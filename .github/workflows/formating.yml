@@ -38,7 +38,7 @@ jobs:
       id-token: write
     uses: 'xn-intenton-z2a/agentic-lib/.github/workflows/wfr-github-create-pr.yml@6.10.2'
     with:
-      branch: 'agentic-lib-formatting'
+      branch: 'formatting'
       baseBranch: 'main'
       gitCommitMessage: 'chore: formatting fixes'
       label: 'automerge'
