@@ -141,7 +141,7 @@ jobs:
         if: steps.mvn.outputs.pomXmlExists == 'true'
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::541134664601:role/agentic-lib-github-actions-role
+          role-to-assume: arn:aws:iam::887764105431:role/submit-github-actions-role
           role-chaining: false
           aws-region: eu-west-2
           audience: sts.amazonaws.com
@@ -156,7 +156,7 @@ jobs:
         if: steps.mvn.outputs.pomXmlExists == 'true'
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::541134664601:role/agentic-lib-deployment-role
+          role-to-assume: arn:aws:iam::887764105431:role/submit-deployment-role
           role-chaining: true
           aws-region: eu-west-2
           audience: sts.amazonaws.com

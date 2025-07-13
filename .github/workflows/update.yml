@@ -2,7 +2,7 @@
 
 name: update
 concurrency: write
-run-name: "ci update [${{ github.ref_name }}]"
+run-name: "update [${{ github.ref_name }}]"
 
 on:
   workflow_dispatch:

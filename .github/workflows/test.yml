@@ -1,7 +1,7 @@
 # .github/workflows/test.yml
 
 name: test
-run-name: 'ci test [${{ github.ref_name }}] [${{ github.event.head_commit.message }}]'
+run-name: 'test [${{ github.ref_name }}] [${{ github.event.head_commit.message }}]'
 
 on:
   push:

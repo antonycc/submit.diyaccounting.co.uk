@@ -4,6 +4,328 @@ This project allows UK businesses to submit tax returns to HMRC under the Making
 
 ---
 
+# Build and run locally
+
+## Clone the Repository
+
+```bash
+
+git clone git@github.com:antonycc/submit.diyaccounting.co.uk.git
+cd submit.diyaccounting.co.uk.git
+```
+
+## Install Node.js dependencies and test
+
+```bash
+
+npm install
+npm test
+```
+
+## Build and test the Java Application
+
+```bash
+./mvnw clean package
+```
+
+## Synthesis the CDK
+
+```bash
+npx cdk synth
+```
+
+## Run the website locally
+
+```bash
+http-server public/ --port 3000
+```
+
+Webserver output:
+```log
+Starting up http-server, serving public/
+
+http-server version: 14.1.1
+
+http-server settings: 
+CORS: disabled
+Cache: 3600 seconds
+Connection Timeout: 120 seconds
+Directory Listings: visible
+AutoIndex: visible
+Serve GZIP Files: false
+Serve Brotli Files: false
+Default File Extension: none
+
+Available on:
+  http://127.0.0.1:3000
+  http://192.168.1.121:3000
+  http://10.14.0.2:3000
+  http://169.254.59.96:3000
+Hit CTRL-C to stop the server
+```
+
+Access via [http://127.0.0.1:3000](http://127.0.0.1:3000) or...
+install [ngrok](https://ngrok.com/) and run to expose http://127.0.0.1:3000 to an SSL terminated public URL:
+```bash
+ngrok http 3000
+```
+
+ngrok runs:
+```log
+ngrok                                                                                                                                                                                                          (Ctrl+C to quit)
+                                                                                                                                                                                                                               
+🤖 Want to hang with ngrokkers on our new Discord? http://ngrok.com/discord                                                                                                                                                    
+                                                                                                                                                                                                                               
+Session Status                online                                                                                                                                                                                           
+Account                       Antony @ Polycode (Plan: Free)                                                                                                                                                                   
+Version                       3.22.1                                                                                                                                                                                           
+Region                        Europe (eu)                                                                                                                                                                                      
+Web Interface                 http://127.0.0.1:4040                                                                                                                                                                            
+Forwarding                    https://d57b-146-70-103-222.ngrok-free.app -> http://localhost:3000                                                                                                                              
+                                                                                                                                                                                                                               
+Connections                   ttl     opn     rt1     rt5     p50     p90                                                                                                                                                      
+                              0       0       0.00    0.00    0.00    0.00                  
+```
+
+Here you can open https://d57b-146-70-103-222.ngrok-free.app in a browser of your choice (you'll have your own URL
+unless I am still running this one, I don't know when the id's roll so I might.)
+
+---
+
+# Deployment to AWS
+
+## Repository set-up
+
+Add the following repository variables to your GitHub repository settings under "Settings":
+
+| Variable                  | Description                              | Level        | Type     | Example                         |
+|---------------------------|------------------------------------------|--------------|----------|---------------------------------|
+| `AWS_HOSTED_ZONE_ID`      | The AWS hosted zone ID for the domain.   | Repository   | String   | `Z0315522208PWZSSBI9AL`         |
+| `AWS_HOSTED_ZONE_NAME`    | The AWS hosted zone name for the domain. | Repository   | String   | `submit.diyaccounting.co.uk`             |
+| `AWS_CERTIFICATE_ARN`      | The AWS certificate ID for the domain.   | Environment  | String   | `arn:aws:acm:us-east-1:887764105431:certificate/b23cd904-8e3b-4cd0-84f1-57ca11d7fe2b`          |
+| `AWS_CLOUD_TRAIL_ENABLED` | Enable CloudTrail logging.               | Environment  | Boolean  | `true`                          |
+
+## OIDC Set-up
+
+Add an OIDC identity provider to your AWS account to allow GitHub Actions to assume roles in your AWS account.
+In this document it assumed that the identity provider is: `arn:aws:iam::887764105431:oidc-provider/token.actions.githubusercontent.com`.
+
+See setting up an OIDC identity provider in the GitHub documentation: [Configuring OpenID Connect in Amazon Web Services](https://docs.github.com/en/actions/how-tos/security-for-github-actions/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services).
+
+## GitHub Actions role creation
+
+The GitHub Actions role authenticates with AWS but does not have permissions to deploy the application.
+These permissions are granted to the `submit-deployment-role` which is assumed by the GitHub Actions role.
+
+The `submit-github-actions-role` needs the following trust entity to allow GitHub Actions to assume the role:
+```bash
+
+cat <<'EOF' > submit-github-actions-trust-policy.json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Principal": {
+                "Federated": "arn:aws:iam::887764105431:oidc-provider/token.actions.githubusercontent.com"
+            },
+            "Action": "sts:AssumeRoleWithWebIdentity",
+            "Condition": {
+                "StringEquals": {
+                    "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
+                },
+                "StringLike": {
+                    "token.actions.githubusercontent.com:sub": "repo:antonycc/submit.diyaccounting.co.uk:*"
+                }
+            }
+        }
+    ]
+}
+EOF
+```
+
+Create the submit-github-actions-role:
+```bash
+aws iam create-role \
+  --role-name submit-github-actions-role \
+  --assume-role-policy-document file://submit-github-actions-trust-policy.json
+```
+
+Add the necessary permissions to deploy `submit.diyaccounting.co.uk`:
+```bash
+
+cat <<'EOF' > submit-assume-deployment-role-permissions-policy.json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+        "Sid": "Statement1",
+        "Effect": "Allow",
+        "Action": [
+            "sts:AssumeRole",
+            "sts:TagSession"
+        ],
+        "Resource": [
+            "arn:aws:iam::887764105431:role/submit-deployment-role"
+        ]
+    }
+  ]
+}
+EOF
+aws iam put-role-policy \
+  --role-name submit-github-actions-role \
+  --policy-name assume-deployment-role-permissions-policy \
+  --policy-document file://submit-assume-deployment-role-permissions-policy.json
+```
+
+## Deployment role creation
+
+Create the IAM role with the necessary permissions be assumed from the authenticated users:
+(Assumes these roles exist: `antony-local-user` and `submit-github-actions-role`.)
+```bash
+
+cat <<'EOF' > submit-deployment-trust-policy.json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "AWS": [
+          "arn:aws:iam::541134664601:user/antony-local-user",
+          "arn:aws:iam::887764105431:role/submit-github-actions-role"
+        ]
+      },
+      "Action": "sts:AssumeRole"
+    }
+  ]
+}
+EOF
+aws iam create-role \
+  --role-name submit-deployment-role \
+  --assume-role-policy-document file://submit-deployment-trust-policy.json
+```
+
+Add the necessary permissions to deploy `submit.diyaccounting.co.uk`:
+```bash
+
+cat <<'EOF' > submit-deployment-permissions-policy.json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "cloudformation:*",
+        "iam:*",
+        "s3:*",
+        "cloudtrail:*",
+        "logs:*",
+        "events:*",
+        "lambda:*",
+        "dynamodb:*",
+        "sqs:*",
+        "sts:AssumeRole"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
+EOF
+aws iam put-role-policy \
+  --role-name submit-deployment-role \
+  --policy-name submit-deployment-permissions-policy \
+  --policy-document file://submit-deployment-permissions-policy.json
+```
+
+## Deployment role trust relationships
+
+For this example, user `antony-local-user` has the following
+trust policy so that they can assume the role: `submit-deployment-role`:
+```json
+{
+	"Version": "2012-10-17",
+	"Statement": [
+		{
+			"Sid": "Statement1",
+			"Effect": "Allow",
+			"Action": ["sts:AssumeRole", "sts:TagSession"],
+			"Resource": ["arn:aws:iam::887764105431:role/submit-deployment-role"]
+		}
+	]
+}
+```
+
+Assume the deployment role:
+```bash
+
+ROLE_ARN="arn:aws:iam::887764105431:role/submit-deployment-role"
+SESSION_NAME="submit-deployment-session-local"
+ASSUME_ROLE_OUTPUT=$(aws sts assume-role --role-arn "$ROLE_ARN" --role-session-name "$SESSION_NAME" --output json)
+if [ $? -ne 0 ]; then
+  echo "Error: Failed to assume role."
+  exit 1
+fi
+export AWS_ACCESS_KEY_ID=$(echo "$ASSUME_ROLE_OUTPUT" | jq -r '.Credentials.AccessKeyId')
+export AWS_SECRET_ACCESS_KEY=$(echo "$ASSUME_ROLE_OUTPUT" | jq -r '.Credentials.SecretAccessKey')
+export AWS_SESSION_TOKEN=$(echo "$ASSUME_ROLE_OUTPUT" | jq -r '.Credentials.SessionToken')
+EXPIRATION=$(echo "$ASSUME_ROLE_OUTPUT" | jq -r '.Credentials.Expiration')
+echo "Assumed role successfully. Credentials valid until: $EXPIRATION"
+```
+Output:
+```log
+Assumed role successfully. Credentials valid until: 2025-03-25T02:27:18+00:00
+```
+
+Check the session:
+```bash
+
+aws sts get-caller-identity
+```
+
+Output:
+```json
+{
+  "UserId": "AROA45MW5HDLYEIKWFG6F:submit-deployment-session-local",
+  "Account": "887764105431",
+  "Arn": "arn:aws:sts::887764105431:assumed-role/submit-deployment-role/submit-deployment-session-local"
+}
+```
+
+Check the permissions of the role:
+```bash
+
+aws iam list-role-policies \
+  --role-name submit-deployment-role
+```
+Output (the policy we created above):
+```json
+{
+  "PolicyNames": [
+    "submit-deployment-permissions-policy"
+  ]
+}
+```
+
+An example of the GitHub Actions role being assumed in a GitHub Actions Workflow:
+```yaml
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::887764105431:role/submit-deployment-role
+          aws-region: eu-west-2
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+      - run: npm install -g aws-cdk
+      - run: aws s3 ls --region eu-west-2
+```
+
+## Deployment from local to AWS
+
+---
+
 ## 🎯 MVP (Initial Release)
 
 ### Features:
