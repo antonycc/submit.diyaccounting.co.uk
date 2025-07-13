@@ -1,0 +1,62 @@
+# Which agentic-lib workflow schedule should be used?
+schedule: schedule-1
+
+# Mapping for from symbolic keys to filepaths for access by agentic-lib workflows with limits and access permissions
+paths:
+  # Filepaths for elaborator workflows
+  missionFilepath:
+    path: 'MISSION.md'
+  librarySourcesFilepath:
+    path: 'SOURCES.md'
+    permissions: ['write']
+    limit: 8
+  libraryDocumentsPath:
+    path: 'library/'
+    permissions: ['write']
+    limit: 32
+  featuresPath:
+    path: 'features/'
+    limit: 0
+
+  # Filepaths for engineer workflows
+  contributingFilepath:
+    path: 'CONTRIBUTING.md'
+  targetTestsPath:
+    path: 'tests/unit/'
+  otherTestsPaths:
+    paths: []
+  targetSourcePath:
+    path: 'src/lib/'
+  otherSourcePaths:
+    paths: []
+  dependenciesFilepath:
+    path: 'package.json'
+  documentationPath:
+    path: 'docs/'
+
+  # Filepaths for maintainer workflows
+  formattingFilepath:
+    path: '.prettierrc'
+  lintingFilepath:
+    path: 'eslint.config.js'
+  readmeFilepath:
+    path: 'README.md'
+
+# Execution commands
+buildScript: "npm run build"
+testScript: "npm test"
+mainScript: "npm run start"
+
+# How many issues should be open to be picked up?
+featureDevelopmentIssuesWipLimit: 0
+maintenanceIssuesWipLimit: 1
+
+# How many attempts should be made to work on an issue?
+attemptsPerBranch: 1
+attemptsPerIssue: 1
+
+# Web publishing
+docRoot: 'public'
+
+discussionBot:
+  seedDiscussionFilepath: 'intentïon.md'

@@ -1,0 +1,241 @@
+# .github/workflows/ci-test.yml
+#
+# This file is part of the example suite for `agentic-lib` see: https://github.com/xn-intenton-z2a/agentic-lib
+# This file is licensed under the MIT License. For details, see LICENSE-MIT
+
+name: ci-test
+run-name: 'ci test [${{ github.ref_name }}] [${{ github.event.head_commit.message }}]'
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '**/*.sh'
+      - '**/*.java'
+      - '**/*.js'
+      - '**/*.json'
+      - '**/*.yml'
+      - '**/pom.xml'
+      - '**/*.properties'
+      - '!exports/**'
+  workflow_dispatch:
+  workflow_run:
+    workflows:
+      - seed-repository
+    types:
+      - completed
+    secrets:
+      PERSONAL_ACCESS_TOKEN:
+        required: false
+      CHATGPT_API_SECRET_KEY:
+        required: true
+  schedule:
+    - cron: '4,34 4 */7 * *' # schedule-1
+    #- cron: '4,34 4 * * *' # schedule-2
+    #- cron: '4,34 */2 * * *' # schedule-3
+    #- cron: '4,34 */2 * * *' # schedule-4
+
+env:
+  npmAuthOrganisation: ${{ vars.npmAuthOrganisation || '@xn-intenton-z2a' }}
+  s3BucketUrl: ${{ vars.s3BucketUrl || 's3://agentic-lib-telemetry-bucket/events/' }}
+  s3WebsiteBucketUrl: ${{ vars.s3WebsiteBucketUrl || 's3://agentic-lib-public-website-stats-bucket/' }}
+  iamActionsRoleArn: ${{ vars.iamActionsRoleArn || 'arn:aws:iam::541134664601:role/agentic-lib-github-actions-role' }}
+  iamStatsBucketWriterRoleArn: ${{ vars.iamStatsBucketWriterRoleArn || 'arn:aws:iam::541134664601:role/agentic-lib-deployment-role' }}
+  iamPublicWebsiteStatsBucketWriterRoleArn: ${{ vars.iamPublicWebsiteStatsBucketWriterRoleArn || 'arn:aws:iam::541134664601:role/agentic-lib-public-website-stats-bucket-writer-role' }}
+
+jobs:
+  agentic-lib:
+    uses: 'xn-intenton-z2a/agentic-lib/.github/workflows/wfr-agent-config.yml@6.10.2'
+    with:
+      configPath: ${{ vars.configPath || '.github/agents/agentic-lib.yml' }}
+    secrets:
+      PERSONAL_ACCESS_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+
+  check-workflow-run:
+    name: 'Check workflow run trigger'
+    runs-on: ubuntu-latest
+    outputs:
+      is_workflow_run: ${{ steps.check.outputs.is_workflow_run }}
+    steps:
+      - id: check
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_run" ]]; then
+            echo "is_workflow_run=true" >> $GITHUB_OUTPUT
+            echo "This workflow was triggered by a workflow_run event"
+          else
+            echo "is_workflow_run=false" >> $GITHUB_OUTPUT
+            echo "This workflow was triggered by a ${{ github.event_name }} event"
+          fi
+
+  npm-test:
+    name: 'npm test'
+    needs: check-workflow-run
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Set up ~/.npmrc
+        if: ${{ env.npmAuthOrganisation != '' }}
+        shell: bash
+        run: |
+          echo "${{ env.npmAuthOrganisation }}:registry=https://npm.pkg.github.com" >> ~/.npmrc
+          echo "//npm.pkg.github.com/:_authToken=${{ secrets.PERSONAL_ACCESS_TOKEN }}" >> ~/.npmrc
+          echo "always-auth=true" >> ~/.npmrc
+
+      - run: npm ci || npm install
+
+      - run: npm test
+
+  npm-unit-test:
+    name: 'npm unit test with coverage'
+    needs: check-workflow-run
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Set up ~/.npmrc
+        if: ${{ env.npmAuthOrganisation != '' }}
+        shell: bash
+        run: |
+          echo "${{ env.npmAuthOrganisation }}:registry=https://npm.pkg.github.com" >> ~/.npmrc
+          echo "//npm.pkg.github.com/:_authToken=${{ secrets.PERSONAL_ACCESS_TOKEN }}" >> ~/.npmrc
+          echo "always-auth=true" >> ~/.npmrc
+
+      - run: npm ci || npm install
+
+      - run: npm run test:unit
+
+  npm-build-test-and-run-main:
+    needs: check-workflow-run
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Set up ~/.npmrc
+        if: ${{ env.npmAuthOrganisation != '' }}
+        shell: bash
+        run: |
+          echo "${{ env.npmAuthOrganisation }}:registry=https://npm.pkg.github.com" >> ~/.npmrc
+          echo "//npm.pkg.github.com/:_authToken=${{ secrets.PERSONAL_ACCESS_TOKEN }}" >> ~/.npmrc
+          echo "always-auth=true" >> ~/.npmrc
+
+      - run: npm ci || npm install
+
+      - name: build
+        id: build
+        shell: bash
+        run: 'npm run build'
+
+      - name: test
+        id: test
+        shell: bash
+        run: 'npm test'
+
+      - name: main
+        id: main
+        shell: bash
+        run: timeout 5m ${{ vars.MAIN_SCRIPT || 'npm run start' }}
+
+  mvn-package-cdk-synth:
+    needs: check-workflow-run
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Set up ~/.npmrc
+        if: ${{ env.npmAuthOrganisation != '' }}
+        shell: bash
+        run: |
+          echo "${{ env.npmAuthOrganisation }}:registry=https://npm.pkg.github.com" >> ~/.npmrc
+          echo "//npm.pkg.github.com/:_authToken=${{ secrets.PERSONAL_ACCESS_TOKEN }}" >> ~/.npmrc
+          echo "always-auth=true" >> ~/.npmrc
+
+      - run: npm ci || npm install
+
+      - name: mvn
+        id: mvn
+        shell: bash
+        run: |
+          if [ -f pom.xml ]; then
+            pomXmlExists='true'
+          else
+            pomXmlExists='false'
+          fi
+          echo "pomXmlExists=${pomXmlExists?}" | tee -a "${GITHUB_OUTPUT?}"
+
+      - uses: actions/setup-java@v4
+        if: steps.mvn.outputs.pomXmlExists == 'true'
+        with:
+          distribution: 'corretto'
+          java-version: 21
+          cache: 'maven'
+          server-password: PERSONAL_ACCESS_TOKEN
+        env:
+          GITHUB_ACTOR: ${{ github.actor }}
+          PERSONAL_ACCESS_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+
+      - name: check
+        id: check
+        run: cat ~/.m2/settings.xml
+        if: steps.mvn.outputs.pomXmlExists == 'true'
+
+      - name: download-dependencies
+        id: download-dependencies
+        if: steps.mvn.outputs.pomXmlExists == 'true'
+        shell: bash
+        run: ./mvnw --batch-mode --quiet dependency:go-offline > /dev/null 2>&1
+        env:
+          GITHUB_ACTOR: ${{ github.actor }}
+          PERSONAL_ACCESS_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+
+      - name: package
+        id: package
+        if: steps.mvn.outputs.pomXmlExists == 'true'
+        shell: bash
+        run: ./mvnw clean package
+        env:
+          GITHUB_ACTOR: ${{ github.actor }}
+          PERSONAL_ACCESS_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+
+      - name: synth
+        id: synth
+        if: steps.mvn.outputs.pomXmlExists == 'true'
+        shell: bash
+        run: npx cdk synth --strict --validation --no-staging --trace
+        env:
+          GITHUB_ACTOR: ${{ github.actor }}
+          PERSONAL_ACCESS_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}

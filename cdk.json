@@ -1,0 +1,26 @@
+{
+  "app": "mvn exec:java -Dexec.mainClass=com.intention.web.WebApp",
+  "synthStacks": "npx cdk synth WebStack-dev --ci true --strict --validation",
+  "deployStacks": "npx cdk deploy WebStack-dev --require-approval never --ci true --verbose --strict --validation",
+  "context": {
+    "env": "dev",
+    "subDomainName": "web",
+    "hostedZoneName": "xn--intenton-z2a.com",
+    "hostedZoneId": "Z09934692CHZL2KPE9Q9F",
+    "useExistingHostedZone": "true",
+    "certificateArn": "arn:aws:acm:us-east-1:541134664601:certificate/73421403-bd8c-493c-888c-e3e08eec1c41",
+    "useExistingCertificate": "true",
+    "cloudTrailEnabled": "false",
+    "cloudTrailLogGroupPrefix": "/aws/s3/",
+    "cloudTrailLogGroupRetentionPeriodDays": "3",
+    "accessLogGroupRetentionPeriodDays": "30",
+    "s3UseExistingBucket": "false",
+    "s3RetainBucket": "false",
+    "cloudTrailEventSelectorPrefix": "none",
+    "logS3ObjectEventHandlerSource": "target/web-1.1.0.jar",
+    "logGzippedS3ObjectEventHandlerSource": "target/web-1.1.0.jar",
+    "docRootPath": "public",
+    "defaultDocumentAtOrigin": "index.html",
+    "error404NotFoundAtDistribution": "404-error-distribution.html"
+  }
+}
