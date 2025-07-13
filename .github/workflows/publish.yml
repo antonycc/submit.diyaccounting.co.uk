@@ -172,8 +172,8 @@ jobs:
       - name: Update cdk.json version references
         shell: bash
         run: |
-          # Replace web-<releasedVersion> with web-<newVersion> in cdk.json
-          sed -i 's/web-${{ needs.publish-npm.outputs.releasedVersion }}/web-${{ needs.publish-npm.outputs.newVersion }}/g' cdk.json
+          # Replace web-<some version>.jar with web-<newVersion>.jar in cdk.json
+          sed -i 's/web-.*\.jar/web-${{ needs.publish-npm.outputs.newVersion }}.jar/g' cdk.json
 
       - name: Commit version updates
         shell: bash
@@ -184,7 +184,7 @@ jobs:
           if git diff --staged --quiet; then
             echo "No changes to commit"
           else
-            git commit -m "Update cdk.json version references from ${{ needs.publish-npm.outputs.releasedVersion }} to ${{ needs.publish-npm.outputs.newVersion }}"
+            git commit -m "${{ needs.publish-npm.outputs.newVersion }}"
 
             # Retry push up to 3 times in case of conflicts
             for i in {1..3}; do
