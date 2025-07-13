@@ -495,7 +495,7 @@ Outputs:
 WebStack.ARecord = dev.submit.diyaccounting.co.uk
 WebStack.AaaaRecord = dev.submit.diyaccounting.co.uk
 WebStack.CertificateArn = arn:aws:acm:us-east-1:541134664601:certificate/73421403-bd8c-493c-888c-e3e08eec1c41
-WebStack.DistributionAccessLogBucketArn = arn:aws:s3:::dev-web-intention-com-distribution-access-logs
+WebStack.DistributionAccessLogBucketArn = arn:aws:s3:::dev-web-intention-com-dist-access-logs
 WebStack.DistributionId = E24DIA1LSWOHYI
 WebStack.HostedZoneId = Z09934692CHZL2KPE9Q9F
 WebStack.OriginAccessLogBucketArn = arn:aws:s3:::dev-web-intention-com-origin-access-logs

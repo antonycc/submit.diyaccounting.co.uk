@@ -221,14 +221,11 @@ public class WebStack extends Stack {
         public static String buildOriginBucketName(String dashedDomainName){ return dashedDomainName; }
         public static String buildCloudTrailLogBucketName(String dashedDomainName) { return "%s-cloud-trail".formatted(dashedDomainName); }
         public static String buildOriginAccessLogBucketName(String dashedDomainName) { return "%s-origin-access-logs".formatted(dashedDomainName); }
-        public static String buildDistributionAccessLogBucketName(String dashedDomainName) { return "%s-distribution-access-logs".formatted(dashedDomainName);}
+        public static String buildDistributionAccessLogBucketName(String dashedDomainName) { return "%s-dist-access-logs".formatted(dashedDomainName);}
 
     }
 
-    // TODO: Move to cdk.json
-    public static final List<AbstractMap.SimpleEntry<Pattern, String>> domainNameMappings = List.of(
-            new AbstractMap.SimpleEntry<>(Pattern.compile("xn--intenton-z2a"), "intention")
-    );
+    public static final List<AbstractMap.SimpleEntry<Pattern, String>> domainNameMappings = List.of();
 
     public WebStack(Construct scope, String id, WebStack.Builder builder) {
         this(scope, id, null, builder);
