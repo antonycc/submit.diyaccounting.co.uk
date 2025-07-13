@@ -425,7 +425,6 @@ public class WebStack extends Stack {
                 .zone(this.hostedZone)
                 .recordName(this.domainName)
                 .deleteExisting(true)
-                .ttl(Duration.seconds(60))
                 .target(RecordTarget.fromAlias(new CloudFrontTarget(this.distribution)))
                 .build();
         this.aaaaRecord = AaaaRecord.Builder
@@ -433,7 +432,6 @@ public class WebStack extends Stack {
                 .zone(this.hostedZone)
                 .recordName(this.domainName)
                 .deleteExisting(true)
-                .ttl(Duration.seconds(60))
                 .target(RecordTarget.fromAlias(new CloudFrontTarget(this.distribution)))
                 .build();
     }
