@@ -93,7 +93,7 @@ jobs:
 
   deploy:
     needs:
-      - npm-test-and-run-main
+      - npm-test
       - mvn-package-cdk-synth
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment || 'ci' }}
