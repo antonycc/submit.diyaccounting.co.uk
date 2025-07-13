@@ -24,7 +24,7 @@ on:
     - cron: '14 6 1 * *'
 
 jobs:
-  npm-test-and-run-main:
+  npm-test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -101,7 +101,7 @@ jobs:
 
   publish-npm:
     needs:
-      - npm-test-and-run-main
+      - npm-test
       - mvn-package-cdk-synth
     permissions:
       contents: write
@@ -116,7 +116,7 @@ jobs:
 
   publish-mvn:
     needs:
-      - npm-test-and-run-main
+      - npm-test
       - publish-npm
       - mvn-package-cdk-synth
     if: needs.mvn-package-cdk-synth.outputs.pomXmlExists == 'true'
@@ -135,3 +135,70 @@ jobs:
       gitUserEmail: 'action@github.com'
       gitUserName: 'GitHub Actions[bot]'
 
+  update-cdk-version:
+    needs:
+      - npm-test
+      - publish-npm
+      - mvn-package-cdk-synth
+      - publish-mvn
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pull latest changes
+        shell: bash
+        run: |
+          # Pull latest changes to account for commits from other jobs
+          # Retry up to 3 times in case of temporary conflicts
+          for i in {1..3}; do
+            if git pull origin ${{ github.ref_name }}; then
+              echo "Successfully pulled latest changes"
+              break
+            else
+              echo "Pull attempt $i failed, retrying in 5 seconds..."
+              sleep 5
+              if [ $i -eq 3 ]; then
+                echo "Failed to pull after 3 attempts"
+                exit 1
+              fi
+            fi
+          done
+
+      - name: Update cdk.json version references
+        shell: bash
+        run: |
+          # Replace web-<releasedVersion> with web-<newVersion> in cdk.json
+          sed -i 's/web-${{ needs.publish-npm.outputs.releasedVersion }}/web-${{ needs.publish-npm.outputs.newVersion }}/g' cdk.json
+
+      - name: Commit version updates
+        shell: bash
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Actions[bot]"
+          git add cdk.json
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Update cdk.json version references from ${{ needs.publish-npm.outputs.releasedVersion }} to ${{ needs.publish-npm.outputs.newVersion }}"
+
+            # Retry push up to 3 times in case of conflicts
+            for i in {1..3}; do
+              if git push; then
+                echo "Successfully pushed changes"
+                break
+              else
+                echo "Push attempt $i failed, pulling latest changes and retrying..."
+                git pull origin ${{ github.ref_name }}
+                if [ $i -eq 3 ]; then
+                  echo "Failed to push after 3 attempts"
+                  exit 1
+                fi
+                sleep 2
+              fi
+            done
+          fi
