@@ -1,5 +1,5 @@
 {
-  "app": "mvn exec:java -Dexec.mainClass=com.intention.web.WebApp",
+  "app": "mvn exec:java -Dexec.mainClass=co.uk.diyaccounting.submit.WebApp",
   "synthStacks": "npx cdk synth WebStack-dev --ci true --strict --validation",
   "deployStacks": "npx cdk deploy WebStack-dev --require-approval never --ci true --verbose --strict --validation",
   "context": {
