@@ -108,8 +108,8 @@ jobs:
       packages: write
     uses: 'xn-intenton-z2a/agentic-lib/.github/workflows/wfr-npm-publish.yml@6.10.2'
     with:
+      npmAuthOrganisation: ${{ inputs.npmAuthOrganisation || github.repository_owner }}
       versionIncrement: ${{ inputs.versionIncrement || 'prerelease' }}
-      #githubRelease: true
       buildScript: 'npm run build'
       releaseNotes: 'Release increment: ${{ inputs.versionIncrement }}.'
       gitUserEmail: 'action@github.com'
