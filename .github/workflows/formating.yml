@@ -42,17 +42,3 @@ jobs:
       baseBranch: 'main'
       gitCommitMessage: 'chore: formatting fixes'
       label: 'automerge'
-
-  automerge-pr:
-    needs:
-      - create-pr
-      - formatting
-    if: needs.formatting.outputs.updatedFiles == 'true'
-    permissions:
-      contents: write
-      pull-requests: write
-      checks: write
-      issues: write
-      id-token: write
-      pages: write
-    uses: 'xn-intenton-z2a/agentic-lib/.github/workflows/ci-automerge.yml@6.10.2'
