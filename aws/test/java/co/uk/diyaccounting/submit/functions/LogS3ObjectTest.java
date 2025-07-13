@@ -1,5 +1,6 @@
-package co.uk.diyaccounting.submit;
+package co.uk.diyaccounting.submit.functions;
 
+import co.uk.diyaccounting.submit.awssdk.S3;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.events.S3Event;

@@ -1,4 +1,4 @@
-package co.uk.diyaccounting.submit;
+package co.uk.diyaccounting.submit.awssdk;
 
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.sync.ResponseTransformer;

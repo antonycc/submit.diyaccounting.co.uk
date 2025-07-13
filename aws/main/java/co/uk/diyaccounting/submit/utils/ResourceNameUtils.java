@@ -1,4 +1,4 @@
-package co.uk.diyaccounting.submit;
+package co.uk.diyaccounting.submit.utils;
 
 import java.util.AbstractMap;
 import java.util.Collections;

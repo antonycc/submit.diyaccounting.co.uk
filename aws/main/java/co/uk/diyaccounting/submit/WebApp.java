@@ -1,5 +1,6 @@
 package co.uk.diyaccounting.submit;
 
+import co.uk.diyaccounting.submit.constructs.WebStack;
 import software.amazon.awscdk.App;
 import software.amazon.awscdk.CfnOutput;
 
@@ -8,7 +9,7 @@ public class WebApp {
         App app = new App();
 
         String envName = System.getenv("ENV_NAME");
-        String stackId = "WebStack-%s".formatted(envName != null && !envName.isBlank() ? envName : "dev");
+        String stackId = "SubmitWebStack-%s".formatted(envName != null && !envName.isBlank() ? envName : "dev");
         WebStack stack = WebStack.Builder.create(app, stackId)
                 .env(System.getenv("ENV_NAME"))
                 .hostedZoneName(System.getenv("HOSTED_ZONE_NAME"))

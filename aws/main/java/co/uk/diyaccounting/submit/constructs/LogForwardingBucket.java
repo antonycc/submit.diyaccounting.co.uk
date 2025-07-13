@@ -1,5 +1,8 @@
-package co.uk.diyaccounting.submit;
+package co.uk.diyaccounting.submit.constructs;
 
+import co.uk.diyaccounting.submit.awssdk.RetentionDaysConverter;
+import co.uk.diyaccounting.submit.functions.LogS3ObjectEvent;
+import co.uk.diyaccounting.submit.utils.ResourceNameUtils;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.S3Event;
 import org.apache.logging.log4j.LogManager;
@@ -14,6 +17,7 @@ import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.lambda.Runtime;
 import software.amazon.awscdk.services.lambda.Version;
 import software.amazon.awscdk.services.lambda.VersionProps;
+import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.s3.Bucket;
 import software.amazon.awscdk.services.s3.BucketEncryption;
 import software.amazon.awscdk.services.s3.EventType;
@@ -110,6 +114,12 @@ public class LogForwardingBucket extends Stack {
             if (handlerSource == null || handlerSource.isBlank() || "none".equals(handlerSource)) {
                 logger.warn("Handler source is not set. Log forwarding will not work.");
             } else {
+                final LogGroup logGroup = LogGroup.Builder
+                        .create(scope, "%sLogForwarderLogGroup".formatted(idPrefix))
+                        .logGroupName(functionName)
+                        .retention(RetentionDaysConverter.daysToRetentionDays(retentionPeriodDays))
+                        .removalPolicy(RemovalPolicy.DESTROY)
+                        .build();
                 final Function logForwarder = Function.Builder
                         .create(scope, "%sLogForwarder".formatted(idPrefix))
                         .functionName(functionName)
@@ -118,6 +128,7 @@ public class LogForwardingBucket extends Stack {
                         .handler(handlerClass.getName())
                         .memorySize(1024)
                         .timeout(Duration.seconds(60))
+                        .logGroup(logGroup)
                         .retryAttempts(2)
                         .build();
                 CfnFunction cfnFunction = (CfnFunction) logForwarder.getNode().getDefaultChild();

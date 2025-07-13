@@ -1,4 +1,4 @@
-package co.uk.diyaccounting.submit;
+package co.uk.diyaccounting.submit.awssdk;
 
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.core.ResponseInputStream;

@@ -1,4 +1,4 @@
-package co.uk.diyaccounting.submit;
+package co.uk.diyaccounting.submit.awssdk;
 
 import com.amazonaws.services.lambda.runtime.events.models.s3.S3EventNotification;
 import org.junit.jupiter.api.BeforeEach;

@@ -534,11 +534,20 @@ Destroy a previous stack and delete related log groups:
 npx cdk destroy
 ```
 
-Delete the log groups:
+Force delete the buckets:
+```bash
+
+aws s3 rm 's3://dev-submit-diyaccounting-co-uk-origin-access-logs' --recursive
+aws s3 rb 's3://dev-submit-diyaccounting-co-uk-origin-access-logs' --force
+```
+
+Manually delete the log groups:
 ```bash
 
 aws logs delete-log-group \
-  --log-group-name "/aws/s3/s3-sqs-bridge-bucket"
+  --log-group-name '/aws/lambda/dev-submit-diyaccounting-co-uk-origin-access-log-forwarder'
+aws logs delete-log-group \
+  --log-group-name '/aws/lambda/dev-submit-diyaccounting-co-uk-distribution-access-log-forwarder'
 ```
 
 ---
