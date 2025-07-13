@@ -22,7 +22,7 @@ env:
   environment: ${{ inputs.environment || 'ci' }}
 
 jobs:
-  npm-test-and-run-main:
+  npm-test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -40,11 +40,6 @@ jobs:
         id: test
         shell: bash
         run: 'npm test'
-
-      - name: main
-        id: main
-        shell: bash
-        run: timeout 5m ${{ needs.agentic-lib.outputs.mainScript }}
 
   mvn-package-cdk-synth:
     runs-on: ubuntu-latest
