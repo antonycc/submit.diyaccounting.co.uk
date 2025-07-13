@@ -1,60 +1,64 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>DIY Accounting Submit</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <script src="https://cdn.jsdelivr.net/npm/ejs@3.1.10/ejs.min.js"></script>
-  <style>
+  <head>
+    <meta charset="UTF-8" />
+    <title>DIY Accounting Submit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="https://cdn.jsdelivr.net/npm/ejs@3.1.10/ejs.min.js"></script>
+    <style>
+      /* Basic reset and box-sizing */
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      html,
+      body {
+        height: 100%;
+      }
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f9f9f9;
+        color: #333;
+        display: flex;
+        flex-direction: column;
+        padding: 1em;
+      }
+      header {
+        margin-bottom: 1em;
+        text-align: center;
+      }
+      h1 {
+        font-size: 1.8em;
+        margin-bottom: 0.5em;
+      }
+      /* Main content container fills available space */
+      #mainContent {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+      }
 
-/* Basic reset and box-sizing */
-* { box-sizing: border-box; margin: 0; padding: 0; }
-html, body { height: 100%; }
-body {
-    font-family: Arial, sans-serif;
-    background-color: #f9f9f9;
-    color: #333;
-    display: flex;
-    flex-direction: column;
-    padding: 1em;
-}
-header {
-    margin-bottom: 1em;
-    text-align: center;
-}
-h1 { font-size: 1.8em; margin-bottom: 0.5em; }
-/* Main content container fills available space */
-#mainContent {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-}
-
-/* The iframe now fills its container completely */
-.tile iframe {
-    width: 100%;
-    height: 100%;
-    border: none;
-}
-footer {
-    margin-top: 0;
-    text-align: center;
-    font-size: 0.9em;
-    color: #777;
-}
-
-  </style>
-</head>
-<body>
-<header>
-</header>
-<div id="mainContent">
-  <h1>DIY Accounting Submit</h1>
-  <p>
-    Submit UK tax information to HMRC
-  </p>
-</div>
-<footer>
-</footer>
-</body>
+      /* The iframe now fills its container completely */
+      .tile iframe {
+        width: 100%;
+        height: 100%;
+        border: none;
+      }
+      footer {
+        margin-top: 0;
+        text-align: center;
+        font-size: 0.9em;
+        color: #777;
+      }
+    </style>
+  </head>
+  <body>
+    <header></header>
+    <div id="mainContent">
+      <h1>DIY Accounting Submit</h1>
+      <p>Submit UK tax information to HMRC</p>
+    </div>
+    <footer></footer>
+  </body>
 </html>
