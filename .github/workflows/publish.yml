@@ -21,7 +21,7 @@ on:
           - preminor
           - prepatch
   schedule:
-    - cron: '14 6 1 * *'
+    - cron: '14 6 9 * *'
 
 jobs:
   npm-test:

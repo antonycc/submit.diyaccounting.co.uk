@@ -22,7 +22,7 @@ on:
   repository_dispatch:
     types: [package-published]
   schedule:
-    - cron: '14 3 * * *'
+    - cron: '14 3 */7 * *'
 
 jobs:
   pom-check:
