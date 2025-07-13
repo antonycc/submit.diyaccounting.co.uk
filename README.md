@@ -105,6 +105,10 @@ Add the following repository variables to your GitHub repository settings under 
 | `AWS_CERTIFICATE_ARN`      | The AWS certificate ID for the domain.   | Environment  | String   | `arn:aws:acm:us-east-1:887764105431:certificate/b23cd904-8e3b-4cd0-84f1-57ca11d7fe2b`          |
 | `AWS_CLOUD_TRAIL_ENABLED` | Enable CloudTrail logging.               | Environment  | Boolean  | `true`                          |
 
+To use a repository level variable certificate should be able to cover the domain `submit.diyaccounting.co.uk` and 
+`*.submit.diyaccounting.co.uk`. If a more specific certificate is required, then the `AWS_CERTIFICATE_ARN` variable can 
+be set at the environment level. Similarly, zone files can be per environment.
+
 ## OIDC Set-up
 
 Add an OIDC identity provider to your AWS account to allow GitHub Actions to assume roles in your AWS account.
@@ -178,6 +182,21 @@ aws iam put-role-policy \
   --policy-document file://submit-assume-deployment-role-permissions-policy.json
 ```
 
+An example of the GitHub Actions role being assumed in a GitHub Actions Workflow:
+```yaml
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::887764105431:role/submit-github-actions-role
+          role-chaining: false
+          aws-region: eu-west-2
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+      - run: aws sts get-caller-identity
+```
+
 ## Deployment role creation
 
 Create the IAM role with the necessary permissions be assumed from the authenticated users:
@@ -225,6 +244,8 @@ cat <<'EOF' > submit-deployment-permissions-policy.json
         "lambda:*",
         "dynamodb:*",
         "sqs:*",
+        "ecr:*",
+        "ssm:*",
         "sts:AssumeRole"
       ],
       "Resource": "*"
@@ -236,6 +257,22 @@ aws iam put-role-policy \
   --role-name submit-deployment-role \
   --policy-name submit-deployment-permissions-policy \
   --policy-document file://submit-deployment-permissions-policy.json
+```
+
+An example of the Deployment role being assumed in a GitHub Actions Workflow:
+```yaml
+      - name: Configure AWS Credentials
+        if: steps.mvn.outputs.pomXmlExists == 'true'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::887764105431:role/submit-deployment-role
+          role-chaining: true
+          aws-region: eu-west-2
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+      - run: aws sts get-caller-identity
 ```
 
 ## Deployment role trust relationships
@@ -256,7 +293,7 @@ trust policy so that they can assume the role: `submit-deployment-role`:
 }
 ```
 
-Assume the deployment role:
+Assume the deployment role from the command line starting as `antony-local-user`:
 ```bash
 
 ROLE_ARN="arn:aws:iam::887764105431:role/submit-deployment-role"
@@ -307,22 +344,202 @@ Output (the policy we created above):
 }
 ```
 
-An example of the GitHub Actions role being assumed in a GitHub Actions Workflow:
-```yaml
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: arn:aws:iam::887764105431:role/submit-deployment-role
-          aws-region: eu-west-2
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '20'
-      - run: npm install -g aws-cdk
-      - run: aws s3 ls --region eu-west-2
+## Deployment from local to AWS
+
+### CDK Bootstrap
+
+You'll need to have run `npx cdk bootstrap` to set up the environment for the CDK. This is a one-time setup per AWS account and region.
+
+Assume deployment role:
+```bash
+
+. ./scripts/aws-assume-submit-deployment-role.sh                                     
 ```
 
-## Deployment from local to AWS
+Output:
+```log
+Assumed arn:aws:iam::541134664601:role/submit-deployment-role successfully, expires: 2025-05-14T02:19:16+00:00. Identity is now:
+{
+"UserId": "AROAX37RDWOMSMQUIZOI4:agentic-lib-deployment-session-local",
+"Account": "541134664601",
+"Arn": "arn:aws:sts::541134664601:assumed-role/submit-deployment-role/agentic-lib-deployment-session-local"
+}
+```~/projects/submit.diyaccounting.co.uk %
+```
+
+The role `submit-deployment-role` has sufficient permissions to bootstrap the CDK environment and deploy the stack.
+```bash
+
+npx cdk bootstrap aws://887764105431/eu-west-2
+```
+
+```log
+
+~/projects/submit.diyaccounting.co.uk % npx cdk bootstrap aws://887764105431/eu-west-2                                                                                                                                       
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] -------------------< submit.diyaccounting.co.uk:web >-------------------
+[INFO] Building web 0.0.1
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- exec:3.5.1:java (default-cli) @ web ---
+[WARNING] aws-cdk-lib.aws_cloudfront_origins.S3Origin is deprecated.
+  Use `S3BucketOrigin` or `S3StaticWebsiteOrigin` instead.
+  This API will be removed in the next major release.
+[WARNING] aws-cdk-lib.aws_cloudfront_origins.S3Origin#bind is deprecated.
+  Use `S3BucketOrigin` or `S3StaticWebsiteOrigin` instead.
+  This API will be removed in the next major release.
+[WARNING] aws-cdk-lib.aws_lambda.FunctionOptions#logRetention is deprecated.
+  use `logGroup` instead
+  This API will be removed in the next major release.
+[WARNING] aws-cdk-lib.aws_lambda.FunctionOptions#logRetention is deprecated.
+  use `logGroup` instead
+  This API will be removed in the next major release.
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  3.585 s
+[INFO] Finished at: 2025-07-13T20:03:56+01:00
+[INFO] ------------------------------------------------------------------------
+ ⏳  Bootstrapping environment aws://887764105431/eu-west-2...
+Trusted accounts for deployment: (none)
+Trusted accounts for lookup: (none)
+Using default execution policy of 'arn:aws:iam::aws:policy/AdministratorAccess'. Pass '--cloudformation-execution-policies' to customize.
+CDKToolkit: creating CloudFormation changeset...
+ ✅  Environment aws://887764105431/eu-west-2 bootstrapped.
+
+NOTICES         (What's this? https://github.com/aws/aws-cdk/wiki/CLI-Notices)
+
+34892   CDK CLI will collect telemetry data on command usage starting at version 2.1100.0 (unless opted out)
+
+        Overview: We do not collect customer content and we anonymize the
+                  telemetry we do collect. See the attached issue for more
+                  information on what data is collected, why, and how to
+                  opt-out. Telemetry will NOT be collected for any CDK CLI
+                  version prior to version 2.1100.0 - regardless of
+                  opt-in/out.
+
+        Affected versions: cli: ^2.0.0
+
+        More information at: https://github.com/aws/aws-cdk/issues/34892
+
+
+If you don’t want to see a notice anymore, use "cdk acknowledge <id>". For example, "cdk acknowledge 34892".
+~/projects/submit.diyaccounting.co.uk %
+```
+
+Package the CDK, deploy the CDK stack which rebuilds the Docker image, and deploy the AWS infrastructure:
+```bash
+
+./mvnw clean package
+```
+
+Maven build output:
+```log
+...truncated...
+[INFO] Replacing original artifact with shaded artifact.
+[INFO] Replacing /Users/antony/projects/submit.diyaccounting.co.uk/target/web-0.0.1.jar with /Users/antony/projects/submit.diyaccounting.co.uk/target/web-0.0.1-shaded.jar
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  15.522 s
+[INFO] Finished at: 2025-05-14T03:16:19+02:00
+[INFO] ------------------------------------------------------------------------
+```
+
+Assume deployment role:
+```bash
+
+. ./scripts/aws-assume-submit-deployment-role.sh                                     
+```
+
+Output:
+```log
+Assumed arn:aws:iam::541134664601:role/submit-deployment-role successfully, expires: 2025-05-14T02:19:16+00:00. Identity is now:
+{
+"UserId": "AROAX37RDWOMSMQUIZOI4:agentic-lib-deployment-session-local",
+"Account": "541134664601",
+"Arn": "arn:aws:sts::541134664601:assumed-role/submit-deployment-role/agentic-lib-deployment-session-local"
+}
+~/projects/submit.diyaccounting.co.uk %
+```
+
+Synthesise the CDK:
+```bash
+npx cdk synth
+```
+
+Compute a diff of the AWS infrastructure:
+```bash
+
+npx cdk diff
+```
+
+Deploy the AWS infrastructure:
+```bash
+
+npx cdk deploy
+```
+
+Example output:
+```log
+WebStack | 4/8 | 3:20:29 AM | UPDATE_COMPLETE      | AWS::CloudFormation::Stack                      | WebStack 
+[03:20:34] Stack WebStack has completed updating
+
+ ✅  WebStack
+
+✨  Deployment time: 46.85s
+
+Outputs:
+WebStack.ARecord = dev.submit.diyaccounting.co.uk
+WebStack.AaaaRecord = dev.submit.diyaccounting.co.uk
+WebStack.CertificateArn = arn:aws:acm:us-east-1:541134664601:certificate/73421403-bd8c-493c-888c-e3e08eec1c41
+WebStack.DistributionAccessLogBucketArn = arn:aws:s3:::dev-web-intention-com-distribution-access-logs
+WebStack.DistributionId = E24DIA1LSWOHYI
+WebStack.HostedZoneId = Z09934692CHZL2KPE9Q9F
+WebStack.OriginAccessLogBucketArn = arn:aws:s3:::dev-web-intention-com-origin-access-logs
+WebStack.OriginBucketArn = arn:aws:s3:::dev-web-intention-com
+WebStack.accessLogGroupRetentionPeriodDays = 30 (Source: CDK context.)
+WebStack.certificateArn = 73421403-bd8c-493c-888c-e3e08eec1c41 (Source: CDK context.)
+WebStack.cloudTrailEnabled = true (Source: CDK context.)
+WebStack.cloudTrailEventSelectorPrefix = none (Source: CDK context.)
+WebStack.cloudTrailLogGroupPrefix = /aws/s3/ (Source: CDK context.)
+WebStack.cloudTrailLogGroupRetentionPeriodDays = 3 (Source: CDK context.)
+WebStack.defaultDocumentAtOrigin = index.html (Source: CDK context.)
+WebStack.docRootPath = public (Source: CDK context.)
+WebStack.env = dev (Source: CDK context.)
+WebStack.error404NotFoundAtDistribution = 404-error-distribution.html (Source: CDK context.)
+WebStack.hostedZoneId = Z09934692CHZL2KPE9Q9F (Source: CDK context.)
+WebStack.hostedZoneName = diyaccounting.co.uk (Source: CDK context.)
+WebStack.logGzippedS3ObjectEventHandlerSource = target/web-0.0.1.jar (Source: CDK context.)
+WebStack.logS3ObjectEventHandlerSource = target/web-0.0.1.jar (Source: CDK context.)
+WebStack.s3RetainBucket = false (Source: CDK context.)
+WebStack.s3UseExistingBucket = false (Source: CDK context.)
+WebStack.subDomainName = web (Source: CDK context.)
+WebStack.useExistingCertificate = true (Source: CDK context.)
+WebStack.useExistingHostedZone = true (Source: CDK context.)
+Stack ARN:
+arn:aws:cloudformation:eu-west-2:541134664601:stack/SubmitWebStack/b49af1d0-2f5e-11f0-a683-063fb0a54f1d
+
+✨  Total time: 52.69s
+
+```
+
+## Troubleshooting - destroying the stack and cleaning up log groups
+
+Destroy a previous stack and delete related log groups:
+```bash
+
+npx cdk destroy
+```
+
+Delete the log groups:
+```bash
+
+aws logs delete-log-group \
+  --log-group-name "/aws/s3/s3-sqs-bridge-bucket"
+```
 
 ---
 
@@ -716,3 +933,30 @@ After approval:
 
 
 ---
+
+
+## License
+
+This project is licensed under the GNU General Public License (GPL). See [LICENSE](LICENSE) for details.
+
+License notice:
+```
+DIY Accounting Submit - submit.diyaccounting.co.uk
+Copyright (C) 2025 DIY Accounting Limited
+
+DIY Accounting Submit is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License v3.0 (GPL‑3).
+along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+IMPORTANT: Any derived work must include the following attribution:
+"This work is derived from https://github.com/xn-intenton-z2a/agentic-lib"
+```

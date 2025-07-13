@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# scripts/aws-assume-agentic-lib-deployment-role.sh
-# Usage: . ./scripts/aws-assume-agentic-lib-deployment-role.sh
+# scripts/aws-assume-submit-deployment-role.sh
+# Usage: . ./scripts/aws-assume-submit-deployment-role.sh
 unset AWS_ACCESS_KEY_ID
 unset AWS_SECRET_ACCESS_KEY
 unset AWS_SESSION_TOKEN
-roleArn="arn:aws:iam::541134664601:role/agentic-lib-deployment-role"
-sessionName="agentic-lib-deployment-session-local"
+roleArn="arn:aws:iam::887764105431:role/submit-deployment-role"
+sessionName="submit-deployment-session-local"
 assumeRoleOutput=$(aws sts assume-role --role-arn "${roleArn?}" --role-session-name "${sessionName?}" --output json)
 if [ $? -ne 0 ]; then
   echo "Error: Failed to assume role."

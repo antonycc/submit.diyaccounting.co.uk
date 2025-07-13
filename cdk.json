@@ -17,8 +17,8 @@
     "s3UseExistingBucket": "false",
     "s3RetainBucket": "false",
     "cloudTrailEventSelectorPrefix": "none",
-    "logS3ObjectEventHandlerSource": "target/web-1.1.0.jar",
-    "logGzippedS3ObjectEventHandlerSource": "target/web-1.1.0.jar",
+    "logS3ObjectEventHandlerSource": "target/web-0.0.1.jar",
+    "logGzippedS3ObjectEventHandlerSource": "target/web-0.0.1.jar",
     "docRootPath": "public",
     "defaultDocumentAtOrigin": "index.html",
     "error404NotFoundAtDistribution": "404-error-distribution.html"

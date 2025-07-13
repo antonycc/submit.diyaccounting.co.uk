@@ -18,6 +18,7 @@ fi
 if [[ -e 'pom.xml' ]]; then
   rm -rf target
   rm -rf cdk.out
+  rm -rf .aws-sam
   mvn clean package
-  cdk synth
+  npx cdk synth
 fi

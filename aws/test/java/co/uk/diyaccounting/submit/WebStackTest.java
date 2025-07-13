@@ -28,9 +28,9 @@ public class WebStackTest {
     public void testStackResources() {
         App app = new App();
 
-        WebStack stack = WebStack.Builder.create(app, "WebStack")
+        WebStack stack = WebStack.Builder.create(app, "SubmitWebStack")
                 .env("test")
-                .hostedZoneName("test.xn--intenton-z2a.com")
+                .hostedZoneName("test.submit.diyaccounting.co.uk")
                 .hostedZoneId("test")
                 .subDomainName("test")
                 .useExistingHostedZone("false")

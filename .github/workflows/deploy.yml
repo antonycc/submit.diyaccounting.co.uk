@@ -204,8 +204,8 @@ jobs:
         if: steps.mvn.outputs.pomXmlExists == 'true'
         shell: bash
         run: |
-          synth=$(jq -r '.synthStacks' cdk.json | sed 's/WebStack-dev/WebStack-${{ inputs.environment || 'ci' }}/g')
-          deploy=$(jq -r '.deployStacks' cdk.json | sed 's/WebStack-dev/WebStack-${{ inputs.environment || 'ci' }}/g')
+          synth=$(jq -r '.synthStacks' cdk.json | sed 's/SubmitWebStack-dev/SubmitWebStack-${{ inputs.environment || 'ci' }}/g')
+          deploy=$(jq -r '.deployStacks' cdk.json | sed 's/SubmitWebStack-dev/SubmitWebStack-${{ inputs.environment || 'ci' }}/g')
           echo "deploy=${deploy?}" | tee -a "${GITHUB_OUTPUT?}"
           echo "synth=${synth?}" | tee -a "${GITHUB_OUTPUT?}"
 

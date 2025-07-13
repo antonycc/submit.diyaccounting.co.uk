@@ -1,0 +1,23 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "cloudformation:*",
+        "iam:*",
+        "s3:*",
+        "cloudtrail:*",
+        "logs:*",
+        "events:*",
+        "lambda:*",
+        "dynamodb:*",
+        "sqs:*",
+        "ecr:*",
+        "ssm:*",
+        "sts:AssumeRole"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
