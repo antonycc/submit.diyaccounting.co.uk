@@ -1,0 +1,137 @@
+# .github/workflows/publish.yml
+
+name: publish
+concurrency: write
+run-name: 'publish packages [${{ github.ref_name }}] [${{ github.event.head_commit.message }}]'
+
+on:
+  workflow_dispatch:
+    inputs:
+      versionIncrement:
+        description: 'Select the Semantic Versioning segment to increment'
+        required: true
+        default: 'prerelease'
+        type: choice
+        options:
+          - prerelease
+          - patch
+          - minor
+          - major
+          - premajor
+          - preminor
+          - prepatch
+  schedule:
+    - cron: '14 6 1 * *'
+
+jobs:
+  npm-test-and-run-main:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - run: npm ci || npm install
+
+      - name: test
+        id: test
+        shell: bash
+        run: 'npm test'
+
+  mvn-package-cdk-synth:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - run: npm ci || npm install
+
+      - name: mvn
+        id: mvn
+        shell: bash
+        run: |
+          if [ -f pom.xml ]; then
+            pomXmlExists='true'
+          else
+            pomXmlExists='false'
+          fi
+          echo "pomXmlExists=${pomXmlExists?}" | tee -a "${GITHUB_OUTPUT?}"
+
+      - uses: actions/setup-java@v4
+        if: steps.mvn.outputs.pomXmlExists == 'true'
+        with:
+          distribution: 'corretto'
+          java-version: 21
+          cache: 'maven'
+
+      - name: download-dependencies
+        id: download-dependencies
+        if: steps.mvn.outputs.pomXmlExists == 'true'
+        shell: bash
+        run: ./mvnw --batch-mode --quiet dependency:go-offline > /dev/null 2>&1
+
+      - name: package
+        id: package
+        if: steps.mvn.outputs.pomXmlExists == 'true'
+        shell: bash
+        run: ./mvnw clean package
+
+      - name: synth
+        id: synth
+        if: steps.mvn.outputs.pomXmlExists == 'true'
+        shell: bash
+        run: npx cdk synth --strict --validation --no-staging
+
+    outputs:
+      pomXmlExists: ${{ steps.mvn.outputs.pomXmlExists }}
+
+  publish-npm:
+    needs:
+      - npm-test-and-run-main
+      - mvn-package-cdk-synth
+    permissions:
+      contents: write
+      packages: write
+    uses: 'xn-intenton-z2a/agentic-lib/.github/workflows/wfr-npm-publish.yml@6.10.2'
+    with:
+      versionIncrement: ${{ inputs.versionIncrement || 'prerelease' }}
+      buildScript: 'nom run build'
+      releaseNotes: 'Release increment: ${{ inputs.versionIncrement }}.'
+      gitUserEmail: 'action@github.com'
+      gitUserName: 'GitHub Actions[bot]'
+
+  publish-mvn:
+    needs:
+      - npm-test-and-run-main
+      - publish-npm
+      - mvn-package-cdk-synth
+    if: needs.mvn-package-cdk-synth.outputs.pomXmlExists == 'true'
+    permissions:
+      contents: write
+      packages: write
+    uses: 'xn-intenton-z2a/agentic-lib/.github/workflows/wfr-mvn-publish.yml@6.10.2'
+    with:
+      versionIncrement: ${{ inputs.versionIncrement || 'prerelease' }}
+      releaseVersionOverride: ${{ needs.publish-npm.outputs.releasedVersion }}
+      newVersionOverride: ${{ needs.publish-npm.outputs.newVersion }}
+      githubRelease: false
+      mavenBuildScript: './mvnw --batch-mode clean install'
+      mavenDeployScript: './mvnw --batch-mode deploy'
+      releaseNotes: 'Release increment: ${{ inputs.versionIncrement }}.'
+      gitUserEmail: 'action@github.com'
+      gitUserName: 'GitHub Actions[bot]'
+

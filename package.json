@@ -1,7 +1,7 @@
 {
-  "name": "intention-com-web",
+  "name": "submit-diyaccounting-co-uk",
   "version": "1.1.0",
-  "description": "intentïon: The consumer front end of intentïon.com featuring repository0 and the agentic-lib.",
+  "description": "Submit UK tax information to HMRC",
   "type": "module",
   "main": "src/lib/main.js",
   "bin": {
@@ -61,8 +61,5 @@
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"
   },
-  "bugs": {
-    "url": "https://github.com/xn-intenton-z2a/repository0-xn--intenton-z2a.com/discussions/TODO"
-  },
-  "homepage": "https://xn--intenton-z2a.com/"
+  "homepage": "https://submit.diyaccounting.co.uk/"
 }
