@@ -547,7 +547,7 @@ Manually delete the log groups:
 aws logs delete-log-group \
   --log-group-name '/aws/lambda/dev-submit-diyaccounting-co-uk-origin-access-log-forwarder'
 aws logs delete-log-group \
-  --log-group-name '/aws/lambda/dev-submit-diyaccounting-co-uk-distribution-access-log-forwarder'
+  --log-group-name '/aws/lambda/dev-submit-diyaccounting-co-uk-dist-access-log-forwarder'
 ```
 
 ---

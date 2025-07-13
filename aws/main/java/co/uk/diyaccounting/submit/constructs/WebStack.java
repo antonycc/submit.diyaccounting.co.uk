@@ -365,7 +365,7 @@ public class WebStack extends Stack {
         this.distributionAccessLogBucket = LogForwardingBucket.Builder
                 .create(this, "DistributionAccess", logGzippedS3ObjectEventHandlerSource, LogGzippedS3ObjectEvent.class)
                 .bucketName(distributionAccessLogBucketName)
-                .functionNamePrefix("%s-distribution-access-".formatted(dashedDomainName))
+                .functionNamePrefix("%s-dist-access-".formatted(dashedDomainName))
                 .retentionPeriodDays(accessLogGroupRetentionPeriodDays)
                 .build();
         final OriginRequestPolicy originRequestPolicy = OriginRequestPolicy.Builder
