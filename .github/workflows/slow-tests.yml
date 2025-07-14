@@ -1,7 +1,7 @@
-# .github/workflows/test.yml
+# .github/workflows/slow-tests.yml
 
-name: test
-run-name: 'test [${{ github.ref_name }}] [${{ github.event.head_commit.message }}]'
+name: slow-tests
+run-name: 'slow tests [${{ github.ref_name }}] [${{ github.event.head_commit.message }}]'
 
 on:
   push:
@@ -18,7 +18,7 @@ on:
       - '!exports/**'
   workflow_dispatch:
   schedule:
-    - cron: '34 2,3,4 * * *'
+    - cron: '44 2,3,4 * * *'
 
 jobs:
   npm-test:
@@ -40,8 +40,8 @@ jobs:
 
       - run: npm test
 
-  npm-build-and-unit-test:
-    name: 'npm build and unit test with coverage'
+  npm-unit-test:
+    name: 'npm unit test with coverage'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -55,8 +55,6 @@ jobs:
           cache: 'npm'
 
       - run: npm ci || npm install
-
-      - run: npm run build
 
       - run: npm run test:unit
 
@@ -78,8 +76,8 @@ jobs:
 
       - run: npm run test:integration
 
-  mvn-package-cdk-synth:
-    name: 'cdk synth from maven package'
+  npm-system-test:
+    name: 'npm system test with coverage'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -94,43 +92,22 @@ jobs:
 
       - run: npm ci || npm install
 
-      - name: mvn
-        id: mvn
-        shell: bash
-        run: |
-          if [ -f pom.xml ]; then
-            pomXmlExists='true'
-          else
-            pomXmlExists='false'
-          fi
-          echo "pomXmlExists=${pomXmlExists?}" | tee -a "${GITHUB_OUTPUT?}"
+      - run: npm run test:system
 
-      - uses: actions/setup-java@v4
-        if: steps.mvn.outputs.pomXmlExists == 'true'
+  npm-behaviour-test:
+    name: 'npm behaviour test'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
         with:
-          distribution: 'corretto'
-          java-version: 21
-          cache: 'maven'
+          node-version: 20
+          cache: 'npm'
 
-      - name: check
-        id: check
-        run: cat ~/.m2/settings.xml
-        if: steps.mvn.outputs.pomXmlExists == 'true'
+      - run: npm ci || npm install
 
-      - name: download-dependencies
-        id: download-dependencies
-        if: steps.mvn.outputs.pomXmlExists == 'true'
-        shell: bash
-        run: ./mvnw --batch-mode --quiet dependency:go-offline > /dev/null 2>&1
-
-      - name: package
-        id: package
-        if: steps.mvn.outputs.pomXmlExists == 'true'
-        shell: bash
-        run: ./mvnw clean package
-
-      - name: synth
-        id: synth
-        if: steps.mvn.outputs.pomXmlExists == 'true'
-        shell: bash
-        run: npx cdk synth --strict --validation --no-staging --trace
+      - run: npm run test:behaviour

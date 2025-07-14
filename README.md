@@ -31,7 +31,7 @@ npx http-server public/ --port 3000
 
 Access via [http://127.0.0.1:3000](http://127.0.0.1:3000)
 
-Continued in [SETUP.md](SETUP.md).
+Continued in [SETUP.md](programmers/SETUP.md).
 
 ---
 
