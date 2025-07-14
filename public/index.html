@@ -238,21 +238,24 @@
         <form id="vatSubmissionForm">
           <div class="form-group">
             <label for="vatNumber">VAT Registration Number (VRN)</label>
-            <input type="text" id="vatNumber" name="vatNumber" required 
+            <input type="text" id="vatNumber" name="vatNumber" required
+                   value="123456789"
                    placeholder="e.g., 123456789" maxlength="9" pattern="[0-9]{9}">
             <div class="help-text">Enter your 9-digit VAT registration number</div>
           </div>
 
           <div class="form-group">
             <label for="periodKey">Period Key</label>
-            <input type="text" id="periodKey" name="periodKey" required 
+            <input type="text" id="periodKey" name="periodKey" required
+                   value="24A1"
                    placeholder="e.g., 24A1" maxlength="4">
             <div class="help-text">The identifier for the VAT period you're submitting for</div>
           </div>
 
           <div class="form-group">
             <label for="vatDue">Total VAT Due (£)</label>
-            <input type="number" id="vatDue" name="vatDue" required 
+            <input type="number" id="vatDue" name="vatDue" required
+                   value="2400.00"
                    placeholder="e.g., 2400.00" step="0.01" min="0">
             <div class="help-text">Enter the total VAT amount due in pounds</div>
           </div>
@@ -531,12 +534,20 @@
           sessionStorage.setItem('submission_data', JSON.stringify(submissionData));
 
           // Get OAuth URL
-          const authResponse = await getAuthUrl(state);
+          //const authResponse = await getAuthUrl(state);
+          //const authResponseUrl = authResponse.authUrl;
+
+          // OAuth URL parameters
+          const clientId = "123456789";
+          const redirectUri = window.location.origin + window.location.pathname;
+          const scope = "write:vat+read:vat";
+
+          const authResponseUrl = `https://api.service.hmrc.gov.uk/oauth/authorize?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}&state=${state}`;
 
           showStatus('Redirecting to HMRC for authentication...', 'info');
 
           // Redirect to HMRC OAuth
-          window.location.href = authResponse.authUrl;
+          window.location.href = authResponseUrl;
 
         } catch (error) {
           console.error('Authentication error:', error);

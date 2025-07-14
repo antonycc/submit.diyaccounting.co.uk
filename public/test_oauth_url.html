@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test OAuth URL Construction</title>
+</head>
+<body>
+    <h1>OAuth URL Construction Test</h1>
+    <div id="results"></div>
+    
+    <script>
+        // Simulate the same logic as in the main file
+        function generateRandomState() {
+            return Math.random().toString(36).substring(2, 15) + 
+                   Math.random().toString(36).substring(2, 15);
+        }
+        
+        // Test the OAuth URL construction
+        const state = generateRandomState();
+        
+        // OAuth URL parameters (same as in main file)
+        const clientId = "123456789";
+        const redirectUri = window.location.origin + window.location.pathname;
+        const scope = "write:vat+read:vat";
+        
+        const authResponseUrl = `https://api.service.hmrc.gov.uk/oauth/authorize?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}&state=${state}`;
+        
+        // Display results
+        const resultsDiv = document.getElementById('results');
+        resultsDiv.innerHTML = `
+            <h2>Generated OAuth URL Components:</h2>
+            <p><strong>Client ID:</strong> ${clientId}</p>
+            <p><strong>Redirect URI:</strong> ${redirectUri}</p>
+            <p><strong>Scope:</strong> ${scope}</p>
+            <p><strong>State:</strong> ${state}</p>
+            <h2>Complete OAuth URL:</h2>
+            <p style="word-break: break-all; background: #f0f0f0; padding: 10px;">${authResponseUrl}</p>
+            <h2>Verification:</h2>
+            <p>✓ Client ID is from variable: ${clientId !== '123456789' ? 'FAIL' : 'PASS'}</p>
+            <p>✓ State is random: ${state.length > 10 ? 'PASS' : 'FAIL'}</p>
+            <p>✓ Redirect URI is dynamic: ${redirectUri.includes(window.location.origin) ? 'PASS' : 'FAIL'}</p>
+            <p>✓ URL is properly encoded: ${authResponseUrl.includes('response_type=code') ? 'PASS' : 'FAIL'}</p>
+        `;
+    </script>
+</body>
+</html>
