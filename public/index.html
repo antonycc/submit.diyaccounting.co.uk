@@ -4,7 +4,6 @@
     <meta charset="UTF-8" />
     <title>DIY Accounting Submit</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <script src="https://cdn.jsdelivr.net/npm/ejs@3.1.10/ejs.min.js"></script>
     <style>
       /* Basic reset and box-sizing */
       * {
@@ -23,42 +22,548 @@
         display: flex;
         flex-direction: column;
         padding: 1em;
+        max-width: 800px;
+        margin: 0 auto;
       }
       header {
-        margin-bottom: 1em;
+        margin-bottom: 2em;
         text-align: center;
       }
       h1 {
-        font-size: 1.8em;
+        font-size: 2.2em;
         margin-bottom: 0.5em;
+        color: #2c5aa0;
       }
-      /* Main content container fills available space */
+      h2 {
+        font-size: 1.5em;
+        margin-bottom: 1em;
+        color: #2c5aa0;
+      }
+      .subtitle {
+        font-size: 1.1em;
+        color: #666;
+        margin-bottom: 2em;
+      }
+
+      /* Main content container */
       #mainContent {
         flex: 1;
         display: flex;
         flex-direction: column;
       }
 
-      /* The iframe now fills its container completely */
-      .tile iframe {
-        width: 100%;
-        height: 100%;
-        border: none;
+      /* Form styling */
+      .form-container {
+        background: white;
+        padding: 2em;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        margin-bottom: 2em;
       }
+
+      .form-group {
+        margin-bottom: 1.5em;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 0.5em;
+        font-weight: bold;
+        color: #333;
+      }
+
+      input[type="text"], input[type="number"] {
+        width: 100%;
+        padding: 0.75em;
+        border: 2px solid #ddd;
+        border-radius: 4px;
+        font-size: 1em;
+        transition: border-color 0.3s;
+      }
+
+      input[type="text"]:focus, input[type="number"]:focus {
+        outline: none;
+        border-color: #2c5aa0;
+      }
+
+      .help-text {
+        font-size: 0.9em;
+        color: #666;
+        margin-top: 0.25em;
+      }
+
+      /* Button styling */
+      .btn {
+        background-color: #2c5aa0;
+        color: white;
+        padding: 1em 2em;
+        border: none;
+        border-radius: 4px;
+        font-size: 1.1em;
+        cursor: pointer;
+        transition: background-color 0.3s;
+        width: 100%;
+      }
+
+      .btn:hover {
+        background-color: #1e3f73;
+      }
+
+      .btn:disabled {
+        background-color: #ccc;
+        cursor: not-allowed;
+      }
+
+      /* Status messages */
+      .status-message {
+        padding: 1em;
+        border-radius: 4px;
+        margin-bottom: 1em;
+        display: none;
+      }
+
+      .status-success {
+        background-color: #d4edda;
+        border: 1px solid #c3e6cb;
+        color: #155724;
+      }
+
+      .status-error {
+        background-color: #f8d7da;
+        border: 1px solid #f5c6cb;
+        color: #721c24;
+      }
+
+      .status-info {
+        background-color: #d1ecf1;
+        border: 1px solid #bee5eb;
+        color: #0c5460;
+      }
+
+      /* Loading spinner */
+      .spinner {
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #2c5aa0;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+        margin: 20px auto;
+        display: none;
+      }
+
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+
+      /* Receipt display */
+      .receipt {
+        background: white;
+        padding: 2em;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        margin-top: 2em;
+        display: none;
+      }
+
+      .receipt h3 {
+        color: #28a745;
+        margin-bottom: 1em;
+        font-size: 1.3em;
+      }
+
+      .receipt-details {
+        background: #f8f9fa;
+        padding: 1em;
+        border-radius: 4px;
+        margin-top: 1em;
+      }
+
+      .receipt-item {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 0.5em;
+        padding-bottom: 0.5em;
+        border-bottom: 1px solid #eee;
+      }
+
+      .receipt-item:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+        padding-bottom: 0;
+      }
+
       footer {
-        margin-top: 0;
+        margin-top: 2em;
         text-align: center;
         font-size: 0.9em;
         color: #777;
+        padding-top: 1em;
+        border-top: 1px solid #eee;
+      }
+
+      /* Responsive design */
+      @media (max-width: 600px) {
+        body {
+          padding: 0.5em;
+        }
+
+        .form-container {
+          padding: 1em;
+        }
+
+        h1 {
+          font-size: 1.8em;
+        }
       }
     </style>
   </head>
   <body>
-    <header></header>
-    <div id="mainContent">
+    <header>
       <h1>DIY Accounting Submit</h1>
-      <p>Submit UK tax information to HMRC</p>
+      <p class="subtitle">Submit UK VAT returns to HMRC under Making Tax Digital (MTD)</p>
+    </header>
+
+    <div id="mainContent">
+      <!-- Status messages -->
+      <div id="statusMessage" class="status-message"></div>
+
+      <!-- Loading spinner -->
+      <div id="loadingSpinner" class="spinner"></div>
+
+      <!-- VAT Submission Form -->
+      <div id="vatForm" class="form-container">
+        <h2>VAT Return Submission</h2>
+        <form id="vatSubmissionForm">
+          <div class="form-group">
+            <label for="vatNumber">VAT Registration Number (VRN)</label>
+            <input type="text" id="vatNumber" name="vatNumber" required 
+                   placeholder="e.g., 123456789" maxlength="9" pattern="[0-9]{9}">
+            <div class="help-text">Enter your 9-digit VAT registration number</div>
+          </div>
+
+          <div class="form-group">
+            <label for="periodKey">Period Key</label>
+            <input type="text" id="periodKey" name="periodKey" required 
+                   placeholder="e.g., 24A1" maxlength="4">
+            <div class="help-text">The identifier for the VAT period you're submitting for</div>
+          </div>
+
+          <div class="form-group">
+            <label for="vatDue">Total VAT Due (£)</label>
+            <input type="number" id="vatDue" name="vatDue" required 
+                   placeholder="e.g., 2400.00" step="0.01" min="0">
+            <div class="help-text">Enter the total VAT amount due in pounds</div>
+          </div>
+
+          <button type="submit" class="btn" id="submitBtn">Submit VAT Return</button>
+        </form>
+      </div>
+
+      <!-- Receipt Display -->
+      <div id="receiptDisplay" class="receipt">
+        <h3>✅ VAT Return Submitted Successfully!</h3>
+        <div class="receipt-details">
+          <div class="receipt-item">
+            <span><strong>Processing Date:</strong></span>
+            <span id="processingDate"></span>
+          </div>
+          <div class="receipt-item">
+            <span><strong>Form Bundle Number:</strong></span>
+            <span id="formBundleNumber"></span>
+          </div>
+          <div class="receipt-item">
+            <span><strong>Charge Reference:</strong></span>
+            <span id="chargeRefNumber"></span>
+          </div>
+        </div>
+        <p style="margin-top: 1em; color: #666; font-size: 0.9em;">
+          Your VAT return has been successfully submitted to HMRC. Please keep this receipt for your records.
+        </p>
+      </div>
     </div>
-    <footer></footer>
+
+    <footer>
+      <p>&copy; 2025 DIY Accounting Limited. Licensed under GPL v3.0</p>
+    </footer>
+
+    <script>
+      // Global variables
+      let currentAccessToken = null;
+      let submissionData = null;
+
+      // DOM elements
+      const form = document.getElementById('vatSubmissionForm');
+      const submitBtn = document.getElementById('submitBtn');
+      const statusMessage = document.getElementById('statusMessage');
+      const loadingSpinner = document.getElementById('loadingSpinner');
+      const receiptDisplay = document.getElementById('receiptDisplay');
+      const vatFormContainer = document.getElementById('vatForm');
+
+      // Utility functions
+      function showStatus(message, type = 'info') {
+        statusMessage.textContent = message;
+        statusMessage.className = `status-message status-${type}`;
+        statusMessage.style.display = 'block';
+
+        // Auto-hide info messages after 5 seconds
+        if (type === 'info') {
+          setTimeout(() => {
+            statusMessage.style.display = 'none';
+          }, 5000);
+        }
+      }
+
+      function hideStatus() {
+        statusMessage.style.display = 'none';
+      }
+
+      function showLoading() {
+        loadingSpinner.style.display = 'block';
+        submitBtn.disabled = true;
+      }
+
+      function hideLoading() {
+        loadingSpinner.style.display = 'none';
+        submitBtn.disabled = false;
+      }
+
+      function generateRandomState() {
+        return Math.random().toString(36).substring(2, 15) + 
+               Math.random().toString(36).substring(2, 15);
+      }
+
+      // API functions
+      async function getAuthUrl(state) {
+        const response = await fetch(`/api/auth-url?state=${encodeURIComponent(state)}`);
+        if (!response.ok) {
+          throw new Error(`Failed to get auth URL: ${response.statusText}`);
+        }
+        return await response.json();
+      }
+
+      async function exchangeToken(code) {
+        const response = await fetch('/api/exchange-token', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ code }),
+        });
+        if (!response.ok) {
+          throw new Error(`Failed to exchange token: ${response.statusText}`);
+        }
+        return await response.json();
+      }
+
+      async function submitVat(vatNumber, periodKey, vatDue, accessToken) {
+        const response = await fetch('/api/submit-vat', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            vatNumber,
+            periodKey,
+            vatDue,
+            accessToken,
+          }),
+        });
+        if (!response.ok) {
+          throw new Error(`Failed to submit VAT: ${response.statusText}`);
+        }
+        return await response.json();
+      }
+
+      async function logReceipt(processingDate, formBundleNumber, chargeRefNumber) {
+        const response = await fetch('/api/log-receipt', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            processingDate,
+            formBundleNumber,
+            chargeRefNumber,
+          }),
+        });
+        if (!response.ok) {
+          throw new Error(`Failed to log receipt: ${response.statusText}`);
+        }
+        return await response.json();
+      }
+
+      // OAuth callback handling
+      function handleOAuthCallback() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const code = urlParams.get('code');
+        const state = urlParams.get('state');
+        const error = urlParams.get('error');
+
+        if (error) {
+          showStatus(`OAuth error: ${error}`, 'error');
+          return;
+        }
+
+        if (code && state) {
+          const storedState = sessionStorage.getItem('oauth_state');
+          const storedSubmissionData = sessionStorage.getItem('submission_data');
+
+          if (state !== storedState) {
+            showStatus('Invalid OAuth state. Please try again.', 'error');
+            return;
+          }
+
+          if (!storedSubmissionData) {
+            showStatus('Submission data not found. Please try again.', 'error');
+            return;
+          }
+
+          // Clear URL parameters
+          window.history.replaceState({}, document.title, window.location.pathname);
+
+          // Continue with token exchange and submission
+          continueSubmission(code, JSON.parse(storedSubmissionData));
+        }
+      }
+
+      async function continueSubmission(code, submissionData) {
+        try {
+          showLoading();
+          showStatus('Exchanging authorization code for access token...', 'info');
+
+          // Exchange code for access token
+          const tokenResponse = await exchangeToken(code);
+          currentAccessToken = tokenResponse.accessToken;
+
+          showStatus('Submitting VAT return to HMRC...', 'info');
+
+          // Submit VAT return
+          const submitResponse = await submitVat(
+            submissionData.vatNumber,
+            submissionData.periodKey,
+            submissionData.vatDue,
+            currentAccessToken
+          );
+
+          showStatus('Logging submission receipt...', 'info');
+
+          // Log the receipt
+          await logReceipt(
+            submitResponse.processingDate,
+            submitResponse.formBundleNumber,
+            submitResponse.chargeRefNumber
+          );
+
+          // Display success
+          displayReceipt(submitResponse);
+          hideStatus();
+
+          // Clean up session storage
+          sessionStorage.removeItem('oauth_state');
+          sessionStorage.removeItem('submission_data');
+
+        } catch (error) {
+          console.error('Submission error:', error);
+          showStatus(`Submission failed: ${error.message}`, 'error');
+        } finally {
+          hideLoading();
+        }
+      }
+
+      function displayReceipt(response) {
+        // Hide the form
+        vatFormContainer.style.display = 'none';
+
+        // Format and display the processing date
+        const processingDate = new Date(response.processingDate);
+        document.getElementById('processingDate').textContent = 
+          processingDate.toLocaleDateString('en-GB', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+
+        document.getElementById('formBundleNumber').textContent = response.formBundleNumber;
+        document.getElementById('chargeRefNumber').textContent = response.chargeRefNumber;
+
+        // Show the receipt
+        receiptDisplay.style.display = 'block';
+      }
+
+      // Form submission handler
+      async function handleFormSubmission(event) {
+        event.preventDefault();
+
+        const formData = new FormData(form);
+        const vatNumber = formData.get('vatNumber').trim();
+        const periodKey = formData.get('periodKey').trim();
+        const vatDue = formData.get('vatDue');
+
+        // Basic validation
+        if (!vatNumber || !periodKey || !vatDue) {
+          showStatus('Please fill in all required fields.', 'error');
+          return;
+        }
+
+        if (!/^\d{9}$/.test(vatNumber)) {
+          showStatus('VAT number must be exactly 9 digits.', 'error');
+          return;
+        }
+
+        if (parseFloat(vatDue) < 0) {
+          showStatus('VAT due cannot be negative.', 'error');
+          return;
+        }
+
+        try {
+          showLoading();
+          showStatus('Initiating HMRC authentication...', 'info');
+
+          // Store submission data and generate state
+          const state = generateRandomState();
+          submissionData = { vatNumber, periodKey, vatDue };
+
+          sessionStorage.setItem('oauth_state', state);
+          sessionStorage.setItem('submission_data', JSON.stringify(submissionData));
+
+          // Get OAuth URL
+          const authResponse = await getAuthUrl(state);
+
+          showStatus('Redirecting to HMRC for authentication...', 'info');
+
+          // Redirect to HMRC OAuth
+          window.location.href = authResponse.authUrl;
+
+        } catch (error) {
+          console.error('Authentication error:', error);
+          showStatus(`Authentication failed: ${error.message}`, 'error');
+          hideLoading();
+        }
+      }
+
+      // Event listeners
+      form.addEventListener('submit', handleFormSubmission);
+
+      // Input validation
+      document.getElementById('vatNumber').addEventListener('input', function(e) {
+        // Only allow digits
+        e.target.value = e.target.value.replace(/\D/g, '');
+      });
+
+      document.getElementById('periodKey').addEventListener('input', function(e) {
+        // Convert to uppercase
+        e.target.value = e.target.value.toUpperCase();
+      });
+
+      // Initialize
+      document.addEventListener('DOMContentLoaded', function() {
+        // Check if we're returning from OAuth
+        handleOAuthCallback();
+      });
+    </script>
   </body>
 </html>
