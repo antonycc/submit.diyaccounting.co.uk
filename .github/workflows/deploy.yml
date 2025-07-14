@@ -5,6 +5,18 @@ concurrency: deploy-${{ inputs.environment || 'ci' }}
 run-name: "deploy [${{ github.ref_name }}] to [${{ inputs.environment || 'ci' }}]"
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - '**/*.sh'
+      - '**/*.java'
+      - '**/*.js'
+      - '**/*.json'
+      - '**/*.yml'
+      - '**/pom.xml'
+      - '**/*.properties'
+      - '!exports/**'
   workflow_dispatch:
     inputs:
       environment:
