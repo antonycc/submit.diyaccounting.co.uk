@@ -58,6 +58,60 @@ jobs:
 
       - run: npm run test:unit
 
+  npm-integration-test:
+    name: 'npm integration test with coverage'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - run: npm ci || npm install
+
+      - run: npm run test:integration
+
+  npm-system-test:
+    name: 'npm system test with coverage'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - run: npm ci || npm install
+
+      - run: npm run test:system
+
+  npm-behaviour-test:
+    name: 'npm behaviour test'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - run: npm ci || npm install
+
+      - run: npm run test:behaviour
+
   npm-build-test-and-run-main:
     runs-on: ubuntu-latest
     permissions:

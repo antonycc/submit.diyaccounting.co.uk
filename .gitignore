@@ -286,6 +286,7 @@ fabric.properties
 /json
 /src/lib/output.*
 /tests/unit/output.*
+/tests/integration/output.*
 /output.*
 /cdk/cdk.out/
 /cdk.out/
@@ -334,3 +335,4 @@ fabric.properties
 /request.json
 /response.json
 /result.json
+/dependency-reduced-pom.xml

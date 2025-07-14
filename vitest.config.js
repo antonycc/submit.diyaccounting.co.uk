@@ -10,7 +10,7 @@ export default defineConfig({
   },
   test: {
     environment: "node",
-    include: ["tests/unit/*.test.js"],
+    include: ["tests/unit/*.test.js", "tests/integration/*.test.js", "tests/system/*.test.js", "tests/behaviour/*.test.js"],
     coverage: {
       provider: "v8",
       reportsDirectory: "./coverage",
