@@ -8,7 +8,7 @@ describe("authUrlHandler", () => {
     process.env = {
       ...originalEnv,
       HMRC_CLIENT_ID: "test-client-id",
-      REDIRECT_URI: "https://example.com/callback"
+      REDIRECT_URI: "https://example.com/callback",
     };
   });
 
@@ -19,8 +19,8 @@ describe("authUrlHandler", () => {
   test("should return auth URL when state is provided", async () => {
     const event = {
       queryStringParameters: {
-        state: "test-state-123"
-      }
+        state: "test-state-123",
+      },
     };
 
     const result = await authUrlHandler(event);
@@ -37,7 +37,7 @@ describe("authUrlHandler", () => {
 
   test("should return 400 when state is missing", async () => {
     const event = {
-      queryStringParameters: {}
+      queryStringParameters: {},
     };
 
     const result = await authUrlHandler(event);
@@ -49,7 +49,7 @@ describe("authUrlHandler", () => {
 
   test("should return 400 when queryStringParameters is null", async () => {
     const event = {
-      queryStringParameters: null
+      queryStringParameters: null,
     };
 
     const result = await authUrlHandler(event);
@@ -62,8 +62,8 @@ describe("authUrlHandler", () => {
   test("should return 400 when state is empty string", async () => {
     const event = {
       queryStringParameters: {
-        state: ""
-      }
+        state: "",
+      },
     };
 
     const result = await authUrlHandler(event);
@@ -76,8 +76,8 @@ describe("authUrlHandler", () => {
   test("should properly encode special characters in state", async () => {
     const event = {
       queryStringParameters: {
-        state: "test state with spaces & symbols"
-      }
+        state: "test state with spaces & symbols",
+      },
     };
 
     const result = await authUrlHandler(event);

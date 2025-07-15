@@ -4,9 +4,9 @@ import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
 const mockSend = vi.fn();
 vi.mock("@aws-sdk/client-s3", () => ({
   S3Client: vi.fn(() => ({
-    send: mockSend
+    send: mockSend,
   })),
-  PutObjectCommand: vi.fn((params) => params)
+  PutObjectCommand: vi.fn((params) => params),
 }));
 
 import { logReceiptHandler } from "@src/lib/main.js";
@@ -17,7 +17,7 @@ describe("logReceiptHandler", () => {
   beforeEach(() => {
     process.env = {
       ...originalEnv,
-      RECEIPTS_BUCKET: "test-receipts-bucket"
+      RECEIPTS_BUCKET: "test-receipts-bucket",
     };
     vi.clearAllMocks();
   });
@@ -32,11 +32,11 @@ describe("logReceiptHandler", () => {
     const receipt = {
       formBundleNumber: "123456789012",
       chargeRefNumber: "XM002610011594",
-      processingDate: "2023-01-01T12:00:00.000Z"
+      processingDate: "2023-01-01T12:00:00.000Z",
     };
 
     const event = {
-      body: JSON.stringify(receipt)
+      body: JSON.stringify(receipt),
     };
 
     const result = await logReceiptHandler(event);
@@ -50,7 +50,7 @@ describe("logReceiptHandler", () => {
       Bucket: "test-receipts-bucket",
       Key: "receipts/123456789012.json",
       Body: JSON.stringify(receipt),
-      ContentType: "application/json"
+      ContentType: "application/json",
     });
   });
 
@@ -61,11 +61,11 @@ describe("logReceiptHandler", () => {
 
     const receipt = {
       formBundleNumber: "123456789012",
-      chargeRefNumber: "XM002610011594"
+      chargeRefNumber: "XM002610011594",
     };
 
     const event = {
-      body: JSON.stringify(receipt)
+      body: JSON.stringify(receipt),
     };
 
     const result = await logReceiptHandler(event);
@@ -82,7 +82,7 @@ describe("logReceiptHandler", () => {
     const receipt = {};
 
     const event = {
-      body: JSON.stringify(receipt)
+      body: JSON.stringify(receipt),
     };
 
     const result = await logReceiptHandler(event);
@@ -96,7 +96,7 @@ describe("logReceiptHandler", () => {
       Bucket: "test-receipts-bucket",
       Key: "receipts/undefined.json",
       Body: JSON.stringify(receipt),
-      ContentType: "application/json"
+      ContentType: "application/json",
     });
   });
 
@@ -105,11 +105,11 @@ describe("logReceiptHandler", () => {
 
     const receipt = {
       formBundleNumber: null,
-      chargeRefNumber: "XM002610011594"
+      chargeRefNumber: "XM002610011594",
     };
 
     const event = {
-      body: JSON.stringify(receipt)
+      body: JSON.stringify(receipt),
     };
 
     const result = await logReceiptHandler(event);
@@ -123,7 +123,7 @@ describe("logReceiptHandler", () => {
       Bucket: "test-receipts-bucket",
       Key: "receipts/null.json",
       Body: JSON.stringify(receipt),
-      ContentType: "application/json"
+      ContentType: "application/json",
     });
   });
 
@@ -137,16 +137,16 @@ describe("logReceiptHandler", () => {
       vatDueSales: 1500.75,
       vatDueAcquisitions: 0,
       totalVatDue: 1500.75,
-      vatReclaimedCurrPeriod: 200.50,
+      vatReclaimedCurrPeriod: 200.5,
       netVatDue: 1300.25,
       additionalData: {
         nested: "value",
-        array: [1, 2, 3]
-      }
+        array: [1, 2, 3],
+      },
     };
 
     const event = {
-      body: JSON.stringify(receipt)
+      body: JSON.stringify(receipt),
     };
 
     const result = await logReceiptHandler(event);
@@ -160,7 +160,7 @@ describe("logReceiptHandler", () => {
       Bucket: "test-receipts-bucket",
       Key: "receipts/987654321098.json",
       Body: JSON.stringify(receipt),
-      ContentType: "application/json"
+      ContentType: "application/json",
     });
   });
 
@@ -168,7 +168,7 @@ describe("logReceiptHandler", () => {
     mockSend.mockResolvedValueOnce({});
 
     const event = {
-      body: ""
+      body: "",
     };
 
     const result = await logReceiptHandler(event);
@@ -182,7 +182,7 @@ describe("logReceiptHandler", () => {
       Bucket: "test-receipts-bucket",
       Key: "receipts/undefined.json",
       Body: JSON.stringify({}),
-      ContentType: "application/json"
+      ContentType: "application/json",
     });
   });
 
@@ -190,7 +190,7 @@ describe("logReceiptHandler", () => {
     mockSend.mockResolvedValueOnce({});
 
     const event = {
-      body: null
+      body: null,
     };
 
     const result = await logReceiptHandler(event);
@@ -204,7 +204,7 @@ describe("logReceiptHandler", () => {
       Bucket: "test-receipts-bucket",
       Key: "receipts/undefined.json",
       Body: JSON.stringify({}),
-      ContentType: "application/json"
+      ContentType: "application/json",
     });
   });
 
@@ -224,13 +224,13 @@ describe("logReceiptHandler", () => {
       Bucket: "test-receipts-bucket",
       Key: "receipts/undefined.json",
       Body: JSON.stringify({}),
-      ContentType: "application/json"
+      ContentType: "application/json",
     });
   });
 
   test("should handle malformed JSON in request body", async () => {
     const event = {
-      body: "invalid-json"
+      body: "invalid-json",
     };
 
     await expect(logReceiptHandler(event)).rejects.toThrow();
@@ -242,11 +242,11 @@ describe("logReceiptHandler", () => {
     mockSend.mockRejectedValueOnce(timeoutError);
 
     const receipt = {
-      formBundleNumber: "123456789012"
+      formBundleNumber: "123456789012",
     };
 
     const event = {
-      body: JSON.stringify(receipt)
+      body: JSON.stringify(receipt),
     };
 
     const result = await logReceiptHandler(event);
@@ -263,11 +263,11 @@ describe("logReceiptHandler", () => {
     mockSend.mockRejectedValueOnce(bucketError);
 
     const receipt = {
-      formBundleNumber: "123456789012"
+      formBundleNumber: "123456789012",
     };
 
     const event = {
-      body: JSON.stringify(receipt)
+      body: JSON.stringify(receipt),
     };
 
     const result = await logReceiptHandler(event);
@@ -283,11 +283,11 @@ describe("logReceiptHandler", () => {
 
     const receipt = {
       formBundleNumber: "ABC-123_456.789",
-      chargeRefNumber: "XM002610011594"
+      chargeRefNumber: "XM002610011594",
     };
 
     const event = {
-      body: JSON.stringify(receipt)
+      body: JSON.stringify(receipt),
     };
 
     const result = await logReceiptHandler(event);
@@ -301,7 +301,7 @@ describe("logReceiptHandler", () => {
       Bucket: "test-receipts-bucket",
       Key: "receipts/ABC-123_456.789.json",
       Body: JSON.stringify(receipt),
-      ContentType: "application/json"
+      ContentType: "application/json",
     });
   });
 });

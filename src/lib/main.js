@@ -15,11 +15,12 @@ export async function authUrlHandler(event) {
   const clientId = process.env.HMRC_CLIENT_ID;
   const redirectUri = process.env.REDIRECT_URI;
   const scope = "write:vat read:vat";
-  const authUrl = `${HMRC_BASE}/oauth/authorize?response_type=code` +
-      `&client_id=${encodeURIComponent(clientId)}` +
-      `&redirect_uri=${encodeURIComponent(redirectUri)}` +
-      `&scope=${encodeURIComponent(scope)}` +
-      `&state=${encodeURIComponent(state)}`;
+  const authUrl =
+    `${HMRC_BASE}/oauth/authorize?response_type=code` +
+    `&client_id=${encodeURIComponent(clientId)}` +
+    `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+    `&scope=${encodeURIComponent(scope)}` +
+    `&state=${encodeURIComponent(state)}`;
   return { statusCode: 200, body: JSON.stringify({ authUrl }) };
 }
 
@@ -68,17 +69,14 @@ export async function submitVatHandler(event) {
     totalAcquisitionsExVAT: 0,
     finalised: true,
   };
-  const res = await fetch(
-      `${HMRC_BASE}/organisations/vat/${vatNumber}/returns`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify(payload),
-      }
-  );
+  const res = await fetch(`${HMRC_BASE}/organisations/vat/${vatNumber}/returns`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify(payload),
+  });
   if (!res.ok) {
     const err = await res.text();
     return { statusCode: res.status, body: JSON.stringify({ error: err }) };
@@ -94,12 +92,12 @@ export async function logReceiptHandler(event) {
   try {
     const s3Client = new S3Client();
     await s3Client.send(
-        new PutObjectCommand({
-          Bucket: process.env.RECEIPTS_BUCKET,
-          Key: key,
-          Body: JSON.stringify(receipt),
-          ContentType: "application/json",
-        })
+      new PutObjectCommand({
+        Bucket: process.env.RECEIPTS_BUCKET,
+        Key: key,
+        Body: JSON.stringify(receipt),
+        ContentType: "application/json",
+      }),
     );
     return { statusCode: 200, body: JSON.stringify({ status: "receipt logged" }) };
   } catch (err) {
