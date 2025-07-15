@@ -16,7 +16,7 @@ const app = express();
 app.use(express.json());
 
 // 1) serve static site exactly like `http-server public/`
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, '../../public')));
 
 // 2) wire your Lambdas under /api
 app.get('/api/auth-url', async (req, res) => {
