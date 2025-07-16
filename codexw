@@ -1,14 +1,28 @@
 #!/usr/bin/env bash
+# File: codexw
+# A transparent wrapper for the Codex CLI inside Docker
+
 set -euo pipefail
 
-# 1) Build the image (one‑time)
-docker build -f .codex/Dockerfile -t diyacct-codex .
+# Image name (with optional tag)
+IMAGE=codexw:latest
 
-# 2) Run interactively, forwarding your SSH agent & Codex cred dir
-# -e SSH_AUTH_SOCK_HOST="$SSH_AUTH_SOCK" \
-# -v "$SSH_AUTH_SOCK":"$SSH_AUTH_SOCK_HOST":ro \
-docker run -it \
+# 1) Build the image if it doesn't already exist
+if ! docker image inspect "$IMAGE" > /dev/null 2>&1; then
+  echo "🔨 Building Docker image $IMAGE..."
+  docker build -f .codex/Dockerfile -t "$IMAGE" .
+fi
+
+# 2) Run your command inside the container,
+#    forwarding SSH, Codex creds, workspace and OpenAI key
+# Forward SSH agent so `git push` etc. Just Works™
+#-v "${SSH_AUTH_SOCK}":/ssh-agent:ro \
+#-e SSH_AUTH_SOCK=/ssh-agent \
+docker run --rm -it \
   --init \
   -v "${HOME}/.codex":/host_codex:ro \
   -v "$(pwd)":/host_workdir:ro \
-  diyacct-codex
+  -w /host_workdir \
+  -e OPENAI_API_KEY \
+  "$IMAGE" \
+  npx codex "$@"

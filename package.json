@@ -19,7 +19,8 @@
     "test": "vitest tests/unit/*.test.js tests/integration/*.test.js",
     "test:unit": "vitest --coverage tests/unit/*.test.js",
     "test:integration": "vitest --coverage tests/integration/*.test.js",
-    "test:system": "vitest --coverage tests/system/*.test.js",
+    "test:system": "vitest tests/system/*.test.js",
+    "test:client": "playwright test tests/system/*.test.js",
     "test:behaviour": "vitest tests/behaviour/*.test.js",
     "start": "node src/lib/server.js"
   },

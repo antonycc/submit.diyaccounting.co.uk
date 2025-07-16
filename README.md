@@ -1,3 +1,5 @@
+Hello Codex! 👋
+
 # DIY Accounting Submit
 
 This project allows UK businesses to submit tax returns to HMRC under the Making Tax Digital (MTD) framework. It simplifies interactions through HMRC’s official APIs, providing streamlined VAT submissions initially via a straightforward web interface.

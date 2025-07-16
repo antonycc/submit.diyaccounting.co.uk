@@ -593,6 +593,21 @@
         e.target.value = e.target.value.toUpperCase();
       });
 
+      // Expose functions to window for testing
+      window.showStatus = showStatus;
+      window.hideStatus = hideStatus;
+      window.showLoading = showLoading;
+      window.hideLoading = hideLoading;
+      window.generateRandomState = generateRandomState;
+      window.getAuthUrl = getAuthUrl;
+      window.exchangeToken = exchangeToken;
+      window.submitVat = submitVat;
+      window.logReceipt = logReceipt;
+      window.handleOAuthCallback = handleOAuthCallback;
+      window.continueSubmission = continueSubmission;
+      window.displayReceipt = displayReceipt;
+      window.handleFormSubmission = handleFormSubmission;
+
       // Initialize
       document.addEventListener("DOMContentLoaded", function () {
         // Check if we're returning from OAuth

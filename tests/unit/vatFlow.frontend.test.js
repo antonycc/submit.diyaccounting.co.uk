@@ -26,6 +26,11 @@ describe('VAT Flow Frontend JavaScript', () => {
             setItem: vi.fn(),
             removeItem: vi.fn()
         };
+        // Also add sessionStorage to window for script access
+        Object.defineProperty(window, 'sessionStorage', {
+            value: global.sessionStorage,
+            writable: true
+        });
         global.URLSearchParams = window.URLSearchParams;
         global.FormData = window.FormData;
         
