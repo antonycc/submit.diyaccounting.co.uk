@@ -2,25 +2,22 @@
 
 FROM node:20-alpine
 
-# 1) Install git, ssh, bash and rsync
+# install git, ssh client, rsync, bash
 RUN apk add --no-cache \
-      git \
-      openssh-client \
-      bash \
-      rsync
+    git \
+    openssh-client \
+    bash \
+    rsync
 
 WORKDIR /app
 
-# 2) Copy only package files and install deps
-#    (we'll sync your workspace code at runtime)
+# copy package manifests & install deps (including openai/codex lib)
 COPY package.json package-lock.json* ./
-RUN npm install --no‑audit
+RUN npm install --no-audit
 
-# 3) Copy the entrypoint helper
-COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+# copy our custom entrypoint
+COPY .codex/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
-# 4) Switch to our entrypoint
 ENTRYPOINT ["docker-entrypoint.sh"]
-# 5) Default to bash
 CMD ["bash"]

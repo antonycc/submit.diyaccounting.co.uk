@@ -1,10 +1,14 @@
 #!/usr/bin/env bash
+set -euo pipefail
 
-# 1) Build the image
-docker build -t diyacct-dev .
+# 1) Build the image (one‑time)
+docker build -f .codex/Dockerfile -t diyacct-codex .
 
-# 2) Run it, mounting your SSH keys and your workspace:
+# 2) Run interactively, forwarding your SSH agent & Codex cred dir
+# -e SSH_AUTH_SOCK_HOST="$SSH_AUTH_SOCK" \
+# -v "$SSH_AUTH_SOCK":"$SSH_AUTH_SOCK_HOST":ro \
 docker run -it \
-  -v ~/.ssh:/host_ssh:ro \
+  --init \
+  -v "${HOME}/.codex":/host_codex:ro \
   -v "$(pwd)":/host_workdir:ro \
-  diyacct-dev
+  diyacct-codex

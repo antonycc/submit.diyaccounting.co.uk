@@ -11,6 +11,10 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["tests/unit/*.test.js", "tests/integration/*.test.js", "tests/system/*.test.js", "tests/behaviour/*.test.js"],
+    environmentMatchGlobs: [
+      ["tests/unit/vatFlow.frontend.test.js", "happy-dom"],
+      ["tests/system/client.system.test.js", "happy-dom"]
+    ],
     coverage: {
       provider: "v8",
       reportsDirectory: "./coverage",
