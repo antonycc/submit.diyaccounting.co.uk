@@ -4,10 +4,13 @@ FROM node:20-alpine
 
 # install git, ssh client, rsync, bash
 RUN apk add --no-cache \
+    curl \
     git \
     openssh-client \
     bash \
-    rsync
+    rsync \
+    vim \
+    wget
 
 WORKDIR /app
 
