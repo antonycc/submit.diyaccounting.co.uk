@@ -3,8 +3,14 @@
 
 set -euo pipefail
 
-# 1) Build the image (one‑time)
-docker build -f .codex/Dockerfile -t diyacct-codex .
+# Image name (with optional tag)
+IMAGE=codexsh:latest
+
+# 1) Build the image if it doesn't already exist
+if ! docker image inspect "$IMAGE" > /dev/null 2>&1; then
+  echo "🔨 Building Docker image $IMAGE..."
+  docker build -f .codex/Dockerfile -t "$IMAGE" .
+fi
 
 # 2) Run interactively, forwarding your SSH agent & Codex cred dir
 # -e SSH_AUTH_SOCK_HOST="$SSH_AUTH_SOCK" \
@@ -13,4 +19,4 @@ docker run -it \
   --init \
   -v "${HOME}/.codex":/host_codex:ro \
   -v "$(pwd)":/host_workdir:ro \
-  diyacct-codex
+  "$IMAGE"

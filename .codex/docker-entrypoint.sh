@@ -25,10 +25,10 @@ if [ -d "/host_workdir" ]; then
     /host_workdir/ /app/
 fi
 
-ssh-add ~/.ssh/id_antony_polycode_mbp_2025
-ssh -T git@github.com
-git config --global user.email "codex@docker"
-git config --global user.name "Codex in Docker"
+#ssh-add ~/.ssh/id_antony_polycode_mbp_2025
+#ssh -T git@github.com
+#git config --global user.email "codex@docker"
+#git config --global user.name "Codex in Docker"
 
 # git push --set-upstream origin codex-in-docker
 # The authenticity of host 'github.com (20.26.156.215)' can't be established.
