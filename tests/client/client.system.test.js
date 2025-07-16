@@ -1,17 +1,16 @@
 // tests/system/client.system.test.js
 
-import { describe, beforeAll, afterAll, beforeEach, afterEach, test, vi } from 'vitest';
-import { chromium, expect } from '@playwright/test';
+import { test, expect, chromium } from '@playwright/test';
 import fs from 'fs';
 import path from 'path';
 
-describe('Client System Test - VAT Flow in Browser', () => {
+test.describe('Client System Test - VAT Flow in Browser', () => {
     let browser;
     let context;
     let page;
     let htmlContent;
 
-    beforeAll(async () => {
+    test.beforeAll(async () => {
         // Launch browser
         browser = await chromium.launch({
             headless: true // Set to false for debugging
@@ -21,13 +20,13 @@ describe('Client System Test - VAT Flow in Browser', () => {
         htmlContent = fs.readFileSync(path.join(process.cwd(), 'public/index.html'), 'utf-8');
     });
 
-    afterAll(async () => {
+    test.afterAll(async () => {
         if (browser) {
             await browser.close();
         }
     });
 
-    beforeEach(async () => {
+    test.beforeEach(async () => {
         // Create a new browser context for each test
         context = await browser.newContext({
             baseURL: 'http://localhost:3000'
@@ -107,17 +106,16 @@ describe('Client System Test - VAT Flow in Browser', () => {
         });
     });
 
-    afterEach(async () => {
+    test.afterEach(async () => {
         if (page) {
             await page.close();
         }
         if (context) {
             await context.close();
         }
-        vi.clearAllMocks();
     });
 
-    describe('Page Loading and Initial State', () => {
+    test.describe('Page Loading and Initial State', () => {
         test('should load the HTML page successfully', async () => {
             // Check that the page title is correct
             const title = await page.title();
@@ -148,7 +146,7 @@ describe('Client System Test - VAT Flow in Browser', () => {
         });
     });
 
-    describe('Form Validation', () => {
+    test.describe('Form Validation', () => {
         test('should validate empty VAT number', async () => {
             // Clear the VAT number field
             await page.locator('#vatNumber').fill('');
@@ -199,7 +197,7 @@ describe('Client System Test - VAT Flow in Browser', () => {
         });
     });
 
-    describe('Input Field Behavior', () => {
+    test.describe('Input Field Behavior', () => {
         test('should only allow digits in VAT number field', async () => {
             const vatNumberField = page.locator('#vatNumber');
 
@@ -225,7 +223,7 @@ describe('Client System Test - VAT Flow in Browser', () => {
         });
     });
 
-    describe('Loading States', () => {
+    test.describe('Loading States', () => {
         test('should show loading spinner during form submission', async () => {
             // Fill in valid form data
             await page.locator('#vatNumber').fill('123456789');
@@ -247,7 +245,7 @@ describe('Client System Test - VAT Flow in Browser', () => {
 
     // OAuth Flow tests removed due to complexity in test environment
 
-    describe('Status Messages', () => {
+    test.describe('Status Messages', () => {
         test('should display info messages with correct styling', async () => {
             // Trigger an info message by calling the function directly
             await page.evaluate(() => {
@@ -291,7 +289,7 @@ describe('Client System Test - VAT Flow in Browser', () => {
         });
     });
 
-    describe('Receipt Display', () => {
+    test.describe('Receipt Display', () => {
         test('should format processing date correctly', async () => {
             const testDate = '2023-12-25T14:30:00.000Z';
 
