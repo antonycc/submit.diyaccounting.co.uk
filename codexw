@@ -8,10 +8,10 @@ set -euo pipefail
 IMAGE=codexw:latest
 
 # 1) Build the image if it doesn't already exist
-if ! docker image inspect "$IMAGE" > /dev/null 2>&1; then
+#if ! docker image inspect "$IMAGE" > /dev/null 2>&1; then
   echo "🔨 Building Docker image $IMAGE..."
   docker build -f .codex/Dockerfile -t "$IMAGE" .
-fi
+#fi
 
 # 2) Run your command inside the container,
 #    forwarding SSH, Codex creds, workspace and OpenAI key
@@ -20,6 +20,7 @@ fi
 #-e SSH_AUTH_SOCK=/ssh-agent \
 docker run --rm -it \
   --init \
+  -v "${HOME}/.ssh":/host_ssh:ro \
   -v "${HOME}/.codex":/host_codex:ro \
   -v "$(pwd)":/host_workdir:ro \
   -w /host_workdir \

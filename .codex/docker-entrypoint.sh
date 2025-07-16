@@ -17,6 +17,15 @@ if [ -d "/host_codex" ]; then
   chmod 600 /root/.codex/*
 fi
 
+# 2️⃣ Copy ssh credentials from host mount (if present)
+if [ -d "/host_ssh" ]; then
+  echo "📄 Injecting Certificates..."
+  mkdir -p /root/.ssh
+  cp /host_ssh/* /root/.ssh/ 2>/dev/null || true
+  chmod 600 /root/.ssh/*
+  chmod 644 /root/.ssh/*.pub
+fi
+
 # 3️⃣ Sync your local workspace into /app (honouring .gitignore)
 if [ -d "/host_workdir" ]; then
   echo "📂 Syncing workspace into /app..."
