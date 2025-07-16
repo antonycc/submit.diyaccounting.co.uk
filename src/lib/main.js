@@ -3,6 +3,7 @@
 
 import { fileURLToPath } from "url";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import fetch from "node-fetch";
 
 const HMRC_BASE = "https://api.service.hmrc.gov.uk";
 
@@ -92,7 +93,23 @@ export async function logReceiptHandler(event) {
   const receipt = JSON.parse(event.body || "{}");
   const key = `receipts/${receipt.formBundleNumber}.json`;
   try {
-    const s3Client = new S3Client();
+    const s3Config = {};
+    
+    // Configure S3 client for containerized MinIO if environment variables are set
+    if (process.env.S3_ENDPOINT) {
+      s3Config.endpoint = process.env.S3_ENDPOINT;
+      s3Config.forcePathStyle = true;
+      s3Config.region = 'us-east-1';
+      
+      if (process.env.S3_ACCESS_KEY && process.env.S3_SECRET_KEY) {
+        s3Config.credentials = {
+          accessKeyId: process.env.S3_ACCESS_KEY,
+          secretAccessKey: process.env.S3_SECRET_KEY,
+        };
+      }
+    }
+    
+    const s3Client = new S3Client(s3Config);
     await s3Client.send(
         new PutObjectCommand({
           Bucket: process.env.RECEIPTS_BUCKET,
