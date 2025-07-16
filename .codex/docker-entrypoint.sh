@@ -25,6 +25,8 @@ if [ -d "/host_workdir" ]; then
     /host_workdir/ /app/
 fi
 
+ssh-add ~/.ssh/id_antony_polycode_mbp_2025
+ssh -T git@github.com
 git config --global user.email "codex@docker"
 git config --global user.name "Codex in Docker"
 
