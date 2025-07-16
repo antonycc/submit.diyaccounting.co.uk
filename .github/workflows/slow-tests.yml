@@ -94,6 +94,24 @@ jobs:
 
       - run: npm run test:system
 
+  npm-all-tests:
+    name: 'npm all tests with coverage'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - run: npm ci || npm install
+
+      - run: npm run test:all
+
   npm-client-test:
     name: 'npm client test'
     runs-on: ubuntu-latest
