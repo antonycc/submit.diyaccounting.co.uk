@@ -17,16 +17,7 @@ if [ -d "/host_codex" ]; then
   chmod 600 /root/.codex/*
 fi
 
-# 2️⃣ Copy ssh credentials from host mount (if present)
-if [ -d "/host_ssh" ]; then
-  echo "📄 Injecting Certificates..."
-  mkdir -p /root/.ssh
-  cp /host_ssh/* /root/.ssh/ 2>/dev/null || true
-  chmod 600 /root/.ssh/*
-  chmod 644 /root/.ssh/*.pub
-fi
-
-# 3️⃣ Sync your local workspace into /app (honouring .gitignore)
+# 3. Sync your local workspace into /app (honouring .gitignore)
 if [ -d "/host_workdir" ]; then
   echo "📂 Syncing workspace into /app..."
   rsync -a --delete \
@@ -34,10 +25,21 @@ if [ -d "/host_workdir" ]; then
     /host_workdir/ /app/
 fi
 
-#ssh-add ~/.ssh/id_antony_polycode_mbp_2025
-#ssh -T git@github.com
-#git config --global user.email "codex@docker"
-#git config --global user.name "Codex in Docker"
+# 4. Copy ssh credentials from host mount (if present)
+if [ -d "/host_ssh" ]; then
+  echo "📄 Injecting Certificates..."
+  mkdir -p /root/.ssh
+  cp /host_ssh/id_antony_polycode_mbp_2025 /root/.ssh/. 2>/dev/null || true
+  cp /host_ssh/id_antony_polycode_mbp_2025.pub /root/.ssh/. 2>/dev/null || true
+  chmod 600 /root/.ssh/id_antony_polycode_mbp_2025
+  chmod 644 /root/.ssh/id_antony_polycode_mbp_2025.pub
+  eval $(ssh-agent -s)
+  ssh-add -D
+  ssh-add /root/.ssh/id_antony_polycode_mbp_2025
+  ssh -o StrictHostKeyChecking=no -T git@github.com || true
+  git config --global user.email "codex@docker"
+  git config --global user.name "Codex in Docker"
+fi
 
 # git push --set-upstream origin codex-in-docker
 # The authenticity of host 'github.com (20.26.156.215)' can't be established.
