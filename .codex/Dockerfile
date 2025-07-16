@@ -19,7 +19,7 @@ RUN npm install --no-audit
 COPY .codex/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
-MKDIR /root/.codex/
+RUN mkdir -p /root/.codex/
 COPY .codex/docker-codex-config.toml /root/.codex/config.toml
 
 ENTRYPOINT ["docker-entrypoint.sh"]
