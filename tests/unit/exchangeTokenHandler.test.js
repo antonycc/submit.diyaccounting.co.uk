@@ -1,8 +1,12 @@
 import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
 import { exchangeTokenHandler } from "@src/lib/main.js";
 
-// Mock fetch globally
-global.fetch = vi.fn();
+// Mock node-fetch
+vi.mock("node-fetch", () => ({
+  default: vi.fn()
+}));
+
+import fetch from "node-fetch";
 
 describe("exchangeTokenHandler", () => {
   const originalEnv = process.env;

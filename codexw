@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+# 1) Build the image
+docker build -t diyacct-dev .
+
+# 2) Run it, mounting your SSH keys and your workspace:
+docker run -it \
+  -v ~/.ssh:/host_ssh:ro \
+  -v "$(pwd)":/host_workdir:ro \
+  diyacct-dev
