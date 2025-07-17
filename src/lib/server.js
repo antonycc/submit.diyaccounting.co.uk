@@ -4,6 +4,8 @@ import express from "express";
 import { fileURLToPath } from "url";
 import { authUrlHandler, exchangeTokenHandler, submitVatHandler, logReceiptHandler } from "./main.js";
 
+import "dotenv/config"; // use dotenv to load environment variables
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 
