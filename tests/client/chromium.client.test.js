@@ -11,36 +11,15 @@ function getTimestamp() {
   return now.toISOString().replace(/[:.]/g, '-').replace('T', '_').slice(0, -5);
 }
 
-//test.describe("Client System Test - VAT Flow in Browser", () => {
-  let browser;
-  let context;
-  let page;
+test.describe("Client System Test - VAT Flow in Browser", () => {
   let htmlContent;
 
   test.beforeAll(async () => {
-    // Launch browser
-    browser = await chromium.launch({
-      headless: true, // Set to false for debugging
-    });
-
     // Read the HTML file
     htmlContent = fs.readFileSync(path.join(process.cwd(), "public/index.html"), "utf-8");
   });
 
-  test.afterAll(async () => {
-    if (browser) {
-      await browser.close();
-    }
-  });
-
-  test.beforeEach(async () => {
-    // Create a new browser context for each test
-    context = await browser.newContext({
-      baseURL: "http://localhost:3000",
-    });
-
-    // Create a new page
-    page = await context.newPage();
+  test.beforeEach(async ({ page }) => {
 
     // Mock API endpoints directly with Playwright
     await page.route("/api/auth-url", async (route) => {
@@ -120,7 +99,7 @@ function getTimestamp() {
       const path = await import('path');
       
       const timestamp = getTimestamp();
-      const videoName = `client-video_${timestamp}.mp4`;
+      const videoName = `client-video_${timestamp}.webm`;
       const targetPath = path.join('client-test-results', videoName);
       
       // Get video path from testInfo
@@ -134,25 +113,10 @@ function getTimestamp() {
         console.log(`[DEBUG_LOG] Failed to copy video: ${error.message}`);
       }
     }
-
-    if (page) {
-      await page.close();
-    }
-    if (context) {
-      await context.close();
-    }
   });
 
-  //test.describe("Page Loading and Initial State", () => {
-
-test.use({
-  video: {
-    mode: "on",
-    size: { width: 1280, height: 720 }
-  }
-});
-
-    test("should load the HTML page successfully", async () => {
+  test.describe("Page Loading and Initial State", () => {
+    test("should load the HTML page successfully", async ({ page }) => {
       const timestamp = getTimestamp();
       // Check that the page title is correct
       const title = await page.title();
@@ -180,22 +144,14 @@ test.use({
       expect(vatDue).toBe("2400.00");
     });
 
-    test("should have receipt display hidden initially", async () => {
+    test("should have receipt display hidden initially", async ({ page }) => {
       const receiptDisplay = page.locator("#receiptDisplay");
       await expect(receiptDisplay).toBeHidden();
     });
-  //});
+  });
 
-  //test.describe("Form Validation", () => {
-
-test.use({
-  video: {
-    mode: "on",
-    size: { width: 1280, height: 720 }
-  }
-});
-
-    test("should validate empty VAT number", async () => {
+  test.describe("Form Validation", () => {
+    test("should validate empty VAT number", async ({ page }) => {
       const timestamp = getTimestamp();
       // Clear the VAT number field
       await page.locator("#vatNumber").fill("");
@@ -219,14 +175,7 @@ test.use({
       await setTimeout(500);
     });
 
-test.use({
-  video: {
-    mode: "on",
-    size: { width: 1280, height: 720 }
-  }
-});
-
-    test("should validate invalid VAT number format", async () => {
+    test("should validate invalid VAT number format", async ({ page }) => {
       // Enter invalid VAT number (too short)
       await page.locator("#vatNumber").fill("12345678");
       await setTimeout(100);
@@ -242,7 +191,7 @@ test.use({
       expect(statusText).toBe("VAT number must be exactly 9 digits.");
     });
 
-    test("should validate negative VAT due", async () => {
+    test("should validate negative VAT due", async ({ page }) => {
       // Enter negative VAT amount
       await page.locator("#vatDue").fill("-100.00");
       await setTimeout(100);
@@ -257,10 +206,10 @@ test.use({
       const statusText = await statusMessage.textContent();
       expect(statusText).toBe("VAT due cannot be negative.");
     });
-  //});
+  });
 
   test.describe("Input Field Behavior", () => {
-    test("should only allow digits in VAT number field", async () => {
+    test("should only allow digits in VAT number field", async ({ page }) => {
       const vatNumberField = page.locator("#vatNumber");
 
       // Clear and type mixed characters
@@ -274,7 +223,7 @@ test.use({
       expect(value).toBe("123456");
     });
 
-    test("should convert period key to uppercase", async () => {
+    test("should convert period key to uppercase", async ({ page }) => {
       const periodKeyField = page.locator("#periodKey");
 
       // Clear and type lowercase
@@ -290,7 +239,7 @@ test.use({
   });
 
   test.describe("Loading States", () => {
-    test("should show loading spinner during form submission", async () => {
+    test("should show loading spinner during form submission", async ({ page }) => {
       const timestamp = getTimestamp();
       // Fill in valid form data
       await page.locator("#vatNumber").fill("123456789");
@@ -321,7 +270,7 @@ test.use({
   // OAuth Flow tests removed due to complexity in test environment
 
   test.describe("Status Messages", () => {
-    test("should display info messages with correct styling", async () => {
+    test("should display info messages with correct styling", async ({ page }) => {
       // Trigger an info message by calling the function directly
       await page.evaluate(() => {
         window.showStatus("Test info message", "info");
@@ -341,7 +290,7 @@ test.use({
       // Note: Auto-hide functionality tested separately due to 5-second timeout
     });
 
-    test("should display error messages without auto-hide", async () => {
+    test("should display error messages without auto-hide", async ({ page }) => {
       // Trigger an error message
       await page.evaluate(() => {
         window.showStatus("Test error message", "error");
@@ -365,7 +314,7 @@ test.use({
   });
 
   test.describe("Receipt Display", () => {
-    test("should format processing date correctly", async () => {
+    test("should format processing date correctly", async ({ page }) => {
       const timestamp = getTimestamp();
       const testDate = "2023-12-25T14:30:00.000Z";
 
@@ -391,5 +340,4 @@ test.use({
       await setTimeout(500);
     });
   });
-
-//});
+});
