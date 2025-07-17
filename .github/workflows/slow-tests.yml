@@ -128,6 +128,8 @@ jobs:
 
       - run: npm ci || npm install
 
+      - run: npx playwright install --with-deps
+
       - run: npm run test:client
 
   npm-behaviour-test:
@@ -145,5 +147,7 @@ jobs:
           cache: 'npm'
 
       - run: npm ci || npm install
+
+      - run: npx playwright install --with-deps
 
       - run: npm run test:behaviour
