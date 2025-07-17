@@ -125,6 +125,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   await page.goto("http://127.0.0.1:3000");
 
   // Wait for page to load completely
+  await setTimeout(500);
   await page.waitForLoadState("networkidle");
   await page.screenshot({ path: `behaviour-test-results/behaviour-initial_${timestamp}.png` });
   await setTimeout(500);
@@ -174,6 +175,8 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
     });
   });
 
+  await setTimeout(500);
+
   // 4) Intercept the OAuth redirect and simulate the callback
   let authState;
 
@@ -184,22 +187,29 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
       authState = url.searchParams.get("state");
 
       // Simulate OAuth callback by navigating back with code and state
+      await setTimeout(1500);
       await page.goto(`http://127.0.0.1:3000/?code=test-code&state=${encodeURIComponent(authState)}`);
     }
   });
 
   // Submit the form - this will trigger the OAuth flow
   await page.click("#submitBtn");
+  await setTimeout(500);
 
   await page.screenshot({ path: `behaviour-test-results/behaviour-after-oauth_${timestamp}.png` });
   await setTimeout(500);
 
   // 5) Wait for the submission process to complete and receipt to be displayed
+  await setTimeout(500);
   await page.waitForSelector("#receiptDisplay", { state: "visible", timeout: 15000 });
+
+  await setTimeout(500);
 
   // Verify the receipt is displayed with correct content
   const receiptDisplay = page.locator("#receiptDisplay");
   await expect(receiptDisplay).toBeVisible();
+
+  await setTimeout(500);
 
   // Check for the success message
   const successHeader = receiptDisplay.locator("h3");
@@ -212,7 +222,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
 
   // Verify the form is hidden after successful submission
   await expect(page.locator("#vatForm")).toBeHidden();
-
+  await setTimeout(500);
   await page.screenshot({ path: `behaviour-test-results/behaviour-receipt_${timestamp}.png`, fullPage: true });
   await setTimeout(500);
 

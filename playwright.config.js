@@ -5,6 +5,9 @@ export default defineConfig({
     // Output directory for all artifacts (screenshots, videos, traces, etc.)
     outputDir: './test-results/',
 
+    // Don't delete the output directory before running tests
+    preserveOutput: 'always',
+
     use: {
         // Save a video for every test
         video: {
