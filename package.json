@@ -20,8 +20,8 @@
     "test:unit": "vitest --run --coverage tests/unit/*.test.js",
     "test:integration": "vitest --run --coverage tests/integration/*.test.js",
     "test:system": "vitest --run --coverage tests/system/*.test.js",
-    "test:client": "vitest --run --coverage tests/client/*.test.js",
-    "test:behaviour": "vitest --run --coverage tests/behaviour/*.test.js",
+    "test:client": "playwright test tests/client/*.test.js",
+    "test:behaviour": "playwright test tests/behaviour/*.test.js",
     "test:all": "vitest --run --coverage tests/unit/*.test.js tests/integration/*.test.js tests/system/*.test.js tests/client/*.test.js tests/behaviour/*.test.js",
     "start": "node src/lib/server.js"
   },
