@@ -1,0 +1,84 @@
+# .github/workflows/test-infra.yml
+
+name: test-infra
+run-name: 'test infra [${{ github.ref_name }}] [${{ github.event.head_commit.message }}]'
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'aws/**'
+      - '.m2/**'
+      - 'mvnw'
+      - '.mvn'
+      - '.github/workflows/test-infra.yml'
+  workflow_dispatch:
+  schedule:
+    - cron: '34 2,3,4 * * *'
+
+jobs:
+  mvn-test:
+    name: 'maven test'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'corretto'
+          java-version: 21
+          cache: 'maven'
+
+      - name: package
+        id: package
+        shell: bash
+        run: ./mvnw clean test
+
+  mvn-package-cdk-synth:
+    name: 'cdk synth from maven package'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - run: npm ci
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'corretto'
+          java-version: 21
+          cache: 'maven'
+
+      - name: check
+        id: check
+        run: cat ~/.m2/settings.xml
+        if: steps.mvn.outputs.pomXmlExists == 'true'
+
+      #- name: download-dependencies
+      #  id: download-dependencies
+      #  if: steps.mvn.outputs.pomXmlExists == 'true'
+      #  shell: bash
+      #  run: ./mvnw --batch-mode --quiet dependency:go-offline > /dev/null 2>&1
+
+      - name: package
+        id: package
+        if: steps.mvn.outputs.pomXmlExists == 'true'
+        shell: bash
+        run: ./mvnw clean package -DskipTests
+
+      - name: synth
+        id: synth
+        if: steps.mvn.outputs.pomXmlExists == 'true'
+        shell: bash
+        run: npx cdk synth --strict --validation --no-staging --trace

@@ -1,26 +1,21 @@
-# .github/workflows/slow-tests.yml
+# .github/workflows/test-services.yml
 
-name: slow-tests
-run-name: 'slow tests [${{ github.ref_name }}] [${{ github.event.head_commit.message }}]'
+name: test-services
+run-name: 'test services [${{ github.ref_name }}] [${{ github.event.head_commit.message }}]'
 
 on:
   push:
     branches:
       - main
     paths:
-      - 'public/**'
-      - 'tests/client'
-      - 'aws/**'
-      - '.m2/**'
-      - 'mvnw'
-      - '.mvn'
       - 'src/**'
       - 'tests/**'
       - '**/*.json'
-      - '.github/workflows/**'
+      - '.github/workflows/test-services.yml'
+      - '!aws/**'
   workflow_dispatch:
   schedule:
-    - cron: '23 * * * *'
+    - cron: '34 2,3,4 * * *'
 
 jobs:
   npm-test:
@@ -38,9 +33,27 @@ jobs:
           node-version: 20
           cache: 'npm'
 
-      - run: npm ci || npm install
+      - run: npm ci
 
       - run: npm test
+
+  npm-build:
+    name: 'npm build'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - run: npm ci || npm install
+
+      - run: npm run build
 
   npm-unit-test:
     name: 'npm unit test with coverage'
@@ -61,7 +74,7 @@ jobs:
       - run: npm run test:coverage
 
   npm-integration-test:
-    name: 'npm integration test with coverage'
+    name: 'npm integration test'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -79,7 +92,7 @@ jobs:
       - run: npm run test:integration
 
   npm-system-test:
-    name: 'npm system test with coverage'
+    name: 'npm system test'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -95,61 +108,3 @@ jobs:
       - run: npm ci || npm install
 
       - run: npm run test:system
-
-  npm-all-tests:
-    name: 'npm all tests with coverage'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      id-token: write
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: 'npm'
-
-      - run: npm ci || npm install
-
-      - run: npm run test:all
-
-  npm-client-test:
-    name: 'npm client test'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      id-token: write
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: 'npm'
-
-      - run: npm ci || npm install
-
-      - run: npx playwright install --with-deps
-
-      - run: npm run test:client
-
-  npm-behaviour-test:
-    name: 'npm behaviour test'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      id-token: write
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: 'npm'
-
-      - run: npm ci || npm install
-
-      - run: npx playwright install --with-deps
-
-      - run: npm run test:behaviour

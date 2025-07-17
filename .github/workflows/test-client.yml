@@ -1,0 +1,38 @@
+# .github/workflows/test-client.yml
+
+name: test
+run-name: 'test client [${{ github.ref_name }}] [${{ github.event.head_commit.message }}]'
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'public/**'
+      - 'tests/client'
+      - '.github/workflows/test-client.yml'
+  workflow_dispatch:
+  schedule:
+    - cron: '34 2,3,4 * * *'
+
+jobs:
+
+  npm-client-test:
+    name: 'npm client test'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - run: npm ci || npm install
+
+      - run: npx playwright install --with-deps
+
+      - run: npm run test:client
