@@ -23,7 +23,6 @@
     "test:system": "vitest --run tests/system/*.test.js",
     "test:client": "playwright test tests/client/*.test.js",
     "test:behaviour": "playwright test tests/behaviour/*.test.js",
-    "test:all": "vitest --run tests/unit/*.test.js tests/integration/*.test.js tests/system/*.test.js tests/client/*.test.js tests/behaviour/*.test.js",
     "start": "node src/lib/server.js"
   },
   "keywords": [],
