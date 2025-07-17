@@ -8,14 +8,14 @@ import { setTimeout } from "timers/promises";
 // Generate timestamp for file naming
 function getTimestamp() {
   const now = new Date();
-  return now.toISOString().replace(/[:.]/g, '-').replace('T', '_').slice(0, -5);
+  return now.toISOString().replace(/[:.]/g, "-").replace("T", "_").slice(0, -5);
 }
 
 test.use({
   video: {
     mode: "on",
-    size: { width: 1280, height: 720 }
-  }
+    size: { width: 1280, height: 720 },
+  },
 });
 
 test.describe("Client System Test - VAT Flow in Browser", () => {
@@ -120,20 +120,26 @@ test.describe("Client System Test - VAT Flow in Browser", () => {
     });
   });
 
-  test.afterEach(async ({ }, testInfo) => {
+  test.afterEach(async ({}, testInfo) => {
     // Handle video file renaming and moving
     if (testInfo.video) {
-      const fs = await import('fs');
-      const path = await import('path');
-      
+      const fs = await import("fs");
+      const path = await import("path");
+
       const timestamp = getTimestamp();
       const videoName = `client-video_${timestamp}.mp4`;
-      const targetPath = path.join('client-test-results', videoName);
-      
+      const targetPath = path.join("client-test-results", videoName);
+
       // Get video path from testInfo
       try {
         const videoPath = await testInfo.video.path();
-        if (videoPath && await fs.promises.access(videoPath).then(() => true).catch(() => false)) {
+        if (
+          videoPath &&
+          (await fs.promises
+            .access(videoPath)
+            .then(() => true)
+            .catch(() => false))
+        ) {
           await fs.promises.copyFile(videoPath, targetPath);
           console.log(`[DEBUG_LOG] Video saved to: ${targetPath}`);
         }
@@ -365,5 +371,4 @@ test.describe("Client System Test - VAT Flow in Browser", () => {
       await setTimeout(500);
     });
   });
-
 });
