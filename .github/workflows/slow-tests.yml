@@ -120,6 +120,8 @@ jobs:
 
       - run: npm ci || npm install
 
+      - run: npx playwright install --with-deps
+
       - run: npm run test:all
 
       - name: Upload test results
