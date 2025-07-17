@@ -122,22 +122,23 @@ test.describe("Client System Test - VAT Flow in Browser", () => {
 
   test.afterEach(async ({ }, testInfo) => {
     // Handle video file renaming and moving
-    if (testInfo.attachments) {
-      const videoAttachment = testInfo.attachments.find(attachment => attachment.name === 'video');
-      if (videoAttachment && videoAttachment.path) {
-        const fs = await import('fs');
-        const path = await import('path');
-        
-        const timestamp = getTimestamp();
-        const videoName = `client-video_${timestamp}.mp4`;
-        const targetPath = path.join('test-results', videoName);
-        
-        try {
-          await fs.promises.copyFile(videoAttachment.path, targetPath);
+    if (testInfo.video) {
+      const fs = await import('fs');
+      const path = await import('path');
+      
+      const timestamp = getTimestamp();
+      const videoName = `client-video_${timestamp}.mp4`;
+      const targetPath = path.join('client-test-results', videoName);
+      
+      // Get video path from testInfo
+      try {
+        const videoPath = await testInfo.video.path();
+        if (videoPath && await fs.promises.access(videoPath).then(() => true).catch(() => false)) {
+          await fs.promises.copyFile(videoPath, targetPath);
           console.log(`[DEBUG_LOG] Video saved to: ${targetPath}`);
-        } catch (error) {
-          console.log(`[DEBUG_LOG] Failed to copy video: ${error.message}`);
         }
+      } catch (error) {
+        console.log(`[DEBUG_LOG] Failed to copy video: ${error.message}`);
       }
     }
 
@@ -164,7 +165,7 @@ test.describe("Client System Test - VAT Flow in Browser", () => {
       const form = page.locator("#vatSubmissionForm");
       await expect(form).toBeVisible();
 
-      await page.screenshot({ path: `test-results/client-initial-page_${timestamp}.png` });
+      await page.screenshot({ path: `client-test-results/client-initial-page_${timestamp}.png` });
       await setTimeout(500);
 
       // Check that input fields have default values
@@ -204,7 +205,7 @@ test.describe("Client System Test - VAT Flow in Browser", () => {
       const className = await statusMessage.getAttribute("class");
       expect(className).toContain("status-error");
 
-      await page.screenshot({ path: `test-results/client-validation-error_${timestamp}.png` });
+      await page.screenshot({ path: `client-test-results/client-validation-error_${timestamp}.png` });
       await setTimeout(500);
     });
 
@@ -286,7 +287,7 @@ test.describe("Client System Test - VAT Flow in Browser", () => {
       const submitBtn = page.locator("#submitBtn");
       await expect(submitBtn).toBeDisabled({ timeout: 1000 });
 
-      await page.screenshot({ path: `test-results/client-loading-state_${timestamp}.png` });
+      await page.screenshot({ path: `client-test-results/client-loading-state_${timestamp}.png` });
       await setTimeout(500);
     });
   });
@@ -360,8 +361,9 @@ test.describe("Client System Test - VAT Flow in Browser", () => {
       expect(processingDate).toContain("25 December 2023");
       expect(processingDate).toContain("14:30");
 
-      await page.screenshot({ path: `test-results/client-receipt-display_${timestamp}.png`, fullPage: true });
+      await page.screenshot({ path: `client-test-results/client-receipt-display_${timestamp}.png`, fullPage: true });
       await setTimeout(500);
     });
   });
+
 });

@@ -48,25 +48,35 @@ test.afterAll(async () => {
 });
 
 test.afterEach(async ({ }, testInfo) => {
+  console.log(`[DEBUG_LOG] afterEach called, testInfo.video exists: ${!!testInfo.video}`);
+  
   // Handle video file renaming and moving
-  if (testInfo.outputDir) {
+  if (testInfo.video) {
     const fs = await import('fs');
     const path = await import('path');
     
-    const timestamp = getTimestamp();
-    const videoName = `behaviour-video_${timestamp}.mp4`;
-    const targetPath = path.join('test-results', videoName);
+    //const timestamp = getTimestamp();
+    //const videoName = `behaviour-video_${timestamp}.mp4`;
+    //const targetPath = path.join('behaviour-test-results', videoName);
     
-    // Look for video file in the test output directory
+    console.log(`[DEBUG_LOG] Attempting to get video path...`);
+    
+    // Get video path from testInfo
     try {
-      const videoPath = path.join(testInfo.outputDir, 'video.webm');
-      if (await fs.promises.access(videoPath).then(() => true).catch(() => false)) {
-        await fs.promises.copyFile(videoPath, targetPath);
-        console.log(`[DEBUG_LOG] Video saved to: ${targetPath}`);
-      }
+      const videoPath = await testInfo.video.path();
+      console.log(`[DEBUG_LOG] Video path: ${videoPath}`);
+      
+      //if (videoPath && await fs.promises.access(videoPath).then(() => true).catch(() => false)) {
+      //  await fs.promises.copyFile(videoPath, targetPath);
+      //  console.log(`[DEBUG_LOG] Video saved to: ${targetPath}`);
+      //} else {
+      //  console.log(`[DEBUG_LOG] Video file not accessible at: ${videoPath}`);
+      //}
     } catch (error) {
       console.log(`[DEBUG_LOG] Failed to copy video: ${error.message}`);
     }
+  } else {
+    console.log(`[DEBUG_LOG] No video in testInfo`);
   }
 });
 
@@ -116,7 +126,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
 
   // Wait for page to load completely
   await page.waitForLoadState("networkidle");
-  await page.screenshot({ path: `test-results/behaviour-initial_${timestamp}.png` });
+  await page.screenshot({ path: `behaviour-test-results/behaviour-initial_${timestamp}.png` });
   await setTimeout(500);
 
   // 2) Verify the form is present and fill it out with correct field IDs
@@ -127,7 +137,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   await page.fill("#periodKey", "24A1");
   await page.fill("#vatDue", "1000.00");
 
-  await page.screenshot({ path: `test-results/behaviour-form-filled_${timestamp}.png` });
+  await page.screenshot({ path: `behaviour-test-results/behaviour-form-filled_${timestamp}.png` });
   await setTimeout(500);
 
   // 3) Mock the token exchange endpoint
@@ -178,7 +188,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   // Submit the form - this will trigger the OAuth flow
   await page.click("#submitBtn");
 
-  await page.screenshot({ path: `test-results/behaviour-after-oauth_${timestamp}.png` });
+  await page.screenshot({ path: `behaviour-test-results/behaviour-after-oauth_${timestamp}.png` });
   await setTimeout(500);
 
   // 5) Wait for the submission process to complete and receipt to be displayed
@@ -200,7 +210,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   // Verify the form is hidden after successful submission
   await expect(page.locator("#vatForm")).toBeHidden();
 
-  await page.screenshot({ path: `test-results/behaviour-receipt_${timestamp}.png`, fullPage: true });
+  await page.screenshot({ path: `behaviour-test-results/behaviour-receipt_${timestamp}.png`, fullPage: true });
   await setTimeout(500);
 
   console.log("[DEBUG_LOG] VAT submission flow completed successfully");

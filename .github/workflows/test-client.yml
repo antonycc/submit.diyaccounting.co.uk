@@ -42,5 +42,13 @@ jobs:
         if: always()
         with:
           name: test-results-client
+          path: client-test-results/
+          retention-days: 30
+
+      - name: Upload test reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-reports-client
           path: test-results/
           retention-days: 30

@@ -336,5 +336,10 @@ fabric.properties
 /response.json
 /result.json
 /dependency-reduced-pom.xml
-/test-results/.last-run.json
-/test-results/
+/all-test-results
+/test-results
+/client-test-results
+/behaviour-test-results
+
+/test-reports/
+/all-test-results/.last-run.json

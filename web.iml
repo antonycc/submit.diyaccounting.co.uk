@@ -4,6 +4,10 @@
     <content url="file://$MODULE_DIR$" dumb="true">
       <excludeFolder url="file://$MODULE_DIR$/cdk.out" />
       <excludeFolder url="file://$MODULE_DIR$/test-results" />
+      <excludeFolder url="file://$MODULE_DIR$/behaviour-test-results" />
+      <excludeFolder url="file://$MODULE_DIR$/client-test-results" />
+      <excludeFolder url="file://$MODULE_DIR$/coverage" />
+      <excludeFolder url="file://$MODULE_DIR$/test-reports" />
     </content>
   </component>
 </module>
