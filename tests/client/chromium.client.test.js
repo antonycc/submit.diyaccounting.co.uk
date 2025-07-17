@@ -5,8 +5,17 @@ import fs from "fs";
 import path from "path";
 import { setTimeout } from "timers/promises";
 
+// Generate timestamp for file naming
+function getTimestamp() {
+  const now = new Date();
+  return now.toISOString().replace(/[:.]/g, '-').replace('T', '_').slice(0, -5);
+}
+
 test.use({
-  video: "on",
+  video: {
+    mode: "on",
+    size: { width: 1280, height: 720 }
+  }
 });
 
 test.describe("Client System Test - VAT Flow in Browser", () => {
@@ -111,7 +120,27 @@ test.describe("Client System Test - VAT Flow in Browser", () => {
     });
   });
 
-  test.afterEach(async () => {
+  test.afterEach(async ({ }, testInfo) => {
+    // Handle video file renaming and moving
+    if (testInfo.attachments) {
+      const videoAttachment = testInfo.attachments.find(attachment => attachment.name === 'video');
+      if (videoAttachment && videoAttachment.path) {
+        const fs = await import('fs');
+        const path = await import('path');
+        
+        const timestamp = getTimestamp();
+        const videoName = `client-video_${timestamp}.mp4`;
+        const targetPath = path.join('test-results', videoName);
+        
+        try {
+          await fs.promises.copyFile(videoAttachment.path, targetPath);
+          console.log(`[DEBUG_LOG] Video saved to: ${targetPath}`);
+        } catch (error) {
+          console.log(`[DEBUG_LOG] Failed to copy video: ${error.message}`);
+        }
+      }
+    }
+
     if (page) {
       await page.close();
     }
@@ -122,6 +151,7 @@ test.describe("Client System Test - VAT Flow in Browser", () => {
 
   test.describe("Page Loading and Initial State", () => {
     test("should load the HTML page successfully", async () => {
+      const timestamp = getTimestamp();
       // Check that the page title is correct
       const title = await page.title();
       expect(title).toBe("DIY Accounting Submit");
@@ -134,7 +164,7 @@ test.describe("Client System Test - VAT Flow in Browser", () => {
       const form = page.locator("#vatSubmissionForm");
       await expect(form).toBeVisible();
 
-      await page.screenshot({ path: "test-results/client-initial-page.png" });
+      await page.screenshot({ path: `test-results/client-initial-page_${timestamp}.png` });
       await setTimeout(500);
 
       // Check that input fields have default values
@@ -156,6 +186,7 @@ test.describe("Client System Test - VAT Flow in Browser", () => {
 
   test.describe("Form Validation", () => {
     test("should validate empty VAT number", async () => {
+      const timestamp = getTimestamp();
       // Clear the VAT number field
       await page.locator("#vatNumber").fill("");
 
@@ -173,7 +204,7 @@ test.describe("Client System Test - VAT Flow in Browser", () => {
       const className = await statusMessage.getAttribute("class");
       expect(className).toContain("status-error");
 
-      await page.screenshot({ path: "test-results/client-validation-error.png" });
+      await page.screenshot({ path: `test-results/client-validation-error_${timestamp}.png` });
       await setTimeout(500);
     });
 
@@ -236,6 +267,7 @@ test.describe("Client System Test - VAT Flow in Browser", () => {
 
   test.describe("Loading States", () => {
     test("should show loading spinner during form submission", async () => {
+      const timestamp = getTimestamp();
       // Fill in valid form data
       await page.locator("#vatNumber").fill("123456789");
       await page.locator("#periodKey").fill("24A1");
@@ -254,7 +286,7 @@ test.describe("Client System Test - VAT Flow in Browser", () => {
       const submitBtn = page.locator("#submitBtn");
       await expect(submitBtn).toBeDisabled({ timeout: 1000 });
 
-      await page.screenshot({ path: "test-results/client-loading-state.png" });
+      await page.screenshot({ path: `test-results/client-loading-state_${timestamp}.png` });
       await setTimeout(500);
     });
   });
@@ -307,6 +339,7 @@ test.describe("Client System Test - VAT Flow in Browser", () => {
 
   test.describe("Receipt Display", () => {
     test("should format processing date correctly", async () => {
+      const timestamp = getTimestamp();
       const testDate = "2023-12-25T14:30:00.000Z";
 
       // Call displayReceipt function directly
@@ -327,7 +360,7 @@ test.describe("Client System Test - VAT Flow in Browser", () => {
       expect(processingDate).toContain("25 December 2023");
       expect(processingDate).toContain("14:30");
 
-      await page.screenshot({ path: "test-results/client-receipt-display.png", fullPage: true });
+      await page.screenshot({ path: `test-results/client-receipt-display_${timestamp}.png`, fullPage: true });
       await setTimeout(500);
     });
   });

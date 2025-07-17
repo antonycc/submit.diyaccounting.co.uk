@@ -5,6 +5,12 @@ import { setTimeout } from "timers/promises";
 
 let serverProcess;
 
+// Generate timestamp for file naming
+function getTimestamp() {
+  const now = new Date();
+  return now.toISOString().replace(/[:.]/g, '-').replace('T', '_').slice(0, -5);
+}
+
 test.beforeAll(async () => {
   // Start the server
   serverProcess = spawn("node", ["src/lib/server.js"], {
@@ -41,11 +47,38 @@ test.afterAll(async () => {
   }
 });
 
+test.afterEach(async ({ }, testInfo) => {
+  // Handle video file renaming and moving
+  if (testInfo.outputDir) {
+    const fs = await import('fs');
+    const path = await import('path');
+    
+    const timestamp = getTimestamp();
+    const videoName = `behaviour-video_${timestamp}.mp4`;
+    const targetPath = path.join('test-results', videoName);
+    
+    // Look for video file in the test output directory
+    try {
+      const videoPath = path.join(testInfo.outputDir, 'video.webm');
+      if (await fs.promises.access(videoPath).then(() => true).catch(() => false)) {
+        await fs.promises.copyFile(videoPath, targetPath);
+        console.log(`[DEBUG_LOG] Video saved to: ${targetPath}`);
+      }
+    } catch (error) {
+      console.log(`[DEBUG_LOG] Failed to copy video: ${error.message}`);
+    }
+  }
+});
+
 test.use({
-  video: "on",
+  video: {
+    mode: "on",
+    size: { width: 1280, height: 720 }
+  }
 });
 
 test("Submit VAT return end-to-end flow with browser emulation", async ({ page }) => {
+  const timestamp = getTimestamp();
   // Mock the API endpoints that the server will call
   await page.route("**/oauth/token", (route) => {
     route.fulfill({
@@ -83,7 +116,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
 
   // Wait for page to load completely
   await page.waitForLoadState("networkidle");
-  await page.screenshot({ path: "test-results/behaviour-initial.png" });
+  await page.screenshot({ path: `test-results/behaviour-initial_${timestamp}.png` });
   await setTimeout(500);
 
   // 2) Verify the form is present and fill it out with correct field IDs
@@ -94,7 +127,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   await page.fill("#periodKey", "24A1");
   await page.fill("#vatDue", "1000.00");
 
-  await page.screenshot({ path: "test-results/behaviour-form-filled.png" });
+  await page.screenshot({ path: `test-results/behaviour-form-filled_${timestamp}.png` });
   await setTimeout(500);
 
   // 3) Mock the token exchange endpoint
@@ -145,7 +178,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   // Submit the form - this will trigger the OAuth flow
   await page.click("#submitBtn");
 
-  await page.screenshot({ path: "test-results/behaviour-after-oauth.png" });
+  await page.screenshot({ path: `test-results/behaviour-after-oauth_${timestamp}.png` });
   await setTimeout(500);
 
   // 5) Wait for the submission process to complete and receipt to be displayed
@@ -167,7 +200,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   // Verify the form is hidden after successful submission
   await expect(page.locator("#vatForm")).toBeHidden();
 
-  await page.screenshot({ path: "test-results/behaviour-receipt.png", fullPage: true });
+  await page.screenshot({ path: `test-results/behaviour-receipt_${timestamp}.png`, fullPage: true });
   await setTimeout(500);
 
   console.log("[DEBUG_LOG] VAT submission flow completed successfully");

@@ -6,6 +6,21 @@ This project allows UK businesses to submit tax returns to HMRC under the Making
 
 ---
 
+## User Flow & Behaviour
+
+### Step 1: Initial Page Load
+
+Upon navigating to the application, the user is presented with a simple, pre-populated VAT submission form.
+**Fig. 1** (see below) shows the initial state.
+
+![Fig. 1: Initial VAT Submission Form](public/docs/behaviour-initial_2025-07-17_20-23-31.png)
+
+<figcaption><b>Fig. 1.</b> Initial state of the VAT submission form as rendered to the user. The form is pre-filled with example values, ready for editing.</figcaption>
+
+See the [User Guide](USERGUIDE.md) for more details on the user flow and behaviour.
+
+---
+
 # Build and run locally
 
 ## Clone the Repository
