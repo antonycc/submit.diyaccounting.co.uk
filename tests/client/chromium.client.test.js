@@ -11,13 +11,6 @@ function getTimestamp() {
   return now.toISOString().replace(/[:.]/g, '-').replace('T', '_').slice(0, -5);
 }
 
-test.use({
-  video: {
-    mode: "on",
-    size: { width: 1280, height: 720 }
-  }
-});
-
 //test.describe("Client System Test - VAT Flow in Browser", () => {
   let browser;
   let context;
@@ -150,7 +143,15 @@ test.use({
     }
   });
 
-  test.describe("Page Loading and Initial State", () => {
+  //test.describe("Page Loading and Initial State", () => {
+
+test.use({
+  video: {
+    mode: "on",
+    size: { width: 1280, height: 720 }
+  }
+});
+
     test("should load the HTML page successfully", async () => {
       const timestamp = getTimestamp();
       // Check that the page title is correct
@@ -183,9 +184,17 @@ test.use({
       const receiptDisplay = page.locator("#receiptDisplay");
       await expect(receiptDisplay).toBeHidden();
     });
-  });
+  //});
 
-  test.describe("Form Validation", () => {
+  //test.describe("Form Validation", () => {
+
+test.use({
+  video: {
+    mode: "on",
+    size: { width: 1280, height: 720 }
+  }
+});
+
     test("should validate empty VAT number", async () => {
       const timestamp = getTimestamp();
       // Clear the VAT number field
@@ -209,6 +218,13 @@ test.use({
       await page.screenshot({ path: `client-test-results/client-validation-error_${timestamp}.png` });
       await setTimeout(500);
     });
+
+test.use({
+  video: {
+    mode: "on",
+    size: { width: 1280, height: 720 }
+  }
+});
 
     test("should validate invalid VAT number format", async () => {
       // Enter invalid VAT number (too short)
@@ -241,7 +257,7 @@ test.use({
       const statusText = await statusMessage.textContent();
       expect(statusText).toBe("VAT due cannot be negative.");
     });
-  });
+  //});
 
   test.describe("Input Field Behavior", () => {
     test("should only allow digits in VAT number field", async () => {
