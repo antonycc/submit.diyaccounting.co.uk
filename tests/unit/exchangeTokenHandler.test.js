@@ -3,7 +3,7 @@ import { exchangeTokenHandler } from "@src/lib/main.js";
 
 // Mock node-fetch
 vi.mock("node-fetch", () => ({
-  default: vi.fn()
+  default: vi.fn(),
 }));
 
 import fetch from "node-fetch";
@@ -16,7 +16,7 @@ describe("exchangeTokenHandler", () => {
       ...originalEnv,
       HMRC_CLIENT_ID: "test-client-id",
       HMRC_CLIENT_SECRET: "test-client-secret",
-      REDIRECT_URI: "https://example.com/callback"
+      REDIRECT_URI: "https://example.com/callback",
     };
     vi.clearAllMocks();
   });
@@ -29,16 +29,16 @@ describe("exchangeTokenHandler", () => {
     const mockResponse = {
       access_token: "test-access-token",
       token_type: "Bearer",
-      expires_in: 3600
+      expires_in: 3600,
     };
 
     fetch.mockResolvedValueOnce({
       ok: true,
-      json: () => Promise.resolve(mockResponse)
+      json: () => Promise.resolve(mockResponse),
     });
 
     const event = {
-      body: JSON.stringify({ code: "test-auth-code" })
+      body: JSON.stringify({ code: "test-auth-code" }),
     };
 
     const result = await exchangeTokenHandler(event);
@@ -48,14 +48,11 @@ describe("exchangeTokenHandler", () => {
     expect(body.accessToken).toBe("test-access-token");
 
     // Verify fetch was called with correct parameters
-    expect(fetch).toHaveBeenCalledWith(
-      "https://api.service.hmrc.gov.uk/oauth/token",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: expect.any(URLSearchParams)
-      }
-    );
+    expect(fetch).toHaveBeenCalledWith("https://api.service.hmrc.gov.uk/oauth/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: expect.any(URLSearchParams),
+    });
 
     // Verify the URLSearchParams contains correct data
     const fetchCall = fetch.mock.calls[0];
@@ -69,7 +66,7 @@ describe("exchangeTokenHandler", () => {
 
   test("should return 400 when code is missing", async () => {
     const event = {
-      body: JSON.stringify({})
+      body: JSON.stringify({}),
     };
 
     const result = await exchangeTokenHandler(event);
@@ -82,7 +79,7 @@ describe("exchangeTokenHandler", () => {
 
   test("should return 400 when body is empty", async () => {
     const event = {
-      body: ""
+      body: "",
     };
 
     const result = await exchangeTokenHandler(event);
@@ -95,7 +92,7 @@ describe("exchangeTokenHandler", () => {
 
   test("should return 400 when body is null", async () => {
     const event = {
-      body: null
+      body: null,
     };
 
     const result = await exchangeTokenHandler(event);
@@ -108,7 +105,7 @@ describe("exchangeTokenHandler", () => {
 
   test("should return 400 when code is empty string", async () => {
     const event = {
-      body: JSON.stringify({ code: "" })
+      body: JSON.stringify({ code: "" }),
     };
 
     const result = await exchangeTokenHandler(event);
@@ -121,15 +118,15 @@ describe("exchangeTokenHandler", () => {
 
   test("should handle HMRC API error response", async () => {
     const errorMessage = "invalid_grant";
-    
+
     fetch.mockResolvedValueOnce({
       ok: false,
       status: 400,
-      text: () => Promise.resolve(errorMessage)
+      text: () => Promise.resolve(errorMessage),
     });
 
     const event = {
-      body: JSON.stringify({ code: "invalid-code" })
+      body: JSON.stringify({ code: "invalid-code" }),
     };
 
     const result = await exchangeTokenHandler(event);
@@ -141,15 +138,15 @@ describe("exchangeTokenHandler", () => {
 
   test("should handle HMRC API 401 unauthorized", async () => {
     const errorMessage = "unauthorized_client";
-    
+
     fetch.mockResolvedValueOnce({
       ok: false,
       status: 401,
-      text: () => Promise.resolve(errorMessage)
+      text: () => Promise.resolve(errorMessage),
     });
 
     const event = {
-      body: JSON.stringify({ code: "test-code" })
+      body: JSON.stringify({ code: "test-code" }),
     };
 
     const result = await exchangeTokenHandler(event);
@@ -161,7 +158,7 @@ describe("exchangeTokenHandler", () => {
 
   test("should handle malformed JSON in request body", async () => {
     const event = {
-      body: "invalid-json"
+      body: "invalid-json",
     };
 
     // This should throw an error when parsing JSON
@@ -172,7 +169,7 @@ describe("exchangeTokenHandler", () => {
     fetch.mockRejectedValueOnce(new Error("Network error"));
 
     const event = {
-      body: JSON.stringify({ code: "test-code" })
+      body: JSON.stringify({ code: "test-code" }),
     };
 
     await expect(exchangeTokenHandler(event)).rejects.toThrow("Network error");

@@ -3,7 +3,7 @@ import { submitVatHandler } from "@src/lib/main.js";
 
 // Mock node-fetch
 vi.mock("node-fetch", () => ({
-  default: vi.fn()
+  default: vi.fn(),
 }));
 
 import fetch from "node-fetch";
@@ -17,12 +17,12 @@ describe("submitVatHandler", () => {
     const mockReceipt = {
       formBundleNumber: "123456789012",
       chargeRefNumber: "XM002610011594",
-      processingDate: "2023-01-01T12:00:00.000Z"
+      processingDate: "2023-01-01T12:00:00.000Z",
     };
 
     fetch.mockResolvedValueOnce({
       ok: true,
-      json: () => Promise.resolve(mockReceipt)
+      json: () => Promise.resolve(mockReceipt),
     });
 
     const event = {
@@ -30,8 +30,8 @@ describe("submitVatHandler", () => {
         vatNumber: "123456789",
         periodKey: "23A1",
         vatDue: "1000.50",
-        accessToken: "test-access-token"
-      })
+        accessToken: "test-access-token",
+      }),
     };
 
     const result = await submitVatHandler(event);
@@ -41,29 +41,26 @@ describe("submitVatHandler", () => {
     expect(body).toEqual(mockReceipt);
 
     // Verify fetch was called with correct parameters
-    expect(fetch).toHaveBeenCalledWith(
-      "https://api.service.hmrc.gov.uk/organisations/vat/123456789/returns",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: "Bearer test-access-token"
-        },
-        body: JSON.stringify({
-          periodKey: "23A1",
-          vatDueSales: 1000.5,
-          vatDueAcquisitions: 0,
-          totalVatDue: 1000.5,
-          vatReclaimedCurrPeriod: 0,
-          netVatDue: 1000.5,
-          totalValueSalesExVAT: 0,
-          totalValuePurchasesExVAT: 0,
-          totalValueGoodsSuppliedExVAT: 0,
-          totalAcquisitionsExVAT: 0,
-          finalised: true
-        })
-      }
-    );
+    expect(fetch).toHaveBeenCalledWith("https://api.service.hmrc.gov.uk/organisations/vat/123456789/returns", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer test-access-token",
+      },
+      body: JSON.stringify({
+        periodKey: "23A1",
+        vatDueSales: 1000.5,
+        vatDueAcquisitions: 0,
+        totalVatDue: 1000.5,
+        vatReclaimedCurrPeriod: 0,
+        netVatDue: 1000.5,
+        totalValueSalesExVAT: 0,
+        totalValuePurchasesExVAT: 0,
+        totalValueGoodsSuppliedExVAT: 0,
+        totalAcquisitionsExVAT: 0,
+        finalised: true,
+      }),
+    });
   });
 
   test("should return 400 when vatNumber is missing", async () => {
@@ -71,8 +68,8 @@ describe("submitVatHandler", () => {
       body: JSON.stringify({
         periodKey: "23A1",
         vatDue: "1000.50",
-        accessToken: "test-access-token"
-      })
+        accessToken: "test-access-token",
+      }),
     };
 
     const result = await submitVatHandler(event);
@@ -88,8 +85,8 @@ describe("submitVatHandler", () => {
       body: JSON.stringify({
         vatNumber: "123456789",
         vatDue: "1000.50",
-        accessToken: "test-access-token"
-      })
+        accessToken: "test-access-token",
+      }),
     };
 
     const result = await submitVatHandler(event);
@@ -105,8 +102,8 @@ describe("submitVatHandler", () => {
       body: JSON.stringify({
         vatNumber: "123456789",
         periodKey: "23A1",
-        accessToken: "test-access-token"
-      })
+        accessToken: "test-access-token",
+      }),
     };
 
     const result = await submitVatHandler(event);
@@ -122,8 +119,8 @@ describe("submitVatHandler", () => {
       body: JSON.stringify({
         vatNumber: "123456789",
         periodKey: "23A1",
-        vatDue: "1000.50"
-      })
+        vatDue: "1000.50",
+      }),
     };
 
     const result = await submitVatHandler(event);
@@ -136,7 +133,7 @@ describe("submitVatHandler", () => {
 
   test("should return 400 when all parameters are missing", async () => {
     const event = {
-      body: JSON.stringify({})
+      body: JSON.stringify({}),
     };
 
     const result = await submitVatHandler(event);
@@ -149,7 +146,7 @@ describe("submitVatHandler", () => {
 
   test("should return 400 when body is empty", async () => {
     const event = {
-      body: ""
+      body: "",
     };
 
     const result = await submitVatHandler(event);
@@ -162,7 +159,7 @@ describe("submitVatHandler", () => {
 
   test("should return 400 when body is null", async () => {
     const event = {
-      body: null
+      body: null,
     };
 
     const result = await submitVatHandler(event);
@@ -179,8 +176,8 @@ describe("submitVatHandler", () => {
         vatNumber: "",
         periodKey: "",
         vatDue: "",
-        accessToken: ""
-      })
+        accessToken: "",
+      }),
     };
 
     const result = await submitVatHandler(event);
@@ -193,11 +190,11 @@ describe("submitVatHandler", () => {
 
   test("should handle HMRC API error response", async () => {
     const errorMessage = "INVALID_VAT_NUMBER";
-    
+
     fetch.mockResolvedValueOnce({
       ok: false,
       status: 400,
-      text: () => Promise.resolve(errorMessage)
+      text: () => Promise.resolve(errorMessage),
     });
 
     const event = {
@@ -205,8 +202,8 @@ describe("submitVatHandler", () => {
         vatNumber: "invalid",
         periodKey: "23A1",
         vatDue: "1000.50",
-        accessToken: "test-access-token"
-      })
+        accessToken: "test-access-token",
+      }),
     };
 
     const result = await submitVatHandler(event);
@@ -218,11 +215,11 @@ describe("submitVatHandler", () => {
 
   test("should handle HMRC API 401 unauthorized", async () => {
     const errorMessage = "INVALID_CREDENTIALS";
-    
+
     fetch.mockResolvedValueOnce({
       ok: false,
       status: 401,
-      text: () => Promise.resolve(errorMessage)
+      text: () => Promise.resolve(errorMessage),
     });
 
     const event = {
@@ -230,8 +227,8 @@ describe("submitVatHandler", () => {
         vatNumber: "123456789",
         periodKey: "23A1",
         vatDue: "1000.50",
-        accessToken: "invalid-token"
-      })
+        accessToken: "invalid-token",
+      }),
     };
 
     const result = await submitVatHandler(event);
@@ -246,7 +243,7 @@ describe("submitVatHandler", () => {
 
     fetch.mockResolvedValueOnce({
       ok: true,
-      json: () => Promise.resolve(mockReceipt)
+      json: () => Promise.resolve(mockReceipt),
     });
 
     const event = {
@@ -254,8 +251,8 @@ describe("submitVatHandler", () => {
         vatNumber: "123456789",
         periodKey: "23A1",
         vatDue: "1500.75",
-        accessToken: "test-access-token"
-      })
+        accessToken: "test-access-token",
+      }),
     };
 
     const result = await submitVatHandler(event);
@@ -275,7 +272,7 @@ describe("submitVatHandler", () => {
 
     fetch.mockResolvedValueOnce({
       ok: true,
-      json: () => Promise.resolve(mockReceipt)
+      json: () => Promise.resolve(mockReceipt),
     });
 
     const event = {
@@ -283,8 +280,8 @@ describe("submitVatHandler", () => {
         vatNumber: "123456789",
         periodKey: "23A1",
         vatDue: 2000.25,
-        accessToken: "test-access-token"
-      })
+        accessToken: "test-access-token",
+      }),
     };
 
     const result = await submitVatHandler(event);
@@ -301,7 +298,7 @@ describe("submitVatHandler", () => {
 
   test("should handle malformed JSON in request body", async () => {
     const event = {
-      body: "invalid-json"
+      body: "invalid-json",
     };
 
     await expect(submitVatHandler(event)).rejects.toThrow();
@@ -315,8 +312,8 @@ describe("submitVatHandler", () => {
         vatNumber: "123456789",
         periodKey: "23A1",
         vatDue: "1000.50",
-        accessToken: "test-access-token"
-      })
+        accessToken: "test-access-token",
+      }),
     };
 
     await expect(submitVatHandler(event)).rejects.toThrow("Network error");
