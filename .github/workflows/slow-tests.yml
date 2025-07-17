@@ -60,6 +60,14 @@ jobs:
 
       - run: npm run test:coverage
 
+      - name: Upload coverage reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-reports-slow
+          path: coverage/
+          retention-days: 30
+
   npm-integration-test:
     name: 'npm integration test with coverage'
     runs-on: ubuntu-latest
@@ -114,6 +122,14 @@ jobs:
 
       - run: npm run test:all
 
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-all
+          path: test-results/
+          retention-days: 30
+
   npm-client-test:
     name: 'npm client test'
     runs-on: ubuntu-latest
@@ -134,6 +150,14 @@ jobs:
 
       - run: npm run test:client
 
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-client-slow
+          path: test-results/
+          retention-days: 30
+
   npm-behaviour-test:
     name: 'npm behaviour test'
     runs-on: ubuntu-latest
@@ -153,3 +177,11 @@ jobs:
       - run: npx playwright install --with-deps
 
       - run: npm run test:behaviour
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-behaviour
+          path: test-results/
+          retention-days: 30

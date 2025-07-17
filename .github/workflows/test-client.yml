@@ -1,6 +1,6 @@
 # .github/workflows/test-client.yml
 
-name: test
+name: test client
 run-name: 'test client [${{ github.ref_name }}] [${{ github.event.head_commit.message }}]'
 
 on:
@@ -36,3 +36,11 @@ jobs:
       - run: npx playwright install --with-deps
 
       - run: npm run test:client
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-client
+          path: test-results/
+          retention-days: 30

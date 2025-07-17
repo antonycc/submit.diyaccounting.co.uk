@@ -73,6 +73,14 @@ jobs:
 
       - run: npm run test:coverage
 
+      - name: Upload coverage reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-reports-services
+          path: coverage/
+          retention-days: 30
+
   npm-integration-test:
     name: 'npm integration test'
     runs-on: ubuntu-latest
