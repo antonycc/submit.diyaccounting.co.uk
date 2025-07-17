@@ -9,7 +9,7 @@ on:
       - main
     paths:
       - 'public/**'
-      - 'tests/client'
+      - 'tests/client/**'
       - 'aws/**'
       - '.m2/**'
       - 'mvnw'
