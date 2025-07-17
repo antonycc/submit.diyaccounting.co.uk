@@ -84,6 +84,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   // Wait for page to load completely
   await page.waitForLoadState("networkidle");
   await page.screenshot({ path: "test-results/behaviour-initial.png" });
+  await setTimeout(500);
 
   // 2) Verify the form is present and fill it out with correct field IDs
   await expect(page.locator("#vatSubmissionForm")).toBeVisible();
@@ -94,6 +95,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   await page.fill("#vatDue", "1000.00");
 
   await page.screenshot({ path: "test-results/behaviour-form-filled.png" });
+  await setTimeout(500);
 
   // 3) Mock the token exchange endpoint
   await page.route("**/api/exchange-token", (route) => {
@@ -144,6 +146,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   await page.click("#submitBtn");
 
   await page.screenshot({ path: "test-results/behaviour-after-oauth.png" });
+  await setTimeout(500);
 
   // 5) Wait for the submission process to complete and receipt to be displayed
   await page.waitForSelector("#receiptDisplay", { state: "visible", timeout: 15000 });
@@ -165,6 +168,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   await expect(page.locator("#vatForm")).toBeHidden();
 
   await page.screenshot({ path: "test-results/behaviour-receipt.png", fullPage: true });
+  await setTimeout(500);
 
   console.log("[DEBUG_LOG] VAT submission flow completed successfully");
 });

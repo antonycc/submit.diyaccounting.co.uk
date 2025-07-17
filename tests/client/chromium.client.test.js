@@ -3,6 +3,11 @@
 import { test, expect, chromium } from "@playwright/test";
 import fs from "fs";
 import path from "path";
+import { setTimeout } from "timers/promises";
+
+test.use({
+  video: "on",
+});
 
 test.describe("Client System Test - VAT Flow in Browser", () => {
   let browser;
@@ -129,6 +134,9 @@ test.describe("Client System Test - VAT Flow in Browser", () => {
       const form = page.locator("#vatSubmissionForm");
       await expect(form).toBeVisible();
 
+      await page.screenshot({ path: "test-results/client-initial-page.png" });
+      await setTimeout(500);
+
       // Check that input fields have default values
       const vatNumber = await page.locator("#vatNumber").inputValue();
       expect(vatNumber).toBe("123456789");
@@ -164,6 +172,9 @@ test.describe("Client System Test - VAT Flow in Browser", () => {
       // Check that the message has error styling
       const className = await statusMessage.getAttribute("class");
       expect(className).toContain("status-error");
+
+      await page.screenshot({ path: "test-results/client-validation-error.png" });
+      await setTimeout(500);
     });
 
     test("should validate invalid VAT number format", async () => {
@@ -242,6 +253,9 @@ test.describe("Client System Test - VAT Flow in Browser", () => {
       // Check that submit button is disabled
       const submitBtn = page.locator("#submitBtn");
       await expect(submitBtn).toBeDisabled({ timeout: 1000 });
+
+      await page.screenshot({ path: "test-results/client-loading-state.png" });
+      await setTimeout(500);
     });
   });
 
@@ -312,6 +326,9 @@ test.describe("Client System Test - VAT Flow in Browser", () => {
       const processingDate = await page.locator("#processingDate").textContent();
       expect(processingDate).toContain("25 December 2023");
       expect(processingDate).toContain("14:30");
+
+      await page.screenshot({ path: "test-results/client-receipt-display.png", fullPage: true });
+      await setTimeout(500);
     });
   });
 });
