@@ -1,369 +1,321 @@
 // tests/integration/server.integration.test.js
-import { describe, beforeAll, afterAll, beforeEach, afterEach, it, expect, vi } from 'vitest';
-import { setupServer } from 'msw/node';
-import { http, HttpResponse } from 'msw';
-import { mockClient } from 'aws-sdk-client-mock';
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
-import request from 'supertest';
-import express from 'express';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import { describe, beforeAll, afterAll, beforeEach, afterEach, it, expect, vi } from "vitest";
+import { setupServer } from "msw/node";
+import { http, HttpResponse } from "msw";
+import { mockClient } from "aws-sdk-client-mock";
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import request from "supertest";
+import express from "express";
+import path from "path";
+import { fileURLToPath } from "url";
 
 // Import the actual handlers (not mocked for integration test)
-import {
-    authUrlHandler,
-    exchangeTokenHandler,
-    submitVatHandler,
-    logReceiptHandler
-} from '@src/lib/main.js';
+import { authUrlHandler, exchangeTokenHandler, submitVatHandler, logReceiptHandler } from "@src/lib/main.js";
 
-const HMRC = 'https://api.service.hmrc.gov.uk';
+const HMRC = "https://api.service.hmrc.gov.uk";
 const s3Mock = mockClient(S3Client);
 
 // Setup MSW server to mock external HTTP calls
 const server = setupServer(
-    // Mock HMRC token exchange
-    http.post(`${HMRC}/oauth/token`, async ({ request }) => {
-        const formData = await request.formData();
-        const grantType = formData.get('grant_type');
-        const code = formData.get('code');
-        
-        if (grantType === 'authorization_code' && code) {
-            return HttpResponse.json(
-                { access_token: 'mocked-access-token' },
-                { status: 200 }
-            );
-        }
-        return HttpResponse.json(
-            { error: 'invalid_request' },
-            { status: 400 }
-        );
-    }),
+  // Mock HMRC token exchange
+  http.post(`${HMRC}/oauth/token`, async ({ request }) => {
+    const formData = await request.formData();
+    const grantType = formData.get("grant_type");
+    const code = formData.get("code");
 
-    // Mock HMRC VAT submission
-    http.post(`${HMRC}/organisations/vat/:vatNumber/returns`, async ({ params, request }) => {
-        const vatNumber = params.vatNumber;
-        const body = await request.json();
-        const authHeader = request.headers.get('authorization');
-        
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
-            return HttpResponse.json(
-                { error: 'Unauthorized' },
-                { status: 401 }
-            );
-        }
-        
-        if (body.finalised && body.periodKey) {
-            return HttpResponse.json(
-                { 
-                    formBundleNumber: 'mocked-bundle-12345',
-                    chargeRefNumber: 'mocked-charge-ref',
-                    processingDate: '2025-07-15T23:40:00Z'
-                },
-                { status: 200 }
-            );
-        }
-        
-        return HttpResponse.json(
-            { error: 'Bad Request' },
-            { status: 400 }
-        );
-    })
+    if (grantType === "authorization_code" && code) {
+      return HttpResponse.json({ access_token: "mocked-access-token" }, { status: 200 });
+    }
+    return HttpResponse.json({ error: "invalid_request" }, { status: 400 });
+  }),
+
+  // Mock HMRC VAT submission
+  http.post(`${HMRC}/organisations/vat/:vatNumber/returns`, async ({ params, request }) => {
+    const vatNumber = params.vatNumber;
+    const body = await request.json();
+    const authHeader = request.headers.get("authorization");
+
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return HttpResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    if (body.finalised && body.periodKey) {
+      return HttpResponse.json(
+        {
+          formBundleNumber: "mocked-bundle-12345",
+          chargeRefNumber: "mocked-charge-ref",
+          processingDate: "2025-07-15T23:40:00Z",
+        },
+        { status: 200 },
+      );
+    }
+
+    return HttpResponse.json({ error: "Bad Request" }, { status: 400 });
+  }),
 );
 
-describe('Integration – Server Express App', () => {
-    let app;
-    const __dirname = path.dirname(fileURLToPath(import.meta.url));
+describe("Integration – Server Express App", () => {
+  let app;
+  const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-    beforeAll(() => {
-        server.listen({ 
-            onUnhandledRequest: 'bypass'
-        });
-        console.log('[DEBUG_LOG] MSW server started for integration tests');
+  beforeAll(() => {
+    server.listen({
+      onUnhandledRequest: "bypass",
+    });
+    console.log("[DEBUG_LOG] MSW server started for integration tests");
+  });
+
+  afterAll(() => {
+    server.close();
+    console.log("[DEBUG_LOG] MSW server closed");
+  });
+
+  beforeEach(() => {
+    vi.resetAllMocks();
+
+    // Set up test environment variables
+    process.env = {
+      ...process.env,
+      HMRC_CLIENT_ID: "integration-test-client-id",
+      HMRC_CLIENT_SECRET: "integration-test-secret",
+      REDIRECT_URI: "https://submit.diyaccounting.co.uk/callback",
+      RECEIPTS_BUCKET: "integration-test-bucket",
+      PORT: "3001",
+    };
+
+    s3Mock.reset();
+
+    // Create Express app exactly like server.js
+    app = express();
+    app.use(express.json());
+    app.use(express.static(path.join(__dirname, "../../src/lib/public")));
+
+    // Wire the API routes exactly like server.js
+    app.get("/api/auth-url", async (req, res) => {
+      const event = { queryStringParameters: { state: req.query.state } };
+      const { statusCode, body } = await authUrlHandler(event);
+      res.status(statusCode).json(JSON.parse(body));
     });
 
-    afterAll(() => {
-        server.close();
-        console.log('[DEBUG_LOG] MSW server closed');
+    app.post("/api/exchange-token", async (req, res) => {
+      const event = { body: JSON.stringify(req.body) };
+      const { statusCode, body } = await exchangeTokenHandler(event);
+      res.status(statusCode).json(JSON.parse(body));
     });
 
-    beforeEach(() => {
-        vi.resetAllMocks();
-        
-        // Set up test environment variables
-        process.env = {
-            ...process.env,
-            HMRC_CLIENT_ID: 'integration-test-client-id',
-            HMRC_CLIENT_SECRET: 'integration-test-secret',
-            REDIRECT_URI: 'https://submit.diyaccounting.co.uk/callback',
-            RECEIPTS_BUCKET: 'integration-test-bucket',
-            PORT: '3001'
-        };
-        
-        s3Mock.reset();
-        
-        // Create Express app exactly like server.js
-        app = express();
-        app.use(express.json());
-        app.use(express.static(path.join(__dirname, '../../src/lib/public')));
-
-        // Wire the API routes exactly like server.js
-        app.get('/api/auth-url', async (req, res) => {
-            const event = { queryStringParameters: { state: req.query.state } };
-            const { statusCode, body } = await authUrlHandler(event);
-            res.status(statusCode).json(JSON.parse(body));
-        });
-
-        app.post('/api/exchange-token', async (req, res) => {
-            const event = { body: JSON.stringify(req.body) };
-            const { statusCode, body } = await exchangeTokenHandler(event);
-            res.status(statusCode).json(JSON.parse(body));
-        });
-
-        app.post('/api/submit-vat', async (req, res) => {
-            const event = { body: JSON.stringify(req.body) };
-            const { statusCode, body } = await submitVatHandler(event);
-            res.status(statusCode).json(JSON.parse(body));
-        });
-
-        app.post('/api/log-receipt', async (req, res) => {
-            const event = { body: JSON.stringify(req.body) };
-            const { statusCode, body } = await logReceiptHandler(event);
-            res.status(statusCode).json(JSON.parse(body));
-        });
-
-        // Fallback to index.html for SPA routing
-        app.get('*', (req, res) => {
-            res.sendFile(path.join(__dirname, '../../src/lib/public/index.html'));
-        });
+    app.post("/api/submit-vat", async (req, res) => {
+      const event = { body: JSON.stringify(req.body) };
+      const { statusCode, body } = await submitVatHandler(event);
+      res.status(statusCode).json(JSON.parse(body));
     });
 
-    afterEach(() => {
-        s3Mock.restore();
+    app.post("/api/log-receipt", async (req, res) => {
+      const event = { body: JSON.stringify(req.body) };
+      const { statusCode, body } = await logReceiptHandler(event);
+      res.status(statusCode).json(JSON.parse(body));
     });
 
-    describe('Auth Flow Integration', () => {
-        it('should generate auth URL through Express endpoint', async () => {
-            const response = await request(app)
-                .get('/api/auth-url')
-                .query({ state: 'integration-test-state' })
-                .expect(200);
+    // Fallback to index.html for SPA routing
+    app.get("*", (req, res) => {
+      res.sendFile(path.join(__dirname, "../../src/lib/public/index.html"));
+    });
+  });
 
-            console.log('[DEBUG_LOG] Auth URL response:', response.body);
-            
-            expect(response.body).toHaveProperty('authUrl');
-            expect(response.body.authUrl).toContain('response_type=code');
-            expect(response.body.authUrl).toContain('client_id=integration-test-client-id');
-            expect(response.body.authUrl).toContain('state=integration-test-state');
-            expect(response.body.authUrl).toContain('redirect_uri=https%3A%2F%2Fsubmit.diyaccounting.co.uk%2Fcallback');
-        });
+  afterEach(() => {
+    s3Mock.restore();
+  });
 
-        it('should exchange token through Express endpoint', async () => {
-            const response = await request(app)
-                .post('/api/exchange-token')
-                .send({ code: 'integration-test-code' })
-                .expect(200);
+  describe("Auth Flow Integration", () => {
+    it("should generate auth URL through Express endpoint", async () => {
+      const response = await request(app).get("/api/auth-url").query({ state: "integration-test-state" }).expect(200);
 
-            console.log('[DEBUG_LOG] Token exchange response:', response.body);
-            
-            expect(response.body).toHaveProperty('accessToken');
-            expect(response.body.accessToken).toBe('mocked-access-token');
-        });
+      console.log("[DEBUG_LOG] Auth URL response:", response.body);
 
-        it('should handle missing state in auth URL', async () => {
-            const response = await request(app)
-                .get('/api/auth-url')
-                .expect(400);
-
-            expect(response.body).toHaveProperty('error');
-            expect(response.body.error).toBe('Missing state');
-        });
-
-        it('should handle missing code in token exchange', async () => {
-            const response = await request(app)
-                .post('/api/exchange-token')
-                .send({})
-                .expect(400);
-
-            expect(response.body).toHaveProperty('error');
-            expect(response.body.error).toBe('Missing code');
-        });
+      expect(response.body).toHaveProperty("authUrl");
+      expect(response.body.authUrl).toContain("response_type=code");
+      expect(response.body.authUrl).toContain("client_id=integration-test-client-id");
+      expect(response.body.authUrl).toContain("state=integration-test-state");
+      expect(response.body.authUrl).toContain("redirect_uri=https%3A%2F%2Fsubmit.diyaccounting.co.uk%2Fcallback");
     });
 
-    describe('VAT Submission Integration', () => {
-        it('should submit VAT return through Express endpoint', async () => {
-            const vatData = {
-                vatNumber: '123456789',
-                periodKey: '18A1',
-                vatDue: '150.00',
-                accessToken: 'mocked-access-token'
-            };
+    it("should exchange token through Express endpoint", async () => {
+      const response = await request(app)
+        .post("/api/exchange-token")
+        .send({ code: "integration-test-code" })
+        .expect(200);
 
-            const response = await request(app)
-                .post('/api/submit-vat')
-                .send(vatData)
-                .expect(200);
+      console.log("[DEBUG_LOG] Token exchange response:", response.body);
 
-            console.log('[DEBUG_LOG] VAT submission response:', response.body);
-            
-            expect(response.body).toHaveProperty('formBundleNumber');
-            expect(response.body.formBundleNumber).toBe('mocked-bundle-12345');
-            expect(response.body).toHaveProperty('chargeRefNumber');
-            expect(response.body).toHaveProperty('processingDate');
-        });
-
-        it('should handle missing VAT parameters', async () => {
-            const response = await request(app)
-                .post('/api/submit-vat')
-                .send({ vatNumber: '123456789' })
-                .expect(400);
-
-            expect(response.body).toHaveProperty('error');
-            expect(response.body.error).toBe('Missing parameters');
-        });
+      expect(response.body).toHaveProperty("accessToken");
+      expect(response.body.accessToken).toBe("mocked-access-token");
     });
 
-    describe('Receipt Logging Integration', () => {
-        it('should log receipt through Express endpoint', async () => {
-            // Mock successful S3 put
-            s3Mock.on(PutObjectCommand).resolves({});
+    it("should handle missing state in auth URL", async () => {
+      const response = await request(app).get("/api/auth-url").expect(400);
 
-            const receiptData = {
-                formBundleNumber: 'test-bundle-123',
-                chargeRefNumber: 'test-charge-ref',
-                processingDate: '2025-07-15T23:40:00Z'
-            };
-
-            const response = await request(app)
-                .post('/api/log-receipt')
-                .send(receiptData)
-                .expect(200);
-
-            console.log('[DEBUG_LOG] Receipt logging response:', response.body);
-            
-            expect(response.body).toHaveProperty('status');
-            expect(response.body.status).toBe('receipt logged');
-
-            // Verify S3 was called correctly
-            expect(s3Mock.calls()).toHaveLength(1);
-            const s3Call = s3Mock.calls()[0];
-            expect(s3Call.args[0].input).toMatchObject({
-                Bucket: 'integration-test-bucket',
-                Key: 'receipts/test-bundle-123.json',
-                ContentType: 'application/json'
-            });
-        });
-
-        it('should handle S3 errors in receipt logging', async () => {
-            // Mock S3 error
-            s3Mock.on(PutObjectCommand).rejects(new Error('S3 connection failed'));
-
-            const receiptData = {
-                formBundleNumber: 'test-bundle-456'
-            };
-
-            const response = await request(app)
-                .post('/api/log-receipt')
-                .send(receiptData)
-                .expect(500);
-
-            expect(response.body).toHaveProperty('error');
-            expect(response.body.error).toBe('Failed to log receipt');
-            expect(response.body).toHaveProperty('details');
-        });
+      expect(response.body).toHaveProperty("error");
+      expect(response.body.error).toBe("Missing state");
     });
 
-    describe('Static File Serving', () => {
-        it('should serve static files from public directory', async () => {
-            // Test that static file middleware is configured
-            const response = await request(app).get('/favicon.ico');
-            // Should either serve the file (200) or return 404 if not found
-            expect([200, 404]).toContain(response.status);
-        });
+    it("should handle missing code in token exchange", async () => {
+      const response = await request(app).post("/api/exchange-token").send({}).expect(400);
+
+      expect(response.body).toHaveProperty("error");
+      expect(response.body.error).toBe("Missing code");
+    });
+  });
+
+  describe("VAT Submission Integration", () => {
+    it("should submit VAT return through Express endpoint", async () => {
+      const vatData = {
+        vatNumber: "123456789",
+        periodKey: "18A1",
+        vatDue: "150.00",
+        accessToken: "mocked-access-token",
+      };
+
+      const response = await request(app).post("/api/submit-vat").send(vatData).expect(200);
+
+      console.log("[DEBUG_LOG] VAT submission response:", response.body);
+
+      expect(response.body).toHaveProperty("formBundleNumber");
+      expect(response.body.formBundleNumber).toBe("mocked-bundle-12345");
+      expect(response.body).toHaveProperty("chargeRefNumber");
+      expect(response.body).toHaveProperty("processingDate");
     });
 
-    describe('SPA Fallback', () => {
-        it('should serve index.html for unknown routes', async () => {
-            const response = await request(app).get('/unknown-spa-route');
-            // Should either serve index.html (200) or return 404 if file doesn't exist
-            expect([200, 404]).toContain(response.status);
-        });
+    it("should handle missing VAT parameters", async () => {
+      const response = await request(app).post("/api/submit-vat").send({ vatNumber: "123456789" }).expect(400);
 
-        it('should serve index.html for nested SPA routes', async () => {
-            const response = await request(app).get('/dashboard/vat/submit');
-            expect([200, 404]).toContain(response.status);
-        });
+      expect(response.body).toHaveProperty("error");
+      expect(response.body.error).toBe("Missing parameters");
+    });
+  });
+
+  describe("Receipt Logging Integration", () => {
+    it("should log receipt through Express endpoint", async () => {
+      // Mock successful S3 put
+      s3Mock.on(PutObjectCommand).resolves({});
+
+      const receiptData = {
+        formBundleNumber: "test-bundle-123",
+        chargeRefNumber: "test-charge-ref",
+        processingDate: "2025-07-15T23:40:00Z",
+      };
+
+      const response = await request(app).post("/api/log-receipt").send(receiptData).expect(200);
+
+      console.log("[DEBUG_LOG] Receipt logging response:", response.body);
+
+      expect(response.body).toHaveProperty("status");
+      expect(response.body.status).toBe("receipt logged");
+
+      // Verify S3 was called correctly
+      expect(s3Mock.calls()).toHaveLength(1);
+      const s3Call = s3Mock.calls()[0];
+      expect(s3Call.args[0].input).toMatchObject({
+        Bucket: "integration-test-bucket",
+        Key: "receipts/test-bundle-123.json",
+        ContentType: "application/json",
+      });
     });
 
-    describe('Full Flow Integration', () => {
-        it('should handle complete auth and VAT submission flow', async () => {
-            // Step 1: Get auth URL
-            const authResponse = await request(app)
-                .get('/api/auth-url')
-                .query({ state: 'flow-test-state' })
-                .expect(200);
+    it("should handle S3 errors in receipt logging", async () => {
+      // Mock S3 error
+      s3Mock.on(PutObjectCommand).rejects(new Error("S3 connection failed"));
 
-            expect(authResponse.body).toHaveProperty('authUrl');
+      const receiptData = {
+        formBundleNumber: "test-bundle-456",
+      };
 
-            // Step 2: Exchange code for token
-            const tokenResponse = await request(app)
-                .post('/api/exchange-token')
-                .send({ code: 'flow-test-code' })
-                .expect(200);
+      const response = await request(app).post("/api/log-receipt").send(receiptData).expect(500);
 
-            expect(tokenResponse.body).toHaveProperty('accessToken');
-            const accessToken = tokenResponse.body.accessToken;
+      expect(response.body).toHaveProperty("error");
+      expect(response.body.error).toBe("Failed to log receipt");
+      expect(response.body).toHaveProperty("details");
+    });
+  });
 
-            // Step 3: Submit VAT return
-            const vatResponse = await request(app)
-                .post('/api/submit-vat')
-                .send({
-                    vatNumber: '987654321',
-                    periodKey: '18A2',
-                    vatDue: '250.00',
-                    accessToken: accessToken
-                })
-                .expect(200);
+  describe("Static File Serving", () => {
+    it("should serve static files from public directory", async () => {
+      // Test that static file middleware is configured
+      const response = await request(app).get("/favicon.ico");
+      // Should either serve the file (200) or return 404 if not found
+      expect([200, 404]).toContain(response.status);
+    });
+  });
 
-            expect(vatResponse.body).toHaveProperty('formBundleNumber');
-
-            // Step 4: Log receipt
-            s3Mock.on(PutObjectCommand).resolves({});
-            
-            const receiptResponse = await request(app)
-                .post('/api/log-receipt')
-                .send(vatResponse.body)
-                .expect(200);
-
-            expect(receiptResponse.body.status).toBe('receipt logged');
-
-            console.log('[DEBUG_LOG] Full flow completed successfully');
-        });
+  describe("SPA Fallback", () => {
+    it("should serve index.html for unknown routes", async () => {
+      const response = await request(app).get("/unknown-spa-route");
+      // Should either serve index.html (200) or return 404 if file doesn't exist
+      expect([200, 404]).toContain(response.status);
     });
 
-    describe('Error Handling', () => {
-        it('should handle malformed JSON in request body', async () => {
-            const response = await request(app)
-                .post('/api/exchange-token')
-                .set('Content-Type', 'application/json')
-                .send('invalid-json')
-                .expect(400);
-
-            // Express should handle malformed JSON gracefully
-        });
-
-        it('should handle large request bodies', async () => {
-            const largeData = {
-                code: 'x'.repeat(10000),
-                extra: 'y'.repeat(10000)
-            };
-
-            const response = await request(app)
-                .post('/api/exchange-token')
-                .send(largeData);
-
-            // Should either process or reject based on Express limits
-            expect([200, 400, 413]).toContain(response.status);
-        });
+    it("should serve index.html for nested SPA routes", async () => {
+      const response = await request(app).get("/dashboard/vat/submit");
+      expect([200, 404]).toContain(response.status);
     });
+  });
+
+  describe("Full Flow Integration", () => {
+    it("should handle complete auth and VAT submission flow", async () => {
+      // Step 1: Get auth URL
+      const authResponse = await request(app).get("/api/auth-url").query({ state: "flow-test-state" }).expect(200);
+
+      expect(authResponse.body).toHaveProperty("authUrl");
+
+      // Step 2: Exchange code for token
+      const tokenResponse = await request(app).post("/api/exchange-token").send({ code: "flow-test-code" }).expect(200);
+
+      expect(tokenResponse.body).toHaveProperty("accessToken");
+      const accessToken = tokenResponse.body.accessToken;
+
+      // Step 3: Submit VAT return
+      const vatResponse = await request(app)
+        .post("/api/submit-vat")
+        .send({
+          vatNumber: "987654321",
+          periodKey: "18A2",
+          vatDue: "250.00",
+          accessToken: accessToken,
+        })
+        .expect(200);
+
+      expect(vatResponse.body).toHaveProperty("formBundleNumber");
+
+      // Step 4: Log receipt
+      s3Mock.on(PutObjectCommand).resolves({});
+
+      const receiptResponse = await request(app).post("/api/log-receipt").send(vatResponse.body).expect(200);
+
+      expect(receiptResponse.body.status).toBe("receipt logged");
+
+      console.log("[DEBUG_LOG] Full flow completed successfully");
+    });
+  });
+
+  describe("Error Handling", () => {
+    it("should handle malformed JSON in request body", async () => {
+      const response = await request(app)
+        .post("/api/exchange-token")
+        .set("Content-Type", "application/json")
+        .send("invalid-json")
+        .expect(400);
+
+      // Express should handle malformed JSON gracefully
+    });
+
+    it("should handle large request bodies", async () => {
+      const largeData = {
+        code: "x".repeat(10000),
+        extra: "y".repeat(10000),
+      };
+
+      const response = await request(app).post("/api/exchange-token").send(largeData);
+
+      // Should either process or reject based on Express limits
+      expect([200, 400, 413]).toContain(response.status);
+    });
+  });
 });

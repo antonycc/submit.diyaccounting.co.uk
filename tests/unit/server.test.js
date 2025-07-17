@@ -1,314 +1,277 @@
 // tests/unit/server.test.js
-import { describe, test, expect, vi, beforeEach } from 'vitest';
-import request from 'supertest';
-import express from 'express';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import { describe, test, expect, vi, beforeEach } from "vitest";
+import request from "supertest";
+import express from "express";
+import path from "path";
+import { fileURLToPath } from "url";
 
 // Mock the handlers from main.js
-vi.mock('@src/lib/main.js', () => ({
-    authUrlHandler: vi.fn(),
-    exchangeTokenHandler: vi.fn(),
-    submitVatHandler: vi.fn(),
-    logReceiptHandler: vi.fn()
+vi.mock("@src/lib/main.js", () => ({
+  authUrlHandler: vi.fn(),
+  exchangeTokenHandler: vi.fn(),
+  submitVatHandler: vi.fn(),
+  logReceiptHandler: vi.fn(),
 }));
 
 // Import the mocked handlers
-import {
-    authUrlHandler,
-    exchangeTokenHandler,
-    submitVatHandler,
-    logReceiptHandler
-} from '@src/lib/main.js';
+import { authUrlHandler, exchangeTokenHandler, submitVatHandler, logReceiptHandler } from "@src/lib/main.js";
 
-describe('Server Unit Tests', () => {
-    let app;
-    const __dirname = path.dirname(fileURLToPath(import.meta.url));
+describe("Server Unit Tests", () => {
+  let app;
+  const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-    beforeEach(() => {
-        vi.clearAllMocks();
-        
-        // Recreate the Express app for each test (similar to server.js)
-        app = express();
-        app.use(express.json());
-        app.use(express.static(path.join(__dirname, '../../src/lib/public')));
+  beforeEach(() => {
+    vi.clearAllMocks();
 
-        // Wire the API routes (same as server.js) with error handling
-        app.get('/api/auth-url', async (req, res) => {
-            try {
-                const event = { queryStringParameters: { state: req.query.state } };
-                const { statusCode, body } = await authUrlHandler(event);
-                res.status(statusCode).json(JSON.parse(body));
-            } catch (error) {
-                res.status(500).json({ error: 'Internal server error' });
-            }
-        });
+    // Recreate the Express app for each test (similar to server.js)
+    app = express();
+    app.use(express.json());
+    app.use(express.static(path.join(__dirname, "../../src/lib/public")));
 
-        app.post('/api/exchange-token', async (req, res) => {
-            try {
-                const event = { body: JSON.stringify(req.body) };
-                const { statusCode, body } = await exchangeTokenHandler(event);
-                res.status(statusCode).json(JSON.parse(body));
-            } catch (error) {
-                res.status(500).json({ error: 'Internal server error' });
-            }
-        });
-
-        app.post('/api/submit-vat', async (req, res) => {
-            try {
-                const event = { body: JSON.stringify(req.body) };
-                const { statusCode, body } = await submitVatHandler(event);
-                res.status(statusCode).json(JSON.parse(body));
-            } catch (error) {
-                res.status(500).json({ error: 'Internal server error' });
-            }
-        });
-
-        app.post('/api/log-receipt', async (req, res) => {
-            try {
-                const event = { body: JSON.stringify(req.body) };
-                const { statusCode, body } = await logReceiptHandler(event);
-                res.status(statusCode).json(JSON.parse(body));
-            } catch (error) {
-                res.status(500).json({ error: 'Internal server error' });
-            }
-        });
-
-        // Fallback route for SPA
-        app.get('*', (req, res) => {
-            res.sendFile(path.join(__dirname, '../../src/lib/public/index.html'));
-        });
+    // Wire the API routes (same as server.js) with error handling
+    app.get("/api/auth-url", async (req, res) => {
+      try {
+        const event = { queryStringParameters: { state: req.query.state } };
+        const { statusCode, body } = await authUrlHandler(event);
+        res.status(statusCode).json(JSON.parse(body));
+      } catch (error) {
+        res.status(500).json({ error: "Internal server error" });
+      }
     });
 
-    describe('Express App Configuration', () => {
-        test('should have JSON middleware configured', async () => {
-            const mockHandler = vi.fn().mockResolvedValue({
-                statusCode: 200,
-                body: JSON.stringify({ success: true })
-            });
-            exchangeTokenHandler.mockImplementation(mockHandler);
-
-            await request(app)
-                .post('/api/exchange-token')
-                .send({ code: 'test-code' })
-                .expect(200);
-
-            expect(mockHandler).toHaveBeenCalledWith({
-                body: JSON.stringify({ code: 'test-code' })
-            });
-        });
-
-        test('should serve static files', async () => {
-            // This test would require actual static files to exist
-            // For now, we'll test that the route doesn't throw an error
-            const response = await request(app).get('/nonexistent.js');
-            // Should return 404 for non-existent static files, not crash
-            expect([404, 200]).toContain(response.status);
-        });
+    app.post("/api/exchange-token", async (req, res) => {
+      try {
+        const event = { body: JSON.stringify(req.body) };
+        const { statusCode, body } = await exchangeTokenHandler(event);
+        res.status(statusCode).json(JSON.parse(body));
+      } catch (error) {
+        res.status(500).json({ error: "Internal server error" });
+      }
     });
 
-    describe('GET /api/auth-url', () => {
-        test('should call authUrlHandler with correct event format', async () => {
-            const mockResponse = {
-                statusCode: 200,
-                body: JSON.stringify({ authUrl: 'https://example.com/auth' })
-            };
-            authUrlHandler.mockResolvedValue(mockResponse);
-
-            const response = await request(app)
-                .get('/api/auth-url')
-                .query({ state: 'test-state' })
-                .expect(200);
-
-            expect(authUrlHandler).toHaveBeenCalledWith({
-                queryStringParameters: { state: 'test-state' }
-            });
-            expect(response.body).toEqual({ authUrl: 'https://example.com/auth' });
-        });
-
-        test('should handle authUrlHandler errors', async () => {
-            const mockResponse = {
-                statusCode: 400,
-                body: JSON.stringify({ error: 'Missing state' })
-            };
-            authUrlHandler.mockResolvedValue(mockResponse);
-
-            const response = await request(app)
-                .get('/api/auth-url')
-                .expect(400);
-
-            expect(response.body).toEqual({ error: 'Missing state' });
-        });
-
-        test('should handle missing state parameter', async () => {
-            const mockResponse = {
-                statusCode: 400,
-                body: JSON.stringify({ error: 'Missing state' })
-            };
-            authUrlHandler.mockResolvedValue(mockResponse);
-
-            await request(app)
-                .get('/api/auth-url')
-                .expect(400);
-
-            expect(authUrlHandler).toHaveBeenCalledWith({
-                queryStringParameters: { state: undefined }
-            });
-        });
+    app.post("/api/submit-vat", async (req, res) => {
+      try {
+        const event = { body: JSON.stringify(req.body) };
+        const { statusCode, body } = await submitVatHandler(event);
+        res.status(statusCode).json(JSON.parse(body));
+      } catch (error) {
+        res.status(500).json({ error: "Internal server error" });
+      }
     });
 
-    describe('POST /api/exchange-token', () => {
-        test('should call exchangeTokenHandler with correct event format', async () => {
-            const mockResponse = {
-                statusCode: 200,
-                body: JSON.stringify({ accessToken: 'test-token' })
-            };
-            exchangeTokenHandler.mockResolvedValue(mockResponse);
-
-            const requestBody = { code: 'auth-code' };
-            const response = await request(app)
-                .post('/api/exchange-token')
-                .send(requestBody)
-                .expect(200);
-
-            expect(exchangeTokenHandler).toHaveBeenCalledWith({
-                body: JSON.stringify(requestBody)
-            });
-            expect(response.body).toEqual({ accessToken: 'test-token' });
-        });
-
-        test('should handle exchangeTokenHandler errors', async () => {
-            const mockResponse = {
-                statusCode: 400,
-                body: JSON.stringify({ error: 'Missing code' })
-            };
-            exchangeTokenHandler.mockResolvedValue(mockResponse);
-
-            const response = await request(app)
-                .post('/api/exchange-token')
-                .send({})
-                .expect(400);
-
-            expect(response.body).toEqual({ error: 'Missing code' });
-        });
+    app.post("/api/log-receipt", async (req, res) => {
+      try {
+        const event = { body: JSON.stringify(req.body) };
+        const { statusCode, body } = await logReceiptHandler(event);
+        res.status(statusCode).json(JSON.parse(body));
+      } catch (error) {
+        res.status(500).json({ error: "Internal server error" });
+      }
     });
 
-    describe('POST /api/submit-vat', () => {
-        test('should call submitVatHandler with correct event format', async () => {
-            const mockResponse = {
-                statusCode: 200,
-                body: JSON.stringify({ formBundleNumber: '12345' })
-            };
-            submitVatHandler.mockResolvedValue(mockResponse);
+    // Fallback route for SPA
+    app.get("*", (req, res) => {
+      res.sendFile(path.join(__dirname, "../../src/lib/public/index.html"));
+    });
+  });
 
-            const requestBody = {
-                vatNumber: '123456789',
-                periodKey: '18A1',
-                vatDue: '100.00',
-                accessToken: 'test-token'
-            };
-            const response = await request(app)
-                .post('/api/submit-vat')
-                .send(requestBody)
-                .expect(200);
+  describe("Express App Configuration", () => {
+    test("should have JSON middleware configured", async () => {
+      const mockHandler = vi.fn().mockResolvedValue({
+        statusCode: 200,
+        body: JSON.stringify({ success: true }),
+      });
+      exchangeTokenHandler.mockImplementation(mockHandler);
 
-            expect(submitVatHandler).toHaveBeenCalledWith({
-                body: JSON.stringify(requestBody)
-            });
-            expect(response.body).toEqual({ formBundleNumber: '12345' });
-        });
+      await request(app).post("/api/exchange-token").send({ code: "test-code" }).expect(200);
 
-        test('should handle submitVatHandler errors', async () => {
-            const mockResponse = {
-                statusCode: 400,
-                body: JSON.stringify({ error: 'Missing parameters' })
-            };
-            submitVatHandler.mockResolvedValue(mockResponse);
-
-            const response = await request(app)
-                .post('/api/submit-vat')
-                .send({ vatNumber: '123' })
-                .expect(400);
-
-            expect(response.body).toEqual({ error: 'Missing parameters' });
-        });
+      expect(mockHandler).toHaveBeenCalledWith({
+        body: JSON.stringify({ code: "test-code" }),
+      });
     });
 
-    describe('POST /api/log-receipt', () => {
-        test('should call logReceiptHandler with correct event format', async () => {
-            const mockResponse = {
-                statusCode: 200,
-                body: JSON.stringify({ status: 'receipt logged' })
-            };
-            logReceiptHandler.mockResolvedValue(mockResponse);
+    test("should serve static files", async () => {
+      // This test would require actual static files to exist
+      // For now, we'll test that the route doesn't throw an error
+      const response = await request(app).get("/nonexistent.js");
+      // Should return 404 for non-existent static files, not crash
+      expect([404, 200]).toContain(response.status);
+    });
+  });
 
-            const requestBody = { formBundleNumber: '12345', receipt: 'data' };
-            const response = await request(app)
-                .post('/api/log-receipt')
-                .send(requestBody)
-                .expect(200);
+  describe("GET /api/auth-url", () => {
+    test("should call authUrlHandler with correct event format", async () => {
+      const mockResponse = {
+        statusCode: 200,
+        body: JSON.stringify({ authUrl: "https://example.com/auth" }),
+      };
+      authUrlHandler.mockResolvedValue(mockResponse);
 
-            expect(logReceiptHandler).toHaveBeenCalledWith({
-                body: JSON.stringify(requestBody)
-            });
-            expect(response.body).toEqual({ status: 'receipt logged' });
-        });
+      const response = await request(app).get("/api/auth-url").query({ state: "test-state" }).expect(200);
 
-        test('should handle logReceiptHandler errors', async () => {
-            const mockResponse = {
-                statusCode: 500,
-                body: JSON.stringify({ error: 'Failed to log receipt' })
-            };
-            logReceiptHandler.mockResolvedValue(mockResponse);
-
-            const response = await request(app)
-                .post('/api/log-receipt')
-                .send({ invalid: 'data' })
-                .expect(500);
-
-            expect(response.body).toEqual({ error: 'Failed to log receipt' });
-        });
+      expect(authUrlHandler).toHaveBeenCalledWith({
+        queryStringParameters: { state: "test-state" },
+      });
+      expect(response.body).toEqual({ authUrl: "https://example.com/auth" });
     });
 
-    describe('SPA Fallback Route', () => {
-        test('should serve index.html for unknown routes', async () => {
-            // This test would require the actual index.html file to exist
-            // For now, we'll test that it attempts to serve the file
-            const response = await request(app).get('/unknown-route');
-            // Should either serve the file (200) or return 404 if file doesn't exist
-            expect([200, 404]).toContain(response.status);
-        });
+    test("should handle authUrlHandler errors", async () => {
+      const mockResponse = {
+        statusCode: 400,
+        body: JSON.stringify({ error: "Missing state" }),
+      };
+      authUrlHandler.mockResolvedValue(mockResponse);
 
-        test('should serve index.html for nested routes', async () => {
-            const response = await request(app).get('/some/nested/route');
-            expect([200, 404]).toContain(response.status);
-        });
+      const response = await request(app).get("/api/auth-url").expect(400);
+
+      expect(response.body).toEqual({ error: "Missing state" });
     });
 
-    describe('Error Handling', () => {
-        test('should handle handler exceptions gracefully', async () => {
-            authUrlHandler.mockRejectedValue(new Error('Handler crashed'));
+    test("should handle missing state parameter", async () => {
+      const mockResponse = {
+        statusCode: 400,
+        body: JSON.stringify({ error: "Missing state" }),
+      };
+      authUrlHandler.mockResolvedValue(mockResponse);
 
-            const response = await request(app)
-                .get('/api/auth-url')
-                .query({ state: 'test' });
+      await request(app).get("/api/auth-url").expect(400);
 
-            // Express should catch the error and return 500
-            expect(response.status).toBe(500);
-        });
-
-        test('should handle malformed JSON responses from handlers', async () => {
-            authUrlHandler.mockResolvedValue({
-                statusCode: 200,
-                body: 'invalid-json'
-            });
-
-            const response = await request(app)
-                .get('/api/auth-url')
-                .query({ state: 'test' });
-
-            // Should return 500 due to JSON.parse error
-            expect(response.status).toBe(500);
-        });
+      expect(authUrlHandler).toHaveBeenCalledWith({
+        queryStringParameters: { state: undefined },
+      });
     });
+  });
+
+  describe("POST /api/exchange-token", () => {
+    test("should call exchangeTokenHandler with correct event format", async () => {
+      const mockResponse = {
+        statusCode: 200,
+        body: JSON.stringify({ accessToken: "test-token" }),
+      };
+      exchangeTokenHandler.mockResolvedValue(mockResponse);
+
+      const requestBody = { code: "auth-code" };
+      const response = await request(app).post("/api/exchange-token").send(requestBody).expect(200);
+
+      expect(exchangeTokenHandler).toHaveBeenCalledWith({
+        body: JSON.stringify(requestBody),
+      });
+      expect(response.body).toEqual({ accessToken: "test-token" });
+    });
+
+    test("should handle exchangeTokenHandler errors", async () => {
+      const mockResponse = {
+        statusCode: 400,
+        body: JSON.stringify({ error: "Missing code" }),
+      };
+      exchangeTokenHandler.mockResolvedValue(mockResponse);
+
+      const response = await request(app).post("/api/exchange-token").send({}).expect(400);
+
+      expect(response.body).toEqual({ error: "Missing code" });
+    });
+  });
+
+  describe("POST /api/submit-vat", () => {
+    test("should call submitVatHandler with correct event format", async () => {
+      const mockResponse = {
+        statusCode: 200,
+        body: JSON.stringify({ formBundleNumber: "12345" }),
+      };
+      submitVatHandler.mockResolvedValue(mockResponse);
+
+      const requestBody = {
+        vatNumber: "123456789",
+        periodKey: "18A1",
+        vatDue: "100.00",
+        accessToken: "test-token",
+      };
+      const response = await request(app).post("/api/submit-vat").send(requestBody).expect(200);
+
+      expect(submitVatHandler).toHaveBeenCalledWith({
+        body: JSON.stringify(requestBody),
+      });
+      expect(response.body).toEqual({ formBundleNumber: "12345" });
+    });
+
+    test("should handle submitVatHandler errors", async () => {
+      const mockResponse = {
+        statusCode: 400,
+        body: JSON.stringify({ error: "Missing parameters" }),
+      };
+      submitVatHandler.mockResolvedValue(mockResponse);
+
+      const response = await request(app).post("/api/submit-vat").send({ vatNumber: "123" }).expect(400);
+
+      expect(response.body).toEqual({ error: "Missing parameters" });
+    });
+  });
+
+  describe("POST /api/log-receipt", () => {
+    test("should call logReceiptHandler with correct event format", async () => {
+      const mockResponse = {
+        statusCode: 200,
+        body: JSON.stringify({ status: "receipt logged" }),
+      };
+      logReceiptHandler.mockResolvedValue(mockResponse);
+
+      const requestBody = { formBundleNumber: "12345", receipt: "data" };
+      const response = await request(app).post("/api/log-receipt").send(requestBody).expect(200);
+
+      expect(logReceiptHandler).toHaveBeenCalledWith({
+        body: JSON.stringify(requestBody),
+      });
+      expect(response.body).toEqual({ status: "receipt logged" });
+    });
+
+    test("should handle logReceiptHandler errors", async () => {
+      const mockResponse = {
+        statusCode: 500,
+        body: JSON.stringify({ error: "Failed to log receipt" }),
+      };
+      logReceiptHandler.mockResolvedValue(mockResponse);
+
+      const response = await request(app).post("/api/log-receipt").send({ invalid: "data" }).expect(500);
+
+      expect(response.body).toEqual({ error: "Failed to log receipt" });
+    });
+  });
+
+  describe("SPA Fallback Route", () => {
+    test("should serve index.html for unknown routes", async () => {
+      // This test would require the actual index.html file to exist
+      // For now, we'll test that it attempts to serve the file
+      const response = await request(app).get("/unknown-route");
+      // Should either serve the file (200) or return 404 if file doesn't exist
+      expect([200, 404]).toContain(response.status);
+    });
+
+    test("should serve index.html for nested routes", async () => {
+      const response = await request(app).get("/some/nested/route");
+      expect([200, 404]).toContain(response.status);
+    });
+  });
+
+  describe("Error Handling", () => {
+    test("should handle handler exceptions gracefully", async () => {
+      authUrlHandler.mockRejectedValue(new Error("Handler crashed"));
+
+      const response = await request(app).get("/api/auth-url").query({ state: "test" });
+
+      // Express should catch the error and return 500
+      expect(response.status).toBe(500);
+    });
+
+    test("should handle malformed JSON responses from handlers", async () => {
+      authUrlHandler.mockResolvedValue({
+        statusCode: 200,
+        body: "invalid-json",
+      });
+
+      const response = await request(app).get("/api/auth-url").query({ state: "test" });
+
+      // Should return 500 due to JSON.parse error
+      expect(response.status).toBe(500);
+    });
+  });
 });

@@ -1,156 +1,155 @@
 // tests/system/submitVatFlow.system.test.js
 
-import { describe, beforeAll, afterAll, beforeEach, it, expect, vi } from 'vitest';
-import { GenericContainer } from 'testcontainers';
-import {
-    S3Client, PutObjectCommand, GetObjectCommand,
-} from '@aws-sdk/client-s3';
-import { mockClient } from 'aws-sdk-client-mock';
-import { setupServer } from 'msw/node';
-import { http, HttpResponse } from 'msw';
-import fetch from 'node-fetch';
-import dotenv from 'dotenv';
+import { describe, beforeAll, afterAll, beforeEach, it, expect, vi } from "vitest";
+import { GenericContainer } from "testcontainers";
+import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
+import { mockClient } from "aws-sdk-client-mock";
+import { setupServer } from "msw/node";
+import { http, HttpResponse } from "msw";
+import fetch from "node-fetch";
+import dotenv from "dotenv";
+
 dotenv.config();
 
-import {
-    exchangeTokenHandler,
-    submitVatHandler,
-    logReceiptHandler,
-} from '@src/lib/main.js';
+import { exchangeTokenHandler, submitVatHandler, logReceiptHandler } from "@src/lib/main.js";
 
-const HMRC = 'https://api.service.hmrc.gov.uk';
+const HMRC = "https://api.service.hmrc.gov.uk";
 
 const server = setupServer(
-    http.post(`${HMRC}/oauth/token`, () =>
-        HttpResponse.json({ access_token: 'test-access-token' })
-    ),
-    http.post(`${HMRC}/organisations/vat/:vrn/returns`, ({ params }) => {
-        const { vrn } = params;
-        return HttpResponse.json({
-            formBundleNumber: `${vrn}-bundle`,
-            chargeRefNumber: `${vrn}-charge`,
-            processingDate: new Date().toISOString(),
-        });
-    }),
+  http.post(`${HMRC}/oauth/token`, () => HttpResponse.json({ access_token: "test-access-token" })),
+  http.post(`${HMRC}/organisations/vat/:vrn/returns`, ({ params }) => {
+    const { vrn } = params;
+    return HttpResponse.json({
+      formBundleNumber: `${vrn}-bundle`,
+      chargeRefNumber: `${vrn}-charge`,
+      processingDate: new Date().toISOString(),
+    });
+  }),
 );
 
 // Helper function to check if Docker is available
 async function isDockerAvailable() {
-    try {
-        const { exec } = await import('child_process');
-        const { promisify } = await import('util');
-        const execAsync = promisify(exec);
-        await execAsync('docker ps');
-        return true;
-    } catch (error) {
-        return false;
-    }
+  try {
+    const { exec } = await import("child_process");
+    const { promisify } = await import("util");
+    const execAsync = promisify(exec);
+    await execAsync("docker ps");
+    return true;
+  } catch (error) {
+    return false;
+  }
 }
 
-describe('System Test – submit VAT and persist receipts to containerised S3', () => {
-    let container;
-    let s3Client;
-    let dockerAvailable = false;
-    const BUCKET_NAME = 'test-receipts';
+describe("System Test – submit VAT and persist receipts to containerised S3", () => {
+  let container;
+  let s3Client;
+  let dockerAvailable = false;
+  const BUCKET_NAME = "test-receipts";
 
-    beforeAll(async () => {
-        // Check if Docker is available
-        dockerAvailable = await isDockerAvailable();
-        if (!dockerAvailable) {
-            return;
-        }
-        
-        server.listen({ onUnhandledRequest: 'error' });
+  beforeAll(async () => {
+    // Check if Docker is available
+    dockerAvailable = await isDockerAvailable();
+    if (!dockerAvailable) {
+      return;
+    }
 
-        container = await new GenericContainer('minio/minio')
-            .withExposedPorts(9000)
-            .withEnvironment({
-                'MINIO_ROOT_USER': 'minioadmin',
-                'MINIO_ROOT_PASSWORD': 'minioadmin'
-            })
-            .withCommand(['server', '/data'])
-            .start();
+    server.listen({ onUnhandledRequest: "error" });
 
-        const endpoint = `http://${container.getHost()}:${container.getMappedPort(9000)}`;
+    container = await new GenericContainer("minio/minio")
+      .withExposedPorts(9000)
+      .withEnvironment({
+        MINIO_ROOT_USER: "minioadmin",
+        MINIO_ROOT_PASSWORD: "minioadmin",
+      })
+      .withCommand(["server", "/data"])
+      .start();
 
-        s3Client = new S3Client({
-            endpoint,
-            region: 'us-east-1',
-            credentials: {
-                accessKeyId: 'minioadmin',
-                secretAccessKey: 'minioadmin',
-            },
-            forcePathStyle: true,
-        });
+    const endpoint = `http://${container.getHost()}:${container.getMappedPort(9000)}`;
 
-        // Create bucket
-        await fetch(`${endpoint}/${BUCKET_NAME}`, { method: 'PUT' });
-
-        // Mock the environment variables for the handlers
-        process.env.RECEIPTS_BUCKET = BUCKET_NAME;
-        process.env.S3_ENDPOINT = endpoint;
-        process.env.S3_ACCESS_KEY = 'minioadmin';
-        process.env.S3_SECRET_KEY = 'minioadmin';
-    }, 20000); // 20s timeout to accommodate container startup
-
-    afterAll(async () => {
-        if (container) {
-            await container.stop();
-        }
-        server.close();
+    s3Client = new S3Client({
+      endpoint,
+      region: "us-east-1",
+      credentials: {
+        accessKeyId: "minioadmin",
+        secretAccessKey: "minioadmin",
+      },
+      forcePathStyle: true,
     });
 
-    beforeEach(() => {
-        vi.resetAllMocks();
-    });
+    // Create bucket
+    await fetch(`${endpoint}/${BUCKET_NAME}`, { method: "PUT" });
 
-    it.skipIf(() => !dockerAvailable)('full flow: exchange token, submit VAT, log receipt and retrieve from S3', async () => {
-        // Exchange token
-        const exchangeRes = await exchangeTokenHandler({
-            body: JSON.stringify({ code: 'dummy-code' }),
-        });
-        const { accessToken } = JSON.parse(exchangeRes.body);
-        expect(accessToken).toBe('test-access-token');
+    // Mock the environment variables for the handlers
+    process.env.RECEIPTS_BUCKET = BUCKET_NAME;
+    process.env.S3_ENDPOINT = endpoint;
+    process.env.S3_ACCESS_KEY = "minioadmin";
+    process.env.S3_SECRET_KEY = "minioadmin";
+  }, 20000); // 20s timeout to accommodate container startup
 
-        // Submit VAT
-        const vatPayload = {
-            vatNumber: '111222333',
-            periodKey: '24A1',
-            vatDue: '1000.00',
-            accessToken,
-        };
+  afterAll(async () => {
+    if (container) {
+      await container.stop();
+    }
+    server.close();
+  });
 
-        const submitRes = await submitVatHandler({ body: JSON.stringify(vatPayload) });
-        const receipt = JSON.parse(submitRes.body);
-        expect(receipt.formBundleNumber).toBe('111222333-bundle');
+  beforeEach(() => {
+    vi.resetAllMocks();
+  });
 
-        // Log receipt (S3 putObject via handler)
-        const logRes = await logReceiptHandler({ body: JSON.stringify(receipt) });
-        expect(JSON.parse(logRes.body).status).toBe('receipt logged');
+  it.skipIf(() => !dockerAvailable)(
+    "full flow: exchange token, submit VAT, log receipt and retrieve from S3",
+    async () => {
+      // Exchange token
+      const exchangeRes = await exchangeTokenHandler({
+        body: JSON.stringify({ code: "dummy-code" }),
+      });
+      const { accessToken } = JSON.parse(exchangeRes.body);
+      expect(accessToken).toBe("test-access-token");
 
-        // Retrieve the stored receipt directly from the containerized S3
-        const getObjectOutput = await s3Client.send(new GetObjectCommand({
-            Bucket: BUCKET_NAME,
-            Key: `receipts/${receipt.formBundleNumber}.json`,
-        }));
+      // Submit VAT
+      const vatPayload = {
+        vatNumber: "111222333",
+        periodKey: "24A1",
+        vatDue: "1000.00",
+        accessToken,
+      };
 
-        const receiptFromS3 = await streamToString(getObjectOutput.Body);
+      const submitRes = await submitVatHandler({ body: JSON.stringify(vatPayload) });
+      const receipt = JSON.parse(submitRes.body);
+      expect(receipt.formBundleNumber).toBe("111222333-bundle");
 
-        const storedReceipt = JSON.parse(receiptFromS3);
+      // Log receipt (S3 putObject via handler)
+      const logRes = await logReceiptHandler({ body: JSON.stringify(receipt) });
+      expect(JSON.parse(logRes.body).status).toBe("receipt logged");
 
-        // Assertions
-        expect(storedReceipt.formBundleNumber).toEqual(receipt.formBundleNumber);
-        expect(storedReceipt.chargeRefNumber).toEqual(receipt.chargeRefNumber);
-        expect(storedReceipt.processingDate).toEqual(receipt.processingDate);
-    }, 20000);
+      // Retrieve the stored receipt directly from the containerized S3
+      const getObjectOutput = await s3Client.send(
+        new GetObjectCommand({
+          Bucket: BUCKET_NAME,
+          Key: `receipts/${receipt.formBundleNumber}.json`,
+        }),
+      );
+
+      const receiptFromS3 = await streamToString(getObjectOutput.Body);
+
+      const storedReceipt = JSON.parse(receiptFromS3);
+
+      // Assertions
+      expect(storedReceipt.formBundleNumber).toEqual(receipt.formBundleNumber);
+      expect(storedReceipt.chargeRefNumber).toEqual(receipt.chargeRefNumber);
+      expect(storedReceipt.processingDate).toEqual(receipt.processingDate);
+    },
+    20000,
+  );
 });
 
 // Helper function to read streams
 async function streamToString(stream) {
-    return new Promise((resolve, reject) => {
-        const chunks = [];
-        stream.on('data', chunk => chunks.push(chunk));
-        stream.on('error', reject);
-        stream.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
-    });
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    stream.on("data", (chunk) => chunks.push(chunk));
+    stream.on("error", reject);
+    stream.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")));
+  });
 }
