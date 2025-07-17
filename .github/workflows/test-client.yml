@@ -50,5 +50,5 @@ jobs:
         if: always()
         with:
           name: test-reports-client
-          path: test-results/
+          path: test-reports/
           retention-days: 30

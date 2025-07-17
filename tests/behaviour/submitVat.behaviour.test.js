@@ -134,8 +134,11 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
 
   // Fill out the VAT form using the correct field IDs from index.html
   await page.fill("#vatNumber", "123456789");
+  await setTimeout(100);
   await page.fill("#periodKey", "24A1");
+  await setTimeout(100);
   await page.fill("#vatDue", "1000.00");
+  await setTimeout(100);
 
   await page.screenshot({ path: `behaviour-test-results/behaviour-form-filled_${timestamp}.png` });
   await setTimeout(500);

@@ -18,7 +18,7 @@ test.use({
   }
 });
 
-test.describe("Client System Test - VAT Flow in Browser", () => {
+//test.describe("Client System Test - VAT Flow in Browser", () => {
   let browser;
   let context;
   let page;
@@ -190,6 +190,7 @@ test.describe("Client System Test - VAT Flow in Browser", () => {
       const timestamp = getTimestamp();
       // Clear the VAT number field
       await page.locator("#vatNumber").fill("");
+      await setTimeout(100);
 
       // Try to submit the form
       await page.locator("#vatSubmissionForm").dispatchEvent("submit");
@@ -212,6 +213,7 @@ test.describe("Client System Test - VAT Flow in Browser", () => {
     test("should validate invalid VAT number format", async () => {
       // Enter invalid VAT number (too short)
       await page.locator("#vatNumber").fill("12345678");
+      await setTimeout(100);
 
       // Try to submit the form
       await page.locator("#vatSubmissionForm").dispatchEvent("submit");
@@ -227,6 +229,7 @@ test.describe("Client System Test - VAT Flow in Browser", () => {
     test("should validate negative VAT due", async () => {
       // Enter negative VAT amount
       await page.locator("#vatDue").fill("-100.00");
+      await setTimeout(100);
 
       // Try to submit the form
       await page.locator("#vatSubmissionForm").dispatchEvent("submit");
@@ -246,7 +249,9 @@ test.describe("Client System Test - VAT Flow in Browser", () => {
 
       // Clear and type mixed characters
       await vatNumberField.fill("");
+      await setTimeout(100);
       await vatNumberField.type("abc123def456");
+      await setTimeout(100);
 
       // Check that only digits remain
       const value = await vatNumberField.inputValue();
@@ -258,7 +263,9 @@ test.describe("Client System Test - VAT Flow in Browser", () => {
 
       // Clear and type lowercase
       await periodKeyField.fill("");
+      await setTimeout(100);
       await periodKeyField.type("a1b2");
+      await setTimeout(100);
 
       // Check that it's converted to uppercase
       const value = await periodKeyField.inputValue();
@@ -271,8 +278,11 @@ test.describe("Client System Test - VAT Flow in Browser", () => {
       const timestamp = getTimestamp();
       // Fill in valid form data
       await page.locator("#vatNumber").fill("123456789");
+      await setTimeout(100);
       await page.locator("#periodKey").fill("24A1");
+      await setTimeout(100);
       await page.locator("#vatDue").fill("1000.00");
+      await setTimeout(100);
 
       // Trigger loading state directly to test the functionality
       await page.evaluate(() => {
@@ -366,4 +376,4 @@ test.describe("Client System Test - VAT Flow in Browser", () => {
     });
   });
 
-});
+//});
