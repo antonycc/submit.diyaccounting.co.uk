@@ -12,7 +12,7 @@ import { fileURLToPath } from "url";
 // Import the actual handlers (not mocked for integration test)
 import { authUrlHandler, exchangeTokenHandler, submitVatHandler, logReceiptHandler } from "@src/lib/main.js";
 
-const HMRC = "https://api.service.hmrc.gov.uk";
+const HMRC = "https://test-api.service.hmrc.gov.uk";
 const s3Mock = mockClient(S3Client);
 
 // Setup MSW server to mock external HTTP calls

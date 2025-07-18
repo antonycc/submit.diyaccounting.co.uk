@@ -13,7 +13,7 @@ dotenv.config();
 
 import { exchangeTokenHandler, submitVatHandler, logReceiptHandler } from "@src/lib/main.js";
 
-const HMRC = "https://api.service.hmrc.gov.uk";
+const HMRC = "https://test-api.service.hmrc.gov.uk";
 
 const server = setupServer(
   http.post(`${HMRC}/oauth/token`, () => HttpResponse.json({ access_token: "test-access-token" })),

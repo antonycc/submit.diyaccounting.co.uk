@@ -48,7 +48,7 @@ describe("exchangeTokenHandler", () => {
     expect(body.accessToken).toBe("test-access-token");
 
     // Verify fetch was called with correct parameters
-    expect(fetch).toHaveBeenCalledWith("https://api.service.hmrc.gov.uk/oauth/token", {
+    expect(fetch).toHaveBeenCalledWith("https://test-api.service.hmrc.gov.uk/oauth/token", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: expect.any(URLSearchParams),

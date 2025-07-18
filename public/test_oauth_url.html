@@ -21,7 +21,7 @@
       const redirectUri = window.location.origin + window.location.pathname;
       const scope = "write:vat+read:vat";
 
-      const authResponseUrl = `https://api.service.hmrc.gov.uk/oauth/authorize?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}&state=${state}`;
+      const authResponseUrl = `https://test-api.service.hmrc.gov.uk/oauth/authorize?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}&state=${state}`;
 
       // Display results
       const resultsDiv = document.getElementById("results");

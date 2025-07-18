@@ -566,9 +566,16 @@
           const redirectUri = encodeURIComponent(window.location.origin + window.location.pathname);
           const scope = encodeURIComponent("write:vat+read:vat");
 
-          const authResponseUrl = `${baseUrl}/oauth/authorize?response_type=code&client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scope}&state=${state}`;
+          let authResponseUrl;
+          if( redirectUri === "https://localhost:3000/" ) {
+            // For local testing, go right back
+            authResponseUrl = redirectUri;
+          } else {
+            // For deployed, use the configured environment
+            authResponseUrl = `${baseUrl}/oauth/authorize?response_type=code&client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scope}&state=${state}`;
+          }
 
-          showStatus("Redirecting to HMRC for authentication...", "info");
+          showStatus(`Redirecting to HMRC for authentication at ${authResponseUrl}...`, "info");
 
           // Redirect to HMRC OAuth
           window.location.href = authResponseUrl;

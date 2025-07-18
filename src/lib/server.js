@@ -46,6 +46,11 @@ app.get("*", (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Listening at http://127.0.0.1:${PORT}`);
-});
+
+// Only start the server if this file is being run directly
+if (import.meta.url === `file://${process.argv[1]}`) {
+  app.listen(PORT, () => {
+    const hmrcBase = process.env.HMRC_BASE || "HMRC_BASE not set";
+    console.log(`Listening at http://127.0.0.1:${PORT} for ${hmrcBase}`);
+  });
+}

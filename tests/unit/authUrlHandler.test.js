@@ -27,7 +27,7 @@ describe("authUrlHandler", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(200);
-    expect(body.authUrl).toContain("https://api.service.hmrc.gov.uk/oauth/authorize");
+    expect(body.authUrl).toContain("https://test-api.service.hmrc.gov.uk/oauth/authorize");
     expect(body.authUrl).toContain("response_type=code");
     expect(body.authUrl).toContain("client_id=test-client-id");
     expect(body.authUrl).toContain("redirect_uri=https%3A%2F%2Fexample.com%2Fcallback");

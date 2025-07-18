@@ -5,8 +5,6 @@ import { fileURLToPath } from "url";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import fetch from "node-fetch";
 
-const HMRC_BASE = "https://api.service.hmrc.gov.uk";
-
 // GET /api/auth-url?state={state}
 export async function authUrlHandler(event) {
   const state = event.queryStringParameters?.state;
@@ -14,10 +12,11 @@ export async function authUrlHandler(event) {
     return { statusCode: 400, body: JSON.stringify({ error: "Missing state" }) };
   }
   const clientId = process.env.HMRC_CLIENT_ID;
-  const redirectUri = process.env.REDIRECT_URI;
+  const redirectUri = process.env.HMRC_REDIRECT_URI;
+  const hmrcBase = process.env.HMRC_BASE;
   const scope = "write:vat read:vat";
   const authUrl =
-    `${HMRC_BASE}/oauth/authorize?response_type=code` +
+    `${hmrcBase}/oauth/authorize?response_type=code` +
     `&client_id=${encodeURIComponent(clientId)}` +
     `&redirect_uri=${encodeURIComponent(redirectUri)}` +
     `&scope=${encodeURIComponent(scope)}` +
@@ -35,19 +34,26 @@ export async function exchangeTokenHandler(event) {
     grant_type: "authorization_code",
     client_id: process.env.HMRC_CLIENT_ID,
     client_secret: process.env.HMRC_CLIENT_SECRET,
-    redirect_uri: process.env.REDIRECT_URI,
+    redirect_uri: process.env.HMRC_REDIRECT_URI,
     code,
   });
-  const res = await fetch(`${HMRC_BASE}/oauth/token`, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: params,
-  });
-  if (!res.ok) {
-    const err = await res.text();
-    return { statusCode: res.status, body: JSON.stringify({ error: err }) };
+  const hmrcBase = process.env.HMRC_BASE;
+  let access_token;
+  if( process.env.HMRC_REDIRECT_URI === process.env.TEST_REDIRECT_URI ) {
+    access_token = process.env.TEST_ACCESS_TOKEN;
+  } else {
+    const res = await fetch(`${hmrcBase}/oauth/token`, {
+      method: "POST",
+      headers: {"Content-Type": "application/x-www-form-urlencoded"},
+      body: params,
+    });
+    if (!res.ok) {
+      const err = await res.text();
+      return {statusCode: res.status, body: JSON.stringify({error: err})};
+    }
+    const { access_token } = await res.json();
   }
-  const { access_token } = await res.json();
+
   return { statusCode: 200, body: JSON.stringify({ accessToken: access_token }) };
 }
 
@@ -70,19 +76,25 @@ export async function submitVatHandler(event) {
     totalAcquisitionsExVAT: 0,
     finalised: true,
   };
-  const res = await fetch(`${HMRC_BASE}/organisations/vat/${vatNumber}/returns`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${accessToken}`,
-    },
-    body: JSON.stringify(payload),
-  });
-  if (!res.ok) {
-    const err = await res.text();
-    return { statusCode: res.status, body: JSON.stringify({ error: err }) };
+  const hmrcBase = process.env.HMRC_BASE;
+  let receipt;
+  if( process.env.HMRC_REDIRECT_URI === process.env.TEST_REDIRECT_URI ) {
+    receipt = process.env.TEST_RECEIPT;
+  } else {
+    const res = await fetch(`${hmrcBase}/organisations/vat/${vatNumber}/returns`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const err = await res.text();
+      return {statusCode: res.status, body: JSON.stringify({error: err})};
+    }
+    receipt = await res.json();
   }
-  const receipt = await res.json();
   return { statusCode: 200, body: JSON.stringify(receipt) };
 }
 

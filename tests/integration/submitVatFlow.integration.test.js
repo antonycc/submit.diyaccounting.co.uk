@@ -7,7 +7,7 @@ import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3
 
 import { authUrlHandler, exchangeTokenHandler, submitVatHandler, logReceiptHandler } from "@src/lib/main.js";
 
-const HMRC = "https://api.service.hmrc.gov.uk";
+const HMRC = "https://test-api.service.hmrc.gov.uk";
 let store;
 const s3Mock = mockClient(S3Client);
 

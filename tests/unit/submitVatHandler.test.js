@@ -41,7 +41,7 @@ describe("submitVatHandler", () => {
     expect(body).toEqual(mockReceipt);
 
     // Verify fetch was called with correct parameters
-    expect(fetch).toHaveBeenCalledWith("https://api.service.hmrc.gov.uk/organisations/vat/123456789/returns", {
+    expect(fetch).toHaveBeenCalledWith("https://test-api.service.hmrc.gov.uk/organisations/vat/123456789/returns", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
