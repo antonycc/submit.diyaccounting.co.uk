@@ -82,6 +82,15 @@ jobs:
       - run: npm ci || npm install
 
       - run: npm run test:coverage
+        env:
+          HMRC_CLIENT_ID: ${{ secrets.HMRC_CLIENT_ID }}
+          HMRC_REDIRECT_URI: ${{ vars.HMRC_REDIRECT_URI }}
+          HMRC_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
+          HMRC_BASE_URI: ${{ vars.HMRC_BASE_URI }}
+          PORT: ${{ vars.PORT }}
+          TEST_REDIRECT_URI: ${{ vars.TEST_REDIRECT_URI }}
+          TEST_ACCESS_TOKEN: ${{ secrets.TEST_ACCESS_TOKEN }}
+          TEST_RECEIPT: ${{ vars.TEST_RECEIPT }}
 
       - name: Upload coverage reports
         uses: actions/upload-artifact@v4
