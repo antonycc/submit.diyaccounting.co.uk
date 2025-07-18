@@ -568,13 +568,13 @@
 
           let authResponseUrl;
           // If the redirect URI contains localhost or 127.0.0.1, use a direct redirect
-          if( redirectUri.includes("localhost") || redirectUri.includes("127.0.0.1") ) {
+          //if( redirectUri.includes("localhost") || redirectUri.includes("127.0.0.1") ) {
             // For local testing, go right back
-            authResponseUrl = redirectUri;
-          } else {
+          //  authResponseUrl = redirectUri;
+          //} else {
             // For deployed, use the configured environment
             authResponseUrl = `${baseUrl}/oauth/authorize?response_type=code&client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scope}&state=${state}`;
-          }
+          //}
 
           showStatus(`Redirecting to HMRC for authentication at ${authResponseUrl}...`, "info");
 

@@ -43,10 +43,34 @@ npm test
 
 ```bash
 
-npx http-server public/ --port 3000
+npm run start
+```
+Access via [http://127.0.0.1:3000](http://127.0.0.1:3000) or...
+
+Install [ngrok](https://ngrok.com/) and run to expose http://127.0.0.1:3000 to an SSL terminated public URL:
+```bash
+ngrok http 3000
 ```
 
-Access via [http://127.0.0.1:3000](http://127.0.0.1:3000)
+ngrok runs:
+```log
+ngrok                                                                                                                                                                                                          (Ctrl+C to quit)
+
+🤖 Want to hang with ngrokkers on our new Discord? http://ngrok.com/discord                                                                                                                                                    
+
+Session Status                online                                                                                                                                                                                           
+Account                       Antony @ Polycode (Plan: Free)                                                                                                                                                                   
+Version                       3.22.1                                                                                                                                                                                           
+Region                        Europe (eu)                                                                                                                                                                                      
+Web Interface                 http://127.0.0.1:4040                                                                                                                                                                            
+Forwarding                    https://d57b-146-70-103-222.ngrok-free.app -> http://localhost:3000                                                                                                                              
+
+Connections                   ttl     opn     rt1     rt5     p50     p90                                                                                                                                                      
+                              0       0       0.00    0.00    0.00    0.00                  
+```
+
+Here you can open https://d57b-146-70-103-222.ngrok-free.app in a browser of your choice (you'll have your own URL
+unless I am still running this one, I don't know when the id's roll so I might.)
 
 Continued in [SETUP.md](programmers/SETUP.md).
 
