@@ -69,7 +69,7 @@ jobs:
           retention-days: 30
 
   npm-integration-test:
-    name: 'npm integration test with coverage'
+    name: 'npm integration test'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -87,7 +87,7 @@ jobs:
       - run: npm run test:integration
 
   npm-system-test:
-    name: 'npm system test with coverage'
+    name: 'npm system test'
     runs-on: ubuntu-latest
     permissions:
       contents: read
