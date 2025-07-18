@@ -7,7 +7,7 @@ import { S3Client } from "@aws-sdk/client-s3";
 
 import { authUrlHandler, exchangeTokenHandler } from "@src/lib/main.js";
 
-const HMRC = "https://test-api.service.hmrc.gov.uk";
+const HMRC = "https://test.test.test.uk";
 const s3Mock = mockClient(S3Client);
 
 // spin up MSW server to catch HMRC calls
@@ -33,9 +33,9 @@ describe("Integration – auth flow", () => {
     process.env = {
       ...originalEnv,
       PORT: "3000",
-      HMRC_BASE_URI: "https://test",
+      HMRC_BASE_URI: "https://test.test.test.uk",
       HMRC_CLIENT_ID: "test client id",
-      HMRC_REDIRECT_URI: "http://hmrc.redirect:3000",
+      HMRC_REDIRECT_URI: "http://test.redirect:3000",
       HMRC_CLIENT_SECRET: "test hmrc client secret",
       TEST_REDIRECT_URI: "http://test.redirect:3000/",
       TEST_ACCESS_TOKEN: "test access token",
@@ -59,8 +59,8 @@ describe("Integration – auth flow", () => {
     expect(res.statusCode).toBe(200);
     const { authUrl } = JSON.parse(res.body);
     expect(authUrl).toContain("response_type=code");
-    expect(authUrl).toContain("client_id=int-test-client-id");
-    expect(authUrl).toContain("redirect_uri=https%3A%2F%2Fexample.com%2Fcb");
+    expect(authUrl).toContain("client_id=test%20client%20id");
+    expect(authUrl).toContain("redirect_uri=http%3A%2F%2Ftest.redirect");
     expect(authUrl).toContain("state=xyz-123");
   });
 

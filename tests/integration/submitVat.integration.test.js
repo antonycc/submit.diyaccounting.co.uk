@@ -7,7 +7,7 @@ import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 
 import { authUrlHandler, exchangeTokenHandler, submitVatHandler, logReceiptHandler } from "@src/lib/main.js";
 
-const HMRC = "https://test-api.service.hmrc.gov.uk";
+const HMRC = "https://test.test.test.uk";
 const s3Mock = mockClient(S3Client);
 
 // spin up MSW server to catch HMRC calls
@@ -46,7 +46,7 @@ describe("Integration – VAT flow", () => {
     process.env = {
       ...originalEnv,
       PORT: "3000",
-      HMRC_BASE_URI: "https://test",
+      HMRC_BASE_URI: "https://test.test.test.uk",
       HMRC_CLIENT_ID: "test client id",
       HMRC_REDIRECT_URI: "http://hmrc.redirect:3000",
       HMRC_CLIENT_SECRET: "test hmrc client secret",

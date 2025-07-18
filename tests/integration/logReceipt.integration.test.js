@@ -24,7 +24,7 @@ describe("Integration – log receipt flow", () => {
     process.env = {
       ...originalEnv,
       PORT: "3000",
-      HMRC_BASE_URI: "https://test",
+      HMRC_BASE_URI: "https://test.test.test.uk",
       HMRC_CLIENT_ID: "test client id",
       HMRC_REDIRECT_URI: "http://hmrc.redirect:3000",
       HMRC_CLIENT_SECRET: "test hmrc client secret",
