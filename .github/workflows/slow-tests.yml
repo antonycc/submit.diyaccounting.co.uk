@@ -18,7 +18,6 @@ on:
       - 'tests/**'
       - '**/*.json'
       - '.github/workflows/**'
-      - '.env.github'
   workflow_dispatch:
   schedule:
     - cron: '23 * * * *'

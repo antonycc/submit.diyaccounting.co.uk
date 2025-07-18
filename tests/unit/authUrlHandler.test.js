@@ -7,9 +7,18 @@ describe("authUrlHandler", () => {
   beforeEach(() => {
     process.env = {
       ...originalEnv,
-      HMRC_CLIENT_ID: "test-client-id",
-      HMRC_REDIRECT_URI: "https://example.com/callback",
-      HMRC_BASE_URI: "https://test-api.service.hmrc.gov.uk",
+      PORT: "3000",
+      HMRC_BASE_URI: "https://test",
+      HMRC_CLIENT_ID: "test client id",
+      HMRC_REDIRECT_URI: "http://hmrc.redirect:3000",
+      HMRC_CLIENT_SECRET: "test hmrc client secret",
+      TEST_REDIRECT_URI: "http://test.redirect:3000/",
+      TEST_ACCESS_TOKEN: "test access token",
+      TEST_RECEIPT: JSON.stringify({
+        formBundleNumber: "test-123456789012",
+        chargeRefNumber: "test-XM002610011594",
+        processingDate: "2023-01-01T12:00:00.000Z"
+      }),
     };
   });
 
@@ -28,10 +37,10 @@ describe("authUrlHandler", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(200);
-    expect(body.authUrl).toContain("https://test-api.service.hmrc.gov.uk/oauth/authorize");
+    expect(body.authUrl).toContain("https://test/oauth/authorize");
     expect(body.authUrl).toContain("response_type=code");
-    expect(body.authUrl).toContain("client_id=test-client-id");
-    expect(body.authUrl).toContain("redirect_uri=https%3A%2F%2Fexample.com%2Fcallback");
+    expect(body.authUrl).toContain("client_id=test%20client%20id");
+    expect(body.authUrl).toContain("redirect_uri=http%3A%2F%2Fhmrc.redirect%3A3000");
     expect(body.authUrl).toContain("scope=write%3Avat%20read%3Avat");
     expect(body.authUrl).toContain("state=test-state-123");
   });

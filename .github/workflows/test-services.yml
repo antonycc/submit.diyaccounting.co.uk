@@ -13,7 +13,6 @@ on:
       - '**/*.json'
       - '.github/workflows/test-services.yml'
       - '!aws/**'
-      - '.env.github'
   workflow_dispatch:
   schedule:
     - cron: '34 2,3,4 * * *'

@@ -12,6 +12,7 @@ const s3Mock = mockClient(S3Client);
 const server = setupServer();
 
 describe("Integration – log receipt flow", () => {
+  const originalEnv = process.env;
   beforeAll(() => {
     server.listen({ onUnhandledRequest: "error" });
     // stub out console if you want less noise
@@ -21,11 +22,20 @@ describe("Integration – log receipt flow", () => {
   beforeEach(() => {
     vi.resetAllMocks();
     process.env = {
-      ...process.env,
-      HMRC_CLIENT_ID: "int-test-client-id",
-      HMRC_CLIENT_SECRET: "int-test-secret",
-      REDIRECT_URI: "https://example.com/cb",
-      RECEIPTS_BUCKET: "my-test-bucket",
+      ...originalEnv,
+      PORT: "3000",
+      HMRC_BASE_URI: "https://test",
+      HMRC_CLIENT_ID: "test client id",
+      HMRC_REDIRECT_URI: "http://hmrc.redirect:3000",
+      HMRC_CLIENT_SECRET: "test hmrc client secret",
+      TEST_REDIRECT_URI: "http://test.redirect:3000/",
+      TEST_ACCESS_TOKEN: "test access token",
+      TEST_RECEIPT: JSON.stringify({
+        formBundleNumber: "test-123456789012",
+        chargeRefNumber: "test-XM002610011594",
+        processingDate: "2023-01-01T12:00:00.000Z"
+      }),
+      RECEIPTS_BUCKET: "test-receipts-bucket",
     };
     s3Mock.reset();
   });
@@ -51,7 +61,7 @@ describe("Integration – log receipt flow", () => {
     expect(s3Mock.calls()).toHaveLength(1);
     const [firstCall] = s3Mock.calls();
     expect(firstCall.args[0].input).toEqual({
-      Bucket: "my-test-bucket",
+      Bucket: "test-receipts-bucket",
       Key: "receipts/FOO123.json",
       Body: JSON.stringify(fakeReceipt),
       ContentType: "application/json",

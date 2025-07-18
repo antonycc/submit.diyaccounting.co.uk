@@ -13,7 +13,6 @@ on:
       - 'mvnw'
       - '.mvn'
       - '.github/workflows/test-infra.yml'
-      - '.env.github'
   workflow_dispatch:
   schedule:
     - cron: '34 2,3,4 * * *'

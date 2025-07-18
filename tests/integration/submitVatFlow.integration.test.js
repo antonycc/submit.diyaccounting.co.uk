@@ -30,6 +30,7 @@ const server = setupServer(
 );
 
 describe("System Test – end-to-end AWS-like flow", () => {
+  const originalEnv = process.env;
   beforeAll(() => server.listen({ onUnhandledRequest: "error" }));
   afterAll(() => server.close());
 
@@ -38,11 +39,20 @@ describe("System Test – end-to-end AWS-like flow", () => {
     store = new Map();
     // Stub environment variables
     process.env = {
-      ...process.env,
-      HMRC_CLIENT_ID: "sys-client-id",
-      HMRC_CLIENT_SECRET: "sys-client-secret",
-      REDIRECT_URI: "https://sys.example.com/callback",
-      RECEIPTS_BUCKET: "sys-bucket",
+      ...originalEnv,
+      PORT: "3000",
+      HMRC_BASE_URI: "https://test",
+      HMRC_CLIENT_ID: "test client id",
+      HMRC_REDIRECT_URI: "http://hmrc.redirect:3000",
+      HMRC_CLIENT_SECRET: "test hmrc client secret",
+      TEST_REDIRECT_URI: "http://test.redirect:3000/",
+      TEST_ACCESS_TOKEN: "test access token",
+      TEST_RECEIPT: JSON.stringify({
+        formBundleNumber: "test-123456789012",
+        chargeRefNumber: "test-XM002610011594",
+        processingDate: "2023-01-01T12:00:00.000Z"
+      }),
+      RECEIPTS_BUCKET: "test-receipts-bucket",
     };
 
     // Configure S3 mock to use in-memory store

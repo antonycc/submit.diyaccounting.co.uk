@@ -12,14 +12,22 @@ describe("exchangeTokenHandler", () => {
   const originalEnv = process.env;
 
   beforeEach(() => {
+    vi.clearAllMocks();
     process.env = {
       ...originalEnv,
-      HMRC_CLIENT_ID: "test-client-id",
-      HMRC_CLIENT_SECRET: "test-client-secret",
-      HMRC_REDIRECT_URI: "https://example.com/callback",
-      HMRC_BASE_URI: "https://test-api.service.hmrc.gov.uk",
+      PORT: "3000",
+      HMRC_BASE_URI: "https://test",
+      HMRC_CLIENT_ID: "test client id",
+      HMRC_REDIRECT_URI: "http://hmrc.redirect:3000",
+      HMRC_CLIENT_SECRET: "test hmrc client secret",
+      TEST_REDIRECT_URI: "http://test.redirect:3000/",
+      TEST_ACCESS_TOKEN: "test access token",
+      TEST_RECEIPT: JSON.stringify({
+        formBundleNumber: "test-123456789012",
+        chargeRefNumber: "test-XM002610011594",
+        processingDate: "2023-01-01T12:00:00.000Z"
+      }),
     };
-    vi.clearAllMocks();
   });
 
   afterEach(() => {
@@ -49,7 +57,7 @@ describe("exchangeTokenHandler", () => {
     expect(body.accessToken).toBe("test-access-token");
 
     // Verify fetch was called with correct parameters
-    expect(fetch).toHaveBeenCalledWith("https://test-api.service.hmrc.gov.uk/oauth/token", {
+    expect(fetch).toHaveBeenCalledWith("https://test/oauth/token", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: expect.any(URLSearchParams),
@@ -59,9 +67,9 @@ describe("exchangeTokenHandler", () => {
     const fetchCall = fetch.mock.calls[0];
     const params = fetchCall[1].body;
     expect(params.get("grant_type")).toBe("authorization_code");
-    expect(params.get("client_id")).toBe("test-client-id");
-    expect(params.get("client_secret")).toBe("test-client-secret");
-    expect(params.get("redirect_uri")).toBe("https://example.com/callback");
+    expect(params.get("client_id")).toBe("test client id");
+    expect(params.get("client_secret")).toBe("test hmrc client secret");
+    expect(params.get("redirect_uri")).toBe("http://hmrc.redirect:3000");
     expect(params.get("code")).toBe("test-auth-code");
   });
 
