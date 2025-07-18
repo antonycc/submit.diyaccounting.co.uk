@@ -34,7 +34,7 @@ describe("Integration – auth flow", () => {
       HMRC_CLIENT_ID: "int-test-client-id",
       HMRC_CLIENT_SECRET: "int-test-secret",
       HMRC_REDIRECT_URI: "https://example.com/cb",
-      HMRC_BASE: "https://test-api.service.hmrc.gov.uk",
+      HMRC_BASE_URI: "https://test-api.service.hmrc.gov.uk",
       RECEIPTS_BUCKET: "my-test-bucket",
     };
     s3Mock.reset();

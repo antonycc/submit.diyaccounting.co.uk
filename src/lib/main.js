@@ -13,7 +13,7 @@ export async function authUrlHandler(event) {
   }
   const clientId = process.env.HMRC_CLIENT_ID;
   const redirectUri = process.env.HMRC_REDIRECT_URI;
-  const hmrcBase = process.env.HMRC_BASE;
+  const hmrcBase = process.env.HMRC_BASE_URI;
   const scope = "write:vat read:vat";
   const authUrl =
     `${hmrcBase}/oauth/authorize?response_type=code` +
@@ -37,7 +37,7 @@ export async function exchangeTokenHandler(event) {
     redirect_uri: process.env.HMRC_REDIRECT_URI,
     code,
   });
-  const hmrcBase = process.env.HMRC_BASE;
+  const hmrcBase = process.env.HMRC_BASE_URI;
   let access_token;
   if( process.env.HMRC_REDIRECT_URI === process.env.TEST_REDIRECT_URI ) {
     access_token = process.env.TEST_ACCESS_TOKEN;
@@ -77,7 +77,7 @@ export async function submitVatHandler(event) {
     totalAcquisitionsExVAT: 0,
     finalised: true,
   };
-  const hmrcBase = process.env.HMRC_BASE;
+  const hmrcBase = process.env.HMRC_BASE_URI;
   let receipt;
   if( process.env.HMRC_REDIRECT_URI === process.env.TEST_REDIRECT_URI ) {
     // TEST_RECEIPT is already a JSON string, so parse it first

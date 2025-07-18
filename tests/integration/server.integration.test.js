@@ -79,7 +79,7 @@ describe("Integration – Server Express App", () => {
       HMRC_CLIENT_ID: "integration-test-client-id",
       HMRC_CLIENT_SECRET: "integration-test-secret",
       HMRC_REDIRECT_URI: "https://submit.diyaccounting.co.uk/callback",
-      HMRC_BASE: "https://test-api.service.hmrc.gov.uk",
+      HMRC_BASE_URI: "https://test-api.service.hmrc.gov.uk",
       RECEIPTS_BUCKET: "integration-test-bucket",
       PORT: "3001",
     };
