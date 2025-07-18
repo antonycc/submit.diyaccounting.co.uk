@@ -16,7 +16,8 @@ describe("exchangeTokenHandler", () => {
       ...originalEnv,
       HMRC_CLIENT_ID: "test-client-id",
       HMRC_CLIENT_SECRET: "test-client-secret",
-      REDIRECT_URI: "https://example.com/callback",
+      HMRC_REDIRECT_URI: "https://example.com/callback",
+      HMRC_BASE: "https://test-api.service.hmrc.gov.uk",
     };
     vi.clearAllMocks();
   });

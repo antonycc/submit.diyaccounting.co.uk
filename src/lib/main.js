@@ -51,7 +51,8 @@ export async function exchangeTokenHandler(event) {
       const err = await res.text();
       return {statusCode: res.status, body: JSON.stringify({error: err})};
     }
-    const { access_token } = await res.json();
+    const tokenResponse = await res.json();
+    access_token = tokenResponse.access_token;
   }
 
   return { statusCode: 200, body: JSON.stringify({ accessToken: access_token }) };
@@ -79,7 +80,8 @@ export async function submitVatHandler(event) {
   const hmrcBase = process.env.HMRC_BASE;
   let receipt;
   if( process.env.HMRC_REDIRECT_URI === process.env.TEST_REDIRECT_URI ) {
-    receipt = process.env.TEST_RECEIPT;
+    // TEST_RECEIPT is already a JSON string, so parse it first
+    receipt = JSON.parse(process.env.TEST_RECEIPT || '{}');
   } else {
     const res = await fetch(`${hmrcBase}/organisations/vat/${vatNumber}/returns`, {
       method: "POST",

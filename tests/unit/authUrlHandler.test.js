@@ -8,7 +8,8 @@ describe("authUrlHandler", () => {
     process.env = {
       ...originalEnv,
       HMRC_CLIENT_ID: "test-client-id",
-      REDIRECT_URI: "https://example.com/callback",
+      HMRC_REDIRECT_URI: "https://example.com/callback",
+      HMRC_BASE: "https://test-api.service.hmrc.gov.uk",
     };
   });
 
