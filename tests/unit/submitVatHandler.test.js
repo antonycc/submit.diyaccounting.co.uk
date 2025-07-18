@@ -11,12 +11,27 @@ import fetch from "node-fetch";
 describe("submitVatHandler", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+
+    // Set up environment variables
+    process.env.PORT = 3000
+    process.env.HMRC_BASE_URI = "https://test-api.service.hmrc.gov.uk";
+    process.env.HMRC_CLIENT_ID = "test";
+    process.env.HMRC_REDIRECT_URI = "http://hmrc.redirect:3000";
+    process.env.HMRC_CLIENT_SECRET = "test hmrc client secret";
+    process.env.HMRC_BASE_URI= "https://test";
+    process.env.TEST_REDIRECT_URI = "http://test.redirect:3000/";
+    process.env.TEST_ACCESS_TOKEN = "test access token";
+    process.env.TEST_RECEIPT = JSON.stringify({
+      formBundleNumber: "test-123456789012",
+      chargeRefNumber: "test-XM002610011594",
+      processingDate: "2023-01-01T12:00:00.000Z"
+    });
   });
 
   test("should submit VAT return successfully", async () => {
     const mockReceipt = {
-      formBundleNumber: "123456789012",
-      chargeRefNumber: "XM002610011594",
+      formBundleNumber: "mock-123456789012",
+      chargeRefNumber: "mock-XM002610011594",
       processingDate: "2023-01-01T12:00:00.000Z",
     };
 
@@ -41,7 +56,7 @@ describe("submitVatHandler", () => {
     expect(body).toEqual(mockReceipt);
 
     // Verify fetch was called with correct parameters
-    expect(fetch).toHaveBeenCalledWith("https://test-api.service.hmrc.gov.uk/organisations/vat/123456789/returns", {
+    expect(fetch).toHaveBeenCalledWith("https://test/organisations/vat/123456789/returns", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
