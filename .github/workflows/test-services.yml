@@ -37,6 +37,15 @@ jobs:
       - run: npm ci
 
       - run: npm test
+        env:
+          HMRC_CLIENT_ID: ${{ vars.HMRC_CLIENT_ID }}
+          HMRC_REDIRECT_URI: ${{ vars.HMRC_REDIRECT_URI }}
+          HMRC_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
+          HMRC_BASE: ${{ vars.HMRC_BASE }}
+          PORT: ${{ vars.PORT }}
+          TEST_REDIRECT_URI: ${{ vars.TEST_REDIRECT_URI }}
+          TEST_ACCESS_TOKEN: ${{ secrets.TEST_ACCESS_TOKEN }}
+          TEST_RECEIPT: ${{ vars.TEST_RECEIPT }}
 
   npm-build:
     name: 'npm build'
