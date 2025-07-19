@@ -1,0 +1,65 @@
+# .github/workflows/test-behaviour.yml
+
+name: test behaviour
+run-name: 'test behaviour [${{ github.ref_name }}] [${{ github.event.head_commit.message }}]'
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - '**/*.json'
+      - 'public/**'
+      - 'tests/behaviour/**'
+      - '.github/workflows/test-behaviour.yml'
+  workflow_dispatch:
+  schedule:
+    - cron: '34 2,3,4 * * *'
+
+jobs:
+
+  npm-behaviour-test:
+    name: 'npm behaviour test'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - run: npm ci || npm install
+
+      - run: npx playwright install --with-deps
+
+      - run: npm run test:behaviour
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-behaviour
+          path: behaviour-test-results/
+          retention-days: 30
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: test-results/
+          retention-days: 30
+
+      - name: Upload test reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-reports-behaviour
+          path: test-reports/
+          retention-days: 30

@@ -146,7 +146,7 @@ describe("Server Unit Tests", () => {
     test("should call exchangeTokenHandler with correct event format", async () => {
       const mockResponse = {
         statusCode: 200,
-        body: JSON.stringify({ accessToken: "test-token" }),
+        body: JSON.stringify({ hmrcAccessToken: "test-token" }),
       };
       exchangeTokenHandler.mockResolvedValue(mockResponse);
 
@@ -156,7 +156,7 @@ describe("Server Unit Tests", () => {
       expect(exchangeTokenHandler).toHaveBeenCalledWith({
         body: JSON.stringify(requestBody),
       });
-      expect(response.body).toEqual({ accessToken: "test-token" });
+      expect(response.body).toEqual({ hmrcAccessToken: "test-token" });
     });
 
     test("should handle exchangeTokenHandler errors", async () => {
@@ -184,7 +184,7 @@ describe("Server Unit Tests", () => {
         vatNumber: "193054661",
         periodKey: "18A1",
         vatDue: "100.00",
-        accessToken: "test-token",
+        hmrcAccessToken: "test-token",
       };
       const response = await request(app).post("/api/submit-vat").send(requestBody).expect(200);
 

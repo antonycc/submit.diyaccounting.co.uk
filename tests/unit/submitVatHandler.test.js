@@ -7,6 +7,7 @@ vi.mock("node-fetch", () => ({
 }));
 
 import fetch from "node-fetch";
+import {buildGovClientTestHeaders} from "@tests/unit/govClientTestHeader.js";
 
 describe("submitVatHandler", () => {
   const originalEnv = process.env;
@@ -31,6 +32,7 @@ describe("submitVatHandler", () => {
   });
 
   test("should submit VAT return successfully", async () => {
+    const headers = buildGovClientTestHeaders();
     const mockReceipt = {
       formBundleNumber: "mock-123456789012",
       chargeRefNumber: "mock-XM002610011594",
@@ -47,22 +49,32 @@ describe("submitVatHandler", () => {
         vatNumber: "193054661",
         periodKey: "23A1",
         vatDue: "1000.50",
-        accessToken: "test-access-token",
+        hmrcAccessToken: "test-access-token",
       }),
+        headers: {
+          ...headers,
+        },
     };
 
     const result = await submitVatHandler(event);
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(200);
-    expect(body).toEqual(mockReceipt);
+    expect(body.receipt).toEqual(mockReceipt);
 
     // Verify fetch was called with correct parameters
-    expect(fetch).toHaveBeenCalledWith("https://test/organisations/vat/123456789/returns", {
+    expect(fetch).toHaveBeenCalledWith("https://test/organisations/vat/193054661/returns", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "Authorization": "Bearer test-access-token",
+        ...headers,
+        "Accept": "application/vnd.hmrc.1.0+json",
+        "Gov-Client-Connection-Method": "WEB_APP_VIA_SERVER",
+        "Gov-Vendor-Forwarded": "by=203.0.113.6&for=198.51.100.0",
+        "Gov-Vendor-License-IDs": "my-licensed-software=8D7963490527D33716835EE7C195516D5E562E03B224E9B359836466EE40CDE1",
+        "Gov-Vendor-Product-Name": "DIY Accounting Submit",
+        "Gov-Vendor-Version": "web-submit-diyaccounting-co-uk-0.0.2-4",
       },
       body: JSON.stringify({
         periodKey: "23A1",
@@ -85,7 +97,7 @@ describe("submitVatHandler", () => {
       body: JSON.stringify({
         periodKey: "23A1",
         vatDue: "1000.50",
-        accessToken: "test-access-token",
+        hmrcAccessToken: "test-access-token",
       }),
     };
 
@@ -93,7 +105,7 @@ describe("submitVatHandler", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(400);
-    expect(body.error).toBe("Missing parameters from URL");
+    expect(body.error).toBe("Missing vatNumber parameter from body");
     expect(fetch).not.toHaveBeenCalled();
   });
 
@@ -102,7 +114,7 @@ describe("submitVatHandler", () => {
       body: JSON.stringify({
         vatNumber: "193054661",
         vatDue: "1000.50",
-        accessToken: "test-access-token",
+        hmrcAccessToken: "test-access-token",
       }),
     };
 
@@ -110,7 +122,7 @@ describe("submitVatHandler", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(400);
-    expect(body.error).toBe("Missing parameters from URL");
+    expect(body.error).toBe("Missing periodKey parameter from body");
     expect(fetch).not.toHaveBeenCalled();
   });
 
@@ -119,7 +131,7 @@ describe("submitVatHandler", () => {
       body: JSON.stringify({
         vatNumber: "193054661",
         periodKey: "23A1",
-        accessToken: "test-access-token",
+        hmrcAccessToken: "test-access-token",
       }),
     };
 
@@ -127,11 +139,11 @@ describe("submitVatHandler", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(400);
-    expect(body.error).toBe("Missing parameters from URL");
+    expect(body.error).toBe("Missing vatDue parameter from body");
     expect(fetch).not.toHaveBeenCalled();
   });
 
-  test("should return 400 when accessToken is missing", async () => {
+  test("should return 400 when hmrcAccessToken is missing", async () => {
     const event = {
       body: JSON.stringify({
         vatNumber: "193054661",
@@ -144,7 +156,7 @@ describe("submitVatHandler", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(400);
-    expect(body.error).toBe("Missing parameters from URL");
+    expect(body.error).toBe("Missing hmrcAccessToken parameter from body");
     expect(fetch).not.toHaveBeenCalled();
   });
 
@@ -157,7 +169,7 @@ describe("submitVatHandler", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(400);
-    expect(body.error).toBe("Missing parameters from URL");
+    expect(body.error).toBe("Missing vatNumber parameter from body, Missing periodKey parameter from body, Missing vatDue parameter from body, Missing hmrcAccessToken parameter from body");
     expect(fetch).not.toHaveBeenCalled();
   });
 
@@ -170,7 +182,7 @@ describe("submitVatHandler", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(400);
-    expect(body.error).toBe("Missing parameters from URL");
+    expect(body.error).toBe("Missing vatNumber parameter from body, Missing periodKey parameter from body, Missing vatDue parameter from body, Missing hmrcAccessToken parameter from body");
     expect(fetch).not.toHaveBeenCalled();
   });
 
@@ -183,7 +195,7 @@ describe("submitVatHandler", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(400);
-    expect(body.error).toBe("Missing parameters from URL");
+    expect(body.error).toBe("Missing vatNumber parameter from body, Missing periodKey parameter from body, Missing vatDue parameter from body, Missing hmrcAccessToken parameter from body");
     expect(fetch).not.toHaveBeenCalled();
   });
 
@@ -193,7 +205,7 @@ describe("submitVatHandler", () => {
         vatNumber: "",
         periodKey: "",
         vatDue: "",
-        accessToken: "",
+        hmrcAccessToken: "",
       }),
     };
 
@@ -201,7 +213,7 @@ describe("submitVatHandler", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(400);
-    expect(body.error).toBe("Missing parameters from URL");
+    expect(body.error).toBe("Missing vatNumber parameter from body, Missing periodKey parameter from body, Missing vatDue parameter from body, Missing hmrcAccessToken parameter from body");
     expect(fetch).not.toHaveBeenCalled();
   });
 
@@ -219,7 +231,7 @@ describe("submitVatHandler", () => {
         vatNumber: "invalid",
         periodKey: "23A1",
         vatDue: "1000.50",
-        accessToken: "test-access-token",
+        hmrcAccessToken: "test-access-token",
       }),
     };
 
@@ -227,7 +239,7 @@ describe("submitVatHandler", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(500);
-    expect(body.error).toBe(errorMessage);
+    expect(body.hmrcResponseText).toBe(errorMessage);
   });
 
   test("should handle HMRC API 401 unauthorized", async () => {
@@ -244,7 +256,7 @@ describe("submitVatHandler", () => {
         vatNumber: "193054661",
         periodKey: "23A1",
         vatDue: "1000.50",
-        accessToken: "invalid-token",
+        hmrcAccessToken: "invalid-token",
       }),
     };
 
@@ -252,7 +264,7 @@ describe("submitVatHandler", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(500);
-    expect(body.error).toBe(errorMessage);
+    expect(body.hmrcResponseText).toBe(errorMessage);
   });
 
   test("should handle numeric vatDue as string", async () => {
@@ -268,7 +280,7 @@ describe("submitVatHandler", () => {
         vatNumber: "193054661",
         periodKey: "23A1",
         vatDue: "1500.75",
-        accessToken: "test-access-token",
+        hmrcAccessToken: "test-access-token",
       }),
     };
 
@@ -297,7 +309,7 @@ describe("submitVatHandler", () => {
         vatNumber: "193054661",
         periodKey: "23A1",
         vatDue: 2000.25,
-        accessToken: "test-access-token",
+        hmrcAccessToken: "test-access-token",
       }),
     };
 
@@ -329,7 +341,7 @@ describe("submitVatHandler", () => {
         vatNumber: "193054661",
         periodKey: "23A1",
         vatDue: "1000.50",
-        accessToken: "test-access-token",
+        hmrcAccessToken: "test-access-token",
       }),
     };
 
@@ -343,7 +355,7 @@ describe("submitVatHandler", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(400);
-    expect(body.error).toBe("Missing parameters from URL");
+    expect(body.error).toBe("Missing vatNumber parameter from body, Missing periodKey parameter from body, Missing vatDue parameter from body, Missing hmrcAccessToken parameter from body");
     expect(fetch).not.toHaveBeenCalled();
   });
 });

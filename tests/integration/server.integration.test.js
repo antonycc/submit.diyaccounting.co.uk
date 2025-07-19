@@ -147,8 +147,8 @@ describe("Integration – Server Express App", () => {
 
       console.log("[DEBUG_LOG] Token exchange response:", response.body);
 
-      expect(response.body).toHaveProperty("accessToken");
-      expect(response.body.accessToken).toBe("mocked-access-token");
+      expect(response.body).toHaveProperty("hmrcAccessToken");
+      expect(response.body.hmrcAccessToken).toBe("mocked-access-token");
     });
 
     it("should handle missing state in auth URL", async () => {
@@ -172,7 +172,7 @@ describe("Integration – Server Express App", () => {
         vatNumber: "193054661",
         periodKey: "18A1",
         vatDue: "150.00",
-        accessToken: "mocked-access-token",
+        hmrcAccessToken: "mocked-access-token",
       };
 
       const response = await request(app).post("/api/submit-vat").send(vatData).expect(200);
@@ -269,8 +269,8 @@ describe("Integration – Server Express App", () => {
       // Step 2: Exchange code for token
       const tokenResponse = await request(app).post("/api/exchange-token").send({ code: "flow-test-code" }).expect(200);
 
-      expect(tokenResponse.body).toHaveProperty("accessToken");
-      const accessToken = tokenResponse.body.accessToken;
+      expect(tokenResponse.body).toHaveProperty("hmrcAccessToken");
+      const hmrcAccessToken = tokenResponse.body.hmrcAccessToken;
 
       // Step 3: Submit VAT return
       const vatResponse = await request(app)
@@ -279,7 +279,7 @@ describe("Integration – Server Express App", () => {
           vatNumber: "987654321",
           periodKey: "18A2",
           vatDue: "250.00",
-          accessToken: accessToken,
+          hmrcAccessToken: hmrcAccessToken,
         })
         .expect(200);
 

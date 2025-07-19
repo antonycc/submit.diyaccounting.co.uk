@@ -42,7 +42,7 @@ Exchanges the OAuth authorization code for an HMRC access token.
 
 ```json
 {
-  "accessToken": "hmrc_access_token"
+  "access_token": "hmrc_access_token"
 }
 ```
 
@@ -59,7 +59,7 @@ Submits the VAT return details to HMRC.
   "vatNumber": "193054661",
   "periodKey": "24A1",
   "vatDue": "2400.00",
-  "accessToken": "hmrc_access_token"
+  "hmrcAccessToken": "hmrc_access_token"
 }
 ```
 

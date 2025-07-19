@@ -16,7 +16,7 @@ const server = setupServer(
   http.post(`${HMRC}/oauth/token`, async ({ request }) => {
     const formData = await request.formData();
     // verify grant_type etc. if you like
-    return HttpResponse.json({ access_token: "stubbed-access-token" }, { status: 200 });
+    return HttpResponse.json({ hmrcAccessToken: "stubbed-access-token" }, { status: 200 });
   }),
 );
 
@@ -70,7 +70,7 @@ describe("Integration – auth flow", () => {
     console.log("[DEBUG_LOG] Response status:", res.statusCode);
     console.log("[DEBUG_LOG] Response body:", res.body);
     expect(res.statusCode).toBe(200);
-    const { accessToken } = JSON.parse(res.body);
-    expect(accessToken).toBe("stubbed-access-token");
+    const { hmrcAccessToken } = JSON.parse(res.body);
+    expect(hmrcAccessToken).toBe("stubbed-access-token");
   });
 });

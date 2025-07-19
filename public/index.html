@@ -407,15 +407,15 @@
         }
 
         const responseJson = await response.json();
-        const accessToken = responseJson.access_token;
-        if (!accessToken) {
-          const message = `Failed to exchange token. Remote call response did not include access_token: POST ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`;
+        const hmrcAccessToken = responseJson.hmrcAccessToken;
+        if (!hmrcAccessToken) {
+          const message = `Failed to exchange token. Remote call response did not include hmrcAccessToken: POST ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`;
           console.error(message);
           throw new Error(message);
         }
 
-        console.log(`Exchanged token. Remote call completed successfully: POST ${url}`, responseJson, accessToken);
-        return accessToken;
+        console.log(`Exchanged token. Remote call completed successfully: POST ${url}`, responseJson, hmrcAccessToken);
+        return hmrcAccessToken;
       }
 
       // Enhanced IP detection function with multiple fallback methods
@@ -500,17 +500,17 @@
         });
       }
 
-      async function submitVat(vatNumber, periodKey, vatDue, accessToken) {
+      async function submitVatWithCalculatedHeaders(vatNumber, periodKey, vatDue, hmrcAccessToken) {
         // Populate headers with required values using what is available in the browser environment
         const govClientBrowserJSUserAgentHeader = navigator.userAgent;
         const govClientDeviceIDHeader = crypto.randomUUID();
         const govClientMultiFactorHeader = "type=OTHER";
-        
+
         // Enhanced IP detection with fallbacks
         const detectedIP = await getClientIP();
         const govClientPublicIPHeader = detectedIP;
         const govVendorPublicIPHeader = detectedIP; // Fix: Define the previously undefined variable
-        
+
         const govClientPublicIPTimestampHeader = new Date().toISOString();
         const govClientPublicPortHeader = "" + (window.location.port || (window.location.protocol === 'https:' ? '443' : '80'));
         const govClientScreensHeader = JSON.stringify({
@@ -527,12 +527,31 @@
         });
         const govVendorForwardedHeader = "test=1";
 
+        const headers = {
+          "Gov-Client-Browser-JS-User-Agent": govClientBrowserJSUserAgentHeader,
+          "Gov-Client-Device-ID": govClientDeviceIDHeader,
+          "Gov-Client-Multi-Factor": govClientMultiFactorHeader,
+          "Gov-Client-Public-IP": govClientPublicIPHeader,
+          "Gov-Client-Public-IP-Timestamp": govClientPublicIPTimestampHeader,
+          "Gov-Client-Public-Port": govClientPublicPortHeader,
+          "Gov-Client-Screens": govClientScreensHeader,
+          "Gov-Client-Timezone": govClientTimezoneHeader,
+          "Gov-Client-User-IDs": govClientUserIDsHeader,
+          "Gov-Client-Window-Size": govClientWindowSizeHeader,
+          "Gov-Vendor-Forwarded": govVendorForwardedHeader,
+          "Gov-Vendor-Public-IP": govVendorPublicIPHeader,
+        }
+        return await submitVat(vatNumber, periodKey, vatDue, hmrcAccessToken, headers);
+      }
+
+      async function submitVat(vatNumber, periodKey, vatDue, hmrcAccessToken, headers) {
+
         const url = "/api/submit-vat";
         const body = JSON.stringify({
           vatNumber,
           periodKey,
           vatDue,
-          accessToken,
+          hmrcAccessToken,
         });
         console.log(`Submitting VAT. Remote call initiated: POST ${url} ++ Body: ${body}`);
 
@@ -540,18 +559,7 @@
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Gov-Client-Browser-JS-User-Agent": govClientBrowserJSUserAgentHeader,
-            "Gov-Client-Device-ID": govClientDeviceIDHeader,
-            "Gov-Client-Multi-Factor": govClientMultiFactorHeader,
-            "Gov-Client-Public-IP": govClientPublicIPHeader,
-            "Gov-Client-Public-IP-Timestamp": govClientPublicIPTimestampHeader,
-            "Gov-Client-Public-Port": govClientPublicPortHeader,
-            "Gov-Client-Screens": govClientScreensHeader,
-            "Gov-Client-Timezone": govClientTimezoneHeader,
-            "Gov-Client-User-IDs": govClientUserIDsHeader,
-            "Gov-Client-Window-Size": govClientWindowSizeHeader,
-            "Gov-Vendor-Forwarded": govVendorForwardedHeader,
-            "Gov-Vendor-Public-IP": govVendorPublicIPHeader,
+            ...headers
           },
           body,
         });
@@ -697,7 +705,7 @@
           showStatus("Submitting VAT return to HMRC...", "info");
 
           // Submit VAT return
-          const submitResponse = await submitVat(
+          const submitResponse = await submitVatWithCalculatedHeaders(
             submissionData.vatNumber,
             submissionData.periodKey,
             submissionData.vatDue,

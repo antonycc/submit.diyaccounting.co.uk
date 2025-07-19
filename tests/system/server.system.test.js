@@ -207,7 +207,7 @@ describe("System – Server Process", () => {
         vatNumber: "193054661",
         periodKey: "18A1",
         vatDue: "100.00",
-        accessToken: "system-test-token",
+        hmrcAccessToken: "system-test-token",
       };
 
       const response = await fetch(`${baseUrl}/api/submit-vat`, {

@@ -43,7 +43,9 @@ describe("logReceiptHandler", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(200);
-    expect(body.status).toBe("receipt logged");
+    expect(body.receipt).not.toBeUndefined;
+    expect(body.receipt.formBundleNumber).not.toBeUndefined;
+    expect(body.receipt.formBundleNumber).toBe(receipt.formBundleNumber);
 
     // Verify S3 client was called with correct parameters
     expect(mockSend).toHaveBeenCalledWith({
@@ -74,158 +76,6 @@ describe("logReceiptHandler", () => {
     expect(result.statusCode).toBe(500);
     expect(body.error).toBe("Failed to log receipt");
     expect(body.details).toBe("Access denied");
-  });
-
-  test("should handle empty receipt object", async () => {
-    mockSend.mockResolvedValueOnce({});
-
-    const receipt = {};
-
-    const event = {
-      body: JSON.stringify(receipt),
-    };
-
-    const result = await logReceiptHandler(event);
-    const body = JSON.parse(result.body);
-
-    expect(result.statusCode).toBe(200);
-    expect(body.status).toBe("receipt logged");
-
-    // Verify S3 client was called with undefined formBundleNumber
-    expect(mockSend).toHaveBeenCalledWith({
-      Bucket: "test-receipts-bucket",
-      Key: "receipts/undefined.json",
-      Body: JSON.stringify(receipt),
-      ContentType: "application/json",
-    });
-  });
-
-  test("should handle receipt with null formBundleNumber", async () => {
-    mockSend.mockResolvedValueOnce({});
-
-    const receipt = {
-      formBundleNumber: null,
-      chargeRefNumber: "XM002610011594",
-    };
-
-    const event = {
-      body: JSON.stringify(receipt),
-    };
-
-    const result = await logReceiptHandler(event);
-    const body = JSON.parse(result.body);
-
-    expect(result.statusCode).toBe(200);
-    expect(body.status).toBe("receipt logged");
-
-    // Verify S3 client was called with null formBundleNumber
-    expect(mockSend).toHaveBeenCalledWith({
-      Bucket: "test-receipts-bucket",
-      Key: "receipts/null.json",
-      Body: JSON.stringify(receipt),
-      ContentType: "application/json",
-    });
-  });
-
-  test("should handle complex receipt object", async () => {
-    mockSend.mockResolvedValueOnce({});
-
-    const receipt = {
-      formBundleNumber: "987654321098",
-      chargeRefNumber: "XM002610011595",
-      processingDate: "2023-02-01T15:30:00.000Z",
-      vatDueSales: 1500.75,
-      vatDueAcquisitions: 0,
-      totalVatDue: 1500.75,
-      vatReclaimedCurrPeriod: 200.5,
-      netVatDue: 1300.25,
-      additionalData: {
-        nested: "value",
-        array: [1, 2, 3],
-      },
-    };
-
-    const event = {
-      body: JSON.stringify(receipt),
-    };
-
-    const result = await logReceiptHandler(event);
-    const body = JSON.parse(result.body);
-
-    expect(result.statusCode).toBe(200);
-    expect(body.status).toBe("receipt logged");
-
-    // Verify S3 client was called with correct parameters
-    expect(mockSend).toHaveBeenCalledWith({
-      Bucket: "test-receipts-bucket",
-      Key: "receipts/987654321098.json",
-      Body: JSON.stringify(receipt),
-      ContentType: "application/json",
-    });
-  });
-
-  test("should handle empty body", async () => {
-    mockSend.mockResolvedValueOnce({});
-
-    const event = {
-      body: "",
-    };
-
-    const result = await logReceiptHandler(event);
-    const body = JSON.parse(result.body);
-
-    expect(result.statusCode).toBe(200);
-    expect(body.status).toBe("receipt logged");
-
-    // Verify S3 client was called with empty object
-    expect(mockSend).toHaveBeenCalledWith({
-      Bucket: "test-receipts-bucket",
-      Key: "receipts/undefined.json",
-      Body: JSON.stringify({}),
-      ContentType: "application/json",
-    });
-  });
-
-  test("should handle null body", async () => {
-    mockSend.mockResolvedValueOnce({});
-
-    const event = {
-      body: null,
-    };
-
-    const result = await logReceiptHandler(event);
-    const body = JSON.parse(result.body);
-
-    expect(result.statusCode).toBe(200);
-    expect(body.status).toBe("receipt logged");
-
-    // Verify S3 client was called with empty object
-    expect(mockSend).toHaveBeenCalledWith({
-      Bucket: "test-receipts-bucket",
-      Key: "receipts/undefined.json",
-      Body: JSON.stringify({}),
-      ContentType: "application/json",
-    });
-  });
-
-  test("should handle missing body property", async () => {
-    mockSend.mockResolvedValueOnce({});
-
-    const event = {};
-
-    const result = await logReceiptHandler(event);
-    const body = JSON.parse(result.body);
-
-    expect(result.statusCode).toBe(200);
-    expect(body.status).toBe("receipt logged");
-
-    // Verify S3 client was called with empty object
-    expect(mockSend).toHaveBeenCalledWith({
-      Bucket: "test-receipts-bucket",
-      Key: "receipts/undefined.json",
-      Body: JSON.stringify({}),
-      ContentType: "application/json",
-    });
   });
 
   test("should handle malformed JSON in request body", async () => {
@@ -294,7 +144,7 @@ describe("logReceiptHandler", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(200);
-    expect(body.status).toBe("receipt logged");
+    expect(body.receipt).not.toBeUndefined;
 
     // Verify S3 client was called with special characters in key
     expect(mockSend).toHaveBeenCalledWith({

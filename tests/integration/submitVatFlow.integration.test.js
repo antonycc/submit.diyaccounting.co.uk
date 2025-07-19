@@ -72,7 +72,7 @@ describe("System Test – end-to-end AWS-like flow", () => {
   it("full end-to-end: submit VAT and read back logged receipt from S3", async () => {
     // 1) Exchange token
     const exchRes = await exchangeTokenHandler({ body: JSON.stringify({ code: "xyz" }) });
-    const { accessToken } = JSON.parse(exchRes.body);
+    const { hmrcAccessToken } = JSON.parse(exchRes.body);
 
     // 2) Submit VAT
     const submitRes = await submitVatHandler({
@@ -80,7 +80,7 @@ describe("System Test – end-to-end AWS-like flow", () => {
         vatNumber: "111222333",
         periodKey: "24B1",
         vatDue: "1000.00",
-        accessToken,
+        hmrcAccessToken,
       }),
     });
     const receipt = JSON.parse(submitRes.body);

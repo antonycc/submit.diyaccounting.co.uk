@@ -54,7 +54,7 @@ describe("exchangeTokenHandler", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(200);
-    expect(body.access_token).toBe("test-access-token");
+    expect(body.hmrcAccessToken).toBe("test-access-token");
 
     // Verify fetch was called with correct parameters
     expect(fetch).toHaveBeenCalledWith("https://test/oauth/token", {
@@ -69,7 +69,7 @@ describe("exchangeTokenHandler", () => {
     expect(params.get("grant_type")).toBe("authorization_code");
     expect(params.get("client_id")).toBe("test client id");
     expect(params.get("client_secret")).toBe("test hmrc client secret");
-    expect(params.get("redirect_uri")).toBe("http://hmrc.redirect:3000");
+    expect(params.get("redirect_uri")).toBe("http://hmrc.redirect:3000/");
     expect(params.get("code")).toBe("test-auth-code");
   });
 

@@ -71,7 +71,7 @@ describe("Integration – VAT flow", () => {
       vatNumber: "999999999",
       periodKey: "23A1",
       vatDue: "500.00",
-      accessToken: "stubbed-access-token",
+      hmrcAccessToken: "stubbed-access-token",
     };
     const res = await submitVatHandler({ body: JSON.stringify(payload) });
     expect(res.statusCode).toBe(200);
@@ -88,8 +88,8 @@ describe("Integration – VAT flow", () => {
 
     // 2) exchange
     const exchRes = await exchangeTokenHandler({ body: JSON.stringify({ code: "C1" }) });
-    const { accessToken } = JSON.parse(exchRes.body);
-    expect(accessToken).toBe("stubbed-access-token");
+    const { hmrcAccessToken } = JSON.parse(exchRes.body);
+    expect(hmrcAccessToken).toBe("stubbed-access-token");
 
     // 3) submit
     const submitRes = await submitVatHandler({
@@ -97,7 +97,7 @@ describe("Integration – VAT flow", () => {
         vatNumber: "123123123",
         periodKey: "23A1",
         vatDue: "750.00",
-        accessToken,
+        hmrcAccessToken,
       }),
     });
     const receipt = JSON.parse(submitRes.body);

@@ -4,6 +4,7 @@ import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
 import { Window } from "happy-dom";
 import fs from "fs";
 import path from "path";
+import {buildGovClientTestHeaders} from "@tests/unit/govClientTestHeader.js";
 
 // Read the HTML file content
 const htmlContent = fs.readFileSync(path.join(process.cwd(), "public/index.html"), "utf-8");
@@ -136,16 +137,21 @@ describe("VAT Flow Frontend JavaScript", () => {
     });
 
     test("getAuthUrl should throw error on failed response", async () => {
+      const mockResponse = { statusText: "Bad Request" };
       fetchMock.mockResolvedValueOnce({
         ok: false,
         statusText: "Bad Request",
+        json: () => Promise.resolve(mockResponse),
       });
 
-      await expect(window.getAuthUrl("test-state")).rejects.toThrow("Failed to get auth URL: Bad Request");
+      await expect(window.getAuthUrl("test-state")).rejects.toThrow(
+          "Failed to get auth URL. Remote call failed: GET /api/auth-url?state=test-state - Status: undefined Bad Request - Body: {\"statusText\":\"Bad Request\"}"
+      );
     });
 
     test("exchangeToken should make correct API call", async () => {
-      const mockResponse = { accessToken: "test-access-token" };
+      const mockAccessToken = "test-access-token";
+      const mockResponse = { hmrcAccessToken: mockAccessToken };
       fetchMock.mockResolvedValueOnce({
         ok: true,
         json: () => Promise.resolve(mockResponse),
@@ -160,10 +166,12 @@ describe("VAT Flow Frontend JavaScript", () => {
         },
         body: JSON.stringify({ code: "test-code" }),
       });
-      expect(result).toEqual(mockResponse);
+      expect(result).toEqual(mockAccessToken);
     });
 
     test("submitVat should make correct API call", async () => {
+      const headers = buildGovClientTestHeaders();
+
       const mockResponse = {
         formBundleNumber: "123456789012",
         chargeRefNumber: "XM002610011594",
@@ -174,18 +182,19 @@ describe("VAT Flow Frontend JavaScript", () => {
         json: () => Promise.resolve(mockResponse),
       });
 
-      const result = await window.submitVat("193054661", "24A1", "1000.00", "test-token");
+      const result = await window.submitVat("193054661", "24A1", "1000.00", "test-token", headers);
 
       expect(fetchMock).toHaveBeenCalledWith("/api/submit-vat", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          ...headers,
         },
         body: JSON.stringify({
           vatNumber: "193054661",
           periodKey: "24A1",
           vatDue: "1000.00",
-          accessToken: "test-token",
+          hmrcAccessToken: "test-token",
         }),
       });
       expect(result).toEqual(mockResponse);

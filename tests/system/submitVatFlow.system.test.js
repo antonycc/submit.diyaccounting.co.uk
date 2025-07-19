@@ -104,15 +104,15 @@ describe("System Test – submit VAT and persist receipts to containerised S3", 
       const exchangeRes = await exchangeTokenHandler({
         body: JSON.stringify({ code: "dummy-code" }),
       });
-      const { accessToken } = JSON.parse(exchangeRes.body);
-      expect(accessToken).toBe("test-access-token");
+      const { hmrcAccessToken } = JSON.parse(exchangeRes.body);
+      expect(hmrcAccessToken).toBe("test-access-token");
 
       // Submit VAT
       const vatPayload = {
         vatNumber: "111222333",
         periodKey: "24A1",
         vatDue: "1000.00",
-        accessToken,
+        hmrcAccessToken,
       };
 
       const submitRes = await submitVatHandler({ body: JSON.stringify(vatPayload) });

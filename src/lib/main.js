@@ -82,9 +82,9 @@ export async function exchangeTokenHandler(event) {
     code,
   });
   const hmrcBase = process.env.HMRC_BASE_URI;
-  let access_token;
+  let hmrcAccessToken;
   if (process.env.HMRC_REDIRECT_URI === process.env.TEST_REDIRECT_URI) {
-    access_token = process.env.TEST_ACCESS_TOKEN;
+    hmrcAccessToken = process.env.TEST_ACCESS_TOKEN;
   } else {
     const hmrcRequestUrl = `${hmrcBase}/oauth/token`;
     const hmrcResponse = await fetch(hmrcRequestUrl, {
@@ -106,13 +106,13 @@ export async function exchangeTokenHandler(event) {
       return response;
     }
     const tokenResponse = await hmrcResponse.json();
-    access_token = tokenResponse.access_token;
+    hmrcAccessToken = tokenResponse.access_token;
   }
 
   // Generate the response
   const response = {
     statusCode: 200,
-    body: JSON.stringify({ access_token }),
+    body: JSON.stringify({ hmrcAccessToken }),
   };
   logger.info({ message: "submitVatHandler responding to url with", url, response });
   return response;
@@ -181,7 +181,7 @@ export async function submitVatHandler(event) {
 
   // Request validation
   let errorMessages = [];
-  const { vatNumber, periodKey, vatDue, accessToken } = JSON.parse(event.body || "{}");
+  const { vatNumber, periodKey, vatDue, hmrcAccessToken } = JSON.parse(event.body || "{}");
   if (!vatNumber) {
     errorMessages.push("Missing vatNumber parameter from body");
   }
@@ -191,8 +191,8 @@ export async function submitVatHandler(event) {
   if (!vatDue) {
     errorMessages.push("Missing vatDue parameter from body");
   }
-  if (!accessToken) {
-    errorMessages.push("Missing accessToken parameter from body");
+  if (!hmrcAccessToken) {
+    errorMessages.push("Missing hmrcAccessToken parameter from body");
   }
   if (errorMessages.length > 0) {
     const response = {
@@ -229,7 +229,7 @@ export async function submitVatHandler(event) {
       headers: {
         "Content-Type": "application/json",
         "Accept": "application/vnd.hmrc.1.0+json",
-        "Authorization": `Bearer ${accessToken}`,
+        "Authorization": `Bearer ${hmrcAccessToken}`,
         "Gov-Client-Connection-Method": "WEB_APP_VIA_SERVER",
         "Gov-Client-Browser-JS-User-Agent": govClientBrowserJSUserAgentHeader,
         "Gov-Client-Device-ID": govClientDeviceIDHeader,

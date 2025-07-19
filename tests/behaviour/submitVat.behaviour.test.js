@@ -94,7 +94,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
     route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify({ access_token: "test-access-token" }),
+      body: JSON.stringify({ hmrcAccessToken: "test-access-token" }),
     });
   });
 
@@ -149,7 +149,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
     route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify({ accessToken: "test-access-token" }),
+      body: JSON.stringify({ hmrcAccessToken: "test-access-token" }),
     });
   });
 
