@@ -71,6 +71,6 @@ describe("Integration – auth flow", () => {
     console.log("[DEBUG_LOG] Response body:", res.body);
     expect(res.statusCode).toBe(200);
     const { hmrcAccessToken } = JSON.parse(res.body);
-    expect(hmrcAccessToken).toBe("stubbed-access-token");
+    expect(hmrcAccessToken).toBe("test access token");
   });
 });

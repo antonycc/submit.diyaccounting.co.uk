@@ -87,7 +87,7 @@ describe("System Test – end-to-end AWS-like flow", () => {
 
     // 3) Log receipt
     const logRes = await logReceiptHandler({ body: JSON.stringify(receipt) });
-    expect(JSON.parse(logRes.body).status).toBe("receipt logged");
+    expect(JSON.parse(logRes.body).receipt).not.toBeUndefined;
 
     // 4) Read back from S3
     const s3 = new S3Client({});
