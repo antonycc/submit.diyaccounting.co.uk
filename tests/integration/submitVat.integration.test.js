@@ -75,10 +75,10 @@ describe("Integration – VAT flow", () => {
     };
     const res = await submitVatHandler({ body: JSON.stringify(payload) });
     expect(res.statusCode).toBe(200);
-    const receipt = JSON.parse(res.body);
-    expect(receipt.formBundleNumber).toBe("999999999-FB123");
-    expect(receipt.chargeRefNumber).toBe("999999999-CR456");
-    expect(typeof receipt.processingDate).toBe("string");
+    const response = JSON.parse(res.body);
+    expect(response.receipt.formBundleNumber).toBe("999999999-FB123");
+    expect(response.receipt.chargeRefNumber).toBe("999999999-CR456");
+    expect(typeof response.receipt.processingDate).toBe("string");
   });
 
   it("should run the whole flow end-to-end in memory", async () => {
@@ -100,12 +100,14 @@ describe("Integration – VAT flow", () => {
         hmrcAccessToken,
       }),
     });
-    const receipt = JSON.parse(submitRes.body);
-    expect(receipt.formBundleNumber).toMatch(/123123123-FB/);
+    const submitResponse = JSON.parse(submitRes.body);
+    expect(submitResponse.receipt.formBundleNumber).toMatch(/123123123-FB/);
 
     // 4) log
     s3Mock.on(PutObjectCommand).resolves({});
-    const logRes = await logReceiptHandler({ body: JSON.stringify(receipt) });
-    expect(JSON.parse(logRes.body).status).toBe("receipt logged");
+    const logRes = await logReceiptHandler({ body: JSON.stringify(submitResponse.receipt) });
+    const logResponse = JSON.parse(logRes.body);
+    expect(logResponse.receipt).toBeDefined();
+    expect(logResponse.key).toBeDefined();
   });
 });

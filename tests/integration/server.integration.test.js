@@ -136,7 +136,7 @@ describe("Integration – Server Express App", () => {
       expect(response.body.authUrl).toContain("response_type=code");
       expect(response.body.authUrl).toContain("client_id=integration-test-client-id");
       expect(response.body.authUrl).toContain("state=integration-test-state");
-      expect(response.body.authUrl).toContain("redirect_uri=https%3A%2F%2Fsubmit.diyaccounting.co.uk%2Fcallback");
+      expect(response.body.authUrl).toContain("redirect_uri=https%3A%2F%2Ftest.submit.diyaccounting.co.uk%2F");
     });
 
     it("should exchange token through Express endpoint", async () => {
@@ -155,14 +155,14 @@ describe("Integration – Server Express App", () => {
       const response = await request(app).get("/api/auth-url").expect(400);
 
       expect(response.body).toHaveProperty("error");
-      expect(response.body.error).toBe("Missing state");
+      expect(response.body.error).toBe("Missing state query parameter from URL");
     });
 
     it("should handle missing code in token exchange", async () => {
       const response = await request(app).post("/api/exchange-token").send({}).expect(400);
 
       expect(response.body).toHaveProperty("error");
-      expect(response.body.error).toBe("Missing code");
+      expect(response.body.error).toBe("Missing code from event body");
     });
   });
 
@@ -179,17 +179,18 @@ describe("Integration – Server Express App", () => {
 
       console.log("[DEBUG_LOG] VAT submission response:", response.body);
 
-      expect(response.body).toHaveProperty("formBundleNumber");
-      expect(response.body.formBundleNumber).toBe("mocked-bundle-12345");
-      expect(response.body).toHaveProperty("chargeRefNumber");
-      expect(response.body).toHaveProperty("processingDate");
+      expect(response.body).toHaveProperty("receipt");
+      expect(response.body.receipt).toHaveProperty("formBundleNumber");
+      expect(response.body.receipt.formBundleNumber).toBe("mocked-bundle-12345");
+      expect(response.body.receipt).toHaveProperty("chargeRefNumber");
+      expect(response.body.receipt).toHaveProperty("processingDate");
     });
 
     it("should handle missing VAT parameters", async () => {
       const response = await request(app).post("/api/submit-vat").send({ vatNumber: "123456789" }).expect(400);
 
       expect(response.body).toHaveProperty("error");
-      expect(response.body.error).toBe("Missing parameters");
+      expect(response.body.error).toBe("Missing periodKey parameter from body, Missing vatDue parameter from body, Missing hmrcAccessToken parameter from body");
     });
   });
 
@@ -208,8 +209,9 @@ describe("Integration – Server Express App", () => {
 
       console.log("[DEBUG_LOG] Receipt logging response:", response.body);
 
-      expect(response.body).toHaveProperty("status");
-      expect(response.body.status).toBe("receipt logged");
+      expect(response.body).toHaveProperty("receipt");
+      expect(response.body).toHaveProperty("key");
+      expect(response.body.key).toBe("receipts/test-bundle-123.json");
 
       // Verify S3 was called correctly
       expect(s3Mock.calls()).toHaveLength(1);
@@ -283,14 +285,16 @@ describe("Integration – Server Express App", () => {
         })
         .expect(200);
 
-      expect(vatResponse.body).toHaveProperty("formBundleNumber");
+      expect(vatResponse.body).toHaveProperty("receipt");
+      expect(vatResponse.body.receipt).toHaveProperty("formBundleNumber");
 
       // Step 4: Log receipt
       s3Mock.on(PutObjectCommand).resolves({});
 
-      const receiptResponse = await request(app).post("/api/log-receipt").send(vatResponse.body).expect(200);
+      const receiptResponse = await request(app).post("/api/log-receipt").send(vatResponse.body.receipt).expect(200);
 
-      expect(receiptResponse.body.status).toBe("receipt logged");
+      expect(receiptResponse.body).toHaveProperty("receipt");
+      expect(receiptResponse.body).toHaveProperty("key");
 
       console.log("[DEBUG_LOG] Full flow completed successfully");
     });

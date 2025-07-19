@@ -55,7 +55,8 @@ describe("Integration – log receipt flow", () => {
     const res = await logReceiptHandler({ body: JSON.stringify(fakeReceipt) });
     expect(res.statusCode).toBe(200);
     const body = JSON.parse(res.body);
-    expect(body.status).toBe("receipt logged");
+    expect(body.receipt).toEqual(fakeReceipt);
+    expect(body.key).toBe("receipts/FOO123.json");
 
     // ensure the S3 client was called correctly
     expect(s3Mock.calls()).toHaveLength(1);
