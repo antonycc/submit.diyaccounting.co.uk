@@ -16,7 +16,6 @@ permissions:
   contents: read
   actions: write
 
-
 jobs:
   sync-variables:
     runs-on: ubuntu-latest
@@ -30,7 +29,6 @@ jobs:
       - name: Sync repository.env → GitHub Repository Variables
         uses: actions/github-script@v7
         env:
-          #repositoryRootDirectory: ${{ github.workspace }}
           variablesSourceFilepath: '.github/repository.env'
         with:
           github-token: ${{ secrets.PERSONAL_ACCESS_TOKEN || secrets.GITHUB_TOKEN }}
@@ -38,7 +36,6 @@ jobs:
             const fs = require('fs');
             const path = require('path');
             const { owner, repo } = context.repo;
-            //const variablesSourceFilepath = path.join(process.env.repositoryRootDirectory, process.env.variablesSourceFilepath);
             const variablesSourceFilepath = process.env.variablesSourceFilepath;
 
             if (!fs.existsSync(variablesSourceFilepath)) {
@@ -75,10 +72,4 @@ jobs:
                 'POST /repos/{owner}/{repo}/actions/variables/{name}',
                 { owner, repo, name, value }
               );
-              //await github.rest.actions.createOrUpdateRepoVariable({
-              //  owner,
-              //  repo,
-              //  name,
-              //  value
-              //});
             }
