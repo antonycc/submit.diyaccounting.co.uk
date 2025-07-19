@@ -77,6 +77,10 @@ jobs:
               const name = line.slice(0, eq);
               let value = line.slice(eq + 1);
 
+              // Trim whitespace around name and value
+              name = name.trim();
+              value = value.trim();
+
               // strip surrounding quotes if present
               if ((value.startsWith('"') && value.endsWith('"')) ||
                   (value.startsWith("'") && value.endsWith("'"))) {
