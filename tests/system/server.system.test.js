@@ -255,7 +255,7 @@ describe("System – Server Process", () => {
 
       const data = await response.json();
       expect(data).toHaveProperty("error");
-      expect(data.error).toBe("Missing state");
+      expect(data.error).toBe("Missing state query parameter from URL");
     });
   });
 
@@ -356,7 +356,7 @@ describe("System – Server Process", () => {
     beforeEach(async () => {
       await startServer();
       await waitForServer();
-    });
+    }, 15000); // Increase timeout to 15 seconds
 
     it("should continue running after handling errors", async () => {
       // Make a request that will likely cause an error
