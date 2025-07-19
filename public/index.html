@@ -349,11 +349,13 @@
       }
 
       function showLoading() {
+        console.log('Page display transition: Showing loading spinner');
         loadingSpinner.style.display = "block";
         submitBtn.disabled = true;
       }
 
       function hideLoading() {
+        console.log('Page display transition: Hiding loading spinner');
         loadingSpinner.style.display = "none";
         submitBtn.disabled = false;
       }
@@ -364,14 +366,18 @@
 
       // API functions
       async function getAuthUrl(state) {
+        console.log('Remote call initiated: GET /api/auth-url');
         const response = await fetch(`/api/auth-url?state=${encodeURIComponent(state)}`);
         if (!response.ok) {
+          console.error(`Remote call failed: GET /api/auth-url - Status: ${response.status} ${response.statusText}`);
           throw new Error(`Failed to get auth URL: ${response.statusText}`);
         }
+        console.log('Remote call completed successfully: GET /api/auth-url');
         return await response.json();
       }
 
       async function exchangeToken(code) {
+        console.log('Remote call initiated: POST /api/exchange-token');
         const response = await fetch("/api/exchange-token", {
           method: "POST",
           headers: {
@@ -380,12 +386,15 @@
           body: JSON.stringify({ code }),
         });
         if (!response.ok) {
+          console.error(`Remote call failed: POST /api/exchange-token - Status: ${response.status} ${response.statusText}`);
           throw new Error(`Failed to exchange token: ${response.statusText}`);
         }
+        console.log('Remote call completed successfully: POST /api/exchange-token');
         return await response.json();
       }
 
       async function submitVat(vatNumber, periodKey, vatDue, accessToken) {
+        console.log('Remote call initiated: POST /api/submit-vat');
         const response = await fetch("/api/submit-vat", {
           method: "POST",
           headers: {
@@ -399,12 +408,15 @@
           }),
         });
         if (!response.ok) {
+          console.error(`Remote call failed: POST /api/submit-vat - Status: ${response.status} ${response.statusText}`);
           throw new Error(`Failed to submit VAT: ${response.statusText}`);
         }
+        console.log('Remote call completed successfully: POST /api/submit-vat');
         return await response.json();
       }
 
       async function logReceipt(processingDate, formBundleNumber, chargeRefNumber) {
+        console.log('Remote call initiated: POST /api/log-receipt');
         const response = await fetch("/api/log-receipt", {
           method: "POST",
           headers: {
@@ -417,13 +429,16 @@
           }),
         });
         if (!response.ok) {
+          console.error(`Remote call failed: POST /api/log-receipt - Status: ${response.status} ${response.statusText}`);
           throw new Error(`Failed to log receipt: ${response.statusText}`);
         }
+        console.log('Remote call completed successfully: POST /api/log-receipt');
         return await response.json();
       }
 
       // OAuth callback handling
       function handleOAuthCallback() {
+        console.log('JS block started loading: OAuth callback handler');
         const urlParams = new URLSearchParams(window.location.search);
         const code = urlParams.get("code");
         const state = urlParams.get("state");
@@ -431,6 +446,7 @@
 
         if (error) {
           showStatus(`OAuth error: ${error}`, "error");
+          console.error('JS block finished loading: OAuth callback handler (error exit)');
           return;
         }
 
@@ -440,23 +456,29 @@
 
           if (state !== storedState) {
             showStatus("Invalid OAuth state. Please try again.", "error");
+            console.error('JS block finished loading: OAuth callback handler (invalid state exit)');
             return;
           }
 
           if (!storedSubmissionData) {
             showStatus("Submission data not found. Please try again.", "error");
+            console.error('JS block finished loading: OAuth callback handler (missing data exit)');
             return;
           }
 
           // Clear URL parameters
+          console.log('Page transition initiated: Clearing URL parameters');
           window.history.replaceState({}, document.title, window.location.pathname);
 
           // Continue with token exchange and submission
           continueSubmission(code, JSON.parse(storedSubmissionData));
+          console.log('JS block finished loading: OAuth callback handler (normal completion)');
         }
+        console.log('JS block finished loading: OAuth callback handler (no action taken)');
       }
 
       async function continueSubmission(code, submissionData) {
+        console.log('JS block started loading: Continue submission handler');
         try {
           showLoading();
           showStatus("Exchanging authorization code for access token...", "info");
@@ -491,15 +513,18 @@
           // Clean up session storage
           sessionStorage.removeItem("oauth_state");
           sessionStorage.removeItem("submission_data");
+          console.log('JS block finished loading: Continue submission handler (success)');
         } catch (error) {
           console.error("Submission error:", error);
           showStatus(`Submission failed: ${error.message}`, "error");
+          console.error('JS block finished loading: Continue submission handler (error)');
         } finally {
           hideLoading();
         }
       }
 
       function displayReceipt(response) {
+        console.log('Page display transition: Displaying receipt and hiding form');
         // Hide the form
         vatFormContainer.style.display = "none";
 
@@ -522,6 +547,7 @@
 
       // Form submission handler
       async function handleFormSubmission(event) {
+        console.log('JS block started loading: Form submission handler');
         event.preventDefault();
 
         const formData = new FormData(form);
@@ -579,12 +605,14 @@
           showStatus(`Redirecting to HMRC for authentication at ${authResponseUrl}...`, "info");
 
           // Redirect to HMRC OAuth
+          console.log('Page transition initiated: Redirecting to HMRC OAuth');
           window.location.href = authResponseUrl;
         } catch (error) {
           console.error("Authentication error:", error);
           showStatus(`Authentication failed: ${error.message}`, "error");
           hideLoading();
         }
+        console.log('JS block finished loading: Form submission handler');
       }
 
       // Event listeners
@@ -618,8 +646,10 @@
 
       // Initialize
       document.addEventListener("DOMContentLoaded", function () {
+        console.log('JS block started loading: DOMContentLoaded event handler');
         // Check if we're returning from OAuth
         handleOAuthCallback();
+        console.log('JS block finished loading: DOMContentLoaded event handler');
       });
     </script>
   </body>
