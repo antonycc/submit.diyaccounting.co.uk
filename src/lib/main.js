@@ -118,20 +118,62 @@ export async function exchangeTokenHandler(event) {
   return response;
 }
 
+// Helper function to extract client IP from request headers
+function extractClientIPFromHeaders(event) {
+  // Try various headers that might contain the client's real IP
+  const headers = event.headers || {};
+  const possibleIPHeaders = [
+    'x-forwarded-for',
+    'x-real-ip',
+    'x-client-ip',
+    'cf-connecting-ip', // Cloudflare
+    'x-forwarded',
+    'forwarded-for',
+    'forwarded'
+  ];
+
+  for (const header of possibleIPHeaders) {
+    const value = headers[header];
+    if (value) {
+      // x-forwarded-for can contain multiple IPs, take the first one
+      const ip = value.split(',')[0].trim();
+      if (ip && ip !== 'unknown') {
+        return ip;
+      }
+    }
+  }
+
+  // Fallback to source IP from event context
+  return event.requestContext?.identity?.sourceIp || 'unknown';
+}
+
 // POST /api/submit-vat
 export async function submitVatHandler(event) {
   const url = buildUrl(event);
-  const govClientBrowserJSUserAgentHeader = event.headers["Gov-Client-Browser-JS-User-Agent"];
-  const govClientDeviceIDHeader = event.headers["Gov-Client-Device-ID"];
-  const govClientMultiFactorHeader = event.headers["Gov-Client-Multi-Factor"];
-  const govClientPublicIPHeader = event.headers["Gov-Client-Public-IP"];
-  const govClientPublicIPTimestampHeader = event.headers["Gov-Client-Public-IP-Timestamp"];
-  const govClientPublicPortHeader = event.headers["Gov-Client-Public-Port"];
-  const govClientScreensHeader = event.headers["Gov-Client-Screens"];
-  const govClientTimezoneHeader = event.headers["Gov-Client-Timezone"];
-  const govClientUserIDsHeader = event.headers["Gov-Client-User-IDs"];
-  const govClientWindowSizeHeader = event.headers["Gov-Client-Window-Size"];
-  const govVendorPublicIPHeader = event.headers["Gov-Vendor-Public-IP"];
+  const govClientBrowserJSUserAgentHeader = (event.headers || {})["Gov-Client-Browser-JS-User-Agent"];
+  const govClientDeviceIDHeader = (event.headers || {})["Gov-Client-Device-ID"];
+  const govClientMultiFactorHeader = (event.headers || {})["Gov-Client-Multi-Factor"];
+  
+  // Handle IP detection - if browser sent "SERVER_DETECT", extract IP from request headers
+  let govClientPublicIPHeader = (event.headers || {})["Gov-Client-Public-IP"];
+  let govVendorPublicIPHeader = (event.headers || {})["Gov-Vendor-Public-IP"];
+  
+  if (govClientPublicIPHeader === "SERVER_DETECT" || !govClientPublicIPHeader) {
+    const detectedIP = extractClientIPFromHeaders(event);
+    govClientPublicIPHeader = detectedIP;
+    logger.info({ message: "Server detected client IP from request headers", detectedIP, headers: event.headers });
+  }
+  
+  if (govVendorPublicIPHeader === "SERVER_DETECT" || !govVendorPublicIPHeader) {
+    govVendorPublicIPHeader = extractClientIPFromHeaders(event);
+  }
+  
+  const govClientPublicIPTimestampHeader = (event.headers || {})["Gov-Client-Public-IP-Timestamp"];
+  const govClientPublicPortHeader = (event.headers || {})["Gov-Client-Public-Port"];
+  const govClientScreensHeader = (event.headers || {})["Gov-Client-Screens"];
+  const govClientTimezoneHeader = (event.headers || {})["Gov-Client-Timezone"];
+  const govClientUserIDsHeader = (event.headers || {})["Gov-Client-User-IDs"];
+  const govClientWindowSizeHeader = (event.headers || {})["Gov-Client-Window-Size"];
 
   // TODO: Also gather system defined values here and validate, failing the request if they are not present.
 
@@ -257,39 +299,43 @@ export async function logReceiptHandler(event) {
   }
 
   // Request processing
-  try {
-    const s3Config = {};
 
-    // Configure S3 client for containerized MinIO if environment variables are set
-    if (process.env.S3_ENDPOINT) {
-      s3Config.endpoint = process.env.S3_ENDPOINT;
-      s3Config.forcePathStyle = true;
-      s3Config.region = "us-east-1";
+  // Configure S3 client for containerized MinIO if environment variables are set
+  const s3Config = {};
+  if (process.env.S3_ENDPOINT) {
+    s3Config.endpoint = process.env.S3_ENDPOINT;
+    s3Config.forcePathStyle = true;
+    s3Config.region = "us-east-1";
 
-      if (process.env.S3_ACCESS_KEY && process.env.S3_SECRET_KEY) {
-        s3Config.credentials = {
-          accessKeyId: process.env.S3_ACCESS_KEY,
-          secretAccessKey: process.env.S3_SECRET_KEY,
-        };
-      }
+    if (process.env.S3_ACCESS_KEY && process.env.S3_SECRET_KEY) {
+      s3Config.credentials = {
+        accessKeyId: process.env.S3_ACCESS_KEY,
+        secretAccessKey: process.env.S3_SECRET_KEY,
+      };
     }
+  }
 
-    const s3Client = new S3Client(s3Config);
-    await s3Client.send(
-      new PutObjectCommand({
-        Bucket: process.env.RECEIPTS_BUCKET,
-        Key: key,
-        Body: JSON.stringify(receipt),
-        ContentType: "application/json",
-      }),
-    );
-  } catch (err) {
-    const response = {
-      statusCode: 500,
-      body: JSON.stringify({ error: "Failed to log receipt", details: err.message }),
-    };
-    logger.error({ message: "logReceiptHandler responding to url with", url, response });
-    return response;
+  if (!process.env.RECEIPTS_BUCKET) {
+    logger.warn({message: "RECEIPTS_BUCKET environment variable is not set, cannot log receipt"});
+  } else {
+    try {
+      const s3Client = new S3Client(s3Config);
+      await s3Client.send(
+          new PutObjectCommand({
+            Bucket: process.env.RECEIPTS_BUCKET,
+            Key: key,
+            Body: JSON.stringify(receipt),
+            ContentType: "application/json",
+          }),
+      );
+    } catch(err) {
+      const response = {
+        statusCode: 500,
+        body: JSON.stringify({error: "Failed to log receipt", details: err.message}),
+      };
+      logger.error({message: "logReceiptHandler responding to url with", url, response});
+      return response;
+    }
   }
 
   // Generate the response
