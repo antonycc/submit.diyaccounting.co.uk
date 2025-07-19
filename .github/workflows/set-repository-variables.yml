@@ -35,7 +35,7 @@ jobs:
           script: |
             const fs = require('fs');
             const path = require('path');
-            //const { owner, repo } = context.repo;
+            const { owner, repo } = context.repo;
             //const variablesSourceFilepath = path.join(process.env.repositoryRootDirectory, process.env.variablesSourceFilepath);
             const variablesSourceFilepath = process.env.variablesSourceFilepath;
 
