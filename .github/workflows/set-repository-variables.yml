@@ -1,7 +1,7 @@
-# .github/workflows/sync-repo-vars.yml
-name: sync-repo-variables
-concurrency: write
-run-name: "sync-repo-variables [${{ github.ref_name }}]"
+# .github/workflows/set-repository-variables.yml
+name: set-repository-variables
+concurrency: set-repository-variables
+run-name: "set repository variables [${{ github.ref_name }}]"
 
 on:
   push:
