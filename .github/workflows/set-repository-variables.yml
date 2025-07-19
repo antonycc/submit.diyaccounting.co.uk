@@ -1,0 +1,74 @@
+# .github/workflows/sync-repo-vars.yml
+name: sync-repo-variables
+concurrency: write
+run-name: "sync-repo-variables [${{ github.ref_name }}]"
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/sync-repo-vars.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: write
+
+jobs:
+  sync-variables:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Sync repository.env → GitHub Repository Variables
+        uses: actions/github-script@v6
+        env:
+          variablesSourceFilepath: '.github/repository.env'
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            //const { owner, repo } = context.repo;
+            const variablesSourceFilepath = process.env.variablesSourceFilepath;
+
+            if (!fs.existsSync(variablesSourceFilepath)) {
+              core.setFailed(`repository.env not found at ${variablesSourceFilepath}`);
+              return;
+            }
+
+            const lines = fs.readFileSync(variablesSourceFilepath, 'utf8')
+              .split(/\r?\n/)
+              .map(l => l.trim());
+
+            for (const line of lines) {
+              // skip empty lines or comments
+              if (!line || line.startsWith('#')) continue;
+
+              const eq = line.indexOf('=');
+              if (eq < 0) {
+                core.info(`Skipping invalid entry: “${line}”`);
+                continue;
+              }
+
+              const name = line.slice(0, eq);
+              let value = line.slice(eq + 1);
+
+              // strip surrounding quotes if present
+              if ((value.startsWith('"') && value.endsWith('"')) ||
+                  (value.startsWith("'") && value.endsWith("'"))) {
+                value = value.slice(1, -1);
+              }
+
+              core.info(`Setting repo variable: ${name}`);
+              await github.rest.actions.createOrUpdateRepoVariable({
+                owner,
+                repo,
+                name,
+                value
+              });
+            }
