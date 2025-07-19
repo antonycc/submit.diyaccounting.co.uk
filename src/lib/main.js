@@ -4,37 +4,39 @@
 import { fileURLToPath } from "url";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import fetch from "node-fetch";
-import { createLogger, format, transports } from "winston";
-
-const logger = createLogger({
-  format: format.json(),
-  transports: [new transports.Console()]
-});
+import logger from "./logger.js";
 
 function buildUrl(event) {
-  const url = new URL(event.path, `https://${event.headers.host}`);
-  if (event.queryStringParameters) {
-    Object.keys(event.queryStringParameters).forEach(key => {
+  let url;
+  if (event.path && event.headers && event.headers.host) {
+    url = new URL(event.path, `http://${event.headers.host}`);
+    Object.keys(event.queryStringParameters).forEach((key) => {
       url.searchParams.append(key, event.queryStringParameters[key]);
     });
+  } else {
+    logger.warn({ message: "buildUrl called with missing path or host header", event });
+    url = "https://unknown";
   }
   return url;
 }
 
 // GET /api/auth-url?state={state}
 export async function authUrlHandler(event) {
-  const url = buildUrl(event)
-  logger.info({ message: 'authUrlHandler responding to url by processing event', url, event });
+  const url = buildUrl(event);
+  logger.info({ message: "authUrlHandler responding to url by processing event", url, event });
 
+  // Request validation
   const state = event.queryStringParameters?.state;
   if (!state) {
     const response = {
       statusCode: 400,
-      body: JSON.stringify({ requestUrl: url, error: "Missing state query parameter" }),
+      body: JSON.stringify({ requestUrl: url, error: "Missing state query parameter from URL" }),
     };
     logger.error(response);
     return response;
   }
+
+  // Request processing
   const clientId = process.env.HMRC_CLIENT_ID;
   const redirectUri = process.env.HMRC_REDIRECT_URI;
   const hmrcBase = process.env.HMRC_BASE_URI;
@@ -46,23 +48,33 @@ export async function authUrlHandler(event) {
     `&scope=${encodeURIComponent(scope)}` +
     `&state=${encodeURIComponent(state)}`;
 
+  // Generate the response
   const response = {
     statusCode: 200,
-    body: JSON.stringify({ authUrl })
+    body: JSON.stringify({ authUrl }),
   };
-  logger.info({ message: 'authUrlHandler responding to url with', url, response });
+  logger.info({ message: "authUrlHandler responding to url with", url, response });
   return response;
 }
 
 // POST /api/exchange-token
 export async function exchangeTokenHandler(event) {
-  const url = buildUrl(event)
-  logger.info({ message: 'exchangeTokenHandler responding to url by processing event', url, event });
+  const url = buildUrl(event);
+  logger.info({ message: "exchangeTokenHandler responding to url by processing event", url, event });
+
+  // Request validation
   const { code } = JSON.parse(event.body || "{}");
   if (!code) {
-    return { statusCode: 400, body: JSON.stringify({ error: "Missing code" }) };
+    const response = {
+      statusCode: 400,
+      body: JSON.stringify({ requestUrl: url, requestBody: event.body, error: "Missing code from event body" }),
+    };
+    logger.error(response);
+    return response;
   }
-  const params = new URLSearchParams({
+
+  // Request processing
+  const hmrcRequestBody = new URLSearchParams({
     grant_type: "authorization_code",
     client_id: process.env.HMRC_CLIENT_ID,
     client_secret: process.env.HMRC_CLIENT_SECRET,
@@ -71,34 +83,59 @@ export async function exchangeTokenHandler(event) {
   });
   const hmrcBase = process.env.HMRC_BASE_URI;
   let access_token;
-  if( process.env.HMRC_REDIRECT_URI === process.env.TEST_REDIRECT_URI ) {
+  if (process.env.HMRC_REDIRECT_URI === process.env.TEST_REDIRECT_URI) {
     access_token = process.env.TEST_ACCESS_TOKEN;
   } else {
-    const res = await fetch(`${hmrcBase}/oauth/token`, {
+    const hmrcRequestUrl = `${hmrcBase}/oauth/token`;
+    const hmrcResponse = await fetch(hmrcRequestUrl, {
       method: "POST",
-      headers: {"Content-Type": "application/x-www-form-urlencoded"},
-      body: params,
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: hmrcRequestBody,
     });
-    if (!res.ok) {
-      const err = await res.text();
-      return {statusCode: res.status, body: JSON.stringify({error: err})};
+    if (!hmrcResponse.ok) {
+      const response = {
+        statusCode: 500,
+        body: JSON.stringify({
+          hmrcRequestUrl,
+          hmrcRequestBody,
+          hmrcResponseCode: hmrcResponse.status,
+          hmrcResponseText: await hmrcResponse.text(),
+        }),
+      };
+      logger.error(response);
+      return response;
     }
-    const tokenResponse = await res.json();
+    const tokenResponse = await hmrcResponse.json();
     access_token = tokenResponse.access_token;
   }
 
-  return { statusCode: 200, body: JSON.stringify({ accessToken: access_token }) };
+  // Generate the response
+  const response = {
+    statusCode: 200,
+    body: JSON.stringify({ access_token }),
+  };
+  logger.info({ message: "submitVatHandler responding to url with", url, response });
+  return response;
 }
 
 // POST /api/submit-vat
 export async function submitVatHandler(event) {
-  const url = buildUrl(event)
-  logger.info({ message: 'submitVatHandler responding to url by processing event', url, event });
+  const url = buildUrl(event);
+  logger.info({ message: "submitVatHandler responding to url by processing event", url, event });
+
+  // Request validation
   const { vatNumber, periodKey, vatDue, accessToken } = JSON.parse(event.body || "{}");
   if (!vatNumber || !periodKey || !vatDue || !accessToken) {
-    return { statusCode: 400, body: JSON.stringify({ error: "Missing parameters" }) };
+    const response = {
+      statusCode: 400,
+      body: JSON.stringify({ url, error: "Missing parameters from URL" }),
+    };
+    logger.error(response);
+    return response;
   }
-  const payload = {
+
+  // Request processing
+  const hmrcRequestBody = {
     periodKey,
     vatDueSales: parseFloat(vatDue),
     vatDueAcquisitions: 0,
@@ -113,33 +150,54 @@ export async function submitVatHandler(event) {
   };
   const hmrcBase = process.env.HMRC_BASE_URI;
   let receipt;
-  if( process.env.HMRC_REDIRECT_URI === process.env.TEST_REDIRECT_URI ) {
+  if (process.env.HMRC_REDIRECT_URI === process.env.TEST_REDIRECT_URI) {
     // TEST_RECEIPT is already a JSON string, so parse it first
-    receipt = JSON.parse(process.env.TEST_RECEIPT || '{}');
+    receipt = JSON.parse(process.env.TEST_RECEIPT || "{}");
   } else {
-    const res = await fetch(`${hmrcBase}/organisations/vat/${vatNumber}/returns`, {
+    const hmrcRequestUrl = `${hmrcBase}/organisations/vat/${vatNumber}/returns`;
+    const hmrcResponse = await fetch(hmrcRequestUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${accessToken}`,
       },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(hmrcRequestBody),
     });
-    if (!res.ok) {
-      const err = await res.text();
-      return {statusCode: res.status, body: JSON.stringify({error: err})};
+    if (!hmrcResponse.ok) {
+      const response = {
+        statusCode: 500,
+        body: JSON.stringify({
+          hmrcRequestUrl,
+          hmrcRequestBody,
+          hmrcResponseCode: hmrcResponse.status,
+          hmrcResponseText: await hmrcResponse.text(),
+        }),
+      };
+      logger.error(response);
+      return response;
     }
-    receipt = await res.json();
+    receipt = await hmrcResponse.json();
   }
-  return { statusCode: 200, body: JSON.stringify(receipt) };
+
+  // Generate the response
+  const response = {
+    statusCode: 200,
+    body: JSON.stringify({ receipt }),
+  };
+  logger.info({ message: "submitVatHandler responding to url with", url, response });
+  return response;
 }
 
 // POST /api/log-receipt
 export async function logReceiptHandler(event) {
-  const url = buildUrl(event)
-  logger.info({ message: 'logReceiptHandler responding to url by processing event', url, event });
+  const url = buildUrl(event);
+  logger.info({ message: "logReceiptHandler responding to url by processing event", url, event });
+
+  // Request validation
   const receipt = JSON.parse(event.body || "{}");
   const key = `receipts/${receipt.formBundleNumber}.json`;
+
+  // Request processing
   try {
     const s3Config = {};
 
@@ -166,13 +224,22 @@ export async function logReceiptHandler(event) {
         ContentType: "application/json",
       }),
     );
-    return { statusCode: 200, body: JSON.stringify({ status: "receipt logged" }) };
   } catch (err) {
-    return {
+    const response = {
       statusCode: 500,
       body: JSON.stringify({ error: "Failed to log receipt", details: err.message }),
     };
+    logger.error({ message: "logReceiptHandler responding to url with", url, response });
+    return response;
   }
+
+  // Generate the response
+  const response = {
+    statusCode: 200,
+    body: JSON.stringify({ receipt, key }),
+  };
+  logger.info({ message: "logReceiptHandler responding to url with", url, response });
+  return response;
 }
 
 export function main(args) {

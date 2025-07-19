@@ -41,15 +41,45 @@ npm test
 
 ## Run the website locally
 
+Register your HMRC OAuth application at [HMRC Developer Hub](https://developer.service.hmrc.gov.uk/),
+and set the following environment variables in a `.env` file:
+```env
+HMRC_CLIENT_ID=your_client_id
+HMRC_CLIENT_SECRET=your_client_secret
+HMRC_REDIRECT_URI=http://
+HMRC_BASE_URI=https://test-api.service.hmrc.gov.uk
+```
+
+Run the web server:
 ```bash
 
+npm install
 npm run start
 ```
 Access via [http://127.0.0.1:3000](http://127.0.0.1:3000) or...
 
-Install [ngrok](https://ngrok.com/) and run to expose http://127.0.0.1:3000 to an SSL terminated public URL:
+Run [ngrok](https://ngrok.com/) to expose http://127.0.0.1:3000 to an SSL terminated public URL:
 ```bash
-ngrok http 3000
+
+npm install
+npx ngrok http 3000
+```
+
+Or use an ngrok account to get a stable URL and set this in package.json:
+```json
+{
+...
+  "scripts": {
+    ...
+    "start": "node src/lib/server.js",
+    "proxy": "npx ngrok http --url wanted-finally-anteater.ngrok-free.app 3000"
+  },
+```
+
+Then run:
+```bash
+
+npm run proxy
 ```
 
 ngrok runs:

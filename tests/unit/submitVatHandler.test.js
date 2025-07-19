@@ -9,7 +9,6 @@ vi.mock("node-fetch", () => ({
 import fetch from "node-fetch";
 
 describe("submitVatHandler", () => {
-
   const originalEnv = process.env;
 
   beforeEach(() => {
@@ -26,7 +25,7 @@ describe("submitVatHandler", () => {
       TEST_RECEIPT: JSON.stringify({
         formBundleNumber: "test-123456789012",
         chargeRefNumber: "test-XM002610011594",
-        processingDate: "2023-01-01T12:00:00.000Z"
+        processingDate: "2023-01-01T12:00:00.000Z",
       }),
     };
   });
@@ -94,7 +93,7 @@ describe("submitVatHandler", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(400);
-    expect(body.error).toBe("Missing parameters");
+    expect(body.error).toBe("Missing parameters from URL");
     expect(fetch).not.toHaveBeenCalled();
   });
 
@@ -111,7 +110,7 @@ describe("submitVatHandler", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(400);
-    expect(body.error).toBe("Missing parameters");
+    expect(body.error).toBe("Missing parameters from URL");
     expect(fetch).not.toHaveBeenCalled();
   });
 
@@ -128,7 +127,7 @@ describe("submitVatHandler", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(400);
-    expect(body.error).toBe("Missing parameters");
+    expect(body.error).toBe("Missing parameters from URL");
     expect(fetch).not.toHaveBeenCalled();
   });
 
@@ -145,7 +144,7 @@ describe("submitVatHandler", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(400);
-    expect(body.error).toBe("Missing parameters");
+    expect(body.error).toBe("Missing parameters from URL");
     expect(fetch).not.toHaveBeenCalled();
   });
 
@@ -158,7 +157,7 @@ describe("submitVatHandler", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(400);
-    expect(body.error).toBe("Missing parameters");
+    expect(body.error).toBe("Missing parameters from URL");
     expect(fetch).not.toHaveBeenCalled();
   });
 
@@ -171,7 +170,7 @@ describe("submitVatHandler", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(400);
-    expect(body.error).toBe("Missing parameters");
+    expect(body.error).toBe("Missing parameters from URL");
     expect(fetch).not.toHaveBeenCalled();
   });
 
@@ -184,7 +183,7 @@ describe("submitVatHandler", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(400);
-    expect(body.error).toBe("Missing parameters");
+    expect(body.error).toBe("Missing parameters from URL");
     expect(fetch).not.toHaveBeenCalled();
   });
 
@@ -202,7 +201,7 @@ describe("submitVatHandler", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(400);
-    expect(body.error).toBe("Missing parameters");
+    expect(body.error).toBe("Missing parameters from URL");
     expect(fetch).not.toHaveBeenCalled();
   });
 
@@ -227,7 +226,7 @@ describe("submitVatHandler", () => {
     const result = await submitVatHandler(event);
     const body = JSON.parse(result.body);
 
-    expect(result.statusCode).toBe(400);
+    expect(result.statusCode).toBe(500);
     expect(body.error).toBe(errorMessage);
   });
 
@@ -252,7 +251,7 @@ describe("submitVatHandler", () => {
     const result = await submitVatHandler(event);
     const body = JSON.parse(result.body);
 
-    expect(result.statusCode).toBe(401);
+    expect(result.statusCode).toBe(500);
     expect(body.error).toBe(errorMessage);
   });
 
@@ -344,7 +343,7 @@ describe("submitVatHandler", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(400);
-    expect(body.error).toBe("Missing parameters");
+    expect(body.error).toBe("Missing parameters from URL");
     expect(fetch).not.toHaveBeenCalled();
   });
 });

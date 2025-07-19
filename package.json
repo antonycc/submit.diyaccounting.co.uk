@@ -23,7 +23,8 @@
     "test:system": "vitest --run tests/system/*.test.js",
     "test:client": "playwright test tests/client/*.test.js",
     "test:behaviour": "playwright test tests/behaviour/*.test.js",
-    "start": "node src/lib/server.js"
+    "start": "node src/lib/server.js",
+    "proxy": "npx ngrok http --url wanted-finally-anteater.ngrok-free.app 3000"
   },
   "keywords": [],
   "author": "",
@@ -31,6 +32,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.846.0",
     "express": "^4.21.2",
+    "ngrok": "^5.0.0-beta.2",
     "winston": "^3.17.0"
   },
   "devDependencies": {

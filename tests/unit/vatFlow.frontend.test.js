@@ -182,7 +182,7 @@ describe("VAT Flow Frontend JavaScript", () => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          vatNumber: "123456789",
+          vatNumber: "193054661",
           periodKey: "24A1",
           vatDue: "1000.00",
           accessToken: "test-token",

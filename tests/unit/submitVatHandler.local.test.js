@@ -9,7 +9,6 @@ vi.mock("node-fetch", () => ({
 import fetch from "node-fetch";
 
 describe("submitVatHandleLocal", () => {
-
   const originalEnv = process.env;
 
   beforeEach(() => {
@@ -22,11 +21,12 @@ describe("submitVatHandleLocal", () => {
       HMRC_REDIRECT_URI: "http://127.0.0.1:3000",
       HMRC_CLIENT_SECRET: "test hmrc client secret",
       TEST_REDIRECT_URI: "http://127.0.0.1:3000/",
-      TEST_ACCESS_TOKEN: "eyJraWQiOiJ0ZXN0LWFwaS1zZXJ2aWNlLWhtcmMifQ.eyJhdWQiOiJ1cU1IQTZSc0RHR2E3aDhFRzJWcWZxQW12NHQiLCJzdWIiOiI4ODg3NzI2MTI3NTYiLCJpc3MiOiJodHRwczovL3Rlc3QtYXBpLnNlcnZpY2UuaG1yYy5nb3YudWsiLCJleHBpcmVkX3VzZXJuYW1lIjoiODg4NzcyNjEyNzU2IiwianRpIjoiYjA5N2QwMjItZDY5Ny00YjA5LTkzMzctYjQwZDUxMGEyN2E0IiwicmVmcmVzaF9jb250ZXh0IjoiL2FjY291bnRzLzY4ODc3MjYxMjc1NiIsInNjb3BlcyI6WyJtYWtpbmctdGF4LWluY29tZS10YXgiLCJyZWFkLXByb2ZpbGUiLCJyZWFkLWltcG9ydCIsInJlYWQtbmF0aW9uYWwtcHJvZmlsZSIsInJlYWQtbmF0aW9uYWwtcGF5bWVudCIsInJlYWQtdGF4LWltcG9ydCIsInJlYWQtdGF4LW5hdGlvbmFsLXByb2ZpbGUiLCJyZWFkLXRheC1uYXRpb25hbC1wYXltZW50Il0sIm5iZiI6MTY5OTg4MDg1OSwiaWF0IjoxNjk5ODgwODU5fQ.8e7d7",
+      TEST_ACCESS_TOKEN:
+        "eyJraWQiOiJ0ZXN0LWFwaS1zZXJ2aWNlLWhtcmMifQ.eyJhdWQiOiJ1cU1IQTZSc0RHR2E3aDhFRzJWcWZxQW12NHQiLCJzdWIiOiI4ODg3NzI2MTI3NTYiLCJpc3MiOiJodHRwczovL3Rlc3QtYXBpLnNlcnZpY2UuaG1yYy5nb3YudWsiLCJleHBpcmVkX3VzZXJuYW1lIjoiODg4NzcyNjEyNzU2IiwianRpIjoiYjA5N2QwMjItZDY5Ny00YjA5LTkzMzctYjQwZDUxMGEyN2E0IiwicmVmcmVzaF9jb250ZXh0IjoiL2FjY291bnRzLzY4ODc3MjYxMjc1NiIsInNjb3BlcyI6WyJtYWtpbmctdGF4LWluY29tZS10YXgiLCJyZWFkLXByb2ZpbGUiLCJyZWFkLWltcG9ydCIsInJlYWQtbmF0aW9uYWwtcHJvZmlsZSIsInJlYWQtbmF0aW9uYWwtcGF5bWVudCIsInJlYWQtdGF4LWltcG9ydCIsInJlYWQtdGF4LW5hdGlvbmFsLXByb2ZpbGUiLCJyZWFkLXRheC1uYXRpb25hbC1wYXltZW50Il0sIm5iZiI6MTY5OTg4MDg1OSwiaWF0IjoxNjk5ODgwODU5fQ.8e7d7",
       TEST_RECEIPT: JSON.stringify({
         formBundleNumber: "local-123456789012",
         chargeRefNumber: "local-XM002610011594",
-        processingDate: "2023-01-01T12:00:00.000Z"
+        processingDate: "2023-01-01T12:00:00.000Z",
       }),
     };
   });
@@ -252,7 +252,7 @@ describe("submitVatHandleLocal", () => {
     const result = await submitVatHandler(event);
     const body = JSON.parse(result.body);
 
-    expect(result.statusCode).toBe(401);
+    expect(result.statusCode).toBe(500);
     expect(body.error).toBe(errorMessage);
   });
 
@@ -344,7 +344,7 @@ describe("submitVatHandleLocal", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(400);
-    expect(body.error).toBe("Missing parameters");
+    expect(body.error).toBe("Missing parameters from URL");
     expect(fetch).not.toHaveBeenCalled();
   });
 });

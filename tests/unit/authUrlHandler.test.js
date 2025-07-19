@@ -17,7 +17,7 @@ describe("authUrlHandler", () => {
       TEST_RECEIPT: JSON.stringify({
         formBundleNumber: "test-123456789012",
         chargeRefNumber: "test-XM002610011594",
-        processingDate: "2023-01-01T12:00:00.000Z"
+        processingDate: "2023-01-01T12:00:00.000Z",
       }),
     };
   });
@@ -54,7 +54,7 @@ describe("authUrlHandler", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(400);
-    expect(body.error).toBe("Missing state");
+    expect(body.error).toBe("Missing state query parameter from URL");
   });
 
   test("should return 400 when queryStringParameters is null", async () => {
@@ -66,7 +66,7 @@ describe("authUrlHandler", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(400);
-    expect(body.error).toBe("Missing state");
+    expect(body.error).toBe("Missing state query parameter from URL");
   });
 
   test("should return 400 when state is empty string", async () => {
@@ -80,7 +80,7 @@ describe("authUrlHandler", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(400);
-    expect(body.error).toBe("Missing state");
+    expect(body.error).toBe("Missing state query parameter from URL");
   });
 
   test("should properly encode special characters in state", async () => {
@@ -104,6 +104,6 @@ describe("authUrlHandler", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(400);
-    expect(body.error).toBe("Missing state");
+    expect(body.error).toBe("Missing state query parameter from URL");
   });
 });

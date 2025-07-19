@@ -42,7 +42,7 @@ describe("Integration – auth flow", () => {
       TEST_RECEIPT: JSON.stringify({
         formBundleNumber: "test-123456789012",
         chargeRefNumber: "test-XM002610011594",
-        processingDate: "2023-01-01T12:00:00.000Z"
+        processingDate: "2023-01-01T12:00:00.000Z",
       }),
       RECEIPTS_BUCKET: "test-receipts-bucket",
     };

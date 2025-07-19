@@ -25,7 +25,7 @@ describe("exchangeTokenHandler", () => {
       TEST_RECEIPT: JSON.stringify({
         formBundleNumber: "test-123456789012",
         chargeRefNumber: "test-XM002610011594",
-        processingDate: "2023-01-01T12:00:00.000Z"
+        processingDate: "2023-01-01T12:00:00.000Z",
       }),
     };
   });
@@ -54,7 +54,7 @@ describe("exchangeTokenHandler", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(200);
-    expect(body.accessToken).toBe("test-access-token");
+    expect(body.access_token).toBe("test-access-token");
 
     // Verify fetch was called with correct parameters
     expect(fetch).toHaveBeenCalledWith("https://test/oauth/token", {
@@ -82,7 +82,7 @@ describe("exchangeTokenHandler", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(400);
-    expect(body.error).toBe("Missing code");
+    expect(body.error).toBe("Missing code from event body");
     expect(fetch).not.toHaveBeenCalled();
   });
 
@@ -95,7 +95,7 @@ describe("exchangeTokenHandler", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(400);
-    expect(body.error).toBe("Missing code");
+    expect(body.error).toBe("Missing code from event body");
     expect(fetch).not.toHaveBeenCalled();
   });
 
@@ -108,7 +108,7 @@ describe("exchangeTokenHandler", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(400);
-    expect(body.error).toBe("Missing code");
+    expect(body.error).toBe("Missing code from event body");
     expect(fetch).not.toHaveBeenCalled();
   });
 
@@ -121,7 +121,7 @@ describe("exchangeTokenHandler", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(400);
-    expect(body.error).toBe("Missing code");
+    expect(body.error).toBe("Missing code from event body");
     expect(fetch).not.toHaveBeenCalled();
   });
 
@@ -141,8 +141,8 @@ describe("exchangeTokenHandler", () => {
     const result = await exchangeTokenHandler(event);
     const body = JSON.parse(result.body);
 
-    expect(result.statusCode).toBe(400);
-    expect(body.error).toBe(errorMessage);
+    expect(result.statusCode).toBe(500);
+    expect(body.hmrcResponseText).toBe(errorMessage);
   });
 
   test("should handle HMRC API 401 unauthorized", async () => {
@@ -161,8 +161,8 @@ describe("exchangeTokenHandler", () => {
     const result = await exchangeTokenHandler(event);
     const body = JSON.parse(result.body);
 
-    expect(result.statusCode).toBe(401);
-    expect(body.error).toBe(errorMessage);
+    expect(result.statusCode).toBe(500);
+    expect(body.hmrcResponseText).toBe(errorMessage);
   });
 
   test("should handle malformed JSON in request body", async () => {
@@ -191,7 +191,7 @@ describe("exchangeTokenHandler", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(400);
-    expect(body.error).toBe("Missing code");
+    expect(body.error).toBe("Missing code from event body");
     expect(fetch).not.toHaveBeenCalled();
   });
 });

@@ -3,8 +3,8 @@ import { loadEnv } from "vite";
 
 export default defineConfig(({ mode }) => {
   // Load env file for tests
-  const env = loadEnv(mode, process.cwd(), '');
-  
+  const env = loadEnv(mode, process.cwd(), "");
+
   return {
     resolve: {
       alias: {
@@ -32,7 +32,14 @@ export default defineConfig(({ mode }) => {
         reportsDirectory: "./coverage",
         reporter: ["text", "json", "html"],
         include: ["src/**/*.js"],
-        exclude: ["**/dist/**", "**/entrypoint/**", "**/tests/**", "**/node_modules/**", "src/index.js", "**/exports/**"],
+        exclude: [
+          "**/dist/**",
+          "**/entrypoint/**",
+          "**/tests/**",
+          "**/node_modules/**",
+          "src/index.js",
+          "**/exports/**",
+        ],
         threshold: {
           statements: 85,
           branches: 80,

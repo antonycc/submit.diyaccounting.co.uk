@@ -3,6 +3,7 @@ import path from "path";
 import express from "express";
 import { fileURLToPath } from "url";
 import { authUrlHandler, exchangeTokenHandler, submitVatHandler, logReceiptHandler } from "./main.js";
+import logger from "./logger.js";
 
 import "dotenv/config"; // use dotenv to load environment variables
 
@@ -52,5 +53,6 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   app.listen(PORT, () => {
     const hmrcBase = process.env.HMRC_BASE_URI || "HMRC_BASE_URI not set";
     console.log(`Listening at http://127.0.0.1:${PORT} for ${hmrcBase}`);
+    logger.info(`Logging to console`);
   });
 }

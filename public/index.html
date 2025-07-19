@@ -557,23 +557,23 @@
           sessionStorage.setItem("submission_data", JSON.stringify(submissionData));
 
           // Get OAuth URL
-          //const authResponse = await getAuthUrl(state);
-          //const authResponseUrl = authResponse.authUrl;
+          const authResponse = await getAuthUrl(state);
+          const authResponseUrl = authResponse.authUrl;
 
           // OAuth URL parameters - TODO get from server
-          const baseUrl = "https://test-api.service.hmrc.gov.uk";
-          const clientId = "uqMHA6RsDGGa7h8EG2VqfqAmv4tV";
-          const redirectUri = encodeURIComponent(window.location.origin + window.location.pathname);
-          const scope = encodeURIComponent("write:vat+read:vat");
+          //const baseUrl = "https://test-api.service.hmrc.gov.uk";
+          //const clientId = "uqMHA6RsDGGa7h8EG2VqfqAmv4tV";
+          //const redirectUri = encodeURIComponent(window.location.origin + window.location.pathname);
+          //const scope = encodeURIComponent("write:vat+read:vat");
 
-          let authResponseUrl;
+          //let authResponseUrl;
           // If the redirect URI contains localhost or 127.0.0.1, use a direct redirect
           //if( redirectUri.includes("localhost") || redirectUri.includes("127.0.0.1") ) {
             // For local testing, go right back
           //  authResponseUrl = redirectUri;
           //} else {
             // For deployed, use the configured environment
-            authResponseUrl = `${baseUrl}/oauth/authorize?response_type=code&client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scope}&state=${state}`;
+          //  authResponseUrl = `${baseUrl}/oauth/authorize?response_type=code&client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scope}&state=${state}`;
           //}
 
           showStatus(`Redirecting to HMRC for authentication at ${authResponseUrl}...`, "info");

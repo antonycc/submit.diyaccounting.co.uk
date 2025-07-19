@@ -8,7 +8,7 @@ let serverProcess;
 // Generate timestamp for file naming
 function getTimestamp() {
   const now = new Date();
-  return now.toISOString().replace(/[:.]/g, '-').replace('T', '_').slice(0, -5);
+  return now.toISOString().replace(/[:.]/g, "-").replace("T", "_").slice(0, -5);
 }
 
 test.beforeAll(async () => {
@@ -47,31 +47,31 @@ test.afterAll(async () => {
   }
 });
 
-test.afterEach(async ({ }, testInfo) => {
+test.afterEach(async ({}, testInfo) => {
   console.log(`[DEBUG_LOG] afterEach called, testInfo.video exists: ${!!testInfo.video}`);
-  
+
   // Handle video file renaming and moving
   if (testInfo.video) {
-    const fs = await import('fs');
-    const path = await import('path');
-    
-    //const timestamp = getTimestamp();
-    //const videoName = `behaviour-video_${timestamp}.mp4`;
-    //const targetPath = path.join('behaviour-test-results', videoName);
-    
+    const fs = await import("fs");
+    const path = await import("path");
+
+    // const timestamp = getTimestamp();
+    // const videoName = `behaviour-video_${timestamp}.mp4`;
+    // const targetPath = path.join('behaviour-test-results', videoName);
+
     console.log(`[DEBUG_LOG] Attempting to get video path...`);
-    
+
     // Get video path from testInfo
     try {
       const videoPath = await testInfo.video.path();
       console.log(`[DEBUG_LOG] Video path: ${videoPath}`);
-      
-      //if (videoPath && await fs.promises.access(videoPath).then(() => true).catch(() => false)) {
+
+      // if (videoPath && await fs.promises.access(videoPath).then(() => true).catch(() => false)) {
       //  await fs.promises.copyFile(videoPath, targetPath);
       //  console.log(`[DEBUG_LOG] Video saved to: ${targetPath}`);
-      //} else {
+      // } else {
       //  console.log(`[DEBUG_LOG] Video file not accessible at: ${videoPath}`);
-      //}
+      // }
     } catch (error) {
       console.log(`[DEBUG_LOG] Failed to copy video: ${error.message}`);
     }
@@ -83,8 +83,8 @@ test.afterEach(async ({ }, testInfo) => {
 test.use({
   video: {
     mode: "on",
-    size: { width: 1280, height: 720 }
-  }
+    size: { width: 1280, height: 720 },
+  },
 });
 
 test("Submit VAT return end-to-end flow with browser emulation", async ({ page }) => {
