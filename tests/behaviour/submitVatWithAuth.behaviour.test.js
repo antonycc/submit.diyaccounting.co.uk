@@ -1,9 +1,10 @@
-// tests/behaviour/submitVat.behaviour.test.js
+// tests/behaviour/submitVatWithAuth.behaviour.test.js
 import { test, expect } from "@playwright/test";
 import { spawn } from "child_process";
 import { setTimeout } from "timers/promises";
 
 let serverProcess;
+let ngrokProcess;
 
 // Generate timestamp for file naming
 function getTimestamp() {
@@ -40,14 +41,43 @@ test.beforeAll(async () => {
     throw new Error("Server failed to start");
   }
 
-  // TODO: Also run ngrok then check if the default document is accessible
+  // Start ngrok process (same as npm run proxy)
+  ngrokProcess = spawn("npx", ["ngrok", "http", "--url", "wanted-finally-anteater.ngrok-free.app", "3000"], {
+    stdio: "pipe",
+  });
 
+  // Wait for ngrok to start
+  await setTimeout(3000);
+
+  // Check if the default document is accessible via ngrok
+  const ngrokUrl = "https://wanted-finally-anteater.ngrok-free.app";
+  let ngrokReady = false;
+  let ngrokAttempts = 0;
+  while (!ngrokReady && ngrokAttempts < 10) {
+    try {
+      const response = await fetch(ngrokUrl);
+      if (response.ok) {
+        ngrokReady = true;
+        console.log(`[DEBUG_LOG] ngrok is accessible at ${ngrokUrl}`);
+      }
+    } catch (error) {
+      ngrokAttempts++;
+      await setTimeout(2000);
+    }
+  }
+
+  if (!ngrokReady) {
+    console.log(`[DEBUG_LOG] Warning: ngrok may not be accessible at ${ngrokUrl}`);
+  }
 
 });
 
 test.afterAll(async () => {
   if (serverProcess) {
     serverProcess.kill();
+  }
+  if (ngrokProcess) {
+    ngrokProcess.kill();
   }
 });
 
@@ -60,8 +90,8 @@ test.afterEach(async ({}, testInfo) => {
     const path = await import("path");
 
     // const timestamp = getTimestamp();
-    // const videoName = `behaviour-video_${timestamp}.mp4`;
-    // const targetPath = path.join('behaviour-test-results', videoName);
+    // const videoName = `auth-behaviour-video_${timestamp}.mp4`;
+    // const targetPath = path.join('auth-behaviour-test-results', videoName);
 
     console.log(`[DEBUG_LOG] Attempting to get video path...`);
 
@@ -126,49 +156,76 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   });
 
   // 1) Navigate to the application served by server.js
-  await page.goto("http://127.0.0.1:3000");
+  await page.setExtraHTTPHeaders({
+    "ngrok-skip-browser-warning": "any value"
+  });
+  await page.goto("https://wanted-finally-anteater.ngrok-free.app");
 
   // Wait for page to load completely
   await setTimeout(500);
   await page.waitForLoadState("networkidle");
-  await page.screenshot({ path: `behaviour-test-results/behaviour-initial_${timestamp}.png` });
+  await page.screenshot({ path: `behaviour-test-results/auth-behaviour-000-initial_${timestamp}.png` });
   await setTimeout(500);
 
   // 2) Verify the form is present and fill it out with correct field IDs
   await expect(page.locator("#vatSubmissionForm")).toBeVisible();
 
   // Fill out the VAT form using the correct field IDs from index.html
+  const randomFourCharacters = Math.random().toString(36).substring(2, 6);
   await page.fill("#vatNumber", "193054661");
   await setTimeout(100);
-  await page.fill("#periodKey", "24A1");
+  await page.fill("#periodKey", randomFourCharacters);
   await setTimeout(100);
   await page.fill("#vatDue", "1000.00");
   await setTimeout(100);
-
-  await page.screenshot({ path: `behaviour-test-results/behaviour-form-filled_${timestamp}.png` });
+  await page.screenshot({ path: `behaviour-test-results/auth-behaviour-010-form-filled_${timestamp}.png` });
   await setTimeout(500);
 
-  // 3) Mock the token exchange endpoint
-  await page.route("**/api/exchange-token", (route) => {
-    route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify({ hmrcAccessToken: "test-access-token" }),
-    });
-  });
+  // Submit the form - this will trigger the OAuth flow
+  await setTimeout(100);
+  await page.click("#submitBtn");
 
-  // Mock the VAT submission endpoint
-  await page.route("**/api/submit-vat", (route) => {
-    route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify({
-        formBundleNumber: "123456789-bundle",
-        chargeRefNumber: "123456789-charge",
-        processingDate: new Date().toISOString(),
-      }),
-    });
-  });
+  // Expect the HMRC permission page to be visible
+  const applicationName = "DIY Accounting Submit";
+  await page.waitForLoadState("networkidle");
+  await setTimeout(500);
+  await page.screenshot({ path: `behaviour-test-results/auth-behaviour-020-hmrc-permission_${timestamp}.png` });
+  await expect(page.locator("#appNameParagraph")).toContainText(applicationName);
+  await expect(page.getByRole('button', { name: 'Continue' })).toContainText("Continue");
+  
+  //  Submit the permission form
+  await setTimeout(100);
+  await page.getByRole('button', { name: 'Continue' }).click();
+
+  // Expect the sign in option to be visible
+  await page.waitForLoadState("networkidle");
+  await setTimeout(500);
+  await page.screenshot({ path: `behaviour-test-results/auth-behaviour-030-hmrc-sign-in_${timestamp}.png` });
+  await expect(page.getByRole('button', { name: 'Sign in to the HMRC online service' })).toContainText("Sign in to the HMRC online service");
+
+  // Submit the sign in
+  await setTimeout(100);
+  await page.getByRole('button', { name: 'Sign in to the HMRC online service' }).click();
+
+  // Expect the credentials form to be visible
+  await page.waitForLoadState("networkidle");
+  await setTimeout(500);
+  await page.screenshot({ path: `behaviour-test-results/auth-behaviour-040-hmrc-credentials_${timestamp}.png` });
+  await expect(page.locator('#userId')).toBeVisible();
+  await expect(page.locator('#password')).toBeVisible();
+
+  // Fill in credentials and submit
+  await page.fill("#userId", "888772612756");
+  await setTimeout(100);
+  await page.fill("#password", "dE9SRyKeA30M");
+  await setTimeout(100);
+  await page.getByRole('button', { name: 'Sign in' }).click();
+
+  // Expect the HMRC give permission page to be visible
+  await page.waitForLoadState("networkidle");
+  await setTimeout(500);
+  await page.screenshot({ path: `behaviour-test-results/auth-behaviour-050-hmrc-give-permission_${timestamp}.png` });
+  await expect(page.locator("#givePermission")).toBeVisible();
 
   // Mock the receipt logging endpoint
   await page.route("**/api/log-receipt", (route) => {
@@ -179,56 +236,37 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
     });
   });
 
+  //  Submit the give permission form
+  await setTimeout(100);
+  await page.click("#givePermission");
+
+  // Display the state after OAuth redirection
+  await page.waitForLoadState("networkidle");
+  await page.screenshot({ path: `behaviour-test-results/auth-behaviour-055-after-oauth_${timestamp}.png` });
   await setTimeout(500);
-
-  // 4) Intercept the OAuth redirect and simulate the callback
-  let authState;
-
-  // Listen for navigation to HMRC OAuth URL
-  page.on("request", async (request) => {
-    if (request.url().includes("oauth/authorize")) {
-      const url = new URL(request.url());
-      authState = url.searchParams.get("state");
-
-      // Simulate OAuth callback by navigating back with code and state
-      await setTimeout(1500);
-      await page.goto(`http://127.0.0.1:3000/?code=test-code&state=${encodeURIComponent(authState)}`);
-    }
-  });
-
-  // Submit the form - this will trigger the OAuth flow
-  await page.click("#submitBtn");
-  await setTimeout(500);
-
-  await page.screenshot({ path: `behaviour-test-results/behaviour-after-oauth_${timestamp}.png` });
-  await setTimeout(500);
+  await page.screenshot({ path: `behaviour-test-results/auth-behaviour-060-after-oauth_${timestamp}.png` });
 
   // 5) Wait for the submission process to complete and receipt to be displayed
   await setTimeout(500);
   await page.waitForSelector("#receiptDisplay", { state: "visible", timeout: 15000 });
 
-  await setTimeout(500);
-
   // Verify the receipt is displayed with correct content
   const receiptDisplay = page.locator("#receiptDisplay");
   await expect(receiptDisplay).toBeVisible();
-
-  await setTimeout(500);
 
   // Check for the success message
   const successHeader = receiptDisplay.locator("h3");
   await expect(successHeader).toContainText("VAT Return Submitted Successfully");
 
   // Verify receipt details are populated
-  await expect(page.locator("#formBundleNumber")).toContainText("123456789-bundle");
-  await expect(page.locator("#chargeRefNumber")).toContainText("123456789-charge");
+  //await expect(page.locator("#formBundleNumber")).toContainText("123456789-bundle");
+  //await expect(page.locator("#chargeRefNumber")).toContainText("123456789-charge");
   await expect(page.locator("#processingDate")).not.toBeEmpty();
 
   // Verify the form is hidden after successful submission
   await expect(page.locator("#vatForm")).toBeHidden();
-  await setTimeout(500);
-  await page.screenshot({ path: `behaviour-test-results/behaviour-receipt_${timestamp}.png`, fullPage: true });
-  await setTimeout(500);
+  await page.screenshot({ path: `behaviour-test-results/auth-behaviour-070-receipt_${timestamp}.png`, fullPage: true });
+  await setTimeout(1000);
 
   console.log("[DEBUG_LOG] VAT submission flow completed successfully");
 });

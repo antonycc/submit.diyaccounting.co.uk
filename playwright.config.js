@@ -12,7 +12,7 @@ export default defineConfig({
     // Save a video for every test
     video: {
       mode: "on", // 'on', 'retain-on-failure', or 'off'
-      size: { width: 1280, height: 720 }, // (optional)
+      size: { width: 1280, height: 1024 }, // (optional)
       // Playwright always uses .webm for video
     },
     // Screenshot options

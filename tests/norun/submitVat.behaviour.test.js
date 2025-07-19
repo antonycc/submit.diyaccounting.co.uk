@@ -82,7 +82,7 @@ test.afterEach(async ({}, testInfo) => {
 
 test.use({
   video: {
-    mode: "on",
+    mode: "retain-on-failure", // 'on', 'retain-on-failure', or 'off'
     size: { width: 1280, height: 720 },
   },
 });
