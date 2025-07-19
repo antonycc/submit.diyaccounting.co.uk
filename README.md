@@ -44,9 +44,9 @@ npm test
 Register your HMRC OAuth application at [HMRC Developer Hub](https://developer.service.hmrc.gov.uk/),
 and set the following environment variables in a `.env` file:
 ```env
-HMRC_CLIENT_ID=your_client_id
-HMRC_CLIENT_SECRET=your_client_secret
-HMRC_REDIRECT_URI=http://
+HMRC_CLIENT_ID=your_hmrc_client_id
+HMRC_CLIENT_SECRET=your_hmrc_client_secret
+HMRC_REDIRECT_URI=https://your-ngrok-domain.ngrok-free.app/
 HMRC_BASE_URI=https://test-api.service.hmrc.gov.uk
 ```
 

@@ -35,7 +35,7 @@ describe("Integration – auth flow", () => {
       PORT: "3000",
       HMRC_BASE_URI: "https://test.test.test.uk",
       HMRC_CLIENT_ID: "test client id",
-      HMRC_REDIRECT_URI: "http://test.redirect:3000",
+      HMRC_REDIRECT_URI: "http://test.redirect:3000/",
       HMRC_CLIENT_SECRET: "test hmrc client secret",
       TEST_REDIRECT_URI: "http://test.redirect:3000/",
       TEST_ACCESS_TOKEN: "test access token",

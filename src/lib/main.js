@@ -121,14 +121,41 @@ export async function exchangeTokenHandler(event) {
 // POST /api/submit-vat
 export async function submitVatHandler(event) {
   const url = buildUrl(event);
-  logger.info({ message: "submitVatHandler responding to url by processing event", url, event });
+  const govClientBrowserJSUserAgentHeader = event.headers["Gov-Client-Browser-JS-User-Agent"];
+  const govClientDeviceIDHeader = event.headers["Gov-Client-Device-ID"];
+  const govClientMultiFactorHeader = event.headers["Gov-Client-Multi-Factor"];
+  const govClientPublicIPHeader = event.headers["Gov-Client-Public-IP"];
+  const govClientPublicIPTimestampHeader = event.headers["Gov-Client-Public-IP-Timestamp"];
+  const govClientPublicPortHeader = event.headers["Gov-Client-Public-Port"];
+  const govClientScreensHeader = event.headers["Gov-Client-Screens"];
+  const govClientTimezoneHeader = event.headers["Gov-Client-Timezone"];
+  const govClientUserIDsHeader = event.headers["Gov-Client-User-IDs"];
+  const govClientWindowSizeHeader = event.headers["Gov-Client-Window-Size"];
+  const govVendorPublicIPHeader = event.headers["Gov-Vendor-Public-IP"];
+
+  // TODO: Also gather system defined values here and validate, failing the request if they are not present.
+
+  logger.info({ message: "submitVatHandler responding to url by processing event", url, event, headers: event.headers });
 
   // Request validation
+  let errorMessages = [];
   const { vatNumber, periodKey, vatDue, accessToken } = JSON.parse(event.body || "{}");
-  if (!vatNumber || !periodKey || !vatDue || !accessToken) {
+  if (!vatNumber) {
+    errorMessages.push("Missing vatNumber parameter from body");
+  }
+  if (!periodKey) {
+    errorMessages.push("Missing periodKey parameter from body");
+  }
+  if (!vatDue) {
+    errorMessages.push("Missing vatDue parameter from body");
+  }
+  if (!accessToken) {
+    errorMessages.push("Missing accessToken parameter from body");
+  }
+  if (errorMessages.length > 0) {
     const response = {
       statusCode: 400,
-      body: JSON.stringify({ url, error: "Missing parameters from URL" }),
+      body:  JSON.stringify({ requestUrl: url, requestBody: event.body, error: errorMessages.join(", ") }),
     };
     logger.error(response);
     return response;
@@ -159,7 +186,24 @@ export async function submitVatHandler(event) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        "Accept": "application/vnd.hmrc.1.0+json",
         "Authorization": `Bearer ${accessToken}`,
+        "Gov-Client-Connection-Method": "WEB_APP_VIA_SERVER",
+        "Gov-Client-Browser-JS-User-Agent": govClientBrowserJSUserAgentHeader,
+        "Gov-Client-Device-ID": govClientDeviceIDHeader,
+        "Gov-Client-Multi-Factor": govClientMultiFactorHeader,
+        "Gov-Client-Public-IP": govClientPublicIPHeader,
+        "Gov-Client-Public-IP-Timestamp": govClientPublicIPTimestampHeader,
+        "Gov-Client-Public-Port": govClientPublicPortHeader,
+        "Gov-Client-Screens": govClientScreensHeader,
+        "Gov-Client-Timezone": govClientTimezoneHeader,
+        "Gov-Client-User-IDs": govClientUserIDsHeader,
+        "Gov-Client-Window-Size": govClientWindowSizeHeader,
+        "Gov-Vendor-Forwarded": "by=203.0.113.6&for=198.51.100.0",
+        "Gov-Vendor-License-IDs": "my-licensed-software=8D7963490527D33716835EE7C195516D5E562E03B224E9B359836466EE40CDE1",
+        "Gov-Vendor-Product-Name": "DIY Accounting Submit",
+        "Gov-Vendor-Public-IP": govVendorPublicIPHeader,
+        "Gov-Vendor-Version": "web-submit-diyaccounting-co-uk-0.0.2-4",
       },
       body: JSON.stringify(hmrcRequestBody),
     });
@@ -196,6 +240,21 @@ export async function logReceiptHandler(event) {
   // Request validation
   const receipt = JSON.parse(event.body || "{}");
   const key = `receipts/${receipt.formBundleNumber}.json`;
+  let errorMessages = [];
+  if (!receipt) {
+    errorMessages.push("Missing receipt parameter from body");
+  }
+  if (!key) {
+    errorMessages.push("Missing key parameter from body");
+  }
+  if (errorMessages.length > 0) {
+    const response = {
+      statusCode: 400,
+      body:  JSON.stringify({ requestUrl: url, requestBody: event.body, error: errorMessages.join(", ") }),
+    };
+    logger.error(response);
+    return response;
+  }
 
   // Request processing
   try {

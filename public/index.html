@@ -318,6 +318,8 @@
     </footer>
 
     <script>
+      console.log('JS block started loading.');
+
       // Global variables
       let currentAccessToken = null;
       let submissionData = null;
@@ -331,7 +333,9 @@
       const vatFormContainer = document.getElementById("vatForm");
 
       // Utility functions
+
       function showStatus(message, type = "info") {
+        console.log('Status message:', message, 'Type:', type);
         statusMessage.textContent = message;
         statusMessage.className = `status-message status-${type}`;
         statusMessage.style.display = "block";
@@ -345,6 +349,7 @@
       }
 
       function hideStatus() {
+        console.log('Hiding status');
         statusMessage.style.display = "none";
       }
 
@@ -365,189 +370,230 @@
       }
 
       // API functions
+
       async function getAuthUrl(state) {
-        console.log('Remote call initiated: GET /api/auth-url');
-        const response = await fetch(`/api/auth-url?state=${encodeURIComponent(state)}`);
+        const url = `/api/auth-url?state=${encodeURIComponent(state)}`;
+        console.log(`Getting auth URL. Remote call initiated: GET ${url}`);
+
+        const response = await fetch(url);
+        const responseJson = await response.json();
         if (!response.ok) {
-          console.error(`Remote call failed: GET /api/auth-url - Status: ${response.status} ${response.statusText}`);
-          throw new Error(`Failed to get auth URL: ${response.statusText}`);
+          const message = `Failed to get auth URL. Remote call failed: GET ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`;
+          console.error(message);
+          throw new Error(message);
         }
-        console.log('Remote call completed successfully: GET /api/auth-url');
-        return await response.json();
+
+        console.log(`Got auth URL. Remote call completed successfully: GET ${url}`, responseJson);
+        return responseJson;
       }
 
       async function exchangeToken(code) {
-        console.log('Remote call initiated: POST /api/exchange-token');
-        const response = await fetch("/api/exchange-token", {
+        const url = `/api/exchange-token`;
+        const body = JSON.stringify({ code });
+        console.log(`Exchanging token. Remote call initiated: POST ${url} ++ Body: ${body}`);
+
+        const response = await fetch(url, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ code }),
+          body,
         });
         if (!response.ok) {
-          console.error(`Remote call failed: POST /api/exchange-token - Status: ${response.status} ${response.statusText}`);
-          throw new Error(`Failed to exchange token: ${response.statusText}`);
+          const message = `Failed to exchange token. Remote call failed: POST ${url} - Status: ${response.status} ${response.statusText}`;
+          console.error(message);
+          throw new Error(message);
         }
-        console.log('Remote call completed successfully: POST /api/exchange-token');
-        return await response.json();
+
+        const responseJson = await response.json();
+        const accessToken = responseJson.access_token;
+        if (!accessToken) {
+          const message = `Failed to exchange token. Remote call response did not include access_token: POST ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`;
+          console.error(message);
+          throw new Error(message);
+        }
+
+        console.log(`Exchanged token. Remote call completed successfully: POST ${url}`, responseJson, accessToken);
+        return accessToken;
+      }
+
+      // Enhanced IP detection function with multiple fallback methods
+      async function getClientIP() {
+        // Method 1: Try WebRTC-based IP detection (works for local IPs, limited for public IPs in modern browsers)
+        const webRTCIP = await getIPViaWebRTC().catch(() => null);
+        if (webRTCIP && !webRTCIP.startsWith('192.168.') && !webRTCIP.startsWith('10.') && !webRTCIP.startsWith('172.')) {
+          return webRTCIP;
+        }
+
+        // Method 2: Try multiple IP detection services with timeout
+        const ipServices = [
+          'https://api.ipify.org',
+          'https://ipapi.co/ip',
+          'https://httpbin.org/ip'
+        ];
+
+        for (const service of ipServices) {
+          try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second timeout
+            
+            let response;
+            if (service === 'https://httpbin.org/ip') {
+              response = await fetch(service, { signal: controller.signal });
+              const data = await response.json();
+              clearTimeout(timeoutId);
+              return data.origin.split(',')[0].trim(); // httpbin returns "ip, ip" format sometimes
+            } else {
+              response = await fetch(service, { signal: controller.signal });
+              const ip = await response.text();
+              clearTimeout(timeoutId);
+              return ip.trim();
+            }
+          } catch (error) {
+            console.warn(`Failed to get IP from ${service}:`, error.message);
+            continue;
+          }
+        }
+
+        // Method 3: Fallback - let server detect IP from request headers
+        console.warn('All IP detection methods failed, server will detect IP from request headers');
+        return 'SERVER_DETECT';
+      }
+
+      // WebRTC-based IP detection (limited effectiveness in modern browsers due to security restrictions)
+      function getIPViaWebRTC() {
+        return new Promise((resolve, reject) => {
+          const timeout = setTimeout(() => reject(new Error('WebRTC timeout')), 2000);
+          
+          try {
+            const pc = new RTCPeerConnection({
+              iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+            });
+
+            pc.createDataChannel('');
+            pc.createOffer().then(offer => pc.setLocalDescription(offer));
+
+            pc.onicecandidate = (event) => {
+              if (event.candidate) {
+                const candidate = event.candidate.candidate;
+                const ipMatch = candidate.match(/(\d+\.\d+\.\d+\.\d+)/);
+                if (ipMatch) {
+                  clearTimeout(timeout);
+                  pc.close();
+                  resolve(ipMatch[1]);
+                }
+              }
+            };
+
+            pc.onicegatheringstatechange = () => {
+              if (pc.iceGatheringState === 'complete') {
+                clearTimeout(timeout);
+                pc.close();
+                reject(new Error('No IP found via WebRTC'));
+              }
+            };
+          } catch (error) {
+            clearTimeout(timeout);
+            reject(error);
+          }
+        });
       }
 
       async function submitVat(vatNumber, periodKey, vatDue, accessToken) {
-        console.log('Remote call initiated: POST /api/submit-vat');
-        const response = await fetch("/api/submit-vat", {
+        // Populate headers with required values using what is available in the browser environment
+        const govClientBrowserJSUserAgentHeader = navigator.userAgent;
+        const govClientDeviceIDHeader = crypto.randomUUID();
+        const govClientMultiFactorHeader = "type=OTHER";
+        
+        // Enhanced IP detection with fallbacks
+        const detectedIP = await getClientIP();
+        const govClientPublicIPHeader = detectedIP;
+        const govVendorPublicIPHeader = detectedIP; // Fix: Define the previously undefined variable
+        
+        const govClientPublicIPTimestampHeader = new Date().toISOString();
+        const govClientPublicPortHeader = "" + (window.location.port || (window.location.protocol === 'https:' ? '443' : '80'));
+        const govClientScreensHeader = JSON.stringify({
+          width: window.screen.width,
+          height: window.screen.height,
+          colorDepth: window.screen.colorDepth,
+          pixelDepth: window.screen.pixelDepth,
+        });
+        const govClientTimezoneHeader = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        const govClientUserIDsHeader = "test=1";
+        const govClientWindowSizeHeader = JSON.stringify({
+          width: window.innerWidth,
+          height: window.innerHeight,
+        });
+        const govVendorForwardedHeader = "test=1";
+
+        const url = "/api/submit-vat";
+        const body = JSON.stringify({
+          vatNumber,
+          periodKey,
+          vatDue,
+          accessToken,
+        });
+        console.log(`Submitting VAT. Remote call initiated: POST ${url} ++ Body: ${body}`);
+
+        const response = await fetch(url, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            "Gov-Client-Browser-JS-User-Agent": govClientBrowserJSUserAgentHeader,
+            "Gov-Client-Device-ID": govClientDeviceIDHeader,
+            "Gov-Client-Multi-Factor": govClientMultiFactorHeader,
+            "Gov-Client-Public-IP": govClientPublicIPHeader,
+            "Gov-Client-Public-IP-Timestamp": govClientPublicIPTimestampHeader,
+            "Gov-Client-Public-Port": govClientPublicPortHeader,
+            "Gov-Client-Screens": govClientScreensHeader,
+            "Gov-Client-Timezone": govClientTimezoneHeader,
+            "Gov-Client-User-IDs": govClientUserIDsHeader,
+            "Gov-Client-Window-Size": govClientWindowSizeHeader,
+            "Gov-Vendor-Forwarded": govVendorForwardedHeader,
+            "Gov-Vendor-Public-IP": govVendorPublicIPHeader,
           },
-          body: JSON.stringify({
-            vatNumber,
-            periodKey,
-            vatDue,
-            accessToken,
-          }),
+          body,
         });
+        const responseJson = await response.json();
         if (!response.ok) {
-          console.error(`Remote call failed: POST /api/submit-vat - Status: ${response.status} ${response.statusText}`);
-          throw new Error(`Failed to submit VAT: ${response.statusText}`);
+          const message = `Failed to submit VAT. Remote call failed: POST ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`;
+          console.error(message);
+          throw new Error(message);
         }
-        console.log('Remote call completed successfully: POST /api/submit-vat');
-        return await response.json();
+
+        console.log(`Submitted VAT. Remote call completed successfully: POST ${url}`, responseJson);
+        return responseJson;
       }
 
       async function logReceipt(processingDate, formBundleNumber, chargeRefNumber) {
-        console.log('Remote call initiated: POST /api/log-receipt');
-        const response = await fetch("/api/log-receipt", {
+        const url = "/api/log-receipt";
+        const body = JSON.stringify({
+          processingDate,
+          formBundleNumber,
+          chargeRefNumber,
+        })
+        console.log(`Logging receipt. Remote call initiated: POST ${url} ++ Body: ${body}`);
+
+        const response = await fetch(url, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            processingDate,
-            formBundleNumber,
-            chargeRefNumber,
-          }),
+          body,
         });
+        const responseJson = await response.json();
         if (!response.ok) {
-          console.error(`Remote call failed: POST /api/log-receipt - Status: ${response.status} ${response.statusText}`);
-          throw new Error(`Failed to log receipt: ${response.statusText}`);
-        }
-        console.log('Remote call completed successfully: POST /api/log-receipt');
-        return await response.json();
-      }
-
-      // OAuth callback handling
-      function handleOAuthCallback() {
-        console.log('JS block started loading: OAuth callback handler');
-        const urlParams = new URLSearchParams(window.location.search);
-        const code = urlParams.get("code");
-        const state = urlParams.get("state");
-        const error = urlParams.get("error");
-
-        if (error) {
-          showStatus(`OAuth error: ${error}`, "error");
-          console.error('JS block finished loading: OAuth callback handler (error exit)');
-          return;
+          const message = `Failed to log receipt. Remote call failed: POST ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`;
+          console.error(message);
+          throw new Error(message);
         }
 
-        if (code && state) {
-          const storedState = sessionStorage.getItem("oauth_state");
-          const storedSubmissionData = sessionStorage.getItem("submission_data");
-
-          if (state !== storedState) {
-            showStatus("Invalid OAuth state. Please try again.", "error");
-            console.error('JS block finished loading: OAuth callback handler (invalid state exit)');
-            return;
-          }
-
-          if (!storedSubmissionData) {
-            showStatus("Submission data not found. Please try again.", "error");
-            console.error('JS block finished loading: OAuth callback handler (missing data exit)');
-            return;
-          }
-
-          // Clear URL parameters
-          console.log('Page transition initiated: Clearing URL parameters');
-          window.history.replaceState({}, document.title, window.location.pathname);
-
-          // Continue with token exchange and submission
-          continueSubmission(code, JSON.parse(storedSubmissionData));
-          console.log('JS block finished loading: OAuth callback handler (normal completion)');
-        }
-        console.log('JS block finished loading: OAuth callback handler (no action taken)');
-      }
-
-      async function continueSubmission(code, submissionData) {
-        console.log('JS block started loading: Continue submission handler');
-        try {
-          showLoading();
-          showStatus("Exchanging authorization code for access token...", "info");
-
-          // Exchange code for access token
-          const tokenResponse = await exchangeToken(code);
-          currentAccessToken = tokenResponse.accessToken;
-
-          showStatus("Submitting VAT return to HMRC...", "info");
-
-          // Submit VAT return
-          const submitResponse = await submitVat(
-            submissionData.vatNumber,
-            submissionData.periodKey,
-            submissionData.vatDue,
-            currentAccessToken,
-          );
-
-          showStatus("Logging submission receipt...", "info");
-
-          // Log the receipt
-          await logReceipt(
-            submitResponse.processingDate,
-            submitResponse.formBundleNumber,
-            submitResponse.chargeRefNumber,
-          );
-
-          // Display success
-          displayReceipt(submitResponse);
-          hideStatus();
-
-          // Clean up session storage
-          sessionStorage.removeItem("oauth_state");
-          sessionStorage.removeItem("submission_data");
-          console.log('JS block finished loading: Continue submission handler (success)');
-        } catch (error) {
-          console.error("Submission error:", error);
-          showStatus(`Submission failed: ${error.message}`, "error");
-          console.error('JS block finished loading: Continue submission handler (error)');
-        } finally {
-          hideLoading();
-        }
-      }
-
-      function displayReceipt(response) {
-        console.log('Page display transition: Displaying receipt and hiding form');
-        // Hide the form
-        vatFormContainer.style.display = "none";
-
-        // Format and display the processing date
-        const processingDate = new Date(response.processingDate);
-        document.getElementById("processingDate").textContent = processingDate.toLocaleDateString("en-GB", {
-          day: "numeric",
-          month: "long",
-          year: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-        });
-
-        document.getElementById("formBundleNumber").textContent = response.formBundleNumber;
-        document.getElementById("chargeRefNumber").textContent = response.chargeRefNumber;
-
-        // Show the receipt
-        receiptDisplay.style.display = "block";
+        console.log(`Logged receipt. Remote call completed successfully: POST ${url}`, responseJson);
+        return responseJson;
       }
 
       // Form submission handler
       async function handleFormSubmission(event) {
-        console.log('JS block started loading: Form submission handler');
         event.preventDefault();
 
         const formData = new FormData(form);
@@ -586,33 +632,122 @@
           const authResponse = await getAuthUrl(state);
           const authResponseUrl = authResponse.authUrl;
 
-          // OAuth URL parameters - TODO get from server
-          //const baseUrl = "https://test-api.service.hmrc.gov.uk";
-          //const clientId = "uqMHA6RsDGGa7h8EG2VqfqAmv4tV";
-          //const redirectUri = encodeURIComponent(window.location.origin + window.location.pathname);
-          //const scope = encodeURIComponent("write:vat+read:vat");
-
-          //let authResponseUrl;
-          // If the redirect URI contains localhost or 127.0.0.1, use a direct redirect
-          //if( redirectUri.includes("localhost") || redirectUri.includes("127.0.0.1") ) {
-            // For local testing, go right back
-          //  authResponseUrl = redirectUri;
-          //} else {
-            // For deployed, use the configured environment
-          //  authResponseUrl = `${baseUrl}/oauth/authorize?response_type=code&client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scope}&state=${state}`;
-          //}
-
           showStatus(`Redirecting to HMRC for authentication at ${authResponseUrl}...`, "info");
 
           // Redirect to HMRC OAuth
-          console.log('Page transition initiated: Redirecting to HMRC OAuth');
+          console.log(`Page transition initiated: Redirecting to HMRC OAuth URL ${authResponseUrl}`);
           window.location.href = authResponseUrl;
         } catch (error) {
           console.error("Authentication error:", error);
           showStatus(`Authentication failed: ${error.message}`, "error");
           hideLoading();
         }
-        console.log('JS block finished loading: Form submission handler');
+      }
+
+      // OAuth callback handling
+      function handleOAuthCallback() {
+        console.log('OAuth callback handler');
+        const urlParams = new URLSearchParams(window.location.search);
+        const code = urlParams.get("code");
+        const state = urlParams.get("state");
+        const error = urlParams.get("error");
+
+        if (error) {
+          showStatus(`OAuth error: ${error}`, "error");
+          console.error('OAuth callback handler (error exit)');
+          return;
+        }
+
+        if (code && state) {
+          const storedState = sessionStorage.getItem("oauth_state");
+          const storedSubmissionData = sessionStorage.getItem("submission_data");
+
+          if (state !== storedState) {
+            showStatus("Invalid OAuth state. Please try again.", "error");
+            console.error('OAuth callback handler (invalid state exit)');
+            return;
+          }
+
+          if (!storedSubmissionData) {
+            showStatus("Submission data not found. Please try again.", "error");
+            console.error('OAuth callback handler (missing data exit)');
+            return;
+          }
+
+          // Clear URL parameters
+          console.log('Page transition initiated: Clearing URL parameters');
+          window.history.replaceState({}, document.title, window.location.pathname);
+
+          // Continue with token exchange and submission
+          continueSubmission(code, JSON.parse(storedSubmissionData));
+          console.log('OAuth callback handler (normal completion)');
+        }
+        console.log('OAuth callback handler (no action taken)');
+      }
+
+      async function continueSubmission(code, submissionData) {
+        try {
+          showLoading();
+          showStatus("Exchanging authorization code for access token...", "info");
+
+          // Exchange code for access token
+          currentAccessToken = await exchangeToken(code);
+
+          showStatus("Submitting VAT return to HMRC...", "info");
+
+          // Submit VAT return
+          const submitResponse = await submitVat(
+            submissionData.vatNumber,
+            submissionData.periodKey,
+            submissionData.vatDue,
+            currentAccessToken,
+          );
+
+          showStatus("Logging submission receipt...", "info");
+
+          // Log the receipt
+          await logReceipt(
+            submitResponse.processingDate,
+            submitResponse.formBundleNumber,
+            submitResponse.chargeRefNumber,
+          );
+
+          // Display success
+          displayReceipt(submitResponse);
+          hideStatus();
+
+          // Clean up session storage
+          sessionStorage.removeItem("oauth_state");
+          sessionStorage.removeItem("submission_data");
+          console.log('Continue submission handler (success)');
+        } catch (error) {
+          console.error("Submission error:", error);
+          showStatus(`Submission failed: ${error.message}`, "error");
+        } finally {
+          hideLoading();
+        }
+      }
+
+      function displayReceipt(response) {
+        console.log('Page display transition: Displaying receipt and hiding form');
+        // Hide the form
+        vatFormContainer.style.display = "none";
+
+        // Format and display the processing date
+        const processingDate = new Date(response.processingDate);
+        document.getElementById("processingDate").textContent = processingDate.toLocaleDateString("en-GB", {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+
+        document.getElementById("formBundleNumber").textContent = response.formBundleNumber;
+        document.getElementById("chargeRefNumber").textContent = response.chargeRefNumber;
+
+        // Show the receipt
+        receiptDisplay.style.display = "block";
       }
 
       // Event listeners
@@ -651,6 +786,7 @@
         handleOAuthCallback();
         console.log('JS block finished loading: DOMContentLoaded event handler');
       });
+      console.log('JS block finished loading.');
     </script>
   </body>
 </html>
