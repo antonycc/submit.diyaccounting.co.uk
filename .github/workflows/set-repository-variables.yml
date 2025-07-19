@@ -72,7 +72,7 @@ jobs:
 
               core.info(`Setting repo variable: ${name}`);
               await github.request(
-                'PATCH /repos/{owner}/{repo}/actions/variables/{name}',
+                'POST /repos/{owner}/{repo}/actions/variables/{name}',
                 { owner, repo, name, value }
               );
               //await github.rest.actions.createOrUpdateRepoVariable({
