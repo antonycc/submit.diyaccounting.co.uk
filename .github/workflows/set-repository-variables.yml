@@ -9,6 +9,7 @@ on:
       - main
     paths:
       - '.github/workflows/sync-repo-vars.yml'
+      - '.github/repository.env'
   workflow_dispatch:
 
 permissions:
