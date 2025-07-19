@@ -37,31 +37,17 @@ npx cdk synth
 ## Run the website locally
 
 ```bash
-http-server public/ --port 3000
+npm run start
 ```
 
 Webserver output:
 ```log
-Starting up http-server, serving public/
 
-http-server version: 14.1.1
+> web-submit-diyaccounting-co-uk@0.0.2-4 start
+> node src/lib/server.js
 
-http-server settings: 
-CORS: disabled
-Cache: 3600 seconds
-Connection Timeout: 120 seconds
-Directory Listings: visible
-AutoIndex: visible
-Serve GZIP Files: false
-Serve Brotli Files: false
-Default File Extension: none
+Listening at http://127.0.0.1:3000 for https://test-api.service.hmrc.gov.uk
 
-Available on:
-  http://127.0.0.1:3000
-  http://192.168.1.121:3000
-  http://10.14.0.2:3000
-  http://169.254.59.96:3000
-Hit CTRL-C to stop the server
 ```
 
 Access via [http://127.0.0.1:3000](http://127.0.0.1:3000) or...
@@ -89,6 +75,15 @@ Connections                   ttl     opn     rt1     rt5     p50     p90
 
 Here you can open https://d57b-146-70-103-222.ngrok-free.app in a browser of your choice (you'll have your own URL
 unless I am still running this one, I don't know when the id's roll so I might.)
+
+# Local usage with HMRC
+
+Add the ngrok URL to the HMRC MTD service as a redirect URI, e.g. `https://d57b-146-70-103-222.ngrok-free.app/`.
+Start at https://d57b-146-70-103-222.ngrok-free.app
+Enter your VAT number, Period Key, and VAT Due in the form and click "Submit VAT Return".
+Log in to HMRC...
+
+More details on usage are in [USERGUIDE.md](programmers/USERGUIDE.md).
 
 ---
 

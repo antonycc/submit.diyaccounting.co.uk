@@ -30,7 +30,8 @@
   "license": "GPL-3.0",
   "dependencies": {
     "@aws-sdk/client-s3": "^3.846.0",
-    "express": "^4.21.2"
+    "express": "^4.21.2",
+    "winston": "^3.17.0"
   },
   "devDependencies": {
     "@microsoft/eslint-formatter-sarif": "^3.1.0",

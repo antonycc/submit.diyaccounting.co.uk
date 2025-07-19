@@ -4,12 +4,36 @@
 import { fileURLToPath } from "url";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import fetch from "node-fetch";
+import { createLogger, format, transports } from "winston";
+
+const logger = createLogger({
+  format: format.json(),
+  transports: [new transports.Console()]
+});
+
+function buildUrl(event) {
+  const url = new URL(event.path, `https://${event.headers.host}`);
+  if (event.queryStringParameters) {
+    Object.keys(event.queryStringParameters).forEach(key => {
+      url.searchParams.append(key, event.queryStringParameters[key]);
+    });
+  }
+  return url;
+}
 
 // GET /api/auth-url?state={state}
 export async function authUrlHandler(event) {
+  const url = buildUrl(event)
+  logger.info({ message: 'authUrlHandler responding to url by processing event', url, event });
+
   const state = event.queryStringParameters?.state;
   if (!state) {
-    return { statusCode: 400, body: JSON.stringify({ error: "Missing state" }) };
+    const response = {
+      statusCode: 400,
+      body: JSON.stringify({ requestUrl: url, error: "Missing state query parameter" }),
+    };
+    logger.error(response);
+    return response;
   }
   const clientId = process.env.HMRC_CLIENT_ID;
   const redirectUri = process.env.HMRC_REDIRECT_URI;
@@ -21,11 +45,19 @@ export async function authUrlHandler(event) {
     `&redirect_uri=${encodeURIComponent(redirectUri)}` +
     `&scope=${encodeURIComponent(scope)}` +
     `&state=${encodeURIComponent(state)}`;
-  return { statusCode: 200, body: JSON.stringify({ authUrl }) };
+
+  const response = {
+    statusCode: 200,
+    body: JSON.stringify({ authUrl })
+  };
+  logger.info({ message: 'authUrlHandler responding to url with', url, response });
+  return response;
 }
 
 // POST /api/exchange-token
 export async function exchangeTokenHandler(event) {
+  const url = buildUrl(event)
+  logger.info({ message: 'exchangeTokenHandler responding to url by processing event', url, event });
   const { code } = JSON.parse(event.body || "{}");
   if (!code) {
     return { statusCode: 400, body: JSON.stringify({ error: "Missing code" }) };
@@ -60,6 +92,8 @@ export async function exchangeTokenHandler(event) {
 
 // POST /api/submit-vat
 export async function submitVatHandler(event) {
+  const url = buildUrl(event)
+  logger.info({ message: 'submitVatHandler responding to url by processing event', url, event });
   const { vatNumber, periodKey, vatDue, accessToken } = JSON.parse(event.body || "{}");
   if (!vatNumber || !periodKey || !vatDue || !accessToken) {
     return { statusCode: 400, body: JSON.stringify({ error: "Missing parameters" }) };
@@ -102,6 +136,8 @@ export async function submitVatHandler(event) {
 
 // POST /api/log-receipt
 export async function logReceiptHandler(event) {
+  const url = buildUrl(event)
+  logger.info({ message: 'logReceiptHandler responding to url by processing event', url, event });
   const receipt = JSON.parse(event.body || "{}");
   const key = `receipts/${receipt.formBundleNumber}.json`;
   try {

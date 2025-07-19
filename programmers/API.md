@@ -56,7 +56,7 @@ Submits the VAT return details to HMRC.
 
 ```json
 {
-  "vatNumber": "123456789",
+  "vatNumber": "193054661",
   "periodKey": "24A1",
   "vatDue": "2400.00",
   "accessToken": "hmrc_access_token"

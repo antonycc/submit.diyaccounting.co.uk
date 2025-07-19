@@ -174,7 +174,7 @@ describe("VAT Flow Frontend JavaScript", () => {
         json: () => Promise.resolve(mockResponse),
       });
 
-      const result = await window.submitVat("123456789", "24A1", "1000.00", "test-token");
+      const result = await window.submitVat("193054661", "24A1", "1000.00", "test-token");
 
       expect(fetchMock).toHaveBeenCalledWith("/api/submit-vat", {
         method: "POST",
@@ -224,7 +224,7 @@ describe("VAT Flow Frontend JavaScript", () => {
       global.sessionStorage.getItem.mockImplementation((key) => {
         if (key === "oauth_state") return "test-state";
         if (key === "submission_data")
-          return JSON.stringify({ vatNumber: "123456789", periodKey: "24A1", vatDue: "1000.00" });
+          return JSON.stringify({ vatNumber: "193054661", periodKey: "24A1", vatDue: "1000.00" });
         return null;
       });
 
@@ -249,7 +249,7 @@ describe("VAT Flow Frontend JavaScript", () => {
       window.handleOAuthCallback();
 
       expect(continueSubmissionSpy).toHaveBeenCalledWith("test-code", {
-        vatNumber: "123456789",
+        vatNumber: "193054661",
         periodKey: "24A1",
         vatDue: "1000.00",
       });
@@ -325,7 +325,7 @@ describe("VAT Flow Frontend JavaScript", () => {
       const periodKeyInput = document.getElementById("periodKey");
       const vatDueInput = document.getElementById("vatDue");
 
-      vatNumberInput.value = "123456789";
+      vatNumberInput.value = "193054661";
       periodKeyInput.value = "24A1";
       vatDueInput.value = "-100.00";
 

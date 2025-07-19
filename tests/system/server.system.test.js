@@ -204,7 +204,7 @@ describe("System – Server Process", () => {
 
     it("should respond to POST /api/submit-vat", async () => {
       const vatData = {
-        vatNumber: "123456789",
+        vatNumber: "193054661",
         periodKey: "18A1",
         vatDue: "100.00",
         accessToken: "system-test-token",

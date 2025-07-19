@@ -134,7 +134,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   await expect(page.locator("#vatSubmissionForm")).toBeVisible();
 
   // Fill out the VAT form using the correct field IDs from index.html
-  await page.fill("#vatNumber", "123456789");
+  await page.fill("#vatNumber", "193054661");
   await setTimeout(100);
   await page.fill("#periodKey", "24A1");
   await setTimeout(100);

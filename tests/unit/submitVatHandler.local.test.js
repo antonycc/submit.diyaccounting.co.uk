@@ -45,7 +45,7 @@ describe("submitVatHandleLocal", () => {
 
     const event = {
       body: JSON.stringify({
-        vatNumber: "123456789",
+        vatNumber: "193054661",
         periodKey: "23A1",
         vatDue: "1000.50",
         accessToken: "test-access-token",
@@ -59,7 +59,7 @@ describe("submitVatHandleLocal", () => {
     expect(body).toEqual(mockReceipt);
 
     // Verify fetch was called with correct parameters
-    expect(fetch).toHaveBeenCalledWith("https://test-api.service.hmrc.gov.uk/organisations/vat/123456789/returns", {
+    expect(fetch).toHaveBeenCalledWith("https://test-api.service.hmrc.gov.uk/organisations/vat/193054661/returns", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -101,7 +101,7 @@ describe("submitVatHandleLocal", () => {
   test("should return 400 when periodKey is missing", async () => {
     const event = {
       body: JSON.stringify({
-        vatNumber: "123456789",
+        vatNumber: "193054661",
         vatDue: "1000.50",
         accessToken: "test-access-token",
       }),
@@ -118,7 +118,7 @@ describe("submitVatHandleLocal", () => {
   test("should return 400 when vatDue is missing", async () => {
     const event = {
       body: JSON.stringify({
-        vatNumber: "123456789",
+        vatNumber: "193054661",
         periodKey: "23A1",
         accessToken: "test-access-token",
       }),
@@ -135,7 +135,7 @@ describe("submitVatHandleLocal", () => {
   test("should return 400 when accessToken is missing", async () => {
     const event = {
       body: JSON.stringify({
-        vatNumber: "123456789",
+        vatNumber: "193054661",
         periodKey: "23A1",
         vatDue: "1000.50",
       }),
@@ -242,7 +242,7 @@ describe("submitVatHandleLocal", () => {
 
     const event = {
       body: JSON.stringify({
-        vatNumber: "123456789",
+        vatNumber: "193054661",
         periodKey: "23A1",
         vatDue: "1000.50",
         accessToken: "invalid-token",
@@ -266,7 +266,7 @@ describe("submitVatHandleLocal", () => {
 
     const event = {
       body: JSON.stringify({
-        vatNumber: "123456789",
+        vatNumber: "193054661",
         periodKey: "23A1",
         vatDue: "1500.75",
         accessToken: "test-access-token",
@@ -295,7 +295,7 @@ describe("submitVatHandleLocal", () => {
 
     const event = {
       body: JSON.stringify({
-        vatNumber: "123456789",
+        vatNumber: "193054661",
         periodKey: "23A1",
         vatDue: 2000.25,
         accessToken: "test-access-token",
@@ -327,7 +327,7 @@ describe("submitVatHandleLocal", () => {
 
     const event = {
       body: JSON.stringify({
-        vatNumber: "123456789",
+        vatNumber: "193054661",
         periodKey: "23A1",
         vatDue: "1000.50",
         accessToken: "test-access-token",

@@ -169,7 +169,7 @@ describe("Integration – Server Express App", () => {
   describe("VAT Submission Integration", () => {
     it("should submit VAT return through Express endpoint", async () => {
       const vatData = {
-        vatNumber: "123456789",
+        vatNumber: "193054661",
         periodKey: "18A1",
         vatDue: "150.00",
         accessToken: "mocked-access-token",

@@ -70,7 +70,7 @@ Connections                   ttl     opn     rt1     rt5     p50     p90
 ```
 
 Here you can open https://d57b-146-70-103-222.ngrok-free.app in a browser of your choice (you'll have your own URL
-unless I am still running this one, I don't know when the id's roll so I might.)
+unless I am still running this one, I don't know when the id's roll so I might).
 
 Continued in [SETUP.md](programmers/SETUP.md).
 
@@ -111,7 +111,7 @@ User fills in the form fields, e.g.:
 
 | Field                   | Example Input |
 | ----------------------- | ------------- |
-| VAT Registration Number | 123456789     |
+| VAT Registration Number | 193054661     |
 | Period Key              | 24A1          |
 | VAT Due                 | £2,400.00     |
 
@@ -200,7 +200,7 @@ Typically, first, confirm the period you're submitting for is correct:
 * GET obligations:
 
 ```http
-GET https://api.service.hmrc.gov.uk/organisations/vat/123456789/obligations
+GET https://api.service.hmrc.gov.uk/organisations/vat/193054661/obligations
 Authorization: Bearer ACCESS_TOKEN
 ```
 
@@ -229,7 +229,7 @@ Use the data from the form to POST to HMRC's API:
 * POST VAT return:
 
 ```http
-POST https://api.service.hmrc.gov.uk/organisations/vat/123456789/returns
+POST https://api.service.hmrc.gov.uk/organisations/vat/193054661/returns
 Authorization: Bearer ACCESS_TOKEN
 Content-Type: application/json
 

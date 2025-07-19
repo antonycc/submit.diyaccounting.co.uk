@@ -135,7 +135,7 @@ test.describe("Client System Test - VAT Flow in Browser", () => {
 
       // Check that input fields have default values
       const vatNumber = await page.locator("#vatNumber").inputValue();
-      expect(vatNumber).toBe("123456789");
+      expect(vatNumber).toBe("193054661");
 
       const periodKey = await page.locator("#periodKey").inputValue();
       expect(periodKey).toBe("24A1");
@@ -242,7 +242,7 @@ test.describe("Client System Test - VAT Flow in Browser", () => {
     test("should show loading spinner during form submission", async ({ page }) => {
       const timestamp = getTimestamp();
       // Fill in valid form data
-      await page.locator("#vatNumber").fill("123456789");
+      await page.locator("#vatNumber").fill("193054661");
       await setTimeout(100);
       await page.locator("#periodKey").fill("24A1");
       await setTimeout(100);
