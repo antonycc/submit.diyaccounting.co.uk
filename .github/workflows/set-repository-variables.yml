@@ -48,6 +48,22 @@ jobs:
               .split(/\r?\n/)
               .map(l => l.trim());
 
+            // Get existing repository variables
+            core.info('Fetching existing repository variables');
+            let existingVariables = {};
+            try {
+              const response = await github.request(
+                'GET /repos/{owner}/{repo}/actions/variables',
+                { owner, repo }
+              );
+              for (const variable of response.data.variables) {
+                existingVariables[variable.name] = variable.value;
+              }
+              core.info(`Found ${Object.keys(existingVariables).length} existing repository variables`);
+            } catch (error) {
+              core.info(`Failed to fetch existing variables: ${error.message}`);
+            }
+
             for (const line of lines) {
               // skip empty lines or comments
               if (!line || line.startsWith('#')) continue;
@@ -67,9 +83,30 @@ jobs:
                 value = value.slice(1, -1);
               }
 
-              core.info(`Setting repo variable: ${name}`);
-              await github.request(
-                'POST /repos/{owner}/{repo}/actions/variables/{name}',
-                { owner, repo, name, value }
-              );
+              // Check if variable exists and compare values
+              if (existingVariables.hasOwnProperty(name)) {
+                if (existingVariables[name] === value) {
+                  core.info(`Variable ${name} already exists with same value, skipping`);
+                  continue;
+                } else {
+                  core.info(`Updating repo variable: ${name} (value changed)`);
+                  await github.request(
+                    'PATCH /repos/{owner}/{repo}/actions/variables/{name}',
+                    { owner, repo, name, value }
+                  );
+                }
+              } else {
+                core.info(`Creating new repo variable: ${name}`);
+                await github.request(
+                  'POST /repos/{owner}/{repo}/actions/variables',
+                  { 
+                    owner, 
+                    repo,
+                    data: {
+                      name: name,
+                      value: value
+                    }
+                  }
+                );
+              }
             }
