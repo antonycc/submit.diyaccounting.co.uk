@@ -8,16 +8,12 @@ on:
     branches:
       - main
     paths:
-      - 'public/**'
-      - 'tests/client/**'
-      - 'aws/**'
-      - '.m2/**'
-      - 'mvnw'
-      - '.mvn'
-      - 'src/**'
-      - 'tests/**'
-      - '**/*.json'
-      - '.github/workflows/**'
+      - 'public/index.html'
+      - 'aws/main/java/co/uk/diyaccounting/submit/constructs/WebStack.java'
+      - 'src/lib/main.js'
+      - 'cdk.json'
+      - 'package.json'
+      - '.github/workflows/slow-tests.yml'
   workflow_dispatch:
   schedule:
     - cron: '23 * * * *'
