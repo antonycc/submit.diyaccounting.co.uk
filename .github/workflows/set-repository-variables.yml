@@ -27,21 +27,23 @@ jobs:
           fetch-depth: 1
 
       - name: Sync repository.env → GitHub Repository Variables
-        uses: actions/github-script@v6
+        uses: actions/github-script@v7
         env:
+          repositoryRootDirectory: ${{ github.workspace }}
           variablesSourceFilepath: '.github/repository.env'
         with:
           script: |
             const fs = require('fs');
             const path = require('path');
             //const { owner, repo } = context.repo;
-            const variablesSourceFilepath = process.env.variablesSourceFilepath;
+            const variablesSourceFilepath = path.join(process.env.repositoryRootDirectory, process.env.variablesSourceFilepath);
 
             if (!fs.existsSync(variablesSourceFilepath)) {
               core.setFailed(`repository.env not found at ${variablesSourceFilepath}`);
               return;
             }
 
+            core.info(`Reading repository variables from ${variablesSourceFilepath}`);
             const lines = fs.readFileSync(variablesSourceFilepath, 'utf8')
               .split(/\r?\n/)
               .map(l => l.trim());
