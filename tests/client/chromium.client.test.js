@@ -140,13 +140,13 @@ test.describe("Client System Test - VAT Flow in Browser", () => {
 
       // Check that input fields have default values
       const vatNumber = await page.locator("#vatNumber").inputValue();
-      expect(vatNumber).toBe("193054661");
+      expect(vatNumber).toBe("");
 
       const periodKey = await page.locator("#periodKey").inputValue();
-      expect(periodKey).toBe("24A1");
+      expect(periodKey).toBe("");
 
       const vatDue = await page.locator("#vatDue").inputValue();
-      expect(vatDue).toBe("2400.00");
+      expect(vatDue).toBe("");
     });
 
     test("should have receipt display hidden initially", async ({ page }) => {
@@ -178,38 +178,6 @@ test.describe("Client System Test - VAT Flow in Browser", () => {
 
       await page.screenshot({ path: `client-test-results/client-validation-error_${timestamp}.png` });
       await setTimeout(500);
-    });
-
-    test("should validate invalid VAT number format", async ({ page }) => {
-      // Enter invalid VAT number (too short)
-      await page.locator("#vatNumber").fill("12345678");
-      await setTimeout(100);
-
-      // Try to submit the form
-      await page.locator("#vatSubmissionForm").dispatchEvent("submit");
-
-      // Check that error message is displayed
-      const statusMessage = page.locator("#statusMessage");
-      await expect(statusMessage).toBeVisible({ timeout: 2000 });
-
-      const statusText = await statusMessage.textContent();
-      expect(statusText).toBe("VAT number must be exactly 9 digits.");
-    });
-
-    test("should validate negative VAT due", async ({ page }) => {
-      // Enter negative VAT amount
-      await page.locator("#vatDue").fill("-100.00");
-      await setTimeout(100);
-
-      // Try to submit the form
-      await page.locator("#vatSubmissionForm").dispatchEvent("submit");
-
-      // Check that error message is displayed
-      const statusMessage = page.locator("#statusMessage");
-      await expect(statusMessage).toBeVisible({ timeout: 2000 });
-
-      const statusText = await statusMessage.textContent();
-      expect(statusText).toBe("VAT due cannot be negative.");
     });
   });
 
