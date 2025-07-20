@@ -33,12 +33,12 @@
     "receiptsBucketName": "",
     "lambdaEntry": "src/lib/main.",
     "authUrlLambdaHandlerFunctionName": "AuthUrlHandler",
-    "authUrlLambdaDuration": "30",
+    "authUrlLambdaDuration": "30000",
     "exchangeTokenLambdaHandlerFunctionName": "ExchangeTokenHandler",
-    "exchangeTokenLambdaDuration": "30",
+    "exchangeTokenLambdaDuration": "30000",
     "submitVatLambdaHandlerFunctionName": "SubmitVatHandler",
-    "submitVatLambdaDuration": "60",
+    "submitVatLambdaDuration": "60000",
     "logReceiptLambdaHandlerFunctionName": "LogReceiptHandler",
-    "logReceiptLambdaDuration": "30"
+    "logReceiptLambdaDuration": "30000"
   }
 }

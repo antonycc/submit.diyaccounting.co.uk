@@ -60,13 +60,13 @@ public class WebStackTest {
                 .receiptsBucketName("test-receipts-bucket")
                 .lambdaEntry("co.uk.diyaccounting.submit.handlers.")
                 .authUrlLambdaHandlerFunctionName("AuthUrlHandler")
-                .authUrlLambdaDuration("30")
+                .authUrlLambdaDurationMillis("30000")
                 .exchangeTokenLambdaHandlerFunctionName("ExchangeTokenHandler")
-                .exchangeTokenLambdaDuration("30")
+                .exchangeTokenLambdaDurationMillis("30000")
                 .submitVatLambdaHandlerFunctionName("SubmitVatHandler")
-                .submitVatLambdaDuration("60")
+                .submitVatLambdaDurationMillis("60000")
                 .logReceiptLambdaHandlerFunctionName("LogReceiptHandler")
-                .logReceiptLambdaDuration("30")
+                .logReceiptLambdaDurationMillis("30000")
                 .build();
 
         Template template = Template.fromStack(stack);

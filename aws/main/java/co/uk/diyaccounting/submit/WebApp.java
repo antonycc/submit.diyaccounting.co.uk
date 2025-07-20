@@ -41,13 +41,13 @@ public class WebApp {
                 .receiptsBucketName(System.getenv("RECEIPTS_BUCKET_NAME"))
                 .lambdaEntry(System.getenv("LAMBDA_ENTRY"))
                 .authUrlLambdaHandlerFunctionName(System.getenv("AUTH_URL_LAMBDA_HANDLER_FUNCTION_NAME"))
-                .authUrlLambdaDuration(System.getenv("AUTH_URL_LAMBDA_DURATION"))
+                .authUrlLambdaDurationMillis(System.getenv("AUTH_URL_LAMBDA_DURATION"))
                 .exchangeTokenLambdaHandlerFunctionName(System.getenv("EXCHANGE_TOKEN_LAMBDA_HANDLER_FUNCTION_NAME"))
-                .exchangeTokenLambdaDuration(System.getenv("EXCHANGE_TOKEN_LAMBDA_DURATION"))
+                .exchangeTokenLambdaDurationMillis(System.getenv("EXCHANGE_TOKEN_LAMBDA_DURATION"))
                 .submitVatLambdaHandlerFunctionName(System.getenv("SUBMIT_VAT_LAMBDA_HANDLER_FUNCTION_NAME"))
-                .submitVatLambdaDuration(System.getenv("SUBMIT_VAT_LAMBDA_DURATION"))
+                .submitVatLambdaDurationMillis(System.getenv("SUBMIT_VAT_LAMBDA_DURATION"))
                 .logReceiptLambdaHandlerFunctionName(System.getenv("LOG_RECEIPT_LAMBDA_HANDLER_FUNCTION_NAME"))
-                .logReceiptLambdaDuration(System.getenv("LOG_RECEIPT_LAMBDA_DURATION"))
+                .logReceiptLambdaDurationMillis(System.getenv("LOG_RECEIPT_LAMBDA_DURATION"))
                 .build();
 
         CfnOutput.Builder.create(stack, "OriginBucketArn")

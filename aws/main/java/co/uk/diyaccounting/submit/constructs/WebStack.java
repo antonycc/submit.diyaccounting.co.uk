@@ -104,6 +104,9 @@ public class WebStack extends Stack {
     public Function logReceiptLambda;
     public FunctionUrl logReceiptLambdaUrl;
     public LogGroup logReceiptLambdaLogGroup;
+    public IBucket receiptsBucket;
+    public LogGroup receiptsBucketLogGroup;
+    public Trail receiptsBucketTrail;
 
     public static class Builder {
         public Construct scope;
@@ -314,7 +317,7 @@ public class WebStack extends Stack {
             return this;
         }
 
-        public Builder authUrlLambdaDuration(String authUrlLambdaDuration) {
+        public Builder authUrlLambdaDurationMillis(String authUrlLambdaDuration) {
             this.authUrlLambdaDuration = authUrlLambdaDuration;
             return this;
         }
@@ -324,7 +327,7 @@ public class WebStack extends Stack {
             return this;
         }
 
-        public Builder exchangeTokenLambdaDuration(String exchangeTokenLambdaDuration) {
+        public Builder exchangeTokenLambdaDurationMillis(String exchangeTokenLambdaDuration) {
             this.exchangeTokenLambdaDuration = exchangeTokenLambdaDuration;
             return this;
         }
@@ -334,7 +337,7 @@ public class WebStack extends Stack {
             return this;
         }
 
-        public Builder submitVatLambdaDuration(String submitVatLambdaDuration) {
+        public Builder submitVatLambdaDurationMillis(String submitVatLambdaDuration) {
             this.submitVatLambdaDuration = submitVatLambdaDuration;
             return this;
         }
@@ -344,7 +347,7 @@ public class WebStack extends Stack {
             return this;
         }
 
-        public Builder logReceiptLambdaDuration(String logReceiptLambdaDuration) {
+        public Builder logReceiptLambdaDurationMillis(String logReceiptLambdaDuration) {
             this.logReceiptLambdaDuration = logReceiptLambdaDuration;
             return this;
         }
@@ -577,6 +580,39 @@ public class WebStack extends Stack {
                 .protocolPolicy(OriginProtocolPolicy.HTTPS_ONLY)
                 .build();
 
+        // Create receipts bucket for storing VAT submission receipts
+        String receiptsBucketName = this.getConfigValue(builder.receiptsBucketName, "receiptsBucketName");
+        this.receiptsBucket = Bucket.Builder.create(this, "ReceiptsBucket")
+                .bucketName(receiptsBucketName)
+                .versioned(false)
+                .blockPublicAccess(BlockPublicAccess.BLOCK_ALL)
+                .encryption(BucketEncryption.S3_MANAGED)
+                .removalPolicy(s3RetainBucket ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY)
+                .autoDeleteObjects(!s3RetainBucket)
+                .build();
+
+        // Add CloudTrail for the receipts bucket if enabled
+        if (cloudTrailEnabled) {
+            this.receiptsBucketLogGroup = LogGroup.Builder.create(this, "ReceiptsBucketLogGroup")
+                    .logGroupName("%s%s-receipts-cloud-trail".formatted(cloudTrailLogGroupPrefix, receiptsBucketName))
+                    .retention(cloudTrailLogGroupRetentionPeriod)
+                    .removalPolicy(s3RetainBucket ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY)
+                    .build();
+            this.receiptsBucketTrail = Trail.Builder.create(this, "ReceiptsBucketTrail")
+                    .trailName("%s-receipts-trail".formatted(dashedDomainName))
+                    .cloudWatchLogGroup(this.receiptsBucketLogGroup)
+                    .sendToCloudWatchLogs(true)
+                    .cloudWatchLogsRetention(cloudTrailLogGroupRetentionPeriod)
+                    .includeGlobalServiceEvents(false)
+                    .isMultiRegionTrail(false)
+                    .build();
+            // Add S3 event selector to the CloudTrail for receipts bucket
+            receiptsBucketTrail.addS3EventSelector(Arrays.asList(S3EventSelector.builder()
+                    .bucket(this.receiptsBucket)
+                    .build()
+            ));
+        }
+
         // logReceiptHandler
         this.logReceiptLambda = DockerImageFunction.Builder.create(this, "LogReceiptLambda")
                 .code(DockerImageCode.fromImageAsset(".", AssetImageCodeProps.builder()
@@ -588,11 +624,14 @@ public class WebStack extends Stack {
                         "TEST_S3_ENDPOINT", builder.testS3Endpoint,
                         "TEST_S3_ACCESS_KEY", builder.testS3AccessKey,
                         "TEST_S3_SECRET_KEY", builder.testS3SecretKey,
-                        "RECEIPTS_BUCKET_NAME", builder.receiptsBucketName
+                        "RECEIPTS_BUCKET_NAME", receiptsBucketName
                 ))
                 .functionName(builder.logReceiptLambdaHandlerFunctionName)
                 .timeout(Duration.millis(Long.parseLong(builder.logReceiptLambdaDuration)))
                 .build();
+
+        // Grant the logReceiptLambda permission to write to the receipts bucket
+        this.receiptsBucket.grantWrite(this.logReceiptLambda);
         this.logReceiptLambdaLogGroup = new LogGroup(this, "LogReceiptLambdaLogGroup", LogGroupProps.builder()
                 .logGroupName("/aws/lambda/" + this.logReceiptLambda.getFunctionName())
                 .retention(RetentionDays.THREE_DAYS)
