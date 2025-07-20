@@ -166,14 +166,6 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
     });
   });
 
-  // Mock the receipt logging endpoint
-  await page.route("**/api/log-receipt", (route) => {
-    route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify({ status: "receipt logged" }),
-    });
-  });
 
   await setTimeout(500);
 
