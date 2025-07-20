@@ -30,6 +30,24 @@ public class WebApp {
                 .docRootPath(System.getenv("DOC_ROOT_PATH"))
                 .defaultDocumentAtOrigin(System.getenv("DEFAULT_HTML_DOCUMENT"))
                 .error404NotFoundAtDistribution(System.getenv("ERROR_HTML_DOCUMENT"))
+                .hmrcClientId(System.getenv("HMRC_CLIENT_ID"))
+                .hmrcRedirectUri(System.getenv("HMRC_REDIRECT_URI"))
+                .hmrcBaseUri(System.getenv("HMRC_BASE_URI"))
+                .testRedirectUri(System.getenv("TEST_REDIRECT_URI"))
+                .testAccessToken(System.getenv("TEST_ACCESS_TOKEN"))
+                .s3Endpoint(System.getenv("S3_ENDPOINT"))
+                .s3AccessKey(System.getenv("S3_ACCESS_KEY"))
+                .s3SecretKey(System.getenv("S3_SECRET_KEY"))
+                .receiptsBucketName(System.getenv("RECEIPTS_BUCKET_NAME"))
+                .lambdaEntry(System.getenv("LAMBDA_ENTRY"))
+                .authUrlLambdaHandlerFunctionName(System.getenv("AUTH_URL_LAMBDA_HANDLER_FUNCTION_NAME"))
+                .authUrlLambdaDuration(System.getenv("AUTH_URL_LAMBDA_DURATION"))
+                .exchangeTokenLambdaHandlerFunctionName(System.getenv("EXCHANGE_TOKEN_LAMBDA_HANDLER_FUNCTION_NAME"))
+                .exchangeTokenLambdaDuration(System.getenv("EXCHANGE_TOKEN_LAMBDA_DURATION"))
+                .submitVatLambdaHandlerFunctionName(System.getenv("SUBMIT_VAT_LAMBDA_HANDLER_FUNCTION_NAME"))
+                .submitVatLambdaDuration(System.getenv("SUBMIT_VAT_LAMBDA_DURATION"))
+                .logReceiptLambdaHandlerFunctionName(System.getenv("LOG_RECEIPT_LAMBDA_HANDLER_FUNCTION_NAME"))
+                .logReceiptLambdaDuration(System.getenv("LOG_RECEIPT_LAMBDA_DURATION"))
                 .build();
 
         CfnOutput.Builder.create(stack, "OriginBucketArn")
@@ -64,21 +82,6 @@ public class WebApp {
                 .value(stack.aaaaRecord.getDomainName())
                 .build();
 
-        CfnOutput.Builder.create(stack, "AuthUrlLambda")
-                .value(stack.authUrlLambda.getFunctionArn())
-                .build();
-
-        CfnOutput.Builder.create(stack, "ExchangeTokenLambda")
-                .value(stack.exchangeTokenLambda.getFunctionArn())
-                .build();
-
-        CfnOutput.Builder.create(stack, "SubmitVatLambda")
-                .value(stack.submitVatLambda.getFunctionArn())
-                .build();
-
-        CfnOutput.Builder.create(stack, "LogReceiptLambda")
-                .value(stack.logReceiptLambda.getFunctionArn())
-                .build();
 
         app.synth();
     }
