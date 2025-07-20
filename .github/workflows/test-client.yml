@@ -1,6 +1,6 @@
 # .github/workflows/test-client.yml
 
-name: test client
+name: test-client
 run-name: 'test client [${{ github.ref_name }}] [${{ github.event.head_commit.message }}]'
 
 on:

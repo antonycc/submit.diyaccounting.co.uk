@@ -1,6 +1,6 @@
 # .github/workflows/test-behaviour.yml
 
-name: test behaviour
+name: test-behaviour
 run-name: 'test behaviour [${{ github.ref_name }}] [${{ github.event.head_commit.message }}]'
 
 on:
