@@ -1,6 +1,7 @@
 # .github/workflows/test-behaviour.yml
 
 name: test-behaviour
+concurrency: ngrok
 run-name: 'test behaviour [${{ github.ref_name }}] [${{ github.event.head_commit.message }}]'
 
 on:

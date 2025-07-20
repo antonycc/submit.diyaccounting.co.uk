@@ -1,7 +1,7 @@
 # .github/workflows/deploy.yml
 
 name: deploy
-concurrency: deploy-${{ inputs.environment || 'ci' }}
+concurrency: ngrok
 run-name: "deploy [${{ github.ref_name }}] to [${{ inputs.environment || 'ci' }}]"
 
 # TODO: Run from branch and pull requests to require a deployment
