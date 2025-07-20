@@ -76,13 +76,6 @@ test.describe("Client System Test - VAT Flow in Browser", () => {
       }
     });
 
-    await page.route("/api/log-receipt", async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({ status: "receipt logged" }),
-      });
-    });
 
     // Set the HTML content
     await page.setContent(htmlContent, {
