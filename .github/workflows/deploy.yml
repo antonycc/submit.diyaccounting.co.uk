@@ -109,6 +109,16 @@ jobs:
         shell: bash
         run: npm test
 
+      - run: npx playwright install --with-deps
+
+      - run: npm run test:behaviour
+        env:
+          HMRC_BASE_URI: ${{ vars.HMRC_BASE_URI }}
+          HMRC_REDIRECT_URI: ${{ vars.HMRC_REDIRECT_URI }}
+          HMRC_CLIENT_ID: ${{ secrets.HMRC_CLIENT_ID }}
+          HMRC_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
+          PORT: ${{ vars.PORT }}
+
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -237,9 +247,13 @@ jobs:
           LOG_S3_OBJECT_EVENT_HANDLER_SOURCE: ${{ steps.jar-path.outputs.jarFilepath }}
           LOG_GZIPPED_S3_OBJECT_EVENT_HANDLER_SOURCE: ${{ steps.jar-path.outputs.jarFilepath }}
 
-      - run: npx playwright install --with-deps
-
       - run: npm run test:behaviour
+        env:
+          HMRC_BASE_URI: ${{ vars.HMRC_BASE_URI }}
+          HMRC_REDIRECT_URI: ${{ vars.HMRC_REDIRECT_URI }}
+          HMRC_CLIENT_ID: ${{ secrets.HMRC_CLIENT_ID }}
+          HMRC_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
+          PORT: ${{ vars.PORT }}
       # TODO: Run behaviour tests targeting the ci environment
 
       - name: Upload test results

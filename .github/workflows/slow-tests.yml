@@ -155,6 +155,12 @@ jobs:
       - run: npx playwright install --with-deps
 
       - run: npm run test:behaviour
+        env:
+          HMRC_BASE_URI: ${{ vars.HMRC_BASE_URI }}
+          HMRC_REDIRECT_URI: ${{ vars.HMRC_REDIRECT_URI }}
+          HMRC_CLIENT_ID: ${{ secrets.HMRC_CLIENT_ID }}
+          HMRC_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
+          PORT: ${{ vars.PORT }}
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
