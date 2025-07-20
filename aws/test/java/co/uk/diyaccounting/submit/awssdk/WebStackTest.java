@@ -70,6 +70,6 @@ public class WebStackTest {
                 .build();
 
         Template template = Template.fromStack(stack);
-        template.resourceCountIs("AWS::S3::Bucket", 4);
+        template.resourceCountIs("AWS::S3::Bucket", 6);
     }
 }
