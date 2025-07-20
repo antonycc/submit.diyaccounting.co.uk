@@ -27,7 +27,7 @@ on:
           - ci
           - prod
   schedule:
-    - cron: '14 5 * * *'
+    - cron: '14 5,11,17,23 * * *'
 
 env:
   environment: ${{ inputs.environment || 'ci' }}
