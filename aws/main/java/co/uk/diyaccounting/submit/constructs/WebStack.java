@@ -363,6 +363,7 @@ public class WebStack extends Stack {
         public static String buildOriginBucketName(String dashedDomainName){ return dashedDomainName; }
         public static String buildCloudTrailLogBucketName(String dashedDomainName) { return "%s-cloud-trail".formatted(dashedDomainName); }
         public static String buildOriginAccessLogBucketName(String dashedDomainName) { return "%s-origin-access-logs".formatted(dashedDomainName); }
+        public static String buildReceiptsBucketName(String dashedDomainName, String receiptsBucketNamePostfix) { return "%s-%s".formatted(dashedDomainName, receiptsBucketNamePostfix); }
         public static String buildDistributionAccessLogBucketName(String dashedDomainName) { return "%s-dist-access-logs".formatted(dashedDomainName);}
 
     }
@@ -419,6 +420,9 @@ public class WebStack extends Stack {
         String docRootPath = this.getConfigValue(builder.docRootPath, "docRootPath");
         String defaultDocumentAtOrigin = this.getConfigValue(builder.defaultDocumentAtOrigin, "defaultDocumentAtOrigin");
         String error404NotFoundAtDistribution = this.getConfigValue(builder.error404NotFoundAtDistribution, "error404NotFoundAtDistribution");
+
+        String receiptsBucketFullName = Builder.buildReceiptsBucketName(dashedDomainName, this.getConfigValue(builder.receiptsBucketName, "receiptsBucketName"));
+
 
         if (s3UseExistingBucket) {
             this.originBucket = Bucket.fromBucketName(this, "OriginBucket", originBucketName);
@@ -581,9 +585,8 @@ public class WebStack extends Stack {
                 .build();
 
         // Create receipts bucket for storing VAT submission receipts
-        String receiptsBucketName = this.getConfigValue(builder.receiptsBucketName, "receiptsBucketName");
         this.receiptsBucket = Bucket.Builder.create(this, "ReceiptsBucket")
-                .bucketName(receiptsBucketName)
+                .bucketName(receiptsBucketFullName)
                 .versioned(false)
                 .blockPublicAccess(BlockPublicAccess.BLOCK_ALL)
                 .encryption(BucketEncryption.S3_MANAGED)
