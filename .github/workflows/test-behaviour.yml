@@ -41,10 +41,7 @@ jobs:
         env:
           NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
         run: |
-          # either via the CLI:
-          npx ngrok config add-authtoken "$NGROK_AUTH_TOKEN"
-          # or simply export it and let ngrok pick it up:
-          # export NGROK_AUTHTOKEN="$NGROK_AUTH_TOKEN"
+          npx ngrok config add-authtoken "${NGROK_AUTH_TOKEN?}"
 
       - run: npx playwright install --with-deps
 

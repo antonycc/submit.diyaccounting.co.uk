@@ -153,6 +153,12 @@ jobs:
 
       - run: npm ci || npm install
 
+      - name: Authenticate ngrok
+        env:
+          NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
+        run: |
+          npx ngrok config add-authtoken "${NGROK_AUTH_TOKEN?}"
+
       - run: npx playwright install --with-deps
 
       - run: npm run test:behaviour
