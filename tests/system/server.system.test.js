@@ -34,7 +34,7 @@ describe("System – Server Process", () => {
       HMRC_CLIENT_ID: "system-test-client-id",
       HMRC_CLIENT_SECRET: "system-test-secret",
       REDIRECT_URI: "https://submit.diyaccounting.co.uk/callback",
-      RECEIPTS_BUCKET: "system-test-bucket",
+      RECEIPTS_BUCKET_NAME: "system-test-bucket",
       PORT: serverPort.toString(),
     };
   });

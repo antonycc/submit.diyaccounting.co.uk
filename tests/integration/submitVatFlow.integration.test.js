@@ -52,7 +52,7 @@ describe("System Test – end-to-end AWS-like flow", () => {
         chargeRefNumber: "test-XM002610011594",
         processingDate: "2023-01-01T12:00:00.000Z",
       }),
-      RECEIPTS_BUCKET: "test-receipts-bucket",
+      RECEIPTS_BUCKET_NAME: "test-receipts-bucket",
     };
 
     // Configure S3 mock to use in-memory store
@@ -93,7 +93,7 @@ describe("System Test – end-to-end AWS-like flow", () => {
     const s3 = new S3Client({});
     const getResult = await s3.send(
       new GetObjectCommand({
-        Bucket: process.env.RECEIPTS_BUCKET,
+        Bucket: process.env.RECEIPTS_BUCKET_NAME,
         Key: `receipts/${receipt.formBundleNumber}.json`,
       }),
     );

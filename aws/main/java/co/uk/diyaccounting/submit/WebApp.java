@@ -64,6 +64,22 @@ public class WebApp {
                 .value(stack.aaaaRecord.getDomainName())
                 .build();
 
+        CfnOutput.Builder.create(stack, "AuthUrlLambda")
+                .value(stack.authUrlLambda.getFunctionArn())
+                .build();
+
+        CfnOutput.Builder.create(stack, "ExchangeTokenLambda")
+                .value(stack.exchangeTokenLambda.getFunctionArn())
+                .build();
+
+        CfnOutput.Builder.create(stack, "SubmitVatLambda")
+                .value(stack.submitVatLambda.getFunctionArn())
+                .build();
+
+        CfnOutput.Builder.create(stack, "LogReceiptLambda")
+                .value(stack.logReceiptLambda.getFunctionArn())
+                .build();
+
         app.synth();
     }
 }

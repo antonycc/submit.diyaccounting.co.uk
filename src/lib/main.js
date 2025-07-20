@@ -315,14 +315,14 @@ export async function logReceiptHandler(event) {
     }
   }
 
-  if (!process.env.RECEIPTS_BUCKET) {
-    logger.warn({message: "RECEIPTS_BUCKET environment variable is not set, cannot log receipt"});
+  if (!process.env.RECEIPTS_BUCKET_NAME) {
+    logger.warn({message: "RECEIPTS_BUCKET_NAME environment variable is not set, cannot log receipt"});
   } else {
     try {
       const s3Client = new S3Client(s3Config);
       await s3Client.send(
           new PutObjectCommand({
-            Bucket: process.env.RECEIPTS_BUCKET,
+            Bucket: process.env.RECEIPTS_BUCKET_NAME,
             Key: key,
             Body: JSON.stringify(receipt),
             ContentType: "application/json",

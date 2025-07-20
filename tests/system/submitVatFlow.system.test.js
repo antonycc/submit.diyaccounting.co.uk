@@ -80,7 +80,7 @@ describe("System Test – submit VAT and persist receipts to containerised S3", 
     await fetch(`${endpoint}/${BUCKET_NAME}`, { method: "PUT" });
 
     // Mock the environment variables for the handlers
-    process.env.RECEIPTS_BUCKET = BUCKET_NAME;
+    process.env.RECEIPTS_BUCKET_NAME = BUCKET_NAME;
     process.env.S3_ENDPOINT = endpoint;
     process.env.S3_ACCESS_KEY = "minioadmin";
     process.env.S3_SECRET_KEY = "minioadmin";

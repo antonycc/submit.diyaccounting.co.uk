@@ -17,7 +17,7 @@ describe("logReceiptHandler", () => {
   beforeEach(() => {
     process.env = {
       ...originalEnv,
-      RECEIPTS_BUCKET: "test-receipts-bucket",
+      RECEIPTS_BUCKET_NAME: "test-receipts-bucket",
     };
     vi.clearAllMocks();
   });

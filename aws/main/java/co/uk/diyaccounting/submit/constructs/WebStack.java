@@ -32,7 +32,13 @@ import software.amazon.awscdk.services.cloudfront.ViewerProtocolPolicy;
 import software.amazon.awscdk.services.cloudfront.origins.S3Origin;
 import software.amazon.awscdk.services.cloudtrail.S3EventSelector;
 import software.amazon.awscdk.services.cloudtrail.Trail;
+import software.amazon.awscdk.services.lambda.AssetImageCodeProps;
+import software.amazon.awscdk.services.lambda.DockerImageCode;
+import software.amazon.awscdk.services.lambda.DockerImageFunction;
+import software.amazon.awscdk.services.lambda.eventsources.SqsEventSource;
+import software.amazon.awscdk.services.lambda.eventsources.SqsEventSourceProps;
 import software.amazon.awscdk.services.logs.LogGroup;
+import software.amazon.awscdk.services.logs.LogGroupProps;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.amazon.awscdk.services.route53.ARecord;
 import software.amazon.awscdk.services.route53.AaaaRecord;
@@ -55,6 +61,7 @@ import java.util.AbstractMap;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Pattern;
 
 public class WebStack extends Stack {
@@ -77,6 +84,14 @@ public class WebStack extends Stack {
     public ARecord aRecord;
     public AaaaRecord aaaaRecord;
     public Trail originBucketTrail;
+    public DockerImageFunction authUrlLambda;
+    public LogGroup authUrlLambdaLogGroup;
+    public DockerImageFunction exchangeTokenLambda;
+    public LogGroup exchangeTokenLambdaLogGroup;
+    public DockerImageFunction submitVatLambda;
+    public LogGroup submitVatLambdaLogGroup;
+    public DockerImageFunction logReceiptLambda;
+    public LogGroup logReceiptLambdaLogGroup;
 
     public static class Builder {
         public Construct scope;
@@ -102,6 +117,24 @@ public class WebStack extends Stack {
         public String docRootPath;
         public String defaultDocumentAtOrigin;
         public String error404NotFoundAtDistribution;
+        public String hmrcClientId;
+        public String hmrcRedirectUri;
+        public String hmrcBaseUri;
+        public String testRedirectUri;
+        public String testAccessToken;
+        public String s3Endpoint;
+        public String s3AccessKey;
+        public String s3SecretKey;
+        public String receiptsBucketName;
+        public String lambdaEntry;
+        public String authUrlLambdaHandlerFunctionName;
+        public String authUrlLambdaDuration;
+        public String exchangeTokenLambdaHandlerFunctionName;
+        public String exchangeTokenLambdaDuration;
+        public String submitVatLambdaHandlerFunctionName;
+        public String submitVatLambdaDuration;
+        public String logReceiptLambdaHandlerFunctionName;
+        public String logReceiptLambdaDuration;
 
         public Builder(Construct scope, String id, StackProps props) {
             this.scope = scope;
@@ -338,6 +371,93 @@ public class WebStack extends Stack {
             logger.info("CloudTrail is not enabled for the origin bucket.");
         }
 
+        // authUrlHandler
+        this.authUrlLambda = DockerImageFunction.Builder.create(this, "AuthUrlLambda")
+                .code(DockerImageCode.fromImageAsset(".", AssetImageCodeProps.builder()
+                        .buildArgs(Map.of(
+                                "HANDLER", lambdaEntry + authUrlLambdaHandlerFunctionName
+                        ))
+                        .build()))
+                .environment(Map.of(
+                        "HMRC_CLIENT_ID", hmrcClientId,
+                        "HMRC_REDIRECT_URI", hmrcRedirectUri,
+                        "HMRC_BASE_URI", hmrcBaseUri
+                        ))
+                .functionName(authUrlLambdaFunctionName)
+                .timeout(authUrlLambdaDuration)
+                .build();
+        this.authUrlLambdaLogGroup = new LogGroup(this, "AuthUrlLambdaLogGroup", LogGroupProps.builder()
+                .logGroupName("/aws/lambda/" + this.authUrlLambda.getFunctionName())
+                .retention(RetentionDays.THREE_DAYS)
+                .removalPolicy(RemovalPolicy.DESTROY)
+                .build());
+        
+        // exchangeTokenHandler
+        this.exchangeTokenLambda = DockerImageFunction.Builder.create(this, "ExchangeTokenLambda")
+                .code(DockerImageCode.fromImageAsset(".", AssetImageCodeProps.builder()
+                        .buildArgs(Map.of(
+                                "HANDLER", lambdaEntry + exchangeTokenLambdaHandlerFunctionName
+                        ))
+                        .build()))
+                .environment(Map.of(
+                        "HMRC_CLIENT_ID", hmrcClientId,
+                        "HMRC_REDIRECT_URI", hmrcRedirectUri,
+                        "HMRC_BASE_URI", hmrcBaseUri,
+                        "TEST_REDIRECT_URI", testRedirectUri,
+                        "TEST_ACCESS_TOKEN", testAccessToken
+                ))
+                .functionName(exchangeTokenLambdaFunctionName)
+                .timeout(exchangeTokenLambdaDuration)
+                .build();
+        this.exchangeTokenLambdaLogGroup = new LogGroup(this, "ExchangeTokenLambdaLogGroup", LogGroupProps.builder()
+                .logGroupName("/aws/lambda/" + this.exchangeTokenLambda.getFunctionName())
+                .retention(RetentionDays.THREE_DAYS)
+                .removalPolicy(RemovalPolicy.DESTROY)
+                .build());
+
+        // submitVatHandler
+        this.submitVatLambda = DockerImageFunction.Builder.create(this, "SubmitVatLambda")
+                .code(DockerImageCode.fromImageAsset(".", AssetImageCodeProps.builder()
+                        .buildArgs(Map.of(
+                                "HANDLER", lambdaEntry + submitVatLambdaHandlerFunctionName
+                        ))
+                        .build()))
+                .environment(Map.of(
+                        "HMRC_REDIRECT_URI", hmrcRedirectUri,
+                        "HMRC_BASE_URI", hmrcBaseUri,
+                        "TEST_REDIRECT_URI", testRedirectUri
+                ))
+                .functionName(submitVatLambdaFunctionName)
+                .timeout(submitVatLambdaDuration)
+                .build();
+        this.submitVatLambdaLogGroup = new LogGroup(this, "SubmitVatLambdaLogGroup", LogGroupProps.builder()
+                .logGroupName("/aws/lambda/" + this.submitVatLambda.getFunctionName())
+                .retention(RetentionDays.THREE_DAYS)
+                .removalPolicy(RemovalPolicy.DESTROY)
+                .build());
+
+        // logReceiptHandler
+        this.logReceiptLambda = DockerImageFunction.Builder.create(this, "LogReceiptLambda")
+                .code(DockerImageCode.fromImageAsset(".", AssetImageCodeProps.builder()
+                        .buildArgs(Map.of(
+                                "HANDLER", lambdaEntry + logReceiptLambdaHandlerFunctionName
+                        ))
+                        .build()))
+                .environment(Map.of(
+                        "S3_ENDPOINT", s3Endpoint,
+                        "S3_ACCESS_KEY", s3AccessKey,
+                        "S3_SECRET_KEY", s3SecretKey,
+                        "RECEIPTS_BUCKET_NAME", receiptsBucketName
+                ))
+                .functionName(logReceiptLambdaFunctionName)
+                .timeout(logReceiptLambdaDuration)
+                .build();
+        this.logReceiptLambdaLogGroup = new LogGroup(this, "LogReceiptLambdaLogGroup", LogGroupProps.builder()
+                .logGroupName("/aws/lambda/" + this.logReceiptLambda.getFunctionName())
+                .retention(RetentionDays.THREE_DAYS)
+                .removalPolicy(RemovalPolicy.DESTROY)
+                .build());
+        
         // Grant the read access to an origin identity
         this.originIdentity = OriginAccessIdentity.Builder
                 .create(this, "OriginAccessIdentity")

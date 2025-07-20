@@ -44,7 +44,7 @@ describe("Integration – auth flow", () => {
         chargeRefNumber: "test-XM002610011594",
         processingDate: "2023-01-01T12:00:00.000Z",
       }),
-      RECEIPTS_BUCKET: "test-receipts-bucket",
+      RECEIPTS_BUCKET_NAME: "test-receipts-bucket",
     };
     s3Mock.reset();
   });
