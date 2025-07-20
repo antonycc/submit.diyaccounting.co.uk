@@ -13,64 +13,76 @@ function getTimestamp() {
 }
 
 test.beforeAll(async () => {
+  console.log("Starting beforeAll hook...");
+  
   // Start the server
+  console.log("Starting server process...");
   serverProcess = spawn("node", ["src/lib/server.js"], {
     env: { ...process.env, PORT: "3000" },
     stdio: "pipe",
   });
 
   // Wait for server to start
+  console.log("Waiting for server to initialize...");
   await setTimeout(2000);
 
   // Check if server is running
   let serverReady = false;
   let attempts = 0;
-  while (!serverReady && attempts < 10) {
+  console.log("Checking server readiness...");
+  while (!serverReady && attempts < 15) {
     try {
       const response = await fetch("http://127.0.0.1:3000");
       if (response.ok) {
         serverReady = true;
+        console.log("Server is ready!");
       }
     } catch (error) {
       attempts++;
+      console.log(`Server check attempt ${attempts}/15 failed: ${error.message}`);
       await setTimeout(1000);
     }
   }
 
   if (!serverReady) {
-    throw new Error("Server failed to start");
+    throw new Error(`Server failed to start after ${attempts} attempts`);
   }
 
   // Start ngrok process (same as npm run proxy)
+  console.log("Starting ngrok process...");
   ngrokProcess = spawn("npx", ["ngrok", "http", "--url", "wanted-finally-anteater.ngrok-free.app", "3000"], {
     stdio: "pipe",
   });
 
   // Wait for ngrok to start
-  await setTimeout(3000);
+  console.log("Waiting for ngrok to initialize...");
+  await setTimeout(5000);
 
   // Check if the default document is accessible via ngrok
   const ngrokUrl = "https://wanted-finally-anteater.ngrok-free.app";
   let ngrokReady = false;
   let ngrokAttempts = 0;
-  while (!ngrokReady && ngrokAttempts < 10) {
+  console.log("Checking ngrok readiness...");
+  while (!ngrokReady && ngrokAttempts < 15) {
     try {
       const response = await fetch(ngrokUrl);
       if (response.ok) {
         ngrokReady = true;
-        console.log(`[DEBUG_LOG] ngrok is accessible at ${ngrokUrl}`);
+        console.log(`ngrok is accessible at ${ngrokUrl}`);
       }
     } catch (error) {
       ngrokAttempts++;
+      console.log(`ngrok check attempt ${ngrokAttempts}/15 failed: ${error.message}`);
       await setTimeout(2000);
     }
   }
 
   if (!ngrokReady) {
-    console.log(`[DEBUG_LOG] Warning: ngrok may not be accessible at ${ngrokUrl}`);
+    console.log(`Warning: ngrok may not be accessible at ${ngrokUrl} after ${ngrokAttempts} attempts`);
   }
 
-});
+  console.log("beforeAll hook completed successfully");
+}, 60000); // Set timeout to 60 seconds for beforeAll hook
 
 test.afterAll(async () => {
   if (serverProcess) {
@@ -82,7 +94,7 @@ test.afterAll(async () => {
 });
 
 test.afterEach(async ({}, testInfo) => {
-  console.log(`[DEBUG_LOG] afterEach called, testInfo.video exists: ${!!testInfo.video}`);
+  console.log(`afterEach called, testInfo.video exists: ${!!testInfo.video}`);
 
   // Handle video file renaming and moving
   if (testInfo.video) {
@@ -93,24 +105,24 @@ test.afterEach(async ({}, testInfo) => {
     // const videoName = `auth-behaviour-video_${timestamp}.mp4`;
     // const targetPath = path.join('auth-behaviour-test-results', videoName);
 
-    console.log(`[DEBUG_LOG] Attempting to get video path...`);
+    console.log(`Attempting to get video path...`);
 
     // Get video path from testInfo
     try {
       const videoPath = await testInfo.video.path();
-      console.log(`[DEBUG_LOG] Video path: ${videoPath}`);
+      console.log(`Video path: ${videoPath}`);
 
       // if (videoPath && await fs.promises.access(videoPath).then(() => true).catch(() => false)) {
       //  await fs.promises.copyFile(videoPath, targetPath);
-      //  console.log(`[DEBUG_LOG] Video saved to: ${targetPath}`);
+      //  console.log(`Video saved to: ${targetPath}`);
       // } else {
-      //  console.log(`[DEBUG_LOG] Video file not accessible at: ${videoPath}`);
+      //  console.log(`Video file not accessible at: ${videoPath}`);
       // }
     } catch (error) {
-      console.log(`[DEBUG_LOG] Failed to copy video: ${error.message}`);
+      console.log(`Failed to copy video: ${error.message}`);
     }
   } else {
-    console.log(`[DEBUG_LOG] No video in testInfo`);
+    console.log(`No video in testInfo`);
   }
 });
 
@@ -268,5 +280,5 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   await page.screenshot({ path: `behaviour-test-results/auth-behaviour-070-receipt_${timestamp}.png`, fullPage: true });
   await setTimeout(1000);
 
-  console.log("[DEBUG_LOG] VAT submission flow completed successfully");
+  console.log("VAT submission flow completed successfully");
 });
