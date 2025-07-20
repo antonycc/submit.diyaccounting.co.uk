@@ -82,7 +82,7 @@ public class WebApp {
                 .value(stack.aaaaRecord.getDomainName())
                 .build();
 
-        CfnOutput.Builder.create(stack, "AuthUrlLambda")
+        CfnOutput.Builder.create(stack, "AuthUrlLambdaArn")
                 .value(stack.authUrlLambda.getFunctionArn())
                 .build();
 
@@ -90,7 +90,7 @@ public class WebApp {
                 .value(stack.authUrlLambdaUrl.getUrl())
                 .build();
 
-        CfnOutput.Builder.create(stack, "ExchangeTokenLambda")
+        CfnOutput.Builder.create(stack, "ExchangeTokenLambdaArn")
                 .value(stack.exchangeTokenLambda.getFunctionArn())
                 .build();
 
@@ -98,7 +98,7 @@ public class WebApp {
                 .value(stack.exchangeTokenLambdaUrl.getUrl())
                 .build();
 
-        CfnOutput.Builder.create(stack, "SubmitVatLambda")
+        CfnOutput.Builder.create(stack, "SubmitVatLambdaArn")
                 .value(stack.submitVatLambda.getFunctionArn())
                 .build();
 
@@ -106,7 +106,7 @@ public class WebApp {
                 .value(stack.submitVatLambdaUrl.getUrl())
                 .build();
 
-        CfnOutput.Builder.create(stack, "LogReceiptLambda")
+        CfnOutput.Builder.create(stack, "LogReceiptLambdaArn")
                 .value(stack.logReceiptLambda.getFunctionArn())
                 .build();
 

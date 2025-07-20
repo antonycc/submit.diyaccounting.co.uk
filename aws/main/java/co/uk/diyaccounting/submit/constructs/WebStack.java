@@ -365,9 +365,15 @@ public class WebStack extends Stack {
         public static String buildOriginBucketName(String dashedDomainName){ return dashedDomainName; }
         public static String buildCloudTrailLogBucketName(String dashedDomainName) { return "%s-cloud-trail".formatted(dashedDomainName); }
         public static String buildOriginAccessLogBucketName(String dashedDomainName) { return "%s-origin-access-logs".formatted(dashedDomainName); }
-        public static String buildReceiptsBucketName(String dashedDomainName, String receiptsBucketNamePostfix) { return "%s-%s".formatted(dashedDomainName, receiptsBucketNamePostfix); }
         public static String buildDistributionAccessLogBucketName(String dashedDomainName) { return "%s-dist-access-logs".formatted(dashedDomainName);}
 
+        private static String buildFunctionName(String dashedDomainName, String functionName) {
+            return "%s-%s".formatted(dashedDomainName, ResourceNameUtils.convertCamelCaseToDashSeparated(functionName));
+        }
+
+        private static String buildBucketName(String dashedDomainName, String bucketName) {
+            return "%s-%s".formatted(dashedDomainName, bucketName);
+        }
     }
 
     public static final List<AbstractMap.SimpleEntry<Pattern, String>> domainNameMappings = List.of();
@@ -423,10 +429,48 @@ public class WebStack extends Stack {
         String defaultDocumentAtOrigin = this.getConfigValue(builder.defaultDocumentAtOrigin, "defaultDocumentAtOrigin");
         String error404NotFoundAtDistribution = this.getConfigValue(builder.error404NotFoundAtDistribution, "error404NotFoundAtDistribution");
 
+        // Receipts bucket
         String receiptsBucketName = this.getConfigValue(builder.receiptsBucketName, "receiptsBucketName");
-        String receiptsBucketFullName = Builder.buildReceiptsBucketName(dashedDomainName, receiptsBucketName);
+        String receiptsBucketFullName = Builder.buildBucketName(dashedDomainName, receiptsBucketName);
 
+        // Lambdas
+        String lambaEntry =  this.getConfigValue(builder.lambdaEntry, "lambdaEntry");
 
+        String authUrlLambdaHandlerFunctionName = Builder.buildFunctionName(dashedDomainName, this.getConfigValue(builder.authUrlLambdaHandlerFunctionName, "authUrlLambdaHandlerFunctionName"));
+        String authUrlLambdaHandler = lambaEntry + authUrlLambdaHandlerFunctionName;
+        Duration authUrlLambdaDuration = Duration.millis(Long.parseLong(this.getConfigValue(builder.authUrlLambdaDuration, "authUrlLambdaDuration")));
+
+        String exchangeTokenLambdaHandlerFunctionName = Builder.buildFunctionName(dashedDomainName, this.getConfigValue(builder.exchangeTokenLambdaHandlerFunctionName, "exchangeTokenLambdaHandlerFunctionName"));
+        String exchangeTokenLambdaHandler = lambaEntry + exchangeTokenLambdaHandlerFunctionName;
+        Duration exchangeTokenLambdaDuration = Duration.millis(Long.parseLong(this.getConfigValue(builder.exchangeTokenLambdaDuration, "exchangeTokenLambdaDuration")));
+
+        String submitVatLambdaHandlerFunctionName = Builder.buildFunctionName(dashedDomainName, this.getConfigValue(builder.submitVatLambdaHandlerFunctionName, "submitVatLambdaHandlerFunctionName"));
+        String submitVatLambdaHandler = lambaEntry + submitVatLambdaHandlerFunctionName;
+        Duration submitVatLambdaDuration = Duration.millis(Long.parseLong(this.getConfigValue(builder.submitVatLambdaDuration, "submitVatLambdaDuration")));
+
+        String logReceiptLambdaHandlerFunctionName = Builder.buildFunctionName(dashedDomainName, this.getConfigValue(builder.logReceiptLambdaHandlerFunctionName, "logReceiptLambdaHandlerFunctionName"));
+        String logReceiptLambdaHandler = lambaEntry + logReceiptLambdaHandlerFunctionName;
+        Duration logReceiptLambdaDuration = Duration.millis(Long.parseLong(this.getConfigValue(builder.logReceiptLambdaDuration, "logReceiptLambdaDuration")));
+
+        // Lambda config values
+        String hmrcClientId = this.getConfigValue(builder.hmrcClientId, "hmrcClientId");
+        String hmrcRedirectUri = this.getConfigValue(builder.hmrcRedirectUri, "hmrcRedirectUri");
+        String hmrcBaseUri = this.getConfigValue(builder.hmrcBaseUri, "hmrcBaseUri");
+        String testRedirectUri = this.getConfigValue(builder.testRedirectUri, "testRedirectUri");
+        String testAccessToken = this.getConfigValue(builder.testAccessToken, "testAccessToken");
+        String testS3Endpoint;
+        String testS3AccessKey;
+        String testS3SecretKey;
+        try {
+            testS3Endpoint = this.getConfigValue(builder.testS3Endpoint, "testS3Endpoint");
+            testS3AccessKey = this.getConfigValue(builder.testS3AccessKey, "testS3AccessKey");
+            testS3SecretKey = this.getConfigValue(builder.testS3SecretKey, "testS3SecretKey");
+        } catch (Exception e) {
+            // If test S3 values are not provided, set them to null
+            testS3Endpoint = null;
+            testS3AccessKey = null;
+            testS3SecretKey = null;
+        }
         if (s3UseExistingBucket) {
             this.originBucket = Bucket.fromBucketName(this, "OriginBucket", originBucketName);
         } else {
@@ -483,6 +527,7 @@ public class WebStack extends Stack {
             logger.info("CloudTrail is not enabled for the origin bucket.");
         }
 
+
         // authUrlHandler
         if ("test".equals(env)) {
             // For testing, create a simple Function instead of DockerImageFunction to avoid Docker builds
@@ -490,28 +535,23 @@ public class WebStack extends Stack {
                     .code(Code.fromInline("exports.handler = async (event) => { return { statusCode: 200, body: 'test' }; }"))
                     .handler("index.handler")
                     .runtime(Runtime.NODEJS_20_X)
-                    .environment(Map.of(
-                            "HMRC_CLIENT_ID", this.getConfigValue(builder.hmrcClientId, "hmrcClientId"),
-                            "HMRC_REDIRECT_URI", this.getConfigValue(builder.hmrcRedirectUri, "hmrcRedirectUri"),
-                            "HMRC_BASE_URI", this.getConfigValue(builder.hmrcBaseUri, "hmrcBaseUri")
-                    ))
-                    .functionName(this.getConfigValue(builder.authUrlLambdaHandlerFunctionName, "authUrlLambdaHandlerFunctionName"))
-                    .timeout(Duration.millis(Long.parseLong(this.getConfigValue(builder.authUrlLambdaDuration, "authUrlLambdaDuration"))))
+                    .environment(Map.of("HMRC_CLIENT_ID", hmrcClientId))
+                    .environment(Map.of("HMRC_REDIRECT_URI", hmrcRedirectUri))
+                    .environment(Map.of("HMRC_BASE_URI", hmrcBaseUri))
+                    .functionName(authUrlLambdaHandlerFunctionName)
+                    .timeout(authUrlLambdaDuration)
                     .build();
         } else {
             this.authUrlLambda = DockerImageFunction.Builder.create(this, "AuthUrlLambda")
-                    .code(DockerImageCode.fromImageAsset(".", AssetImageCodeProps.builder()
-                            .buildArgs(Map.of(
-                                    "HANDLER", this.getConfigValue(builder.lambdaEntry, "lambdaEntry") + this.getConfigValue(builder.authUrlLambdaHandlerFunctionName, "authUrlLambdaHandlerFunctionName")
-                            ))
-                            .build()))
-                    .environment(Map.of(
-                            "HMRC_CLIENT_ID", this.getConfigValue(builder.hmrcClientId, "hmrcClientId"),
-                            "HMRC_REDIRECT_URI", this.getConfigValue(builder.hmrcRedirectUri, "hmrcRedirectUri"),
-                            "HMRC_BASE_URI", this.getConfigValue(builder.hmrcBaseUri, "hmrcBaseUri")
-                    ))
-                    .functionName(this.getConfigValue(builder.authUrlLambdaHandlerFunctionName, "authUrlLambdaHandlerFunctionName"))
-                    .timeout(Duration.millis(Long.parseLong(this.getConfigValue(builder.authUrlLambdaDuration, "authUrlLambdaDuration"))))
+                    .code(DockerImageCode.fromImageAsset(
+                            ".",
+                            AssetImageCodeProps.builder().buildArgs(Map.of("HANDLER", authUrlLambdaHandler)).build())
+                    )
+                    .environment(Map.of("HMRC_CLIENT_ID", hmrcClientId))
+                    .environment(Map.of("HMRC_REDIRECT_URI", hmrcRedirectUri))
+                    .environment(Map.of("HMRC_BASE_URI", hmrcBaseUri))
+                    .functionName(authUrlLambdaHandlerFunctionName)
+                    .timeout(authUrlLambdaDuration)
                     .build();
         }
         this.authUrlLambdaLogGroup = new LogGroup(this, "AuthUrlLambdaLogGroup", LogGroupProps.builder()
@@ -540,32 +580,27 @@ public class WebStack extends Stack {
                     .code(Code.fromInline("exports.handler = async (event) => { return { statusCode: 200, body: 'test' }; }"))
                     .handler("index.handler")
                     .runtime(Runtime.NODEJS_20_X)
-                    .environment(Map.of(
-                            "HMRC_CLIENT_ID", this.getConfigValue(builder.hmrcClientId, "hmrcClientId"),
-                            "HMRC_REDIRECT_URI", this.getConfigValue(builder.hmrcRedirectUri, "hmrcRedirectUri"),
-                            "HMRC_BASE_URI", this.getConfigValue(builder.hmrcBaseUri, "hmrcBaseUri"),
-                            "TEST_REDIRECT_URI", this.getConfigValue(builder.testRedirectUri, "testRedirectUri"),
-                            "TEST_ACCESS_TOKEN", this.getConfigValue(builder.testAccessToken, "testAccessToken")
-                    ))
-                    .functionName(this.getConfigValue(builder.exchangeTokenLambdaHandlerFunctionName, "exchangeTokenLambdaHandlerFunctionName"))
-                    .timeout(Duration.millis(Long.parseLong(this.getConfigValue(builder.exchangeTokenLambdaDuration, "exchangeTokenLambdaDuration"))))
+                    .environment(Map.of("HMRC_CLIENT_ID", hmrcClientId))
+                    .environment(Map.of("HMRC_REDIRECT_URI", hmrcRedirectUri))
+                    .environment(Map.of("HMRC_BASE_URI", hmrcBaseUri))
+                    .environment(Map.of("TEST_REDIRECT_URI", testRedirectUri))
+                    .environment(Map.of("TEST_ACCESS_TOKEN", testAccessToken))
+                    .functionName(exchangeTokenLambdaHandlerFunctionName)
+                    .timeout(exchangeTokenLambdaDuration)
                     .build();
         } else {
             this.exchangeTokenLambda = DockerImageFunction.Builder.create(this, "ExchangeTokenLambda")
-                    .code(DockerImageCode.fromImageAsset(".", AssetImageCodeProps.builder()
-                            .buildArgs(Map.of(
-                                    "HANDLER", this.getConfigValue(builder.lambdaEntry, "lambdaEntry") + this.getConfigValue(builder.exchangeTokenLambdaHandlerFunctionName, "exchangeTokenLambdaHandlerFunctionName")
-                            ))
-                            .build()))
-                    .environment(Map.of(
-                            "HMRC_CLIENT_ID", this.getConfigValue(builder.hmrcClientId, "hmrcClientId"),
-                            "HMRC_REDIRECT_URI", this.getConfigValue(builder.hmrcRedirectUri, "hmrcRedirectUri"),
-                            "HMRC_BASE_URI", this.getConfigValue(builder.hmrcBaseUri, "hmrcBaseUri"),
-                            "TEST_REDIRECT_URI", this.getConfigValue(builder.testRedirectUri, "testRedirectUri"),
-                            "TEST_ACCESS_TOKEN", this.getConfigValue(builder.testAccessToken, "testAccessToken")
-                    ))
-                    .functionName(this.getConfigValue(builder.exchangeTokenLambdaHandlerFunctionName, "exchangeTokenLambdaHandlerFunctionName"))
-                    .timeout(Duration.millis(Long.parseLong(this.getConfigValue(builder.exchangeTokenLambdaDuration, "exchangeTokenLambdaDuration"))))
+                    .code(DockerImageCode.fromImageAsset(
+                            ".",
+                            AssetImageCodeProps.builder().buildArgs(Map.of("HANDLER", exchangeTokenLambdaHandler)).build())
+                    )
+                    .environment(Map.of("HMRC_CLIENT_ID", hmrcClientId))
+                    .environment(Map.of("HMRC_REDIRECT_URI", hmrcRedirectUri))
+                    .environment(Map.of("HMRC_BASE_URI", hmrcBaseUri))
+                    .environment(Map.of("TEST_REDIRECT_URI", testRedirectUri))
+                    .environment(Map.of("TEST_ACCESS_TOKEN", testAccessToken))
+                    .functionName(exchangeTokenLambdaHandlerFunctionName)
+                    .timeout(exchangeTokenLambdaDuration)
                     .build();
         }
         this.exchangeTokenLambdaLogGroup = new LogGroup(this, "ExchangeTokenLambdaLogGroup", LogGroupProps.builder()
@@ -594,28 +629,23 @@ public class WebStack extends Stack {
                     .code(Code.fromInline("exports.handler = async (event) => { return { statusCode: 200, body: 'test' }; }"))
                     .handler("index.handler")
                     .runtime(Runtime.NODEJS_20_X)
-                    .environment(Map.of(
-                            "HMRC_REDIRECT_URI", this.getConfigValue(builder.hmrcRedirectUri, "hmrcRedirectUri"),
-                            "HMRC_BASE_URI", this.getConfigValue(builder.hmrcBaseUri, "hmrcBaseUri"),
-                            "TEST_REDIRECT_URI", this.getConfigValue(builder.testRedirectUri, "testRedirectUri")
-                    ))
-                    .functionName(this.getConfigValue(builder.submitVatLambdaHandlerFunctionName, "submitVatLambdaHandlerFunctionName"))
-                    .timeout(Duration.millis(Long.parseLong(this.getConfigValue(builder.submitVatLambdaDuration, "submitVatLambdaDuration"))))
+                    .environment(Map.of("HMRC_REDIRECT_URI", hmrcRedirectUri))
+                    .environment(Map.of("HMRC_BASE_URI", hmrcBaseUri))
+                    .environment(Map.of("TEST_REDIRECT_URI", testRedirectUri))
+                    .functionName(submitVatLambdaHandlerFunctionName)
+                    .timeout(submitVatLambdaDuration)
                     .build();
         } else {
             this.submitVatLambda = DockerImageFunction.Builder.create(this, "SubmitVatLambda")
-                    .code(DockerImageCode.fromImageAsset(".", AssetImageCodeProps.builder()
-                            .buildArgs(Map.of(
-                                    "HANDLER", this.getConfigValue(builder.lambdaEntry, "lambdaEntry") + this.getConfigValue(builder.submitVatLambdaHandlerFunctionName, "submitVatLambdaHandlerFunctionName")
-                            ))
-                            .build()))
-                    .environment(Map.of(
-                            "HMRC_REDIRECT_URI", this.getConfigValue(builder.hmrcRedirectUri, "hmrcRedirectUri"),
-                            "HMRC_BASE_URI", this.getConfigValue(builder.hmrcBaseUri, "hmrcBaseUri"),
-                            "TEST_REDIRECT_URI", this.getConfigValue(builder.testRedirectUri, "testRedirectUri")
-                    ))
-                    .functionName(this.getConfigValue(builder.submitVatLambdaHandlerFunctionName, "submitVatLambdaHandlerFunctionName"))
-                    .timeout(Duration.millis(Long.parseLong(this.getConfigValue(builder.submitVatLambdaDuration, "submitVatLambdaDuration"))))
+                    .code(DockerImageCode.fromImageAsset(
+                            ".",
+                            AssetImageCodeProps.builder().buildArgs(Map.of("HANDLER", submitVatLambdaHandler)).build())
+                    )
+                    .environment(Map.of("HMRC_REDIRECT_URI", hmrcRedirectUri))
+                    .environment(Map.of("HMRC_BASE_URI", hmrcBaseUri))
+                    .environment(Map.of("TEST_REDIRECT_URI", testRedirectUri))
+                    .functionName(submitVatLambdaHandlerFunctionName)
+                    .timeout(submitVatLambdaDuration)
                     .build();
         }
         this.submitVatLambdaLogGroup = new LogGroup(this, "SubmitVatLambdaLogGroup", LogGroupProps.builder()
@@ -672,35 +702,48 @@ public class WebStack extends Stack {
         // logReceiptHandler
         if ("test".equals(env)) {
             // For testing, create a simple Function instead of DockerImageFunction to avoid Docker builds
-            this.logReceiptLambda = Function.Builder.create(this, "LogReceiptLambda")
-                    .code(Code.fromInline("exports.handler = async (event) => { return { statusCode: 200, body: 'test' }; }"))
-                    .handler("index.handler")
-                    .runtime(Runtime.NODEJS_20_X)
-                    .environment(Map.of(
-                            "TEST_S3_ENDPOINT", this.getConfigValue(builder.testS3Endpoint, "testS3Endpoint"),
-                            "TEST_S3_ACCESS_KEY", this.getConfigValue(builder.testS3AccessKey, "testS3AccessKey"),
-                            "TEST_S3_SECRET_KEY", this.getConfigValue(builder.testS3SecretKey, "testS3SecretKey"),
-                            "RECEIPTS_BUCKET_NAME", this.getConfigValue(receiptsBucketName, "receiptsBucketName")
-                    ))
-                    .functionName(this.getConfigValue(builder.logReceiptLambdaHandlerFunctionName, "logReceiptLambdaHandlerFunctionName"))
-                    .timeout(Duration.millis(Long.parseLong(this.getConfigValue(builder.logReceiptLambdaDuration, "logReceiptLambdaDuration"))))
-                    .build();
+            if(testS3Endpoint == null || testS3AccessKey == null || testS3SecretKey == null) {
+                this.logReceiptLambda = Function.Builder.create(this, "LogReceiptLambda")
+                        .code(Code.fromInline("exports.handler = async (event) => { return { statusCode: 200, body: 'test' }; }"))
+                        .handler("index.handler")
+                        .runtime(Runtime.NODEJS_20_X)
+                        .environment(Map.of("RECEIPTS_BUCKET_NAME", receiptsBucketName))
+                        .functionName(logReceiptLambdaHandlerFunctionName)
+                        .timeout(logReceiptLambdaDuration)
+                        .build();
+            } else {
+                this.logReceiptLambda = Function.Builder.create(this, "LogReceiptLambda")
+                        .code(Code.fromInline("exports.handler = async (event) => { return { statusCode: 200, body: 'test' }; }"))
+                        .handler("index.handler")
+                        .runtime(Runtime.NODEJS_20_X)
+                        .environment(Map.of("TEST_S3_ENDPOINT", testS3Endpoint))
+                        .environment(Map.of("TEST_S3_ACCESS_KEY", testS3AccessKey))
+                        .environment(Map.of("TEST_S3_SECRET_KEY", testS3SecretKey))
+                        .environment(Map.of("RECEIPTS_BUCKET_NAME", receiptsBucketName))
+                        .functionName(logReceiptLambdaHandlerFunctionName)
+                        .timeout(logReceiptLambdaDuration)
+                        .build();
+            }
         } else {
-            this.logReceiptLambda = DockerImageFunction.Builder.create(this, "LogReceiptLambda")
-                    .code(DockerImageCode.fromImageAsset(".", AssetImageCodeProps.builder()
-                            .buildArgs(Map.of(
-                                    "HANDLER", this.getConfigValue(builder.lambdaEntry, "lambdaEntry") + this.getConfigValue(builder.logReceiptLambdaHandlerFunctionName, "logReceiptLambdaHandlerFunctionName")
-                            ))
-                            .build()))
-                    .environment(Map.of(
-                            "TEST_S3_ENDPOINT", this.getConfigValue(builder.testS3Endpoint, "testS3Endpoint"),
-                            "TEST_S3_ACCESS_KEY", this.getConfigValue(builder.testS3AccessKey, "testS3AccessKey"),
-                            "TEST_S3_SECRET_KEY", this.getConfigValue(builder.testS3SecretKey, "testS3SecretKey"),
-                            "RECEIPTS_BUCKET_NAME", this.getConfigValue(receiptsBucketName, "receiptsBucketName")
-                    ))
-                    .functionName(this.getConfigValue(builder.logReceiptLambdaHandlerFunctionName, "logReceiptLambdaHandlerFunctionName"))
-                    .timeout(Duration.millis(Long.parseLong(this.getConfigValue(builder.logReceiptLambdaDuration, "logReceiptLambdaDuration"))))
-                    .build();
+            AssetImageCodeProps logReceiptHandlerImageCodeProps = AssetImageCodeProps.builder().buildArgs(Map.of("HANDLER", logReceiptLambdaHandler)).build();
+            if(testS3Endpoint == null || testS3AccessKey == null || testS3SecretKey == null) {
+                this.logReceiptLambda = DockerImageFunction.Builder.create(this, "LogReceiptLambda")
+                        .code(DockerImageCode.fromImageAsset(".", logReceiptHandlerImageCodeProps))
+                        .environment(Map.of("RECEIPTS_BUCKET_NAME", receiptsBucketName))
+                        .functionName(logReceiptLambdaHandlerFunctionName)
+                        .timeout(logReceiptLambdaDuration)
+                        .build();
+            } else {
+                this.logReceiptLambda = DockerImageFunction.Builder.create(this, "LogReceiptLambda")
+                        .code(DockerImageCode.fromImageAsset(".", logReceiptHandlerImageCodeProps))
+                        .environment(Map.of("TEST_S3_ENDPOINT", testS3Endpoint))
+                        .environment(Map.of("TEST_S3_ACCESS_KEY", testS3AccessKey))
+                        .environment(Map.of("TEST_S3_SECRET_KEY", testS3SecretKey))
+                        .environment(Map.of("RECEIPTS_BUCKET_NAME", receiptsBucketName))
+                        .functionName(logReceiptLambdaHandlerFunctionName)
+                        .timeout(logReceiptLambdaDuration)
+                        .build();
+            }
         }
 
         // Grant the logReceiptLambda permission to write to the receipts bucket
