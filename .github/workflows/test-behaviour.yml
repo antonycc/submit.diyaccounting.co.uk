@@ -48,6 +48,12 @@ jobs:
       - run: npx playwright install --with-deps
 
       - run: npm run test:behaviour
+        env:
+          HMRC_BASE_URI: ${{ vars.HMRC_BASE_URI || 'https://test-api.service.hmrc.gov.uk' }}
+          HMRC_REDIRECT_URI: ${{ vars.HMRC_REDIRECT_URI || 'https://wanted-finally-anteater.ngrok-free.app' }}
+          HMRC_CLIENT_ID: ${{ secrets.HMRC_CLIENT_ID }}
+          HMRC_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
+          PORT: ${ vars.PORT || '3000' }
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
