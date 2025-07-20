@@ -14,7 +14,7 @@ function getTimestamp() {
 test.beforeAll(async () => {
   // Start the server
   serverProcess = spawn("node", ["src/lib/server.js"], {
-    env: { ...process.env, PORT: "3000" },
+    env: { ...process.env, PORT: process.env.TEST_SERVER_HTTP_PORT },
     stdio: "pipe",
   });
 
@@ -87,6 +87,8 @@ test.use({
   },
 });
 
+test.outputDir = "behaviour-test-results";
+
 test("Submit VAT return end-to-end flow with browser emulation", async ({ page }) => {
   const timestamp = getTimestamp();
   // Mock the API endpoints that the server will call
@@ -127,7 +129,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   // Wait for page to load completely
   await setTimeout(500);
   await page.waitForLoadState("networkidle");
-  await page.screenshot({ path: `behaviour-test-results/behaviour-initial_${timestamp}.png` });
+  await page.screenshot({ path: `behaviour-000-test-results/behaviour-initial_${timestamp}.png` });
   await setTimeout(500);
 
   // 2) Verify the form is present and fill it out with correct field IDs
@@ -141,7 +143,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   await page.fill("#vatDue", "1000.00");
   await setTimeout(100);
 
-  await page.screenshot({ path: `behaviour-test-results/behaviour-form-filled_${timestamp}.png` });
+  await page.screenshot({ path: `behaviour-test-010-results/behaviour-form-filled_${timestamp}.png` });
   await setTimeout(500);
 
   // 3) Mock the token exchange endpoint
@@ -188,7 +190,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   await page.click("#submitBtn");
   await setTimeout(500);
 
-  await page.screenshot({ path: `behaviour-test-results/behaviour-after-oauth_${timestamp}.png` });
+  await page.screenshot({ path: `behaviour-test-020-results/behaviour-after-oauth_${timestamp}.png` });
   await setTimeout(500);
 
   // 5) Wait for the submission process to complete and receipt to be displayed
@@ -215,7 +217,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   // Verify the form is hidden after successful submission
   await expect(page.locator("#vatForm")).toBeHidden();
   await setTimeout(500);
-  await page.screenshot({ path: `behaviour-test-results/behaviour-receipt_${timestamp}.png`, fullPage: true });
+  await page.screenshot({ path: `behaviour-test-030-results/behaviour-receipt_${timestamp}.png`, fullPage: true });
   await setTimeout(500);
 
   console.log("VAT submission flow completed successfully");

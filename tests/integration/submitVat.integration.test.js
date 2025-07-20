@@ -45,7 +45,7 @@ describe("Integration – VAT flow", () => {
     vi.resetAllMocks();
     process.env = {
       ...originalEnv,
-      PORT: "3000",
+      TEST_SERVER_HTTP_PORT: "3000",
       HMRC_BASE_URI: "https://test.test.test.uk",
       HMRC_CLIENT_ID: "test client id",
       HMRC_REDIRECT_URI: "http://hmrc.redirect:3000/",

@@ -35,7 +35,7 @@ describe("System – Server Process", () => {
       HMRC_CLIENT_SECRET: "system-test-secret",
       REDIRECT_URI: "https://submit.diyaccounting.co.uk/callback",
       RECEIPTS_BUCKET_NAME: "system-test-bucket",
-      PORT: serverPort.toString(),
+      TEST_SERVER_HTTP_PORT: serverPort.toString(),
     };
   });
 
@@ -341,14 +341,14 @@ describe("System – Server Process", () => {
       console.log("Environment variables working correctly");
     });
 
-    it("should start on custom PORT from environment", async () => {
+    it("should start on custom port from environment", async () => {
       // This is already tested by using PORT=3002, but we verify it's working
       expect(serverProcess).toBeDefined();
 
       const response = await fetch(`${baseUrl}/api/auth-url?state=port-env-test`);
       expect([200, 400]).toContain(response.status);
 
-      console.log("Custom PORT environment variable working");
+      console.log("Custom port environment variable working");
     });
   });
 

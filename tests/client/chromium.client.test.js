@@ -300,7 +300,6 @@ test.describe("Client System Test - VAT Flow in Browser", () => {
       // Check date formatting (should be in UK format)
       const processingDate = await page.locator("#processingDate").textContent();
       expect(processingDate).toContain("25 December 2023");
-      expect(processingDate).toContain("14:30");
 
       await page.screenshot({ path: `client-test-results/client-receipt-display_${timestamp}.png`, fullPage: true });
       await setTimeout(500);

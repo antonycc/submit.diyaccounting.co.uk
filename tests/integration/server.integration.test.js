@@ -81,7 +81,7 @@ describe("Integration – Server Express App", () => {
       HMRC_REDIRECT_URI: "https://test.submit.diyaccounting.co.uk/",
       HMRC_BASE_URI: "https://test-api.service.hmrc.gov.uk",
       RECEIPTS_BUCKET_NAME: "integration-test-bucket",
-      PORT: "3001",
+      TEST_SERVER_HTTP_PORT: "3001",
     };
 
     s3Mock.reset();

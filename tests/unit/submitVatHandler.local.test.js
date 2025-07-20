@@ -16,7 +16,7 @@ describe("submitVatHandleLocal", () => {
     vi.clearAllMocks();
     process.env = {
       ...originalEnv,
-      PORT: "3000",
+      TEST_SERVER_HTTP_PORT: "3000",
       HMRC_BASE_URI: "https://test-api.service.hmrc.gov.uk",
       HMRC_CLIENT_ID: "uqMHA6RsDGGa7h8EG2VqfqAmv4tV",
       HMRC_REDIRECT_URI: "http://127.0.0.1:3000/",

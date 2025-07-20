@@ -343,3 +343,4 @@ fabric.properties
 
 /test-reports/
 /all-test-results/.last-run.json
+/behaviour-with-auth-test-results/

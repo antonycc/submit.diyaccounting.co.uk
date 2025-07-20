@@ -2,6 +2,15 @@
 import { defineConfig } from "@playwright/test";
 
 export default defineConfig({
+
+  projects: [
+    {
+      name: 'behaviour-tests',
+      testDir: 'tests/behaviour',
+      workers: 1, // throttle concurrency to 1
+    },
+  ],
+
   // Output directory for all artifacts (screenshots, videos, traces, etc.)
   outputDir: "./test-results/",
 

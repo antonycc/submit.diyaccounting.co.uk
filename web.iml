@@ -8,6 +8,7 @@
       <excludeFolder url="file://$MODULE_DIR$/client-test-results" />
       <excludeFolder url="file://$MODULE_DIR$/coverage" />
       <excludeFolder url="file://$MODULE_DIR$/test-reports" />
+      <excludeFolder url="file://$MODULE_DIR$/behaviour-with-auth-test-results" />
     </content>
   </component>
 </module>
