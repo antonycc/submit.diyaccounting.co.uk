@@ -18,11 +18,11 @@ describe("System – Server Process", () => {
     serverPort = 3002;
     baseUrl = `http://127.0.0.1:${serverPort}`;
 
-    console.log("[DEBUG_LOG] Starting server system tests");
+    console.log("Starting server system tests");
   });
 
   afterAll(() => {
-    console.log("[DEBUG_LOG] Server system tests completed");
+    console.log("Server system tests completed");
   });
 
   beforeEach(() => {
@@ -41,7 +41,7 @@ describe("System – Server Process", () => {
 
   afterEach(async () => {
     if (serverProcess) {
-      console.log("[DEBUG_LOG] Stopping server process");
+      console.log("Stopping server process");
       serverProcess.kill("SIGTERM");
 
       // Wait for process to exit
@@ -62,7 +62,7 @@ describe("System – Server Process", () => {
 
   const startServer = () => {
     return new Promise((resolve, reject) => {
-      console.log("[DEBUG_LOG] Starting server process on port", serverPort);
+      console.log("Starting server process on port", serverPort);
 
       serverProcess = spawn("node", [serverPath], {
         env: process.env,
@@ -75,7 +75,7 @@ describe("System – Server Process", () => {
       serverProcess.stdout.on("data", (data) => {
         const message = data.toString();
         output += message;
-        console.log("[DEBUG_LOG] Server stdout:", message.trim());
+        console.log("Server stdout:", message.trim());
 
         // Check if server has started
         if (message.includes(`Listening at http://127.0.0.1:${serverPort}`)) {
@@ -86,16 +86,16 @@ describe("System – Server Process", () => {
       serverProcess.stderr.on("data", (data) => {
         const message = data.toString();
         errorOutput += message;
-        console.log("[DEBUG_LOG] Server stderr:", message.trim());
+        console.log("Server stderr:", message.trim());
       });
 
       serverProcess.on("error", (error) => {
-        console.log("[DEBUG_LOG] Server process error:", error);
+        console.log("Server process error:", error);
         reject(error);
       });
 
       serverProcess.on("exit", (code, signal) => {
-        console.log("[DEBUG_LOG] Server process exited with code:", code, "signal:", signal);
+        console.log("Server process exited with code:", code, "signal:", signal);
         if (code !== 0 && code !== null) {
           reject(new Error(`Server exited with code ${code}. Output: ${output}. Error: ${errorOutput}`));
         }
@@ -118,11 +118,11 @@ describe("System – Server Process", () => {
           timeout: 1000,
         });
         if (response.status === 200 || response.status === 400) {
-          console.log("[DEBUG_LOG] Server is responding");
+          console.log("Server is responding");
           return true;
         }
       } catch (error) {
-        console.log(`[DEBUG_LOG] Server not ready yet (attempt ${i + 1}):`, error.message);
+        console.log(`Server not ready yet (attempt ${i + 1}):`, error.message);
       }
       await new Promise((resolve) => setTimeout(resolve, 500));
     }
@@ -182,7 +182,7 @@ describe("System – Server Process", () => {
       expect(data.authUrl).toContain("client_id=system-test-client-id");
       expect(data.authUrl).toContain("state=system-test-state");
 
-      console.log("[DEBUG_LOG] Auth URL endpoint working:", data.authUrl.substring(0, 100) + "...");
+      console.log("Auth URL endpoint working:", data.authUrl.substring(0, 100) + "...");
     });
 
     it("should respond to POST /api/exchange-token", async () => {
@@ -198,8 +198,8 @@ describe("System – Server Process", () => {
       expect([200, 400, 401, 500]).toContain(response.status);
 
       const data = await response.json();
-      console.log("[DEBUG_LOG] Token exchange response status:", response.status);
-      console.log("[DEBUG_LOG] Token exchange response:", data);
+      console.log("Token exchange response status:", response.status);
+      console.log("Token exchange response:", data);
     });
 
     it("should respond to POST /api/submit-vat", async () => {
@@ -222,8 +222,8 @@ describe("System – Server Process", () => {
       expect([200, 400, 401, 500]).toContain(response.status);
 
       const data = await response.json();
-      console.log("[DEBUG_LOG] VAT submission response status:", response.status);
-      console.log("[DEBUG_LOG] VAT submission response:", data);
+      console.log("VAT submission response status:", response.status);
+      console.log("VAT submission response:", data);
     });
 
     it("should respond to POST /api/log-receipt", async () => {
@@ -244,8 +244,8 @@ describe("System – Server Process", () => {
       expect([200, 500]).toContain(response.status);
 
       const data = await response.json();
-      console.log("[DEBUG_LOG] Receipt logging response status:", response.status);
-      console.log("[DEBUG_LOG] Receipt logging response:", data);
+      console.log("Receipt logging response status:", response.status);
+      console.log("Receipt logging response:", data);
     });
 
     it("should handle missing parameters gracefully", async () => {
@@ -270,7 +270,7 @@ describe("System – Server Process", () => {
 
       // Should either serve the file (200) or return 404 if not found
       expect([200, 404]).toContain(response.status);
-      console.log("[DEBUG_LOG] Static file serving status:", response.status);
+      console.log("Static file serving status:", response.status);
     });
 
     it("should serve SPA fallback for unknown routes", async () => {
@@ -278,7 +278,7 @@ describe("System – Server Process", () => {
 
       // Should either serve index.html (200) or return 404 if file doesn't exist
       expect([200, 404]).toContain(response.status);
-      console.log("[DEBUG_LOG] SPA fallback status:", response.status);
+      console.log("SPA fallback status:", response.status);
     });
   });
 
@@ -295,7 +295,7 @@ describe("System – Server Process", () => {
 
       responses.forEach((response, index) => {
         expect([200, 400]).toContain(response.status);
-        console.log(`[DEBUG_LOG] Concurrent request ${index} status:`, response.status);
+        console.log(`Concurrent request ${index} status:`, response.status);
       });
     });
 
@@ -305,7 +305,7 @@ describe("System – Server Process", () => {
       const response = await fetch(`${baseUrl}/api/auth-url?state=performance-test`);
 
       const responseTime = Date.now() - startTime;
-      console.log("[DEBUG_LOG] Response time:", responseTime, "ms");
+      console.log("Response time:", responseTime, "ms");
 
       expect(response.status).toBe(200);
       expect(responseTime).toBeLessThan(5000); // Should respond within 5 seconds
@@ -321,7 +321,7 @@ describe("System – Server Process", () => {
       });
 
       expect(response.status).toBe(400);
-      console.log("[DEBUG_LOG] Malformed request handled with status:", response.status);
+      console.log("Malformed request handled with status:", response.status);
     });
   });
 
@@ -338,7 +338,7 @@ describe("System – Server Process", () => {
       const data = await response.json();
       expect(data.authUrl).toContain("client_id=system-test-client-id");
 
-      console.log("[DEBUG_LOG] Environment variables working correctly");
+      console.log("Environment variables working correctly");
     });
 
     it("should start on custom PORT from environment", async () => {
@@ -348,7 +348,7 @@ describe("System – Server Process", () => {
       const response = await fetch(`${baseUrl}/api/auth-url?state=port-env-test`);
       expect([200, 400]).toContain(response.status);
 
-      console.log("[DEBUG_LOG] Custom PORT environment variable working");
+      console.log("Custom PORT environment variable working");
     });
   });
 
@@ -374,7 +374,7 @@ describe("System – Server Process", () => {
       const healthResponse = await fetch(`${baseUrl}/api/auth-url?state=health-after-error`);
       expect([200, 400]).toContain(healthResponse.status);
 
-      console.log("[DEBUG_LOG] Server recovered from error successfully");
+      console.log("Server recovered from error successfully");
     });
   });
 });

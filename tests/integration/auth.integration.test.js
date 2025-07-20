@@ -67,8 +67,8 @@ describe("Integration – auth flow", () => {
   it("should exchange code for a stubbed access token", async () => {
     const evt = { body: JSON.stringify({ code: "anything" }) };
     const res = await exchangeTokenHandler(evt);
-    console.log("[DEBUG_LOG] Response status:", res.statusCode);
-    console.log("[DEBUG_LOG] Response body:", res.body);
+    console.log("Response status:", res.statusCode);
+    console.log("Response body:", res.body);
     expect(res.statusCode).toBe(200);
     const { hmrcAccessToken } = JSON.parse(res.body);
     expect(hmrcAccessToken).toBe("test access token");

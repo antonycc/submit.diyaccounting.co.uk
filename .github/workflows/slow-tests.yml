@@ -238,22 +238,13 @@ jobs:
       - name: check
         id: check
         run: cat ~/.m2/settings.xml
-        if: steps.mvn.outputs.pomXmlExists == 'true'
-
-      #- name: download-dependencies
-      #  id: download-dependencies
-      #  if: steps.mvn.outputs.pomXmlExists == 'true'
-      #  shell: bash
-      #  run: ./mvnw --batch-mode --quiet dependency:go-offline > /dev/null 2>&1
 
       - name: package
         id: package
-        if: steps.mvn.outputs.pomXmlExists == 'true'
         shell: bash
         run: ./mvnw clean package
 
       - name: synth
         id: synth
-        if: steps.mvn.outputs.pomXmlExists == 'true'
         shell: bash
         run: npx cdk synth --strict --validation --no-staging --trace

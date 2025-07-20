@@ -48,7 +48,7 @@ test.afterAll(async () => {
 });
 
 test.afterEach(async ({}, testInfo) => {
-  console.log(`[DEBUG_LOG] afterEach called, testInfo.video exists: ${!!testInfo.video}`);
+  console.log(`afterEach called, testInfo.video exists: ${!!testInfo.video}`);
 
   // Handle video file renaming and moving
   if (testInfo.video) {
@@ -59,24 +59,24 @@ test.afterEach(async ({}, testInfo) => {
     // const videoName = `behaviour-video_${timestamp}.mp4`;
     // const targetPath = path.join('behaviour-test-results', videoName);
 
-    console.log(`[DEBUG_LOG] Attempting to get video path...`);
+    console.log(`Attempting to get video path...`);
 
     // Get video path from testInfo
     try {
       const videoPath = await testInfo.video.path();
-      console.log(`[DEBUG_LOG] Video path: ${videoPath}`);
+      console.log(`Video path: ${videoPath}`);
 
       // if (videoPath && await fs.promises.access(videoPath).then(() => true).catch(() => false)) {
       //  await fs.promises.copyFile(videoPath, targetPath);
-      //  console.log(`[DEBUG_LOG] Video saved to: ${targetPath}`);
+      //  console.log(`Video saved to: ${targetPath}`);
       // } else {
-      //  console.log(`[DEBUG_LOG] Video file not accessible at: ${videoPath}`);
+      //  console.log(`Video file not accessible at: ${videoPath}`);
       // }
     } catch (error) {
-      console.log(`[DEBUG_LOG] Failed to copy video: ${error.message}`);
+      console.log(`Failed to copy video: ${error.message}`);
     }
   } else {
-    console.log(`[DEBUG_LOG] No video in testInfo`);
+    console.log(`No video in testInfo`);
   }
 });
 
@@ -226,5 +226,5 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   await page.screenshot({ path: `behaviour-test-results/behaviour-receipt_${timestamp}.png`, fullPage: true });
   await setTimeout(500);
 
-  console.log("[DEBUG_LOG] VAT submission flow completed successfully");
+  console.log("VAT submission flow completed successfully");
 });

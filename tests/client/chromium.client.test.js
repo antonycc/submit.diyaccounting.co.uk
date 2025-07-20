@@ -112,10 +112,10 @@ test.describe("Client System Test - VAT Flow in Browser", () => {
             .catch(() => false))
         ) {
           await fs.promises.copyFile(videoPath, targetPath);
-          console.log(`[DEBUG_LOG] Video saved to: ${targetPath}`);
+          console.log(`Video saved to: ${targetPath}`);
         }
       } catch (error) {
-        console.log(`[DEBUG_LOG] Failed to copy video: ${error.message}`);
+        console.log(`Failed to copy video: ${error.message}`);
       }
     }
   });

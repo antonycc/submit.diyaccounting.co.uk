@@ -19,20 +19,33 @@ import software.amazon.awscdk.services.certificatemanager.CertificateValidation;
 import software.amazon.awscdk.services.certificatemanager.ICertificate;
 import software.amazon.awscdk.services.cloudfront.AllowedMethods;
 import software.amazon.awscdk.services.cloudfront.BehaviorOptions;
+import software.amazon.awscdk.services.cloudfront.CachePolicy;
 import software.amazon.awscdk.services.cloudfront.Distribution;
 import software.amazon.awscdk.services.cloudfront.ErrorResponse;
 import software.amazon.awscdk.services.cloudfront.HttpVersion;
 import software.amazon.awscdk.services.cloudfront.OriginAccessIdentity;
+import software.amazon.awscdk.services.cloudfront.OriginProtocolPolicy;
 import software.amazon.awscdk.services.cloudfront.OriginRequestCookieBehavior;
 import software.amazon.awscdk.services.cloudfront.OriginRequestHeaderBehavior;
 import software.amazon.awscdk.services.cloudfront.OriginRequestPolicy;
 import software.amazon.awscdk.services.cloudfront.ResponseHeadersPolicy;
 import software.amazon.awscdk.services.cloudfront.SSLMethod;
 import software.amazon.awscdk.services.cloudfront.ViewerProtocolPolicy;
+import software.amazon.awscdk.services.cloudfront.origins.HttpOrigin;
 import software.amazon.awscdk.services.cloudfront.origins.S3Origin;
 import software.amazon.awscdk.services.cloudtrail.S3EventSelector;
 import software.amazon.awscdk.services.cloudtrail.Trail;
+import software.amazon.awscdk.services.lambda.AssetImageCodeProps;
+import software.amazon.awscdk.services.lambda.DockerImageCode;
+import software.amazon.awscdk.services.lambda.DockerImageFunction;
+import software.amazon.awscdk.services.lambda.Function;
+import software.amazon.awscdk.services.lambda.FunctionUrl;
+import software.amazon.awscdk.services.lambda.FunctionUrlAuthType;
+import software.amazon.awscdk.services.lambda.FunctionUrlCorsOptions;
+import software.amazon.awscdk.services.lambda.FunctionUrlOptions;
+import software.amazon.awscdk.services.lambda.HttpMethod;
 import software.amazon.awscdk.services.logs.LogGroup;
+import software.amazon.awscdk.services.logs.LogGroupProps;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.amazon.awscdk.services.route53.ARecord;
 import software.amazon.awscdk.services.route53.AaaaRecord;
@@ -51,10 +64,12 @@ import software.amazon.awscdk.services.s3.deployment.ISource;
 import software.amazon.awscdk.services.s3.deployment.Source;
 import software.constructs.Construct;
 
+import java.net.URI;
 import java.util.AbstractMap;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Pattern;
 
 public class WebStack extends Stack {
@@ -77,6 +92,18 @@ public class WebStack extends Stack {
     public ARecord aRecord;
     public AaaaRecord aaaaRecord;
     public Trail originBucketTrail;
+    public Function authUrlLambda;
+    public FunctionUrl authUrlLambdaUrl;
+    public LogGroup authUrlLambdaLogGroup;
+    public Function exchangeTokenLambda;
+    public FunctionUrl exchangeTokenLambdaUrl;
+    public LogGroup exchangeTokenLambdaLogGroup;
+    public Function submitVatLambda;
+    public FunctionUrl submitVatLambdaUrl;
+    public LogGroup submitVatLambdaLogGroup;
+    public Function logReceiptLambda;
+    public FunctionUrl logReceiptLambdaUrl;
+    public LogGroup logReceiptLambdaLogGroup;
 
     public static class Builder {
         public Construct scope;
@@ -107,9 +134,9 @@ public class WebStack extends Stack {
         public String hmrcBaseUri;
         public String testRedirectUri;
         public String testAccessToken;
-        public String s3Endpoint;
-        public String s3AccessKey;
-        public String s3SecretKey;
+        public String testS3Endpoint;
+        public String testS3AccessKey;
+        public String testS3SecretKey;
         public String receiptsBucketName;
         public String lambdaEntry;
         public String authUrlLambdaHandlerFunctionName;
@@ -257,18 +284,18 @@ public class WebStack extends Stack {
             return this;
         }
 
-        public Builder s3Endpoint(String s3Endpoint) {
-            this.s3Endpoint = s3Endpoint;
+        public Builder testS3Endpoint(String testS3Endpoint) {
+            this.testS3Endpoint = testS3Endpoint;
             return this;
         }
 
-        public Builder s3AccessKey(String s3AccessKey) {
-            this.s3AccessKey = s3AccessKey;
+        public Builder testS3AccessKey(String testS3AccessKey) {
+            this.testS3AccessKey = testS3AccessKey;
             return this;
         }
 
-        public Builder s3SecretKey(String s3SecretKey) {
-            this.s3SecretKey = s3SecretKey;
+        public Builder testS3SecretKey(String testS3SecretKey) {
+            this.testS3SecretKey = testS3SecretKey;
             return this;
         }
 
@@ -446,7 +473,145 @@ public class WebStack extends Stack {
             logger.info("CloudTrail is not enabled for the origin bucket.");
         }
 
-        
+        // authUrlHandler
+        this.authUrlLambda = DockerImageFunction.Builder.create(this, "AuthUrlLambda")
+                .code(DockerImageCode.fromImageAsset(".", AssetImageCodeProps.builder()
+                        .buildArgs(Map.of(
+                                "HANDLER", builder.lambdaEntry + builder.authUrlLambdaHandlerFunctionName
+                        ))
+                        .build()))
+                .environment(Map.of(
+                        "HMRC_CLIENT_ID", builder.hmrcClientId,
+                        "HMRC_REDIRECT_URI", builder.hmrcRedirectUri,
+                        "HMRC_BASE_URI", builder.hmrcBaseUri
+                ))
+                .functionName(builder.authUrlLambdaHandlerFunctionName)
+                .timeout(Duration.millis(Long.parseLong(builder.authUrlLambdaDuration)))
+                .build();
+        this.authUrlLambdaLogGroup = new LogGroup(this, "AuthUrlLambdaLogGroup", LogGroupProps.builder()
+                .logGroupName("/aws/lambda/" + this.authUrlLambda.getFunctionName())
+                .retention(RetentionDays.THREE_DAYS)
+                .removalPolicy(RemovalPolicy.DESTROY)
+                .build());
+        this.authUrlLambdaUrl = this.authUrlLambda.addFunctionUrl(
+                FunctionUrlOptions.builder()
+                        .authType(FunctionUrlAuthType.NONE)  // No auth for the auth URL
+                        .cors(FunctionUrlCorsOptions.builder()
+                                .allowedOrigins(List.of("https://" + this.domainName))
+                                .allowedMethods(List.of(HttpMethod.GET))
+                                .build())
+                        .build()
+        );
+        String authUrlApiHost = URI.create(this.authUrlLambdaUrl.getUrl()).getHost();
+        HttpOrigin authUrlApiOrigin = HttpOrigin.Builder.create(authUrlApiHost)
+                .protocolPolicy(OriginProtocolPolicy.HTTPS_ONLY)
+                .build();
+
+        // exchangeTokenHandler
+        this.exchangeTokenLambda = DockerImageFunction.Builder.create(this, "ExchangeTokenLambda")
+                .code(DockerImageCode.fromImageAsset(".", AssetImageCodeProps.builder()
+                        .buildArgs(Map.of(
+                                "HANDLER", builder.lambdaEntry + builder.exchangeTokenLambdaHandlerFunctionName
+                        ))
+                        .build()))
+                .environment(Map.of(
+                        "HMRC_CLIENT_ID", builder.hmrcClientId,
+                        "HMRC_REDIRECT_URI", builder.hmrcRedirectUri,
+                        "HMRC_BASE_URI", builder.hmrcBaseUri,
+                        "TEST_REDIRECT_URI", builder.testRedirectUri,
+                        "TEST_ACCESS_TOKEN", builder.testAccessToken
+                ))
+                .functionName(builder.exchangeTokenLambdaHandlerFunctionName)
+                .timeout(Duration.millis(Long.parseLong(builder.exchangeTokenLambdaDuration)))
+                .build();
+        this.exchangeTokenLambdaLogGroup = new LogGroup(this, "ExchangeTokenLambdaLogGroup", LogGroupProps.builder()
+                .logGroupName("/aws/lambda/" + this.exchangeTokenLambda.getFunctionName())
+                .retention(RetentionDays.THREE_DAYS)
+                .removalPolicy(RemovalPolicy.DESTROY)
+                .build());
+        this.exchangeTokenLambdaUrl = this.exchangeTokenLambda.addFunctionUrl(
+                FunctionUrlOptions.builder()
+                        .authType(FunctionUrlAuthType.NONE)  // No auth for the auth URL
+                        .cors(FunctionUrlCorsOptions.builder()
+                                .allowedOrigins(List.of("https://" + this.domainName))
+                                .allowedMethods(List.of(HttpMethod.POST))
+                                .build())
+                        .build()
+        );
+        String exchangeTokenApiHost = URI.create(this.exchangeTokenLambdaUrl.getUrl()).getHost();
+        HttpOrigin exchangeTokenApiOrigin = HttpOrigin.Builder.create(exchangeTokenApiHost)
+                .protocolPolicy(OriginProtocolPolicy.HTTPS_ONLY)
+                .build();
+
+        // submitVatHandler
+        this.submitVatLambda = DockerImageFunction.Builder.create(this, "SubmitVatLambda")
+                .code(DockerImageCode.fromImageAsset(".", AssetImageCodeProps.builder()
+                        .buildArgs(Map.of(
+                                "HANDLER", builder.lambdaEntry + builder.submitVatLambdaHandlerFunctionName
+                        ))
+                        .build()))
+                .environment(Map.of(
+                        "HMRC_REDIRECT_URI", builder.hmrcRedirectUri,
+                        "HMRC_BASE_URI", builder.hmrcBaseUri,
+                        "TEST_REDIRECT_URI", builder.testRedirectUri
+                ))
+                .functionName(builder.submitVatLambdaHandlerFunctionName)
+                .timeout(Duration.millis(Long.parseLong(builder.submitVatLambdaDuration)))
+                .build();
+        this.submitVatLambdaLogGroup = new LogGroup(this, "SubmitVatLambdaLogGroup", LogGroupProps.builder()
+                .logGroupName("/aws/lambda/" + this.submitVatLambda.getFunctionName())
+                .retention(RetentionDays.THREE_DAYS)
+                .removalPolicy(RemovalPolicy.DESTROY)
+                .build());
+        this.submitVatLambdaUrl = this.submitVatLambda.addFunctionUrl(
+                FunctionUrlOptions.builder()
+                        .authType(FunctionUrlAuthType.NONE)  // No auth for the auth URL
+                        .cors(FunctionUrlCorsOptions.builder()
+                                .allowedOrigins(List.of("https://" + this.domainName))
+                                .allowedMethods(List.of(HttpMethod.POST))
+                                .build())
+                        .build()
+        );
+        String submitVatApiHost = URI.create(this.submitVatLambdaUrl.getUrl()).getHost();
+        HttpOrigin submitVatApiOrigin = HttpOrigin.Builder.create(submitVatApiHost)
+                .protocolPolicy(OriginProtocolPolicy.HTTPS_ONLY)
+                .build();
+
+        // logReceiptHandler
+        this.logReceiptLambda = DockerImageFunction.Builder.create(this, "LogReceiptLambda")
+                .code(DockerImageCode.fromImageAsset(".", AssetImageCodeProps.builder()
+                        .buildArgs(Map.of(
+                                "HANDLER", builder.lambdaEntry + builder.logReceiptLambdaHandlerFunctionName
+                        ))
+                        .build()))
+                .environment(Map.of(
+                        "TEST_S3_ENDPOINT", builder.testS3Endpoint,
+                        "TEST_S3_ACCESS_KEY", builder.testS3AccessKey,
+                        "TEST_S3_SECRET_KEY", builder.testS3SecretKey,
+                        "RECEIPTS_BUCKET_NAME", builder.receiptsBucketName
+                ))
+                .functionName(builder.logReceiptLambdaHandlerFunctionName)
+                .timeout(Duration.millis(Long.parseLong(builder.logReceiptLambdaDuration)))
+                .build();
+        this.logReceiptLambdaLogGroup = new LogGroup(this, "LogReceiptLambdaLogGroup", LogGroupProps.builder()
+                .logGroupName("/aws/lambda/" + this.logReceiptLambda.getFunctionName())
+                .retention(RetentionDays.THREE_DAYS)
+                .removalPolicy(RemovalPolicy.DESTROY)
+                .build());
+        this.logReceiptLambdaUrl = this.logReceiptLambda.addFunctionUrl(
+                FunctionUrlOptions.builder()
+                        .authType(FunctionUrlAuthType.NONE)  // No auth for the auth URL
+                        .cors(FunctionUrlCorsOptions.builder()
+                                .allowedOrigins(List.of("https://" + this.domainName))
+                                .allowedMethods(List.of(HttpMethod.POST))
+                                .build())
+                        .build()
+        );
+        String logReceiptApiHost = URI.create(this.logReceiptLambdaUrl.getUrl()).getHost();
+        HttpOrigin logReceiptApiOrigin = HttpOrigin.Builder.create(logReceiptApiHost)
+                .protocolPolicy(OriginProtocolPolicy.HTTPS_ONLY)
+                .build();
+
         // Grant the read access to an origin identity
         this.originIdentity = OriginAccessIdentity.Builder
                 .create(this, "OriginAccessIdentity")
@@ -483,7 +648,7 @@ public class WebStack extends Stack {
                 .cookieBehavior(OriginRequestCookieBehavior.none())
                 .headerBehavior(OriginRequestHeaderBehavior.allowList("Accept", "Accept-Language", "Origin"))
                 .build();
-        final BehaviorOptions defaultBehaviour = BehaviorOptions.builder()
+        final BehaviorOptions s3BucketOriginBehaviour = BehaviorOptions.builder()
                 .origin(this.origin)
                 .allowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
                 .originRequestPolicy(originRequestPolicy)
@@ -491,10 +656,38 @@ public class WebStack extends Stack {
                 .responseHeadersPolicy(ResponseHeadersPolicy.CORS_ALLOW_ALL_ORIGINS_WITH_PREFLIGHT_AND_SECURITY_HEADERS)
                 .compress(true)
                 .build();
+        final BehaviorOptions authUrlOriginBehaviour = BehaviorOptions.builder()
+                        .origin(authUrlApiOrigin)
+                        .allowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
+                        .cachePolicy(CachePolicy.CACHING_DISABLED)
+                        .originRequestPolicy(OriginRequestPolicy.ALL_VIEWER)
+                        .build();
+        final BehaviorOptions exchangeTokenOriginBehaviour = BehaviorOptions.builder()
+                .origin(exchangeTokenApiOrigin)
+                .allowedMethods(AllowedMethods.ALLOW_ALL)
+                .cachePolicy(CachePolicy.CACHING_DISABLED)
+                .originRequestPolicy(OriginRequestPolicy.ALL_VIEWER)
+                .build();
+        final BehaviorOptions submitVatOriginBehaviour = BehaviorOptions.builder()
+                .origin(submitVatApiOrigin)
+                .allowedMethods(AllowedMethods.ALLOW_ALL)
+                .cachePolicy(CachePolicy.CACHING_DISABLED)
+                .originRequestPolicy(OriginRequestPolicy.ALL_VIEWER)
+                .build();
+        final BehaviorOptions logReceiptOriginBehaviour = BehaviorOptions.builder()
+                .origin(logReceiptApiOrigin)
+                .allowedMethods(AllowedMethods.ALLOW_ALL)
+                .cachePolicy(CachePolicy.CACHING_DISABLED)
+                .originRequestPolicy(OriginRequestPolicy.ALL_VIEWER)
+                .build();
         this.distribution = Distribution.Builder
                 .create(this, "Distribution")
                 .domainNames(Collections.singletonList(this.domainName))
-                .defaultBehavior(defaultBehaviour)
+                .defaultBehavior(s3BucketOriginBehaviour)
+                .additionalBehaviors(Map.of("/api/auth-url*", authUrlOriginBehaviour))
+                .additionalBehaviors(Map.of("/api/exchange-token*", exchangeTokenOriginBehaviour))
+                .additionalBehaviors(Map.of("/api/submit-vat*", submitVatOriginBehaviour))
+                .additionalBehaviors(Map.of("/api/log-receipt*", logReceiptOriginBehaviour))
                 .defaultRootObject(defaultDocumentAtOrigin)
                 .errorResponses(List.of(ErrorResponse.builder()
                         .httpStatus(HttpStatus.SC_NOT_FOUND)

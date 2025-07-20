@@ -302,15 +302,15 @@ export async function logReceiptHandler(event) {
 
   // Configure S3 client for containerized MinIO if environment variables are set
   const s3Config = {};
-  if (process.env.S3_ENDPOINT) {
-    s3Config.endpoint = process.env.S3_ENDPOINT;
+  if (process.env.TEST_S3_ENDPOINT) {
+    s3Config.endpoint = process.env.TEST_S3_ENDPOINT;
     s3Config.forcePathStyle = true;
     s3Config.region = "us-east-1";
 
-    if (process.env.S3_ACCESS_KEY && process.env.S3_SECRET_KEY) {
+    if (process.env.TEST_S3_ACCESS_KEY && process.env.TEST_S3_SECRET_KEY) {
       s3Config.credentials = {
-        accessKeyId: process.env.S3_ACCESS_KEY,
-        secretAccessKey: process.env.S3_SECRET_KEY,
+        accessKeyId: process.env.TEST_S3_ACCESS_KEY,
+        secretAccessKey: process.env.TEST_S3_SECRET_KEY,
       };
     }
   }

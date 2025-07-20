@@ -35,9 +35,9 @@ public class WebApp {
                 .hmrcBaseUri(System.getenv("HMRC_BASE_URI"))
                 .testRedirectUri(System.getenv("TEST_REDIRECT_URI"))
                 .testAccessToken(System.getenv("TEST_ACCESS_TOKEN"))
-                .s3Endpoint(System.getenv("S3_ENDPOINT"))
-                .s3AccessKey(System.getenv("S3_ACCESS_KEY"))
-                .s3SecretKey(System.getenv("S3_SECRET_KEY"))
+                .testS3Endpoint(System.getenv("TEST_S3_ENDPOINT"))
+                .testS3AccessKey(System.getenv("TEST_S3_ACCESS_KEY"))
+                .testS3SecretKey(System.getenv("TEST_S3_SECRET_KEY"))
                 .receiptsBucketName(System.getenv("RECEIPTS_BUCKET_NAME"))
                 .lambdaEntry(System.getenv("LAMBDA_ENTRY"))
                 .authUrlLambdaHandlerFunctionName(System.getenv("AUTH_URL_LAMBDA_HANDLER_FUNCTION_NAME"))
@@ -82,6 +82,37 @@ public class WebApp {
                 .value(stack.aaaaRecord.getDomainName())
                 .build();
 
+        CfnOutput.Builder.create(stack, "AuthUrlLambda")
+                .value(stack.authUrlLambda.getFunctionArn())
+                .build();
+
+        CfnOutput.Builder.create(stack, "AuthUrlLambdaUrl")
+                .value(stack.authUrlLambdaUrl.getUrl())
+                .build();
+
+        CfnOutput.Builder.create(stack, "ExchangeTokenLambda")
+                .value(stack.exchangeTokenLambda.getFunctionArn())
+                .build();
+
+        CfnOutput.Builder.create(stack, "ExchangeTokenLambdaUrl")
+                .value(stack.exchangeTokenLambdaUrl.getUrl())
+                .build();
+
+        CfnOutput.Builder.create(stack, "SubmitVatLambda")
+                .value(stack.submitVatLambda.getFunctionArn())
+                .build();
+
+        CfnOutput.Builder.create(stack, "SubmitVatLambdaUrl")
+                .value(stack.submitVatLambdaUrl.getUrl())
+                .build();
+
+        CfnOutput.Builder.create(stack, "LogReceiptLambda")
+                .value(stack.logReceiptLambda.getFunctionArn())
+                .build();
+
+        CfnOutput.Builder.create(stack, "LogReceiptLambdaUrl")
+                .value(stack.logReceiptLambdaUrl.getUrl())
+                .build();
 
         app.synth();
     }

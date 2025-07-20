@@ -257,7 +257,6 @@ aws iam put-role-policy \
 An example of the Deployment role being assumed in a GitHub Actions Workflow:
 ```yaml
       - name: Configure AWS Credentials
-        if: steps.mvn.outputs.pomXmlExists == 'true'
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::887764105431:role/submit-deployment-role

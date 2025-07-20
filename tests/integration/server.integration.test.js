@@ -62,12 +62,12 @@ describe("Integration – Server Express App", () => {
     server.listen({
       onUnhandledRequest: "bypass",
     });
-    console.log("[DEBUG_LOG] MSW server started for integration tests");
+    console.log("MSW server started for integration tests");
   });
 
   afterAll(() => {
     server.close();
-    console.log("[DEBUG_LOG] MSW server closed");
+    console.log("MSW server closed");
   });
 
   beforeEach(() => {
@@ -130,7 +130,7 @@ describe("Integration – Server Express App", () => {
     it("should generate auth URL through Express endpoint", async () => {
       const response = await request(app).get("/api/auth-url").query({ state: "integration-test-state" }).expect(200);
 
-      console.log("[DEBUG_LOG] Auth URL response:", response.body);
+      console.log("Auth URL response:", response.body);
 
       expect(response.body).toHaveProperty("authUrl");
       expect(response.body.authUrl).toContain("response_type=code");
@@ -145,7 +145,7 @@ describe("Integration – Server Express App", () => {
         .send({ code: "integration-test-code" })
         .expect(200);
 
-      console.log("[DEBUG_LOG] Token exchange response:", response.body);
+      console.log("Token exchange response:", response.body);
 
       expect(response.body).toHaveProperty("hmrcAccessToken");
       expect(response.body.hmrcAccessToken).toBe("mocked-access-token");
@@ -177,7 +177,7 @@ describe("Integration – Server Express App", () => {
 
       const response = await request(app).post("/api/submit-vat").send(vatData).expect(200);
 
-      console.log("[DEBUG_LOG] VAT submission response:", response.body);
+      console.log("VAT submission response:", response.body);
 
       expect(response.body).toHaveProperty("receipt");
       expect(response.body.receipt).toHaveProperty("formBundleNumber");
@@ -207,7 +207,7 @@ describe("Integration – Server Express App", () => {
 
       const response = await request(app).post("/api/log-receipt").send(receiptData).expect(200);
 
-      console.log("[DEBUG_LOG] Receipt logging response:", response.body);
+      console.log("Receipt logging response:", response.body);
 
       expect(response.body).toHaveProperty("receipt");
       expect(response.body).toHaveProperty("key");
@@ -296,7 +296,7 @@ describe("Integration – Server Express App", () => {
       expect(receiptResponse.body).toHaveProperty("receipt");
       expect(receiptResponse.body).toHaveProperty("key");
 
-      console.log("[DEBUG_LOG] Full flow completed successfully");
+      console.log("Full flow completed successfully");
     });
   });
 
