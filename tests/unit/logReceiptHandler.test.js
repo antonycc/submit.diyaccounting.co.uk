@@ -1,6 +1,7 @@
 import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
+import dotenv from 'dotenv';
 
-import "dotenv/config";
+dotenv.config({ path: '.env.test' });
 
 // Mock AWS S3 client - must be done before importing main.js
 const mockSend = vi.fn();
@@ -17,11 +18,13 @@ describe("logReceiptHandler", () => {
   const originalEnv = process.env;
 
   beforeEach(() => {
+    vi.clearAllMocks();
+
+    // Dotenv uses the default environment variables from .env which sets NODE_ENV to 'development' and this is overridden.
     process.env = {
       ...originalEnv,
-      RECEIPTS_BUCKET_NAME: "test-receipts-bucket",
+      RECEIPTS_BUCKET_POSTFIX: "test-receipts-bucket",
     };
-    vi.clearAllMocks();
   });
 
   afterEach(() => {

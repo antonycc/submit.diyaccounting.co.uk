@@ -4,8 +4,9 @@ import request from "supertest";
 import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
+import dotenv from 'dotenv';
 
-import "dotenv/config";
+dotenv.config({ path: '.env.test' });
 
 // Mock the handlers from main.js
 vi.mock("@src/lib/main.js", () => ({
@@ -19,11 +20,17 @@ vi.mock("@src/lib/main.js", () => ({
 import { authUrlHandler, exchangeTokenHandler, submitVatHandler, logReceiptHandler } from "@src/lib/main.js";
 
 describe("Server Unit Tests", () => {
+  const originalEnv = process.env;
   let app;
   const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
   beforeEach(() => {
     vi.clearAllMocks();
+
+    // Dotenv uses the default environment variables from .env which sets NODE_ENV to 'development' and this is overridden.
+    process.env = {
+      ...originalEnv,
+    };
 
     // Recreate the Express app for each test (similar to server.js)
     app = express();

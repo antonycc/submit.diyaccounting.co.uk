@@ -142,7 +142,7 @@ public class WebStack extends Stack {
         public String testS3Endpoint;
         public String testS3AccessKey;
         public String testS3SecretKey;
-        public String receiptsBucketName;
+        public String receiptsBucketPostfix;
         public String lambdaEntry;
         public String authUrlLambdaHandlerFunctionName;
         public String authUrlLambdaDuration;
@@ -304,8 +304,8 @@ public class WebStack extends Stack {
             return this;
         }
 
-        public Builder receiptsBucketName(String receiptsBucketName) {
-            this.receiptsBucketName = receiptsBucketName;
+        public Builder receiptsBucketPostfix(String receiptsBucketPostfix) {
+            this.receiptsBucketPostfix = receiptsBucketPostfix;
             return this;
         }
 
@@ -430,8 +430,8 @@ public class WebStack extends Stack {
         String error404NotFoundAtDistribution = this.getConfigValue(builder.error404NotFoundAtDistribution, "error404NotFoundAtDistribution");
 
         // Receipts bucket
-        String receiptsBucketName = this.getConfigValue(builder.receiptsBucketName, "receiptsBucketName");
-        String receiptsBucketFullName = Builder.buildBucketName(dashedDomainName, receiptsBucketName);
+        String receiptsBucketPostfix = this.getConfigValue(builder.receiptsBucketPostfix, "receiptsBucketPostfix");
+        String receiptsBucketFullName = Builder.buildBucketName(dashedDomainName, receiptsBucketPostfix);
 
         // Lambdas
         String lambaEntry =  this.getConfigValue(builder.lambdaEntry, "lambdaEntry");
@@ -583,7 +583,6 @@ public class WebStack extends Stack {
                     .environment(Map.of("HMRC_CLIENT_ID", hmrcClientId))
                     .environment(Map.of("HMRC_REDIRECT_URI", hmrcRedirectUri))
                     .environment(Map.of("HMRC_BASE_URI", hmrcBaseUri))
-                    .environment(Map.of("TEST_REDIRECT_URI", testRedirectUri))
                     .environment(Map.of("TEST_ACCESS_TOKEN", testAccessToken))
                     .functionName(exchangeTokenLambdaHandlerFunctionName)
                     .timeout(exchangeTokenLambdaDuration)
@@ -597,7 +596,6 @@ public class WebStack extends Stack {
                     .environment(Map.of("HMRC_CLIENT_ID", hmrcClientId))
                     .environment(Map.of("HMRC_REDIRECT_URI", hmrcRedirectUri))
                     .environment(Map.of("HMRC_BASE_URI", hmrcBaseUri))
-                    .environment(Map.of("TEST_REDIRECT_URI", testRedirectUri))
                     .environment(Map.of("TEST_ACCESS_TOKEN", testAccessToken))
                     .functionName(exchangeTokenLambdaHandlerFunctionName)
                     .timeout(exchangeTokenLambdaDuration)
@@ -631,7 +629,6 @@ public class WebStack extends Stack {
                     .runtime(Runtime.NODEJS_20_X)
                     .environment(Map.of("HMRC_REDIRECT_URI", hmrcRedirectUri))
                     .environment(Map.of("HMRC_BASE_URI", hmrcBaseUri))
-                    .environment(Map.of("TEST_REDIRECT_URI", testRedirectUri))
                     .functionName(submitVatLambdaHandlerFunctionName)
                     .timeout(submitVatLambdaDuration)
                     .build();
@@ -643,7 +640,6 @@ public class WebStack extends Stack {
                     )
                     .environment(Map.of("HMRC_REDIRECT_URI", hmrcRedirectUri))
                     .environment(Map.of("HMRC_BASE_URI", hmrcBaseUri))
-                    .environment(Map.of("TEST_REDIRECT_URI", testRedirectUri))
                     .functionName(submitVatLambdaHandlerFunctionName)
                     .timeout(submitVatLambdaDuration)
                     .build();
@@ -680,7 +676,7 @@ public class WebStack extends Stack {
         // Add CloudTrail for the receipts bucket if enabled
         if (cloudTrailEnabled) {
             this.receiptsBucketLogGroup = LogGroup.Builder.create(this, "ReceiptsBucketLogGroup")
-                    .logGroupName("%s%s-receipts-cloud-trail".formatted(cloudTrailLogGroupPrefix, receiptsBucketName))
+                    .logGroupName("%s%s-receipts-cloud-trail".formatted(cloudTrailLogGroupPrefix, receiptsBucketFullName))
                     .retention(cloudTrailLogGroupRetentionPeriod)
                     .removalPolicy(s3RetainBucket ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY)
                     .build();
@@ -707,7 +703,7 @@ public class WebStack extends Stack {
                         .code(Code.fromInline("exports.handler = async (event) => { return { statusCode: 200, body: 'test' }; }"))
                         .handler("index.handler")
                         .runtime(Runtime.NODEJS_20_X)
-                        .environment(Map.of("RECEIPTS_BUCKET_NAME", receiptsBucketName))
+                        .environment(Map.of("RECEIPTS_BUCKET_POSTFIX", receiptsBucketPostfix))
                         .functionName(logReceiptLambdaHandlerFunctionName)
                         .timeout(logReceiptLambdaDuration)
                         .build();
@@ -719,7 +715,7 @@ public class WebStack extends Stack {
                         .environment(Map.of("TEST_S3_ENDPOINT", testS3Endpoint))
                         .environment(Map.of("TEST_S3_ACCESS_KEY", testS3AccessKey))
                         .environment(Map.of("TEST_S3_SECRET_KEY", testS3SecretKey))
-                        .environment(Map.of("RECEIPTS_BUCKET_NAME", receiptsBucketName))
+                        .environment(Map.of("RECEIPTS_BUCKET_POSTFIX", receiptsBucketPostfix))
                         .functionName(logReceiptLambdaHandlerFunctionName)
                         .timeout(logReceiptLambdaDuration)
                         .build();
@@ -729,7 +725,7 @@ public class WebStack extends Stack {
             if(testS3Endpoint == null || testS3AccessKey == null || testS3SecretKey == null) {
                 this.logReceiptLambda = DockerImageFunction.Builder.create(this, "LogReceiptLambda")
                         .code(DockerImageCode.fromImageAsset(".", logReceiptHandlerImageCodeProps))
-                        .environment(Map.of("RECEIPTS_BUCKET_NAME", receiptsBucketName))
+                        .environment(Map.of("RECEIPTS_BUCKET_POSTFIX", receiptsBucketPostfix))
                         .functionName(logReceiptLambdaHandlerFunctionName)
                         .timeout(logReceiptLambdaDuration)
                         .build();
@@ -739,7 +735,7 @@ public class WebStack extends Stack {
                         .environment(Map.of("TEST_S3_ENDPOINT", testS3Endpoint))
                         .environment(Map.of("TEST_S3_ACCESS_KEY", testS3AccessKey))
                         .environment(Map.of("TEST_S3_SECRET_KEY", testS3SecretKey))
-                        .environment(Map.of("RECEIPTS_BUCKET_NAME", receiptsBucketName))
+                        .environment(Map.of("RECEIPTS_BUCKET_POSTFIX", receiptsBucketPostfix))
                         .functionName(logReceiptLambdaHandlerFunctionName)
                         .timeout(logReceiptLambdaDuration)
                         .build();

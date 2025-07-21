@@ -1,7 +1,8 @@
 import { describe, test, expect, beforeEach, afterEach } from "vitest";
 import { authUrlHandler } from "@src/lib/main.js";
+import dotenv from 'dotenv';
 
-import "dotenv/config";
+dotenv.config({ path: '.env.test' });
 
 describe("authUrlHandler", () => {
   const originalEnv = process.env;
@@ -13,8 +14,12 @@ describe("authUrlHandler", () => {
   // and the ci tests so we can test; local via proxy, ci, and prod.
   // This so that npm test will run the unit tests with the default (no) environment
   // So we also need tests that do load the environment variables to check the default behaviour
+  // Also check in test.env with the default environment variables that don't include secrets.
+
+  // Maybe all the tests should use dotenv to comsult the checked in test.env,
 
   beforeEach(() => {
+    // Dotenv uses the default environment variables from .env which sets NODE_ENV to 'development' and this is overridden.
     process.env = {
       ...originalEnv,
     };

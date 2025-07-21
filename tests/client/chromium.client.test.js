@@ -4,8 +4,9 @@ import { test, expect, chromium } from "@playwright/test";
 import fs from "fs";
 import path from "path";
 import { setTimeout } from "timers/promises";
+import dotenv from 'dotenv';
 
-import "dotenv/config";
+dotenv.config({ path: '.env.test' });
 
 // Generate timestamp for file naming
 function getTimestamp() {

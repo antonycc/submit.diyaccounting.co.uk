@@ -6,8 +6,9 @@ import { mockClient } from "aws-sdk-client-mock";
 import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
 
 import { authUrlHandler, exchangeTokenHandler, submitVatHandler, logReceiptHandler } from "@src/lib/main.js";
+import dotenv from 'dotenv';
 
-import "dotenv/config";
+dotenv.config({ path: '.env.test' });
 
 const HMRC = "https://test.test.test.uk";
 let store;
@@ -47,14 +48,13 @@ describe("System Test – end-to-end AWS-like flow", () => {
       HMRC_CLIENT_ID: "test client id",
       HMRC_REDIRECT_URI: "http://hmrc.redirect:3000/",
       HMRC_CLIENT_SECRET: "test hmrc client secret",
-      TEST_REDIRECT_URI: "http://test.redirect:3000/",
       TEST_ACCESS_TOKEN: "test access token",
       TEST_RECEIPT: JSON.stringify({
         formBundleNumber: "test-123456789012",
         chargeRefNumber: "test-XM002610011594",
         processingDate: "2023-01-01T12:00:00.000Z",
       }),
-      RECEIPTS_BUCKET_NAME: "test-receipts-bucket",
+      RECEIPTS_BUCKET_POSTFIX: "test-receipts-bucket",
     };
 
     // Configure S3 mock to use in-memory store
@@ -95,7 +95,7 @@ describe("System Test – end-to-end AWS-like flow", () => {
     const s3 = new S3Client({});
     const getResult = await s3.send(
       new GetObjectCommand({
-        Bucket: process.env.RECEIPTS_BUCKET_NAME,
+        Bucket: process.env.RECEIPTS_BUCKET_POSTFIX,
         Key: `receipts/${receipt.formBundleNumber}.json`,
       }),
     );

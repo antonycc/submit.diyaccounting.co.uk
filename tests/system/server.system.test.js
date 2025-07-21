@@ -3,9 +3,9 @@ import { describe, beforeAll, afterAll, beforeEach, afterEach, it, expect, vi } 
 import { spawn } from "child_process";
 import { fileURLToPath } from "url";
 import path from "path";
-// Use global fetch available in Node.js 18+
+import dotenv from 'dotenv';
 
-import "dotenv/config";
+dotenv.config({ path: '.env.test' });
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const serverPath = path.join(__dirname, "../../src/lib/server.js");
@@ -36,7 +36,7 @@ describe("System – Server Process", () => {
       HMRC_CLIENT_ID: "system-test-client-id",
       HMRC_CLIENT_SECRET: "system-test-secret",
       REDIRECT_URI: "https://submit.diyaccounting.co.uk/callback",
-      RECEIPTS_BUCKET_NAME: "system-test-bucket",
+      RECEIPTS_BUCKET_POSTFIX: "system-test-bucket",
       TEST_SERVER_HTTP_PORT: serverPort.toString(),
     };
   });
@@ -66,8 +66,11 @@ describe("System – Server Process", () => {
     return new Promise((resolve, reject) => {
       console.log("Starting server process on port", serverPort);
 
-      serverProcess = spawn("node", [serverPath], {
-        env: process.env,
+      serverProcess = spawn("npm", ["run", "start"], {
+        env: {
+          ...process.env,
+          NODE_ENV: "test",
+        },
         stdio: ["pipe", "pipe", "pipe"],
       });
 

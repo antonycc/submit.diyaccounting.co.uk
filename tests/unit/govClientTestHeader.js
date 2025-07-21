@@ -1,5 +1,7 @@
 // tests/unit/govClientTestHeader.js
-import "dotenv/config";
+import dotenv from 'dotenv';
+
+dotenv.config({ path: '.env.test' });
 
 // TODO Read from .env file
 

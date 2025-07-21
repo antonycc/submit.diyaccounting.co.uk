@@ -5,8 +5,9 @@ import { fileURLToPath } from "url";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import fetch from "node-fetch";
 import logger from "./logger.js";
+import dotenv from 'dotenv';
 
-import "dotenv/config";
+dotenv.config({ path: '.env' });
 
 function buildUrl(event) {
   let url;
@@ -85,7 +86,7 @@ export async function exchangeTokenHandler(event) {
   });
   const hmrcBase = process.env.HMRC_BASE_URI;
   let hmrcAccessToken;
-  if (process.env.HMRC_REDIRECT_URI === process.env.TEST_REDIRECT_URI) {
+  if (process.env.NODE_ENV === "test") {
     hmrcAccessToken = process.env.TEST_ACCESS_TOKEN;
   } else {
     const hmrcRequestUrl = `${hmrcBase}/oauth/token`;
@@ -221,7 +222,7 @@ export async function submitVatHandler(event) {
   };
   const hmrcBase = process.env.HMRC_BASE_URI;
   let receipt;
-  if (process.env.HMRC_REDIRECT_URI === process.env.TEST_REDIRECT_URI) {
+  if (process.env.NODE_ENV === "test") {
     // TEST_RECEIPT is already a JSON string, so parse it first
     receipt = JSON.parse(process.env.TEST_RECEIPT || "{}");
   } else {
@@ -317,14 +318,27 @@ export async function logReceiptHandler(event) {
     }
   }
 
-  if (!process.env.RECEIPTS_BUCKET_NAME) {
-    logger.warn({message: "RECEIPTS_BUCKET_NAME environment variable is not set, cannot log receipt"});
+  if (!process.env.RECEIPTS_BUCKET_POSTFIX || !process.env.HMRC_REDIRECT_URI) {
+    if (!process.env.RECEIPTS_BUCKET_POSTFIX ) {
+      logger.warn({message: "RECEIPTS_BUCKET_POSTFIX environment variable is not set, cannot log receipt"});
+    }
+    if (!process.env.HMRC_REDIRECT_URI) {
+      logger.warn({message: "HMRC_REDIRECT_URI environment variable is not set, cannot log receipt"});
+    }
   } else {
     try {
+      const hmrcRedirectUri = process.env.HMRC_REDIRECT_URI;
+      const receiptsBucketPostfix = process.env.RECEIPTS_BUCKET_POSTFIX;
+      // TODO: Externalise the bucket name and just do the below as the default.
+      // Extract dashed domain name from subdomain hostname e.g. https://wanted-finally-anteater.ngrok-free.app/ or https://ci.submit.diyaccounting.co.uk/
+      // and use it to construct the bucket name using the hmrcRedirectUri
+      const { hostname } = new URL(hmrcRedirectUri);
+      const dashedDomain = hostname.split('.').join('-');
+      receiptsBucketFullNameName = `${dashedDomain}-${receiptsBucketPostfix}`;
       const s3Client = new S3Client(s3Config);
       await s3Client.send(
           new PutObjectCommand({
-            Bucket: process.env.RECEIPTS_BUCKET_NAME,
+            Bucket: process.env.RECEIPTS_BUCKET_POSTFIX,
             Key: key,
             Body: JSON.stringify(receipt),
             ContentType: "application/json",

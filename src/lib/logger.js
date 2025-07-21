@@ -1,20 +1,30 @@
 // src/lib/logger.js
-import winston from "winston";
+  import winston from "winston";
+  import dotenv from "dotenv";
 
-const { createLogger, format, transports } = winston;
+  // Load environment variables
+  dotenv.config({ path: ".env" });
 
-import "dotenv/config"; // use dotenv to load environment variables
+  const { createLogger, format, transports } = winston;
+  const logTransports = [];
 
-const timestamp = new Date().toISOString().replace(/:/g, "-");
-const logFilePath = process.env.LOG_FILE_PATH || `./submit-${timestamp}.log`;
+  // Add Console transport if LOG_TO_CONSOLE is enabled (default on)
+  if (process.env.LOG_TO_CONSOLE != "false") {
+    logTransports.push(new transports.Console());
+  }
 
-export const winstonConsoleLogger = createLogger({
-  level: "info",
-  format: format.combine(format.timestamp(), format.json()),
-  transports: [
-    new transports.Console(),
-    new transports.File({ filename: logFilePath })
-  ]
-});
+  // Add File transport only when LOG_TO_FILE is enabled (default off)
+  if (process.env.LOG_TO_FILE === "true") {
+    const timestamp = new Date().toISOString().replace(/:/g, "-");
+    const logFilePath =
+      process.env.LOG_FILE_PATH || `./submit-${timestamp}.log`;
+    logTransports.push(new transports.File({ filename: logFilePath }));
+  }
 
-export default winstonConsoleLogger;
+  export const winstonConsoleLogger = createLogger({
+    level: "info",
+    format: format.combine(format.timestamp(), format.json()),
+    transports: logTransports,
+  });
+
+  export default winstonConsoleLogger;

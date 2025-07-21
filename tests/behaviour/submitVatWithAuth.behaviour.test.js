@@ -2,8 +2,11 @@
 import { test, expect } from "@playwright/test";
 import { spawn } from "child_process";
 import { setTimeout } from "timers/promises";
+import { S3Client, CreateBucketCommand, HeadBucketCommand } from '@aws-sdk/client-s3';
+import dotenv from 'dotenv';
 
-import "dotenv/config";
+dotenv.config({ path: '.env' }); // e.g. Not checked in, HMRC API credentials
+dotenv.config({ path: '.env.proxy' });
 
 let serverProcess;
 let ngrokProcess;
@@ -36,12 +39,11 @@ test.beforeAll(async () => {
     TEST_SERVER_HTTP: "run",
     TEST_PROXY_URL: "https://wanted-finally-anteater.ngrok-free.app",
     TEST_PROXY: "run",
-    RECEIPTS_BUCKET_NAME: "none",
+    RECEIPTS_BUCKET_POSTFIX: "none",
     HMRC_BASE_URI: "https://test-api.service.hmrc.gov.uk",
     HMRC_CLIENT_ID: "uqMHA6RsDGGa7h8EG2VqfqAmv4tV",
     HMRC_REDIRECT_URI: "https://wanted-finally-anteater.ngrok-free.app/",
     // TODO: HMRC_CLIENT_SECRET: read from .env file: .env.hmrc-test-api
-    TEST_REDIRECT_URI: "http://127.0.0.1:3000/",
     TEST_ACCESS_TOKEN: "test access token",
     TEST_RECEIPT: JSON.stringify({
       formBundleNumber: "test-123456789012",
@@ -49,11 +51,44 @@ test.beforeAll(async () => {
       processingDate: "2023-01-01T12:00:00.000Z",
     }),
   };
-  
+
+  // Start Minio
+  async function ensureMinioBucketExists() {
+    const s3 = new S3Client({
+      endpoint: "http://localhost:9000", // Match your MinIO URL
+      forcePathStyle: true,
+      region: "us-east-1",
+      credentials: {
+        accessKeyId: "minioadmin",
+        secretAccessKey: "minioadmin"
+      }
+    });
+
+    const bucketName = "vat-receipts";
+
+    try {
+      await s3.send(new HeadBucketCommand({ Bucket: bucketName }));
+      console.log(`✅ MinIO bucket '${bucketName}' already exists`);
+    } catch (err) {
+      if (err.name === "NotFound") {
+        console.log(`ℹ️ MinIO bucket '${bucketName}' not found, creating...`);
+        await s3.send(new CreateBucketCommand({ Bucket: bucketName }));
+        console.log(`✅ Created bucket '${bucketName}'`);
+      } else {
+        throw new Error(`Failed to check/create MinIO bucket: ${err.message}`);
+      }
+    }
+  }
+
+  await ensureMinioBucketExists();
+
   // Start the server
   console.log("Starting server process...");
-  serverProcess = spawn("node", ["src/lib/server.js"], {
-    env: { ...process.env, PORT: process.env.TEST_SERVER_HTTP_PORT },
+  serverProcess = spawn("npm", ["run", "start"], {
+  // serverProcess = spawn("node", ["src/lib/server.js"], {
+    env: {
+      ...process.env,
+    },
     stdio: "pipe",
   });
 
@@ -85,7 +120,8 @@ test.beforeAll(async () => {
 
   // Start ngrok process (same as npm run proxy)
   console.log("Starting ngrok process...");
-  ngrokProcess = spawn("npx", ["ngrok", "http", "--url", "wanted-finally-anteater.ngrok-free.app", "3000"], {
+  ngrokProcess = spawn("npm", ["run", "proxy"], {
+  //ngrokProcess = spawn("npx", ["ngrok", "http", "--url", "wanted-finally-anteater.ngrok-free.app", "3000"], {
     stdio: "pipe",
   });
 
@@ -172,7 +208,7 @@ test.outputDir = "behaviour-with-auth-test-results";
 
 test("Submit VAT return end-to-end flow with browser emulation", async ({ page }) => {
   const timestamp = getTimestamp();
-  const testUrl = process.env.TEST_PROXY_URL || process.env.TEST_REDIRECT_URI || "http://127.0.1:3000/";
+  const testUrl = process.env.TEST_PROXY_URL || "http://127.0.1:3000/";
 
   // Mock the API endpoints that the server will call
   await page.route("**/oauth/token", (route) => {

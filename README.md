@@ -62,7 +62,22 @@ Run [ngrok](https://ngrok.com/) to expose http://127.0.0.1:3000 to an SSL termin
 ```bash
 
 npm install
-npx ngrok http 3000
+npm run proxy
+```
+
+✅ MinIO Setup Steps
+Run MinIO locally (e.g. with Docker):
+```bash
+docker run -p 9000:9000 -p 9001:9001 \
+  -e "MINIO_ROOT_USER=minioadmin" \
+  -e "MINIO_ROOT_PASSWORD=minioadmin" \
+  quay.io/minio/minio server /data --console-address ":9001"
+```
+
+Create the bucket (e.g. using mc CLI):
+```bash
+mc alias set local http://localhost:9000 minioadmin minioadmin
+mc mb local/vat-receipts
 ```
 
 Or use an ngrok account to get a stable URL and set this in package.json:

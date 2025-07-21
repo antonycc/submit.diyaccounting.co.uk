@@ -7,9 +7,9 @@ import { mockClient } from "aws-sdk-client-mock";
 import { setupServer } from "msw/node";
 import { http, HttpResponse } from "msw";
 import fetch from "node-fetch";
-import dotenv from "dotenv";
+import dotenv from 'dotenv';
 
-import "dotenv/config";
+dotenv.config({ path: '.env.test' });
 
 dotenv.config();
 
@@ -82,7 +82,7 @@ describe("System Test – submit VAT and persist receipts to containerised S3", 
     await fetch(`${endpoint}/${BUCKET_NAME}`, { method: "PUT" });
 
     // Mock the environment variables for the handlers
-    process.env.RECEIPTS_BUCKET_NAME = BUCKET_NAME;
+    process.env.RECEIPTS_BUCKET_POSTFIX = BUCKET_NAME;
     process.env.TEST_S3_ENDPOINT = endpoint;
     process.env.TEST_S3_ACCESS_KEY = "minioadmin";
     process.env.TEST_S3_SECRET_KEY = "minioadmin";

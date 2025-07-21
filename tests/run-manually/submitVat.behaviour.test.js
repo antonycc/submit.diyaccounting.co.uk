@@ -2,8 +2,9 @@
 import { test, expect } from "@playwright/test";
 import { spawn } from "child_process";
 import { setTimeout } from "timers/promises";
+import dotenv from 'dotenv';
 
-import "dotenv/config";
+dotenv.config({ path: '.env.test' });
 
 let serverProcess;
 
@@ -15,9 +16,12 @@ function getTimestamp() {
 
 test.beforeAll(async () => {
   // Start the server
-  serverProcess = spawn("node", ["src/lib/server.js"], {
-    env: { ...process.env, PORT: process.env.TEST_SERVER_HTTP_PORT },
-    stdio: "pipe",
+  serverProcess = spawn("npm", ["run", "start"], {
+    env: {
+      ...process.env,
+      NODE_ENV: "test",
+    },
+    stdio: ["pipe", "pipe", "pipe"],
   });
 
   // Wait for server to start

@@ -57,7 +57,7 @@ public class WebStackTest {
                 .testS3Endpoint("https://s3.amazonaws.com")
                 .testS3AccessKey("test-access-key")
                 .testS3SecretKey("test-secret-key")
-                .receiptsBucketName("test-receipts-bucket")
+                .receiptsBucketPostfix("test-receipts-bucket")
                 .lambdaEntry("co.uk.diyaccounting.submit.handlers.")
                 .authUrlLambdaHandlerFunctionName("AuthUrlHandler")
                 .authUrlLambdaDurationMillis("30000")

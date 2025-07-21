@@ -5,18 +5,28 @@ import { Window } from "happy-dom";
 import fs from "fs";
 import path from "path";
 import {buildGovClientTestHeaders} from "@tests/unit/govClientTestHeader.js";
+import dotenv from 'dotenv';
 
-import "dotenv/config";
+dotenv.config({ path: '.env.test' });
 
 // Read the HTML file content
 const htmlContent = fs.readFileSync(path.join(process.cwd(), "public/index.html"), "utf-8");
 
 describe("VAT Flow Frontend JavaScript", () => {
+  const originalEnv = process.env;
+
   let window;
   let document;
   let fetchMock;
 
   beforeEach(() => {
+    vi.clearAllMocks();
+
+    // Dotenv uses the default environment variables from .env which sets NODE_ENV to 'development' and this is overridden.
+    process.env = {
+      ...originalEnv,
+    };
+
     // Create a new DOM window for each test
     window = new Window();
     document = window.document;
@@ -68,7 +78,6 @@ describe("VAT Flow Frontend JavaScript", () => {
   });
 
   afterEach(() => {
-    vi.clearAllMocks();
     window.close();
   });
 

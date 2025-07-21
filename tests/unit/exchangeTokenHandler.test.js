@@ -1,7 +1,8 @@
 import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
 import { exchangeTokenHandler } from "@src/lib/main.js";
+import dotenv from 'dotenv';
 
-import "dotenv/config";
+dotenv.config({ path: '.env.test' });
 
 // Mock node-fetch
 vi.mock("node-fetch", () => ({
@@ -15,6 +16,8 @@ describe("exchangeTokenHandler", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+
+    // Dotenv uses the default environment variables from .env which sets NODE_ENV to 'development' and this is overridden.
     process.env = {
       ...originalEnv,
     };
@@ -44,7 +47,7 @@ describe("exchangeTokenHandler", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(200);
-    expect(body.hmrcAccessToken).toBe("test-access-token");
+    expect(body.hmrcAccessToken).toBe("test access token");
 
     // Verify fetch was called with correct parameters
     expect(fetch).toHaveBeenCalledWith("https://test/oauth/token", {

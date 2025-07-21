@@ -8,8 +8,9 @@ import request from "supertest";
 import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
+import dotenv from 'dotenv';
 
-import "dotenv/config";
+dotenv.config({ path: '.env.test' });
 
 // Import the actual handlers (not mocked for integration test)
 import { authUrlHandler, exchangeTokenHandler, submitVatHandler, logReceiptHandler } from "@src/lib/main.js";
@@ -82,7 +83,7 @@ describe("Integration – Server Express App", () => {
       HMRC_CLIENT_SECRET: "integration-test-secret",
       HMRC_REDIRECT_URI: "https://test.submit.diyaccounting.co.uk/",
       HMRC_BASE_URI: "https://test-api.service.hmrc.gov.uk",
-      RECEIPTS_BUCKET_NAME: "integration-test-bucket",
+      RECEIPTS_BUCKET_POSTFIX: "integration-test-bucket",
       TEST_SERVER_HTTP_PORT: "3001",
     };
 

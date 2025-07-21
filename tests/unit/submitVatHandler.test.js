@@ -1,7 +1,8 @@
 import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
 import { submitVatHandler } from "@src/lib/main.js";
+import dotenv from 'dotenv';
 
-import "dotenv/config";
+dotenv.config({ path: '.env.test' });
 
 // Mock node-fetch
 vi.mock("node-fetch", () => ({
@@ -16,6 +17,7 @@ describe("submitVatHandler", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    // Dotenv uses the default environment variables from .env which sets NODE_ENV to 'development' and this is overridden.
     process.env = {
       ...originalEnv,
     };

@@ -5,8 +5,9 @@ import { http, HttpResponse } from "msw";
 import { mockClient } from "aws-sdk-client-mock";
 import { S3Client } from "@aws-sdk/client-s3";
 import { authUrlHandler, exchangeTokenHandler } from "@src/lib/main.js";
+import dotenv from 'dotenv';
 
-import "dotenv/config";
+dotenv.config({ path: '.env.test' });
 
 const HMRC = "https://test.test.test.uk";
 const s3Mock = mockClient(S3Client);
@@ -38,14 +39,13 @@ describe("Integration – auth flow", () => {
       HMRC_CLIENT_ID: "test client id",
       HMRC_REDIRECT_URI: "http://test.redirect:3000/",
       HMRC_CLIENT_SECRET: "test hmrc client secret",
-      TEST_REDIRECT_URI: "http://test.redirect:3000/",
       TEST_ACCESS_TOKEN: "test access token",
       TEST_RECEIPT: JSON.stringify({
         formBundleNumber: "test-123456789012",
         chargeRefNumber: "test-XM002610011594",
         processingDate: "2023-01-01T12:00:00.000Z",
       }),
-      RECEIPTS_BUCKET_NAME: "test-receipts-bucket",
+      RECEIPTS_BUCKET_POSTFIX: "test-receipts-bucket",
     };
     s3Mock.reset();
   });

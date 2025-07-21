@@ -30,7 +30,7 @@
     "testS3Endpoint": "",
     "testS3AccessKey": "",
     "testS3SecretKey": "",
-    "receiptsBucketName": "receipts",
+    "receiptsBucketPostfix": "receipts",
     "lambdaEntry": "src/lib/main.",
     "authUrlLambdaHandlerFunctionName": "AuthUrlHandler",
     "authUrlLambdaDuration": "30000",
