@@ -78,11 +78,8 @@ jobs:
 
       - run: npm run test:behaviour
         env:
-          HMRC_BASE_URI: ${{ vars.HMRC_BASE_URI }}
-          HMRC_REDIRECT_URI: ${{ vars.HMRC_REDIRECT_URI }}
           HMRC_CLIENT_ID: ${{ secrets.HMRC_CLIENT_ID }}
           HMRC_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
-          TEST_SERVER_HTTP_PORT: ${{ vars.TEST_SERVER_HTTP_PORT }}
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
@@ -305,7 +302,6 @@ jobs:
           LOG_RECEIPT_LAMBDA_HANDLER_FUNCTION_NAME: ${{ vars.LOG_RECEIPT_LAMBDA_HANDLER_FUNCTION_NAME }}
           LOG_RECEIPT_LAMBDA_DURATION: ${{ vars.LOG_RECEIPT_LAMBDA_DURATION }}
 
-  # TODO: Run behaviour tests targeting the ci environment
   npm-behaviour-test-ci:
     needs:
       - npm-test
@@ -335,13 +331,10 @@ jobs:
 
       - run: npx playwright install --with-deps
 
-      - run: npm run test:behaviour
+      - run: npx dotenv -e '.env.ci' npm run test:behaviour
         env:
-          HMRC_BASE_URI: ${{ vars.HMRC_BASE_URI }}
-          HMRC_REDIRECT_URI: ${{ vars.HMRC_REDIRECT_URI }}
           HMRC_CLIENT_ID: ${{ secrets.HMRC_CLIENT_ID }}
           HMRC_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
-          TEST_SERVER_HTTP_PORT: ${{ vars.TEST_SERVER_HTTP_PORT }}
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
