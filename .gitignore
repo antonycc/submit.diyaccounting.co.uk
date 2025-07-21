@@ -345,3 +345,4 @@ fabric.properties
 /all-test-results/.last-run.json
 /behaviour-with-auth-test-results/
 /.env.bak
+/.env.hmrc-test-api
