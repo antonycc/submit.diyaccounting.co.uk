@@ -1,5 +1,7 @@
 import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
 
+import "dotenv/config";
+
 // Mock AWS S3 client - must be done before importing main.js
 const mockSend = vi.fn();
 vi.mock("@aws-sdk/client-s3", () => ({

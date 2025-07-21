@@ -6,6 +6,8 @@ import fs from "fs";
 import path from "path";
 import {buildGovClientTestHeaders} from "@tests/unit/govClientTestHeader.js";
 
+import "dotenv/config";
+
 // Read the HTML file content
 const htmlContent = fs.readFileSync(path.join(process.cwd(), "public/index.html"), "utf-8");
 

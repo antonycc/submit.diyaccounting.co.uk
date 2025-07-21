@@ -1,6 +1,8 @@
 import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
 import { submitVatHandler } from "@src/lib/main.js";
 
+import "dotenv/config";
+
 // Mock node-fetch
 vi.mock("node-fetch", () => ({
   default: vi.fn(),
@@ -16,14 +18,9 @@ describe("submitVatHandleLocal", () => {
     vi.clearAllMocks();
     process.env = {
       ...originalEnv,
-      TEST_SERVER_HTTP_PORT: "3000",
-      HMRC_BASE_URI: "https://test-api.service.hmrc.gov.uk",
-      HMRC_CLIENT_ID: "uqMHA6RsDGGa7h8EG2VqfqAmv4tV",
       HMRC_REDIRECT_URI: "http://127.0.0.1:3000/",
-      HMRC_CLIENT_SECRET: "test hmrc client secret",
       TEST_REDIRECT_URI: "http://127.0.0.1:3000/",
-      TEST_ACCESS_TOKEN:
-        "eyJraWQiOiJ0ZXN0LWFwaS1zZXJ2aWNlLWhtcmMifQ.eyJhdWQiOiJ1cU1IQTZSc0RHR2E3aDhFRzJWcWZxQW12NHQiLCJzdWIiOiI4ODg3NzI2MTI3NTYiLCJpc3MiOiJodHRwczovL3Rlc3QtYXBpLnNlcnZpY2UuaG1yYy5nb3YudWsiLCJleHBpcmVkX3VzZXJuYW1lIjoiODg4NzcyNjEyNzU2IiwianRpIjoiYjA5N2QwMjItZDY5Ny00YjA5LTkzMzctYjQwZDUxMGEyN2E0IiwicmVmcmVzaF9jb250ZXh0IjoiL2FjY291bnRzLzY4ODc3MjYxMjc1NiIsInNjb3BlcyI6WyJtYWtpbmctdGF4LWluY29tZS10YXgiLCJyZWFkLXByb2ZpbGUiLCJyZWFkLWltcG9ydCIsInJlYWQtbmF0aW9uYWwtcHJvZmlsZSIsInJlYWQtbmF0aW9uYWwtcGF5bWVudCIsInJlYWQtdGF4LWltcG9ydCIsInJlYWQtdGF4LW5hdGlvbmFsLXByb2ZpbGUiLCJyZWFkLXRheC1uYXRpb25hbC1wYXltZW50Il0sIm5iZiI6MTY5OTg4MDg1OSwiaWF0IjoxNjk5ODgwODU5fQ.8e7d7",
+      TEST_ACCESS_TOKEN: "eyJraWQiOiJ0ZXN0LWFwaS1zZXJ2aWNlLWhtcmMifQ.eyJhdWQiOiJ1cU1IQTZSc0RHR2E3aDhFRzJWcWZxQW12NHQiLCJzdWIiOiI4ODg3NzI2MTI3NTYiLCJpc3MiOiJodHRwczovL3Rlc3QtYXBpLnNlcnZpY2UuaG1yYy5nb3YudWsiLCJleHBpcmVkX3VzZXJuYW1lIjoiODg4NzcyNjEyNzU2IiwianRpIjoiYjA5N2QwMjItZDY5Ny00YjA5LTkzMzctYjQwZDUxMGEyN2E0IiwicmVmcmVzaF9jb250ZXh0IjoiL2FjY291bnRzLzY4ODc3MjYxMjc1NiIsInNjb3BlcyI6WyJtYWtpbmctdGF4LWluY29tZS10YXgiLCJyZWFkLXByb2ZpbGUiLCJyZWFkLWltcG9ydCIsInJlYWQtbmF0aW9uYWwtcHJvZmlsZSIsInJlYWQtbmF0aW9uYWwtcGF5bWVudCIsInJlYWQtdGF4LWltcG9ydCIsInJlYWQtdGF4LW5hdGlvbmFsLXByb2ZpbGUiLCJyZWFkLXRheC1uYXRpb25hbC1wYXltZW50Il0sIm5iZiI6MTY5OTg4MDg1OSwiaWF0IjoxNjk5ODgwODU5fQ.8e7d7",
       TEST_RECEIPT: JSON.stringify({
         formBundleNumber: "local-123456789012",
         chargeRefNumber: "local-XM002610011594",

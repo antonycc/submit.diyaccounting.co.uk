@@ -1,24 +1,22 @@
 import { describe, test, expect, beforeEach, afterEach } from "vitest";
 import { authUrlHandler } from "@src/lib/main.js";
 
+import "dotenv/config";
+
 describe("authUrlHandler", () => {
   const originalEnv = process.env;
+
+  // YOU ARE HERE: The default environment from .env should be the highly stubbed environment for unit testing
+  // So the envronment section below should be mostly empty unless you need to override something for a specific test.
+  // Then the behaviour tests will override
+  // as will the npm runn start and npm run proxy commands
+  // and the ci tests so we can test; local via proxy, ci, and prod.
+  // This so that npm test will run the unit tests with the default (no) environment
+  // So we also need tests that do load the environment variables to check the default behaviour
 
   beforeEach(() => {
     process.env = {
       ...originalEnv,
-      TEST_SERVER_HTTP_PORT: "3000",
-      HMRC_BASE_URI: "https://test",
-      HMRC_CLIENT_ID: "test client id",
-      HMRC_REDIRECT_URI: "http://hmrc.redirect:3000/",
-      HMRC_CLIENT_SECRET: "test hmrc client secret",
-      TEST_REDIRECT_URI: "http://test.redirect:3000/",
-      TEST_ACCESS_TOKEN: "test access token",
-      TEST_RECEIPT: JSON.stringify({
-        formBundleNumber: "test-123456789012",
-        chargeRefNumber: "test-XM002610011594",
-        processingDate: "2023-01-01T12:00:00.000Z",
-      }),
     };
   });
 

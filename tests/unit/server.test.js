@@ -5,6 +5,8 @@ import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
 
+import "dotenv/config";
+
 // Mock the handlers from main.js
 vi.mock("@src/lib/main.js", () => ({
   authUrlHandler: vi.fn(),

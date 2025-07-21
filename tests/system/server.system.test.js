@@ -5,6 +5,8 @@ import { fileURLToPath } from "url";
 import path from "path";
 // Use global fetch available in Node.js 18+
 
+import "dotenv/config";
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const serverPath = path.join(__dirname, "../../src/lib/server.js");
 

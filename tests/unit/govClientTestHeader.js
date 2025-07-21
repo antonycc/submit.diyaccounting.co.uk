@@ -1,4 +1,7 @@
 // tests/unit/govClientTestHeader.js
+import "dotenv/config";
+
+// TODO Read from .env file
 
 export function buildGovClientTestHeaders() {
   const govClientBrowserJSUserAgentHeader = "test-browser-js-user-agent";

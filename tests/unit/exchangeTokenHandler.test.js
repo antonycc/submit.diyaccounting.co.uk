@@ -1,6 +1,8 @@
 import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
 import { exchangeTokenHandler } from "@src/lib/main.js";
 
+import "dotenv/config";
+
 // Mock node-fetch
 vi.mock("node-fetch", () => ({
   default: vi.fn(),
@@ -15,18 +17,6 @@ describe("exchangeTokenHandler", () => {
     vi.clearAllMocks();
     process.env = {
       ...originalEnv,
-      TEST_SERVER_HTTP_PORT: "3000",
-      HMRC_BASE_URI: "https://test",
-      HMRC_CLIENT_ID: "test client id",
-      HMRC_REDIRECT_URI: "http://hmrc.redirect:3000/",
-      HMRC_CLIENT_SECRET: "test hmrc client secret",
-      TEST_REDIRECT_URI: "http://test.redirect:3000/",
-      TEST_ACCESS_TOKEN: "test access token",
-      TEST_RECEIPT: JSON.stringify({
-        formBundleNumber: "test-123456789012",
-        chargeRefNumber: "test-XM002610011594",
-        processingDate: "2023-01-01T12:00:00.000Z",
-      }),
     };
   });
 

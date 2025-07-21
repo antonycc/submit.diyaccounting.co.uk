@@ -5,6 +5,8 @@ import fs from "fs";
 import path from "path";
 import { setTimeout } from "timers/promises";
 
+import "dotenv/config";
+
 // Generate timestamp for file naming
 function getTimestamp() {
   const now = new Date();

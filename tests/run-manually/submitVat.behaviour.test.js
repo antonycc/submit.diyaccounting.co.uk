@@ -3,6 +3,8 @@ import { test, expect } from "@playwright/test";
 import { spawn } from "child_process";
 import { setTimeout } from "timers/promises";
 
+import "dotenv/config";
+
 let serverProcess;
 
 // Generate timestamp for file naming

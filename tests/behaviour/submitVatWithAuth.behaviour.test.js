@@ -3,6 +3,8 @@ import { test, expect } from "@playwright/test";
 import { spawn } from "child_process";
 import { setTimeout } from "timers/promises";
 
+import "dotenv/config";
+
 let serverProcess;
 let ngrokProcess;
 
@@ -28,15 +30,18 @@ test.beforeAll(async () => {
   // TEST_PROXY_URL=https://wanted-finally-anteater.ngrok-free.app
   // TEST_PROXY=use-existing
 
-
   process.env = {
     ...originalEnv,
     TEST_SERVER_HTTP_PORT: "3000",
-    HMRC_BASE_URI: "https://test",
-    HMRC_CLIENT_ID: "test client id",
-    HMRC_REDIRECT_URI: "http://hmrc.redirect:3000/",
-    HMRC_CLIENT_SECRET: "test hmrc client secret",
-    TEST_REDIRECT_URI: "http://test.redirect:3000/",
+    TEST_SERVER_HTTP: "run",
+    TEST_PROXY_URL: "https://wanted-finally-anteater.ngrok-free.app",
+    TEST_PROXY: "run",
+    RECEIPTS_BUCKET_NAME: "none",
+    HMRC_BASE_URI: "https://test-api.service.hmrc.gov.uk",
+    HMRC_CLIENT_ID: "uqMHA6RsDGGa7h8EG2VqfqAmv4tV",
+    HMRC_REDIRECT_URI: "https://wanted-finally-anteater.ngrok-free.app/",
+    // TODO: HMRC_CLIENT_SECRET: read from .env file: .env.hmrc-test-api
+    TEST_REDIRECT_URI: "http://127.0.0.1:3000/",
     TEST_ACCESS_TOKEN: "test access token",
     TEST_RECEIPT: JSON.stringify({
       formBundleNumber: "test-123456789012",
@@ -89,7 +94,7 @@ test.beforeAll(async () => {
   await setTimeout(5000);
 
   // Check if the default document is accessible via ngrok
-  const ngrokUrl = "https://wanted-finally-anteater.ngrok-free.app";
+  const ngrokUrl = process.env.TEST_PROXY_URL;
   let ngrokReady = false;
   let ngrokAttempts = 0;
   console.log("Checking ngrok readiness...");
@@ -167,6 +172,8 @@ test.outputDir = "behaviour-with-auth-test-results";
 
 test("Submit VAT return end-to-end flow with browser emulation", async ({ page }) => {
   const timestamp = getTimestamp();
+  const testUrl = process.env.TEST_PROXY_URL || process.env.TEST_REDIRECT_URI || "http://127.0.1:3000/";
+
   // Mock the API endpoints that the server will call
   await page.route("**/oauth/token", (route) => {
     route.fulfill({
@@ -203,7 +210,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   await page.setExtraHTTPHeaders({
     "ngrok-skip-browser-warning": "any value"
   });
-  await page.goto("https://wanted-finally-anteater.ngrok-free.app");
+  await page.goto(testUrl);
 
   // Wait for page to load completely
   await setTimeout(500);
@@ -232,7 +239,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   // Expect the HMRC permission page to be visible
   const applicationName = "DIY Accounting Submit";
   await page.waitForLoadState("networkidle");
-  await setTimeout(1500);
+  await setTimeout(500);
   await page.screenshot({ path: `behaviour-with-auth-test-results/auth-behaviour-020-hmrc-permission_${timestamp}.png` });
   await expect(page.locator("#appNameParagraph")).toContainText(applicationName);
   await expect(page.getByRole('button', { name: 'Continue' })).toContainText("Continue");

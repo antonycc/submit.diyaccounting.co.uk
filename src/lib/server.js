@@ -13,6 +13,12 @@ const app = express();
 // parse JSON bodies
 app.use(express.json());
 
+// HTTP access logging middleware
+app.use((req, res, next) => {
+  logger.info(`HTTP ${req.method} ${req.url}`);
+  next();
+});
+
 // 1) serve static site exactly like `http-server public/`
 app.use(express.static(path.join(__dirname, "../../public")));
 

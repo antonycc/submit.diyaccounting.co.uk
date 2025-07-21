@@ -6,6 +6,8 @@ import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import fetch from "node-fetch";
 import logger from "./logger.js";
 
+import "dotenv/config";
+
 function buildUrl(event) {
   let url;
   if (event.path && event.headers && event.headers.host) {

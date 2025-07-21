@@ -9,6 +9,8 @@ import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
 
+import "dotenv/config";
+
 // Import the actual handlers (not mocked for integration test)
 import { authUrlHandler, exchangeTokenHandler, submitVatHandler, logReceiptHandler } from "@src/lib/main.js";
 

@@ -7,6 +7,8 @@ import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 
 import { authUrlHandler, exchangeTokenHandler, submitVatHandler, logReceiptHandler } from "@src/lib/main.js";
 
+import "dotenv/config";
+
 const HMRC = "https://test.test.test.uk";
 const s3Mock = mockClient(S3Client);
 

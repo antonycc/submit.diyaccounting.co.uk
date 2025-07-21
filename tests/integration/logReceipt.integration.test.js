@@ -6,6 +6,8 @@ import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 
 import { logReceiptHandler } from "@src/lib/main.js";
 
+import "dotenv/config";
+
 const s3Mock = mockClient(S3Client);
 
 // spin up MSW server to catch HMRC calls

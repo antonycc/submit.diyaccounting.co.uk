@@ -9,6 +9,8 @@ import { http, HttpResponse } from "msw";
 import fetch from "node-fetch";
 import dotenv from "dotenv";
 
+import "dotenv/config";
+
 dotenv.config();
 
 import { exchangeTokenHandler, submitVatHandler, logReceiptHandler } from "@src/lib/main.js";
