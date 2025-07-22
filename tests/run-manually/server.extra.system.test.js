@@ -8,7 +8,7 @@ import dotenv from 'dotenv';
 dotenv.config({ path: '.env.test' });
 
 // Test specific dedicated server port
-const serverPort = 3220;
+const serverPort = 3400;
 
 const waitForServer = async (maxAttempts = 10) => {
   for (let i = 0; i < maxAttempts; i++) {
@@ -109,7 +109,7 @@ describe("System – Server Process", () => {
     // Use a different port for system tests to avoid conflicts
     baseUrl = `http://127.0.0.1:${serverPort}`;
     await startServer();
-    await waitForServer();
+    await waitForServer(baseUrl);
     console.log("Starting server system tests");
   });
 

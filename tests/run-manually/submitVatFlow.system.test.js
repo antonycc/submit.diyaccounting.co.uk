@@ -29,19 +29,6 @@ const server = setupServer(
   }),
 );
 
-// Helper function to check if Docker is available
-async function isDockerAvailable() {
-  try {
-    const { exec } = await import("child_process");
-    const { promisify } = await import("util");
-    const execAsync = promisify(exec);
-    await execAsync("docker ps");
-    return true;
-  } catch (error) {
-    return false;
-  }
-}
-
 describe("System Test – submit VAT and persist receipts to containerised S3", () => {
   let container;
   let s3Client;
@@ -49,12 +36,6 @@ describe("System Test – submit VAT and persist receipts to containerised S3", 
   const BUCKET_NAME = "test-receipts";
 
   beforeAll(async () => {
-    // Check if Docker is available
-    dockerAvailable = await isDockerAvailable();
-    if (!dockerAvailable) {
-      return;
-    }
-
     server.listen({ onUnhandledRequest: "error" });
 
     container = await new GenericContainer("minio/minio")
@@ -99,7 +80,7 @@ describe("System Test – submit VAT and persist receipts to containerised S3", 
     vi.resetAllMocks();
   });
 
-  it.skipIf(() => !dockerAvailable)(
+  it(
     "full flow: exchange token, submit VAT, log receipt and retrieve from S3",
     async () => {
       // Exchange token

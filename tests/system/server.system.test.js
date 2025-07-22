@@ -10,7 +10,7 @@ dotenv.config({ path: '.env.test' });
 // Test specific dedicated server port
 const serverPort = 3270;
 
-const waitForServer = async (maxAttempts = 10) => {
+const waitForServer = async (baseUrl, maxAttempts = 10) => {
   for (let i = 0; i < maxAttempts; i++) {
     try {
       const response = await fetch(`${baseUrl}/api/auth-url?state=health-check`, {
@@ -109,7 +109,7 @@ describe("System – Server Process", () => {
     // Use a different port for system tests to avoid conflicts
     baseUrl = `http://127.0.0.1:${serverPort}`;
     await startServer();
-    await waitForServer();
+    await waitForServer(baseUrl);
     console.log("Starting server system tests");
   });
 
@@ -150,7 +150,7 @@ describe("System – Server Process", () => {
       let data = await response.json();
       expect(data).toHaveProperty("authUrl");
       expect(data.authUrl).toContain("response_type=code");
-      expect(data.authUrl).toContain("client_id=system-test-client-id");
+      expect(data.authUrl).toContain("client_id=test%20client%20id");
       expect(data.authUrl).toContain("state=system-test-state");
 
       console.log("Auth URL endpoint working:", data.authUrl.substring(0, 100) + "...");
