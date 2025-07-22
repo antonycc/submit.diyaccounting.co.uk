@@ -220,7 +220,7 @@ describe("Integration – Server Express App", () => {
       expect(s3Mock.calls()).toHaveLength(1);
       const s3Call = s3Mock.calls()[0];
       expect(s3Call.args[0].input).toMatchObject({
-        Bucket: "integration-test-bucket",
+        Bucket: "test-submit-diyaccounting-co-uk-integration-test-bucket",
         Key: "receipts/test-bundle-123.json",
         ContentType: "application/json",
       });
