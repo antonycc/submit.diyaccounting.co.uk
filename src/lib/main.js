@@ -334,11 +334,11 @@ export async function logReceiptHandler(event) {
       // and use it to construct the bucket name using the hmrcRedirectUri
       const { hostname } = new URL(hmrcRedirectUri);
       const dashedDomain = hostname.split('.').join('-');
-      receiptsBucketFullNameName = `${dashedDomain}-${receiptsBucketPostfix}`;
+      const receiptsBucketFullNameName = `${dashedDomain}-${receiptsBucketPostfix}`;
       const s3Client = new S3Client(s3Config);
       await s3Client.send(
           new PutObjectCommand({
-            Bucket: process.env.RECEIPTS_BUCKET_POSTFIX,
+            Bucket: receiptsBucketFullNameName,
             Key: key,
             Body: JSON.stringify(receipt),
             ContentType: "application/json",
