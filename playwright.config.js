@@ -9,6 +9,11 @@ export default defineConfig({
       testDir: 'tests/behaviour',
       workers: 1, // throttle concurrency to 1
     },
+    {
+      name: 'client-tests',
+      testDir: 'tests/client',
+      workers: 1, // throttle concurrency to 1
+    },
   ],
 
   // Output directory for all artifacts (screenshots, videos, traces, etc.)
