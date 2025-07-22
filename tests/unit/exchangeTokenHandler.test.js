@@ -17,7 +17,7 @@ describe("exchangeTokenHandler", () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
-    // Dotenv uses the default environment variables from .env which sets NODE_ENV to 'development' and this is overridden.
+
     process.env = {
       ...originalEnv,
     };
@@ -29,7 +29,7 @@ describe("exchangeTokenHandler", () => {
 
   test("should exchange code for access token successfully", async () => {
     const mockResponse = {
-      access_token: "test-access-token",
+      access_token: "test access token",
       token_type: "Bearer",
       expires_in: 3600,
     };
@@ -62,7 +62,7 @@ describe("exchangeTokenHandler", () => {
     expect(params.get("grant_type")).toBe("authorization_code");
     expect(params.get("client_id")).toBe("test client id");
     expect(params.get("client_secret")).toBe("test hmrc client secret");
-    expect(params.get("redirect_uri")).toBe("http://hmrc.redirect:3000/");
+    expect(params.get("redirect_uri")).toBe("http://hmrc.test.redirect:3000/");
     expect(params.get("code")).toBe("test-auth-code");
   });
 

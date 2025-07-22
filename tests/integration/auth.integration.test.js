@@ -34,8 +34,6 @@ describe("Integration – auth flow", () => {
     vi.resetAllMocks();
     process.env = {
       ...originalEnv,
-      // Set NODE_ENV to 'development' to allow MSW to intercept HTTP calls
-      NODE_ENV: 'development',
       DIY_SUBMIT_DIY_SUBMIT_TEST_SERVER_HTTP_PORT: "3000",
       DIY_SUBMIT_HMRC_BASE_URI: "https://test.test.test.uk",
       DIY_SUBMIT_HMRC_CLIENT_ID: "test client id",

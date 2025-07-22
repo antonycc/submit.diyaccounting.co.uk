@@ -19,7 +19,6 @@ describe("submitVatHandleLocal", () => {
     vi.clearAllMocks();
     process.env = {
       ...originalEnv,
-      NODE_ENV: "test",
       DIY_SUBMIT_TEST_ACCESS_TOKEN: "eyJraWQiOiJ0ZXN0LWFwaS1zZXJ2aWNlLWhtcmMifQ.eyJhdWQiOiJ1cU1IQTZSc0RHR2E3aDhFRzJWcWZxQW12NHQiLCJzdWIiOiI4ODg3NzI2MTI3NTYiLCJpc3MiOiJodHRwczovL3Rlc3QtYXBpLnNlcnZpY2UuaG1yYy5nb3YudWsiLCJleHBpcmVkX3VzZXJuYW1lIjoiODg4NzcyNjEyNzU2IiwianRpIjoiYjA5N2QwMjItZDY5Ny00YjA5LTkzMzctYjQwZDUxMGEyN2E0IiwicmVmcmVzaF9jb250ZXh0IjoiL2FjY291bnRzLzY4ODc3MjYxMjc1NiIsInNjb3BlcyI6WyJtYWtpbmctdGF4LWluY29tZS10YXgiLCJyZWFkLXByb2ZpbGUiLCJyZWFkLWltcG9ydCIsInJlYWQtbmF0aW9uYWwtcHJvZmlsZSIsInJlYWQtbmF0aW9uYWwtcGF5bWVudCIsInJlYWQtdGF4LWltcG9ydCIsInJlYWQtdGF4LW5hdGlvbmFsLXByb2ZpbGUiLCJyZWFkLXRheC1uYXRpb25hbC1wYXltZW50Il0sIm5iZiI6MTY5OTg4MDg1OSwiaWF0IjoxNjk5ODgwODU5fQ.8e7d7",
       DIY_SUBMIT_TEST_RECEIPT: JSON.stringify({
         formBundleNumber: "local-123456789012",
@@ -44,7 +43,7 @@ describe("submitVatHandleLocal", () => {
         vatNumber: "193054661",
         periodKey: "23A1",
         vatDue: "1000.50",
-        hmrcAccessToken: "test-access-token",
+        hmrcAccessToken: "test access token",
         ...headers,
       }),
     };
@@ -65,7 +64,7 @@ describe("submitVatHandleLocal", () => {
       body: JSON.stringify({
         periodKey: "23A1",
         vatDue: "1000.50",
-        hmrcAccessToken: "test-access-token",
+        hmrcAccessToken: "test access token",
       }),
     };
 
@@ -82,7 +81,7 @@ describe("submitVatHandleLocal", () => {
       body: JSON.stringify({
         vatNumber: "193054661",
         vatDue: "1000.50",
-        hmrcAccessToken: "test-access-token",
+        hmrcAccessToken: "test access token",
       }),
     };
 
@@ -99,7 +98,7 @@ describe("submitVatHandleLocal", () => {
       body: JSON.stringify({
         vatNumber: "193054661",
         periodKey: "23A1",
-        hmrcAccessToken: "test-access-token",
+        hmrcAccessToken: "test access token",
       }),
     };
 

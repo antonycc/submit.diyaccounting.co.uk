@@ -19,7 +19,6 @@ test.beforeAll(async () => {
   serverProcess = spawn("npm", ["run", "start"], {
     env: {
       ...process.env,
-      NODE_ENV: "test",
     },
     stdio: ["pipe", "pipe", "pipe"],
   });
@@ -102,7 +101,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
     route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify({ hmrcAccessToken: "test-access-token" }),
+      body: JSON.stringify({ hmrcAccessToken: "test access token" }),
     });
   });
 
@@ -157,7 +156,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
     route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify({ hmrcAccessToken: "test-access-token" }),
+      body: JSON.stringify({ hmrcAccessToken: "test access token" }),
     });
   });
 

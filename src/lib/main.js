@@ -86,9 +86,9 @@ export async function exchangeTokenHandler(event) {
   });
   const hmrcBase = process.env.DIY_SUBMIT_HMRC_BASE_URI;
   let hmrcAccessToken;
-  if (process.env.NODE_ENV === "test") {
-    hmrcAccessToken = process.env.DIY_SUBMIT_TEST_ACCESS_TOKEN;
-  } else {
+  //if (process.env.NODE_ENV === "test") {
+  //  hmrcAccessToken = process.env.DIY_SUBMIT_TEST_ACCESS_TOKEN;
+  //} else {
     const hmrcRequestUrl = `${hmrcBase}/oauth/token`;
     const hmrcResponse = await fetch(hmrcRequestUrl, {
       method: "POST",
@@ -110,7 +110,7 @@ export async function exchangeTokenHandler(event) {
     }
     const tokenResponse = await hmrcResponse.json();
     hmrcAccessToken = tokenResponse.access_token;
-  }
+  //}
 
   // Generate the response
   const response = {
@@ -222,10 +222,10 @@ export async function submitVatHandler(event) {
   };
   const hmrcBase = process.env.DIY_SUBMIT_HMRC_BASE_URI;
   let receipt;
-  if (process.env.NODE_ENV === "test") {
+  //if (process.env.NODE_ENV === "test") {
     // DIY_SUBMIT_TEST_RECEIPT is already a JSON string, so parse it first
-    receipt = JSON.parse(process.env.DIY_SUBMIT_TEST_RECEIPT || "{}");
-  } else {
+  //  receipt = JSON.parse(process.env.DIY_SUBMIT_TEST_RECEIPT || "{}");
+  //} else {
     const hmrcRequestUrl = `${hmrcBase}/organisations/vat/${vatNumber}/returns`;
     const hmrcResponse = await fetch(hmrcRequestUrl, {
       method: "POST",
@@ -266,7 +266,7 @@ export async function submitVatHandler(event) {
       return response;
     }
     receipt = await hmrcResponse.json();
-  }
+  //}
 
   // Generate the response
   const response = {

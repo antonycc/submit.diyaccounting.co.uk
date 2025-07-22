@@ -53,7 +53,7 @@ public class WebStackTest {
                 .homeUrl("https://test.submit.diyaccounting.co.uk/callback")
                 .hmrcBaseUri("https://test-api.service.hmrc.gov.uk")
                 .testRedirectUri("https://test.submit.diyaccounting.co.uk/test-callback")
-                .testAccessToken("test-access-token")
+                .testAccessToken("test access token")
                 .testS3Endpoint("https://s3.amazonaws.com")
                 .testS3AccessKey("test-access-key")
                 .testS3SecretKey("test-secret-key")

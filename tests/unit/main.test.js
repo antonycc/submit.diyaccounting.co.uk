@@ -9,7 +9,7 @@ describe("Main Module Import", () => {
   const originalEnv = process.env;
 
   beforeEach(() => {
-    // Dotenv uses the default environment variables from .env which sets NODE_ENV to 'development' and this is overridden.
+
     process.env = {
       ...originalEnv,
     };
@@ -24,10 +24,9 @@ describe("Main Output", () => {
   const originalEnv = process.env;
 
   beforeEach(() => {
-    // Dotenv uses the default environment variables from .env which sets NODE_ENV to 'development' and this is overridden.
+
     process.env = {
       ...originalEnv,
-      NODE_ENV: "test",
     };
   });
 

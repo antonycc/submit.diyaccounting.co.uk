@@ -17,7 +17,7 @@ describe("submitVatHandler", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    // Dotenv uses the default environment variables from .env which sets NODE_ENV to 'development' and this is overridden.
+
     process.env = {
       ...originalEnv,
     };
@@ -41,7 +41,7 @@ describe("submitVatHandler", () => {
         vatNumber: "193054661",
         periodKey: "23A1",
         vatDue: "1000.50",
-        hmrcAccessToken: "test-access-token",
+        hmrcAccessToken: "test access token",
       }),
         headers: {
           ...headers,
@@ -59,7 +59,7 @@ describe("submitVatHandler", () => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": "Bearer test-access-token",
+        "Authorization": "Bearer test access token",
         ...headers,
         "Accept": "application/vnd.hmrc.1.0+json",
         "Gov-Client-Connection-Method": "WEB_APP_VIA_SERVER",
@@ -89,7 +89,7 @@ describe("submitVatHandler", () => {
       body: JSON.stringify({
         periodKey: "23A1",
         vatDue: "1000.50",
-        hmrcAccessToken: "test-access-token",
+        hmrcAccessToken: "test access token",
       }),
     };
 
@@ -106,7 +106,7 @@ describe("submitVatHandler", () => {
       body: JSON.stringify({
         vatNumber: "193054661",
         vatDue: "1000.50",
-        hmrcAccessToken: "test-access-token",
+        hmrcAccessToken: "test access token",
       }),
     };
 
@@ -123,7 +123,7 @@ describe("submitVatHandler", () => {
       body: JSON.stringify({
         vatNumber: "193054661",
         periodKey: "23A1",
-        hmrcAccessToken: "test-access-token",
+        hmrcAccessToken: "test access token",
       }),
     };
 
@@ -223,7 +223,7 @@ describe("submitVatHandler", () => {
         vatNumber: "invalid",
         periodKey: "23A1",
         vatDue: "1000.50",
-        hmrcAccessToken: "test-access-token",
+        hmrcAccessToken: "test access token",
       }),
     };
 
@@ -272,7 +272,7 @@ describe("submitVatHandler", () => {
         vatNumber: "193054661",
         periodKey: "23A1",
         vatDue: "1500.75",
-        hmrcAccessToken: "test-access-token",
+        hmrcAccessToken: "test access token",
       }),
     };
 
@@ -301,7 +301,7 @@ describe("submitVatHandler", () => {
         vatNumber: "193054661",
         periodKey: "23A1",
         vatDue: 2000.25,
-        hmrcAccessToken: "test-access-token",
+        hmrcAccessToken: "test access token",
       }),
     };
 
@@ -333,7 +333,7 @@ describe("submitVatHandler", () => {
         vatNumber: "193054661",
         periodKey: "23A1",
         vatDue: "1000.50",
-        hmrcAccessToken: "test-access-token",
+        hmrcAccessToken: "test access token",
       }),
     };
 

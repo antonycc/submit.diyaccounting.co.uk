@@ -19,7 +19,7 @@ describe("authUrlHandler", () => {
   // Maybe all the tests should use dotenv to comsult the checked in test.env,
 
   beforeEach(() => {
-    // Dotenv uses the default environment variables from .env which sets NODE_ENV to 'development' and this is overridden.
+
     process.env = {
       ...originalEnv,
     };

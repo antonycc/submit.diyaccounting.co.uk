@@ -18,7 +18,7 @@ import { exchangeTokenHandler, submitVatHandler, logReceiptHandler } from "@src/
 const HMRC = "https://test-api.service.hmrc.gov.uk";
 
 const server = setupServer(
-  http.post(`${HMRC}/oauth/token`, () => HttpResponse.json({ access_token: "test-access-token" })),
+  http.post(`${HMRC}/oauth/token`, () => HttpResponse.json({ access_token: "test access token" })),
   http.post(`${HMRC}/organisations/vat/:vrn/returns`, ({ params }) => {
     const { vrn } = params;
     return HttpResponse.json({
@@ -107,7 +107,7 @@ describe("System Test – submit VAT and persist receipts to containerised S3", 
         body: JSON.stringify({ code: "dummy-code" }),
       });
       const { hmrcAccessToken } = JSON.parse(exchangeRes.body);
-      expect(hmrcAccessToken).toBe("test-access-token");
+      expect(hmrcAccessToken).toBe("test access token");
 
       // Submit VAT
       const vatPayload = {

@@ -69,7 +69,6 @@ describe("System – Server Process", () => {
       serverProcess = spawn("npm", ["run", "start"], {
         env: {
           ...process.env,
-          NODE_ENV: "test",
         },
         stdio: ["pipe", "pipe", "pipe"],
       });

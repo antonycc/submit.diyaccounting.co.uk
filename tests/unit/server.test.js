@@ -27,7 +27,7 @@ describe("Server Unit Tests", () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
-    // Dotenv uses the default environment variables from .env which sets NODE_ENV to 'development' and this is overridden.
+
     process.env = {
       ...originalEnv,
     };

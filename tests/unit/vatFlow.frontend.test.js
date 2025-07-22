@@ -22,7 +22,7 @@ describe("VAT Flow Frontend JavaScript", () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
-    // Dotenv uses the default environment variables from .env which sets NODE_ENV to 'development' and this is overridden.
+
     process.env = {
       ...originalEnv,
     };
@@ -161,7 +161,7 @@ describe("VAT Flow Frontend JavaScript", () => {
     });
 
     test("exchangeToken should make correct API call", async () => {
-      const mockAccessToken = "test-access-token";
+      const mockAccessToken = "test access token";
       const mockResponse = { hmrcAccessToken: mockAccessToken };
       fetchMock.mockResolvedValueOnce({
         ok: true,
