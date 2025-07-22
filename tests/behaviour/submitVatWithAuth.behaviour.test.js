@@ -8,6 +8,9 @@ import dotenv from 'dotenv';
 dotenv.config({ path: '.env' }); // e.g. Not checked in, HMRC API credentials
 dotenv.config({ path: '.env.proxy' });
 
+// Test specific dedicated server port
+const serverPort = 3500;
+
 let serverProcess;
 let ngrokProcess;
 
@@ -21,35 +24,9 @@ test.beforeAll(async () => {
   console.log("Starting beforeAll hook...");
   const originalEnv = { ...process.env };
 
-  // Add these to run against the proxy server
-  // DIY_SUBMIT_DIY_SUBMIT_TEST_SERVER_HTTP_PORT=3000
-  // DIY_SUBMIT_TEST_SERVER_HTTP=run
-  // DIY_SUBMIT_DIY_SUBMIT_TEST_PROXY_URL=https://wanted-finally-anteater.ngrok-free.app
-  // DIY_SUBMIT_TEST_PROXY=run
-
-  // Also this to run against an existing proxy server
-  // DIY_SUBMIT_DIY_SUBMIT_TEST_SERVER_HTTP_PORT=
-  // DIY_SUBMIT_TEST_SERVER_HTTP=use-existing
-  // DIY_SUBMIT_DIY_SUBMIT_TEST_PROXY_URL=https://wanted-finally-anteater.ngrok-free.app
-  // DIY_SUBMIT_TEST_PROXY=use-existing
-
   process.env = {
     ...originalEnv,
-    DIY_SUBMIT_DIY_SUBMIT_TEST_SERVER_HTTP_PORT: "3000",
-    DIY_SUBMIT_TEST_SERVER_HTTP: "run",
-    DIY_SUBMIT_DIY_SUBMIT_TEST_PROXY_URL: "https://wanted-finally-anteater.ngrok-free.app",
-    DIY_SUBMIT_TEST_PROXY: "run",
-    DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX: "none",
-    DIY_SUBMIT_HMRC_BASE_URI: "https://test-api.service.hmrc.gov.uk",
-    DIY_SUBMIT_HMRC_CLIENT_ID: "uqMHA6RsDGGa7h8EG2VqfqAmv4tV",
-    DIY_SUBMIT_HOME_URL: "https://wanted-finally-anteater.ngrok-free.app/",
-    // TODO: DIY_SUBMIT_HMRC_CLIENT_SECRET: read from .env file: .env.hmrc-test-api
-    DIY_SUBMIT_TEST_ACCESS_TOKEN: "test access token",
-    DIY_SUBMIT_TEST_RECEIPT: JSON.stringify({
-      formBundleNumber: "test-123456789012",
-      chargeRefNumber: "test-XM002610011594",
-      processingDate: "2023-01-01T12:00:00.000Z",
-    }),
+    DIY_SUBMIT_DIY_SUBMIT_TEST_SERVER_HTTP_PORT: serverPort.toString(),
   };
 
   // Start Minio
@@ -88,6 +65,7 @@ test.beforeAll(async () => {
   // serverProcess = spawn("node", ["src/lib/server.js"], {
     env: {
       ...process.env,
+      DIY_SUBMIT_DIY_SUBMIT_TEST_SERVER_HTTP_PORT: serverPort.toString(),
     },
     stdio: "pipe",
   });
