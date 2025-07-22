@@ -10,7 +10,7 @@ dotenv.config({ path: '.env.test' });
 // Test specific dedicated server port
 const serverPort = 3400;
 
-const waitForServer = async (maxAttempts = 10) => {
+const waitForServer = async (baseUrl, maxAttempts = 10) => {
   for (let i = 0; i < maxAttempts; i++) {
     try {
       const response = await fetch(`${baseUrl}/api/auth-url?state=health-check`, {
