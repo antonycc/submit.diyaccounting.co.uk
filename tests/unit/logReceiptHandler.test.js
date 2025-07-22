@@ -54,7 +54,7 @@ describe("logReceiptHandler", () => {
 
     // Verify S3 client was called with correct parameters
     expect(mockSend).toHaveBeenCalledWith({
-      Bucket: "test-receipts-bucket",
+      Bucket: "hmrc-test-redirect-test-receipts-bucket",
       Key: "receipts/123456789012.json",
       Body: JSON.stringify(receipt),
       ContentType: "application/json",
@@ -153,7 +153,7 @@ describe("logReceiptHandler", () => {
 
     // Verify S3 client was called with special characters in key
     expect(mockSend).toHaveBeenCalledWith({
-      Bucket: "test-receipts-bucket",
+      Bucket: "hmrc-test-redirect-test-receipts-bucket",
       Key: "receipts/ABC-123_456.789.json",
       Body: JSON.stringify(receipt),
       ContentType: "application/json",
