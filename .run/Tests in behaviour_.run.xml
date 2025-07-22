@@ -1,0 +1,11 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Tests in behaviour/" type="JavaScriptTestRunnerPlaywright">
+    <node-interpreter value="project" />
+    <playwright-package value="$PROJECT_DIR$/node_modules/@playwright/test" />
+    <working-dir value="$PROJECT_DIR$" />
+    <envs />
+    <scope-kind value="DIRECTORY" />
+    <test-directory value="$PROJECT_DIR$/tests/behaviour" />
+    <method v="2" />
+  </configuration>
+</component>

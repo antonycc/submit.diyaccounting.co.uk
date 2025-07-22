@@ -37,6 +37,7 @@ describe("exchangeTokenHandler", () => {
     fetch.mockResolvedValueOnce({
       ok: true,
       json: () => Promise.resolve(mockResponse),
+      text: async () => JSON.stringify(mockResponse),
     });
 
     const event = {

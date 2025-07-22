@@ -6,6 +6,9 @@ import dotenv from 'dotenv';
 
 dotenv.config({ path: '.env.test' });
 
+// Test specific dedicated server port
+const serverPort = 3100;
+
 let serverProcess;
 
 // Generate timestamp for file naming
@@ -19,6 +22,10 @@ test.beforeAll(async () => {
   serverProcess = spawn("npm", ["run", "start"], {
     env: {
       ...process.env,
+      NODE_ENV: "stubbed",
+      DIY_SUBMIT_DIY_SUBMIT_TEST_SERVER_HTTP_PORT: serverPort.toString(),
+      DIY_SUBMIT_LOG_TO_CONSOLE: true.toString(),
+      DIY_SUBMIT_LOG_TO_FILE: true.toString(),
     },
     stdio: ["pipe", "pipe", "pipe"],
   });
@@ -31,7 +38,7 @@ test.beforeAll(async () => {
   let attempts = 0;
   while (!serverReady && attempts < 10) {
     try {
-      const response = await fetch("http://127.0.0.1:3000");
+      const response = await fetch(`http://127.0.0.1:${serverPort}`);
       if (response.ok) {
         serverReady = true;
       }
@@ -129,7 +136,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   });
 
   // 1) Navigate to the application served by server.js
-  await page.goto("http://127.0.0.1:3000");
+  await page.goto(`http://127.0.0.1:${serverPort}`);
 
   // Wait for page to load completely
   await setTimeout(500);
@@ -187,7 +194,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
 
       // Simulate OAuth callback by navigating back with code and state
       await setTimeout(1500);
-      await page.goto(`http://127.0.0.1:3000/?code=test-code&state=${encodeURIComponent(authState)}`);
+      await page.goto(`http://127.0.0.1:${serverPort}/?code=test-code&state=${encodeURIComponent(authState)}`);
     }
   });
 

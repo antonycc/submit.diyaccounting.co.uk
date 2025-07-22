@@ -24,24 +24,11 @@ export default defineConfig(({ mode }) => {
             "tests/unit/*.test.js",
             "tests/integration/*.test.js",
             "tests/system/*.test.js",
+          ],
+          exclude: [
+            "tests/run-manually/*.test.js",
             "tests/client/*.test.js",
             "tests/behaviour/*.test.js",
-          ],
-          exclude: [],
-        },
-        {
-          name: "frontend",
-          environment: "happy-dom",
-          resolve: {
-            alias: {
-              "@dist": path.resolve(process.cwd(), "dist"),
-              "@src": path.resolve(process.cwd(), "src"),
-              "@tests": path.resolve(process.cwd(), "tests"),
-            },
-          },
-          include: [
-            "tests/unit/vatFlow.frontend.test.js",
-            "tests/system/client.system.test.js",
           ],
         },
       ],
@@ -57,6 +44,7 @@ export default defineConfig(({ mode }) => {
           "tests/integration/*.test.js",
           "tests/system/*.test.js",
           "tests/client/*.test.js",
+          "tests/run-manually/*.test.js",
           "tests/behaviour/*.test.js",
           "**/node_modules/**",
           "src/index.js",

@@ -7,17 +7,18 @@ import dotenv from 'dotenv';
 
 dotenv.config({ path: '.env.test' });
 
+// Test specific dedicated server port
+const serverPort = 3200;
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const serverPath = path.join(__dirname, "../../src/lib/server.js");
 
 describe("System – Server Process", () => {
   let serverProcess;
-  let serverPort;
   let baseUrl;
 
   beforeAll(async () => {
     // Use a different port for system tests to avoid conflicts
-    serverPort = 3002;
     baseUrl = `http://127.0.0.1:${serverPort}`;
 
     console.log("Starting server system tests");
@@ -38,6 +39,8 @@ describe("System – Server Process", () => {
       REDIRECT_URI: "https://submit.diyaccounting.co.uk/callback",
       DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX: "system-test-bucket",
       DIY_SUBMIT_DIY_SUBMIT_TEST_SERVER_HTTP_PORT: serverPort.toString(),
+      DIY_SUBMIT_LOG_TO_CONSOLE: true.toString(),
+      DIY_SUBMIT_LOG_TO_FILE: true.toString(),
     };
   });
 
@@ -69,6 +72,10 @@ describe("System – Server Process", () => {
       serverProcess = spawn("npm", ["run", "start"], {
         env: {
           ...process.env,
+          NODE_ENV: "stubbed",
+          DIY_SUBMIT_DIY_SUBMIT_TEST_SERVER_HTTP_PORT: serverPort.toString(),
+          DIY_SUBMIT_LOG_TO_CONSOLE: true.toString(),
+          DIY_SUBMIT_LOG_TO_FILE: true.toString(),
         },
         stdio: ["pipe", "pipe", "pipe"],
       });

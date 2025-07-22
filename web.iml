@@ -9,6 +9,10 @@
       <excludeFolder url="file://$MODULE_DIR$/coverage" />
       <excludeFolder url="file://$MODULE_DIR$/test-reports" />
       <excludeFolder url="file://$MODULE_DIR$/behaviour-with-auth-test-results" />
+      <excludeFolder url="file://$MODULE_DIR$/behaviour-000-test-results" />
+      <excludeFolder url="file://$MODULE_DIR$/behaviour-test-010-results" />
+      <excludeFolder url="file://$MODULE_DIR$/behaviour-test-020-results" />
+      <excludeFolder url="file://$MODULE_DIR$/behaviour-test-030-results" />
     </content>
   </component>
 </module>
