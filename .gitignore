@@ -346,4 +346,6 @@ fabric.properties
 /behaviour-with-auth-test-results/
 /.env.bak
 /.env.hmrc-test-api
+/client*-results/
 /behaviour*-results/
+/run-manually*-results/
