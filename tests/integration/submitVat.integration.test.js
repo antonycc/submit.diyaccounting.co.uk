@@ -53,12 +53,6 @@ describe("Integration – VAT flow", () => {
       HMRC_CLIENT_ID: "test client id",
       HMRC_REDIRECT_URI: "http://hmrc.redirect:3000/",
       HMRC_CLIENT_SECRET: "test hmrc client secret",
-      TEST_ACCESS_TOKEN: "test access token",
-      TEST_RECEIPT: JSON.stringify({
-        formBundleNumber: "test-123456789012",
-        chargeRefNumber: "test-XM002610011594",
-        processingDate: "2023-01-01T12:00:00.000Z",
-      }),
       RECEIPTS_BUCKET_POSTFIX: "test-receipts-bucket",
     };
     s3Mock.reset();

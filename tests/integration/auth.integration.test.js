@@ -18,7 +18,7 @@ const server = setupServer(
   http.post(`${HMRC}/oauth/token`, async ({ request }) => {
     const formData = await request.formData();
     // verify grant_type etc. if you like
-    return HttpResponse.json({ hmrcAccessToken: "stubbed-access-token" }, { status: 200 });
+    return HttpResponse.json({ access_token: "stubbed-access-token" }, { status: 200 });
   }),
 );
 
@@ -34,17 +34,16 @@ describe("Integration – auth flow", () => {
     vi.resetAllMocks();
     process.env = {
       ...originalEnv,
+      // Set NODE_ENV to 'development' to allow MSW to intercept HTTP calls
+      NODE_ENV: 'development',
       TEST_SERVER_HTTP_PORT: "3000",
       HMRC_BASE_URI: "https://test.test.test.uk",
       HMRC_CLIENT_ID: "test client id",
       HMRC_REDIRECT_URI: "http://test.redirect:3000/",
       HMRC_CLIENT_SECRET: "test hmrc client secret",
-      TEST_ACCESS_TOKEN: "test access token",
-      TEST_RECEIPT: JSON.stringify({
-        formBundleNumber: "test-123456789012",
-        chargeRefNumber: "test-XM002610011594",
-        processingDate: "2023-01-01T12:00:00.000Z",
-      }),
+      // Clear these to ensure HTTP calls are made and MSW can intercept them
+      TEST_ACCESS_TOKEN: undefined,
+      TEST_RECEIPT: undefined,
       RECEIPTS_BUCKET_POSTFIX: "test-receipts-bucket",
     };
     s3Mock.reset();
@@ -72,6 +71,6 @@ describe("Integration – auth flow", () => {
     console.log("Response body:", res.body);
     expect(res.statusCode).toBe(200);
     const { hmrcAccessToken } = JSON.parse(res.body);
-    expect(hmrcAccessToken).toBe("test access token");
+    expect(hmrcAccessToken).toBe("stubbed-access-token");
   });
 });
