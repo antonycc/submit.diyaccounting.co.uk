@@ -125,6 +125,7 @@ describe("exchangeTokenHandler", () => {
     fetch.mockResolvedValueOnce({
       ok: false,
       status: 400,
+      json: () => Promise.resolve({ error: errorMessage }),
       text: () => Promise.resolve(errorMessage),
     });
 
@@ -145,6 +146,7 @@ describe("exchangeTokenHandler", () => {
     fetch.mockResolvedValueOnce({
       ok: false,
       status: 401,
+      json: () => Promise.resolve({ error: errorMessage }),
       text: () => Promise.resolve(errorMessage),
     });
 

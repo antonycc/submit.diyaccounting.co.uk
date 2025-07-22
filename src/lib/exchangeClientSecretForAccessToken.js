@@ -1,7 +1,7 @@
 import logger from "@src/lib/logger.js";
 import fetch from "node-fetch";
 
-export async function exchangeClientSecretForAccessToken(code) {
+export default async function exchangeClientSecretForAccessToken(code) {
     const hmrcRequestBody = new URLSearchParams({
         grant_type: "authorization_code",
         client_id: process.env.DIY_SUBMIT_HMRC_CLIENT_ID,

@@ -25,25 +25,44 @@ app.use(express.static(path.join(__dirname, "../../public")));
 
 // 2) wire your Lambdas under /api
 app.get("/api/auth-url", async (req, res) => {
-  const event = { queryStringParameters: { state: req.query.state } };
+  const event = {
+    path: req.path,
+    headers: { host: req.get('host') || 'localhost:3000' },
+    queryStringParameters: req.query || {},
+  };
   const { statusCode, body } = await authUrlHandler(event);
   res.status(statusCode).json(JSON.parse(body));
 });
 
 app.post("/api/exchange-token", async (req, res) => {
-  const event = { body: JSON.stringify(req.body) };
+  const event = {
+    path: req.path,
+    headers: { host: req.get('host') || 'localhost:3000' },
+    queryStringParameters: req.query || {},
+    body: JSON.stringify(req.body)
+  };
   const { statusCode, body } = await exchangeTokenHandler(event);
   res.status(statusCode).json(JSON.parse(body));
 });
 
 app.post("/api/submit-vat", async (req, res) => {
-  const event = { body: JSON.stringify(req.body) };
+  const event = {
+    path: req.path,
+    headers: { host: req.get('host') || 'localhost:3000' },
+    queryStringParameters: req.query || {},
+    body: JSON.stringify(req.body)
+  };
   const { statusCode, body } = await submitVatHandler(event);
   res.status(statusCode).json(JSON.parse(body));
 });
 
 app.post("/api/log-receipt", async (req, res) => {
-  const event = { body: JSON.stringify(req.body) };
+  const event = {
+    path: req.path,
+    headers: { host: req.get('host') || 'localhost:3000' },
+    queryStringParameters: req.query || {},
+    body: JSON.stringify(req.body)
+  };
   const { statusCode, body } = await logReceiptHandler(event);
   res.status(statusCode).json(JSON.parse(body));
 });

@@ -2,12 +2,13 @@
 // src/lib/main.js
 
 import {fileURLToPath} from "url";
-import {PutObjectCommand, S3Client} from "@aws-sdk/client-s3";
-import fetch from "node-fetch";
+import dotenv from 'dotenv';
 import logger from "./logger.js";
 import buildOAuthOutboundRedirectUrl from "./buildOAuthOutboundRedirectUrl.js";
-import dotenv from 'dotenv';
-import {exchangeClientSecretForAccessToken} from "@src/lib/exchangeClientSecretForAccessToken.js";
+import exchangeClientSecretForAccessToken from "@src/lib/exchangeClientSecretForAccessToken.js";
+import eventToGovClientHeaders from "@src/lib/eventToGovClientHeaders.js";
+import submitVat from "@src/lib/submitVat.js";
+import logReceipt from "@src/lib/logReceipt.js";
 
 dotenv.config({ path: '.env' });
 
@@ -121,37 +122,13 @@ function extractClientIPFromHeaders(event) {
   return event.requestContext?.identity?.sourceIp || 'unknown';
 }
 
+
 // POST /api/submit-vat
 export async function submitVatHandler(event) {
   const url = buildUrl(event);
-  const govClientBrowserJSUserAgentHeader = (event.headers || {})["Gov-Client-Browser-JS-User-Agent"];
-  const govClientDeviceIDHeader = (event.headers || {})["Gov-Client-Device-ID"];
-  const govClientMultiFactorHeader = (event.headers || {})["Gov-Client-Multi-Factor"];
-  
-  // Handle IP detection - if browser sent "SERVER_DETECT", extract IP from request headers
-  let govClientPublicIPHeader = (event.headers || {})["Gov-Client-Public-IP"];
-  let govVendorPublicIPHeader = (event.headers || {})["Gov-Vendor-Public-IP"];
-  
-  if (govClientPublicIPHeader === "SERVER_DETECT" || !govClientPublicIPHeader) {
-    const detectedIP = extractClientIPFromHeaders(event);
-    govClientPublicIPHeader = detectedIP;
-    logger.info({ message: "Server detected client IP from request headers", detectedIP, headers: event.headers });
-  }
-  
-  if (govVendorPublicIPHeader === "SERVER_DETECT" || !govVendorPublicIPHeader) {
-    govVendorPublicIPHeader = extractClientIPFromHeaders(event);
-  }
-  
-  const govClientPublicIPTimestampHeader = (event.headers || {})["Gov-Client-Public-IP-Timestamp"];
-  const govClientPublicPortHeader = (event.headers || {})["Gov-Client-Public-Port"];
-  const govClientScreensHeader = (event.headers || {})["Gov-Client-Screens"];
-  const govClientTimezoneHeader = (event.headers || {})["Gov-Client-Timezone"];
-  const govClientUserIDsHeader = (event.headers || {})["Gov-Client-User-IDs"];
-  const govClientWindowSizeHeader = (event.headers || {})["Gov-Client-Window-Size"];
-
-  // TODO: Also gather system defined values here and validate, failing the request if they are not present.
-
   logger.info({ message: "submitVatHandler responding to url by processing event", url, event, headers: event.headers });
+
+  const detectedIP = extractClientIPFromHeaders(event);
 
   // Request validation
   let errorMessages = [];
@@ -168,6 +145,13 @@ export async function submitVatHandler(event) {
   if (!hmrcAccessToken) {
     errorMessages.push("Missing hmrcAccessToken parameter from body");
   }
+
+  const {
+    govClientHeaders,
+    govClientErrorMessages
+  } = eventToGovClientHeaders(event, detectedIP);
+
+  errorMessages = errorMessages.concat(govClientErrorMessages || []);
   if (errorMessages.length > 0) {
     const response = {
       statusCode: 400,
@@ -177,66 +161,21 @@ export async function submitVatHandler(event) {
     return response;
   }
 
-  // Request processing
-  const hmrcRequestBody = {
-    periodKey,
-    vatDueSales: parseFloat(vatDue),
-    vatDueAcquisitions: 0,
-    totalVatDue: parseFloat(vatDue),
-    vatReclaimedCurrPeriod: 0,
-    netVatDue: parseFloat(vatDue),
-    totalValueSalesExVAT: 0,
-    totalValuePurchasesExVAT: 0,
-    totalValueGoodsSuppliedExVAT: 0,
-    totalAcquisitionsExVAT: 0,
-    finalised: true,
-  };
-  const hmrcBase = process.env.DIY_SUBMIT_HMRC_BASE_URI;
-  let receipt;
-  if (process.env.NODE_ENV === "stubbed") {
-    // DIY_SUBMIT_TEST_RECEIPT is already a JSON string, so parse it first
-    receipt = JSON.parse(process.env.DIY_SUBMIT_TEST_RECEIPT || "{}");
-  } else {
-    const hmrcRequestUrl = `${hmrcBase}/organisations/vat/${vatNumber}/returns`;
-    const hmrcResponse = await fetch(hmrcRequestUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Accept": "application/vnd.hmrc.1.0+json",
-        "Authorization": `Bearer ${hmrcAccessToken}`,
-        "Gov-Client-Connection-Method": "WEB_APP_VIA_SERVER",
-        "Gov-Client-Browser-JS-User-Agent": govClientBrowserJSUserAgentHeader,
-        "Gov-Client-Device-ID": govClientDeviceIDHeader,
-        "Gov-Client-Multi-Factor": govClientMultiFactorHeader,
-        "Gov-Client-Public-IP": govClientPublicIPHeader,
-        "Gov-Client-Public-IP-Timestamp": govClientPublicIPTimestampHeader,
-        "Gov-Client-Public-Port": govClientPublicPortHeader,
-        "Gov-Client-Screens": govClientScreensHeader,
-        "Gov-Client-Timezone": govClientTimezoneHeader,
-        "Gov-Client-User-IDs": govClientUserIDsHeader,
-        "Gov-Client-Window-Size": govClientWindowSizeHeader,
-        "Gov-Vendor-Forwarded": "by=203.0.113.6&for=198.51.100.0",
-        "Gov-Vendor-License-IDs": "my-licensed-software=8D7963490527D33716835EE7C195516D5E562E03B224E9B359836466EE40CDE1",
-        "Gov-Vendor-Product-Name": "DIY Accounting Submit",
-        "Gov-Vendor-Public-IP": govVendorPublicIPHeader,
-        "Gov-Vendor-Version": "web-submit-diyaccounting-co-uk-0.0.2-4",
-      },
-      body: JSON.stringify(hmrcRequestBody),
-    });
-    if (!hmrcResponse.ok) {
-      const response = {
-        statusCode: 500,
-        body: JSON.stringify({
-          hmrcRequestUrl,
-          hmrcRequestBody,
-          hmrcResponseCode: hmrcResponse.status,
-          hmrcResponseText: await hmrcResponse.text(),
-        }),
-      };
-      logger.error(response);
-      return response;
-    }
-    receipt = await hmrcResponse.json();
+  let {
+    receipt,
+    hmrcResponse,
+  } = await submitVat(periodKey, vatDue, vatNumber, hmrcAccessToken, govClientHeaders);
+
+  if (!hmrcResponse.ok) {
+    const response = {
+      statusCode: 500,
+      body: JSON.stringify({
+        hmrcResponseCode: hmrcResponse.status,
+        hmrcResponseText: await hmrcResponse.text(),
+      }),
+    };
+    logger.error(response);
+    return response;
   }
 
   // Generate the response
@@ -263,6 +202,12 @@ export async function logReceiptHandler(event) {
   if (!key) {
     errorMessages.push("Missing key parameter from body");
   }
+  if (!process.env.DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX) {
+    errorMessages.push({message: "DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX environment variable is not set, cannot log receipt"});
+  }
+  if (!process.env.DIY_SUBMIT_HOME_URL) {
+    errorMessages.push({message: "DIY_SUBMIT_HOME_URL environment variable is not set, cannot log receipt"});
+  }
   if (errorMessages.length > 0) {
     const response = {
       statusCode: 400,
@@ -272,58 +217,15 @@ export async function logReceiptHandler(event) {
     return response;
   }
 
-  // Request processing
-  const homeUrl = process.env.DIY_SUBMIT_HOME_URL;
-  const receiptsBucketPostfix = process.env.DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX;
-  const { hostname } = new URL(homeUrl);
-  const dashedDomain = hostname.split('.').join('-');
-  const receiptsBucketFullNameName = `${dashedDomain}-${receiptsBucketPostfix}`;
-
-  // Configure S3 client for containerized MinIO if environment variables are set
-  const s3Config = {};
-  if (process.env.NODE_ENV !== "stubbed" && process.env.DIY_SUBMIT_TEST_S3_ENDPOINT) {
-    s3Config.endpoint = process.env.DIY_SUBMIT_TEST_S3_ENDPOINT;
-    s3Config.forcePathStyle = true;
-    s3Config.region = "us-east-1";
-
-    if (process.env.DIY_SUBMIT_TEST_S3_ACCESS_KEY && process.env.DIY_SUBMIT_TEST_S3_SECRET_KEY) {
-      s3Config.credentials = {
-        accessKeyId: process.env.DIY_SUBMIT_TEST_S3_ACCESS_KEY,
-        secretAccessKey: process.env.DIY_SUBMIT_TEST_S3_SECRET_KEY,
-      };
-    }
-  }
-
-  if (process.env.NODE_ENV !== "stubbed" && (!process.env.DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX || !process.env.DIY_SUBMIT_HOME_URL)) {
-    if (!process.env.DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX ) {
-      logger.warn({message: "DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX environment variable is not set, cannot log receipt"});
-    }
-    if (!process.env.DIY_SUBMIT_HOME_URL) {
-      logger.warn({message: "DIY_SUBMIT_HOME_URL environment variable is not set, cannot log receipt"});
-    }
-  } else {
-    try {
-      if (process.env.NODE_ENV === "stubbed") {
-        logger.warn({message: ".NODE_ENV environment variable is stubbedL No receipt saved."});
-      } else {
-        const s3Client = new S3Client(s3Config);
-        await s3Client.send(
-            new PutObjectCommand({
-              Bucket: receiptsBucketFullNameName,
-              Key: key,
-              Body: JSON.stringify(receipt),
-              ContentType: "application/json",
-            }),
-        );
-      }
-    } catch(err) {
-      const response = {
-        statusCode: 500,
-        body: JSON.stringify({error: "Failed to log receipt", details: err.message}),
-      };
-      logger.error({message: "logReceiptHandler responding to url with", url, response});
-      return response;
-    }
+  try {
+      await logReceipt(key, receipt);
+  } catch(err) {
+    const response = {
+      statusCode: 500,
+      body: JSON.stringify({error: "Failed to log receipt", details: err.message}),
+    };
+    logger.error({message: "logReceiptHandler responding to url with", url, response});
+    return response;
   }
 
   // Generate the response
