@@ -24,8 +24,6 @@ test.beforeAll(async () => {
       ...process.env,
       NODE_ENV: "stubbed",
       DIY_SUBMIT_DIY_SUBMIT_TEST_SERVER_HTTP_PORT: serverPort.toString(),
-      DIY_SUBMIT_LOG_TO_CONSOLE: true.toString(),
-      DIY_SUBMIT_LOG_TO_FILE: true.toString(),
     },
     stdio: ["pipe", "pipe", "pipe"],
   });

@@ -1,4 +1,4 @@
-import logger from "@src/lib/logger.js";
+import logger from "./logger.js";
 import fetch from "node-fetch";
 
 export default async function exchangeClientSecretForAccessToken(code) {

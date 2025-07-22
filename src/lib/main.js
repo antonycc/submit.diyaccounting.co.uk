@@ -5,10 +5,10 @@ import {fileURLToPath} from "url";
 import dotenv from 'dotenv';
 import logger from "./logger.js";
 import buildOAuthOutboundRedirectUrl from "./buildOAuthOutboundRedirectUrl.js";
-import exchangeClientSecretForAccessToken from "@src/lib/exchangeClientSecretForAccessToken.js";
-import eventToGovClientHeaders from "@src/lib/eventToGovClientHeaders.js";
-import submitVat from "@src/lib/submitVat.js";
-import logReceipt from "@src/lib/logReceipt.js";
+import exchangeClientSecretForAccessToken from "./exchangeClientSecretForAccessToken.js";
+import eventToGovClientHeaders from "./eventToGovClientHeaders.js";
+import submitVat from "./submitVat.js";
+import logReceipt from "./logReceipt.js";
 
 dotenv.config({ path: '.env' });
 

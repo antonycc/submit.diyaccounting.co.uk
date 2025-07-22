@@ -1,4 +1,4 @@
-import logger from "@src/lib/logger.js";
+import logger from "./logger.js";
 
 export default function eventToGovClientHeaders(event, detectedIP) {
     const govClientBrowserJSUserAgentHeader = (event.headers || {})["Gov-Client-Browser-JS-User-Agent"];

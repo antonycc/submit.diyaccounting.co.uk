@@ -1,4 +1,4 @@
-import logger from "@src/lib/logger.js";
+import logger from "./logger.js";
 import {PutObjectCommand, S3Client} from "@aws-sdk/client-s3";
 
 function buildTestS3Config(s3Config) {
