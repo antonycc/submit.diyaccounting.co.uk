@@ -43,7 +43,7 @@ describe("authUrlHandler", () => {
     expect(body.authUrl).toContain("https://test/oauth/authorize");
     expect(body.authUrl).toContain("response_type=code");
     expect(body.authUrl).toContain("client_id=test%20client%20id");
-    expect(body.authUrl).toContain("redirect_uri=http%3A%2F%2Fhmrc.redirect%3A3000");
+    expect(body.authUrl).toContain("redirect_uri=http%3A%2F%2Fhmrc.test.redirect%3A3000");
     expect(body.authUrl).toContain("scope=write%3Avat%20read%3Avat");
     expect(body.authUrl).toContain("state=test-state-123");
   });

@@ -47,7 +47,7 @@ describe("exchangeTokenHandler", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(200);
-    expect(body.hmrcAccessToken).toBe("test-access-token");
+    expect(body.hmrcAccessToken).toBe("test access token");
 
     // Verify fetch was called with correct parameters
     expect(fetch).toHaveBeenCalledWith("https://test/oauth/token", {
