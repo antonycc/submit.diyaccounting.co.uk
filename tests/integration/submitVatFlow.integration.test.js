@@ -43,12 +43,12 @@ describe("System Test – end-to-end AWS-like flow", () => {
     // Stub environment variables
     process.env = {
       ...originalEnv,
-      TEST_SERVER_HTTP_PORT: "3000",
-      HMRC_BASE_URI: "https://test.test.test.uk",
-      HMRC_CLIENT_ID: "test client id",
-      HMRC_REDIRECT_URI: "http://hmrc.redirect:3000/",
-      HMRC_CLIENT_SECRET: "test hmrc client secret",
-      RECEIPTS_BUCKET_POSTFIX: "test-receipts-bucket",
+      DIY_SUBMIT_DIY_SUBMIT_TEST_SERVER_HTTP_PORT: "3000",
+      DIY_SUBMIT_HMRC_BASE_URI: "https://test.test.test.uk",
+      DIY_SUBMIT_HMRC_CLIENT_ID: "test client id",
+      DIY_SUBMIT_HOME_URL: "http://hmrc.redirect:3000/",
+      DIY_SUBMIT_HMRC_CLIENT_SECRET: "test hmrc client secret",
+      DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX: "test-receipts-bucket",
     };
 
     // Configure S3 mock to use in-memory store
@@ -89,7 +89,7 @@ describe("System Test – end-to-end AWS-like flow", () => {
     const s3 = new S3Client({});
     const getResult = await s3.send(
       new GetObjectCommand({
-        Bucket: process.env.RECEIPTS_BUCKET_POSTFIX,
+        Bucket: process.env.DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX,
         Key: `receipts/${receipt.formBundleNumber}.json`,
       }),
     );

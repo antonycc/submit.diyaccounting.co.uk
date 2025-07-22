@@ -22,30 +22,30 @@ test.beforeAll(async () => {
   const originalEnv = { ...process.env };
 
   // Add these to run against the proxy server
-  // TEST_SERVER_HTTP_PORT=3000
-  // TEST_SERVER_HTTP=run
-  // TEST_PROXY_URL=https://wanted-finally-anteater.ngrok-free.app
-  // TEST_PROXY=run
+  // DIY_SUBMIT_DIY_SUBMIT_TEST_SERVER_HTTP_PORT=3000
+  // DIY_SUBMIT_TEST_SERVER_HTTP=run
+  // DIY_SUBMIT_DIY_SUBMIT_TEST_PROXY_URL=https://wanted-finally-anteater.ngrok-free.app
+  // DIY_SUBMIT_TEST_PROXY=run
 
   // Also this to run against an existing proxy server
-  // TEST_SERVER_HTTP_PORT=
-  // TEST_SERVER_HTTP=use-existing
-  // TEST_PROXY_URL=https://wanted-finally-anteater.ngrok-free.app
-  // TEST_PROXY=use-existing
+  // DIY_SUBMIT_DIY_SUBMIT_TEST_SERVER_HTTP_PORT=
+  // DIY_SUBMIT_TEST_SERVER_HTTP=use-existing
+  // DIY_SUBMIT_DIY_SUBMIT_TEST_PROXY_URL=https://wanted-finally-anteater.ngrok-free.app
+  // DIY_SUBMIT_TEST_PROXY=use-existing
 
   process.env = {
     ...originalEnv,
-    TEST_SERVER_HTTP_PORT: "3000",
-    TEST_SERVER_HTTP: "run",
-    TEST_PROXY_URL: "https://wanted-finally-anteater.ngrok-free.app",
-    TEST_PROXY: "run",
-    RECEIPTS_BUCKET_POSTFIX: "none",
-    HMRC_BASE_URI: "https://test-api.service.hmrc.gov.uk",
-    HMRC_CLIENT_ID: "uqMHA6RsDGGa7h8EG2VqfqAmv4tV",
-    HMRC_REDIRECT_URI: "https://wanted-finally-anteater.ngrok-free.app/",
-    // TODO: HMRC_CLIENT_SECRET: read from .env file: .env.hmrc-test-api
-    TEST_ACCESS_TOKEN: "test access token",
-    TEST_RECEIPT: JSON.stringify({
+    DIY_SUBMIT_DIY_SUBMIT_TEST_SERVER_HTTP_PORT: "3000",
+    DIY_SUBMIT_TEST_SERVER_HTTP: "run",
+    DIY_SUBMIT_DIY_SUBMIT_TEST_PROXY_URL: "https://wanted-finally-anteater.ngrok-free.app",
+    DIY_SUBMIT_TEST_PROXY: "run",
+    DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX: "none",
+    DIY_SUBMIT_HMRC_BASE_URI: "https://test-api.service.hmrc.gov.uk",
+    DIY_SUBMIT_HMRC_CLIENT_ID: "uqMHA6RsDGGa7h8EG2VqfqAmv4tV",
+    DIY_SUBMIT_HOME_URL: "https://wanted-finally-anteater.ngrok-free.app/",
+    // TODO: DIY_SUBMIT_HMRC_CLIENT_SECRET: read from .env file: .env.hmrc-test-api
+    DIY_SUBMIT_TEST_ACCESS_TOKEN: "test access token",
+    DIY_SUBMIT_TEST_RECEIPT: JSON.stringify({
       formBundleNumber: "test-123456789012",
       chargeRefNumber: "test-XM002610011594",
       processingDate: "2023-01-01T12:00:00.000Z",
@@ -130,7 +130,7 @@ test.beforeAll(async () => {
   await setTimeout(5000);
 
   // Check if the default document is accessible via ngrok
-  const ngrokUrl = process.env.TEST_PROXY_URL;
+  const ngrokUrl = process.env.DIY_SUBMIT_DIY_SUBMIT_TEST_PROXY_URL;
   let ngrokReady = false;
   let ngrokAttempts = 0;
   console.log("Checking ngrok readiness...");
@@ -208,7 +208,7 @@ test.outputDir = "behaviour-with-auth-test-results";
 
 test("Submit VAT return end-to-end flow with browser emulation", async ({ page }) => {
   const timestamp = getTimestamp();
-  const testUrl = process.env.TEST_PROXY_URL || "http://127.0.1:3000/";
+  const testUrl = process.env.DIY_SUBMIT_DIY_SUBMIT_TEST_PROXY_URL || "http://127.0.1:3000/";
 
   // Mock the API endpoints that the server will call
   await page.route("**/oauth/token", (route) => {

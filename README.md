@@ -44,10 +44,10 @@ npm test
 Register your HMRC OAuth application at [HMRC Developer Hub](https://developer.service.hmrc.gov.uk/),
 and set the following environment variables in a `.env` file:
 ```env
-HMRC_CLIENT_ID=your_hmrc_client_id
-HMRC_CLIENT_SECRET=your_hmrc_client_secret
-HMRC_REDIRECT_URI=https://your-ngrok-domain.ngrok-free.app/
-HMRC_BASE_URI=https://test-api.service.hmrc.gov.uk
+DIY_SUBMIT_HMRC_CLIENT_ID=your_hmrc_client_id
+DIY_SUBMIT_HMRC_CLIENT_SECRET=your_hmrc_client_secret
+DIY_SUBMIT_HOME_URL=https://your-ngrok-domain.ngrok-free.app/
+DIY_SUBMIT_HMRC_BASE_URI=https://test-api.service.hmrc.gov.uk
 ```
 
 Run the web server:
@@ -174,7 +174,7 @@ Since no retained tokens exist, the system initiates a fresh HMRC OAuth flow:
 ```
 https://api.service.hmrc.gov.uk/oauth/authorize
   ?response_type=code
-  &client_id=YOUR_HMRC_CLIENT_ID
+  &client_id=YOUR_DIY_SUBMIT_HMRC_CLIENT_ID
   &redirect_uri=https://yourapp.com/callback
   &scope=write:vat+read:vat
   &state=randomly-generated-string
@@ -216,7 +216,7 @@ POST https://api.service.hmrc.gov.uk/oauth/token
 Content-Type: application/x-www-form-urlencoded
 
 grant_type=authorization_code&
-client_id=YOUR_HMRC_CLIENT_ID&
+client_id=YOUR_DIY_SUBMIT_HMRC_CLIENT_ID&
 client_secret=YOUR_HMRC_SECRET&
 redirect_uri=https://yourapp.com/callback&
 code=AUTHORIZATION_CODE

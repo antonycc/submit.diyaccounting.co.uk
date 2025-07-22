@@ -53,13 +53,13 @@ app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "public/index.html"));
 });
 
-const TEST_SERVER_HTTP_PORT = process.env.TEST_SERVER_HTTP_PORT || 3000;
+const DIY_SUBMIT_DIY_SUBMIT_TEST_SERVER_HTTP_PORT = process.env.DIY_SUBMIT_DIY_SUBMIT_TEST_SERVER_HTTP_PORT || 3000;
 
 // Only start the server if this file is being run directly
 if (import.meta.url === `file://${process.argv[1]}`) {
-  app.listen(TEST_SERVER_HTTP_PORT, () => {
-    const hmrcBase = process.env.HMRC_BASE_URI || "HMRC_BASE_URI not set";
-    console.log(`Listening at http://127.0.0.1:${TEST_SERVER_HTTP_PORT} for ${hmrcBase}`);
+  app.listen(DIY_SUBMIT_DIY_SUBMIT_TEST_SERVER_HTTP_PORT, () => {
+    const hmrcBase = process.env.DIY_SUBMIT_HMRC_BASE_URI || "DIY_SUBMIT_HMRC_BASE_URI not set";
+    console.log(`Listening at http://127.0.0.1:${DIY_SUBMIT_DIY_SUBMIT_TEST_SERVER_HTTP_PORT} for ${hmrcBase}`);
     logger.info(`Logging to console`);
   });
 }

@@ -135,7 +135,7 @@ public class WebStack extends Stack {
         public String defaultDocumentAtOrigin;
         public String error404NotFoundAtDistribution;
         public String hmrcClientId;
-        public String hmrcRedirectUri;
+        public String homeUrl;
         public String hmrcBaseUri;
         public String testRedirectUri;
         public String testAccessToken;
@@ -269,8 +269,8 @@ public class WebStack extends Stack {
             return this;
         }
 
-        public Builder hmrcRedirectUri(String hmrcRedirectUri) {
-            this.hmrcRedirectUri = hmrcRedirectUri;
+        public Builder homeUrl(String homeUrl) {
+            this.homeUrl = homeUrl;
             return this;
         }
 
@@ -454,7 +454,7 @@ public class WebStack extends Stack {
 
         // Lambda config values
         String hmrcClientId = this.getConfigValue(builder.hmrcClientId, "hmrcClientId");
-        String hmrcRedirectUri = this.getConfigValue(builder.hmrcRedirectUri, "hmrcRedirectUri");
+        String homeUrl = this.getConfigValue(builder.homeUrl, "homeUrl");
         String hmrcBaseUri = this.getConfigValue(builder.hmrcBaseUri, "hmrcBaseUri");
         String testRedirectUri = this.getConfigValue(builder.testRedirectUri, "testRedirectUri");
         String testAccessToken = this.getConfigValue(builder.testAccessToken, "testAccessToken");
@@ -535,9 +535,9 @@ public class WebStack extends Stack {
                     .code(Code.fromInline("exports.handler = async (event) => { return { statusCode: 200, body: 'test' }; }"))
                     .handler("index.handler")
                     .runtime(Runtime.NODEJS_20_X)
-                    .environment(Map.of("HMRC_CLIENT_ID", hmrcClientId))
-                    .environment(Map.of("HMRC_REDIRECT_URI", hmrcRedirectUri))
-                    .environment(Map.of("HMRC_BASE_URI", hmrcBaseUri))
+                    .environment(Map.of("DIY_SUBMIT_HMRC_CLIENT_ID", hmrcClientId))
+                    .environment(Map.of("DIY_SUBMIT_HOME_URL", homeUrl))
+                    .environment(Map.of("DIY_SUBMIT_HMRC_BASE_URI", hmrcBaseUri))
                     .functionName(authUrlLambdaHandlerFunctionName)
                     .timeout(authUrlLambdaDuration)
                     .build();
@@ -547,9 +547,9 @@ public class WebStack extends Stack {
                             ".",
                             AssetImageCodeProps.builder().buildArgs(Map.of("HANDLER", authUrlLambdaHandler)).build())
                     )
-                    .environment(Map.of("HMRC_CLIENT_ID", hmrcClientId))
-                    .environment(Map.of("HMRC_REDIRECT_URI", hmrcRedirectUri))
-                    .environment(Map.of("HMRC_BASE_URI", hmrcBaseUri))
+                    .environment(Map.of("DIY_SUBMIT_HMRC_CLIENT_ID", hmrcClientId))
+                    .environment(Map.of("DIY_SUBMIT_HOME_URL", homeUrl))
+                    .environment(Map.of("DIY_SUBMIT_HMRC_BASE_URI", hmrcBaseUri))
                     .functionName(authUrlLambdaHandlerFunctionName)
                     .timeout(authUrlLambdaDuration)
                     .build();
@@ -580,10 +580,10 @@ public class WebStack extends Stack {
                     .code(Code.fromInline("exports.handler = async (event) => { return { statusCode: 200, body: 'test' }; }"))
                     .handler("index.handler")
                     .runtime(Runtime.NODEJS_20_X)
-                    .environment(Map.of("HMRC_CLIENT_ID", hmrcClientId))
-                    .environment(Map.of("HMRC_REDIRECT_URI", hmrcRedirectUri))
-                    .environment(Map.of("HMRC_BASE_URI", hmrcBaseUri))
-                    .environment(Map.of("TEST_ACCESS_TOKEN", testAccessToken))
+                    .environment(Map.of("DIY_SUBMIT_HMRC_CLIENT_ID", hmrcClientId))
+                    .environment(Map.of("DIY_SUBMIT_HOME_URL", homeUrl))
+                    .environment(Map.of("DIY_SUBMIT_HMRC_BASE_URI", hmrcBaseUri))
+                    .environment(Map.of("DIY_SUBMIT_TEST_ACCESS_TOKEN", testAccessToken))
                     .functionName(exchangeTokenLambdaHandlerFunctionName)
                     .timeout(exchangeTokenLambdaDuration)
                     .build();
@@ -593,10 +593,10 @@ public class WebStack extends Stack {
                             ".",
                             AssetImageCodeProps.builder().buildArgs(Map.of("HANDLER", exchangeTokenLambdaHandler)).build())
                     )
-                    .environment(Map.of("HMRC_CLIENT_ID", hmrcClientId))
-                    .environment(Map.of("HMRC_REDIRECT_URI", hmrcRedirectUri))
-                    .environment(Map.of("HMRC_BASE_URI", hmrcBaseUri))
-                    .environment(Map.of("TEST_ACCESS_TOKEN", testAccessToken))
+                    .environment(Map.of("DIY_SUBMIT_HMRC_CLIENT_ID", hmrcClientId))
+                    .environment(Map.of("DIY_SUBMIT_HOME_URL", homeUrl))
+                    .environment(Map.of("DIY_SUBMIT_HMRC_BASE_URI", hmrcBaseUri))
+                    .environment(Map.of("DIY_SUBMIT_TEST_ACCESS_TOKEN", testAccessToken))
                     .functionName(exchangeTokenLambdaHandlerFunctionName)
                     .timeout(exchangeTokenLambdaDuration)
                     .build();
@@ -627,8 +627,8 @@ public class WebStack extends Stack {
                     .code(Code.fromInline("exports.handler = async (event) => { return { statusCode: 200, body: 'test' }; }"))
                     .handler("index.handler")
                     .runtime(Runtime.NODEJS_20_X)
-                    .environment(Map.of("HMRC_REDIRECT_URI", hmrcRedirectUri))
-                    .environment(Map.of("HMRC_BASE_URI", hmrcBaseUri))
+                    .environment(Map.of("DIY_SUBMIT_HOME_URL", homeUrl))
+                    .environment(Map.of("DIY_SUBMIT_HMRC_BASE_URI", hmrcBaseUri))
                     .functionName(submitVatLambdaHandlerFunctionName)
                     .timeout(submitVatLambdaDuration)
                     .build();
@@ -638,8 +638,8 @@ public class WebStack extends Stack {
                             ".",
                             AssetImageCodeProps.builder().buildArgs(Map.of("HANDLER", submitVatLambdaHandler)).build())
                     )
-                    .environment(Map.of("HMRC_REDIRECT_URI", hmrcRedirectUri))
-                    .environment(Map.of("HMRC_BASE_URI", hmrcBaseUri))
+                    .environment(Map.of("DIY_SUBMIT_HOME_URL", homeUrl))
+                    .environment(Map.of("DIY_SUBMIT_HMRC_BASE_URI", hmrcBaseUri))
                     .functionName(submitVatLambdaHandlerFunctionName)
                     .timeout(submitVatLambdaDuration)
                     .build();
@@ -703,7 +703,7 @@ public class WebStack extends Stack {
                         .code(Code.fromInline("exports.handler = async (event) => { return { statusCode: 200, body: 'test' }; }"))
                         .handler("index.handler")
                         .runtime(Runtime.NODEJS_20_X)
-                        .environment(Map.of("RECEIPTS_BUCKET_POSTFIX", receiptsBucketPostfix))
+                        .environment(Map.of("DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX", receiptsBucketPostfix))
                         .functionName(logReceiptLambdaHandlerFunctionName)
                         .timeout(logReceiptLambdaDuration)
                         .build();
@@ -712,10 +712,10 @@ public class WebStack extends Stack {
                         .code(Code.fromInline("exports.handler = async (event) => { return { statusCode: 200, body: 'test' }; }"))
                         .handler("index.handler")
                         .runtime(Runtime.NODEJS_20_X)
-                        .environment(Map.of("TEST_S3_ENDPOINT", testS3Endpoint))
-                        .environment(Map.of("TEST_S3_ACCESS_KEY", testS3AccessKey))
-                        .environment(Map.of("TEST_S3_SECRET_KEY", testS3SecretKey))
-                        .environment(Map.of("RECEIPTS_BUCKET_POSTFIX", receiptsBucketPostfix))
+                        .environment(Map.of("DIY_SUBMIT_TEST_S3_ENDPOINT", testS3Endpoint))
+                        .environment(Map.of("DIY_SUBMIT_TEST_S3_ACCESS_KEY", testS3AccessKey))
+                        .environment(Map.of("DIY_SUBMIT_TEST_S3_SECRET_KEY", testS3SecretKey))
+                        .environment(Map.of("DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX", receiptsBucketPostfix))
                         .functionName(logReceiptLambdaHandlerFunctionName)
                         .timeout(logReceiptLambdaDuration)
                         .build();
@@ -725,17 +725,17 @@ public class WebStack extends Stack {
             if(testS3Endpoint == null || testS3AccessKey == null || testS3SecretKey == null) {
                 this.logReceiptLambda = DockerImageFunction.Builder.create(this, "LogReceiptLambda")
                         .code(DockerImageCode.fromImageAsset(".", logReceiptHandlerImageCodeProps))
-                        .environment(Map.of("RECEIPTS_BUCKET_POSTFIX", receiptsBucketPostfix))
+                        .environment(Map.of("DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX", receiptsBucketPostfix))
                         .functionName(logReceiptLambdaHandlerFunctionName)
                         .timeout(logReceiptLambdaDuration)
                         .build();
             } else {
                 this.logReceiptLambda = DockerImageFunction.Builder.create(this, "LogReceiptLambda")
                         .code(DockerImageCode.fromImageAsset(".", logReceiptHandlerImageCodeProps))
-                        .environment(Map.of("TEST_S3_ENDPOINT", testS3Endpoint))
-                        .environment(Map.of("TEST_S3_ACCESS_KEY", testS3AccessKey))
-                        .environment(Map.of("TEST_S3_SECRET_KEY", testS3SecretKey))
-                        .environment(Map.of("RECEIPTS_BUCKET_POSTFIX", receiptsBucketPostfix))
+                        .environment(Map.of("DIY_SUBMIT_TEST_S3_ENDPOINT", testS3Endpoint))
+                        .environment(Map.of("DIY_SUBMIT_TEST_S3_ACCESS_KEY", testS3AccessKey))
+                        .environment(Map.of("DIY_SUBMIT_TEST_S3_SECRET_KEY", testS3SecretKey))
+                        .environment(Map.of("DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX", receiptsBucketPostfix))
                         .functionName(logReceiptLambdaHandlerFunctionName)
                         .timeout(logReceiptLambdaDuration)
                         .build();

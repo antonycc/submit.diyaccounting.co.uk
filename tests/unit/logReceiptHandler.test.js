@@ -23,7 +23,7 @@ describe("logReceiptHandler", () => {
     // Dotenv uses the default environment variables from .env which sets NODE_ENV to 'development' and this is overridden.
     process.env = {
       ...originalEnv,
-      RECEIPTS_BUCKET_POSTFIX: "test-receipts-bucket",
+      DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX: "test-receipts-bucket",
     };
   });
 

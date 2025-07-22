@@ -23,7 +23,7 @@
     "defaultDocumentAtOrigin": "index.html",
     "error404NotFoundAtDistribution": "404-error-distribution.html",
     "hmrcClientId": "test-client-id",
-    "hmrcRedirectUri": "https://submit.diyaccounting.co.uk/callback",
+    "homeUrl": "https://submit.diyaccounting.co.uk/callback",
     "hmrcBaseUri": "https://test-api.service.hmrc.gov.uk",
     "testRedirectUri": "https://127.0.0.1:3000/",
     "testAccessToken": "test access token",

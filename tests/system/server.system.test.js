@@ -33,11 +33,11 @@ describe("System – Server Process", () => {
     // Set up test environment variables
     process.env = {
       ...process.env,
-      HMRC_CLIENT_ID: "system-test-client-id",
-      HMRC_CLIENT_SECRET: "system-test-secret",
+      DIY_SUBMIT_HMRC_CLIENT_ID: "system-test-client-id",
+      DIY_SUBMIT_HMRC_CLIENT_SECRET: "system-test-secret",
       REDIRECT_URI: "https://submit.diyaccounting.co.uk/callback",
-      RECEIPTS_BUCKET_POSTFIX: "system-test-bucket",
-      TEST_SERVER_HTTP_PORT: serverPort.toString(),
+      DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX: "system-test-bucket",
+      DIY_SUBMIT_DIY_SUBMIT_TEST_SERVER_HTTP_PORT: serverPort.toString(),
     };
   });
 

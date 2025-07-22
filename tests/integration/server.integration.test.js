@@ -79,12 +79,12 @@ describe("Integration – Server Express App", () => {
     // Set up test environment variables
     process.env = {
       ...process.env,
-      HMRC_CLIENT_ID: "integration-test-client-id",
-      HMRC_CLIENT_SECRET: "integration-test-secret",
-      HMRC_REDIRECT_URI: "https://test.submit.diyaccounting.co.uk/",
-      HMRC_BASE_URI: "https://test-api.service.hmrc.gov.uk",
-      RECEIPTS_BUCKET_POSTFIX: "integration-test-bucket",
-      TEST_SERVER_HTTP_PORT: "3001",
+      DIY_SUBMIT_HMRC_CLIENT_ID: "integration-test-client-id",
+      DIY_SUBMIT_HMRC_CLIENT_SECRET: "integration-test-secret",
+      DIY_SUBMIT_HOME_URL: "https://test.submit.diyaccounting.co.uk/",
+      DIY_SUBMIT_HMRC_BASE_URI: "https://test-api.service.hmrc.gov.uk",
+      DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX: "integration-test-bucket",
+      DIY_SUBMIT_DIY_SUBMIT_TEST_SERVER_HTTP_PORT: "3001",
     };
 
     s3Mock.reset();

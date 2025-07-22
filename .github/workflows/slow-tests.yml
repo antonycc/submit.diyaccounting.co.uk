@@ -163,8 +163,8 @@ jobs:
 
       - run: npm run test:behaviour
         env:
-          HMRC_CLIENT_ID: ${{ secrets.HMRC_CLIENT_ID }}
-          HMRC_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
+          DIY_SUBMIT_HMRC_CLIENT_ID: ${{ secrets.DIY_SUBMIT_HMRC_CLIENT_ID }}
+          DIY_SUBMIT_HMRC_CLIENT_SECRET: ${{ secrets.DIY_SUBMIT_HMRC_CLIENT_SECRET }}
 
       - name: Upload test results
         uses: actions/upload-artifact@v4

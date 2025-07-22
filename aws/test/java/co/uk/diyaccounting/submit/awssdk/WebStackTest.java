@@ -50,7 +50,7 @@ public class WebStackTest {
                 .defaultDocumentAtOrigin("404-error-origin.html")
                 .error404NotFoundAtDistribution("404-error-distribution.html")
                 .hmrcClientId("test-client-id")
-                .hmrcRedirectUri("https://test.submit.diyaccounting.co.uk/callback")
+                .homeUrl("https://test.submit.diyaccounting.co.uk/callback")
                 .hmrcBaseUri("https://test-api.service.hmrc.gov.uk")
                 .testRedirectUri("https://test.submit.diyaccounting.co.uk/test-callback")
                 .testAccessToken("test-access-token")

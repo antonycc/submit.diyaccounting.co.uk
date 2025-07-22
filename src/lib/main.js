@@ -40,9 +40,9 @@ export async function authUrlHandler(event) {
   }
 
   // Request processing
-  const clientId = process.env.HMRC_CLIENT_ID;
-  const redirectUri = process.env.HMRC_REDIRECT_URI;
-  const hmrcBase = process.env.HMRC_BASE_URI;
+  const clientId = process.env.DIY_SUBMIT_HMRC_CLIENT_ID;
+  const redirectUri = process.env.DIY_SUBMIT_HOME_URL;
+  const hmrcBase = process.env.DIY_SUBMIT_HMRC_BASE_URI;
   const scope = "write:vat read:vat";
   const authUrl =
     `${hmrcBase}/oauth/authorize?response_type=code` +
@@ -79,15 +79,15 @@ export async function exchangeTokenHandler(event) {
   // Request processing
   const hmrcRequestBody = new URLSearchParams({
     grant_type: "authorization_code",
-    client_id: process.env.HMRC_CLIENT_ID,
-    client_secret: process.env.HMRC_CLIENT_SECRET,
-    redirect_uri: process.env.HMRC_REDIRECT_URI,
+    client_id: process.env.DIY_SUBMIT_HMRC_CLIENT_ID,
+    client_secret: process.env.DIY_SUBMIT_HMRC_CLIENT_SECRET,
+    redirect_uri: process.env.DIY_SUBMIT_HOME_URL,
     code,
   });
-  const hmrcBase = process.env.HMRC_BASE_URI;
+  const hmrcBase = process.env.DIY_SUBMIT_HMRC_BASE_URI;
   let hmrcAccessToken;
   if (process.env.NODE_ENV === "test") {
-    hmrcAccessToken = process.env.TEST_ACCESS_TOKEN;
+    hmrcAccessToken = process.env.DIY_SUBMIT_TEST_ACCESS_TOKEN;
   } else {
     const hmrcRequestUrl = `${hmrcBase}/oauth/token`;
     const hmrcResponse = await fetch(hmrcRequestUrl, {
@@ -220,11 +220,11 @@ export async function submitVatHandler(event) {
     totalAcquisitionsExVAT: 0,
     finalised: true,
   };
-  const hmrcBase = process.env.HMRC_BASE_URI;
+  const hmrcBase = process.env.DIY_SUBMIT_HMRC_BASE_URI;
   let receipt;
   if (process.env.NODE_ENV === "test") {
-    // TEST_RECEIPT is already a JSON string, so parse it first
-    receipt = JSON.parse(process.env.TEST_RECEIPT || "{}");
+    // DIY_SUBMIT_TEST_RECEIPT is already a JSON string, so parse it first
+    receipt = JSON.parse(process.env.DIY_SUBMIT_TEST_RECEIPT || "{}");
   } else {
     const hmrcRequestUrl = `${hmrcBase}/organisations/vat/${vatNumber}/returns`;
     const hmrcResponse = await fetch(hmrcRequestUrl, {
@@ -305,34 +305,34 @@ export async function logReceiptHandler(event) {
 
   // Configure S3 client for containerized MinIO if environment variables are set
   const s3Config = {};
-  if (process.env.TEST_S3_ENDPOINT) {
-    s3Config.endpoint = process.env.TEST_S3_ENDPOINT;
+  if (process.env.DIY_SUBMIT_TEST_S3_ENDPOINT) {
+    s3Config.endpoint = process.env.DIY_SUBMIT_TEST_S3_ENDPOINT;
     s3Config.forcePathStyle = true;
     s3Config.region = "us-east-1";
 
-    if (process.env.TEST_S3_ACCESS_KEY && process.env.TEST_S3_SECRET_KEY) {
+    if (process.env.DIY_SUBMIT_TEST_S3_ACCESS_KEY && process.env.DIY_SUBMIT_TEST_S3_SECRET_KEY) {
       s3Config.credentials = {
-        accessKeyId: process.env.TEST_S3_ACCESS_KEY,
-        secretAccessKey: process.env.TEST_S3_SECRET_KEY,
+        accessKeyId: process.env.DIY_SUBMIT_TEST_S3_ACCESS_KEY,
+        secretAccessKey: process.env.DIY_SUBMIT_TEST_S3_SECRET_KEY,
       };
     }
   }
 
-  if (!process.env.RECEIPTS_BUCKET_POSTFIX || !process.env.HMRC_REDIRECT_URI) {
-    if (!process.env.RECEIPTS_BUCKET_POSTFIX ) {
-      logger.warn({message: "RECEIPTS_BUCKET_POSTFIX environment variable is not set, cannot log receipt"});
+  if (!process.env.DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX || !process.env.DIY_SUBMIT_HOME_URL) {
+    if (!process.env.DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX ) {
+      logger.warn({message: "DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX environment variable is not set, cannot log receipt"});
     }
-    if (!process.env.HMRC_REDIRECT_URI) {
-      logger.warn({message: "HMRC_REDIRECT_URI environment variable is not set, cannot log receipt"});
+    if (!process.env.DIY_SUBMIT_HOME_URL) {
+      logger.warn({message: "DIY_SUBMIT_HOME_URL environment variable is not set, cannot log receipt"});
     }
   } else {
     try {
-      const hmrcRedirectUri = process.env.HMRC_REDIRECT_URI;
-      const receiptsBucketPostfix = process.env.RECEIPTS_BUCKET_POSTFIX;
+      const homeUrl = process.env.DIY_SUBMIT_HOME_URL;
+      const receiptsBucketPostfix = process.env.DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX;
       // TODO: Externalise the bucket name and just do the below as the default.
       // Extract dashed domain name from subdomain hostname e.g. https://wanted-finally-anteater.ngrok-free.app/ or https://ci.submit.diyaccounting.co.uk/
-      // and use it to construct the bucket name using the hmrcRedirectUri
-      const { hostname } = new URL(hmrcRedirectUri);
+      // and use it to construct the bucket name using the homeUrl
+      const { hostname } = new URL(homeUrl);
       const dashedDomain = hostname.split('.').join('-');
       const receiptsBucketFullNameName = `${dashedDomain}-${receiptsBucketPostfix}`;
       const s3Client = new S3Client(s3Config);

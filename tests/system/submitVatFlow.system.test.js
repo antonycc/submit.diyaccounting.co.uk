@@ -82,10 +82,10 @@ describe("System Test – submit VAT and persist receipts to containerised S3", 
     await fetch(`${endpoint}/${BUCKET_NAME}`, { method: "PUT" });
 
     // Mock the environment variables for the handlers
-    process.env.RECEIPTS_BUCKET_POSTFIX = BUCKET_NAME;
-    process.env.TEST_S3_ENDPOINT = endpoint;
-    process.env.TEST_S3_ACCESS_KEY = "minioadmin";
-    process.env.TEST_S3_SECRET_KEY = "minioadmin";
+    process.env.DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX = BUCKET_NAME;
+    process.env.DIY_SUBMIT_TEST_S3_ENDPOINT = endpoint;
+    process.env.DIY_SUBMIT_TEST_S3_ACCESS_KEY = "minioadmin";
+    process.env.DIY_SUBMIT_TEST_S3_SECRET_KEY = "minioadmin";
   }, 20000); // 20s timeout to accommodate container startup
 
   afterAll(async () => {

@@ -36,15 +36,15 @@ describe("Integration – auth flow", () => {
       ...originalEnv,
       // Set NODE_ENV to 'development' to allow MSW to intercept HTTP calls
       NODE_ENV: 'development',
-      TEST_SERVER_HTTP_PORT: "3000",
-      HMRC_BASE_URI: "https://test.test.test.uk",
-      HMRC_CLIENT_ID: "test client id",
-      HMRC_REDIRECT_URI: "http://test.redirect:3000/",
-      HMRC_CLIENT_SECRET: "test hmrc client secret",
+      DIY_SUBMIT_DIY_SUBMIT_TEST_SERVER_HTTP_PORT: "3000",
+      DIY_SUBMIT_HMRC_BASE_URI: "https://test.test.test.uk",
+      DIY_SUBMIT_HMRC_CLIENT_ID: "test client id",
+      DIY_SUBMIT_HOME_URL: "http://test.redirect:3000/",
+      DIY_SUBMIT_HMRC_CLIENT_SECRET: "test hmrc client secret",
       // Clear these to ensure HTTP calls are made and MSW can intercept them
-      TEST_ACCESS_TOKEN: undefined,
-      TEST_RECEIPT: undefined,
-      RECEIPTS_BUCKET_POSTFIX: "test-receipts-bucket",
+      DIY_SUBMIT_TEST_ACCESS_TOKEN: undefined,
+      DIY_SUBMIT_TEST_RECEIPT: undefined,
+      DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX: "test-receipts-bucket",
     };
     s3Mock.reset();
   });
