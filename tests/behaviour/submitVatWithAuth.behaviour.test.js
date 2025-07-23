@@ -213,38 +213,6 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   const timestamp = getTimestamp();
   const testUrl = process.env.DIY_SUBMIT_DIY_SUBMIT_TEST_PROXY_URL;
 
-  // Mock the API endpoints that the server will call
-  await page.route("**/oauth/token", (route) => {
-    route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify({ hmrcAccessToken: "test access token" }),
-    });
-  });
-
-  await page.route("**/organisations/vat/*/returns", (route) => {
-    const url = new URL(route.request().url());
-    const vrn = url.pathname.split("/")[3]; // Extract VRN from path
-    route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify({
-        formBundleNumber: `${vrn}-bundle`,
-        chargeRefNumber: `${vrn}-charge`,
-        processingDate: new Date().toISOString(),
-      }),
-    });
-  });
-
-  // Mock S3 endpoints for receipt logging
-  await page.route("**/test-receipts/**", (route) => {
-    route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify({ status: "success" }),
-    });
-  });
-
   // 1) Navigate to the application served by server.js
   await page.setExtraHTTPHeaders({
     "ngrok-skip-browser-warning": "any value"
