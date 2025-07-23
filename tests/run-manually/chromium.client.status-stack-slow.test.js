@@ -6,6 +6,8 @@ import dotenv from 'dotenv';
 
 dotenv.config({ path: '.env.test' });
 
+test.setTimeout(120000); // Set a longer timeout for the entire test suite
+
 function getTimestamp() {
   const now = new Date();
   return now.toISOString().replace(/[:.]/g, "-").replace("T", "_").slice(0, -5);
@@ -41,9 +43,9 @@ test.describe("Client Status Message Stacking", () => {
     await expect(messages.nth(2)).toHaveText("Info message 3");
     await page.screenshot({ path: `client-test-results/client-status-stack-initial_${timestamp}.png` });
     // Wait 31 seconds for auto-removal
-    //await page.waitForTimeout(31000);
-    //await expect(messages).toHaveCount(0);
-  });
+    await page.waitForTimeout(31000);
+    await expect(messages).toHaveCount(0);
+  }, 60000);
 
   test("should stack error and info messages, only auto-remove info", async ({ page }) => {
     // Trigger error and info
@@ -56,11 +58,11 @@ test.describe("Client Status Message Stacking", () => {
     await expect(messages.nth(0)).toHaveText("Error message");
     await expect(messages.nth(1)).toHaveText("Info message");
     // Wait 31 seconds
-    //await page.waitForTimeout(31000);
+    await page.waitForTimeout(31000);
     // Only error should remain
-    //await expect(messages).toHaveCount(1);
-    //await expect(messages.nth(0)).toHaveText("Error message");
-  });
+    await expect(messages).toHaveCount(1);
+    await expect(messages.nth(0)).toHaveText("Error message");
+  }, 60000);
 
   test("should clear all messages with hideStatus", async ({ page }) => {
     await page.evaluate(() => {
