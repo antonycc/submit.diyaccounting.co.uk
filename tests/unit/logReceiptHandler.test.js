@@ -80,7 +80,7 @@ describe("logReceiptHandler", () => {
 
     expect(result.statusCode).toBe(500);
     expect(body.error).toBe("Failed to log receipt");
-    expect(body.details).toBe("Access denied");
+    expect(body.details).toBe("Failed to log receipt: Access denied");
   });
 
   test("should handle malformed JSON in request body", async () => {
@@ -109,7 +109,7 @@ describe("logReceiptHandler", () => {
 
     expect(result.statusCode).toBe(500);
     expect(body.error).toBe("Failed to log receipt");
-    expect(body.details).toBe("Request timeout");
+    expect(body.details).toBe("Failed to log receipt: Request timeout");
   });
 
   test("should handle S3 bucket not found error", async () => {
@@ -130,7 +130,7 @@ describe("logReceiptHandler", () => {
 
     expect(result.statusCode).toBe(500);
     expect(body.error).toBe("Failed to log receipt");
-    expect(body.details).toBe("The specified bucket does not exist");
+    expect(body.details).toBe("Failed to log receipt: The specified bucket does not exist");
   });
 
   test("should handle receipt with special characters in formBundleNumber", async () => {
