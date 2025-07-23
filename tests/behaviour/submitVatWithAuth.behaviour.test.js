@@ -4,12 +4,23 @@ import { spawn } from "child_process";
 import { setTimeout } from "timers/promises";
 import { S3Client, CreateBucketCommand, HeadBucketCommand } from '@aws-sdk/client-s3';
 import dotenv from 'dotenv';
+import {GenericContainer} from "testcontainers";
 
 dotenv.config({ path: '.env' }); // e.g. Not checked in, HMRC API credentials
 dotenv.config({ path: '.env.proxy' });
 
+const originalEnv = { ...process.env };
+
 // Test specific dedicated server port
 const serverPort = 3500;
+const testS3AccessKey = process.env.DIY_SUBMIT_TEST_S3_ACCESS_KEY;
+const testS3SecretKey = process.env.DIY_SUBMIT_TEST_S3_SECRET_KEY;
+
+const bucketNamePostfix = process.env.DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX;
+const homeUrl = process.env.DIY_SUBMIT_HOME_URL;
+const {hostname} = new URL(homeUrl);
+const dashedDomain = hostname.split('.').join('-');
+const receiptsBucketFullName = `${dashedDomain}-${bucketNamePostfix}`;
 
 let serverProcess;
 let ngrokProcess;
@@ -20,37 +31,45 @@ function getTimestamp() {
   return now.toISOString().replace(/[:.]/g, "-").replace("T", "_").slice(0, -5);
 }
 
+test.setTimeout(120000);
+
 test.beforeAll(async () => {
   console.log("Starting beforeAll hook...");
-  const originalEnv = { ...process.env };
-
   process.env = {
     ...originalEnv,
-    DIY_SUBMIT_DIY_SUBMIT_TEST_SERVER_HTTP_PORT: serverPort.toString(),
-  };
+  }
+
+  const container = await new GenericContainer("minio/minio")
+      .withExposedPorts(9000)
+      .withEnvironment({
+        MINIO_ROOT_USER: testS3AccessKey,
+        MINIO_ROOT_PASSWORD: testS3SecretKey,
+      })
+      .withCommand(["server", "/data"])
+      .start();
+
+  const endpoint = `http://${container.getHost()}:${container.getMappedPort(9000)}`;
 
   // Start Minio
   async function ensureMinioBucketExists() {
     const s3 = new S3Client({
-      endpoint: "http://localhost:9000", // Match your MinIO URL
+      endpoint,
       forcePathStyle: true,
       region: "us-east-1",
       credentials: {
-        accessKeyId: "minioadmin",
-        secretAccessKey: "minioadmin"
+        accessKeyId: testS3AccessKey,
+        secretAccessKey: testS3SecretKey,
       }
     });
 
-    const bucketName = "vat-receipts";
-
     try {
-      await s3.send(new HeadBucketCommand({ Bucket: bucketName }));
-      console.log(`✅ MinIO bucket '${bucketName}' already exists`);
+      await s3.send(new HeadBucketCommand({ Bucket: receiptsBucketFullName }));
+      console.log(`✅ MinIO bucket '${receiptsBucketFullName}' already exists`);
     } catch (err) {
       if (err.name === "NotFound") {
-        console.log(`ℹ️ MinIO bucket '${bucketName}' not found, creating...`);
-        await s3.send(new CreateBucketCommand({ Bucket: bucketName }));
-        console.log(`✅ Created bucket '${bucketName}'`);
+        console.log(`ℹ️ MinIO bucket '${receiptsBucketFullName}' not found, creating...`);
+        await s3.send(new CreateBucketCommand({ Bucket: receiptsBucketFullName }));
+        console.log(`✅ Created bucket '${receiptsBucketFullName}'`);
       } else {
         throw new Error(`Failed to check/create MinIO bucket: ${err.message}`);
       }
@@ -65,9 +84,10 @@ test.beforeAll(async () => {
   // serverProcess = spawn("node", ["src/lib/server.js"], {
     env: {
       ...process.env,
+      DIY_SUBMIT_TEST_S3_ENDPOINT: endpoint,
       DIY_SUBMIT_DIY_SUBMIT_TEST_SERVER_HTTP_PORT: serverPort.toString(),
     },
-    stdio: "pipe",
+    stdio: ["pipe", "pipe", "pipe"],
   });
 
   // Wait for server to start
@@ -80,7 +100,7 @@ test.beforeAll(async () => {
   console.log("Checking server readiness...");
   while (!serverReady && attempts < 15) {
     try {
-      const response = await fetch("http://127.0.0.1:3000");
+      const response = await fetch(`http://127.0.0.1:${serverPort}`);
       if (response.ok) {
         serverReady = true;
         console.log("Server is ready!");
@@ -98,9 +118,13 @@ test.beforeAll(async () => {
 
   // Start ngrok process (same as npm run proxy)
   console.log("Starting ngrok process...");
-  ngrokProcess = spawn("npm", ["run", "proxy"], {
-  //ngrokProcess = spawn("npx", ["ngrok", "http", "--url", "wanted-finally-anteater.ngrok-free.app", "3000"], {
-    stdio: "pipe",
+  //ngrokProcess = spawn("npm", ["run", "proxy"], {
+  ngrokProcess = spawn("npx", ["ngrok", "http", "--url", "wanted-finally-anteater.ngrok-free.app", serverPort.toString()], {
+    env: {
+      ...process.env,
+      DIY_SUBMIT_DIY_SUBMIT_TEST_SERVER_HTTP_PORT: serverPort.toString(),
+    },
+    stdio: ["pipe", "pipe", "pipe"],
   });
 
   // Wait for ngrok to start
@@ -114,6 +138,7 @@ test.beforeAll(async () => {
   console.log("Checking ngrok readiness...");
   while (!ngrokReady && ngrokAttempts < 15) {
     try {
+      console.log(`trying ngrok at ${ngrokUrl}`);
       const response = await fetch(ngrokUrl);
       if (response.ok) {
         ngrokReady = true;
@@ -186,7 +211,7 @@ test.outputDir = "behaviour-with-auth-test-results";
 
 test("Submit VAT return end-to-end flow with browser emulation", async ({ page }) => {
   const timestamp = getTimestamp();
-  const testUrl = process.env.DIY_SUBMIT_DIY_SUBMIT_TEST_PROXY_URL || "http://127.0.1:3000/";
+  const testUrl = process.env.DIY_SUBMIT_DIY_SUBMIT_TEST_PROXY_URL;
 
   // Mock the API endpoints that the server will call
   await page.route("**/oauth/token", (route) => {
@@ -326,4 +351,4 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   await setTimeout(1000);
 
   console.log("VAT submission flow completed successfully");
-});
+}, 60000);

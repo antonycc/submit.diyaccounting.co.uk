@@ -72,8 +72,8 @@ export async function exchangeTokenHandler(event) {
 
   if (!hmrcResponse.ok) {
     const response = {
-      statusCode: 500,
-      body: JSON.stringify({
+        statusCode: 500,
+        body: JSON.stringify({
         hmrcResponseCode: hmrcResponse.status,
         hmrcResponseText: await hmrcResponse.text(),
       }),

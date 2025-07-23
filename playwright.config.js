@@ -8,19 +8,19 @@ export default defineConfig({
       name: 'behaviour-tests',
       testDir: 'tests/behaviour',
       workers: 1, // throttle concurrency to 1
-      outputDir: "./behaviour-test-results/",
+      //outputDir: "./behaviour-test-results/",
     },
     {
       name: 'client-tests',
       testDir: 'tests/client',
       workers: 1, // throttle concurrency to 1
-      outputDir: "./behaviour-test-results/",
+      //outputDir: "./behaviour-test-results/",
     },
     {
       name: 'run-manually-tests',
       testDir: 'tests/run-manually',
       workers: 1, // throttle concurrency to 1
-      outputDir: "./run-manually-test-results/",
+      //outputDir: "./run-manually-test-results/",
     },
   ],
 

@@ -74,10 +74,19 @@ docker run -p 9000:9000 -p 9001:9001 \
   quay.io/minio/minio server /data --console-address ":9001"
 ```
 
+If you need the MinIO client (`mc`), install it from [MinIO Client Quickstart Guide](https://docs.min.io/docs/minio-client-quickstart-guide.html).
+e.g. On macOS with Homebrew:
+```bash
+
+brew install minio/stable/mc
+```
+
+
 Create the bucket (e.g. using mc CLI):
 ```bash
 mc alias set local http://localhost:9000 minioadmin minioadmin
 mc mb local/vat-receipts
+mc mb test
 ```
 
 Or use an ngrok account to get a stable URL and set this in package.json:

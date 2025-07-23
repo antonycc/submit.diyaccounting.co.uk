@@ -34,6 +34,6 @@ export default async function exchangeClientSecretForAccessToken(code) {
 
     return {
         hmrcAccessToken,
-        hmrcResponse
+        hmrcResponse,
     };
 }
