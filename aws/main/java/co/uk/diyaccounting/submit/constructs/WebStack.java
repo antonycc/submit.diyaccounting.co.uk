@@ -835,10 +835,12 @@ public class WebStack extends Stack {
                 .create(this, "Distribution")
                 .domainNames(Collections.singletonList(this.domainName))
                 .defaultBehavior(s3BucketOriginBehaviour)
-                .additionalBehaviors(Map.of("/api/auth-url*", authUrlOriginBehaviour))
-                .additionalBehaviors(Map.of("/api/exchange-token*", exchangeTokenOriginBehaviour))
-                .additionalBehaviors(Map.of("/api/submit-vat*", submitVatOriginBehaviour))
-                .additionalBehaviors(Map.of("/api/log-receipt*", logReceiptOriginBehaviour))
+                .additionalBehaviors(Map.of(
+                    "/api/auth-url*", authUrlOriginBehaviour,
+                    "/api/exchange-token*", exchangeTokenOriginBehaviour,
+                    "/api/submit-vat*", submitVatOriginBehaviour,
+                    "/api/log-receipt*", logReceiptOriginBehaviour
+                ))
                 .defaultRootObject(defaultDocumentAtOrigin)
                 .errorResponses(List.of(ErrorResponse.builder()
                         .httpStatus(HttpStatus.SC_NOT_FOUND)
