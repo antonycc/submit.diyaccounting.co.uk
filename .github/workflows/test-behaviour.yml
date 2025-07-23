@@ -79,3 +79,16 @@ jobs:
           name: test-reports-behaviour
           path: test-reports/
           retention-days: 30
+
+      - name: Copy test server logs
+        run: |
+          mkdir -p test-server-logs/
+          cp -r submit-*.log test-server-logs/
+
+      - name: Upload test logs
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-server-logs-behaviour
+          path: test-server-logs/
+          retention-days: 30
