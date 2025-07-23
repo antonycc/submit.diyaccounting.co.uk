@@ -109,7 +109,6 @@ describe("System Test – persist receipts to containerised S3", () => {
         if (container) {
             await container.stop();
         }
-        server.close();
     });
 
     beforeEach(() => {
