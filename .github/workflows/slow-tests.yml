@@ -190,6 +190,35 @@ jobs:
           path: test-reports/
           retention-days: 30
 
+  npm-test-all:
+    name: 'npm test:all'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - run: npm ci || npm install
+
+      - name: Authenticate ngrok
+        env:
+          NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
+        run: |
+          npx ngrok config add-authtoken "${NGROK_AUTH_TOKEN?}"
+
+      - run: npx playwright install --with-deps
+
+      - run: npm run test:all
+        env:
+          DIY_SUBMIT_HMRC_CLIENT_ID: ${{ secrets.HMRC_CLIENT_ID }}
+          DIY_SUBMIT_HMRC_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
+
   mvn-test:
     name: 'maven test'
     runs-on: ubuntu-latest

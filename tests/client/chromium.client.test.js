@@ -162,14 +162,14 @@ test.describe("Client System Test - VAT Flow in Browser", () => {
       await page.locator("#vatSubmissionForm").dispatchEvent("submit");
 
       // Check that error message is displayed
-      const statusMessage = page.locator("#statusMessage");
-      await expect(statusMessage).toBeVisible({ timeout: 2000 });
+      const statusMessages = page.locator("#statusMessagesContainer .status-message");
+      await expect(statusMessages.first()).toBeVisible({ timeout: 2000 });
 
-      const statusText = await statusMessage.textContent();
+      const statusText = await statusMessages.first().textContent();
       expect(statusText).toBe("Please fill in all required fields.");
 
       // Check that the message has error styling
-      const className = await statusMessage.getAttribute("class");
+      const className = await statusMessages.first().getAttribute("class");
       expect(className).toContain("status-error");
 
       await page.screenshot({ path: `client-test-results/client-validation-error_${timestamp}.png` });
@@ -246,14 +246,14 @@ test.describe("Client System Test - VAT Flow in Browser", () => {
       });
 
       // Check that message is visible
-      const statusMessage = page.locator("#statusMessage");
-      await expect(statusMessage).toBeVisible({ timeout: 1000 });
+      const statusMessages = page.locator("#statusMessagesContainer .status-message");
+      await expect(statusMessages.first()).toBeVisible({ timeout: 1000 });
 
-      const statusText = await statusMessage.textContent();
+      const statusText = await statusMessages.first().textContent();
       expect(statusText).toBe("Test info message");
 
       // Check styling
-      const className = await statusMessage.getAttribute("class");
+      const className = await statusMessages.first().getAttribute("class");
       expect(className).toContain("status-info");
 
       // Note: Auto-hide functionality tested separately due to 5-second timeout
@@ -266,19 +266,19 @@ test.describe("Client System Test - VAT Flow in Browser", () => {
       });
 
       // Check that message is visible
-      const statusMessage = page.locator("#statusMessage");
-      await expect(statusMessage).toBeVisible();
+      const statusMessages = page.locator("#statusMessagesContainer .status-message");
+      await expect(statusMessages.first()).toBeVisible();
 
-      const statusText = await statusMessage.textContent();
+      const statusText = await statusMessages.first().textContent();
       expect(statusText).toBe("Test error message");
 
       // Check styling
-      const className = await statusMessage.getAttribute("class");
+      const className = await statusMessages.first().getAttribute("class");
       expect(className).toContain("status-error");
 
       // Wait a bit and ensure it's still visible (no auto-hide for errors)
       await page.waitForTimeout(2000);
-      await expect(statusMessage).toBeVisible();
+      await expect(statusMessages.first()).toBeVisible();
     });
   });
 

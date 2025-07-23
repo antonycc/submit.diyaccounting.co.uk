@@ -17,6 +17,7 @@
     "update-to-minor": "npx npm-check-updates --upgrade --enginesNode --target minor --verbose --install always",
     "update-to-greatest": "npx npm-check-updates --upgrade --enginesNode --target greatest --verbose --install always --reject 'alpha'",
     "test": "vitest --run tests/unit/*.test.js tests/integration/*.test.js",
+    "test:all": "vitest --run tests/unit/*.test.js tests/integration/*.test.js tests/system/*.test.js ; playwright test tests/client/*.test.js tests/behaviour/*.test.js",
     "test:unit": "vitest --run tests/unit/*.test.js",
     "test:coverage": "vitest --run --coverage tests/unit/*.test.js",
     "test:integration": "vitest --run tests/integration/*.test.js",

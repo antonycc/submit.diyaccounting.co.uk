@@ -233,7 +233,7 @@
 
     <div id="mainContent">
       <!-- Status messages -->
-      <div id="statusMessage" class="status-message"></div>
+      <div id="statusMessagesContainer"></div>
 
       <!-- Loading spinner -->
       <div id="loadingSpinner" class="spinner"></div>
@@ -327,7 +327,7 @@
       // DOM elements
       const form = document.getElementById("vatSubmissionForm");
       const submitBtn = document.getElementById("submitBtn");
-      const statusMessage = document.getElementById("statusMessage");
+      const statusMessagesContainer = document.getElementById("statusMessagesContainer");
       const loadingSpinner = document.getElementById("loadingSpinner");
       const receiptDisplay = document.getElementById("receiptDisplay");
       const vatFormContainer = document.getElementById("vatForm");
@@ -336,22 +336,23 @@
 
       function showStatus(message, type = "info") {
         console.log('Status message:', message, 'Type:', type);
-        statusMessage.textContent = message;
-        statusMessage.className = `status-message status-${type}`;
-        statusMessage.style.display = "block";
+        const msgDiv = document.createElement("div");
+        msgDiv.className = `status-message status-${type}`;
+        msgDiv.textContent = message;
+        msgDiv.style.display = "block";
+        statusMessagesContainer.appendChild(msgDiv);
 
         // Auto-hide info messages after 5 seconds
-        // TODO: Don't do this, require an explicit user action to hide
         if (type === "info") {
           setTimeout(() => {
-            statusMessage.style.display = "none";
+            msgDiv.remove();
           }, 5000);
         }
       }
 
       function hideStatus() {
-        console.log('Hiding status');
-        statusMessage.style.display = "none";
+        console.log('Hiding all status messages');
+        statusMessagesContainer.innerHTML = "";
       }
 
       function showLoading() {
