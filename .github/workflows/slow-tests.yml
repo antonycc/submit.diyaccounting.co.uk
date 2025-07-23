@@ -192,6 +192,8 @@ jobs:
 
   npm-test-all:
     name: 'npm test:all'
+    needs:
+      npm-behaviour-test
     runs-on: ubuntu-latest
     permissions:
       contents: read
