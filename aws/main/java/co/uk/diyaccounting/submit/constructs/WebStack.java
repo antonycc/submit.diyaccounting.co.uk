@@ -540,7 +540,6 @@ public class WebStack extends Stack {
                     .code(Code.fromInline("exports.handler = async (event) => { return { statusCode: 200, body: 'test' }; }"))
                     .handler("index.handler")
                     .runtime(Runtime.NODEJS_20_X)
-                    .environment(authUrlLambdaEnv)
                     .functionName(authUrlLambdaHandlerFunctionName)
                     .timeout(authUrlLambdaDuration)
                     .build();
@@ -587,7 +586,6 @@ public class WebStack extends Stack {
                     .code(Code.fromInline("exports.handler = async (event) => { return { statusCode: 200, body: 'test' }; }"))
                     .handler("index.handler")
                     .runtime(Runtime.NODEJS_20_X)
-                    .environment(exchangeTokenLambdaEnv)
                     .functionName(exchangeTokenLambdaHandlerFunctionName)
                     .timeout(exchangeTokenLambdaDuration)
                     .build();
@@ -632,7 +630,6 @@ public class WebStack extends Stack {
                     .code(Code.fromInline("exports.handler = async (event) => { return { statusCode: 200, body: 'test' }; }"))
                     .handler("index.handler")
                     .runtime(Runtime.NODEJS_20_X)
-                    .environment(submitVatLambdaEnv)
                     .functionName(submitVatLambdaHandlerFunctionName)
                     .timeout(submitVatLambdaDuration)
                     .build();
@@ -710,38 +707,27 @@ public class WebStack extends Stack {
         );
         if ("test".equals(env)) {
             // For testing, create a simple Function instead of DockerImageFunction to avoid Docker builds
-            if(StringUtils.isNotBlank( testS3Endpoint) && StringUtils.isNotBlank(testS3AccessKey) || StringUtils.isNotBlank(testS3SecretKey)) {
-                this.logReceiptLambda = Function.Builder.create(this, "LogReceiptLambda")
-                        .code(Code.fromInline("exports.handler = async (event) => { return { statusCode: 200, body: 'test' }; }"))
-                        .handler("index.handler")
-                        .runtime(Runtime.NODEJS_20_X)
-                        .environment(logReceiptLambdaEnv)
-                        .functionName(logReceiptLambdaHandlerFunctionName)
-                        .timeout(logReceiptLambdaDuration)
-                        .build();
-            } else {
-                this.logReceiptLambda = Function.Builder.create(this, "LogReceiptLambda")
-                        .code(Code.fromInline("exports.handler = async (event) => { return { statusCode: 200, body: 'test' }; }"))
-                        .handler("index.handler")
-                        .runtime(Runtime.NODEJS_20_X)
-                        .environment(logReceiptLambdaTestEnv)
-                        .functionName(logReceiptLambdaHandlerFunctionName)
-                        .timeout(logReceiptLambdaDuration)
-                        .build();
-            }
+            this.logReceiptLambda = Function.Builder.create(this, "LogReceiptLambda")
+                    .code(Code.fromInline("exports.handler = async (event) => { return { statusCode: 200, body: 'test' }; }"))
+                    .handler("index.handler")
+                    .runtime(Runtime.NODEJS_20_X)
+                    .functionName(logReceiptLambdaHandlerFunctionName)
+                    .timeout(logReceiptLambdaDuration)
+                    .build();
         } else {
             AssetImageCodeProps logReceiptHandlerImageCodeProps = AssetImageCodeProps.builder().buildArgs(Map.of("HANDLER", logReceiptLambdaHandler)).build();
             if(StringUtils.isNotBlank( testS3Endpoint) && StringUtils.isNotBlank(testS3AccessKey) || StringUtils.isNotBlank(testS3SecretKey)) {
+                // For production like integrations without AWS we can use test S3 credentials
                 this.logReceiptLambda = DockerImageFunction.Builder.create(this, "LogReceiptLambda")
                         .code(DockerImageCode.fromImageAsset(".", logReceiptHandlerImageCodeProps))
-                        .environment(logReceiptLambdaEnv)
+                        .environment(logReceiptLambdaTestEnv)
                         .functionName(logReceiptLambdaHandlerFunctionName)
                         .timeout(logReceiptLambdaDuration)
                         .build();
             } else {
                 this.logReceiptLambda = DockerImageFunction.Builder.create(this, "LogReceiptLambda")
                         .code(DockerImageCode.fromImageAsset(".", logReceiptHandlerImageCodeProps))
-                        .environment(logReceiptLambdaTestEnv)
+                        .environment(logReceiptLambdaEnv)
                         .functionName(logReceiptLambdaHandlerFunctionName)
                         .timeout(logReceiptLambdaDuration)
                         .build();
