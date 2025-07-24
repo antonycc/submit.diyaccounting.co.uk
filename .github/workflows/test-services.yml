@@ -56,7 +56,7 @@ jobs:
       - run: npm run build
 
   npm-unit-test:
-    name: 'npm unit test with coverage'
+    name: 'npm unit test'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -71,15 +71,7 @@ jobs:
 
       - run: npm ci || npm install
 
-      - run: npm run test:coverage
-
-      - name: Upload coverage reports
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: coverage-reports-services
-          path: coverage/
-          retention-days: 30
+      - run: npm run test:unit
 
   npm-integration-test:
     name: 'npm integration test'
