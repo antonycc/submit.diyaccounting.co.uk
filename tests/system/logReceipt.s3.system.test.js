@@ -18,15 +18,15 @@ describe("System Test – persist receipts to containerised S3", () => {
     const dashedDomain = hostname.split('.').join('-');
     const receiptsBucketFullName = `${dashedDomain}-${bucketNamePostfix}`;
     const originalEnv = process.env;
-    const testS3AccessKey = process.env.DIY_SUBMIT_TEST_S3_ACCESS_KEY;
-    const testS3SecretKey = process.env.DIY_SUBMIT_TEST_S3_SECRET_KEY;
+    const optionalTestS3AccessKey = process.env.DIY_SUBMIT_TEST_S3_ACCESS_KEY;
+    const optionalTestS3SecretKey = process.env.DIY_SUBMIT_TEST_S3_SECRET_KEY;
 
     beforeAll(async () => {
         container = await new GenericContainer("minio/minio")
             .withExposedPorts(9000)
             .withEnvironment({
-                MINIO_ROOT_USER: testS3AccessKey,
-                MINIO_ROOT_PASSWORD: testS3SecretKey,
+                MINIO_ROOT_USER: optionalTestS3AccessKey,
+                MINIO_ROOT_PASSWORD: optionalTestS3SecretKey,
             })
             .withCommand(["server", "/data"])
             .start();
@@ -44,8 +44,8 @@ describe("System Test – persist receipts to containerised S3", () => {
             endpoint,
             region: "us-east-1",
             credentials: {
-                accessKeyId: testS3AccessKey,
-                secretAccessKey: testS3SecretKey,
+                accessKeyId: optionalTestS3AccessKey,
+                secretAccessKey: optionalTestS3SecretKey,
             },
             forcePathStyle: true,
         });

@@ -138,11 +138,11 @@ public class WebStack extends Stack {
         public String hmrcClientId;
         public String homeUrl;
         public String hmrcBaseUri;
-        public String testRedirectUri;
-        public String testAccessToken;
-        public String testS3Endpoint;
-        public String testS3AccessKey;
-        public String testS3SecretKey;
+        public String optionalTestRedirectUri;
+        public String optionalTestAccessToken;
+        public String optionalTestS3Endpoint;
+        public String optionalTestS3AccessKey;
+        public String optionalTestS3SecretKey;
         public String receiptsBucketPostfix;
         public String lambdaEntry;
         public String authUrlLambdaHandlerFunctionName;
@@ -280,28 +280,28 @@ public class WebStack extends Stack {
             return this;
         }
 
-        public Builder testRedirectUri(String testRedirectUri) {
-            this.testRedirectUri = testRedirectUri;
+        public Builder optionalTestRedirectUri(String optionalTestRedirectUri) {
+            this.optionalTestRedirectUri = optionalTestRedirectUri;
             return this;
         }
 
-        public Builder testAccessToken(String testAccessToken) {
-            this.testAccessToken = testAccessToken;
+        public Builder optionalTestAccessToken(String optionalTestAccessToken) {
+            this.optionalTestAccessToken = optionalTestAccessToken;
             return this;
         }
 
-        public Builder testS3Endpoint(String testS3Endpoint) {
-            this.testS3Endpoint = testS3Endpoint;
+        public Builder optionalTestS3Endpoint(String optionalTestS3Endpoint) {
+            this.optionalTestS3Endpoint = optionalTestS3Endpoint;
             return this;
         }
 
-        public Builder testS3AccessKey(String testS3AccessKey) {
-            this.testS3AccessKey = testS3AccessKey;
+        public Builder optionalTestS3AccessKey(String optionalTestS3AccessKey) {
+            this.optionalTestS3AccessKey = optionalTestS3AccessKey;
             return this;
         }
 
-        public Builder testS3SecretKey(String testS3SecretKey) {
-            this.testS3SecretKey = testS3SecretKey;
+        public Builder optionalTestS3SecretKey(String optionalTestS3SecretKey) {
+            this.optionalTestS3SecretKey = optionalTestS3SecretKey;
             return this;
         }
 
@@ -457,19 +457,19 @@ public class WebStack extends Stack {
         String hmrcClientId = this.getConfigValue(builder.hmrcClientId, "hmrcClientId");
         String homeUrl = this.getConfigValue(builder.homeUrl, "homeUrl");
         String hmrcBaseUri = this.getConfigValue(builder.hmrcBaseUri, "hmrcBaseUri");
-        String testAccessToken = this.getConfigValue(builder.testAccessToken, "testAccessToken");
-        String testS3Endpoint;
-        String testS3AccessKey;
-        String testS3SecretKey;
+        String optionalTestAccessToken = this.getConfigValue(builder.optionalTestAccessToken, "optionalTestAccessToken");
+        String optionalTestS3Endpoint;
+        String optionalTestS3AccessKey;
+        String optionalTestS3SecretKey;
         try {
-            testS3Endpoint = this.getConfigValue(builder.testS3Endpoint, "testS3Endpoint");
-            testS3AccessKey = this.getConfigValue(builder.testS3AccessKey, "testS3AccessKey");
-            testS3SecretKey = this.getConfigValue(builder.testS3SecretKey, "testS3SecretKey");
+            optionalTestS3Endpoint = this.getConfigValue(builder.optionalTestS3Endpoint, "optionalTestS3Endpoint");
+            optionalTestS3AccessKey = this.getConfigValue(builder.optionalTestS3AccessKey, "optionalTestS3AccessKey");
+            optionalTestS3SecretKey = this.getConfigValue(builder.optionalTestS3SecretKey, "optionalTestS3SecretKey");
         } catch (Exception e) {
             // If test S3 values are not provided, set them to null
-            testS3Endpoint = null;
-            testS3AccessKey = null;
-            testS3SecretKey = null;
+            optionalTestS3Endpoint = null;
+            optionalTestS3AccessKey = null;
+            optionalTestS3SecretKey = null;
         }
         if (s3UseExistingBucket) {
             this.originBucket = Bucket.fromBucketName(this, "OriginBucket", originBucketName);
@@ -587,7 +587,7 @@ public class WebStack extends Stack {
                     "DIY_SUBMIT_HMRC_CLIENT_ID", hmrcClientId,
                     "DIY_SUBMIT_HOME_URL", homeUrl,
                     "DIY_SUBMIT_HMRC_BASE_URI", hmrcBaseUri,
-                    "DIY_SUBMIT_TEST_ACCESS_TOKEN", testAccessToken
+                    "DIY_SUBMIT_TEST_ACCESS_TOKEN", optionalTestAccessToken
             );
             this.exchangeTokenLambda = DockerImageFunction.Builder.create(this, "ExchangeTokenLambda")
                     .code(DockerImageCode.fromImageAsset(
@@ -706,12 +706,12 @@ public class WebStack extends Stack {
                     .build();
         } else {
             AssetImageCodeProps logReceiptHandlerImageCodeProps = AssetImageCodeProps.builder().buildArgs(Map.of("HANDLER", logReceiptLambdaHandler)).build();
-            if(StringUtils.isNotBlank( testS3Endpoint) && StringUtils.isNotBlank(testS3AccessKey) || StringUtils.isNotBlank(testS3SecretKey)) {
+            if(StringUtils.isNotBlank( optionalTestS3Endpoint) && StringUtils.isNotBlank(optionalTestS3AccessKey) || StringUtils.isNotBlank(optionalTestS3SecretKey)) {
                 // For production like integrations without AWS we can use test S3 credentials
                 var logReceiptLambdaTestEnv = Map.of(
-                        "DIY_SUBMIT_TEST_S3_ENDPOINT", testS3Endpoint,
-                        "DIY_SUBMIT_TEST_S3_ACCESS_KEY", testS3AccessKey,
-                        "DIY_SUBMIT_TEST_S3_SECRET_KEY", testS3SecretKey,
+                        "DIY_SUBMIT_TEST_S3_ENDPOINT", optionalTestS3Endpoint,
+                        "DIY_SUBMIT_TEST_S3_ACCESS_KEY", optionalTestS3AccessKey,
+                        "DIY_SUBMIT_TEST_S3_SECRET_KEY", optionalTestS3SecretKey,
                         "DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX", receiptsBucketPostfix
                 );
                 this.logReceiptLambda = DockerImageFunction.Builder.create(this, "LogReceiptLambda")
@@ -896,7 +896,11 @@ public class WebStack extends Stack {
                         .build();
                 return contextValue.toString();
             } else {
-                throw new IllegalArgumentException("No customValue found or context key " + contextKey);
+                if (contextKey.startsWith("optional")) {
+                    logger.warn("No customValue or non-empty context key value found for optional context key: {}", contextKey);
+                } else {
+                    throw new IllegalArgumentException("No customValue or non-empty context key value found for non-optional context key" + contextKey);
+                }
             }
         }
         return customValue;
