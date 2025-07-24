@@ -102,7 +102,7 @@ jobs:
       - name: deploy
         id: deploy
         shell: bash
-        run: npx dotenv -e .env.ci ${{ steps.stacks.outputs.deploy }}
+        run: npx dotenv -e .env.ci -- ${{ steps.stacks.outputs.deploy }}
         env:
           GITHUB_ACTOR: ${{ github.actor }}
           ENV_NAME: ${{ inputs.environment || 'ci' }}
@@ -129,7 +129,7 @@ jobs:
 
       - run: npx playwright install --with-deps
 
-      - run: npx dotenv -e '.env.ci' npm run test:behaviour
+      - run: npx dotenv -e '.env.ci' -- npm run test:behaviour
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
