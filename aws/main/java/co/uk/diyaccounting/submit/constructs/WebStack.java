@@ -699,12 +699,6 @@ public class WebStack extends Stack {
         var logReceiptLambdaEnv = Map.of(
                 "DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX", receiptsBucketPostfix
         );
-        var logReceiptLambdaTestEnv = Map.of(
-                "DIY_SUBMIT_TEST_S3_ENDPOINT", testS3Endpoint,
-                "DIY_SUBMIT_TEST_S3_ACCESS_KEY", testS3AccessKey,
-                "DIY_SUBMIT_TEST_S3_SECRET_KEY", testS3SecretKey,
-                "DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX", receiptsBucketPostfix
-        );
         if ("test".equals(env)) {
             // For testing, create a simple Function instead of DockerImageFunction to avoid Docker builds
             this.logReceiptLambda = Function.Builder.create(this, "LogReceiptLambda")
@@ -718,6 +712,12 @@ public class WebStack extends Stack {
             AssetImageCodeProps logReceiptHandlerImageCodeProps = AssetImageCodeProps.builder().buildArgs(Map.of("HANDLER", logReceiptLambdaHandler)).build();
             if(StringUtils.isNotBlank( testS3Endpoint) && StringUtils.isNotBlank(testS3AccessKey) || StringUtils.isNotBlank(testS3SecretKey)) {
                 // For production like integrations without AWS we can use test S3 credentials
+                var logReceiptLambdaTestEnv = Map.of(
+                        "DIY_SUBMIT_TEST_S3_ENDPOINT", testS3Endpoint,
+                        "DIY_SUBMIT_TEST_S3_ACCESS_KEY", testS3AccessKey,
+                        "DIY_SUBMIT_TEST_S3_SECRET_KEY", testS3SecretKey,
+                        "DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX", receiptsBucketPostfix
+                );
                 this.logReceiptLambda = DockerImageFunction.Builder.create(this, "LogReceiptLambda")
                         .code(DockerImageCode.fromImageAsset(".", logReceiptHandlerImageCodeProps))
                         .environment(logReceiptLambdaTestEnv)
