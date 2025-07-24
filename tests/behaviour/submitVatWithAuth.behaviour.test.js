@@ -13,8 +13,14 @@ const originalEnv = { ...process.env };
 
 // Test specific dedicated server port
 const serverPort = 3500;
+
+// S3 credentials for the test MinIO instance
 const testS3AccessKey = process.env.DIY_SUBMIT_TEST_S3_ACCESS_KEY;
 const testS3SecretKey = process.env.DIY_SUBMIT_TEST_S3_SECRET_KEY;
+
+// Environment variables for the test server and proxy
+const runTestServer = process.env.DIY_SUBMIT_TEST_SERVER_HTTP === "run";
+const runProxy = process.env.DIY_SUBMIT_TEST_PROXY === "run";
 
 const bucketNamePostfix = process.env.DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX;
 const homeUrl = process.env.DIY_SUBMIT_HOME_URL;
@@ -79,80 +85,88 @@ test.beforeAll(async () => {
   await ensureMinioBucketExists();
 
   // Start the server
-  console.log("Starting server process...");
-  serverProcess = spawn("npm", ["run", "start"], {
-  // serverProcess = spawn("node", ["src/lib/server.js"], {
-    env: {
-      ...process.env,
-      DIY_SUBMIT_TEST_S3_ENDPOINT: endpoint,
-      DIY_SUBMIT_DIY_SUBMIT_TEST_SERVER_HTTP_PORT: serverPort.toString(),
-    },
-    stdio: ["pipe", "pipe", "pipe"],
-  });
+  if (runTestServer) {
+    console.log("Starting server process...");
+    serverProcess = spawn("npm", ["run", "start"], {
+      // serverProcess = spawn("node", ["src/lib/server.js"], {
+      env: {
+        ...process.env,
+        DIY_SUBMIT_TEST_S3_ENDPOINT: endpoint,
+        DIY_SUBMIT_DIY_SUBMIT_TEST_SERVER_HTTP_PORT: serverPort.toString(),
+      },
+      stdio: ["pipe", "pipe", "pipe"],
+    });
 
-  // Wait for server to start
-  console.log("Waiting for server to initialize...");
-  await setTimeout(2000);
+    // Wait for server to start
+    console.log("Waiting for server to initialize...");
+    await setTimeout(2000);
 
-  // Check if server is running
-  let serverReady = false;
-  let attempts = 0;
-  console.log("Checking server readiness...");
-  while (!serverReady && attempts < 15) {
-    try {
-      const response = await fetch(`http://127.0.0.1:${serverPort}`);
-      if (response.ok) {
-        serverReady = true;
-        console.log("Server is ready!");
+    // Check if server is running
+    let serverReady = false;
+    let attempts = 0;
+    console.log("Checking server readiness...");
+    while (!serverReady && attempts < 15) {
+      try {
+        const response = await fetch(`http://127.0.0.1:${serverPort}`);
+        if (response.ok) {
+          serverReady = true;
+          console.log("Server is ready!");
+        }
+      } catch (error) {
+        attempts++;
+        console.log(`Server check attempt ${attempts}/15 failed: ${error.message}`);
+        await setTimeout(1000);
       }
-    } catch (error) {
-      attempts++;
-      console.log(`Server check attempt ${attempts}/15 failed: ${error.message}`);
-      await setTimeout(1000);
     }
+
+    if (!serverReady) {
+      throw new Error(`Server failed to start after ${attempts} attempts`);
+    }
+  } else {
+    console.log("Skipping server process as runTestServer is not set to 'run'");
   }
 
-  if (!serverReady) {
-    throw new Error(`Server failed to start after ${attempts} attempts`);
-  }
+  if(runProxy) {
+    // Start ngrok process (same as npm run proxy)
+    console.log("Starting ngrok process...");
+    //ngrokProcess = spawn("npm", ["run", "proxy"], {
+    ngrokProcess = spawn("npx", ["ngrok", "http", "--url", "wanted-finally-anteater.ngrok-free.app", serverPort.toString()], {
+      env: {
+        ...process.env,
+        DIY_SUBMIT_DIY_SUBMIT_TEST_SERVER_HTTP_PORT: serverPort.toString(),
+      },
+      stdio: ["pipe", "pipe", "pipe"],
+    });
 
-  // Start ngrok process (same as npm run proxy)
-  console.log("Starting ngrok process...");
-  //ngrokProcess = spawn("npm", ["run", "proxy"], {
-  ngrokProcess = spawn("npx", ["ngrok", "http", "--url", "wanted-finally-anteater.ngrok-free.app", serverPort.toString()], {
-    env: {
-      ...process.env,
-      DIY_SUBMIT_DIY_SUBMIT_TEST_SERVER_HTTP_PORT: serverPort.toString(),
-    },
-    stdio: ["pipe", "pipe", "pipe"],
-  });
+    // Wait for ngrok to start
+    console.log("Waiting for ngrok to initialize...");
+    await setTimeout(5000);
 
-  // Wait for ngrok to start
-  console.log("Waiting for ngrok to initialize...");
-  await setTimeout(5000);
-
-  // Check if the default document is accessible via ngrok
-  const ngrokUrl = process.env.DIY_SUBMIT_DIY_SUBMIT_TEST_PROXY_URL;
-  let ngrokReady = false;
-  let ngrokAttempts = 0;
-  console.log("Checking ngrok readiness...");
-  while (!ngrokReady && ngrokAttempts < 15) {
-    try {
-      console.log(`trying ngrok at ${ngrokUrl}`);
-      const response = await fetch(ngrokUrl);
-      if (response.ok) {
-        ngrokReady = true;
-        console.log(`ngrok is accessible at ${ngrokUrl}`);
+    // Check if the default document is accessible via ngrok
+    const ngrokUrl = process.env.DIY_SUBMIT_DIY_SUBMIT_TEST_PROXY_URL;
+    let ngrokReady = false;
+    let ngrokAttempts = 0;
+    console.log("Checking ngrok readiness...");
+    while (!ngrokReady && ngrokAttempts < 15) {
+      try {
+        console.log(`trying ngrok at ${ngrokUrl}`);
+        const response = await fetch(ngrokUrl);
+        if (response.ok) {
+          ngrokReady = true;
+          console.log(`ngrok is accessible at ${ngrokUrl}`);
+        }
+      } catch (error) {
+        ngrokAttempts++;
+        console.log(`ngrok check attempt ${ngrokAttempts}/15 failed: ${error.message}`);
+        await setTimeout(2000);
       }
-    } catch (error) {
-      ngrokAttempts++;
-      console.log(`ngrok check attempt ${ngrokAttempts}/15 failed: ${error.message}`);
-      await setTimeout(2000);
     }
-  }
 
-  if (!ngrokReady) {
-    console.log(`Warning: ngrok may not be accessible at ${ngrokUrl} after ${ngrokAttempts} attempts`);
+    if (!ngrokReady) {
+      console.log(`Warning: ngrok may not be accessible at ${ngrokUrl} after ${ngrokAttempts} attempts`);
+    }
+  } else {
+    console.log("Skipping ngrok process as runProxy is not set to 'run'");
   }
 
   console.log("beforeAll hook completed successfully");

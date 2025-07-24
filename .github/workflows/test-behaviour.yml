@@ -46,12 +46,10 @@ jobs:
       - run: npx playwright install --with-deps
 
       #- run: |
-      #    echo "DIY_SUBMIT_HMRC_CLIENT_ID=${{ secrets.HMRC_CLIENT_ID }}" >> .env
       #    echo "DIY_SUBMIT_HMRC_CLIENT_SECRET=${{ secrets.HMRC_CLIENT_SECRET }}" >> .env
 
       - run: npm run test:behaviour
         env:
-          DIY_SUBMIT_HMRC_CLIENT_ID: ${{ secrets.HMRC_CLIENT_ID }}
           DIY_SUBMIT_HMRC_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
 
       #- run: rm -rf .env
