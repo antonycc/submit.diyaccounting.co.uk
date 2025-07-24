@@ -527,13 +527,7 @@ public class WebStack extends Stack {
             logger.info("CloudTrail is not enabled for the origin bucket.");
         }
 
-
         // authUrlHandler
-        var authUrlLambdaEnv = Map.of(
-                "DIY_SUBMIT_HMRC_CLIENT_ID", hmrcClientId,
-                "DIY_SUBMIT_HOME_URL", homeUrl,
-                "DIY_SUBMIT_HMRC_BASE_URI", hmrcBaseUri
-        );
         if ("test".equals(env)) {
             // For testing, create a simple Function instead of DockerImageFunction to avoid Docker builds
             this.authUrlLambda = Function.Builder.create(this, "AuthUrlLambda")
@@ -544,6 +538,11 @@ public class WebStack extends Stack {
                     .timeout(authUrlLambdaDuration)
                     .build();
         } else {
+            var authUrlLambdaEnv = Map.of(
+                    "DIY_SUBMIT_HMRC_CLIENT_ID", hmrcClientId,
+                    "DIY_SUBMIT_HOME_URL", homeUrl,
+                    "DIY_SUBMIT_HMRC_BASE_URI", hmrcBaseUri
+            );
             this.authUrlLambda = DockerImageFunction.Builder.create(this, "AuthUrlLambda")
                     .code(DockerImageCode.fromImageAsset(
                             ".",
@@ -574,12 +573,6 @@ public class WebStack extends Stack {
                 .build();
 
         // exchangeTokenHandler
-        var exchangeTokenLambdaEnv = Map.of(
-                "DIY_SUBMIT_HMRC_CLIENT_ID", hmrcClientId,
-                "DIY_SUBMIT_HOME_URL", homeUrl,
-                "DIY_SUBMIT_HMRC_BASE_URI", hmrcBaseUri,
-                "DIY_SUBMIT_TEST_ACCESS_TOKEN", testAccessToken
-        );
         if ("test".equals(env)) {
             // For testing, create a simple Function instead of DockerImageFunction to avoid Docker builds
             this.exchangeTokenLambda = Function.Builder.create(this, "ExchangeTokenLambda")
@@ -590,6 +583,12 @@ public class WebStack extends Stack {
                     .timeout(exchangeTokenLambdaDuration)
                     .build();
         } else {
+            var exchangeTokenLambdaEnv = Map.of(
+                    "DIY_SUBMIT_HMRC_CLIENT_ID", hmrcClientId,
+                    "DIY_SUBMIT_HOME_URL", homeUrl,
+                    "DIY_SUBMIT_HMRC_BASE_URI", hmrcBaseUri,
+                    "DIY_SUBMIT_TEST_ACCESS_TOKEN", testAccessToken
+            );
             this.exchangeTokenLambda = DockerImageFunction.Builder.create(this, "ExchangeTokenLambda")
                     .code(DockerImageCode.fromImageAsset(
                             ".",
@@ -620,10 +619,6 @@ public class WebStack extends Stack {
                 .build();
 
         // submitVatHandler
-        var submitVatLambdaEnv = Map.of(
-                "DIY_SUBMIT_HOME_URL", homeUrl,
-                "DIY_SUBMIT_HMRC_BASE_URI", hmrcBaseUri
-        );
         if ("test".equals(env)) {
             // For testing, create a simple Function instead of DockerImageFunction to avoid Docker builds
             this.submitVatLambda = Function.Builder.create(this, "SubmitVatLambda")
@@ -634,6 +629,10 @@ public class WebStack extends Stack {
                     .timeout(submitVatLambdaDuration)
                     .build();
         } else {
+            var submitVatLambdaEnv = Map.of(
+                    "DIY_SUBMIT_HOME_URL", homeUrl,
+                    "DIY_SUBMIT_HMRC_BASE_URI", hmrcBaseUri
+            );
             this.submitVatLambda = DockerImageFunction.Builder.create(this, "SubmitVatLambda")
                     .code(DockerImageCode.fromImageAsset(
                             ".",
@@ -696,9 +695,6 @@ public class WebStack extends Stack {
         }
 
         // logReceiptHandler
-        var logReceiptLambdaEnv = Map.of(
-                "DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX", receiptsBucketPostfix
-        );
         if ("test".equals(env)) {
             // For testing, create a simple Function instead of DockerImageFunction to avoid Docker builds
             this.logReceiptLambda = Function.Builder.create(this, "LogReceiptLambda")
@@ -725,6 +721,9 @@ public class WebStack extends Stack {
                         .timeout(logReceiptLambdaDuration)
                         .build();
             } else {
+                var logReceiptLambdaEnv = Map.of(
+                        "DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX", receiptsBucketPostfix
+                );
                 this.logReceiptLambda = DockerImageFunction.Builder.create(this, "LogReceiptLambda")
                         .code(DockerImageCode.fromImageAsset(".", logReceiptHandlerImageCodeProps))
                         .environment(logReceiptLambdaEnv)
