@@ -71,6 +71,7 @@ import java.net.URI;
 import java.util.AbstractMap;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -583,12 +584,14 @@ public class WebStack extends Stack {
                     .timeout(exchangeTokenLambdaDuration)
                     .build();
         } else {
-            var exchangeTokenLambdaEnv = Map.of(
+            var exchangeTokenLambdaEnv = new HashMap<>(Map.of(
                     "DIY_SUBMIT_HMRC_CLIENT_ID", hmrcClientId,
                     "DIY_SUBMIT_HOME_URL", homeUrl,
-                    "DIY_SUBMIT_HMRC_BASE_URI", hmrcBaseUri,
-                    "DIY_SUBMIT_TEST_ACCESS_TOKEN", optionalTestAccessToken
-            );
+                    "DIY_SUBMIT_HMRC_BASE_URI", hmrcBaseUri
+            ));
+            if (StringUtils.isNotBlank(optionalTestAccessToken)){
+                exchangeTokenLambdaEnv.put("DIY_SUBMIT_TEST_ACCESS_TOKEN", optionalTestAccessToken);
+            }
             this.exchangeTokenLambda = DockerImageFunction.Builder.create(this, "ExchangeTokenLambda")
                     .code(DockerImageCode.fromImageAsset(
                             ".",

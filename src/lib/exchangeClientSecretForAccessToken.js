@@ -14,7 +14,7 @@ export default async function exchangeClientSecretForAccessToken(code) {
     let hmrcResponse;
     if (process.env.NODE_ENV === "stubbed") {
         logger.warn({message: "exchangeTokenHandler called in stubbed mode, using test access token"});
-        const hmrcoptionalTestAccessToken = process.env.DIY_SUBMIT_TEST_ACCESS_TOKEN;
+        const hmrcTestAccessToken = process.env.DIY_SUBMIT_TEST_ACCESS_TOKEN;
         hmrcResponse = {
             ok: true,
             status: 200,
