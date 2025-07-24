@@ -64,6 +64,7 @@ import software.amazon.awscdk.services.s3.assets.AssetOptions;
 import software.amazon.awscdk.services.s3.deployment.BucketDeployment;
 import software.amazon.awscdk.services.s3.deployment.ISource;
 import software.amazon.awscdk.services.s3.deployment.Source;
+import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
 
 import java.net.URI;
@@ -456,7 +457,6 @@ public class WebStack extends Stack {
         String hmrcClientId = this.getConfigValue(builder.hmrcClientId, "hmrcClientId");
         String homeUrl = this.getConfigValue(builder.homeUrl, "homeUrl");
         String hmrcBaseUri = this.getConfigValue(builder.hmrcBaseUri, "hmrcBaseUri");
-        String testRedirectUri = this.getConfigValue(builder.testRedirectUri, "testRedirectUri");
         String testAccessToken = this.getConfigValue(builder.testAccessToken, "testAccessToken");
         String testS3Endpoint;
         String testS3AccessKey;
@@ -529,15 +529,18 @@ public class WebStack extends Stack {
 
 
         // authUrlHandler
+        var authUrlLambdaEnv = Map.of(
+                "DIY_SUBMIT_HMRC_CLIENT_ID", hmrcClientId,
+                "DIY_SUBMIT_HOME_URL", homeUrl,
+                "DIY_SUBMIT_HMRC_BASE_URI", hmrcBaseUri
+        );
         if ("test".equals(env)) {
             // For testing, create a simple Function instead of DockerImageFunction to avoid Docker builds
             this.authUrlLambda = Function.Builder.create(this, "AuthUrlLambda")
                     .code(Code.fromInline("exports.handler = async (event) => { return { statusCode: 200, body: 'test' }; }"))
                     .handler("index.handler")
                     .runtime(Runtime.NODEJS_20_X)
-                    .environment(Map.of("DIY_SUBMIT_HMRC_CLIENT_ID", hmrcClientId))
-                    .environment(Map.of("DIY_SUBMIT_HOME_URL", homeUrl))
-                    .environment(Map.of("DIY_SUBMIT_HMRC_BASE_URI", hmrcBaseUri))
+                    .environment(authUrlLambdaEnv)
                     .functionName(authUrlLambdaHandlerFunctionName)
                     .timeout(authUrlLambdaDuration)
                     .build();
@@ -547,9 +550,7 @@ public class WebStack extends Stack {
                             ".",
                             AssetImageCodeProps.builder().buildArgs(Map.of("HANDLER", authUrlLambdaHandler)).build())
                     )
-                    .environment(Map.of("DIY_SUBMIT_HMRC_CLIENT_ID", hmrcClientId))
-                    .environment(Map.of("DIY_SUBMIT_HOME_URL", homeUrl))
-                    .environment(Map.of("DIY_SUBMIT_HMRC_BASE_URI", hmrcBaseUri))
+                    .environment(authUrlLambdaEnv)
                     .functionName(authUrlLambdaHandlerFunctionName)
                     .timeout(authUrlLambdaDuration)
                     .build();
@@ -574,16 +575,19 @@ public class WebStack extends Stack {
                 .build();
 
         // exchangeTokenHandler
+        var exchangeTokenLambdaEnv = Map.of(
+                "DIY_SUBMIT_HMRC_CLIENT_ID", hmrcClientId,
+                "DIY_SUBMIT_HOME_URL", homeUrl,
+                "DIY_SUBMIT_HMRC_BASE_URI", hmrcBaseUri,
+                "DIY_SUBMIT_TEST_ACCESS_TOKEN", testAccessToken
+        );
         if ("test".equals(env)) {
             // For testing, create a simple Function instead of DockerImageFunction to avoid Docker builds
             this.exchangeTokenLambda = Function.Builder.create(this, "ExchangeTokenLambda")
                     .code(Code.fromInline("exports.handler = async (event) => { return { statusCode: 200, body: 'test' }; }"))
                     .handler("index.handler")
                     .runtime(Runtime.NODEJS_20_X)
-                    .environment(Map.of("DIY_SUBMIT_HMRC_CLIENT_ID", hmrcClientId))
-                    .environment(Map.of("DIY_SUBMIT_HOME_URL", homeUrl))
-                    .environment(Map.of("DIY_SUBMIT_HMRC_BASE_URI", hmrcBaseUri))
-                    .environment(Map.of("DIY_SUBMIT_TEST_ACCESS_TOKEN", testAccessToken))
+                    .environment(exchangeTokenLambdaEnv)
                     .functionName(exchangeTokenLambdaHandlerFunctionName)
                     .timeout(exchangeTokenLambdaDuration)
                     .build();
@@ -593,10 +597,7 @@ public class WebStack extends Stack {
                             ".",
                             AssetImageCodeProps.builder().buildArgs(Map.of("HANDLER", exchangeTokenLambdaHandler)).build())
                     )
-                    .environment(Map.of("DIY_SUBMIT_HMRC_CLIENT_ID", hmrcClientId))
-                    .environment(Map.of("DIY_SUBMIT_HOME_URL", homeUrl))
-                    .environment(Map.of("DIY_SUBMIT_HMRC_BASE_URI", hmrcBaseUri))
-                    .environment(Map.of("DIY_SUBMIT_TEST_ACCESS_TOKEN", testAccessToken))
+                    .environment(exchangeTokenLambdaEnv)
                     .functionName(exchangeTokenLambdaHandlerFunctionName)
                     .timeout(exchangeTokenLambdaDuration)
                     .build();
@@ -621,14 +622,17 @@ public class WebStack extends Stack {
                 .build();
 
         // submitVatHandler
+        var submitVatLambdaEnv = Map.of(
+                "DIY_SUBMIT_HOME_URL", homeUrl,
+                "DIY_SUBMIT_HMRC_BASE_URI", hmrcBaseUri
+        );
         if ("test".equals(env)) {
             // For testing, create a simple Function instead of DockerImageFunction to avoid Docker builds
             this.submitVatLambda = Function.Builder.create(this, "SubmitVatLambda")
                     .code(Code.fromInline("exports.handler = async (event) => { return { statusCode: 200, body: 'test' }; }"))
                     .handler("index.handler")
                     .runtime(Runtime.NODEJS_20_X)
-                    .environment(Map.of("DIY_SUBMIT_HOME_URL", homeUrl))
-                    .environment(Map.of("DIY_SUBMIT_HMRC_BASE_URI", hmrcBaseUri))
+                    .environment(submitVatLambdaEnv)
                     .functionName(submitVatLambdaHandlerFunctionName)
                     .timeout(submitVatLambdaDuration)
                     .build();
@@ -638,8 +642,7 @@ public class WebStack extends Stack {
                             ".",
                             AssetImageCodeProps.builder().buildArgs(Map.of("HANDLER", submitVatLambdaHandler)).build())
                     )
-                    .environment(Map.of("DIY_SUBMIT_HOME_URL", homeUrl))
-                    .environment(Map.of("DIY_SUBMIT_HMRC_BASE_URI", hmrcBaseUri))
+                    .environment(submitVatLambdaEnv)
                     .functionName(submitVatLambdaHandlerFunctionName)
                     .timeout(submitVatLambdaDuration)
                     .build();
@@ -696,14 +699,23 @@ public class WebStack extends Stack {
         }
 
         // logReceiptHandler
+        var logReceiptLambdaEnv = Map.of(
+                "DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX", receiptsBucketPostfix
+        );
+        var logReceiptLambdaTestEnv = Map.of(
+                "DIY_SUBMIT_TEST_S3_ENDPOINT", testS3Endpoint,
+                "DIY_SUBMIT_TEST_S3_ACCESS_KEY", testS3AccessKey,
+                "DIY_SUBMIT_TEST_S3_SECRET_KEY", testS3SecretKey,
+                "DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX", receiptsBucketPostfix
+        );
         if ("test".equals(env)) {
             // For testing, create a simple Function instead of DockerImageFunction to avoid Docker builds
-            if(testS3Endpoint == null || testS3AccessKey == null || testS3SecretKey == null) {
+            if(StringUtils.isNotBlank( testS3Endpoint) && StringUtils.isNotBlank(testS3AccessKey) || StringUtils.isNotBlank(testS3SecretKey)) {
                 this.logReceiptLambda = Function.Builder.create(this, "LogReceiptLambda")
                         .code(Code.fromInline("exports.handler = async (event) => { return { statusCode: 200, body: 'test' }; }"))
                         .handler("index.handler")
                         .runtime(Runtime.NODEJS_20_X)
-                        .environment(Map.of("DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX", receiptsBucketPostfix))
+                        .environment(logReceiptLambdaEnv)
                         .functionName(logReceiptLambdaHandlerFunctionName)
                         .timeout(logReceiptLambdaDuration)
                         .build();
@@ -712,30 +724,24 @@ public class WebStack extends Stack {
                         .code(Code.fromInline("exports.handler = async (event) => { return { statusCode: 200, body: 'test' }; }"))
                         .handler("index.handler")
                         .runtime(Runtime.NODEJS_20_X)
-                        .environment(Map.of("DIY_SUBMIT_TEST_S3_ENDPOINT", testS3Endpoint))
-                        .environment(Map.of("DIY_SUBMIT_TEST_S3_ACCESS_KEY", testS3AccessKey))
-                        .environment(Map.of("DIY_SUBMIT_TEST_S3_SECRET_KEY", testS3SecretKey))
-                        .environment(Map.of("DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX", receiptsBucketPostfix))
+                        .environment(logReceiptLambdaTestEnv)
                         .functionName(logReceiptLambdaHandlerFunctionName)
                         .timeout(logReceiptLambdaDuration)
                         .build();
             }
         } else {
             AssetImageCodeProps logReceiptHandlerImageCodeProps = AssetImageCodeProps.builder().buildArgs(Map.of("HANDLER", logReceiptLambdaHandler)).build();
-            if(testS3Endpoint == null || testS3AccessKey == null || testS3SecretKey == null) {
+            if(StringUtils.isNotBlank( testS3Endpoint) && StringUtils.isNotBlank(testS3AccessKey) || StringUtils.isNotBlank(testS3SecretKey)) {
                 this.logReceiptLambda = DockerImageFunction.Builder.create(this, "LogReceiptLambda")
                         .code(DockerImageCode.fromImageAsset(".", logReceiptHandlerImageCodeProps))
-                        .environment(Map.of("DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX", receiptsBucketPostfix))
+                        .environment(logReceiptLambdaEnv)
                         .functionName(logReceiptLambdaHandlerFunctionName)
                         .timeout(logReceiptLambdaDuration)
                         .build();
             } else {
                 this.logReceiptLambda = DockerImageFunction.Builder.create(this, "LogReceiptLambda")
                         .code(DockerImageCode.fromImageAsset(".", logReceiptHandlerImageCodeProps))
-                        .environment(Map.of("DIY_SUBMIT_TEST_S3_ENDPOINT", testS3Endpoint))
-                        .environment(Map.of("DIY_SUBMIT_TEST_S3_ACCESS_KEY", testS3AccessKey))
-                        .environment(Map.of("DIY_SUBMIT_TEST_S3_SECRET_KEY", testS3SecretKey))
-                        .environment(Map.of("DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX", receiptsBucketPostfix))
+                        .environment(logReceiptLambdaTestEnv)
                         .functionName(logReceiptLambdaHandlerFunctionName)
                         .timeout(logReceiptLambdaDuration)
                         .build();
