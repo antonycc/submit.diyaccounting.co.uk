@@ -11,6 +11,7 @@ import software.amazon.awscdk.AssetHashType;
 import software.amazon.awscdk.CfnOutput;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Expiration;
+import software.amazon.awscdk.Fn;
 import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
@@ -611,7 +612,7 @@ public class WebStack extends Stack {
         if (skipLambdaUrlOrigins) {
             logger.info("Skipping Lambda URL origins for authUrlLambdaUrl as per configuration.");
         } else {
-            String authUrlLambdaUrl = this.authUrlLambda.getFunctionName();
+            String authUrlLambdaUrl = this.getLambdaUrlHostToken(this.authUrlLambdaUrl);
             HttpOrigin authUrlApiOrigin = HttpOrigin.Builder.create(authUrlLambdaUrl)
                     .protocolPolicy(OriginProtocolPolicy.HTTPS_ONLY)
                     .build();
@@ -670,7 +671,7 @@ public class WebStack extends Stack {
         if (skipLambdaUrlOrigins) {
             logger.info("Skipping Lambda URL origins for exchangeTokenLambdaUrl as per configuration.");
         } else {
-            String exchangeTokenLambdaUrl = this.exchangeTokenLambda.getFunctionName();
+            String exchangeTokenLambdaUrl = this.getLambdaUrlHostToken(this.exchangeTokenLambdaUrl);
             HttpOrigin exchangeTokenApiOrigin = HttpOrigin.Builder.create(exchangeTokenLambdaUrl)
                     .protocolPolicy(OriginProtocolPolicy.HTTPS_ONLY)
                     .build();
@@ -725,7 +726,7 @@ public class WebStack extends Stack {
         if (skipLambdaUrlOrigins) {
             logger.info("Skipping Lambda URL origins for submitVatLambdaUrl as per configuration.");
         } else {
-            String submitVatLambdaUrl = this.submitVatLambda.getFunctionName();
+            String submitVatLambdaUrl = this.getLambdaUrlHostToken(this.submitVatLambdaUrl);
             HttpOrigin submitVatApiOrigin = HttpOrigin.Builder.create(submitVatLambdaUrl)
                     .protocolPolicy(OriginProtocolPolicy.HTTPS_ONLY)
                     .build();
@@ -826,7 +827,7 @@ public class WebStack extends Stack {
         if (skipLambdaUrlOrigins) {
             logger.info("Skipping Lambda URL origins for logReceiptLambdaUrl as per configuration.");
         } else {
-            String logReceiptLambdaUrl = this.logReceiptLambda.getFunctionName();
+            String logReceiptLambdaUrl = this.getLambdaUrlHostToken(this.logReceiptLambdaUrl);
             HttpOrigin logReceiptApiOrigin = HttpOrigin.Builder.create(logReceiptLambdaUrl)
                     .protocolPolicy(OriginProtocolPolicy.HTTPS_ONLY)
                     .build();
@@ -938,5 +939,10 @@ public class WebStack extends Stack {
             }
         }
         return customValue;
+    }
+
+    private String getLambdaUrlHostToken(FunctionUrl functionUrl) {
+        String urlHostToken = Fn.select(2, Fn.split("/", functionUrl.getUrl()));
+        return urlHostToken;
     }
 }
