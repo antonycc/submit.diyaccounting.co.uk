@@ -23,6 +23,7 @@ import software.amazon.awscdk.services.cloudfront.CachePolicy;
 import software.amazon.awscdk.services.cloudfront.Distribution;
 import software.amazon.awscdk.services.cloudfront.ErrorResponse;
 import software.amazon.awscdk.services.cloudfront.HttpVersion;
+import software.amazon.awscdk.services.cloudfront.IOrigin;
 import software.amazon.awscdk.services.cloudfront.OriginAccessIdentity;
 import software.amazon.awscdk.services.cloudfront.OriginProtocolPolicy;
 import software.amazon.awscdk.services.cloudfront.OriginRequestCookieBehavior;
@@ -32,7 +33,6 @@ import software.amazon.awscdk.services.cloudfront.ResponseHeadersPolicy;
 import software.amazon.awscdk.services.cloudfront.SSLMethod;
 import software.amazon.awscdk.services.cloudfront.ViewerProtocolPolicy;
 import software.amazon.awscdk.services.cloudfront.origins.HttpOrigin;
-import software.amazon.awscdk.services.cloudfront.IOrigin;
 import software.amazon.awscdk.services.cloudfront.origins.S3BucketOrigin;
 import software.amazon.awscdk.services.cloudfront.origins.S3BucketOriginWithOAIProps;
 import software.amazon.awscdk.services.cloudtrail.S3EventSelector;
@@ -69,9 +69,7 @@ import software.amazon.awscdk.services.s3.deployment.Source;
 import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
 
-import java.net.URI;
 import java.util.AbstractMap;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -165,13 +163,11 @@ public class WebStack extends Stack {
         }
 
         public static Builder create(Construct scope, String id) {
-            Builder builder = new Builder(scope, id, null);
-            return builder;
+            return new Builder(scope, id, null);
         }
 
         public static Builder create(Construct scope, String id, StackProps props) {
-            Builder builder = new Builder(scope, id, props);
-            return builder;
+            return new Builder(scope, id, props);
         }
 
         public Builder env(String env) {
@@ -365,8 +361,7 @@ public class WebStack extends Stack {
         }
 
         public WebStack build() {
-            WebStack stack = new WebStack(this.scope, this.id, this.props, this);
-            return stack;
+            return new WebStack(this.scope, this.id, this.props, this);
         }
 
         public static String buildDomainName(String env, String subDomainName, String hostedZoneName) { return env.equals("prod") ? hostedZoneName : Builder.buildNonProdDomainName(env, subDomainName, hostedZoneName); }
@@ -556,12 +551,12 @@ public class WebStack extends Stack {
                     .build();
             // Add S3 event selector to the CloudTrail
             if (cloudTrailEventSelectorPrefix == null || !cloudTrailEventSelectorPrefix.isBlank() || "none".equals(cloudTrailEventSelectorPrefix)) {
-                originBucketTrail.addS3EventSelector(Arrays.asList(S3EventSelector.builder()
+                originBucketTrail.addS3EventSelector(List.of(S3EventSelector.builder()
                         .bucket(this.originBucket)
                         .build()
                 ));
             } else {
-                originBucketTrail.addS3EventSelector(Arrays.asList(S3EventSelector.builder()
+                originBucketTrail.addS3EventSelector(List.of(S3EventSelector.builder()
                         .bucket(this.originBucket)
                         .objectPrefix(cloudTrailEventSelectorPrefix)
                         .build()
@@ -616,8 +611,8 @@ public class WebStack extends Stack {
         if (skipLambdaUrlOrigins) {
             logger.info("Skipping Lambda URL origins for authUrlLambdaUrl as per configuration.");
         } else {
-            String authUrlApiHost = extractHostFromUrl(this.authUrlLambdaUrl.getUrl());
-            HttpOrigin authUrlApiOrigin = HttpOrigin.Builder.create(authUrlApiHost)
+            String authUrlLambdaUrl = this.authUrlLambdaUrl.getUrl();
+            HttpOrigin authUrlApiOrigin = HttpOrigin.Builder.create(authUrlLambdaUrl)
                     .protocolPolicy(OriginProtocolPolicy.HTTPS_ONLY)
                     .build();
             final BehaviorOptions authUrlOriginBehaviour = BehaviorOptions.builder()
@@ -675,8 +670,8 @@ public class WebStack extends Stack {
         if (skipLambdaUrlOrigins) {
             logger.info("Skipping Lambda URL origins for exchangeTokenLambdaUrl as per configuration.");
         } else {
-            String exchangeTokenApiHost = extractHostFromUrl(this.exchangeTokenLambdaUrl.getUrl());
-            HttpOrigin exchangeTokenApiOrigin = HttpOrigin.Builder.create(exchangeTokenApiHost)
+            String exchangeTokenLambdaUrl = this.exchangeTokenLambdaUrl.getUrl();
+            HttpOrigin exchangeTokenApiOrigin = HttpOrigin.Builder.create(exchangeTokenLambdaUrl)
                     .protocolPolicy(OriginProtocolPolicy.HTTPS_ONLY)
                     .build();
             final BehaviorOptions exchangeTokenOriginBehaviour = BehaviorOptions.builder()
@@ -730,8 +725,8 @@ public class WebStack extends Stack {
         if (skipLambdaUrlOrigins) {
             logger.info("Skipping Lambda URL origins for submitVatLambdaUrl as per configuration.");
         } else {
-            String submitVatApiHost = extractHostFromUrl(this.submitVatLambdaUrl.getUrl());
-            HttpOrigin submitVatApiOrigin = HttpOrigin.Builder.create(submitVatApiHost)
+            String submitVatLambdaUrl = this.submitVatLambdaUrl.getUrl();
+            HttpOrigin submitVatApiOrigin = HttpOrigin.Builder.create(submitVatLambdaUrl)
                     .protocolPolicy(OriginProtocolPolicy.HTTPS_ONLY)
                     .build();
             final BehaviorOptions submitVatOriginBehaviour = BehaviorOptions.builder()
@@ -769,7 +764,7 @@ public class WebStack extends Stack {
                     .isMultiRegionTrail(false)
                     .build();
             // Add S3 event selector to the CloudTrail for receipts bucket
-            receiptsBucketTrail.addS3EventSelector(Arrays.asList(S3EventSelector.builder()
+            receiptsBucketTrail.addS3EventSelector(List.of(S3EventSelector.builder()
                     .bucket(this.receiptsBucket)
                     .build()
             ));
@@ -831,8 +826,8 @@ public class WebStack extends Stack {
         if (skipLambdaUrlOrigins) {
             logger.info("Skipping Lambda URL origins for logReceiptLambdaUrl as per configuration.");
         } else {
-            String logReceiptApiHost = extractHostFromUrl(this.logReceiptLambdaUrl.getUrl());
-            HttpOrigin logReceiptApiOrigin = HttpOrigin.Builder.create(logReceiptApiHost)
+            String logReceiptLambdaUrl = this.logReceiptLambdaUrl.getUrl();
+            HttpOrigin logReceiptApiOrigin = HttpOrigin.Builder.create(logReceiptLambdaUrl)
                     .protocolPolicy(OriginProtocolPolicy.HTTPS_ONLY)
                     .build();
             final BehaviorOptions logReceiptOriginBehaviour = BehaviorOptions.builder()
@@ -943,9 +938,5 @@ public class WebStack extends Stack {
             }
         }
         return customValue;
-    }
-
-    private String extractHostFromUrl(String url) {
-        return URI.create(url).getHost();
     }
 }

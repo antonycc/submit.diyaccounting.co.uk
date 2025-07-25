@@ -1,6 +1,8 @@
 package co.uk.diyaccounting.submit.awssdk;
 
 import co.uk.diyaccounting.submit.constructs.WebStack;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import software.amazon.awscdk.App;
@@ -12,6 +14,7 @@ import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
 @ExtendWith(SystemStubsExtension.class)
 public class WebStackTest {
 
+    private static final Logger logger = LogManager.getLogger(WebStackTest.class);
     private static final String testAccount = "111111111111";
 
     @SystemStub
@@ -27,6 +30,7 @@ public class WebStackTest {
 
     @Test
     public void testStackResources() {
+        logger.info("Starting WebStack test - this should be visible in console output");
         App app = new App();
 
         WebStack stack = WebStack.Builder.create(app, "SubmitWebStack")
@@ -72,5 +76,6 @@ public class WebStackTest {
 
         Template template = Template.fromStack(stack);
         template.resourceCountIs("AWS::S3::Bucket", 6);
+        logger.info("WebStack test completed successfully - logging is working!");
     }
 }
