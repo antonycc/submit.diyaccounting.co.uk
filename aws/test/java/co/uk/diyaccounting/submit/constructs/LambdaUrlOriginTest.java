@@ -107,6 +107,7 @@ public class LambdaUrlOriginTest {
                 .env("test")
                 .domainName("test.example.com")
                 .functionName("test-function")
+                .skipBehaviorOptions(true)
                 .build();
 
         Template template = Template.fromStack(stack);

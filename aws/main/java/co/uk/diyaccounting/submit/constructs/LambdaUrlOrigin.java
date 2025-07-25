@@ -62,17 +62,22 @@ public class LambdaUrlOrigin {
                         .build()
         );
 
-        String lambdaUrlHost = getLambdaUrlHostToken(this.functionUrl);
-        HttpOrigin apiOrigin = HttpOrigin.Builder.create(lambdaUrlHost)
-                .protocolPolicy(OriginProtocolPolicy.HTTPS_ONLY)
-                .build();
+        if (builder.skipBehaviorOptions) {
+            logger.info("Skipping behavior options for Lambda URL origin as per configuration.");
+            this.behaviorOptions = null;
+        } else {
+            String lambdaUrlHost = getLambdaUrlHostToken(this.functionUrl);
+            HttpOrigin apiOrigin = HttpOrigin.Builder.create(lambdaUrlHost)
+                    .protocolPolicy(OriginProtocolPolicy.HTTPS_ONLY)
+                    .build();
 
-        this.behaviorOptions = BehaviorOptions.builder()
-                .origin(apiOrigin)
-                .allowedMethods(builder.cloudFrontAllowedMethods)
-                .cachePolicy(CachePolicy.CACHING_DISABLED)
-                .originRequestPolicy(OriginRequestPolicy.CORS_S3_ORIGIN)
-                .build();
+            this.behaviorOptions = BehaviorOptions.builder()
+                    .origin(apiOrigin)
+                    .allowedMethods(builder.cloudFrontAllowedMethods)
+                    .cachePolicy(CachePolicy.CACHING_DISABLED)
+                    .originRequestPolicy(OriginRequestPolicy.CORS_S3_ORIGIN)
+                    .build();
+        }
 
         logger.info("Created LambdaUrlOrigin with function: {}", this.lambda.getFunctionName());
     }
@@ -117,18 +122,18 @@ public class LambdaUrlOrigin {
     }
 
     public static class Builder {
-        private final Construct scope;
-        private final String idPrefix;
+        public final Construct scope;
+        public final String idPrefix;
         
-        // Required parameters
-        private String env = null;
-        private String domainName = null;
-        private String functionName = null;
-        private String handler = null;
-        private Duration timeout = Duration.seconds(30);
-        private Map<String, String> environment = Map.of();
-        private List<HttpMethod> allowedMethods = List.of(HttpMethod.GET);
-        private AllowedMethods cloudFrontAllowedMethods = AllowedMethods.ALLOW_GET_HEAD_OPTIONS;
+        public String env = null;
+        public String domainName = null;
+        public String functionName = null;
+        public String handler = null;
+        public Duration timeout = Duration.seconds(30);
+        public Map<String, String> environment = Map.of();
+        public List<HttpMethod> allowedMethods = List.of(HttpMethod.GET);
+        public AllowedMethods cloudFrontAllowedMethods = AllowedMethods.ALLOW_GET_HEAD_OPTIONS;
+        public boolean skipBehaviorOptions = false;
 
         private Builder(final Construct scope, final String idPrefix) {
             this.scope = scope;
@@ -176,6 +181,11 @@ public class LambdaUrlOrigin {
 
         public Builder cloudFrontAllowedMethods(AllowedMethods cloudFrontAllowedMethods) {
             this.cloudFrontAllowedMethods = cloudFrontAllowedMethods;
+            return this;
+        }
+
+        public Builder skipBehaviorOptions(boolean skipBehaviorOptions) {
+            this.skipBehaviorOptions = skipBehaviorOptions;
             return this;
         }
 
