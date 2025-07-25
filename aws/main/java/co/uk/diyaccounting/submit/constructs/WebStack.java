@@ -30,7 +30,6 @@ import software.amazon.awscdk.services.cloudfront.OriginProtocolPolicy;
 import software.amazon.awscdk.services.cloudfront.OriginRequestCookieBehavior;
 import software.amazon.awscdk.services.cloudfront.OriginRequestHeaderBehavior;
 import software.amazon.awscdk.services.cloudfront.OriginRequestPolicy;
-import software.amazon.awscdk.services.cloudfront.OriginRequestQueryStringBehavior;
 import software.amazon.awscdk.services.cloudfront.ResponseHeadersPolicy;
 import software.amazon.awscdk.services.cloudfront.SSLMethod;
 import software.amazon.awscdk.services.cloudfront.ViewerProtocolPolicy;
@@ -512,22 +511,17 @@ public class WebStack extends Stack {
                         .originAccessIdentity(this.originIdentity)
                         .build());
 
-        // Create an origin from the bucket and the lambda URL origins
-        // TODO Create policies for each Lambda that only accept specific headers and query strings
-        //.headerBehavior(OriginRequestHeaderBehavior.allowList("Accept", "Accept-Language", "Origin"))
-        final OriginRequestPolicy headersButNoCookiesOriginRequestPolicy = OriginRequestPolicy.Builder
+        // Create the CloudFront distribution with a bucket as an origin
+        final OriginRequestPolicy s3BucketOriginRequestPolicy = OriginRequestPolicy.Builder
                 .create(this, "OriginRequestPolicy")
                 .comment("Policy to allow content headers but no cookies from the origin")
                 .cookieBehavior(OriginRequestCookieBehavior.none())
-                .headerBehavior(OriginRequestHeaderBehavior.all())
-                .queryStringBehavior(OriginRequestQueryStringBehavior.all())
+                .headerBehavior(OriginRequestHeaderBehavior.allowList("Accept", "Accept-Language", "Origin"))
                 .build();
-
-        // Create the CloudFront distribution origin options for the S3 bucket
         final BehaviorOptions s3BucketOriginBehaviour = BehaviorOptions.builder()
                 .origin(this.origin)
                 .allowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
-                .originRequestPolicy(headersButNoCookiesOriginRequestPolicy)
+                .originRequestPolicy(s3BucketOriginRequestPolicy)
                 .viewerProtocolPolicy(ViewerProtocolPolicy.REDIRECT_TO_HTTPS)
                 .responseHeadersPolicy(ResponseHeadersPolicy.CORS_ALLOW_ALL_ORIGINS_WITH_PREFLIGHT_AND_SECURITY_HEADERS)
                 .compress(true)
@@ -626,7 +620,7 @@ public class WebStack extends Stack {
                     .origin(authUrlApiOrigin)
                     .allowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
                     .cachePolicy(CachePolicy.CACHING_DISABLED)
-                    .originRequestPolicy(headersButNoCookiesOriginRequestPolicy)
+                    .originRequestPolicy(OriginRequestPolicy.CORS_S3_ORIGIN)
                     .build();
             lambdaUrlToOriginsBehaviourMappings.put("/api/auth-url*", authUrlOriginBehaviour);
         }
@@ -685,7 +679,7 @@ public class WebStack extends Stack {
                     .origin(exchangeTokenApiOrigin)
                     .allowedMethods(AllowedMethods.ALLOW_ALL)
                     .cachePolicy(CachePolicy.CACHING_DISABLED)
-                    .originRequestPolicy(headersButNoCookiesOriginRequestPolicy)
+                    .originRequestPolicy(OriginRequestPolicy.CORS_S3_ORIGIN)
                     .build();
             lambdaUrlToOriginsBehaviourMappings.put("/api/exchange-token*", exchangeTokenOriginBehaviour);
         }
@@ -740,7 +734,7 @@ public class WebStack extends Stack {
                     .origin(submitVatApiOrigin)
                     .allowedMethods(AllowedMethods.ALLOW_ALL)
                     .cachePolicy(CachePolicy.CACHING_DISABLED)
-                    .originRequestPolicy(headersButNoCookiesOriginRequestPolicy)
+                    .originRequestPolicy(OriginRequestPolicy.CORS_S3_ORIGIN)
                     .build();
             lambdaUrlToOriginsBehaviourMappings.put("/api/submit-vat*", submitVatOriginBehaviour);
         }
@@ -841,7 +835,7 @@ public class WebStack extends Stack {
                     .origin(logReceiptApiOrigin)
                     .allowedMethods(AllowedMethods.ALLOW_ALL)
                     .cachePolicy(CachePolicy.CACHING_DISABLED)
-                    .originRequestPolicy(headersButNoCookiesOriginRequestPolicy)
+                    .originRequestPolicy(OriginRequestPolicy.CORS_S3_ORIGIN)
                     .build();
             lambdaUrlToOriginsBehaviourMappings.put("/api/log-receipt*", logReceiptOriginBehaviour);
         }
