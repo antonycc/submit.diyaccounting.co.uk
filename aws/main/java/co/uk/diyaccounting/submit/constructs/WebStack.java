@@ -32,7 +32,9 @@ import software.amazon.awscdk.services.cloudfront.ResponseHeadersPolicy;
 import software.amazon.awscdk.services.cloudfront.SSLMethod;
 import software.amazon.awscdk.services.cloudfront.ViewerProtocolPolicy;
 import software.amazon.awscdk.services.cloudfront.origins.HttpOrigin;
-import software.amazon.awscdk.services.cloudfront.origins.S3Origin;
+import software.amazon.awscdk.services.cloudfront.IOrigin;
+import software.amazon.awscdk.services.cloudfront.origins.S3BucketOrigin;
+import software.amazon.awscdk.services.cloudfront.origins.S3BucketOriginWithOAIProps;
 import software.amazon.awscdk.services.cloudtrail.S3EventSelector;
 import software.amazon.awscdk.services.cloudtrail.Trail;
 import software.amazon.awscdk.services.lambda.AssetImageCodeProps;
@@ -84,7 +86,7 @@ public class WebStack extends Stack {
     public IBucket originBucket;
     public LogGroup originBucketLogGroup;
     public IBucket originAccessLogBucket;
-    public S3Origin origin;
+    public IOrigin origin;
     public BucketDeployment deployment;
     public IHostedZone hostedZone;
     public ICertificate certificate;
@@ -136,6 +138,7 @@ public class WebStack extends Stack {
         public String docRootPath;
         public String defaultDocumentAtOrigin;
         public String error404NotFoundAtDistribution;
+        public String skipLambdaUrlOrigins;
         public String hmrcClientId;
         public String homeUrl;
         public String hmrcBaseUri;
@@ -263,6 +266,11 @@ public class WebStack extends Stack {
 
         public Builder error404NotFoundAtDistribution(String error404NotFoundAtDistribution) {
             this.error404NotFoundAtDistribution = error404NotFoundAtDistribution;
+            return this;
+        }
+
+        public Builder skipLambdaUrlOrigins(String skipLambdaUrlOrigins) {
+            this.skipLambdaUrlOrigins = skipLambdaUrlOrigins;
             return this;
         }
 
@@ -430,6 +438,7 @@ public class WebStack extends Stack {
         String docRootPath = this.getConfigValue(builder.docRootPath, "docRootPath");
         String defaultDocumentAtOrigin = this.getConfigValue(builder.defaultDocumentAtOrigin, "defaultDocumentAtOrigin");
         String error404NotFoundAtDistribution = this.getConfigValue(builder.error404NotFoundAtDistribution, "error404NotFoundAtDistribution");
+        boolean skipLambdaUrlOrigins = Boolean.parseBoolean(this.getConfigValue(builder.skipLambdaUrlOrigins, "skipLambdaUrlOrigins"));
 
         // Receipts bucket
         String receiptsBucketPostfix = this.getConfigValue(builder.receiptsBucketPostfix, "receiptsBucketPostfix");
@@ -501,9 +510,10 @@ public class WebStack extends Stack {
                 .comment("Identity created for access to the web website bucket via the CloudFront distribution")
                 .build();
         originBucket.grantRead(this.originIdentity); // This adds "s3:List*" so that 404s are handled.
-        this.origin = S3Origin.Builder.create(this.originBucket)
-                .originAccessIdentity(this.originIdentity)
-                .build();
+        this.origin = S3BucketOrigin.withOriginAccessIdentity(this.originBucket, 
+                S3BucketOriginWithOAIProps.builder()
+                        .originAccessIdentity(this.originIdentity)
+                        .build());
 
         // Create an origin from the bucket
         final OriginRequestPolicy originRequestPolicy = OriginRequestPolicy.Builder
@@ -603,10 +613,10 @@ public class WebStack extends Stack {
                                 .build())
                         .build()
         );
-        String authUrlApiHost = extractHostFromUrl(this.authUrlLambdaUrl.getUrl());
-        if (StringUtils.isBlank(authUrlApiHost)) {
-            logger.warn("Failed to extract host from authUrlLambdaUrl: {}", this.authUrlLambdaUrl.getUrl());
+        if (skipLambdaUrlOrigins) {
+            logger.info("Skipping Lambda URL origins for authUrlLambdaUrl as per configuration.");
         } else {
+            String authUrlApiHost = extractHostFromUrl(this.authUrlLambdaUrl.getUrl());
             HttpOrigin authUrlApiOrigin = HttpOrigin.Builder.create(authUrlApiHost)
                     .protocolPolicy(OriginProtocolPolicy.HTTPS_ONLY)
                     .build();
@@ -662,10 +672,10 @@ public class WebStack extends Stack {
                                 .build())
                         .build()
         );
-        String exchangeTokenApiHost = extractHostFromUrl(this.exchangeTokenLambdaUrl.getUrl());
-        if (StringUtils.isBlank(exchangeTokenApiHost)) {
-            logger.warn("Failed to extract host from exchangeTokenLambdaUrl: {}", this.exchangeTokenLambdaUrl.getUrl());
+        if (skipLambdaUrlOrigins) {
+            logger.info("Skipping Lambda URL origins for exchangeTokenLambdaUrl as per configuration.");
         } else {
+            String exchangeTokenApiHost = extractHostFromUrl(this.exchangeTokenLambdaUrl.getUrl());
             HttpOrigin exchangeTokenApiOrigin = HttpOrigin.Builder.create(exchangeTokenApiHost)
                     .protocolPolicy(OriginProtocolPolicy.HTTPS_ONLY)
                     .build();
@@ -717,10 +727,10 @@ public class WebStack extends Stack {
                                 .build())
                         .build()
         );
-        String submitVatApiHost = extractHostFromUrl(this.submitVatLambdaUrl.getUrl());
-        if (StringUtils.isBlank(submitVatApiHost)) {
-            logger.warn("Failed to extract host from submitVatLambdaUrl: {}", this.submitVatLambdaUrl.getUrl());
+        if (skipLambdaUrlOrigins) {
+            logger.info("Skipping Lambda URL origins for submitVatLambdaUrl as per configuration.");
         } else {
+            String submitVatApiHost = extractHostFromUrl(this.submitVatLambdaUrl.getUrl());
             HttpOrigin submitVatApiOrigin = HttpOrigin.Builder.create(submitVatApiHost)
                     .protocolPolicy(OriginProtocolPolicy.HTTPS_ONLY)
                     .build();
@@ -818,10 +828,10 @@ public class WebStack extends Stack {
                                 .build())
                         .build()
         );
-        String logReceiptApiHost = extractHostFromUrl(this.logReceiptLambdaUrl.getUrl());
-        if (StringUtils.isBlank(logReceiptApiHost)) {
-            logger.warn("Failed to extract host from logReceiptLambdaUrl: {}", this.logReceiptLambdaUrl.getUrl());
+        if (skipLambdaUrlOrigins) {
+            logger.info("Skipping Lambda URL origins for logReceiptLambdaUrl as per configuration.");
         } else {
+            String logReceiptApiHost = extractHostFromUrl(this.logReceiptLambdaUrl.getUrl());
             HttpOrigin logReceiptApiOrigin = HttpOrigin.Builder.create(logReceiptApiHost)
                     .protocolPolicy(OriginProtocolPolicy.HTTPS_ONLY)
                     .build();
@@ -875,13 +885,21 @@ public class WebStack extends Stack {
                 .assetHashType(AssetHashType.SOURCE)
                 .build());
         logger.info("Will deploy files from: %s".formatted(docRootPath));
+        
+        // Create LogGroup for BucketDeployment
+        LogGroup bucketDeploymentLogGroup = LogGroup.Builder.create(this, "BucketDeploymentLogGroup")
+                .logGroupName("/aws/lambda/bucket-deployment-%s".formatted(dashedDomainName))
+                .retention(cloudTrailLogGroupRetentionPeriod)
+                .removalPolicy(s3RetainBucket ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY)
+                .build();
+        
         this.deployment = BucketDeployment.Builder.create(this, "DocRootToOriginDeployment")
                 .sources(List.of(this.docRootSource))
                 .destinationBucket(this.originBucket)
                 .distribution(this.distribution)
                 .distributionPaths(List.of("/*"))
                 .retainOnDelete(false)
-                .logRetention(cloudTrailLogGroupRetentionPeriod)
+                .logGroup(bucketDeploymentLogGroup)
                 .expires(Expiration.after(Duration.minutes(5)))
                 .prune(true)
                 .build();
@@ -928,11 +946,6 @@ public class WebStack extends Stack {
     }
 
     private String extractHostFromUrl(String url) {
-        try {
-            return URI.create(url).getHost();
-        } catch (Exception e) {
-            logger.warn("Failed to extract host from URL: {}. Error: {}", url, e.getMessage());
-            return null;
-        }
+        return URI.create(url).getHost();
     }
 }
