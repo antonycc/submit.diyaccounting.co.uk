@@ -611,7 +611,7 @@ public class WebStack extends Stack {
         if (skipLambdaUrlOrigins) {
             logger.info("Skipping Lambda URL origins for authUrlLambdaUrl as per configuration.");
         } else {
-            String authUrlLambdaUrl = this.authUrlLambdaUrl.getUrl();
+            String authUrlLambdaUrl = this.authUrlLambda.getFunctionName();
             HttpOrigin authUrlApiOrigin = HttpOrigin.Builder.create(authUrlLambdaUrl)
                     .protocolPolicy(OriginProtocolPolicy.HTTPS_ONLY)
                     .build();
@@ -670,7 +670,7 @@ public class WebStack extends Stack {
         if (skipLambdaUrlOrigins) {
             logger.info("Skipping Lambda URL origins for exchangeTokenLambdaUrl as per configuration.");
         } else {
-            String exchangeTokenLambdaUrl = this.exchangeTokenLambdaUrl.getUrl();
+            String exchangeTokenLambdaUrl = this.exchangeTokenLambda.getFunctionName();
             HttpOrigin exchangeTokenApiOrigin = HttpOrigin.Builder.create(exchangeTokenLambdaUrl)
                     .protocolPolicy(OriginProtocolPolicy.HTTPS_ONLY)
                     .build();
@@ -725,7 +725,7 @@ public class WebStack extends Stack {
         if (skipLambdaUrlOrigins) {
             logger.info("Skipping Lambda URL origins for submitVatLambdaUrl as per configuration.");
         } else {
-            String submitVatLambdaUrl = this.submitVatLambdaUrl.getUrl();
+            String submitVatLambdaUrl = this.submitVatLambda.getFunctionName();
             HttpOrigin submitVatApiOrigin = HttpOrigin.Builder.create(submitVatLambdaUrl)
                     .protocolPolicy(OriginProtocolPolicy.HTTPS_ONLY)
                     .build();
@@ -826,7 +826,7 @@ public class WebStack extends Stack {
         if (skipLambdaUrlOrigins) {
             logger.info("Skipping Lambda URL origins for logReceiptLambdaUrl as per configuration.");
         } else {
-            String logReceiptLambdaUrl = this.logReceiptLambdaUrl.getUrl();
+            String logReceiptLambdaUrl = this.logReceiptLambda.getFunctionName();
             HttpOrigin logReceiptApiOrigin = HttpOrigin.Builder.create(logReceiptLambdaUrl)
                     .protocolPolicy(OriginProtocolPolicy.HTTPS_ONLY)
                     .build();
