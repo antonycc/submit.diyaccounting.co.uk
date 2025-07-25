@@ -19,12 +19,12 @@ on:
         skipDeploy:
             description: 'Skip deployment step'
             required: false
-            default: 'false'
+            default: 'true'
             type: string
 
 env:
   environment: 'ci'
-  skipDeploy: ${{ inputs.skipDeploy || 'false' }}
+  skipDeploy: ${{ inputs.skipDeploy || 'true' }}
 
 jobs:
 
@@ -107,7 +107,7 @@ jobs:
           echo "deploy=${deploy?}" | tee -a "${GITHUB_OUTPUT?}"
 
       - name: deploy
-        if: skipDeploy != 'true'
+        if: ${{ skipDeploy != 'true' }}
         id: deploy
         shell: bash
         run: npx dotenv -e .env.ci -- ${{ steps.stacks.outputs.deploy }}
