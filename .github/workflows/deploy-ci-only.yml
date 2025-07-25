@@ -107,7 +107,7 @@ jobs:
           echo "deploy=${deploy?}" | tee -a "${GITHUB_OUTPUT?}"
 
       - name: deploy
-        if: ${{ skipDeploy != 'true' }}
+        if: ${{ env.skipDeploy != 'true' }}
         id: deploy
         shell: bash
         run: npx dotenv -e .env.ci -- ${{ steps.stacks.outputs.deploy }}
