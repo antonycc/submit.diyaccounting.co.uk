@@ -38,7 +38,6 @@ import software.amazon.awscdk.services.cloudfront.origins.S3BucketOrigin;
 import software.amazon.awscdk.services.cloudfront.origins.S3BucketOriginWithOAIProps;
 import software.amazon.awscdk.services.cloudtrail.S3EventSelector;
 import software.amazon.awscdk.services.cloudtrail.Trail;
-import software.amazon.awscdk.services.ecr.assets.DockerImageAssetOptions;
 import software.amazon.awscdk.services.lambda.AssetImageCodeProps;
 import software.amazon.awscdk.services.lambda.Code;
 import software.amazon.awscdk.services.lambda.DockerImageCode;
@@ -645,12 +644,6 @@ public class WebStack extends Stack {
             if (StringUtils.isNotBlank(optionalTestAccessToken)){
                 exchangeTokenLambdaEnv.put("DIY_SUBMIT_TEST_ACCESS_TOKEN", optionalTestAccessToken);
             }
-            DockerImageCode code = DockerImageCode.fromImageAsset(
-                    ".",
-                    DockerImageAssetOptions.builder()
-                            .cmd(List.of("index.handler"))  // Pass the handler name here
-                            .build()
-            );
             this.exchangeTokenLambda = DockerImageFunction.Builder.create(this, "ExchangeTokenLambda")
                     .code(DockerImageCode.fromImageAsset(
                             ".",
