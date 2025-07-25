@@ -230,6 +230,14 @@
                 <configuration>
                     <source>${maven.compiler.source}</source>
                     <target>${maven.compiler.target}</target>
+                    <!-- Suppress annotation processing warning -->
+                    <proc>none</proc>
+                    <!-- JVM arguments to suppress class sharing warnings during compilation -->
+                    <compilerArgs>
+                        <arg>-J-Xshare:off</arg>
+                        <arg>-J-XX:+EnableDynamicAgentLoading</arg>
+                        <arg>-Xlint:-options</arg>
+                    </compilerArgs>
                 </configuration>
             </plugin>
             <plugin>
@@ -242,6 +250,13 @@
                     <reuseForks>true</reuseForks>
                     <!-- Ensure console output is visible -->
                     <useSystemClassLoader>true</useSystemClassLoader>
+                    <!-- JVM arguments to suppress Java agent warnings -->
+                    <argLine>
+                        -XX:+EnableDynamicAgentLoading
+                        -Xshare:off
+                        --add-opens java.base/java.lang=ALL-UNNAMED
+                        --add-opens java.base/java.util=ALL-UNNAMED
+                    </argLine>
                 </configuration>
             </plugin>
             <plugin>
@@ -275,7 +290,7 @@
                                         <exclude>META-INF/MANIFEST.MF</exclude>
                                         <exclude>META-INF/FastDoubleParser-LICENSE</exclude>
                                         <exclude>META-INF/FastDoubleParser-NOTICE</exclude>
-                                        <exclude>META-INF/versions/9/module-info.class</exclude>
+                                        <exclude>**/module-info.class</exclude>
                                         <exclude>META-INF/io.netty.versions.properties</exclude>
                                     </excludes>
                                 </filter>
