@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import * as setLambdaOriginHostsModule from "../../src/lib/setLambdaOriginHosts.js";
+import * as setLambdaOriginHostsModule from "./setLambdaOriginHosts.js";
 import {
     ListDistributionsCommand,
     GetDistributionConfigCommand,
