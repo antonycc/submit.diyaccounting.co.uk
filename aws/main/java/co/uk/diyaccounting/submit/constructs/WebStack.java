@@ -472,6 +472,7 @@ public class WebStack extends Stack {
             optionalTestS3AccessKey = null;
             optionalTestS3SecretKey = null;
         }
+
         if (s3UseExistingBucket) {
             this.originBucket = Bucket.fromBucketName(this, "OriginBucket", originBucketName);
         } else {
@@ -493,6 +494,38 @@ public class WebStack extends Stack {
                     .serverAccessLogsBucket(this.originAccessLogBucket)
                     .build();
         }
+
+        // Grant the read access to an origin identity
+        this.originIdentity = OriginAccessIdentity.Builder
+                .create(this, "OriginAccessIdentity")
+                .comment("Identity created for access to the web website bucket via the CloudFront distribution")
+                .build();
+        originBucket.grantRead(this.originIdentity); // This adds "s3:List*" so that 404s are handled.
+        this.origin = S3Origin.Builder.create(this.originBucket)
+                .originAccessIdentity(this.originIdentity)
+                .build();
+
+        // Create an origin from the bucket
+        final OriginRequestPolicy originRequestPolicy = OriginRequestPolicy.Builder
+                .create(this, "OriginRequestPolicy")
+                .comment("Policy to allow content headers but no cookies from the origin")
+                .cookieBehavior(OriginRequestCookieBehavior.none())
+                .headerBehavior(OriginRequestHeaderBehavior.allowList("Accept", "Accept-Language", "Origin"))
+                .build();
+        final BehaviorOptions s3BucketOriginBehaviour = BehaviorOptions.builder()
+                .origin(this.origin)
+                .allowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
+                .originRequestPolicy(originRequestPolicy)
+                .viewerProtocolPolicy(ViewerProtocolPolicy.REDIRECT_TO_HTTPS)
+                .responseHeadersPolicy(ResponseHeadersPolicy.CORS_ALLOW_ALL_ORIGINS_WITH_PREFLIGHT_AND_SECURITY_HEADERS)
+                .compress(true)
+                .build();
+        this.distributionAccessLogBucket = LogForwardingBucket.Builder
+                .create(this, "DistributionAccess", logGzippedS3ObjectEventHandlerSource, LogGzippedS3ObjectEvent.class)
+                .bucketName(distributionAccessLogBucketName)
+                .functionNamePrefix("%s-dist-access-".formatted(dashedDomainName))
+                .retentionPeriodDays(accessLogGroupRetentionPeriodDays)
+                .build();
 
         // Add cloud trail to the origin bucket if enabled
         // CloudTrail for the origin bucket
@@ -527,6 +560,8 @@ public class WebStack extends Stack {
         } else {
             logger.info("CloudTrail is not enabled for the origin bucket.");
         }
+
+        var lambdaUrlToOriginsBehaviourMappings = new HashMap<String, BehaviorOptions>();
 
         // authUrlHandler
         if ("test".equals(env)) {
@@ -568,10 +603,21 @@ public class WebStack extends Stack {
                                 .build())
                         .build()
         );
-        String authUrlApiHost = safeGetHostFromUrl(this.authUrlLambdaUrl.getUrl());
-        HttpOrigin authUrlApiOrigin = HttpOrigin.Builder.create(authUrlApiHost)
-                .protocolPolicy(OriginProtocolPolicy.HTTPS_ONLY)
-                .build();
+        String authUrlApiHost = extractHostFromUrl(this.authUrlLambdaUrl.getUrl());
+        if (StringUtils.isBlank(authUrlApiHost)) {
+            logger.warn("Failed to extract host from authUrlLambdaUrl: {}", this.authUrlLambdaUrl.getUrl());
+        } else {
+            HttpOrigin authUrlApiOrigin = HttpOrigin.Builder.create(authUrlApiHost)
+                    .protocolPolicy(OriginProtocolPolicy.HTTPS_ONLY)
+                    .build();
+            final BehaviorOptions authUrlOriginBehaviour = BehaviorOptions.builder()
+                    .origin(authUrlApiOrigin)
+                    .allowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
+                    .cachePolicy(CachePolicy.CACHING_DISABLED)
+                    .originRequestPolicy(OriginRequestPolicy.ALL_VIEWER)
+                    .build();
+            lambdaUrlToOriginsBehaviourMappings.put("/api/auth-url*", authUrlOriginBehaviour);
+        }
 
         // exchangeTokenHandler
         if ("test".equals(env)) {
@@ -616,10 +662,21 @@ public class WebStack extends Stack {
                                 .build())
                         .build()
         );
-        String exchangeTokenApiHost = safeGetHostFromUrl(this.exchangeTokenLambdaUrl.getUrl());
-        HttpOrigin exchangeTokenApiOrigin = HttpOrigin.Builder.create(exchangeTokenApiHost)
-                .protocolPolicy(OriginProtocolPolicy.HTTPS_ONLY)
-                .build();
+        String exchangeTokenApiHost = extractHostFromUrl(this.exchangeTokenLambdaUrl.getUrl());
+        if (StringUtils.isBlank(exchangeTokenApiHost)) {
+            logger.warn("Failed to extract host from exchangeTokenLambdaUrl: {}", this.exchangeTokenLambdaUrl.getUrl());
+        } else {
+            HttpOrigin exchangeTokenApiOrigin = HttpOrigin.Builder.create(exchangeTokenApiHost)
+                    .protocolPolicy(OriginProtocolPolicy.HTTPS_ONLY)
+                    .build();
+            final BehaviorOptions exchangeTokenOriginBehaviour = BehaviorOptions.builder()
+                    .origin(exchangeTokenApiOrigin)
+                    .allowedMethods(AllowedMethods.ALLOW_ALL)
+                    .cachePolicy(CachePolicy.CACHING_DISABLED)
+                    .originRequestPolicy(OriginRequestPolicy.ALL_VIEWER)
+                    .build();
+            lambdaUrlToOriginsBehaviourMappings.put("/api/exchange-token*", exchangeTokenOriginBehaviour);
+        }
 
         // submitVatHandler
         if ("test".equals(env)) {
@@ -660,10 +717,21 @@ public class WebStack extends Stack {
                                 .build())
                         .build()
         );
-        String submitVatApiHost = safeGetHostFromUrl(this.submitVatLambdaUrl.getUrl());
-        HttpOrigin submitVatApiOrigin = HttpOrigin.Builder.create(submitVatApiHost)
-                .protocolPolicy(OriginProtocolPolicy.HTTPS_ONLY)
-                .build();
+        String submitVatApiHost = extractHostFromUrl(this.submitVatLambdaUrl.getUrl());
+        if (StringUtils.isBlank(submitVatApiHost)) {
+            logger.warn("Failed to extract host from submitVatLambdaUrl: {}", this.submitVatLambdaUrl.getUrl());
+        } else {
+            HttpOrigin submitVatApiOrigin = HttpOrigin.Builder.create(submitVatApiHost)
+                    .protocolPolicy(OriginProtocolPolicy.HTTPS_ONLY)
+                    .build();
+            final BehaviorOptions submitVatOriginBehaviour = BehaviorOptions.builder()
+                    .origin(submitVatApiOrigin)
+                    .allowedMethods(AllowedMethods.ALLOW_ALL)
+                    .cachePolicy(CachePolicy.CACHING_DISABLED)
+                    .originRequestPolicy(OriginRequestPolicy.ALL_VIEWER)
+                    .build();
+            lambdaUrlToOriginsBehaviourMappings.put("/api/submit-vat*", submitVatOriginBehaviour);
+        }
 
         // Create receipts bucket for storing VAT submission receipts
         this.receiptsBucket = Bucket.Builder.create(this, "ReceiptsBucket")
@@ -735,8 +803,6 @@ public class WebStack extends Stack {
                         .build();
             }
         }
-
-        // Grant the logReceiptLambda permission to write to the receipts bucket
         this.receiptsBucket.grantWrite(this.logReceiptLambda);
         this.logReceiptLambdaLogGroup = new LogGroup(this, "LogReceiptLambdaLogGroup", LogGroupProps.builder()
                 .logGroupName("/aws/lambda/" + this.logReceiptLambda.getFunctionName())
@@ -752,20 +818,21 @@ public class WebStack extends Stack {
                                 .build())
                         .build()
         );
-        String logReceiptApiHost = safeGetHostFromUrl(this.logReceiptLambdaUrl.getUrl());
-        HttpOrigin logReceiptApiOrigin = HttpOrigin.Builder.create(logReceiptApiHost)
-                .protocolPolicy(OriginProtocolPolicy.HTTPS_ONLY)
-                .build();
-
-        // Grant the read access to an origin identity
-        this.originIdentity = OriginAccessIdentity.Builder
-                .create(this, "OriginAccessIdentity")
-                .comment("Identity created for access to the web website bucket via the CloudFront distribution")
-                .build();
-        originBucket.grantRead(this.originIdentity); // This adds "s3:List*" so that 404s are handled.
-        this.origin = S3Origin.Builder.create(this.originBucket)
-                .originAccessIdentity(this.originIdentity)
-                .build();
+        String logReceiptApiHost = extractHostFromUrl(this.logReceiptLambdaUrl.getUrl());
+        if (StringUtils.isBlank(logReceiptApiHost)) {
+            logger.warn("Failed to extract host from logReceiptLambdaUrl: {}", this.logReceiptLambdaUrl.getUrl());
+        } else {
+            HttpOrigin logReceiptApiOrigin = HttpOrigin.Builder.create(logReceiptApiHost)
+                    .protocolPolicy(OriginProtocolPolicy.HTTPS_ONLY)
+                    .build();
+            final BehaviorOptions logReceiptOriginBehaviour = BehaviorOptions.builder()
+                    .origin(logReceiptApiOrigin)
+                    .allowedMethods(AllowedMethods.ALLOW_ALL)
+                    .cachePolicy(CachePolicy.CACHING_DISABLED)
+                    .originRequestPolicy(OriginRequestPolicy.ALL_VIEWER)
+                    .build();
+            lambdaUrlToOriginsBehaviourMappings.put("/api/log-receipt*", logReceiptOriginBehaviour);
+        }
 
         // Create a certificate for the website domain
         if (useExistingCertificate) {
@@ -781,60 +848,11 @@ public class WebStack extends Stack {
         }
 
         // Create the CloudFront distribution using the web website bucket as the origin and Origin Access Identity
-        this.distributionAccessLogBucket = LogForwardingBucket.Builder
-                .create(this, "DistributionAccess", logGzippedS3ObjectEventHandlerSource, LogGzippedS3ObjectEvent.class)
-                .bucketName(distributionAccessLogBucketName)
-                .functionNamePrefix("%s-dist-access-".formatted(dashedDomainName))
-                .retentionPeriodDays(accessLogGroupRetentionPeriodDays)
-                .build();
-        final OriginRequestPolicy originRequestPolicy = OriginRequestPolicy.Builder
-                .create(this, "OriginRequestPolicy")
-                .comment("Policy to allow content headers but no cookies from the origin")
-                .cookieBehavior(OriginRequestCookieBehavior.none())
-                .headerBehavior(OriginRequestHeaderBehavior.allowList("Accept", "Accept-Language", "Origin"))
-                .build();
-        final BehaviorOptions s3BucketOriginBehaviour = BehaviorOptions.builder()
-                .origin(this.origin)
-                .allowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
-                .originRequestPolicy(originRequestPolicy)
-                .viewerProtocolPolicy(ViewerProtocolPolicy.REDIRECT_TO_HTTPS)
-                .responseHeadersPolicy(ResponseHeadersPolicy.CORS_ALLOW_ALL_ORIGINS_WITH_PREFLIGHT_AND_SECURITY_HEADERS)
-                .compress(true)
-                .build();
-        final BehaviorOptions authUrlOriginBehaviour = BehaviorOptions.builder()
-                        .origin(authUrlApiOrigin)
-                        .allowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
-                        .cachePolicy(CachePolicy.CACHING_DISABLED)
-                        .originRequestPolicy(OriginRequestPolicy.ALL_VIEWER)
-                        .build();
-        final BehaviorOptions exchangeTokenOriginBehaviour = BehaviorOptions.builder()
-                .origin(exchangeTokenApiOrigin)
-                .allowedMethods(AllowedMethods.ALLOW_ALL)
-                .cachePolicy(CachePolicy.CACHING_DISABLED)
-                .originRequestPolicy(OriginRequestPolicy.ALL_VIEWER)
-                .build();
-        final BehaviorOptions submitVatOriginBehaviour = BehaviorOptions.builder()
-                .origin(submitVatApiOrigin)
-                .allowedMethods(AllowedMethods.ALLOW_ALL)
-                .cachePolicy(CachePolicy.CACHING_DISABLED)
-                .originRequestPolicy(OriginRequestPolicy.ALL_VIEWER)
-                .build();
-        final BehaviorOptions logReceiptOriginBehaviour = BehaviorOptions.builder()
-                .origin(logReceiptApiOrigin)
-                .allowedMethods(AllowedMethods.ALLOW_ALL)
-                .cachePolicy(CachePolicy.CACHING_DISABLED)
-                .originRequestPolicy(OriginRequestPolicy.ALL_VIEWER)
-                .build();
         this.distribution = Distribution.Builder
                 .create(this, "Distribution")
                 .domainNames(Collections.singletonList(this.domainName))
                 .defaultBehavior(s3BucketOriginBehaviour)
-                .additionalBehaviors(Map.of(
-                    "/api/auth-url*", authUrlOriginBehaviour,
-                    "/api/exchange-token*", exchangeTokenOriginBehaviour,
-                    "/api/submit-vat*", submitVatOriginBehaviour,
-                    "/api/log-receipt*", logReceiptOriginBehaviour
-                ))
+                .additionalBehaviors(lambdaUrlToOriginsBehaviourMappings)
                 .defaultRootObject(defaultDocumentAtOrigin)
                 .errorResponses(List.of(ErrorResponse.builder()
                         .httpStatus(HttpStatus.SC_NOT_FOUND)
@@ -909,23 +927,12 @@ public class WebStack extends Stack {
         return customValue;
     }
 
-    /**
-     * Safely extracts the host from a URL string, handling unresolved CDK tokens during testing.
-     * CDK tokens like ${Token[TOKEN.134]} cannot be parsed as URIs, so we return a mock host
-     * value during testing to prevent IllegalArgumentException.
-     */
-    private String safeGetHostFromUrl(String url) {
-        // Check if the URL contains unresolved CDK tokens
-        if (url != null && url.contains("${Token[")) {
-            // Return a mock host for testing purposes
-            return "mock-lambda-host.amazonaws.com";
-        }
-        
+    private String extractHostFromUrl(String url) {
         try {
             return URI.create(url).getHost();
         } catch (Exception e) {
-            logger.warn("Failed to parse URL: {}, using mock host", url);
-            return "mock-lambda-host.amazonaws.com";
+            logger.warn("Failed to extract host from URL: {}. Error: {}", url, e.getMessage());
+            return null;
         }
     }
 }
