@@ -52,8 +52,7 @@ async function updateDistributionOrigins(distId, etag, distConfig, originUpdates
     await cloudfront.send(new UpdateDistributionCommand(params));
 }
 
-export async function setLambdaOriginHosts({ environment, hostedZoneName }) {
-    const domain = `${environment}.${hostedZoneName}`;
+export async function setLambdaOriginHosts(domain) {
     const dist = await findDistributionByAlias(domain);
     if (!dist) {
         throw new Error(`CloudFront distribution with alias ${domain} not found`);
@@ -83,14 +82,8 @@ export async function setLambdaOriginHosts({ environment, hostedZoneName }) {
 
 // Allow script to be run directly via node
 if (process.argv[1].endsWith("setLambdaOriginHosts.js")) {
-    const env = process.env.ENVIRONMENT || "ci";
-    const hostedZone = process.env.AWS_HOSTED_ZONE_NAME;
-    if (!hostedZone) {
-        console.error("AWS_HOSTED_ZONE_NAME env var not set");
-        process.exit(1);
-    }
-
-    setLambdaOriginHosts({ environment: env, hostedZoneName: hostedZone })
+    const domain = `CLOUDFRONT_ORIGIN_ALIAS`;
+    setLambdaOriginHosts(domain)
         .then(() => console.log("Done"))
         .catch(err => {
             console.error(err);

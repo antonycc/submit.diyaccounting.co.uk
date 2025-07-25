@@ -119,9 +119,7 @@ jobs:
 
       - name: Fix CloudFront origins to Lambda URLs
         env:
-          AWS_REGION: eu-west-2
-          AWS_HOSTED_ZONE_NAME: ${{ vars.AWS_HOSTED_ZONE_NAME }}
-          ENVIRONMENT: ${{ inputs.environment || 'ci' }}
+          CLOUDFRONT_ORIGIN_ALIAS: "${{ inputs.environment || 'ci' }}.submit.${{ vars.AWS_HOSTED_ZONE_NAME }}"
         run: npm run set-lambda-origin-hosts
 
   npm-behaviour-test-ci:
