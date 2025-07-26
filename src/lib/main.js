@@ -205,9 +205,6 @@ export async function logReceiptHandler(event) {
   if (!process.env.DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX) {
     errorMessages.push({message: "DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX environment variable is not set, cannot log receipt"});
   }
-  if (!process.env.DIY_SUBMIT_HOME_URL) {
-    errorMessages.push({message: "DIY_SUBMIT_HOME_URL environment variable is not set, cannot log receipt"});
-  }
   if (errorMessages.length > 0) {
     const response = {
       statusCode: 400,
