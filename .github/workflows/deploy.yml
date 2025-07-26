@@ -120,7 +120,7 @@ jobs:
       - name: synth
         id: synth
         shell: bash
-        run: npx cdk synth --strict --validation --no-staging
+        run: npx dotenv -e .env.ci -- npx cdk synth --strict --validation --no-staging
 
   deploy:
     needs:
@@ -224,7 +224,7 @@ jobs:
       - name: synth
         id: synth
         shell: bash
-        run: ${{ steps.stacks.outputs.synth }}
+        run: npx dotenv -e .env.ci -- ${{ steps.stacks.outputs.synth }}
         env:
           GITHUB_ACTOR: ${{ github.actor }}
           ENV_NAME: ${{ inputs.environment || 'ci' }}
@@ -246,7 +246,7 @@ jobs:
       - name: deploy
         id: deploy
         shell: bash
-        run: ${{ steps.stacks.outputs.deploy }}
+        run: npx dotenv -e .env.ci -- ${{ steps.stacks.outputs.deploy }}
         env:
           GITHUB_ACTOR: ${{ github.actor }}
           ENV_NAME: ${{ inputs.environment || 'ci' }}
