@@ -629,7 +629,7 @@ public class WebStack extends Stack {
             final OriginRequestPolicy authUrlOriginRequestPolicy = OriginRequestPolicy.Builder
                     .create(this, "AuthUrlOriginRequestPolicy")
                     .originRequestPolicyName(this.authUrlLambda.getFunctionName() + "-origin-request-policy")
-                    .comment("Policy for rest APIs (no cookies, allow specific query parameters and headers)")
+                    .comment("Policy for rest APIs (allow all cookies, query parameters, and headers)")
                     .cookieBehavior(OriginRequestCookieBehavior.all())
                     .headerBehavior(OriginRequestHeaderBehavior.all())  // TODO: Minimize headers
                     //.queryStringBehavior(OriginRequestQueryStringBehavior.allowList("state"))
@@ -639,9 +639,11 @@ public class WebStack extends Stack {
                     .origin(authUrlApiOrigin)
                     //.allowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
                     .allowedMethods(AllowedMethods.ALLOW_ALL)
-                    .cachePolicy(CachePolicy.USE_ORIGIN_CACHE_CONTROL_HEADERS_QUERY_STRINGS)
-                    //.originRequestPolicy(authUrlOriginRequestPolicy)
-                    .originRequestPolicy(OriginRequestPolicy.CORS_S3_ORIGIN)
+                    //.cachePolicy(CachePolicy.USE_ORIGIN_CACHE_CONTROL_HEADERS_QUERY_STRINGS)
+                    .cachePolicy(CachePolicy.CACHING_DISABLED)
+                    .originRequestPolicy(authUrlOriginRequestPolicy)
+                    //.originRequestPolicy(OriginRequestPolicy.CORS_S3_ORIGIN)
+                    .viewerProtocolPolicy(ViewerProtocolPolicy.REDIRECT_TO_HTTPS)
                     .build();
             lambdaUrlToOriginsBehaviourMappings.put("/api/auth-url*", authUrlOriginBehaviour);
         }
