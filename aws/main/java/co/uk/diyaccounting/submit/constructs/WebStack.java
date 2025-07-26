@@ -637,8 +637,9 @@ public class WebStack extends Stack {
                     .build();
             final BehaviorOptions authUrlOriginBehaviour = BehaviorOptions.builder()
                     .origin(authUrlApiOrigin)
-                    .allowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
-                    .cachePolicy(CachePolicy.CACHING_DISABLED)
+                    //.allowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
+                    .allowedMethods(AllowedMethods.ALLOW_ALL)
+                    .cachePolicy(CachePolicy.USE_ORIGIN_CACHE_CONTROL_HEADERS_QUERY_STRINGS)
                     .originRequestPolicy(authUrlOriginRequestPolicy)
                     .build();
             lambdaUrlToOriginsBehaviourMappings.put("/api/auth-url*", authUrlOriginBehaviour);
