@@ -33,13 +33,13 @@
     "optionalTestS3SecretKey": "",
     "receiptsBucketPostfix": "receipts",
     "lambdaEntry": "src/lib/main.",
-    "authUrlLambdaHandlerFunctionName": "AuthUrlHandler",
+    "authUrlLambdaHandlerFunctionName": "authUrlHandler",
     "authUrlLambdaDuration": "30000",
-    "exchangeTokenLambdaHandlerFunctionName": "ExchangeTokenHandler",
+    "exchangeTokenLambdaHandlerFunctionName": "exchangeTokenHandler",
     "exchangeTokenLambdaDuration": "30000",
-    "submitVatLambdaHandlerFunctionName": "SubmitVatHandler",
+    "submitVatLambdaHandlerFunctionName": "submitVatHandler",
     "submitVatLambdaDuration": "60000",
-    "logReceiptLambdaHandlerFunctionName": "LogReceiptHandler",
+    "logReceiptLambdaHandlerFunctionName": "logReceiptHandler",
     "logReceiptLambdaDuration": "30000"
   }
 }

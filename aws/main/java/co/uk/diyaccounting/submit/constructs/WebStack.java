@@ -38,6 +38,7 @@ import software.amazon.awscdk.services.cloudfront.origins.S3BucketOrigin;
 import software.amazon.awscdk.services.cloudfront.origins.S3BucketOriginWithOAIProps;
 import software.amazon.awscdk.services.cloudtrail.S3EventSelector;
 import software.amazon.awscdk.services.cloudtrail.Trail;
+import software.amazon.awscdk.services.lambda.AssetImageCodeProps;
 import software.amazon.awscdk.services.lambda.Code;
 import software.amazon.awscdk.services.lambda.DockerImageCode;
 import software.amazon.awscdk.services.lambda.DockerImageFunction;
@@ -160,6 +161,7 @@ public class WebStack extends Stack {
             this.scope = scope;
             this.id = id;
             this.props = props;
+            // TODO: Load default values from cdk.json here, then let the properties be overridden by the mutators
         }
 
         public static Builder create(Construct scope, String id) {
@@ -443,19 +445,19 @@ public class WebStack extends Stack {
         String lambaEntry =  this.getConfigValue(builder.lambdaEntry, "lambdaEntry");
 
         String authUrlLambdaHandlerFunctionName = Builder.buildFunctionName(dashedDomainName, this.getConfigValue(builder.authUrlLambdaHandlerFunctionName, "authUrlLambdaHandlerFunctionName"));
-        String authUrlLambdaHandler = lambaEntry + authUrlLambdaHandlerFunctionName;
+        String authUrlLambdaHandlerCmd = lambaEntry + authUrlLambdaHandlerFunctionName;
         Duration authUrlLambdaDuration = Duration.millis(Long.parseLong(this.getConfigValue(builder.authUrlLambdaDuration, "authUrlLambdaDuration")));
 
         String exchangeTokenLambdaHandlerFunctionName = Builder.buildFunctionName(dashedDomainName, this.getConfigValue(builder.exchangeTokenLambdaHandlerFunctionName, "exchangeTokenLambdaHandlerFunctionName"));
-        String exchangeTokenLambdaHandler = lambaEntry + exchangeTokenLambdaHandlerFunctionName;
+        String exchangeTokenLambdaHandlerCmd = lambaEntry + exchangeTokenLambdaHandlerFunctionName;
         Duration exchangeTokenLambdaDuration = Duration.millis(Long.parseLong(this.getConfigValue(builder.exchangeTokenLambdaDuration, "exchangeTokenLambdaDuration")));
 
         String submitVatLambdaHandlerFunctionName = Builder.buildFunctionName(dashedDomainName, this.getConfigValue(builder.submitVatLambdaHandlerFunctionName, "submitVatLambdaHandlerFunctionName"));
-        String submitVatLambdaHandler = lambaEntry + submitVatLambdaHandlerFunctionName;
+        String submitVatLambdaHandlerCmd = lambaEntry + submitVatLambdaHandlerFunctionName;
         Duration submitVatLambdaDuration = Duration.millis(Long.parseLong(this.getConfigValue(builder.submitVatLambdaDuration, "submitVatLambdaDuration")));
 
         String logReceiptLambdaHandlerFunctionName = Builder.buildFunctionName(dashedDomainName, this.getConfigValue(builder.logReceiptLambdaHandlerFunctionName, "logReceiptLambdaHandlerFunctionName"));
-        String logReceiptLambdaHandler = lambaEntry + logReceiptLambdaHandlerFunctionName;
+        String logReceiptLambdaHandlerCmd = lambaEntry + logReceiptLambdaHandlerFunctionName;
         Duration logReceiptLambdaDuration = Duration.millis(Long.parseLong(this.getConfigValue(builder.logReceiptLambdaDuration, "logReceiptLambdaDuration")));
 
         // Lambda config values
@@ -585,8 +587,11 @@ public class WebStack extends Stack {
                     "DIY_SUBMIT_HOME_URL", homeUrl,
                     "DIY_SUBMIT_HMRC_BASE_URI", hmrcBaseUri
             );
+            var assetImageCodeProps = AssetImageCodeProps.builder()
+                    .cmd(List.of(authUrlLambdaHandlerCmd))
+                    .build();
             this.authUrlLambda = DockerImageFunction.Builder.create(this, "AuthUrlLambda")
-                    .code(DockerImageCode.fromImageAsset("."))
+                    .code(DockerImageCode.fromImageAsset(".", assetImageCodeProps))
                     .environment(authUrlLambdaEnv)
                     .functionName(authUrlLambdaHandlerFunctionName)
                     .timeout(authUrlLambdaDuration)
@@ -635,7 +640,7 @@ public class WebStack extends Stack {
         } else {
             // AssetImageCodeProps.builder().buildArgs(Map.of("HANDLER", exchangeTokenLambdaHandler)).build())
             var exchangeTokenLambdaEnv = new HashMap<>(Map.of(
-                    "HANDLER", exchangeTokenLambdaHandler,
+                    "HANDLER", exchangeTokenLambdaHandlerCmd,
                     "DIY_SUBMIT_HMRC_CLIENT_ID", hmrcClientId,
                     "DIY_SUBMIT_HOME_URL", homeUrl,
                     "DIY_SUBMIT_HMRC_BASE_URI", hmrcBaseUri
@@ -692,7 +697,7 @@ public class WebStack extends Stack {
                     .build();
         } else {
             var submitVatLambdaEnv = Map.of(
-                    "HANDLER", submitVatLambdaHandler,
+                    "HANDLER", submitVatLambdaHandlerCmd,
                     "DIY_SUBMIT_HOME_URL", homeUrl,
                     "DIY_SUBMIT_HMRC_BASE_URI", hmrcBaseUri
             );
@@ -779,7 +784,7 @@ public class WebStack extends Stack {
             if(StringUtils.isNotBlank( optionalTestS3Endpoint) && StringUtils.isNotBlank(optionalTestS3AccessKey) || StringUtils.isNotBlank(optionalTestS3SecretKey)) {
                 // For production like integrations without AWS we can use test S3 credentials
                 var logReceiptLambdaTestEnv = Map.of(
-                        "HANDLER", logReceiptLambdaHandler,
+                        "HANDLER", logReceiptLambdaHandlerCmd,
                         "DIY_SUBMIT_TEST_S3_ENDPOINT", optionalTestS3Endpoint,
                         "DIY_SUBMIT_TEST_S3_ACCESS_KEY", optionalTestS3AccessKey,
                         "DIY_SUBMIT_TEST_S3_SECRET_KEY", optionalTestS3SecretKey,
@@ -793,7 +798,7 @@ public class WebStack extends Stack {
                         .build();
             } else {
                 var logReceiptLambdaEnv = Map.of(
-                        "HANDLER", logReceiptLambdaHandler,
+                        "HANDLER", logReceiptLambdaHandlerCmd,
                         "DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX", receiptsBucketPostfix
                 );
                 this.logReceiptLambda = DockerImageFunction.Builder.create(this, "LogReceiptLambda")
