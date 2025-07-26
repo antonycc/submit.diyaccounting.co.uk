@@ -637,7 +637,7 @@ public class WebStack extends Stack {
                     .origin(authUrlApiOrigin)
                     .allowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
                     .cachePolicy(CachePolicy.CACHING_DISABLED)
-                    .originRequestPolicy(OriginRequestPolicy.CORS_S3_ORIGIN)
+                    .originRequestPolicy(authUrlOriginRequestPolicy)
                     .build();
             lambdaUrlToOriginsBehaviourMappings.put("/api/auth-url*", authUrlOriginBehaviour);
         }
@@ -901,7 +901,7 @@ public class WebStack extends Stack {
                 .httpVersion(HttpVersion.HTTP2_AND_3)
                 .enableLogging(true)
                 .logBucket(this.distributionAccessLogBucket)
-                .logIncludesCookies(true)
+                .logIncludesCookies(false)
                 .build();
         this.distributionUrl = "https://%s/".formatted(this.distribution.getDomainName());
         logger.info("Distribution URL: %s".formatted(distributionUrl));
