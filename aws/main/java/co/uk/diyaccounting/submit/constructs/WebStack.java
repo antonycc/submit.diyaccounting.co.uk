@@ -482,26 +482,8 @@ public class WebStack extends Stack {
 
         boolean skipLambdaUrlOrigins = Boolean.parseBoolean(builder.skipLambdaUrlOrigins);
 
+        // Origin bucket for the CloudFront distribution
         String receiptsBucketFullName = Builder.buildBucketName(dashedDomainName, builder.receiptsBucketPostfix);
-
-        // Lambdas
-
-        String authUrlLambdaHandlerLambdaFunctionName = Builder.buildFunctionName(dashedDomainName, builder.authUrlLambdaHandlerFunctionName);
-        String authUrlLambdaHandlerCmd = builder.lambdaEntry + builder.authUrlLambdaHandlerFunctionName;
-        Duration authUrlLambdaDuration = Duration.millis(Long.parseLong(builder.authUrlLambdaDuration));
-
-        String exchangeTokenLambdaHandlerLambdaFunctionName = Builder.buildFunctionName(dashedDomainName, builder.exchangeTokenLambdaHandlerFunctionName);
-        String exchangeTokenLambdaHandlerCmd = builder.lambdaEntry + builder.exchangeTokenLambdaHandlerFunctionName;
-        Duration exchangeTokenLambdaDuration = Duration.millis(Long.parseLong(builder.exchangeTokenLambdaDuration));
-
-        String submitVatLambdaHandlerLambdaFunctionName = Builder.buildFunctionName(dashedDomainName, builder.submitVatLambdaHandlerFunctionName);
-        String submitVatLambdaHandlerCmd = builder.lambdaEntry + builder.submitVatLambdaHandlerFunctionName;
-        Duration submitVatLambdaDuration = Duration.millis(Long.parseLong(builder.submitVatLambdaDuration));
-
-        String logReceiptLambdaHandlerLambdaFunctionName = Builder.buildFunctionName(dashedDomainName, builder.logReceiptLambdaHandlerFunctionName);
-        String logReceiptLambdaHandlerCmd = builder.lambdaEntry + builder.logReceiptLambdaHandlerFunctionName;
-        Duration logReceiptLambdaDuration = Duration.millis(Long.parseLong(builder.logReceiptLambdaDuration));
-
         if (s3UseExistingBucket) {
             this.originBucket = Bucket.fromBucketName(this, "OriginBucket", originBucketName);
         } else {
@@ -594,6 +576,9 @@ public class WebStack extends Stack {
         var lambdaUrlToOriginsBehaviourMappings = new HashMap<String, BehaviorOptions>();
 
         // authUrlHandler
+        String authUrlLambdaHandlerLambdaFunctionName = Builder.buildFunctionName(dashedDomainName, builder.authUrlLambdaHandlerFunctionName);
+        String authUrlLambdaHandlerCmd = builder.lambdaEntry + builder.authUrlLambdaHandlerFunctionName;
+        Duration authUrlLambdaDuration = Duration.millis(Long.parseLong(builder.authUrlLambdaDuration));
         if ("test".equals(builder.env)) {
             // For testing, create a simple Function instead of DockerImageFunction to avoid Docker builds
             this.authUrlLambda = Function.Builder.create(this, "AuthUrlLambda")
@@ -650,6 +635,9 @@ public class WebStack extends Stack {
         }
 
         // exchangeTokenHandler
+        String exchangeTokenLambdaHandlerLambdaFunctionName = Builder.buildFunctionName(dashedDomainName, builder.exchangeTokenLambdaHandlerFunctionName);
+        String exchangeTokenLambdaHandlerCmd = builder.lambdaEntry + builder.exchangeTokenLambdaHandlerFunctionName;
+        Duration exchangeTokenLambdaDuration = Duration.millis(Long.parseLong(builder.exchangeTokenLambdaDuration));
         if ("test".equals(builder.env)) {
             // For testing, create a simple Function instead of DockerImageFunction to avoid Docker builds
             this.exchangeTokenLambda = Function.Builder.create(this, "ExchangeTokenLambda")
@@ -709,6 +697,9 @@ public class WebStack extends Stack {
         }
 
         // submitVatHandler
+        String submitVatLambdaHandlerLambdaFunctionName = Builder.buildFunctionName(dashedDomainName, builder.submitVatLambdaHandlerFunctionName);
+        String submitVatLambdaHandlerCmd = builder.lambdaEntry + builder.submitVatLambdaHandlerFunctionName;
+        Duration submitVatLambdaDuration = Duration.millis(Long.parseLong(builder.submitVatLambdaDuration));
         if ("test".equals(builder.env)) {
             // For testing, create a simple Function instead of DockerImageFunction to avoid Docker builds
             this.submitVatLambda = Function.Builder.create(this, "SubmitVatLambda")
@@ -796,6 +787,9 @@ public class WebStack extends Stack {
         }
 
         // logReceiptHandler
+        String logReceiptLambdaHandlerLambdaFunctionName = Builder.buildFunctionName(dashedDomainName, builder.logReceiptLambdaHandlerFunctionName);
+        String logReceiptLambdaHandlerCmd = builder.lambdaEntry + builder.logReceiptLambdaHandlerFunctionName;
+        Duration logReceiptLambdaDuration = Duration.millis(Long.parseLong(builder.logReceiptLambdaDuration));
         if ("test".equals(builder.env)) {
             // For testing, create a simple Function instead of DockerImageFunction to avoid Docker builds
             this.logReceiptLambda = Function.Builder.create(this, "LogReceiptLambda")

@@ -11,7 +11,7 @@
     "certificateArn": "arn:aws:acm:us-east-1:887764105431:certificate/b23cd904-8e3b-4cd0-84f1-57ca11d7fe2b",
     "useExistingCertificate": "true",
     "cloudTrailEnabled": "false",
-    "cloudTrailLogGroupPrefix": "/aws/s3/",
+    "cloudTrailLogGroupPrefix": "/aws/cloudtrail/",
     "cloudTrailLogGroupRetentionPeriodDays": "3",
     "accessLogGroupRetentionPeriodDays": "30",
     "s3UseExistingBucket": "false",
