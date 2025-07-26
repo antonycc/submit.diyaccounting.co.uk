@@ -26,7 +26,6 @@
     "test:behaviour": "playwright test tests/behaviour/*.test.js",
     "start": "npx dotenv -e .env.proxy -- node src/lib/server.js",
     "proxy": "npx dotenv -e .env.proxy -- npx ngrok http --url wanted-finally-anteater.ngrok-free.app 3000",
-    "set-lambda-origin-hosts": "node programmers/setLambdaOriginHosts.js"
   },
   "keywords": [],
   "author": "",

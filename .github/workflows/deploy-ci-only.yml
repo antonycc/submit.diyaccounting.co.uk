@@ -107,7 +107,6 @@ jobs:
           echo "deploy=${deploy?}" | tee -a "${GITHUB_OUTPUT?}"
 
       - name: deploy
-        #if: ${{ env.skipDeploy != 'true' }}
         id: deploy
         shell: bash
         run: npx dotenv -e .env.ci -- ${{ steps.stacks.outputs.deploy }}
@@ -116,11 +115,6 @@ jobs:
           ENV_NAME: ${{ inputs.environment || 'ci' }}
           LOG_S3_OBJECT_EVENT_HANDLER_SOURCE: ${{ steps.jar-path.outputs.jarFilepath }}
           LOG_GZIPPED_S3_OBJECT_EVENT_HANDLER_SOURCE: ${{ steps.jar-path.outputs.jarFilepath }}
-
-      #- name: Fix CloudFront origins to Lambda URLs
-      #  env:
-      #    CLOUDFRONT_ORIGIN_ALIAS: "${{ inputs.environment || 'ci' }}.submit.${{ vars.AWS_HOSTED_ZONE_NAME }}"
-      #  run: npm run set-lambda-origin-hosts
 
   npm-behaviour-test-ci:
     needs:

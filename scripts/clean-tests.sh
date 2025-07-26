@@ -1,2 +1,2 @@
 #!/usr/bin/env bash
-rm -rf *test-results test-reports
+rm -rf *test-results test-reports submit*.log

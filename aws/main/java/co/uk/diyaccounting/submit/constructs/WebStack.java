@@ -163,11 +163,9 @@ public class WebStack extends Stack {
             this.scope = scope;
             this.id = id;
             this.props = props;
-            // Load values from cdk.json here using reflection, then let the properties be overridden by the mutators
-            loadContextValuesUsingReflection(scope);
         }
-        
-        private void loadContextValuesUsingReflection(Construct scope) {
+
+        public void loadContextValuesUsingReflection(Construct scope) {
             Field[] fields = this.getClass().getDeclaredFields();
             for (Field field : fields) {
                 if (field.getType() == String.class && 
@@ -176,6 +174,13 @@ public class WebStack extends Stack {
                     !field.getName().equals("props")) {
                     try {
                         field.setAccessible(true);
+
+                        // Skip if already set
+                        if (field.get(this) != null) {
+                            continue;
+                        }
+
+                        // Set from config
                         String contextValue = getContextValueString(scope, field.getName());
                         if (contextValue != null) {
                             field.set(this, contextValue);
@@ -187,11 +192,11 @@ public class WebStack extends Stack {
             }
         }
 
-        private String getContextValueString(Construct scope, String contextKey) {
+        public String getContextValueString(Construct scope, String contextKey) {
             return getContextValueString(scope, contextKey, null);
         }
 
-        private String getContextValueString(Construct scope, String contextKey, String defaultValue) {
+        public String getContextValueString(Construct scope, String contextKey, String defaultValue) {
             var contextValue = scope.getNode().tryGetContext(contextKey);
             String defaultedValue;
             String source;
@@ -202,13 +207,13 @@ public class WebStack extends Stack {
                 defaultedValue = defaultValue;
                 source = "default value";
             }
-            try {
+            //try {
                 CfnOutput.Builder.create(scope, contextKey)
                         .value(MessageFormat.format("{0} (Source: CDK {1})", defaultedValue, source))
                         .build();
-            }catch (Exception e) {
-                logger.warn("Failed to create CfnOutput for context key {}: {}", contextKey, e.getMessage());
-            }
+            //}catch (Exception e) {
+            //    logger.warn("Failed to create CfnOutput for context key {}: {}", contextKey, e.getMessage());
+            //}
             return defaultedValue;
         }
 
@@ -439,6 +444,9 @@ public class WebStack extends Stack {
 
     public WebStack(Construct scope, String id, StackProps props, WebStack.Builder builder) {
         super(scope, id, props);
+
+        // Load values from cdk.json here using reflection, then let the properties be overridden by the mutators
+        builder.loadContextValuesUsingReflection(scope);
 
         boolean useExistingHostedZone = Boolean.parseBoolean(builder.useExistingHostedZone);
         if (useExistingHostedZone) {
