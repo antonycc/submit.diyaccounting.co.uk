@@ -2,6 +2,8 @@ FROM public.ecr.aws/lambda/nodejs:20
 
 WORKDIR /var/task
 
+ENV HANDLER=src/lib/main.authUrlHandler
+
 COPY package.json package-lock.json ./
 RUN npm install --production
 COPY src/ src/

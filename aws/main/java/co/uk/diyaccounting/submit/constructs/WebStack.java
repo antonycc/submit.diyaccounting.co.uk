@@ -580,7 +580,7 @@ public class WebStack extends Stack {
                     .build();
         } else {
             var authUrlLambdaEnv = Map.of(
-                    "HANDLER", authUrlLambdaHandler,
+                    //"HANDLER", authUrlLambdaHandler,
                     "DIY_SUBMIT_HMRC_CLIENT_ID", hmrcClientId,
                     "DIY_SUBMIT_HOME_URL", homeUrl,
                     "DIY_SUBMIT_HMRC_BASE_URI", hmrcBaseUri
