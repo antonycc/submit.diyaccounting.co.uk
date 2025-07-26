@@ -640,7 +640,8 @@ public class WebStack extends Stack {
                     //.allowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
                     .allowedMethods(AllowedMethods.ALLOW_ALL)
                     .cachePolicy(CachePolicy.USE_ORIGIN_CACHE_CONTROL_HEADERS_QUERY_STRINGS)
-                    .originRequestPolicy(authUrlOriginRequestPolicy)
+                    //.originRequestPolicy(authUrlOriginRequestPolicy)
+                    .originRequestPolicy(OriginRequestPolicy.CORS_S3_ORIGIN)
                     .build();
             lambdaUrlToOriginsBehaviourMappings.put("/api/auth-url*", authUrlOriginBehaviour);
         }
