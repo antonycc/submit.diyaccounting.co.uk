@@ -581,15 +581,13 @@ public class WebStack extends Stack {
                     .build();
         } else {
             var authUrlLambdaEnv = Map.of(
+                    "HANDLER", authUrlLambdaHandler,
                     "DIY_SUBMIT_HMRC_CLIENT_ID", hmrcClientId,
                     "DIY_SUBMIT_HOME_URL", homeUrl,
                     "DIY_SUBMIT_HMRC_BASE_URI", hmrcBaseUri
             );
             this.authUrlLambda = DockerImageFunction.Builder.create(this, "AuthUrlLambda")
-                    .code(DockerImageCode.fromImageAsset(
-                            ".",
-                            AssetImageCodeProps.builder().buildArgs(Map.of("HANDLER", authUrlLambdaHandler)).build())
-                    )
+                    .code(DockerImageCode.fromImageAsset("."))
                     .environment(authUrlLambdaEnv)
                     .functionName(authUrlLambdaHandlerFunctionName)
                     .timeout(authUrlLambdaDuration)
