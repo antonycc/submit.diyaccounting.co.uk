@@ -446,7 +446,7 @@ public class WebStack extends Stack {
         super(scope, id, props);
 
         // Load values from cdk.json here using reflection, then let the properties be overridden by the mutators
-        builder.loadContextValuesUsingReflection(scope);
+        builder.loadContextValuesUsingReflection(this);
 
         boolean useExistingHostedZone = Boolean.parseBoolean(builder.useExistingHostedZone);
         if (useExistingHostedZone) {
