@@ -628,10 +628,12 @@ public class WebStack extends Stack {
                     .build();
             final OriginRequestPolicy authUrlOriginRequestPolicy = OriginRequestPolicy.Builder
                     .create(this, "AuthUrlOriginRequestPolicy")
+                    .originRequestPolicyName(this.authUrlLambda.getFunctionName() + "-origin-request-policy")
                     .comment("Policy for rest APIs (no cookies, allow specific query parameters and headers)")
-                    .cookieBehavior(OriginRequestCookieBehavior.none())
+                    .cookieBehavior(OriginRequestCookieBehavior.all())
                     .headerBehavior(OriginRequestHeaderBehavior.all())  // TODO: Minimize headers
-                    .queryStringBehavior(OriginRequestQueryStringBehavior.allowList("state"))
+                    //.queryStringBehavior(OriginRequestQueryStringBehavior.allowList("state"))
+                    .queryStringBehavior(OriginRequestQueryStringBehavior.all())
                     .build();
             final BehaviorOptions authUrlOriginBehaviour = BehaviorOptions.builder()
                     .origin(authUrlApiOrigin)
