@@ -178,7 +178,7 @@ terraform apply -auto-approve
 Launch a scratch pod:
 
 ```bash
-kubectl run mcp-pod --image node:20-alpine --restart=Never --command -- sleep infinity
+kubectl run mcp-pod --image node:22-alpine --restart=Never --command -- sleep infinity
 kubectl exec -it mcp-pod -- bash
 ```
 

@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM node:20-alpine
+FROM node:22-alpine
 
 # install git, ssh client, rsync, bash
 RUN apk add --no-cache \
