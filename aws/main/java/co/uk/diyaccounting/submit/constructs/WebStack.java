@@ -636,7 +636,9 @@ public class WebStack extends Stack {
                     .timeout(exchangeTokenLambdaDuration)
                     .build();
         } else {
+            // AssetImageCodeProps.builder().buildArgs(Map.of("HANDLER", exchangeTokenLambdaHandler)).build())
             var exchangeTokenLambdaEnv = new HashMap<>(Map.of(
+                    "HANDLER", exchangeTokenLambdaHandler,
                     "DIY_SUBMIT_HMRC_CLIENT_ID", hmrcClientId,
                     "DIY_SUBMIT_HOME_URL", homeUrl,
                     "DIY_SUBMIT_HMRC_BASE_URI", hmrcBaseUri
@@ -645,10 +647,7 @@ public class WebStack extends Stack {
                 exchangeTokenLambdaEnv.put("DIY_SUBMIT_TEST_ACCESS_TOKEN", optionalTestAccessToken);
             }
             this.exchangeTokenLambda = DockerImageFunction.Builder.create(this, "ExchangeTokenLambda")
-                    .code(DockerImageCode.fromImageAsset(
-                            ".",
-                            AssetImageCodeProps.builder().buildArgs(Map.of("HANDLER", exchangeTokenLambdaHandler)).build())
-                    )
+                    .code(DockerImageCode.fromImageAsset("."))
                     .environment(exchangeTokenLambdaEnv)
                     .functionName(exchangeTokenLambdaHandlerFunctionName)
                     .timeout(exchangeTokenLambdaDuration)

@@ -2,9 +2,6 @@ FROM public.ecr.aws/lambda/nodejs:20
 
 WORKDIR /var/task
 
-ARG HANDLER=src/lib/main.changeTheDefaultLambdaHandler
-ENV HANDLER=$HANDLER
-
 COPY package.json package-lock.json ./
 RUN npm install --production
 COPY src/ src/
