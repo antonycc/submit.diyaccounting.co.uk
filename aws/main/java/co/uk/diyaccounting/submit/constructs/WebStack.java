@@ -70,6 +70,7 @@ import software.amazon.awscdk.services.s3.deployment.Source;
 import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
 
+import java.text.MessageFormat;
 import java.util.AbstractMap;
 import java.util.Collections;
 import java.util.HashMap;
@@ -161,7 +162,27 @@ public class WebStack extends Stack {
             this.scope = scope;
             this.id = id;
             this.props = props;
-            // TODO: Load default values from cdk.json here, then let the properties be overridden by the mutators
+            // Load values from cdk.json here, then let the properties be overridden by the mutators
+            this.env = getContextValueString(scope, "env");
+        }
+
+        private String getContextValueString(Construct scope, String contextKey) {
+            return getContextValueString(scope, contextKey, null);
+        }
+
+        private String getContextValueString(Construct scope, String contextKey, String defaultValue) {
+            var contextValue = scope.getNode().tryGetContext(contextKey);
+            var defaultedValue = StringUtils.isNotBlank(contextValue.toString()) ? contextValue.toString() : defaultValue;
+            String source;
+            if (StringUtils.isNotBlank(contextValue.toString())) {
+                source = "CDK context";
+            } else {
+                source = "default value";
+            }
+            CfnOutput.Builder.create(scope, contextKey)
+                    .value(MessageFormat.format(  "{0} (Source: CDK {1})",defaultedValue, source))
+                    .build();
+            return contextValue.toString();
         }
 
         public static Builder create(Construct scope, String id) {
