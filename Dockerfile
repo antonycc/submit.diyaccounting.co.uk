@@ -1,5 +1,7 @@
 FROM public.ecr.aws/lambda/nodejs:22
 
+# TODO: Create separate Dockerfiles for each function and move to ./infra/runtimes
+
 # authURL
 ENV DIY_SUBMIT_HMRC_BASE_URI="From Dockerfile"
 ENV DIY_SUBMIT_HMRC_CLIENT_ID="From Dockerfile"

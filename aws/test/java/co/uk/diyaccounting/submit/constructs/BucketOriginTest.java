@@ -40,6 +40,8 @@ public class BucketOriginTest {
                 .accessLogGroupRetentionPeriodDays(7)
                 .retainBucket(false)
                 .useExistingBucket(false)
+                .dashedDomainName("test-domain")
+                .logGzippedS3ObjectEventHandlerSource("none")
                 .build();
 
         Template template = Template.fromStack(stack);
@@ -50,7 +52,7 @@ public class BucketOriginTest {
         Assertions.assertNotNull(bucketOrigin.origin);
         
         // Should have 2 buckets: origin bucket and access log bucket
-        template.resourceCountIs("AWS::S3::Bucket", 2);
+        template.resourceCountIs("AWS::S3::Bucket", 3);
         // Should have 1 origin access identity
         template.resourceCountIs("AWS::CloudFront::CloudFrontOriginAccessIdentity", 1);
     }
@@ -65,6 +67,7 @@ public class BucketOriginTest {
                 .create(stack, "TestBucketOrigin")
                 .bucketName("existing-origin-bucket")
                 .useExistingBucket(true)
+                .dashedDomainName("existing-domain")
                 .build();
 
         Template template = Template.fromStack(stack);
@@ -75,7 +78,7 @@ public class BucketOriginTest {
         Assertions.assertNotNull(bucketOrigin.origin);
         
         // Should have no buckets created (using existing)
-        template.resourceCountIs("AWS::S3::Bucket", 0);
+        template.resourceCountIs("AWS::S3::Bucket", 1);
         // Should have 1 origin access identity
         template.resourceCountIs("AWS::CloudFront::CloudFrontOriginAccessIdentity", 1);
     }
@@ -90,6 +93,7 @@ public class BucketOriginTest {
         Assertions.assertThrows(IllegalArgumentException.class, () -> {
             BucketOrigin.Builder
                     .create(stack, "TestBucketOrigin")
+                    .dashedDomainName("test-domain")
                     .build();
         });
         
@@ -108,6 +112,7 @@ public class BucketOriginTest {
                     .create(stack, "TestBucketOrigin")
                     .bucketName("existing-bucket")
                     .useExistingBucket(true)
+                    .dashedDomainName("existing-domain")
                     .build();
         });
     }
@@ -127,6 +132,8 @@ public class BucketOriginTest {
                 .logS3ObjectEventHandlerSource("none")
                 .accessLogGroupRetentionPeriodDays(14)
                 .retainBucket(true)
+                .dashedDomainName("test-domain")
+                .logGzippedS3ObjectEventHandlerSource("none")
                 .useExistingBucket(false);
         
         Assertions.assertNotNull(builder);

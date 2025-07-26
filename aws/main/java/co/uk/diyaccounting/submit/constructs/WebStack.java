@@ -520,7 +520,7 @@ public class WebStack extends Stack {
 
         // Create the CloudFront distribution with a bucket as an origin
         final OriginRequestPolicy s3BucketOriginRequestPolicy = OriginRequestPolicy.Builder
-                .create(this, "OriginRequestPolicy")
+                .create(this, "S3BucketOriginRequestPolicy")
                 .comment("Policy to allow content headers but no cookies from the origin")
                 .cookieBehavior(OriginRequestCookieBehavior.none())
                 .headerBehavior(OriginRequestHeaderBehavior.allowList("Accept", "Accept-Language", "Origin"))
@@ -627,7 +627,7 @@ public class WebStack extends Stack {
                     .protocolPolicy(OriginProtocolPolicy.HTTPS_ONLY)
                     .build();
             final OriginRequestPolicy authUrlOriginRequestPolicy = OriginRequestPolicy.Builder
-                    .create(this, "OriginRequestPolicy")
+                    .create(this, "AuthUrlOriginRequestPolicy")
                     .comment("Policy for rest APIs (no cookies, allow specific query parameters and headers)")
                     .cookieBehavior(OriginRequestCookieBehavior.none())
                     .headerBehavior(OriginRequestHeaderBehavior.all())  // TODO: Minimize headers
