@@ -25,14 +25,12 @@
     "test:client": "playwright test tests/client/*.test.js",
     "test:behaviour": "playwright test tests/behaviour/*.test.js",
     "start": "npx dotenv -e .env.proxy -- node src/lib/server.js",
-    "proxy": "npx dotenv -e .env.proxy -- npx ngrok http --url wanted-finally-anteater.ngrok-free.app 3000",
+    "proxy": "npx dotenv -e .env.proxy -- npx ngrok http --url wanted-finally-anteater.ngrok-free.app 3000"
   },
   "keywords": [],
   "author": "",
   "license": "GPL-3.0",
   "dependencies": {
-    "@aws-sdk/client-cloudfront": "^3.850.0",
-    "@aws-sdk/client-lambda": "^3.851.0",
     "@aws-sdk/client-s3": "^3.846.0",
     "dotenv-cli": "^8.0.0",
     "express": "^4.21.2",
