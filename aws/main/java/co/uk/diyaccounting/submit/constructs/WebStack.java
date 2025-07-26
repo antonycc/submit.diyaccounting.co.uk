@@ -30,6 +30,7 @@ import software.amazon.awscdk.services.cloudfront.OriginProtocolPolicy;
 import software.amazon.awscdk.services.cloudfront.OriginRequestCookieBehavior;
 import software.amazon.awscdk.services.cloudfront.OriginRequestHeaderBehavior;
 import software.amazon.awscdk.services.cloudfront.OriginRequestPolicy;
+import software.amazon.awscdk.services.cloudfront.OriginRequestQueryStringBehavior;
 import software.amazon.awscdk.services.cloudfront.ResponseHeadersPolicy;
 import software.amazon.awscdk.services.cloudfront.SSLMethod;
 import software.amazon.awscdk.services.cloudfront.ViewerProtocolPolicy;
@@ -624,6 +625,13 @@ public class WebStack extends Stack {
             String authUrlLambdaUrl = this.getLambdaUrlHostToken(this.authUrlLambdaUrl);
             HttpOrigin authUrlApiOrigin = HttpOrigin.Builder.create(authUrlLambdaUrl)
                     .protocolPolicy(OriginProtocolPolicy.HTTPS_ONLY)
+                    .build();
+            final OriginRequestPolicy authUrlOriginRequestPolicy = OriginRequestPolicy.Builder
+                    .create(this, "OriginRequestPolicy")
+                    .comment("Policy for rest APIs (no cookies, allow specific query parameters and headers)")
+                    .cookieBehavior(OriginRequestCookieBehavior.none())
+                    .headerBehavior(OriginRequestHeaderBehavior.all())  // TODO: Minimize headers
+                    .queryStringBehavior(OriginRequestQueryStringBehavior.allowList("state"))
                     .build();
             final BehaviorOptions authUrlOriginBehaviour = BehaviorOptions.builder()
                     .origin(authUrlApiOrigin)

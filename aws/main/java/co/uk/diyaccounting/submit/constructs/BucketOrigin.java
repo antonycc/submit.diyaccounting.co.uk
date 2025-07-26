@@ -1,18 +1,33 @@
 package co.uk.diyaccounting.submit.constructs;
 
+import co.uk.diyaccounting.submit.awssdk.RetentionDaysConverter;
+import co.uk.diyaccounting.submit.functions.LogGzippedS3ObjectEvent;
 import co.uk.diyaccounting.submit.functions.LogS3ObjectEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import software.amazon.awscdk.RemovalPolicy;
+import software.amazon.awscdk.services.cloudfront.AllowedMethods;
+import software.amazon.awscdk.services.cloudfront.BehaviorOptions;
 import software.amazon.awscdk.services.cloudfront.IOrigin;
 import software.amazon.awscdk.services.cloudfront.OriginAccessIdentity;
+import software.amazon.awscdk.services.cloudfront.OriginRequestCookieBehavior;
+import software.amazon.awscdk.services.cloudfront.OriginRequestHeaderBehavior;
+import software.amazon.awscdk.services.cloudfront.OriginRequestPolicy;
+import software.amazon.awscdk.services.cloudfront.ResponseHeadersPolicy;
+import software.amazon.awscdk.services.cloudfront.ViewerProtocolPolicy;
 import software.amazon.awscdk.services.cloudfront.origins.S3BucketOrigin;
 import software.amazon.awscdk.services.cloudfront.origins.S3BucketOriginWithOAIProps;
+import software.amazon.awscdk.services.cloudtrail.S3EventSelector;
+import software.amazon.awscdk.services.cloudtrail.Trail;
+import software.amazon.awscdk.services.logs.LogGroup;
+import software.amazon.awscdk.services.logs.RetentionDays;
 import software.amazon.awscdk.services.s3.BlockPublicAccess;
 import software.amazon.awscdk.services.s3.Bucket;
 import software.amazon.awscdk.services.s3.BucketEncryption;
 import software.amazon.awscdk.services.s3.IBucket;
 import software.constructs.Construct;
+
+import java.util.List;
 
 public class BucketOrigin {
 
@@ -22,8 +37,16 @@ public class BucketOrigin {
     public final IBucket originAccessLogBucket;
     public final OriginAccessIdentity originIdentity;
     public final IOrigin origin;
+    public final String receiptsBucketFullName;
+    public final BehaviorOptions s3BucketOriginBehaviour;
+    public final IBucket distributionAccessLogBucket;
+    public final Trail originBucketTrail;
+    public final LogGroup originBucketLogGroup;
 
     private BucketOrigin(Builder builder) {
+        // Calculate receiptsBucketFullName
+        this.receiptsBucketFullName = buildBucketName(builder.dashedDomainName, builder.receiptsBucketPostfix);
+        
         // Create access log bucket using LogForwardingBucket
         if (builder.useExistingBucket) {
             this.originBucket = Bucket.fromBucketName(builder.scope, "OriginBucket", builder.bucketName);
@@ -63,9 +86,77 @@ public class BucketOrigin {
                         .originAccessIdentity(this.originIdentity)
                         .build());
 
+        // Create CloudFront s3BucketOriginBehaviour
+        final OriginRequestPolicy s3BucketOriginRequestPolicy = OriginRequestPolicy.Builder
+                .create(builder.scope, "OriginRequestPolicy")
+                .comment("Policy to allow content headers but no cookies from the origin")
+                .cookieBehavior(OriginRequestCookieBehavior.none())
+                .headerBehavior(OriginRequestHeaderBehavior.allowList("Accept", "Accept-Language", "Origin"))
+                .build();
+        this.s3BucketOriginBehaviour = BehaviorOptions.builder()
+                .origin(this.origin)
+                .allowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
+                .originRequestPolicy(s3BucketOriginRequestPolicy)
+                .viewerProtocolPolicy(ViewerProtocolPolicy.REDIRECT_TO_HTTPS)
+                .responseHeadersPolicy(ResponseHeadersPolicy.CORS_ALLOW_ALL_ORIGINS_WITH_PREFLIGHT_AND_SECURITY_HEADERS)
+                .compress(true)
+                .build();
+
+        // Create distributionAccessLogBucket
+        this.distributionAccessLogBucket = LogForwardingBucket.Builder
+                .create(builder.scope, "DistributionAccess", builder.logGzippedS3ObjectEventHandlerSource, LogGzippedS3ObjectEvent.class)
+                .bucketName(builder.distributionAccessLogBucketName)
+                .functionNamePrefix(String.format("%s-dist-access-", builder.dashedDomainName))
+                .retentionPeriodDays(builder.accessLogGroupRetentionPeriodDays)
+                .build();
+
+        // Create originBucketTrail if CloudTrail is enabled
+        RetentionDays cloudTrailLogGroupRetentionPeriod = RetentionDaysConverter.daysToRetentionDays(builder.cloudTrailLogGroupRetentionPeriodDays);
+        if (builder.cloudTrailEnabled) {
+            this.originBucketLogGroup = LogGroup.Builder.create(builder.scope, "OriginBucketLogGroup")
+                    .logGroupName(String.format("%s%s-cloud-trail", builder.cloudTrailLogGroupPrefix, this.originBucket.getBucketName()))
+                    .retention(cloudTrailLogGroupRetentionPeriod)
+                    .removalPolicy(builder.retainBucket ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY)
+                    .build();
+            this.originBucketTrail = Trail.Builder.create(builder.scope, "OriginBucketTrail")
+                    .trailName(buildCloudTrailLogBucketName(builder.dashedDomainName))
+                    .cloudWatchLogGroup(this.originBucketLogGroup)
+                    .sendToCloudWatchLogs(true)
+                    .cloudWatchLogsRetention(cloudTrailLogGroupRetentionPeriod)
+                    .includeGlobalServiceEvents(false)
+                    .isMultiRegionTrail(false)
+                    .build();
+            // Add S3 event selector to the CloudTrail
+            if (builder.cloudTrailEventSelectorPrefix == null || builder.cloudTrailEventSelectorPrefix.isBlank() || "none".equals(builder.cloudTrailEventSelectorPrefix)) {
+                originBucketTrail.addS3EventSelector(List.of(S3EventSelector.builder()
+                        .bucket(this.originBucket)
+                        .build()
+                ));
+            } else {
+                originBucketTrail.addS3EventSelector(List.of(S3EventSelector.builder()
+                        .bucket(this.originBucket)
+                        .objectPrefix(builder.cloudTrailEventSelectorPrefix)
+                        .build()
+                ));
+            }
+        } else {
+            this.originBucketLogGroup = null;
+            this.originBucketTrail = null;
+            logger.info("CloudTrail is not enabled for the origin bucket.");
+        }
+
         logger.info("Created BucketOrigin with bucket: {}", this.originBucket.getBucketName());
     }
 
+    // Static helper methods from WebStack
+    public static String buildOriginBucketName(String dashedDomainName){ return dashedDomainName; }
+    public static String buildCloudTrailLogBucketName(String dashedDomainName) { return "%s-cloud-trail".formatted(dashedDomainName); }
+    public static String buildOriginAccessLogBucketName(String dashedDomainName) { return "%s-origin-access-logs".formatted(dashedDomainName); }
+    public static String buildDistributionAccessLogBucketName(String dashedDomainName) { return "%s-dist-access-logs".formatted(dashedDomainName);}
+    
+    private static String buildBucketName(String dashedDomainName, String bucketName) {
+        return "%s-%s".formatted(dashedDomainName, bucketName);
+    }
 
     public static class Builder {
         private final Construct scope;
@@ -77,6 +168,16 @@ public class BucketOrigin {
         private int accessLogGroupRetentionPeriodDays = 30;
         private boolean retainBucket = false;
         private boolean useExistingBucket = false;
+        
+        // New fields for enhanced functionality
+        private String dashedDomainName = null;
+        private String receiptsBucketPostfix = "receipts";
+        private String logGzippedS3ObjectEventHandlerSource = null;
+        private String distributionAccessLogBucketName = null;
+        private boolean cloudTrailEnabled = false;
+        private String cloudTrailLogGroupPrefix = "/aws/cloudtrail/";
+        private int cloudTrailLogGroupRetentionPeriodDays = 30;
+        private String cloudTrailEventSelectorPrefix = null;
 
         private Builder(final Construct scope, final String idPrefix) {
             this.scope = scope;
@@ -122,19 +223,72 @@ public class BucketOrigin {
             return this;
         }
 
+        // New builder methods for enhanced functionality
+        public Builder dashedDomainName(String dashedDomainName) {
+            this.dashedDomainName = dashedDomainName;
+            return this;
+        }
+
+        public Builder receiptsBucketPostfix(String receiptsBucketPostfix) {
+            this.receiptsBucketPostfix = receiptsBucketPostfix;
+            return this;
+        }
+
+        public Builder logGzippedS3ObjectEventHandlerSource(String logGzippedS3ObjectEventHandlerSource) {
+            this.logGzippedS3ObjectEventHandlerSource = logGzippedS3ObjectEventHandlerSource;
+            return this;
+        }
+
+        public Builder distributionAccessLogBucketName(String distributionAccessLogBucketName) {
+            this.distributionAccessLogBucketName = distributionAccessLogBucketName;
+            return this;
+        }
+
+        public Builder cloudTrailEnabled(boolean cloudTrailEnabled) {
+            this.cloudTrailEnabled = cloudTrailEnabled;
+            return this;
+        }
+
+        public Builder cloudTrailLogGroupPrefix(String cloudTrailLogGroupPrefix) {
+            this.cloudTrailLogGroupPrefix = cloudTrailLogGroupPrefix;
+            return this;
+        }
+
+        public Builder cloudTrailLogGroupRetentionPeriodDays(int cloudTrailLogGroupRetentionPeriodDays) {
+            this.cloudTrailLogGroupRetentionPeriodDays = cloudTrailLogGroupRetentionPeriodDays;
+            return this;
+        }
+
+        public Builder cloudTrailEventSelectorPrefix(String cloudTrailEventSelectorPrefix) {
+            this.cloudTrailEventSelectorPrefix = cloudTrailEventSelectorPrefix;
+            return this;
+        }
+
         public BucketOrigin build() {
             if (bucketName == null || bucketName.isBlank()) {
                 throw new IllegalArgumentException("bucketName is required");
             }
+            if (dashedDomainName == null || dashedDomainName.isBlank()) {
+                throw new IllegalArgumentException("dashedDomainName is required");
+            }
+            
+            // Set default values using static helper methods if not provided
+            if (originAccessLogBucketName == null || originAccessLogBucketName.isBlank()) {
+                this.originAccessLogBucketName = buildOriginAccessLogBucketName(dashedDomainName);
+            }
+            if (distributionAccessLogBucketName == null || distributionAccessLogBucketName.isBlank()) {
+                this.distributionAccessLogBucketName = buildDistributionAccessLogBucketName(dashedDomainName);
+            }
+            if (functionNamePrefix == null || functionNamePrefix.isBlank()) {
+                this.functionNamePrefix = String.format("%s-origin-access-", dashedDomainName);
+            }
+            
             if (!useExistingBucket) {
-                if (originAccessLogBucketName == null || originAccessLogBucketName.isBlank()) {
-                    throw new IllegalArgumentException("originAccessLogBucketName is required when not using existing bucket");
-                }
                 if (logS3ObjectEventHandlerSource == null || logS3ObjectEventHandlerSource.isBlank()) {
                     throw new IllegalArgumentException("logS3ObjectEventHandlerSource is required when not using existing bucket");
                 }
-                if (functionNamePrefix == null || functionNamePrefix.isBlank()) {
-                    throw new IllegalArgumentException("functionNamePrefix is required when not using existing bucket");
+                if (logGzippedS3ObjectEventHandlerSource == null || logGzippedS3ObjectEventHandlerSource.isBlank()) {
+                    throw new IllegalArgumentException("logGzippedS3ObjectEventHandlerSource is required when not using existing bucket");
                 }
             }
             return new BucketOrigin(this);
