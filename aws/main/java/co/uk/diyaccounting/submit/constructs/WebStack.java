@@ -38,7 +38,6 @@ import software.amazon.awscdk.services.cloudfront.origins.S3BucketOrigin;
 import software.amazon.awscdk.services.cloudfront.origins.S3BucketOriginWithOAIProps;
 import software.amazon.awscdk.services.cloudtrail.S3EventSelector;
 import software.amazon.awscdk.services.cloudtrail.Trail;
-import software.amazon.awscdk.services.lambda.AssetImageCodeProps;
 import software.amazon.awscdk.services.lambda.Code;
 import software.amazon.awscdk.services.lambda.DockerImageCode;
 import software.amazon.awscdk.services.lambda.DockerImageFunction;
@@ -693,14 +692,12 @@ public class WebStack extends Stack {
                     .build();
         } else {
             var submitVatLambdaEnv = Map.of(
+                    "HANDLER", submitVatLambdaHandler,
                     "DIY_SUBMIT_HOME_URL", homeUrl,
                     "DIY_SUBMIT_HMRC_BASE_URI", hmrcBaseUri
             );
             this.submitVatLambda = DockerImageFunction.Builder.create(this, "SubmitVatLambda")
-                    .code(DockerImageCode.fromImageAsset(
-                            ".",
-                            AssetImageCodeProps.builder().buildArgs(Map.of("HANDLER", submitVatLambdaHandler)).build())
-                    )
+                    .code(DockerImageCode.fromImageAsset("."))
                     .environment(submitVatLambdaEnv)
                     .functionName(submitVatLambdaHandlerFunctionName)
                     .timeout(submitVatLambdaDuration)
@@ -779,27 +776,28 @@ public class WebStack extends Stack {
                     .timeout(logReceiptLambdaDuration)
                     .build();
         } else {
-            AssetImageCodeProps logReceiptHandlerImageCodeProps = AssetImageCodeProps.builder().buildArgs(Map.of("HANDLER", logReceiptLambdaHandler)).build();
             if(StringUtils.isNotBlank( optionalTestS3Endpoint) && StringUtils.isNotBlank(optionalTestS3AccessKey) || StringUtils.isNotBlank(optionalTestS3SecretKey)) {
                 // For production like integrations without AWS we can use test S3 credentials
                 var logReceiptLambdaTestEnv = Map.of(
+                        "HANDLER", logReceiptLambdaHandler,
                         "DIY_SUBMIT_TEST_S3_ENDPOINT", optionalTestS3Endpoint,
                         "DIY_SUBMIT_TEST_S3_ACCESS_KEY", optionalTestS3AccessKey,
                         "DIY_SUBMIT_TEST_S3_SECRET_KEY", optionalTestS3SecretKey,
                         "DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX", receiptsBucketPostfix
                 );
                 this.logReceiptLambda = DockerImageFunction.Builder.create(this, "LogReceiptLambda")
-                        .code(DockerImageCode.fromImageAsset(".", logReceiptHandlerImageCodeProps))
+                        .code(DockerImageCode.fromImageAsset("."))
                         .environment(logReceiptLambdaTestEnv)
                         .functionName(logReceiptLambdaHandlerFunctionName)
                         .timeout(logReceiptLambdaDuration)
                         .build();
             } else {
                 var logReceiptLambdaEnv = Map.of(
+                        "HANDLER", logReceiptLambdaHandler,
                         "DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX", receiptsBucketPostfix
                 );
                 this.logReceiptLambda = DockerImageFunction.Builder.create(this, "LogReceiptLambda")
-                        .code(DockerImageCode.fromImageAsset(".", logReceiptHandlerImageCodeProps))
+                        .code(DockerImageCode.fromImageAsset("."))
                         .environment(logReceiptLambdaEnv)
                         .functionName(logReceiptLambdaHandlerFunctionName)
                         .timeout(logReceiptLambdaDuration)

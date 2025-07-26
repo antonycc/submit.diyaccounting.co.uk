@@ -8,6 +8,8 @@ import software.amazon.awscdk.services.cloudfront.AllowedMethods;
 import software.amazon.awscdk.services.cloudfront.BehaviorOptions;
 import software.amazon.awscdk.services.cloudfront.CachePolicy;
 import software.amazon.awscdk.services.cloudfront.OriginProtocolPolicy;
+import software.amazon.awscdk.services.cloudfront.OriginRequestCookieBehavior;
+import software.amazon.awscdk.services.cloudfront.OriginRequestHeaderBehavior;
 import software.amazon.awscdk.services.cloudfront.OriginRequestPolicy;
 import software.amazon.awscdk.services.cloudfront.origins.HttpOrigin;
 import software.amazon.awscdk.services.lambda.AssetImageCodeProps;
@@ -39,6 +41,7 @@ public class LambdaUrlOrigin {
     public final LogGroup logGroup;
     public final FunctionUrl functionUrl;
     public final BehaviorOptions behaviorOptions;
+    public final OriginRequestPolicy customOriginRequestPolicy;
 
     private LambdaUrlOrigin(Builder builder) {
         // Create the lambda function
@@ -50,6 +53,21 @@ public class LambdaUrlOrigin {
                 .retention(RetentionDays.THREE_DAYS)
                 .removalPolicy(RemovalPolicy.DESTROY)
                 .build());
+
+        // Create custom origin request policy
+        OriginRequestPolicy.Builder policyBuilder = OriginRequestPolicy.Builder
+                .create(builder.scope, builder.idPrefix + "OriginRequestPolicy")
+                .comment("Custom origin request policy with CORS_S3_ORIGIN equivalent configuration")
+                .cookieBehavior(builder.originRequestCookieBehavior)
+                .headerBehavior(builder.originRequestHeaderBehavior);
+        
+        if (builder.originRequestQueryStringAll) {
+            policyBuilder.queryStringBehavior(software.amazon.awscdk.services.cloudfront.OriginRequestQueryStringBehavior.all());
+        } else {
+            policyBuilder.queryStringBehavior(software.amazon.awscdk.services.cloudfront.OriginRequestQueryStringBehavior.none());
+        }
+        
+        this.customOriginRequestPolicy = policyBuilder.build();
 
         // Create function URL
         this.functionUrl = this.lambda.addFunctionUrl(
@@ -75,7 +93,7 @@ public class LambdaUrlOrigin {
                     .origin(apiOrigin)
                     .allowedMethods(builder.cloudFrontAllowedMethods)
                     .cachePolicy(CachePolicy.CACHING_DISABLED)
-                    .originRequestPolicy(OriginRequestPolicy.CORS_S3_ORIGIN)
+                    .originRequestPolicy(this.customOriginRequestPolicy)
                     .build();
         }
 
@@ -134,6 +152,14 @@ public class LambdaUrlOrigin {
         public List<HttpMethod> allowedMethods = List.of(HttpMethod.GET);
         public AllowedMethods cloudFrontAllowedMethods = AllowedMethods.ALLOW_GET_HEAD_OPTIONS;
         public boolean skipBehaviorOptions = false;
+        
+        // Origin Request Policy configuration
+        public OriginRequestHeaderBehavior originRequestHeaderBehavior = OriginRequestHeaderBehavior.allowList(
+                "CloudFront-Forwarded-Proto", "CloudFront-Is-Desktop-Viewer", 
+                "CloudFront-Is-Mobile-Viewer", "CloudFront-Is-SmartTV-Viewer", "CloudFront-Is-Tablet-Viewer", 
+                "CloudFront-Viewer-Country", "Host", "Origin", "Referer");
+        public OriginRequestCookieBehavior originRequestCookieBehavior = OriginRequestCookieBehavior.none();
+        public boolean originRequestQueryStringAll = true;
 
         private Builder(final Construct scope, final String idPrefix) {
             this.scope = scope;
@@ -186,6 +212,21 @@ public class LambdaUrlOrigin {
 
         public Builder skipBehaviorOptions(boolean skipBehaviorOptions) {
             this.skipBehaviorOptions = skipBehaviorOptions;
+            return this;
+        }
+
+        public Builder originRequestHeaderBehavior(OriginRequestHeaderBehavior originRequestHeaderBehavior) {
+            this.originRequestHeaderBehavior = originRequestHeaderBehavior;
+            return this;
+        }
+
+        public Builder originRequestCookieBehavior(OriginRequestCookieBehavior originRequestCookieBehavior) {
+            this.originRequestCookieBehavior = originRequestCookieBehavior;
+            return this;
+        }
+
+        public Builder originRequestQueryStringAll(boolean originRequestQueryStringAll) {
+            this.originRequestQueryStringAll = originRequestQueryStringAll;
             return this;
         }
 
