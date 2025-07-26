@@ -70,6 +70,7 @@ import software.amazon.awscdk.services.s3.deployment.Source;
 import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
 
+import java.lang.reflect.Field;
 import java.text.MessageFormat;
 import java.util.AbstractMap;
 import java.util.Collections;
@@ -162,8 +163,28 @@ public class WebStack extends Stack {
             this.scope = scope;
             this.id = id;
             this.props = props;
-            // Load values from cdk.json here, then let the properties be overridden by the mutators
-            this.env = getContextValueString(scope, "env");
+            // Load values from cdk.json here using reflection, then let the properties be overridden by the mutators
+            loadContextValuesUsingReflection(scope);
+        }
+        
+        private void loadContextValuesUsingReflection(Construct scope) {
+            Field[] fields = this.getClass().getDeclaredFields();
+            for (Field field : fields) {
+                if (field.getType() == String.class && 
+                    !field.getName().equals("scope") && 
+                    !field.getName().equals("id") && 
+                    !field.getName().equals("props")) {
+                    try {
+                        field.setAccessible(true);
+                        String contextValue = getContextValueString(scope, field.getName());
+                        if (contextValue != null) {
+                            field.set(this, contextValue);
+                        }
+                    } catch (IllegalAccessException e) {
+                        logger.warn("Failed to set field {} using reflection: {}", field.getName(), e.getMessage());
+                    }
+                }
+            }
         }
 
         private String getContextValueString(Construct scope, String contextKey) {
@@ -172,17 +193,23 @@ public class WebStack extends Stack {
 
         private String getContextValueString(Construct scope, String contextKey, String defaultValue) {
             var contextValue = scope.getNode().tryGetContext(contextKey);
-            var defaultedValue = StringUtils.isNotBlank(contextValue.toString()) ? contextValue.toString() : defaultValue;
+            String defaultedValue;
             String source;
-            if (StringUtils.isNotBlank(contextValue.toString())) {
+            if (contextValue != null && StringUtils.isNotBlank(contextValue.toString())) {
+                defaultedValue = contextValue.toString();
                 source = "CDK context";
             } else {
+                defaultedValue = defaultValue;
                 source = "default value";
             }
-            CfnOutput.Builder.create(scope, contextKey)
-                    .value(MessageFormat.format(  "{0} (Source: CDK {1})",defaultedValue, source))
-                    .build();
-            return contextValue.toString();
+            try {
+                CfnOutput.Builder.create(scope, contextKey)
+                        .value(MessageFormat.format("{0} (Source: CDK {1})", defaultedValue, source))
+                        .build();
+            }catch (Exception e) {
+                logger.warn("Failed to create CfnOutput for context key {}: {}", contextKey, e.getMessage());
+            }
+            return defaultedValue;
         }
 
         public static Builder create(Construct scope, String id) {
@@ -413,99 +440,66 @@ public class WebStack extends Stack {
     public WebStack(Construct scope, String id, StackProps props, WebStack.Builder builder) {
         super(scope, id, props);
 
-        boolean useExistingHostedZone = Boolean.parseBoolean(this.getConfigValue(builder.useExistingHostedZone, "useExistingHostedZone"));
-        String hostedZoneName = this.getConfigValue(builder.hostedZoneName, "hostedZoneName");
+        boolean useExistingHostedZone = Boolean.parseBoolean(builder.useExistingHostedZone);
         if (useExistingHostedZone) {
-            String hostedZoneId = this.getConfigValue(builder.hostedZoneId, "hostedZoneId");
+            String hostedZoneId = builder.hostedZoneId;
             this.hostedZone = HostedZone.fromHostedZoneAttributes(this, "HostedZone", HostedZoneAttributes.builder()
-                    .zoneName(hostedZoneName)
+                    .zoneName(builder.hostedZoneName)
                     .hostedZoneId(hostedZoneId)
                     .build());
         } else {
             this.hostedZone = HostedZone.Builder
                     .create(this, "HostedZone")
-                    .zoneName(hostedZoneName)
+                    .zoneName(builder.hostedZoneName)
                     .build();
         }
 
-        String env = this.getConfigValue(builder.env, "env");
-        String subDomainName = this.getConfigValue(builder.subDomainName, "subDomainName");
-        this.domainName = Builder.buildDomainName(env, subDomainName, hostedZoneName);
-        String dashedDomainName = Builder.buildDashedDomainName(env, subDomainName, hostedZoneName);
+        this.domainName = Builder.buildDomainName(builder.env, builder.subDomainName, builder.hostedZoneName);
+        String dashedDomainName = Builder.buildDashedDomainName(builder.env, builder.subDomainName, builder.hostedZoneName);
         String originBucketName = Builder.buildOriginBucketName(dashedDomainName);
 
-        boolean s3UseExistingBucket = Boolean.parseBoolean(this.getConfigValue(builder.s3UseExistingBucket, "s3UseExistingBucket"));
-        boolean s3RetainBucket = Boolean.parseBoolean(this.getConfigValue(builder.s3RetainBucket, "s3RetainBucket"));
+        boolean s3UseExistingBucket = Boolean.parseBoolean(builder.s3UseExistingBucket);
+        boolean s3RetainBucket = Boolean.parseBoolean(builder.s3RetainBucket);
 
-        String cloudTrailEventSelectorPrefix = this.getConfigValue(builder.cloudTrailEventSelectorPrefix, "cloudTrailEventSelectorPrefix");
         String cloudTrailLogBucketName = Builder.buildCloudTrailLogBucketName(dashedDomainName);
-        boolean cloudTrailEnabled = Boolean.parseBoolean(this.getConfigValue(builder.cloudTrailEnabled, "cloudTrailEnabled"));
-        String cloudTrailLogGroupPrefix = this.getConfigValue(builder.cloudTrailLogGroupPrefix, "cloudTrailLogGroupPrefix");
-        int cloudTrailLogGroupRetentionPeriodDays = Integer.parseInt(this.getConfigValue(builder.cloudTrailLogGroupRetentionPeriodDays, "cloudTrailLogGroupRetentionPeriodDays"));
+        boolean cloudTrailEnabled = Boolean.parseBoolean(builder.cloudTrailEnabled);
+        int cloudTrailLogGroupRetentionPeriodDays = Integer.parseInt(builder.cloudTrailLogGroupRetentionPeriodDays);
 
-        String certificateArn = this.getConfigValue(builder.certificateArn, "certificateArn");
-        boolean useExistingCertificate = Boolean.parseBoolean(this.getConfigValue(builder.useExistingCertificate, "useExistingCertificate"));
+        boolean useExistingCertificate = Boolean.parseBoolean(builder.useExistingCertificate);
 
-        int accessLogGroupRetentionPeriodDays = Integer.parseInt(this.getConfigValue(builder.accessLogGroupRetentionPeriodDays, "accessLogGroupRetentionPeriodDays"));
+        int accessLogGroupRetentionPeriodDays = Integer.parseInt(builder.accessLogGroupRetentionPeriodDays);
         String originAccessLogBucketName = Builder.buildOriginAccessLogBucketName(dashedDomainName);
-        String logS3ObjectEventHandlerSource = this.getConfigValue(builder.logS3ObjectEventHandlerSource, "logS3ObjectEventHandlerSource");
 
         String distributionAccessLogBucketName = Builder.buildDistributionAccessLogBucketName(dashedDomainName);
-        String logGzippedS3ObjectEventHandlerSource = this.getConfigValue(builder.logGzippedS3ObjectEventHandlerSource, "logGzippedS3ObjectEventHandlerSource");
 
-        String docRootPath = this.getConfigValue(builder.docRootPath, "docRootPath");
-        String defaultDocumentAtOrigin = this.getConfigValue(builder.defaultDocumentAtOrigin, "defaultDocumentAtOrigin");
-        String error404NotFoundAtDistribution = this.getConfigValue(builder.error404NotFoundAtDistribution, "error404NotFoundAtDistribution");
-        boolean skipLambdaUrlOrigins = Boolean.parseBoolean(this.getConfigValue(builder.skipLambdaUrlOrigins, "skipLambdaUrlOrigins"));
+        boolean skipLambdaUrlOrigins = Boolean.parseBoolean(builder.skipLambdaUrlOrigins);
 
-        // Receipts bucket
-        String receiptsBucketPostfix = this.getConfigValue(builder.receiptsBucketPostfix, "receiptsBucketPostfix");
-        String receiptsBucketFullName = Builder.buildBucketName(dashedDomainName, receiptsBucketPostfix);
+        String receiptsBucketFullName = Builder.buildBucketName(dashedDomainName, builder.receiptsBucketPostfix);
 
         // Lambdas
-        String lambaEntry =  this.getConfigValue(builder.lambdaEntry, "lambdaEntry");
 
-        String authUrlLambdaHandlerFunctionName = Builder.buildFunctionName(dashedDomainName, this.getConfigValue(builder.authUrlLambdaHandlerFunctionName, "authUrlLambdaHandlerFunctionName"));
-        String authUrlLambdaHandlerCmd = lambaEntry + authUrlLambdaHandlerFunctionName;
-        Duration authUrlLambdaDuration = Duration.millis(Long.parseLong(this.getConfigValue(builder.authUrlLambdaDuration, "authUrlLambdaDuration")));
+        String authUrlLambdaHandlerLambdaFunctionName = Builder.buildFunctionName(dashedDomainName, builder.authUrlLambdaHandlerFunctionName);
+        String authUrlLambdaHandlerCmd = builder.lambdaEntry + builder.authUrlLambdaHandlerFunctionName;
+        Duration authUrlLambdaDuration = Duration.millis(Long.parseLong(builder.authUrlLambdaDuration));
 
-        String exchangeTokenLambdaHandlerFunctionName = Builder.buildFunctionName(dashedDomainName, this.getConfigValue(builder.exchangeTokenLambdaHandlerFunctionName, "exchangeTokenLambdaHandlerFunctionName"));
-        String exchangeTokenLambdaHandlerCmd = lambaEntry + exchangeTokenLambdaHandlerFunctionName;
-        Duration exchangeTokenLambdaDuration = Duration.millis(Long.parseLong(this.getConfigValue(builder.exchangeTokenLambdaDuration, "exchangeTokenLambdaDuration")));
+        String exchangeTokenLambdaHandlerLambdaFunctionName = Builder.buildFunctionName(dashedDomainName, builder.exchangeTokenLambdaHandlerFunctionName);
+        String exchangeTokenLambdaHandlerCmd = builder.lambdaEntry + builder.exchangeTokenLambdaHandlerFunctionName;
+        Duration exchangeTokenLambdaDuration = Duration.millis(Long.parseLong(builder.exchangeTokenLambdaDuration));
 
-        String submitVatLambdaHandlerFunctionName = Builder.buildFunctionName(dashedDomainName, this.getConfigValue(builder.submitVatLambdaHandlerFunctionName, "submitVatLambdaHandlerFunctionName"));
-        String submitVatLambdaHandlerCmd = lambaEntry + submitVatLambdaHandlerFunctionName;
-        Duration submitVatLambdaDuration = Duration.millis(Long.parseLong(this.getConfigValue(builder.submitVatLambdaDuration, "submitVatLambdaDuration")));
+        String submitVatLambdaHandlerLambdaFunctionName = Builder.buildFunctionName(dashedDomainName, builder.submitVatLambdaHandlerFunctionName);
+        String submitVatLambdaHandlerCmd = builder.lambdaEntry + builder.submitVatLambdaHandlerFunctionName;
+        Duration submitVatLambdaDuration = Duration.millis(Long.parseLong(builder.submitVatLambdaDuration));
 
-        String logReceiptLambdaHandlerFunctionName = Builder.buildFunctionName(dashedDomainName, this.getConfigValue(builder.logReceiptLambdaHandlerFunctionName, "logReceiptLambdaHandlerFunctionName"));
-        String logReceiptLambdaHandlerCmd = lambaEntry + logReceiptLambdaHandlerFunctionName;
-        Duration logReceiptLambdaDuration = Duration.millis(Long.parseLong(this.getConfigValue(builder.logReceiptLambdaDuration, "logReceiptLambdaDuration")));
-
-        // Lambda config values
-        String hmrcClientId = this.getConfigValue(builder.hmrcClientId, "hmrcClientId");
-        String homeUrl = this.getConfigValue(builder.homeUrl, "homeUrl");
-        String hmrcBaseUri = this.getConfigValue(builder.hmrcBaseUri, "hmrcBaseUri");
-        String optionalTestAccessToken = this.getConfigValue(builder.optionalTestAccessToken, "optionalTestAccessToken");
-        String optionalTestS3Endpoint;
-        String optionalTestS3AccessKey;
-        String optionalTestS3SecretKey;
-        try {
-            optionalTestS3Endpoint = this.getConfigValue(builder.optionalTestS3Endpoint, "optionalTestS3Endpoint");
-            optionalTestS3AccessKey = this.getConfigValue(builder.optionalTestS3AccessKey, "optionalTestS3AccessKey");
-            optionalTestS3SecretKey = this.getConfigValue(builder.optionalTestS3SecretKey, "optionalTestS3SecretKey");
-        } catch (Exception e) {
-            // If test S3 values are not provided, set them to null
-            optionalTestS3Endpoint = null;
-            optionalTestS3AccessKey = null;
-            optionalTestS3SecretKey = null;
-        }
+        String logReceiptLambdaHandlerLambdaFunctionName = Builder.buildFunctionName(dashedDomainName, builder.logReceiptLambdaHandlerFunctionName);
+        String logReceiptLambdaHandlerCmd = builder.lambdaEntry + builder.logReceiptLambdaHandlerFunctionName;
+        Duration logReceiptLambdaDuration = Duration.millis(Long.parseLong(builder.logReceiptLambdaDuration));
 
         if (s3UseExistingBucket) {
             this.originBucket = Bucket.fromBucketName(this, "OriginBucket", originBucketName);
         } else {
             // Web bucket as origin for the CloudFront distribution with a bucket for access logs forwarded to CloudWatch
             this.originAccessLogBucket = LogForwardingBucket.Builder
-                    .create(this, "OriginAccess", logS3ObjectEventHandlerSource, LogS3ObjectEvent.class)
+                    .create(this, "OriginAccess", builder.logS3ObjectEventHandlerSource, LogS3ObjectEvent.class)
                     .bucketName(originAccessLogBucketName)
                     .functionNamePrefix("%s-origin-access-".formatted(dashedDomainName))
                     .retentionPeriodDays(accessLogGroupRetentionPeriodDays)
@@ -549,7 +543,7 @@ public class WebStack extends Stack {
                 .compress(true)
                 .build();
         this.distributionAccessLogBucket = LogForwardingBucket.Builder
-                .create(this, "DistributionAccess", logGzippedS3ObjectEventHandlerSource, LogGzippedS3ObjectEvent.class)
+                .create(this, "DistributionAccess", builder.logGzippedS3ObjectEventHandlerSource, LogGzippedS3ObjectEvent.class)
                 .bucketName(distributionAccessLogBucketName)
                 .functionNamePrefix("%s-dist-access-".formatted(dashedDomainName))
                 .retentionPeriodDays(accessLogGroupRetentionPeriodDays)
@@ -560,7 +554,7 @@ public class WebStack extends Stack {
         RetentionDays cloudTrailLogGroupRetentionPeriod = RetentionDaysConverter.daysToRetentionDays(cloudTrailLogGroupRetentionPeriodDays);
         if (cloudTrailEnabled) {
             this.originBucketLogGroup = LogGroup.Builder.create(this, "OriginBucketLogGroup")
-                    .logGroupName("%s%s-cloud-trail".formatted(cloudTrailLogGroupPrefix, this.originBucket.getBucketName()))
+                    .logGroupName("%s%s-cloud-trail".formatted(builder.cloudTrailLogGroupPrefix, this.originBucket.getBucketName()))
                     .retention(cloudTrailLogGroupRetentionPeriod)
                     .removalPolicy(s3RetainBucket ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY)
                     .build();
@@ -573,7 +567,7 @@ public class WebStack extends Stack {
                     .isMultiRegionTrail(false)
                     .build();
             // Add S3 event selector to the CloudTrail
-            if (cloudTrailEventSelectorPrefix == null || !cloudTrailEventSelectorPrefix.isBlank() || "none".equals(cloudTrailEventSelectorPrefix)) {
+            if (builder.cloudTrailEventSelectorPrefix == null || !builder.cloudTrailEventSelectorPrefix.isBlank() || "none".equals(builder.cloudTrailEventSelectorPrefix)) {
                 originBucketTrail.addS3EventSelector(List.of(S3EventSelector.builder()
                         .bucket(this.originBucket)
                         .build()
@@ -581,7 +575,7 @@ public class WebStack extends Stack {
             } else {
                 originBucketTrail.addS3EventSelector(List.of(S3EventSelector.builder()
                         .bucket(this.originBucket)
-                        .objectPrefix(cloudTrailEventSelectorPrefix)
+                        .objectPrefix(builder.cloudTrailEventSelectorPrefix)
                         .build()
                 ));
             }
@@ -592,29 +586,28 @@ public class WebStack extends Stack {
         var lambdaUrlToOriginsBehaviourMappings = new HashMap<String, BehaviorOptions>();
 
         // authUrlHandler
-        if ("test".equals(env)) {
+        if ("test".equals(builder.env)) {
             // For testing, create a simple Function instead of DockerImageFunction to avoid Docker builds
             this.authUrlLambda = Function.Builder.create(this, "AuthUrlLambda")
                     .code(Code.fromInline("exports.handler = async (event) => { return { statusCode: 200, body: 'test' }; }"))
                     .handler("index.handler")
                     .runtime(Runtime.NODEJS_20_X)
-                    .functionName(authUrlLambdaHandlerFunctionName)
+                    .functionName(authUrlLambdaHandlerLambdaFunctionName)
                     .timeout(authUrlLambdaDuration)
                     .build();
         } else {
             var authUrlLambdaEnv = Map.of(
-                    //"HANDLER", authUrlLambdaHandler,
-                    "DIY_SUBMIT_HMRC_CLIENT_ID", hmrcClientId,
-                    "DIY_SUBMIT_HOME_URL", homeUrl,
-                    "DIY_SUBMIT_HMRC_BASE_URI", hmrcBaseUri
+                    "DIY_SUBMIT_HMRC_CLIENT_ID", builder.hmrcClientId,
+                    "DIY_SUBMIT_HOME_URL", builder.homeUrl,
+                    "DIY_SUBMIT_HMRC_BASE_URI", builder.hmrcBaseUri
             );
-            var assetImageCodeProps = AssetImageCodeProps.builder()
+            var authUrlLambdaAssetImageCodeProps = AssetImageCodeProps.builder()
                     .cmd(List.of(authUrlLambdaHandlerCmd))
                     .build();
             this.authUrlLambda = DockerImageFunction.Builder.create(this, "AuthUrlLambda")
-                    .code(DockerImageCode.fromImageAsset(".", assetImageCodeProps))
+                    .code(DockerImageCode.fromImageAsset(".", authUrlLambdaAssetImageCodeProps))
                     .environment(authUrlLambdaEnv)
-                    .functionName(authUrlLambdaHandlerFunctionName)
+                    .functionName(authUrlLambdaHandlerLambdaFunctionName)
                     .timeout(authUrlLambdaDuration)
                     .build();
         }
@@ -649,30 +642,31 @@ public class WebStack extends Stack {
         }
 
         // exchangeTokenHandler
-        if ("test".equals(env)) {
+        if ("test".equals(builder.env)) {
             // For testing, create a simple Function instead of DockerImageFunction to avoid Docker builds
             this.exchangeTokenLambda = Function.Builder.create(this, "ExchangeTokenLambda")
                     .code(Code.fromInline("exports.handler = async (event) => { return { statusCode: 200, body: 'test' }; }"))
                     .handler("index.handler")
                     .runtime(Runtime.NODEJS_20_X)
-                    .functionName(exchangeTokenLambdaHandlerFunctionName)
+                    .functionName(exchangeTokenLambdaHandlerLambdaFunctionName)
                     .timeout(exchangeTokenLambdaDuration)
                     .build();
         } else {
-            // AssetImageCodeProps.builder().buildArgs(Map.of("HANDLER", exchangeTokenLambdaHandler)).build())
             var exchangeTokenLambdaEnv = new HashMap<>(Map.of(
-                    "HANDLER", exchangeTokenLambdaHandlerCmd,
-                    "DIY_SUBMIT_HMRC_CLIENT_ID", hmrcClientId,
-                    "DIY_SUBMIT_HOME_URL", homeUrl,
-                    "DIY_SUBMIT_HMRC_BASE_URI", hmrcBaseUri
+                    "DIY_SUBMIT_HMRC_CLIENT_ID", builder.hmrcClientId,
+                    "DIY_SUBMIT_HOME_URL", builder.homeUrl,
+                    "DIY_SUBMIT_HMRC_BASE_URI", builder.hmrcBaseUri
             ));
-            if (StringUtils.isNotBlank(optionalTestAccessToken)){
-                exchangeTokenLambdaEnv.put("DIY_SUBMIT_TEST_ACCESS_TOKEN", optionalTestAccessToken);
+            if (StringUtils.isNotBlank(builder.optionalTestAccessToken)){
+                exchangeTokenLambdaEnv.put("DIY_SUBMIT_TEST_ACCESS_TOKEN", builder.optionalTestAccessToken);
             }
+            var exchangeTokenLambdaAssetImageCodeProps = AssetImageCodeProps.builder()
+                    .cmd(List.of(exchangeTokenLambdaHandlerCmd))
+                    .build();
             this.exchangeTokenLambda = DockerImageFunction.Builder.create(this, "ExchangeTokenLambda")
-                    .code(DockerImageCode.fromImageAsset("."))
+                    .code(DockerImageCode.fromImageAsset(".", exchangeTokenLambdaAssetImageCodeProps))
                     .environment(exchangeTokenLambdaEnv)
-                    .functionName(exchangeTokenLambdaHandlerFunctionName)
+                    .functionName(exchangeTokenLambdaHandlerLambdaFunctionName)
                     .timeout(exchangeTokenLambdaDuration)
                     .build();
         }
@@ -707,25 +701,27 @@ public class WebStack extends Stack {
         }
 
         // submitVatHandler
-        if ("test".equals(env)) {
+        if ("test".equals(builder.env)) {
             // For testing, create a simple Function instead of DockerImageFunction to avoid Docker builds
             this.submitVatLambda = Function.Builder.create(this, "SubmitVatLambda")
                     .code(Code.fromInline("exports.handler = async (event) => { return { statusCode: 200, body: 'test' }; }"))
                     .handler("index.handler")
                     .runtime(Runtime.NODEJS_20_X)
-                    .functionName(submitVatLambdaHandlerFunctionName)
+                    .functionName(submitVatLambdaHandlerLambdaFunctionName)
                     .timeout(submitVatLambdaDuration)
                     .build();
         } else {
             var submitVatLambdaEnv = Map.of(
-                    "HANDLER", submitVatLambdaHandlerCmd,
-                    "DIY_SUBMIT_HOME_URL", homeUrl,
-                    "DIY_SUBMIT_HMRC_BASE_URI", hmrcBaseUri
+                    "DIY_SUBMIT_HOME_URL", builder.homeUrl,
+                    "DIY_SUBMIT_HMRC_BASE_URI", builder.hmrcBaseUri
             );
+            var submitVatLambdaAssetImageCodeProps = AssetImageCodeProps.builder()
+                    .cmd(List.of(submitVatLambdaHandlerCmd))
+                    .build();
             this.submitVatLambda = DockerImageFunction.Builder.create(this, "SubmitVatLambda")
-                    .code(DockerImageCode.fromImageAsset("."))
+                    .code(DockerImageCode.fromImageAsset(".", submitVatLambdaAssetImageCodeProps))
                     .environment(submitVatLambdaEnv)
-                    .functionName(submitVatLambdaHandlerFunctionName)
+                    .functionName(submitVatLambdaHandlerLambdaFunctionName)
                     .timeout(submitVatLambdaDuration)
                     .build();
         }
@@ -772,7 +768,7 @@ public class WebStack extends Stack {
         // Add CloudTrail for the receipts bucket if enabled
         if (cloudTrailEnabled) {
             this.receiptsBucketLogGroup = LogGroup.Builder.create(this, "ReceiptsBucketLogGroup")
-                    .logGroupName("%s%s-receipts-cloud-trail".formatted(cloudTrailLogGroupPrefix, receiptsBucketFullName))
+                    .logGroupName("%s%s-receipts-cloud-trail".formatted(builder.cloudTrailLogGroupPrefix, receiptsBucketFullName))
                     .retention(cloudTrailLogGroupRetentionPeriod)
                     .removalPolicy(s3RetainBucket ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY)
                     .build();
@@ -792,40 +788,43 @@ public class WebStack extends Stack {
         }
 
         // logReceiptHandler
-        if ("test".equals(env)) {
+        if ("test".equals(builder.env)) {
             // For testing, create a simple Function instead of DockerImageFunction to avoid Docker builds
             this.logReceiptLambda = Function.Builder.create(this, "LogReceiptLambda")
                     .code(Code.fromInline("exports.handler = async (event) => { return { statusCode: 200, body: 'test' }; }"))
                     .handler("index.handler")
                     .runtime(Runtime.NODEJS_20_X)
-                    .functionName(logReceiptLambdaHandlerFunctionName)
+                    .functionName(logReceiptLambdaHandlerLambdaFunctionName)
                     .timeout(logReceiptLambdaDuration)
                     .build();
         } else {
-            if(StringUtils.isNotBlank( optionalTestS3Endpoint) && StringUtils.isNotBlank(optionalTestS3AccessKey) || StringUtils.isNotBlank(optionalTestS3SecretKey)) {
+            var logReceiptLambdaAssetImageCodeProps = AssetImageCodeProps.builder()
+                    .cmd(List.of(logReceiptLambdaHandlerCmd))
+                    .build();
+            if(StringUtils.isNotBlank(builder.optionalTestS3Endpoint) && StringUtils.isNotBlank(builder.optionalTestS3AccessKey) || StringUtils.isNotBlank(builder.optionalTestS3SecretKey)) {
                 // For production like integrations without AWS we can use test S3 credentials
                 var logReceiptLambdaTestEnv = Map.of(
                         "HANDLER", logReceiptLambdaHandlerCmd,
-                        "DIY_SUBMIT_TEST_S3_ENDPOINT", optionalTestS3Endpoint,
-                        "DIY_SUBMIT_TEST_S3_ACCESS_KEY", optionalTestS3AccessKey,
-                        "DIY_SUBMIT_TEST_S3_SECRET_KEY", optionalTestS3SecretKey,
-                        "DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX", receiptsBucketPostfix
+                        "DIY_SUBMIT_TEST_S3_ENDPOINT", builder.optionalTestS3Endpoint,
+                        "DIY_SUBMIT_TEST_S3_ACCESS_KEY", builder.optionalTestS3AccessKey,
+                        "DIY_SUBMIT_TEST_S3_SECRET_KEY", builder.optionalTestS3SecretKey,
+                        "DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX", builder.receiptsBucketPostfix
                 );
                 this.logReceiptLambda = DockerImageFunction.Builder.create(this, "LogReceiptLambda")
-                        .code(DockerImageCode.fromImageAsset("."))
+                        .code(DockerImageCode.fromImageAsset(".", logReceiptLambdaAssetImageCodeProps))
                         .environment(logReceiptLambdaTestEnv)
-                        .functionName(logReceiptLambdaHandlerFunctionName)
+                        .functionName(logReceiptLambdaHandlerLambdaFunctionName)
                         .timeout(logReceiptLambdaDuration)
                         .build();
             } else {
                 var logReceiptLambdaEnv = Map.of(
                         "HANDLER", logReceiptLambdaHandlerCmd,
-                        "DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX", receiptsBucketPostfix
+                        "DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX", builder.receiptsBucketPostfix
                 );
                 this.logReceiptLambda = DockerImageFunction.Builder.create(this, "LogReceiptLambda")
-                        .code(DockerImageCode.fromImageAsset("."))
+                        .code(DockerImageCode.fromImageAsset(".", logReceiptLambdaAssetImageCodeProps))
                         .environment(logReceiptLambdaEnv)
-                        .functionName(logReceiptLambdaHandlerFunctionName)
+                        .functionName(logReceiptLambdaHandlerLambdaFunctionName)
                         .timeout(logReceiptLambdaDuration)
                         .build();
             }
@@ -863,12 +862,12 @@ public class WebStack extends Stack {
 
         // Create a certificate for the website domain
         if (useExistingCertificate) {
-            this.certificate = Certificate.fromCertificateArn(this, "Certificate", certificateArn);
+            this.certificate = Certificate.fromCertificateArn(this, "Certificate", builder.certificateArn);
         } else {
             this.certificate = Certificate.Builder
                     .create(this, "Certificate")
                     .domainName(this.domainName)
-                    .certificateName(certificateArn)
+                    .certificateName(builder.certificateArn)
                     .validation(CertificateValidation.fromDns(this.hostedZone))
                     .transparencyLoggingEnabled(true)
                     .build();
@@ -880,11 +879,11 @@ public class WebStack extends Stack {
                 .domainNames(Collections.singletonList(this.domainName))
                 .defaultBehavior(s3BucketOriginBehaviour)
                 .additionalBehaviors(lambdaUrlToOriginsBehaviourMappings)
-                .defaultRootObject(defaultDocumentAtOrigin)
+                .defaultRootObject(builder.defaultDocumentAtOrigin)
                 .errorResponses(List.of(ErrorResponse.builder()
                         .httpStatus(HttpStatus.SC_NOT_FOUND)
                         .responseHttpStatus(HttpStatus.SC_NOT_FOUND)
-                        .responsePagePath("/%s".formatted(error404NotFoundAtDistribution))
+                        .responsePagePath("/%s".formatted(builder.error404NotFoundAtDistribution))
                         .build()))
                 .certificate(this.certificate)
                 .enableIpv6(true)
@@ -898,10 +897,10 @@ public class WebStack extends Stack {
         logger.info("Distribution URL: %s".formatted(distributionUrl));
 
         // Deploy the web website files to the web website bucket and invalidate distribution
-        this.docRootSource = Source.asset(docRootPath, AssetOptions.builder()
+        this.docRootSource = Source.asset(builder.docRootPath, AssetOptions.builder()
                 .assetHashType(AssetHashType.SOURCE)
                 .build());
-        logger.info("Will deploy files from: %s".formatted(docRootPath));
+        logger.info("Will deploy files from: %s".formatted(builder.docRootPath));
         
         // Create LogGroup for BucketDeployment
         LogGroup bucketDeploymentLogGroup = LogGroup.Builder.create(this, "BucketDeploymentLogGroup")
@@ -961,6 +960,18 @@ public class WebStack extends Stack {
         }
         return customValue;
     }
+
+    //private String getBuilderPropertyValue(Builder builder, String propertyName) {
+    //    try {
+    //        Field field = builder.getClass().getDeclaredField(propertyName);
+    //        field.setAccessible(true);
+    //        String builderValue = (String) field.get(builder);
+    //        return getConfigValue(builderValue, propertyName);
+    //    } catch (NoSuchFieldException | IllegalAccessException e) {
+    //        logger.warn("Failed to access builder property {} using reflection: {}", propertyName, e.getMessage());
+    //        return getConfigValue(null, propertyName);
+    //    }
+    //}
 
     private String getLambdaUrlHostToken(FunctionUrl functionUrl) {
         String urlHostToken = Fn.select(2, Fn.split("/", functionUrl.getUrl()));

@@ -14,4 +14,4 @@ COPY src/ src/
 
 # Use a fixed ENTRYPOINT without environment variables
 #ENTRYPOINT ["/lambda-entrypoint.sh"]
-CMD [ "src/lib/main.authUrlHandler" ]
+#CMD [ "src/lib/main.authUrlHandler" ]
