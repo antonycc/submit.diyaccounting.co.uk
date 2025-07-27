@@ -674,7 +674,7 @@ public class WebStack extends Stack {
                 .build());
         var authUrlLambdaFunctionUrlOptions = FunctionUrlOptions.builder()
                 .invokeMode(InvokeMode.BUFFERED)
-                .authType(functionUrlAuthType)  // Conditional authentication based on configuration
+                .authType(functionUrlAuthType)
                 .build();
         this.authUrlLambdaUrl = this.authUrlLambda.addFunctionUrl(authUrlLambdaFunctionUrlOptions);
         if (skipLambdaUrlOrigins) {
@@ -684,86 +684,14 @@ public class WebStack extends Stack {
             HttpOrigin authUrlApiOrigin = HttpOrigin.Builder.create(authUrlLambdaUrl)
                     .protocolPolicy(OriginProtocolPolicy.HTTPS_ONLY)
                     .build();
-            /*
-            ResponseHeadersPolicy corsResponseHeadersPolicy = ResponseHeadersPolicy.Builder.create(this, "CorsResponseHeadersPolicy")
-                    .responseHeadersPolicyName("AllowAllCorsWithPreflight")
-                    .corsBehavior(ResponseHeadersCorsBehavior.builder()
-                            .accessControlAllowCredentials(true)             // Allow cookies / credentials
-                            //.accessControlAllowHeaders(List.of("*"))          // Allow all headers
-                            .accessControlAllowHeaders(List.of(
-                                    "Authorization",
-                                    "Content-Type",
-                                    "Accept",
-                                    "Origin",
-                                    "User-Agent",
-                                    "X-Amz-Date",
-                                    "X-Api-Key",
-                                    "X-Amz-Security-Token",
-                                    "X-Amz-User-Agent",
-                                    "X-Requested-With",
-                                    "Cache-Control",
-                                    "Pragma",
-                                    "If-Modified-Since",
-                                    "If-None-Match",
-                                    "Referer",
-                                    "Accept-Encoding",
-                                    "Accept-Language",
-                                    "Cookie"
-                            ))
-                            .accessControlAllowMethods(List.of(
-                                HttpMethod.GET.toString(),
-                                HttpMethod.HEAD.toString(),
-                                HttpMethod.OPTIONS.toString(),
-                                HttpMethod.POST.toString(),
-                                HttpMethod.PUT.toString(),
-                                HttpMethod.PATCH.toString(),
-                                HttpMethod.DELETE.toString()
-                            ))                                                // Allow all methods
-                            .accessControlAllowOrigins(List.of("*"))          // Allow all origins (or list your domains)
-                            //.accessControlExposeHeaders(List.of("*"))         // Expose all headers to client
-                            .accessControlExposeHeaders(List.of(
-                                    "Authorization",
-                                    "Content-Type",
-                                    "ETag",
-                                    "Last-Modified",
-                                    "Link",
-                                    "X-Total-Count",
-                                    "Accept",
-                                    "Origin",
-                                    "User-Agent",
-                                    "X-Amz-Date",
-                                    "X-Api-Key",
-                                    "X-Amz-Security-Token",
-                                    "X-Amz-User-Agent",
-                                    "X-Requested-With",
-                                    "Cache-Control",
-                                    "Pragma",
-                                    "If-Modified-Since",
-                                    "If-None-Match",
-                                    "Referer",
-                                    "Accept-Encoding",
-                                    "Accept-Language",
-                                    "Cookie"
-                            ))
-                            .accessControlMaxAge(Duration.seconds(600))       // Cache preflight for 10 minutes
-                            .originOverride(true)                             // Override origin headers
-                            .build())
-                    .build();
-            */
             final BehaviorOptions authUrlOriginBehaviour = BehaviorOptions.builder()
                     .origin(authUrlApiOrigin)
                     .allowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
-                    //.allowedMethods(AllowedMethods.ALLOW_ALL)
-                    //.cachePolicy(CachePolicy.USE_ORIGIN_CACHE_CONTROL_HEADERS_QUERY_STRINGS)
                     .cachePolicy(CachePolicy.CACHING_DISABLED)
-                    //.originRequestPolicy(authUrlOriginRequestPolicy)
                     .originRequestPolicy(OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER)
-                    //.responseHeadersPolicy(corsResponseHeadersPolicy)
                     .responseHeadersPolicy(ResponseHeadersPolicy.CORS_ALLOW_ALL_ORIGINS_WITH_PREFLIGHT_AND_SECURITY_HEADERS)
-                    //.viewerProtocolPolicy(ViewerProtocolPolicy.REDIRECT_TO_HTTPS)
                     .build();
             lambdaUrlToOriginsBehaviourMappings.put("/api/auth-url*", authUrlOriginBehaviour);
-            //lambdaUrlToOriginsBehaviourMappings.put("/api/*", authUrlOriginBehaviour);
         }
 
         // exchangeTokenHandler
