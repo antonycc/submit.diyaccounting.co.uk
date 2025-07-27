@@ -15,13 +15,18 @@ dotenv.config({ path: '.env' });
 function buildUrl(event) {
   let url;
   if (event.headers && event.headers.host) {
-    const host = event.headers.host;
-    const path = event.rawPath || event.path || event.requestContext?.http?.path || '';
-    const queryString = event.rawQueryString || '';
-    url = new URL(`${path}?${queryString}`,`https://${host}`);
-    Object.keys(event.queryStringParameters).forEach((key) => {
-      url.searchParams.append(key, event.queryStringParameters[key]);
-    });
+    try {
+      const host = event.headers.host;
+      const path = event.rawPath || event.path || event.requestContext?.http?.path || '';
+      const queryString = event.rawQueryString || '';
+      url = new URL(`${path}?${queryString}`, `https://${host}`);
+      //Object.keys(event.queryStringParameters).forEach((key) => {
+      //  url.searchParams.append(key, event.queryStringParameters[key]);
+      //});
+    }catch (err) {
+        logger.error({ message: "Error building URL from event", error: err, event });
+        url = "https://unknown"; // Fallback URL in case of error
+    }
   } else {
     logger.warn({ message: "buildUrl called with missing path or host header", event });
     url = "https://unknown";
