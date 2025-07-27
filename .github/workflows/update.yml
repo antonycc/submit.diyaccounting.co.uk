@@ -34,19 +34,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: mvn
-        id: mvn
-        shell: bash
-        run: |
-          if [ -f pom.xml ]; then
-            pomXmlExists='true'
-          else
-            pomXmlExists='false'
-          fi
-          echo "pomXmlExists=${pomXmlExists?}" | tee -a "${GITHUB_OUTPUT?}"
 
       - uses: actions/setup-java@v4
-        if: steps.mvn.outputs.pomXmlExists == 'true'
         with:
           distribution: 'corretto'
           java-version: 21
@@ -54,18 +43,13 @@ jobs:
 
       - name: download-dependencies
         id: download-dependencies
-        if: steps.mvn.outputs.pomXmlExists == 'true'
         shell: bash
         run: ./mvnw --batch-mode --quiet dependency:go-offline > /dev/null 2>&1
 
       - name: package
         id: package
-        if: steps.mvn.outputs.pomXmlExists == 'true'
         shell: bash
         run: ./mvnw validate
-
-    outputs:
-      pomXmlExists: ${{ steps.mvn.outputs.pomXmlExists }}
 
   update-npm:
     permissions:
