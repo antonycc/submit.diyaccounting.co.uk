@@ -57,6 +57,7 @@ public class LogForwardingBucket extends Stack {
         private int retentionPeriodDays = 30;
         private boolean cloudTrailEnabled = false;
         private boolean xRayEnabled = false;
+        private RemovalPolicy removalPolicy = RemovalPolicy.DESTROY;
 
         private Builder(
                 final Construct scope,
@@ -84,6 +85,7 @@ public class LogForwardingBucket extends Stack {
             newBuilder.retentionPeriodDays = retentionPeriodDays;
             newBuilder.cloudTrailEnabled = cloudTrailEnabled;
             newBuilder.xRayEnabled = xRayEnabled;
+            newBuilder.removalPolicy = removalPolicy;
             return newBuilder;
         }
 
@@ -94,6 +96,7 @@ public class LogForwardingBucket extends Stack {
             newBuilder.retentionPeriodDays = retentionPeriodDays;
             newBuilder.cloudTrailEnabled = cloudTrailEnabled;
             newBuilder.xRayEnabled = xRayEnabled;
+            newBuilder.removalPolicy = removalPolicy;
             return newBuilder;
         }
 
@@ -104,6 +107,7 @@ public class LogForwardingBucket extends Stack {
             newBuilder.retentionPeriodDays = retentionPeriodDays;
             newBuilder.cloudTrailEnabled = cloudTrailEnabled;
             newBuilder.xRayEnabled = xRayEnabled;
+            newBuilder.removalPolicy = removalPolicy;
             return newBuilder;
         }
 
@@ -114,6 +118,7 @@ public class LogForwardingBucket extends Stack {
             newBuilder.retentionPeriodDays = retentionPeriodDays;
             newBuilder.cloudTrailEnabled = cloudTrailEnabled;
             newBuilder.xRayEnabled = xRayEnabled;
+            newBuilder.removalPolicy = removalPolicy;
             return newBuilder;
         }
 
@@ -124,6 +129,18 @@ public class LogForwardingBucket extends Stack {
             newBuilder.retentionPeriodDays = retentionPeriodDays;
             newBuilder.cloudTrailEnabled = cloudTrailEnabled;
             newBuilder.xRayEnabled = xRayEnabled;
+            newBuilder.removalPolicy = removalPolicy;
+            return newBuilder;
+        }
+
+        public Builder removalPolicy(RemovalPolicy removalPolicy) {
+            final Builder newBuilder = new Builder(scope, idPrefix, handlerSource, handlerClass);
+            newBuilder.bucketName = bucketName;
+            newBuilder.functionNamePrefix = functionNamePrefix;
+            newBuilder.retentionPeriodDays = retentionPeriodDays;
+            newBuilder.cloudTrailEnabled = cloudTrailEnabled;
+            newBuilder.xRayEnabled = xRayEnabled;
+            newBuilder.removalPolicy = removalPolicy;
             return newBuilder;
         }
 
@@ -137,7 +154,7 @@ public class LogForwardingBucket extends Stack {
                     .objectOwnership(ObjectOwnership.OBJECT_WRITER)
                     .versioned(false)
                     .encryption(BucketEncryption.S3_MANAGED)
-                    .removalPolicy(RemovalPolicy.DESTROY)
+                    .removalPolicy(removalPolicy)
                     .autoDeleteObjects(true)
                     .lifecycleRules(List.of(LifecycleRule.builder().expiration(Duration.days(retentionPeriodDays)).build()))
                     .build();

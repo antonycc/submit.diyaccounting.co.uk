@@ -4,6 +4,8 @@ import co.uk.diyaccounting.submit.awssdk.RetentionDaysConverter;
 import co.uk.diyaccounting.submit.functions.LogGzippedS3ObjectEvent;
 import co.uk.diyaccounting.submit.functions.LogS3ObjectEvent;
 import co.uk.diyaccounting.submit.utils.ResourceNameUtils;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.hc.core5.http.HttpStatus;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -74,9 +76,16 @@ import software.amazon.awscdk.services.s3.deployment.Source;
 import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.lang.reflect.Field;
+import java.net.HttpURLConnection;
+import java.net.URI;
+import java.net.URL;
 import java.text.MessageFormat;
 import java.util.AbstractMap;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -89,7 +98,7 @@ public class WebStack extends Stack {
 
     public String domainName;
     public IBucket originBucket;
-    public LogGroup originBucketLogGroup;
+    public LogGroup cloudTrailLogGroup;
     public IBucket originAccessLogBucket;
     public IOrigin origin;
     public BucketDeployment deployment;
@@ -102,7 +111,7 @@ public class WebStack extends Stack {
     public ISource docRootSource;
     public ARecord aRecord;
     public AaaaRecord aaaaRecord;
-    public Trail originBucketTrail;
+    public Trail cloudTrailLogBucket;
     public Function authUrlLambda;
     public FunctionUrl authUrlLambdaUrl;
     public LogGroup authUrlLambdaLogGroup;
@@ -116,8 +125,6 @@ public class WebStack extends Stack {
     public FunctionUrl logReceiptLambdaUrl;
     public LogGroup logReceiptLambdaLogGroup;
     public IBucket receiptsBucket;
-    public LogGroup receiptsBucketLogGroup;
-    public Trail receiptsBucketTrail;
 
     public static class Builder {
         public Construct scope;
@@ -493,6 +500,24 @@ public class WebStack extends Stack {
 
         boolean skipLambdaUrlOrigins = Boolean.parseBoolean(builder.skipLambdaUrlOrigins);
 
+        // Create a CloudTrail for the stack resources
+        RetentionDays cloudTrailLogGroupRetentionPeriod = RetentionDaysConverter.daysToRetentionDays(cloudTrailLogGroupRetentionPeriodDays);
+        if (cloudTrailEnabled) {
+            this.cloudTrailLogGroup = LogGroup.Builder.create(this, "OriginBucketLogGroup")
+                    .logGroupName("%s%s-cloud-trail".formatted(builder.cloudTrailLogGroupPrefix, dashedDomainName))
+                    .retention(cloudTrailLogGroupRetentionPeriod)
+                    .removalPolicy(RemovalPolicy.DESTROY)
+                    .build();
+            this.cloudTrailLogBucket = Trail.Builder.create(this, "OriginBucketTrail")
+                    .trailName(cloudTrailLogBucketName)
+                    .cloudWatchLogGroup(this.cloudTrailLogGroup)
+                    .sendToCloudWatchLogs(true)
+                    .cloudWatchLogsRetention(cloudTrailLogGroupRetentionPeriod)
+                    .includeGlobalServiceEvents(false)
+                    .isMultiRegionTrail(false)
+                    .build();
+        }
+
         // Origin bucket for the CloudFront distribution
         String receiptsBucketFullName = Builder.buildBucketName(dashedDomainName, builder.receiptsBucketPostfix);
         if (s3UseExistingBucket) {
@@ -552,29 +577,15 @@ public class WebStack extends Stack {
 
         // Add cloud trail to the origin bucket if enabled
         // CloudTrail for the origin bucket
-        RetentionDays cloudTrailLogGroupRetentionPeriod = RetentionDaysConverter.daysToRetentionDays(cloudTrailLogGroupRetentionPeriodDays);
         if (cloudTrailEnabled) {
-            this.originBucketLogGroup = LogGroup.Builder.create(this, "OriginBucketLogGroup")
-                    .logGroupName("%s%s-cloud-trail".formatted(builder.cloudTrailLogGroupPrefix, this.originBucket.getBucketName()))
-                    .retention(cloudTrailLogGroupRetentionPeriod)
-                    .removalPolicy(s3RetainBucket ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY)
-                    .build();
-            this.originBucketTrail = Trail.Builder.create(this, "OriginBucketTrail")
-                    .trailName(cloudTrailLogBucketName)
-                    .cloudWatchLogGroup(this.originBucketLogGroup)
-                    .sendToCloudWatchLogs(true)
-                    .cloudWatchLogsRetention(cloudTrailLogGroupRetentionPeriod)
-                    .includeGlobalServiceEvents(false)
-                    .isMultiRegionTrail(false)
-                    .build();
             // Add S3 event selector to the CloudTrail
             if (builder.cloudTrailEventSelectorPrefix == null || !builder.cloudTrailEventSelectorPrefix.isBlank() || "none".equals(builder.cloudTrailEventSelectorPrefix)) {
-                originBucketTrail.addS3EventSelector(List.of(S3EventSelector.builder()
+                cloudTrailLogBucket.addS3EventSelector(List.of(S3EventSelector.builder()
                         .bucket(this.originBucket)
                         .build()
                 ));
             } else {
-                originBucketTrail.addS3EventSelector(List.of(S3EventSelector.builder()
+                cloudTrailLogBucket.addS3EventSelector(List.of(S3EventSelector.builder()
                         .bucket(this.originBucket)
                         .objectPrefix(builder.cloudTrailEventSelectorPrefix)
                         .build()
@@ -830,7 +841,7 @@ public class WebStack extends Stack {
         }
 
         // Create receipts bucket for storing VAT submission receipts
-        // TODO: Change to a log forwarding bucket
+        // TODO: Create separate s3RetainXxxxBucket switches for the origin bucket and receipts bucket
         this.receiptsBucket = Bucket.Builder.create(this, "ReceiptsBucket")
                 .bucketName(receiptsBucketFullName)
                 .versioned(false)
@@ -839,27 +850,30 @@ public class WebStack extends Stack {
                 .removalPolicy(s3RetainBucket ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY)
                 .autoDeleteObjects(!s3RetainBucket)
                 .build();
+        this.receiptsBucket = LogForwardingBucket.Builder
+                .create(this, "ReceiptsBucket", builder.logS3ObjectEventHandlerSource, LogS3ObjectEvent.class)
+                .bucketName(receiptsBucketFullName)
+                .functionNamePrefix("%s-receipts-bucket-".formatted(dashedDomainName))
+                .retentionPeriodDays(accessLogGroupRetentionPeriodDays)
+                .removalPolicy(s3RetainBucket ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY)
+                .build();
 
-        // Add CloudTrail for the receipts bucket if enabled
+        // Add S3 event selector to the CloudTrail for receipts bucket
         if (cloudTrailEnabled) {
-            this.receiptsBucketLogGroup = LogGroup.Builder.create(this, "ReceiptsBucketLogGroup")
-                    .logGroupName("%s%s-receipts-cloud-trail".formatted(builder.cloudTrailLogGroupPrefix, receiptsBucketFullName))
-                    .retention(cloudTrailLogGroupRetentionPeriod)
-                    .removalPolicy(s3RetainBucket ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY)
-                    .build();
-            this.receiptsBucketTrail = Trail.Builder.create(this, "ReceiptsBucketTrail")
-                    .trailName("%s-receipts-trail".formatted(dashedDomainName))
-                    .cloudWatchLogGroup(this.receiptsBucketLogGroup)
-                    .sendToCloudWatchLogs(true)
-                    .cloudWatchLogsRetention(cloudTrailLogGroupRetentionPeriod)
-                    .includeGlobalServiceEvents(false)
-                    .isMultiRegionTrail(false)
-                    .build();
-            // Add S3 event selector to the CloudTrail for receipts bucket
-            receiptsBucketTrail.addS3EventSelector(List.of(S3EventSelector.builder()
-                    .bucket(this.receiptsBucket)
-                    .build()
-            ));
+            if (builder.cloudTrailEventSelectorPrefix == null || !builder.cloudTrailEventSelectorPrefix.isBlank() || "none".equals(builder.cloudTrailEventSelectorPrefix)) {
+                cloudTrailLogBucket.addS3EventSelector(List.of(S3EventSelector.builder()
+                        .bucket(this.receiptsBucket)
+                        .build()
+                ));
+            } else {
+                cloudTrailLogBucket.addS3EventSelector(List.of(S3EventSelector.builder()
+                        .bucket(this.receiptsBucket)
+                        .objectPrefix(builder.cloudTrailEventSelectorPrefix)
+                        .build()
+                ));
+            }
+        } else {
+            logger.info("CloudTrail is not enabled for the origin bucket.");
         }
 
         // logReceiptHandler
@@ -1068,5 +1082,57 @@ public class WebStack extends Stack {
     private String getLambdaUrlHostToken(FunctionUrl functionUrl) {
         String urlHostToken = Fn.select(2, Fn.split("/", functionUrl.getUrl()));
         return urlHostToken;
+    }
+
+    public Map<String, Object> getCloudFrontIpCondition() {
+        String ipRangesUrl = "https://ip-ranges.amazonaws.com/ip-ranges.json";
+        List<String> cloudFrontIps = new ArrayList<>();
+
+        try {
+            var url = URI.create(ipRangesUrl).toURL();
+            JsonNode prefixes = getJsonNode(url);
+            if (prefixes != null && prefixes.isArray()) {
+                for (JsonNode prefix : prefixes) {
+                    if ("CLOUDFRONT".equals(prefix.get("service").asText())) {
+                        cloudFrontIps.add(prefix.get("ip_prefix").asText());
+                    }
+                }
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Error fetching/parsing CloudFront IP ranges", e);
+        }
+
+        Map<String, Object> condition = new HashMap<>();
+        Map<String, Object> ipAddressMap = new HashMap<>();
+        ipAddressMap.put("aws:SourceIp", cloudFrontIps);
+        condition.put("IpAddress", ipAddressMap);
+        return condition;
+    }
+
+    private static JsonNode getJsonNode(URL url) throws IOException {
+        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+        conn.setRequestMethod("GET");
+        conn.setConnectTimeout(5000);
+        conn.setReadTimeout(5000);
+
+        int status = conn.getResponseCode();
+        if (status != 200) {
+            throw new RuntimeException("Failed to fetch IP ranges: HTTP " + status);
+        }
+
+        BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+        StringBuilder responseBuilder = new StringBuilder();
+        String line;
+        while ((line = reader.readLine()) != null) {
+            responseBuilder.append(line);
+        }
+        reader.close();
+
+        String json = responseBuilder.toString();
+
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode root = mapper.readTree(json);
+        JsonNode prefixes = root.get("prefixes");
+        return prefixes;
     }
 }
