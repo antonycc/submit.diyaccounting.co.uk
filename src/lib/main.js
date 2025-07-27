@@ -56,6 +56,10 @@ export async function authUrlHandler(event) {
       body: JSON.stringify({ requestUrl: url, error: "Missing state query parameter from URL" }),
     };
     logger.error(response);
+
+    if (event.httpMethod === 'HEAD') {
+      delete response.body;
+    }
     return response;
   }
   const authUrl = buildOAuthOutboundRedirectUrl(state);
@@ -66,6 +70,9 @@ export async function authUrlHandler(event) {
     body: JSON.stringify({ authUrl }),
   };
   logger.info({ message: "authUrlHandler responding to url with", url, response });
+  if (event.httpMethod === 'HEAD') {
+    delete response.body;
+  }
   return response;
 }
 

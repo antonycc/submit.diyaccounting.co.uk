@@ -617,11 +617,7 @@ public class WebStack extends Stack {
                                 .allowedOrigins(List.of("*"))  // Allow all origins (be careful with this in production!)
                                 .allowedMethods(List.of(
                                         HttpMethod.GET,
-                                        HttpMethod.POST,
-                                        HttpMethod.PUT,
-                                        HttpMethod.DELETE,
                                         HttpMethod.HEAD,
-                                        HttpMethod.PATCH,
                                         HttpMethod.OPTIONS
                                 ))  // Allow all common HTTP methods including OPTIONS for preflight
                                 .allowedHeaders(List.of("*"))  // Allow all headers in CORS requests
