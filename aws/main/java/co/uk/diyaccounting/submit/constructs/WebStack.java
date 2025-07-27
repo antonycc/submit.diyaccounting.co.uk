@@ -659,12 +659,12 @@ public class WebStack extends Stack {
             }
             this.authUrlLambda = authUrlLambdaBuilder.build();
         }
-        authUrlLambda.addPermission("AllowCloudFrontInvoke", Permission.builder()
-                .principal(new AnyPrincipal())
-                .action("lambda:InvokeFunctionUrl")
-                //.sourceIp(List.of("13.32.0.0/15", "52.46.0.0/18")) // CloudFront IP ranges
-                .functionUrlAuthType(FunctionUrlAuthType.NONE)
-                .build());
+        //authUrlLambda.addPermission("AllowCloudFrontInvoke", Permission.builder()
+        //        .principal(new AnyPrincipal())
+        //        .action("lambda:InvokeFunctionUrl")
+        //        //.sourceIp(List.of("13.32.0.0/15", "52.46.0.0/18")) // CloudFront IP ranges
+        //        .functionUrlAuthType(FunctionUrlAuthType.NONE)
+        //        .build());
         this.authUrlLambdaLogGroup = new LogGroup(this, "AuthUrlLambdaLogGroup", LogGroupProps.builder()
                 .logGroupName("/aws/lambda/" + this.authUrlLambda.getFunctionName())
                 .retention(RetentionDays.THREE_DAYS)
@@ -1088,6 +1088,13 @@ public class WebStack extends Stack {
                 .build();
         //var grantable = this.distribution.getGrantPrincipal();
         //this.authUrlLambdaUrl.grantInvokeUrl(this.distribution.);
+        Permission invokeFunctionUrlPermission = Permission.builder()
+                .principal(new AnyPrincipal())
+                .action("lambda:InvokeFunctionUrl")
+                .functionUrlAuthType(FunctionUrlAuthType.NONE)
+                .sourceArn(this.distribution.getDistributionArn()) // restrict to your distribution
+                .build();
+        authUrlLambda.addPermission("AuthLambdaAllowCloudFrontInvoke", invokeFunctionUrlPermission);
         this.distributionUrl = "https://%s/".formatted(this.distribution.getDomainName());
         logger.info("Distribution URL: %s".formatted(distributionUrl));
 
