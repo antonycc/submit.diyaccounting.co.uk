@@ -157,8 +157,8 @@ describe("Integration – Server Express App", () => {
     it("should handle missing state in auth URL", async () => {
       const response = await request(app).get("/api/auth-url").expect(400);
 
-      expect(response.body).toHaveProperty("error");
-      expect(response.body.error).toBe("Missing state query parameter from URL");
+      expect(response.body).toHaveProperty("message");
+      expect(response.body.message).toBe("Missing state query parameter from URL");
     });
 
     it("should handle missing code in token exchange", async () => {

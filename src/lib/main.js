@@ -36,52 +36,62 @@ function buildUrl(event) {
 
 // GET /api/auth-url?state={state}
 export async function authUrlHandler(event) {
-  const url = buildUrl(event);
-  logger.info({ message: "authUrlHandler responding to url by processing event", url, event });
+  try {
+    const url = buildUrl(event);
+    logger.info({message: "authUrlHandler responding to url by processing event", url, event});
 
-  //if (event.httpMethod === 'OPTIONS') {
-  //  // Respond to preflight
-  //  return {
-  //    statusCode: 200,
-  //    headers: {
-  //      'Access-Control-Allow-Origin': '*',           // Or restrict to your frontend origin
-  //      'Access-Control-Allow-Methods': 'GET,OPTIONS',
-  //      'Access-Control-Allow-Headers': 'Content-Type,Authorization',
-  //      'Access-Control-Max-Age': '0',
-  //    },
-  //    body: '',
-  //  };
-  //}
+    //if (event.httpMethod === 'OPTIONS') {
+    //  // Respond to preflight
+    //  return {
+    //    statusCode: 200,
+    //    headers: {
+    //      'Access-Control-Allow-Origin': '*',           // Or restrict to your frontend origin
+    //      'Access-Control-Allow-Methods': 'GET,OPTIONS',
+    //      'Access-Control-Allow-Headers': 'Content-Type,Authorization',
+    //      'Access-Control-Max-Age': '0',
+    //    },
+    //    body: '',
+    //  };
+    //}
 
-  // Request validation
-  const state = event.queryStringParameters?.state;
-  if (!state) {
+    // Request validation
+    const state = event.queryStringParameters?.state;
+    if (!state) {
+      const message = "Missing state query parameter from URL";
+      const response = {
+        statusCode: 400,
+        headers: {
+          'Access-Control-Allow-Origin': '*',           // Same as above
+        },
+        body: JSON.stringify({requestUrl: url, message, event}),
+      };
+      logger.error(response);
+
+      //if (event.httpMethod === 'HEAD') {
+      //  delete response.body;
+      //}
+      return response;
+    }
+    const authUrl = buildOAuthOutboundRedirectUrl(state);
+
+    // Generate the response
     const response = {
-      statusCode: 400,
-      headers: {
-        'Access-Control-Allow-Origin': '*',           // Same as above
-      },
-      body: JSON.stringify({ requestUrl: url, error: "Missing state query parameter from URL" }),
+      statusCode: 200,
+      body: JSON.stringify({authUrl}),
     };
-    logger.error(response);
-
+    logger.info({message: "authUrlHandler responding to url with", url, response});
     //if (event.httpMethod === 'HEAD') {
     //  delete response.body;
     //}
     return response;
+  }catch (error) {
+    const message = "Internal Server Error in authUrlHandler";
+    logger.error({ message, error, event });
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ message, error, event }),
+    };
   }
-  const authUrl = buildOAuthOutboundRedirectUrl(state);
-
-  // Generate the response
-  const response = {
-    statusCode: 200,
-    body: JSON.stringify({ authUrl }),
-  };
-  logger.info({ message: "authUrlHandler responding to url with", url, response });
-  //if (event.httpMethod === 'HEAD') {
-  //  delete response.body;
-  //}
-  return response;
 }
 
 // POST /api/exchange-token

@@ -57,7 +57,7 @@ describe("authUrlHandler", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(400);
-    expect(body.error).toBe("Missing state query parameter from URL");
+    expect(body.message).toBe("Missing state query parameter from URL");
   });
 
   test("should return 400 when queryStringParameters is null", async () => {
@@ -69,7 +69,7 @@ describe("authUrlHandler", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(400);
-    expect(body.error).toBe("Missing state query parameter from URL");
+    expect(body.message).toBe("Missing state query parameter from URL");
   });
 
   test("should return 400 when state is empty string", async () => {
@@ -83,7 +83,7 @@ describe("authUrlHandler", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(400);
-    expect(body.error).toBe("Missing state query parameter from URL");
+    expect(body.message).toBe("Missing state query parameter from URL");
   });
 
   test("should properly encode special characters in state", async () => {
@@ -107,6 +107,6 @@ describe("authUrlHandler", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(400);
-    expect(body.error).toBe("Missing state query parameter from URL");
+    expect(body.message).toBe("Missing state query parameter from URL");
   });
 });
