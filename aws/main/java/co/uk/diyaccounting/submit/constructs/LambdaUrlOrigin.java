@@ -8,9 +8,8 @@ import software.amazon.awscdk.services.cloudfront.AllowedMethods;
 import software.amazon.awscdk.services.cloudfront.BehaviorOptions;
 import software.amazon.awscdk.services.cloudfront.CachePolicy;
 import software.amazon.awscdk.services.cloudfront.ICachePolicy;
+import software.amazon.awscdk.services.cloudfront.IResponseHeadersPolicy;
 import software.amazon.awscdk.services.cloudfront.OriginProtocolPolicy;
-import software.amazon.awscdk.services.cloudfront.OriginRequestCookieBehavior;
-import software.amazon.awscdk.services.cloudfront.OriginRequestHeaderBehavior;
 import software.amazon.awscdk.services.cloudfront.OriginRequestPolicy;
 import software.amazon.awscdk.services.cloudfront.ResponseHeadersPolicy;
 import software.amazon.awscdk.services.cloudfront.ViewerProtocolPolicy;
@@ -22,9 +21,7 @@ import software.amazon.awscdk.services.lambda.DockerImageFunction;
 import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.lambda.FunctionUrl;
 import software.amazon.awscdk.services.lambda.FunctionUrlAuthType;
-import software.amazon.awscdk.services.lambda.FunctionUrlCorsOptions;
 import software.amazon.awscdk.services.lambda.FunctionUrlOptions;
-import software.amazon.awscdk.services.lambda.HttpMethod;
 import software.amazon.awscdk.services.lambda.InvokeMode;
 import software.amazon.awscdk.services.lambda.Runtime;
 import software.amazon.awscdk.services.lambda.Tracing;
@@ -33,7 +30,6 @@ import software.amazon.awscdk.services.logs.LogGroupProps;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.constructs.Construct;
 
-import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
@@ -46,7 +42,6 @@ public class LambdaUrlOrigin {
     public final LogGroup logGroup;
     public final FunctionUrl functionUrl;
     public final BehaviorOptions behaviorOptions;
-    public final OriginRequestPolicy customOriginRequestPolicy;
 
     private LambdaUrlOrigin(Builder builder) {
         // Create the lambda function
@@ -59,60 +54,30 @@ public class LambdaUrlOrigin {
                 .removalPolicy(builder.logGroupRemovalPolicy)
                 .build());
 
-        // Create custom origin request policy
-        OriginRequestPolicy.Builder policyBuilder = OriginRequestPolicy.Builder
-                .create(builder.scope, builder.idPrefix + "OriginRequestPolicy")
-                .comment("Custom origin request policy with CORS_S3_ORIGIN equivalent configuration")
-                .cookieBehavior(builder.originRequestCookieBehavior)
-                .headerBehavior(builder.originRequestHeaderBehavior);
-        
-        if (builder.originRequestQueryStringAll) {
-            policyBuilder.queryStringBehavior(software.amazon.awscdk.services.cloudfront.OriginRequestQueryStringBehavior.all());
-        } else {
-            policyBuilder.queryStringBehavior(software.amazon.awscdk.services.cloudfront.OriginRequestQueryStringBehavior.none());
-        }
-        
-        this.customOriginRequestPolicy = policyBuilder.build();
-
         // Create function URL
         FunctionUrlOptions.Builder functionUrlOptionsBuilder = FunctionUrlOptions.builder()
                 .authType(builder.functionUrlAuthType)
                 .invokeMode(builder.invokeMode);
         
-        if (builder.functionUrlCorsOptions != null) {
-            functionUrlOptionsBuilder.cors(builder.functionUrlCorsOptions);
-        } else {
-            // Default CORS configuration if none provided
-            functionUrlOptionsBuilder.cors(FunctionUrlCorsOptions.builder()
-                    .allowedOrigins(List.of("https://" + builder.domainName))
-                    .allowedMethods(builder.allowedMethods)
-                    .build());
-        }
-        
         this.functionUrl = this.lambda.addFunctionUrl(functionUrlOptionsBuilder.build());
 
-        if (builder.skipBehaviorOptions) {
-            logger.info("Skipping behavior options for Lambda URL origin as per configuration.");
-            this.behaviorOptions = null;
-        } else {
-            String lambdaUrlHost = getLambdaUrlHostToken(this.functionUrl);
-            HttpOrigin apiOrigin = HttpOrigin.Builder.create(lambdaUrlHost)
-                    .protocolPolicy(builder.protocolPolicy)
-                    .build();
+        String lambdaUrlHost = getLambdaUrlHostToken(this.functionUrl);
+        HttpOrigin apiOrigin = HttpOrigin.Builder.create(lambdaUrlHost)
+                .protocolPolicy(builder.protocolPolicy)
+                .build();
 
-            BehaviorOptions.Builder behaviorOptionsBuilder = BehaviorOptions.builder()
-                    .origin(apiOrigin)
-                    .allowedMethods(builder.cloudFrontAllowedMethods)
-                    .cachePolicy(builder.cachePolicy)
-                    .originRequestPolicy(this.customOriginRequestPolicy)
-                    .viewerProtocolPolicy(builder.viewerProtocolPolicy);
-            
-            if (builder.responseHeadersPolicy != null) {
-                behaviorOptionsBuilder.responseHeadersPolicy(builder.responseHeadersPolicy);
-            }
-            
-            this.behaviorOptions = behaviorOptionsBuilder.build();
+        BehaviorOptions.Builder behaviorOptionsBuilder = BehaviorOptions.builder()
+                .origin(apiOrigin)
+                .allowedMethods(builder.cloudFrontAllowedMethods)
+                .cachePolicy(builder.cachePolicy)
+                .originRequestPolicy(OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER)
+                .viewerProtocolPolicy(builder.viewerProtocolPolicy);
+
+        if (builder.responseHeadersPolicy != null) {
+            behaviorOptionsBuilder.responseHeadersPolicy(builder.responseHeadersPolicy);
         }
+
+        this.behaviorOptions = behaviorOptionsBuilder.build();
 
         logger.info("Created LambdaUrlOrigin with function: {}", this.lambda.getFunctionName());
     }
@@ -173,22 +138,12 @@ public class LambdaUrlOrigin {
         public final String idPrefix;
         
         public String env = null;
-        public String domainName = null;
         public String functionName = null;
         public String handler = null;
         public Duration timeout = Duration.seconds(30);
         public Map<String, String> environment = Map.of();
-        public List<HttpMethod> allowedMethods = List.of(HttpMethod.GET);
         public AllowedMethods cloudFrontAllowedMethods = AllowedMethods.ALLOW_GET_HEAD_OPTIONS;
         public boolean skipBehaviorOptions = false;
-        
-        // Origin Request Policy configuration
-        public OriginRequestHeaderBehavior originRequestHeaderBehavior = OriginRequestHeaderBehavior.allowList(
-                "CloudFront-Forwarded-Proto", "CloudFront-Is-Desktop-Viewer", 
-                "CloudFront-Is-Mobile-Viewer", "CloudFront-Is-SmartTV-Viewer", "CloudFront-Is-Tablet-Viewer", 
-                "CloudFront-Viewer-Country", "Host", "Origin", "Referer");
-        public OriginRequestCookieBehavior originRequestCookieBehavior = OriginRequestCookieBehavior.none();
-        public boolean originRequestQueryStringAll = true;
         
         // CloudTrail and X-Ray configuration
         public boolean cloudTrailEnabled = false;
@@ -197,7 +152,6 @@ public class LambdaUrlOrigin {
         
         // Function URL configuration
         public FunctionUrlAuthType functionUrlAuthType = FunctionUrlAuthType.NONE;
-        public FunctionUrlCorsOptions functionUrlCorsOptions = null;
         public InvokeMode invokeMode = InvokeMode.BUFFERED;
         
         // Log group configuration
@@ -208,14 +162,7 @@ public class LambdaUrlOrigin {
         public OriginProtocolPolicy protocolPolicy = OriginProtocolPolicy.HTTPS_ONLY;
         
         // ResponseHeadersPolicy configuration
-        public ResponseHeadersPolicy responseHeadersPolicy = null;
-        public boolean corsAccessControlAllowCredentials = true;
-        public List<String> corsAccessControlAllowHeaders = List.of("*");
-        public List<String> corsAccessControlAllowMethods = List.of("GET", "HEAD", "OPTIONS", "POST", "PUT", "PATCH", "DELETE");
-        public List<String> corsAccessControlAllowOrigins = List.of("*");
-        public List<String> corsAccessControlExposeHeaders = List.of("*");
-        public Duration corsAccessControlMaxAge = Duration.seconds(600);
-        public boolean corsOriginOverride = true;
+        public IResponseHeadersPolicy responseHeadersPolicy = ResponseHeadersPolicy.CORS_ALLOW_ALL_ORIGINS_WITH_PREFLIGHT_AND_SECURITY_HEADERS;
         
         // BehaviorOptions configuration
         public ICachePolicy cachePolicy = CachePolicy.CACHING_DISABLED;
@@ -232,11 +179,6 @@ public class LambdaUrlOrigin {
 
         public Builder env(String env) {
             this.env = env;
-            return this;
-        }
-
-        public Builder domainName(String domainName) {
-            this.domainName = domainName;
             return this;
         }
 
@@ -260,11 +202,6 @@ public class LambdaUrlOrigin {
             return this;
         }
 
-        public Builder allowedMethods(List<HttpMethod> allowedMethods) {
-            this.allowedMethods = allowedMethods;
-            return this;
-        }
-
         public Builder cloudFrontAllowedMethods(AllowedMethods cloudFrontAllowedMethods) {
             this.cloudFrontAllowedMethods = cloudFrontAllowedMethods;
             return this;
@@ -272,21 +209,6 @@ public class LambdaUrlOrigin {
 
         public Builder skipBehaviorOptions(boolean skipBehaviorOptions) {
             this.skipBehaviorOptions = skipBehaviorOptions;
-            return this;
-        }
-
-        public Builder originRequestHeaderBehavior(OriginRequestHeaderBehavior originRequestHeaderBehavior) {
-            this.originRequestHeaderBehavior = originRequestHeaderBehavior;
-            return this;
-        }
-
-        public Builder originRequestCookieBehavior(OriginRequestCookieBehavior originRequestCookieBehavior) {
-            this.originRequestCookieBehavior = originRequestCookieBehavior;
-            return this;
-        }
-
-        public Builder originRequestQueryStringAll(boolean originRequestQueryStringAll) {
-            this.originRequestQueryStringAll = originRequestQueryStringAll;
             return this;
         }
 
@@ -308,11 +230,6 @@ public class LambdaUrlOrigin {
         // Function URL configuration methods
         public Builder functionUrlAuthType(FunctionUrlAuthType functionUrlAuthType) {
             this.functionUrlAuthType = functionUrlAuthType;
-            return this;
-        }
-
-        public Builder functionUrlCorsOptions(FunctionUrlCorsOptions functionUrlCorsOptions) {
-            this.functionUrlCorsOptions = functionUrlCorsOptions;
             return this;
         }
 
@@ -339,43 +256,8 @@ public class LambdaUrlOrigin {
         }
 
         // ResponseHeadersPolicy configuration methods
-        public Builder responseHeadersPolicy(ResponseHeadersPolicy responseHeadersPolicy) {
+        public Builder responseHeadersPolicy(IResponseHeadersPolicy responseHeadersPolicy) {
             this.responseHeadersPolicy = responseHeadersPolicy;
-            return this;
-        }
-
-        public Builder corsAccessControlAllowCredentials(boolean corsAccessControlAllowCredentials) {
-            this.corsAccessControlAllowCredentials = corsAccessControlAllowCredentials;
-            return this;
-        }
-
-        public Builder corsAccessControlAllowHeaders(List<String> corsAccessControlAllowHeaders) {
-            this.corsAccessControlAllowHeaders = corsAccessControlAllowHeaders;
-            return this;
-        }
-
-        public Builder corsAccessControlAllowMethods(List<String> corsAccessControlAllowMethods) {
-            this.corsAccessControlAllowMethods = corsAccessControlAllowMethods;
-            return this;
-        }
-
-        public Builder corsAccessControlAllowOrigins(List<String> corsAccessControlAllowOrigins) {
-            this.corsAccessControlAllowOrigins = corsAccessControlAllowOrigins;
-            return this;
-        }
-
-        public Builder corsAccessControlExposeHeaders(List<String> corsAccessControlExposeHeaders) {
-            this.corsAccessControlExposeHeaders = corsAccessControlExposeHeaders;
-            return this;
-        }
-
-        public Builder corsAccessControlMaxAge(Duration corsAccessControlMaxAge) {
-            this.corsAccessControlMaxAge = corsAccessControlMaxAge;
-            return this;
-        }
-
-        public Builder corsOriginOverride(boolean corsOriginOverride) {
-            this.corsOriginOverride = corsOriginOverride;
             return this;
         }
 
@@ -394,9 +276,6 @@ public class LambdaUrlOrigin {
             // Validate required parameters
             if (env == null || env.isBlank()) {
                 throw new IllegalArgumentException("env is required");
-            }
-            if (domainName == null || domainName.isBlank()) {
-                throw new IllegalArgumentException("domainName is required");
             }
             if (functionName == null || functionName.isBlank()) {
                 throw new IllegalArgumentException("functionName is required");

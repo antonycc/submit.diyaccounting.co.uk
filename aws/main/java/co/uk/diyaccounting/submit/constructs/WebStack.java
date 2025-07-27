@@ -636,6 +636,37 @@ public class WebStack extends Stack {
         String authUrlLambdaHandlerLambdaFunctionName = Builder.buildFunctionName(dashedDomainName, builder.authUrlLambdaHandlerFunctionName);
         String authUrlLambdaHandlerCmd = builder.lambdaEntry + builder.authUrlLambdaHandlerFunctionName;
         Duration authUrlLambdaDuration = Duration.millis(Long.parseLong(builder.authUrlLambdaDuration));
+        var authUrlLambdaUrlOrigin = LambdaUrlOrigin.Builder.create(this, "AuthUrlLambda")
+                .env(builder.env)
+                .functionName(authUrlLambdaHandlerLambdaFunctionName)
+                .handler(authUrlLambdaHandlerCmd)
+                //.imageDirectory(".") // to add and default to the value used here
+                //.runtime(Runtime.NODEJS_22_X) // to add and default to the value used here
+                .timeout(authUrlLambdaDuration)
+                .environment(Map.of(
+                        "DIY_SUBMIT_HMRC_CLIENT_ID", builder.hmrcClientId,
+                        "DIY_SUBMIT_HOME_URL", builder.homeUrl,
+                        "DIY_SUBMIT_HMRC_BASE_URI", builder.hmrcBaseUri
+                ))
+                .cloudFrontAllowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS) // to rename to allowedMethods
+                // .originRequestPolicy(OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER) // to add and default to the value used here
+                .cloudTrailEnabled(cloudTrailEnabled)
+                .xRayEnabled(xRayEnabled)
+                .verboseLogging(verboseLogging)
+                .functionUrlAuthType(functionUrlAuthType)
+                .invokeMode(InvokeMode.BUFFERED) // As default
+                .logGroupRetention(RetentionDays.THREE_DAYS) // As default
+                .logGroupRemovalPolicy(RemovalPolicy.DESTROY) // As default
+                .protocolPolicy(OriginProtocolPolicy.HTTPS_ONLY)  // As default
+                .responseHeadersPolicy(ResponseHeadersPolicy.CORS_ALLOW_ALL_ORIGINS_WITH_PREFLIGHT_AND_SECURITY_HEADERS)   // As default
+                .cachePolicy(CachePolicy.CACHING_DISABLED)  // As default
+                .viewerProtocolPolicy(ViewerProtocolPolicy.REDIRECT_TO_HTTPS)  // As default
+                .build();
+        lambdaUrlToOriginsBehaviourMappings.put("/api/auth-url*", authUrlLambdaUrlOrigin.behaviorOptions);
+        /*
+        String authUrlLambdaHandlerLambdaFunctionName = Builder.buildFunctionName(dashedDomainName, builder.authUrlLambdaHandlerFunctionName);
+        String authUrlLambdaHandlerCmd = builder.lambdaEntry + builder.authUrlLambdaHandlerFunctionName;
+        Duration authUrlLambdaDuration = Duration.millis(Long.parseLong(builder.authUrlLambdaDuration));
         if ("test".equals(builder.env)) {
             // For testing, create a simple Function instead of DockerImageFunction to avoid Docker builds
             this.authUrlLambda = Function.Builder.create(this, "AuthUrlLambda")
@@ -693,6 +724,7 @@ public class WebStack extends Stack {
                     .build();
             lambdaUrlToOriginsBehaviourMappings.put("/api/auth-url*", authUrlOriginBehaviour);
         }
+        */
 
         // exchangeTokenHandler
         String exchangeTokenLambdaHandlerLambdaFunctionName = Builder.buildFunctionName(dashedDomainName, builder.exchangeTokenLambdaHandlerFunctionName);
