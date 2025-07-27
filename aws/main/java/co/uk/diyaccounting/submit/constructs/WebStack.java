@@ -39,6 +39,7 @@ import software.amazon.awscdk.services.cloudfront.origins.S3BucketOrigin;
 import software.amazon.awscdk.services.cloudfront.origins.S3BucketOriginWithOAIProps;
 import software.amazon.awscdk.services.cloudtrail.S3EventSelector;
 import software.amazon.awscdk.services.cloudtrail.Trail;
+import software.amazon.awscdk.services.iam.AnyPrincipal;
 import software.amazon.awscdk.services.lambda.AssetImageCodeProps;
 import software.amazon.awscdk.services.lambda.Code;
 import software.amazon.awscdk.services.lambda.DockerImageCode;
@@ -49,6 +50,7 @@ import software.amazon.awscdk.services.lambda.FunctionUrlAuthType;
 import software.amazon.awscdk.services.lambda.FunctionUrlCorsOptions;
 import software.amazon.awscdk.services.lambda.FunctionUrlOptions;
 import software.amazon.awscdk.services.lambda.HttpMethod;
+import software.amazon.awscdk.services.lambda.Permission;
 import software.amazon.awscdk.services.lambda.Runtime;
 import software.amazon.awscdk.services.lambda.Tracing;
 import software.amazon.awscdk.services.logs.LogGroup;
@@ -619,6 +621,12 @@ public class WebStack extends Stack {
             }
             this.authUrlLambda = authUrlLambdaBuilder.build();
         }
+        authUrlLambda.addPermission("AllowCloudFrontInvoke", Permission.builder()
+                .principal(new AnyPrincipal())
+                .action("lambda:InvokeFunctionUrl")
+                //.sourceIp(List.of("13.32.0.0/15", "52.46.0.0/18")) // CloudFront IP ranges
+                .functionUrlAuthType(FunctionUrlAuthType.NONE)
+                .build());
         this.authUrlLambdaLogGroup = new LogGroup(this, "AuthUrlLambdaLogGroup", LogGroupProps.builder()
                 .logGroupName("/aws/lambda/" + this.authUrlLambda.getFunctionName())
                 .retention(RetentionDays.THREE_DAYS)
@@ -631,8 +639,7 @@ public class WebStack extends Stack {
                                 .allowedOrigins(List.of("*"))  // Allow all origins (be careful with this in production!)
                                 .allowedMethods(List.of(
                                         HttpMethod.GET,
-                                        HttpMethod.HEAD,
-                                        HttpMethod.OPTIONS
+                                        HttpMethod.HEAD
                                 ))  // Allow all common HTTP methods including OPTIONS for preflight
                                 .allowedHeaders(List.of("*"))  // Allow all headers in CORS requests
                                 .exposedHeaders(List.of("*"))  // Expose all headers to browser clients
@@ -644,10 +651,25 @@ public class WebStack extends Stack {
         if (skipLambdaUrlOrigins) {
             logger.info("Skipping Lambda URL origins for authUrlLambdaUrl as per configuration.");
         } else {
+            //OriginAccessIdentity authUrlApiOriginIdentity = OriginAccessIdentity.Builder.create(this, "AuthUrlApiOriginIdentity")
+            //        .comment("Identity for accessing the auth URL API origin")
+            //        .build();
+            //this.authUrlLambda.grantInvoke(authUrlApiOriginIdentity);
+            //this.authUrlLambda.grantInvokeUrl(authUrlApiOriginIdentity);
             String authUrlLambdaUrl = this.getLambdaUrlHostToken(this.authUrlLambdaUrl);
             HttpOrigin authUrlApiOrigin = HttpOrigin.Builder.create(authUrlLambdaUrl)
                     .protocolPolicy(OriginProtocolPolicy.HTTPS_ONLY)
+                    //.originId(authUrlApiOriginIdentity.getOriginAccessIdentityId())
                     .build();
+
+
+                    /*
+                            originBucket.grantRead(this.originIdentity); // This adds "s3:List*" so that 404s are handled.
+        this.origin = S3BucketOrigin.withOriginAccessIdentity(this.originBucket,
+                S3BucketOriginWithOAIProps.builder()
+                        .originAccessIdentity(this.originIdentity)
+                        .build());
+                     */
             final OriginRequestPolicy authUrlOriginRequestPolicy = OriginRequestPolicy.Builder
                     .create(this, "AuthUrlOriginRequestPolicy")
                     .originRequestPolicyName(this.authUrlLambda.getFunctionName() + "-origin-request-policy")
