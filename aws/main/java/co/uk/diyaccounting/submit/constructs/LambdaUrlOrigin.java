@@ -7,10 +7,13 @@ import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.services.cloudfront.AllowedMethods;
 import software.amazon.awscdk.services.cloudfront.BehaviorOptions;
 import software.amazon.awscdk.services.cloudfront.CachePolicy;
+import software.amazon.awscdk.services.cloudfront.ICachePolicy;
 import software.amazon.awscdk.services.cloudfront.OriginProtocolPolicy;
 import software.amazon.awscdk.services.cloudfront.OriginRequestCookieBehavior;
 import software.amazon.awscdk.services.cloudfront.OriginRequestHeaderBehavior;
 import software.amazon.awscdk.services.cloudfront.OriginRequestPolicy;
+import software.amazon.awscdk.services.cloudfront.ResponseHeadersPolicy;
+import software.amazon.awscdk.services.cloudfront.ViewerProtocolPolicy;
 import software.amazon.awscdk.services.cloudfront.origins.HttpOrigin;
 import software.amazon.awscdk.services.lambda.AssetImageCodeProps;
 import software.amazon.awscdk.services.lambda.Code;
@@ -178,6 +181,31 @@ public class LambdaUrlOrigin {
         public boolean cloudTrailEnabled = false;
         public boolean xRayEnabled = false;
         public boolean verboseLogging = false;
+        
+        // Function URL configuration
+        public FunctionUrlAuthType functionUrlAuthType = FunctionUrlAuthType.NONE;
+        public FunctionUrlCorsOptions functionUrlCorsOptions = null;
+        
+        // Log group configuration
+        public RetentionDays logGroupRetention = RetentionDays.THREE_DAYS;
+        public RemovalPolicy logGroupRemovalPolicy = RemovalPolicy.DESTROY;
+        
+        // HttpOrigin configuration
+        public OriginProtocolPolicy protocolPolicy = OriginProtocolPolicy.HTTPS_ONLY;
+        
+        // ResponseHeadersPolicy configuration
+        public ResponseHeadersPolicy responseHeadersPolicy = null;
+        public boolean corsAccessControlAllowCredentials = true;
+        public List<String> corsAccessControlAllowHeaders = List.of("*");
+        public List<String> corsAccessControlAllowMethods = List.of("GET", "HEAD", "OPTIONS", "POST", "PUT", "PATCH", "DELETE");
+        public List<String> corsAccessControlAllowOrigins = List.of("*");
+        public List<String> corsAccessControlExposeHeaders = List.of("*");
+        public Duration corsAccessControlMaxAge = Duration.seconds(600);
+        public boolean corsOriginOverride = true;
+        
+        // BehaviorOptions configuration
+        public ICachePolicy cachePolicy = CachePolicy.CACHING_DISABLED;
+        public ViewerProtocolPolicy viewerProtocolPolicy = ViewerProtocolPolicy.REDIRECT_TO_HTTPS;
 
         private Builder(final Construct scope, final String idPrefix) {
             this.scope = scope;
@@ -260,6 +288,86 @@ public class LambdaUrlOrigin {
 
         public Builder verboseLogging(boolean verboseLogging) {
             this.verboseLogging = verboseLogging;
+            return this;
+        }
+
+        // Function URL configuration methods
+        public Builder functionUrlAuthType(FunctionUrlAuthType functionUrlAuthType) {
+            this.functionUrlAuthType = functionUrlAuthType;
+            return this;
+        }
+
+        public Builder functionUrlCorsOptions(FunctionUrlCorsOptions functionUrlCorsOptions) {
+            this.functionUrlCorsOptions = functionUrlCorsOptions;
+            return this;
+        }
+
+        // Log group configuration methods
+        public Builder logGroupRetention(RetentionDays logGroupRetention) {
+            this.logGroupRetention = logGroupRetention;
+            return this;
+        }
+
+        public Builder logGroupRemovalPolicy(RemovalPolicy logGroupRemovalPolicy) {
+            this.logGroupRemovalPolicy = logGroupRemovalPolicy;
+            return this;
+        }
+
+        // HttpOrigin configuration methods
+        public Builder protocolPolicy(OriginProtocolPolicy protocolPolicy) {
+            this.protocolPolicy = protocolPolicy;
+            return this;
+        }
+
+        // ResponseHeadersPolicy configuration methods
+        public Builder responseHeadersPolicy(ResponseHeadersPolicy responseHeadersPolicy) {
+            this.responseHeadersPolicy = responseHeadersPolicy;
+            return this;
+        }
+
+        public Builder corsAccessControlAllowCredentials(boolean corsAccessControlAllowCredentials) {
+            this.corsAccessControlAllowCredentials = corsAccessControlAllowCredentials;
+            return this;
+        }
+
+        public Builder corsAccessControlAllowHeaders(List<String> corsAccessControlAllowHeaders) {
+            this.corsAccessControlAllowHeaders = corsAccessControlAllowHeaders;
+            return this;
+        }
+
+        public Builder corsAccessControlAllowMethods(List<String> corsAccessControlAllowMethods) {
+            this.corsAccessControlAllowMethods = corsAccessControlAllowMethods;
+            return this;
+        }
+
+        public Builder corsAccessControlAllowOrigins(List<String> corsAccessControlAllowOrigins) {
+            this.corsAccessControlAllowOrigins = corsAccessControlAllowOrigins;
+            return this;
+        }
+
+        public Builder corsAccessControlExposeHeaders(List<String> corsAccessControlExposeHeaders) {
+            this.corsAccessControlExposeHeaders = corsAccessControlExposeHeaders;
+            return this;
+        }
+
+        public Builder corsAccessControlMaxAge(Duration corsAccessControlMaxAge) {
+            this.corsAccessControlMaxAge = corsAccessControlMaxAge;
+            return this;
+        }
+
+        public Builder corsOriginOverride(boolean corsOriginOverride) {
+            this.corsOriginOverride = corsOriginOverride;
+            return this;
+        }
+
+        // BehaviorOptions configuration methods
+        public Builder cachePolicy(ICachePolicy cachePolicy) {
+            this.cachePolicy = cachePolicy;
+            return this;
+        }
+
+        public Builder viewerProtocolPolicy(ViewerProtocolPolicy viewerProtocolPolicy) {
+            this.viewerProtocolPolicy = viewerProtocolPolicy;
             return this;
         }
 

@@ -8,11 +8,15 @@ import org.apache.logging.log4j.Logger;
 import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.services.cloudfront.AllowedMethods;
 import software.amazon.awscdk.services.cloudfront.BehaviorOptions;
+import software.amazon.awscdk.services.cloudfront.CachePolicy;
+import software.amazon.awscdk.services.cloudfront.ICachePolicy;
 import software.amazon.awscdk.services.cloudfront.IOrigin;
 import software.amazon.awscdk.services.cloudfront.OriginAccessIdentity;
 import software.amazon.awscdk.services.cloudfront.OriginRequestCookieBehavior;
 import software.amazon.awscdk.services.cloudfront.OriginRequestHeaderBehavior;
 import software.amazon.awscdk.services.cloudfront.OriginRequestPolicy;
+import software.amazon.awscdk.services.cloudfront.IResponseHeadersPolicy;
+import software.amazon.awscdk.services.cloudfront.ResponseHeadersCorsBehavior;
 import software.amazon.awscdk.services.cloudfront.ResponseHeadersPolicy;
 import software.amazon.awscdk.services.cloudfront.ViewerProtocolPolicy;
 import software.amazon.awscdk.services.cloudfront.origins.S3BucketOrigin;
@@ -188,6 +192,24 @@ public class BucketOrigin {
         private String cloudTrailEventSelectorPrefix = null;
         private boolean xRayEnabled = false;
         private boolean verboseLogging = false;
+        
+        // Log group configuration
+        private RetentionDays logGroupRetention = RetentionDays.THREE_DAYS;
+        private RemovalPolicy logGroupRemovalPolicy = RemovalPolicy.DESTROY;
+        
+        // ResponseHeadersPolicy configuration
+        private IResponseHeadersPolicy responseHeadersPolicy = ResponseHeadersPolicy.CORS_ALLOW_ALL_ORIGINS_WITH_PREFLIGHT_AND_SECURITY_HEADERS;
+        private boolean corsAccessControlAllowCredentials = true;
+        private List<String> corsAccessControlAllowHeaders = List.of("*");
+        private List<String> corsAccessControlAllowMethods = List.of("GET", "HEAD", "OPTIONS");
+        private List<String> corsAccessControlAllowOrigins = List.of("*");
+        private List<String> corsAccessControlExposeHeaders = List.of("*");
+        private software.amazon.awscdk.Duration corsAccessControlMaxAge = software.amazon.awscdk.Duration.seconds(600);
+        private boolean corsOriginOverride = true;
+        
+        // BehaviorOptions configuration
+        private ICachePolicy cachePolicy = CachePolicy.CACHING_OPTIMIZED;
+        private ViewerProtocolPolicy viewerProtocolPolicy = ViewerProtocolPolicy.REDIRECT_TO_HTTPS;
 
         private Builder(final Construct scope, final String idPrefix) {
             this.scope = scope;
@@ -281,6 +303,69 @@ public class BucketOrigin {
 
         public Builder verboseLogging(boolean verboseLogging) {
             this.verboseLogging = verboseLogging;
+            return this;
+        }
+
+        // Log group configuration methods
+        public Builder logGroupRetention(RetentionDays logGroupRetention) {
+            this.logGroupRetention = logGroupRetention;
+            return this;
+        }
+
+        public Builder logGroupRemovalPolicy(RemovalPolicy logGroupRemovalPolicy) {
+            this.logGroupRemovalPolicy = logGroupRemovalPolicy;
+            return this;
+        }
+
+        // ResponseHeadersPolicy configuration methods
+        public Builder responseHeadersPolicy(IResponseHeadersPolicy responseHeadersPolicy) {
+            this.responseHeadersPolicy = responseHeadersPolicy;
+            return this;
+        }
+
+        public Builder corsAccessControlAllowCredentials(boolean corsAccessControlAllowCredentials) {
+            this.corsAccessControlAllowCredentials = corsAccessControlAllowCredentials;
+            return this;
+        }
+
+        public Builder corsAccessControlAllowHeaders(List<String> corsAccessControlAllowHeaders) {
+            this.corsAccessControlAllowHeaders = corsAccessControlAllowHeaders;
+            return this;
+        }
+
+        public Builder corsAccessControlAllowMethods(List<String> corsAccessControlAllowMethods) {
+            this.corsAccessControlAllowMethods = corsAccessControlAllowMethods;
+            return this;
+        }
+
+        public Builder corsAccessControlAllowOrigins(List<String> corsAccessControlAllowOrigins) {
+            this.corsAccessControlAllowOrigins = corsAccessControlAllowOrigins;
+            return this;
+        }
+
+        public Builder corsAccessControlExposeHeaders(List<String> corsAccessControlExposeHeaders) {
+            this.corsAccessControlExposeHeaders = corsAccessControlExposeHeaders;
+            return this;
+        }
+
+        public Builder corsAccessControlMaxAge(software.amazon.awscdk.Duration corsAccessControlMaxAge) {
+            this.corsAccessControlMaxAge = corsAccessControlMaxAge;
+            return this;
+        }
+
+        public Builder corsOriginOverride(boolean corsOriginOverride) {
+            this.corsOriginOverride = corsOriginOverride;
+            return this;
+        }
+
+        // BehaviorOptions configuration methods
+        public Builder cachePolicy(ICachePolicy cachePolicy) {
+            this.cachePolicy = cachePolicy;
+            return this;
+        }
+
+        public Builder viewerProtocolPolicy(ViewerProtocolPolicy viewerProtocolPolicy) {
+            this.viewerProtocolPolicy = viewerProtocolPolicy;
             return this;
         }
 
