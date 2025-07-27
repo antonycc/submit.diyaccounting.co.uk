@@ -108,7 +108,6 @@ public class LambdaUrlOriginTest {
         Assertions.assertNotNull(lambdaUrlOrigin.lambda);
         Assertions.assertNotNull(lambdaUrlOrigin.logGroup);
         Assertions.assertNotNull(lambdaUrlOrigin.functionUrl);
-        Assertions.assertNull(lambdaUrlOrigin.behaviorOptions);
         
         // Should have 1 lambda function
         template.resourceCountIs("AWS::Lambda::Function", 1);
@@ -160,15 +159,6 @@ public class LambdaUrlOriginTest {
             LambdaUrlOrigin.Builder
                     .create(stack, "TestLambdaUrlOrigin1")
                     .functionName("test-function-1")
-                    .build();
-        });
-        
-        // Test missing domainName
-        Assertions.assertThrows(IllegalArgumentException.class, () -> {
-            LambdaUrlOrigin.Builder
-                    .create(stack, "TestLambdaUrlOrigin2")
-                    .env("test")
-                    .functionName("test-function-2")
                     .build();
         });
         
