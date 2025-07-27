@@ -15,6 +15,7 @@ import software.amazon.awscdk.services.lambda.CfnFunction;
 import software.amazon.awscdk.services.lambda.Code;
 import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.lambda.Runtime;
+import software.amazon.awscdk.services.lambda.Tracing;
 import software.amazon.awscdk.services.lambda.Version;
 import software.amazon.awscdk.services.lambda.VersionProps;
 import software.amazon.awscdk.services.logs.LogGroup;
@@ -54,6 +55,8 @@ public class LogForwardingBucket extends Stack {
         private String bucketName = null;
         private String functionNamePrefix = null;
         private int retentionPeriodDays = 30;
+        private boolean cloudTrailEnabled = false;
+        private boolean xRayEnabled = false;
 
         private Builder(
                 final Construct scope,
@@ -78,6 +81,9 @@ public class LogForwardingBucket extends Stack {
             final Builder newBuilder = new Builder(scope, idPrefix, handlerSource, handlerClass);
             newBuilder.functionNamePrefix = functionNamePrefix;
             newBuilder.bucketName = bucketName;
+            newBuilder.retentionPeriodDays = retentionPeriodDays;
+            newBuilder.cloudTrailEnabled = cloudTrailEnabled;
+            newBuilder.xRayEnabled = xRayEnabled;
             return newBuilder;
         }
 
@@ -85,6 +91,9 @@ public class LogForwardingBucket extends Stack {
             final Builder newBuilder = new Builder(scope, idPrefix, handlerSource, handlerClass);
             newBuilder.bucketName = bucketName;
             newBuilder.functionNamePrefix = functionNamePrefix;
+            newBuilder.retentionPeriodDays = retentionPeriodDays;
+            newBuilder.cloudTrailEnabled = cloudTrailEnabled;
+            newBuilder.xRayEnabled = xRayEnabled;
             return newBuilder;
         }
 
@@ -93,6 +102,28 @@ public class LogForwardingBucket extends Stack {
             newBuilder.bucketName = bucketName;
             newBuilder.functionNamePrefix = functionNamePrefix;
             newBuilder.retentionPeriodDays = retentionPeriodDays;
+            newBuilder.cloudTrailEnabled = cloudTrailEnabled;
+            newBuilder.xRayEnabled = xRayEnabled;
+            return newBuilder;
+        }
+
+        public Builder cloudTrailEnabled(boolean cloudTrailEnabled) {
+            final Builder newBuilder = new Builder(scope, idPrefix, handlerSource, handlerClass);
+            newBuilder.bucketName = bucketName;
+            newBuilder.functionNamePrefix = functionNamePrefix;
+            newBuilder.retentionPeriodDays = retentionPeriodDays;
+            newBuilder.cloudTrailEnabled = cloudTrailEnabled;
+            newBuilder.xRayEnabled = xRayEnabled;
+            return newBuilder;
+        }
+
+        public Builder xRayEnabled(boolean xRayEnabled) {
+            final Builder newBuilder = new Builder(scope, idPrefix, handlerSource, handlerClass);
+            newBuilder.bucketName = bucketName;
+            newBuilder.functionNamePrefix = functionNamePrefix;
+            newBuilder.retentionPeriodDays = retentionPeriodDays;
+            newBuilder.cloudTrailEnabled = cloudTrailEnabled;
+            newBuilder.xRayEnabled = xRayEnabled;
             return newBuilder;
         }
 
@@ -120,7 +151,7 @@ public class LogForwardingBucket extends Stack {
                         .retention(RetentionDaysConverter.daysToRetentionDays(retentionPeriodDays))
                         .removalPolicy(RemovalPolicy.DESTROY)
                         .build();
-                final Function logForwarder = Function.Builder
+                var logForwarderBuilder = Function.Builder
                         .create(scope, "%sLogForwarder".formatted(idPrefix))
                         .functionName(functionName)
                         .runtime(Runtime.JAVA_21)
@@ -129,8 +160,11 @@ public class LogForwardingBucket extends Stack {
                         .memorySize(1024)
                         .timeout(Duration.seconds(60))
                         .logGroup(logGroup)
-                        .retryAttempts(2)
-                        .build();
+                        .retryAttempts(2);
+                if (xRayEnabled) {
+                    logForwarderBuilder.tracing(Tracing.ACTIVE);
+                }
+                final Function logForwarder = logForwarderBuilder.build();
                 CfnFunction cfnFunction = (CfnFunction) logForwarder.getNode().getDefaultChild();
                 assert cfnFunction != null;
                 cfnFunction.addPropertyOverride("SnapStart", Map.of("ApplyOn", "PublishedVersions"));

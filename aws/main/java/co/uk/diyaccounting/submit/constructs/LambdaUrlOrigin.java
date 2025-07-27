@@ -23,6 +23,7 @@ import software.amazon.awscdk.services.lambda.FunctionUrlCorsOptions;
 import software.amazon.awscdk.services.lambda.FunctionUrlOptions;
 import software.amazon.awscdk.services.lambda.HttpMethod;
 import software.amazon.awscdk.services.lambda.Runtime;
+import software.amazon.awscdk.services.lambda.Tracing;
 import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.LogGroupProps;
 import software.amazon.awscdk.services.logs.RetentionDays;
@@ -102,24 +103,36 @@ public class LambdaUrlOrigin {
 
     private Function createLambda(Builder builder) {
         if ("test".equals(builder.env)) {
-            return Function.Builder.create(builder.scope, builder.idPrefix + "Lambda")
+            var functionBuilder = Function.Builder.create(builder.scope, builder.idPrefix + "Lambda")
                     .code(Code.fromInline("exports.handler = async (event) => { return { statusCode: 200, body: 'test' }; }"))
                     .handler("index.handler")
                     .runtime(Runtime.NODEJS_20_X)
                     .functionName(builder.functionName)
-                    .timeout(builder.timeout)
-                    .build();
+                    .timeout(builder.timeout);
+            if (builder.xRayEnabled) {
+                functionBuilder.tracing(Tracing.ACTIVE);
+            }
+            return functionBuilder.build();
         } else {
             AssetImageCodeProps imageCodeProps = AssetImageCodeProps.builder()
                     .buildArgs(Map.of("HANDLER", builder.handler))
                     .build();
             
-            return DockerImageFunction.Builder.create(builder.scope, builder.idPrefix + "Lambda")
+            // Add X-Ray environment variables if enabled
+            var environment = new java.util.HashMap<>(builder.environment);
+            if (builder.xRayEnabled) {
+                environment.put("AWS_XRAY_TRACING_NAME", builder.functionName);
+            }
+            
+            var dockerFunctionBuilder = DockerImageFunction.Builder.create(builder.scope, builder.idPrefix + "Lambda")
                     .code(DockerImageCode.fromImageAsset(".", imageCodeProps))
-                    .environment(builder.environment)
+                    .environment(environment)
                     .functionName(builder.functionName)
-                    .timeout(builder.timeout)
-                    .build();
+                    .timeout(builder.timeout);
+            if (builder.xRayEnabled) {
+                dockerFunctionBuilder.tracing(Tracing.ACTIVE);
+            }
+            return dockerFunctionBuilder.build();
         }
     }
 
@@ -160,6 +173,10 @@ public class LambdaUrlOrigin {
                 "CloudFront-Viewer-Country", "Host", "Origin", "Referer");
         public OriginRequestCookieBehavior originRequestCookieBehavior = OriginRequestCookieBehavior.none();
         public boolean originRequestQueryStringAll = true;
+        
+        // CloudTrail and X-Ray configuration
+        public boolean cloudTrailEnabled = false;
+        public boolean xRayEnabled = false;
 
         private Builder(final Construct scope, final String idPrefix) {
             this.scope = scope;
@@ -227,6 +244,16 @@ public class LambdaUrlOrigin {
 
         public Builder originRequestQueryStringAll(boolean originRequestQueryStringAll) {
             this.originRequestQueryStringAll = originRequestQueryStringAll;
+            return this;
+        }
+
+        public Builder cloudTrailEnabled(boolean cloudTrailEnabled) {
+            this.cloudTrailEnabled = cloudTrailEnabled;
+            return this;
+        }
+
+        public Builder xRayEnabled(boolean xRayEnabled) {
+            this.xRayEnabled = xRayEnabled;
             return this;
         }
 

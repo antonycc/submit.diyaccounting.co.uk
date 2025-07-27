@@ -57,6 +57,8 @@ public class BucketOrigin {
                     .bucketName(builder.originAccessLogBucketName)
                     .functionNamePrefix(builder.functionNamePrefix)
                     .retentionPeriodDays(builder.accessLogGroupRetentionPeriodDays)
+                    .cloudTrailEnabled(builder.cloudTrailEnabled)
+                    .xRayEnabled(builder.xRayEnabled)
                     .build();
 
             // Create the origin bucket
@@ -108,6 +110,8 @@ public class BucketOrigin {
                 .bucketName(builder.distributionAccessLogBucketName)
                 .functionNamePrefix(String.format("%s-dist-access-", builder.dashedDomainName))
                 .retentionPeriodDays(builder.accessLogGroupRetentionPeriodDays)
+                .cloudTrailEnabled(builder.cloudTrailEnabled)
+                .xRayEnabled(builder.xRayEnabled)
                 .build();
 
         // Create originBucketTrail if CloudTrail is enabled
@@ -178,6 +182,7 @@ public class BucketOrigin {
         private String cloudTrailLogGroupPrefix = "/aws/cloudtrail/";
         private int cloudTrailLogGroupRetentionPeriodDays = 30;
         private String cloudTrailEventSelectorPrefix = null;
+        private boolean xRayEnabled = false;
 
         private Builder(final Construct scope, final String idPrefix) {
             this.scope = scope;
@@ -261,6 +266,11 @@ public class BucketOrigin {
 
         public Builder cloudTrailEventSelectorPrefix(String cloudTrailEventSelectorPrefix) {
             this.cloudTrailEventSelectorPrefix = cloudTrailEventSelectorPrefix;
+            return this;
+        }
+
+        public Builder xRayEnabled(boolean xRayEnabled) {
+            this.xRayEnabled = xRayEnabled;
             return this;
         }
 

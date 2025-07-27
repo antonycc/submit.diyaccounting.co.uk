@@ -50,6 +50,7 @@ import software.amazon.awscdk.services.lambda.FunctionUrlCorsOptions;
 import software.amazon.awscdk.services.lambda.FunctionUrlOptions;
 import software.amazon.awscdk.services.lambda.HttpMethod;
 import software.amazon.awscdk.services.lambda.Runtime;
+import software.amazon.awscdk.services.lambda.Tracing;
 import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.LogGroupProps;
 import software.amazon.awscdk.services.logs.RetentionDays;
@@ -135,6 +136,7 @@ public class WebStack extends Stack {
         public String s3UseExistingBucket;
         public String s3RetainBucket;
         public String cloudTrailEventSelectorPrefix;
+        public String xRayEnabled;
         public String logS3ObjectEventHandlerSource;
         public String logGzippedS3ObjectEventHandlerSource;
         public String docRootPath;
@@ -293,6 +295,11 @@ public class WebStack extends Stack {
 
         public Builder cloudTrailEventSelectorPrefix(String cloudTrailEventSelectorPrefix) {
             this.cloudTrailEventSelectorPrefix = cloudTrailEventSelectorPrefix;
+            return this;
+        }
+
+        public Builder xRayEnabled(String xRayEnabled) {
+            this.xRayEnabled = xRayEnabled;
             return this;
         }
 
@@ -473,6 +480,7 @@ public class WebStack extends Stack {
         String cloudTrailLogBucketName = Builder.buildCloudTrailLogBucketName(dashedDomainName);
         boolean cloudTrailEnabled = Boolean.parseBoolean(builder.cloudTrailEnabled);
         int cloudTrailLogGroupRetentionPeriodDays = Integer.parseInt(builder.cloudTrailLogGroupRetentionPeriodDays);
+        boolean xRayEnabled = Boolean.parseBoolean(builder.xRayEnabled);
 
         boolean useExistingCertificate = Boolean.parseBoolean(builder.useExistingCertificate);
 
@@ -590,20 +598,26 @@ public class WebStack extends Stack {
                     .timeout(authUrlLambdaDuration)
                     .build();
         } else {
-            var authUrlLambdaEnv = Map.of(
+            var authUrlLambdaEnv = new HashMap<>(Map.of(
                     "DIY_SUBMIT_HMRC_CLIENT_ID", builder.hmrcClientId,
                     "DIY_SUBMIT_HOME_URL", builder.homeUrl,
                     "DIY_SUBMIT_HMRC_BASE_URI", builder.hmrcBaseUri
-            );
+            ));
+            if (xRayEnabled) {
+                authUrlLambdaEnv.put("AWS_XRAY_TRACING_NAME", authUrlLambdaHandlerLambdaFunctionName);
+            }
             var authUrlLambdaAssetImageCodeProps = AssetImageCodeProps.builder()
                     .cmd(List.of(authUrlLambdaHandlerCmd))
                     .build();
-            this.authUrlLambda = DockerImageFunction.Builder.create(this, "AuthUrlLambda")
+            var authUrlLambdaBuilder = DockerImageFunction.Builder.create(this, "AuthUrlLambda")
                     .code(DockerImageCode.fromImageAsset(".", authUrlLambdaAssetImageCodeProps))
                     .environment(authUrlLambdaEnv)
                     .functionName(authUrlLambdaHandlerLambdaFunctionName)
-                    .timeout(authUrlLambdaDuration)
-                    .build();
+                    .timeout(authUrlLambdaDuration);
+            if (xRayEnabled) {
+                authUrlLambdaBuilder.tracing(Tracing.ACTIVE);
+            }
+            this.authUrlLambda = authUrlLambdaBuilder.build();
         }
         this.authUrlLambdaLogGroup = new LogGroup(this, "AuthUrlLambdaLogGroup", LogGroupProps.builder()
                 .logGroupName("/aws/lambda/" + this.authUrlLambda.getFunctionName())
@@ -683,15 +697,21 @@ public class WebStack extends Stack {
             if (StringUtils.isNotBlank(builder.optionalTestAccessToken)){
                 exchangeTokenLambdaEnv.put("DIY_SUBMIT_TEST_ACCESS_TOKEN", builder.optionalTestAccessToken);
             }
+            if (xRayEnabled) {
+                exchangeTokenLambdaEnv.put("AWS_XRAY_TRACING_NAME", exchangeTokenLambdaHandlerLambdaFunctionName);
+            }
             var exchangeTokenLambdaAssetImageCodeProps = AssetImageCodeProps.builder()
                     .cmd(List.of(exchangeTokenLambdaHandlerCmd))
                     .build();
-            this.exchangeTokenLambda = DockerImageFunction.Builder.create(this, "ExchangeTokenLambda")
+            var exchangeTokenLambdaBuilder = DockerImageFunction.Builder.create(this, "ExchangeTokenLambda")
                     .code(DockerImageCode.fromImageAsset(".", exchangeTokenLambdaAssetImageCodeProps))
                     .environment(exchangeTokenLambdaEnv)
                     .functionName(exchangeTokenLambdaHandlerLambdaFunctionName)
-                    .timeout(exchangeTokenLambdaDuration)
-                    .build();
+                    .timeout(exchangeTokenLambdaDuration);
+            if (xRayEnabled) {
+                exchangeTokenLambdaBuilder.tracing(Tracing.ACTIVE);
+            }
+            this.exchangeTokenLambda = exchangeTokenLambdaBuilder.build();
         }
         this.exchangeTokenLambdaLogGroup = new LogGroup(this, "ExchangeTokenLambdaLogGroup", LogGroupProps.builder()
                 .logGroupName("/aws/lambda/" + this.exchangeTokenLambda.getFunctionName())
@@ -737,19 +757,25 @@ public class WebStack extends Stack {
                     .timeout(submitVatLambdaDuration)
                     .build();
         } else {
-            var submitVatLambdaEnv = Map.of(
+            var submitVatLambdaEnv = new HashMap<>(Map.of(
                     "DIY_SUBMIT_HOME_URL", builder.homeUrl,
                     "DIY_SUBMIT_HMRC_BASE_URI", builder.hmrcBaseUri
-            );
+            ));
+            if (xRayEnabled) {
+                submitVatLambdaEnv.put("AWS_XRAY_TRACING_NAME", submitVatLambdaHandlerLambdaFunctionName);
+            }
             var submitVatLambdaAssetImageCodeProps = AssetImageCodeProps.builder()
                     .cmd(List.of(submitVatLambdaHandlerCmd))
                     .build();
-            this.submitVatLambda = DockerImageFunction.Builder.create(this, "SubmitVatLambda")
+            var submitVatLambdaBuilder = DockerImageFunction.Builder.create(this, "SubmitVatLambda")
                     .code(DockerImageCode.fromImageAsset(".", submitVatLambdaAssetImageCodeProps))
                     .environment(submitVatLambdaEnv)
                     .functionName(submitVatLambdaHandlerLambdaFunctionName)
-                    .timeout(submitVatLambdaDuration)
-                    .build();
+                    .timeout(submitVatLambdaDuration);
+            if (xRayEnabled) {
+                submitVatLambdaBuilder.tracing(Tracing.ACTIVE);
+            }
+            this.submitVatLambda = submitVatLambdaBuilder.build();
         }
         this.submitVatLambdaLogGroup = new LogGroup(this, "SubmitVatLambdaLogGroup", LogGroupProps.builder()
                 .logGroupName("/aws/lambda/" + this.submitVatLambda.getFunctionName())
@@ -833,30 +859,42 @@ public class WebStack extends Stack {
                     .build();
             if(StringUtils.isNotBlank(builder.optionalTestS3Endpoint) && StringUtils.isNotBlank(builder.optionalTestS3AccessKey) || StringUtils.isNotBlank(builder.optionalTestS3SecretKey)) {
                 // For production like integrations without AWS we can use test S3 credentials
-                var logReceiptLambdaTestEnv = Map.of(
+                var logReceiptLambdaTestEnv = new HashMap<>(Map.of(
                         "HANDLER", logReceiptLambdaHandlerCmd,
                         "DIY_SUBMIT_TEST_S3_ENDPOINT", builder.optionalTestS3Endpoint,
                         "DIY_SUBMIT_TEST_S3_ACCESS_KEY", builder.optionalTestS3AccessKey,
                         "DIY_SUBMIT_TEST_S3_SECRET_KEY", builder.optionalTestS3SecretKey,
                         "DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX", builder.receiptsBucketPostfix
-                );
-                this.logReceiptLambda = DockerImageFunction.Builder.create(this, "LogReceiptLambda")
+                ));
+                if (xRayEnabled) {
+                    logReceiptLambdaTestEnv.put("AWS_XRAY_TRACING_NAME", logReceiptLambdaHandlerLambdaFunctionName);
+                }
+                var logReceiptLambdaTestBuilder = DockerImageFunction.Builder.create(this, "LogReceiptLambda")
                         .code(DockerImageCode.fromImageAsset(".", logReceiptLambdaAssetImageCodeProps))
                         .environment(logReceiptLambdaTestEnv)
                         .functionName(logReceiptLambdaHandlerLambdaFunctionName)
-                        .timeout(logReceiptLambdaDuration)
-                        .build();
+                        .timeout(logReceiptLambdaDuration);
+                if (xRayEnabled) {
+                    logReceiptLambdaTestBuilder.tracing(Tracing.ACTIVE);
+                }
+                this.logReceiptLambda = logReceiptLambdaTestBuilder.build();
             } else {
-                var logReceiptLambdaEnv = Map.of(
+                var logReceiptLambdaEnv = new HashMap<>(Map.of(
                         "HANDLER", logReceiptLambdaHandlerCmd,
                         "DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX", builder.receiptsBucketPostfix
-                );
-                this.logReceiptLambda = DockerImageFunction.Builder.create(this, "LogReceiptLambda")
+                ));
+                if (xRayEnabled) {
+                    logReceiptLambdaEnv.put("AWS_XRAY_TRACING_NAME", logReceiptLambdaHandlerLambdaFunctionName);
+                }
+                var logReceiptLambdaBuilder = DockerImageFunction.Builder.create(this, "LogReceiptLambda")
                         .code(DockerImageCode.fromImageAsset(".", logReceiptLambdaAssetImageCodeProps))
                         .environment(logReceiptLambdaEnv)
                         .functionName(logReceiptLambdaHandlerLambdaFunctionName)
-                        .timeout(logReceiptLambdaDuration)
-                        .build();
+                        .timeout(logReceiptLambdaDuration);
+                if (xRayEnabled) {
+                    logReceiptLambdaBuilder.tracing(Tracing.ACTIVE);
+                }
+                this.logReceiptLambda = logReceiptLambdaBuilder.build();
             }
         }
         this.receiptsBucket.grantWrite(this.logReceiptLambda);
@@ -923,6 +961,8 @@ public class WebStack extends Stack {
                 .logBucket(this.distributionAccessLogBucket)
                 .logIncludesCookies(false)
                 .build();
+        //var grantable = this.distribution.getGrantPrincipal();
+        //this.authUrlLambdaUrl.grantInvokeUrl(this.distribution.);
         this.distributionUrl = "https://%s/".formatted(this.distribution.getDomainName());
         logger.info("Distribution URL: %s".formatted(distributionUrl));
 

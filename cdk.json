@@ -17,6 +17,7 @@
     "s3UseExistingBucket": "false",
     "s3RetainBucket": "false",
     "cloudTrailEventSelectorPrefix": "none",
+    "xRayEnabled": "false",
     "logS3ObjectEventHandlerSource": "target/web-0.0.2-4.jar",
     "logGzippedS3ObjectEventHandlerSource": "target/web-0.0.2-4.jar",
     "docRootPath": "public",
