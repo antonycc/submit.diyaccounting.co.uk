@@ -9,13 +9,11 @@ import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.assertions.Template;
 import software.amazon.awscdk.services.cloudfront.AllowedMethods;
-import software.amazon.awscdk.services.lambda.HttpMethod;
 import software.amazon.awscdk.services.s3.Bucket;
 import uk.org.webcompere.systemstubs.environment.EnvironmentVariables;
 import uk.org.webcompere.systemstubs.jupiter.SystemStub;
 import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
 
-import java.util.List;
 import java.util.Map;
 
 @ExtendWith(SystemStubsExtension.class)
@@ -41,11 +39,9 @@ public class LambdaUrlOriginTest {
         LambdaUrlOrigin lambdaUrlOrigin = LambdaUrlOrigin.Builder
                 .create(stack, "TestLambdaUrlOrigin")
                 .env("test")
-                .domainName("test.example.com")
                 .functionName("test-function")
                 .timeout(Duration.seconds(30))
-                .allowedMethods(List.of(HttpMethod.GET))
-                .cloudFrontAllowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
+                .allowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
                 .build();
 
         Template template = Template.fromStack(stack);
@@ -73,12 +69,10 @@ public class LambdaUrlOriginTest {
         LambdaUrlOrigin lambdaUrlOrigin = LambdaUrlOrigin.Builder
                 .create(stack, "ProdTestLambdaUrlOrigin")
                 .env("test")  // Use test env to avoid Docker issues in unit tests
-                .domainName("example.com")
                 .functionName("prod-function")
                 .timeout(Duration.seconds(60))
                 .environment(Map.of("ENV_VAR", "value"))
-                .allowedMethods(List.of(HttpMethod.POST))
-                .cloudFrontAllowedMethods(AllowedMethods.ALLOW_ALL)
+                .allowedMethods(AllowedMethods.ALLOW_ALL)
                 .build();
 
         Template template = Template.fromStack(stack);
@@ -105,7 +99,6 @@ public class LambdaUrlOriginTest {
         LambdaUrlOrigin lambdaUrlOrigin = LambdaUrlOrigin.Builder
                 .create(stack, "TestLambdaUrlOrigin")
                 .env("test")
-                .domainName("test.example.com")
                 .functionName("test-function")
                 .skipBehaviorOptions(true)
                 .build();
@@ -139,7 +132,6 @@ public class LambdaUrlOriginTest {
         LambdaUrlOrigin lambdaUrlOrigin = LambdaUrlOrigin.Builder
                 .create(stack, "TestLambdaUrlOrigin")
                 .env("test")
-                .domainName("test.example.com")
                 .functionName("test-function")
                 .build();
 
@@ -167,7 +159,6 @@ public class LambdaUrlOriginTest {
         Assertions.assertThrows(IllegalArgumentException.class, () -> {
             LambdaUrlOrigin.Builder
                     .create(stack, "TestLambdaUrlOrigin1")
-                    .domainName("test.example.com")
                     .functionName("test-function-1")
                     .build();
         });
@@ -186,7 +177,6 @@ public class LambdaUrlOriginTest {
             LambdaUrlOrigin.Builder
                     .create(stack, "TestLambdaUrlOrigin3")
                     .env("test")
-                    .domainName("test.example.com")
                     .build();
         });
         
@@ -195,7 +185,6 @@ public class LambdaUrlOriginTest {
             LambdaUrlOrigin.Builder
                     .create(stack, "TestLambdaUrlOrigin4")
                     .env("production")
-                    .domainName("test.example.com")
                     .functionName("test-function-4")
                     .build();
         });
@@ -205,7 +194,6 @@ public class LambdaUrlOriginTest {
             LambdaUrlOrigin.Builder
                     .create(stack, "TestLambdaUrlOrigin5")
                     .env("test")
-                    .domainName("test.example.com")
                     .functionName("test-function-5")
                     .build();
         });
@@ -215,7 +203,6 @@ public class LambdaUrlOriginTest {
             LambdaUrlOrigin.Builder
                     .create(stack, "TestLambdaUrlOrigin6")
                     .env("test")  // Use test env to avoid Docker issues in unit tests
-                    .domainName("test.example.com")
                     .functionName("test-function-6")
                     .handler("com.example.Handler")
                     .build();
@@ -232,13 +219,11 @@ public class LambdaUrlOriginTest {
         LambdaUrlOrigin.Builder builder = LambdaUrlOrigin.Builder
                 .create(stack, "TestLambdaUrlOrigin")
                 .env("test")
-                .domainName("test.example.com")
                 .functionName("test-function")
                 .handler("com.example.Handler")
                 .timeout(Duration.seconds(45))
                 .environment(Map.of("TEST_VAR", "test_value"))
-                .allowedMethods(List.of(HttpMethod.GET, HttpMethod.POST))
-                .cloudFrontAllowedMethods(AllowedMethods.ALLOW_ALL);
+                .allowedMethods(AllowedMethods.ALLOW_ALL);
         
         Assertions.assertNotNull(builder);
         

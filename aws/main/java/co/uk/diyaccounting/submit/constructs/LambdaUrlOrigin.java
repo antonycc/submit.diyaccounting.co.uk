@@ -8,6 +8,7 @@ import software.amazon.awscdk.services.cloudfront.AllowedMethods;
 import software.amazon.awscdk.services.cloudfront.BehaviorOptions;
 import software.amazon.awscdk.services.cloudfront.CachePolicy;
 import software.amazon.awscdk.services.cloudfront.ICachePolicy;
+import software.amazon.awscdk.services.cloudfront.IOriginRequestPolicy;
 import software.amazon.awscdk.services.cloudfront.IResponseHeadersPolicy;
 import software.amazon.awscdk.services.cloudfront.OriginProtocolPolicy;
 import software.amazon.awscdk.services.cloudfront.OriginRequestPolicy;
@@ -42,6 +43,7 @@ public class LambdaUrlOrigin {
     public final LogGroup logGroup;
     public final FunctionUrl functionUrl;
     public final BehaviorOptions behaviorOptions;
+    public final HttpOrigin apiOrigin;
 
     private LambdaUrlOrigin(Builder builder) {
         // Create the lambda function
@@ -62,15 +64,15 @@ public class LambdaUrlOrigin {
         this.functionUrl = this.lambda.addFunctionUrl(functionUrlOptionsBuilder.build());
 
         String lambdaUrlHost = getLambdaUrlHostToken(this.functionUrl);
-        HttpOrigin apiOrigin = HttpOrigin.Builder.create(lambdaUrlHost)
+        this.apiOrigin = HttpOrigin.Builder.create(lambdaUrlHost)
                 .protocolPolicy(builder.protocolPolicy)
                 .build();
 
         BehaviorOptions.Builder behaviorOptionsBuilder = BehaviorOptions.builder()
-                .origin(apiOrigin)
+                .origin(this.apiOrigin)
                 .allowedMethods(builder.cloudFrontAllowedMethods)
                 .cachePolicy(builder.cachePolicy)
-                .originRequestPolicy(OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER)
+                .originRequestPolicy(builder.originRequestPolicy)
                 .viewerProtocolPolicy(builder.viewerProtocolPolicy);
 
         if (builder.responseHeadersPolicy != null) {
@@ -87,7 +89,7 @@ public class LambdaUrlOrigin {
             var functionBuilder = Function.Builder.create(builder.scope, builder.idPrefix + "Lambda")
                     .code(Code.fromInline("exports.handler = async (event) => { return { statusCode: 200, body: 'test' }; }"))
                     .handler("index.handler")
-                    .runtime(Runtime.NODEJS_22_X)
+                    .runtime(builder.runtime)
                     .functionName(builder.functionName)
                     .timeout(builder.timeout);
             if (builder.xRayEnabled) {
@@ -106,7 +108,7 @@ public class LambdaUrlOrigin {
             }
             
             var dockerFunctionBuilder = DockerImageFunction.Builder.create(builder.scope, builder.idPrefix + "Lambda")
-                    .code(DockerImageCode.fromImageAsset(".", imageCodeProps))
+                    .code(DockerImageCode.fromImageAsset(builder.imageDirectory, imageCodeProps))
                     .environment(environment)
                     .functionName(builder.functionName)
                     .timeout(builder.timeout);
@@ -167,6 +169,11 @@ public class LambdaUrlOrigin {
         // BehaviorOptions configuration
         public ICachePolicy cachePolicy = CachePolicy.CACHING_DISABLED;
         public ViewerProtocolPolicy viewerProtocolPolicy = ViewerProtocolPolicy.REDIRECT_TO_HTTPS;
+        public IOriginRequestPolicy originRequestPolicy = OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER;
+        
+        // Lambda configuration
+        public String imageDirectory = ".";
+        public Runtime runtime = Runtime.NODEJS_22_X;
 
         private Builder(final Construct scope, final String idPrefix) {
             this.scope = scope;
@@ -202,7 +209,7 @@ public class LambdaUrlOrigin {
             return this;
         }
 
-        public Builder cloudFrontAllowedMethods(AllowedMethods cloudFrontAllowedMethods) {
+        public Builder allowedMethods(AllowedMethods cloudFrontAllowedMethods) {
             this.cloudFrontAllowedMethods = cloudFrontAllowedMethods;
             return this;
         }
@@ -269,6 +276,22 @@ public class LambdaUrlOrigin {
 
         public Builder viewerProtocolPolicy(ViewerProtocolPolicy viewerProtocolPolicy) {
             this.viewerProtocolPolicy = viewerProtocolPolicy;
+            return this;
+        }
+
+        public Builder originRequestPolicy(IOriginRequestPolicy originRequestPolicy) {
+            this.originRequestPolicy = originRequestPolicy;
+            return this;
+        }
+
+        // Lambda configuration methods
+        public Builder imageDirectory(String imageDirectory) {
+            this.imageDirectory = imageDirectory;
+            return this;
+        }
+
+        public Builder runtime(Runtime runtime) {
+            this.runtime = runtime;
             return this;
         }
 
