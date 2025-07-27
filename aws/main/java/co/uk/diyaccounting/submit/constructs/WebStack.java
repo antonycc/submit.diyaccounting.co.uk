@@ -786,6 +786,7 @@ public class WebStack extends Stack {
         }
 
         // Create receipts bucket for storing VAT submission receipts
+        // TODO: Change to a log forwarding bucket
         this.receiptsBucket = Bucket.Builder.create(this, "ReceiptsBucket")
                 .bucketName(receiptsBucketFullName)
                 .versioned(false)

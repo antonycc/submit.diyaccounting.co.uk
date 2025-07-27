@@ -22,15 +22,15 @@ on:
     #        default: 'true'
     #        type: string
 
-env:
-  environment: 'ci'
+#env:
+  #environment: 'ci'
   #skipDeploy: ${{ inputs.skipDeploy || 'true' }}
 
 jobs:
 
   deploy:
     runs-on: ubuntu-latest
-    environment: ${{ inputs.environment || 'ci' }}
+    environment: 'ci'
     permissions:
       id-token: write
       contents: read
@@ -112,9 +112,13 @@ jobs:
         run: npx dotenv -e .env.ci -- ${{ steps.stacks.outputs.deploy }}
         env:
           GITHUB_ACTOR: ${{ github.actor }}
-          ENV_NAME: ${{ inputs.environment || 'ci' }}
+          ENV_NAME: 'ci'
           LOG_S3_OBJECT_EVENT_HANDLER_SOURCE: ${{ steps.jar-path.outputs.jarFilepath }}
           LOG_GZIPPED_S3_OBJECT_EVENT_HANDLER_SOURCE: ${{ steps.jar-path.outputs.jarFilepath }}
+          CERTIFICATE_ARN: ${{ vars.AWS_CERTIFICATE_ARN }}
+          CLOUD_TRAIL_ENABLED: ${{ vars.AWS_CLOUD_TRAIL_ENABLED }}
+          HOSTED_ZONE_ID: ${{ vars.AWS_HOSTED_ZONE_ID }}
+          HOSTED_ZONE_NAME: ${{ vars.AWS_HOSTED_ZONE_NAME }}
 
   npm-behaviour-test-ci:
     needs:
