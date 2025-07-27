@@ -33,6 +33,7 @@ import software.amazon.awscdk.services.cloudfront.OriginRequestCookieBehavior;
 import software.amazon.awscdk.services.cloudfront.OriginRequestHeaderBehavior;
 import software.amazon.awscdk.services.cloudfront.OriginRequestPolicy;
 import software.amazon.awscdk.services.cloudfront.OriginRequestQueryStringBehavior;
+import software.amazon.awscdk.services.cloudfront.ResponseHeadersCorsBehavior;
 import software.amazon.awscdk.services.cloudfront.ResponseHeadersPolicy;
 import software.amazon.awscdk.services.cloudfront.SSLMethod;
 import software.amazon.awscdk.services.cloudfront.ViewerProtocolPolicy;
@@ -148,6 +149,7 @@ public class WebStack extends Stack {
         public String s3RetainReceiptsBucket;
         public String cloudTrailEventSelectorPrefix;
         public String xRayEnabled;
+        public String verboseLogging;
         public String logS3ObjectEventHandlerSource;
         public String logGzippedS3ObjectEventHandlerSource;
         public String docRootPath;
@@ -316,6 +318,11 @@ public class WebStack extends Stack {
 
         public Builder xRayEnabled(String xRayEnabled) {
             this.xRayEnabled = xRayEnabled;
+            return this;
+        }
+
+        public Builder verboseLogging(String verboseLogging) {
+            this.verboseLogging = verboseLogging;
             return this;
         }
 
@@ -507,6 +514,16 @@ public class WebStack extends Stack {
         String distributionAccessLogBucketName = Builder.buildDistributionAccessLogBucketName(dashedDomainName);
 
         boolean skipLambdaUrlOrigins = Boolean.parseBoolean(builder.skipLambdaUrlOrigins);
+        
+        // Check for environment variable override for verboseLogging
+        String verboseLoggingEnv = System.getenv("VERBOSE_LOGGING");
+        boolean verboseLogging = verboseLoggingEnv != null ? 
+            Boolean.parseBoolean(verboseLoggingEnv) : 
+            Boolean.parseBoolean(builder.verboseLogging);
+        
+        if (verboseLoggingEnv != null) {
+            logger.info("Verbose logging setting overridden by environment variable VERBOSE_LOGGING: {}", verboseLogging);
+        }
 
         // Create a CloudTrail for the stack resources
         RetentionDays cloudTrailLogGroupRetentionPeriod = RetentionDaysConverter.daysToRetentionDays(cloudTrailLogGroupRetentionPeriodDays);
@@ -537,6 +554,7 @@ public class WebStack extends Stack {
                     .bucketName(originAccessLogBucketName)
                     .functionNamePrefix("%s-origin-access-".formatted(dashedDomainName))
                     .retentionPeriodDays(accessLogGroupRetentionPeriodDays)
+                    .verboseLogging(verboseLogging)
                     .build();
             this.originBucket = Bucket.Builder.create(this, "OriginBucket")
                     .bucketName(originBucketName)
@@ -581,6 +599,7 @@ public class WebStack extends Stack {
                 .bucketName(distributionAccessLogBucketName)
                 .functionNamePrefix("%s-dist-access-".formatted(dashedDomainName))
                 .retentionPeriodDays(accessLogGroupRetentionPeriodDays)
+                .verboseLogging(verboseLogging)
                 .build();
 
         // Add cloud trail to the origin bucket if enabled
@@ -693,15 +712,35 @@ public class WebStack extends Stack {
                     .create(this, "AuthUrlOriginRequestPolicy")
                     .originRequestPolicyName(this.authUrlLambda.getFunctionName() + "-origin-request-policy")
                     .comment("Policy for rest APIs (allow all cookies, query parameters, and headers)")
-                    .cookieBehavior(OriginRequestCookieBehavior.all())
-                    .headerBehavior(OriginRequestHeaderBehavior.allowList(
-                            "Host",
-                            "Origin",
-                            "Access-Control-Request-Headers",
-                            "Access-Control-Request-Method"
-                    ))
+                    .cookieBehavior(OriginRequestCookieBehavior.none())
+                    .headerBehavior(OriginRequestHeaderBehavior.all())
+                    //.headerBehavior(OriginRequestHeaderBehavior.allowList(
+                    //        "Host",
+                    //        "Origin",
+                    //        "Access-Control-Request-Headers",
+                    //        "Access-Control-Request-Method"
+                    //))
                     //.queryStringBehavior(OriginRequestQueryStringBehavior.allowList("state"))
                     .queryStringBehavior(OriginRequestQueryStringBehavior.all())
+                    .build();
+            ResponseHeadersPolicy corsResponseHeadersPolicy = ResponseHeadersPolicy.Builder.create(this, "CorsResponseHeadersPolicy")
+                    .responseHeadersPolicyName("AllowAllCorsWithPreflight")
+                    .corsBehavior(ResponseHeadersCorsBehavior.builder()
+                            .accessControlAllowCredentials(true)             // Allow cookies / credentials
+                            .accessControlAllowHeaders(List.of("*"))          // Allow all headers
+                            .accessControlAllowMethods(List.of(
+                                HttpMethod.GET.toString(),
+                                HttpMethod.HEAD.toString(),
+                                HttpMethod.OPTIONS.toString(),
+                                HttpMethod.POST.toString(),
+                                HttpMethod.PUT.toString(),
+                                HttpMethod.PATCH.toString(),
+                                HttpMethod.DELETE.toString()
+                            ))                                                // Allow all methods
+                            .accessControlAllowOrigins(List.of("*"))          // Allow all origins (or list your domains)
+                            .accessControlExposeHeaders(List.of("*"))         // Expose all headers to client
+                            .accessControlMaxAge(Duration.seconds(600))       // Cache preflight for 10 minutes
+                            .build())
                     .build();
             final BehaviorOptions authUrlOriginBehaviour = BehaviorOptions.builder()
                     .origin(authUrlApiOrigin)
@@ -711,6 +750,7 @@ public class WebStack extends Stack {
                     .cachePolicy(CachePolicy.CACHING_DISABLED)
                     .originRequestPolicy(authUrlOriginRequestPolicy)
                     //.originRequestPolicy(OriginRequestPolicy.CORS_S3_ORIGIN)
+                    .responseHeadersPolicy(corsResponseHeadersPolicy)
                     .viewerProtocolPolicy(ViewerProtocolPolicy.REDIRECT_TO_HTTPS)
                     .build();
             lambdaUrlToOriginsBehaviourMappings.put("/api/auth-url*", authUrlOriginBehaviour);
@@ -858,6 +898,7 @@ public class WebStack extends Stack {
                 .autoDeleteObjects(!s3RetainReceiptsBucket)
                 .functionNamePrefix("%s-receipts-bucket-".formatted(dashedDomainName))
                 .retentionPeriodDays(accessLogGroupRetentionPeriodDays)
+                .verboseLogging(verboseLogging)
                 .removalPolicy(s3RetainReceiptsBucket ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY)
                 .build();
 
@@ -998,7 +1039,7 @@ public class WebStack extends Stack {
                 .httpVersion(HttpVersion.HTTP2_AND_3)
                 .enableLogging(true)
                 .logBucket(this.distributionAccessLogBucket)
-                .logIncludesCookies(false)
+                .logIncludesCookies(verboseLogging)
                 .build();
         //var grantable = this.distribution.getGrantPrincipal();
         //this.authUrlLambdaUrl.grantInvokeUrl(this.distribution.);

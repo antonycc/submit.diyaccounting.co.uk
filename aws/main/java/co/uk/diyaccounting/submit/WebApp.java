@@ -20,6 +20,7 @@ public class WebApp {
                 .useExistingCertificate(System.getenv("USE_EXISTING_CERTIFICATE"))
                 .cloudTrailEnabled(System.getenv("CLOUD_TRAIL_ENABLED"))
                 .xRayEnabled(System.getenv("X_RAY_ENABLED"))
+                .verboseLogging(System.getenv("VERBOSE_LOGGING"))
                 .cloudTrailLogGroupPrefix(System.getenv("CLOUD_TRAIL_LOG_GROUP_PREFIX"))
                 .cloudTrailLogGroupRetentionPeriodDays(System.getenv("CLOUD_TRAIL_LOG_GROUP_RETENTION_PERIOD_DAYS"))
                 .accessLogGroupRetentionPeriodDays(System.getenv("ACCESS_LOG_GROUP_RETENTION_PERIOD_DAYS"))

@@ -59,6 +59,7 @@ public class BucketOrigin {
                     .retentionPeriodDays(builder.accessLogGroupRetentionPeriodDays)
                     .cloudTrailEnabled(builder.cloudTrailEnabled)
                     .xRayEnabled(builder.xRayEnabled)
+                    .verboseLogging(builder.verboseLogging)
                     .build();
 
             // Create the origin bucket
@@ -112,10 +113,13 @@ public class BucketOrigin {
                 .retentionPeriodDays(builder.accessLogGroupRetentionPeriodDays)
                 .cloudTrailEnabled(builder.cloudTrailEnabled)
                 .xRayEnabled(builder.xRayEnabled)
+                .verboseLogging(builder.verboseLogging)
                 .build();
 
         // Create originBucketTrail if CloudTrail is enabled
-        RetentionDays cloudTrailLogGroupRetentionPeriod = RetentionDaysConverter.daysToRetentionDays(builder.cloudTrailLogGroupRetentionPeriodDays);
+        RetentionDays cloudTrailLogGroupRetentionPeriod = builder.verboseLogging ? 
+            RetentionDaysConverter.daysToRetentionDays(30) : 
+            RetentionDaysConverter.daysToRetentionDays(builder.cloudTrailLogGroupRetentionPeriodDays);
         if (builder.cloudTrailEnabled) {
             this.originBucketLogGroup = LogGroup.Builder.create(builder.scope, "OriginBucketLogGroup")
                     .logGroupName(String.format("%s%s-cloud-trail", builder.cloudTrailLogGroupPrefix, this.originBucket.getBucketName()))
@@ -183,6 +187,7 @@ public class BucketOrigin {
         private int cloudTrailLogGroupRetentionPeriodDays = 30;
         private String cloudTrailEventSelectorPrefix = null;
         private boolean xRayEnabled = false;
+        private boolean verboseLogging = false;
 
         private Builder(final Construct scope, final String idPrefix) {
             this.scope = scope;
@@ -271,6 +276,11 @@ public class BucketOrigin {
 
         public Builder xRayEnabled(boolean xRayEnabled) {
             this.xRayEnabled = xRayEnabled;
+            return this;
+        }
+
+        public Builder verboseLogging(boolean verboseLogging) {
+            this.verboseLogging = verboseLogging;
             return this;
         }
 

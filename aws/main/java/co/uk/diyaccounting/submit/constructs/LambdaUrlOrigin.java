@@ -177,6 +177,7 @@ public class LambdaUrlOrigin {
         // CloudTrail and X-Ray configuration
         public boolean cloudTrailEnabled = false;
         public boolean xRayEnabled = false;
+        public boolean verboseLogging = false;
 
         private Builder(final Construct scope, final String idPrefix) {
             this.scope = scope;
@@ -254,6 +255,11 @@ public class LambdaUrlOrigin {
 
         public Builder xRayEnabled(boolean xRayEnabled) {
             this.xRayEnabled = xRayEnabled;
+            return this;
+        }
+
+        public Builder verboseLogging(boolean verboseLogging) {
+            this.verboseLogging = verboseLogging;
             return this;
         }
 

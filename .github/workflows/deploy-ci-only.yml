@@ -118,6 +118,7 @@ jobs:
           CERTIFICATE_ARN: ${{ vars.AWS_CERTIFICATE_ARN }}
           CLOUD_TRAIL_ENABLED: ${{ vars.AWS_CLOUD_TRAIL_ENABLED }}
           X_RAY_ENABLED: ${{ vars.AWS_X_RAY_ENABLED }}
+          VERBOSE_LOGGING: ${{ vars.AWS_VERBOSE_LOGGING }}
           HOSTED_ZONE_ID: ${{ vars.AWS_HOSTED_ZONE_ID }}
           HOSTED_ZONE_NAME: ${{ vars.AWS_HOSTED_ZONE_NAME }}
 

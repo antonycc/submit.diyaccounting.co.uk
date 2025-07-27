@@ -58,6 +58,7 @@ public class LogForwardingBucket extends Stack {
         private int retentionPeriodDays = 30;
         private boolean cloudTrailEnabled = false;
         private boolean xRayEnabled = false;
+        private boolean verboseLogging = false;
         private RemovalPolicy removalPolicy = RemovalPolicy.DESTROY;
         private boolean versioned = false;
         private BlockPublicAccess blockPublicAccess = BlockPublicAccess.BLOCK_ALL;
@@ -90,6 +91,7 @@ public class LogForwardingBucket extends Stack {
             newBuilder.retentionPeriodDays = retentionPeriodDays;
             newBuilder.cloudTrailEnabled = cloudTrailEnabled;
             newBuilder.xRayEnabled = xRayEnabled;
+            newBuilder.verboseLogging = verboseLogging;
             newBuilder.removalPolicy = removalPolicy;
             newBuilder.versioned = versioned;
             newBuilder.blockPublicAccess = blockPublicAccess;
@@ -105,6 +107,7 @@ public class LogForwardingBucket extends Stack {
             newBuilder.retentionPeriodDays = retentionPeriodDays;
             newBuilder.cloudTrailEnabled = cloudTrailEnabled;
             newBuilder.xRayEnabled = xRayEnabled;
+            newBuilder.verboseLogging = verboseLogging;
             newBuilder.removalPolicy = removalPolicy;
             newBuilder.versioned = versioned;
             newBuilder.blockPublicAccess = blockPublicAccess;
@@ -120,6 +123,7 @@ public class LogForwardingBucket extends Stack {
             newBuilder.retentionPeriodDays = retentionPeriodDays;
             newBuilder.cloudTrailEnabled = cloudTrailEnabled;
             newBuilder.xRayEnabled = xRayEnabled;
+            newBuilder.verboseLogging = verboseLogging;
             newBuilder.removalPolicy = removalPolicy;
             newBuilder.versioned = versioned;
             newBuilder.blockPublicAccess = blockPublicAccess;
@@ -135,6 +139,7 @@ public class LogForwardingBucket extends Stack {
             newBuilder.retentionPeriodDays = retentionPeriodDays;
             newBuilder.cloudTrailEnabled = cloudTrailEnabled;
             newBuilder.xRayEnabled = xRayEnabled;
+            newBuilder.verboseLogging = verboseLogging;
             newBuilder.removalPolicy = removalPolicy;
             newBuilder.versioned = versioned;
             newBuilder.blockPublicAccess = blockPublicAccess;
@@ -150,6 +155,23 @@ public class LogForwardingBucket extends Stack {
             newBuilder.retentionPeriodDays = retentionPeriodDays;
             newBuilder.cloudTrailEnabled = cloudTrailEnabled;
             newBuilder.xRayEnabled = xRayEnabled;
+            newBuilder.verboseLogging = verboseLogging;
+            newBuilder.removalPolicy = removalPolicy;
+            newBuilder.versioned = versioned;
+            newBuilder.blockPublicAccess = blockPublicAccess;
+            newBuilder.autoDeleteObjects = autoDeleteObjects;
+            newBuilder.objectOwnership = objectOwnership;
+            return newBuilder;
+        }
+
+        public Builder verboseLogging(boolean verboseLogging) {
+            final Builder newBuilder = new Builder(scope, idPrefix, handlerSource, handlerClass);
+            newBuilder.bucketName = bucketName;
+            newBuilder.functionNamePrefix = functionNamePrefix;
+            newBuilder.retentionPeriodDays = retentionPeriodDays;
+            newBuilder.cloudTrailEnabled = cloudTrailEnabled;
+            newBuilder.xRayEnabled = xRayEnabled;
+            newBuilder.verboseLogging = verboseLogging;
             newBuilder.removalPolicy = removalPolicy;
             newBuilder.versioned = versioned;
             newBuilder.blockPublicAccess = blockPublicAccess;
@@ -165,6 +187,7 @@ public class LogForwardingBucket extends Stack {
             newBuilder.retentionPeriodDays = retentionPeriodDays;
             newBuilder.cloudTrailEnabled = cloudTrailEnabled;
             newBuilder.xRayEnabled = xRayEnabled;
+            newBuilder.verboseLogging = verboseLogging;
             newBuilder.removalPolicy = removalPolicy;
             newBuilder.versioned = versioned;
             newBuilder.blockPublicAccess = blockPublicAccess;
@@ -180,6 +203,7 @@ public class LogForwardingBucket extends Stack {
             newBuilder.retentionPeriodDays = retentionPeriodDays;
             newBuilder.cloudTrailEnabled = cloudTrailEnabled;
             newBuilder.xRayEnabled = xRayEnabled;
+            newBuilder.verboseLogging = verboseLogging;
             newBuilder.removalPolicy = removalPolicy;
             newBuilder.versioned = versioned;
             newBuilder.blockPublicAccess = blockPublicAccess;
@@ -195,6 +219,7 @@ public class LogForwardingBucket extends Stack {
             newBuilder.retentionPeriodDays = retentionPeriodDays;
             newBuilder.cloudTrailEnabled = cloudTrailEnabled;
             newBuilder.xRayEnabled = xRayEnabled;
+            newBuilder.verboseLogging = verboseLogging;
             newBuilder.removalPolicy = removalPolicy;
             newBuilder.versioned = versioned;
             newBuilder.blockPublicAccess = blockPublicAccess;
@@ -210,6 +235,7 @@ public class LogForwardingBucket extends Stack {
             newBuilder.retentionPeriodDays = retentionPeriodDays;
             newBuilder.cloudTrailEnabled = cloudTrailEnabled;
             newBuilder.xRayEnabled = xRayEnabled;
+            newBuilder.verboseLogging = verboseLogging;
             newBuilder.removalPolicy = removalPolicy;
             newBuilder.versioned = versioned;
             newBuilder.blockPublicAccess = blockPublicAccess;
@@ -225,6 +251,7 @@ public class LogForwardingBucket extends Stack {
             newBuilder.retentionPeriodDays = retentionPeriodDays;
             newBuilder.cloudTrailEnabled = cloudTrailEnabled;
             newBuilder.xRayEnabled = xRayEnabled;
+            newBuilder.verboseLogging = verboseLogging;
             newBuilder.removalPolicy = removalPolicy;
             newBuilder.versioned = versioned;
             newBuilder.blockPublicAccess = blockPublicAccess;
