@@ -25,6 +25,7 @@ import software.amazon.awscdk.services.lambda.FunctionUrlAuthType;
 import software.amazon.awscdk.services.lambda.FunctionUrlCorsOptions;
 import software.amazon.awscdk.services.lambda.FunctionUrlOptions;
 import software.amazon.awscdk.services.lambda.HttpMethod;
+import software.amazon.awscdk.services.lambda.InvokeMode;
 import software.amazon.awscdk.services.lambda.Runtime;
 import software.amazon.awscdk.services.lambda.Tracing;
 import software.amazon.awscdk.services.logs.LogGroup;
@@ -54,8 +55,8 @@ public class LambdaUrlOrigin {
         // Create log group for the lambda
         this.logGroup = new LogGroup(builder.scope, builder.idPrefix + "LogGroup", LogGroupProps.builder()
                 .logGroupName("/aws/lambda/" + this.lambda.getFunctionName())
-                .retention(RetentionDays.THREE_DAYS)
-                .removalPolicy(RemovalPolicy.DESTROY)
+                .retention(builder.logGroupRetention)
+                .removalPolicy(builder.logGroupRemovalPolicy)
                 .build());
 
         // Create custom origin request policy
@@ -74,15 +75,21 @@ public class LambdaUrlOrigin {
         this.customOriginRequestPolicy = policyBuilder.build();
 
         // Create function URL
-        this.functionUrl = this.lambda.addFunctionUrl(
-                FunctionUrlOptions.builder()
-                        .authType(FunctionUrlAuthType.NONE)
-                        .cors(FunctionUrlCorsOptions.builder()
-                                .allowedOrigins(List.of("https://" + builder.domainName))
-                                .allowedMethods(builder.allowedMethods)
-                                .build())
-                        .build()
-        );
+        FunctionUrlOptions.Builder functionUrlOptionsBuilder = FunctionUrlOptions.builder()
+                .authType(builder.functionUrlAuthType)
+                .invokeMode(builder.invokeMode);
+        
+        if (builder.functionUrlCorsOptions != null) {
+            functionUrlOptionsBuilder.cors(builder.functionUrlCorsOptions);
+        } else {
+            // Default CORS configuration if none provided
+            functionUrlOptionsBuilder.cors(FunctionUrlCorsOptions.builder()
+                    .allowedOrigins(List.of("https://" + builder.domainName))
+                    .allowedMethods(builder.allowedMethods)
+                    .build());
+        }
+        
+        this.functionUrl = this.lambda.addFunctionUrl(functionUrlOptionsBuilder.build());
 
         if (builder.skipBehaviorOptions) {
             logger.info("Skipping behavior options for Lambda URL origin as per configuration.");
@@ -90,15 +97,21 @@ public class LambdaUrlOrigin {
         } else {
             String lambdaUrlHost = getLambdaUrlHostToken(this.functionUrl);
             HttpOrigin apiOrigin = HttpOrigin.Builder.create(lambdaUrlHost)
-                    .protocolPolicy(OriginProtocolPolicy.HTTPS_ONLY)
+                    .protocolPolicy(builder.protocolPolicy)
                     .build();
 
-            this.behaviorOptions = BehaviorOptions.builder()
+            BehaviorOptions.Builder behaviorOptionsBuilder = BehaviorOptions.builder()
                     .origin(apiOrigin)
                     .allowedMethods(builder.cloudFrontAllowedMethods)
-                    .cachePolicy(CachePolicy.CACHING_DISABLED)
+                    .cachePolicy(builder.cachePolicy)
                     .originRequestPolicy(this.customOriginRequestPolicy)
-                    .build();
+                    .viewerProtocolPolicy(builder.viewerProtocolPolicy);
+            
+            if (builder.responseHeadersPolicy != null) {
+                behaviorOptionsBuilder.responseHeadersPolicy(builder.responseHeadersPolicy);
+            }
+            
+            this.behaviorOptions = behaviorOptionsBuilder.build();
         }
 
         logger.info("Created LambdaUrlOrigin with function: {}", this.lambda.getFunctionName());
@@ -185,6 +198,7 @@ public class LambdaUrlOrigin {
         // Function URL configuration
         public FunctionUrlAuthType functionUrlAuthType = FunctionUrlAuthType.NONE;
         public FunctionUrlCorsOptions functionUrlCorsOptions = null;
+        public InvokeMode invokeMode = InvokeMode.BUFFERED;
         
         // Log group configuration
         public RetentionDays logGroupRetention = RetentionDays.THREE_DAYS;
@@ -299,6 +313,11 @@ public class LambdaUrlOrigin {
 
         public Builder functionUrlCorsOptions(FunctionUrlCorsOptions functionUrlCorsOptions) {
             this.functionUrlCorsOptions = functionUrlCorsOptions;
+            return this;
+        }
+
+        public Builder invokeMode(InvokeMode invokeMode) {
+            this.invokeMode = invokeMode;
             return this;
         }
 
