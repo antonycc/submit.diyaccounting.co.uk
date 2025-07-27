@@ -758,7 +758,31 @@ public class WebStack extends Stack {
                                 HttpMethod.DELETE.toString()
                             ))                                                // Allow all methods
                             .accessControlAllowOrigins(List.of("*"))          // Allow all origins (or list your domains)
-                            .accessControlExposeHeaders(List.of("*"))         // Expose all headers to client
+                            //.accessControlExposeHeaders(List.of("*"))         // Expose all headers to client
+                            .accessControlExposeHeaders(List.of(
+                                    "Authorization",
+                                    "Content-Type",
+                                    "ETag",
+                                    "Last-Modified",
+                                    "Link",
+                                    "X-Total-Count",
+                                    "Accept",
+                                    "Origin",
+                                    "User-Agent",
+                                    "X-Amz-Date",
+                                    "X-Api-Key",
+                                    "X-Amz-Security-Token",
+                                    "X-Amz-User-Agent",
+                                    "X-Requested-With",
+                                    "Cache-Control",
+                                    "Pragma",
+                                    "If-Modified-Since",
+                                    "If-None-Match",
+                                    "Referer",
+                                    "Accept-Encoding",
+                                    "Accept-Language",
+                                    "Cookie"
+                            ))
                             .accessControlMaxAge(Duration.seconds(600))       // Cache preflight for 10 minutes
                             .originOverride(true)                             // Override origin headers
                             .build())
