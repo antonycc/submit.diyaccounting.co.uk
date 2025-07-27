@@ -19,6 +19,7 @@ import software.amazon.awscdk.services.lambda.Tracing;
 import software.amazon.awscdk.services.lambda.Version;
 import software.amazon.awscdk.services.lambda.VersionProps;
 import software.amazon.awscdk.services.logs.LogGroup;
+import software.amazon.awscdk.services.s3.BlockPublicAccess;
 import software.amazon.awscdk.services.s3.Bucket;
 import software.amazon.awscdk.services.s3.BucketEncryption;
 import software.amazon.awscdk.services.s3.EventType;
@@ -58,6 +59,10 @@ public class LogForwardingBucket extends Stack {
         private boolean cloudTrailEnabled = false;
         private boolean xRayEnabled = false;
         private RemovalPolicy removalPolicy = RemovalPolicy.DESTROY;
+        private boolean versioned = false;
+        private BlockPublicAccess blockPublicAccess = BlockPublicAccess.BLOCK_ALL;
+        private boolean autoDeleteObjects = true;
+        private ObjectOwnership objectOwnership = ObjectOwnership.OBJECT_WRITER;
 
         private Builder(
                 final Construct scope,
@@ -86,6 +91,10 @@ public class LogForwardingBucket extends Stack {
             newBuilder.cloudTrailEnabled = cloudTrailEnabled;
             newBuilder.xRayEnabled = xRayEnabled;
             newBuilder.removalPolicy = removalPolicy;
+            newBuilder.versioned = versioned;
+            newBuilder.blockPublicAccess = blockPublicAccess;
+            newBuilder.autoDeleteObjects = autoDeleteObjects;
+            newBuilder.objectOwnership = objectOwnership;
             return newBuilder;
         }
 
@@ -97,6 +106,10 @@ public class LogForwardingBucket extends Stack {
             newBuilder.cloudTrailEnabled = cloudTrailEnabled;
             newBuilder.xRayEnabled = xRayEnabled;
             newBuilder.removalPolicy = removalPolicy;
+            newBuilder.versioned = versioned;
+            newBuilder.blockPublicAccess = blockPublicAccess;
+            newBuilder.autoDeleteObjects = autoDeleteObjects;
+            newBuilder.objectOwnership = objectOwnership;
             return newBuilder;
         }
 
@@ -108,6 +121,10 @@ public class LogForwardingBucket extends Stack {
             newBuilder.cloudTrailEnabled = cloudTrailEnabled;
             newBuilder.xRayEnabled = xRayEnabled;
             newBuilder.removalPolicy = removalPolicy;
+            newBuilder.versioned = versioned;
+            newBuilder.blockPublicAccess = blockPublicAccess;
+            newBuilder.autoDeleteObjects = autoDeleteObjects;
+            newBuilder.objectOwnership = objectOwnership;
             return newBuilder;
         }
 
@@ -119,6 +136,10 @@ public class LogForwardingBucket extends Stack {
             newBuilder.cloudTrailEnabled = cloudTrailEnabled;
             newBuilder.xRayEnabled = xRayEnabled;
             newBuilder.removalPolicy = removalPolicy;
+            newBuilder.versioned = versioned;
+            newBuilder.blockPublicAccess = blockPublicAccess;
+            newBuilder.autoDeleteObjects = autoDeleteObjects;
+            newBuilder.objectOwnership = objectOwnership;
             return newBuilder;
         }
 
@@ -130,6 +151,10 @@ public class LogForwardingBucket extends Stack {
             newBuilder.cloudTrailEnabled = cloudTrailEnabled;
             newBuilder.xRayEnabled = xRayEnabled;
             newBuilder.removalPolicy = removalPolicy;
+            newBuilder.versioned = versioned;
+            newBuilder.blockPublicAccess = blockPublicAccess;
+            newBuilder.autoDeleteObjects = autoDeleteObjects;
+            newBuilder.objectOwnership = objectOwnership;
             return newBuilder;
         }
 
@@ -141,6 +166,70 @@ public class LogForwardingBucket extends Stack {
             newBuilder.cloudTrailEnabled = cloudTrailEnabled;
             newBuilder.xRayEnabled = xRayEnabled;
             newBuilder.removalPolicy = removalPolicy;
+            newBuilder.versioned = versioned;
+            newBuilder.blockPublicAccess = blockPublicAccess;
+            newBuilder.autoDeleteObjects = autoDeleteObjects;
+            newBuilder.objectOwnership = objectOwnership;
+            return newBuilder;
+        }
+
+        public Builder versioned(boolean versioned) {
+            final Builder newBuilder = new Builder(scope, idPrefix, handlerSource, handlerClass);
+            newBuilder.bucketName = bucketName;
+            newBuilder.functionNamePrefix = functionNamePrefix;
+            newBuilder.retentionPeriodDays = retentionPeriodDays;
+            newBuilder.cloudTrailEnabled = cloudTrailEnabled;
+            newBuilder.xRayEnabled = xRayEnabled;
+            newBuilder.removalPolicy = removalPolicy;
+            newBuilder.versioned = versioned;
+            newBuilder.blockPublicAccess = blockPublicAccess;
+            newBuilder.autoDeleteObjects = autoDeleteObjects;
+            newBuilder.objectOwnership = objectOwnership;
+            return newBuilder;
+        }
+
+        public Builder blockPublicAccess(BlockPublicAccess blockPublicAccess) {
+            final Builder newBuilder = new Builder(scope, idPrefix, handlerSource, handlerClass);
+            newBuilder.bucketName = bucketName;
+            newBuilder.functionNamePrefix = functionNamePrefix;
+            newBuilder.retentionPeriodDays = retentionPeriodDays;
+            newBuilder.cloudTrailEnabled = cloudTrailEnabled;
+            newBuilder.xRayEnabled = xRayEnabled;
+            newBuilder.removalPolicy = removalPolicy;
+            newBuilder.versioned = versioned;
+            newBuilder.blockPublicAccess = blockPublicAccess;
+            newBuilder.autoDeleteObjects = autoDeleteObjects;
+            newBuilder.objectOwnership = objectOwnership;
+            return newBuilder;
+        }
+
+        public Builder autoDeleteObjects(boolean autoDeleteObjects) {
+            final Builder newBuilder = new Builder(scope, idPrefix, handlerSource, handlerClass);
+            newBuilder.bucketName = bucketName;
+            newBuilder.functionNamePrefix = functionNamePrefix;
+            newBuilder.retentionPeriodDays = retentionPeriodDays;
+            newBuilder.cloudTrailEnabled = cloudTrailEnabled;
+            newBuilder.xRayEnabled = xRayEnabled;
+            newBuilder.removalPolicy = removalPolicy;
+            newBuilder.versioned = versioned;
+            newBuilder.blockPublicAccess = blockPublicAccess;
+            newBuilder.autoDeleteObjects = autoDeleteObjects;
+            newBuilder.objectOwnership = objectOwnership;
+            return newBuilder;
+        }
+
+        public Builder objectOwnership(ObjectOwnership objectOwnership) {
+            final Builder newBuilder = new Builder(scope, idPrefix, handlerSource, handlerClass);
+            newBuilder.bucketName = bucketName;
+            newBuilder.functionNamePrefix = functionNamePrefix;
+            newBuilder.retentionPeriodDays = retentionPeriodDays;
+            newBuilder.cloudTrailEnabled = cloudTrailEnabled;
+            newBuilder.xRayEnabled = xRayEnabled;
+            newBuilder.removalPolicy = removalPolicy;
+            newBuilder.versioned = versioned;
+            newBuilder.blockPublicAccess = blockPublicAccess;
+            newBuilder.autoDeleteObjects = autoDeleteObjects;
+            newBuilder.objectOwnership = objectOwnership;
             return newBuilder;
         }
 
@@ -151,11 +240,12 @@ public class LogForwardingBucket extends Stack {
             final IBucket logBucket = Bucket.Builder
                     .create(scope, "%sLogBucket".formatted(idPrefix))
                     .bucketName(bucketName)
-                    .objectOwnership(ObjectOwnership.OBJECT_WRITER)
-                    .versioned(false)
+                    .objectOwnership(objectOwnership)
+                    .versioned(versioned)
+                    .blockPublicAccess(blockPublicAccess)
                     .encryption(BucketEncryption.S3_MANAGED)
                     .removalPolicy(removalPolicy)
-                    .autoDeleteObjects(true)
+                    .autoDeleteObjects(autoDeleteObjects)
                     .lifecycleRules(List.of(LifecycleRule.builder().expiration(Duration.days(retentionPeriodDays)).build()))
                     .build();
             logger.info("Created log bucket %s".formatted(logBucket.getBucketName()));
