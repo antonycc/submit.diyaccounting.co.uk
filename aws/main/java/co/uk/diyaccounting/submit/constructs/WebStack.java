@@ -42,7 +42,7 @@ import software.amazon.awscdk.services.cloudfront.origins.S3BucketOrigin;
 import software.amazon.awscdk.services.cloudfront.origins.S3BucketOriginWithOAIProps;
 import software.amazon.awscdk.services.cloudtrail.S3EventSelector;
 import software.amazon.awscdk.services.cloudtrail.Trail;
-import software.amazon.awscdk.services.iam.AnyPrincipal;
+import software.amazon.awscdk.services.iam.ServicePrincipal;
 import software.amazon.awscdk.services.lambda.AssetImageCodeProps;
 import software.amazon.awscdk.services.lambda.Code;
 import software.amazon.awscdk.services.lambda.DockerImageCode;
@@ -1089,7 +1089,8 @@ public class WebStack extends Stack {
         //var grantable = this.distribution.getGrantPrincipal();
         //this.authUrlLambdaUrl.grantInvokeUrl(this.distribution.);
         Permission invokeFunctionUrlPermission = Permission.builder()
-                .principal(new AnyPrincipal())
+                //.principal(new AnyPrincipal())
+                .principal(new ServicePrincipal("cloudfront.amazonaws.com"))
                 .action("lambda:InvokeFunctionUrl")
                 .functionUrlAuthType(FunctionUrlAuthType.NONE)
                 .sourceArn(this.distribution.getDistributionArn()) // restrict to your distribution
