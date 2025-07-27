@@ -91,6 +91,7 @@ jobs:
           VERBOSE_LOGGING: ${{ vars.AWS_VERBOSE_LOGGING }}
           HOSTED_ZONE_ID: ${{ vars.AWS_HOSTED_ZONE_ID }}
           HOSTED_ZONE_NAME: ${{ vars.AWS_HOSTED_ZONE_NAME }}
+          LAMBDA_URL_AUTH_TYPE: 'NONE'
 
   mvn-package-cdk-synth:
     name: 'cdk synth from maven package'
@@ -145,4 +146,5 @@ jobs:
           VERBOSE_LOGGING: ${{ vars.AWS_VERBOSE_LOGGING }}
           HOSTED_ZONE_ID: ${{ vars.AWS_HOSTED_ZONE_ID }}
           HOSTED_ZONE_NAME: ${{ vars.AWS_HOSTED_ZONE_NAME }}
+          LAMBDA_URL_AUTH_TYPE: 'NONE'
 

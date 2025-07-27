@@ -51,6 +51,7 @@ public class WebApp {
                 .submitVatLambdaDurationMillis(System.getenv("SUBMIT_VAT_LAMBDA_DURATION"))
                 .logReceiptLambdaHandlerFunctionName(System.getenv("LOG_RECEIPT_LAMBDA_HANDLER_FUNCTION_NAME"))
                 .logReceiptLambdaDurationMillis(System.getenv("LOG_RECEIPT_LAMBDA_DURATION"))
+                .lambdaUrlAuthType(System.getenv("LAMBDA_URL_AUTH_TYPE"))
                 .build();
 
         CfnOutput.Builder.create(stack, "OriginBucketArn")

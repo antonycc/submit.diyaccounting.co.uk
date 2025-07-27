@@ -173,6 +173,7 @@ public class WebStack extends Stack {
         public String submitVatLambdaDuration;
         public String logReceiptLambdaHandlerFunctionName;
         public String logReceiptLambdaDuration;
+        public String lambdaUrlAuthType;
 
         public Builder(Construct scope, String id, StackProps props) {
             this.scope = scope;
@@ -445,6 +446,11 @@ public class WebStack extends Stack {
             return this;
         }
 
+        public Builder lambdaUrlAuthType(String lambdaUrlAuthType) {
+            this.lambdaUrlAuthType = lambdaUrlAuthType;
+            return this;
+        }
+
         public WebStack build() {
             return new WebStack(this.scope, this.id, this.props, this);
         }
@@ -523,6 +529,10 @@ public class WebStack extends Stack {
         if (verboseLoggingEnv != null) {
             logger.info("Verbose logging setting overridden by environment variable VERBOSE_LOGGING: {}", verboseLogging);
         }
+
+        // Determine Lambda URL authentication type
+        FunctionUrlAuthType functionUrlAuthType = "AWS_IAM".equalsIgnoreCase(builder.lambdaUrlAuthType) ? 
+            FunctionUrlAuthType.AWS_IAM : FunctionUrlAuthType.NONE;
 
         // Create a CloudTrail for the stack resources
         RetentionDays cloudTrailLogGroupRetentionPeriod = RetentionDaysConverter.daysToRetentionDays(cloudTrailLogGroupRetentionPeriodDays);
@@ -664,7 +674,7 @@ public class WebStack extends Stack {
                 .build());
         var authUrlLambdaFunctionUrlOptions = FunctionUrlOptions.builder()
                 .invokeMode(InvokeMode.BUFFERED)
-                .authType(FunctionUrlAuthType.NONE)  // No authentication required
+                .authType(functionUrlAuthType)  // Conditional authentication based on configuration
                 .build();
         this.authUrlLambdaUrl = this.authUrlLambda.addFunctionUrl(authUrlLambdaFunctionUrlOptions);
         if (skipLambdaUrlOrigins) {
@@ -749,6 +759,7 @@ public class WebStack extends Stack {
                     //.originRequestPolicy(authUrlOriginRequestPolicy)
                     .originRequestPolicy(OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER)
                     //.responseHeadersPolicy(corsResponseHeadersPolicy)
+                    .responseHeadersPolicy(ResponseHeadersPolicy.CORS_ALLOW_ALL_ORIGINS_WITH_PREFLIGHT_AND_SECURITY_HEADERS)
                     //.viewerProtocolPolicy(ViewerProtocolPolicy.REDIRECT_TO_HTTPS)
                     .build();
             lambdaUrlToOriginsBehaviourMappings.put("/api/auth-url*", authUrlOriginBehaviour);
@@ -800,7 +811,7 @@ public class WebStack extends Stack {
                 .build());
         this.exchangeTokenLambdaUrl = this.exchangeTokenLambda.addFunctionUrl(
                 FunctionUrlOptions.builder()
-                        .authType(FunctionUrlAuthType.NONE)  // No auth for the auth URL
+                        .authType(functionUrlAuthType)  // Conditional authentication based on configuration
                         .cors(FunctionUrlCorsOptions.builder()
                                 .allowedOrigins(List.of("https://" + this.domainName))
                                 .allowedMethods(List.of(HttpMethod.POST))
@@ -864,7 +875,7 @@ public class WebStack extends Stack {
                 .build());
         this.submitVatLambdaUrl = this.submitVatLambda.addFunctionUrl(
                 FunctionUrlOptions.builder()
-                        .authType(FunctionUrlAuthType.NONE)  // No auth for the auth URL
+                        .authType(functionUrlAuthType)  // Conditional authentication based on configuration
                         .cors(FunctionUrlCorsOptions.builder()
                                 .allowedOrigins(List.of("https://" + this.domainName))
                                 .allowedMethods(List.of(HttpMethod.POST))
@@ -984,7 +995,7 @@ public class WebStack extends Stack {
                 .build());
         this.logReceiptLambdaUrl = this.logReceiptLambda.addFunctionUrl(
                 FunctionUrlOptions.builder()
-                        .authType(FunctionUrlAuthType.NONE)  // No auth for the auth URL
+                        .authType(functionUrlAuthType)  // Conditional authentication based on configuration
                         .cors(FunctionUrlCorsOptions.builder()
                                 .allowedOrigins(List.of("https://" + this.domainName))
                                 .allowedMethods(List.of(HttpMethod.POST))
@@ -1045,7 +1056,7 @@ public class WebStack extends Stack {
         Permission invokeFunctionUrlPermission = Permission.builder()
                 .principal(new ServicePrincipal("cloudfront.amazonaws.com"))
                 .action("lambda:InvokeFunctionUrl")
-                .functionUrlAuthType(FunctionUrlAuthType.NONE)
+                .functionUrlAuthType(functionUrlAuthType)
                 .sourceArn(this.distribution.getDistributionArn()) // restrict to your distribution
                 .build();
         authUrlLambda.addPermission("AuthLambdaAllowCloudFrontInvoke", invokeFunctionUrlPermission);

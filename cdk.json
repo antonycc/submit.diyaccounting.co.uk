@@ -43,6 +43,7 @@
     "submitVatLambdaHandlerFunctionName": "submitVatHandler",
     "submitVatLambdaDuration": "60000",
     "logReceiptLambdaHandlerFunctionName": "logReceiptHandler",
-    "logReceiptLambdaDuration": "30000"
+    "logReceiptLambdaDuration": "30000",
+    "lambdaUrlAuthType": "none"
   }
 }
