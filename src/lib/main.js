@@ -31,11 +31,28 @@ export async function authUrlHandler(event) {
   const url = buildUrl(event);
   logger.info({ message: "authUrlHandler responding to url by processing event", url, event });
 
+  if (event.httpMethod === 'OPTIONS') {
+    // Respond to preflight
+    return {
+      statusCode: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',           // Or restrict to your frontend origin
+        'Access-Control-Allow-Methods': 'GET,OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type,Authorization',
+        'Access-Control-Max-Age': '0',
+      },
+      body: '',
+    };
+  }
+
   // Request validation
   const state = event.queryStringParameters?.state;
   if (!state) {
     const response = {
       statusCode: 400,
+      headers: {
+        'Access-Control-Allow-Origin': '*',           // Same as above
+      },
       body: JSON.stringify({ requestUrl: url, error: "Missing state query parameter from URL" }),
     };
     logger.error(response);
