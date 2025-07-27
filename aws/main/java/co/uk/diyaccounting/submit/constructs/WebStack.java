@@ -69,6 +69,7 @@ import software.amazon.awscdk.services.s3.BlockPublicAccess;
 import software.amazon.awscdk.services.s3.Bucket;
 import software.amazon.awscdk.services.s3.BucketEncryption;
 import software.amazon.awscdk.services.s3.IBucket;
+import software.amazon.awscdk.services.s3.ObjectOwnership;
 import software.amazon.awscdk.services.s3.assets.AssetOptions;
 import software.amazon.awscdk.services.s3.deployment.BucketDeployment;
 import software.amazon.awscdk.services.s3.deployment.ISource;
@@ -143,7 +144,8 @@ public class WebStack extends Stack {
         public String cloudTrailLogGroupRetentionPeriodDays;
         public String accessLogGroupRetentionPeriodDays;
         public String s3UseExistingBucket;
-        public String s3RetainBucket;
+        public String s3RetainOriginBucket;
+        public String s3RetainReceiptsBucket;
         public String cloudTrailEventSelectorPrefix;
         public String xRayEnabled;
         public String logS3ObjectEventHandlerSource;
@@ -297,8 +299,13 @@ public class WebStack extends Stack {
             return this;
         }
 
-        public Builder s3RetainBucket(String s3RetainBucket) {
-            this.s3RetainBucket = s3RetainBucket;
+        public Builder s3RetainOriginBucket(String s3RetainOriginBucket) {
+            this.s3RetainOriginBucket = s3RetainOriginBucket;
+            return this;
+        }
+
+        public Builder s3RetainReceiptsBucket(String s3RetainReceiptsBucket) {
+            this.s3RetainReceiptsBucket = s3RetainReceiptsBucket;
             return this;
         }
 
@@ -484,7 +491,8 @@ public class WebStack extends Stack {
         String originBucketName = Builder.buildOriginBucketName(dashedDomainName);
 
         boolean s3UseExistingBucket = Boolean.parseBoolean(builder.s3UseExistingBucket);
-        boolean s3RetainBucket = Boolean.parseBoolean(builder.s3RetainBucket);
+        boolean s3RetainOriginBucket = Boolean.parseBoolean(builder.s3RetainOriginBucket);
+        boolean s3RetainReceiptsBucket = Boolean.parseBoolean(builder.s3RetainReceiptsBucket);
 
         String cloudTrailLogBucketName = Builder.buildCloudTrailLogBucketName(dashedDomainName);
         boolean cloudTrailEnabled = Boolean.parseBoolean(builder.cloudTrailEnabled);
@@ -535,9 +543,9 @@ public class WebStack extends Stack {
                     .versioned(false)
                     .blockPublicAccess(BlockPublicAccess.BLOCK_ALL)
                     .encryption(BucketEncryption.S3_MANAGED)
-                    .removalPolicy(s3RetainBucket ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY)
+                    .removalPolicy(s3RetainOriginBucket ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY)
                     .autoDeleteObjects(true)
-                    .autoDeleteObjects(!s3RetainBucket)
+                    .autoDeleteObjects(!s3RetainOriginBucket)
                     .serverAccessLogsBucket(this.originAccessLogBucket)
                     .build();
         }
@@ -841,21 +849,16 @@ public class WebStack extends Stack {
         }
 
         // Create receipts bucket for storing VAT submission receipts
-        // TODO: Create separate s3RetainXxxxBucket switches for the origin bucket and receipts bucket
-        this.receiptsBucket = Bucket.Builder.create(this, "ReceiptsBucket")
-                .bucketName(receiptsBucketFullName)
-                .versioned(false)
-                .blockPublicAccess(BlockPublicAccess.BLOCK_ALL)
-                .encryption(BucketEncryption.S3_MANAGED)
-                .removalPolicy(s3RetainBucket ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY)
-                .autoDeleteObjects(!s3RetainBucket)
-                .build();
         this.receiptsBucket = LogForwardingBucket.Builder
                 .create(this, "ReceiptsBucket", builder.logS3ObjectEventHandlerSource, LogS3ObjectEvent.class)
                 .bucketName(receiptsBucketFullName)
+                .versioned(true)
+                .blockPublicAccess(BlockPublicAccess.BLOCK_ALL)
+                .objectOwnership(ObjectOwnership.OBJECT_WRITER)
+                .autoDeleteObjects(!s3RetainReceiptsBucket)
                 .functionNamePrefix("%s-receipts-bucket-".formatted(dashedDomainName))
                 .retentionPeriodDays(accessLogGroupRetentionPeriodDays)
-                .removalPolicy(s3RetainBucket ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY)
+                .removalPolicy(s3RetainReceiptsBucket ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY)
                 .build();
 
         // Add S3 event selector to the CloudTrail for receipts bucket
@@ -1012,7 +1015,7 @@ public class WebStack extends Stack {
         LogGroup bucketDeploymentLogGroup = LogGroup.Builder.create(this, "BucketDeploymentLogGroup")
                 .logGroupName("/aws/lambda/bucket-deployment-%s".formatted(dashedDomainName))
                 .retention(cloudTrailLogGroupRetentionPeriod)
-                .removalPolicy(s3RetainBucket ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY)
+                .removalPolicy(s3RetainOriginBucket ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY)
                 .build();
         
         this.deployment = BucketDeployment.Builder.create(this, "DocRootToOriginDeployment")

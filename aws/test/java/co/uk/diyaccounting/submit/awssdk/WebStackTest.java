@@ -65,7 +65,8 @@ public class WebStackTest {
                 .cloudTrailLogGroupRetentionPeriodDays("3")
                 .accessLogGroupRetentionPeriodDays("30")
                 .s3UseExistingBucket("false")
-                .s3RetainBucket("false")
+                .s3RetainOriginBucket("false")
+                .s3RetainReceiptsBucket("false")
                 .cloudTrailEventSelectorPrefix("none")
                 .logS3ObjectEventHandlerSource("none")
                 .logGzippedS3ObjectEventHandlerSource("none")
@@ -96,7 +97,7 @@ public class WebStackTest {
         WebStack stack = createTestWebStack(app);
 
         Template template = Template.fromStack(stack);
-        template.resourceCountIs("AWS::S3::Bucket", 6);
+        template.resourceCountIs("AWS::S3::Bucket", 5);
         logger.info("WebStack test completed successfully - logging is working!");
     }
 
@@ -323,7 +324,8 @@ public class WebStackTest {
                 .cloudTrailLogGroupRetentionPeriodDays("3")
                 .accessLogGroupRetentionPeriodDays("30")
                 .s3UseExistingBucket("false")
-                .s3RetainBucket("false")
+                .s3RetainOriginBucket("false")
+                .s3RetainReceiptsBucket("false")
                 .cloudTrailEventSelectorPrefix("none")
                 .logS3ObjectEventHandlerSource("none")
                 .logGzippedS3ObjectEventHandlerSource("none")
