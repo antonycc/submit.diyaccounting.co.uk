@@ -562,7 +562,6 @@ public class WebStack extends Stack {
                     .blockPublicAccess(BlockPublicAccess.BLOCK_ALL)
                     .encryption(BucketEncryption.S3_MANAGED)
                     .removalPolicy(s3RetainOriginBucket ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY)
-                    .autoDeleteObjects(true)
                     .autoDeleteObjects(!s3RetainOriginBucket)
                     .serverAccessLogsBucket(this.originAccessLogBucket)
                     .build();
@@ -606,7 +605,7 @@ public class WebStack extends Stack {
         // CloudTrail for the origin bucket
         if (cloudTrailEnabled) {
             // Add S3 event selector to the CloudTrail
-            if (builder.cloudTrailEventSelectorPrefix == null || !builder.cloudTrailEventSelectorPrefix.isBlank() || "none".equals(builder.cloudTrailEventSelectorPrefix)) {
+            if (builder.cloudTrailEventSelectorPrefix == null || builder.cloudTrailEventSelectorPrefix.isBlank() || "none".equals(builder.cloudTrailEventSelectorPrefix)) {
                 cloudTrailLogBucket.addS3EventSelector(List.of(S3EventSelector.builder()
                         .bucket(this.originBucket)
                         .build()
@@ -950,7 +949,7 @@ public class WebStack extends Stack {
 
         // Add S3 event selector to the CloudTrail for receipts bucket
         if (cloudTrailEnabled) {
-            if (builder.cloudTrailEventSelectorPrefix == null || !builder.cloudTrailEventSelectorPrefix.isBlank() || "none".equals(builder.cloudTrailEventSelectorPrefix)) {
+            if (builder.cloudTrailEventSelectorPrefix == null || builder.cloudTrailEventSelectorPrefix.isBlank() || "none".equals(builder.cloudTrailEventSelectorPrefix)) {
                 cloudTrailLogBucket.addS3EventSelector(List.of(S3EventSelector.builder()
                         .bucket(this.receiptsBucket)
                         .build()
