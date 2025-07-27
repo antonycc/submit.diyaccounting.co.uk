@@ -726,8 +726,28 @@ public class WebStack extends Stack {
             ResponseHeadersPolicy corsResponseHeadersPolicy = ResponseHeadersPolicy.Builder.create(this, "CorsResponseHeadersPolicy")
                     .responseHeadersPolicyName("AllowAllCorsWithPreflight")
                     .corsBehavior(ResponseHeadersCorsBehavior.builder()
-                            //.accessControlAllowCredentials(true)             // Allow cookies / credentials
-                            .accessControlAllowHeaders(List.of("*"))          // Allow all headers
+                            .accessControlAllowCredentials(true)             // Allow cookies / credentials
+                            //.accessControlAllowHeaders(List.of("*"))          // Allow all headers
+                            .accessControlAllowHeaders(List.of(
+                                    "Authorization",
+                                    "Content-Type",
+                                    "Accept",
+                                    "Origin",
+                                    "User-Agent",
+                                    "X-Amz-Date",
+                                    "X-Api-Key",
+                                    "X-Amz-Security-Token",
+                                    "X-Amz-User-Agent",
+                                    "X-Requested-With",
+                                    "Cache-Control",
+                                    "Pragma",
+                                    "If-Modified-Since",
+                                    "If-None-Match",
+                                    "Referer",
+                                    "Accept-Encoding",
+                                    "Accept-Language",
+                                    "Cookie"
+                            ))
                             .accessControlAllowMethods(List.of(
                                 HttpMethod.GET.toString(),
                                 HttpMethod.HEAD.toString(),
