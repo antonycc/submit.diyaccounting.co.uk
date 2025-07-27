@@ -636,14 +636,16 @@ public class WebStack extends Stack {
         var authUrlLambdaUrlOrigin = LambdaUrlOrigin.Builder.create(this, "AuthUrlLambda")
                 .env(builder.env)
                 .functionName(Builder.buildFunctionName(dashedDomainName, builder.authUrlLambdaHandlerFunctionName))
-                .allowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS) // As default
                 .handler(builder.lambdaEntry + builder.authUrlLambdaHandlerFunctionName)
                 .timeout(Duration.millis(Long.parseLong(builder.authUrlLambdaDuration)))
+                .imageDirectory(".") // As default
+                .runtime(Runtime.NODEJS_22_X) // As default
                 .environment(Map.of(
                         "DIY_SUBMIT_HMRC_CLIENT_ID", builder.hmrcClientId,
                         "DIY_SUBMIT_HOME_URL", builder.homeUrl,
                         "DIY_SUBMIT_HMRC_BASE_URI", builder.hmrcBaseUri
                 ))
+                .allowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS) // As default
                 .cloudTrailEnabled(cloudTrailEnabled)
                 .xRayEnabled(xRayEnabled)
                 .verboseLogging(verboseLogging)
@@ -651,8 +653,6 @@ public class WebStack extends Stack {
                 .invokeMode(InvokeMode.BUFFERED) // As default
                 .logGroupRetention(RetentionDays.THREE_DAYS) // As default
                 .logGroupRemovalPolicy(RemovalPolicy.DESTROY) // As default
-                .imageDirectory(".") // As default
-                .runtime(Runtime.NODEJS_22_X) // As default
                 .originRequestPolicy(OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER) // As default
                 .protocolPolicy(OriginProtocolPolicy.HTTPS_ONLY)  // As default
                 .responseHeadersPolicy(ResponseHeadersPolicy.CORS_ALLOW_ALL_ORIGINS_WITH_PREFLIGHT_AND_SECURITY_HEADERS)   // As default
