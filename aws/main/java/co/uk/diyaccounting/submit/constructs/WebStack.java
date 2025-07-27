@@ -32,8 +32,6 @@ import software.amazon.awscdk.services.cloudfront.OriginProtocolPolicy;
 import software.amazon.awscdk.services.cloudfront.OriginRequestCookieBehavior;
 import software.amazon.awscdk.services.cloudfront.OriginRequestHeaderBehavior;
 import software.amazon.awscdk.services.cloudfront.OriginRequestPolicy;
-import software.amazon.awscdk.services.cloudfront.OriginRequestQueryStringBehavior;
-import software.amazon.awscdk.services.cloudfront.ResponseHeadersCorsBehavior;
 import software.amazon.awscdk.services.cloudfront.ResponseHeadersPolicy;
 import software.amazon.awscdk.services.cloudfront.SSLMethod;
 import software.amazon.awscdk.services.cloudfront.ViewerProtocolPolicy;
@@ -659,12 +657,6 @@ public class WebStack extends Stack {
             }
             this.authUrlLambda = authUrlLambdaBuilder.build();
         }
-        //authUrlLambda.addPermission("AllowCloudFrontInvoke", Permission.builder()
-        //        .principal(new AnyPrincipal())
-        //        .action("lambda:InvokeFunctionUrl")
-        //        //.sourceIp(List.of("13.32.0.0/15", "52.46.0.0/18")) // CloudFront IP ranges
-        //        .functionUrlAuthType(FunctionUrlAuthType.NONE)
-        //        .build());
         this.authUrlLambdaLogGroup = new LogGroup(this, "AuthUrlLambdaLogGroup", LogGroupProps.builder()
                 .logGroupName("/aws/lambda/" + this.authUrlLambda.getFunctionName())
                 .retention(RetentionDays.THREE_DAYS)
@@ -673,56 +665,16 @@ public class WebStack extends Stack {
         var authUrlLambdaFunctionUrlOptions = FunctionUrlOptions.builder()
                 .invokeMode(InvokeMode.BUFFERED)
                 .authType(FunctionUrlAuthType.NONE)  // No authentication required
-                //.cors(FunctionUrlCorsOptions.builder()
-                //        .allowedOrigins(List.of("*"))  // Allow all origins (be careful with this in production!)
-                //        .allowedMethods(List.of(
-                //                HttpMethod.GET,
-                //                HttpMethod.HEAD
-                //        ))  // Allow all common HTTP methods including OPTIONS for preflight
-                //        .allowedHeaders(List.of("*"))  // Allow all headers in CORS requests
-                //        .exposedHeaders(List.of("*"))  // Expose all headers to browser clients
-                //        .maxAge(Duration.seconds(86400))  // Cache preflight response for 24 hours
-                //        .allowCredentials(true)  // Allow cookies and authorization headers
-                //        .build())
                 .build();
         this.authUrlLambdaUrl = this.authUrlLambda.addFunctionUrl(authUrlLambdaFunctionUrlOptions);
         if (skipLambdaUrlOrigins) {
             logger.info("Skipping Lambda URL origins for authUrlLambdaUrl as per configuration.");
         } else {
-            //OriginAccessIdentity authUrlApiOriginIdentity = OriginAccessIdentity.Builder.create(this, "AuthUrlApiOriginIdentity")
-            //        .comment("Identity for accessing the auth URL API origin")
-            //        .build();
-            //this.authUrlLambda.grantInvoke(authUrlApiOriginIdentity);
-            //this.authUrlLambda.grantInvokeUrl(authUrlApiOriginIdentity);
             String authUrlLambdaUrl = this.getLambdaUrlHostToken(this.authUrlLambdaUrl);
             HttpOrigin authUrlApiOrigin = HttpOrigin.Builder.create(authUrlLambdaUrl)
                     .protocolPolicy(OriginProtocolPolicy.HTTPS_ONLY)
-                    //.originId(authUrlApiOriginIdentity.getOriginAccessIdentityId())
                     .build();
-
-
-                    /*
-                            originBucket.grantRead(this.originIdentity); // This adds "s3:List*" so that 404s are handled.
-        this.origin = S3BucketOrigin.withOriginAccessIdentity(this.originBucket,
-                S3BucketOriginWithOAIProps.builder()
-                        .originAccessIdentity(this.originIdentity)
-                        .build());
-                     */
-            final OriginRequestPolicy authUrlOriginRequestPolicy = OriginRequestPolicy.Builder
-                    .create(this, "AuthUrlOriginRequestPolicy")
-                    .originRequestPolicyName(this.authUrlLambda.getFunctionName() + "-origin-request-policy")
-                    .comment("Policy for rest APIs (allow all cookies, query parameters, and headers)")
-                    .cookieBehavior(OriginRequestCookieBehavior.none())
-                    .headerBehavior(OriginRequestHeaderBehavior.all())
-                    //.headerBehavior(OriginRequestHeaderBehavior.allowList(
-                    //        "Host",
-                    //        "Origin",
-                    //        "Access-Control-Request-Headers",
-                    //        "Access-Control-Request-Method"
-                    //))
-                    //.queryStringBehavior(OriginRequestQueryStringBehavior.allowList("state"))
-                    .queryStringBehavior(OriginRequestQueryStringBehavior.all())
-                    .build();
+            /*
             ResponseHeadersPolicy corsResponseHeadersPolicy = ResponseHeadersPolicy.Builder.create(this, "CorsResponseHeadersPolicy")
                     .responseHeadersPolicyName("AllowAllCorsWithPreflight")
                     .corsBehavior(ResponseHeadersCorsBehavior.builder()
@@ -787,19 +739,20 @@ public class WebStack extends Stack {
                             .originOverride(true)                             // Override origin headers
                             .build())
                     .build();
+            */
             final BehaviorOptions authUrlOriginBehaviour = BehaviorOptions.builder()
                     .origin(authUrlApiOrigin)
-                    //.allowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
-                    .allowedMethods(AllowedMethods.ALLOW_ALL)
-                    //.cachePolicy(CachePolicy.USE_ORIGIN_CACHE_CONTROL_HEADERS_QUERY_STRINGS)
-                    .cachePolicy(CachePolicy.CACHING_DISABLED)
-                    .originRequestPolicy(authUrlOriginRequestPolicy)
-                    //.originRequestPolicy(OriginRequestPolicy.CORS_S3_ORIGIN)
-                    .responseHeadersPolicy(corsResponseHeadersPolicy)
-                    .viewerProtocolPolicy(ViewerProtocolPolicy.REDIRECT_TO_HTTPS)
+                    .allowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
+                    //.allowedMethods(AllowedMethods.ALLOW_ALL)
+                    .cachePolicy(CachePolicy.USE_ORIGIN_CACHE_CONTROL_HEADERS_QUERY_STRINGS)
+                    //.cachePolicy(CachePolicy.CACHING_DISABLED)
+                    //.originRequestPolicy(authUrlOriginRequestPolicy)
+                    .originRequestPolicy(OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER)
+                    //.responseHeadersPolicy(corsResponseHeadersPolicy)
+                    //.viewerProtocolPolicy(ViewerProtocolPolicy.REDIRECT_TO_HTTPS)
                     .build();
-            //lambdaUrlToOriginsBehaviourMappings.put("/api/auth-url*", authUrlOriginBehaviour);
-            lambdaUrlToOriginsBehaviourMappings.put("/api/*", authUrlOriginBehaviour);
+            lambdaUrlToOriginsBehaviourMappings.put("/api/auth-url*", authUrlOriginBehaviour);
+            //lambdaUrlToOriginsBehaviourMappings.put("/api/*", authUrlOriginBehaviour);
         }
 
         // exchangeTokenHandler
@@ -865,7 +818,7 @@ public class WebStack extends Stack {
                     .origin(exchangeTokenApiOrigin)
                     .allowedMethods(AllowedMethods.ALLOW_ALL)
                     .cachePolicy(CachePolicy.CACHING_DISABLED)
-                    .originRequestPolicy(OriginRequestPolicy.CORS_S3_ORIGIN)
+                    .originRequestPolicy(OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER)
                     .build();
             lambdaUrlToOriginsBehaviourMappings.put("/api/exchange-token*", exchangeTokenOriginBehaviour);
         }
@@ -929,7 +882,7 @@ public class WebStack extends Stack {
                     .origin(submitVatApiOrigin)
                     .allowedMethods(AllowedMethods.ALLOW_ALL)
                     .cachePolicy(CachePolicy.CACHING_DISABLED)
-                    .originRequestPolicy(OriginRequestPolicy.CORS_S3_ORIGIN)
+                    .originRequestPolicy(OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER)
                     .build();
             lambdaUrlToOriginsBehaviourMappings.put("/api/submit-vat*", submitVatOriginBehaviour);
         }
@@ -1049,7 +1002,7 @@ public class WebStack extends Stack {
                     .origin(logReceiptApiOrigin)
                     .allowedMethods(AllowedMethods.ALLOW_ALL)
                     .cachePolicy(CachePolicy.CACHING_DISABLED)
-                    .originRequestPolicy(OriginRequestPolicy.CORS_S3_ORIGIN)
+                    .originRequestPolicy(OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER)
                     .build();
             lambdaUrlToOriginsBehaviourMappings.put("/api/log-receipt*", logReceiptOriginBehaviour);
         }
@@ -1090,11 +1043,10 @@ public class WebStack extends Stack {
         //var grantable = this.distribution.getGrantPrincipal();
         //this.authUrlLambdaUrl.grantInvokeUrl(this.distribution.);
         Permission invokeFunctionUrlPermission = Permission.builder()
-                //.principal(new AnyPrincipal())
                 .principal(new ServicePrincipal("cloudfront.amazonaws.com"))
                 .action("lambda:InvokeFunctionUrl")
                 .functionUrlAuthType(FunctionUrlAuthType.NONE)
-                //.sourceArn(this.distribution.getDistributionArn()) // restrict to your distribution
+                .sourceArn(this.distribution.getDistributionArn()) // restrict to your distribution
                 .build();
         authUrlLambda.addPermission("AuthLambdaAllowCloudFrontInvoke", invokeFunctionUrlPermission);
         this.distributionUrl = "https://%s/".formatted(this.distribution.getDomainName());
