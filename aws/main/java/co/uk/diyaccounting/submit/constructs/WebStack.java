@@ -798,7 +798,8 @@ public class WebStack extends Stack {
                     .responseHeadersPolicy(corsResponseHeadersPolicy)
                     .viewerProtocolPolicy(ViewerProtocolPolicy.REDIRECT_TO_HTTPS)
                     .build();
-            lambdaUrlToOriginsBehaviourMappings.put("/api/auth-url*", authUrlOriginBehaviour);
+            //lambdaUrlToOriginsBehaviourMappings.put("/api/auth-url*", authUrlOriginBehaviour);
+            lambdaUrlToOriginsBehaviourMappings.put("/api/*", authUrlOriginBehaviour);
         }
 
         // exchangeTokenHandler
