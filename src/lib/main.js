@@ -31,19 +31,19 @@ export async function authUrlHandler(event) {
   const url = buildUrl(event);
   logger.info({ message: "authUrlHandler responding to url by processing event", url, event });
 
-  if (event.httpMethod === 'OPTIONS') {
-    // Respond to preflight
-    return {
-      statusCode: 200,
-      headers: {
-        'Access-Control-Allow-Origin': '*',           // Or restrict to your frontend origin
-        'Access-Control-Allow-Methods': 'GET,OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type,Authorization',
-        'Access-Control-Max-Age': '0',
-      },
-      body: '',
-    };
-  }
+  //if (event.httpMethod === 'OPTIONS') {
+  //  // Respond to preflight
+  //  return {
+  //    statusCode: 200,
+  //    headers: {
+  //      'Access-Control-Allow-Origin': '*',           // Or restrict to your frontend origin
+  //      'Access-Control-Allow-Methods': 'GET,OPTIONS',
+  //      'Access-Control-Allow-Headers': 'Content-Type,Authorization',
+  //      'Access-Control-Max-Age': '0',
+  //    },
+  //    body: '',
+  //  };
+  //}
 
   // Request validation
   const state = event.queryStringParameters?.state;
@@ -57,9 +57,9 @@ export async function authUrlHandler(event) {
     };
     logger.error(response);
 
-    if (event.httpMethod === 'HEAD') {
-      delete response.body;
-    }
+    //if (event.httpMethod === 'HEAD') {
+    //  delete response.body;
+    //}
     return response;
   }
   const authUrl = buildOAuthOutboundRedirectUrl(state);
@@ -70,9 +70,9 @@ export async function authUrlHandler(event) {
     body: JSON.stringify({ authUrl }),
   };
   logger.info({ message: "authUrlHandler responding to url with", url, response });
-  if (event.httpMethod === 'HEAD') {
-    delete response.body;
-  }
+  //if (event.httpMethod === 'HEAD') {
+  //  delete response.body;
+  //}
   return response;
 }
 

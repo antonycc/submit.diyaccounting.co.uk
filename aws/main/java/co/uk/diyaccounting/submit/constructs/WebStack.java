@@ -673,17 +673,17 @@ public class WebStack extends Stack {
         this.authUrlLambdaUrl = this.authUrlLambda.addFunctionUrl(
                 FunctionUrlOptions.builder()
                         .authType(FunctionUrlAuthType.NONE)  // No authentication required
-                        .cors(FunctionUrlCorsOptions.builder()
-                                .allowedOrigins(List.of("*"))  // Allow all origins (be careful with this in production!)
-                                .allowedMethods(List.of(
-                                        HttpMethod.GET,
-                                        HttpMethod.HEAD
-                                ))  // Allow all common HTTP methods including OPTIONS for preflight
-                                .allowedHeaders(List.of("*"))  // Allow all headers in CORS requests
-                                .exposedHeaders(List.of("*"))  // Expose all headers to browser clients
-                                .maxAge(Duration.seconds(86400))  // Cache preflight response for 24 hours
-                                .allowCredentials(true)  // Allow cookies and authorization headers
-                                .build())
+                        //.cors(FunctionUrlCorsOptions.builder()
+                        //        .allowedOrigins(List.of("*"))  // Allow all origins (be careful with this in production!)
+                        //        .allowedMethods(List.of(
+                        //                HttpMethod.GET,
+                        //                HttpMethod.HEAD
+                        //        ))  // Allow all common HTTP methods including OPTIONS for preflight
+                        //        .allowedHeaders(List.of("*"))  // Allow all headers in CORS requests
+                        //        .exposedHeaders(List.of("*"))  // Expose all headers to browser clients
+                        //        .maxAge(Duration.seconds(86400))  // Cache preflight response for 24 hours
+                        //        .allowCredentials(true)  // Allow cookies and authorization headers
+                        //        .build())
                         .build()
         );
         if (skipLambdaUrlOrigins) {
@@ -740,6 +740,7 @@ public class WebStack extends Stack {
                             .accessControlAllowOrigins(List.of("*"))          // Allow all origins (or list your domains)
                             .accessControlExposeHeaders(List.of("*"))         // Expose all headers to client
                             .accessControlMaxAge(Duration.seconds(600))       // Cache preflight for 10 minutes
+                            .originOverride(true)                             // Override origin headers
                             .build())
                     .build();
             final BehaviorOptions authUrlOriginBehaviour = BehaviorOptions.builder()
