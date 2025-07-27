@@ -109,7 +109,7 @@ public class LambdaUrlOrigin {
             var functionBuilder = Function.Builder.create(builder.scope, builder.idPrefix + "Lambda")
                     .code(Code.fromInline("exports.handler = async (event) => { return { statusCode: 200, body: 'test' }; }"))
                     .handler("index.handler")
-                    .runtime(Runtime.NODEJS_20_X)
+                    .runtime(Runtime.NODEJS_22_X)
                     .functionName(builder.functionName)
                     .timeout(builder.timeout);
             if (builder.xRayEnabled) {

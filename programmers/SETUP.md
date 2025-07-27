@@ -632,7 +632,7 @@ public class MtdStack extends Stack {
       .build();
 
     Function handler = Function.Builder.create(this, "VatSubmissionHandler")
-      .runtime(Runtime.NODEJS_20_X)
+      .runtime(Runtime.NODEJS_22_X)
       .handler("index.handler")
       .code(Code.fromAsset("lambda"))
       .logGroup(handlerLogGroup)

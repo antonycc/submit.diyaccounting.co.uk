@@ -274,7 +274,7 @@ jobs:
         id: stacks
         shell: bash
         run: |
-          synth=$(jq -r '.deployStacks' cdk.json | sed 's/SubmitWebStack-dev/SubmitWebStack-ci/g')
+          synth=$(jq -r '.synthStacks' cdk.json | sed 's/SubmitWebStack-dev/SubmitWebStack-ci/g')
           echo "synth=${synth?}" | tee -a "${GITHUB_OUTPUT?}"
 
       - name: synth

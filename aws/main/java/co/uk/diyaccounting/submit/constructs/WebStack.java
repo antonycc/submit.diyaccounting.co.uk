@@ -633,7 +633,7 @@ public class WebStack extends Stack {
             this.authUrlLambda = Function.Builder.create(this, "AuthUrlLambda")
                     .code(Code.fromInline("exports.handler = async (event) => { return { statusCode: 200, body: 'test' }; }"))
                     .handler("index.handler")
-                    .runtime(Runtime.NODEJS_20_X)
+                    .runtime(Runtime.NODEJS_22_X)
                     .functionName(authUrlLambdaHandlerLambdaFunctionName)
                     .timeout(authUrlLambdaDuration)
                     .build();
@@ -726,7 +726,7 @@ public class WebStack extends Stack {
             ResponseHeadersPolicy corsResponseHeadersPolicy = ResponseHeadersPolicy.Builder.create(this, "CorsResponseHeadersPolicy")
                     .responseHeadersPolicyName("AllowAllCorsWithPreflight")
                     .corsBehavior(ResponseHeadersCorsBehavior.builder()
-                            .accessControlAllowCredentials(true)             // Allow cookies / credentials
+                            //.accessControlAllowCredentials(true)             // Allow cookies / credentials
                             .accessControlAllowHeaders(List.of("*"))          // Allow all headers
                             .accessControlAllowMethods(List.of(
                                 HttpMethod.GET.toString(),
@@ -766,7 +766,7 @@ public class WebStack extends Stack {
             this.exchangeTokenLambda = Function.Builder.create(this, "ExchangeTokenLambda")
                     .code(Code.fromInline("exports.handler = async (event) => { return { statusCode: 200, body: 'test' }; }"))
                     .handler("index.handler")
-                    .runtime(Runtime.NODEJS_20_X)
+                    .runtime(Runtime.NODEJS_22_X)
                     .functionName(exchangeTokenLambdaHandlerLambdaFunctionName)
                     .timeout(exchangeTokenLambdaDuration)
                     .build();
@@ -834,7 +834,7 @@ public class WebStack extends Stack {
             this.submitVatLambda = Function.Builder.create(this, "SubmitVatLambda")
                     .code(Code.fromInline("exports.handler = async (event) => { return { statusCode: 200, body: 'test' }; }"))
                     .handler("index.handler")
-                    .runtime(Runtime.NODEJS_20_X)
+                    .runtime(Runtime.NODEJS_22_X)
                     .functionName(submitVatLambdaHandlerLambdaFunctionName)
                     .timeout(submitVatLambdaDuration)
                     .build();
@@ -930,7 +930,7 @@ public class WebStack extends Stack {
             this.logReceiptLambda = Function.Builder.create(this, "LogReceiptLambda")
                     .code(Code.fromInline("exports.handler = async (event) => { return { statusCode: 200, body: 'test' }; }"))
                     .handler("index.handler")
-                    .runtime(Runtime.NODEJS_20_X)
+                    .runtime(Runtime.NODEJS_22_X)
                     .functionName(logReceiptLambdaHandlerLambdaFunctionName)
                     .timeout(logReceiptLambdaDuration)
                     .build();
