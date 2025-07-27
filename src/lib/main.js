@@ -14,8 +14,11 @@ dotenv.config({ path: '.env' });
 
 function buildUrl(event) {
   let url;
-  if (event.path && event.headers && event.headers.host) {
-    url = new URL(event.path, `http://${event.headers.host}`);
+  if (event.headers && event.headers.host) {
+    const host = event.headers.host;
+    const path = event.rawPath || event.path || event.requestContext?.http?.path || '';
+    const queryString = event.rawQueryString || '';
+    url = new URL(`${path}?${queryString}`,`https://${host}`);
     Object.keys(event.queryStringParameters).forEach((key) => {
       url.searchParams.append(key, event.queryStringParameters[key]);
     });
