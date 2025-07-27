@@ -53,6 +53,7 @@ import software.amazon.awscdk.services.lambda.FunctionUrlAuthType;
 import software.amazon.awscdk.services.lambda.FunctionUrlCorsOptions;
 import software.amazon.awscdk.services.lambda.FunctionUrlOptions;
 import software.amazon.awscdk.services.lambda.HttpMethod;
+import software.amazon.awscdk.services.lambda.InvokeMode;
 import software.amazon.awscdk.services.lambda.Permission;
 import software.amazon.awscdk.services.lambda.Runtime;
 import software.amazon.awscdk.services.lambda.Tracing;
@@ -669,22 +670,22 @@ public class WebStack extends Stack {
                 .retention(RetentionDays.THREE_DAYS)
                 .removalPolicy(RemovalPolicy.DESTROY)
                 .build());
-        this.authUrlLambdaUrl = this.authUrlLambda.addFunctionUrl(
-                FunctionUrlOptions.builder()
-                        .authType(FunctionUrlAuthType.NONE)  // No authentication required
-                        //.cors(FunctionUrlCorsOptions.builder()
-                        //        .allowedOrigins(List.of("*"))  // Allow all origins (be careful with this in production!)
-                        //        .allowedMethods(List.of(
-                        //                HttpMethod.GET,
-                        //                HttpMethod.HEAD
-                        //        ))  // Allow all common HTTP methods including OPTIONS for preflight
-                        //        .allowedHeaders(List.of("*"))  // Allow all headers in CORS requests
-                        //        .exposedHeaders(List.of("*"))  // Expose all headers to browser clients
-                        //        .maxAge(Duration.seconds(86400))  // Cache preflight response for 24 hours
-                        //        .allowCredentials(true)  // Allow cookies and authorization headers
-                        //        .build())
-                        .build()
-        );
+        var authUrlLambdaFunctionUrlOptions = FunctionUrlOptions.builder()
+                .invokeMode(InvokeMode.BUFFERED)
+                .authType(FunctionUrlAuthType.NONE)  // No authentication required
+                //.cors(FunctionUrlCorsOptions.builder()
+                //        .allowedOrigins(List.of("*"))  // Allow all origins (be careful with this in production!)
+                //        .allowedMethods(List.of(
+                //                HttpMethod.GET,
+                //                HttpMethod.HEAD
+                //        ))  // Allow all common HTTP methods including OPTIONS for preflight
+                //        .allowedHeaders(List.of("*"))  // Allow all headers in CORS requests
+                //        .exposedHeaders(List.of("*"))  // Expose all headers to browser clients
+                //        .maxAge(Duration.seconds(86400))  // Cache preflight response for 24 hours
+                //        .allowCredentials(true)  // Allow cookies and authorization headers
+                //        .build())
+                .build();
+        this.authUrlLambdaUrl = this.authUrlLambda.addFunctionUrl(authUrlLambdaFunctionUrlOptions);
         if (skipLambdaUrlOrigins) {
             logger.info("Skipping Lambda URL origins for authUrlLambdaUrl as per configuration.");
         } else {
@@ -1093,7 +1094,7 @@ public class WebStack extends Stack {
                 .principal(new ServicePrincipal("cloudfront.amazonaws.com"))
                 .action("lambda:InvokeFunctionUrl")
                 .functionUrlAuthType(FunctionUrlAuthType.NONE)
-                .sourceArn(this.distribution.getDistributionArn()) // restrict to your distribution
+                //.sourceArn(this.distribution.getDistributionArn()) // restrict to your distribution
                 .build();
         authUrlLambda.addPermission("AuthLambdaAllowCloudFrontInvoke", invokeFunctionUrlPermission);
         this.distributionUrl = "https://%s/".formatted(this.distribution.getDomainName());
