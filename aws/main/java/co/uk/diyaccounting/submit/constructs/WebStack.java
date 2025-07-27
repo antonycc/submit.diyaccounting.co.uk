@@ -4,8 +4,6 @@ import co.uk.diyaccounting.submit.awssdk.RetentionDaysConverter;
 import co.uk.diyaccounting.submit.functions.LogGzippedS3ObjectEvent;
 import co.uk.diyaccounting.submit.functions.LogS3ObjectEvent;
 import co.uk.diyaccounting.submit.utils.ResourceNameUtils;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.hc.core5.http.HttpStatus;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -13,7 +11,6 @@ import software.amazon.awscdk.AssetHashType;
 import software.amazon.awscdk.CfnOutput;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Expiration;
-import software.amazon.awscdk.Fn;
 import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
@@ -35,28 +32,18 @@ import software.amazon.awscdk.services.cloudfront.OriginRequestPolicy;
 import software.amazon.awscdk.services.cloudfront.ResponseHeadersPolicy;
 import software.amazon.awscdk.services.cloudfront.SSLMethod;
 import software.amazon.awscdk.services.cloudfront.ViewerProtocolPolicy;
-import software.amazon.awscdk.services.cloudfront.origins.HttpOrigin;
 import software.amazon.awscdk.services.cloudfront.origins.S3BucketOrigin;
 import software.amazon.awscdk.services.cloudfront.origins.S3BucketOriginWithOAIProps;
 import software.amazon.awscdk.services.cloudtrail.S3EventSelector;
 import software.amazon.awscdk.services.cloudtrail.Trail;
 import software.amazon.awscdk.services.iam.ServicePrincipal;
-import software.amazon.awscdk.services.lambda.AssetImageCodeProps;
-import software.amazon.awscdk.services.lambda.Code;
-import software.amazon.awscdk.services.lambda.DockerImageCode;
-import software.amazon.awscdk.services.lambda.DockerImageFunction;
 import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.lambda.FunctionUrl;
 import software.amazon.awscdk.services.lambda.FunctionUrlAuthType;
-import software.amazon.awscdk.services.lambda.FunctionUrlCorsOptions;
-import software.amazon.awscdk.services.lambda.FunctionUrlOptions;
-import software.amazon.awscdk.services.lambda.HttpMethod;
 import software.amazon.awscdk.services.lambda.InvokeMode;
 import software.amazon.awscdk.services.lambda.Permission;
 import software.amazon.awscdk.services.lambda.Runtime;
-import software.amazon.awscdk.services.lambda.Tracing;
 import software.amazon.awscdk.services.logs.LogGroup;
-import software.amazon.awscdk.services.logs.LogGroupProps;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.amazon.awscdk.services.route53.ARecord;
 import software.amazon.awscdk.services.route53.AaaaRecord;
@@ -77,16 +64,9 @@ import software.amazon.awscdk.services.s3.deployment.Source;
 import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
 import java.lang.reflect.Field;
-import java.net.HttpURLConnection;
-import java.net.URI;
-import java.net.URL;
 import java.text.MessageFormat;
 import java.util.AbstractMap;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -632,7 +612,12 @@ public class WebStack extends Stack {
 
         var lambdaUrlToOriginsBehaviourMappings = new HashMap<String, BehaviorOptions>();
 
-        // authUrlHandler
+        // authUrl
+        var authUrlLambdaEnv = new HashMap<>(Map.of(
+                "DIY_SUBMIT_HMRC_CLIENT_ID", builder.hmrcClientId,
+                "DIY_SUBMIT_HOME_URL", builder.homeUrl,
+                "DIY_SUBMIT_HMRC_BASE_URI", builder.hmrcBaseUri
+        ));
         var authUrlLambdaUrlOrigin = LambdaUrlOrigin.Builder.create(this, "AuthUrlLambda")
                 .env(builder.env)
                 .functionName(Builder.buildFunctionName(dashedDomainName, builder.authUrlLambdaHandlerFunctionName))
@@ -640,11 +625,7 @@ public class WebStack extends Stack {
                 .timeout(Duration.millis(Long.parseLong(builder.authUrlLambdaDuration)))
                 .imageDirectory(".") // As default
                 .runtime(Runtime.NODEJS_22_X) // As default
-                .environment(Map.of(
-                        "DIY_SUBMIT_HMRC_CLIENT_ID", builder.hmrcClientId,
-                        "DIY_SUBMIT_HOME_URL", builder.homeUrl,
-                        "DIY_SUBMIT_HMRC_BASE_URI", builder.hmrcBaseUri
-                ))
+                .environment(authUrlLambdaEnv)
                 .allowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS) // As default
                 .cloudTrailEnabled(cloudTrailEnabled)
                 .xRayEnabled(xRayEnabled)
@@ -726,8 +707,82 @@ public class WebStack extends Stack {
         }
         */
 
-        // exchangeTokenHandler
-        String exchangeTokenLambdaHandlerLambdaFunctionName = Builder.buildFunctionName(dashedDomainName, builder.exchangeTokenLambdaHandlerFunctionName);
+        // exchangeToken
+        var exchangeTokenLambdaEnv = new HashMap<>(Map.of(
+                "DIY_SUBMIT_HMRC_CLIENT_ID", builder.hmrcClientId,
+                "DIY_SUBMIT_HOME_URL", builder.homeUrl,
+                "DIY_SUBMIT_HMRC_BASE_URI", builder.hmrcBaseUri
+        ));
+        if (StringUtils.isNotBlank(builder.optionalTestAccessToken)){
+            exchangeTokenLambdaEnv.put("DIY_SUBMIT_TEST_ACCESS_TOKEN", builder.optionalTestAccessToken);
+        }
+        var exchangeTokenLambdaUrlOrigin = LambdaUrlOrigin.Builder.create(this, "ExchangeTokenLambda")
+                .env(builder.env)
+                .functionName(Builder.buildFunctionName(dashedDomainName, builder.exchangeTokenLambdaHandlerFunctionName))
+                .handler(builder.lambdaEntry + builder.exchangeTokenLambdaHandlerFunctionName)
+                .timeout(Duration.millis(Long.parseLong(builder.exchangeTokenLambdaDuration)))
+                .imageDirectory(".") // As default
+                .runtime(Runtime.NODEJS_22_X) // As default
+                .environment(exchangeTokenLambdaEnv)
+                .allowedMethods(AllowedMethods.ALLOW_ALL)
+                .cloudTrailEnabled(cloudTrailEnabled)
+                .xRayEnabled(xRayEnabled)
+                .verboseLogging(verboseLogging)
+                .functionUrlAuthType(functionUrlAuthType)
+                .build();
+        this.exchangeTokenLambda = exchangeTokenLambdaUrlOrigin.lambda;
+        this.exchangeTokenLambdaLogGroup = exchangeTokenLambdaUrlOrigin.logGroup;
+        this.exchangeTokenLambdaUrl = exchangeTokenLambdaUrlOrigin.functionUrl;
+        lambdaUrlToOriginsBehaviourMappings.put("/api/exchange-token*", exchangeTokenLambdaUrlOrigin.behaviorOptions);
+
+        // submitVat
+        var submitVatLambdaEnv = new HashMap<>(Map.of(
+                "DIY_SUBMIT_HOME_URL", builder.homeUrl,
+                "DIY_SUBMIT_HMRC_BASE_URI", builder.hmrcBaseUri
+        ));
+        var submitVatLambdaUrlOrigin = LambdaUrlOrigin.Builder.create(this, "SubmitVatLambda")
+                .env(builder.env)
+                .functionName(Builder.buildFunctionName(dashedDomainName, builder.submitVatLambdaHandlerFunctionName))
+                .handler(builder.lambdaEntry + builder.submitVatLambdaHandlerFunctionName)
+                .timeout(Duration.millis(Long.parseLong(builder.submitVatLambdaDuration)))
+                .imageDirectory(".") // As default
+                .runtime(Runtime.NODEJS_22_X) // As default
+                .environment(submitVatLambdaEnv)
+                .allowedMethods(AllowedMethods.ALLOW_ALL)
+                .cloudTrailEnabled(cloudTrailEnabled)
+                .xRayEnabled(xRayEnabled)
+                .verboseLogging(verboseLogging)
+                .functionUrlAuthType(functionUrlAuthType)
+                .build();
+        this.submitVatLambda = submitVatLambdaUrlOrigin.lambda;
+        this.submitVatLambdaLogGroup = submitVatLambdaUrlOrigin.logGroup;
+        this.submitVatLambdaUrl = submitVatLambdaUrlOrigin.functionUrl;
+        lambdaUrlToOriginsBehaviourMappings.put("/api/exchange-token*", submitVatLambdaUrlOrigin.behaviorOptions);
+
+        var logReceiptLambdaEnv = new HashMap<>(Map.of(
+                "DIY_SUBMIT_HOME_URL", builder.homeUrl,
+                "DIY_SUBMIT_HMRC_BASE_URI", builder.hmrcBaseUri
+        ));
+        var logReceiptLambdaUrlOrigin = LambdaUrlOrigin.Builder.create(this, "LogReceiptLambda")
+                .env(builder.env)
+                .functionName(Builder.buildFunctionName(dashedDomainName, builder.logReceiptLambdaHandlerFunctionName))
+                .handler(builder.lambdaEntry + builder.logReceiptLambdaHandlerFunctionName)
+                .timeout(Duration.millis(Long.parseLong(builder.logReceiptLambdaDuration)))
+                .imageDirectory(".") // As default
+                .runtime(Runtime.NODEJS_22_X) // As default
+                .environment(logReceiptLambdaEnv)
+                .allowedMethods(AllowedMethods.ALLOW_ALL)
+                .cloudTrailEnabled(cloudTrailEnabled)
+                .xRayEnabled(xRayEnabled)
+                .verboseLogging(verboseLogging)
+                .functionUrlAuthType(functionUrlAuthType)
+                .build();
+        this.logReceiptLambda = logReceiptLambdaUrlOrigin.lambda;
+        this.logReceiptLambdaLogGroup = logReceiptLambdaUrlOrigin.logGroup;
+        this.logReceiptLambdaUrl = logReceiptLambdaUrlOrigin.functionUrl;
+        lambdaUrlToOriginsBehaviourMappings.put("/api/log-receipt*", logReceiptLambdaUrlOrigin.behaviorOptions);
+
+        /*String exchangeTokenLambdaHandlerLambdaFunctionName = Builder.buildFunctionName(dashedDomainName, builder.exchangeTokenLambdaHandlerFunctionName);
         String exchangeTokenLambdaHandlerCmd = builder.lambdaEntry + builder.exchangeTokenLambdaHandlerFunctionName;
         Duration exchangeTokenLambdaDuration = Duration.millis(Long.parseLong(builder.exchangeTokenLambdaDuration));
         if ("test".equals(builder.env)) {
@@ -792,9 +847,10 @@ public class WebStack extends Stack {
                     .originRequestPolicy(OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER)
                     .build();
             lambdaUrlToOriginsBehaviourMappings.put("/api/exchange-token*", exchangeTokenOriginBehaviour);
-        }
+        }*/
 
         // submitVatHandler
+        /*
         String submitVatLambdaHandlerLambdaFunctionName = Builder.buildFunctionName(dashedDomainName, builder.submitVatLambdaHandlerFunctionName);
         String submitVatLambdaHandlerCmd = builder.lambdaEntry + builder.submitVatLambdaHandlerFunctionName;
         Duration submitVatLambdaDuration = Duration.millis(Long.parseLong(builder.submitVatLambdaDuration));
@@ -857,6 +913,7 @@ public class WebStack extends Stack {
                     .build();
             lambdaUrlToOriginsBehaviourMappings.put("/api/submit-vat*", submitVatOriginBehaviour);
         }
+        */
 
         // Create receipts bucket for storing VAT submission receipts
         this.receiptsBucket = LogForwardingBucket.Builder
@@ -871,8 +928,10 @@ public class WebStack extends Stack {
                 .verboseLogging(verboseLogging)
                 .removalPolicy(s3RetainReceiptsBucket ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY)
                 .build();
+        this.receiptsBucket.grantWrite(this.logReceiptLambda);
 
         // Add S3 event selector to the CloudTrail for receipts bucket
+        // TODO Move to the LogForwardingBucket
         if (cloudTrailEnabled) {
             if (builder.cloudTrailEventSelectorPrefix == null || builder.cloudTrailEventSelectorPrefix.isBlank() || "none".equals(builder.cloudTrailEventSelectorPrefix)) {
                 cloudTrailLogBucket.addS3EventSelector(List.of(S3EventSelector.builder()
@@ -887,10 +946,11 @@ public class WebStack extends Stack {
                 ));
             }
         } else {
-            logger.info("CloudTrail is not enabled for the origin bucket.");
+            logger.info("CloudTrail is not enabled for the bucket.");
         }
 
         // logReceiptHandler
+        /*
         String logReceiptLambdaHandlerLambdaFunctionName = Builder.buildFunctionName(dashedDomainName, builder.logReceiptLambdaHandlerFunctionName);
         String logReceiptLambdaHandlerCmd = builder.lambdaEntry + builder.logReceiptLambdaHandlerFunctionName;
         Duration logReceiptLambdaDuration = Duration.millis(Long.parseLong(builder.logReceiptLambdaDuration));
@@ -947,7 +1007,6 @@ public class WebStack extends Stack {
                 this.logReceiptLambda = logReceiptLambdaBuilder.build();
             }
         }
-        this.receiptsBucket.grantWrite(this.logReceiptLambda);
         this.logReceiptLambdaLogGroup = new LogGroup(this, "LogReceiptLambdaLogGroup", LogGroupProps.builder()
                 .logGroupName("/aws/lambda/" + this.logReceiptLambda.getFunctionName())
                 .retention(RetentionDays.THREE_DAYS)
@@ -977,6 +1036,7 @@ public class WebStack extends Stack {
                     .build();
             lambdaUrlToOriginsBehaviourMappings.put("/api/log-receipt*", logReceiptOriginBehaviour);
         }
+         */
 
         // Create a certificate for the website domain
         if (useExistingCertificate) {
@@ -1011,8 +1071,7 @@ public class WebStack extends Stack {
                 .logBucket(this.distributionAccessLogBucket)
                 .logIncludesCookies(verboseLogging)
                 .build();
-        //var grantable = this.distribution.getGrantPrincipal();
-        //this.authUrlLambdaUrl.grantInvokeUrl(this.distribution.);
+
         Permission invokeFunctionUrlPermission = Permission.builder()
                 .principal(new ServicePrincipal("cloudfront.amazonaws.com"))
                 .action("lambda:InvokeFunctionUrl")
@@ -1066,98 +1125,5 @@ public class WebStack extends Stack {
                 .deleteExisting(true)
                 .target(RecordTarget.fromAlias(new CloudFrontTarget(this.distribution)))
                 .build();
-    }
-
-    private String getConfigValue(String customValue, String contextKey) {
-        if (customValue == null || customValue.isEmpty()) {
-            Object contextValue = null;
-            try {
-                contextValue = this.getNode().tryGetContext(contextKey);
-            }catch (Exception e) {
-                // NOP
-            }
-            if (contextValue != null && !contextValue.toString().isEmpty()) {
-                CfnOutput.Builder.create(this, contextKey)
-                        .value(contextValue.toString() + " (Source: CDK context.)")
-                        .build();
-                return contextValue.toString();
-            } else {
-                if (contextKey.startsWith("optional")) {
-                    logger.warn("No customValue or non-empty context key value found for optional context key: {}", contextKey);
-                } else {
-                    throw new IllegalArgumentException("No customValue or non-empty context key value found for non-optional context key" + contextKey);
-                }
-            }
-        }
-        return customValue;
-    }
-
-    //private String getBuilderPropertyValue(Builder builder, String propertyName) {
-    //    try {
-    //        Field field = builder.getClass().getDeclaredField(propertyName);
-    //        field.setAccessible(true);
-    //        String builderValue = (String) field.get(builder);
-    //        return getConfigValue(builderValue, propertyName);
-    //    } catch (NoSuchFieldException | IllegalAccessException e) {
-    //        logger.warn("Failed to access builder property {} using reflection: {}", propertyName, e.getMessage());
-    //        return getConfigValue(null, propertyName);
-    //    }
-    //}
-
-    private String getLambdaUrlHostToken(FunctionUrl functionUrl) {
-        String urlHostToken = Fn.select(2, Fn.split("/", functionUrl.getUrl()));
-        return urlHostToken;
-    }
-
-    public Map<String, Object> getCloudFrontIpCondition() {
-        String ipRangesUrl = "https://ip-ranges.amazonaws.com/ip-ranges.json";
-        List<String> cloudFrontIps = new ArrayList<>();
-
-        try {
-            var url = URI.create(ipRangesUrl).toURL();
-            JsonNode prefixes = getJsonNode(url);
-            if (prefixes != null && prefixes.isArray()) {
-                for (JsonNode prefix : prefixes) {
-                    if ("CLOUDFRONT".equals(prefix.get("service").asText())) {
-                        cloudFrontIps.add(prefix.get("ip_prefix").asText());
-                    }
-                }
-            }
-        } catch (Exception e) {
-            throw new RuntimeException("Error fetching/parsing CloudFront IP ranges", e);
-        }
-
-        Map<String, Object> condition = new HashMap<>();
-        Map<String, Object> ipAddressMap = new HashMap<>();
-        ipAddressMap.put("aws:SourceIp", cloudFrontIps);
-        condition.put("IpAddress", ipAddressMap);
-        return condition;
-    }
-
-    private static JsonNode getJsonNode(URL url) throws IOException {
-        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-        conn.setRequestMethod("GET");
-        conn.setConnectTimeout(5000);
-        conn.setReadTimeout(5000);
-
-        int status = conn.getResponseCode();
-        if (status != 200) {
-            throw new RuntimeException("Failed to fetch IP ranges: HTTP " + status);
-        }
-
-        BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-        StringBuilder responseBuilder = new StringBuilder();
-        String line;
-        while ((line = reader.readLine()) != null) {
-            responseBuilder.append(line);
-        }
-        reader.close();
-
-        String json = responseBuilder.toString();
-
-        ObjectMapper mapper = new ObjectMapper();
-        JsonNode root = mapper.readTree(json);
-        JsonNode prefixes = root.get("prefixes");
-        return prefixes;
     }
 }

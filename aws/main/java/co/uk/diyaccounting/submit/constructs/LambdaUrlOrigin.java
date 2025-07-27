@@ -3,6 +3,7 @@ package co.uk.diyaccounting.submit.constructs;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import software.amazon.awscdk.Duration;
+import software.amazon.awscdk.Fn;
 import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.services.cloudfront.AllowedMethods;
 import software.amazon.awscdk.services.cloudfront.BehaviorOptions;
@@ -120,19 +121,8 @@ public class LambdaUrlOrigin {
     }
 
     private String getLambdaUrlHostToken(FunctionUrl functionUrl) {
-        String url = functionUrl.getUrl();
-        
-        // Handle CDK tokens during testing/synthesis
-        if (url.startsWith("${Token[")) {
-            // Return a mock host for CDK tokens during testing
-            return "mock-lambda-host.amazonaws.com";
-        }
-        
-        var matcher = LAMBDA_URL_HOST_PATTERN.matcher(url);
-        if (matcher.find()) {
-            return matcher.group(1);
-        }
-        throw new IllegalStateException("Could not extract host from Lambda URL: " + url);
+        String urlHostToken = Fn.select(2, Fn.split("/", functionUrl.getUrl()));
+        return urlHostToken;
     }
 
     public static class Builder {
