@@ -32,6 +32,7 @@ import software.amazon.awscdk.services.logs.LogGroupProps;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.constructs.Construct;
 
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
@@ -98,10 +99,10 @@ public class LambdaUrlOrigin {
             }
             return functionBuilder.build();
         } else {
-            AssetImageCodeProps imageCodeProps = AssetImageCodeProps.builder()
-                    .buildArgs(Map.of("HANDLER", builder.handler))
+            var imageCodeProps = AssetImageCodeProps.builder()
+                    .cmd(List.of(builder.handler))
                     .build();
-            
+
             // Add X-Ray environment variables if enabled
             var environment = new java.util.HashMap<>(builder.environment);
             if (builder.xRayEnabled) {
