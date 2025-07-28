@@ -9,109 +9,60 @@ import exchangeClientSecretForAccessToken from "./exchangeClientSecretForAccessT
 import eventToGovClientHeaders from "./eventToGovClientHeaders.js";
 import submitVat from "./submitVat.js";
 import logReceipt from "./logReceipt.js";
+import {extractRequest, httpBadRequestResponse, httpOkResponse, httpServerErrorResponse} from "@src/lib/responses.js";
 
 dotenv.config({ path: '.env' });
 
-function buildUrl(event) {
-  let url;
-  if (event.headers && event.headers.host) {
-    try {
-      const host = event.headers.host;
-      const path = event.rawPath || event.path || event.requestContext?.http?.path || '';
-      const queryString = event.rawQueryString || '';
-      url = new URL(`${path}?${queryString}`, `https://${host}`);
-      //Object.keys(event.queryStringParameters).forEach((key) => {
-      //  url.searchParams.append(key, event.queryStringParameters[key]);
-      //});
-    }catch (err) {
-        logger.error({ message: "Error building URL from event", error: err, event });
-        url = "https://unknown"; // Fallback URL in case of error
-    }
-  } else {
-    logger.warn({ message: "buildUrl called with missing path or host header", event });
-    url = "https://unknown";
-  }
-  return url;
-}
-
 // GET /api/auth-url?state={state}
 export async function authUrlHandler(event) {
+  let request;
   try {
-    const url = buildUrl(event);
-    logger.info({message: "authUrlHandler responding to url by processing event", url, event});
+    const request = extractRequest(event);
 
-    //if (event.httpMethod === 'OPTIONS') {
-    //  // Respond to preflight
-    //  return {
-    //    statusCode: 200,
-    //    headers: {
-    //      'Access-Control-Allow-Origin': '*',           // Or restrict to your frontend origin
-    //      'Access-Control-Allow-Methods': 'GET,OPTIONS',
-    //      'Access-Control-Allow-Headers': 'Content-Type,Authorization',
-    //      'Access-Control-Max-Age': '0',
-    //    },
-    //    body: '',
-    //  };
-    //}
-
-    // Request validation
+    // Validation
     const state = event.queryStringParameters?.state;
     if (!state) {
-      const message = "Missing state query parameter from URL";
-      const response = {
-        statusCode: 400,
-        headers: {
-          'Access-Control-Allow-Origin': '*',           // Same as above
-        },
-        body: JSON.stringify({requestUrl: url, message, event}),
-      };
-      logger.error(response);
-
-      //if (event.httpMethod === 'HEAD') {
-      //  delete response.body;
-      //}
-      return response;
+      return httpBadRequestResponse({
+        request,
+        message: "Missing state query parameter from URL",
+      });
     }
+
+    // Processing
     const authUrl = buildOAuthOutboundRedirectUrl(state);
 
-    // Generate the response
-    const response = {
-      statusCode: 200,
-      body: JSON.stringify({authUrl}),
-    };
-    logger.info({message: "authUrlHandler responding to url with", url, response});
-    //if (event.httpMethod === 'HEAD') {
-    //  delete response.body;
-    //}
-    return response;
+    // Generate a success response
+    return httpOkResponse({
+      request,
+      data: {
+        authUrl,
+      },
+    });
   }catch (error) {
-    const message = "Internal Server Error in authUrlHandler";
-    logger.error({ message, error, event });
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ message, error, event }),
-    };
+    // Generate a failure response
+    return httpServerErrorResponse({
+      request: request,
+      data: { error, message: "Internal Server Error in authUrlHandler" },
+    });
   }
 }
 
 // POST /api/exchange-token
 export async function exchangeTokenHandler(event) {
-  const url = buildUrl(event);
-  logger.info({ message: "exchangeTokenHandler responding to url by processing event", url, event });
+  const request = extractRequest(event);
 
-  // Request validation
+  // Validation
   const { code } = JSON.parse(event.body || "{}");
   if (!code) {
-    const response = {
-      statusCode: 400,
-      body: JSON.stringify({ requestUrl: url, requestBody: event.body, error: "Missing code from event body" }),
-    };
-    logger.error(response);
-    return response;
+    return httpBadRequestResponse({
+      request,
+      message: "Missing code from event body",
+    });
   }
 
   let { hmrcAccessToken, hmrcResponse } = await exchangeClientSecretForAccessToken(code);
 
+  // TODO: the hmrc attributes should be in the response body but this will break some tests. Do this before swapping to responses.js
   if (!hmrcResponse.ok) {
     const response = {
         statusCode: 500,
@@ -131,7 +82,7 @@ export async function exchangeTokenHandler(event) {
       hmrcAccessToken,
     }),
   };
-  logger.info({ message: "submitVatHandler responding to url with", url, response });
+  logger.info({ message: "submitVatHandler responding to url with", url: request, response });
   return response;
 }
 
@@ -167,8 +118,7 @@ function extractClientIPFromHeaders(event) {
 
 // POST /api/submit-vat
 export async function submitVatHandler(event) {
-  const url = buildUrl(event);
-  logger.info({ message: "submitVatHandler responding to url by processing event", url, event, headers: event.headers });
+  const url = extractRequest(event);
 
   const detectedIP = extractClientIPFromHeaders(event);
 
@@ -231,8 +181,7 @@ export async function submitVatHandler(event) {
 
 // POST /api/log-receipt
 export async function logReceiptHandler(event) {
-  const url = buildUrl(event);
-  logger.info({ message: "logReceiptHandler responding to url by processing event", url, event });
+  const url = extractRequest(event);
 
   // Request validation
   const receipt = JSON.parse(event.body || "{}");

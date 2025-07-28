@@ -19,13 +19,11 @@ import software.amazon.awscdk.services.certificatemanager.CertificateValidation;
 import software.amazon.awscdk.services.certificatemanager.ICertificate;
 import software.amazon.awscdk.services.cloudfront.AllowedMethods;
 import software.amazon.awscdk.services.cloudfront.BehaviorOptions;
-import software.amazon.awscdk.services.cloudfront.CachePolicy;
 import software.amazon.awscdk.services.cloudfront.Distribution;
 import software.amazon.awscdk.services.cloudfront.ErrorResponse;
 import software.amazon.awscdk.services.cloudfront.HttpVersion;
 import software.amazon.awscdk.services.cloudfront.IOrigin;
 import software.amazon.awscdk.services.cloudfront.OriginAccessIdentity;
-import software.amazon.awscdk.services.cloudfront.OriginProtocolPolicy;
 import software.amazon.awscdk.services.cloudfront.OriginRequestCookieBehavior;
 import software.amazon.awscdk.services.cloudfront.OriginRequestHeaderBehavior;
 import software.amazon.awscdk.services.cloudfront.OriginRequestPolicy;
@@ -40,7 +38,6 @@ import software.amazon.awscdk.services.iam.ServicePrincipal;
 import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.lambda.FunctionUrl;
 import software.amazon.awscdk.services.lambda.FunctionUrlAuthType;
-import software.amazon.awscdk.services.lambda.InvokeMode;
 import software.amazon.awscdk.services.lambda.Permission;
 import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
@@ -620,91 +617,21 @@ public class WebStack extends Stack {
         ));
         var authUrlLambdaUrlOrigin = LambdaUrlOrigin.Builder.create(this, "AuthUrlLambda")
                 .env(builder.env)
+                .imageDirectory(".")
                 .functionName(Builder.buildFunctionName(dashedDomainName, builder.authUrlLambdaHandlerFunctionName))
+                .allowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
+                .functionUrlAuthType(functionUrlAuthType)
                 .handler(builder.lambdaEntry + builder.authUrlLambdaHandlerFunctionName)
-                .timeout(Duration.millis(Long.parseLong(builder.authUrlLambdaDuration)))
-                .imageDirectory(".") // As default
                 .environment(authUrlLambdaEnv)
-                .allowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS) // As default
+                .timeout(Duration.millis(Long.parseLong(builder.authUrlLambdaDuration)))
                 .cloudTrailEnabled(cloudTrailEnabled)
                 .xRayEnabled(xRayEnabled)
                 .verboseLogging(verboseLogging)
-                .functionUrlAuthType(functionUrlAuthType)
-                .invokeMode(InvokeMode.BUFFERED) // As default
-                .logGroupRetention(RetentionDays.THREE_DAYS) // As default
-                .logGroupRemovalPolicy(RemovalPolicy.DESTROY) // As default
-                .originRequestPolicy(OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER) // As default
-                .protocolPolicy(OriginProtocolPolicy.HTTPS_ONLY)  // As default
-                .responseHeadersPolicy(ResponseHeadersPolicy.CORS_ALLOW_ALL_ORIGINS_WITH_PREFLIGHT_AND_SECURITY_HEADERS)   // As default
-                .cachePolicy(CachePolicy.CACHING_DISABLED)  // As default
-                .viewerProtocolPolicy(ViewerProtocolPolicy.REDIRECT_TO_HTTPS)  // As default
                 .build();
         this.authUrlLambda = authUrlLambdaUrlOrigin.lambda;
-        this.authUrlLambdaLogGroup = authUrlLambdaUrlOrigin.logGroup;
         this.authUrlLambdaUrl = authUrlLambdaUrlOrigin.functionUrl;
+        this.authUrlLambdaLogGroup = authUrlLambdaUrlOrigin.logGroup;
         lambdaUrlToOriginsBehaviourMappings.put("/api/auth-url*", authUrlLambdaUrlOrigin.behaviorOptions);
-        /*
-        String authUrlLambdaHandlerLambdaFunctionName = Builder.buildFunctionName(dashedDomainName, builder.authUrlLambdaHandlerFunctionName);
-        String authUrlLambdaHandlerCmd = builder.lambdaEntry + builder.authUrlLambdaHandlerFunctionName;
-        Duration authUrlLambdaDuration = Duration.millis(Long.parseLong(builder.authUrlLambdaDuration));
-        if ("test".equals(builder.env)) {
-            // For testing, create a simple Function instead of DockerImageFunction to avoid Docker builds
-            this.authUrlLambda = Function.Builder.create(this, "AuthUrlLambda")
-                    .code(Code.fromInline("exports.handler = async (event) => { return { statusCode: 200, body: 'test' }; }"))
-                    .handler("index.handler")
-                    .runtime(Runtime.NODEJS_22_X)
-                    .functionName(authUrlLambdaHandlerLambdaFunctionName)
-                    .timeout(authUrlLambdaDuration)
-                    .build();
-        } else {
-            var authUrlLambdaEnv = new HashMap<>(Map.of(
-                    "DIY_SUBMIT_HMRC_CLIENT_ID", builder.hmrcClientId,
-                    "DIY_SUBMIT_HOME_URL", builder.homeUrl,
-                    "DIY_SUBMIT_HMRC_BASE_URI", builder.hmrcBaseUri
-            ));
-            if (xRayEnabled) {
-                authUrlLambdaEnv.put("AWS_XRAY_TRACING_NAME", authUrlLambdaHandlerLambdaFunctionName);
-            }
-            var authUrlLambdaAssetImageCodeProps = AssetImageCodeProps.builder()
-                    .cmd(List.of(authUrlLambdaHandlerCmd))
-                    .build();
-            var authUrlLambdaBuilder = DockerImageFunction.Builder.create(this, "AuthUrlLambda")
-                    .code(DockerImageCode.fromImageAsset(".", authUrlLambdaAssetImageCodeProps))
-                    .environment(authUrlLambdaEnv)
-                    .functionName(authUrlLambdaHandlerLambdaFunctionName)
-                    .timeout(authUrlLambdaDuration);
-            if (xRayEnabled) {
-                authUrlLambdaBuilder.tracing(Tracing.ACTIVE);
-            }
-            this.authUrlLambda = authUrlLambdaBuilder.build();
-        }
-        this.authUrlLambdaLogGroup = new LogGroup(this, "AuthUrlLambdaLogGroup", LogGroupProps.builder()
-                .logGroupName("/aws/lambda/" + this.authUrlLambda.getFunctionName())
-                .retention(RetentionDays.THREE_DAYS)
-                .removalPolicy(RemovalPolicy.DESTROY)
-                .build());
-        var authUrlLambdaFunctionUrlOptions = FunctionUrlOptions.builder()
-                .invokeMode(InvokeMode.BUFFERED)
-                .authType(functionUrlAuthType)
-                .build();
-        this.authUrlLambdaUrl = this.authUrlLambda.addFunctionUrl(authUrlLambdaFunctionUrlOptions);
-        if (skipLambdaUrlOrigins) {
-            logger.info("Skipping Lambda URL origins for authUrlLambdaUrl as per configuration.");
-        } else {
-            String authUrlLambdaUrl = this.getLambdaUrlHostToken(this.authUrlLambdaUrl);
-            HttpOrigin authUrlApiOrigin = HttpOrigin.Builder.create(authUrlLambdaUrl)
-                    .protocolPolicy(OriginProtocolPolicy.HTTPS_ONLY)
-                    .build();
-            final BehaviorOptions authUrlOriginBehaviour = BehaviorOptions.builder()
-                    .origin(authUrlApiOrigin)
-                    .allowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
-                    .cachePolicy(CachePolicy.CACHING_DISABLED)
-                    .originRequestPolicy(OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER)
-                    .responseHeadersPolicy(ResponseHeadersPolicy.CORS_ALLOW_ALL_ORIGINS_WITH_PREFLIGHT_AND_SECURITY_HEADERS)
-                    .build();
-            lambdaUrlToOriginsBehaviourMappings.put("/api/auth-url*", authUrlOriginBehaviour);
-        }
-        */
 
         // exchangeToken
         var exchangeTokenLambdaEnv = new HashMap<>(Map.of(
@@ -717,20 +644,20 @@ public class WebStack extends Stack {
         }
         var exchangeTokenLambdaUrlOrigin = LambdaUrlOrigin.Builder.create(this, "ExchangeTokenLambda")
                 .env(builder.env)
+                .imageDirectory(".")
                 .functionName(Builder.buildFunctionName(dashedDomainName, builder.exchangeTokenLambdaHandlerFunctionName))
-                .handler(builder.lambdaEntry + builder.exchangeTokenLambdaHandlerFunctionName)
-                .timeout(Duration.millis(Long.parseLong(builder.exchangeTokenLambdaDuration)))
-                .imageDirectory(".") // As default
-                .environment(exchangeTokenLambdaEnv)
                 .allowedMethods(AllowedMethods.ALLOW_ALL)
+                .functionUrlAuthType(functionUrlAuthType)
+                .handler(builder.lambdaEntry + builder.exchangeTokenLambdaHandlerFunctionName)
+                .environment(exchangeTokenLambdaEnv)
+                .timeout(Duration.millis(Long.parseLong(builder.exchangeTokenLambdaDuration)))
                 .cloudTrailEnabled(cloudTrailEnabled)
                 .xRayEnabled(xRayEnabled)
                 .verboseLogging(verboseLogging)
-                .functionUrlAuthType(functionUrlAuthType)
                 .build();
         this.exchangeTokenLambda = exchangeTokenLambdaUrlOrigin.lambda;
-        this.exchangeTokenLambdaLogGroup = exchangeTokenLambdaUrlOrigin.logGroup;
         this.exchangeTokenLambdaUrl = exchangeTokenLambdaUrlOrigin.functionUrl;
+        this.exchangeTokenLambdaLogGroup = exchangeTokenLambdaUrlOrigin.logGroup;
         lambdaUrlToOriginsBehaviourMappings.put("/api/exchange-token*", exchangeTokenLambdaUrlOrigin.behaviorOptions);
 
         // submitVat
@@ -740,20 +667,20 @@ public class WebStack extends Stack {
         ));
         var submitVatLambdaUrlOrigin = LambdaUrlOrigin.Builder.create(this, "SubmitVatLambda")
                 .env(builder.env)
+                .imageDirectory(".")
                 .functionName(Builder.buildFunctionName(dashedDomainName, builder.submitVatLambdaHandlerFunctionName))
-                .handler(builder.lambdaEntry + builder.submitVatLambdaHandlerFunctionName)
-                .timeout(Duration.millis(Long.parseLong(builder.submitVatLambdaDuration)))
-                .imageDirectory(".") // As default
-                .environment(submitVatLambdaEnv)
                 .allowedMethods(AllowedMethods.ALLOW_ALL)
+                .functionUrlAuthType(functionUrlAuthType)
+                .handler(builder.lambdaEntry + builder.submitVatLambdaHandlerFunctionName)
+                .environment(submitVatLambdaEnv)
+                .timeout(Duration.millis(Long.parseLong(builder.submitVatLambdaDuration)))
                 .cloudTrailEnabled(cloudTrailEnabled)
                 .xRayEnabled(xRayEnabled)
                 .verboseLogging(verboseLogging)
-                .functionUrlAuthType(functionUrlAuthType)
                 .build();
         this.submitVatLambda = submitVatLambdaUrlOrigin.lambda;
-        this.submitVatLambdaLogGroup = submitVatLambdaUrlOrigin.logGroup;
         this.submitVatLambdaUrl = submitVatLambdaUrlOrigin.functionUrl;
+        this.submitVatLambdaLogGroup = submitVatLambdaUrlOrigin.logGroup;
         lambdaUrlToOriginsBehaviourMappings.put("/api/exchange-token*", submitVatLambdaUrlOrigin.behaviorOptions);
 
         var logReceiptLambdaEnv = new HashMap<String,String>(Map.of());
@@ -768,21 +695,21 @@ public class WebStack extends Stack {
             logReceiptLambdaEnv.putAll(logReceiptLambdaTestEnv);
         }
         var logReceiptLambdaUrlOrigin = LambdaUrlOrigin.Builder.create(this, "LogReceiptLambda")
-            .env(builder.env)
-            .functionName(Builder.buildFunctionName(dashedDomainName, builder.logReceiptLambdaHandlerFunctionName))
-            .handler(builder.lambdaEntry + builder.logReceiptLambdaHandlerFunctionName)
-            .timeout(Duration.millis(Long.parseLong(builder.logReceiptLambdaDuration)))
-            .imageDirectory(".") // As default
-            .environment(logReceiptLambdaEnv)
-            .allowedMethods(AllowedMethods.ALLOW_ALL)
-            .cloudTrailEnabled(cloudTrailEnabled)
-            .xRayEnabled(xRayEnabled)
-            .verboseLogging(verboseLogging)
-            .functionUrlAuthType(functionUrlAuthType)
-            .build();
+                .env(builder.env)
+                .imageDirectory(".")
+                .functionName(Builder.buildFunctionName(dashedDomainName, builder.logReceiptLambdaHandlerFunctionName))
+                .allowedMethods(AllowedMethods.ALLOW_ALL)
+                .functionUrlAuthType(functionUrlAuthType)
+                .handler(builder.lambdaEntry + builder.logReceiptLambdaHandlerFunctionName)
+                .environment(logReceiptLambdaEnv)
+                .timeout(Duration.millis(Long.parseLong(builder.logReceiptLambdaDuration)))
+                .cloudTrailEnabled(cloudTrailEnabled)
+                .xRayEnabled(xRayEnabled)
+                .verboseLogging(verboseLogging)
+                .build();
         this.logReceiptLambda = logReceiptLambdaUrlOrigin.lambda;
-        this.logReceiptLambdaLogGroup = logReceiptLambdaUrlOrigin.logGroup;
         this.logReceiptLambdaUrl = logReceiptLambdaUrlOrigin.functionUrl;
+        this.logReceiptLambdaLogGroup = logReceiptLambdaUrlOrigin.logGroup;
         lambdaUrlToOriginsBehaviourMappings.put("/api/log-receipt*", logReceiptLambdaUrlOrigin.behaviorOptions);
 
         /*String exchangeTokenLambdaHandlerLambdaFunctionName = Builder.buildFunctionName(dashedDomainName, builder.exchangeTokenLambdaHandlerFunctionName);
