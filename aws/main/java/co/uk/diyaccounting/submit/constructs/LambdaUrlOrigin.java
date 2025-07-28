@@ -90,7 +90,7 @@ public class LambdaUrlOrigin {
             var functionBuilder = Function.Builder.create(builder.scope, builder.idPrefix + "Lambda")
                     .code(Code.fromInline("exports.handler = async (event) => { return { statusCode: 200, body: 'test' }; }"))
                     .handler("index.handler")
-                    .runtime(builder.runtime)
+                    .runtime(builder.testRuntime)
                     .functionName(builder.functionName)
                     .timeout(builder.timeout);
             if (builder.xRayEnabled) {
@@ -163,7 +163,7 @@ public class LambdaUrlOrigin {
         
         // Lambda configuration
         public String imageDirectory = ".";
-        public Runtime runtime = Runtime.NODEJS_22_X;
+        public Runtime testRuntime = Runtime.NODEJS_22_X;
 
         private Builder(final Construct scope, final String idPrefix) {
             this.scope = scope;
@@ -281,7 +281,7 @@ public class LambdaUrlOrigin {
         }
 
         public Builder runtime(Runtime runtime) {
-            this.runtime = runtime;
+            this.testRuntime = runtime;
             return this;
         }
 

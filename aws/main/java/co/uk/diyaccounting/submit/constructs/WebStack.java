@@ -42,7 +42,6 @@ import software.amazon.awscdk.services.lambda.FunctionUrl;
 import software.amazon.awscdk.services.lambda.FunctionUrlAuthType;
 import software.amazon.awscdk.services.lambda.InvokeMode;
 import software.amazon.awscdk.services.lambda.Permission;
-import software.amazon.awscdk.services.lambda.Runtime;
 import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.amazon.awscdk.services.route53.ARecord;
@@ -625,7 +624,6 @@ public class WebStack extends Stack {
                 .handler(builder.lambdaEntry + builder.authUrlLambdaHandlerFunctionName)
                 .timeout(Duration.millis(Long.parseLong(builder.authUrlLambdaDuration)))
                 .imageDirectory(".") // As default
-                .runtime(Runtime.NODEJS_22_X) // As default
                 .environment(authUrlLambdaEnv)
                 .allowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS) // As default
                 .cloudTrailEnabled(cloudTrailEnabled)
@@ -723,7 +721,6 @@ public class WebStack extends Stack {
                 .handler(builder.lambdaEntry + builder.exchangeTokenLambdaHandlerFunctionName)
                 .timeout(Duration.millis(Long.parseLong(builder.exchangeTokenLambdaDuration)))
                 .imageDirectory(".") // As default
-                .runtime(Runtime.NODEJS_22_X) // As default
                 .environment(exchangeTokenLambdaEnv)
                 .allowedMethods(AllowedMethods.ALLOW_ALL)
                 .cloudTrailEnabled(cloudTrailEnabled)
@@ -747,7 +744,6 @@ public class WebStack extends Stack {
                 .handler(builder.lambdaEntry + builder.submitVatLambdaHandlerFunctionName)
                 .timeout(Duration.millis(Long.parseLong(builder.submitVatLambdaDuration)))
                 .imageDirectory(".") // As default
-                .runtime(Runtime.NODEJS_22_X) // As default
                 .environment(submitVatLambdaEnv)
                 .allowedMethods(AllowedMethods.ALLOW_ALL)
                 .cloudTrailEnabled(cloudTrailEnabled)
@@ -760,24 +756,30 @@ public class WebStack extends Stack {
         this.submitVatLambdaUrl = submitVatLambdaUrlOrigin.functionUrl;
         lambdaUrlToOriginsBehaviourMappings.put("/api/exchange-token*", submitVatLambdaUrlOrigin.behaviorOptions);
 
-        var logReceiptLambdaEnv = new HashMap<>(Map.of(
-                "DIY_SUBMIT_HOME_URL", builder.homeUrl,
-                "DIY_SUBMIT_HMRC_BASE_URI", builder.hmrcBaseUri
-        ));
+        var logReceiptLambdaEnv = new HashMap<String,String>(Map.of());
+        if(StringUtils.isNotBlank(builder.optionalTestS3Endpoint) && StringUtils.isNotBlank(builder.optionalTestS3AccessKey) || StringUtils.isNotBlank(builder.optionalTestS3SecretKey)) {
+            // For production like integrations without AWS we can use test S3 credentials
+            var logReceiptLambdaTestEnv = new HashMap<>(Map.of(
+                    "DIY_SUBMIT_TEST_S3_ENDPOINT", builder.optionalTestS3Endpoint,
+                    "DIY_SUBMIT_TEST_S3_ACCESS_KEY", builder.optionalTestS3AccessKey,
+                    "DIY_SUBMIT_TEST_S3_SECRET_KEY", builder.optionalTestS3SecretKey,
+                    "DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX", builder.receiptsBucketPostfix
+            ));
+            logReceiptLambdaEnv.putAll(logReceiptLambdaTestEnv);
+        }
         var logReceiptLambdaUrlOrigin = LambdaUrlOrigin.Builder.create(this, "LogReceiptLambda")
-                .env(builder.env)
-                .functionName(Builder.buildFunctionName(dashedDomainName, builder.logReceiptLambdaHandlerFunctionName))
-                .handler(builder.lambdaEntry + builder.logReceiptLambdaHandlerFunctionName)
-                .timeout(Duration.millis(Long.parseLong(builder.logReceiptLambdaDuration)))
-                .imageDirectory(".") // As default
-                .runtime(Runtime.NODEJS_22_X) // As default
-                .environment(logReceiptLambdaEnv)
-                .allowedMethods(AllowedMethods.ALLOW_ALL)
-                .cloudTrailEnabled(cloudTrailEnabled)
-                .xRayEnabled(xRayEnabled)
-                .verboseLogging(verboseLogging)
-                .functionUrlAuthType(functionUrlAuthType)
-                .build();
+            .env(builder.env)
+            .functionName(Builder.buildFunctionName(dashedDomainName, builder.logReceiptLambdaHandlerFunctionName))
+            .handler(builder.lambdaEntry + builder.logReceiptLambdaHandlerFunctionName)
+            .timeout(Duration.millis(Long.parseLong(builder.logReceiptLambdaDuration)))
+            .imageDirectory(".") // As default
+            .environment(logReceiptLambdaEnv)
+            .allowedMethods(AllowedMethods.ALLOW_ALL)
+            .cloudTrailEnabled(cloudTrailEnabled)
+            .xRayEnabled(xRayEnabled)
+            .verboseLogging(verboseLogging)
+            .functionUrlAuthType(functionUrlAuthType)
+            .build();
         this.logReceiptLambda = logReceiptLambdaUrlOrigin.lambda;
         this.logReceiptLambdaLogGroup = logReceiptLambdaUrlOrigin.logGroup;
         this.logReceiptLambdaUrl = logReceiptLambdaUrlOrigin.functionUrl;

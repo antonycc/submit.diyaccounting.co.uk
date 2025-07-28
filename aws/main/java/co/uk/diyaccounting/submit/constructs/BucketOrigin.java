@@ -10,10 +10,9 @@ import software.amazon.awscdk.services.cloudfront.BehaviorOptions;
 import software.amazon.awscdk.services.cloudfront.CachePolicy;
 import software.amazon.awscdk.services.cloudfront.ICachePolicy;
 import software.amazon.awscdk.services.cloudfront.IOrigin;
+import software.amazon.awscdk.services.cloudfront.IOriginRequestPolicy;
 import software.amazon.awscdk.services.cloudfront.IResponseHeadersPolicy;
 import software.amazon.awscdk.services.cloudfront.OriginAccessIdentity;
-import software.amazon.awscdk.services.cloudfront.OriginRequestCookieBehavior;
-import software.amazon.awscdk.services.cloudfront.OriginRequestHeaderBehavior;
 import software.amazon.awscdk.services.cloudfront.OriginRequestPolicy;
 import software.amazon.awscdk.services.cloudfront.ResponseHeadersPolicy;
 import software.amazon.awscdk.services.cloudfront.ViewerProtocolPolicy;
@@ -64,9 +63,9 @@ public class BucketOrigin {
             // Create the origin bucket
             this.originBucket = Bucket.Builder.create(builder.scope, builder.idPrefix + "OriginBucket")
                     .bucketName(builder.bucketName)
-                    .versioned(false)
-                    .blockPublicAccess(BlockPublicAccess.BLOCK_ALL)
-                    .encryption(BucketEncryption.S3_MANAGED)
+                    .versioned(builder.versioned)
+                    .blockPublicAccess(builder.blockPublicAccess)
+                    .encryption(builder.encryption)
                     .removalPolicy(builder.retainBucket ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY)
                     .autoDeleteObjects(!builder.retainBucket)
                     .serverAccessLogsBucket(this.originAccessLogBucket)
@@ -89,19 +88,13 @@ public class BucketOrigin {
                         .build());
 
         // Create CloudFront s3BucketOriginBehaviour
-        final OriginRequestPolicy s3BucketOriginRequestPolicy = OriginRequestPolicy.Builder
-                .create(builder.scope, builder.idPrefix + "OriginRequestPolicy")
-                .comment("Policy to allow content headers but no cookies from the origin")
-                .cookieBehavior(OriginRequestCookieBehavior.none())
-                .headerBehavior(OriginRequestHeaderBehavior.allowList("Accept", "Accept-Language", "Origin"))
-                .build();
         this.s3BucketOriginBehaviour = BehaviorOptions.builder()
                 .origin(this.origin)
                 .allowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
-                .originRequestPolicy(s3BucketOriginRequestPolicy)
-                .viewerProtocolPolicy(ViewerProtocolPolicy.REDIRECT_TO_HTTPS)
-                .responseHeadersPolicy(ResponseHeadersPolicy.CORS_ALLOW_ALL_ORIGINS_WITH_PREFLIGHT_AND_SECURITY_HEADERS)
-                .compress(true)
+                .originRequestPolicy(builder.originRequestPolicy)
+                .viewerProtocolPolicy(builder.viewerProtocolPolicy)
+                .responseHeadersPolicy(builder.responseHeadersPolicy)
+                .compress(builder.compress)
                 .build();
 
         // Create distributionAccessLogBucket
@@ -137,8 +130,6 @@ public class BucketOrigin {
     }
 
     // Static helper methods from WebStack
-    public static String buildOriginBucketName(String dashedDomainName){ return dashedDomainName; }
-    public static String buildCloudTrailLogBucketName(String dashedDomainName) { return "%s-cloud-trail".formatted(dashedDomainName); }
     public static String buildOriginAccessLogBucketName(String dashedDomainName) { return "%s-origin-access-logs".formatted(dashedDomainName); }
     public static String buildDistributionAccessLogBucketName(String dashedDomainName) { return "%s-dist-access-logs".formatted(dashedDomainName);}
     
@@ -157,15 +148,14 @@ public class BucketOrigin {
         private boolean retainBucket = false;
         private boolean useExistingBucket = false;
 
-        /*
-            versioned
-            blockPublicAccess
-            encryption
-            originRequestPolicy
-            viewerProtocolPolicy
-            responseHeadersPolicy
-            compress
-         */
+        // S3 Bucket configuration fields with defaults matching WebStack.java
+        private boolean versioned = false;
+        private BlockPublicAccess blockPublicAccess = BlockPublicAccess.BLOCK_ALL;
+        private BucketEncryption encryption = BucketEncryption.S3_MANAGED;
+        
+        // CloudFront Origin configuration fields with defaults matching WebStack.java
+        private IOriginRequestPolicy originRequestPolicy = OriginRequestPolicy.CORS_S3_ORIGIN;
+        private boolean compress = true;
 
         // New fields for enhanced functionality
         private String dashedDomainName = null;
@@ -230,6 +220,33 @@ public class BucketOrigin {
 
         public Builder useExistingBucket(boolean useExistingBucket) {
             this.useExistingBucket = useExistingBucket;
+            return this;
+        }
+
+        // S3 Bucket configuration methods with defaults matching WebStack.java
+        public Builder versioned(boolean versioned) {
+            this.versioned = versioned;
+            return this;
+        }
+
+        public Builder blockPublicAccess(BlockPublicAccess blockPublicAccess) {
+            this.blockPublicAccess = blockPublicAccess;
+            return this;
+        }
+
+        public Builder encryption(BucketEncryption encryption) {
+            this.encryption = encryption;
+            return this;
+        }
+
+        // CloudFront Origin configuration methods with defaults matching WebStack.java
+        public Builder originRequestPolicy(IOriginRequestPolicy originRequestPolicy) {
+            this.originRequestPolicy = originRequestPolicy;
+            return this;
+        }
+
+        public Builder compress(boolean compress) {
+            this.compress = compress;
             return this;
         }
 
