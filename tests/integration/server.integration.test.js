@@ -164,8 +164,8 @@ describe("Integration – Server Express App", () => {
     it("should handle missing code in token exchange", async () => {
       const response = await request(app).post("/api/exchange-token").send({}).expect(400);
 
-      expect(response.body).toHaveProperty("error");
-      expect(response.body.error).toBe("Missing code from event body");
+      expect(response.error).toHaveProperty("message");
+      expect(response.body.message).toBe("Missing code from event body");
     });
   });
 

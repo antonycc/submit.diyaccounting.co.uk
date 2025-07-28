@@ -76,7 +76,7 @@ describe("exchangeTokenHandler", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(400);
-    expect(body.error).toBe("Missing code from event body");
+    expect(body.message).toBe("Missing code from event body");
     expect(fetch).not.toHaveBeenCalled();
   });
 
@@ -89,7 +89,7 @@ describe("exchangeTokenHandler", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(400);
-    expect(body.error).toBe("Missing code from event body");
+    expect(body.message).toBe("Missing code from event body");
     expect(fetch).not.toHaveBeenCalled();
   });
 
@@ -102,7 +102,7 @@ describe("exchangeTokenHandler", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(400);
-    expect(body.error).toBe("Missing code from event body");
+    expect(body.message).toBe("Missing code from event body");
     expect(fetch).not.toHaveBeenCalled();
   });
 
@@ -115,7 +115,7 @@ describe("exchangeTokenHandler", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(400);
-    expect(body.error).toBe("Missing code from event body");
+    expect(body.message).toBe("Missing code from event body");
     expect(fetch).not.toHaveBeenCalled();
   });
 
@@ -187,7 +187,7 @@ describe("exchangeTokenHandler", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(400);
-    expect(body.error).toBe("Missing code from event body");
+    expect(body.message).toBe("Missing code from event body");
     expect(fetch).not.toHaveBeenCalled();
   });
 });
