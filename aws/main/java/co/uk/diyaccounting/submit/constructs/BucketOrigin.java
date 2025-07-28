@@ -1,6 +1,5 @@
 package co.uk.diyaccounting.submit.constructs;
 
-import co.uk.diyaccounting.submit.awssdk.RetentionDaysConverter;
 import co.uk.diyaccounting.submit.functions.LogGzippedS3ObjectEvent;
 import co.uk.diyaccounting.submit.functions.LogS3ObjectEvent;
 import org.apache.logging.log4j.LogManager;
@@ -11,19 +10,17 @@ import software.amazon.awscdk.services.cloudfront.BehaviorOptions;
 import software.amazon.awscdk.services.cloudfront.CachePolicy;
 import software.amazon.awscdk.services.cloudfront.ICachePolicy;
 import software.amazon.awscdk.services.cloudfront.IOrigin;
+import software.amazon.awscdk.services.cloudfront.IResponseHeadersPolicy;
 import software.amazon.awscdk.services.cloudfront.OriginAccessIdentity;
 import software.amazon.awscdk.services.cloudfront.OriginRequestCookieBehavior;
 import software.amazon.awscdk.services.cloudfront.OriginRequestHeaderBehavior;
 import software.amazon.awscdk.services.cloudfront.OriginRequestPolicy;
-import software.amazon.awscdk.services.cloudfront.IResponseHeadersPolicy;
-import software.amazon.awscdk.services.cloudfront.ResponseHeadersCorsBehavior;
 import software.amazon.awscdk.services.cloudfront.ResponseHeadersPolicy;
 import software.amazon.awscdk.services.cloudfront.ViewerProtocolPolicy;
 import software.amazon.awscdk.services.cloudfront.origins.S3BucketOrigin;
 import software.amazon.awscdk.services.cloudfront.origins.S3BucketOriginWithOAIProps;
 import software.amazon.awscdk.services.cloudtrail.S3EventSelector;
 import software.amazon.awscdk.services.cloudtrail.Trail;
-import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.amazon.awscdk.services.s3.BlockPublicAccess;
 import software.amazon.awscdk.services.s3.Bucket;
@@ -44,8 +41,6 @@ public class BucketOrigin {
     public final String receiptsBucketFullName;
     public final BehaviorOptions s3BucketOriginBehaviour;
     public final IBucket distributionAccessLogBucket;
-    public final Trail originBucketTrail;
-    public final LogGroup originBucketLogGroup;
 
     private BucketOrigin(Builder builder) {
         // Calculate receiptsBucketFullName
@@ -53,11 +48,11 @@ public class BucketOrigin {
         
         // Create access log bucket using LogForwardingBucket
         if (builder.useExistingBucket) {
-            this.originBucket = Bucket.fromBucketName(builder.scope, "OriginBucket", builder.bucketName);
+            this.originBucket = Bucket.fromBucketName(builder.scope, builder.idPrefix + "OriginBucket", builder.bucketName);
             this.originAccessLogBucket = null;
         } else {
             this.originAccessLogBucket = LogForwardingBucket.Builder
-                    .create(builder.scope, "OriginAccess", builder.logS3ObjectEventHandlerSource, LogS3ObjectEvent.class)
+                    .create(builder.scope, builder.idPrefix + "OriginAccess", builder.logS3ObjectEventHandlerSource, LogS3ObjectEvent.class)
                     .bucketName(builder.originAccessLogBucketName)
                     .functionNamePrefix(builder.functionNamePrefix)
                     .retentionPeriodDays(builder.accessLogGroupRetentionPeriodDays)
@@ -67,7 +62,7 @@ public class BucketOrigin {
                     .build();
 
             // Create the origin bucket
-            this.originBucket = Bucket.Builder.create(builder.scope, "OriginBucket")
+            this.originBucket = Bucket.Builder.create(builder.scope, builder.idPrefix + "OriginBucket")
                     .bucketName(builder.bucketName)
                     .versioned(false)
                     .blockPublicAccess(BlockPublicAccess.BLOCK_ALL)
@@ -80,7 +75,7 @@ public class BucketOrigin {
 
         // Create origin access identity
         this.originIdentity = OriginAccessIdentity.Builder
-                .create(builder.scope, "OriginAccessIdentity")
+                .create(builder.scope, builder.idPrefix + "OriginAccessIdentity")
                 .comment("Identity created for access to the web website bucket via the CloudFront distribution")
                 .build();
 
@@ -95,7 +90,7 @@ public class BucketOrigin {
 
         // Create CloudFront s3BucketOriginBehaviour
         final OriginRequestPolicy s3BucketOriginRequestPolicy = OriginRequestPolicy.Builder
-                .create(builder.scope, "OriginRequestPolicy")
+                .create(builder.scope, builder.idPrefix + "OriginRequestPolicy")
                 .comment("Policy to allow content headers but no cookies from the origin")
                 .cookieBehavior(OriginRequestCookieBehavior.none())
                 .headerBehavior(OriginRequestHeaderBehavior.allowList("Accept", "Accept-Language", "Origin"))
@@ -111,7 +106,7 @@ public class BucketOrigin {
 
         // Create distributionAccessLogBucket
         this.distributionAccessLogBucket = LogForwardingBucket.Builder
-                .create(builder.scope, "DistributionAccess", builder.logGzippedS3ObjectEventHandlerSource, LogGzippedS3ObjectEvent.class)
+                .create(builder.scope, builder.idPrefix + "DistributionAccess", builder.logGzippedS3ObjectEventHandlerSource, LogGzippedS3ObjectEvent.class)
                 .bucketName(builder.distributionAccessLogBucketName)
                 .functionNamePrefix(String.format("%s-dist-access-", builder.dashedDomainName))
                 .retentionPeriodDays(builder.accessLogGroupRetentionPeriodDays)
@@ -120,40 +115,21 @@ public class BucketOrigin {
                 .verboseLogging(builder.verboseLogging)
                 .build();
 
-        // Create originBucketTrail if CloudTrail is enabled
-        RetentionDays cloudTrailLogGroupRetentionPeriod = builder.verboseLogging ? 
-            RetentionDaysConverter.daysToRetentionDays(30) : 
-            RetentionDaysConverter.daysToRetentionDays(builder.cloudTrailLogGroupRetentionPeriodDays);
         if (builder.cloudTrailEnabled) {
-            this.originBucketLogGroup = LogGroup.Builder.create(builder.scope, "OriginBucketLogGroup")
-                    .logGroupName(String.format("%s%s-cloud-trail", builder.cloudTrailLogGroupPrefix, this.originBucket.getBucketName()))
-                    .retention(cloudTrailLogGroupRetentionPeriod)
-                    .removalPolicy(builder.retainBucket ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY)
-                    .build();
-            this.originBucketTrail = Trail.Builder.create(builder.scope, "OriginBucketTrail")
-                    .trailName(buildCloudTrailLogBucketName(builder.dashedDomainName))
-                    .cloudWatchLogGroup(this.originBucketLogGroup)
-                    .sendToCloudWatchLogs(true)
-                    .cloudWatchLogsRetention(cloudTrailLogGroupRetentionPeriod)
-                    .includeGlobalServiceEvents(false)
-                    .isMultiRegionTrail(false)
-                    .build();
             // Add S3 event selector to the CloudTrail
             if (builder.cloudTrailEventSelectorPrefix == null || builder.cloudTrailEventSelectorPrefix.isBlank() || "none".equals(builder.cloudTrailEventSelectorPrefix)) {
-                originBucketTrail.addS3EventSelector(List.of(S3EventSelector.builder()
+                builder.cloudTrail.addS3EventSelector(List.of(S3EventSelector.builder()
                         .bucket(this.originBucket)
                         .build()
                 ));
             } else {
-                originBucketTrail.addS3EventSelector(List.of(S3EventSelector.builder()
+                builder.cloudTrail.addS3EventSelector(List.of(S3EventSelector.builder()
                         .bucket(this.originBucket)
                         .objectPrefix(builder.cloudTrailEventSelectorPrefix)
                         .build()
                 ));
             }
         } else {
-            this.originBucketLogGroup = null;
-            this.originBucketTrail = null;
             logger.info("CloudTrail is not enabled for the origin bucket.");
         }
 
@@ -180,15 +156,24 @@ public class BucketOrigin {
         private int accessLogGroupRetentionPeriodDays = 30;
         private boolean retainBucket = false;
         private boolean useExistingBucket = false;
-        
+
+        /*
+            versioned
+            blockPublicAccess
+            encryption
+            originRequestPolicy
+            viewerProtocolPolicy
+            responseHeadersPolicy
+            compress
+         */
+
         // New fields for enhanced functionality
         private String dashedDomainName = null;
         private String receiptsBucketPostfix = "receipts";
         private String logGzippedS3ObjectEventHandlerSource = null;
         private String distributionAccessLogBucketName = null;
         private boolean cloudTrailEnabled = false;
-        private String cloudTrailLogGroupPrefix = "/aws/cloudtrail/";
-        private int cloudTrailLogGroupRetentionPeriodDays = 30;
+        private Trail cloudTrail;
         private String cloudTrailEventSelectorPrefix = null;
         private boolean xRayEnabled = false;
         private boolean verboseLogging = false;
@@ -199,13 +184,6 @@ public class BucketOrigin {
         
         // ResponseHeadersPolicy configuration
         private IResponseHeadersPolicy responseHeadersPolicy = ResponseHeadersPolicy.CORS_ALLOW_ALL_ORIGINS_WITH_PREFLIGHT_AND_SECURITY_HEADERS;
-        private boolean corsAccessControlAllowCredentials = true;
-        private List<String> corsAccessControlAllowHeaders = List.of("*");
-        private List<String> corsAccessControlAllowMethods = List.of("GET", "HEAD", "OPTIONS");
-        private List<String> corsAccessControlAllowOrigins = List.of("*");
-        private List<String> corsAccessControlExposeHeaders = List.of("*");
-        private software.amazon.awscdk.Duration corsAccessControlMaxAge = software.amazon.awscdk.Duration.seconds(600);
-        private boolean corsOriginOverride = true;
         
         // BehaviorOptions configuration
         private ICachePolicy cachePolicy = CachePolicy.CACHING_OPTIMIZED;
@@ -281,13 +259,8 @@ public class BucketOrigin {
             return this;
         }
 
-        public Builder cloudTrailLogGroupPrefix(String cloudTrailLogGroupPrefix) {
-            this.cloudTrailLogGroupPrefix = cloudTrailLogGroupPrefix;
-            return this;
-        }
-
-        public Builder cloudTrailLogGroupRetentionPeriodDays(int cloudTrailLogGroupRetentionPeriodDays) {
-            this.cloudTrailLogGroupRetentionPeriodDays = cloudTrailLogGroupRetentionPeriodDays;
+        public Builder cloudTrail(Trail cloudTrail) {
+            this.cloudTrail = cloudTrail;
             return this;
         }
 
@@ -320,41 +293,6 @@ public class BucketOrigin {
         // ResponseHeadersPolicy configuration methods
         public Builder responseHeadersPolicy(IResponseHeadersPolicy responseHeadersPolicy) {
             this.responseHeadersPolicy = responseHeadersPolicy;
-            return this;
-        }
-
-        public Builder corsAccessControlAllowCredentials(boolean corsAccessControlAllowCredentials) {
-            this.corsAccessControlAllowCredentials = corsAccessControlAllowCredentials;
-            return this;
-        }
-
-        public Builder corsAccessControlAllowHeaders(List<String> corsAccessControlAllowHeaders) {
-            this.corsAccessControlAllowHeaders = corsAccessControlAllowHeaders;
-            return this;
-        }
-
-        public Builder corsAccessControlAllowMethods(List<String> corsAccessControlAllowMethods) {
-            this.corsAccessControlAllowMethods = corsAccessControlAllowMethods;
-            return this;
-        }
-
-        public Builder corsAccessControlAllowOrigins(List<String> corsAccessControlAllowOrigins) {
-            this.corsAccessControlAllowOrigins = corsAccessControlAllowOrigins;
-            return this;
-        }
-
-        public Builder corsAccessControlExposeHeaders(List<String> corsAccessControlExposeHeaders) {
-            this.corsAccessControlExposeHeaders = corsAccessControlExposeHeaders;
-            return this;
-        }
-
-        public Builder corsAccessControlMaxAge(software.amazon.awscdk.Duration corsAccessControlMaxAge) {
-            this.corsAccessControlMaxAge = corsAccessControlMaxAge;
-            return this;
-        }
-
-        public Builder corsOriginOverride(boolean corsOriginOverride) {
-            this.corsOriginOverride = corsOriginOverride;
             return this;
         }
 
