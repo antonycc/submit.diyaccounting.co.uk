@@ -1,4 +1,5 @@
 // tests/behaviour/submitVatWithAuth.behaviour.test.js
+
 import { test, expect } from "@playwright/test";
 import { spawn } from "child_process";
 import { setTimeout } from "timers/promises";

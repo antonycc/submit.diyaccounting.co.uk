@@ -1,6 +1,9 @@
+// tests/unit/submitVatHandler.stubbed.test.js
+
 import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
-import { submitVatHandler } from "../../app/lib/main.js";
 import dotenv from 'dotenv';
+
+import { submitVatHandler } from "@app/bin/main.js";
 
 dotenv.config({ path: '.env.test' });
 

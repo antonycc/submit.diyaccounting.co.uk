@@ -1,7 +1,10 @@
+// tests/unit/main.test.js
+
 import {describe, test, expect, beforeEach} from "vitest";
-import * as mainModule from "../../app/lib/main.js";
-import { main } from "../../app/lib/main.js";
 import dotenv from 'dotenv';
+
+import * as mainModule from "@app/bin/main.js";
+import { main } from "@app/bin/main.js";
 
 dotenv.config({ path: '.env.test' });
 

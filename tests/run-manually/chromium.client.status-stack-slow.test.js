@@ -1,7 +1,8 @@
+// tests/run-manually/chromium.client.status-stack-slow.test.js
+
 import { test, expect, chromium } from "@playwright/test";
 import fs from "fs";
 import path from "path";
-import { setTimeout } from "timers/promises";
 import dotenv from 'dotenv';
 
 dotenv.config({ path: '.env.test' });

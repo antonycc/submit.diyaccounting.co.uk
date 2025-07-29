@@ -1,11 +1,13 @@
 // tests/integration/auth.integration.test.js
+
 import { describe, beforeAll, afterAll, beforeEach, afterEach, it, expect, vi } from "vitest";
 import { setupServer } from "msw/node";
 import { http, HttpResponse } from "msw";
 import { mockClient } from "aws-sdk-client-mock";
 import { S3Client } from "@aws-sdk/client-s3";
-import { authUrlHandler, exchangeTokenHandler } from "../../app/lib/main.js";
 import dotenv from 'dotenv';
+
+import { authUrlHandler, exchangeTokenHandler } from "@app/bin/main.js";
 
 dotenv.config({ path: '.env.test' });
 

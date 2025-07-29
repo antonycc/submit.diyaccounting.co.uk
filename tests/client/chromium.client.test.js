@@ -1,4 +1,4 @@
-// tests/system/client.system.test.js
+// tests/client/client.system.test.js
 
 import { test, expect, chromium } from "@playwright/test";
 import fs from "fs";

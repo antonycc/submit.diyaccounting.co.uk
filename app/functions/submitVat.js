@@ -1,5 +1,10 @@
-import logger from "./logger.js";
+// app/functions/submitVat.js
+
+import logger from "../lib/logger.js";
 import fetch from "node-fetch";
+import dotenv from "dotenv";
+
+dotenv.config({ path: ".env" });
 
 export default async function submitVat(periodKey, vatDue, vatNumber, hmrcAccessToken, govClientHeaders) {
     // Request processing
@@ -34,7 +39,7 @@ export default async function submitVat(periodKey, vatDue, vatNumber, hmrcAccess
         };
         // DIY_SUBMIT_TEST_RECEIPT is already a JSON string, so parse it first
         hmrcResponseBody = JSON.parse(process.env.DIY_SUBMIT_TEST_RECEIPT || "{}");
-        logger.warn({message: "submitVatHandler called in stubbed mode, using test receipt", receipt: hmrcResponseBody});
+        logger.warn({message: "httpPost called in stubbed mode, using test receipt", receipt: hmrcResponseBody});
     } else {
         hmrcResponse = await fetch(hmrcRequestUrl, {
             method: "POST",
@@ -58,4 +63,65 @@ export default async function submitVat(periodKey, vatDue, vatNumber, hmrcAccess
     });
 
     return {hmrcRequestBody, receipt: hmrcResponseBody, hmrcResponse, hmrcResponseBody, hmrcRequestUrl};
+}
+
+// POST /api/submit-vat
+export async function httpPost(event) {
+    const request = extractRequest(event);
+
+    const detectedIP = extractClientIPFromHeaders(event);
+
+    // Validation
+    let errorMessages = [];
+    const { vatNumber, periodKey, vatDue, hmrcAccessToken } = JSON.parse(event.body || "{}");
+    if (!vatNumber) {
+        errorMessages.push("Missing vatNumber parameter from body");
+    }
+    if (!periodKey) {
+        errorMessages.push("Missing periodKey parameter from body");
+    }
+    if (!vatDue) {
+        errorMessages.push("Missing vatDue parameter from body");
+    }
+    if (!hmrcAccessToken) {
+        errorMessages.push("Missing hmrcAccessToken parameter from body");
+    }
+    const {
+        govClientHeaders,
+        govClientErrorMessages
+    } = eventToGovClientHeaders(event, detectedIP);
+    errorMessages = errorMessages.concat(govClientErrorMessages || []);
+    if (errorMessages.length > 0) {
+        return httpBadRequestResponse({
+            request,
+            headers: { ...govClientHeaders },
+            message: errorMessages.join(", "),
+        });
+    }
+
+    // Processing
+    let {
+        receipt,
+        hmrcResponse,
+        hmrcResponseBody
+    } = await submitVat(periodKey, vatDue, vatNumber, hmrcAccessToken, govClientHeaders);
+
+    if (!hmrcResponse.ok) {
+        return httpServerErrorResponse({
+            request,
+            message: "HMRC VAT submission failed",
+            error: {
+                hmrcResponseCode: hmrcResponse.status,
+                hmrcResponseBody,
+            },
+        });
+    }
+
+    // Generate a success response
+    return httpOkResponse({
+        request,
+        data: {
+            receipt,
+        },
+    });
 }

@@ -20,7 +20,11 @@ public class ResourceNameUtils {
                     .mapToObj(c -> Character.isUpperCase(c)
                             ? "-" + Character.toLowerCase((char) c)
                             : String.valueOf((char) c))
-                    .collect(Collectors.joining());
+                    .collect(Collectors.joining())
+                    .replaceAll("[ .-_]+", "-")
+                    .replaceAll("-http", "")
+                    .replaceAll("-handler", "")
+                    ;
             return result.startsWith("-") ? result.substring(1) : result;
         }
     }

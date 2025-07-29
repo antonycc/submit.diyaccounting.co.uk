@@ -4,8 +4,9 @@ import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
 import { Window } from "happy-dom";
 import fs from "fs";
 import path from "path";
-import {buildGovClientTestHeaders} from "@tests/unit/govClientTestHeader.js";
 import dotenv from 'dotenv';
+
+import {buildGovClientTestHeaders} from "@tests/unit/govClientTestHeader.js";
 
 dotenv.config({ path: '.env.test' });
 

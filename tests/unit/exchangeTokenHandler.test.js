@@ -1,6 +1,9 @@
+// tests/unit/exchangeTokenHandler.test.js
+
 import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
-import { exchangeTokenHandler } from "../../app/lib/main.js";
 import dotenv from 'dotenv';
+
+import { exchangeTokenHandler } from "@app/bin/main.js";
 
 dotenv.config({ path: '.env.test' });
 
@@ -11,7 +14,7 @@ vi.mock("node-fetch", () => ({
 
 import fetch from "node-fetch";
 
-describe("exchangeTokenHandler", () => {
+describe("httpPost", () => {
   const originalEnv = process.env;
 
   beforeEach(() => {

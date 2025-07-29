@@ -2,8 +2,9 @@
 import { describe, beforeEach, afterEach, test, expect, vi } from "vitest";
 import { mockClient } from "aws-sdk-client-mock";
 import { SecretsManagerClient, GetSecretValueCommand } from "@aws-sdk/client-secrets-manager";
-import exchangeClientSecretForAccessToken from "../../app/lib/exchangeClientSecretForAccessToken.js";
 import dotenv from 'dotenv';
+
+import exchangeToken from "@app/functions/exchangeToken.js";
 
 dotenv.config({ path: '.env.test' });
 
@@ -62,10 +63,10 @@ describe("exchangeClientSecretForAccessToken", () => {
       });
 
       // Re-import the module to get fresh instance
-      const { default: exchangeFunction } = await import("../../app/lib/exchangeClientSecretForAccessToken.js");
+      const { exchangeToken: exchangeFunction } = await import("@app/functions/exchangeToken");
 
       // Act
-      const result = await exchangeFunction("test-auth-code");
+      const result = await exchangeToken("test-auth-code");
 
       // Assert
       expect(result.hmrcAccessToken).toBe("test-access-token");
@@ -97,10 +98,10 @@ describe("exchangeClientSecretForAccessToken", () => {
       });
 
       // Re-import the module to get fresh instance
-      const { default: exchangeFunction } = await import("../../app/lib/exchangeClientSecretForAccessToken.js");
+      const { exchangeToken: exchangeFunction } = await import("@app/functions/exchangeToken");
 
       // Act
-      const result = await exchangeFunction("test-auth-code");
+      const result = await exchangeToken("test-auth-code");
 
       // Assert
       expect(result.hmrcAccessToken).toBe("test-access-token");
@@ -138,11 +139,11 @@ describe("exchangeClientSecretForAccessToken", () => {
       });
 
       // Re-import the module to get fresh instance
-      const { default: exchangeFunction } = await import("../../app/lib/exchangeClientSecretForAccessToken.js");
+      const { exchangeToken: exchangeFunction } = await import("@app/functions/exchangeToken");
 
       // Act - call the function twice
-      await exchangeFunction("test-auth-code-1");
-      await exchangeFunction("test-auth-code-2");
+      await exchangeToken("test-auth-code-1");
+      await exchangeToken("test-auth-code-2");
 
       // Assert
       // Should only call Secrets Manager once due to caching
@@ -181,10 +182,10 @@ describe("exchangeClientSecretForAccessToken", () => {
       });
 
       // Re-import the module to get fresh instance
-      const { default: exchangeFunction } = await import("../../app/lib/exchangeClientSecretForAccessToken.js");
+      const { exchangeToken: exchangeFunction } = await import("@app/functions/exchangeToken");
 
       // Act
-      const result = await exchangeFunction("test-auth-code");
+      const result = await exchangeToken("test-auth-code");
 
       // Assert
       expect(result.hmrcAccessToken).toBe("test-access-token");
@@ -218,10 +219,10 @@ describe("exchangeClientSecretForAccessToken", () => {
       });
 
       // Re-import the module to get fresh instance
-      const { default: exchangeFunction } = await import("../../app/lib/exchangeClientSecretForAccessToken.js");
+      const { exchangeToken: exchangeFunction } = await import("@app/functions/exchangeToken");
 
       // Act
-      const result = await exchangeFunction("test-auth-code");
+      const result = await exchangeToken("test-auth-code");
 
       // Assert
       expect(result.hmrcAccessToken).toBe("test-access-token");
@@ -243,10 +244,10 @@ describe("exchangeClientSecretForAccessToken", () => {
       process.env.DIY_SUBMIT_HMRC_CLIENT_SECRET = "any-secret";
 
       // Re-import the module to get fresh instance
-      const { default: exchangeFunction } = await import("../../app/lib/exchangeClientSecretForAccessToken.js");
+      const { exchangeToken: exchangeFunction } = await import("@app/functions/exchangeToken");
 
       // Act
-      const result = await exchangeFunction("test-auth-code");
+      const result = await exchangeToken("test-auth-code");
 
       // Assert
       expect(result.hmrcAccessToken).toBe(testAccessToken);

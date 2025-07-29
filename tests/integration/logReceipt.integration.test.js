@@ -1,11 +1,12 @@
 // tests/integration/logReceipt.integration.test.js
+
 import { describe, beforeAll, afterAll, beforeEach, afterEach, it, expect, vi } from "vitest";
 import { setupServer } from "msw/node";
 import { mockClient } from "aws-sdk-client-mock";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
-
-import { logReceiptHandler } from "../../app/lib/main.js";
 import dotenv from 'dotenv';
+
+import { logReceiptHandler } from "@app/bin/main.js";
 
 dotenv.config({ path: '.env.test' });
 

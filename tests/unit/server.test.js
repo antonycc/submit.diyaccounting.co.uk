@@ -1,4 +1,5 @@
 // tests/unit/server.test.js
+
 import { describe, test, expect, vi, beforeEach } from "vitest";
 import request from "supertest";
 import express from "express";
@@ -17,7 +18,7 @@ vi.mock("@app/lib/main.js", () => ({
 }));
 
 // Import the mocked handlers
-import { authUrlHandler, exchangeTokenHandler, submitVatHandler, logReceiptHandler } from "../../app/lib/main.js";
+import { authUrlHandler, exchangeTokenHandler, submitVatHandler, logReceiptHandler } from "@app/bin/main.js";
 
 describe("Server Unit Tests", () => {
   const originalEnv = process.env;
@@ -109,7 +110,7 @@ describe("Server Unit Tests", () => {
   });
 
   describe("GET /api/auth-url", () => {
-    test("should call authUrlHandler with correct event format", async () => {
+    test("should call httpGet with correct event format", async () => {
       const mockResponse = {
         statusCode: 200,
         body: JSON.stringify({ authUrl: "https://example.com/auth" }),
@@ -124,7 +125,7 @@ describe("Server Unit Tests", () => {
       expect(response.body).toEqual({ authUrl: "https://example.com/auth" });
     });
 
-    test("should handle authUrlHandler errors", async () => {
+    test("should handle httpGet errors", async () => {
       const mockResponse = {
         statusCode: 400,
         body: JSON.stringify({ error: "Missing state" }),
@@ -152,7 +153,7 @@ describe("Server Unit Tests", () => {
   });
 
   describe("POST /api/exchange-token", () => {
-    test("should call exchangeTokenHandler with correct event format", async () => {
+    test("should call httpPost with correct event format", async () => {
       const mockResponse = {
         statusCode: 200,
         body: JSON.stringify({ hmrcAccessToken: "test-token" }),
@@ -168,7 +169,7 @@ describe("Server Unit Tests", () => {
       expect(response.body).toEqual({ hmrcAccessToken: "test-token" });
     });
 
-    test("should handle exchangeTokenHandler errors", async () => {
+    test("should handle httpPost errors", async () => {
       const mockResponse = {
         statusCode: 400,
         body: JSON.stringify({ error: "Missing code" }),
@@ -182,7 +183,7 @@ describe("Server Unit Tests", () => {
   });
 
   describe("POST /api/submit-vat", () => {
-    test("should call submitVatHandler with correct event format", async () => {
+    test("should call httpPost with correct event format", async () => {
       const mockResponse = {
         statusCode: 200,
         body: JSON.stringify({ formBundleNumber: "12345" }),
@@ -203,7 +204,7 @@ describe("Server Unit Tests", () => {
       expect(response.body).toEqual({ formBundleNumber: "12345" });
     });
 
-    test("should handle submitVatHandler errors", async () => {
+    test("should handle httpPost errors", async () => {
       const mockResponse = {
         statusCode: 400,
         body: JSON.stringify({ error: "Missing parameters" }),
@@ -217,7 +218,7 @@ describe("Server Unit Tests", () => {
   });
 
   describe("POST /api/log-receipt", () => {
-    test("should call logReceiptHandler with correct event format", async () => {
+    test("should call httpPost with correct event format", async () => {
       const mockResponse = {
         statusCode: 200,
         body: JSON.stringify({ status: "receipt logged" }),
@@ -233,7 +234,7 @@ describe("Server Unit Tests", () => {
       expect(response.body).toEqual({ status: "receipt logged" });
     });
 
-    test("should handle logReceiptHandler errors", async () => {
+    test("should handle httpPost errors", async () => {
       const mockResponse = {
         statusCode: 500,
         body: JSON.stringify({ error: "Failed to log receipt" }),

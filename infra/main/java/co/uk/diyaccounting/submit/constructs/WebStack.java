@@ -799,7 +799,7 @@ public class WebStack extends Stack {
             lambdaUrlToOriginsBehaviourMappings.put("/api/exchange-token*", exchangeTokenOriginBehaviour);
         }*/
 
-        // submitVatHandler
+        // httpPost
         /*
         String submitVatLambdaHandlerLambdaFunctionName = Builder.buildFunctionName(dashedDomainName, builder.submitVatLambdaHandlerFunctionName);
         String submitVatLambdaHandlerCmd = builder.lambdaEntry + builder.submitVatLambdaHandlerFunctionName;
@@ -900,7 +900,7 @@ public class WebStack extends Stack {
             logger.info("CloudTrail is not enabled for the bucket.");
         }
 
-        // logReceiptHandler
+        // httpPost
         /*
         String logReceiptLambdaHandlerLambdaFunctionName = Builder.buildFunctionName(dashedDomainName, builder.logReceiptLambdaHandlerFunctionName);
         String logReceiptLambdaHandlerCmd = builder.lambdaEntry + builder.logReceiptLambdaHandlerFunctionName;

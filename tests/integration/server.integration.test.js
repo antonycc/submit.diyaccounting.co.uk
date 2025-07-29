@@ -1,4 +1,5 @@
 // tests/integration/server.integration.test.js
+
 import { describe, beforeAll, afterAll, beforeEach, afterEach, it, expect, vi } from "vitest";
 import { setupServer } from "msw/node";
 import { http, HttpResponse } from "msw";
@@ -13,7 +14,7 @@ import dotenv from 'dotenv';
 dotenv.config({ path: '.env.test' });
 
 // Import the actual handlers (not mocked for integration test)
-import { authUrlHandler, exchangeTokenHandler, submitVatHandler, logReceiptHandler } from "../../app/lib/main.js";
+import { authUrlHandler, exchangeTokenHandler, submitVatHandler, logReceiptHandler } from "@app/bin/main.js";
 
 const HMRC = "https://test-api.service.hmrc.gov.uk";
 const s3Mock = mockClient(S3Client);
