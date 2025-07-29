@@ -100,8 +100,7 @@ public class LambdaUrlOrigin {
             return functionBuilder.build();
         } else {
             var imageCodeProps = AssetImageCodeProps.builder()
-                    //.file(builder.imageDirectory + File.separator + builder.imageFilename)
-                    .file(builder.imageFilename)
+                    .file(builder.imageDirectory + "/" + builder.imageFilename)
                     .cmd(List.of(builder.handler))
                     .build();
 
@@ -112,7 +111,7 @@ public class LambdaUrlOrigin {
             }
             
             var dockerFunctionBuilder = DockerImageFunction.Builder.create(builder.scope, builder.idPrefix + "Lambda")
-                    .code(DockerImageCode.fromImageAsset(builder.imageDirectory, imageCodeProps))
+                    .code(DockerImageCode.fromImageAsset(".", imageCodeProps))
                     .environment(environment)
                     .functionName(builder.functionName)
                     .timeout(builder.timeout);
