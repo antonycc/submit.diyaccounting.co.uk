@@ -1,5 +1,5 @@
 import { describe, test, expect, beforeEach, afterEach } from "vitest";
-import { authUrlHandler } from "@app/bin/main.js";
+import { httpGet as authUrlHandler } from "@app/functions/authUrl.js";
 import dotenv from 'dotenv';
 
 dotenv.config({ path: '.env.test' });

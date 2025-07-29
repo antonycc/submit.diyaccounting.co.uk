@@ -9,16 +9,25 @@ import dotenv from 'dotenv';
 
 dotenv.config({ path: '.env.test' });
 
-// Mock the handlers from main.js
-vi.mock("@app/lib/main.js", () => ({
-  authUrlHandler: vi.fn(),
-  exchangeTokenHandler: vi.fn(),
-  submitVatHandler: vi.fn(),
-  logReceiptHandler: vi.fn(),
+// Mock the handlers from their respective function files
+vi.mock("@app/functions/authUrl.js", () => ({
+  httpGet: vi.fn(),
+}));
+vi.mock("@app/functions/exchangeToken.js", () => ({
+  httpPost: vi.fn(),
+}));
+vi.mock("@app/functions/submitVat.js", () => ({
+  httpPost: vi.fn(),
+}));
+vi.mock("@app/functions/logReceipt.js", () => ({
+  httpPost: vi.fn(),
 }));
 
 // Import the mocked handlers
-import { authUrlHandler, exchangeTokenHandler, submitVatHandler, logReceiptHandler } from "@app/bin/main.js";
+import { httpGet as authUrlHandler } from "@app/functions/authUrl.js";
+import { httpPost as exchangeTokenHandler } from "@app/functions/exchangeToken.js";
+import { httpPost as submitVatHandler } from "@app/functions/submitVat.js";
+import { httpPost as logReceiptHandler } from "@app/functions/logReceipt.js";
 
 describe("Server Unit Tests", () => {
   const originalEnv = process.env;

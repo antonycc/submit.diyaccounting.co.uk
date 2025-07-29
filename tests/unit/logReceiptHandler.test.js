@@ -12,7 +12,7 @@ vi.mock("@aws-sdk/client-s3", () => ({
   PutObjectCommand: vi.fn((params) => params),
 }));
 
-import { logReceiptHandler } from "@app/bin/main.js";
+import { httpPost as logReceiptHandler } from "@app/functions/logReceipt.js";
 
 describe("httpPost", () => {
   const originalEnv = process.env;

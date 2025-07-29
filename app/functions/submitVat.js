@@ -2,6 +2,8 @@
 
 import logger from "../lib/logger.js";
 import fetch from "node-fetch";
+import { extractRequest, httpBadRequestResponse, httpOkResponse, httpServerErrorResponse, extractClientIPFromHeaders } from "../lib/responses.js";
+import eventToGovClientHeaders from "../lib/eventToGovClientHeaders.js";
 import dotenv from "dotenv";
 
 dotenv.config({ path: ".env" });
@@ -34,7 +36,7 @@ export default async function submitVat(periodKey, vatDue, vatNumber, hmrcAccess
         hmrcResponse = {
             ok: true,
             status: 200,
-            json: async () => ({access_token: hmrcTestAccessToken}),
+            json: async () => ({access_token: hmrcAccessToken}),
             text: async () => JSON.stringify({access_token: hmrcAccessToken}),
         };
         // DIY_SUBMIT_TEST_RECEIPT is already a JSON string, so parse it first

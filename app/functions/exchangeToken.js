@@ -3,6 +3,7 @@
 import logger from "../lib/logger.js";
 import fetch from "node-fetch";
 import { SecretsManagerClient, GetSecretValueCommand } from '@aws-sdk/client-secrets-manager';
+import { extractRequest, httpBadRequestResponse, httpOkResponse, httpServerErrorResponse } from "../lib/responses.js";
 import dotenv from "dotenv";
 
 dotenv.config({ path: ".env" });
@@ -35,7 +36,7 @@ export default async function exchangeToken(code) {
             ok: true,
             status: 200,
             json: async () => ({access_token: hmrcTestAccessToken}),
-            text: async () => JSON.stringify({access_token: hmrcAccessToken}),
+            text: async () => JSON.stringify({access_token: hmrcTestAccessToken}),
         };
     } else {
         hmrcResponse = await fetch(hmrcRequestUrl, {

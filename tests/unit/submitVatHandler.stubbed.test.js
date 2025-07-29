@@ -3,7 +3,7 @@
 import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
 import dotenv from 'dotenv';
 
-import { submitVatHandler } from "@app/bin/main.js";
+import { httpPost as submitVatHandler } from "@app/functions/submitVat.js";
 
 dotenv.config({ path: '.env.test' });
 

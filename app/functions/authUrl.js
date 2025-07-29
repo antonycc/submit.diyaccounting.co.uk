@@ -33,13 +33,13 @@ export async function httpGet(event) {
         }
 
         // Processing
-        const authUrl = authUrl(state);
+        const authUrlResult = authUrl(state);
 
         // Generate a success response
         return httpOkResponse({
             request,
             data: {
-                authUrl,
+                authUrl: authUrlResult,
             },
         });
     }catch (error) {

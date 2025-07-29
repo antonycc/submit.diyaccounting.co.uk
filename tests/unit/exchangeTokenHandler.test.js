@@ -3,7 +3,7 @@
 import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
 import dotenv from 'dotenv';
 
-import { exchangeTokenHandler } from "@app/bin/main.js";
+import { httpPost as exchangeTokenHandler } from "@app/functions/exchangeToken.js";
 
 dotenv.config({ path: '.env.test' });
 
