@@ -14,5 +14,5 @@ RUN echo "[DEBUG_LOG] exchangeToken.Dockerfile: Listing current directory:" && l
 
 COPY package.json package-lock.json ./
 RUN echo "[DEBUG_LOG] exchangeToken.Dockerfile: Installing npm dependencies" && npm install --production
-COPY src/ src/
+COPY app/ app/
 RUN echo "[DEBUG_LOG] exchangeToken.Dockerfile: Final directory structure:" && ls -la .

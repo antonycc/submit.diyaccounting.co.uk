@@ -37,7 +37,7 @@
     "optionalTestS3AccessKey": "",
     "optionalTestS3SecretKey": "",
     "receiptsBucketPostfix": "receipts",
-    "lambdaEntry": "src/lib/main.",
+    "lambdaEntry": "app/lib/main.",
     "authUrlLambdaHandlerFunctionName": "authUrlHandler",
     "authUrlLambdaDuration": "30000",
     "exchangeTokenLambdaHandlerFunctionName": "exchangeTokenHandler",

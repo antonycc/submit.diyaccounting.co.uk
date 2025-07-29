@@ -10,5 +10,5 @@ RUN echo "[DEBUG_LOG] submitVat.Dockerfile: Listing current directory:" && ls -l
 
 COPY package.json package-lock.json ./
 RUN echo "[DEBUG_LOG] submitVat.Dockerfile: Installing npm dependencies" && npm install --production
-COPY src/ src/
+COPY app/ app/
 RUN echo "[DEBUG_LOG] submitVat.Dockerfile: Final directory structure:" && ls -la .

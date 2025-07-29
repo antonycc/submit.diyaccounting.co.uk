@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// src/lib/main.js
+// app/lib/main.js
 
 import {fileURLToPath} from "url";
 import dotenv from 'dotenv';

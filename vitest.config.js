@@ -16,7 +16,7 @@ export default defineConfig(({ mode }) => {
           resolve: {
             alias: {
               "@dist": path.resolve(process.cwd(), "dist"),
-              "@src": path.resolve(process.cwd(), "src"),
+              "@app": path.resolve(process.cwd(), "app"),
               "@tests": path.resolve(process.cwd(), "tests"),
             },
           },
@@ -36,7 +36,7 @@ export default defineConfig(({ mode }) => {
         provider: "v8",
         reportsDirectory: "./coverage",
         reporter: ["text", "json", "html"],
-        include: ["src/**/*.js"],
+        include: ["app/**/*.js"],
         exclude: [
           "**/dist/**",
           "**/entrypoint/**",
@@ -47,7 +47,7 @@ export default defineConfig(({ mode }) => {
           "tests/run-manually/*.test.js",
           "tests/behaviour/*.test.js",
           "**/node_modules/**",
-          "src/index.js",
+          "app/index.js",
           "**/exports/**",
         ],
         threshold: {

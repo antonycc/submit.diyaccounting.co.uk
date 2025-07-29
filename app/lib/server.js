@@ -1,4 +1,4 @@
-// src/lib/server.js
+// app/lib/server.js
 import path from "path";
 import express from "express";
 import { fileURLToPath } from "url";

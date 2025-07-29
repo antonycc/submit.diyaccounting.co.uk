@@ -1,5 +1,5 @@
 import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
-import { submitVatHandler } from "@src/lib/main.js";
+import { submitVatHandler } from "../../app/lib/main.js";
 import dotenv from 'dotenv';
 
 dotenv.config({ path: '.env.test' });

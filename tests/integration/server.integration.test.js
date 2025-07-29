@@ -13,7 +13,7 @@ import dotenv from 'dotenv';
 dotenv.config({ path: '.env.test' });
 
 // Import the actual handlers (not mocked for integration test)
-import { authUrlHandler, exchangeTokenHandler, submitVatHandler, logReceiptHandler } from "@src/lib/main.js";
+import { authUrlHandler, exchangeTokenHandler, submitVatHandler, logReceiptHandler } from "../../app/lib/main.js";
 
 const HMRC = "https://test-api.service.hmrc.gov.uk";
 const s3Mock = mockClient(S3Client);
@@ -92,7 +92,7 @@ describe("Integration – Server Express App", () => {
     // Create Express app exactly like server.js
     app = express();
     app.use(express.json());
-    app.use(express.static(path.join(__dirname, "../../src/lib/public")));
+    app.use(express.static(path.join(__dirname, "../../app/lib/public")));
 
     // Wire the API routes exactly like server.js
     app.get("/api/auth-url", async (req, res) => {
@@ -121,7 +121,7 @@ describe("Integration – Server Express App", () => {
 
     // Fallback to index.html for SPA routing
     app.get("*", (req, res) => {
-      res.sendFile(path.join(__dirname, "../../src/lib/public/index.html"));
+      res.sendFile(path.join(__dirname, "../../app/lib/public/index.html"));
     });
   });
 

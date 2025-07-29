@@ -4,7 +4,7 @@
     "// Also make path changes in vitest.config.js": "",
     "paths": {
       "@dist/*": ["dist/*"],
-      "@src/*": ["src/*"],
+      "@app/*": ["app/*"],
       "@tests/*": ["tests/*"]
     }
   }

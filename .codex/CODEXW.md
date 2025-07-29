@@ -14,7 +14,7 @@ This README explains how to build and run the Codex‐enabled development contai
 │   └── docker-entrypoint.sh
 ├── codew
 ├── package.json
-├── src/
+├── app/
 └── scripts/
 ├── mcp-codespace.sh
 ├── mcp-runner.sh
@@ -182,7 +182,7 @@ kubectl run mcp-pod --image node:22-alpine --restart=Never --command -- sleep in
 kubectl exec -it mcp-pod -- bash
 ```
 
-**Extension**: Write a Node.js CLI using `@kubernetes/client-node` for programmatic control—place in `src/lib/mcp.js`.
+**Extension**: Write a Node.js CLI using `@kubernetes/client-node` for programmatic control—place in `app/lib/mcp.js`.
 
 ---
 
@@ -210,7 +210,7 @@ ngrok http "${1:-3000}"
 2. **Manage Codespaces**: `./scripts/mcp-codespace.sh yourorg/yourrepo main`
 3. **Run a self-hosted runner**: `./scripts/mcp-runner.sh $RUNNER_TOKEN`
 4. **Provision cloud VM**: `./scripts/mcp-terraform.sh`
-5. **Spawn k8s pod**: use `kubectl` or extend with `src/lib/mcp.js`
+5. **Spawn k8s pod**: use `kubectl` or extend with `app/lib/mcp.js`
 6. **Open tunnel**: `./scripts/mcp-tunnel.sh 3000`
 
 Each helper script can be extended with flags or prompts to make your sandbox operations even smoother. Enjoy your instantly mountable, Codex‑powered developer playground!

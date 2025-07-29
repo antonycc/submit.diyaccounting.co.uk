@@ -9,7 +9,7 @@ import dotenv from 'dotenv';
 dotenv.config({ path: '.env.test' });
 
 // Mock the handlers from main.js
-vi.mock("@src/lib/main.js", () => ({
+vi.mock("@app/lib/main.js", () => ({
   authUrlHandler: vi.fn(),
   exchangeTokenHandler: vi.fn(),
   submitVatHandler: vi.fn(),
@@ -17,7 +17,7 @@ vi.mock("@src/lib/main.js", () => ({
 }));
 
 // Import the mocked handlers
-import { authUrlHandler, exchangeTokenHandler, submitVatHandler, logReceiptHandler } from "@src/lib/main.js";
+import { authUrlHandler, exchangeTokenHandler, submitVatHandler, logReceiptHandler } from "../../app/lib/main.js";
 
 describe("Server Unit Tests", () => {
   const originalEnv = process.env;
@@ -35,7 +35,7 @@ describe("Server Unit Tests", () => {
     // Recreate the Express app for each test (similar to server.js)
     app = express();
     app.use(express.json());
-    app.use(express.static(path.join(__dirname, "../../src/lib/public")));
+    app.use(express.static(path.join(__dirname, "../../app/lib/public")));
 
     // Wire the API routes (same as server.js) with error handling
     app.get("/api/auth-url", async (req, res) => {
@@ -80,7 +80,7 @@ describe("Server Unit Tests", () => {
 
     // Fallback route for SPA
     app.get("*", (req, res) => {
-      res.sendFile(path.join(__dirname, "../../src/lib/public/index.html"));
+      res.sendFile(path.join(__dirname, "../../app/lib/public/index.html"));
     });
   });
 

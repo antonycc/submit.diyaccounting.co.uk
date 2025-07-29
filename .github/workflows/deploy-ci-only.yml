@@ -10,7 +10,7 @@ on:
       - main
     paths:
       - 'infra/**'
-      - 'src/**'
+      - '../../app/**'
       - 'public/**'
       - '.github/workflows/deploy-ci-only.yml'
       - '**/pom.xml'

@@ -1,5 +1,5 @@
 import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
-import { exchangeTokenHandler } from "@src/lib/main.js";
+import { exchangeTokenHandler } from "../../app/lib/main.js";
 import dotenv from 'dotenv';
 
 dotenv.config({ path: '.env.test' });

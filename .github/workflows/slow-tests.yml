@@ -11,7 +11,7 @@ on:
   #  paths:
   #    - 'public/index.html'
   #    - 'aws/main/java/co/uk/diyaccounting/submit/constructs/WebStack.java'
-  #    - 'src/lib/main.js'
+  #    - 'app/lib/main.js'
   #    - 'cdk.json'
   #    - 'package.json'
   #    - '.github/workflows/slow-tests.yml'

@@ -95,7 +95,7 @@ Or use an ngrok account to get a stable URL and set this in package.json:
 ...
   "scripts": {
     ...
-    "start": "node src/lib/server.js",
+    "start": "node app/lib/server.js",
     "proxy": "npx ngrok http --url wanted-finally-anteater.ngrok-free.app 3000"
   },
 ```

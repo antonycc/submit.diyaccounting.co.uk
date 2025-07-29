@@ -44,7 +44,7 @@ Webserver output:
 ```log
 
 > web-submit-diyaccounting-co-uk@0.0.2-4 start
-> node src/lib/server.js
+> node app/lib/server.js
 
 Listening at http://127.0.0.1:3000 for https://test-api.service.hmrc.gov.uk
 

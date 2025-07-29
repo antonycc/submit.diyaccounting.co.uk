@@ -4,7 +4,7 @@ import { setupServer } from "msw/node";
 import { mockClient } from "aws-sdk-client-mock";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 
-import { logReceiptHandler } from "@src/lib/main.js";
+import { logReceiptHandler } from "../../app/lib/main.js";
 import dotenv from 'dotenv';
 
 dotenv.config({ path: '.env.test' });

@@ -2,7 +2,7 @@
 import { describe, beforeEach, afterEach, test, expect, vi } from "vitest";
 import { mockClient } from "aws-sdk-client-mock";
 import { SecretsManagerClient, GetSecretValueCommand } from "@aws-sdk/client-secrets-manager";
-import exchangeClientSecretForAccessToken from "@src/lib/exchangeClientSecretForAccessToken.js";
+import exchangeClientSecretForAccessToken from "../../app/lib/exchangeClientSecretForAccessToken.js";
 import dotenv from 'dotenv';
 
 dotenv.config({ path: '.env.test' });
@@ -13,7 +13,7 @@ vi.mock("node-fetch", () => ({
 }));
 
 // Mock logger
-vi.mock("@src/lib/logger.js", () => ({
+vi.mock("@app/lib/logger.js", () => ({
   default: {
     info: vi.fn(),
     warn: vi.fn(),
@@ -62,7 +62,7 @@ describe("exchangeClientSecretForAccessToken", () => {
       });
 
       // Re-import the module to get fresh instance
-      const { default: exchangeFunction } = await import("@src/lib/exchangeClientSecretForAccessToken.js");
+      const { default: exchangeFunction } = await import("../../app/lib/exchangeClientSecretForAccessToken.js");
 
       // Act
       const result = await exchangeFunction("test-auth-code");
@@ -97,7 +97,7 @@ describe("exchangeClientSecretForAccessToken", () => {
       });
 
       // Re-import the module to get fresh instance
-      const { default: exchangeFunction } = await import("@src/lib/exchangeClientSecretForAccessToken.js");
+      const { default: exchangeFunction } = await import("../../app/lib/exchangeClientSecretForAccessToken.js");
 
       // Act
       const result = await exchangeFunction("test-auth-code");
@@ -138,7 +138,7 @@ describe("exchangeClientSecretForAccessToken", () => {
       });
 
       // Re-import the module to get fresh instance
-      const { default: exchangeFunction } = await import("@src/lib/exchangeClientSecretForAccessToken.js");
+      const { default: exchangeFunction } = await import("../../app/lib/exchangeClientSecretForAccessToken.js");
 
       // Act - call the function twice
       await exchangeFunction("test-auth-code-1");
@@ -181,7 +181,7 @@ describe("exchangeClientSecretForAccessToken", () => {
       });
 
       // Re-import the module to get fresh instance
-      const { default: exchangeFunction } = await import("@src/lib/exchangeClientSecretForAccessToken.js");
+      const { default: exchangeFunction } = await import("../../app/lib/exchangeClientSecretForAccessToken.js");
 
       // Act
       const result = await exchangeFunction("test-auth-code");
@@ -218,7 +218,7 @@ describe("exchangeClientSecretForAccessToken", () => {
       });
 
       // Re-import the module to get fresh instance
-      const { default: exchangeFunction } = await import("@src/lib/exchangeClientSecretForAccessToken.js");
+      const { default: exchangeFunction } = await import("../../app/lib/exchangeClientSecretForAccessToken.js");
 
       // Act
       const result = await exchangeFunction("test-auth-code");
@@ -243,7 +243,7 @@ describe("exchangeClientSecretForAccessToken", () => {
       process.env.DIY_SUBMIT_HMRC_CLIENT_SECRET = "any-secret";
 
       // Re-import the module to get fresh instance
-      const { default: exchangeFunction } = await import("@src/lib/exchangeClientSecretForAccessToken.js");
+      const { default: exchangeFunction } = await import("../../app/lib/exchangeClientSecretForAccessToken.js");
 
       // Act
       const result = await exchangeFunction("test-auth-code");

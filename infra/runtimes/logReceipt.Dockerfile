@@ -9,5 +9,5 @@ RUN echo "[DEBUG_LOG] logReceipt.Dockerfile: Listing current directory:" && ls -
 
 COPY package.json package-lock.json ./
 RUN echo "[DEBUG_LOG] logReceipt.Dockerfile: Installing npm dependencies" && npm install --production
-COPY src/ src/
+COPY app/ app/
 RUN echo "[DEBUG_LOG] logReceipt.Dockerfile: Final directory structure:" && ls -la .

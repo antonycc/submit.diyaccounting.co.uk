@@ -1,4 +1,4 @@
-// src/lib/logger.js
+// app/lib/logger.js
   import winston from "winston";
   import dotenv from "dotenv";
 

@@ -88,7 +88,7 @@ test.beforeAll(async () => {
   if (runTestServer) {
     console.log("Starting server process...");
     serverProcess = spawn("npm", ["run", "start"], {
-      // serverProcess = spawn("node", ["src/lib/server.js"], {
+      // serverProcess = spawn("node", ["app/lib/server.js"], {
       env: {
         ...process.env,
         DIY_SUBMIT_TEST_S3_ENDPOINT: endpoint,

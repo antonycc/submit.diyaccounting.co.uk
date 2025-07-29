@@ -1,6 +1,6 @@
 import {describe, test, expect, beforeEach} from "vitest";
-import * as mainModule from "@src/lib/main.js";
-import { main } from "@src/lib/main.js";
+import * as mainModule from "../../app/lib/main.js";
+import { main } from "../../app/lib/main.js";
 import dotenv from 'dotenv';
 
 dotenv.config({ path: '.env.test' });
@@ -31,7 +31,7 @@ describe("Main Output", () => {
   });
 
   test("should terminate without error", () => {
-    process.argv = ["node", "src/lib/main.js"];
+    process.argv = ["node", "app/lib/main.js"];
     main();
   });
 });

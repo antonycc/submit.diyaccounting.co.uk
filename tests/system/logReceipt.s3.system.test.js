@@ -4,7 +4,7 @@ import {describe, beforeAll, afterAll, beforeEach, it, expect, vi} from "vitest"
 import {GenericContainer} from "testcontainers";
 import {S3Client, CreateBucketCommand, PutObjectCommand, HeadBucketCommand, GetObjectCommand} from "@aws-sdk/client-s3";
 import dotenv from 'dotenv';
-import {logReceiptHandler} from "@src/lib/main.js";
+import {logReceiptHandler} from "../../app/lib/main.js";
 
 //dotenv.config({path: '.env.test'});
 dotenv.config({ path: '.env.proxy' });

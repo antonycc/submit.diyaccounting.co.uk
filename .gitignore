@@ -284,7 +284,7 @@ fabric.properties
 
 # Project files
 /json
-/src/lib/output.*
+/app/lib/output.*
 /tests/unit/output.*
 /tests/integration/output.*
 /output.*

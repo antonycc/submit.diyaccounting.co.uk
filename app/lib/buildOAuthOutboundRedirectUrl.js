@@ -1,4 +1,4 @@
-// src/lib/buildOAuthOutboundRedirectUrl.js
+// app/lib/buildOAuthOutboundRedirectUrl.js
 
 export default function buildOAuthOutboundRedirectUrl(state) {
     const clientId = process.env.DIY_SUBMIT_HMRC_CLIENT_ID;

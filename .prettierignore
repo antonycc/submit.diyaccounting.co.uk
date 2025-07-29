@@ -16,5 +16,5 @@ jsconfig.json
 package.json
 package-lock.json
 preXXXttier.config.js
-src/index.js/exports/
+app/index.js/exports/
 /cdk/cdk.out/

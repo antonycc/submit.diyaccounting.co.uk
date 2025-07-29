@@ -1,4 +1,4 @@
-// src/lib/responses.js
+// app/lib/responses.js
 
 import logger from "./logger.js";
 
