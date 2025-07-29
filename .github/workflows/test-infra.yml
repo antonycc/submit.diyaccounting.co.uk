@@ -8,7 +8,7 @@ on:
     branches:
       - main
     paths:
-      - '../../infra/**'
+      - 'infra/**'
       - '.m2/**'
       - 'mvnw'
       - 'cdk.json'

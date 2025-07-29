@@ -12,7 +12,7 @@ on:
       - 'tests/**'
       - '**/*.json'
       - '.github/workflows/test-services.yml'
-      - '!aws/**'
+      - '!infra/**'
   workflow_dispatch:
   schedule:
     - cron: '34 2,3,4 * * *'
