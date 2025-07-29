@@ -43,7 +43,7 @@ export default defineConfig({
     // To get jpeg: page.screenshot({ type: 'jpeg' }) in test code
   },
 
-  reporter: [["html", { outputFolder: "test-reports/html-report" }], ["list"]],
+  reporter: [["html", { outputFolder: "target/test-reports/html-report" }], ["list"]],
 
   // Optional: customize test timeout or other settings here
   timeout: 30 * 1000, // 30 seconds per test
