@@ -17,7 +17,7 @@ export default async function submitVat(periodKey, vatDue, vatNumber, hmrcAccess
         finalised: true,
     };
 
-    let receipt;
+    let hmrcResponseBody;
     let hmrcResponse;
     const hmrcBase = process.env.DIY_SUBMIT_HMRC_BASE_URI;
     const hmrcRequestUrl = `${hmrcBase}/organisations/vat/${vatNumber}/returns`;
@@ -29,8 +29,8 @@ export default async function submitVat(periodKey, vatDue, vatNumber, hmrcAccess
             text: async () => JSON.stringify({access_token: hmrcAccessToken}),
         };
         // DIY_SUBMIT_TEST_RECEIPT is already a JSON string, so parse it first
-        receipt = JSON.parse(process.env.DIY_SUBMIT_TEST_RECEIPT || "{}");
-        logger.warn({message: "submitVatHandler called in stubbed mode, using test receipt", receipt});
+        hmrcResponseBody = JSON.parse(process.env.DIY_SUBMIT_TEST_RECEIPT || "{}");
+        logger.warn({message: "submitVatHandler called in stubbed mode, using test receipt", receipt: hmrcResponseBody});
     } else {
         hmrcResponse = await fetch(hmrcRequestUrl, {
             method: "POST",
@@ -42,7 +42,9 @@ export default async function submitVat(periodKey, vatDue, vatNumber, hmrcAccess
             },
             body: JSON.stringify(hmrcRequestBody),
         });
-        receipt = await hmrcResponse.json();
+        hmrcResponseBody = await hmrcResponse.json();
     }
-    return {hmrcRequestBody, receipt, hmrcResponse, hmrcRequestUrl};
+    //const hmrcResponseBody = await hmrcResponse.json();
+
+    return {hmrcRequestBody, receipt: hmrcResponseBody, hmrcResponse, hmrcResponseBody, hmrcRequestUrl};
 }

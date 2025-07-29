@@ -137,7 +137,7 @@ describe("exchangeTokenHandler", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(500);
-    expect(body.hmrcResponseText).toBe(errorMessage);
+    expect(body.hmrcResponseBody.error).toBe(errorMessage);
   });
 
   test("should handle HMRC API 401 unauthorized", async () => {
@@ -158,7 +158,7 @@ describe("exchangeTokenHandler", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(500);
-    expect(body.hmrcResponseText).toBe(errorMessage);
+    expect(body.hmrcResponseBody.error).toBe(errorMessage);
   });
 
   test("should handle malformed JSON in request body", async () => {

@@ -66,7 +66,7 @@ export async function exchangeTokenHandler(event) {
     });
   }
 
-  let { hmrcAccessToken, hmrcResponse } = await exchangeClientSecretForAccessToken(code);
+  let { hmrcAccessToken, hmrcResponse, hmrcResponseBody } = await exchangeClientSecretForAccessToken(code);
 
   if (!hmrcResponse.ok) {
     return httpServerErrorResponse({
@@ -74,7 +74,7 @@ export async function exchangeTokenHandler(event) {
       message: "HMRC token exchange failed",
       error: {
         hmrcResponseCode: hmrcResponse.status,
-        hmrcResponseText: await hmrcResponse.text(),
+        hmrcResponseBody,
       },
     });
   }
@@ -126,6 +126,7 @@ export async function submitVatHandler(event) {
   let {
     receipt,
     hmrcResponse,
+    hmrcResponseBody
   } = await submitVat(periodKey, vatDue, vatNumber, hmrcAccessToken, govClientHeaders);
 
   if (!hmrcResponse.ok) {
@@ -134,7 +135,7 @@ export async function submitVatHandler(event) {
       message: "HMRC VAT submission failed",
       error: {
         hmrcResponseCode: hmrcResponse.status,
-        hmrcResponseText: await hmrcResponse.text(),
+        hmrcResponseBody,
       },
     });
   }

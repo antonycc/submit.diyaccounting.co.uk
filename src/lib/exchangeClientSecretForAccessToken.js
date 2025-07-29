@@ -31,9 +31,12 @@ export default async function exchangeClientSecretForAccessToken(code) {
 
     const hmrcResponseTokens = await hmrcResponse.json();
     const hmrcAccessToken = hmrcResponseTokens.access_token;
+    const hmrcResponseBody = { ...hmrcResponseTokens };
+    delete hmrcResponseBody.access_token;
 
     return {
         hmrcAccessToken,
         hmrcResponse,
+        hmrcResponseBody
     };
 }
