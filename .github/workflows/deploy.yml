@@ -221,7 +221,7 @@ jobs:
           echo "LOG_S3_OBJECT_EVENT_HANDLER_SOURCE: ${{ steps.jar-path.outputs.jarFilepath }}"
           echo "LOG_GZIPPED_S3_OBJECT_EVENT_HANDLER_SOURCE: ${{ steps.jar-path.outputs.jarFilepath }}"
           echo "CERTIFICATE_ARN: ${{ vars.AWS_CERTIFICATE_ARN }}"
-          echo "CLOUD_TRAIL_ENABLED: ${{ vars.AWS_CLOUD_TRAIL_ENABLED
+          echo "CLOUD_TRAIL_ENABLED: ${{ vars.AWS_CLOUD_TRAIL_ENABLED }}"
           echo "X_RAY_ENABLED: ${{ vars.AWS_X_RAY_ENABLED }}"
           echo "VERBOSE_LOGGING: ${{ vars.AWS_VERBOSE_LOGGING }}"
           echo "HOSTED_ZONE_ID: ${{ vars.AWS_HOSTED_ZONE_ID }}"

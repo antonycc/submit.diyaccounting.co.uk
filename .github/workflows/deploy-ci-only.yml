@@ -2,7 +2,7 @@
 
 name: deploy-ci-only
 concurrency: ngrok
-run-name: "deploy [${{ github.ref_name }}] to [${{ inputs.environment || 'ci' }}]"
+run-name: "deploy ci only [${{ github.ref_name }}] to [${{ inputs.environment || 'ci' }}]"
 
 on:
   push:
