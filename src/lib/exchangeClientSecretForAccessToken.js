@@ -1,11 +1,34 @@
 import logger from "./logger.js";
 import fetch from "node-fetch";
+import { SecretsManagerClient, GetSecretValueCommand } from '@aws-sdk/client-secrets-manager';
+
+const secretsClient = new SecretsManagerClient();
+
+let cachedSecret; // caching via module-level variable
+
+// Retrieve secret at initialization unless the secret is already in the environment
+async function retrieveSecret() {
+    const secretFromEnv = process.env.DIY_SUBMIT_HMRC_CLIENT_SECRET;
+    // Always update the secret from the environment variable if it exists
+    if (secretFromEnv) {
+        cachedSecret = secretFromEnv;
+        logger.info(`Secret retrieved from environment variable DIY_SUBMIT_HMRC_CLIENT_SECRET and cached`);
+        // Only update the cached secret if it isn't set
+    } else if (!cachedSecret) {
+        const secretArn = process.env.DIY_SUBMIT_HMRC_CLIENT_SECRET_ARN; // set via Lambda environment variable
+        const data = await secretsClient.send(new GetSecretValueCommand({ SecretId: secretArn }));
+        cachedSecret = data.SecretString;
+        logger.info(`Secret retrieved from Secrets Manager with Arn ${secretArn} and cached`);
+    }
+    return cachedSecret;
+};
 
 export default async function exchangeClientSecretForAccessToken(code) {
+    await retrieveSecret();
     const hmrcRequestBody = new URLSearchParams({
         grant_type: "authorization_code",
         client_id: process.env.DIY_SUBMIT_HMRC_CLIENT_ID,
-        client_secret: process.env.DIY_SUBMIT_HMRC_CLIENT_SECRET,
+        client_secret: cachedSecret,
         redirect_uri: process.env.DIY_SUBMIT_HOME_URL,
         code,
     });

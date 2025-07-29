@@ -634,10 +634,13 @@ public class WebStack extends Stack {
         lambdaUrlToOriginsBehaviourMappings.put("/api/auth-url*", authUrlLambdaUrlOrigin.behaviorOptions);
 
         // exchangeToken
+        // Create a secret for the HMRC client secret and set the ARN to be used in the Lambda environment variable
+        var hmrcClientSecretArn = "Set to match the value passed in via DIY_SUBMIT_HMRC_CLIENT_SECRET";
         var exchangeTokenLambdaEnv = new HashMap<>(Map.of(
                 "DIY_SUBMIT_HMRC_CLIENT_ID", builder.hmrcClientId,
                 "DIY_SUBMIT_HOME_URL", builder.homeUrl,
-                "DIY_SUBMIT_HMRC_BASE_URI", builder.hmrcBaseUri
+                "DIY_SUBMIT_HMRC_BASE_URI", builder.hmrcBaseUri,
+                "DIY_SUBMIT_HMRC_CLIENT_SECRET_ARN", hmrcClientSecretArn
         ));
         if (StringUtils.isNotBlank(builder.optionalTestAccessToken)){
             exchangeTokenLambdaEnv.put("DIY_SUBMIT_TEST_ACCESS_TOKEN", builder.optionalTestAccessToken);
