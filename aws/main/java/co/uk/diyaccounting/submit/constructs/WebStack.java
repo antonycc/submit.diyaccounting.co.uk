@@ -12,6 +12,7 @@ import software.amazon.awscdk.CfnOutput;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Expiration;
 import software.amazon.awscdk.RemovalPolicy;
+import software.amazon.awscdk.SecretValue;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.services.certificatemanager.Certificate;
@@ -643,7 +644,7 @@ public class WebStack extends Stack {
         // exchangeToken
         // Create a secret for the HMRC client secret and set the ARN to be used in the Lambda environment variable
         var hmrcClientSecret = Secret.Builder.create(this, "HmrcClientSecret")
-                .secretStringValue(software.amazon.awscdk.SecretValue.unsafePlainText(builder.hmrcClientSecret))
+                .secretStringValue(SecretValue.unsafePlainText(builder.hmrcClientSecret))
                 .description("HMRC Client Secret for OAuth authentication")
                 .build();
         var hmrcClientSecretArn = hmrcClientSecret.getSecretArn();

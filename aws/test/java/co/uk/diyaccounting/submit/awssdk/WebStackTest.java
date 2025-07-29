@@ -64,6 +64,7 @@ public class WebStackTest {
                 .error404NotFoundAtDistribution("404-error-distribution.html")
                 .skipLambdaUrlOrigins("false")
                 .hmrcClientId("test-client-id")
+                .hmrcClientSecret("test client secret")
                 .homeUrl("https://test.submit.diyaccounting.co.uk/callback")
                 .hmrcBaseUri("https://test-api.service.hmrc.gov.uk")
                 .optionalTestRedirectUri("https://test.submit.diyaccounting.co.uk/test-callback")
