@@ -625,7 +625,8 @@ public class WebStack extends Stack {
         ));
         var authUrlLambdaUrlOrigin = LambdaUrlOrigin.Builder.create(this, "AuthUrlLambda")
                 .env(builder.env)
-                .imageDirectory(".")
+                .imageDirectory("infra/runtimes")
+                .imageFilename("authUrl.Dockerfile")
                 .functionName(Builder.buildFunctionName(dashedDomainName, builder.authUrlLambdaHandlerFunctionName))
                 .allowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
                 .functionUrlAuthType(functionUrlAuthType)
@@ -659,7 +660,8 @@ public class WebStack extends Stack {
         }
         var exchangeTokenLambdaUrlOrigin = LambdaUrlOrigin.Builder.create(this, "ExchangeTokenLambda")
                 .env(builder.env)
-                .imageDirectory(".")
+                .imageDirectory("infra/runtimes")
+                .imageFilename("exchangeToken.Dockerfile")
                 .functionName(Builder.buildFunctionName(dashedDomainName, builder.exchangeTokenLambdaHandlerFunctionName))
                 .allowedMethods(AllowedMethods.ALLOW_ALL)
                 .functionUrlAuthType(functionUrlAuthType)
@@ -682,7 +684,8 @@ public class WebStack extends Stack {
         ));
         var submitVatLambdaUrlOrigin = LambdaUrlOrigin.Builder.create(this, "SubmitVatLambda")
                 .env(builder.env)
-                .imageDirectory(".")
+                .imageDirectory("infra/runtimes")
+                .imageFilename("submitVat.Dockerfile")
                 .functionName(Builder.buildFunctionName(dashedDomainName, builder.submitVatLambdaHandlerFunctionName))
                 .allowedMethods(AllowedMethods.ALLOW_ALL)
                 .functionUrlAuthType(functionUrlAuthType)
@@ -711,7 +714,8 @@ public class WebStack extends Stack {
         }
         var logReceiptLambdaUrlOrigin = LambdaUrlOrigin.Builder.create(this, "LogReceiptLambda")
                 .env(builder.env)
-                .imageDirectory(".")
+                .imageDirectory("infra/runtimes")
+                .imageFilename("logReceipt.Dockerfile")
                 .functionName(Builder.buildFunctionName(dashedDomainName, builder.logReceiptLambdaHandlerFunctionName))
                 .allowedMethods(AllowedMethods.ALLOW_ALL)
                 .functionUrlAuthType(functionUrlAuthType)

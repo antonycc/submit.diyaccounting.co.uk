@@ -175,18 +175,18 @@
 
     <build>
         <!-- Change the default source directories -->
-        <sourceDirectory>aws/main/java</sourceDirectory>
-        <testSourceDirectory>aws/test/java</testSourceDirectory>
+        <sourceDirectory>infra/main/java</sourceDirectory>
+        <testSourceDirectory>infra/test/java</testSourceDirectory>
         
         <!-- Configure resource directories -->
         <resources>
             <resource>
-                <directory>aws/main/resources</directory>
+                <directory>infra/main/resources</directory>
             </resource>
         </resources>
         <testResources>
             <testResource>
-                <directory>aws/test/resources</directory>
+                <directory>infra/test/resources</directory>
             </testResource>
         </testResources>
 
