@@ -6,12 +6,9 @@ Configuration:
       target: SYSTEM_OUT
       PatternLayout:
         Pattern: "%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"
-    Async:
-      name: AsyncConsole
-      AppenderRef:
-        ref: Console
   Loggers:
     Root:
       level: info
       AppenderRef:
-        ref: AsyncConsole
+        ref: Console
+

@@ -32,7 +32,6 @@ import software.amazon.awscdk.services.logs.LogGroupProps;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.constructs.Construct;
 
-import java.io.File;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -101,7 +100,8 @@ public class LambdaUrlOrigin {
             return functionBuilder.build();
         } else {
             var imageCodeProps = AssetImageCodeProps.builder()
-                    .file(builder.imageDirectory + File.separator + builder.imageFilename)
+                    //.file(builder.imageDirectory + File.separator + builder.imageFilename)
+                    .file(builder.imageFilename)
                     .cmd(List.of(builder.handler))
                     .build();
 
