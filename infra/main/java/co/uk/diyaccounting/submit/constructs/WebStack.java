@@ -676,6 +676,7 @@ public class WebStack extends Stack {
         this.exchangeTokenLambdaUrl = exchangeTokenLambdaUrlOrigin.functionUrl;
         this.exchangeTokenLambdaLogGroup = exchangeTokenLambdaUrlOrigin.logGroup;
         lambdaUrlToOriginsBehaviourMappings.put("/api/exchange-token*", exchangeTokenLambdaUrlOrigin.behaviorOptions);
+        hmrcClientSecret.grantRead(this.exchangeTokenLambda);
 
         // submitVat
         var submitVatLambdaEnv = new HashMap<>(Map.of(
