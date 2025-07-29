@@ -8,13 +8,13 @@ export default defineConfig({
       name: 'behaviour-tests',
       testDir: 'tests/behaviour',
       workers: 1, // throttle concurrency to 1
-      outputDir: "./behaviour-test-results/",
+      outputDir: "./target/behaviour-test-results/",
     },
     {
       name: 'client-tests',
       testDir: 'tests/client',
       workers: 1, // throttle concurrency to 1
-      outputDir: "./behaviour-test-results/",
+      outputDir: "./target/behaviour-test-results/",
     },
     {
       name: 'run-manually-tests',
@@ -25,7 +25,7 @@ export default defineConfig({
   ],
 
   // Output directory for all artifacts (screenshots, videos, traces, etc.)
-  outputDir: "./test-results/",
+  outputDir: "./target/test-results/",
 
   // Don't delete the output directory before running tests
   preserveOutput: "always",

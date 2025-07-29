@@ -167,7 +167,7 @@ jobs:
         if: always()
         with:
           name: test-results-behaviour-ci
-          path: behaviour-test-results/
+          path: target/behaviour-test-results/
           retention-days: 30
 
       - name: Upload test results
@@ -175,7 +175,7 @@ jobs:
         if: always()
         with:
           name: test-results-ci
-          path: test-results/
+          path: target/test-results/
           retention-days: 30
 
       - name: Upload test reports
@@ -183,5 +183,5 @@ jobs:
         if: always()
         with:
           name: test-reports-behaviour-ci
-          path: test-reports/
+          path: target/test-reports/
           retention-days: 30

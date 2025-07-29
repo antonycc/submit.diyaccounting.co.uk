@@ -42,7 +42,7 @@ jobs:
         if: always()
         with:
           name: test-results-client
-          path: client-test-results/
+          path: target/client-test-results/
           retention-days: 30
 
       - name: Upload test reports
@@ -50,5 +50,5 @@ jobs:
         if: always()
         with:
           name: test-reports-client
-          path: test-reports/
+          path: target/test-reports/
           retention-days: 30

@@ -97,7 +97,7 @@ test.use({
   },
 });
 
-test.outputDir = "behaviour-test-results";
+test.outputDir = "target/behaviour-test-results";
 
 test("Submit VAT return end-to-end flow with browser emulation", async ({ page }) => {
   const timestamp = getTimestamp();

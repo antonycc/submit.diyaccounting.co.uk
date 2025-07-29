@@ -337,13 +337,13 @@ fabric.properties
 /result.json
 /dependency-reduced-pom.xml
 /all-test-results
-/test-results
-/client-test-results
-/behaviour-test-results
+/target/test-results
+/target/client-test-results
+/target/behaviour-test-results
 
-/test-reports/
+/target/test-reports/
 /all-test-results/.last-run.json
-/behaviour-with-auth-test-results/
+/target/behaviour-with-auth-test-results/
 /.env.bak
 /.env.hmrc-test-api
 /client*-results/

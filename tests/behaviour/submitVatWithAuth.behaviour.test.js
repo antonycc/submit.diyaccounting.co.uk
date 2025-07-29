@@ -221,7 +221,7 @@ test.use({
   },
 });
 
-test.outputDir = "behaviour-with-auth-test-results";
+test.outputDir = "target/behaviour-with-auth-test-results";
 
 test("Submit VAT return end-to-end flow with browser emulation", async ({ page }) => {
   const timestamp = getTimestamp();
@@ -236,7 +236,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   // Wait for page to load completely
   await setTimeout(500);
   await page.waitForLoadState("networkidle");
-  await page.screenshot({ path: `behaviour-with-auth-test-results/auth-behaviour-000-initial_${timestamp}.png` });
+  await page.screenshot({ path: `target/behaviour-with-auth-test-results/auth-behaviour-000-initial_${timestamp}.png` });
   await setTimeout(500);
 
   // 2) Verify the form is present and fill it out with correct field IDs
@@ -250,7 +250,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   await setTimeout(100);
   await page.fill("#vatDue", "1000.00");
   await setTimeout(100);
-  await page.screenshot({ path: `behaviour-with-auth-test-results/auth-behaviour-010-form-filled_${timestamp}.png` });
+  await page.screenshot({ path: `target/behaviour-with-auth-test-results/auth-behaviour-010-form-filled_${timestamp}.png` });
   await setTimeout(500);
 
   // Submit the form - this will trigger the OAuth flow
@@ -261,7 +261,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   const applicationName = "DIY Accounting Submit";
   await page.waitForLoadState("networkidle");
   await setTimeout(500);
-  await page.screenshot({ path: `behaviour-with-auth-test-results/auth-behaviour-020-hmrc-permission_${timestamp}.png` });
+  await page.screenshot({ path: `target/behaviour-with-auth-test-results/auth-behaviour-020-hmrc-permission_${timestamp}.png` });
   await expect(page.locator("#appNameParagraph")).toContainText(applicationName);
   await expect(page.getByRole('button', { name: 'Continue' })).toContainText("Continue");
   
@@ -272,7 +272,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   // Expect the sign in option to be visible
   await page.waitForLoadState("networkidle");
   await setTimeout(500);
-  await page.screenshot({ path: `behaviour-with-auth-test-results/auth-behaviour-030-hmrc-sign-in_${timestamp}.png` });
+  await page.screenshot({ path: `target/behaviour-with-auth-test-results/auth-behaviour-030-hmrc-sign-in_${timestamp}.png` });
   await expect(page.getByRole('button', { name: 'Sign in to the HMRC online service' })).toContainText("Sign in to the HMRC online service");
 
   // Submit the sign in
@@ -282,7 +282,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   // Expect the credentials form to be visible
   await page.waitForLoadState("networkidle");
   await setTimeout(500);
-  await page.screenshot({ path: `behaviour-with-auth-test-results/auth-behaviour-040-hmrc-credentials_${timestamp}.png` });
+  await page.screenshot({ path: `target/behaviour-with-auth-test-results/auth-behaviour-040-hmrc-credentials_${timestamp}.png` });
   await expect(page.locator('#userId')).toBeVisible();
   await expect(page.locator('#password')).toBeVisible();
 
@@ -296,7 +296,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   // Expect the HMRC give permission page to be visible
   await page.waitForLoadState("networkidle");
   await setTimeout(500);
-  await page.screenshot({ path: `behaviour-with-auth-test-results/auth-behaviour-050-hmrc-give-permission_${timestamp}.png` });
+  await page.screenshot({ path: `target/behaviour-with-auth-test-results/auth-behaviour-050-hmrc-give-permission_${timestamp}.png` });
   await expect(page.locator("#givePermission")).toBeVisible();
 
 
@@ -306,9 +306,9 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
 
   // Display the state after OAuth redirection
   await page.waitForLoadState("networkidle");
-  await page.screenshot({ path: `behaviour-with-auth-test-results/auth-behaviour-055-after-oauth_${timestamp}.png` });
+  await page.screenshot({ path: `target/behaviour-with-auth-test-results/auth-behaviour-055-after-oauth_${timestamp}.png` });
   await setTimeout(500);
-  await page.screenshot({ path: `behaviour-with-auth-test-results/auth-behaviour-060-after-oauth_${timestamp}.png` });
+  await page.screenshot({ path: `target/behaviour-with-auth-test-results/auth-behaviour-060-after-oauth_${timestamp}.png` });
 
   // 5) Wait for the submission process to complete and receipt to be displayed
   await setTimeout(500);
@@ -329,7 +329,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
 
   // Verify the form is hidden after successful submission
   await expect(page.locator("#vatForm")).toBeHidden();
-  await page.screenshot({ path: `behaviour-with-auth-test-results/auth-behaviour-070-receipt_${timestamp}.png`, fullPage: true });
+  await page.screenshot({ path: `target/behaviour-with-auth-test-results/auth-behaviour-070-receipt_${timestamp}.png`, fullPage: true });
   await setTimeout(1000);
 
   console.log("VAT submission flow completed successfully");
