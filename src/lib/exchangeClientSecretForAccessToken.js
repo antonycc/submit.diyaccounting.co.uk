@@ -11,7 +11,12 @@ export default async function exchangeClientSecretForAccessToken(code) {
     });
     const hmrcBase = process.env.DIY_SUBMIT_HMRC_BASE_URI;
     const hmrcRequestUrl = `${hmrcBase}/oauth/token`;
+
     let hmrcResponse;
+    logger.info({
+        message: `Request to POST ${hmrcRequestUrl}`,
+        url: hmrcRequestUrl,
+    });
     if (process.env.NODE_ENV === "stubbed") {
         logger.warn({message: "exchangeTokenHandler called in stubbed mode, using test access token"});
         const hmrcTestAccessToken = process.env.DIY_SUBMIT_TEST_ACCESS_TOKEN;
@@ -30,6 +35,12 @@ export default async function exchangeClientSecretForAccessToken(code) {
     }
 
     const hmrcResponseTokens = await hmrcResponse.json();
+    logger.info({
+        message: "exchangeClientSecretForAccessToken response",
+        hmrcResponseStatus: hmrcResponse.status,
+        hmrcResponseTokens,
+    });
+
     const hmrcAccessToken = hmrcResponseTokens.access_token;
     const hmrcResponseBody = { ...hmrcResponseTokens };
     delete hmrcResponseBody.access_token;

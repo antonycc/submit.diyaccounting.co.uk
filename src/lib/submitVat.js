@@ -21,6 +21,10 @@ export default async function submitVat(periodKey, vatDue, vatNumber, hmrcAccess
     let hmrcResponse;
     const hmrcBase = process.env.DIY_SUBMIT_HMRC_BASE_URI;
     const hmrcRequestUrl = `${hmrcBase}/organisations/vat/${vatNumber}/returns`;
+    logger.info({
+        message: `Request to POST ${hmrcRequestUrl}`,
+        url: hmrcRequestUrl,
+    });
     if (process.env.NODE_ENV === "stubbed") {
         hmrcResponse = {
             ok: true,
@@ -45,6 +49,13 @@ export default async function submitVat(periodKey, vatDue, vatNumber, hmrcAccess
         hmrcResponseBody = await hmrcResponse.json();
     }
     //const hmrcResponseBody = await hmrcResponse.json();
+
+    logger.info({
+        message: `Response from POST ${hmrcRequestUrl}`,
+        url: hmrcRequestUrl,
+        hmrcResponseStatus: hmrcResponse.status,
+        hmrcRequestBody,
+    });
 
     return {hmrcRequestBody, receipt: hmrcResponseBody, hmrcResponse, hmrcResponseBody, hmrcRequestUrl};
 }
