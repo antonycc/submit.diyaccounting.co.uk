@@ -11,6 +11,7 @@ on:
       - '../../infra/**'
       - '.m2/**'
       - 'mvnw'
+      - 'cdk.json'
       - '.mvn'
       - '.github/workflows/test-infra.yml'
   workflow_dispatch:
