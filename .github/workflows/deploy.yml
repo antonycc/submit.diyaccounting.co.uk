@@ -220,6 +220,13 @@ jobs:
           echo "ENV_NAME: ${{ inputs.environment || 'ci' }}"
           echo "LOG_S3_OBJECT_EVENT_HANDLER_SOURCE: ${{ steps.jar-path.outputs.jarFilepath }}"
           echo "LOG_GZIPPED_S3_OBJECT_EVENT_HANDLER_SOURCE: ${{ steps.jar-path.outputs.jarFilepath }}"
+          echo "CERTIFICATE_ARN: ${{ vars.AWS_CERTIFICATE_ARN }}"
+          echo "CLOUD_TRAIL_ENABLED: ${{ vars.AWS_CLOUD_TRAIL_ENABLED
+          echo "X_RAY_ENABLED: ${{ vars.AWS_X_RAY_ENABLED }}"
+          echo "VERBOSE_LOGGING: ${{ vars.AWS_VERBOSE_LOGGING }}"
+          echo "HOSTED_ZONE_ID: ${{ vars.AWS_HOSTED_ZONE_ID }}"
+          echo "HOSTED_ZONE_NAME: ${{ vars.AWS_HOSTED_ZONE_NAME }}"
+          echo "DIY_SUBMIT_HMRC_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}"
 
       - name: synth
         id: synth
@@ -230,17 +237,24 @@ jobs:
           ENV_NAME: ${{ inputs.environment || 'ci' }}
           LOG_S3_OBJECT_EVENT_HANDLER_SOURCE: ${{ steps.jar-path.outputs.jarFilepath }}
           LOG_GZIPPED_S3_OBJECT_EVENT_HANDLER_SOURCE: ${{ steps.jar-path.outputs.jarFilepath }}
+          CERTIFICATE_ARN: ${{ vars.AWS_CERTIFICATE_ARN }}
+          CLOUD_TRAIL_ENABLED: ${{ vars.AWS_CLOUD_TRAIL_ENABLED }}
+          X_RAY_ENABLED: ${{ vars.AWS_X_RAY_ENABLED }}
+          VERBOSE_LOGGING: ${{ vars.AWS_VERBOSE_LOGGING }}
+          HOSTED_ZONE_ID: ${{ vars.AWS_HOSTED_ZONE_ID }}
+          HOSTED_ZONE_NAME: ${{ vars.AWS_HOSTED_ZONE_NAME }}
+          DIY_SUBMIT_HMRC_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
 
       - name: Log generated stacks
         shell: bash
         run: |
-          jq '.' cdk.out/tree.json
+          jq '.' target/cdk.out/tree.json
 
       - name: Upload tree.json as artifact
         uses: actions/upload-artifact@v4
         with:
           name: cdk-tree-json
-          path: cdk.out/tree.json
+          path: target/cdk.out/tree.json
           retention-days: 7
 
       - name: deploy
@@ -252,6 +266,13 @@ jobs:
           ENV_NAME: ${{ inputs.environment || 'ci' }}
           LOG_S3_OBJECT_EVENT_HANDLER_SOURCE: ${{ steps.jar-path.outputs.jarFilepath }}
           LOG_GZIPPED_S3_OBJECT_EVENT_HANDLER_SOURCE: ${{ steps.jar-path.outputs.jarFilepath }}
+          CERTIFICATE_ARN: ${{ vars.AWS_CERTIFICATE_ARN }}
+          CLOUD_TRAIL_ENABLED: ${{ vars.AWS_CLOUD_TRAIL_ENABLED }}
+          X_RAY_ENABLED: ${{ vars.AWS_X_RAY_ENABLED }}
+          VERBOSE_LOGGING: ${{ vars.AWS_VERBOSE_LOGGING }}
+          HOSTED_ZONE_ID: ${{ vars.AWS_HOSTED_ZONE_ID }}
+          HOSTED_ZONE_NAME: ${{ vars.AWS_HOSTED_ZONE_NAME }}
+          DIY_SUBMIT_HMRC_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
 
   npm-behaviour-test-ci:
     needs:
