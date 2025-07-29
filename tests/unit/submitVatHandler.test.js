@@ -232,7 +232,7 @@ describe("submitVatHandler", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(500);
-    expect(body.hmrcResponseBody.message).toBe(errorMessage);
+    expect(body.hmrcResponseBody.error).toBe(errorMessage);
   });
 
   test("should handle HMRC API 401 unauthorized", async () => {
@@ -258,7 +258,7 @@ describe("submitVatHandler", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(500);
-    expect(body.hmrcResponseBody.message).toBe(errorMessage);
+    expect(body.hmrcResponseBody.error).toBe(errorMessage);
   });
 
   test("should handle numeric vatDue as string", async () => {
