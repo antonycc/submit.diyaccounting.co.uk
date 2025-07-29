@@ -57,6 +57,7 @@ import software.amazon.awscdk.services.s3.assets.AssetOptions;
 import software.amazon.awscdk.services.s3.deployment.BucketDeployment;
 import software.amazon.awscdk.services.s3.deployment.ISource;
 import software.amazon.awscdk.services.s3.deployment.Source;
+import software.amazon.awscdk.services.secretsmanager.Secret;
 import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
 
@@ -132,6 +133,7 @@ public class WebStack extends Stack {
         public String error404NotFoundAtDistribution;
         public String skipLambdaUrlOrigins;
         public String hmrcClientId;
+        public String hmrcClientSecret;
         public String homeUrl;
         public String hmrcBaseUri;
         public String optionalTestRedirectUri;
@@ -334,6 +336,11 @@ public class WebStack extends Stack {
 
         public Builder hmrcClientId(String hmrcClientId) {
             this.hmrcClientId = hmrcClientId;
+            return this;
+        }
+
+        public Builder hmrcClientSecret(String hmrcClientSecret) {
+            this.hmrcClientSecret = hmrcClientSecret;
             return this;
         }
 
@@ -635,7 +642,11 @@ public class WebStack extends Stack {
 
         // exchangeToken
         // Create a secret for the HMRC client secret and set the ARN to be used in the Lambda environment variable
-        var hmrcClientSecretArn = "Set to match the value passed in via DIY_SUBMIT_HMRC_CLIENT_SECRET";
+        var hmrcClientSecret = Secret.Builder.create(this, "HmrcClientSecret")
+                .secretStringValue(software.amazon.awscdk.SecretValue.unsafePlainText(builder.hmrcClientSecret))
+                .description("HMRC Client Secret for OAuth authentication")
+                .build();
+        var hmrcClientSecretArn = hmrcClientSecret.getSecretArn();
         var exchangeTokenLambdaEnv = new HashMap<>(Map.of(
                 "DIY_SUBMIT_HMRC_CLIENT_ID", builder.hmrcClientId,
                 "DIY_SUBMIT_HOME_URL", builder.homeUrl,
@@ -849,6 +860,7 @@ public class WebStack extends Stack {
         */
 
         // Create receipts bucket for storing VAT submission receipts
+        // TODO: Add a switch not to write the file contents.
         this.receiptsBucket = LogForwardingBucket.Builder
                 .create(this, "ReceiptsBucket", builder.logS3ObjectEventHandlerSource, LogS3ObjectEvent.class)
                 .bucketName(receiptsBucketFullName)
