@@ -5,7 +5,7 @@ import {GenericContainer} from "testcontainers";
 import {S3Client, CreateBucketCommand, PutObjectCommand, HeadBucketCommand, GetObjectCommand} from "@aws-sdk/client-s3";
 import dotenv from 'dotenv';
 
-import {logReceiptHandler} from "@app/bin/main.js";
+import {httpPost as logReceiptHandler} from "@app/functions/logReceipt.js";
 
 //dotenv.config({path: '.env.test'});
 dotenv.config({ path: '.env.proxy' });

@@ -132,9 +132,6 @@ describe("exchangeClientSecretForAccessToken", () => {
         json: async () => ({ access_token: "test-access-token" }),
       });
 
-      // Re-import the module to get fresh instance
-      const { exchangeToken: exchangeFunction } = await import("@app/functions/exchangeToken");
-
       // Act - call the function twice
       await exchangeToken("test-auth-code-1");
       await exchangeToken("test-auth-code-2");
@@ -174,9 +171,6 @@ describe("exchangeClientSecretForAccessToken", () => {
         status: 200,
         json: async () => ({ access_token: "test-access-token" }),
       });
-
-      // Re-import the module to get fresh instance
-      const { exchangeToken: exchangeFunction } = await import("@app/functions/exchangeToken");
 
       // Act
       const result = await exchangeToken("test-auth-code");
