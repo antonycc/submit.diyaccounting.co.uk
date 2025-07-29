@@ -1,9 +1,10 @@
 // app/functions/logReceipt.js
 
-import logger from "../lib/logger.js";
 import {PutObjectCommand, S3Client} from "@aws-sdk/client-s3";
-import { extractRequest, httpBadRequestResponse, httpOkResponse, httpServerErrorResponse } from "../lib/responses.js";
 import dotenv from "dotenv";
+
+import logger from "../lib/logger.js";
+import { extractRequest, httpBadRequestResponse, httpOkResponse, httpServerErrorResponse } from "../lib/responses.js";
 
 dotenv.config({ path: ".env" });
 

@@ -1,10 +1,11 @@
 // app/functions/exchangeToken.js
 
-import logger from "../lib/logger.js";
 import fetch from "node-fetch";
 import { SecretsManagerClient, GetSecretValueCommand } from '@aws-sdk/client-secrets-manager';
-import { extractRequest, httpBadRequestResponse, httpOkResponse, httpServerErrorResponse } from "../lib/responses.js";
 import dotenv from "dotenv";
+
+import logger from "../lib/logger.js";
+import { extractRequest, httpBadRequestResponse, httpOkResponse, httpServerErrorResponse } from "../lib/responses.js";
 
 dotenv.config({ path: ".env" });
 

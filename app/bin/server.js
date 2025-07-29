@@ -5,13 +5,14 @@ import express from "express";
 import { fileURLToPath } from "url";
 import dotenv from 'dotenv';
 
-import logger from "../lib/logger.js";
 import { httpGet as authUrlHandlerHttpGet }  from "../functions/authUrl.js";
 import { httpPost as exchangeTokenHandlerHttpPost } from "../functions/exchangeToken.js";
 import { httpPost as submitVatHandlerHttpPost } from "../functions/submitVat.js";
 import { httpPost as logReceiptHandlerHttpPost } from "../functions/logReceipt.js";
 
 dotenv.config({ path: '.env' });
+
+import logger from "../lib/logger.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();

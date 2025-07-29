@@ -1,7 +1,8 @@
 // app/functions/authUrl.js
 
 import dotenv from "dotenv";
-import {extractRequest, httpBadRequestResponse, httpOkResponse, httpServerErrorResponse} from "@app/lib/responses.js";
+
+import {extractRequest, httpBadRequestResponse, httpOkResponse, httpServerErrorResponse} from "../lib/responses.js";
 
 dotenv.config({ path: ".env" });
 
