@@ -14,7 +14,10 @@ import dotenv from 'dotenv';
 dotenv.config({ path: '.env.test' });
 
 // Import the actual handlers (not mocked for integration test)
-import { authUrlHandler, exchangeTokenHandler, submitVatHandler, logReceiptHandler } from "@app/bin/main.js";
+import { httpGet as authUrlHandler } from "@app/functions/authUrl.js";
+import { httpPost as exchangeTokenHandler } from "@app/functions/exchangeToken.js";
+import { httpPost as submitVatHandler } from "@app/functions/submitVat.js";
+import { httpPost as logReceiptHandler } from "@app/functions/logReceipt.js";
 
 const HMRC = "https://test-api.service.hmrc.gov.uk";
 const s3Mock = mockClient(S3Client);

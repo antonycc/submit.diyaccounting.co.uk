@@ -7,7 +7,8 @@ import { mockClient } from "aws-sdk-client-mock";
 import { S3Client } from "@aws-sdk/client-s3";
 import dotenv from 'dotenv';
 
-import { authUrlHandler, exchangeTokenHandler } from "@app/bin/main.js";
+import { httpGet as authUrlHandler } from "@app/functions/authUrl.js";
+import { httpPost as exchangeTokenHandler } from "@app/functions/exchangeToken.js";
 
 dotenv.config({ path: '.env.test' });
 

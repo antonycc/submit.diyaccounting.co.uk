@@ -6,7 +6,7 @@ import { mockClient } from "aws-sdk-client-mock";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import dotenv from 'dotenv';
 
-import { logReceiptHandler } from "@app/bin/main.js";
+import { httpPost as logReceiptHandler } from "@app/functions/logReceipt.js";
 
 dotenv.config({ path: '.env.test' });
 

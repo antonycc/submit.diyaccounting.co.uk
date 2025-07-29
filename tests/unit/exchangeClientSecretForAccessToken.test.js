@@ -4,7 +4,7 @@ import { mockClient } from "aws-sdk-client-mock";
 import { SecretsManagerClient, GetSecretValueCommand } from "@aws-sdk/client-secrets-manager";
 import dotenv from 'dotenv';
 
-import exchangeToken from "@app/functions/exchangeToken.js";
+import exchangeToken, { resetCachedSecret } from "@app/functions/exchangeToken.js";
 
 dotenv.config({ path: '.env.test' });
 
@@ -40,8 +40,8 @@ describe("exchangeClientSecretForAccessToken", () => {
       NODE_ENV: "test",
     };
     
-    // Clear any cached secrets by resetting the module
-    vi.resetModules();
+    // Clear any cached secrets
+    resetCachedSecret();
   });
 
   afterEach(() => {
@@ -61,9 +61,6 @@ describe("exchangeClientSecretForAccessToken", () => {
         status: 200,
         json: async () => ({ access_token: "test-access-token" }),
       });
-
-      // Re-import the module to get fresh instance
-      const { exchangeToken: exchangeFunction } = await import("@app/functions/exchangeToken");
 
       // Act
       const result = await exchangeToken("test-auth-code");
@@ -96,9 +93,6 @@ describe("exchangeClientSecretForAccessToken", () => {
         status: 200,
         json: async () => ({ access_token: "test-access-token" }),
       });
-
-      // Re-import the module to get fresh instance
-      const { exchangeToken: exchangeFunction } = await import("@app/functions/exchangeToken");
 
       // Act
       const result = await exchangeToken("test-auth-code");

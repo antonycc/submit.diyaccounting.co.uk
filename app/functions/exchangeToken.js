@@ -115,3 +115,8 @@ async function retrieveSecret() {
     return cachedSecret;
 };
 
+// Export function to reset cached secret for testing
+export function resetCachedSecret() {
+    cachedSecret = undefined;
+}
+
