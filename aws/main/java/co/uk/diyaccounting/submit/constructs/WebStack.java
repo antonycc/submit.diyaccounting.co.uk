@@ -681,7 +681,7 @@ public class WebStack extends Stack {
         this.submitVatLambda = submitVatLambdaUrlOrigin.lambda;
         this.submitVatLambdaUrl = submitVatLambdaUrlOrigin.functionUrl;
         this.submitVatLambdaLogGroup = submitVatLambdaUrlOrigin.logGroup;
-        lambdaUrlToOriginsBehaviourMappings.put("/api/exchange-token*", submitVatLambdaUrlOrigin.behaviorOptions);
+        lambdaUrlToOriginsBehaviourMappings.put("/api/submit-vat*", submitVatLambdaUrlOrigin.behaviorOptions);
 
         var logReceiptLambdaEnv = new HashMap<String,String>(Map.of());
         if(StringUtils.isNotBlank(builder.optionalTestS3Endpoint) && StringUtils.isNotBlank(builder.optionalTestS3AccessKey) || StringUtils.isNotBlank(builder.optionalTestS3SecretKey)) {

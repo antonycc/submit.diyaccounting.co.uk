@@ -68,17 +68,15 @@ export async function exchangeTokenHandler(event) {
 
   let { hmrcAccessToken, hmrcResponse } = await exchangeClientSecretForAccessToken(code);
 
-  // TODO: the hmrc attributes should be in the response body but this will break some tests. Do this before swapping to responses.js
   if (!hmrcResponse.ok) {
-    const response = {
-        statusCode: 500,
-        body: JSON.stringify({
+    return httpServerErrorResponse({
+      request,
+      message: "HMRC token exchange failed",
+      error: {
         hmrcResponseCode: hmrcResponse.status,
         hmrcResponseText: await hmrcResponse.text(),
-      }),
-    };
-    logger.error(response);
-    return response;
+      },
+    });
   }
 
   // Generate a success response
@@ -119,6 +117,7 @@ export async function submitVatHandler(event) {
   if (errorMessages.length > 0) {
     return httpBadRequestResponse({
       request,
+      headers: { ...govClientHeaders },
       message: errorMessages.join(", "),
     });
   }
@@ -130,15 +129,14 @@ export async function submitVatHandler(event) {
   } = await submitVat(periodKey, vatDue, vatNumber, hmrcAccessToken, govClientHeaders);
 
   if (!hmrcResponse.ok) {
-    const response = {
-      statusCode: 500,
-      body: JSON.stringify({
+    return httpServerErrorResponse({
+      request,
+      message: "HMRC VAT submission failed",
+      error: {
         hmrcResponseCode: hmrcResponse.status,
         hmrcResponseText: await hmrcResponse.text(),
-      }),
-    };
-    logger.error(response);
-    return response;
+      },
+    });
   }
 
   // Generate a success response
