@@ -35,6 +35,7 @@ public class WebApp {
                 .error404NotFoundAtDistribution(System.getenv("ERROR_HTML_DOCUMENT"))
                 .skipLambdaUrlOrigins(System.getenv("SKIP_LAMBDA_URL_ORIGINS"))
                 .hmrcClientId(System.getenv("DIY_SUBMIT_HMRC_CLIENT_ID"))
+                .hmrcClientSecret(System.getenv("DIY_SUBMIT_HMRC_CLIENT_SECRET"))
                 .homeUrl(System.getenv("DIY_SUBMIT_HOME_URL"))
                 .hmrcBaseUri(System.getenv("DIY_SUBMIT_HMRC_BASE_URI"))
                 .optionalTestAccessToken(System.getenv("DIY_SUBMIT_TEST_ACCESS_TOKEN"))
