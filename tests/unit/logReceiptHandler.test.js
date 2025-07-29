@@ -79,7 +79,7 @@ describe("logReceiptHandler", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(500);
-    expect(body.error).toBe("Failed to log receipt");
+    expect(body.message).toBe("Failed to log receipt");
     expect(body.details).toBe("Failed to log receipt: Access denied");
   });
 
@@ -108,7 +108,7 @@ describe("logReceiptHandler", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(500);
-    expect(body.error).toBe("Failed to log receipt");
+    expect(body.message).toBe("Failed to log receipt");
     expect(body.details).toBe("Failed to log receipt: Request timeout");
   });
 
@@ -129,7 +129,7 @@ describe("logReceiptHandler", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(500);
-    expect(body.error).toBe("Failed to log receipt");
+    expect(body.message).toBe("Failed to log receipt");
     expect(body.details).toBe("Failed to log receipt: The specified bucket does not exist");
   });
 

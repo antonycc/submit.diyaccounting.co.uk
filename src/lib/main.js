@@ -9,7 +9,13 @@ import exchangeClientSecretForAccessToken from "./exchangeClientSecretForAccessT
 import eventToGovClientHeaders from "./eventToGovClientHeaders.js";
 import submitVat from "./submitVat.js";
 import logReceipt from "./logReceipt.js";
-import {extractRequest, httpBadRequestResponse, httpOkResponse, httpServerErrorResponse} from "@src/lib/responses.js";
+import {
+  extractClientIPFromHeaders,
+  extractRequest,
+  httpBadRequestResponse,
+  httpOkResponse,
+  httpServerErrorResponse
+} from "./responses.js";
 
 dotenv.config({ path: '.env' });
 
@@ -75,54 +81,22 @@ export async function exchangeTokenHandler(event) {
     return response;
   }
 
-  // Generate the response
-  const response = {
-    statusCode: 200,
-    body: JSON.stringify({
+  // Generate a success response
+  return httpOkResponse({
+    request,
+    data: {
       hmrcAccessToken,
-    }),
-  };
-  logger.info({ message: "submitVatHandler responding to url with", url: request, response });
-  return response;
+    },
+  });
 }
-
-// Helper function to extract client IP from request headers
-function extractClientIPFromHeaders(event) {
-  // Try various headers that might contain the client's real IP
-  const headers = event.headers || {};
-  const possibleIPHeaders = [
-    'x-forwarded-for',
-    'x-real-ip',
-    'x-client-ip',
-    'cf-connecting-ip', // Cloudflare
-    'x-forwarded',
-    'forwarded-for',
-    'forwarded'
-  ];
-
-  for (const header of possibleIPHeaders) {
-    const value = headers[header];
-    if (value) {
-      // x-forwarded-for can contain multiple IPs, take the first one
-      const ip = value.split(',')[0].trim();
-      if (ip && ip !== 'unknown') {
-        return ip;
-      }
-    }
-  }
-
-  // Fallback to source IP from event context
-  return event.requestContext?.identity?.sourceIp || 'unknown';
-}
-
 
 // POST /api/submit-vat
 export async function submitVatHandler(event) {
-  const url = extractRequest(event);
+  const request = extractRequest(event);
 
   const detectedIP = extractClientIPFromHeaders(event);
 
-  // Request validation
+  // Validation
   let errorMessages = [];
   const { vatNumber, periodKey, vatDue, hmrcAccessToken } = JSON.parse(event.body || "{}");
   if (!vatNumber) {
@@ -137,22 +111,19 @@ export async function submitVatHandler(event) {
   if (!hmrcAccessToken) {
     errorMessages.push("Missing hmrcAccessToken parameter from body");
   }
-
   const {
     govClientHeaders,
     govClientErrorMessages
   } = eventToGovClientHeaders(event, detectedIP);
-
   errorMessages = errorMessages.concat(govClientErrorMessages || []);
   if (errorMessages.length > 0) {
-    const response = {
-      statusCode: 400,
-      body:  JSON.stringify({ requestUrl: url, requestBody: event.body, error: errorMessages.join(", ") }),
-    };
-    logger.error(response);
-    return response;
+    return httpBadRequestResponse({
+      request,
+      message: errorMessages.join(", "),
+    });
   }
 
+  // Processing
   let {
     receipt,
     hmrcResponse,
@@ -170,20 +141,20 @@ export async function submitVatHandler(event) {
     return response;
   }
 
-  // Generate the response
-  const response = {
-    statusCode: 200,
-    body: JSON.stringify({ receipt }),
-  };
-  logger.info({ message: "submitVatHandler responding to url with", url, response });
-  return response;
+  // Generate a success response
+  return httpOkResponse({
+    request,
+    data: {
+      receipt,
+    },
+  });
 }
 
 // POST /api/log-receipt
 export async function logReceiptHandler(event) {
-  const url = extractRequest(event);
+  const request = extractRequest(event);
 
-  // Request validation
+  // Validation
   const receipt = JSON.parse(event.body || "{}");
   const key = `receipts/${receipt.formBundleNumber}.json`;
   let errorMessages = [];
@@ -197,32 +168,33 @@ export async function logReceiptHandler(event) {
     errorMessages.push({message: "DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX environment variable is not set, cannot log receipt"});
   }
   if (errorMessages.length > 0) {
-    const response = {
-      statusCode: 400,
-      body:  JSON.stringify({ requestUrl: url, requestBody: event.body, error: errorMessages.join(", ") }),
-    };
-    logger.error(response);
-    return response;
+    return httpBadRequestResponse({
+      request,
+      message: `There are ${errorMessages.length} validation errors.`,
+      error: errorMessages.join(", "),
+    });
   }
 
+  // Processing
   try {
       await logReceipt(key, receipt);
-  } catch(err) {
-    const response = {
-      statusCode: 500,
-      body: JSON.stringify({error: "Failed to log receipt", details: err.message}),
-    };
-    logger.error({message: "logReceiptHandler responding to url with", url, response});
-    return response;
+  } catch(error) {
+    // Generate a failure response
+    return httpServerErrorResponse({
+      request: request,
+      message: "Failed to log receipt",
+      error: { details: error.message },
+    });
   }
 
-  // Generate the response
-  const response = {
-    statusCode: 200,
-    body: JSON.stringify({ receipt, key }),
-  };
-  logger.info({ message: "logReceiptHandler responding to url with", url, response });
-  return response;
+  // Generate a success response
+  return httpOkResponse({
+    request,
+    data: {
+      receipt,
+      key,
+    },
+  });
 }
 
 export function main(args) {

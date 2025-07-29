@@ -1,6 +1,6 @@
 // src/lib/responses.js
 
-import logger from "@src/lib/logger.js";
+import logger from "./logger.js";
 
 export function httpOkResponse({request, headers, data}) {
   return httpResponse({
@@ -12,12 +12,12 @@ export function httpOkResponse({request, headers, data}) {
   });
 }
 
-export function httpBadRequestResponse({request, headers, message}) {
+export function httpBadRequestResponse({request, headers, message, error}) {
   return httpResponse({
     statusCode: 400,
     request,
     headers,
-    data: {message},
+    data: {message, ...error},
     levelledLogger: logger.error
   });
 }
@@ -71,4 +71,33 @@ export function extractRequest(event) {
     request = "https://unknown";
   }
   return request;
+}
+
+// Helper function to extract client IP from request headers
+export function extractClientIPFromHeaders(event) {
+  // Try various headers that might contain the client's real IP
+  const headers = event.headers || {};
+  const possibleIPHeaders = [
+    'x-forwarded-for',
+    'x-real-ip',
+    'x-client-ip',
+    'cf-connecting-ip', // Cloudflare
+    'x-forwarded',
+    'forwarded-for',
+    'forwarded'
+  ];
+
+  for (const header of possibleIPHeaders) {
+    const value = headers[header];
+    if (value) {
+      // x-forwarded-for can contain multiple IPs, take the first one
+      const ip = value.split(',')[0].trim();
+      if (ip && ip !== 'unknown') {
+        return ip;
+      }
+    }
+  }
+
+  // Fallback to source IP from event context
+  return event.requestContext?.identity?.sourceIp || 'unknown';
 }

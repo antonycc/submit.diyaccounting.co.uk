@@ -73,7 +73,7 @@ describe("submitVatHandleLocal", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(400);
-    expect(body.error).toBe("Missing vatNumber parameter from body");
+    expect(body.message).toBe("Missing vatNumber parameter from body");
     expect(fetch).not.toHaveBeenCalled();
   });
 
@@ -90,7 +90,7 @@ describe("submitVatHandleLocal", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(400);
-    expect(body.error).toBe("Missing periodKey parameter from body");
+    expect(body.message).toBe("Missing periodKey parameter from body");
     expect(fetch).not.toHaveBeenCalled();
   });
 
@@ -107,7 +107,7 @@ describe("submitVatHandleLocal", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(400);
-    expect(body.error).toBe("Missing vatDue parameter from body");
+    expect(body.message).toBe("Missing vatDue parameter from body");
     expect(fetch).not.toHaveBeenCalled();
   });
 
@@ -124,7 +124,7 @@ describe("submitVatHandleLocal", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(400);
-    expect(body.error).toBe("Missing hmrcAccessToken parameter from body");
+    expect(body.message).toBe("Missing hmrcAccessToken parameter from body");
     expect(fetch).not.toHaveBeenCalled();
   });
 
@@ -137,7 +137,7 @@ describe("submitVatHandleLocal", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(400);
-    expect(body.error).toBe("Missing vatNumber parameter from body, Missing periodKey parameter from body, Missing vatDue parameter from body, Missing hmrcAccessToken parameter from body");
+    expect(body.message).toBe("Missing vatNumber parameter from body, Missing periodKey parameter from body, Missing vatDue parameter from body, Missing hmrcAccessToken parameter from body");
     expect(fetch).not.toHaveBeenCalled();
   });
 
@@ -150,7 +150,7 @@ describe("submitVatHandleLocal", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(400);
-    expect(body.error).toBe("Missing vatNumber parameter from body, Missing periodKey parameter from body, Missing vatDue parameter from body, Missing hmrcAccessToken parameter from body");
+    expect(body.message).toBe("Missing vatNumber parameter from body, Missing periodKey parameter from body, Missing vatDue parameter from body, Missing hmrcAccessToken parameter from body");
     expect(fetch).not.toHaveBeenCalled();
   });
 
@@ -163,7 +163,7 @@ describe("submitVatHandleLocal", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(400);
-    expect(body.error).toBe("Missing vatNumber parameter from body, Missing periodKey parameter from body, Missing vatDue parameter from body, Missing hmrcAccessToken parameter from body");
+    expect(body.message).toBe("Missing vatNumber parameter from body, Missing periodKey parameter from body, Missing vatDue parameter from body, Missing hmrcAccessToken parameter from body");
     expect(fetch).not.toHaveBeenCalled();
   });
 
@@ -181,7 +181,7 @@ describe("submitVatHandleLocal", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(400);
-    expect(body.error).toBe("Missing vatNumber parameter from body, Missing periodKey parameter from body, Missing vatDue parameter from body, Missing hmrcAccessToken parameter from body");
+    expect(body.message).toBe("Missing vatNumber parameter from body, Missing periodKey parameter from body, Missing vatDue parameter from body, Missing hmrcAccessToken parameter from body");
     expect(fetch).not.toHaveBeenCalled();
   });
 
@@ -200,7 +200,7 @@ describe("submitVatHandleLocal", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(400);
-    expect(body.error).toBe("Missing vatNumber parameter from body, Missing periodKey parameter from body, Missing vatDue parameter from body, Missing hmrcAccessToken parameter from body");
+    expect(body.message).toBe("Missing vatNumber parameter from body, Missing periodKey parameter from body, Missing vatDue parameter from body, Missing hmrcAccessToken parameter from body");
     expect(fetch).not.toHaveBeenCalled();
   });
 });

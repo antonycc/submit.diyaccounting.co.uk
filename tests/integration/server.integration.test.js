@@ -192,8 +192,8 @@ describe("Integration – Server Express App", () => {
     it("should handle missing VAT parameters", async () => {
       const response = await request(app).post("/api/submit-vat").send({ vatNumber: "123456789" }).expect(400);
 
-      expect(response.body).toHaveProperty("error");
-      expect(response.body.error).toBe("Missing periodKey parameter from body, Missing vatDue parameter from body, Missing hmrcAccessToken parameter from body");
+      expect(response.body).toHaveProperty("message");
+      expect(response.body.message).toBe("Missing periodKey parameter from body, Missing vatDue parameter from body, Missing hmrcAccessToken parameter from body");
     });
   });
 
@@ -236,8 +236,8 @@ describe("Integration – Server Express App", () => {
 
       const response = await request(app).post("/api/log-receipt").send(receiptData).expect(500);
 
-      expect(response.body).toHaveProperty("error");
-      expect(response.body.error).toBe("Failed to log receipt");
+      expect(response.body).toHaveProperty("message");
+      expect(response.body.message).toBe("Failed to log receipt");
       expect(response.body).toHaveProperty("details");
     });
   });
