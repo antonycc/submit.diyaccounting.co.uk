@@ -43,9 +43,9 @@ function httpResponse({statusCode, headers, data, request, levelledLogger}) {
     }),
   };
   if (request) {
-    levelledLogger("Responding to request with response", request, response);
+    levelledLogger({message: "Responding to request with response", request, response});
   } else {
-    levelledLogger("Responding with response", response);
+    levelledLogger({message: "Responding with response", response});
   }
   return response;
 }
