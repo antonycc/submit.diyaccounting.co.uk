@@ -7,6 +7,6 @@ ENV DIY_SUBMIT_HMRC_CLIENT_SECRET_ARN="From Dockerfile"
 ENV DIY_SUBMIT_HOME_URL="From Dockerfile"
 ENV DIY_SUBMIT_TEST_ACCESS_TOKEN="From Dockerfile"
 
-COPY package.json package-lock.json ./
+COPY ../../package.json ../../package-lock.json ./
 RUN npm install --production
-COPY src/ src/
+COPY ../../src/ src/
