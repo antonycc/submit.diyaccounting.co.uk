@@ -8,16 +8,22 @@ import dotenv from 'dotenv';
 import {httpPost as logReceiptHandler} from "@app/functions/logReceipt.js";
 
 //dotenv.config({path: '.env.test'});
-dotenv.config({ path: '.env.proxy' });
+dotenv.config({ path: '.env.proxy', override: true }); // Override to ensure test environment variables are used
 //dotenv.config();
 
 describe("System Test – persist receipts to containerised S3", () => {
     let container;
     let s3Client;
     const bucketNamePostfix = process.env.DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX;
-    const hostname = "hmrc.test.redirect";
+    //const hostname = "hmrc.test.redirect";
+    //const dashedDomain = hostname.split('.').join('-');
+    //const receiptsBucketFullName = `${dashedDomain}-${bucketNamePostfix}`;
+    const homeUrl = process.env.DIY_SUBMIT_HOME_URL;
+    const receiptsBucketPostfix = process.env.DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX;
+    const {hostname} = new URL(homeUrl);
     const dashedDomain = hostname.split('.').join('-');
-    const receiptsBucketFullName = `${dashedDomain}-${bucketNamePostfix}`;
+    const receiptsBucketFullName = `${dashedDomain}-${receiptsBucketPostfix}`;
+
     const originalEnv = process.env;
     const optionalTestS3AccessKey = process.env.DIY_SUBMIT_TEST_S3_ACCESS_KEY;
     const optionalTestS3SecretKey = process.env.DIY_SUBMIT_TEST_S3_SECRET_KEY;
