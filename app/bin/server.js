@@ -18,6 +18,14 @@ import logger from "../lib/logger.js";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 
+// Read configuration from cdk.json
+const cdkJsonPath = path.join(__dirname, "../../cdk.json");
+logger.info(`Reading CDK configuration from ${cdkJsonPath}`);
+const cdkConfig = JSON.parse(readFileSync(cdkJsonPath, 'utf8'));
+logger.info(`CDK configuration: ${JSON.stringify(cdkConfig, null, 2)}`);
+const context = cdkConfig.context || {};
+logger.info(`CDK context: ${JSON.stringify(context, null, 2)}`);
+
 // parse JSON bodies
 app.use(express.json());
 
@@ -30,11 +38,11 @@ app.use((req, res, next) => {
 // 1) serve static site exactly like `http-server public/`
 app.use(express.static(path.join(__dirname, "../../public")));
 
-// 2) wire your Lambdas under configurable paths
-const authUrlPath = process.env.AUTH_URL_LAMBDA_URL_PATH || "/api/auth-url";
-const exchangeTokenPath = process.env.EXCHANGE_TOKEN_LAMBDA_URL_PATH || "/api/exchange-token";
-const submitVatPath = process.env.SUBMIT_VAT_LAMBDA_URL_PATH || "/api/submit-vat";
-const logReceiptPath = process.env.LOG_RECEIPT_LAMBDA_URL_PATH || "/api/log-receipt";
+// 2) wire your Lambdas under configurable paths from cdk.json
+const authUrlPath = context.authUrlLambdaUrlPath || "/api/auth-url";
+const exchangeTokenPath = context.exchangeTokenLambdaUrlPath || "/api/exchange-token";
+const submitVatPath = context.submitVatLambdaUrlPath || "/api/submit-vat";
+const logReceiptPath = context.logReceiptLambdaUrlPath || "/api/log-receipt";
 
 app.get(authUrlPath, async (req, res) => {
   const event = {
@@ -43,7 +51,7 @@ app.get(authUrlPath, async (req, res) => {
     queryStringParameters: req.query || {},
   };
   const { statusCode, body } = await authUrlHandlerHttpGet(event);
-  res.status(statusCode).json(JSON.parse(body));
+  res["status"](statusCode).json(JSON.parse(body));
 });
 
 app.post(exchangeTokenPath, async (req, res) => {

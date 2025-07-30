@@ -68,6 +68,11 @@ export default async function submitVat(periodKey, vatDue, vatNumber, hmrcAccess
     logger.info({
         message: `Request to POST ${hmrcRequestUrl}`,
         url: hmrcRequestUrl,
+        headers: {
+            ...hmrcRequestHeaders,
+            ...govClientHeaders,
+        },
+        body: hmrcRequestBody,
         environment: {
             hmrcBase,
             nodeEnv: process.env.NODE_ENV

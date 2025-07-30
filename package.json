@@ -24,6 +24,7 @@
     "test:system": "vitest --run tests/system/*.test.js",
     "test:client": "playwright test tests/client/*.test.js",
     "test:behaviour": "playwright test tests/behaviour/*.test.js",
+    "test:cdk": "./mvnw clean package ; npx dotenv -e .env.proxy -- npx cdk synth SubmitWebStack-dev --ci true --strict --validation",
     "start": "npx dotenv -e .env.proxy -- node app/bin/server.js",
     "proxy": "npx dotenv -e .env.proxy -- npx ngrok http --url wanted-finally-anteater.ngrok-free.app 3000"
   },

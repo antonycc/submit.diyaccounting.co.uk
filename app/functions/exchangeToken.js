@@ -32,6 +32,10 @@ export default async function exchangeToken(code) {
     logger.info({
         message: `Request to POST ${hmrcRequestUrl}`,
         url: hmrcRequestUrl,
+        headers: {
+            ...hmrcRequestHeaders,
+        },
+        body: hmrcRequestBody,
     });
     if (process.env.NODE_ENV === "stubbed") {
         logger.warn({message: "httpPost called in stubbed mode, using test access token"});
