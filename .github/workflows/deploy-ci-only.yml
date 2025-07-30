@@ -18,11 +18,14 @@ on:
       - '**/pom.xml'
   workflow_dispatch:
     inputs:
-        skipDeploy:
-            description: 'Skip deployment step'
-            required: false
-            default: 'true'
-            type: string
+      skipDeploy:
+        description: 'Skip deployment step'
+        required: false
+        default: 'true'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
 
 env:
   #environment: 'ci'
