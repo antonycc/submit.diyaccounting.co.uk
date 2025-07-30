@@ -20,7 +20,7 @@ const s3Mock = mockClient(S3Client);
 // MSW server to stub HMRC HTTP calls
 const server = setupServer(
   http.post(`${HMRC}/oauth/token`, () => {
-    return HttpResponse.json({ access_token: "sys-token" }, { status: 200 });
+    return HttpResponse.json({ access_token: "test access token" }, { status: 200 });
   }),
   http.post(`${HMRC}/organisations/vat/:vrn/returns`, ({ params }) => {
     const { vrn } = params;

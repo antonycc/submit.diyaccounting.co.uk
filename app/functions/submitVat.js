@@ -32,7 +32,7 @@ export default async function submitVat(periodKey, vatDue, vatNumber, hmrcAccess
     });
 
     // Early validation - reject if token is clearly invalid
-    if (!hmrcAccessToken || typeof hmrcAccessToken !== 'string' || hmrcAccessToken.length < 10) {
+    if (!hmrcAccessToken || typeof hmrcAccessToken !== 'string' || hmrcAccessToken.length < 2) {
         logger.error({
             message: "Invalid access token provided to submitVat",
             tokenValidation,
@@ -42,6 +42,11 @@ export default async function submitVat(periodKey, vatDue, vatNumber, hmrcAccess
     }
 
     // Request processing
+    const hmrcRequestHeaders = {
+        "Content-Type": "application/json",
+        "Accept": "application/vnd.hmrc.1.0+json",
+        "Authorization": `Bearer ${hmrcAccessToken}`,
+    }
     const hmrcRequestBody = {
         periodKey,
         vatDueSales: parseFloat(vatDue),
@@ -82,9 +87,7 @@ export default async function submitVat(periodKey, vatDue, vatNumber, hmrcAccess
         hmrcResponse = await fetch(hmrcRequestUrl, {
             method: "POST",
             headers: {
-                "Content-Type": "application/json",
-                "Accept": "application/vnd.hmrc.1.0+json",
-                "Authorization": `Bearer ${hmrcAccessToken}`,
+                ...hmrcRequestHeaders,
                 ...govClientHeaders,
             },
             body: JSON.stringify(hmrcRequestBody),

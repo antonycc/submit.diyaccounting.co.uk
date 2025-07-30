@@ -15,6 +15,9 @@ let cachedSecret; // caching via module-level variable
 
 export default async function exchangeToken(code) {
     await retrieveSecret();
+    const hmrcRequestHeaders = {
+        "Content-Type": "application/x-www-form-urlencoded"
+    }
     const hmrcRequestBody = new URLSearchParams({
         grant_type: "authorization_code",
         client_id: process.env.DIY_SUBMIT_HMRC_CLIENT_ID,
@@ -42,7 +45,9 @@ export default async function exchangeToken(code) {
     } else {
         hmrcResponse = await fetch(hmrcRequestUrl, {
             method: "POST",
-            headers: {"Content-Type": "application/x-www-form-urlencoded"},
+            headers: {
+                ...hmrcRequestHeaders,
+            },
             body: hmrcRequestBody,
         });
     }
