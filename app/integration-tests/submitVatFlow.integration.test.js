@@ -1,4 +1,5 @@
-// tests/system/submitVat.system.test.js
+// app/integration-tests/submitVat.system.test.js
+
 import { describe, beforeAll, afterAll, beforeEach, it, expect, vi } from "vitest";
 import { setupServer } from "msw/node";
 import { http, HttpResponse } from "msw";

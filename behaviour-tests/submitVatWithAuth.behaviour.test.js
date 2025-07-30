@@ -1,4 +1,4 @@
-// tests/behaviour/submitVatWithAuth.behaviour.test.js
+// behaviour-tests/submitVatWithAuth.behaviour.test.js
 
 import { test, expect } from "@playwright/test";
 import { spawn } from "child_process";

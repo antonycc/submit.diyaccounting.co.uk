@@ -1,4 +1,4 @@
-// tests/client/client.system.test.js
+// web/browser-tests/client.system.test.js
 
 import { test, expect, chromium } from "@playwright/test";
 import fs from "fs";
@@ -19,7 +19,7 @@ test.describe("Client System Test - VAT Flow in Browser", () => {
 
   test.beforeAll(async () => {
     // Read the HTML file
-    htmlContent = fs.readFileSync(path.join(process.cwd(), "public/index.html"), "utf-8");
+    htmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/index.html"), "utf-8");
   });
 
   test.beforeEach(async ({ page }) => {

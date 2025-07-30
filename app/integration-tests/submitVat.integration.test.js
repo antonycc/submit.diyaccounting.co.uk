@@ -1,4 +1,4 @@
-// tests/integration/primaryPaths.integration.test.js
+// app/integration-tests/primaryPaths.integration.test.js
 import { describe, beforeAll, afterAll, beforeEach, afterEach, it, expect, vi } from "vitest";
 import { setupServer } from "msw/node";
 import { http, HttpResponse } from "msw";

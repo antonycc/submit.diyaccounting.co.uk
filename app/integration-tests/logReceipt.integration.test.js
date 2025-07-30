@@ -1,4 +1,4 @@
-// tests/integration/logReceipt.integration.test.js
+// app/integration-tests/logReceipt.integration.test.js
 
 import { describe, beforeAll, afterAll, beforeEach, afterEach, it, expect, vi } from "vitest";
 import { setupServer } from "msw/node";

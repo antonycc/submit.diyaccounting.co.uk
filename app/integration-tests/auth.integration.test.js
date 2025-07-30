@@ -1,4 +1,4 @@
-// tests/integration/auth.integration.test.js
+// app/integration-tests/auth.integration.test.js
 
 import { describe, beforeAll, afterAll, beforeEach, afterEach, it, expect, vi } from "vitest";
 import { setupServer } from "msw/node";

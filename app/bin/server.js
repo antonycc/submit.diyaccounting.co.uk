@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 // app/bin/server.js
+
 import path from "path";
 import express from "express";
 import { fileURLToPath } from "url";
@@ -35,8 +36,8 @@ app.use((req, res, next) => {
   next();
 });
 
-// 1) serve static site exactly like `http-server public/`
-app.use(express.static(path.join(__dirname, "../../public")));
+// 1) serve static site
+app.use(express.static(path.join(__dirname, "../../web/public")));
 
 // 2) wire your Lambdas under configurable paths from cdk.json
 const authUrlPath = context.authUrlLambdaUrlPath || "/api/auth-url";

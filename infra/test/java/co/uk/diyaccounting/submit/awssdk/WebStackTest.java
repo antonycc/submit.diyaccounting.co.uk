@@ -59,7 +59,7 @@ public class WebStackTest {
                 .cloudTrailEventSelectorPrefix("none")
                 .logS3ObjectEventHandlerSource("none")
                 .logGzippedS3ObjectEventHandlerSource("none")
-                .docRootPath("public/")
+                .docRootPath("web/public/")
                 .defaultDocumentAtOrigin("404-error-origin.html")
                 .error404NotFoundAtDistribution("404-error-distribution.html")
                 .skipLambdaUrlOrigins("false")

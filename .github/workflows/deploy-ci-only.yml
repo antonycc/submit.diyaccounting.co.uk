@@ -11,7 +11,7 @@ on:
     paths:
       - 'infra/**'
       - '../../app/**'
-      - 'public/**'
+      - '../../web/public/**'
       - '.github/workflows/deploy-ci-only.yml'
       - '**/pom.xml'
   workflow_dispatch:

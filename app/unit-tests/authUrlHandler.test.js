@@ -1,3 +1,5 @@
+// app/unit-tests/authUrlHandler.test.js
+
 import { describe, test, expect, beforeEach, afterEach } from "vitest";
 import { httpGet as authUrlHandler } from "@app/functions/authUrl.js";
 import dotenv from 'dotenv';

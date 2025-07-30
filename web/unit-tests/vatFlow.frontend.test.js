@@ -1,4 +1,4 @@
-// app/unit-tests/vatFlow.frontend.test.js
+// web/unit-tests/vatFlow.frontend.test.js
 
 import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
 import { Window } from "happy-dom";
@@ -11,7 +11,7 @@ import {buildGovClientTestHeaders} from "@app/unit-tests/govClientTestHeader.js"
 dotenv.config({ path: '.env.test' });
 
 // Read the HTML file content
-const htmlContent = fs.readFileSync(path.join(process.cwd(), "public/index.html"), "utf-8");
+const htmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/index.html"), "utf-8");
 
 describe("VAT Flow Frontend JavaScript", () => {
   const originalEnv = process.env;

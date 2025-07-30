@@ -10,7 +10,7 @@ on:
       - main
     paths:
       - 'behaviour-tests/**'
-      - '**/public/**'
+      - '../../web/public/**'
       - '.github/workflows/test-behaviour.yml'
       - '!infra/**'
   workflow_dispatch:

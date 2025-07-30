@@ -9,7 +9,7 @@ on:
       - main
     paths:
       - 'web/**'
-      - 'public/**'
+      - '../../web/public/**'
       - '.github/workflows/test-client.yml'
   workflow_dispatch:
   schedule:

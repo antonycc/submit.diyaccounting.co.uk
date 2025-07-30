@@ -1,4 +1,4 @@
-// tests/integration/server.integration.test.js
+// app/integration-tests/server.integration.test.js
 
 import { describe, beforeAll, afterAll, beforeEach, afterEach, it, expect, vi } from "vitest";
 import { setupServer } from "msw/node";
@@ -96,7 +96,8 @@ describe("Integration – Server Express App", () => {
     // Create Express app exactly like server.js
     app = express();
     app.use(express.json());
-    app.use(express.static(path.join(__dirname, "../../app/lib/public")));
+    //app.use(express.static(path.join(__dirname, "../../app/lib/public")));
+    app.use(express.static(path.join(__dirname, "../../web/public")));
 
     // Wire the API routes exactly like server.js
     app.get("/api/auth-url", async (req, res) => {

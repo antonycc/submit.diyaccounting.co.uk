@@ -1,3 +1,5 @@
+// app/unit-tests/logReceiptHandler.test.js
+
 import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
 import dotenv from 'dotenv';
 

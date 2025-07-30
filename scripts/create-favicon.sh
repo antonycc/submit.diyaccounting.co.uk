@@ -15,7 +15,7 @@ fi
 input_image_filepath="$1"
 
 # Output favicon file
-output_favicon_filepath="./public/favicon.ico"
+output_favicon_filepath="./web/public/favicon.ico"
 
 # Create multiple sizes of the favicon
 convert "${input_image_filepath?}" \

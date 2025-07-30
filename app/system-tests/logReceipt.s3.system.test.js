@@ -1,4 +1,4 @@
-// tests/system/logReceipt.s3.system.test.js
+// app/system-tests/logReceipt.s3.system.test.js
 
 import {describe, beforeAll, afterAll, beforeEach, it, expect, vi} from "vitest";
 import {GenericContainer} from "testcontainers";

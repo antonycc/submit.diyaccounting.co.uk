@@ -1,4 +1,4 @@
-// tests/client/chromium.client.status-stack.test.js
+// web/browser-tests/chromium.client.status-stack.test.js
 
 import { test, expect, chromium } from "@playwright/test";
 import fs from "fs";
@@ -16,7 +16,7 @@ test.describe("Client Status Message Stacking", () => {
   let htmlContent;
 
   test.beforeAll(async () => {
-    htmlContent = fs.readFileSync(path.join(process.cwd(), "public/index.html"), "utf-8");
+    htmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/index.html"), "utf-8");
   });
 
   test.beforeEach(async ({ page }) => {
