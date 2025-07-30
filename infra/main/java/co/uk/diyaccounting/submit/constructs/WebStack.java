@@ -145,12 +145,16 @@ public class WebStack extends Stack {
         public String receiptsBucketPostfix;
         public String lambdaEntry;
         public String authUrlLambdaHandlerFunctionName;
+        public String authUrlLambdaUrlPath;
         public String authUrlLambdaDuration;
         public String exchangeTokenLambdaHandlerFunctionName;
+        public String exchangeTokenLambdaUrlPath;
         public String exchangeTokenLambdaDuration;
         public String submitVatLambdaHandlerFunctionName;
+        public String submitVatLambdaUrlPath;
         public String submitVatLambdaDuration;
         public String logReceiptLambdaHandlerFunctionName;
+        public String logReceiptLambdaUrlPath;
         public String logReceiptLambdaDuration;
         public String lambdaUrlAuthType;
 
@@ -395,6 +399,11 @@ public class WebStack extends Stack {
             return this;
         }
 
+        public Builder authUrlLambdaUrlPath(String authUrlLambdaUrlPath) {
+            this.authUrlLambdaUrlPath = authUrlLambdaUrlPath;
+            return this;
+        }
+
         public Builder authUrlLambdaDurationMillis(String authUrlLambdaDuration) {
             this.authUrlLambdaDuration = authUrlLambdaDuration;
             return this;
@@ -402,6 +411,11 @@ public class WebStack extends Stack {
 
         public Builder exchangeTokenLambdaHandlerFunctionName(String exchangeTokenLambdaHandlerFunctionName) {
             this.exchangeTokenLambdaHandlerFunctionName = exchangeTokenLambdaHandlerFunctionName;
+            return this;
+        }
+
+        public Builder exchangeTokenLambdaUrlPath(String exchangeTokenLambdaUrlPath) {
+            this.exchangeTokenLambdaUrlPath = exchangeTokenLambdaUrlPath;
             return this;
         }
 
@@ -415,6 +429,11 @@ public class WebStack extends Stack {
             return this;
         }
 
+        public Builder submitVatLambdaUrlPath(String submitVatLambdaUrlPath) {
+            this.submitVatLambdaUrlPath = submitVatLambdaUrlPath;
+            return this;
+        }
+
         public Builder submitVatLambdaDurationMillis(String submitVatLambdaDuration) {
             this.submitVatLambdaDuration = submitVatLambdaDuration;
             return this;
@@ -422,6 +441,11 @@ public class WebStack extends Stack {
 
         public Builder logReceiptLambdaHandlerFunctionName(String logReceiptLambdaHandlerFunctionName) {
             this.logReceiptLambdaHandlerFunctionName = logReceiptLambdaHandlerFunctionName;
+            return this;
+        }
+
+        public Builder logReceiptLambdaUrlPath(String logReceiptLambdaUrlPath) {
+            this.logReceiptLambdaUrlPath = logReceiptLambdaUrlPath;
             return this;
         }
 
@@ -640,7 +664,7 @@ public class WebStack extends Stack {
         this.authUrlLambda = authUrlLambdaUrlOrigin.lambda;
         this.authUrlLambdaUrl = authUrlLambdaUrlOrigin.functionUrl;
         this.authUrlLambdaLogGroup = authUrlLambdaUrlOrigin.logGroup;
-        lambdaUrlToOriginsBehaviourMappings.put("/api/auth-url*", authUrlLambdaUrlOrigin.behaviorOptions);
+        lambdaUrlToOriginsBehaviourMappings.put(builder.authUrlLambdaUrlPath + "*", authUrlLambdaUrlOrigin.behaviorOptions);
 
         // exchangeToken
         // Create a secret for the HMRC client secret and set the ARN to be used in the Lambda environment variable
@@ -675,7 +699,7 @@ public class WebStack extends Stack {
         this.exchangeTokenLambda = exchangeTokenLambdaUrlOrigin.lambda;
         this.exchangeTokenLambdaUrl = exchangeTokenLambdaUrlOrigin.functionUrl;
         this.exchangeTokenLambdaLogGroup = exchangeTokenLambdaUrlOrigin.logGroup;
-        lambdaUrlToOriginsBehaviourMappings.put("/api/exchange-token*", exchangeTokenLambdaUrlOrigin.behaviorOptions);
+        lambdaUrlToOriginsBehaviourMappings.put(builder.exchangeTokenLambdaUrlPath + "*", exchangeTokenLambdaUrlOrigin.behaviorOptions);
         hmrcClientSecret.grantRead(this.exchangeTokenLambda);
 
         // submitVat
@@ -700,7 +724,7 @@ public class WebStack extends Stack {
         this.submitVatLambda = submitVatLambdaUrlOrigin.lambda;
         this.submitVatLambdaUrl = submitVatLambdaUrlOrigin.functionUrl;
         this.submitVatLambdaLogGroup = submitVatLambdaUrlOrigin.logGroup;
-        lambdaUrlToOriginsBehaviourMappings.put("/api/submit-vat*", submitVatLambdaUrlOrigin.behaviorOptions);
+        lambdaUrlToOriginsBehaviourMappings.put(builder.submitVatLambdaUrlPath + "*", submitVatLambdaUrlOrigin.behaviorOptions);
 
         var logReceiptLambdaEnv = new HashMap<String,String>(Map.of());
         if(StringUtils.isNotBlank(builder.optionalTestS3Endpoint) && StringUtils.isNotBlank(builder.optionalTestS3AccessKey) || StringUtils.isNotBlank(builder.optionalTestS3SecretKey)) {
@@ -730,7 +754,7 @@ public class WebStack extends Stack {
         this.logReceiptLambda = logReceiptLambdaUrlOrigin.lambda;
         this.logReceiptLambdaUrl = logReceiptLambdaUrlOrigin.functionUrl;
         this.logReceiptLambdaLogGroup = logReceiptLambdaUrlOrigin.logGroup;
-        lambdaUrlToOriginsBehaviourMappings.put("/api/log-receipt*", logReceiptLambdaUrlOrigin.behaviorOptions);
+        lambdaUrlToOriginsBehaviourMappings.put(builder.logReceiptLambdaUrlPath + "*", logReceiptLambdaUrlOrigin.behaviorOptions);
 
         /*String exchangeTokenLambdaHandlerLambdaFunctionName = Builder.buildFunctionName(dashedDomainName, builder.exchangeTokenLambdaHandlerFunctionName);
         String exchangeTokenLambdaHandlerCmd = builder.lambdaEntry + builder.exchangeTokenLambdaHandlerFunctionName;

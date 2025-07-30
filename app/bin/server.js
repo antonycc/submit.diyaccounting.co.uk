@@ -3,6 +3,7 @@
 import path from "path";
 import express from "express";
 import { fileURLToPath } from "url";
+import { readFileSync } from "fs";
 import dotenv from 'dotenv';
 
 import { httpGet as authUrlHandlerHttpGet }  from "../functions/authUrl.js";
@@ -29,8 +30,13 @@ app.use((req, res, next) => {
 // 1) serve static site exactly like `http-server public/`
 app.use(express.static(path.join(__dirname, "../../public")));
 
-// 2) wire your Lambdas under /api
-app.get("/api/auth-url", async (req, res) => {
+// 2) wire your Lambdas under configurable paths
+const authUrlPath = process.env.AUTH_URL_LAMBDA_URL_PATH || "/api/auth-url";
+const exchangeTokenPath = process.env.EXCHANGE_TOKEN_LAMBDA_URL_PATH || "/api/exchange-token";
+const submitVatPath = process.env.SUBMIT_VAT_LAMBDA_URL_PATH || "/api/submit-vat";
+const logReceiptPath = process.env.LOG_RECEIPT_LAMBDA_URL_PATH || "/api/log-receipt";
+
+app.get(authUrlPath, async (req, res) => {
   const event = {
     path: req.path,
     headers: { host: req.get('host') || 'localhost:3000' },
@@ -40,7 +46,7 @@ app.get("/api/auth-url", async (req, res) => {
   res.status(statusCode).json(JSON.parse(body));
 });
 
-app.post("/api/exchange-token", async (req, res) => {
+app.post(exchangeTokenPath, async (req, res) => {
   const event = {
     path: req.path,
     headers: { host: req.get('host') || 'localhost:3000' },
@@ -51,7 +57,7 @@ app.post("/api/exchange-token", async (req, res) => {
   res.status(statusCode).json(JSON.parse(body));
 });
 
-app.post("/api/submit-vat", async (req, res) => {
+app.post(submitVatPath, async (req, res) => {
   const event = {
     path: req.path,
     headers: { host: req.get('host') || 'localhost:3000' },
@@ -62,7 +68,7 @@ app.post("/api/submit-vat", async (req, res) => {
   res.status(statusCode).json(JSON.parse(body));
 });
 
-app.post("/api/log-receipt", async (req, res) => {
+app.post(logReceiptPath, async (req, res) => {
   const event = {
     path: req.path,
     headers: { host: req.get('host') || 'localhost:3000' },
