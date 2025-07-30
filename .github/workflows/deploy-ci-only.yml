@@ -176,7 +176,7 @@ jobs:
 
       - run: npx playwright install --with-deps
 
-      - run: npx dotenv -e '.env.ci' -- npm run test:behaviour
+      - run: cp '.env.ci' '.env.proxy' ; npx dotenv -e '.env.ci' -- npm run test:behaviour
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
