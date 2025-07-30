@@ -5,6 +5,14 @@ concurrency: ngrok
 run-name: 'test behaviour [${{ github.ref_name }}] [${{ github.event.head_commit.message }}]'
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'behaviour-tests/**'
+      - '**/public/**'
+      - '.github/workflows/test-behaviour.yml'
+      - '!infra/**'
   workflow_dispatch:
   schedule:
     - cron: '34 2,3,4 * * *'

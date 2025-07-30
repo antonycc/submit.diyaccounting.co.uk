@@ -13,4 +13,3 @@ COPY package.json package-lock.json ./
 RUN echo "authUrl.Dockerfile: Installing npm dependencies" && npm install --production
 COPY app/ app/
 RUN echo "authUrl.Dockerfile: Final directory structure:" && ls -la .
-RUN echo "authUrl.Dockerfile: Final app/ files:" && find app/ -type f

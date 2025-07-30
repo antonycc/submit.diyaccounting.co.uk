@@ -1,7 +1,7 @@
 # .github/workflows/test-app.yml
 
-name: test-services
-run-name: 'test services [${{ github.ref_name }}] [${{ github.event.head_commit.message }}]'
+name: test-app
+run-name: 'test app [${{ github.ref_name }}] [${{ github.event.head_commit.message }}]'
 
 on:
   push:
@@ -10,7 +10,7 @@ on:
     paths:
       - 'app/**'
       - '**/*.json'
-      - 'test-app.yml'
+      - '.github/workflows/test-app.yml'
       - '!infra/**'
   workflow_dispatch:
   schedule:

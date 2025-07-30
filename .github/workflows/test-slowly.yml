@@ -1,8 +1,8 @@
-# .github/workflows/slow-tests.yml
+# .github/workflows/test-slowly.yml
 
-name: slow-tests
+name: test-slowly
 concurrency: ngrok
-run-name: 'slow tests [${{ github.ref_name }}] [${{ github.event.head_commit.message }}]'
+run-name: 'test slowly [${{ github.ref_name }}] [${{ github.event.head_commit.message }}]'
 
 on:
   workflow_dispatch:
