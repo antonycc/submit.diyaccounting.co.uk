@@ -9,7 +9,8 @@ on:
       - main
     paths:
       - 'app/**'
-      - '**/*.json'
+      - 'package.json'
+      - 'package-lock.json'
       - '.github/workflows/test-app.yml'
       - '!infra/**'
   workflow_dispatch:

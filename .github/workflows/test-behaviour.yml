@@ -11,6 +11,8 @@ on:
     paths:
       - 'behaviour-tests/**'
       - '../../web/public/**'
+      - 'package.json'
+      - 'package-lock.json'
       - '.github/workflows/test-behaviour.yml'
       - '!infra/**'
   workflow_dispatch:
