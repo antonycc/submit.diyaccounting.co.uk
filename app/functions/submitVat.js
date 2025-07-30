@@ -10,6 +10,37 @@ import eventToGovClientHeaders from "../lib/eventToGovClientHeaders.js";
 dotenv.config({ path: ".env" });
 
 export default async function submitVat(periodKey, vatDue, vatNumber, hmrcAccessToken, govClientHeaders) {
+    const submissionStartTime = new Date().toISOString();
+    
+    // Validate access token format
+    const tokenValidation = {
+        hasAccessToken: !!hmrcAccessToken,
+        accessTokenLength: hmrcAccessToken ? hmrcAccessToken.length : 0,
+        accessTokenPrefix: hmrcAccessToken ? hmrcAccessToken.substring(0, 8) + "..." : "none",
+        isValidFormat: hmrcAccessToken && typeof hmrcAccessToken === 'string' && hmrcAccessToken.length > 10,
+        vatNumber,
+        periodKey,
+        vatDue
+    };
+
+    // Enhanced debug logging for access token validation
+    logger.info({
+        message: "submitVat function called with access token",
+        submissionStartTime,
+        tokenValidation,
+        govClientHeaders: Object.keys(govClientHeaders || {})
+    });
+
+    // Early validation - reject if token is clearly invalid
+    if (!hmrcAccessToken || typeof hmrcAccessToken !== 'string' || hmrcAccessToken.length < 10) {
+        logger.error({
+            message: "Invalid access token provided to submitVat",
+            tokenValidation,
+            error: "Access token is missing, not a string, or too short"
+        });
+        throw new Error("Invalid access token provided");
+    }
+
     // Request processing
     const hmrcRequestBody = {
         periodKey,
@@ -32,6 +63,10 @@ export default async function submitVat(periodKey, vatDue, vatNumber, hmrcAccess
     logger.info({
         message: `Request to POST ${hmrcRequestUrl}`,
         url: hmrcRequestUrl,
+        environment: {
+            hmrcBase,
+            nodeEnv: process.env.NODE_ENV
+        }
     });
     if (process.env.NODE_ENV === "stubbed") {
         hmrcResponse = {
@@ -58,12 +93,39 @@ export default async function submitVat(periodKey, vatDue, vatNumber, hmrcAccess
     }
     //const hmrcResponseBody = await hmrcResponse.json();
 
-    logger.info({
+    // Enhanced logging for response analysis
+    const responseLogData = {
         message: `Response from POST ${hmrcRequestUrl}`,
         url: hmrcRequestUrl,
         hmrcResponseStatus: hmrcResponse.status,
         hmrcRequestBody,
-    });
+    };
+
+    // Add detailed error logging for 403 responses
+    if (hmrcResponse.status === 403) {
+        responseLogData.error403Analysis = {
+            message: "403 Forbidden - Access token may be invalid, expired, or lack required permissions",
+            possibleCauses: [
+                "Invalid or expired access token",
+                "Token lacks required scopes (write:vat read:vat)",
+                "Client credentials mismatch",
+                "Missing or incorrect Gov-Client headers",
+                "HMRC API rate limiting"
+            ],
+            tokenInfo: {
+                hasAccessToken: !!hmrcAccessToken,
+                accessTokenLength: hmrcAccessToken ? hmrcAccessToken.length : 0,
+                accessTokenPrefix: hmrcAccessToken ? hmrcAccessToken.substring(0, 8) + "..." : "none"
+            },
+            requestHeaders: {
+                authorization: hmrcAccessToken ? `Bearer ${hmrcAccessToken.substring(0, 8)}...` : "missing",
+                govClientHeadersCount: Object.keys(govClientHeaders || {}).length,
+                govClientHeaderKeys: Object.keys(govClientHeaders || {})
+            }
+        };
+    }
+
+    logger.info(responseLogData);
 
     return {hmrcRequestBody, receipt: hmrcResponseBody, hmrcResponse, hmrcResponseBody, hmrcRequestUrl};
 }

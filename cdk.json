@@ -38,13 +38,13 @@
     "optionalTestS3SecretKey": "",
     "receiptsBucketPostfix": "receipts",
     "lambdaEntry": "app/functions/",
-    "authUrlLambdaHandlerFunctionName": "authUrl.authUrlHandler",
+    "authUrlLambdaHandlerFunctionName": "authUrl.httpGet",
     "authUrlLambdaDuration": "30000",
-    "exchangeTokenLambdaHandlerFunctionName": "exchangeToken.exchangeTokenHandler",
+    "exchangeTokenLambdaHandlerFunctionName": "exchangeToken.httpPost",
     "exchangeTokenLambdaDuration": "30000",
-    "submitVatLambdaHandlerFunctionName": "submitVat.submitVatHandler",
+    "submitVatLambdaHandlerFunctionName": "submitVat.httpPost",
     "submitVatLambdaDuration": "60000",
-    "logReceiptLambdaHandlerFunctionName": "logReceipt.logReceiptHandler",
+    "logReceiptLambdaHandlerFunctionName": "logReceipt.httpPost",
     "logReceiptLambdaDuration": "30000",
     "lambdaUrlAuthType": "none"
   }

@@ -48,10 +48,20 @@ export default async function exchangeToken(code) {
     }
 
     const hmrcResponseTokens = await hmrcResponse.json();
+    
+    // Enhanced debug logging for access token flow
     logger.info({
         message: "exchangeClientSecretForAccessToken response",
         hmrcResponseStatus: hmrcResponse.status,
         hmrcResponseTokens,
+        tokenValidation: {
+            hasAccessToken: !!hmrcResponseTokens.access_token,
+            accessTokenLength: hmrcResponseTokens.access_token ? hmrcResponseTokens.access_token.length : 0,
+            tokenType: hmrcResponseTokens.token_type,
+            scope: hmrcResponseTokens.scope,
+            expiresIn: hmrcResponseTokens.expires_in,
+            hasRefreshToken: !!hmrcResponseTokens.refresh_token
+        }
     });
 
     const hmrcAccessToken = hmrcResponseTokens.access_token;

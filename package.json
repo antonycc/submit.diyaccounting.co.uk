@@ -5,7 +5,7 @@
   "type": "module",
   "main": "app/bin/main.js",
   "bin": {
-    "repository0-intention-com-web": "app/bin/main.js"
+    "submit": "app/bin/main.js"
   },
   "scripts": {
     "build": "echo 'Nothing to build'",

@@ -10,8 +10,8 @@ on:
   #    - main
   #  paths:
   #    - 'public/index.html'
-  #    - 'aws/main/java/co/uk/diyaccounting/submit/constructs/WebStack.java'
-  #    - 'app/lib/main.js'
+  #    - 'aws/'
+  #    - 'app/'
   #    - 'cdk.json'
   #    - 'package.json'
   #    - '.github/workflows/slow-tests.yml'

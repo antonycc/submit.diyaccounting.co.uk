@@ -34,7 +34,7 @@ describe("Main Output", () => {
   });
 
   test("should terminate without error", () => {
-    process.argv = ["node", "app/lib/main.js"];
+    process.argv = ["node", "app/bin/main.js"];
     main();
   });
 });
