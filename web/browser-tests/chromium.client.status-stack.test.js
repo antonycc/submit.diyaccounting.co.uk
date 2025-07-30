@@ -40,7 +40,7 @@ test.describe("Client Status Message Stacking", () => {
     await expect(messages.nth(0)).toHaveText("Info message 1");
     await expect(messages.nth(1)).toHaveText("Info message 2");
     await expect(messages.nth(2)).toHaveText("Info message 3");
-    await page.screenshot({ path: `target/client-test-results/client-status-stack-initial_${timestamp}.png` });
+    await page.screenshot({ path: `target/browser-test-results/browser-status-stack-initial_${timestamp}.png` });
     // Wait 31 seconds for auto-removal
     //await page.waitForTimeout(31000);
     //await expect(messages).toHaveCount(0);

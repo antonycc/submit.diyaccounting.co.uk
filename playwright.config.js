@@ -6,21 +6,21 @@ export default defineConfig({
   projects: [
     {
       name: 'behaviour-tests',
-      testDir: 'tests/behaviour',
+      testDir: 'behaviour-tests',
       workers: 1, // throttle concurrency to 1
       outputDir: "./target/behaviour-test-results/",
     },
     {
-      name: 'client-tests',
-      testDir: 'tests/client',
+      name: 'browser-tests',
+      testDir: 'web/browser-tests',
       workers: 1, // throttle concurrency to 1
       outputDir: "./target/behaviour-test-results/",
     },
     {
-      name: 'run-manually-tests',
-      testDir: 'tests/run-manually',
+      name: 'manually-run-tests',
+      testDir: 'manually-run-tests',
       workers: 1, // throttle concurrency to 1
-      outputDir: "./run-manually-test-results/",
+      outputDir: "./target/run-manually-test-results/",
     },
   ],
 

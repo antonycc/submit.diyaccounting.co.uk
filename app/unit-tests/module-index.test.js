@@ -1,9 +1,9 @@
-// tests/unit/module-index.test.js
+// app/unit-tests/module-index.test.js
 
 import {describe, test, expect, beforeEach} from "vitest";
 import dotenv from 'dotenv';
 
-import anything from "../../app/index.js";
+import anything from "../index.js";
 
 dotenv.config({ path: '.env.test' });
 

@@ -1,4 +1,4 @@
-// tests/unit/vatFlow.frontend.test.js
+// app/unit-tests/vatFlow.frontend.test.js
 
 import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
 import { Window } from "happy-dom";
@@ -6,7 +6,7 @@ import fs from "fs";
 import path from "path";
 import dotenv from 'dotenv';
 
-import {buildGovClientTestHeaders} from "@tests/unit/govClientTestHeader.js";
+import {buildGovClientTestHeaders} from "@app/unit-tests/govClientTestHeader.js";
 
 dotenv.config({ path: '.env.test' });
 

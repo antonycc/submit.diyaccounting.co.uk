@@ -1,4 +1,4 @@
-// tests/unit/server.test.js
+// app/unit-tests/server.test.js
 
 import { describe, test, expect, vi, beforeEach } from "vitest";
 import request from "supertest";

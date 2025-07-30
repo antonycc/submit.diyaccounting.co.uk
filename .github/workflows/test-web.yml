@@ -1,4 +1,4 @@
-# .github/workflows/test-client.yml
+# .github/workflows/test-web.yml
 
 name: test-client
 run-name: 'test client [${{ github.ref_name }}] [${{ github.event.head_commit.message }}]'
@@ -8,8 +8,8 @@ on:
     branches:
       - main
     paths:
+      - 'web/**'
       - 'public/**'
-      - 'tests/client/**'
       - '.github/workflows/test-client.yml'
   workflow_dispatch:
   schedule:
@@ -17,8 +17,8 @@ on:
 
 jobs:
 
-  npm-client-test:
-    name: 'npm client test'
+  npm-browser-test:
+    name: 'npm web browser'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -35,20 +35,20 @@ jobs:
 
       - run: npx playwright install --with-deps
 
-      - run: npm run test:client
+      - run: npm run test:browser
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: test-results-client
-          path: target/client-test-results/
+          name: test-results-browser
+          path: target/browser-test-results/
           retention-days: 30
 
       - name: Upload test reports
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: test-reports-client
+          name: test-reports-browser
           path: target/test-reports/
           retention-days: 30

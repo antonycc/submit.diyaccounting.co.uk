@@ -1,4 +1,4 @@
-// tests/unit/submitVatHandler.test.js
+// app/unit-tests/submitVatHandler.test.js
 
 import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
 import dotenv from 'dotenv';
@@ -13,7 +13,7 @@ vi.mock("node-fetch", () => ({
 }));
 
 import fetch from "node-fetch";
-import {buildGovClientTestHeaders} from "@tests/unit/govClientTestHeader.js";
+import {buildGovClientTestHeaders} from "@app/unit-tests/govClientTestHeader.js";
 
 describe("httpPost", () => {
   const originalEnv = process.env;

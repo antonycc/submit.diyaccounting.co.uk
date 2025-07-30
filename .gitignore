@@ -285,8 +285,8 @@ fabric.properties
 # Project files
 /json
 /app/lib/output.*
-/tests/unit/output.*
-/tests/integration/output.*
+/app/unit-tests/output.*
+/app/integration-tests/output.*
 /output.*
 /cdk/cdk.out/
 /cdk.out/
@@ -337,13 +337,8 @@ fabric.properties
 /result.json
 /dependency-reduced-pom.xml
 /all-test-results
-/target/test-results
-/target/client-test-results
-/target/behaviour-test-results
-
-/target/test-reports/
+/target
 /all-test-results/.last-run.json
-/target/behaviour-with-auth-test-results/
 /.env.bak
 /.env.hmrc-test-api
 /client*-results/

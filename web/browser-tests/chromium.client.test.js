@@ -94,8 +94,8 @@ test.describe("Client System Test - VAT Flow in Browser", () => {
       const path = await import("path");
 
       const timestamp = getTimestamp();
-      const videoName = `client-video_${timestamp}.webm`;
-      const targetPath = path.join("target/client-test-results", videoName);
+      const videoName = `browser-video_${timestamp}.webm`;
+      const targetPath = path.join("target/browser-test-results", videoName);
 
       // Get video path from testInfo
       try {
@@ -131,7 +131,7 @@ test.describe("Client System Test - VAT Flow in Browser", () => {
       const form = page.locator("#vatSubmissionForm");
       await expect(form).toBeVisible();
 
-      await page.screenshot({ path: `target/client-test-results/client-initial-page_${timestamp}.png` });
+      await page.screenshot({ path: `target/browser-test-results/browser-initial-page_${timestamp}.png` });
       await setTimeout(500);
 
       // Check that input fields have default values
@@ -172,7 +172,7 @@ test.describe("Client System Test - VAT Flow in Browser", () => {
       const className = await statusMessages.first().getAttribute("class");
       expect(className).toContain("status-error");
 
-      await page.screenshot({ path: `target/client-test-results/client-validation-error_${timestamp}.png` });
+      await page.screenshot({ path: `target/browser-test-results/browser-validation-error_${timestamp}.png` });
       await setTimeout(500);
     });
   });
@@ -231,7 +231,7 @@ test.describe("Client System Test - VAT Flow in Browser", () => {
       const submitBtn = page.locator("#submitBtn");
       await expect(submitBtn).toBeDisabled({ timeout: 1000 });
 
-      await page.screenshot({ path: `target/client-test-results/client-loading-state_${timestamp}.png` });
+      await page.screenshot({ path: `target/browser-test-results/browser-loading-state_${timestamp}.png` });
       await setTimeout(500);
     });
   });
@@ -304,7 +304,7 @@ test.describe("Client System Test - VAT Flow in Browser", () => {
       const processingDate = await page.locator("#processingDate").textContent();
       expect(processingDate).toContain("25 December 2023");
 
-      await page.screenshot({ path: `target/client-test-results/client-receipt-display_${timestamp}.png`, fullPage: true });
+      await page.screenshot({ path: `target/browser-test-results/browser-receipt-display_${timestamp}.png`, fullPage: true });
       await setTimeout(500);
     });
   });

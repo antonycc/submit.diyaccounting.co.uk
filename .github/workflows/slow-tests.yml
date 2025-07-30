@@ -5,16 +5,6 @@ concurrency: ngrok
 run-name: 'slow tests [${{ github.ref_name }}] [${{ github.event.head_commit.message }}]'
 
 on:
-  #push:
-  #  branches:
-  #    - main
-  #  paths:
-  #    - 'public/index.html'
-  #    - 'aws/'
-  #    - 'app/'
-  #    - 'cdk.json'
-  #    - 'package.json'
-  #    - '.github/workflows/slow-tests.yml'
   workflow_dispatch:
   schedule:
     - cron: '23 * * * *'
@@ -101,8 +91,8 @@ jobs:
 
       - run: npm run test:system
 
-  npm-client-test:
-    name: 'npm client test'
+  npm-browser-test:
+    name: 'npm browser test'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -119,21 +109,21 @@ jobs:
 
       - run: npx playwright install --with-deps
 
-      - run: npm run test:client
+      - run: npm run test:browser
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: test-results-client
-          path: target/client-test-results/
+          name: test-results-browser
+          path: target/browser-test-results/
           retention-days: 30
 
       - name: Upload test reports
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: test-reports-client
+          name: test-reports-browser
           path: target/test-reports/
           retention-days: 30
 

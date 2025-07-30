@@ -1,4 +1,4 @@
-// tests/unit/exchangeTokenHandler.test.js
+// app/unit-tests/exchangeTokenHandler.test.js
 
 import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
 import dotenv from 'dotenv';

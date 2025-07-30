@@ -1,4 +1,4 @@
-# .github/workflows/test-services.yml
+# .github/workflows/test-app.yml
 
 name: test-services
 run-name: 'test services [${{ github.ref_name }}] [${{ github.event.head_commit.message }}]'
@@ -8,10 +8,9 @@ on:
     branches:
       - main
     paths:
-      - '../../app/**'
-      - 'tests/**'
+      - 'app/**'
       - '**/*.json'
-      - '.github/workflows/test-services.yml'
+      - 'test-app.yml'
       - '!infra/**'
   workflow_dispatch:
   schedule:

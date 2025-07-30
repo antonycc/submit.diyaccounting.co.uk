@@ -1,4 +1,4 @@
-// tests/unit/main.test.js
+// app/unit-tests/main.test.js
 
 import {describe, test, expect, beforeEach} from "vitest";
 import dotenv from 'dotenv';

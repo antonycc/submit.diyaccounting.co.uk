@@ -126,7 +126,7 @@ Connections                   ttl     opn     rt1     rt5     p50     p90
 Here you can open https://d57b-146-70-103-222.ngrok-free.app in a browser of your choice (you'll have your own URL
 unless I am still running this one, I don't know when the id's roll so I might).
 
-Continued in [SETUP.md](programmers/SETUP.md).
+Continued in [SETUP.md](_developers/SETUP.md).
 
 ---
 

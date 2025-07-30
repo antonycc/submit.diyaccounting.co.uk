@@ -1,4 +1,4 @@
-// tests/unit/exchangeClientSecretForAccessToken.test.js
+// app/unit-tests/exchangeClientSecretForAccessToken.test.js
 import { describe, beforeEach, afterEach, test, expect, vi } from "vitest";
 import { mockClient } from "aws-sdk-client-mock";
 import { SecretsManagerClient, GetSecretValueCommand } from "@aws-sdk/client-secrets-manager";
@@ -207,7 +207,7 @@ describe("exchangeClientSecretForAccessToken", () => {
       });
 
       // Re-import the module to get fresh instance
-      const { exchangeToken: exchangeFunction } = await import("@app/functions/exchangeToken");
+      const { exchangeToken: exchangeFunction } = await import("@app/functions/exchangeToken.js");
 
       // Act
       const result = await exchangeToken("test-auth-code");
@@ -232,7 +232,7 @@ describe("exchangeClientSecretForAccessToken", () => {
       process.env.DIY_SUBMIT_HMRC_CLIENT_SECRET = "any-secret";
 
       // Re-import the module to get fresh instance
-      const { exchangeToken: exchangeFunction } = await import("@app/functions/exchangeToken");
+      const { exchangeToken: exchangeFunction } = await import("@app/functions/exchangeToken.js");
 
       // Act
       const result = await exchangeToken("test-auth-code");

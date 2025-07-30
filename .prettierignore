@@ -1,9 +1,6 @@
-apply-fixes-sarif/
 build/
 coverage/
 exports/
-fix-code-ai/
-intentions/
 node_modules/
 .*
 *.env
