@@ -60,7 +60,7 @@ test.beforeAll(async () => {
 
   // Start or connect to MinIO S3 server or any S3 compatible server
   async function ensureBucketExists() {
-    console.log(`Ensuring bucket: ${err.message} exists on endpoint '${endpoint}' for access key '${optionalTestS3AccessKey}'`);
+    console.log(`Ensuring bucket: ${receiptsBucketFullName} exists on endpoint '${endpoint}' for access key '${optionalTestS3AccessKey}'`);
     let clientConfig ;
     if (process.env.DIY_SUBMIT_TEST_S3_ENDPOINT !== "off") {
       clientConfig = {
