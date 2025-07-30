@@ -17,7 +17,7 @@ export async function logReceipt(key, receipt) {
 
     // Configure S3 client for containerized MinIO if environment variables are set
     let s3Config = {};
-    if (process.env.NODE_ENV !== "stubbed" && process.env.DIY_SUBMIT_TEST_S3_ENDPOINT) {
+    if (process.env.NODE_ENV !== "stubbed" && process.env.DIY_SUBMIT_TEST_S3_ENDPOINT && process.env.DIY_SUBMIT_TEST_S3_ENDPOINT !== "off") {
          s3Config = buildTestS3Config(s3Config);
     }
 

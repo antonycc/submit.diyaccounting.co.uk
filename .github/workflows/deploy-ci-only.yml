@@ -17,16 +17,16 @@ on:
       - '.github/workflows/deploy-ci-only.yml'
       - '**/pom.xml'
   workflow_dispatch:
-    #inputs:
-    #    skipDeploy:
-    #        description: 'Skip deployment step'
-    #        required: false
-    #        default: 'true'
-    #        type: string
+    inputs:
+        skipDeploy:
+            description: 'Skip deployment step'
+            required: false
+            default: 'true'
+            type: string
 
-#env:
+env:
   #environment: 'ci'
-  #skipDeploy: ${{ inputs.skipDeploy || 'true' }}
+  skipDeploy: ${{ inputs.skipDeploy || 'true' }}
 
 jobs:
 
@@ -53,6 +53,7 @@ jobs:
       - run: npm test
 
       - name: Configure AWS Credentials
+        if: ${{ !env.skipDeploy }}
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::887764105431:role/submit-github-actions-role
@@ -64,6 +65,7 @@ jobs:
           retry-max-attempts: 3
 
       - name: Configure AWS Credentials
+        if: ${{ !env.skipDeploy }}
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::887764105431:role/submit-deployment-role
@@ -75,17 +77,20 @@ jobs:
           retry-max-attempts: 3
 
       - uses: actions/setup-java@v4
+        if: ${{ !env.skipDeploy }}
         with:
           distribution: 'corretto'
           java-version: 21
           cache: 'maven'
 
       - name: package
+        if: ${{ !env.skipDeploy }}
         id: package
         shell: bash
         run: ./mvnw clean package
 
       - name: Log built files
+        if: ${{ !env.skipDeploy }}
         shell: bash
         run: |
           echo "ls -lh target/:"
@@ -94,6 +99,7 @@ jobs:
           du -h target/
 
       - name: set-jar-path
+        if: ${{ !env.skipDeploy }}
         id: jar-path
         shell: bash
         run: |
@@ -102,6 +108,7 @@ jobs:
           echo "jarFilepath=${jarPath?}/${jarFilename?}.jar" | tee -a "${GITHUB_OUTPUT?}"
 
       - name: stacks
+        if: ${{ !env.skipDeploy }}
         id: stacks
         shell: bash
         run: |
@@ -111,6 +118,7 @@ jobs:
           echo "synth=${synth?}" | tee -a "${GITHUB_OUTPUT?}"
 
       - name: synth
+        if: ${{ !env.skipDeploy }}
         id: synth
         shell: bash
         run: npx dotenv -e .env.ci -- ${{ steps.stacks.outputs.synth }}
@@ -128,6 +136,7 @@ jobs:
           DIY_SUBMIT_HMRC_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
 
       - name: deploy
+        if: ${{ !env.skipDeploy }}
         id: deploy
         shell: bash
         run: npx dotenv -e .env.ci -- ${{ steps.stacks.outputs.deploy }}

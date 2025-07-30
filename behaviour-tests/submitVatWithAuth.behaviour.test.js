@@ -22,6 +22,7 @@ const optionalTestS3SecretKey = process.env.DIY_SUBMIT_TEST_S3_SECRET_KEY;
 // Environment variables for the test server and proxy
 const runTestServer = process.env.DIY_SUBMIT_TEST_SERVER_HTTP === "run";
 const runProxy = process.env.DIY_SUBMIT_TEST_PROXY === "run";
+console.log(`runTestServer: ${runTestServer}, runProxy: ${runProxy}`);
 
 const bucketNamePostfix = process.env.DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX;
 const homeUrl = process.env.DIY_SUBMIT_HOME_URL;
@@ -57,33 +58,44 @@ test.beforeAll(async () => {
 
   const endpoint = `http://${container.getHost()}:${container.getMappedPort(9000)}`;
 
-  // Start Minio
-  async function ensureMinioBucketExists() {
-    const s3 = new S3Client({
-      endpoint,
-      forcePathStyle: true,
-      region: "us-east-1",
-      credentials: {
-        accessKeyId: optionalTestS3AccessKey,
-        secretAccessKey: optionalTestS3SecretKey,
+  // Start or connect to MinIO S3 server or any S3 compatible server
+  async function ensureBucketExists() {
+    console.log(`Ensuring bucket: ${err.message} exists on endpoint '${endpoint}' for access key '${optionalTestS3AccessKey}'`);
+    let clientConfig ;
+    if (process.env.DIY_SUBMIT_TEST_S3_ENDPOINT !== "off") {
+      clientConfig = {
+        endpoint,
+        forcePathStyle: true,
+        region: "us-east-1",
+        credentials: {
+          accessKeyId: optionalTestS3AccessKey,
+          secretAccessKey: optionalTestS3SecretKey,
+        }
       }
-    });
+    } else {
+      clientConfig = {};
+    }
+    const s3 = new S3Client(clientConfig);
 
     try {
       await s3.send(new HeadBucketCommand({ Bucket: receiptsBucketFullName }));
-      console.log(`✅ MinIO bucket '${receiptsBucketFullName}' already exists`);
+      console.log(`✅ Bucket '${receiptsBucketFullName}' already exists on endpoint '${endpoint}'`);
     } catch (err) {
       if (err.name === "NotFound") {
-        console.log(`ℹ️ MinIO bucket '${receiptsBucketFullName}' not found, creating...`);
-        await s3.send(new CreateBucketCommand({ Bucket: receiptsBucketFullName }));
-        console.log(`✅ Created bucket '${receiptsBucketFullName}'`);
+        if(process.env.DIY_SUBMIT_TEST_S3_ENDPOINT !== "off") {
+          console.log(`ℹ️ Bucket '${receiptsBucketFullName}' not found on endpoint '${endpoint}', creating...`);
+          await s3.send(new CreateBucketCommand({Bucket: receiptsBucketFullName}));
+          console.log(`✅ Created bucket '${receiptsBucketFullName}' on endpoint '${endpoint}'`);
+        } else {
+          console.log(`ℹ️ Skipping bucket creation as endpoint is set to 'off'`);
+        }
       } else {
-        throw new Error(`Failed to check/create MinIO bucket: ${err.message}`);
+        throw new Error(`Failed to check/create bucket: ${err.message} on endpoint '${endpoint}' for access key '${optionalTestS3AccessKey}'`);
       }
     }
   }
 
-  await ensureMinioBucketExists();
+  await ensureBucketExists();
 
   // Start the server
   if (runTestServer) {
@@ -142,32 +154,31 @@ test.beforeAll(async () => {
     // Wait for ngrok to start
     console.log("Waiting for ngrok to initialize...");
     await setTimeout(5000);
-
-    // Check if the default document is accessible via ngrok
-    const ngrokUrl = process.env.DIY_SUBMIT_DIY_SUBMIT_TEST_PROXY_URL;
-    let ngrokReady = false;
-    let ngrokAttempts = 0;
-    console.log("Checking ngrok readiness...");
-    while (!ngrokReady && ngrokAttempts < 15) {
-      try {
-        console.log(`trying ngrok at ${ngrokUrl}`);
-        const response = await fetch(ngrokUrl);
-        if (response.ok) {
-          ngrokReady = true;
-          console.log(`ngrok is accessible at ${ngrokUrl}`);
-        }
-      } catch (error) {
-        ngrokAttempts++;
-        console.log(`ngrok check attempt ${ngrokAttempts}/15 failed: ${error.message}`);
-        await setTimeout(2000);
-      }
-    }
-
-    if (!ngrokReady) {
-      console.log(`Warning: ngrok may not be accessible at ${ngrokUrl} after ${ngrokAttempts} attempts`);
-    }
   } else {
     console.log("Skipping ngrok process as runProxy is not set to 'run'");
+  }
+
+  // Check if the default document is accessible
+  let homeReady = false;
+  let homeAttempts = 0;
+  console.log("Checking home readiness...");
+  while (!homeReady && homeAttempts < 15) {
+    try {
+      console.log(`trying home at ${homeUrl}`);
+      const response = await fetch(homeUrl);
+      if (response.ok) {
+        homeReady = true;
+        console.log(`home is accessible at ${homeUrl}`);
+      }
+    } catch (error) {
+      homeAttempts++;
+      console.log(`home check attempt ${homeAttempts}/15 failed: ${error.message}`);
+      await setTimeout(2000);
+    }
+
+    if (!homeReady) {
+      console.log(`Warning: home may not be accessible at ${ngrokUrl} after ${homeAttempts} attempts`);
+    }
   }
 
   console.log("beforeAll hook completed successfully");
@@ -226,7 +237,7 @@ test.outputDir = "target/behaviour-with-auth-test-results";
 
 test("Submit VAT return end-to-end flow with browser emulation", async ({ page }) => {
   const timestamp = getTimestamp();
-  const testUrl = process.env.DIY_SUBMIT_DIY_SUBMIT_TEST_PROXY_URL;
+  const testUrl = homeUrl;
 
   // 1) Navigate to the application served by server.js
   await page.setExtraHTTPHeaders({
