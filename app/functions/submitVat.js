@@ -9,7 +9,7 @@ import eventToGovClientHeaders from "../lib/eventToGovClientHeaders.js";
 
 dotenv.config({ path: ".env" });
 
-export default async function submitVat(periodKey, vatDue, vatNumber, hmrcAccessToken, govClientHeaders) {
+export async function submitVat(periodKey, vatDue, vatNumber, hmrcAccessToken, govClientHeaders) {
     const submissionStartTime = new Date().toISOString();
     
     // Validate access token format

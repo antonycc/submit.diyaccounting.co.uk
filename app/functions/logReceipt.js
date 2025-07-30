@@ -8,7 +8,7 @@ import { extractRequest, httpBadRequestResponse, httpOkResponse, httpServerError
 
 dotenv.config({ path: ".env" });
 
-export default async function logReceipt(key, receipt) {
+export async function logReceipt(key, receipt) {
     const homeUrl = process.env.DIY_SUBMIT_HOME_URL;
     const receiptsBucketPostfix = process.env.DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX;
     const {hostname} = new URL(homeUrl);

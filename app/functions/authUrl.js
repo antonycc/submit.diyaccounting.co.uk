@@ -6,7 +6,7 @@ import {extractRequest, httpBadRequestResponse, httpOkResponse, httpServerErrorR
 
 dotenv.config({ path: ".env" });
 
-export default function authUrl(state) {
+export function authUrl(state) {
     const clientId = process.env.DIY_SUBMIT_HMRC_CLIENT_ID;
     const redirectUri = process.env.DIY_SUBMIT_HOME_URL;
     const hmrcBase = process.env.DIY_SUBMIT_HMRC_BASE_URI;

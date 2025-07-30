@@ -5,7 +5,7 @@ import { mockClient } from "aws-sdk-client-mock";
 import { SecretsManagerClient, GetSecretValueCommand } from "@aws-sdk/client-secrets-manager";
 import dotenv from 'dotenv';
 
-import exchangeToken, { resetCachedSecret } from "@app/functions/exchangeToken.js";
+import {exchangeToken, resetCachedSecret } from "@app/functions/exchangeToken.js";
 
 dotenv.config({ path: '.env.test' });
 

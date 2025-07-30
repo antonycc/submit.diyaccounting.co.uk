@@ -7,10 +7,10 @@ import { fileURLToPath } from "url";
 import { readFileSync } from "fs";
 import dotenv from 'dotenv';
 
-import { httpGet as authUrlHandlerHttpGet }  from "../functions/authUrl.js";
-import { httpPost as exchangeTokenHandlerHttpPost } from "../functions/exchangeToken.js";
-import { httpPost as submitVatHandlerHttpPost } from "../functions/submitVat.js";
-import { httpPost as logReceiptHandlerHttpPost } from "../functions/logReceipt.js";
+import { httpGet as authUrlHttpGet } from "../functions/authUrl.js";
+import { httpPost as exchangeTokenHttpPost } from "../functions/exchangeToken.js";
+import { httpPost as submitVatHttpPost } from "../functions/submitVat.js";
+import { httpPost as logReceiptHttpPost } from "../functions/logReceipt.js";
 
 dotenv.config({ path: '.env' });
 
@@ -51,7 +51,7 @@ app.get(authUrlPath, async (req, res) => {
     headers: { host: req.get('host') || 'localhost:3000' },
     queryStringParameters: req.query || {},
   };
-  const { statusCode, body } = await authUrlHandlerHttpGet(event);
+  const { statusCode, body } = await authUrlHttpGet(event);
   res["status"](statusCode).json(JSON.parse(body));
 });
 
@@ -62,7 +62,7 @@ app.post(exchangeTokenPath, async (req, res) => {
     queryStringParameters: req.query || {},
     body: JSON.stringify(req.body)
   };
-  const { statusCode, body } = await exchangeTokenHandlerHttpPost(event);
+  const { statusCode, body } = await exchangeTokenHttpPost(event);
   res.status(statusCode).json(JSON.parse(body));
 });
 
@@ -73,7 +73,7 @@ app.post(submitVatPath, async (req, res) => {
     queryStringParameters: req.query || {},
     body: JSON.stringify(req.body)
   };
-  const { statusCode, body } = await submitVatHandlerHttpPost(event);
+  const { statusCode, body } = await submitVatHttpPost(event);
   res.status(statusCode).json(JSON.parse(body));
 });
 
@@ -84,7 +84,7 @@ app.post(logReceiptPath, async (req, res) => {
     queryStringParameters: req.query || {},
     body: JSON.stringify(req.body)
   };
-  const { statusCode, body } = await logReceiptHandlerHttpPost(event);
+  const { statusCode, body } = await logReceiptHttpPost(event);
   res.status(statusCode).json(JSON.parse(body));
 });
 

@@ -13,7 +13,7 @@ const secretsClient = new SecretsManagerClient();
 
 let cachedSecret; // caching via module-level variable
 
-export default async function exchangeToken(code) {
+export async function exchangeToken(code) {
     await retrieveSecret();
     const hmrcRequestHeaders = {
         "Content-Type": "application/x-www-form-urlencoded"
