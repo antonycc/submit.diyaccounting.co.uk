@@ -228,6 +228,30 @@ test.describe("Client System Test - VAT Flow in Browser", () => {
         window.showLoading();
       });
 
+      // Debug: Check element styles after showLoading
+      const spinnerStyles = await page.evaluate(() => {
+        const spinner = document.getElementById('loadingSpinner');
+        const computed = window.getComputedStyle(spinner);
+        const rect = spinner.getBoundingClientRect();
+        return {
+          display: spinner.style.display,
+          visibility: spinner.style.visibility,
+          opacity: spinner.style.opacity,
+          computedDisplay: computed.display,
+          computedVisibility: computed.visibility,
+          computedOpacity: computed.opacity,
+          computedWidth: computed.width,
+          computedHeight: computed.height,
+          boundingRect: {
+            width: rect.width,
+            height: rect.height,
+            top: rect.top,
+            left: rect.left
+          }
+        };
+      });
+      console.log('Spinner styles after showLoading:', spinnerStyles);
+
       // Check that loading spinner appears quickly
       const loadingSpinner = page.locator("#loadingSpinner");
       await expect(loadingSpinner).toBeVisible({ timeout: 1000 });

@@ -5,150 +5,6 @@
     <title>DIY Accounting Submit</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" href="submit.css" />
-    <style>
-      header {
-        margin-bottom: 2em;
-        text-align: center;
-      }
-      
-      .subtitle {
-        font-size: 1.1em;
-        color: #666;
-        margin-bottom: 2em;
-      }
-
-      /* Main content container */
-      #mainContent {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-      }
-
-      /* Form styling */
-      .form-container {
-        background: white;
-        padding: 2em;
-        border-radius: 8px;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        margin-bottom: 2em;
-      }
-
-      .form-group {
-        margin-bottom: 1.5em;
-      }
-
-      label {
-        display: block;
-        margin-bottom: 0.5em;
-        font-weight: bold;
-        color: #333;
-      }
-
-      input[type="text"],
-      input[type="number"] {
-        width: 100%;
-        padding: 0.75em;
-        border: 2px solid #ddd;
-        border-radius: 4px;
-        font-size: 1em;
-        transition: border-color 0.3s;
-      }
-
-      input[type="text"]:focus,
-      input[type="number"]:focus {
-        outline: none;
-        border-color: #2c5aa0;
-      }
-
-      .help-text {
-        font-size: 0.9em;
-        color: #666;
-        margin-top: 0.25em;
-      }
-
-
-      /* Loading spinner */
-      .spinner {
-        border: 4px solid #f3f3f3;
-        border-top: 4px solid #2c5aa0;
-        border-radius: 50%;
-        width: 40px;
-        height: 40px;
-        animation: spin 1s linear infinite;
-        margin: 20px auto;
-        display: none;
-      }
-
-      @keyframes spin {
-        0% {
-          transform: rotate(0deg);
-        }
-        100% {
-          transform: rotate(360deg);
-        }
-      }
-
-      /* Receipt display */
-      .receipt {
-        background: white;
-        padding: 2em;
-        border-radius: 8px;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        margin-top: 2em;
-        display: none;
-      }
-
-      .receipt h3 {
-        color: #28a745;
-        margin-bottom: 1em;
-        font-size: 1.3em;
-      }
-
-      .receipt-details {
-        background: #f8f9fa;
-        padding: 1em;
-        border-radius: 4px;
-        margin-top: 1em;
-      }
-
-      .receipt-item {
-        display: flex;
-        justify-content: space-between;
-        margin-bottom: 0.5em;
-        padding-bottom: 0.5em;
-        border-bottom: 1px solid #eee;
-      }
-
-      .receipt-item:last-child {
-        border-bottom: none;
-        margin-bottom: 0;
-        padding-bottom: 0;
-      }
-
-      footer {
-        margin-top: 2em;
-        text-align: center;
-        font-size: 0.9em;
-        color: #777;
-        padding-top: 1em;
-        border-top: 1px solid #eee;
-      }
-
-      /* Responsive design */
-      @media (max-width: 600px) {
-        body {
-          padding: 0.5em;
-        }
-
-        .form-container {
-          padding: 1em;
-        }
-
-        h1 {
-          font-size: 1.8em;
-        }
-      }
-    </style>
   </head>
   <body>
     <header>
@@ -161,7 +17,7 @@
       <div id="statusMessagesContainer"></div>
 
       <!-- Loading spinner -->
-      <div id="loadingSpinner" class="spinner"></div>
+      <div id="loadingSpinner" class="spinner" style="display: none;"></div>
 
       <!-- VAT Submission Form -->
       <div id="vatForm" class="form-container">
@@ -216,7 +72,7 @@
       </div>
 
       <!-- Receipt Display -->
-      <div id="receiptDisplay" class="receipt">
+      <div id="receiptDisplay" class="receipt" style="display: none;">
         <h3>✅ VAT Return Submitted Successfully!</h3>
         <div class="receipt-details">
           <div class="receipt-item">
@@ -259,6 +115,105 @@
       const vatFormContainer = document.getElementById("vatForm");
 
       // VAT-specific functions
+      // Form submission handler
+      async function handleFormSubmission(event) {
+        event.preventDefault();
+
+        const formData = new FormData(form);
+        const vatNumber = formData.get("vatNumber").trim();
+        const periodKey = formData.get("periodKey").trim();
+        const vatDue = formData.get("vatDue");
+
+        // Basic validation
+        if (!vatNumber || !periodKey || !vatDue) {
+          showStatus("Please fill in all required fields.", "error");
+          return;
+        }
+
+        if (!/^\d{9}$/.test(vatNumber)) {
+          showStatus("VAT number must be exactly 9 digits.", "error");
+          return;
+        }
+
+        if (parseFloat(vatDue) < 0) {
+          showStatus("VAT due cannot be negative.", "error");
+          return;
+        }
+
+        try {
+          showLoading();
+          showStatus("Initiating HMRC authentication...", "info");
+
+          // Store submission data and generate state
+          const state = generateRandomState();
+          submissionData = { vatNumber, periodKey, vatDue };
+
+          sessionStorage.setItem("oauth_state", state);
+          sessionStorage.setItem("submission_data", JSON.stringify(submissionData));
+
+          // Get OAuth URL
+          const authResponse = await getAuthUrl(state);
+          const authResponseUrl = authResponse.authUrl;
+
+          showStatus(`Redirecting to HMRC for authentication at ${authResponseUrl}...`, "info");
+
+          // Redirect to HMRC OAuth
+          console.log(`Page transition initiated: Redirecting to HMRC OAuth URL ${authResponseUrl}`);
+          window.location.href = authResponseUrl;
+        } catch (error) {
+          console.error("Authentication error:", error);
+          showStatus(`Authentication failed: ${error.message}`, "error");
+          hideLoading();
+        }
+      }
+
+      // OAuth callback handling
+      function handleOAuthCallback() {
+        return  handleOAuth(continueVatSubmission);
+      }
+
+      async function continueVatSubmission(code, submissionData) {
+        try {
+          showLoading();
+          showStatus("Exchanging authorization code for access token...", "info");
+
+          // Exchange code for access token
+          currentAccessToken = await exchangeToken(code);
+
+          showStatus("Submitting VAT return to HMRC...", "info");
+
+          // Submit VAT return
+          const submitResponse = await submitVatWithCalculatedHeaders(
+                  submissionData.vatNumber,
+                  submissionData.periodKey,
+                  submissionData.vatDue,
+                  currentAccessToken,
+          );
+
+          showStatus("Logging submission receipt...", "info");
+
+          // Log the receipt
+          await logReceipt(
+                  submitResponse.processingDate,
+                  submitResponse.formBundleNumber,
+                  submitResponse.chargeRefNumber,
+          );
+
+          // Display success
+          displayReceipt(submitResponse);
+          hideStatus();
+
+          // Clean up session storage
+          sessionStorage.removeItem("oauth_state");
+          sessionStorage.removeItem("submission_data");
+          console.log('Continue submission handler (success)');
+        } catch (error) {
+          console.error("Submission error:", error);
+          showStatus(`Submission failed: ${error.message}`, "error");
+        } finally {
+          hideLoading();
+        }
+      }
 
       async function submitVatWithCalculatedHeaders(vatNumber, periodKey, vatDue, hmrcAccessToken) {
         // Populate headers with required values using what is available in the browser environment
@@ -305,7 +260,6 @@
       }
 
       async function submitVat(vatNumber, periodKey, vatDue, hmrcAccessToken, headers) {
-
         const url = "/api/submit-vat";
         const body = JSON.stringify({
           vatNumber,
@@ -361,142 +315,6 @@
         return responseJson;
       }
 
-      // Form submission handler
-      async function handleFormSubmission(event) {
-        event.preventDefault();
-
-        const formData = new FormData(form);
-        const vatNumber = formData.get("vatNumber").trim();
-        const periodKey = formData.get("periodKey").trim();
-        const vatDue = formData.get("vatDue");
-
-        // Basic validation
-        if (!vatNumber || !periodKey || !vatDue) {
-          showStatus("Please fill in all required fields.", "error");
-          return;
-        }
-
-        if (!/^\d{9}$/.test(vatNumber)) {
-          showStatus("VAT number must be exactly 9 digits.", "error");
-          return;
-        }
-
-        if (parseFloat(vatDue) < 0) {
-          showStatus("VAT due cannot be negative.", "error");
-          return;
-        }
-
-        try {
-          showLoading();
-          showStatus("Initiating HMRC authentication...", "info");
-
-          // Store submission data and generate state
-          const state = generateRandomState();
-          submissionData = { vatNumber, periodKey, vatDue };
-
-          sessionStorage.setItem("oauth_state", state);
-          sessionStorage.setItem("submission_data", JSON.stringify(submissionData));
-
-          // Get OAuth URL
-          const authResponse = await getAuthUrl(state);
-          const authResponseUrl = authResponse.authUrl;
-
-          showStatus(`Redirecting to HMRC for authentication at ${authResponseUrl}...`, "info");
-
-          // Redirect to HMRC OAuth
-          console.log(`Page transition initiated: Redirecting to HMRC OAuth URL ${authResponseUrl}`);
-          window.location.href = authResponseUrl;
-        } catch (error) {
-          console.error("Authentication error:", error);
-          showStatus(`Authentication failed: ${error.message}`, "error");
-          hideLoading();
-        }
-      }
-
-      // OAuth callback handling
-      function handleOAuthCallback() {
-        console.log('OAuth callback handler');
-        const urlParams = new URLSearchParams(window.location.search);
-        const code = urlParams.get("code");
-        const state = urlParams.get("state");
-        const error = urlParams.get("error");
-
-        if (error) {
-          showStatus(`OAuth error: ${error}`, "error");
-          console.error('OAuth callback handler (error exit)');
-          return;
-        }
-
-        if (code && state) {
-          const storedState = sessionStorage.getItem("oauth_state");
-          const storedSubmissionData = sessionStorage.getItem("submission_data");
-
-          if (state !== storedState) {
-            showStatus("Invalid OAuth state. Please try again.", "error");
-            console.error('OAuth callback handler (invalid state exit)');
-            return;
-          }
-
-          if (!storedSubmissionData) {
-            showStatus("Submission data not found. Please try again.", "error");
-            console.error('OAuth callback handler (missing data exit)');
-            return;
-          }
-
-          // Clear URL parameters
-          console.log('Page transition initiated: Clearing URL parameters');
-          window.history.replaceState({}, document.title, window.location.pathname);
-
-          // Continue with token exchange and submission
-          continueSubmission(code, JSON.parse(storedSubmissionData));
-          console.log('OAuth callback handler (normal completion)');
-        }
-        console.log('OAuth callback handler (no action taken)');
-      }
-
-      async function continueSubmission(code, submissionData) {
-        try {
-          showLoading();
-          showStatus("Exchanging authorization code for access token...", "info");
-
-          // Exchange code for access token
-          currentAccessToken = await exchangeToken(code);
-
-          showStatus("Submitting VAT return to HMRC...", "info");
-
-          // Submit VAT return
-          const submitResponse = await submitVatWithCalculatedHeaders(
-            submissionData.vatNumber,
-            submissionData.periodKey,
-            submissionData.vatDue,
-            currentAccessToken,
-          );
-
-          showStatus("Logging submission receipt...", "info");
-
-          // Log the receipt
-          await logReceipt(
-            submitResponse.processingDate,
-            submitResponse.formBundleNumber,
-            submitResponse.chargeRefNumber,
-          );
-
-          // Display success
-          displayReceipt(submitResponse);
-          hideStatus();
-
-          // Clean up session storage
-          sessionStorage.removeItem("oauth_state");
-          sessionStorage.removeItem("submission_data");
-          console.log('Continue submission handler (success)');
-        } catch (error) {
-          console.error("Submission error:", error);
-          showStatus(`Submission failed: ${error.message}`, "error");
-        } finally {
-          hideLoading();
-        }
-      }
-
       function displayReceipt(response) {
         console.log('Page display transition: Displaying receipt and hiding form');
         // Hide the form
@@ -537,7 +355,7 @@
       window.submitVat = submitVat;
       window.logReceipt = logReceipt;
       window.handleOAuthCallback = handleOAuthCallback;
-      window.continueSubmission = continueSubmission;
+      window.continueSubmission = continueVatSubmission;
       window.displayReceipt = displayReceipt;
       window.handleFormSubmission = handleFormSubmission;
 

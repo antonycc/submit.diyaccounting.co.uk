@@ -329,9 +329,9 @@ describe("VAT Flow Frontend JavaScript", () => {
         writable: true,
       });
 
-      // Mock continueSubmission function - must be set before calling handleOAuthCallback
+      // Mock continueVatSubmission function - must be set before calling handleOAuthCallback
       const continueSubmissionSpy = vi.fn();
-      window.continueSubmission = continueSubmissionSpy;
+      window.continueVatSubmission = continueSubmissionSpy;
 
       window.handleOAuthCallback();
 

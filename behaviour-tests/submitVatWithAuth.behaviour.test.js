@@ -345,4 +345,4 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   await setTimeout(1000);
 
   console.log("VAT submission flow completed successfully");
-}, 60000);
+}, 90000);

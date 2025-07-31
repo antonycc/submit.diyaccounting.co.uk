@@ -51,8 +51,18 @@ function showLoading() {
   console.log('Page display transition: Showing loading spinner');
   const loadingSpinner = document.getElementById("loadingSpinner");
   const submitBtn = document.getElementById("submitBtn");
-  loadingSpinner.style.display = "block";
-  submitBtn.disabled = true;
+  console.log('Loading spinner element:', loadingSpinner);
+  if (loadingSpinner) {
+    loadingSpinner.style.display = "block";
+    loadingSpinner.style.visibility = "visible";
+    loadingSpinner.style.opacity = "1";
+    loadingSpinner.style.width = "40px";
+    loadingSpinner.style.height = "40px";
+    console.log('Loading spinner styles set:', loadingSpinner.style.cssText);
+  }
+  if (submitBtn) {
+    submitBtn.disabled = true;
+  }
 }
 
 function hideLoading() {
@@ -196,6 +206,48 @@ function getIPViaWebRTC() {
     }
   });
 }
+
+// OAuth callback handling
+function handleOAuth(callback) {
+  console.log('OAuth callback handler');
+  const urlParams = new URLSearchParams(window.location.search);
+  const code = urlParams.get("code");
+  const state = urlParams.get("state");
+  const error = urlParams.get("error");
+
+  if (error) {
+    showStatus(`OAuth error: ${error}`, "error");
+    console.error('OAuth callback handler (error exit)');
+    return;
+  }
+
+  if (code && state) {
+    const storedState = sessionStorage.getItem("oauth_state");
+    const storedSubmissionData = sessionStorage.getItem("submission_data");
+
+    if (state !== storedState) {
+      showStatus("Invalid OAuth state. Please try again.", "error");
+      console.error('OAuth callback handler (invalid state exit)');
+      return;
+    }
+
+    if (!storedSubmissionData) {
+      showStatus("Submission data not found. Please try again.", "error");
+      console.error('OAuth callback handler (missing data exit)');
+      return;
+    }
+
+    // Clear URL parameters
+    console.log('Page transition initiated: Clearing URL parameters');
+    window.history.replaceState({}, document.title, window.location.pathname);
+
+    // Continue with token exchange and submission
+    callback(code, JSON.parse(storedSubmissionData));
+    console.log('OAuth callback handler (normal completion)');
+  }
+  console.log('OAuth callback handler (no action taken)');
+}
+
 
 // Expose functions to window for use by other scripts and testing
 if (typeof window !== 'undefined') {
