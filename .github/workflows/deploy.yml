@@ -280,7 +280,7 @@ jobs:
       - npm-behaviour-test-local
       - mvn-package-cdk-synth
       - deploy-to-environment
-    name: 'npm behaviour test ${{ env.environment }}'
+    name: 'npm behaviour test'
     runs-on: ubuntu-latest
     permissions:
       contents: read
