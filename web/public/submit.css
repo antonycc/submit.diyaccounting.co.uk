@@ -392,8 +392,8 @@ footer {
   }
 }
 
-/* Services page */
-.services-list {
+/* bundles page */
+.bundles-list {
   display: flex;
   flex-direction: column;
   gap: 1.5em;

@@ -160,8 +160,8 @@ describe("Navigation Frontend Tests", () => {
       expect(menuLinks[0].getAttribute("href")).toBe("index.html");
       expect(menuLinks[1].textContent).toBe("View Activities");
       expect(menuLinks[1].getAttribute("href")).toBe("activities.html");
-      expect(menuLinks[2].textContent).toBe("Add Service");
-      expect(menuLinks[2].getAttribute("href")).toBe("services.html");
+      expect(menuLinks[2].textContent).toBe("Add Bundle");
+      expect(menuLinks[2].getAttribute("href")).toBe("bundles.html");
     });
 
     test("should have auth section with login status and link", () => {
@@ -221,23 +221,23 @@ describe("Navigation Frontend Tests", () => {
     });
   });
 
-  describe("Services Page (services.html)", () => {
+  describe("Bundles Page (bundles.html)", () => {
     beforeEach(() => {
-      const htmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/services.html"), "utf-8");
+      const htmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/bundles.html"), "utf-8");
       document.documentElement.innerHTML = htmlContent;
     });
 
-    test("should have correct title and services list", () => {
-      expect(document.title).toBe("DIY Accounting Submit - Add Service");
+    test("should have correct title and bundles list", () => {
+      expect(document.title).toBe("DIY Accounting Submit - Add Bundle");
       
       const header = document.querySelector("h2");
-      expect(header.textContent).toBe("Add Service");
+      expect(header.textContent).toBe("Add Bundle");
       
       const serviceItems = document.querySelectorAll(".service-item");
       expect(serviceItems).toHaveLength(3);
       
       const hmrcTestBtn = Array.from(document.querySelectorAll("button")).find(btn => 
-        btn.textContent.trim() === "Add HMRC Test API Service"
+        btn.textContent.trim() === "Add HMRC Test API Bundle"
       );
       expect(hmrcTestBtn).toBeTruthy();
       expect(hmrcTestBtn.getAttribute("onclick")).toContain("coming-soon.html");

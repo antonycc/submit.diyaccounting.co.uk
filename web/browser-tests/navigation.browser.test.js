@@ -10,7 +10,7 @@ test.describe("Navigation Browser Tests", () => {
   let activitiesHtmlContent;
   let submitVatHtmlContent;
   let loginHtmlContent;
-  let servicesHtmlContent;
+  let bundlesHtmlContent;
   let comingSoonHtmlContent;
 
   test.beforeAll(async () => {
@@ -19,7 +19,7 @@ test.describe("Navigation Browser Tests", () => {
     activitiesHtmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/activities.html"), "utf-8");
     submitVatHtmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/submitVat.html"), "utf-8");
     loginHtmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/login.html"), "utf-8");
-    servicesHtmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/services.html"), "utf-8");
+    bundlesHtmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/bundles.html"), "utf-8");
     comingSoonHtmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/coming-soon.html"), "utf-8");
   });
 
@@ -241,7 +241,7 @@ test.describe("Navigation Browser Tests", () => {
       await setTimeout(100);
     });
 
-    test("should navigate to services page from hamburger menu", async ({ page }) => {
+    test("should navigate to bundles page from hamburger menu", async ({ page }) => {
       await page.setContent(indexHtmlContent, {
         baseURL: "http://localhost:3000",
         waitUntil: "domcontentloaded",
@@ -251,17 +251,17 @@ test.describe("Navigation Browser Tests", () => {
       await page.click(".hamburger-btn");
       await setTimeout(100);
       
-      // Mock navigation to services page
-      await page.route("**/services.html", async (route) => {
+      // Mock navigation to bundles page
+      await page.route("**/bundles.html", async (route) => {
         await route.fulfill({
           status: 200,
           contentType: "text/html",
-          body: servicesHtmlContent,
+          body: bundlesHtmlContent,
         });
       });
 
-      // Click "Add Service" in dropdown
-      await page.click("text=Add Service");
+      // Click "Add Bundle" in dropdown
+      await page.click("text=Add Bundle");
       await setTimeout(100);
     });
   });
@@ -319,21 +319,21 @@ test.describe("Navigation Browser Tests", () => {
     });
   });
 
-  test.describe("Services Page Navigation", () => {
-    test("should navigate to services page and display service options", async ({ page }) => {
-      await page.setContent(servicesHtmlContent, {
+  test.describe("Bundles Page Navigation", () => {
+    test("should navigate to bundles page and display service options", async ({ page }) => {
+      await page.setContent(bundlesHtmlContent, {
         baseURL: "http://localhost:3000",
         waitUntil: "domcontentloaded",
       });
 
       // Verify services page content
-      await expect(page.locator("h2")).toContainText("Add Service");
+      await expect(page.locator("h2")).toContainText("Add Bundle");
       await expect(page.locator(".service-item")).toHaveCount(3);
-      await expect(page.getByText("Add HMRC Test API Service")).toBeVisible();
+      await expect(page.getByText("Add HMRC Test API Bundle")).toBeVisible();
     });
 
     test("should navigate from services to coming soon page", async ({ page }) => {
-      await page.setContent(servicesHtmlContent, {
+      await page.setContent(bundlesHtmlContent, {
         baseURL: "http://localhost:3000",
         waitUntil: "domcontentloaded",
       });
@@ -347,8 +347,8 @@ test.describe("Navigation Browser Tests", () => {
         });
       });
 
-      // Click "Add HMRC Test API Service" button
-      await page.click("button:has-text('Add HMRC Test API Service')");
+      // Click "Add HMRC Test API Bundle" button
+      await page.click("button:has-text('Add HMRC Test API Bundle')");
       await setTimeout(100);
     });
   });
@@ -387,7 +387,7 @@ test.describe("Navigation Browser Tests", () => {
     });
   });
 
-  test.describe("Activities Page Add Service Navigation", () => {
+  test.describe("Activities Page Add Bundle Navigation", () => {
     test("should navigate from activities to services page", async ({ page }) => {
       await page.setContent(activitiesHtmlContent, {
         baseURL: "http://localhost:3000",
@@ -407,8 +407,8 @@ test.describe("Navigation Browser Tests", () => {
         });
       });
 
-      // Click "Add Service" button
-      await page.click("button:has-text('Add Service')");
+      // Click "Add Bundle" button
+      await page.click("button:has-text('Add Bundle')");
       await setTimeout(100);
     });
   });
