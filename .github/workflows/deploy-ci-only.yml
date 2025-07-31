@@ -1,6 +1,7 @@
 # .github/workflows/deploy-ci-only.yml
 
 name: deploy-ci-only
+concurrency: deploy-ci
 run-name: "deploy ci only [${{ github.ref_name }}] to [${{ inputs.environment || 'ci' }}]"
 
 on:
