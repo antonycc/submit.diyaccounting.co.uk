@@ -11,8 +11,6 @@ on:
     paths:
       - 'package.json'
       - 'package-lock.json'
-      - 'app/**'
-      - 'web/public/**'
       - '.github/workflows/deploy.yml'
       - '**/pom.xml'
   workflow_dispatch:
@@ -20,6 +18,12 @@ on:
       environment:
         description: 'Environment to deploy to'
         required: true
+        # TODO: Always deploy to 'ci-<git hash>' environment, run the behaviour tests against the 'ci' environment, and then if successful deploy to the target environment.
+        # TODO: Change the default target environment to be 'test' where the remote calls are stubbed.
+        # TODO: Deploy to versioned target environments, e.g. 'prod-<git hash>'.
+        # TODO: Create and test ci/test/prod 'actual' domains which route to a pool of versioned environments.
+        # TODO: Promote to the ci/test/prod 'actual' domains if tests pass in the versioned environments.
+        # TODO: Create separate jobs to prune the stacks from pools.
         default: 'ci'
         type: choice
         options:
