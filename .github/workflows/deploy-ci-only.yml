@@ -12,8 +12,8 @@ on:
       - 'infra/**'
       - 'package.json'
       - 'package-lock.json'
-      - '../../app/**'
-      - '../../web/public/**'
+      - 'app/**'
+      - 'web/public/**'
       - '.github/workflows/deploy-ci-only.yml'
       - '**/pom.xml'
   workflow_dispatch:

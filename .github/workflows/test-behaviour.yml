@@ -10,7 +10,7 @@ on:
       - main
     paths:
       - 'behaviour-tests/**'
-      - '../../web/public/**'
+      - 'web/public/**'
       - 'package.json'
       - 'package-lock.json'
       - '.github/workflows/test-behaviour.yml'
