@@ -122,7 +122,7 @@ jobs:
         shell: bash
         run: npx dotenv -e .env.ci -- npx cdk synth --strict --validation --no-staging
 
-  deploy:
+  deploy-to-environment:
     needs:
       - npm-test
       - npm-behaviour-test-local
@@ -208,8 +208,8 @@ jobs:
         id: stacks
         shell: bash
         run: |
-          synth=$(jq -r '.synthStacks' cdk.json | sed 's/SubmitWebStack-dev/SubmitWebStack-${{ inputs.environment || 'ci' }}/g')
-          deploy=$(jq -r '.deployStacks' cdk.json | sed 's/SubmitWebStack-dev/SubmitWebStack-${{ inputs.environment || 'ci' }}/g')
+          synth=$(jq -r '.synthStacks' cdk.json | sed 's/SubmitWebStack-dev/SubmitWebStack-${{ env.environment }}/g')
+          deploy=$(jq -r '.deployStacks' cdk.json | sed 's/SubmitWebStack-dev/SubmitWebStack${{ env.environment }}/g')
           echo "deploy=${deploy?}" | tee -a "${GITHUB_OUTPUT?}"
           echo "synth=${synth?}" | tee -a "${GITHUB_OUTPUT?}"
 
@@ -217,7 +217,7 @@ jobs:
         shell: bash
         run: |
           echo "GITHUB_ACTOR: ${{ github.actor }}"
-          echo "ENV_NAME: ${{ inputs.environment || 'ci' }}"
+          echo "ENV_NAME: ${{ env.environment }}"
           echo "LOG_S3_OBJECT_EVENT_HANDLER_SOURCE: ${{ steps.jar-path.outputs.jarFilepath }}"
           echo "LOG_GZIPPED_S3_OBJECT_EVENT_HANDLER_SOURCE: ${{ steps.jar-path.outputs.jarFilepath }}"
           echo "CERTIFICATE_ARN: ${{ vars.AWS_CERTIFICATE_ARN }}"
@@ -231,10 +231,10 @@ jobs:
       - name: synth
         id: synth
         shell: bash
-        run: npx dotenv -e .env.ci -- ${{ steps.stacks.outputs.synth }}
+        run: npx dotenv -e .env.${{ env.environment }} -- ${{ steps.stacks.outputs.synth }}
         env:
           GITHUB_ACTOR: ${{ github.actor }}
-          ENV_NAME: ${{ inputs.environment || 'ci' }}
+          ENV_NAME: ${{ env.environment }}
           LOG_S3_OBJECT_EVENT_HANDLER_SOURCE: ${{ steps.jar-path.outputs.jarFilepath }}
           LOG_GZIPPED_S3_OBJECT_EVENT_HANDLER_SOURCE: ${{ steps.jar-path.outputs.jarFilepath }}
           CERTIFICATE_ARN: ${{ vars.AWS_CERTIFICATE_ARN }}
@@ -260,10 +260,10 @@ jobs:
       - name: deploy
         id: deploy
         shell: bash
-        run: npx dotenv -e .env.ci -- ${{ steps.stacks.outputs.deploy }}
+        run: npx dotenv -e .env.${{ env.environment }} -- ${{ steps.stacks.outputs.deploy }}
         env:
           GITHUB_ACTOR: ${{ github.actor }}
-          ENV_NAME: ${{ inputs.environment || 'ci' }}
+          ENV_NAME: ${{ env.environment }}
           LOG_S3_OBJECT_EVENT_HANDLER_SOURCE: ${{ steps.jar-path.outputs.jarFilepath }}
           LOG_GZIPPED_S3_OBJECT_EVENT_HANDLER_SOURCE: ${{ steps.jar-path.outputs.jarFilepath }}
           CERTIFICATE_ARN: ${{ vars.AWS_CERTIFICATE_ARN }}
@@ -274,13 +274,13 @@ jobs:
           HOSTED_ZONE_NAME: ${{ vars.AWS_HOSTED_ZONE_NAME }}
           DIY_SUBMIT_HMRC_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
 
-  npm-behaviour-test-ci:
+  npm-behaviour-test-environment:
     needs:
       - npm-test
       - npm-behaviour-test-local
       - mvn-package-cdk-synth
-      - deploy
-    name: 'npm behaviour test ci'
+      - deploy-to-environment
+    name: 'npm behaviour test ${{ env.environment }}'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -297,13 +297,13 @@ jobs:
 
       - run: npx playwright install --with-deps
 
-      - run: npx dotenv -e '.env.ci' -- npm run test:behaviour
+      - run: cp '.env.${{ env.environment }}' '.env.proxy' ; npx dotenv -e '.env.${{ env.environment }}' -- npm run test:behaviour
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: test-results-behaviour-ci
+          name: "test-results-behaviour-${{ env.environment }}"
           path: target/behaviour-test-results/
           retention-days: 30
 
@@ -311,7 +311,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: test-results-ci
+          name: "test-results-${{ env.environment }}"
           path: target/test-results/
           retention-days: 30
 
@@ -319,7 +319,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: test-reports-behaviour-ci
+          name: "test-reports-behaviour-${{ env.environment }}"
           path: target/test-reports/
           retention-days: 30
 

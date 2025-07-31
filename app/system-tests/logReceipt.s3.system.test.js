@@ -8,6 +8,7 @@ import dotenv from 'dotenv';
 import {httpPost as logReceiptHandler} from "@app/functions/logReceipt.js";
 
 //dotenv.config({path: '.env.test'});
+// TODO: remove the override and ensure the tests pass with .env.test, then change the pipeline tests to copy over .env.test.
 dotenv.config({ path: '.env.proxy', override: true }); // Override to ensure test environment variables are used
 //dotenv.config();
 

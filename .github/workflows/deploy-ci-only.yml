@@ -21,7 +21,7 @@ on:
       skipDeploy:
         description: 'Skip deployment step'
         required: false
-        default: 'true'
+        default: 'false'
         type: choice
         options:
           - 'true'
@@ -29,7 +29,7 @@ on:
 
 env:
   #environment: 'ci'
-  skipDeploy: ${{ inputs.skipDeploy || 'true' }}
+  skipDeploy: ${{ inputs.skipDeploy || 'false' }}
 
 jobs:
 
