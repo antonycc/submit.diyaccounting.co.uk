@@ -2,7 +2,7 @@
 
 name: deploy
 concurrency: ngrok
-run-name: "deploy [${{ github.ref_name }}] to [${{ inputs.environment || 'ci' }}]"
+run-name: "deploy [${{ github.ref_name }}] to [${{ inputs.environment || 'prod' }}]"
 
 on:
   push:
@@ -24,16 +24,16 @@ on:
         # TODO: Create and test test & prod 'actual' domains which route to a pool of versioned environments.
         # TODO: Promote to the test & prod 'actual' domains if tests pass in the versioned environments.
         # TODO: Create separate jobs to prune the stacks from pools.
-        default: 'ci'
+        default: 'prod'
         type: choice
         options:
-          - ci
+          - test
           - prod
   schedule:
     - cron: '14 5,11,17,23 * * *'
 
 env:
-  environment: ${{ inputs.environment || 'ci' }}
+  environment: ${{ inputs.environment || 'prod' }}
 
 jobs:
   npm-test:
@@ -136,13 +136,22 @@ jobs:
         shell: bash
         run: npx dotenv -e .env.ci -- npx cdk synth --strict --validation --no-staging
 
-  deploy-to-environment:
+  deploy-to-ci:
     needs:
       - npm-test
       - npm-behaviour-test-local
       - mvn-package-cdk-synth
+    uses: 'antonycc/submit.diyaccounting.co.uk/.github/workflows/deploy-ci-only.yml@main'
+    with:
+      skipDeploy: 'false'
+    secrets:
+      HMRC_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
+
+  deploy-to-environment:
+    needs:
+      - deploy-to-ci
     runs-on: ubuntu-latest
-    environment: ${{ inputs.environment || 'ci' }}
+    environment: ${{ inputs.environment || 'prod' }}
     permissions:
       id-token: write
       contents: read

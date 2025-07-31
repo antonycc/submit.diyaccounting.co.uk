@@ -16,6 +16,16 @@ on:
       - 'web/public/**'
       - '.github/workflows/deploy-ci-only.yml'
       - '**/pom.xml'
+  workflow_call:
+    inputs:
+      skipDeploy:
+        description: 'Skip deployment step'
+        type: string
+        required: false
+        default: 'false'
+    secrets:
+      HMRC_CLIENT_SECRET:
+        required: true
   workflow_dispatch:
     inputs:
       skipDeploy:
