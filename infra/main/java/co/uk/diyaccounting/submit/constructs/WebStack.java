@@ -726,14 +726,16 @@ public class WebStack extends Stack {
         this.submitVatLambdaLogGroup = submitVatLambdaUrlOrigin.logGroup;
         lambdaUrlToOriginsBehaviourMappings.put(builder.submitVatLambdaUrlPath + "*", submitVatLambdaUrlOrigin.behaviorOptions);
 
-        var logReceiptLambdaEnv = new HashMap<String,String>(Map.of());
+        var logReceiptLambdaEnv = new HashMap<>(Map.of(
+                "DIY_SUBMIT_HOME_URL", builder.homeUrl,
+                "DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX", builder.receiptsBucketPostfix
+        ));
         if(StringUtils.isNotBlank(builder.optionalTestS3Endpoint) && StringUtils.isNotBlank(builder.optionalTestS3AccessKey) || StringUtils.isNotBlank(builder.optionalTestS3SecretKey)) {
             // For production like integrations without AWS we can use test S3 credentials
             var logReceiptLambdaTestEnv = new HashMap<>(Map.of(
                     "DIY_SUBMIT_TEST_S3_ENDPOINT", builder.optionalTestS3Endpoint,
                     "DIY_SUBMIT_TEST_S3_ACCESS_KEY", builder.optionalTestS3AccessKey,
-                    "DIY_SUBMIT_TEST_S3_SECRET_KEY", builder.optionalTestS3SecretKey,
-                    "DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX", builder.receiptsBucketPostfix
+                    "DIY_SUBMIT_TEST_S3_SECRET_KEY", builder.optionalTestS3SecretKey
             ));
             logReceiptLambdaEnv.putAll(logReceiptLambdaTestEnv);
         }
