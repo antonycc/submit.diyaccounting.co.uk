@@ -11,7 +11,7 @@ import {buildGovClientTestHeaders} from "@app/unit-tests/govClientTestHeader.js"
 dotenv.config({ path: '.env.test' });
 
 // Read the HTML file content
-const htmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/index.html"), "utf-8");
+const htmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/submitVat.html"), "utf-8");
 
 describe("VAT Flow Frontend JavaScript", () => {
   const originalEnv = process.env;

@@ -251,10 +251,25 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   await page.screenshot({ path: `target/behaviour-with-auth-test-results/auth-behaviour-000-initial_${timestamp}.png` });
   await setTimeout(500);
 
-  // 2) Verify the form is present and fill it out with correct field IDs
+  // 2) Navigate through the new navigation structure
+  // Click "View available activities" on home page
+  await expect(page.getByText("View available activities")).toBeVisible();
+  await page.click("button:has-text('View available activities')");
+  await page.waitForLoadState("networkidle");
+  await setTimeout(500);
+  await page.screenshot({ path: `target/behaviour-with-auth-test-results/auth-behaviour-005-activities_${timestamp}.png` });
+
+  // Click "VAT Return Submission" on activities page
+  await expect(page.getByText("VAT Return Submission")).toBeVisible();
+  await page.click("button:has-text('VAT Return Submission')");
+  await page.waitForLoadState("networkidle");
+  await setTimeout(500);
+  await page.screenshot({ path: `target/behaviour-with-auth-test-results/auth-behaviour-007-vat-form_${timestamp}.png` });
+
+  // 3) Verify the form is present and fill it out with correct field IDs
   await expect(page.locator("#vatSubmissionForm")).toBeVisible();
 
-  // Fill out the VAT form using the correct field IDs from index.html
+  // Fill out the VAT form using the correct field IDs from submitVat.html
   const randomFourCharacters = Math.random().toString(36).substring(2, 6);
   await page.fill("#vatNumber", "193054661");
   await setTimeout(100);

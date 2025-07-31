@@ -20,7 +20,7 @@ test.describe("Client System Test - VAT Flow in Browser", () => {
 
   test.beforeAll(async () => {
     // Read the HTML file
-    htmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/index.html"), "utf-8");
+    htmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/submitVat.html"), "utf-8");
     submitJsContent = fs.readFileSync(path.join(process.cwd(), "web/public/submit.js"), "utf-8");
   });
 
