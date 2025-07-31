@@ -223,7 +223,7 @@ jobs:
         shell: bash
         run: |
           synth=$(jq -r '.synthStacks' cdk.json | sed 's/SubmitWebStack-dev/SubmitWebStack-${{ env.environment }}/g')
-          deploy=$(jq -r '.deployStacks' cdk.json | sed 's/SubmitWebStack-dev/SubmitWebStack${{ env.environment }}/g')
+          deploy=$(jq -r '.deployStacks' cdk.json | sed 's/SubmitWebStack-dev/SubmitWebStack$-{{ env.environment }}/g')
           echo "deploy=${deploy?}" | tee -a "${GITHUB_OUTPUT?}"
           echo "synth=${synth?}" | tee -a "${GITHUB_OUTPUT?}"
 
