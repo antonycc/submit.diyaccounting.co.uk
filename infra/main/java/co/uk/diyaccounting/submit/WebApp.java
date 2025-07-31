@@ -57,6 +57,7 @@ public class WebApp {
                 .logReceiptLambdaUrlPath(System.getenv("LOG_RECEIPT_LAMBDA_URL_PATH"))
                 .logReceiptLambdaDurationMillis(System.getenv("LOG_RECEIPT_LAMBDA_DURATION"))
                 .lambdaUrlAuthType(System.getenv("LAMBDA_URL_AUTH_TYPE"))
+                .commitHash(System.getenv("COMMIT_HASH"))
                 .build();
 
         CfnOutput.Builder.create(stack, "OriginBucketArn")

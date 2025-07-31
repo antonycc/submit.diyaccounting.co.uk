@@ -247,11 +247,39 @@ input[type="number"]:focus {
 
 footer {
   margin-top: 2em;
-  text-align: center;
   font-size: 0.9em;
   color: #777;
   padding-top: 1em;
   border-top: 1px solid #eee;
+}
+
+.footer-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+}
+
+.footer-left {
+  flex: 1;
+  text-align: left;
+}
+
+.footer-center {
+  flex: 2;
+  text-align: center;
+}
+
+.footer-left a {
+  color: #2c5aa0;
+  text-decoration: none;
+  font-size: 0.85em;
+  transition: color 0.3s;
+}
+
+.footer-left a:hover {
+  color: #1a3d6b;
+  text-decoration: underline;
 }
 
 /* Auth providers */

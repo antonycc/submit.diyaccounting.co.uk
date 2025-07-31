@@ -12,6 +12,7 @@
         <div class="hamburger-menu">
           <button class="hamburger-btn" onclick="toggleMenu()">☰</button>
           <div class="menu-dropdown" id="menuDropdown">
+            <a href="index.html">Home</a>
             <a href="activities.html">View Activities</a>
             <a href="services.html">Add Service</a>
           </div>
@@ -74,7 +75,14 @@
     </div>
 
     <footer>
-      <p>&copy; 2025 DIY Accounting Limited. Licensed under GPL v3.0</p>
+      <div class="footer-content">
+        <div class="footer-left">
+          <a href="#" id="viewSourceLink" style="display: none;">view source</a>
+        </div>
+        <div class="footer-center">
+          <p>&copy; 2025 DIY Accounting Limited. Licensed under GPL v3.0</p>
+        </div>
+      </div>
     </footer>
 
     <script>
@@ -93,6 +101,29 @@
           }
         }
       }
+
+      // Load and display view source link
+      async function loadViewSourceLink() {
+        try {
+          const response = await fetch('source.txt');
+          if (response.ok) {
+            const commitHash = (await response.text()).trim();
+            if (commitHash) {
+              const currentPage = window.location.pathname.split('/').pop() || 'index.html';
+              const githubUrl = `https://github.com/antonycc/submit.diyaccounting.co.uk/blob/${commitHash}/web/public/${currentPage}`;
+              const viewSourceLink = document.getElementById('viewSourceLink');
+              viewSourceLink.href = githubUrl;
+              viewSourceLink.textContent = `view source ${commitHash.substring(0, 7)}`;
+              viewSourceLink.style.display = 'inline';
+            }
+          }
+        } catch (error) {
+          console.log('Could not load source.txt:', error);
+        }
+      }
+
+      // Load view source link on page load
+      loadViewSourceLink();
     </script>
   </body>
 </html>

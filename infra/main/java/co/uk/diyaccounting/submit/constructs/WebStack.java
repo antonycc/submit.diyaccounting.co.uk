@@ -157,6 +157,7 @@ public class WebStack extends Stack {
         public String logReceiptLambdaUrlPath;
         public String logReceiptLambdaDuration;
         public String lambdaUrlAuthType;
+        public String commitHash;
 
         public Builder(Construct scope, String id, StackProps props) {
             this.scope = scope;
@@ -456,6 +457,11 @@ public class WebStack extends Stack {
 
         public Builder lambdaUrlAuthType(String lambdaUrlAuthType) {
             this.lambdaUrlAuthType = lambdaUrlAuthType;
+            return this;
+        }
+
+        public Builder commitHash(String commitHash) {
+            this.commitHash = commitHash;
             return this;
         }
 
@@ -1063,6 +1069,19 @@ public class WebStack extends Stack {
 
         this.distributionUrl = "https://%s/".formatted(this.distribution.getDomainName());
         logger.info("Distribution URL: %s".formatted(distributionUrl));
+
+        // Generate source.txt file with commit hash if provided
+        if (builder.commitHash != null && !builder.commitHash.isBlank()) {
+            try {
+                java.nio.file.Path sourceFilePath = java.nio.file.Paths.get(builder.docRootPath, "source.txt");
+                java.nio.file.Files.writeString(sourceFilePath, builder.commitHash.trim());
+                logger.info("Created source.txt file with commit hash: %s".formatted(builder.commitHash));
+            } catch (Exception e) {
+                logger.warn("Failed to create source.txt file: %s".formatted(e.getMessage()));
+            }
+        } else {
+            logger.info("No commit hash provided, skipping source.txt generation");
+        }
 
         // Deploy the web website files to the web website bucket and invalidate distribution
         this.docRootSource = Source.asset(builder.docRootPath, AssetOptions.builder()

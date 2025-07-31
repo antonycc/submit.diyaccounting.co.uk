@@ -155,11 +155,13 @@ describe("Navigation Frontend Tests", () => {
       expect(menuDropdown).toBeTruthy();
       
       const menuLinks = menuDropdown.querySelectorAll("a");
-      expect(menuLinks).toHaveLength(2);
-      expect(menuLinks[0].textContent).toBe("View Activities");
-      expect(menuLinks[0].getAttribute("href")).toBe("activities.html");
-      expect(menuLinks[1].textContent).toBe("Add Service");
-      expect(menuLinks[1].getAttribute("href")).toBe("services.html");
+      expect(menuLinks).toHaveLength(3);
+      expect(menuLinks[0].textContent).toBe("Home");
+      expect(menuLinks[0].getAttribute("href")).toBe("index.html");
+      expect(menuLinks[1].textContent).toBe("View Activities");
+      expect(menuLinks[1].getAttribute("href")).toBe("activities.html");
+      expect(menuLinks[2].textContent).toBe("Add Service");
+      expect(menuLinks[2].getAttribute("href")).toBe("services.html");
     });
 
     test("should have auth section with login status and link", () => {
