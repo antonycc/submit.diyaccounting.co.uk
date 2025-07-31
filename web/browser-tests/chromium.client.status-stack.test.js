@@ -14,9 +14,11 @@ function getTimestamp() {
 
 test.describe("Client Status Message Stacking", () => {
   let htmlContent;
+  let submitJsContent;
 
   test.beforeAll(async () => {
     htmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/index.html"), "utf-8");
+    submitJsContent = fs.readFileSync(path.join(process.cwd(), "web/public/submit.js"), "utf-8");
   });
 
   test.beforeEach(async ({ page }) => {
@@ -24,6 +26,9 @@ test.describe("Client Status Message Stacking", () => {
       baseURL: "http://localhost:3000",
       waitUntil: "domcontentloaded",
     });
+    
+    // Inject submit.js content into the page
+    await page.addScriptTag({ content: submitJsContent });
   });
 
   test("should stack multiple info messages and auto-remove after 5 seconds", async ({ page }) => {
@@ -37,9 +42,9 @@ test.describe("Client Status Message Stacking", () => {
     // All three should be visible and stacked
     const messages = page.locator("#statusMessagesContainer .status-message");
     await expect(messages).toHaveCount(3);
-    await expect(messages.nth(0)).toHaveText("Info message 1");
-    await expect(messages.nth(1)).toHaveText("Info message 2");
-    await expect(messages.nth(2)).toHaveText("Info message 3");
+    await expect(messages.nth(0).locator(".status-message-content")).toHaveText("Info message 1");
+    await expect(messages.nth(1).locator(".status-message-content")).toHaveText("Info message 2");
+    await expect(messages.nth(2).locator(".status-message-content")).toHaveText("Info message 3");
     await page.screenshot({ path: `target/browser-test-results/browser-status-stack-initial_${timestamp}.png` });
     // Wait 31 seconds for auto-removal
     //await page.waitForTimeout(31000);
@@ -54,8 +59,8 @@ test.describe("Client Status Message Stacking", () => {
     });
     const messages = page.locator("#statusMessagesContainer .status-message");
     await expect(messages).toHaveCount(2);
-    await expect(messages.nth(0)).toHaveText("Error message");
-    await expect(messages.nth(1)).toHaveText("Info message");
+    await expect(messages.nth(0).locator(".status-message-content")).toHaveText("Error message");
+    await expect(messages.nth(1).locator(".status-message-content")).toHaveText("Info message");
     // Wait 31 seconds
     //await page.waitForTimeout(31000);
     // Only error should remain
@@ -73,6 +78,45 @@ test.describe("Client Status Message Stacking", () => {
     // Call hideStatus
     await page.evaluate(() => window.hideStatus());
     await expect(messages).toHaveCount(0);
+  });
+
+  test("should remove individual messages when close button is clicked", async ({ page }) => {
+    const timestamp = getTimestamp();
+    // Create multiple messages
+    await page.evaluate(() => {
+      window.showStatus("Message 1", "info");
+      window.showStatus("Message 2", "error");
+      window.showStatus("Message 3", "success");
+    });
+    
+    const messages = page.locator("#statusMessagesContainer .status-message");
+    await expect(messages).toHaveCount(3);
+    
+    // Take screenshot before clicking
+    await page.screenshot({ path: `target/browser-test-results/browser-close-button-before_${timestamp}.png` });
+    
+    // Click close button on the second message
+    const secondMessageCloseButton = messages.nth(1).locator(".status-close-button");
+    await expect(secondMessageCloseButton).toBeVisible();
+    await secondMessageCloseButton.click();
+    
+    // Should have 2 messages remaining
+    await expect(messages).toHaveCount(2);
+    
+    // Verify the correct messages remain
+    await expect(messages.nth(0).locator(".status-message-content")).toHaveText("Message 1");
+    await expect(messages.nth(1).locator(".status-message-content")).toHaveText("Message 3");
+    
+    // Take screenshot after clicking
+    await page.screenshot({ path: `target/browser-test-results/browser-close-button-after_${timestamp}.png` });
+    
+    // Click close button on first remaining message
+    const firstMessageCloseButton = messages.nth(0).locator(".status-close-button");
+    await firstMessageCloseButton.click();
+    
+    // Should have 1 message remaining
+    await expect(messages).toHaveCount(1);
+    await expect(messages.nth(0).locator(".status-message-content")).toHaveText("Message 3");
   });
 });
 

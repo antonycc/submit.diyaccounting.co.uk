@@ -16,10 +16,12 @@ function getTimestamp() {
 
 test.describe("Client System Test - VAT Flow in Browser", () => {
   let htmlContent;
+  let submitJsContent;
 
   test.beforeAll(async () => {
     // Read the HTML file
     htmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/index.html"), "utf-8");
+    submitJsContent = fs.readFileSync(path.join(process.cwd(), "web/public/submit.js"), "utf-8");
   });
 
   test.beforeEach(async ({ page }) => {
@@ -85,6 +87,9 @@ test.describe("Client System Test - VAT Flow in Browser", () => {
       baseURL: "http://localhost:3000",
       waitUntil: "domcontentloaded",
     });
+    
+    // Inject submit.js content into the page
+    await page.addScriptTag({ content: submitJsContent });
   });
 
   test.afterEach(async ({}, testInfo) => {
@@ -165,7 +170,7 @@ test.describe("Client System Test - VAT Flow in Browser", () => {
       const statusMessages = page.locator("#statusMessagesContainer .status-message");
       await expect(statusMessages.first()).toBeVisible({ timeout: 2000 });
 
-      const statusText = await statusMessages.first().textContent();
+      const statusText = await statusMessages.first().locator(".status-message-content").textContent();
       expect(statusText).toBe("Please fill in all required fields.");
 
       // Check that the message has error styling
@@ -249,7 +254,7 @@ test.describe("Client System Test - VAT Flow in Browser", () => {
       const statusMessages = page.locator("#statusMessagesContainer .status-message");
       await expect(statusMessages.first()).toBeVisible({ timeout: 1000 });
 
-      const statusText = await statusMessages.first().textContent();
+      const statusText = await statusMessages.first().locator(".status-message-content").textContent();
       expect(statusText).toBe("Test info message");
 
       // Check styling
@@ -269,7 +274,7 @@ test.describe("Client System Test - VAT Flow in Browser", () => {
       const statusMessages = page.locator("#statusMessagesContainer .status-message");
       await expect(statusMessages.first()).toBeVisible();
 
-      const statusText = await statusMessages.first().textContent();
+      const statusText = await statusMessages.first().locator(".status-message-content").textContent();
       expect(statusText).toBe("Test error message");
 
       // Check styling

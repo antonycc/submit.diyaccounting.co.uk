@@ -67,7 +67,13 @@ describe("VAT Flow Frontend JavaScript", () => {
     // Load the HTML content
     document.documentElement.innerHTML = htmlContent;
 
-    // Execute the script content to define functions
+    // Load and execute submit.js first
+    const submitJsContent = fs.readFileSync(path.join(process.cwd(), "web/public/submit.js"), "utf-8");
+    const submitScript = document.createElement("script");
+    submitScript.textContent = submitJsContent;
+    document.head.appendChild(submitScript);
+
+    // Execute the inline script content to define page-specific functions
     const scriptMatch = htmlContent.match(/<script>([\s\S]*?)<\/script>/);
     if (scriptMatch) {
       const scriptContent = scriptMatch[1];
@@ -90,9 +96,11 @@ describe("VAT Flow Frontend JavaScript", () => {
       const statusMessages = statusMessagesContainer.querySelectorAll('.status-message');
       expect(statusMessages.length).toBeGreaterThan(0);
       const firstMsg = statusMessages[0];
-      expect(firstMsg.textContent).toBe("Test message");
+      const messageContent = firstMsg.querySelector('.status-message-content');
+      const closeButton = firstMsg.querySelector('.status-close-button');
+      expect(messageContent.textContent).toBe("Test message");
+      expect(closeButton.textContent).toBe("×");
       expect(firstMsg.className).toBe("status-message status-info");
-      expect(firstMsg.style.display).toBe("block");
     });
 
     test("showStatus should display error status", () => {
@@ -101,7 +109,10 @@ describe("VAT Flow Frontend JavaScript", () => {
       const statusMessages = statusMessagesContainer.querySelectorAll('.status-message');
       expect(statusMessages.length).toBeGreaterThan(0);
       const firstMsg = statusMessages[0];
-      expect(firstMsg.textContent).toBe("Error message");
+      const messageContent = firstMsg.querySelector('.status-message-content');
+      const closeButton = firstMsg.querySelector('.status-close-button');
+      expect(messageContent.textContent).toBe("Error message");
+      expect(closeButton.textContent).toBe("×");
       expect(firstMsg.className).toBe("status-message status-error");
     });
 
@@ -134,6 +145,58 @@ describe("VAT Flow Frontend JavaScript", () => {
       const state = window.generateRandomState();
       expect(typeof state).toBe("string");
       expect(state.length).toBeGreaterThan(0);
+    });
+
+    test("close button should remove status message when clicked", () => {
+      const statusMessagesContainer = document.getElementById("statusMessagesContainer");
+      window.showStatus("Test message", "info");
+      
+      const statusMessages = statusMessagesContainer.querySelectorAll('.status-message');
+      expect(statusMessages.length).toBe(1);
+      
+      const closeButton = statusMessages[0].querySelector('.status-close-button');
+      expect(closeButton).toBeTruthy();
+      
+      // Click the close button
+      closeButton.click();
+      
+      // Message should be removed
+      const remainingMessages = statusMessagesContainer.querySelectorAll('.status-message');
+      expect(remainingMessages.length).toBe(0);
+    });
+
+    test("close button should work for multiple messages", () => {
+      const statusMessagesContainer = document.getElementById("statusMessagesContainer");
+      window.showStatus("Message 1", "info");
+      window.showStatus("Message 2", "error");
+      window.showStatus("Message 3", "success");
+      
+      let statusMessages = statusMessagesContainer.querySelectorAll('.status-message');
+      expect(statusMessages.length).toBe(3);
+      
+      // Click close button on second message
+      const secondMessageCloseButton = statusMessages[1].querySelector('.status-close-button');
+      secondMessageCloseButton.click();
+      
+      // Should have 2 messages remaining
+      statusMessages = statusMessagesContainer.querySelectorAll('.status-message');
+      expect(statusMessages.length).toBe(2);
+      
+      // Verify the correct message was removed (second one)
+      const messageContents = Array.from(statusMessages).map(msg => 
+        msg.querySelector('.status-message-content').textContent
+      );
+      expect(messageContents).toEqual(["Message 1", "Message 3"]);
+    });
+
+    test("removeStatusMessage should safely handle non-existent messages", () => {
+      const statusMessagesContainer = document.getElementById("statusMessagesContainer");
+      const fakeDiv = document.createElement("div");
+      
+      // Should not throw error when trying to remove non-existent message
+      expect(() => window.removeStatusMessage(fakeDiv)).not.toThrow();
+      expect(() => window.removeStatusMessage(null)).not.toThrow();
+      expect(() => window.removeStatusMessage(undefined)).not.toThrow();
     });
   });
 

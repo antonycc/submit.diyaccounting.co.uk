@@ -4,41 +4,13 @@
     <meta charset="UTF-8" />
     <title>DIY Accounting Submit</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="submit.css" />
     <style>
-      /* Basic reset and box-sizing */
-      * {
-        box-sizing: border-box;
-        margin: 0;
-        padding: 0;
-      }
-      html,
-      body {
-        height: 100%;
-      }
-      body {
-        font-family: Arial, sans-serif;
-        background-color: #f9f9f9;
-        color: #333;
-        display: flex;
-        flex-direction: column;
-        padding: 1em;
-        max-width: 800px;
-        margin: 0 auto;
-      }
       header {
         margin-bottom: 2em;
         text-align: center;
       }
-      h1 {
-        font-size: 2.2em;
-        margin-bottom: 0.5em;
-        color: #2c5aa0;
-      }
-      h2 {
-        font-size: 1.5em;
-        margin-bottom: 1em;
-        color: #2c5aa0;
-      }
+      
       .subtitle {
         font-size: 1.1em;
         color: #666;
@@ -94,53 +66,6 @@
         margin-top: 0.25em;
       }
 
-      /* Button styling */
-      .btn {
-        background-color: #2c5aa0;
-        color: white;
-        padding: 1em 2em;
-        border: none;
-        border-radius: 4px;
-        font-size: 1.1em;
-        cursor: pointer;
-        transition: background-color 0.3s;
-        width: 100%;
-      }
-
-      .btn:hover {
-        background-color: #1e3f73;
-      }
-
-      .btn:disabled {
-        background-color: #ccc;
-        cursor: not-allowed;
-      }
-
-      /* Status messages */
-      .status-message {
-        padding: 1em;
-        border-radius: 4px;
-        margin-bottom: 1em;
-        display: none;
-      }
-
-      .status-success {
-        background-color: #d4edda;
-        border: 1px solid #c3e6cb;
-        color: #155724;
-      }
-
-      .status-error {
-        background-color: #f8d7da;
-        border: 1px solid #f5c6cb;
-        color: #721c24;
-      }
-
-      .status-info {
-        background-color: #d1ecf1;
-        border: 1px solid #bee5eb;
-        color: #0c5460;
-      }
 
       /* Loading spinner */
       .spinner {
@@ -317,6 +242,7 @@
       <p>&copy; 2025 DIY Accounting Limited. Licensed under GPL v3.0</p>
     </footer>
 
+    <script src="submit.js"></script>
     <script>
       console.log('JS block started loading.');
 
@@ -332,174 +258,7 @@
       const receiptDisplay = document.getElementById("receiptDisplay");
       const vatFormContainer = document.getElementById("vatForm");
 
-      // Utility functions
-
-      function showStatus(message, type = "info") {
-        console.log('Status message:', message, 'Type:', type);
-        const msgDiv = document.createElement("div");
-        msgDiv.className = `status-message status-${type}`;
-        msgDiv.textContent = message;
-        msgDiv.style.display = "block";
-        statusMessagesContainer.appendChild(msgDiv);
-
-        // Auto-hide info messages after 5 seconds
-        if (type === "info") {
-          setTimeout(() => {
-            msgDiv.remove();
-          }, 30000);
-        }
-      }
-
-      function hideStatus() {
-        console.log('Hiding all status messages');
-        statusMessagesContainer.innerHTML = "";
-      }
-
-      function showLoading() {
-        console.log('Page display transition: Showing loading spinner');
-        loadingSpinner.style.display = "block";
-        submitBtn.disabled = true;
-      }
-
-      function hideLoading() {
-        console.log('Page display transition: Hiding loading spinner');
-        loadingSpinner.style.display = "none";
-        submitBtn.disabled = false;
-      }
-
-      function generateRandomState() {
-        return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-      }
-
-      // API functions
-
-      async function getAuthUrl(state) {
-        const url = `/api/auth-url?state=${encodeURIComponent(state)}`;
-        console.log(`Getting auth URL. Remote call initiated: GET ${url}`);
-
-        const response = await fetch(url);
-        const responseJson = await response.json();
-        if (!response.ok) {
-          const message = `Failed to get auth URL. Remote call failed: GET ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`;
-          console.error(message);
-          throw new Error(message);
-        }
-
-        console.log(`Got auth URL. Remote call completed successfully: GET ${url}`, responseJson);
-        return responseJson;
-      }
-
-      async function exchangeToken(code) {
-        const url = `/api/exchange-token`;
-        const body = JSON.stringify({ code });
-        console.log(`Exchanging token. Remote call initiated: POST ${url} ++ Body: ${body}`);
-
-        const response = await fetch(url, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body,
-        });
-        if (!response.ok) {
-          const message = `Failed to exchange token. Remote call failed: POST ${url} - Status: ${response.status} ${response.statusText}`;
-          console.error(message);
-          throw new Error(message);
-        }
-
-        const responseJson = await response.json();
-        const hmrcAccessToken = responseJson.hmrcAccessToken;
-        if (!hmrcAccessToken) {
-          const message = `Failed to exchange token. Remote call response did not include hmrcAccessToken: POST ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`;
-          console.error(message);
-          throw new Error(message);
-        }
-
-        console.log(`Exchanged token. Remote call completed successfully: POST ${url}`, responseJson, hmrcAccessToken);
-        return hmrcAccessToken;
-      }
-
-      // Enhanced IP detection function with multiple fallback methods
-      async function getClientIP() {
-        // Method 1: Try WebRTC-based IP detection (works for local IPs, limited for public IPs in modern browsers)
-        const webRTCIP = await getIPViaWebRTC().catch(() => null);
-        if (webRTCIP && !webRTCIP.startsWith('192.168.') && !webRTCIP.startsWith('10.') && !webRTCIP.startsWith('172.')) {
-          return webRTCIP;
-        }
-
-        // Method 2: Try multiple IP detection services with timeout
-        const ipServices = [
-          'https://api.ipify.org',
-          'https://ipapi.co/ip',
-          'https://httpbin.org/ip'
-        ];
-
-        for (const service of ipServices) {
-          try {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second timeout
-            
-            let response;
-            if (service === 'https://httpbin.org/ip') {
-              response = await fetch(service, { signal: controller.signal });
-              const data = await response.json();
-              clearTimeout(timeoutId);
-              return data.origin.split(',')[0].trim(); // httpbin returns "ip, ip" format sometimes
-            } else {
-              response = await fetch(service, { signal: controller.signal });
-              const ip = await response.text();
-              clearTimeout(timeoutId);
-              return ip.trim();
-            }
-          } catch (error) {
-            console.warn(`Failed to get IP from ${service}:`, error.message);
-            continue;
-          }
-        }
-
-        // Method 3: Fallback - let server detect IP from request headers
-        console.warn('All IP detection methods failed, server will detect IP from request headers');
-        return 'SERVER_DETECT';
-      }
-
-      // WebRTC-based IP detection (limited effectiveness in modern browsers due to security restrictions)
-      function getIPViaWebRTC() {
-        return new Promise((resolve, reject) => {
-          const timeout = setTimeout(() => reject(new Error('WebRTC timeout')), 2000);
-          
-          try {
-            const pc = new RTCPeerConnection({
-              iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
-            });
-
-            pc.createDataChannel('');
-            pc.createOffer().then(offer => pc.setLocalDescription(offer));
-
-            pc.onicecandidate = (event) => {
-              if (event.candidate) {
-                const candidate = event.candidate.candidate;
-                const ipMatch = candidate.match(/(\d+\.\d+\.\d+\.\d+)/);
-                if (ipMatch) {
-                  clearTimeout(timeout);
-                  pc.close();
-                  resolve(ipMatch[1]);
-                }
-              }
-            };
-
-            pc.onicegatheringstatechange = () => {
-              if (pc.iceGatheringState === 'complete') {
-                clearTimeout(timeout);
-                pc.close();
-                reject(new Error('No IP found via WebRTC'));
-              }
-            };
-          } catch (error) {
-            clearTimeout(timeout);
-            reject(error);
-          }
-        });
-      }
+      // VAT-specific functions
 
       async function submitVatWithCalculatedHeaders(vatNumber, periodKey, vatDue, hmrcAccessToken) {
         // Populate headers with required values using what is available in the browser environment
@@ -774,14 +533,7 @@
         e.target.value = e.target.value.toUpperCase();
       });
 
-      // Expose functions to window for testing
-      window.showStatus = showStatus;
-      window.hideStatus = hideStatus;
-      window.showLoading = showLoading;
-      window.hideLoading = hideLoading;
-      window.generateRandomState = generateRandomState;
-      window.getAuthUrl = getAuthUrl;
-      window.exchangeToken = exchangeToken;
+      // Expose page-specific functions to window for testing
       window.submitVat = submitVat;
       window.logReceipt = logReceipt;
       window.handleOAuthCallback = handleOAuthCallback;
