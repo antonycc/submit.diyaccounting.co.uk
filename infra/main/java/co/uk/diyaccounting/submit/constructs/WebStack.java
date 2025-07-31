@@ -463,7 +463,8 @@ public class WebStack extends Stack {
             return new WebStack(this.scope, this.id, this.props, this);
         }
 
-        public static String buildDomainName(String env, String subDomainName, String hostedZoneName) { return env.equals("prod") ? hostedZoneName : Builder.buildNonProdDomainName(env, subDomainName, hostedZoneName); }
+        public static String buildDomainName(String env, String subDomainName, String hostedZoneName) { return env.equals("prod") ? Builder.buildProdDomainName(subDomainName, hostedZoneName) : Builder.buildNonProdDomainName(env, subDomainName, hostedZoneName); }
+        public static String buildProdDomainName(String subDomainName, String hostedZoneName) { return "%s.%s".formatted(subDomainName, hostedZoneName); }
         public static String buildNonProdDomainName(String env, String subDomainName, String hostedZoneName) { return "%s.%s.%s".formatted(env, subDomainName, hostedZoneName); }
         public static String buildDashedDomainName(String env, String subDomainName, String hostedZoneName) { return ResourceNameUtils.convertDashSeparatedToDotSeparated("%s.%s.%s".formatted(env, subDomainName, hostedZoneName), domainNameMappings); }
         public static String buildOriginBucketName(String dashedDomainName){ return dashedDomainName; }
