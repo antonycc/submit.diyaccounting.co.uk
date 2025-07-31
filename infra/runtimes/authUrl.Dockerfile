@@ -1,8 +1,8 @@
 FROM public.ecr.aws/lambda/nodejs:22
 
-ENV DIY_SUBMIT_HMRC_BASE_URI="From Dockerfile"
-ENV DIY_SUBMIT_HMRC_CLIENT_ID="From Dockerfile"
-ENV DIY_SUBMIT_HOME_URL="From Dockerfile"
+ENV DIY_SUBMIT_HMRC_BASE_URI="The default value from the Dockerfile is intended to be overridden."
+ENV DIY_SUBMIT_HMRC_CLIENT_ID="The default value from the Dockerfile is intended to be overridden."
+ENV DIY_SUBMIT_HOME_URL="The default value from the Dockerfile is intended to be overridden."
 
 # Log build context and paths for debugging
 RUN echo "authUrl.Dockerfile: Build context is $(pwd)"

@@ -1,6 +1,7 @@
 FROM public.ecr.aws/lambda/nodejs:22
 
-ENV DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX="From Dockerfile"
+ENV DIY_SUBMIT_HOME_URL="The default value from the Dockerfile is intended to be overridden."
+ENV DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX="The default value from the Dockerfile is intended to be overridden."
 
 # Log build context and paths for debugging
 RUN echo "logReceipt.Dockerfile: Build context is $(pwd)"
