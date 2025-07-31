@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>DIY Accounting Submit</title>
+    <title>DIY Accounting Submit - Coming Soon</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" href="submit.css" />
   </head>
@@ -27,9 +27,17 @@
 
     <div id="mainContent">
       <div class="form-container" style="text-align: center;">
-        <h2>Welcome</h2>
-        <p>Choose from the available activities below to get started.</p>
-        <button type="button" class="btn" onclick="window.location.href='activities.html'">View available activities</button>
+        <h2>Coming Soon</h2>
+        <div class="coming-soon-message">
+          <div class="coming-soon-icon">🚧</div>
+          <p>This feature is currently under development.</p>
+          <p>You will be redirected to the home page shortly...</p>
+          <div class="countdown" id="countdown">2</div>
+        </div>
+        
+        <div style="margin-top: 2em;">
+          <button type="button" class="btn" onclick="window.location.href='index.html'" style="background-color: #6c757d; border-color: #6c757d;">Go Home Now</button>
+        </div>
       </div>
     </div>
 
@@ -54,17 +62,19 @@
         }
       }
 
-      // Check for OAuth callback parameters and redirect to submitVat.html if found
-      const urlParams = new URLSearchParams(window.location.search);
-      const code = urlParams.get("code");
-      const state = urlParams.get("state");
-      const error = urlParams.get("error");
+      // Countdown and redirect functionality
+      let countdown = 2;
+      const countdownElement = document.getElementById('countdown');
       
-      if (code || error) {
-        // OAuth callback detected, redirect to submitVat.html with parameters
-        console.log('OAuth callback detected on home page, redirecting to submitVat.html');
-        window.location.href = 'submitVat.html' + window.location.search;
-      }
+      const timer = setInterval(() => {
+        countdown--;
+        countdownElement.textContent = countdown;
+        
+        if (countdown <= 0) {
+          clearInterval(timer);
+          window.location.href = 'index.html';
+        }
+      }, 1000);
     </script>
   </body>
 </html>

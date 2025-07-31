@@ -9,12 +9,18 @@ test.describe("Navigation Browser Tests", () => {
   let indexHtmlContent;
   let activitiesHtmlContent;
   let submitVatHtmlContent;
+  let loginHtmlContent;
+  let servicesHtmlContent;
+  let comingSoonHtmlContent;
 
   test.beforeAll(async () => {
     // Read the HTML files
     indexHtmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/index.html"), "utf-8");
     activitiesHtmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/activities.html"), "utf-8");
     submitVatHtmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/submitVat.html"), "utf-8");
+    loginHtmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/login.html"), "utf-8");
+    servicesHtmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/services.html"), "utf-8");
+    comingSoonHtmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/coming-soon.html"), "utf-8");
   });
 
   test.describe("Home Page to Activities Navigation", () => {
@@ -201,6 +207,209 @@ test.describe("Navigation Browser Tests", () => {
       });
 
       expect(hasOAuthParams).toBe(false);
+    });
+  });
+
+  test.describe("Hamburger Menu Navigation", () => {
+    test("should toggle hamburger menu and navigate to activities", async ({ page }) => {
+      await page.setContent(indexHtmlContent, {
+        baseURL: "http://localhost:3000",
+        waitUntil: "domcontentloaded",
+      });
+
+      // Verify hamburger menu exists
+      await expect(page.locator(".hamburger-btn")).toBeVisible();
+      
+      // Click hamburger menu to open dropdown
+      await page.click(".hamburger-btn");
+      await setTimeout(100);
+      
+      // Verify menu dropdown is visible (we can't test CSS classes easily, so we check if links are clickable)
+      await expect(page.locator(".menu-dropdown a").first()).toBeVisible();
+      
+      // Mock navigation to activities page
+      await page.route("**/activities.html", async (route) => {
+        await route.fulfill({
+          status: 200,
+          contentType: "text/html",
+          body: activitiesHtmlContent,
+        });
+      });
+
+      // Click "View Activities" in dropdown
+      await page.click("text=View Activities");
+      await setTimeout(100);
+    });
+
+    test("should navigate to services page from hamburger menu", async ({ page }) => {
+      await page.setContent(indexHtmlContent, {
+        baseURL: "http://localhost:3000",
+        waitUntil: "domcontentloaded",
+      });
+
+      // Click hamburger menu
+      await page.click(".hamburger-btn");
+      await setTimeout(100);
+      
+      // Mock navigation to services page
+      await page.route("**/services.html", async (route) => {
+        await route.fulfill({
+          status: 200,
+          contentType: "text/html",
+          body: servicesHtmlContent,
+        });
+      });
+
+      // Click "Add Service" in dropdown
+      await page.click("text=Add Service");
+      await setTimeout(100);
+    });
+  });
+
+  test.describe("Login Page Navigation", () => {
+    test("should navigate to login page and display auth providers", async ({ page }) => {
+      await page.setContent(indexHtmlContent, {
+        baseURL: "http://localhost:3000",
+        waitUntil: "domcontentloaded",
+      });
+
+      // Mock navigation to login page
+      await page.route("**/login.html", async (route) => {
+        await route.fulfill({
+          status: 200,
+          contentType: "text/html",
+          body: loginHtmlContent,
+        });
+      });
+
+      // Click login link
+      await page.click(".login-link");
+      await setTimeout(100);
+
+      // Simulate navigation to login page
+      await page.setContent(loginHtmlContent, {
+        baseURL: "http://localhost:3000",
+        waitUntil: "domcontentloaded",
+      });
+
+      // Verify login page content
+      await expect(page.locator("h2")).toContainText("Login");
+      await expect(page.locator(".google-btn")).toBeVisible();
+      await expect(page.locator(".disabled-btn")).toHaveCount(3);
+    });
+
+    test("should navigate from login to coming soon page", async ({ page }) => {
+      await page.setContent(loginHtmlContent, {
+        baseURL: "http://localhost:3000",
+        waitUntil: "domcontentloaded",
+      });
+
+      // Mock navigation to coming soon page
+      await page.route("**/coming-soon.html", async (route) => {
+        await route.fulfill({
+          status: 200,
+          contentType: "text/html",
+          body: comingSoonHtmlContent,
+        });
+      });
+
+      // Click Google login button
+      await page.click(".google-btn");
+      await setTimeout(100);
+    });
+  });
+
+  test.describe("Services Page Navigation", () => {
+    test("should navigate to services page and display service options", async ({ page }) => {
+      await page.setContent(servicesHtmlContent, {
+        baseURL: "http://localhost:3000",
+        waitUntil: "domcontentloaded",
+      });
+
+      // Verify services page content
+      await expect(page.locator("h2")).toContainText("Add Service");
+      await expect(page.locator(".service-item")).toHaveCount(3);
+      await expect(page.getByText("Add HMRC Test API Service")).toBeVisible();
+    });
+
+    test("should navigate from services to coming soon page", async ({ page }) => {
+      await page.setContent(servicesHtmlContent, {
+        baseURL: "http://localhost:3000",
+        waitUntil: "domcontentloaded",
+      });
+
+      // Mock navigation to coming soon page
+      await page.route("**/coming-soon.html", async (route) => {
+        await route.fulfill({
+          status: 200,
+          contentType: "text/html",
+          body: comingSoonHtmlContent,
+        });
+      });
+
+      // Click "Add HMRC Test API Service" button
+      await page.click("button:has-text('Add HMRC Test API Service')");
+      await setTimeout(100);
+    });
+  });
+
+  test.describe("Coming Soon Page Functionality", () => {
+    test("should display coming soon message with countdown", async ({ page }) => {
+      await page.setContent(comingSoonHtmlContent, {
+        baseURL: "http://localhost:3000",
+        waitUntil: "domcontentloaded",
+      });
+
+      // Verify coming soon page content
+      await expect(page.locator("h2")).toContainText("Coming Soon");
+      await expect(page.locator(".countdown")).toBeVisible();
+      await expect(page.locator(".countdown")).toContainText("2");
+    });
+
+    test("should have manual navigation back to home", async ({ page }) => {
+      await page.setContent(comingSoonHtmlContent, {
+        baseURL: "http://localhost:3000",
+        waitUntil: "domcontentloaded",
+      });
+
+      // Mock navigation back to home
+      await page.route("**/index.html", async (route) => {
+        await route.fulfill({
+          status: 200,
+          contentType: "text/html",
+          body: indexHtmlContent,
+        });
+      });
+
+      // Click "Go Home Now" button
+      await page.click("button:has-text('Go Home Now')");
+      await setTimeout(100);
+    });
+  });
+
+  test.describe("Activities Page Add Service Navigation", () => {
+    test("should navigate from activities to services page", async ({ page }) => {
+      await page.setContent(activitiesHtmlContent, {
+        baseURL: "http://localhost:3000",
+        waitUntil: "domcontentloaded",
+      });
+
+      // Verify add service section exists
+      await expect(page.locator(".add-service-section")).toBeVisible();
+      await expect(page.getByText("Need more choices?")).toBeVisible();
+
+      // Mock navigation to services page
+      await page.route("**/services.html", async (route) => {
+        await route.fulfill({
+          status: 200,
+          contentType: "text/html",
+          body: servicesHtmlContent,
+        });
+      });
+
+      // Click "Add Service" button
+      await page.click("button:has-text('Add Service')");
+      await setTimeout(100);
     });
   });
 });

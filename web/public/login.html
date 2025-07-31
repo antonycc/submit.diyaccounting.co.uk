@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>DIY Accounting Submit - Login</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="submit.css" />
+  </head>
+  <body>
+    <header>
+      <div class="header-nav">
+        <div class="hamburger-menu">
+          <button class="hamburger-btn" onclick="toggleMenu()">☰</button>
+          <div class="menu-dropdown" id="menuDropdown">
+            <a href="activities.html">View Activities</a>
+            <a href="services.html">Add Service</a>
+          </div>
+        </div>
+        <div class="auth-section">
+          <span class="login-status">Not logged in</span>
+          <a href="index.html" class="login-link">Home</a>
+        </div>
+      </div>
+      <h1>DIY Accounting Submit</h1>
+      <p class="subtitle">Submit UK VAT returns to HMRC under Making Tax Digital (MTD)</p>
+    </header>
+
+    <div id="mainContent">
+      <div class="form-container" style="text-align: center;">
+        <h2>Login</h2>
+        <p>Choose your authentication provider to continue:</p>
+        
+        <div class="auth-providers">
+          <!-- Google Auth Provider (Enabled) -->
+          <div class="auth-provider">
+            <button type="button" class="btn auth-btn google-btn" onclick="window.location.href='coming-soon.html'">
+              <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google" class="provider-logo">
+              Continue with Google
+            </button>
+          </div>
+          
+          <!-- Microsoft Auth Provider (Disabled) -->
+          <div class="auth-provider disabled">
+            <button type="button" class="btn auth-btn disabled-btn" disabled>
+              <img src="https://img-prod-cms-rt-microsoft-com.akamaized.net/cms/api/am/imageFileData/RE1Mu3b?ver=5c31" alt="Microsoft" class="provider-logo">
+              Continue with Microsoft
+            </button>
+            <p class="coming-soon-text">Coming soon</p>
+          </div>
+          
+          <!-- Apple Auth Provider (Disabled) -->
+          <div class="auth-provider disabled">
+            <button type="button" class="btn auth-btn disabled-btn" disabled>
+              <img src="https://developer.apple.com/assets/elements/icons/sign-in-with-apple/sign-in-with-apple-logo.svg" alt="Apple" class="provider-logo">
+              Continue with Apple
+            </button>
+            <p class="coming-soon-text">Coming soon</p>
+          </div>
+          
+          <!-- Facebook Auth Provider (Disabled) -->
+          <div class="auth-provider disabled">
+            <button type="button" class="btn auth-btn disabled-btn" disabled>
+              <img src="https://static.xx.fbcdn.net/rsrc.php/v3/yX/r/Kvo5FesWVKX.png" alt="Facebook" class="provider-logo">
+              Continue with Facebook
+            </button>
+            <p class="coming-soon-text">Coming soon</p>
+          </div>
+        </div>
+        
+        <div style="margin-top: 2em;">
+          <button type="button" class="btn" onclick="window.location.href='index.html'" style="background-color: #6c757d; border-color: #6c757d;">Back to Home</button>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      <p>&copy; 2025 DIY Accounting Limited. Licensed under GPL v3.0</p>
+    </footer>
+
+    <script>
+      // Hamburger menu toggle functionality
+      function toggleMenu() {
+        const dropdown = document.getElementById('menuDropdown');
+        dropdown.classList.toggle('show');
+      }
+
+      // Close menu when clicking outside
+      window.onclick = function(event) {
+        if (!event.target.matches('.hamburger-btn')) {
+          const dropdown = document.getElementById('menuDropdown');
+          if (dropdown.classList.contains('show')) {
+            dropdown.classList.remove('show');
+          }
+        }
+      }
+    </script>
+  </body>
+</html>
