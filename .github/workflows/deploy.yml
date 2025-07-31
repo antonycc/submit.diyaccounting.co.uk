@@ -18,11 +18,11 @@ on:
       environment:
         description: 'Environment to deploy to'
         required: true
-        # TODO: Always deploy to 'ci-<git hash>' environment, run the behaviour tests against the 'ci' environment, and then if successful deploy to the target environment.
+        # TODO: Always deploy to 'ci>' environment, run the behaviour tests against the 'ci' environment, and then if successful deploy to the target environment.
         # TODO: Change the default target environment to be 'test' where the remote calls are stubbed.
-        # TODO: Deploy to versioned target environments, e.g. 'prod-<git hash>'.
-        # TODO: Create and test ci/test/prod 'actual' domains which route to a pool of versioned environments.
-        # TODO: Promote to the ci/test/prod 'actual' domains if tests pass in the versioned environments.
+        # TODO: Deploy to versioned target environments, e.g. 'test-<git hash>'.
+        # TODO: Create and test test & prod 'actual' domains which route to a pool of versioned environments.
+        # TODO: Promote to the test & prod 'actual' domains if tests pass in the versioned environments.
         # TODO: Create separate jobs to prune the stacks from pools.
         default: 'ci'
         type: choice
@@ -310,6 +310,32 @@ jobs:
       - run: npm ci || npm install
 
       - run: npx playwright install --with-deps
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::887764105431:role/submit-github-actions-role
+          role-chaining: false
+          aws-region: eu-west-2
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - run: aws sts get-caller-identity --region eu-west-2
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::887764105431:role/submit-deployment-role
+          role-chaining: true
+          aws-region: eu-west-2
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - run: aws sts get-caller-identity --region eu-west-2
 
       - run: cp '.env.${{ env.environment }}' '.env.proxy' ; npx dotenv -e '.env.${{ env.environment }}' -- npm run test:behaviour
 
