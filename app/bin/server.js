@@ -90,7 +90,7 @@ app.post(logReceiptPath, async (req, res) => {
 
 // fallback to index.html for SPA routing (if needed)
 app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "public/index.html"));
+  res.sendFile(path.join(__dirname, "../../web/public/index.html"));
 });
 
 const DIY_SUBMIT_DIY_SUBMIT_TEST_SERVER_HTTP_PORT = process.env.DIY_SUBMIT_DIY_SUBMIT_TEST_SERVER_HTTP_PORT || 3000;

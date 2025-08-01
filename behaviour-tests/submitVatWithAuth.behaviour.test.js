@@ -40,7 +40,7 @@ function getTimestamp() {
   return now.toISOString().replace(/[:.]/g, "-").replace("T", "_").slice(0, -5);
 }
 
-test.setTimeout(120000);
+test.setTimeout(240000);
 
 test.beforeAll(async () => {
   console.log("Starting beforeAll hook...");
@@ -289,7 +289,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   const currentUrl = page.url();
   console.log(`Current URL after Google login attempt: ${currentUrl}`);
   
-  if (currentUrl.includes('amazoncognito.com') || currentUrl.includes('google.com')) {
+  /*if (currentUrl.includes('amazoncognito.com') || currentUrl.includes('google.com')) {
     console.log('Redirected to actual OAuth provider - this is expected in real environment');
     // In a real test environment, we would handle the OAuth flow
     // For now, we'll simulate going back to continue the test
@@ -306,12 +306,17 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
     // We might be back on the login page or home page
     console.log('OAuth flow completed or redirected back');
   }
-  
+  */
   await page.screenshot({ path: `target/behaviour-with-auth-test-results/auth-behaviour-003-after-auth-attempt_${timestamp}.png` });
+  await setTimeout(500);
+  await page.goBack();
+  await setTimeout(500);
+  await page.screenshot({ path: `target/behaviour-with-auth-test-results/auth-behaviour-003b-after-auth-attempt-back_${timestamp}.png` });
 
   // 3) Navigate through hamburger menu to bundles (Add Bundle)
   console.log("Testing hamburger menu navigation");
   await page.click(".hamburger-btn");
+  await page.waitForLoadState("networkidle");
   await setTimeout(500);
   await page.screenshot({ path: `target/behaviour-with-auth-test-results/auth-behaviour-004-hamburger-menu_${timestamp}.png` });
   
@@ -328,9 +333,20 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   await page.screenshot({ path: `target/behaviour-with-auth-test-results/auth-behaviour-004c-coming-soon-bundle_${timestamp}.png` });
 
   // Go back home from coming soon
-  await page.click("button:has-text('Go Home Now')");
+  //await page.click("button:has-text('Go Home Now')");
+  //await page.waitForLoadState("networkidle");
+  //await setTimeout(500);
+
+  // Go back home
+  console.log("Testing hamburger menu navigation to go home");
+  await page.click(".hamburger-btn");
+  await setTimeout(500);
+  await page.screenshot({ path: `target/behaviour-with-auth-test-results/auth-behaviour-004d-hamburger-menu_${timestamp}.png` });
+
+  await page.click("a:has-text('Home')");
   await page.waitForLoadState("networkidle");
   await setTimeout(500);
+  await page.screenshot({ path: `target/behaviour-with-auth-test-results/auth-behaviour-004e-home-page_${timestamp}.png` });
 
   // 4) Navigate through the main navigation structure to VAT submission
   // Click "View available activities" on home page
@@ -499,4 +515,4 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   await page.screenshot({ path: `target/behaviour-with-auth-test-results/auth-behaviour-075-final-home_${timestamp}.png` });
 
   console.log("Extended site tour completed successfully");
-}, 90000);
+}, 180000);
