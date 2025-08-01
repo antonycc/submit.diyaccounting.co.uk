@@ -96,6 +96,63 @@
 
       // Load view source link on page load
       loadViewSourceLink();
+
+      // Authentication status management
+      
+      // Update login status display
+      function updateLoginStatus() {
+        const userInfo = localStorage.getItem('userInfo');
+        const loginStatusElement = document.querySelector('.login-status');
+        const loginLinkElement = document.querySelector('.login-link');
+
+        if (userInfo) {
+          const user = JSON.parse(userInfo);
+          loginStatusElement.textContent = `Logged in as ${user.email}`;
+          loginLinkElement.textContent = 'Logout';
+          loginLinkElement.href = '#';
+          loginLinkElement.onclick = logout;
+        } else {
+          loginStatusElement.textContent = 'Not logged in';
+          loginLinkElement.textContent = 'Log in';
+          loginLinkElement.href = 'login.html';
+          loginLinkElement.onclick = null;
+        }
+      }
+
+      // Logout function
+      function logout() {
+        console.log('[DEBUG_LOG] Logging out user');
+        
+        // Clear stored tokens and user info
+        localStorage.removeItem('cognitoAccessToken');
+        localStorage.removeItem('cognitoIdToken');
+        localStorage.removeItem('cognitoRefreshToken');
+        localStorage.removeItem('userInfo');
+        localStorage.removeItem('authState');
+
+        // Update login status
+        updateLoginStatus();
+
+        // Redirect to home page
+        window.location.reload();
+      }
+
+      // Check authentication status on page load
+      function checkAuthStatus() {
+        const accessToken = localStorage.getItem('cognitoAccessToken');
+        const userInfo = localStorage.getItem('userInfo');
+        
+        if (accessToken && userInfo) {
+          console.log('[DEBUG_LOG] User is authenticated');
+          updateLoginStatus();
+        } else {
+          console.log('[DEBUG_LOG] User is not authenticated');
+          updateLoginStatus();
+        }
+      }
+
+      // Initialize authentication status
+      checkAuthStatus();
     </script>
   </body>
 </html>

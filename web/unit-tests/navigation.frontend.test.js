@@ -196,7 +196,7 @@ describe("Navigation Frontend Tests", () => {
       const googleBtn = document.querySelector(".google-btn");
       expect(googleBtn).toBeTruthy();
       expect(googleBtn.textContent.trim()).toContain("Continue with Google");
-      expect(googleBtn.getAttribute("onclick")).toContain("coming-soon.html");
+      expect(googleBtn.getAttribute("onclick")).toContain("loginWithGoogle()");
       
       const disabledBtns = document.querySelectorAll(".disabled-btn");
       expect(disabledBtns).toHaveLength(3);
@@ -240,7 +240,7 @@ describe("Navigation Frontend Tests", () => {
         btn.textContent.trim() === "Add HMRC Test API Bundle"
       );
       expect(hmrcTestBtn).toBeTruthy();
-      expect(hmrcTestBtn.getAttribute("onclick")).toContain("coming-soon.html");
+      expect(hmrcTestBtn.getAttribute("onclick")).toContain("requestBundle('HMRC_TEST_API')");
     });
   });
 });

@@ -35,7 +35,7 @@
           <div class="service-item">
             <h3>HMRC Test API Bundle</h3>
             <p class="service-description">Connect to HMRC's test environment for development and testing purposes.</p>
-            <button type="button" class="btn service-btn" onclick="window.location.href='coming-soon.html'">
+            <button type="button" class="btn service-btn" onclick="requestBundle('HMRC_TEST_API')">
               Add HMRC Test API Bundle
             </button>
           </div>
@@ -115,6 +115,158 @@
 
       // Load view source link on page load
       loadViewSourceLink();
+
+      // Authentication and bundle management functions
+      
+      // Update login status display
+      function updateLoginStatus() {
+        const userInfo = localStorage.getItem('userInfo');
+        const loginStatusElement = document.querySelector('.login-status');
+        const loginLinkElement = document.querySelector('.login-link');
+
+        if (userInfo) {
+          const user = JSON.parse(userInfo);
+          loginStatusElement.textContent = `Logged in as ${user.email}`;
+          loginLinkElement.textContent = 'Logout';
+          loginLinkElement.href = '#';
+          loginLinkElement.onclick = logout;
+        } else {
+          loginStatusElement.textContent = 'Not logged in';
+          loginLinkElement.textContent = 'Log in';
+          loginLinkElement.href = 'login.html';
+          loginLinkElement.onclick = null;
+        }
+      }
+
+      // Logout function
+      function logout() {
+        console.log('[DEBUG_LOG] Logging out user');
+        
+        // Clear stored tokens and user info
+        localStorage.removeItem('cognitoAccessToken');
+        localStorage.removeItem('cognitoIdToken');
+        localStorage.removeItem('cognitoRefreshToken');
+        localStorage.removeItem('userInfo');
+        localStorage.removeItem('authState');
+
+        // Update login status
+        updateLoginStatus();
+
+        // Redirect to home page
+        window.location.href = 'index.html';
+      }
+
+      // Request a bundle
+      async function requestBundle(bundleId) {
+        console.log('[DEBUG_LOG] Requesting bundle:', bundleId);
+
+        // Check if user is authenticated
+        const accessToken = localStorage.getItem('cognitoAccessToken');
+        const idToken = localStorage.getItem('cognitoIdToken');
+        
+        if (!accessToken || !idToken) {
+          alert('Please log in first to request bundles.');
+          window.location.href = 'login.html';
+          return;
+        }
+
+        try {
+          // Show loading state
+          const button = event.target;
+          const originalText = button.textContent;
+          button.textContent = 'Requesting...';
+          button.disabled = true;
+
+          // Make request to bundle API
+          const response = await fetch('/api/request-bundle', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${idToken}`
+            },
+            body: JSON.stringify({
+              bundleId: bundleId
+            })
+          });
+
+          const result = await response.json();
+
+          if (response.ok) {
+            if (result.status === 'granted') {
+              alert(`Bundle granted successfully! Expires on: ${result.expiryDate}`);
+              button.textContent = 'Bundle Added ✓';
+              button.style.backgroundColor = '#28a745';
+              console.log('[DEBUG_LOG] Bundle granted:', result);
+            } else if (result.status === 'already_granted') {
+              alert('You already have this bundle!');
+              button.textContent = 'Already Added ✓';
+              button.style.backgroundColor = '#28a745';
+              console.log('[DEBUG_LOG] Bundle already granted:', result);
+            }
+            
+            // Update bundle status display
+            updateBundleStatus();
+            
+          } else {
+            console.error('[DEBUG_LOG] Bundle request failed:', result);
+            alert(`Failed to request bundle: ${result.error || 'Unknown error'}`);
+            button.textContent = originalText;
+            button.disabled = false;
+          }
+
+        } catch (error) {
+          console.error('[DEBUG_LOG] Bundle request error:', error);
+          alert('Failed to request bundle. Please try again.');
+          
+          // Reset button state
+          const button = event.target;
+          button.textContent = 'Add HMRC Test API Bundle';
+          button.disabled = false;
+        }
+      }
+
+      // Update bundle status display
+      async function updateBundleStatus() {
+        const accessToken = localStorage.getItem('cognitoAccessToken');
+        const idToken = localStorage.getItem('cognitoIdToken');
+        
+        if (!accessToken || !idToken) {
+          return;
+        }
+
+        try {
+          // For now, we'll check localStorage for user bundles
+          // In a full implementation, you might want to fetch current bundles from the API
+          const userInfo = localStorage.getItem('userInfo');
+          if (userInfo) {
+            const user = JSON.parse(userInfo);
+            console.log('[DEBUG_LOG] Current user bundles would be displayed here');
+            
+            // You could add a bundles display section to show current user bundles
+            // This would require extending the bundle API to include a GET endpoint
+          }
+        } catch (error) {
+          console.error('[DEBUG_LOG] Error updating bundle status:', error);
+        }
+      }
+
+      // Check authentication status on page load
+      function checkAuthStatus() {
+        const accessToken = localStorage.getItem('cognitoAccessToken');
+        const userInfo = localStorage.getItem('userInfo');
+        
+        if (accessToken && userInfo) {
+          console.log('[DEBUG_LOG] User is authenticated');
+          updateLoginStatus();
+          updateBundleStatus();
+        } else {
+          console.log('[DEBUG_LOG] User is not authenticated');
+          updateLoginStatus();
+        }
+      }
+
+      // Initialize page
+      checkAuthStatus();
     </script>
   </body>
 </html>

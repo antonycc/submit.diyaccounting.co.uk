@@ -34,7 +34,7 @@
         <div class="auth-providers">
           <!-- Google Auth Provider (Enabled) -->
           <div class="auth-provider">
-            <button type="button" class="btn auth-btn google-btn" onclick="window.location.href='coming-soon.html'">
+            <button type="button" class="btn auth-btn google-btn" onclick="loginWithGoogle()">
               <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google" class="provider-logo">
               Continue with Google
             </button>
@@ -124,6 +124,168 @@
 
       // Load view source link on page load
       loadViewSourceLink();
+
+      // Cognito configuration - these will be set by environment variables in production
+      const COGNITO_CONFIG = {
+        userPoolId: 'us-east-1_PLACEHOLDER', // Will be replaced with actual values
+        clientId: 'PLACEHOLDER_CLIENT_ID',
+        domain: 'PLACEHOLDER_DOMAIN.auth.us-east-1.amazoncognito.com',
+        redirectUri: window.location.origin + '/login.html',
+        responseType: 'code',
+        scope: 'email openid profile'
+      };
+
+      // Check for authentication callback
+      function checkAuthCallback() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const code = urlParams.get('code');
+        const state = urlParams.get('state');
+        
+        if (code) {
+          console.log('[DEBUG_LOG] Authentication callback received with code:', code);
+          handleAuthCallback(code, state);
+        }
+      }
+
+      // Handle authentication callback from Cognito
+      async function handleAuthCallback(code, state) {
+        try {
+          // Exchange authorization code for tokens
+          const tokenResponse = await fetch(`https://${COGNITO_CONFIG.domain}/oauth2/token`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: new URLSearchParams({
+              grant_type: 'authorization_code',
+              client_id: COGNITO_CONFIG.clientId,
+              code: code,
+              redirect_uri: COGNITO_CONFIG.redirectUri
+            })
+          });
+
+          if (!tokenResponse.ok) {
+            throw new Error('Failed to exchange authorization code for tokens');
+          }
+
+          const tokens = await tokenResponse.json();
+          console.log('[DEBUG_LOG] Received tokens from Cognito');
+
+          // Store tokens in localStorage
+          localStorage.setItem('cognitoAccessToken', tokens.access_token);
+          localStorage.setItem('cognitoIdToken', tokens.id_token);
+          if (tokens.refresh_token) {
+            localStorage.setItem('cognitoRefreshToken', tokens.refresh_token);
+          }
+
+          // Decode ID token to get user info
+          const idTokenPayload = JSON.parse(atob(tokens.id_token.split('.')[1]));
+          localStorage.setItem('userInfo', JSON.stringify({
+            sub: idTokenPayload.sub,
+            email: idTokenPayload.email,
+            given_name: idTokenPayload.given_name,
+            family_name: idTokenPayload.family_name
+          }));
+
+          console.log('[DEBUG_LOG] User authenticated successfully:', idTokenPayload.email);
+
+          // Clear URL parameters
+          window.history.replaceState({}, document.title, window.location.pathname);
+
+          // Update login status and redirect
+          updateLoginStatus();
+          
+          // Redirect to bundles page or home
+          setTimeout(() => {
+            window.location.href = 'bundles.html';
+          }, 1000);
+
+        } catch (error) {
+          console.error('[DEBUG_LOG] Authentication callback error:', error);
+          alert('Authentication failed. Please try again.');
+        }
+      }
+
+      // Login with Google via Cognito
+      function loginWithGoogle() {
+        console.log('[DEBUG_LOG] Initiating Google login via Cognito');
+        
+        // Generate state parameter for security
+        const state = Math.random().toString(36).substring(2, 15);
+        localStorage.setItem('authState', state);
+
+        // Build Cognito OAuth URL
+        const authUrl = `https://${COGNITO_CONFIG.domain}/oauth2/authorize?` + 
+          `response_type=${COGNITO_CONFIG.responseType}&` +
+          `client_id=${COGNITO_CONFIG.clientId}&` +
+          `redirect_uri=${encodeURIComponent(COGNITO_CONFIG.redirectUri)}&` +
+          `scope=${encodeURIComponent(COGNITO_CONFIG.scope)}&` +
+          `state=${state}&` +
+          `identity_provider=Google`;
+
+        console.log('[DEBUG_LOG] Redirecting to Cognito OAuth URL');
+        window.location.href = authUrl;
+      }
+
+      // Update login status display
+      function updateLoginStatus() {
+        const userInfo = localStorage.getItem('userInfo');
+        const loginStatusElement = document.querySelector('.login-status');
+        const loginLinkElement = document.querySelector('.login-link');
+
+        if (userInfo) {
+          const user = JSON.parse(userInfo);
+          loginStatusElement.textContent = `Logged in as ${user.email}`;
+          loginLinkElement.textContent = 'Logout';
+          loginLinkElement.href = '#';
+          loginLinkElement.onclick = logout;
+        } else {
+          loginStatusElement.textContent = 'Not logged in';
+          loginLinkElement.textContent = 'Home';
+          loginLinkElement.href = 'index.html';
+          loginLinkElement.onclick = null;
+        }
+      }
+
+      // Logout function
+      function logout() {
+        console.log('[DEBUG_LOG] Logging out user');
+        
+        // Clear stored tokens and user info
+        localStorage.removeItem('cognitoAccessToken');
+        localStorage.removeItem('cognitoIdToken');
+        localStorage.removeItem('cognitoRefreshToken');
+        localStorage.removeItem('userInfo');
+        localStorage.removeItem('authState');
+
+        // Update login status
+        updateLoginStatus();
+
+        // Redirect to Cognito logout URL
+        const logoutUrl = `https://${COGNITO_CONFIG.domain}/logout?` +
+          `client_id=${COGNITO_CONFIG.clientId}&` +
+          `logout_uri=${encodeURIComponent(window.location.origin + '/')}`;
+        
+        window.location.href = logoutUrl;
+      }
+
+      // Check if user is already logged in
+      function checkExistingAuth() {
+        const accessToken = localStorage.getItem('cognitoAccessToken');
+        const userInfo = localStorage.getItem('userInfo');
+        
+        if (accessToken && userInfo) {
+          console.log('[DEBUG_LOG] User already authenticated');
+          updateLoginStatus();
+          
+          // Optionally redirect to bundles page if already logged in
+          // window.location.href = 'bundles.html';
+        }
+      }
+
+      // Initialize authentication on page load
+      checkExistingAuth();
+      checkAuthCallback();
     </script>
   </body>
 </html>

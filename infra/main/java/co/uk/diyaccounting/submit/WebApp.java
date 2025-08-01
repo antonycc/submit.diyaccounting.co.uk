@@ -58,6 +58,15 @@ public class WebApp {
                 .logReceiptLambdaDurationMillis(System.getenv("LOG_RECEIPT_LAMBDA_DURATION"))
                 .lambdaUrlAuthType(System.getenv("LAMBDA_URL_AUTH_TYPE"))
                 .commitHash(System.getenv("COMMIT_HASH"))
+                // Cognito and Bundle Management configuration
+                .googleClientId(System.getenv("DIY_SUBMIT_GOOGLE_CLIENT_ID"))
+                .googleClientSecret(System.getenv("DIY_SUBMIT_GOOGLE_CLIENT_SECRET"))
+                .cognitoDomainPrefix(System.getenv("DIY_SUBMIT_COGNITO_DOMAIN_PREFIX"))
+                .bundleExpiryDate(System.getenv("DIY_SUBMIT_BUNDLE_EXPIRY_DATE"))
+                .bundleUserLimit(System.getenv("DIY_SUBMIT_BUNDLE_USER_LIMIT"))
+                .bundleLambdaHandlerFunctionName(System.getenv("BUNDLE_LAMBDA_HANDLER_FUNCTION_NAME"))
+                .bundleLambdaUrlPath(System.getenv("BUNDLE_LAMBDA_URL_PATH"))
+                .bundleLambdaDurationMillis(System.getenv("BUNDLE_LAMBDA_DURATION"))
                 .build();
 
         CfnOutput.Builder.create(stack, "OriginBucketArn")
@@ -123,6 +132,40 @@ public class WebApp {
         CfnOutput.Builder.create(stack, "LogReceiptLambdaUrl")
                 .value(stack.logReceiptLambdaUrl.getUrl())
                 .build();
+
+        // Cognito outputs (only if Cognito is configured)
+        if (stack.userPool != null) {
+            CfnOutput.Builder.create(stack, "UserPoolId")
+                    .value(stack.userPool.getUserPoolId())
+                    .build();
+
+            CfnOutput.Builder.create(stack, "UserPoolArn")
+                    .value(stack.userPool.getUserPoolArn())
+                    .build();
+        }
+
+        if (stack.userPoolClient != null) {
+            CfnOutput.Builder.create(stack, "UserPoolClientId")
+                    .value(stack.userPoolClient.getUserPoolClientId())
+                    .build();
+        }
+
+        if (stack.userPoolDomain != null) {
+            CfnOutput.Builder.create(stack, "UserPoolDomainName")
+                    .value(stack.userPoolDomain.getDomainName())
+                    .build();
+        }
+
+        // Bundle Lambda outputs (only if bundle Lambda is configured)
+        if (stack.bundleLambda != null) {
+            CfnOutput.Builder.create(stack, "BundleLambdaArn")
+                    .value(stack.bundleLambda.getFunctionArn())
+                    .build();
+
+            CfnOutput.Builder.create(stack, "BundleLambdaUrl")
+                    .value(stack.bundleLambdaUrl.getUrl())
+                    .build();
+        }
 
         app.synth();
     }

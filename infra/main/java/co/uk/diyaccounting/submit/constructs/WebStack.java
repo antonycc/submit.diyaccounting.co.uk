@@ -59,6 +59,20 @@ import software.amazon.awscdk.services.s3.deployment.BucketDeployment;
 import software.amazon.awscdk.services.s3.deployment.ISource;
 import software.amazon.awscdk.services.s3.deployment.Source;
 import software.amazon.awscdk.services.secretsmanager.Secret;
+import software.amazon.awscdk.services.cognito.UserPool;
+import software.amazon.awscdk.services.cognito.UserPoolClient;
+import software.amazon.awscdk.services.cognito.UserPoolIdentityProviderGoogle;
+import software.amazon.awscdk.services.cognito.UserPoolDomain;
+import software.amazon.awscdk.services.cognito.OAuthSettings;
+import software.amazon.awscdk.services.cognito.OAuthFlows;
+import software.amazon.awscdk.services.cognito.OAuthScope;
+import software.amazon.awscdk.services.cognito.ProviderAttribute;
+import software.amazon.awscdk.services.cognito.AttributeMapping;
+import software.amazon.awscdk.services.cognito.StandardAttribute;
+import software.amazon.awscdk.services.cognito.StandardAttributes;
+import software.amazon.awscdk.services.cognito.StringAttribute;
+import software.amazon.awscdk.services.iam.PolicyStatement;
+import software.amazon.awscdk.services.iam.Effect;
 import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
 
@@ -103,6 +117,17 @@ public class WebStack extends Stack {
     public Function logReceiptLambda;
     public FunctionUrl logReceiptLambdaUrl;
     public LogGroup logReceiptLambdaLogGroup;
+    
+    // Cognito resources
+    public UserPool userPool;
+    public UserPoolClient userPoolClient;
+    public UserPoolDomain userPoolDomain;
+    public UserPoolIdentityProviderGoogle googleIdentityProvider;
+    
+    // Bundle management Lambda
+    public Function bundleLambda;
+    public FunctionUrl bundleLambdaUrl;
+    public LogGroup bundleLambdaLogGroup;
     public IBucket receiptsBucket;
 
     public static class Builder {
@@ -158,6 +183,16 @@ public class WebStack extends Stack {
         public String logReceiptLambdaDuration;
         public String lambdaUrlAuthType;
         public String commitHash;
+        
+        // Cognito and Bundle Management properties
+        public String googleClientId;
+        public String googleClientSecret;
+        public String cognitoDomainPrefix;
+        public String bundleExpiryDate;
+        public String bundleUserLimit;
+        public String bundleLambdaHandlerFunctionName;
+        public String bundleLambdaUrlPath;
+        public String bundleLambdaDuration;
 
         public Builder(Construct scope, String id, StackProps props) {
             this.scope = scope;
@@ -465,6 +500,46 @@ public class WebStack extends Stack {
             return this;
         }
 
+        public Builder googleClientId(String googleClientId) {
+            this.googleClientId = googleClientId;
+            return this;
+        }
+
+        public Builder googleClientSecret(String googleClientSecret) {
+            this.googleClientSecret = googleClientSecret;
+            return this;
+        }
+
+        public Builder cognitoDomainPrefix(String cognitoDomainPrefix) {
+            this.cognitoDomainPrefix = cognitoDomainPrefix;
+            return this;
+        }
+
+        public Builder bundleExpiryDate(String bundleExpiryDate) {
+            this.bundleExpiryDate = bundleExpiryDate;
+            return this;
+        }
+
+        public Builder bundleUserLimit(String bundleUserLimit) {
+            this.bundleUserLimit = bundleUserLimit;
+            return this;
+        }
+
+        public Builder bundleLambdaHandlerFunctionName(String bundleLambdaHandlerFunctionName) {
+            this.bundleLambdaHandlerFunctionName = bundleLambdaHandlerFunctionName;
+            return this;
+        }
+
+        public Builder bundleLambdaUrlPath(String bundleLambdaUrlPath) {
+            this.bundleLambdaUrlPath = bundleLambdaUrlPath;
+            return this;
+        }
+
+        public Builder bundleLambdaDurationMillis(String bundleLambdaDuration) {
+            this.bundleLambdaDuration = bundleLambdaDuration;
+            return this;
+        }
+
         public WebStack build() {
             return new WebStack(this.scope, this.id, this.props, this);
         }
@@ -764,6 +839,137 @@ public class WebStack extends Stack {
         this.logReceiptLambdaUrl = logReceiptLambdaUrlOrigin.functionUrl;
         this.logReceiptLambdaLogGroup = logReceiptLambdaUrlOrigin.logGroup;
         lambdaUrlToOriginsBehaviourMappings.put(builder.logReceiptLambdaUrlPath + "*", logReceiptLambdaUrlOrigin.behaviorOptions);
+
+        // Create Cognito User Pool for authentication
+        if (StringUtils.isNotBlank(builder.googleClientId) && StringUtils.isNotBlank(builder.googleClientSecret)) {
+            // Create User Pool with custom attributes for bundles
+            this.userPool = UserPool.Builder.create(this, "UserPool")
+                    .userPoolName(dashedDomainName + "-user-pool")
+                    .selfSignUpEnabled(true)
+                    .signInAliases(software.amazon.awscdk.services.cognito.SignInAliases.builder()
+                            .email(true)
+                            .build())
+                    .standardAttributes(StandardAttributes.builder()
+                            .email(StandardAttribute.builder()
+                                    .required(true)
+                                    .mutable(true)
+                                    .build())
+                            .givenName(StandardAttribute.builder()
+                                    .required(false)
+                                    .mutable(true)
+                                    .build())
+                            .familyName(StandardAttribute.builder()
+                                    .required(false)
+                                    .mutable(true)
+                                    .build())
+                            .build())
+                    .customAttributes(Map.of(
+                            "bundles", StringAttribute.Builder.create()
+                                    .maxLen(2048)
+                                    .mutable(true)
+                                    .build()
+                    ))
+                    .removalPolicy(RemovalPolicy.DESTROY)
+                    .build();
+
+            // Create User Pool Domain
+            this.userPoolDomain = UserPoolDomain.Builder.create(this, "UserPoolDomain")
+                    .userPool(this.userPool)
+                    .cognitoDomain(software.amazon.awscdk.services.cognito.CognitoDomainOptions.builder()
+                            .domainPrefix(builder.cognitoDomainPrefix != null ? builder.cognitoDomainPrefix : dashedDomainName + "-auth")
+                            .build())
+                    .build();
+
+            // Create Google Identity Provider
+            var googleClientSecret = Secret.Builder.create(this, "GoogleClientSecret")
+                    .secretStringValue(SecretValue.unsafePlainText(builder.googleClientSecret))
+                    .description("Google OAuth Client Secret for Cognito")
+                    .build();
+
+            this.googleIdentityProvider = UserPoolIdentityProviderGoogle.Builder.create(this, "GoogleIdentityProvider")
+                    .userPool(this.userPool)
+                    .clientId(builder.googleClientId)
+                    .clientSecretValue(googleClientSecret.getSecretValue())
+                    .scopes(List.of("email", "openid", "profile"))
+                    .attributeMapping(AttributeMapping.builder()
+                            .email(ProviderAttribute.GOOGLE_EMAIL)
+                            .givenName(ProviderAttribute.GOOGLE_GIVEN_NAME)
+                            .familyName(ProviderAttribute.GOOGLE_FAMILY_NAME)
+                            .build())
+                    .build();
+
+            // Create User Pool Client
+            this.userPoolClient = UserPoolClient.Builder.create(this, "UserPoolClient")
+                    .userPool(this.userPool)
+                    .userPoolClientName(dashedDomainName + "-client")
+                    .generateSecret(false)
+                    .oAuth(OAuthSettings.builder()
+                            .flows(OAuthFlows.builder()
+                                    .authorizationCodeGrant(true)
+                                    .build())
+                            .scopes(List.of(OAuthScope.EMAIL, OAuthScope.OPENID, OAuthScope.PROFILE))
+                            .callbackUrls(List.of(
+                                    "https://" + this.domainName + "/",
+                                    "https://" + this.domainName + "/login.html",
+                                    "https://" + this.domainName + "/bundles.html"
+                            ))
+                            .logoutUrls(List.of(
+                                    "https://" + this.domainName + "/"
+                            ))
+                            .build())
+                    .supportedIdentityProviders(List.of(
+                            software.amazon.awscdk.services.cognito.UserPoolClientIdentityProvider.GOOGLE
+                    ))
+                    .build();
+
+            // Make sure the client depends on the identity provider
+            this.userPoolClient.getNode().addDependency(this.googleIdentityProvider);
+        }
+
+        // Create Bundle Management Lambda
+        if (StringUtils.isNotBlank(builder.bundleLambdaHandlerFunctionName)) {
+            var bundleLambdaEnv = new HashMap<>(Map.of(
+                    "DIY_SUBMIT_HOME_URL", builder.homeUrl,
+                    "DIY_SUBMIT_BUNDLE_EXPIRY_DATE", builder.bundleExpiryDate != null ? builder.bundleExpiryDate : "2025-12-31",
+                    "DIY_SUBMIT_BUNDLE_USER_LIMIT", builder.bundleUserLimit != null ? builder.bundleUserLimit : "1000"
+            ));
+            
+            if (this.userPool != null) {
+                bundleLambdaEnv.put("DIY_SUBMIT_USER_POOL_ID", this.userPool.getUserPoolId());
+            }
+
+            var bundleLambdaUrlOrigin = LambdaUrlOrigin.Builder.create(this, "BundleLambda")
+                    .env(builder.env)
+                    .imageDirectory("infra/runtimes")
+                    .imageFilename("bundle.Dockerfile")
+                    .functionName(Builder.buildFunctionName(dashedDomainName, builder.bundleLambdaHandlerFunctionName))
+                    .allowedMethods(AllowedMethods.ALLOW_ALL)
+                    .functionUrlAuthType(functionUrlAuthType)
+                    .handler(builder.lambdaEntry + builder.bundleLambdaHandlerFunctionName)
+                    .environment(bundleLambdaEnv)
+                    .timeout(Duration.millis(Long.parseLong(builder.bundleLambdaDuration != null ? builder.bundleLambdaDuration : "30000")))
+                    .cloudTrailEnabled(cloudTrailEnabled)
+                    .xRayEnabled(xRayEnabled)
+                    .verboseLogging(verboseLogging)
+                    .build();
+            this.bundleLambda = bundleLambdaUrlOrigin.lambda;
+            this.bundleLambdaUrl = bundleLambdaUrlOrigin.functionUrl;
+            this.bundleLambdaLogGroup = bundleLambdaUrlOrigin.logGroup;
+            lambdaUrlToOriginsBehaviourMappings.put(builder.bundleLambdaUrlPath + "*", bundleLambdaUrlOrigin.behaviorOptions);
+
+            // Grant Cognito permissions to the bundle Lambda
+            if (this.userPool != null) {
+                this.bundleLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                        .effect(Effect.ALLOW)
+                        .actions(List.of(
+                                "cognito-idp:AdminGetUser",
+                                "cognito-idp:AdminUpdateUserAttributes",
+                                "cognito-idp:ListUsers"
+                        ))
+                        .resources(List.of(this.userPool.getUserPoolArn()))
+                        .build());
+            }
+        }
 
         /*String exchangeTokenLambdaHandlerLambdaFunctionName = Builder.buildFunctionName(dashedDomainName, builder.exchangeTokenLambdaHandlerFunctionName);
         String exchangeTokenLambdaHandlerCmd = builder.lambdaEntry + builder.exchangeTokenLambdaHandlerFunctionName;
