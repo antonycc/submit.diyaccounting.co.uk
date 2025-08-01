@@ -1,4 +1,4 @@
-Thanks for clarifying! Keeping your current functionality intact, and adding the new functionality as **"service bundles"** (e.g., VAT submission as one possible bundle), here's a detailed, instructional guide for your **agentic AI system** to implement these service bundles into your existing system, while keeping everything **ultra-simple and fully serverless**:
+Thanks for clarifying! Keeping your current functionality intact, and adding the new functionality as **"bundles"** (e.g., VAT submission as one possible bundle), here's a detailed, instructional guide for your **agentic AI system** to implement these bundles into your existing system, while keeping everything **ultra-simple and fully serverless**:
 
 ---
 
@@ -6,8 +6,8 @@ Thanks for clarifying! Keeping your current functionality intact, and adding the
 
 Extend your existing DIY Accounting web platform to add:
 
-* **Service bundles**: sets of features like VAT submission.
-* Users can self-request service bundles through the web interface.
+* **bundles**: sets of features like VAT submission.
+* Users can self-request bundles through the web interface.
 * Bundles are immediately granted if the total user limit isn't reached and the expiry date hasn't passed.
 * Store assigned bundles directly on the user's Cognito profile (no additional DB required).
 
@@ -18,7 +18,7 @@ Extend your existing DIY Accounting web platform to add:
 Keep your current setup, and simply add:
 
 * Cognito user pool (with federation, if not already implemented).
-* A new Lambda function (via Lambda URL) specifically for service bundle management.
+* A new Lambda function (via Lambda URL) specifically for bundle management.
 * Store assigned bundles in **Cognito custom attributes**.
 
 You will not remove existing HMRC OAuth logic or VAT submission handlers, as these are still valid and used within some of the bundles you plan to offer.
@@ -29,13 +29,13 @@ You will not remove existing HMRC OAuth logic or VAT submission handlers, as the
 
 ### 1. **Update Cognito User Pool**
 
-* Add a **custom user attribute** (String) named `custom:serviceBundles`, max 2048 chars.
-* This attribute will store the user's granted service bundles as pipe-separated values, e.g.:
+* Add a **custom user attribute** (String) named `custom:bundles`, max 2048 chars.
+* This attribute will store the user's granted bundles as pipe-separated values, e.g.:
   `"VAT_SUBMISSION|EXPIRY=2025-12-31"`
 
 ---
 
-### 2. **Create a new Lambda URL Handler (Service Bundle API)**
+### 2. **Create a new Lambda URL Handler (bundle API)**
 
 * Add this to your existing CDK Java files (`WebStack.java` or `LambdaUrlOrigin.java`):
 
@@ -44,19 +44,19 @@ You will not remove existing HMRC OAuth logic or VAT submission handlers, as the
 
 **Lambda URL (REST) Endpoints**:
 
-* `POST /api/request-service-bundle`
+* `POST /api/request-bundle`
 * Users call this endpoint (authenticated via Cognito JWT token) to request a specific bundle.
 
 ---
 
 ### 3. **Implement the Lambda Function Logic (JavaScript, minimal dependencies)**
 
-Lambda logic overview (`main.js` or a new dedicated file like `serviceBundles.js`):
+Lambda logic overview (`main.js` or a new dedicated file like `bundles.js`):
 
 **Algorithmic steps (not literal)**:
 
 ```javascript
-async function requestServiceBundle(event) {
+async function requestBundle(event) {
   // 1. Extract Cognito JWT from the Authorization header
   const token = event.headers.authorization?.split(" ")[1];
   if (!token) return { statusCode: 401, body: "Unauthorized" };
@@ -66,7 +66,7 @@ async function requestServiceBundle(event) {
 
   // 3. Fetch current bundles from Cognito custom attribute
   const user = await cognito.adminGetUser({ UserPoolId, Username: userId });
-  let bundles = user.UserAttributes["custom:serviceBundles"]?.split("|") || [];
+  let bundles = user.UserAttributes["custom:bundles"]?.split("|") || [];
 
   // 4. Validate requested bundle against total user limit and expiry
   const requestedBundle = JSON.parse(event.body).bundleId;
@@ -84,7 +84,7 @@ async function requestServiceBundle(event) {
   await cognito.adminUpdateUserAttributes({
     UserPoolId,
     Username: userId,
-    UserAttributes: [{ Name: "custom:serviceBundles", Value: bundles.join("|") }]
+    UserAttributes: [{ Name: "custom:bundles", Value: bundles.join("|") }]
   });
 
   // 6. Increment global bundle usage count (store in environment or SSM)
@@ -113,7 +113,7 @@ async function requestServiceBundle(event) {
 document.getElementById("requestVatBundleBtn").addEventListener("click", async () => {
   const token = /* Retrieve Cognito JWT from user session */;
   
-  const response = await fetch("/api/request-service-bundle", {
+  const response = await fetch("/api/request-bundle", {
     method: "POST",
     headers: {
       "Authorization": `Bearer ${token}`,
@@ -137,7 +137,7 @@ document.getElementById("requestVatBundleBtn").addEventListener("click", async (
 
 Instruct the AI agent:
 
-* Add Lambda Function construct (`WebStack.java`) to handle the new endpoint `/api/request-service-bundle`.
+* Add Lambda Function construct (`WebStack.java`) to handle the new endpoint `/api/request-bundle`.
 * Configure Lambda environment variables (`BUNDLE_EXPIRY_DATE`, `BUNDLE_USER_LIMIT`).
 
 Example pseudo-instruction:
@@ -150,7 +150,7 @@ Example pseudo-instruction:
 
 Instruct the agent to:
 
-* Update `API.md` to document the new endpoint `/api/request-service-bundle`.
+* Update `API.md` to document the new endpoint `/api/request-bundle`.
 * Update `README.md` to describe how users can request and manage bundles.
 
 ---
@@ -159,7 +159,7 @@ Instruct the agent to:
 
 ```
 [User Web UI]
-    ├── /api/request-service-bundle  ──▶ [Lambda URL]
+    ├── /api/request-bundle  ──▶ [Lambda URL]
     │                                      ├── Cognito (read/update user attributes)
     │                                      └── Environment vars (limits, expiry)
     │
@@ -182,7 +182,7 @@ Instruct the agent to:
 
 ## 🚀 **Final Instructions for Agentic AI:**
 
-* Clearly separate new functionality (service bundle logic) from existing logic.
+* Clearly separate new functionality (bundle logic) from existing logic.
 * Do **not remove existing features** (HMRC OAuth flow, VAT submission).
 * Leverage Cognito custom attributes for state management (no DynamoDB).
 * Maintain simplicity and readability for easy maintenance and scaling.
