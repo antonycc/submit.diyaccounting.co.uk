@@ -23,6 +23,8 @@ export async function logReceipt(key, receipt) {
 
     if (process.env.NODE_ENV === "stubbed") {
         logger.warn({message: ".NODE_ENV environment variable is stubbedL No receipt saved."});
+    } else if (process.env.DIY_SUBMIT_TEST_S3_ENDPOINT === "off") {
+        logger.warn({message: "DIY_SUBMIT_TEST_S3_ENDPOINT is set to 'off': No receipt saved."});
     } else {
         const s3Client = new S3Client(s3Config);
         try {

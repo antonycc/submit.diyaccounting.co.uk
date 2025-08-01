@@ -261,4 +261,5 @@ if (typeof window !== 'undefined') {
   window.exchangeToken = exchangeToken;
   window.getClientIP = getClientIP;
   window.getIPViaWebRTC = getIPViaWebRTC;
+  window.handleOAuth = handleOAuth;
 }

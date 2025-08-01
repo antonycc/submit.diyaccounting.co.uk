@@ -47,16 +47,25 @@ test.beforeAll(async () => {
     ...originalEnv,
   }
 
-  const container = await new GenericContainer("minio/minio")
-      .withExposedPorts(9000)
-      .withEnvironment({
-        MINIO_ROOT_USER: optionalTestS3AccessKey,
-        MINIO_ROOT_PASSWORD: optionalTestS3SecretKey,
-      })
-      .withCommand(["server", "/data"])
-      .start();
+  let container;
+  let endpoint;
 
-  const endpoint = `http://${container.getHost()}:${container.getMappedPort(9000)}`;
+  // Only start Docker container if S3 endpoint is not set to "off"
+  if (process.env.DIY_SUBMIT_TEST_S3_ENDPOINT !== "off") {
+    container = await new GenericContainer("minio/minio")
+        .withExposedPorts(9000)
+        .withEnvironment({
+          MINIO_ROOT_USER: optionalTestS3AccessKey,
+          MINIO_ROOT_PASSWORD: optionalTestS3SecretKey,
+        })
+        .withCommand(["server", "/data"])
+        .start();
+
+    endpoint = `http://${container.getHost()}:${container.getMappedPort(9000)}`;
+  } else {
+    console.log("Skipping Docker container creation as S3 endpoint is set to 'off'");
+    endpoint = "off";
+  }
 
   // Start or connect to MinIO S3 server or any S3 compatible server
   async function ensureBucketExists() {
@@ -239,6 +248,15 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   const timestamp = getTimestamp();
   const testUrl = homeUrl;
 
+  // Add console logging to capture browser messages
+  page.on('console', msg => {
+    console.log(`[BROWSER CONSOLE ${msg.type()}]: ${msg.text()}`);
+  });
+  
+  page.on('pageerror', error => {
+    console.log(`[BROWSER ERROR]: ${error.message}`);
+  });
+
   // 1) Navigate to the application served by server.js
   await page.setExtraHTTPHeaders({
     "ngrok-skip-browser-warning": "any value"
@@ -251,7 +269,52 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   await page.screenshot({ path: `target/behaviour-with-auth-test-results/auth-behaviour-000-initial_${timestamp}.png` });
   await setTimeout(500);
 
-  // 2) Navigate through the new navigation structure
+  // 2) EXTENDED JOURNEY - Start with login flow
+  console.log("Starting extended site tour - Login flow");
+  await expect(page.getByText("Log in")).toBeVisible();
+  await page.click("a:has-text('Log in')");
+  await page.waitForLoadState("networkidle");
+  await setTimeout(500);
+  await page.screenshot({ path: `target/behaviour-with-auth-test-results/auth-behaviour-001-login-page_${timestamp}.png` });
+
+  // Click on Google auth (which goes to coming soon)
+  await expect(page.getByText("Continue with Google")).toBeVisible();
+  await page.click("button:has-text('Continue with Google')");
+  await page.waitForLoadState("networkidle");
+  await setTimeout(500);
+  await page.screenshot({ path: `target/behaviour-with-auth-test-results/auth-behaviour-002-coming-soon-login_${timestamp}.png` });
+
+  // Wait for coming soon countdown and redirect, or click "Go Home Now"
+  await expect(page.getByText("Coming Soon")).toBeVisible();
+  await page.click("button:has-text('Go Home Now')");
+  await page.waitForLoadState("networkidle");
+  await setTimeout(500);
+  await page.screenshot({ path: `target/behaviour-with-auth-test-results/auth-behaviour-003-back-home_${timestamp}.png` });
+
+  // 3) Navigate through hamburger menu to bundles (Add Bundle)
+  console.log("Testing hamburger menu navigation");
+  await page.click(".hamburger-btn");
+  await setTimeout(500);
+  await page.screenshot({ path: `target/behaviour-with-auth-test-results/auth-behaviour-004-hamburger-menu_${timestamp}.png` });
+  
+  await page.click("a:has-text('Add Bundle')");
+  await page.waitForLoadState("networkidle");
+  await setTimeout(500);
+  await page.screenshot({ path: `target/behaviour-with-auth-test-results/auth-behaviour-004b-bundles-page_${timestamp}.png` });
+
+  // Click on HMRC Test API Bundle (which goes to coming soon)
+  await expect(page.getByText("Add HMRC Test API Bundle")).toBeVisible();
+  await page.click("button:has-text('Add HMRC Test API Bundle')");
+  await page.waitForLoadState("networkidle");
+  await setTimeout(500);
+  await page.screenshot({ path: `target/behaviour-with-auth-test-results/auth-behaviour-004c-coming-soon-bundle_${timestamp}.png` });
+
+  // Go back home from coming soon
+  await page.click("button:has-text('Go Home Now')");
+  await page.waitForLoadState("networkidle");
+  await setTimeout(500);
+
+  // 4) Navigate through the main navigation structure to VAT submission
   // Click "View available activities" on home page
   await expect(page.getByText("View available activities")).toBeVisible();
   await page.click("button:has-text('View available activities')");
@@ -338,6 +401,26 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   await page.screenshot({ path: `target/behaviour-with-auth-test-results/auth-behaviour-060-after-oauth_${timestamp}.png` });
 
   // 5) Wait for the submission process to complete and receipt to be displayed
+  console.log("Waiting for VAT submission to complete and receipt to be displayed...");
+  
+  // Check current page URL and elements
+  console.log(`Current URL: ${page.url()}`);
+  const receiptExists = await page.locator("#receiptDisplay").count();
+  console.log(`Receipt element exists: ${receiptExists > 0}`);
+  
+  if (receiptExists > 0) {
+    const receiptStyle = await page.locator("#receiptDisplay").getAttribute("style");
+    console.log(`Receipt element style: ${receiptStyle}`);
+  }
+  
+  const formExists = await page.locator("#vatForm").count();
+  console.log(`Form element exists: ${formExists > 0}`);
+  
+  if (formExists > 0) {
+    const formStyle = await page.locator("#vatForm").getAttribute("style");
+    console.log(`Form element style: ${formStyle}`);
+  }
+  
   await setTimeout(500);
   await page.waitForSelector("#receiptDisplay", { state: "visible", timeout: 15000 });
 
@@ -360,4 +443,42 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   await setTimeout(1000);
 
   console.log("VAT submission flow completed successfully");
+
+  // 6) POST-VAT SUBMISSION JOURNEY - Extended site tour continues
+  console.log("Starting post-VAT submission site tour");
+  
+  // Test hamburger menu navigation again
+  await page.click(".hamburger-btn");
+  await setTimeout(500);
+  await page.screenshot({ path: `target/behaviour-with-auth-test-results/auth-behaviour-071-post-vat-hamburger_${timestamp}.png` });
+  
+  // Navigate to View Activities via hamburger menu
+  await page.click("a:has-text('View Activities')");
+  await page.waitForLoadState("networkidle");
+  await setTimeout(500);
+  await page.screenshot({ path: `target/behaviour-with-auth-test-results/auth-behaviour-072-activities-via-hamburger_${timestamp}.png` });
+
+  // Go back to home via hamburger menu
+  await page.click(".hamburger-btn");
+  await setTimeout(500);
+  await page.click("a:has-text('Home')");
+  await page.waitForLoadState("networkidle");
+  await setTimeout(500);
+  await page.screenshot({ path: `target/behaviour-with-auth-test-results/auth-behaviour-073-home-via-hamburger_${timestamp}.png` });
+
+  // Navigate to login page again (another coming soon journey)
+  await page.click("a:has-text('Log in')");
+  await page.waitForLoadState("networkidle");
+  await setTimeout(500);
+  await page.screenshot({ path: `target/behaviour-with-auth-test-results/auth-behaviour-074-login-again_${timestamp}.png` });
+
+  // Try a different auth provider (Microsoft - disabled, shows coming soon)
+  await expect(page.getByText("Continue with Microsoft")).toBeVisible();
+  // Note: Microsoft button is disabled, so we'll go back to home
+  await page.click("button:has-text('Back to Home')");
+  await page.waitForLoadState("networkidle");
+  await setTimeout(500);
+  await page.screenshot({ path: `target/behaviour-with-auth-test-results/auth-behaviour-075-final-home_${timestamp}.png` });
+
+  console.log("Extended site tour completed successfully");
 }, 90000);
