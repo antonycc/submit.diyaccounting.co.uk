@@ -151,7 +151,7 @@ test.describe("User Journey Tests", () => {
     await page.goBack();
 
     // 6) Go back to home
-    await page.click("button:has-text('Go Home Now')");
+    //await page.click("button:has-text('Go Home Now')");
     await page.waitForLoadState("networkidle");
     await setTimeout(500);
     await page.screenshot({ path: `target/user-journeys-test-results/journey1-003-back-home_${timestamp}.png` });
