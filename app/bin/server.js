@@ -41,7 +41,7 @@ app.use((req, res, next) => {
 app.use(express.static(path.join(__dirname, "../../web/public")));
 
 // 2) wire your Lambdas under configurable paths from cdk.json
-const authUrlPath = context.authUrlLambdaUrlPath || "/api/auth-url";
+const authUrlPath = context.authUrlLambdaUrlPath || "/api/hmrc/auth-url";
 const exchangeTokenPath = context.exchangeTokenLambdaUrlPath || "/api/exchange-token";
 const submitVatPath = context.submitVatLambdaUrlPath || "/api/submit-vat";
 const logReceiptPath = context.logReceiptLambdaUrlPath || "/api/log-receipt";

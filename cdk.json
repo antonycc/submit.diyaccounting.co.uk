@@ -39,7 +39,7 @@
     "receiptsBucketPostfix": "receipts",
     "lambdaEntry": "app/functions/",
     "lambdaUrlAuthType": "none",
-    "authUrlLambdaUrlPath": "/api/auth-url",
+    "authUrlLambdaUrlPath": "/api/hmrc/auth-url",
     "authUrlLambdaHandlerFunctionName": "authUrl.httpGet",
     "authUrlLambdaDuration": "30000",
     "exchangeTokenLambdaUrlPath": "/api/exchange-token",

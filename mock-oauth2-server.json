@@ -25,7 +25,8 @@
       "clientId": "debugger",
       "clientSecret": "someSecret",
       "redirectUris": [
-        "http://127.0.0.1:3000/login.html"
+        "http://127.0.0.1:3000/loginCallback.html",
+        "https://wanted-finally-anteater.ngrok-free.app/loginCallback.html"
       ],
       "grantTypes": [
         "authorization_code"

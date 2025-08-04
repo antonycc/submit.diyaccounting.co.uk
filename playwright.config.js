@@ -41,6 +41,9 @@ export default defineConfig({
     screenshot: "on", // or 'only-on-failure', 'off'
     // Screenshots are png by default, but jpeg is also possible
     // To get jpeg: page.screenshot({ type: 'jpeg' }) in test code
+    
+    // Enable detailed logging
+    trace: 'on', // Enable tracing for detailed debugging
   },
 
   reporter: [

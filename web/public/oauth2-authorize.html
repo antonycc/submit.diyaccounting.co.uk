@@ -54,10 +54,11 @@
         localStorage.setItem('authState', state);
 
         // Build Cognito OAuth URL see: http://localhost:8080/default/debugger
+        //`redirect_uri=${encodeURIComponent("http://127.0.0.1:3000/loginCallback.html")}&` +
         const authUrl = `http://localhost:8080/oauth/authorize?` +
                 `response_type=code&` +
                 `client_id=debugger&` +
-                `redirect_uri=${encodeURIComponent("http://127.0.0.1:3000/loginCallback.html")}&` +
+                `redirect_uri=${encodeURIComponent("loginCallback.html")}&` +
                 `scope=${encodeURIComponent("openid somescope")}&` +
                 `state=${state}&` +
                 `identity_provider=MockOAuth2Server`;

@@ -14,13 +14,13 @@ participant "AWS S3" as S3
 
 User -> Browser: Open submission page
 Browser -> App: Load frontend assets
-App -> AuthUrl: GET /api/auth-url?state=<state> → [sync]
+App -> AuthUrl: GET /api/hmrc/auth-url?state=<state> → [sync]
 AuthUrl -> App: 200 { authUrl } → [sync]
 App -> Browser: Render form with authUrl
 
 loop VAT Submission Flow
   Browser -> App: Submit form(vrn, periodKey, vatDue)
-  App -> AuthUrl: GET /api/auth-url?state → [sync]
+  App -> AuthUrl: GET /api/hmrc/auth-url?state → [sync]
   AuthUrl -> App: { authUrl } → [sync]
   App -> Browser: Redirect to HMRC consent → [sync]
   Browser -> HMRCAuth: GET /oauth/authorize?...&state →→ [async]

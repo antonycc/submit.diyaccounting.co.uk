@@ -18,7 +18,7 @@ export function authUrl(state) {
         `&state=${encodeURIComponent(state)}`;
 }
 
-// GET /api/auth-url?state={state}
+// GET /api/hmrc/auth-url?state={state}
 export async function httpGet(event) {
     let request;
     try {
