@@ -95,36 +95,6 @@ async function getAuthUrl(state) {
   return responseJson;
 }
 
-async function exchangeToken(code) {
-  const url = `/api/exchange-token`;
-  const body = JSON.stringify({ code });
-  console.log(`Exchanging token. Remote call initiated: POST ${url} ++ Body: ${body}`);
-
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body,
-  });
-  if (!response.ok) {
-    const message = `Failed to exchange token. Remote call failed: POST ${url} - Status: ${response.status} ${response.statusText}`;
-    console.error(message);
-    throw new Error(message);
-  }
-
-  const responseJson = await response.json();
-  const hmrcAccessToken = responseJson.hmrcAccessToken;
-  if (!hmrcAccessToken) {
-    const message = `Failed to exchange token. Remote call response did not include hmrcAccessToken: POST ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`;
-    console.error(message);
-    throw new Error(message);
-  }
-
-  console.log(`Exchanged token. Remote call completed successfully: POST ${url}`, responseJson, hmrcAccessToken);
-  return hmrcAccessToken;
-}
-
 // Enhanced IP detection function with multiple fallback methods
 async function getClientIP() {
   // Method 1: Try WebRTC-based IP detection (works for local IPs, limited for public IPs in modern browsers)
@@ -207,48 +177,6 @@ function getIPViaWebRTC() {
   });
 }
 
-// OAuth callback handling
-function handleOAuth(callback) {
-  console.log('OAuth callback handler');
-  const urlParams = new URLSearchParams(window.location.search);
-  const code = urlParams.get("code");
-  const state = urlParams.get("state");
-  const error = urlParams.get("error");
-
-  if (error) {
-    showStatus(`OAuth error: ${error}`, "error");
-    console.error('OAuth callback handler (error exit)');
-    return;
-  }
-
-  if (code && state) {
-    const storedState = sessionStorage.getItem("oauth_state");
-    const storedSubmissionData = sessionStorage.getItem("submission_data");
-
-    if (state !== storedState) {
-      showStatus("Invalid OAuth state. Please try again.", "error");
-      console.error('OAuth callback handler (invalid state exit)');
-      return;
-    }
-
-    if (!storedSubmissionData) {
-      showStatus("Submission data not found. Please try again.", "error");
-      console.error('OAuth callback handler (missing data exit)');
-      return;
-    }
-
-    // Clear URL parameters
-    console.log('Page transition initiated: Clearing URL parameters');
-    window.history.replaceState({}, document.title, window.location.pathname);
-
-    // Continue with token exchange and submission
-    callback(code, JSON.parse(storedSubmissionData));
-    console.log('OAuth callback handler (normal completion)');
-  }
-  console.log('OAuth callback handler (no action taken)');
-}
-
-
 // Expose functions to window for use by other scripts and testing
 if (typeof window !== 'undefined') {
   window.showStatus = showStatus;
@@ -258,8 +186,6 @@ if (typeof window !== 'undefined') {
   window.hideLoading = hideLoading;
   window.generateRandomState = generateRandomState;
   window.getAuthUrl = getAuthUrl;
-  window.exchangeToken = exchangeToken;
   window.getClientIP = getClientIP;
   window.getIPViaWebRTC = getIPViaWebRTC;
-  window.handleOAuth = handleOAuth;
 }

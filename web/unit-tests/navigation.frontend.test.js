@@ -203,24 +203,6 @@ describe("Navigation Frontend Tests", () => {
     });
   });
 
-  describe("Coming Soon Page (coming-soon.html)", () => {
-    beforeEach(() => {
-      const htmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/coming-soon.html"), "utf-8");
-      document.documentElement.innerHTML = htmlContent;
-    });
-
-    test("should have correct title and coming soon message", () => {
-      expect(document.title).toBe("DIY Accounting Submit - Coming Soon");
-      
-      const header = document.querySelector("h2");
-      expect(header.textContent).toBe("Coming Soon");
-      
-      const countdown = document.querySelector(".countdown");
-      expect(countdown).toBeTruthy();
-      expect(countdown.textContent).toBe("2");
-    });
-  });
-
   describe("Bundles Page (bundles.html)", () => {
     beforeEach(() => {
       const htmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/bundles.html"), "utf-8");

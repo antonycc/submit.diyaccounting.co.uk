@@ -11,7 +11,6 @@ test.describe("Navigation Browser Tests", () => {
   let submitVatHtmlContent;
   let loginHtmlContent;
   let bundlesHtmlContent;
-  let comingSoonHtmlContent;
 
   test.beforeAll(async () => {
     // Read the HTML files
@@ -20,7 +19,6 @@ test.describe("Navigation Browser Tests", () => {
     submitVatHtmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/submitVat.html"), "utf-8");
     loginHtmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/login.html"), "utf-8");
     bundlesHtmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/bundles.html"), "utf-8");
-    comingSoonHtmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/coming-soon.html"), "utf-8");
   });
 
   test.describe("Home Page to Activities Navigation", () => {
@@ -304,15 +302,6 @@ test.describe("Navigation Browser Tests", () => {
         waitUntil: "domcontentloaded",
       });
 
-      // Mock navigation to coming soon page
-      await page.route("**/coming-soon.html", async (route) => {
-        await route.fulfill({
-          status: 200,
-          contentType: "text/html",
-          body: comingSoonHtmlContent,
-        });
-      });
-
       // Click Google login button
       await page.click(".google-btn");
       await setTimeout(100);
@@ -338,51 +327,8 @@ test.describe("Navigation Browser Tests", () => {
         waitUntil: "domcontentloaded",
       });
 
-      // Mock navigation to coming soon page
-      await page.route("**/coming-soon.html", async (route) => {
-        await route.fulfill({
-          status: 200,
-          contentType: "text/html",
-          body: comingSoonHtmlContent,
-        });
-      });
-
       // Click "Add HMRC Test API Bundle" button
       await page.click("button:has-text('Add HMRC Test API Bundle')");
-      await setTimeout(100);
-    });
-  });
-
-  test.describe("Coming Soon Page Functionality", () => {
-    test("should display coming soon message with countdown", async ({ page }) => {
-      await page.setContent(comingSoonHtmlContent, {
-        baseURL: "http://localhost:3000",
-        waitUntil: "domcontentloaded",
-      });
-
-      // Verify coming soon page content
-      await expect(page.locator("h2")).toContainText("Coming Soon");
-      await expect(page.locator(".countdown")).toBeVisible();
-      await expect(page.locator(".countdown")).toContainText("2");
-    });
-
-    test("should have manual navigation back to home", async ({ page }) => {
-      await page.setContent(comingSoonHtmlContent, {
-        baseURL: "http://localhost:3000",
-        waitUntil: "domcontentloaded",
-      });
-
-      // Mock navigation back to home
-      await page.route("**/index.html", async (route) => {
-        await route.fulfill({
-          status: 200,
-          contentType: "text/html",
-          body: indexHtmlContent,
-        });
-      });
-
-      // Click "Go Home Now" button
-      await page.click("button:has-text('Go Home Now')");
       await setTimeout(100);
     });
   });

@@ -23,6 +23,7 @@ const optionalTestS3SecretKey = process.env.DIY_SUBMIT_TEST_S3_SECRET_KEY;
 // Environment variables for the test server and proxy
 const runTestServer = process.env.DIY_SUBMIT_TEST_SERVER_HTTP === "run";
 const runProxy = process.env.DIY_SUBMIT_TEST_PROXY === "run";
+const runMockOAuth2 = process.env.DIY_SUBMIT_TEST_MOCK_OAUTH2 === "run";
 console.log(`runTestServer: ${runTestServer}, runProxy: ${runProxy}`);
 
 const bucketNamePostfix = process.env.DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX;
@@ -294,12 +295,6 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
     // In a real test environment, we would handle the OAuth flow
     // For now, we'll simulate going back to continue the test
     await page.goBack();
-    await page.waitForLoadState("networkidle");
-    await setTimeout(500);
-  } else if (currentUrl.includes('coming-soon.html')) {
-    // Fallback for development environment that still uses coming soon
-    await expect(page.getByText("Coming Soon")).toBeVisible();
-    await page.click("button:has-text('Go Home Now')");
     await page.waitForLoadState("networkidle");
     await setTimeout(500);
   } else {

@@ -1,10 +1,11 @@
+<!-- index.html -->
 <!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <title>DIY Accounting Submit</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="stylesheet" href="submit.css" />
+    <link rel="stylesheet" href="./submit.css" />
   </head>
   <body>
     <header>
@@ -12,14 +13,14 @@
         <div class="hamburger-menu">
           <button class="hamburger-btn" onclick="toggleMenu()">☰</button>
           <div class="menu-dropdown" id="menuDropdown">
-            <a href="index.html">Home</a>
-            <a href="activities.html">View Activities</a>
-            <a href="bundles.html">Add Bundle</a>
+            <a href="./index.html">Home</a>
+            <a href="./activities.html">View Activities</a>
+            <a href="./bundles.html">Add Bundle</a>
           </div>
         </div>
         <div class="auth-section">
           <span class="login-status">Not logged in</span>
-          <a href="login.html" class="login-link">Log in</a>
+          <a href="./login.html" class="login-link">Log in</a>
         </div>
       </div>
       <h1>DIY Accounting Submit</h1>
@@ -28,7 +29,7 @@
 
     <div id="mainContent">
       <div class="form-container" style="text-align: center;">
-        <h2>Welcome</h2>
+        <h2 id="welcomeHeading">Welcome</h2>
         <p>Choose from the available activities below to get started.</p>
         <button type="button" class="btn" onclick="window.location.href='activities.html'">View available activities</button>
       </div>
@@ -52,16 +53,6 @@
         dropdown.classList.toggle('show');
       }
 
-      // Close menu when clicking outside
-      window.onclick = function(event) {
-        if (!event.target.matches('.hamburger-btn')) {
-          const dropdown = document.getElementById('menuDropdown');
-          if (dropdown.classList.contains('show')) {
-            dropdown.classList.remove('show');
-          }
-        }
-      }
-
       // Load and display view source link
       async function loadViewSourceLink() {
         try {
@@ -73,7 +64,7 @@
               const githubUrl = `https://github.com/antonycc/submit.diyaccounting.co.uk/blob/${commitHash}/web/public/${currentPage}`;
               const viewSourceLink = document.getElementById('viewSourceLink');
               viewSourceLink.href = githubUrl;
-              viewSourceLink.textContent = `view source ${commitHash.substring(0, 7)}`;
+              viewSourceLink.textContent = `source: ${currentPage}@${commitHash.substring(0, 7)}`;
               viewSourceLink.style.display = 'inline';
             }
           }
@@ -81,21 +72,6 @@
           console.log('Could not load source.txt:', error);
         }
       }
-
-      // Check for OAuth callback parameters and redirect to submitVat.html if found
-      const urlParams = new URLSearchParams(window.location.search);
-      const code = urlParams.get("code");
-      const state = urlParams.get("state");
-      const error = urlParams.get("error");
-      
-      if (code || error) {
-        // OAuth callback detected, redirect to submitVat.html with parameters
-        console.log('OAuth callback detected on home page, redirecting to submitVat.html');
-        window.location.href = 'submitVat.html' + window.location.search;
-      }
-
-      // Load view source link on page load
-      loadViewSourceLink();
 
       // Authentication status management
       
@@ -121,7 +97,7 @@
 
       // Logout function
       function logout() {
-        console.log('[DEBUG_LOG] Logging out user');
+        console.log('Logging out user');
         
         // Clear stored tokens and user info
         localStorage.removeItem('cognitoAccessToken');
@@ -131,28 +107,28 @@
         localStorage.removeItem('authState');
 
         // Update login status
-        updateLoginStatus();
+        //updateLoginStatus();
 
         // Redirect to home page
         window.location.reload();
       }
 
-      // Check authentication status on page load
-      function checkAuthStatus() {
-        const accessToken = localStorage.getItem('cognitoAccessToken');
-        const userInfo = localStorage.getItem('userInfo');
-        
-        if (accessToken && userInfo) {
-          console.log('[DEBUG_LOG] User is authenticated');
-          updateLoginStatus();
-        } else {
-          console.log('[DEBUG_LOG] User is not authenticated');
-          updateLoginStatus();
+      // Close menu when clicking outside
+      window.onclick = function(event) {
+        if (!event.target.matches('.hamburger-btn')) {
+          const dropdown = document.getElementById('menuDropdown');
+          if (dropdown.classList.contains('show')) {
+            dropdown.classList.remove('show');
+          }
         }
       }
 
-      // Initialize authentication status
-      checkAuthStatus();
+      // Load view source link on page load
+      loadViewSourceLink();
+
+      // Update login status
+      updateLoginStatus();
+
     </script>
   </body>
 </html>

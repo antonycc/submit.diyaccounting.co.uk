@@ -130,48 +130,9 @@ describe("User Journeys Frontend Tests", () => {
     });
   });
 
-  describe("Coming Soon Journey", () => {
-    test("should display coming soon message", () => {
-      const htmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/coming-soon.html"), "utf-8");
-      document.documentElement.innerHTML = htmlContent;
-
-      const pageTitle = document.querySelector("h2");
-      expect(pageTitle.textContent).toBe("Coming Soon");
-
-      const comingSoonMessage = document.querySelector(".coming-soon-message");
-      expect(comingSoonMessage).toBeTruthy();
-
-      const icon = document.querySelector(".coming-soon-icon");
-      expect(icon.textContent).toBe("🚧");
-
-      const messages = document.querySelectorAll(".coming-soon-message p");
-      expect(messages.length).toBeGreaterThanOrEqual(2);
-      expect(messages[0].textContent).toBe("This feature is currently under development.");
-      expect(messages[1].textContent).toBe("You will be redirected to the home page shortly...");
-    });
-
-    test("should have countdown element", () => {
-      const htmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/coming-soon.html"), "utf-8");
-      document.documentElement.innerHTML = htmlContent;
-
-      const countdown = document.querySelector("#countdown");
-      expect(countdown).toBeTruthy();
-      expect(countdown.textContent).toBe("2");
-    });
-
-    test("should have go home now button", () => {
-      const htmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/coming-soon.html"), "utf-8");
-      document.documentElement.innerHTML = htmlContent;
-
-      const goHomeButton = Array.from(document.querySelectorAll("button")).find(btn => btn.textContent.includes("Go Home Now"));
-      expect(goHomeButton).toBeTruthy();
-      expect(goHomeButton.getAttribute("onclick")).toContain("index.html");
-    });
-  });
-
   describe("Hamburger Menu Navigation Journey", () => {
     test("should have hamburger menu on all pages", () => {
-      const pages = ["index.html", "login.html", "bundles.html", "coming-soon.html", "activities.html"];
+      const pages = ["index.html", "login.html", "bundles.html", "activities.html"];
       
       pages.forEach(page => {
         const htmlContent = fs.readFileSync(path.join(process.cwd(), `web/public/${page}`), "utf-8");
@@ -221,7 +182,7 @@ describe("User Journeys Frontend Tests", () => {
 
   describe("Cross-Page Navigation Journey", () => {
     test("should maintain consistent header across all pages", () => {
-      const pages = ["index.html", "login.html", "bundles.html", "coming-soon.html", "activities.html"];
+      const pages = ["index.html", "login.html", "bundles.html", "activities.html"];
       
       pages.forEach(page => {
         const htmlContent = fs.readFileSync(path.join(process.cwd(), `web/public/${page}`), "utf-8");
@@ -236,7 +197,7 @@ describe("User Journeys Frontend Tests", () => {
     });
 
     test("should maintain consistent footer across all pages", () => {
-      const pages = ["index.html", "login.html", "bundles.html", "coming-soon.html", "activities.html"];
+      const pages = ["index.html", "login.html", "bundles.html", "activities.html"];
       
       pages.forEach(page => {
         const htmlContent = fs.readFileSync(path.join(process.cwd(), `web/public/${page}`), "utf-8");
@@ -248,7 +209,7 @@ describe("User Journeys Frontend Tests", () => {
     });
 
     test("should have view source link functionality on all pages", () => {
-      const pages = ["index.html", "login.html", "bundles.html", "coming-soon.html", "activities.html"];
+      const pages = ["index.html", "login.html", "bundles.html", "activities.html"];
       
       pages.forEach(page => {
         const htmlContent = fs.readFileSync(path.join(process.cwd(), `web/public/${page}`), "utf-8");

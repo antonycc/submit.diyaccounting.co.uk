@@ -1,3 +1,4 @@
+<!-- bundles.html -->
 <!doctype html>
 <html lang="en">
   <head>
@@ -83,16 +84,6 @@
         dropdown.classList.toggle('show');
       }
 
-      // Close menu when clicking outside
-      window.onclick = function(event) {
-        if (!event.target.matches('.hamburger-btn')) {
-          const dropdown = document.getElementById('menuDropdown');
-          if (dropdown.classList.contains('show')) {
-            dropdown.classList.remove('show');
-          }
-        }
-      }
-
       // Load and display view source link
       async function loadViewSourceLink() {
         try {
@@ -104,7 +95,7 @@
               const githubUrl = `https://github.com/antonycc/submit.diyaccounting.co.uk/blob/${commitHash}/web/public/${currentPage}`;
               const viewSourceLink = document.getElementById('viewSourceLink');
               viewSourceLink.href = githubUrl;
-              viewSourceLink.textContent = `view source ${commitHash.substring(0, 7)}`;
+              viewSourceLink.textContent = `source: ${currentPage}@${commitHash.substring(0, 7)}`;
               viewSourceLink.style.display = 'inline';
             }
           }
@@ -112,9 +103,6 @@
           console.log('Could not load source.txt:', error);
         }
       }
-
-      // Load view source link on page load
-      loadViewSourceLink();
 
       // Authentication and bundle management functions
       
@@ -140,7 +128,7 @@
 
       // Logout function
       function logout() {
-        console.log('[DEBUG_LOG] Logging out user');
+        console.log('Logging out user');
         
         // Clear stored tokens and user info
         localStorage.removeItem('cognitoAccessToken');
@@ -158,7 +146,7 @@
 
       // Request a bundle
       async function requestBundle(bundleId) {
-        console.log('[DEBUG_LOG] Requesting bundle:', bundleId);
+        console.log('Requesting bundle:', bundleId);
 
         // Check if user is authenticated
         const accessToken = localStorage.getItem('cognitoAccessToken');
@@ -196,26 +184,26 @@
               alert(`Bundle granted successfully! Expires on: ${result.expiryDate}`);
               button.textContent = 'Bundle Added ✓';
               button.style.backgroundColor = '#28a745';
-              console.log('[DEBUG_LOG] Bundle granted:', result);
+              console.log('Bundle granted:', result);
             } else if (result.status === 'already_granted') {
               alert('You already have this bundle!');
               button.textContent = 'Already Added ✓';
               button.style.backgroundColor = '#28a745';
-              console.log('[DEBUG_LOG] Bundle already granted:', result);
+              console.log('Bundle already granted:', result);
             }
             
             // Update bundle status display
             updateBundleStatus();
             
           } else {
-            console.error('[DEBUG_LOG] Bundle request failed:', result);
+            console.error('Bundle request failed:', result);
             alert(`Failed to request bundle: ${result.error || 'Unknown error'}`);
             button.textContent = originalText;
             button.disabled = false;
           }
 
         } catch (error) {
-          console.error('[DEBUG_LOG] Bundle request error:', error);
+          console.error('Bundle request error:', error);
           alert('Failed to request bundle. Please try again.');
           
           // Reset button state
@@ -240,13 +228,13 @@
           const userInfo = localStorage.getItem('userInfo');
           if (userInfo) {
             const user = JSON.parse(userInfo);
-            console.log('[DEBUG_LOG] Current user bundles would be displayed here');
+            console.log('Current user bundles would be displayed here');
             
             // You could add a bundles display section to show current user bundles
             // This would require extending the bundle API to include a GET endpoint
           }
         } catch (error) {
-          console.error('[DEBUG_LOG] Error updating bundle status:', error);
+          console.error('Error updating bundle status:', error);
         }
       }
 
@@ -256,14 +244,30 @@
         const userInfo = localStorage.getItem('userInfo');
         
         if (accessToken && userInfo) {
-          console.log('[DEBUG_LOG] User is authenticated');
+          console.log('User is authenticated');
           updateLoginStatus();
           updateBundleStatus();
         } else {
-          console.log('[DEBUG_LOG] User is not authenticated');
+          console.log('User is not authenticated');
           updateLoginStatus();
         }
       }
+
+      // Close menu when clicking outside
+      window.onclick = function(event) {
+        if (!event.target.matches('.hamburger-btn')) {
+          const dropdown = document.getElementById('menuDropdown');
+          if (dropdown.classList.contains('show')) {
+            dropdown.classList.remove('show');
+          }
+        }
+      }
+
+      localStorage.removeItem('currentActivity');
+      console.log('Current activity cleared');
+
+      // Load view source link on page load
+      loadViewSourceLink();
 
       // Initialize page
       checkAuthStatus();

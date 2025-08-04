@@ -22,7 +22,7 @@ export async function exchangeToken(code) {
         grant_type: "authorization_code",
         client_id: process.env.DIY_SUBMIT_HMRC_CLIENT_ID,
         client_secret: cachedSecret,
-        redirect_uri: process.env.DIY_SUBMIT_HOME_URL,
+        redirect_uri: process.env.DIY_SUBMIT_HOME_URL + "submitHmrcCallback.html",
         code,
     });
     const hmrcBase = process.env.DIY_SUBMIT_HMRC_BASE_URI;

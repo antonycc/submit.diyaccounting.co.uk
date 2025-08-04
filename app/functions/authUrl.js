@@ -8,7 +8,7 @@ dotenv.config({ path: ".env" });
 
 export function authUrl(state) {
     const clientId = process.env.DIY_SUBMIT_HMRC_CLIENT_ID;
-    const redirectUri = process.env.DIY_SUBMIT_HOME_URL;
+    const redirectUri = process.env.DIY_SUBMIT_HOME_URL + "submitHmrcCallback.html";
     const hmrcBase = process.env.DIY_SUBMIT_HMRC_BASE_URI;
     const scope = "write:vat read:vat";
     return `${hmrcBase}/oauth/authorize?response_type=code` +

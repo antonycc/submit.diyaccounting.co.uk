@@ -1,3 +1,4 @@
+<!-- login.html -->
 <!doctype html>
 <html lang="en">
   <head>
@@ -35,29 +36,19 @@
           <!-- Google Auth Provider (Enabled) -->
           <div class="auth-provider">
             <button type="button" class="btn auth-btn google-btn" onclick="loginWithGoogle()">
-              <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google" class="provider-logo">
+              <img src="./brand/proprietary/g-logo.png" alt="Google" class="provider-logo">
               Continue with Google
             </button>
           </div>
           
-          <!-- Microsoft Auth Provider (Disabled) -->
-          <div class="auth-provider disabled">
-            <button type="button" class="btn auth-btn disabled-btn" disabled>
-              <img src="https://img-prod-cms-rt-microsoft-com.akamaized.net/cms/api/am/imageFileData/RE1Mu3b?ver=5c31" alt="Microsoft" class="provider-logo">
-              Continue with Microsoft
+          <!-- mock-oauth2-server Auth Provider (Enabled) -->
+          <div class="auth-provider">
+            <button type="button" class="btn auth-btn" onclick="loginWithMockOAuth2()">
+              <img src="https://avatars.githubusercontent.com/u/11848947?s=48&v=4" alt="navikt/mock-oauth2-server" class="provider-logo">
+              Continue with mock-oauth2-server
             </button>
-            <p class="coming-soon-text">Coming soon</p>
           </div>
-          
-          <!-- Apple Auth Provider (Disabled) -->
-          <div class="auth-provider disabled">
-            <button type="button" class="btn auth-btn disabled-btn" disabled>
-              <img src="https://developer.apple.com/assets/elements/icons/sign-in-with-apple/sign-in-with-apple-logo.svg" alt="Apple" class="provider-logo">
-              Continue with Apple
-            </button>
-            <p class="coming-soon-text">Coming soon</p>
-          </div>
-          
+
           <!-- Facebook Auth Provider (Disabled) -->
           <div class="auth-provider disabled">
             <button type="button" class="btn auth-btn disabled-btn" disabled>
@@ -92,16 +83,6 @@
         dropdown.classList.toggle('show');
       }
 
-      // Close menu when clicking outside
-      window.onclick = function(event) {
-        if (!event.target.matches('.hamburger-btn')) {
-          const dropdown = document.getElementById('menuDropdown');
-          if (dropdown.classList.contains('show')) {
-            dropdown.classList.remove('show');
-          }
-        }
-      }
-
       // Load and display view source link
       async function loadViewSourceLink() {
         try {
@@ -113,7 +94,7 @@
               const githubUrl = `https://github.com/antonycc/submit.diyaccounting.co.uk/blob/${commitHash}/web/public/${currentPage}`;
               const viewSourceLink = document.getElementById('viewSourceLink');
               viewSourceLink.href = githubUrl;
-              viewSourceLink.textContent = `view source ${commitHash.substring(0, 7)}`;
+              viewSourceLink.textContent = `source: ${currentPage}@${commitHash.substring(0, 7)}`;
               viewSourceLink.style.display = 'inline';
             }
           }
@@ -126,89 +107,26 @@
       loadViewSourceLink();
 
       // Cognito configuration - these will be set by environment variables in production
+      //const COGNITO_CONFIG = {
+      //  userPoolId: 'us-east-1_PLACEHOLDER', // Will be replaced with actual values
+     //   clientId: 'PLACEHOLDER_CLIENT_ID',
+     //   domain: 'PLACEHOLDER_DOMAIN.auth.us-east-1.amazoncognito.com',
+     //   redirectUri: window.location.origin + '/loginCallback.html',
+     //   responseType: 'code',
+     //   scope: 'email openid profile'
+    //  };
       const COGNITO_CONFIG = {
         userPoolId: 'us-east-1_PLACEHOLDER', // Will be replaced with actual values
         clientId: 'PLACEHOLDER_CLIENT_ID',
         domain: 'PLACEHOLDER_DOMAIN.auth.us-east-1.amazoncognito.com',
-        redirectUri: window.location.origin + '/login.html',
+        // redirectUri: window.location.origin + '/loginCallback.html',
         responseType: 'code',
         scope: 'email openid profile'
       };
 
-      // Check for authentication callback
-      function checkAuthCallback() {
-        const urlParams = new URLSearchParams(window.location.search);
-        const code = urlParams.get('code');
-        const state = urlParams.get('state');
-        
-        if (code) {
-          console.log('[DEBUG_LOG] Authentication callback received with code:', code);
-          handleAuthCallback(code, state);
-        }
-      }
-
-      // Handle authentication callback from Cognito
-      async function handleAuthCallback(code, state) {
-        try {
-          // Exchange authorization code for tokens
-          const tokenResponse = await fetch(`https://${COGNITO_CONFIG.domain}/oauth2/token`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/x-www-form-urlencoded'
-            },
-            body: new URLSearchParams({
-              grant_type: 'authorization_code',
-              client_id: COGNITO_CONFIG.clientId,
-              code: code,
-              redirect_uri: COGNITO_CONFIG.redirectUri
-            })
-          });
-
-          if (!tokenResponse.ok) {
-            throw new Error('Failed to exchange authorization code for tokens');
-          }
-
-          const tokens = await tokenResponse.json();
-          console.log('[DEBUG_LOG] Received tokens from Cognito');
-
-          // Store tokens in localStorage
-          localStorage.setItem('cognitoAccessToken', tokens.access_token);
-          localStorage.setItem('cognitoIdToken', tokens.id_token);
-          if (tokens.refresh_token) {
-            localStorage.setItem('cognitoRefreshToken', tokens.refresh_token);
-          }
-
-          // Decode ID token to get user info
-          const idTokenPayload = JSON.parse(atob(tokens.id_token.split('.')[1]));
-          localStorage.setItem('userInfo', JSON.stringify({
-            sub: idTokenPayload.sub,
-            email: idTokenPayload.email,
-            given_name: idTokenPayload.given_name,
-            family_name: idTokenPayload.family_name
-          }));
-
-          console.log('[DEBUG_LOG] User authenticated successfully:', idTokenPayload.email);
-
-          // Clear URL parameters
-          window.history.replaceState({}, document.title, window.location.pathname);
-
-          // Update login status and redirect
-          updateLoginStatus();
-          
-          // Redirect to bundles page or home
-          setTimeout(() => {
-            window.location.href = 'bundles.html';
-          }, 1000);
-
-        } catch (error) {
-          console.error('[DEBUG_LOG] Authentication callback error:', error);
-          alert('Authentication failed. Please try again.');
-        }
-      }
-
       // Login with Google via Cognito
       function loginWithGoogle() {
-        console.log('[DEBUG_LOG] Initiating Google login via Cognito');
+        console.log('Initiating Google login via Cognito');
         
         // Generate state parameter for security
         const state = Math.random().toString(36).substring(2, 15);
@@ -218,12 +136,33 @@
         const authUrl = `https://${COGNITO_CONFIG.domain}/oauth2/authorize?` + 
           `response_type=${COGNITO_CONFIG.responseType}&` +
           `client_id=${COGNITO_CONFIG.clientId}&` +
-          `redirect_uri=${encodeURIComponent(COGNITO_CONFIG.redirectUri)}&` +
+          `redirect_uri=${encodeURIComponent("loginCallback.html")}&` +
           `scope=${encodeURIComponent(COGNITO_CONFIG.scope)}&` +
           `state=${state}&` +
           `identity_provider=Google`;
 
-        console.log('[DEBUG_LOG] Redirecting to Cognito OAuth URL');
+        console.log('Redirecting to Cognito OAuth URL');
+        window.location.href = authUrl;
+      }
+
+      // Login with Mock OAuth2 Server via Cognito
+      function loginWithMockOAuth2() {
+        console.log('Initiating navikt/mock-oauth2-server login via Cognito');
+
+        // Generate state parameter for security
+        const state = Math.random().toString(36).substring(2, 15);
+        localStorage.setItem('authState', state);
+
+        // Build Cognito OAuth URL
+        const authUrl = `./oauth2-authorize.html?` +
+                `response_type=${COGNITO_CONFIG.responseType}&` +
+                `client_id=test-client&` +
+                `redirect_uri=${encodeURIComponent("loginCallback.html")}&` +
+                `scope=${encodeURIComponent("test")}&` +
+                `state=${state}&` +
+                `identity_provider=MockOAuth2Server`;
+
+        console.log('Redirecting to Cognito OAuth URL');
         window.location.href = authUrl;
       }
 
@@ -249,7 +188,7 @@
 
       // Logout function
       function logout() {
-        console.log('[DEBUG_LOG] Logging out user');
+        console.log('Logging out user');
         
         // Clear stored tokens and user info
         localStorage.removeItem('cognitoAccessToken');
@@ -275,7 +214,7 @@
         const userInfo = localStorage.getItem('userInfo');
         
         if (accessToken && userInfo) {
-          console.log('[DEBUG_LOG] User already authenticated');
+          console.log('User already authenticated');
           updateLoginStatus();
           
           // Optionally redirect to bundles page if already logged in
@@ -283,9 +222,21 @@
         }
       }
 
+      // Close menu when clicking outside
+      window.onclick = function(event) {
+        if (!event.target.matches('.hamburger-btn')) {
+          const dropdown = document.getElementById('menuDropdown');
+          if (dropdown.classList.contains('show')) {
+            dropdown.classList.remove('show');
+          }
+        }
+      }
+
+      localStorage.removeItem('currentActivity');
+      console.log('Current activity cleared');
+
       // Initialize authentication on page load
       checkExistingAuth();
-      checkAuthCallback();
     </script>
   </body>
 </html>

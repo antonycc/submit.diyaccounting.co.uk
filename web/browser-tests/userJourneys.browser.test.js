@@ -9,7 +9,6 @@ test.describe("User Journeys Browser Tests", () => {
   let indexHtmlContent;
   let loginHtmlContent;
   let bundlesHtmlContent;
-  let comingSoonHtmlContent;
   let activitiesHtmlContent;
 
   test.beforeAll(async () => {
@@ -17,7 +16,6 @@ test.describe("User Journeys Browser Tests", () => {
     indexHtmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/index.html"), "utf-8");
     loginHtmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/login.html"), "utf-8");
     bundlesHtmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/bundles.html"), "utf-8");
-    comingSoonHtmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/coming-soon.html"), "utf-8");
     activitiesHtmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/activities.html"), "utf-8");
   });
 
@@ -63,24 +61,9 @@ test.describe("User Journeys Browser Tests", () => {
       const microsoftProvider = page.locator(".auth-provider").filter({ hasText: "Continue with Microsoft" });
       await expect(microsoftProvider.locator(".coming-soon-text")).toContainText("Coming soon");
 
-      // Mock navigation to coming soon page
-      await page.route("**/coming-soon.html", async (route) => {
-        await route.fulfill({
-          status: 200,
-          contentType: "text/html",
-          body: comingSoonHtmlContent,
-        });
-      });
-
       // Click Google auth button (which goes to coming soon)
       await page.click("button:has-text('Continue with Google')");
       await setTimeout(100);
-
-      // Simulate navigation to coming soon page
-      await page.setContent(comingSoonHtmlContent, {
-        baseURL: "http://localhost:3000",
-        waitUntil: "domcontentloaded",
-      });
 
       // Verify we're on the coming soon page
       await expect(page.locator("h2")).toContainText("Coming Soon");
@@ -175,24 +158,9 @@ test.describe("User Journeys Browser Tests", () => {
       const hmrcProdBtn = page.locator("button").filter({ hasText: "Add HMRC Production API Bundle" });
       await expect(hmrcProdBtn).toBeDisabled();
 
-      // Mock navigation to coming soon page
-      await page.route("**/coming-soon.html", async (route) => {
-        await route.fulfill({
-          status: 200,
-          contentType: "text/html",
-          body: comingSoonHtmlContent,
-        });
-      });
-
       // Click HMRC Test API Bundle button
       await page.click("button:has-text('Add HMRC Test API Bundle')");
       await setTimeout(100);
-
-      // Simulate navigation to coming soon page
-      await page.setContent(comingSoonHtmlContent, {
-        baseURL: "http://localhost:3000",
-        waitUntil: "domcontentloaded",
-      });
 
       // Verify we're on the coming soon page
       await expect(page.locator("h2")).toContainText("Coming Soon");
@@ -221,59 +189,6 @@ test.describe("User Journeys Browser Tests", () => {
 
       // Click back to home button
       await page.click("button:has-text('Back to Home')");
-      await setTimeout(100);
-
-      // Simulate navigation back to home
-      await page.setContent(indexHtmlContent, {
-        baseURL: "http://localhost:3000",
-        waitUntil: "domcontentloaded",
-      });
-
-      // Verify we're back on the home page
-      await expect(page.locator("h2")).toContainText("Welcome");
-    });
-  });
-
-  test.describe("Coming Soon Page Functionality", () => {
-    test("should display coming soon message with countdown", async ({ page }) => {
-      // Start on coming soon page
-      await page.setContent(comingSoonHtmlContent, {
-        baseURL: "http://localhost:3000",
-        waitUntil: "domcontentloaded",
-      });
-
-      // Verify coming soon elements
-      await expect(page.locator("h2")).toContainText("Coming Soon");
-      await expect(page.locator(".coming-soon-icon")).toContainText("🚧");
-      await expect(page.getByText("This feature is currently under development")).toBeVisible();
-      await expect(page.getByText("You will be redirected to the home page shortly")).toBeVisible();
-      
-      // Verify countdown element exists
-      await expect(page.locator("#countdown")).toBeVisible();
-      await expect(page.locator("#countdown")).toContainText("2");
-    });
-
-    test("should have manual navigation back to home", async ({ page }) => {
-      // Start on coming soon page
-      await page.setContent(comingSoonHtmlContent, {
-        baseURL: "http://localhost:3000",
-        waitUntil: "domcontentloaded",
-      });
-
-      // Verify go home button exists
-      await expect(page.getByText("Go Home Now")).toBeVisible();
-
-      // Mock navigation back to home
-      await page.route("**/index.html", async (route) => {
-        await route.fulfill({
-          status: 200,
-          contentType: "text/html",
-          body: indexHtmlContent,
-        });
-      });
-
-      // Click go home button
-      await page.click("button:has-text('Go Home Now')");
       await setTimeout(100);
 
       // Simulate navigation back to home
@@ -333,7 +248,6 @@ test.describe("User Journeys Browser Tests", () => {
         { content: indexHtmlContent, title: "Welcome" },
         { content: loginHtmlContent, title: "Login" },
         { content: bundlesHtmlContent, title: "Add Bundle" },
-        { content: comingSoonHtmlContent, title: "Coming Soon" },
         { content: activitiesHtmlContent, title: "Available Activities" }
       ];
 

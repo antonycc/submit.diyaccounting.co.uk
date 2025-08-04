@@ -1,3 +1,4 @@
+<!-- submitVat.html -->
 <!doctype html>
 <html lang="en">
   <head>
@@ -9,18 +10,6 @@
   <body>
     <header>
       <div class="header-nav">
-        <div class="hamburger-menu">
-          <button class="hamburger-btn" onclick="toggleMenu()">☰</button>
-          <div class="menu-dropdown" id="menuDropdown">
-            <a href="index.html">Home</a>
-            <a href="activities.html">View Activities</a>
-            <a href="bundles.html">Add Bundle</a>
-          </div>
-        </div>
-        <div class="auth-section">
-          <span class="login-status">Not logged in</span>
-          <a href="login.html" class="login-link">Log in</a>
-        </div>
       </div>
       <h1>DIY Accounting Submit</h1>
       <p class="subtitle">Submit UK VAT returns to HMRC under Making Tax Digital (MTD)</p>
@@ -124,39 +113,11 @@
       </div>
     </footer>
 
-    <script src="submit.js"></script>
+    <script src="./submit.js"></script>
     <script>
-      // Hamburger menu toggle functionality
-      function toggleMenu() {
-        const dropdown = document.getElementById('menuDropdown');
-        dropdown.classList.toggle('show');
-      }
-
-      // Close menu when clicking outside
-      window.onclick = function(event) {
-        if (!event.target.matches('.hamburger-btn')) {
-          const dropdown = document.getElementById('menuDropdown');
-          if (dropdown.classList.contains('show')) {
-            dropdown.classList.remove('show');
-          }
-        }
-      }
-
-      console.log('JS block started loading.');
-
-      // Global variables
-      let currentAccessToken = null;
-      let submissionData = null;
-
-      // DOM elements
-      const form = document.getElementById("vatSubmissionForm");
-      const submitBtn = document.getElementById("submitBtn");
-      const statusMessagesContainer = document.getElementById("statusMessagesContainer");
-      const loadingSpinner = document.getElementById("loadingSpinner");
-      const receiptDisplay = document.getElementById("receiptDisplay");
-      const vatFormContainer = document.getElementById("vatForm");
 
       // VAT-specific functions
+
       // Form submission handler
       async function handleFormSubmission(event) {
         event.preventDefault();
@@ -191,11 +152,14 @@
           submissionData = { vatNumber, periodKey, vatDue };
 
           sessionStorage.setItem("oauth_state", state);
-          sessionStorage.setItem("submission_data", JSON.stringify(submissionData));
+          localStorage.setItem("submission_data", JSON.stringify(submissionData));
 
           // Get OAuth URL
           const authResponse = await getAuthUrl(state);
           const authResponseUrl = authResponse.authUrl;
+
+          localStorage.setItem('currentActivity', location.pathname);
+          console.log('Current activity set to:', location.pathname);
 
           showStatus(`Redirecting to HMRC for authentication at ${authResponseUrl}...`, "info");
 
@@ -211,16 +175,21 @@
 
       // OAuth callback handling
       function handleOAuthCallback() {
-        return  handleOAuth(continueVatSubmission);
+        const hmrcAccessToken = sessionStorage.getItem("hmrcAccessToken");
+        if (hmrcAccessToken) {
+          console.log('OAuth callback handler (hmrcAccessToken found)');
+          // If we have an access token, continue with submission
+          continueVatSubmission();
+        } else {
+          console.log('OAuth callback handler (no hmrcAccessToken found)');
+        }
       }
 
-      async function continueVatSubmission(code, submissionData) {
+      async function continueVatSubmission() {
         try {
-          showLoading();
-          showStatus("Exchanging authorization code for access token...", "info");
-
-          // Exchange code for access token
-          currentAccessToken = await exchangeToken(code);
+          const hmrcAccessToken = sessionStorage.getItem("hmrcAccessToken");
+          const submissionData = JSON.parse(localStorage.getItem("submission_data"));
+          console.log('Retrieved submission data:', submissionData);
 
           showStatus("Submitting VAT return to HMRC...", "info");
 
@@ -229,7 +198,7 @@
                   submissionData.vatNumber,
                   submissionData.periodKey,
                   submissionData.vatDue,
-                  currentAccessToken,
+                  hmrcAccessToken,
           );
 
           showStatus("Logging submission receipt...", "info");
@@ -245,9 +214,13 @@
           displayReceipt(submitResponse);
           hideStatus();
 
+          // Reset current activity
+          localStorage.removeItem('currentActivity');
+          console.log('Current activity cleared');
+
           // Clean up session storage
           sessionStorage.removeItem("oauth_state");
-          sessionStorage.removeItem("submission_data");
+          localStorage.removeItem("submission_data");
           console.log('Continue submission handler (success)');
         } catch (error) {
           console.error("Submission error:", error);
@@ -379,6 +352,18 @@
         receiptDisplay.style.display = "block";
       }
 
+      // Global variables
+      let hmrcAccessToken = null;
+      let submissionData = null;
+
+      // DOM elements
+      const form = document.getElementById("vatSubmissionForm");
+      //const submitBtn = document.getElementById("submitBtn");
+      //const statusMessagesContainer = document.getElementById("statusMessagesContainer");
+      //const loadingSpinner = document.getElementById("loadingSpinner");
+      const receiptDisplay = document.getElementById("receiptDisplay");
+      const vatFormContainer = document.getElementById("vatForm");
+
       // Event listeners
       form.addEventListener("submit", handleFormSubmission);
 
@@ -401,35 +386,14 @@
       window.displayReceipt = displayReceipt;
       window.handleFormSubmission = handleFormSubmission;
 
-      // Load and display view source link
-      async function loadViewSourceLink() {
-        try {
-          const response = await fetch('source.txt');
-          if (response.ok) {
-            const commitHash = (await response.text()).trim();
-            if (commitHash) {
-              const currentPage = window.location.pathname.split('/').pop() || 'index.html';
-              const githubUrl = `https://github.com/antonycc/submit.diyaccounting.co.uk/blob/${commitHash}/web/public/${currentPage}`;
-              const viewSourceLink = document.getElementById('viewSourceLink');
-              viewSourceLink.href = githubUrl;
-              viewSourceLink.textContent = `view source ${commitHash.substring(0, 7)}`;
-              viewSourceLink.style.display = 'inline';
-            }
-          }
-        } catch (error) {
-          console.log('Could not load source.txt:', error);
-        }
-      }
-
       // Initialize
       document.addEventListener("DOMContentLoaded", function () {
         console.log('JS block started loading: DOMContentLoaded event handler');
         // Check if we're returning from OAuth
         handleOAuthCallback();
-        // Load view source link
-        loadViewSourceLink();
         console.log('JS block finished loading: DOMContentLoaded event handler');
       });
+
       console.log('JS block finished loading.');
     </script>
   </body>

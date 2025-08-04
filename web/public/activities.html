@@ -1,3 +1,4 @@
+<!-- activities.html -->
 <!doctype html>
 <html lang="en">
   <head>
@@ -64,13 +65,56 @@
         dropdown.classList.toggle('show');
       }
 
-      // Close menu when clicking outside
-      window.onclick = function(event) {
-        if (!event.target.matches('.hamburger-btn')) {
-          const dropdown = document.getElementById('menuDropdown');
-          if (dropdown.classList.contains('show')) {
-            dropdown.classList.remove('show');
-          }
+      // Update login status display
+      function updateLoginStatus() {
+        const userInfo = localStorage.getItem('userInfo');
+        const loginStatusElement = document.querySelector('.login-status');
+        const loginLinkElement = document.querySelector('.login-link');
+
+        if (userInfo) {
+          const user = JSON.parse(userInfo);
+          loginStatusElement.textContent = `Logged in as ${user.email}`;
+          loginLinkElement.textContent = 'Logout';
+          loginLinkElement.href = '#';
+          loginLinkElement.onclick = logout;
+        } else {
+          loginStatusElement.textContent = 'Not logged in';
+          loginLinkElement.textContent = 'Log in';
+          loginLinkElement.href = 'login.html';
+          loginLinkElement.onclick = null;
+        }
+      }
+
+      // Logout function
+      function logout() {
+        console.log('Logging out user');
+
+        // Clear stored tokens and user info
+        localStorage.removeItem('cognitoAccessToken');
+        localStorage.removeItem('cognitoIdToken');
+        localStorage.removeItem('cognitoRefreshToken');
+        localStorage.removeItem('userInfo');
+        localStorage.removeItem('authState');
+
+        // Update login status
+        updateLoginStatus();
+
+        // Redirect to home page
+        window.location.href = 'index.html';
+      }
+
+      // Check authentication status on page load
+      function checkAuthStatus() {
+        const accessToken = localStorage.getItem('cognitoAccessToken');
+        const userInfo = localStorage.getItem('userInfo');
+
+        if (accessToken && userInfo) {
+          console.log('User is authenticated');
+          updateLoginStatus();
+          updateBundleStatus();
+        } else {
+          console.log('User is not authenticated');
+          updateLoginStatus();
         }
       }
 
@@ -85,7 +129,7 @@
               const githubUrl = `https://github.com/antonycc/submit.diyaccounting.co.uk/blob/${commitHash}/web/public/${currentPage}`;
               const viewSourceLink = document.getElementById('viewSourceLink');
               viewSourceLink.href = githubUrl;
-              viewSourceLink.textContent = `view source ${commitHash.substring(0, 7)}`;
+              viewSourceLink.textContent = `source: ${currentPage}@${commitHash.substring(0, 7)}`;
               viewSourceLink.style.display = 'inline';
             }
           }
@@ -93,6 +137,22 @@
           console.log('Could not load source.txt:', error);
         }
       }
+
+      // Close menu when clicking outside
+      window.onclick = function(event) {
+        if (!event.target.matches('.hamburger-btn')) {
+          const dropdown = document.getElementById('menuDropdown');
+          if (dropdown.classList.contains('show')) {
+            dropdown.classList.remove('show');
+          }
+        }
+      }
+
+      localStorage.removeItem('currentActivity');
+      console.log('Current activity cleared');
+
+      // Initialize page
+      checkAuthStatus();
 
       // Load view source link on page load
       loadViewSourceLink();
