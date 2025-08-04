@@ -28,8 +28,8 @@ const cdkConfig = JSON.parse(readFileSync(cdkJsonPath, 'utf8'));
 const context = cdkConfig.context || {};
 logger.info("CDK context:", context);
 
-export async function startMinio(receiptsBucketFullName, optionalTestS3AccessKey, optionalTestS3SecretKey) {
-  const container = await new GenericContainer("minio/minio")
+async function startMinioContainer(optionalTestS3AccessKey, optionalTestS3SecretKey) {
+  return await new GenericContainer("minio/minio")
       .withExposedPorts(9000)
       .withEnvironment({
         MINIO_ROOT_USER: optionalTestS3AccessKey,
@@ -37,12 +37,16 @@ export async function startMinio(receiptsBucketFullName, optionalTestS3AccessKey
       })
       .withCommand(["server", "/data"])
       .start();
+}
+
+export async function startMinio(receiptsBucketFullName, optionalTestS3AccessKey, optionalTestS3SecretKey) {
+  const container = await startMinioContainer(optionalTestS3AccessKey, optionalTestS3SecretKey);
   const endpoint = `http://${container.getHost()}:${container.getMappedPort(9000)}`;
   return endpoint;
 }
 
 // Start or connect to MinIO S3 server or any S3 compatible server
-export async function ensureMinioBucketExists(receiptsBucketFullName, endpoint, optionalTestS3AccessKey) {
+export async function ensureMinioBucketExists(receiptsBucketFullName, endpoint, optionalTestS3AccessKey, optionalTestS3SecretKey) {
   logger.info(`Ensuring bucket: '${receiptsBucketFullName}' exists on endpoint '${endpoint}' for access key '${optionalTestS3AccessKey}'`);
   const clientConfig = {
       endpoint,
@@ -78,6 +82,55 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const receiptsBucketFullName = `${dashedDomain}-${bucketNamePostfix}`;
   const optionalTestS3AccessKey = process.env.DIY_SUBMIT_TEST_S3_ACCESS_KEY;
   const optionalTestS3SecretKey = process.env.DIY_SUBMIT_TEST_S3_SECRET_KEY;
-  const endpoint = await startMinio(receiptsBucketFullName, optionalTestS3AccessKey, optionalTestS3SecretKey);
-  console.log(`MinIO started url=${endpoint}`);
+  
+  let container;
+  
+  try {
+    logger.info('Starting MinIO server...');
+    container = await startMinioContainer(optionalTestS3AccessKey, optionalTestS3SecretKey);
+    
+    const endpoint = `http://${container.getHost()}:${container.getMappedPort(9000)}`;
+    console.log(`MinIO started url=${endpoint}`);
+    
+    // Ensure bucket exists
+    await ensureMinioBucketExists(receiptsBucketFullName, endpoint, optionalTestS3AccessKey, optionalTestS3SecretKey);
+    
+    logger.info('MinIO server is running. Press CTRL-C to stop.');
+    
+    // Handle graceful shutdown
+    let isShuttingDown = false;
+    const gracefulShutdown = async (signal) => {
+      if (isShuttingDown) return;
+      isShuttingDown = true;
+      
+      logger.info(`\nReceived ${signal}. Shutting down MinIO server...`);
+      if (container) {
+        try {
+          await container.stop();
+          logger.info('MinIO server stopped successfully.');
+        } catch (error) {
+          logger.error('Error stopping MinIO server:', error);
+        }
+      }
+      process.exit(0);
+    };
+    
+    // Listen for termination signals
+    process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+    process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+    
+    // Keep the process alive
+    const keepAlive = setInterval(() => {
+      // This interval keeps the process running
+    }, 1000);
+    
+    // Clean up interval on exit
+    process.on('exit', () => {
+      clearInterval(keepAlive);
+    });
+    
+  } catch (error) {
+    logger.error('Failed to start MinIO server:', error);
+    process.exit(1);
+  }
 }
