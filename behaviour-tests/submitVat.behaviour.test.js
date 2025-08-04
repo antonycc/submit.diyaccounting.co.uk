@@ -3,9 +3,9 @@
 import { test, expect } from "@playwright/test";
 import { spawn } from "child_process";
 import { setTimeout } from "timers/promises";
-import { S3Client, CreateBucketCommand, HeadBucketCommand } from '@aws-sdk/client-s3';
 import dotenv from 'dotenv';
-import {GenericContainer} from "testcontainers";
+import {ensureMinioBucketExists, startMinio} from "@app/bin/minio.js";
+import {checkIfServerIsRunning} from "@app/bin/server.js";
 
 dotenv.config({ path: '.env' }); // e.g. Not checked in, HMRC API credentials
 // TODO: remove the override and ensure the tests pass with .env.test, then change the pipeline tests to copy over .env.test.
@@ -24,6 +24,7 @@ const optionalTestS3SecretKey = process.env.DIY_SUBMIT_TEST_S3_SECRET_KEY;
 const runTestServer = process.env.DIY_SUBMIT_TEST_SERVER_HTTP === "run";
 const runProxy = process.env.DIY_SUBMIT_TEST_PROXY === "run";
 const runMockOAuth2 = process.env.DIY_SUBMIT_TEST_MOCK_OAUTH2 === "run";
+const runMinioS3 = process.env.DIY_SUBMIT_TEST_MINIO_S3 === "run";
 console.log(`runTestServer: ${runTestServer}, runProxy: ${runProxy}`);
 
 const bucketNamePostfix = process.env.DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX;
@@ -49,70 +50,26 @@ test.beforeAll(async () => {
     ...originalEnv,
   }
 
-  let container;
+  // Retain the custom s3 endpoint for the storage bucket (if there is one) to pass to the HTTP server (if needed).
   let endpoint;
 
-  // Only start Docker container if S3 endpoint is not set to "off"
-  if (process.env.DIY_SUBMIT_TEST_S3_ENDPOINT !== "off") {
-    container = await new GenericContainer("minio/minio")
-        .withExposedPorts(9000)
-        .withEnvironment({
-          MINIO_ROOT_USER: optionalTestS3AccessKey,
-          MINIO_ROOT_PASSWORD: optionalTestS3SecretKey,
-        })
-        .withCommand(["server", "/data"])
-        .start();
-
-    endpoint = `http://${container.getHost()}:${container.getMappedPort(9000)}`;
+  if (runMinioS3) {
+    console.log("Starting minio process...");
+    //serverProcess = spawn("npm", ["run", "storage"], {
+    //  env: {
+    //    ...process.env,
+    //  },
+    //  stdio: ["pipe", "pipe", "pipe"],
+    //});
+    endpoint = await startMinio(receiptsBucketFullName, optionalTestS3AccessKey, optionalTestS3SecretKey);
+    await ensureMinioBucketExists(receiptsBucketFullName, endpoint, optionalTestS3AccessKey);
   } else {
-    console.log("Skipping Docker container creation as S3 endpoint is set to 'off'");
-    endpoint = "off";
+    console.log("Skipping Minio container creation because DIY_SUBMIT_TEST_MINIO_S3 is not set to 'on'");
   }
 
-  // Start or connect to MinIO S3 server or any S3 compatible server
-  async function ensureBucketExists() {
-    console.log(`Ensuring bucket: ${receiptsBucketFullName} exists on endpoint '${endpoint}' for access key '${optionalTestS3AccessKey}'`);
-    let clientConfig ;
-    if (process.env.DIY_SUBMIT_TEST_S3_ENDPOINT !== "off") {
-      clientConfig = {
-        endpoint,
-        forcePathStyle: true,
-        region: "us-east-1",
-        credentials: {
-          accessKeyId: optionalTestS3AccessKey,
-          secretAccessKey: optionalTestS3SecretKey,
-        }
-      }
-    } else {
-      clientConfig = {};
-    }
-    const s3 = new S3Client(clientConfig);
-
-    try {
-      await s3.send(new HeadBucketCommand({ Bucket: receiptsBucketFullName }));
-      console.log(`✅ Bucket '${receiptsBucketFullName}' already exists on endpoint '${endpoint}'`);
-    } catch (err) {
-      if (err.name === "NotFound") {
-        if(process.env.DIY_SUBMIT_TEST_S3_ENDPOINT !== "off") {
-          console.log(`ℹ️ Bucket '${receiptsBucketFullName}' not found on endpoint '${endpoint}', creating...`);
-          await s3.send(new CreateBucketCommand({Bucket: receiptsBucketFullName}));
-          console.log(`✅ Created bucket '${receiptsBucketFullName}' on endpoint '${endpoint}'`);
-        } else {
-          console.log(`ℹ️ Skipping bucket creation as endpoint is set to 'off'`);
-        }
-      } else {
-        throw new Error(`Failed to check/create bucket: ${err.message} on endpoint '${endpoint}' for access key '${optionalTestS3AccessKey}'`);
-      }
-    }
-  }
-
-  await ensureBucketExists();
-
-  // Start the server
   if (runTestServer) {
     console.log("Starting server process...");
     serverProcess = spawn("npm", ["run", "start"], {
-      // serverProcess = spawn("node", ["app/lib/server.js"], {
       env: {
         ...process.env,
         DIY_SUBMIT_TEST_S3_ENDPOINT: endpoint,
@@ -120,40 +77,14 @@ test.beforeAll(async () => {
       },
       stdio: ["pipe", "pipe", "pipe"],
     });
-
-    // Wait for server to start
-    console.log("Waiting for server to initialize...");
-    await setTimeout(500);
-
-    // Check if server is running
-    let serverReady = false;
-    let attempts = 0;
-    console.log("Checking server readiness...");
-    while (!serverReady && attempts < 15) {
-      try {
-        const response = await fetch(`http://127.0.0.1:${serverPort}`);
-        if (response.ok) {
-          serverReady = true;
-          console.log("Server is ready!");
-        }
-      } catch (error) {
-        attempts++;
-        console.log(`Server check attempt ${attempts}/15 failed: ${error.message}`);
-        await setTimeout(500);
-      }
-    }
-
-    if (!serverReady) {
-      throw new Error(`Server failed to start after ${attempts} attempts`);
-    }
+    await checkIfServerIsRunning(`http://127.0.0.1:${serverPort}`);
   } else {
     console.log("Skipping server process as runTestServer is not set to 'run'");
   }
 
   if(runProxy) {
-    // Start ngrok process (same as npm run proxy)
     console.log("Starting ngrok process...");
-    //ngrokProcess = spawn("npm", ["run", "proxy"], {
+    // TODO: Get the ngrok host from the HOME_URL environment variable
     ngrokProcess = spawn("npx", ["ngrok", "http", "--url", "wanted-finally-anteater.ngrok-free.app", serverPort.toString()], {
       env: {
         ...process.env,
@@ -161,78 +92,20 @@ test.beforeAll(async () => {
       },
       stdio: ["pipe", "pipe", "pipe"],
     });
-
-    // Wait for ngrok to start
-    console.log("Waiting for ngrok to initialize...");
-    await setTimeout(2000);
+    await checkIfServerIsRunning(homeUrl);
   } else {
     console.log("Skipping ngrok process as runProxy is not set to 'run'");
   }
 
-  // Check if the default document is accessible
-  let homeReady = false;
-  let homeAttempts = 0;
-  console.log("Checking home readiness...");
-  while (!homeReady && homeAttempts < 15) {
-    try {
-      console.log(`trying home at ${homeUrl}`);
-      const response = await fetch(homeUrl);
-      if (response.ok) {
-        homeReady = true;
-        console.log(`home is accessible at ${homeUrl}`);
-      }
-    } catch (error) {
-      homeAttempts++;
-      console.log(`home check attempt ${homeAttempts}/15 failed: ${error.message}`);
-      await setTimeout(500);
-    }
-
-    if (!homeReady) {
-      console.log(`Warning: home may not be accessible at ${ngrokUrl} after ${homeAttempts} attempts`);
-    }
-  }
-
-  // Start the mock-oauth2-server
   if (runMockOAuth2) {
     console.log("Starting mock-oauth2-server process...");
-    serverProcess = spawn("npm", ["run", "mock-oauth2"], {
+    serverProcess = spawn("npm", ["run", "auth"], {
       env: {
         ...process.env,
       },
       stdio: ["pipe", "pipe", "pipe"],
     });
-
-    // Wait for mock-oauth2-server to start
-    console.log("Waiting for mock-oauth2-server to initialize...");
-    await setTimeout(500);
-
-    // Check if mock-oauth2-server is running
-    let mockOAuth2Ready = false;
-    let attempts = 0;
-    console.log("Checking mock-oauth2-server readiness...");
-    while (!mockOAuth2Ready && attempts < 15) {
-      try {
-        const response = await fetch("http://localhost:8080/default/debugger");
-        if (response.ok) {
-          mockOAuth2Ready = true;
-          console.log("mock-oauth2-server is ready!");
-          console.log("mock-oauth2-server configuration:");
-          const config = await response.json();
-          console.log(`  - Port: ${config.port}`);
-          console.log(`  - Client ID: ${config.clientId}`);
-          console.log(`  - Client Secret: ${config.clientSecret}`);
-          console.log(`  - Authorization URL: ${config.authorizationUrl}`);
-        }
-      } catch (error) {
-        attempts++;
-        console.log(`mock-oauth2-server check attempt ${attempts}/15 failed: ${error.message}`);
-        await setTimeout(1000);
-      }
-    }
-
-    if (!mockOAuth2Ready) {
-      throw new Error(`mock-oauth2-server failed to start after ${attempts} attempts`);
-    }
+    await checkIfServerIsRunning("http://localhost:8080/default/debugger");
   } else {
     console.log("Skipping mock-oauth2-server process as runMockOAuth2 is not set to 'run'");
   }
@@ -254,28 +127,11 @@ test.afterEach(async ({}, testInfo) => {
 
   // Handle video file renaming and moving
   if (testInfo.video) {
-    const fs = await import("fs");
-    const path = await import("path");
-
-    // const timestamp = getTimestamp();
-    // const videoName = `auth-behaviour-video_${timestamp}.mp4`;
-    // const targetPath = path.join('auth-behaviour-test-results', videoName);
-
-    console.log(`Attempting to get video path...`);
-
-    // Get video path from testInfo
     try {
       const videoPath = await testInfo.video.path();
       console.log(`Video path: ${videoPath}`);
-
-      // if (videoPath && await fs.promises.access(videoPath).then(() => true).catch(() => false)) {
-      //  await fs.promises.copyFile(videoPath, targetPath);
-      //  console.log(`Video saved to: ${targetPath}`);
-      // } else {
-      //  console.log(`Video file not accessible at: ${videoPath}`);
-      // }
     } catch (error) {
-      console.log(`Failed to copy video: ${error.message}`);
+      console.log(`Failed to locate video: ${error.message}`);
     }
   } else {
     console.log(`No video in testInfo`);

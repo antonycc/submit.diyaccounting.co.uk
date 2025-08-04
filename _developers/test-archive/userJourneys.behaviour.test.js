@@ -17,6 +17,7 @@ const serverPort = 3501; // Different port from main behaviour test
 const runTestServer = process.env.DIY_SUBMIT_TEST_SERVER_HTTP === "run";
 const runProxy = process.env.DIY_SUBMIT_TEST_PROXY === "run";
 const runMockOAuth2 = process.env.DIY_SUBMIT_TEST_MOCK_OAUTH2 === "run";
+const runMinioS3 = process.env.DIY_SUBMIT_TEST_MINIO_S3 === "run";
 console.log(`runTestServer: ${runTestServer}, runProxy: ${runProxy}`);
 
 const homeUrl = process.env.DIY_SUBMIT_HOME_URL;

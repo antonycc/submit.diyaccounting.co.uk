@@ -15,6 +15,7 @@ import { httpPost as logReceiptHttpPost } from "../functions/logReceipt.js";
 dotenv.config({ path: '.env' });
 
 import logger from "../lib/logger.js";
+import {setTimeout} from "timers/promises";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -92,6 +93,32 @@ app.post(logReceiptPath, async (req, res) => {
 app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "../../web/public/index.html"));
 });
+
+export async function checkIfServerIsRunning(url, delay = 500) {
+  let serverReady = false;
+  let attempts = 0;
+  logger.info(`Checking server readiness for...`, url);
+  while (!serverReady && attempts < 15) {
+    try {
+      const response = await fetch(url);
+      if (response.ok) {
+        serverReady = true;
+        // Log the body of the response for debugging
+        const responseBody = await response.text();
+        logger.info("Response body", responseBody, url);
+        logger.info("Server is ready!", url);
+      }
+    } catch (error) {
+      attempts++;
+      logger.error(`Server check attempt ${attempts}/15 failed: ${error.message}`);
+      await setTimeout(delay);
+    }
+  }
+
+  if (!serverReady) {
+    throw new Error(`Server failed to start after ${attempts} attempts`);
+  }
+}
 
 const DIY_SUBMIT_DIY_SUBMIT_TEST_SERVER_HTTP_PORT = process.env.DIY_SUBMIT_DIY_SUBMIT_TEST_SERVER_HTTP_PORT || 3000;
 
