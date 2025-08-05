@@ -11,7 +11,7 @@ dotenv.config({ path: '.env.test' });
 
 // Mock the handlers from their respective function files
 vi.mock("@app/functions/authUrl.js", () => ({
-  httpGet: vi.fn(),
+  httpGetHmrc: vi.fn(),
 }));
 vi.mock("@app/functions/exchangeToken.js", () => ({
   httpPost: vi.fn(),

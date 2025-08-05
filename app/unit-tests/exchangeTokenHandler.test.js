@@ -66,7 +66,7 @@ describe("httpPost", () => {
     expect(params.get("grant_type")).toBe("authorization_code");
     expect(params.get("client_id")).toBe("test client id");
     //expect(params.get("client_secret")).toBe("test hmrc client secret");
-    expect(params.get("redirect_uri")).toBe("http://hmrc.test.redirect:3000/");
+    expect(params.get("redirect_uri")).toBe("http://hmrc.test.redirect:3000/submitHmrcCallback.html");
     expect(params.get("code")).toBe("test-auth-code");
   });
 
