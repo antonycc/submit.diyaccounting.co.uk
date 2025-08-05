@@ -116,7 +116,7 @@ test.beforeAll(async () => {
       },
       stdio: ["pipe", "pipe", "pipe"],
     });
-    await checkIfServerIsRunning("http://localhost:8080/default/debugger");
+    await checkIfServerIsRunning("http://localhost:8080/default/debugger", 2000);
   } else {
     console.log("Skipping mock-oauth2-server process as runMockOAuth2 is not set to 'run'");
   }
