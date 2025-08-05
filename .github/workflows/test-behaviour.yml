@@ -16,6 +16,15 @@ on:
       - '.github/workflows/test-behaviour.yml'
       - '!infra/**'
   workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'proxy'
+        type: choice
+        options:
+          - proxy
+          - ci
   schedule:
     - cron: '34 2,3,4 * * *'
 
