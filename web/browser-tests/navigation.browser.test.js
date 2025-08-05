@@ -152,7 +152,7 @@ test.describe("Navigation Browser Tests", () => {
       });
 
       // Click the "View available activities" button
-      await page.click("#viewActivitiesFromMainBtn");
+      await page.click("#homePageFromMainBtn");
       await setTimeout(100);
 
       // Simulate navigation back to activities
