@@ -66,7 +66,7 @@ test.beforeAll(async () => {
     await setTimeout(2000);
     await ensureMinioBucketExists(receiptsBucketFullName, endpoint, optionalTestS3AccessKey, optionalTestS3SecretKey);
   } else {
-    console.log("Skipping Minio container creation because DIY_SUBMIT_TEST_MINIO_S3 is not set to 'on'");
+    console.log("Skipping Minio container creation because DIY_SUBMIT_TEST_MINIO_S3 is not set to 'run'");
   }
 
   if (runTestServer) {
