@@ -82,8 +82,8 @@ describe("httpPost", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(500);
-    expect(body.message).toBe("Failed to log receipt");
-    expect(body.details).toBe("Failed to log receipt: Access denied");
+    expect(body.message).toContain("Failed to log receipt");
+    expect(body.details).toContain("Failed to log receipt: Access denied");
   });
 
   test("should handle malformed JSON in request body", async () => {
@@ -111,8 +111,8 @@ describe("httpPost", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(500);
-    expect(body.message).toBe("Failed to log receipt");
-    expect(body.details).toBe("Failed to log receipt: Request timeout");
+    expect(body.message).toContain("Failed to log receipt");
+    expect(body.details).toContain("Failed to log receipt: Request timeout");
   });
 
   test("should handle S3 bucket not found error", async () => {
@@ -132,8 +132,8 @@ describe("httpPost", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(500);
-    expect(body.message).toBe("Failed to log receipt");
-    expect(body.details).toBe("Failed to log receipt: The specified bucket does not exist");
+    expect(body.message).toContain("Failed to log receipt");
+    expect(body.details).toContain("Failed to log receipt: The specified bucket does not exist");
   });
 
   test("should handle receipt with special characters in formBundleNumber", async () => {

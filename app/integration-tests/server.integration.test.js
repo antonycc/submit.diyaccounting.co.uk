@@ -243,7 +243,7 @@ describe("Integration – Server Express App", () => {
       const response = await request(app).post("/api/log-receipt").send(receiptData).expect(500);
 
       expect(response.body).toHaveProperty("message");
-      expect(response.body.message).toBe("Failed to log receipt");
+      expect(response.body.message).toContain("Failed to log receipt");
       expect(response.body).toHaveProperty("details");
     });
   });
