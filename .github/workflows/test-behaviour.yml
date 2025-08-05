@@ -19,11 +19,15 @@ on:
   schedule:
     - cron: '34 2,3,4 * * *'
 
+env:
+  environment: ${{ inputs.environment || 'proxy' }}
+
 jobs:
 
   npm-behaviour-test:
     name: 'npm behaviour test'
     runs-on: ubuntu-latest
+    environment: ${{ inputs.environment || 'proxy' }}
     permissions:
       contents: read
       id-token: write
@@ -45,10 +49,37 @@ jobs:
 
       - run: npx playwright install --with-deps
 
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::887764105431:role/submit-github-actions-role
+          role-chaining: false
+          aws-region: eu-west-2
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - run: aws sts get-caller-identity --region eu-west-2
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::887764105431:role/submit-deployment-role
+          role-chaining: true
+          aws-region: eu-west-2
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - run: aws sts get-caller-identity --region eu-west-2
+
       #- run: |
       #    echo "DIY_SUBMIT_HMRC_CLIENT_SECRET=${{ secrets.HMRC_CLIENT_SECRET }}" >> .env
 
-      - run: npm run test:behaviour
+      #- run: npm run test:behaviour
+      - run: cp '.env.${{ env.environment }}' '.env.proxy' ; npx dotenv -e '.env.${{ env.environment }}' -- npm run test:behaviour
         env:
           DIY_SUBMIT_HMRC_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
 
