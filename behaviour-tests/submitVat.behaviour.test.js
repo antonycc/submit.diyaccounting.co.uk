@@ -10,6 +10,12 @@ import {checkIfServerIsRunning} from "@app/bin/server.js";
 dotenv.config({ path: '.env' }); // e.g. Not checked in, HMRC API credentials
 // TODO: remove the override and ensure the tests pass with .env.test, then change the pipeline tests to copy over .env.test.
 dotenv.config({ path: '.env.proxy' });
+const envFilepath = process.env.DIY_SUBMIT_ENV_FILEPATH;
+if (envFilepath) {
+  console.log(`Loaded configuration from env file: ${envFilepath}`);
+} else {
+  console.log(`No configuration loaded from an env file.`);
+}
 
 const originalEnv = { ...process.env };
 
@@ -25,7 +31,10 @@ const runTestServer = process.env.DIY_SUBMIT_TEST_SERVER_HTTP === "run";
 const runProxy = process.env.DIY_SUBMIT_TEST_PROXY === "run";
 const runMockOAuth2 = process.env.DIY_SUBMIT_TEST_MOCK_OAUTH2 === "run";
 const runMinioS3 = process.env.DIY_SUBMIT_TEST_MINIO_S3 === "run";
-console.log(`runTestServer: ${runTestServer}, runProxy: ${runProxy}`);
+console.log(`runTestServer: ${runTestServer} (DIY_SUBMIT_TEST_SERVER_HTTP: ${process.env.DIY_SUBMIT_TEST_SERVER_HTTP})`);
+console.log(`runProxy: ${runProxy} (DIY_SUBMIT_TEST_PROXY: ${process.env.DIY_SUBMIT_TEST_PROXY})`);
+console.log(`runMockOAuth2: ${runMockOAuth2} (DIY_SUBMIT_TEST_MOCK_OAUTH2: ${process.env.DIY_SUBMIT_TEST_MOCK_OAUTH2})`);
+console.log(`runMinioS3: ${runMinioS3} (DIY_SUBMIT_TEST_MINIO_S3: ${process.env.DIY_SUBMIT_TEST_MINIO_S3})`);
 
 const bucketNamePostfix = process.env.DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX;
 const homeUrl = process.env.DIY_SUBMIT_HOME_URL;

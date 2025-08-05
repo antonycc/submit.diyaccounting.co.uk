@@ -24,9 +24,9 @@ const app = express();
 const cdkJsonPath = path.join(__dirname, "../../cdk.json");
 logger.info(`Reading CDK configuration from ${cdkJsonPath}`);
 const cdkConfig = JSON.parse(readFileSync(cdkJsonPath, 'utf8'));
-logger.info(`CDK configuration: ${JSON.stringify(cdkConfig, null, 2)}`);
+//logger.info(`CDK configuration: ${JSON.stringify(cdkConfig, null, 2)}`);
 const context = cdkConfig.context || {};
-logger.info(`CDK context: ${JSON.stringify(context, null, 2)}`);
+logger.info("CDK context:", context);
 
 // parse JSON bodies
 app.use(express.json());

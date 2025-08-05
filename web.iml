@@ -2,17 +2,17 @@
 <module version="4">
   <component name="AdditionalModuleElements">
     <content url="file://$MODULE_DIR$" dumb="true">
-      <excludeFolder url="file://$MODULE_DIR$/cdk.out" />
-      <excludeFolder url="file://$MODULE_DIR$/test-results" />
-      <excludeFolder url="file://$MODULE_DIR$/behaviour-test-results" />
-      <excludeFolder url="file://$MODULE_DIR$/client-test-results" />
-      <excludeFolder url="file://$MODULE_DIR$/coverage" />
-      <excludeFolder url="file://$MODULE_DIR$/test-reports" />
-      <excludeFolder url="file://$MODULE_DIR$/behaviour-with-auth-test-results" />
       <excludeFolder url="file://$MODULE_DIR$/behaviour-000-test-results" />
       <excludeFolder url="file://$MODULE_DIR$/behaviour-test-010-results" />
       <excludeFolder url="file://$MODULE_DIR$/behaviour-test-020-results" />
       <excludeFolder url="file://$MODULE_DIR$/behaviour-test-030-results" />
+      <excludeFolder url="file://$MODULE_DIR$/behaviour-test-results" />
+      <excludeFolder url="file://$MODULE_DIR$/behaviour-with-auth-test-results" />
+      <excludeFolder url="file://$MODULE_DIR$/cdk.out" />
+      <excludeFolder url="file://$MODULE_DIR$/client-test-results" />
+      <excludeFolder url="file://$MODULE_DIR$/coverage" />
+      <excludeFolder url="file://$MODULE_DIR$/test-reports" />
+      <excludeFolder url="file://$MODULE_DIR$/test-results" />
     </content>
   </component>
 </module>
