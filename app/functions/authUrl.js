@@ -43,7 +43,7 @@ export async function httpGetHmrc(event) {
 
 // GET /api/mock/auth-url?state={state}
 export async function httpGetMock(event) {
-    return httpGet(event, "mock")
+     return httpGet(event, "mock")
 }
 
 export async function httpGet(event, provider="hmrc") {

@@ -76,6 +76,8 @@ public class WebStackTest {
                 .lambdaEntry("co.uk.diyaccounting.submit.handlers.")
                 .authUrlLambdaHandlerFunctionName("AuthUrlHandler")
                 .authUrlLambdaDurationMillis("30000")
+                .authUrlMockLambdaHandlerFunctionName("AuthUrlHandler")
+                .authUrlMockLambdaDurationMillis("30000")
                 .exchangeTokenLambdaHandlerFunctionName("ExchangeTokenHandler")
                 .exchangeTokenLambdaDurationMillis("30000")
                 .submitVatLambdaHandlerFunctionName("SubmitVatHandler")

@@ -47,6 +47,9 @@ public class WebApp {
                 .authUrlLambdaHandlerFunctionName(System.getenv("AUTH_URL_LAMBDA_HANDLER_FUNCTION_NAME"))
                 .authUrlLambdaUrlPath(System.getenv("AUTH_URL_LAMBDA_URL_PATH"))
                 .authUrlLambdaDurationMillis(System.getenv("AUTH_URL_LAMBDA_DURATION"))
+                .authUrlMockLambdaHandlerFunctionName(System.getenv("AUTH_URL_MOCK_LAMBDA_HANDLER_FUNCTION_NAME"))
+                .authUrlMockLambdaUrlPath(System.getenv("AUTH_URL_MOCK_LAMBDA_URL_PATH"))
+                .authUrlMockLambdaDurationMillis(System.getenv("AUTH_URL_MOCK_LAMBDA_DURATION"))
                 .exchangeTokenLambdaHandlerFunctionName(System.getenv("EXCHANGE_TOKEN_LAMBDA_HANDLER_FUNCTION_NAME"))
                 .exchangeTokenLambdaUrlPath(System.getenv("EXCHANGE_TOKEN_LAMBDA_URL_PATH"))
                 .exchangeTokenLambdaDurationMillis(System.getenv("EXCHANGE_TOKEN_LAMBDA_DURATION"))
@@ -107,6 +110,14 @@ public class WebApp {
 
         CfnOutput.Builder.create(stack, "AuthUrlLambdaUrl")
                 .value(stack.authUrlLambdaUrl.getUrl())
+                .build();
+
+        CfnOutput.Builder.create(stack, "AuthUrlMockLambdaArn")
+                .value(stack.authUrlMockLambda.getFunctionArn())
+                .build();
+
+        CfnOutput.Builder.create(stack, "AuthUrlMockLambdaUrl")
+                .value(stack.authUrlMockLambdaUrl.getUrl())
                 .build();
 
         CfnOutput.Builder.create(stack, "ExchangeTokenLambdaArn")
