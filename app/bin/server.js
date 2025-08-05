@@ -7,7 +7,7 @@ import { fileURLToPath } from "url";
 import { readFileSync } from "fs";
 import dotenv from 'dotenv';
 
-import { httpGet as authUrlHttpGet } from "../functions/authUrl.js";
+import {httpGetHmrc, httpGetHmrc as authUrlHttpGet, httpGetMock} from "../functions/authUrl.js";
 import { httpPost as exchangeTokenHttpPost } from "../functions/exchangeToken.js";
 import { httpPost as submitVatHttpPost } from "../functions/submitVat.js";
 import { httpPost as logReceiptHttpPost } from "../functions/logReceipt.js";
@@ -42,6 +42,7 @@ app.use(express.static(path.join(__dirname, "../../web/public")));
 
 // 2) wire your Lambdas under configurable paths from cdk.json
 const authUrlPath = context.authUrlLambdaUrlPath || "/api/hmrc/auth-url";
+const mockAuthUrlPath = "/api/mock/auth-url";
 const exchangeTokenPath = context.exchangeTokenLambdaUrlPath || "/api/exchange-token";
 const submitVatPath = context.submitVatLambdaUrlPath || "/api/submit-vat";
 const logReceiptPath = context.logReceiptLambdaUrlPath || "/api/log-receipt";
@@ -52,7 +53,17 @@ app.get(authUrlPath, async (req, res) => {
     headers: { host: req.get('host') || 'localhost:3000' },
     queryStringParameters: req.query || {},
   };
-  const { statusCode, body } = await authUrlHttpGet(event);
+  const { statusCode, body } = await httpGetHmrc(event);
+  res["status"](statusCode).json(JSON.parse(body));
+});
+
+app.get(mockAuthUrlPath, async (req, res) => {
+  const event = {
+    path: req.path,
+    headers: { host: req.get('host') || 'localhost:3000' },
+    queryStringParameters: req.query || {},
+  };
+  const { statusCode, body } = await httpGetMock(event);
   res["status"](statusCode).json(JSON.parse(body));
 });
 

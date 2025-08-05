@@ -5,7 +5,7 @@ import { http, HttpResponse } from "msw";
 import { mockClient } from "aws-sdk-client-mock";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 
-import { httpGet as authUrlHandler } from "@app/functions/authUrl.js";
+import { httpGetHmrc as authUrlHandler } from "@app/functions/authUrl.js";
 import { httpPost as exchangeTokenHandler } from "@app/functions/exchangeToken.js";
 import { httpPost as submitVatHandler } from "@app/functions/submitVat.js";
 import { httpPost as logReceiptHandler } from "@app/functions/logReceipt.js";

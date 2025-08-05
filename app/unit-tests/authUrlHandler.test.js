@@ -1,12 +1,12 @@
 // app/unit-tests/authUrlHandler.test.js
 
 import { describe, test, expect, beforeEach, afterEach } from "vitest";
-import { httpGet as authUrlHandler } from "@app/functions/authUrl.js";
+import { httpGetHmrc as authUrlHandler } from "@app/functions/authUrl.js";
 import dotenv from 'dotenv';
 
 dotenv.config({ path: '.env.test' });
 
-describe("httpGet", () => {
+describe("httpGetHmrc", () => {
   const originalEnv = process.env;
 
   // YOU ARE HERE: The default environment from .env should be the highly stubbed environment for unit testing

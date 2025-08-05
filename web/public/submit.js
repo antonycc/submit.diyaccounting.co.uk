@@ -79,8 +79,8 @@ function generateRandomState() {
 }
 
 // Auth API functions
-async function getAuthUrl(state) {
-  const url = `/api/hmrc/auth-url?state=${encodeURIComponent(state)}`;
+async function getAuthUrl(state, provider = "hmrc") {
+  const url = `/api/${provider}/auth-url?state=${encodeURIComponent(state)}`;
   console.log(`Getting auth URL. Remote call initiated: GET ${url}`);
 
   const response = await fetch(url);

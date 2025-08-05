@@ -402,28 +402,24 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   /* ******* */
 
   // Go back home and log out
-  console.log("Hamburger menu navigation to go home");
-  await page.click(".hamburger-btn");
-  await setTimeout(500);
-  await page.screenshot({ path: `target/behaviour-submitVat/180-hamburger-menu-${timestamp}.png` });
-
-  await page.click("a:has-text('Home')");
+  console.log("Main button to go home");
+  await page.click("#homePageFromMainBtn");
   await page.waitForLoadState("networkidle");
   await setTimeout(500);
-  await page.screenshot({ path: `target/behaviour-submitVat/190-home-${timestamp}.png` });
+  await page.screenshot({ path: `target/behaviour-submitVat/180-home-button-clicked-${timestamp}.png` });
+  await expect(page.locator("a:has-text('Logout')")).toBeVisible();
 
   await page.click("a:has-text('Logout')");
   await page.waitForLoadState("networkidle");
   await setTimeout(500);
-  await page.screenshot({ path: `target/behaviour-submitVat/210-home-${timestamp}.png` });
+  await page.screenshot({ path: `target/behaviour-submitVat/190-home-${timestamp}.png` });
 
   // Home page has a welcome message and clickable login link
   console.log("Checking home page...");
   await page.waitForLoadState("networkidle");
   await setTimeout(500);
-  await page.screenshot({ path: `target/behaviour-submitVat/010-home-${timestamp}.png` });
+  await page.screenshot({ path: `target/behaviour-submitVat/200-home-${timestamp}.png` });
   await expect(page.locator("#welcomeHeading")).toContainText("Welcome");
   await expect(page.getByText("Log in")).toBeVisible();
-  await page.click("a:has-text('Log in')");
 
 }, 30000);

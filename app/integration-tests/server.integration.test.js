@@ -14,7 +14,7 @@ import dotenv from 'dotenv';
 dotenv.config({ path: '.env.test' });
 
 // Import the actual handlers (not mocked for integration test)
-import { httpGet as authUrlHandler } from "@app/functions/authUrl.js";
+import { httpGetHmrc as authUrlHandler } from "@app/functions/authUrl.js";
 import { httpPost as exchangeTokenHandler } from "@app/functions/exchangeToken.js";
 import { httpPost as submitVatHandler } from "@app/functions/submitVat.js";
 import { httpPost as logReceiptHandler } from "@app/functions/logReceipt.js";

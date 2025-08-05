@@ -98,7 +98,7 @@
 
       <!-- Navigation Button -->
       <div class="navigation-container" style="text-align: center; margin-top: 2em;">
-        <button type="button" class="btn" id="viewActivitiesFromMainBtn" onclick="window.location.href='activities.html'">View available activities</button>
+        <button type="button" class="btn" id="homePageFromMainBtn" onclick="window.location.href='index.html'">Return to the home page</button>
       </div>
     </div>
 
@@ -155,7 +155,7 @@
           localStorage.setItem("submission_data", JSON.stringify(submissionData));
 
           // Get OAuth URL
-          const authResponse = await getAuthUrl(state);
+          const authResponse = await getAuthUrl(state, "hmrc");
           const authResponseUrl = authResponse.authUrl;
 
           localStorage.setItem('currentActivity', location.pathname);

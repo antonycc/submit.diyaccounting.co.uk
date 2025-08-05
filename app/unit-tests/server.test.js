@@ -24,7 +24,7 @@ vi.mock("@app/functions/logReceipt.js", () => ({
 }));
 
 // Import the mocked handlers
-import { httpGet as authUrlHandler } from "@app/functions/authUrl.js";
+import { httpGetHmrc as authUrlHandler } from "@app/functions/authUrl.js";
 import { httpPost as exchangeTokenHandler } from "@app/functions/exchangeToken.js";
 import { httpPost as submitVatHandler } from "@app/functions/submitVat.js";
 import { httpPost as logReceiptHandler } from "@app/functions/logReceipt.js";
@@ -120,7 +120,7 @@ describe("Server Unit Tests", () => {
   });
 
   describe("GET /api/hmrc/auth-url", () => {
-    test("should call httpGet with correct event format", async () => {
+    test("should call httpGetHmrc with correct event format", async () => {
       const mockResponse = {
         statusCode: 200,
         body: JSON.stringify({ authUrl: "https://example.com/auth" }),
@@ -135,7 +135,7 @@ describe("Server Unit Tests", () => {
       expect(response.body).toEqual({ authUrl: "https://example.com/auth" });
     });
 
-    test("should handle httpGet errors", async () => {
+    test("should handle httpGetHmrc errors", async () => {
       const mockResponse = {
         statusCode: 400,
         body: JSON.stringify({ error: "Missing state" }),
