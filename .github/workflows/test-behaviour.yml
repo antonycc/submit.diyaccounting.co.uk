@@ -25,6 +25,7 @@ on:
         options:
           - proxy
           - ci
+          - prod
   schedule:
     - cron: '34 2,3,4 * * *'
 
