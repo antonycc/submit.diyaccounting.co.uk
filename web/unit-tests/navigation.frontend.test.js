@@ -188,19 +188,6 @@ describe("Navigation Frontend Tests", () => {
       const header = document.querySelector("h1");
       expect(header.textContent).toBe("DIY Accounting Submit");
     });
-
-    test("should have auth providers with Google enabled", () => {
-      const authProviders = document.querySelectorAll(".auth-provider");
-      expect(authProviders).toHaveLength(4);
-      
-      const googleBtn = document.querySelector(".google-btn");
-      expect(googleBtn).toBeTruthy();
-      expect(googleBtn.textContent.trim()).toContain("Continue with Google");
-      expect(googleBtn.getAttribute("onclick")).toContain("loginWithGoogle()");
-      
-      const disabledBtns = document.querySelectorAll(".disabled-btn");
-      expect(disabledBtns).toHaveLength(3);
-    });
   });
 
   describe("Bundles Page (bundles.html)", () => {

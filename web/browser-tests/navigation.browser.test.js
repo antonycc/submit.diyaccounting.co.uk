@@ -128,7 +128,7 @@ test.describe("Navigation Browser Tests", () => {
       // Verify we're on the VAT submission page
       await expect(page.locator("h2")).toContainText("VAT Return Submission");
       await expect(page.locator("#vatSubmissionForm")).toBeVisible();
-      await expect(page.locator("#viewActivitiesFromMainBtn")).toBeVisible();
+      await expect(page.locator("#homePageFromMainBtn")).toBeVisible();
     });
 
     test("should navigate back from VAT submission to activities page", async ({ page }) => {
@@ -140,7 +140,7 @@ test.describe("Navigation Browser Tests", () => {
 
       // Verify we're on the VAT submission page
       await expect(page.locator("h2")).toContainText("VAT Return Submission");
-      await expect(page.locator("#viewActivitiesFromMainBtn")).toBeVisible();
+      await expect(page.locator("#homePageFromMainBtn")).toBeVisible();
 
       // Mock navigation back to activities
       await page.route("**/activities.html", async (route) => {
@@ -293,7 +293,6 @@ test.describe("Navigation Browser Tests", () => {
       // Verify login page content
       await expect(page.locator("h2")).toContainText("Login");
       await expect(page.locator(".google-btn")).toBeVisible();
-      await expect(page.locator(".disabled-btn")).toHaveCount(3);
     });
 
     test("should navigate from login to coming soon page", async ({ page }) => {

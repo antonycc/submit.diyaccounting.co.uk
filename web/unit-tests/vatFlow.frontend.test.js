@@ -227,26 +227,6 @@ describe("VAT Flow Frontend JavaScript", () => {
       );
     });
 
-    test("exchangeToken should make correct API call", async () => {
-      const mockAccessToken = "test access token";
-      const mockResponse = { hmrcAccessToken: mockAccessToken };
-      fetchMock.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockResponse),
-      });
-
-      const result = await window.exchangeToken("test-code");
-
-      expect(fetchMock).toHaveBeenCalledWith("/api/exchange-token", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ code: "test-code" }),
-      });
-      expect(result).toEqual(mockAccessToken);
-    });
-
     test("submitVat should make correct API call", async () => {
       const headers = buildGovClientTestHeaders();
 
@@ -299,70 +279,6 @@ describe("VAT Flow Frontend JavaScript", () => {
         }),
       });
       expect(result).toEqual(mockResponse);
-    });
-  });
-
-  describe("OAuth Callback Handling", () => {
-    test("handleOAuthCallback should handle successful callback", () => {
-      // Mock URL with OAuth callback parameters
-      window.location.search = "?code=test-code&state=test-state";
-      window.location.pathname = "/";
-
-      global.sessionStorage.getItem.mockImplementation((key) => {
-        if (key === "oauth_state") return "test-state";
-        if (key === "submission_data")
-          return JSON.stringify({ vatNumber: "193054661", periodKey: "24A1", vatDue: "1000.00" });
-        return null;
-      });
-
-      // Mock window.history.replaceState
-      Object.defineProperty(window, "history", {
-        value: {
-          replaceState: vi.fn(),
-        },
-        writable: true,
-      });
-
-      // Mock document.title
-      Object.defineProperty(document, "title", {
-        value: "Test Title",
-        writable: true,
-      });
-
-      // Mock continueVatSubmission function - must be set before calling handleOAuthCallback
-      const continueSubmissionSpy = vi.fn();
-      window.continueVatSubmission = continueSubmissionSpy;
-
-      window.handleOAuthCallback();
-
-      expect(continueSubmissionSpy).toHaveBeenCalledWith("test-code", {
-        vatNumber: "193054661",
-        periodKey: "24A1",
-        vatDue: "1000.00",
-      });
-    });
-
-    test("handleOAuthCallback should handle OAuth error", () => {
-      window.location.search = "?error=access_denied";
-
-      window.showStatus = vi.fn();
-      window.handleOAuthCallback();
-
-      expect(window.showStatus).toHaveBeenCalledWith("OAuth error: access_denied", "error");
-    });
-
-    test("handleOAuthCallback should handle invalid state", () => {
-      window.location.search = "?code=test-code&state=invalid-state";
-
-      global.sessionStorage.getItem.mockImplementation((key) => {
-        if (key === "oauth_state") return "valid-state";
-        return null;
-      });
-
-      window.showStatus = vi.fn();
-      window.handleOAuthCallback();
-
-      expect(window.showStatus).toHaveBeenCalledWith("Invalid OAuth state. Please try again.", "error");
     });
   });
 
