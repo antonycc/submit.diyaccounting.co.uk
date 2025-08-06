@@ -9,8 +9,11 @@ on:
     branches:
       - main
     paths:
+      - 'infra/**'
       - 'package.json'
       - 'package-lock.json'
+      - 'app/**'
+      - 'web/public/**'
       - '.github/workflows/deploy.yml'
       - '**/pom.xml'
   workflow_dispatch:
@@ -18,11 +21,12 @@ on:
       environment:
         description: 'Environment to deploy to'
         required: true
-        # TODO: Change the default target environment to be 'test' where the remote calls are stubbed.
-        # TODO: Deploy to versioned target environments, e.g. 'ci, test-<git hash>, prod-<git hash>'.
-        # TODO: Create and test test & prod 'actual' domains which route to a pool of versioned environments.
-        # TODO: Promote to the test & prod 'actual' domains if tests pass in the versioned environments.
-        # TODO: Create jobs to prune the older stacks from pools.
+        # TODO: Deploy to versioned target environments, e.g. 'ci, prod-<git hash>'.
+        # TODO: Create a prod 'actual' domain which routes to a pool of versioned prod deployments.
+        # TODO: Promote to prod 'actual' if behaviour tests pass against the versioned environments.
+        # TODO: All environments read state from all S3 buckets.
+        # TODO: Create jobs to set a stack to draining state which is removed from the DNS pool and all objects synced to a non-draining stack.
+        # TODO: Create jobs to prune drained stacks by backing up the the whole stack and then deleting the stack.
         default: 'prod'
         type: choice
         options:

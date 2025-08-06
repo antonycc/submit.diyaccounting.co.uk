@@ -9,6 +9,7 @@ on:
     branches:
       - main
     paths:
+      - 'app/**'
       - 'behaviour-tests/**'
       - 'web/public/**'
       - 'package.json'
