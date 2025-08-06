@@ -102,6 +102,9 @@ public class LambdaUrlOrigin {
             var imageCodeProps = AssetImageCodeProps.builder()
                     .file(builder.imageDirectory + "/" + builder.imageFilename)
                     .cmd(List.of(builder.handler))
+                    .buildArgs(Map.of(
+                        "BUILDKIT_INLINE_CACHE", "1"
+                    ))
                     .build();
 
             // Add X-Ray environment variables if enabled
