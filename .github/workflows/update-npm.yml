@@ -1,6 +1,6 @@
 # .github/workflows/update-npm.yml
 
-name: update
+name: update-npm
 concurrency: write
 run-name: "update npm [${{ github.ref_name }}] (upgradeTarget=[${{ inputs.upgradeTarget || 'minor' }}])"
 

@@ -1,6 +1,6 @@
 # .github/workflows/update-mvn.yml
 
-name: update
+name: update-mvn
 concurrency: write
 run-name: "update mvn [${{ github.ref_name }}] (upgradeTarget=[${{ inputs.upgradeTarget || 'minor' }}])"
 
