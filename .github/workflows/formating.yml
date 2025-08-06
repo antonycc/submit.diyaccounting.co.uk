@@ -19,7 +19,7 @@ jobs:
     with:
       script: 'npm run formatting-fix -- ${{ needs.extract-paths.outputs.allPaths }} ; npm run linting-fix ${{ needs.extract-paths.outputs.allPaths }}'
       sarifScript: ''
-      testScript: 'npm test'
+      testScript: 'npm run test:unit'
       branch: 'formatting'
       gitUserEmail: 'action@github.com'
       gitUserName: 'GitHub Actions[bot]'
