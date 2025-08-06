@@ -116,19 +116,19 @@ jobs:
           node-version: 22
           cache: ${{ env.cache }}
 
-      - name: Check GitHub authentication
-        if: ${{ env.npmAuthOrganisation != '' }}
-        shell: bash
-        run: |
-          curl --include --header "Authorization: token ${{ secrets.PERSONAL_ACCESS_TOKEN }}" https://api.github.com/user
+      #- name: Check GitHub authentication
+      #  if: ${{ env.npmAuthOrganisation != '' }}
+      #  shell: bash
+      #  run: |
+      #    curl --include --header "Authorization: token ${{ secrets.PERSONAL_ACCESS_TOKEN }}" https://api.github.com/user
 
-      - name: Set up .npmrc
-        if: ${{ env.npmAuthOrganisation != '' }}
-        shell: bash
-        run: |
-          echo "${{ env.npmAuthOrganisation }}:registry=https://npm.pkg.github.com" >> .npmrc
-          echo "//npm.pkg.github.com/:_authToken=${{ secrets.PERSONAL_ACCESS_TOKEN }}" >> .npmrc
-          echo "always-auth=true" >> .npmrc
+      #- name: Set up .npmrc
+      #  if: ${{ env.npmAuthOrganisation != '' }}
+      #  shell: bash
+      #  run: |
+      #    echo "${{ env.npmAuthOrganisation }}:registry=https://npm.pkg.github.com" >> .npmrc
+      #    echo "//npm.pkg.github.com/:_authToken=${{ secrets.PERSONAL_ACCESS_TOKEN }}" >> .npmrc
+      #    echo "always-auth=true" >> .npmrc
 
       - name: Get latest from remote
         run: |
