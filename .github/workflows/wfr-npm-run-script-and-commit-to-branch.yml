@@ -130,14 +130,14 @@ jobs:
       #    echo "//npm.pkg.github.com/:_authToken=${{ secrets.PERSONAL_ACCESS_TOKEN }}" >> .npmrc
       #    echo "always-auth=true" >> .npmrc
 
-      - name: Get latest from remote
-        run: |
-          git config --local user.email '${{ env.gitUserEmail }}'
-          git config --local user.name '${{ env.gitUserName }}'
-          git config --local pull.ff     false       # never fast-forward
-          git config --local pull.rebase false       # never rebase on pull
-          git fetch origin ${{ github.ref_name }}
-          git merge origin/${{ github.ref_name }} --no-ff --no-edit --strategy=recursive --strategy-option=ours
+      #- name: Get latest from remote
+      #  run: |
+      #    git config --local user.email '${{ env.gitUserEmail }}'
+      #    git config --local user.name '${{ env.gitUserName }}'
+      #    git config --local pull.ff     false       # never fast-forward
+      #    git config --local pull.rebase false       # never rebase on pull
+      #    git fetch origin ${{ github.ref_name }}
+      #    git merge origin/${{ github.ref_name }} --no-ff --no-edit --strategy=recursive --strategy-option=ours
 
       - run: npm ci || npm install
 
