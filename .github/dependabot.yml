@@ -1,14 +1,44 @@
+# ./.github/dependabot.yml
 # See: https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
 version: 2
 updates:
+  -
   - package-ecosystem: "npm"
-    directory: "/"
+    directories:
+      - "/"
     schedule:
       interval: "weekly"
     labels:
       - dependencies
       - automated
       - automerge
-    #ignore:
-    #  - dependency-name: "some-dependency" # Example of ignoring a specific dependency
-    #    versions: ["1.x", "2.x"]
+
+  - package-ecosystem: maven
+    directories:
+      - "/"
+    schedule:
+      interval: "weekly"
+    labels:
+      - dependencies
+      - automated
+      - automerge
+
+  - package-ecosystem: github-actions
+    directories:
+      - "/.github/workflows"
+    schedule:
+      interval: "weekly"
+    labels:
+      - dependencies
+      - automated
+      - automerge
+
+  - package-ecosystem: "docker"
+    directories:
+      - "/infra/runtimes"
+    schedule:
+      interval: "weekly"
+      labels:
+        - dependencies
+        - automated
+        - automerge
