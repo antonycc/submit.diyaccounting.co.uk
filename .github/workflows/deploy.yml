@@ -159,10 +159,6 @@ jobs:
         run: npx dotenv -e .env.ci -- npx cdk synth --strict --validation --no-staging
 
   deploy-to-ci:
-    needs:
-      - npm-test
-      - npm-behaviour-test-local
-      - mvn-package-cdk-synth
     uses: 'antonycc/submit.diyaccounting.co.uk/.github/workflows/deploy-ci-only.yml@main'
     with:
       skipDeploy: 'false'
@@ -171,6 +167,9 @@ jobs:
 
   deploy-to-environment:
     needs:
+      - npm-test
+      - npm-behaviour-test-local
+      - mvn-package-cdk-synth
       - deploy-to-ci
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment || 'prod' }}
