@@ -95,13 +95,6 @@ jobs:
           driver-opts: |
             image=moby/buildkit:latest
 
-      - name: Build and cache Docker images
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
       - run: npm run test:system
 
   npm-browser-test:
@@ -168,13 +161,6 @@ jobs:
         with:
           driver-opts: |
             image=moby/buildkit:latest
-
-      - name: Build and cache Docker images
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
 
       - name: Authenticate ngrok
         env:
@@ -243,13 +229,6 @@ jobs:
           driver-opts: |
             image=moby/buildkit:latest
 
-      - name: Build and cache Docker images
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
       - name: Authenticate ngrok
         env:
           NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
@@ -290,13 +269,6 @@ jobs:
           driver-opts: |
             image=moby/buildkit:latest
 
-      - name: Build and cache Docker images
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
       - name: package
         id: package
         shell: bash
@@ -329,13 +301,6 @@ jobs:
         with:
           driver-opts: |
             image=moby/buildkit:latest
-
-      - name: Build and cache Docker images
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
 
       - name: check
         id: check

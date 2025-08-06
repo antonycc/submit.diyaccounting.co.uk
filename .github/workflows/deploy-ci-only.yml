@@ -102,13 +102,6 @@ jobs:
           driver-opts: |
             image=moby/buildkit:latest
 
-      - name: Build and cache Docker images
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
       - name: package
         if: ${{ env.skipDeploy != 'true' }}
         id: package
@@ -204,13 +197,6 @@ jobs:
         with:
           driver-opts: |
             image=moby/buildkit:latest
-
-      - name: Build and cache Docker images
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
 
       - name: Cache Playwright browsers
         uses: actions/cache@v4
