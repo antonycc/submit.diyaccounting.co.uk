@@ -2,7 +2,7 @@
 
 name: test-behaviour
 concurrency: ngrok
-run-name: 'test behaviour [${{ env.environment }}] [${{ github.ref_name }}] [${{ github.event.head_commit.message }}]'
+run-name: 'test behaviour [${{ inputs.environment || 'proxy' }}] [${{ github.ref_name }}] [${{ github.event.head_commit.message }}]'
 
 on:
   push:
