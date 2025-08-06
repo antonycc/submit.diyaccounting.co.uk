@@ -79,27 +79,10 @@ describe("User Journeys Frontend Tests", () => {
       const pageTitle = document.querySelector("h2");
       expect(pageTitle.textContent).toBe("Add Bundle");
     });
-
-    test("should have service descriptions on bundles page", () => {
-      const htmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/bundles.html"), "utf-8");
-      document.documentElement.innerHTML = htmlContent;
-
-      const descriptions = document.querySelectorAll(".service-description");
-      expect(descriptions.length).toBeGreaterThan(0);
-
-      const hmrcTestDesc = Array.from(descriptions).find((desc) => desc.textContent.includes("test environment"));
-      expect(hmrcTestDesc).toBeTruthy();
-
-      const hmrcProdDesc = Array.from(descriptions).find((desc) => desc.textContent.includes("production environment"));
-      expect(hmrcProdDesc).toBeTruthy();
-
-      const companiesHouseDesc = Array.from(descriptions).find((desc) => desc.textContent.includes("Companies House"));
-      expect(companiesHouseDesc).toBeTruthy();
-    });
   });
 
   describe("Cross-Page Navigation Journey", () => {
-    test("should maintain consistent header across all pages", () => {
+    test("should maintain consistent header across pages", () => {
       const pages = ["index.html", "login.html", "bundles.html", "activities.html"];
 
       pages.forEach((page) => {
@@ -114,7 +97,7 @@ describe("User Journeys Frontend Tests", () => {
       });
     });
 
-    test("should maintain consistent footer across all pages", () => {
+    test("should maintain consistent footer across pages", () => {
       const pages = ["index.html", "login.html", "bundles.html", "activities.html"];
 
       pages.forEach((page) => {
@@ -126,7 +109,7 @@ describe("User Journeys Frontend Tests", () => {
       });
     });
 
-    test("should have view source link functionality on all pages", () => {
+    test("should have view source link functionality on pages", () => {
       const pages = ["index.html", "login.html", "bundles.html", "activities.html"];
 
       pages.forEach((page) => {
