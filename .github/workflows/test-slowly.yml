@@ -107,7 +107,14 @@ jobs:
 
       - run: npm ci || npm install
 
-      - run: npx playwright install --with-deps
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('**/package-lock.json') }}
+
+      - run: npx playwright install chromium --with-deps
 
       - run: npm run test:browser
 
@@ -149,7 +156,14 @@ jobs:
         run: |
           npx ngrok config add-authtoken "${NGROK_AUTH_TOKEN?}"
 
-      - run: npx playwright install --with-deps
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('**/package-lock.json') }}
+
+      - run: npx playwright install chromium --with-deps
 
       - run: npm run test:behaviour
         env:
@@ -203,7 +217,14 @@ jobs:
         run: |
           npx ngrok config add-authtoken "${NGROK_AUTH_TOKEN?}"
 
-      - run: npx playwright install --with-deps
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('**/package-lock.json') }}
+
+      - run: npx playwright install chromium --with-deps
 
       - run: npm run test:all
         env:

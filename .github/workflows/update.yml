@@ -2,7 +2,7 @@
 
 name: update
 concurrency: write
-run-name: "update [${{ github.ref_name }}]"
+run-name: "update [${{ github.ref_name }}] (upgradeTarget=[${{ inputs.upgradeTarget || 'minor' }}])"
 
 on:
   workflow_dispatch:

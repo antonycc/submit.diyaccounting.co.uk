@@ -2,7 +2,7 @@
 
 name: deploy-ci-only
 concurrency: deploy-ci
-run-name: "deploy ci only [${{ github.ref_name }}] to [${{ inputs.environment || 'ci' }}]"
+run-name: "deploy ci only [${{ github.ref_name }}] (skipDeploy = [${{ inputs.skipDeploy || 'false' }}])"
 
 on:
   push:
@@ -192,7 +192,14 @@ jobs:
 
       - run: npm ci || npm install
 
-      - run: npx playwright install --with-deps
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('**/package-lock.json') }}
+
+      - run: npx playwright install chromium --with-deps
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4

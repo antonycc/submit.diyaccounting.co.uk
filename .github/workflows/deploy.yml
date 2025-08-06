@@ -2,7 +2,7 @@
 
 name: deploy
 concurrency: ngrok
-run-name: "deploy [${{ github.ref_name }}] to [${{ inputs.environment || 'prod' }}]"
+run-name: "deploy [${{ inputs.environment || 'prod' }}] [${{ github.ref_name }}]"
 
 on:
   push:
@@ -76,7 +76,14 @@ jobs:
         run: |
           npx ngrok config add-authtoken "${NGROK_AUTH_TOKEN?}"
 
-      - run: npx playwright install --with-deps
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('**/package-lock.json') }}
+
+      - run: npx playwright install chromium --with-deps
 
       - run: npm run test:behaviour
         env:
@@ -331,7 +338,14 @@ jobs:
 
       - run: npm ci || npm install
 
-      - run: npx playwright install --with-deps
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('**/package-lock.json') }}
+
+      - run: npx playwright install chromium --with-deps
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -359,7 +373,14 @@ jobs:
 
       - run: aws sts get-caller-identity --region eu-west-2
 
+      - run: npx dotenv -e '.env.${{ env.environment }}' -- npm run test:behaviour
+        if: env.environment == 'proxy'
+        env:
+          DIY_SUBMIT_HMRC_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
       - run: cp '.env.${{ env.environment }}' '.env.proxy' ; npx dotenv -e '.env.${{ env.environment }}' -- npm run test:behaviour
+        if: env.environment != 'proxy'
+        env:
+          DIY_SUBMIT_HMRC_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
