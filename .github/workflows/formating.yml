@@ -15,7 +15,8 @@ jobs:
       contents: write
       packages: write
       id-token: write
-    uses: 'xn-intenton-z2a/agentic-lib/.github/workflows/wfr-npm-run-script-and-commit-to-branch.yml@6.10.2'
+    #uses: 'xn-intenton-z2a/agentic-lib/.github/workflows/wfr-npm-run-script-and-commit-to-branch.yml@6.10.2'
+    uses: 'antonycc/submit.diyaccounting.co.uk/.github/workflows/wfr-npm-run-script-and-commit-to-branch.yml@main'
     with:
       script: 'npm run formatting-fix -- ${{ needs.extract-paths.outputs.allPaths }} ; npm run linting-fix ${{ needs.extract-paths.outputs.allPaths }}'
       sarifScript: ''

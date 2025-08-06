@@ -1,0 +1,225 @@
+# .github/workflows/wfr-run-script-and-push-changes.yml
+
+#
+# agentic-lib
+# Copyright (C) 2025 Polycode Limited
+#
+# This file is part of agentic-lib.
+#
+# agentic-lib is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License v3.0 (GPL‑3).
+# along with this program. If not, see <https://www.gnu.org/licenses/>.
+#
+# IMPORTANT: Any derived work must include the following attribution:
+# "This work is derived from https://github.com/xn-intenton-z2a/agentic-lib"
+#
+
+name: ∞ run-script-and-push-changes
+
+on:
+  workflow_call:
+    inputs:
+      script:
+        description: 'The script must be runnable as: `npm ci ; <script>`.'
+        type: string
+        required: false
+        default: ''
+      sarifScript:
+        description: 'The script must be runnable as: `npm ci ; <script>` and output a SARIF file. e.g. `npm run linting-json`'
+        type: string
+        required: false
+        default: ''
+      testScript:
+        description: 'The script must be runnable as: `npm ci ; <script>` and succeed with a zero exit code. e.g. `npm test`'
+        type: string
+        required: false
+        default: 'npm test'
+      branch:
+        description: 'The branch to push changes to. e.g. "apply-script"'
+        type: string
+        required: false
+        default: ''
+      npmAuthOrganisation:
+        description: 'The GitHub organisation to authenticate with for npm. e.g. "xn-intenton-z2a"'
+        type: string
+        required: false
+        default: ''
+      gitUserEmail:
+        description: 'The email to use for git commits. e.g. "action@github.com"'
+        type: string
+        required: false
+        default: 'action@github.com'
+      gitUserName:
+        description: 'The name to use for git commits. e.g. "GitHub Actions[bot]"'
+        type: string
+        required: false
+        default: 'GitHub Actions[bot]'
+      cache:
+        description: 'The cache to use for npm. e.g. "npm"'
+        type: string
+        required: false
+        default: 'npm'
+      gitCommitMessage:
+        description: 'The message to use for git commits. e.g. "Updated by script"'
+        type: string
+        required: false
+        default: 'Updated by script'
+    secrets:
+      PERSONAL_ACCESS_TOKEN:
+        required: false
+    outputs:
+      updatedFiles:
+          description: 'Whether files were updated by the script. e.g. "true"'
+          value: ${{ jobs.update-and-push.outputs.updatedFiles }}
+      scriptOutput:
+        description: 'The output from running the script. '
+        value: ${{ jobs.update-and-push.outputs.scriptOutput }}
+      remainingResultsCount:
+        description: 'The number of results from the SARIF script. e.g. "1"'
+        value: ${{ jobs.update-and-push.outputs.remainingResultsCount }}
+      fixStillRequired:
+        description: 'Whether the SARIF script requires fixes. e.g. "true"'
+        value: ${{ jobs.update-and-push.outputs.fixStillRequired }}
+
+jobs:
+  update-and-push:
+    runs-on: ubuntu-latest
+
+    env:
+      script: ${{ inputs.script || '' }}
+      sarifScript: ${{ inputs.sarifScript || '' }}
+      testScript: ${{ inputs.testScript || 'npm test' }}
+      branch: ${{ inputs.branch || '' }}
+      npmAuthOrganisation: ${{ inputs.npmAuthOrganisation || '' }}
+      gitUserEmail: ${{ inputs.gitUserEmail || 'action@github.com' }}
+      gitUserName: ${{ inputs.gitUserName || 'GitHub Actions[bot]' }}
+      cache: ${{ inputs.cache || 'npm' }}
+      gitCommitMessage: ${{ inputs.gitCommitMessage || 'Updated by inputs.script' }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.ref }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: ${{ env.cache }}
+
+      - name: Check GitHub authentication
+        if: ${{ env.npmAuthOrganisation != '' }}
+        shell: bash
+        run: |
+          curl --include --header "Authorization: token ${{ secrets.PERSONAL_ACCESS_TOKEN }}" https://api.github.com/user
+
+      - name: Set up .npmrc
+        if: ${{ env.npmAuthOrganisation != '' }}
+        shell: bash
+        run: |
+          echo "${{ env.npmAuthOrganisation }}:registry=https://npm.pkg.github.com" >> .npmrc
+          echo "//npm.pkg.github.com/:_authToken=${{ secrets.PERSONAL_ACCESS_TOKEN }}" >> .npmrc
+          echo "always-auth=true" >> .npmrc
+
+      - name: Get latest from remote
+        run: |
+          git config --local user.email '${{ env.gitUserEmail }}'
+          git config --local user.name '${{ env.gitUserName }}'
+          git config --local pull.ff     false       # never fast-forward
+          git config --local pull.rebase false       # never rebase on pull
+          git fetch origin ${{ github.ref_name }}
+          git merge origin/${{ github.ref_name }} --no-ff --no-edit --strategy=recursive --strategy-option=ours
+
+      - run: npm ci || npm install
+
+      - name: script
+        id: script
+        if: ${{ env.script != '' }}
+        shell: bash
+        run: |
+          set +e
+          output=$(${{ env.script }} 2>&1)
+          echo "output<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$output" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+          echo "output=${output}"
+          if git diff --quiet; then
+            updated='false'
+          else
+            updated='true'
+          fi
+          set -e
+          echo "updated=${updated}" >> $GITHUB_OUTPUT
+          echo "updated=${updated}"
+        continue-on-error: true
+
+      - name: sarif-script
+        id: sarif-script
+        if: ${{ env.sarifScript != '' }}
+        continue-on-error: true
+        shell: bash
+        run: |
+          set +e
+          results=$(${{ env.sarifScript }})
+          exitCode="$?"
+          set -e
+          echo "exitCode=${exitCode}"
+          fixStillRequired=$([ $? -eq 0 ] && echo 'true' || echo 'false')
+          echo "fixStillRequired={fixStillRequired}" >> $GITHUB_OUTPUT
+          echo "fixStillRequired=${fixStillRequired}"
+          remainingResultsCount=$(echo "${results}" | jq '.runs[0].results | length' 2>/dev/null || echo "unknown")
+          echo "remainingResultsCount=${remainingResultsCount}" >> $GITHUB_OUTPUT
+          echo "remainingResultsCount=${remainingResultsCount}"
+          echo "results: ${results}"
+
+      - name: Test
+        if: steps.script.outputs.updated == 'true' || env.git-force == 'true'
+        shell: bash
+        run: |
+          ${{ env.testScript }}
+
+      - name: Tear down npm auth
+        if: ${{ env.npmAuthOrganisation != '' }}
+        run: rm -vf .npmrc
+
+      - name: Commit
+        if: ${{ env.branch != '' && steps.script.outputs.updated == 'true' || env.git-force == 'true' }}
+        shell: bash
+        run: |
+          git config --local user.email '${{ env.gitUserEmail }}'
+          git config --local user.name '${{ env.gitUserName }}'
+          git config --local pull.ff     false       # never fast-forward
+          git config --local pull.rebase false       # never rebase on pull
+          git status -v
+          git switch -c '${{ env.branch }}'
+          git branch --set-upstream-to=origin/main
+          git add -v --all
+          git commit -v -m '${{ env.gitCommitMessage }}'
+          git pull --rebase
+          git push --set-upstream origin '${{ env.branch }}'
+          git push -v
+          git status -v
+
+      - name: Log outputs
+        continue-on-error: true
+        shell: bash
+        run: |
+          echo "updatedFiles: steps.script.outputs.updated=${{ steps.script.outputs.updated }}"
+          echo "scriptOutput: steps.script.outputs.output=${{ steps.script.outputs.output }}"
+          echo "remainingResultsCount: steps.sarif-script.outputs.remainingResultsCount=${{ steps.sarif-script.outputs.remainingResultsCount }}"
+          echo "fixStillRequired: steps.sarif-script.outputs.fixStillRequired=${{ steps.sarif-script.outputs.fixStillRequired }}"
+
+    outputs:
+      updatedFiles: ${{ steps.script.outputs.updated }}
+      scriptOutput: ${{ steps.script.outputs.output }}
+      remainingResultsCount: ${{ steps.sarif-script.outputs.remainingResultsCount }}
+      fixStillRequired: ${{ steps.sarif-script.outputs.fixStillRequired }}
