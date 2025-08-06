@@ -3,7 +3,7 @@
 import winston from "winston";
 import dotenv from "dotenv";
 
-dotenv.config({ path: '.env' });
+dotenv.config({ path: ".env" });
 
 const { createLogger, format, transports } = winston;
 const logTransports = [];
@@ -16,8 +16,7 @@ if (process.env.DIY_SUBMIT_LOG_TO_CONSOLE != "false") {
 // Add File transport only when DIY_SUBMIT_LOG_TO_FILE is enabled (default off)
 if (process.env.DIY_SUBMIT_LOG_TO_FILE === "true") {
   const timestamp = new Date().toISOString().replace(/:/g, "-");
-  const logFilePath =
-    process.env.LOG_FILE_PATH || `./submit-${timestamp}.log`;
+  const logFilePath = process.env.LOG_FILE_PATH || `./submit-${timestamp}.log`;
   logTransports.push(new transports.File({ filename: logFilePath }));
 }
 

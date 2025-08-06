@@ -3,10 +3,10 @@
 import { test, expect } from "@playwright/test";
 import { spawn } from "child_process";
 import { setTimeout } from "timers/promises";
-import dotenv from 'dotenv';
+import dotenv from "dotenv";
 
-dotenv.config({ path: '.env' });
-dotenv.config({ path: '.env.proxy' });
+dotenv.config({ path: ".env" });
+dotenv.config({ path: ".env.proxy" });
 
 const originalEnv = { ...process.env };
 
@@ -37,7 +37,7 @@ test.beforeAll(async () => {
   console.log("Starting beforeAll hook for user journeys...");
   process.env = {
     ...originalEnv,
-  }
+  };
 
   // Start the server (no S3 dependency for these tests)
   if (runTestServer) {
@@ -147,13 +147,13 @@ test.describe("User Journey Tests", () => {
     await page.screenshot({ path: `target/user-journeys-test-results/journey1-002-coming-soon_${timestamp}.png` });
 
     // 5) Verify coming soon page
-    //await expect(page.locator("h2")).toContainText("Coming Soon");
+    // await expect(page.locator("h2")).toContainText("Coming Soon");
     // await expect(page.getByText("🚧")).toBeVisible();
     await setTimeout(500);
     await page.goBack();
 
     // 6) Go back to home
-    //await page.click("button:has-text('Go Home Now')");
+    // await page.click("button:has-text('Go Home Now')");
     await page.waitForLoadState("networkidle");
     await setTimeout(500);
     await page.screenshot({ path: `target/user-journeys-test-results/journey1-003-back-home_${timestamp}.png` });
@@ -174,10 +174,12 @@ test.describe("User Journey Tests", () => {
     await page.click("button:has-text('Add HMRC Test API Bundle')");
     await page.waitForLoadState("networkidle");
     await setTimeout(500);
-    await page.screenshot({ path: `target/user-journeys-test-results/journey1-005-service-coming-soon_${timestamp}.png` });
+    await page.screenshot({
+      path: `target/user-journeys-test-results/journey1-005-service-coming-soon_${timestamp}.png`,
+    });
 
     // 10) Return to home
-    //await page.click("button:has-text('Go Home Now')");
+    // await page.click("button:has-text('Go Home Now')");
     await page.waitForLoadState("networkidle");
     await setTimeout(500);
     await page.goBack();
@@ -227,7 +229,9 @@ test.describe("User Journey Tests", () => {
     await page.click("a:has-text('View Activities')");
     await page.waitForLoadState("networkidle");
     await setTimeout(500);
-    await page.screenshot({ path: `target/user-journeys-test-results/journey2-003-back-to-activities_${timestamp}.png` });
+    await page.screenshot({
+      path: `target/user-journeys-test-results/journey2-003-back-to-activities_${timestamp}.png`,
+    });
 
     // 7) Navigate to home via hamburger menu
     await page.click(".hamburger-btn");
@@ -235,7 +239,9 @@ test.describe("User Journey Tests", () => {
     await page.click("a:has-text('Home')");
     await page.waitForLoadState("networkidle");
     await setTimeout(500);
-    await page.screenshot({ path: `target/user-journeys-test-results/journey2-004-home-via-hamburger_${timestamp}.png` });
+    await page.screenshot({
+      path: `target/user-journeys-test-results/journey2-004-home-via-hamburger_${timestamp}.png`,
+    });
 
     // 8) Test direct navigation to login from home
     await page.click("a:has-text('Log in')");
@@ -276,7 +282,9 @@ test.describe("User Journey Tests", () => {
     await page.click("a:has-text('View Activities')");
     await page.waitForLoadState("networkidle");
     await setTimeout(500);
-    await page.screenshot({ path: `target/user-journeys-test-results/journey3-002-activities-via-hamburger_${timestamp}.png` });
+    await page.screenshot({
+      path: `target/user-journeys-test-results/journey3-002-activities-via-hamburger_${timestamp}.png`,
+    });
 
     // 4) Test hamburger menu from activities page
     await page.click(".hamburger-btn");
@@ -284,7 +292,9 @@ test.describe("User Journey Tests", () => {
     await page.click("a:has-text('Add Bundle')");
     await page.waitForLoadState("networkidle");
     await setTimeout(500);
-    await page.screenshot({ path: `target/user-journeys-test-results/journey3-003-bundles-via-hamburger_${timestamp}.png` });
+    await page.screenshot({
+      path: `target/user-journeys-test-results/journey3-003-bundles-via-hamburger_${timestamp}.png`,
+    });
 
     // 5) Test hamburger menu from bundles page
     await page.click(".hamburger-btn");
@@ -292,7 +302,9 @@ test.describe("User Journey Tests", () => {
     await page.click("a:has-text('Home')");
     await page.waitForLoadState("networkidle");
     await setTimeout(500);
-    await page.screenshot({ path: `target/user-journeys-test-results/journey3-004-home-via-hamburger_${timestamp}.png` });
+    await page.screenshot({
+      path: `target/user-journeys-test-results/journey3-004-home-via-hamburger_${timestamp}.png`,
+    });
 
     // 6) Navigate to login and test hamburger there
     await page.click("a:has-text('Log in')");
@@ -308,10 +320,11 @@ test.describe("User Journey Tests", () => {
     await setTimeout(500);
 
     // 8) Test hamburger menu from coming soon page
-    //await page.click(".hamburger-btn");
-    //await setTimeout(500);
-    await page.screenshot({ path: `target/user-journeys-test-results/journey3-006-hamburger-coming-soon_${timestamp}.png` });
-
+    // await page.click(".hamburger-btn");
+    // await setTimeout(500);
+    await page.screenshot({
+      path: `target/user-journeys-test-results/journey3-006-hamburger-coming-soon_${timestamp}.png`,
+    });
 
     // 9) Final navigation back to home via hamburger
     await setTimeout(500);

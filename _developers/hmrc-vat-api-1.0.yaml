@@ -5,18 +5,18 @@ info:
   contact: {}
   version: "1.0"
 servers:
-- url: https://test-api.service.hmrc.gov.uk
-  description: Sandbox
-- url: https://api.service.hmrc.gov.uk
-  description: Production
+  - url: https://test-api.service.hmrc.gov.uk
+    description: Sandbox
+  - url: https://api.service.hmrc.gov.uk
+    description: Production
 tags:
-- name: organisations
-  description: ""
+  - name: organisations
+    description: ""
 paths:
   /organisations/vat/{vrn}/obligations:
     get:
       tags:
-      - organisations
+        - organisations
       summary: Retrieve VAT obligations
       description: |
         Retrieve VAT obligations. This endpoint is one of the mandatory endpoints to use to achieve the minimum level of compliance. The other endpoint required to achieve the minimum level of compliance is [Submit VAT return for period](#_submit-vat-return-for-period_post_accordion).
@@ -113,55 +113,55 @@ paths:
         </table>
       operationId: RetrieveVATobligations
       parameters:
-      - name: vrn
-        in: path
-        description: VAT registration number. <br> A nine-digit number.
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-          example: "123456789"
-      - name: from
-        in: query
-        description: Date from which to return obligations. Mandatory unless the status
-          is O.
-        required: false
-        style: form
-        explode: true
-        schema:
-          type: string
-          example: 2017-01-25
-      - name: to
-        in: query
-        description: Date to which to return obligations. Mandatory unless the status
-          is O.
-        required: false
-        style: form
-        explode: true
-        schema:
-          type: string
-          example: 2017-01-25
-      - name: status
-        in: query
-        description: "Obligation status to return: O=Open, F= Fulfilled. Omit status\
-          \ to retrieve all obligations."
-        required: false
-        style: form
-        explode: true
-        schema:
-          type: string
-          example: F
-      - name: Gov-Test-Scenario
-        in: header
-        description: Only in sandbox environment. See Test Data table for all header
-          values.
-        required: false
-        style: simple
-        explode: false
-        schema:
-          type: string
-          example: "-"
+        - name: vrn
+          in: path
+          description: VAT registration number. <br> A nine-digit number.
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+            example: "123456789"
+        - name: from
+          in: query
+          description: Date from which to return obligations. Mandatory unless the status
+            is O.
+          required: false
+          style: form
+          explode: true
+          schema:
+            type: string
+            example: 2017-01-25
+        - name: to
+          in: query
+          description: Date to which to return obligations. Mandatory unless the status
+            is O.
+          required: false
+          style: form
+          explode: true
+          schema:
+            type: string
+            example: 2017-01-25
+        - name: status
+          in: query
+          description: "Obligation status to return: O=Open, F= Fulfilled. Omit status\
+            \ to retrieve all obligations."
+          required: false
+          style: form
+          explode: true
+          schema:
+            type: string
+            example: F
+        - name: Gov-Test-Scenario
+          in: header
+          description: Only in sandbox environment. See Test Data table for all header
+            values.
+          required: false
+          style: simple
+          explode: false
+          schema:
+            type: string
+            example: "-"
       responses:
         "200":
           description: ""
@@ -182,7 +182,7 @@ paths:
             application/json:
               schema:
                 required:
-                - obligations
+                  - obligations
                 type: object
                 properties:
                   obligations:
@@ -191,11 +191,11 @@ paths:
                     items:
                       title: Obligation
                       required:
-                      - due
-                      - end
-                      - periodKey
-                      - start
-                      - status
+                        - due
+                        - end
+                        - periodKey
+                        - start
+                        - status
                       type: object
                       properties:
                         start:
@@ -236,65 +236,65 @@ paths:
                           example: "18AD, 18A1, #001"
                       description: Obligation
                 example:
-                - obligations:
-                  - start: 2017-01-01
-                    end: 2017-03-31
-                    due: 2017-05-07
-                    status: F
-                    periodKey: 18A1
-                    received: 2017-05-06
-                  - start: 2017-04-01
-                    end: 2017-06-30
-                    due: 2017-08-07
-                    status: O
-                    periodKey: 18A2
+                  - obligations:
+                      - start: 2017-01-01
+                        end: 2017-03-31
+                        due: 2017-05-07
+                        status: F
+                        periodKey: 18A1
+                        received: 2017-05-06
+                      - start: 2017-04-01
+                        end: 2017-06-30
+                        due: 2017-08-07
+                        status: O
+                        periodKey: 18A2
               examples:
                 example-1:
                   description: Quarterly obligations; one fulfilled
                   value:
                     obligations:
-                    - start: 2017-01-01
-                      end: 2017-03-31
-                      due: 2017-05-07
-                      status: F
-                      periodKey: 18A1
-                      received: 2017-05-06
-                    - start: 2017-04-01
-                      end: 2017-06-30
-                      due: 2017-08-07
-                      status: O
-                      periodKey: 18A2
+                      - start: 2017-01-01
+                        end: 2017-03-31
+                        due: 2017-05-07
+                        status: F
+                        periodKey: 18A1
+                        received: 2017-05-06
+                      - start: 2017-04-01
+                        end: 2017-06-30
+                        due: 2017-08-07
+                        status: O
+                        periodKey: 18A2
                 example-2:
                   description: Monthly obligations; one fulfilled
                   value:
                     obligations:
-                    - start: 2017-01-01
-                      end: 2017-01-31
-                      due: 2017-03-07
-                      status: F
-                      periodKey: 18AD
-                      received: 2017-03-06
-                    - start: 2017-02-01
-                      end: 2017-02-28
-                      due: 2017-04-07
-                      status: O
-                      periodKey: 18AE
+                      - start: 2017-01-01
+                        end: 2017-01-31
+                        due: 2017-03-07
+                        status: F
+                        periodKey: 18AD
+                        received: 2017-03-06
+                      - start: 2017-02-01
+                        end: 2017-02-28
+                        due: 2017-04-07
+                        status: O
+                        periodKey: 18AE
         "400":
           description: ""
           content:
             application/json:
               schema:
                 required:
-                - code
+                  - code
                 type: object
                 properties:
                   code:
                     type: string
                 example:
-                - description: Invalid VRN
-                  value:
-                    code: VRN_INVALID
-                    message: The provided VRN is invalid
+                  - description: Invalid VRN
+                    value:
+                      code: VRN_INVALID
+                      message: The provided VRN is invalid
               examples:
                 invalidNino:
                   description: Invalid VRN
@@ -327,14 +327,14 @@ paths:
             application/json:
               schema:
                 required:
-                - code
+                  - code
                 type: object
                 properties:
                   code:
                     type: string
                 example:
-                - code: NOT_FOUND
-                  message: The requested resource could not be found
+                  - code: NOT_FOUND
+                    message: The requested resource could not be found
               examples:
                 invalidNino:
                   description: The remote endpoint has indicated that no associated
@@ -348,14 +348,14 @@ paths:
             application/json:
               schema:
                 required:
-                - code
+                  - code
                 type: object
                 properties:
                   code:
                     type: string
                 example:
-                - code: CLIENT_OR_AGENT_NOT_AUTHORISED
-                  message: The client and/or agent is not authorised
+                  - code: CLIENT_OR_AGENT_NOT_AUTHORISED
+                    message: The client and/or agent is not authorised
               examples:
                 clientNotSubscribedToMTD:
                   description: "The client and/or agent is not authorised. This is\
@@ -374,12 +374,12 @@ paths:
                       insolvent
       deprecated: false
       security:
-      - userRestricted:
-        - read:vat
+        - userRestricted:
+            - read:vat
   /organisations/vat/{vrn}/returns:
     post:
       tags:
-      - organisations
+        - organisations
       summary: Submit VAT return for period
       description: |
         Submit VAT return for period. This endpoint is one of the mandatory endpoints to use to achieve the minimum level of compliance. The other endpoint required to achieve the minimum level of compliance is [Retrieve VAT obligations](#_retrieve-vat-obligations_get_accordion).
@@ -423,42 +423,42 @@ paths:
         </table>
       operationId: SubmitVATreturnforperiod
       parameters:
-      - name: vrn
-        in: path
-        description: VAT registration number. <br> A nine-digit number.
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-          example: "123456789"
-      - name: Gov-Test-Scenario
-        in: header
-        description: Only in sandbox environment. See Test Data table for all header
-          values.
-        required: false
-        style: simple
-        explode: false
-        schema:
-          type: string
-          example: "-"
+        - name: vrn
+          in: path
+          description: VAT registration number. <br> A nine-digit number.
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+            example: "123456789"
+        - name: Gov-Test-Scenario
+          in: header
+          description: Only in sandbox environment. See Test Data table for all header
+            values.
+          required: false
+          style: simple
+          explode: false
+          schema:
+            type: string
+            example: "-"
       requestBody:
         description: ""
         content:
           application/json:
             schema:
               required:
-              - finalised
-              - netVatDue
-              - periodKey
-              - totalAcquisitionsExVAT
-              - totalValueGoodsSuppliedExVAT
-              - totalValuePurchasesExVAT
-              - totalValueSalesExVAT
-              - totalVatDue
-              - vatDueAcquisitions
-              - vatDueSales
-              - vatReclaimedCurrPeriod
+                - finalised
+                - netVatDue
+                - periodKey
+                - totalAcquisitionsExVAT
+                - totalValueGoodsSuppliedExVAT
+                - totalValuePurchasesExVAT
+                - totalValueSalesExVAT
+                - totalVatDue
+                - vatDueAcquisitions
+                - vatDueSales
+                - vatReclaimedCurrPeriod
               type: object
               properties:
                 periodKey:
@@ -537,17 +537,17 @@ paths:
                   example: true
               description: VAT Return Declaration
               example:
-              - periodKey: A001
-                vatDueSales: 105.5
-                vatDueAcquisitions: -100.45
-                totalVatDue: 5.05
-                vatReclaimedCurrPeriod: 105.15
-                netVatDue: 100.1
-                totalValueSalesExVAT: 300
-                totalValuePurchasesExVAT: 300
-                totalValueGoodsSuppliedExVAT: 3000
-                totalAcquisitionsExVAT: 3000
-                finalised: true
+                - periodKey: A001
+                  vatDueSales: 105.5
+                  vatDueAcquisitions: -100.45
+                  totalVatDue: 5.05
+                  vatReclaimedCurrPeriod: 105.15
+                  netVatDue: 100.1
+                  totalValueSalesExVAT: 300
+                  totalValuePurchasesExVAT: 300
+                  totalValueGoodsSuppliedExVAT: 3000
+                  totalAcquisitionsExVAT: 3000
+                  finalised: true
             examples:
               example-1:
                 description: VAT Return with decimals
@@ -566,7 +566,7 @@ paths:
               example-2:
                 description: VAT Return with a hash in the periodKey
                 value:
-                  periodKey: '#001'
+                  periodKey: "#001"
                   vatDueSales: 100
                   vatDueAcquisitions: 100
                   totalVatDue: 200
@@ -633,8 +633,8 @@ paths:
             application/json:
               schema:
                 required:
-                - formBundleNumber
-                - processingDate
+                  - formBundleNumber
+                  - processingDate
                 type: object
                 properties:
                   processingDate:
@@ -653,8 +653,8 @@ paths:
                       * `DD` - The netVatDue value is a debit, and HMRC holds a Direct Debit instruction for the client.
                       * `BANK` - The netVatDue value is a credit, and HMRC holds the client’s bank data.
                     enum:
-                    - DD
-                    - BANK
+                      - DD
+                      - BANK
                   chargeRefNumber:
                     maxLength: 16
                     minLength: 1
@@ -663,10 +663,10 @@ paths:
                       \ the netVatDue value is a debit. Between 1 and 16 characters."
                 description: Submit 9-Box Vat Return - Success response
                 example:
-                - processingDate: 2018-01-16T08:20:27.895+0000
-                  paymentIndicator: BANK
-                  formBundleNumber: "256660290587"
-                  chargeRefNumber: aCxFaNx0FZsCvyWF
+                  - processingDate: 2018-01-16T08:20:27.895+0000
+                    paymentIndicator: BANK
+                    formBundleNumber: "256660290587"
+                    chargeRefNumber: aCxFaNx0FZsCvyWF
               example:
                 processingDate: 2018-01-16T08:20:27.895+0000
                 paymentIndicator: BANK
@@ -678,14 +678,14 @@ paths:
             application/json:
               schema:
                 required:
-                - code
+                  - code
                 type: object
                 properties:
                   code:
                     type: string
                 example:
-                - code: VRN_INVALID
-                  message: The provided VRN is invalid
+                  - code: VRN_INVALID
+                    message: The provided VRN is invalid
               examples:
                 invalidVrn:
                   description: Invalid VRN
@@ -733,14 +733,14 @@ paths:
             application/json:
               schema:
                 required:
-                - code
+                  - code
                 type: object
                 properties:
                   code:
                     type: string
                 example:
-                - code: NOT_FINALISED
-                  message: User has not declared VAT return as final
+                  - code: NOT_FINALISED
+                    message: User has not declared VAT return as final
               examples:
                 notDeclared:
                   description: User has not declared VAT return as final
@@ -776,12 +776,12 @@ paths:
                       insolvent
       deprecated: false
       security:
-      - userRestricted:
-        - write:vat
+        - userRestricted:
+            - write:vat
   /organisations/vat/{vrn}/returns/{periodKey}:
     get:
       tags:
-      - organisations
+        - organisations
       summary: View VAT Return
       description: "Retrieve a submitted VAT return\n\n### Test data\n<p>Scenario\
         \ simulations using Gov-Test-Scenario headers are only available in sandbox\
@@ -796,36 +796,36 @@ paths:
         \    </tr>        \n  </tbody>\n</table>\n"
       operationId: ViewVATReturn
       parameters:
-      - name: vrn
-        in: path
-        description: VAT registration number. <br> A nine-digit number.
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-          example: "123456789"
-      - name: periodKey
-        in: path
-        description: "The ID code for the period that this obligation belongs to.\
-          \ The format is a string of four alphanumeric characters. Occasionally the\
-          \ format includes the \"#\" symbol, which must be URL-encoded."
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-          example: "18AD, 18A1, #001"
-      - name: Gov-Test-Scenario
-        in: header
-        description: Only in sandbox environment. See Test Data table for all header
-          values.
-        required: false
-        style: simple
-        explode: false
-        schema:
-          type: string
-          example: "-"
+        - name: vrn
+          in: path
+          description: VAT registration number. <br> A nine-digit number.
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+            example: "123456789"
+        - name: periodKey
+          in: path
+          description: "The ID code for the period that this obligation belongs to.\
+            \ The format is a string of four alphanumeric characters. Occasionally the\
+            \ format includes the \"#\" symbol, which must be URL-encoded."
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+            example: "18AD, 18A1, #001"
+        - name: Gov-Test-Scenario
+          in: header
+          description: Only in sandbox environment. See Test Data table for all header
+            values.
+          required: false
+          style: simple
+          explode: false
+          schema:
+            type: string
+            example: "-"
       responses:
         "200":
           description: ""
@@ -846,16 +846,16 @@ paths:
             application/json:
               schema:
                 required:
-                - netVatDue
-                - periodKey
-                - totalAcquisitionsExVAT
-                - totalValueGoodsSuppliedExVAT
-                - totalValuePurchasesExVAT
-                - totalValueSalesExVAT
-                - totalVatDue
-                - vatDueAcquisitions
-                - vatDueSales
-                - vatReclaimedCurrPeriod
+                  - netVatDue
+                  - periodKey
+                  - totalAcquisitionsExVAT
+                  - totalValueGoodsSuppliedExVAT
+                  - totalValuePurchasesExVAT
+                  - totalValueSalesExVAT
+                  - totalVatDue
+                  - vatDueAcquisitions
+                  - vatDueSales
+                  - vatReclaimedCurrPeriod
                 type: object
                 properties:
                   periodKey:
@@ -926,16 +926,16 @@ paths:
                       \ between -9,999,999,999,999.00 and 9,999,999,999,999.00"
                 description: Submit VAT
                 example:
-                - periodKey: A001
-                  vatDueSales: 105.5
-                  vatDueAcquisitions: -100.45
-                  totalVatDue: 5.05
-                  vatReclaimedCurrPeriod: 105.15
-                  netVatDue: 100.1
-                  totalValueSalesExVAT: 300
-                  totalValuePurchasesExVAT: 300
-                  totalValueGoodsSuppliedExVAT: 3000
-                  totalAcquisitionsExVAT: 3000
+                  - periodKey: A001
+                    vatDueSales: 105.5
+                    vatDueAcquisitions: -100.45
+                    totalVatDue: 5.05
+                    vatReclaimedCurrPeriod: 105.15
+                    netVatDue: 100.1
+                    totalValueSalesExVAT: 300
+                    totalValuePurchasesExVAT: 300
+                    totalValueGoodsSuppliedExVAT: 3000
+                    totalAcquisitionsExVAT: 3000
               examples:
                 example-1:
                   description: VAT Return with decimals
@@ -953,7 +953,7 @@ paths:
                 example-2:
                   description: VAT Return with a hash in the periodKey
                   value:
-                    periodKey: '#001'
+                    periodKey: "#001"
                     vatDueSales: 100
                     vatDueAcquisitions: 100
                     totalVatDue: 200
@@ -969,14 +969,14 @@ paths:
             application/json:
               schema:
                 required:
-                - code
+                  - code
                 type: object
                 properties:
                   code:
                     type: string
                 example:
-                - code: VRN_INVALID
-                  message: The provided VRN is invalid
+                  - code: VRN_INVALID
+                    message: The provided VRN is invalid
               examples:
                 invalidNino:
                   description: The provided VRN is invalid
@@ -994,15 +994,15 @@ paths:
             application/json:
               schema:
                 required:
-                - code
+                  - code
                 type: object
                 properties:
                   code:
                     type: string
                 example:
-                - code: DATE_RANGE_TOO_LARGE
-                  message: The date of the requested return cannot be further than
-                    four years from the current date
+                  - code: DATE_RANGE_TOO_LARGE
+                    message: The date of the requested return cannot be further than
+                      four years from the current date
               examples:
                 dateRangeTooLarge:
                   description: The date of the requested return cannot be more than
@@ -1032,14 +1032,14 @@ paths:
             application/json:
               schema:
                 required:
-                - code
+                  - code
                 type: object
                 properties:
                   code:
                     type: string
                 example:
-                - code: NOT_FOUND
-                  message: The requested resource could not be found
+                  - code: NOT_FOUND
+                    message: The requested resource could not be found
               examples:
                 notFound:
                   description: The remote endpoint has indicated that no associated
@@ -1049,12 +1049,12 @@ paths:
                     message: The requested resource could not be found
       deprecated: false
       security:
-      - userRestricted:
-        - read:vat
+        - userRestricted:
+            - read:vat
   /organisations/vat/{vrn}/liabilities:
     get:
       tags:
-      - organisations
+        - organisations
       summary: Retrieve VAT liabilities
       description: |
         Retrieve VAT liabilities
@@ -1098,45 +1098,45 @@ paths:
         <p>The 'to' date of the liability must fall within the date range provided.</p>
       operationId: RetrieveVATliabilities
       parameters:
-      - name: vrn
-        in: path
-        description: VAT registration number. <br> A nine-digit number.
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-          example: "123456789"
-      - name: from
-        in: query
-        description: "Liabilities to return from date, the minimum 'from' date is\
-          \ 2017-12-01"
-        required: true
-        style: form
-        explode: true
-        schema:
-          type: string
-          example: 2018-01-25
-      - name: to
-        in: query
-        description: "Liabilities to return up to date, the maximum 'to' date is the\
-          \ current date"
-        required: true
-        style: form
-        explode: true
-        schema:
-          type: string
-          example: 2018-12-31
-      - name: Gov-Test-Scenario
-        in: header
-        description: Only in sandbox environment. See Test Data table for all header
-          values.
-        required: false
-        style: simple
-        explode: false
-        schema:
-          type: string
-          example: "-"
+        - name: vrn
+          in: path
+          description: VAT registration number. <br> A nine-digit number.
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+            example: "123456789"
+        - name: from
+          in: query
+          description: "Liabilities to return from date, the minimum 'from' date is\
+            \ 2017-12-01"
+          required: true
+          style: form
+          explode: true
+          schema:
+            type: string
+            example: 2018-01-25
+        - name: to
+          in: query
+          description: "Liabilities to return up to date, the maximum 'to' date is the\
+            \ current date"
+          required: true
+          style: form
+          explode: true
+          schema:
+            type: string
+            example: 2018-12-31
+        - name: Gov-Test-Scenario
+          in: header
+          description: Only in sandbox environment. See Test Data table for all header
+            values.
+          required: false
+          style: simple
+          explode: false
+          schema:
+            type: string
+            example: "-"
       responses:
         "200":
           description: ""
@@ -1157,7 +1157,7 @@ paths:
             application/json:
               schema:
                 required:
-                - liabilities
+                  - liabilities
                 type: object
                 properties:
                   liabilities:
@@ -1166,14 +1166,14 @@ paths:
                     items:
                       title: Liability
                       required:
-                      - originalAmount
-                      - type
+                        - originalAmount
+                        - type
                       type: object
                       properties:
                         taxPeriod:
                           required:
-                          - from
-                          - to
+                            - from
+                            - to
                           type: object
                           properties:
                             from:
@@ -1213,7 +1213,16 @@ paths:
                           example: 2017-01-25
                       description: Liability
                 example:
-                - liabilities:
+                  - liabilities:
+                      - taxPeriod:
+                          from: 2018-04-06
+                          to: 2018-07-06
+                        type: VAT ...
+                        originalAmount: 6000.3
+                        outstandingAmount: 100.51
+                        due: 2018-07-06
+              example:
+                liabilities:
                   - taxPeriod:
                       from: 2018-04-06
                       to: 2018-07-06
@@ -1221,29 +1230,20 @@ paths:
                     originalAmount: 6000.3
                     outstandingAmount: 100.51
                     due: 2018-07-06
-              example:
-                liabilities:
-                - taxPeriod:
-                    from: 2018-04-06
-                    to: 2018-07-06
-                  type: VAT ...
-                  originalAmount: 6000.3
-                  outstandingAmount: 100.51
-                  due: 2018-07-06
         "400":
           description: ""
           content:
             application/json:
               schema:
                 required:
-                - code
+                  - code
                 type: object
                 properties:
                   code:
                     type: string
                 example:
-                - code: VRN_INVALID
-                  message: The provided VRN is invalid
+                  - code: VRN_INVALID
+                    message: The provided VRN is invalid
               examples:
                 invalidNino:
                   description: Invalid VRN
@@ -1271,14 +1271,14 @@ paths:
             application/json:
               schema:
                 required:
-                - code
+                  - code
                 type: object
                 properties:
                   code:
                     type: string
                 example:
-                - code: NOT_FOUND
-                  message: The requested resource could not be found
+                  - code: NOT_FOUND
+                    message: The requested resource could not be found
               examples:
                 invalidNino:
                   description: The remote endpoint has indicated that no associated
@@ -1292,14 +1292,14 @@ paths:
             application/json:
               schema:
                 required:
-                - code
+                  - code
                 type: object
                 properties:
                   code:
                     type: string
                 example:
-                - code: CLIENT_OR_AGENT_NOT_AUTHORISED
-                  message: The client and/or agent is not authorised
+                  - code: CLIENT_OR_AGENT_NOT_AUTHORISED
+                    message: The client and/or agent is not authorised
               examples:
                 clientNotSubscribedToMTD:
                   description: "The client and/or agent is not authorised. This is\
@@ -1318,12 +1318,12 @@ paths:
                       insolvent
       deprecated: false
       security:
-      - userRestricted:
-        - read:vat
+        - userRestricted:
+            - read:vat
   /organisations/vat/{vrn}/payments:
     get:
       tags:
-      - organisations
+        - organisations
       summary: Retrieve VAT payments
       description: "Retrieve VAT payments\n\n### Test data\n<p>Scenario simulations\
         \ using Gov-Test-Scenario headers are only available in sandbox environment.</p>\n\
@@ -1345,44 +1345,44 @@ paths:
         \ must fall within the date range provided.</p>\n"
       operationId: RetrieveVATpayments
       parameters:
-      - name: vrn
-        in: path
-        description: VAT registration number. <br> A nine-digit number.
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-          example: "123456789"
-      - name: from
-        in: query
-        description: "Payments to return from date, the minimum 'from' date is 2017-12-01"
-        required: true
-        style: form
-        explode: true
-        schema:
-          type: string
-          example: 2018-01-25
-      - name: to
-        in: query
-        description: "Payments to return up to date, the maximum 'to' date is the\
-          \ current date"
-        required: true
-        style: form
-        explode: true
-        schema:
-          type: string
-          example: 2018-12-31
-      - name: Gov-Test-Scenario
-        in: header
-        description: Only in sandbox environment. See Test Data table for all header
-          values.
-        required: false
-        style: simple
-        explode: false
-        schema:
-          type: string
-          example: "-"
+        - name: vrn
+          in: path
+          description: VAT registration number. <br> A nine-digit number.
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+            example: "123456789"
+        - name: from
+          in: query
+          description: "Payments to return from date, the minimum 'from' date is 2017-12-01"
+          required: true
+          style: form
+          explode: true
+          schema:
+            type: string
+            example: 2018-01-25
+        - name: to
+          in: query
+          description: "Payments to return up to date, the maximum 'to' date is the\
+            \ current date"
+          required: true
+          style: form
+          explode: true
+          schema:
+            type: string
+            example: 2018-12-31
+        - name: Gov-Test-Scenario
+          in: header
+          description: Only in sandbox environment. See Test Data table for all header
+            values.
+          required: false
+          style: simple
+          explode: false
+          schema:
+            type: string
+            example: "-"
       responses:
         "200":
           description: ""
@@ -1403,7 +1403,7 @@ paths:
             application/json:
               schema:
                 required:
-                - payments
+                  - payments
                 type: object
                 properties:
                   payments:
@@ -1412,7 +1412,7 @@ paths:
                     items:
                       title: Payment
                       required:
-                      - amount
+                        - amount
                       type: object
                       properties:
                         amount:
@@ -1429,27 +1429,27 @@ paths:
                           example: 2017-01-25
                       description: Payment
                 example:
-                - payments:
-                  - amount: 100.05
-                    received: 2018-04-06
+                  - payments:
+                      - amount: 100.05
+                        received: 2018-04-06
               example:
                 payments:
-                - amount: 100.05
-                  received: 2018-04-06
+                  - amount: 100.05
+                    received: 2018-04-06
         "400":
           description: ""
           content:
             application/json:
               schema:
                 required:
-                - code
+                  - code
                 type: object
                 properties:
                   code:
                     type: string
                 example:
-                - code: VRN_INVALID
-                  message: The provided VRN is invalid
+                  - code: VRN_INVALID
+                    message: The provided VRN is invalid
               examples:
                 invalidNino:
                   description: Invalid VRN
@@ -1477,14 +1477,14 @@ paths:
             application/json:
               schema:
                 required:
-                - code
+                  - code
                 type: object
                 properties:
                   code:
                     type: string
                 example:
-                - code: NOT_FOUND
-                  message: The requested resource could not be found
+                  - code: NOT_FOUND
+                    message: The requested resource could not be found
               examples:
                 invalidNino:
                   description: The remote endpoint has indicated that no associated
@@ -1498,14 +1498,14 @@ paths:
             application/json:
               schema:
                 required:
-                - code
+                  - code
                 type: object
                 properties:
                   code:
                     type: string
                 example:
-                - code: CLIENT_OR_AGENT_NOT_AUTHORISED
-                  message: The client and/or agent is not authorised
+                  - code: CLIENT_OR_AGENT_NOT_AUTHORISED
+                    message: The client and/or agent is not authorised
               examples:
                 clientNotSubscribedToMTD:
                   description: "The client and/or agent is not authorised. This is\
@@ -1524,12 +1524,12 @@ paths:
                       insolvent
       deprecated: false
       security:
-      - userRestricted:
-        - read:vat
+        - userRestricted:
+            - read:vat
   /organisations/vat/{vrn}/penalties:
     get:
       tags:
-      - organisations
+        - organisations
       summary: Retrieve VAT penalties
       description: "Retrieves details of all the penalties that have been applied\
         \ to a VAT account. Twenty-four months' worth of penalty information will\
@@ -1562,25 +1562,25 @@ paths:
         </table>\n"
       operationId: RetrieveVATpenalties
       parameters:
-      - name: vrn
-        in: path
-        description: VAT registration number. <br> A nine-digit number.
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-          example: "123456789"
-      - name: Gov-Test-Scenario
-        in: header
-        description: Only in sandbox environment. See Test Data table for all header
-          values.
-        required: false
-        style: simple
-        explode: false
-        schema:
-          type: string
-          example: "-"
+        - name: vrn
+          in: path
+          description: VAT registration number. <br> A nine-digit number.
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+            example: "123456789"
+        - name: Gov-Test-Scenario
+          in: header
+          description: Only in sandbox environment. See Test Data table for all header
+            values.
+          required: false
+          style: simple
+          explode: false
+          schema:
+            type: string
+            example: "-"
       responses:
         "200":
           description: ""
@@ -1646,17 +1646,17 @@ paths:
                       levied.
                   lateSubmissionPenalty:
                     required:
-                    - details
-                    - summary
+                      - details
+                      - summary
                     type: object
                     properties:
                       summary:
                         required:
-                        - activePenaltyPoints
-                        - inactivePenaltyPoints
-                        - penaltyChargeAmount
-                        - periodOfComplianceAchievement
-                        - regimeThreshold
+                          - activePenaltyPoints
+                          - inactivePenaltyPoints
+                          - penaltyChargeAmount
+                          - periodOfComplianceAchievement
+                          - regimeThreshold
                         type: object
                         properties:
                           activePenaltyPoints:
@@ -1705,12 +1705,12 @@ paths:
                         items:
                           title: Detail
                           required:
-                          - penaltyCategory
-                          - penaltyCreationDate
-                          - penaltyExpiryDate
-                          - penaltyNumber
-                          - penaltyOrder
-                          - penaltyStatus
+                            - penaltyCategory
+                            - penaltyCreationDate
+                            - penaltyExpiryDate
+                            - penaltyNumber
+                            - penaltyOrder
+                            - penaltyStatus
                           type: object
                           properties:
                             penaltyNumber:
@@ -1737,9 +1737,9 @@ paths:
                                 **Note:** If the late submission penalty is inactive, the default value will be returned.
                               example: point
                               enum:
-                              - point
-                              - charge
-                              - threshold
+                                - point
+                                - charge
+                                - threshold
                               default: point
                             penaltyStatus:
                               type: string
@@ -1749,8 +1749,8 @@ paths:
                                   * `inactive` - If the penalty category is 'point', it no longer counts towards the individual's or organisation's point balance. This might be because the point has expired, been successfully appealed against, or been removed due to an adjustment. If the penalty category is 'threshold', then it no longer counts towards the individual's or organisation's point balance for the same reasons. Alternatively, a 'threshold' penalty could be inactive because the charge that is associated with it has been reversed. If the penalty category is 'charge', then the charge has been reversed.
                               example: active
                               enum:
-                              - active
-                              - inactive
+                                - active
+                                - inactive
                             frequencyAdjustmentPointIndicator:
                               type: string
                               description: "Indicates whether there has been an adjustment\
@@ -1758,9 +1758,9 @@ paths:
                                 \ submission frequency (for example, changing from\
                                 \ quarterly submissions to monthly submissions)."
                               example:
-                              - X
+                                - X
                               enum:
-                              - X
+                                - X
                             penaltyCreationDate:
                               type: string
                               description: The date that the penalty point was created.
@@ -1785,14 +1785,14 @@ paths:
                                   * `HMRC-reset` - An HMRC officer has reset the user's penalty points to zero.
                               example: appeal
                               enum:
-                              - appeal
-                              - submission-frequency-change
-                              - obligations-reversed
-                              - HMRC-removed
-                              - natural-expiry
-                              - penalty-removed
-                              - expiry-conditions-met
-                              - HMRC-reset
+                                - appeal
+                                - submission-frequency-change
+                                - obligations-reversed
+                                - HMRC-removed
+                                - natural-expiry
+                                - penalty-removed
+                                - expiry-conditions-met
+                                - HMRC-reset
                             communicationsDate:
                               type: string
                               description: The date when a letter about the penalty
@@ -1815,8 +1815,8 @@ paths:
                               items:
                                 title: LateSubmission
                                 required:
-                                - lateSubmissionID
-                                - taxReturnStatus
+                                  - lateSubmissionID
+                                  - taxReturnStatus
                                 type: object
                                 properties:
                                   lateSubmissionID:
@@ -1835,9 +1835,9 @@ paths:
                                       **Note:** If the late submission penalty is inactive, the default value will be returned.
                                     example: Open
                                     enum:
-                                    - Open
-                                    - Fulfilled
-                                    - Reversed
+                                      - Open
+                                      - Fulfilled
+                                      - Reversed
                                     default: Reversed
                                   taxPeriodStartDate:
                                     type: string
@@ -1867,8 +1867,8 @@ paths:
                               items:
                                 title: AppealInformation
                                 required:
-                                - appealLevel
-                                - appealStatus
+                                  - appealLevel
+                                  - appealStatus
                                 type: object
                                 properties:
                                   appealStatus:
@@ -1876,10 +1876,10 @@ paths:
                                     description: The appeal status of a penalty.
                                     example: under-appeal
                                     enum:
-                                    - under-appeal
-                                    - appeal-upheld
-                                    - appeal-rejected
-                                    - cannot-be-appealed
+                                      - under-appeal
+                                      - appeal-upheld
+                                      - appeal-rejected
+                                      - cannot-be-appealed
                                   appealLevel:
                                     type: string
                                     description: |
@@ -1888,8 +1888,8 @@ paths:
                                       **Note:** If the late submission penalty is inactive, the default value will be returned.
                                     example: statutory-review
                                     enum:
-                                    - statutory-review
-                                    - appeal-first-tier-tribunal
+                                      - statutory-review
+                                      - appeal-first-tier-tribunal
                                     default: statutory-review
                             chargeReference:
                               type: string
@@ -1931,15 +1931,15 @@ paths:
                         items:
                           title: Detail1
                           required:
-                          - penaltyAmountAccruing
-                          - penaltyAmountPosted
-                          - penaltyCategory
-                          - penaltyStatus
-                          - principalChargeBillingFrom
-                          - principalChargeBillingTo
-                          - principalChargeDocNumber
-                          - principalChargeDueDate
-                          - principalChargeReference
+                            - penaltyAmountAccruing
+                            - penaltyAmountPosted
+                            - penaltyCategory
+                            - penaltyStatus
+                            - principalChargeBillingFrom
+                            - principalChargeBillingTo
+                            - principalChargeDocNumber
+                            - principalChargeDueDate
+                            - principalChargeReference
                           type: object
                           properties:
                             principalChargeReference:
@@ -1963,8 +1963,8 @@ paths:
                                   * `posted` - The penalty has been posted to the account.
                               example: accruing
                               enum:
-                              - accruing
-                              - posted
+                                - accruing
+                                - posted
                             penaltyAmountAccruing:
                               multipleOf: 0.01
                               maximum: 9999999999999.99
@@ -2080,8 +2080,8 @@ paths:
                               items:
                                 title: AppealInformation
                                 required:
-                                - appealLevel
-                                - appealStatus
+                                  - appealLevel
+                                  - appealStatus
                                 type: object
                                 properties:
                                   appealStatus:
@@ -2089,10 +2089,10 @@ paths:
                                     description: The appeal status of a penalty.
                                     example: under-appeal
                                     enum:
-                                    - under-appeal
-                                    - appeal-upheld
-                                    - appeal-rejected
-                                    - cannot-be-appealed
+                                      - under-appeal
+                                      - appeal-upheld
+                                      - appeal-rejected
+                                      - cannot-be-appealed
                                   appealLevel:
                                     type: string
                                     description: |
@@ -2101,8 +2101,8 @@ paths:
                                       **Note:** If the late submission penalty is inactive, the default value will be returned.
                                     example: statutory-review
                                     enum:
-                                    - statutory-review
-                                    - appeal-first-tier-tribunal
+                                      - statutory-review
+                                      - appeal-first-tier-tribunal
                                     default: statutory-review
                             principalChargeDocNumber:
                               type: string
@@ -2147,7 +2147,7 @@ paths:
                     description: Information about the late payment penalties that
                       HMRC has levied.
                 example:
-                - {}
+                  - {}
               examples:
                 example-1:
                   description: Example of an account with no penalties
@@ -2168,121 +2168,121 @@ paths:
                         regimeThreshold: 4
                         penaltyChargeAmount: 400
                       details:
-                      - penaltyNumber: "00004"
-                        penaltyOrder: "4"
-                        penaltyCategory: point
-                        penaltyStatus: inactive
-                        frequencyAdjustmentPointIndicator: X
-                        penaltyCreationDate: 2023-11-08
-                        penaltyExpiryDate: 2025-12-01
-                        expiryReason: appeal
-                        communicationsDate: 2023-11-11
-                        lateSubmissions:
-                        - lateSubmissionID: "1054600"
-                          taxReturnStatus: Fulfilled
-                          taxPeriodStartDate: 2023-07-01
-                          taxPeriodEndDate: 2023-09-30
-                          taxPeriodDueDate: 2023-11-07
-                          returnReceiptDate: 2023-11-13
-                        appealInformation:
-                        - appealStatus: appeal-upheld
-                          appealLevel: statutory-review
-                      - penaltyNumber: "00005"
-                        penaltyOrder: "5"
-                        penaltyCategory: threshold
-                        penaltyStatus: active
-                        penaltyCreationDate: 2024-02-08
-                        penaltyExpiryDate: 2026-03-01
-                        communicationsDate: 2024-02-11
-                        lateSubmissions:
-                        - lateSubmissionID: "1054700"
-                          taxReturnStatus: Fulfilled
-                          taxPeriodStartDate: 2023-10-01
-                          taxPeriodEndDate: 2023-12-31
-                          taxPeriodDueDate: 2024-02-07
-                          returnReceiptDate: 2024-02-15
-                        chargeReference: XS198765432109
-                        chargeAmount: 200
-                        chargeOutstandingAmount: 200
-                        chargeDueDate: 2024-02-28
-                      - penaltyNumber: "00006"
-                        penaltyOrder: "6"
-                        penaltyCategory: charge
-                        penaltyStatus: active
-                        penaltyCreationDate: 2024-05-08
-                        penaltyExpiryDate: 2026-06-01
-                        communicationsDate: 2024-05-11
-                        lateSubmissions:
-                        - lateSubmissionID: "1054800"
-                          taxReturnStatus: Fulfilled
-                          taxPeriodStartDate: 2024-01-01
-                          taxPeriodEndDate: 2024-03-31
-                          taxPeriodDueDate: 2024-05-07
-                          returnReceiptDate: 2024-11-12
-                        chargeReference: XS212345678901
-                        chargeAmount: 200
-                        chargeOutstandingAmount: 200
-                        chargeDueDate: 2024-02-28
+                        - penaltyNumber: "00004"
+                          penaltyOrder: "4"
+                          penaltyCategory: point
+                          penaltyStatus: inactive
+                          frequencyAdjustmentPointIndicator: X
+                          penaltyCreationDate: 2023-11-08
+                          penaltyExpiryDate: 2025-12-01
+                          expiryReason: appeal
+                          communicationsDate: 2023-11-11
+                          lateSubmissions:
+                            - lateSubmissionID: "1054600"
+                              taxReturnStatus: Fulfilled
+                              taxPeriodStartDate: 2023-07-01
+                              taxPeriodEndDate: 2023-09-30
+                              taxPeriodDueDate: 2023-11-07
+                              returnReceiptDate: 2023-11-13
+                          appealInformation:
+                            - appealStatus: appeal-upheld
+                              appealLevel: statutory-review
+                        - penaltyNumber: "00005"
+                          penaltyOrder: "5"
+                          penaltyCategory: threshold
+                          penaltyStatus: active
+                          penaltyCreationDate: 2024-02-08
+                          penaltyExpiryDate: 2026-03-01
+                          communicationsDate: 2024-02-11
+                          lateSubmissions:
+                            - lateSubmissionID: "1054700"
+                              taxReturnStatus: Fulfilled
+                              taxPeriodStartDate: 2023-10-01
+                              taxPeriodEndDate: 2023-12-31
+                              taxPeriodDueDate: 2024-02-07
+                              returnReceiptDate: 2024-02-15
+                          chargeReference: XS198765432109
+                          chargeAmount: 200
+                          chargeOutstandingAmount: 200
+                          chargeDueDate: 2024-02-28
+                        - penaltyNumber: "00006"
+                          penaltyOrder: "6"
+                          penaltyCategory: charge
+                          penaltyStatus: active
+                          penaltyCreationDate: 2024-05-08
+                          penaltyExpiryDate: 2026-06-01
+                          communicationsDate: 2024-05-11
+                          lateSubmissions:
+                            - lateSubmissionID: "1054800"
+                              taxReturnStatus: Fulfilled
+                              taxPeriodStartDate: 2024-01-01
+                              taxPeriodEndDate: 2024-03-31
+                              taxPeriodDueDate: 2024-05-07
+                              returnReceiptDate: 2024-11-12
+                          chargeReference: XS212345678901
+                          chargeAmount: 200
+                          chargeOutstandingAmount: 200
+                          chargeDueDate: 2024-02-28
                     latePaymentPenalty:
                       details:
-                      - principalChargeReference: XV123451234512
-                        penaltyCategory: LPP1
-                        penaltyStatus: posted
-                        penaltyAmountAccruing: 0
-                        penaltyAmountPosted: 400
-                        penaltyAmountPaid: 0
-                        penaltyAmountOutstanding: 400
-                        latePaymentPenalty1LowerRateCalculationAmount: 10000
-                        latePaymentPenalty1LowerRatePercentage: 2
-                        latePaymentPenalty1HigherRateCalculationAmount: 10000
-                        latePaymentPenalty1HigherRatePercentage: 2
-                        penaltyChargeCreationDate: 2024-06-06
-                        communicationsDate: 2024-06-09
-                        penaltyChargeReference: XP123456789012
-                        penaltyChargeDueDate: 2024-07-06
-                        principalChargeDocNumber: "10023852"
-                        principalChargeBillingFrom: 2024-01-01
-                        principalChargeBillingTo: 2024-03-31
-                        principalChargeDueDate: 2024-05-07
-                        principalChargeLatestClearing: 2024-07-31
-                        timeToPay:
-                        - timeToPayStartDate: 2024-07-06
-                          timeToPayEndDate: 2024-07-11
-                        appealInformation:
-                        - appealStatus: appeal-rejected
-                          appealLevel: statutory-review
-                      - principalChargeReference: XV123451234512
-                        penaltyCategory: LPP2
-                        penaltyStatus: accruing
-                        penaltyAmountAccruing: 30.68
-                        penaltyAmountPosted: 25.21
-                        penaltyAmountPaid: 0
-                        penaltyAmountOutstanding: 25.21
-                        latePaymentPenalty2Days: "23"
-                        latePaymentPenalty2Percentage: 4
-                        penaltyChargeCreationDate: 2024-07-01
-                        communicationsDate: 2024-07-04
-                        penaltyChargeReference: XP298765432109
-                        penaltyChargeDueDate: 2024-08-07
-                        principalChargeDocNumber: "10023852"
-                        principalChargeBillingFrom: 2024-01-01
-                        principalChargeBillingTo: 2024-03-31
-                        principalChargeDueDate: 2024-05-07
-                        principalChargeLatestClearing: 2024-07-31
+                        - principalChargeReference: XV123451234512
+                          penaltyCategory: LPP1
+                          penaltyStatus: posted
+                          penaltyAmountAccruing: 0
+                          penaltyAmountPosted: 400
+                          penaltyAmountPaid: 0
+                          penaltyAmountOutstanding: 400
+                          latePaymentPenalty1LowerRateCalculationAmount: 10000
+                          latePaymentPenalty1LowerRatePercentage: 2
+                          latePaymentPenalty1HigherRateCalculationAmount: 10000
+                          latePaymentPenalty1HigherRatePercentage: 2
+                          penaltyChargeCreationDate: 2024-06-06
+                          communicationsDate: 2024-06-09
+                          penaltyChargeReference: XP123456789012
+                          penaltyChargeDueDate: 2024-07-06
+                          principalChargeDocNumber: "10023852"
+                          principalChargeBillingFrom: 2024-01-01
+                          principalChargeBillingTo: 2024-03-31
+                          principalChargeDueDate: 2024-05-07
+                          principalChargeLatestClearing: 2024-07-31
+                          timeToPay:
+                            - timeToPayStartDate: 2024-07-06
+                              timeToPayEndDate: 2024-07-11
+                          appealInformation:
+                            - appealStatus: appeal-rejected
+                              appealLevel: statutory-review
+                        - principalChargeReference: XV123451234512
+                          penaltyCategory: LPP2
+                          penaltyStatus: accruing
+                          penaltyAmountAccruing: 30.68
+                          penaltyAmountPosted: 25.21
+                          penaltyAmountPaid: 0
+                          penaltyAmountOutstanding: 25.21
+                          latePaymentPenalty2Days: "23"
+                          latePaymentPenalty2Percentage: 4
+                          penaltyChargeCreationDate: 2024-07-01
+                          communicationsDate: 2024-07-04
+                          penaltyChargeReference: XP298765432109
+                          penaltyChargeDueDate: 2024-08-07
+                          principalChargeDocNumber: "10023852"
+                          principalChargeBillingFrom: 2024-01-01
+                          principalChargeBillingTo: 2024-03-31
+                          principalChargeDueDate: 2024-05-07
+                          principalChargeLatestClearing: 2024-07-31
         "400":
           description: ""
           content:
             application/json:
               schema:
                 required:
-                - code
+                  - code
                 type: object
                 properties:
                   code:
                     type: string
                 example:
-                - code: VRN_INVALID
-                  message: The provided VRN is invalid
+                  - code: VRN_INVALID
+                    message: The provided VRN is invalid
               examples:
                 invalidVrn:
                   description: Invalid VRN.
@@ -2295,14 +2295,14 @@ paths:
             application/json:
               schema:
                 required:
-                - code
+                  - code
                 type: object
                 properties:
                   code:
                     type: string
                 example:
-                - code: CLIENT_OR_AGENT_NOT_AUTHORISED
-                  message: The client and/or agent is not authorised
+                  - code: CLIENT_OR_AGENT_NOT_AUTHORISED
+                    message: The client and/or agent is not authorised
               examples:
                 clientNotSubscribedToMTD:
                   description: "The client and/or agent is not authorised. This is\
@@ -2314,12 +2314,12 @@ paths:
                     message: The client and/or agent is not authorised
       deprecated: false
       security:
-      - userRestricted:
-        - read:vat
+        - userRestricted:
+            - read:vat
   /organisations/vat/{vrn}/financial-details/{penaltyChargeReference}:
     get:
       tags:
-      - organisations
+        - organisations
       summary: Retrieve financial details
       description: "Retrieves the financial details relating to a late submission\
         \ or late payment penalty that has been applied to a VAT account.\n\n### Test\
@@ -2330,36 +2330,36 @@ paths:
         \ scenario.</p></td>\n    </tr> \n  </tbody>\n</table>\n"
       operationId: Retrievefinancialdetails
       parameters:
-      - name: vrn
-        in: path
-        description: VAT registration number. <br> A nine-digit number.
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-          example: "123456789"
-      - name: penaltyChargeReference
-        in: path
-        description: "The late submission *chargeReference* or late payment *penaltyChargeReference*,\
-          \ which has been obtained from the Retrieve VAT penalties endpoint. Only\
-          \ the financial details that relate to this charge will be returned."
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-          example: XP123456789012
-      - name: Gov-Test-Scenario
-        in: header
-        description: Only in sandbox environment. See Test Data table for all header
-          values.
-        required: false
-        style: simple
-        explode: false
-        schema:
-          type: string
-          example: "-"
+        - name: vrn
+          in: path
+          description: VAT registration number. <br> A nine-digit number.
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+            example: "123456789"
+        - name: penaltyChargeReference
+          in: path
+          description: "The late submission *chargeReference* or late payment *penaltyChargeReference*,\
+            \ which has been obtained from the Retrieve VAT penalties endpoint. Only\
+            \ the financial details that relate to this charge will be returned."
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+            example: XP123456789012
+        - name: Gov-Test-Scenario
+          in: header
+          description: Only in sandbox environment. See Test Data table for all header
+            values.
+          required: false
+          style: simple
+          explode: false
+          schema:
+            type: string
+            example: "-"
       responses:
         "200":
           description: ""
@@ -2556,35 +2556,35 @@ paths:
                                 description: Details of the interest that relates
                                   to the line item.
                 example:
-                - totalisations:
-                    totalOverdue: 123.45
-                    totalNotYetDue: 12.34
-                    totalBalance: 109.99
-                    totalCredit: 13.46
-                    totalCleared: 12.35
-                    additionalReceivableTotalisations:
-                      totalAccountPostedInterest: 13.12
-                      totalAccountAccruingInterest: 12.1
-                  documentDetails:
-                  - postingDate: 2024-05-07
-                    issueDate: 2024-05-07
-                    documentTotalAmount: 123.45
-                    documentClearedAmount: 111.11
-                    documentOutstandingAmount: 12.34
-                    documentInterestTotals:
-                      interestPostedAmount: 13.12
-                      interestAccruingAmount: 12.1
-                    lineItemDetails:
-                    - chargeDescription: VAT Return
-                      periodFromDate: 2024-01-01
-                      periodToDate: 2024-03-31
-                      netDueDate: 2024-05-07
-                      amount: 123.45
-                      lineItemInterestDetails:
-                        interestStartDate: 2024-05-08
-                        currentInterestRate: 2
-                        interestPostedAmount: 13.12
-                        interestAccruingAmount: 12.1
+                  - totalisations:
+                      totalOverdue: 123.45
+                      totalNotYetDue: 12.34
+                      totalBalance: 109.99
+                      totalCredit: 13.46
+                      totalCleared: 12.35
+                      additionalReceivableTotalisations:
+                        totalAccountPostedInterest: 13.12
+                        totalAccountAccruingInterest: 12.1
+                    documentDetails:
+                      - postingDate: 2024-05-07
+                        issueDate: 2024-05-07
+                        documentTotalAmount: 123.45
+                        documentClearedAmount: 111.11
+                        documentOutstandingAmount: 12.34
+                        documentInterestTotals:
+                          interestPostedAmount: 13.12
+                          interestAccruingAmount: 12.1
+                        lineItemDetails:
+                          - chargeDescription: VAT Return
+                            periodFromDate: 2024-01-01
+                            periodToDate: 2024-03-31
+                            netDueDate: 2024-05-07
+                            amount: 123.45
+                            lineItemInterestDetails:
+                              interestStartDate: 2024-05-08
+                              currentInterestRate: 2
+                              interestPostedAmount: 13.12
+                              interestAccruingAmount: 12.1
               examples:
                 example-1:
                   description: all fields example
@@ -2599,39 +2599,39 @@ paths:
                         totalAccountPostedInterest: 13.12
                         totalAccountAccruingInterest: 12.1
                     documentDetails:
-                    - postingDate: 2024-05-07
-                      issueDate: 2024-05-07
-                      documentTotalAmount: 123.45
-                      documentClearedAmount: 111.11
-                      documentOutstandingAmount: 12.34
-                      documentInterestTotals:
-                        interestPostedAmount: 13.12
-                        interestAccruingAmount: 12.1
-                      lineItemDetails:
-                      - chargeDescription: VAT Return
-                        periodFromDate: 2024-01-01
-                        periodToDate: 2024-03-31
-                        netDueDate: 2024-05-07
-                        amount: 123.45
-                        lineItemInterestDetails:
-                          interestStartDate: 2024-05-08
-                          currentInterestRate: 2
+                      - postingDate: 2024-05-07
+                        issueDate: 2024-05-07
+                        documentTotalAmount: 123.45
+                        documentClearedAmount: 111.11
+                        documentOutstandingAmount: 12.34
+                        documentInterestTotals:
                           interestPostedAmount: 13.12
                           interestAccruingAmount: 12.1
+                        lineItemDetails:
+                          - chargeDescription: VAT Return
+                            periodFromDate: 2024-01-01
+                            periodToDate: 2024-03-31
+                            netDueDate: 2024-05-07
+                            amount: 123.45
+                            lineItemInterestDetails:
+                              interestStartDate: 2024-05-08
+                              currentInterestRate: 2
+                              interestPostedAmount: 13.12
+                              interestAccruingAmount: 12.1
         "400":
           description: ""
           content:
             application/json:
               schema:
                 required:
-                - code
+                  - code
                 type: object
                 properties:
                   code:
                     type: string
                 example:
-                - code: VRN_INVALID
-                  message: The provided VRN is invalid
+                  - code: VRN_INVALID
+                    message: The provided VRN is invalid
               examples:
                 invalidVrn:
                   description: Invalid VRN.
@@ -2649,14 +2649,14 @@ paths:
             application/json:
               schema:
                 required:
-                - code
+                  - code
                 type: object
                 properties:
                   code:
                     type: string
                 example:
-                - code: MATCHING_RESOURCE_NOT_FOUND
-                  message: Matching resource not found
+                  - code: MATCHING_RESOURCE_NOT_FOUND
+                    message: Matching resource not found
               examples:
                 notFound:
                   description: The remote endpoint has indicated that no associated
@@ -2670,14 +2670,14 @@ paths:
             application/json:
               schema:
                 required:
-                - code
+                  - code
                 type: object
                 properties:
                   code:
                     type: string
                 example:
-                - code: CLIENT_OR_AGENT_NOT_AUTHORISED
-                  message: The client and/or agent is not authorised
+                  - code: CLIENT_OR_AGENT_NOT_AUTHORISED
+                    message: The client and/or agent is not authorised
               examples:
                 clientNotSubscribedToMTD:
                   description: "The client and/or agent is not authorised. This is\
@@ -2689,12 +2689,12 @@ paths:
                     message: The client and/or agent is not authorised
       deprecated: false
       security:
-      - userRestricted:
-        - read:vat
+        - userRestricted:
+            - read:vat
   /organisations/vat/{vrn}/information:
     get:
       tags:
-      - organisations
+        - organisations
       summary: Retrieve VAT customer information
       description: |
         Retrieves information about a VAT customer.
@@ -2733,25 +2733,25 @@ paths:
         </table>
       operationId: RetrieveVATCustomerInformation
       parameters:
-      - name: vrn
-        in: path
-        description: VAT registration number. <br> A nine-digit number.
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-          example: "123456789"
-      - name: Gov-Test-Scenario
-        in: header
-        description: Only in sandbox environment. See Test Data table for all header
-          values.
-        required: false
-        style: simple
-        explode: false
-        schema:
-          type: string
-          example: "-"
+        - name: vrn
+          in: path
+          description: VAT registration number. <br> A nine-digit number.
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+            example: "123456789"
+        - name: Gov-Test-Scenario
+          in: header
+          description: Only in sandbox environment. See Test Data table for all header
+            values.
+          required: false
+          style: simple
+          explode: false
+          schema:
+            type: string
+            example: "-"
       responses:
         "200":
           description: ""
@@ -2846,62 +2846,62 @@ paths:
                             * `999` - Data Migrated from VMF
                         example: "001"
                         enum:
-                        - "001"
-                        - "002"
-                        - "003"
-                        - "004"
-                        - "005"
-                        - "006"
-                        - "007"
-                        - "008"
-                        - "009"
-                        - "010"
-                        - "011"
-                        - "012"
-                        - "013"
-                        - "014"
-                        - "015"
-                        - "016"
-                        - "017"
-                        - "018"
-                        - "019"
-                        - "020"
-                        - "021"
-                        - "022"
-                        - "023"
-                        - "024"
-                        - "025"
-                        - "026"
-                        - "027"
-                        - "028"
-                        - "029"
-                        - "030"
-                        - "031"
-                        - "032"
-                        - "033"
-                        - "034"
-                        - "035"
-                        - "036"
-                        - "037"
-                        - "038"
-                        - "039"
-                        - "040"
-                        - "041"
-                        - "042"
-                        - "043"
-                        - "044"
-                        - "045"
-                        - "046"
-                        - "047"
-                        - "048"
-                        - "049"
-                        - "050"
-                        - "051"
-                        - "052"
-                        - "053"
-                        - "054"
-                        - "055"
-                        - "999"
+                          - "001"
+                          - "002"
+                          - "003"
+                          - "004"
+                          - "005"
+                          - "006"
+                          - "007"
+                          - "008"
+                          - "009"
+                          - "010"
+                          - "011"
+                          - "012"
+                          - "013"
+                          - "014"
+                          - "015"
+                          - "016"
+                          - "017"
+                          - "018"
+                          - "019"
+                          - "020"
+                          - "021"
+                          - "022"
+                          - "023"
+                          - "024"
+                          - "025"
+                          - "026"
+                          - "027"
+                          - "028"
+                          - "029"
+                          - "030"
+                          - "031"
+                          - "032"
+                          - "033"
+                          - "034"
+                          - "035"
+                          - "036"
+                          - "037"
+                          - "038"
+                          - "039"
+                          - "040"
+                          - "041"
+                          - "042"
+                          - "043"
+                          - "044"
+                          - "045"
+                          - "046"
+                          - "047"
+                          - "048"
+                          - "049"
+                          - "050"
+                          - "051"
+                          - "052"
+                          - "053"
+                          - "054"
+                          - "055"
+                          - "999"
                       startDate:
                         type: string
                         description: The date upon which the business entered the
@@ -2909,11 +2909,11 @@ paths:
                         example: 2025-12-31
                     description: Information about the VAT Flat Rate Scheme.
                 example:
-                - customerDetails:
-                    effectiveRegistrationDate: 2001-01-01
-                  flatRateScheme:
-                    frsCategory: "001"
-                    startDate: 2001-01-01
+                  - customerDetails:
+                      effectiveRegistrationDate: 2001-01-01
+                    flatRateScheme:
+                      frsCategory: "001"
+                      startDate: 2001-01-01
               examples:
                 example-1:
                   value:
@@ -2928,16 +2928,16 @@ paths:
             application/json:
               schema:
                 required:
-                - code
+                  - code
                 type: object
                 properties:
                   code:
                     type: string
                 example:
-                - description: Invalid VRN
-                  value:
-                    code: VRN_INVALID
-                    message: The provided VRN is invalid
+                  - description: Invalid VRN
+                    value:
+                      code: VRN_INVALID
+                      message: The provided VRN is invalid
               examples:
                 invalidVrn:
                   description: Invalid VRN
@@ -2950,14 +2950,14 @@ paths:
             application/json:
               schema:
                 required:
-                - code
+                  - code
                 type: object
                 properties:
                   code:
                     type: string
                 example:
-                - code: INVALID_CREDENTIALS
-                  message: Invalid authentication information provided
+                  - code: INVALID_CREDENTIALS
+                    message: Invalid authentication information provided
               examples:
                 invalidCredentials:
                   description: Invalid authentication information provided.
@@ -2970,14 +2970,14 @@ paths:
             application/json:
               schema:
                 required:
-                - code
+                  - code
                 type: object
                 properties:
                   code:
                     type: string
                 example:
-                - code: CLIENT_OR_AGENT_NOT_AUTHORISED
-                  message: The client and/or agent is not authorised
+                  - code: CLIENT_OR_AGENT_NOT_AUTHORISED
+                    message: The client and/or agent is not authorised
               examples:
                 clientNotSubscribedToMTD:
                   description: "The client and/or agent is not authorised. This is\
@@ -2993,14 +2993,14 @@ paths:
             application/json:
               schema:
                 required:
-                - code
+                  - code
                 type: object
                 properties:
                   code:
                     type: string
                 example:
-                - code: NOT_FOUND
-                  message: The requested resource could not be found
+                  - code: NOT_FOUND
+                    message: The requested resource could not be found
               examples:
                 invalidNino:
                   description: The remote endpoint has indicated that no associated
@@ -3010,14 +3010,14 @@ paths:
                     message: The requested resource could not be found
       deprecated: false
       security:
-      - userRestricted:
-        - read:vat
+        - userRestricted:
+            - read:vat
 components:
   schemas:
     errorResponse:
       title: errorResponse
       required:
-      - code
+        - code
       type: object
       properties:
         code:
@@ -3040,8 +3040,8 @@ components:
     AppealInformation:
       title: AppealInformation
       required:
-      - appealLevel
-      - appealStatus
+        - appealLevel
+        - appealStatus
       type: object
       properties:
         appealStatus:
@@ -3049,10 +3049,10 @@ components:
           description: The appeal status of a penalty.
           example: under-appeal
           enum:
-          - under-appeal
-          - appeal-upheld
-          - appeal-rejected
-          - cannot-be-appealed
+            - under-appeal
+            - appeal-upheld
+            - appeal-rejected
+            - cannot-be-appealed
         appealLevel:
           type: string
           description: |
@@ -3061,8 +3061,8 @@ components:
             **Note:** If the late submission penalty is inactive, the default value will be returned.
           example: statutory-review
           enum:
-          - statutory-review
-          - appeal-first-tier-tribunal
+            - statutory-review
+            - appeal-first-tier-tribunal
           default: statutory-review
     CustomerDetails:
       title: CustomerDetails
@@ -3075,12 +3075,12 @@ components:
     Detail:
       title: Detail
       required:
-      - penaltyCategory
-      - penaltyCreationDate
-      - penaltyExpiryDate
-      - penaltyNumber
-      - penaltyOrder
-      - penaltyStatus
+        - penaltyCategory
+        - penaltyCreationDate
+        - penaltyExpiryDate
+        - penaltyNumber
+        - penaltyOrder
+        - penaltyStatus
       type: object
       properties:
         penaltyNumber:
@@ -3106,9 +3106,9 @@ components:
             **Note:** If the late submission penalty is inactive, the default value will be returned.
           example: point
           enum:
-          - point
-          - charge
-          - threshold
+            - point
+            - charge
+            - threshold
           default: point
         penaltyStatus:
           type: string
@@ -3118,17 +3118,17 @@ components:
               * `inactive` - If the penalty category is 'point', it no longer counts towards the individual's or organisation's point balance. This might be because the point has expired, been successfully appealed against, or been removed due to an adjustment. If the penalty category is 'threshold', then it no longer counts towards the individual's or organisation's point balance for the same reasons. Alternatively, a 'threshold' penalty could be inactive because the charge that is associated with it has been reversed. If the penalty category is 'charge', then the charge has been reversed.
           example: active
           enum:
-          - active
-          - inactive
+            - active
+            - inactive
         frequencyAdjustmentPointIndicator:
           type: string
           description: "Indicates whether there has been an adjustment to the penalty\
             \ point because of a change to your submission frequency (for example,\
             \ changing from quarterly submissions to monthly submissions)."
           example:
-          - X
+            - X
           enum:
-          - X
+            - X
         penaltyCreationDate:
           type: string
           description: The date that the penalty point was created.
@@ -3153,14 +3153,14 @@ components:
               * `HMRC-reset` - An HMRC officer has reset the user's penalty points to zero.
           example: appeal
           enum:
-          - appeal
-          - submission-frequency-change
-          - obligations-reversed
-          - HMRC-removed
-          - natural-expiry
-          - penalty-removed
-          - expiry-conditions-met
-          - HMRC-reset
+            - appeal
+            - submission-frequency-change
+            - obligations-reversed
+            - HMRC-removed
+            - natural-expiry
+            - penalty-removed
+            - expiry-conditions-met
+            - HMRC-reset
         communicationsDate:
           type: string
           description: The date when a letter about the penalty was sent to the customer.
@@ -3178,8 +3178,8 @@ components:
           items:
             title: LateSubmission
             required:
-            - lateSubmissionID
-            - taxReturnStatus
+              - lateSubmissionID
+              - taxReturnStatus
             type: object
             properties:
               lateSubmissionID:
@@ -3198,9 +3198,9 @@ components:
                   **Note:** If the late submission penalty is inactive, the default value will be returned.
                 example: Open
                 enum:
-                - Open
-                - Fulfilled
-                - Reversed
+                  - Open
+                  - Fulfilled
+                  - Reversed
                 default: Reversed
               taxPeriodStartDate:
                 type: string
@@ -3226,8 +3226,8 @@ components:
           items:
             title: AppealInformation
             required:
-            - appealLevel
-            - appealStatus
+              - appealLevel
+              - appealStatus
             type: object
             properties:
               appealStatus:
@@ -3235,10 +3235,10 @@ components:
                 description: The appeal status of a penalty.
                 example: under-appeal
                 enum:
-                - under-appeal
-                - appeal-upheld
-                - appeal-rejected
-                - cannot-be-appealed
+                  - under-appeal
+                  - appeal-upheld
+                  - appeal-rejected
+                  - cannot-be-appealed
               appealLevel:
                 type: string
                 description: |
@@ -3247,8 +3247,8 @@ components:
                   **Note:** If the late submission penalty is inactive, the default value will be returned.
                 example: statutory-review
                 enum:
-                - statutory-review
-                - appeal-first-tier-tribunal
+                  - statutory-review
+                  - appeal-first-tier-tribunal
                 default: statutory-review
         chargeReference:
           type: string
@@ -3278,15 +3278,15 @@ components:
     Detail1:
       title: Detail1
       required:
-      - penaltyAmountAccruing
-      - penaltyAmountPosted
-      - penaltyCategory
-      - penaltyStatus
-      - principalChargeBillingFrom
-      - principalChargeBillingTo
-      - principalChargeDocNumber
-      - principalChargeDueDate
-      - principalChargeReference
+        - penaltyAmountAccruing
+        - penaltyAmountPosted
+        - penaltyCategory
+        - penaltyStatus
+        - principalChargeBillingFrom
+        - principalChargeBillingTo
+        - principalChargeDocNumber
+        - principalChargeDueDate
+        - principalChargeReference
       type: object
       properties:
         principalChargeReference:
@@ -3309,8 +3309,8 @@ components:
               * `posted` - The penalty has been posted to the account.
           example: accruing
           enum:
-          - accruing
-          - posted
+            - accruing
+            - posted
         penaltyAmountAccruing:
           multipleOf: 0.01
           maximum: 9999999999999.99
@@ -3417,8 +3417,8 @@ components:
           items:
             title: AppealInformation
             required:
-            - appealLevel
-            - appealStatus
+              - appealLevel
+              - appealStatus
             type: object
             properties:
               appealStatus:
@@ -3426,10 +3426,10 @@ components:
                 description: The appeal status of a penalty.
                 example: under-appeal
                 enum:
-                - under-appeal
-                - appeal-upheld
-                - appeal-rejected
-                - cannot-be-appealed
+                  - under-appeal
+                  - appeal-upheld
+                  - appeal-rejected
+                  - cannot-be-appealed
               appealLevel:
                 type: string
                 description: |
@@ -3438,8 +3438,8 @@ components:
                   **Note:** If the late submission penalty is inactive, the default value will be returned.
                 example: statutory-review
                 enum:
-                - statutory-review
-                - appeal-first-tier-tribunal
+                  - statutory-review
+                  - appeal-first-tier-tribunal
                 default: statutory-review
         principalChargeDocNumber:
           type: string
@@ -3832,62 +3832,62 @@ components:
               * `999` - Data Migrated from VMF
           example: "001"
           enum:
-          - "001"
-          - "002"
-          - "003"
-          - "004"
-          - "005"
-          - "006"
-          - "007"
-          - "008"
-          - "009"
-          - "010"
-          - "011"
-          - "012"
-          - "013"
-          - "014"
-          - "015"
-          - "016"
-          - "017"
-          - "018"
-          - "019"
-          - "020"
-          - "021"
-          - "022"
-          - "023"
-          - "024"
-          - "025"
-          - "026"
-          - "027"
-          - "028"
-          - "029"
-          - "030"
-          - "031"
-          - "032"
-          - "033"
-          - "034"
-          - "035"
-          - "036"
-          - "037"
-          - "038"
-          - "039"
-          - "040"
-          - "041"
-          - "042"
-          - "043"
-          - "044"
-          - "045"
-          - "046"
-          - "047"
-          - "048"
-          - "049"
-          - "050"
-          - "051"
-          - "052"
-          - "053"
-          - "054"
-          - "055"
-          - "999"
+            - "001"
+            - "002"
+            - "003"
+            - "004"
+            - "005"
+            - "006"
+            - "007"
+            - "008"
+            - "009"
+            - "010"
+            - "011"
+            - "012"
+            - "013"
+            - "014"
+            - "015"
+            - "016"
+            - "017"
+            - "018"
+            - "019"
+            - "020"
+            - "021"
+            - "022"
+            - "023"
+            - "024"
+            - "025"
+            - "026"
+            - "027"
+            - "028"
+            - "029"
+            - "030"
+            - "031"
+            - "032"
+            - "033"
+            - "034"
+            - "035"
+            - "036"
+            - "037"
+            - "038"
+            - "039"
+            - "040"
+            - "041"
+            - "042"
+            - "043"
+            - "044"
+            - "045"
+            - "046"
+            - "047"
+            - "048"
+            - "049"
+            - "050"
+            - "051"
+            - "052"
+            - "053"
+            - "054"
+            - "055"
+            - "999"
         startDate:
           type: string
           description: The date upon which the business entered the VAT Flat Rate
@@ -3901,7 +3901,7 @@ components:
         \ from quarterly submissions to monthly submissions)."
       example: X
       enum:
-      - X
+        - X
     Information:
       title: Information
       type: object
@@ -3979,62 +3979,62 @@ components:
                   * `999` - Data Migrated from VMF
               example: "001"
               enum:
-              - "001"
-              - "002"
-              - "003"
-              - "004"
-              - "005"
-              - "006"
-              - "007"
-              - "008"
-              - "009"
-              - "010"
-              - "011"
-              - "012"
-              - "013"
-              - "014"
-              - "015"
-              - "016"
-              - "017"
-              - "018"
-              - "019"
-              - "020"
-              - "021"
-              - "022"
-              - "023"
-              - "024"
-              - "025"
-              - "026"
-              - "027"
-              - "028"
-              - "029"
-              - "030"
-              - "031"
-              - "032"
-              - "033"
-              - "034"
-              - "035"
-              - "036"
-              - "037"
-              - "038"
-              - "039"
-              - "040"
-              - "041"
-              - "042"
-              - "043"
-              - "044"
-              - "045"
-              - "046"
-              - "047"
-              - "048"
-              - "049"
-              - "050"
-              - "051"
-              - "052"
-              - "053"
-              - "054"
-              - "055"
-              - "999"
+                - "001"
+                - "002"
+                - "003"
+                - "004"
+                - "005"
+                - "006"
+                - "007"
+                - "008"
+                - "009"
+                - "010"
+                - "011"
+                - "012"
+                - "013"
+                - "014"
+                - "015"
+                - "016"
+                - "017"
+                - "018"
+                - "019"
+                - "020"
+                - "021"
+                - "022"
+                - "023"
+                - "024"
+                - "025"
+                - "026"
+                - "027"
+                - "028"
+                - "029"
+                - "030"
+                - "031"
+                - "032"
+                - "033"
+                - "034"
+                - "035"
+                - "036"
+                - "037"
+                - "038"
+                - "039"
+                - "040"
+                - "041"
+                - "042"
+                - "043"
+                - "044"
+                - "045"
+                - "046"
+                - "047"
+                - "048"
+                - "049"
+                - "050"
+                - "051"
+                - "052"
+                - "053"
+                - "054"
+                - "055"
+                - "999"
             startDate:
               type: string
               description: The date upon which the business entered the VAT Flat Rate
@@ -4052,15 +4052,15 @@ components:
           items:
             title: Detail1
             required:
-            - penaltyAmountAccruing
-            - penaltyAmountPosted
-            - penaltyCategory
-            - penaltyStatus
-            - principalChargeBillingFrom
-            - principalChargeBillingTo
-            - principalChargeDocNumber
-            - principalChargeDueDate
-            - principalChargeReference
+              - penaltyAmountAccruing
+              - penaltyAmountPosted
+              - penaltyCategory
+              - penaltyStatus
+              - principalChargeBillingFrom
+              - principalChargeBillingTo
+              - principalChargeDocNumber
+              - principalChargeDueDate
+              - principalChargeReference
             type: object
             properties:
               principalChargeReference:
@@ -4083,8 +4083,8 @@ components:
                     * `posted` - The penalty has been posted to the account.
                 example: accruing
                 enum:
-                - accruing
-                - posted
+                  - accruing
+                  - posted
               penaltyAmountAccruing:
                 multipleOf: 0.01
                 maximum: 9999999999999.99
@@ -4194,8 +4194,8 @@ components:
                 items:
                   title: AppealInformation
                   required:
-                  - appealLevel
-                  - appealStatus
+                    - appealLevel
+                    - appealStatus
                   type: object
                   properties:
                     appealStatus:
@@ -4203,10 +4203,10 @@ components:
                       description: The appeal status of a penalty.
                       example: under-appeal
                       enum:
-                      - under-appeal
-                      - appeal-upheld
-                      - appeal-rejected
-                      - cannot-be-appealed
+                        - under-appeal
+                        - appeal-upheld
+                        - appeal-rejected
+                        - cannot-be-appealed
                     appealLevel:
                       type: string
                       description: |
@@ -4215,8 +4215,8 @@ components:
                         **Note:** If the late submission penalty is inactive, the default value will be returned.
                       example: statutory-review
                       enum:
-                      - statutory-review
-                      - appeal-first-tier-tribunal
+                        - statutory-review
+                        - appeal-first-tier-tribunal
                       default: statutory-review
               principalChargeDocNumber:
                 type: string
@@ -4261,8 +4261,8 @@ components:
     LateSubmission:
       title: LateSubmission
       required:
-      - lateSubmissionID
-      - taxReturnStatus
+        - lateSubmissionID
+        - taxReturnStatus
       type: object
       properties:
         lateSubmissionID:
@@ -4280,9 +4280,9 @@ components:
             **Note:** If the late submission penalty is inactive, the default value will be returned.
           example: Open
           enum:
-          - Open
-          - Fulfilled
-          - Reversed
+            - Open
+            - Fulfilled
+            - Reversed
           default: Reversed
         taxPeriodStartDate:
           type: string
@@ -4304,17 +4304,17 @@ components:
     LateSubmissionPenalty:
       title: LateSubmissionPenalty
       required:
-      - details
-      - summary
+        - details
+        - summary
       type: object
       properties:
         summary:
           required:
-          - activePenaltyPoints
-          - inactivePenaltyPoints
-          - penaltyChargeAmount
-          - periodOfComplianceAchievement
-          - regimeThreshold
+            - activePenaltyPoints
+            - inactivePenaltyPoints
+            - penaltyChargeAmount
+            - periodOfComplianceAchievement
+            - regimeThreshold
           type: object
           properties:
             activePenaltyPoints:
@@ -4363,12 +4363,12 @@ components:
           items:
             title: Detail
             required:
-            - penaltyCategory
-            - penaltyCreationDate
-            - penaltyExpiryDate
-            - penaltyNumber
-            - penaltyOrder
-            - penaltyStatus
+              - penaltyCategory
+              - penaltyCreationDate
+              - penaltyExpiryDate
+              - penaltyNumber
+              - penaltyOrder
+              - penaltyStatus
             type: object
             properties:
               penaltyNumber:
@@ -4394,9 +4394,9 @@ components:
                   **Note:** If the late submission penalty is inactive, the default value will be returned.
                 example: point
                 enum:
-                - point
-                - charge
-                - threshold
+                  - point
+                  - charge
+                  - threshold
                 default: point
               penaltyStatus:
                 type: string
@@ -4406,17 +4406,17 @@ components:
                     * `inactive` - If the penalty category is 'point', it no longer counts towards the individual's or organisation's point balance. This might be because the point has expired, been successfully appealed against, or been removed due to an adjustment. If the penalty category is 'threshold', then it no longer counts towards the individual's or organisation's point balance for the same reasons. Alternatively, a 'threshold' penalty could be inactive because the charge that is associated with it has been reversed. If the penalty category is 'charge', then the charge has been reversed.
                 example: active
                 enum:
-                - active
-                - inactive
+                  - active
+                  - inactive
               frequencyAdjustmentPointIndicator:
                 type: string
                 description: "Indicates whether there has been an adjustment to the\
                   \ penalty point because of a change to your submission frequency\
                   \ (for example, changing from quarterly submissions to monthly submissions)."
                 example:
-                - X
+                  - X
                 enum:
-                - X
+                  - X
               penaltyCreationDate:
                 type: string
                 description: The date that the penalty point was created.
@@ -4441,14 +4441,14 @@ components:
                     * `HMRC-reset` - An HMRC officer has reset the user's penalty points to zero.
                 example: appeal
                 enum:
-                - appeal
-                - submission-frequency-change
-                - obligations-reversed
-                - HMRC-removed
-                - natural-expiry
-                - penalty-removed
-                - expiry-conditions-met
-                - HMRC-reset
+                  - appeal
+                  - submission-frequency-change
+                  - obligations-reversed
+                  - HMRC-removed
+                  - natural-expiry
+                  - penalty-removed
+                  - expiry-conditions-met
+                  - HMRC-reset
               communicationsDate:
                 type: string
                 description: The date when a letter about the penalty was sent to
@@ -4468,8 +4468,8 @@ components:
                 items:
                   title: LateSubmission
                   required:
-                  - lateSubmissionID
-                  - taxReturnStatus
+                    - lateSubmissionID
+                    - taxReturnStatus
                   type: object
                   properties:
                     lateSubmissionID:
@@ -4488,9 +4488,9 @@ components:
                         **Note:** If the late submission penalty is inactive, the default value will be returned.
                       example: Open
                       enum:
-                      - Open
-                      - Fulfilled
-                      - Reversed
+                        - Open
+                        - Fulfilled
+                        - Reversed
                       default: Reversed
                     taxPeriodStartDate:
                       type: string
@@ -4518,8 +4518,8 @@ components:
                 items:
                   title: AppealInformation
                   required:
-                  - appealLevel
-                  - appealStatus
+                    - appealLevel
+                    - appealStatus
                   type: object
                   properties:
                     appealStatus:
@@ -4527,10 +4527,10 @@ components:
                       description: The appeal status of a penalty.
                       example: under-appeal
                       enum:
-                      - under-appeal
-                      - appeal-upheld
-                      - appeal-rejected
-                      - cannot-be-appealed
+                        - under-appeal
+                        - appeal-upheld
+                        - appeal-rejected
+                        - cannot-be-appealed
                     appealLevel:
                       type: string
                       description: |
@@ -4539,8 +4539,8 @@ components:
                         **Note:** If the late submission penalty is inactive, the default value will be returned.
                       example: statutory-review
                       enum:
-                      - statutory-review
-                      - appeal-first-tier-tribunal
+                        - statutory-review
+                        - appeal-first-tier-tribunal
                       default: statutory-review
               chargeReference:
                 type: string
@@ -4574,7 +4574,7 @@ components:
     Liabilities:
       title: Liabilities
       required:
-      - liabilities
+        - liabilities
       type: object
       properties:
         liabilities:
@@ -4583,14 +4583,14 @@ components:
           items:
             title: Liability
             required:
-            - originalAmount
-            - type
+              - originalAmount
+              - type
             type: object
             properties:
               taxPeriod:
                 required:
-                - from
-                - to
+                  - from
+                  - to
                 type: object
                 properties:
                   from:
@@ -4631,14 +4631,14 @@ components:
     Liability:
       title: Liability
       required:
-      - originalAmount
-      - type
+        - originalAmount
+        - type
       type: object
       properties:
         taxPeriod:
           required:
-          - from
-          - to
+            - from
+            - to
           type: object
           properties:
             from:
@@ -4756,8 +4756,8 @@ components:
     MTDFB-API56v1.0Submit9-BoxVatReturn-Successresponse:
       title: MTDFB-API56v1.0Submit9-BoxVatReturn-Successresponse
       required:
-      - formBundleNumber
-      - processingDate
+        - formBundleNumber
+        - processingDate
       type: object
       properties:
         processingDate:
@@ -4775,8 +4775,8 @@ components:
             * `DD` - The netVatDue value is a debit, and HMRC holds a Direct Debit instruction for the client.
             * `BANK` - The netVatDue value is a credit, and HMRC holds the client’s bank data.
           enum:
-          - DD
-          - BANK
+            - DD
+            - BANK
         chargeRefNumber:
           maxLength: 16
           minLength: 1
@@ -4787,11 +4787,11 @@ components:
     Obligation:
       title: Obligation
       required:
-      - due
-      - end
-      - periodKey
-      - start
-      - status
+        - due
+        - end
+        - periodKey
+        - start
+        - status
       type: object
       properties:
         start:
@@ -4832,7 +4832,7 @@ components:
     Obligations:
       title: Obligations
       required:
-      - obligations
+        - obligations
       type: object
       properties:
         obligations:
@@ -4841,11 +4841,11 @@ components:
           items:
             title: Obligation
             required:
-            - due
-            - end
-            - periodKey
-            - start
-            - status
+              - due
+              - end
+              - periodKey
+              - start
+              - status
             type: object
             properties:
               start:
@@ -4886,7 +4886,7 @@ components:
     Payment:
       title: Payment
       required:
-      - amount
+        - amount
       type: object
       properties:
         amount:
@@ -4909,12 +4909,12 @@ components:
         Debit Instruction for the client. Is BANK if the netVatDue value is a credit
         and HMRC holds the client’s bank data. Otherwise not present.
       enum:
-      - DD
-      - BANK
+        - DD
+        - BANK
     Payments:
       title: Payments
       required:
-      - payments
+        - payments
       type: object
       properties:
         payments:
@@ -4923,7 +4923,7 @@ components:
           items:
             title: Payment
             required:
-            - amount
+              - amount
             type: object
             properties:
               amount:
@@ -4985,17 +4985,17 @@ components:
           description: Totals that relate to the penalties that HMRC has levied.
         lateSubmissionPenalty:
           required:
-          - details
-          - summary
+            - details
+            - summary
           type: object
           properties:
             summary:
               required:
-              - activePenaltyPoints
-              - inactivePenaltyPoints
-              - penaltyChargeAmount
-              - periodOfComplianceAchievement
-              - regimeThreshold
+                - activePenaltyPoints
+                - inactivePenaltyPoints
+                - penaltyChargeAmount
+                - periodOfComplianceAchievement
+                - regimeThreshold
               type: object
               properties:
                 activePenaltyPoints:
@@ -5044,12 +5044,12 @@ components:
               items:
                 title: Detail
                 required:
-                - penaltyCategory
-                - penaltyCreationDate
-                - penaltyExpiryDate
-                - penaltyNumber
-                - penaltyOrder
-                - penaltyStatus
+                  - penaltyCategory
+                  - penaltyCreationDate
+                  - penaltyExpiryDate
+                  - penaltyNumber
+                  - penaltyOrder
+                  - penaltyStatus
                 type: object
                 properties:
                   penaltyNumber:
@@ -5075,9 +5075,9 @@ components:
                       **Note:** If the late submission penalty is inactive, the default value will be returned.
                     example: point
                     enum:
-                    - point
-                    - charge
-                    - threshold
+                      - point
+                      - charge
+                      - threshold
                     default: point
                   penaltyStatus:
                     type: string
@@ -5087,8 +5087,8 @@ components:
                         * `inactive` - If the penalty category is 'point', it no longer counts towards the individual's or organisation's point balance. This might be because the point has expired, been successfully appealed against, or been removed due to an adjustment. If the penalty category is 'threshold', then it no longer counts towards the individual's or organisation's point balance for the same reasons. Alternatively, a 'threshold' penalty could be inactive because the charge that is associated with it has been reversed. If the penalty category is 'charge', then the charge has been reversed.
                     example: active
                     enum:
-                    - active
-                    - inactive
+                      - active
+                      - inactive
                   frequencyAdjustmentPointIndicator:
                     type: string
                     description: "Indicates whether there has been an adjustment to\
@@ -5096,9 +5096,9 @@ components:
                       \ (for example, changing from quarterly submissions to monthly\
                       \ submissions)."
                     example:
-                    - X
+                      - X
                     enum:
-                    - X
+                      - X
                   penaltyCreationDate:
                     type: string
                     description: The date that the penalty point was created.
@@ -5123,14 +5123,14 @@ components:
                         * `HMRC-reset` - An HMRC officer has reset the user's penalty points to zero.
                     example: appeal
                     enum:
-                    - appeal
-                    - submission-frequency-change
-                    - obligations-reversed
-                    - HMRC-removed
-                    - natural-expiry
-                    - penalty-removed
-                    - expiry-conditions-met
-                    - HMRC-reset
+                      - appeal
+                      - submission-frequency-change
+                      - obligations-reversed
+                      - HMRC-removed
+                      - natural-expiry
+                      - penalty-removed
+                      - expiry-conditions-met
+                      - HMRC-reset
                   communicationsDate:
                     type: string
                     description: The date when a letter about the penalty was sent
@@ -5151,8 +5151,8 @@ components:
                     items:
                       title: LateSubmission
                       required:
-                      - lateSubmissionID
-                      - taxReturnStatus
+                        - lateSubmissionID
+                        - taxReturnStatus
                       type: object
                       properties:
                         lateSubmissionID:
@@ -5171,9 +5171,9 @@ components:
                             **Note:** If the late submission penalty is inactive, the default value will be returned.
                           example: Open
                           enum:
-                          - Open
-                          - Fulfilled
-                          - Reversed
+                            - Open
+                            - Fulfilled
+                            - Reversed
                           default: Reversed
                         taxPeriodStartDate:
                           type: string
@@ -5201,8 +5201,8 @@ components:
                     items:
                       title: AppealInformation
                       required:
-                      - appealLevel
-                      - appealStatus
+                        - appealLevel
+                        - appealStatus
                       type: object
                       properties:
                         appealStatus:
@@ -5210,10 +5210,10 @@ components:
                           description: The appeal status of a penalty.
                           example: under-appeal
                           enum:
-                          - under-appeal
-                          - appeal-upheld
-                          - appeal-rejected
-                          - cannot-be-appealed
+                            - under-appeal
+                            - appeal-upheld
+                            - appeal-rejected
+                            - cannot-be-appealed
                         appealLevel:
                           type: string
                           description: |
@@ -5222,8 +5222,8 @@ components:
                             **Note:** If the late submission penalty is inactive, the default value will be returned.
                           example: statutory-review
                           enum:
-                          - statutory-review
-                          - appeal-first-tier-tribunal
+                            - statutory-review
+                            - appeal-first-tier-tribunal
                           default: statutory-review
                   chargeReference:
                     type: string
@@ -5265,15 +5265,15 @@ components:
               items:
                 title: Detail1
                 required:
-                - penaltyAmountAccruing
-                - penaltyAmountPosted
-                - penaltyCategory
-                - penaltyStatus
-                - principalChargeBillingFrom
-                - principalChargeBillingTo
-                - principalChargeDocNumber
-                - principalChargeDueDate
-                - principalChargeReference
+                  - penaltyAmountAccruing
+                  - penaltyAmountPosted
+                  - penaltyCategory
+                  - penaltyStatus
+                  - principalChargeBillingFrom
+                  - principalChargeBillingTo
+                  - principalChargeDocNumber
+                  - principalChargeDueDate
+                  - principalChargeReference
                 type: object
                 properties:
                   principalChargeReference:
@@ -5296,8 +5296,8 @@ components:
                         * `posted` - The penalty has been posted to the account.
                     example: accruing
                     enum:
-                    - accruing
-                    - posted
+                      - accruing
+                      - posted
                   penaltyAmountAccruing:
                     multipleOf: 0.01
                     maximum: 9999999999999.99
@@ -5408,8 +5408,8 @@ components:
                     items:
                       title: AppealInformation
                       required:
-                      - appealLevel
-                      - appealStatus
+                        - appealLevel
+                        - appealStatus
                       type: object
                       properties:
                         appealStatus:
@@ -5417,10 +5417,10 @@ components:
                           description: The appeal status of a penalty.
                           example: under-appeal
                           enum:
-                          - under-appeal
-                          - appeal-upheld
-                          - appeal-rejected
-                          - cannot-be-appealed
+                            - under-appeal
+                            - appeal-upheld
+                            - appeal-rejected
+                            - cannot-be-appealed
                         appealLevel:
                           type: string
                           description: |
@@ -5429,8 +5429,8 @@ components:
                             **Note:** If the late submission penalty is inactive, the default value will be returned.
                           example: statutory-review
                           enum:
-                          - statutory-review
-                          - appeal-first-tier-tribunal
+                            - statutory-review
+                            - appeal-first-tier-tribunal
                           default: statutory-review
                   principalChargeDocNumber:
                     type: string
@@ -5476,16 +5476,16 @@ components:
     SubmitVAT:
       title: SubmitVAT
       required:
-      - netVatDue
-      - periodKey
-      - totalAcquisitionsExVAT
-      - totalValueGoodsSuppliedExVAT
-      - totalValuePurchasesExVAT
-      - totalValueSalesExVAT
-      - totalVatDue
-      - vatDueAcquisitions
-      - vatDueSales
-      - vatReclaimedCurrPeriod
+        - netVatDue
+        - periodKey
+        - totalAcquisitionsExVAT
+        - totalValueGoodsSuppliedExVAT
+        - totalValuePurchasesExVAT
+        - totalValueSalesExVAT
+        - totalVatDue
+        - vatDueAcquisitions
+        - vatDueSales
+        - vatReclaimedCurrPeriod
       type: object
       properties:
         periodKey:
@@ -5558,11 +5558,11 @@ components:
     Summary:
       title: Summary
       required:
-      - activePenaltyPoints
-      - inactivePenaltyPoints
-      - penaltyChargeAmount
-      - periodOfComplianceAchievement
-      - regimeThreshold
+        - activePenaltyPoints
+        - inactivePenaltyPoints
+        - penaltyChargeAmount
+        - periodOfComplianceAchievement
+        - regimeThreshold
       type: object
       properties:
         activePenaltyPoints:
@@ -5606,8 +5606,8 @@ components:
     TaxPeriod:
       title: TaxPeriod
       required:
-      - from
-      - to
+        - from
+        - to
       type: object
       properties:
         from:
@@ -5723,17 +5723,17 @@ components:
     VATReturnDeclaration:
       title: VATReturnDeclaration
       required:
-      - finalised
-      - netVatDue
-      - periodKey
-      - totalAcquisitionsExVAT
-      - totalValueGoodsSuppliedExVAT
-      - totalValuePurchasesExVAT
-      - totalValueSalesExVAT
-      - totalVatDue
-      - vatDueAcquisitions
-      - vatDueSales
-      - vatReclaimedCurrPeriod
+        - finalised
+        - netVatDue
+        - periodKey
+        - totalAcquisitionsExVAT
+        - totalValueGoodsSuppliedExVAT
+        - totalValuePurchasesExVAT
+        - totalValueSalesExVAT
+        - totalVatDue
+        - vatDueAcquisitions
+        - vatDueSales
+        - vatReclaimedCurrPeriod
       type: object
       properties:
         periodKey:

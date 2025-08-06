@@ -2,9 +2,9 @@
 
 import { test, expect } from "@playwright/test";
 import { setTimeout } from "timers/promises";
-import dotenv from 'dotenv';
+import dotenv from "dotenv";
 
-dotenv.config({ path: '.env.test' });
+dotenv.config({ path: ".env.test" });
 
 // Generate timestamp for file naming
 function getTimestamp() {
@@ -25,7 +25,7 @@ test.outputDir = "target/behaviour-navigation-test-results";
 test.describe("Navigation Journey: Home to VAT Submission and Back", () => {
   test("should navigate from home page to VAT submission and back successfully", async ({ page }) => {
     const timestamp = getTimestamp();
-    
+
     // Navigate to the home page
     await page.goto("http://localhost:3000/");
     await page.waitForLoadState("networkidle");
@@ -42,7 +42,9 @@ test.describe("Navigation Journey: Home to VAT Submission and Back", () => {
     await page.click("button:has-text('View available activities')");
     await page.waitForLoadState("networkidle");
     await setTimeout(500);
-    await page.screenshot({ path: `target/behaviour-navigation-test-results/home-to-vat-010-activities_${timestamp}.png` });
+    await page.screenshot({
+      path: `target/behaviour-navigation-test-results/home-to-vat-010-activities_${timestamp}.png`,
+    });
 
     // Verify we're on the activities page
     await expect(page.locator("h1")).toContainText("DIY Accounting Submit");
@@ -55,7 +57,9 @@ test.describe("Navigation Journey: Home to VAT Submission and Back", () => {
     await page.click("button:has-text('VAT Return Submission')");
     await page.waitForLoadState("networkidle");
     await setTimeout(500);
-    await page.screenshot({ path: `target/behaviour-navigation-test-results/home-to-vat-020-vat-form_${timestamp}.png` });
+    await page.screenshot({
+      path: `target/behaviour-navigation-test-results/home-to-vat-020-vat-form_${timestamp}.png`,
+    });
 
     // Verify we're on the VAT submission page
     await expect(page.locator("h1")).toContainText("DIY Accounting Submit");
@@ -70,7 +74,9 @@ test.describe("Navigation Journey: Home to VAT Submission and Back", () => {
     await page.click("button:has-text('View available activities')");
     await page.waitForLoadState("networkidle");
     await setTimeout(500);
-    await page.screenshot({ path: `target/behaviour-navigation-test-results/home-to-vat-030-back-activities_${timestamp}.png` });
+    await page.screenshot({
+      path: `target/behaviour-navigation-test-results/home-to-vat-030-back-activities_${timestamp}.png`,
+    });
 
     // Verify we're back on the activities page
     await expect(page.locator("h1")).toContainText("DIY Accounting Submit");
@@ -83,7 +89,9 @@ test.describe("Navigation Journey: Home to VAT Submission and Back", () => {
     await page.click("button:has-text('Back to Home')");
     await page.waitForLoadState("networkidle");
     await setTimeout(500);
-    await page.screenshot({ path: `target/behaviour-navigation-test-results/home-to-vat-040-back-home_${timestamp}.png` });
+    await page.screenshot({
+      path: `target/behaviour-navigation-test-results/home-to-vat-040-back-home_${timestamp}.png`,
+    });
 
     // Verify we're back on the home page
     await expect(page.locator("h1")).toContainText("DIY Accounting Submit");
@@ -96,7 +104,7 @@ test.describe("Navigation Journey: Home to VAT Submission and Back", () => {
 
   test("should navigate directly from VAT form back to home via activities", async ({ page }) => {
     const timestamp = getTimestamp();
-    
+
     // Navigate to the home page
     await page.goto("http://localhost:3000/");
     await page.waitForLoadState("networkidle");
@@ -106,11 +114,13 @@ test.describe("Navigation Journey: Home to VAT Submission and Back", () => {
     await page.click("button:has-text('View available activities')");
     await page.waitForLoadState("networkidle");
     await setTimeout(300);
-    
+
     await page.click("button:has-text('VAT Return Submission')");
     await page.waitForLoadState("networkidle");
     await setTimeout(500);
-    await page.screenshot({ path: `target/behaviour-navigation-test-results/home-to-vat-direct-000-vat-form_${timestamp}.png` });
+    await page.screenshot({
+      path: `target/behaviour-navigation-test-results/home-to-vat-direct-000-vat-form_${timestamp}.png`,
+    });
 
     // Verify we're on the VAT submission page
     await expect(page.locator("h2")).toContainText("VAT Return Submission");
@@ -125,7 +135,9 @@ test.describe("Navigation Journey: Home to VAT Submission and Back", () => {
     await page.click("button:has-text('Back to Home')");
     await page.waitForLoadState("networkidle");
     await setTimeout(500);
-    await page.screenshot({ path: `target/behaviour-navigation-test-results/home-to-vat-direct-010-back-home_${timestamp}.png` });
+    await page.screenshot({
+      path: `target/behaviour-navigation-test-results/home-to-vat-direct-010-back-home_${timestamp}.png`,
+    });
 
     // Verify we're back on the home page
     await expect(page.locator("h2")).toContainText("Welcome");
@@ -135,16 +147,16 @@ test.describe("Navigation Journey: Home to VAT Submission and Back", () => {
 
   test("should maintain form state when navigating away and back", async ({ page }) => {
     const timestamp = getTimestamp();
-    
+
     // Navigate to VAT form
     await page.goto("http://localhost:3000/");
     await page.waitForLoadState("networkidle");
     await setTimeout(500);
-    
+
     await page.click("button:has-text('View available activities')");
     await page.waitForLoadState("networkidle");
     await setTimeout(300);
-    
+
     await page.click("button:has-text('VAT Return Submission')");
     await page.waitForLoadState("networkidle");
     await setTimeout(500);
@@ -154,7 +166,9 @@ test.describe("Navigation Journey: Home to VAT Submission and Back", () => {
     await page.fill("#periodKey", "24A1");
     await page.fill("#vatDue", "1000.00");
     await setTimeout(300);
-    await page.screenshot({ path: `target/behaviour-navigation-test-results/home-to-vat-state-000-form-filled_${timestamp}.png` });
+    await page.screenshot({
+      path: `target/behaviour-navigation-test-results/home-to-vat-state-000-form-filled_${timestamp}.png`,
+    });
 
     // Navigate away to activities
     await page.click("button:has-text('View available activities')");
@@ -165,7 +179,9 @@ test.describe("Navigation Journey: Home to VAT Submission and Back", () => {
     await page.click("button:has-text('VAT Return Submission')");
     await page.waitForLoadState("networkidle");
     await setTimeout(500);
-    await page.screenshot({ path: `target/behaviour-navigation-test-results/home-to-vat-state-010-form-restored_${timestamp}.png` });
+    await page.screenshot({
+      path: `target/behaviour-navigation-test-results/home-to-vat-state-010-form-restored_${timestamp}.png`,
+    });
 
     // Verify form is empty (as expected for new page load)
     const vatNumber = await page.locator("#vatNumber").inputValue();
@@ -181,7 +197,7 @@ test.describe("Navigation Journey: Home to VAT Submission and Back", () => {
 
   test("should handle rapid navigation between pages", async ({ page }) => {
     const timestamp = getTimestamp();
-    
+
     // Start at home page
     await page.goto("http://localhost:3000/");
     await page.waitForLoadState("networkidle");
@@ -193,25 +209,27 @@ test.describe("Navigation Journey: Home to VAT Submission and Back", () => {
       await page.click("button:has-text('View available activities')");
       await page.waitForLoadState("networkidle");
       await setTimeout(100);
-      
+
       // Activities -> VAT Form
       await page.click("button:has-text('VAT Return Submission')");
       await page.waitForLoadState("networkidle");
       await setTimeout(100);
-      
+
       // VAT Form -> Activities
       await page.click("button:has-text('View available activities')");
       await page.waitForLoadState("networkidle");
       await setTimeout(100);
-      
+
       // Activities -> Home
       await page.click("button:has-text('Back to Home')");
       await page.waitForLoadState("networkidle");
       await setTimeout(100);
     }
 
-    await page.screenshot({ path: `target/behaviour-navigation-test-results/home-to-vat-rapid-navigation_${timestamp}.png` });
-    
+    await page.screenshot({
+      path: `target/behaviour-navigation-test-results/home-to-vat-rapid-navigation_${timestamp}.png`,
+    });
+
     // Verify we end up on the home page
     await expect(page.locator("h2")).toContainText("Welcome");
 

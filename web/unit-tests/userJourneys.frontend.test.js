@@ -11,17 +11,17 @@ describe("User Journeys Frontend Tests", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     // Create a new DOM window for each test
     window = new Window();
     document = window.document;
-    
+
     // Set up global objects
     global.window = window;
     global.document = document;
     global.URLSearchParams = window.URLSearchParams;
     global.fetch = vi.fn();
-    
+
     // Set a proper base URL for the document
     Object.defineProperty(window, "location", {
       value: {
@@ -53,7 +53,9 @@ describe("User Journeys Frontend Tests", () => {
       const htmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/login.html"), "utf-8");
       document.documentElement.innerHTML = htmlContent;
 
-      const googleBtn = Array.from(document.querySelectorAll("button")).find(btn => btn.textContent.includes("Continue with Google"));
+      const googleBtn = Array.from(document.querySelectorAll("button")).find((btn) =>
+        btn.textContent.includes("Continue with Google"),
+      );
       expect(googleBtn).toBeTruthy();
     });
 
@@ -61,7 +63,9 @@ describe("User Journeys Frontend Tests", () => {
       const htmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/login.html"), "utf-8");
       document.documentElement.innerHTML = htmlContent;
 
-      const backButton = Array.from(document.querySelectorAll("button")).find(btn => btn.textContent.includes("Back to Home"));
+      const backButton = Array.from(document.querySelectorAll("button")).find((btn) =>
+        btn.textContent.includes("Back to Home"),
+      );
       expect(backButton).toBeTruthy();
       expect(backButton.getAttribute("onclick")).toContain("index.html");
     });
@@ -74,7 +78,6 @@ describe("User Journeys Frontend Tests", () => {
 
       const pageTitle = document.querySelector("h2");
       expect(pageTitle.textContent).toBe("Add Bundle");
-
     });
 
     test("should have service descriptions on bundles page", () => {
@@ -84,13 +87,13 @@ describe("User Journeys Frontend Tests", () => {
       const descriptions = document.querySelectorAll(".service-description");
       expect(descriptions.length).toBeGreaterThan(0);
 
-      const hmrcTestDesc = Array.from(descriptions).find(desc => desc.textContent.includes("test environment"));
+      const hmrcTestDesc = Array.from(descriptions).find((desc) => desc.textContent.includes("test environment"));
       expect(hmrcTestDesc).toBeTruthy();
 
-      const hmrcProdDesc = Array.from(descriptions).find(desc => desc.textContent.includes("production environment"));
+      const hmrcProdDesc = Array.from(descriptions).find((desc) => desc.textContent.includes("production environment"));
       expect(hmrcProdDesc).toBeTruthy();
 
-      const companiesHouseDesc = Array.from(descriptions).find(desc => desc.textContent.includes("Companies House"));
+      const companiesHouseDesc = Array.from(descriptions).find((desc) => desc.textContent.includes("Companies House"));
       expect(companiesHouseDesc).toBeTruthy();
     });
   });
@@ -98,8 +101,8 @@ describe("User Journeys Frontend Tests", () => {
   describe("Cross-Page Navigation Journey", () => {
     test("should maintain consistent header across all pages", () => {
       const pages = ["index.html", "login.html", "bundles.html", "activities.html"];
-      
-      pages.forEach(page => {
+
+      pages.forEach((page) => {
         const htmlContent = fs.readFileSync(path.join(process.cwd(), `web/public/${page}`), "utf-8");
         document.documentElement.innerHTML = htmlContent;
 
@@ -113,8 +116,8 @@ describe("User Journeys Frontend Tests", () => {
 
     test("should maintain consistent footer across all pages", () => {
       const pages = ["index.html", "login.html", "bundles.html", "activities.html"];
-      
-      pages.forEach(page => {
+
+      pages.forEach((page) => {
         const htmlContent = fs.readFileSync(path.join(process.cwd(), `web/public/${page}`), "utf-8");
         document.documentElement.innerHTML = htmlContent;
 
@@ -125,8 +128,8 @@ describe("User Journeys Frontend Tests", () => {
 
     test("should have view source link functionality on all pages", () => {
       const pages = ["index.html", "login.html", "bundles.html", "activities.html"];
-      
-      pages.forEach(page => {
+
+      pages.forEach((page) => {
         const htmlContent = fs.readFileSync(path.join(process.cwd(), `web/public/${page}`), "utf-8");
         document.documentElement.innerHTML = htmlContent;
 

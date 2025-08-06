@@ -25,11 +25,7 @@ export default defineConfig(({ mode }) => {
             "app/system-tests/*.test.js",
             "web/unit-tests/*.test.js",
           ],
-          exclude: [
-            "web/browser-tests/*.test.js",
-            "manually-run-tests/*.test.js",
-            "behaviour-tests/*.test.js",
-          ],
+          exclude: ["web/browser-tests/*.test.js", "manually-run-tests/*.test.js", "behaviour-tests/*.test.js"],
         },
       ],
       coverage: {

@@ -3,9 +3,9 @@
 import { test, expect, chromium } from "@playwright/test";
 import fs from "fs";
 import path from "path";
-import dotenv from 'dotenv';
+import dotenv from "dotenv";
 
-dotenv.config({ path: '.env.test' });
+dotenv.config({ path: ".env.test" });
 
 function getTimestamp() {
   const now = new Date();
@@ -26,7 +26,7 @@ test.describe("Client Status Message Stacking", () => {
       baseURL: "http://localhost:3000",
       waitUntil: "domcontentloaded",
     });
-    
+
     // Inject submit.js content into the page
     await page.addScriptTag({ content: submitJsContent });
   });
@@ -47,8 +47,8 @@ test.describe("Client Status Message Stacking", () => {
     await expect(messages.nth(2).locator(".status-message-content")).toHaveText("Info message 3");
     await page.screenshot({ path: `target/browser-test-results/browser-status-stack-initial_${timestamp}.png` });
     // Wait 31 seconds for auto-removal
-    //await page.waitForTimeout(31000);
-    //await expect(messages).toHaveCount(0);
+    // await page.waitForTimeout(31000);
+    // await expect(messages).toHaveCount(0);
   });
 
   test("should stack error and info messages, only auto-remove info", async ({ page }) => {
@@ -62,10 +62,10 @@ test.describe("Client Status Message Stacking", () => {
     await expect(messages.nth(0).locator(".status-message-content")).toHaveText("Error message");
     await expect(messages.nth(1).locator(".status-message-content")).toHaveText("Info message");
     // Wait 31 seconds
-    //await page.waitForTimeout(31000);
+    // await page.waitForTimeout(31000);
     // Only error should remain
-    //await expect(messages).toHaveCount(1);
-    //await expect(messages.nth(0)).toHaveText("Error message");
+    // await expect(messages).toHaveCount(1);
+    // await expect(messages.nth(0)).toHaveText("Error message");
   });
 
   test("should clear all messages with hideStatus", async ({ page }) => {
@@ -88,35 +88,34 @@ test.describe("Client Status Message Stacking", () => {
       window.showStatus("Message 2", "error");
       window.showStatus("Message 3", "success");
     });
-    
+
     const messages = page.locator("#statusMessagesContainer .status-message");
     await expect(messages).toHaveCount(3);
-    
+
     // Take screenshot before clicking
     await page.screenshot({ path: `target/browser-test-results/browser-close-button-before_${timestamp}.png` });
-    
+
     // Click close button on the second message
     const secondMessageCloseButton = messages.nth(1).locator(".status-close-button");
     await expect(secondMessageCloseButton).toBeVisible();
     await secondMessageCloseButton.click();
-    
+
     // Should have 2 messages remaining
     await expect(messages).toHaveCount(2);
-    
+
     // Verify the correct messages remain
     await expect(messages.nth(0).locator(".status-message-content")).toHaveText("Message 1");
     await expect(messages.nth(1).locator(".status-message-content")).toHaveText("Message 3");
-    
+
     // Take screenshot after clicking
     await page.screenshot({ path: `target/browser-test-results/browser-close-button-after_${timestamp}.png` });
-    
+
     // Click close button on first remaining message
     const firstMessageCloseButton = messages.nth(0).locator(".status-close-button");
     await firstMessageCloseButton.click();
-    
+
     // Should have 1 message remaining
     await expect(messages).toHaveCount(1);
     await expect(messages.nth(0).locator(".status-message-content")).toHaveText("Message 3");
   });
 });
-

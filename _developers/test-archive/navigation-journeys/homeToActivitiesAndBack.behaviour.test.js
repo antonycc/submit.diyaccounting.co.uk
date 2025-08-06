@@ -2,9 +2,9 @@
 
 import { test, expect } from "@playwright/test";
 import { setTimeout } from "timers/promises";
-import dotenv from 'dotenv';
+import dotenv from "dotenv";
 
-dotenv.config({ path: '.env.test' });
+dotenv.config({ path: ".env.test" });
 
 // Generate timestamp for file naming
 function getTimestamp() {
@@ -25,12 +25,14 @@ test.outputDir = "target/behaviour-navigation-test-results";
 test.describe("Navigation Journey: Home to Activities and Back", () => {
   test("should navigate from home page to activities and back successfully", async ({ page }) => {
     const timestamp = getTimestamp();
-    
+
     // Navigate to the home page
     await page.goto("http://localhost:3000/");
     await page.waitForLoadState("networkidle");
     await setTimeout(500);
-    await page.screenshot({ path: `target/behaviour-navigation-test-results/home-to-activities-000-home_${timestamp}.png` });
+    await page.screenshot({
+      path: `target/behaviour-navigation-test-results/home-to-activities-000-home_${timestamp}.png`,
+    });
 
     // Verify we're on the home page
     await expect(page.locator("h1")).toContainText("DIY Accounting Submit");
@@ -42,7 +44,9 @@ test.describe("Navigation Journey: Home to Activities and Back", () => {
     await page.click("button:has-text('View available activities')");
     await page.waitForLoadState("networkidle");
     await setTimeout(500);
-    await page.screenshot({ path: `target/behaviour-navigation-test-results/home-to-activities-010-activities_${timestamp}.png` });
+    await page.screenshot({
+      path: `target/behaviour-navigation-test-results/home-to-activities-010-activities_${timestamp}.png`,
+    });
 
     // Verify we're on the activities page
     await expect(page.locator("h1")).toContainText("DIY Accounting Submit");
@@ -55,7 +59,9 @@ test.describe("Navigation Journey: Home to Activities and Back", () => {
     await page.click("button:has-text('Back to Home')");
     await page.waitForLoadState("networkidle");
     await setTimeout(500);
-    await page.screenshot({ path: `target/behaviour-navigation-test-results/home-to-activities-020-back-home_${timestamp}.png` });
+    await page.screenshot({
+      path: `target/behaviour-navigation-test-results/home-to-activities-020-back-home_${timestamp}.png`,
+    });
 
     // Verify we're back on the home page
     await expect(page.locator("h1")).toContainText("DIY Accounting Submit");
@@ -68,7 +74,7 @@ test.describe("Navigation Journey: Home to Activities and Back", () => {
 
   test("should handle multiple navigation cycles", async ({ page }) => {
     const timestamp = getTimestamp();
-    
+
     // Start at home page
     await page.goto("http://localhost:3000/");
     await page.waitForLoadState("networkidle");
@@ -80,26 +86,28 @@ test.describe("Navigation Journey: Home to Activities and Back", () => {
       await page.click("button:has-text('View available activities')");
       await page.waitForLoadState("networkidle");
       await setTimeout(200);
-      
+
       // Verify activities page
       await expect(page.locator("h2")).toContainText("Available Activities");
-      
+
       // Go back to home
       await page.click("button:has-text('Back to Home')");
       await page.waitForLoadState("networkidle");
       await setTimeout(200);
-      
+
       // Verify home page
       await expect(page.locator("h2")).toContainText("Welcome");
     }
 
-    await page.screenshot({ path: `target/behaviour-navigation-test-results/home-to-activities-multiple-cycles_${timestamp}.png` });
+    await page.screenshot({
+      path: `target/behaviour-navigation-test-results/home-to-activities-multiple-cycles_${timestamp}.png`,
+    });
     console.log("Multiple navigation cycles completed successfully");
   });
 
   test("should maintain page state during navigation", async ({ page }) => {
     const timestamp = getTimestamp();
-    
+
     // Navigate to home page
     await page.goto("http://localhost:3000/");
     await page.waitForLoadState("networkidle");
@@ -127,7 +135,9 @@ test.describe("Navigation Journey: Home to Activities and Back", () => {
     const restoredHomeTitle = await page.locator("title").textContent();
     expect(restoredHomeTitle).toBe("DIY Accounting Submit");
 
-    await page.screenshot({ path: `target/behaviour-navigation-test-results/home-to-activities-state-maintained_${timestamp}.png` });
+    await page.screenshot({
+      path: `target/behaviour-navigation-test-results/home-to-activities-state-maintained_${timestamp}.png`,
+    });
     console.log("Page state maintained during navigation");
   });
 });

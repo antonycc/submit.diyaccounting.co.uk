@@ -2,23 +2,22 @@
 import { defineConfig } from "@playwright/test";
 
 export default defineConfig({
-
   projects: [
     {
-      name: 'behaviour-tests',
-      testDir: 'behaviour-tests',
+      name: "behaviour-tests",
+      testDir: "behaviour-tests",
       workers: 1, // throttle concurrency to 1
       outputDir: "./target/behaviour-test-results/",
     },
     {
-      name: 'browser-tests',
-      testDir: 'web/browser-tests',
+      name: "browser-tests",
+      testDir: "web/browser-tests",
       workers: 1, // throttle concurrency to 1
       outputDir: "./target/browser-test-results/",
     },
     {
-      name: 'manually-run-tests',
-      testDir: 'manually-run-tests',
+      name: "manually-run-tests",
+      testDir: "manually-run-tests",
       workers: 1, // throttle concurrency to 1
       outputDir: "./target/run-manually-test-results/",
     },
@@ -41,18 +40,20 @@ export default defineConfig({
     screenshot: "on", // or 'only-on-failure', 'off'
     // Screenshots are png by default, but jpeg is also possible
     // To get jpeg: page.screenshot({ type: 'jpeg' }) in test code
-    
+
     // Enable detailed logging
-    trace: 'on', // Enable tracing for detailed debugging
+    trace: "on", // Enable tracing for detailed debugging
   },
 
   reporter: [
-      ["html", {
-          outputFolder: "target/test-reports/html-report",
-          open: "never"  // <-- prevent auto-serving and terminal blocking
-        }
-      ],
-    ["list"]
+    [
+      "html",
+      {
+        outputFolder: "target/test-reports/html-report",
+        open: "never", // <-- prevent auto-serving and terminal blocking
+      },
+    ],
+    ["list"],
   ],
 
   // Optional: customize test timeout or other settings here

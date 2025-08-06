@@ -217,14 +217,14 @@ test.describe("Navigation Browser Tests", () => {
 
       // Verify hamburger menu exists
       await expect(page.locator(".hamburger-btn")).toBeVisible();
-      
+
       // Click hamburger menu to open dropdown
       await page.click(".hamburger-btn");
       await setTimeout(100);
-      
+
       // Verify menu dropdown is visible (we can't test CSS classes easily, so we check if links are clickable)
       await expect(page.locator(".menu-dropdown a").first()).toBeVisible();
-      
+
       // Mock navigation to activities page
       await page.route("**/activities.html", async (route) => {
         await route.fulfill({
@@ -248,7 +248,7 @@ test.describe("Navigation Browser Tests", () => {
       // Click hamburger menu
       await page.click(".hamburger-btn");
       await setTimeout(100);
-      
+
       // Mock navigation to bundles page
       await page.route("**/bundles.html", async (route) => {
         await route.fulfill({

@@ -3,9 +3,9 @@
 import { test, expect } from "@playwright/test";
 import { spawn } from "child_process";
 import { setTimeout } from "timers/promises";
-import dotenv from 'dotenv';
+import dotenv from "dotenv";
 
-dotenv.config({ path: '.env.test' });
+dotenv.config({ path: ".env.test" });
 
 // Test specific dedicated server port
 const serverPort = 3100;
@@ -178,7 +178,6 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
       }),
     });
   });
-
 
   await setTimeout(500);
 

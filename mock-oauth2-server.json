@@ -10,9 +10,7 @@
           "claims": {
             "sub": "user",
             "email": "user@example.com",
-            "aud": [
-              "debugger"
-            ],
+            "aud": ["debugger"],
             "scope": "openid somescope",
             "nonce": "5678"
           }
@@ -28,17 +26,10 @@
         "http://127.0.0.1:3000/loginCallback.html",
         "https://wanted-finally-anteater.ngrok-free.app/loginCallback.html"
       ],
-      "grantTypes": [
-        "authorization_code"
-      ],
-      "responseTypes": [
-        "code"
-      ],
+      "grantTypes": ["authorization_code"],
+      "responseTypes": ["code"],
       "tokenEndpointAuthMethod": "client_secret_basic",
-      "scopes": [
-        "openid",
-        "somescope"
-      ]
+      "scopes": ["openid", "somescope"]
     }
   ]
 }

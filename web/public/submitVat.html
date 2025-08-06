@@ -9,8 +9,7 @@
   </head>
   <body>
     <header>
-      <div class="header-nav">
-      </div>
+      <div class="header-nav"></div>
       <h1>DIY Accounting Submit</h1>
       <p class="subtitle">Submit UK VAT returns to HMRC under Making Tax Digital (MTD)</p>
     </header>
@@ -20,7 +19,7 @@
       <div id="statusMessagesContainer"></div>
 
       <!-- Loading spinner -->
-      <div id="loadingSpinner" class="spinner" style="display: none;"></div>
+      <div id="loadingSpinner" class="spinner" style="display: none"></div>
 
       <!-- VAT Submission Form -->
       <div id="vatForm" class="form-container">
@@ -75,7 +74,7 @@
       </div>
 
       <!-- Receipt Display -->
-      <div id="receiptDisplay" class="receipt" style="display: none;">
+      <div id="receiptDisplay" class="receipt" style="display: none">
         <h3>✅ VAT Return Submitted Successfully!</h3>
         <div class="receipt-details">
           <div class="receipt-item">
@@ -97,15 +96,17 @@
       </div>
 
       <!-- Navigation Button -->
-      <div class="navigation-container" style="text-align: center; margin-top: 2em;">
-        <button type="button" class="btn" id="homePageFromMainBtn" onclick="window.location.href='index.html'">Return to the home page</button>
+      <div class="navigation-container" style="text-align: center; margin-top: 2em">
+        <button type="button" class="btn" id="homePageFromMainBtn" onclick="window.location.href='index.html'">
+          Return to the home page
+        </button>
       </div>
     </div>
 
     <footer>
       <div class="footer-content">
         <div class="footer-left">
-          <a href="#" id="viewSourceLink" style="display: none;">view source</a>
+          <a href="#" id="viewSourceLink" style="display: none">view source</a>
         </div>
         <div class="footer-center">
           <p>&copy; 2025 DIY Accounting Limited. Licensed under GPL v3.0</p>
@@ -115,7 +116,6 @@
 
     <script src="./submit.js"></script>
     <script>
-
       // VAT-specific functions
 
       // Form submission handler
@@ -158,8 +158,8 @@
           const authResponse = await getAuthUrl(state, "hmrc");
           const authResponseUrl = authResponse.authUrl;
 
-          localStorage.setItem('currentActivity', location.pathname);
-          console.log('Current activity set to:', location.pathname);
+          localStorage.setItem("currentActivity", location.pathname);
+          console.log("Current activity set to:", location.pathname);
 
           showStatus(`Redirecting to HMRC for authentication at ${authResponseUrl}...`, "info");
 
@@ -177,11 +177,11 @@
       function handleOAuthCallback() {
         const hmrcAccessToken = sessionStorage.getItem("hmrcAccessToken");
         if (hmrcAccessToken) {
-          console.log('OAuth callback handler (hmrcAccessToken found)');
+          console.log("OAuth callback handler (hmrcAccessToken found)");
           // If we have an access token, continue with submission
           continueVatSubmission();
         } else {
-          console.log('OAuth callback handler (no hmrcAccessToken found)');
+          console.log("OAuth callback handler (no hmrcAccessToken found)");
         }
       }
 
@@ -189,25 +189,25 @@
         try {
           const hmrcAccessToken = sessionStorage.getItem("hmrcAccessToken");
           const submissionData = JSON.parse(localStorage.getItem("submission_data"));
-          console.log('Retrieved submission data:', submissionData);
+          console.log("Retrieved submission data:", submissionData);
 
           showStatus("Submitting VAT return to HMRC...", "info");
 
           // Submit VAT return
           const submitResponse = await submitVatWithCalculatedHeaders(
-                  submissionData.vatNumber,
-                  submissionData.periodKey,
-                  submissionData.vatDue,
-                  hmrcAccessToken,
+            submissionData.vatNumber,
+            submissionData.periodKey,
+            submissionData.vatDue,
+            hmrcAccessToken,
           );
 
           showStatus("Logging submission receipt...", "info");
 
           // Log the receipt
           await logReceipt(
-                  submitResponse.processingDate,
-                  submitResponse.formBundleNumber,
-                  submitResponse.chargeRefNumber,
+            submitResponse.processingDate,
+            submitResponse.formBundleNumber,
+            submitResponse.chargeRefNumber,
           );
 
           // Display success
@@ -215,13 +215,13 @@
           hideStatus();
 
           // Reset current activity
-          localStorage.removeItem('currentActivity');
-          console.log('Current activity cleared');
+          localStorage.removeItem("currentActivity");
+          console.log("Current activity cleared");
 
           // Clean up session storage
           sessionStorage.removeItem("oauth_state");
           localStorage.removeItem("submission_data");
-          console.log('Continue submission handler (success)');
+          console.log("Continue submission handler (success)");
         } catch (error) {
           console.error("Submission error:", error);
           showStatus(`Submission failed: ${error.message}`, "error");
@@ -242,7 +242,8 @@
         const govVendorPublicIPHeader = detectedIP; // Fix: Define the previously undefined variable
 
         const govClientPublicIPTimestampHeader = new Date().toISOString();
-        const govClientPublicPortHeader = "" + (window.location.port || (window.location.protocol === 'https:' ? '443' : '80'));
+        const govClientPublicPortHeader =
+          "" + (window.location.port || (window.location.protocol === "https:" ? "443" : "80"));
         const govClientScreensHeader = JSON.stringify({
           width: window.screen.width,
           height: window.screen.height,
@@ -270,7 +271,7 @@
           "Gov-Client-Window-Size": govClientWindowSizeHeader,
           "Gov-Vendor-Forwarded": govVendorForwardedHeader,
           "Gov-Vendor-Public-IP": govVendorPublicIPHeader,
-        }
+        };
         return await submitVat(vatNumber, periodKey, vatDue, hmrcAccessToken, headers);
       }
 
@@ -288,7 +289,7 @@
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            ...headers
+            ...headers,
           },
           body,
         });
@@ -309,7 +310,7 @@
           processingDate,
           formBundleNumber,
           chargeRefNumber,
-        })
+        });
         console.log(`Logging receipt. Remote call initiated: POST ${url} ++ Body: ${body}`);
 
         const response = await fetch(url, {
@@ -331,7 +332,7 @@
       }
 
       function displayReceipt(response) {
-        console.log('Page display transition: Displaying receipt and hiding form');
+        console.log("Page display transition: Displaying receipt and hiding form");
         // Hide the form
         vatFormContainer.style.display = "none";
 
@@ -388,13 +389,13 @@
 
       // Initialize
       document.addEventListener("DOMContentLoaded", function () {
-        console.log('JS block started loading: DOMContentLoaded event handler');
+        console.log("JS block started loading: DOMContentLoaded event handler");
         // Check if we're returning from OAuth
         handleOAuthCallback();
-        console.log('JS block finished loading: DOMContentLoaded event handler');
+        console.log("JS block finished loading: DOMContentLoaded event handler");
       });
 
-      console.log('JS block finished loading.');
+      console.log("JS block finished loading.");
     </script>
   </body>
 </html>

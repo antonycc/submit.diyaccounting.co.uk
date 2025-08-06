@@ -5,17 +5,17 @@ import path from "path";
 import express from "express";
 import { fileURLToPath } from "url";
 import { readFileSync } from "fs";
-import dotenv from 'dotenv';
+import dotenv from "dotenv";
 
-import {httpGetHmrc, httpGetHmrc as authUrlHttpGet, httpGetMock} from "../functions/authUrl.js";
+import { httpGetHmrc, httpGetHmrc as authUrlHttpGet, httpGetMock } from "../functions/authUrl.js";
 import { httpPost as exchangeTokenHttpPost } from "../functions/exchangeToken.js";
 import { httpPost as submitVatHttpPost } from "../functions/submitVat.js";
 import { httpPost as logReceiptHttpPost } from "../functions/logReceipt.js";
 
-dotenv.config({ path: '.env' });
+dotenv.config({ path: ".env" });
 
 import logger from "../lib/logger.js";
-import {setTimeout} from "timers/promises";
+import { setTimeout } from "timers/promises";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -23,8 +23,8 @@ const app = express();
 // Read configuration from cdk.json
 const cdkJsonPath = path.join(__dirname, "../../cdk.json");
 logger.info(`Reading CDK configuration from ${cdkJsonPath}`);
-const cdkConfig = JSON.parse(readFileSync(cdkJsonPath, 'utf8'));
-//logger.info(`CDK configuration: ${JSON.stringify(cdkConfig, null, 2)}`);
+const cdkConfig = JSON.parse(readFileSync(cdkJsonPath, "utf8"));
+// logger.info(`CDK configuration: ${JSON.stringify(cdkConfig, null, 2)}`);
 const context = cdkConfig.context || {};
 logger.info("CDK context:", context);
 
@@ -50,7 +50,7 @@ const logReceiptPath = context.logReceiptLambdaUrlPath || "/api/log-receipt";
 app.get(authUrlPath, async (req, res) => {
   const event = {
     path: req.path,
-    headers: { host: req.get('host') || 'localhost:3000' },
+    headers: { host: req.get("host") || "localhost:3000" },
     queryStringParameters: req.query || {},
   };
   const { statusCode, body } = await httpGetHmrc(event);
@@ -60,7 +60,7 @@ app.get(authUrlPath, async (req, res) => {
 app.get(mockAuthUrlPath, async (req, res) => {
   const event = {
     path: req.path,
-    headers: { host: req.get('host') || 'localhost:3000' },
+    headers: { host: req.get("host") || "localhost:3000" },
     queryStringParameters: req.query || {},
   };
   const { statusCode, body } = await httpGetMock(event);
@@ -70,9 +70,9 @@ app.get(mockAuthUrlPath, async (req, res) => {
 app.post(exchangeTokenPath, async (req, res) => {
   const event = {
     path: req.path,
-    headers: { host: req.get('host') || 'localhost:3000' },
+    headers: { host: req.get("host") || "localhost:3000" },
     queryStringParameters: req.query || {},
-    body: JSON.stringify(req.body)
+    body: JSON.stringify(req.body),
   };
   const { statusCode, body } = await exchangeTokenHttpPost(event);
   res.status(statusCode).json(JSON.parse(body));
@@ -81,9 +81,9 @@ app.post(exchangeTokenPath, async (req, res) => {
 app.post(submitVatPath, async (req, res) => {
   const event = {
     path: req.path,
-    headers: { host: req.get('host') || 'localhost:3000' },
+    headers: { host: req.get("host") || "localhost:3000" },
     queryStringParameters: req.query || {},
-    body: JSON.stringify(req.body)
+    body: JSON.stringify(req.body),
   };
   const { statusCode, body } = await submitVatHttpPost(event);
   res.status(statusCode).json(JSON.parse(body));
@@ -92,9 +92,9 @@ app.post(submitVatPath, async (req, res) => {
 app.post(logReceiptPath, async (req, res) => {
   const event = {
     path: req.path,
-    headers: { host: req.get('host') || 'localhost:3000' },
+    headers: { host: req.get("host") || "localhost:3000" },
     queryStringParameters: req.query || {},
-    body: JSON.stringify(req.body)
+    body: JSON.stringify(req.body),
   };
   const { statusCode, body } = await logReceiptHttpPost(event);
   res.status(statusCode).json(JSON.parse(body));
@@ -137,7 +137,7 @@ const DIY_SUBMIT_DIY_SUBMIT_TEST_SERVER_HTTP_PORT = process.env.DIY_SUBMIT_DIY_S
 if (import.meta.url === `file://${process.argv[1]}`) {
   app.listen(DIY_SUBMIT_DIY_SUBMIT_TEST_SERVER_HTTP_PORT, () => {
     const hmrcBase = process.env.DIY_SUBMIT_HMRC_BASE_URI || "DIY_SUBMIT_HMRC_BASE_URI not set";
-    const message =`Listening at http://127.0.0.1:${DIY_SUBMIT_DIY_SUBMIT_TEST_SERVER_HTTP_PORT} for ${hmrcBase}`;
+    const message = `Listening at http://127.0.0.1:${DIY_SUBMIT_DIY_SUBMIT_TEST_SERVER_HTTP_PORT} for ${hmrcBase}`;
     console.log(message);
     logger.info(message);
   });

@@ -3,11 +3,11 @@
 import { describe, beforeEach, afterEach, test, expect, vi } from "vitest";
 import { mockClient } from "aws-sdk-client-mock";
 import { SecretsManagerClient, GetSecretValueCommand } from "@aws-sdk/client-secrets-manager";
-import dotenv from 'dotenv';
+import dotenv from "dotenv";
 
-import {exchangeToken, resetCachedSecret } from "@app/functions/exchangeToken.js";
+import { exchangeToken, resetCachedSecret } from "@app/functions/exchangeToken.js";
 
-dotenv.config({ path: '.env.test' });
+dotenv.config({ path: ".env.test" });
 
 // Mock node-fetch
 vi.mock("node-fetch", () => ({
@@ -31,7 +31,7 @@ describe("exchangeClientSecretForAccessToken", () => {
   beforeEach(() => {
     vi.resetAllMocks();
     secretsManagerMock.reset();
-    
+
     // Reset environment variables
     process.env = {
       ...originalEnv,
@@ -40,7 +40,7 @@ describe("exchangeClientSecretForAccessToken", () => {
       DIY_SUBMIT_HMRC_BASE_URI: "https://test-api.service.hmrc.gov.uk",
       NODE_ENV: "test",
     };
-    
+
     // Clear any cached secrets
     resetCachedSecret();
   });
@@ -55,7 +55,7 @@ describe("exchangeClientSecretForAccessToken", () => {
       // Arrange
       const testSecret = "test-client-secret-from-env";
       process.env.DIY_SUBMIT_HMRC_CLIENT_SECRET = testSecret;
-      
+
       const fetch = await import("node-fetch");
       fetch.default.mockResolvedValue({
         ok: true,
@@ -69,7 +69,7 @@ describe("exchangeClientSecretForAccessToken", () => {
       // Assert
       expect(result.hmrcAccessToken).toBe("test-access-token");
       expect(secretsManagerMock.calls()).toHaveLength(0); // Should not call Secrets Manager
-      
+
       // Verify the fetch was called with correct parameters
       const fetchCall = fetch.default.mock.calls[0];
       expect(fetchCall[1].body.toString()).toContain(`client_secret=${testSecret}`);
@@ -79,7 +79,7 @@ describe("exchangeClientSecretForAccessToken", () => {
       // Arrange
       const testSecretArn = "arn:aws:secretsmanager:us-east-1:123456789012:secret:test-secret";
       const testSecretValue = "test-client-secret-from-secrets-manager";
-      
+
       process.env.DIY_SUBMIT_HMRC_CLIENT_SECRET_ARN = testSecretArn;
       delete process.env.DIY_SUBMIT_HMRC_CLIENT_SECRET;
 
@@ -100,14 +100,14 @@ describe("exchangeClientSecretForAccessToken", () => {
 
       // Assert
       expect(result.hmrcAccessToken).toBe("test-access-token");
-      
+
       // Verify GetSecretValueCommand was called with correct parameters
       const secretsManagerCalls = secretsManagerMock.calls();
       expect(secretsManagerCalls).toHaveLength(1);
       expect(secretsManagerCalls[0].args[0].input).toEqual({
         SecretId: testSecretArn,
       });
-      
+
       // Verify the fetch was called with the secret from Secrets Manager
       const fetchCall = fetch.default.mock.calls[0];
       expect(fetchCall[1].body.toString()).toContain(`client_secret=${testSecretValue}`);
@@ -117,7 +117,7 @@ describe("exchangeClientSecretForAccessToken", () => {
       // Arrange
       const testSecretArn = "arn:aws:secretsmanager:us-east-1:123456789012:secret:test-secret";
       const testSecretValue = "cached-secret-value";
-      
+
       process.env.DIY_SUBMIT_HMRC_CLIENT_SECRET_ARN = testSecretArn;
       delete process.env.DIY_SUBMIT_HMRC_CLIENT_SECRET;
 
@@ -141,7 +141,7 @@ describe("exchangeClientSecretForAccessToken", () => {
       // Should only call Secrets Manager once due to caching
       const secretsManagerCalls = secretsManagerMock.calls();
       expect(secretsManagerCalls).toHaveLength(1);
-      
+
       // Both fetch calls should use the same cached secret
       expect(fetch.default).toHaveBeenCalledTimes(2);
       const firstFetchCall = fetch.default.mock.calls[0];
@@ -154,7 +154,7 @@ describe("exchangeClientSecretForAccessToken", () => {
       // Arrange
       const testSecretArn = "arn:aws:secretsmanager:us-east-1:123456789012:secret:test-secret";
       const testSecretValue = "secret-with-special-chars!@#$%";
-      
+
       process.env.DIY_SUBMIT_HMRC_CLIENT_SECRET_ARN = testSecretArn;
       delete process.env.DIY_SUBMIT_HMRC_CLIENT_SECRET;
 
@@ -178,7 +178,7 @@ describe("exchangeClientSecretForAccessToken", () => {
 
       // Assert
       expect(result.hmrcAccessToken).toBe("test-access-token");
-      
+
       // Verify the secret was extracted correctly from the response
       const fetchCall = fetch.default.mock.calls[0];
       const bodyString = fetchCall[1].body.toString();
@@ -191,7 +191,7 @@ describe("exchangeClientSecretForAccessToken", () => {
       const envSecret = "env-secret";
       const secretsManagerSecret = "secrets-manager-secret";
       const testSecretArn = "arn:aws:secretsmanager:us-east-1:123456789012:secret:test-secret";
-      
+
       process.env.DIY_SUBMIT_HMRC_CLIENT_SECRET = envSecret;
       process.env.DIY_SUBMIT_HMRC_CLIENT_SECRET_ARN = testSecretArn;
 
@@ -216,7 +216,7 @@ describe("exchangeClientSecretForAccessToken", () => {
       // Assert
       expect(result.hmrcAccessToken).toBe("test-access-token");
       expect(secretsManagerMock.calls()).toHaveLength(0); // Should not call Secrets Manager
-      
+
       // Verify the fetch was called with the environment variable secret
       const fetchCall = fetch.default.mock.calls[0];
       expect(fetchCall[1].body.toString()).toContain(`client_secret=${envSecret}`);
@@ -241,7 +241,7 @@ describe("exchangeClientSecretForAccessToken", () => {
       // Assert
       expect(result.hmrcAccessToken).toBe(testAccessToken);
       expect(result.hmrcResponse.status).toBe(200);
-      
+
       // Should not make actual HTTP calls in stubbed mode
       const fetch = await import("node-fetch");
       expect(fetch.default).not.toHaveBeenCalled();

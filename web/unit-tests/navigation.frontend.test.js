@@ -11,16 +11,16 @@ describe("Navigation Frontend Tests", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     // Create a new DOM window for each test
     window = new Window();
     document = window.document;
-    
+
     // Set up global objects
     global.window = window;
     global.document = document;
     global.URLSearchParams = window.URLSearchParams;
-    
+
     // Set a proper base URL for the document
     Object.defineProperty(window, "location", {
       value: {
@@ -47,7 +47,7 @@ describe("Navigation Frontend Tests", () => {
       expect(document.title).toBe("DIY Accounting Submit");
       const header = document.querySelector("h1");
       expect(header.textContent).toBe("DIY Accounting Submit");
-      
+
       const subtitle = document.querySelector(".subtitle");
       expect(subtitle.textContent).toBe("Submit UK VAT returns to HMRC under Making Tax Digital (MTD)");
     });
@@ -55,13 +55,13 @@ describe("Navigation Frontend Tests", () => {
     test("should have welcome message and navigation button", () => {
       const welcomeHeader = document.querySelector("h2");
       expect(welcomeHeader.textContent).toBe("Welcome");
-      
+
       const description = document.querySelector(".form-container p");
       expect(description.textContent).toBe("Choose from the available activities below to get started.");
-      
+
       const buttons = document.querySelectorAll("button");
-      const activitiesButton = Array.from(buttons).find(btn => btn.textContent === "View available activities");
-      
+      const activitiesButton = Array.from(buttons).find((btn) => btn.textContent === "View available activities");
+
       expect(activitiesButton).toBeTruthy();
       expect(activitiesButton.getAttribute("onclick")).toContain("activities.html");
     });
@@ -96,7 +96,7 @@ describe("Navigation Frontend Tests", () => {
       const urlParams = new URLSearchParams(window.location.search);
       const code = urlParams.get("code");
       const state = urlParams.get("state");
-      
+
       expect(code).toBe("test-code");
       expect(state).toBe("test-state");
     });
@@ -112,7 +112,7 @@ describe("Navigation Frontend Tests", () => {
       expect(document.title).toBe("DIY Accounting Submit - Activities");
       const header = document.querySelector("h1");
       expect(header.textContent).toBe("DIY Accounting Submit");
-      
+
       const subtitle = document.querySelector(".subtitle");
       expect(subtitle.textContent).toBe("Submit UK VAT returns to HMRC under Making Tax Digital (MTD)");
     });
@@ -120,23 +120,23 @@ describe("Navigation Frontend Tests", () => {
     test("should have activities header and description", () => {
       const activitiesHeader = document.querySelector("h2");
       expect(activitiesHeader.textContent).toBe("Available Activities");
-      
+
       const description = document.querySelector(".form-container p");
       expect(description.textContent).toBe("Select an activity to continue:");
     });
 
     test("should have VAT Return Submission button", () => {
       const buttons = document.querySelectorAll("button");
-      const vatButton = Array.from(buttons).find(btn => btn.textContent === "VAT Return Submission");
-      
+      const vatButton = Array.from(buttons).find((btn) => btn.textContent === "VAT Return Submission");
+
       expect(vatButton).toBeTruthy();
       expect(vatButton.getAttribute("onclick")).toContain("submitVat.html");
     });
 
     test("should have Back to Home button", () => {
       const buttons = document.querySelectorAll("button");
-      const backButton = Array.from(buttons).find(btn => btn.textContent === "Back to Home");
-      
+      const backButton = Array.from(buttons).find((btn) => btn.textContent === "Back to Home");
+
       expect(backButton).toBeTruthy();
       expect(backButton.getAttribute("onclick")).toContain("index.html");
     });
@@ -150,10 +150,10 @@ describe("Navigation Frontend Tests", () => {
       const hamburgerBtn = document.querySelector(".hamburger-btn");
       expect(hamburgerBtn).toBeTruthy();
       expect(hamburgerBtn.textContent).toBe("☰");
-      
+
       const menuDropdown = document.querySelector(".menu-dropdown");
       expect(menuDropdown).toBeTruthy();
-      
+
       const menuLinks = menuDropdown.querySelectorAll("a");
       expect(menuLinks).toHaveLength(3);
       expect(menuLinks[0].textContent).toBe("Home");
@@ -167,10 +167,10 @@ describe("Navigation Frontend Tests", () => {
     test("should have auth section with login status and link", () => {
       const authSection = document.querySelector(".auth-section");
       expect(authSection).toBeTruthy();
-      
+
       const loginStatus = document.querySelector(".login-status");
       expect(loginStatus.textContent).toBe("Not logged in");
-      
+
       const loginLink = document.querySelector(".login-link");
       expect(loginLink.textContent).toBe("Log in");
       expect(loginLink.getAttribute("href")).toBe("login.html");
@@ -198,15 +198,15 @@ describe("Navigation Frontend Tests", () => {
 
     test("should have correct title and bundles list", () => {
       expect(document.title).toBe("DIY Accounting Submit - Add Bundle");
-      
+
       const header = document.querySelector("h2");
       expect(header.textContent).toBe("Add Bundle");
-      
+
       const serviceItems = document.querySelectorAll(".service-item");
       expect(serviceItems).toHaveLength(3);
-      
-      const hmrcTestBtn = Array.from(document.querySelectorAll("button")).find(btn => 
-        btn.textContent.trim() === "Add HMRC Test API Bundle"
+
+      const hmrcTestBtn = Array.from(document.querySelectorAll("button")).find(
+        (btn) => btn.textContent.trim() === "Add HMRC Test API Bundle",
       );
       expect(hmrcTestBtn).toBeTruthy();
       expect(hmrcTestBtn.getAttribute("onclick")).toContain("requestBundle('HMRC_TEST_API')");

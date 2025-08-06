@@ -2,16 +2,16 @@
 
 // Status message handling
 function showStatus(message, type = "info") {
-  console.log('Status message:', message, 'Type:', type);
+  console.log("Status message:", message, "Type:", type);
   const statusMessagesContainer = document.getElementById("statusMessagesContainer");
   const msgDiv = document.createElement("div");
   msgDiv.className = `status-message status-${type}`;
-  
+
   // Create message content container
   const messageContent = document.createElement("span");
   messageContent.textContent = message;
   messageContent.className = "status-message-content";
-  
+
   // Create close button
   const closeButton = document.createElement("button");
   closeButton.textContent = "×";
@@ -20,7 +20,7 @@ function showStatus(message, type = "info") {
   closeButton.addEventListener("click", () => {
     removeStatusMessage(msgDiv);
   });
-  
+
   // Append content and close button to message div
   msgDiv.appendChild(messageContent);
   msgDiv.appendChild(closeButton);
@@ -41,24 +41,24 @@ function removeStatusMessage(msgDiv) {
 }
 
 function hideStatus() {
-  console.log('Hiding all status messages');
+  console.log("Hiding all status messages");
   const statusMessagesContainer = document.getElementById("statusMessagesContainer");
   statusMessagesContainer.innerHTML = "";
 }
 
 // Loading state management
 function showLoading() {
-  console.log('Page display transition: Showing loading spinner');
+  console.log("Page display transition: Showing loading spinner");
   const loadingSpinner = document.getElementById("loadingSpinner");
   const submitBtn = document.getElementById("submitBtn");
-  console.log('Loading spinner element:', loadingSpinner);
+  console.log("Loading spinner element:", loadingSpinner);
   if (loadingSpinner) {
     loadingSpinner.style.display = "block";
     loadingSpinner.style.visibility = "visible";
     loadingSpinner.style.opacity = "1";
     loadingSpinner.style.width = "40px";
     loadingSpinner.style.height = "40px";
-    console.log('Loading spinner styles set:', loadingSpinner.style.cssText);
+    console.log("Loading spinner styles set:", loadingSpinner.style.cssText);
   }
   if (submitBtn) {
     submitBtn.disabled = true;
@@ -66,7 +66,7 @@ function showLoading() {
 }
 
 function hideLoading() {
-  console.log('Page display transition: Hiding loading spinner');
+  console.log("Page display transition: Hiding loading spinner");
   const loadingSpinner = document.getElementById("loadingSpinner");
   const submitBtn = document.getElementById("submitBtn");
   loadingSpinner.style.display = "none";
@@ -99,28 +99,24 @@ async function getAuthUrl(state, provider = "hmrc") {
 async function getClientIP() {
   // Method 1: Try WebRTC-based IP detection (works for local IPs, limited for public IPs in modern browsers)
   const webRTCIP = await getIPViaWebRTC().catch(() => null);
-  if (webRTCIP && !webRTCIP.startsWith('192.168.') && !webRTCIP.startsWith('10.') && !webRTCIP.startsWith('172.')) {
+  if (webRTCIP && !webRTCIP.startsWith("192.168.") && !webRTCIP.startsWith("10.") && !webRTCIP.startsWith("172.")) {
     return webRTCIP;
   }
 
   // Method 2: Try multiple IP detection services with timeout
-  const ipServices = [
-    'https://api.ipify.org',
-    'https://ipapi.co/ip',
-    'https://httpbin.org/ip'
-  ];
+  const ipServices = ["https://api.ipify.org", "https://ipapi.co/ip", "https://httpbin.org/ip"];
 
   for (const service of ipServices) {
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second timeout
-      
+
       let response;
-      if (service === 'https://httpbin.org/ip') {
+      if (service === "https://httpbin.org/ip") {
         response = await fetch(service, { signal: controller.signal });
         const data = await response.json();
         clearTimeout(timeoutId);
-        return data.origin.split(',')[0].trim(); // httpbin returns "ip, ip" format sometimes
+        return data.origin.split(",")[0].trim(); // httpbin returns "ip, ip" format sometimes
       } else {
         response = await fetch(service, { signal: controller.signal });
         const ip = await response.text();
@@ -134,22 +130,22 @@ async function getClientIP() {
   }
 
   // Method 3: Fallback - let server detect IP from request headers
-  console.warn('All IP detection methods failed, server will detect IP from request headers');
-  return 'SERVER_DETECT';
+  console.warn("All IP detection methods failed, server will detect IP from request headers");
+  return "SERVER_DETECT";
 }
 
 // WebRTC-based IP detection (limited effectiveness in modern browsers due to security restrictions)
 function getIPViaWebRTC() {
   return new Promise((resolve, reject) => {
-    const timeout = setTimeout(() => reject(new Error('WebRTC timeout')), 2000);
-    
+    const timeout = setTimeout(() => reject(new Error("WebRTC timeout")), 2000);
+
     try {
       const pc = new RTCPeerConnection({
-        iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+        iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
       });
 
-      pc.createDataChannel('');
-      pc.createOffer().then(offer => pc.setLocalDescription(offer));
+      pc.createDataChannel("");
+      pc.createOffer().then((offer) => pc.setLocalDescription(offer));
 
       pc.onicecandidate = (event) => {
         if (event.candidate) {
@@ -164,10 +160,10 @@ function getIPViaWebRTC() {
       };
 
       pc.onicegatheringstatechange = () => {
-        if (pc.iceGatheringState === 'complete') {
+        if (pc.iceGatheringState === "complete") {
           clearTimeout(timeout);
           pc.close();
-          reject(new Error('No IP found via WebRTC'));
+          reject(new Error("No IP found via WebRTC"));
         }
       };
     } catch (error) {
@@ -178,7 +174,7 @@ function getIPViaWebRTC() {
 }
 
 // Expose functions to window for use by other scripts and testing
-if (typeof window !== 'undefined') {
+if (typeof window !== "undefined") {
   window.showStatus = showStatus;
   window.hideStatus = hideStatus;
   window.removeStatusMessage = removeStatusMessage;

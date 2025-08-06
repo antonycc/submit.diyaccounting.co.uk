@@ -5,9 +5,9 @@ import request from "supertest";
 import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
-import dotenv from 'dotenv';
+import dotenv from "dotenv";
 
-dotenv.config({ path: '.env.test' });
+dotenv.config({ path: ".env.test" });
 
 // Mock the handlers from their respective function files
 vi.mock("@app/functions/authUrl.js", () => ({
@@ -37,7 +37,6 @@ describe("Server Unit Tests", () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
-
     process.env = {
       ...originalEnv,
     };
@@ -45,7 +44,7 @@ describe("Server Unit Tests", () => {
     // Recreate the Express app for each test (similar to server.js)
     app = express();
     app.use(express.json());
-    //app.use(express.static(path.join(__dirname, "../../app/lib/public")));
+    // app.use(express.static(path.join(__dirname, "../../app/lib/public")));
     app.use(express.static(path.join(__dirname, "../../web/public")));
 
     // Wire the API routes (same as server.js) with error handling

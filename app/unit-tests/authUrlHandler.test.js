@@ -2,9 +2,9 @@
 
 import { describe, test, expect, beforeEach, afterEach } from "vitest";
 import { httpGetHmrc as authUrlHandler } from "@app/functions/authUrl.js";
-import dotenv from 'dotenv';
+import dotenv from "dotenv";
 
-dotenv.config({ path: '.env.test' });
+dotenv.config({ path: ".env.test" });
 
 describe("httpGetHmrc", () => {
   const originalEnv = process.env;
@@ -21,7 +21,6 @@ describe("httpGetHmrc", () => {
   // Maybe all the tests should use dotenv to comsult the checked in test.env,
 
   beforeEach(() => {
-
     process.env = {
       ...originalEnv,
     };

@@ -4,9 +4,9 @@ import { test, expect, chromium } from "@playwright/test";
 import fs from "fs";
 import path from "path";
 import { setTimeout } from "timers/promises";
-import dotenv from 'dotenv';
+import dotenv from "dotenv";
 
-dotenv.config({ path: '.env.test' });
+dotenv.config({ path: ".env.test" });
 
 // Generate timestamp for file naming
 function getTimestamp() {
@@ -81,13 +81,12 @@ test.describe("Client System Test - VAT Flow in Browser", () => {
       }
     });
 
-
     // Set the HTML content
     await page.setContent(htmlContent, {
       baseURL: "http://localhost:3000",
       waitUntil: "domcontentloaded",
     });
-    
+
     // Inject submit.js content into the page
     await page.addScriptTag({ content: submitJsContent });
   });
@@ -230,7 +229,7 @@ test.describe("Client System Test - VAT Flow in Browser", () => {
 
       // Debug: Check element styles after showLoading
       const spinnerStyles = await page.evaluate(() => {
-        const spinner = document.getElementById('loadingSpinner');
+        const spinner = document.getElementById("loadingSpinner");
         const computed = window.getComputedStyle(spinner);
         const rect = spinner.getBoundingClientRect();
         return {
@@ -246,11 +245,11 @@ test.describe("Client System Test - VAT Flow in Browser", () => {
             width: rect.width,
             height: rect.height,
             top: rect.top,
-            left: rect.left
-          }
+            left: rect.left,
+          },
         };
       });
-      console.log('Spinner styles after showLoading:', spinnerStyles);
+      console.log("Spinner styles after showLoading:", spinnerStyles);
 
       // Check that loading spinner appears quickly
       const loadingSpinner = page.locator("#loadingSpinner");
@@ -333,7 +332,10 @@ test.describe("Client System Test - VAT Flow in Browser", () => {
       const processingDate = await page.locator("#processingDate").textContent();
       expect(processingDate).toContain("25 December 2023");
 
-      await page.screenshot({ path: `target/browser-test-results/browser-receipt-display_${timestamp}.png`, fullPage: true });
+      await page.screenshot({
+        path: `target/browser-test-results/browser-receipt-display_${timestamp}.png`,
+        fullPage: true,
+      });
       await setTimeout(500);
     });
   });

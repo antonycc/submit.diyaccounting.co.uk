@@ -11,4 +11,3 @@ Configuration:
       level: info
       AppenderRef:
         ref: Console
-

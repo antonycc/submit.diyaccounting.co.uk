@@ -1,11 +1,11 @@
 // app/unit-tests/submitVatHandler.stubbed.test.js
 
 import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
-import dotenv from 'dotenv';
+import dotenv from "dotenv";
 
 import { httpPost as submitVatHandler } from "@app/functions/submitVat.js";
 
-dotenv.config({ path: '.env.test' });
+dotenv.config({ path: ".env.test" });
 
 // Mock node-fetch
 vi.mock("node-fetch", () => ({
@@ -13,7 +13,7 @@ vi.mock("node-fetch", () => ({
 }));
 
 import fetch from "node-fetch";
-import {buildGovClientTestHeaders} from "@app/unit-tests/govClientTestHeader.js";
+import { buildGovClientTestHeaders } from "@app/unit-tests/govClientTestHeader.js";
 
 describe("submitVatHandleLocal", () => {
   const originalEnv = process.env;
@@ -23,7 +23,8 @@ describe("submitVatHandleLocal", () => {
     process.env = {
       ...originalEnv,
       NODE_ENV: "stubbed",
-      DIY_SUBMIT_TEST_ACCESS_TOKEN: "eyJraWQiOiJ0ZXN0LWFwaS1zZXJ2aWNlLWhtcmMifQ.eyJhdWQiOiJ1cU1IQTZSc0RHR2E3aDhFRzJWcWZxQW12NHQiLCJzdWIiOiI4ODg3NzI2MTI3NTYiLCJpc3MiOiJodHRwczovL3Rlc3QtYXBpLnNlcnZpY2UuaG1yYy5nb3YudWsiLCJleHBpcmVkX3VzZXJuYW1lIjoiODg4NzcyNjEyNzU2IiwianRpIjoiYjA5N2QwMjItZDY5Ny00YjA5LTkzMzctYjQwZDUxMGEyN2E0IiwicmVmcmVzaF9jb250ZXh0IjoiL2FjY291bnRzLzY4ODc3MjYxMjc1NiIsInNjb3BlcyI6WyJtYWtpbmctdGF4LWluY29tZS10YXgiLCJyZWFkLXByb2ZpbGUiLCJyZWFkLWltcG9ydCIsInJlYWQtbmF0aW9uYWwtcHJvZmlsZSIsInJlYWQtbmF0aW9uYWwtcGF5bWVudCIsInJlYWQtdGF4LWltcG9ydCIsInJlYWQtdGF4LW5hdGlvbmFsLXByb2ZpbGUiLCJyZWFkLXRheC1uYXRpb25hbC1wYXltZW50Il0sIm5iZiI6MTY5OTg4MDg1OSwiaWF0IjoxNjk5ODgwODU5fQ.8e7d7",
+      DIY_SUBMIT_TEST_ACCESS_TOKEN:
+        "eyJraWQiOiJ0ZXN0LWFwaS1zZXJ2aWNlLWhtcmMifQ.eyJhdWQiOiJ1cU1IQTZSc0RHR2E3aDhFRzJWcWZxQW12NHQiLCJzdWIiOiI4ODg3NzI2MTI3NTYiLCJpc3MiOiJodHRwczovL3Rlc3QtYXBpLnNlcnZpY2UuaG1yYy5nb3YudWsiLCJleHBpcmVkX3VzZXJuYW1lIjoiODg4NzcyNjEyNzU2IiwianRpIjoiYjA5N2QwMjItZDY5Ny00YjA5LTkzMzctYjQwZDUxMGEyN2E0IiwicmVmcmVzaF9jb250ZXh0IjoiL2FjY291bnRzLzY4ODc3MjYxMjc1NiIsInNjb3BlcyI6WyJtYWtpbmctdGF4LWluY29tZS10YXgiLCJyZWFkLXByb2ZpbGUiLCJyZWFkLWltcG9ydCIsInJlYWQtbmF0aW9uYWwtcHJvZmlsZSIsInJlYWQtbmF0aW9uYWwtcGF5bWVudCIsInJlYWQtdGF4LWltcG9ydCIsInJlYWQtdGF4LW5hdGlvbmFsLXByb2ZpbGUiLCJyZWFkLXRheC1uYXRpb25hbC1wYXltZW50Il0sIm5iZiI6MTY5OTg4MDg1OSwiaWF0IjoxNjk5ODgwODU5fQ.8e7d7",
       DIY_SUBMIT_TEST_RECEIPT: JSON.stringify({
         formBundleNumber: "local-123456789012",
         chargeRefNumber: "local-XM002610011594",
@@ -140,7 +141,9 @@ describe("submitVatHandleLocal", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(400);
-    expect(body.message).toBe("Missing vatNumber parameter from body, Missing periodKey parameter from body, Missing vatDue parameter from body, Missing hmrcAccessToken parameter from body");
+    expect(body.message).toBe(
+      "Missing vatNumber parameter from body, Missing periodKey parameter from body, Missing vatDue parameter from body, Missing hmrcAccessToken parameter from body",
+    );
     expect(fetch).not.toHaveBeenCalled();
   });
 
@@ -153,7 +156,9 @@ describe("submitVatHandleLocal", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(400);
-    expect(body.message).toBe("Missing vatNumber parameter from body, Missing periodKey parameter from body, Missing vatDue parameter from body, Missing hmrcAccessToken parameter from body");
+    expect(body.message).toBe(
+      "Missing vatNumber parameter from body, Missing periodKey parameter from body, Missing vatDue parameter from body, Missing hmrcAccessToken parameter from body",
+    );
     expect(fetch).not.toHaveBeenCalled();
   });
 
@@ -166,7 +171,9 @@ describe("submitVatHandleLocal", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(400);
-    expect(body.message).toBe("Missing vatNumber parameter from body, Missing periodKey parameter from body, Missing vatDue parameter from body, Missing hmrcAccessToken parameter from body");
+    expect(body.message).toBe(
+      "Missing vatNumber parameter from body, Missing periodKey parameter from body, Missing vatDue parameter from body, Missing hmrcAccessToken parameter from body",
+    );
     expect(fetch).not.toHaveBeenCalled();
   });
 
@@ -184,7 +191,9 @@ describe("submitVatHandleLocal", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(400);
-    expect(body.message).toBe("Missing vatNumber parameter from body, Missing periodKey parameter from body, Missing vatDue parameter from body, Missing hmrcAccessToken parameter from body");
+    expect(body.message).toBe(
+      "Missing vatNumber parameter from body, Missing periodKey parameter from body, Missing vatDue parameter from body, Missing hmrcAccessToken parameter from body",
+    );
     expect(fetch).not.toHaveBeenCalled();
   });
 
@@ -203,7 +212,9 @@ describe("submitVatHandleLocal", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(400);
-    expect(body.message).toBe("Missing vatNumber parameter from body, Missing periodKey parameter from body, Missing vatDue parameter from body, Missing hmrcAccessToken parameter from body");
+    expect(body.message).toBe(
+      "Missing vatNumber parameter from body, Missing periodKey parameter from body, Missing vatDue parameter from body, Missing hmrcAccessToken parameter from body",
+    );
     expect(fetch).not.toHaveBeenCalled();
   });
 });

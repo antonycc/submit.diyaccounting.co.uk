@@ -9,9 +9,9 @@ import request from "supertest";
 import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
-import dotenv from 'dotenv';
+import dotenv from "dotenv";
 
-dotenv.config({ path: '.env.test' });
+dotenv.config({ path: ".env.test" });
 
 // Import the actual handlers (not mocked for integration test)
 import { httpGetHmrc as authUrlHandler } from "@app/functions/authUrl.js";
@@ -97,7 +97,7 @@ describe("Integration – Server Express App", () => {
     // Create Express app exactly like server.js
     app = express();
     app.use(express.json());
-    //app.use(express.static(path.join(__dirname, "../../app/lib/public")));
+    // app.use(express.static(path.join(__dirname, "../../app/lib/public")));
     app.use(express.static(path.join(__dirname, "../../web/public")));
 
     // Wire the API routes exactly like server.js
@@ -137,7 +137,10 @@ describe("Integration – Server Express App", () => {
 
   describe("Auth Flow Integration", () => {
     it("should generate auth URL through Express endpoint", async () => {
-      const response = await request(app).get("/api/hmrc/auth-url").query({ state: "integration-test-state" }).expect(200);
+      const response = await request(app)
+        .get("/api/hmrc/auth-url")
+        .query({ state: "integration-test-state" })
+        .expect(200);
 
       console.log("Auth URL response:", response.body);
 
@@ -199,7 +202,9 @@ describe("Integration – Server Express App", () => {
       const response = await request(app).post("/api/submit-vat").send({ vatNumber: "123456789" }).expect(400);
 
       expect(response.body).toHaveProperty("message");
-      expect(response.body.message).toBe("Missing periodKey parameter from body, Missing vatDue parameter from body, Missing hmrcAccessToken parameter from body");
+      expect(response.body.message).toBe(
+        "Missing periodKey parameter from body, Missing vatDue parameter from body, Missing hmrcAccessToken parameter from body",
+      );
     });
   });
 

@@ -3,9 +3,9 @@
 import { test, expect, chromium } from "@playwright/test";
 import fs from "fs";
 import path from "path";
-import dotenv from 'dotenv';
+import dotenv from "dotenv";
 
-dotenv.config({ path: '.env.test' });
+dotenv.config({ path: ".env.test" });
 
 test.setTimeout(120000); // Set a longer timeout for the entire test suite
 
@@ -77,4 +77,3 @@ test.describe("Client Status Message Stacking", () => {
     await expect(messages).toHaveCount(0);
   });
 });
-

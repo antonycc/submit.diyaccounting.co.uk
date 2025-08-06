@@ -1,11 +1,11 @@
 // app/unit-tests/exchangeTokenHandler.test.js
 
 import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
-import dotenv from 'dotenv';
+import dotenv from "dotenv";
 
 import { httpPost as exchangeTokenHandler } from "@app/functions/exchangeToken.js";
 
-dotenv.config({ path: '.env.test' });
+dotenv.config({ path: ".env.test" });
 
 // Mock node-fetch
 vi.mock("node-fetch", () => ({
@@ -19,7 +19,6 @@ describe("httpPost", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-
 
     process.env = {
       ...originalEnv,
@@ -65,7 +64,7 @@ describe("httpPost", () => {
     const params = fetchCall[1].body;
     expect(params.get("grant_type")).toBe("authorization_code");
     expect(params.get("client_id")).toBe("test client id");
-    //expect(params.get("client_secret")).toBe("test hmrc client secret");
+    // expect(params.get("client_secret")).toBe("test hmrc client secret");
     expect(params.get("redirect_uri")).toBe("http://hmrc.test.redirect:3000/submitHmrcCallback.html");
     expect(params.get("code")).toBe("test-auth-code");
   });

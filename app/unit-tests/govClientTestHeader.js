@@ -1,8 +1,8 @@
 // app/unit-tests/govClientTestHeader.js
 
-import dotenv from 'dotenv';
+import dotenv from "dotenv";
 
-dotenv.config({ path: '.env.test' });
+dotenv.config({ path: ".env.test" });
 
 // TODO Read from .env file
 
@@ -32,6 +32,6 @@ export function buildGovClientTestHeaders() {
     "Gov-Client-Window-Size": govClientWindowSizeHeader,
     "Gov-Vendor-Forwarded": govVendorForwardedHeader,
     "Gov-Vendor-Public-IP": govVendorPublicIPHeader,
-  }
+  };
   return headers;
 }

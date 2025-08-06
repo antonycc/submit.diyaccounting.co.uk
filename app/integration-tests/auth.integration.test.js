@@ -5,12 +5,12 @@ import { setupServer } from "msw/node";
 import { http, HttpResponse } from "msw";
 import { mockClient } from "aws-sdk-client-mock";
 import { S3Client } from "@aws-sdk/client-s3";
-import dotenv from 'dotenv';
+import dotenv from "dotenv";
 
 import { httpGetHmrc as authUrlHandler } from "@app/functions/authUrl.js";
 import { httpPost as exchangeTokenHandler } from "@app/functions/exchangeToken.js";
 
-dotenv.config({ path: '.env.test' });
+dotenv.config({ path: ".env.test" });
 
 const HMRC = "https://test.test.test.uk";
 const s3Mock = mockClient(S3Client);
