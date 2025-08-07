@@ -101,11 +101,25 @@ jobs:
           driver-opts: |
             image=moby/buildkit:latest
 
+      - name: Build base image locally (for CI deployment)
+        run: |
+          BASE_IMAGE_TAG="submit-base:${{ github.sha }}"
+          
+          # Build the base image using your root Dockerfile
+          docker buildx build \
+            --load \
+            --cache-from type=gha,scope=base \
+            --cache-to type=gha,mode=max,scope=base \
+            -t $BASE_IMAGE_TAG \
+            -f Dockerfile .
+
       - name: package
         if: ${{ env.skipDeploy != 'true' }}
         id: package
         shell: bash
         run: ./mvnw clean package -DskipTests=true
+        env:
+          BASE_IMAGE_TAG: "submit-base:${{ github.sha }}"
 
       - name: Log built files
         if: ${{ env.skipDeploy != 'true' }}
@@ -172,6 +186,7 @@ jobs:
           HOSTED_ZONE_NAME: ${{ vars.AWS_HOSTED_ZONE_NAME }}
           DIY_SUBMIT_HMRC_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
           COMMIT_HASH: ${{ github.sha }}
+          BASE_IMAGE_TAG: "submit-base:${{ github.sha }}"
 
   npm-behaviour-test-ci:
     needs:
