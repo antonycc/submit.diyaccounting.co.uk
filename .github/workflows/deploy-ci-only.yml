@@ -189,7 +189,7 @@ jobs:
           node-version: 22
           cache: 'npm'
 
-      - run: npm ci --production
+      - run: npm ci || npm install
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
