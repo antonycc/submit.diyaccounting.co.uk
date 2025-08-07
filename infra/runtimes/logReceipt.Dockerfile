@@ -1,14 +1,13 @@
-FROM public.ecr.aws/lambda/nodejs:22
+# Use the base image built in the previous job step
+ARG BASE_IMAGE_TAG=submit-base:latest
+FROM ${BASE_IMAGE_TAG}
 
+# Lambda-specific environment variables
 ENV DIY_SUBMIT_HOME_URL="The default value from the Dockerfile is intended to be overridden."
 ENV DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX="The default value from the Dockerfile is intended to be overridden."
 
-# Log build context and paths for debugging
-RUN echo "logReceipt.Dockerfile: Build context is $(pwd)"
-RUN echo "logReceipt.Dockerfile: Listing root directory:" && ls -la /
-RUN echo "logReceipt.Dockerfile: Listing current directory:" && ls -la .
+# No need to copy package.json or run npm install - it's already in the base image!
+# The app/ directory is also already copied in the base image
 
-COPY package.json package-lock.json ./
-RUN echo "logReceipt.Dockerfile: Installing npm dependencies" && npm install --production
-COPY app/ app/
-RUN echo "logReceipt.Dockerfile: Final directory structure:" && ls -la .
+# Set the specific handler for this Lambda
+CMD ["app/functions/logReceipt/logReceipt.httpPost"]

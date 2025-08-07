@@ -29,7 +29,7 @@
     "test:submitVatBehaviourProxyRunning": "npx dotenv -e .env.proxyRunning -- playwright test behaviour-tests/submitVat.behaviour.test.js",
     "test:submitVatBehaviour": "playwright test behaviour-tests/submitVat.behaviour.test.js",
     "test:userJourneysBehaviour": "playwright test _developers/test-archive/userJourneys.behaviour.test.js",
-    "test:cdk": "./mvnw clean package ; npx dotenv -e .env.ci -- npx cdk synth SubmitWebStack-ci --ci true --strict --validation",
+    "test:cdk": "docker build -t submit-base:latest -f Dockerfile . ; BASE_IMAGE_TAG=submit-base:latest ./mvnw clean package ; BASE_IMAGE_TAG=submit-base:latest npx dotenv -e .env.ci -- npx cdk synth SubmitWebStack-ci --ci true --strict --validation",
     "start": "npx dotenv -e .env.proxy -- node app/bin/server.js",
     "proxy": "npx dotenv -e .env.proxy -- npx ngrok http --url wanted-finally-anteater.ngrok-free.app 3000",
     "auth": "npx dotenv -e .env.proxy -- docker run -p 8080:8080 -e JSON_CONFIG_PATH=/config/mock-oauth2-config.json -e LOG_LEVEL=DEBUG -v $(pwd)/mock-oauth2-config.json:/config/mock-oauth2-config.json:ro ghcr.io/navikt/mock-oauth2-server:2.2.1",

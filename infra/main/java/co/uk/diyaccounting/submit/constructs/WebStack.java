@@ -199,6 +199,7 @@ public class WebStack extends Stack {
         public String bundleLambdaHandlerFunctionName;
         public String bundleLambdaUrlPath;
         public String bundleLambdaDuration;
+        public String baseImageTag;
 
         public Builder(Construct scope, String id, StackProps props) {
             this.scope = scope;
@@ -561,6 +562,11 @@ public class WebStack extends Stack {
             return this;
         }
 
+        public Builder baseImageTag(String baseImageTag) {
+            this.baseImageTag = baseImageTag;
+            return this;
+        }
+
         public WebStack build() {
             return new WebStack(this.scope, this.id, this.props, this);
         }
@@ -763,6 +769,7 @@ public class WebStack extends Stack {
                 .cloudTrailEnabled(cloudTrailEnabled)
                 .xRayEnabled(xRayEnabled)
                 .verboseLogging(verboseLogging)
+                .baseImageTag(builder.baseImageTag)
                 .build();
         this.authUrlLambda = authUrlLambdaUrlOrigin.lambda;
         this.authUrlLambdaUrl = authUrlLambdaUrlOrigin.functionUrl;
@@ -786,6 +793,7 @@ public class WebStack extends Stack {
                 .cloudTrailEnabled(cloudTrailEnabled)
                 .xRayEnabled(xRayEnabled)
                 .verboseLogging(verboseLogging)
+                .baseImageTag(builder.baseImageTag)
                 .build();
         this.authUrlMockLambda = authUrlMockLambdaUrlOrigin.lambda;
         this.authUrlMockLambdaUrl = authUrlMockLambdaUrlOrigin.functionUrl;
@@ -821,6 +829,7 @@ public class WebStack extends Stack {
                 .cloudTrailEnabled(cloudTrailEnabled)
                 .xRayEnabled(xRayEnabled)
                 .verboseLogging(verboseLogging)
+                .baseImageTag(builder.baseImageTag)
                 .build();
         this.exchangeTokenLambda = exchangeTokenLambdaUrlOrigin.lambda;
         this.exchangeTokenLambdaUrl = exchangeTokenLambdaUrlOrigin.functionUrl;
@@ -846,6 +855,7 @@ public class WebStack extends Stack {
                 .cloudTrailEnabled(cloudTrailEnabled)
                 .xRayEnabled(xRayEnabled)
                 .verboseLogging(verboseLogging)
+                .baseImageTag(builder.baseImageTag)
                 .build();
         this.submitVatLambda = submitVatLambdaUrlOrigin.lambda;
         this.submitVatLambdaUrl = submitVatLambdaUrlOrigin.functionUrl;
@@ -878,6 +888,7 @@ public class WebStack extends Stack {
                 .cloudTrailEnabled(cloudTrailEnabled)
                 .xRayEnabled(xRayEnabled)
                 .verboseLogging(verboseLogging)
+                .baseImageTag(builder.baseImageTag)
                 .build();
         this.logReceiptLambda = logReceiptLambdaUrlOrigin.lambda;
         this.logReceiptLambdaUrl = logReceiptLambdaUrlOrigin.functionUrl;
@@ -995,6 +1006,7 @@ public class WebStack extends Stack {
                     .cloudTrailEnabled(cloudTrailEnabled)
                     .xRayEnabled(xRayEnabled)
                     .verboseLogging(verboseLogging)
+                    .baseImageTag(builder.baseImageTag)
                     .build();
             this.bundleLambda = bundleLambdaUrlOrigin.lambda;
             this.bundleLambdaUrl = bundleLambdaUrlOrigin.functionUrl;

@@ -70,6 +70,7 @@ public class WebApp {
                 .bundleLambdaHandlerFunctionName(System.getenv("BUNDLE_LAMBDA_HANDLER_FUNCTION_NAME"))
                 .bundleLambdaUrlPath(System.getenv("BUNDLE_LAMBDA_URL_PATH"))
                 .bundleLambdaDurationMillis(System.getenv("BUNDLE_LAMBDA_DURATION"))
+                .baseImageTag(System.getenv("BASE_IMAGE_TAG"))
                 .build();
 
         CfnOutput.Builder.create(stack, "OriginBucketArn")

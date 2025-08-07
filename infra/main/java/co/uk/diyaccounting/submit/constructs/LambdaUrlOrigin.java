@@ -99,12 +99,19 @@ public class LambdaUrlOrigin {
             }
             return functionBuilder.build();
         } else {
+            // Prepare build arguments
+            var buildArgs = new java.util.HashMap<String, String>();
+            buildArgs.put("BUILDKIT_INLINE_CACHE", "1");
+            
+            // Add BASE_IMAGE_TAG if provided
+            if (builder.baseImageTag != null && !builder.baseImageTag.isBlank()) {
+                buildArgs.put("BASE_IMAGE_TAG", builder.baseImageTag);
+            }
+            
             var imageCodeProps = AssetImageCodeProps.builder()
                     .file(builder.imageDirectory + "/" + builder.imageFilename)
                     .cmd(List.of(builder.handler))
-                    .buildArgs(Map.of(
-                        "BUILDKIT_INLINE_CACHE", "1"
-                    ))
+                    .buildArgs(buildArgs)
                     .build();
 
             // Add X-Ray environment variables if enabled
@@ -170,6 +177,7 @@ public class LambdaUrlOrigin {
         public String imageDirectory = ".";
         public String imageFilename = "Dockerfile";
         public Runtime testRuntime = Runtime.NODEJS_22_X;
+        public String baseImageTag = null;
 
         private Builder(final Construct scope, final String idPrefix) {
             this.scope = scope;
@@ -292,6 +300,11 @@ public class LambdaUrlOrigin {
 
         public Builder runtime(Runtime runtime) {
             this.testRuntime = runtime;
+            return this;
+        }
+
+        public Builder baseImageTag(String baseImageTag) {
+            this.baseImageTag = baseImageTag;
             return this;
         }
 
