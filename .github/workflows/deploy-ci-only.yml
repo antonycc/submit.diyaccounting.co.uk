@@ -246,6 +246,21 @@ jobs:
 
       - run: cp '.env.ci' '.env.proxy' ; npx dotenv -e '.env.ci' -- npm run test:behaviour
 
+      - name: Convert Playwright video to MP4
+        if: ${{ !cancelled() }}
+        run: |
+          find target/behaviour-test-results -type f -name '*.webm' -exec mv -v "{}" target/behaviour-test-results/video.webm \;
+          npm run convert:video -- --in target/behaviour-test-results/video.webm --out target/behaviour-test-results/video.mp4
+
+      - name: Upload converted video
+        uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: "test-results-behaviour-${{ env.environment }}-mp4"
+          path: target/behaviour-test-results/video.mp4
+          retention-days: 30
+          compression-level: '0'
+
       - name: Upload test results
         uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
