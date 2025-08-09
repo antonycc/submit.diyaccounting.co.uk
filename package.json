@@ -16,6 +16,8 @@
     "linting-fix": "eslint --fix .",
     "update-to-minor": "npx npm-check-updates --upgrade --enginesNode --target minor --verbose --install always",
     "update-to-greatest": "npx npm-check-updates --upgrade --enginesNode --target greatest --verbose --install always --reject 'alpha'",
+    "convert:video": "node app/bin/convert.js",
+    "convert:video:default": "node app/bin/convert.js --in target/behaviour-test-results/video.webm --out target/behaviour-test-results/video.mp4",
     "test": "vitest --run app/unit-tests/*.test.js web/unit-tests/*.test.js app/integration-tests/*.test.js",
     "test:all": "vitest --run app/unit-tests/*.test.js app/integration-tests/*.test.js app/system-tests/*.test.js && playwright test web/browser-tests/*.test.js behaviour-tests/*.test.js",
     "test:app-unit": "vitest --run app/unit-tests/*.test.js",
@@ -41,15 +43,19 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.846.0",
     "@aws-sdk/client-secrets-manager": "^3.855.0",
+    "@ffprobe-installer/ffprobe": "^2.1.2",
     "dotenv": "^17.2.1",
     "dotenv-cli": "^9.0.0",
     "express": "^4.21.2",
+    "ffmpeg-static": "^5.2.0",
+    "fluent-ffmpeg": "^2.1.3",
     "ngrok": "^5.0.0-beta.2",
     "node-fetch": "^3.3.2",
     "testcontainers": "^11.2.1",
     "winston": "^3.17.0"
   },
   "devDependencies": {
+    "@executeautomation/playwright-mcp-server": "^1.0.6",
     "@microsoft/eslint-formatter-sarif": "^3.1.0",
     "@openai/codex": "^0.11.0",
     "@playwright/test": "^1.54.1",
