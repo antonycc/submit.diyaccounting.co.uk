@@ -101,7 +101,7 @@ jobs:
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
-        if: always()
+        if: ${{ !cancelled() }}
         with:
           name: test-results-behaviour-local
           path: target/behaviour-test-results/
@@ -109,7 +109,7 @@ jobs:
 
       - name: Upload test reports
         uses: actions/upload-artifact@v4
-        if: always()
+        if: ${{ !cancelled() }}
         with:
           name: test-reports-behaviour-local
           path: target/test-reports/
@@ -455,7 +455,7 @@ jobs:
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
-        if: always()
+        if: ${{ !cancelled() }}
         with:
           name: "test-results-behaviour-${{ env.environment }}"
           path: target/behaviour-test-results/
@@ -463,7 +463,7 @@ jobs:
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
-        if: always()
+        if: ${{ !cancelled() }}
         with:
           name: "test-results-${{ env.environment }}"
           path: target/test-results/
@@ -471,7 +471,7 @@ jobs:
 
       - name: Upload test reports
         uses: actions/upload-artifact@v4
-        if: always()
+        if: ${{ !cancelled() }}
         with:
           name: "test-reports-behaviour-${{ env.environment }}"
           path: target/test-reports/

@@ -248,7 +248,7 @@ jobs:
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
-        if: always()
+        if: ${{ !cancelled() }}
         with:
           name: test-results-behaviour-ci
           path: target/behaviour-test-results/
@@ -256,7 +256,7 @@ jobs:
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
-        if: always()
+        if: ${{ !cancelled() }}
         with:
           name: test-results-ci
           path: target/test-results/
@@ -264,7 +264,7 @@ jobs:
 
       - name: Upload test reports
         uses: actions/upload-artifact@v4
-        if: always()
+        if: ${{ !cancelled() }}
         with:
           name: test-reports-behaviour-ci
           path: target/test-reports/

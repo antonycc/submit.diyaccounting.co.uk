@@ -107,15 +107,16 @@ jobs:
         if: env.environment != 'proxy'
         env:
           DIY_SUBMIT_HMRC_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
+
       - name: Convert Playwright video to MP4
-        if: always()
+        if: ${{ !cancelled() }}
         run: |
-          # Convert the recorded video; fails the job if conversion fails
-          npm run convert:video:default
+          find target/behaviour-test-results -type f -name '*.webm' -exec mv -v "{}" target/behaviour-test-results/video.webm \;
+          npm run convert:video -- --in target/behaviour-test-results/video.webm --out target/behaviour-test-results/video.mp4
 
       - name: Upload converted video
         uses: actions/upload-artifact@v4
-        if: always()
+        if: ${{ !cancelled() }}
         with:
           name: "test-results-behaviour-${{ env.environment }}-mp4"
           path: target/behaviour-test-results/video.mp4
@@ -123,7 +124,7 @@ jobs:
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
-        if: always()
+        if: ${{ !cancelled() }}
         with:
           name: test-results-behaviour
           path: target/behaviour-test-results/
@@ -131,7 +132,7 @@ jobs:
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
-        if: always()
+        if: ${{ !cancelled() }}
         with:
           name: test-results
           path: target/test-results/
@@ -139,20 +140,21 @@ jobs:
 
       - name: Upload test reports
         uses: actions/upload-artifact@v4
-        if: always()
+        if: ${{ !cancelled() }}
         with:
           name: test-reports-behaviour
           path: target/test-reports/
           retention-days: 30
 
       - name: Copy test server logs
+        if: ${{ !cancelled() }}
         run: |
           mkdir -p test-server-logs/
           cp -r submit-*.log test-server-logs/
 
       - name: Upload test logs
+        if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
-        if: always()
         with:
           name: test-server-logs-behaviour
           path: test-server-logs/
