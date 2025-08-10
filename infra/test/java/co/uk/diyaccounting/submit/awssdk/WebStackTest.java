@@ -78,12 +78,19 @@ public class WebStackTest {
                 .authUrlHmrcLambdaDurationMillis("30000")
                 .authUrlMockLambdaHandlerFunctionName("AuthUrlHandler")
                 .authUrlMockLambdaDurationMillis("30000")
+                .authUrlGoogleLambdaHandlerFunctionName("AuthUrlHandler")
+                .authUrlGoogleLambdaDurationMillis("30000")
                 .exchangeHmrcTokenLambdaHandlerFunctionName("ExchangeTokenHandler")
                 .exchangeHmrcTokenLambdaDurationMillis("30000")
+                .exchangeGoogleTokenLambdaHandlerFunctionName("ExchangeTokenHandler")
+                .exchangeGoogleTokenLambdaDurationMillis("30000")
                 .submitVatLambdaHandlerFunctionName("SubmitVatHandler")
                 .submitVatLambdaDurationMillis("60000")
                 .logReceiptLambdaHandlerFunctionName("LogReceiptHandler")
                 .logReceiptLambdaDurationMillis("30000")
+                // Provide Google configuration to avoid nulls in Map.of and Secrets during tests
+                .googleClientId("test-google-client-id")
+                .googleClientSecret("test-google-client-secret")
                 .build();
     }
 }

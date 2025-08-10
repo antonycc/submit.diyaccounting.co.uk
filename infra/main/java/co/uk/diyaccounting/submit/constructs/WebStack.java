@@ -895,34 +895,34 @@ public class WebStack extends Stack {
                 .description("HMRC Client Secret for OAuth authentication")
                 .build();
         var hmrcClientSecretArn = this.hmrcClientSecretsManagerSecret.getSecretArn();
-        var exchangeTokenLambdaEnv = new HashMap<>(Map.of(
+        var exchangeHmrcTokenLambdaEnv = new HashMap<>(Map.of(
                 "DIY_SUBMIT_HOME_URL", builder.homeUrl,
                 "DIY_SUBMIT_HMRC_BASE_URI", builder.hmrcBaseUri,
                 "DIY_SUBMIT_HMRC_CLIENT_ID", builder.hmrcClientId,
                 "DIY_SUBMIT_HMRC_CLIENT_SECRET_ARN", hmrcClientSecretArn
         ));
         if (StringUtils.isNotBlank(builder.optionalTestAccessToken)){
-            exchangeTokenLambdaEnv.put("DIY_SUBMIT_TEST_ACCESS_TOKEN", builder.optionalTestAccessToken);
+            exchangeHmrcTokenLambdaEnv.put("DIY_SUBMIT_TEST_ACCESS_TOKEN", builder.optionalTestAccessToken);
         }
-        var exchangeTokenLambdaUrlOrigin = LambdaUrlOrigin.Builder.create(this, "ExchangeTokenLambda")
+        var exchangeHmrcTokenLambdaUrlOrigin = LambdaUrlOrigin.Builder.create(this, "ExchangeHmrcTokenLambda")
                 .env(builder.env)
                 .imageDirectory("infra/runtimes")
-                .imageFilename("exchangeToken.Dockerfile")
+                .imageFilename("exchangeHmrcToken.Dockerfile")
                 .functionName(Builder.buildFunctionName(dashedDomainName, builder.exchangeHmrcTokenLambdaHandlerFunctionName))
                 .allowedMethods(AllowedMethods.ALLOW_ALL)
                 .functionUrlAuthType(functionUrlAuthType)
                 .handler(builder.lambdaEntry + builder.exchangeHmrcTokenLambdaHandlerFunctionName)
-                .environment(exchangeTokenLambdaEnv)
+                .environment(exchangeHmrcTokenLambdaEnv)
                 .timeout(Duration.millis(Long.parseLong(builder.exchangeHmrcTokenLambdaDuration)))
                 .cloudTrailEnabled(cloudTrailEnabled)
                 .xRayEnabled(xRayEnabled)
                 .verboseLogging(verboseLogging)
                 .baseImageTag(builder.baseImageTag)
                 .build();
-        this.exchangeHmrcTokenLambda = exchangeTokenLambdaUrlOrigin.lambda;
-        this.exchangeHmrcTokenLambdaUrl = exchangeTokenLambdaUrlOrigin.functionUrl;
-        this.exchangeHmrcTokenLambdaLogGroup = exchangeTokenLambdaUrlOrigin.logGroup;
-        lambdaUrlToOriginsBehaviourMappings.put(builder.exchangeHmrcTokenLambdaUrlPath + "*", exchangeTokenLambdaUrlOrigin.behaviorOptions);
+        this.exchangeHmrcTokenLambda = exchangeHmrcTokenLambdaUrlOrigin.lambda;
+        this.exchangeHmrcTokenLambdaUrl = exchangeHmrcTokenLambdaUrlOrigin.functionUrl;
+        this.exchangeHmrcTokenLambdaLogGroup = exchangeHmrcTokenLambdaUrlOrigin.logGroup;
+        lambdaUrlToOriginsBehaviourMappings.put(builder.exchangeHmrcTokenLambdaUrlPath + "*", exchangeHmrcTokenLambdaUrlOrigin.behaviorOptions);
         this.hmrcClientSecretsManagerSecret.grantRead(this.exchangeHmrcTokenLambda);
 
         // exchangeToken - Google
@@ -950,7 +950,7 @@ public class WebStack extends Stack {
                 .functionUrlAuthType(functionUrlAuthType)
                 .handler(builder.lambdaEntry + builder.exchangeGoogleTokenLambdaHandlerFunctionName)
                 .environment(exchangeGoogleTokenLambdaEnv)
-                .timeout(Duration.millis(Long.parseLong(builder.exchangeGoogleTokenLambdaDuration)))
+                .timeout(Duration.millis(Long.parseLong(builder.exchangeGoogleTokenLambdaDuration != null ? builder.exchangeGoogleTokenLambdaDuration : "30000")))
                 .cloudTrailEnabled(cloudTrailEnabled)
                 .xRayEnabled(xRayEnabled)
                 .verboseLogging(verboseLogging)
@@ -1075,15 +1075,11 @@ public class WebStack extends Stack {
                     .build();
 
             // Create Google Identity Provider
-            var googleClientSecret = Secret.Builder.create(this, "GoogleClientSecret")
-                    .secretStringValue(SecretValue.unsafePlainText(builder.googleClientSecret))
-                    .description("Google OAuth Client Secret for Cognito")
-                    .build();
 
             this.googleIdentityProvider = UserPoolIdentityProviderGoogle.Builder.create(this, "GoogleIdentityProvider")
                     .userPool(this.userPool)
                     .clientId(builder.googleClientId)
-                    .clientSecretValue(googleClientSecret.getSecretValue())
+                    .clientSecretValue(this.googleClientSecretsManagerSecret.getSecretValue())
                     .scopes(List.of("email", "openid", "profile"))
                     .attributeMapping(AttributeMapping.builder()
                             .email(ProviderAttribute.GOOGLE_EMAIL)
