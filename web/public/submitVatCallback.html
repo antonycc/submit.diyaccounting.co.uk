@@ -89,7 +89,7 @@
 
             // Clean up session storage
             sessionStorage.removeItem("oauth_state");
-            sessionStorage.setItem("hmrcAccessToken", hmrcAccessToken);
+            sessionStorage.setItem("hmrcAccessToken", accessToken);
           } catch (error) {
             console.error("Submission error:", error);
             showStatus(`Submission failed: ${error.message}`, "error");

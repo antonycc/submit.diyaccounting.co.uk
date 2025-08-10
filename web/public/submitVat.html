@@ -176,12 +176,12 @@
       // OAuth callback handling
       function handleOAuthCallback() {
         const accessToken = sessionStorage.getItem("hmrcAccessToken");
-        if (hmrcAccessToken) {
-          console.log("OAuth callback handler (hmrcAccessToken found)");
+        if (accessToken) {
+          console.log("OAuth callback handler (accessToken found)");
           // If we have an access token, continue with submission
           continueVatSubmission();
         } else {
-          console.log("OAuth callback handler (no hmrcAccessToken found)");
+          console.log("OAuth callback handler (no accessToken found)");
         }
       }
 
@@ -198,7 +198,7 @@
             submissionData.vatNumber,
             submissionData.periodKey,
             submissionData.vatDue,
-            hmrcAccessToken,
+            accessToken,
           );
 
           showStatus("Logging submission receipt...", "info");
@@ -272,7 +272,7 @@
           "Gov-Vendor-Forwarded": govVendorForwardedHeader,
           "Gov-Vendor-Public-IP": govVendorPublicIPHeader,
         };
-        return await submitVat(vatNumber, periodKey, vatDue, hmrcAccessToken, headers);
+        return await submitVat(vatNumber, periodKey, vatDue, accessToken, headers);
       }
 
       async function submitVat(vatNumber, periodKey, vatDue, accessToken, headers) {
@@ -281,7 +281,7 @@
           vatNumber,
           periodKey,
           vatDue,
-          accessToken: hmrcAccessToken,
+          accessToken,
         });
         console.log(`Submitting VAT. Remote call initiated: POST ${url} ++ Body: ${body}`);
 

@@ -15,7 +15,44 @@ const secretsClient = new SecretsManagerClient();
 let cachedGoogleClientSecret;
 let cachedHmrcClientSecret;
 
-export async function exchangeToken(providerUrl, body) {
+export async function httpPost(event) {
+  const request = extractRequest(event);
+  const { code } = JSON.parse(event.body || "{}");
+  if (!code) {
+    return httpBadRequestResponse({ request, message: "Missing code from event body" });
+  }
+  const clientSecret = await retrieveHmrcClientSecret();
+  const url = `${process.env.DIY_SUBMIT_HMRC_BASE_URI}/oauth/token`;
+  const body = {
+    grant_type: "authorization_code",
+    client_id: process.env.DIY_SUBMIT_HMRC_CLIENT_ID,
+    client_secret: clientSecret,
+    redirect_uri: process.env.DIY_SUBMIT_HOME_URL + "submitVatCallback.html",
+    code,
+  };
+  return httpPostWithUrl(request, url, body);
+}
+
+export async function exchangeToken(providerUrlOrCode, maybeBody) {
+  // Overloaded signature for tests/backward-compat:
+  // - exchangeToken(code)
+  // - exchangeToken(providerUrl, body)
+  if (typeof providerUrlOrCode === "string" && (!maybeBody || typeof maybeBody !== "object")) {
+    const clientSecret = await retrieveHmrcClientSecret();
+    const url = `${process.env.DIY_SUBMIT_HMRC_BASE_URI}/oauth/token`;
+    const body = {
+      grant_type: "authorization_code",
+      client_id: process.env.DIY_SUBMIT_HMRC_CLIENT_ID,
+      client_secret: clientSecret,
+      redirect_uri: process.env.DIY_SUBMIT_HOME_URL + "submitVatCallback.html",
+      code: providerUrlOrCode,
+    };
+    return performTokenExchange(url, body);
+  }
+  return performTokenExchange(providerUrlOrCode, maybeBody);
+}
+
+async function performTokenExchange(providerUrl, body) {
   const requestHeaders = {
     "Content-Type": "application/x-www-form-urlencoded",
   };
@@ -49,9 +86,18 @@ export async function exchangeToken(providerUrl, body) {
     });
   }
 
-  const responseTokens = await response.json();
+  let responseTokens;
+  try {
+    responseTokens = await response.json();
+  } catch (err) {
+    try {
+      const text = await response.text();
+      responseTokens = JSON.parse(text);
+    } catch {
+      responseTokens = {};
+    }
+  }
 
-  // Enhanced debug logging for access token flow
   logger.info({
     message: "exchangeClientSecretForAccessToken response",
     responseStatus: response.status,
@@ -70,11 +116,7 @@ export async function exchangeToken(providerUrl, body) {
   const responseBody = { ...responseTokens };
   delete responseBody.access_token;
 
-  return {
-    accessToken,
-    response,
-    responseBody,
-  };
+  return { accessToken, response, responseBody };
 }
 
 // POST /api/google/exchange-token
@@ -100,7 +142,7 @@ export async function httpPostGoogle(event) {
     redirect_uri: process.env.DIY_SUBMIT_HOME_URL + "loginWithGoogleCallback.html",
     code,
   };
-  return httpPost(request, url, body);
+  return httpPostWithUrl(request, url, body);
 }
 
 // POST /api/hmrc/exchange-token
@@ -126,10 +168,10 @@ export async function httpPostHmrc(event) {
     redirect_uri: process.env.DIY_SUBMIT_HOME_URL + "submitVatCallback.html",
     code,
   };
-  return httpPost(request, url, body);
+  return httpPostWithUrl(request, url, body);
 }
 
-export async function httpPost(request, url, body) {
+export async function httpPostWithUrl(request, url, body) {
   const { accessToken, response, responseBody } = await exchangeToken(url, body);
 
   if (!response.ok) {
@@ -148,6 +190,7 @@ export async function httpPost(request, url, body) {
     request,
     data: {
       accessToken,
+      hmrcAccessToken: accessToken,
     },
   });
 }
@@ -188,4 +231,9 @@ async function retrieveHmrcClientSecret() {
 export function resetCachedSecrets() {
   cachedGoogleClientSecret = undefined;
   cachedHmrcClientSecret = undefined;
+}
+
+// Backwards-compatible alias expected by tests
+export function resetCachedSecret() {
+  return resetCachedSecrets();
 }

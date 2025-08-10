@@ -141,7 +141,7 @@ export async function submitVat(periodKey, vatDue, vatNumber, hmrcAccessToken, g
 
   logger.info(responseLogData);
 
-  return { hmrcRequestBody, receipt: hmrcResponseBody, response: hmrcResponse, responseBody: hmrcResponseBody, hmrcRequestUrl };
+  return { hmrcRequestBody, receipt: hmrcResponseBody, hmrcResponse, hmrcResponseBody, hmrcRequestUrl };
 }
 
 // POST /api/submit-vat
@@ -152,7 +152,8 @@ export async function httpPost(event) {
 
   // Validation
   let errorMessages = [];
-  const { vatNumber, periodKey, vatDue, hmrcAccessToken } = JSON.parse(event.body || "{}");
+  const { vatNumber, periodKey, vatDue, accessToken, hmrcAccessToken } = JSON.parse(event.body || "{}");
+  const token = accessToken || hmrcAccessToken;
   if (!vatNumber) {
     errorMessages.push("Missing vatNumber parameter from body");
   }
@@ -162,7 +163,7 @@ export async function httpPost(event) {
   if (!vatDue) {
     errorMessages.push("Missing vatDue parameter from body");
   }
-  if (!hmrcAccessToken) {
+  if (!token) {
     errorMessages.push("Missing accessToken parameter from body");
   }
   const { govClientHeaders, govClientErrorMessages } = eventToGovClientHeaders(event, detectedIP);
@@ -180,7 +181,7 @@ export async function httpPost(event) {
     periodKey,
     vatDue,
     vatNumber,
-    hmrcAccessToken,
+    token,
     govClientHeaders,
   );
 

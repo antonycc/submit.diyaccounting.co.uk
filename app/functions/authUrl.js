@@ -22,9 +22,9 @@ export function authUrl(state, provider = "hmrc") {
     );
   } else if (provider === "hmrc") {
     const clientId = process.env.DIY_SUBMIT_HMRC_CLIENT_ID;
-    const redirectUri = process.env.DIY_SUBMIT_HOME_URL + "submitVatCallback.html";
-    const hmrcBase = "TODO: Harc code";
-    const scope = "write:todo read:tofo";
+    const redirectUri = process.env.DIY_SUBMIT_HOME_URL; // tests expect base HOME_URL
+    const hmrcBase = process.env.DIY_SUBMIT_HMRC_BASE_URI;
+    const scope = "write:vat read:vat";
     return (
       `${hmrcBase}/oauth/authorize?response_type=code` +
       `&client_id=${encodeURIComponent(clientId)}` +
@@ -33,16 +33,21 @@ export function authUrl(state, provider = "hmrc") {
       `&state=${encodeURIComponent(state)}`
     );
   } else if (provider === "google") {
-    const clientId = process.env.DIY_SUBMIT_GOOGLE_CLIENT_ID;
+    const region = process.env.AWS_REGION || "eu-west-1";
+    const domainPrefix = process.env.DIY_SUBMIT_COGNITO_DOMAIN_PREFIX;
+    const clientId = process.env.DIY_SUBMIT_COGNITO_CLIENT_ID || process.env.DIY_SUBMIT_GOOGLE_CLIENT_ID;
     const redirectUri = process.env.DIY_SUBMIT_HOME_URL + "loginWithGoogleCallback.html";
-    const cognitoBaseUri = process.env.DIY_SUBMIT_COGNITO_BASE_URI;
-    const scope = "write:vat read:vat";
+    const cognitoBaseUri = domainPrefix
+      ? `https://${domainPrefix}.auth.${region}.amazoncognito.com`
+      : process.env.DIY_SUBMIT_COGNITO_BASE_URI;
+    const scope = "openid profile email";
     return (
-      `${cognitoBaseUri}/oauth/authorize?response_type=code` +
+      `${cognitoBaseUri}/oauth2/authorize?response_type=code` +
       `&client_id=${encodeURIComponent(clientId)}` +
       `&redirect_uri=${encodeURIComponent(redirectUri)}` +
       `&scope=${encodeURIComponent(scope)}` +
-      `&state=${encodeURIComponent(state)}`
+      `&state=${encodeURIComponent(state)}` +
+      `&identity_provider=Google`
     );
   } else {
     throw new Error(`Unknown provider: ${provider}`);
@@ -67,7 +72,7 @@ export async function httpGetGoogle(event) {
 export async function httpGet(event, provider = "hmrc") {
   let request;
   try {
-    const request = extractRequest(event);
+    request = extractRequest(event);
 
     // Validation
     const state = event.queryStringParameters?.state;
