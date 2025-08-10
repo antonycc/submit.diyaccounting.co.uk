@@ -99,12 +99,18 @@ jobs:
         env:
           DIY_SUBMIT_HMRC_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
 
+      - name: Convert Playwright video to MP4
+        if: ${{ !cancelled() }}
+        run: |
+          find target/behaviour-test-results -type f -name '*.webm' -exec mv -v "{}" target/behaviour-test-results/video.webm \;
+          npm run convert:video -- --in target/behaviour-test-results/video.webm --out target/behaviour-test-results/video.mp4
+
       - name: Upload test results
         uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
         with:
           name: test-results-behaviour-local
-          path: target/behaviour-test-results/
+          path: "target/behaviour-test-results/"
           retention-days: 30
 
       - name: Upload test reports
@@ -112,7 +118,7 @@ jobs:
         if: ${{ !cancelled() }}
         with:
           name: test-reports-behaviour-local
-          path: target/test-reports/
+          path: "target/test-reports/"
           retention-days: 30
 
   build-base-image:
@@ -464,7 +470,7 @@ jobs:
         if: ${{ !cancelled() }}
         with:
           name: "test-results-behaviour-${{ env.environment }}-mp4"
-          path: target/behaviour-test-results/video.mp4
+          path: "target/behaviour-test-results/video.mp4"
           retention-days: 30
           compression-level: '0'
 
@@ -473,7 +479,7 @@ jobs:
         if: ${{ !cancelled() }}
         with:
           name: "test-results-behaviour-${{ env.environment }}"
-          path: target/behaviour-test-results/
+          path: "target/behaviour-test-results/"
           retention-days: 30
 
       - name: Upload test results
@@ -481,7 +487,7 @@ jobs:
         if: ${{ !cancelled() }}
         with:
           name: "test-results-${{ env.environment }}"
-          path: target/test-results/
+          path: "target/test-results/"
           retention-days: 30
 
       - name: Upload test reports
@@ -489,6 +495,6 @@ jobs:
         if: ${{ !cancelled() }}
         with:
           name: "test-reports-behaviour-${{ env.environment }}"
-          path: target/test-reports/
+          path: "target/test-reports/"
           retention-days: 30
 

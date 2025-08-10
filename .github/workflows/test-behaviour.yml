@@ -119,7 +119,7 @@ jobs:
         if: ${{ !cancelled() }}
         with:
           name: "test-results-behaviour-${{ env.environment }}-mp4"
-          path: target/behaviour-test-results/video.mp4
+          path: "target/behaviour-test-results/video.mp4"
           retention-days: 30
           compression-level: '0'
 
@@ -128,7 +128,7 @@ jobs:
         if: ${{ !cancelled() }}
         with:
           name: test-results-behaviour
-          path: target/behaviour-test-results/
+          path: "target/behaviour-test-results/"
           retention-days: 30
 
       - name: Upload test results
@@ -136,7 +136,7 @@ jobs:
         if: ${{ !cancelled() }}
         with:
           name: test-results
-          path: target/test-results/
+          path: "target/test-results/"
           retention-days: 30
 
       - name: Upload test reports
@@ -144,7 +144,7 @@ jobs:
         if: ${{ !cancelled() }}
         with:
           name: test-reports-behaviour
-          path: target/test-reports/
+          path: "target/test-reports/"
           retention-days: 30
 
       - name: Copy test server logs
@@ -158,5 +158,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: test-server-logs-behaviour
-          path: test-server-logs/
+          path: "test-server-logs/"
           retention-days: 30
