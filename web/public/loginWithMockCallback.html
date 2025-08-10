@@ -1,0 +1,122 @@
+<!-- loginWithMockCallback.html -->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>DIY Accounting Submit - Login with mock callback</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="submit.css" />
+</head>
+<body>
+<header>
+  <div class="header-nav"></div>
+  <h1>DIY Accounting Submit - Login with mock callback</h1>
+  <p class="subtitle">Submit UK VAT returns to HMRC under Making Tax Digital (MTD)</p>
+</header>
+
+<div id="mainContent">
+  <div class="form-container" style="text-align: center">
+    <h2 id="welcomeHeading">Welcome</h2>
+    <p>Return home.</p>
+    <button type="button" class="btn" onclick="window.location.href='index.html'">Home</button>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-content">
+    <div class="footer-center">
+      <p>&copy; 2025 DIY Accounting Limited. Licensed under GPL v3.0</p>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // Check for authentication callback
+  function checkAuthCallback() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get("code");
+    const state = urlParams.get("state");
+
+    if (code) {
+      console.log("Authentication callback received with code:", code);
+      handleAuthCallback(code, state);
+    }
+  }
+
+  function base64UrlDecode(str) {
+    // Replace URL-safe chars
+    str = str.replace(/-/g, "+").replace(/_/g, "/");
+    // Add padding if missing
+    const pad = str.length % 4;
+    if (pad) {
+      str += "=".repeat(4 - pad);
+    }
+    return atob(str);
+  }
+
+  // Handle authentication callback from mock
+  async function handleAuthCallback(code, state) {
+    try {
+      // Exchange authorization code for tokens
+      const tokenResponse = await fetch(`http://localhost:8080/default/token`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: new URLSearchParams({
+          grant_type: "authorization_code",
+          client_id: "debugger",
+          code: code,
+          redirect_uri: "http://127.0.0.1:3000/loginWithMockCallback.html",
+        }),
+      });
+
+      if (!tokenResponse.ok) {
+        throw new Error("Failed to exchange authorization code for tokens");
+      }
+
+      const tokens = await tokenResponse.json();
+      console.log("Received tokens from mock " + JSON.stringify(tokens));
+
+      // Store tokens in localStorage
+      localStorage.setItem("cognitoAccessToken", tokens.access_token);
+      localStorage.setItem("cognitoIdToken", tokens.id_token);
+      if (tokens.refresh_token) {
+        localStorage.setItem("cognitoRefreshToken", tokens.refresh_token);
+      }
+
+      // Decode ID token to get user info
+      const base64Payload = tokens.id_token.split(".")[1];
+      const jsonPayload = base64UrlDecode(base64Payload);
+      const idTokenPayload = JSON.parse(jsonPayload); //["id_token"];
+
+      console.log("Received id_token from mock " + JSON.stringify(idTokenPayload));
+
+      localStorage.setItem(
+        "userInfo",
+        JSON.stringify({
+          sub: idTokenPayload.sub,
+          email: idTokenPayload.email,
+          given_name: idTokenPayload.given_name,
+          family_name: idTokenPayload.family_name,
+        }),
+      );
+
+      console.log("User authenticated successfully using mock:", idTokenPayload.email);
+
+      // Clear URL parameters
+      window.history.replaceState({}, document.title, window.location.pathname);
+
+      // Redirect to bundles page or home
+      window.location.href = "index.html";
+    } catch (error) {
+      console.error("Authentication callback error:", error);
+      alert("Authentication failed. Please try again.");
+    }
+  }
+
+  // Check if this page was loaded as a callback from authentication
+  checkAuthCallback();
+</script>
+</body>
+</html>

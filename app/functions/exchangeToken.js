@@ -11,81 +11,74 @@ dotenv.config({ path: ".env" });
 
 const secretsClient = new SecretsManagerClient();
 
-let cachedSecret; // caching via module-level variable
+// caching via module-level variables
+let cachedGoogleClientSecret;
+let cachedHmrcClientSecret;
 
-export async function exchangeToken(code) {
-  await retrieveSecret();
-  const hmrcRequestHeaders = {
+export async function exchangeToken(providerUrl, body) {
+  const requestHeaders = {
     "Content-Type": "application/x-www-form-urlencoded",
   };
-  const hmrcRequestBody = new URLSearchParams({
-    grant_type: "authorization_code",
-    client_id: process.env.DIY_SUBMIT_HMRC_CLIENT_ID,
-    client_secret: cachedSecret,
-    redirect_uri: process.env.DIY_SUBMIT_HOME_URL + "submitHmrcCallback.html",
-    code,
-  });
-  const hmrcBase = process.env.DIY_SUBMIT_HMRC_BASE_URI;
-  const hmrcRequestUrl = `${hmrcBase}/oauth/token`;
+  const requestBody = new URLSearchParams(body);
 
-  let hmrcResponse;
+  let response;
   logger.info({
-    message: `Request to POST ${hmrcRequestUrl}`,
-    url: hmrcRequestUrl,
+    message: `Request to POST ${providerUrl}`,
+    url: providerUrl,
     headers: {
-      ...hmrcRequestHeaders,
+      ...requestHeaders,
     },
-    body: hmrcRequestBody,
+    body: requestBody,
   });
   if (process.env.NODE_ENV === "stubbed") {
     logger.warn({ message: "httpPost called in stubbed mode, using test access token" });
-    const hmrcTestAccessToken = process.env.DIY_SUBMIT_TEST_ACCESS_TOKEN;
-    hmrcResponse = {
+    const testAccessToken = process.env.DIY_SUBMIT_TEST_ACCESS_TOKEN;
+    response = {
       ok: true,
       status: 200,
-      json: async () => ({ access_token: hmrcTestAccessToken }),
-      text: async () => JSON.stringify({ access_token: hmrcTestAccessToken }),
+      json: async () => ({ access_token: testAccessToken }),
+      text: async () => JSON.stringify({ access_token: testAccessToken }),
     };
   } else {
-    hmrcResponse = await fetch(hmrcRequestUrl, {
+    response = await fetch(providerUrl, {
       method: "POST",
       headers: {
-        ...hmrcRequestHeaders,
+        ...requestHeaders,
       },
-      body: hmrcRequestBody,
+      body: requestBody,
     });
   }
 
-  const hmrcResponseTokens = await hmrcResponse.json();
+  const responseTokens = await response.json();
 
   // Enhanced debug logging for access token flow
   logger.info({
     message: "exchangeClientSecretForAccessToken response",
-    hmrcResponseStatus: hmrcResponse.status,
-    hmrcResponseTokens,
+    responseStatus: response.status,
+    responseTokens,
     tokenValidation: {
-      hasAccessToken: !!hmrcResponseTokens.access_token,
-      accessTokenLength: hmrcResponseTokens.access_token ? hmrcResponseTokens.access_token.length : 0,
-      tokenType: hmrcResponseTokens.token_type,
-      scope: hmrcResponseTokens.scope,
-      expiresIn: hmrcResponseTokens.expires_in,
-      hasRefreshToken: !!hmrcResponseTokens.refresh_token,
+      hasAccessToken: !!responseTokens.access_token,
+      accessTokenLength: responseTokens.access_token ? responseTokens.access_token.length : 0,
+      tokenType: responseTokens.token_type,
+      scope: responseTokens.scope,
+      expiresIn: responseTokens.expires_in,
+      hasRefreshToken: !!responseTokens.refresh_token,
     },
   });
 
-  const hmrcAccessToken = hmrcResponseTokens.access_token;
-  const hmrcResponseBody = { ...hmrcResponseTokens };
-  delete hmrcResponseBody.access_token;
+  const accessToken = responseTokens.access_token;
+  const responseBody = { ...responseTokens };
+  delete responseBody.access_token;
 
   return {
-    hmrcAccessToken,
-    hmrcResponse,
-    hmrcResponseBody,
+    accessToken,
+    response,
+    responseBody,
   };
 }
 
-// POST /api/exchange-token
-export async function httpPost(event) {
+// POST /api/google/exchange-token
+export async function httpPostGoogle(event) {
   const request = extractRequest(event);
 
   // Validation
@@ -97,15 +90,55 @@ export async function httpPost(event) {
     });
   }
 
-  const { hmrcAccessToken, hmrcResponse, hmrcResponseBody } = await exchangeToken(code);
+  // OAuth exchange token post-body
+  const clientSecret = await retrieveGoogleClientSecret();
+  const url = `${process.env.DIY_SUBMIT_COGNITO_BASE_URI}/oauth/token`;
+  const body = {
+    grant_type: "authorization_code",
+    client_id: process.env.DIY_SUBMIT_COGNITO_CLIENT_ID,
+    client_secret: clientSecret,
+    redirect_uri: process.env.DIY_SUBMIT_HOME_URL + "loginWithGoogleCallback.html",
+    code,
+  };
+  return httpPost(request, url, body);
+}
 
-  if (!hmrcResponse.ok) {
+// POST /api/hmrc/exchange-token
+export async function httpPostHmrc(event) {
+  const request = extractRequest(event);
+
+  // Validation
+  const { code } = JSON.parse(event.body || "{}");
+  if (!code) {
+    return httpBadRequestResponse({
+      request,
+      message: "Missing code from event body",
+    });
+  }
+
+  // OAuth exchange token post-body
+  const clientSecret = await retrieveHmrcClientSecret();
+  const url = `${process.env.DIY_SUBMIT_HMRC_BASE_URI}/oauth/token`;
+  const body = {
+    grant_type: "authorization_code",
+    client_id: process.env.DIY_SUBMIT_HMRC_CLIENT_ID,
+    client_secret: clientSecret,
+    redirect_uri: process.env.DIY_SUBMIT_HOME_URL + "submitVatCallback.html",
+    code,
+  };
+  return httpPost(request, url, body);
+}
+
+export async function httpPost(request, url, body) {
+  const { accessToken, response, responseBody } = await exchangeToken(url, body);
+
+  if (!response.ok) {
     return httpServerErrorResponse({
       request,
-      message: "HMRC token exchange failed",
+      message: "Token exchange failed",
       error: {
-        hmrcResponseCode: hmrcResponse.status,
-        hmrcResponseBody,
+        responseCode: response.status,
+        responseBody,
       },
     });
   }
@@ -114,28 +147,45 @@ export async function httpPost(event) {
   return httpOkResponse({
     request,
     data: {
-      hmrcAccessToken,
+      accessToken,
     },
   });
 }
 
-async function retrieveSecret() {
+async function retrieveGoogleClientSecret() {
+  const secretFromEnv = process.env.DIY_SUBMIT_GOOGLE_CLIENT_SECRET;
+  // Always update the secret from the environment variable if it exists
+  if (secretFromEnv) {
+    cachedGoogleClientSecret = secretFromEnv;
+    logger.info(`Secret retrieved from environment variable DIY_SUBMIT_GOOGLE_CLIENT_SECRET and cached`);
+    // Only update the cached secret if it isn't set
+  } else if (!cachedGoogleClientSecret) {
+    const secretArn = process.env.DIY_SUBMIT_GOOGLE_CLIENT_SECRET_ARN; // set via Lambda environment variable
+    const data = await secretsClient.send(new GetSecretValueCommand({ SecretId: secretArn }));
+    cachedGoogleClientSecret = data.SecretString;
+    logger.info(`Secret retrieved from Secrets Manager with Arn ${secretArn} and cached`);
+  }
+  return cachedGoogleClientSecret;
+}
+
+async function retrieveHmrcClientSecret() {
   const secretFromEnv = process.env.DIY_SUBMIT_HMRC_CLIENT_SECRET;
   // Always update the secret from the environment variable if it exists
   if (secretFromEnv) {
-    cachedSecret = secretFromEnv;
+    cachedHmrcClientSecret = secretFromEnv;
     logger.info(`Secret retrieved from environment variable DIY_SUBMIT_HMRC_CLIENT_SECRET and cached`);
     // Only update the cached secret if it isn't set
-  } else if (!cachedSecret) {
+  } else if (!cachedHmrcClientSecret) {
     const secretArn = process.env.DIY_SUBMIT_HMRC_CLIENT_SECRET_ARN; // set via Lambda environment variable
     const data = await secretsClient.send(new GetSecretValueCommand({ SecretId: secretArn }));
-    cachedSecret = data.SecretString;
+    cachedHmrcClientSecret = data.SecretString;
     logger.info(`Secret retrieved from Secrets Manager with Arn ${secretArn} and cached`);
   }
-  return cachedSecret;
+  return cachedHmrcClientSecret;
 }
 
 // Export function to reset cached secret for testing
-export function resetCachedSecret() {
-  cachedSecret = undefined;
+export function resetCachedSecrets() {
+  cachedGoogleClientSecret = undefined;
+  cachedHmrcClientSecret = undefined;
 }

@@ -251,7 +251,7 @@ describe("VAT Flow Frontend JavaScript", () => {
           vatNumber: "193054661",
           periodKey: "24A1",
           vatDue: "1000.00",
-          hmrcAccessToken: "test-token",
+          accessToken: "test-token",
         }),
       });
       expect(result).toEqual(mockResponse);

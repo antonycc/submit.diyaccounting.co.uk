@@ -97,6 +97,9 @@ public class WebStack extends Stack {
     public BucketDeployment deployment;
     public IHostedZone hostedZone;
     public ICertificate certificate;
+    public ICertificate authCertificate;
+    public Secret hmrcClientSecretsManagerSecret;
+    public Secret googleClientSecretsManagerSecret;
     public IBucket distributionAccessLogBucket;
     public OriginAccessIdentity originIdentity;
     public Distribution distribution;
@@ -105,15 +108,21 @@ public class WebStack extends Stack {
     public ARecord aRecord;
     public AaaaRecord aaaaRecord;
     public Trail cloudTrailLogBucket;
-    public Function authUrlLambda;
-    public FunctionUrl authUrlLambdaUrl;
+    public Function authUrlHmrcLambda;
+    public FunctionUrl authUrlHmrcLambdaUrl;
     public LogGroup authUrlLambdaLogGroup;
     public Function authUrlMockLambda;
     public FunctionUrl authUrlMockLambdaUrl;
     public LogGroup authUrlMockLambdaLogGroup;
-    public Function exchangeTokenLambda;
-    public FunctionUrl exchangeTokenLambdaUrl;
-    public LogGroup exchangeTokenLambdaLogGroup;
+    public Function authUrlGoogleLambda;
+    public FunctionUrl authUrlGoogleLambdaUrl;
+    public LogGroup authUrlGoogleLambdaLogGroup;
+    public Function exchangeHmrcTokenLambda;
+    public FunctionUrl exchangeHmrcTokenLambdaUrl;
+    public LogGroup exchangeHmrcTokenLambdaLogGroup;
+    public Function exchangeGoogleTokenLambda;
+    public FunctionUrl exchangeGoogleTokenLambdaUrl;
+    public LogGroup exchangeGoogleTokenLambdaLogGroup;
     public Function submitVatLambda;
     public FunctionUrl submitVatLambdaUrl;
     public LogGroup submitVatLambdaLogGroup;
@@ -145,6 +154,8 @@ public class WebStack extends Stack {
         public String useExistingHostedZone;
         public String certificateArn;
         public String useExistingCertificate;
+        public String authCertificateArn;
+        public String useExistingAuthCertificate;
         public String cloudTrailEnabled;
         public String cloudTrailLogGroupPrefix;
         public String cloudTrailLogGroupRetentionPeriodDays;
@@ -172,15 +183,21 @@ public class WebStack extends Stack {
         public String optionalTestS3SecretKey;
         public String receiptsBucketPostfix;
         public String lambdaEntry;
-        public String authUrlLambdaHandlerFunctionName;
+        public String authUrlHmrcLambdaHandlerFunctionName;
         public String authUrlLambdaUrlPath;
-        public String authUrlLambdaDuration;
+        public String authUrlHmrcLambdaDuration;
         public String authUrlMockLambdaHandlerFunctionName;
         public String authUrlMockLambdaUrlPath;
         public String authUrlMockLambdaDuration;
-        public String exchangeTokenLambdaHandlerFunctionName;
-        public String exchangeTokenLambdaUrlPath;
-        public String exchangeTokenLambdaDuration;
+        public String authUrlGoogleLambdaHandlerFunctionName;
+        public String authUrlGoogleLambdaUrlPath;
+        public String authUrlGoogleLambdaDuration;
+        public String exchangeHmrcTokenLambdaHandlerFunctionName;
+        public String exchangeHmrcTokenLambdaUrlPath;
+        public String exchangeHmrcTokenLambdaDuration;
+        public String exchangeGoogleTokenLambdaHandlerFunctionName;
+        public String exchangeGoogleTokenLambdaUrlPath;
+        public String exchangeGoogleTokenLambdaDuration;
         public String submitVatLambdaHandlerFunctionName;
         public String submitVatLambdaUrlPath;
         public String submitVatLambdaDuration;
@@ -299,6 +316,16 @@ public class WebStack extends Stack {
 
         public Builder useExistingCertificate(String useExistingCertificate) {
             this.useExistingCertificate = useExistingCertificate;
+            return this;
+        }
+
+        public Builder authCertificateArn(String authCertificateArn) {
+            this.authCertificateArn = authCertificateArn;
+            return this;
+        }
+
+        public Builder useExistingAuthCertificate(String useExistingAuthCertificate) {
+            this.useExistingAuthCertificate = useExistingAuthCertificate;
             return this;
         }
 
@@ -437,18 +464,18 @@ public class WebStack extends Stack {
             return this;
         }
 
-        public Builder authUrlLambdaHandlerFunctionName(String authUrlLambdaHandlerFunctionName) {
-            this.authUrlLambdaHandlerFunctionName = authUrlLambdaHandlerFunctionName;
+        public Builder authUrlHmrcLambdaHandlerFunctionName(String authUrlHmrcLambdaHandlerFunctionName) {
+            this.authUrlHmrcLambdaHandlerFunctionName = authUrlHmrcLambdaHandlerFunctionName;
             return this;
         }
 
-        public Builder authUrlLambdaUrlPath(String authUrlLambdaUrlPath) {
-            this.authUrlLambdaUrlPath = authUrlLambdaUrlPath;
+        public Builder authUrlHmrcLambdaUrlPath(String authUrlHmrcLambdaUrlPath) {
+            this.authUrlLambdaUrlPath = authUrlHmrcLambdaUrlPath;
             return this;
         }
 
-        public Builder authUrlLambdaDurationMillis(String authUrlLambdaDuration) {
-            this.authUrlLambdaDuration = authUrlLambdaDuration;
+        public Builder authUrlHmrcLambdaDurationMillis(String authUrlHmrcLambdaDuration) {
+            this.authUrlHmrcLambdaDuration = authUrlHmrcLambdaDuration;
             return this;
         }
 
@@ -467,18 +494,48 @@ public class WebStack extends Stack {
             return this;
         }
 
-        public Builder exchangeTokenLambdaHandlerFunctionName(String exchangeTokenLambdaHandlerFunctionName) {
-            this.exchangeTokenLambdaHandlerFunctionName = exchangeTokenLambdaHandlerFunctionName;
+        public Builder authUrlGoogleLambdaHandlerFunctionName(String authUrlGoogleLambdaHandlerFunctionName) {
+            this.authUrlGoogleLambdaHandlerFunctionName = authUrlGoogleLambdaHandlerFunctionName;
             return this;
         }
 
-        public Builder exchangeTokenLambdaUrlPath(String exchangeTokenLambdaUrlPath) {
-            this.exchangeTokenLambdaUrlPath = exchangeTokenLambdaUrlPath;
+        public Builder authUrlGoogleLambdaUrlPath(String authUrlGoogleLambdaUrlPath) {
+            this.authUrlGoogleLambdaUrlPath = authUrlGoogleLambdaUrlPath;
             return this;
         }
 
-        public Builder exchangeTokenLambdaDurationMillis(String exchangeTokenLambdaDuration) {
-            this.exchangeTokenLambdaDuration = exchangeTokenLambdaDuration;
+        public Builder authUrlGoogleLambdaDurationMillis(String authUrlGoogleLambdaDuration) {
+            this.authUrlGoogleLambdaDuration = authUrlGoogleLambdaDuration;
+            return this;
+        }
+
+        public Builder exchangeHmrcTokenLambdaHandlerFunctionName(String exchangeHmrcTokenLambdaHandlerFunctionName) {
+            this.exchangeHmrcTokenLambdaHandlerFunctionName = exchangeHmrcTokenLambdaHandlerFunctionName;
+            return this;
+        }
+
+        public Builder exchangeHmrcTokenLambdaUrlPath(String exchangeHmrcTokenLambdaUrlPath) {
+            this.exchangeHmrcTokenLambdaUrlPath = exchangeHmrcTokenLambdaUrlPath;
+            return this;
+        }
+
+        public Builder exchangeHmrcTokenLambdaDurationMillis(String exchangeHmrcTokenLambdaDuration) {
+            this.exchangeHmrcTokenLambdaDuration = exchangeHmrcTokenLambdaDuration;
+            return this;
+        }
+
+        public Builder exchangeGoogleTokenLambdaHandlerFunctionName(String exchangeGoogleTokenLambdaHandlerFunctionName) {
+            this.exchangeGoogleTokenLambdaHandlerFunctionName = exchangeGoogleTokenLambdaHandlerFunctionName;
+            return this;
+        }
+
+        public Builder exchangeGoogleTokenLambdaUrlPath(String exchangeGoogleTokenLambdaUrlPath) {
+            this.exchangeGoogleTokenLambdaUrlPath = exchangeGoogleTokenLambdaUrlPath;
+            return this;
+        }
+
+        public Builder exchangeGoogleTokenLambdaDurationMillis(String exchangeGoogleTokenLambdaDuration) {
+            this.exchangeGoogleTokenLambdaDuration = exchangeGoogleTokenLambdaDuration;
             return this;
         }
 
@@ -578,7 +635,9 @@ public class WebStack extends Stack {
         public static String buildOriginBucketName(String dashedDomainName){ return dashedDomainName; }
         public static String buildCloudTrailLogBucketName(String dashedDomainName) { return "%s-cloud-trail".formatted(dashedDomainName); }
         public static String buildOriginAccessLogBucketName(String dashedDomainName) { return "%s-origin-access-logs".formatted(dashedDomainName); }
-        public static String buildDistributionAccessLogBucketName(String dashedDomainName) { return "%s-dist-access-logs".formatted(dashedDomainName);}
+        public static String buildDistributionAccessLogBucketName(String dashedDomainName) { return "%s-dist-access-logs".formatted(dashedDomainName); }
+        public static String buildCognitoDomain(String env, String cognitoDomainPrefix, String domainName) { return "%s.%s.%s".formatted(env, cognitoDomainPrefix, domainName); }
+        public static String buildCognitoBaseUri(String cognitoDomain) { return "https://%s".formatted(cognitoDomain); }
 
         private static String buildFunctionName(String dashedDomainName, String functionName) {
             return "%s-%s".formatted(dashedDomainName, ResourceNameUtils.convertCamelCaseToDashSeparated(functionName));
@@ -630,13 +689,16 @@ public class WebStack extends Stack {
 
         boolean useExistingCertificate = Boolean.parseBoolean(builder.useExistingCertificate);
 
+        boolean useExistingAuthCertificate = Boolean.parseBoolean(builder.useExistingAuthCertificate);
+
         int accessLogGroupRetentionPeriodDays = Integer.parseInt(builder.accessLogGroupRetentionPeriodDays);
         String originAccessLogBucketName = Builder.buildOriginAccessLogBucketName(dashedDomainName);
 
         String distributionAccessLogBucketName = Builder.buildDistributionAccessLogBucketName(dashedDomainName);
 
-        boolean skipLambdaUrlOrigins = Boolean.parseBoolean(builder.skipLambdaUrlOrigins);
-        
+        var cognitoDomain = Builder.buildCognitoDomain(builder.env, builder.cognitoDomainPrefix != null ? builder.cognitoDomainPrefix : "auth", domainName);
+        var cognitoBaseUri = Builder.buildCognitoBaseUri(cognitoDomain);
+
         // Check for environment variable override for verboseLogging
         String verboseLoggingEnv = System.getenv("VERBOSE_LOGGING");
         boolean verboseLogging = verboseLoggingEnv != null ? 
@@ -750,31 +812,31 @@ public class WebStack extends Stack {
 
         var lambdaUrlToOriginsBehaviourMappings = new HashMap<String, BehaviorOptions>();
 
-        // authUrl - hmrc
-        var authUrlLambdaEnv = new HashMap<>(Map.of(
-                "DIY_SUBMIT_HMRC_CLIENT_ID", builder.hmrcClientId,
+        // authUrl - HMRC
+        var authUrlHmrcLambdaEnv = new HashMap<>(Map.of(
                 "DIY_SUBMIT_HOME_URL", builder.homeUrl,
-                "DIY_SUBMIT_HMRC_BASE_URI", builder.hmrcBaseUri
+                "DIY_SUBMIT_HMRC_BASE_URI", builder.hmrcBaseUri,
+                "DIY_SUBMIT_HMRC_CLIENT_ID", builder.hmrcClientId
         ));
-        var authUrlLambdaUrlOrigin = LambdaUrlOrigin.Builder.create(this, "AuthUrlLambda")
+        var authUrlHmrcLambdaUrlOrigin = LambdaUrlOrigin.Builder.create(this, "AuthUrlHmrcLambda")
                 .env(builder.env)
                 .imageDirectory("infra/runtimes")
-                .imageFilename("authUrl.Dockerfile")
-                .functionName(Builder.buildFunctionName(dashedDomainName, builder.authUrlLambdaHandlerFunctionName))
+                .imageFilename("authUrlHmrc.Dockerfile")
+                .functionName(Builder.buildFunctionName(dashedDomainName, builder.authUrlHmrcLambdaHandlerFunctionName))
                 .allowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
                 .functionUrlAuthType(functionUrlAuthType)
-                .handler(builder.lambdaEntry + builder.authUrlLambdaHandlerFunctionName)
-                .environment(authUrlLambdaEnv)
-                .timeout(Duration.millis(Long.parseLong(builder.authUrlLambdaDuration)))
+                .handler(builder.lambdaEntry + builder.authUrlHmrcLambdaHandlerFunctionName)
+                .environment(authUrlHmrcLambdaEnv)
+                .timeout(Duration.millis(Long.parseLong(builder.authUrlHmrcLambdaDuration)))
                 .cloudTrailEnabled(cloudTrailEnabled)
                 .xRayEnabled(xRayEnabled)
                 .verboseLogging(verboseLogging)
                 .baseImageTag(builder.baseImageTag)
                 .build();
-        this.authUrlLambda = authUrlLambdaUrlOrigin.lambda;
-        this.authUrlLambdaUrl = authUrlLambdaUrlOrigin.functionUrl;
-        this.authUrlLambdaLogGroup = authUrlLambdaUrlOrigin.logGroup;
-        lambdaUrlToOriginsBehaviourMappings.put(builder.authUrlLambdaUrlPath + "*", authUrlLambdaUrlOrigin.behaviorOptions);
+        this.authUrlHmrcLambda = authUrlHmrcLambdaUrlOrigin.lambda;
+        this.authUrlHmrcLambdaUrl = authUrlHmrcLambdaUrlOrigin.functionUrl;
+        this.authUrlLambdaLogGroup = authUrlHmrcLambdaUrlOrigin.logGroup;
+        lambdaUrlToOriginsBehaviourMappings.put(builder.authUrlLambdaUrlPath + "*", authUrlHmrcLambdaUrlOrigin.behaviorOptions);
 
         // authUrl - mock
         var authUrlMockLambdaEnv = new HashMap<>(Map.of(
@@ -800,17 +862,43 @@ public class WebStack extends Stack {
         this.authUrlMockLambdaLogGroup = authUrlMockLambdaUrlOrigin.logGroup;
         lambdaUrlToOriginsBehaviourMappings.put(builder.authUrlMockLambdaUrlPath + "*", authUrlMockLambdaUrlOrigin.behaviorOptions);
 
-        // exchangeToken
+        // authUrl - Google
+        var authUrlGoogleLambdaEnv = new HashMap<>(Map.of(
+                "DIY_SUBMIT_HOME_URL", builder.homeUrl,
+                "DIY_SUBMIT_COGNITO_BASE_URI", cognitoBaseUri,
+                "DIY_SUBMIT_GOOGLE_CLIENT_ID", builder.googleClientId
+        ));
+        var authUrlGoogleLambdaUrlOrigin = LambdaUrlOrigin.Builder.create(this, "AuthUrlGoogleLambda")
+                .env(builder.env)
+                .imageDirectory("infra/runtimes")
+                .imageFilename("authUrlGoogle.Dockerfile")
+                .functionName(Builder.buildFunctionName(dashedDomainName, builder.authUrlGoogleLambdaHandlerFunctionName))
+                .allowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
+                .functionUrlAuthType(functionUrlAuthType)
+                .handler(builder.lambdaEntry + builder.authUrlGoogleLambdaHandlerFunctionName)
+                .environment(authUrlGoogleLambdaEnv)
+                .timeout(Duration.millis(Long.parseLong(builder.authUrlGoogleLambdaDuration)))
+                .cloudTrailEnabled(cloudTrailEnabled)
+                .xRayEnabled(xRayEnabled)
+                .verboseLogging(verboseLogging)
+                .baseImageTag(builder.baseImageTag)
+                .build();
+        this.authUrlGoogleLambda = authUrlGoogleLambdaUrlOrigin.lambda;
+        this.authUrlGoogleLambdaUrl = authUrlGoogleLambdaUrlOrigin.functionUrl;
+        this.authUrlGoogleLambdaLogGroup = authUrlGoogleLambdaUrlOrigin.logGroup;
+        lambdaUrlToOriginsBehaviourMappings.put(builder.authUrlGoogleLambdaUrlPath + "*", authUrlGoogleLambdaUrlOrigin.behaviorOptions);
+
+        // exchangeToken - HMRC
         // Create a secret for the HMRC client secret and set the ARN to be used in the Lambda environment variable
-        var hmrcClientSecret = Secret.Builder.create(this, "HmrcClientSecret")
+        this.hmrcClientSecretsManagerSecret = Secret.Builder.create(this, "HmrcClientSecret")
                 .secretStringValue(SecretValue.unsafePlainText(builder.hmrcClientSecret))
                 .description("HMRC Client Secret for OAuth authentication")
                 .build();
-        var hmrcClientSecretArn = hmrcClientSecret.getSecretArn();
+        var hmrcClientSecretArn = this.hmrcClientSecretsManagerSecret.getSecretArn();
         var exchangeTokenLambdaEnv = new HashMap<>(Map.of(
-                "DIY_SUBMIT_HMRC_CLIENT_ID", builder.hmrcClientId,
                 "DIY_SUBMIT_HOME_URL", builder.homeUrl,
                 "DIY_SUBMIT_HMRC_BASE_URI", builder.hmrcBaseUri,
+                "DIY_SUBMIT_HMRC_CLIENT_ID", builder.hmrcClientId,
                 "DIY_SUBMIT_HMRC_CLIENT_SECRET_ARN", hmrcClientSecretArn
         ));
         if (StringUtils.isNotBlank(builder.optionalTestAccessToken)){
@@ -820,22 +908,59 @@ public class WebStack extends Stack {
                 .env(builder.env)
                 .imageDirectory("infra/runtimes")
                 .imageFilename("exchangeToken.Dockerfile")
-                .functionName(Builder.buildFunctionName(dashedDomainName, builder.exchangeTokenLambdaHandlerFunctionName))
+                .functionName(Builder.buildFunctionName(dashedDomainName, builder.exchangeHmrcTokenLambdaHandlerFunctionName))
                 .allowedMethods(AllowedMethods.ALLOW_ALL)
                 .functionUrlAuthType(functionUrlAuthType)
-                .handler(builder.lambdaEntry + builder.exchangeTokenLambdaHandlerFunctionName)
+                .handler(builder.lambdaEntry + builder.exchangeHmrcTokenLambdaHandlerFunctionName)
                 .environment(exchangeTokenLambdaEnv)
-                .timeout(Duration.millis(Long.parseLong(builder.exchangeTokenLambdaDuration)))
+                .timeout(Duration.millis(Long.parseLong(builder.exchangeHmrcTokenLambdaDuration)))
                 .cloudTrailEnabled(cloudTrailEnabled)
                 .xRayEnabled(xRayEnabled)
                 .verboseLogging(verboseLogging)
                 .baseImageTag(builder.baseImageTag)
                 .build();
-        this.exchangeTokenLambda = exchangeTokenLambdaUrlOrigin.lambda;
-        this.exchangeTokenLambdaUrl = exchangeTokenLambdaUrlOrigin.functionUrl;
-        this.exchangeTokenLambdaLogGroup = exchangeTokenLambdaUrlOrigin.logGroup;
-        lambdaUrlToOriginsBehaviourMappings.put(builder.exchangeTokenLambdaUrlPath + "*", exchangeTokenLambdaUrlOrigin.behaviorOptions);
-        hmrcClientSecret.grantRead(this.exchangeTokenLambda);
+        this.exchangeHmrcTokenLambda = exchangeTokenLambdaUrlOrigin.lambda;
+        this.exchangeHmrcTokenLambdaUrl = exchangeTokenLambdaUrlOrigin.functionUrl;
+        this.exchangeHmrcTokenLambdaLogGroup = exchangeTokenLambdaUrlOrigin.logGroup;
+        lambdaUrlToOriginsBehaviourMappings.put(builder.exchangeHmrcTokenLambdaUrlPath + "*", exchangeTokenLambdaUrlOrigin.behaviorOptions);
+        this.hmrcClientSecretsManagerSecret.grantRead(this.exchangeHmrcTokenLambda);
+
+        // exchangeToken - Google
+        // Create a secret for the Google client secret and set the ARN to be used in the Lambda environment variable
+        this.googleClientSecretsManagerSecret = Secret.Builder.create(this, "GoogleClientSecret")
+                .secretStringValue(SecretValue.unsafePlainText(builder.googleClientSecret))
+                .description("Google Client Secret for OAuth authentication")
+                .build();
+        var googleClientSecretArn = this.googleClientSecretsManagerSecret.getSecretArn();
+        var exchangeGoogleTokenLambdaEnv = new HashMap<>(Map.of(
+                "DIY_SUBMIT_HOME_URL", builder.homeUrl,
+                "DIY_SUBMIT_COGNITO_BASE_URI", cognitoBaseUri,
+                "DIY_SUBMIT_GOOGLE_CLIENT_ID", builder.googleClientId,
+                "DIY_SUBMIT_GOOGLE_CLIENT_SECRET_ARN", googleClientSecretArn
+        ));
+        if (StringUtils.isNotBlank(builder.optionalTestAccessToken)){
+            exchangeGoogleTokenLambdaEnv.put("DIY_SUBMIT_TEST_ACCESS_TOKEN", builder.optionalTestAccessToken);
+        }
+        var exchangeGoogleTokenLambdaUrlOrigin = LambdaUrlOrigin.Builder.create(this, "ExchangeGoogleTokenLambda")
+                .env(builder.env)
+                .imageDirectory("infra/runtimes")
+                .imageFilename("exchangeGoogleToken.Dockerfile")
+                .functionName(Builder.buildFunctionName(dashedDomainName, builder.exchangeGoogleTokenLambdaHandlerFunctionName))
+                .allowedMethods(AllowedMethods.ALLOW_ALL)
+                .functionUrlAuthType(functionUrlAuthType)
+                .handler(builder.lambdaEntry + builder.exchangeGoogleTokenLambdaHandlerFunctionName)
+                .environment(exchangeGoogleTokenLambdaEnv)
+                .timeout(Duration.millis(Long.parseLong(builder.exchangeGoogleTokenLambdaDuration)))
+                .cloudTrailEnabled(cloudTrailEnabled)
+                .xRayEnabled(xRayEnabled)
+                .verboseLogging(verboseLogging)
+                .baseImageTag(builder.baseImageTag)
+                .build();
+        this.exchangeGoogleTokenLambda = exchangeGoogleTokenLambdaUrlOrigin.lambda;
+        this.exchangeGoogleTokenLambdaUrl = exchangeGoogleTokenLambdaUrlOrigin.functionUrl;
+        this.exchangeGoogleTokenLambdaLogGroup = exchangeGoogleTokenLambdaUrlOrigin.logGroup;
+        lambdaUrlToOriginsBehaviourMappings.put(builder.exchangeGoogleTokenLambdaUrlPath + "*", exchangeGoogleTokenLambdaUrlOrigin.behaviorOptions);
+        this.googleClientSecretsManagerSecret.grantRead(this.exchangeGoogleTokenLambda);
 
         // submitVat
         var submitVatLambdaEnv = new HashMap<>(Map.of(
@@ -927,11 +1052,25 @@ public class WebStack extends Stack {
                     .removalPolicy(RemovalPolicy.DESTROY)
                     .build();
 
-            // Create User Pool Domain
+            // Create a certificate for Cognito
+            if (useExistingAuthCertificate) {
+                this.authCertificate = Certificate.fromCertificateArn(this, "AuthCertificate", builder.authCertificateArn);
+            } else {
+                this.authCertificate = Certificate.Builder
+                        .create(this, "AuthCertificate")
+                        .domainName(cognitoDomain)
+                        .certificateName(builder.authCertificateArn)
+                        .validation(CertificateValidation.fromDns(this.hostedZone))
+                        .transparencyLoggingEnabled(true)
+                        .build();
+            }
+
+            // Create Cognito User Pool Domain
             this.userPoolDomain = UserPoolDomain.Builder.create(this, "UserPoolDomain")
                     .userPool(this.userPool)
-                    .cognitoDomain(software.amazon.awscdk.services.cognito.CognitoDomainOptions.builder()
-                            .domainPrefix(builder.cognitoDomainPrefix != null ? builder.cognitoDomainPrefix : dashedDomainName + "-auth")
+                    .customDomain(software.amazon.awscdk.services.cognito.CustomDomainOptions.builder()
+                            .domainName(cognitoDomain)
+                            .certificate(this.authCertificate)
                             .build())
                     .build();
 
@@ -1028,7 +1167,6 @@ public class WebStack extends Stack {
         }
 
         // Create receipts bucket for storing VAT submission receipts
-        // TODO: Add a switch not to write the file contents.
         this.receiptsBucket = LogForwardingBucket.Builder
                 .create(this, "ReceiptsBucket", builder.logS3ObjectEventHandlerSource, LogS3ObjectEvent.class)
                 .bucketName(receiptsBucketFullName)
@@ -1102,8 +1240,8 @@ public class WebStack extends Stack {
                 .functionUrlAuthType(functionUrlAuthType)
                 .sourceArn(this.distribution.getDistributionArn()) // restrict to your distribution
                 .build();
-        authUrlLambda.addPermission("AuthLambdaAllowCloudFrontInvoke", invokeFunctionUrlPermission);
-        exchangeTokenLambda.addPermission("ExchangeTokenLambdaAllowCloudFrontInvoke", invokeFunctionUrlPermission);
+        authUrlHmrcLambda.addPermission("AuthLambdaAllowCloudFrontInvoke", invokeFunctionUrlPermission);
+        exchangeHmrcTokenLambda.addPermission("ExchangeTokenLambdaAllowCloudFrontInvoke", invokeFunctionUrlPermission);
         submitVatLambda.addPermission("SubmitVatLambdaAllowCloudFrontInvoke", invokeFunctionUrlPermission);
         logReceiptLambda.addPermission("LogReceiptLambdaAllowCloudFrontInvoke", invokeFunctionUrlPermission);
 

@@ -105,7 +105,7 @@ export async function submitVat(periodKey, vatDue, vatNumber, hmrcAccessToken, g
     });
     hmrcResponseBody = await hmrcResponse.json();
   }
-  // const hmrcResponseBody = await hmrcResponse.json();
+  // const responseBody = await response.json();
 
   // Enhanced logging for response analysis
   const responseLogData = {
@@ -141,7 +141,7 @@ export async function submitVat(periodKey, vatDue, vatNumber, hmrcAccessToken, g
 
   logger.info(responseLogData);
 
-  return { hmrcRequestBody, receipt: hmrcResponseBody, hmrcResponse, hmrcResponseBody, hmrcRequestUrl };
+  return { hmrcRequestBody, receipt: hmrcResponseBody, response: hmrcResponse, responseBody: hmrcResponseBody, hmrcRequestUrl };
 }
 
 // POST /api/submit-vat
@@ -163,7 +163,7 @@ export async function httpPost(event) {
     errorMessages.push("Missing vatDue parameter from body");
   }
   if (!hmrcAccessToken) {
-    errorMessages.push("Missing hmrcAccessToken parameter from body");
+    errorMessages.push("Missing accessToken parameter from body");
   }
   const { govClientHeaders, govClientErrorMessages } = eventToGovClientHeaders(event, detectedIP);
   errorMessages = errorMessages.concat(govClientErrorMessages || []);
@@ -190,7 +190,7 @@ export async function httpPost(event) {
       message: "HMRC VAT submission failed",
       error: {
         hmrcResponseCode: hmrcResponse.status,
-        hmrcResponseBody,
+        responseBody: hmrcResponseBody,
       },
     });
   }

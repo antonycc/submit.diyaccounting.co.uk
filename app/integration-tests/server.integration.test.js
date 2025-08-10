@@ -85,6 +85,8 @@ describe("Integration – Server Express App", () => {
       ...process.env,
       DIY_SUBMIT_HMRC_CLIENT_ID: "integration-test-client-id",
       DIY_SUBMIT_HMRC_CLIENT_SECRET: "integration-test-secret",
+      DIY_SUBMIT_GOOGLE_CLIENT_ID: "integration-test-google-client-id",
+      DIY_SUBMIT_GOOGLE_CLIENT_SECRET: "integration-test-google-secret",
       DIY_SUBMIT_HOME_URL: "https://test.submit.diyaccounting.co.uk/",
       DIY_SUBMIT_HMRC_BASE_URI: "https://test-api.service.hmrc.gov.uk",
       DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX: "integration-test-bucket",
@@ -160,7 +162,7 @@ describe("Integration – Server Express App", () => {
       console.log("Token exchange response:", response.body);
 
       expect(response.body).toHaveProperty("hmrcAccessToken");
-      expect(response.body.hmrcAccessToken).toBe("mocked-access-token");
+      expect(response.body.accessToken).toBe("mocked-access-token");
     });
 
     it("should handle missing state in auth URL", async () => {
@@ -184,7 +186,7 @@ describe("Integration – Server Express App", () => {
         vatNumber: "193054661",
         periodKey: "18A1",
         vatDue: "150.00",
-        hmrcAccessToken: "mocked-access-token",
+        accessToken: "mocked-access-token",
       };
 
       const response = await request(app).post("/api/submit-vat").send(vatData).expect(200);
@@ -203,7 +205,7 @@ describe("Integration – Server Express App", () => {
 
       expect(response.body).toHaveProperty("message");
       expect(response.body.message).toBe(
-        "Missing periodKey parameter from body, Missing vatDue parameter from body, Missing hmrcAccessToken parameter from body",
+        "Missing periodKey parameter from body, Missing vatDue parameter from body, Missing accessToken parameter from body",
       );
     });
   });
@@ -286,7 +288,7 @@ describe("Integration – Server Express App", () => {
       const tokenResponse = await request(app).post("/api/exchange-token").send({ code: "flow-test-code" }).expect(200);
 
       expect(tokenResponse.body).toHaveProperty("hmrcAccessToken");
-      const hmrcAccessToken = tokenResponse.body.hmrcAccessToken;
+      const hmrcAccessToken = tokenResponse.body.accessToken;
 
       // Step 3: Submit VAT return
       const vatResponse = await request(app)
@@ -295,7 +297,7 @@ describe("Integration – Server Express App", () => {
           vatNumber: "987654321",
           periodKey: "18A2",
           vatDue: "250.00",
-          hmrcAccessToken: hmrcAccessToken,
+          accessToken: hmrcAccessToken,
         })
         .expect(200);
 

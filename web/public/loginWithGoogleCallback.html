@@ -1,16 +1,16 @@
-<!-- loginCallback.html -->
+<!-- loginWithGoogleCallback.html -->
 <!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>DIY Accounting Submit - Login callback</title>
+    <title>DIY Accounting Submit - Login with Google callback</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" href="submit.css" />
   </head>
   <body>
     <header>
       <div class="header-nav"></div>
-      <h1>DIY Accounting Submit - Login callback</h1>
+      <h1>DIY Accounting Submit - Login with Google callback</h1>
       <p class="subtitle">Submit UK VAT returns to HMRC under Making Tax Digital (MTD)</p>
     </header>
 
@@ -57,21 +57,21 @@
       // Handle authentication callback from Cognito
       async function handleAuthCallback(code, state) {
         try {
-          // Exchange authorization code for tokens
+          const url = `/api/google/exchange-token`;
+          const body = {
+            grant_type: "authorization_code",
+            client_id: "670010122633-j177nir959n1tdnd891uqsgj6fkrj6b1.apps.googleusercontent.com",
+            code: code,
+          };
+          console.log(`Exchanging token. Remote call initiated: POST ${url} ++ Body: ${body}`);
+
           //const tokenResponse = await fetch(`https://${COGNITO_CONFIG.domain}/oauth2/token`, {
-          const tokenResponse = await fetch(`http://localhost:8080/default/token`, {
+          const tokenResponse = await fetch(url, {
             method: "POST",
             headers: {
               "Content-Type": "application/x-www-form-urlencoded",
             },
-            body: new URLSearchParams({
-              grant_type: "authorization_code",
-              //client_id: COGNITO_CONFIG.clientId,
-              client_id: "debugger",
-              code: code,
-              //redirect_uri: COGNITO_CONFIG.redirectUri
-              redirect_uri: "http://127.0.0.1:3000/loginCallback.html",
-            }),
+            body: new URLSearchParams(body),
           });
 
           if (!tokenResponse.ok) {

@@ -67,7 +67,7 @@ describe("exchangeClientSecretForAccessToken", () => {
       const result = await exchangeToken("test-auth-code");
 
       // Assert
-      expect(result.hmrcAccessToken).toBe("test-access-token");
+      expect(result.accessToken).toBe("test-access-token");
       expect(secretsManagerMock.calls()).toHaveLength(0); // Should not call Secrets Manager
 
       // Verify the fetch was called with correct parameters
@@ -99,7 +99,7 @@ describe("exchangeClientSecretForAccessToken", () => {
       const result = await exchangeToken("test-auth-code");
 
       // Assert
-      expect(result.hmrcAccessToken).toBe("test-access-token");
+      expect(result.accessToken).toBe("test-access-token");
 
       // Verify GetSecretValueCommand was called with correct parameters
       const secretsManagerCalls = secretsManagerMock.calls();
@@ -177,7 +177,7 @@ describe("exchangeClientSecretForAccessToken", () => {
       const result = await exchangeToken("test-auth-code");
 
       // Assert
-      expect(result.hmrcAccessToken).toBe("test-access-token");
+      expect(result.accessToken).toBe("test-access-token");
 
       // Verify the secret was extracted correctly from the response
       const fetchCall = fetch.default.mock.calls[0];
@@ -214,7 +214,7 @@ describe("exchangeClientSecretForAccessToken", () => {
       const result = await exchangeToken("test-auth-code");
 
       // Assert
-      expect(result.hmrcAccessToken).toBe("test-access-token");
+      expect(result.accessToken).toBe("test-access-token");
       expect(secretsManagerMock.calls()).toHaveLength(0); // Should not call Secrets Manager
 
       // Verify the fetch was called with the environment variable secret
@@ -239,8 +239,8 @@ describe("exchangeClientSecretForAccessToken", () => {
       const result = await exchangeToken("test-auth-code");
 
       // Assert
-      expect(result.hmrcAccessToken).toBe(testAccessToken);
-      expect(result.hmrcResponse.status).toBe(200);
+      expect(result.accessToken).toBe(testAccessToken);
+      expect(result.response.status).toBe(200);
 
       // Should not make actual HTTP calls in stubbed mode
       const fetch = await import("node-fetch");

@@ -35,7 +35,7 @@
         <div class="auth-providers">
           <!-- Google Auth Provider (Enabled) -->
           <div class="auth-provider">
-            <button type="button" class="btn auth-btn google-btn" onclick="loginWithGoogle()">
+            <button type="button" class="btn auth-btn google-btn" id="loginWithGoogle">
               <img src="./brand/proprietary/g-logo.png" alt="Google" class="provider-logo" />
               Continue with Google
             </button>
@@ -91,6 +91,7 @@
       </div>
     </footer>
 
+    <script src="./submit.js"></script>
     <script>
       // Hamburger menu toggle functionality
       function toggleMenu() {
@@ -118,47 +119,20 @@
         }
       }
 
-      // Load view source link on page load
-      loadViewSourceLink();
-
-      // Cognito configuration - these will be set by environment variables in production
-      //const COGNITO_CONFIG = {
-      //  userPoolId: 'us-east-1_PLACEHOLDER', // Will be replaced with actual values
-      //   clientId: 'PLACEHOLDER_CLIENT_ID',
-      //   domain: 'PLACEHOLDER_DOMAIN.auth.us-east-1.amazoncognito.com',
-      //   redirectUri: window.location.origin + '/loginCallback.html',
-      //   responseType: 'code',
-      //   scope: 'email openid profile'
-      //  };
-      const COGNITO_CONFIG = {
-        userPoolId: "us-east-1_PLACEHOLDER", // Will be replaced with actual values
-        clientId: "PLACEHOLDER_CLIENT_ID",
-        domain: "PLACEHOLDER_DOMAIN.auth.us-east-1.amazoncognito.com",
-        // redirectUri: window.location.origin + '/loginCallback.html',
-        responseType: "code",
-        scope: "email openid profile",
-      };
-
       // Login with Google via Cognito
-      function loginWithGoogle() {
+      async function loginWithGoogle() {
         console.log("Initiating Google login via Cognito");
 
         // Generate state parameter for security
         const state = Math.random().toString(36).substring(2, 15);
         localStorage.setItem("authState", state);
 
-        // Build Cognito OAuth URL
-        const authUrl =
-          `https://${COGNITO_CONFIG.domain}/oauth2/authorize?` +
-          `response_type=${COGNITO_CONFIG.responseType}&` +
-          `client_id=${COGNITO_CONFIG.clientId}&` +
-          `redirect_uri=${encodeURIComponent("loginCallback.html")}&` +
-          `scope=${encodeURIComponent(COGNITO_CONFIG.scope)}&` +
-          `state=${state}&` +
-          `identity_provider=Google`;
+        // Get OAuth URL
+        const authResponse = await getAuthUrl(state, "google");
+        const authResponseUrl = authResponse.authUrl;
 
-        console.log("Redirecting to Cognito OAuth URL");
-        window.location.href = authUrl;
+        console.log("Redirecting to Google OAuth URL");
+        window.location.href = authResponseUrl;
       }
 
       // Login with Mock OAuth2 Server via Cognito
@@ -172,9 +146,9 @@
         // Build Cognito OAuth URL
         const authUrl =
           `./oauth2-authorize.html?` +
-          `response_type=${COGNITO_CONFIG.responseType}&` +
+          `response_type=code&` +
           `client_id=test-client&` +
-          `redirect_uri=${encodeURIComponent("loginCallback.html")}&` +
+          `redirect_uri=${encodeURIComponent("loginWithGoogleCallback.html")}&` +
           `scope=${encodeURIComponent("test")}&` +
           `state=${state}&` +
           `identity_provider=MockOAuth2Server`;
@@ -240,6 +214,12 @@
         }
       }
 
+      // DOM elements
+      const loginWithGoogleButton = document.getElementById("loginWithGoogle");
+
+      // Event listeners
+      loginWithGoogleButton.onclick = loginWithGoogle();
+
       // Close menu when clicking outside
       window.onclick = function (event) {
         if (!event.target.matches(".hamburger-btn")) {
@@ -255,6 +235,9 @@
 
       // Initialize authentication on page load
       checkExistingAuth();
+
+      // Load view source link on page load
+      loadViewSourceLink();
     </script>
   </body>
 </html>

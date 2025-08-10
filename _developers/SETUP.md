@@ -588,7 +588,7 @@ app.get('/callback', async (req, res) => {
     grant_type: 'authorization_code',
     code: code
   });
-  const hmrcAccessToken = tokenResponse.data.access_token;
+  const accessToken = tokenResponse.data.access_token;
   // Queue submission task with SQS
 });
 ```
@@ -597,11 +597,11 @@ app.get('/callback', async (req, res) => {
 
 ```javascript
 exports.handler = async (event) => {
-  const { hmrcAccessToken, vatNumber, periodKey, vatDue } = event;
+  const { accessToken, vatNumber, periodKey, vatDue } = event;
   await axios.post(`https://test-api.service.hmrc.gov.uk/organisations/vat/${vatNumber}/returns`, {
     periodKey, vatDueSales: vatDue, totalVatDue: vatDue
   }, {
-    headers: { Authorization: `Bearer ${hmrcAccessToken}` }
+    headers: { Authorization: `Bearer ${accessToken}` }
   });
 };
 ```

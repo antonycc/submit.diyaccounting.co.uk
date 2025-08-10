@@ -48,6 +48,8 @@ DIY_SUBMIT_HMRC_CLIENT_ID=your_hmrc_client_id
 DIY_SUBMIT_HMRC_CLIENT_SECRET=your_hmrc_client_secret
 DIY_SUBMIT_HOME_URL=https://your-ngrok-domain.ngrok-free.app/
 DIY_SUBMIT_HMRC_BASE_URI=https://test-api.service.hmrc.gov.uk
+DIY_SUBMIT_GOOGLE_CLIENT_ID=your_google_client_id
+DIY_SUBMIT_GOOGLE_CLIENT_SECRET=your_google_client_secret
 ```
 
 Run the web server:

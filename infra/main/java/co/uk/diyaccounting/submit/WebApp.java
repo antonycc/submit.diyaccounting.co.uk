@@ -18,6 +18,8 @@ public class WebApp {
                 .useExistingHostedZone(System.getenv("USE_EXISTING_HOSTED_ZONE"))
                 .certificateArn(System.getenv("CERTIFICATE_ARN"))
                 .useExistingCertificate(System.getenv("USE_EXISTING_CERTIFICATE"))
+                .authCertificateArn(System.getenv("AUTH_CERTIFICATE_ARN"))
+                .useExistingAuthCertificate(System.getenv("USE_EXISTING_AUTH_CERTIFICATE"))
                 .cloudTrailEnabled(System.getenv("CLOUD_TRAIL_ENABLED"))
                 .xRayEnabled(System.getenv("X_RAY_ENABLED"))
                 .verboseLogging(System.getenv("VERBOSE_LOGGING"))
@@ -44,15 +46,21 @@ public class WebApp {
                 .optionalTestS3SecretKey(System.getenv("DIY_SUBMIT_TEST_S3_SECRET_KEY"))
                 .receiptsBucketPostfix(System.getenv("DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX"))
                 .lambdaEntry(System.getenv("LAMBDA_ENTRY"))
-                .authUrlLambdaHandlerFunctionName(System.getenv("AUTH_URL_LAMBDA_HANDLER_FUNCTION_NAME"))
-                .authUrlLambdaUrlPath(System.getenv("AUTH_URL_LAMBDA_URL_PATH"))
-                .authUrlLambdaDurationMillis(System.getenv("AUTH_URL_LAMBDA_DURATION"))
+                .authUrlHmrcLambdaHandlerFunctionName(System.getenv("AUTH_URL_LAMBDA_HANDLER_FUNCTION_NAME"))
+                .authUrlHmrcLambdaUrlPath(System.getenv("AUTH_URL_LAMBDA_URL_PATH"))
+                .authUrlHmrcLambdaDurationMillis(System.getenv("AUTH_URL_LAMBDA_DURATION"))
                 .authUrlMockLambdaHandlerFunctionName(System.getenv("AUTH_URL_MOCK_LAMBDA_HANDLER_FUNCTION_NAME"))
                 .authUrlMockLambdaUrlPath(System.getenv("AUTH_URL_MOCK_LAMBDA_URL_PATH"))
                 .authUrlMockLambdaDurationMillis(System.getenv("AUTH_URL_MOCK_LAMBDA_DURATION"))
-                .exchangeTokenLambdaHandlerFunctionName(System.getenv("EXCHANGE_TOKEN_LAMBDA_HANDLER_FUNCTION_NAME"))
-                .exchangeTokenLambdaUrlPath(System.getenv("EXCHANGE_TOKEN_LAMBDA_URL_PATH"))
-                .exchangeTokenLambdaDurationMillis(System.getenv("EXCHANGE_TOKEN_LAMBDA_DURATION"))
+                .authUrlGoogleLambdaHandlerFunctionName(System.getenv("AUTH_URL_GOOGLE_LAMBDA_HANDLER_FUNCTION_NAME"))
+                .authUrlGoogleLambdaUrlPath(System.getenv("AUTH_URL_GOOGLE_LAMBDA_URL_PATH"))
+                .authUrlGoogleLambdaDurationMillis(System.getenv("AUTH_URL_GOOGLE_LAMBDA_DURATION"))
+                .exchangeHmrcTokenLambdaHandlerFunctionName(System.getenv("EXCHANGE_HMRC_TOKEN_LAMBDA_HANDLER_FUNCTION_NAME"))
+                .exchangeHmrcTokenLambdaUrlPath(System.getenv("EXCHANGE_HMRC_TOKEN_LAMBDA_URL_PATH"))
+                .exchangeHmrcTokenLambdaDurationMillis(System.getenv("EXCHANGE_HMRC_TOKEN_LAMBDA_DURATION"))
+                .exchangeGoogleTokenLambdaHandlerFunctionName(System.getenv("EXCHANGE_GOOGLE_TOKEN_LAMBDA_HANDLER_FUNCTION_NAME"))
+                .exchangeGoogleTokenLambdaUrlPath(System.getenv("EXCHANGE_GOOGLE_TOKEN_LAMBDA_URL_PATH"))
+                .exchangeGoogleTokenLambdaDurationMillis(System.getenv("EXCHANGE_GOOGLE_TOKEN_LAMBDA_DURATION"))
                 .submitVatLambdaHandlerFunctionName(System.getenv("SUBMIT_VAT_LAMBDA_HANDLER_FUNCTION_NAME"))
                 .submitVatLambdaUrlPath(System.getenv("SUBMIT_VAT_LAMBDA_URL_PATH"))
                 .submitVatLambdaDurationMillis(System.getenv("SUBMIT_VAT_LAMBDA_DURATION"))
@@ -97,6 +105,14 @@ public class WebApp {
                 .value(stack.certificate.getCertificateArn())
                 .build();
 
+        CfnOutput.Builder.create(stack, "HmrcClientSecretsManagerSecretArn")
+                .value(stack.hmrcClientSecretsManagerSecret.getSecretArn())
+                .build();
+
+        CfnOutput.Builder.create(stack, "GoogleClientSecretsManagerSecretArn")
+                .value(stack.googleClientSecretsManagerSecret.getSecretArn())
+                .build();
+
         CfnOutput.Builder.create(stack, "ARecord")
                 .value(stack.aRecord.getDomainName())
                 .build();
@@ -105,12 +121,12 @@ public class WebApp {
                 .value(stack.aaaaRecord.getDomainName())
                 .build();
 
-        CfnOutput.Builder.create(stack, "AuthUrlLambdaArn")
-                .value(stack.authUrlLambda.getFunctionArn())
+        CfnOutput.Builder.create(stack, "AuthUrlHmrcLambdaArn")
+                .value(stack.authUrlHmrcLambda.getFunctionArn())
                 .build();
 
-        CfnOutput.Builder.create(stack, "AuthUrlLambdaUrl")
-                .value(stack.authUrlLambdaUrl.getUrl())
+        CfnOutput.Builder.create(stack, "AuthUrlHmrcLambdaUrl")
+                .value(stack.authUrlHmrcLambdaUrl.getUrl())
                 .build();
 
         CfnOutput.Builder.create(stack, "AuthUrlMockLambdaArn")
@@ -121,13 +137,30 @@ public class WebApp {
                 .value(stack.authUrlMockLambdaUrl.getUrl())
                 .build();
 
-        CfnOutput.Builder.create(stack, "ExchangeTokenLambdaArn")
-                .value(stack.exchangeTokenLambda.getFunctionArn())
+        CfnOutput.Builder.create(stack, "AuthUrlGoogleLambdaArn")
+                .value(stack.authUrlGoogleLambda.getFunctionArn())
                 .build();
 
-        CfnOutput.Builder.create(stack, "ExchangeTokenLambdaUrl")
-                .value(stack.exchangeTokenLambdaUrl.getUrl())
+        CfnOutput.Builder.create(stack, "AuthUrlGoogleLambdaUrl")
+                .value(stack.authUrlGoogleLambdaUrl.getUrl())
                 .build();
+
+        CfnOutput.Builder.create(stack, "ExchangeHmrcTokenLambdaArn")
+                .value(stack.exchangeHmrcTokenLambda.getFunctionArn())
+                .build();
+
+        CfnOutput.Builder.create(stack, "ExchangeHmrcTokenLambdaUrl")
+                .value(stack.exchangeHmrcTokenLambdaUrl.getUrl())
+                .build();
+
+        CfnOutput.Builder.create(stack, "ExchangeGoogleTokenLambdaArn")
+                .value(stack.exchangeGoogleTokenLambda.getFunctionArn())
+                .build();
+
+        CfnOutput.Builder.create(stack, "ExchangeGoogleTokenLambdaUrl")
+                .value(stack.exchangeGoogleTokenLambdaUrl.getUrl())
+                .build();
+
 
         CfnOutput.Builder.create(stack, "SubmitVatLambdaArn")
                 .value(stack.submitVatLambda.getFunctionArn())

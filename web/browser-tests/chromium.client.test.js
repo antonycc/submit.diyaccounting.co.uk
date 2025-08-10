@@ -47,7 +47,7 @@ test.describe("Client System Test - VAT Flow in Browser", () => {
         await route.fulfill({
           status: 200,
           contentType: "application/json",
-          body: JSON.stringify({ hmrcAccessToken: "test access token" }),
+          body: JSON.stringify({ accessToken: "test access token" }),
         });
       } else {
         await route.fulfill({
@@ -62,7 +62,7 @@ test.describe("Client System Test - VAT Flow in Browser", () => {
       const request = route.request();
       const body = JSON.parse(request.postData() || "{}");
 
-      if (body.hmrcAccessToken === "test access token") {
+      if (body.accessToken === "test access token") {
         await route.fulfill({
           status: 200,
           contentType: "application/json",

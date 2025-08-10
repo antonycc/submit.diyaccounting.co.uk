@@ -50,7 +50,7 @@ describe("httpPost", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(200);
-    expect(body.hmrcAccessToken).toBe("test access token");
+    expect(body.accessToken).toBe("test access token");
 
     // Verify fetch was called with correct parameters
     expect(fetch).toHaveBeenCalledWith("https://test/oauth/token", {
@@ -65,7 +65,7 @@ describe("httpPost", () => {
     expect(params.get("grant_type")).toBe("authorization_code");
     expect(params.get("client_id")).toBe("test client id");
     // expect(params.get("client_secret")).toBe("test hmrc client secret");
-    expect(params.get("redirect_uri")).toBe("http://hmrc.test.redirect:3000/submitHmrcCallback.html");
+    expect(params.get("redirect_uri")).toBe("http://hmrc.test.redirect:3000/submitVatCallback.html");
     expect(params.get("code")).toBe("test-auth-code");
   });
 
@@ -139,7 +139,7 @@ describe("httpPost", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(500);
-    expect(body.hmrcResponseBody.error).toBe(errorMessage);
+    expect(body.responseBody.error).toBe(errorMessage);
   });
 
   test("should handle HMRC API 401 unauthorized", async () => {
@@ -160,7 +160,7 @@ describe("httpPost", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(500);
-    expect(body.hmrcResponseBody.error).toBe(errorMessage);
+    expect(body.responseBody.error).toBe(errorMessage);
   });
 
   test("should handle malformed JSON in request body", async () => {

@@ -1,4 +1,4 @@
-<!-- submitHmrcCallback.html -->
+<!-- submitVatCallback.html -->
 <!doctype html>
 <html lang="en">
   <head>
@@ -83,7 +83,7 @@
             showStatus("Exchanging authorization code for access token...", "info");
 
             // Exchange code for access token
-            const hmrcAccessToken = await exchangeToken(code);
+            const accessToken = await exchangeToken(code);
 
             showStatus("Obtained Access Token from HMRC...", "info");
 
@@ -138,7 +138,7 @@
       }
 
       async function exchangeToken(code) {
-        const url = `/api/exchange-token`;
+        const url = `/api/hmrc/exchange-token`;
         const body = JSON.stringify({ code });
         console.log(`Exchanging token. Remote call initiated: POST ${url} ++ Body: ${body}`);
 
@@ -156,9 +156,9 @@
         }
 
         const responseJson = await response.json();
-        const hmrcAccessToken = responseJson.hmrcAccessToken;
+        const accessToken = responseJson.accessToken;
         if (!hmrcAccessToken) {
-          const message = `Failed to exchange token. Remote call response did not include hmrcAccessToken: POST ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`;
+          const message = `Failed to exchange token. Remote call response did not include accessToken: POST ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`;
           console.error(message);
           throw new Error(message);
         }

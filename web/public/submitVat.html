@@ -175,7 +175,7 @@
 
       // OAuth callback handling
       function handleOAuthCallback() {
-        const hmrcAccessToken = sessionStorage.getItem("hmrcAccessToken");
+        const accessToken = sessionStorage.getItem("hmrcAccessToken");
         if (hmrcAccessToken) {
           console.log("OAuth callback handler (hmrcAccessToken found)");
           // If we have an access token, continue with submission
@@ -187,7 +187,7 @@
 
       async function continueVatSubmission() {
         try {
-          const hmrcAccessToken = sessionStorage.getItem("hmrcAccessToken");
+          const accessToken = sessionStorage.getItem("hmrcAccessToken");
           const submissionData = JSON.parse(localStorage.getItem("submission_data"));
           console.log("Retrieved submission data:", submissionData);
 
@@ -230,7 +230,7 @@
         }
       }
 
-      async function submitVatWithCalculatedHeaders(vatNumber, periodKey, vatDue, hmrcAccessToken) {
+      async function submitVatWithCalculatedHeaders(vatNumber, periodKey, vatDue, accessToken) {
         // Populate headers with required values using what is available in the browser environment
         const govClientBrowserJSUserAgentHeader = navigator.userAgent;
         const govClientDeviceIDHeader = crypto.randomUUID();
@@ -275,13 +275,13 @@
         return await submitVat(vatNumber, periodKey, vatDue, hmrcAccessToken, headers);
       }
 
-      async function submitVat(vatNumber, periodKey, vatDue, hmrcAccessToken, headers) {
+      async function submitVat(vatNumber, periodKey, vatDue, accessToken, headers) {
         const url = "/api/submit-vat";
         const body = JSON.stringify({
           vatNumber,
           periodKey,
           vatDue,
-          hmrcAccessToken,
+          accessToken: hmrcAccessToken,
         });
         console.log(`Submitting VAT. Remote call initiated: POST ${url} ++ Body: ${body}`);
 
@@ -354,7 +354,7 @@
       }
 
       // Global variables
-      let hmrcAccessToken = null;
+      let accessToken = null;
       let submissionData = null;
 
       // DOM elements

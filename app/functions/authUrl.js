@@ -8,7 +8,7 @@ dotenv.config({ path: ".env" });
 
 export function authUrl(state, provider = "hmrc") {
   if (provider === "mock") {
-    const redirectUri = process.env.DIY_SUBMIT_HOME_URL + "loginCallback.html";
+    const redirectUri = process.env.DIY_SUBMIT_HOME_URL + "loginWithMockCallback.html";
     const mockBase = "http://localhost:8080";
     const scope = "openid somescope";
     return (
@@ -22,11 +22,23 @@ export function authUrl(state, provider = "hmrc") {
     );
   } else if (provider === "hmrc") {
     const clientId = process.env.DIY_SUBMIT_HMRC_CLIENT_ID;
-    const redirectUri = process.env.DIY_SUBMIT_HOME_URL + "submitHmrcCallback.html";
-    const hmrcBase = process.env.DIY_SUBMIT_HMRC_BASE_URI;
-    const scope = "write:vat read:vat";
+    const redirectUri = process.env.DIY_SUBMIT_HOME_URL + "submitVatCallback.html";
+    const hmrcBase = "TODO: Harc code";
+    const scope = "write:todo read:tofo";
     return (
       `${hmrcBase}/oauth/authorize?response_type=code` +
+      `&client_id=${encodeURIComponent(clientId)}` +
+      `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+      `&scope=${encodeURIComponent(scope)}` +
+      `&state=${encodeURIComponent(state)}`
+    );
+  } else if (provider === "google") {
+    const clientId = process.env.DIY_SUBMIT_GOOGLE_CLIENT_ID;
+    const redirectUri = process.env.DIY_SUBMIT_HOME_URL + "loginWithGoogleCallback.html";
+    const cognitoBaseUri = process.env.DIY_SUBMIT_COGNITO_BASE_URI;
+    const scope = "write:vat read:vat";
+    return (
+      `${cognitoBaseUri}/oauth/authorize?response_type=code` +
       `&client_id=${encodeURIComponent(clientId)}` +
       `&redirect_uri=${encodeURIComponent(redirectUri)}` +
       `&scope=${encodeURIComponent(scope)}` +
@@ -45,6 +57,11 @@ export async function httpGetHmrc(event) {
 // GET /api/mock/auth-url?state={state}
 export async function httpGetMock(event) {
   return httpGet(event, "mock");
+}
+
+// GET /api/google/auth-url?state={state}
+export async function httpGetGoogle(event) {
+  return httpGet(event, "google");
 }
 
 export async function httpGet(event, provider = "hmrc") {

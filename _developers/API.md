@@ -59,7 +59,7 @@ Submits the VAT return details to HMRC.
   "vatNumber": "193054661",
   "periodKey": "24A1",
   "vatDue": "2400.00",
-  "hmrcAccessToken": "hmrc_access_token"
+  "accessToken": "hmrc_access_token"
 }
 ```
 
