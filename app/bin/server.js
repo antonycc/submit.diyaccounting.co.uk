@@ -7,8 +7,8 @@ import { fileURLToPath } from "url";
 import { readFileSync } from "fs";
 import dotenv from "dotenv";
 
-import { httpGetGoogle, httpGetHmrc, httpGetHmrc as authUrlHttpGet, httpGetMock } from "../functions/authUrl.js";
-import { httpPost as exchangeTokenHttpPost } from "../functions/exchangeToken.js";
+import { httpGetGoogle, httpGetHmrc, httpGetMock } from "../functions/authUrl.js";
+import { httpPost as exchangeTokenHttpPost, httpPostHmrc, httpPostGoogle } from "../functions/exchangeToken.js";
 import { httpPost as submitVatHttpPost } from "../functions/submitVat.js";
 import { httpPost as logReceiptHttpPost } from "../functions/logReceipt.js";
 
@@ -28,7 +28,8 @@ const cdkConfig = JSON.parse(readFileSync(cdkJsonPath, "utf8"));
 const context = cdkConfig.context || {};
 logger.info("CDK context:", context);
 
-// parse JSON bodies
+// parse bodies
+app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
 // HTTP access logging middleware
@@ -44,6 +45,8 @@ app.use(express.static(path.join(__dirname, "../../web/public")));
 const authUrlPath = context.authUrlLambdaUrlPath || "/api/hmrc/auth-url";
 const mockAuthUrlPath = "/api/mock/auth-url";
 const exchangeTokenPath = context.exchangeTokenLambdaUrlPath || "/api/exchange-token";
+const exchangeHmrcTokenPath = context.exchangeHmrcTokenLambdaUrlPath || "/api/hmrc/exchange-token";
+const exchangeGoogleTokenPath = context.exchangeGoogleTokenLambdaUrlPath || "/api/google/exchange-token";
 const submitVatPath = context.submitVatLambdaUrlPath || "/api/submit-vat";
 const logReceiptPath = context.logReceiptLambdaUrlPath || "/api/log-receipt";
 const googleAuthUrlPath = context.googleAuthUrlLambdaUrlPath || "/api/google/auth-url";
@@ -86,6 +89,28 @@ app.post(exchangeTokenPath, async (req, res) => {
     body: JSON.stringify(req.body),
   };
   const { statusCode, body } = await exchangeTokenHttpPost(event);
+  res.status(statusCode).json(JSON.parse(body));
+});
+
+app.post(exchangeHmrcTokenPath, async (req, res) => {
+  const event = {
+    path: req.path,
+    headers: { host: req.get("host") || "localhost:3000" },
+    queryStringParameters: req.query || {},
+    body: JSON.stringify(req.body),
+  };
+  const { statusCode, body } = await httpPostHmrc(event);
+  res.status(statusCode).json(JSON.parse(body));
+});
+
+app.post(exchangeGoogleTokenPath, async (req, res) => {
+  const event = {
+    path: req.path,
+    headers: { host: req.get("host") || "localhost:3000" },
+    queryStringParameters: req.query || {},
+    body: JSON.stringify(req.body),
+  };
+  const { statusCode, body } = await httpPostGoogle(event);
   res.status(statusCode).json(JSON.parse(body));
 });
 

@@ -157,14 +157,14 @@
 
         const responseJson = await response.json();
         const accessToken = responseJson.accessToken;
-        if (!hmrcAccessToken) {
+        if (!accessToken) {
           const message = `Failed to exchange token. Remote call response did not include accessToken: POST ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`;
           console.error(message);
           throw new Error(message);
         }
 
-        console.log(`Exchanged token. Remote call completed successfully: POST ${url}`, responseJson, hmrcAccessToken);
-        return hmrcAccessToken;
+        console.log(`Exchanged token. Remote call completed successfully: POST ${url}`, responseJson, accessToken);
+        return accessToken;
       }
 
       function checkCurrentActivityAndRedirect() {
