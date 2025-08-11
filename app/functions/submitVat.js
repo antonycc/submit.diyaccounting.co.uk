@@ -15,6 +15,53 @@ import eventToGovClientHeaders from "../lib/eventToGovClientHeaders.js";
 
 dotenv.config({ path: ".env" });
 
+// Lazy load AWS Cognito SDK only if bundle enforcement is on
+let __cognitoModule;
+let __cognitoClient;
+async function getCognitoModule() {
+  if (!__cognitoModule) {
+    __cognitoModule = await import("@aws-sdk/client-cognito-identity-provider");
+  }
+  return __cognitoModule;
+}
+async function getCognitoClient() {
+  if (!__cognitoClient) {
+    const mod = await getCognitoModule();
+    __cognitoClient = new mod.CognitoIdentityProviderClient({ region: process.env.AWS_REGION || "eu-west-2" });
+  }
+  return __cognitoClient;
+}
+
+// Lightweight JWT decode (no signature verification)
+function decodeJwtNoVerify(token) {
+  try {
+    const parts = String(token || "").split(".");
+    if (parts.length < 2) return null;
+    const payload = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+    const json = Buffer.from(payload, "base64").toString("utf8");
+    return JSON.parse(json);
+  } catch (_e) {
+    return null;
+  }
+}
+
+function isSandboxBase(base) {
+  return /test|sandbox/i.test(base || "");
+}
+
+function hasBundle(bundles, id) {
+  return (bundles || []).some((b) => typeof b === "string" && (b === id || b.startsWith(id + "|")));
+}
+
+async function getUserBundlesFromCognito(userPoolId, sub) {
+  const mod = await getCognitoModule();
+  const client = await getCognitoClient();
+  const cmd = new mod.AdminGetUserCommand({ UserPoolId: userPoolId, Username: sub });
+  const user = await client.send(cmd);
+  const attr = user.UserAttributes?.find((a) => a.Name === "custom:bundles")?.Value || "";
+  return attr.split("|").filter(Boolean);
+}
+
 export async function submitVat(periodKey, vatDue, vatNumber, hmrcAccessToken, govClientHeaders) {
   const submissionStartTime = new Date().toISOString();
 
@@ -174,6 +221,38 @@ export async function httpPost(event) {
       headers: { ...govClientHeaders },
       message: errorMessages.join(", "),
     });
+  }
+
+  // Optional bundle entitlement enforcement (disabled by default)
+  try {
+    const enforceBundles = String(process.env.DIY_SUBMIT_ENFORCE_BUNDLES || "").toLowerCase() === "true" || process.env.DIY_SUBMIT_ENFORCE_BUNDLES === "1";
+    const userPoolId = process.env.DIY_SUBMIT_USER_POOL_ID;
+    if (enforceBundles && userPoolId) {
+      const authHeader = event.headers?.authorization || event.headers?.Authorization;
+      if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return httpBadRequestResponse({ request, message: "Missing Authorization Bearer token" });
+      }
+      const idToken = authHeader.split(" ")[1];
+      const decoded = decodeJwtNoVerify(idToken);
+      if (!decoded?.sub) {
+        return httpBadRequestResponse({ request, message: "Invalid Authorization token" });
+      }
+      const bundles = await getUserBundlesFromCognito(userPoolId, decoded.sub);
+      const hmrcBase = process.env.DIY_SUBMIT_HMRC_BASE_URI;
+      const sandbox = isSandboxBase(hmrcBase);
+      if (sandbox) {
+        if (!bundles || !bundles.some((b) => typeof b === "string" && (b === "HMRC_TEST_API" || b.startsWith("HMRC_TEST_API|")))) {
+          return httpServerErrorResponse({ request, message: "Forbidden: HMRC Sandbox submission requires HMRC_TEST_API bundle", error: { code: "BUNDLE_FORBIDDEN", requiredBundle: "HMRC_TEST_API" } });
+        }
+      } else {
+        const allowed = (bundles || []).some((b) => typeof b === "string" && (b === "HMRC_PROD_SUBMIT" || b.startsWith("HMRC_PROD_SUBMIT|") || b === "LEGACY_ENTITLEMENT" || b.startsWith("LEGACY_ENTITLEMENT|")));
+        if (!allowed) {
+          return httpServerErrorResponse({ request, message: "Forbidden: Production submission requires HMRC_PROD_SUBMIT or LEGACY_ENTITLEMENT bundle", error: { code: "BUNDLE_FORBIDDEN", requiredBundle: ["HMRC_PROD_SUBMIT", "LEGACY_ENTITLEMENT"] } });
+        }
+      }
+    }
+  } catch (authError) {
+    return httpServerErrorResponse({ request, message: "Authorization failure while checking entitlements", error: authError?.message || String(authError) });
   }
 
   // Processing

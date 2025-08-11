@@ -67,6 +67,9 @@
     "submitVatLambdaDuration": "60000",
     "logReceiptLambdaUrlPath": "/api/log-receipt",
     "logReceiptLambdaHandlerFunctionName": "logReceipt.httpPost",
-    "logReceiptLambdaDuration": "30000"
+    "logReceiptLambdaDuration": "30000",
+    "bundleLambdaUrlPath": "/api/request-bundle",
+    "bundleLambdaHandlerFunctionName": "bundle.httpPost",
+    "bundleLambdaDuration": "30000"
   }
 }

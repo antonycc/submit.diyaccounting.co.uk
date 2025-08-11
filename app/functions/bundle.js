@@ -1,14 +1,41 @@
 // app/functions/bundle.js
 
-import {
-  CognitoIdentityProviderClient,
-  AdminGetUserCommand,
-  AdminUpdateUserAttributesCommand,
-  ListUsersCommand,
-} from "@aws-sdk/client-cognito-identity-provider";
-import jwt from "jsonwebtoken";
+// AWS Cognito SDK is loaded lazily only when not in MOCK mode to avoid requiring it during tests
+let __cognitoModule;
+let __cognitoClient;
+async function getCognitoModule() {
+  if (!__cognitoModule) {
+    __cognitoModule = await import("@aws-sdk/client-cognito-identity-provider");
+  }
+  return __cognitoModule;
+}
+async function getCognitoClient() {
+  if (!__cognitoClient) {
+    const mod = await getCognitoModule();
+    __cognitoClient = new mod.CognitoIdentityProviderClient({ region: process.env.AWS_REGION || "eu-west-2" });
+  }
+  return __cognitoClient;
+}
+// Lightweight JWT decode (no signature verification)
+function decodeJwtNoVerify(token) {
+  try {
+    const parts = String(token || "").split(".");
+    if (parts.length < 2) return null;
+    const payload = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+    const json = Buffer.from(payload, "base64").toString("utf8");
+    return JSON.parse(json);
+  } catch (_err) {
+    return null;
+  }
+}
 
-const cognitoClient = new CognitoIdentityProviderClient({ region: process.env.AWS_REGION });
+
+// In-memory store for MOCK mode (no AWS required). Map<userSub, string[]>
+const __inMemoryBundles = new Map();
+
+function isMockMode() {
+  return String(process.env.DIY_SUBMIT_BUNDLE_MOCK || "").toLowerCase() === "true" || process.env.DIY_SUBMIT_BUNDLE_MOCK === "1";
+}
 
 /**
  * Request a bundle for a user
@@ -37,15 +64,9 @@ export async function httpPost(event) {
     const token = authHeader.split(" ")[1];
 
     // Decode JWT to get user's Cognito ID (sub)
-    let decodedToken;
-    try {
-      // Note: In production, you should verify the JWT signature
-      decodedToken = jwt.decode(token);
-      if (!decodedToken || !decodedToken.sub) {
-        throw new Error("Invalid token structure");
-      }
-    } catch (error) {
-      console.log("[DEBUG_LOG] JWT decode error:", error.message);
+    const decodedToken = decodeJwtNoVerify(token);
+    if (!decodedToken || !decodedToken.sub) {
+      console.log("[DEBUG_LOG] JWT decode failed or missing sub");
       return {
         statusCode: 401,
         headers: {
@@ -59,8 +80,8 @@ export async function httpPost(event) {
     const userId = decodedToken.sub;
     const userPoolId = process.env.DIY_SUBMIT_USER_POOL_ID;
 
-    if (!userPoolId) {
-      console.log("[DEBUG_LOG] Missing USER_POOL_ID environment variable");
+    if (!userPoolId && !isMockMode()) {
+      console.log("[DEBUG_LOG] Missing USER_POOL_ID environment variable (non-mock mode)");
       return {
         statusCode: 500,
         headers: {
@@ -100,32 +121,36 @@ export async function httpPost(event) {
 
     console.log("[DEBUG_LOG] Processing bundle request for user:", userId, "bundle:", requestedBundle);
 
-    // Fetch current bundles from Cognito custom attribute
+    // Fetch current bundles from Cognito custom attribute or MOCK store
     let currentBundles = [];
-    try {
-      const getUserCommand = new AdminGetUserCommand({
-        UserPoolId: userPoolId,
-        Username: userId,
-      });
-
-      const userResponse = await cognitoClient.send(getUserCommand);
-      const bundlesAttribute = userResponse.UserAttributes?.find((attr) => attr.Name === "custom:bundles");
-
-      if (bundlesAttribute && bundlesAttribute.Value) {
-        currentBundles = bundlesAttribute.Value.split("|").filter((bundle) => bundle.length > 0);
+    if (isMockMode()) {
+      currentBundles = __inMemoryBundles.get(userId) || [];
+      console.log("[DEBUG_LOG] [MOCK] Current user bundles:", currentBundles);
+    } else {
+      try {
+        const mod = await getCognitoModule();
+        const client = await getCognitoClient();
+        const getUserCommand = new mod.AdminGetUserCommand({
+          UserPoolId: userPoolId,
+          Username: userId,
+        });
+        const userResponse = await client.send(getUserCommand);
+        const bundlesAttribute = userResponse.UserAttributes?.find((attr) => attr.Name === "custom:bundles");
+        if (bundlesAttribute && bundlesAttribute.Value) {
+          currentBundles = bundlesAttribute.Value.split("|").filter((bundle) => bundle.length > 0);
+        }
+        console.log("[DEBUG_LOG] Current user bundles:", currentBundles);
+      } catch (error) {
+        console.log("[DEBUG_LOG] Error fetching user:", error.message);
+        return {
+          statusCode: 404,
+          headers: {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*",
+          },
+          body: JSON.stringify({ error: "User not found" }),
+        };
       }
-
-      console.log("[DEBUG_LOG] Current user bundles:", currentBundles);
-    } catch (error) {
-      console.log("[DEBUG_LOG] Error fetching user:", error.message);
-      return {
-        statusCode: 404,
-        headers: {
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*",
-        },
-        body: JSON.stringify({ error: "User not found" }),
-      };
     }
 
     // Check if user already has this bundle
@@ -160,7 +185,18 @@ export async function httpPost(event) {
 
     // Check user limit for this bundle
     const userLimit = parseInt(process.env.DIY_SUBMIT_BUNDLE_USER_LIMIT || "1000");
-    const currentCount = await getCurrentUserCountForBundle(requestedBundle, userPoolId);
+    let currentCount;
+    if (isMockMode()) {
+      // Count users in the in-memory store that have this bundle
+      currentCount = 0;
+      for (const bundles of __inMemoryBundles.values()) {
+        if ((bundles || []).some((b) => typeof b === "string" && b.startsWith(requestedBundle + "|"))) {
+          currentCount++;
+        }
+      }
+    } else {
+      currentCount = await getCurrentUserCountForBundle(requestedBundle, userPoolId);
+    }
 
     if (currentCount >= userLimit) {
       return {
@@ -177,8 +213,29 @@ export async function httpPost(event) {
     const newBundle = `${requestedBundle}|EXPIRY=${expiryDate}`;
     currentBundles.push(newBundle);
 
+    if (isMockMode()) {
+      // Update in-memory store and return success without AWS calls
+      __inMemoryBundles.set(userId, currentBundles);
+      console.log("[DEBUG_LOG] [MOCK] Bundle granted successfully:", newBundle);
+      return {
+        statusCode: 200,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+        },
+        body: JSON.stringify({
+          status: "granted",
+          expiryDate,
+          bundle: requestedBundle,
+          bundles: currentBundles,
+        }),
+      };
+    }
+
     try {
-      const updateCommand = new AdminUpdateUserAttributesCommand({
+      const mod = await getCognitoModule();
+      const client = await getCognitoClient();
+      const updateCommand = new mod.AdminUpdateUserAttributesCommand({
         UserPoolId: userPoolId,
         Username: userId,
         UserAttributes: [
@@ -189,7 +246,7 @@ export async function httpPost(event) {
         ],
       });
 
-      await cognitoClient.send(updateCommand);
+      await client.send(updateCommand);
 
       console.log("[DEBUG_LOG] Bundle granted successfully:", newBundle);
 
@@ -207,7 +264,7 @@ export async function httpPost(event) {
         }),
       };
     } catch (error) {
-      console.log("[DEBUG_LOG] Error updating user attributes:", error.message);
+      console.log("[DEBUG_LOG] Error updating user attributes:", error?.message || error);
       return {
         statusCode: 500,
         headers: {
@@ -240,13 +297,15 @@ async function getCurrentUserCountForBundle(bundleId, userPoolId) {
   try {
     // Note: This is a simplified implementation. In production, you might want to use
     // a more efficient approach like DynamoDB to track bundle counts
-    const listUsersCommand = new ListUsersCommand({
+    const mod = await getCognitoModule();
+    const client = await getCognitoClient();
+    const listUsersCommand = new mod.ListUsersCommand({
       UserPoolId: userPoolId,
       AttributesToGet: ["custom:bundles"],
       Limit: 60, // Cognito limit
     });
 
-    const response = await cognitoClient.send(listUsersCommand);
+    const response = await client.send(listUsersCommand);
     let count = 0;
 
     for (const user of response.Users || []) {
@@ -262,7 +321,7 @@ async function getCurrentUserCountForBundle(bundleId, userPoolId) {
     console.log("[DEBUG_LOG] Current user count for bundle", bundleId, ":", count);
     return count;
   } catch (error) {
-    console.log("[DEBUG_LOG] Error counting users for bundle:", error.message);
+    console.log("[DEBUG_LOG] Error counting users for bundle:", error?.message || error);
     return 0; // Return 0 on error to allow bundle granting
   }
 }
@@ -272,7 +331,7 @@ async function getCurrentUserCountForBundle(bundleId, userPoolId) {
  * @param {Object} event - Lambda event object
  * @returns {Object} Response object
  */
-export async function httpOptions(event) {
+export async function httpOptions(_event) {
   return {
     statusCode: 200,
     headers: {
