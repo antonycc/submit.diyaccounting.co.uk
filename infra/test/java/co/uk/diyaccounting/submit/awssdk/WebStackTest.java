@@ -36,7 +36,7 @@ public class WebStackTest {
         WebStack stack = createTestWebStack(app);
 
         Template template = Template.fromStack(stack);
-        template.resourceCountIs("AWS::S3::Bucket", 5);
+        template.resourceCountIs("AWS::S3::Bucket", 6);
         logger.info("WebStack test completed successfully - logging is working!");
     }
 
