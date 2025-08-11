@@ -34,13 +34,9 @@ export function authUrl(state, provider = "hmrc") {
       `&state=${encodeURIComponent(state)}`
     );
   } else if (provider === "google") {
-    const region = process.env.AWS_REGION || "eu-west-1";
-    const domainPrefix = process.env.DIY_SUBMIT_COGNITO_DOMAIN_PREFIX;
-    const clientId = process.env.DIY_SUBMIT_COGNITO_CLIENT_ID || process.env.DIY_SUBMIT_GOOGLE_CLIENT_ID;
+    const clientId = process.env.DIY_SUBMIT_GOOGLE_CLIENT_ID;
     const redirectUri = process.env.DIY_SUBMIT_HOME_URL + "loginWithGoogleCallback.html";
-    const cognitoBaseUri = domainPrefix
-      ? `https://${domainPrefix}.auth.${region}.amazoncognito.com`
-      : process.env.DIY_SUBMIT_COGNITO_BASE_URI;
+    const cognitoBaseUri = process.env.DIY_SUBMIT_COGNITO_BASE_URI;
     const scope = "openid profile email";
     return (
       `${cognitoBaseUri}/oauth2/authorize?response_type=code` +

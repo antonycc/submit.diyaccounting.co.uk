@@ -137,7 +137,7 @@ export async function httpPostGoogle(event) {
   const url = `${process.env.DIY_SUBMIT_COGNITO_BASE_URI}/oauth/token`;
   const body = {
     grant_type: "authorization_code",
-    client_id: process.env.DIY_SUBMIT_COGNITO_CLIENT_ID,
+    client_id: process.env.DIY_SUBMIT_GOOGLE_CLIENT_ID,
     client_secret: clientSecret,
     redirect_uri: process.env.DIY_SUBMIT_HOME_URL + "loginWithGoogleCallback.html",
     code,
