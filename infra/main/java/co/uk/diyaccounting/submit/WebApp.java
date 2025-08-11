@@ -201,6 +201,14 @@ public class WebApp {
                     .build();
         }
 
+        CfnOutput.Builder.create(stack, "UserPoolDomainARecord")
+                .value(stack.userPoolDomainARecord.getDomainName())
+                .build();
+
+        CfnOutput.Builder.create(stack, "UserPoolDomainAaaaRecord")
+                .value(stack.userPoolDomainAaaaRecord.getDomainName())
+                .build();
+
         // Bundle Lambda outputs (only if bundle Lambda is configured)
         if (stack.bundleLambda != null) {
             CfnOutput.Builder.create(stack, "BundleLambdaArn")

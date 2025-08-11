@@ -29,11 +29,11 @@ public class ResourceNameUtils {
         }
     }
 
-    public static String convertDashSeparatedToDotSeparated(String input) {
-        return convertDashSeparatedToDotSeparated(input, Collections.emptyList());
+    public static String convertDotSeparatedToDashSeparated(String input) {
+        return convertDotSeparatedToDashSeparated(input, Collections.emptyList());
     }
 
-    public static String convertDashSeparatedToDotSeparated(String input, List<AbstractMap.SimpleEntry<Pattern, String>> mappings) {
+    public static String convertDotSeparatedToDashSeparated(String input, List<AbstractMap.SimpleEntry<Pattern, String>> mappings) {
         return applyMappings(applyMappings(input, mappings), dashSeparatedMappings);
     }
 

@@ -173,6 +173,28 @@ function getIPViaWebRTC() {
   });
 }
 
+// Catalog helpers (browser-safe; no TOML parsing here to avoid bundling dependencies)
+function bundlesForActivity(catalog, activityId) {
+  const activity = catalog?.activities?.find((a) => a.id === activityId);
+  return activity?.bundles ?? [];
+}
+
+function activitiesForBundle(catalog, bundleId) {
+  if (!catalog?.activities) return [];
+  return catalog.activities.filter((a) => Array.isArray(a.bundles) && a.bundles.includes(bundleId)).map((a) => a.id);
+}
+
+function isActivityAvailable(catalog, activityId, bundleId) {
+  return bundlesForActivity(catalog, activityId).includes(bundleId);
+}
+
+// Fetch raw TOML from the server; parsing to be done by the caller/test if needed
+async function fetchCatalogText(url = "/product-catalog.toml") {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Failed to fetch catalog: ${res.status} ${res.statusText}`);
+  return res.text();
+}
+
 // Expose functions to window for use by other scripts and testing
 if (typeof window !== "undefined") {
   window.showStatus = showStatus;
@@ -184,4 +206,9 @@ if (typeof window !== "undefined") {
   window.getAuthUrl = getAuthUrl;
   window.getClientIP = getClientIP;
   window.getIPViaWebRTC = getIPViaWebRTC;
+  // new helpers
+  window.bundlesForActivity = bundlesForActivity;
+  window.activitiesForBundle = activitiesForBundle;
+  window.isActivityAvailable = isActivityAvailable;
+  window.fetchCatalogText = fetchCatalogText;
 }

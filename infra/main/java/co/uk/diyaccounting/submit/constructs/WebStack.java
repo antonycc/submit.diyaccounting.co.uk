@@ -49,6 +49,7 @@ import software.amazon.awscdk.services.route53.HostedZoneAttributes;
 import software.amazon.awscdk.services.route53.IHostedZone;
 import software.amazon.awscdk.services.route53.RecordTarget;
 import software.amazon.awscdk.services.route53.targets.CloudFrontTarget;
+import software.amazon.awscdk.services.route53.targets.UserPoolDomainTarget;
 import software.amazon.awscdk.services.s3.BlockPublicAccess;
 import software.amazon.awscdk.services.s3.Bucket;
 import software.amazon.awscdk.services.s3.BucketEncryption;
@@ -133,6 +134,8 @@ public class WebStack extends Stack {
     // Cognito resources
     public UserPool userPool;
     public UserPoolClient userPoolClient;
+    public ARecord userPoolDomainARecord;
+    public AaaaRecord userPoolDomainAaaaRecord;
     public UserPoolDomain userPoolDomain;
     public UserPoolIdentityProviderGoogle googleIdentityProvider;
     
@@ -631,14 +634,15 @@ public class WebStack extends Stack {
         public static String buildDomainName(String env, String subDomainName, String hostedZoneName) { return env.equals("prod") ? Builder.buildProdDomainName(subDomainName, hostedZoneName) : Builder.buildNonProdDomainName(env, subDomainName, hostedZoneName); }
         public static String buildProdDomainName(String subDomainName, String hostedZoneName) { return "%s.%s".formatted(subDomainName, hostedZoneName); }
         public static String buildNonProdDomainName(String env, String subDomainName, String hostedZoneName) { return "%s.%s.%s".formatted(env, subDomainName, hostedZoneName); }
-        public static String buildDashedDomainName(String env, String subDomainName, String hostedZoneName) { return ResourceNameUtils.convertDashSeparatedToDotSeparated("%s.%s.%s".formatted(env, subDomainName, hostedZoneName), domainNameMappings); }
+        public static String buildDashedDomainName(String env, String subDomainName, String hostedZoneName) { return ResourceNameUtils.convertDotSeparatedToDashSeparated("%s.%s.%s".formatted(env, subDomainName, hostedZoneName), domainNameMappings); }
         public static String buildOriginBucketName(String dashedDomainName){ return dashedDomainName; }
         public static String buildCloudTrailLogBucketName(String dashedDomainName) { return "%s-cloud-trail".formatted(dashedDomainName); }
         public static String buildOriginAccessLogBucketName(String dashedDomainName) { return "%s-origin-access-logs".formatted(dashedDomainName); }
         public static String buildDistributionAccessLogBucketName(String dashedDomainName) { return "%s-dist-access-logs".formatted(dashedDomainName); }
-        public static String buildCognitoDomain(String env, String cognitoDomainPrefix, String subDomainName, String hostedZoneName) { return env.equals("prod") ? Builder.buildProdCognitoDomain(cognitoDomainPrefix, subDomainName, hostedZoneName) : Builder.buildNonProdCognitoDomain(env, cognitoDomainPrefix, subDomainName, hostedZoneName); }
-        public static String buildProdCognitoDomain(String cognitoDomainPrefix, String subDomainName, String hostedZoneName) { return "%s.%s.%s".formatted(cognitoDomainPrefix, subDomainName, hostedZoneName); }
-        public static String buildNonProdCognitoDomain(String env, String cognitoDomainPrefix, String subDomainName, String hostedZoneName) { return "%s.%s.%s.%s".formatted(env, cognitoDomainPrefix, subDomainName, hostedZoneName); }
+        public static String buildCognitoDomainName(String env, String cognitoDomainPrefix, String subDomainName, String hostedZoneName) { return env.equals("prod") ? Builder.buildProdCognitoDomainName(cognitoDomainPrefix, subDomainName, hostedZoneName) : Builder.buildNonProdCognitoDomainName(env, cognitoDomainPrefix, subDomainName, hostedZoneName); }
+        public static String buildProdCognitoDomainName(String cognitoDomainPrefix, String subDomainName, String hostedZoneName) { return "%s.%s.%s".formatted(cognitoDomainPrefix, subDomainName, hostedZoneName); }
+        public static String buildNonProdCognitoDomainName(String env, String cognitoDomainPrefix, String subDomainName, String hostedZoneName) { return "%s.%s.%s.%s".formatted(env, cognitoDomainPrefix, subDomainName, hostedZoneName); }
+        public static String buildDashedCognitoDomainName(String cognitoDomainName) { return ResourceNameUtils.convertDotSeparatedToDashSeparated(cognitoDomainName, domainNameMappings); }
 
         public static String buildCognitoBaseUri(String cognitoDomain) { return "https://%s".formatted(cognitoDomain); }
 
@@ -699,8 +703,9 @@ public class WebStack extends Stack {
 
         String distributionAccessLogBucketName = Builder.buildDistributionAccessLogBucketName(dashedDomainName);
 
-        var cognitoDomain = Builder.buildCognitoDomain(builder.env, builder.cognitoDomainPrefix != null ? builder.cognitoDomainPrefix : "auth", builder.subDomainName, builder.hostedZoneName);
-        var cognitoBaseUri = Builder.buildCognitoBaseUri(cognitoDomain);
+        var cognitoDomainName = Builder.buildCognitoDomainName(builder.env, builder.cognitoDomainPrefix != null ? builder.cognitoDomainPrefix : "auth", builder.subDomainName, builder.hostedZoneName);
+        var dashedCognitoDomainName = Builder.buildDashedCognitoDomainName(cognitoDomainName);
+        var cognitoBaseUri = Builder.buildCognitoBaseUri(cognitoDomainName);
 
         // Check for environment variable override for verboseLogging
         String verboseLoggingEnv = System.getenv("VERBOSE_LOGGING");
@@ -1055,28 +1060,6 @@ public class WebStack extends Stack {
                     .removalPolicy(RemovalPolicy.DESTROY)
                     .build();
 
-            // Create a certificate for Cognito
-            if (useExistingAuthCertificate) {
-                this.authCertificate = Certificate.fromCertificateArn(this, "AuthCertificate", builder.authCertificateArn);
-            } else {
-                this.authCertificate = Certificate.Builder
-                        .create(this, "AuthCertificate")
-                        .domainName(cognitoDomain)
-                        .certificateName(builder.authCertificateArn)
-                        .validation(CertificateValidation.fromDns(this.hostedZone))
-                        .transparencyLoggingEnabled(true)
-                        .build();
-            }
-
-            // Create Cognito User Pool Domain
-            this.userPoolDomain = UserPoolDomain.Builder.create(this, "UserPoolDomain")
-                    .userPool(this.userPool)
-                    .customDomain(software.amazon.awscdk.services.cognito.CustomDomainOptions.builder()
-                            .domainName(cognitoDomain)
-                            .certificate(this.authCertificate)
-                            .build())
-                    .build();
-
             // Create Google Identity Provider
 
             this.googleIdentityProvider = UserPoolIdentityProviderGoogle.Builder.create(this, "GoogleIdentityProvider")
@@ -1299,5 +1282,47 @@ public class WebStack extends Stack {
                 .deleteExisting(true)
                 .target(RecordTarget.fromAlias(new CloudFrontTarget(this.distribution)))
                 .build();
+
+        // Create a certificate for Cognito
+        if (useExistingAuthCertificate) {
+            this.authCertificate = Certificate.fromCertificateArn(this, "AuthCertificate", builder.authCertificateArn);
+        } else {
+            this.authCertificate = Certificate.Builder
+                    .create(this, "AuthCertificate")
+                    .domainName(cognitoDomainName)
+                    .certificateName(builder.authCertificateArn)
+                    .validation(CertificateValidation.fromDns(this.hostedZone))
+                    .transparencyLoggingEnabled(true)
+                    .build();
+        }
+
+        // Create Cognito User Pool Domain
+        this.userPoolDomain = UserPoolDomain.Builder.create(this, "UserPoolDomain")
+                .userPool(this.userPool)
+                .customDomain(software.amazon.awscdk.services.cognito.CustomDomainOptions.builder()
+                        .domainName(cognitoDomainName)
+                        .certificate(this.authCertificate)
+                        .build())
+                .build();
+        this.userPoolDomain.getNode().addDependency(this.aRecord);
+        this.userPoolDomain.getNode().addDependency(this.aaaaRecord);
+
+        // Create Route53 records for teh Cognito UserPoolDomain
+        this.userPoolDomainARecord = ARecord.Builder
+                .create(this, "UserPoolDomainARecord-%s".formatted(dashedCognitoDomainName))
+                .zone(this.hostedZone)
+                .recordName(cognitoDomainName)
+                .deleteExisting(true)
+                .target(RecordTarget.fromAlias(new UserPoolDomainTarget(this.userPoolDomain)))
+                .build();
+        this.userPoolDomainARecord.getNode().addDependency(this.aRecord);
+        this.userPoolDomainAaaaRecord = AaaaRecord.Builder
+                .create(this, "UserPoolDomainAaaaRecord-%s".formatted(dashedCognitoDomainName))
+                .zone(this.hostedZone)
+                .recordName(cognitoDomainName)
+                .deleteExisting(true)
+                .target(RecordTarget.fromAlias(new UserPoolDomainTarget(this.userPoolDomain)))
+                .build();
+        this.userPoolDomainAaaaRecord.getNode().addDependency(this.aaaaRecord);
     }
 }

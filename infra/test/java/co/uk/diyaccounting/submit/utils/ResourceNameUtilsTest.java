@@ -34,7 +34,7 @@ public class ResourceNameUtilsTest {
     public void testConvertDashSeparatedToDotSeparated() {
         String input = "this.is.a.test";
         String expected = "this-is-a-test";
-        String actual = ResourceNameUtils.convertDashSeparatedToDotSeparated(input);
+        String actual = ResourceNameUtils.convertDotSeparatedToDashSeparated(input);
         assertEquals(expected, actual);
     }
 
@@ -42,7 +42,7 @@ public class ResourceNameUtilsTest {
     public void testConvertDashSeparatedToDotSeparatedWithEmptyString() {
         String input = "";
         String expected = "";
-        String actual = ResourceNameUtils.convertDashSeparatedToDotSeparated(input);
+        String actual = ResourceNameUtils.convertDotSeparatedToDashSeparated(input);
         assertEquals(expected, actual);
     }
 }
