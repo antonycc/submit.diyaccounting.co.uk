@@ -54,6 +54,7 @@ import software.amazon.awscdk.services.s3.BlockPublicAccess;
 import software.amazon.awscdk.services.s3.Bucket;
 import software.amazon.awscdk.services.s3.BucketEncryption;
 import software.amazon.awscdk.services.s3.IBucket;
+import software.amazon.awscdk.services.s3.LifecycleRule;
 import software.amazon.awscdk.services.s3.ObjectOwnership;
 import software.amazon.awscdk.services.s3.assets.AssetOptions;
 import software.amazon.awscdk.services.s3.deployment.BucketDeployment;
@@ -108,7 +109,8 @@ public class WebStack extends Stack {
     public ISource docRootSource;
     public ARecord aRecord;
     public AaaaRecord aaaaRecord;
-    public Trail cloudTrailLogBucket;
+    public Bucket trailBucket;
+    public Trail trail;
     public Function authUrlHmrcLambda;
     public FunctionUrl authUrlHmrcLambdaUrl;
     public LogGroup authUrlLambdaLogGroup;
@@ -636,7 +638,7 @@ public class WebStack extends Stack {
         public static String buildNonProdDomainName(String env, String subDomainName, String hostedZoneName) { return "%s.%s.%s".formatted(env, subDomainName, hostedZoneName); }
         public static String buildDashedDomainName(String env, String subDomainName, String hostedZoneName) { return ResourceNameUtils.convertDotSeparatedToDashSeparated("%s.%s.%s".formatted(env, subDomainName, hostedZoneName), domainNameMappings); }
         public static String buildOriginBucketName(String dashedDomainName){ return dashedDomainName; }
-        public static String buildCloudTrailLogBucketName(String dashedDomainName) { return "%s-cloud-trail".formatted(dashedDomainName); }
+        public static String buildTrailName(String dashedDomainName) { return "%s-cloud-trail".formatted(dashedDomainName); }
         public static String buildOriginAccessLogBucketName(String dashedDomainName) { return "%s-origin-access-logs".formatted(dashedDomainName); }
         public static String buildDistributionAccessLogBucketName(String dashedDomainName) { return "%s-dist-access-logs".formatted(dashedDomainName); }
         public static String buildCognitoDomainName(String env, String cognitoDomainPrefix, String subDomainName, String hostedZoneName) { return env.equals("prod") ? Builder.buildProdCognitoDomainName(cognitoDomainPrefix, subDomainName, hostedZoneName) : Builder.buildNonProdCognitoDomainName(env, cognitoDomainPrefix, subDomainName, hostedZoneName); }
@@ -689,7 +691,7 @@ public class WebStack extends Stack {
         boolean s3RetainOriginBucket = Boolean.parseBoolean(builder.s3RetainOriginBucket);
         boolean s3RetainReceiptsBucket = Boolean.parseBoolean(builder.s3RetainReceiptsBucket);
 
-        String cloudTrailLogBucketName = Builder.buildCloudTrailLogBucketName(dashedDomainName);
+        String trailName = Builder.buildTrailName(dashedDomainName);
         boolean cloudTrailEnabled = Boolean.parseBoolean(builder.cloudTrailEnabled);
         int cloudTrailLogGroupRetentionPeriodDays = Integer.parseInt(builder.cloudTrailLogGroupRetentionPeriodDays);
         boolean xRayEnabled = Boolean.parseBoolean(builder.xRayEnabled);
@@ -729,8 +731,20 @@ public class WebStack extends Stack {
                     .retention(cloudTrailLogGroupRetentionPeriod)
                     .removalPolicy(RemovalPolicy.DESTROY)
                     .build();
-            this.cloudTrailLogBucket = Trail.Builder.create(this, "OriginBucketTrail")
-                    .trailName(cloudTrailLogBucketName)
+            this.trailBucket = Bucket.Builder.create(this, trailName + "CloudTrailBucket")
+                    // optional: stable name, otherwise CDK adds a hash (fine too)
+                    // .bucketName(ResourceNameUtils.buildBucketName(env, "originbuckettrail"))
+                    .encryption(BucketEncryption.S3_MANAGED)
+                    .blockPublicAccess(BlockPublicAccess.BLOCK_ALL)
+                    .versioned(false)
+                    .autoDeleteObjects(true)
+                    .removalPolicy(RemovalPolicy.DESTROY)
+                    .lifecycleRules(List.of(LifecycleRule.builder()
+                            .expiration(Duration.days(cloudTrailLogGroupRetentionPeriodDays))
+                            .build()))
+                    .build();
+            this.trail = Trail.Builder.create(this, "OriginBucketTrail")
+                    .trailName(trailName)
                     .cloudWatchLogGroup(this.cloudTrailLogGroup)
                     .sendToCloudWatchLogs(true)
                     .cloudWatchLogsRetention(cloudTrailLogGroupRetentionPeriod)
@@ -803,12 +817,12 @@ public class WebStack extends Stack {
         if (cloudTrailEnabled) {
             // Add S3 event selector to the CloudTrail
             if (builder.cloudTrailEventSelectorPrefix == null || builder.cloudTrailEventSelectorPrefix.isBlank() || "none".equals(builder.cloudTrailEventSelectorPrefix)) {
-                cloudTrailLogBucket.addS3EventSelector(List.of(S3EventSelector.builder()
+                trail.addS3EventSelector(List.of(S3EventSelector.builder()
                         .bucket(this.originBucket)
                         .build()
                 ));
             } else {
-                cloudTrailLogBucket.addS3EventSelector(List.of(S3EventSelector.builder()
+                trail.addS3EventSelector(List.of(S3EventSelector.builder()
                         .bucket(this.originBucket)
                         .objectPrefix(builder.cloudTrailEventSelectorPrefix)
                         .build()
@@ -1167,12 +1181,12 @@ public class WebStack extends Stack {
         // TODO Move to the LogForwardingBucket
         if (cloudTrailEnabled) {
             if (builder.cloudTrailEventSelectorPrefix == null || builder.cloudTrailEventSelectorPrefix.isBlank() || "none".equals(builder.cloudTrailEventSelectorPrefix)) {
-                cloudTrailLogBucket.addS3EventSelector(List.of(S3EventSelector.builder()
+                trail.addS3EventSelector(List.of(S3EventSelector.builder()
                         .bucket(this.receiptsBucket)
                         .build()
                 ));
             } else {
-                cloudTrailLogBucket.addS3EventSelector(List.of(S3EventSelector.builder()
+                trail.addS3EventSelector(List.of(S3EventSelector.builder()
                         .bucket(this.receiptsBucket)
                         .objectPrefix(builder.cloudTrailEventSelectorPrefix)
                         .build()

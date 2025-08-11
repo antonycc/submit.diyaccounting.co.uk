@@ -121,6 +121,14 @@ public class WebApp {
                 .value(stack.aaaaRecord.getDomainName())
                 .build();
 
+        CfnOutput.Builder.create(stack, "TrailBucketArn")
+                .value(stack.trailBucket.getBucketArn())
+                .build();
+
+        CfnOutput.Builder.create(stack, "TrailArn")
+                .value(stack.trail.getTrailArn())
+                .build();
+
         CfnOutput.Builder.create(stack, "AuthUrlHmrcLambdaArn")
                 .value(stack.authUrlHmrcLambda.getFunctionArn())
                 .build();
