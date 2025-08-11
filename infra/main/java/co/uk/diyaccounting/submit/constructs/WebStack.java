@@ -636,7 +636,10 @@ public class WebStack extends Stack {
         public static String buildCloudTrailLogBucketName(String dashedDomainName) { return "%s-cloud-trail".formatted(dashedDomainName); }
         public static String buildOriginAccessLogBucketName(String dashedDomainName) { return "%s-origin-access-logs".formatted(dashedDomainName); }
         public static String buildDistributionAccessLogBucketName(String dashedDomainName) { return "%s-dist-access-logs".formatted(dashedDomainName); }
-        public static String buildCognitoDomain(String env, String cognitoDomainPrefix, String domainName) { return "%s.%s.%s".formatted(env, cognitoDomainPrefix, domainName); }
+        public static String buildCognitoDomain(String env, String cognitoDomainPrefix, String subDomainName, String hostedZoneName) { return env.equals("prod") ? Builder.buildProdCognitoDomain(cognitoDomainPrefix, subDomainName, hostedZoneName) : Builder.buildNonProdCognitoDomain(env, cognitoDomainPrefix, subDomainName, hostedZoneName); }
+        public static String buildProdCognitoDomain(String cognitoDomainPrefix, String subDomainName, String hostedZoneName) { return "%s.%s.%s".formatted(cognitoDomainPrefix, subDomainName, hostedZoneName); }
+        public static String buildNonProdCognitoDomain(String env, String cognitoDomainPrefix, String subDomainName, String hostedZoneName) { return "%s.%s.%s.%s".formatted(env, cognitoDomainPrefix, subDomainName, hostedZoneName); }
+
         public static String buildCognitoBaseUri(String cognitoDomain) { return "https://%s".formatted(cognitoDomain); }
 
         private static String buildFunctionName(String dashedDomainName, String functionName) {
@@ -696,7 +699,7 @@ public class WebStack extends Stack {
 
         String distributionAccessLogBucketName = Builder.buildDistributionAccessLogBucketName(dashedDomainName);
 
-        var cognitoDomain = Builder.buildCognitoDomain(builder.env, builder.cognitoDomainPrefix != null ? builder.cognitoDomainPrefix : "auth", domainName);
+        var cognitoDomain = Builder.buildCognitoDomain(builder.env, builder.cognitoDomainPrefix != null ? builder.cognitoDomainPrefix : "auth", builder.subDomainName, builder.hostedZoneName);
         var cognitoBaseUri = Builder.buildCognitoBaseUri(cognitoDomain);
 
         // Check for environment variable override for verboseLogging
