@@ -4,7 +4,8 @@ import { test, expect } from "@playwright/test";
 import { spawn } from "child_process";
 import { setTimeout as delay } from "timers/promises";
 import dotenv from "dotenv";
-import { checkIfServerIsRunning } from "@app/bin/server.js";
+
+import { checkIfServerIsRunning } from "@app/lib/serverHelper.js";
 
 dotenv.config({ path: ".env" });
 dotenv.config({ path: ".env.proxy" });

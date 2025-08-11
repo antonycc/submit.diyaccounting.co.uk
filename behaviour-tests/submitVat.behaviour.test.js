@@ -5,7 +5,8 @@ import { spawn } from "child_process";
 import { setTimeout } from "timers/promises";
 import dotenv from "dotenv";
 import { ensureMinioBucketExists, startMinio } from "@app/bin/minio.js";
-import { checkIfServerIsRunning } from "@app/bin/server.js";
+
+import { checkIfServerIsRunning } from "@app/lib/serverHelper.js";
 
 dotenv.config({ path: ".env" }); // e.g. Not checked in, HMRC API credentials
 // TODO: remove the override and ensure the tests pass with .env.test, then change the pipeline tests to copy over .env.test.
