@@ -841,15 +841,16 @@ public class WebStack extends Stack {
                 "DIY_SUBMIT_HMRC_CLIENT_ID", builder.hmrcClientId
         ));
         var authUrlHmrcLambdaUrlOrigin = LambdaUrlOrigin.Builder.create(this, "AuthUrlHmrcLambda")
-                .env(builder.env)
-                .imageDirectory("infra/runtimes")
                 .imageFilename("authUrlHmrc.Dockerfile")
                 .functionName(Builder.buildFunctionName(dashedDomainName, builder.authUrlHmrcLambdaHandlerFunctionName))
                 .allowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
-                .functionUrlAuthType(functionUrlAuthType)
                 .handler(builder.lambdaEntry + builder.authUrlHmrcLambdaHandlerFunctionName)
                 .environment(authUrlHmrcLambdaEnv)
                 .timeout(Duration.millis(Long.parseLong(builder.authUrlHmrcLambdaDuration)))
+                // TODO Refactor the next 7 into a LambdaUrlOriginOpts that all Lambdas take.
+                .env(builder.env)
+                .imageDirectory("infra/runtimes")
+                .functionUrlAuthType(functionUrlAuthType)
                 .cloudTrailEnabled(cloudTrailEnabled)
                 .xRayEnabled(xRayEnabled)
                 .verboseLogging(verboseLogging)
