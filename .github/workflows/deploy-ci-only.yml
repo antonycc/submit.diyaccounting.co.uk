@@ -166,6 +166,7 @@ jobs:
       #    HOSTED_ZONE_ID: ${{ vars.AWS_HOSTED_ZONE_ID }}
       #    HOSTED_ZONE_NAME: ${{ vars.AWS_HOSTED_ZONE_NAME }}
       #    DIY_SUBMIT_HMRC_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
+      #    DIY_SUBMIT_GOOGLE_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
       #    COMMIT_HASH: ${{ github.sha }}
 
       - name: deploy
@@ -185,6 +186,7 @@ jobs:
           HOSTED_ZONE_ID: ${{ vars.AWS_HOSTED_ZONE_ID }}
           HOSTED_ZONE_NAME: ${{ vars.AWS_HOSTED_ZONE_NAME }}
           DIY_SUBMIT_HMRC_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
+          DIY_SUBMIT_GOOGLE_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
           COMMIT_HASH: ${{ github.sha }}
           BASE_IMAGE_TAG: "submit-base:${{ github.sha }}"
 

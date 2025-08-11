@@ -180,6 +180,7 @@ jobs:
       - run: npm run test:behaviour
         env:
           DIY_SUBMIT_HMRC_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
+          DIY_SUBMIT_GOOGLE_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
 
       - name: Convert Playwright video to MP4
         if: ${{ !cancelled() }}
@@ -262,6 +263,7 @@ jobs:
       - run: npm run test:all
         env:
           DIY_SUBMIT_HMRC_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
+          DIY_SUBMIT_GOOGLE_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
 
   mvn-test:
     name: 'maven test'
