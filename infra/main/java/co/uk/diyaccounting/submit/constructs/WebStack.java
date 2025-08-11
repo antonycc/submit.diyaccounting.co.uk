@@ -1304,6 +1304,8 @@ public class WebStack extends Stack {
                         .certificate(this.authCertificate)
                         .build())
                 .build();
+        this.userPoolDomain.getNode().addDependency(this.aRecord);
+        this.userPoolDomain.getNode().addDependency(this.aaaaRecord);
 
         // Create Route53 records for teh Cognito UserPoolDomain
         this.userPoolDomainARecord = ARecord.Builder
@@ -1313,6 +1315,7 @@ public class WebStack extends Stack {
                 .deleteExisting(true)
                 .target(RecordTarget.fromAlias(new UserPoolDomainTarget(this.userPoolDomain)))
                 .build();
+        this.userPoolDomainARecord.getNode().addDependency(this.aRecord);
         this.userPoolDomainAaaaRecord = AaaaRecord.Builder
                 .create(this, "UserPoolDomainAaaaRecord-%s".formatted(dashedCognitoDomainName))
                 .zone(this.hostedZone)
@@ -1320,5 +1323,6 @@ public class WebStack extends Stack {
                 .deleteExisting(true)
                 .target(RecordTarget.fromAlias(new UserPoolDomainTarget(this.userPoolDomain)))
                 .build();
+        this.userPoolDomainAaaaRecord.getNode().addDependency(this.aaaaRecord);
     }
 }
