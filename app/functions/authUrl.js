@@ -33,7 +33,8 @@ export function authUrl(state, provider = "hmrc") {
       `&state=${encodeURIComponent(state)}`
     );
   } else if (provider === "google") {
-    const clientId = process.env.DIY_SUBMIT_GOOGLE_CLIENT_ID;
+    // TODO: Fall back to DIY_SUBMIT_GOOGLE_CLIENT_ID when there is no cognito configured.
+    const clientId = process.env.DIY_SUBMIT_COGNITO_CLIENT_ID;
     const redirectUri = process.env.DIY_SUBMIT_HOME_URL + "loginWithGoogleCallback.html";
     const cognitoBaseUri = process.env.DIY_SUBMIT_COGNITO_BASE_URI;
     const scope = "openid profile email";

@@ -38,6 +38,8 @@ export async function exchangeToken(providerUrlOrCode, maybeBody) {
   // - exchangeToken(code)
   // - exchangeToken(providerUrl, body)
   if (typeof providerUrlOrCode === "string" && (!maybeBody || typeof maybeBody !== "object")) {
+    // TODO: Remove this when tests are otherwise stable.
+    logger.warn({ message: "exchangeToken called with code and no body, defaulting to HMRC" });
     const clientSecret = await retrieveHmrcClientSecret();
     const url = `${process.env.DIY_SUBMIT_HMRC_BASE_URI}/oauth/token`;
     const body = {
@@ -132,13 +134,16 @@ export async function httpPostGoogle(event) {
     });
   }
 
+  // TODO: Fall back to DIY_SUBMIT_GOOGLE_CLIENT_ID when there is no cognito configured.
+  const clientId = process.env.DIY_SUBMIT_COGNITO_CLIENT_ID;
+
   // OAuth exchange token post-body
-  const clientSecret = await retrieveGoogleClientSecret();
+  // const clientSecret = await retrieveGoogleClientSecret();
   const url = `${process.env.DIY_SUBMIT_COGNITO_BASE_URI}/oauth/token`;
   const body = {
     grant_type: "authorization_code",
-    client_id: process.env.DIY_SUBMIT_GOOGLE_CLIENT_ID,
-    client_secret: clientSecret,
+    client_id: clientId,
+    // client_secret: clientSecret,
     redirect_uri: process.env.DIY_SUBMIT_HOME_URL + "loginWithGoogleCallback.html",
     code,
   };

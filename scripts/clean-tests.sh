@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
-rm -rvf target
+rm -rf target
 rm -rvf submit*.log
 rm -rvf minio*.log

@@ -1,4 +1,4 @@
-// app/unit-tests/convertVideo.test.js
+// app/unit-tests/convertVideo.integration.test.js
 
 import { describe, test, expect, vi } from 'vitest';
 

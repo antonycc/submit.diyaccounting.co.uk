@@ -3,9 +3,9 @@ ARG BASE_IMAGE_TAG=submit-base:latest
 FROM ${BASE_IMAGE_TAG}
 
 # Lambda-specific environment variables
-ENV DIY_SUBMIT_GOOGLE_BASE_URI="The default value from the Dockerfile is intended to be overridden."
-ENV DIY_SUBMIT_GOOGLE_CLIENT_ID="The default value from the Dockerfile is intended to be overridden."
+ENV DIY_SUBMIT_COGNITO_BASE_URI="The default value from the Dockerfile is intended to be overridden."
 ENV DIY_SUBMIT_GOOGLE_CLIENT_SECRET_ARN="The default value from the Dockerfile is intended to be overridden."
+ENV DIY_SUBMIT_COGNITO_CLIENT_ID="The default value from the Dockerfile is intended to be overridden."
 ENV DIY_SUBMIT_HOME_URL="The default value from the Dockerfile is intended to be overridden."
 ENV DIY_SUBMIT_TEST_ACCESS_TOKEN="The default value from the Dockerfile is intended to be overridden."
 

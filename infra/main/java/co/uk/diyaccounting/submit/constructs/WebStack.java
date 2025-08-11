@@ -35,6 +35,20 @@ import software.amazon.awscdk.services.cloudfront.origins.S3BucketOrigin;
 import software.amazon.awscdk.services.cloudfront.origins.S3BucketOriginWithOAIProps;
 import software.amazon.awscdk.services.cloudtrail.S3EventSelector;
 import software.amazon.awscdk.services.cloudtrail.Trail;
+import software.amazon.awscdk.services.cognito.AttributeMapping;
+import software.amazon.awscdk.services.cognito.OAuthFlows;
+import software.amazon.awscdk.services.cognito.OAuthScope;
+import software.amazon.awscdk.services.cognito.OAuthSettings;
+import software.amazon.awscdk.services.cognito.ProviderAttribute;
+import software.amazon.awscdk.services.cognito.StandardAttribute;
+import software.amazon.awscdk.services.cognito.StandardAttributes;
+import software.amazon.awscdk.services.cognito.StringAttribute;
+import software.amazon.awscdk.services.cognito.UserPool;
+import software.amazon.awscdk.services.cognito.UserPoolClient;
+import software.amazon.awscdk.services.cognito.UserPoolDomain;
+import software.amazon.awscdk.services.cognito.UserPoolIdentityProviderGoogle;
+import software.amazon.awscdk.services.iam.Effect;
+import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.iam.ServicePrincipal;
 import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.lambda.FunctionUrl;
@@ -61,20 +75,6 @@ import software.amazon.awscdk.services.s3.deployment.BucketDeployment;
 import software.amazon.awscdk.services.s3.deployment.ISource;
 import software.amazon.awscdk.services.s3.deployment.Source;
 import software.amazon.awscdk.services.secretsmanager.Secret;
-import software.amazon.awscdk.services.cognito.UserPool;
-import software.amazon.awscdk.services.cognito.UserPoolClient;
-import software.amazon.awscdk.services.cognito.UserPoolIdentityProviderGoogle;
-import software.amazon.awscdk.services.cognito.UserPoolDomain;
-import software.amazon.awscdk.services.cognito.OAuthSettings;
-import software.amazon.awscdk.services.cognito.OAuthFlows;
-import software.amazon.awscdk.services.cognito.OAuthScope;
-import software.amazon.awscdk.services.cognito.ProviderAttribute;
-import software.amazon.awscdk.services.cognito.AttributeMapping;
-import software.amazon.awscdk.services.cognito.StandardAttribute;
-import software.amazon.awscdk.services.cognito.StandardAttributes;
-import software.amazon.awscdk.services.cognito.StringAttribute;
-import software.amazon.awscdk.services.iam.PolicyStatement;
-import software.amazon.awscdk.services.iam.Effect;
 import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
 
@@ -832,6 +832,85 @@ public class WebStack extends Stack {
             logger.info("CloudTrail is not enabled for the origin bucket.");
         }
 
+        // Create Cognito User Pool for authentication
+        var standardAttributes = StandardAttributes.builder()
+                .email(StandardAttribute.builder()
+                        .required(true)
+                        .mutable(true)
+                        .build())
+                .givenName(StandardAttribute.builder()
+                        .required(false)
+                        .mutable(true)
+                        .build())
+                .familyName(StandardAttribute.builder()
+                        .required(false)
+                        .mutable(true)
+                        .build())
+                .build();
+        if (StringUtils.isNotBlank(builder.googleClientId) && StringUtils.isNotBlank(builder.googleClientSecret)) {
+            // Create User Pool with custom attributes for bundles
+            this.userPool = UserPool.Builder.create(this, "UserPool")
+                    .userPoolName(dashedDomainName + "-user-pool")
+                    .selfSignUpEnabled(true)
+                    .signInAliases(software.amazon.awscdk.services.cognito.SignInAliases.builder()
+                            .email(true)
+                            .build())
+                    .standardAttributes(standardAttributes)
+                    .customAttributes(Map.of(
+                            "bundles", StringAttribute.Builder.create()
+                                    .maxLen(2048)
+                                    .mutable(true)
+                                    .build()
+                    ))
+                    .removalPolicy(RemovalPolicy.DESTROY)
+                    .build();
+
+            // Create Google Identity Provider
+            var googleClientSecretValue = this.googleClientSecretsManagerSecret != null
+                    ? this.googleClientSecretsManagerSecret.getSecretValue()
+                    : SecretValue.unsafePlainText(builder.googleClientSecret);
+            this.googleIdentityProvider = UserPoolIdentityProviderGoogle.Builder.create(this, "GoogleIdentityProvider")
+                    .userPool(this.userPool)
+                    .clientId(builder.googleClientId)
+                    .clientSecretValue(googleClientSecretValue)
+                    .scopes(List.of("email", "openid", "profile"))
+                    .attributeMapping(AttributeMapping.builder()
+                            .email(ProviderAttribute.GOOGLE_EMAIL)
+                            .givenName(ProviderAttribute.GOOGLE_GIVEN_NAME)
+                            .familyName(ProviderAttribute.GOOGLE_FAMILY_NAME)
+                            .build())
+                    .build();
+
+            // Create User Pool Client
+            this.userPoolClient = UserPoolClient.Builder.create(this, "UserPoolClient")
+                    .userPool(this.userPool)
+                    .userPoolClientName(dashedDomainName + "-client")
+                    .generateSecret(false)
+                    .oAuth(OAuthSettings.builder()
+                            .flows(OAuthFlows.builder()
+                                    .authorizationCodeGrant(true)
+                                    .build())
+                            .scopes(List.of(OAuthScope.EMAIL, OAuthScope.OPENID, OAuthScope.PROFILE))
+                            .callbackUrls(List.of(
+                                    "https://" + this.domainName + "/",
+                                    "https://" + this.domainName + "/login.html",
+                                    "https://" + this.domainName + "/bundles.html"
+                            ))
+                            .logoutUrls(List.of(
+                                    "https://" + this.domainName + "/"
+                            ))
+                            .build())
+                    .supportedIdentityProviders(List.of(
+                            software.amazon.awscdk.services.cognito.UserPoolClientIdentityProvider.GOOGLE
+                    ))
+                    .build();
+
+            // Make sure the client depends on the identity provider
+            this.userPoolClient.getNode().addDependency(this.googleIdentityProvider);
+        }
+
+        // Lambdas
+
         var lambdaUrlToOriginsBehaviourMappings = new HashMap<String, BehaviorOptions>();
 
         // authUrl - HMRC
@@ -888,9 +967,11 @@ public class WebStack extends Stack {
         // authUrl - Google
         var authUrlGoogleLambdaEnv = new HashMap<>(Map.of(
                 "DIY_SUBMIT_HOME_URL", builder.homeUrl,
-                "DIY_SUBMIT_COGNITO_BASE_URI", cognitoBaseUri,
-                "DIY_SUBMIT_GOOGLE_CLIENT_ID", builder.googleClientId
+                "DIY_SUBMIT_COGNITO_BASE_URI", cognitoBaseUri
         ));
+        if (this.userPool != null){
+            authUrlGoogleLambdaEnv.put("DIY_SUBMIT_COGNITO_CLIENT_ID", this.userPoolClient.getUserPoolClientId());
+        }
         var authUrlGoogleLambdaUrlOrigin = LambdaUrlOrigin.Builder.create(this, "AuthUrlGoogleLambda")
                 .env(builder.env)
                 .imageDirectory("infra/runtimes")
@@ -958,9 +1039,11 @@ public class WebStack extends Stack {
         var exchangeGoogleTokenLambdaEnv = new HashMap<>(Map.of(
                 "DIY_SUBMIT_HOME_URL", builder.homeUrl,
                 "DIY_SUBMIT_COGNITO_BASE_URI", cognitoBaseUri,
-                "DIY_SUBMIT_GOOGLE_CLIENT_ID", builder.googleClientId,
                 "DIY_SUBMIT_GOOGLE_CLIENT_SECRET_ARN", googleClientSecretArn
         ));
+        if (this.userPool != null){
+            exchangeGoogleTokenLambdaEnv.put("DIY_SUBMIT_COGNITO_CLIENT_ID", this.userPoolClient.getUserPoolClientId());
+        }
         if (StringUtils.isNotBlank(builder.optionalTestAccessToken)){
             exchangeGoogleTokenLambdaEnv.put("DIY_SUBMIT_TEST_ACCESS_TOKEN", builder.optionalTestAccessToken);
         }
@@ -1042,80 +1125,6 @@ public class WebStack extends Stack {
         this.logReceiptLambdaUrl = logReceiptLambdaUrlOrigin.functionUrl;
         this.logReceiptLambdaLogGroup = logReceiptLambdaUrlOrigin.logGroup;
         lambdaUrlToOriginsBehaviourMappings.put(builder.logReceiptLambdaUrlPath + "*", logReceiptLambdaUrlOrigin.behaviorOptions);
-
-        // Create Cognito User Pool for authentication
-        if (StringUtils.isNotBlank(builder.googleClientId) && StringUtils.isNotBlank(builder.googleClientSecret)) {
-            // Create User Pool with custom attributes for bundles
-            this.userPool = UserPool.Builder.create(this, "UserPool")
-                    .userPoolName(dashedDomainName + "-user-pool")
-                    .selfSignUpEnabled(true)
-                    .signInAliases(software.amazon.awscdk.services.cognito.SignInAliases.builder()
-                            .email(true)
-                            .build())
-                    .standardAttributes(StandardAttributes.builder()
-                            .email(StandardAttribute.builder()
-                                    .required(true)
-                                    .mutable(true)
-                                    .build())
-                            .givenName(StandardAttribute.builder()
-                                    .required(false)
-                                    .mutable(true)
-                                    .build())
-                            .familyName(StandardAttribute.builder()
-                                    .required(false)
-                                    .mutable(true)
-                                    .build())
-                            .build())
-                    .customAttributes(Map.of(
-                            "bundles", StringAttribute.Builder.create()
-                                    .maxLen(2048)
-                                    .mutable(true)
-                                    .build()
-                    ))
-                    .removalPolicy(RemovalPolicy.DESTROY)
-                    .build();
-
-            // Create Google Identity Provider
-
-            this.googleIdentityProvider = UserPoolIdentityProviderGoogle.Builder.create(this, "GoogleIdentityProvider")
-                    .userPool(this.userPool)
-                    .clientId(builder.googleClientId)
-                    .clientSecretValue(this.googleClientSecretsManagerSecret.getSecretValue())
-                    .scopes(List.of("email", "openid", "profile"))
-                    .attributeMapping(AttributeMapping.builder()
-                            .email(ProviderAttribute.GOOGLE_EMAIL)
-                            .givenName(ProviderAttribute.GOOGLE_GIVEN_NAME)
-                            .familyName(ProviderAttribute.GOOGLE_FAMILY_NAME)
-                            .build())
-                    .build();
-
-            // Create User Pool Client
-            this.userPoolClient = UserPoolClient.Builder.create(this, "UserPoolClient")
-                    .userPool(this.userPool)
-                    .userPoolClientName(dashedDomainName + "-client")
-                    .generateSecret(false)
-                    .oAuth(OAuthSettings.builder()
-                            .flows(OAuthFlows.builder()
-                                    .authorizationCodeGrant(true)
-                                    .build())
-                            .scopes(List.of(OAuthScope.EMAIL, OAuthScope.OPENID, OAuthScope.PROFILE))
-                            .callbackUrls(List.of(
-                                    "https://" + this.domainName + "/",
-                                    "https://" + this.domainName + "/login.html",
-                                    "https://" + this.domainName + "/bundles.html"
-                            ))
-                            .logoutUrls(List.of(
-                                    "https://" + this.domainName + "/"
-                            ))
-                            .build())
-                    .supportedIdentityProviders(List.of(
-                            software.amazon.awscdk.services.cognito.UserPoolClientIdentityProvider.GOOGLE
-                    ))
-                    .build();
-
-            // Make sure the client depends on the identity provider
-            this.userPoolClient.getNode().addDependency(this.googleIdentityProvider);
-        }
 
         // Create Bundle Management Lambda
         if (StringUtils.isNotBlank(builder.bundleLambdaHandlerFunctionName)) {
