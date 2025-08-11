@@ -161,10 +161,11 @@
           return;
         }
 
+        const button = event.target;
+        const originalText = button.textContent;
+
         try {
           // Show loading state
-          const button = event.target;
-          const originalText = button.textContent;
           button.textContent = "Requesting...";
           button.disabled = true;
 
@@ -183,6 +184,11 @@
           const result = await response.json();
 
           if (response.ok) {
+            // Persist bundles for later pages
+            if (result && Array.isArray(result.bundles)) {
+              localStorage.setItem("userBundles", JSON.stringify(result.bundles));
+            }
+
             if (result.status === "granted") {
               alert(`Bundle granted successfully! Expires on: ${result.expiryDate}`);
               button.textContent = "Bundle Added ✓";
@@ -208,8 +214,7 @@
           alert("Failed to request bundle. Please try again.");
 
           // Reset button state
-          const button = event.target;
-          button.textContent = "Add HMRC Test API Bundle";
+          button.textContent = originalText;
           button.disabled = false;
         }
       }

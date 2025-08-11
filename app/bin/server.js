@@ -11,6 +11,7 @@ import { httpGetGoogle, httpGetHmrc, httpGetMock } from "../functions/authUrl.js
 import { httpPost as exchangeTokenHttpPost, httpPostHmrc, httpPostGoogle } from "../functions/exchangeToken.js";
 import { httpPost as submitVatHttpPost } from "../functions/submitVat.js";
 import { httpPost as logReceiptHttpPost } from "../functions/logReceipt.js";
+import { httpPost as requestBundleHttpPost } from "../functions/bundle.js";
 
 dotenv.config({ path: ".env" });
 
@@ -50,6 +51,7 @@ const exchangeGoogleTokenPath = context.exchangeGoogleTokenLambdaUrlPath || "/ap
 const submitVatPath = context.submitVatLambdaUrlPath || "/api/submit-vat";
 const logReceiptPath = context.logReceiptLambdaUrlPath || "/api/log-receipt";
 const googleAuthUrlPath = context.googleAuthUrlLambdaUrlPath || "/api/google/auth-url";
+const requestBundlePath = context.bundleLambdaUrlPath || "/api/request-bundle";
 
 app.get(authUrlPath, async (req, res) => {
   const event = {
@@ -134,6 +136,30 @@ app.post(logReceiptPath, async (req, res) => {
   };
   const { statusCode, body } = await logReceiptHttpPost(event);
   res.status(statusCode).json(JSON.parse(body));
+});
+
+// Bundle management route
+app.post(requestBundlePath, async (req, res) => {
+  const event = {
+    path: req.path,
+    headers: { host: req.get("host") || "localhost:3000", authorization: req.headers.authorization },
+    queryStringParameters: req.query || {},
+    body: JSON.stringify(req.body),
+  };
+  const { statusCode, body } = await requestBundleHttpPost(event);
+  try {
+    res.status(statusCode).json(body ? JSON.parse(body) : {});
+  } catch (_e) {
+    res.status(statusCode).send(body || "");
+  }
+});
+app.options(requestBundlePath, async (_req, res) => {
+  const { statusCode, body } = await requestBundleHttpPost({ httpMethod: "OPTIONS" });
+  try {
+    res.status(statusCode).json(body ? JSON.parse(body) : {});
+  } catch (_e) {
+    res.status(statusCode).send(body || "");
+  }
 });
 
 // fallback to index.html for SPA routing (if needed)

@@ -38,6 +38,8 @@
           </button>
         </div>
 
+        <div id="activitiesByBundle" style="text-align:left; margin: 1.5em auto; max-width: 640px"></div>
+
         <div
           class="add-service-section"
           style="margin: 2em 0; padding: 1.5em; background-color: #f8f9fa; border-radius: 8px; border: 1px solid #ddd"
@@ -132,11 +134,61 @@
         if (accessToken && userInfo) {
           console.log("User is authenticated");
           updateLoginStatus();
-          updateBundleStatus();
+          renderActivitiesByBundle();
         } else {
           console.log("User is not authenticated");
           updateLoginStatus();
+          renderActivitiesByBundle();
         }
+      }
+
+      // Activities rendering based on bundles
+      function parseUserBundles() {
+        try {
+          const raw = localStorage.getItem("userBundles");
+          if (!raw) return [];
+          const arr = JSON.parse(raw);
+          if (!Array.isArray(arr)) return [];
+          return arr;
+        } catch (_e) {
+          return [];
+        }
+      }
+
+      function hasBundle(bundles, id) {
+        return (bundles || []).some((b) => typeof b === "string" && (b === id || b.startsWith(id + "|")));
+      }
+
+      function renderActivitiesByBundle() {
+        const container = document.getElementById("activitiesByBundle");
+        if (!container) return;
+        const bundles = parseUserBundles();
+
+        const sections = [];
+        // Default bundle always available
+        sections.push(`
+          <section style="margin-bottom:1em;">
+            <h3 style="margin:0 0 .5em 0;">Default bundle</h3>
+            <ul>
+              <li>VAT Obligations (Production) – open</li>
+              <li>Learning pages</li>
+            </ul>
+          </section>
+        `);
+
+        if (hasBundle(bundles, "HMRC_TEST_API")) {
+          sections.push(`
+            <section style="margin-bottom:1em;">
+              <h3 style="margin:0 0 .5em 0;">HMRC Test API bundle</h3>
+              <ul>
+                <li>Submit VAT (Sandbox API)</li>
+                <li>VAT Obligations (Sandbox API)</li>
+              </ul>
+            </section>
+          `);
+        }
+
+        container.innerHTML = sections.join("\n");
       }
 
       // Load and display view source link

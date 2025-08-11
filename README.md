@@ -374,3 +374,62 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 IMPORTANT: Any derived work must include the following attribution:
 "This work is derived from https://github.com/xn-intenton-z2a/agentic-lib"
 ```
+
+
+
+## Bundles (Authenticated)
+
+This repository now includes an authenticated “bundle” mechanism so users can self‑enable feature access, starting with the HMRC Test API bundle.
+
+- Request a bundle at: bundles.html (Add HMRC Test API Bundle)
+- The front‑end sends Authorization: Bearer idToken to /api/request-bundle
+- The bundle Lambda stores the grant in Cognito custom:bundles (live) or an in‑memory store when running locally in MOCK mode
+- Activities are rendered based on granted bundles. Default activities are visible to all. HMRC Test activities appear once HMRC_TEST_API is granted.
+
+Notes about environments:
+- Local/dev: By default, tests and local proxy run with DIY_SUBMIT_BUNDLE_MOCK=true, so no AWS calls are made. This keeps development fast and offline‑friendly.
+- Cloud/prod: When deployed with Cognito, the Lambda reads and updates custom:bundles and enforces user/expiry limits.
+
+### Environment keys for bundles (non‑secret)
+Already provided in .env.test and .env.proxy for local use:
+- DIY_SUBMIT_BUNDLE_EXPIRY_DATE
+- DIY_SUBMIT_BUNDLE_USER_LIMIT
+- DIY_SUBMIT_BUNDLE_MOCK
+- AWS_REGION
+- DIY_SUBMIT_USER_POOL_ID (stubbed for local use; real value injected by CDK on deploy)
+
+### Credentials in .env (secrets – names only)
+Create an .env file at the project root and add your credentials. Only the keys are shown here, not values:
+- DIY_SUBMIT_HMRC_CLIENT_SECRET
+- DIY_SUBMIT_GOOGLE_CLIENT_SECRET
+
+These are read by the app (and CDK) at runtime. Do not commit actual secret values.
+
+## Run the proxy environment locally
+The proxy environment gives you a realistic local run with ngrok, mock OAuth2 and local S3 (MinIO):
+
+1) Terminal A – start the local server (uses .env.proxy):
+- npm run start
+
+2) Terminal B – expose via ngrok (uses .env.proxy):
+- npm run proxy
+
+3) Terminal C – start mock OAuth2 server (uses .env.proxy):
+- npm run auth
+
+4) Optional – local S3 for receipts (uses .env.proxy):
+- npm run storage
+
+Then open the ngrok URL (DIY_SUBMIT_HOME_URL from .env.proxy) and:
+- Click Login and choose mock‑oauth2‑server
+- Open bundles.html and click “Add HMRC Test API Bundle”
+- Go to activities.html and you should see the Default and HMRC Test sections
+
+## Running tests
+All tests should pass locally:
+- npm test
+- npm run test:system
+- npm run test:infra
+- npm run test:behaviour
+
+The behaviour suite includes a test that logs in via the mock callback, adds the Test bundle and verifies available activities reflect both Default and Test bundles.

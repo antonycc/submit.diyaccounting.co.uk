@@ -28,6 +28,7 @@
     "test:system": "vitest --run app/system-tests/*.test.js",
     "test:browser": "playwright test web/browser-tests/*.test.js",
     "test:behaviour": "playwright test behaviour-tests/*.test.js",
+    "test:infra": "npm run test:cdk",
     "test:submitVatBehaviourProxyRunning": "npx dotenv -e .env.proxyRunning -- playwright test behaviour-tests/submitVat.behaviour.test.js",
     "test:submitVatBehaviour": "playwright test behaviour-tests/submitVat.behaviour.test.js",
     "test:userJourneysBehaviour": "playwright test _developers/test-archive/userJourneys.behaviour.test.js",
