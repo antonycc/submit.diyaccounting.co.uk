@@ -4,13 +4,14 @@ This guide explains how to use the DIY Accounting Submit system to send UK VAT r
 
 ## Quick Start
 
-1. **Install dependencies and start the server:**
+1. Install dependencies and start the server:
 ```bash
-   npm install
-   node app/bin/server.js
-````
 
-The app will be served at [http://127.0.0.1:3000](http://127.0.0.1:3000).
+npm install
+npm run start
+```
+
+The app will be served at http://127.0.0.1:3000. For developer setup, see README.md (Quickstart) and _developers/SETUP.md.
 
 2. **Open the site in your browser** and fill in the VAT submission form.
 
