@@ -6,6 +6,8 @@
 # This file is licensed under the MIT License. For details, see LICENSE-MIT
 #
 
+./scripts/clean-tests.sh
+
 # Node clean and build
 if [[ -e 'package.json' ]]; then
   rm -rf build

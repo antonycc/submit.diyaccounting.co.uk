@@ -22,8 +22,7 @@ export function authUrl(state, provider = "hmrc") {
     );
   } else if (provider === "hmrc") {
     const clientId = process.env.DIY_SUBMIT_HMRC_CLIENT_ID;
-    const redirectPath = process.env.DIY_SUBMIT_HMRC_REDIRECT_PATH || "";
-    const redirectUri = (process.env.DIY_SUBMIT_HOME_URL || "") + redirectPath; // default tests expect base HOME_URL
+    const redirectUri = process.env.DIY_SUBMIT_HOME_URL + "submitVatCallback.html";
     const hmrcBase = process.env.DIY_SUBMIT_HMRC_BASE_URI;
     const scope = "write:vat read:vat";
     return (
