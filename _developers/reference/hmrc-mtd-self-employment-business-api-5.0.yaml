@@ -1,0 +1,2639 @@
+openapi: 3.0.3
+info:
+  title: Self Employment Business (MTD)
+  description: "The following groups of endpoints are stateful in the Sandbox:\n*\
+    \ [Self-Employment Annual Submission](#tag/Self-Employment-Annual-Submission)\n\
+    * [Self-Employment Period Summaries](#tag/Self-Employment-Period-Summaries)\n\
+    * [Self-Employment Cumulative Period Summary](#tag/Self-Employment-Cumulative-Period-Summary)\n\
+    \n# Send fraud prevention data\nHMRC monitors transactions to help protect your\
+    \ customers' confidential data from criminals and fraudsters. \n\n<div class=\"\
+    govuk-warning-text warning-icon-fix\">\n  <span class=\"govuk-warning-text__icon\
+    \ warning-icon-ui-fix\" aria-hidden=\"true\">!</span>\n  <strong class=\"govuk-warning-text__text\"\
+    >\n    <span class=\"govuk-warning-text__assistive\">Warning</span>\n    You are\
+    \ required by law to submit header data for this API. This includes all associated\
+    \ APIs and endpoints.\n  </strong>\n</div>\n\n[Check the data you need to send](/guides/fraud-prevention/).\
+    \ You can also use the [Test API](/api-documentation/docs/api/service/txm-fph-validator-api/1.0)\
+    \ during initial development and as part of your quality assurance checks.\n\n\
+    # Mapping APIs to Self Assessment tax return forms\nSome parameters in this API\
+    \ map to box numbers in one or more Self Assessment tax return forms. To learn\
+    \ more and to download this mapping information as a CSV file, go to [income-tax-mtd-changelog/mapping](https://github.com/hmrc/income-tax-mtd-changelog?tab=readme-ov-file#mapping-apis-to-self-assessment-tax-return-forms)\
+    \ on GitHub.\n\n# Changelog\nYou can find the changelog in the [income-tax-mtd-changelog](https://github.com/hmrc/income-tax-mtd-changelog/#readme)\
+    \ on GitHub.\n\n# Support\n\n* Direct reports of bugs or errors in Production\
+    \ or Sandbox code, or queries about HMRC business functionality (such as how a\
+    \ specific field is used by HMRC or why it is needed) to the [Software Development\
+    \ Support Team (SDST)](https://developer.service.hmrc.gov.uk/developer/support).\n\
+    * Send queries or feedback related to the design of the APIs (including recommended\
+    \ changes) using the [income-tax-mtd-changelog](https://github.com/hmrc/income-tax-mtd-changelog/issues)\
+    \ GitHub page.\n* <a href=\"/contact/report-technical-problem?newTab=true&service=api-documentation-frontend\"\
+    \ target=\"_blank\">Is this page not working properly? (opens in new tab)</a>\n"
+  version: "5.0"
+servers:
+  - url: https://test-api.service.hmrc.gov.uk
+    description: Sandbox
+  - url: https://api.service.hmrc.gov.uk
+    description: Production
+tags:
+  - name: Self-Employment Annual Submission
+    description: Resources relating to an individual's self-employment annual submission
+  - name: Self-Employment Period Summaries
+    description: Resources relating to an individual's self-employment period summaries
+  - name: Self-Employment Cumulative Period Summary
+    description: Resources relating to an individual's self-employment cumulative period
+      summary
+paths:
+  /individuals/business/self-employment/{nino}/{businessId}/annual/{taxYear}:
+    get:
+      summary: Retrieve a Self-Employment Annual Submission
+      security:
+        - User-Restricted:
+            - read:self-assessment
+    put:
+      summary: Create and Amend Self-Employment Annual Submission
+      security:
+        - User-Restricted:
+            - write:self-assessment
+    delete:
+      summary: Delete a Self-Employment Annual Submission
+      security:
+        - User-Restricted:
+            - write:self-assessment
+  /individuals/business/self-employment/{nino}/{businessId}/period:
+    post:
+      tags:
+        - Self-Employment Period Summaries
+      summary: Create a Self-Employment Period Summary
+      description: |
+        This endpoint enables you to create a self-employment period summary for submission of periodic data.
+        Submissions must include values for incomes, expenses and deductions, even if the values are zero.
+        For example, if there is no income for the period, submit a periodIncome object with 'turnover' and 'other' values of zero.
+        A National Insurance number and business ID must be provided.
+
+        <strong>Note: This endpoint can only be used for submissions for tax year 2024-25 or earlier.
+        New endpoints which support cumulative submission will be provided for tax year 2025-26 onwards</strong>.
+
+        ### Test data
+        Scenario simulation using Gov-Test-Scenario headers is only available in the sandbox environment.
+
+        | Header Value (Gov-Test-Scenario)             | Scenario                                                                                                                                                                           |
+        |----------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+        | N/A - DEFAULT                                | Simulates success response.                                                                                                                                                        |
+        | OVERLAPPING_PERIOD                           | Simulates the scenario where the period summary overlaps with an existing period summary.                                                                                          |
+        | MISALIGNED_PERIOD                            | Simulates the scenario where the period summary isn't within the accounting period.                                                                                                |
+        | NOT_CONTIGUOUS_PERIOD                        | Simulates the scenario where the period summaries are not contiguous.                                                                                                              |
+        | NOT_ALLOWED_CONSOLIDATED_EXPENSES            | Simulates the scenario where the cumulative turnover amount exceeds the consolidated expenses threshold.                                                                           |
+        | DUPLICATE_SUBMISSION                         | Simulates the scenario where a summary has already been submitted for the specified period. <br><br>This scenario only occurs for data related to tax years from 2023-24 onwards.  |
+        | TAX_YEAR_NOT_SUPPORTED                       | Simulates the scenario where the tax year is not supported. <br><br>This scenario only occurs for data related to tax years from 2023-24 onwards.                                  |
+        | NOT_FOUND                                    | Simulates the scenario where no data is found.                                                                                                                                     |
+        | BOTH_EXPENSES_SUPPLIED                       | Simulates the scenario where both expenses and consolidatedExpenses are present at the same time.                                                                                  |
+        | BUSINESS_INCOME_PERIOD_RESTRICTION           | Simulates the scenario where the customer has ITSA status 'Annual' or a latent business income source and the submission period is between 6 April to 5 April.                     |
+        | STATEFUL                                     | Performs a stateful create.                                                                                                                                                        |
+
+        ### Standard quarterly period dates
+        The standard quarterly periods and deadlines in each tax year are given in this table. For more information please visit [the guide](https://www.gov.uk/guidance/using-making-tax-digital-for-income-tax)
+
+        | Quarterly period       | Quarterly deadline |
+        |------------------------|--------------------|
+        | 6 April to 5 July      | 5 August           |
+        | 6 July to 5 October    | 5 November         |
+        | 6 October to 5 January | 5 February         |
+        | 6 January to 5 April   | 5 May              |
+      parameters:
+        - name: nino
+          in: path
+          description: |
+            National Insurance number, in the format `AA999999A`
+          required: true
+          schema:
+            type: string
+            example: TC663795B
+        - name: businessId
+          in: path
+          description: |
+            An identifier for the business, unique to the customer.<p>Must conform to the regular expression `^X[A-Z0-9]{1}IS[0-9]{11}$`
+          required: true
+          schema:
+            pattern: "^X[A-Z0-9]{1}IS[0-9]{11}$"
+            type: string
+            example: XAIS12345678910
+        - name: Accept
+          in: header
+          description: |
+            Specifies the response format and the version of the API to be used.
+          required: true
+          schema:
+            type: string
+            enum:
+              - application/vnd.hmrc.5.0+json
+        - name: Content-Type
+          in: header
+          description: |
+            Specifies the format of the request body, which must be JSON.
+          required: true
+          schema:
+            type: string
+            enum:
+              - application/json
+        - name: Authorization
+          in: header
+          description: |
+            An OAuth 2.0 Bearer Token with the *write:self-assessment* scope.
+          required: true
+          schema:
+            type: string
+            example: Bearer bb7fed3fe10dd235a2ccda3d50fb
+        - name: Gov-Test-Scenario
+          in: header
+          description: |
+            Only in sandbox environment. See Test Data table for all header values.
+          required: false
+          schema:
+            type: string
+            example: "-"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - title: Before TY 2023-24
+                  required:
+                    - periodDates
+                  type: object
+                  properties:
+                    periodDates:
+                      required:
+                        - periodEndDate
+                        - periodStartDate
+                      type: object
+                      properties:
+                        periodStartDate:
+                          type: string
+                          description: "The first day that the income, expenses and\
+                          \ deduction period summary covers."
+                          example: 2020-01-01
+                        periodEndDate:
+                          type: string
+                          description: "The last day that the income, expenses and deduction\
+                          \ period summary covers."
+                          example: 2020-01-01
+                      additionalProperties: false
+                      description: Object containing the details about self-employment
+                        period dates.
+                    periodIncome:
+                      type: object
+                      properties:
+                        turnover:
+                          type: number
+                          description: "The takings, fees, sales or money earned by\
+                          \ the business. Income associated with the running of the\
+                          \ business. The value must be between 0 and 99999999999.99\
+                          \ up to 2 decimal places."
+                          example: 10000.00
+                        other:
+                          type: number
+                          description: Any other business income not included in turnover.
+                            Income associated with the running of the business. The
+                            value must be between 0 and 99999999999.99 up to 2 decimal
+                            places.
+                          example: 10000.00
+                      additionalProperties: false
+                      description: Object containing the details about self-employment
+                        income.
+                    periodExpenses:
+                      type: object
+                      properties:
+                        consolidatedExpenses:
+                          type: number
+                          description: The sum of all allowable expenses for the specified
+                            period. The value must be between 0 and 99999999999.99 up
+                            to 2 decimal places.
+                          example: 10000.00
+                        costOfGoods:
+                          type: number
+                          description: Cost of goods bought for resale or goods used.
+                            Expenses associated with the running of the business. The
+                            value must be between -99999999999.99 and 99999999999.99
+                            up to 2 decimal places.
+                          example: 10000.00
+                        paymentsToSubcontractors:
+                          type: number
+                          description: Payments to construction industry subcontractors.
+                            Expenses associated with the running of the business. The
+                            value must be between 0 and 99999999999.99 up to 2 decimal
+                            places.
+                          example: 10000.00
+                        wagesAndStaffCosts:
+                          type: number
+                          description: "Wages, salaries and other staff costs. Expenses\
+                          \ associated with the running of the business. The value\
+                          \ must be between 0 and 99999999999.99 up to 2 decimal places."
+                          example: 10000.00
+                        carVanTravelExpenses:
+                          type: number
+                          description: "Car, van and travel expenses associated with\
+                          \ the running of the business. The value must be between\
+                          \ 0 and 99999999999.99 up to 2 decimal places."
+                          example: 10000.89
+                        premisesRunningCosts:
+                          type: number
+                          description: "Rent, rates, power and insurance costs. Expenses\
+                          \ associated with the running of the business. The value\
+                          \ must be between -99999999999.99 and 99999999999.99 up\
+                          \ to 2 decimal places."
+                          example: 10000.89
+                        maintenanceCosts:
+                          type: number
+                          description: Repairs and renewals of property and equipment.
+                            Expenses associated with the running of the business. The
+                            value must be between -99999999999.99 and 99999999999.99
+                            up to 2 decimal places.
+                          example: 10000.89
+                        adminCosts:
+                          type: number
+                          description: "Phone, fax, stationery and other office costs.\
+                          \ Expenses associated with the running of the business.\
+                          \ The value must be between 0 and 99999999999.99 up to 2\
+                          \ decimal places."
+                          example: 10000.89
+                        businessEntertainmentCosts:
+                          type: number
+                          description: Business entertainment costs. Expenses associated
+                            with the running of the business. The value must be between
+                            0 and 99999999999.99 up to 2 decimal places.
+                          example: 10000.89
+                        advertisingCosts:
+                          type: number
+                          description: Advertising costs. Expenses associated with the
+                            running of the business. The value must be between 0 and
+                            99999999999.99 up to 2 decimal places.
+                          example: 10000.89
+                        interestOnBankOtherLoans:
+                          type: number
+                          description: Interest on bank and other loans. Expenses associated
+                            with the running of the business. The value must be between
+                            -99999999999.99 and 99999999999.99 up to 2 decimal places.
+                          example: 10000.89
+                        financeCharges:
+                          type: number
+                          description: "Bank, credit card and other financial charges.\
+                          \ Expenses associated with the running of the business.\
+                          \ The value must be between -99999999999.99 and 99999999999.99\
+                          \ up to 2 decimal places."
+                          example: 10000.89
+                        irrecoverableDebts:
+                          type: number
+                          description: Irrecoverable debts written off. Expenses associated
+                            with the running of the business. The value must be between
+                            -99999999999.99 and 99999999999.99 up to 2 decimal places.
+                          example: 10000.89
+                        professionalFees:
+                          type: number
+                          description: "Accountancy, legal and other professional fees.\
+                          \ Expenses associated with the running of the business.\
+                          \ The value must be between -99999999999.99 and 99999999999.99\
+                          \ up to 2 decimal places."
+                          example: 10000.89
+                        depreciation:
+                          type: number
+                          description: Depreciation and loss/profit on sales of assets.
+                            Expenses associated with the running of the business. The
+                            value must be between -99999999999.99 and 99999999999.99
+                            up to 2 decimal places.
+                          example: 10000.89
+                        otherExpenses:
+                          type: number
+                          description: Other business expenses associated with the running
+                            of the business. The value must be between 0 and 99999999999.99
+                            up to 2 decimal places.
+                          example: 10000.89
+                      additionalProperties: false
+                      description: Object containing the details about self-employment
+                        expenses.
+                    periodDisallowableExpenses:
+                      type: object
+                      properties:
+                        costOfGoodsDisallowable:
+                          type: number
+                          description: Cost of goods bought for resale or goods used.
+                            Any expense or partial expense that cannot be claimed for
+                            tax purposes. The value must be between -99999999999.99
+                            and 99999999999.99 up to 2 decimal places.
+                          example: 10000.45
+                        paymentsToSubcontractorsDisallowable:
+                          type: number
+                          description: Payments to subcontractors - Construction Industry
+                            Scheme (CIS). Any expense or partial expense that cannot
+                            be claimed for tax purposes. The value must be between 0
+                            and 99999999999.99 up to 2 decimal places.
+                          example: 10000.89
+                        wagesAndStaffCostsDisallowable:
+                          type: number
+                          description: "Wages, salaries and other staff costs. Any expense\
+                          \ or partial expense that cannot be claimed for tax purposes.\
+                          \ The value must be between 0 and 99999999999.99 up to 2\
+                          \ decimal places."
+                          example: 10000.89
+                        carVanTravelExpensesDisallowable:
+                          type: number
+                          description: "Car, van and travel expenses. Any expense or\
+                          \ partial expense that cannot be claimed for tax purposes.\
+                          \ The value must be between 0 and 99999999999.99 up to 2\
+                          \ decimal places."
+                          example: 10000.89
+                        premisesRunningCostsDisallowable:
+                          type: number
+                          description: "Rent, rates, power and insurance costs. Any\
+                          \ expense or partial expense that cannot be claimed for\
+                          \ tax purposes. The value must be between -99999999999.99\
+                          \ and 99999999999.99 up to 2 decimal places."
+                          example: 10000.89
+                        maintenanceCostsDisallowable:
+                          type: number
+                          description: Repairs and renewals of property and equipment.
+                            Any expense or partial expense that cannot be claimed for
+                            tax purposes. The value must be between -99999999999.99
+                            and 99999999999.99 up to 2 decimal places.
+                          example: 10000.89
+                        adminCostsDisallowable:
+                          type: number
+                          description: "Phone, fax, stationery and other office costs.\
+                          \ Any expense or partial expense that cannot be claimed\
+                          \ for tax purposes. The value must be between 0 and 99999999999.99\
+                          \ up to 2 decimal places."
+                          example: 10000.89
+                        businessEntertainmentCostsDisallowable:
+                          type: number
+                          description: Business entertainment costs. Any expense or
+                            partial expense that cannot be claimed for tax purposes.
+                            The value must be between 0 and 99999999999.99 up to 2 decimal
+                            places.
+                          example: 10000.89
+                        advertisingCostsDisallowable:
+                          type: number
+                          description: Advertising costs. Any expense or partial expense
+                            that cannot be claimed for tax purposes. The value must
+                            be between 0 and 99999999999.99 up to 2 decimal places.
+                          example: 10000.89
+                        interestOnBankOtherLoansDisallowable:
+                          type: number
+                          description: Interest on bank and other loans. Any expense
+                            or partial expense that cannot be claimed for tax purposes.
+                            The value must be between -99999999999.99 and 99999999999.99
+                            up to 2 decimal places.
+                          example: 10000.89
+                        financeChargesDisallowable:
+                          type: number
+                          description: "Bank, credit card and other financial charges.\
+                          \ Any expense or partial expense that cannot be claimed\
+                          \ for tax purposes. The value must be between -99999999999.99\
+                          \ and 99999999999.99 up to 2 decimal places."
+                          example: 10000.89
+                        irrecoverableDebtsDisallowable:
+                          type: number
+                          description: Irrecoverable debts written off. Any expense
+                            or partial expense that cannot be claimed for tax purposes.
+                            The value must be between -99999999999.99 and 99999999999.99
+                            up to 2 decimal places.
+                          example: 10000.89
+                        professionalFeesDisallowable:
+                          type: number
+                          description: Legal and other professional fees. Any expense
+                            or partial expense that cannot be claimed for tax purposes.
+                            The value must be between 0 and 99999999999.99 up to 2 decimal
+                            places.
+                          example: 10000.89
+                        depreciationDisallowable:
+                          type: number
+                          description: Depreciation and loss/profit on sales of assets.
+                            Any expense or partial expense that cannot be claimed for
+                            tax purposes. The value must be between -99999999999.99
+                            and 99999999999.99 up to 2 decimal places.
+                          example: 10000.89
+                        otherExpensesDisallowable:
+                          type: number
+                          description: Other business expenses. Any expense or partial
+                            expense that cannot be claimed for tax purposes. The value
+                            must be between 0 and 99999999999.99 up to 2 decimal places.
+                          example: 10000.89
+                      additionalProperties: false
+                      description: Object containing the details about self-employment
+                        disallowable expenses that cannot be claimed for tax purposes.
+                  additionalProperties: false
+                  description: Create a Self-Employment Period Summary Request
+                - title: TY 2023-24 and 2024-25
+                  required:
+                    - periodDates
+                  type: object
+                  properties:
+                    periodDates:
+                      required:
+                        - periodEndDate
+                        - periodStartDate
+                      type: object
+                      properties:
+                        periodStartDate:
+                          type: string
+                          description: "The first day that the income, expenses and\
+                          \ deduction period summary covers."
+                          example: 2020-01-01
+                        periodEndDate:
+                          type: string
+                          description: "The last day that the income, expenses and deduction\
+                          \ period summary covers."
+                          example: 2020-01-01
+                      additionalProperties: false
+                      description: Object containing the details about self-employment
+                        period dates.
+                    periodIncome:
+                      type: object
+                      properties:
+                        turnover:
+                          type: number
+                          description: "The takings, fees, sales or money earned by\
+                          \ the business. Income associated with the running of the\
+                          \ business. The value must be between 0 and 99999999999.99\
+                          \ up to 2 decimal places."
+                          example: 10000.00
+                        other:
+                          type: number
+                          description: Any other business income not included in turnover.
+                            Income associated with the running of the business. The
+                            value must be between 0 and 99999999999.99 up to 2 decimal
+                            places.
+                          example: 10000.00
+                        taxTakenOffTradingIncome:
+                          type: number
+                          description: Other tax taken off trading income apart from
+                            CIS deductions. The value must be between 0 and 99999999999.99
+                            up to 2 decimal places.
+                          example: 10000.00
+                      additionalProperties: false
+                      description: Object containing the details about self-employment
+                        income.
+                    periodExpenses:
+                      type: object
+                      properties:
+                        consolidatedExpenses:
+                          type: number
+                          description: The sum of all allowable expenses for the specified
+                            period. The value must be between -99999999999.99 and 99999999999.99
+                            up to 2 decimal places.
+                          example: 10000.00
+                        costOfGoods:
+                          type: number
+                          description: Cost of goods bought for resale or goods used.
+                            Expenses associated with the running of the business. The
+                            value must be between -99999999999.99 and 99999999999.99
+                            up to 2 decimal places.
+                          example: 10000.00
+                        paymentsToSubcontractors:
+                          type: number
+                          description: Payments to construction industry subcontractors.
+                            Expenses associated with the running of the business. The
+                            value must be between -99999999999.99 and 99999999999.99
+                            up to 2 decimal places.
+                          example: 10000.00
+                        wagesAndStaffCosts:
+                          type: number
+                          description: "Wages, salaries and other staff costs. Expenses\
+                          \ associated with the running of the business. The value\
+                          \ must be between -99999999999.99 and 99999999999.99 up\
+                          \ to 2 decimal places."
+                          example: 10000.00
+                        carVanTravelExpenses:
+                          type: number
+                          description: "Car, van and travel expenses associated with\
+                          \ the running of the business. The value must be between\
+                          \ -99999999999.99 and 99999999999.99 up to 2 decimal places."
+                          example: 10000.89
+                        premisesRunningCosts:
+                          type: number
+                          description: "Rent, rates, power and insurance costs. Expenses\
+                          \ associated with the running of the business. The value\
+                          \ must be between -99999999999.99 and 99999999999.99 up\
+                          \ to 2 decimal places."
+                          example: 10000.89
+                        maintenanceCosts:
+                          type: number
+                          description: Repairs and renewals of property and equipment.
+                            Expenses associated with the running of the business. The
+                            value must be between -99999999999.99 and 99999999999.99
+                            up to 2 decimal places.
+                          example: 10000.89
+                        adminCosts:
+                          type: number
+                          description: "Phone, fax, stationery and other office costs.\
+                          \ Expenses associated with the running of the business.\
+                          \ The value must be between -99999999999.99 and 99999999999.99\
+                          \ up to 2 decimal places."
+                          example: 10000.89
+                        businessEntertainmentCosts:
+                          type: number
+                          description: Business entertainment costs. Expenses associated
+                            with the running of the business. The value must be between
+                            -99999999999.99 and 99999999999.99 up to 2 decimal places.
+                          example: 10000.89
+                        advertisingCosts:
+                          type: number
+                          description: Advertising costs. Expenses associated with the
+                            running of the business. The value must be between -99999999999.99
+                            and 99999999999.99 up to 2 decimal places.
+                          example: 10000.89
+                        interestOnBankOtherLoans:
+                          type: number
+                          description: Interest on bank and other loans. Expenses associated
+                            with the running of the business. The value must be between
+                            -99999999999.99 and 99999999999.99 up to 2 decimal places.
+                          example: 10000.89
+                        financeCharges:
+                          type: number
+                          description: "Bank, credit card and other financial charges.\
+                          \ Expenses associated with the running of the business.\
+                          \ The value must be between -99999999999.99 and 99999999999.99\
+                          \ up to 2 decimal places."
+                          example: 10000.89
+                        irrecoverableDebts:
+                          type: number
+                          description: Irrecoverable debts written off. Expenses associated
+                            with the running of the business. The value must be between
+                            -99999999999.99 and 99999999999.99 up to 2 decimal places.
+                          example: 10000.89
+                        professionalFees:
+                          type: number
+                          description: "Accountancy, legal and other professional fees.\
+                          \ Expenses associated with the running of the business.\
+                          \ The value must be between -99999999999.99 and 99999999999.99\
+                          \ up to 2 decimal places."
+                          example: 10000.89
+                        depreciation:
+                          type: number
+                          description: Depreciation and loss/profit on sales of assets.
+                            Expenses associated with the running of the business. The
+                            value must be between -99999999999.99 and 99999999999.99
+                            up to 2 decimal places.
+                          example: 10000.89
+                        otherExpenses:
+                          type: number
+                          description: Other business expenses associated with the running
+                            of the business. The value must be between -99999999999.99
+                            and 99999999999.99 up to 2 decimal places.
+                          example: 10000.89
+                      additionalProperties: false
+                      description: Object containing the details about self-employment
+                        expenses.
+                    periodDisallowableExpenses:
+                      type: object
+                      properties:
+                        costOfGoodsDisallowable:
+                          type: number
+                          description: Cost of goods bought for resale or goods used.
+                            Any expense or partial expense that cannot be claimed for
+                            tax purposes. The value must be between -99999999999.99
+                            and 99999999999.99 up to 2 decimal places.
+                          example: 10000.45
+                        paymentsToSubcontractorsDisallowable:
+                          type: number
+                          description: Payments to subcontractors - Construction Industry
+                            Scheme (CIS). Any expense or partial expense that cannot
+                            be claimed for tax purposes. The value must be between -99999999999.99
+                            and 99999999999.99 up to 2 decimal places.
+                          example: 10000.89
+                        wagesAndStaffCostsDisallowable:
+                          type: number
+                          description: "Wages, salaries and other staff costs. Any expense\
+                          \ or partial expense that cannot be claimed for tax purposes.\
+                          \ The value must be between -99999999999.99 and 99999999999.99\
+                          \ up to 2 decimal places."
+                          example: 10000.89
+                        carVanTravelExpensesDisallowable:
+                          type: number
+                          description: "Car, van and travel expenses. Any expense or\
+                          \ partial expense that cannot be claimed for tax purposes.\
+                          \ The value must be between -99999999999.99 and 99999999999.99\
+                          \ up to 2 decimal places."
+                          example: 10000.89
+                        premisesRunningCostsDisallowable:
+                          type: number
+                          description: "Rent, rates, power and insurance costs. Any\
+                          \ expense or partial expense that cannot be claimed for\
+                          \ tax purposes. The value must be between -99999999999.99\
+                          \ and 99999999999.99 up to 2 decimal places."
+                          example: 10000.89
+                        maintenanceCostsDisallowable:
+                          type: number
+                          description: Repairs and renewals of property and equipment.
+                            Any expense or partial expense that cannot be claimed for
+                            tax purposes. The value must be between -99999999999.99
+                            and 99999999999.99 up to 2 decimal places.
+                          example: 10000.89
+                        adminCostsDisallowable:
+                          type: number
+                          description: "Phone, fax, stationery and other office costs.\
+                          \ Any expense or partial expense that cannot be claimed\
+                          \ for tax purposes. The value must be between -99999999999.99\
+                          \ and 99999999999.99 up to 2 decimal places."
+                          example: 10000.89
+                        businessEntertainmentCostsDisallowable:
+                          type: number
+                          description: Business entertainment costs. Any expense or
+                            partial expense that cannot be claimed for tax purposes.
+                            The value must be between -99999999999.99 and 99999999999.99
+                            up to 2 decimal places.
+                          example: 10000.89
+                        advertisingCostsDisallowable:
+                          type: number
+                          description: Advertising costs. Any expense or partial expense
+                            that cannot be claimed for tax purposes. The value must
+                            be between -99999999999.99 and 99999999999.99 up to 2 decimal
+                            places.
+                          example: 10000.89
+                        interestOnBankOtherLoansDisallowable:
+                          type: number
+                          description: Interest on bank and other loans. Any expense
+                            or partial expense that cannot be claimed for tax purposes.
+                            The value must be between -99999999999.99 and 99999999999.99
+                            up to 2 decimal places.
+                          example: 10000.89
+                        financeChargesDisallowable:
+                          type: number
+                          description: "Bank, credit card and other financial charges.\
+                          \ Any expense or partial expense that cannot be claimed\
+                          \ for tax purposes. The value must be between -99999999999.99\
+                          \ and 99999999999.99 up to 2 decimal places."
+                          example: 10000.89
+                        irrecoverableDebtsDisallowable:
+                          type: number
+                          description: Irrecoverable debts written off. Any expense
+                            or partial expense that cannot be claimed for tax purposes.
+                            The value must be between -99999999999.99 and 99999999999.99
+                            up to 2 decimal places.
+                          example: 10000.89
+                        professionalFeesDisallowable:
+                          type: number
+                          description: Legal and other professional fees. Any expense
+                            or partial expense that cannot be claimed for tax purposes.
+                            The value must be between -99999999999.99 and 99999999999.99
+                            up to 2 decimal places.
+                          example: 10000.89
+                        depreciationDisallowable:
+                          type: number
+                          description: Depreciation and loss/profit on sales of assets.
+                            Any expense or partial expense that cannot be claimed for
+                            tax purposes. The value must be between -99999999999.99
+                            and 99999999999.99 up to 2 decimal places.
+                          example: 10000.89
+                        otherExpensesDisallowable:
+                          type: number
+                          description: Other business expenses. Any expense or partial
+                            expense that cannot be claimed for tax purposes. The value
+                            must be between -99999999999.99 and 99999999999.99 up to
+                            2 decimal places.
+                          example: 10000.89
+                      additionalProperties: false
+                      description: Object containing the details about self-employment
+                        disallowable expenses that cannot be claimed for tax purposes.
+                  additionalProperties: false
+                  description: Create a Self-Employment Period Summary Request
+            examples:
+              Non-consolidated request for TY 2023-24 and 2024-25:
+                value:
+                  $ref: ./examples/createPeriodSummary/def2/non_consolidated_request.json
+              Consolidated request for TY 2023-24 and 2024-25:
+                value:
+                  $ref: ./examples/createPeriodSummary/def2/consolidated_request.json
+              Non-consolidated request for TY 2022-23 and before:
+                value:
+                  $ref: ./examples/createPeriodSummary/def1/non_consolidated_request.json
+              Consolidated request for TY 2022-23 and before:
+                value:
+                  $ref: ./examples/createPeriodSummary/def1/consolidated_request.json
+      responses:
+        "200":
+          description: Success
+          headers:
+            X-CorrelationId:
+              description: |
+                Unique ID for operation tracking
+                String, 36 characters.
+              required: true
+              schema:
+                type: string
+                example: c75f40a6-a3df-4429-a697-471eeec46435
+            Deprecation:
+              description: |
+                The deprecation date/time for this endpoint.
+              required: false
+              schema:
+                type: string
+                example: "Sun, 01 Jan 2023 23:59:59 UTC"
+            Sunset:
+              description: |
+                The earliest date/time this endpoint will become unavailable after deprecation.
+              required: false
+              schema:
+                type: string
+                example: "Sun, 02 Jul 2023 23:59:59 UTC"
+            Link:
+              description: |
+                See the API documentation:
+              required: false
+              schema:
+                type: string
+                example: https://developer.service.hmrc.gov.uk/api-documentation/docs/api/service/self-employment-business-api
+          content:
+            application/json:
+              schema:
+                title: Create a Self-Employment Period Summary
+                required:
+                  - periodId
+                type: object
+                properties:
+                  periodId:
+                    type: string
+                    description: "An identifier for the update period, unique to the\
+                      \ customer's self-employment business."
+                    example: 2017-04-06_2017-07-04
+                additionalProperties: false
+                description: Create a Self-Employment Period Summary Response
+              examples:
+                Example response:
+                  value:
+                    $ref: ./examples/createPeriodSummary/response.json
+        "400":
+          description: Bad request
+          headers:
+            X-CorrelationId:
+              description: |
+                Unique ID for operation tracking
+                String, 36 characters.
+              required: true
+              schema:
+                type: string
+                example: c75f40a6-a3df-4429-a697-471eeec46435
+            Deprecation:
+              description: |
+                The deprecation date/time for this endpoint.
+              required: false
+              schema:
+                type: string
+                example: "Sun, 01 Jan 2023 23:59:59 UTC"
+            Sunset:
+              description: |
+                The earliest date/time this endpoint will become unavailable after deprecation.
+              required: false
+              schema:
+                type: string
+                example: "Sun, 02 Jul 2023 23:59:59 UTC"
+            Link:
+              description: |
+                See the API documentation:
+              required: false
+              schema:
+                type: string
+                example: https://developer.service.hmrc.gov.uk/api-documentation/docs/api/service/self-employment-business-api
+          content:
+            application/json:
+              schema:
+                required:
+                  - code
+                type: object
+                properties:
+                  code:
+                    type: string
+                    description: The error code
+                  message:
+                    type: string
+                    description: The error message
+                description: Error Response
+              examples:
+                FORMAT_NINO:
+                  description: The format of the supplied NINO field is not valid.
+                  value:
+                    code: FORMAT_NINO
+                    message: The NINO format is invalid
+                FORMAT_VALUE:
+                  description: One or more values have been added with the incorrect
+                    format.
+                  value:
+                    code: FORMAT_VALUE
+                    message: The value must be between 0 and 99999999999.99
+                FORMAT_BUSINESS_ID:
+                  description: The format of the supplied Business ID field is not
+                    valid.
+                  value:
+                    code: FORMAT_BUSINESS_ID
+                    message: The Business ID format is invalid
+                FORMAT_START_DATE:
+                  description: The format of the supplied Start date field is not
+                    valid.
+                  value:
+                    code: FORMAT_START_DATE
+                    message: The provided Start date is invalid
+                FORMAT_END_DATE:
+                  description: The format of the supplied End date field is not valid.
+                  value:
+                    code: FORMAT_END_DATE
+                    message: The provided End date is invalid
+                RULE_END_DATE_BEFORE_START_DATE:
+                  description: The End date is earlier than the Start date.
+                  value:
+                    code: RULE_END_DATE_BEFORE_START_DATE
+                    message: The supplied accounting period end date is before the
+                      start date
+                RULE_INCORRECT_OR_EMPTY_BODY_SUBMITTED:
+                  description: An empty or non-matching body was submitted.
+                  value:
+                    code: RULE_INCORRECT_OR_EMPTY_BODY_SUBMITTED
+                    message: An empty or non-matching body was submitted
+                RULE_TAX_YEAR_NOT_SUPPORTED:
+                  description: |
+                    The specified tax year is not supported.
+                    Either the tax year specified is before the minimum tax year value,
+                    or it is after the maximum tax year value.
+                  value:
+                    code: RULE_TAX_YEAR_NOT_SUPPORTED
+                    message: The tax year specified does not lie within the supported
+                      range
+                RULE_OVERLAPPING_PERIOD:
+                  description: Period summary overlaps with any of the existing period
+                    summaries.
+                  value:
+                    code: RULE_OVERLAPPING_PERIOD
+                    message: Period summary overlaps with any of the existing period
+                      summaries
+                RULE_BOTH_EXPENSES_SUPPLIED:
+                  description: Both expenses and consolidatedExpenses can not be present
+                    at the same time.
+                  value:
+                    code: RULE_BOTH_EXPENSES_SUPPLIED
+                    message: Both expenses and consolidatedExpenses can not be present
+                      at the same time
+                RULE_MISALIGNED_PERIOD:
+                  description: Period summary is not within the accounting period.
+                  value:
+                    code: RULE_MISALIGNED_PERIOD
+                    message: Period summary is not within the accounting period
+                RULE_NOT_CONTIGUOUS_PERIOD:
+                  description: Period summaries are not contiguous.
+                  value:
+                    code: RULE_NOT_CONTIGUOUS_PERIOD
+                    message: Period summaries are not contiguous
+                RULE_NOT_ALLOWED_CONSOLIDATED_EXPENSES:
+                  description: Consolidated expenses are not allowed if the accumulative
+                    turnover amount exceeds the threshold.
+                  value:
+                    code: RULE_NOT_ALLOWED_CONSOLIDATED_EXPENSES
+                    message: Consolidated expenses are not allowed if the accumulative
+                      turnover amount exceeds the threshold
+                RULE_DUPLICATE_SUBMISSION:
+                  description: A summary has already been submitted for the period
+                    specified.
+                  value:
+                    code: RULE_DUPLICATE_SUBMISSION
+                    message: A summary has already been submitted for the period specified
+                RULE_BUSINESS_INCOME_RESTRICTION:
+                  description: "For customers with ITSA status 'Annual' or a latent\
+                    \ business income source, submission period has to be 6 April\
+                    \ to 5 April."
+                  value:
+                    code: RULE_BUSINESS_INCOME_PERIOD_RESTRICTION
+                    message: "For customers with ITSA status 'Annual' or a latent\
+                      \ business income source, submission period has to be 6 April\
+                      \ to 5 April"
+                RULE_INCORRECT_GOV_TEST_SCENARIO:
+                  description: The request did not match any available Sandbox data.
+                    Check that the supplied Gov-Test-Scenario is correct for this
+                    endpoint version. This error will only be returned in the Sandbox
+                    environment.
+                  value:
+                    code: RULE_INCORRECT_GOV_TEST_SCENARIO
+                    message: The supplied Gov-Test-Scenario is not valid
+        "403":
+          description: Forbidden
+          headers:
+            X-CorrelationId:
+              description: |
+                Unique ID for operation tracking
+                String, 36 characters.
+              required: true
+              schema:
+                type: string
+                example: c75f40a6-a3df-4429-a697-471eeec46435
+            Deprecation:
+              description: |
+                The deprecation date/time for this endpoint.
+              required: false
+              schema:
+                type: string
+                example: "Sun, 01 Jan 2023 23:59:59 UTC"
+            Sunset:
+              description: |
+                The earliest date/time this endpoint will become unavailable after deprecation.
+              required: false
+              schema:
+                type: string
+                example: "Sun, 02 Jul 2023 23:59:59 UTC"
+            Link:
+              description: |
+                See the API documentation:
+              required: false
+              schema:
+                type: string
+                example: https://developer.service.hmrc.gov.uk/api-documentation/docs/api/service/self-employment-business-api
+          content:
+            application/json:
+              schema:
+                required:
+                  - code
+                type: object
+                properties:
+                  code:
+                    type: string
+                    description: The error code
+                  message:
+                    type: string
+                    description: The error message
+                description: Error Response
+              examples:
+                CLIENT_OR_AGENT_NOT_AUTHORISED:
+                  description: |
+                    The client and/or agent is not authorised. This is normally because: the client is not subscribed to MTD, the agent is not subscribed to Agent Services, or the client has not authorised the agent to act on their behalf.
+                  value:
+                    code: CLIENT_OR_AGENT_NOT_AUTHORISED
+                    message: The client or agent is not authorised
+        "404":
+          description: Not Found
+          headers:
+            X-CorrelationId:
+              description: |
+                Unique ID for operation tracking
+                String, 36 characters.
+              required: true
+              schema:
+                type: string
+                example: c75f40a6-a3df-4429-a697-471eeec46435
+            Deprecation:
+              description: |
+                The deprecation date/time for this endpoint.
+              required: false
+              schema:
+                type: string
+                example: "Sun, 01 Jan 2023 23:59:59 UTC"
+            Sunset:
+              description: |
+                The earliest date/time this endpoint will become unavailable after deprecation.
+              required: false
+              schema:
+                type: string
+                example: "Sun, 02 Jul 2023 23:59:59 UTC"
+            Link:
+              description: |
+                See the API documentation:
+              required: false
+              schema:
+                type: string
+                example: https://developer.service.hmrc.gov.uk/api-documentation/docs/api/service/self-employment-business-api
+          content:
+            application/json:
+              schema:
+                required:
+                  - code
+                type: object
+                properties:
+                  code:
+                    type: string
+                    description: The error code
+                  message:
+                    type: string
+                    description: The error message
+                description: Error Response
+              examples:
+                MATCHING_RESOURCE_NOT_FOUND:
+                  description: |
+                    The supplied income source could not be found.
+                  value:
+                    code: MATCHING_RESOURCE_NOT_FOUND
+                    message: Matching resource not found
+      security:
+        - User-Restricted:
+            - write:self-assessment
+  /individuals/business/self-employment/{nino}/{businessId}/period/{taxYear}:
+    get:
+      tags:
+        - Self-Employment Period Summaries
+      summary: List Self-Employment Period Summaries
+      description: |
+        This endpoint enables you to retrieve a list of all self-employment update period summaries.
+        A National Insurance number and business ID must be provided.
+
+        <strong>Note: This endpoint can only be used for submissions for tax year 2024-25 or earlier.
+        New endpoints which support cumulative submission will be provided for tax year 2025-26 onwards</strong>.
+
+        ### Test data
+        Scenario simulation using Gov-Test-Scenario headers is only available in the sandbox environment.
+
+        | Header Value (Gov-Test-Scenario)     | Scenario                                                                                                   |
+        |--------------------------------------|------------------------------------------------------------------------------------------------------------|
+        | N/A - DEFAULT                        | Simulates success response.                                                                                 |
+        | NOT_FOUND                            | Simulates the scenario where no data is found.                                                               |
+        | TAX_YEAR_NOT_SUPPORTED               | Simulates the scenario where the tax year is not supported.                                                 |
+        | STATEFUL                             | Performs a stateful list.                                                                                    |
+      parameters:
+        - name: nino
+          in: path
+          description: |
+            National Insurance number, in the format `AA999999A`
+          required: true
+          schema:
+            type: string
+            example: TC663795B
+        - name: businessId
+          in: path
+          description: |
+            An identifier for the business, unique to the customer.<p>Must conform to the regular expression `^X[A-Z0-9]{1}IS[0-9]{11}$`
+          required: true
+          schema:
+            pattern: "^X[A-Z0-9]{1}IS[0-9]{11}$"
+            type: string
+            example: XAIS12345678910
+        - name: taxYear
+          in: path
+          description: |
+            The tax year to which the data applies in the format YYYY-YY. The start year and end year must not span two tax years. The minimum tax year is 2017-18. No gaps are allowed, for example, 2022-24 is not valid.'
+          required: true
+          schema:
+            type: string
+            example: 2022-23
+        - name: Accept
+          in: header
+          description: |
+            Specifies the response format and the version of the API to be used.
+          required: true
+          schema:
+            type: string
+            enum:
+              - application/vnd.hmrc.5.0+json
+        - name: Authorization
+          in: header
+          description: |
+            An OAuth 2.0 Bearer Token with the *read:self-assessment* scope.
+          required: true
+          schema:
+            type: string
+            example: Bearer bb7fed3fe10dd235a2ccda3d50fb
+        - name: Gov-Test-Scenario
+          in: header
+          description: |
+            Only in sandbox environment. See Test Data table for all header values.
+          required: false
+          schema:
+            type: string
+            example: "-"
+      responses:
+        "200":
+          description: Success
+          headers:
+            X-CorrelationId:
+              description: |
+                Unique ID for operation tracking
+                String, 36 characters.
+              required: true
+              schema:
+                type: string
+                example: c75f40a6-a3df-4429-a697-471eeec46435
+            Deprecation:
+              description: |
+                The deprecation date/time for this endpoint.
+              required: false
+              schema:
+                type: string
+                example: "Sun, 01 Jan 2023 23:59:59 UTC"
+            Sunset:
+              description: |
+                The earliest date/time this endpoint will become unavailable after deprecation.
+              required: false
+              schema:
+                type: string
+                example: "Sun, 02 Jul 2023 23:59:59 UTC"
+            Link:
+              description: |
+                See the API documentation:
+              required: false
+              schema:
+                type: string
+                example: https://developer.service.hmrc.gov.uk/api-documentation/docs/api/service/self-employment-business-api
+          content:
+            application/json:
+              schema:
+                title: Before TY 2025-26
+                required:
+                  - periods
+                type: object
+                properties:
+                  periods:
+                    type: array
+                    additionalProperties: false
+                    items:
+                      required:
+                        - periodEndDate
+                        - periodId
+                        - periodStartDate
+                      type: object
+                      properties:
+                        periodId:
+                          type: string
+                          description: Concatenated period start and end dates.
+                          example: 2017-04-06_2017-07-04
+                        periodStartDate:
+                          type: string
+                          description: "The first day that the income, expenses and\
+                            \ deduction period summary covers. Must conform to the\
+                            \ format: YYYY-MM-DD"
+                          example: 2020-01-01
+                        periodEndDate:
+                          type: string
+                          description: "The last day that the income, expenses and\
+                            \ deduction period summary covers. Must conform to the\
+                            \ format: YYYY-MM-DD"
+                          example: 2020-01-01
+                      description: Details about Self-Employment periods.
+                additionalProperties: false
+                description: List Self-Employment Period Summaries Response
+              examples:
+                Example response:
+                  value:
+                    $ref: ./examples/listPeriodSummaries/response.json
+        "400":
+          description: Bad request
+          headers:
+            X-CorrelationId:
+              description: |
+                Unique ID for operation tracking
+                String, 36 characters.
+              required: true
+              schema:
+                type: string
+                example: c75f40a6-a3df-4429-a697-471eeec46435
+            Deprecation:
+              description: |
+                The deprecation date/time for this endpoint.
+              required: false
+              schema:
+                type: string
+                example: "Sun, 01 Jan 2023 23:59:59 UTC"
+            Sunset:
+              description: |
+                The earliest date/time this endpoint will become unavailable after deprecation.
+              required: false
+              schema:
+                type: string
+                example: "Sun, 02 Jul 2023 23:59:59 UTC"
+            Link:
+              description: |
+                See the API documentation:
+              required: false
+              schema:
+                type: string
+                example: https://developer.service.hmrc.gov.uk/api-documentation/docs/api/service/self-employment-business-api
+          content:
+            application/json:
+              schema:
+                required:
+                  - code
+                type: object
+                properties:
+                  code:
+                    type: string
+                    description: The error code
+                  message:
+                    type: string
+                    description: The error message
+                description: Error Response
+              examples:
+                FORMAT_NINO:
+                  description: The format of the supplied NINO field is not valid.
+                  value:
+                    code: FORMAT_NINO
+                    message: The NINO format is invalid
+                FORMAT_TAX_YEAR:
+                  description: The format of the supplied taxYear field is not valid.
+                  value:
+                    code: FORMAT_TAX_YEAR
+                    message: The taxYear format is invalid
+                FORMAT_BUSINESS_ID:
+                  description: The format of the supplied Business ID field is not
+                    valid.
+                  value:
+                    code: FORMAT_BUSINESS_ID
+                    message: The Business ID format is invalid
+                RULE_TAX_YEAR_NOT_SUPPORTED:
+                  description: |
+                    The specified tax year is not supported.
+                    Either the tax year specified is before the minimum tax year value,
+                    or it is after the maximum tax year value.
+                  value:
+                    code: RULE_TAX_YEAR_NOT_SUPPORTED
+                    message: The tax year specified does not lie within the supported
+                      range
+                RULE_TAX_YEAR_RANGE_INVALID:
+                  description: Tax year range invalid. A tax year range of one year
+                    is required.
+                  value:
+                    code: RULE_TAX_YEAR_RANGE_INVALID
+                    message: A tax year range of one year is required
+                INVALID_TAX_YEAR_PARAMETER:
+                  description: |
+                    A tax year before 2023-24 was supplied.
+                    A request with a tax year parameter is only valid for tax years 2023-24 or later.
+                  value:
+                    code: INVALID_TAX_YEAR_PARAMETER
+                    message: A tax year before 2023-24 was supplied
+                RULE_INCORRECT_GOV_TEST_SCENARIO:
+                  description: The request did not match any available Sandbox data.
+                    Check that the supplied Gov-Test-Scenario is correct for this
+                    endpoint version. This error will only be returned in the Sandbox
+                    environment.
+                  value:
+                    code: RULE_INCORRECT_GOV_TEST_SCENARIO
+                    message: The supplied Gov-Test-Scenario is not valid
+        "403":
+          description: Forbidden
+          headers:
+            X-CorrelationId:
+              description: |
+                Unique ID for operation tracking
+                String, 36 characters.
+              required: true
+              schema:
+                type: string
+                example: c75f40a6-a3df-4429-a697-471eeec46435
+            Deprecation:
+              description: |
+                The deprecation date/time for this endpoint.
+              required: false
+              schema:
+                type: string
+                example: "Sun, 01 Jan 2023 23:59:59 UTC"
+            Sunset:
+              description: |
+                The earliest date/time this endpoint will become unavailable after deprecation.
+              required: false
+              schema:
+                type: string
+                example: "Sun, 02 Jul 2023 23:59:59 UTC"
+            Link:
+              description: |
+                See the API documentation:
+              required: false
+              schema:
+                type: string
+                example: https://developer.service.hmrc.gov.uk/api-documentation/docs/api/service/self-employment-business-api
+          content:
+            application/json:
+              schema:
+                required:
+                  - code
+                type: object
+                properties:
+                  code:
+                    type: string
+                    description: The error code
+                  message:
+                    type: string
+                    description: The error message
+                description: Error Response
+              examples:
+                CLIENT_OR_AGENT_NOT_AUTHORISED:
+                  description: |
+                    The client and/or agent is not authorised. This is normally because: the client is not subscribed to MTD, the agent is not subscribed to Agent Services, or the client has not authorised the agent to act on their behalf.
+                  value:
+                    code: CLIENT_OR_AGENT_NOT_AUTHORISED
+                    message: The client or agent is not authorised
+        "404":
+          description: Not Found
+          headers:
+            X-CorrelationId:
+              description: |
+                Unique ID for operation tracking
+                String, 36 characters.
+              required: true
+              schema:
+                type: string
+                example: c75f40a6-a3df-4429-a697-471eeec46435
+            Deprecation:
+              description: |
+                The deprecation date/time for this endpoint.
+              required: false
+              schema:
+                type: string
+                example: "Sun, 01 Jan 2023 23:59:59 UTC"
+            Sunset:
+              description: |
+                The earliest date/time this endpoint will become unavailable after deprecation.
+              required: false
+              schema:
+                type: string
+                example: "Sun, 02 Jul 2023 23:59:59 UTC"
+            Link:
+              description: |
+                See the API documentation:
+              required: false
+              schema:
+                type: string
+                example: https://developer.service.hmrc.gov.uk/api-documentation/docs/api/service/self-employment-business-api
+          content:
+            application/json:
+              schema:
+                required:
+                  - code
+                type: object
+                properties:
+                  code:
+                    type: string
+                    description: The error code
+                  message:
+                    type: string
+                    description: The error message
+                description: Error Response
+              examples:
+                MATCHING_RESOURCE_NOT_FOUND:
+                  description: |
+                    The supplied income source could not be found.
+                  value:
+                    code: MATCHING_RESOURCE_NOT_FOUND
+                    message: Matching resource not found
+      security:
+        - User-Restricted:
+            - read:self-assessment
+  /individuals/business/self-employment/{nino}/{businessId}/period/{taxYear}/{periodId}:
+    get:
+      summary: Retrieve a Self-Employment Period Summary
+      security:
+        - User-Restricted:
+            - read:self-assessment
+    put:
+      summary: Amend a Self-Employment Period Summary
+      security:
+        - User-Restricted:
+            - write:self-assessment
+  /individuals/business/self-employment/{nino}/{businessId}/cumulative/{taxYear}:
+    get:
+      summary: Retrieve a Self-Employment Period Summary
+      security:
+        - User-Restricted:
+            - read:self-assessment
+    put:
+      summary: Create and Amend a Self-Employment Cumulative Period Summary
+      security:
+        - User-Restricted:
+            - write:self-assessment
+components:
+  schemas:
+    request:
+      title: Before TY 2023-24
+      required:
+        - periodDates
+      type: object
+      properties:
+        periodDates:
+          required:
+            - periodEndDate
+            - periodStartDate
+          type: object
+          properties:
+            periodStartDate:
+              type: string
+              description: "The first day that the income, expenses and deduction\
+                \ period summary covers."
+              example: 2020-01-01
+            periodEndDate:
+              type: string
+              description: "The last day that the income, expenses and deduction period\
+                \ summary covers."
+              example: 2020-01-01
+          additionalProperties: false
+          description: Object containing the details about self-employment period
+            dates.
+        periodIncome:
+          type: object
+          properties:
+            turnover:
+              type: number
+              description: "The takings, fees, sales or money earned by the business.\
+                \ Income associated with the running of the business. The value must\
+                \ be between 0 and 99999999999.99 up to 2 decimal places."
+              example: 10000.00
+            other:
+              type: number
+              description: Any other business income not included in turnover. Income
+                associated with the running of the business. The value must be between
+                0 and 99999999999.99 up to 2 decimal places.
+              example: 10000.00
+          additionalProperties: false
+          description: Object containing the details about self-employment income.
+        periodExpenses:
+          type: object
+          properties:
+            consolidatedExpenses:
+              type: number
+              description: The sum of all allowable expenses for the specified period.
+                The value must be between 0 and 99999999999.99 up to 2 decimal places.
+              example: 10000.00
+            costOfGoods:
+              type: number
+              description: Cost of goods bought for resale or goods used. Expenses
+                associated with the running of the business. The value must be between
+                -99999999999.99 and 99999999999.99 up to 2 decimal places.
+              example: 10000.00
+            paymentsToSubcontractors:
+              type: number
+              description: Payments to construction industry subcontractors. Expenses
+                associated with the running of the business. The value must be between
+                0 and 99999999999.99 up to 2 decimal places.
+              example: 10000.00
+            wagesAndStaffCosts:
+              type: number
+              description: "Wages, salaries and other staff costs. Expenses associated\
+                \ with the running of the business. The value must be between 0 and\
+                \ 99999999999.99 up to 2 decimal places."
+              example: 10000.00
+            carVanTravelExpenses:
+              type: number
+              description: "Car, van and travel expenses associated with the running\
+                \ of the business. The value must be between 0 and 99999999999.99\
+                \ up to 2 decimal places."
+              example: 10000.89
+            premisesRunningCosts:
+              type: number
+              description: "Rent, rates, power and insurance costs. Expenses associated\
+                \ with the running of the business. The value must be between -99999999999.99\
+                \ and 99999999999.99 up to 2 decimal places."
+              example: 10000.89
+            maintenanceCosts:
+              type: number
+              description: Repairs and renewals of property and equipment. Expenses
+                associated with the running of the business. The value must be between
+                -99999999999.99 and 99999999999.99 up to 2 decimal places.
+              example: 10000.89
+            adminCosts:
+              type: number
+              description: "Phone, fax, stationery and other office costs. Expenses\
+                \ associated with the running of the business. The value must be between\
+                \ 0 and 99999999999.99 up to 2 decimal places."
+              example: 10000.89
+            businessEntertainmentCosts:
+              type: number
+              description: Business entertainment costs. Expenses associated with
+                the running of the business. The value must be between 0 and 99999999999.99
+                up to 2 decimal places.
+              example: 10000.89
+            advertisingCosts:
+              type: number
+              description: Advertising costs. Expenses associated with the running
+                of the business. The value must be between 0 and 99999999999.99 up
+                to 2 decimal places.
+              example: 10000.89
+            interestOnBankOtherLoans:
+              type: number
+              description: Interest on bank and other loans. Expenses associated with
+                the running of the business. The value must be between -99999999999.99
+                and 99999999999.99 up to 2 decimal places.
+              example: 10000.89
+            financeCharges:
+              type: number
+              description: "Bank, credit card and other financial charges. Expenses\
+                \ associated with the running of the business. The value must be between\
+                \ -99999999999.99 and 99999999999.99 up to 2 decimal places."
+              example: 10000.89
+            irrecoverableDebts:
+              type: number
+              description: Irrecoverable debts written off. Expenses associated with
+                the running of the business. The value must be between -99999999999.99
+                and 99999999999.99 up to 2 decimal places.
+              example: 10000.89
+            professionalFees:
+              type: number
+              description: "Accountancy, legal and other professional fees. Expenses\
+                \ associated with the running of the business. The value must be between\
+                \ -99999999999.99 and 99999999999.99 up to 2 decimal places."
+              example: 10000.89
+            depreciation:
+              type: number
+              description: Depreciation and loss/profit on sales of assets. Expenses
+                associated with the running of the business. The value must be between
+                -99999999999.99 and 99999999999.99 up to 2 decimal places.
+              example: 10000.89
+            otherExpenses:
+              type: number
+              description: Other business expenses associated with the running of
+                the business. The value must be between 0 and 99999999999.99 up to
+                2 decimal places.
+              example: 10000.89
+          additionalProperties: false
+          description: Object containing the details about self-employment expenses.
+        periodDisallowableExpenses:
+          type: object
+          properties:
+            costOfGoodsDisallowable:
+              type: number
+              description: Cost of goods bought for resale or goods used. Any expense
+                or partial expense that cannot be claimed for tax purposes. The value
+                must be between -99999999999.99 and 99999999999.99 up to 2 decimal
+                places.
+              example: 10000.45
+            paymentsToSubcontractorsDisallowable:
+              type: number
+              description: Payments to subcontractors - Construction Industry Scheme
+                (CIS). Any expense or partial expense that cannot be claimed for tax
+                purposes. The value must be between 0 and 99999999999.99 up to 2 decimal
+                places.
+              example: 10000.89
+            wagesAndStaffCostsDisallowable:
+              type: number
+              description: "Wages, salaries and other staff costs. Any expense or\
+                \ partial expense that cannot be claimed for tax purposes. The value\
+                \ must be between 0 and 99999999999.99 up to 2 decimal places."
+              example: 10000.89
+            carVanTravelExpensesDisallowable:
+              type: number
+              description: "Car, van and travel expenses. Any expense or partial expense\
+                \ that cannot be claimed for tax purposes. The value must be between\
+                \ 0 and 99999999999.99 up to 2 decimal places."
+              example: 10000.89
+            premisesRunningCostsDisallowable:
+              type: number
+              description: "Rent, rates, power and insurance costs. Any expense or\
+                \ partial expense that cannot be claimed for tax purposes. The value\
+                \ must be between -99999999999.99 and 99999999999.99 up to 2 decimal\
+                \ places."
+              example: 10000.89
+            maintenanceCostsDisallowable:
+              type: number
+              description: Repairs and renewals of property and equipment. Any expense
+                or partial expense that cannot be claimed for tax purposes. The value
+                must be between -99999999999.99 and 99999999999.99 up to 2 decimal
+                places.
+              example: 10000.89
+            adminCostsDisallowable:
+              type: number
+              description: "Phone, fax, stationery and other office costs. Any expense\
+                \ or partial expense that cannot be claimed for tax purposes. The\
+                \ value must be between 0 and 99999999999.99 up to 2 decimal places."
+              example: 10000.89
+            businessEntertainmentCostsDisallowable:
+              type: number
+              description: Business entertainment costs. Any expense or partial expense
+                that cannot be claimed for tax purposes. The value must be between
+                0 and 99999999999.99 up to 2 decimal places.
+              example: 10000.89
+            advertisingCostsDisallowable:
+              type: number
+              description: Advertising costs. Any expense or partial expense that
+                cannot be claimed for tax purposes. The value must be between 0 and
+                99999999999.99 up to 2 decimal places.
+              example: 10000.89
+            interestOnBankOtherLoansDisallowable:
+              type: number
+              description: Interest on bank and other loans. Any expense or partial
+                expense that cannot be claimed for tax purposes. The value must be
+                between -99999999999.99 and 99999999999.99 up to 2 decimal places.
+              example: 10000.89
+            financeChargesDisallowable:
+              type: number
+              description: "Bank, credit card and other financial charges. Any expense\
+                \ or partial expense that cannot be claimed for tax purposes. The\
+                \ value must be between -99999999999.99 and 99999999999.99 up to 2\
+                \ decimal places."
+              example: 10000.89
+            irrecoverableDebtsDisallowable:
+              type: number
+              description: Irrecoverable debts written off. Any expense or partial
+                expense that cannot be claimed for tax purposes. The value must be
+                between -99999999999.99 and 99999999999.99 up to 2 decimal places.
+              example: 10000.89
+            professionalFeesDisallowable:
+              type: number
+              description: Legal and other professional fees. Any expense or partial
+                expense that cannot be claimed for tax purposes. The value must be
+                between 0 and 99999999999.99 up to 2 decimal places.
+              example: 10000.89
+            depreciationDisallowable:
+              type: number
+              description: Depreciation and loss/profit on sales of assets. Any expense
+                or partial expense that cannot be claimed for tax purposes. The value
+                must be between -99999999999.99 and 99999999999.99 up to 2 decimal
+                places.
+              example: 10000.89
+            otherExpensesDisallowable:
+              type: number
+              description: Other business expenses. Any expense or partial expense
+                that cannot be claimed for tax purposes. The value must be between
+                0 and 99999999999.99 up to 2 decimal places.
+              example: 10000.89
+          additionalProperties: false
+          description: Object containing the details about self-employment disallowable
+            expenses that cannot be claimed for tax purposes.
+      additionalProperties: false
+      description: Create a Self-Employment Period Summary Request
+    request_1:
+      title: TY 2023-24 and 2024-25
+      required:
+        - periodDates
+      type: object
+      properties:
+        periodDates:
+          required:
+            - periodEndDate
+            - periodStartDate
+          type: object
+          properties:
+            periodStartDate:
+              type: string
+              description: "The first day that the income, expenses and deduction\
+                \ period summary covers."
+              example: 2020-01-01
+            periodEndDate:
+              type: string
+              description: "The last day that the income, expenses and deduction period\
+                \ summary covers."
+              example: 2020-01-01
+          additionalProperties: false
+          description: Object containing the details about self-employment period
+            dates.
+        periodIncome:
+          type: object
+          properties:
+            turnover:
+              type: number
+              description: "The takings, fees, sales or money earned by the business.\
+                \ Income associated with the running of the business. The value must\
+                \ be between 0 and 99999999999.99 up to 2 decimal places."
+              example: 10000.00
+            other:
+              type: number
+              description: Any other business income not included in turnover. Income
+                associated with the running of the business. The value must be between
+                0 and 99999999999.99 up to 2 decimal places.
+              example: 10000.00
+            taxTakenOffTradingIncome:
+              type: number
+              description: Other tax taken off trading income apart from CIS deductions.
+                The value must be between 0 and 99999999999.99 up to 2 decimal places.
+              example: 10000.00
+          additionalProperties: false
+          description: Object containing the details about self-employment income.
+        periodExpenses:
+          type: object
+          properties:
+            consolidatedExpenses:
+              type: number
+              description: The sum of all allowable expenses for the specified period.
+                The value must be between -99999999999.99 and 99999999999.99 up to
+                2 decimal places.
+              example: 10000.00
+            costOfGoods:
+              type: number
+              description: Cost of goods bought for resale or goods used. Expenses
+                associated with the running of the business. The value must be between
+                -99999999999.99 and 99999999999.99 up to 2 decimal places.
+              example: 10000.00
+            paymentsToSubcontractors:
+              type: number
+              description: Payments to construction industry subcontractors. Expenses
+                associated with the running of the business. The value must be between
+                -99999999999.99 and 99999999999.99 up to 2 decimal places.
+              example: 10000.00
+            wagesAndStaffCosts:
+              type: number
+              description: "Wages, salaries and other staff costs. Expenses associated\
+                \ with the running of the business. The value must be between -99999999999.99\
+                \ and 99999999999.99 up to 2 decimal places."
+              example: 10000.00
+            carVanTravelExpenses:
+              type: number
+              description: "Car, van and travel expenses associated with the running\
+                \ of the business. The value must be between -99999999999.99 and 99999999999.99\
+                \ up to 2 decimal places."
+              example: 10000.89
+            premisesRunningCosts:
+              type: number
+              description: "Rent, rates, power and insurance costs. Expenses associated\
+                \ with the running of the business. The value must be between -99999999999.99\
+                \ and 99999999999.99 up to 2 decimal places."
+              example: 10000.89
+            maintenanceCosts:
+              type: number
+              description: Repairs and renewals of property and equipment. Expenses
+                associated with the running of the business. The value must be between
+                -99999999999.99 and 99999999999.99 up to 2 decimal places.
+              example: 10000.89
+            adminCosts:
+              type: number
+              description: "Phone, fax, stationery and other office costs. Expenses\
+                \ associated with the running of the business. The value must be between\
+                \ -99999999999.99 and 99999999999.99 up to 2 decimal places."
+              example: 10000.89
+            businessEntertainmentCosts:
+              type: number
+              description: Business entertainment costs. Expenses associated with
+                the running of the business. The value must be between -99999999999.99
+                and 99999999999.99 up to 2 decimal places.
+              example: 10000.89
+            advertisingCosts:
+              type: number
+              description: Advertising costs. Expenses associated with the running
+                of the business. The value must be between -99999999999.99 and 99999999999.99
+                up to 2 decimal places.
+              example: 10000.89
+            interestOnBankOtherLoans:
+              type: number
+              description: Interest on bank and other loans. Expenses associated with
+                the running of the business. The value must be between -99999999999.99
+                and 99999999999.99 up to 2 decimal places.
+              example: 10000.89
+            financeCharges:
+              type: number
+              description: "Bank, credit card and other financial charges. Expenses\
+                \ associated with the running of the business. The value must be between\
+                \ -99999999999.99 and 99999999999.99 up to 2 decimal places."
+              example: 10000.89
+            irrecoverableDebts:
+              type: number
+              description: Irrecoverable debts written off. Expenses associated with
+                the running of the business. The value must be between -99999999999.99
+                and 99999999999.99 up to 2 decimal places.
+              example: 10000.89
+            professionalFees:
+              type: number
+              description: "Accountancy, legal and other professional fees. Expenses\
+                \ associated with the running of the business. The value must be between\
+                \ -99999999999.99 and 99999999999.99 up to 2 decimal places."
+              example: 10000.89
+            depreciation:
+              type: number
+              description: Depreciation and loss/profit on sales of assets. Expenses
+                associated with the running of the business. The value must be between
+                -99999999999.99 and 99999999999.99 up to 2 decimal places.
+              example: 10000.89
+            otherExpenses:
+              type: number
+              description: Other business expenses associated with the running of
+                the business. The value must be between -99999999999.99 and 99999999999.99
+                up to 2 decimal places.
+              example: 10000.89
+          additionalProperties: false
+          description: Object containing the details about self-employment expenses.
+        periodDisallowableExpenses:
+          type: object
+          properties:
+            costOfGoodsDisallowable:
+              type: number
+              description: Cost of goods bought for resale or goods used. Any expense
+                or partial expense that cannot be claimed for tax purposes. The value
+                must be between -99999999999.99 and 99999999999.99 up to 2 decimal
+                places.
+              example: 10000.45
+            paymentsToSubcontractorsDisallowable:
+              type: number
+              description: Payments to subcontractors - Construction Industry Scheme
+                (CIS). Any expense or partial expense that cannot be claimed for tax
+                purposes. The value must be between -99999999999.99 and 99999999999.99
+                up to 2 decimal places.
+              example: 10000.89
+            wagesAndStaffCostsDisallowable:
+              type: number
+              description: "Wages, salaries and other staff costs. Any expense or\
+                \ partial expense that cannot be claimed for tax purposes. The value\
+                \ must be between -99999999999.99 and 99999999999.99 up to 2 decimal\
+                \ places."
+              example: 10000.89
+            carVanTravelExpensesDisallowable:
+              type: number
+              description: "Car, van and travel expenses. Any expense or partial expense\
+                \ that cannot be claimed for tax purposes. The value must be between\
+                \ -99999999999.99 and 99999999999.99 up to 2 decimal places."
+              example: 10000.89
+            premisesRunningCostsDisallowable:
+              type: number
+              description: "Rent, rates, power and insurance costs. Any expense or\
+                \ partial expense that cannot be claimed for tax purposes. The value\
+                \ must be between -99999999999.99 and 99999999999.99 up to 2 decimal\
+                \ places."
+              example: 10000.89
+            maintenanceCostsDisallowable:
+              type: number
+              description: Repairs and renewals of property and equipment. Any expense
+                or partial expense that cannot be claimed for tax purposes. The value
+                must be between -99999999999.99 and 99999999999.99 up to 2 decimal
+                places.
+              example: 10000.89
+            adminCostsDisallowable:
+              type: number
+              description: "Phone, fax, stationery and other office costs. Any expense\
+                \ or partial expense that cannot be claimed for tax purposes. The\
+                \ value must be between -99999999999.99 and 99999999999.99 up to 2\
+                \ decimal places."
+              example: 10000.89
+            businessEntertainmentCostsDisallowable:
+              type: number
+              description: Business entertainment costs. Any expense or partial expense
+                that cannot be claimed for tax purposes. The value must be between
+                -99999999999.99 and 99999999999.99 up to 2 decimal places.
+              example: 10000.89
+            advertisingCostsDisallowable:
+              type: number
+              description: Advertising costs. Any expense or partial expense that
+                cannot be claimed for tax purposes. The value must be between -99999999999.99
+                and 99999999999.99 up to 2 decimal places.
+              example: 10000.89
+            interestOnBankOtherLoansDisallowable:
+              type: number
+              description: Interest on bank and other loans. Any expense or partial
+                expense that cannot be claimed for tax purposes. The value must be
+                between -99999999999.99 and 99999999999.99 up to 2 decimal places.
+              example: 10000.89
+            financeChargesDisallowable:
+              type: number
+              description: "Bank, credit card and other financial charges. Any expense\
+                \ or partial expense that cannot be claimed for tax purposes. The\
+                \ value must be between -99999999999.99 and 99999999999.99 up to 2\
+                \ decimal places."
+              example: 10000.89
+            irrecoverableDebtsDisallowable:
+              type: number
+              description: Irrecoverable debts written off. Any expense or partial
+                expense that cannot be claimed for tax purposes. The value must be
+                between -99999999999.99 and 99999999999.99 up to 2 decimal places.
+              example: 10000.89
+            professionalFeesDisallowable:
+              type: number
+              description: Legal and other professional fees. Any expense or partial
+                expense that cannot be claimed for tax purposes. The value must be
+                between -99999999999.99 and 99999999999.99 up to 2 decimal places.
+              example: 10000.89
+            depreciationDisallowable:
+              type: number
+              description: Depreciation and loss/profit on sales of assets. Any expense
+                or partial expense that cannot be claimed for tax purposes. The value
+                must be between -99999999999.99 and 99999999999.99 up to 2 decimal
+                places.
+              example: 10000.89
+            otherExpensesDisallowable:
+              type: number
+              description: Other business expenses. Any expense or partial expense
+                that cannot be claimed for tax purposes. The value must be between
+                -99999999999.99 and 99999999999.99 up to 2 decimal places.
+              example: 10000.89
+          additionalProperties: false
+          description: Object containing the details about self-employment disallowable
+            expenses that cannot be claimed for tax purposes.
+      additionalProperties: false
+      description: Create a Self-Employment Period Summary Request
+    response:
+      title: Create a Self-Employment Period Summary
+      required:
+        - periodId
+      type: object
+      properties:
+        periodId:
+          type: string
+          description: "An identifier for the update period, unique to the customer's\
+            \ self-employment business."
+          example: 2017-04-06_2017-07-04
+      additionalProperties: false
+      description: Create a Self-Employment Period Summary Response
+    error-response:
+      required:
+        - code
+      type: object
+      properties:
+        code:
+          type: string
+          description: The error code
+        message:
+          type: string
+          description: The error message
+      description: Error Response
+    response_1:
+      title: Before TY 2025-26
+      required:
+        - periods
+      type: object
+      properties:
+        periods:
+          type: array
+          additionalProperties: false
+          items:
+            required:
+              - periodEndDate
+              - periodId
+              - periodStartDate
+            type: object
+            properties:
+              periodId:
+                type: string
+                description: Concatenated period start and end dates.
+                example: 2017-04-06_2017-07-04
+              periodStartDate:
+                type: string
+                description: "The first day that the income, expenses and deduction\
+                  \ period summary covers. Must conform to the format: YYYY-MM-DD"
+                example: 2020-01-01
+              periodEndDate:
+                type: string
+                description: "The last day that the income, expenses and deduction\
+                  \ period summary covers. Must conform to the format: YYYY-MM-DD"
+                example: 2020-01-01
+            description: Details about Self-Employment periods.
+      additionalProperties: false
+      description: List Self-Employment Period Summaries Response
+    period_dates:
+      required:
+        - periodEndDate
+        - periodStartDate
+      type: object
+      properties:
+        periodStartDate:
+          type: string
+          description: "The first day that the income, expenses and deduction period\
+            \ summary covers."
+          example: 2020-01-01
+        periodEndDate:
+          type: string
+          description: "The last day that the income, expenses and deduction period\
+            \ summary covers."
+          example: 2020-01-01
+      additionalProperties: false
+      description: Object containing the details about self-employment period dates.
+    period_income:
+      type: object
+      properties:
+        turnover:
+          type: number
+          description: "The takings, fees, sales or money earned by the business.\
+            \ Income associated with the running of the business. The value must be\
+            \ between 0 and 99999999999.99 up to 2 decimal places."
+          example: 10000.00
+        other:
+          type: number
+          description: Any other business income not included in turnover. Income
+            associated with the running of the business. The value must be between
+            0 and 99999999999.99 up to 2 decimal places.
+          example: 10000.00
+      additionalProperties: false
+      description: Object containing the details about self-employment income.
+    period_expenses:
+      type: object
+      properties:
+        consolidatedExpenses:
+          type: number
+          description: The sum of all allowable expenses for the specified period.
+            The value must be between 0 and 99999999999.99 up to 2 decimal places.
+          example: 10000.00
+        costOfGoods:
+          type: number
+          description: Cost of goods bought for resale or goods used. Expenses associated
+            with the running of the business. The value must be between -99999999999.99
+            and 99999999999.99 up to 2 decimal places.
+          example: 10000.00
+        paymentsToSubcontractors:
+          type: number
+          description: Payments to construction industry subcontractors. Expenses
+            associated with the running of the business. The value must be between
+            0 and 99999999999.99 up to 2 decimal places.
+          example: 10000.00
+        wagesAndStaffCosts:
+          type: number
+          description: "Wages, salaries and other staff costs. Expenses associated\
+            \ with the running of the business. The value must be between 0 and 99999999999.99\
+            \ up to 2 decimal places."
+          example: 10000.00
+        carVanTravelExpenses:
+          type: number
+          description: "Car, van and travel expenses associated with the running of\
+            \ the business. The value must be between 0 and 99999999999.99 up to 2\
+            \ decimal places."
+          example: 10000.89
+        premisesRunningCosts:
+          type: number
+          description: "Rent, rates, power and insurance costs. Expenses associated\
+            \ with the running of the business. The value must be between -99999999999.99\
+            \ and 99999999999.99 up to 2 decimal places."
+          example: 10000.89
+        maintenanceCosts:
+          type: number
+          description: Repairs and renewals of property and equipment. Expenses associated
+            with the running of the business. The value must be between -99999999999.99
+            and 99999999999.99 up to 2 decimal places.
+          example: 10000.89
+        adminCosts:
+          type: number
+          description: "Phone, fax, stationery and other office costs. Expenses associated\
+            \ with the running of the business. The value must be between 0 and 99999999999.99\
+            \ up to 2 decimal places."
+          example: 10000.89
+        businessEntertainmentCosts:
+          type: number
+          description: Business entertainment costs. Expenses associated with the
+            running of the business. The value must be between 0 and 99999999999.99
+            up to 2 decimal places.
+          example: 10000.89
+        advertisingCosts:
+          type: number
+          description: Advertising costs. Expenses associated with the running of
+            the business. The value must be between 0 and 99999999999.99 up to 2 decimal
+            places.
+          example: 10000.89
+        interestOnBankOtherLoans:
+          type: number
+          description: Interest on bank and other loans. Expenses associated with
+            the running of the business. The value must be between -99999999999.99
+            and 99999999999.99 up to 2 decimal places.
+          example: 10000.89
+        financeCharges:
+          type: number
+          description: "Bank, credit card and other financial charges. Expenses associated\
+            \ with the running of the business. The value must be between -99999999999.99\
+            \ and 99999999999.99 up to 2 decimal places."
+          example: 10000.89
+        irrecoverableDebts:
+          type: number
+          description: Irrecoverable debts written off. Expenses associated with the
+            running of the business. The value must be between -99999999999.99 and
+            99999999999.99 up to 2 decimal places.
+          example: 10000.89
+        professionalFees:
+          type: number
+          description: "Accountancy, legal and other professional fees. Expenses associated\
+            \ with the running of the business. The value must be between -99999999999.99\
+            \ and 99999999999.99 up to 2 decimal places."
+          example: 10000.89
+        depreciation:
+          type: number
+          description: Depreciation and loss/profit on sales of assets. Expenses associated
+            with the running of the business. The value must be between -99999999999.99
+            and 99999999999.99 up to 2 decimal places.
+          example: 10000.89
+        otherExpenses:
+          type: number
+          description: Other business expenses associated with the running of the
+            business. The value must be between 0 and 99999999999.99 up to 2 decimal
+            places.
+          example: 10000.89
+      additionalProperties: false
+      description: Object containing the details about self-employment expenses.
+    period_disallowable_expenses:
+      type: object
+      properties:
+        costOfGoodsDisallowable:
+          type: number
+          description: Cost of goods bought for resale or goods used. Any expense
+            or partial expense that cannot be claimed for tax purposes. The value
+            must be between -99999999999.99 and 99999999999.99 up to 2 decimal places.
+          example: 10000.45
+        paymentsToSubcontractorsDisallowable:
+          type: number
+          description: Payments to subcontractors - Construction Industry Scheme (CIS).
+            Any expense or partial expense that cannot be claimed for tax purposes.
+            The value must be between 0 and 99999999999.99 up to 2 decimal places.
+          example: 10000.89
+        wagesAndStaffCostsDisallowable:
+          type: number
+          description: "Wages, salaries and other staff costs. Any expense or partial\
+            \ expense that cannot be claimed for tax purposes. The value must be between\
+            \ 0 and 99999999999.99 up to 2 decimal places."
+          example: 10000.89
+        carVanTravelExpensesDisallowable:
+          type: number
+          description: "Car, van and travel expenses. Any expense or partial expense\
+            \ that cannot be claimed for tax purposes. The value must be between 0\
+            \ and 99999999999.99 up to 2 decimal places."
+          example: 10000.89
+        premisesRunningCostsDisallowable:
+          type: number
+          description: "Rent, rates, power and insurance costs. Any expense or partial\
+            \ expense that cannot be claimed for tax purposes. The value must be between\
+            \ -99999999999.99 and 99999999999.99 up to 2 decimal places."
+          example: 10000.89
+        maintenanceCostsDisallowable:
+          type: number
+          description: Repairs and renewals of property and equipment. Any expense
+            or partial expense that cannot be claimed for tax purposes. The value
+            must be between -99999999999.99 and 99999999999.99 up to 2 decimal places.
+          example: 10000.89
+        adminCostsDisallowable:
+          type: number
+          description: "Phone, fax, stationery and other office costs. Any expense\
+            \ or partial expense that cannot be claimed for tax purposes. The value\
+            \ must be between 0 and 99999999999.99 up to 2 decimal places."
+          example: 10000.89
+        businessEntertainmentCostsDisallowable:
+          type: number
+          description: Business entertainment costs. Any expense or partial expense
+            that cannot be claimed for tax purposes. The value must be between 0 and
+            99999999999.99 up to 2 decimal places.
+          example: 10000.89
+        advertisingCostsDisallowable:
+          type: number
+          description: Advertising costs. Any expense or partial expense that cannot
+            be claimed for tax purposes. The value must be between 0 and 99999999999.99
+            up to 2 decimal places.
+          example: 10000.89
+        interestOnBankOtherLoansDisallowable:
+          type: number
+          description: Interest on bank and other loans. Any expense or partial expense
+            that cannot be claimed for tax purposes. The value must be between -99999999999.99
+            and 99999999999.99 up to 2 decimal places.
+          example: 10000.89
+        financeChargesDisallowable:
+          type: number
+          description: "Bank, credit card and other financial charges. Any expense\
+            \ or partial expense that cannot be claimed for tax purposes. The value\
+            \ must be between -99999999999.99 and 99999999999.99 up to 2 decimal places."
+          example: 10000.89
+        irrecoverableDebtsDisallowable:
+          type: number
+          description: Irrecoverable debts written off. Any expense or partial expense
+            that cannot be claimed for tax purposes. The value must be between -99999999999.99
+            and 99999999999.99 up to 2 decimal places.
+          example: 10000.89
+        professionalFeesDisallowable:
+          type: number
+          description: Legal and other professional fees. Any expense or partial expense
+            that cannot be claimed for tax purposes. The value must be between 0 and
+            99999999999.99 up to 2 decimal places.
+          example: 10000.89
+        depreciationDisallowable:
+          type: number
+          description: Depreciation and loss/profit on sales of assets. Any expense
+            or partial expense that cannot be claimed for tax purposes. The value
+            must be between -99999999999.99 and 99999999999.99 up to 2 decimal places.
+          example: 10000.89
+        otherExpensesDisallowable:
+          type: number
+          description: Other business expenses. Any expense or partial expense that
+            cannot be claimed for tax purposes. The value must be between 0 and 99999999999.99
+            up to 2 decimal places.
+          example: 10000.89
+      additionalProperties: false
+      description: Object containing the details about self-employment disallowable
+        expenses that cannot be claimed for tax purposes.
+    period_income_1:
+      type: object
+      properties:
+        turnover:
+          type: number
+          description: "The takings, fees, sales or money earned by the business.\
+            \ Income associated with the running of the business. The value must be\
+            \ between 0 and 99999999999.99 up to 2 decimal places."
+          example: 10000.00
+        other:
+          type: number
+          description: Any other business income not included in turnover. Income
+            associated with the running of the business. The value must be between
+            0 and 99999999999.99 up to 2 decimal places.
+          example: 10000.00
+        taxTakenOffTradingIncome:
+          type: number
+          description: Other tax taken off trading income apart from CIS deductions.
+            The value must be between 0 and 99999999999.99 up to 2 decimal places.
+          example: 10000.00
+      additionalProperties: false
+      description: Object containing the details about self-employment income.
+    period_expenses_1:
+      type: object
+      properties:
+        consolidatedExpenses:
+          type: number
+          description: The sum of all allowable expenses for the specified period.
+            The value must be between -99999999999.99 and 99999999999.99 up to 2 decimal
+            places.
+          example: 10000.00
+        costOfGoods:
+          type: number
+          description: Cost of goods bought for resale or goods used. Expenses associated
+            with the running of the business. The value must be between -99999999999.99
+            and 99999999999.99 up to 2 decimal places.
+          example: 10000.00
+        paymentsToSubcontractors:
+          type: number
+          description: Payments to construction industry subcontractors. Expenses
+            associated with the running of the business. The value must be between
+            -99999999999.99 and 99999999999.99 up to 2 decimal places.
+          example: 10000.00
+        wagesAndStaffCosts:
+          type: number
+          description: "Wages, salaries and other staff costs. Expenses associated\
+            \ with the running of the business. The value must be between -99999999999.99\
+            \ and 99999999999.99 up to 2 decimal places."
+          example: 10000.00
+        carVanTravelExpenses:
+          type: number
+          description: "Car, van and travel expenses associated with the running of\
+            \ the business. The value must be between -99999999999.99 and 99999999999.99\
+            \ up to 2 decimal places."
+          example: 10000.89
+        premisesRunningCosts:
+          type: number
+          description: "Rent, rates, power and insurance costs. Expenses associated\
+            \ with the running of the business. The value must be between -99999999999.99\
+            \ and 99999999999.99 up to 2 decimal places."
+          example: 10000.89
+        maintenanceCosts:
+          type: number
+          description: Repairs and renewals of property and equipment. Expenses associated
+            with the running of the business. The value must be between -99999999999.99
+            and 99999999999.99 up to 2 decimal places.
+          example: 10000.89
+        adminCosts:
+          type: number
+          description: "Phone, fax, stationery and other office costs. Expenses associated\
+            \ with the running of the business. The value must be between -99999999999.99\
+            \ and 99999999999.99 up to 2 decimal places."
+          example: 10000.89
+        businessEntertainmentCosts:
+          type: number
+          description: Business entertainment costs. Expenses associated with the
+            running of the business. The value must be between -99999999999.99 and
+            99999999999.99 up to 2 decimal places.
+          example: 10000.89
+        advertisingCosts:
+          type: number
+          description: Advertising costs. Expenses associated with the running of
+            the business. The value must be between -99999999999.99 and 99999999999.99
+            up to 2 decimal places.
+          example: 10000.89
+        interestOnBankOtherLoans:
+          type: number
+          description: Interest on bank and other loans. Expenses associated with
+            the running of the business. The value must be between -99999999999.99
+            and 99999999999.99 up to 2 decimal places.
+          example: 10000.89
+        financeCharges:
+          type: number
+          description: "Bank, credit card and other financial charges. Expenses associated\
+            \ with the running of the business. The value must be between -99999999999.99\
+            \ and 99999999999.99 up to 2 decimal places."
+          example: 10000.89
+        irrecoverableDebts:
+          type: number
+          description: Irrecoverable debts written off. Expenses associated with the
+            running of the business. The value must be between -99999999999.99 and
+            99999999999.99 up to 2 decimal places.
+          example: 10000.89
+        professionalFees:
+          type: number
+          description: "Accountancy, legal and other professional fees. Expenses associated\
+            \ with the running of the business. The value must be between -99999999999.99\
+            \ and 99999999999.99 up to 2 decimal places."
+          example: 10000.89
+        depreciation:
+          type: number
+          description: Depreciation and loss/profit on sales of assets. Expenses associated
+            with the running of the business. The value must be between -99999999999.99
+            and 99999999999.99 up to 2 decimal places.
+          example: 10000.89
+        otherExpenses:
+          type: number
+          description: Other business expenses associated with the running of the
+            business. The value must be between -99999999999.99 and 99999999999.99
+            up to 2 decimal places.
+          example: 10000.89
+      additionalProperties: false
+      description: Object containing the details about self-employment expenses.
+    period_disallowable_expenses_1:
+      type: object
+      properties:
+        costOfGoodsDisallowable:
+          type: number
+          description: Cost of goods bought for resale or goods used. Any expense
+            or partial expense that cannot be claimed for tax purposes. The value
+            must be between -99999999999.99 and 99999999999.99 up to 2 decimal places.
+          example: 10000.45
+        paymentsToSubcontractorsDisallowable:
+          type: number
+          description: Payments to subcontractors - Construction Industry Scheme (CIS).
+            Any expense or partial expense that cannot be claimed for tax purposes.
+            The value must be between -99999999999.99 and 99999999999.99 up to 2 decimal
+            places.
+          example: 10000.89
+        wagesAndStaffCostsDisallowable:
+          type: number
+          description: "Wages, salaries and other staff costs. Any expense or partial\
+            \ expense that cannot be claimed for tax purposes. The value must be between\
+            \ -99999999999.99 and 99999999999.99 up to 2 decimal places."
+          example: 10000.89
+        carVanTravelExpensesDisallowable:
+          type: number
+          description: "Car, van and travel expenses. Any expense or partial expense\
+            \ that cannot be claimed for tax purposes. The value must be between -99999999999.99\
+            \ and 99999999999.99 up to 2 decimal places."
+          example: 10000.89
+        premisesRunningCostsDisallowable:
+          type: number
+          description: "Rent, rates, power and insurance costs. Any expense or partial\
+            \ expense that cannot be claimed for tax purposes. The value must be between\
+            \ -99999999999.99 and 99999999999.99 up to 2 decimal places."
+          example: 10000.89
+        maintenanceCostsDisallowable:
+          type: number
+          description: Repairs and renewals of property and equipment. Any expense
+            or partial expense that cannot be claimed for tax purposes. The value
+            must be between -99999999999.99 and 99999999999.99 up to 2 decimal places.
+          example: 10000.89
+        adminCostsDisallowable:
+          type: number
+          description: "Phone, fax, stationery and other office costs. Any expense\
+            \ or partial expense that cannot be claimed for tax purposes. The value\
+            \ must be between -99999999999.99 and 99999999999.99 up to 2 decimal places."
+          example: 10000.89
+        businessEntertainmentCostsDisallowable:
+          type: number
+          description: Business entertainment costs. Any expense or partial expense
+            that cannot be claimed for tax purposes. The value must be between -99999999999.99
+            and 99999999999.99 up to 2 decimal places.
+          example: 10000.89
+        advertisingCostsDisallowable:
+          type: number
+          description: Advertising costs. Any expense or partial expense that cannot
+            be claimed for tax purposes. The value must be between -99999999999.99
+            and 99999999999.99 up to 2 decimal places.
+          example: 10000.89
+        interestOnBankOtherLoansDisallowable:
+          type: number
+          description: Interest on bank and other loans. Any expense or partial expense
+            that cannot be claimed for tax purposes. The value must be between -99999999999.99
+            and 99999999999.99 up to 2 decimal places.
+          example: 10000.89
+        financeChargesDisallowable:
+          type: number
+          description: "Bank, credit card and other financial charges. Any expense\
+            \ or partial expense that cannot be claimed for tax purposes. The value\
+            \ must be between -99999999999.99 and 99999999999.99 up to 2 decimal places."
+          example: 10000.89
+        irrecoverableDebtsDisallowable:
+          type: number
+          description: Irrecoverable debts written off. Any expense or partial expense
+            that cannot be claimed for tax purposes. The value must be between -99999999999.99
+            and 99999999999.99 up to 2 decimal places.
+          example: 10000.89
+        professionalFeesDisallowable:
+          type: number
+          description: Legal and other professional fees. Any expense or partial expense
+            that cannot be claimed for tax purposes. The value must be between -99999999999.99
+            and 99999999999.99 up to 2 decimal places.
+          example: 10000.89
+        depreciationDisallowable:
+          type: number
+          description: Depreciation and loss/profit on sales of assets. Any expense
+            or partial expense that cannot be claimed for tax purposes. The value
+            must be between -99999999999.99 and 99999999999.99 up to 2 decimal places.
+          example: 10000.89
+        otherExpensesDisallowable:
+          type: number
+          description: Other business expenses. Any expense or partial expense that
+            cannot be claimed for tax purposes. The value must be between -99999999999.99
+            and 99999999999.99 up to 2 decimal places.
+          example: 10000.89
+      additionalProperties: false
+      description: Object containing the details about self-employment disallowable
+        expenses that cannot be claimed for tax purposes.
+  parameters:
+    nino:
+      name: nino
+      in: path
+      description: |
+        National Insurance number, in the format `AA999999A`
+      required: true
+      schema:
+        type: string
+        example: TC663795B
+    businessId:
+      name: businessId
+      in: path
+      description: |
+        An identifier for the business, unique to the customer.<p>Must conform to the regular expression `^X[A-Z0-9]{1}IS[0-9]{11}$`
+      required: true
+      schema:
+        pattern: "^X[A-Z0-9]{1}IS[0-9]{11}$"
+        type: string
+        example: XAIS12345678910
+    acceptHeader:
+      name: Accept
+      in: header
+      description: |
+        Specifies the response format and the version of the API to be used.
+      required: true
+      schema:
+        type: string
+        enum:
+          - application/vnd.hmrc.5.0+json
+    contentTypeJson:
+      name: Content-Type
+      in: header
+      description: |
+        Specifies the format of the request body, which must be JSON.
+      required: true
+      schema:
+        type: string
+        enum:
+          - application/json
+    authorizationWriteScopeHeader:
+      name: Authorization
+      in: header
+      description: |
+        An OAuth 2.0 Bearer Token with the *write:self-assessment* scope.
+      required: true
+      schema:
+        type: string
+        example: Bearer bb7fed3fe10dd235a2ccda3d50fb
+    testScenarioHeader:
+      name: Gov-Test-Scenario
+      in: header
+      description: |
+        Only in sandbox environment. See Test Data table for all header values.
+      required: false
+      schema:
+        type: string
+        example: "-"
+    taxYear:
+      name: taxYear
+      in: path
+      description: |
+        The tax year to which the data applies in the format YYYY-YY. The start year and end year must not span two tax years. The minimum tax year is 2017-18. No gaps are allowed, for example, 2022-24 is not valid.'
+      required: true
+      schema:
+        type: string
+        example: 2022-23
+    authorizationReadScopeHeader:
+      name: Authorization
+      in: header
+      description: |
+        An OAuth 2.0 Bearer Token with the *read:self-assessment* scope.
+      required: true
+      schema:
+        type: string
+        example: Bearer bb7fed3fe10dd235a2ccda3d50fb
+  examples:
+    formatNino:
+      description: The format of the supplied NINO field is not valid.
+      value:
+        code: FORMAT_NINO
+        message: The NINO format is invalid
+    formatValue:
+      description: One or more values have been added with the incorrect format.
+      value:
+        code: FORMAT_VALUE
+        message: The value must be between 0 and 99999999999.99
+    formatBusinessId:
+      description: The format of the supplied Business ID field is not valid.
+      value:
+        code: FORMAT_BUSINESS_ID
+        message: The Business ID format is invalid
+    formatStartDate:
+      description: The format of the supplied Start date field is not valid.
+      value:
+        code: FORMAT_START_DATE
+        message: The provided Start date is invalid
+    formatEndDate:
+      description: The format of the supplied End date field is not valid.
+      value:
+        code: FORMAT_END_DATE
+        message: The provided End date is invalid
+    ruleEndDateBeforeStartDate:
+      description: The End date is earlier than the Start date.
+      value:
+        code: RULE_END_DATE_BEFORE_START_DATE
+        message: The supplied accounting period end date is before the start date
+    ruleIncorrectOrEmptyBody:
+      description: An empty or non-matching body was submitted.
+      value:
+        code: RULE_INCORRECT_OR_EMPTY_BODY_SUBMITTED
+        message: An empty or non-matching body was submitted
+    ruleTaxYearNotSupported:
+      description: |
+        The specified tax year is not supported.
+        Either the tax year specified is before the minimum tax year value,
+        or it is after the maximum tax year value.
+      value:
+        code: RULE_TAX_YEAR_NOT_SUPPORTED
+        message: The tax year specified does not lie within the supported range
+    ruleOverlappingPeriod:
+      description: Period summary overlaps with any of the existing period summaries.
+      value:
+        code: RULE_OVERLAPPING_PERIOD
+        message: Period summary overlaps with any of the existing period summaries
+    ruleBothExpensesSupplied:
+      description: Both expenses and consolidatedExpenses can not be present at the
+        same time.
+      value:
+        code: RULE_BOTH_EXPENSES_SUPPLIED
+        message: Both expenses and consolidatedExpenses can not be present at the
+          same time
+    ruleMisalignedPeriod:
+      description: Period summary is not within the accounting period.
+      value:
+        code: RULE_MISALIGNED_PERIOD
+        message: Period summary is not within the accounting period
+    ruleNotContiguousPeriod:
+      description: Period summaries are not contiguous.
+      value:
+        code: RULE_NOT_CONTIGUOUS_PERIOD
+        message: Period summaries are not contiguous
+    ruleNotAllowedConsolidatedExpenses:
+      description: Consolidated expenses are not allowed if the accumulative turnover
+        amount exceeds the threshold.
+      value:
+        code: RULE_NOT_ALLOWED_CONSOLIDATED_EXPENSES
+        message: Consolidated expenses are not allowed if the accumulative turnover
+          amount exceeds the threshold
+    ruleDuplicateSubmission:
+      description: A summary has already been submitted for the period specified.
+      value:
+        code: RULE_DUPLICATE_SUBMISSION
+        message: A summary has already been submitted for the period specified
+    ruleBusinessIncomePeriodRestriction:
+      description: "For customers with ITSA status 'Annual' or a latent business income\
+        \ source, submission period has to be 6 April to 5 April."
+      value:
+        code: RULE_BUSINESS_INCOME_PERIOD_RESTRICTION
+        message: "For customers with ITSA status 'Annual' or a latent business income\
+          \ source, submission period has to be 6 April to 5 April"
+    ruleIncorrectGovTestScenario:
+      description: The request did not match any available Sandbox data. Check that
+        the supplied Gov-Test-Scenario is correct for this endpoint version. This
+        error will only be returned in the Sandbox environment.
+      value:
+        code: RULE_INCORRECT_GOV_TEST_SCENARIO
+        message: The supplied Gov-Test-Scenario is not valid
+    clientOrAgentNotAuthorised:
+      description: |
+        The client and/or agent is not authorised. This is normally because: the client is not subscribed to MTD, the agent is not subscribed to Agent Services, or the client has not authorised the agent to act on their behalf.
+      value:
+        code: CLIENT_OR_AGENT_NOT_AUTHORISED
+        message: The client or agent is not authorised
+    notFound:
+      description: |
+        The supplied income source could not be found.
+      value:
+        code: MATCHING_RESOURCE_NOT_FOUND
+        message: Matching resource not found
+    formatTaxYear:
+      description: The format of the supplied taxYear field is not valid.
+      value:
+        code: FORMAT_TAX_YEAR
+        message: The taxYear format is invalid
+    ruleTaxYearRangeInvalid:
+      description: Tax year range invalid. A tax year range of one year is required.
+      value:
+        code: RULE_TAX_YEAR_RANGE_INVALID
+        message: A tax year range of one year is required
+    invalidTaxYearParameter:
+      description: |
+        A tax year before 2023-24 was supplied.
+        A request with a tax year parameter is only valid for tax years 2023-24 or later.
+      value:
+        code: INVALID_TAX_YEAR_PARAMETER
+        message: A tax year before 2023-24 was supplied
+  headers:
+    correlationId:
+      description: |
+        Unique ID for operation tracking
+        String, 36 characters.
+      required: true
+      schema:
+        type: string
+        example: c75f40a6-a3df-4429-a697-471eeec46435
+    deprecationHeader:
+      description: |
+        The deprecation date/time for this endpoint.
+      required: false
+      schema:
+        type: string
+        example: "Sun, 01 Jan 2023 23:59:59 UTC"
+    sunsetHeader:
+      description: |
+        The earliest date/time this endpoint will become unavailable after deprecation.
+      required: false
+      schema:
+        type: string
+        example: "Sun, 02 Jul 2023 23:59:59 UTC"
+    linkHeader:
+      description: |
+        See the API documentation:
+      required: false
+      schema:
+        type: string
+        example: https://developer.service.hmrc.gov.uk/api-documentation/docs/api/service/self-employment-business-api
+  securitySchemes:
+    User-Restricted:
+      type: oauth2
+      description: "HMRC supports OAuth 2.0 for authenticating [User-restricted](https://developer.service.hmrc.gov.uk/api-documentation/docs/authorisation/user-restricted-endpoints)\
+        \ API requests"
+      flows:
+        authorizationCode:
+          authorizationUrl: https://api.service.hmrc.gov.uk/oauth/authorize
+          tokenUrl: https://api.service.hmrc.gov.uk/oauth/token
+          refreshUrl: https://api.service.hmrc.gov.uk/oauth/refresh
+          scopes:
+            write:self-assessment: Grant write access
+            read:self-assessment: Grant read access
