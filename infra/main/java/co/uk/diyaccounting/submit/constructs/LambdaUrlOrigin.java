@@ -308,6 +308,18 @@ public class LambdaUrlOrigin {
             return this;
         }
 
+        public Builder options(LambdaUrlOriginOpts opts) {
+            if (opts == null) return this;
+            if (opts.env != null) this.env = opts.env;
+            if (opts.imageDirectory != null) this.imageDirectory = opts.imageDirectory;
+            if (opts.functionUrlAuthType != null) this.functionUrlAuthType = opts.functionUrlAuthType;
+            this.cloudTrailEnabled = opts.cloudTrailEnabled;
+            this.xRayEnabled = opts.xRayEnabled;
+            this.verboseLogging = opts.verboseLogging;
+            if (opts.baseImageTag != null) this.baseImageTag = opts.baseImageTag;
+            return this;
+        }
+
         public LambdaUrlOrigin build() {
             // Validate required parameters
             if (env == null || env.isBlank()) {

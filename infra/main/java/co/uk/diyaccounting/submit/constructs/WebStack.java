@@ -1,7 +1,6 @@
 package co.uk.diyaccounting.submit.constructs;
 
 import co.uk.diyaccounting.submit.awssdk.RetentionDaysConverter;
-import co.uk.diyaccounting.submit.functions.LogGzippedS3ObjectEvent;
 import co.uk.diyaccounting.submit.functions.LogS3ObjectEvent;
 import co.uk.diyaccounting.submit.utils.ResourceNameUtils;
 import org.apache.hc.core5.http.HttpStatus;
@@ -21,28 +20,15 @@ import software.amazon.awscdk.services.certificatemanager.ICertificate;
 import software.amazon.awscdk.services.cloudfront.AllowedMethods;
 import software.amazon.awscdk.services.cloudfront.BehaviorOptions;
 import software.amazon.awscdk.services.cloudfront.Distribution;
-import software.amazon.awscdk.services.cloudfront.ErrorResponse;
-import software.amazon.awscdk.services.cloudfront.HttpVersion;
 import software.amazon.awscdk.services.cloudfront.IOrigin;
 import software.amazon.awscdk.services.cloudfront.OriginAccessIdentity;
-import software.amazon.awscdk.services.cloudfront.OriginRequestCookieBehavior;
-import software.amazon.awscdk.services.cloudfront.OriginRequestHeaderBehavior;
 import software.amazon.awscdk.services.cloudfront.OriginRequestPolicy;
 import software.amazon.awscdk.services.cloudfront.ResponseHeadersPolicy;
-import software.amazon.awscdk.services.cloudfront.SSLMethod;
 import software.amazon.awscdk.services.cloudfront.ViewerProtocolPolicy;
-import software.amazon.awscdk.services.cloudfront.origins.S3BucketOrigin;
-import software.amazon.awscdk.services.cloudfront.origins.S3BucketOriginWithOAIProps;
 import software.amazon.awscdk.services.cloudtrail.S3EventSelector;
 import software.amazon.awscdk.services.cloudtrail.Trail;
-import software.amazon.awscdk.services.cognito.AttributeMapping;
-import software.amazon.awscdk.services.cognito.OAuthFlows;
-import software.amazon.awscdk.services.cognito.OAuthScope;
-import software.amazon.awscdk.services.cognito.OAuthSettings;
-import software.amazon.awscdk.services.cognito.ProviderAttribute;
 import software.amazon.awscdk.services.cognito.StandardAttribute;
 import software.amazon.awscdk.services.cognito.StandardAttributes;
-import software.amazon.awscdk.services.cognito.StringAttribute;
 import software.amazon.awscdk.services.cognito.UserPool;
 import software.amazon.awscdk.services.cognito.UserPoolClient;
 import software.amazon.awscdk.services.cognito.UserPoolDomain;
@@ -81,7 +67,6 @@ import software.constructs.Construct;
 import java.lang.reflect.Field;
 import java.text.MessageFormat;
 import java.util.AbstractMap;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -723,6 +708,17 @@ public class WebStack extends Stack {
         FunctionUrlAuthType functionUrlAuthType = "AWS_IAM".equalsIgnoreCase(builder.lambdaUrlAuthType) ? 
             FunctionUrlAuthType.AWS_IAM : FunctionUrlAuthType.NONE;
 
+        // Common options for all Lambda URL origins to reduce repetition
+        var lambdaCommonOpts = LambdaUrlOriginOpts.Builder.create()
+                .env(builder.env)
+                .imageDirectory("infra/runtimes")
+                .functionUrlAuthType(functionUrlAuthType)
+                .cloudTrailEnabled(cloudTrailEnabled)
+                .xRayEnabled(xRayEnabled)
+                .verboseLogging(verboseLogging)
+                .baseImageTag(builder.baseImageTag)
+                .build();
+
         // Create a CloudTrail for the stack resources
         RetentionDays cloudTrailLogGroupRetentionPeriod = RetentionDaysConverter.daysToRetentionDays(cloudTrailLogGroupRetentionPeriodDays);
         if (cloudTrailEnabled) {
@@ -755,46 +751,38 @@ public class WebStack extends Stack {
 
         // Origin bucket for the CloudFront distribution
         String receiptsBucketFullName = Builder.buildBucketName(dashedDomainName, builder.receiptsBucketPostfix);
+        BucketOrigin bucketOrigin;
         if (s3UseExistingBucket) {
-            this.originBucket = Bucket.fromBucketName(this, "OriginBucket", originBucketName);
-        } else {
-            // Web bucket as origin for the CloudFront distribution with a bucket for access logs forwarded to CloudWatch
-            this.originAccessLogBucket = LogForwardingBucket.Builder
-                    .create(this, "OriginAccess", builder.logS3ObjectEventHandlerSource, LogS3ObjectEvent.class)
-                    .bucketName(originAccessLogBucketName)
-                    .functionNamePrefix("%s-origin-access-".formatted(dashedDomainName))
-                    .retentionPeriodDays(accessLogGroupRetentionPeriodDays)
-                    .verboseLogging(verboseLogging)
-                    .build();
-            this.originBucket = Bucket.Builder.create(this, "OriginBucket")
+            bucketOrigin = BucketOrigin.Builder
+                    .create(this, "Origin")
                     .bucketName(originBucketName)
-                    .versioned(false)
-                    .blockPublicAccess(BlockPublicAccess.BLOCK_ALL)
-                    .encryption(BucketEncryption.S3_MANAGED)
-                    .removalPolicy(s3RetainOriginBucket ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY)
-                    .autoDeleteObjects(!s3RetainOriginBucket)
-                    .serverAccessLogsBucket(this.originAccessLogBucket)
+                    .useExistingBucket(true)
+                    .build();
+        } else {
+            bucketOrigin = BucketOrigin.Builder
+                    .create(this, "Origin")
+                    .bucketName(originBucketName)
+                    .originAccessLogBucketName(originAccessLogBucketName)
+                    .functionNamePrefix("%s-origin-access-".formatted(dashedDomainName))
+                    .logS3ObjectEventHandlerSource(builder.logS3ObjectEventHandlerSource)
+                    .accessLogGroupRetentionPeriodDays(accessLogGroupRetentionPeriodDays)
+                    .retainBucket(s3RetainOriginBucket)
+                    .verboseLogging(verboseLogging)
+                    .useExistingBucket(false)
                     .build();
         }
-
-        // Grant the read access to an origin identity
-        this.originIdentity = OriginAccessIdentity.Builder
-                .create(this, "OriginAccessIdentity")
-                .comment("Identity created for access to the web website bucket via the CloudFront distribution")
-                .build();
-        originBucket.grantRead(this.originIdentity); // This adds "s3:List*" so that 404s are handled.
-        this.origin = S3BucketOrigin.withOriginAccessIdentity(this.originBucket, 
-                S3BucketOriginWithOAIProps.builder()
-                        .originAccessIdentity(this.originIdentity)
-                        .build());
+        this.originBucket = bucketOrigin.originBucket;
+        this.originAccessLogBucket = bucketOrigin.originAccessLogBucket;
+        this.originIdentity = bucketOrigin.originIdentity;
+        this.origin = bucketOrigin.origin;
 
         // Create the CloudFront distribution with a bucket as an origin
-        final OriginRequestPolicy s3BucketOriginRequestPolicy = OriginRequestPolicy.Builder
-                .create(this, "S3BucketOriginRequestPolicy")
-                .comment("Policy to allow content headers but no cookies from the origin")
-                .cookieBehavior(OriginRequestCookieBehavior.none())
-                .headerBehavior(OriginRequestHeaderBehavior.allowList("Accept", "Accept-Language", "Origin"))
-                .build();
+        //final OriginRequestPolicy s3BucketOriginRequestPolicy = OriginRequestPolicy.Builder
+        //        .create(this, "S3BucketOriginRequestPolicy")
+        //        .comment("Policy to allow content headers but no cookies from the origin")
+        //        .cookieBehavior(OriginRequestCookieBehavior.none())
+        //        .headerBehavior(OriginRequestHeaderBehavior.allowList("Accept", "Accept-Language", "Origin"))
+        //        .build();
         final BehaviorOptions s3BucketOriginBehaviour = BehaviorOptions.builder()
                 .origin(this.origin)
                 .allowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
@@ -804,13 +792,7 @@ public class WebStack extends Stack {
                 .responseHeadersPolicy(ResponseHeadersPolicy.CORS_ALLOW_ALL_ORIGINS_WITH_PREFLIGHT_AND_SECURITY_HEADERS)
                 .compress(true)
                 .build();
-        this.distributionAccessLogBucket = LogForwardingBucket.Builder
-                .create(this, "DistributionAccess", builder.logGzippedS3ObjectEventHandlerSource, LogGzippedS3ObjectEvent.class)
-                .bucketName(distributionAccessLogBucketName)
-                .functionNamePrefix("%s-dist-access-".formatted(dashedDomainName))
-                .retentionPeriodDays(accessLogGroupRetentionPeriodDays)
-                .verboseLogging(verboseLogging)
-                .build();
+        // Distribution access log bucket creation moved to DistributionWithLogging
 
         // Add cloud trail to the origin bucket if enabled
         // CloudTrail for the origin bucket
@@ -848,65 +830,29 @@ public class WebStack extends Stack {
                         .build())
                 .build();
         if (StringUtils.isNotBlank(builder.googleClientId) && StringUtils.isNotBlank(builder.googleClientSecret)) {
-            // Create User Pool with custom attributes for bundles
-            this.userPool = UserPool.Builder.create(this, "UserPool")
-                    .userPoolName(dashedDomainName + "-user-pool")
-                    .selfSignUpEnabled(true)
-                    .signInAliases(software.amazon.awscdk.services.cognito.SignInAliases.builder()
-                            .email(true)
-                            .build())
-                    .standardAttributes(standardAttributes)
-                    .customAttributes(Map.of(
-                            "bundles", StringAttribute.Builder.create()
-                                    .maxLen(2048)
-                                    .mutable(true)
-                                    .build()
-                    ))
-                    .removalPolicy(RemovalPolicy.DESTROY)
-                    .build();
-
-            // Create Google Identity Provider
             var googleClientSecretValue = this.googleClientSecretsManagerSecret != null
                     ? this.googleClientSecretsManagerSecret.getSecretValue()
                     : SecretValue.unsafePlainText(builder.googleClientSecret);
-            this.googleIdentityProvider = UserPoolIdentityProviderGoogle.Builder.create(this, "GoogleIdentityProvider")
-                    .userPool(this.userPool)
-                    .clientId(builder.googleClientId)
-                    .clientSecretValue(googleClientSecretValue)
-                    .scopes(List.of("email", "openid", "profile"))
-                    .attributeMapping(AttributeMapping.builder()
-                            .email(ProviderAttribute.GOOGLE_EMAIL)
-                            .givenName(ProviderAttribute.GOOGLE_GIVEN_NAME)
-                            .familyName(ProviderAttribute.GOOGLE_FAMILY_NAME)
-                            .build())
-                    .build();
 
-            // Create User Pool Client
-            this.userPoolClient = UserPoolClient.Builder.create(this, "UserPoolClient")
-                    .userPool(this.userPool)
+            var cognito = CognitoAuth.Builder.create(this)
+                    .userPoolName(dashedDomainName + "-user-pool")
                     .userPoolClientName(dashedDomainName + "-client")
-                    .generateSecret(false)
-                    .oAuth(OAuthSettings.builder()
-                            .flows(OAuthFlows.builder()
-                                    .authorizationCodeGrant(true)
-                                    .build())
-                            .scopes(List.of(OAuthScope.EMAIL, OAuthScope.OPENID, OAuthScope.PROFILE))
-                            .callbackUrls(List.of(
-                                    "https://" + this.domainName + "/",
-                                    "https://" + this.domainName + "/login.html",
-                                    "https://" + this.domainName + "/bundles.html"
-                            ))
-                            .logoutUrls(List.of(
-                                    "https://" + this.domainName + "/"
-                            ))
-                            .build())
+                    .standardAttributes(standardAttributes)
+                    .googleClientId(builder.googleClientId)
+                    .googleClientSecretValue(googleClientSecretValue)
+                    .callbackUrls(List.of(
+                            "https://" + this.domainName + "/",
+                            "https://" + this.domainName + "/loginWithGoogleCallback.html",
+                            "https://" + this.domainName + "/bundles.html"
+                    ))
+                    .logoutUrls(List.of("https://" + this.domainName + "/"))
                     .supportedIdentityProviders(List.of(
                             software.amazon.awscdk.services.cognito.UserPoolClientIdentityProvider.GOOGLE
                     ))
                     .build();
-
-            // Make sure the client depends on the identity provider
-            this.userPoolClient.getNode().addDependency(this.googleIdentityProvider);
+            this.userPool = cognito.userPool;
+            this.googleIdentityProvider = cognito.googleIdentityProvider;
+            this.userPoolClient = cognito.userPoolClient;
         }
 
         // Lambdas
@@ -926,14 +872,7 @@ public class WebStack extends Stack {
                 .handler(builder.lambdaEntry + builder.authUrlHmrcLambdaHandlerFunctionName)
                 .environment(authUrlHmrcLambdaEnv)
                 .timeout(Duration.millis(Long.parseLong(builder.authUrlHmrcLambdaDuration)))
-                // TODO Refactor the next 7 into a LambdaUrlOriginOpts that all Lambdas take.
-                .env(builder.env)
-                .imageDirectory("infra/runtimes")
-                .functionUrlAuthType(functionUrlAuthType)
-                .cloudTrailEnabled(cloudTrailEnabled)
-                .xRayEnabled(xRayEnabled)
-                .verboseLogging(verboseLogging)
-                .baseImageTag(builder.baseImageTag)
+                .options(lambdaCommonOpts)
                 .build();
         this.authUrlHmrcLambda = authUrlHmrcLambdaUrlOrigin.lambda;
         this.authUrlHmrcLambdaUrl = authUrlHmrcLambdaUrlOrigin.functionUrl;
@@ -945,19 +884,13 @@ public class WebStack extends Stack {
                 "DIY_SUBMIT_HOME_URL", builder.homeUrl
         ));
         var authUrlMockLambdaUrlOrigin = LambdaUrlOrigin.Builder.create(this, "AuthUrlMockLambda")
-                .env(builder.env)
-                .imageDirectory("infra/runtimes")
+                .options(lambdaCommonOpts)
                 .imageFilename("authUrlMock.Dockerfile")
                 .functionName(Builder.buildFunctionName(dashedDomainName, builder.authUrlMockLambdaHandlerFunctionName))
                 .allowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
-                .functionUrlAuthType(functionUrlAuthType)
                 .handler(builder.lambdaEntry + builder.authUrlMockLambdaHandlerFunctionName)
                 .environment(authUrlMockLambdaEnv)
                 .timeout(Duration.millis(Long.parseLong(builder.authUrlMockLambdaDuration)))
-                .cloudTrailEnabled(cloudTrailEnabled)
-                .xRayEnabled(xRayEnabled)
-                .verboseLogging(verboseLogging)
-                .baseImageTag(builder.baseImageTag)
                 .build();
         this.authUrlMockLambda = authUrlMockLambdaUrlOrigin.lambda;
         this.authUrlMockLambdaUrl = authUrlMockLambdaUrlOrigin.functionUrl;
@@ -973,19 +906,13 @@ public class WebStack extends Stack {
             authUrlGoogleLambdaEnv.put("DIY_SUBMIT_COGNITO_CLIENT_ID", this.userPoolClient.getUserPoolClientId());
         }
         var authUrlGoogleLambdaUrlOrigin = LambdaUrlOrigin.Builder.create(this, "AuthUrlGoogleLambda")
-                .env(builder.env)
-                .imageDirectory("infra/runtimes")
+                .options(lambdaCommonOpts)
                 .imageFilename("authUrlGoogle.Dockerfile")
                 .functionName(Builder.buildFunctionName(dashedDomainName, builder.authUrlGoogleLambdaHandlerFunctionName))
                 .allowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
-                .functionUrlAuthType(functionUrlAuthType)
                 .handler(builder.lambdaEntry + builder.authUrlGoogleLambdaHandlerFunctionName)
                 .environment(authUrlGoogleLambdaEnv)
                 .timeout(Duration.millis(Long.parseLong(builder.authUrlGoogleLambdaDuration)))
-                .cloudTrailEnabled(cloudTrailEnabled)
-                .xRayEnabled(xRayEnabled)
-                .verboseLogging(verboseLogging)
-                .baseImageTag(builder.baseImageTag)
                 .build();
         this.authUrlGoogleLambda = authUrlGoogleLambdaUrlOrigin.lambda;
         this.authUrlGoogleLambdaUrl = authUrlGoogleLambdaUrlOrigin.functionUrl;
@@ -1009,19 +936,13 @@ public class WebStack extends Stack {
             exchangeHmrcTokenLambdaEnv.put("DIY_SUBMIT_TEST_ACCESS_TOKEN", builder.optionalTestAccessToken);
         }
         var exchangeHmrcTokenLambdaUrlOrigin = LambdaUrlOrigin.Builder.create(this, "ExchangeHmrcTokenLambda")
-                .env(builder.env)
-                .imageDirectory("infra/runtimes")
+                .options(lambdaCommonOpts)
                 .imageFilename("exchangeHmrcToken.Dockerfile")
                 .functionName(Builder.buildFunctionName(dashedDomainName, builder.exchangeHmrcTokenLambdaHandlerFunctionName))
                 .allowedMethods(AllowedMethods.ALLOW_ALL)
-                .functionUrlAuthType(functionUrlAuthType)
                 .handler(builder.lambdaEntry + builder.exchangeHmrcTokenLambdaHandlerFunctionName)
                 .environment(exchangeHmrcTokenLambdaEnv)
                 .timeout(Duration.millis(Long.parseLong(builder.exchangeHmrcTokenLambdaDuration)))
-                .cloudTrailEnabled(cloudTrailEnabled)
-                .xRayEnabled(xRayEnabled)
-                .verboseLogging(verboseLogging)
-                .baseImageTag(builder.baseImageTag)
                 .build();
         this.exchangeHmrcTokenLambda = exchangeHmrcTokenLambdaUrlOrigin.lambda;
         this.exchangeHmrcTokenLambdaUrl = exchangeHmrcTokenLambdaUrlOrigin.functionUrl;
@@ -1048,19 +969,13 @@ public class WebStack extends Stack {
             exchangeGoogleTokenLambdaEnv.put("DIY_SUBMIT_TEST_ACCESS_TOKEN", builder.optionalTestAccessToken);
         }
         var exchangeGoogleTokenLambdaUrlOrigin = LambdaUrlOrigin.Builder.create(this, "ExchangeGoogleTokenLambda")
-                .env(builder.env)
-                .imageDirectory("infra/runtimes")
+                .options(lambdaCommonOpts)
                 .imageFilename("exchangeGoogleToken.Dockerfile")
                 .functionName(Builder.buildFunctionName(dashedDomainName, builder.exchangeGoogleTokenLambdaHandlerFunctionName))
                 .allowedMethods(AllowedMethods.ALLOW_ALL)
-                .functionUrlAuthType(functionUrlAuthType)
                 .handler(builder.lambdaEntry + builder.exchangeGoogleTokenLambdaHandlerFunctionName)
                 .environment(exchangeGoogleTokenLambdaEnv)
                 .timeout(Duration.millis(Long.parseLong(builder.exchangeGoogleTokenLambdaDuration != null ? builder.exchangeGoogleTokenLambdaDuration : "30000")))
-                .cloudTrailEnabled(cloudTrailEnabled)
-                .xRayEnabled(xRayEnabled)
-                .verboseLogging(verboseLogging)
-                .baseImageTag(builder.baseImageTag)
                 .build();
         this.exchangeGoogleTokenLambda = exchangeGoogleTokenLambdaUrlOrigin.lambda;
         this.exchangeGoogleTokenLambdaUrl = exchangeGoogleTokenLambdaUrlOrigin.functionUrl;
@@ -1074,19 +989,13 @@ public class WebStack extends Stack {
                 "DIY_SUBMIT_HMRC_BASE_URI", builder.hmrcBaseUri
         ));
         var submitVatLambdaUrlOrigin = LambdaUrlOrigin.Builder.create(this, "SubmitVatLambda")
-                .env(builder.env)
-                .imageDirectory("infra/runtimes")
+                .options(lambdaCommonOpts)
                 .imageFilename("submitVat.Dockerfile")
                 .functionName(Builder.buildFunctionName(dashedDomainName, builder.submitVatLambdaHandlerFunctionName))
                 .allowedMethods(AllowedMethods.ALLOW_ALL)
-                .functionUrlAuthType(functionUrlAuthType)
                 .handler(builder.lambdaEntry + builder.submitVatLambdaHandlerFunctionName)
                 .environment(submitVatLambdaEnv)
                 .timeout(Duration.millis(Long.parseLong(builder.submitVatLambdaDuration)))
-                .cloudTrailEnabled(cloudTrailEnabled)
-                .xRayEnabled(xRayEnabled)
-                .verboseLogging(verboseLogging)
-                .baseImageTag(builder.baseImageTag)
                 .build();
         this.submitVatLambda = submitVatLambdaUrlOrigin.lambda;
         this.submitVatLambdaUrl = submitVatLambdaUrlOrigin.functionUrl;
@@ -1107,19 +1016,13 @@ public class WebStack extends Stack {
             logReceiptLambdaEnv.putAll(logReceiptLambdaTestEnv);
         }
         var logReceiptLambdaUrlOrigin = LambdaUrlOrigin.Builder.create(this, "LogReceiptLambda")
-                .env(builder.env)
-                .imageDirectory("infra/runtimes")
+                .options(lambdaCommonOpts)
                 .imageFilename("logReceipt.Dockerfile")
                 .functionName(Builder.buildFunctionName(dashedDomainName, builder.logReceiptLambdaHandlerFunctionName))
                 .allowedMethods(AllowedMethods.ALLOW_ALL)
-                .functionUrlAuthType(functionUrlAuthType)
                 .handler(builder.lambdaEntry + builder.logReceiptLambdaHandlerFunctionName)
                 .environment(logReceiptLambdaEnv)
                 .timeout(Duration.millis(Long.parseLong(builder.logReceiptLambdaDuration)))
-                .cloudTrailEnabled(cloudTrailEnabled)
-                .xRayEnabled(xRayEnabled)
-                .verboseLogging(verboseLogging)
-                .baseImageTag(builder.baseImageTag)
                 .build();
         this.logReceiptLambda = logReceiptLambdaUrlOrigin.lambda;
         this.logReceiptLambdaUrl = logReceiptLambdaUrlOrigin.functionUrl;
@@ -1139,19 +1042,13 @@ public class WebStack extends Stack {
             }
 
             var bundleLambdaUrlOrigin = LambdaUrlOrigin.Builder.create(this, "BundleLambda")
-                    .env(builder.env)
-                    .imageDirectory("infra/runtimes")
+                    .options(lambdaCommonOpts)
                     .imageFilename("bundle.Dockerfile")
                     .functionName(Builder.buildFunctionName(dashedDomainName, builder.bundleLambdaHandlerFunctionName))
                     .allowedMethods(AllowedMethods.ALLOW_ALL)
-                    .functionUrlAuthType(functionUrlAuthType)
                     .handler(builder.lambdaEntry + builder.bundleLambdaHandlerFunctionName)
                     .environment(bundleLambdaEnv)
                     .timeout(Duration.millis(Long.parseLong(builder.bundleLambdaDuration != null ? builder.bundleLambdaDuration : "30000")))
-                    .cloudTrailEnabled(cloudTrailEnabled)
-                    .xRayEnabled(xRayEnabled)
-                    .verboseLogging(verboseLogging)
-                    .baseImageTag(builder.baseImageTag)
                     .build();
             this.bundleLambda = bundleLambdaUrlOrigin.lambda;
             this.bundleLambdaUrl = bundleLambdaUrlOrigin.functionUrl;
@@ -1182,6 +1079,7 @@ public class WebStack extends Stack {
                 .autoDeleteObjects(!s3RetainReceiptsBucket)
                 .functionNamePrefix("%s-receipts-bucket-".formatted(dashedDomainName))
                 .retentionPeriodDays(accessLogGroupRetentionPeriodDays)
+                .cloudTrailEnabled(cloudTrailEnabled)
                 .verboseLogging(verboseLogging)
                 .removalPolicy(s3RetainReceiptsBucket ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY)
                 .build();
@@ -1219,26 +1117,24 @@ public class WebStack extends Stack {
                     .build();
         }
 
-        // Create the CloudFront distribution using the web website bucket as the origin and Origin Access Identity
-        this.distribution = Distribution.Builder
-                .create(this, "Distribution")
-                .domainNames(Collections.singletonList(this.domainName))
+        // Create the CloudFront distribution using a helper to preserve IDs and reduce inline noise
+        var distWithLogging = DistributionWithLogging.Builder.create(this)
+                .domainName(this.domainName)
                 .defaultBehavior(s3BucketOriginBehaviour)
                 .additionalBehaviors(lambdaUrlToOriginsBehaviourMappings)
                 .defaultRootObject(builder.defaultDocumentAtOrigin)
-                .errorResponses(List.of(ErrorResponse.builder()
-                        .httpStatus(HttpStatus.SC_NOT_FOUND)
-                        .responseHttpStatus(HttpStatus.SC_NOT_FOUND)
-                        .responsePagePath("/%s".formatted(builder.error404NotFoundAtDistribution))
-                        .build()))
+                .errorPageKey(builder.error404NotFoundAtDistribution)
+                .errorStatusCode(HttpStatus.SC_NOT_FOUND)
                 .certificate(this.certificate)
-                .enableIpv6(true)
-                .sslSupportMethod(SSLMethod.SNI)
-                .httpVersion(HttpVersion.HTTP2_AND_3)
-                .enableLogging(true)
-                .logBucket(this.distributionAccessLogBucket)
+                .logBucketName(distributionAccessLogBucketName)
+                .logFunctionNamePrefix("%s-dist-access-".formatted(dashedDomainName))
+                .logRetentionDays(accessLogGroupRetentionPeriodDays)
+                .cloudTrailEnabled(cloudTrailEnabled)
                 .logIncludesCookies(verboseLogging)
+                .logHandlerSource(builder.logGzippedS3ObjectEventHandlerSource)
                 .build();
+        this.distributionAccessLogBucket = distWithLogging.logBucket;
+        this.distribution = distWithLogging.distribution;
 
         Permission invokeFunctionUrlPermission = Permission.builder()
                 .principal(new ServicePrincipal("cloudfront.amazonaws.com"))
@@ -1331,7 +1227,7 @@ public class WebStack extends Stack {
         this.userPoolDomain.getNode().addDependency(this.aRecord);
         this.userPoolDomain.getNode().addDependency(this.aaaaRecord);
 
-        // Create Route53 records for teh Cognito UserPoolDomain
+        // Create Route53 records for the Cognito UserPoolDomain
         this.userPoolDomainARecord = ARecord.Builder
                 .create(this, "UserPoolDomainARecord-%s".formatted(dashedCognitoDomainName))
                 .zone(this.hostedZone)
