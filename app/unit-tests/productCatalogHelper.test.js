@@ -1,41 +1,47 @@
-import { describe, it, expect } from 'vitest';
-import fs from 'node:fs';
-import path from 'node:path';
-import { parseCatalog, loadCatalogFromRoot, bundlesForActivity, activitiesForBundle, isActivityAvailable } from '../src/lib/productCatalogHelper.js';
+import { describe, it, expect } from "vitest";
+import fs from "node:fs";
+import path from "node:path";
+import {
+  parseCatalog,
+  loadCatalogFromRoot,
+  bundlesForActivity,
+  activitiesForBundle,
+  isActivityAvailable,
+} from "../src/lib/productCatalogHelper.js";
 
-describe('productCatalogHelper', () => {
-  const tomlPath = path.join(process.cwd(), 'product-catalog.toml');
-  const tomlText = fs.readFileSync(tomlPath, 'utf-8');
+describe("productCatalogHelper", () => {
+  const tomlPath = path.join(process.cwd(), "product-catalog.toml");
+  const tomlText = fs.readFileSync(tomlPath, "utf-8");
 
-  it('parseCatalog should parse TOML into object', () => {
+  it("parseCatalog should parse TOML into object", () => {
     const catalog = parseCatalog(tomlText);
     expect(catalog).toBeTruthy();
-    expect(catalog.version).toBeTypeOf('string');
+    expect(catalog.version).toBeTypeOf("string");
     expect(Array.isArray(catalog.bundles)).toBe(true);
     expect(Array.isArray(catalog.activities)).toBe(true);
   });
 
-  it('loadCatalogFromRoot should load and parse file from root', () => {
+  it("loadCatalogFromRoot should load and parse file from root", () => {
     const catalog = loadCatalogFromRoot();
-    expect(catalog.version).toBe('1.1.0');
+    expect(catalog.version).toBe("1.1.0");
   });
 
-  it('bundlesForActivity should return expected bundles', () => {
+  it("bundlesForActivity should return expected bundles", () => {
     const catalog = parseCatalog(tomlText);
-    expect(bundlesForActivity(catalog, 'submit-vat')).toEqual(['guest', 'basic', 'legacy']);
-    expect(bundlesForActivity(catalog, 'vat-obligations')).toEqual(['default']);
+    expect(bundlesForActivity(catalog, "submit-vat")).toEqual(["guest", "basic", "legacy"]);
+    expect(bundlesForActivity(catalog, "vat-obligations")).toEqual(["default"]);
   });
 
-  it('activitiesForBundle should return expected activity ids', () => {
+  it("activitiesForBundle should return expected activity ids", () => {
     const catalog = parseCatalog(tomlText);
-    const legacyActivities = activitiesForBundle(catalog, 'legacy');
-    expect(legacyActivities).toContain('submit-vat');
-    expect(legacyActivities).toContain('diy-limited-company-upload');
+    const legacyActivities = activitiesForBundle(catalog, "legacy");
+    expect(legacyActivities).toContain("submit-vat");
+    expect(legacyActivities).toContain("diy-limited-company-upload");
   });
 
-  it('isActivityAvailable should work for positive and negative cases', () => {
+  it("isActivityAvailable should work for positive and negative cases", () => {
     const catalog = parseCatalog(tomlText);
-    expect(isActivityAvailable(catalog, 'submit-vat', 'guest')).toBe(true);
-    expect(isActivityAvailable(catalog, 'submit-vat', 'default')).toBe(false);
+    expect(isActivityAvailable(catalog, "submit-vat", "guest")).toBe(true);
+    expect(isActivityAvailable(catalog, "submit-vat", "default")).toBe(false);
   });
 });

@@ -1,6 +1,6 @@
-import fs from 'node:fs';
-import path from 'node:path';
-import TOML from '@iarna/toml';
+import fs from "node:fs";
+import path from "node:path";
+import TOML from "@iarna/toml";
 
 /**
  * Parse a TOML string of the product catalog into a JS object
@@ -8,7 +8,7 @@ import TOML from '@iarna/toml';
  * @returns {{version:string,bundles:Array,activities:Array}}
  */
 export function parseCatalog(tomlString) {
-  if (typeof tomlString !== 'string') throw new TypeError('tomlString must be a string');
+  if (typeof tomlString !== "string") throw new TypeError("tomlString must be a string");
   const catalog = TOML.parse(tomlString);
   return catalog;
 }
@@ -18,8 +18,8 @@ export function parseCatalog(tomlString) {
  * @returns {object}
  */
 export function loadCatalogFromRoot() {
-  const filePath = path.join(process.cwd(), 'product-catalog.toml');
-  const raw = fs.readFileSync(filePath, 'utf-8');
+  const filePath = path.join(process.cwd(), "product-catalog.toml");
+  const raw = fs.readFileSync(filePath, "utf-8");
   return parseCatalog(raw);
 }
 

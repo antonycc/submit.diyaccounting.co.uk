@@ -225,7 +225,9 @@ export async function httpPost(event) {
 
   // Optional bundle entitlement enforcement (disabled by default)
   try {
-    const enforceBundles = String(process.env.DIY_SUBMIT_ENFORCE_BUNDLES || "").toLowerCase() === "true" || process.env.DIY_SUBMIT_ENFORCE_BUNDLES === "1";
+    const enforceBundles =
+      String(process.env.DIY_SUBMIT_ENFORCE_BUNDLES || "").toLowerCase() === "true" ||
+      process.env.DIY_SUBMIT_ENFORCE_BUNDLES === "1";
     const userPoolId = process.env.DIY_SUBMIT_USER_POOL_ID;
     if (enforceBundles && userPoolId) {
       const authHeader = event.headers?.authorization || event.headers?.Authorization;
@@ -241,18 +243,40 @@ export async function httpPost(event) {
       const hmrcBase = process.env.DIY_SUBMIT_HMRC_BASE_URI;
       const sandbox = isSandboxBase(hmrcBase);
       if (sandbox) {
-        if (!bundles || !bundles.some((b) => typeof b === "string" && (b === "HMRC_TEST_API" || b.startsWith("HMRC_TEST_API|")))) {
-          return httpServerErrorResponse({ request, message: "Forbidden: HMRC Sandbox submission requires HMRC_TEST_API bundle", error: { code: "BUNDLE_FORBIDDEN", requiredBundle: "HMRC_TEST_API" } });
+        if (
+          !bundles ||
+          !bundles.some((b) => typeof b === "string" && (b === "HMRC_TEST_API" || b.startsWith("HMRC_TEST_API|")))
+        ) {
+          return httpServerErrorResponse({
+            request,
+            message: "Forbidden: HMRC Sandbox submission requires HMRC_TEST_API bundle",
+            error: { code: "BUNDLE_FORBIDDEN", requiredBundle: "HMRC_TEST_API" },
+          });
         }
       } else {
-        const allowed = (bundles || []).some((b) => typeof b === "string" && (b === "HMRC_PROD_SUBMIT" || b.startsWith("HMRC_PROD_SUBMIT|") || b === "LEGACY_ENTITLEMENT" || b.startsWith("LEGACY_ENTITLEMENT|")));
+        const allowed = (bundles || []).some(
+          (b) =>
+            typeof b === "string" &&
+            (b === "HMRC_PROD_SUBMIT" ||
+              b.startsWith("HMRC_PROD_SUBMIT|") ||
+              b === "LEGACY_ENTITLEMENT" ||
+              b.startsWith("LEGACY_ENTITLEMENT|")),
+        );
         if (!allowed) {
-          return httpServerErrorResponse({ request, message: "Forbidden: Production submission requires HMRC_PROD_SUBMIT or LEGACY_ENTITLEMENT bundle", error: { code: "BUNDLE_FORBIDDEN", requiredBundle: ["HMRC_PROD_SUBMIT", "LEGACY_ENTITLEMENT"] } });
+          return httpServerErrorResponse({
+            request,
+            message: "Forbidden: Production submission requires HMRC_PROD_SUBMIT or LEGACY_ENTITLEMENT bundle",
+            error: { code: "BUNDLE_FORBIDDEN", requiredBundle: ["HMRC_PROD_SUBMIT", "LEGACY_ENTITLEMENT"] },
+          });
         }
       }
     }
   } catch (authError) {
-    return httpServerErrorResponse({ request, message: "Authorization failure while checking entitlements", error: authError?.message || String(authError) });
+    return httpServerErrorResponse({
+      request,
+      message: "Authorization failure while checking entitlements",
+      error: authError?.message || String(authError),
+    });
   }
 
   // Processing

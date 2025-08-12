@@ -168,12 +168,12 @@ paths:
                         periodStartDate:
                           type: string
                           description: "The first day that the income, expenses and\
-                          \ deduction period summary covers."
+                            \ deduction period summary covers."
                           example: 2020-01-01
                         periodEndDate:
                           type: string
                           description: "The last day that the income, expenses and deduction\
-                          \ period summary covers."
+                            \ period summary covers."
                           example: 2020-01-01
                       additionalProperties: false
                       description: Object containing the details about self-employment
@@ -184,9 +184,9 @@ paths:
                         turnover:
                           type: number
                           description: "The takings, fees, sales or money earned by\
-                          \ the business. Income associated with the running of the\
-                          \ business. The value must be between 0 and 99999999999.99\
-                          \ up to 2 decimal places."
+                            \ the business. Income associated with the running of the\
+                            \ business. The value must be between 0 and 99999999999.99\
+                            \ up to 2 decimal places."
                           example: 10000.00
                         other:
                           type: number
@@ -224,21 +224,21 @@ paths:
                         wagesAndStaffCosts:
                           type: number
                           description: "Wages, salaries and other staff costs. Expenses\
-                          \ associated with the running of the business. The value\
-                          \ must be between 0 and 99999999999.99 up to 2 decimal places."
+                            \ associated with the running of the business. The value\
+                            \ must be between 0 and 99999999999.99 up to 2 decimal places."
                           example: 10000.00
                         carVanTravelExpenses:
                           type: number
                           description: "Car, van and travel expenses associated with\
-                          \ the running of the business. The value must be between\
-                          \ 0 and 99999999999.99 up to 2 decimal places."
+                            \ the running of the business. The value must be between\
+                            \ 0 and 99999999999.99 up to 2 decimal places."
                           example: 10000.89
                         premisesRunningCosts:
                           type: number
                           description: "Rent, rates, power and insurance costs. Expenses\
-                          \ associated with the running of the business. The value\
-                          \ must be between -99999999999.99 and 99999999999.99 up\
-                          \ to 2 decimal places."
+                            \ associated with the running of the business. The value\
+                            \ must be between -99999999999.99 and 99999999999.99 up\
+                            \ to 2 decimal places."
                           example: 10000.89
                         maintenanceCosts:
                           type: number
@@ -250,9 +250,9 @@ paths:
                         adminCosts:
                           type: number
                           description: "Phone, fax, stationery and other office costs.\
-                          \ Expenses associated with the running of the business.\
-                          \ The value must be between 0 and 99999999999.99 up to 2\
-                          \ decimal places."
+                            \ Expenses associated with the running of the business.\
+                            \ The value must be between 0 and 99999999999.99 up to 2\
+                            \ decimal places."
                           example: 10000.89
                         businessEntertainmentCosts:
                           type: number
@@ -275,9 +275,9 @@ paths:
                         financeCharges:
                           type: number
                           description: "Bank, credit card and other financial charges.\
-                          \ Expenses associated with the running of the business.\
-                          \ The value must be between -99999999999.99 and 99999999999.99\
-                          \ up to 2 decimal places."
+                            \ Expenses associated with the running of the business.\
+                            \ The value must be between -99999999999.99 and 99999999999.99\
+                            \ up to 2 decimal places."
                           example: 10000.89
                         irrecoverableDebts:
                           type: number
@@ -288,9 +288,9 @@ paths:
                         professionalFees:
                           type: number
                           description: "Accountancy, legal and other professional fees.\
-                          \ Expenses associated with the running of the business.\
-                          \ The value must be between -99999999999.99 and 99999999999.99\
-                          \ up to 2 decimal places."
+                            \ Expenses associated with the running of the business.\
+                            \ The value must be between -99999999999.99 and 99999999999.99\
+                            \ up to 2 decimal places."
                           example: 10000.89
                         depreciation:
                           type: number
@@ -328,23 +328,23 @@ paths:
                         wagesAndStaffCostsDisallowable:
                           type: number
                           description: "Wages, salaries and other staff costs. Any expense\
-                          \ or partial expense that cannot be claimed for tax purposes.\
-                          \ The value must be between 0 and 99999999999.99 up to 2\
-                          \ decimal places."
+                            \ or partial expense that cannot be claimed for tax purposes.\
+                            \ The value must be between 0 and 99999999999.99 up to 2\
+                            \ decimal places."
                           example: 10000.89
                         carVanTravelExpensesDisallowable:
                           type: number
                           description: "Car, van and travel expenses. Any expense or\
-                          \ partial expense that cannot be claimed for tax purposes.\
-                          \ The value must be between 0 and 99999999999.99 up to 2\
-                          \ decimal places."
+                            \ partial expense that cannot be claimed for tax purposes.\
+                            \ The value must be between 0 and 99999999999.99 up to 2\
+                            \ decimal places."
                           example: 10000.89
                         premisesRunningCostsDisallowable:
                           type: number
                           description: "Rent, rates, power and insurance costs. Any\
-                          \ expense or partial expense that cannot be claimed for\
-                          \ tax purposes. The value must be between -99999999999.99\
-                          \ and 99999999999.99 up to 2 decimal places."
+                            \ expense or partial expense that cannot be claimed for\
+                            \ tax purposes. The value must be between -99999999999.99\
+                            \ and 99999999999.99 up to 2 decimal places."
                           example: 10000.89
                         maintenanceCostsDisallowable:
                           type: number
@@ -356,9 +356,9 @@ paths:
                         adminCostsDisallowable:
                           type: number
                           description: "Phone, fax, stationery and other office costs.\
-                          \ Any expense or partial expense that cannot be claimed\
-                          \ for tax purposes. The value must be between 0 and 99999999999.99\
-                          \ up to 2 decimal places."
+                            \ Any expense or partial expense that cannot be claimed\
+                            \ for tax purposes. The value must be between 0 and 99999999999.99\
+                            \ up to 2 decimal places."
                           example: 10000.89
                         businessEntertainmentCostsDisallowable:
                           type: number
@@ -383,9 +383,9 @@ paths:
                         financeChargesDisallowable:
                           type: number
                           description: "Bank, credit card and other financial charges.\
-                          \ Any expense or partial expense that cannot be claimed\
-                          \ for tax purposes. The value must be between -99999999999.99\
-                          \ and 99999999999.99 up to 2 decimal places."
+                            \ Any expense or partial expense that cannot be claimed\
+                            \ for tax purposes. The value must be between -99999999999.99\
+                            \ and 99999999999.99 up to 2 decimal places."
                           example: 10000.89
                         irrecoverableDebtsDisallowable:
                           type: number
@@ -433,12 +433,12 @@ paths:
                         periodStartDate:
                           type: string
                           description: "The first day that the income, expenses and\
-                          \ deduction period summary covers."
+                            \ deduction period summary covers."
                           example: 2020-01-01
                         periodEndDate:
                           type: string
                           description: "The last day that the income, expenses and deduction\
-                          \ period summary covers."
+                            \ period summary covers."
                           example: 2020-01-01
                       additionalProperties: false
                       description: Object containing the details about self-employment
@@ -449,9 +449,9 @@ paths:
                         turnover:
                           type: number
                           description: "The takings, fees, sales or money earned by\
-                          \ the business. Income associated with the running of the\
-                          \ business. The value must be between 0 and 99999999999.99\
-                          \ up to 2 decimal places."
+                            \ the business. Income associated with the running of the\
+                            \ business. The value must be between 0 and 99999999999.99\
+                            \ up to 2 decimal places."
                           example: 10000.00
                         other:
                           type: number
@@ -495,22 +495,22 @@ paths:
                         wagesAndStaffCosts:
                           type: number
                           description: "Wages, salaries and other staff costs. Expenses\
-                          \ associated with the running of the business. The value\
-                          \ must be between -99999999999.99 and 99999999999.99 up\
-                          \ to 2 decimal places."
+                            \ associated with the running of the business. The value\
+                            \ must be between -99999999999.99 and 99999999999.99 up\
+                            \ to 2 decimal places."
                           example: 10000.00
                         carVanTravelExpenses:
                           type: number
                           description: "Car, van and travel expenses associated with\
-                          \ the running of the business. The value must be between\
-                          \ -99999999999.99 and 99999999999.99 up to 2 decimal places."
+                            \ the running of the business. The value must be between\
+                            \ -99999999999.99 and 99999999999.99 up to 2 decimal places."
                           example: 10000.89
                         premisesRunningCosts:
                           type: number
                           description: "Rent, rates, power and insurance costs. Expenses\
-                          \ associated with the running of the business. The value\
-                          \ must be between -99999999999.99 and 99999999999.99 up\
-                          \ to 2 decimal places."
+                            \ associated with the running of the business. The value\
+                            \ must be between -99999999999.99 and 99999999999.99 up\
+                            \ to 2 decimal places."
                           example: 10000.89
                         maintenanceCosts:
                           type: number
@@ -522,9 +522,9 @@ paths:
                         adminCosts:
                           type: number
                           description: "Phone, fax, stationery and other office costs.\
-                          \ Expenses associated with the running of the business.\
-                          \ The value must be between -99999999999.99 and 99999999999.99\
-                          \ up to 2 decimal places."
+                            \ Expenses associated with the running of the business.\
+                            \ The value must be between -99999999999.99 and 99999999999.99\
+                            \ up to 2 decimal places."
                           example: 10000.89
                         businessEntertainmentCosts:
                           type: number
@@ -547,9 +547,9 @@ paths:
                         financeCharges:
                           type: number
                           description: "Bank, credit card and other financial charges.\
-                          \ Expenses associated with the running of the business.\
-                          \ The value must be between -99999999999.99 and 99999999999.99\
-                          \ up to 2 decimal places."
+                            \ Expenses associated with the running of the business.\
+                            \ The value must be between -99999999999.99 and 99999999999.99\
+                            \ up to 2 decimal places."
                           example: 10000.89
                         irrecoverableDebts:
                           type: number
@@ -560,9 +560,9 @@ paths:
                         professionalFees:
                           type: number
                           description: "Accountancy, legal and other professional fees.\
-                          \ Expenses associated with the running of the business.\
-                          \ The value must be between -99999999999.99 and 99999999999.99\
-                          \ up to 2 decimal places."
+                            \ Expenses associated with the running of the business.\
+                            \ The value must be between -99999999999.99 and 99999999999.99\
+                            \ up to 2 decimal places."
                           example: 10000.89
                         depreciation:
                           type: number
@@ -600,23 +600,23 @@ paths:
                         wagesAndStaffCostsDisallowable:
                           type: number
                           description: "Wages, salaries and other staff costs. Any expense\
-                          \ or partial expense that cannot be claimed for tax purposes.\
-                          \ The value must be between -99999999999.99 and 99999999999.99\
-                          \ up to 2 decimal places."
+                            \ or partial expense that cannot be claimed for tax purposes.\
+                            \ The value must be between -99999999999.99 and 99999999999.99\
+                            \ up to 2 decimal places."
                           example: 10000.89
                         carVanTravelExpensesDisallowable:
                           type: number
                           description: "Car, van and travel expenses. Any expense or\
-                          \ partial expense that cannot be claimed for tax purposes.\
-                          \ The value must be between -99999999999.99 and 99999999999.99\
-                          \ up to 2 decimal places."
+                            \ partial expense that cannot be claimed for tax purposes.\
+                            \ The value must be between -99999999999.99 and 99999999999.99\
+                            \ up to 2 decimal places."
                           example: 10000.89
                         premisesRunningCostsDisallowable:
                           type: number
                           description: "Rent, rates, power and insurance costs. Any\
-                          \ expense or partial expense that cannot be claimed for\
-                          \ tax purposes. The value must be between -99999999999.99\
-                          \ and 99999999999.99 up to 2 decimal places."
+                            \ expense or partial expense that cannot be claimed for\
+                            \ tax purposes. The value must be between -99999999999.99\
+                            \ and 99999999999.99 up to 2 decimal places."
                           example: 10000.89
                         maintenanceCostsDisallowable:
                           type: number
@@ -628,9 +628,9 @@ paths:
                         adminCostsDisallowable:
                           type: number
                           description: "Phone, fax, stationery and other office costs.\
-                          \ Any expense or partial expense that cannot be claimed\
-                          \ for tax purposes. The value must be between -99999999999.99\
-                          \ and 99999999999.99 up to 2 decimal places."
+                            \ Any expense or partial expense that cannot be claimed\
+                            \ for tax purposes. The value must be between -99999999999.99\
+                            \ and 99999999999.99 up to 2 decimal places."
                           example: 10000.89
                         businessEntertainmentCostsDisallowable:
                           type: number
@@ -656,9 +656,9 @@ paths:
                         financeChargesDisallowable:
                           type: number
                           description: "Bank, credit card and other financial charges.\
-                          \ Any expense or partial expense that cannot be claimed\
-                          \ for tax purposes. The value must be between -99999999999.99\
-                          \ and 99999999999.99 up to 2 decimal places."
+                            \ Any expense or partial expense that cannot be claimed\
+                            \ for tax purposes. The value must be between -99999999999.99\
+                            \ and 99999999999.99 up to 2 decimal places."
                           example: 10000.89
                         irrecoverableDebtsDisallowable:
                           type: number
@@ -2627,7 +2627,8 @@ components:
   securitySchemes:
     User-Restricted:
       type: oauth2
-      description: "HMRC supports OAuth 2.0 for authenticating [User-restricted](https://developer.service.hmrc.gov.uk/api-documentation/docs/authorisation/user-restricted-endpoints)\
+      description:
+        "HMRC supports OAuth 2.0 for authenticating [User-restricted](https://developer.service.hmrc.gov.uk/api-documentation/docs/authorisation/user-restricted-endpoints)\
         \ API requests"
       flows:
         authorizationCode:

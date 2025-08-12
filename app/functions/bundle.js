@@ -29,12 +29,14 @@ function decodeJwtNoVerify(token) {
   }
 }
 
-
 // In-memory store for MOCK mode (no AWS required). Map<userSub, string[]>
 const __inMemoryBundles = new Map();
 
 function isMockMode() {
-  return String(process.env.DIY_SUBMIT_BUNDLE_MOCK || "").toLowerCase() === "true" || process.env.DIY_SUBMIT_BUNDLE_MOCK === "1";
+  return (
+    String(process.env.DIY_SUBMIT_BUNDLE_MOCK || "").toLowerCase() === "true" ||
+    process.env.DIY_SUBMIT_BUNDLE_MOCK === "1"
+  );
 }
 
 /**
