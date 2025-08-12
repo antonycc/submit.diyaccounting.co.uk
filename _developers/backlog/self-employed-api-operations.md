@@ -14,7 +14,7 @@ There is no self‑employment code in the repository.  The product catalogue inc
 ### Back‑end functions
 
 1. **Annual summaries**:
-    - `getSelfEmploymentAnnual.js` to call `GET /income-tax/self-employment/{nino}/{businessId}/annual-summaries/{taxYear}` and return the summary or `404`.
+    - `getSelfEmploymentAnnual.js` to call `GET /income-tax/self-employment/{nino}/{businessId}/annual-summaries/{taxYear}` and return the summary or `404`.
     - `putSelfEmploymentAnnual.js` to send `PUT` with a validated body; use `ajv` to validate against the spec schema.
     - `deleteSelfEmploymentAnnual.js` to send `DELETE` and return `204` or error.
 2. **Period summaries**:
@@ -54,4 +54,4 @@ There is no self‑employment code in the repository.  The product catalogue inc
 
 ## HMRC context & roll‑out
 
-Making Tax Digital for Income Tax (MTD ITSA) is planned to start in April 2026.  Sole traders and landlords with income over £20 k must send quarterly updates using compatible software:contentReference[oaicite:34]{index=34}.  HMRC’s self‑employment API (v5.0) provides endpoints for period and annual summaries that will underpin these quarterly submissions.  Implementing this integration now positions the platform to support MTD ITSA well before it becomes mandatory.
+Making Tax Digital for Income Tax (MTD ITSA) is planned to start in April 2026.  Sole traders and landlords with income over £20 k must send quarterly updates using compatible software:contentReference[oaicite:34]{index=34}.  HMRC’s self‑employment API (v5.0) provides endpoints for period and annual summaries that will underpin these quarterly submissions.  Implementing this integration now positions the platform to support MTD ITSA well before it becomes mandatory.

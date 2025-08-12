@@ -26,7 +26,7 @@
 
 ### Lambdas & routes
 
-1. Add `Function` definitions for `getCatalog`, `requestBundle`, `listReceipts`, `getReceipt`, `getVatObligations`, `getVatReturn`, `getVatLiability`, `getVatPayment`, `getVatPenalties`, `getSelfEmploymentAnnual`, `putSelfEmploymentAnnual`, etc.  Set the runtime to Node.js 18 or 20.  Pass environment variables for HMRC base URIs, stubbed data, grants table name, receipts bucket, etc.
+1. Add `Function` definitions for `getCatalog`, `requestBundle`, `listReceipts`, `getReceipt`, `getVatObligations`, `getVatReturn`, `getVatLiability`, `getVatPayment`, `getVatPenalties`, `getSelfEmploymentAnnual`, `putSelfEmploymentAnnual`, etc.  Set the runtime to Node.js 18 or 20.  Pass environment variables for HMRC base URIs, stubbed data, grants table name, receipts bucket, etc.
 2. Use `FunctionUrl` to expose these Lambdas publicly.  Set CORS `allowOrigins` to the site domain and `allowMethods` as appropriate.
 3. If using DynamoDB, ensure each function has `AWSLambdaBasicExecutionRole` and add a policy for DynamoDB access.
 

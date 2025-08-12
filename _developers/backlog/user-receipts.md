@@ -1,7 +1,7 @@
 ## Goals
 
 - **Per‑user receipts** – adjust `logReceipt.js` to save receipts under `receipts/{userSub}/{timestamp}-{bundleId}.json` so each user’s receipts are isolated:contentReference[oaicite:35]{index=35}.
-- **Listing and retrieval** – implement `GET /api/my-receipts` to list a user’s receipts with metadata (timestamp, period, amount) and `GET /api/my-receipts/{key}` to fetch the full receipt JSON.  Restrict access to the authenticated user’s own prefix.
+- **Listing and retrieval** – implement `GET /api/my-receipts` to list a user’s receipts with metadata (timestamp, period, amount) and `GET /api/my-receipts/{key}` to fetch the full receipt JSON.  Restrict access to the authenticated user’s own prefix.
 - **Receipts page** – create `receipts.html` to display a table of past submissions with links to view/download receipts.  Integrate with the rest of the UI so users can easily find their submission history.
 - **Testability** – write unit and integration tests for listing and retrieving receipts, and extend e2e tests to verify receipts appear after submissions.
 
@@ -40,4 +40,4 @@
 
 ## HMRC context
 
-Under Making Tax Digital, businesses must keep digital records and preserve them for several years.  HMRC’s APIs do not supply receipts; therefore, generating and storing your own receipts in S3 per user helps meet compliance requirements and provides users with a clear audit trail of their submissions.
+Under Making Tax Digital, businesses must keep digital records and preserve them for several years.  HMRC’s APIs do not supply receipts; therefore, generating and storing your own receipts in S3 per user helps meet compliance requirements and provides users with a clear audit trail of their submissions.

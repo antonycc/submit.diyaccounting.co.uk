@@ -26,7 +26,7 @@ The repository has some unit tests and Playwright tests, plus stubbed mode for `
 ### Expand integration tests
 
 1. Use `supertest` to spin up the Express app with all routes.  Test sign‑in and sign‑out flows using a fake Cognito token.
-2. Test entitlements gating: call `GET /api/vat/obligations` without the `default` bundle and expect `403`.  Request the `guest` bundle and repeat, expecting `200`.
+2. Test entitlements gating: call `GET /api/vat/obligations` without the `default` bundle and expect `403`.  Request the `guest` bundle and repeat, expecting `200`.
 3. Test the bundle request endpoint’s cap logic by issuing multiple requests and verifying `409` responses when the cap is exceeded.
 4. For self‑employment, test creating, retrieving, updating and deleting period summaries using stubbed responses.
 
@@ -59,4 +59,4 @@ The repository has some unit tests and Playwright tests, plus stubbed mode for `
 
 ## HMRC context
 
-HMRC’s sandbox is designed for iterative development and supports many scenarios via `Gov‑Test‑Scenario` headers:contentReference[oaicite:42]{index=42}.  By building a robust dry‑run infrastructure with stubs and sandbox tests, the DIY Accounting platform can rapidly adapt to API changes and ensure reliable behaviour when MTD becomes mandatory.
+HMRC’s sandbox is designed for iterative development and supports many scenarios via `Gov‑Test‑Scenario` headers:contentReference[oaicite:42]{index=42}.  By building a robust dry‑run infrastructure with stubs and sandbox tests, the DIY Accounting platform can rapidly adapt to API changes and ensure reliable behaviour when MTD becomes mandatory.
