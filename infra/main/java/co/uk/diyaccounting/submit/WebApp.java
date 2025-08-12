@@ -79,6 +79,10 @@ public class WebApp {
                 .bundleLambdaUrlPath(System.getenv("BUNDLE_LAMBDA_URL_PATH"))
                 .bundleLambdaDurationMillis(System.getenv("BUNDLE_LAMBDA_DURATION"))
                 .baseImageTag(System.getenv("BASE_IMAGE_TAG"))
+                // Cognito advanced security/logging flags
+                .cognitoFeaturePlan(System.getenv("DIY_SUBMIT_COGNITO_FEATURE_PLAN"))
+                .cognitoEnableLogDelivery(System.getenv("DIY_SUBMIT_ENABLE_LOG_DELIVERY"))
+                .cognitoCreateTriggerLambdas(System.getenv("DIY_SUBMIT_CREATE_COGNITO_TRIGGER_LAMBDAS"))
                 .build();
 
         CfnOutput.Builder.create(stack, "OriginBucketArn")
@@ -108,6 +112,16 @@ public class WebApp {
         CfnOutput.Builder.create(stack, "HmrcClientSecretsManagerSecretArn")
                 .value(stack.hmrcClientSecretsManagerSecret.getSecretArn())
                 .build();
+
+        // Cognito Hosted UI and Google IdP redirect URI for troubleshooting OAuth redirect mismatch
+        if (stack.cognitoBaseUri != null) {
+            CfnOutput.Builder.create(stack, "CognitoBaseUri")
+                    .value(stack.cognitoBaseUri)
+                    .build();
+            CfnOutput.Builder.create(stack, "CognitoGoogleIdpRedirectUri")
+                    .value(stack.cognitoBaseUri + "/oauth2/idpresponse")
+                    .build();
+        }
 
         CfnOutput.Builder.create(stack, "GoogleClientSecretsManagerSecretArn")
                 .value(stack.googleClientSecretsManagerSecret.getSecretArn())
