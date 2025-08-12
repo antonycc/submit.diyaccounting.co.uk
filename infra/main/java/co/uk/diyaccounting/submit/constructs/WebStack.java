@@ -125,6 +125,10 @@ public class WebStack extends Stack {
     public AaaaRecord userPoolDomainAaaaRecord;
     public UserPoolDomain userPoolDomain;
     public UserPoolIdentityProviderGoogle googleIdentityProvider;
+
+    // Cognito URIs
+    public String cognitoDomainName;
+    public String cognitoBaseUri;
     
     // Bundle management Lambda
     public Function bundleLambda;
@@ -207,6 +211,10 @@ public class WebStack extends Stack {
         public String bundleLambdaUrlPath;
         public String bundleLambdaDuration;
         public String baseImageTag;
+        // Cognito advanced security/logging flags
+        public String cognitoFeaturePlan;
+        public String cognitoEnableLogDelivery;
+        public String cognitoCreateTriggerLambdas;
 
         public Builder(Construct scope, String id, StackProps props) {
             this.scope = scope;
@@ -614,6 +622,21 @@ public class WebStack extends Stack {
             return this;
         }
 
+        public Builder cognitoFeaturePlan(String cognitoFeaturePlan) {
+            this.cognitoFeaturePlan = cognitoFeaturePlan;
+            return this;
+        }
+
+        public Builder cognitoEnableLogDelivery(String cognitoEnableLogDelivery) {
+            this.cognitoEnableLogDelivery = cognitoEnableLogDelivery;
+            return this;
+        }
+
+        public Builder cognitoCreateTriggerLambdas(String cognitoCreateTriggerLambdas) {
+            this.cognitoCreateTriggerLambdas = cognitoCreateTriggerLambdas;
+            return this;
+        }
+
         public WebStack build() {
             return new WebStack(this.scope, this.id, this.props, this);
         }
@@ -693,6 +716,8 @@ public class WebStack extends Stack {
         var cognitoDomainName = Builder.buildCognitoDomainName(builder.env, builder.cognitoDomainPrefix != null ? builder.cognitoDomainPrefix : "auth", builder.subDomainName, builder.hostedZoneName);
         var dashedCognitoDomainName = Builder.buildDashedCognitoDomainName(cognitoDomainName);
         var cognitoBaseUri = Builder.buildCognitoBaseUri(cognitoDomainName);
+        this.cognitoDomainName = cognitoDomainName;
+        this.cognitoBaseUri = cognitoBaseUri;
 
         // Check for environment variable override for verboseLogging
         String verboseLoggingEnv = System.getenv("VERBOSE_LOGGING");
@@ -849,6 +874,13 @@ public class WebStack extends Stack {
                     .supportedIdentityProviders(List.of(
                             software.amazon.awscdk.services.cognito.UserPoolClientIdentityProvider.GOOGLE
                     ))
+                    .featurePlan(builder.cognitoFeaturePlan != null && !builder.cognitoFeaturePlan.isBlank() ? builder.cognitoFeaturePlan : "ESSENTIALS")
+                    .enableLogDelivery(builder.cognitoEnableLogDelivery == null || builder.cognitoEnableLogDelivery.isBlank() ? false : Boolean.parseBoolean(builder.cognitoEnableLogDelivery))
+                    .createTriggerLambdas(builder.cognitoCreateTriggerLambdas == null || builder.cognitoCreateTriggerLambdas.isBlank() ? false : Boolean.parseBoolean(builder.cognitoCreateTriggerLambdas))
+                    .xRayEnabled(xRayEnabled)
+                    .accessLogGroupRetentionPeriodDays(accessLogGroupRetentionPeriodDays)
+                    .logGroupNamePrefix(dashedDomainName)
+                    .lambdaJarPath("target/web-0.0.2-4-shaded.jar")
                     .build();
             this.userPool = cognito.userPool;
             this.googleIdentityProvider = cognito.googleIdentityProvider;

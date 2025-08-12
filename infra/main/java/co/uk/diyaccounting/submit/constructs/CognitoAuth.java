@@ -1,10 +1,32 @@
 package co.uk.diyaccounting.submit.constructs;
 
-import software.amazon.awscdk.SecretValue;
+import co.uk.diyaccounting.submit.awssdk.RetentionDaysConverter;
 import software.amazon.awscdk.RemovalPolicy;
-import software.amazon.awscdk.services.cognito.*;
+import software.amazon.awscdk.SecretValue;
+import software.amazon.awscdk.services.cognito.AttributeMapping;
+import software.amazon.awscdk.services.cognito.CfnLogDeliveryConfiguration;
+import software.amazon.awscdk.services.cognito.CfnUserPool;
+import software.amazon.awscdk.services.cognito.OAuthFlows;
+import software.amazon.awscdk.services.cognito.OAuthScope;
+import software.amazon.awscdk.services.cognito.OAuthSettings;
+import software.amazon.awscdk.services.cognito.ProviderAttribute;
+import software.amazon.awscdk.services.cognito.SignInAliases;
+import software.amazon.awscdk.services.cognito.StandardAttributes;
+import software.amazon.awscdk.services.cognito.StringAttribute;
+import software.amazon.awscdk.services.cognito.UserPool;
+import software.amazon.awscdk.services.cognito.UserPoolClient;
+import software.amazon.awscdk.services.cognito.UserPoolClientIdentityProvider;
+import software.amazon.awscdk.services.cognito.UserPoolIdentityProviderGoogle;
+import software.amazon.awscdk.services.cognito.UserPoolOperation;
+import software.amazon.awscdk.services.lambda.Code;
+import software.amazon.awscdk.services.lambda.Function;
+import software.amazon.awscdk.services.lambda.Runtime;
+import software.amazon.awscdk.services.lambda.Tracing;
+import software.amazon.awscdk.services.logs.LogGroup;
+import software.amazon.awscdk.services.logs.RetentionDays;
 import software.constructs.Construct;
 
+import java.io.File;
 import java.util.List;
 import java.util.Map;
 
@@ -12,6 +34,11 @@ import java.util.Map;
  * Thin coordinator for Cognito resources, created at WebStack scope to preserve logical IDs.
  * Creates UserPool (id: "UserPool"), optional Google IdP (id: "GoogleIdentityProvider"),
  * and UserPoolClient (id: "UserPoolClient").
+ *
+ * Extended to:
+ *  - Enable advanced security (AUDIT/ENFORCED via CfnUserPool add-ons)
+ *  - Deliver Cognito userAuthEvents and userNotification logs to CloudWatch
+ *  - Attach logging Lambdas for common Cognito triggers with optional X-Ray
  */
 public class CognitoAuth {
 
@@ -32,6 +59,16 @@ public class CognitoAuth {
                 .build();
         this.userPool = up;
 
+        // Enable advanced security via L1 CfnUserPool AddOns (AUDIT/ENFORCED)
+        var cfnUserPool = (CfnUserPool) up.getNode().getDefaultChild();
+        if (cfnUserPool != null && b.featurePlan != null && b.featurePlan.equalsIgnoreCase("PLUS")) {
+            String asm = b.featurePlan.equalsIgnoreCase("PLUS") ? "ENFORCED" : "AUDIT";
+            cfnUserPool.setUserPoolAddOns(CfnUserPool.UserPoolAddOnsProperty.builder()
+                    .advancedSecurityMode(asm)
+                    .build());
+        }
+
+        // Optional Google IdP
         UserPoolIdentityProviderGoogle googleIdp = null;
         if (b.googleClientId != null && !b.googleClientId.isBlank() && b.googleClientSecretValue != null) {
             googleIdp = UserPoolIdentityProviderGoogle.Builder.create(b.scope, "GoogleIdentityProvider")
@@ -48,6 +85,7 @@ public class CognitoAuth {
         }
         this.googleIdentityProvider = googleIdp;
 
+        // User Pool Client
         UserPoolClient client = UserPoolClient.Builder.create(b.scope, "UserPoolClient")
                 .userPool(up)
                 .userPoolClientName(b.userPoolClientName)
@@ -60,11 +98,104 @@ public class CognitoAuth {
                         .build())
                 .supportedIdentityProviders(b.supportedIdentityProviders)
                 .build();
-
         if (googleIdp != null) {
             client.getNode().addDependency(googleIdp);
         }
         this.userPoolClient = client;
+
+        // Configure log delivery to CloudWatch if enabled
+        if (b.enableLogDelivery) {
+            RetentionDays retention = RetentionDaysConverter.daysToRetentionDays(b.accessLogGroupRetentionPeriodDays);
+            LogGroup authEventsLog = LogGroup.Builder.create(b.scope, "CognitoUserAuthEventsLogGroup")
+                    .logGroupName("/aws/cognito/" + b.logGroupNamePrefix + "/userAuthEvents")
+                    .retention(retention)
+                    .removalPolicy(RemovalPolicy.DESTROY)
+                    .build();
+            LogGroup notificationLog = LogGroup.Builder.create(b.scope, "CognitoUserNotificationLogGroup")
+                    .logGroupName("/aws/cognito/" + b.logGroupNamePrefix + "/userNotification")
+                    .retention(retention)
+                    .removalPolicy(RemovalPolicy.DESTROY)
+                    .build();
+
+            var logConfigs = List.of(
+                    CfnLogDeliveryConfiguration.LogConfigurationProperty.builder()
+                            .eventSource("userAuthEvents")
+                            .logLevel("INFO")
+                            .cloudWatchLogsConfiguration(
+                                    CfnLogDeliveryConfiguration.CloudWatchLogsConfigurationProperty.builder()
+                                            .logGroupArn(authEventsLog.getLogGroupArn())
+                                            .build())
+                            .build(),
+                    CfnLogDeliveryConfiguration.LogConfigurationProperty.builder()
+                            .eventSource("userNotification")
+                            .logLevel("ERROR")
+                            .cloudWatchLogsConfiguration(
+                                    CfnLogDeliveryConfiguration.CloudWatchLogsConfigurationProperty.builder()
+                                            .logGroupArn(notificationLog.getLogGroupArn())
+                                            .build())
+                            .build()
+            );
+            var delivery = CfnLogDeliveryConfiguration.Builder.create(b.scope, "UserPoolLogDelivery")
+                    .userPoolId(up.getUserPoolId())
+                    .logConfigurations(logConfigs)
+                    .build();
+            delivery.getNode().addDependency(up);
+        }
+
+        // Create lightweight logging lambdas for Cognito triggers (optional)
+        boolean shouldCreateTriggers = b.createTriggerLambdas;
+        if (shouldCreateTriggers) {
+            File jar = new File(b.lambdaJarPath);
+            if (!jar.exists()) {
+                shouldCreateTriggers = false;
+            }
+        }
+        if (shouldCreateTriggers) {
+            RetentionDays retention = RetentionDaysConverter.daysToRetentionDays(b.accessLogGroupRetentionPeriodDays);
+            Tracing tracing = b.xRayEnabled ? Tracing.ACTIVE : Tracing.DISABLED;
+
+            Function preAuth = Function.Builder.create(b.scope, "LogPreAuthentication")
+                    .runtime(Runtime.JAVA_21)
+                    .handler("co.uk.diyaccounting.submit.functions.LogPreAuthentication")
+                    .code(Code.fromAsset(b.lambdaJarPath))
+                    .tracing(tracing)
+                    .logRetention(retention)
+                    .build();
+            Function postAuth = Function.Builder.create(b.scope, "LogPostAuthentication")
+                    .runtime(Runtime.JAVA_21)
+                    .handler("co.uk.diyaccounting.submit.functions.LogPostAuthentication")
+                    .code(Code.fromAsset(b.lambdaJarPath))
+                    .tracing(tracing)
+                    .logRetention(retention)
+                    .build();
+            Function preSignUp = Function.Builder.create(b.scope, "LogPreSignUp")
+                    .runtime(Runtime.JAVA_21)
+                    .handler("co.uk.diyaccounting.submit.functions.LogPreSignUp")
+                    .code(Code.fromAsset(b.lambdaJarPath))
+                    .tracing(tracing)
+                    .logRetention(retention)
+                    .build();
+            Function postConfirmation = Function.Builder.create(b.scope, "LogPostConfirmation")
+                    .runtime(Runtime.JAVA_21)
+                    .handler("co.uk.diyaccounting.submit.functions.LogPostConfirmation")
+                    .code(Code.fromAsset(b.lambdaJarPath))
+                    .tracing(tracing)
+                    .logRetention(retention)
+                    .build();
+            Function preTokenGen = Function.Builder.create(b.scope, "LogPreTokenGeneration")
+                    .runtime(Runtime.JAVA_21)
+                    .handler("co.uk.diyaccounting.submit.functions.LogPreTokenGeneration")
+                    .code(Code.fromAsset(b.lambdaJarPath))
+                    .tracing(tracing)
+                    .logRetention(retention)
+                    .build();
+
+            up.addTrigger(UserPoolOperation.PRE_AUTHENTICATION, preAuth);
+            up.addTrigger(UserPoolOperation.POST_AUTHENTICATION, postAuth);
+            up.addTrigger(UserPoolOperation.PRE_SIGN_UP, preSignUp);
+            up.addTrigger(UserPoolOperation.POST_CONFIRMATION, postConfirmation);
+            up.addTrigger(UserPoolOperation.PRE_TOKEN_GENERATION, preTokenGen);
+        }
     }
 
     public static class Builder {
@@ -78,6 +209,15 @@ public class CognitoAuth {
         private List<String> logoutUrls;
         private List<UserPoolClientIdentityProvider> supportedIdentityProviders = List.of();
 
+        // New optional settings
+        private String featurePlan; // PLUS or ESSENTIALS (default ESSENTIALS)
+        private boolean enableLogDelivery = false;
+        private boolean createTriggerLambdas = true;
+        private boolean xRayEnabled = false;
+        private int accessLogGroupRetentionPeriodDays = 30;
+        private String logGroupNamePrefix = "cognito";
+        private String lambdaJarPath = "target/web-0.0.2-4-shaded.jar";
+
         private Builder(Construct scope) { this.scope = scope; }
         public static Builder create(Construct scope) { return new Builder(scope); }
 
@@ -89,6 +229,15 @@ public class CognitoAuth {
         public Builder callbackUrls(List<String> urls) { this.callbackUrls = urls; return this; }
         public Builder logoutUrls(List<String> urls) { this.logoutUrls = urls; return this; }
         public Builder supportedIdentityProviders(List<UserPoolClientIdentityProvider> providers) { this.supportedIdentityProviders = providers; return this; }
+
+        // New builder methods
+        public Builder featurePlan(String plan) { this.featurePlan = plan; return this; }
+        public Builder enableLogDelivery(boolean enable) { this.enableLogDelivery = enable; return this; }
+        public Builder createTriggerLambdas(boolean create) { this.createTriggerLambdas = create; return this; }
+        public Builder xRayEnabled(boolean enabled) { this.xRayEnabled = enabled; return this; }
+        public Builder accessLogGroupRetentionPeriodDays(int days) { this.accessLogGroupRetentionPeriodDays = days; return this; }
+        public Builder logGroupNamePrefix(String prefix) { this.logGroupNamePrefix = prefix; return this; }
+        public Builder lambdaJarPath(String path) { this.lambdaJarPath = path; return this; }
 
         public CognitoAuth build() {
             if (userPoolName == null || userPoolName.isBlank()) throw new IllegalArgumentException("userPoolName is required");
