@@ -13,8 +13,7 @@ This project allows UK businesses to submit tax returns to HMRC under the Making
 
 ### Additional Stack:
 
-* **Auth:** Passport.js (Google OAuth)
-* **DB:** PostgreSQL
+* **Auth:** Cognito (Google OAuth)
 
 ---
 
