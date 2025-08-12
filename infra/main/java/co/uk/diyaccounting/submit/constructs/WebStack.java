@@ -874,8 +874,8 @@ public class WebStack extends Stack {
                     .supportedIdentityProviders(List.of(
                             software.amazon.awscdk.services.cognito.UserPoolClientIdentityProvider.GOOGLE
                     ))
-                    .featurePlan(builder.cognitoFeaturePlan != null && !builder.cognitoFeaturePlan.isBlank() ? builder.cognitoFeaturePlan : "PLUS")
-                    .enableLogDelivery(builder.cognitoEnableLogDelivery == null || builder.cognitoEnableLogDelivery.isBlank() ? true : Boolean.parseBoolean(builder.cognitoEnableLogDelivery))
+                    .featurePlan(builder.cognitoFeaturePlan != null && !builder.cognitoFeaturePlan.isBlank() ? builder.cognitoFeaturePlan : "ESSENTIALS")
+                    .enableLogDelivery(builder.cognitoEnableLogDelivery == null || builder.cognitoEnableLogDelivery.isBlank() ? false : Boolean.parseBoolean(builder.cognitoEnableLogDelivery))
                     .createTriggerLambdas(builder.cognitoCreateTriggerLambdas == null || builder.cognitoCreateTriggerLambdas.isBlank() ? false : Boolean.parseBoolean(builder.cognitoCreateTriggerLambdas))
                     .xRayEnabled(xRayEnabled)
                     .accessLogGroupRetentionPeriodDays(accessLogGroupRetentionPeriodDays)

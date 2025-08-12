@@ -61,8 +61,8 @@ public class CognitoAuth {
 
         // Enable advanced security via L1 CfnUserPool AddOns (AUDIT/ENFORCED)
         var cfnUserPool = (CfnUserPool) up.getNode().getDefaultChild();
-        if (cfnUserPool != null) {
-            String asm = (b.featurePlan != null && b.featurePlan.equalsIgnoreCase("ESSENTIALS")) ? "AUDIT" : "ENFORCED";
+        if (cfnUserPool != null && b.featurePlan != null && b.featurePlan.equalsIgnoreCase("PLUS")) {
+            String asm = b.featurePlan.equalsIgnoreCase("PLUS") ? "ENFORCED" : "AUDIT";
             cfnUserPool.setUserPoolAddOns(CfnUserPool.UserPoolAddOnsProperty.builder()
                     .advancedSecurityMode(asm)
                     .build());
@@ -210,8 +210,8 @@ public class CognitoAuth {
         private List<UserPoolClientIdentityProvider> supportedIdentityProviders = List.of();
 
         // New optional settings
-        private String featurePlan; // PLUS or ESSENTIALS (default PLUS)
-        private boolean enableLogDelivery = true;
+        private String featurePlan; // PLUS or ESSENTIALS (default ESSENTIALS)
+        private boolean enableLogDelivery = false;
         private boolean createTriggerLambdas = true;
         private boolean xRayEnabled = false;
         private int accessLogGroupRetentionPeriodDays = 30;
