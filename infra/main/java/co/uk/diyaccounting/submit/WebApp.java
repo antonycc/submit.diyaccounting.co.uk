@@ -83,6 +83,7 @@ public class WebApp {
                 .cognitoFeaturePlan(System.getenv("DIY_SUBMIT_COGNITO_FEATURE_PLAN"))
                 .cognitoEnableLogDelivery(System.getenv("DIY_SUBMIT_ENABLE_LOG_DELIVERY"))
                 .cognitoCreateTriggerLambdas(System.getenv("DIY_SUBMIT_CREATE_COGNITO_TRIGGER_LAMBDAS"))
+                .logCognitoEventHandlerSource(System.getenv("LOG_COGNITO_EVENT_HANDLER_SOURCE"))
                 .build();
 
         CfnOutput.Builder.create(stack, "OriginBucketArn")

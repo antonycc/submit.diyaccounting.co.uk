@@ -1,6 +1,8 @@
 package co.uk.diyaccounting.submit.constructs;
 
 import co.uk.diyaccounting.submit.awssdk.RetentionDaysConverter;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.SecretValue;
 import software.amazon.awscdk.services.cognito.AttributeMapping;
@@ -41,6 +43,8 @@ import java.util.Map;
  *  - Attach logging Lambdas for common Cognito triggers with optional X-Ray
  */
 public class CognitoAuth {
+
+    private static final Logger logger = LogManager.getLogger(CognitoAuth.class);
 
     public final UserPool userPool;
     public final UserPoolIdentityProviderGoogle googleIdentityProvider;
@@ -147,6 +151,7 @@ public class CognitoAuth {
         if (shouldCreateTriggers) {
             File jar = new File(b.lambdaJarPath);
             if (!jar.exists()) {
+                logger.warn("Lambda jar file {} does not exist, will not create Cognito logging Lambdas", b.lambdaJarPath);
                 shouldCreateTriggers = false;
             }
         }
@@ -216,7 +221,7 @@ public class CognitoAuth {
         private boolean xRayEnabled = false;
         private int accessLogGroupRetentionPeriodDays = 30;
         private String logGroupNamePrefix = "cognito";
-        private String lambdaJarPath = "target/web-0.0.2-4-shaded.jar";
+        private String lambdaJarPath = null;
 
         private Builder(Construct scope) { this.scope = scope; }
         public static Builder create(Construct scope) { return new Builder(scope); }

@@ -215,6 +215,7 @@ public class WebStack extends Stack {
         public String cognitoFeaturePlan;
         public String cognitoEnableLogDelivery;
         public String cognitoCreateTriggerLambdas;
+        public String logCognitoEventHandlerSource;
 
         public Builder(Construct scope, String id, StackProps props) {
             this.scope = scope;
@@ -384,6 +385,11 @@ public class WebStack extends Stack {
 
         public Builder logGzippedS3ObjectEventHandlerSource(String logGzippedS3ObjectEventHandlerSource) {
             this.logGzippedS3ObjectEventHandlerSource = logGzippedS3ObjectEventHandlerSource;
+            return this;
+        }
+
+        public Builder logCognitoEventHandlerSource(String logCognitoEventHandlerSource) {
+            this.logCognitoEventHandlerSource = logCognitoEventHandlerSource;
             return this;
         }
 
@@ -880,7 +886,7 @@ public class WebStack extends Stack {
                     .xRayEnabled(xRayEnabled)
                     .accessLogGroupRetentionPeriodDays(accessLogGroupRetentionPeriodDays)
                     .logGroupNamePrefix(dashedDomainName)
-                    .lambdaJarPath("target/web-0.0.2-4-shaded.jar")
+                    .lambdaJarPath(builder.logCognitoEventHandlerSource)
                     .build();
             this.userPool = cognito.userPool;
             this.googleIdentityProvider = cognito.googleIdentityProvider;
