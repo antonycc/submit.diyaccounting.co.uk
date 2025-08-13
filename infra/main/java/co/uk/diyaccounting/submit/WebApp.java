@@ -212,27 +212,23 @@ public class WebApp {
             CfnOutput.Builder.create(stack, "UserPoolArn")
                     .value(stack.userPool.getUserPoolArn())
                     .build();
-        }
 
-        if (stack.userPoolClient != null) {
             CfnOutput.Builder.create(stack, "UserPoolClientId")
                     .value(stack.userPoolClient.getUserPoolClientId())
                     .build();
-        }
 
-        if (stack.userPoolDomain != null) {
             CfnOutput.Builder.create(stack, "UserPoolDomainName")
                     .value(stack.userPoolDomain.getDomainName())
                     .build();
+
+            CfnOutput.Builder.create(stack, "UserPoolDomainARecord")
+                    .value(stack.userPoolDomainARecord.getDomainName())
+                    .build();
+
+            CfnOutput.Builder.create(stack, "UserPoolDomainAaaaRecord")
+                    .value(stack.userPoolDomainAaaaRecord.getDomainName())
+                    .build();
         }
-
-        CfnOutput.Builder.create(stack, "UserPoolDomainARecord")
-                .value(stack.userPoolDomainARecord.getDomainName())
-                .build();
-
-        CfnOutput.Builder.create(stack, "UserPoolDomainAaaaRecord")
-                .value(stack.userPoolDomainAaaaRecord.getDomainName())
-                .build();
 
         // Bundle Lambda outputs (only if bundle Lambda is configured)
         if (stack.bundleLambda != null) {
