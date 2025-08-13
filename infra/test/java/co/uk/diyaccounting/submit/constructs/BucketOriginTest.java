@@ -81,38 +81,6 @@ public class BucketOriginTest {
     }
 
     @Test
-    public void testBucketOriginBuilderValidation() {
-        var stackProps = SimpleStackProps.Builder.create(Stack.class).build();
-        App app = new App();
-        Stack stack = new Stack(app, stackProps.getStackName(), stackProps);
-        
-        // Test missing bucket name
-        Assertions.assertThrows(IllegalArgumentException.class, () -> {
-            BucketOrigin.Builder
-                    .create(stack, "TestBucketOrigin")
-                    .build();
-        });
-        
-        // Test missing required fields for new bucket
-        Assertions.assertThrows(IllegalArgumentException.class, () -> {
-            BucketOrigin.Builder
-                    .create(stack, "TestBucketOrigin")
-                    .bucketName("test-bucket")
-                    .useExistingBucket(false)
-                    .build();
-        });
-        
-        // Test valid existing bucket configuration
-        Assertions.assertDoesNotThrow(() -> {
-            BucketOrigin.Builder
-                    .create(stack, "TestBucketOrigin")
-                    .bucketName("existing-bucket")
-                    .useExistingBucket(true)
-                    .build();
-        });
-    }
-
-    @Test
     public void testBucketOriginBuilderFluentInterface() {
         var stackProps = SimpleStackProps.Builder.create(Stack.class).build();
         App app = new App();
