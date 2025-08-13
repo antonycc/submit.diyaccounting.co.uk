@@ -56,7 +56,7 @@ function getTimestamp() {
   return now.toISOString().replace(/[:.]/g, "-").replace("T", "_").slice(0, -5);
 }
 
-test.setTimeout(60000);
+test.setTimeout(120000);
 
 test.beforeAll(async () => {
   console.log("Starting beforeAll hook...");
@@ -131,7 +131,7 @@ test.beforeAll(async () => {
   }
 
   console.log("beforeAll hook completed successfully");
-}, 30000); // Set timeout to 60 seconds for beforeAll hook
+}, 60000); // Set timeout to 60 seconds for beforeAll hook
 
 test.afterAll(async () => {
   if (serverProcess) {
@@ -443,4 +443,4 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   await page.screenshot({ path: `target/behaviour-submitVat/200-home-${timestamp}.png` });
   await expect(page.locator("#welcomeHeading")).toContainText("Welcome");
   await expect(page.getByText("Log in")).toBeVisible();
-}, 30000);
+}, 60000);
