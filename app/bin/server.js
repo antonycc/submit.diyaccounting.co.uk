@@ -13,7 +13,9 @@ import { httpPost as submitVatHttpPost } from "../functions/submitVat.js";
 import { httpPost as logReceiptHttpPost } from "../functions/logReceipt.js";
 import { httpPost as requestBundleHttpPost } from "../functions/bundle.js";
 import { httpGet as getCatalogHttpGet } from "../functions/getCatalog.js";
+import { httpGet as myBundlesHttpGet } from "../functions/myBundles.js";
 import logger from "../lib/logger.js";
+import { requireActivity } from "../src/lib/entitlementsService.js";
 
 dotenv.config({ path: ".env" });
 
@@ -41,6 +43,14 @@ app.use((req, res, next) => {
 // 1) serve static site
 app.use(express.static(path.join(__dirname, "../../web/public")));
 
+// Dynamic config for client-side flags
+app.get("/config.js", (_req, res) => {
+  const flag = String(process.env.CATALOG_DRIVEN_UI || "false").toLowerCase() === "true";
+  const content = `window.CATALOG_DRIVEN_UI = ${flag};`;
+  res.set("Content-Type", "application/javascript");
+  res.send(content);
+});
+
 // 2) wire your Lambdas under configurable paths from cdk.json
 const authUrlPath = context.authUrlLambdaUrlPath || "/api/hmrc/auth-url";
 const mockAuthUrlPath = "/api/mock/auth-url";
@@ -52,6 +62,7 @@ const logReceiptPath = context.logReceiptLambdaUrlPath || "/api/log-receipt";
 const googleAuthUrlPath = context.googleAuthUrlLambdaUrlPath || "/api/google/auth-url";
 const requestBundlePath = context.bundleLambdaUrlPath || "/api/request-bundle";
 const catalogPath = context.catalogLambdaUrlPath || "/api/catalog";
+const myBundlesPath = context.myBundlesLambdaUrlPath || "/api/my-bundles";
 
 app.get(authUrlPath, async (req, res) => {
   const event = {
@@ -116,16 +127,30 @@ app.post(exchangeGoogleTokenPath, async (req, res) => {
   res.status(statusCode).json(JSON.parse(body));
 });
 
-app.post(submitVatPath, async (req, res) => {
-  const event = {
-    path: req.path,
-    headers: { host: req.get("host") || "localhost:3000" },
-    queryStringParameters: req.query || {},
-    body: JSON.stringify(req.body),
-  };
-  const { statusCode, body } = await submitVatHttpPost(event);
-  res.status(statusCode).json(JSON.parse(body));
-});
+// Submit VAT route (optionally guarded)
+if (String(process.env.DIY_SUBMIT_ENABLE_CATALOG_GUARDS || "").toLowerCase() === "true") {
+  app.post(submitVatPath, requireActivity("submit-vat"), async (req, res) => {
+    const event = {
+      path: req.path,
+      headers: { host: req.get("host") || "localhost:3000" },
+      queryStringParameters: req.query || {},
+      body: JSON.stringify(req.body),
+    };
+    const { statusCode, body } = await submitVatHttpPost(event);
+    res.status(statusCode).json(JSON.parse(body));
+  });
+} else {
+  app.post(submitVatPath, async (req, res) => {
+    const event = {
+      path: req.path,
+      headers: { host: req.get("host") || "localhost:3000" },
+      queryStringParameters: req.query || {},
+      body: JSON.stringify(req.body),
+    };
+    const { statusCode, body } = await submitVatHttpPost(event);
+    res.status(statusCode).json(JSON.parse(body));
+  });
+}
 
 app.post(logReceiptPath, async (req, res) => {
   const event = {
@@ -176,6 +201,25 @@ app.get(catalogPath, async (req, res) => {
   const { statusCode, body, headers } = await getCatalogHttpGet(event);
   if (headers) res.set(headers);
   if (statusCode === 304) return res.status(304).end();
+  try {
+    res.status(statusCode).json(body ? JSON.parse(body) : {});
+  } catch (_e) {
+    res.status(statusCode).send(body || "");
+  }
+});
+
+// My bundles endpoint
+app.get(myBundlesPath, async (req, res) => {
+  const event = {
+    path: req.path,
+    headers: {
+      host: req.get("host") || "localhost:3000",
+      authorization: req.headers.authorization,
+    },
+    queryStringParameters: req.query || {},
+  };
+  const { statusCode, body, headers } = await myBundlesHttpGet(event);
+  if (headers) res.set(headers);
   try {
     res.status(statusCode).json(body ? JSON.parse(body) : {});
   } catch (_e) {

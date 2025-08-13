@@ -134,6 +134,17 @@ public class WebStack extends Stack {
     public Function bundleLambda;
     public FunctionUrl bundleLambdaUrl;
     public LogGroup bundleLambdaLogGroup;
+
+    // Catalog Lambda
+    public Function catalogLambda;
+    public FunctionUrl catalogLambdaUrl;
+    public LogGroup catalogLambdaLogGroup;
+
+    // My Bundles Lambda
+    public Function myBundlesLambda;
+    public FunctionUrl myBundlesLambdaUrl;
+    public LogGroup myBundlesLambdaLogGroup;
+
     public IBucket receiptsBucket;
 
     public static class Builder {
@@ -210,6 +221,13 @@ public class WebStack extends Stack {
         public String bundleLambdaHandlerFunctionName;
         public String bundleLambdaUrlPath;
         public String bundleLambdaDuration;
+        // Catalog and My Bundles lambdas
+        public String catalogLambdaHandlerFunctionName;
+        public String catalogLambdaUrlPath;
+        public String catalogLambdaDuration;
+        public String myBundlesLambdaHandlerFunctionName;
+        public String myBundlesLambdaUrlPath;
+        public String myBundlesLambdaDuration;
         public String baseImageTag;
         // Cognito advanced security/logging flags
         public String cognitoFeaturePlan;
@@ -620,6 +638,34 @@ public class WebStack extends Stack {
 
         public Builder bundleLambdaDurationMillis(String bundleLambdaDuration) {
             this.bundleLambdaDuration = bundleLambdaDuration;
+            return this;
+        }
+
+        // Catalog Lambda setters
+        public Builder catalogLambdaHandlerFunctionName(String catalogLambdaHandlerFunctionName) {
+            this.catalogLambdaHandlerFunctionName = catalogLambdaHandlerFunctionName;
+            return this;
+        }
+        public Builder catalogLambdaUrlPath(String catalogLambdaUrlPath) {
+            this.catalogLambdaUrlPath = catalogLambdaUrlPath;
+            return this;
+        }
+        public Builder catalogLambdaDurationMillis(String catalogLambdaDuration) {
+            this.catalogLambdaDuration = catalogLambdaDuration;
+            return this;
+        }
+
+        // My Bundles Lambda setters
+        public Builder myBundlesLambdaHandlerFunctionName(String myBundlesLambdaHandlerFunctionName) {
+            this.myBundlesLambdaHandlerFunctionName = myBundlesLambdaHandlerFunctionName;
+            return this;
+        }
+        public Builder myBundlesLambdaUrlPath(String myBundlesLambdaUrlPath) {
+            this.myBundlesLambdaUrlPath = myBundlesLambdaUrlPath;
+            return this;
+        }
+        public Builder myBundlesLambdaDurationMillis(String myBundlesLambdaDuration) {
+            this.myBundlesLambdaDuration = myBundlesLambdaDuration;
             return this;
         }
 
@@ -1107,6 +1153,46 @@ public class WebStack extends Stack {
             }
         }
 
+        // Catalog Lambda
+        if (StringUtils.isNotBlank(builder.catalogLambdaHandlerFunctionName)) {
+            var catalogLambdaEnv = new HashMap<>(Map.of(
+                    "DIY_SUBMIT_HOME_URL", builder.homeUrl
+            ));
+            var catalogLambdaUrlOrigin = LambdaUrlOrigin.Builder.create(this, "CatalogLambda")
+                    .options(lambdaCommonOpts)
+                    .imageFilename("getCatalog.Dockerfile")
+                    .functionName(Builder.buildFunctionName(dashedDomainName, builder.catalogLambdaHandlerFunctionName))
+                    .allowedMethods(AllowedMethods.ALLOW_ALL)
+                    .handler(builder.lambdaEntry + builder.catalogLambdaHandlerFunctionName)
+                    .environment(catalogLambdaEnv)
+                    .timeout(Duration.millis(Long.parseLong(builder.catalogLambdaDuration != null ? builder.catalogLambdaDuration : "30000")))
+                    .build();
+            this.catalogLambda = catalogLambdaUrlOrigin.lambda;
+            this.catalogLambdaUrl = catalogLambdaUrlOrigin.functionUrl;
+            this.catalogLambdaLogGroup = catalogLambdaUrlOrigin.logGroup;
+            lambdaUrlToOriginsBehaviourMappings.put(builder.catalogLambdaUrlPath + "*", catalogLambdaUrlOrigin.behaviorOptions);
+        }
+
+        // My Bundles Lambda
+        if (StringUtils.isNotBlank(builder.myBundlesLambdaHandlerFunctionName)) {
+            var myBundlesLambdaEnv = new HashMap<>(Map.of(
+                    "DIY_SUBMIT_HOME_URL", builder.homeUrl
+            ));
+            var myBundlesLambdaUrlOrigin = LambdaUrlOrigin.Builder.create(this, "MyBundlesLambda")
+                    .options(lambdaCommonOpts)
+                    .imageFilename("myBundles.Dockerfile")
+                    .functionName(Builder.buildFunctionName(dashedDomainName, builder.myBundlesLambdaHandlerFunctionName))
+                    .allowedMethods(AllowedMethods.ALLOW_ALL)
+                    .handler(builder.lambdaEntry + builder.myBundlesLambdaHandlerFunctionName)
+                    .environment(myBundlesLambdaEnv)
+                    .timeout(Duration.millis(Long.parseLong(builder.myBundlesLambdaDuration != null ? builder.myBundlesLambdaDuration : "30000")))
+                    .build();
+            this.myBundlesLambda = myBundlesLambdaUrlOrigin.lambda;
+            this.myBundlesLambdaUrl = myBundlesLambdaUrlOrigin.functionUrl;
+            this.myBundlesLambdaLogGroup = myBundlesLambdaUrlOrigin.logGroup;
+            lambdaUrlToOriginsBehaviourMappings.put(builder.myBundlesLambdaUrlPath + "*", myBundlesLambdaUrlOrigin.behaviorOptions);
+        }
+
         // Create receipts bucket for storing VAT submission receipts
         this.receiptsBucket = LogForwardingBucket.Builder
                 .create(this, "ReceiptsBucket", builder.logS3ObjectEventHandlerSource, LogS3ObjectEvent.class)
@@ -1184,6 +1270,9 @@ public class WebStack extends Stack {
         exchangeHmrcTokenLambda.addPermission("ExchangeTokenLambdaAllowCloudFrontInvoke", invokeFunctionUrlPermission);
         submitVatLambda.addPermission("SubmitVatLambdaAllowCloudFrontInvoke", invokeFunctionUrlPermission);
         logReceiptLambda.addPermission("LogReceiptLambdaAllowCloudFrontInvoke", invokeFunctionUrlPermission);
+        if (this.bundleLambda != null) this.bundleLambda.addPermission("BundleLambdaAllowCloudFrontInvoke", invokeFunctionUrlPermission);
+        if (this.catalogLambda != null) this.catalogLambda.addPermission("CatalogLambdaAllowCloudFrontInvoke", invokeFunctionUrlPermission);
+        if (this.myBundlesLambda != null) this.myBundlesLambda.addPermission("MyBundlesLambdaAllowCloudFrontInvoke", invokeFunctionUrlPermission);
 
         this.distributionUrl = "https://%s/".formatted(this.distribution.getDomainName());
         logger.info("Distribution URL: %s".formatted(distributionUrl));

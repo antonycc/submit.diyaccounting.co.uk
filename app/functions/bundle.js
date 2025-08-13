@@ -1,5 +1,7 @@
 // app/functions/bundle.js
 
+import { loadCatalogFromRoot } from "@app/src/lib/productCatalogHelper.js";
+
 // AWS Cognito SDK is loaded lazily only when not in MOCK mode to avoid requiring it during tests
 let __cognitoModule;
 let __cognitoClient;
@@ -41,6 +43,49 @@ function isMockMode() {
     String(process.env.DIY_SUBMIT_BUNDLE_MOCK || "").toLowerCase() === "true" ||
     process.env.DIY_SUBMIT_BUNDLE_MOCK === "1"
   );
+}
+
+function parseIsoDurationToDate(fromDate, iso) {
+  // Minimal support for PnD, PnM, PnY
+  const d = new Date(fromDate.getTime());
+  const m = String(iso || "").match(/^P(?:(\d+)Y)?(?:(\d+)M)?(?:(\d+)D)?$/);
+  if (!m) return d;
+  const years = parseInt(m[1] || "0", 10);
+  const months = parseInt(m[2] || "0", 10);
+  const days = parseInt(m[3] || "0", 10);
+  d.setFullYear(d.getFullYear() + years);
+  d.setMonth(d.getMonth() + months);
+  d.setDate(d.getDate() + days);
+  return d;
+}
+
+function getCatalogBundle(bundleId) {
+  try {
+    const catalog = loadCatalogFromRoot();
+    return (catalog.bundles || []).find((b) => b.id === bundleId) || null;
+  } catch (_e) {
+    return null;
+  }
+}
+
+function qualifiersSatisfied(bundle, claims, requestQualifiers = {}) {
+  const q = bundle?.qualifiers || {};
+  if (q.requiresTransactionId) {
+    const tx = requestQualifiers.transactionId || claims?.transactionId || claims?.["custom:transactionId"];
+    if (!tx) return { ok: false, reason: "missing_transactionId" };
+  }
+  if (q.subscriptionTier) {
+    const tier = requestQualifiers.subscriptionTier || claims?.subscriptionTier || claims?.["custom:subscriptionTier"];
+    if (tier !== q.subscriptionTier) return { ok: false, reason: "subscription_tier_mismatch" };
+  }
+  // Reject unknown qualifier keys present in request
+  const known = new Set(Object.keys(q));
+  if (q.requiresTransactionId) known.add("transactionId");
+  if (Object.prototype.hasOwnProperty.call(q, "subscriptionTier")) known.add("subscriptionTier");
+  for (const k of Object.keys(requestQualifiers || {})) {
+    if (!known.has(k)) return { ok: false, unknown: k };
+  }
+  return { ok: true };
 }
 
 /**
@@ -114,6 +159,7 @@ export async function httpPost(event) {
     }
 
     const requestedBundle = requestBody.bundleId;
+    const qualifiers = requestBody.qualifiers || {};
     if (!requestedBundle) {
       return {
         statusCode: 400,
@@ -172,116 +218,130 @@ export async function httpPost(event) {
           status: "already_granted",
           message: "Bundle already granted to user",
           bundles: currentBundles,
+          granted: false,
         }),
       };
     }
 
-    // Validate bundle against expiry date
-    const expiryDate = process.env.DIY_SUBMIT_BUNDLE_EXPIRY_DATE || "2025-12-31";
-    if (new Date() > new Date(expiryDate)) {
-      return {
-        statusCode: 403,
-        headers: {
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*",
-        },
-        body: JSON.stringify({ error: "This bundle has expired." }),
-      };
-    }
+    // Two paths: legacy HMRC_TEST_API path via env expiry & user limit OR catalog-driven bundles
+    const catalogBundle = getCatalogBundle(requestedBundle);
 
-    // Check user limit for this bundle
-    const userLimit = parseInt(process.env.DIY_SUBMIT_BUNDLE_USER_LIMIT || "1000");
-    let currentCount;
-    if (isMockMode()) {
-      // Count users in the in-memory store that have this bundle
-      currentCount = 0;
-      for (const bundles of __inMemoryBundles.values()) {
-        if ((bundles || []).some((b) => typeof b === "string" && b.startsWith(requestedBundle + "|"))) {
-          currentCount++;
-        }
-      }
-    } else {
-      currentCount = await getCurrentUserCountForBundle(requestedBundle, userPoolId);
-    }
-
-    if (currentCount >= userLimit) {
-      return {
-        statusCode: 403,
-        headers: {
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*",
-        },
-        body: JSON.stringify({ error: "User limit reached for this bundle." }),
-      };
-    }
-
-    // Grant the bundle to the user
-    const newBundle = `${requestedBundle}|EXPIRY=${expiryDate}`;
-    currentBundles.push(newBundle);
-
-    if (isMockMode()) {
-      // Update in-memory store and return success without AWS calls
-      __inMemoryBundles.set(userId, currentBundles);
-      console.log("[DEBUG_LOG] [MOCK] Bundle granted successfully:", newBundle);
-      return {
-        statusCode: 200,
-        headers: {
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*",
-        },
-        body: JSON.stringify({
-          status: "granted",
-          expiryDate,
-          bundle: requestedBundle,
-          bundles: currentBundles,
-        }),
-      };
-    }
-
-    try {
-      const mod = await getCognitoModule();
-      const client = await getCognitoClient();
-      const updateCommand = new mod.AdminUpdateUserAttributesCommand({
-        UserPoolId: userPoolId,
-        Username: userId,
-        UserAttributes: [
-          {
-            Name: "custom:bundles",
-            Value: currentBundles.join("|"),
+    if (!catalogBundle) {
+      // Legacy behavior preserved (HMRC_TEST_API or other external bundles using envs)
+      const expiryDate = process.env.DIY_SUBMIT_BUNDLE_EXPIRY_DATE || "2025-12-31";
+      if (new Date() > new Date(expiryDate)) {
+        return {
+          statusCode: 403,
+          headers: {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*",
           },
-        ],
-      });
+          body: JSON.stringify({ error: "This bundle has expired." }),
+        };
+      }
 
-      await client.send(updateCommand);
+      // Check user limit for this bundle
+      const userLimit = parseInt(process.env.DIY_SUBMIT_BUNDLE_USER_LIMIT || "1000");
+      let currentCount;
+      if (isMockMode()) {
+        currentCount = 0;
+        for (const bundles of __inMemoryBundles.values()) {
+          if ((bundles || []).some((b) => typeof b === "string" && b.startsWith(requestedBundle + "|"))) {
+            currentCount++;
+          }
+        }
+      } else {
+        currentCount = await getCurrentUserCountForBundle(requestedBundle, userPoolId);
+      }
 
-      console.log("[DEBUG_LOG] Bundle granted successfully:", newBundle);
+      if (currentCount >= userLimit) {
+        return {
+          statusCode: 403,
+          headers: {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*",
+          },
+          body: JSON.stringify({ error: "User limit reached for this bundle." }),
+        };
+      }
 
+      const newBundle = `${requestedBundle}|EXPIRY=${expiryDate}`;
+      currentBundles.push(newBundle);
+      if (isMockMode()) {
+        __inMemoryBundles.set(userId, currentBundles);
+        return {
+          statusCode: 200,
+          headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+          body: JSON.stringify({ status: "granted", granted: true, expiryDate, expiry: expiryDate, bundle: requestedBundle, bundles: currentBundles }),
+        };
+      }
+      try {
+        const mod = await getCognitoModule();
+        const client = await getCognitoClient();
+        const updateCommand = new mod.AdminUpdateUserAttributesCommand({
+          UserPoolId: userPoolId,
+          Username: userId,
+          UserAttributes: [
+            { Name: "custom:bundles", Value: currentBundles.join("|") },
+          ],
+        });
+        await client.send(updateCommand);
+        return {
+          statusCode: 200,
+          headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+          body: JSON.stringify({ status: "granted", granted: true, expiryDate, expiry: expiryDate, bundle: requestedBundle, bundles: currentBundles }),
+        };
+      } catch (error) {
+        return { statusCode: 500, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }, body: JSON.stringify({ error: "Failed to grant bundle" }) };
+      }
+    }
+
+    // Catalog-driven bundles
+    // If bundle requires auth, we already have auth (Bearer)
+    // Validate qualifiers
+    const check = qualifiersSatisfied(catalogBundle, decodedToken, qualifiers);
+    if (check?.unknown) {
+      return { statusCode: 400, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }, body: JSON.stringify({ error: "unknown_qualifier", qualifier: check.unknown }) };
+    }
+    if (check?.ok === false) {
+      return { statusCode: 400, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }, body: JSON.stringify({ error: "qualifier_mismatch" }) };
+    }
+
+    if (catalogBundle.allocation === "automatic") {
+      // nothing to persist
       return {
         statusCode: 200,
-        headers: {
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*",
-        },
-        body: JSON.stringify({
-          status: "granted",
-          expiryDate,
-          bundle: requestedBundle,
-          bundles: currentBundles,
-        }),
-      };
-    } catch (error) {
-      console.log("[DEBUG_LOG] Error updating user attributes:", error?.message || error);
-      return {
-        statusCode: 500,
-        headers: {
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*",
-        },
-        body: JSON.stringify({ error: "Failed to grant bundle" }),
+        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+        body: JSON.stringify({ status: "granted", granted: true, expiry: null, bundle: requestedBundle, bundles: currentBundles }),
       };
     }
+
+    // on-request: enforce cap and expiry
+    const cap = Number.isFinite(catalogBundle.cap) ? Number(catalogBundle.cap) : undefined;
+    if (typeof cap === "number") {
+      let currentCount = 0;
+      for (const bundles of __inMemoryBundles.values()) {
+        if ((bundles || []).some((b) => typeof b === "string" && b.startsWith(requestedBundle + "|"))) currentCount++;
+      }
+      if (currentCount >= cap) {
+        return { statusCode: 403, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }, body: JSON.stringify({ error: "cap_reached" }) };
+      }
+    }
+
+    const expiry = catalogBundle.timeout ? parseIsoDurationToDate(new Date(), catalogBundle.timeout) : null;
+    const expiryStr = expiry ? expiry.toISOString().slice(0, 10) : "";
+
+    const newBundle = `${requestedBundle}|EXPIRY=${expiryStr || ""}`;
+    currentBundles.push(newBundle);
+    __inMemoryBundles.set(userId, currentBundles);
+
+    return {
+      statusCode: 200,
+      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+      body: JSON.stringify({ status: "granted", granted: true, expiry: expiryStr || null, bundle: requestedBundle, bundles: currentBundles }),
+    };
   } catch (error) {
-    console.log("[DEBUG_LOG] Unexpected error:", error.message);
+    console.log("[DEBUG_LOG] Unexpected error:", error?.message || error);
     return {
       statusCode: 500,
       headers: {
