@@ -2,7 +2,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
-import { loadCatalogFromRoot } from "@app/src/lib/productCatalogHelper.js";
+import { loadCatalogFromRoot } from "../src/lib/productCatalogHelper.js";
 
 let cached = null; // { json, etag, lastModified, object, validated }
 

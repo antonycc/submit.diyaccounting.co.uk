@@ -232,13 +232,17 @@ app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "../../web/public/index.html"));
 });
 
-const DIY_SUBMIT_DIY_SUBMIT_TEST_SERVER_HTTP_PORT = process.env.DIY_SUBMIT_DIY_SUBMIT_TEST_SERVER_HTTP_PORT || 3000;
+const DIY_SUBMIT_TEST_SERVER_HTTP_PORT = process.env.DIY_SUBMIT_TEST_SERVER_HTTP_PORT || process.env.DIY_SUBMIT_DIY_SUBMIT_TEST_SERVER_HTTP_PORT || 3000;
 
-// Only start the server if this file is being run directly
-if (import.meta.url === `file://${process.argv[1]}`) {
-  app.listen(DIY_SUBMIT_DIY_SUBMIT_TEST_SERVER_HTTP_PORT, () => {
+// Only start the server if this file is being run directly (compare absolute paths) or under test harness
+const __thisFile = fileURLToPath(import.meta.url);
+const __argv1 = process.argv[1] ? path.resolve(process.argv[1]) : "";
+const __runDirect = __thisFile === __argv1 || String(process.env.DIY_SUBMIT_TEST_SERVER_HTTP || "") === "run";
+
+if (__runDirect) {
+  app.listen(DIY_SUBMIT_TEST_SERVER_HTTP_PORT, () => {
     const hmrcBase = process.env.DIY_SUBMIT_HMRC_BASE_URI || "DIY_SUBMIT_HMRC_BASE_URI not set";
-    const message = `Listening at http://127.0.0.1:${DIY_SUBMIT_DIY_SUBMIT_TEST_SERVER_HTTP_PORT} for ${hmrcBase}`;
+    const message = `Listening at http://127.0.0.1:${DIY_SUBMIT_TEST_SERVER_HTTP_PORT} for ${hmrcBase}`;
     console.log(message);
     logger.info(message);
   });

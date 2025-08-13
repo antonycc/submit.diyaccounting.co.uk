@@ -1,5 +1,5 @@
 // app/functions/myBundles.js
-import { getActiveBundles } from "@app/src/lib/entitlementsService.js";
+import { getActiveBundles } from "../src/lib/entitlementsService.js";
 
 function decodeJwtNoVerify(token) {
   try {

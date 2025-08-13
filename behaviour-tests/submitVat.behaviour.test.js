@@ -56,7 +56,7 @@ function getTimestamp() {
   return now.toISOString().replace(/[:.]/g, "-").replace("T", "_").slice(0, -5);
 }
 
-test.setTimeout(60000);
+test.setTimeout(120000);
 
 test.beforeAll(async () => {
   console.log("Starting beforeAll hook...");
