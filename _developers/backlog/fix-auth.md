@@ -31,7 +31,7 @@ Your repo uses AWS Cognito as an OAuth broker: the login page calls `GET /api/
 4. **Fix the CI/CD workflows.**
 
     * In `.github/workflows/test-slowly.yml` and `deploy.yml`, pass all required environment variables for CDK synthesis.  Specifically, provide `DIY_SUBMIT_COGNITO_CLIENT_ID` (use a dummy value for synth if necessary) so that `cdk synth` doesn’t fail due to missing variables.
-    * Replace `DIY_SUBMIT_GOOGLE_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}` with the correct secret as noted above.
+    * Replace `DIY_SUBMIT_GOOGLE_CLIENT_SECRET: ${{ secrets.DIY_SUBMIT_GOOGLE_CLIENT_SECRET }}` with the correct secret as noted above.
     * After building the CDK stack, export the `CognitoClientId` and set it for later jobs; the `synth` job can read outputs from `cdk synth` to avoid “to get later” placeholders.
 
 5. **Other improvements.**

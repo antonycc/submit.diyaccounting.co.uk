@@ -33,18 +33,37 @@ export function authUrl(state, provider = "hmrc") {
       `&state=${encodeURIComponent(state)}`
     );
   } else if (provider === "google") {
-    // TODO: Fall back to DIY_SUBMIT_GOOGLE_CLIENT_ID when there is no cognito configured.
-    const clientId = process.env.DIY_SUBMIT_COGNITO_CLIENT_ID;
     const redirectUri = process.env.DIY_SUBMIT_HOME_URL + "loginWithGoogleCallback.html";
-    const cognitoBaseUri = process.env.DIY_SUBMIT_COGNITO_BASE_URI;
     const scope = "openid profile email";
+
+    const cognitoClientId = (process.env.DIY_SUBMIT_COGNITO_CLIENT_ID || "").trim();
+    const cognitoBaseUri = (process.env.DIY_SUBMIT_COGNITO_BASE_URI || "").trim();
+
+    if (cognitoClientId && cognitoBaseUri) {
+      // Normal path via Cognito Hosted UI -> Google IdP
+      return (
+        `${cognitoBaseUri}/oauth2/authorize?response_type=code` +
+        `&client_id=${encodeURIComponent(cognitoClientId)}` +
+        `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+        `&scope=${encodeURIComponent(scope)}` +
+        `&state=${encodeURIComponent(state)}` +
+        `&identity_provider=Google`
+      );
+    }
+
+    // Fallback: direct Google OAuth when Cognito is not configured
+    const googleClientId = (process.env.DIY_SUBMIT_GOOGLE_CLIENT_ID || "").trim();
+    if (!googleClientId) {
+      throw new Error("Google login misconfigured: neither DIY_SUBMIT_COGNITO_CLIENT_ID nor DIY_SUBMIT_GOOGLE_CLIENT_ID is set");
+    }
+    const googleAuthorize = "https://accounts.google.com/o/oauth2/v2/auth";
     return (
-      `${cognitoBaseUri}/oauth2/authorize?response_type=code` +
-      `&client_id=${encodeURIComponent(clientId)}` +
+      `${googleAuthorize}?response_type=code` +
+      `&client_id=${encodeURIComponent(googleClientId)}` +
       `&redirect_uri=${encodeURIComponent(redirectUri)}` +
       `&scope=${encodeURIComponent(scope)}` +
       `&state=${encodeURIComponent(state)}` +
-      `&identity_provider=Google`
+      `&access_type=offline&include_granted_scopes=true`
     );
   } else {
     throw new Error(`Unknown provider: ${provider}`);

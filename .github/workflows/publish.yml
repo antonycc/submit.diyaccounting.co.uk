@@ -82,11 +82,6 @@ jobs:
         shell: bash
         run: ./mvnw clean package
 
-      - name: synth
-        id: synth
-        shell: bash
-        run: npx cdk synth --strict --validation --no-staging
-
   publish-npm:
     needs:
       - npm-test

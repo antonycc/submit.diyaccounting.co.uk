@@ -134,20 +134,41 @@ export async function httpPostGoogle(event) {
     });
   }
 
-  // TODO: Fall back to DIY_SUBMIT_GOOGLE_CLIENT_ID when there is no cognito configured.
-  const clientId = process.env.DIY_SUBMIT_COGNITO_CLIENT_ID;
+  const redirectUri = process.env.DIY_SUBMIT_HOME_URL + "loginWithGoogleCallback.html";
 
-  // OAuth exchange token post-body
-  // const clientSecret = await retrieveGoogleClientSecret();
-  const url = `${process.env.DIY_SUBMIT_COGNITO_BASE_URI}/oauth/token`;
-  const body = {
+  const cognitoClientId = (process.env.DIY_SUBMIT_COGNITO_CLIENT_ID || "").trim();
+  const cognitoBaseUri = (process.env.DIY_SUBMIT_COGNITO_BASE_URI || "").trim();
+
+  if (cognitoClientId && cognitoBaseUri) {
+    // Exchange via Cognito
+    const url = `${cognitoBaseUri}/oauth/token`;
+    const body = {
+      grant_type: "authorization_code",
+      client_id: cognitoClientId,
+      redirect_uri: redirectUri,
+      code,
+    };
+    return httpPostWithUrl(request, url, body);
+  }
+
+  // Fallback: exchange directly with Google
+  const googleClientId = (process.env.DIY_SUBMIT_GOOGLE_CLIENT_ID || "").trim();
+  if (!googleClientId) {
+    return httpServerErrorResponse({
+      request,
+      message: "Google login misconfigured: neither DIY_SUBMIT_COGNITO_CLIENT_ID nor DIY_SUBMIT_GOOGLE_CLIENT_ID is set",
+    });
+  }
+  const clientSecret = await retrieveGoogleClientSecret();
+  const googleTokenUrl = "https://oauth2.googleapis.com/token";
+  const googleBody = {
     grant_type: "authorization_code",
-    client_id: clientId,
-    // client_secret: clientSecret,
-    redirect_uri: process.env.DIY_SUBMIT_HOME_URL + "loginWithGoogleCallback.html",
+    client_id: googleClientId,
+    client_secret: clientSecret,
+    redirect_uri: redirectUri,
     code,
   };
-  return httpPostWithUrl(request, url, body);
+  return httpPostWithUrl(request, googleTokenUrl, googleBody);
 }
 
 // POST /api/hmrc/exchange-token
