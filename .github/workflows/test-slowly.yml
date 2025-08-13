@@ -342,6 +342,7 @@ jobs:
         env:
           GITHUB_ACTOR: ${{ github.actor }}
           ENV_NAME: 'ci'
+          BASE_IMAGE_TAG: ${{ needs.build-base-image.outputs.base-image-tag }}
           LOG_S3_OBJECT_EVENT_HANDLER_SOURCE: ${{ steps.jar-path.outputs.jarFilepath }}
           LOG_GZIPPED_S3_OBJECT_EVENT_HANDLER_SOURCE: ${{ steps.jar-path.outputs.jarFilepath }}
           CERTIFICATE_ARN: ${{ vars.AWS_CERTIFICATE_ARN }}

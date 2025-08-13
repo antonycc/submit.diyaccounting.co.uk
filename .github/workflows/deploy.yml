@@ -156,7 +156,7 @@ jobs:
           # Verify the image was built
           docker images | grep submit-base
 
-  mvn-package-cdk-synth:
+  mvn-package:
     runs-on: ubuntu-latest
     needs: [build-base-image]
     steps:
@@ -198,13 +198,6 @@ jobs:
         id: package
         shell: bash
         run: ./mvnw clean package
-        env:
-          BASE_IMAGE_TAG: ${{ needs.build-base-image.outputs.base-image-tag }}
-
-      - name: synth
-        id: synth
-        shell: bash
-        run: npx dotenv -e .env.ci -- npx cdk synth --strict --validation --no-staging
         env:
           BASE_IMAGE_TAG: ${{ needs.build-base-image.outputs.base-image-tag }}
 
