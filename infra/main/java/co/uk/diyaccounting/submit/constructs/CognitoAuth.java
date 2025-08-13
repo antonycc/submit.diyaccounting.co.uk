@@ -159,40 +159,64 @@ public class CognitoAuth {
             RetentionDays retention = RetentionDaysConverter.daysToRetentionDays(b.accessLogGroupRetentionPeriodDays);
             Tracing tracing = b.xRayEnabled ? Tracing.ACTIVE : Tracing.DISABLED;
 
+            LogGroup preAuthLg = LogGroup.Builder.create(b.scope, "LogPreAuthenticationLogGroup")
+                    .retention(retention)
+                    .removalPolicy(RemovalPolicy.DESTROY)
+                    .build();
             Function preAuth = Function.Builder.create(b.scope, "LogPreAuthentication")
                     .runtime(Runtime.JAVA_21)
                     .handler("co.uk.diyaccounting.submit.functions.LogPreAuthentication")
                     .code(Code.fromAsset(b.lambdaJarPath))
                     .tracing(tracing)
-                    .logRetention(retention)
+                    .logGroup(preAuthLg)
+                    .build();
+
+            LogGroup postAuthLg = LogGroup.Builder.create(b.scope, "LogPostAuthenticationLogGroup")
+                    .retention(retention)
+                    .removalPolicy(RemovalPolicy.DESTROY)
                     .build();
             Function postAuth = Function.Builder.create(b.scope, "LogPostAuthentication")
                     .runtime(Runtime.JAVA_21)
                     .handler("co.uk.diyaccounting.submit.functions.LogPostAuthentication")
                     .code(Code.fromAsset(b.lambdaJarPath))
                     .tracing(tracing)
-                    .logRetention(retention)
+                    .logGroup(postAuthLg)
+                    .build();
+
+            LogGroup preSignUpLg = LogGroup.Builder.create(b.scope, "LogPreSignUpLogGroup")
+                    .retention(retention)
+                    .removalPolicy(RemovalPolicy.DESTROY)
                     .build();
             Function preSignUp = Function.Builder.create(b.scope, "LogPreSignUp")
                     .runtime(Runtime.JAVA_21)
                     .handler("co.uk.diyaccounting.submit.functions.LogPreSignUp")
                     .code(Code.fromAsset(b.lambdaJarPath))
                     .tracing(tracing)
-                    .logRetention(retention)
+                    .logGroup(preSignUpLg)
+                    .build();
+
+            LogGroup postConfirmationLg = LogGroup.Builder.create(b.scope, "LogPostConfirmationLogGroup")
+                    .retention(retention)
+                    .removalPolicy(RemovalPolicy.DESTROY)
                     .build();
             Function postConfirmation = Function.Builder.create(b.scope, "LogPostConfirmation")
                     .runtime(Runtime.JAVA_21)
                     .handler("co.uk.diyaccounting.submit.functions.LogPostConfirmation")
                     .code(Code.fromAsset(b.lambdaJarPath))
                     .tracing(tracing)
-                    .logRetention(retention)
+                    .logGroup(postConfirmationLg)
+                    .build();
+
+            LogGroup preTokenGenLg = LogGroup.Builder.create(b.scope, "LogPreTokenGenerationLogGroup")
+                    .retention(retention)
+                    .removalPolicy(RemovalPolicy.DESTROY)
                     .build();
             Function preTokenGen = Function.Builder.create(b.scope, "LogPreTokenGeneration")
                     .runtime(Runtime.JAVA_21)
                     .handler("co.uk.diyaccounting.submit.functions.LogPreTokenGeneration")
                     .code(Code.fromAsset(b.lambdaJarPath))
                     .tracing(tracing)
-                    .logRetention(retention)
+                    .logGroup(preTokenGenLg)
                     .build();
 
             up.addTrigger(UserPoolOperation.PRE_AUTHENTICATION, preAuth);
