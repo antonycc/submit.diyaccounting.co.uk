@@ -212,7 +212,7 @@ jobs:
     needs:
       - npm-test
       - npm-behaviour-test-local
-      - mvn-package-cdk-synth
+      - mvn-package
       - deploy-to-ci
       - build-base-image
     runs-on: ubuntu-latest
@@ -314,10 +314,8 @@ jobs:
         id: stacks
         shell: bash
         run: |
-          synth=$(jq -r '.synthStacks' cdk.json | sed 's/SubmitWebStack-dev/SubmitWebStack-${{ env.environment }}/g')
           deploy=$(jq -r '.deployStacks' cdk.json | sed 's/SubmitWebStack-dev/SubmitWebStack-${{ env.environment }}/g')
           echo "deploy=${deploy?}" | tee -a "${GITHUB_OUTPUT?}"
-          echo "synth=${synth?}" | tee -a "${GITHUB_OUTPUT?}"
 
       - name: log environment and repository variables
         shell: bash
@@ -334,37 +332,6 @@ jobs:
           echo "HOSTED_ZONE_NAME: ${{ vars.AWS_HOSTED_ZONE_NAME }}"
           echo "DIY_SUBMIT_HMRC_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}"
           echo "DIY_SUBMIT_GOOGLE_CLIENT_SECRET: ${{ secrets.DIY_SUBMIT_GOOGLE_CLIENT_SECRET }}"
-
-      #- name: synth
-      #  id: synth
-      #  shell: bash
-      #  run: npx dotenv -e .env.${{ env.environment }} -- ${{ steps.stacks.outputs.synth }}
-      #  env:
-      #    GITHUB_ACTOR: ${{ github.actor }}
-      #    ENV_NAME: ${{ env.environment }}
-      #    LOG_S3_OBJECT_EVENT_HANDLER_SOURCE: ${{ steps.jar-path.outputs.jarFilepath }}
-      #    LOG_GZIPPED_S3_OBJECT_EVENT_HANDLER_SOURCE: ${{ steps.jar-path.outputs.jarFilepath }}
-      #    CERTIFICATE_ARN: ${{ vars.AWS_CERTIFICATE_ARN }}
-      #    CLOUD_TRAIL_ENABLED: ${{ vars.AWS_CLOUD_TRAIL_ENABLED }}
-      #    X_RAY_ENABLED: ${{ vars.AWS_X_RAY_ENABLED }}
-      #    VERBOSE_LOGGING: ${{ vars.AWS_VERBOSE_LOGGING }}
-      #    HOSTED_ZONE_ID: ${{ vars.AWS_HOSTED_ZONE_ID }}
-      #    HOSTED_ZONE_NAME: ${{ vars.AWS_HOSTED_ZONE_NAME }}
-      #    DIY_SUBMIT_HMRC_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
-      #    DIY_SUBMIT_GOOGLE_CLIENT_SECRET: ${{ secrets.DIY_SUBMIT_GOOGLE_CLIENT_SECRET }}
-      #    COMMIT_HASH: ${{ github.sha }}
-
-      #- name: Log generated stacks
-      #  shell: bash
-      #  run: |
-      #    jq '.' target/cdk.out/tree.json
-
-      #- name: Upload tree.json as artifact
-      #  uses: actions/upload-artifact@v4
-      #  with:
-      #    name: cdk-tree-json
-      #    path: target/cdk.out/tree.json
-      #    retention-days: 7
 
       - name: deploy
         id: deploy
@@ -390,7 +357,7 @@ jobs:
     needs:
       - npm-test
       - npm-behaviour-test-local
-      - mvn-package-cdk-synth
+      - mvn-package
       - deploy-to-environment
     name: 'npm behaviour test'
     runs-on: ubuntu-latest
