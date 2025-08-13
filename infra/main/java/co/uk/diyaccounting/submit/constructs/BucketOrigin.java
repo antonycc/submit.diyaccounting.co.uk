@@ -162,17 +162,17 @@ public class BucketOrigin {
             if (bucketName == null || bucketName.isBlank()) {
                 throw new IllegalArgumentException("bucketName is required");
             }
-            if (!useExistingBucket) {
-                if (originAccessLogBucketName == null || originAccessLogBucketName.isBlank()) {
-                    throw new IllegalArgumentException("originAccessLogBucketName is required when creating a new bucket");
-                }
-                if (functionNamePrefix == null || functionNamePrefix.isBlank()) {
-                    throw new IllegalArgumentException("functionNamePrefix is required when creating a new bucket");
-                }
-                if (logS3ObjectEventHandlerSource == null || logS3ObjectEventHandlerSource.isBlank()) {
-                    throw new IllegalArgumentException("logS3ObjectEventHandlerSource is required when creating a new bucket");
-                }
-            }
+            //if (!useExistingBucket) {
+                //if (originAccessLogBucketName == null || originAccessLogBucketName.isBlank()) {
+                //    throw new IllegalArgumentException("originAccessLogBucketName is required when creating a new bucket");
+                //}
+                //if (functionNamePrefix == null || functionNamePrefix.isBlank()) {
+                //    throw new IllegalArgumentException("functionNamePrefix is required when creating a new bucket");
+                //}
+                //if (logS3ObjectEventHandlerSource == null || logS3ObjectEventHandlerSource.isBlank()) {
+                //    throw new IllegalArgumentException("logS3ObjectEventHandlerSource is required when creating a new bucket");
+                //}
+            //}
             return new BucketOrigin(this);
         }
     }
