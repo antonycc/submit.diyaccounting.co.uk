@@ -36,10 +36,21 @@
         const urlParams = new URLSearchParams(window.location.search);
         const code = urlParams.get("code");
         const state = urlParams.get("state");
+        const error = urlParams.get("error");
+        const errorDescription = urlParams.get("error_description");
 
         if (code) {
           console.log("Authentication callback received with code:", code);
           handleAuthCallback(code, state);
+        } else if (error || errorDescription) {
+          console.error("OAuth error received:", error, errorDescription);
+          const main = document.getElementById("mainContent");
+          const p = document.createElement("p");
+          p.style.color = "#b00020";
+          p.style.maxWidth = "720px";
+          p.style.margin = "1rem auto";
+          p.textContent = `Authentication error: ${errorDescription || error}`;
+          main.appendChild(p);
         }
       }
 
@@ -60,7 +71,6 @@
           const url = `/api/google/exchange-token`;
           const body = {
             grant_type: "authorization_code",
-            client_id: "670010122633-j177nir959n1tdnd891uqsgj6fkrj6b1.apps.googleusercontent.com",
             code: code,
           };
           console.log(`Exchanging token. Remote call initiated: POST ${url} ++ Body: ${body}`);
