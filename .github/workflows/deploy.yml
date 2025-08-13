@@ -99,7 +99,7 @@ jobs:
       - run: npm run test:behaviour
         env:
           DIY_SUBMIT_HMRC_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
-          DIY_SUBMIT_GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          DIY_SUBMIT_GOOGLE_CLIENT_SECRET: ${{ secrets.DIY_SUBMIT_GOOGLE_CLIENT_SECRET }}
 
       - name: Convert Playwright video to MP4
         if: ${{ !cancelled() }}
@@ -340,7 +340,7 @@ jobs:
           echo "HOSTED_ZONE_ID: ${{ vars.AWS_HOSTED_ZONE_ID }}"
           echo "HOSTED_ZONE_NAME: ${{ vars.AWS_HOSTED_ZONE_NAME }}"
           echo "DIY_SUBMIT_HMRC_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}"
-          echo "DIY_SUBMIT_GOOGLE_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}"
+          echo "DIY_SUBMIT_GOOGLE_CLIENT_SECRET: ${{ secrets.DIY_SUBMIT_GOOGLE_CLIENT_SECRET }}"
 
       #- name: synth
       #  id: synth
@@ -358,7 +358,7 @@ jobs:
       #    HOSTED_ZONE_ID: ${{ vars.AWS_HOSTED_ZONE_ID }}
       #    HOSTED_ZONE_NAME: ${{ vars.AWS_HOSTED_ZONE_NAME }}
       #    DIY_SUBMIT_HMRC_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
-      #    DIY_SUBMIT_GOOGLE_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
+      #    DIY_SUBMIT_GOOGLE_CLIENT_SECRET: ${{ secrets.DIY_SUBMIT_GOOGLE_CLIENT_SECRET }}
       #    COMMIT_HASH: ${{ github.sha }}
 
       #- name: Log generated stacks
@@ -389,7 +389,7 @@ jobs:
           HOSTED_ZONE_ID: ${{ vars.AWS_HOSTED_ZONE_ID }}
           HOSTED_ZONE_NAME: ${{ vars.AWS_HOSTED_ZONE_NAME }}
           DIY_SUBMIT_HMRC_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
-          DIY_SUBMIT_GOOGLE_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
+          DIY_SUBMIT_GOOGLE_CLIENT_SECRET: ${{ secrets.DIY_SUBMIT_GOOGLE_CLIENT_SECRET }}
           COMMIT_HASH: ${{ github.sha }}
           BASE_IMAGE_TAG: ${{ needs.build-base-image.outputs.base-image-tag }}
 
@@ -459,12 +459,12 @@ jobs:
         if: env.environment == 'proxy'
         env:
           DIY_SUBMIT_HMRC_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
-          DIY_SUBMIT_GOOGLE_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
+          DIY_SUBMIT_GOOGLE_CLIENT_SECRET: ${{ secrets.DIY_SUBMIT_GOOGLE_CLIENT_SECRET }}
       - run: cp '.env.${{ env.environment }}' '.env.proxy' ; npx dotenv -e '.env.${{ env.environment }}' -- npm run test:behaviour
         if: env.environment != 'proxy'
         env:
           DIY_SUBMIT_HMRC_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
-          DIY_SUBMIT_GOOGLE_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
+          DIY_SUBMIT_GOOGLE_CLIENT_SECRET: ${{ secrets.DIY_SUBMIT_GOOGLE_CLIENT_SECRET }}
 
       - name: Convert Playwright video to MP4
         if: ${{ !cancelled() }}
