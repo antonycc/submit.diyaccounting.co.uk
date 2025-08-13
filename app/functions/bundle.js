@@ -32,6 +32,10 @@ function decodeJwtNoVerify(token) {
 // In-memory store for MOCK mode (no AWS required). Map<userSub, string[]>
 const __inMemoryBundles = new Map();
 
+export function __getInMemoryBundlesStore() {
+  return __inMemoryBundles;
+}
+
 function isMockMode() {
   return (
     String(process.env.DIY_SUBMIT_BUNDLE_MOCK || "").toLowerCase() === "true" ||

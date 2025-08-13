@@ -12,6 +12,7 @@ import { httpPost as exchangeTokenHttpPost, httpPostGoogle, httpPostHmrc } from 
 import { httpPost as submitVatHttpPost } from "../functions/submitVat.js";
 import { httpPost as logReceiptHttpPost } from "../functions/logReceipt.js";
 import { httpPost as requestBundleHttpPost } from "../functions/bundle.js";
+import { httpGet as getCatalogHttpGet } from "../functions/getCatalog.js";
 import logger from "../lib/logger.js";
 
 dotenv.config({ path: ".env" });
@@ -50,6 +51,7 @@ const submitVatPath = context.submitVatLambdaUrlPath || "/api/submit-vat";
 const logReceiptPath = context.logReceiptLambdaUrlPath || "/api/log-receipt";
 const googleAuthUrlPath = context.googleAuthUrlLambdaUrlPath || "/api/google/auth-url";
 const requestBundlePath = context.bundleLambdaUrlPath || "/api/request-bundle";
+const catalogPath = context.catalogLambdaUrlPath || "/api/catalog";
 
 app.get(authUrlPath, async (req, res) => {
   const event = {
@@ -153,6 +155,27 @@ app.post(requestBundlePath, async (req, res) => {
 });
 app.options(requestBundlePath, async (_req, res) => {
   const { statusCode, body } = await requestBundleHttpPost({ httpMethod: "OPTIONS" });
+  try {
+    res.status(statusCode).json(body ? JSON.parse(body) : {});
+  } catch (_e) {
+    res.status(statusCode).send(body || "");
+  }
+});
+
+// Catalog endpoint
+app.get(catalogPath, async (req, res) => {
+  const event = {
+    path: req.path,
+    headers: {
+      host: req.get("host") || "localhost:3000",
+      "if-none-match": req.headers["if-none-match"],
+      "if-modified-since": req.headers["if-modified-since"],
+    },
+    queryStringParameters: req.query || {},
+  };
+  const { statusCode, body, headers } = await getCatalogHttpGet(event);
+  if (headers) res.set(headers);
+  if (statusCode === 304) return res.status(304).end();
   try {
     res.status(statusCode).json(body ? JSON.parse(body) : {});
   } catch (_e) {
