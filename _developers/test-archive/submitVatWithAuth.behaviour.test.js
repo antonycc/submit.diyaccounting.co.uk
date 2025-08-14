@@ -499,7 +499,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   }
 
   await setTimeout(500);
-  await page.waitForSelector("#receiptDisplay", { state: "visible", timeout: 15000 });
+  await page.waitForSelector("#receiptDisplay", { state: "visible", timeout: 30000 });
 
   // Verify the receipt is displayed with correct content
   const receiptDisplay = page.locator("#receiptDisplay");

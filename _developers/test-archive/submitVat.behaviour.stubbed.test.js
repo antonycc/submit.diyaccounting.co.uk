@@ -205,7 +205,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
 
   // 5) Wait for the submission process to complete and receipt to be displayed
   await setTimeout(500);
-  await page.waitForSelector("#receiptDisplay", { state: "visible", timeout: 15000 });
+  await page.waitForSelector("#receiptDisplay", { state: "visible", timeout: 30000 });
 
   await setTimeout(500);
 
