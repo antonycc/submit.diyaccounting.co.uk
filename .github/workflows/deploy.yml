@@ -253,7 +253,7 @@ jobs:
       - name: Upsert HMRC_CLIENT_SECRET into AWS Secrets Manager
         shell: bash
         env:
-          SECRET_NAME: diy/submit/hmrc/client_secret
+          SECRET_NAME: "diy/${{ env.environment}}/submit/hmrc/client_secret"
         run: |
           set -euo pipefail
           if aws secretsmanager describe-secret --secret-id "$SECRET_NAME" >/dev/null 2>&1; then
@@ -281,7 +281,7 @@ jobs:
       - name: Upsert DIY_SUBMIT_GOOGLE_CLIENT_SECRET into AWS Secrets Manager
         shell: bash
         env:
-          SECRET_NAME: diy/submit/google/client_secret
+          SECRET_NAME: "diy/${{ env.environment}}/submit/google/client_secret"
         run: |
           set -euo pipefail
           if aws secretsmanager describe-secret --secret-id "$SECRET_NAME" >/dev/null 2>&1; then
