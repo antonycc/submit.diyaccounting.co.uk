@@ -845,6 +845,13 @@ public class WebStack extends Stack {
             logger.info("CloudTrail is not enabled for the origin bucket.");
         }
 
+        // Create a secret for the Google client secret and set the ARN to be used in the Lambda environment variable
+        this.googleClientSecretsManagerSecret = Secret.Builder.create(this, "GoogleClientSecretValue")
+                .secretStringValue(SecretValue.unsafePlainText(builder.googleClientSecret))
+                .description("Google Client Secret for OAuth authentication")
+                .build();
+        var googleClientSecretArn = this.googleClientSecretsManagerSecret.getSecretArn();
+
         // Create Cognito User Pool for authentication
         var standardAttributes = StandardAttributes.builder()
                 .email(StandardAttribute.builder()
@@ -861,9 +868,10 @@ public class WebStack extends Stack {
                         .build())
                 .build();
         if (StringUtils.isNotBlank(builder.googleClientId) && StringUtils.isNotBlank(builder.googleClientSecret)) {
-            var googleClientSecretValue = this.googleClientSecretsManagerSecret != null
-                    ? this.googleClientSecretsManagerSecret.getSecretValue()
-                    : SecretValue.unsafePlainText(builder.googleClientSecret);
+            var googleClientSecretValue = this.googleClientSecretsManagerSecret.getSecretValue();
+            //var googleClientSecretValue = this.googleClientSecretsManagerSecret != null
+            //        ? this.googleClientSecretsManagerSecret.getSecretValue()
+            //        : SecretValue.unsafePlainText(builder.googleClientSecret);
 
             var cognito = CognitoAuth.Builder.create(this)
                     .userPoolName(dashedDomainName + "-user-pool")
@@ -993,12 +1001,6 @@ public class WebStack extends Stack {
         this.hmrcClientSecretsManagerSecret.grantRead(this.exchangeHmrcTokenLambda);
 
         // exchangeToken - Google
-        // Create a secret for the Google client secret and set the ARN to be used in the Lambda environment variable
-        this.googleClientSecretsManagerSecret = Secret.Builder.create(this, "GoogleClientSecret")
-                .secretStringValue(SecretValue.unsafePlainText(builder.googleClientSecret))
-                .description("Google Client Secret for OAuth authentication")
-                .build();
-        var googleClientSecretArn = this.googleClientSecretsManagerSecret.getSecretArn();
         var exchangeGoogleTokenLambdaEnv = new HashMap<>(Map.of(
                 "DIY_SUBMIT_HOME_URL", builder.homeUrl,
                 "DIY_SUBMIT_COGNITO_BASE_URI", cognitoBaseUri,
