@@ -415,8 +415,8 @@ jobs:
           VERBOSE_LOGGING: ${{ vars.AWS_VERBOSE_LOGGING }}
           HOSTED_ZONE_ID: ${{ vars.AWS_HOSTED_ZONE_ID }}
           HOSTED_ZONE_NAME: ${{ vars.AWS_HOSTED_ZONE_NAME }}
-          DIY_SUBMIT_HMRC_CLIENT_SECRET_ARN: 'arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/submit/hmrc/client_secret'
-          DIY_SUBMIT_GOOGLE_CLIENT_SECRET_ARN: 'arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/submit/google/client_secret'
+          DIY_SUBMIT_HMRC_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ env.environment}}/submit/hmrc/client_secret"
+          DIY_SUBMIT_GOOGLE_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ env.environment}}/submit/google/client_secret"
           COMMIT_HASH: ${{ github.sha }}
           BASE_IMAGE_TAG: ${{ needs.build-base-image.outputs.base-image-tag }}
 
