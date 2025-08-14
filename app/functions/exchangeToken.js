@@ -144,7 +144,7 @@ export async function httpPostGoogle(event) {
 
   if (cognitoClientId && cognitoBaseUri) {
     // Exchange via Cognito
-    const url = `${cognitoBaseUri}/oauth/token`;
+    const url = `${cognitoBaseUri}/oauth2/token`;
     const body = {
       grant_type: "authorization_code",
       client_id: cognitoClientId,
