@@ -126,7 +126,10 @@ export async function httpPostGoogle(event) {
   const request = extractRequest(event);
 
   // Validation
-  const { code } = JSON.parse(event.body || "{}");
+  const decoded = Buffer.from(event.body, "base64").toString("utf-8");
+  const searchParams = new URLSearchParams(decoded);
+  const code = searchParams.get("code");
+
   if (!code) {
     return httpBadRequestResponse({
       request,
