@@ -37,7 +37,7 @@ public class WebApp {
                 .error404NotFoundAtDistribution(System.getenv("ERROR_HTML_DOCUMENT"))
                 .skipLambdaUrlOrigins(System.getenv("SKIP_LAMBDA_URL_ORIGINS"))
                 .hmrcClientId(System.getenv("DIY_SUBMIT_HMRC_CLIENT_ID"))
-                .hmrcClientSecret(System.getenv("DIY_SUBMIT_HMRC_CLIENT_SECRET"))
+                .hmrcClientSecretArn(System.getenv("DIY_SUBMIT_HMRC_CLIENT_SECRET_ARN"))
                 .homeUrl(System.getenv("DIY_SUBMIT_HOME_URL"))
                 .hmrcBaseUri(System.getenv("DIY_SUBMIT_HMRC_BASE_URI"))
                 .optionalTestAccessToken(System.getenv("DIY_SUBMIT_TEST_ACCESS_TOKEN"))
@@ -71,7 +71,7 @@ public class WebApp {
                 .commitHash(System.getenv("COMMIT_HASH"))
                 // Cognito and Bundle Management configuration
                 .googleClientId(System.getenv("DIY_SUBMIT_GOOGLE_CLIENT_ID"))
-                .googleClientSecret(System.getenv("DIY_SUBMIT_GOOGLE_CLIENT_SECRET"))
+                .googleClientSecretArn(System.getenv("DIY_SUBMIT_GOOGLE_CLIENT_SECRET_ARN"))
                 .cognitoDomainPrefix(System.getenv("DIY_SUBMIT_COGNITO_DOMAIN_PREFIX"))
                 .bundleExpiryDate(System.getenv("DIY_SUBMIT_BUNDLE_EXPIRY_DATE"))
                 .bundleUserLimit(System.getenv("DIY_SUBMIT_BUNDLE_USER_LIMIT"))

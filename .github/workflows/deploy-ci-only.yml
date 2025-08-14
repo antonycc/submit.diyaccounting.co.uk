@@ -44,6 +44,79 @@ env:
 
 jobs:
 
+jobs:
+  upsert-secrets:
+    runs-on: ubuntu-latest
+    environment: prod
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        if: ${{ env.skipDeploy != 'true' }}
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::887764105431:role/submit-github-actions-role
+          role-chaining: false
+          aws-region: eu-west-2
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Configure AWS Credentials
+        if: ${{ env.skipDeploy != 'true' }}
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::887764105431:role/submit-deployment-role
+          role-chaining: true
+          aws-region: eu-west-2
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Write GitHub secret HMRC_CLIENT_SECRET to temp file (keeps out of logs)
+        shell: bash
+        env:
+          GH_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
+        run: |
+          set -euo pipefail
+          umask 077
+          printf '%s' "$GH_SECRET" > secret.txt
+          echo "::add-mask::$(cat secret.txt)"
+
+      - name: Upsert HMRC_CLIENT_SECRET into AWS Secrets Manager
+        shell: bash
+        env:
+          SECRET_NAME: diy/submit/hmrc/client_secret
+        run: |
+          set -euo pipefail
+          aws secretsmanager put-secret-value \
+            --secret-id "$SECRET_NAME" \
+            --secret-string file://secret.txt
+          shred -u secret.txt
+
+      - name: Write GitHub secret DIY_SUBMIT_GOOGLE_CLIENT_SECRET to temp file (keeps out of logs)
+        shell: bash
+        env:
+          GH_SECRET: ${{ secrets.DIY_SUBMIT_GOOGLE_CLIENT_SECRET }}
+        run: |
+          set -euo pipefail
+          umask 077
+          printf '%s' "$GH_SECRET" > secret.txt
+          echo "::add-mask::$(cat secret.txt)"
+
+      - name: Upsert DIY_SUBMIT_GOOGLE_CLIENT_SECRET into AWS Secrets Manager
+        shell: bash
+        env:
+          SECRET_NAME: diy/submit/google/client_secret
+        run: |
+          set -euo pipefail
+          aws secretsmanager put-secret-value \
+            --secret-id "$SECRET_NAME" \
+            --secret-string file://secret.txt
+          shred -u secret.txt
+
   deploy:
     runs-on: ubuntu-latest
     environment: 'ci'
@@ -149,26 +222,6 @@ jobs:
           echo "deploy=${deploy?}" | tee -a "${GITHUB_OUTPUT?}"
           echo "synth=${synth?}" | tee -a "${GITHUB_OUTPUT?}"
 
-      #- name: synth
-      #  if: ${{ env.skipDeploy != 'true' }}
-      #  id: synth
-      #  shell: bash
-      #  run: npx dotenv -e .env.ci -- ${{ steps.stacks.outputs.synth }}
-      #  env:
-      #    GITHUB_ACTOR: ${{ github.actor }}
-      #    ENV_NAME: 'ci'
-      #    LOG_S3_OBJECT_EVENT_HANDLER_SOURCE: ${{ steps.jar-path.outputs.jarFilepath }}
-      #    LOG_GZIPPED_S3_OBJECT_EVENT_HANDLER_SOURCE: ${{ steps.jar-path.outputs.jarFilepath }}
-      #    CERTIFICATE_ARN: ${{ vars.AWS_CERTIFICATE_ARN }}
-      #    CLOUD_TRAIL_ENABLED: ${{ vars.AWS_CLOUD_TRAIL_ENABLED }}
-      #    X_RAY_ENABLED: ${{ vars.AWS_X_RAY_ENABLED }}
-      #    VERBOSE_LOGGING: ${{ vars.AWS_VERBOSE_LOGGING }}
-      #    HOSTED_ZONE_ID: ${{ vars.AWS_HOSTED_ZONE_ID }}
-      #    HOSTED_ZONE_NAME: ${{ vars.AWS_HOSTED_ZONE_NAME }}
-      #    DIY_SUBMIT_HMRC_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
-      #    DIY_SUBMIT_GOOGLE_CLIENT_SECRET: ${{ secrets.DIY_SUBMIT_GOOGLE_CLIENT_SECRET }}
-      #    COMMIT_HASH: ${{ github.sha }}
-
       - name: deploy
         if: ${{ env.skipDeploy != 'true' }}
         id: deploy
@@ -185,8 +238,8 @@ jobs:
           VERBOSE_LOGGING: ${{ vars.AWS_VERBOSE_LOGGING }}
           HOSTED_ZONE_ID: ${{ vars.AWS_HOSTED_ZONE_ID }}
           HOSTED_ZONE_NAME: ${{ vars.AWS_HOSTED_ZONE_NAME }}
-          DIY_SUBMIT_HMRC_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
-          DIY_SUBMIT_GOOGLE_CLIENT_SECRET: ${{ secrets.DIY_SUBMIT_GOOGLE_CLIENT_SECRET }}
+          DIY_SUBMIT_HMRC_CLIENT_SECRET_ARN: 'arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/submit/hmrc/client_secret'
+          DIY_SUBMIT_GOOGLE_CLIENT_SECRET_ARN: 'arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/submit/google/client_secret'
           COMMIT_HASH: ${{ github.sha }}
           BASE_IMAGE_TAG: "submit-base:${{ github.sha }}"
 
