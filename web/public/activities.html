@@ -6,6 +6,7 @@
     <title>DIY Accounting Submit - Activities</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" href="submit.css" />
+    <script src="/config.js"></script>
   </head>
   <body>
     <header>
@@ -229,6 +230,58 @@
 
       // Load view source link on page load
       loadViewSourceLink();
+    </script>
+    <script>
+      // Catalog-driven UI enhancer (non-breaking; runs only when flag is true)
+      (async function () {
+        try {
+          if (!window.CATALOG_DRIVEN_UI) return;
+          const main = document.getElementById("mainContent");
+          if (!main) return;
+
+          const idToken = localStorage.getItem("cognitoIdToken");
+          const headers = idToken ? { Authorization: `Bearer ${idToken}` } : {};
+
+          const [catalogRes, bundlesRes] = await Promise.all([
+            fetch('/api/catalog', { headers }),
+            fetch('/api/my-bundles', { headers }),
+          ]);
+          if (!catalogRes.ok) throw new Error('catalog fetch failed');
+          if (!bundlesRes.ok) throw new Error('my-bundles fetch failed');
+          const catalog = await catalogRes.json();
+          const my = await bundlesRes.json();
+          const activeBundles = new Set(my.bundles || []);
+
+          // Build activities list
+          const items = (catalog.activities || []).map((a) => {
+            const required = Array.isArray(a.bundles) ? a.bundles : [];
+            const allowed = required.some((b) => activeBundles.has(b));
+            const bundlesBadges = required.map((b) => `<span class="badge">${b}</span>`).join(' ');
+            const disabled = allowed ? '' : 'disabled';
+            const target = a.id === 'submit-vat' ? 'submitVat.html' : (a.id === 'vat-obligations' ? 'vatObligations.html' : '#');
+            return `
+              <div class="activity ${allowed ? '' : 'disabled'}" style="margin:.5em 0; padding:.5em; border:1px solid #ddd; border-radius:6px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:1em;">
+                  <div>
+                    <div style="font-weight:600">${a.name}</div>
+                    <div style="font-size:.9em; color:#666">Requires: ${bundlesBadges}</div>
+                  </div>
+                  <button class="btn" ${disabled} onclick="if('${target}'!=='#') window.location.href='${target}'">Open</button>
+                </div>
+              </div>`;
+          }).join('\n');
+
+          main.innerHTML = `
+            <div class="form-container" style="text-align:center">
+              <h2>Available Activities</h2>
+              <p>Rendered from product catalog</p>
+              <div>${items}</div>
+              <div style="margin-top:2em"><a class="btn" href="bundles.html">Add Bundle</a></div>
+            </div>`;
+        } catch (e) {
+          console.log('CATALOG_DRIVEN_UI rendering failed:', e);
+        }
+      })();
     </script>
   </body>
 </html>

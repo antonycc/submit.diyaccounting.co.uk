@@ -74,6 +74,12 @@
     "logReceiptLambdaDuration": "30000",
     "bundleLambdaUrlPath": "/api/request-bundle",
     "bundleLambdaHandlerFunctionName": "bundle.httpPost",
-    "bundleLambdaDuration": "30000"
+    "bundleLambdaDuration": "30000",
+    "catalogLambdaUrlPath": "/api/catalog",
+    "catalogLambdaHandlerFunctionName": "getCatalog.httpGet",
+    "catalogLambdaDuration": "30000",
+    "myBundlesLambdaUrlPath": "/api/my-bundles",
+    "myBundlesLambdaHandlerFunctionName": "myBundles.httpGet",
+    "myBundlesLambdaDuration": "30000"
   }
 }
