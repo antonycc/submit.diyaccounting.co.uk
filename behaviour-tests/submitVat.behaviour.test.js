@@ -7,6 +7,7 @@ import dotenv from "dotenv";
 import { ensureMinioBucketExists, startMinio } from "@app/bin/minio.js";
 
 import { checkIfServerIsRunning } from "@app/lib/serverHelper.js";
+import { gotoWithRetries } from "../lib/gotoWithRetries.js";
 
 dotenv.config({ path: ".env" }); // e.g. Not checked in, HMRC API credentials
 // TODO: remove the override and ensure the tests pass with .env.test, then change the pipeline tests to copy over .env.test.
@@ -213,8 +214,11 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   };
 
   const loggedGoto = async (url, description = "") => {
-    console.log(`[NAVIGATION] Going to: ${url} ${description ? "- " + description : ""}`);
-    await page.goto(url);
+    await gotoWithRetries(page, url, {
+      description,
+      waitUntil: "domcontentloaded",
+      readySelector: "#welcomeHeading",
+    });
   };
 
   // Journey 1: Existing user submits VAT

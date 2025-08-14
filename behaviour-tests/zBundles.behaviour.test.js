@@ -6,6 +6,7 @@ import { setTimeout as delay } from "timers/promises";
 import dotenv from "dotenv";
 
 import { checkIfServerIsRunning } from "@app/lib/serverHelper.js";
+import { gotoWithRetries } from "../lib/gotoWithRetries.js";
 
 dotenv.config({ path: ".env" });
 dotenv.config({ path: ".env.proxy" });
@@ -84,7 +85,7 @@ test.describe("Bundles behaviour flow (mock auth -> add bundle -> activities)", 
     });
 
     // Visit the mock callback page to populate localStorage with tokens
-    await page.goto(`http://127.0.0.1:${serverPort}/loginWithMockCallback.html?code=abc&state=xyz`);
+    await gotoWithRetries(page, `http://127.0.0.1:${serverPort}/loginWithMockCallback.html?code=abc&state=xyz`, { waitUntil: "domcontentloaded" });
 
     // The page should redirect to index.html on success
     await expect(page).toHaveURL(new RegExp(`http://127.0.0.1:${serverPort}/(index.html)?$`));
@@ -94,7 +95,7 @@ test.describe("Bundles behaviour flow (mock auth -> add bundle -> activities)", 
       await dialog.dismiss();
     });
 
-    await page.goto(`http://127.0.0.1:${serverPort}/bundles.html`);
+    await gotoWithRetries(page, `http://127.0.0.1:${serverPort}/bundles.html`, { waitUntil: "domcontentloaded" });
     const addBtn = page.getByRole("button", { name: "Add HMRC Test API Bundle" });
     await expect(addBtn).toBeVisible();
     await addBtn.click();
@@ -103,7 +104,7 @@ test.describe("Bundles behaviour flow (mock auth -> add bundle -> activities)", 
     await expect(page.getByRole("button", { name: /Added ✓|Already Added ✓/ })).toBeVisible();
 
     // Go to activities and verify sections
-    await page.goto(`http://127.0.0.1:${serverPort}/activities.html`);
+    await gotoWithRetries(page, `http://127.0.0.1:${serverPort}/activities.html`, { waitUntil: "domcontentloaded" });
     await expect(page.getByText("Default bundle")).toBeVisible();
     await expect(page.getByText("HMRC Test API bundle")).toBeVisible();
     await expect(page.getByText("Submit VAT (Sandbox API)")).toBeVisible();

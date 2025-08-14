@@ -58,9 +58,9 @@ export function extractRequest(event) {
       const path = event.rawPath || event.path || event.requestContext?.http?.path || "";
       const queryString = event.rawQueryString || "";
       request = new URL(`${path}?${queryString}`, `https://${host}`);
-      // Object.keys(event.queryStringParameters).forEach((key) => {
-      //  url.searchParams.append(key, event.queryStringParameters[key]);
-      // });
+      Object.keys(event.queryStringParameters).forEach((key) => {
+        request.searchParams.append(key, event.queryStringParameters[key]);
+      });
       logger.info({ message: "Processing request with event", request, event });
     } catch (err) {
       logger.warn({ message: "Error building request URL from event", error: err, event });
