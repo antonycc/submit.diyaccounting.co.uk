@@ -61,6 +61,7 @@ import software.amazon.awscdk.services.s3.deployment.BucketDeployment;
 import software.amazon.awscdk.services.s3.deployment.ISource;
 import software.amazon.awscdk.services.s3.deployment.Source;
 import software.amazon.awscdk.services.secretsmanager.Secret;
+import software.amazon.awscdk.services.secretsmanager.SecretStringGenerator;
 import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
 
