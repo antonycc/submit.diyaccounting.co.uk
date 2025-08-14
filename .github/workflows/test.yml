@@ -1,10 +1,23 @@
-# .github/workflows/test-slowly.yml
+# .github/workflows/test.yml
 
-name: test-slowly
+name: test
 concurrency: ngrok
-run-name: 'test slowly [${{ github.ref_name }}] [${{ github.event.head_commit.message }}]'
+run-name: 'test [${{ github.ref_name }}] [${{ github.event.head_commit.message }}]'
 
 on:
+  push:
+    branches:
+      - '**'
+      - '!gh_pages'
+    paths:
+      - 'infra/**'
+      - 'app/**'
+      - 'web/**'
+      - 'cdk.json'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/test.yml'
+      - '**/pom.xml'
   workflow_dispatch:
   schedule:
     - cron: '23 * * * *'
@@ -220,50 +233,6 @@ jobs:
           name: test-reports-behaviour
           path: target/test-reports/
           retention-days: 30
-
-  npm-test-all:
-    name: 'npm test:all'
-    needs:
-      npm-behaviour-test
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      id-token: write
-    steps:
-      - uses: actions/checkout@v5
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: 'npm'
-
-      - run: npm ci || npm install
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-        with:
-          driver-opts: |
-            image=moby/buildkit:latest
-
-      - name: Authenticate ngrok
-        env:
-          NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
-        run: |
-          npx ngrok config add-authtoken "${NGROK_AUTH_TOKEN?}"
-
-      - name: Cache Playwright browsers
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-${{ hashFiles('**/package-lock.json') }}
-
-      - run: npx playwright install chromium --with-deps
-
-      - run: npm run test:all
-        env:
-          DIY_SUBMIT_HMRC_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
-          DIY_SUBMIT_GOOGLE_CLIENT_SECRET: ${{ secrets.DIY_SUBMIT_GOOGLE_CLIENT_SECRET }}
 
   mvn-test:
     name: 'maven test'

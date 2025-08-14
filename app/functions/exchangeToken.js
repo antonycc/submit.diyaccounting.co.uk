@@ -84,7 +84,7 @@ async function performTokenExchange(providerUrl, body) {
       headers: {
         ...requestHeaders,
       },
-      body: requestBody.toString(),
+      body: requestBody,
     });
   }
 

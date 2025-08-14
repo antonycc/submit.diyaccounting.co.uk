@@ -5,17 +5,20 @@ concurrency: deploy-ci
 run-name: "deploy ci only [${{ github.ref_name }}] (skipDeploy = [${{ inputs.skipDeploy || 'false' }}])"
 
 on:
-  #push:
-  #  branches:
-  #    - main
-  #  paths:
-  #    - 'infra/**'
-  #    - 'package.json'
-  #    - 'package-lock.json'
-  #    - 'app/**'
-  #    - 'web/public/**'
-  #    - '.github/workflows/deploy-ci-only.yml'
-  #    - '**/pom.xml'
+  push:
+    branches:
+      - '**'
+      - '!main'
+      - '!gh_pages'
+    paths:
+      - 'infra/**'
+      - 'app/**'
+      - 'web/**'
+      - 'cdk.json'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/deploy-ci-only.yml'
+      - '**/pom.xml'
   workflow_call:
     inputs:
       skipDeploy:
