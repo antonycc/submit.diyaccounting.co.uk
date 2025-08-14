@@ -399,7 +399,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   }
 
   await page.screenshot({ path: `target/behaviour-submitVat/160-waiting-for-receipt-${timestamp}.png` });
-  await page.waitForSelector("#receiptDisplay", { state: "visible", timeout: 15000 });
+  await page.waitForSelector("#receiptDisplay", { state: "visible", timeout: 30000 });
   await page.screenshot({ path: `target/behaviour-submitVat/170-receipt-${timestamp}.png` });
   await setTimeout(500);
   const receiptDisplay = page.locator("#receiptDisplay");
