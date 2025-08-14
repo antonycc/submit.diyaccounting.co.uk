@@ -67,7 +67,7 @@ async function performTokenExchange(providerUrl, body) {
     headers: {
       ...requestHeaders,
     },
-    body: requestBody,
+    body: requestBody.toString(),
   });
   if (process.env.NODE_ENV === "stubbed") {
     logger.warn({ message: "httpPost called in stubbed mode, using test access token" });
@@ -84,7 +84,7 @@ async function performTokenExchange(providerUrl, body) {
       headers: {
         ...requestHeaders,
       },
-      body: requestBody,
+      body: requestBody.toString(),
     });
   }
 
