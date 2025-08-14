@@ -26,6 +26,8 @@ on:
     secrets:
       HMRC_CLIENT_SECRET:
         required: true
+      DIY_SUBMIT_GOOGLE_CLIENT_SECRET:
+        required: true
   workflow_dispatch:
     inputs:
       skipDeploy:
