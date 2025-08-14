@@ -207,6 +207,7 @@ jobs:
       skipDeploy: 'false'
     secrets:
       HMRC_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
+      DIY_SUBMIT_GOOGLE_CLIENT_SECRET: ${{ secrets.DIY_SUBMIT_GOOGLE_CLIENT_SECRET }}
 
   upsert-secrets:
     runs-on: ubuntu-latest
