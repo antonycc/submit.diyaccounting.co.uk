@@ -208,6 +208,78 @@ jobs:
     secrets:
       HMRC_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
 
+  upsert-secrets:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment || 'prod' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        if: ${{ env.skipDeploy != 'true' }}
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::887764105431:role/submit-github-actions-role
+          role-chaining: false
+          aws-region: eu-west-2
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Configure AWS Credentials
+        if: ${{ env.skipDeploy != 'true' }}
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::887764105431:role/submit-deployment-role
+          role-chaining: true
+          aws-region: eu-west-2
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Write GitHub secret HMRC_CLIENT_SECRET to temp file (keeps out of logs)
+        shell: bash
+        env:
+          GH_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
+        run: |
+          set -euo pipefail
+          umask 077
+          printf '%s' "$GH_SECRET" > secret.txt
+          echo "::add-mask::$(cat secret.txt)"
+
+      - name: Upsert HMRC_CLIENT_SECRET into AWS Secrets Manager
+        shell: bash
+        env:
+          SECRET_NAME: diy/submit/hmrc/client_secret
+        run: |
+          set -euo pipefail
+          aws secretsmanager put-secret-value \
+            --secret-id "$SECRET_NAME" \
+            --secret-string file://secret.txt
+          shred -u secret.txt
+
+      - name: Write GitHub secret DIY_SUBMIT_GOOGLE_CLIENT_SECRET to temp file (keeps out of logs)
+        shell: bash
+        env:
+          GH_SECRET: ${{ secrets.DIY_SUBMIT_GOOGLE_CLIENT_SECRET }}
+        run: |
+          set -euo pipefail
+          umask 077
+          printf '%s' "$GH_SECRET" > secret.txt
+          echo "::add-mask::$(cat secret.txt)"
+
+      - name: Upsert DIY_SUBMIT_GOOGLE_CLIENT_SECRET into AWS Secrets Manager
+        shell: bash
+        env:
+          SECRET_NAME: diy/submit/google/client_secret
+        run: |
+          set -euo pipefail
+          aws secretsmanager put-secret-value \
+            --secret-id "$SECRET_NAME" \
+            --secret-string file://secret.txt
+          shred -u secret.txt
+
   deploy-to-environment:
     needs:
       - npm-test
@@ -215,6 +287,7 @@ jobs:
       - mvn-package
       - deploy-to-ci
       - build-base-image
+      - upsert-secrets
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment || 'prod' }}
     permissions:

@@ -46,7 +46,7 @@ jobs:
 
   upsert-secrets:
     runs-on: ubuntu-latest
-    environment: prod
+    environment: ci
     steps:
       - uses: actions/checkout@v4
 
@@ -117,6 +117,9 @@ jobs:
           shred -u secret.txt
 
   deploy:
+    needs:
+      - upsert-secrets
+    name: 'deploy'
     runs-on: ubuntu-latest
     environment: 'ci'
     permissions:
