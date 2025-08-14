@@ -60,6 +60,7 @@ import software.amazon.awscdk.services.s3.assets.AssetOptions;
 import software.amazon.awscdk.services.s3.deployment.BucketDeployment;
 import software.amazon.awscdk.services.s3.deployment.ISource;
 import software.amazon.awscdk.services.s3.deployment.Source;
+import software.amazon.awscdk.services.secretsmanager.ISecret;
 import software.amazon.awscdk.services.secretsmanager.Secret;
 import software.amazon.awscdk.services.secretsmanager.SecretStringGenerator;
 import software.amazon.awssdk.utils.StringUtils;
@@ -852,7 +853,7 @@ public class WebStack extends Stack {
         //        .description("Google Client Secret for OAuth authentication")
         //        .build();
         // Look up the client secret by arn
-        this.googleClientSecretsManagerSecret = Secret.fromSecretCompleteArn(this, "GoogleClientSecret", builder.googleClientSecretArn);
+        this.googleClientSecretsManagerSecret = Secret.fromSecretPartialArn(this, "GoogleClientSecret", builder.googleClientSecretArn);
         var googleClientSecretArn = this.googleClientSecretsManagerSecret.getSecretArn();
 
         // Create Cognito User Pool for authentication
@@ -870,7 +871,7 @@ public class WebStack extends Stack {
                         .mutable(true)
                         .build())
                 .build();
-        if (StringUtils.isNotBlank(builder.googleClientId) && StringUtils.isNotBlank(builder.googleClientSecret)) {
+        if (StringUtils.isNotBlank(builder.googleClientId) && StringUtils.isNotBlank(builder.googleClientSecretArn)) {
             var googleClientSecretValue = this.googleClientSecretsManagerSecret.getSecretValue();
             //var googleClientSecretValue = this.googleClientSecretsManagerSecret != null
             //        ? this.googleClientSecretsManagerSecret.getSecretValue()
@@ -979,7 +980,7 @@ public class WebStack extends Stack {
         //        .description("HMRC Client Secret for OAuth authentication")
         //        .build();
         // Look up the client secret by arn
-        this.hmrcClientSecretsManagerSecret = Secret.fromSecretCompleteArn(this, "HmrcClientSecret", builder.hmrcClientSecretArn);
+        this.hmrcClientSecretsManagerSecret = Secret.fromSecretPartialArn(this, "HmrcClientSecret", builder.hmrcClientSecretArn);
         var hmrcClientSecretArn = this.hmrcClientSecretsManagerSecret.getSecretArn();
         var exchangeHmrcTokenLambdaEnv = new HashMap<>(Map.of(
                 "DIY_SUBMIT_HOME_URL", builder.homeUrl,

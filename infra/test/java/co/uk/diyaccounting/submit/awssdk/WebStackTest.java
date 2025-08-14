@@ -64,7 +64,7 @@ public class WebStackTest {
                 .error404NotFoundAtDistribution("404-error-distribution.html")
                 .skipLambdaUrlOrigins("false")
                 .hmrcClientId("test-client-id")
-                .hmrcClientSecretArn("test client secret arn")
+                .hmrcClientSecretArn("arn:aws:secretsmanager:eu-west-2:000000000000:secret:test/submit/hmrc/client_secret")
                 .homeUrl("https://test.submit.diyaccounting.co.uk/callback")
                 .hmrcBaseUri("https://test-api.service.hmrc.gov.uk")
                 .optionalTestRedirectUri("https://test.submit.diyaccounting.co.uk/test-callback")
@@ -90,7 +90,7 @@ public class WebStackTest {
                 .logReceiptLambdaDurationMillis("30000")
                 // Provide Google configuration to avoid nulls in Map.of and Secrets during tests
                 .googleClientId("test-google-client-id")
-                .googleClientSecretArn("test-google-client-secret-arn")
+                .googleClientSecretArn("arn:aws:secretsmanager:eu-west-2:000000000000:secret:test/submit/google/client_secret")
                 .build();
     }
 }

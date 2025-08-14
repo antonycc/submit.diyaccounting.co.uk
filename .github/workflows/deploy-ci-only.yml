@@ -47,6 +47,9 @@ jobs:
   upsert-secrets:
     runs-on: ubuntu-latest
     environment: ci
+    permissions:
+      id-token: write
+      contents: read
     steps:
       - uses: actions/checkout@v4
 
