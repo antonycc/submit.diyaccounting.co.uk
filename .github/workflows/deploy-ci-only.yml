@@ -41,8 +41,8 @@ on:
         options:
           - 'true'
           - 'false'
-  schedule:
-    - cron: '14 2,8,14,20 * * *'
+  #schedule:
+  #  - cron: '14 2,8,14,20 * * *'
 
 env:
   skipDeploy: ${{ inputs.skipDeploy || 'false' }}
