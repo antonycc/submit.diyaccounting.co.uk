@@ -15,6 +15,12 @@
     </header>
 
     <div id="mainContent">
+      <!-- Status messages -->
+      <div id="statusMessagesContainer"></div>
+
+      <!-- Loading spinner -->
+      <div id="loadingSpinner" class="spinner" style="display: none"></div>
+
       <div class="form-container" style="text-align: center">
         <h2 id="welcomeHeading">Welcome</h2>
         <p>Return home.</p>
@@ -30,6 +36,7 @@
       </div>
     </footer>
 
+    <script src="./status-messages.js"></script>
     <script>
       // Check for authentication callback
       function checkAuthCallback() {
@@ -44,13 +51,7 @@
           handleAuthCallback(code, state);
         } else if (error || errorDescription) {
           console.error("OAuth error received:", error, errorDescription);
-          const main = document.getElementById("mainContent");
-          const p = document.createElement("p");
-          p.style.color = "#b00020";
-          p.style.maxWidth = "720px";
-          p.style.margin = "1rem auto";
-          p.textContent = `Authentication error: ${errorDescription || error}`;
-          main.appendChild(p);
+          showStatus(`Authentication error: ${errorDescription || error}`, "error");
         }
       }
 
@@ -68,6 +69,9 @@
       // Handle authentication callback from Cognito
       async function handleAuthCallback(code, state) {
         try {
+          showLoading();
+          showStatus("Exchanging authorization code for access token...", "info");
+
           const url = `/api/google/exchange-token`;
           const body = {
             grant_type: "authorization_code",
@@ -75,7 +79,6 @@
           };
           console.log(`Exchanging token. Remote call initiated: POST ${url} ++ Body: ${body}`);
 
-          //const tokenResponse = await fetch(`https://${COGNITO_CONFIG.domain}/oauth2/token`, {
           const tokenResponse = await fetch(url, {
             method: "POST",
             headers: {
@@ -103,10 +106,9 @@
           }
 
           // Decode ID token to get user info
-          //const idTokenPayload = JSON.parse(atob(tokens.id_token.split('.')[1]));
           const base64Payload = tokens.accessToken.split(".")[1];
           const jsonPayload = base64UrlDecode(base64Payload);
-          const idTokenPayload = JSON.parse(jsonPayload); //["id_token"];
+          const idTokenPayload = JSON.parse(jsonPayload);
 
           console.log("Received id_token from Cognito " + JSON.stringify(idTokenPayload));
 
@@ -121,17 +123,18 @@
           );
 
           console.log("User authenticated successfully using Cognito:", idTokenPayload.email);
+          showStatus("Authenticated successfully. Redirecting...", "info");
 
           // Clear URL parameters
           window.history.replaceState({}, document.title, window.location.pathname);
 
           // Redirect to bundles page or home
-          //setTimeout(() => {
           window.location.href = "index.html";
-          //}, 1000);
         } catch (error) {
           console.error("Authentication callback error:", error);
-          alert("Authentication failed. Please try again.");
+          showStatus(`Authentication failed: ${error.message}`, "error");
+        } finally {
+          hideLoading();
         }
       }
 
