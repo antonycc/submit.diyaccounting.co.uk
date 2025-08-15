@@ -25,7 +25,7 @@
     <footer>
       <div class="footer-content">
         <div class="footer-center">
-          <p>&copy; 2025 DIY Accounting Limited. Licensed under GPL v3.0</p>
+          <p>&copy; 2025 DIY Accounting Limited</p>
         </div>
       </div>
     </footer>
@@ -92,8 +92,12 @@
           console.log("Received tokens from Cognito " + JSON.stringify(tokens));
 
           // Store tokens in localStorage
-          localStorage.setItem("cognitoAccessToken", tokens.access_token);
-          localStorage.setItem("cognitoIdToken", tokens.id_token);
+          if (tokens.access_token) {
+            localStorage.setItem("cognitoAccessToken", tokens.access_token);
+          }
+          if (tokens.id_token) {
+            localStorage.setItem("cognitoIdToken", tokens.id_token);
+          }
           if (tokens.refresh_token) {
             localStorage.setItem("cognitoRefreshToken", tokens.refresh_token);
           }

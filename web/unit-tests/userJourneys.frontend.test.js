@@ -105,7 +105,7 @@ describe("User Journeys Frontend Tests", () => {
         document.documentElement.innerHTML = htmlContent;
 
         const footer = document.querySelector("footer p");
-        expect(footer.innerHTML).toContain("&amp;copy; 2025 DIY Accounting Limited. Licensed under GPL v3.0");
+        expect(footer.innerHTML).toContain("&amp;copy; 2025 DIY Accounting Limited");
       });
     });
 
