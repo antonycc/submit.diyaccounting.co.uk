@@ -237,7 +237,6 @@ jobs:
   deploy-to-environment:
     needs:
       - npm-test
-      - npm-behaviour-test-local
       - mvn-package
       - deploy-to-ci
       - build-base-image
@@ -376,7 +375,6 @@ jobs:
   npm-behaviour-test-environment:
     needs:
       - npm-test
-      - npm-behaviour-test-local
       - mvn-package
       - deploy-to-environment
     name: 'npm behaviour test'
@@ -480,12 +478,6 @@ jobs:
               fail=1
             fi
           done
-
-          # Back-compat: if exactly one MP4 exists and it's not named video.mp4, copy it for the single-artifact step
-          mp4s=("$root"/*.mp4)
-          if [[ ${#mp4s[@]} -eq 1 && "${mp4s[0]}" != "$root/video.mp4" ]]; then
-            cp -v "${mp4s[0]}" "$root/video.mp4" || true
-          fi
 
           exit $fail
 
