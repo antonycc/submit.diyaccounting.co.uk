@@ -1,7 +1,6 @@
 # .github/workflows/test.yml
 
 name: test
-concurrency: ngrok
 run-name: 'test [${{ github.ref_name }}] [${{ github.event.head_commit.message }}]'
 
 on:
@@ -13,10 +12,12 @@ on:
       - 'infra/**'
       - 'app/**'
       - 'web/**'
+      - 'behaviour-tests/**'
       - 'cdk.json'
       - 'package.json'
       - 'package-lock.json'
       - '.github/workflows/test.yml'
+      - '.env.*'
       - '**/pom.xml'
   workflow_dispatch:
     inputs:

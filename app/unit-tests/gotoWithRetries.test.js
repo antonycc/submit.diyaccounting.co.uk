@@ -1,6 +1,6 @@
 // app/unit-tests/gotoWithRetries.test.js
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import * as nav from "../../lib/gotoWithRetries.js";
+import * as nav from "../lib/gotoWithRetries.js";
 
 function makeMockPage() {
   return {

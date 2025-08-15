@@ -6,7 +6,7 @@ import { setTimeout as delay } from "timers/promises";
 import dotenv from "dotenv";
 
 import { checkIfServerIsRunning } from "@app/lib/serverHelper.js";
-import { gotoWithRetries } from "../lib/gotoWithRetries.js";
+import { gotoWithRetries } from "@app/lib/gotoWithRetries.js";
 
 dotenv.config({ path: ".env" });
 dotenv.config({ path: ".env.proxy" });
