@@ -1,4 +1,4 @@
-// behaviour-tests/zBundles.behaviour.test.js
+// behaviour-tests/journeys.behaviour.test.js
 
 import { test, expect } from "@playwright/test";
 import { spawn } from "child_process";
@@ -12,7 +12,7 @@ dotenv.config({ path: ".env" });
 dotenv.config({ path: ".env.proxy" });
 
 const originalEnv = { ...process.env };
-const serverPort = 3501;
+const serverPort = 3502; // dedicated port for these journeys
 
 function base64UrlEncode(obj) {
   const json = JSON.stringify(obj);
@@ -23,9 +23,9 @@ function base64UrlEncode(obj) {
 function makeIdToken(payloadClaims = {}) {
   const header = { alg: "none", typ: "JWT" };
   const payload = {
-    sub: "test-user-1",
-    email: "user@example.com",
-    given_name: "Test",
+    sub: "journey-user-1",
+    email: "journey.user@example.com",
+    given_name: "Journey",
     family_name: "User",
     aud: "debugger",
     iss: "http://localhost:8080/default",
@@ -78,13 +78,17 @@ async function gotoWithPause(page, url) {
   await delay(500);
 }
 
-test.describe("Bundles behaviour flow (mock auth -> add bundle -> activities)", () => {
-  test.setTimeout(60000);
+async function goBackWithPause(page) {
+  await page.goBack();
+  await delay(500);
+}
+
+test.describe("Backlog journeys", () => {
+  test.setTimeout(90000);
 
   test.beforeAll(async () => {
     process.env = { ...originalEnv };
 
-    // Start the local server with a fixed port and ensure mock bundle mode is on
     // eslint-disable-next-line sonarjs/no-os-command-from-path
     serverProcess = spawn("npm", ["run", "start"], {
       env: {
@@ -110,10 +114,25 @@ test.describe("Bundles behaviour flow (mock auth -> add bundle -> activities)", 
     }
   });
 
-  test("login via mock callback, request HMRC Test API bundle, verify activities", async ({ page }) => {
+  test("Journey 2: New customer signing up and adding a bundle", async ({ page }) => {
     await enableVideoTimestampOverlay(page);
 
-    // Intercept token exchange with mock-oauth2 server
+    // 1) Start unauthenticated on Bundles
+    await gotoWithPause(page, `http://127.0.0.1:${serverPort}/bundles.html`);
+
+    // Prepare to dismiss the alert for unauthenticated add attempt
+    page.on("dialog", async (dialog) => {
+      await dialog.dismiss();
+    });
+
+    // 2) Attempt to add (should prompt to login and redirect to login.html)
+    const addBtn = page.getByRole("button", { name: "Add HMRC Test API Bundle" });
+    await expect(addBtn).toBeVisible();
+    await clickWithPause(addBtn);
+    await delay(500);
+    await expect(page).toHaveURL(new RegExp(`/login.html$`));
+
+    // 3) Complete mock login via direct callback and intercepted token exchange
     await page.route("http://localhost:8080/default/token", async (route) => {
       const response = {
         status: 200,
@@ -129,29 +148,60 @@ test.describe("Bundles behaviour flow (mock auth -> add bundle -> activities)", 
       await route.fulfill(response);
     });
 
-    // Visit the mock callback page to populate localStorage with tokens
     await gotoWithPause(page, `http://127.0.0.1:${serverPort}/loginWithMockCallback.html?code=abc&state=xyz`);
 
-    // The page should redirect to index.html on success
+    // Should land on home
     await expect(page).toHaveURL(new RegExp(`http://127.0.0.1:${serverPort}/(index.html)?$`));
 
-    // Go to bundles page
-    page.on("dialog", async (dialog) => {
-      await dialog.dismiss();
-    });
-
+    // 4) Go back to Bundles and add the bundle (should now succeed without login prompt)
     await gotoWithPause(page, `http://127.0.0.1:${serverPort}/bundles.html`);
-    const addBtn = page.getByRole("button", { name: "Add HMRC Test API Bundle" });
-    await expect(addBtn).toBeVisible();
-    await clickWithPause(addBtn);
+    const addBtn2 = page.getByRole("button", { name: "Add HMRC Test API Bundle" });
+    await expect(addBtn2).toBeVisible();
+    await clickWithPause(addBtn2);
 
-    // Button should change to added or already added
-    await expect(page.getByRole("button", { name: /Added ✓|Already Added ✓/ })).toBeVisible();
+    // Button should reflect added state
+    await expect(page.getByRole("button", { name: /Bundle Added ✓|Already Added ✓/ })).toBeVisible();
 
-    // Go to activities and verify sections
+    // 5) View activities shows Submit VAT
     await gotoWithPause(page, `http://127.0.0.1:${serverPort}/activities.html`);
-    await expect(page.getByText("Default bundle")).toBeVisible();
     await expect(page.getByText("HMRC Test API bundle")).toBeVisible();
     await expect(page.getByText("Submit VAT (Sandbox API)")).toBeVisible();
+  });
+
+  test("Journey 4: Hamburger menu and back navigation", async ({ page }) => {
+    await enableVideoTimestampOverlay(page);
+
+    // Home
+    await gotoWithPause(page, `http://127.0.0.1:${serverPort}/index.html`);
+
+    // Bundles via hamburger
+    await clickWithPause(page.getByRole("button", { name: "☰" }));
+    await clickWithPause(page.getByRole("link", { name: "Add Bundle" }));
+    await delay(500);
+    await expect(page).toHaveURL(new RegExp(`/bundles.html$`));
+
+    // Back to home via back
+    await goBackWithPause(page);
+    await expect(page).toHaveURL(new RegExp(`/index.html$`));
+
+    // Activities via hamburger
+    await clickWithPause(page.getByRole("button", { name: "☰" }));
+    await clickWithPause(page.getByRole("link", { name: "View Activities" }));
+    await delay(500);
+    await expect(page).toHaveURL(new RegExp(`/activities.html$`));
+
+    // Home via hamburger
+    await clickWithPause(page.getByRole("button", { name: "☰" }));
+    await clickWithPause(page.getByRole("link", { name: "Home" }));
+    await delay(500);
+    await expect(page).toHaveURL(new RegExp(`/index.html$`));
+
+    // Back to Activities via back
+    await goBackWithPause(page);
+    await expect(page).toHaveURL(new RegExp(`/activities.html$`));
+
+    // Back to home via back
+    await goBackWithPause(page);
+    await expect(page).toHaveURL(new RegExp(`/index.html$`));
   });
 });

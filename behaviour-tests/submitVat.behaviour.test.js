@@ -7,7 +7,7 @@ import dotenv from "dotenv";
 import { ensureMinioBucketExists, startMinio } from "@app/bin/minio.js";
 
 import { checkIfServerIsRunning } from "@app/lib/serverHelper.js";
-import { gotoWithRetries } from "../lib/gotoWithRetries.js";
+import { gotoWithRetries } from "@app/lib/gotoWithRetries.js";
 
 dotenv.config({ path: ".env" }); // e.g. Not checked in, HMRC API credentials
 // TODO: remove the override and ensure the tests pass with .env.test, then change the pipeline tests to copy over .env.test.
@@ -233,14 +233,14 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   await page.setExtraHTTPHeaders({
     "ngrok-skip-browser-warning": "any value",
   });
-  await page.screenshot({ path: `target/behaviour-submitVat/000-start-${timestamp}.png` });
+  await page.screenshot({ path: `target/behaviour-test-results/behaviour-submitVat/000-start-${timestamp}.png` });
   await loggedGoto(testUrl, "Loading home page");
 
   // Home page has a welcome message and clickable login link
   console.log("Checking home page...");
   await page.waitForLoadState("networkidle");
   await setTimeout(500);
-  await page.screenshot({ path: `target/behaviour-submitVat/010-home-${timestamp}.png` });
+  await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/010-home-${timestamp}.png` });
   await expect(page.locator("#welcomeHeading")).toContainText("Welcome");
   await expect(page.getByText("Log in")).toBeVisible();
   await loggedClick("a:has-text('Log in')", "Clicking login link");
@@ -254,19 +254,19 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
 
   await page.waitForLoadState("networkidle");
   await setTimeout(500);
-  await page.screenshot({ path: `target/behaviour-submitVat/020-login-${timestamp}.png` });
+  await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/020-login-${timestamp}.png` });
   await expect(page.getByText("Continue with mock-oauth2-server")).toBeVisible();
 
   await loggedClick("button:has-text('Continue with mock-oauth2-server')", "Continue with OAuth provider");
   await page.waitForLoadState("networkidle");
   await setTimeout(500);
-  await page.screenshot({ path: `target/behaviour-submitVat/030-hand-off-to-provider-auth-${timestamp}.png` });
+  await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/030-hand-off-to-provider-auth-${timestamp}.png` });
   await expect(page.getByText("Hand off to mock-oauth2-server")).toBeVisible();
 
   await loggedClick("button:has-text('Hand off to mock-oauth2-server')", "Hand off to OAuth provider");
   await page.waitForLoadState("networkidle");
   await setTimeout(500);
-  await page.screenshot({ path: `target/behaviour-submitVat/040-provider-auth-${timestamp}.png` });
+  await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/040-provider-auth-${timestamp}.png` });
   // await expect(page.getByText("SIGN-IN")).toBeVisible();
   await expect(page.locator('input[type="submit"][value="Sign-in"]')).toBeVisible();
 
@@ -282,20 +282,20 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   };
   await loggedFill('textarea[name="claims"]', JSON.stringify(identityToken), "Entering identity claims");
   await setTimeout(100);
-  await page.screenshot({ path: `target/behaviour-submitVat/050-auth-form-filled-${timestamp}.png` });
+  await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/050-auth-form-filled-${timestamp}.png` });
 
   // Home page has logged in user email
   // <input class="button-primary" type="submit" value="Sign-in">
   await loggedClick('input[type="submit"][value="Sign-in"]', "Submitting sign-in form");
   await page.waitForLoadState("networkidle");
   await setTimeout(500);
-  await page.screenshot({ path: `target/behaviour-submitVat/060-signed-in-${timestamp}.png` });
+  await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/060-signed-in-${timestamp}.png` });
 
   // Home page has logged in user email
   console.log("Checking home page...");
   await page.waitForLoadState("networkidle");
   await setTimeout(500);
-  await page.screenshot({ path: `target/behaviour-submitVat/070-home-${timestamp}.png` });
+  await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/070-home-${timestamp}.png` });
   await expect(page.locator(".login-status")).toContainText("user@example.com");
   await expect(page.getByText("View available activities")).toBeVisible();
 
@@ -307,7 +307,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   await loggedClick("button:has-text('View available activities')", "Viewing available activities");
   await page.waitForLoadState("networkidle");
   await setTimeout(500);
-  await page.screenshot({ path: `target/behaviour-submitVat/080-activities-${timestamp}.png` });
+  await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/080-activities-${timestamp}.png` });
 
   // View available activities
   await expect(page.getByText("VAT Return Submission")).toBeVisible();
@@ -320,7 +320,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   await loggedClick("button:has-text('VAT Return Submission')", "Starting VAT return submission");
   await page.waitForLoadState("networkidle");
   await setTimeout(500);
-  await page.screenshot({ path: `target/behaviour-submitVat/090-start-submission-${timestamp}.png` });
+  await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/090-start-submission-${timestamp}.png` });
   await expect(page.locator("#vatSubmissionForm")).toBeVisible();
 
   // Fill out the VAT form using the correct field IDs from submitVat.html
@@ -331,7 +331,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   await setTimeout(100);
   await loggedFill("#vatDue", "1000.00", "Entering VAT due amount");
   await setTimeout(500);
-  await page.screenshot({ path: `target/behaviour-submitVat/100-form-filled-${timestamp}.png` });
+  await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/100-form-filled-${timestamp}.png` });
   await expect(page.locator("#submitBtn")).toBeVisible();
 
   // Expect the HMRC permission page to be visible
@@ -339,7 +339,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   const applicationName = "DIY Accounting Submit";
   await page.waitForLoadState("networkidle");
   await setTimeout(500);
-  await page.screenshot({ path: `target/behaviour-submitVat/110-hmrc-permission-${timestamp}.png` });
+  await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/110-hmrc-permission-${timestamp}.png` });
   await expect(page.locator("#appNameParagraph")).toContainText(applicationName);
   await expect(page.getByRole("button", { name: "Continue" })).toContainText("Continue");
 
@@ -349,7 +349,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   await page.getByRole("button", { name: "Continue" }).click();
   await page.waitForLoadState("networkidle");
   await setTimeout(500);
-  await page.screenshot({ path: `target/behaviour-submitVat/120-submit-permission-${timestamp}.png` });
+  await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/120-submit-permission-${timestamp}.png` });
   await expect(page.getByRole("button", { name: "Sign in to the HMRC online service" })).toContainText(
     "Sign in to the HMRC online service",
   );
@@ -359,7 +359,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   await page.getByRole("button", { name: "Sign in to the HMRC online service" }).click();
   await page.waitForLoadState("networkidle");
   await setTimeout(500);
-  await page.screenshot({ path: `target/behaviour-submitVat/130-hmrc-auth-${timestamp}.png` });
+  await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/130-hmrc-auth-${timestamp}.png` });
   await expect(page.locator("#userId")).toBeVisible();
   await expect(page.locator("#password")).toBeVisible();
 
@@ -372,14 +372,14 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   await page.getByRole("button", { name: "Sign in" }).click();
   await page.waitForLoadState("networkidle");
   await setTimeout(500);
-  await page.screenshot({ path: `target/behaviour-submitVat/140-hmrc-credentials-${timestamp}.png` });
+  await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/140-hmrc-credentials-${timestamp}.png` });
   await expect(page.locator("#givePermission")).toBeVisible();
 
   //  Submit the give permission form
   await page.click("#givePermission");
   await page.waitForLoadState("networkidle");
   await setTimeout(500);
-  await page.screenshot({ path: `target/behaviour-submitVat/150-give-permission-${timestamp}.png` });
+  await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/150-give-permission-${timestamp}.png` });
 
   // Wait for the submission process to complete and receipt to be displayed
   console.log("Waiting for VAT submission to complete and receipt to be displayed...");
@@ -402,9 +402,9 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
     console.log(`Form element style: ${formStyle}`);
   }
 
-  await page.screenshot({ path: `target/behaviour-submitVat/160-waiting-for-receipt-${timestamp}.png` });
+  await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/160-waiting-for-receipt-${timestamp}.png` });
   await page.waitForSelector("#receiptDisplay", { state: "visible", timeout: 30000 });
-  await page.screenshot({ path: `target/behaviour-submitVat/170-receipt-${timestamp}.png` });
+  await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/170-receipt-${timestamp}.png` });
   await setTimeout(500);
   const receiptDisplay = page.locator("#receiptDisplay");
   await expect(receiptDisplay).toBeVisible();
@@ -432,19 +432,19 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   await page.click("#homePageFromMainBtn");
   await page.waitForLoadState("networkidle");
   await setTimeout(500);
-  await page.screenshot({ path: `target/behaviour-submitVat/180-home-button-clicked-${timestamp}.png` });
+  await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/180-home-button-clicked-${timestamp}.png` });
   await expect(page.locator("a:has-text('Logout')")).toBeVisible();
 
   await page.click("a:has-text('Logout')");
   await page.waitForLoadState("networkidle");
   await setTimeout(500);
-  await page.screenshot({ path: `target/behaviour-submitVat/190-home-${timestamp}.png` });
+  await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/190-home-${timestamp}.png` });
 
   // Home page has a welcome message and clickable login link
   console.log("Checking home page...");
   await page.waitForLoadState("networkidle");
   await setTimeout(500);
-  await page.screenshot({ path: `target/behaviour-submitVat/200-home-${timestamp}.png` });
+  await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/200-home-${timestamp}.png` });
   await expect(page.locator("#welcomeHeading")).toContainText("Welcome");
   await expect(page.getByText("Log in")).toBeVisible();
 }, 60000);

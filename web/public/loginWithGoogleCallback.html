@@ -94,19 +94,26 @@
           const tokens = await tokenResponse.json();
           console.log("Received tokens from Cognito " + JSON.stringify(tokens));
 
-          // Store tokens in localStorage
-          if (tokens.access_token) {
-            localStorage.setItem("cognitoAccessToken", tokens.access_token);
+          // Store tokens in localStorage (support both snake_case and camelCase fields)
+          const accessToken = tokens.accessToken || tokens.access_token;
+          const idToken = tokens.idToken || tokens.id_token;
+          const refreshToken = tokens.refreshToken || tokens.refresh_token;
+
+          if (accessToken) {
+            localStorage.setItem("cognitoAccessToken", accessToken);
           }
-          if (tokens.id_token) {
-            localStorage.setItem("cognitoIdToken", tokens.id_token);
+          if (idToken) {
+            localStorage.setItem("cognitoIdToken", idToken);
           }
-          if (tokens.refresh_token) {
-            localStorage.setItem("cognitoRefreshToken", tokens.refresh_token);
+          if (refreshToken) {
+            localStorage.setItem("cognitoRefreshToken", refreshToken);
           }
 
           // Decode ID token to get user info
-          const base64Payload = tokens.accessToken.split(".")[1];
+          if (!idToken) {
+            throw new Error("Missing idToken in exchange-token response");
+          }
+          const base64Payload = idToken.split(".")[1];
           const jsonPayload = base64UrlDecode(base64Payload);
           const idTokenPayload = JSON.parse(jsonPayload);
 

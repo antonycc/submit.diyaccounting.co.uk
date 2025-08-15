@@ -1,7 +1,7 @@
 # .github/workflows/deploy.yml
 
 name: deploy
-concurrency: ngrok
+concurrency: deploy
 run-name: "deploy [${{ inputs.environment || 'prod' }}] [${{ github.ref_name }}]"
 
 on:
@@ -16,6 +16,7 @@ on:
       - 'app/**'
       - 'web/public/**'
       - '.github/workflows/deploy.yml'
+      - '.github/workflows/deploy-ci-only.yml'
       - '**/pom.xml'
   workflow_dispatch:
     inputs:
@@ -59,70 +60,6 @@ jobs:
         id: test
         shell: bash
         run: 'npm test'
-
-  npm-behaviour-test-local:
-    name: 'npm behaviour test local'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      id-token: write
-    steps:
-      - uses: actions/checkout@v5
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: 'npm'
-
-      - run: npm ci || npm install
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-        with:
-          driver-opts: |
-            image=moby/buildkit:latest
-
-      - name: Authenticate ngrok
-        env:
-          NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
-        run: |
-          npx ngrok config add-authtoken "${NGROK_AUTH_TOKEN?}"
-
-      - name: Cache Playwright browsers
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-${{ hashFiles('**/package-lock.json') }}
-
-      - run: npx playwright install chromium --with-deps
-
-      - run: npm run test:behaviour
-        env:
-          DIY_SUBMIT_HMRC_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
-          DIY_SUBMIT_GOOGLE_CLIENT_SECRET: ${{ secrets.DIY_SUBMIT_GOOGLE_CLIENT_SECRET }}
-
-      - name: Convert Playwright video to MP4
-        if: ${{ !cancelled() }}
-        run: |
-          find target/behaviour-test-results -type f -name '*.webm' -exec mv -v "{}" target/behaviour-test-results/video.webm \;
-          npm run convert:video -- --in target/behaviour-test-results/video.webm --out target/behaviour-test-results/video.mp4
-
-      - name: Upload test results
-        uses: actions/upload-artifact@v4
-        if: ${{ !cancelled() }}
-        with:
-          name: test-results-behaviour-local
-          path: "target/behaviour-test-results/"
-          retention-days: 30
-
-      - name: Upload test reports
-        uses: actions/upload-artifact@v4
-        if: ${{ !cancelled() }}
-        with:
-          name: test-reports-behaviour-local
-          path: "target/test-reports/"
-          retention-days: 30
 
   build-base-image:
     runs-on: ubuntu-latest
@@ -300,7 +237,6 @@ jobs:
   deploy-to-environment:
     needs:
       - npm-test
-      - npm-behaviour-test-local
       - mvn-package
       - deploy-to-ci
       - build-base-image
@@ -439,7 +375,6 @@ jobs:
   npm-behaviour-test-environment:
     needs:
       - npm-test
-      - npm-behaviour-test-local
       - mvn-package
       - deploy-to-environment
     name: 'npm behaviour test'
@@ -512,17 +447,30 @@ jobs:
       - name: Convert Playwright video to MP4
         if: ${{ !cancelled() }}
         run: |
-          find target/behaviour-test-results -type f -name '*.webm' -exec mv -v "{}" target/behaviour-test-results/video.webm \;
-          npm run convert:video -- --in target/behaviour-test-results/video.webm --out target/behaviour-test-results/video.mp4
+          set -euo pipefail
+          root="target/behaviour-test-results"
 
-      - name: Upload converted video
-        uses: actions/upload-artifact@v4
-        if: ${{ !cancelled() }}
-        with:
-          name: "test-results-behaviour-${{ env.environment }}-mp4"
-          path: "target/behaviour-test-results/video.mp4"
-          retention-days: 30
-          compression-level: '0'
+          # Recursively transcode all .webm files, placing output next to source with 'converted' prefix
+          pids=()
+          while IFS= read -r -d '' f; do
+            dir=$(dirname "$f")
+            base="${f##*/}"
+            name="${base%.webm}"
+            out="${dir}/converted${name}.mp4"
+            echo "Transcoding $f -> $out"
+            npm run convert:video -- --in "$f" --out "$out" &
+            pids+=($!)
+          done < <(find "$root" -type f -name '*.webm' -print0)
+
+          # Wait for all transcodes to complete
+          fail=0
+          for pid in "${pids[@]:-}"; do
+            if ! wait "$pid"; then
+              fail=1
+            fi
+          done
+
+          exit $fail
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
@@ -530,14 +478,6 @@ jobs:
         with:
           name: "test-results-behaviour-${{ env.environment }}"
           path: "target/behaviour-test-results/"
-          retention-days: 30
-
-      - name: Upload test results
-        uses: actions/upload-artifact@v4
-        if: ${{ !cancelled() }}
-        with:
-          name: "test-results-${{ env.environment }}"
-          path: "target/test-results/"
           retention-days: 30
 
       - name: Upload test reports

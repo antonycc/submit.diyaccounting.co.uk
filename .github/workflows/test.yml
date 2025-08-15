@@ -1,7 +1,6 @@
 # .github/workflows/test.yml
 
 name: test
-concurrency: ngrok
 run-name: 'test [${{ github.ref_name }}] [${{ github.event.head_commit.message }}]'
 
 on:
@@ -13,14 +12,30 @@ on:
       - 'infra/**'
       - 'app/**'
       - 'web/**'
+      - 'behaviour-tests/**'
       - 'cdk.json'
       - 'package.json'
       - 'package-lock.json'
       - '.github/workflows/test.yml'
+      - '.env.*'
       - '**/pom.xml'
   workflow_dispatch:
+    inputs:
+        environment:
+            description: 'Environment to run the tests against'
+            required: false
+            default: 'test'
+            options:
+              - test
+              - proxy
+              - ci
+              - production
+            type: choice
   schedule:
     - cron: '23 * * * *'
+
+env:
+  environment: ${{ inputs.environment || 'proxy' }}
 
 jobs:
 
@@ -41,7 +56,7 @@ jobs:
 
       - run: npm ci || npm install
 
-      - run: npm test
+      - run: source .env.${{ env.environment }} && npm test
 
   npm-unit-test:
     name: 'npm unit test with coverage'
@@ -59,13 +74,13 @@ jobs:
 
       - run: npm ci || npm install
 
-      - run: npm run test:coverage
+      - run: source .env.${{ env.environment }} && npm run test:coverage
 
       - name: Upload coverage reports
         uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
         with:
-          name: coverage-reports-slow
+          name: coverage-reports
           path: coverage/
           retention-days: 30
 
@@ -85,7 +100,7 @@ jobs:
 
       - run: npm ci || npm install
 
-      - run: npm run test:integration
+      - run: source .env.${{ env.environment }} && npm run test:integration
 
   npm-system-test:
     name: 'npm system test'
@@ -109,7 +124,7 @@ jobs:
           driver-opts: |
             image=moby/buildkit:latest
 
-      - run: npm run test:system
+      - run: source .env.${{ env.environment }} && npm run test:system
 
   npm-test-web-unit:
     name: 'npm unit test with coverage'
@@ -127,15 +142,7 @@ jobs:
 
       - run: npm ci || npm install
 
-      - run: npm run test:web-unit
-
-      - name: Upload coverage reports
-        uses: actions/upload-artifact@v4
-        if: ${{ !cancelled() }}
-        with:
-          name: coverage-reports-slow
-          path: coverage/
-          retention-days: 30
+      - run: source .env.${{ env.environment }} && npm run test:web-unit
 
   npm-browser-test:
     name: 'npm browser test'
@@ -162,7 +169,7 @@ jobs:
 
       - run: npx playwright install chromium --with-deps
 
-      - run: npm run test:browser
+      - run: source .env.${{ env.environment }} && npm run test:browser
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
@@ -258,17 +265,30 @@ jobs:
       - name: Convert Playwright video to MP4
         if: ${{ !cancelled() }}
         run: |
-          find target/behaviour-test-results -type f -name '*.webm' -exec mv -v "{}" target/behaviour-test-results/video.webm \;
-          npm run convert:video -- --in target/behaviour-test-results/video.webm --out target/behaviour-test-results/video.mp4
+          set -euo pipefail
+          root="target/behaviour-test-results"
 
-      - name: Upload converted video
-        uses: actions/upload-artifact@v4
-        if: ${{ !cancelled() }}
-        with:
-          name: "test-results-behaviour-${{ env.environment }}-mp4"
-          path: "target/behaviour-test-results/video.mp4"
-          retention-days: 30
-          compression-level: '0'
+          # Recursively transcode all .webm files, placing output next to source with 'converted' prefix
+          pids=()
+          while IFS= read -r -d '' f; do
+            dir=$(dirname "$f")
+            base="${f##*/}"
+            name="${base%.webm}"
+            out="${dir}/converted${name}.mp4"
+            echo "Transcoding $f -> $out"
+            npm run convert:video -- --in "$f" --out "$out" &
+            pids+=($!)
+          done < <(find "$root" -type f -name '*.webm' -print0)
+
+          # Wait for all transcodes to complete
+          fail=0
+          for pid in "${pids[@]:-}"; do
+            if ! wait "$pid"; then
+              fail=1
+            fi
+          done
+
+          exit $fail
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
@@ -276,14 +296,6 @@ jobs:
         with:
           name: test-results-behaviour
           path: "target/behaviour-test-results/"
-          retention-days: 30
-
-      - name: Upload test results
-        uses: actions/upload-artifact@v4
-        if: ${{ !cancelled() }}
-        with:
-          name: test-results
-          path: "target/test-results/"
           retention-days: 30
 
       - name: Upload test reports
@@ -332,7 +344,7 @@ jobs:
       - name: package
         id: package
         shell: bash
-        run: ./mvnw clean test
+        run: source .env.${{ env.environment }} && ./mvnw clean test
 
   npm-test-cdk:
     name: 'npm test:cdk'
@@ -365,4 +377,4 @@ jobs:
       - name: test:cdk
         id: test-cdk
         shell: bash
-        run: npm run test:cdk
+        run: source .env.${{ env.environment }} && npm run test:cdk
