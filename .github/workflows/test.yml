@@ -23,6 +23,7 @@ on:
     - cron: '23 * * * *'
 
 jobs:
+
   npm-test:
     name: 'npm test'
     runs-on: ubuntu-latest
@@ -110,6 +111,32 @@ jobs:
 
       - run: npm run test:system
 
+  npm-test-web-unit:
+    name: 'npm unit test with coverage'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - run: npm ci || npm install
+
+      - run: npm run test:web-unit
+
+      - name: Upload coverage reports
+        uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: coverage-reports-slow
+          path: coverage/
+          retention-days: 30
+
   npm-browser-test:
     name: 'npm browser test'
     runs-on: ubuntu-latest
@@ -156,6 +183,7 @@ jobs:
   npm-behaviour-test:
     name: 'npm behaviour test'
     runs-on: ubuntu-latest
+    environment: ${{ inputs.environment || 'proxy' }}
     permissions:
       contents: read
       id-token: write
@@ -190,7 +218,39 @@ jobs:
 
       - run: npx playwright install chromium --with-deps
 
-      - run: npm run test:behaviour
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::887764105431:role/submit-github-actions-role
+          role-chaining: false
+          aws-region: eu-west-2
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - run: aws sts get-caller-identity --region eu-west-2
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::887764105431:role/submit-deployment-role
+          role-chaining: true
+          aws-region: eu-west-2
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - run: aws sts get-caller-identity --region eu-west-2
+
+      - run: npx dotenv -e '.env.${{ env.environment }}' -- npm run test:behaviour
+        if: env.environment == 'proxy'
+        env:
+          DIY_SUBMIT_HMRC_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
+          DIY_SUBMIT_GOOGLE_CLIENT_SECRET: ${{ secrets.DIY_SUBMIT_GOOGLE_CLIENT_SECRET }}
+      - run: cp '.env.${{ env.environment }}' '.env.proxy' ; npx dotenv -e '.env.${{ env.environment }}' -- npm run test:behaviour
+        if: env.environment != 'proxy'
         env:
           DIY_SUBMIT_HMRC_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
           DIY_SUBMIT_GOOGLE_CLIENT_SECRET: ${{ secrets.DIY_SUBMIT_GOOGLE_CLIENT_SECRET }}
@@ -206,7 +266,7 @@ jobs:
         if: ${{ !cancelled() }}
         with:
           name: "test-results-behaviour-${{ env.environment }}-mp4"
-          path: target/behaviour-test-results/video.mp4
+          path: "target/behaviour-test-results/video.mp4"
           retention-days: 30
           compression-level: '0'
 
@@ -215,7 +275,7 @@ jobs:
         if: ${{ !cancelled() }}
         with:
           name: test-results-behaviour
-          path: target/behaviour-test-results/
+          path: "target/behaviour-test-results/"
           retention-days: 30
 
       - name: Upload test results
@@ -223,7 +283,7 @@ jobs:
         if: ${{ !cancelled() }}
         with:
           name: test-results
-          path: target/test-results/
+          path: "target/test-results/"
           retention-days: 30
 
       - name: Upload test reports
@@ -231,7 +291,21 @@ jobs:
         if: ${{ !cancelled() }}
         with:
           name: test-reports-behaviour
-          path: target/test-reports/
+          path: "target/test-reports/"
+          retention-days: 30
+
+      - name: Copy test server logs
+        if: ${{ !cancelled() }}
+        run: |
+          mkdir -p test-server-logs/
+          cp -r submit-*.log test-server-logs/
+
+      - name: Upload test logs
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-server-logs-behaviour
+          path: "test-server-logs/"
           retention-days: 30
 
   mvn-test:
@@ -259,3 +333,36 @@ jobs:
         id: package
         shell: bash
         run: ./mvnw clean test
+
+  npm-test-cdk:
+    name: 'npm test:cdk'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - run: npm ci
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'corretto'
+          java-version: 21
+          cache: 'maven'
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver-opts: |
+            image=moby/buildkit:latest
+
+      - name: test:cdk
+        id: test-cdk
+        shell: bash
+        run: npm run test:cdk
