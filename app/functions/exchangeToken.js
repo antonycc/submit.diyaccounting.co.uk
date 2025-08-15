@@ -215,11 +215,22 @@ export async function httpPostWithUrl(request, url, body) {
   }
 
   // Generate a success response
+  // Include additional tokens (e.g., id_token, refresh_token) when available so the client can derive user info
+  const idToken = responseBody.id_token;
+  const refreshToken = responseBody.refresh_token;
+  const expiresIn = responseBody.expires_in;
+  const tokenType = responseBody.token_type;
+
   return httpOkResponse({
     request,
     data: {
       accessToken,
       hmrcAccessToken: accessToken,
+      // Optional values (present for Google/Cognito flows)
+      idToken,
+      refreshToken,
+      expiresIn,
+      tokenType,
     },
   });
 }
