@@ -330,27 +330,18 @@ jobs:
         run: |
           set -euo pipefail
           root="target/behaviour-test-results"
-          shopt -s nullglob
 
-          # Flatten nested .webm files into $root preserving only filenames (no paths)
-          while IFS= read -r -d '' f; do
-            base=$(basename "$f")
-            dest="$root/$base"
-            if [[ "$f" != "$dest" ]]; then
-              cp -v "$f" "$dest"
-            fi
-          done < <(find "$root" -mindepth 2 -type f -name '*.webm' -print0)
-
-          # Transcode all .webm files at the root concurrently
+          # Recursively transcode all .webm files, placing output next to source with 'converted' prefix
           pids=()
-          for f in "$root"/*.webm; do
-            [[ -e "$f" ]] || continue
+          while IFS= read -r -d '' f; do
+            dir=$(dirname "$f")
             base="${f##*/}"
-            out="$root/${base%.webm}.mp4"
+            name="${base%.webm}"
+            out="${dir}/converted${name}.mp4"
             echo "Transcoding $f -> $out"
             npm run convert:video -- --in "$f" --out "$out" &
             pids+=($!)
-          done
+          done < <(find "$root" -type f -name '*.webm' -print0)
 
           # Wait for all transcodes to complete
           fail=0
@@ -359,12 +350,6 @@ jobs:
               fail=1
             fi
           done
-
-          # Back-compat: if exactly one MP4 exists and it's not named video.mp4, copy it for the single-artifact step
-          mp4s=("$root"/*.mp4)
-          if [[ ${#mp4s[@]} -eq 1 && "${mp4s[0]}" != "$root/video.mp4" ]]; then
-            cp -v "${mp4s[0]}" "$root/video.mp4" || true
-          fi
 
           exit $fail
 
