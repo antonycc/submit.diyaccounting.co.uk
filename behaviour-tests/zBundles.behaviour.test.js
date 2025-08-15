@@ -37,6 +37,44 @@ function makeIdToken(payloadClaims = {}) {
 
 let serverProcess;
 
+// Inject a small timestamp overlay into the page/videos for readability
+async function enableVideoTimestampOverlay(page) {
+  await page.addInitScript(() => {
+    const createOrUpdate = () => {
+      let el = document.getElementById("pw-video-overlay-ts");
+      if (!el) {
+        el = document.createElement("div");
+        el.id = "pw-video-overlay-ts";
+        el.style.position = "fixed";
+        el.style.right = "6px";
+        el.style.top = "6px";
+        el.style.zIndex = "2147483647";
+        el.style.background = "rgba(0,0,0,0.55)";
+        el.style.color = "#00ff88";
+        el.style.font = "12px/1.2 monospace";
+        el.style.padding = "2px 6px";
+        el.style.borderRadius = "3px";
+        el.style.pointerEvents = "none";
+        document.addEventListener("DOMContentLoaded", () => document.body && document.body.appendChild(el));
+        if (document.body) document.body.appendChild(el);
+      }
+      el.textContent = new Date().toISOString();
+    };
+    setInterval(createOrUpdate, 250);
+  });
+}
+
+// Convenience wrappers to enforce UX-friendly pacing
+async function clickWithPause(locator) {
+  await locator.click();
+  await delay(100);
+}
+
+async function gotoWithPause(page, url) {
+  await gotoWithRetries(page, url, { waitUntil: "domcontentloaded" });
+  await delay(500);
+}
+
 test.describe("Bundles behaviour flow (mock auth -> add bundle -> activities)", () => {
   test.setTimeout(60000);
 
@@ -68,6 +106,8 @@ test.describe("Bundles behaviour flow (mock auth -> add bundle -> activities)", 
   });
 
   test("login via mock callback, request HMRC Test API bundle, verify activities", async ({ page }) => {
+    await enableVideoTimestampOverlay(page);
+
     // Intercept token exchange with mock-oauth2 server
     await page.route("http://localhost:8080/default/token", async (route) => {
       const response = {
@@ -85,7 +125,7 @@ test.describe("Bundles behaviour flow (mock auth -> add bundle -> activities)", 
     });
 
     // Visit the mock callback page to populate localStorage with tokens
-    await gotoWithRetries(page, `http://127.0.0.1:${serverPort}/loginWithMockCallback.html?code=abc&state=xyz`, { waitUntil: "domcontentloaded" });
+    await gotoWithPause(page, `http://127.0.0.1:${serverPort}/loginWithMockCallback.html?code=abc&state=xyz`);
 
     // The page should redirect to index.html on success
     await expect(page).toHaveURL(new RegExp(`http://127.0.0.1:${serverPort}/(index.html)?$`));
@@ -95,16 +135,16 @@ test.describe("Bundles behaviour flow (mock auth -> add bundle -> activities)", 
       await dialog.dismiss();
     });
 
-    await gotoWithRetries(page, `http://127.0.0.1:${serverPort}/bundles.html`, { waitUntil: "domcontentloaded" });
+    await gotoWithPause(page, `http://127.0.0.1:${serverPort}/bundles.html`);
     const addBtn = page.getByRole("button", { name: "Add HMRC Test API Bundle" });
     await expect(addBtn).toBeVisible();
-    await addBtn.click();
+    await clickWithPause(addBtn);
 
     // Button should change to added or already added
     await expect(page.getByRole("button", { name: /Added ✓|Already Added ✓/ })).toBeVisible();
 
     // Go to activities and verify sections
-    await gotoWithRetries(page, `http://127.0.0.1:${serverPort}/activities.html`, { waitUntil: "domcontentloaded" });
+    await gotoWithPause(page, `http://127.0.0.1:${serverPort}/activities.html`);
     await expect(page.getByText("Default bundle")).toBeVisible();
     await expect(page.getByText("HMRC Test API bundle")).toBeVisible();
     await expect(page.getByText("Submit VAT (Sandbox API)")).toBeVisible();

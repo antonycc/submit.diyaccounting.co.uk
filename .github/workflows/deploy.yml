@@ -16,6 +16,7 @@ on:
       - 'app/**'
       - 'web/public/**'
       - '.github/workflows/deploy.yml'
+      - '.github/workflows/deploy-ci-only.yml'
       - '**/pom.xml'
   workflow_dispatch:
     inputs:
