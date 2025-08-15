@@ -100,7 +100,7 @@
 
           // Decode ID token to get user info
           //const idTokenPayload = JSON.parse(atob(tokens.id_token.split('.')[1]));
-          const base64Payload = tokens.id_token.split(".")[1];
+          const base64Payload = tokens.accessToken.split(".")[1];
           const jsonPayload = base64UrlDecode(base64Payload);
           const idTokenPayload = JSON.parse(jsonPayload); //["id_token"];
 

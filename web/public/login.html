@@ -123,6 +123,13 @@
       async function loginWithGoogle() {
         console.log("Initiating Google login via Cognito");
 
+        console.log("Clear stored tokens and user info");
+        localStorage.removeItem("cognitoAccessToken");
+        localStorage.removeItem("cognitoIdToken");
+        localStorage.removeItem("cognitoRefreshToken");
+        localStorage.removeItem("userInfo");
+        localStorage.removeItem("authState");
+
         // Generate state parameter for security
         const state = Math.random().toString(36).substring(2, 15);
         localStorage.setItem("authState", state);
@@ -138,6 +145,13 @@
       // Login with Mock OAuth2 Server via Cognito
       function loginWithMockOAuth2() {
         console.log("Initiating navikt/mock-oauth2-server login via Cognito");
+
+        console.log("Clear stored tokens and user info");
+        localStorage.removeItem("cognitoAccessToken");
+        localStorage.removeItem("cognitoIdToken");
+        localStorage.removeItem("cognitoRefreshToken");
+        localStorage.removeItem("userInfo");
+        localStorage.removeItem("authState");
 
         // Generate state parameter for security
         const state = Math.random().toString(36).substring(2, 15);
