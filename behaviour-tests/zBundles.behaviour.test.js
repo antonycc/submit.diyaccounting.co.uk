@@ -16,6 +16,7 @@ const serverPort = 3501;
 
 function base64UrlEncode(obj) {
   const json = JSON.stringify(obj);
+  // eslint-disable-next-line sonarjs/slow-regex
   return Buffer.from(json).toString("base64").replace(/=+$/g, "").replace(/\+/g, "-").replace(/\//g, "_");
 }
 
@@ -40,6 +41,7 @@ let serverProcess;
 // Inject a small timestamp overlay into the page/videos for readability
 async function enableVideoTimestampOverlay(page) {
   await page.addInitScript(() => {
+    /* eslint-disable no-undef */
     const createOrUpdate = () => {
       let el = document.getElementById("pw-video-overlay-ts");
       if (!el) {
@@ -61,6 +63,7 @@ async function enableVideoTimestampOverlay(page) {
       el.textContent = new Date().toISOString();
     };
     setInterval(createOrUpdate, 250);
+    /* eslint-enable no-undef */
   });
 }
 
@@ -82,6 +85,7 @@ test.describe("Bundles behaviour flow (mock auth -> add bundle -> activities)", 
     process.env = { ...originalEnv };
 
     // Start the local server with a fixed port and ensure mock bundle mode is on
+    // eslint-disable-next-line sonarjs/no-os-command-from-path
     serverProcess = spawn("npm", ["run", "start"], {
       env: {
         ...process.env,
@@ -100,8 +104,9 @@ test.describe("Bundles behaviour flow (mock auth -> add bundle -> activities)", 
         serverProcess.kill("SIGINT");
         await delay(500);
       }
-    } catch (_e) {
-      // ignore
+      // eslint-disable-next-line sonarjs/no-ignored-exceptions
+    } catch {
+      // intentionally ignored during shutdown
     }
   });
 
