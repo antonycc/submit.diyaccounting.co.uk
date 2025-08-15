@@ -513,17 +513,45 @@ jobs:
       - name: Convert Playwright video to MP4
         if: ${{ !cancelled() }}
         run: |
-          find target/behaviour-test-results -type f -name '*.webm' -exec mv -v "{}" target/behaviour-test-results/video.webm \;
-          npm run convert:video -- --in target/behaviour-test-results/video.webm --out target/behaviour-test-results/video.mp4
+          set -euo pipefail
+          root="target/behaviour-test-results"
+          shopt -s nullglob
 
-      - name: Upload converted video
-        uses: actions/upload-artifact@v4
-        if: ${{ !cancelled() }}
-        with:
-          name: "test-results-behaviour-${{ env.environment }}-mp4"
-          path: "target/behaviour-test-results/video.mp4"
-          retention-days: 30
-          compression-level: '0'
+          # Flatten nested .webm files into $root preserving only filenames (no paths)
+          while IFS= read -r -d '' f; do
+            base=$(basename "$f")
+            dest="$root/$base"
+            if [[ "$f" != "$dest" ]]; then
+              cp -v "$f" "$dest"
+            fi
+          done < <(find "$root" -mindepth 2 -type f -name '*.webm' -print0)
+
+          # Transcode all .webm files at the root concurrently
+          pids=()
+          for f in "$root"/*.webm; do
+            [[ -e "$f" ]] || continue
+            base="${f##*/}"
+            out="$root/${base%.webm}.mp4"
+            echo "Transcoding $f -> $out"
+            npm run convert:video -- --in "$f" --out "$out" &
+            pids+=($!)
+          done
+
+          # Wait for all transcodes to complete
+          fail=0
+          for pid in "${pids[@]:-}"; do
+            if ! wait "$pid"; then
+              fail=1
+            fi
+          done
+
+          # Back-compat: if exactly one MP4 exists and it's not named video.mp4, copy it for the single-artifact step
+          mp4s=("$root"/*.mp4)
+          if [[ ${#mp4s[@]} -eq 1 && "${mp4s[0]}" != "$root/video.mp4" ]]; then
+            cp -v "${mp4s[0]}" "$root/video.mp4" || true
+          fi
+
+          exit $fail
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
@@ -531,14 +559,6 @@ jobs:
         with:
           name: "test-results-behaviour-${{ env.environment }}"
           path: "target/behaviour-test-results/"
-          retention-days: 30
-
-      - name: Upload test results
-        uses: actions/upload-artifact@v4
-        if: ${{ !cancelled() }}
-        with:
-          name: "test-results-${{ env.environment }}"
-          path: "target/test-results/"
           retention-days: 30
 
       - name: Upload test reports
