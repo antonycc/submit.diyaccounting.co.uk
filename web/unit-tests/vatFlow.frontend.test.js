@@ -254,7 +254,7 @@ describe("VAT Flow Frontend JavaScript", () => {
           accessToken: "test-token",
         }),
       });
-      // expect(result).toEqual(mockResponse);
+      expect(result).toEqual(mockResponse);
     });
 
     test("logReceipt should make correct API call", async () => {
