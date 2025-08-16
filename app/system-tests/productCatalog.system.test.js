@@ -11,7 +11,7 @@ describe("System: product-catalogue.toml", () => {
   });
 
   // it("should have Submit VAT available for guest and not for default", () => {
-  //  expect(bundlesForActivity(catalog, "submit-vat")).toContain("guest");
+  //   expect(bundlesForActivity(catalog, "submit-vat")).toContain("guest");
   //  expect(bundlesForActivity(catalog, "submit-vat")).not.toContain("default");
   // });
 
