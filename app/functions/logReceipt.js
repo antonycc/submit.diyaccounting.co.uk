@@ -55,26 +55,56 @@ export async function logReceipt(key, receipt) {
 export async function httpPost(event) {
   const request = extractRequest(event);
 
+  // Parse body – allow either {receipt: {...}} or direct receipt fields
+  const parsed = JSON.parse(event.body || "{}");
+  const receipt = parsed && parsed.receipt ? parsed.receipt : parsed;
+
+  // Extract user sub (if available) from Authorization header without verification
+  const auth = event.headers?.authorization || event.headers?.Authorization;
+  let userSub = null;
+  if (auth && auth.startsWith("Bearer ")) {
+    try {
+      const token = auth.split(" ")[1];
+      const parts = token.split(".");
+      if (parts.length >= 2) {
+        const payload = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+        const json = Buffer.from(payload, "base64").toString("utf8");
+        const claims = JSON.parse(json);
+        userSub = claims.sub || null;
+      }
+    } catch (_e) {
+      userSub = null;
+    }
+  }
+
+  // Build S3 key
+  const formBundle = receipt?.formBundleNumber;
+  const timestamp = new Date().toISOString();
+  const key = userSub && formBundle
+    ? `receipts/${userSub}/${timestamp}-${formBundle}.json`
+    : formBundle
+      ? `receipts/${formBundle}.json`
+      : null;
+
   // Validation
-  const receipt = JSON.parse(event.body || "{}");
-  const key = `receipts/${receipt.formBundleNumber}.json`;
   const errorMessages = [];
-  if (!receipt) {
+  if (!receipt || Object.keys(receipt).length === 0) {
     errorMessages.push("Missing receipt parameter from body");
   }
+  if (!formBundle) {
+    errorMessages.push("Missing formBundleNumber in receipt body");
+  }
   if (!key) {
-    errorMessages.push("Missing key parameter from body");
+    errorMessages.push("Missing key parameter derived from body");
   }
   if (!process.env.DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX) {
-    errorMessages.push({
-      message: "DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX environment variable is not set, cannot log receipt",
-    });
+    errorMessages.push("DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX environment variable is not set, cannot log receipt");
   }
   if (errorMessages.length > 0) {
     return httpBadRequestResponse({
       request,
-      message: `There are ${errorMessages.length} validation errors for ${key}.`,
-      error: errorMessages.join(", "),
+      message: `There are ${errorMessages.length} validation errors for ${formBundle || "unknown"}.`,
+      error: { error: errorMessages.join(", ") },
     });
   }
 

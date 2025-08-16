@@ -86,7 +86,7 @@ describe("System Test – end-to-end AWS-like flow", () => {
         accessToken: hmrcAccessToken,
       }),
     });
-    const receipt = JSON.parse(submitRes.body);
+    const { receipt } = JSON.parse(submitRes.body);
 
     // 3) Log receipt
     const logRes = await logReceiptHandler({ body: JSON.stringify(receipt) });
