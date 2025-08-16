@@ -220,25 +220,51 @@
         }
       }
 
-      // Update bundle status display
+      // Update bundle status display – reflect previously selected bundles in the UI
       async function updateBundleStatus() {
-        const accessToken = localStorage.getItem("cognitoAccessToken");
-        const idToken = localStorage.getItem("cognitoIdToken");
-
-        if (!accessToken || !idToken) {
-          return;
-        }
-
         try {
-          // For now, we'll check localStorage for user bundles
-          // In a full implementation, you might want to fetch current bundles from the API
-          const userInfo = localStorage.getItem("userInfo");
-          if (userInfo) {
-            const user = JSON.parse(userInfo);
-            console.log("Current user bundles would be displayed here");
+          // Parse bundles from localStorage (array of strings like "HMRC_TEST_API" or "HMRC_TEST_API|EXPIRY=YYYY-MM-DD")
+          const parseUserBundles = () => {
+            try {
+              const raw = localStorage.getItem("userBundles");
+              if (!raw) return [];
+              const arr = JSON.parse(raw);
+              return Array.isArray(arr) ? arr : [];
+            } catch (_e) {
+              return [];
+            }
+          };
+          const hasBundle = (bundles, id) => (bundles || []).some((b) => typeof b === "string" && (b === id || b.startsWith(id + "|")));
 
-            // You could add a bundles display section to show current user bundles
-            // This would require extending the bundle API to include a GET endpoint
+          const bundles = parseUserBundles();
+
+          // Legacy static UI: mark HMRC_TEST_API as already added
+          const legacyBtn = document.querySelector("button.btn.service-btn:not(.disabled-btn)[onclick*=\"HMRC_TEST_API\"]");
+          if (legacyBtn) {
+            if (hasBundle(bundles, "HMRC_TEST_API")) {
+              legacyBtn.textContent = "Already Added ✓";
+              legacyBtn.disabled = true;
+              legacyBtn.style.backgroundColor = "#28a745";
+            }
+          }
+
+          // Catalog-driven UI: mark any rendered bundle cards as active
+          const dataButtons = document.querySelectorAll('button[data-bundle-id]');
+          if (dataButtons && dataButtons.length) {
+            for (const btn of dataButtons) {
+              const bundleId = btn.getAttribute('data-bundle-id');
+              if (bundleId && hasBundle(bundles, bundleId)) {
+                btn.textContent = `Already Added ✓`;
+                btn.disabled = true;
+                btn.style.backgroundColor = "#28a745";
+                const card = btn.closest('.service-item');
+                const statusEl = card && card.querySelector('.status');
+                if (statusEl) {
+                  statusEl.textContent = 'Active';
+                  statusEl.style.color = '#2c7a7b';
+                }
+              }
+            }
           }
         } catch (error) {
           console.error("Error updating bundle status:", error);
@@ -360,6 +386,11 @@
                 statusEl.style.color = '#b00020';
               }
             });
+          }
+
+          // Reflect pre-existing selections after rendering
+          if (typeof updateBundleStatus === 'function') {
+            try { await updateBundleStatus(); } catch { /* ignore */ }
           }
         } catch (e) {
           console.log('CATALOG_DRIVEN_UI bundles rendering failed:', e);
