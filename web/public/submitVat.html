@@ -301,7 +301,8 @@
         }
 
         console.log(`Submitted VAT. Remote call completed successfully: POST ${url}`, responseJson, responseJson.receipt);
-        return responseJson.receipt;
+        // Return the receipt object when present (production), otherwise return the full body (tests/mocks)
+        return responseJson?.receipt ?? responseJson;
       }
 
       async function logReceipt(processingDate, formBundleNumber, chargeRefNumber) {
