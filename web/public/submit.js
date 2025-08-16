@@ -230,7 +230,7 @@ function isActivityAvailable(catalog, activityId, bundleId) {
 }
 
 // Fetch raw TOML from the server; parsing to be done by the caller/test if needed
-async function fetchCatalogText(url = "/product-catalog.toml") {
+async function fetchCatalogText(url = "/product-catalogue.toml") {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Failed to fetch catalog: ${res.status} ${res.statusText}`);
   return res.text();

@@ -28,7 +28,7 @@ async function validateCatalog(object) {
 }
 
 async function load() {
-  const filePath = path.join(process.cwd(), "product-catalog.toml");
+  const filePath = path.join(process.cwd(), "product-catalogue.toml");
   const stat = fs.statSync(filePath);
   const lastModified = stat.mtime.toUTCString();
   const object = loadCatalogFromRoot();

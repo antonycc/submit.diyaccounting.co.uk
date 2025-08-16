@@ -40,7 +40,7 @@ describe("web/public/submit.js helpers", () => {
   it("fetchCatalogText should fetch TOML text", async () => {
     const fakeToml = 'version = "1.0.0"';
     global.fetch = vi.fn(async () => ({ ok: true, status: 200, statusText: "OK", text: async () => fakeToml }));
-    const txt = await window.fetchCatalogText("/product-catalog.toml");
+    const txt = await window.fetchCatalogText("/product-catalogue.toml");
     expect(txt).toBe(fakeToml);
   });
 });

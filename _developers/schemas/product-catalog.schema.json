@@ -34,11 +34,10 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["id", "name", "kind", "bundles"],
+        "required": ["id", "name", "bundles"],
         "properties": {
           "id": { "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$" },
           "name": { "type": "string" },
-          "kind": { "enum": ["demo", "actual"] },
           "bundles": {
             "type": "array",
             "minItems": 1,

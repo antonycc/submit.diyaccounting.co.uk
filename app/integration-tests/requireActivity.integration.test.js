@@ -30,7 +30,7 @@ describe("Integration – requireActivity middleware", () => {
     app = express();
     app.use(express.json());
 
-    app.post("/protected", requireActivity("submit-vat"), (req, res) => {
+    app.post("/protected", requireActivity("submit-vat-sandbox"), (req, res) => {
       res.status(200).json({ ok: true });
     });
 
@@ -45,7 +45,7 @@ describe("Integration – requireActivity middleware", () => {
     });
   });
 
-  test("403 before grant, 200 after guest grant", async () => {
+  test("403 before grant, 200 after test grant", async () => {
     const token = makeIdToken("guard-user-guest");
 
     const resForbidden = await request(app).post("/protected").set("Authorization", `Bearer ${token}`).send({});
@@ -57,7 +57,7 @@ describe("Integration – requireActivity middleware", () => {
     const resGrant = await request(app)
       .post("/api/request-bundle")
       .set("Authorization", `Bearer ${token}`)
-      .send({ bundleId: "guest" });
+      .send({ bundleId: "test" });
     expect(resGrant.status).toBe(200);
 
     const resAllowed = await request(app).post("/protected").set("Authorization", `Bearer ${token}`).send({});

@@ -1,0 +1,129 @@
+version = "1.1.0"
+
+[[bundles]]
+id = "default"
+name = "Default"
+allocation = "automatic"
+auth = "none"
+
+[[bundles]]
+id = "test"
+name = "Test"
+allocation = "on-request"
+auth = "required"
+cap = 10
+timeout = "P1D"
+
+#[[bundles]]
+#id = "guest"
+#name = "Guest"
+#allocation = "on-request"
+#auth = "required"
+#cap = 10
+#timeout = "P1M"
+
+#[[bundles]]
+#id = "legacy"
+#name = "Legacy"
+#allocation = "on-request"
+#auth = "required"
+#cap = 1000
+#timeout = "P1Y"
+#[bundles.qualifiers]
+#requiresTransactionId = true
+
+#[[bundles]]
+#id = "basic"
+#name = "Basic"
+#allocation = "on-request"
+#auth = "required"
+#[bundles.qualifiers]
+#subscriptionTier = "Basic"
+
+#[[bundles]]
+#id = "advanced"
+#name = "Advanced"
+#allocation = "on-request"
+#auth = "required"
+#[bundles.qualifiers]
+#subscriptionTier = "Advanced"
+
+# Demo/placeholder activities
+#[[activities]]
+#id = "learn-free-anon"
+#name = "Learn about free anonymous activities"
+#bundles = ["default"]
+
+#[[activities]]
+#id = "learn-free-auth"
+#name = "Learn about free authenticated activities"
+#bundles = ["guest"]
+
+#[[activities]]
+#id = "learn-basic"
+#name = "Learn about basic activities"
+#bundles = ["basic"]
+
+#[[activities]]
+#id = "learn-legacy"
+#name = "Learn about DIY legacy entitlements"
+#bundles = ["legacy"]
+
+#[[activities]]
+#id = "learn-advanced"
+#name = "Learn about advanced activities"
+#bundles = ["advanced"]
+
+# VAT activities
+[[activities]]
+id = "submit-vat-sandbox"
+name = "Submit VAT (Sandbox API)"
+bundles = ["test"]
+# tags = ["sandbox"]
+
+[[activities]]
+id = "vat-obligations-sandbox"
+name = "VAT Obligations (Sandbox API)"
+bundles = ["test"]
+# tags = ["sandbox"]
+
+[[activities]]
+id = "my-receipts"
+name = "View previously submitted receipts"
+bundles = ["default"]
+
+#[[activities]]
+#id = "submit-vat"
+#name = "Submit VAT"
+#bundles = ["guest", "basic", "legacy"]
+#bundles = ["guest"]
+
+#[[activities]]
+#id = "vat-obligations"
+#name = "VAT Obligations"
+#bundles = ["default"]
+
+#[[activities]]
+#id = "self-employed"
+#name = "Self Employed"
+#bundles = ["basic", "legacy"]
+
+#[[activities]]
+#id = "diy-basic-sole-trader-upload"
+#name = "DIY Basic Sole Trader Upload"
+#bundles = ["legacy"]
+
+#[[activities]]
+#id = "diy-taxi-upload"
+#name = "DIY Taxi Upload"
+#bundles = ["legacy"]
+
+#[[activities]]
+#id = "diy-self-employed-upload"
+#name = "DIY Self-Employed Upload"
+#bundles = ["legacy"]
+
+#[[activities]]
+#id = "diy-limited-company-upload"
+#name = "DIY Limited Company Upload"
+#bundles = ["legacy"]

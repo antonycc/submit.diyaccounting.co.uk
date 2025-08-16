@@ -14,11 +14,11 @@ export function parseCatalog(tomlString) {
 }
 
 /**
- * Load catalog from the repository root product-catalog.toml
+ * Load catalog from the repository root product-catalogue.toml
  * @returns {object}
  */
 export function loadCatalogFromRoot() {
-  const filePath = path.join(process.cwd(), "product-catalog.toml");
+  const filePath = path.join(process.cwd(), "product-catalogue.toml");
   const raw = fs.readFileSync(filePath, "utf-8");
   return parseCatalog(raw);
 }

@@ -1,7 +1,7 @@
 ### Phase 2: make the catalog the single source of truth (backend + frontend)
 
 You already have:
-- Product catalog (product-catalog.toml) and schema (_developers/schemas/product-catalog.schema.json).
+- Product catalog (product-catalogue.toml) and schema (_developers/schemas/product-catalog.schema.json).
 - Server helpers: parse/load and availability queries in app/src/lib/productCatalogHelper.js.
 - Client helpers in web/public/submit.js (no TOML parsing).
 - Tests: unit + system validating helpers and the catalog.
@@ -69,7 +69,6 @@ This continuation completes the migration by exposing catalog JSON, centralizing
 - activities.html (or equivalent component):
     - Available to you: activities where any activity.bundles intersects active bundles.
     - Requires additional access: all catalog.activities minus available.
-    - Filters: by kind (demo|actual); future tags.
     - Badges: show bundle names that unlock each activity; show auth badge if all unlocking bundles require auth.
 - bundles.html:
     - List catalog.bundles with allocation/auth/timeout/cap.
@@ -84,7 +83,7 @@ This continuation completes the migration by exposing catalog JSON, centralizing
 ### Shared contracts (align with schema)
 
 - Bundle: { id, name, allocation: "automatic"|"on-request", auth: "none"|"required", cap?, timeout?, qualifiers? }
-- Activity: { id, name, kind: "demo"|"actual", bundles: string[], tags?, metadata? }
+- Activity: { id, name, bundles: string[], tags?, metadata? }
 - Grant: { subject, bundleId, expiry?, qualifiers? }
 
 Ensure server-side validates qualifiers and strips unexpected properties.

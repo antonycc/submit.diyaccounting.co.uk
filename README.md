@@ -168,7 +168,7 @@ Receipts and bundles
   - Response: { "granted": true, "expiry": "2025-09-01T00:00:00Z" }
 
 Bundles and product-catalog
-Catalog: product-catalog.toml
+Catalog: product-catalogue.toml
 - Bundles (default, test, guest, basic, legacy, advanced) govern access.
 - Activities map to bundles. For example:
   - test -> submit-vat-sandbox, vat-obligations-sandbox
