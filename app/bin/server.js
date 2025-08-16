@@ -14,6 +14,7 @@ import { httpPost as logReceiptHttpPost } from "../functions/logReceipt.js";
 import { httpPost as requestBundleHttpPost } from "../functions/bundle.js";
 import { httpGet as getCatalogHttpGet } from "../functions/getCatalog.js";
 import { httpGet as myBundlesHttpGet } from "../functions/myBundles.js";
+import { httpGet as myReceiptsHttpGet, httpGetByName as myReceiptHttpGetByName } from "../functions/myReceipts.js";
 import logger from "../lib/logger.js";
 import { requireActivity } from "../src/lib/entitlementsService.js";
 
@@ -63,6 +64,7 @@ const googleAuthUrlPath = context.googleAuthUrlLambdaUrlPath || "/api/google/aut
 const requestBundlePath = context.bundleLambdaUrlPath || "/api/request-bundle";
 const catalogPath = context.catalogLambdaUrlPath || "/api/catalog";
 const myBundlesPath = context.myBundlesLambdaUrlPath || "/api/my-bundles";
+const myReceiptsPath = context.myReceiptsLambdaUrlPath || "/api/my-receipts";
 
 app.get(authUrlPath, async (req, res) => {
   const event = {
@@ -155,7 +157,7 @@ if (String(process.env.DIY_SUBMIT_ENABLE_CATALOG_GUARDS || "").toLowerCase() ===
 app.post(logReceiptPath, async (req, res) => {
   const event = {
     path: req.path,
-    headers: { host: req.get("host") || "localhost:3000" },
+    headers: { host: req.get("host") || "localhost:3000", authorization: req.headers.authorization },
     queryStringParameters: req.query || {},
     body: JSON.stringify(req.body),
   };
@@ -222,6 +224,45 @@ app.get(myBundlesPath, async (req, res) => {
   if (headers) res.set(headers);
   try {
     res.status(statusCode).json(body ? JSON.parse(body) : {});
+  } catch (_e) {
+    res.status(statusCode).send(body || "");
+  }
+});
+
+// My receipts endpoints
+app.get(myReceiptsPath, async (req, res) => {
+  const event = {
+    path: req.path,
+    headers: {
+      host: req.get("host") || "localhost:3000",
+      authorization: req.headers.authorization,
+    },
+    queryStringParameters: req.query || {},
+  };
+  const { statusCode, body, headers } = await myReceiptsHttpGet(event);
+  if (headers) res.set(headers);
+  try {
+    res.status(statusCode).json(body ? JSON.parse(body) : {});
+  } catch (_e) {
+    res.status(statusCode).send(body || "");
+  }
+});
+
+app.get(`${myReceiptsPath}/:name`, async (req, res) => {
+  const event = {
+    path: req.path,
+    headers: {
+      host: req.get("host") || "localhost:3000",
+      authorization: req.headers.authorization,
+    },
+    pathParameters: { name: req.params.name },
+    queryStringParameters: req.query || {},
+  };
+  const { statusCode, body, headers } = await myReceiptHttpGetByName(event);
+  if (headers) res.set(headers);
+  try {
+    // For GET receipt by name, response body is already JSON string of the receipt
+    res.status(statusCode).send(body || "{}");
   } catch (_e) {
     res.status(statusCode).send(body || "");
   }

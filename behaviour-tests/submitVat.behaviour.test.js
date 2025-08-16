@@ -170,7 +170,7 @@ test.outputDir = "target/behaviour-with-auth-test-results";
 
 test("Submit VAT return end-to-end flow with browser emulation", async ({ page }) => {
   const timestamp = getTimestamp();
-  const testUrl = homeUrl;
+  const testUrl = runTestServer ? `http://127.0.0.1:${serverPort}` : homeUrl;
 
   // Add console logging to capture browser messages
   page.on("console", (msg) => {
