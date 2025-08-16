@@ -1,3 +1,5 @@
+/* eslint-env browser */
+/* global RTCPeerConnection */
 // Generic utility functions for submit application
 
 // Status message handling
@@ -92,6 +94,45 @@ async function getAuthUrl(state, provider = "hmrc") {
   }
 
   console.log(`Got auth URL. Remote call completed successfully: GET ${url}`, responseJson);
+  return responseJson;
+}
+
+// VAT submission API function
+async function submitVat(vatNumber, periodKey, vatDue, accessToken, govClientHeaders = {}) {
+  const url = "/api/submit-vat";
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...govClientHeaders,
+    },
+    body: JSON.stringify({ vatNumber, periodKey, vatDue, accessToken }),
+  });
+  const responseJson = await response.json();
+  if (!response.ok) {
+    const message = `Failed to submit VAT. Remote call failed: POST ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`;
+    console.error(message);
+    throw new Error(message);
+  }
+  return responseJson;
+}
+
+// Receipt logging API function
+async function logReceipt(processingDate, formBundleNumber, chargeRefNumber) {
+  const url = "/api/log-receipt";
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ processingDate, formBundleNumber, chargeRefNumber }),
+  });
+  const responseJson = await response.json();
+  if (!response.ok) {
+    const message = `Failed to log receipt. Remote call failed: POST ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`;
+    console.error(message);
+    throw new Error(message);
+  }
   return responseJson;
 }
 
@@ -204,6 +245,8 @@ if (typeof window !== "undefined") {
   window.hideLoading = hideLoading;
   window.generateRandomState = generateRandomState;
   window.getAuthUrl = getAuthUrl;
+  window.submitVat = submitVat;
+  window.logReceipt = logReceipt;
   window.getClientIP = getClientIP;
   window.getIPViaWebRTC = getIPViaWebRTC;
   // new helpers
