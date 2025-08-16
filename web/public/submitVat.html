@@ -300,8 +300,8 @@
           throw new Error(message);
         }
 
-        console.log(`Submitted VAT. Remote call completed successfully: POST ${url}`, responseJson);
-        return responseJson;
+        console.log(`Submitted VAT. Remote call completed successfully: POST ${url}`, responseJson, responseJson.receipt);
+        return responseJson.receipt;
       }
 
       async function logReceipt(processingDate, formBundleNumber, chargeRefNumber) {

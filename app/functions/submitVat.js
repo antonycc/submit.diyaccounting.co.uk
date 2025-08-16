@@ -159,7 +159,7 @@ export async function submitVat(periodKey, vatDue, vatNumber, hmrcAccessToken, g
     message: `Response from POST ${hmrcRequestUrl}`,
     url: hmrcRequestUrl,
     hmrcResponseStatus: hmrcResponse.status,
-    hmrcRequestBody,
+    hmrcResponseBody,
   };
 
   // Add detailed error logging for 403 responses

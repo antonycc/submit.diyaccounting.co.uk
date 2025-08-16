@@ -181,7 +181,10 @@
 
         if (userInfo) {
           const user = JSON.parse(userInfo);
-          loginStatusElement.textContent = `Logged in as ${user.email}`;
+          const userLabel = user.email ? user.email : user.sub;
+          console.log("User info:", user);
+          console.log("User label:", userLabel);
+          loginStatusElement.textContent = `Logged in as ${userLabel}`;
           loginLinkElement.textContent = "Logout";
           loginLinkElement.href = "#";
           loginLinkElement.onclick = logout;
