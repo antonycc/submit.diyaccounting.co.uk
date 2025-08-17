@@ -9,7 +9,7 @@ const scriptContent = fs.readFileSync(submitJsPath, "utf-8");
 describe("web/public/submit.js helpers", () => {
   beforeEach(() => {
     global.window = {};
-    // eslint-disable-next-line no-eval
+
     eval(scriptContent);
   });
 

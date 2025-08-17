@@ -10,7 +10,7 @@
     const path = document.createElementNS("http:\/\/www.w3.org\/2000\/svg", "path");
     path.setAttribute(
       "d",
-      "M3 3h14l4 4v14a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zm2 2v6h14V8.83L15.17 5H5zm0 16h14v-8H5v8zm3-3h8v2H8v-2z"
+      "M3 3h14l4 4v14a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zm2 2v6h14V8.83L15.17 5H5zm0 16h14v-8H5v8zm3-3h8v2H8v-2z",
     );
     path.setAttribute("fill", "currentColor");
 

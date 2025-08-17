@@ -16,7 +16,7 @@ describe("entitlementsService", () => {
   //  expect(active).toContain("default");
   //  expect(isActivityAllowed("vat-obligations", ctx)).toBe(true);
   //  expect(isActivityAllowed("submit-vat", ctx)).toBe(false);
-  //});
+  // });
 
   // it("guest grant should allow submit-vat", () => {
   //  const sub = "ent-user-1";

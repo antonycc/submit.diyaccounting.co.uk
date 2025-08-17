@@ -7,6 +7,7 @@ dotenv.config({ path: ".env.test" });
 // Mock AWS S3 client
 import { mockClient } from "aws-sdk-client-mock";
 import { S3Client, ListObjectsV2Command, GetObjectCommand } from "@aws-sdk/client-s3";
+
 const s3Mock = mockClient(S3Client);
 
 // Import after mocks
@@ -15,7 +16,8 @@ import { httpGet as listReceipts, httpGetByName as getReceipt } from "@app/funct
 function makeJwt(sub = "test-user-sub") {
   const header = { alg: "none", typ: "JWT" };
   const payload = { sub };
-  const b64 = (obj) => Buffer.from(JSON.stringify(obj)).toString("base64").replace(/=+$/g, "").replace(/\+/g, "-").replace(/\//g, "_");
+  const b64 = (obj) =>
+    Buffer.from(JSON.stringify(obj)).toString("base64").replace(/=+$/g, "").replace(/\+/g, "-").replace(/\//g, "_");
   return `${b64(header)}.${b64(payload)}.`;
 }
 
@@ -32,8 +34,16 @@ describe("myReceipts functions", () => {
     const auth = `Bearer ${makeJwt(userSub)}`;
     const listResp = {
       Contents: [
-        { Key: `receipts/${userSub}/2025-05-01T10:00:00.000Z-AAA.json`, Size: 123, LastModified: new Date("2025-05-01T10:00:10Z") },
-        { Key: `receipts/${userSub}/2025-06-01T09:00:00.000Z-BBB.json`, Size: 456, LastModified: new Date("2025-06-01T09:00:10Z") },
+        {
+          Key: `receipts/${userSub}/2025-05-01T10:00:00.000Z-AAA.json`,
+          Size: 123,
+          LastModified: new Date("2025-05-01T10:00:10Z"),
+        },
+        {
+          Key: `receipts/${userSub}/2025-06-01T09:00:00.000Z-BBB.json`,
+          Size: 456,
+          LastModified: new Date("2025-06-01T09:00:10Z"),
+        },
       ],
       IsTruncated: false,
     };
@@ -63,13 +73,19 @@ describe("myReceipts functions", () => {
     const stream = new ReadableStreamMock(JSON.stringify(receiptObj));
     s3Mock.on(GetObjectCommand).resolves({ Body: stream });
 
-    const { statusCode, body } = await getReceipt({ headers: { authorization: auth }, pathParameters: { name: "2025-07-01T12:00:00.000Z-CCC.json" } });
+    const { statusCode, body } = await getReceipt({
+      headers: { authorization: auth },
+      pathParameters: { name: "2025-07-01T12:00:00.000Z-CCC.json" },
+    });
     expect(statusCode).toBe(200);
     const json = JSON.parse(body);
     expect(json.formBundleNumber).toBe("CCC");
 
     // Forbidden when trying to access someone else's prefix via full key
-    const respForbidden = await getReceipt({ headers: { authorization: auth }, queryStringParameters: { key: `receipts/other/2025-01-01-XXX.json` } });
+    const respForbidden = await getReceipt({
+      headers: { authorization: auth },
+      queryStringParameters: { key: `receipts/other/2025-01-01-XXX.json` },
+    });
     expect(respForbidden.statusCode).toBe(403);
   });
 });

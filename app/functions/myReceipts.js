@@ -96,9 +96,7 @@ export async function httpGet(event) {
   const items = [];
   try {
     do {
-      const resp = await s3.send(
-        new ListObjectsV2Command({ Bucket, Prefix, ContinuationToken, MaxKeys: 1000 }),
-      );
+      const resp = await s3.send(new ListObjectsV2Command({ Bucket, Prefix, ContinuationToken, MaxKeys: 1000 }));
       (resp.Contents || []).forEach((o) => {
         const meta = parseReceiptKey(o.Key);
         if (meta.ok) {

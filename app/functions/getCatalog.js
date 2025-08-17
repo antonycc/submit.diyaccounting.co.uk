@@ -55,7 +55,7 @@ export async function httpGet(event) {
       return {
         statusCode: 304,
         headers: {
-          ETag: cached.etag,
+          "ETag": cached.etag,
           "Last-Modified": cached.lastModified,
           "Cache-Control": "public, max-age=60",
           "X-Catalog-Validated": String(!!cached.validated),
@@ -67,7 +67,7 @@ export async function httpGet(event) {
       return {
         statusCode: 304,
         headers: {
-          ETag: cached.etag,
+          "ETag": cached.etag,
           "Last-Modified": cached.lastModified,
           "Cache-Control": "public, max-age=60",
           "X-Catalog-Validated": String(!!cached.validated),
@@ -80,7 +80,7 @@ export async function httpGet(event) {
       statusCode: 200,
       headers: {
         "Content-Type": "application/json",
-        ETag: cached.etag,
+        "ETag": cached.etag,
         "Last-Modified": cached.lastModified,
         "Cache-Control": "public, max-age=60",
         "X-Catalog-Validated": String(!!cached.validated),

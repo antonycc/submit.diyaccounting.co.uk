@@ -54,7 +54,9 @@ export function authUrl(state, provider = "hmrc") {
     // Fallback: direct Google OAuth when Cognito is not configured
     const googleClientId = (process.env.DIY_SUBMIT_GOOGLE_CLIENT_ID || "").trim();
     if (!googleClientId) {
-      throw new Error("Google login misconfigured: neither DIY_SUBMIT_COGNITO_CLIENT_ID nor DIY_SUBMIT_GOOGLE_CLIENT_ID is set");
+      throw new Error(
+        "Google login misconfigured: neither DIY_SUBMIT_COGNITO_CLIENT_ID nor DIY_SUBMIT_GOOGLE_CLIENT_ID is set",
+      );
     }
     const googleAuthorize = "https://accounts.google.com/o/oauth2/v2/auth";
     return (
