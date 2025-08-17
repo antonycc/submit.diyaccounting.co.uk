@@ -111,7 +111,7 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: 21
+          java-version: 17
           cache: 'maven'
 
       - name: Set up Docker Buildx
@@ -306,7 +306,7 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: 21
+          java-version: 17
           cache: 'maven'
 
       - name: Set up Docker Buildx
@@ -347,7 +347,7 @@ jobs:
         shell: bash
         run: |
           echo "Compiling Java classes required for CDK deployment..."
-          ./mvnw compile -Dmaven.compiler.source=17 -Dmaven.compiler.target=17 -q
+          ./mvnw compile -Dmaven.compiler.source=17 -Dmaven.compiler.target=17 -DskipTests=true
           echo "Compilation completed."
 
       - name: set-jar-path

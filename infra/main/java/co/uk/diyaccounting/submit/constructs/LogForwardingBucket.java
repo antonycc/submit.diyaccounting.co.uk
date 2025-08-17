@@ -290,7 +290,7 @@ public class LogForwardingBucket extends Stack {
                 var logForwarderBuilder = Function.Builder
                         .create(scope, "%sLogForwarder".formatted(idPrefix))
                         .functionName(functionName)
-                        .runtime(Runtime.JAVA_21)
+                        .runtime(Runtime.JAVA_17)
                         .code(Code.fromAsset(handlerSource))
                         .handler(handlerClass.getName())
                         .memorySize(1024)

@@ -90,7 +90,7 @@ Cognito triggers fire at various stages (pre‑sign‑up, post‑confirmation, p
 
    ```java
    Function preAuthLambda = Function.Builder.create(this, "LogPreAuthLambda")
-       .runtime(Runtime.JAVA_21)
+       .runtime(Runtime.JAVA_17)
        .handler("co.uk.diyaccounting.submit.functions.LogPreAuthentication")
        .code(Code.fromAsset("path/to/your/compiled/jar"))   // same as other functions
        .logGroup(LogGroup.Builder.create(this, "LogPreAuthGroup")

@@ -164,7 +164,7 @@ public class CognitoAuth {
                     .removalPolicy(RemovalPolicy.DESTROY)
                     .build();
             Function preAuth = Function.Builder.create(b.scope, "LogPreAuthentication")
-                    .runtime(Runtime.JAVA_21)
+                    .runtime(Runtime.JAVA_17)
                     .handler("co.uk.diyaccounting.submit.functions.LogPreAuthentication")
                     .code(Code.fromAsset(b.lambdaJarPath))
                     .tracing(tracing)
@@ -176,7 +176,7 @@ public class CognitoAuth {
                     .removalPolicy(RemovalPolicy.DESTROY)
                     .build();
             Function postAuth = Function.Builder.create(b.scope, "LogPostAuthentication")
-                    .runtime(Runtime.JAVA_21)
+                    .runtime(Runtime.JAVA_17)
                     .handler("co.uk.diyaccounting.submit.functions.LogPostAuthentication")
                     .code(Code.fromAsset(b.lambdaJarPath))
                     .tracing(tracing)
@@ -188,7 +188,7 @@ public class CognitoAuth {
                     .removalPolicy(RemovalPolicy.DESTROY)
                     .build();
             Function preSignUp = Function.Builder.create(b.scope, "LogPreSignUp")
-                    .runtime(Runtime.JAVA_21)
+                    .runtime(Runtime.JAVA_17)
                     .handler("co.uk.diyaccounting.submit.functions.LogPreSignUp")
                     .code(Code.fromAsset(b.lambdaJarPath))
                     .tracing(tracing)
@@ -200,7 +200,7 @@ public class CognitoAuth {
                     .removalPolicy(RemovalPolicy.DESTROY)
                     .build();
             Function postConfirmation = Function.Builder.create(b.scope, "LogPostConfirmation")
-                    .runtime(Runtime.JAVA_21)
+                    .runtime(Runtime.JAVA_17)
                     .handler("co.uk.diyaccounting.submit.functions.LogPostConfirmation")
                     .code(Code.fromAsset(b.lambdaJarPath))
                     .tracing(tracing)
@@ -212,7 +212,7 @@ public class CognitoAuth {
                     .removalPolicy(RemovalPolicy.DESTROY)
                     .build();
             Function preTokenGen = Function.Builder.create(b.scope, "LogPreTokenGeneration")
-                    .runtime(Runtime.JAVA_21)
+                    .runtime(Runtime.JAVA_17)
                     .handler("co.uk.diyaccounting.submit.functions.LogPreTokenGeneration")
                     .code(Code.fromAsset(b.lambdaJarPath))
                     .tracing(tracing)
