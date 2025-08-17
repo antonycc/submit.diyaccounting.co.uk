@@ -1,4 +1,10 @@
 on:
+  push:
+    branches:
+      - '**'
+      - '!gh_pages'
+    paths:
+      - '.github/workflows/copilot-setup-steps.yml'
   workflow_dispatch:
 
 permissions:
