@@ -1234,7 +1234,8 @@ public class WebStack extends Stack {
         // myReceipts Lambda
         if (StringUtils.isNotBlank(builder.myReceiptsLambdaHandlerFunctionName)) {
             var myReceiptsLambdaEnv = new HashMap<>(Map.of(
-                    "DIY_SUBMIT_HOME_URL", builder.homeUrl
+                    "DIY_SUBMIT_HOME_URL", builder.homeUrl,
+                    "DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX", builder.receiptsBucketPostfix
             ));
             var myReceiptsLambdaUrlOrigin = LambdaUrlOrigin.Builder.create(this, "MyReceiptsLambda")
                     .options(lambdaCommonOpts)
