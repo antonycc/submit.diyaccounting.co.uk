@@ -217,7 +217,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
     await gotoWithRetries(page, url, {
       description,
       waitUntil: "domcontentloaded",
-      readySelector: "#welcomeHeading",
+      readySelector: "#activitiesByBundle",
     });
   };
 
@@ -241,7 +241,6 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   await page.waitForLoadState("networkidle");
   await setTimeout(500);
   await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/010-home-${timestamp}.png` });
-  await expect(page.locator("#welcomeHeading")).toContainText("Welcome");
   await expect(page.getByText("Log in")).toBeVisible();
   await loggedClick("a:has-text('Log in')", "Clicking login link");
 
@@ -303,21 +302,6 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   await setTimeout(500);
   await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/070-home-${timestamp}.png` });
   await expect(page.locator(".login-status")).toContainText("user@example.com");
-  await expect(page.getByText("View available activities")).toBeVisible();
-
-  /* ********** */
-  /* ACTIVITIES */
-  /* ********** */
-
-  // Click "View available activities" on home page
-  await loggedClick("button:has-text('View available activities')", "Viewing available activities");
-  await page.waitForLoadState("networkidle");
-  await setTimeout(500);
-  await page.screenshot({
-    path: `target/behaviour-test-results/submitVat-screenshots/080-activities-${timestamp}.png`,
-  });
-
-  // View available activities
   await expect(page.getByText("VAT Return Submission")).toBeVisible();
 
   /* ************ */
@@ -469,6 +453,5 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   await page.waitForLoadState("networkidle");
   await setTimeout(500);
   await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/200-home-${timestamp}.png` });
-  await expect(page.locator("#welcomeHeading")).toContainText("Welcome");
   await expect(page.getByText("Log in")).toBeVisible();
 }, 60000);

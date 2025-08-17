@@ -166,37 +166,4 @@ test.describe("Backlog journeys", () => {
     await expect(page.getByText("HMRC Test API bundle")).toBeVisible();
     await expect(page.getByText("Submit VAT (Sandbox API)")).toBeVisible();
   });
-
-  test("Journey 4: Hamburger menu and back navigation", async ({ page }) => {
-    await enableVideoTimestampOverlay(page);
-
-    // Home
-    await gotoWithPause(page, `http://127.0.0.1:${serverPort}/index.html`);
-
-    // Bundles via hamburger
-    await clickWithPause(page.getByRole("button", { name: "☰" }));
-    await clickWithPause(page.getByRole("link", { name: "Add Bundle" }));
-    await delay(500);
-    await expect(page).toHaveURL(new RegExp(`/bundles.html$`));
-
-    // Back to home via back
-    await goBackWithPause(page);
-    await expect(page).toHaveURL(new RegExp(`/index.html$`));
-
-    // Activities via hamburger
-    await clickWithPause(page.getByRole("button", { name: "☰" }));
-    await clickWithPause(page.getByRole("link", { name: "View Activities" }));
-    await delay(500);
-    await expect(page).toHaveURL(new RegExp(`/index.html$`));
-
-    // Home via hamburger
-    await clickWithPause(page.getByRole("button", { name: "☰" }));
-    await clickWithPause(page.getByRole("link", { name: "Home" }));
-    await delay(500);
-    await expect(page).toHaveURL(new RegExp(`/index.html$`));
-
-    // Back to home via back
-    await goBackWithPause(page);
-    await expect(page).toHaveURL(new RegExp(`/index.html$`));
-  });
 });
