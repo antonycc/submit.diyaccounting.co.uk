@@ -27,86 +27,52 @@ jobs:
           fetch-depth: 1
 
       - name: Sync repository.env → GitHub Repository Variables
-        uses: actions/github-script@v7
         env:
-          variablesSourceFilepath: '.github/repository.env'
-        with:
-          github-token: ${{ secrets.PERSONAL_ACCESS_TOKEN || secrets.GITHUB_TOKEN }}
-          script: |
-            const fs = require('fs');
-            const path = require('path');
-            const { owner, repo } = context.repo;
-            const variablesSourceFilepath = process.env.variablesSourceFilepath;
+          GH_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN || secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
 
-            if (!fs.existsSync(variablesSourceFilepath)) {
-              core.setFailed(`repository.env not found at ${variablesSourceFilepath}`);
-              return;
-            }
+          variables_file=".github/repository.env"
 
-            core.info(`Reading repository variables from ${variablesSourceFilepath}`);
-            const lines = fs.readFileSync(variablesSourceFilepath, 'utf8')
-              .split(/\r?\n/)
-              .map(l => l.trim());
+          if [[ ! -f "$variables_file" ]]; then
+            echo "Error: repository.env not found at $variables_file"
+            exit 1
+          fi
 
-            // Get existing repository variables
-            core.info('Fetching existing repository variables');
-            let existingVariables = {};
-            try {
-              const response = await github.request(
-                'GET /repos/{owner}/{repo}/actions/variables',
-                { owner, repo }
-              );
-              for (const variable of response.data.variables) {
-                existingVariables[variable.name] = variable.value;
-              }
-              core.info(`Found ${Object.keys(existingVariables).length} existing repository variables`);
-            } catch (error) {
-              core.info(`Failed to fetch existing variables: ${error.message}`);
-            }
+          echo "Reading repository variables from $variables_file"
 
-            for (const line of lines) {
-              // skip empty lines or comments
-              if (!line || line.startsWith('#')) continue;
+          # Process each line in the repository.env file
+          while IFS= read -r line || [[ -n "$line" ]]; do
+            # Skip empty lines and comments
+            [[ -z "$line" || "$line" =~ ^[[:space:]]*# ]] && continue
 
-              const eq = line.indexOf('=');
-              if (eq < 0) {
-                core.info(`Skipping invalid entry: “${line}”`);
-                continue;
-              }
+            # Parse variable assignment (name=value)
+            if [[ "$line" =~ ^([^=]+)=(.*)$ ]]; then
+              name="${BASH_REMATCH[1]// /}"  # Remove spaces
+              value="${BASH_REMATCH[2]}"
 
-              const name = line.slice(0, eq).trim();
-              let value = line.slice(eq + 1).trim();
+              # Strip surrounding quotes if present
+              if [[ "$value" =~ ^\"(.*)\"$ ]] || [[ "$value" =~ ^\'(.*)\'$ ]]; then
+                value="${BASH_REMATCH[1]}"
+              fi
 
-              // strip surrounding quotes if present
-              if ((value.startsWith('"') && value.endsWith('"')) ||
-                  (value.startsWith("'") && value.endsWith("'"))) {
-                value = value.slice(1, -1);
-              }
+              # Check if variable already exists with same value
+              if existing_value=$(gh variable get "$name" --repo "${{ github.repository }}" 2>/dev/null); then
+                if [[ "$existing_value" == "$value" ]]; then
+                  echo "Variable $name already exists with same value, skipping"
+                  continue
+                else
+                  echo "Updating repository variable: $name (value changed)"
+                fi
+              else
+                echo "Creating new repository variable: $name"
+              fi
 
-              // Check if variable exists and compare values
-              if (existingVariables.hasOwnProperty(name)) {
-                if (existingVariables[name] === value) {
-                  core.info(`Variable ${name} already exists with same value, skipping`);
-                  continue;
-                } else {
-                  core.info(`Updating repo variable: ${name} (value changed)`);
-                  await github.request(
-                    'PATCH /repos/{owner}/{repo}/actions/variables/{name}',
-                    { owner, repo, name, value }
-                  );
-                }
-              } else {
-                core.info(`Creating new repo variable: ${name}`);
-                await github.request(
-                  'POST /repos/{owner}/{repo}/actions/variables',
-                  { 
-                    owner, 
-                    repo,
-                    data: {
-                      name: name,
-                      value: value
-                    }
-                  }
-                );
-              }
-            }
+              # Set the variable using gh CLI
+              gh variable set "$name" --body "$value" --repo "${{ github.repository }}"
+
+            else
+              echo "Skipping invalid entry: '$line'"
+            fi
+          done < "$variables_file"

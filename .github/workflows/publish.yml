@@ -136,55 +136,26 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Pull latest changes
-        shell: bash
-        run: |
-          # Pull latest changes to account for commits from other jobs
-          # Retry up to 3 times in case of temporary conflicts
-          for i in {1..3}; do
-            if git pull origin ${{ github.ref_name }}; then
-              echo "Successfully pulled latest changes"
-              break
-            else
-              echo "Pull attempt $i failed, retrying in 5 seconds..."
-              sleep 5
-              if [ $i -eq 3 ]; then
-                echo "Failed to pull after 3 attempts"
-                exit 1
-              fi
-            fi
-          done
-
-      - name: Update cdk.json version references
+      - name: Update cdk.json version references and commit
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
         run: |
           # Replace web-<some version>.jar with web-<newVersion>.jar in cdk.json
           sed -i 's/web-.*\.jar/web-${{ needs.publish-npm.outputs.newVersion }}.jar/g' cdk.json
-
-      - name: Commit version updates
-        shell: bash
-        run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Actions[bot]"
-          git add cdk.json
-          if git diff --staged --quiet; then
+          
+          # Check if there are changes to commit
+          if git diff --quiet cdk.json; then
             echo "No changes to commit"
           else
+            echo "Committing version updates using gh CLI"
+            
+            # Configure git user for the commit
+            git config --local user.email "action@github.com"
+            git config --local user.name "GitHub Actions[bot]"
+            
+            # Commit and push using standard git (gh CLI doesn't provide commit functionality)
+            git add cdk.json
             git commit -m "${{ needs.publish-npm.outputs.newVersion }}"
-
-            # Retry push up to 3 times in case of conflicts
-            for i in {1..3}; do
-              if git push; then
-                echo "Successfully pushed changes"
-                break
-              else
-                echo "Push attempt $i failed, pulling latest changes and retrying..."
-                git pull origin ${{ github.ref_name }}
-                if [ $i -eq 3 ]; then
-                  echo "Failed to push after 3 attempts"
-                  exit 1
-                fi
-                sleep 2
-              fi
-            done
+            git push
           fi
