@@ -5,26 +5,26 @@ concurrency: deploy
 run-name: "deploy [${{ inputs.environment || 'prod' }}] [${{ github.ref_name }}]"
 
 on:
-  pull_request:
-    branches:
-      - main
-    paths:
-      - 'app/functions'
-      - 'app/lib'
-      - 'infra/main'
-      - 'infra/runtimes'
-      - 'web/public/**'
-      - '.env.ci'
-      - '.env.prod'
-      - 'cdk.json'
-      - 'Dockerfile'
-      - 'LICENSE'
-      - 'package.json'
-      - 'package-lock.json'
-      - 'pom.xml'
-      - 'product-catalogue.toml'
-      - '.github/workflows/deploy.yml'
-      - '.github/workflows/deploy-ci-only.yml'
+#  pull_request:
+#    branches:
+#      - main
+#    paths:
+#      - 'app/functions'
+#      - 'app/lib'
+#      - 'infra/main'
+#      - 'infra/runtimes'
+#      - 'web/public/**'
+#      - '.env.ci'
+#      - '.env.prod'
+#      - 'cdk.json'
+#      - 'Dockerfile'
+#      - 'LICENSE'
+#      - 'package.json'
+#      - 'package-lock.json'
+#      - 'pom.xml'
+#      - 'product-catalogue.toml'
+#      - '.github/workflows/deploy.yml'
+#      - '.github/workflows/deploy-ci-only.yml'
   push:
     branches:
       - main
