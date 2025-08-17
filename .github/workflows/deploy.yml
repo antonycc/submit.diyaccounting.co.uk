@@ -89,37 +89,7 @@ jobs:
         run: 'npm test'
 
   build-base-image:
-    runs-on: ubuntu-latest
-    outputs:
-      base-image-tag: ${{ steps.build.outputs.base-image-tag }}
-    steps:
-      - uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
-      
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-        with:
-          driver-opts: |
-            image=moby/buildkit:latest
-      
-      - name: Build base image locally
-        id: build
-        run: |
-          BASE_IMAGE_TAG="submit-base:${{ github.sha }}"
-          
-          # Build the base image using your root Dockerfile
-          docker buildx build \
-            --load \
-            --cache-from type=gha,scope=base \
-            --cache-to type=gha,mode=max,scope=base \
-            -t $BASE_IMAGE_TAG \
-            -f Dockerfile .
-          
-          echo "base-image-tag=$BASE_IMAGE_TAG" >> $GITHUB_OUTPUT
-          
-          # Verify the image was built
-          docker images | grep submit-base
+    uses: ./.github/workflows/build-base-image.yml
 
   mvn-package:
     runs-on: ubuntu-latest
@@ -147,17 +117,23 @@ jobs:
           driver-opts: |
             image=moby/buildkit:latest
 
-      - name: Build base image locally (for tests)
+      - name: Load base image from cache
         run: |
-          BASE_IMAGE_TAG="submit-base:${{ github.sha }}"
+          BASE_IMAGE_TAG="${{ needs.build-base-image.outputs.base-image-tag }}"
+          echo "Using base image: $BASE_IMAGE_TAG"
           
-          # Build the base image using your root Dockerfile
-          docker buildx build \
-            --load \
-            --cache-from type=gha,scope=base \
-            --cache-to type=gha,mode=max,scope=base \
-            -t $BASE_IMAGE_TAG \
-            -f Dockerfile .
+          # Try to load from cache first
+          if ! docker images | grep -q "submit-base.*${{ github.sha }}"; then
+            echo "Base image not found locally, attempting to load from cache"
+            docker buildx build \
+              --load \
+              --cache-from type=gha,scope=base-${{ github.sha }} \
+              --cache-from type=gha,scope=base-main \
+              -t $BASE_IMAGE_TAG \
+              -f Dockerfile . || echo "Cache load failed, will build fresh if needed"
+          else
+            echo "Base image already available locally"
+          fi
 
       - name: package
         id: package
@@ -325,17 +301,23 @@ jobs:
           driver-opts: |
             image=moby/buildkit:latest
 
-      - name: Build base image locally (for deployment)
+      - name: Load base image from cache
         run: |
-          BASE_IMAGE_TAG="submit-base:${{ github.sha }}"
+          BASE_IMAGE_TAG="${{ needs.build-base-image.outputs.base-image-tag }}"
+          echo "Using base image: $BASE_IMAGE_TAG"
           
-          # Build the base image using your root Dockerfile
-          docker buildx build \
-            --load \
-            --cache-from type=gha,scope=base \
-            --cache-to type=gha,mode=max,scope=base \
-            -t $BASE_IMAGE_TAG \
-            -f Dockerfile .
+          # Try to load from cache first
+          if ! docker images | grep -q "submit-base.*${{ github.sha }}"; then
+            echo "Base image not found locally, attempting to load from cache"
+            docker buildx build \
+              --load \
+              --cache-from type=gha,scope=base-${{ github.sha }} \
+              --cache-from type=gha,scope=base-main \
+              -t $BASE_IMAGE_TAG \
+              -f Dockerfile . || echo "Cache load failed, will build fresh if needed"
+          else
+            echo "Base image already available locally"
+          fi
 
       - name: package
         id: package
