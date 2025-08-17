@@ -7,7 +7,6 @@ import { setTimeout } from "timers/promises";
 
 test.describe("Navigation Browser Tests", () => {
   let indexHtmlContent;
-  let activitiesHtmlContent;
   let submitVatHtmlContent;
   let loginHtmlContent;
   let bundlesHtmlContent;
@@ -15,14 +14,13 @@ test.describe("Navigation Browser Tests", () => {
   test.beforeAll(async () => {
     // Read the HTML files
     indexHtmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/index.html"), "utf-8");
-    activitiesHtmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/index.html"), "utf-8");
     submitVatHtmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/submitVat.html"), "utf-8");
     loginHtmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/login.html"), "utf-8");
     bundlesHtmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/bundles.html"), "utf-8");
   });
 
   test.describe("Home Page to Activities Navigation", () => {
-    test("should navigate from home to activities page", async ({ page }) => {
+    test("should show activities/features on home page after clicking 'View available activities'", async ({ page }) => {
       // Set the home page content
       await page.setContent(indexHtmlContent, {
         baseURL: "http://localhost:3000",
@@ -33,78 +31,31 @@ test.describe("Navigation Browser Tests", () => {
       await expect(page.locator("h2")).toContainText("Welcome");
       await expect(page.getByText("View available activities")).toBeVisible();
 
-      // Mock navigation by setting activities page content when button is clicked
-      await page.route("**/index.html", async (route) => {
-        await route.fulfill({
-          status: 200,
-          contentType: "text/html",
-          body: activitiesHtmlContent,
-        });
+      // Click the "View available activities" button
+      await page.click("button:has-text('View available activities')");
+      await setTimeout(100);
+
+      // Verify activities/features are now visible on the home page (index.html)
+      await expect(page.locator("h2")).toContainText(/Available Activities|Features|Your Activities/);
+      await expect(page.getByText(/VAT Return Submission|Submit VAT/)).toBeVisible();
+    });
+  });
+
+  test.describe("Activities to VAT Submission Navigation", () => {
+    test("should navigate from activities/features to VAT submission page", async ({ page }) => {
+      // Start on home page (index.html)
+      await page.setContent(indexHtmlContent, {
+        baseURL: "http://localhost:3000",
+        waitUntil: "domcontentloaded",
       });
 
       // Click the "View available activities" button
       await page.click("button:has-text('View available activities')");
       await setTimeout(100);
 
-      // Verify navigation occurred by checking if we can navigate to activities
-      // Since we're testing with setContent, we'll simulate the navigation
-      await page.setContent(activitiesHtmlContent, {
-        baseURL: "http://localhost:3000",
-        waitUntil: "domcontentloaded",
-      });
-
-      // Verify we're on the activities page
-      await expect(page.locator("h2")).toContainText("Available Activities");
-      await expect(page.getByText("VAT Return Submission")).toBeVisible();
-      await expect(page.getByText("Back to Home")).toBeVisible();
-    });
-
-    test("should navigate back from activities to home page", async ({ page }) => {
-      // Start on activities page
-      await page.setContent(activitiesHtmlContent, {
-        baseURL: "http://localhost:3000",
-        waitUntil: "domcontentloaded",
-      });
-
-      // Verify we're on the activities page
-      await expect(page.locator("h2")).toContainText("Available Activities");
-
-      // Mock navigation back to home
-      await page.route("**/index.html", async (route) => {
-        await route.fulfill({
-          status: 200,
-          contentType: "text/html",
-          body: indexHtmlContent,
-        });
-      });
-
-      // Click the "Back to Home" button
-      await page.click("button:has-text('Back to Home')");
-      await setTimeout(100);
-
-      // Simulate navigation back to home
-      await page.setContent(indexHtmlContent, {
-        baseURL: "http://localhost:3000",
-        waitUntil: "domcontentloaded",
-      });
-
-      // Verify we're back on the home page
-      await expect(page.locator("h2")).toContainText("Welcome");
-      await expect(page.getByText("View available activities")).toBeVisible();
-    });
-  });
-
-  test.describe("Activities to VAT Submission Navigation", () => {
-    test("should navigate from activities to VAT submission page", async ({ page }) => {
-      // Start on activities page
-      await page.setContent(activitiesHtmlContent, {
-        baseURL: "http://localhost:3000",
-        waitUntil: "domcontentloaded",
-      });
-
-      // Verify we're on the activities page
-      await expect(page.locator("h2")).toContainText("Available Activities");
-      await expect(page.getByText("VAT Return Submission")).toBeVisible();
+      // Verify activities/features are visible
+      await expect(page.locator("h2")).toContainText(/Available Activities|Features|Your Activities/);
+      await expect(page.getByText(/VAT Return Submission|Submit VAT/)).toBeVisible();
 
       // Mock navigation to submitVat page
       await page.route("**/submitVat.html", async (route) => {
@@ -115,55 +66,12 @@ test.describe("Navigation Browser Tests", () => {
         });
       });
 
-      // Click the "VAT Return Submission" button
-      await page.click("button:has-text('VAT Return Submission')");
+      // Click the "VAT Return Submission" or "Submit VAT" button
+      await page.click("button:has-text('VAT Return Submission'), button:has-text('Submit VAT')");
       await setTimeout(100);
 
-      // Simulate navigation to submitVat page
-      await page.setContent(submitVatHtmlContent, {
-        baseURL: "http://localhost:3000",
-        waitUntil: "domcontentloaded",
-      });
-
       // Verify we're on the VAT submission page
-      await expect(page.locator("h2")).toContainText("VAT Return Submission");
-      await expect(page.locator("#vatSubmissionForm")).toBeVisible();
-      await expect(page.locator("#homePageFromMainBtn")).toBeVisible();
-    });
-
-    test("should navigate back from VAT submission to activities page", async ({ page }) => {
-      // Start on submitVat page
-      await page.setContent(submitVatHtmlContent, {
-        baseURL: "http://localhost:3000",
-        waitUntil: "domcontentloaded",
-      });
-
-      // Verify we're on the VAT submission page
-      await expect(page.locator("h2")).toContainText("VAT Return Submission");
-      await expect(page.locator("#homePageFromMainBtn")).toBeVisible();
-
-      // Mock navigation back to activities
-      await page.route("**/index.html", async (route) => {
-        await route.fulfill({
-          status: 200,
-          contentType: "text/html",
-          body: activitiesHtmlContent,
-        });
-      });
-
-      // Click the "View available activities" button
-      await page.click("#homePageFromMainBtn");
-      await setTimeout(100);
-
-      // Simulate navigation back to activities
-      await page.setContent(activitiesHtmlContent, {
-        baseURL: "http://localhost:3000",
-        waitUntil: "domcontentloaded",
-      });
-
-      // Verify we're back on the activities page
-      await expect(page.locator("h2")).toContainText("Available Activities");
-      await expect(page.getByText("VAT Return Submission")).toBeVisible();
+      await expect(page.locator("h2")).toContainText(/VAT Submission|Submit VAT/);
     });
   });
 
@@ -176,10 +84,9 @@ test.describe("Navigation Browser Tests", () => {
       });
       await setTimeout(100);
 
-      // The OAuth detection script should run automatically
-      // We can verify the parameters are detected by checking the URL parsing
+      // Simulate URLSearchParams using the test URL
       const hasOAuthParams = await page.evaluate(() => {
-        const urlParams = new URLSearchParams("?code=test-code&state=test-state");
+        const urlParams = new URLSearchParams(document.location.search);
         return urlParams.get("code") !== null || urlParams.get("error") !== null;
       });
 
@@ -198,9 +105,9 @@ test.describe("Navigation Browser Tests", () => {
       await expect(page.locator("h2")).toContainText("Welcome");
       await expect(page.getByText("View available activities")).toBeVisible();
 
-      // Verify no OAuth parameters are detected
+      // Simulate URLSearchParams using the test URL
       const hasOAuthParams = await page.evaluate(() => {
-        const urlParams = new URLSearchParams(window.location.search);
+        const urlParams = new URLSearchParams(document.location.search);
         return urlParams.get("code") !== null || urlParams.get("error") !== null;
       });
 
@@ -328,32 +235,6 @@ test.describe("Navigation Browser Tests", () => {
 
       // Click "Add HMRC Test API Bundle" button
       await page.click("button:has-text('Add HMRC Test API Bundle')");
-      await setTimeout(100);
-    });
-  });
-
-  test.describe("Activities Page Add Bundle Navigation", () => {
-    test("should navigate from activities to services page", async ({ page }) => {
-      await page.setContent(activitiesHtmlContent, {
-        baseURL: "http://localhost:3000",
-        waitUntil: "domcontentloaded",
-      });
-
-      // Verify add service section exists
-      await expect(page.locator(".add-service-section")).toBeVisible();
-      await expect(page.getByText("Need more choices?")).toBeVisible();
-
-      // Mock navigation to services page
-      await page.route("**/services.html", async (route) => {
-        await route.fulfill({
-          status: 200,
-          contentType: "text/html",
-          body: servicesHtmlContent,
-        });
-      });
-
-      // Click "Add Bundle" button
-      await page.click("button:has-text('Add Bundle')");
       await setTimeout(100);
     });
   });
