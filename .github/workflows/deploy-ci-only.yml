@@ -223,14 +223,12 @@ jobs:
       #  env:
       #    BASE_IMAGE_TAG: ${{ needs.build-base-image.outputs.base-image-tag }}
 
-      - name: Compile Java classes for CDK
+      - name: Package Java classes for CDK
         id: package
         if: ${{ env.skipDeploy != 'true' }}
         shell: bash
         run: |
-          echo "Compiling Java classes required for CDK deployment..."
-          ./mvnw compile -Dmaven.compiler.source=17 -Dmaven.compiler.target=17 -DskipTests=true
-          echo "Compilation completed."
+          ./mvnw package -Dmaven.compiler.source=17 -Dmaven.compiler.target=17 -DskipTests=true
         env:
           BASE_IMAGE_TAG: ${{ needs.build-base-image.outputs.base-image-tag }}
 

@@ -343,12 +343,10 @@ jobs:
           echo "du -h target/:"
           du -h target/
 
-      - name: Compile Java classes for CDK
+      - name: Package Java classes for CDK
         shell: bash
         run: |
-          echo "Compiling Java classes required for CDK deployment..."
-          ./mvnw compile -Dmaven.compiler.source=17 -Dmaven.compiler.target=17 -DskipTests=true
-          echo "Compilation completed."
+          ./mvnw package -Dmaven.compiler.source=17 -Dmaven.compiler.target=17 -DskipTests=true
 
       - name: set-jar-path
         id: jar-path
