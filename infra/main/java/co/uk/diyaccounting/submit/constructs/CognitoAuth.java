@@ -19,16 +19,10 @@ import software.amazon.awscdk.services.cognito.UserPool;
 import software.amazon.awscdk.services.cognito.UserPoolClient;
 import software.amazon.awscdk.services.cognito.UserPoolClientIdentityProvider;
 import software.amazon.awscdk.services.cognito.UserPoolIdentityProviderGoogle;
-import software.amazon.awscdk.services.cognito.UserPoolOperation;
-import software.amazon.awscdk.services.lambda.Code;
-import software.amazon.awscdk.services.lambda.Function;
-import software.amazon.awscdk.services.lambda.Runtime;
-import software.amazon.awscdk.services.lambda.Tracing;
 import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.constructs.Construct;
 
-import java.io.File;
 import java.util.List;
 import java.util.Map;
 
@@ -145,86 +139,6 @@ public class CognitoAuth {
                     .build();
             delivery.getNode().addDependency(up);
         }
-
-        // Create lightweight logging lambdas for Cognito triggers (optional)
-        boolean shouldCreateTriggers = b.createTriggerLambdas;
-        if (shouldCreateTriggers) {
-            File jar = new File(b.lambdaJarPath);
-            if (!jar.exists()) {
-                logger.warn("Lambda jar file {} does not exist, will not create Cognito logging Lambdas", b.lambdaJarPath);
-                shouldCreateTriggers = false;
-            }
-        }
-        if (shouldCreateTriggers) {
-            RetentionDays retention = RetentionDaysConverter.daysToRetentionDays(b.accessLogGroupRetentionPeriodDays);
-            Tracing tracing = b.xRayEnabled ? Tracing.ACTIVE : Tracing.DISABLED;
-
-            LogGroup preAuthLg = LogGroup.Builder.create(b.scope, "LogPreAuthenticationLogGroup")
-                    .retention(retention)
-                    .removalPolicy(RemovalPolicy.DESTROY)
-                    .build();
-            Function preAuth = Function.Builder.create(b.scope, "LogPreAuthentication")
-                    .runtime(Runtime.JAVA_17)
-                    .handler("co.uk.diyaccounting.submit.functions.LogPreAuthentication")
-                    .code(Code.fromAsset(b.lambdaJarPath))
-                    .tracing(tracing)
-                    .logGroup(preAuthLg)
-                    .build();
-
-            LogGroup postAuthLg = LogGroup.Builder.create(b.scope, "LogPostAuthenticationLogGroup")
-                    .retention(retention)
-                    .removalPolicy(RemovalPolicy.DESTROY)
-                    .build();
-            Function postAuth = Function.Builder.create(b.scope, "LogPostAuthentication")
-                    .runtime(Runtime.JAVA_17)
-                    .handler("co.uk.diyaccounting.submit.functions.LogPostAuthentication")
-                    .code(Code.fromAsset(b.lambdaJarPath))
-                    .tracing(tracing)
-                    .logGroup(postAuthLg)
-                    .build();
-
-            LogGroup preSignUpLg = LogGroup.Builder.create(b.scope, "LogPreSignUpLogGroup")
-                    .retention(retention)
-                    .removalPolicy(RemovalPolicy.DESTROY)
-                    .build();
-            Function preSignUp = Function.Builder.create(b.scope, "LogPreSignUp")
-                    .runtime(Runtime.JAVA_17)
-                    .handler("co.uk.diyaccounting.submit.functions.LogPreSignUp")
-                    .code(Code.fromAsset(b.lambdaJarPath))
-                    .tracing(tracing)
-                    .logGroup(preSignUpLg)
-                    .build();
-
-            LogGroup postConfirmationLg = LogGroup.Builder.create(b.scope, "LogPostConfirmationLogGroup")
-                    .retention(retention)
-                    .removalPolicy(RemovalPolicy.DESTROY)
-                    .build();
-            Function postConfirmation = Function.Builder.create(b.scope, "LogPostConfirmation")
-                    .runtime(Runtime.JAVA_17)
-                    .handler("co.uk.diyaccounting.submit.functions.LogPostConfirmation")
-                    .code(Code.fromAsset(b.lambdaJarPath))
-                    .tracing(tracing)
-                    .logGroup(postConfirmationLg)
-                    .build();
-
-            LogGroup preTokenGenLg = LogGroup.Builder.create(b.scope, "LogPreTokenGenerationLogGroup")
-                    .retention(retention)
-                    .removalPolicy(RemovalPolicy.DESTROY)
-                    .build();
-            Function preTokenGen = Function.Builder.create(b.scope, "LogPreTokenGeneration")
-                    .runtime(Runtime.JAVA_17)
-                    .handler("co.uk.diyaccounting.submit.functions.LogPreTokenGeneration")
-                    .code(Code.fromAsset(b.lambdaJarPath))
-                    .tracing(tracing)
-                    .logGroup(preTokenGenLg)
-                    .build();
-
-            up.addTrigger(UserPoolOperation.PRE_AUTHENTICATION, preAuth);
-            up.addTrigger(UserPoolOperation.POST_AUTHENTICATION, postAuth);
-            up.addTrigger(UserPoolOperation.PRE_SIGN_UP, preSignUp);
-            up.addTrigger(UserPoolOperation.POST_CONFIRMATION, postConfirmation);
-            up.addTrigger(UserPoolOperation.PRE_TOKEN_GENERATION, preTokenGen);
-        }
     }
 
     public static class Builder {
@@ -241,7 +155,6 @@ public class CognitoAuth {
         // New optional settings
         private String featurePlan; // PLUS or ESSENTIALS (default ESSENTIALS)
         private boolean enableLogDelivery = false;
-        private boolean createTriggerLambdas = true;
         private boolean xRayEnabled = false;
         private int accessLogGroupRetentionPeriodDays = 30;
         private String logGroupNamePrefix = "cognito";
@@ -262,7 +175,6 @@ public class CognitoAuth {
         // New builder methods
         public Builder featurePlan(String plan) { this.featurePlan = plan; return this; }
         public Builder enableLogDelivery(boolean enable) { this.enableLogDelivery = enable; return this; }
-        public Builder createTriggerLambdas(boolean create) { this.createTriggerLambdas = create; return this; }
         public Builder xRayEnabled(boolean enabled) { this.xRayEnabled = enabled; return this; }
         public Builder accessLogGroupRetentionPeriodDays(int days) { this.accessLogGroupRetentionPeriodDays = days; return this; }
         public Builder logGroupNamePrefix(String prefix) { this.logGroupNamePrefix = prefix; return this; }

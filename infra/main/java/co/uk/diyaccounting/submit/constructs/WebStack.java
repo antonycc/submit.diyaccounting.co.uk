@@ -236,7 +236,6 @@ public class WebStack extends Stack {
         // Cognito advanced security/logging flags
         public String cognitoFeaturePlan;
         public String cognitoEnableLogDelivery;
-        public String cognitoCreateTriggerLambdas;
         public String logCognitoEventHandlerSource;
         public String myReceiptsLambdaHandlerFunctionName;
         public String myReceiptsLambdaUrlPath;
@@ -691,11 +690,6 @@ public class WebStack extends Stack {
             return this;
         }
 
-        public Builder cognitoCreateTriggerLambdas(String cognitoCreateTriggerLambdas) {
-            this.cognitoCreateTriggerLambdas = cognitoCreateTriggerLambdas;
-            return this;
-        }
-
         public Builder myReceiptsLambdaHandlerFunctionName(String myReceiptsLambdaHandlerFunctionName) {
             this.myReceiptsLambdaHandlerFunctionName = myReceiptsLambdaHandlerFunctionName;
             return this;
@@ -962,7 +956,6 @@ public class WebStack extends Stack {
                     ))
                     .featurePlan(builder.cognitoFeaturePlan != null && !builder.cognitoFeaturePlan.isBlank() ? builder.cognitoFeaturePlan : "ESSENTIALS")
                     .enableLogDelivery(builder.cognitoEnableLogDelivery == null || builder.cognitoEnableLogDelivery.isBlank() ? false : Boolean.parseBoolean(builder.cognitoEnableLogDelivery))
-                    .createTriggerLambdas(builder.cognitoCreateTriggerLambdas == null || builder.cognitoCreateTriggerLambdas.isBlank() ? false : Boolean.parseBoolean(builder.cognitoCreateTriggerLambdas))
                     .xRayEnabled(xRayEnabled)
                     .accessLogGroupRetentionPeriodDays(accessLogGroupRetentionPeriodDays)
                     .logGroupNamePrefix(dashedDomainName)

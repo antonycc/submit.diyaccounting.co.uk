@@ -41,7 +41,7 @@
           </div>
 
           <!-- mock-oauth2-server Auth Provider (Enabled) -->
-          <div class="auth-provider">
+          <div class="auth-provider" id="mockOAuth2Provider">
             <button type="button" class="btn auth-btn" onclick="loginWithMockOAuth2()">
               <img
                 src="https://avatars.githubusercontent.com/u/11848947?s=48&v=4"
@@ -100,6 +100,7 @@
               const githubUrl = `https://github.com/antonycc/submit.diyaccounting.co.uk/blob/${commitHash}/web/public/${currentPage}`;
               const viewSourceLink = document.getElementById("viewSourceLink");
               viewSourceLink.href = githubUrl;
+              viewSourceLink.target = "_blank";
               viewSourceLink.textContent = `source: ${currentPage}@${commitHash.substring(0, 7)}`;
               viewSourceLink.style.display = "inline";
             }
@@ -246,6 +247,18 @@
 
       // Load view source link on page load
       loadViewSourceLink();
+    </script>
+
+    <script>
+      // Hide the section if the page wasn't served from specific domains
+      const allowedDomains = ["127.0.0.1", "localhost", "wanted-finally-anteater.ngrok-free.app"];
+      const currentDomain = window.location.hostname;
+
+      if (!allowedDomains.includes(currentDomain)) {
+        document.querySelectorAll('#mockOAuth2Provider').forEach(element => {
+          element.style.display = 'none';
+        });
+      }
     </script>
   </body>
 </html>

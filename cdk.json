@@ -37,7 +37,6 @@
     "cognitoDomainPrefix": "",
     "cognitoFeaturePlan": "ESSENTIALS",
     "cognitoEnableLogDelivery": "false",
-    "cognitoCreateTriggerLambdas": "false",
     "homeUrl": "",
     "hmrcBaseUri": "",
     "optionalTestRedirectUri": "",

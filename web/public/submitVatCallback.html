@@ -59,7 +59,10 @@
     <footer>
       <div class="footer-content">
         <div class="footer-left">
-          <a href="#" id="viewSourceLink" style="display: none">view source</a>
+          <a href="#" id="viewSourceLink" target="_blank" style="display: none">
+            <img src="./icons/source-icon.png" alt="Source Icon" style="width: 16px; vertical-align: middle;" />
+            View Source
+          </a>
         </div>
         <div class="footer-center">
           <p>&copy; 2025 DIY Accounting Limited</p>
@@ -177,7 +180,27 @@
         }
       }
 
+      async function loadViewSourceLink() {
+        try {
+          const response = await fetch("source.txt");
+          if (response.ok) {
+            const commitHash = (await response.text()).trim();
+            if (commitHash) {
+              const currentPage = window.location.pathname.split("/").pop() || "index.html";
+              const githubUrl = `https://github.com/antonycc/submit.diyaccounting.co.uk/blob/${commitHash}/web/public/${currentPage}`;
+              const viewSourceLink = document.getElementById("viewSourceLink");
+              viewSourceLink.href = githubUrl;
+              viewSourceLink.target = "_blank";
+              viewSourceLink.style.display = "inline";
+            }
+          }
+        } catch (error) {
+          console.log("Could not load source.txt:", error);
+        }
+      }
+
       handleOAuthCallback();
+      loadViewSourceLink();
     </script>
   </body>
 </html>

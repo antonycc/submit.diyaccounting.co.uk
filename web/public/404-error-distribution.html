@@ -55,6 +55,7 @@
               const githubUrl = `https://github.com/antonycc/submit.diyaccounting.co.uk/blob/${commitHash}/web/public/${currentPage}`;
               const viewSourceLink = document.getElementById("viewSourceLink");
               viewSourceLink.href = githubUrl;
+              viewSourceLink.target = "_blank";
               viewSourceLink.textContent = `source: ${currentPage}@${commitHash.substring(0, 7)}`;
               viewSourceLink.style.display = "inline";
             }

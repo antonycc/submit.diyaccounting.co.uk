@@ -42,29 +42,12 @@
           </div>
 
           <div class="service-item disabled">
-            <h3>HMRC Production API Bundle</h3>
-            <p class="service-description">Connect to HMRC's production environment for live submissions.</p>
-            <button type="button" class="btn service-btn disabled-btn" disabled>Add HMRC Production API Bundle</button>
+            <h3>Guest</h3>
+            <p class="service-description">Connect to HMRC for live submissions.</p>
+            <button type="button" class="btn service-btn disabled-btn" disabled>Add Guest Bundle</button>
             <p class="coming-soon-text">Coming soon</p>
           </div>
 
-          <div class="service-item disabled">
-            <h3>Companies House API Bundle</h3>
-            <p class="service-description">Connect to Companies House for company information and filings.</p>
-            <button type="button" class="btn service-btn disabled-btn" disabled>Add Companies House API Bundle</button>
-            <p class="coming-soon-text">Coming soon</p>
-          </div>
-        </div>
-
-        <div style="margin-top: 2em">
-          <button
-            type="button"
-            class="btn"
-            onclick="window.location.href='index.html'"
-            style="background-color: #6c757d; border-color: #6c757d"
-          >
-            Back to Home
-          </button>
         </div>
       </div>
     </div>
@@ -80,6 +63,7 @@
       </div>
     </footer>
 
+    <script src="./localstorage-viewer.js"></script>
     <script>
       // Hamburger menu toggle functionality
       function toggleMenu() {
@@ -98,6 +82,7 @@
               const githubUrl = `https://github.com/antonycc/submit.diyaccounting.co.uk/blob/${commitHash}/web/public/${currentPage}`;
               const viewSourceLink = document.getElementById("viewSourceLink");
               viewSourceLink.href = githubUrl;
+              viewSourceLink.target = "_blank";
               viewSourceLink.textContent = `source: ${currentPage}@${commitHash.substring(0, 7)}`;
               viewSourceLink.style.display = "inline";
             }

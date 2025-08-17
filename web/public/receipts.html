@@ -71,10 +71,32 @@
       </div>
     </footer>
 
+    <script src="./localstorage-viewer.js"></script>
     <script>
       function toggleMenu() {
         const dropdown = document.getElementById("menuDropdown");
         dropdown.classList.toggle("show");
+      }
+
+      // Load and display view source link
+      async function loadViewSourceLink() {
+        try {
+          const response = await fetch("source.txt");
+          if (response.ok) {
+            const commitHash = (await response.text()).trim();
+            if (commitHash) {
+              const currentPage = window.location.pathname.split("/").pop() || "index.html";
+              const githubUrl = `https://github.com/antonycc/submit.diyaccounting.co.uk/blob/${commitHash}/web/public/${currentPage}`;
+              const viewSourceLink = document.getElementById("viewSourceLink");
+              viewSourceLink.href = githubUrl;
+              viewSourceLink.target = "_blank";
+              viewSourceLink.textContent = `source: ${currentPage}@${commitHash.substring(0, 7)}`;
+              viewSourceLink.style.display = "inline";
+            }
+          }
+        } catch (error) {
+          console.log("Could not load source.txt:", error);
+        }
       }
 
       function updateLoginStatus() {
@@ -103,25 +125,6 @@
         localStorage.removeItem("userInfo");
         localStorage.removeItem("authState");
         window.location.reload();
-      }
-
-      async function loadViewSourceLink() {
-        try {
-          const response = await fetch("source.txt");
-          if (response.ok) {
-            const commitHash = (await response.text()).trim();
-            if (commitHash) {
-              const currentPage = window.location.pathname.split("/").pop() || "receipts.html";
-              const githubUrl = `https://github.com/antonycc/submit.diyaccounting.co.uk/blob/${commitHash}/web/public/${currentPage}`;
-              const viewSourceLink = document.getElementById("viewSourceLink");
-              viewSourceLink.href = githubUrl;
-              viewSourceLink.textContent = `source: ${currentPage}@${commitHash.substring(0, 7)}`;
-              viewSourceLink.style.display = "inline";
-            }
-          }
-        } catch (e) {
-          console.log("Could not load source.txt:", e);
-        }
       }
 
       function getIdToken() {
