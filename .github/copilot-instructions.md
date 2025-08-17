@@ -110,22 +110,47 @@ This is a full-stack AWS serverless application:
    ```
 
 ### Manual Testing Scenarios
-After making changes to user-facing features, manually test:
+Manual testing should be performed using the **proxy environment**. This requires starting several services using the npm scripts provided in `package.json`:
 
-1. **VAT Submission Flow**:
-   - Start server: `npm run start`
-   - Open: http://127.0.0.1:3000/submitVat.html
-   - Fill form with test data (VAT number: 193054661, Period: 24A1, Amount: 1000.00)
-   - Verify form validation and submission process
+1. **Start supporting services in separate terminals:**
+   - Ngrok proxy:
+     ```bash
+     npm run proxy
+     ```
+   - Mock OAuth2 server:
+     ```bash
+     npm run auth
+     ```
+   - MinIO S3 storage (endpoint is generated at runtime):
+     ```bash
+     npm run storage
+     # Note the output: MinIO started url=http://127.0.0.1:9000 (or similar)
+     ```
 
-2. **Bundle/Entitlement System**:
-   - Open: http://127.0.0.1:3000/bundles.html
-   - Test requesting different bundles (Test, Guest, etc.)
-   - Verify activities appear in http://127.0.0.1:3000/activities.html
+2. **Start the Express server with the MinIO endpoint:**
+   - Pass the MinIO endpoint to the server by overriding the environment variable:
+     ```bash
+     DIY_SUBMIT_TEST_S3_ENDPOINT=<minio_endpoint_url> npm run start
+     # Example: DIY_SUBMIT_TEST_S3_ENDPOINT=http://127.0.0.1:9000 npm run start
+     # Verify "Listening at http://127.0.0.1:3000" appears
+     ```
 
-3. **Receipt System**:
-   - Open: http://127.0.0.1:3000/receipts.html
-   - Verify receipt display and storage functionality
+3. **Manual test flows:**
+   - **VAT Submission Flow**:
+     - Open: http://127.0.0.1:3000/submitVat.html
+     - Fill form with test data (VAT number: 193054661, Period: 24A1, Amount: 1000.00)
+     - Verify form validation and submission process
+   - **Bundle/Entitlement System**:
+     - Open: http://127.0.0.1:3000/bundles.html
+     - Test requesting different bundles (Test, Guest, etc.)
+     - Verify activities appear in http://127.0.0.1:3000/activities.html
+   - **Receipt System**:
+     - Open: http://127.0.0.1:3000/receipts.html
+     - Verify receipt display and storage functionality
+
+**Note:**
+- Always use the MinIO endpoint generated at runtime by the storage script.
+- All services must be running for full manual testing coverage.
 
 ## Common Issues & Workarounds
 
