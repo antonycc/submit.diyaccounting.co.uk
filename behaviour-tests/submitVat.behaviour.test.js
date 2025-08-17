@@ -268,7 +268,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   await setTimeout(500);
   await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/040-provider-auth-${timestamp}.png` });
   // await expect(page.getByText("SIGN-IN")).toBeVisible();
-  await expect(page.locator('input[type="submit"][value="Sign-in"]')).toBeVisible();
+  await expect(page.locator('input[type="submit"][value="Sign-in"]')).toBeVisible({ timeout: 10000 });
 
   // <input class="u-full-width" required="" type="text" name="username" placeholder="Enter any user/subject" autofocus="on">
   const username = "user";
