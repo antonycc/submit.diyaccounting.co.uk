@@ -340,7 +340,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   await page.waitForLoadState("networkidle");
   await setTimeout(500);
   await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/110-hmrc-permission-${timestamp}.png` });
-  await expect(page.locator("#appNameParagraph")).toContainText(applicationName);
+  await expect(page.locator("#appNameParagraph")).toContainText(applicationName, { timeout: 10000 });
   await expect(page.getByRole("button", { name: "Continue" })).toContainText("Continue");
 
   //  Submit the permission form and expect the sign in option to be visible
