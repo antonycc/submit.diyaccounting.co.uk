@@ -192,7 +192,7 @@ jobs:
       - uses: actions/setup-java@v4
         if: ${{ env.skipDeploy != 'true' }}
         with:
-          distribution: 'corretto'
+          distribution: 'temurin'
           java-version: 21
           cache: 'maven'
 
