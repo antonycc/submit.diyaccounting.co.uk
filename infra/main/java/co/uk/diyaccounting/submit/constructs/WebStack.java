@@ -1209,7 +1209,7 @@ public class WebStack extends Stack {
             lambdaUrlToOriginsBehaviourMappings.put(builder.myBundlesLambdaUrlPath + "*", myBundlesLambdaUrlOrigin.behaviorOptions);
         }
 
-        // Create receipts bucket for storing VAT submission receipts
+        // Create receipts bucket for storing VAT submission receipts with enhanced lifecycle
         this.receiptsBucket = LogForwardingBucket.Builder
                 .create(this, "ReceiptsBucket", builder.logS3ObjectEventHandlerSource, LogS3ObjectEvent.class)
                 .bucketName(receiptsBucketFullName)
@@ -1218,7 +1218,7 @@ public class WebStack extends Stack {
                 .objectOwnership(ObjectOwnership.OBJECT_WRITER)
                 .autoDeleteObjects(!s3RetainReceiptsBucket)
                 .functionNamePrefix("%s-receipts-bucket-".formatted(dashedDomainName))
-                .retentionPeriodDays(accessLogGroupRetentionPeriodDays)
+                .retentionPeriodDays(2555) // 7 years for tax records as per HMRC requirements
                 .cloudTrailEnabled(cloudTrailEnabled)
                 .verboseLogging(verboseLogging)
                 .removalPolicy(s3RetainReceiptsBucket ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY)

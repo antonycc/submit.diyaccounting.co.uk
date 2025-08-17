@@ -26,6 +26,8 @@ import software.amazon.awscdk.services.s3.EventType;
 import software.amazon.awscdk.services.s3.IBucket;
 import software.amazon.awscdk.services.s3.LifecycleRule;
 import software.amazon.awscdk.services.s3.ObjectOwnership;
+import software.amazon.awscdk.services.s3.StorageClass;
+import software.amazon.awscdk.services.s3.Transition;
 import software.amazon.awscdk.services.s3.notifications.LambdaDestination;
 import software.constructs.Construct;
 
@@ -273,7 +275,7 @@ public class LogForwardingBucket extends Stack {
                     .encryption(BucketEncryption.S3_MANAGED)
                     .removalPolicy(removalPolicy)
                     .autoDeleteObjects(autoDeleteObjects)
-                    .lifecycleRules(List.of(LifecycleRule.builder().expiration(Duration.days(retentionPeriodDays)).build()))
+                    .lifecycleRules(createLifecycleRules(retentionPeriodDays, idPrefix))
                     .build();
             logger.info("Created log bucket %s".formatted(logBucket.getBucketName()));
             if (handlerSource == null || handlerSource.isBlank() || "none".equals(handlerSource)) {
@@ -322,6 +324,50 @@ public class LogForwardingBucket extends Stack {
             return bucketName != null
                     ? bucketName
                     : "%s-log-bucket".formatted(ResourceNameUtils.convertCamelCaseToDashSeparated(idPrefix));
+        }
+
+        /**
+         * Create lifecycle rules based on bucket purpose and retention period
+         * For receipts buckets (7 years): Intelligent Tiering to IA after 30 days, Glacier after 90 days
+         * For log buckets (short term): Simple expiration
+         */
+        private List<LifecycleRule> createLifecycleRules(int retentionDays, String bucketPurpose) {
+            if (retentionDays > 365) {
+                // Long-term storage (receipts) - use intelligent tiering for cost optimization
+                return List.of(
+                    LifecycleRule.builder()
+                        .id("ReceiptsLifecycleRule")
+                        .enabled(true)
+                        .transitions(List.of(
+                            // Move to IA after 30 days
+                            Transition.builder()
+                                .storageClass(StorageClass.INFREQUENT_ACCESS)
+                                .transitionAfter(Duration.days(30))
+                                .build(),
+                            // Move to Glacier after 90 days  
+                            Transition.builder()
+                                .storageClass(StorageClass.GLACIER)
+                                .transitionAfter(Duration.days(90))
+                                .build(),
+                            // Move to Deep Archive after 1 year for maximum cost savings
+                            Transition.builder()
+                                .storageClass(StorageClass.DEEP_ARCHIVE)
+                                .transitionAfter(Duration.days(365))
+                                .build()
+                        ))
+                        .expiration(Duration.days(retentionDays))
+                        .build()
+                );
+            } else {
+                // Short-term storage (logs) - simple expiration
+                return List.of(
+                    LifecycleRule.builder()
+                        .id("LogsLifecycleRule")
+                        .enabled(true)
+                        .expiration(Duration.days(retentionDays))
+                        .build()
+                );
+            }
         }
 
     }
