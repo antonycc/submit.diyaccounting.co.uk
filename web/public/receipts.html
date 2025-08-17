@@ -30,15 +30,15 @@
 
     <div id="mainContent">
       <div class="form-container">
-        <div id="unauthenticatedHint" style="display:none; margin-bottom: 1em; color: #b30000">
+        <div id="unauthenticatedHint" style="display: none; margin-bottom: 1em; color: #b30000">
           Please log in to view your receipts.
         </div>
-        <div id="receiptsControls" style="display:none; margin-bottom: 1em">
+        <div id="receiptsControls" style="display: none; margin-bottom: 1em">
           <button class="btn" id="refreshBtn">Refresh</button>
           <button class="btn" id="exportCsvBtn" style="margin-left: 0.5em">Export CSV</button>
         </div>
         <div style="overflow-x: auto">
-          <table id="receiptsTable" class="data-table" style="width:100%; display:none">
+          <table id="receiptsTable" class="data-table" style="width: 100%; display: none">
             <thead>
               <tr>
                 <th>Date</th>
@@ -50,12 +50,12 @@
             <tbody></tbody>
           </table>
         </div>
-        <div id="emptyState" style="display:none; margin-top: 1em; color: #555">No receipts yet.</div>
+        <div id="emptyState" style="display: none; margin-top: 1em; color: #555">No receipts yet.</div>
       </div>
 
-      <div id="viewerModal" class="modal" style="display:none">
+      <div id="viewerModal" class="modal" style="display: none">
         <div class="modal-content">
-          <span class="close" id="closeModalBtn" style="float:right; cursor:pointer">&times;</span>
+          <span class="close" id="closeModalBtn" style="float: right; cursor: pointer">&times;</span>
           <h3>Receipt JSON</h3>
           <pre id="receiptJson" style="white-space: pre-wrap"></pre>
         </div>
@@ -75,120 +75,120 @@
 
     <script>
       function toggleMenu() {
-        const dropdown = document.getElementById('menuDropdown');
-        dropdown.classList.toggle('show');
+        const dropdown = document.getElementById("menuDropdown");
+        dropdown.classList.toggle("show");
       }
 
       function updateLoginStatus() {
-        const userInfo = localStorage.getItem('userInfo');
-        const loginStatusElement = document.querySelector('.login-status');
-        const loginLinkElement = document.querySelector('.login-link');
+        const userInfo = localStorage.getItem("userInfo");
+        const loginStatusElement = document.querySelector(".login-status");
+        const loginLinkElement = document.querySelector(".login-link");
         if (userInfo) {
           const user = JSON.parse(userInfo);
           const userLabel = user.email ? user.email : user.sub;
           loginStatusElement.textContent = `Logged in as ${userLabel}`;
-          loginLinkElement.textContent = 'Logout';
-          loginLinkElement.href = '#';
+          loginLinkElement.textContent = "Logout";
+          loginLinkElement.href = "#";
           loginLinkElement.onclick = logout;
         } else {
-          loginStatusElement.textContent = 'Not logged in';
-          loginLinkElement.textContent = 'Log in';
-          loginLinkElement.href = 'login.html';
+          loginStatusElement.textContent = "Not logged in";
+          loginLinkElement.textContent = "Log in";
+          loginLinkElement.href = "login.html";
           loginLinkElement.onclick = null;
         }
       }
 
       function logout() {
-        localStorage.removeItem('cognitoAccessToken');
-        localStorage.removeItem('cognitoIdToken');
-        localStorage.removeItem('cognitoRefreshToken');
-        localStorage.removeItem('userInfo');
-        localStorage.removeItem('authState');
+        localStorage.removeItem("cognitoAccessToken");
+        localStorage.removeItem("cognitoIdToken");
+        localStorage.removeItem("cognitoRefreshToken");
+        localStorage.removeItem("userInfo");
+        localStorage.removeItem("authState");
         window.location.reload();
       }
 
       async function loadViewSourceLink() {
         try {
-          const response = await fetch('source.txt');
+          const response = await fetch("source.txt");
           if (response.ok) {
             const commitHash = (await response.text()).trim();
             if (commitHash) {
-              const currentPage = window.location.pathname.split('/').pop() || 'receipts.html';
+              const currentPage = window.location.pathname.split("/").pop() || "receipts.html";
               const githubUrl = `https://github.com/antonycc/submit.diyaccounting.co.uk/blob/${commitHash}/web/public/${currentPage}`;
-              const viewSourceLink = document.getElementById('viewSourceLink');
+              const viewSourceLink = document.getElementById("viewSourceLink");
               viewSourceLink.href = githubUrl;
               viewSourceLink.textContent = `source: ${currentPage}@${commitHash.substring(0, 7)}`;
-              viewSourceLink.style.display = 'inline';
+              viewSourceLink.style.display = "inline";
             }
           }
         } catch (e) {
-          console.log('Could not load source.txt:', e);
+          console.log("Could not load source.txt:", e);
         }
       }
 
       function getIdToken() {
-        return localStorage.getItem('cognitoIdToken');
+        return localStorage.getItem("cognitoIdToken");
       }
 
       async function fetchReceipts() {
         const idToken = getIdToken();
-        const unauthHint = document.getElementById('unauthenticatedHint');
-        const controls = document.getElementById('receiptsControls');
-        const table = document.getElementById('receiptsTable');
-        const tbody = table.querySelector('tbody');
-        const empty = document.getElementById('emptyState');
+        const unauthHint = document.getElementById("unauthenticatedHint");
+        const controls = document.getElementById("receiptsControls");
+        const table = document.getElementById("receiptsTable");
+        const tbody = table.querySelector("tbody");
+        const empty = document.getElementById("emptyState");
 
         if (!idToken) {
-          unauthHint.style.display = 'block';
-          controls.style.display = 'none';
-          table.style.display = 'none';
-          empty.style.display = 'none';
+          unauthHint.style.display = "block";
+          controls.style.display = "none";
+          table.style.display = "none";
+          empty.style.display = "none";
           return;
         }
 
-        unauthHint.style.display = 'none';
-        controls.style.display = 'block';
+        unauthHint.style.display = "none";
+        controls.style.display = "block";
 
-        const res = await fetch('/api/my-receipts', {
+        const res = await fetch("/api/my-receipts", {
           headers: { Authorization: `Bearer ${idToken}` },
         });
         if (!res.ok) {
-          tbody.innerHTML = '';
-          table.style.display = 'none';
-          empty.textContent = 'Failed to load receipts';
-          empty.style.display = 'block';
+          tbody.innerHTML = "";
+          table.style.display = "none";
+          empty.textContent = "Failed to load receipts";
+          empty.style.display = "block";
           return;
         }
         const json = await res.json();
         const items = Array.isArray(json.receipts) ? json.receipts : [];
-        tbody.innerHTML = '';
+        tbody.innerHTML = "";
         if (items.length === 0) {
-          table.style.display = 'none';
-          empty.textContent = 'No receipts yet.';
-          empty.style.display = 'block';
+          table.style.display = "none";
+          empty.textContent = "No receipts yet.";
+          empty.style.display = "block";
         } else {
-          empty.style.display = 'none';
-          table.style.display = 'table';
+          empty.style.display = "none";
+          table.style.display = "table";
           for (const it of items) {
-            const tr = document.createElement('tr');
+            const tr = document.createElement("tr");
             const date = new Date(it.timestamp);
-            const dateCell = document.createElement('td');
-            dateCell.textContent = isNaN(date.getTime()) ? it.timestamp : date.toLocaleString('en-GB');
-            const bundleCell = document.createElement('td');
-            bundleCell.textContent = it.formBundleNumber || '';
-            const sizeCell = document.createElement('td');
-            sizeCell.textContent = typeof it.size === 'number' ? `${it.size} bytes` : '';
-            const actionsCell = document.createElement('td');
+            const dateCell = document.createElement("td");
+            dateCell.textContent = isNaN(date.getTime()) ? it.timestamp : date.toLocaleString("en-GB");
+            const bundleCell = document.createElement("td");
+            bundleCell.textContent = it.formBundleNumber || "";
+            const sizeCell = document.createElement("td");
+            sizeCell.textContent = typeof it.size === "number" ? `${it.size} bytes` : "";
+            const actionsCell = document.createElement("td");
 
-            const viewBtn = document.createElement('button');
-            viewBtn.className = 'btn';
-            viewBtn.textContent = 'View';
+            const viewBtn = document.createElement("button");
+            viewBtn.className = "btn";
+            viewBtn.textContent = "View";
             viewBtn.onclick = () => viewReceipt(it.name);
 
-            const dlBtn = document.createElement('button');
-            dlBtn.className = 'btn';
-            dlBtn.style.marginLeft = '0.5em';
-            dlBtn.textContent = 'Download';
+            const dlBtn = document.createElement("button");
+            dlBtn.className = "btn";
+            dlBtn.style.marginLeft = "0.5em";
+            dlBtn.textContent = "Download";
             dlBtn.onclick = () => downloadReceipt(it.name);
 
             actionsCell.appendChild(viewBtn);
@@ -208,10 +208,10 @@
         const res = await fetch(`/api/my-receipts/${encodeURIComponent(name)}`, {
           headers: { Authorization: `Bearer ${idToken}` },
         });
-        if (!res.ok) return alert('Failed to fetch receipt');
+        if (!res.ok) return alert("Failed to fetch receipt");
         const text = await res.text();
-        document.getElementById('receiptJson').textContent = prettyPrintJson(text);
-        document.getElementById('viewerModal').style.display = 'block';
+        document.getElementById("receiptJson").textContent = prettyPrintJson(text);
+        document.getElementById("viewerModal").style.display = "block";
       }
 
       function prettyPrintJson(text) {
@@ -227,9 +227,9 @@
         const res = await fetch(`/api/my-receipts/${encodeURIComponent(name)}`, {
           headers: { Authorization: `Bearer ${idToken}` },
         });
-        if (!res.ok) return alert('Failed to download receipt');
-        const blob = new Blob([await res.text()], { type: 'application/json' });
-        const a = document.createElement('a');
+        if (!res.ok) return alert("Failed to download receipt");
+        const blob = new Blob([await res.text()], { type: "application/json" });
+        const a = document.createElement("a");
         a.href = URL.createObjectURL(blob);
         a.download = name;
         document.body.appendChild(a);
@@ -238,41 +238,41 @@
       }
 
       function exportCsv(rows) {
-        const header = ['Date','Form bundle','Size'];
-        const lines = [header.join(',')];
-        for (const r of rows) lines.push(r.join(','));
-        const blob = new Blob([lines.join('\n')], { type: 'text/csv' });
-        const a = document.createElement('a');
+        const header = ["Date", "Form bundle", "Size"];
+        const lines = [header.join(",")];
+        for (const r of rows) lines.push(r.join(","));
+        const blob = new Blob([lines.join("\n")], { type: "text/csv" });
+        const a = document.createElement("a");
         a.href = URL.createObjectURL(blob);
-        a.download = 'receipts.csv';
+        a.download = "receipts.csv";
         document.body.appendChild(a);
         a.click();
         a.remove();
       }
 
-      document.getElementById('refreshBtn').addEventListener('click', fetchReceipts);
-      document.getElementById('exportCsvBtn').addEventListener('click', async () => {
+      document.getElementById("refreshBtn").addEventListener("click", fetchReceipts);
+      document.getElementById("exportCsvBtn").addEventListener("click", async () => {
         const idToken = getIdToken();
-        const res = await fetch('/api/my-receipts', { headers: { Authorization: `Bearer ${idToken}` } });
-        if (!res.ok) return alert('Failed to export CSV');
+        const res = await fetch("/api/my-receipts", { headers: { Authorization: `Bearer ${idToken}` } });
+        if (!res.ok) return alert("Failed to export CSV");
         const json = await res.json();
         const items = Array.isArray(json.receipts) ? json.receipts : [];
-        const rows = items.map((it) => [it.timestamp, it.formBundleNumber || '', it.size || '']);
+        const rows = items.map((it) => [it.timestamp, it.formBundleNumber || "", it.size || ""]);
         exportCsv(rows);
       });
 
-      document.getElementById('closeModalBtn').addEventListener('click', () => {
-        document.getElementById('viewerModal').style.display = 'none';
+      document.getElementById("closeModalBtn").addEventListener("click", () => {
+        document.getElementById("viewerModal").style.display = "none";
       });
 
       // Close menu when clicking outside
       window.onclick = function (event) {
-        if (!event.target.matches('.hamburger-btn')) {
-          const dropdown = document.getElementById('menuDropdown');
-          if (dropdown.classList.contains('show')) dropdown.classList.remove('show');
+        if (!event.target.matches(".hamburger-btn")) {
+          const dropdown = document.getElementById("menuDropdown");
+          if (dropdown.classList.contains("show")) dropdown.classList.remove("show");
         }
-        if (event.target.id === 'viewerModal') {
-          document.getElementById('viewerModal').style.display = 'none';
+        if (event.target.id === "viewerModal") {
+          document.getElementById("viewerModal").style.display = "none";
         }
       };
 

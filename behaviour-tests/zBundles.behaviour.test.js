@@ -104,7 +104,6 @@ test.describe("Bundles behaviour flow (mock auth -> add bundle -> activities)", 
         serverProcess.kill("SIGINT");
         await delay(500);
       }
-      // eslint-disable-next-line sonarjs/no-ignored-exceptions
     } catch {
       // intentionally ignored during shutdown
     }

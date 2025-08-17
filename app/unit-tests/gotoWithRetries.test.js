@@ -21,14 +21,16 @@ describe("gotoWithRetries", () => {
     const page = makeMockPage();
     const transient = new Error("net::ERR_NETWORK_CHANGED");
 
-    page.goto
-      .mockRejectedValueOnce(transient)
-      .mockRejectedValueOnce(transient)
-      .mockResolvedValueOnce(undefined);
+    page.goto.mockRejectedValueOnce(transient).mockRejectedValueOnce(transient).mockResolvedValueOnce(undefined);
 
     const sleepFn = vi.fn().mockResolvedValue();
 
-    await nav.gotoWithRetries(page, "https://example.com", { maxRetries: 4, baseDelayMs: 100, maxDelayMs: 1000, sleepFn });
+    await nav.gotoWithRetries(page, "https://example.com", {
+      maxRetries: 4,
+      baseDelayMs: 100,
+      maxDelayMs: 1000,
+      sleepFn,
+    });
 
     expect(page.goto).toHaveBeenCalledTimes(3);
     // backoff called twice (between the three attempts)
@@ -40,9 +42,9 @@ describe("gotoWithRetries", () => {
     const fatal = new Error("HTTP 401 Unauthorized");
     page.goto.mockRejectedValueOnce(fatal);
 
-    await expect(
-      nav.gotoWithRetries(page, "https://example.com", { maxRetries: 4 })
-    ).rejects.toThrowError(/Unauthorized/);
+    await expect(nav.gotoWithRetries(page, "https://example.com", { maxRetries: 4 })).rejects.toThrowError(
+      /Unauthorized/,
+    );
 
     expect(page.goto).toHaveBeenCalledTimes(1);
   });
@@ -55,7 +57,7 @@ describe("gotoWithRetries", () => {
     const sleepFn = vi.fn().mockResolvedValue();
 
     await expect(
-      nav.gotoWithRetries(page, "https://example.com", { maxRetries: 3, baseDelayMs: 50, maxDelayMs: 100, sleepFn })
+      nav.gotoWithRetries(page, "https://example.com", { maxRetries: 3, baseDelayMs: 50, maxDelayMs: 100, sleepFn }),
     ).rejects.toThrowError(/ERR_NAME_NOT_RESOLVED/);
 
     // 3 attempts => 2 delays

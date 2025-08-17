@@ -61,9 +61,7 @@ describe("Integration – /api/my-receipts", () => {
     const sub = "mr-user-2";
     const token = makeIdToken(sub);
     s3Mock.on(ListObjectsV2Command).resolves({
-      Contents: [
-        { Key: `receipts/${sub}/2025-08-01T10:00:00.000Z-XYZ.json`, Size: 42 },
-      ],
+      Contents: [{ Key: `receipts/${sub}/2025-08-01T10:00:00.000Z-XYZ.json`, Size: 42 }],
       IsTruncated: false,
     });
     const bodyText = JSON.stringify({ formBundleNumber: "XYZ", amount: 123 });

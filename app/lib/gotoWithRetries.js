@@ -63,9 +63,7 @@ export async function gotoWithRetries(page, url, options = {}) {
   let lastErr;
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      console.log(
-        `[NAVIGATION] (${attempt}/${maxRetries}) Going to: ${url} ${description ? "- " + description : ""}`,
-      );
+      console.log(`[NAVIGATION] (${attempt}/${maxRetries}) Going to: ${url} ${description ? "- " + description : ""}`);
       await page.goto(url, { waitUntil });
 
       if (readySelector) {

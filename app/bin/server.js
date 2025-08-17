@@ -194,7 +194,7 @@ app.get(catalogPath, async (req, res) => {
   const event = {
     path: req.path,
     headers: {
-      host: req.get("host") || "localhost:3000",
+      "host": req.get("host") || "localhost:3000",
       "if-none-match": req.headers["if-none-match"],
       "if-modified-since": req.headers["if-modified-since"],
     },
@@ -273,7 +273,8 @@ app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "../../web/public/index.html"));
 });
 
-const DIY_SUBMIT_TEST_SERVER_HTTP_PORT = process.env.DIY_SUBMIT_TEST_SERVER_HTTP_PORT || process.env.DIY_SUBMIT_DIY_SUBMIT_TEST_SERVER_HTTP_PORT || 3000;
+const DIY_SUBMIT_TEST_SERVER_HTTP_PORT =
+  process.env.DIY_SUBMIT_TEST_SERVER_HTTP_PORT || process.env.DIY_SUBMIT_DIY_SUBMIT_TEST_SERVER_HTTP_PORT || 3000;
 
 // Only start the server if this file is being run directly (compare absolute paths) or under test harness
 const __thisFile = fileURLToPath(import.meta.url);

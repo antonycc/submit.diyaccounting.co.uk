@@ -60,22 +60,38 @@ export async function httpGet(event) {
   try {
     const user = userCtxFromEvent(event || {});
     if (!user.sub) {
-      return { statusCode: 401, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ error: "unauthorized" }) };
+      return {
+        statusCode: 401,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ error: "unauthorized" }),
+      };
     }
 
     const key = event.queryStringParameters?.key || event.pathParameters?.key || null;
     if (!key || !key.startsWith(`receipts/${user.sub}/`)) {
-      return { statusCode: 403, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ error: "forbidden" }) };
+      return {
+        statusCode: 403,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ error: "forbidden" }),
+      };
     }
 
     const { Bucket, s3Client } = buildBucketAndClient();
     const got = await s3Client.send(new GetObjectCommand({ Bucket, Key: key }));
 
     const body = await streamToString(got.Body);
-    return { statusCode: 200, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }, body };
+    return {
+      statusCode: 200,
+      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+      body,
+    };
   } catch (e) {
     logger.error({ message: "getReceipt error", error: e?.message || String(e) });
-    return { statusCode: 500, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ error: "get_error", message: e?.message || String(e) }) };
+    return {
+      statusCode: 500,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ error: "get_error", message: e?.message || String(e) }),
+    };
   }
 }
 

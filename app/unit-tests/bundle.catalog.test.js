@@ -50,7 +50,7 @@ describe("bundle.js – catalog qualifiers and expiry (MOCK)", () => {
     const token = makeIdToken("user-test");
     const res = await requestBundle(buildEvent(token, { bundleId: "test" }));
     expect(res.statusCode).toBe(200);
-    const body = JSON.parse(res.body || '{}');
+    const body = JSON.parse(res.body || "{}");
     expect(body.status).toBe("granted");
     // expiry should be a YYYY-MM-DD string
     if (body.expiry) {

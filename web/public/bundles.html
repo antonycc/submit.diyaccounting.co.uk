@@ -238,12 +238,15 @@
               return [];
             }
           };
-          const hasBundle = (bundles, id) => (bundles || []).some((b) => typeof b === "string" && (b === id || b.startsWith(id + "|")));
+          const hasBundle = (bundles, id) =>
+            (bundles || []).some((b) => typeof b === "string" && (b === id || b.startsWith(id + "|")));
 
           const bundles = parseUserBundles();
 
           // Legacy static UI: mark HMRC_TEST_API as already added
-          const legacyBtn = document.querySelector("button.btn.service-btn:not(.disabled-btn)[onclick*=\"HMRC_TEST_API\"]");
+          const legacyBtn = document.querySelector(
+            'button.btn.service-btn:not(.disabled-btn)[onclick*="HMRC_TEST_API"]',
+          );
           if (legacyBtn) {
             if (hasBundle(bundles, "HMRC_TEST_API")) {
               legacyBtn.textContent = "Already Added ✓";
@@ -253,19 +256,19 @@
           }
 
           // Catalog-driven UI: mark any rendered bundle cards as active
-          const dataButtons = document.querySelectorAll('button[data-bundle-id]');
+          const dataButtons = document.querySelectorAll("button[data-bundle-id]");
           if (dataButtons && dataButtons.length) {
             for (const btn of dataButtons) {
-              const bundleId = btn.getAttribute('data-bundle-id');
+              const bundleId = btn.getAttribute("data-bundle-id");
               if (bundleId && hasBundle(bundles, bundleId)) {
                 btn.textContent = `Already Added ✓`;
                 btn.disabled = true;
                 btn.style.backgroundColor = "#28a745";
-                const card = btn.closest('.service-item');
-                const statusEl = card && card.querySelector('.status');
+                const card = btn.closest(".service-item");
+                const statusEl = card && card.querySelector(".status");
                 if (statusEl) {
-                  statusEl.textContent = 'Active';
-                  statusEl.style.color = '#2c7a7b';
+                  statusEl.textContent = "Active";
+                  statusEl.style.color = "#2c7a7b";
                 }
               }
             }
@@ -314,42 +317,46 @@
       (async function () {
         try {
           if (!window.CATALOG_DRIVEN_UI) return;
-          const main = document.getElementById('mainContent');
+          const main = document.getElementById("mainContent");
           if (!main) return;
 
-          const idToken = localStorage.getItem('cognitoIdToken');
+          const idToken = localStorage.getItem("cognitoIdToken");
           const headers = idToken ? { Authorization: `Bearer ${idToken}` } : {};
-          const res = await fetch('/api/catalog', { headers });
-          if (!res.ok) throw new Error('catalog fetch failed');
+          const res = await fetch("/api/catalog", { headers });
+          if (!res.ok) throw new Error("catalog fetch failed");
           const catalog = await res.json();
 
           function bundleCard(b) {
             const q = b.qualifiers || {};
             const qFields = [];
-            if (Object.prototype.hasOwnProperty.call(q, 'requiresTransactionId') && q.requiresTransactionId) {
+            if (Object.prototype.hasOwnProperty.call(q, "requiresTransactionId") && q.requiresTransactionId) {
               qFields.push(`<label>Transaction ID <input name="transactionId" /></label>`);
             }
-            if (Object.prototype.hasOwnProperty.call(q, 'subscriptionTier')) {
-              qFields.push(`<label>Subscription Tier <input name="subscriptionTier" value="${q.subscriptionTier}" /></label>`);
+            if (Object.prototype.hasOwnProperty.call(q, "subscriptionTier")) {
+              qFields.push(
+                `<label>Subscription Tier <input name="subscriptionTier" value="${q.subscriptionTier}" /></label>`,
+              );
             }
             const info = [
               `allocation: ${b.allocation}`,
-              b.auth ? `auth: ${b.auth}` : '',
-              b.cap != null ? `cap: ${b.cap}` : '',
-              b.timeout ? `timeout: ${b.timeout}` : '',
-            ].filter(Boolean).join(' • ');
+              b.auth ? `auth: ${b.auth}` : "",
+              b.cap != null ? `cap: ${b.cap}` : "",
+              b.timeout ? `timeout: ${b.timeout}` : "",
+            ]
+              .filter(Boolean)
+              .join(" • ");
 
             return `
               <div class="service-item" style="text-align:left">
                 <h3>${b.name || b.id}</h3>
                 <p class="service-description">${info}</p>
-                ${qFields.length ? `<div class="qualifiers" style="display:flex; gap:.5em; flex-wrap:wrap">${qFields.join(' ')}</div>` : ''}
+                ${qFields.length ? `<div class="qualifiers" style="display:flex; gap:.5em; flex-wrap:wrap">${qFields.join(" ")}</div>` : ""}
                 <button type="button" class="btn service-btn" data-bundle-id="${b.id}">Request ${b.id}</button>
                 <div class="status" style="font-size:.9em; color:#666; margin-top:.25em"></div>
               </div>`;
           }
 
-          const cards = (catalog.bundles || []).map(bundleCard).join('\n');
+          const cards = (catalog.bundles || []).map(bundleCard).join("\n");
           main.innerHTML = `
             <div class="form-container" style="text-align:center">
               <h2>Add Bundle</h2>
@@ -361,43 +368,47 @@
             </div>`;
 
           // Wire buttons
-          for (const btn of document.querySelectorAll('button[data-bundle-id]')) {
-            btn.addEventListener('click', async (e) => {
-              const card = e.target.closest('.service-item');
-              const statusEl = card.querySelector('.status');
-              const bundleId = e.target.getAttribute('data-bundle-id');
+          for (const btn of document.querySelectorAll("button[data-bundle-id]")) {
+            btn.addEventListener("click", async (e) => {
+              const card = e.target.closest(".service-item");
+              const statusEl = card.querySelector(".status");
+              const bundleId = e.target.getAttribute("data-bundle-id");
               const qualifiers = {};
               const tx = card.querySelector('input[name="transactionId"]');
               if (tx && tx.value) qualifiers.transactionId = tx.value;
               const tier = card.querySelector('input[name="subscriptionTier"]');
               if (tier && tier.value) qualifiers.subscriptionTier = tier.value;
               try {
-                const r = await fetch('/api/request-bundle', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json', ...(headers || {}) },
+                const r = await fetch("/api/request-bundle", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json", ...(headers || {}) },
                   body: JSON.stringify({ bundleId, qualifiers }),
                 });
                 const body = await r.json().catch(() => ({}));
                 if (r.ok) {
-                  statusEl.textContent = `Granted: ${body.status || 'ok'} ${body.expiry ? `(expires ${body.expiry})` : ''}`;
-                  statusEl.style.color = '#2c7a7b';
+                  statusEl.textContent = `Granted: ${body.status || "ok"} ${body.expiry ? `(expires ${body.expiry})` : ""}`;
+                  statusEl.style.color = "#2c7a7b";
                 } else {
                   statusEl.textContent = `Error: ${body.error || r.status}`;
-                  statusEl.style.color = '#b00020';
+                  statusEl.style.color = "#b00020";
                 }
               } catch (err) {
                 statusEl.textContent = `Error: ${err?.message || err}`;
-                statusEl.style.color = '#b00020';
+                statusEl.style.color = "#b00020";
               }
             });
           }
 
           // Reflect pre-existing selections after rendering
-          if (typeof updateBundleStatus === 'function') {
-            try { await updateBundleStatus(); } catch { /* ignore */ }
+          if (typeof updateBundleStatus === "function") {
+            try {
+              await updateBundleStatus();
+            } catch {
+              /* ignore */
+            }
           }
         } catch (e) {
-          console.log('CATALOG_DRIVEN_UI bundles rendering failed:', e);
+          console.log("CATALOG_DRIVEN_UI bundles rendering failed:", e);
         }
       })();
     </script>

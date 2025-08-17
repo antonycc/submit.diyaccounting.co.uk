@@ -159,7 +159,8 @@ export async function httpPostGoogle(event) {
   if (!googleClientId) {
     return httpServerErrorResponse({
       request,
-      message: "Google login misconfigured: neither DIY_SUBMIT_COGNITO_CLIENT_ID nor DIY_SUBMIT_GOOGLE_CLIENT_ID is set",
+      message:
+        "Google login misconfigured: neither DIY_SUBMIT_COGNITO_CLIENT_ID nor DIY_SUBMIT_GOOGLE_CLIENT_ID is set",
     });
   }
   const clientSecret = await retrieveGoogleClientSecret();

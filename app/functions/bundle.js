@@ -272,7 +272,14 @@ export async function httpPost(event) {
         return {
           statusCode: 200,
           headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
-          body: JSON.stringify({ status: "granted", granted: true, expiryDate, expiry: expiryDate, bundle: requestedBundle, bundles: currentBundles }),
+          body: JSON.stringify({
+            status: "granted",
+            granted: true,
+            expiryDate,
+            expiry: expiryDate,
+            bundle: requestedBundle,
+            bundles: currentBundles,
+          }),
         };
       }
       try {
@@ -281,18 +288,27 @@ export async function httpPost(event) {
         const updateCommand = new mod.AdminUpdateUserAttributesCommand({
           UserPoolId: userPoolId,
           Username: userId,
-          UserAttributes: [
-            { Name: "custom:bundles", Value: currentBundles.join("|") },
-          ],
+          UserAttributes: [{ Name: "custom:bundles", Value: currentBundles.join("|") }],
         });
         await client.send(updateCommand);
         return {
           statusCode: 200,
           headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
-          body: JSON.stringify({ status: "granted", granted: true, expiryDate, expiry: expiryDate, bundle: requestedBundle, bundles: currentBundles }),
+          body: JSON.stringify({
+            status: "granted",
+            granted: true,
+            expiryDate,
+            expiry: expiryDate,
+            bundle: requestedBundle,
+            bundles: currentBundles,
+          }),
         };
       } catch (error) {
-        return { statusCode: 500, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }, body: JSON.stringify({ error: "Failed to grant bundle" }) };
+        return {
+          statusCode: 500,
+          headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+          body: JSON.stringify({ error: "Failed to grant bundle" }),
+        };
       }
     }
 
@@ -301,10 +317,18 @@ export async function httpPost(event) {
     // Validate qualifiers
     const check = qualifiersSatisfied(catalogBundle, decodedToken, qualifiers);
     if (check?.unknown) {
-      return { statusCode: 400, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }, body: JSON.stringify({ error: "unknown_qualifier", qualifier: check.unknown }) };
+      return {
+        statusCode: 400,
+        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+        body: JSON.stringify({ error: "unknown_qualifier", qualifier: check.unknown }),
+      };
     }
     if (check?.ok === false) {
-      return { statusCode: 400, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }, body: JSON.stringify({ error: "qualifier_mismatch" }) };
+      return {
+        statusCode: 400,
+        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+        body: JSON.stringify({ error: "qualifier_mismatch" }),
+      };
     }
 
     if (catalogBundle.allocation === "automatic") {
@@ -312,7 +336,13 @@ export async function httpPost(event) {
       return {
         statusCode: 200,
         headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
-        body: JSON.stringify({ status: "granted", granted: true, expiry: null, bundle: requestedBundle, bundles: currentBundles }),
+        body: JSON.stringify({
+          status: "granted",
+          granted: true,
+          expiry: null,
+          bundle: requestedBundle,
+          bundles: currentBundles,
+        }),
       };
     }
 
@@ -324,7 +354,11 @@ export async function httpPost(event) {
         if ((bundles || []).some((b) => typeof b === "string" && b.startsWith(requestedBundle + "|"))) currentCount++;
       }
       if (currentCount >= cap) {
-        return { statusCode: 403, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }, body: JSON.stringify({ error: "cap_reached" }) };
+        return {
+          statusCode: 403,
+          headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+          body: JSON.stringify({ error: "cap_reached" }),
+        };
       }
     }
 
@@ -338,7 +372,13 @@ export async function httpPost(event) {
     return {
       statusCode: 200,
       headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
-      body: JSON.stringify({ status: "granted", granted: true, expiry: expiryStr || null, bundle: requestedBundle, bundles: currentBundles }),
+      body: JSON.stringify({
+        status: "granted",
+        granted: true,
+        expiry: expiryStr || null,
+        bundle: requestedBundle,
+        bundles: currentBundles,
+      }),
     };
   } catch (error) {
     console.log("[DEBUG_LOG] Unexpected error:", error?.message || error);

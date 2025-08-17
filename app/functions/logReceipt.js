@@ -80,11 +80,12 @@ export async function httpPost(event) {
   // Build S3 key
   const formBundle = receipt?.formBundleNumber;
   const timestamp = new Date().toISOString();
-  const key = userSub && formBundle
-    ? `receipts/${userSub}/${timestamp}-${formBundle}.json`
-    : formBundle
-      ? `receipts/${formBundle}.json`
-      : null;
+  const key =
+    userSub && formBundle
+      ? `receipts/${userSub}/${timestamp}-${formBundle}.json`
+      : formBundle
+        ? `receipts/${formBundle}.json`
+        : null;
 
   // Validation
   const errorMessages = [];
