@@ -170,7 +170,7 @@ test.outputDir = "target/behaviour-with-auth-test-results";
 
 test("Submit VAT return end-to-end flow with browser emulation", async ({ page }) => {
   const timestamp = getTimestamp();
-  const testUrl = homeUrl;
+  const testUrl = runTestServer ? `http://127.0.0.1:${serverPort}` : homeUrl;
 
   // Add console logging to capture browser messages
   page.on("console", (msg) => {
@@ -340,7 +340,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   await page.waitForLoadState("networkidle");
   await setTimeout(500);
   await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/110-hmrc-permission-${timestamp}.png` });
-  await expect(page.locator("#appNameParagraph")).toContainText(applicationName);
+  await expect(page.locator("#appNameParagraph")).toContainText(applicationName, { timeout: 10000 });
   await expect(page.getByRole("button", { name: "Continue" })).toContainText("Continue");
 
   //  Submit the permission form and expect the sign in option to be visible

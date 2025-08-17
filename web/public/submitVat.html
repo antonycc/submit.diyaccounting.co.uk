@@ -314,11 +314,13 @@
         });
         console.log(`Logging receipt. Remote call initiated: POST ${url} ++ Body: ${body}`);
 
+        const idToken = localStorage.getItem("cognitoIdToken");
+        const headers = { "Content-Type": "application/json" };
+        if (idToken) headers["Authorization"] = `Bearer ${idToken}`;
+
         const response = await fetch(url, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers,
           body,
         });
         const responseJson = await response.json();
@@ -329,6 +331,7 @@
         }
 
         console.log(`Logged receipt. Remote call completed successfully: POST ${url}`, responseJson);
+        try { showStatus("Receipt saved. View it on the Receipts page.", "info"); } catch (_e) {}
         return responseJson;
       }
 
