@@ -11,7 +11,6 @@ import software.amazon.awscdk.CfnOutput;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Expiration;
 import software.amazon.awscdk.RemovalPolicy;
-import software.amazon.awscdk.SecretValue;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.services.certificatemanager.Certificate;
@@ -62,7 +61,6 @@ import software.amazon.awscdk.services.s3.deployment.ISource;
 import software.amazon.awscdk.services.s3.deployment.Source;
 import software.amazon.awscdk.services.secretsmanager.ISecret;
 import software.amazon.awscdk.services.secretsmanager.Secret;
-import software.amazon.awscdk.services.secretsmanager.SecretStringGenerator;
 import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
 
@@ -148,6 +146,10 @@ public class WebStack extends Stack {
     public LogGroup myBundlesLambdaLogGroup;
 
     public IBucket receiptsBucket;
+
+    public Function myReceiptsLambda;
+    public FunctionUrl myReceiptsLambdaUrl;
+    public LogGroup myReceiptsLambdaLogGroup;
 
     public static class Builder {
         public Construct scope;
@@ -236,6 +238,9 @@ public class WebStack extends Stack {
         public String cognitoEnableLogDelivery;
         public String cognitoCreateTriggerLambdas;
         public String logCognitoEventHandlerSource;
+        public String myReceiptsLambdaHandlerFunctionName;
+        public String myReceiptsLambdaUrlPath;
+        public String myReceiptsLambdaDuration;
 
         public Builder(Construct scope, String id, StackProps props) {
             this.scope = scope;
@@ -688,6 +693,21 @@ public class WebStack extends Stack {
 
         public Builder cognitoCreateTriggerLambdas(String cognitoCreateTriggerLambdas) {
             this.cognitoCreateTriggerLambdas = cognitoCreateTriggerLambdas;
+            return this;
+        }
+
+        public Builder myReceiptsLambdaHandlerFunctionName(String myReceiptsLambdaHandlerFunctionName) {
+            this.myReceiptsLambdaHandlerFunctionName = myReceiptsLambdaHandlerFunctionName;
+            return this;
+        }
+
+        public Builder myReceiptsLambdaUrlPath(String myReceiptsLambdaUrlPath) {
+            this.myReceiptsLambdaUrlPath = myReceiptsLambdaUrlPath;
+            return this;
+        }
+
+        public Builder myReceiptsLambdaDurationMillis(String myReceiptsLambdaDuration) {
+            this.myReceiptsLambdaDuration = myReceiptsLambdaDuration;
             return this;
         }
 
@@ -1209,7 +1229,27 @@ public class WebStack extends Stack {
             lambdaUrlToOriginsBehaviourMappings.put(builder.myBundlesLambdaUrlPath + "*", myBundlesLambdaUrlOrigin.behaviorOptions);
         }
 
-        // Create receipts bucket for storing VAT submission receipts with enhanced lifecycle
+        // myReceipts Lambda
+        if (StringUtils.isNotBlank(builder.myReceiptsLambdaHandlerFunctionName)) {
+            var myReceiptsLambdaEnv = new HashMap<>(Map.of(
+                    "DIY_SUBMIT_HOME_URL", builder.homeUrl
+            ));
+            var myReceiptsLambdaUrlOrigin = LambdaUrlOrigin.Builder.create(this, "MyReceiptsLambda")
+                    .options(lambdaCommonOpts)
+                    .imageFilename("myReceipts.Dockerfile")
+                    .functionName(Builder.buildFunctionName(dashedDomainName, builder.myReceiptsLambdaHandlerFunctionName))
+                    .allowedMethods(AllowedMethods.ALLOW_ALL)
+                    .handler(builder.lambdaEntry + builder.myReceiptsLambdaHandlerFunctionName)
+                    .environment(myReceiptsLambdaEnv)
+                    .timeout(Duration.millis(Long.parseLong(builder.myReceiptsLambdaDuration != null ? builder.myReceiptsLambdaDuration : "30000")))
+                    .build();
+            this.myReceiptsLambda = myReceiptsLambdaUrlOrigin.lambda;
+            this.myReceiptsLambdaUrl = myReceiptsLambdaUrlOrigin.functionUrl;
+            this.myReceiptsLambdaLogGroup = myReceiptsLambdaUrlOrigin.logGroup;
+            lambdaUrlToOriginsBehaviourMappings.put(builder.myReceiptsLambdaUrlPath + "*", myReceiptsLambdaUrlOrigin.behaviorOptions);
+        }
+
+        // Create receipts bucket for storing VAT submission receipts
         this.receiptsBucket = LogForwardingBucket.Builder
                 .create(this, "ReceiptsBucket", builder.logS3ObjectEventHandlerSource, LogS3ObjectEvent.class)
                 .bucketName(receiptsBucketFullName)

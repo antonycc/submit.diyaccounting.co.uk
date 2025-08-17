@@ -80,6 +80,9 @@
     "catalogLambdaDuration": "30000",
     "myBundlesLambdaUrlPath": "/api/my-bundles",
     "myBundlesLambdaHandlerFunctionName": "myBundles.httpGet",
-    "myBundlesLambdaDuration": "30000"
+    "myBundlesLambdaDuration": "30000",
+    "myReceiptsLambdaUrlPath": "/api/my-receipts",
+    "myReceiptsLambdaHandlerFunctionName": "myReceipts.httpGet",
+    "myReceiptsLambdaDuration": "30000"
   }
 }

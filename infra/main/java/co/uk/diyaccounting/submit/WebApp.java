@@ -84,6 +84,9 @@ public class WebApp {
                 .cognitoEnableLogDelivery(System.getenv("DIY_SUBMIT_ENABLE_LOG_DELIVERY"))
                 .cognitoCreateTriggerLambdas(System.getenv("DIY_SUBMIT_CREATE_COGNITO_TRIGGER_LAMBDAS"))
                 .logCognitoEventHandlerSource(System.getenv("LOG_COGNITO_EVENT_HANDLER_SOURCE"))
+                .myReceiptsLambdaHandlerFunctionName(System.getenv("MY_RECEIPTS_LAMBDA_HANDLER_FUNCTION_NAME"))
+                .myReceiptsLambdaUrlPath(System.getenv("MY_RECEIPTS_LAMBDA_URL_PATH"))
+                .myReceiptsLambdaDurationMillis(System.getenv("MY_RECEIPTS_LAMBDA_DURATION"))
                 .build();
 
         CfnOutput.Builder.create(stack, "OriginBucketArn")
@@ -238,6 +241,17 @@ public class WebApp {
 
             CfnOutput.Builder.create(stack, "BundleLambdaUrl")
                     .value(stack.bundleLambdaUrl.getUrl())
+                    .build();
+        }
+
+        // My Receipts Lambda outputs (only if my receipts Lambda is configured)
+        if (stack.myReceiptsLambda != null) {
+            CfnOutput.Builder.create(stack, "MyReceiptsLambdaArn")
+                    .value(stack.myReceiptsLambda.getFunctionArn())
+                    .build();
+
+            CfnOutput.Builder.create(stack, "MyReceiptsLambdaUrl")
+                    .value(stack.myReceiptsLambdaUrl.getUrl())
                     .build();
         }
 
