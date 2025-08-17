@@ -711,6 +711,8 @@ public class WebStack extends Stack {
             return this;
         }
 
+        // TODO: Split into Edge, Identity, Data, App, and Ops. See: _developers/backlog/diverse-versions-at-origin.md
+
         public WebStack build() {
             return new WebStack(this.scope, this.id, this.props, this);
         }
