@@ -66,7 +66,7 @@ This continuation completes the migration by exposing catalog JSON, centralizing
     - Authenticated: call GET /api/my-bundles (or derive from request-bundle responses) to hydrate active bundles with expiry.
 
 #### 6) Replace semi-hardcoded sections
-- activities.html (or equivalent component):
+- index.html (or equivalent component):
     - Available to you: activities where any activity.bundles intersects active bundles.
     - Requires additional access: all catalog.activities minus available.
     - Badges: show bundle names that unlock each activity; show auth badge if all unlocking bundles require auth.
@@ -127,7 +127,7 @@ Ensure server-side validates qualifiers and strips unexpected properties.
 - [ ] Implement /api/catalog with caching headers.
 - [ ] Add entitlements service; wire guards for submit-vat, vat-obligations, sandbox.
 - [ ] Implement POST /api/request-bundle with qualifiers/cap/timeout.
-- [ ] Update activities.html and bundles.html to catalog-driven rendering.
+- [ ] Update index.html and bundles.html to catalog-driven rendering.
 - [ ] Add GET /api/my-bundles (optional but convenient for UI state).
 - [ ] CI: validate:catalog; add unit/integration/browser tests.
 - [ ] Logging/metrics for grants and access denials.

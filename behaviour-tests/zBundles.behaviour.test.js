@@ -148,7 +148,7 @@ test.describe("Bundles behaviour flow (mock auth -> add bundle -> activities)", 
     await expect(page.getByRole("button", { name: /Added ✓|Already Added ✓/ })).toBeVisible();
 
     // Go to activities and verify sections
-    await gotoWithPause(page, `http://127.0.0.1:${serverPort}/activities.html`);
+    await gotoWithPause(page, `http://127.0.0.1:${serverPort}/index.html`);
     await expect(page.getByText("Default bundle")).toBeVisible();
     await expect(page.getByText("HMRC Test API bundle")).toBeVisible();
     await expect(page.getByText("Submit VAT (Sandbox API)")).toBeVisible();

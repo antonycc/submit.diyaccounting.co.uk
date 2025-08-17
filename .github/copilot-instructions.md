@@ -143,7 +143,7 @@ Manual testing should be performed using the **proxy environment**. This require
    - **Bundle/Entitlement System**:
      - Open: http://127.0.0.1:3000/bundles.html
      - Test requesting different bundles (Test, Guest, etc.)
-     - Verify activities appear in http://127.0.0.1:3000/activities.html
+     - Verify activities appear in http://127.0.0.1:3000/index.html
    - **Receipt System**:
      - Open: http://127.0.0.1:3000/receipts.html
      - Verify receipt display and storage functionality

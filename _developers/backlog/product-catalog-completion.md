@@ -17,7 +17,7 @@
     - Gaps: Other endpoints (e.g., VAT obligations, sandbox routes, future self-employment APIs) not yet wrapped.
 
 - Client UI (catalog-driven)
-    - Implemented: CATALOG_DRIVEN_UI flag toggles new rendering for activities.html and bundles.html. Activities are derived from catalog.activities and filtered by /api/my-bundles. Bundles page renders bundle cards from catalog with qualifier inputs and calls POST /api/request-bundle.
+    - Implemented: CATALOG_DRIVEN_UI flag toggles new rendering for index.html and bundles.html. Activities are derived from catalog.activities and filtered by /api/my-bundles. Bundles page renders bundle cards from catalog with qualifier inputs and calls POST /api/request-bundle.
     - Gaps: Anonymous-user flow: localStorage handling exists but isn’t integrated with getActiveBundles (server-side) for automatic bundles when logged out; UX to reflect entitlements from server for signed-in users exists but can be expanded (e.g., badge/tooltips). Receipt page isn’t catalog-driven (not necessary per backlog but could be improved).
 
 - Receipts
@@ -73,7 +73,7 @@
 #### 6) API additions and UX
 - GET /api/my-bundles – already returns active bundles; add optional details flag (?details=1) to return full grants for the user when authenticated.
 - UI
-    - activities.html and bundles.html already use the new endpoints under CATALOG_DRIVEN_UI; enrich UX to display bundle details (cap, expiry) and show which bundles unlock each activity (already showing badges).
+    - index.html and bundles.html already use the new endpoints under CATALOG_DRIVEN_UI; enrich UX to display bundle details (cap, expiry) and show which bundles unlock each activity (already showing badges).
     - Optionally support anonymous sessions by locally storing requested “guest” bundles as allowed per catalog rules (for bundles with auth: optional, allocation: on-request); reconcile upon sign-in by calling /api/my-bundles.
 
 #### 7) Receipts alignment (optional hardening)

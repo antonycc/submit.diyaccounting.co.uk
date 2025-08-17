@@ -175,7 +175,7 @@ Catalog: product-catalogue.toml
   - guest/basic/legacy -> production submit-vat and others
 How to try locally
 - Go to bundles.html and request the “Test” bundle.
-- Visit activities.html to see sections update based on granted bundles.
+- Visit index.html to see sections update based on granted bundles.
 
 Deployment (AWS CDK Java)
 Prereqs

@@ -83,7 +83,7 @@ describe("User Journeys Frontend Tests", () => {
 
   describe("Cross-Page Navigation Journey", () => {
     test("should maintain consistent header across pages", () => {
-      const pages = ["index.html", "login.html", "bundles.html", "activities.html"];
+      const pages = ["index.html", "login.html", "bundles.html"];
 
       pages.forEach((page) => {
         const htmlContent = fs.readFileSync(path.join(process.cwd(), `web/public/${page}`), "utf-8");
@@ -98,7 +98,7 @@ describe("User Journeys Frontend Tests", () => {
     });
 
     test("should maintain consistent footer across pages", () => {
-      const pages = ["index.html", "login.html", "bundles.html", "activities.html"];
+      const pages = ["index.html", "login.html", "bundles.html"];
 
       pages.forEach((page) => {
         const htmlContent = fs.readFileSync(path.join(process.cwd(), `web/public/${page}`), "utf-8");
@@ -110,7 +110,7 @@ describe("User Journeys Frontend Tests", () => {
     });
 
     test("should have view source link functionality on pages", () => {
-      const pages = ["index.html", "login.html", "bundles.html", "activities.html"];
+      const pages = ["index.html", "login.html", "bundles.html"];
 
       pages.forEach((page) => {
         const htmlContent = fs.readFileSync(path.join(process.cwd(), `web/public/${page}`), "utf-8");

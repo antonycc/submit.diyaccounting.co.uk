@@ -14,8 +14,6 @@
           <button class="hamburger-btn" onclick="toggleMenu()">☰</button>
           <div class="menu-dropdown" id="menuDropdown">
             <a href="./index.html">Home</a>
-            <a href="./activities.html">View Activities</a>
-            <a href="./bundles.html">Add Bundle</a>
             <a href="./receipts.html">Receipts</a>
           </div>
         </div>
@@ -30,11 +28,32 @@
 
     <div id="mainContent">
       <div class="form-container" style="text-align: center">
-        <h2 id="welcomeHeading">Welcome</h2>
-        <p>Choose from the available activities below to get started.</p>
-        <button type="button" class="btn" onclick="window.location.href='activities.html'">
-          View available activities
-        </button>
+        <h2>Select an activity to continue:</h2>
+
+        <div style="margin: 2em 0">
+          <button type="button" class="btn" onclick="window.location.href='submitVat.html'">
+            VAT Return Submission
+          </button>
+        </div>
+
+        <div id="activitiesByBundle" style="text-align: left; margin: 1.5em auto; max-width: 640px"></div>
+
+        <div
+          class="add-service-section"
+          style="margin: 2em 0; padding: 1.5em; background-color: #f8f9fa; border-radius: 8px; border: 1px solid #ddd"
+        >
+          <p style="margin-bottom: 1em; color: #666; font-style: italic">
+            Need more choices? Select additional bundles to expand your available activities.
+          </p>
+          <button
+            type="button"
+            class="btn"
+            onclick="window.location.href='bundles.html'"
+            style="background-color: #28a745; border-color: #28a745"
+          >
+            Add Bundle
+          </button>
+        </div>
       </div>
     </div>
 
@@ -120,6 +139,71 @@
         window.location.reload();
       }
 
+      // Check authentication status on page load
+      function checkAuthStatus() {
+        const accessToken = localStorage.getItem("cognitoAccessToken");
+        const userInfo = localStorage.getItem("userInfo");
+
+        if (accessToken && userInfo) {
+          console.log("User is authenticated");
+          updateLoginStatus();
+          renderActivitiesByBundle();
+        } else {
+          console.log("User is not authenticated");
+          updateLoginStatus();
+          renderActivitiesByBundle();
+        }
+      }
+
+      // Activities rendering based on bundles
+      function parseUserBundles() {
+        try {
+          const raw = localStorage.getItem("userBundles");
+          if (!raw) return [];
+          const arr = JSON.parse(raw);
+          if (!Array.isArray(arr)) return [];
+          return arr;
+        } catch (_e) {
+          return [];
+        }
+      }
+
+      function hasBundle(bundles, id) {
+        return (bundles || []).some((b) => typeof b === "string" && (b === id || b.startsWith(id + "|")));
+      }
+
+      function renderActivitiesByBundle() {
+        const container = document.getElementById("activitiesByBundle");
+        if (!container) return;
+        const bundles = parseUserBundles();
+
+        const sections = [];
+        // Default bundle always available
+        sections.push(`
+          <section style="margin-bottom:1em;">
+            <h3 style="margin:0 0 .5em 0;">Default bundle</h3>
+            <ul>
+              <li>VAT Obligations (Production) – open</li>
+              <li>Learning pages</li>
+            </ul>
+          </section>
+        `);
+
+        if (hasBundle(bundles, "HMRC_TEST_API")) {
+          sections.push(`
+            <section style="margin-bottom:1em;">
+              <h3 style="margin:0 0 .5em 0;">HMRC Test API bundle</h3>
+              <ul>
+                <li>Submit VAT (Sandbox API)</li>
+                <li>VAT Obligations (Sandbox API)</li>
+              </ul>
+            </section>
+          `);
+        }
+
+        container.innerHTML = sections.join("\n");
+      }
+
       // Close menu when clicking outside
       window.onclick = function (event) {
         if (!event.target.matches(".hamburger-btn")) {
@@ -130,11 +214,17 @@
         }
       };
 
+      localStorage.removeItem("currentActivity");
+      console.log("Current activity cleared");
+
+      // Initialize page
+      checkAuthStatus();
+
       // Load view source link on page load
       loadViewSourceLink();
 
       // Update login status
-      updateLoginStatus();
+      //updateLoginStatus();
     </script>
   </body>
 </html>

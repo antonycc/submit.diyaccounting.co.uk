@@ -15,7 +15,7 @@ test.describe("Navigation Browser Tests", () => {
   test.beforeAll(async () => {
     // Read the HTML files
     indexHtmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/index.html"), "utf-8");
-    activitiesHtmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/activities.html"), "utf-8");
+    activitiesHtmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/index.html"), "utf-8");
     submitVatHtmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/submitVat.html"), "utf-8");
     loginHtmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/login.html"), "utf-8");
     bundlesHtmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/bundles.html"), "utf-8");
@@ -34,7 +34,7 @@ test.describe("Navigation Browser Tests", () => {
       await expect(page.getByText("View available activities")).toBeVisible();
 
       // Mock navigation by setting activities page content when button is clicked
-      await page.route("**/activities.html", async (route) => {
+      await page.route("**/index.html", async (route) => {
         await route.fulfill({
           status: 200,
           contentType: "text/html",
@@ -143,7 +143,7 @@ test.describe("Navigation Browser Tests", () => {
       await expect(page.locator("#homePageFromMainBtn")).toBeVisible();
 
       // Mock navigation back to activities
-      await page.route("**/activities.html", async (route) => {
+      await page.route("**/index.html", async (route) => {
         await route.fulfill({
           status: 200,
           contentType: "text/html",
@@ -226,7 +226,7 @@ test.describe("Navigation Browser Tests", () => {
       await expect(page.locator(".menu-dropdown a").first()).toBeVisible();
 
       // Mock navigation to activities page
-      await page.route("**/activities.html", async (route) => {
+      await page.route("**/index.html", async (route) => {
         await route.fulfill({
           status: 200,
           contentType: "text/html",
