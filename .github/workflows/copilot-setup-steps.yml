@@ -1,3 +1,7 @@
+# .github/workflows/copilot-setup-steps.yml
+
+name: copilot-setup-steps
+
 on:
   push:
     branches:
