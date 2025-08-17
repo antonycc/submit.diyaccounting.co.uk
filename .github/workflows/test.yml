@@ -335,7 +335,7 @@ jobs:
         if: ${{ !cancelled() }}
         run: |
           mkdir -p test-server-logs/
-          cp -r submit-*.log test-server-logs/
+          cp -r target/submit-*.log test-server-logs/
 
       - name: Upload test logs
         if: ${{ !cancelled() }}

@@ -233,7 +233,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   await page.setExtraHTTPHeaders({
     "ngrok-skip-browser-warning": "any value",
   });
-  await page.screenshot({ path: `target/behaviour-test-results/behaviour-submitVat/000-start-${timestamp}.png` });
+  await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/000-start-${timestamp}.png` });
   await loggedGoto(testUrl, "Loading home page");
 
   // Home page has a welcome message and clickable login link

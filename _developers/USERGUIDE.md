@@ -24,7 +24,7 @@ The app will be served at http://127.0.0.1:3000. For developer setup, see README
 Upon navigating to the application, the user is presented with a simple, pre-populated VAT submission form.
 **Fig. 1** (see below) shows the initial state.
 
-![Fig. 1: Initial VAT Submission Form](web/public/docs/behaviour-initial_2025-07-17_20-23-31.png)
+![Fig. 1: Initial VAT Submission Form](../web/public/docs/behaviour-initial_2025-07-17_20-23-31.png)
 
 <figcaption><b>Fig. 1.</b> Initial state of the VAT submission form as rendered to the user. The form is pre-filled with example values, ready for editing.</figcaption>
 
@@ -45,7 +45,7 @@ If the input is invalid, errors are shown and submission is blocked.
 
 **Fig. 2** shows a correctly completed form:
 
-![Fig. 2: Completed VAT Form](web/public/docs/behaviour-form-filled_2025-07-17_20-23-31.png)
+![Fig. 2: Completed VAT Form](../web/public/docs/behaviour-form-filled_2025-07-17_20-23-31.png)
 
 <figcaption><b>Fig. 2.</b> The VAT submission form after user has entered all required fields. Form validation is enforced before submission.</figcaption>
 
@@ -61,7 +61,7 @@ On clicking **Submit VAT Return**:
 
 **Fig. 3** shows the application state after the OAuth redirect:
 
-![Fig. 3: After OAuth Callback](web/public/docs/behaviour-after-oauth_2025-07-17_20-23-31.png)
+![Fig. 3: After OAuth Callback](../web/public/docs/behaviour-after-oauth_2025-07-17_20-23-31.png)
 
 <figcaption><b>Fig. 3.</b> After OAuth callback, the system exchanges the code for an access token and proceeds to submit the VAT return to HMRC. A loading spinner is shown during processing.</figcaption>
 
@@ -76,7 +76,7 @@ On successful submission:
 
 **Fig. 4** shows the receipt view:
 
-![Fig. 4: Submission Receipt](web/public/docs/behaviour-receipt_2025-07-17_20-23-31.png)
+![Fig. 4: Submission Receipt](../web/public/docs/behaviour-receipt_2025-07-17_20-23-31.png)
 
 <figcaption><b>Fig. 4.</b> Confirmation receipt after successful VAT submission, showing all relevant HMRC return details and a processing timestamp.</figcaption>
 
@@ -92,7 +92,7 @@ On successful submission:
 
 ## Technical Notes
 
-* All client/server communication is via a REST API (see [README.md](README.md) for endpoints).
+* All client/server communication is via a REST API (see [README.md](../README.md) for endpoints).
 * Each submission uses a one-time OAuth flow and does not persist any tokens.
 * Receipts are logged securely via the backend (typically to AWS S3 or compatible storage).
 
@@ -103,13 +103,13 @@ On successful submission:
 
 ## More Info
 
-See [README.md](README.md) for architecture, API details, and licensing.
+See [README.md](../README.md) for architecture, API details, and licensing.
 
 ---
 
 ## License
 
-This project is licensed under the GNU GPL v3. See [LICENSE](LICENSE).
+This project is licensed under the GNU GPL v3. See [LICENSE](../LICENSE).
 
 ```
 **Fig. 1–4** in this document are produced from actual system tests and reflect real application behaviour in both user-facing and test automation contexts.
