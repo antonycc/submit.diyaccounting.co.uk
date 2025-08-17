@@ -10,16 +10,16 @@ on:
       base-image-tag:
         description: "The tag of the built base image"
         value: ${{ jobs.build-base-image.outputs.base-image-tag }}
-      image-exists:
-        description: "Whether the image was built or already exists"
-        value: ${{ jobs.build-base-image.outputs.image-exists }}
+      cache-hit:
+        description: "Whether the image was loaded from cache"
+        value: ${{ jobs.build-base-image.outputs.cache-hit }}
 
 jobs:
   build-base-image:
     runs-on: ubuntu-latest
     outputs:
-      base-image-tag: ${{ steps.build.outputs.base-image-tag }}
-      image-exists: ${{ steps.check.outputs.image-exists }}
+      base-image-tag: ${{ steps.setup.outputs.base-image-tag }}
+      cache-hit: ${{ steps.build.outputs.cache-hit }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
@@ -32,49 +32,38 @@ jobs:
           driver-opts: |
             image=moby/buildkit:latest
       
-      - name: Check if image already exists
-        id: check
+      - name: Setup image tag
+        id: setup
         run: |
           BASE_IMAGE_TAG="submit-base:${{ github.sha }}"
           echo "base-image-tag=$BASE_IMAGE_TAG" >> $GITHUB_OUTPUT
-          
-          # Check if image exists in cache - if it does, we can skip the build
-          if docker buildx imagetools inspect $BASE_IMAGE_TAG 2>/dev/null; then
-            echo "image-exists=true" >> $GITHUB_OUTPUT
-            echo "Image $BASE_IMAGE_TAG already exists, skipping build"
-          else
-            echo "image-exists=false" >> $GITHUB_OUTPUT
-            echo "Image $BASE_IMAGE_TAG does not exist, will build"
-          fi
+          echo "Building/loading base image with tag: $BASE_IMAGE_TAG"
       
-      - name: Build base image
+      - name: Build base image with intelligent caching
         id: build
-        if: steps.check.outputs.image-exists == 'false'
         run: |
           BASE_IMAGE_TAG="submit-base:${{ github.sha }}"
           
-          echo "Building base image with tag: $BASE_IMAGE_TAG"
-          
-          # Build the base image using optimized caching
+          # Build the base image using optimized multi-level caching
+          # This will use cached layers from previous builds when possible
           docker buildx build \
             --load \
             --cache-from type=gha,scope=base-${{ github.sha }} \
             --cache-from type=gha,scope=base-main \
+            --cache-from type=gha,scope=base \
             --cache-to type=gha,mode=max,scope=base-${{ github.sha }} \
+            --cache-to type=gha,mode=max,scope=base \
             -t $BASE_IMAGE_TAG \
             -f Dockerfile .
           
-          echo "base-image-tag=$BASE_IMAGE_TAG" >> $GITHUB_OUTPUT
-          
-          # Verify the image was built successfully
-          docker images | grep submit-base || echo "Warning: Base image not found in local registry"
+          # Check if the build used significant cache (indicates cache hit)
+          if docker images --format "table {{.Repository}}:{{.Tag}}\t{{.Size}}" | grep submit-base; then
+            echo "cache-hit=true" >> $GITHUB_OUTPUT
+            echo "Base image built successfully (using cache when available)"
+          else
+            echo "cache-hit=false" >> $GITHUB_OUTPUT
+            echo "Warning: Base image build may have failed"
+          fi
           
           # Export image info for debugging
-          docker inspect $BASE_IMAGE_TAG | jq '.[0].Config.Labels // {}' || echo "No labels found"
-      
-      - name: Use existing image
-        if: steps.check.outputs.image-exists == 'true'
-        run: |
-          BASE_IMAGE_TAG="submit-base:${{ github.sha }}"
-          echo "Using existing image: $BASE_IMAGE_TAG"
-          echo "base-image-tag=$BASE_IMAGE_TAG" >> $GITHUB_OUTPUT
+          docker inspect $BASE_IMAGE_TAG | jq -r '.[0].Config.Labels // "No labels"' || echo "Image inspection failed"

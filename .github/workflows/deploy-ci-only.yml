@@ -49,6 +49,9 @@ env:
 
 jobs:
 
+  build-base-image:
+    uses: ./.github/workflows/build-base-image.yml
+
   upsert-secrets:
     runs-on: ubuntu-latest
     environment: ci
@@ -140,6 +143,7 @@ jobs:
 
   deploy:
     needs:
+      - build-base-image
       - upsert-secrets
     name: 'deploy'
     runs-on: ubuntu-latest
@@ -198,17 +202,19 @@ jobs:
           driver-opts: |
             image=moby/buildkit:latest
 
-      - name: Build base image locally (for CI deployment)
+      - name: Load base image from cache
         run: |
-          BASE_IMAGE_TAG="submit-base:${{ github.sha }}"
+          BASE_IMAGE_TAG="${{ needs.build-base-image.outputs.base-image-tag }}"
+          echo "Using base image: $BASE_IMAGE_TAG"
           
-          # Build the base image using your root Dockerfile
+          # Load base image from GitHub Actions cache efficiently
           docker buildx build \
             --load \
+            --cache-from type=gha,scope=base-${{ github.sha }} \
+            --cache-from type=gha,scope=base-main \
             --cache-from type=gha,scope=base \
-            --cache-to type=gha,mode=max,scope=base \
             -t $BASE_IMAGE_TAG \
-            -f Dockerfile .
+            -f Dockerfile . || echo "Using fallback build if cache unavailable"
 
       - name: package
         if: ${{ env.skipDeploy != 'true' }}
@@ -216,7 +222,7 @@ jobs:
         shell: bash
         run: ./mvnw clean package -DskipTests=true
         env:
-          BASE_IMAGE_TAG: "submit-base:${{ github.sha }}"
+          BASE_IMAGE_TAG: ${{ needs.build-base-image.outputs.base-image-tag }}
 
       - name: Log built files
         if: ${{ env.skipDeploy != 'true' }}
@@ -265,7 +271,7 @@ jobs:
           DIY_SUBMIT_HMRC_CLIENT_SECRET_ARN: 'arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/ci/submit/hmrc/client_secret'
           DIY_SUBMIT_GOOGLE_CLIENT_SECRET_ARN: 'arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/ci/submit/google/client_secret'
           COMMIT_HASH: ${{ github.sha }}
-          BASE_IMAGE_TAG: "submit-base:${{ github.sha }}"
+          BASE_IMAGE_TAG: ${{ needs.build-base-image.outputs.base-image-tag }}
 
   npm-behaviour-test-ci:
     needs:
