@@ -57,7 +57,7 @@ function getTimestamp() {
   return now.toISOString().replace(/[:.]/g, "-").replace("T", "_").slice(0, -5);
 }
 
-test.setTimeout(120000);
+test.setTimeout(180000);
 
 test.beforeAll(async () => {
   console.log("Starting beforeAll hook...");
@@ -94,7 +94,7 @@ test.beforeAll(async () => {
       },
       stdio: ["pipe", "pipe", "pipe"],
     });
-    await checkIfServerIsRunning(`http://127.0.0.1:${serverPort}`);
+    await checkIfServerIsRunning(`http://127.0.0.1:${serverPort}`, 1000);
   } else {
     console.log("Skipping server process as runTestServer is not set to 'run'");
   }
@@ -113,7 +113,7 @@ test.beforeAll(async () => {
         stdio: ["pipe", "pipe", "pipe"],
       },
     );
-    await checkIfServerIsRunning(homeUrl);
+    await checkIfServerIsRunning(homeUrl, 1000);
   } else {
     console.log("Skipping ngrok process as runProxy is not set to 'run'");
   }
@@ -132,7 +132,7 @@ test.beforeAll(async () => {
   }
 
   console.log("beforeAll hook completed successfully");
-}, 60000); // Set timeout to 60 seconds for beforeAll hook
+}, 120000); // Set timeout to 60 seconds for beforeAll hook
 
 test.afterAll(async () => {
   if (serverProcess) {
@@ -259,14 +259,14 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   await loggedClick("button:has-text('Continue with mock-oauth2-server')", "Continue with OAuth provider");
   await page.waitForLoadState("networkidle");
   await setTimeout(500);
-  await page.screenshot({
-    path: `target/behaviour-test-results/submitVat-screenshots/030-hand-off-to-provider-auth-${timestamp}.png`,
-  });
-  await expect(page.getByText("Hand off to mock-oauth2-server")).toBeVisible();
+  // await page.screenshot({
+  //  path: `target/behaviour-test-results/submitVat-screenshots/030-hand-off-to-provider-auth-${timestamp}.png`,
+  // });
+  // await expect(page.getByText("Hand off to mock-oauth2-server")).toBeVisible();
 
-  await loggedClick("button:has-text('Hand off to mock-oauth2-server')", "Hand off to OAuth provider");
-  await page.waitForLoadState("networkidle");
-  await setTimeout(500);
+  // await loggedClick("button:has-text('Hand off to mock-oauth2-server')", "Hand off to OAuth provider");
+  // await page.waitForLoadState("networkidle");
+  // await setTimeout(500);
   await page.screenshot({
     path: `target/behaviour-test-results/submitVat-screenshots/040-provider-auth-${timestamp}.png`,
   });

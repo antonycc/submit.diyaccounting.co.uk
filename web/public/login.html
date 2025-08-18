@@ -27,6 +27,9 @@
     </header>
 
     <div id="mainContent">
+      <!-- Status messages -->
+      <div id="statusMessagesContainer"></div>
+
       <div class="form-container" style="text-align: center">
         <h2>Login</h2>
         <p>Choose your authentication provider to continue:</p>
@@ -42,7 +45,7 @@
 
           <!-- mock-oauth2-server Auth Provider (Enabled) -->
           <div class="auth-provider" id="mockOAuth2Provider">
-            <button type="button" class="btn auth-btn" onclick="loginWithMockOAuth2()">
+            <button type="button" class="btn auth-btn" id="loginWithMockOAuth2">
               <img
                 src="https://avatars.githubusercontent.com/u/11848947?s=48&v=4"
                 alt="navikt/mock-oauth2-server"
@@ -135,7 +138,7 @@
       }
 
       // Login with Mock OAuth2 Server via Cognito
-      function loginWithMockOAuth2() {
+      async function loginWithMockOAuth2() {
         console.log("Initiating navikt/mock-oauth2-server login via Cognito");
 
         console.log("Clear stored tokens and user info");
@@ -149,17 +152,12 @@
         const state = Math.random().toString(36).substring(2, 15);
         localStorage.setItem("authState", state);
 
-        // Build Cognito OAuth URL
-        const authUrl =
-          `./oauth2-authorize.html?` +
-          `response_type=code&` +
-          `client_id=test-client&` +
-          `redirect_uri=${encodeURIComponent("loginWithGoogleCallback.html")}&` +
-          `scope=${encodeURIComponent("test")}&` +
-          `state=${state}&` +
-          `identity_provider=MockOAuth2Server`;
+        // Get OAuth URL
+        const authResponse = await getAuthUrl(state, "mock");
+        const authUrl = authResponse.authUrl;
 
-        console.log("Redirecting to Cognito OAuth URL");
+        showStatus(`Handing off to ${authUrl}`, "info");
+        console.log("Redirecting to navikt/mock-oauth2-server");
         window.location.href = authUrl;
       }
 
@@ -225,9 +223,14 @@
 
       // DOM elements
       const loginWithGoogleButton = document.getElementById("loginWithGoogle");
+      const loginWithMockOAuth2Button = document.getElementById("loginWithMockOAuth2");
 
       // Event listeners
       loginWithGoogleButton.onclick = loginWithGoogle;
+      loginWithMockOAuth2Button.addEventListener("click", async (event) => {
+        event.preventDefault(); // Prevent default button action
+        await loginWithMockOAuth2();
+      });
 
       // Close menu when clicking outside
       window.onclick = function (event) {
