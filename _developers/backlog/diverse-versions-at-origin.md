@@ -106,6 +106,56 @@ Outcome:
 
 ---
 
+Weighted CNAME record update (pipeline step)
+
+After deploying the commit stack, the CI/CD pipeline should update the
+weighted CNAME record. Here is an example using the AWS CLI:
+
+```
+# For CI environment (point ci.submit.diyaccounting.co.uk to the commit domain)
+aws route53 change-resource-record-sets \
+  --hosted-zone-id <HOSTED_ZONE_ID> \
+  --change-batch '{
+    "Comment": "CI switch to new commit", 
+    "Changes": [
+      {"Action": "UPSERT", "ResourceRecordSet": {
+        "Name": "ci.submit.diyaccounting.co.uk",
+        "Type": "CNAME",
+        "TTL": 60,
+        "ResourceRecords": [ {"Value": "ci-d56db64.submit.diyaccounting.co.uk"} ]
+      }}
+    ]
+  }'
+
+# For prod environment (canary deployment)
+aws route53 change-resource-record-sets \
+  --hosted-zone-id <HOSTED_ZONE_ID> \
+  --change-batch '{
+    "Comment": "Prod add new commit", 
+    "Changes": [
+      {"Action": "UPSERT", "ResourceRecordSet": {
+        "Name": "submit.diyaccounting.co.uk",
+        "Type": "CNAME",
+        "SetIdentifier": "prod-d56db64", 
+        "Weight": 10, 
+        "TTL": 60,
+        "ResourceRecords": [ {"Value": "prod-d56db64.submit.diyaccounting.co.uk"} ]
+      }},
+      {"Action": "UPSERT", "ResourceRecordSet": {
+        "Name": "submit.diyaccounting.co.uk",
+        "Type": "CNAME",
+        "SetIdentifier": "prod-old", 
+        "Weight": 90, 
+        "TTL": 60,
+        "ResourceRecords": [ {"Value": "prod-OLDHASH.submit.diyaccounting.co.uk"} ]
+      }}
+    ]
+  }'
+
+```
+
+---
+
 ## Step-by-step plan
 
 1) **Edge stack**
