@@ -3,12 +3,15 @@
   // Load and display view source link
   async function loadViewSourceLink() {
     try {
-      const response = await fetch("source.txt");
+      //const response = await fetch("submit.version");
+      const versionUrl = new URL("../submit.version", import.meta.url);
+      const response = await fetch(versionUrl);
       if (response.ok) {
-        const commitHash = (await response.text()).trim();
+        const text = await response.text();
+        const commitHash = text.trim();
         if (commitHash) {
           const currentPage = window.location.pathname.split("/").pop() || "index.html";
-          const githubUrl = `https://github.com/antonycc/submit.diyaccounting.co.uk/blob/${commitHash}/web/public/${currentPage}`;
+          const githubUrl = `https://github.com/antonycc/submit.diyaccounting.co.uk/blob/${commitHash}/web/public/${window.location.pathname}`;
           const viewSourceLink = document.getElementById("viewSourceLink");
           if (viewSourceLink) {
             viewSourceLink.href = githubUrl;
@@ -19,7 +22,7 @@
         }
       }
     } catch (error) {
-      console.log("Could not load source.txt:", error);
+      console.log("Could not load submit.version:", error);
     }
   }
 

@@ -1,0 +1,82 @@
+<!-- errors/404-error-origin.html -->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>DIY Accounting Submit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="../submit.css" />
+  </head>
+  <body>
+
+    <header>
+      <div class="header-nav">
+        <div class="hamburger-menu">
+          <button class="hamburger-btn" onclick="toggleMenu()">☰</button>
+          <div class="menu-dropdown" id="menuDropdown">
+            <a href="../index.html">Home</a>
+            <a href="../account/bundles.html">Add Bundle</a>
+          </div>
+        </div>
+        <div class="auth-section">
+          <span class="login-status">Not logged in</span>
+          <a href="../auth/login.html" class="login-link">Log in</a>
+        </div>
+      </div>
+      <h1>DIY Accounting Submit - 404 Not Found (Origin)</h1>
+      <p class="subtitle">The requested resource could not be found on the server.</p>
+    </header>
+
+    <div id="mainContent">
+
+      <div id="statusMessagesContainer"></div>
+
+      <div class="form-container" style="text-align: center">
+        <div class="navigation-container" style="text-align: center; margin-top: 2em">
+          <button
+            type="button"
+            class="btn"
+            id="navigationBtn"
+            onclick="window.location.href='index.html'"
+          >
+            Return home
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+    <footer>
+      <div class="footer-content">
+        <div class="footer-left">
+          <a href="#" id="viewSourceLink" style="display: none">view source</a>
+        </div>
+        <div class="footer-center">
+          <p>&copy; 2025 DIY Accounting Limited</p>
+        </div>
+        <div class="footer-right" id="localstorageContainer">
+        </div>
+      </div>
+    </footer>
+
+    <script src="../submit.js"></script>
+    <script src="../widgets/hamburger-menu.js"></script>
+    <script src="../widgets/auth-status.js"></script>
+    <script type="module" src="../widgets/view-source-link.js"></script>
+    <script src="../widgets/localstorage-viewer.js"></script>
+    <script>
+      // Close menu when clicking outside
+      window.onclick = function (event) {
+        if (!event.target.matches(".hamburger-btn")) {
+          const dropdown = document.getElementById("menuDropdown");
+          if (dropdown.classList.contains("show")) {
+            dropdown.classList.remove("show");
+          }
+        }
+      };
+
+      // Initialize page
+      checkAuthStatus();
+    </script>
+  </body>
+</html>

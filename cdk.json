@@ -28,7 +28,7 @@
     "logCognitoEventHandlerSource": "target/web-0.0.2-4.jar",
     "docRootPath": "web/public",
     "defaultDocumentAtOrigin": "index.html",
-    "error404NotFoundAtDistribution": "404-error-distribution.html",
+    "error404NotFoundAtDistribution": "errors/404-error-distribution.html",
     "skipLambdaUrlOrigins": "false",
     "hmrcClientId": "",
     "hmrcClientSecretArn": "to be replaced with lookup of environment variable DIY_SUBMIT_HMRC_CLIENT_SECRET_ARN",

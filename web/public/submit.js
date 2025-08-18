@@ -2,6 +2,20 @@
 /* global RTCPeerConnection */
 // Generic utility functions for submit application
 
+// Check authentication status on page load
+function checkAuthStatus() {
+  const accessToken = localStorage.getItem("cognitoAccessToken");
+  const userInfo = localStorage.getItem("userInfo");
+
+  if (accessToken && userInfo) {
+    console.log("User is authenticated");
+    updateLoginStatus();
+  } else {
+    console.log("User is not authenticated");
+    updateLoginStatus();
+  }
+}
+
 // Status message handling
 function showStatus(message, type = "info") {
   console.log("Status message:", message, "Type:", type);

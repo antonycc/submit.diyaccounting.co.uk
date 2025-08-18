@@ -5,9 +5,10 @@
     <meta charset="UTF-8" />
     <title>DIY Accounting Submit - Login with Google callback</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="stylesheet" href="submit.css" />
+    <link rel="stylesheet" href="../submit.css" />
   </head>
   <body>
+
     <header>
       <div class="header-nav"></div>
       <h1>DIY Accounting Submit - Login with Google callback</h1>
@@ -15,16 +16,15 @@
     </header>
 
     <div id="mainContent">
-      <!-- Status messages -->
+
       <div id="statusMessagesContainer"></div>
 
-      <!-- Loading spinner -->
       <div id="loadingSpinner" class="spinner" style="display: none"></div>
 
       <div class="form-container" style="text-align: center">
         <h2 id="welcomeHeading">Welcome</h2>
         <p>Return home.</p>
-        <button type="button" class="btn" onclick="window.location.href='index.html'">Home</button>
+        <button type="button" class="btn" onclick="window.location.href='../index.html'">Home</button>
       </div>
     </div>
 
@@ -36,7 +36,9 @@
       </div>
     </footer>
 
-    <script src="./status-messages.js"></script>
+    <script src="../submit.js"></script>
+    <script src="../widgets/status-messages.js"></script>
+    <script src="../widgets/loading-spinner.js"></script>
     <script>
       // Check for authentication callback
       function checkAuthCallback() {

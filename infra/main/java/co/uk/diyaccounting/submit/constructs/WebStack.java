@@ -1330,17 +1330,17 @@ public class WebStack extends Stack {
         this.distributionUrl = "https://%s/".formatted(this.distribution.getDomainName());
         logger.info("Distribution URL: %s".formatted(distributionUrl));
 
-        // Generate source.txt file with commit hash if provided
+        // Generate submit.version file with commit hash if provided
         if (builder.commitHash != null && !builder.commitHash.isBlank()) {
             try {
-                java.nio.file.Path sourceFilePath = java.nio.file.Paths.get(builder.docRootPath, "source.txt");
+                java.nio.file.Path sourceFilePath = java.nio.file.Paths.get(builder.docRootPath, "submit.version");
                 java.nio.file.Files.writeString(sourceFilePath, builder.commitHash.trim());
-                logger.info("Created source.txt file with commit hash: %s".formatted(builder.commitHash));
+                logger.info("Created submit.version file with commit hash: %s".formatted(builder.commitHash));
             } catch (Exception e) {
-                logger.warn("Failed to create source.txt file: %s".formatted(e.getMessage()));
+                logger.warn("Failed to create submit.version file: %s".formatted(e.getMessage()));
             }
         } else {
-            logger.info("No commit hash provided, skipping source.txt generation");
+            logger.info("No commit hash provided, skipping submit.version generation");
         }
 
         // Deploy the web website files to the web website bucket and invalidate distribution

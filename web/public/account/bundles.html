@@ -1,26 +1,26 @@
-<!-- bundles.html -->
+<!-- auth/bundles.html -->
 <!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <title>DIY Accounting Submit - Add Bundle</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="stylesheet" href="submit.css" />
-    <script src="/config.js"></script>
+    <link rel="stylesheet" href="../submit.css" />
   </head>
   <body>
+
     <header>
       <div class="header-nav">
         <div class="hamburger-menu">
           <button class="hamburger-btn" onclick="toggleMenu()">☰</button>
           <div class="menu-dropdown" id="menuDropdown">
-            <a href="index.html">Home</a>
-            <a href="receipts.html">Receipts</a>
+            <a href="../index.html">Home</a>
+            <a href="../account/receipts.html">Receipts</a>
           </div>
         </div>
         <div class="auth-section">
           <span class="login-status">Not logged in</span>
-          <a href="login.html" class="login-link">Log in</a>
+          <a href="../auth/login.html" class="login-link">Log in</a>
         </div>
       </div>
       <h1>DIY Accounting Submit</h1>
@@ -60,13 +60,16 @@
         <div class="footer-center">
           <p>&copy; 2025 DIY Accounting Limited</p>
         </div>
+        <div class="footer-right" id="localstorageContainer">
+        </div>
       </div>
     </footer>
 
-    <script src="./localstorage-viewer.js"></script>
-    <script src="./hamburger-menu.js"></script>
-    <script src="./view-source-link.js"></script>
-    <script src="./auth-status.js"></script>
+    <script src="../submit.js"></script>
+    <script src="../widgets/hamburger-menu.js"></script>
+    <script src="../widgets/auth-status.js"></script>
+    <script type="module" src="../widgets/view-source-link.js"></script>
+    <script src="../widgets/localstorage-viewer.js"></script>
     <script>
       // Request a bundle
       async function requestBundle(bundleId) {
@@ -194,126 +197,118 @@
         }
       }
 
-      // Check authentication status on page load
-      function checkAuthStatus() {
+      function initializeBundles() {
         const accessToken = localStorage.getItem("cognitoAccessToken");
         const userInfo = localStorage.getItem("userInfo");
 
         if (accessToken && userInfo) {
           console.log("User is authenticated");
-          updateLoginStatus();
           updateBundleStatus();
         } else {
           console.log("User is not authenticated");
-          updateLoginStatus();
         }
       }
+
+      // Catalog-driven Bundles UI (optional, gated by CATALOG_DRIVEN_UI)
+      (async function () {
+        const main = document.getElementById("mainContent");
+        if (!main) return;
+
+        const idToken = localStorage.getItem("cognitoIdToken");
+        const headers = idToken ? { Authorization: `Bearer ${idToken}` } : {};
+        const res = await fetch("/api/catalog", { headers });
+        if (!res.ok) throw new Error("catalog fetch failed");
+        const catalog = await res.json();
+
+        function bundleCard(b) {
+          const q = b.qualifiers || {};
+          const qFields = [];
+          if (Object.prototype.hasOwnProperty.call(q, "requiresTransactionId") && q.requiresTransactionId) {
+            qFields.push(`<label>Transaction ID <input name="transactionId" /></label>`);
+          }
+          if (Object.prototype.hasOwnProperty.call(q, "subscriptionTier")) {
+            qFields.push(
+              `<label>Subscription Tier <input name="subscriptionTier" value="${q.subscriptionTier}" /></label>`,
+            );
+          }
+          const info = [
+            `allocation: ${b.allocation}`,
+            b.auth ? `auth: ${b.auth}` : "",
+            b.cap != null ? `cap: ${b.cap}` : "",
+            b.timeout ? `timeout: ${b.timeout}` : "",
+          ]
+            .filter(Boolean)
+            .join(" • ");
+
+          return `
+            <div class="service-item" style="text-align:left">
+              <h3>${b.name || b.id}</h3>
+              <p class="service-description">${info}</p>
+              ${qFields.length ? `<div class="qualifiers" style="display:flex; gap:.5em; flex-wrap:wrap">${qFields.join(" ")}</div>` : ""}
+              <button type="button" class="btn service-btn" data-bundle-id="${b.id}">Request ${b.id}</button>
+              <div class="status" style="font-size:.9em; color:#666; margin-top:.25em"></div>
+            </div>`;
+        }
+
+        const cards = (catalog.bundles || []).map(bundleCard).join("\n");
+        main.innerHTML = `
+          <div class="form-container" style="text-align:center">
+            <h2>Add Bundle</h2>
+            <p>Rendered from product catalog</p>
+            <div class="bundles-list">${cards}</div>
+            <div style="margin-top:2em">
+              <button type="button" class="btn" onclick="window.location.href='../index.html'" style="background-color:#6c757d;border-color:#6c757d">Back to Home</button>
+            </div>
+          </div>`;
+
+        // Wire buttons
+        for (const btn of document.querySelectorAll("button[data-bundle-id]")) {
+          btn.addEventListener("click", async (e) => {
+            const card = e.target.closest(".service-item");
+            const statusEl = card.querySelector(".status");
+            const bundleId = e.target.getAttribute("data-bundle-id");
+            const qualifiers = {};
+            const tx = card.querySelector('input[name="transactionId"]');
+            if (tx && tx.value) qualifiers.transactionId = tx.value;
+            const tier = card.querySelector('input[name="subscriptionTier"]');
+            if (tier && tier.value) qualifiers.subscriptionTier = tier.value;
+            try {
+              const r = await fetch("/api/request-bundle", {
+                method: "POST",
+                headers: { "Content-Type": "application/json", ...(headers || {}) },
+                body: JSON.stringify({ bundleId, qualifiers }),
+              });
+              const body = await r.json().catch(() => ({}));
+              if (r.ok) {
+                statusEl.textContent = `Granted: ${body.status || "ok"} ${body.expiry ? `(expires ${body.expiry})` : ""}`;
+                statusEl.style.color = "#2c7a7b";
+              } else {
+                statusEl.textContent = `Error: ${body.error || r.status}`;
+                statusEl.style.color = "#b00020";
+              }
+            } catch (err) {
+              statusEl.textContent = `Error: ${err?.message || err}`;
+              statusEl.style.color = "#b00020";
+            }
+          });
+        }
+
+        // Reflect pre-existing selections after rendering
+        if (typeof updateBundleStatus === "function") {
+          try {
+            await updateBundleStatus();
+          } catch {
+            /* ignore */
+          }
+        }
+      })();
 
       localStorage.removeItem("currentActivity");
       console.log("Current activity cleared");
 
       // Initialize page
       checkAuthStatus();
-    </script>
-    <script>
-      // Catalog-driven Bundles UI (optional, gated by CATALOG_DRIVEN_UI)
-      (async function () {
-        try {
-          if (!window.CATALOG_DRIVEN_UI) return;
-          const main = document.getElementById("mainContent");
-          if (!main) return;
-
-          const idToken = localStorage.getItem("cognitoIdToken");
-          const headers = idToken ? { Authorization: `Bearer ${idToken}` } : {};
-          const res = await fetch("/api/catalog", { headers });
-          if (!res.ok) throw new Error("catalog fetch failed");
-          const catalog = await res.json();
-
-          function bundleCard(b) {
-            const q = b.qualifiers || {};
-            const qFields = [];
-            if (Object.prototype.hasOwnProperty.call(q, "requiresTransactionId") && q.requiresTransactionId) {
-              qFields.push(`<label>Transaction ID <input name="transactionId" /></label>`);
-            }
-            if (Object.prototype.hasOwnProperty.call(q, "subscriptionTier")) {
-              qFields.push(
-                `<label>Subscription Tier <input name="subscriptionTier" value="${q.subscriptionTier}" /></label>`,
-              );
-            }
-            const info = [
-              `allocation: ${b.allocation}`,
-              b.auth ? `auth: ${b.auth}` : "",
-              b.cap != null ? `cap: ${b.cap}` : "",
-              b.timeout ? `timeout: ${b.timeout}` : "",
-            ]
-              .filter(Boolean)
-              .join(" • ");
-
-            return `
-              <div class="service-item" style="text-align:left">
-                <h3>${b.name || b.id}</h3>
-                <p class="service-description">${info}</p>
-                ${qFields.length ? `<div class="qualifiers" style="display:flex; gap:.5em; flex-wrap:wrap">${qFields.join(" ")}</div>` : ""}
-                <button type="button" class="btn service-btn" data-bundle-id="${b.id}">Request ${b.id}</button>
-                <div class="status" style="font-size:.9em; color:#666; margin-top:.25em"></div>
-              </div>`;
-          }
-
-          const cards = (catalog.bundles || []).map(bundleCard).join("\n");
-          main.innerHTML = `
-            <div class="form-container" style="text-align:center">
-              <h2>Add Bundle</h2>
-              <p>Rendered from product catalog</p>
-              <div class="bundles-list">${cards}</div>
-              <div style="margin-top:2em">
-                <button type="button" class="btn" onclick="window.location.href='index.html'" style="background-color:#6c757d;border-color:#6c757d">Back to Home</button>
-              </div>
-            </div>`;
-
-          // Wire buttons
-          for (const btn of document.querySelectorAll("button[data-bundle-id]")) {
-            btn.addEventListener("click", async (e) => {
-              const card = e.target.closest(".service-item");
-              const statusEl = card.querySelector(".status");
-              const bundleId = e.target.getAttribute("data-bundle-id");
-              const qualifiers = {};
-              const tx = card.querySelector('input[name="transactionId"]');
-              if (tx && tx.value) qualifiers.transactionId = tx.value;
-              const tier = card.querySelector('input[name="subscriptionTier"]');
-              if (tier && tier.value) qualifiers.subscriptionTier = tier.value;
-              try {
-                const r = await fetch("/api/request-bundle", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json", ...(headers || {}) },
-                  body: JSON.stringify({ bundleId, qualifiers }),
-                });
-                const body = await r.json().catch(() => ({}));
-                if (r.ok) {
-                  statusEl.textContent = `Granted: ${body.status || "ok"} ${body.expiry ? `(expires ${body.expiry})` : ""}`;
-                  statusEl.style.color = "#2c7a7b";
-                } else {
-                  statusEl.textContent = `Error: ${body.error || r.status}`;
-                  statusEl.style.color = "#b00020";
-                }
-              } catch (err) {
-                statusEl.textContent = `Error: ${err?.message || err}`;
-                statusEl.style.color = "#b00020";
-              }
-            });
-          }
-
-          // Reflect pre-existing selections after rendering
-          if (typeof updateBundleStatus === "function") {
-            try {
-              await updateBundleStatus();
-            } catch {
-              /* ignore */
-            }
-          }
-        } catch (e) {
-          console.log("CATALOG_DRIVEN_UI bundles rendering failed:", e);
-        }
-      })();
+      initializeBundles();
     </script>
   </body>
 </html>

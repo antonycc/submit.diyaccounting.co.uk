@@ -5,9 +5,10 @@
     <meta charset="UTF-8" />
     <title>DIY Accounting Submit</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="stylesheet" href="submit.css" />
+    <link rel="stylesheet" href="../submit.css" />
   </head>
   <body>
+
     <header>
       <div class="header-nav"></div>
       <h1>DIY Accounting Submit</h1>
@@ -18,7 +19,6 @@
 
       <div id="statusMessagesContainer"></div>
 
-      <!-- Loading spinner -->
       <div id="loadingSpinner" class="spinner" style="display: none"></div>
 
       <!-- VAT Submission Form -->
@@ -97,7 +97,7 @@
 
       <!-- Navigation Button -->
       <div class="navigation-container" style="text-align: center; margin-top: 2em">
-        <button type="button" class="btn" id="homePageFromMainBtn" onclick="window.location.href='index.html'">
+        <button type="button" class="btn" id="homePageFromMainBtn" onclick="window.location.href='../index.html'">
           Return to the home page
         </button>
       </div>
@@ -105,24 +105,15 @@
 
     <footer>
       <div class="footer-content">
-        <div class="footer-left">
-          <a href="#" id="viewSourceLink" target="_blank" style="display: none">
-            <img src="./icons/source-icon.png" alt="Source Icon" style="width: 16px; vertical-align: middle;" />
-            View Source
-          </a>
-        </div>
         <div class="footer-center">
           <p>&copy; 2025 DIY Accounting Limited</p>
         </div>
       </div>
     </footer>
 
-    <script src="./submit.js"></script>
-    <script src="./status-messages.js"></script>
-    <script src="./loading-spinner.js"></script>
-    <script src="./view-source-link.js"></script>
+    <script src="../submit.js"></script>
+    <script src="../widgets/status-messages.js"></script>
     <script>
-      // VAT-specific functions
 
       // Form submission handler
       async function handleFormSubmission(event) {
