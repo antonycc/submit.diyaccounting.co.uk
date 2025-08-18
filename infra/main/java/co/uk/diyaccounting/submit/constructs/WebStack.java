@@ -1260,6 +1260,7 @@ public class WebStack extends Stack {
                 .removalPolicy(s3RetainReceiptsBucket ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY)
                 .build();
         this.receiptsBucket.grantWrite(this.logReceiptLambda);
+        this.receiptsBucket.grantRead(this.myReceiptsLambda);
 
         // Add S3 event selector to the CloudTrail for receipts bucket
         // TODO Move to the LogForwardingBucket
