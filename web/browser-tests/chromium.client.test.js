@@ -17,11 +17,17 @@ function getTimestamp() {
 test.describe("Client System Test - VAT Flow in Browser", () => {
   let htmlContent;
   let submitJsContent;
+  let statusMessagesJsContent;
+  let loadingSpinnerJsContent;
+  let viewSourceLinkJsContent;
 
   test.beforeAll(async () => {
     // Read the HTML file
     htmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/submitVat.html"), "utf-8");
     submitJsContent = fs.readFileSync(path.join(process.cwd(), "web/public/submit.js"), "utf-8");
+    statusMessagesJsContent = fs.readFileSync(path.join(process.cwd(), "web/public/status-messages.js"), "utf-8");
+    loadingSpinnerJsContent = fs.readFileSync(path.join(process.cwd(), "web/public/loading-spinner.js"), "utf-8");
+    viewSourceLinkJsContent = fs.readFileSync(path.join(process.cwd(), "web/public/view-source-link.js"), "utf-8");
   });
 
   test.beforeEach(async ({ page }) => {
@@ -87,7 +93,10 @@ test.describe("Client System Test - VAT Flow in Browser", () => {
       waitUntil: "domcontentloaded",
     });
 
-    // Inject submit.js content into the page
+    // Inject all script dependencies into the page
+    await page.addScriptTag({ content: statusMessagesJsContent });
+    await page.addScriptTag({ content: loadingSpinnerJsContent });
+    await page.addScriptTag({ content: viewSourceLinkJsContent });
     await page.addScriptTag({ content: submitJsContent });
   });
 

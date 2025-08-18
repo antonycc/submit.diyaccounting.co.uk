@@ -118,6 +118,9 @@
     </footer>
 
     <script src="./submit.js"></script>
+    <script src="./status-messages.js"></script>
+    <script src="./loading-spinner.js"></script>
+    <script src="./view-source-link.js"></script>
     <script>
       // VAT-specific functions
 
@@ -409,27 +412,6 @@
       });
 
       console.log("JS block finished loading.");
-
-      async function loadViewSourceLink() {
-        try {
-          const response = await fetch("source.txt");
-          if (response.ok) {
-            const commitHash = (await response.text()).trim();
-            if (commitHash) {
-              const currentPage = window.location.pathname.split("/").pop() || "index.html";
-              const githubUrl = `https://github.com/antonycc/submit.diyaccounting.co.uk/blob/${commitHash}/web/public/${currentPage}`;
-              const viewSourceLink = document.getElementById("viewSourceLink");
-              viewSourceLink.href = githubUrl;
-              viewSourceLink.target = "_blank";
-              viewSourceLink.style.display = "inline";
-            }
-          }
-        } catch (error) {
-          console.log("Could not load source.txt:", error);
-        }
-      }
-
-      loadViewSourceLink();
     </script>
   </body>
 </html>

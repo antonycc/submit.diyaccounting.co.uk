@@ -48,32 +48,8 @@ function hideStatus() {
   statusMessagesContainer.innerHTML = "";
 }
 
-// Loading state management
-function showLoading() {
-  console.log("Page display transition: Showing loading spinner");
-  const loadingSpinner = document.getElementById("loadingSpinner");
-  const submitBtn = document.getElementById("submitBtn");
-  console.log("Loading spinner element:", loadingSpinner);
-  if (loadingSpinner) {
-    loadingSpinner.style.display = "block";
-    loadingSpinner.style.visibility = "visible";
-    loadingSpinner.style.opacity = "1";
-    loadingSpinner.style.width = "40px";
-    loadingSpinner.style.height = "40px";
-    console.log("Loading spinner styles set:", loadingSpinner.style.cssText);
-  }
-  if (submitBtn) {
-    submitBtn.disabled = true;
-  }
-}
-
-function hideLoading() {
-  console.log("Page display transition: Hiding loading spinner");
-  const loadingSpinner = document.getElementById("loadingSpinner");
-  const submitBtn = document.getElementById("submitBtn");
-  loadingSpinner.style.display = "none";
-  submitBtn.disabled = false;
-}
+// Loading state management - moved to loading-spinner.js
+// Functions are imported globally by loading-spinner.js for backward compatibility
 
 // Utility functions
 function generateRandomState() {
@@ -241,8 +217,7 @@ if (typeof window !== "undefined") {
   window.showStatus = showStatus;
   window.hideStatus = hideStatus;
   window.removeStatusMessage = removeStatusMessage;
-  window.showLoading = showLoading;
-  window.hideLoading = hideLoading;
+  // Loading functions are now in loading-spinner.js
   window.generateRandomState = generateRandomState;
   window.getAuthUrl = getAuthUrl;
   window.submitVat = submitVat;

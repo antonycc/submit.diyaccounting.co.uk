@@ -72,6 +72,12 @@ describe("VAT Flow Frontend JavaScript", () => {
     submitScript.textContent = submitJsContent;
     document.head.appendChild(submitScript);
 
+    // Load and execute loading-spinner.js
+    const loadingSpinnerJsContent = fs.readFileSync(path.join(process.cwd(), "web/public/loading-spinner.js"), "utf-8");
+    const loadingSpinnerScript = document.createElement("script");
+    loadingSpinnerScript.textContent = loadingSpinnerJsContent;
+    document.head.appendChild(loadingSpinnerScript);
+
     // Execute the inline script content to define page-specific functions
     const scriptMatch = htmlContent.match(/<script>([\s\S]*?)<\/script>/);
     if (scriptMatch) {

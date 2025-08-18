@@ -72,61 +72,10 @@
     </footer>
 
     <script src="./localstorage-viewer.js"></script>
+    <script src="./hamburger-menu.js"></script>
+    <script src="./view-source-link.js"></script>
+    <script src="./auth-status.js"></script>
     <script>
-      function toggleMenu() {
-        const dropdown = document.getElementById("menuDropdown");
-        dropdown.classList.toggle("show");
-      }
-
-      // Load and display view source link
-      async function loadViewSourceLink() {
-        try {
-          const response = await fetch("source.txt");
-          if (response.ok) {
-            const commitHash = (await response.text()).trim();
-            if (commitHash) {
-              const currentPage = window.location.pathname.split("/").pop() || "index.html";
-              const githubUrl = `https://github.com/antonycc/submit.diyaccounting.co.uk/blob/${commitHash}/web/public/${currentPage}`;
-              const viewSourceLink = document.getElementById("viewSourceLink");
-              viewSourceLink.href = githubUrl;
-              viewSourceLink.target = "_blank";
-              viewSourceLink.textContent = `source: ${currentPage}@${commitHash.substring(0, 7)}`;
-              viewSourceLink.style.display = "inline";
-            }
-          }
-        } catch (error) {
-          console.log("Could not load source.txt:", error);
-        }
-      }
-
-      function updateLoginStatus() {
-        const userInfo = localStorage.getItem("userInfo");
-        const loginStatusElement = document.querySelector(".login-status");
-        const loginLinkElement = document.querySelector(".login-link");
-        if (userInfo) {
-          const user = JSON.parse(userInfo);
-          const userLabel = user.email ? user.email : user.sub;
-          loginStatusElement.textContent = `Logged in as ${userLabel}`;
-          loginLinkElement.textContent = "Logout";
-          loginLinkElement.href = "#";
-          loginLinkElement.onclick = logout;
-        } else {
-          loginStatusElement.textContent = "Not logged in";
-          loginLinkElement.textContent = "Log in";
-          loginLinkElement.href = "login.html";
-          loginLinkElement.onclick = null;
-        }
-      }
-
-      function logout() {
-        localStorage.removeItem("cognitoAccessToken");
-        localStorage.removeItem("cognitoIdToken");
-        localStorage.removeItem("cognitoRefreshToken");
-        localStorage.removeItem("userInfo");
-        localStorage.removeItem("authState");
-        window.location.reload();
-      }
-
       function getIdToken() {
         return localStorage.getItem("cognitoIdToken");
       }
@@ -266,20 +215,14 @@
         document.getElementById("viewerModal").style.display = "none";
       });
 
-      // Close menu when clicking outside
-      window.onclick = function (event) {
-        if (!event.target.matches(".hamburger-btn")) {
-          const dropdown = document.getElementById("menuDropdown");
-          if (dropdown.classList.contains("show")) dropdown.classList.remove("show");
-        }
+      // Close modal when clicking on modal background
+      window.addEventListener("click", function (event) {
         if (event.target.id === "viewerModal") {
           document.getElementById("viewerModal").style.display = "none";
         }
-      };
+      });
 
       // Init
-      loadViewSourceLink();
-      updateLoginStatus();
       fetchReceipts();
     </script>
   </body>
