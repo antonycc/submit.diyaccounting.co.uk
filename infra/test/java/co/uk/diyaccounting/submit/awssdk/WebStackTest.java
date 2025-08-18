@@ -88,6 +88,12 @@ public class WebStackTest {
                 .submitVatLambdaDurationMillis("60000")
                 .logReceiptLambdaHandlerFunctionName("LogReceiptHandler")
                 .logReceiptLambdaDurationMillis("30000")
+                .myReceiptsLambdaHandlerFunctionName("MyReceiptsHandler")
+                .myReceiptsLambdaDurationMillis("30000")
+                .catalogLambdaHandlerFunctionName("CatalogHandler")
+                .catalogLambdaDurationMillis("30000")
+                .myBundlesLambdaHandlerFunctionName("MyBundlesHandler")
+                .myBundlesLambdaDurationMillis("30000")
                 // Provide Google configuration to avoid nulls in Map.of and Secrets during tests
                 .googleClientId("test-google-client-id")
                 .googleClientSecretArn("arn:aws:secretsmanager:eu-west-2:000000000000:secret:diy/test/submit/google/client_secret")

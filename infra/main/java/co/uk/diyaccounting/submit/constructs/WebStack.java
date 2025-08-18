@@ -1185,7 +1185,7 @@ public class WebStack extends Stack {
         }
 
         // Catalog Lambda
-        if (StringUtils.isNotBlank(builder.catalogLambdaHandlerFunctionName)) {
+        //if (StringUtils.isNotBlank(builder.catalogLambdaHandlerFunctionName)) {
             var catalogLambdaEnv = new HashMap<>(Map.of(
                     "DIY_SUBMIT_HOME_URL", builder.homeUrl
             ));
@@ -1202,10 +1202,10 @@ public class WebStack extends Stack {
             this.catalogLambdaUrl = catalogLambdaUrlOrigin.functionUrl;
             this.catalogLambdaLogGroup = catalogLambdaUrlOrigin.logGroup;
             lambdaUrlToOriginsBehaviourMappings.put(builder.catalogLambdaUrlPath + "*", catalogLambdaUrlOrigin.behaviorOptions);
-        }
+        //}
 
         // My Bundles Lambda
-        if (StringUtils.isNotBlank(builder.myBundlesLambdaHandlerFunctionName)) {
+        //if (StringUtils.isNotBlank(builder.myBundlesLambdaHandlerFunctionName)) {
             var myBundlesLambdaEnv = new HashMap<>(Map.of(
                     "DIY_SUBMIT_HOME_URL", builder.homeUrl
             ));
@@ -1222,10 +1222,10 @@ public class WebStack extends Stack {
             this.myBundlesLambdaUrl = myBundlesLambdaUrlOrigin.functionUrl;
             this.myBundlesLambdaLogGroup = myBundlesLambdaUrlOrigin.logGroup;
             lambdaUrlToOriginsBehaviourMappings.put(builder.myBundlesLambdaUrlPath + "*", myBundlesLambdaUrlOrigin.behaviorOptions);
-        }
+        //}
 
         // myReceipts Lambda
-        if (StringUtils.isNotBlank(builder.myReceiptsLambdaHandlerFunctionName)) {
+        //if (StringUtils.isNotBlank(builder.myReceiptsLambdaHandlerFunctionName)) {
             var myReceiptsLambdaEnv = new HashMap<>(Map.of(
                     "DIY_SUBMIT_HOME_URL", builder.homeUrl,
                     "DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX", builder.receiptsBucketPostfix
@@ -1243,7 +1243,7 @@ public class WebStack extends Stack {
             this.myReceiptsLambdaUrl = myReceiptsLambdaUrlOrigin.functionUrl;
             this.myReceiptsLambdaLogGroup = myReceiptsLambdaUrlOrigin.logGroup;
             lambdaUrlToOriginsBehaviourMappings.put(builder.myReceiptsLambdaUrlPath + "*", myReceiptsLambdaUrlOrigin.behaviorOptions);
-        }
+        //}
 
         // Create receipts bucket for storing VAT submission receipts
         this.receiptsBucket = LogForwardingBucket.Builder
