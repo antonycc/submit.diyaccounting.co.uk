@@ -279,6 +279,27 @@ jobs:
 
       - run: aws sts get-caller-identity --region eu-west-2
 
+      - name: Wait for ngrok domain to be free
+        shell: bash
+        run: |
+          domain="wanted-finally-anteater.ngrok-free.app"
+          max_attempts=30
+          attempt=1
+          while [ $attempt -le $max_attempts ]; do
+            if curl -s --head --fail "https://${domain}" >/dev/null; then
+              echo "Domain ${domain} is in use. Waiting 10 seconds (attempt $attempt/$max_attempts)..."
+              sleep 10
+              attempt=$((attempt + 1))
+            else
+              echo "Domain ${domain} is free."
+              break
+            fi
+          done
+          if [ $attempt -gt $max_attempts ]; then
+            echo "Timeout waiting for domain ${domain} to be free."
+            exit 1
+          fi
+
       - run: npx dotenv -e '.env.${{ env.environment }}' -- npm run test:behaviour
         if: env.environment == 'proxy'
         env:
