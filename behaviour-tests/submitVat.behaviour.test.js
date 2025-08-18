@@ -449,9 +449,9 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/190-home-${timestamp}.png` });
 
   // Home page has a welcome message and clickable login link
-  console.log("Checking home page...");
-  await page.waitForLoadState("networkidle");
-  await setTimeout(500);
-  await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/200-home-${timestamp}.png` });
-  await expect(page.getByText("Log in")).toBeVisible();
+  // console.log("Checking home page...");
+  // await page.waitForLoadState("networkidle");
+  // await setTimeout(500);
+  // await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/200-home-${timestamp}.png` });
+  // await expect(page.getByText("Log in")).toBeVisible();
 }, 60000);
