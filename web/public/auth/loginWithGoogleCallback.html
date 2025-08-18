@@ -138,7 +138,7 @@
           window.history.replaceState({}, document.title, window.location.pathname);
 
           // Redirect to bundles page or home
-          window.location.href = "index.html";
+          window.location.href = "../index.html";
         } catch (error) {
           console.error("Authentication callback error:", error);
           showStatus(`Authentication failed: ${error.message}`, "error");

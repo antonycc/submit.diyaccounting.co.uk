@@ -78,7 +78,7 @@
               grant_type: "authorization_code",
               client_id: "debugger",
               code: code,
-              redirect_uri: "http://127.0.0.1:3000/loginWithMockCallback.html",
+              redirect_uri: "http://127.0.0.1:3000/auth/loginWithMockCallback.html",
             }),
           });
 
@@ -124,7 +124,7 @@
           window.history.replaceState({}, document.title, window.location.pathname);
 
           // Redirect to bundles page or home
-          window.location.href = "index.html";
+          window.location.href = "../index.html";
         } catch (error) {
           console.error("Authentication callback error:", error);
           showStatus(`Authentication failed: ${error.message}`, "error");

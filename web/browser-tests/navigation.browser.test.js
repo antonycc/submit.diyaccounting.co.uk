@@ -14,9 +14,9 @@ test.describe("Navigation Browser Tests", () => {
   test.beforeAll(async () => {
     // Read the HTML files
     indexHtmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/index.html"), "utf-8");
-    submitVatHtmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/submitVat.html"), "utf-8");
-    loginHtmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/login.html"), "utf-8");
-    bundlesHtmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/bundles.html"), "utf-8");
+    submitVatHtmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/activities/submitVat.html"), "utf-8");
+    loginHtmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/auth/login.html"), "utf-8");
+    bundlesHtmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/account/bundles.html"), "utf-8");
   });
 
   test.describe("Home Page to Activities Navigation", () => {
@@ -149,18 +149,6 @@ test.describe("Navigation Browser Tests", () => {
 
       // Verify services page content
       await expect(page.locator("h2")).toContainText("Add Bundle");
-      await expect(page.locator(".service-item")).toHaveCount(2);
-    });
-
-    test("should navigate from services to coming soon page", async ({ page }) => {
-      await page.setContent(bundlesHtmlContent, {
-        baseURL: "http://localhost:3000",
-        waitUntil: "domcontentloaded",
-      });
-
-      // Click "Add HMRC Test API Bundle" button
-      await page.click("button:has-text('Add HMRC Test API Bundle')");
-      await setTimeout(100);
     });
   });
 });

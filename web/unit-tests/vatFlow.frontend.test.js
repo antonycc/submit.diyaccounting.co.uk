@@ -11,7 +11,7 @@ import { buildGovClientTestHeaders } from "@app/unit-tests/govClientTestHeader.j
 dotenv.config({ path: ".env.test" });
 
 // Read the HTML file content
-const htmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/submitVat.html"), "utf-8");
+const htmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/activities/submitVat.html"), "utf-8");
 
 describe("VAT Flow Frontend JavaScript", () => {
   const originalEnv = process.env;
@@ -73,7 +73,7 @@ describe("VAT Flow Frontend JavaScript", () => {
     document.head.appendChild(submitScript);
 
     // Load and execute loading-spinner.js
-    const loadingSpinnerJsContent = fs.readFileSync(path.join(process.cwd(), "web/public/loading-spinner.js"), "utf-8");
+    const loadingSpinnerJsContent = fs.readFileSync(path.join(process.cwd(), "web/public/widgets/loading-spinner.js"), "utf-8");
     const loadingSpinnerScript = document.createElement("script");
     loadingSpinnerScript.textContent = loadingSpinnerJsContent;
     document.head.appendChild(loadingSpinnerScript);

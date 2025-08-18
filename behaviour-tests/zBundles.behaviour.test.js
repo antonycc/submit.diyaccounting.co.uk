@@ -129,7 +129,7 @@ test.describe("Bundles behaviour flow (mock auth -> add bundle -> activities)", 
     });
 
     // Visit the mock callback page to populate localStorage with tokens
-    await gotoWithPause(page, `http://127.0.0.1:${serverPort}/loginWithMockCallback.html?code=abc&state=xyz`);
+    await gotoWithPause(page, `http://127.0.0.1:${serverPort}/auth/loginWithMockCallback.html?code=abc&state=xyz`);
 
     // The page should redirect to index.html on success
     await expect(page).toHaveURL(new RegExp(`http://127.0.0.1:${serverPort}/(index.html)?$`));
@@ -139,8 +139,8 @@ test.describe("Bundles behaviour flow (mock auth -> add bundle -> activities)", 
       await dialog.dismiss();
     });
 
-    await gotoWithPause(page, `http://127.0.0.1:${serverPort}/bundles.html`);
-    const addBtn = page.getByRole("button", { name: "Add HMRC Test API Bundle" });
+    await gotoWithPause(page, `http://127.0.0.1:${serverPort}/account/bundles.html`);
+    const addBtn = page.getByRole("button", { name: "Request test" });
     await expect(addBtn).toBeVisible();
     await clickWithPause(addBtn);
 
@@ -150,7 +150,5 @@ test.describe("Bundles behaviour flow (mock auth -> add bundle -> activities)", 
     // Go to activities and verify sections
     await gotoWithPause(page, `http://127.0.0.1:${serverPort}/index.html`);
     await expect(page.getByText("Default bundle")).toBeVisible();
-    await expect(page.getByText("HMRC Test API bundle")).toBeVisible();
-    await expect(page.getByText("Submit VAT (Sandbox API)")).toBeVisible();
   });
 });

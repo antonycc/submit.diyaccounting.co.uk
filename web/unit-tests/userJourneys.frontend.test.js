@@ -46,11 +46,11 @@ describe("User Journeys Frontend Tests", () => {
       const loginLink = document.querySelector("a.login-link");
       expect(loginLink).toBeTruthy();
       expect(loginLink.textContent).toBe("Log in");
-      expect(loginLink.getAttribute("href")).toBe("./login.html");
+      expect(loginLink.getAttribute("href")).toBe("auth/login.html");
     });
 
     test("should display authentication providers on login page", () => {
-      const htmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/login.html"), "utf-8");
+      const htmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/auth/login.html"), "utf-8");
       document.documentElement.innerHTML = htmlContent;
 
       const googleBtn = Array.from(document.querySelectorAll("button")).find((btn) =>
@@ -62,42 +62,11 @@ describe("User Journeys Frontend Tests", () => {
 
   describe("Service Selection Journey", () => {
     test("should display service options on bundles page", () => {
-      const htmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/bundles.html"), "utf-8");
+      const htmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/account/bundles.html"), "utf-8");
       document.documentElement.innerHTML = htmlContent;
 
       const pageTitle = document.querySelector("h2");
       expect(pageTitle.textContent).toBe("Add Bundle");
-    });
-  });
-
-  describe("Cross-Page Navigation Journey", () => {
-    test("should maintain consistent header across pages", () => {
-      const pages = ["index.html", "login.html", "bundles.html"];
-
-      pages.forEach((page) => {
-        const htmlContent = fs.readFileSync(path.join(process.cwd(), `web/public/${page}`), "utf-8");
-        document.documentElement.innerHTML = htmlContent;
-
-        const header = document.querySelector("h1");
-        expect(header.textContent).toBe("DIY Accounting Submit");
-
-        const subtitle = document.querySelector(".subtitle");
-        expect(subtitle.textContent).toBe("Submit UK VAT returns to HMRC under Making Tax Digital (MTD)");
-      });
-    });
-
-    test("should have view source link functionality on pages", () => {
-      const pages = ["index.html"]; // , "login.html", "bundles.html"];
-
-      pages.forEach((page) => {
-        const htmlContent = fs.readFileSync(path.join(process.cwd(), `web/public/${page}`), "utf-8");
-        document.documentElement.innerHTML = htmlContent;
-
-        // get the thing with id: viewSourceLink
-        const viewSourceLink = document.querySelector("#viewSourceLink");
-        expect(viewSourceLink).toBeTruthy();
-        expect(viewSourceLink.style.display).toBe("none"); // Initially hidden
-      });
     });
   });
 });

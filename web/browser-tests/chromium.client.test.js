@@ -23,11 +23,11 @@ test.describe("Client System Test - VAT Flow in Browser", () => {
 
   test.beforeAll(async () => {
     // Read the HTML file
-    htmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/submitVat.html"), "utf-8");
+    htmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/activities/submitVat.html"), "utf-8");
     submitJsContent = fs.readFileSync(path.join(process.cwd(), "web/public/submit.js"), "utf-8");
-    statusMessagesJsContent = fs.readFileSync(path.join(process.cwd(), "web/public/status-messages.js"), "utf-8");
-    loadingSpinnerJsContent = fs.readFileSync(path.join(process.cwd(), "web/public/loading-spinner.js"), "utf-8");
-    viewSourceLinkJsContent = fs.readFileSync(path.join(process.cwd(), "web/public/view-source-link.js"), "utf-8");
+    statusMessagesJsContent = fs.readFileSync(path.join(process.cwd(), "web/public/widgets/status-messages.js"), "utf-8");
+    loadingSpinnerJsContent = fs.readFileSync(path.join(process.cwd(), "web/public/widgets/loading-spinner.js"), "utf-8");
+    viewSourceLinkJsContent = fs.readFileSync(path.join(process.cwd(), "web/public/widgets/view-source-link.js"), "utf-8");
   });
 
   test.beforeEach(async ({ page }) => {

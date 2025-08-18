@@ -23,8 +23,8 @@
       "clientId": "debugger",
       "clientSecret": "someSecret",
       "redirectUris": [
-        "http://127.0.0.1:3000/loginWithMockCallback.html",
-        "https://wanted-finally-anteater.ngrok-free.app/loginWithMockCallback.html"
+        "http://127.0.0.1:3000/auth/loginWithMockCallback.html",
+        "https://wanted-finally-anteater.ngrok-free.app/auth/loginWithMockCallback.html"
       ],
       "grantTypes": ["authorization_code"],
       "responseTypes": ["code"],
