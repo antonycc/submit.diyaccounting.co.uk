@@ -2,6 +2,8 @@
 ARG BASE_IMAGE_TAG=submit-base:latest
 FROM ${BASE_IMAGE_TAG}
 
+COPY product-catalogue.toml ./
+
 # The base image already contains node, deps and app code
 # Set the specific handler for this Lambda
 CMD ["app/functions/getCatalog.httpGet"]
