@@ -112,8 +112,8 @@
     const lsvContainer = document.getElementById("localstorageContainer");
     if (lsvContainer) {
       lsvContainer.innerHTML = buttonHTML;
-    }else {
-      //document.body.insertAdjacentHTML("beforeend", buttonHTML);
+    } else {
+      // document.body.insertAdjacentHTML("beforeend", buttonHTML);
     }
 
     const btn = document.getElementById("lsv-button");

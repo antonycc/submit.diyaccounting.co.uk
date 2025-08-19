@@ -3,7 +3,7 @@
   // Load and display view source link
   async function loadViewSourceLink() {
     try {
-      //const response = await fetch("submit.version");
+      // const response = await fetch("submit.version");
       const versionUrl = new URL("../submit.version", import.meta.url);
       const response = await fetch(versionUrl);
       if (response.ok) {

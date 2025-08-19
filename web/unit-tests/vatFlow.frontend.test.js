@@ -73,7 +73,10 @@ describe("VAT Flow Frontend JavaScript", () => {
     document.head.appendChild(submitScript);
 
     // Load and execute loading-spinner.js
-    const loadingSpinnerJsContent = fs.readFileSync(path.join(process.cwd(), "web/public/widgets/loading-spinner.js"), "utf-8");
+    const loadingSpinnerJsContent = fs.readFileSync(
+      path.join(process.cwd(), "web/public/widgets/loading-spinner.js"),
+      "utf-8",
+    );
     const loadingSpinnerScript = document.createElement("script");
     loadingSpinnerScript.textContent = loadingSpinnerJsContent;
     document.head.appendChild(loadingSpinnerScript);

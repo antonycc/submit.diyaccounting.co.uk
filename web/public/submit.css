@@ -567,18 +567,19 @@ footer {
 /* External link icon (new tab) */
 a[target="_blank"]::after,
 a.external-link::after {
-    content: "";
-    display: inline-block;
-    width: 10px;
-    height: 10px;
-    margin-left: 4px;
-    vertical-align: baseline;
-    background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAAQElEQVR42qXKwQkAIAxDUUdxtO6/RBQkQZvSi8I/pL4BoGw/XPkh4XigPmsUgh0626AjRsgxHTkUThsG2T/sIlzdTsp52kSS1wAAAABJRU5ErkJggg==) no-repeat center / contain;
-    opacity: 0.7;
+  content: "";
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-left: 4px;
+  vertical-align: baseline;
+  background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAAQElEQVR42qXKwQkAIAxDUUdxtO6/RBQkQZvSi8I/pL4BoGw/XPkh4XigPmsUgh0626AjRsgxHTkUThsG2T/sIlzdTsp52kSS1wAAAABJRU5ErkJggg==)
+    no-repeat center / contain;
+  opacity: 0.7;
 }
 
 /* Optional hover emphasis */
 a[target="_blank"]:hover::after,
 a.external-link:hover::after {
-    opacity: 1;
+  opacity: 1;
 }
