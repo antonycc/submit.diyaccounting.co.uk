@@ -947,8 +947,7 @@ public class WebStack extends Stack {
                     .googleClientSecretValue(googleClientSecretValue)
                     .callbackUrls(List.of(
                             "https://" + this.domainName + "/",
-                            "https://" + this.domainName + "/loginWithGoogleCallback.html",
-                            "https://" + this.domainName + "/bundles.html"
+                            "https://" + this.domainName + "/auth/loginWithGoogleCallback.html"
                     ))
                     .logoutUrls(List.of("https://" + this.domainName + "/"))
                     .supportedIdentityProviders(List.of(
