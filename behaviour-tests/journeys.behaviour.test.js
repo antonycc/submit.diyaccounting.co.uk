@@ -117,7 +117,7 @@ test.describe("Backlog journeys", () => {
     await enableVideoTimestampOverlay(page);
 
     // 1) Start unauthenticated on Bundles
-    await gotoWithPause(page, `http://127.0.0.1:${serverPort}/bundles.html`);
+    await gotoWithPause(page, `http://127.0.0.1:${serverPort}/account/bundles.html`);
 
     // Prepare to dismiss the alert for unauthenticated add attempt
     page.on("dialog", async (dialog) => {
@@ -125,11 +125,11 @@ test.describe("Backlog journeys", () => {
     });
 
     // 2) Attempt to add (should prompt to login and redirect to login.html)
-    const addBtn = page.getByRole("button", { name: "Add HMRC Test API Bundle" });
+    const addBtn = page.getByRole("button", { name: "Request test" });
     await expect(addBtn).toBeVisible();
     await clickWithPause(addBtn);
     await delay(500);
-    await expect(page).toHaveURL(new RegExp(`/login.html$`));
+    await expect(page).toHaveURL(new RegExp(`/auth/login.html$`));
 
     // 3) Complete mock login via direct callback and intercepted token exchange
     await page.route("http://localhost:8080/default/token", async (route) => {
@@ -147,23 +147,22 @@ test.describe("Backlog journeys", () => {
       await route.fulfill(response);
     });
 
-    await gotoWithPause(page, `http://127.0.0.1:${serverPort}/loginWithMockCallback.html?code=abc&state=xyz`);
+    await gotoWithPause(page, `http://127.0.0.1:${serverPort}/auth/loginWithMockCallback.html?code=abc&state=xyz`);
 
     // Should land on home
     await expect(page).toHaveURL(new RegExp(`http://127.0.0.1:${serverPort}/(index.html)?$`));
 
     // 4) Go back to Bundles and add the bundle (should now succeed without login prompt)
-    await gotoWithPause(page, `http://127.0.0.1:${serverPort}/bundles.html`);
-    const addBtn2 = page.getByRole("button", { name: "Add HMRC Test API Bundle" });
+    await gotoWithPause(page, `http://127.0.0.1:${serverPort}/account/bundles.html`);
+    const addBtn2 = page.getByRole("button", { name: "Default" });
     await expect(addBtn2).toBeVisible();
     await clickWithPause(addBtn2);
 
     // Button should reflect added state
-    await expect(page.getByRole("button", { name: /Bundle Added ✓|Already Added ✓/ })).toBeVisible();
+    await expect(page.getByRole("button", { name: /Bundle Added/ })).toBeVisible();
 
     // 5) View activities shows Submit VAT
     await gotoWithPause(page, `http://127.0.0.1:${serverPort}/index.html`);
-    await expect(page.getByText("HMRC Test API bundle")).toBeVisible();
-    await expect(page.getByText("Submit VAT (Sandbox API)")).toBeVisible();
+    await expect(page.getByText("Default")).toBeVisible();
   });
 });

@@ -12,7 +12,7 @@ const __dirname = path.dirname(__filename);
 
 // This test uses a file:// URL so it does not require a running server
 test("receipts page renders and shows unauthenticated hint", async ({ page }) => {
-  const receiptsPath = path.resolve(__dirname, "../web/public/receipts.html");
+  const receiptsPath = path.resolve(__dirname, "../web/public/account/receipts.html");
   const receiptsUrl = `file://${receiptsPath}`;
   await page.goto(receiptsUrl);
 

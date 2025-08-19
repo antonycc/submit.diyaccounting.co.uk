@@ -1,0 +1,194 @@
+<!-- auth/bundles.html -->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>DIY Accounting Submit - Add Bundle</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="../submit.css" />
+</head>
+<body>
+
+<header>
+  <div class="header-nav">
+    <div class="hamburger-menu">
+      <button class="hamburger-btn" onclick="toggleMenu()">☰</button>
+      <div class="menu-dropdown" id="menuDropdown">
+        <a href="../index.html">Home</a>
+        <a href="../account/receipts.html">Receipts</a>
+      </div>
+    </div>
+    <div class="auth-section">
+      <span class="login-status">Not logged in</span>
+      <a href="../auth/login.html" class="login-link">Log in</a>
+    </div>
+  </div>
+  <h1>DIY Accounting Submit</h1>
+  <p class="subtitle">Submit UK VAT returns to HMRC under Making Tax Digital (MTD)</p>
+</header>
+
+<div id="mainContent">
+  <div class="form-container" style="text-align:center">
+    <h2>Add Bundle</h2>
+    <p>Rendered from product catalog</p>
+    <div class="bundles-list" id="catalogBundles"></div>
+    <div style="margin-top:2em">
+      <button type="button" class="btn" onclick="window.location.href='../index.html'" style="background-color:#6c757d;border-color:#6c757d">Back to Home</button>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-content">
+    <div class="footer-left">
+      <a href="#" id="viewSourceLink" style="display: none">view source</a>
+    </div>
+    <div class="footer-center">
+      <p>&copy; 2025 DIY Accounting Limited</p>
+    </div>
+    <div class="footer-right" id="localstorageContainer"></div>
+  </div>
+</footer>
+
+<script src="../submit.js"></script>
+<script src="../widgets/hamburger-menu.js"></script>
+<script src="../widgets/auth-status.js"></script>
+<script type="module" src="../widgets/view-source-link.js"></script>
+<script src="../widgets/localstorage-viewer.js"></script>
+
+<script>
+  // --- helpers
+  const getIdToken = () => localStorage.getItem('cognitoIdToken');
+
+  const parseUserBundles = () => {
+    try { const raw = localStorage.getItem('userBundles'); const arr = raw ? JSON.parse(raw) : []; return Array.isArray(arr) ? arr : []; }
+    catch { return []; }
+  };
+
+  const hasBundle = (bundles, id) =>
+    (bundles || []).some(b => typeof b === 'string' && (b === id || b.startsWith(id + '|')));
+
+  const markGranted = (btn, message = 'Already Added ✓') => {
+    btn.textContent = message;
+    btn.disabled = true;
+    btn.style.backgroundColor = '#28a745';
+    const status = btn.closest('.service-item')?.querySelector('.status');
+    if (status) { status.textContent = 'Active'; status.style.color = '#2c7a7b'; }
+  };
+
+  // --- render one catalog card
+  const cardHtml = (b) => {
+    const q = b.qualifiers || {};
+    const info = [
+      `allocation: ${b.allocation}`,
+      b.auth ? `auth: ${b.auth}` : '',
+      b.cap != null ? `cap: ${b.cap}` : '',
+      b.timeout ? `timeout: ${b.timeout}` : ''
+    ].filter(Boolean).join(' • ');
+
+    const qFields = [];
+    if (q.requiresTransactionId) qFields.push('<label>Transaction ID <input name="transactionId" /></label>');
+    if (Object.prototype.hasOwnProperty.call(q, 'subscriptionTier')) {
+      qFields.push(`<label>Subscription Tier <input name="subscriptionTier" value="${q.subscriptionTier}" /></label>`);
+    }
+
+    return `
+          <div class="service-item" style="text-align:left">
+            <h3>${b.name || b.id}</h3>
+            <p class="service-description">${info}</p>
+            ${qFields.length ? `<div class="qualifiers" style="display:flex; gap:.5em; flex-wrap:wrap">${qFields.join(' ')}</div>` : ''}
+            <button type="button" class="btn service-btn" data-bundle-id="${b.id}">Request ${b.id}</button>
+            <div class="status" style="font-size:.9em; color:#666; margin-top:.25em"></div>
+          </div>`;
+  };
+
+  // --- click handler for all request buttons
+  document.addEventListener('click', async (e) => {
+    const btn = e.target.closest('button[data-bundle-id]');
+    if (!btn) return;
+
+    const idToken = getIdToken();
+    if (!idToken) {
+      alert('Please log in first to request bundles.');
+      window.location.href = '../auth/login.html';
+      return;
+    }
+
+    const bundleId = btn.getAttribute('data-bundle-id');
+    const card = btn.closest('.service-item');
+    const statusEl = card?.querySelector('.status');
+    const original = btn.textContent;
+
+    const qualifiers = {};
+    const tx = card?.querySelector('input[name="transactionId"]');
+    if (tx?.value) qualifiers.transactionId = tx.value;
+    const tier = card?.querySelector('input[name="subscriptionTier"]');
+    if (tier?.value) qualifiers.subscriptionTier = tier.value;
+
+    btn.textContent = 'Requesting...';
+    btn.disabled = true;
+
+    try {
+      const r = await fetch('/api/request-bundle', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
+        body: JSON.stringify({ bundleId, qualifiers })
+      });
+      const body = await r.json().catch(() => ({}));
+
+      if (r.ok) {
+        if (Array.isArray(body.bundles)) localStorage.setItem('userBundles', JSON.stringify(body.bundles));
+        if (body.status === 'granted' || body.status === 'already_granted') {
+          markGranted(btn, body.status === 'granted' ? 'Bundle Added ✓' : 'Already Added ✓');
+          if (statusEl) { statusEl.textContent = `Granted ${body.expiry ? `(expires ${body.expiry})` : ''}`; statusEl.style.color = '#2c7a7b'; }
+        } else {
+          btn.textContent = original; btn.disabled = false;
+          if (statusEl) { statusEl.textContent = 'Unknown response'; statusEl.style.color = '#b00020'; }
+        }
+      } else {
+        btn.textContent = original; btn.disabled = false;
+        if (statusEl) { statusEl.textContent = `Error: ${body.error || r.status}`; statusEl.style.color = '#b00020'; }
+        alert(`Failed to request bundle: ${body.error || 'Unknown error'}`);
+      }
+    } catch (err) {
+      btn.textContent = original; btn.disabled = false;
+      if (statusEl) { statusEl.textContent = `Error: ${err?.message || err}`; statusEl.style.color = '#b00020'; }
+      alert('Failed to request bundle. Please try again.');
+    }
+  });
+
+  // --- reflect previously granted
+  function updateBundleStatus() {
+    const bundles = parseUserBundles();
+    document.querySelectorAll('button[data-bundle-id]').forEach(btn => {
+      const id = btn.getAttribute('data-bundle-id');
+      if (hasBundle(bundles, id)) markGranted(btn);
+    });
+  }
+
+  // --- bootstrap: fetch catalog and render
+  (async function () {
+    const container = document.getElementById('catalogBundles');
+    try {
+      const idToken = getIdToken();
+      const headers = idToken ? { Authorization: `Bearer ${idToken}` } : {};
+      const res = await fetch('/api/catalog', { headers });
+      if (!res.ok) {
+        container.innerHTML = '<p class="service-description">Catalog unavailable.</p>';
+        return;
+      }
+      const catalog = await res.json();
+      const cards = (catalog.bundles || []).map(cardHtml).join('\n');
+      container.innerHTML = cards || '<p class="service-description">No bundles available.</p>';
+      updateBundleStatus();
+    } catch {
+      container.innerHTML = '<p class="service-description">Failed to load catalog.</p>';
+    }
+  })();
+
+  // --- page init
+  localStorage.removeItem('currentActivity');
+  checkAuthStatus();
+</script>
+</body>
+</html>

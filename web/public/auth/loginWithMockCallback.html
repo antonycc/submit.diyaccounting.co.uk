@@ -1,30 +1,30 @@
-<!-- loginWithGoogleCallback.html -->
+<!-- loginWithMockCallback.html -->
 <!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>DIY Accounting Submit - Login with Google callback</title>
+    <title>DIY Accounting Submit - Login with mock callback</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="stylesheet" href="submit.css" />
+    <link rel="stylesheet" href="../submit.css" />
   </head>
   <body>
+
     <header>
       <div class="header-nav"></div>
-      <h1>DIY Accounting Submit - Login with Google callback</h1>
+      <h1>DIY Accounting Submit - Login with mock callback</h1>
       <p class="subtitle">Submit UK VAT returns to HMRC under Making Tax Digital (MTD)</p>
     </header>
 
     <div id="mainContent">
-      <!-- Status messages -->
+
       <div id="statusMessagesContainer"></div>
 
-      <!-- Loading spinner -->
       <div id="loadingSpinner" class="spinner" style="display: none"></div>
 
       <div class="form-container" style="text-align: center">
         <h2 id="welcomeHeading">Welcome</h2>
         <p>Return home.</p>
-        <button type="button" class="btn" onclick="window.location.href='index.html'">Home</button>
+        <button type="button" class="btn" onclick="window.location.href='../index.html'">Home</button>
       </div>
     </div>
 
@@ -36,22 +36,19 @@
       </div>
     </footer>
 
-    <script src="./status-messages.js"></script>
+    <script src="../submit.js"></script>
+    <script src="../widgets/status-messages.js"></script>
+    <script src="../widgets/loading-spinner.js"></script>
     <script>
       // Check for authentication callback
       function checkAuthCallback() {
         const urlParams = new URLSearchParams(window.location.search);
         const code = urlParams.get("code");
         const state = urlParams.get("state");
-        const error = urlParams.get("error");
-        const errorDescription = urlParams.get("error_description");
 
         if (code) {
           console.log("Authentication callback received with code:", code);
           handleAuthCallback(code, state);
-        } else if (error || errorDescription) {
-          console.error("OAuth error received:", error, errorDescription);
-          showStatus(`Authentication error: ${errorDescription || error}`, "error");
         }
       }
 
@@ -66,25 +63,23 @@
         return atob(str);
       }
 
-      // Handle authentication callback from Cognito
+      // Handle authentication callback from mock
       async function handleAuthCallback(code, state) {
         try {
           showLoading();
           showStatus("Exchanging authorization code for access token...", "info");
-
-          const url = `/api/google/exchange-token`;
-          const body = {
-            grant_type: "authorization_code",
-            code: code,
-          };
-          console.log(`Exchanging token. Remote call initiated: POST ${url} ++ Body: ${body}`);
-
-          const tokenResponse = await fetch(url, {
+          // Exchange authorization code for tokens
+          const tokenResponse = await fetch(`http://localhost:8080/default/token`, {
             method: "POST",
             headers: {
               "Content-Type": "application/x-www-form-urlencoded",
             },
-            body: new URLSearchParams(body),
+            body: new URLSearchParams({
+              grant_type: "authorization_code",
+              client_id: "debugger",
+              code: code,
+              redirect_uri: "http://127.0.0.1:3000/auth/loginWithMockCallback.html",
+            }),
           });
 
           if (!tokenResponse.ok) {
@@ -92,32 +87,25 @@
           }
 
           const tokens = await tokenResponse.json();
-          console.log("Received tokens from Cognito " + JSON.stringify(tokens));
+          console.log("Received tokens from mock " + JSON.stringify(tokens));
 
-          // Store tokens in localStorage (support both snake_case and camelCase fields)
-          const accessToken = tokens.accessToken || tokens.access_token;
-          const idToken = tokens.idToken || tokens.id_token;
-          const refreshToken = tokens.refreshToken || tokens.refresh_token;
-
-          if (accessToken) {
-            localStorage.setItem("cognitoAccessToken", accessToken);
+          // Store tokens in localStorage
+          if (tokens.access_token) {
+            localStorage.setItem("cognitoAccessToken", tokens.access_token);
           }
-          if (idToken) {
-            localStorage.setItem("cognitoIdToken", idToken);
+          if (tokens.id_token) {
+            localStorage.setItem("cognitoIdToken", tokens.id_token);
           }
-          if (refreshToken) {
-            localStorage.setItem("cognitoRefreshToken", refreshToken);
+          if (tokens.refresh_token) {
+            localStorage.setItem("cognitoRefreshToken", tokens.refresh_token);
           }
 
           // Decode ID token to get user info
-          if (!idToken) {
-            throw new Error("Missing idToken in exchange-token response");
-          }
-          const base64Payload = idToken.split(".")[1];
+          const base64Payload = tokens.id_token.split(".")[1];
           const jsonPayload = base64UrlDecode(base64Payload);
           const idTokenPayload = JSON.parse(jsonPayload);
 
-          console.log("Received id_token from Cognito " + JSON.stringify(idTokenPayload));
+          console.log("Received id_token from mock " + JSON.stringify(idTokenPayload));
 
           localStorage.setItem(
             "userInfo",
@@ -129,14 +117,14 @@
             }),
           );
 
-          console.log("User authenticated successfully using Cognito:", idTokenPayload.email);
+          console.log("User authenticated successfully using mock:", idTokenPayload.email);
           showStatus("Authenticated successfully. Redirecting...", "info");
 
           // Clear URL parameters
           window.history.replaceState({}, document.title, window.location.pathname);
 
           // Redirect to bundles page or home
-          window.location.href = "index.html";
+          window.location.href = "../index.html";
         } catch (error) {
           console.error("Authentication callback error:", error);
           showStatus(`Authentication failed: ${error.message}`, "error");

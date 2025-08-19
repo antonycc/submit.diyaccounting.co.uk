@@ -41,18 +41,8 @@ app.use((req, res, next) => {
   next();
 });
 
-// 1) serve static site
 app.use(express.static(path.join(__dirname, "../../web/public")));
 
-// Dynamic config for client-side flags
-app.get("/config.js", (_req, res) => {
-  const flag = String(process.env.CATALOG_DRIVEN_UI || "false").toLowerCase() === "true";
-  const content = `window.CATALOG_DRIVEN_UI = ${flag};`;
-  res.set("Content-Type", "application/javascript");
-  res.send(content);
-});
-
-// 2) wire your Lambdas under configurable paths from cdk.json
 const authUrlPath = context.authUrlLambdaUrlPath || "/api/hmrc/auth-url";
 const mockAuthUrlPath = "/api/mock/auth-url";
 const exchangeTokenPath = context.exchangeTokenLambdaUrlPath || "/api/exchange-token";

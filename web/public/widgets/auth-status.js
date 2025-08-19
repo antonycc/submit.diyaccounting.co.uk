@@ -24,10 +24,10 @@
       const currentPage = window.location.pathname.split("/").pop();
       if (currentPage === "login.html") {
         loginLinkElement.textContent = "Home";
-        loginLinkElement.href = "index.html";
+        loginLinkElement.href = "../index.html";
       } else {
         loginLinkElement.textContent = "Log in";
-        loginLinkElement.href = "login.html";
+        loginLinkElement.href = "../auth/login.html";
       }
       loginLinkElement.onclick = null;
     }
