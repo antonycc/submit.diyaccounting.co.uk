@@ -1,6 +1,6 @@
 # .github/workflows/∞-reusable-copilot-suggestions.yml
 
-name: Generate Copilot Suggestions
+name: ∞-reusable-copilot-suggestions
 
 on:
   workflow_call:
