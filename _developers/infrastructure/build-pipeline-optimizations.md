@@ -12,7 +12,7 @@ This document details the optimizations made to address build pipeline efficienc
 ### 2. Inconsistent Caching Strategy
 - **Issue**: Different cache scopes used across workflows (`base` vs `base-main` vs `base-${{ github.sha }}`)
 - **Impact**: Poor cache hit rates, redundant builds
-- **Problem**: `build-base-image.yml` had flawed image existence check using `docker buildx imagetools inspect`
+- **Problem**: `∞-reusable-build-base-image.yml` had flawed image existence check using `docker buildx imagetools inspect`
 
 ### 3. Maven Build Inefficiencies
 - **Issue**: `deploy.yml` was running Maven package twice - once in `mvn-package` job and again in `deploy-to-environment` job
@@ -25,7 +25,7 @@ This document details the optimizations made to address build pipeline efficienc
 ## Solutions Implemented
 
 ### 1. Optimized Base Image Workflow
-**File**: `.github/workflows/build-base-image.yml`
+**File**: `.github/workflows/∞-reusable-build-base-image.yml`
 
 **Changes**:
 - Removed flawed image existence check that used `docker buildx imagetools inspect`
@@ -56,7 +56,7 @@ This document details the optimizations made to address build pipeline efficienc
 **File**: `.github/workflows/deploy-ci-only.yml`
 
 **Changes**:
-- **Shared Base Image**: Now uses the centralized `build-base-image.yml` workflow instead of building independently
+- **Shared Base Image**: Now uses the centralized `∞-reusable-build-base-image.yml` workflow instead of building independently
 - **Unified Cache Strategy**: Uses same cache scopes as main deploy workflow
 - **Consistent Docker Handling**: Aligned with optimized loading strategy
 
@@ -119,7 +119,7 @@ graph TD
 ### Validation Commands
 ```bash
 # Check workflow syntax
-python3 -c "import yaml; yaml.safe_load(open('.github/workflows/build-base-image.yml').read())"
+python3 -c "import yaml; yaml.safe_load(open('.github/workflows/∞-reusable-build-base-image.yml').read())"
 python3 -c "import yaml; yaml.safe_load(open('.github/workflows/deploy.yml').read())" 
 python3 -c "import yaml; yaml.safe_load(open('.github/workflows/deploy-ci-only.yml').read())"
 ```
