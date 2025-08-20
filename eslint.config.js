@@ -69,6 +69,20 @@ export default [
       "security/detect-object-injection": "off",
     },
   },
+  // Browser environment for web scripts
+  {
+    files: ["web/public/**/*.js", "web/browser-tests/**/*.js", "web/unit-tests/**/*.js"],
+    languageOptions: {
+      globals: {
+        ...globals.browser,
+        ...globals.node,
+      },
+    },
+    rules: {
+      // Allow eval in tests for testing purposes
+      "sonarjs/code-eval": "off",
+    },
+  },
   {
     settings: {
       react: {
@@ -77,6 +91,6 @@ export default [
     },
   },
   {
-    ignores: ["build/", "coverage/", "dist/", "exports/", "node_modules/", "eslint.config.js"],
+    ignores: ["build/", "coverage/", "dist/", "exports/", "node_modules/", "eslint.config.js", "target/", "cdk.out/"],
   },
 ];

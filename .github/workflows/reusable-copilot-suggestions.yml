@@ -1,0 +1,211 @@
+# .github/workflows/reusable-copilot-suggestions.yml
+
+name: Generate Copilot Suggestions
+
+on:
+  workflow_call:
+    inputs:
+      suggestion_type:
+        description: 'Type of suggestions to generate (linting, todos, incremental)'
+        required: true
+        type: string
+      context_files:
+        description: 'Files to analyze for context (space-separated)'
+        required: false
+        type: string
+      focus_area:
+        description: 'Specific focus area for suggestions'
+        required: false
+        type: string
+    outputs:
+      suggestions_generated:
+        description: 'Whether suggestions were successfully generated'
+        value: ${{ jobs.generate-suggestions.outputs.suggestions_generated }}
+      suggestion_count:
+        description: 'Number of suggestions generated'
+        value: ${{ jobs.generate-suggestions.outputs.suggestion_count }}
+
+jobs:
+  generate-suggestions:
+    runs-on: ubuntu-latest
+    outputs:
+      suggestions_generated: ${{ steps.generate.outputs.suggestions_generated }}
+      suggestion_count: ${{ steps.generate.outputs.suggestion_count }}
+    steps:
+      - name: Generate linting suggestions
+        if: inputs.suggestion_type == 'linting'
+        id: linting
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Checking for remaining linting issues..."
+          LINT_OUTPUT=$(npm run linting 2>&1 || true)
+          
+          # Count remaining issues
+          ISSUE_COUNT=$(echo "$LINT_OUTPUT" | grep -E "✖ [0-9]+ problems" \
+            | grep -o -E "[0-9]+" | head -1 || echo "0")
+          echo "Found $ISSUE_COUNT remaining issues"
+
+          if [ "$ISSUE_COUNT" != "0" ]; then
+            # Create a summary of issues for Copilot
+            cat > copilot_linting_prompt.txt << 'EOF'
+          I have the following ESLint issues in my JavaScript/TypeScript project:
+
+          $LINT_OUTPUT
+
+          Please suggest specific code fixes for these issues. Focus on:
+          1. Removing unused imports and variables
+          2. Handling ignored exceptions properly
+          3. Fixing security issues
+          4. Improving code quality
+
+          Provide the fixes as specific file changes that can be applied automatically.
+          EOF
+
+            # Try to get suggestions from Copilot CLI
+            if gh copilot suggest --help &> /dev/null; then
+              echo "Getting linting suggestions from GitHub Copilot..."
+              gh copilot suggest "$(cat copilot_linting_prompt.txt)" \
+                > copilot_linting_suggestions.txt || echo "Copilot linting suggestions failed"
+              
+              if [ -f copilot_linting_suggestions.txt ] && [ -s copilot_linting_suggestions.txt ]; then
+                echo "suggestions_generated=true" >> $GITHUB_OUTPUT
+                echo "suggestion_count=$ISSUE_COUNT" >> $GITHUB_OUTPUT
+              fi
+            fi
+          fi
+
+      - name: Generate TODO suggestions
+        if: inputs.suggestion_type == 'todos'
+        id: todos
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Analyzing TODOs for ${{ inputs.focus_area }}..."
+          
+          # Find TODOs based on focus area
+          if [ "${{ inputs.focus_area }}" = "environment" ]; then
+            TODO_CONTENT=$(grep -n "TODO.*env" \
+              ./behaviour-tests/submitVat.behaviour.test.js \
+              ./app/system-tests/logReceipt.s3.system.test.js \
+              ./app/unit-tests/govClientTestHeader.js \
+              2>/dev/null || echo "No environment TODOs found")
+          else
+            TODO_CONTENT=$(grep -rn "TODO" --include="*.js" --include="*.ts" \
+              ${{ inputs.context_files }} 2>/dev/null || echo "No TODOs found")
+          fi
+
+          if [ "$TODO_CONTENT" != "No TODOs found" ] && [ "$TODO_CONTENT" != "No environment TODOs found" ]; then
+            TODO_COUNT=$(echo "$TODO_CONTENT" | wc -l)
+            
+            # Create focused prompt for TODO resolution
+            cat > copilot_todo_prompt.txt << EOF
+          I have the following TODOs in my ${{ inputs.focus_area }} that need resolution:
+
+          $TODO_CONTENT
+
+          Please suggest specific code changes to resolve these TODOs.
+          Focus on: ${{ inputs.focus_area }}
+          
+          Provide actionable recommendations that maintain functionality while
+          improving code quality and consistency.
+          EOF
+
+            # Get TODO resolution suggestions from Copilot CLI
+            if gh copilot suggest --help &> /dev/null; then
+              echo "Getting TODO resolution suggestions from GitHub Copilot..."
+              gh copilot suggest "$(cat copilot_todo_prompt.txt)" \
+                > copilot_todo_suggestions.txt || echo "Copilot TODO suggestions failed"
+              
+              if [ -f copilot_todo_suggestions.txt ] && [ -s copilot_todo_suggestions.txt ]; then
+                echo "suggestions_generated=true" >> $GITHUB_OUTPUT
+                echo "suggestion_count=$TODO_COUNT" >> $GITHUB_OUTPUT
+              fi
+            fi
+          fi
+
+      - name: Generate incremental improvement suggestions
+        if: inputs.suggestion_type == 'incremental'
+        id: incremental
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Analyzing codebase for incremental improvements..."
+          
+          # Analyze code quality metrics
+          CODE_ANALYSIS=""
+          
+          # Check for code smells and improvement opportunities
+          COMPLEXITY_FILES=$(find . -name "*.js" -o -name "*.ts" | head -10)
+          LONG_FUNCTIONS=$(grep -rn "function\|=>" $COMPLEXITY_FILES 2>/dev/null | head -20 || echo "")
+          
+          if [ -n "$LONG_FUNCTIONS" ]; then
+            CODE_ANALYSIS="$CODE_ANALYSIS\nFunction analysis:\n$LONG_FUNCTIONS"
+          fi
+
+          # Create prompt for incremental improvements
+          cat > copilot_incremental_prompt.txt << EOF
+          I want to make incremental improvements to my codebase. Here's some analysis:
+
+          $CODE_ANALYSIS
+
+          Please suggest 3-5 specific, small improvements that would:
+          1. Improve code readability and maintainability
+          2. Reduce complexity
+          3. Follow best practices
+          4. Enhance performance
+          5. Improve error handling
+
+          Focus on changes that are:
+          - Low risk and easy to implement
+          - Have clear benefit
+          - Can be done incrementally
+          - Don't break existing functionality
+
+          Provide specific file changes with explanations.
+          EOF
+
+          # Get incremental improvement suggestions from Copilot CLI
+          if gh copilot suggest --help &> /dev/null; then
+            echo "Getting incremental improvement suggestions from GitHub Copilot..."
+            gh copilot suggest "$(cat copilot_incremental_prompt.txt)" \
+              > copilot_incremental_suggestions.txt || echo "Copilot incremental suggestions failed"
+            
+            if [ -f copilot_incremental_suggestions.txt ] && [ -s copilot_incremental_suggestions.txt ]; then
+              echo "suggestions_generated=true" >> $GITHUB_OUTPUT
+              echo "suggestion_count=5" >> $GITHUB_OUTPUT
+            fi
+          fi
+
+      - name: Set output
+        id: generate
+        run: |
+          if [ "${{ steps.linting.outputs.suggestions_generated }}" = "true" ] || \
+             [ "${{ steps.todos.outputs.suggestions_generated }}" = "true" ] || \
+             [ "${{ steps.incremental.outputs.suggestions_generated }}" = "true" ]; then
+            echo "suggestions_generated=true" >> $GITHUB_OUTPUT
+            
+            # Sum up suggestion counts
+            TOTAL_COUNT=0
+            [ -n "${{ steps.linting.outputs.suggestion_count }}" ] && \
+              TOTAL_COUNT=$((TOTAL_COUNT + ${{ steps.linting.outputs.suggestion_count }}))
+            [ -n "${{ steps.todos.outputs.suggestion_count }}" ] && \
+              TOTAL_COUNT=$((TOTAL_COUNT + ${{ steps.todos.outputs.suggestion_count }}))
+            [ -n "${{ steps.incremental.outputs.suggestion_count }}" ] && \
+              TOTAL_COUNT=$((TOTAL_COUNT + ${{ steps.incremental.outputs.suggestion_count }}))
+            
+            echo "suggestion_count=$TOTAL_COUNT" >> $GITHUB_OUTPUT
+          else
+            echo "suggestions_generated=false" >> $GITHUB_OUTPUT
+            echo "suggestion_count=0" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Upload suggestions
+        if: steps.generate.outputs.suggestions_generated == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: copilot-suggestions-${{ inputs.suggestion_type }}-${{ github.run_id }}
+          path: |
+            copilot_*_suggestions.txt
+            copilot_*_prompt.txt
+          retention-days: 7

@@ -2,6 +2,8 @@ build/
 coverage/
 exports/
 node_modules/
+target/
+cdk.out/
 .*
 *.env
 *.md
@@ -12,6 +14,7 @@ eslint-txt.config.js
 jsconfig.json
 package.json
 package-lock.json
-preXXXttier.config.js
+pom.xml
+prettier.config.js
 app/index.js/exports/
 /cdk/cdk.out/
