@@ -302,14 +302,35 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   await setTimeout(500);
   await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/070-home-${timestamp}.png` });
   await expect(page.locator(".login-status")).toContainText("user@example.com");
-  await expect(page.getByText("VAT Return Submission")).toBeVisible();
+
+  // Add bundle
+  await expect(page.getByText("Add Bundle")).toBeVisible();
+  await loggedClick("button:has-text('Add Bundle')", "Add Bundle");
+  await page.waitForLoadState("networkidle");
+  await setTimeout(500);
+  await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/072-home-${timestamp}.png` });
+
+  // Request test
+  await expect(page.getByText("Request test")).toBeVisible();
+  await loggedClick("button:has-text('Request test')", "Request test");
+  await page.waitForLoadState("networkidle");
+  await setTimeout(500);
+  await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/075-bundles-${timestamp}.png` });
+  await expect(page.getByText("Bundle Added")).toBeVisible();
+  await expect(page.getByText("Back to Home")).toBeVisible();
+  await loggedClick("button:has-text('Back to Home')", "Back to Home");
+  await page.waitForLoadState("networkidle");
+  await setTimeout(500);
+  await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/077-home-${timestamp}.png` });
+
+  //await expect(page.getByText("Submit VAT")).toBeVisible();
 
   /* ************ */
   /* `SUBMIT VAT  */
   /* ************ */
 
   // Click "VAT Return Submission" on activities page
-  await loggedClick("button:has-text('VAT Return Submission')", "Starting VAT return submission");
+  await loggedClick("button:has-text('Submit VAT (Sandbox API)')", "Starting VAT return submission");
   await page.waitForLoadState("networkidle");
   await setTimeout(500);
   await page.screenshot({

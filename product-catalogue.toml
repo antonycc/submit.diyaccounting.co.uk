@@ -79,29 +79,34 @@ timeout = "P1D"
 id = "submit-vat-sandbox"
 name = "Submit VAT (Sandbox API)"
 bundles = ["test"]
+path = "activities/submitVat.html"
 # tags = ["sandbox"]
 
 [[activities]]
 id = "vat-obligations-sandbox"
 name = "VAT Obligations (Sandbox API)"
 bundles = ["test"]
+path = "account/receipts.html"
 # tags = ["sandbox"]
 
 [[activities]]
 id = "my-receipts"
 name = "View previously submitted receipts"
 bundles = ["default"]
+path = "account/receipts.html"
 
 #[[activities]]
 #id = "submit-vat"
 #name = "Submit VAT"
 #bundles = ["guest", "basic", "legacy"]
 #bundles = ["guest"]
+#path = "activities/submitVat.html"
 
-#[[activities]]
-#id = "vat-obligations"
-#name = "VAT Obligations"
-#bundles = ["default"]
+[[activities]]
+id = "vat-obligations"
+name = "VAT Obligations"
+bundles = ["default"]
+path = "account/receipts.html"
 
 #[[activities]]
 #id = "self-employed"
