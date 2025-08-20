@@ -314,7 +314,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   await expect(page.getByText("Request test")).toBeVisible();
   await loggedClick("button:has-text('Request test')", "Request test");
   await page.waitForLoadState("networkidle");
-  await setTimeout(500);
+  await setTimeout(1500);
   await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/075-bundles-${timestamp}.png` });
   await expect(page.getByText("Bundle Added")).toBeVisible();
   await expect(page.getByText("Back to Home")).toBeVisible();
@@ -323,7 +323,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   await setTimeout(500);
   await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/077-home-${timestamp}.png` });
 
-  //await expect(page.getByText("Submit VAT")).toBeVisible();
+  // await expect(page.getByText("Submit VAT")).toBeVisible();
 
   /* ************ */
   /* `SUBMIT VAT  */
