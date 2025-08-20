@@ -48,7 +48,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup environment
-        uses: ∞-reusable-setup-environment.yml
+        uses: ./.github/workflows/∞-reusable-setup-environment.yml
         with:
           install_copilot: false
 
