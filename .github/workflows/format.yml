@@ -101,4 +101,3 @@ jobs:
       pr_body: 'This PR was automatically created by the Auto Format and Lint workflow'
       target_branch: ${{ inputs.target_branch || 'main' }}
       labels: 'automated,formatting,linting'
-      dry_run: 'false'
