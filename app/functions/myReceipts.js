@@ -1,96 +1,52 @@
 // app/functions/myReceipts.js
-import { S3Client, ListObjectsV2Command, GetObjectCommand } from "@aws-sdk/client-s3";
+import { ListObjectsV2Command, GetObjectCommand } from "@aws-sdk/client-s3";
 import dotenv from "dotenv";
 import logger from "../lib/logger.js";
+import { extractRequest, httpOkResponse, httpBadRequestResponse, httpServerErrorResponse } from "../lib/responses.js";
+import { getUserSub } from "../lib/auth.js";
+import { makeReceiptsS3 } from "../lib/s3Env.js";
+import { streamToString } from "../lib/streams.js";
 
 dotenv.config({ path: ".env" });
 
-function decodeJwtNoVerify(token) {
-  try {
-    const parts = String(token || "").split(".");
-    if (parts.length < 2) return null;
-    const payload = parts[1].replace(/-/g, "+").replace(/_/g, "/");
-    const json = Buffer.from(payload, "base64").toString("utf8");
-    return JSON.parse(json);
-  } catch (_err) {
-    return null;
-  }
-}
-
-function userSubFromEvent(event) {
-  const auth = event.headers?.authorization || event.headers?.Authorization;
-  if (!auth || !auth.startsWith("Bearer ")) return null;
-  const token = auth.split(" ")[1];
-  const claims = decodeJwtNoVerify(token) || {};
-  return claims.sub || null;
-}
-
-function buildReceiptsBucketFullName() {
-  const homeUrl = process.env.DIY_SUBMIT_HOME_URL;
-  const receiptsBucketPostfix = process.env.DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX;
-  const { hostname } = new URL(homeUrl);
-  let envPrefix = "";
-  if (homeUrl === "https://submit.diyaccounting.co.uk/") {
-    envPrefix = "prod.";
-  }
-  const dashedDomain = `${envPrefix}${hostname}`.split(".").join("-");
-  return `${dashedDomain}-${receiptsBucketPostfix}`;
-}
-
-function buildTestS3ConfigIfNeeded() {
-  let s3Config = {};
-  if (
-    process.env.NODE_ENV !== "stubbed" &&
-    process.env.DIY_SUBMIT_TEST_S3_ENDPOINT &&
-    process.env.DIY_SUBMIT_TEST_S3_ENDPOINT !== "off"
-  ) {
-    s3Config = {
-      endpoint: process.env.DIY_SUBMIT_TEST_S3_ENDPOINT,
-      region: "us-east-1",
-      credentials: {
-        accessKeyId: process.env.DIY_SUBMIT_TEST_S3_ACCESS_KEY,
-        secretAccessKey: process.env.DIY_SUBMIT_TEST_S3_SECRET_KEY,
-      },
-      forcePathStyle: true,
-    };
-  }
-  return s3Config;
-}
-
 function parseReceiptKey(key) {
-  // Expect: receipts/{sub}/{timestamp}-{bundle}.json
+  // receipts/{sub}/{timestamp}-{bundle}.json
   const parts = String(key || "").split("/");
   if (parts.length < 3) return { ok: false };
   const name = parts[parts.length - 1];
   const sub = parts[1];
-  const m = name.match(/^(.*)-(.*)\.json$/);
-  if (!m) return { ok: false };
-  const timestamp = m[1];
-  const formBundleNumber = m[2];
+  if (!name.endsWith(".json")) return { ok: false };
+  const base = name.slice(0, -5);
+  const dashIdx = base.lastIndexOf("-");
+  if (dashIdx === -1) return { ok: false };
+  const timestamp = base.substring(0, dashIdx);
+  const formBundleNumber = base.substring(dashIdx + 1);
   return { ok: true, name, sub, timestamp, formBundleNumber };
 }
 
+// GET /api/my/receipts
 export async function httpGet(event) {
-  // List receipts for authenticated user
-  const userSub = userSubFromEvent(event || {});
+  const request = extractRequest(event);
+  logger.info({ message: "myReceipts list entry", route: "/api/my/receipts" });
+
+  const userSub = getUserSub(event || {});
   if (!userSub) {
     return {
       statusCode: 401,
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
       body: JSON.stringify({ error: "unauthorized", message: "Authentication required" }),
     };
   }
   if (!process.env.DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX) {
-    return {
-      statusCode: 500,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ error: "config_error", message: "DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX not set" }),
-    };
+    return httpServerErrorResponse({
+      request,
+      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+      message: "DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX not set",
+    });
   }
 
-  const Bucket = buildReceiptsBucketFullName();
+  const { s3, Bucket } = makeReceiptsS3(process.env);
   const Prefix = `receipts/${userSub}/`;
-  const s3 = new S3Client(buildTestS3ConfigIfNeeded());
 
   let ContinuationToken = undefined;
   const items = [];
@@ -113,31 +69,36 @@ export async function httpGet(event) {
       ContinuationToken = resp.IsTruncated ? resp.NextContinuationToken : undefined;
     } while (ContinuationToken);
 
-    // Sort by timestamp desc
-    items.sort((a, b) => (a.timestamp > b.timestamp ? -1 : a.timestamp < b.timestamp ? 1 : 0));
+    items.sort((a, b) => String(b.timestamp).localeCompare(String(a.timestamp)));
 
-    return {
-      statusCode: 200,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ receipts: items }),
-    };
+    logger.info({ message: "myReceipts list exit", route: "/api/my/receipts", count: items.length });
+
+    return httpOkResponse({
+      request,
+      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+      data: { receipts: items },
+    });
   } catch (e) {
-    logger.error({ message: "Failed to list receipts", error: e });
-    return {
-      statusCode: 500,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ error: "list_failed", message: e?.message || String(e) }),
-    };
+    logger.error({ message: "Failed to list receipts", error: e?.message || String(e) });
+    return httpServerErrorResponse({
+      request,
+      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+      message: "list_failed",
+      error: { detail: e?.message || String(e) },
+    });
   }
 }
 
+// GET /api/my/receipts/{name} or ?name= or ?key=
 export async function httpGetByName(event) {
-  // Retrieve a single receipt either by object name (timestamp-bundle.json) or full key
-  const userSub = userSubFromEvent(event || {});
+  const request = extractRequest(event);
+  logger.info({ message: "myReceipts get entry", route: "/api/my/receipts/{name}" });
+
+  const userSub = getUserSub(event || {});
   if (!userSub) {
     return {
       statusCode: 401,
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
       body: JSON.stringify({ error: "unauthorized", message: "Authentication required" }),
     };
   }
@@ -146,67 +107,59 @@ export async function httpGetByName(event) {
 
   let Key;
   if (providedKey) {
-    // Security: must be under user's own prefix
     if (!providedKey.startsWith(`receipts/${userSub}/`) || providedKey.includes("..")) {
       return {
         statusCode: 403,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ error: "forbidden", message: "Access to requested key is not allowed" }),
+        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+        body: JSON.stringify({ error: "forbidden" }),
       };
     }
     Key = providedKey;
   } else if (name) {
     if (!/^[^/]+\.json$/.test(name)) {
-      return {
-        statusCode: 400,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ error: "bad_request", message: "Invalid name format" }),
-      };
+      return httpBadRequestResponse({
+        request,
+        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+        message: "bad_request",
+      });
     }
     Key = `receipts/${userSub}/${name}`;
   } else {
-    return {
-      statusCode: 400,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ error: "bad_request", message: "Missing name or key parameter" }),
-    };
+    return httpBadRequestResponse({
+      request,
+      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+      message: "Missing name or key",
+    });
   }
 
-  const Bucket = buildReceiptsBucketFullName();
-  const s3 = new S3Client(buildTestS3ConfigIfNeeded());
+  const { s3, Bucket } = makeReceiptsS3(process.env);
 
   try {
     const resp = await s3.send(new GetObjectCommand({ Bucket, Key }));
-    // resp.Body is a stream; convert to string
     const bodyString = await streamToString(resp.Body);
+
+    logger.info({ message: "myReceipts get exit", route: "/api/my/receipts/{name}", key: Key });
+
     return {
       statusCode: 200,
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
       body: bodyString,
     };
   } catch (e) {
     const statusCode = e?.$metadata?.httpStatusCode || 500;
     if (statusCode === 404) {
-      return {
-        statusCode: 404,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ error: "not_found", message: "Receipt not found" }),
-      };
+      return httpBadRequestResponse({
+        request,
+        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+        message: "not_found",
+      });
     }
-    logger.error({ message: "Failed to get receipt", error: e });
-    return {
-      statusCode: 500,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ error: "get_failed", message: e?.message || String(e) }),
-    };
+    logger.error({ message: "Failed to get receipt", error: e?.message || String(e) });
+    return httpServerErrorResponse({
+      request,
+      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+      message: "get_failed",
+      error: { detail: e?.message || String(e) },
+    });
   }
-}
-
-function streamToString(stream) {
-  return new Promise((resolve, reject) => {
-    const chunks = [];
-    stream.on("data", (chunk) => chunks.push(Buffer.from(chunk)));
-    stream.on("error", (err) => reject(err));
-    stream.on("end", () => resolve(Buffer.concat(chunks).toString("utf-8")));
-  });
 }

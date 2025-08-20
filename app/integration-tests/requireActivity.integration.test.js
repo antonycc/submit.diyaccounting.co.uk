@@ -2,7 +2,7 @@
 import { describe, test, beforeEach, expect } from "vitest";
 import express from "express";
 import request from "supertest";
-import { requireActivity } from "@app/src/lib/entitlementsService.js";
+import { requireActivity } from "@app/lib/entitlementsService.js";
 import { httpPost as requestBundle } from "@app/functions/bundle.js";
 
 function base64UrlEncode(obj) {

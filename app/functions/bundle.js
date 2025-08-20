@@ -1,6 +1,6 @@
 // app/functions/bundle.js
 
-import { loadCatalogFromRoot } from "../src/lib/productCatalogHelper.js";
+import { loadCatalogFromRoot } from "../lib/productCatalogHelper.js";
 
 // AWS Cognito SDK is loaded lazily only when not in MOCK mode to avoid requiring it during tests
 let __cognitoModule;

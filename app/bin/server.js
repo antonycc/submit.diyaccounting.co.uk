@@ -16,7 +16,7 @@ import { httpGet as getCatalogHttpGet } from "../functions/getCatalog.js";
 import { httpGet as myBundlesHttpGet } from "../functions/myBundles.js";
 import { httpGet as myReceiptsHttpGet, httpGetByName as myReceiptHttpGetByName } from "../functions/myReceipts.js";
 import logger from "../lib/logger.js";
-import { requireActivity } from "../src/lib/entitlementsService.js";
+import { requireActivity } from "../lib/entitlementsService.js";
 
 dotenv.config({ path: ".env" });
 

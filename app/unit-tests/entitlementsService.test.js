@@ -1,6 +1,6 @@
 // app/unit-tests/entitlementsService.test.js
 import { describe, it, beforeEach, expect } from "vitest";
-import { getActiveBundles, isActivityAllowed } from "@app/src/lib/entitlementsService.js";
+import { getActiveBundles, isActivityAllowed } from "@app/lib/entitlementsService.js";
 import { __getInMemoryBundlesStore } from "@app/functions/bundle.js";
 
 describe("entitlementsService", () => {
