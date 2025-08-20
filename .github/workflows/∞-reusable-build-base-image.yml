@@ -1,4 +1,4 @@
-# .github/workflows/build-base-image.yml
+# .github/workflows/∞-reusable-build-base-image.yml
 # Reusable workflow for building the base Docker image
 # This eliminates duplicate builds across different jobs and pipelines
 

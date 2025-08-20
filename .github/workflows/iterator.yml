@@ -1,6 +1,6 @@
 # .github/workflows/iterator.yml
 
-name: Iterator
+name: iterator
 
 concurrency:
   group: 'iterator-${{ github.ref_name }}'
@@ -182,7 +182,7 @@ jobs:
     name: 'Setup Environment'
     needs: analyze-codebase
     if: needs.analyze-codebase.outputs.analysis_complete == 'true'
-    uses: ./.github/workflows/reusable-setup-environment.yml
+    uses: ∞-reusable-setup-environment.yml
     with:
       install_copilot: true
 
@@ -212,7 +212,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup environment
-        uses: ./.github/workflows/reusable-setup-environment.yml
+        uses: ∞-reusable-setup-environment.yml
         with:
           install_copilot: false
 

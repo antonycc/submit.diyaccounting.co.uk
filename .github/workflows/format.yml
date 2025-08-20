@@ -1,7 +1,7 @@
 ---
-# .github/workflows/auto-format-lint.yml
+# .github/workflows/format.yml
 
-name: Auto Format and Lint
+name: format
 concurrency:
   group: 'auto-format-lint-${{ github.ref_name }}'
   cancel-in-progress: true
@@ -54,7 +54,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup environment
-        uses: ./.github/workflows/reusable-setup-environment.yml
+        uses: ∞-reusable-setup-environment.yml
         with:
           install_copilot: false
 

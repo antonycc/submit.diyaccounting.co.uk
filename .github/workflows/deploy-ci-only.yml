@@ -50,7 +50,7 @@ env:
 jobs:
 
   build-base-image:
-    uses: ./.github/workflows/build-base-image.yml
+    uses: ∞-reusable-build-base-image.yml
 
   upsert-secrets:
     runs-on: ubuntu-latest
