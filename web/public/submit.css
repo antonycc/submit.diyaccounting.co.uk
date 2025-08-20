@@ -583,3 +583,123 @@ a[target="_blank"]:hover::after,
 a.external-link:hover::after {
   opacity: 1;
 }
+
+/* Receipts page specific styles */
+.data-table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.data-table th,
+.data-table td {
+  border: 1px solid #ddd;
+  padding: 0.75em;
+  text-align: left;
+}
+
+.data-table th {
+  background-color: #f8f9fa;
+  font-weight: bold;
+  color: #333;
+}
+
+.data-table tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.data-table tr:hover {
+  background-color: #f5f5f5;
+}
+
+/* Clickable receipt label */
+.receipt-label {
+  color: #2c5aa0;
+  cursor: pointer;
+  text-decoration: none;
+  transition: color 0.3s;
+}
+
+.receipt-label:hover {
+  color: #1e3f73;
+  text-decoration: underline;
+}
+
+/* Download icon */
+.download-icon {
+  display: inline-block;
+  margin-left: 0.5em;
+  cursor: pointer;
+  color: #2c5aa0;
+  font-size: 1.1em;
+  transition: color 0.3s;
+  text-decoration: none;
+}
+
+.download-icon:hover {
+  color: #1e3f73;
+}
+
+/* Small button variant */
+.btn-small {
+  background-color: #2c5aa0;
+  color: white;
+  padding: 0.5em 1em;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.9em;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  width: auto;
+}
+
+.btn-small:hover {
+  background-color: #1e3f73;
+}
+
+.btn-small:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+/* Receipt display area */
+.receipt-display {
+  background: white;
+  padding: 1.5em;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  margin-top: 2em;
+  display: none;
+}
+
+.receipt-display h3 {
+  color: #2c5aa0;
+  margin-bottom: 1em;
+  font-size: 1.2em;
+}
+
+.receipt-display table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.receipt-display th,
+.receipt-display td {
+  border: 1px solid #ddd;
+  padding: 0.5em;
+  text-align: left;
+}
+
+.receipt-display th {
+  background-color: #f8f9fa;
+  font-weight: bold;
+}
+
+.receipt-display tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+/* Export controls at bottom */
+.export-controls {
+  margin-top: 1em;
+  text-align: center;
+}

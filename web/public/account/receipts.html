@@ -31,32 +31,28 @@
         <div id="unauthenticatedHint" style="display: none; margin-bottom: 1em; color: #b30000">
           Please log in to view your receipts.
         </div>
-        <div id="receiptsControls" style="display: none; margin-bottom: 1em">
-          <button class="btn" id="refreshBtn">Refresh</button>
-          <button class="btn" id="exportCsvBtn" style="margin-left: 0.5em">Export CSV</button>
-        </div>
         <div style="overflow-x: auto">
           <table id="receiptsTable" class="data-table" style="width: 100%; display: none">
             <thead>
               <tr>
                 <th>Date</th>
-                <th>Form bundle</th>
+                <th>Receipt</th>
                 <th>Size</th>
-                <th>Actions</th>
               </tr>
             </thead>
             <tbody></tbody>
           </table>
         </div>
         <div id="emptyState" style="display: none; margin-top: 1em; color: #555">No receipts yet.</div>
+
+        <div class="export-controls" id="exportControls" style="display: none">
+          <button class="btn-small" id="exportCsvBtn">Export CSV</button>
+        </div>
       </div>
 
-      <div id="viewerModal" class="modal" style="display: none">
-        <div class="modal-content">
-          <span class="close" id="closeModalBtn" style="float: right; cursor: pointer">&times;</span>
-          <h3>Receipt JSON</h3>
-          <pre id="receiptJson" style="white-space: pre-wrap"></pre>
-        </div>
+      <div id="receiptDisplay" class="receipt-display" style="display: none">
+        <h3>Receipt Details</h3>
+        <div id="receiptContent"></div>
       </div>
     </div>
 
@@ -85,21 +81,20 @@
       async function fetchReceipts() {
         const idToken = getIdToken();
         const unauthHint = document.getElementById("unauthenticatedHint");
-        const controls = document.getElementById("receiptsControls");
+        const exportControls = document.getElementById("exportControls");
         const table = document.getElementById("receiptsTable");
         const tbody = table.querySelector("tbody");
         const empty = document.getElementById("emptyState");
 
         if (!idToken) {
           unauthHint.style.display = "block";
-          controls.style.display = "none";
+          exportControls.style.display = "none";
           table.style.display = "none";
           empty.style.display = "none";
           return;
         }
 
         unauthHint.style.display = "none";
-        controls.style.display = "block";
 
         const res = await fetch("/api/my-receipts", {
           headers: { Authorization: `Bearer ${idToken}` },
@@ -109,6 +104,7 @@
           table.style.display = "none";
           empty.textContent = "Failed to load receipts";
           empty.style.display = "block";
+          exportControls.style.display = "none";
           return;
         }
         const json = await res.json();
@@ -118,38 +114,50 @@
           table.style.display = "none";
           empty.textContent = "No receipts yet.";
           empty.style.display = "block";
+          exportControls.style.display = "none";
         } else {
           empty.style.display = "none";
           table.style.display = "table";
+          exportControls.style.display = "block";
           for (const it of items) {
             const tr = document.createElement("tr");
+
+            // Date cell
             const date = new Date(it.timestamp);
             const dateCell = document.createElement("td");
             dateCell.textContent = isNaN(date.getTime()) ? it.timestamp : date.toLocaleString("en-GB");
-            const bundleCell = document.createElement("td");
-            bundleCell.textContent = it.formBundleNumber || "";
+
+            // Receipt cell with clickable label and download icon
+            const receiptCell = document.createElement("td");
+            const receiptLabel = document.createElement("a");
+            receiptLabel.className = "receipt-label";
+            receiptLabel.href = "#";
+            receiptLabel.textContent = it.formBundleNumber || it.name || "Unknown";
+            receiptLabel.onclick = (e) => {
+              e.preventDefault();
+              viewReceipt(it.name);
+            };
+
+            const downloadIcon = document.createElement("a");
+            downloadIcon.className = "download-icon";
+            downloadIcon.href = "#";
+            downloadIcon.innerHTML = "⬇";
+            downloadIcon.title = "Download receipt";
+            downloadIcon.onclick = (e) => {
+              e.preventDefault();
+              downloadReceipt(it.name);
+            };
+
+            receiptCell.appendChild(receiptLabel);
+            receiptCell.appendChild(downloadIcon);
+
+            // Size cell
             const sizeCell = document.createElement("td");
             sizeCell.textContent = typeof it.size === "number" ? `${it.size} bytes` : "";
-            const actionsCell = document.createElement("td");
-
-            const viewBtn = document.createElement("button");
-            viewBtn.className = "btn";
-            viewBtn.textContent = "View";
-            viewBtn.onclick = () => viewReceipt(it.name);
-
-            const dlBtn = document.createElement("button");
-            dlBtn.className = "btn";
-            dlBtn.style.marginLeft = "0.5em";
-            dlBtn.textContent = "Download";
-            dlBtn.onclick = () => downloadReceipt(it.name);
-
-            actionsCell.appendChild(viewBtn);
-            actionsCell.appendChild(dlBtn);
 
             tr.appendChild(dateCell);
-            tr.appendChild(bundleCell);
+            tr.appendChild(receiptCell);
             tr.appendChild(sizeCell);
-            tr.appendChild(actionsCell);
             tbody.appendChild(tr);
           }
         }
@@ -162,16 +170,109 @@
         });
         if (!res.ok) return alert("Failed to fetch receipt");
         const text = await res.text();
-        document.getElementById("receiptJson").textContent = prettyPrintJson(text);
-        document.getElementById("viewerModal").style.display = "block";
+
+        try {
+          const receiptData = JSON.parse(text);
+          displayReceiptTable(receiptData, name);
+        } catch (e) {
+          // If not JSON, display as text
+          displayReceiptTable({ content: text }, name);
+        }
       }
 
-      function prettyPrintJson(text) {
-        try {
-          return JSON.stringify(JSON.parse(text), null, 2);
-        } catch {
-          return text;
+      function displayReceiptTable(data, name) {
+        const receiptDisplay = document.getElementById("receiptDisplay");
+        const receiptContent = document.getElementById("receiptContent");
+
+        // Create table
+        const table = document.createElement("table");
+        table.style.width = "100%";
+        table.style.borderCollapse = "collapse";
+
+        // Add table header
+        const thead = document.createElement("thead");
+        const headerRow = document.createElement("tr");
+        const propHeader = document.createElement("th");
+        propHeader.textContent = "Property";
+        const valueHeader = document.createElement("th");
+        valueHeader.textContent = "Value";
+        headerRow.appendChild(propHeader);
+        headerRow.appendChild(valueHeader);
+        thead.appendChild(headerRow);
+        table.appendChild(thead);
+
+        // Add table body
+        const tbody = document.createElement("tbody");
+
+        // Add receipt name first
+        const nameRow = document.createElement("tr");
+        const nameProp = document.createElement("td");
+        nameProp.textContent = "Receipt Name";
+        nameProp.style.fontWeight = "bold";
+        const nameValue = document.createElement("td");
+        nameValue.textContent = name;
+        nameRow.appendChild(nameProp);
+        nameRow.appendChild(nameValue);
+        tbody.appendChild(nameRow);
+
+        // Add all data properties
+        function addDataToTable(obj, prefix = "") {
+          for (const [key, value] of Object.entries(obj)) {
+            const row = document.createElement("tr");
+            const propCell = document.createElement("td");
+            const valueCell = document.createElement("td");
+
+            const displayKey = prefix ? `${prefix}.${key}` : key;
+            propCell.textContent = displayKey;
+            propCell.style.fontWeight = "bold";
+
+            if (value && typeof value === "object" && !Array.isArray(value)) {
+              valueCell.textContent = "[Object]";
+              row.appendChild(propCell);
+              row.appendChild(valueCell);
+              tbody.appendChild(row);
+              addDataToTable(value, displayKey);
+            } else if (Array.isArray(value)) {
+              valueCell.textContent = `[Array with ${value.length} items]`;
+              row.appendChild(propCell);
+              row.appendChild(valueCell);
+              tbody.appendChild(row);
+              value.forEach((item, index) => {
+                if (item && typeof item === "object") {
+                  addDataToTable(item, `${displayKey}[${index}]`);
+                } else {
+                  const itemRow = document.createElement("tr");
+                  const itemProp = document.createElement("td");
+                  const itemValue = document.createElement("td");
+                  itemProp.textContent = `${displayKey}[${index}]`;
+                  itemProp.style.fontWeight = "bold";
+                  itemValue.textContent = String(item);
+                  itemRow.appendChild(itemProp);
+                  itemRow.appendChild(itemValue);
+                  tbody.appendChild(itemRow);
+                }
+              });
+            } else {
+              valueCell.textContent = String(value);
+              row.appendChild(propCell);
+              row.appendChild(valueCell);
+              tbody.appendChild(row);
+            }
+          }
         }
+
+        addDataToTable(data);
+        table.appendChild(tbody);
+
+        // Clear and populate content
+        receiptContent.innerHTML = "";
+        receiptContent.appendChild(table);
+
+        // Show the display area
+        receiptDisplay.style.display = "block";
+
+        // Scroll to the receipt display
+        receiptDisplay.scrollIntoView({ behavior: "smooth" });
       }
 
       async function downloadReceipt(name) {
@@ -202,7 +303,6 @@
         a.remove();
       }
 
-      document.getElementById("refreshBtn").addEventListener("click", fetchReceipts);
       document.getElementById("exportCsvBtn").addEventListener("click", async () => {
         const idToken = getIdToken();
         const res = await fetch("/api/my-receipts", { headers: { Authorization: `Bearer ${idToken}` } });
@@ -213,15 +313,9 @@
         exportCsv(rows);
       });
 
-      document.getElementById("closeModalBtn").addEventListener("click", () => {
-        document.getElementById("viewerModal").style.display = "none";
-      });
-
-      // Close modal when clicking on modal background
-      window.addEventListener("click", function (event) {
-        if (event.target.id === "viewerModal") {
-          document.getElementById("viewerModal").style.display = "none";
-        }
+      // Auto-refresh on page focus
+      window.addEventListener("focus", () => {
+        fetchReceipts();
       });
 
       // Initialize page
