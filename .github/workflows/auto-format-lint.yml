@@ -32,8 +32,15 @@ env:
   DRY_RUN: ${{ inputs.dry_run || 'false' }}
 
 jobs:
+  setup-environment:
+    name: 'Setup Environment'
+    uses: ./.github/workflows/reusable-setup-environment.yml
+    with:
+      install_copilot: true
+
   auto-format-lint:
     name: 'Auto Format and Lint'
+    needs: setup-environment
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -46,29 +53,10 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - name: Setup environment
+        uses: ./.github/workflows/reusable-setup-environment.yml
         with:
-          node-version: 22
-          cache: 'npm'
-
-      - name: Set up Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: 17
-          cache: 'maven'
-
-      - name: Install dependencies
-        run: npm ci || npm install --ignore-engines
-
-      - name: Create feature branch
-        if: env.DRY_RUN == 'false'
-        run: |
-          BRANCH_NAME="auto-format-lint/$(date +%Y%m%d_%H%M%S)"
-          echo "FEATURE_BRANCH=$BRANCH_NAME" >> $GITHUB_ENV
-          git checkout -b "$BRANCH_NAME"
-          echo "Created branch: $BRANCH_NAME"
+          install_copilot: false
 
       - name: Check current state
         run: |
@@ -102,247 +90,47 @@ jobs:
           echo "Applying ESLint auto-fixes..."
           npm run linting-fix || echo "ESLint auto-fix completed"
 
-      - name: Install GitHub CLI if not available
-        run: |
-          if ! command -v gh &> /dev/null; then
-            echo "Installing GitHub CLI..."
-            curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
-              | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
-            echo "deb [arch=$(dpkg --print-architecture) \
-              signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] \
-              https://cli.github.com/packages stable main" \
-              | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
-            sudo apt update
-            sudo apt install gh
-          fi
+  generate-linting-suggestions:
+    name: 'Generate Linting Suggestions'
+    needs: auto-format-lint
+    uses: ./.github/workflows/reusable-copilot-suggestions.yml
+    with:
+      suggestion_type: 'linting'
 
-      - name: Install GitHub Copilot CLI extension
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          echo "Installing GitHub Copilot CLI extension..."
-          gh extension install github/gh-copilot \
-            || echo "Copilot extension already installed or failed to install"
+  create-format-lint-pr:
+    name: 'Create Format/Lint PR'
+    needs: [auto-format-lint, generate-linting-suggestions]
+    uses: ./.github/workflows/reusable-create-pr.yml
+    with:
+      branch_prefix: 'auto-format-lint'
+      pr_title: 'Auto-format and lint fixes $(date +%Y-%m-%d)'
+      pr_body: |
+        ## Automated Formatting and Linting Fixes
 
-      - name: Check remaining linting issues
-        id: remaining_issues
-        run: |
-          echo "Checking for remaining linting issues..."
-          LINT_OUTPUT=$(npm run linting 2>&1 || true)
-          echo "LINT_OUTPUT<<EOF" >> $GITHUB_OUTPUT
-          echo "$LINT_OUTPUT" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+        This PR contains automated formatting and linting fixes applied by the auto-format-lint workflow.
 
-          # Count remaining issues
-          ISSUE_COUNT=$(echo "$LINT_OUTPUT" | grep -E "✖ [0-9]+ problems" \
-            | grep -o -E "[0-9]+" | head -1 || echo "0")
-          echo "ISSUE_COUNT=$ISSUE_COUNT" >> $GITHUB_OUTPUT
-          echo "Found $ISSUE_COUNT remaining issues"
+        ### Changes Applied
+        - ✅ Prettier formatting for JavaScript, HTML, CSS, and JSON files
+        - ✅ Java formatting with Google Java Format via Spotless
+        - ✅ ESLint auto-fixes where possible
 
-      - name: Use Copilot to suggest fixes for remaining issues
-        if: steps.remaining_issues.outputs.ISSUE_COUNT != '0'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          echo "Using GitHub Copilot to suggest fixes for remaining ESLint issues..."
+        ### AI Assistance
+        - 🤖 GitHub Copilot has analyzed remaining linting issues
+        - 📋 Suggestions available in workflow artifacts
+        - 🔧 Manual review recommended for complex issues
 
-          # Create a summary of issues for Copilot
-          cat > copilot_prompt.txt << 'EOF'
-          I have the following ESLint issues in my JavaScript/TypeScript project:
+        ### Workflow Information
+        - **Triggered by**: ${{ github.event_name }}
+        - **Branch**: ${{ env.TARGET_BRANCH }}
+        - **Timestamp**: $(date -u)
+        - **Workflow Run**: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
-          ${{ steps.remaining_issues.outputs.LINT_OUTPUT }}
+        ### Related Workflows
+        For TODO resolution, use the **TODO-inator** workflow.
+        For incremental improvements, use the **Iterator** workflow.
 
-          Please suggest specific code fixes for these issues. Focus on:
-          1. Removing unused imports and variables
-          2. Handling ignored exceptions properly
-          3. Fixing security issues
-          4. Improving code quality
-
-          Provide the fixes as specific file changes that can be applied
-          automatically.
-          EOF
-
-          # Try to get suggestions from Copilot CLI (if available)
-          if gh copilot suggest --help &> /dev/null; then
-            echo "Getting suggestions from GitHub Copilot..."
-            gh copilot suggest "$(cat copilot_prompt.txt)" \
-              > copilot_suggestions.txt || echo "Copilot suggestions failed"
-
-            if [ -f copilot_suggestions.txt ] \
-               && [ -s copilot_suggestions.txt ]; then
-              echo "::group::Copilot Suggestions"
-              cat copilot_suggestions.txt
-              echo "::endgroup::"
-            fi
-          else
-            echo "GitHub Copilot CLI not available or not configured"
-          fi
-
-      - name: Use Copilot to suggest TODO resolutions
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          echo "Using GitHub Copilot to suggest resolutions for environment configuration TODOs..."
-
-          # Find environment configuration TODOs
-          TODO_CONTENT=$(grep -n "TODO.*env" \
-            ./behaviour-tests/submitVat.behaviour.test.js \
-            ./app/system-tests/logReceipt.s3.system.test.js \
-            ./app/unit-tests/govClientTestHeader.js \
-            2>/dev/null || echo "No environment TODOs found")
-
-          if [ "$TODO_CONTENT" != "No environment TODOs found" ]; then
-            # Create a focused prompt for environment configuration TODOs
-            cat > copilot_todo_prompt.txt << 'EOF'
-          I have the following environment configuration TODOs in my Node.js/JavaScript project that need resolution to improve test consistency:
-
-          Environment Configuration TODOs:
-          $TODO_CONTENT
-
-          Context: These TODOs are about standardizing environment configuration usage across tests.
-          The project uses .env files (.env.test, .env.proxy, .env.ci) for different environments.
-
-          Please suggest specific code changes to:
-          1. Standardize .env.test usage across test files
-          2. Remove hardcoded environment overrides in favor of proper .env file reading
-          3. Implement consistent environment variable loading patterns
-          4. Ensure tests use the HOME_URL environment variable properly
-
-          Focus on making the environment configuration consistent and removing the need
-          for manual overrides. Provide specific file changes that maintain test functionality
-          while following proper environment configuration practices.
-          EOF
-
-            # Try to get TODO resolution suggestions from Copilot CLI
-            if gh copilot suggest --help &> /dev/null; then
-              echo "Getting TODO resolution suggestions from GitHub Copilot..."
-              gh copilot suggest "$(cat copilot_todo_prompt.txt)" \
-                > copilot_todo_suggestions.txt || echo "Copilot TODO suggestions failed"
-
-              if [ -f copilot_todo_suggestions.txt ] \
-                 && [ -s copilot_todo_suggestions.txt ]; then
-                echo "::group::Copilot TODO Resolution Suggestions"
-                cat copilot_todo_suggestions.txt
-                echo "::endgroup::"
-              fi
-            else
-              echo "GitHub Copilot CLI not available for TODO suggestions"
-            fi
-          else
-            echo "No environment configuration TODOs found to resolve"
-          fi
-
-      - name: Check for changes
-        id: changes
-        run: |
-          if git diff --quiet; then
-            echo "HAS_CHANGES=false" >> $GITHUB_OUTPUT
-            echo "No changes detected"
-          else
-            echo "HAS_CHANGES=true" >> $GITHUB_OUTPUT
-            echo "Changes detected"
-            echo "::group::Changes Summary"
-            git diff --stat
-            echo "::endgroup::"
-          fi
-
-      - name: Commit changes
-        if: >
-          steps.changes.outputs.HAS_CHANGES == 'true' &&
-          env.DRY_RUN == 'false'
-        run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action Auto-Format"
-
-          git add .
-          git commit -m "Auto-format and lint fixes
-
-          - Applied Prettier formatting for JS, HTML, CSS, JSON
-          - Applied Java formatting with Spotless
-          - Applied ESLint auto-fixes
-          - Remaining issues: ${{ steps.remaining_issues.outputs.ISSUE_COUNT }}
-
-          Co-authored-by: github-actions[bot] \
-            <41898282+github-actions[bot]@users.noreply.github.com>"
-
-      - name: Push changes and create PR
-        if: >
-          steps.changes.outputs.HAS_CHANGES == 'true' &&
-          env.DRY_RUN == 'false'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          git push origin "$FEATURE_BRANCH"
-
-          # Create PR using GitHub CLI
-          PR_BODY="## Automated Formatting and Linting Fixes
-
-          This PR contains automated formatting and linting fixes applied
-          by the auto-format-lint workflow.
-
-          ### Changes Applied
-          - ✅ Prettier formatting for JavaScript, HTML, CSS, and JSON files
-          - ✅ Java formatting with Google Java Format via Spotless
-          - ✅ ESLint auto-fixes where possible
-
-          ### Remaining Issues
-          - **${{ steps.remaining_issues.outputs.ISSUE_COUNT }}**
-            ESLint issues still require manual attention
-
-          ### TODO Resolution Guidance
-          - 🤖 GitHub Copilot has provided suggestions for resolving environment configuration TODOs
-          - 📋 Focus area: Standardizing .env file usage across test files
-          - 🔧 Suggestions available in workflow artifacts for manual review and implementation
-
-          ### Manual Review Required
-          Please review the following files for any issues that need manual
-          fixing:
-
-          \`\`\`
-          ${{ steps.remaining_issues.outputs.LINT_OUTPUT }}
-          \`\`\`
-
-          Check the workflow artifacts for Copilot suggestions on TODO resolutions,
-          particularly for environment configuration standardization.
-
-          ### Workflow Information
-          - **Triggered by**: ${{ github.event_name }}
-          - **Branch**: ${{ env.TARGET_BRANCH }}
-          - **Timestamp**: $(date -u)
-          - **Workflow Run**: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-
-          ---
-          *This PR was automatically created by the Auto Format and Lint
-          workflow*"
-
-          gh pr create \
-            --title "Auto-format and lint fixes $(date +%Y-%m-%d)" \
-            --body "$PR_BODY" \
-            --base "$TARGET_BRANCH" \
-            --head "$FEATURE_BRANCH" \
-            --label "automated,formatting,linting" \
-            --assignee "${{ github.actor }}"
-
-          echo "PR created successfully"
-
-      - name: Dry run summary
-        if: env.DRY_RUN == 'true'
-        run: |
-          echo "::notice::DRY RUN MODE - No changes were committed or pushed"
-          echo "::group::Summary"
-          echo "Would have made changes: ${{ steps.changes.outputs.HAS_CHANGES }}"
-          echo "Remaining lint issues: ${{ steps.remaining_issues.outputs.ISSUE_COUNT }}"
-          if [ "${{ steps.changes.outputs.HAS_CHANGES }}" == "true" ]; then
-            echo "Changes that would be committed:"
-            git diff --stat
-          fi
-          echo "::endgroup::"
-
-      - name: Upload logs and suggestions
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: auto-format-lint-logs-${{ github.run_id }}
-          path: |
-            copilot_*.txt
-          retention-days: 7
+        ---
+        *This PR was automatically created by the Auto Format and Lint workflow*
+      target_branch: ${{ env.TARGET_BRANCH }}
+      labels: 'automated,formatting,linting'
+      dry_run: ${{ env.DRY_RUN }}

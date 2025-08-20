@@ -1,0 +1,126 @@
+# .github/workflows/reusable-create-pr.yml
+
+name: Create Pull Request
+
+on:
+  workflow_call:
+    inputs:
+      branch_prefix:
+        description: 'Prefix for the feature branch'
+        required: true
+        type: string
+      pr_title:
+        description: 'Title for the pull request'
+        required: true
+        type: string
+      pr_body:
+        description: 'Body content for the pull request'
+        required: true
+        type: string
+      target_branch:
+        description: 'Target branch for the PR'
+        required: false
+        default: 'main'
+        type: string
+      labels:
+        description: 'Labels to apply to the PR (comma-separated)'
+        required: false
+        default: 'automated'
+        type: string
+      dry_run:
+        description: 'Run in dry-run mode (no PR created)'
+        required: false
+        default: false
+        type: boolean
+    outputs:
+      pr_created:
+        description: 'Whether a PR was created'
+        value: ${{ jobs.create-pr.outputs.pr_created }}
+      pr_number:
+        description: 'PR number if created'
+        value: ${{ jobs.create-pr.outputs.pr_number }}
+      feature_branch:
+        description: 'Name of the feature branch created'
+        value: ${{ jobs.create-pr.outputs.feature_branch }}
+
+jobs:
+  create-pr:
+    runs-on: ubuntu-latest
+    outputs:
+      pr_created: ${{ steps.create.outputs.pr_created }}
+      pr_number: ${{ steps.create.outputs.pr_number }}
+      feature_branch: ${{ steps.branch.outputs.feature_branch }}
+    steps:
+      - name: Check for changes
+        id: changes
+        run: |
+          if git diff --quiet; then
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+            echo "No changes detected"
+          else
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+            echo "Changes detected"
+            echo "::group::Changes Summary"
+            git diff --stat
+            echo "::endgroup::"
+          fi
+
+      - name: Create feature branch
+        id: branch
+        if: steps.changes.outputs.has_changes == 'true' && inputs.dry_run == false
+        run: |
+          BRANCH_NAME="${{ inputs.branch_prefix }}/$(date +%Y%m%d_%H%M%S)"
+          echo "feature_branch=$BRANCH_NAME" >> $GITHUB_OUTPUT
+          git checkout -b "$BRANCH_NAME"
+          echo "Created branch: $BRANCH_NAME"
+
+      - name: Commit changes
+        if: steps.changes.outputs.has_changes == 'true' && inputs.dry_run == false
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+
+          git add .
+          git commit -m "${{ inputs.pr_title }}
+
+          Co-authored-by: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>"
+
+      - name: Push changes and create PR
+        id: create
+        if: steps.changes.outputs.has_changes == 'true' && inputs.dry_run == false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git push origin "${{ steps.branch.outputs.feature_branch }}"
+
+          # Create PR using GitHub CLI
+          PR_RESULT=$(gh pr create \
+            --title "${{ inputs.pr_title }}" \
+            --body "${{ inputs.pr_body }}" \
+            --base "${{ inputs.target_branch }}" \
+            --head "${{ steps.branch.outputs.feature_branch }}" \
+            --label "${{ inputs.labels }}" \
+            --assignee "${{ github.actor }}")
+
+          # Extract PR number from the result
+          PR_NUMBER=$(echo "$PR_RESULT" | grep -o '[0-9]\+$')
+          echo "pr_created=true" >> $GITHUB_OUTPUT
+          echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
+          echo "PR created successfully: #$PR_NUMBER"
+
+      - name: Dry run summary
+        if: inputs.dry_run == true
+        run: |
+          echo "::notice::DRY RUN MODE - No changes were committed or pushed"
+          echo "::group::Summary"
+          echo "Would have made changes: ${{ steps.changes.outputs.has_changes }}"
+          if [ "${{ steps.changes.outputs.has_changes }}" == "true" ]; then
+            echo "Changes that would be committed:"
+            git diff --stat
+          fi
+          echo "::endgroup::"
+
+      - name: No changes summary
+        if: steps.changes.outputs.has_changes == 'false'
+        run: |
+          echo "::notice::No changes detected - skipping PR creation"
