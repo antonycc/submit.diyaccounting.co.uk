@@ -7,7 +7,7 @@ import {
   bundlesForActivity,
   activitiesForBundle,
   isActivityAvailable,
-} from "../src/lib/productCatalogHelper.js";
+} from "../lib/productCatalogHelper.js";
 
 describe("productCatalogHelper", () => {
   const tomlPath = path.join(process.cwd(), "product-catalogue.toml");

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { loadCatalogFromRoot, bundlesForActivity, activitiesForBundle } from "../src/lib/productCatalogHelper.js";
+import { loadCatalogFromRoot, bundlesForActivity, activitiesForBundle } from "../lib/productCatalogHelper.js";
 
 describe("System: product-catalogue.toml", () => {
   const catalog = loadCatalogFromRoot();

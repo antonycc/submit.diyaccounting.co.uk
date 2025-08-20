@@ -2,7 +2,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
-import { loadCatalogFromRoot } from "../src/lib/productCatalogHelper.js";
+import { loadCatalogFromRoot } from "../lib/productCatalogHelper.js";
 import { extractRequest } from "../lib/responses.js";
 
 import dotenv from "dotenv";
@@ -13,39 +13,13 @@ dotenv.config({ path: ".env" });
 
 let cached = null; // { json, etag, lastModified, object, validated }
 
-// async function validateCatalog(object) {
-//   try {
-//     // Lazy load AJV if present; if missing, skip validation
-//     const { default: Ajv } = await import("ajv").catch(() => ({ default: null }));
-//     if (!Ajv) return { ok: true, validated: false };
-//     const ajv = new Ajv({ allErrors: true, strict: false });
-//     const schemaPath = path.join(process.cwd(), "_developers/schemas/product-catalog.schema.json");
-//     const schema = JSON.parse(fs.readFileSync(schemaPath, "utf8"));
-//     const validate = ajv.compile(schema);
-//     const ok = validate(object);
-//     if (!ok) {
-//       const errors = (validate.errors || []).map((e) => `${e.instancePath} ${e.message}`).join("; ");
-//       return { ok: false, errors };
-//     }
-//     return { ok: true, validated: true };
-//   } catch (_e) {
-//     // On any error, skip validation
-//     return { ok: true, validated: false };
-//   }
-// }
-
 async function load() {
   const filePath = path.join(process.cwd(), "product-catalogue.toml");
   const stat = fs.statSync(filePath);
   const lastModified = stat.mtime.toUTCString();
   const object = loadCatalogFromRoot();
-  // const validation = await validateCatalog(object);
-  // if (!validation.ok) {
-  //  throw new Error(`Catalog validation failed: ${validation.errors}`);
-  // }
   const json = JSON.stringify(object);
-  const etag = 'W/"' + crypto.createHash("sha1").update(json).digest("hex") + '"';
-  // cached = { json, etag, lastModified, object, validated: !!validation.validated };
+  const etag = 'W/"' + crypto.createHash("sha256").update(json).digest("hex") + '"';
   cached = { json, etag, lastModified, object, validated: true };
 }
 
@@ -53,14 +27,23 @@ async function ensureLoaded() {
   if (!cached) await load();
 }
 
+// GET /api/catalog
 export async function httpGet(event) {
-  extractRequest(event);
+  const request = extractRequest(event);
+  logger.info({ message: "getCatalog entry", route: "/api/catalog", request });
   try {
     await ensureLoaded();
     const ifNoneMatch = event.headers?.["if-none-match"] || event.headers?.["If-None-Match"];
     const ifModifiedSince = event.headers?.["if-modified-since"] || event.headers?.["If-Modified-Since"];
 
     if (ifNoneMatch && ifNoneMatch === cached.etag) {
+      logger.info({
+        message: "getCatalog exit",
+        route: "/api/catalog",
+        status: 304,
+        etag: cached.etag,
+        request,
+      });
       return {
         statusCode: 304,
         headers: {
@@ -73,6 +56,13 @@ export async function httpGet(event) {
       };
     }
     if (ifModifiedSince && ifModifiedSince === cached.lastModified) {
+      logger.info({
+        message: "getCatalog exit",
+        route: "/api/catalog",
+        status: 304,
+        lastModified: cached.lastModified,
+        request,
+      });
       return {
         statusCode: 304,
         headers: {
@@ -85,7 +75,15 @@ export async function httpGet(event) {
       };
     }
 
-    logger.info("Catalog loaded successfully", cached.json);
+    logger.info({
+      message: "getCatalog exit",
+      route: "/api/catalog",
+      status: 200,
+      size: cached.json.length,
+      etag: cached.etag,
+      lastModified: cached.lastModified,
+      request,
+    });
 
     return {
       statusCode: 200,
