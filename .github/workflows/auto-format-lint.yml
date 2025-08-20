@@ -178,6 +178,60 @@ jobs:
             echo "GitHub Copilot CLI not available or not configured"
           fi
 
+      - name: Use Copilot to suggest TODO resolutions
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Using GitHub Copilot to suggest resolutions for environment configuration TODOs..."
+
+          # Find environment configuration TODOs
+          TODO_CONTENT=$(grep -n "TODO.*env" \
+            ./behaviour-tests/submitVat.behaviour.test.js \
+            ./app/system-tests/logReceipt.s3.system.test.js \
+            ./app/unit-tests/govClientTestHeader.js \
+            2>/dev/null || echo "No environment TODOs found")
+
+          if [ "$TODO_CONTENT" != "No environment TODOs found" ]; then
+            # Create a focused prompt for environment configuration TODOs
+            cat > copilot_todo_prompt.txt << 'EOF'
+          I have the following environment configuration TODOs in my Node.js/JavaScript project that need resolution to improve test consistency:
+
+          Environment Configuration TODOs:
+          $TODO_CONTENT
+
+          Context: These TODOs are about standardizing environment configuration usage across tests.
+          The project uses .env files (.env.test, .env.proxy, .env.ci) for different environments.
+
+          Please suggest specific code changes to:
+          1. Standardize .env.test usage across test files
+          2. Remove hardcoded environment overrides in favor of proper .env file reading
+          3. Implement consistent environment variable loading patterns
+          4. Ensure tests use the HOME_URL environment variable properly
+
+          Focus on making the environment configuration consistent and removing the need
+          for manual overrides. Provide specific file changes that maintain test functionality
+          while following proper environment configuration practices.
+          EOF
+
+            # Try to get TODO resolution suggestions from Copilot CLI
+            if gh copilot suggest --help &> /dev/null; then
+              echo "Getting TODO resolution suggestions from GitHub Copilot..."
+              gh copilot suggest "$(cat copilot_todo_prompt.txt)" \
+                > copilot_todo_suggestions.txt || echo "Copilot TODO suggestions failed"
+
+              if [ -f copilot_todo_suggestions.txt ] \
+                 && [ -s copilot_todo_suggestions.txt ]; then
+                echo "::group::Copilot TODO Resolution Suggestions"
+                cat copilot_todo_suggestions.txt
+                echo "::endgroup::"
+              fi
+            else
+              echo "GitHub Copilot CLI not available for TODO suggestions"
+            fi
+          else
+            echo "No environment configuration TODOs found to resolve"
+          fi
+
       - name: Check for changes
         id: changes
         run: |
@@ -235,6 +289,11 @@ jobs:
           - **${{ steps.remaining_issues.outputs.ISSUE_COUNT }}**
             ESLint issues still require manual attention
 
+          ### TODO Resolution Guidance
+          - 🤖 GitHub Copilot has provided suggestions for resolving environment configuration TODOs
+          - 📋 Focus area: Standardizing .env file usage across test files
+          - 🔧 Suggestions available in workflow artifacts for manual review and implementation
+
           ### Manual Review Required
           Please review the following files for any issues that need manual
           fixing:
@@ -242,6 +301,9 @@ jobs:
           \`\`\`
           ${{ steps.remaining_issues.outputs.LINT_OUTPUT }}
           \`\`\`
+
+          Check the workflow artifacts for Copilot suggestions on TODO resolutions,
+          particularly for environment configuration standardization.
 
           ### Workflow Information
           - **Triggered by**: ${{ github.event_name }}
