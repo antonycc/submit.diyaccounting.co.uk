@@ -1,4 +1,4 @@
-# .github/workflows/todo-inator.yml
+# .github/workflows/todoinator.yml
 
 name: TODO-inator
 
@@ -129,7 +129,7 @@ jobs:
     name: 'Generate TODO Suggestions'
     needs: [analyze-todos, setup-environment]
     if: needs.analyze-todos.outputs.todo_count > 0
-    uses: ./.github/workflows/reusable-copilot-suggestions.yml
+    uses: ∞-reusable-copilot-suggestions.yml
     with:
       suggestion_type: 'todos'
       focus_area: ${{ inputs.focus_area || 'environment' }}
@@ -151,7 +151,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup environment
-        uses: ./.github/workflows/reusable-setup-environment.yml
+        uses: ∞-reusable-setup-environment.yml
         with:
           install_copilot: false
 

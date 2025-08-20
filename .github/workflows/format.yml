@@ -1,7 +1,6 @@
----
-# .github/workflows/auto-format-lint.yml
+# .github/workflows/format.yml
 
-name: Auto Format and Lint
+name: format
 concurrency:
   group: 'auto-format-lint-${{ github.ref_name }}'
   cancel-in-progress: true
@@ -26,15 +25,10 @@ on:
     # Run nightly at 4:07 AM UTC (optimal time for GitHub Actions)
     - cron: '7 4 * * *'
 
-env:
-  # Use the target branch from input, or 'main' if not specified
-  TARGET_BRANCH: ${{ inputs.target_branch || 'main' }}
-  DRY_RUN: ${{ inputs.dry_run || 'false' }}
-
 jobs:
   setup-environment:
     name: 'Setup Environment'
-    uses: ./.github/workflows/reusable-setup-environment.yml
+    uses: ./.github/workflows/∞-reusable-setup-environment.yml
     with:
       install_copilot: true
 
@@ -54,7 +48,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup environment
-        uses: ./.github/workflows/reusable-setup-environment.yml
+        uses: ./.github/workflows/∞-reusable-setup-environment.yml
         with:
           install_copilot: false
 
@@ -93,44 +87,17 @@ jobs:
   generate-linting-suggestions:
     name: 'Generate Linting Suggestions'
     needs: auto-format-lint
-    uses: ./.github/workflows/reusable-copilot-suggestions.yml
+    uses: ./.github/workflows/∞-reusable-copilot-suggestions.yml
     with:
       suggestion_type: 'linting'
 
   create-format-lint-pr:
     name: 'Create Format/Lint PR'
     needs: [auto-format-lint, generate-linting-suggestions]
-    uses: ./.github/workflows/reusable-create-pr.yml
+    uses: ./.github/workflows/∞-reusable-create-pr.yml
     with:
       branch_prefix: 'auto-format-lint'
       pr_title: 'Auto-format and lint fixes $(date +%Y-%m-%d)'
-      pr_body: |
-        ## Automated Formatting and Linting Fixes
-
-        This PR contains automated formatting and linting fixes applied by the auto-format-lint workflow.
-
-        ### Changes Applied
-        - ✅ Prettier formatting for JavaScript, HTML, CSS, and JSON files
-        - ✅ Java formatting with Google Java Format via Spotless
-        - ✅ ESLint auto-fixes where possible
-
-        ### AI Assistance
-        - 🤖 GitHub Copilot has analyzed remaining linting issues
-        - 📋 Suggestions available in workflow artifacts
-        - 🔧 Manual review recommended for complex issues
-
-        ### Workflow Information
-        - **Triggered by**: ${{ github.event_name }}
-        - **Branch**: ${{ env.TARGET_BRANCH }}
-        - **Timestamp**: $(date -u)
-        - **Workflow Run**: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-
-        ### Related Workflows
-        For TODO resolution, use the **TODO-inator** workflow.
-        For incremental improvements, use the **Iterator** workflow.
-
-        ---
-        *This PR was automatically created by the Auto Format and Lint workflow*
-      target_branch: ${{ env.TARGET_BRANCH }}
+      pr_body: 'This PR was automatically created by the Auto Format and Lint workflow'
+      target_branch: ${{ inputs.target_branch || 'main' }}
       labels: 'automated,formatting,linting'
-      dry_run: ${{ env.DRY_RUN }}
