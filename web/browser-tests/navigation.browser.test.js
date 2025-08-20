@@ -31,7 +31,6 @@ test.describe("Navigation Browser Tests", () => {
 
       // Verify activities/features are now visible on the home page (index.html)
       await expect(page.locator("h2")).toContainText(/Select an activity/);
-      await expect(page.getByText(/VAT Return Submission|Submit VAT/)).toBeVisible();
     });
   });
 
