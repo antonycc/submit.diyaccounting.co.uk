@@ -89,7 +89,7 @@ jobs:
         run: 'npm test'
 
   build-base-image:
-    uses: ∞-reusable-build-base-image.yml
+    uses: ./.github/workflows/∞-reusable-build-base-image.yml
 
   mvn-package:
     runs-on: ubuntu-latest
