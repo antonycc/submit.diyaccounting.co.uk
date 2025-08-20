@@ -16,9 +16,10 @@ on:
       improvement_type:
         description: 'Type of incremental improvements to focus on'
         required: false
-        default: 'code-quality'
+        default: 'functionality'
         type: choice
         options:
+          - functionality
           - code-quality
           - performance
           - security
