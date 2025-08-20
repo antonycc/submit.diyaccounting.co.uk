@@ -211,7 +211,10 @@
             return;
           }
           const catalog = await res.json();
-          const cards = (catalog.bundles || []).map(cardHtml).join("\n");
+          const cards = (catalog.bundles || [])
+            .filter((b) => b["allocation"] && b["allocation"] !== "automatic")
+            .map(cardHtml)
+            .join("\n");
           container.innerHTML = cards || '<p class="service-description">No bundles available.</p>';
           updateBundleStatus();
         } catch {
