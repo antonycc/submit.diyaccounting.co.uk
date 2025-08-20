@@ -154,7 +154,7 @@ test.describe("Backlog journeys", () => {
 
     // 4) Go back to Bundles and add the bundle (should now succeed without login prompt)
     await gotoWithPause(page, `http://127.0.0.1:${serverPort}/account/bundles.html`);
-    const addBtn2 = page.getByRole("button", { name: "Default" });
+    const addBtn2 = page.getByRole("button", { name: "Test" });
     await expect(addBtn2).toBeVisible();
     await clickWithPause(addBtn2);
 
