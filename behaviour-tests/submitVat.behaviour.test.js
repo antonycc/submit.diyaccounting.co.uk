@@ -396,6 +396,8 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   await expect(page.getByText("Bundle Added")).toBeVisible({ timeout: 16000 });
 
   await expect(page.getByText("Bundle Added")).toBeVisible();
+
+  // Return to home
   await expect(page.getByText("Back to Home")).toBeVisible();
   await loggedClick("button:has-text('Back to Home')", "Back to Home");
   await page.waitForLoadState("networkidle");
@@ -588,12 +590,16 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   console.log("Opening hamburger menu to go to receipts...");
   await loggedClick("button.hamburger-btn", "Opening hamburger menu for receipts");
   await setTimeout(500);
-  await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/176-hamburger-menu-receipts-${timestamp}.png` });
+  await page.screenshot({
+    path: `target/behaviour-test-results/submitVat-screenshots/176-hamburger-menu-receipts-${timestamp}.png`,
+  });
   await expect(page.getByText("Receipts")).toBeVisible();
   await loggedClick("a:has-text('Receipts')", "Clicking Receipts in hamburger menu");
   await page.waitForLoadState("networkidle");
   await setTimeout(500);
-  await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/177-receipts-page-${timestamp}.png` });
+  await page.screenshot({
+    path: `target/behaviour-test-results/submitVat-screenshots/177-receipts-page-${timestamp}.png`,
+  });
 
   // Check if we have receipts in the table
   console.log("Checking receipts page...");
@@ -602,14 +608,16 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
 
   // If there are receipts, click on the first one
   const firstReceiptLink = receiptsTable.locator("tbody tr:first-child a").first();
-  const hasReceipts = await firstReceiptLink.count() > 0;
+  const hasReceipts = (await firstReceiptLink.count()) > 0;
 
   if (hasReceipts) {
     console.log("Found receipts, clicking on first receipt...");
     await firstReceiptLink.click();
     await page.waitForLoadState("networkidle");
     await setTimeout(500);
-    await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/178-receipt-detail-${timestamp}.png` });
+    await page.screenshot({
+      path: `target/behaviour-test-results/submitVat-screenshots/178-receipt-detail-${timestamp}.png`,
+    });
   } else {
     console.log("No receipts found in table");
   }
@@ -621,7 +629,9 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   await loggedClick("a:has-text('Home')", "Clicking Home in hamburger menu");
   await page.waitForLoadState("networkidle");
   await setTimeout(500);
-  await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/179-back-home-via-menu-${timestamp}.png` });
+  await page.screenshot({
+    path: `target/behaviour-test-results/submitVat-screenshots/179-back-home-via-menu-${timestamp}.png`,
+  });
 
   /* ******* */
   /* LOG OUT */
