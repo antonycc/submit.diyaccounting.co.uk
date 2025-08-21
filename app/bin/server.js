@@ -196,6 +196,22 @@ app.delete(requestBundlePath, async (req, res) => {
   }
 });
 
+// Bundle removal route
+app.delete(requestBundlePath, async (req, res) => {
+  const event = {
+    path: req.path,
+    headers: { host: req.get("host") || "localhost:3000", authorization: req.headers.authorization },
+    queryStringParameters: req.query || {},
+    body: JSON.stringify(req.body),
+  };
+  const { statusCode, body } = await removeBundleHttpDelete(event);
+  try {
+    res.status(statusCode).json(body ? JSON.parse(body) : {});
+  } catch (_e) {
+    res.status(statusCode).send(body || "");
+  }
+});
+
 // Catalog endpoint
 app.get(catalogPath, async (req, res) => {
   const event = {
