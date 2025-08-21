@@ -39,4 +39,27 @@ describe("entitlementsService", () => {
     const activeWithTxn = getActiveBundles(ctxWithTxn);
     expect(activeWithTxn).toContain("legacy");
   });
+
+  it("expired bundles should not appear in active bundles", () => {
+    const sub = "ent-user-expired";
+    store.set(sub, ["guest|EXPIRY=2020-01-01"]); // expired
+    const ctx = { sub, claims: {} };
+    const active = getActiveBundles(ctx);
+    expect(active).not.toContain("guest");
+  });
+
+  it("multiple active bundles from different sources", () => {
+    const sub = "ent-user-multi";
+    store.set(sub, ["guest|EXPIRY=2099-01-01", "legacy|EXPIRY=2099-01-01"]);
+    const ctx = { sub, claims: { transactionId: "abc-123" } };
+    const active = getActiveBundles(ctx);
+    expect(active).toContain("default"); // automatic
+    expect(active).toContain("guest"); // on-request grant
+    expect(active).toContain("legacy"); // on-request grant with qualifier
+  });
+
+  it("bundlesForActivity edge cases", () => {
+    expect(isActivityAllowed("nonexistent-activity", { sub: "user", claims: {} })).toBe(false);
+    expect(isActivityAllowed("submit-vat", { sub: null, claims: {} })).toBe(false); // anonymous
+  });
 });
