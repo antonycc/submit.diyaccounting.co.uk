@@ -67,8 +67,30 @@
             <div class="help-text">Enter the total VAT amount due in pounds</div>
           </div>
 
+          <!-- Developer Test Scenario Section -->
+          <div id="developerSection" class="form-group" style="display: none;">
+            <label for="testScenario">Test Scenario (Developer/Sandbox Only)</label>
+            <select id="testScenario" name="testScenario">
+              <option value="">Default</option>
+              <option value="INVALID_VRN">Test Invalid VRN</option>
+              <option value="INVALID_PAYLOAD">Test Invalid Payload</option>
+              <option value="TAX_PERIOD_NOT_ENDED">Test Tax Period Not Ended</option>
+              <option value="DUPLICATE_SUBMISSION">Test Duplicate Submission</option>
+              <option value="CLIENT_OR_AGENT_NOT_AUTHORISED">Test Not Authorised</option>
+              <option value="INVALID_PERIOD_KEY">Test Invalid Period Key</option>
+              <option value="RULE_INSOLVENT_TRADER">Test Insolvent Trader</option>
+            </select>
+            <div class="help-text">Test different HMRC sandbox error scenarios</div>
+          </div>
+
           <button type="submit" class="btn" id="submitBtn">Submit VAT Return</button>
         </form>
+
+        <div class="developer-controls">
+          <button type="button" id="toggleDeveloperMode" class="developer-button">
+            Show Developer Options
+          </button>
+        </div>
       </div>
 
       <!-- Receipt Display -->
@@ -368,6 +390,44 @@
       //const loadingSpinner = document.getElementById("loadingSpinner");
       const receiptDisplay = document.getElementById("receiptDisplay");
       const vatFormContainer = document.getElementById("vatForm");
+
+      // Initialize page
+      function initializePage() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const vrn = urlParams.get('vrn');
+        const periodKey = urlParams.get('periodKey');
+        
+        if (vrn) {
+          document.getElementById('vatNumber').value = vrn;
+        }
+        if (periodKey) {
+          document.getElementById('periodKey').value = periodKey;
+        }
+
+        const baseUrl = window.location.origin;
+        const isSandbox = baseUrl.includes('test') || baseUrl.includes('sandbox') || 
+                         window.location.hostname === 'localhost' || 
+                         window.location.hostname === '127.0.0.1';
+        
+        if (isSandbox) {
+          const devSection = document.getElementById('developerSection');
+          if (devSection) {
+            devSection.style.display = 'block';
+          }
+        }
+
+        // Toggle developer mode button
+        const toggleBtn = document.getElementById('toggleDeveloperMode');
+        const devSection = document.getElementById('developerSection');
+        
+        if (toggleBtn && devSection) {
+          toggleBtn.addEventListener('click', () => {
+            const isVisible = devSection.style.display !== 'none';
+            devSection.style.display = isVisible ? 'none' : 'block';
+            toggleBtn.textContent = isVisible ? 'Show Developer Options' : 'Hide Developer Options';
+          });
+        }
+      }
 
       // Event listeners
       form.addEventListener("submit", handleFormSubmission);

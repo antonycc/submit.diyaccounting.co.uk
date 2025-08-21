@@ -86,7 +86,14 @@ path = "activities/submitVat.html"
 id = "vat-obligations-sandbox"
 name = "VAT Obligations (Sandbox API)"
 bundles = ["test"]
-path = "account/receipts.html"
+path = "activities/vatObligations.html"
+# tags = ["sandbox"]
+
+[[activities]]
+id = "view-vat-return-sandbox"
+name = "View VAT Return (Sandbox API)"
+bundles = ["test"]
+path = "activities/viewVatReturn.html"
 # tags = ["sandbox"]
 
 [[activities]]

@@ -1,0 +1,322 @@
+<!-- vatObligations.html -->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>VAT Obligations - DIY Accounting Submit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="../submit.css" />
+  </head>
+  <body>
+    <header>
+      <div class="header-nav">
+        <a href="../index.html">← Back to Home</a>
+      </div>
+      <h1>VAT Obligations</h1>
+      <p class="subtitle">Retrieve VAT obligations from HMRC</p>
+    </header>
+
+    <div id="mainContent">
+      <div id="statusMessagesContainer"></div>
+
+      <div id="loadingSpinner" class="spinner" style="display: none"></div>
+
+      <!-- VAT Obligations Form -->
+      <div id="obligationsForm" class="form-container">
+        <h2>Retrieve VAT Obligations</h2>
+        <form id="vatObligationsForm">
+          <div class="form-group">
+            <label for="vrn">VAT Registration Number (VRN)</label>
+            <input
+              type="text"
+              id="vrn"
+              name="vrn"
+              required
+              value=""
+              placeholder="e.g., 193054661"
+              maxlength="9"
+              pattern="[0-9]{9}"
+            />
+            <div class="help-text">Enter your 9-digit VAT registration number</div>
+          </div>
+
+          <div class="form-group">
+            <label for="fromDate">From Date (optional)</label>
+            <input
+              type="date"
+              id="fromDate"
+              name="fromDate"
+              value=""
+            />
+            <div class="help-text">Start date for obligation period filter</div>
+          </div>
+
+          <div class="form-group">
+            <label for="toDate">To Date (optional)</label>
+            <input
+              type="date"
+              id="toDate"
+              name="toDate"
+              value=""
+            />
+            <div class="help-text">End date for obligation period filter</div>
+          </div>
+
+          <div class="form-group">
+            <label for="status">Status (optional)</label>
+            <select id="status" name="status">
+              <option value="">All statuses</option>
+              <option value="O">Open</option>
+              <option value="F">Fulfilled</option>
+            </select>
+            <div class="help-text">Filter by obligation status</div>
+          </div>
+
+          <!-- Developer Test Scenario Section -->
+          <div id="developerSection" class="form-group" style="display: none;">
+            <label for="testScenario">Test Scenario (Developer/Sandbox Only)</label>
+            <select id="testScenario" name="testScenario">
+              <option value="">Default (One Quarterly Met)</option>
+              <option value="QUARTERLY_NONE_MET">Quarterly - None Met</option>
+              <option value="QUARTERLY_ONE_MET">Quarterly - One Met</option>
+              <option value="QUARTERLY_TWO_MET">Quarterly - Two Met</option>
+              <option value="QUARTERLY_THREE_MET">Quarterly - Three Met</option>
+              <option value="QUARTERLY_FOUR_MET">Quarterly - Four Met</option>
+              <option value="MONTHLY_NONE_MET">Monthly - None Met</option>
+              <option value="MONTHLY_ONE_MET">Monthly - One Met</option>
+              <option value="MONTHLY_TWO_MET">Monthly - Two Met</option>
+              <option value="MONTHLY_THREE_MET">Monthly - Three Met</option>
+              <option value="MONTHLY_OBS_01_OPEN">Monthly - Jan Open</option>
+              <option value="MONTHLY_OBS_02_OPEN">Monthly - Feb Open</option>
+              <option value="MONTHLY_OBS_03_OPEN">Monthly - Mar Open</option>
+              <option value="MONTHLY_OBS_04_OPEN">Monthly - Apr Open</option>
+              <option value="MONTHLY_OBS_05_OPEN">Monthly - May Open</option>
+              <option value="MONTHLY_OBS_06_OPEN">Monthly - Jun Open</option>
+              <option value="MONTHLY_OBS_07_OPEN">Monthly - Jul Open</option>
+              <option value="MONTHLY_OBS_08_OPEN">Monthly - Aug Open</option>
+              <option value="MONTHLY_OBS_09_OPEN">Monthly - Sep Open</option>
+              <option value="MONTHLY_OBS_10_OPEN">Monthly - Oct Open</option>
+              <option value="MONTHLY_OBS_11_OPEN">Monthly - Nov Open</option>
+              <option value="MONTHLY_OBS_12_OPEN">Monthly - Dec Open</option>
+              <option value="MONTHLY_OBS_12_FULFILLED">Monthly - All Fulfilled</option>
+              <option value="QUARTERLY_OBS_01_OPEN">Quarterly - Q1 Open</option>
+              <option value="QUARTERLY_OBS_02_OPEN">Quarterly - Q2 Open</option>
+              <option value="QUARTERLY_OBS_03_OPEN">Quarterly - Q3 Open</option>
+              <option value="QUARTERLY_OBS_04_OPEN">Quarterly - Q4 Open</option>
+              <option value="QUARTERLY_OBS_04_FULFILLED">Quarterly - All Fulfilled</option>
+              <option value="MULTIPLE_OPEN_MONTHLY">Multiple Open Monthly</option>
+              <option value="MULTIPLE_OPEN_QUARTERLY">Multiple Open Quarterly</option>
+            </select>
+            <div class="help-text">Test different HMRC sandbox scenarios</div>
+          </div>
+
+          <button type="submit" id="retrieveBtn" class="submit-button">
+            Retrieve Obligations
+          </button>
+        </form>
+
+        <div class="developer-controls">
+          <button type="button" id="toggleDeveloperMode" class="developer-button">
+            Show Developer Options
+          </button>
+        </div>
+      </div>
+
+      <!-- Results Display -->
+      <div id="obligationsResults" class="results-container" style="display: none;">
+        <h3>VAT Obligations</h3>
+        <div id="obligationsTable"></div>
+        <div class="button-group">
+          <button type="button" id="newSearchBtn" class="secondary-button">
+            New Search
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script src="../submit.js"></script>
+    <script>
+      // Check if we're in sandbox/test mode to show developer options
+      function initializePage() {
+        const baseUrl = window.location.origin;
+        const isSandbox = baseUrl.includes('test') || baseUrl.includes('sandbox') || 
+                         window.location.hostname === 'localhost' || 
+                         window.location.hostname === '127.0.0.1';
+        
+        if (isSandbox) {
+          const devSection = document.getElementById('developerSection');
+          if (devSection) {
+            devSection.style.display = 'block';
+          }
+        }
+
+        // Toggle developer mode button
+        const toggleBtn = document.getElementById('toggleDeveloperMode');
+        const devSection = document.getElementById('developerSection');
+        
+        if (toggleBtn && devSection) {
+          toggleBtn.addEventListener('click', () => {
+            const isVisible = devSection.style.display !== 'none';
+            devSection.style.display = isVisible ? 'none' : 'block';
+            toggleBtn.textContent = isVisible ? 'Show Developer Options' : 'Hide Developer Options';
+          });
+        }
+      }
+
+      // Handle form submission
+      document.getElementById('vatObligationsForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const loadingSpinner = document.getElementById('loadingSpinner');
+        const submitBtn = document.getElementById('retrieveBtn');
+        const statusContainer = document.getElementById('statusMessagesContainer');
+        const resultsContainer = document.getElementById('obligationsResults');
+        
+        // Clear previous results and status
+        statusContainer.innerHTML = '';
+        resultsContainer.style.display = 'none';
+        
+        // Show loading
+        loadingSpinner.style.display = 'block';
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Retrieving...';
+        
+        try {
+          const formData = new FormData(e.target);
+          const vrn = formData.get('vrn');
+          const fromDate = formData.get('fromDate');
+          const toDate = formData.get('toDate');
+          const status = formData.get('status');
+          const testScenario = formData.get('testScenario');
+          
+          // Build query parameters
+          const params = new URLSearchParams({ vrn });
+          if (fromDate) params.append('from', fromDate);
+          if (toDate) params.append('to', toDate);
+          if (status) params.append('status', status);
+          if (testScenario) params.append('Gov-Test-Scenario', testScenario);
+          
+          // Get access token (assuming it's stored from previous auth)
+          const accessToken = localStorage.getItem('hmrcAccessToken');
+          if (!accessToken) {
+            throw new Error('No access token found. Please authorize with HMRC first.');
+          }
+          
+          const response = await fetch(`/api/vat/obligations?${params}`, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+              'Content-Type': 'application/json',
+            },
+          });
+          
+          const result = await response.json();
+          
+          if (!response.ok) {
+            throw new Error(result.message || 'Failed to retrieve obligations');
+          }
+          
+          // Display results
+          displayObligations(result.obligations || []);
+          resultsContainer.style.display = 'block';
+          
+        } catch (error) {
+          console.error('Error retrieving obligations:', error);
+          showStatusMessage(error.message, 'error');
+        } finally {
+          // Hide loading
+          loadingSpinner.style.display = 'none';
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Retrieve Obligations';
+        }
+      });
+
+      function displayObligations(obligations) {
+        const tableContainer = document.getElementById('obligationsTable');
+        
+        if (!obligations || obligations.length === 0) {
+          tableContainer.innerHTML = '<p class="no-data">No obligations found for the specified criteria.</p>';
+          return;
+        }
+        
+        let tableHtml = `
+          <table class="results-table">
+            <thead>
+              <tr>
+                <th>Period Key</th>
+                <th>Start Date</th>
+                <th>End Date</th>
+                <th>Due Date</th>
+                <th>Status</th>
+                <th>Received</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+        `;
+        
+        obligations.forEach(obligation => {
+          const statusClass = obligation.status === 'O' ? 'status-open' : 'status-fulfilled';
+          const statusText = obligation.status === 'O' ? 'Open' : 'Fulfilled';
+          
+          tableHtml += `
+            <tr>
+              <td><strong>${obligation.periodKey}</strong></td>
+              <td>${obligation.start || '-'}</td>
+              <td>${obligation.end || '-'}</td>
+              <td>${obligation.due || '-'}</td>
+              <td><span class="${statusClass}">${statusText}</span></td>
+              <td>${obligation.received || '-'}</td>
+              <td>
+                ${obligation.status === 'F' ? 
+                  `<button class="action-button" onclick="viewReturn('${document.getElementById('vrn').value}', '${obligation.periodKey}')">View Return</button>` :
+                  `<button class="action-button" onclick="submitReturn('${document.getElementById('vrn').value}', '${obligation.periodKey}')">Submit Return</button>`
+                }
+              </td>
+            </tr>
+          `;
+        });
+        
+        tableHtml += '</tbody></table>';
+        tableContainer.innerHTML = tableHtml;
+      }
+
+      function viewReturn(vrn, periodKey) {
+        // Navigate to view VAT return page
+        window.location.href = `viewVatReturn.html?vrn=${vrn}&periodKey=${periodKey}`;
+      }
+
+      function submitReturn(vrn, periodKey) {
+        // Navigate to submit VAT return page with pre-filled data
+        window.location.href = `submitVat.html?vrn=${vrn}&periodKey=${periodKey}`;
+      }
+
+      function showStatusMessage(message, type = 'info') {
+        const container = document.getElementById('statusMessagesContainer');
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `status-message ${type}`;
+        messageDiv.textContent = message;
+        container.appendChild(messageDiv);
+        
+        // Auto-remove after 5 seconds
+        setTimeout(() => {
+          if (messageDiv.parentNode) {
+            messageDiv.parentNode.removeChild(messageDiv);
+          }
+        }, 5000);
+      }
+
+      // New search button handler
+      document.getElementById('newSearchBtn')?.addEventListener('click', () => {
+        const form = document.getElementById('vatObligationsForm');
+        const resultsContainer = document.getElementById('obligationsResults');
+        form.reset();
+        resultsContainer.style.display = 'none';
+        document.getElementById('statusMessagesContainer').innerHTML = '';
+      });
+
+      // Initialize page when DOM is loaded
+      document.addEventListener('DOMContentLoaded', initializePage);
+    </script>
+  </body>
+</html>
