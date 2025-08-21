@@ -32,12 +32,12 @@
         <h2>Add Bundle</h2>
         <p>Rendered from product catalog</p>
         <div class="bundles-list" id="catalogBundles"></div>
-        
+
         <div style="margin-top: 3em; padding-top: 2em; border-top: 1px solid #ddd">
           <h3>Your Current Bundles</h3>
           <div id="currentBundles" style="margin: 1em 0"></div>
         </div>
-        
+
         <div style="margin-top: 2em">
           <button
             type="button"
@@ -48,7 +48,7 @@
             Back to Home
           </button>
         </div>
-        
+
         <div style="margin-top: 3em; padding-top: 1em; border-top: 1px solid #eee">
           <button
             type="button"
@@ -244,18 +244,19 @@
       function renderCurrentBundles() {
         const container = document.getElementById("currentBundles");
         const bundles = parseUserBundles();
-        
+
         if (bundles.length === 0) {
           container.innerHTML = '<p style="color: #666; font-style: italic;">No bundles added yet.</p>';
           return;
         }
 
-        const bundleCards = bundles.map(bundleEntry => {
-          const bundleId = bundleEntry.split("|")[0]; // Remove expiry info if present
-          const hasExpiry = bundleEntry.includes("EXPIRY=");
-          const expiryInfo = hasExpiry ? bundleEntry.split("EXPIRY=")[1] : "";
-          
-          return `
+        const bundleCards = bundles
+          .map((bundleEntry) => {
+            const bundleId = bundleEntry.split("|")[0]; // Remove expiry info if present
+            const hasExpiry = bundleEntry.includes("EXPIRY=");
+            const expiryInfo = hasExpiry ? bundleEntry.split("EXPIRY=")[1] : "";
+
+            return `
             <div class="service-item" style="text-align:left; margin-bottom: 1em; background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 5px; padding: 1em;">
               <h4 style="margin: 0 0 0.5em 0;">${bundleId}</h4>
               ${expiryInfo ? `<p style="font-size: 0.9em; color: #666; margin: 0 0 0.5em 0;">Expires: ${expiryInfo}</p>` : ""}
@@ -264,7 +265,8 @@
                 Remove
               </button>
             </div>`;
-        }).join("");
+          })
+          .join("");
 
         container.innerHTML = bundleCards;
       }
@@ -298,9 +300,9 @@
             method: "DELETE",
             headers: {
               "Content-Type": "application/json",
-              "Authorization": `Bearer ${idToken}`
+              "Authorization": `Bearer ${idToken}`,
             },
-            body: JSON.stringify({ bundleId })
+            body: JSON.stringify({ bundleId }),
           });
 
           const result = await response.json().catch(() => ({}));
@@ -339,9 +341,9 @@
             method: "DELETE",
             headers: {
               "Content-Type": "application/json",
-              "Authorization": `Bearer ${idToken}`
+              "Authorization": `Bearer ${idToken}`,
             },
-            body: JSON.stringify({ removeAll: true })
+            body: JSON.stringify({ removeAll: true }),
           });
 
           const result = await response.json().catch(() => ({}));
