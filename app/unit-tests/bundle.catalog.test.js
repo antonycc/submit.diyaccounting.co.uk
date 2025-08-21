@@ -31,20 +31,20 @@ describe("bundle.js – catalog qualifiers and expiry (MOCK)", () => {
     process.env.DIY_SUBMIT_BUNDLE_MOCK = "true";
   });
 
-  // test("legacy requires transactionId qualifier", async () => {
-  //  const token = makeIdToken("user-legacy");
-  //  const resFail = await requestBundle(buildEvent(token, { bundleId: "legacy" }));
-  //  expect(resFail.statusCode).toBe(400);
-  //  const bodyFail = JSON.parse(resFail.body || '{}');
-  //  expect(["qualifier_mismatch", "unknown_qualifier"]).toContain(bodyFail.error);
-  //
-  //  const resOk = await requestBundle(
-  //    buildEvent(token, { bundleId: "legacy", qualifiers: { transactionId: "t-123" } }),
-  //  );
-  //  expect(resOk.statusCode).toBe(200);
-  //  const bodyOk = JSON.parse(resOk.body || '{}');
-  //  expect(bodyOk.status).toBe("granted");
-  // });
+  test("legacy requires transactionId qualifier", async () => {
+    const token = makeIdToken("user-legacy");
+    const resFail = await requestBundle(buildEvent(token, { bundleId: "legacy" }));
+    expect(resFail.statusCode).toBe(400);
+    const bodyFail = JSON.parse(resFail.body || '{}');
+    expect(["qualifier_mismatch", "unknown_qualifier"]).toContain(bodyFail.error);
+
+    const resOk = await requestBundle(
+      buildEvent(token, { bundleId: "legacy", qualifiers: { transactionId: "t-123" } }),
+    );
+    expect(resOk.statusCode).toBe(200);
+    const bodyOk = JSON.parse(resOk.body || '{}');
+    expect(bodyOk.status).toBe("granted");
+  });
 
   test("test bundle applies P1D timeout producing non-null expiry", async () => {
     const token = makeIdToken("user-test");
@@ -56,5 +56,35 @@ describe("bundle.js – catalog qualifiers and expiry (MOCK)", () => {
     if (body.expiry) {
       expect(/\d{4}-\d{2}-\d{2}/.test(body.expiry)).toBe(true);
     }
+  });
+
+  test("unknown qualifier should return 400 with specific error", async () => {
+    const token = makeIdToken("user-unknown-qualifier");
+    const res = await requestBundle(buildEvent(token, { 
+      bundleId: "test", 
+      qualifiers: { unknownField: "value" } 
+    }));
+    expect(res.statusCode).toBe(400);
+    const body = JSON.parse(res.body || "{}");
+    expect(body.error).toBe("unknown_qualifier");
+    expect(body.qualifier).toBe("unknownField");
+  });
+
+  test("basic bundle requires subscription tier qualifier", async () => {
+    const token = makeIdToken("user-basic-no-tier");
+    // Should fail without subscriptionTier
+    const resFail = await requestBundle(buildEvent(token, { bundleId: "basic" }));
+    expect(resFail.statusCode).toBe(400);
+    const bodyFail = JSON.parse(resFail.body || "{}");
+    expect(bodyFail.error).toBe("qualifier_mismatch");
+
+    // Should succeed with correct subscriptionTier
+    const resOk = await requestBundle(buildEvent(token, { 
+      bundleId: "basic", 
+      qualifiers: { subscriptionTier: "Basic" } 
+    }));
+    expect(resOk.statusCode).toBe(200);
+    const bodyOk = JSON.parse(resOk.body || "{}");
+    expect(bodyOk.status).toBe("granted");
   });
 });

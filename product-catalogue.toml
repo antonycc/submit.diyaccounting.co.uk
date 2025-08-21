@@ -14,31 +14,31 @@ auth = "required"
 cap = 10
 timeout = "P1D"
 
-#[[bundles]]
-#id = "guest"
-#name = "Guest"
-#allocation = "on-request"
-#auth = "required"
-#cap = 10
-#timeout = "P1M"
+[[bundles]]
+id = "guest"
+name = "Guest"
+allocation = "on-request"
+auth = "required"
+cap = 10
+timeout = "P1M"
 
-#[[bundles]]
-#id = "legacy"
-#name = "Legacy"
-#allocation = "on-request"
-#auth = "required"
-#cap = 1000
-#timeout = "P1Y"
-#[bundles.qualifiers]
-#requiresTransactionId = true
+[[bundles]]
+id = "legacy"
+name = "Legacy"
+allocation = "on-request"
+auth = "required"
+cap = 1000
+timeout = "P1Y"
+[bundles.qualifiers]
+requiresTransactionId = true
 
-#[[bundles]]
-#id = "basic"
-#name = "Basic"
-#allocation = "on-request"
-#auth = "required"
-#[bundles.qualifiers]
-#subscriptionTier = "Basic"
+[[bundles]]
+id = "basic"
+name = "Basic"
+allocation = "on-request"
+auth = "required"
+[bundles.qualifiers]
+subscriptionTier = "Basic"
 
 #[[bundles]]
 #id = "advanced"
@@ -95,12 +95,11 @@ name = "View previously submitted receipts"
 bundles = ["default"]
 path = "account/receipts.html"
 
-#[[activities]]
-#id = "submit-vat"
-#name = "Submit VAT"
-#bundles = ["guest", "basic", "legacy"]
-#bundles = ["guest"]
-#path = "activities/submitVat.html"
+[[activities]]
+id = "submit-vat"
+name = "Submit VAT"
+bundles = ["guest", "basic", "legacy"]
+path = "activities/submitVat.html"
 
 [[activities]]
 id = "vat-obligations"
