@@ -26,15 +26,8 @@ on:
     - cron: '7 4 * * *'
 
 jobs:
-  setup-environment:
-    name: 'Setup Environment'
-    uses: ./.github/workflows/∞-reusable-setup-environment.yml
-    with:
-      install_copilot: true
-
   auto-format-lint:
     name: 'Auto Format and Lint'
-    needs: setup-environment
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -47,10 +40,21 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Setup environment
-        uses: ./.github/workflows/∞-reusable-setup-environment.yml
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
-          install_copilot: false
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'maven'
+
+      - name: Install Node.js dependencies
+        run: npm ci || npm install --ignore-engines
 
       - name: Check current state
         run: |
@@ -84,20 +88,72 @@ jobs:
           echo "Applying ESLint auto-fixes..."
           npm run linting-fix || echo "ESLint auto-fix completed"
 
-  generate-linting-suggestions:
-    name: 'Generate Linting Suggestions'
-    needs: auto-format-lint
-    uses: ./.github/workflows/∞-reusable-copilot-suggestions.yml
-    with:
-      suggestion_type: 'linting'
+      - name: Check for changes
+        id: changes
+        run: |
+          if git diff --quiet; then
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+            echo "No changes detected"
+          else
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+            echo "Changes detected"
+            echo "::group::Changes Summary"
+            git diff --stat
+            echo "::endgroup::"
+          fi
 
-  create-format-lint-pr:
-    name: 'Create Format/Lint PR'
-    needs: [auto-format-lint, generate-linting-suggestions]
-    uses: ./.github/workflows/∞-reusable-create-pr.yml
-    with:
-      branch_prefix: 'auto-format-lint'
-      pr_title: 'Auto-format and lint fixes $(date +%Y-%m-%d)'
-      pr_body: 'This PR was automatically created by the Auto Format and Lint workflow'
-      target_branch: ${{ inputs.target_branch || 'main' }}
-      labels: 'automated,formatting,linting'
+      - name: Create feature branch and PR
+        if: steps.changes.outputs.has_changes == 'true' && inputs.dry_run != true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Configure git
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+
+          # Create feature branch
+          BRANCH_NAME="auto-format-lint/$(date +%Y%m%d_%H%M%S)"
+          git checkout -b "$BRANCH_NAME"
+          echo "Created branch: $BRANCH_NAME"
+
+          # Commit changes
+          git add .
+          git commit -m "Auto-format and lint fixes $(date +%Y-%m-%d)
+
+          Co-authored-by: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>"
+
+          # Push changes
+          git push origin "$BRANCH_NAME"
+
+          # Create PR using GitHub CLI
+          gh pr create \
+            --title "Auto-format and lint fixes $(date +%Y-%m-%d)" \
+            --body "This PR was automatically created by the Auto Format and Lint workflow.
+
+          Changes include:
+          - JavaScript/TypeScript formatting fixes via Prettier
+          - Java formatting fixes via Spotless  
+          - ESLint auto-fixes for JavaScript/TypeScript
+
+          Please review and merge if the changes look good." \
+            --base "${{ inputs.target_branch || 'main' }}" \
+            --head "$BRANCH_NAME" \
+            --label "automated,formatting,linting" \
+            --assignee "${{ github.actor }}"
+
+      - name: Dry run summary
+        if: inputs.dry_run == true
+        run: |
+          echo "::notice::DRY RUN MODE - No changes were committed or pushed"
+          echo "::group::Summary"
+          echo "Would have made changes: ${{ steps.changes.outputs.has_changes }}"
+          if [ "${{ steps.changes.outputs.has_changes }}" == "true" ]; then
+            echo "Changes that would be committed:"
+            git diff --stat
+          fi
+          echo "::endgroup::"
+
+      - name: No changes summary
+        if: steps.changes.outputs.has_changes == 'false'
+        run: |
+          echo "::notice::No changes detected - skipping PR creation"
