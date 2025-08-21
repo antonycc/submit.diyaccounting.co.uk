@@ -171,12 +171,12 @@ app.post(requestBundlePath, async (req, res) => {
   }
 });
 app.options(requestBundlePath, async (_req, res) => {
-  const { statusCode, body } = await requestBundleHttpPost({ httpMethod: "OPTIONS" });
-  try {
-    res.status(statusCode).json(body ? JSON.parse(body) : {});
-  } catch (_e) {
-    res.status(statusCode).send(body || "");
-  }
+  res.set({
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Headers": "Content-Type,Authorization",
+    "Access-Control-Allow-Methods": "POST,DELETE,OPTIONS",
+  });
+  res.status(200).send();
 });
 
 // Bundle removal route
