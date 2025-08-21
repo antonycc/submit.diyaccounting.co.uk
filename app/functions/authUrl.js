@@ -3,6 +3,7 @@
 import dotenv from "dotenv";
 
 import { extractRequest, httpBadRequestResponse, httpOkResponse, httpServerErrorResponse } from "../lib/responses.js";
+import { isAuthMockMode } from "../lib/parameterStore.js";
 
 dotenv.config({ path: ".env" });
 
@@ -35,8 +36,15 @@ export async function httpGet(event, provider = "hmrc") {
       });
     }
 
+    // Check if we should override provider to mock based on runtime parameter
+    let actualProvider = provider;
+    if ((provider === "hmrc" || provider === "google") && (await isAuthMockMode())) {
+      console.log(`[AUTH] Runtime mock mode enabled, switching ${provider} to mock`);
+      actualProvider = "mock";
+    }
+
     // Processing
-    const authUrlResult = authUrl(state, provider);
+    const authUrlResult = authUrl(state, actualProvider);
 
     // Generate a success response
     return httpOkResponse({
