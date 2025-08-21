@@ -221,6 +221,7 @@ public class WebStack extends Stack {
     public String cognitoDomainPrefix;
     public String bundleExpiryDate;
     public String bundleUserLimit;
+    public String bundleMock;
     public String bundleLambdaHandlerFunctionName;
     public String bundleLambdaUrlPath;
     public String bundleLambdaDuration;
@@ -639,6 +640,11 @@ public class WebStack extends Stack {
 
     public Builder bundleUserLimit(String bundleUserLimit) {
       this.bundleUserLimit = bundleUserLimit;
+      return this;
+    }
+
+    public Builder bundleMock(String bundleMock) {
+      this.bundleMock = bundleMock;
       return this;
     }
 
@@ -1305,6 +1311,10 @@ public class WebStack extends Stack {
                       builder.bundleExpiryDate != null ? builder.bundleExpiryDate : "2025-12-31",
                   "DIY_SUBMIT_BUNDLE_USER_LIMIT",
                       builder.bundleUserLimit != null ? builder.bundleUserLimit : "1000"));
+
+      if (builder.bundleMock != null && !builder.bundleMock.isBlank()) {
+        bundleLambdaEnv.put("DIY_SUBMIT_BUNDLE_MOCK", builder.bundleMock);
+      }
 
       if (this.userPool != null) {
         bundleLambdaEnv.put("DIY_SUBMIT_USER_POOL_ID", this.userPool.getUserPoolId());
