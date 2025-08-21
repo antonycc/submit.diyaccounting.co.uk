@@ -443,8 +443,141 @@ export async function httpOptions(_event) {
     headers: {
       "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Headers": "Content-Type,Authorization",
-      "Access-Control-Allow-Methods": "POST,OPTIONS",
+      "Access-Control-Allow-Methods": "POST,DELETE,OPTIONS",
     },
     body: "",
   };
+}
+
+/**
+ * Remove a bundle for a user
+ * @param {Object} event - Lambda event object
+ * @returns {Object} Response object
+ */
+export async function httpDelete(event) {
+  try {
+    console.log("[DEBUG_LOG] Bundle delete request received:", JSON.stringify(event, null, 2));
+
+    // Extract Cognito JWT from Authorization header
+    const authorization = event.headers?.authorization || event.headers?.Authorization;
+    if (!authorization || !authorization.startsWith("Bearer ")) {
+      return {
+        statusCode: 401,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+        },
+        body: JSON.stringify({ error: "Missing or invalid Authorization header" }),
+      };
+    }
+
+    const token = authorization.substring("Bearer ".length);
+    const payload = decodeJwtNoVerify(token);
+    if (!payload?.sub) {
+      return {
+        statusCode: 401,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+        },
+        body: JSON.stringify({ error: "Invalid token: no subject" }),
+      };
+    }
+
+    const userId = payload.sub;
+    const body = JSON.parse(event.body || "{}");
+    const bundleToRemove = body.bundleId;
+    const removeAll = body.removeAll;
+
+    if (!bundleToRemove && !removeAll) {
+      return {
+        statusCode: 400,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+        },
+        body: JSON.stringify({ error: "Missing bundleId or removeAll parameter" }),
+      };
+    }
+
+    // Get current bundles for the user
+    let currentBundles = [];
+    if (isMockMode()) {
+      currentBundles = __inMemoryBundles.get(userId) || [];
+    } else {
+      // TODO: Add AWS Cognito implementation similar to httpPost
+      console.log("[DEBUG_LOG] AWS Cognito delete not implemented in full mode");
+      return {
+        statusCode: 501,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+        },
+        body: JSON.stringify({ error: "Delete not implemented for production mode" }),
+      };
+    }
+
+    if (removeAll) {
+      // Remove all bundles
+      if (isMockMode()) {
+        __inMemoryBundles.set(userId, []);
+      }
+      return {
+        statusCode: 200,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+        },
+        body: JSON.stringify({
+          status: "removed_all",
+          message: "All bundles removed",
+          bundles: [],
+        }),
+      };
+    } else {
+      // Remove specific bundle
+      const bundlesAfterRemoval = currentBundles.filter(
+        (bundle) => !bundle.startsWith(bundleToRemove + "|") && bundle !== bundleToRemove,
+      );
+
+      if (bundlesAfterRemoval.length === currentBundles.length) {
+        return {
+          statusCode: 404,
+          headers: {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*",
+          },
+          body: JSON.stringify({ error: "Bundle not found" }),
+        };
+      }
+
+      if (isMockMode()) {
+        __inMemoryBundles.set(userId, bundlesAfterRemoval);
+      }
+
+      return {
+        statusCode: 200,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+        },
+        body: JSON.stringify({
+          status: "removed",
+          message: "Bundle removed",
+          bundle: bundleToRemove,
+          bundles: bundlesAfterRemoval,
+        }),
+      };
+    }
+  } catch (error) {
+    console.log("[DEBUG_LOG] Unexpected error in httpDelete:", error?.message || error);
+    return {
+      statusCode: 500,
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+      },
+      body: JSON.stringify({ error: "Internal server error" }),
+    };
+  }
 }
