@@ -80,11 +80,9 @@
         if (accessToken && userInfo) {
           console.log("User is authenticated");
           renderDynamicActivities();
-          renderActivitiesByBundle();
         } else {
           console.log("User is not authenticated");
           renderDynamicActivities();
-          renderActivitiesByBundle();
         }
       }
 
@@ -182,40 +180,6 @@
           dynamicContainer.innerHTML =
             '<p style="color: #b00020;">Error loading activities. Please refresh the page.</p>';
         }
-      }
-
-      function renderActivitiesByBundle() {
-        const container = document.getElementById("activitiesByBundle");
-        if (!container) return;
-
-        // Keep the bundle summary section for now, but we could make this dynamic too
-        const bundles = parseUserBundles();
-        const sections = [];
-
-        // Default bundle always available
-        sections.push(`
-          <section style="margin-bottom:1em;">
-            <h3 style="margin:0 0 .5em 0;">Default bundle</h3>
-            <ul>
-              <li>VAT Obligations (Production) – available</li>
-              <li>View receipts – available</li>
-            </ul>
-          </section>
-        `);
-
-        if (hasBundle(bundles, "test") || hasBundle(bundles, "HMRC_TEST_API")) {
-          sections.push(`
-            <section style="margin-bottom:1em;">
-              <h3 style="margin:0 0 .5em 0;">Test API bundle</h3>
-              <ul>
-                <li>Submit VAT (Sandbox API) – available</li>
-                <li>VAT Obligations (Sandbox API) – available</li>
-              </ul>
-            </section>
-          `);
-        }
-
-        container.innerHTML = sections.join("\n");
       }
 
       // Close menu when clicking outside

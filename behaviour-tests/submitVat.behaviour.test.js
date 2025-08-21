@@ -361,14 +361,27 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/070-home-${timestamp}.png` });
   await expect(page.getByText("Logged in as")).toBeVisible({ timeout: 15000 });
 
-  // Add bundle
-  await expect(page.getByText("Add Bundle")).toBeVisible();
-  await loggedClick("button:has-text('Add Bundle')", "Add Bundle");
+  // Go to bundles via hamburger menu
+  console.log("Opening hamburger menu...");
+  await loggedClick("button.hamburger-btn", "Opening hamburger menu");
+  await setTimeout(500);
+  await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/071-hamburger-menu-${timestamp}.png` });
+  await expect(page.getByText("Bundles")).toBeVisible();
+  await loggedClick("a:has-text('Bundles')", "Clicking Bundles in hamburger menu");
   await page.waitForLoadState("networkidle");
   await setTimeout(500);
-  await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/072-home-${timestamp}.png` });
+  await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/072-bundles-page-${timestamp}.png` });
 
-  // Request test
+  // Remove all bundles first (idempotent operation)
+  console.log("Removing all bundles first...");
+  await loggedClick("#removeAllBtn", "Remove All Bundles");
+  await setTimeout(500);
+  // Accept the confirmation dialog
+  await page.on('dialog', dialog => dialog.accept());
+  await setTimeout(1000);
+  await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/073-removed-all-bundles-${timestamp}.png` });
+
+  // Request test bundle
   await expect(page.getByText("Request test")).toBeVisible();
   await loggedClick("button:has-text('Request test')", "Request test");
   await page.waitForLoadState("networkidle");
@@ -376,6 +389,8 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/075-bundles-${timestamp}.png` });
 
   await expect(page.getByText("Bundle Added")).toBeVisible();
+  
+  // Return to home
   await expect(page.getByText("Back to Home")).toBeVisible();
   await loggedClick("button:has-text('Back to Home')", "Back to Home");
   await page.waitForLoadState("networkidle");
@@ -551,17 +566,68 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
 
   console.log("VAT submission flow completed successfully");
 
-  /* ******* */
-  /* LOG OUT */
-  /* ******* */
+  /* ********** */
+  /* RECEIPTS   */
+  /* ********** */
 
-  // Go back home and log out
-  console.log("Main button to go home");
+  // Go back home first
+  console.log("Going back to home page");
   await page.click("#homePageFromMainBtn");
   await page.waitForLoadState("networkidle");
   await setTimeout(500);
   await page.screenshot({
-    path: `target/behaviour-test-results/submitVat-screenshots/180-home-button-clicked-${timestamp}.png`,
+    path: `target/behaviour-test-results/submitVat-screenshots/175-back-to-home-${timestamp}.png`,
+  });
+  
+  // Use hamburger menu to go to receipts
+  console.log("Opening hamburger menu to go to receipts...");
+  await loggedClick("button.hamburger-btn", "Opening hamburger menu for receipts");
+  await setTimeout(500);
+  await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/176-hamburger-menu-receipts-${timestamp}.png` });
+  await expect(page.getByText("Receipts")).toBeVisible();
+  await loggedClick("a:has-text('Receipts')", "Clicking Receipts in hamburger menu");
+  await page.waitForLoadState("networkidle");
+  await setTimeout(500);
+  await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/177-receipts-page-${timestamp}.png` });
+
+  // Check if we have receipts in the table
+  console.log("Checking receipts page...");
+  const receiptsTable = page.locator("#receiptsTable");
+  await expect(receiptsTable).toBeVisible({ timeout: 10000 });
+  
+  // If there are receipts, click on the first one
+  const firstReceiptLink = receiptsTable.locator("tbody tr:first-child a").first();
+  const hasReceipts = await firstReceiptLink.count() > 0;
+  
+  if (hasReceipts) {
+    console.log("Found receipts, clicking on first receipt...");
+    await firstReceiptLink.click();
+    await page.waitForLoadState("networkidle");
+    await setTimeout(500);
+    await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/178-receipt-detail-${timestamp}.png` });
+  } else {
+    console.log("No receipts found in table");
+  }
+
+  // Return to home via hamburger menu
+  console.log("Returning to home via hamburger menu...");
+  await loggedClick("button.hamburger-btn", "Opening hamburger menu to go home");
+  await setTimeout(500);
+  await loggedClick("a:has-text('Home')", "Clicking Home in hamburger menu");
+  await page.waitForLoadState("networkidle");
+  await setTimeout(500);
+  await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/179-back-home-via-menu-${timestamp}.png` });
+
+  /* ******* */
+  /* LOG OUT */
+  /* ******* */
+
+  // Log out from home page
+  console.log("Logging out from home page");
+  await page.waitForLoadState("networkidle");
+  await setTimeout(500);
+  await page.screenshot({
+    path: `target/behaviour-test-results/submitVat-screenshots/180-home-before-logout-${timestamp}.png`,
   });
   await expect(page.locator("a:has-text('Logout')")).toBeVisible();
 
