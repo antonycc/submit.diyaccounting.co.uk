@@ -361,21 +361,35 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/070-home-${timestamp}.png` });
   await expect(page.getByText("Logged in as")).toBeVisible({ timeout: 16000 });
 
-  // Add bundle
-  await expect(page.getByText("Add Bundle")).toBeVisible();
-  await loggedClick("button:has-text('Add Bundle')", "Add Bundle");
+  // Go to bundles via hamburger menu
+  console.log("Opening hamburger menu...");
+  await loggedClick("button.hamburger-btn", "Opening hamburger menu");
+  await setTimeout(500);
+  await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/071-hamburger-menu-${timestamp}.png` });
+  await expect(page.getByText("Bundles")).toBeVisible();
+  await loggedClick("a:has-text('Bundles')", "Clicking Bundles in hamburger menu");
   await page.waitForLoadState("networkidle");
   await setTimeout(500);
-  await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/072-home-${timestamp}.png` });
+  await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/072-bundles-page-${timestamp}.png` });
 
-  // Request test
+  // Remove all bundles first (idempotent operation)
+  console.log("Removing all bundles first...");
+  await loggedClick("#removeAllBtn", "Remove All Bundles");
+  await setTimeout(500);
+  // Accept the confirmation dialog
+  await page.on('dialog', dialog => dialog.accept());
+  await setTimeout(1000);
+  await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/073-removed-all-bundles-${timestamp}.png` });
+
+  // Request test bundle
   await expect(page.getByText("Request test")).toBeVisible();
   await loggedClick("button:has-text('Request test')", "Request test");
   await page.waitForLoadState("networkidle");
   await setTimeout(1500);
   await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/075-bundles-${timestamp}.png` });
-
   await expect(page.getByText("Bundle Added")).toBeVisible({ timeout: 16000 });
+
+  // Return to home
   await expect(page.getByText("Back to Home")).toBeVisible();
   await loggedClick("button:has-text('Back to Home')", "Back to Home");
   await page.waitForLoadState("networkidle");
