@@ -396,8 +396,6 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   await expect(page.getByText("Bundle Added")).toBeVisible({ timeout: 16000 });
 
   await expect(page.getByText("Bundle Added")).toBeVisible();
-
-  // Return to home
   await expect(page.getByText("Back to Home")).toBeVisible();
   await loggedClick("button:has-text('Back to Home')", "Back to Home");
   await page.waitForLoadState("networkidle");
@@ -629,13 +627,12 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   /* LOG OUT */
   /* ******* */
 
-  // Go back home and log out
-  console.log("Main button to go home");
-  await page.click("#homePageFromMainBtn");
+  // Log out from home page
+  console.log("Logging out from home page");
   await page.waitForLoadState("networkidle");
   await setTimeout(500);
   await page.screenshot({
-    path: `target/behaviour-test-results/submitVat-screenshots/180-home-button-clicked-${timestamp}.png`,
+    path: `target/behaviour-test-results/submitVat-screenshots/180-home-before-logout-${timestamp}.png`,
   });
   await expect(page.locator("a:has-text('Logout')")).toBeVisible();
 
