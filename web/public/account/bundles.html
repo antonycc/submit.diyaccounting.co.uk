@@ -14,6 +14,7 @@
           <button class="hamburger-btn" onclick="toggleMenu()">☰</button>
           <div class="menu-dropdown" id="menuDropdown">
             <a href="../index.html">Home</a>
+            <a href="../account/bundles.html">Bundles</a>
             <a href="../account/receipts.html">Receipts</a>
           </div>
         </div>
@@ -31,6 +32,12 @@
         <h2>Add Bundle</h2>
         <p>Rendered from product catalog</p>
         <div class="bundles-list" id="catalogBundles"></div>
+        
+        <div style="margin-top: 3em; padding-top: 2em; border-top: 1px solid #ddd">
+          <h3>Your Current Bundles</h3>
+          <div id="currentBundles" style="margin: 1em 0"></div>
+        </div>
+        
         <div style="margin-top: 2em">
           <button
             type="button"
@@ -39,6 +46,17 @@
             style="background-color: #6c757d; border-color: #6c757d"
           >
             Back to Home
+          </button>
+        </div>
+        
+        <div style="margin-top: 3em; padding-top: 1em; border-top: 1px solid #eee">
+          <button
+            type="button"
+            class="btn"
+            id="removeAllBtn"
+            style="background-color: #dc3545; border-color: #dc3545; color: white; font-size: 0.9em"
+          >
+            Remove All Bundles
           </button>
         </div>
       </div>
@@ -221,6 +239,131 @@
           container.innerHTML = '<p class="service-description">Failed to load catalog.</p>';
         }
       })();
+
+      // --- render current user bundles with remove buttons
+      function renderCurrentBundles() {
+        const container = document.getElementById("currentBundles");
+        const bundles = parseUserBundles();
+        
+        if (bundles.length === 0) {
+          container.innerHTML = '<p style="color: #666; font-style: italic;">No bundles added yet.</p>';
+          return;
+        }
+
+        const bundleCards = bundles.map(bundleEntry => {
+          const bundleId = bundleEntry.split("|")[0]; // Remove expiry info if present
+          const hasExpiry = bundleEntry.includes("EXPIRY=");
+          const expiryInfo = hasExpiry ? bundleEntry.split("EXPIRY=")[1] : "";
+          
+          return `
+            <div class="service-item" style="text-align:left; margin-bottom: 1em; background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 5px; padding: 1em;">
+              <h4 style="margin: 0 0 0.5em 0;">${bundleId}</h4>
+              ${expiryInfo ? `<p style="font-size: 0.9em; color: #666; margin: 0 0 0.5em 0;">Expires: ${expiryInfo}</p>` : ""}
+              <button type="button" class="btn" data-remove-bundle-id="${bundleId}" 
+                      style="background-color: #dc3545; border-color: #dc3545; color: white; font-size: 0.8em; padding: 0.3em 0.8em;">
+                Remove
+              </button>
+            </div>`;
+        }).join("");
+
+        container.innerHTML = bundleCards;
+      }
+
+      // --- click handler for remove buttons
+      document.addEventListener("click", async (e) => {
+        if (e.target.closest("button[data-remove-bundle-id]")) {
+          const btn = e.target.closest("button[data-remove-bundle-id]");
+          const bundleId = btn.getAttribute("data-remove-bundle-id");
+          await removeBundle(bundleId);
+        } else if (e.target.id === "removeAllBtn") {
+          await removeAllBundles();
+        }
+      });
+
+      // --- remove individual bundle
+      async function removeBundle(bundleId) {
+        const idToken = getIdToken();
+        if (!idToken) {
+          alert("Please log in first to remove bundles.");
+          window.location.href = "../auth/login.html";
+          return;
+        }
+
+        if (!confirm(`Are you sure you want to remove the "${bundleId}" bundle?`)) {
+          return;
+        }
+
+        try {
+          const response = await fetch("/api/request-bundle", {
+            method: "DELETE",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${idToken}`
+            },
+            body: JSON.stringify({ bundleId })
+          });
+
+          const result = await response.json().catch(() => ({}));
+
+          if (response.ok) {
+            if (Array.isArray(result.bundles)) {
+              localStorage.setItem("userBundles", JSON.stringify(result.bundles));
+            }
+            renderCurrentBundles();
+            updateBundleStatus(); // Update the request buttons
+            alert(`Bundle "${bundleId}" removed successfully.`);
+          } else {
+            alert(`Failed to remove bundle: ${result.error || "Unknown error"}`);
+          }
+        } catch (error) {
+          alert("Failed to remove bundle. Please try again.");
+          console.error("Remove bundle error:", error);
+        }
+      }
+
+      // --- remove all bundles
+      async function removeAllBundles() {
+        const idToken = getIdToken();
+        if (!idToken) {
+          alert("Please log in first to remove bundles.");
+          window.location.href = "../auth/login.html";
+          return;
+        }
+
+        if (!confirm("Are you sure you want to remove ALL bundles? This action cannot be undone.")) {
+          return;
+        }
+
+        try {
+          const response = await fetch("/api/request-bundle", {
+            method: "DELETE",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${idToken}`
+            },
+            body: JSON.stringify({ removeAll: true })
+          });
+
+          const result = await response.json().catch(() => ({}));
+
+          if (response.ok) {
+            localStorage.setItem("userBundles", JSON.stringify([]));
+            renderCurrentBundles();
+            updateBundleStatus(); // Update the request buttons
+            alert("All bundles removed successfully.");
+          } else {
+            alert(`Failed to remove all bundles: ${result.error || "Unknown error"}`);
+          }
+        } catch (error) {
+          alert("Failed to remove all bundles. Please try again.");
+          console.error("Remove all bundles error:", error);
+        }
+      }
+
+      // --- initialize current bundles display
+      setTimeout(() => {
+        renderCurrentBundles();
+      }, 100);
 
       // --- page init
       localStorage.removeItem("currentActivity");
