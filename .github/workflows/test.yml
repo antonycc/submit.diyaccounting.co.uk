@@ -2,7 +2,7 @@
 
 name: test
 concurrency:
-  group: 'test-${{ github.ref_name }}'
+  group: 'ngrok-free-app-test'
   cancel-in-progress: true
 run-name: 'test [${{ github.ref_name }}] [${{ github.event.head_commit.message }}]'
 
