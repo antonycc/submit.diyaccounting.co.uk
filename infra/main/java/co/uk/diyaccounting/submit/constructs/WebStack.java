@@ -1079,17 +1079,22 @@ public class WebStack extends Stack {
     }
 
     // Create runtime configuration parameters in Systems Manager Parameter Store
-    this.bundleMockParameter = StringParameter.Builder.create(this, "BundleMockParameter")
-        .parameterName("/diy-submit/bundle-mock")
-        .stringValue(builder.bundleMock != null && !builder.bundleMock.isBlank() ? builder.bundleMock : "false")
-        .description("Runtime switch for bundle mock mode (true/false)")
-        .build();
+    this.bundleMockParameter =
+        StringParameter.Builder.create(this, "BundleMockParameter")
+            .parameterName("/diy-submit/bundle-mock")
+            .stringValue(
+                builder.bundleMock != null && !builder.bundleMock.isBlank()
+                    ? builder.bundleMock
+                    : "false")
+            .description("Runtime switch for bundle mock mode (true/false)")
+            .build();
 
-    this.authMockParameter = StringParameter.Builder.create(this, "AuthMockParameter")
-        .parameterName("/diy-submit/auth-mock")
-        .stringValue("false") // Default to false, can be changed at runtime
-        .description("Runtime switch for authentication mock mode (true/false)")
-        .build();
+    this.authMockParameter =
+        StringParameter.Builder.create(this, "AuthMockParameter")
+            .parameterName("/diy-submit/auth-mock")
+            .stringValue("false") // Default to false, can be changed at runtime
+            .description("Runtime switch for authentication mock mode (true/false)")
+            .build();
 
     // Lambdas
 
@@ -1175,14 +1180,16 @@ public class WebStack extends Stack {
         builder.authUrlGoogleLambdaUrlPath + "*", authUrlGoogleLambdaUrlOrigin.behaviorOptions);
 
     // Grant Systems Manager Parameter Store read permissions to auth Lambda functions
-    var ssmPolicy = PolicyStatement.Builder.create()
-        .effect(Effect.ALLOW)
-        .actions(List.of("ssm:GetParameter", "ssm:GetParameters"))
-        .resources(List.of(
-            this.bundleMockParameter.getParameterArn(),
-            this.authMockParameter.getParameterArn()))
-        .build();
-    
+    var ssmPolicy =
+        PolicyStatement.Builder.create()
+            .effect(Effect.ALLOW)
+            .actions(List.of("ssm:GetParameter", "ssm:GetParameters"))
+            .resources(
+                List.of(
+                    this.bundleMockParameter.getParameterArn(),
+                    this.authMockParameter.getParameterArn()))
+            .build();
+
     this.authUrlHmrcLambda.addToRolePolicy(ssmPolicy);
     this.authUrlMockLambda.addToRolePolicy(ssmPolicy);
     this.authUrlGoogleLambda.addToRolePolicy(ssmPolicy);
@@ -1387,15 +1394,16 @@ public class WebStack extends Stack {
                 .resources(List.of(this.userPool.getUserPoolArn()))
                 .build());
       }
-      
+
       // Grant Systems Manager Parameter Store read permissions to the bundle Lambda
       this.bundleLambda.addToRolePolicy(
           PolicyStatement.Builder.create()
               .effect(Effect.ALLOW)
               .actions(List.of("ssm:GetParameter", "ssm:GetParameters"))
-              .resources(List.of(
-                  this.bundleMockParameter.getParameterArn(),
-                  this.authMockParameter.getParameterArn()))
+              .resources(
+                  List.of(
+                      this.bundleMockParameter.getParameterArn(),
+                      this.authMockParameter.getParameterArn()))
               .build());
     }
 

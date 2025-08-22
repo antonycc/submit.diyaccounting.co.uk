@@ -39,29 +39,30 @@ export async function getParameter(parameterName, fallbackValue = "") {
     }
 
     console.log(`[PARAMETER_STORE] Fetching parameter: ${parameterName}`);
-    
+
     const mod = await getSsmModule();
     const client = await getSsmClient();
-    
+
     const command = new mod.GetParameterCommand({
       Name: parameterName,
-      WithDecryption: false
+      WithDecryption: false,
     });
-    
+
     const response = await client.send(command);
     const value = response.Parameter?.Value || fallbackValue;
-    
+
     // Cache the result
     __parameterCache.set(parameterName, {
       value,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
-    
+
     console.log(`[PARAMETER_STORE] Retrieved ${parameterName}: ${value}`);
     return value;
-    
   } catch (error) {
-    console.log(`[PARAMETER_STORE] Error fetching ${parameterName}: ${error.message}. Using fallback: ${fallbackValue}`);
+    console.log(
+      `[PARAMETER_STORE] Error fetching ${parameterName}: ${error.message}. Using fallback: ${fallbackValue}`,
+    );
     return fallbackValue;
   }
 }
@@ -92,10 +93,10 @@ export async function isBundleMockMode() {
     if (parameterValue !== null) {
       return parameterValue;
     }
-  } catch (error) {
+  } catch (_error) {
     console.log("[PARAMETER_STORE] Failed to check bundle mock parameter, falling back to environment variable");
   }
-  
+
   // Fallback to environment variable (current behavior)
   return (
     String(process.env.DIY_SUBMIT_BUNDLE_MOCK || "").toLowerCase() === "true" ||
@@ -115,10 +116,10 @@ export async function isAuthMockMode() {
     if (parameterValue !== null) {
       return parameterValue;
     }
-  } catch (error) {
+  } catch (_error) {
     console.log("[PARAMETER_STORE] Failed to check auth mock parameter, falling back to environment variable");
   }
-  
+
   // Fallback to environment variable check for mock oauth2 server
   return String(process.env.DIY_SUBMIT_TEST_MOCK_OAUTH2 || "").toLowerCase() === "run";
 }

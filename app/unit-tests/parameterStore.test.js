@@ -1,24 +1,24 @@
 // app/unit-tests/parameterStore.test.js
 
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { 
-  getParameter, 
-  getBooleanParameter, 
-  isBundleMockMode, 
+import {
+  getParameter,
+  getBooleanParameter,
+  isBundleMockMode,
   isAuthMockMode,
   clearParameterCache,
-  __getParameterCache 
+  __getParameterCache,
 } from "../lib/parameterStore.js";
 
 // Mock the AWS SDK
 const mockSend = vi.fn();
 const mockSSMClient = {
-  send: mockSend
+  send: mockSend,
 };
 
 vi.mock("@aws-sdk/client-ssm", () => ({
   SSMClient: vi.fn(() => mockSSMClient),
-  GetParameterCommand: vi.fn((params) => ({ params }))
+  GetParameterCommand: vi.fn((params) => ({ params })),
 }));
 
 describe("Parameter Store", () => {
@@ -33,7 +33,7 @@ describe("Parameter Store", () => {
   describe("getParameter", () => {
     it("should return parameter value from AWS SSM", async () => {
       mockSend.mockResolvedValue({
-        Parameter: { Value: "test-value" }
+        Parameter: { Value: "test-value" },
       });
 
       const result = await getParameter("/test/param", "fallback");
@@ -49,7 +49,7 @@ describe("Parameter Store", () => {
 
     it("should cache parameter values", async () => {
       mockSend.mockResolvedValue({
-        Parameter: { Value: "cached-value" }
+        Parameter: { Value: "cached-value" },
       });
 
       // First call
@@ -67,7 +67,7 @@ describe("Parameter Store", () => {
   describe("getBooleanParameter", () => {
     it("should return true for 'true' string", async () => {
       mockSend.mockResolvedValue({
-        Parameter: { Value: "true" }
+        Parameter: { Value: "true" },
       });
 
       const result = await getBooleanParameter("/test/bool", false);
@@ -76,7 +76,7 @@ describe("Parameter Store", () => {
 
     it("should return true for '1' string", async () => {
       mockSend.mockResolvedValue({
-        Parameter: { Value: "1" }
+        Parameter: { Value: "1" },
       });
 
       const result = await getBooleanParameter("/test/bool", false);
@@ -85,7 +85,7 @@ describe("Parameter Store", () => {
 
     it("should return false for 'false' string", async () => {
       mockSend.mockResolvedValue({
-        Parameter: { Value: "false" }
+        Parameter: { Value: "false" },
       });
 
       const result = await getBooleanParameter("/test/bool", true);
@@ -103,7 +103,7 @@ describe("Parameter Store", () => {
   describe("isBundleMockMode", () => {
     it("should return parameter store value when available", async () => {
       mockSend.mockResolvedValue({
-        Parameter: { Value: "true" }
+        Parameter: { Value: "true" },
       });
 
       const result = await isBundleMockMode();
@@ -131,7 +131,7 @@ describe("Parameter Store", () => {
   describe("isAuthMockMode", () => {
     it("should return parameter store value when available", async () => {
       mockSend.mockResolvedValue({
-        Parameter: { Value: "true" }
+        Parameter: { Value: "true" },
       });
 
       const result = await isAuthMockMode();
@@ -160,9 +160,9 @@ describe("Parameter Store", () => {
     it("should clear the cache", async () => {
       // First populate cache
       mockSend.mockResolvedValue({
-        Parameter: { Value: "cached-value" }
+        Parameter: { Value: "cached-value" },
       });
-      
+
       await getParameter("/test/param", "fallback");
       expect(__getParameterCache().size).toBe(1);
 
