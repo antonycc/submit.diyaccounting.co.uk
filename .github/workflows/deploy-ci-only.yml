@@ -86,6 +86,7 @@ jobs:
           retry-max-attempts: 3
 
       - name: Write GitHub secret HMRC_CLIENT_SECRET to temp file (keeps out of logs)
+        if: ${{ env.skipDeploy != 'true' }}
         shell: bash
         env:
           GH_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
@@ -96,6 +97,7 @@ jobs:
           echo "::add-mask::$(cat secret.txt)"
 
       - name: Upsert HMRC_CLIENT_SECRET into AWS Secrets Manager
+        if: ${{ env.skipDeploy != 'true' }}
         shell: bash
         env:
           SECRET_NAME: "diy/ci/submit/hmrc/client_secret"
@@ -113,7 +115,8 @@ jobs:
           fi
           shred -u secret.txt
 
-      - name: Write GitHub secret DIY_SUBMIT_GOOGLE_CLIENT_SECRET to temp file (keeps out of logs)
+      - name: Write GitHub secret DIY_SUBMIT_GOOGLE_CLIENT_SECRET to temp file
+        if: ${{ env.skipDeploy != 'true' }}
         shell: bash
         env:
           GH_SECRET: ${{ secrets.DIY_SUBMIT_GOOGLE_CLIENT_SECRET }}
@@ -124,6 +127,7 @@ jobs:
           echo "::add-mask::$(cat secret.txt)"
 
       - name: Upsert DIY_SUBMIT_GOOGLE_CLIENT_SECRET into AWS Secrets Manager
+        if: ${{ env.skipDeploy != 'true' }}
         shell: bash
         env:
           SECRET_NAME: "diy/ci/submit/google/client_secret"
