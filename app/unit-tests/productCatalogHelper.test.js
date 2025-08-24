@@ -26,11 +26,11 @@ describe("productCatalogHelper", () => {
     expect(catalog.version).toBe("1.1.0");
   });
 
-  // it("bundlesForActivity should return expected bundles", () => {
-  //  const catalog = parseCatalog(tomlText);
-  //  expect(bundlesForActivity(catalog, "submit-vat")).toEqual(["guest", "basic", "legacy"]);
-  //  expect(bundlesForActivity(catalog, "vat-obligations")).toEqual(["default"]);
-  // });
+  it("bundlesForActivity should return expected bundles", () => {
+    const catalog = parseCatalog(tomlText);
+    expect(bundlesForActivity(catalog, "submit-vat")).toEqual(["guest", "basic", "legacy"]);
+    expect(bundlesForActivity(catalog, "vat-obligations")).toEqual(["default"]);
+  });
 
   // it("activitiesForBundle should return expected activity ids", () => {
   //  const catalog = parseCatalog(tomlText);
@@ -39,9 +39,9 @@ describe("productCatalogHelper", () => {
   //  expect(legacyActivities).toContain("diy-limited-company-upload");
   // });
 
-  // it("isActivityAvailable should work for positive and negative cases", () => {
-  //  const catalog = parseCatalog(tomlText);
-  //  expect(isActivityAvailable(catalog, "submit-vat", "guest")).toBe(true);
-  //  expect(isActivityAvailable(catalog, "submit-vat", "default")).toBe(false);
-  // });
+  it("isActivityAvailable should work for positive and negative cases", () => {
+    const catalog = parseCatalog(tomlText);
+    expect(isActivityAvailable(catalog, "submit-vat", "guest")).toBe(true);
+    expect(isActivityAvailable(catalog, "submit-vat", "default")).toBe(false);
+  });
 });
