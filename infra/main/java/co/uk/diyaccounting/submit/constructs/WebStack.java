@@ -68,6 +68,7 @@ import software.amazon.awscdk.services.s3.deployment.ISource;
 import software.amazon.awscdk.services.s3.deployment.Source;
 import software.amazon.awscdk.services.secretsmanager.ISecret;
 import software.amazon.awscdk.services.secretsmanager.Secret;
+import software.amazon.awscdk.services.ssm.StringParameter;
 import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
 
@@ -150,6 +151,10 @@ public class WebStack extends Stack {
   public FunctionUrl myReceiptsLambdaUrl;
   public LogGroup myReceiptsLambdaLogGroup;
 
+  // Runtime configuration parameters
+  public StringParameter bundleMockParameter;
+  public StringParameter authMockParameter;
+
   public static class Builder {
     public Construct scope;
     public String id;
@@ -221,6 +226,7 @@ public class WebStack extends Stack {
     public String cognitoDomainPrefix;
     public String bundleExpiryDate;
     public String bundleUserLimit;
+    public String bundleMock;
     public String bundleLambdaHandlerFunctionName;
     public String bundleLambdaUrlPath;
     public String bundleLambdaDuration;
@@ -639,6 +645,11 @@ public class WebStack extends Stack {
 
     public Builder bundleUserLimit(String bundleUserLimit) {
       this.bundleUserLimit = bundleUserLimit;
+      return this;
+    }
+
+    public Builder bundleMock(String bundleMock) {
+      this.bundleMock = bundleMock;
       return this;
     }
 
@@ -1067,6 +1078,24 @@ public class WebStack extends Stack {
       this.userPoolClient = cognito.userPoolClient;
     }
 
+    // Create runtime configuration parameters in Systems Manager Parameter Store
+    this.bundleMockParameter =
+        StringParameter.Builder.create(this, "BundleMockParameter")
+            .parameterName("/diy-submit/bundle-mock")
+            .stringValue(
+                builder.bundleMock != null && !builder.bundleMock.isBlank()
+                    ? builder.bundleMock
+                    : "false")
+            .description("Runtime switch for bundle mock mode (true/false)")
+            .build();
+
+    this.authMockParameter =
+        StringParameter.Builder.create(this, "AuthMockParameter")
+            .parameterName("/diy-submit/auth-mock")
+            .stringValue("false") // Default to false, can be changed at runtime
+            .description("Runtime switch for authentication mock mode (true/false)")
+            .build();
+
     // Lambdas
 
     var lambdaUrlToOriginsBehaviourMappings = new HashMap<String, BehaviorOptions>();
@@ -1149,6 +1178,21 @@ public class WebStack extends Stack {
     this.authUrlGoogleLambdaLogGroup = authUrlGoogleLambdaUrlOrigin.logGroup;
     lambdaUrlToOriginsBehaviourMappings.put(
         builder.authUrlGoogleLambdaUrlPath + "*", authUrlGoogleLambdaUrlOrigin.behaviorOptions);
+
+    // Grant Systems Manager Parameter Store read permissions to auth Lambda functions
+    var ssmPolicy =
+        PolicyStatement.Builder.create()
+            .effect(Effect.ALLOW)
+            .actions(List.of("ssm:GetParameter", "ssm:GetParameters"))
+            .resources(
+                List.of(
+                    this.bundleMockParameter.getParameterArn(),
+                    this.authMockParameter.getParameterArn()))
+            .build();
+
+    this.authUrlHmrcLambda.addToRolePolicy(ssmPolicy);
+    this.authUrlMockLambda.addToRolePolicy(ssmPolicy);
+    this.authUrlGoogleLambda.addToRolePolicy(ssmPolicy);
 
     // exchangeToken - HMRC
     // Create a secret for the HMRC client secret and set the ARN to be used in the Lambda
@@ -1306,6 +1350,10 @@ public class WebStack extends Stack {
                   "DIY_SUBMIT_BUNDLE_USER_LIMIT",
                       builder.bundleUserLimit != null ? builder.bundleUserLimit : "1000"));
 
+      if (builder.bundleMock != null && !builder.bundleMock.isBlank()) {
+        bundleLambdaEnv.put("DIY_SUBMIT_BUNDLE_MOCK", builder.bundleMock);
+      }
+
       if (this.userPool != null) {
         bundleLambdaEnv.put("DIY_SUBMIT_USER_POOL_ID", this.userPool.getUserPoolId());
       }
@@ -1346,6 +1394,17 @@ public class WebStack extends Stack {
                 .resources(List.of(this.userPool.getUserPoolArn()))
                 .build());
       }
+
+      // Grant Systems Manager Parameter Store read permissions to the bundle Lambda
+      this.bundleLambda.addToRolePolicy(
+          PolicyStatement.Builder.create()
+              .effect(Effect.ALLOW)
+              .actions(List.of("ssm:GetParameter", "ssm:GetParameters"))
+              .resources(
+                  List.of(
+                      this.bundleMockParameter.getParameterArn(),
+                      this.authMockParameter.getParameterArn()))
+              .build());
     }
 
     // Catalog Lambda

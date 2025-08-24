@@ -1,6 +1,7 @@
 // app/functions/bundle.js
 
 import { loadCatalogFromRoot } from "../lib/productCatalogHelper.js";
+import { isBundleMockMode } from "../lib/parameterStore.js";
 
 // AWS Cognito SDK is loaded lazily only when not in MOCK mode to avoid requiring it during tests
 let __cognitoModule;
@@ -38,11 +39,9 @@ export function __getInMemoryBundlesStore() {
   return __inMemoryBundles;
 }
 
-function isMockMode() {
-  return (
-    String(process.env.DIY_SUBMIT_BUNDLE_MOCK || "").toLowerCase() === "true" ||
-    process.env.DIY_SUBMIT_BUNDLE_MOCK === "1"
-  );
+// Runtime version that checks parameter store
+async function isMockModeRuntime() {
+  return await isBundleMockMode();
 }
 
 function parseIsoDurationToDate(fromDate, iso) {
@@ -130,8 +129,9 @@ export async function httpPost(event) {
 
     const userId = decodedToken.sub;
     const userPoolId = process.env.DIY_SUBMIT_USER_POOL_ID;
+    const isMock = await isMockModeRuntime();
 
-    if (!userPoolId && !isMockMode()) {
+    if (!userPoolId && !isMock) {
       console.log("[DEBUG_LOG] Missing USER_POOL_ID environment variable (non-mock mode)");
       return {
         statusCode: 500,
@@ -175,7 +175,7 @@ export async function httpPost(event) {
 
     // Fetch current bundles from Cognito custom attribute or MOCK store
     let currentBundles = [];
-    if (isMockMode()) {
+    if (isMock) {
       currentBundles = __inMemoryBundles.get(userId) || [];
       console.log("[DEBUG_LOG] [MOCK] Current user bundles:", currentBundles);
     } else {
@@ -243,7 +243,7 @@ export async function httpPost(event) {
       // Check user limit for this bundle
       const userLimit = parseInt(process.env.DIY_SUBMIT_BUNDLE_USER_LIMIT || "1000");
       let currentCount;
-      if (isMockMode()) {
+      if (isMock) {
         currentCount = 0;
         for (const bundles of __inMemoryBundles.values()) {
           if ((bundles || []).some((b) => typeof b === "string" && b.startsWith(requestedBundle + "|"))) {
@@ -267,7 +267,7 @@ export async function httpPost(event) {
 
       const newBundle = `${requestedBundle}|EXPIRY=${expiryDate}`;
       currentBundles.push(newBundle);
-      if (isMockMode()) {
+      if (isMock) {
         __inMemoryBundles.set(userId, currentBundles);
         return {
           statusCode: 200,
