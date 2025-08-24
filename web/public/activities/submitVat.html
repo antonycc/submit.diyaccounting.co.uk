@@ -9,7 +9,20 @@
   </head>
   <body>
     <header>
-      <div class="header-nav"></div>
+      <div class="header-nav">
+        <div class="hamburger-menu">
+          <button class="hamburger-btn" onclick="toggleMenu()">☰</button>
+          <div class="menu-dropdown" id="menuDropdown">
+            <a href="../index.html">Home</a>
+            <a href="../account/bundles.html">Bundles</a>
+            <a href="../account/receipts.html">Receipts</a>
+          </div>
+        </div>
+        <div class="auth-section">
+          <span class="login-status">Not logged in</span>
+          <a href="../auth/login.html" class="login-link">Log in</a>
+        </div>
+      </div>
       <h1>DIY Accounting Submit</h1>
       <p class="subtitle">Submit UK VAT returns to HMRC under Making Tax Digital (MTD)</p>
     </header>
@@ -110,6 +123,8 @@
     </footer>
 
     <script src="../submit.js"></script>
+    <script src="../widgets/hamburger-menu.js"></script>
+    <script src="../widgets/auth-status.js"></script>
     <script src="../widgets/status-messages.js"></script>
     <script>
       // Form submission handler
