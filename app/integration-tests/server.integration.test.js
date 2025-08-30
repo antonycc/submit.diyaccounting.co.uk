@@ -90,7 +90,7 @@ describe("Integration – Server Express App", () => {
       DIY_SUBMIT_HOME_URL: "https://test.submit.diyaccounting.co.uk/",
       DIY_SUBMIT_HMRC_BASE_URI: "https://test-api.service.hmrc.gov.uk",
       DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX: "integration-test-bucket",
-      DIY_SUBMIT_DIY_SUBMIT_TEST_SERVER_HTTP_PORT: "3001",
+      DIY_SUBMIT_TEST_SERVER_HTTP_PORT: "3001",
       DIY_SUBMIT_TEST_S3_ENDPOINT: "http://localhost:9000", // Enable S3 operations for tests
     };
 

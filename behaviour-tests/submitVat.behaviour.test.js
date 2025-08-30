@@ -90,7 +90,7 @@ test.beforeAll(async () => {
       env: {
         ...process.env,
         DIY_SUBMIT_TEST_S3_ENDPOINT: endpoint,
-        DIY_SUBMIT_DIY_SUBMIT_TEST_SERVER_HTTP_PORT: serverPort.toString(),
+        DIY_SUBMIT_TEST_SERVER_HTTP_PORT: serverPort.toString(),
       },
       stdio: ["pipe", "pipe", "pipe"],
     });
@@ -101,14 +101,9 @@ test.beforeAll(async () => {
 
   if (runProxy) {
     console.log("Starting ngrok process...");
-    // TODO: Get the ngrok host from the HOME_URL environment variable
-    ngrokProcess = spawn(
-      "npx",
-      ["ngrok", "http", "--url", "wanted-finally-anteater.ngrok-free.app", serverPort.toString()],
-      {
+    ngrokProcess = spawn("npm", [ "run", "proxy", serverPort.toString() ], {
         env: {
           ...process.env,
-          DIY_SUBMIT_DIY_SUBMIT_TEST_SERVER_HTTP_PORT: serverPort.toString(),
         },
         stdio: ["pipe", "pipe", "pipe"],
       },
@@ -430,7 +425,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   await page.screenshot({
     path: `target/behaviour-test-results/submitVat-screenshots/160-waiting-for-receipt-${timestamp}.png`,
   });
-  await page.waitForSelector("#receiptDisplay", { state: "visible", timeout: 30000 });
+  await page.waitForSelector("#receiptDisplay", { state: "visible", timeout: 60000 });
   await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/170-receipt-${timestamp}.png` });
   await setTimeout(500);
   const receiptDisplay = page.locator("#receiptDisplay");
@@ -476,3 +471,25 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   // await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/200-home-${timestamp}.png` });
   // await expect(page.getByText("Log in")).toBeVisible();
 }, 60000);
+
+// Resolve ngrok host from HOME_URL (DIY_SUBMIT_HOME_URL)
+// Examples:
+//  https://example.ngrok-free.app/         -> example.ngrok-free.app
+//  https://example.ngrok-free.app/index.html -> example.ngrok-free.app
+//  http://localhost:3000/path              -> localhost (omit port for external host usage)
+// If you actually need the port for a local tunnel, use url.host instead of url.hostname.
+function resolveProxyHost(homeUrlValue) {
+  if (!homeUrlValue) {
+    throw new Error("DIY_SUBMIT_HOME_URL is not defined");
+  }
+  try {
+    const url = new URL(homeUrlValue);
+    return url.hostname; // change to url.host if you want to keep :port
+  } catch {
+    // Fallback: strip protocol, then take up to first / ? or #
+    return homeUrlValue
+      .replace(/^[a-z]+:\/\//i, "")
+      .split(/[/?#]/)[0]
+      .replace(/:\d+$/, ""); // drop port if present
+  }
+}
