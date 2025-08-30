@@ -15,7 +15,7 @@ export async function checkIfServerIsRunning(url, delay = 500) {
         // Log the body of the response for debugging
         const responseBody = await response.text();
         logger.info("Response body", responseBody, url);
-        logger.info("Server is ready! at ${url}", url);
+        logger.info(`Server is ready! at ${url}`, url);
       }
     } catch (error) {
       attempts++;
