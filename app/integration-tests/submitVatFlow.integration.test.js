@@ -47,7 +47,7 @@ describe("System Test – end-to-end AWS-like flow", () => {
     // Stub environment variables
     process.env = {
       ...originalEnv,
-      DIY_SUBMIT_DIY_SUBMIT_TEST_SERVER_HTTP_PORT: "3000",
+      DIY_SUBMIT_TEST_SERVER_HTTP_PORT: "3000",
       DIY_SUBMIT_HMRC_BASE_URI: "https://test.test.test.uk",
       DIY_SUBMIT_HMRC_CLIENT_ID: "test client id",
       DIY_SUBMIT_HOME_URL: "http://hmrc.redirect:3000/",

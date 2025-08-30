@@ -6,7 +6,7 @@ import { setTimeout } from "timers/promises";
 export async function checkIfServerIsRunning(url, delay = 500) {
   let serverReady = false;
   let attempts = 0;
-  logger.info(`Checking server readiness for...`, url);
+  logger.info(`Checking server readiness for... ${url}`, url);
   while (!serverReady && attempts < 15) {
     try {
       const response = await fetch(url);
@@ -15,11 +15,11 @@ export async function checkIfServerIsRunning(url, delay = 500) {
         // Log the body of the response for debugging
         const responseBody = await response.text();
         logger.info("Response body", responseBody, url);
-        logger.info("Server is ready!", url);
+        logger.info("Server is ready! at ${url}", url);
       }
     } catch (error) {
       attempts++;
-      logger.error(`Server check attempt ${attempts}/15 failed: ${error.message}`);
+      logger.error(`Server check attempt ${attempts}/15 failed: ${error.message} from ${url}`);
       await setTimeout(delay);
     }
   }

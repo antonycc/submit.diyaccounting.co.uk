@@ -263,8 +263,7 @@ app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "../../web/public/index.html"));
 });
 
-const DIY_SUBMIT_TEST_SERVER_HTTP_PORT =
-  process.env.DIY_SUBMIT_TEST_SERVER_HTTP_PORT || process.env.DIY_SUBMIT_DIY_SUBMIT_TEST_SERVER_HTTP_PORT || 3000;
+const DIY_SUBMIT_TEST_SERVER_HTTP_PORT = process.env.DIY_SUBMIT_TEST_SERVER_HTTP_PORT || 3000;
 
 // Only start the server if this file is being run directly (compare absolute paths) or under test harness
 const __thisFile = fileURLToPath(import.meta.url);

@@ -119,7 +119,7 @@ describe("System Test – persist receipts to containerised S3", () => {
       ...originalEnv,
       DIY_SUBMIT_TEST_S3_ENDPOINT: endpoint,
     };
-  }, 20000); // 20s timeout to accommodate container startup
+  }, 30000); // 30s timeout to accommodate container startup
 
   afterAll(async () => {
     if (container) {
@@ -163,7 +163,7 @@ describe("System Test – persist receipts to containerised S3", () => {
     expect(storedReceipt.formBundleNumber).toEqual(receipt.formBundleNumber);
     expect(storedReceipt.chargeRefNumber).toEqual(receipt.chargeRefNumber);
     expect(storedReceipt.processingDate).toEqual(receipt.processingDate);
-  }, 20000);
+  }, 30000);
 });
 
 // Helper function to read streams
