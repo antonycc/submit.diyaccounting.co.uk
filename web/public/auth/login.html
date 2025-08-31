@@ -48,6 +48,13 @@
             </button>
           </div>
 
+          <div class="auth-provider">
+            <button type="button" class="btn auth-btn antonycc-btn" id="loginWithAntonyccCognito">
+              <img src="../images/oidc-antonycc-logo.png" alt="OIDC by Antonycc Cognito" class="provider-logo" />
+              Continue with @antonycc/oidc via Cognito
+            </button>
+          </div>
+
           <div class="auth-provider" id="mockOAuth2Provider">
             <button type="button" class="btn auth-btn" id="loginWithMockOAuth2">
               <img
@@ -105,8 +112,32 @@
         window.location.href = authResponseUrl;
       }
 
-      // Login with Antonycc via Cognito
+      // Login with Antonycc
       async function loginWithAntonycc() {
+        console.log("Initiating Antonycc login");
+
+        console.log("Clear stored tokens and user info");
+        localStorage.removeItem("cognitoAccessToken");
+        localStorage.removeItem("cognitoIdToken");
+        localStorage.removeItem("cognitoRefreshToken");
+        localStorage.removeItem("userInfo");
+        localStorage.removeItem("authState");
+
+        // Generate state parameter for security
+        const state = Math.random().toString(36).substring(2, 15);
+        localStorage.setItem("authState", state);
+
+        // Get OAuth URL
+        const authResponse = await getAuthUrl(state, "mock");
+        const authUrl = authResponse.authUrl;
+
+        showStatus(`Handing off to ${authUrl}`, "info");
+        console.log("Redirecting to Antonycc");
+        window.location.href = authUrl;
+      }
+
+      // Login with Antonycc via Cognito
+      async function loginWithAntonyccCognito() {
         console.log("Initiating Antonycc login via Cognito");
 
         console.log("Clear stored tokens and user info");
@@ -131,7 +162,7 @@
 
       // Login with Mock OAuth2 Server via Cognito
       async function loginWithMockOAuth2() {
-        console.log("Initiating navikt/mock-oauth2-server login via Cognito");
+        console.log("Initiating navikt/mock-oauth2-server login");
 
         console.log("Clear stored tokens and user info");
         localStorage.removeItem("cognitoAccessToken");
@@ -167,11 +198,13 @@
       // DOM elements
       const loginWithGoogleButton = document.getElementById("loginWithGoogle");
       const loginWithAntonyccButton = document.getElementById("loginWithAntonycc");
+      const loginWithAntonyccCognitoButton = document.getElementById("loginWithAntonyccCognito");
       const loginWithMockOAuth2Button = document.getElementById("loginWithMockOAuth2");
 
       // Event listeners
       loginWithGoogleButton.onclick = loginWithGoogle;
       loginWithAntonyccButton.onclick = loginWithAntonycc;
+      loginWithAntonyccCognitoButton.onclick = loginWithAntonyccCognito;
       loginWithMockOAuth2Button.addEventListener("click", async (event) => {
         event.preventDefault(); // Prevent default button action
         await loginWithMockOAuth2();

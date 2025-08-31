@@ -83,8 +83,25 @@ export async function httpGetGoogle(event) {
 // GET /api/antonycc/auth-url?state={state}
 export async function httpGetAntonycc(event) {
   const state = event.queryStringParameters?.state;
-  const clientId = process.env.DIY_SUBMIT_ANTONYCC_CLIENT_ID;
   const redirectUri = process.env.DIY_SUBMIT_HOME_URL + "auth/loginWithAntonyccCallback.html";
+  const antonyccOidcBase = "https://oidc.antonycc.com";
+  const scope = "openid profile email";
+  const authUrl =
+    `${antonyccOidcBase}/authorize?` +
+    "response_type=code" +
+    "&client_id=self-client" +
+    `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+    `&scope=${encodeURIComponent(scope)}` +
+    `&state=${encodeURIComponent(state)}` +
+    "&identity_provider=MockOAuth2Server";
+  return httpGet(event, authUrl);
+}
+
+// GET /api/antonycc-cognito/auth-url?state={state}
+export async function httpGetAntonyccCognito(event) {
+  const state = event.queryStringParameters?.state;
+  const clientId = process.env.DIY_SUBMIT_ANTONYCC_CLIENT_ID;
+  const redirectUri = process.env.DIY_SUBMIT_HOME_URL + "auth/loginWithAntonyccCognitoCallback.html";
   const baseUri = process.env.DIY_SUBMIT_ANTONYCC_BASE_URI;
   const scope = "write:vat read:vat";
   const authUrl =
