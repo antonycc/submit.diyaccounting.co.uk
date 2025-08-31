@@ -1,8 +1,6 @@
 package co.uk.diyaccounting.submit.constructs;
 
 import co.uk.diyaccounting.submit.awssdk.RetentionDaysConverter;
-import java.util.List;
-import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import software.amazon.awscdk.RemovalPolicy;
@@ -21,9 +19,13 @@ import software.amazon.awscdk.services.cognito.UserPool;
 import software.amazon.awscdk.services.cognito.UserPoolClient;
 import software.amazon.awscdk.services.cognito.UserPoolClientIdentityProvider;
 import software.amazon.awscdk.services.cognito.UserPoolIdentityProviderGoogle;
+import software.amazon.awscdk.services.cognito.UserPoolIdentityProviderOidc;
 import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.constructs.Construct;
+
+import java.util.List;
+import java.util.Map;
 
 /**
  * Thin coordinator for Cognito resources, created at WebStack scope to preserve logical IDs.
@@ -41,6 +43,7 @@ public class CognitoAuth {
 
   public final UserPool userPool;
   public final UserPoolIdentityProviderGoogle googleIdentityProvider;
+  public final UserPoolIdentityProviderOidc antonyccIdentityProvider;
   public final UserPoolClient userPoolClient;
 
   private CognitoAuth(Builder b) {
@@ -65,7 +68,7 @@ public class CognitoAuth {
           CfnUserPool.UserPoolAddOnsProperty.builder().advancedSecurityMode(asm).build());
     }
 
-    // Optional Google IdP
+    // Google IdP
     UserPoolIdentityProviderGoogle googleIdp = null;
     if (b.googleClientId != null
         && !b.googleClientId.isBlank()
@@ -85,6 +88,27 @@ public class CognitoAuth {
               .build();
     }
     this.googleIdentityProvider = googleIdp;
+
+      // Antonycc OIDC IdP
+      UserPoolIdentityProviderOidc antonyccIdp = null;
+      if (b.antonyccClientId != null
+              && !b.antonyccClientId.isBlank()
+              && b.antonyccClientSecretValue != null) {
+          googleIdp =
+                  UserPoolIdentityProviderGoogle.Builder.create(b.scope, "AntonyccIdentityProvider")
+                          .userPool(up)
+                          .clientId(b.antonyccClientId)
+                          .clientSecretValue(b.antonyccClientSecretValue)
+                          .scopes(List.of("email", "openid", "profile"))
+                          .attributeMapping(
+                                  AttributeMapping.builder()
+                                          .email(ProviderAttribute.GOOGLE_EMAIL)
+                                          .givenName(ProviderAttribute.GOOGLE_GIVEN_NAME)
+                                          .familyName(ProviderAttribute.GOOGLE_FAMILY_NAME)
+                                          .build())
+                          .build();
+      }
+      this.antonyccIdentityProvider = antonyccIdp;
 
     // User Pool Client
     UserPoolClient client =
@@ -157,6 +181,8 @@ public class CognitoAuth {
     private StandardAttributes standardAttributes;
     private String googleClientId;
     private SecretValue googleClientSecretValue;
+    private String antonyccClientId;
+    private SecretValue antonyccClientSecretValue;
     private List<String> callbackUrls;
     private List<String> logoutUrls;
     private List<UserPoolClientIdentityProvider> supportedIdentityProviders = List.of();
@@ -200,6 +226,16 @@ public class CognitoAuth {
     public Builder googleClientSecretValue(SecretValue value) {
       this.googleClientSecretValue = value;
       return this;
+    }
+
+    public Builder antonyccClientId(String id) {
+          this.antonyccClientId = id;
+          return this;
+    }
+
+    public Builder antonyccClientSecretValue(SecretValue value) {
+          this.antonyccClientSecretValue = value;
+          return this;
     }
 
     public Builder callbackUrls(List<String> urls) {

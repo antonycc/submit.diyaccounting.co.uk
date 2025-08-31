@@ -63,6 +63,10 @@ public class WebApp {
                 System.getenv("AUTH_URL_GOOGLE_LAMBDA_HANDLER_FUNCTION_NAME"))
             .authUrlGoogleLambdaUrlPath(System.getenv("AUTH_URL_GOOGLE_LAMBDA_URL_PATH"))
             .authUrlGoogleLambdaDurationMillis(System.getenv("AUTH_URL_GOOGLE_LAMBDA_DURATION"))
+            .authUrlAntonyccLambdaHandlerFunctionName(
+                System.getenv("AUTH_URL_ANTONYCC_LAMBDA_HANDLER_FUNCTION_NAME"))
+            .authUrlAntonyccLambdaUrlPath(System.getenv("AUTH_URL_ANTONYCC_LAMBDA_URL_PATH"))
+            .authUrlAntonyccLambdaDurationMillis(System.getenv("AUTH_URL_ANTONYCC_LAMBDA_DURATION"))
             .exchangeHmrcTokenLambdaHandlerFunctionName(
                 System.getenv("EXCHANGE_HMRC_TOKEN_LAMBDA_HANDLER_FUNCTION_NAME"))
             .exchangeHmrcTokenLambdaUrlPath(System.getenv("EXCHANGE_HMRC_TOKEN_LAMBDA_URL_PATH"))
@@ -74,6 +78,12 @@ public class WebApp {
                 System.getenv("EXCHANGE_GOOGLE_TOKEN_LAMBDA_URL_PATH"))
             .exchangeGoogleTokenLambdaDurationMillis(
                 System.getenv("EXCHANGE_GOOGLE_TOKEN_LAMBDA_DURATION"))
+            .exchangeAntonyccTokenLambdaHandlerFunctionName(
+                System.getenv("EXCHANGE_ANTONYCC_TOKEN_LAMBDA_HANDLER_FUNCTION_NAME"))
+            .exchangeAntonyccTokenLambdaUrlPath(
+                System.getenv("EXCHANGE_ANTONYCC_TOKEN_LAMBDA_URL_PATH"))
+            .exchangeAntonyccTokenLambdaDurationMillis(
+                System.getenv("EXCHANGE_ANTONYCC_TOKEN_LAMBDA_DURATION"))
             .submitVatLambdaHandlerFunctionName(
                 System.getenv("SUBMIT_VAT_LAMBDA_HANDLER_FUNCTION_NAME"))
             .submitVatLambdaUrlPath(System.getenv("SUBMIT_VAT_LAMBDA_URL_PATH"))
@@ -102,6 +112,9 @@ public class WebApp {
                 System.getenv("MY_RECEIPTS_LAMBDA_HANDLER_FUNCTION_NAME"))
             .myReceiptsLambdaUrlPath(System.getenv("MY_RECEIPTS_LAMBDA_URL_PATH"))
             .myReceiptsLambdaDurationMillis(System.getenv("MY_RECEIPTS_LAMBDA_DURATION"))
+            .antonyccClientId(System.getenv("DIY_SUBMIT_ANTONYCC_CLIENT_ID"))
+            .antonyccBaseUri(System.getenv("DIY_SUBMIT_ANTONYCC_BASE_URI"))
+            .antonyccClientSecretArn(System.getenv("DIY_SUBMIT_ANTONYCC_CLIENT_SECRET_ARN"))
             .build();
 
     CfnOutput.Builder.create(stack, "OriginBucketArn")

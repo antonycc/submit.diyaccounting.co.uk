@@ -3,13 +3,6 @@ package co.uk.diyaccounting.submit.constructs;
 import co.uk.diyaccounting.submit.awssdk.RetentionDaysConverter;
 import co.uk.diyaccounting.submit.functions.LogS3ObjectEvent;
 import co.uk.diyaccounting.submit.utils.ResourceNameUtils;
-import java.lang.reflect.Field;
-import java.text.MessageFormat;
-import java.util.AbstractMap;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.regex.Pattern;
 import org.apache.hc.core5.http.HttpStatus;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -71,6 +64,14 @@ import software.amazon.awscdk.services.secretsmanager.Secret;
 import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
 
+import java.lang.reflect.Field;
+import java.text.MessageFormat;
+import java.util.AbstractMap;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Pattern;
+
 public class WebStack extends Stack {
 
   private static final Logger logger = LogManager.getLogger(WebStack.class);
@@ -86,6 +87,7 @@ public class WebStack extends Stack {
   public ICertificate authCertificate;
   public ISecret hmrcClientSecretsManagerSecret;
   public ISecret googleClientSecretsManagerSecret;
+  public ISecret antonyccClientSecretsManagerSecret;
   public IBucket distributionAccessLogBucket;
   public OriginAccessIdentity originIdentity;
   public Distribution distribution;
@@ -104,12 +106,18 @@ public class WebStack extends Stack {
   public Function authUrlGoogleLambda;
   public FunctionUrl authUrlGoogleLambdaUrl;
   public LogGroup authUrlGoogleLambdaLogGroup;
+  public Function authUrlAntonyccLambda;
+  public FunctionUrl authUrlAntonyccLambdaUrl;
+  public LogGroup authUrlAntonyccLambdaLogGroup;
   public Function exchangeHmrcTokenLambda;
   public FunctionUrl exchangeHmrcTokenLambdaUrl;
   public LogGroup exchangeHmrcTokenLambdaLogGroup;
   public Function exchangeGoogleTokenLambda;
   public FunctionUrl exchangeGoogleTokenLambdaUrl;
   public LogGroup exchangeGoogleTokenLambdaLogGroup;
+  public Function exchangeAntonyccTokenLambda;
+  public FunctionUrl exchangeAntonyccTokenLambdaUrl;
+  public LogGroup exchangeAntonyccTokenLambdaLogGroup;
   public Function submitVatLambda;
   public FunctionUrl submitVatLambdaUrl;
   public LogGroup submitVatLambdaLogGroup;
@@ -200,6 +208,15 @@ public class WebStack extends Stack {
     public String authUrlGoogleLambdaHandlerFunctionName;
     public String authUrlGoogleLambdaUrlPath;
     public String authUrlGoogleLambdaDuration;
+    public String authUrlAntonyccLambdaHandlerFunctionName;
+    public String authUrlAntonyccLambdaUrlPath;
+    public String authUrlAntonyccLambdaDuration;
+    public String antonyccClientId;
+    public String antonyccBaseUri;
+    public String antonyccClientSecretArn;
+    public String exchangeAntonyccTokenLambdaHandlerFunctionName;
+    public String exchangeAntonyccTokenLambdaUrlPath;
+    public String exchangeAntonyccTokenLambdaDuration;
     public String exchangeHmrcTokenLambdaHandlerFunctionName;
     public String exchangeHmrcTokenLambdaUrlPath;
     public String exchangeHmrcTokenLambdaDuration;
@@ -540,6 +557,53 @@ public class WebStack extends Stack {
 
     public Builder authUrlGoogleLambdaDurationMillis(String authUrlGoogleLambdaDuration) {
       this.authUrlGoogleLambdaDuration = authUrlGoogleLambdaDuration;
+      return this;
+    }
+
+    public Builder authUrlAntonyccLambdaHandlerFunctionName(
+        String authUrlAntonyccLambdaHandlerFunctionName) {
+      this.authUrlAntonyccLambdaHandlerFunctionName = authUrlAntonyccLambdaHandlerFunctionName;
+      return this;
+    }
+
+    public Builder authUrlAntonyccLambdaUrlPath(String authUrlAntonyccLambdaUrlPath) {
+      this.authUrlAntonyccLambdaUrlPath = authUrlAntonyccLambdaUrlPath;
+      return this;
+    }
+
+    public Builder authUrlAntonyccLambdaDurationMillis(String authUrlAntonyccLambdaDuration) {
+      this.authUrlAntonyccLambdaDuration = authUrlAntonyccLambdaDuration;
+      return this;
+    }
+
+    public Builder antonyccClientId(String antonyccClientId) {
+      this.antonyccClientId = antonyccClientId;
+      return this;
+    }
+
+    public Builder antonyccBaseUri(String antonyccBaseUri) {
+      this.antonyccBaseUri = antonyccBaseUri;
+      return this;
+    }
+
+    public Builder antonyccClientSecretArn(String antonyccClientSecretArn) {
+      this.antonyccClientSecretArn = antonyccClientSecretArn;
+      return this;
+    }
+
+    public Builder exchangeAntonyccTokenLambdaHandlerFunctionName(
+        String exchangeAntonyccTokenLambdaHandlerFunctionName) {
+      this.exchangeAntonyccTokenLambdaHandlerFunctionName = exchangeAntonyccTokenLambdaHandlerFunctionName;
+      return this;
+    }
+
+    public Builder exchangeAntonyccTokenLambdaUrlPath(String exchangeAntonyccTokenLambdaUrlPath) {
+      this.exchangeAntonyccTokenLambdaUrlPath = exchangeAntonyccTokenLambdaUrlPath;
+      return this;
+    }
+
+    public Builder exchangeAntonyccTokenLambdaDurationMillis(String exchangeAntonyccTokenLambdaDuration) {
+      this.exchangeAntonyccTokenLambdaDuration = exchangeAntonyccTokenLambdaDuration;
       return this;
     }
 
@@ -1018,7 +1082,11 @@ public class WebStack extends Stack {
         Secret.fromSecretPartialArn(this, "GoogleClientSecret", builder.googleClientSecretArn);
     var googleClientSecretArn = this.googleClientSecretsManagerSecret.getSecretArn();
 
-    // Create Cognito User Pool for authentication
+    this.antonyccClientSecretsManagerSecret =
+              Secret.fromSecretPartialArn(this, "AntonyccClientSecret", builder.antonyccClientSecretArn);
+    var antonyccClientSecretArn = this.antonyccClientSecretsManagerSecret.getSecretArn();
+
+      // Create Cognito User Pool for authentication
     var standardAttributes =
         StandardAttributes.builder()
             .email(StandardAttribute.builder().required(true).mutable(true).build())
@@ -1028,6 +1096,7 @@ public class WebStack extends Stack {
     if (StringUtils.isNotBlank(builder.googleClientId)
         && StringUtils.isNotBlank(builder.googleClientSecretArn)) {
       var googleClientSecretValue = this.googleClientSecretsManagerSecret.getSecretValue();
+      var antonyccClientSecretValue = this.antonyccClientSecretsManagerSecret.getSecretValue();
       // var googleClientSecretValue = this.googleClientSecretsManagerSecret != null
       //        ? this.googleClientSecretsManagerSecret.getSecretValue()
       //        : SecretValue.unsafePlainText(builder.googleClientSecret);
@@ -1039,6 +1108,8 @@ public class WebStack extends Stack {
               .standardAttributes(standardAttributes)
               .googleClientId(builder.googleClientId)
               .googleClientSecretValue(googleClientSecretValue)
+              .antonyccClientId(builder.antonyccClientId)
+              .antonyccClientSecretValue(antonyccClientSecretValue)
               .callbackUrls(
                   List.of(
                       "https://" + this.domainName + "/",
@@ -1150,6 +1221,37 @@ public class WebStack extends Stack {
     lambdaUrlToOriginsBehaviourMappings.put(
         builder.authUrlGoogleLambdaUrlPath + "*", authUrlGoogleLambdaUrlOrigin.behaviorOptions);
 
+    // authUrl - Antonycc
+    var authUrlAntonyccLambdaEnv =
+        new HashMap<>(
+            Map.of(
+                "DIY_SUBMIT_HOME_URL",
+                builder.homeUrl));
+    if (StringUtils.isNotBlank(builder.antonyccBaseUri)) {
+      authUrlAntonyccLambdaEnv.put("DIY_SUBMIT_ANTONYCC_BASE_URI", builder.antonyccBaseUri);
+    }
+    if (StringUtils.isNotBlank(builder.antonyccClientId)) {
+      authUrlAntonyccLambdaEnv.put("DIY_SUBMIT_ANTONYCC_CLIENT_ID", builder.antonyccClientId);
+    }
+    var authUrlAntonyccLambdaUrlOrigin =
+        LambdaUrlOrigin.Builder.create(this, "AuthUrlAntonyccLambda")
+            .options(lambdaCommonOpts)
+            .imageFilename("authUrlAntonycc.Dockerfile")
+            .functionName(
+                Builder.buildFunctionName(
+                    dashedDomainName, builder.authUrlAntonyccLambdaHandlerFunctionName))
+            .allowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
+            .handler(builder.lambdaEntry + builder.authUrlAntonyccLambdaHandlerFunctionName)
+            .environment(authUrlAntonyccLambdaEnv)
+            .timeout(Duration.millis(Long.parseLong(builder.authUrlAntonyccLambdaDuration)))
+            .build();
+    this.authUrlAntonyccLambda = authUrlAntonyccLambdaUrlOrigin.lambda;
+    this.authUrlAntonyccLambdaUrl = authUrlAntonyccLambdaUrlOrigin.functionUrl;
+    this.authUrlAntonyccLambdaLogGroup = authUrlAntonyccLambdaUrlOrigin.logGroup;
+    lambdaUrlToOriginsBehaviourMappings.put(
+        builder.authUrlAntonyccLambdaUrlPath + "*",
+        authUrlAntonyccLambdaUrlOrigin.behaviorOptions);
+
     // exchangeToken - HMRC
     // Create a secret for the HMRC client secret and set the ARN to be used in the Lambda
     // environment variable
@@ -1236,7 +1338,52 @@ public class WebStack extends Stack {
         exchangeGoogleTokenLambdaUrlOrigin.behaviorOptions);
     this.googleClientSecretsManagerSecret.grantRead(this.exchangeGoogleTokenLambda);
 
-    // submitVat
+      // exchangeToken - Antonycc
+      var exchangeAntonyccTokenLambdaEnv =
+          new HashMap<>(
+              Map.of(
+                  "DIY_SUBMIT_HOME_URL", builder.homeUrl));
+      if (StringUtils.isNotBlank(builder.antonyccBaseUri)) {
+        exchangeAntonyccTokenLambdaEnv.put("DIY_SUBMIT_ANTONYCC_BASE_URI", builder.antonyccBaseUri);
+      }
+      if (StringUtils.isNotBlank(builder.antonyccClientId)) {
+        exchangeAntonyccTokenLambdaEnv.put("DIY_SUBMIT_ANTONYCC_CLIENT_ID", builder.antonyccClientId);
+      }
+      if (StringUtils.isNotBlank(builder.antonyccClientSecretArn)) {
+        exchangeAntonyccTokenLambdaEnv.put("DIY_SUBMIT_ANTONYCC_CLIENT_SECRET_ARN", antonyccClientSecretArn);
+      }
+      if (StringUtils.isNotBlank(builder.optionalTestAccessToken)) {
+        exchangeAntonyccTokenLambdaEnv.put(
+            "DIY_SUBMIT_TEST_ACCESS_TOKEN", builder.optionalTestAccessToken);
+      }
+      var exchangeAntonyccTokenLambdaUrlOrigin =
+          LambdaUrlOrigin.Builder.create(this, "ExchangeAntonyccTokenLambda")
+              .options(lambdaCommonOpts)
+              .imageFilename("exchangeAntonyccToken.Dockerfile")
+              .functionName(
+                  Builder.buildFunctionName(
+                      dashedDomainName, builder.exchangeAntonyccTokenLambdaHandlerFunctionName))
+              .allowedMethods(AllowedMethods.ALLOW_ALL)
+              .handler(builder.lambdaEntry + builder.exchangeAntonyccTokenLambdaHandlerFunctionName)
+              .environment(exchangeAntonyccTokenLambdaEnv)
+              .timeout(
+                  Duration.millis(
+                      Long.parseLong(
+                          builder.exchangeAntonyccTokenLambdaDuration != null
+                              ? builder.exchangeAntonyccTokenLambdaDuration
+                              : "30000")))
+              .build();
+      this.exchangeAntonyccTokenLambda = exchangeAntonyccTokenLambdaUrlOrigin.lambda;
+      this.exchangeAntonyccTokenLambdaUrl = exchangeAntonyccTokenLambdaUrlOrigin.functionUrl;
+      this.exchangeAntonyccTokenLambdaLogGroup = exchangeAntonyccTokenLambdaUrlOrigin.logGroup;
+      lambdaUrlToOriginsBehaviourMappings.put(
+          builder.exchangeAntonyccTokenLambdaUrlPath + "*",
+          exchangeAntonyccTokenLambdaUrlOrigin.behaviorOptions);
+      if (this.antonyccClientSecretsManagerSecret != null) {
+        this.antonyccClientSecretsManagerSecret.grantRead(this.exchangeAntonyccTokenLambda);
+      }
+
+      // submitVat
     var submitVatLambdaEnv =
         new HashMap<>(
             Map.of(

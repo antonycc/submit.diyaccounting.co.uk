@@ -41,6 +41,13 @@
             </button>
           </div>
 
+          <div class="auth-provider">
+            <button type="button" class="btn auth-btn antonycc-btn" id="loginWithAntonycc">
+              <img src="../images/oidc-antonycc-logo.png" alt="OIDC by Antonycc" class="provider-logo" />
+              Continue with @antonycc/oidc
+            </button>
+          </div>
+
           <div class="auth-provider" id="mockOAuth2Provider">
             <button type="button" class="btn auth-btn" id="loginWithMockOAuth2">
               <img
@@ -95,6 +102,30 @@
         const authResponseUrl = authResponse.authUrl;
 
         console.log("Redirecting to Google OAuth URL");
+        window.location.href = authResponseUrl;
+      }
+
+      // Login with Antonycc via Cognito
+      async function loginWithAntonycc() {
+        console.log("Initiating Antonycc login via Cognito");
+
+        console.log("Clear stored tokens and user info");
+        localStorage.removeItem("authState");
+        localStorage.removeItem("cognitoAccessToken");
+        localStorage.removeItem("cognitoIdToken");
+        localStorage.removeItem("cognitoRefreshToken");
+        localStorage.removeItem("userInfo");
+        localStorage.removeItem("authState");
+
+        // Generate state parameter for security
+        const state = Math.random().toString(36).substring(2, 15);
+        localStorage.setItem("authState", state);
+
+        // Get OAuth URL
+        const authResponse = await getAuthUrl(state, "oidc.antonycc");
+        const authResponseUrl = authResponse.authUrl;
+
+        console.log("Redirecting to Antonycc OAuth URL");
         window.location.href = authResponseUrl;
       }
 
