@@ -11,6 +11,7 @@ import software.amazon.awscdk.services.cognito.CfnUserPool;
 import software.amazon.awscdk.services.cognito.OAuthFlows;
 import software.amazon.awscdk.services.cognito.OAuthScope;
 import software.amazon.awscdk.services.cognito.OAuthSettings;
+import software.amazon.awscdk.services.cognito.OidcEndpoints;
 import software.amazon.awscdk.services.cognito.ProviderAttribute;
 import software.amazon.awscdk.services.cognito.SignInAliases;
 import software.amazon.awscdk.services.cognito.StandardAttributes;
@@ -94,15 +95,20 @@ public class CognitoAuth {
     UserPoolIdentityProviderOidc antonyccIdp = null;
     if (b.antonyccClientId != null
               && !b.antonyccClientId.isBlank()
-              && b.antonyccClientSecretValue != null
-              && b.antonyccIssuerUrl != null
-              && !b.antonyccIssuerUrl.isBlank()) {
+              && b.antonyccClientSecretValue != null) {
+        OidcEndpoints oidcEndpoints = OidcEndpoints.builder()
+                .authorization(b.antonyccIssuerUrl + "/authorize")
+                .token(b.antonyccIssuerUrl + "/token")
+                .userInfo(b.antonyccIssuerUrl + "/userinfo")
+                .jwksUri(b.antonyccIssuerUrl + "/.well-known/jwks")
+                .build();
           antonyccIdp =
                   UserPoolIdentityProviderOidc.Builder.create(b.scope, "AntonyccIdentityProvider")
                           .userPool(up)
                           .clientId(b.antonyccClientId)
                           .clientSecret(b.antonyccClientSecretValue.unsafeUnwrap())
                           .issuerUrl(b.antonyccIssuerUrl)
+                          .endpoints(oidcEndpoints)
                           .attributeMapping(
                                   AttributeMapping.builder()
                                           .email(ProviderAttribute.other("email"))
@@ -124,7 +130,7 @@ public class CognitoAuth {
                           .clientId(b.acCogClientId)
                           .clientSecret(b.acCogClientSecretValue.unsafeUnwrap())
                           //.issuerUrl("https://cognito-idp.eu-west-2.amazonaws.com/eu-west-2_default")
-                          .issuerUrl("https://auth.oidc.antonycc.com")
+                          .issuerUrl(b.acCogIssuerUrl)
                           .scopes(List.of("email", "openid", "profile"))
                           .attributeMapping(
                                   AttributeMapping.builder()
@@ -212,6 +218,7 @@ public class CognitoAuth {
     private String antonyccIssuerUrl;
     private String acCogClientId;
     private SecretValue acCogClientSecretValue;
+    private String acCogIssuerUrl;
     private List<String> callbackUrls;
     private List<String> logoutUrls;
     private List<UserPoolClientIdentityProvider> supportedIdentityProviders = List.of();
@@ -279,6 +286,11 @@ public class CognitoAuth {
 
       public Builder acCogClientSecretValue(SecretValue value) {
           this.acCogClientSecretValue = value;
+          return this;
+      }
+
+      public Builder acCogIssuerUrl(String url) {
+          this.acCogIssuerUrl = url;
           return this;
       }
 

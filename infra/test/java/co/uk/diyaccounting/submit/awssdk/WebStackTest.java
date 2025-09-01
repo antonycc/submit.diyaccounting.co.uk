@@ -92,7 +92,7 @@ public class WebStackTest {
         .exchangeAntonyccTokenLambdaUrlPath("/api/antonycc/exchange-token")
         .exchangeAntonyccTokenLambdaDurationMillis("30000")
         .exchangeAcCogTokenLambdaHandlerFunctionName("ExchangeTokenHandler")
-        .exchangeAcCogTokenLambdaUrlPath("/api/antonycc/exchange-token")
+        .exchangeAcCogTokenLambdaUrlPath("/api/ac-cog/exchange-token")
         .exchangeAcCogTokenLambdaDurationMillis("30000")
         .submitVatLambdaHandlerFunctionName("SubmitVatHandler")
         .submitVatLambdaDurationMillis("60000")

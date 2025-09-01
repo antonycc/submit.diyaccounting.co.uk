@@ -30,6 +30,7 @@ import software.amazon.awscdk.services.cognito.StandardAttribute;
 import software.amazon.awscdk.services.cognito.StandardAttributes;
 import software.amazon.awscdk.services.cognito.UserPool;
 import software.amazon.awscdk.services.cognito.UserPoolClient;
+import software.amazon.awscdk.services.cognito.UserPoolClientIdentityProvider;
 import software.amazon.awscdk.services.cognito.UserPoolDomain;
 import software.amazon.awscdk.services.cognito.UserPoolIdentityProviderGoogle;
 import software.amazon.awscdk.services.iam.Effect;
@@ -67,6 +68,7 @@ import software.constructs.Construct;
 import java.lang.reflect.Field;
 import java.text.MessageFormat;
 import java.util.AbstractMap;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -1168,6 +1170,15 @@ public class WebStack extends Stack {
       //        ? this.googleClientSecretsManagerSecret.getSecretValue()
       //        : SecretValue.unsafePlainText(builder.googleClientSecret);
 
+      List<UserPoolClientIdentityProvider> identityProviders = new ArrayList<>();
+      identityProviders.add(UserPoolClientIdentityProvider.GOOGLE);
+      //identityProviders.add(UserPoolClientIdentityProvider.COGNITO);
+      //if (builder.antonyccClientId != null && !builder.antonyccClientId.isBlank()) {
+      //      identityProviders.add(UserPoolClientIdentityProvider.custom("Antonycc"));
+      //}
+      //if (builder.acCogClientId != null && !builder.acCogClientId.isBlank()) {
+      //      identityProviders.add(UserPoolClientIdentityProvider.custom("AcCog"));
+      //}
       var cognito =
           CognitoAuth.Builder.create(this)
               .userPoolName(dashedDomainName + "-user-pool")
@@ -1175,21 +1186,18 @@ public class WebStack extends Stack {
               .standardAttributes(standardAttributes)
               .googleClientId(builder.googleClientId)
               .googleClientSecretValue(googleClientSecretValue)
-              .antonyccClientId(builder.antonyccClientId)
-              .antonyccIssuerUrl(builder.antonyccBaseUri)
-              .antonyccClientSecretValue(antonyccClientSecretValue)
-              .acCogClientId(builder.acCogClientId)
-              .antonyccIssuerUrl(builder.acCogBaseUri)
-              .acCogClientSecretValue(acCogClientSecretValue)
+              //.antonyccClientId(builder.antonyccClientId)
+              //.antonyccIssuerUrl(builder.antonyccBaseUri)
+              //.antonyccClientSecretValue(antonyccClientSecretValue)
+              //.acCogClientId(builder.acCogClientId)
+              //.acCogIssuerUrl(builder.acCogBaseUri)
+              //.acCogClientSecretValue(acCogClientSecretValue)
               .callbackUrls(
                   List.of(
                       "https://" + this.domainName + "/",
                       "https://" + this.domainName + "/auth/loginWithGoogleCallback.html"))
               .logoutUrls(List.of("https://" + this.domainName + "/"))
-              .supportedIdentityProviders(
-                  List.of(
-                      software.amazon.awscdk.services.cognito.UserPoolClientIdentityProvider
-                          .GOOGLE))
+              .supportedIdentityProviders(identityProviders)
               .featurePlan(
                   builder.cognitoFeaturePlan != null && !builder.cognitoFeaturePlan.isBlank()
                       ? builder.cognitoFeaturePlan
@@ -1323,17 +1331,17 @@ public class WebStack extends Stack {
         builder.authUrlAntonyccLambdaUrlPath + "*",
         authUrlAntonyccLambdaUrlOrigin.behaviorOptions);
 
-      // authUrl - Antonycc
+      // authUrl - Antonycc via Cognito
       var authUrlAcCogLambdaEnv =
               new HashMap<>(
                       Map.of(
                               "DIY_SUBMIT_HOME_URL",
                               builder.homeUrl));
       if (StringUtils.isNotBlank(builder.acCogBaseUri)) {
-          authUrlAcCogLambdaEnv.put("DIY_SUBMIT_ANTONYCC_BASE_URI", builder.acCogBaseUri);
+          authUrlAcCogLambdaEnv.put("DIY_SUBMIT_ANTONYCC_COGNITO_BASE_URI", builder.acCogBaseUri);
       }
       if (StringUtils.isNotBlank(builder.acCogClientId)) {
-          authUrlAcCogLambdaEnv.put("DIY_SUBMIT_ANTONYCC_CLIENT_ID", builder.acCogClientId);
+          authUrlAcCogLambdaEnv.put("DIY_SUBMIT_ANTONYCC_COGNITO_CLIENT_ID", builder.acCogClientId);
       }
       var authUrlAcCogLambdaUrlOrigin =
               LambdaUrlOrigin.Builder.create(this, "AuthUrlAcCogLambda")
@@ -1344,7 +1352,7 @@ public class WebStack extends Stack {
                                       dashedDomainName, builder.authUrlAcCogLambdaHandlerFunctionName))
                       .allowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
                       .handler(builder.lambdaEntry + builder.authUrlAcCogLambdaHandlerFunctionName)
-                      .environment(authUrlAntonyccLambdaEnv)
+                      .environment(authUrlAcCogLambdaEnv)
                       .timeout(Duration.millis(Long.parseLong(builder.authUrlAcCogLambdaDuration)))
                       .build();
       this.authUrlAcCogLambda = authUrlAcCogLambdaUrlOrigin.lambda;

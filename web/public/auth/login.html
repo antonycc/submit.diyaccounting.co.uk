@@ -48,12 +48,12 @@
             </button>
           </div>
 
-          <div class="auth-provider">
+          <!--div class="auth-provider">
             <button type="button" class="btn auth-btn antonycc-btn" id="loginWithAcCog">
               <img src="../images/oidc-antonycc-logo.png" alt="OIDC by Antonycc Cognito" class="provider-logo" />
               Continue with @antonycc/oidc via Cognito
             </button>
-          </div>
+          </div-->
 
           <div class="auth-provider" id="mockOAuth2Provider">
             <button type="button" class="btn auth-btn" id="loginWithMockOAuth2">
@@ -137,7 +137,7 @@
       }
 
       // Login with Antonycc via Cognito
-      async function loginWithAcCog() {
+      /*async function loginWithAcCog() {
         console.log("Initiating Antonycc login via Cognito");
 
         console.log("Clear stored tokens and user info");
@@ -146,7 +146,6 @@
         localStorage.removeItem("cognitoIdToken");
         localStorage.removeItem("cognitoRefreshToken");
         localStorage.removeItem("userInfo");
-        localStorage.removeItem("authState");
 
         // Generate state parameter for security
         const state = Math.random().toString(36).substring(2, 15);
@@ -158,7 +157,7 @@
 
         console.log("Redirecting to Antonycc OAuth URL");
         window.location.href = authResponseUrl;
-      }
+      }*/
 
       // Login with Mock OAuth2 Server via Cognito
       async function loginWithMockOAuth2() {
@@ -198,13 +197,13 @@
       // DOM elements
       const loginWithGoogleButton = document.getElementById("loginWithGoogle");
       const loginWithAntonyccButton = document.getElementById("loginWithAntonycc");
-      const loginWithAcCogButton = document.getElementById("loginWithAcCog");
+      //const loginWithAcCogButton = document.getElementById("loginWithAcCog");
       const loginWithMockOAuth2Button = document.getElementById("loginWithMockOAuth2");
 
       // Event listeners
       loginWithGoogleButton.onclick = loginWithGoogle;
       loginWithAntonyccButton.onclick = loginWithAntonycc;
-      loginWithAcCogButton.onclick = loginWithAcCog;
+      //loginWithAcCogButton.onclick = loginWithAcCog;
       loginWithMockOAuth2Button.addEventListener("click", async (event) => {
         event.preventDefault(); // Prevent default button action
         await loginWithMockOAuth2();

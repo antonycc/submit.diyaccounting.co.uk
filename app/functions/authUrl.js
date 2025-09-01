@@ -87,7 +87,7 @@ export async function httpGetAntonycc(event) {
   const antonyccOidcBase = "https://oidc.antonycc.com";
   const scope = "openid profile email";
   const authUrl =
-    `${antonyccOidcBase}/authorize?` +
+    `${antonyccOidcBase}/login.html?` +
     "response_type=code" +
     "&client_id=self-client" +
     `&redirect_uri=${encodeURIComponent(redirectUri)}` +
