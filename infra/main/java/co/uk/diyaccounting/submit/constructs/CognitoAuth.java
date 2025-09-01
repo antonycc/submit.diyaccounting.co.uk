@@ -123,7 +123,8 @@ public class CognitoAuth {
                           .userPool(up)
                           .clientId(b.acCogClientId)
                           .clientSecret(b.acCogClientSecretValue.unsafeUnwrap())
-                          .issuerUrl("https://cognito-idp.eu-west-2.amazonaws.com/eu-west-2_default")
+                          //.issuerUrl("https://cognito-idp.eu-west-2.amazonaws.com/eu-west-2_default")
+                          .issuerUrl("https://auth.oidc.antonycc.com")
                           .scopes(List.of("email", "openid", "profile"))
                           .attributeMapping(
                                   AttributeMapping.builder()

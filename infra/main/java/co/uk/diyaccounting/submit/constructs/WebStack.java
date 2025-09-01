@@ -221,12 +221,6 @@ public class WebStack extends Stack {
     public String authUrlAcCogLambdaHandlerFunctionName;
     public String authUrlAcCogLambdaUrlPath;
     public String authUrlAcCogLambdaDuration;
-    public String antonyccClientId;
-    public String antonyccBaseUri;
-    public String antonyccClientSecretArn;
-    public String acCogClientId;
-    public String acCogBaseUri;
-    public String acCogClientSecretArn;
     public String exchangeAntonyccTokenLambdaHandlerFunctionName;
     public String exchangeAntonyccTokenLambdaUrlPath;
     public String exchangeAntonyccTokenLambdaDuration;
@@ -247,6 +241,12 @@ public class WebStack extends Stack {
     public String logReceiptLambdaDuration;
     public String lambdaUrlAuthType;
     public String commitHash;
+    public String antonyccClientId;
+    public String antonyccBaseUri;
+    public String antonyccClientSecretArn;
+    public String acCogClientId;
+    public String acCogBaseUri;
+    public String acCogClientSecretArn;
 
     // Cognito and Bundle Management properties
     public String googleClientId;
@@ -1176,8 +1176,10 @@ public class WebStack extends Stack {
               .googleClientId(builder.googleClientId)
               .googleClientSecretValue(googleClientSecretValue)
               .antonyccClientId(builder.antonyccClientId)
+              .antonyccIssuerUrl(builder.antonyccBaseUri)
               .antonyccClientSecretValue(antonyccClientSecretValue)
               .acCogClientId(builder.acCogClientId)
+              .antonyccIssuerUrl(builder.acCogBaseUri)
               .acCogClientSecretValue(acCogClientSecretValue)
               .callbackUrls(
                   List.of(
