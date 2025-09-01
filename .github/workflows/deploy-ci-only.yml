@@ -160,7 +160,7 @@ jobs:
         if: ${{ env.skipDeploy != 'true' }}
         shell: bash
         env:
-          SECRET_NAME: "diy/${{ env.environment}}/submit/antonycc/client_secret"
+          SECRET_NAME: "diy/ci/submit/antonycc/client_secret"
         run: |
           set -euo pipefail
           if aws secretsmanager describe-secret --secret-id "$SECRET_NAME" >/dev/null 2>&1; then
@@ -190,7 +190,7 @@ jobs:
         if: ${{ env.skipDeploy != 'true' }}
         shell: bash
         env:
-          SECRET_NAME: "diy/${{ env.environment}}/submit/ac-cog/client_secret"
+          SECRET_NAME: "diy/ci/submit/ac-cog/client_secret"
         run: |
           set -euo pipefail
           if aws secretsmanager describe-secret --secret-id "$SECRET_NAME" >/dev/null 2>&1; then
