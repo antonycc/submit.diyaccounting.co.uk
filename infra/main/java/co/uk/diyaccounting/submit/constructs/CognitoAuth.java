@@ -95,17 +95,17 @@ public class CognitoAuth {
     if (b.antonyccClientId != null
               && !b.antonyccClientId.isBlank()
               && b.antonyccClientSecretValue != null) {
-          googleIdp =
-                  UserPoolIdentityProviderGoogle.Builder.create(b.scope, "AntonyccIdentityProvider")
+          antonyccIdp =
+                  UserPoolIdentityProviderOidc.Builder.create(b.scope, "AntonyccIdentityProvider")
                           .userPool(up)
                           .clientId(b.antonyccClientId)
-                          .clientSecretValue(b.antonyccClientSecretValue)
-                          .scopes(List.of("email", "openid", "profile"))
+                          .clientSecret(b.antonyccClientSecretValue)
+                          .issuerUrl(b.antonyccIssuerUrl)
                           .attributeMapping(
                                   AttributeMapping.builder()
-                                          .email(ProviderAttribute.GOOGLE_EMAIL)
-                                          .givenName(ProviderAttribute.GOOGLE_GIVEN_NAME)
-                                          .familyName(ProviderAttribute.GOOGLE_FAMILY_NAME)
+                                          .email(ProviderAttribute.COGNITO_EMAIL)
+                                          .givenName(ProviderAttribute.COGNITO_GIVEN_NAME)
+                                          .familyName(ProviderAttribute.COGNITO_FAMILY_NAME)
                                           .build())
                           .build();
     }
