@@ -11,6 +11,8 @@ on:
       - '!main'
       - '!gh_pages'
     paths:
+      - '.env.ci'
+      - '.env.proxy'
       - 'infra/**'
       - 'app/**'
       - 'web/**'

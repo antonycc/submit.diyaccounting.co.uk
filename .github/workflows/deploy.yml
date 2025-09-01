@@ -29,6 +29,7 @@ on:
     branches:
       - main
     paths:
+      - '.env.prod'
       - 'app/functions'
       - 'app/lib'
       - 'infra/main'
