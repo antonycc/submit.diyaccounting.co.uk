@@ -94,43 +94,46 @@ public class CognitoAuth {
     UserPoolIdentityProviderOidc antonyccIdp = null;
     if (b.antonyccClientId != null
               && !b.antonyccClientId.isBlank()
-              && b.antonyccClientSecretValue != null) {
+              && b.antonyccClientSecretValue != null
+              && b.antonyccIssuerUrl != null
+              && !b.antonyccIssuerUrl.isBlank()) {
           antonyccIdp =
                   UserPoolIdentityProviderOidc.Builder.create(b.scope, "AntonyccIdentityProvider")
                           .userPool(up)
                           .clientId(b.antonyccClientId)
-                          .clientSecret(b.antonyccClientSecretValue)
+                          .clientSecret(b.antonyccClientSecretValue.unsafeUnwrap())
                           .issuerUrl(b.antonyccIssuerUrl)
                           .attributeMapping(
                                   AttributeMapping.builder()
-                                          .email(ProviderAttribute.COGNITO_EMAIL)
-                                          .givenName(ProviderAttribute.COGNITO_GIVEN_NAME)
-                                          .familyName(ProviderAttribute.COGNITO_FAMILY_NAME)
+                                          .email(ProviderAttribute.other("email"))
+                                          .givenName(ProviderAttribute.other("given_name"))
+                                          .familyName(ProviderAttribute.other("family_name"))
                                           .build())
                           .build();
     }
     this.antonyccIdentityProvider = antonyccIdp;
 
-    // Antonycc OIDC vi Cognito IdP
+    // Antonycc OIDC via Cognito IdP
     UserPoolIdentityProviderOidc AcCogIdp = null;
     if (b.acCogClientId != null
               && !b.acCogClientId.isBlank()
               && b.acCogClientSecretValue != null) {
-          googleIdp =
-                  UserPoolIdentityProviderGoogle.Builder.create(b.scope, "AcCogIdentityProvider")
+          AcCogIdp =
+                  UserPoolIdentityProviderOidc.Builder.create(b.scope, "AcCogIdentityProvider")
                           .userPool(up)
                           .clientId(b.acCogClientId)
-                          .clientSecretValue(b.acCogClientSecretValue)
+                          .clientSecret(b.acCogClientSecretValue.unsafeUnwrap())
+                          .issuerUrl("https://cognito-idp.eu-west-2.amazonaws.com/eu-west-2_default")
                           .scopes(List.of("email", "openid", "profile"))
                           .attributeMapping(
                                   AttributeMapping.builder()
-                                          .email(ProviderAttribute.GOOGLE_EMAIL)
-                                          .givenName(ProviderAttribute.GOOGLE_GIVEN_NAME)
-                                          .familyName(ProviderAttribute.GOOGLE_FAMILY_NAME)
+                                          .email(ProviderAttribute.other("email"))
+                                          .givenName(ProviderAttribute.other("given_name"))
+                                          .familyName(ProviderAttribute.other("family_name"))
                                           .build())
                           .build();
     }
-    this.AcCogIdentityProvider = antonyccIdp;
+    this.AcCogIdentityProvider = AcCogIdp;
 
     // User Pool Client
     UserPoolClient client =
@@ -205,6 +208,7 @@ public class CognitoAuth {
     private SecretValue googleClientSecretValue;
     private String antonyccClientId;
     private SecretValue antonyccClientSecretValue;
+    private String antonyccIssuerUrl;
     private String acCogClientId;
     private SecretValue acCogClientSecretValue;
     private List<String> callbackUrls;
@@ -259,6 +263,11 @@ public class CognitoAuth {
 
     public Builder antonyccClientSecretValue(SecretValue value) {
           this.antonyccClientSecretValue = value;
+          return this;
+    }
+
+    public Builder antonyccIssuerUrl(String url) {
+          this.antonyccIssuerUrl = url;
           return this;
     }
 
