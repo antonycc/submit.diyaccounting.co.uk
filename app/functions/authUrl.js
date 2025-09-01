@@ -97,11 +97,11 @@ export async function httpGetAntonycc(event) {
   return httpGet(event, authUrl);
 }
 
-// GET /api/antonycc-cognito/auth-url?state={state}
-export async function httpGetAntonyccCognito(event) {
+// GET /api/ac-cog/auth-url?state={state}
+export async function httpGetAcCog(event) {
   const state = event.queryStringParameters?.state;
   const clientId = process.env.DIY_SUBMIT_ANTONYCC_CLIENT_ID;
-  const redirectUri = process.env.DIY_SUBMIT_HOME_URL + "auth/loginWithAntonyccCognitoCallback.html";
+  const redirectUri = process.env.DIY_SUBMIT_HOME_URL + "auth/loginWithAcCogCallback.html";
   const baseUri = process.env.DIY_SUBMIT_ANTONYCC_BASE_URI;
   const scope = "write:vat read:vat";
   const authUrl =

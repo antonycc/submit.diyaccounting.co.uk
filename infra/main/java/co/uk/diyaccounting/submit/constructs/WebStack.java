@@ -88,6 +88,7 @@ public class WebStack extends Stack {
   public ISecret hmrcClientSecretsManagerSecret;
   public ISecret googleClientSecretsManagerSecret;
   public ISecret antonyccClientSecretsManagerSecret;
+  public ISecret acCogClientSecretsManagerSecret;
   public IBucket distributionAccessLogBucket;
   public OriginAccessIdentity originIdentity;
   public Distribution distribution;
@@ -109,6 +110,9 @@ public class WebStack extends Stack {
   public Function authUrlAntonyccLambda;
   public FunctionUrl authUrlAntonyccLambdaUrl;
   public LogGroup authUrlAntonyccLambdaLogGroup;
+  public Function authUrlAcCogLambda;
+  public FunctionUrl authUrlAcCogLambdaUrl;
+  public LogGroup authUrlAcCogLambdaLogGroup;
   public Function exchangeHmrcTokenLambda;
   public FunctionUrl exchangeHmrcTokenLambdaUrl;
   public LogGroup exchangeHmrcTokenLambdaLogGroup;
@@ -118,6 +122,9 @@ public class WebStack extends Stack {
   public Function exchangeAntonyccTokenLambda;
   public FunctionUrl exchangeAntonyccTokenLambdaUrl;
   public LogGroup exchangeAntonyccTokenLambdaLogGroup;
+  public Function exchangeAcCogTokenLambda;
+  public FunctionUrl exchangeAcCogTokenLambdaUrl;
+  public LogGroup exchangeAcCogTokenLambdaLogGroup;
   public Function submitVatLambda;
   public FunctionUrl submitVatLambdaUrl;
   public LogGroup submitVatLambdaLogGroup;
@@ -211,12 +218,21 @@ public class WebStack extends Stack {
     public String authUrlAntonyccLambdaHandlerFunctionName;
     public String authUrlAntonyccLambdaUrlPath;
     public String authUrlAntonyccLambdaDuration;
+    public String authUrlAcCogLambdaHandlerFunctionName;
+    public String authUrlAcCogLambdaUrlPath;
+    public String authUrlAcCogLambdaDuration;
     public String antonyccClientId;
     public String antonyccBaseUri;
     public String antonyccClientSecretArn;
+    public String acCogClientId;
+    public String acCogBaseUri;
+    public String acCogClientSecretArn;
     public String exchangeAntonyccTokenLambdaHandlerFunctionName;
     public String exchangeAntonyccTokenLambdaUrlPath;
     public String exchangeAntonyccTokenLambdaDuration;
+    public String exchangeAcCogTokenLambdaHandlerFunctionName;
+    public String exchangeAcCogTokenLambdaUrlPath;
+    public String exchangeAcCogTokenLambdaDuration;
     public String exchangeHmrcTokenLambdaHandlerFunctionName;
     public String exchangeHmrcTokenLambdaUrlPath;
     public String exchangeHmrcTokenLambdaDuration;
@@ -576,6 +592,21 @@ public class WebStack extends Stack {
       return this;
     }
 
+    public Builder authUrlAcCogLambdaHandlerFunctionName(String authUrlAcCogLambdaHandlerFunctionName) {
+          this.authUrlAcCogLambdaHandlerFunctionName = authUrlAcCogLambdaHandlerFunctionName;
+          return this;
+    }
+
+    public Builder authUrlAcCogLambdaUrlPath(String authUrlAcCogLambdaUrlPath) {
+      this.authUrlAcCogLambdaUrlPath = authUrlAcCogLambdaUrlPath;
+      return this;
+    }
+
+    public Builder authUrlAcCogLambdaDurationMillis(String authUrlAcCogLambdaDuration) {
+      this.authUrlAcCogLambdaDuration = authUrlAcCogLambdaDuration;
+      return this;
+    }
+
     public Builder antonyccClientId(String antonyccClientId) {
       this.antonyccClientId = antonyccClientId;
       return this;
@@ -591,21 +622,52 @@ public class WebStack extends Stack {
       return this;
     }
 
-    public Builder exchangeAntonyccTokenLambdaHandlerFunctionName(
-        String exchangeAntonyccTokenLambdaHandlerFunctionName) {
-      this.exchangeAntonyccTokenLambdaHandlerFunctionName = exchangeAntonyccTokenLambdaHandlerFunctionName;
+      public Builder acCogClientId(String acCogClientId) {
+          this.acCogClientId = acCogClientId;
+          return this;
+      }
+
+      public Builder acCogBaseUri(String acCogBaseUri) {
+          this.acCogBaseUri = acCogBaseUri;
+          return this;
+      }
+
+      public Builder acCogClientSecretArn(String acCogClientSecretArn) {
+          this.acCogClientSecretArn = acCogClientSecretArn;
+          return this;
+      }
+
+    public Builder exchangeAcCogTokenLambdaHandlerFunctionName(
+        String exchangeAcCogTokenLambdaHandlerFunctionName) {
+      this.exchangeAcCogTokenLambdaHandlerFunctionName = exchangeAcCogTokenLambdaHandlerFunctionName;
       return this;
     }
 
-    public Builder exchangeAntonyccTokenLambdaUrlPath(String exchangeAntonyccTokenLambdaUrlPath) {
-      this.exchangeAntonyccTokenLambdaUrlPath = exchangeAntonyccTokenLambdaUrlPath;
+    public Builder exchangeAcCogTokenLambdaUrlPath(String exchangeAcCogTokenLambdaUrlPath) {
+      this.exchangeAcCogTokenLambdaUrlPath = exchangeAcCogTokenLambdaUrlPath;
       return this;
     }
 
-    public Builder exchangeAntonyccTokenLambdaDurationMillis(String exchangeAntonyccTokenLambdaDuration) {
-      this.exchangeAntonyccTokenLambdaDuration = exchangeAntonyccTokenLambdaDuration;
+    public Builder exchangeAcCogTokenLambdaDurationMillis(String exchangeAcCogTokenLambdaDuration) {
+      this.exchangeAcCogTokenLambdaDuration = exchangeAcCogTokenLambdaDuration;
       return this;
     }
+
+      public Builder exchangeAntonyccTokenLambdaHandlerFunctionName(
+              String exchangeAntonyccTokenLambdaHandlerFunctionName) {
+          this.exchangeAntonyccTokenLambdaHandlerFunctionName = exchangeAntonyccTokenLambdaHandlerFunctionName;
+          return this;
+      }
+
+      public Builder exchangeAntonyccTokenLambdaUrlPath(String exchangeAntonyccTokenLambdaUrlPath) {
+          this.exchangeAntonyccTokenLambdaUrlPath = exchangeAntonyccTokenLambdaUrlPath;
+          return this;
+      }
+
+      public Builder exchangeAntonyccTokenLambdaDurationMillis(String exchangeAntonyccTokenLambdaDuration) {
+          this.exchangeAntonyccTokenLambdaDuration = exchangeAntonyccTokenLambdaDuration;
+          return this;
+      }
 
     public Builder exchangeHmrcTokenLambdaHandlerFunctionName(
         String exchangeHmrcTokenLambdaHandlerFunctionName) {
@@ -1086,7 +1148,11 @@ public class WebStack extends Stack {
               Secret.fromSecretPartialArn(this, "AntonyccClientSecret", builder.antonyccClientSecretArn);
     var antonyccClientSecretArn = this.antonyccClientSecretsManagerSecret.getSecretArn();
 
-      // Create Cognito User Pool for authentication
+    this.acCogClientSecretsManagerSecret =
+              Secret.fromSecretPartialArn(this, "AcCogClientSecret", builder.acCogClientSecretArn);
+    var acCogClientSecretArn = this.acCogClientSecretsManagerSecret.getSecretArn();
+
+    // Create Cognito User Pool for authentication
     var standardAttributes =
         StandardAttributes.builder()
             .email(StandardAttribute.builder().required(true).mutable(true).build())
@@ -1097,6 +1163,7 @@ public class WebStack extends Stack {
         && StringUtils.isNotBlank(builder.googleClientSecretArn)) {
       var googleClientSecretValue = this.googleClientSecretsManagerSecret.getSecretValue();
       var antonyccClientSecretValue = this.antonyccClientSecretsManagerSecret.getSecretValue();
+      var acCogClientSecretValue = this.acCogClientSecretsManagerSecret.getSecretValue();
       // var googleClientSecretValue = this.googleClientSecretsManagerSecret != null
       //        ? this.googleClientSecretsManagerSecret.getSecretValue()
       //        : SecretValue.unsafePlainText(builder.googleClientSecret);
@@ -1110,6 +1177,8 @@ public class WebStack extends Stack {
               .googleClientSecretValue(googleClientSecretValue)
               .antonyccClientId(builder.antonyccClientId)
               .antonyccClientSecretValue(antonyccClientSecretValue)
+              .acCogClientId(builder.acCogClientId)
+              .acCogClientSecretValue(acCogClientSecretValue)
               .callbackUrls(
                   List.of(
                       "https://" + this.domainName + "/",
@@ -1252,6 +1321,37 @@ public class WebStack extends Stack {
         builder.authUrlAntonyccLambdaUrlPath + "*",
         authUrlAntonyccLambdaUrlOrigin.behaviorOptions);
 
+      // authUrl - Antonycc
+      var authUrlAcCogLambdaEnv =
+              new HashMap<>(
+                      Map.of(
+                              "DIY_SUBMIT_HOME_URL",
+                              builder.homeUrl));
+      if (StringUtils.isNotBlank(builder.acCogBaseUri)) {
+          authUrlAcCogLambdaEnv.put("DIY_SUBMIT_ANTONYCC_BASE_URI", builder.acCogBaseUri);
+      }
+      if (StringUtils.isNotBlank(builder.acCogClientId)) {
+          authUrlAcCogLambdaEnv.put("DIY_SUBMIT_ANTONYCC_CLIENT_ID", builder.acCogClientId);
+      }
+      var authUrlAcCogLambdaUrlOrigin =
+              LambdaUrlOrigin.Builder.create(this, "AuthUrlAcCogLambda")
+                      .options(lambdaCommonOpts)
+                      .imageFilename("authUrlAcCog.Dockerfile")
+                      .functionName(
+                              Builder.buildFunctionName(
+                                      dashedDomainName, builder.authUrlAcCogLambdaHandlerFunctionName))
+                      .allowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
+                      .handler(builder.lambdaEntry + builder.authUrlAcCogLambdaHandlerFunctionName)
+                      .environment(authUrlAntonyccLambdaEnv)
+                      .timeout(Duration.millis(Long.parseLong(builder.authUrlAcCogLambdaDuration)))
+                      .build();
+      this.authUrlAcCogLambda = authUrlAcCogLambdaUrlOrigin.lambda;
+      this.authUrlAcCogLambdaUrl = authUrlAcCogLambdaUrlOrigin.functionUrl;
+      this.authUrlAcCogLambdaLogGroup = authUrlAcCogLambdaUrlOrigin.logGroup;
+      lambdaUrlToOriginsBehaviourMappings.put(
+              builder.authUrlAcCogLambdaUrlPath + "*",
+              authUrlAcCogLambdaUrlOrigin.behaviorOptions);
+
     // exchangeToken - HMRC
     // Create a secret for the HMRC client secret and set the ARN to be used in the Lambda
     // environment variable
@@ -1381,6 +1481,51 @@ public class WebStack extends Stack {
           exchangeAntonyccTokenLambdaUrlOrigin.behaviorOptions);
       if (this.antonyccClientSecretsManagerSecret != null) {
         this.antonyccClientSecretsManagerSecret.grantRead(this.exchangeAntonyccTokenLambda);
+      }
+
+      // exchangeToken - Antonycc Cognito
+      var exchangeAcCogTokenLambdaEnv =
+              new HashMap<>(
+                      Map.of(
+                              "DIY_SUBMIT_HOME_URL", builder.homeUrl));
+      if (StringUtils.isNotBlank(builder.acCogBaseUri)) {
+          exchangeAcCogTokenLambdaEnv.put("DIY_SUBMIT_AC_COG_BASE_URI", builder.acCogBaseUri);
+      }
+      if (StringUtils.isNotBlank(builder.acCogClientId)) {
+          exchangeAcCogTokenLambdaEnv.put("DIY_SUBMIT_AC_COG_CLIENT_ID", builder.acCogClientId);
+      }
+      if (StringUtils.isNotBlank(builder.acCogClientSecretArn)) {
+          exchangeAcCogTokenLambdaEnv.put("DIY_SUBMIT_AC_COG_CLIENT_SECRET_ARN", acCogClientSecretArn);
+      }
+      if (StringUtils.isNotBlank(builder.optionalTestAccessToken)) {
+          exchangeAcCogTokenLambdaEnv.put(
+                  "DIY_SUBMIT_TEST_ACCESS_TOKEN", builder.optionalTestAccessToken);
+      }
+      var exchangeAcCogTokenLambdaUrlOrigin =
+              LambdaUrlOrigin.Builder.create(this, "ExchangeAcCogTokenLambda")
+                      .options(lambdaCommonOpts)
+                      .imageFilename("exchangeAcCogToken.Dockerfile")
+                      .functionName(
+                              Builder.buildFunctionName(
+                                      dashedDomainName, builder.exchangeAcCogTokenLambdaHandlerFunctionName))
+                      .allowedMethods(AllowedMethods.ALLOW_ALL)
+                      .handler(builder.lambdaEntry + builder.exchangeAcCogTokenLambdaHandlerFunctionName)
+                      .environment(exchangeAcCogTokenLambdaEnv)
+                      .timeout(
+                              Duration.millis(
+                                      Long.parseLong(
+                                              builder.exchangeAcCogTokenLambdaDuration != null
+                                                      ? builder.exchangeAcCogTokenLambdaDuration
+                                                      : "30000")))
+                      .build();
+      this.exchangeAcCogTokenLambda = exchangeAcCogTokenLambdaUrlOrigin.lambda;
+      this.exchangeAcCogTokenLambdaUrl = exchangeAcCogTokenLambdaUrlOrigin.functionUrl;
+      this.exchangeAcCogTokenLambdaLogGroup = exchangeAcCogTokenLambdaUrlOrigin.logGroup;
+      lambdaUrlToOriginsBehaviourMappings.put(
+              builder.exchangeAcCogTokenLambdaUrlPath + "*",
+              exchangeAcCogTokenLambdaUrlOrigin.behaviorOptions);
+      if (this.acCogClientSecretsManagerSecret != null) {
+          this.acCogClientSecretsManagerSecret.grantRead(this.exchangeAcCogTokenLambda);
       }
 
       // submitVat

@@ -82,6 +82,8 @@ public class WebStackTest {
         .authUrlGoogleLambdaDurationMillis("30000")
         .authUrlAntonyccLambdaHandlerFunctionName("AuthUrlHandler")
         .authUrlAntonyccLambdaDurationMillis("30000")
+        .authUrlAcCogLambdaHandlerFunctionName("AuthUrlHandler")
+        .authUrlAcCogLambdaDurationMillis("30000")
         .exchangeHmrcTokenLambdaHandlerFunctionName("ExchangeTokenHandler")
         .exchangeHmrcTokenLambdaDurationMillis("30000")
         .exchangeGoogleTokenLambdaHandlerFunctionName("ExchangeTokenHandler")
@@ -89,6 +91,9 @@ public class WebStackTest {
         .exchangeAntonyccTokenLambdaHandlerFunctionName("ExchangeTokenHandler")
         .exchangeAntonyccTokenLambdaUrlPath("/api/antonycc/exchange-token")
         .exchangeAntonyccTokenLambdaDurationMillis("30000")
+        .exchangeAcCogTokenLambdaHandlerFunctionName("ExchangeTokenHandler")
+        .exchangeAcCogTokenLambdaUrlPath("/api/antonycc/exchange-token")
+        .exchangeAcCogTokenLambdaDurationMillis("30000")
         .submitVatLambdaHandlerFunctionName("SubmitVatHandler")
         .submitVatLambdaDurationMillis("60000")
         .logReceiptLambdaHandlerFunctionName("LogReceiptHandler")
@@ -106,6 +111,9 @@ public class WebStackTest {
         .antonyccClientId("test-antonycc-client-id")
         .antonyccClientSecretArn(
                 "arn:aws:secretsmanager:eu-west-2:000000000000:secret:diy/test/submit/antonycc/client_secret")
+        .acCogClientId("test-antonycc-client-id")
+        .acCogClientSecretArn(
+                "arn:aws:secretsmanager:eu-west-2:000000000000:secret:diy/test/submit/ac-cog/client_secret")
         .build();
   }
 }

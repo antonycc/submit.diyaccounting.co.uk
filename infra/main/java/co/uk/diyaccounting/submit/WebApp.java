@@ -67,6 +67,10 @@ public class WebApp {
                 System.getenv("AUTH_URL_ANTONYCC_LAMBDA_HANDLER_FUNCTION_NAME"))
             .authUrlAntonyccLambdaUrlPath(System.getenv("AUTH_URL_ANTONYCC_LAMBDA_URL_PATH"))
             .authUrlAntonyccLambdaDurationMillis(System.getenv("AUTH_URL_ANTONYCC_LAMBDA_DURATION"))
+            .authUrlAcCogLambdaHandlerFunctionName(
+                    System.getenv("AUTH_URL_AC_COG_LAMBDA_HANDLER_FUNCTION_NAME"))
+            .authUrlAcCogLambdaUrlPath(System.getenv("AUTH_URL_AC_COG_LAMBDA_URL_PATH"))
+            .authUrlAcCogLambdaDurationMillis(System.getenv("AUTH_URL_AC_COG_LAMBDA_DURATION"))
             .exchangeHmrcTokenLambdaHandlerFunctionName(
                 System.getenv("EXCHANGE_HMRC_TOKEN_LAMBDA_HANDLER_FUNCTION_NAME"))
             .exchangeHmrcTokenLambdaUrlPath(System.getenv("EXCHANGE_HMRC_TOKEN_LAMBDA_URL_PATH"))
@@ -114,7 +118,10 @@ public class WebApp {
             .myReceiptsLambdaDurationMillis(System.getenv("MY_RECEIPTS_LAMBDA_DURATION"))
             .antonyccClientId(System.getenv("DIY_SUBMIT_ANTONYCC_CLIENT_ID"))
             .antonyccBaseUri(System.getenv("DIY_SUBMIT_ANTONYCC_BASE_URI"))
+            .acCogClientId(System.getenv("DIY_SUBMIT_AC_COG_CLIENT_ID"))
+            .acCogBaseUri(System.getenv("DIY_SUBMIT_AC_COG_BASE_URI"))
             .antonyccClientSecretArn(System.getenv("DIY_SUBMIT_ANTONYCC_CLIENT_SECRET_ARN"))
+            .acCogClientSecretArn(System.getenv("DIY_SUBMIT_AC_COG_CLIENT_SECRET_ARN"))
             .build();
 
     CfnOutput.Builder.create(stack, "OriginBucketArn")

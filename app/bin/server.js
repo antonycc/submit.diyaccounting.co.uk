@@ -7,8 +7,20 @@ import { fileURLToPath } from "url";
 import { readFileSync } from "fs";
 import dotenv from "dotenv";
 
-import { httpGetAntonycc, httpGetGoogle, httpGetHmrc, httpGetMock } from "../functions/authUrl.js";
-import { httpPost as exchangeTokenHttpPostMock, exchangeTokenHttpPostGoogle, exchangeTokenHttpPostHmrc, exchangeTokenHttpPostAntonycc } from "../functions/exchangeToken.js";
+import {
+  httpGetAntonycc,
+  httpGetAcCog,
+  httpGetGoogle,
+  httpGetHmrc,
+  httpGetMock,
+} from "../functions/authUrl.js";
+import {
+  httpPost as exchangeTokenHttpPostMock,
+  exchangeTokenHttpPostGoogle,
+  exchangeTokenHttpPostHmrc,
+  exchangeTokenHttpPostAntonycc,
+  exchangeTokenHttpPostAcCog,
+} from "../functions/exchangeToken.js";
 import { httpPost as submitVatHttpPost } from "../functions/submitVat.js";
 import { httpPost as logReceiptHttpPost } from "../functions/logReceipt.js";
 import { httpPost as requestBundleHttpPost } from "../functions/bundle.js";
@@ -21,6 +33,7 @@ import { requireActivity } from "../lib/entitlementsService.js";
 dotenv.config({ path: ".env" });
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+// eslint-disable-next-line sonarjs/x-powered-by
 const app = express();
 
 // Read configuration from cdk.json
@@ -49,10 +62,13 @@ const exchangeMockTokenPath = context.exchangeTokenLambdaUrlPath || "/api/exchan
 const exchangeHmrcTokenPath = context.exchangeHmrcTokenLambdaUrlPath || "/api/hmrc/exchange-token";
 const exchangeGoogleTokenPath = context.exchangeGoogleTokenLambdaUrlPath || "/api/google/exchange-token";
 const exchangeAntonyccTokenPath = context.exchangeAntonyccTokenLambdaUrlPath || "/api/antonycc/exchange-token";
+const exchangeAcCogTokenPath =
+  context.exchangeAcCogTokenLambdaUrlPath || "/api/ac-cog/exchange-token";
 const submitVatPath = context.submitVatLambdaUrlPath || "/api/submit-vat";
 const logReceiptPath = context.logReceiptLambdaUrlPath || "/api/log-receipt";
 const googleAuthUrlPath = context.googleAuthUrlLambdaUrlPath || "/api/google/auth-url";
 const antonyccAuthUrlPath = context.antonyccAuthUrlLambdaUrlPath || "/api/antonycc/auth-url";
+const AcCogAuthUrlPath = context.AcCogAuthUrlLambdaUrlPath || "/api/ac-cog/auth-url";
 const requestBundlePath = context.bundleLambdaUrlPath || "/api/request-bundle";
 const catalogPath = context.catalogLambdaUrlPath || "/api/catalog";
 const myBundlesPath = context.myBundlesLambdaUrlPath || "/api/my-bundles";
@@ -98,6 +114,16 @@ app.get(antonyccAuthUrlPath, async (req, res) => {
   res.status(statusCode).json(JSON.parse(body));
 });
 
+app.get(AcCogAuthUrlPath, async (req, res) => {
+  const event = {
+    path: req.path,
+    headers: { host: req.get("host") || "localhost:3000" },
+    queryStringParameters: req.query || {},
+  };
+  const { statusCode, body } = await httpGetAcCog(event);
+  res.status(statusCode).json(JSON.parse(body));
+});
+
 app.post(exchangeMockTokenPath, async (req, res) => {
   const event = {
     path: req.path,
@@ -139,6 +165,17 @@ app.post(exchangeAntonyccTokenPath, async (req, res) => {
     body: JSON.stringify(req.body),
   };
   const { statusCode, body } = await exchangeTokenHttpPostAntonycc(event);
+  res.status(statusCode).json(JSON.parse(body));
+});
+
+app.post(exchangeAcCogTokenPath, async (req, res) => {
+  const event = {
+    path: req.path,
+    headers: { host: req.get("host") || "localhost:3000" },
+    queryStringParameters: req.query || {},
+    body: JSON.stringify(req.body),
+  };
+  const { statusCode, body } = await exchangeTokenHttpPostAcCog(event);
   res.status(statusCode).json(JSON.parse(body));
 });
 

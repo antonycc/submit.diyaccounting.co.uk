@@ -44,6 +44,7 @@ public class CognitoAuth {
   public final UserPool userPool;
   public final UserPoolIdentityProviderGoogle googleIdentityProvider;
   public final UserPoolIdentityProviderOidc antonyccIdentityProvider;
+  public final UserPoolIdentityProviderOidc AcCogIdentityProvider;
   public final UserPoolClient userPoolClient;
 
   private CognitoAuth(Builder b) {
@@ -89,9 +90,9 @@ public class CognitoAuth {
     }
     this.googleIdentityProvider = googleIdp;
 
-      // Antonycc OIDC IdP
-      UserPoolIdentityProviderOidc antonyccIdp = null;
-      if (b.antonyccClientId != null
+    // Antonycc OIDC IdP
+    UserPoolIdentityProviderOidc antonyccIdp = null;
+    if (b.antonyccClientId != null
               && !b.antonyccClientId.isBlank()
               && b.antonyccClientSecretValue != null) {
           googleIdp =
@@ -107,8 +108,29 @@ public class CognitoAuth {
                                           .familyName(ProviderAttribute.GOOGLE_FAMILY_NAME)
                                           .build())
                           .build();
-      }
-      this.antonyccIdentityProvider = antonyccIdp;
+    }
+    this.antonyccIdentityProvider = antonyccIdp;
+
+    // Antonycc OIDC vi Cognito IdP
+    UserPoolIdentityProviderOidc AcCogIdp = null;
+    if (b.acCogClientId != null
+              && !b.acCogClientId.isBlank()
+              && b.acCogClientSecretValue != null) {
+          googleIdp =
+                  UserPoolIdentityProviderGoogle.Builder.create(b.scope, "AcCogIdentityProvider")
+                          .userPool(up)
+                          .clientId(b.acCogClientId)
+                          .clientSecretValue(b.acCogClientSecretValue)
+                          .scopes(List.of("email", "openid", "profile"))
+                          .attributeMapping(
+                                  AttributeMapping.builder()
+                                          .email(ProviderAttribute.GOOGLE_EMAIL)
+                                          .givenName(ProviderAttribute.GOOGLE_GIVEN_NAME)
+                                          .familyName(ProviderAttribute.GOOGLE_FAMILY_NAME)
+                                          .build())
+                          .build();
+    }
+    this.AcCogIdentityProvider = antonyccIdp;
 
     // User Pool Client
     UserPoolClient client =
@@ -183,6 +205,8 @@ public class CognitoAuth {
     private SecretValue googleClientSecretValue;
     private String antonyccClientId;
     private SecretValue antonyccClientSecretValue;
+    private String acCogClientId;
+    private SecretValue acCogClientSecretValue;
     private List<String> callbackUrls;
     private List<String> logoutUrls;
     private List<UserPoolClientIdentityProvider> supportedIdentityProviders = List.of();
@@ -238,7 +262,17 @@ public class CognitoAuth {
           return this;
     }
 
-    public Builder callbackUrls(List<String> urls) {
+      public Builder acCogClientId(String id) {
+          this.acCogClientId = id;
+          return this;
+      }
+
+      public Builder acCogClientSecretValue(SecretValue value) {
+          this.acCogClientSecretValue = value;
+          return this;
+      }
+
+      public Builder callbackUrls(List<String> urls) {
       this.callbackUrls = urls;
       return this;
     }

@@ -86,16 +86,48 @@ export async function exchangeTokenHttpPostAntonycc(event) {
     });
   }
 
-  const redirectUri = process.env.DIY_SUBMIT_HOME_URL + "auth/loginWithGoogleCallback.html";
+  const redirectUri = process.env.DIY_SUBMIT_HOME_URL + "auth/loginWithAntonyccCallback.html";
 
   const antonyccClientId = (process.env.DIY_SUBMIT_ANTONYCC_CLIENT_ID || "").trim();
   const antonyccBaseUri = (process.env.DIY_SUBMIT_ANTONYCC_BASE_URI || "").trim();
 
-  // Exchange via Cognito
+  // Exchange
   const url = `${antonyccBaseUri}/oauth2/token`;
   const body = {
     grant_type: "authorization_code",
     client_id: antonyccClientId,
+    redirect_uri: redirectUri,
+    code,
+  };
+  return httpPostWithUrl(request, url, body);
+}
+
+// POST /api/ac-cog/exchange-token
+export async function exchangeTokenHttpPostAcCog(event) {
+  const request = extractRequest(event);
+
+  // Validation
+  const decoded = Buffer.from(event.body, "base64").toString("utf-8");
+  const searchParams = new URLSearchParams(decoded);
+  const code = searchParams.get("code");
+
+  if (!code) {
+    return httpBadRequestResponse({
+      request,
+      message: "Missing code from event body",
+    });
+  }
+
+  const redirectUri = process.env.DIY_SUBMIT_HOME_URL + "auth/loginWithAcCogCallback.html";
+
+  const AcCogClientId = (process.env.DIY_SUBMIT_AC_COG_CLIENT_ID || "").trim();
+  const AcCogBaseUri = (process.env.DIY_SUBMIT_AC_COG_BASE_URI || "").trim();
+
+  // Exchange via Cognito
+  const url = `${AcCogBaseUri}/oauth2/token`;
+  const body = {
+    grant_type: "authorization_code",
+    client_id: AcCogClientId,
     redirect_uri: redirectUri,
     code,
   };
