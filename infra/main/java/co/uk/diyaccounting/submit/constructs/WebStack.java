@@ -245,10 +245,10 @@ public class WebStack extends Stack {
     public String commitHash;
     public String antonyccClientId;
     public String antonyccBaseUri;
-    public String antonyccClientSecretArn;
+    //public String antonyccClientSecretArn;
     public String acCogClientId;
     public String acCogBaseUri;
-    public String acCogClientSecretArn;
+    //public String acCogClientSecretArn;
 
     // Cognito and Bundle Management properties
     public String googleClientId;
@@ -619,10 +619,10 @@ public class WebStack extends Stack {
       return this;
     }
 
-    public Builder antonyccClientSecretArn(String antonyccClientSecretArn) {
-      this.antonyccClientSecretArn = antonyccClientSecretArn;
-      return this;
-    }
+    //public Builder antonyccClientSecretArn(String antonyccClientSecretArn) {
+    //  this.antonyccClientSecretArn = antonyccClientSecretArn;
+    //  return this;
+    //}
 
       public Builder acCogClientId(String acCogClientId) {
           this.acCogClientId = acCogClientId;
@@ -634,10 +634,10 @@ public class WebStack extends Stack {
           return this;
       }
 
-      public Builder acCogClientSecretArn(String acCogClientSecretArn) {
-          this.acCogClientSecretArn = acCogClientSecretArn;
-          return this;
-      }
+      //public Builder acCogClientSecretArn(String acCogClientSecretArn) {
+      //    this.acCogClientSecretArn = acCogClientSecretArn;
+      //    return this;
+      //}
 
     public Builder exchangeAcCogTokenLambdaHandlerFunctionName(
         String exchangeAcCogTokenLambdaHandlerFunctionName) {
@@ -1146,13 +1146,13 @@ public class WebStack extends Stack {
         Secret.fromSecretPartialArn(this, "GoogleClientSecret", builder.googleClientSecretArn);
     var googleClientSecretArn = this.googleClientSecretsManagerSecret.getSecretArn();
 
-    this.antonyccClientSecretsManagerSecret =
-              Secret.fromSecretPartialArn(this, "AntonyccClientSecret", builder.antonyccClientSecretArn);
-    var antonyccClientSecretArn = this.antonyccClientSecretsManagerSecret.getSecretArn();
+    //this.antonyccClientSecretsManagerSecret =
+    //          Secret.fromSecretPartialArn(this, "AntonyccClientSecret", builder.antonyccClientSecretArn);
+    //var antonyccClientSecretArn = this.antonyccClientSecretsManagerSecret.getSecretArn();
 
-    this.acCogClientSecretsManagerSecret =
-              Secret.fromSecretPartialArn(this, "AcCogClientSecret", builder.acCogClientSecretArn);
-    var acCogClientSecretArn = this.acCogClientSecretsManagerSecret.getSecretArn();
+    //this.acCogClientSecretsManagerSecret =
+    //          Secret.fromSecretPartialArn(this, "AcCogClientSecret", builder.acCogClientSecretArn);
+    //var acCogClientSecretArn = this.acCogClientSecretsManagerSecret.getSecretArn();
 
     // Create Cognito User Pool for authentication
     var standardAttributes =
@@ -1164,8 +1164,8 @@ public class WebStack extends Stack {
     if (StringUtils.isNotBlank(builder.googleClientId)
         && StringUtils.isNotBlank(builder.googleClientSecretArn)) {
       var googleClientSecretValue = this.googleClientSecretsManagerSecret.getSecretValue();
-      var antonyccClientSecretValue = this.antonyccClientSecretsManagerSecret.getSecretValue();
-      var acCogClientSecretValue = this.acCogClientSecretsManagerSecret.getSecretValue();
+      //var antonyccClientSecretValue = this.antonyccClientSecretsManagerSecret.getSecretValue();
+      //var acCogClientSecretValue = this.acCogClientSecretsManagerSecret.getSecretValue();
       // var googleClientSecretValue = this.googleClientSecretsManagerSecret != null
       //        ? this.googleClientSecretsManagerSecret.getSecretValue()
       //        : SecretValue.unsafePlainText(builder.googleClientSecret);
@@ -1459,9 +1459,9 @@ public class WebStack extends Stack {
       if (StringUtils.isNotBlank(builder.antonyccClientId)) {
         exchangeAntonyccTokenLambdaEnv.put("DIY_SUBMIT_ANTONYCC_CLIENT_ID", builder.antonyccClientId);
       }
-      if (StringUtils.isNotBlank(builder.antonyccClientSecretArn)) {
-        exchangeAntonyccTokenLambdaEnv.put("DIY_SUBMIT_ANTONYCC_CLIENT_SECRET_ARN", antonyccClientSecretArn);
-      }
+      //if (StringUtils.isNotBlank(builder.antonyccClientSecretArn)) {
+      //  exchangeAntonyccTokenLambdaEnv.put("DIY_SUBMIT_ANTONYCC_CLIENT_SECRET_ARN", antonyccClientSecretArn);
+      //}
       if (StringUtils.isNotBlank(builder.optionalTestAccessToken)) {
         exchangeAntonyccTokenLambdaEnv.put(
             "DIY_SUBMIT_TEST_ACCESS_TOKEN", builder.optionalTestAccessToken);
@@ -1504,9 +1504,9 @@ public class WebStack extends Stack {
       if (StringUtils.isNotBlank(builder.acCogClientId)) {
           exchangeAcCogTokenLambdaEnv.put("DIY_SUBMIT_AC_COG_CLIENT_ID", builder.acCogClientId);
       }
-      if (StringUtils.isNotBlank(builder.acCogClientSecretArn)) {
-          exchangeAcCogTokenLambdaEnv.put("DIY_SUBMIT_AC_COG_CLIENT_SECRET_ARN", acCogClientSecretArn);
-      }
+      //if (StringUtils.isNotBlank(builder.acCogClientSecretArn)) {
+      //    exchangeAcCogTokenLambdaEnv.put("DIY_SUBMIT_AC_COG_CLIENT_SECRET_ARN", acCogClientSecretArn);
+      //}
       if (StringUtils.isNotBlank(builder.optionalTestAccessToken)) {
           exchangeAcCogTokenLambdaEnv.put(
                   "DIY_SUBMIT_TEST_ACCESS_TOKEN", builder.optionalTestAccessToken);
