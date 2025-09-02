@@ -29,6 +29,7 @@ on:
     branches:
       - main
     paths:
+      - '.env.prod'
       - 'app/functions'
       - 'app/lib'
       - 'infra/main'
@@ -237,6 +238,62 @@ jobs:
         shell: bash
         env:
           SECRET_NAME: "diy/${{ env.environment}}/submit/google/client_secret"
+        run: |
+          set -euo pipefail
+          if aws secretsmanager describe-secret --secret-id "$SECRET_NAME" >/dev/null 2>&1; then
+            aws secretsmanager put-secret-value \
+              --secret-id "$SECRET_NAME" \
+              --secret-string file://secret.txt
+          else
+            aws secretsmanager create-secret \
+              --name "$SECRET_NAME" \
+              --secret-string file://secret.txt \
+              --tags Key=managed-by,Value=github-actions Key=repo,Value=${GITHUB_REPOSITORY}
+          fi
+          shred -u secret.txt
+
+      - name: Write GitHub secret DIY_SUBMIT_ANTONYCC_CLIENT_SECRET to temp file (keeps out of logs)
+        shell: bash
+        env:
+          GH_SECRET: ${{ secrets.DIY_SUBMIT_ANTONYCC_CLIENT_SECRET }}
+        run: |
+          set -euo pipefail
+          umask 077
+          printf '%s' "$GH_SECRET" > secret.txt
+          echo "::add-mask::$(cat secret.txt)"
+
+      - name: Upsert DIY_SUBMIT_ANTONYCC_CLIENT_SECRET into AWS Secrets Manager
+        shell: bash
+        env:
+          SECRET_NAME: "diy/${{ env.environment}}/submit/antonycc/client_secret"
+        run: |
+          set -euo pipefail
+          if aws secretsmanager describe-secret --secret-id "$SECRET_NAME" >/dev/null 2>&1; then
+            aws secretsmanager put-secret-value \
+              --secret-id "$SECRET_NAME" \
+              --secret-string file://secret.txt
+          else
+            aws secretsmanager create-secret \
+              --name "$SECRET_NAME" \
+              --secret-string file://secret.txt \
+              --tags Key=managed-by,Value=github-actions Key=repo,Value=${GITHUB_REPOSITORY}
+          fi
+          shred -u secret.txt
+
+      - name: Write GitHub secret DIY_SUBMIT_AC_COG_CLIENT_SECRET to temp file (keeps out of logs)
+        shell: bash
+        env:
+          GH_SECRET: ${{ secrets.DIY_SUBMIT_AC_COG_CLIENT_SECRET }}
+        run: |
+          set -euo pipefail
+          umask 077
+          printf '%s' "$GH_SECRET" > secret.txt
+          echo "::add-mask::$(cat secret.txt)"
+
+      - name: Upsert DIY_SUBMIT_AC_COG_CLIENT_SECRET into AWS Secrets Manager
+        shell: bash
+        env:
+          SECRET_NAME: "diy/${{ env.environment}}/submit/ac-cog/client_secret"
         run: |
           set -euo pipefail
           if aws secretsmanager describe-secret --secret-id "$SECRET_NAME" >/dev/null 2>&1; then

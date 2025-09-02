@@ -15,6 +15,151 @@ const secretsClient = new SecretsManagerClient();
 let cachedGoogleClientSecret;
 let cachedHmrcClientSecret;
 
+// POST /api/google/exchange-token
+export async function exchangeTokenHttpPostGoogle(event) {
+  const request = extractRequest(event);
+
+  // Validation
+  const decoded = Buffer.from(event.body, "base64").toString("utf-8");
+  const searchParams = new URLSearchParams(decoded);
+  const code = searchParams.get("code");
+
+  if (!code) {
+    return httpBadRequestResponse({
+      request,
+      message: "Missing code from event body",
+    });
+  }
+
+  const redirectUri = process.env.DIY_SUBMIT_HOME_URL + "auth/loginWithGoogleCallback.html";
+
+  const cognitoClientId = (process.env.DIY_SUBMIT_COGNITO_CLIENT_ID || "").trim();
+  const cognitoBaseUri = (process.env.DIY_SUBMIT_COGNITO_BASE_URI || "").trim();
+
+  if (cognitoClientId && cognitoBaseUri) {
+    // Exchange via Cognito
+    const url = `${cognitoBaseUri}/oauth2/token`;
+    const body = {
+      grant_type: "authorization_code",
+      client_id: cognitoClientId,
+      redirect_uri: redirectUri,
+      code,
+    };
+    return httpPostWithUrl(request, url, body);
+  }
+
+  // Fallback: exchange directly with Google
+  // TODO: remove this fallback after removing whatever needed it
+  const googleClientId = (process.env.DIY_SUBMIT_GOOGLE_CLIENT_ID || "").trim();
+  if (!googleClientId) {
+    return httpServerErrorResponse({
+      request,
+      message:
+        "Google login misconfigured: neither DIY_SUBMIT_COGNITO_CLIENT_ID nor DIY_SUBMIT_GOOGLE_CLIENT_ID is set",
+    });
+  }
+  const clientSecret = await retrieveGoogleClientSecret();
+  const googleTokenUrl = "https://oauth2.googleapis.com/token";
+  const googleBody = {
+    grant_type: "authorization_code",
+    client_id: googleClientId,
+    client_secret: clientSecret,
+    redirect_uri: redirectUri,
+    code,
+  };
+  return httpPostWithUrl(request, googleTokenUrl, googleBody);
+}
+
+// POST /api/antonycc/exchange-token
+export async function exchangeTokenHttpPostAntonycc(event) {
+  const request = extractRequest(event);
+
+  // Validation
+  const decoded = Buffer.from(event.body, "base64").toString("utf-8");
+  const searchParams = new URLSearchParams(decoded);
+  const code = searchParams.get("code");
+
+  if (!code) {
+    return httpBadRequestResponse({
+      request,
+      message: "Missing code from event body",
+    });
+  }
+
+  const redirectUri = process.env.DIY_SUBMIT_HOME_URL + "auth/loginWithAntonyccCallback.html";
+
+  const antonyccClientId = (process.env.DIY_SUBMIT_ANTONYCC_CLIENT_ID || "").trim();
+  const antonyccBaseUri = (process.env.DIY_SUBMIT_ANTONYCC_BASE_URI || "").trim();
+
+  // Exchange
+  const url = `${antonyccBaseUri}/oauth2/token`;
+  const body = {
+    grant_type: "authorization_code",
+    client_id: antonyccClientId,
+    redirect_uri: redirectUri,
+    code,
+  };
+  return httpPostWithUrl(request, url, body);
+}
+
+// POST /api/ac-cog/exchange-token
+export async function exchangeTokenHttpPostAcCog(event) {
+  const request = extractRequest(event);
+
+  // Validation
+  const decoded = Buffer.from(event.body, "base64").toString("utf-8");
+  const searchParams = new URLSearchParams(decoded);
+  const code = searchParams.get("code");
+
+  if (!code) {
+    return httpBadRequestResponse({
+      request,
+      message: "Missing code from event body",
+    });
+  }
+
+  const redirectUri = process.env.DIY_SUBMIT_HOME_URL + "auth/loginWithAcCogCallback.html";
+
+  const AcCogClientId = (process.env.DIY_SUBMIT_AC_COG_CLIENT_ID || "").trim();
+  const AcCogBaseUri = (process.env.DIY_SUBMIT_AC_COG_BASE_URI || "").trim();
+
+  // Exchange via Cognito
+  const url = `${AcCogBaseUri}/oauth2/token`;
+  const body = {
+    grant_type: "authorization_code",
+    client_id: AcCogClientId,
+    redirect_uri: redirectUri,
+    code,
+  };
+  return httpPostWithUrl(request, url, body);
+}
+
+// POST /api/hmrc/exchange-token
+export async function exchangeTokenHttpPostHmrc(event) {
+  const request = extractRequest(event);
+
+  // Validation
+  const { code } = JSON.parse(event.body || "{}");
+  if (!code) {
+    return httpBadRequestResponse({
+      request,
+      message: "Missing code from event body",
+    });
+  }
+
+  // OAuth exchange token post-body
+  const clientSecret = await retrieveHmrcClientSecret();
+  const url = `${process.env.DIY_SUBMIT_HMRC_BASE_URI}/oauth/token`;
+  const body = {
+    grant_type: "authorization_code",
+    client_id: process.env.DIY_SUBMIT_HMRC_CLIENT_ID,
+    client_secret: clientSecret,
+    redirect_uri: process.env.DIY_SUBMIT_HOME_URL + "activities/submitVatCallback.html",
+    code,
+  };
+  return httpPostWithUrl(request, url, body);
+}
+
 export async function httpPost(event) {
   const request = extractRequest(event);
   const { code } = JSON.parse(event.body || "{}");
@@ -119,86 +264,6 @@ async function performTokenExchange(providerUrl, body) {
   delete responseBody.access_token;
 
   return { accessToken, response, responseBody };
-}
-
-// POST /api/google/exchange-token
-export async function httpPostGoogle(event) {
-  const request = extractRequest(event);
-
-  // Validation
-  const decoded = Buffer.from(event.body, "base64").toString("utf-8");
-  const searchParams = new URLSearchParams(decoded);
-  const code = searchParams.get("code");
-
-  if (!code) {
-    return httpBadRequestResponse({
-      request,
-      message: "Missing code from event body",
-    });
-  }
-
-  const redirectUri = process.env.DIY_SUBMIT_HOME_URL + "auth/loginWithGoogleCallback.html";
-
-  const cognitoClientId = (process.env.DIY_SUBMIT_COGNITO_CLIENT_ID || "").trim();
-  const cognitoBaseUri = (process.env.DIY_SUBMIT_COGNITO_BASE_URI || "").trim();
-
-  if (cognitoClientId && cognitoBaseUri) {
-    // Exchange via Cognito
-    const url = `${cognitoBaseUri}/oauth2/token`;
-    const body = {
-      grant_type: "authorization_code",
-      client_id: cognitoClientId,
-      redirect_uri: redirectUri,
-      code,
-    };
-    return httpPostWithUrl(request, url, body);
-  }
-
-  // Fallback: exchange directly with Google
-  const googleClientId = (process.env.DIY_SUBMIT_GOOGLE_CLIENT_ID || "").trim();
-  if (!googleClientId) {
-    return httpServerErrorResponse({
-      request,
-      message:
-        "Google login misconfigured: neither DIY_SUBMIT_COGNITO_CLIENT_ID nor DIY_SUBMIT_GOOGLE_CLIENT_ID is set",
-    });
-  }
-  const clientSecret = await retrieveGoogleClientSecret();
-  const googleTokenUrl = "https://oauth2.googleapis.com/token";
-  const googleBody = {
-    grant_type: "authorization_code",
-    client_id: googleClientId,
-    client_secret: clientSecret,
-    redirect_uri: redirectUri,
-    code,
-  };
-  return httpPostWithUrl(request, googleTokenUrl, googleBody);
-}
-
-// POST /api/hmrc/exchange-token
-export async function httpPostHmrc(event) {
-  const request = extractRequest(event);
-
-  // Validation
-  const { code } = JSON.parse(event.body || "{}");
-  if (!code) {
-    return httpBadRequestResponse({
-      request,
-      message: "Missing code from event body",
-    });
-  }
-
-  // OAuth exchange token post-body
-  const clientSecret = await retrieveHmrcClientSecret();
-  const url = `${process.env.DIY_SUBMIT_HMRC_BASE_URI}/oauth/token`;
-  const body = {
-    grant_type: "authorization_code",
-    client_id: process.env.DIY_SUBMIT_HMRC_CLIENT_ID,
-    client_secret: clientSecret,
-    redirect_uri: process.env.DIY_SUBMIT_HOME_URL + "activities/submitVatCallback.html",
-    code,
-  };
-  return httpPostWithUrl(request, url, body);
 }
 
 export async function httpPostWithUrl(request, url, body) {

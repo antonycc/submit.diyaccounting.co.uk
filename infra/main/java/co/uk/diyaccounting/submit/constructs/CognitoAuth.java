@@ -1,8 +1,6 @@
 package co.uk.diyaccounting.submit.constructs;
 
 import co.uk.diyaccounting.submit.awssdk.RetentionDaysConverter;
-import java.util.List;
-import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import software.amazon.awscdk.RemovalPolicy;
@@ -13,6 +11,7 @@ import software.amazon.awscdk.services.cognito.CfnUserPool;
 import software.amazon.awscdk.services.cognito.OAuthFlows;
 import software.amazon.awscdk.services.cognito.OAuthScope;
 import software.amazon.awscdk.services.cognito.OAuthSettings;
+import software.amazon.awscdk.services.cognito.OidcEndpoints;
 import software.amazon.awscdk.services.cognito.ProviderAttribute;
 import software.amazon.awscdk.services.cognito.SignInAliases;
 import software.amazon.awscdk.services.cognito.StandardAttributes;
@@ -21,9 +20,13 @@ import software.amazon.awscdk.services.cognito.UserPool;
 import software.amazon.awscdk.services.cognito.UserPoolClient;
 import software.amazon.awscdk.services.cognito.UserPoolClientIdentityProvider;
 import software.amazon.awscdk.services.cognito.UserPoolIdentityProviderGoogle;
+import software.amazon.awscdk.services.cognito.UserPoolIdentityProviderOidc;
 import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.constructs.Construct;
+
+import java.util.List;
+import java.util.Map;
 
 /**
  * Thin coordinator for Cognito resources, created at WebStack scope to preserve logical IDs.
@@ -41,6 +44,8 @@ public class CognitoAuth {
 
   public final UserPool userPool;
   public final UserPoolIdentityProviderGoogle googleIdentityProvider;
+  public final UserPoolIdentityProviderOidc antonyccIdentityProvider;
+  public final UserPoolIdentityProviderOidc AcCogIdentityProvider;
   public final UserPoolClient userPoolClient;
 
   private CognitoAuth(Builder b) {
@@ -65,7 +70,7 @@ public class CognitoAuth {
           CfnUserPool.UserPoolAddOnsProperty.builder().advancedSecurityMode(asm).build());
     }
 
-    // Optional Google IdP
+    // Google IdP
     UserPoolIdentityProviderGoogle googleIdp = null;
     if (b.googleClientId != null
         && !b.googleClientId.isBlank()
@@ -85,6 +90,57 @@ public class CognitoAuth {
               .build();
     }
     this.googleIdentityProvider = googleIdp;
+
+    // Antonycc OIDC IdP
+    UserPoolIdentityProviderOidc antonyccIdp = null;
+    if (b.antonyccClientId != null
+              && !b.antonyccClientId.isBlank()
+              && b.antonyccClientSecretValue != null) {
+        OidcEndpoints oidcEndpoints = OidcEndpoints.builder()
+                .authorization(b.antonyccIssuerUrl + "/authorize")
+                .token(b.antonyccIssuerUrl + "/token")
+                .userInfo(b.antonyccIssuerUrl + "/userinfo")
+                .jwksUri(b.antonyccIssuerUrl + "/.well-known/jwks")
+                .build();
+          antonyccIdp =
+                  UserPoolIdentityProviderOidc.Builder.create(b.scope, "AntonyccIdentityProvider")
+                          .userPool(up)
+                          .clientId(b.antonyccClientId)
+                          .clientSecret(b.antonyccClientSecretValue.unsafeUnwrap())
+                          .issuerUrl(b.antonyccIssuerUrl)
+                          .endpoints(oidcEndpoints)
+                          .attributeMapping(
+                                  AttributeMapping.builder()
+                                          .email(ProviderAttribute.other("email"))
+                                          .givenName(ProviderAttribute.other("given_name"))
+                                          .familyName(ProviderAttribute.other("family_name"))
+                                          .build())
+                          .build();
+    }
+    this.antonyccIdentityProvider = antonyccIdp;
+
+    // Antonycc OIDC via Cognito IdP
+    UserPoolIdentityProviderOidc AcCogIdp = null;
+    if (b.acCogClientId != null
+              && !b.acCogClientId.isBlank()
+              && b.acCogClientSecretValue != null) {
+          AcCogIdp =
+                  UserPoolIdentityProviderOidc.Builder.create(b.scope, "AcCogIdentityProvider")
+                          .userPool(up)
+                          .clientId(b.acCogClientId)
+                          .clientSecret(b.acCogClientSecretValue.unsafeUnwrap())
+                          //.issuerUrl("https://cognito-idp.eu-west-2.amazonaws.com/eu-west-2_default")
+                          .issuerUrl(b.acCogIssuerUrl)
+                          .scopes(List.of("email", "openid", "profile"))
+                          .attributeMapping(
+                                  AttributeMapping.builder()
+                                          .email(ProviderAttribute.other("email"))
+                                          .givenName(ProviderAttribute.other("given_name"))
+                                          .familyName(ProviderAttribute.other("family_name"))
+                                          .build())
+                          .build();
+    }
+    this.AcCogIdentityProvider = AcCogIdp;
 
     // User Pool Client
     UserPoolClient client =
@@ -157,6 +213,12 @@ public class CognitoAuth {
     private StandardAttributes standardAttributes;
     private String googleClientId;
     private SecretValue googleClientSecretValue;
+    private String antonyccClientId;
+    private SecretValue antonyccClientSecretValue;
+    private String antonyccIssuerUrl;
+    private String acCogClientId;
+    private SecretValue acCogClientSecretValue;
+    private String acCogIssuerUrl;
     private List<String> callbackUrls;
     private List<String> logoutUrls;
     private List<UserPoolClientIdentityProvider> supportedIdentityProviders = List.of();
@@ -202,7 +264,37 @@ public class CognitoAuth {
       return this;
     }
 
-    public Builder callbackUrls(List<String> urls) {
+    public Builder antonyccClientId(String id) {
+          this.antonyccClientId = id;
+          return this;
+    }
+
+    public Builder antonyccClientSecretValue(SecretValue value) {
+          this.antonyccClientSecretValue = value;
+          return this;
+    }
+
+    public Builder antonyccIssuerUrl(String url) {
+          this.antonyccIssuerUrl = url;
+          return this;
+    }
+
+      public Builder acCogClientId(String id) {
+          this.acCogClientId = id;
+          return this;
+      }
+
+      public Builder acCogClientSecretValue(SecretValue value) {
+          this.acCogClientSecretValue = value;
+          return this;
+      }
+
+      public Builder acCogIssuerUrl(String url) {
+          this.acCogIssuerUrl = url;
+          return this;
+      }
+
+      public Builder callbackUrls(List<String> urls) {
       this.callbackUrls = urls;
       return this;
     }

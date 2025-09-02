@@ -80,10 +80,20 @@ public class WebStackTest {
         .authUrlMockLambdaDurationMillis("30000")
         .authUrlGoogleLambdaHandlerFunctionName("AuthUrlHandler")
         .authUrlGoogleLambdaDurationMillis("30000")
+        .authUrlAntonyccLambdaHandlerFunctionName("AuthUrlHandler")
+        .authUrlAntonyccLambdaDurationMillis("30000")
+        .authUrlAcCogLambdaHandlerFunctionName("AuthUrlHandler")
+        .authUrlAcCogLambdaDurationMillis("30000")
         .exchangeHmrcTokenLambdaHandlerFunctionName("ExchangeTokenHandler")
         .exchangeHmrcTokenLambdaDurationMillis("30000")
         .exchangeGoogleTokenLambdaHandlerFunctionName("ExchangeTokenHandler")
         .exchangeGoogleTokenLambdaDurationMillis("30000")
+        .exchangeAntonyccTokenLambdaHandlerFunctionName("ExchangeTokenHandler")
+        .exchangeAntonyccTokenLambdaUrlPath("/api/antonycc/exchange-token")
+        .exchangeAntonyccTokenLambdaDurationMillis("30000")
+        .exchangeAcCogTokenLambdaHandlerFunctionName("ExchangeTokenHandler")
+        .exchangeAcCogTokenLambdaUrlPath("/api/ac-cog/exchange-token")
+        .exchangeAcCogTokenLambdaDurationMillis("30000")
         .submitVatLambdaHandlerFunctionName("SubmitVatHandler")
         .submitVatLambdaDurationMillis("60000")
         .logReceiptLambdaHandlerFunctionName("LogReceiptHandler")
@@ -98,6 +108,12 @@ public class WebStackTest {
         .googleClientId("test-google-client-id")
         .googleClientSecretArn(
             "arn:aws:secretsmanager:eu-west-2:000000000000:secret:diy/test/submit/google/client_secret")
+        .antonyccClientId("test-antonycc-client-id")
+        .antonyccClientSecretArn(
+                "arn:aws:secretsmanager:eu-west-2:000000000000:secret:diy/test/submit/antonycc/client_secret")
+        .acCogClientId("test-antonycc-client-id")
+        .acCogClientSecretArn(
+                "arn:aws:secretsmanager:eu-west-2:000000000000:secret:diy/test/submit/ac-cog/client_secret")
         .build();
   }
 }
