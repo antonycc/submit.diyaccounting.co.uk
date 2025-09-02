@@ -35,7 +35,7 @@
     "googleClientId": "",
     "googleClientSecretArn": "to be replaced with lookup of environment variable DIY_SUBMIT_GOOGLE_CLIENT_SECRET_ARN",
     "myReceiptsLambdaDuration": "30000",
-    "antonyccClientId": "TODO",
+    "antonyccClientId": "submit-diyaccounting-co-uk",
     "antonyccBaseUri": "https://oidc.antonycc.com/",
     "acCogClientId": "",
     "acCogBaseUri": "https://auth.oidc.antonycc.com/",

@@ -32,7 +32,6 @@
     "test:system": "vitest --run app/system-tests/*.test.js",
     "test:browser": "playwright test --project=browser-tests web/browser-tests/*.test.js",
     "test:behaviour": "playwright test --project=behaviour-tests behaviour-tests/*.test.js",
-    "test:infra": "npm run test:cdk",
     "playwright:install": "npx playwright install chromium --with-deps",
     "test:submitVatBehaviourProxyRunning": "npx dotenv -e .env.proxyRunning -- playwright test behaviour-tests/submitVat.behaviour.test.js",
     "test:submitVatBehaviour": "playwright test behaviour-tests/submitVat.behaviour.test.js",

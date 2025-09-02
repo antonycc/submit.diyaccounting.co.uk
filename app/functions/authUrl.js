@@ -83,26 +83,26 @@ export async function httpGetGoogle(event) {
 // GET /api/antonycc/auth-url?state={state}
 export async function httpGetAntonycc(event) {
   const state = event.queryStringParameters?.state;
+  const clientId = process.env.DIY_SUBMIT_ANTONYCC_CLIENT_ID;
   const redirectUri = process.env.DIY_SUBMIT_HOME_URL + "auth/loginWithAntonyccCallback.html";
-  const antonyccOidcBase = "https://oidc.antonycc.com";
+  const baseUri = process.env.DIY_SUBMIT_ANTONYCC_BASE_URI;
   const scope = "openid profile email";
   const authUrl =
-    `${antonyccOidcBase}/loginDirect.html?` +
+    `${baseUri}/loginDirect.html?` +
     "response_type=code" +
-    "&client_id=self-client" +
+    `&client_id=${encodeURIComponent(clientId)}` +
     `&redirect_uri=${encodeURIComponent(redirectUri)}` +
     `&scope=${encodeURIComponent(scope)}` +
-    `&state=${encodeURIComponent(state)}` +
-    "&identity_provider=MockOAuth2Server";
+    `&state=${encodeURIComponent(state)}`;
   return httpGet(event, authUrl);
 }
 
 // GET /api/ac-cog/auth-url?state={state}
 export async function httpGetAcCog(event) {
   const state = event.queryStringParameters?.state;
-  const clientId = process.env.DIY_SUBMIT_ANTONYCC_CLIENT_ID;
+  const clientId = process.env.DIY_SUBMIT_AC_COG_CLIENT_ID;
   const redirectUri = process.env.DIY_SUBMIT_HOME_URL + "auth/loginWithAcCogCallback.html";
-  const baseUri = process.env.DIY_SUBMIT_ANTONYCC_BASE_URI;
+  const baseUri = process.env.DIY_SUBMIT_AC_COG_BASE_URI;
   const scope = "write:vat read:vat";
   const authUrl =
     `${baseUri}/oauth2/authorize?response_type=code` +
