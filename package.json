@@ -82,7 +82,7 @@
     "eslint-plugin-security": "^3.0.1",
     "eslint-plugin-sonarjs": "^3.0.4",
     "happy-dom": "^18.0.1",
-    "msw": "^2.10.5",
+    "msw": "^2.11.1",
     "npm-check-updates": "^18.0.2",
     "prettier": "^3.6.2",
     "supertest": "^7.1.4",
