@@ -92,7 +92,7 @@ export async function exchangeTokenHttpPostAntonycc(event) {
   const antonyccBaseUri = (process.env.DIY_SUBMIT_ANTONYCC_BASE_URI || "").trim();
 
   // Exchange
-  const url = `${antonyccBaseUri}/oauth2/token`;
+  const url = `${antonyccBaseUri}/token`;
   const body = {
     grant_type: "authorization_code",
     client_id: antonyccClientId,
