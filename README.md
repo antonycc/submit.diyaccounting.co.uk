@@ -232,7 +232,7 @@ Test types (scripts in package.json)
 - Behaviour tests (Playwright): behaviour-tests
   - npm run test:behaviour
 - Infra tests (CDK synth in Docker + mvnw):
-  - npm run test:infra (alias: npm run test:cdk)
+  - npm run run test:cdk
 - End-to-end with running proxy:
   - npm run test:submitVatBehaviourProxyRunning
 

@@ -16,7 +16,7 @@ let cachedGoogleClientSecret;
 let cachedHmrcClientSecret;
 
 // POST /api/google/exchange-token
-export async function exchangeTokenHttpPostGoogle(event) {
+export async function httpPostGoogle(event) {
   const request = extractRequest(event);
 
   // Validation
@@ -71,13 +71,14 @@ export async function exchangeTokenHttpPostGoogle(event) {
 }
 
 // POST /api/antonycc/exchange-token
-export async function exchangeTokenHttpPostAntonycc(event) {
+export async function httpPostAntonycc(event) {
   const request = extractRequest(event);
 
   // Validation
   const decoded = Buffer.from(event.body, "base64").toString("utf-8");
   const searchParams = new URLSearchParams(decoded);
   const code = searchParams.get("code");
+  // const code = JSON.parse(event.body || "{}").code;
 
   if (!code) {
     return httpBadRequestResponse({
@@ -92,7 +93,7 @@ export async function exchangeTokenHttpPostAntonycc(event) {
   const antonyccBaseUri = (process.env.DIY_SUBMIT_ANTONYCC_BASE_URI || "").trim();
 
   // Exchange
-  const url = `${antonyccBaseUri}/oauth2/token`;
+  const url = `${antonyccBaseUri}/token`;
   const body = {
     grant_type: "authorization_code",
     client_id: antonyccClientId,
@@ -103,7 +104,7 @@ export async function exchangeTokenHttpPostAntonycc(event) {
 }
 
 // POST /api/ac-cog/exchange-token
-export async function exchangeTokenHttpPostAcCog(event) {
+export async function httpPostAcCog(event) {
   const request = extractRequest(event);
 
   // Validation
@@ -135,7 +136,7 @@ export async function exchangeTokenHttpPostAcCog(event) {
 }
 
 // POST /api/hmrc/exchange-token
-export async function exchangeTokenHttpPostHmrc(event) {
+export async function httpPostHmrc(event) {
   const request = extractRequest(event);
 
   // Validation
