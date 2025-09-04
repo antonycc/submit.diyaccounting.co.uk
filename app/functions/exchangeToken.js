@@ -16,7 +16,7 @@ let cachedGoogleClientSecret;
 let cachedHmrcClientSecret;
 
 // POST /api/google/exchange-token
-export async function exchangeTokenHttpPostGoogle(event) {
+export async function httpPostGoogle(event) {
   const request = extractRequest(event);
 
   // Validation
@@ -71,7 +71,7 @@ export async function exchangeTokenHttpPostGoogle(event) {
 }
 
 // POST /api/antonycc/exchange-token
-export async function exchangeTokenHttpPostAntonycc(event) {
+export async function httpPostAntonycc(event) {
   const request = extractRequest(event);
 
   // Validation
@@ -104,7 +104,7 @@ export async function exchangeTokenHttpPostAntonycc(event) {
 }
 
 // POST /api/ac-cog/exchange-token
-export async function exchangeTokenHttpPostAcCog(event) {
+export async function httpPostAcCog(event) {
   const request = extractRequest(event);
 
   // Validation
@@ -136,7 +136,7 @@ export async function exchangeTokenHttpPostAcCog(event) {
 }
 
 // POST /api/hmrc/exchange-token
-export async function exchangeTokenHttpPostHmrc(event) {
+export async function httpPostHmrc(event) {
   const request = extractRequest(event);
 
   // Validation

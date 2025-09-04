@@ -12,4 +12,4 @@ ENV DIY_SUBMIT_TEST_ACCESS_TOKEN="The default value from the Dockerfile is inten
 # The app/ directory is also already copied in the base image
 
 # Set the specific handler for this Lambda
-CMD ["app/functions/exchangeToken/exchangeToken.exchangeTokenHttpPostAntonycc"]
+CMD ["app/functions/exchangeToken/exchangeToken.httpPostAntonycc"]

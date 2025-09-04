@@ -16,10 +16,10 @@ import {
 } from "../functions/authUrl.js";
 import {
   httpPost as exchangeTokenHttpPostMock,
-  exchangeTokenHttpPostGoogle,
-  exchangeTokenHttpPostHmrc,
-  exchangeTokenHttpPostAntonycc,
-  exchangeTokenHttpPostAcCog,
+  httpPostGoogle,
+  httpPostHmrc,
+  httpPostAntonycc,
+  httpPostAcCog,
 } from "../functions/exchangeToken.js";
 import { httpPost as submitVatHttpPost } from "../functions/submitVat.js";
 import { httpPost as logReceiptHttpPost } from "../functions/logReceipt.js";
@@ -142,7 +142,7 @@ app.post(exchangeHmrcTokenPath, async (req, res) => {
     queryStringParameters: req.query || {},
     body: JSON.stringify(req.body),
   };
-  const { statusCode, body } = await exchangeTokenHttpPostHmrc(event);
+  const { statusCode, body } = await httpPostHmrc(event);
   res.status(statusCode).json(JSON.parse(body));
 });
 
@@ -153,7 +153,7 @@ app.post(exchangeGoogleTokenPath, async (req, res) => {
     queryStringParameters: req.query || {},
     body: JSON.stringify(req.body),
   };
-  const { statusCode, body } = await exchangeTokenHttpPostGoogle(event);
+  const { statusCode, body } = await httpPostGoogle(event);
   res.status(statusCode).json(JSON.parse(body));
 });
 
@@ -164,7 +164,7 @@ app.post(exchangeAntonyccTokenPath, async (req, res) => {
     queryStringParameters: req.query || {},
     body: JSON.stringify(req.body),
   };
-  const { statusCode, body } = await exchangeTokenHttpPostAntonycc(event);
+  const { statusCode, body } = await httpPostAntonycc(event);
   res.status(statusCode).json(JSON.parse(body));
 });
 
@@ -175,7 +175,7 @@ app.post(exchangeAcCogTokenPath, async (req, res) => {
     queryStringParameters: req.query || {},
     body: JSON.stringify(req.body),
   };
-  const { statusCode, body } = await exchangeTokenHttpPostAcCog(event);
+  const { statusCode, body } = await httpPostAcCog(event);
   res.status(statusCode).json(JSON.parse(body));
 });
 
