@@ -75,10 +75,10 @@ export async function httpPostAntonycc(event) {
   const request = extractRequest(event);
 
   // Validation
-  // const decoded = Buffer.from(event.body, "base64").toString("utf-8");
-  // const searchParams = new URLSearchParams(decoded);
-  // const code = searchParams.get("code");
-  const code = JSON.parse(event.body || "{}").code;
+  const decoded = Buffer.from(event.body, "base64").toString("utf-8");
+  const searchParams = new URLSearchParams(decoded);
+  const code = searchParams.get("code");
+  // const code = JSON.parse(event.body || "{}").code;
 
   if (!code) {
     return httpBadRequestResponse({
