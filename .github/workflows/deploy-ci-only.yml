@@ -407,7 +407,7 @@ jobs:
 
       - run: cp '.env.ci' '.env.proxy' ; npx dotenv -e '.env.ci' -- npm run test:behaviour
         env:
-          DIY_SUBMIT_TEST_AUTH_PASSWORD=${{ secrets.DIY_SUBMIT_TEST_AUTH_PASSWORD }}
+          DIY_SUBMIT_TEST_AUTH_PASSWORD: ${{ secrets.DIY_SUBMIT_TEST_AUTH_PASSWORD }}
 
       - name: Convert Playwright video to MP4
         if: ${{ !cancelled() }}
