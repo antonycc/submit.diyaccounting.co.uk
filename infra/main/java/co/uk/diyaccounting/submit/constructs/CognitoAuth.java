@@ -11,7 +11,6 @@ import software.amazon.awscdk.services.cognito.CfnUserPool;
 import software.amazon.awscdk.services.cognito.OAuthFlows;
 import software.amazon.awscdk.services.cognito.OAuthScope;
 import software.amazon.awscdk.services.cognito.OAuthSettings;
-import software.amazon.awscdk.services.cognito.OidcEndpoints;
 import software.amazon.awscdk.services.cognito.ProviderAttribute;
 import software.amazon.awscdk.services.cognito.SignInAliases;
 import software.amazon.awscdk.services.cognito.StandardAttributes;
@@ -44,8 +43,7 @@ public class CognitoAuth {
 
   public final UserPool userPool;
   public final UserPoolIdentityProviderGoogle googleIdentityProvider;
-  public final UserPoolIdentityProviderOidc antonyccIdentityProvider;
-  public final UserPoolIdentityProviderOidc AcCogIdentityProvider;
+  public final UserPoolIdentityProviderOidc acCogIdentityProvider;
   public final UserPoolClient userPoolClient;
 
   private CognitoAuth(Builder b) {
@@ -92,6 +90,7 @@ public class CognitoAuth {
     this.googleIdentityProvider = googleIdp;
 
     // Antonycc OIDC IdP
+    /*
     UserPoolIdentityProviderOidc antonyccIdp = null;
     if (b.antonyccClientId != null
               && !b.antonyccClientId.isBlank()
@@ -118,13 +117,14 @@ public class CognitoAuth {
                           .build();
     }
     this.antonyccIdentityProvider = antonyccIdp;
+    */
 
     // Antonycc OIDC via Cognito IdP
-    UserPoolIdentityProviderOidc AcCogIdp = null;
+    UserPoolIdentityProviderOidc acCogIdp = null;
     if (b.acCogClientId != null
               && !b.acCogClientId.isBlank()
               && b.acCogClientSecretValue != null) {
-          AcCogIdp =
+          acCogIdp =
                   UserPoolIdentityProviderOidc.Builder.create(b.scope, "AcCogIdentityProvider")
                           .userPool(up)
                           .clientId(b.acCogClientId)
@@ -140,7 +140,7 @@ public class CognitoAuth {
                                           .build())
                           .build();
     }
-    this.AcCogIdentityProvider = AcCogIdp;
+    this.acCogIdentityProvider = acCogIdp;
 
     // User Pool Client
     UserPoolClient client =
@@ -157,8 +157,11 @@ public class CognitoAuth {
                     .build())
             .supportedIdentityProviders(b.supportedIdentityProviders)
             .build();
-    if (googleIdp != null) {
-      client.getNode().addDependency(googleIdp);
+    if (this.googleIdentityProvider != null) {
+      client.getNode().addDependency(this.googleIdentityProvider);
+    }
+    if (this.acCogIdentityProvider != null) {
+       client.getNode().addDependency(this.acCogIdentityProvider);
     }
     this.userPoolClient = client;
 

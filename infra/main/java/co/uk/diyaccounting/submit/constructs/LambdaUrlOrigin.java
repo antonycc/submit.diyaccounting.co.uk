@@ -1,8 +1,5 @@
 package co.uk.diyaccounting.submit.constructs;
 
-import java.util.List;
-import java.util.Map;
-import java.util.regex.Pattern;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import software.amazon.awscdk.Duration;
@@ -34,6 +31,10 @@ import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.LogGroupProps;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.constructs.Construct;
+
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Pattern;
 
 public class LambdaUrlOrigin {
 
@@ -122,6 +123,7 @@ public class LambdaUrlOrigin {
               .cmd(List.of(builder.handler))
               .buildArgs(buildArgs)
               .build();
+      var dockerImage = DockerImageCode.fromImageAsset(".", imageCodeProps);
 
       // Add X-Ray environment variables if enabled
       var environment = new java.util.HashMap<>(builder.environment);
@@ -131,7 +133,7 @@ public class LambdaUrlOrigin {
 
       var dockerFunctionBuilder =
           DockerImageFunction.Builder.create(builder.scope, builder.idPrefix + "Lambda")
-              .code(DockerImageCode.fromImageAsset(".", imageCodeProps))
+              .code(dockerImage)
               .environment(environment)
               .functionName(builder.functionName)
               .timeout(builder.timeout);
