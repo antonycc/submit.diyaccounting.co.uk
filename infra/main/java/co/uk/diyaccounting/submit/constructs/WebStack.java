@@ -1180,8 +1180,8 @@ public class WebStack extends Stack {
               //.antonyccClientId(builder.antonyccClientId)
               //.antonyccIssuerUrl(builder.antonyccBaseUri)
               //.antonyccClientSecretValue(antonyccClientSecretValue)
-              //.acCogClientId(builder.acCogClientId)
-              //.acCogIssuerUrl(builder.acCogBaseUri)
+              .acCogClientId(builder.acCogClientId)
+              .acCogIssuerUrl(builder.acCogBaseUri)
               //.acCogClientSecretValue(acCogClientSecretValue)
               .callbackUrls(
                   List.of(

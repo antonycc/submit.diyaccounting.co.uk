@@ -125,14 +125,14 @@ public class CognitoAuth {
     // Antonycc OIDC via Cognito IdP
     UserPoolIdentityProviderOidc acCogIdp = null;
     if (b.acCogClientId != null
-              && !b.acCogClientId.isBlank()
-              && b.acCogClientSecretValue != null) {
+              && !b.acCogClientId.isBlank()) {
+              // && b.acCogClientSecretValue != null) {
           acCogIdp =
                   UserPoolIdentityProviderOidc.Builder.create(b.scope, "AcCogIdentityProvider")
                           .name("ac-cog")
                           .userPool(up)
                           .clientId(b.acCogClientId)
-                          .clientSecret(b.acCogClientSecretValue.unsafeUnwrap())
+                          ///.clientSecret(b.acCogClientSecretValue.unsafeUnwrap())
                           //.issuerUrl("https://cognito-idp.eu-west-2.amazonaws.com/eu-west-2_default")
                           .issuerUrl(b.acCogIssuerUrl)
                           .scopes(List.of("email", "openid", "profile"))
@@ -221,11 +221,11 @@ public class CognitoAuth {
     private StandardAttributes standardAttributes;
     private String googleClientId;
     private SecretValue googleClientSecretValue;
-    private String antonyccClientId;
-    private SecretValue antonyccClientSecretValue;
-    private String antonyccIssuerUrl;
+    //private String antonyccClientId;
+    //private SecretValue antonyccClientSecretValue;
+    //private String antonyccIssuerUrl;
     private String acCogClientId;
-    private SecretValue acCogClientSecretValue;
+    //private SecretValue acCogClientSecretValue;
     private String acCogIssuerUrl;
     private List<String> callbackUrls;
     private List<String> logoutUrls;
@@ -271,30 +271,30 @@ public class CognitoAuth {
       return this;
     }
 
-    public Builder antonyccClientId(String id) {
-          this.antonyccClientId = id;
-          return this;
-    }
+    //public Builder antonyccClientId(String id) {
+    //      this.antonyccClientId = id;
+    //      return this;
+   // }
 
-    public Builder antonyccClientSecretValue(SecretValue value) {
-          this.antonyccClientSecretValue = value;
-          return this;
-    }
+    //public Builder antonyccClientSecretValue(SecretValue value) {
+    //      this.antonyccClientSecretValue = value;
+    //      return this;
+   // }
 
-    public Builder antonyccIssuerUrl(String url) {
-          this.antonyccIssuerUrl = url;
-          return this;
-    }
+    //public Builder antonyccIssuerUrl(String url) {
+    //      this.antonyccIssuerUrl = url;
+    //      return this;
+    //}
 
       public Builder acCogClientId(String id) {
           this.acCogClientId = id;
           return this;
       }
 
-      public Builder acCogClientSecretValue(SecretValue value) {
-          this.acCogClientSecretValue = value;
-          return this;
-      }
+      //public Builder acCogClientSecretValue(SecretValue value) {
+      //    this.acCogClientSecretValue = value;
+      //    return this;
+     // }
 
       public Builder acCogIssuerUrl(String url) {
           this.acCogIssuerUrl = url;
