@@ -26,13 +26,13 @@ import software.amazon.awscdk.services.cloudfront.ResponseHeadersPolicy;
 import software.amazon.awscdk.services.cloudfront.ViewerProtocolPolicy;
 import software.amazon.awscdk.services.cloudtrail.S3EventSelector;
 import software.amazon.awscdk.services.cloudtrail.Trail;
+import software.amazon.awscdk.services.cognito.CfnUserPoolIdentityProvider;
 import software.amazon.awscdk.services.cognito.StandardAttribute;
 import software.amazon.awscdk.services.cognito.StandardAttributes;
 import software.amazon.awscdk.services.cognito.UserPool;
 import software.amazon.awscdk.services.cognito.UserPoolClient;
 import software.amazon.awscdk.services.cognito.UserPoolDomain;
 import software.amazon.awscdk.services.cognito.UserPoolIdentityProviderGoogle;
-import software.amazon.awscdk.services.cognito.UserPoolIdentityProviderOidc;
 import software.amazon.awscdk.services.iam.Effect;
 import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.iam.ServicePrincipal;
@@ -140,7 +140,7 @@ public class WebStack extends Stack {
   public AaaaRecord userPoolDomainAaaaRecord;
   public UserPoolDomain userPoolDomain;
   public UserPoolIdentityProviderGoogle googleIdentityProvider;
-  public UserPoolIdentityProviderOidc acCogIdentityProvider;
+  public CfnUserPoolIdentityProvider acCogIdentityProvider;
 
   // Cognito URIs
   public String cognitoDomainName;
