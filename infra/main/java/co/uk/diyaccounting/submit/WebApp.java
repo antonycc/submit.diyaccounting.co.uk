@@ -284,6 +284,17 @@ public class WebApp {
       CfnOutput.Builder.create(stack, "UserPoolDomainAaaaRecord")
           .value(stack.userPoolDomainAaaaRecord.getDomainName())
           .build();
+      // Conditionally show identity providers
+        if (stack.googleIdentityProvider != null) {
+            CfnOutput.Builder.create(stack, "CognitoGoogleIdpId")
+                .value(stack.googleIdentityProvider.getProviderName())
+                .build();
+        }
+        if (stack.acCogIdentityProvider != null) {
+            CfnOutput.Builder.create(stack, "CognitoAntonyccIdpId")
+                .value(stack.acCogIdentityProvider.getProviderName())
+                .build();
+        }
     }
 
     // Bundle Lambda outputs (only if bundle Lambda is configured)

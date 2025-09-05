@@ -30,9 +30,9 @@ import software.amazon.awscdk.services.cognito.StandardAttribute;
 import software.amazon.awscdk.services.cognito.StandardAttributes;
 import software.amazon.awscdk.services.cognito.UserPool;
 import software.amazon.awscdk.services.cognito.UserPoolClient;
-import software.amazon.awscdk.services.cognito.UserPoolClientIdentityProvider;
 import software.amazon.awscdk.services.cognito.UserPoolDomain;
 import software.amazon.awscdk.services.cognito.UserPoolIdentityProviderGoogle;
+import software.amazon.awscdk.services.cognito.UserPoolIdentityProviderOidc;
 import software.amazon.awscdk.services.iam.Effect;
 import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.iam.ServicePrincipal;
@@ -68,7 +68,6 @@ import software.constructs.Construct;
 import java.lang.reflect.Field;
 import java.text.MessageFormat;
 import java.util.AbstractMap;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -141,6 +140,7 @@ public class WebStack extends Stack {
   public AaaaRecord userPoolDomainAaaaRecord;
   public UserPoolDomain userPoolDomain;
   public UserPoolIdentityProviderGoogle googleIdentityProvider;
+  public UserPoolIdentityProviderOidc acCogIdentityProvider;
 
   // Cognito URIs
   public String cognitoDomainName;
@@ -1170,15 +1170,6 @@ public class WebStack extends Stack {
       //        ? this.googleClientSecretsManagerSecret.getSecretValue()
       //        : SecretValue.unsafePlainText(builder.googleClientSecret);
 
-      List<UserPoolClientIdentityProvider> identityProviders = new ArrayList<>();
-      identityProviders.add(UserPoolClientIdentityProvider.GOOGLE);
-      //identityProviders.add(UserPoolClientIdentityProvider.COGNITO);
-      //if (builder.antonyccClientId != null && !builder.antonyccClientId.isBlank()) {
-      //      identityProviders.add(UserPoolClientIdentityProvider.custom("Antonycc"));
-      //}
-      //if (builder.acCogClientId != null && !builder.acCogClientId.isBlank()) {
-      //      identityProviders.add(UserPoolClientIdentityProvider.custom("AcCog"));
-      //}
       var cognito =
           CognitoAuth.Builder.create(this)
               .userPoolName(dashedDomainName + "-user-pool")
@@ -1189,8 +1180,8 @@ public class WebStack extends Stack {
               //.antonyccClientId(builder.antonyccClientId)
               //.antonyccIssuerUrl(builder.antonyccBaseUri)
               //.antonyccClientSecretValue(antonyccClientSecretValue)
-              //.acCogClientId(builder.acCogClientId)
-              //.acCogIssuerUrl(builder.acCogBaseUri)
+              .acCogClientId(builder.acCogClientId)
+              .acCogIssuerUrl(builder.acCogBaseUri)
               //.acCogClientSecretValue(acCogClientSecretValue)
               .callbackUrls(
                   List.of(
@@ -1198,7 +1189,6 @@ public class WebStack extends Stack {
                       "https://" + this.domainName + "/auth/loginWithGoogleCallback.html",
                       "https://" + this.domainName + "/auth/loginWithAcCogCallback.html"))
               .logoutUrls(List.of("https://" + this.domainName + "/"))
-              .supportedIdentityProviders(identityProviders)
               .featurePlan(
                   builder.cognitoFeaturePlan != null && !builder.cognitoFeaturePlan.isBlank()
                       ? builder.cognitoFeaturePlan
@@ -1215,6 +1205,7 @@ public class WebStack extends Stack {
               .build();
       this.userPool = cognito.userPool;
       this.googleIdentityProvider = cognito.googleIdentityProvider;
+      this.acCogIdentityProvider = cognito.acCogIdentityProvider;
       this.userPoolClient = cognito.userPoolClient;
     }
 
