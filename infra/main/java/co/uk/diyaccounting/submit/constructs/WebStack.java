@@ -30,9 +30,9 @@ import software.amazon.awscdk.services.cognito.StandardAttribute;
 import software.amazon.awscdk.services.cognito.StandardAttributes;
 import software.amazon.awscdk.services.cognito.UserPool;
 import software.amazon.awscdk.services.cognito.UserPoolClient;
-import software.amazon.awscdk.services.cognito.UserPoolClientIdentityProvider;
 import software.amazon.awscdk.services.cognito.UserPoolDomain;
 import software.amazon.awscdk.services.cognito.UserPoolIdentityProviderGoogle;
+import software.amazon.awscdk.services.cognito.UserPoolIdentityProviderOidc;
 import software.amazon.awscdk.services.iam.Effect;
 import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.iam.ServicePrincipal;
@@ -68,7 +68,6 @@ import software.constructs.Construct;
 import java.lang.reflect.Field;
 import java.text.MessageFormat;
 import java.util.AbstractMap;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -141,6 +140,7 @@ public class WebStack extends Stack {
   public AaaaRecord userPoolDomainAaaaRecord;
   public UserPoolDomain userPoolDomain;
   public UserPoolIdentityProviderGoogle googleIdentityProvider;
+  public UserPoolIdentityProviderOidc acCogIdentityProvider;
 
   // Cognito URIs
   public String cognitoDomainName;
@@ -1205,6 +1205,7 @@ public class WebStack extends Stack {
               .build();
       this.userPool = cognito.userPool;
       this.googleIdentityProvider = cognito.googleIdentityProvider;
+      this.acCogIdentityProvider = cognito.acCogIdentityProvider;
       this.userPoolClient = cognito.userPoolClient;
     }
 
