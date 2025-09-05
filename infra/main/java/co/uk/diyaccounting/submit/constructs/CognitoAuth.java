@@ -24,6 +24,7 @@ import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.constructs.Construct;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -45,6 +46,7 @@ public class CognitoAuth {
   public final UserPoolIdentityProviderGoogle googleIdentityProvider;
   public final UserPoolIdentityProviderOidc acCogIdentityProvider;
   public final UserPoolClient userPoolClient;
+  public final List<UserPoolClientIdentityProvider> identityProviders = new ArrayList<>();
 
   private CognitoAuth(Builder b) {
     UserPool up =
@@ -86,6 +88,7 @@ public class CognitoAuth {
                       .familyName(ProviderAttribute.GOOGLE_FAMILY_NAME)
                       .build())
               .build();
+        this.identityProviders.add(UserPoolClientIdentityProvider.GOOGLE);
     }
     this.googleIdentityProvider = googleIdp;
 
@@ -126,6 +129,7 @@ public class CognitoAuth {
               && b.acCogClientSecretValue != null) {
           acCogIdp =
                   UserPoolIdentityProviderOidc.Builder.create(b.scope, "AcCogIdentityProvider")
+                          .name("ac-cog")
                           .userPool(up)
                           .clientId(b.acCogClientId)
                           .clientSecret(b.acCogClientSecretValue.unsafeUnwrap())
@@ -139,6 +143,7 @@ public class CognitoAuth {
                                           .familyName(ProviderAttribute.other("family_name"))
                                           .build())
                           .build();
+        this.identityProviders.add(UserPoolClientIdentityProvider.custom("ac-cog"));
     }
     this.acCogIdentityProvider = acCogIdp;
 
@@ -155,7 +160,7 @@ public class CognitoAuth {
                     .callbackUrls(b.callbackUrls)
                     .logoutUrls(b.logoutUrls)
                     .build())
-            .supportedIdentityProviders(b.supportedIdentityProviders)
+            .supportedIdentityProviders(this.identityProviders)
             .build();
     if (this.googleIdentityProvider != null) {
       client.getNode().addDependency(this.googleIdentityProvider);
@@ -224,7 +229,6 @@ public class CognitoAuth {
     private String acCogIssuerUrl;
     private List<String> callbackUrls;
     private List<String> logoutUrls;
-    private List<UserPoolClientIdentityProvider> supportedIdentityProviders = List.of();
 
     // New optional settings
     private String featurePlan; // PLUS or ESSENTIALS (default ESSENTIALS)
@@ -304,11 +308,6 @@ public class CognitoAuth {
 
     public Builder logoutUrls(List<String> urls) {
       this.logoutUrls = urls;
-      return this;
-    }
-
-    public Builder supportedIdentityProviders(List<UserPoolClientIdentityProvider> providers) {
-      this.supportedIdentityProviders = providers;
       return this;
     }
 

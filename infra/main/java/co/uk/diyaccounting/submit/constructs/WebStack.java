@@ -1170,15 +1170,6 @@ public class WebStack extends Stack {
       //        ? this.googleClientSecretsManagerSecret.getSecretValue()
       //        : SecretValue.unsafePlainText(builder.googleClientSecret);
 
-      List<UserPoolClientIdentityProvider> identityProviders = new ArrayList<>();
-      identityProviders.add(UserPoolClientIdentityProvider.GOOGLE);
-      //identityProviders.add(UserPoolClientIdentityProvider.COGNITO);
-      //if (builder.antonyccClientId != null && !builder.antonyccClientId.isBlank()) {
-      //      identityProviders.add(UserPoolClientIdentityProvider.custom("Antonycc"));
-      //}
-      //if (builder.acCogClientId != null && !builder.acCogClientId.isBlank()) {
-      //      identityProviders.add(UserPoolClientIdentityProvider.custom("AcCog"));
-      //}
       var cognito =
           CognitoAuth.Builder.create(this)
               .userPoolName(dashedDomainName + "-user-pool")
@@ -1198,7 +1189,6 @@ public class WebStack extends Stack {
                       "https://" + this.domainName + "/auth/loginWithGoogleCallback.html",
                       "https://" + this.domainName + "/auth/loginWithAcCogCallback.html"))
               .logoutUrls(List.of("https://" + this.domainName + "/"))
-              .supportedIdentityProviders(identityProviders)
               .featurePlan(
                   builder.cognitoFeaturePlan != null && !builder.cognitoFeaturePlan.isBlank()
                       ? builder.cognitoFeaturePlan
