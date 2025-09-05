@@ -8,6 +8,7 @@ import software.amazon.awscdk.SecretValue;
 import software.amazon.awscdk.services.cognito.AttributeMapping;
 import software.amazon.awscdk.services.cognito.CfnLogDeliveryConfiguration;
 import software.amazon.awscdk.services.cognito.CfnUserPool;
+import software.amazon.awscdk.services.cognito.CfnUserPoolIdentityProvider;
 import software.amazon.awscdk.services.cognito.OAuthFlows;
 import software.amazon.awscdk.services.cognito.OAuthScope;
 import software.amazon.awscdk.services.cognito.OAuthSettings;
@@ -19,7 +20,6 @@ import software.amazon.awscdk.services.cognito.UserPool;
 import software.amazon.awscdk.services.cognito.UserPoolClient;
 import software.amazon.awscdk.services.cognito.UserPoolClientIdentityProvider;
 import software.amazon.awscdk.services.cognito.UserPoolIdentityProviderGoogle;
-import software.amazon.awscdk.services.cognito.UserPoolIdentityProviderOidc;
 import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.constructs.Construct;
@@ -44,7 +44,7 @@ public class CognitoAuth {
 
   public final UserPool userPool;
   public final UserPoolIdentityProviderGoogle googleIdentityProvider;
-  public final UserPoolIdentityProviderOidc acCogIdentityProvider;
+  public final CfnUserPoolIdentityProvider acCogIdentityProvider;
   public final UserPoolClient userPoolClient;
   public final List<UserPoolClientIdentityProvider> identityProviders = new ArrayList<>();
 
@@ -92,58 +92,26 @@ public class CognitoAuth {
     }
     this.googleIdentityProvider = googleIdp;
 
-    // Antonycc OIDC IdP
-    /*
-    UserPoolIdentityProviderOidc antonyccIdp = null;
-    if (b.antonyccClientId != null
-              && !b.antonyccClientId.isBlank()
-              && b.antonyccClientSecretValue != null) {
-        OidcEndpoints oidcEndpoints = OidcEndpoints.builder()
-                .authorization(b.antonyccIssuerUrl + "/authorize")
-                .token(b.antonyccIssuerUrl + "/token")
-                .userInfo(b.antonyccIssuerUrl + "/userinfo")
-                .jwksUri(b.antonyccIssuerUrl + "/.well-known/jwks")
-                .build();
-          antonyccIdp =
-                  UserPoolIdentityProviderOidc.Builder.create(b.scope, "AntonyccIdentityProvider")
-                          .userPool(up)
-                          .clientId(b.antonyccClientId)
-                          .clientSecret(b.antonyccClientSecretValue.unsafeUnwrap())
-                          .issuerUrl(b.antonyccIssuerUrl)
-                          .endpoints(oidcEndpoints)
-                          .attributeMapping(
-                                  AttributeMapping.builder()
-                                          .email(ProviderAttribute.other("email"))
-                                          .givenName(ProviderAttribute.other("given_name"))
-                                          .familyName(ProviderAttribute.other("family_name"))
-                                          .build())
-                          .build();
-    }
-    this.antonyccIdentityProvider = antonyccIdp;
-    */
-
-    // Antonycc OIDC via Cognito IdP
-    UserPoolIdentityProviderOidc acCogIdp = null;
-    if (b.acCogClientId != null
-              && !b.acCogClientId.isBlank()) {
-              // && b.acCogClientSecretValue != null) {
-          acCogIdp =
-                  UserPoolIdentityProviderOidc.Builder.create(b.scope, "AcCogIdentityProvider")
-                          .name("ac-cog")
-                          .userPool(up)
-                          .clientId(b.acCogClientId)
-                          ///.clientSecret(b.acCogClientSecretValue.unsafeUnwrap())
-                          //.issuerUrl("https://cognito-idp.eu-west-2.amazonaws.com/eu-west-2_default")
-                          .issuerUrl(b.acCogIssuerUrl)
-                          .scopes(List.of("email", "openid", "profile"))
-                          .attributeMapping(
-                                  AttributeMapping.builder()
-                                          .email(ProviderAttribute.other("email"))
-                                          .givenName(ProviderAttribute.other("given_name"))
-                                          .familyName(ProviderAttribute.other("family_name"))
-                                          .build())
-                          .build();
-        this.identityProviders.add(UserPoolClientIdentityProvider.custom("ac-cog"));
+    // Antonycc OIDC via Cognito IdP (using L1 construct to avoid clientSecret requirement)
+    CfnUserPoolIdentityProvider acCogIdp = null;
+    if (b.acCogClientId != null && !b.acCogClientId.isBlank()) {
+      acCogIdp = CfnUserPoolIdentityProvider.Builder.create(b.scope, "AcCogIdentityProvider")
+          .providerName("ac-cog")
+          .providerType("OIDC")
+          .userPoolId(up.getUserPoolId())
+          .providerDetails(Map.of(
+              "client_id", b.acCogClientId,
+              "issuer", b.acCogIssuerUrl,
+              "authorize_scopes", "email openid profile"
+              // No client_secret provided
+          ))
+          .attributeMapping(Map.of(
+              "email", "email",
+              "given_name", "given_name",
+              "family_name", "family_name"
+          ))
+          .build();
+      this.identityProviders.add(UserPoolClientIdentityProvider.custom("ac-cog"));
     }
     this.acCogIdentityProvider = acCogIdp;
 
