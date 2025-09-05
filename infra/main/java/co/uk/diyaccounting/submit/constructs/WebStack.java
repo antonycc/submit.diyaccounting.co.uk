@@ -1341,7 +1341,7 @@ public class WebStack extends Stack {
                               "DIY_SUBMIT_AC_COG_BASE_URI",
                               cognitoBaseUri));
       if (this.userPool != null) {
-          authUrlGoogleLambdaEnv.put(
+          authUrlAcCogLambdaEnv.put(
                   "DIY_SUBMIT_AC_COG_CLIENT_ID", this.userPoolClient.getUserPoolClientId());
       }
       var authUrlAcCogLambdaUrlOrigin =
