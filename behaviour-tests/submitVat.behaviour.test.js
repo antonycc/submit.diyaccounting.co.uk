@@ -42,6 +42,10 @@ console.log(
 );
 console.log(`runMinioS3: ${runMinioS3} (DIY_SUBMIT_TEST_MINIO_S3: ${process.env.DIY_SUBMIT_TEST_MINIO_S3})`);
 
+const testAuthProvider = process.env.DIY_SUBMIT_TEST_AUTH_PROVIDER || "mock";
+const testAuthUsername = process.env.DIY_SUBMIT_TEST_AUTH_USERNAME || "user";
+const testAuthPassword = process.env.DIY_SUBMIT_TEST_AUTH_PASSWORD || "";
+
 const bucketNamePostfix = process.env.DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX;
 const homeUrl = process.env.DIY_SUBMIT_HOME_URL;
 const { hostname } = new URL(homeUrl);
@@ -249,49 +253,71 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   await page.waitForLoadState("networkidle");
   await setTimeout(500);
   await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/020-login-${timestamp}.png` });
-  await expect(page.getByText("Continue with mock-oauth2-server")).toBeVisible();
 
-  await loggedClick("button:has-text('Continue with mock-oauth2-server')", "Continue with OAuth provider");
-  await page.waitForLoadState("networkidle");
-  await setTimeout(500);
-  // await page.screenshot({
-  //  path: `target/behaviour-test-results/submitVat-screenshots/030-hand-off-to-provider-auth-${timestamp}.png`,
-  // });
-  // await expect(page.getByText("Hand off to mock-oauth2-server")).toBeVisible();
+  if (testAuthProvider === "mock") {
+    await expect(page.getByText("Continue with mock-oauth2-server")).toBeVisible();
+    await loggedClick("button:has-text('Continue with mock-oauth2-server')", "Continue with OAuth provider");
+    await page.waitForLoadState("networkidle");
+    await setTimeout(500);
+    // await page.screenshot({
+    //  path: `target/behaviour-test-results/submitVat-screenshots/030-hand-off-to-provider-auth-${timestamp}.png`,
+    // });
+    // await expect(page.getByText("Hand off to mock-oauth2-server")).toBeVisible();
 
-  // await loggedClick("button:has-text('Hand off to mock-oauth2-server')", "Hand off to OAuth provider");
-  // await page.waitForLoadState("networkidle");
-  // await setTimeout(500);
-  await page.screenshot({
-    path: `target/behaviour-test-results/submitVat-screenshots/040-provider-auth-${timestamp}.png`,
-  });
-  // await expect(page.getByText("SIGN-IN")).toBeVisible();
-  await expect(page.locator('input[type="submit"][value="Sign-in"]')).toBeVisible({ timeout: 10000 });
+    // await loggedClick("button:has-text('Hand off to mock-oauth2-server')", "Hand off to OAuth provider");
+    // await page.waitForLoadState("networkidle");
+    // await setTimeout(500);
+    await page.screenshot({
+      path: `target/behaviour-test-results/submitVat-screenshots/040-mock-provider-auth-${timestamp}.png`,
+    });
+    // await expect(page.getByText("SIGN-IN")).toBeVisible();
+    await expect(page.locator('input[type="submit"][value="Sign-in"]')).toBeVisible({ timeout: 10000 });
 
-  // <input class="u-full-width" required="" type="text" name="username" placeholder="Enter any user/subject" autofocus="on">
-  const username = "user";
-  await loggedFill('input[name="username"]', `${username}`, "Entering username");
-  await setTimeout(100);
+    // <input class="u-full-width" required="" type="text" name="username" placeholder="Enter any user/subject" autofocus="on">
+    await loggedFill('input[name="username"]', `${testAuthUsername}`, "Entering username");
+    await setTimeout(100);
 
-  // <textarea class="u-full-width claims" name="claims" rows="15" placeholder="Optional claims JSON" autofocus="on"></textarea>
-  // { "email": "user@example.com" }
-  const identityToken = {
-    email: `${username}@example.com`,
-  };
-  await loggedFill('textarea[name="claims"]', JSON.stringify(identityToken), "Entering identity claims");
-  await setTimeout(100);
-  await page.screenshot({
-    path: `target/behaviour-test-results/submitVat-screenshots/050-auth-form-filled-${timestamp}.png`,
-  });
+    // <textarea class="u-full-width claims" name="claims" rows="15" placeholder="Optional claims JSON" autofocus="on"></textarea>
+    // { "email": "user@example.com" }
+    const identityToken = {
+      email: `${testAuthUsername}@example.com`,
+    };
+    await loggedFill('textarea[name="claims"]', JSON.stringify(identityToken), "Entering identity claims");
+    await setTimeout(100);
+    await page.screenshot({
+      path: `target/behaviour-test-results/submitVat-screenshots/050-mock-auth-form-filled-${timestamp}.png`,
+    });
 
-  // Home page has logged in user email
-  // <input class="button-primary" type="submit" value="Sign-in">
-  await loggedClick('input[type="submit"][value="Sign-in"]', "Submitting sign-in form");
-  await page.waitForLoadState("networkidle");
-  await setTimeout(500);
-  await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/060-signed-in-${timestamp}.png` });
+    // Home page has logged in user email
+    // <input class="button-primary" type="submit" value="Sign-in">
+    await loggedClick('input[type="submit"][value="Sign-in"]', "Submitting sign-in form");
+    await page.waitForLoadState("networkidle");
+    await setTimeout(500);
+    await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/060-mock-signed-in-${timestamp}.png` });
+  } else if (testAuthProvider === "ac-cog") {
+    await expect(page.getByText(" Continue with @antonycc/oidc via Cognito")).toBeVisible();
+    await loggedClick("button:has-text(' Continue with @antonycc/oidc via Cognito')", "Continue with @antonycc/oidc via Cognitor");
+    await page.waitForLoadState("networkidle");
+    await setTimeout(500);
+    await page.screenshot({
+      path: `target/behaviour-test-results/submitVat-screenshots/040-ac-cog-provider-auth-${timestamp}.png`,
+    });
+    await page.getByRole("heading", { name: "OIDC - Direct Login" }).waitFor();
+    await page.getByLabel("Username").fill(testAuthUsername);
+    await page.getByLabel("Password").fill(testAuthPassword);
+    await setTimeout(100);
+    await page.screenshot({
+      path: `target/behaviour-test-results/submitVat-screenshots/050-ac-cog-auth-form-filled-${timestamp}.png`,
+    });
 
-  // Home page has logged in user email
+    // Home page has logged in user email
+    await page.getByRole("button", { name: "Sign in" }).click();
+    await page.waitForLoadState("networkidle");
+    await setTimeout(500);
+    await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/060-ac-cog-signed-in-${timestamp}.png` });
+  }
+
+  // Page has logged in user email
   console.log("Checking home page...");
   await page.waitForLoadState("networkidle");
   await setTimeout(500);

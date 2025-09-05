@@ -100,17 +100,20 @@ export async function httpGetAntonycc(event) {
 // GET /api/ac-cog/auth-url?state={state}
 export async function httpGetAcCog(event) {
   const state = event.queryStringParameters?.state;
-  const clientId = process.env.DIY_SUBMIT_AC_COG_CLIENT_ID;
   const redirectUri = process.env.DIY_SUBMIT_HOME_URL + "auth/loginWithAcCogCallback.html";
-  const baseUri = process.env.DIY_SUBMIT_AC_COG_BASE_URI;
-  const scope = "write:vat read:vat";
+  const scope = "openid profile email";
+
+  const cognitoClientId = (process.env.DIY_SUBMIT_AC_COG_CLIENT_ID || "").trim();
+  const cognitoBaseUri = (process.env.DIY_SUBMIT_AC_COG_BASE_URI || "").trim();
+
   const authUrl =
-    `${baseUri}/oauth2/authorize?response_type=code` +
-    `&client_id=${encodeURIComponent(clientId)}` +
-    `&redirect_uri=${encodeURIComponent(redirectUri)}` +
-    `&scope=${encodeURIComponent(scope)}` +
-    `&state=${encodeURIComponent(state)}` +
-    `&identity_provider=Google`;
+      `${cognitoBaseUri}/oauth2/authorize?response_type=code` +
+      `&client_id=${encodeURIComponent(cognitoClientId)}` +
+      `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+      `&scope=${encodeURIComponent(scope)}` +
+      `&state=${encodeURIComponent(state)}` +
+      `&identity_provider=ac-cog`;
+
   return httpGet(event, authUrl);
 }
 

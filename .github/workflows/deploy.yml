@@ -164,6 +164,7 @@ jobs:
     secrets:
       HMRC_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
       DIY_SUBMIT_GOOGLE_CLIENT_SECRET: ${{ secrets.DIY_SUBMIT_GOOGLE_CLIENT_SECRET }}
+      DIY_SUBMIT_TEST_AUTH_PASSWORD: ${{ secrets.DIY_SUBMIT_TEST_AUTH_PASSWORD }}
 
   upsert-secrets:
     runs-on: ubuntu-latest
@@ -520,11 +521,13 @@ jobs:
         env:
           DIY_SUBMIT_HMRC_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
           DIY_SUBMIT_GOOGLE_CLIENT_SECRET: ${{ secrets.DIY_SUBMIT_GOOGLE_CLIENT_SECRET }}
+          DIY_SUBMIT_TEST_AUTH_PASSWORD: ${{ secrets.DIY_SUBMIT_TEST_AUTH_PASSWORD }}
       - run: cp '.env.${{ env.environment }}' '.env.proxy' ; npx dotenv -e '.env.${{ env.environment }}' -- npm run test:behaviour
         if: env.environment != 'proxy'
         env:
           DIY_SUBMIT_HMRC_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
           DIY_SUBMIT_GOOGLE_CLIENT_SECRET: ${{ secrets.DIY_SUBMIT_GOOGLE_CLIENT_SECRET }}
+          DIY_SUBMIT_TEST_AUTH_PASSWORD: ${{ secrets.DIY_SUBMIT_TEST_AUTH_PASSWORD }}
 
       - name: Convert Playwright video to MP4
         if: ${{ !cancelled() }}
@@ -569,4 +572,3 @@ jobs:
           name: "test-reports-behaviour-${{ env.environment }}"
           path: "target/test-reports/"
           retention-days: 30
-

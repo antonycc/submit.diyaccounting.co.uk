@@ -1195,7 +1195,8 @@ public class WebStack extends Stack {
               .callbackUrls(
                   List.of(
                       "https://" + this.domainName + "/",
-                      "https://" + this.domainName + "/auth/loginWithGoogleCallback.html"))
+                      "https://" + this.domainName + "/auth/loginWithGoogleCallback.html",
+                      "https://" + this.domainName + "/auth/loginWithAcCogCallback.html"))
               .logoutUrls(List.of("https://" + this.domainName + "/"))
               .supportedIdentityProviders(identityProviders)
               .featurePlan(
@@ -1336,12 +1337,12 @@ public class WebStack extends Stack {
               new HashMap<>(
                       Map.of(
                               "DIY_SUBMIT_HOME_URL",
-                              builder.homeUrl));
-      if (StringUtils.isNotBlank(builder.acCogBaseUri)) {
-          authUrlAcCogLambdaEnv.put("DIY_SUBMIT_ANTONYCC_COGNITO_BASE_URI", builder.acCogBaseUri);
-      }
-      if (StringUtils.isNotBlank(builder.acCogClientId)) {
-          authUrlAcCogLambdaEnv.put("DIY_SUBMIT_ANTONYCC_COGNITO_CLIENT_ID", builder.acCogClientId);
+                              builder.homeUrl,
+                              "DIY_SUBMIT_AC_COG_BASE_URI",
+                              cognitoBaseUri));
+      if (this.userPool != null) {
+          authUrlGoogleLambdaEnv.put(
+                  "DIY_SUBMIT_AC_COG_CLIENT_ID", this.userPoolClient.getUserPoolClientId());
       }
       var authUrlAcCogLambdaUrlOrigin =
               LambdaUrlOrigin.Builder.create(this, "AuthUrlAcCogLambda")

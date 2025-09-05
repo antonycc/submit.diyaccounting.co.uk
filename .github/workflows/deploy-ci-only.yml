@@ -33,6 +33,8 @@ on:
         required: true
       DIY_SUBMIT_GOOGLE_CLIENT_SECRET:
         required: true
+      DIY_SUBMIT_TEST_AUTH_PASSWORD:
+        required: true
   workflow_dispatch:
     inputs:
       skipDeploy:
@@ -404,6 +406,8 @@ jobs:
           retry-max-attempts: 3
 
       - run: cp '.env.ci' '.env.proxy' ; npx dotenv -e '.env.ci' -- npm run test:behaviour
+        env:
+          DIY_SUBMIT_TEST_AUTH_PASSWORD=${{ secrets.DIY_SUBMIT_TEST_AUTH_PASSWORD }}
 
       - name: Convert Playwright video to MP4
         if: ${{ !cancelled() }}
