@@ -105,13 +105,12 @@ test.beforeAll(async () => {
 
   if (runProxy) {
     console.log("Starting ngrok process...");
-    ngrokProcess = spawn("npm", [ "run", "proxy", serverPort.toString() ], {
-        env: {
-          ...process.env,
-        },
-        stdio: ["pipe", "pipe", "pipe"],
+    ngrokProcess = spawn("npm", ["run", "proxy", serverPort.toString()], {
+      env: {
+        ...process.env,
       },
-    );
+      stdio: ["pipe", "pipe", "pipe"],
+    });
     await checkIfServerIsRunning(homeUrl, 1000);
   } else {
     console.log("Skipping ngrok process as runProxy is not set to 'run'");
@@ -293,10 +292,15 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
     await loggedClick('input[type="submit"][value="Sign-in"]', "Submitting sign-in form");
     await page.waitForLoadState("networkidle");
     await setTimeout(500);
-    await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/060-mock-signed-in-${timestamp}.png` });
+    await page.screenshot({
+      path: `target/behaviour-test-results/submitVat-screenshots/060-mock-signed-in-${timestamp}.png`,
+    });
   } else if (testAuthProvider === "ac-cog") {
     await expect(page.getByText(" Continue with @antonycc/oidc via Cognito")).toBeVisible();
-    await loggedClick("button:has-text(' Continue with @antonycc/oidc via Cognito')", "Continue with @antonycc/oidc via Cognitor");
+    await loggedClick(
+      "button:has-text(' Continue with @antonycc/oidc via Cognito')",
+      "Continue with @antonycc/oidc via Cognitor",
+    );
     await page.waitForLoadState("networkidle");
     await setTimeout(500);
     await page.screenshot({
@@ -314,7 +318,9 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
     await page.getByRole("button", { name: "Sign in" }).click();
     await page.waitForLoadState("networkidle");
     await setTimeout(500);
-    await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/060-ac-cog-signed-in-${timestamp}.png` });
+    await page.screenshot({
+      path: `target/behaviour-test-results/submitVat-screenshots/060-ac-cog-signed-in-${timestamp}.png`,
+    });
   }
 
   // Page has logged in user email

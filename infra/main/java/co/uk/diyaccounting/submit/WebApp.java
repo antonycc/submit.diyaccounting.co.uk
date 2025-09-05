@@ -10,7 +10,7 @@ public class WebApp {
     App app = new App();
 
     String envName = System.getenv("ENV_NAME");
-    
+
     // Create DevStack first (before WebStack as requested)
     String devStackId =
         "SubmitDevStack-%s".formatted(envName != null && !envName.isBlank() ? envName : "dev");
@@ -81,7 +81,7 @@ public class WebApp {
             .authUrlAntonyccLambdaUrlPath(System.getenv("AUTH_URL_ANTONYCC_LAMBDA_URL_PATH"))
             .authUrlAntonyccLambdaDurationMillis(System.getenv("AUTH_URL_ANTONYCC_LAMBDA_DURATION"))
             .authUrlAcCogLambdaHandlerFunctionName(
-                    System.getenv("AUTH_URL_AC_COG_LAMBDA_HANDLER_FUNCTION_NAME"))
+                System.getenv("AUTH_URL_AC_COG_LAMBDA_HANDLER_FUNCTION_NAME"))
             .authUrlAcCogLambdaUrlPath(System.getenv("AUTH_URL_AC_COG_LAMBDA_URL_PATH"))
             .authUrlAcCogLambdaDurationMillis(System.getenv("AUTH_URL_AC_COG_LAMBDA_DURATION"))
             .exchangeHmrcTokenLambdaHandlerFunctionName(
@@ -133,8 +133,8 @@ public class WebApp {
             .antonyccBaseUri(System.getenv("DIY_SUBMIT_ANTONYCC_BASE_URI"))
             .acCogClientId(System.getenv("DIY_SUBMIT_AC_COG_CLIENT_ID"))
             .acCogBaseUri(System.getenv("DIY_SUBMIT_AC_COG_BASE_URI"))
-            //.antonyccClientSecretArn(System.getenv("DIY_SUBMIT_ANTONYCC_CLIENT_SECRET_ARN"))
-            //.acCogClientSecretArn(System.getenv("DIY_SUBMIT_AC_COG_CLIENT_SECRET_ARN"))
+            // .antonyccClientSecretArn(System.getenv("DIY_SUBMIT_ANTONYCC_CLIENT_SECRET_ARN"))
+            // .acCogClientSecretArn(System.getenv("DIY_SUBMIT_AC_COG_CLIENT_SECRET_ARN"))
             .build();
 
     // DevStack outputs
