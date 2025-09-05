@@ -109,13 +109,11 @@ public class WebStackTest {
         .googleClientSecretArn(
             "arn:aws:secretsmanager:eu-west-2:000000000000:secret:diy/test/submit/google/client_secret")
         .antonyccClientId("test-antonycc-client-id")
-        // .antonyccClientSecretArn(
-        //
-        // "arn:aws:secretsmanager:eu-west-2:000000000000:secret:diy/test/submit/antonycc/client_secret")
+        //.antonyccClientSecretArn(
+        //        "arn:aws:secretsmanager:eu-west-2:000000000000:secret:diy/test/submit/antonycc/client_secret")
         .acCogClientId("test-antonycc-client-id")
-        // .acCogClientSecretArn(
-        //
-        // "arn:aws:secretsmanager:eu-west-2:000000000000:secret:diy/test/submit/ac-cog/client_secret")
+        //.acCogClientSecretArn(
+        //        "arn:aws:secretsmanager:eu-west-2:000000000000:secret:diy/test/submit/ac-cog/client_secret")
         .build();
   }
 }

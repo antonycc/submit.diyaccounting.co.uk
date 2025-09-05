@@ -1,10 +1,6 @@
 package co.uk.diyaccounting.submit.constructs;
 
 import co.uk.diyaccounting.submit.utils.ResourceNameUtils;
-import java.text.MessageFormat;
-import java.util.AbstractMap;
-import java.util.List;
-import java.util.regex.Pattern;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import software.amazon.awscdk.CfnOutput;
@@ -17,6 +13,7 @@ import software.amazon.awscdk.services.ecr.LifecycleRule;
 import software.amazon.awscdk.services.ecr.Repository;
 import software.amazon.awscdk.services.ecr.TagStatus;
 import software.amazon.awscdk.services.iam.Effect;
+import software.amazon.awscdk.services.iam.Policy;
 import software.amazon.awscdk.services.iam.PolicyDocument;
 import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.iam.Role;
@@ -25,6 +22,10 @@ import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
+import java.text.MessageFormat;
+import java.util.AbstractMap;
+import java.util.List;
+import java.util.regex.Pattern;
 
 /**
  * DevStack for Docker container development and deployment infrastructure.
@@ -50,94 +51,89 @@ public class DevStack extends Stack {
     builder.loadContextValuesUsingReflection(this);
 
     // Build naming using same patterns as WebStack
-    String domainName =
+    String domainName = 
         Builder.buildDomainName(builder.env, builder.subDomainName, builder.hostedZoneName);
-    String dashedDomainName =
+    String dashedDomainName = 
         Builder.buildDashedDomainName(builder.env, builder.subDomainName, builder.hostedZoneName);
-
+    
     logger.info("Creating DevStack for domain: {} (dashed: {})", domainName, dashedDomainName);
 
     // ECR Repository with lifecycle rules
     String ecrRepositoryName = Builder.buildEcrRepositoryName(dashedDomainName);
-    this.ecrRepository =
-        Repository.Builder.create(this, "EcrRepository")
-            .repositoryName(ecrRepositoryName)
-            .imageScanOnPush(true) // Enable vulnerability scanning
-            .imageTagMutability(software.amazon.awscdk.services.ecr.TagMutability.MUTABLE)
-            .lifecycleRules(
-                List.of(
-                    // Remove untagged images after 1 day
-                    LifecycleRule.builder()
-                        .description("Remove untagged images after 1 day")
-                        .tagStatus(TagStatus.UNTAGGED)
-                        .maxImageAge(Duration.days(1))
-                        .build()))
-            .removalPolicy(
-                builder.retainEcrRepository ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY)
-            .build();
+    this.ecrRepository = Repository.Builder.create(this, "EcrRepository")
+        .repositoryName(ecrRepositoryName)
+        .imageScanOnPush(true) // Enable vulnerability scanning
+        .imageTagMutability(software.amazon.awscdk.services.ecr.TagMutability.MUTABLE)
+        .lifecycleRules(List.of(
+            // Remove untagged images after 1 day
+            LifecycleRule.builder()
+                .description("Remove untagged images after 1 day")
+                .tagStatus(TagStatus.UNTAGGED)
+                .maxImageAge(Duration.days(1))
+                .build()
+        ))
+        .removalPolicy(builder.retainEcrRepository ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY)
+        .build();
 
     // CloudWatch Log Group for ECR operations with 7-day retention
     String ecrLogGroupName = Builder.buildEcrLogGroupName(dashedDomainName);
-    this.ecrLogGroup =
-        LogGroup.Builder.create(this, "EcrLogGroup")
-            .logGroupName(ecrLogGroupName)
-            .retention(RetentionDays.ONE_WEEK) // 7-day retention as requested
-            .removalPolicy(RemovalPolicy.DESTROY)
-            .build();
+    this.ecrLogGroup = LogGroup.Builder.create(this, "EcrLogGroup")
+        .logGroupName(ecrLogGroupName)
+        .retention(RetentionDays.ONE_WEEK) // 7-day retention as requested
+        .removalPolicy(RemovalPolicy.DESTROY)
+        .build();
 
     // IAM Role for ECR publishing with comprehensive permissions
-    this.ecrPublishRole =
-        Role.Builder.create(this, "EcrPublishRole")
-            .roleName(Builder.buildEcrPublishRoleName(dashedDomainName))
-            .assumedBy(new ServicePrincipal("lambda.amazonaws.com"))
-            .inlinePolicies(
-                java.util.Map.of(
-                    "EcrPublishPolicy",
-                    PolicyDocument.Builder.create()
-                        .statements(
-                            List.of(
-                                // ECR repository permissions
-                                PolicyStatement.Builder.create()
-                                    .effect(Effect.ALLOW)
-                                    .actions(
-                                        List.of(
-                                            "ecr:GetAuthorizationToken",
-                                            "ecr:BatchCheckLayerAvailability",
-                                            "ecr:GetDownloadUrlForLayer",
-                                            "ecr:BatchGetImage",
-                                            "ecr:InitiateLayerUpload",
-                                            "ecr:UploadLayerPart",
-                                            "ecr:CompleteLayerUpload",
-                                            "ecr:PutImage",
-                                            "ecr:ListImages",
-                                            "ecr:DescribeImages",
-                                            "ecr:DescribeRepositories"))
-                                    .resources(List.of(this.ecrRepository.getRepositoryArn()))
-                                    .build(),
-                                // CloudWatch Logs permissions for verbose logging
-                                PolicyStatement.Builder.create()
-                                    .effect(Effect.ALLOW)
-                                    .actions(
-                                        List.of(
-                                            "logs:CreateLogStream",
-                                            "logs:PutLogEvents",
-                                            "logs:DescribeLogGroups",
-                                            "logs:DescribeLogStreams"))
-                                    .resources(List.of(this.ecrLogGroup.getLogGroupArn() + "*"))
-                                    .build(),
-                                // Additional ECR permissions for scanning and lifecycle
-                                PolicyStatement.Builder.create()
-                                    .effect(Effect.ALLOW)
-                                    .actions(
-                                        List.of(
-                                            "ecr:DescribeImageScanFindings",
-                                            "ecr:StartImageScan",
-                                            "ecr:GetLifecyclePolicy",
-                                            "ecr:GetLifecyclePolicyPreview"))
-                                    .resources(List.of(this.ecrRepository.getRepositoryArn()))
-                                    .build()))
-                        .build()))
-            .build();
+    this.ecrPublishRole = Role.Builder.create(this, "EcrPublishRole")
+        .roleName(Builder.buildEcrPublishRoleName(dashedDomainName))
+        .assumedBy(new ServicePrincipal("lambda.amazonaws.com"))
+        .inlinePolicies(java.util.Map.of(
+            "EcrPublishPolicy", PolicyDocument.Builder.create()
+                .statements(List.of(
+                    // ECR repository permissions
+                    PolicyStatement.Builder.create()
+                        .effect(Effect.ALLOW)
+                        .actions(List.of(
+                            "ecr:GetAuthorizationToken",
+                            "ecr:BatchCheckLayerAvailability",
+                            "ecr:GetDownloadUrlForLayer",
+                            "ecr:BatchGetImage",
+                            "ecr:InitiateLayerUpload",
+                            "ecr:UploadLayerPart",
+                            "ecr:CompleteLayerUpload",
+                            "ecr:PutImage",
+                            "ecr:ListImages",
+                            "ecr:DescribeImages",
+                            "ecr:DescribeRepositories"
+                        ))
+                        .resources(List.of(this.ecrRepository.getRepositoryArn()))
+                        .build(),
+                    // CloudWatch Logs permissions for verbose logging
+                    PolicyStatement.Builder.create()
+                        .effect(Effect.ALLOW)
+                        .actions(List.of(
+                            "logs:CreateLogStream",
+                            "logs:PutLogEvents",
+                            "logs:DescribeLogGroups",
+                            "logs:DescribeLogStreams"
+                        ))
+                        .resources(List.of(this.ecrLogGroup.getLogGroupArn() + "*"))
+                        .build(),
+                    // Additional ECR permissions for scanning and lifecycle
+                    PolicyStatement.Builder.create()
+                        .effect(Effect.ALLOW)
+                        .actions(List.of(
+                            "ecr:DescribeImageScanFindings",
+                            "ecr:StartImageScan",
+                            "ecr:GetLifecyclePolicy",
+                            "ecr:GetLifecyclePolicyPreview"
+                        ))
+                        .resources(List.of(this.ecrRepository.getRepositoryArn()))
+                        .build()
+                ))
+                .build()
+        ))
+        .build();
 
     // Output key information
     CfnOutput.Builder.create(this, "EcrRepositoryArn")
@@ -170,7 +166,7 @@ public class DevStack extends Stack {
     private Construct scope;
     private String id;
     private StackProps props;
-
+    
     // Environment configuration
     public String env;
     public String subDomainName;
@@ -254,14 +250,10 @@ public class DevStack extends Stack {
      */
     public void loadContextValuesUsingReflection(Construct scope) {
       this.env = getContextValueString(scope, "env", this.env != null ? this.env : "dev");
-      this.subDomainName =
-          getContextValueString(
-              scope, "subDomainName", this.subDomainName != null ? this.subDomainName : "submit");
-      this.hostedZoneName =
-          getContextValueString(
-              scope,
-              "hostedZoneName",
-              this.hostedZoneName != null ? this.hostedZoneName : "diyaccounting.co.uk");
+      this.subDomainName = getContextValueString(scope, "subDomainName", 
+          this.subDomainName != null ? this.subDomainName : "submit");
+      this.hostedZoneName = getContextValueString(scope, "hostedZoneName", 
+          this.hostedZoneName != null ? this.hostedZoneName : "diyaccounting.co.uk");
     }
 
     public String getContextValueString(Construct scope, String contextKey, String defaultValue) {
@@ -275,14 +267,13 @@ public class DevStack extends Stack {
         defaultedValue = defaultValue;
         source = "default value";
       }
-
+      
       try {
         CfnOutput.Builder.create(scope, "DevStack" + contextKey)
             .value(MessageFormat.format("{0} (Source: CDK {1})", defaultedValue, source))
             .build();
       } catch (Exception e) {
-        logger.warn(
-            "Failed to create CfnOutput for context key {}: {}", contextKey, e.getMessage());
+        logger.warn("Failed to create CfnOutput for context key {}: {}", contextKey, e.getMessage());
       }
       return defaultedValue;
     }
