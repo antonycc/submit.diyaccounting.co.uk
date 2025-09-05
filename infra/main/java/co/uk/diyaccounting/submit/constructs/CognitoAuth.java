@@ -94,7 +94,7 @@ public class CognitoAuth {
 
     // Antonycc OIDC via Cognito IdP (using L1 construct to avoid clientSecret requirement)
     CfnUserPoolIdentityProvider acCogIdp = null;
-    if (b.acCogClientId != null && !b.acCogClientId.isBlank()) {
+    if (b.acCogClientId != null && !b.acCogClientId.isBlank() && b.acCogIssuerUrl != null && !b.acCogIssuerUrl.isBlank()) {
       acCogIdp = CfnUserPoolIdentityProvider.Builder.create(b.scope, "AcCogIdentityProvider")
           .providerName("ac-cog")
           .providerType("OIDC")
