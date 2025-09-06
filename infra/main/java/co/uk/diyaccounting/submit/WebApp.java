@@ -1,5 +1,6 @@
 package co.uk.diyaccounting.submit;
 
+import co.uk.diyaccounting.submit.constructs.DevStack;
 import co.uk.diyaccounting.submit.constructs.WebStack;
 import software.amazon.awscdk.App;
 import software.amazon.awscdk.CfnOutput;
@@ -9,6 +10,17 @@ public class WebApp {
     App app = new App();
 
     String envName = System.getenv("ENV_NAME");
+    
+    // Create DevStack first (before WebStack as requested)
+    String devStackId =
+        "SubmitDevStack-%s".formatted(envName != null && !envName.isBlank() ? envName : "dev");
+    DevStack devStack =
+        DevStack.Builder.create(app, devStackId)
+            .env(System.getenv("ENV_NAME"))
+            .hostedZoneName(System.getenv("HOSTED_ZONE_NAME"))
+            .subDomainName(System.getenv("SUB_DOMAIN_NAME"))
+            .retainEcrRepository(System.getenv("RETAIN_ECR_REPOSITORY"))
+            .build();
     String stackId =
         "SubmitWebStack-%s".formatted(envName != null && !envName.isBlank() ? envName : "dev");
     WebStack stack =
@@ -123,6 +135,25 @@ public class WebApp {
             //.antonyccClientSecretArn(System.getenv("DIY_SUBMIT_ANTONYCC_CLIENT_SECRET_ARN"))
             //.acCogClientSecretArn(System.getenv("DIY_SUBMIT_AC_COG_CLIENT_SECRET_ARN"))
             .build();
+
+    // DevStack outputs
+    CfnOutput.Builder.create(devStack, "DevStackEcrRepositoryArn")
+        .value(devStack.ecrRepository.getRepositoryArn())
+        .build();
+
+    CfnOutput.Builder.create(devStack, "DevStackEcrRepositoryUri")
+        .value(devStack.ecrRepository.getRepositoryUri())
+        .build();
+
+    CfnOutput.Builder.create(devStack, "DevStackEcrLogGroupArn")
+        .value(devStack.ecrLogGroup.getLogGroupArn())
+        .build();
+
+    CfnOutput.Builder.create(devStack, "DevStackEcrPublishRoleArn")
+        .value(devStack.ecrPublishRole.getRoleArn())
+        .build();
+
+    // WebStack outputs
 
     CfnOutput.Builder.create(stack, "OriginBucketArn")
         .value(stack.originBucket.getBucketArn())

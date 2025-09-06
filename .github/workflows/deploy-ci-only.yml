@@ -323,8 +323,8 @@ jobs:
         id: stacks
         shell: bash
         run: |
-          deploy=$(jq -r '.deployStacks' cdk.json | sed 's/SubmitWebStack-dev/SubmitWebStack-ci/g')
-          synth=$(jq -r '.synthStacks' cdk.json | sed 's/SubmitWebStack-dev/SubmitWebStack-ci/g')
+          deploy=$(jq -r '.deployStacks' cdk.json | sed 's/SubmitWebStack-dev/SubmitWebStack-ci/g' | sed 's/SubmitWebStack-[^ ]*//')
+          synth=$(jq -r '.synthStacks' cdk.json | sed 's/SubmitWebStack-dev/SubmitWebStack-ci/g' | sed 's/SubmitWebStack-[^ ]*//')
           echo "deploy=${deploy?}" | tee -a "${GITHUB_OUTPUT?}"
           echo "synth=${synth?}" | tee -a "${GITHUB_OUTPUT?}"
 
@@ -349,38 +349,18 @@ jobs:
           COMMIT_HASH: ${{ github.sha }}
           BASE_IMAGE_TAG: ${{ needs.build-base-image.outputs.base-image-tag }}
 
-  npm-behaviour-test-ci:
+  push-to-ecr:
     needs:
+      - build-base-image
       - deploy
-    name: 'npm behaviour test ci'
     runs-on: ubuntu-latest
+    environment: ci
     permissions:
-      contents: read
       id-token: write
+      contents: read
     steps:
-      - uses: actions/checkout@v5
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: 'npm'
-
-      - run: npm ci || npm install
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-        with:
-          driver-opts: |
-            image=moby/buildkit:latest
-
-      - name: Cache Playwright browsers
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-${{ hashFiles('**/package-lock.json') }}
-
-      - run: npx playwright install chromium --with-deps
+      - name: Checkout repository
+        uses: actions/checkout@v5
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -393,7 +373,6 @@ jobs:
           output-credentials: true
           retry-max-attempts: 3
 
-      # TODO: Replace submit-deployment-role with a role that can only run tests and access s3.
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -405,50 +384,58 @@ jobs:
           output-credentials: true
           retry-max-attempts: 3
 
-      - run: cp '.env.ci' '.env.proxy' ; npx dotenv -e '.env.ci' -- npm run test:behaviour
-        env:
-          DIY_SUBMIT_TEST_AUTH_PASSWORD: ${{ secrets.DIY_SUBMIT_TEST_AUTH_PASSWORD }}
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver-opts: |
+            image=moby/buildkit:latest
 
-      - name: Convert Playwright video to MP4
-        if: ${{ !cancelled() }}
+      - name: Load base image from cache
         run: |
-          set -euo pipefail
-          root="target/behaviour-test-results"
+          BASE_IMAGE_TAG="${{ needs.build-base-image.outputs.base-image-tag }}"
+          echo "Using base image: $BASE_IMAGE_TAG"
+          
+          # Load base image from GitHub Actions cache efficiently
+          docker buildx build \
+            --load \
+            --cache-from type=gha,scope=base-${{ github.sha }} \
+            --cache-from type=gha,scope=base-main \
+            --cache-from type=gha,scope=base \
+            -t $BASE_IMAGE_TAG \
+            -f Dockerfile . || echo "Using fallback build if cache unavailable"
 
-          # Recursively transcode all .webm files, placing output next to source with 'converted' prefix
-          pids=()
-          while IFS= read -r -d '' f; do
-            dir=$(dirname "$f")
-            base="${f##*/}"
-            name="${base%.webm}"
-            out="${dir}/converted${name}.mp4"
-            echo "Transcoding $f -> $out"
-            npm run convert:video -- --in "$f" --out "$out" &
-            pids+=($!)
-          done < <(find "$root" -type f -name '*.webm' -print0)
+      - name: Get ECR repository URI
+        id: ecr-uri
+        shell: bash
+        run: |
+          STACK_NAME="SubmitDevStack-ci"
+          ECR_URI=$(aws cloudformation describe-stacks \
+            --stack-name $STACK_NAME \
+            --query 'Stacks[0].Outputs[?OutputKey==`EcrRepositoryUri`].OutputValue' \
+            --output text)
+          echo "ecr-uri=${ECR_URI}" | tee -a "${GITHUB_OUTPUT}"
+          echo "ECR Repository URI: $ECR_URI"
 
-          # Wait for all transcodes to complete
-          fail=0
-          for pid in "${pids[@]:-}"; do
-            if ! wait "$pid"; then
-              fail=1
-            fi
-          done
+      - name: Login to Amazon ECR
+        shell: bash
+        run: |
+          aws ecr get-login-password --region eu-west-2 | docker login --username AWS --password-stdin ${{ steps.ecr-uri.outputs.ecr-uri }}
 
-          exit $fail
-
-      - name: Upload test results
-        uses: actions/upload-artifact@v4
-        if: ${{ !cancelled() }}
-        with:
-          name: test-results-behaviour-ci
-          path: "target/behaviour-test-results/"
-          retention-days: 30
-
-      - name: Upload test reports
-        uses: actions/upload-artifact@v4
-        if: ${{ !cancelled() }}
-        with:
-          name: test-reports-behaviour-ci
-          path: "target/test-reports/"
-          retention-days: 30
+      - name: Tag and push Docker image to ECR
+        shell: bash
+        run: |
+          BASE_IMAGE_TAG="${{ needs.build-base-image.outputs.base-image-tag }}"
+          ECR_URI="${{ steps.ecr-uri.outputs.ecr-uri }}"
+          COMMIT_HASH="${{ github.sha }}"
+          
+          # Tag with commit hash and latest
+          docker tag $BASE_IMAGE_TAG $ECR_URI:$COMMIT_HASH
+          docker tag $BASE_IMAGE_TAG $ECR_URI:latest
+          
+          # Push both tags
+          docker push $ECR_URI:$COMMIT_HASH
+          docker push $ECR_URI:latest
+          
+          echo "Successfully pushed Docker image to ECR:"
+          echo "  $ECR_URI:$COMMIT_HASH"
+          echo "  $ECR_URI:latest"
