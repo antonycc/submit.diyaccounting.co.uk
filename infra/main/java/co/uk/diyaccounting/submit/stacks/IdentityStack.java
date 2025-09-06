@@ -7,16 +7,23 @@ import org.apache.logging.log4j.Logger;
 import software.amazon.awscdk.CfnOutput;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
+import software.amazon.awscdk.services.certificatemanager.Certificate;
+import software.amazon.awscdk.services.certificatemanager.CertificateValidation;
 import software.amazon.awscdk.services.certificatemanager.ICertificate;
 import software.amazon.awscdk.services.cognito.CfnUserPoolIdentityProvider;
 import software.amazon.awscdk.services.cognito.StandardAttribute;
 import software.amazon.awscdk.services.cognito.StandardAttributes;
 import software.amazon.awscdk.services.cognito.UserPool;
 import software.amazon.awscdk.services.cognito.UserPoolClient;
+import software.amazon.awscdk.services.cognito.UserPoolDomain;
 import software.amazon.awscdk.services.cognito.UserPoolIdentityProviderGoogle;
+import software.amazon.awscdk.services.route53.ARecord;
+import software.amazon.awscdk.services.route53.AaaaRecord;
 import software.amazon.awscdk.services.route53.HostedZone;
 import software.amazon.awscdk.services.route53.HostedZoneAttributes;
 import software.amazon.awscdk.services.route53.IHostedZone;
+import software.amazon.awscdk.services.route53.RecordTarget;
+import software.amazon.awscdk.services.route53.targets.UserPoolDomainTarget;
 import software.amazon.awscdk.services.secretsmanager.ISecret;
 import software.amazon.awscdk.services.secretsmanager.Secret;
 import software.amazon.awssdk.utils.StringUtils;
@@ -35,6 +42,7 @@ public class IdentityStack extends Stack {
   public String domainName;
   public IHostedZone hostedZone;
   public ICertificate certificate;
+  public ICertificate authCertificate;
   public ISecret googleClientSecretsManagerSecret;
 
   // Cognito resources
@@ -42,6 +50,9 @@ public class IdentityStack extends Stack {
   public UserPoolClient userPoolClient;
   public UserPoolIdentityProviderGoogle googleIdentityProvider;
   public CfnUserPoolIdentityProvider acCogIdentityProvider;
+  public UserPoolDomain userPoolDomain;
+  public ARecord userPoolDomainARecord;
+  public AaaaRecord userPoolDomainAaaaRecord;
 
   // Cognito URIs
   public String cognitoDomainName;
@@ -426,5 +437,52 @@ public class IdentityStack extends Stack {
       this.googleIdentityProvider = cognito.googleIdentityProvider;
       this.acCogIdentityProvider = cognito.acCogIdentityProvider;
       this.userPoolClient = cognito.userPoolClient;
+
+      // Create a certificate for Cognito
+      boolean useExistingAuthCertificate = Boolean.parseBoolean(builder.useExistingAuthCertificate);
+      var dashedCognitoDomainName = ResourceNameUtils.convertDotSeparatedToDashSeparated(
+              cognitoDomainName, domainNameMappings);
+
+      if (useExistingAuthCertificate) {
+          this.authCertificate =
+                  Certificate.fromCertificateArn(this, "AuthCertificate", builder.authCertificateArn);
+      } else {
+          this.authCertificate =
+                  Certificate.Builder.create(this, "AuthCertificate")
+                          .domainName(cognitoDomainName)
+                          .certificateName(builder.authCertificateArn)
+                          .validation(CertificateValidation.fromDns(hostedZone))
+                          .transparencyLoggingEnabled(true)
+                          .build();
+      }
+
+      // Create Cognito User Pool Domain
+      this.userPoolDomain =
+              UserPoolDomain.Builder.create(this, "UserPoolDomain")
+                      .userPool(this.userPool)
+                      .customDomain(
+                              software.amazon.awscdk.services.cognito.CustomDomainOptions.builder()
+                                      .domainName(cognitoDomainName)
+                                      .certificate(this.authCertificate)
+                                      .build())
+                      .build();
+
+      // Create Route53 records for the Cognito UserPoolDomain
+      this.userPoolDomainARecord =
+              ARecord.Builder.create(
+                              this, "UserPoolDomainARecord-%s".formatted(dashedCognitoDomainName))
+                      .zone(hostedZone)
+                      .recordName(cognitoDomainName)
+                      .deleteExisting(true)
+                      .target(RecordTarget.fromAlias(new UserPoolDomainTarget(this.userPoolDomain)))
+                      .build();
+      this.userPoolDomainAaaaRecord =
+              AaaaRecord.Builder.create(
+                              this, "UserPoolDomainAaaaRecord-%s".formatted(dashedCognitoDomainName))
+                      .zone(hostedZone)
+                      .recordName(cognitoDomainName)
+                      .deleteExisting(true)
+                      .target(RecordTarget.fromAlias(new UserPoolDomainTarget(this.userPoolDomain)))
+                      .build();
   }
 }

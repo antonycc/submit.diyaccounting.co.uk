@@ -27,6 +27,14 @@ public class WebApp {
     IdentityStack identityStack =
         IdentityStack.Builder.create(app, identityStackId)
             .env(System.getenv("ENV_NAME"))
+            .hostedZoneName(System.getenv("HOSTED_ZONE_NAME"))
+            .hostedZoneId(System.getenv("HOSTED_ZONE_ID"))
+            .subDomainName(System.getenv("SUB_DOMAIN_NAME"))
+            .authCertificateArn(System.getenv("AUTH_CERTIFICATE_ARN"))
+            .useExistingAuthCertificate(System.getenv("USE_EXISTING_AUTH_CERTIFICATE"))
+            .accessLogGroupRetentionPeriodDays(
+                System.getenv("ACCESS_LOG_GROUP_RETENTION_PERIOD_DAYS"))
+            .xRayEnabled(System.getenv("X_RAY_ENABLED"))
             .cognitoFeaturePlan(System.getenv("DIY_SUBMIT_COGNITO_FEATURE_PLAN"))
             .cognitoEnableLogDelivery(System.getenv("DIY_SUBMIT_ENABLE_LOG_DELIVERY"))
             .logCognitoEventHandlerSource(System.getenv("LOG_COGNITO_EVENT_HANDLER_SOURCE"))
@@ -295,15 +303,15 @@ public class WebApp {
           .build();
 
       CfnOutput.Builder.create(identityStack, "UserPoolDomainName")
-          .value(webStack.userPoolDomain.getDomainName())
+          .value(identityStack.userPoolDomain.getDomainName())
           .build();
 
       CfnOutput.Builder.create(identityStack, "UserPoolDomainARecord")
-          .value(webStack.userPoolDomainARecord.getDomainName())
+          .value(identityStack.userPoolDomainARecord.getDomainName())
           .build();
 
-      CfnOutput.Builder.create(webStack, "UserPoolDomainAaaaRecord")
-          .value(webStack.userPoolDomainAaaaRecord.getDomainName())
+      CfnOutput.Builder.create(identityStack, "UserPoolDomainAaaaRecord")
+          .value(identityStack.userPoolDomainAaaaRecord.getDomainName())
           .build();
       // Conditionally show identity providers
         if (identityStack.googleIdentityProvider != null) {

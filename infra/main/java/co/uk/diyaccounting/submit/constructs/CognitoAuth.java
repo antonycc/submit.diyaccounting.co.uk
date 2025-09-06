@@ -71,38 +71,46 @@ public class CognitoAuth {
     }
 
     // Google IdP
-    this.googleIdentityProvider = UserPoolIdentityProviderGoogle.Builder.create(b.scope, "GoogleIdentityProvider")
-              .userPool(up)
-              .clientId(b.googleClientId)
-              .clientSecretValue(b.googleClientSecretValue)
-              .scopes(List.of("email", "openid", "profile"))
-              .attributeMapping(
-                  AttributeMapping.builder()
-                      .email(ProviderAttribute.GOOGLE_EMAIL)
-                      .givenName(ProviderAttribute.GOOGLE_GIVEN_NAME)
-                      .familyName(ProviderAttribute.GOOGLE_FAMILY_NAME)
-                      .build())
-              .build();
-        this.identityProviders.add(UserPoolClientIdentityProvider.GOOGLE);
+    if (b.googleClientId != null && b.googleClientSecretValue != null) {
+      this.googleIdentityProvider = UserPoolIdentityProviderGoogle.Builder.create(b.scope, "GoogleIdentityProvider")
+                .userPool(up)
+                .clientId(b.googleClientId)
+                .clientSecretValue(b.googleClientSecretValue)
+                .scopes(List.of("email", "openid", "profile"))
+                .attributeMapping(
+                    AttributeMapping.builder()
+                        .email(ProviderAttribute.GOOGLE_EMAIL)
+                        .givenName(ProviderAttribute.GOOGLE_GIVEN_NAME)
+                        .familyName(ProviderAttribute.GOOGLE_FAMILY_NAME)
+                        .build())
+                .build();
+          this.identityProviders.add(UserPoolClientIdentityProvider.GOOGLE);
+    } else {
+      this.googleIdentityProvider = null;
+    }
 
     // Antonycc OIDC via Cognito IdP (using L1 construct to avoid clientSecret requirement)
-    this.acCogIdentityProvider = CfnUserPoolIdentityProvider.Builder.create(b.scope, "AcCogIdentityProvider")
-          .providerName("ac-cog")
-          .providerType("OIDC")
-          .userPoolId(up.getUserPoolId())
-          .providerDetails(Map.of(
-              "client_id", b.acCogClientId,
-              "issuer", b.acCogIssuerUrl,
-              "authorize_scopes", "email openid profile"
-              // No client_secret provided
-          ))
-          .attributeMapping(Map.of(
-              "email", "email",
-              "given_name", "given_name",
-              "family_name", "family_name"
-          ))
-          .build();
-      this.identityProviders.add(UserPoolClientIdentityProvider.custom("ac-cog"));
+    if (b.acCogClientId != null && b.acCogIssuerUrl != null) {
+      this.acCogIdentityProvider = CfnUserPoolIdentityProvider.Builder.create(b.scope, "AcCogIdentityProvider")
+            .providerName("ac-cog")
+            .providerType("OIDC")
+            .userPoolId(up.getUserPoolId())
+            .providerDetails(Map.of(
+                "client_id", b.acCogClientId,
+                "issuer", b.acCogIssuerUrl,
+                "authorize_scopes", "email openid profile"
+                // No client_secret provided
+            ))
+            .attributeMapping(Map.of(
+                "email", "email",
+                "given_name", "given_name",
+                "family_name", "family_name"
+            ))
+            .build();
+        this.identityProviders.add(UserPoolClientIdentityProvider.custom("ac-cog"));
+    } else {
+      this.acCogIdentityProvider = null;
+    }
 
     // User Pool Client
     UserPoolClient client =
@@ -119,8 +127,12 @@ public class CognitoAuth {
                     .build())
             .supportedIdentityProviders(this.identityProviders)
             .build();
-    client.getNode().addDependency(this.googleIdentityProvider);
-    client.getNode().addDependency(this.acCogIdentityProvider);
+    if (this.googleIdentityProvider != null) {
+      client.getNode().addDependency(this.googleIdentityProvider);
+    }
+    if (this.acCogIdentityProvider != null) {
+      client.getNode().addDependency(this.acCogIdentityProvider);
+    }
     this.userPoolClient = client;
 
     // Configure log delivery to CloudWatch if enabled

@@ -86,7 +86,6 @@ public class WebStack extends Stack {
   public BucketDeployment deployment;
   public IHostedZone hostedZone;
   public ICertificate certificate;
-  public ICertificate authCertificate;
   public ISecret hmrcClientSecretsManagerSecret;
   //public ISecret googleClientSecretsManagerSecret;
   //public ISecret antonyccClientSecretsManagerSecret;
@@ -133,11 +132,6 @@ public class WebStack extends Stack {
   public Function logReceiptLambda;
   public FunctionUrl logReceiptLambdaUrl;
   public LogGroup logReceiptLambdaLogGroup;
-
-  // Cognito resources
-  public ARecord userPoolDomainARecord;
-  public AaaaRecord userPoolDomainAaaaRecord;
-  public UserPoolDomain userPoolDomain;
 
   // Cognito URIs
   public String cognitoBaseUri;
@@ -1795,52 +1789,5 @@ public class WebStack extends Stack {
             .deleteExisting(true)
             .target(RecordTarget.fromAlias(new CloudFrontTarget(this.distribution)))
             .build();
-
-    // Create a certificate for Cognito
-    if (useExistingAuthCertificate) {
-      this.authCertificate =
-          Certificate.fromCertificateArn(this, "AuthCertificate", builder.authCertificateArn);
-    } else {
-      this.authCertificate =
-          Certificate.Builder.create(this, "AuthCertificate")
-              .domainName(cognitoDomainName)
-              .certificateName(builder.authCertificateArn)
-              .validation(CertificateValidation.fromDns(this.hostedZone))
-              .transparencyLoggingEnabled(true)
-              .build();
-    }
-
-    // Create Cognito User Pool Domain
-      this.userPoolDomain =
-          UserPoolDomain.Builder.create(this, "UserPoolDomain")
-              .userPool(userPool)
-              .customDomain(
-                  software.amazon.awscdk.services.cognito.CustomDomainOptions.builder()
-                      .domainName(cognitoDomainName)
-                      .certificate(this.authCertificate)
-                      .build())
-              .build();
-      this.userPoolDomain.getNode().addDependency(this.aRecord);
-      this.userPoolDomain.getNode().addDependency(this.aaaaRecord);
-
-      // Create Route53 records for the Cognito UserPoolDomain
-      this.userPoolDomainARecord =
-          ARecord.Builder.create(
-                  this, "UserPoolDomainARecord-%s".formatted(dashedCognitoDomainName))
-              .zone(this.hostedZone)
-              .recordName(cognitoDomainName)
-              .deleteExisting(true)
-              .target(RecordTarget.fromAlias(new UserPoolDomainTarget(this.userPoolDomain)))
-              .build();
-      this.userPoolDomainARecord.getNode().addDependency(this.aRecord);
-      this.userPoolDomainAaaaRecord =
-          AaaaRecord.Builder.create(
-                  this, "UserPoolDomainAaaaRecord-%s".formatted(dashedCognitoDomainName))
-              .zone(this.hostedZone)
-              .recordName(cognitoDomainName)
-              .deleteExisting(true)
-              .target(RecordTarget.fromAlias(new UserPoolDomainTarget(this.userPoolDomain)))
-              .build();
-      this.userPoolDomainAaaaRecord.getNode().addDependency(this.aaaaRecord);
   }
 }
