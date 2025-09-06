@@ -3,9 +3,9 @@ ARG BASE_IMAGE_TAG=submit-base:latest
 FROM ${BASE_IMAGE_TAG}
 
 # Lambda-specific environment variables
-ENV DIY_SUBMIT_HOME_URL="The default value from the Dockerfile is intended to be overridden."
-ENV DIY_SUBMIT_COGNITO_BASE_URI="The default value from the Dockerfile is intended to be overridden."
-ENV DIY_SUBMIT_COGNITO_CLIENT_ID="The default value from the Dockerfile is intended to be overridden."
+ENV DIY_SUBMIT_HOME_URL=""
+ENV DIY_SUBMIT_COGNITO_BASE_URI=""
+ENV DIY_SUBMIT_COGNITO_CLIENT_ID=""
 
 # No need to copy package.json or run npm install - it's already in the base image!
 # The app/ directory is also already copied in the base image
