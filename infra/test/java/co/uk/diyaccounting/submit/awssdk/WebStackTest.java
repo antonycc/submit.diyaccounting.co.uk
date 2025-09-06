@@ -1,6 +1,6 @@
 package co.uk.diyaccounting.submit.awssdk;
 
-import co.uk.diyaccounting.submit.constructs.WebStack;
+import co.uk.diyaccounting.submit.stacks.WebStack;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Test;

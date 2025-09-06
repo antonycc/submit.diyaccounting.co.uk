@@ -1,7 +1,7 @@
 package co.uk.diyaccounting.submit;
 
-import co.uk.diyaccounting.submit.constructs.DevStack;
-import co.uk.diyaccounting.submit.constructs.WebStack;
+import co.uk.diyaccounting.submit.stacks.DevStack;
+import co.uk.diyaccounting.submit.stacks.WebStack;
 import software.amazon.awscdk.App;
 import software.amazon.awscdk.CfnOutput;
 

@@ -53,9 +53,6 @@ env:
 
 jobs:
 
-  build-base-image:
-    uses: ./.github/workflows/∞-reusable-build-base-image.yml
-
   upsert-secrets:
     runs-on: ubuntu-latest
     environment: ci
@@ -149,69 +146,8 @@ jobs:
           fi
           shred -u secret.txt
 
-      #- name: Write GitHub secret DIY_SUBMIT_ANTONYCC_CLIENT_SECRET to temp file (keeps out of logs)
-      #  if: ${{ env.skipDeploy != 'true' }}
-      #  shell: bash
-      #  env:
-      #    GH_SECRET: ${{ secrets.DIY_SUBMIT_ANTONYCC_CLIENT_SECRET }}
-      #  run: |
-      #    set -euo pipefail
-      #    umask 077
-      #    printf '%s' "$GH_SECRET" > secret.txt
-      #    echo "::add-mask::$(cat secret.txt)"
-
-      #- name: Upsert DIY_SUBMIT_ANTONYCC_CLIENT_SECRET into AWS Secrets Manager
-      #  if: ${{ env.skipDeploy != 'true' }}
-      #  shell: bash
-      #  env:
-      #    SECRET_NAME: "diy/ci/submit/antonycc/client_secret"
-      #  run: |
-      #    set -euo pipefail
-      #    if aws secretsmanager describe-secret --secret-id "$SECRET_NAME" >/dev/null 2>&1; then
-      #      aws secretsmanager put-secret-value \
-      #        --secret-id "$SECRET_NAME" \
-      #        --secret-string file://secret.txt
-      #    else
-      #      aws secretsmanager create-secret \
-      #        --name "$SECRET_NAME" \
-      #        --secret-string file://secret.txt \
-      #        --tags Key=managed-by,Value=github-actions Key=repo,Value=${GITHUB_REPOSITORY}
-      #    fi
-      #    shred -u secret.txt
-
-      #- name: Write GitHub secret DIY_SUBMIT_AC_COG_CLIENT_SECRET to temp file (keeps out of logs)
-      #  if: ${{ env.skipDeploy != 'true' }}
-      #  shell: bash
-      #  env:
-      #    GH_SECRET: ${{ secrets.DIY_SUBMIT_AC_COG_CLIENT_SECRET }}
-      #  run: |
-      #    set -euo pipefail
-      #    umask 077
-      #    printf '%s' "$GH_SECRET" > secret.txt
-      #    echo "::add-mask::$(cat secret.txt)"
-
-      #- name: Upsert DIY_SUBMIT_AC_COG_CLIENT_SECRET into AWS Secrets Manager
-      #  if: ${{ env.skipDeploy != 'true' }}
-      #  shell: bash
-      #  env:
-      #    SECRET_NAME: "diy/ci/submit/ac-cog/client_secret"
-      #  run: |
-      #    set -euo pipefail
-      #    if aws secretsmanager describe-secret --secret-id "$SECRET_NAME" >/dev/null 2>&1; then
-      #      aws secretsmanager put-secret-value \
-      #        --secret-id "$SECRET_NAME" \
-      #        --secret-string file://secret.txt
-      #    else
-      #      aws secretsmanager create-secret \
-      #        --name "$SECRET_NAME" \
-      #        --secret-string file://secret.txt \
-      #        --tags Key=managed-by,Value=github-actions Key=repo,Value=${GITHUB_REPOSITORY}
-      #    fi
-      #    shred -u secret.txt
-
   deploy:
     needs:
-      - build-base-image
       - upsert-secrets
     name: 'deploy'
     runs-on: ubuntu-latest
@@ -233,63 +169,12 @@ jobs:
 
       - run: npm install
 
-      - name: Configure AWS Credentials
-        if: ${{ env.skipDeploy != 'true' }}
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: arn:aws:iam::887764105431:role/submit-github-actions-role
-          role-chaining: false
-          aws-region: eu-west-2
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - name: Configure AWS Credentials
-        if: ${{ env.skipDeploy != 'true' }}
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: arn:aws:iam::887764105431:role/submit-deployment-role
-          role-chaining: true
-          aws-region: eu-west-2
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
       - uses: actions/setup-java@v4
         if: ${{ env.skipDeploy != 'true' }}
         with:
           distribution: 'temurin'
           java-version: 17
           cache: 'maven'
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-        with:
-          driver-opts: |
-            image=moby/buildkit:latest
-
-      - name: Load base image from cache
-        run: |
-          BASE_IMAGE_TAG="${{ needs.build-base-image.outputs.base-image-tag }}"
-          echo "Using base image: $BASE_IMAGE_TAG"
-          
-          # Load base image from GitHub Actions cache efficiently
-          docker buildx build \
-            --load \
-            --cache-from type=gha,scope=base-${{ github.sha }} \
-            --cache-from type=gha,scope=base-main \
-            --cache-from type=gha,scope=base \
-            -t $BASE_IMAGE_TAG \
-            -f Dockerfile . || echo "Using fallback build if cache unavailable"
-
-      #- name: package
-      #  id: package
-      #  shell: bash
-      #  run: ./mvnw clean package -DskipTests=true
-      #  env:
-      #    BASE_IMAGE_TAG: ${{ needs.build-base-image.outputs.base-image-tag }}
 
       - name: Package Java classes for CDK
         id: package
@@ -323,46 +208,17 @@ jobs:
         id: stacks
         shell: bash
         run: |
-          deploy=$(jq -r '.deployStacks' cdk.json | sed 's/SubmitWebStack-dev/SubmitWebStack-ci/g' | sed 's/SubmitWebStack-[^ ]*//')
-          synth=$(jq -r '.synthStacks' cdk.json | sed 's/SubmitWebStack-dev/SubmitWebStack-ci/g' | sed 's/SubmitWebStack-[^ ]*//')
-          echo "deploy=${deploy?}" | tee -a "${GITHUB_OUTPUT?}"
-          echo "synth=${synth?}" | tee -a "${GITHUB_OUTPUT?}"
-
-      - name: deploy
-        if: ${{ env.skipDeploy != 'true' }}
-        id: deploy
-        shell: bash
-        run: npx dotenv -e .env.ci -- ${{ steps.stacks.outputs.deploy }}
-        env:
-          GITHUB_ACTOR: ${{ github.actor }}
-          ENV_NAME: 'ci'
-          LOG_S3_OBJECT_EVENT_HANDLER_SOURCE: ${{ steps.jar-path.outputs.jarFilepath }}
-          LOG_GZIPPED_S3_OBJECT_EVENT_HANDLER_SOURCE: ${{ steps.jar-path.outputs.jarFilepath }}
-          CERTIFICATE_ARN: ${{ vars.AWS_CERTIFICATE_ARN }}
-          CLOUD_TRAIL_ENABLED: ${{ vars.AWS_CLOUD_TRAIL_ENABLED }}
-          X_RAY_ENABLED: ${{ vars.AWS_X_RAY_ENABLED }}
-          VERBOSE_LOGGING: ${{ vars.AWS_VERBOSE_LOGGING }}
-          HOSTED_ZONE_ID: ${{ vars.AWS_HOSTED_ZONE_ID }}
-          HOSTED_ZONE_NAME: ${{ vars.AWS_HOSTED_ZONE_NAME }}
-          DIY_SUBMIT_HMRC_CLIENT_SECRET_ARN: 'arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/ci/submit/hmrc/client_secret'
-          DIY_SUBMIT_GOOGLE_CLIENT_SECRET_ARN: 'arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/ci/submit/google/client_secret'
-          COMMIT_HASH: ${{ github.sha }}
-          BASE_IMAGE_TAG: ${{ needs.build-base-image.outputs.base-image-tag }}
-
-  push-to-ecr:
-    needs:
-      - build-base-image
-      - deploy
-    runs-on: ubuntu-latest
-    environment: ci
-    permissions:
-      id-token: write
-      contents: read
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v5
+          synthDev=$(jq -r '.synthDevStack' cdk.json | sed 's/SubmitDevStack-dev/SubmitDevStack-ci/g')
+          synthWeb=$(jq -r '.synthWebStack' cdk.json | sed 's/SubmitWebStack-dev/SubmitWebStack-ci/g')
+          deployDev=$(jq -r '.deployDevStack' cdk.json | sed 's/SubmitDevStack-dev/SubmitDevStack-ci/g')
+          deployWeb=$(jq -r '.deployWebStack' cdk.json | sed 's/SubmitWebStack-dev/SubmitWebStack-ci/g')
+          echo "synthWeb=${synthWeb?}" | tee -a "${GITHUB_OUTPUT?}"
+          echo "synthDev=${synthDev?}" | tee -a "${GITHUB_OUTPUT?}"
+          echo "deployWeb=${deployWeb?}" | tee -a "${GITHUB_OUTPUT?}"
+          echo "deployDev=${deployDev?}" | tee -a "${GITHUB_OUTPUT?}"
 
       - name: Configure AWS Credentials
+        if: ${{ env.skipDeploy != 'true' }}
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::887764105431:role/submit-github-actions-role
@@ -374,6 +230,7 @@ jobs:
           retry-max-attempts: 3
 
       - name: Configure AWS Credentials
+        if: ${{ env.skipDeploy != 'true' }}
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::887764105431:role/submit-deployment-role
@@ -384,25 +241,42 @@ jobs:
           output-credentials: true
           retry-max-attempts: 3
 
+      - name: deployDev
+        if: ${{ env.skipDeploy != 'true' }}
+        id: deploy
+        shell: bash
+        run: npx dotenv -e .env.ci -- ${{ steps.stacks.outputs.deployDev }}
+        env:
+          GITHUB_ACTOR: ${{ github.actor }}
+          ENV_NAME: 'ci'
+          BASE_IMAGE_TAG: ${{ needs.build-base-image.outputs.base-image-tag }}
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
         with:
           driver-opts: |
             image=moby/buildkit:latest
 
-      - name: Load base image from cache
+      - name: Setup image tag
+        id: image-tag
         run: |
-          BASE_IMAGE_TAG="${{ needs.build-base-image.outputs.base-image-tag }}"
-          echo "Using base image: $BASE_IMAGE_TAG"
-          
-          # Load base image from GitHub Actions cache efficiently
+          BASE_IMAGE_TAG="submit-base:${{ github.sha }}"
+          echo "base-image-tag=$BASE_IMAGE_TAG" >> $GITHUB_OUTPUT
+          echo "Building/loading base image with tag: $BASE_IMAGE_TAG"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver-opts: |
+            image=moby/buildkit:latest
+
+      - name: Build base image
+        id: build
+        run: |
           docker buildx build \
             --load \
-            --cache-from type=gha,scope=base-${{ github.sha }} \
-            --cache-from type=gha,scope=base-main \
-            --cache-from type=gha,scope=base \
-            -t $BASE_IMAGE_TAG \
-            -f Dockerfile . || echo "Using fallback build if cache unavailable"
+            -t "${{ steps.image-tag.outputs.base-image-tag }}" \
+            -f Dockerfile .
 
       - name: Get ECR repository URI
         id: ecr-uri
@@ -424,7 +298,7 @@ jobs:
       - name: Tag and push Docker image to ECR
         shell: bash
         run: |
-          BASE_IMAGE_TAG="${{ needs.build-base-image.outputs.base-image-tag }}"
+          BASE_IMAGE_TAG="${{ steps.image-tag.outputs.base-image-tag }}"
           ECR_URI="${{ steps.ecr-uri.outputs.ecr-uri }}"
           COMMIT_HASH="${{ github.sha }}"
           
@@ -439,3 +313,128 @@ jobs:
           echo "Successfully pushed Docker image to ECR:"
           echo "  $ECR_URI:$COMMIT_HASH"
           echo "  $ECR_URI:latest"
+
+      - name: deployWeb
+        if: ${{ env.skipDeploy != 'true' }}
+        id: deploy
+        shell: bash
+        run: npx dotenv -e .env.ci -- ${{ steps.stacks.outputs.deployWeb }}
+        env:
+          GITHUB_ACTOR: ${{ github.actor }}
+          ENV_NAME: 'ci'
+          LOG_S3_OBJECT_EVENT_HANDLER_SOURCE: ${{ steps.jar-path.outputs.jarFilepath }}
+          LOG_GZIPPED_S3_OBJECT_EVENT_HANDLER_SOURCE: ${{ steps.jar-path.outputs.jarFilepath }}
+          CERTIFICATE_ARN: ${{ vars.AWS_CERTIFICATE_ARN }}
+          CLOUD_TRAIL_ENABLED: ${{ vars.AWS_CLOUD_TRAIL_ENABLED }}
+          X_RAY_ENABLED: ${{ vars.AWS_X_RAY_ENABLED }}
+          VERBOSE_LOGGING: ${{ vars.AWS_VERBOSE_LOGGING }}
+          HOSTED_ZONE_ID: ${{ vars.AWS_HOSTED_ZONE_ID }}
+          HOSTED_ZONE_NAME: ${{ vars.AWS_HOSTED_ZONE_NAME }}
+          DIY_SUBMIT_HMRC_CLIENT_SECRET_ARN: 'arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/ci/submit/hmrc/client_secret'
+          DIY_SUBMIT_GOOGLE_CLIENT_SECRET_ARN: 'arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/ci/submit/google/client_secret'
+          COMMIT_HASH: ${{ github.sha }}
+          BASE_IMAGE_TAG: ${{ steps.ecr-uri.outputs.ecr-uri }}:${{ github.sha }}
+
+  npm-behaviour-test-ci:
+    needs:
+      - deploy
+    name: 'npm behaviour test ci'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - run: npm ci || npm install
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver-opts: |
+            image=moby/buildkit:latest
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('**/package-lock.json') }}
+
+      - run: npx playwright install chromium --with-deps
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::887764105431:role/submit-github-actions-role
+          role-chaining: false
+          aws-region: eu-west-2
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      # TODO: Replace submit-deployment-role with a role that can only run tests and access s3.
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::887764105431:role/submit-deployment-role
+          role-chaining: true
+          aws-region: eu-west-2
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - run: cp '.env.ci' '.env.proxy' ; npx dotenv -e '.env.ci' -- npm run test:behaviour
+        env:
+          DIY_SUBMIT_TEST_AUTH_PASSWORD: ${{ secrets.DIY_SUBMIT_TEST_AUTH_PASSWORD }}
+
+      - name: Convert Playwright video to MP4
+        if: ${{ !cancelled() }}
+        run: |
+          set -euo pipefail
+          root="target/behaviour-test-results"
+          
+          # Recursively transcode all .webm files, placing output next to source with 'converted' prefix
+          pids=()
+          while IFS= read -r -d '' f; do
+            dir=$(dirname "$f")
+            base="${f##*/}"
+            name="${base%.webm}"
+            out="${dir}/converted${name}.mp4"
+            echo "Transcoding $f -> $out"
+            npm run convert:video -- --in "$f" --out "$out" &
+            pids+=($!)
+          done < <(find "$root" -type f -name '*.webm' -print0)
+          
+          # Wait for all transcodes to complete
+          fail=0
+          for pid in "${pids[@]:-}"; do
+            if ! wait "$pid"; then
+              fail=1
+            fi
+          done
+          
+          exit $fail
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: test-results-behaviour-ci
+          path: "target/behaviour-test-results/"
+          retention-days: 30
+
+      - name: Upload test reports
+        uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: test-reports-behaviour-ci
+          path: "target/test-reports/"
+          retention-days: 30

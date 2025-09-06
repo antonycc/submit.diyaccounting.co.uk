@@ -1,4 +1,4 @@
-package co.uk.diyaccounting.submit.constructs;
+package co.uk.diyaccounting.submit.stacks;
 
 import co.uk.diyaccounting.submit.utils.ResourceNameUtils;
 import org.apache.logging.log4j.LogManager;
@@ -13,7 +13,6 @@ import software.amazon.awscdk.services.ecr.LifecycleRule;
 import software.amazon.awscdk.services.ecr.Repository;
 import software.amazon.awscdk.services.ecr.TagStatus;
 import software.amazon.awscdk.services.iam.Effect;
-import software.amazon.awscdk.services.iam.Policy;
 import software.amazon.awscdk.services.iam.PolicyDocument;
 import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.iam.Role;
