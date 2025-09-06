@@ -1,6 +1,6 @@
-package co.uk.diyaccounting.submit.awssdk;
+package co.uk.diyaccounting.submit.constructs;
 
-import co.uk.diyaccounting.submit.constructs.LogForwardingBucket;
+import co.uk.diyaccounting.submit.awssdk.SimpleStackProps;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

@@ -2,7 +2,6 @@ package co.uk.diyaccounting.submit.stacks;
 
 import co.uk.diyaccounting.submit.awssdk.RetentionDaysConverter;
 import co.uk.diyaccounting.submit.constructs.BucketOrigin;
-import co.uk.diyaccounting.submit.constructs.CognitoAuth;
 import co.uk.diyaccounting.submit.constructs.DistributionWithLogging;
 import co.uk.diyaccounting.submit.constructs.LambdaUrlOrigin;
 import co.uk.diyaccounting.submit.constructs.LambdaUrlOriginOpts;
@@ -32,13 +31,9 @@ import software.amazon.awscdk.services.cloudfront.ResponseHeadersPolicy;
 import software.amazon.awscdk.services.cloudfront.ViewerProtocolPolicy;
 import software.amazon.awscdk.services.cloudtrail.S3EventSelector;
 import software.amazon.awscdk.services.cloudtrail.Trail;
-import software.amazon.awscdk.services.cognito.CfnUserPoolIdentityProvider;
-import software.amazon.awscdk.services.cognito.StandardAttribute;
-import software.amazon.awscdk.services.cognito.StandardAttributes;
+import software.amazon.awscdk.services.cognito.IUserPool;
 import software.amazon.awscdk.services.cognito.UserPool;
-import software.amazon.awscdk.services.cognito.UserPoolClient;
 import software.amazon.awscdk.services.cognito.UserPoolDomain;
-import software.amazon.awscdk.services.cognito.UserPoolIdentityProviderGoogle;
 import software.amazon.awscdk.services.iam.Effect;
 import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.iam.ServicePrincipal;
@@ -93,9 +88,9 @@ public class WebStack extends Stack {
   public ICertificate certificate;
   public ICertificate authCertificate;
   public ISecret hmrcClientSecretsManagerSecret;
-  public ISecret googleClientSecretsManagerSecret;
-  public ISecret antonyccClientSecretsManagerSecret;
-  public ISecret acCogClientSecretsManagerSecret;
+  //public ISecret googleClientSecretsManagerSecret;
+  //public ISecret antonyccClientSecretsManagerSecret;
+  //public ISecret acCogClientSecretsManagerSecret;
   public IBucket distributionAccessLogBucket;
   public OriginAccessIdentity originIdentity;
   public Distribution distribution;
@@ -140,16 +135,11 @@ public class WebStack extends Stack {
   public LogGroup logReceiptLambdaLogGroup;
 
   // Cognito resources
-  public UserPool userPool;
-  public UserPoolClient userPoolClient;
   public ARecord userPoolDomainARecord;
   public AaaaRecord userPoolDomainAaaaRecord;
   public UserPoolDomain userPoolDomain;
-  public UserPoolIdentityProviderGoogle googleIdentityProvider;
-  public CfnUserPoolIdentityProvider acCogIdentityProvider;
 
   // Cognito URIs
-  public String cognitoDomainName;
   public String cognitoBaseUri;
 
   // Bundle management Lambda
@@ -260,6 +250,7 @@ public class WebStack extends Stack {
     public String googleClientId;
     public String googleClientSecretArn;
     public String cognitoDomainPrefix;
+    public String userPoolArn;
     public String bundleExpiryDate;
     public String bundleUserLimit;
     public String bundleLambdaHandlerFunctionName;
@@ -766,6 +757,11 @@ public class WebStack extends Stack {
       return this;
     }
 
+    public Builder userPoolArn(String userPoolArn) {
+      this.userPoolArn = userPoolArn;
+      return this;
+    }
+
     public Builder bundleExpiryDate(String bundleExpiryDate) {
       this.bundleExpiryDate = bundleExpiryDate;
       return this;
@@ -999,21 +995,9 @@ public class WebStack extends Stack {
             builder.hostedZoneName);
     var dashedCognitoDomainName = Builder.buildDashedCognitoDomainName(cognitoDomainName);
     var cognitoBaseUri = Builder.buildCognitoBaseUri(cognitoDomainName);
-    this.cognitoDomainName = cognitoDomainName;
     this.cognitoBaseUri = cognitoBaseUri;
 
-    // Check for environment variable override for verboseLogging
-    String verboseLoggingEnv = System.getenv("VERBOSE_LOGGING");
-    boolean verboseLogging =
-        verboseLoggingEnv != null
-            ? Boolean.parseBoolean(verboseLoggingEnv)
-            : Boolean.parseBoolean(builder.verboseLogging);
-
-    if (verboseLoggingEnv != null) {
-      logger.info(
-          "Verbose logging setting overridden by environment variable VERBOSE_LOGGING: {}",
-          verboseLogging);
-    }
+    boolean verboseLogging = builder.verboseLogging == null || Boolean.parseBoolean(builder.verboseLogging);
 
     // Determine Lambda URL authentication type
     FunctionUrlAuthType functionUrlAuthType =
@@ -1140,80 +1124,8 @@ public class WebStack extends Stack {
       logger.info("CloudTrail is not enabled for the origin bucket.");
     }
 
-    // Create a secret for the Google client secret and set the ARN to be used in the Lambda
-    // environment variable
-    // this.googleClientSecretsManagerSecret = Secret.Builder.create(this,
-    // "GoogleClientSecretValue")
-    //        .secretStringValue(SecretValue.unsafePlainText(builder.googleClientSecret))
-    //        .description("Google Client Secret for OAuth authentication")
-    //        .build();
-    // Look up the client secret by arn
-    this.googleClientSecretsManagerSecret =
-        Secret.fromSecretPartialArn(this, "GoogleClientSecret", builder.googleClientSecretArn);
-    var googleClientSecretArn = this.googleClientSecretsManagerSecret.getSecretArn();
 
-    //this.antonyccClientSecretsManagerSecret =
-    //          Secret.fromSecretPartialArn(this, "AntonyccClientSecret", builder.antonyccClientSecretArn);
-    //var antonyccClientSecretArn = this.antonyccClientSecretsManagerSecret.getSecretArn();
-
-    //this.acCogClientSecretsManagerSecret =
-    //          Secret.fromSecretPartialArn(this, "AcCogClientSecret", builder.acCogClientSecretArn);
-    //var acCogClientSecretArn = this.acCogClientSecretsManagerSecret.getSecretArn();
-
-    // Create Cognito User Pool for authentication
-    var standardAttributes =
-        StandardAttributes.builder()
-            .email(StandardAttribute.builder().required(true).mutable(true).build())
-            .givenName(StandardAttribute.builder().required(false).mutable(true).build())
-            .familyName(StandardAttribute.builder().required(false).mutable(true).build())
-            .build();
-    if (StringUtils.isNotBlank(builder.googleClientId)
-        && StringUtils.isNotBlank(builder.googleClientSecretArn)) {
-      var googleClientSecretValue = this.googleClientSecretsManagerSecret.getSecretValue();
-      //var antonyccClientSecretValue = this.antonyccClientSecretsManagerSecret.getSecretValue();
-      //var acCogClientSecretValue = this.acCogClientSecretsManagerSecret.getSecretValue();
-      // var googleClientSecretValue = this.googleClientSecretsManagerSecret != null
-      //        ? this.googleClientSecretsManagerSecret.getSecretValue()
-      //        : SecretValue.unsafePlainText(builder.googleClientSecret);
-
-      var cognito =
-          CognitoAuth.Builder.create(this)
-              .userPoolName(dashedDomainName + "-user-pool")
-              .userPoolClientName(dashedDomainName + "-client")
-              .standardAttributes(standardAttributes)
-              .googleClientId(builder.googleClientId)
-              .googleClientSecretValue(googleClientSecretValue)
-              //.antonyccClientId(builder.antonyccClientId)
-              //.antonyccIssuerUrl(builder.antonyccBaseUri)
-              //.antonyccClientSecretValue(antonyccClientSecretValue)
-              .acCogClientId(builder.acCogClientId)
-              .acCogIssuerUrl(builder.acCogBaseUri)
-              //.acCogClientSecretValue(acCogClientSecretValue)
-              .callbackUrls(
-                  List.of(
-                      "https://" + this.domainName + "/",
-                      "https://" + this.domainName + "/auth/loginWithGoogleCallback.html",
-                      "https://" + this.domainName + "/auth/loginWithAcCogCallback.html"))
-              .logoutUrls(List.of("https://" + this.domainName + "/"))
-              .featurePlan(
-                  builder.cognitoFeaturePlan != null && !builder.cognitoFeaturePlan.isBlank()
-                      ? builder.cognitoFeaturePlan
-                      : "ESSENTIALS")
-              .enableLogDelivery(
-                  builder.cognitoEnableLogDelivery == null
-                          || builder.cognitoEnableLogDelivery.isBlank()
-                      ? false
-                      : Boolean.parseBoolean(builder.cognitoEnableLogDelivery))
-              .xRayEnabled(xRayEnabled)
-              .accessLogGroupRetentionPeriodDays(accessLogGroupRetentionPeriodDays)
-              .logGroupNamePrefix(dashedDomainName)
-              .lambdaJarPath(builder.logCognitoEventHandlerSource)
-              .build();
-      this.userPool = cognito.userPool;
-      this.googleIdentityProvider = cognito.googleIdentityProvider;
-      this.acCogIdentityProvider = cognito.acCogIdentityProvider;
-      this.userPoolClient = cognito.userPoolClient;
-    }
+    IUserPool userPool = UserPool.fromUserPoolArn(this, "UserPool", builder.userPoolArn);
 
     // Lambdas
 
@@ -1270,12 +1182,10 @@ public class WebStack extends Stack {
             Map.of(
                 "DIY_SUBMIT_HOME_URL",
                 builder.homeUrl,
+                "DIY_SUBMIT_COGNITO_CLIENT_ID",
+                builder.googleClientId,
                 "DIY_SUBMIT_COGNITO_BASE_URI",
                 cognitoBaseUri));
-    if (this.userPool != null) {
-      authUrlGoogleLambdaEnv.put(
-          "DIY_SUBMIT_COGNITO_CLIENT_ID", this.userPoolClient.getUserPoolClientId());
-    }
     // Provide Google client ID for direct-Google fallback when Cognito is not configured
     if (StringUtils.isNotBlank(builder.googleClientId)) {
       authUrlGoogleLambdaEnv.put("DIY_SUBMIT_GOOGLE_CLIENT_ID", builder.googleClientId);
@@ -1335,12 +1245,10 @@ public class WebStack extends Stack {
                       Map.of(
                               "DIY_SUBMIT_HOME_URL",
                               builder.homeUrl,
+                              "DIY_SUBMIT_AC_COG_CLIENT_ID",
+                                builder.acCogClientId,
                               "DIY_SUBMIT_AC_COG_BASE_URI",
                               cognitoBaseUri));
-      if (this.userPool != null) {
-          authUrlAcCogLambdaEnv.put(
-                  "DIY_SUBMIT_AC_COG_CLIENT_ID", this.userPoolClient.getUserPoolClientId());
-      }
       var authUrlAcCogLambdaUrlOrigin =
               LambdaUrlOrigin.Builder.create(this, "AuthUrlAcCogLambda")
                       .options(lambdaCommonOpts)
@@ -1408,11 +1316,8 @@ public class WebStack extends Stack {
             Map.of(
                 "DIY_SUBMIT_HOME_URL", builder.homeUrl,
                 "DIY_SUBMIT_COGNITO_BASE_URI", cognitoBaseUri,
-                "DIY_SUBMIT_GOOGLE_CLIENT_SECRET_ARN", googleClientSecretArn));
-    if (this.userPool != null) {
-      exchangeGoogleTokenLambdaEnv.put(
-          "DIY_SUBMIT_COGNITO_CLIENT_ID", this.userPoolClient.getUserPoolClientId());
-    }
+                    "DIY_SUBMIT_COGNITO_CLIENT_ID", builder.googleClientId,
+                "DIY_SUBMIT_GOOGLE_CLIENT_SECRET_ARN", builder.googleClientSecretArn));
     // Provide Google client ID for direct-Google fallback when Cognito is not configured
     if (StringUtils.isNotBlank(builder.googleClientId)) {
       exchangeGoogleTokenLambdaEnv.put("DIY_SUBMIT_GOOGLE_CLIENT_ID", builder.googleClientId);
@@ -1444,7 +1349,9 @@ public class WebStack extends Stack {
     lambdaUrlToOriginsBehaviourMappings.put(
         builder.exchangeGoogleTokenLambdaUrlPath + "*",
         exchangeGoogleTokenLambdaUrlOrigin.behaviorOptions);
-    this.googleClientSecretsManagerSecret.grantRead(this.exchangeGoogleTokenLambda);
+    var googleClientSecretsManagerSecret =
+              Secret.fromSecretPartialArn(this, "GoogleClientSecret", builder.googleClientSecretArn);
+    googleClientSecretsManagerSecret.grantRead(this.exchangeGoogleTokenLambda);
 
       // exchangeToken - Antonycc
       var exchangeAntonyccTokenLambdaEnv =
@@ -1487,9 +1394,11 @@ public class WebStack extends Stack {
       lambdaUrlToOriginsBehaviourMappings.put(
           builder.exchangeAntonyccTokenLambdaUrlPath + "*",
           exchangeAntonyccTokenLambdaUrlOrigin.behaviorOptions);
-      if (this.antonyccClientSecretsManagerSecret != null) {
-        this.antonyccClientSecretsManagerSecret.grantRead(this.exchangeAntonyccTokenLambda);
-      }
+      //var antonyccClientSecretsManagerSecret = null;
+      //if (builder.antonyccClientSecretArn != null) {
+      //  var antonyccClientSecretsManagerSecret = Secret.fromSecretPartialArn(this, "AntonyccClientSecret", builder.antonyccClientSecretArn);
+      //  antonyccClientSecretsManagerSecret.grantRead(this.exchangeAntonyccTokenLambda);
+      //}
 
       // exchangeToken - Antonycc Cognito
       var exchangeAcCogTokenLambdaEnv =
@@ -1532,9 +1441,9 @@ public class WebStack extends Stack {
       lambdaUrlToOriginsBehaviourMappings.put(
               builder.exchangeAcCogTokenLambdaUrlPath + "*",
               exchangeAcCogTokenLambdaUrlOrigin.behaviorOptions);
-      if (this.acCogClientSecretsManagerSecret != null) {
-          this.acCogClientSecretsManagerSecret.grantRead(this.exchangeAcCogTokenLambda);
-      }
+      //if (this.acCogClientSecretsManagerSecret != null) {
+      //    this.acCogClientSecretsManagerSecret.grantRead(this.exchangeAcCogTokenLambda);
+      //}
 
       // submitVat
     var submitVatLambdaEnv =
@@ -1601,15 +1510,11 @@ public class WebStack extends Stack {
           new HashMap<>(
               Map.of(
                   "DIY_SUBMIT_HOME_URL", builder.homeUrl,
+                      "DIY_SUBMIT_USER_POOL_ID", userPool.getUserPoolId(),
                   "DIY_SUBMIT_BUNDLE_EXPIRY_DATE",
                       builder.bundleExpiryDate != null ? builder.bundleExpiryDate : "2025-12-31",
                   "DIY_SUBMIT_BUNDLE_USER_LIMIT",
                       builder.bundleUserLimit != null ? builder.bundleUserLimit : "1000"));
-
-      if (this.userPool != null) {
-        bundleLambdaEnv.put("DIY_SUBMIT_USER_POOL_ID", this.userPool.getUserPoolId());
-      }
-
       var bundleLambdaUrlOrigin =
           LambdaUrlOrigin.Builder.create(this, "BundleLambda")
               .options(lambdaCommonOpts)
@@ -1634,18 +1539,16 @@ public class WebStack extends Stack {
           builder.bundleLambdaUrlPath + "*", bundleLambdaUrlOrigin.behaviorOptions);
 
       // Grant Cognito permissions to the bundle Lambda
-      if (this.userPool != null) {
-        this.bundleLambda.addToRolePolicy(
-            PolicyStatement.Builder.create()
-                .effect(Effect.ALLOW)
-                .actions(
-                    List.of(
-                        "cognito-idp:AdminGetUser",
-                        "cognito-idp:AdminUpdateUserAttributes",
-                        "cognito-idp:ListUsers"))
-                .resources(List.of(this.userPool.getUserPoolArn()))
-                .build());
-      }
+    this.bundleLambda.addToRolePolicy(
+        PolicyStatement.Builder.create()
+            .effect(Effect.ALLOW)
+            .actions(
+                List.of(
+                    "cognito-idp:AdminGetUser",
+                    "cognito-idp:AdminUpdateUserAttributes",
+                    "cognito-idp:ListUsers"))
+            .resources(List.of(userPool.getUserPoolArn()))
+            .build());
     }
 
     // Catalog Lambda
@@ -1907,11 +1810,10 @@ public class WebStack extends Stack {
               .build();
     }
 
-    // Create Cognito User Pool Domain only if userPool exists
-    if (this.userPool != null) {
+    // Create Cognito User Pool Domain
       this.userPoolDomain =
           UserPoolDomain.Builder.create(this, "UserPoolDomain")
-              .userPool(this.userPool)
+              .userPool(userPool)
               .customDomain(
                   software.amazon.awscdk.services.cognito.CustomDomainOptions.builder()
                       .domainName(cognitoDomainName)
@@ -1940,6 +1842,5 @@ public class WebStack extends Stack {
               .target(RecordTarget.fromAlias(new UserPoolDomainTarget(this.userPoolDomain)))
               .build();
       this.userPoolDomainAaaaRecord.getNode().addDependency(this.aaaaRecord);
-    }
   }
 }

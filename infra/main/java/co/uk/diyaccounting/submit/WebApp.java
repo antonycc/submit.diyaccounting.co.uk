@@ -1,6 +1,7 @@
 package co.uk.diyaccounting.submit;
 
 import co.uk.diyaccounting.submit.stacks.DevStack;
+import co.uk.diyaccounting.submit.stacks.IdentityStack;
 import co.uk.diyaccounting.submit.stacks.WebStack;
 import software.amazon.awscdk.App;
 import software.amazon.awscdk.CfnOutput;
@@ -11,9 +12,8 @@ public class WebApp {
 
     String envName = System.getenv("ENV_NAME");
     
-    // Create DevStack first (before WebStack as requested)
-    String devStackId =
-        "SubmitDevStack-%s".formatted(envName != null && !envName.isBlank() ? envName : "dev");
+    // Create DevStack with resources only used during development or deployment (e.g. ECR)
+    String devStackId = "SubmitDevStack-%s".formatted(envName != null && !envName.isBlank() ? envName : "dev");
     DevStack devStack =
         DevStack.Builder.create(app, devStackId)
             .env(System.getenv("ENV_NAME"))
@@ -21,10 +21,30 @@ public class WebApp {
             .subDomainName(System.getenv("SUB_DOMAIN_NAME"))
             .retainEcrRepository(System.getenv("RETAIN_ECR_REPOSITORY"))
             .build();
-    String stackId =
-        "SubmitWebStack-%s".formatted(envName != null && !envName.isBlank() ? envName : "dev");
-    WebStack stack =
-        WebStack.Builder.create(app, stackId)
+
+    // Create the identity stack before any user aware services
+    String identityStackId = "SubmitIdentityStack-%s".formatted(envName != null && !envName.isBlank() ? envName : "dev");
+    IdentityStack identityStack =
+        IdentityStack.Builder.create(app, identityStackId)
+            .env(System.getenv("ENV_NAME"))
+            .cognitoFeaturePlan(System.getenv("DIY_SUBMIT_COGNITO_FEATURE_PLAN"))
+            .cognitoEnableLogDelivery(System.getenv("DIY_SUBMIT_ENABLE_LOG_DELIVERY"))
+            .logCognitoEventHandlerSource(System.getenv("LOG_COGNITO_EVENT_HANDLER_SOURCE"))
+            .googleClientId(System.getenv("DIY_SUBMIT_GOOGLE_CLIENT_ID"))
+            .googleClientSecretArn(System.getenv("DIY_SUBMIT_GOOGLE_CLIENT_SECRET_ARN"))
+            .cognitoDomainPrefix(System.getenv("DIY_SUBMIT_COGNITO_DOMAIN_PREFIX"))
+            .antonyccClientId(System.getenv("DIY_SUBMIT_ANTONYCC_CLIENT_ID"))
+            .antonyccBaseUri(System.getenv("DIY_SUBMIT_ANTONYCC_BASE_URI"))
+            //.antonyccClientSecretArn(System.getenv("DIY_SUBMIT_ANTONYCC_CLIENT_SECRET_ARN"))
+            .acCogClientId(System.getenv("DIY_SUBMIT_AC_COG_CLIENT_ID"))
+            .acCogBaseUri(System.getenv("DIY_SUBMIT_AC_COG_BASE_URI"))
+            //.acCogClientSecretArn(System.getenv("DIY_SUBMIT_AC_COG_CLIENT_SECRET_ARN"))
+            .build();
+
+    // Create WebStack with resources used in running the application
+    String webStackId = "SubmitWebStack-%s".formatted(envName != null && !envName.isBlank() ? envName : "dev");
+    WebStack webStack =
+        WebStack.Builder.create(app, webStackId)
             .env(System.getenv("ENV_NAME"))
             .hostedZoneName(System.getenv("HOSTED_ZONE_NAME"))
             .hostedZoneId(System.getenv("HOSTED_ZONE_ID"))
@@ -33,6 +53,7 @@ public class WebApp {
             .certificateArn(System.getenv("CERTIFICATE_ARN"))
             .useExistingCertificate(System.getenv("USE_EXISTING_CERTIFICATE"))
             .authCertificateArn(System.getenv("AUTH_CERTIFICATE_ARN"))
+            .userPoolArn(identityStack.userPool.getUserPoolArn())
             .useExistingAuthCertificate(System.getenv("USE_EXISTING_AUTH_CERTIFICATE"))
             .cloudTrailEnabled(System.getenv("CLOUD_TRAIL_ENABLED"))
             .xRayEnabled(System.getenv("X_RAY_ENABLED"))
@@ -155,167 +176,167 @@ public class WebApp {
 
     // WebStack outputs
 
-    CfnOutput.Builder.create(stack, "OriginBucketArn")
-        .value(stack.originBucket.getBucketArn())
+    CfnOutput.Builder.create(webStack, "OriginBucketArn")
+        .value(webStack.originBucket.getBucketArn())
         .build();
 
-    CfnOutput.Builder.create(stack, "OriginAccessLogBucketArn")
-        .value(stack.originAccessLogBucket.getBucketArn())
+    CfnOutput.Builder.create(webStack, "OriginAccessLogBucketArn")
+        .value(webStack.originAccessLogBucket.getBucketArn())
         .build();
 
-    CfnOutput.Builder.create(stack, "DistributionAccessLogBucketArn")
-        .value(stack.distributionAccessLogBucket.getBucketArn())
+    CfnOutput.Builder.create(webStack, "DistributionAccessLogBucketArn")
+        .value(webStack.distributionAccessLogBucket.getBucketArn())
         .build();
 
-    CfnOutput.Builder.create(stack, "DistributionId")
-        .value(stack.distribution.getDistributionId())
+    CfnOutput.Builder.create(webStack, "DistributionId")
+        .value(webStack.distribution.getDistributionId())
         .build();
 
-    CfnOutput.Builder.create(stack, "HostedZoneId")
-        .value(stack.hostedZone.getHostedZoneId())
+    CfnOutput.Builder.create(webStack, "HostedZoneId")
+        .value(webStack.hostedZone.getHostedZoneId())
         .build();
 
-    CfnOutput.Builder.create(stack, "CertificateArn")
-        .value(stack.certificate.getCertificateArn())
+    CfnOutput.Builder.create(webStack, "CertificateArn")
+        .value(webStack.certificate.getCertificateArn())
         .build();
 
-    CfnOutput.Builder.create(stack, "HmrcClientSecretsManagerSecretArn")
-        .value(stack.hmrcClientSecretsManagerSecret.getSecretArn())
+    CfnOutput.Builder.create(webStack, "HmrcClientSecretsManagerSecretArn")
+        .value(webStack.hmrcClientSecretsManagerSecret.getSecretArn())
         .build();
 
     // Cognito Hosted UI and Google IdP redirect URI for troubleshooting OAuth redirect mismatch
-    if (stack.cognitoBaseUri != null) {
-      CfnOutput.Builder.create(stack, "CognitoBaseUri").value(stack.cognitoBaseUri).build();
-      CfnOutput.Builder.create(stack, "CognitoGoogleIdpRedirectUri")
-          .value(stack.cognitoBaseUri + "/oauth2/idpresponse")
+    if (webStack.cognitoBaseUri != null) {
+      CfnOutput.Builder.create(webStack, "CognitoBaseUri").value(webStack.cognitoBaseUri).build();
+      CfnOutput.Builder.create(webStack, "CognitoGoogleIdpRedirectUri")
+          .value(webStack.cognitoBaseUri + "/oauth2/idpresponse")
           .build();
     }
 
-    CfnOutput.Builder.create(stack, "GoogleClientSecretsManagerSecretArn")
-        .value(stack.googleClientSecretsManagerSecret.getSecretArn())
-        .build();
+    //CfnOutput.Builder.create(webStack, "GoogleClientSecretsManagerSecretArn")
+    //    .value(webStack.googleClientSecretsManagerSecret.getSecretArn())
+    //    .build();
 
-    CfnOutput.Builder.create(stack, "ARecord").value(stack.aRecord.getDomainName()).build();
+    CfnOutput.Builder.create(webStack, "ARecord").value(webStack.aRecord.getDomainName()).build();
 
-    CfnOutput.Builder.create(stack, "AaaaRecord").value(stack.aaaaRecord.getDomainName()).build();
+    CfnOutput.Builder.create(webStack, "AaaaRecord").value(webStack.aaaaRecord.getDomainName()).build();
 
-    if (stack.trail != null) {
-      CfnOutput.Builder.create(stack, "TrailBucketArn")
-          .value(stack.trailBucket.getBucketArn())
+    if (webStack.trail != null) {
+      CfnOutput.Builder.create(webStack, "TrailBucketArn")
+          .value(webStack.trailBucket.getBucketArn())
           .build();
 
-      CfnOutput.Builder.create(stack, "TrailArn").value(stack.trail.getTrailArn()).build();
+      CfnOutput.Builder.create(webStack, "TrailArn").value(webStack.trail.getTrailArn()).build();
     }
 
-    CfnOutput.Builder.create(stack, "AuthUrlHmrcLambdaArn")
-        .value(stack.authUrlHmrcLambda.getFunctionArn())
+    CfnOutput.Builder.create(webStack, "AuthUrlHmrcLambdaArn")
+        .value(webStack.authUrlHmrcLambda.getFunctionArn())
         .build();
 
-    CfnOutput.Builder.create(stack, "AuthUrlHmrcLambdaUrl")
-        .value(stack.authUrlHmrcLambdaUrl.getUrl())
+    CfnOutput.Builder.create(webStack, "AuthUrlHmrcLambdaUrl")
+        .value(webStack.authUrlHmrcLambdaUrl.getUrl())
         .build();
 
-    CfnOutput.Builder.create(stack, "AuthUrlMockLambdaArn")
-        .value(stack.authUrlMockLambda.getFunctionArn())
+    CfnOutput.Builder.create(webStack, "AuthUrlMockLambdaArn")
+        .value(webStack.authUrlMockLambda.getFunctionArn())
         .build();
 
-    CfnOutput.Builder.create(stack, "AuthUrlMockLambdaUrl")
-        .value(stack.authUrlMockLambdaUrl.getUrl())
+    CfnOutput.Builder.create(webStack, "AuthUrlMockLambdaUrl")
+        .value(webStack.authUrlMockLambdaUrl.getUrl())
         .build();
 
-    CfnOutput.Builder.create(stack, "AuthUrlGoogleLambdaArn")
-        .value(stack.authUrlGoogleLambda.getFunctionArn())
+    CfnOutput.Builder.create(webStack, "AuthUrlGoogleLambdaArn")
+        .value(webStack.authUrlGoogleLambda.getFunctionArn())
         .build();
 
-    CfnOutput.Builder.create(stack, "AuthUrlGoogleLambdaUrl")
-        .value(stack.authUrlGoogleLambdaUrl.getUrl())
+    CfnOutput.Builder.create(webStack, "AuthUrlGoogleLambdaUrl")
+        .value(webStack.authUrlGoogleLambdaUrl.getUrl())
         .build();
 
-    CfnOutput.Builder.create(stack, "ExchangeHmrcTokenLambdaArn")
-        .value(stack.exchangeHmrcTokenLambda.getFunctionArn())
+    CfnOutput.Builder.create(webStack, "ExchangeHmrcTokenLambdaArn")
+        .value(webStack.exchangeHmrcTokenLambda.getFunctionArn())
         .build();
 
-    CfnOutput.Builder.create(stack, "ExchangeHmrcTokenLambdaUrl")
-        .value(stack.exchangeHmrcTokenLambdaUrl.getUrl())
+    CfnOutput.Builder.create(webStack, "ExchangeHmrcTokenLambdaUrl")
+        .value(webStack.exchangeHmrcTokenLambdaUrl.getUrl())
         .build();
 
-    CfnOutput.Builder.create(stack, "ExchangeGoogleTokenLambdaArn")
-        .value(stack.exchangeGoogleTokenLambda.getFunctionArn())
+    CfnOutput.Builder.create(webStack, "ExchangeGoogleTokenLambdaArn")
+        .value(webStack.exchangeGoogleTokenLambda.getFunctionArn())
         .build();
 
-    CfnOutput.Builder.create(stack, "ExchangeGoogleTokenLambdaUrl")
-        .value(stack.exchangeGoogleTokenLambdaUrl.getUrl())
+    CfnOutput.Builder.create(webStack, "ExchangeGoogleTokenLambdaUrl")
+        .value(webStack.exchangeGoogleTokenLambdaUrl.getUrl())
         .build();
 
-    CfnOutput.Builder.create(stack, "SubmitVatLambdaArn")
-        .value(stack.submitVatLambda.getFunctionArn())
+    CfnOutput.Builder.create(webStack, "SubmitVatLambdaArn")
+        .value(webStack.submitVatLambda.getFunctionArn())
         .build();
 
-    CfnOutput.Builder.create(stack, "SubmitVatLambdaUrl")
-        .value(stack.submitVatLambdaUrl.getUrl())
+    CfnOutput.Builder.create(webStack, "SubmitVatLambdaUrl")
+        .value(webStack.submitVatLambdaUrl.getUrl())
         .build();
 
-    CfnOutput.Builder.create(stack, "LogReceiptLambdaArn")
-        .value(stack.logReceiptLambda.getFunctionArn())
+    CfnOutput.Builder.create(webStack, "LogReceiptLambdaArn")
+        .value(webStack.logReceiptLambda.getFunctionArn())
         .build();
 
-    CfnOutput.Builder.create(stack, "LogReceiptLambdaUrl")
-        .value(stack.logReceiptLambdaUrl.getUrl())
+    CfnOutput.Builder.create(webStack, "LogReceiptLambdaUrl")
+        .value(webStack.logReceiptLambdaUrl.getUrl())
         .build();
 
     // Cognito outputs (only if Cognito is configured)
-    if (stack.userPool != null) {
-      CfnOutput.Builder.create(stack, "UserPoolId").value(stack.userPool.getUserPoolId()).build();
+    if (identityStack.userPool != null) {
+      CfnOutput.Builder.create(identityStack, "UserPoolId").value(identityStack.userPool.getUserPoolId()).build();
 
-      CfnOutput.Builder.create(stack, "UserPoolArn").value(stack.userPool.getUserPoolArn()).build();
+      CfnOutput.Builder.create(identityStack, "UserPoolArn").value(identityStack.userPool.getUserPoolArn()).build();
 
-      CfnOutput.Builder.create(stack, "UserPoolClientId")
-          .value(stack.userPoolClient.getUserPoolClientId())
+      CfnOutput.Builder.create(identityStack, "UserPoolClientId")
+          .value(identityStack.userPoolClient.getUserPoolClientId())
           .build();
 
-      CfnOutput.Builder.create(stack, "UserPoolDomainName")
-          .value(stack.userPoolDomain.getDomainName())
+      CfnOutput.Builder.create(identityStack, "UserPoolDomainName")
+          .value(webStack.userPoolDomain.getDomainName())
           .build();
 
-      CfnOutput.Builder.create(stack, "UserPoolDomainARecord")
-          .value(stack.userPoolDomainARecord.getDomainName())
+      CfnOutput.Builder.create(identityStack, "UserPoolDomainARecord")
+          .value(webStack.userPoolDomainARecord.getDomainName())
           .build();
 
-      CfnOutput.Builder.create(stack, "UserPoolDomainAaaaRecord")
-          .value(stack.userPoolDomainAaaaRecord.getDomainName())
+      CfnOutput.Builder.create(webStack, "UserPoolDomainAaaaRecord")
+          .value(webStack.userPoolDomainAaaaRecord.getDomainName())
           .build();
       // Conditionally show identity providers
-        if (stack.googleIdentityProvider != null) {
-            CfnOutput.Builder.create(stack, "CognitoGoogleIdpId")
-                .value(stack.googleIdentityProvider.getProviderName())
+        if (identityStack.googleIdentityProvider != null) {
+            CfnOutput.Builder.create(identityStack, "CognitoGoogleIdpId")
+                .value(identityStack.googleIdentityProvider.getProviderName())
                 .build();
         }
-        if (stack.acCogIdentityProvider != null) {
-            CfnOutput.Builder.create(stack, "CognitoAntonyccIdpId")
-                .value(stack.acCogIdentityProvider.getProviderName())
+        if (identityStack.acCogIdentityProvider != null) {
+            CfnOutput.Builder.create(identityStack, "CognitoAntonyccIdpId")
+                .value(identityStack.acCogIdentityProvider.getProviderName())
                 .build();
         }
     }
 
     // Bundle Lambda outputs (only if bundle Lambda is configured)
-    if (stack.bundleLambda != null) {
-      CfnOutput.Builder.create(stack, "BundleLambdaArn")
-          .value(stack.bundleLambda.getFunctionArn())
+    if (webStack.bundleLambda != null) {
+      CfnOutput.Builder.create(webStack, "BundleLambdaArn")
+          .value(webStack.bundleLambda.getFunctionArn())
           .build();
 
-      CfnOutput.Builder.create(stack, "BundleLambdaUrl")
-          .value(stack.bundleLambdaUrl.getUrl())
+      CfnOutput.Builder.create(webStack, "BundleLambdaUrl")
+          .value(webStack.bundleLambdaUrl.getUrl())
           .build();
     }
 
     // My Receipts Lambda outputs (only if my receipts Lambda is configured)
-    if (stack.myReceiptsLambda != null) {
-      CfnOutput.Builder.create(stack, "MyReceiptsLambdaArn")
-          .value(stack.myReceiptsLambda.getFunctionArn())
+    if (webStack.myReceiptsLambda != null) {
+      CfnOutput.Builder.create(webStack, "MyReceiptsLambdaArn")
+          .value(webStack.myReceiptsLambda.getFunctionArn())
           .build();
 
-      CfnOutput.Builder.create(stack, "MyReceiptsLambdaUrl")
-          .value(stack.myReceiptsLambdaUrl.getUrl())
+      CfnOutput.Builder.create(webStack, "MyReceiptsLambdaUrl")
+          .value(webStack.myReceiptsLambdaUrl.getUrl())
           .build();
     }
 

@@ -1,6 +1,5 @@
-package co.uk.diyaccounting.submit.awssdk;
+package co.uk.diyaccounting.submit.stacks;
 
-import co.uk.diyaccounting.submit.stacks.WebStack;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Test;
@@ -113,6 +112,7 @@ public class WebStackTest {
         //        "arn:aws:secretsmanager:eu-west-2:000000000000:secret:diy/test/submit/antonycc/client_secret")
         .acCogClientId("test-antonycc-client-id")
         .acCogBaseUri("https://test")
+        .userPoolArn("arn:aws:cognito-idp:eu-west-2:111111111111:userpool/test")
         //.acCogClientSecretArn(
         //        "arn:aws:secretsmanager:eu-west-2:000000000000:secret:diy/test/submit/ac-cog/client_secret")
         .build();

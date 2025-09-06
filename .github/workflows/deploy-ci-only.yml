@@ -60,11 +60,11 @@ jobs:
       id-token: write
       contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Configure AWS Credentials
         if: ${{ env.skipDeploy != 'true' }}
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: arn:aws:iam::887764105431:role/submit-github-actions-role
           role-chaining: false
@@ -76,7 +76,7 @@ jobs:
 
       - name: Configure AWS Credentials
         if: ${{ env.skipDeploy != 'true' }}
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: arn:aws:iam::887764105431:role/submit-deployment-role
           role-chaining: true
@@ -162,14 +162,14 @@ jobs:
           fetch-depth: 0
           ref: ${{ github.ref }}
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: 'npm'
 
       - run: npm install
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         if: ${{ env.skipDeploy != 'true' }}
         with:
           distribution: 'temurin'
@@ -185,41 +185,9 @@ jobs:
         env:
           BASE_IMAGE_TAG: ${{ needs.build-base-image.outputs.base-image-tag }}
 
-      - name: Log built files
-        if: ${{ env.skipDeploy != 'true' }}
-        shell: bash
-        run: |
-          echo "ls -lh target/:"
-          ls -lh target/
-          echo "du -h target/:"
-          du -h target/
-
-      - name: set-jar-path
-        if: ${{ env.skipDeploy != 'true' }}
-        id: jar-path
-        shell: bash
-        run: |
-          jarPath=$(mvn help:evaluate --quiet --define expression=project.build.directory --define forceStdout)
-          jarFilename=$(mvn help:evaluate --quiet --define expression=project.build.finalName --define forceStdout)
-          echo "jarFilepath=${jarPath?}/${jarFilename?}.jar" | tee -a "${GITHUB_OUTPUT?}"
-
-      - name: stacks
-        if: ${{ env.skipDeploy != 'true' }}
-        id: stacks
-        shell: bash
-        run: |
-          synthDev=$(jq -r '.synthDevStack' cdk.json | sed 's/SubmitDevStack-dev/SubmitDevStack-ci/g')
-          synthWeb=$(jq -r '.synthWebStack' cdk.json | sed 's/SubmitWebStack-dev/SubmitWebStack-ci/g')
-          deployDev=$(jq -r '.deployDevStack' cdk.json | sed 's/SubmitDevStack-dev/SubmitDevStack-ci/g')
-          deployWeb=$(jq -r '.deployWebStack' cdk.json | sed 's/SubmitWebStack-dev/SubmitWebStack-ci/g')
-          echo "synthWeb=${synthWeb?}" | tee -a "${GITHUB_OUTPUT?}"
-          echo "synthDev=${synthDev?}" | tee -a "${GITHUB_OUTPUT?}"
-          echo "deployWeb=${deployWeb?}" | tee -a "${GITHUB_OUTPUT?}"
-          echo "deployDev=${deployDev?}" | tee -a "${GITHUB_OUTPUT?}"
-
       - name: Configure AWS Credentials
         if: ${{ env.skipDeploy != 'true' }}
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: arn:aws:iam::887764105431:role/submit-github-actions-role
           role-chaining: false
@@ -231,7 +199,7 @@ jobs:
 
       - name: Configure AWS Credentials
         if: ${{ env.skipDeploy != 'true' }}
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: arn:aws:iam::887764105431:role/submit-deployment-role
           role-chaining: true
@@ -245,7 +213,17 @@ jobs:
         if: ${{ env.skipDeploy != 'true' }}
         id: deployDev
         shell: bash
-        run: npx dotenv -e .env.ci -- ${{ steps.stacks.outputs.deployDev }}
+        run: npx dotenv -e .env.ci -- npx cdk deploy SubmitDevStack-ci --exclusively --require-approval never --ci true --verbose --strict --validation
+        env:
+          GITHUB_ACTOR: ${{ github.actor }}
+          ENV_NAME: 'ci'
+          BASE_IMAGE_TAG: ${{ needs.build-base-image.outputs.base-image-tag }}
+
+      - name: deployIdentity
+        if: ${{ env.skipDeploy != 'true' }}
+        id: deployIdentity
+        shell: bash
+        run: npx dotenv -e .env.ci -- npx cdk deploy SubmitIdentityStack-ci --exclusively --require-approval never --ci true --verbose --strict --validation
         env:
           GITHUB_ACTOR: ${{ github.actor }}
           ENV_NAME: 'ci'
@@ -318,7 +296,7 @@ jobs:
         if: ${{ env.skipDeploy != 'true' }}
         id: deployWeb
         shell: bash
-        run: npx dotenv -e .env.ci -- ${{ steps.stacks.outputs.deployWeb }}
+        run: npx dotenv -e .env.ci -- npx cdk deploy SubmitWebStack-ci --exclusively --require-approval never --ci true --verbose --strict --validation
         env:
           GITHUB_ACTOR: ${{ github.actor }}
           ENV_NAME: 'ci'
@@ -346,7 +324,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: 'npm'
@@ -369,7 +347,7 @@ jobs:
       - run: npx playwright install chromium --with-deps
 
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: arn:aws:iam::887764105431:role/submit-github-actions-role
           role-chaining: false
@@ -381,7 +359,7 @@ jobs:
 
       # TODO: Replace submit-deployment-role with a role that can only run tests and access s3.
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: arn:aws:iam::887764105431:role/submit-deployment-role
           role-chaining: true

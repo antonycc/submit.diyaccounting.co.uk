@@ -71,12 +71,7 @@ public class CognitoAuth {
     }
 
     // Google IdP
-    UserPoolIdentityProviderGoogle googleIdp = null;
-    if (b.googleClientId != null
-        && !b.googleClientId.isBlank()
-        && b.googleClientSecretValue != null) {
-      googleIdp =
-          UserPoolIdentityProviderGoogle.Builder.create(b.scope, "GoogleIdentityProvider")
+    this.googleIdentityProvider = UserPoolIdentityProviderGoogle.Builder.create(b.scope, "GoogleIdentityProvider")
               .userPool(up)
               .clientId(b.googleClientId)
               .clientSecretValue(b.googleClientSecretValue)
@@ -89,13 +84,9 @@ public class CognitoAuth {
                       .build())
               .build();
         this.identityProviders.add(UserPoolClientIdentityProvider.GOOGLE);
-    }
-    this.googleIdentityProvider = googleIdp;
 
     // Antonycc OIDC via Cognito IdP (using L1 construct to avoid clientSecret requirement)
-    CfnUserPoolIdentityProvider acCogIdp = null;
-    if (b.acCogClientId != null && !b.acCogClientId.isBlank() && b.acCogIssuerUrl != null && !b.acCogIssuerUrl.isBlank()) {
-      acCogIdp = CfnUserPoolIdentityProvider.Builder.create(b.scope, "AcCogIdentityProvider")
+    this.acCogIdentityProvider = CfnUserPoolIdentityProvider.Builder.create(b.scope, "AcCogIdentityProvider")
           .providerName("ac-cog")
           .providerType("OIDC")
           .userPoolId(up.getUserPoolId())
@@ -112,8 +103,6 @@ public class CognitoAuth {
           ))
           .build();
       this.identityProviders.add(UserPoolClientIdentityProvider.custom("ac-cog"));
-    }
-    this.acCogIdentityProvider = acCogIdp;
 
     // User Pool Client
     UserPoolClient client =
@@ -130,12 +119,8 @@ public class CognitoAuth {
                     .build())
             .supportedIdentityProviders(this.identityProviders)
             .build();
-    if (this.googleIdentityProvider != null) {
-      client.getNode().addDependency(this.googleIdentityProvider);
-    }
-    if (this.acCogIdentityProvider != null) {
-       client.getNode().addDependency(this.acCogIdentityProvider);
-    }
+    client.getNode().addDependency(this.googleIdentityProvider);
+    client.getNode().addDependency(this.acCogIdentityProvider);
     this.userPoolClient = client;
 
     // Configure log delivery to CloudWatch if enabled

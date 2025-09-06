@@ -1,6 +1,5 @@
-package co.uk.diyaccounting.submit.constructs;
+package co.uk.diyaccounting.submit.stacks;
 
-import co.uk.diyaccounting.submit.stacks.DevStack;
 import org.junit.jupiter.api.Test;
 import software.amazon.awscdk.App;
 
