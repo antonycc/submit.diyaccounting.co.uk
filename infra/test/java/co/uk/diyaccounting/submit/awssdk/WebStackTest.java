@@ -112,6 +112,7 @@ public class WebStackTest {
         //.antonyccClientSecretArn(
         //        "arn:aws:secretsmanager:eu-west-2:000000000000:secret:diy/test/submit/antonycc/client_secret")
         .acCogClientId("test-antonycc-client-id")
+        .acCogBaseUri("https://test")
         //.acCogClientSecretArn(
         //        "arn:aws:secretsmanager:eu-west-2:000000000000:secret:diy/test/submit/ac-cog/client_secret")
         .build();
