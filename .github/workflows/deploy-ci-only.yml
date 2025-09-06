@@ -243,7 +243,7 @@ jobs:
 
       - name: deployDev
         if: ${{ env.skipDeploy != 'true' }}
-        id: deploy
+        id: deployDev
         shell: bash
         run: npx dotenv -e .env.ci -- ${{ steps.stacks.outputs.deployDev }}
         env:
@@ -316,7 +316,7 @@ jobs:
 
       - name: deployWeb
         if: ${{ env.skipDeploy != 'true' }}
-        id: deploy
+        id: deployWeb
         shell: bash
         run: npx dotenv -e .env.ci -- ${{ steps.stacks.outputs.deployWeb }}
         env:
