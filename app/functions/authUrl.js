@@ -123,13 +123,6 @@ Please modify all the pages in ./web/index.html in @antonycc/oidc so that there 
 
  */
 
-
-
-
-
-
-
-
 export async function httpGet(event, authUrl) {
   let request;
   try {

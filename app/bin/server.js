@@ -7,13 +7,7 @@ import { fileURLToPath } from "url";
 import { readFileSync } from "fs";
 import dotenv from "dotenv";
 
-import {
-  httpGetAntonycc,
-  httpGetAcCog,
-  httpGetGoogle,
-  httpGetHmrc,
-  httpGetMock,
-} from "../functions/authUrl.js";
+import { httpGetAntonycc, httpGetAcCog, httpGetGoogle, httpGetHmrc, httpGetMock } from "../functions/authUrl.js";
 import {
   httpPost as exchangeTokenHttpPostMock,
   httpPostGoogle,
@@ -62,8 +56,7 @@ const exchangeMockTokenPath = context.exchangeTokenLambdaUrlPath || "/api/exchan
 const exchangeHmrcTokenPath = context.exchangeHmrcTokenLambdaUrlPath || "/api/hmrc/exchange-token";
 const exchangeGoogleTokenPath = context.exchangeGoogleTokenLambdaUrlPath || "/api/google/exchange-token";
 const exchangeAntonyccTokenPath = context.exchangeAntonyccTokenLambdaUrlPath || "/api/antonycc/exchange-token";
-const exchangeAcCogTokenPath =
-  context.exchangeAcCogTokenLambdaUrlPath || "/api/ac-cog/exchange-token";
+const exchangeAcCogTokenPath = context.exchangeAcCogTokenLambdaUrlPath || "/api/ac-cog/exchange-token";
 const submitVatPath = context.submitVatLambdaUrlPath || "/api/submit-vat";
 const logReceiptPath = context.logReceiptLambdaUrlPath || "/api/log-receipt";
 const googleAuthUrlPath = context.googleAuthUrlLambdaUrlPath || "/api/google/auth-url";

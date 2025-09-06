@@ -101,13 +101,12 @@ test.beforeAll(async () => {
 
   if (runProxy) {
     console.log("Starting ngrok process...");
-    ngrokProcess = spawn("npm", [ "run", "proxy", serverPort.toString() ], {
-        env: {
-          ...process.env,
-        },
-        stdio: ["pipe", "pipe", "pipe"],
+    ngrokProcess = spawn("npm", ["run", "proxy", serverPort.toString()], {
+      env: {
+        ...process.env,
       },
-    );
+      stdio: ["pipe", "pipe", "pipe"],
+    });
     await checkIfServerIsRunning(homeUrl, 1000);
   } else {
     console.log("Skipping ngrok process as runProxy is not set to 'run'");
