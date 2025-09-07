@@ -202,14 +202,11 @@
                             <include>infra/main/java/**/*.java</include>
                             <include>infra/test/java/**/*.java</include>
                         </includes>
-                        <googleJavaFormat>
-                            <version>1.22.0</version>
-                            <style>GOOGLE</style>
-                            <reflowLongStrings>true</reflowLongStrings>
-                            <formatJavadoc>false</formatJavadoc>
-                        </googleJavaFormat>
+                        <palantirJavaFormat>
+                            <version>2.50.0</version>
+                        </palantirJavaFormat>
                         <removeUnusedImports></removeUnusedImports>
-                        <trimTrailingWhitespace></trimTrailingWhitespace>
+                        <importOrder></importOrder>
                         <endWithNewline></endWithNewline>
                     </java>
                     <pom>

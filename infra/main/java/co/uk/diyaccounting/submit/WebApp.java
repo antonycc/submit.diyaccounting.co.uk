@@ -5,6 +5,7 @@ import co.uk.diyaccounting.submit.stacks.DevStack;
 import co.uk.diyaccounting.submit.stacks.IdentityStack;
 import co.uk.diyaccounting.submit.stacks.ObservabilityStack;
 import co.uk.diyaccounting.submit.stacks.WebStack;
+import java.lang.reflect.Field;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import software.amazon.awscdk.App;
@@ -12,342 +13,294 @@ import software.amazon.awscdk.StackProps;
 import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
 
-import java.lang.reflect.Field;
-
 public class WebApp {
 
-  private static final Logger logger = LogManager.getLogger(WebApp.class);
+    private static final Logger logger = LogManager.getLogger(WebApp.class);
 
-  public static void main(final String[] args) {
+    public static void main(final String[] args) {
 
-    App app = new App();
+        App app = new App();
 
-    // Build app-level props from cdk.json context with environment overrides
-    WebApp.Builder builder = WebApp.Builder.create(app, "WebApp");
-    WebAppProps appProps = loadAppProps(builder, app);
+        // Build app-level props from cdk.json context with environment overrides
+        WebApp.Builder builder = WebApp.Builder.create(app, "WebApp");
+        WebAppProps appProps = loadAppProps(builder, app);
 
-    String envName = appProps.env;
+        String envName = appProps.env;
 
-    String observabilityStackEnv = envOr("ENV_NAME", appProps.env);
-    String observabilityStackId =
-        "SubmitObservabilityStack-%s"
-            .formatted(
-                observabilityStackEnv != null && !observabilityStackEnv.isBlank()
-                    ? observabilityStackEnv
-                    : "dev");
-    ObservabilityStack observabilityStack =
-        ObservabilityStack.Builder.create(app, observabilityStackId)
-            .props(
-                co.uk.diyaccounting.submit.stacks.ObservabilityStackProps.builder()
-                    .env(observabilityStackEnv)
-                    .hostedZoneName(appProps.hostedZoneName)
-                    .subDomainName(appProps.subDomainName)
-                    .cloudTrailEnabled(appProps.cloudTrailEnabled)
-                    .xRayEnabled(appProps.xRayEnabled)
-                    .cloudTrailLogGroupPrefix(appProps.cloudTrailLogGroupPrefix)
-                    .cloudTrailLogGroupRetentionPeriodDays(
-                        appProps.cloudTrailLogGroupRetentionPeriodDays)
-                    .accessLogGroupRetentionPeriodDays(appProps.accessLogGroupRetentionPeriodDays)
-                    .build())
-            .build();
+        String observabilityStackEnv = envOr("ENV_NAME", appProps.env);
+        String observabilityStackId = "SubmitObservabilityStack-%s"
+                .formatted(
+                        observabilityStackEnv != null && !observabilityStackEnv.isBlank()
+                                ? observabilityStackEnv
+                                : "dev");
+        ObservabilityStack observabilityStack = ObservabilityStack.Builder.create(app, observabilityStackId)
+                .props(co.uk.diyaccounting.submit.stacks.ObservabilityStackProps.builder()
+                        .env(observabilityStackEnv)
+                        .hostedZoneName(appProps.hostedZoneName)
+                        .subDomainName(appProps.subDomainName)
+                        .cloudTrailEnabled(appProps.cloudTrailEnabled)
+                        .xRayEnabled(appProps.xRayEnabled)
+                        .cloudTrailLogGroupPrefix(appProps.cloudTrailLogGroupPrefix)
+                        .cloudTrailLogGroupRetentionPeriodDays(appProps.cloudTrailLogGroupRetentionPeriodDays)
+                        .accessLogGroupRetentionPeriodDays(appProps.accessLogGroupRetentionPeriodDays)
+                        .build())
+                .build();
 
-    // Create DevStack with resources only used during development or deployment (e.g. ECR)
-    String devStackEnv = envOr("ENV_NAME", appProps.env);
-    String devStackId =
-        "SubmitDevStack-%s"
-            .formatted(devStackEnv != null && !devStackEnv.isBlank() ? devStackEnv : "dev");
-    DevStack devStack =
-        DevStack.Builder.create(app, devStackId)
-            .props(
-                co.uk.diyaccounting.submit.stacks.DevStackProps.builder()
-                    .env(devStackEnv)
-                    .hostedZoneName(appProps.hostedZoneName)
-                    .subDomainName(appProps.subDomainName)
-                    .build())
-            .build();
+        // Create DevStack with resources only used during development or deployment (e.g. ECR)
+        String devStackEnv = envOr("ENV_NAME", appProps.env);
+        String devStackId =
+                "SubmitDevStack-%s".formatted(devStackEnv != null && !devStackEnv.isBlank() ? devStackEnv : "dev");
+        DevStack devStack = DevStack.Builder.create(app, devStackId)
+                .props(co.uk.diyaccounting.submit.stacks.DevStackProps.builder()
+                        .env(devStackEnv)
+                        .hostedZoneName(appProps.hostedZoneName)
+                        .subDomainName(appProps.subDomainName)
+                        .build())
+                .build();
 
-    // Create the identity stack before any user aware services
-    String identityStackEnv = envOr("ENV_NAME", appProps.env);
-    String identityStackId =
-        "SubmitIdentityStack-%s"
-            .formatted(
-                identityStackEnv != null && !identityStackEnv.isBlank() ? identityStackEnv : "dev");
-    IdentityStack identityStack =
-        IdentityStack.Builder.create(app, identityStackId)
-            .props(
-                co.uk.diyaccounting.submit.stacks.IdentityStackProps.builder()
-                    .env(identityStackEnv)
-                    .hostedZoneName(appProps.hostedZoneName)
-                    .hostedZoneId(appProps.hostedZoneId)
-                    .subDomainName(appProps.subDomainName)
-                    .authCertificateArn(envOr("AUTH_CERTIFICATE_ARN", appProps.authCertificateArn))
-                    .googleClientId(envOr("DIY_SUBMIT_GOOGLE_CLIENT_ID", appProps.googleClientId))
-                    .googleClientSecretArn(
-                        envOr(
-                            "DIY_SUBMIT_GOOGLE_CLIENT_SECRET_ARN", appProps.googleClientSecretArn))
-                    .cognitoDomainPrefix(appProps.cognitoDomainPrefix)
-                    .antonyccClientId(
-                        envOr("DIY_SUBMIT_ANTONYCC_CLIENT_ID", appProps.antonyccClientId))
-                    .antonyccBaseUri(
-                        envOr("DIY_SUBMIT_ANTONYCC_BASE_URI", appProps.antonyccBaseUri))
-                    .acCogClientId(envOr("DIY_SUBMIT_AC_COG_CLIENT_ID", appProps.acCogClientId))
-                    .acCogBaseUri(envOr("DIY_SUBMIT_AC_COG_BASE_URI", appProps.acCogBaseUri))
-                    .build())
-            .build();
+        // Create the identity stack before any user aware services
+        String identityStackEnv = envOr("ENV_NAME", appProps.env);
+        String identityStackId = "SubmitIdentityStack-%s"
+                .formatted(identityStackEnv != null && !identityStackEnv.isBlank() ? identityStackEnv : "dev");
+        IdentityStack identityStack = IdentityStack.Builder.create(app, identityStackId)
+                .props(co.uk.diyaccounting.submit.stacks.IdentityStackProps.builder()
+                        .env(identityStackEnv)
+                        .hostedZoneName(appProps.hostedZoneName)
+                        .hostedZoneId(appProps.hostedZoneId)
+                        .subDomainName(appProps.subDomainName)
+                        .authCertificateArn(envOr("AUTH_CERTIFICATE_ARN", appProps.authCertificateArn))
+                        .googleClientId(envOr("DIY_SUBMIT_GOOGLE_CLIENT_ID", appProps.googleClientId))
+                        .googleClientSecretArn(
+                                envOr("DIY_SUBMIT_GOOGLE_CLIENT_SECRET_ARN", appProps.googleClientSecretArn))
+                        .cognitoDomainPrefix(appProps.cognitoDomainPrefix)
+                        .antonyccClientId(envOr("DIY_SUBMIT_ANTONYCC_CLIENT_ID", appProps.antonyccClientId))
+                        .antonyccBaseUri(envOr("DIY_SUBMIT_ANTONYCC_BASE_URI", appProps.antonyccBaseUri))
+                        .acCogClientId(envOr("DIY_SUBMIT_AC_COG_CLIENT_ID", appProps.acCogClientId))
+                        .acCogBaseUri(envOr("DIY_SUBMIT_AC_COG_BASE_URI", appProps.acCogBaseUri))
+                        .build())
+                .build();
 
-    // Create the ApplicationStack
-    String applicationStackEnv = envOr("ENV_NAME", appProps.env);
-    String applicationStackId =
-        "SubmitApplicationStack-%s"
-            .formatted(
-                applicationStackEnv != null && !applicationStackEnv.isBlank()
-                    ? applicationStackEnv
-                    : "dev");
-    ApplicationStack applicationStack =
-        ApplicationStack.Builder.create(app, applicationStackId)
-            .props(
-                co.uk.diyaccounting.submit.stacks.ApplicationStackProps.builder()
-                    .env(applicationStackEnv)
-                    .hostedZoneName(appProps.hostedZoneName)
-                    .subDomainName(envOr("SUB_DOMAIN_NAME", appProps.subDomainName))
-                    .cloudTrailEnabled(appProps.cloudTrailEnabled)
-                    .xRayEnabled(appProps.xRayEnabled)
-                    .build())
-            .build();
+        // Create the ApplicationStack
+        String applicationStackEnv = envOr("ENV_NAME", appProps.env);
+        String applicationStackId = "SubmitApplicationStack-%s"
+                .formatted(applicationStackEnv != null && !applicationStackEnv.isBlank() ? applicationStackEnv : "dev");
+        ApplicationStack applicationStack = ApplicationStack.Builder.create(app, applicationStackId)
+                .props(co.uk.diyaccounting.submit.stacks.ApplicationStackProps.builder()
+                        .env(applicationStackEnv)
+                        .hostedZoneName(appProps.hostedZoneName)
+                        .subDomainName(envOr("SUB_DOMAIN_NAME", appProps.subDomainName))
+                        .cloudTrailEnabled(appProps.cloudTrailEnabled)
+                        .xRayEnabled(appProps.xRayEnabled)
+                        .build())
+                .build();
 
-    // Create WebStack with resources used in running the application
-    String webStackEnv = envOr("ENV_NAME", appProps.env);
-    String webStackId =
-        "SubmitWebStack-%s"
-            .formatted(webStackEnv != null && !webStackEnv.isBlank() ? webStackEnv : "dev");
-    WebStack webStack =
-        WebStack.Builder.create(app, webStackId)
-            .props(
-                co.uk.diyaccounting.submit.stacks.WebStackProps.builder()
-                    .env(webStackEnv)
-                    .hostedZoneName(appProps.hostedZoneName)
-                    .hostedZoneId(appProps.hostedZoneId)
-                    .subDomainName(appProps.subDomainName)
-                    .certificateArn(envOr("CERTIFICATE_ARN", appProps.certificateArn))
-                    .userPoolArn(
-                        identityStack.userPool != null
-                            ? identityStack.userPool.getUserPoolArn()
-                            : null)
-                    .cloudTrailEnabled(appProps.cloudTrailEnabled)
-                    .xRayEnabled(appProps.xRayEnabled)
-                    .verboseLogging(appProps.verboseLogging)
-                    .cloudTrailLogGroupRetentionPeriodDays(
-                        appProps.cloudTrailLogGroupRetentionPeriodDays)
-                    .accessLogGroupRetentionPeriodDays(appProps.accessLogGroupRetentionPeriodDays)
-                    .s3UseExistingBucket(appProps.s3UseExistingBucket)
-                    .s3RetainOriginBucket(appProps.s3RetainOriginBucket)
-                    .s3RetainReceiptsBucket(appProps.s3RetainReceiptsBucket)
-                    .cloudTrailEventSelectorPrefix(appProps.cloudTrailEventSelectorPrefix)
-                    .logS3ObjectEventHandlerSource(appProps.logS3ObjectEventHandlerSource)
-                    .logGzippedS3ObjectEventHandlerSource(
-                        appProps.logGzippedS3ObjectEventHandlerSource)
-                    .docRootPath(appProps.docRootPath)
-                    .defaultDocumentAtOrigin(appProps.defaultDocumentAtOrigin)
-                    .error404NotFoundAtDistribution(appProps.error404NotFoundAtDistribution)
-                    .skipLambdaUrlOrigins(appProps.skipLambdaUrlOrigins)
-                    .hmrcClientId(envOr("DIY_SUBMIT_HMRC_CLIENT_ID", appProps.hmrcClientId))
-                    .hmrcClientSecretArn(
-                        envOr("DIY_SUBMIT_HMRC_CLIENT_SECRET_ARN", appProps.hmrcClientSecretArn))
-                    .homeUrl(envOr("DIY_SUBMIT_HOME_URL", appProps.homeUrl))
-                    .hmrcBaseUri(envOr("DIY_SUBMIT_HMRC_BASE_URI", appProps.hmrcBaseUri))
-                    .optionalTestAccessToken(
-                        envOr("DIY_SUBMIT_TEST_ACCESS_TOKEN", appProps.optionalTestAccessToken))
-                    .optionalTestS3Endpoint(
-                        envOr("DIY_SUBMIT_TEST_S3_ENDPOINT", appProps.optionalTestS3Endpoint))
-                    .optionalTestS3AccessKey(
-                        envOr("DIY_SUBMIT_TEST_S3_ACCESS_KEY", appProps.optionalTestS3AccessKey))
-                    .optionalTestS3SecretKey(
-                        envOr("DIY_SUBMIT_TEST_S3_SECRET_KEY", appProps.optionalTestS3SecretKey))
-                    .receiptsBucketPostfix(
-                        envOr("DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX", appProps.receiptsBucketPostfix))
-                    .lambdaEntry(appProps.lambdaEntry)
-                    .authUrlHmrcLambdaHandlerFunctionName(
-                        appProps.authUrlHmrcLambdaHandlerFunctionName)
-                    .authUrlHmrcLambdaUrlPath(appProps.authUrlLambdaUrlPath)
-                    .authUrlHmrcLambdaDurationMillis(appProps.authUrlHmrcLambdaDuration)
-                    .authUrlMockLambdaHandlerFunctionName(
-                        appProps.authUrlMockLambdaHandlerFunctionName)
-                    .authUrlMockLambdaUrlPath(appProps.authUrlMockLambdaUrlPath)
-                    .authUrlMockLambdaDurationMillis(appProps.authUrlMockLambdaDuration)
-                    .authUrlGoogleLambdaHandlerFunctionName(
-                        appProps.authUrlGoogleLambdaHandlerFunctionName)
-                    .authUrlGoogleLambdaUrlPath(appProps.authUrlGoogleLambdaUrlPath)
-                    .authUrlGoogleLambdaDurationMillis(appProps.authUrlGoogleLambdaDuration)
-                    .authUrlAntonyccLambdaHandlerFunctionName(
-                        appProps.authUrlAntonyccLambdaHandlerFunctionName)
-                    .authUrlAntonyccLambdaUrlPath(appProps.authUrlAntonyccLambdaUrlPath)
-                    .authUrlAntonyccLambdaDurationMillis(appProps.authUrlAntonyccLambdaDuration)
-                    .authUrlAcCogLambdaHandlerFunctionName(
-                        appProps.authUrlAcCogLambdaHandlerFunctionName)
-                    .authUrlAcCogLambdaUrlPath(appProps.authUrlAcCogLambdaUrlPath)
-                    .authUrlAcCogLambdaDurationMillis(appProps.authUrlAcCogLambdaDuration)
-                    .exchangeHmrcTokenLambdaHandlerFunctionName(
-                        appProps.exchangeHmrcTokenLambdaHandlerFunctionName)
-                    .exchangeHmrcTokenLambdaUrlPath(appProps.exchangeHmrcTokenLambdaUrlPath)
-                    .exchangeHmrcTokenLambdaDurationMillis(appProps.exchangeHmrcTokenLambdaDuration)
-                    .exchangeGoogleTokenLambdaHandlerFunctionName(
-                        appProps.exchangeGoogleTokenLambdaHandlerFunctionName)
-                    .exchangeGoogleTokenLambdaUrlPath(appProps.exchangeGoogleTokenLambdaUrlPath)
-                    .exchangeGoogleTokenLambdaDurationMillis(
-                        appProps.exchangeGoogleTokenLambdaDuration)
-                    .exchangeAntonyccTokenLambdaHandlerFunctionName(
-                        appProps.exchangeAntonyccTokenLambdaHandlerFunctionName)
-                    .exchangeAntonyccTokenLambdaUrlPath(appProps.exchangeAntonyccTokenLambdaUrlPath)
-                    .exchangeAntonyccTokenLambdaDurationMillis(
-                        appProps.exchangeAntonyccTokenLambdaDuration)
-                    .exchangeAcCogTokenLambdaHandlerFunctionName(
-                            appProps.exchangeAcCogTokenLambdaHandlerFunctionName)
-                    .exchangeAcCogTokenLambdaUrlPath(appProps.exchangeAcCogTokenLambdaUrlPath)
-                    .exchangeAcCogTokenLambdaDurationMillis(
-                            appProps.exchangeAcCogTokenLambdaDuration)
-                    .submitVatLambdaHandlerFunctionName(appProps.submitVatLambdaHandlerFunctionName)
-                    .submitVatLambdaUrlPath(appProps.submitVatLambdaUrlPath)
-                    .submitVatLambdaDurationMillis(appProps.submitVatLambdaDuration)
-                    .logReceiptLambdaHandlerFunctionName(
-                        appProps.logReceiptLambdaHandlerFunctionName)
-                    .logReceiptLambdaUrlPath(appProps.logReceiptLambdaUrlPath)
-                    .logReceiptLambdaDurationMillis(appProps.logReceiptLambdaDuration)
-                    .lambdaUrlAuthType(appProps.lambdaUrlAuthType)
-                    .commitHash(envOr("COMMIT_HASH", appProps.commitHash))
-                    .googleClientId(envOr("DIY_SUBMIT_GOOGLE_CLIENT_ID", appProps.googleClientId))
-                    .googleBaseUri(envOr("DIY_SUBMIT_GOOGLE_BASE_URI", appProps.googleBaseUri))
-                    .googleClientSecretArn(
-                        envOr(
-                            "DIY_SUBMIT_GOOGLE_CLIENT_SECRET_ARN", appProps.googleClientSecretArn))
-                    .cognitoDomainPrefix(
-                        envOr("DIY_SUBMIT_COGNITO_DOMAIN_PREFIX", appProps.cognitoDomainPrefix))
-                    .bundleExpiryDate(appProps.bundleExpiryDate)
-                    .bundleUserLimit(appProps.bundleUserLimit)
-                    .bundleLambdaHandlerFunctionName(appProps.bundleLambdaHandlerFunctionName)
-                    .bundleLambdaUrlPath(appProps.bundleLambdaUrlPath)
-                    .bundleLambdaDurationMillis(appProps.bundleLambdaDuration)
-                    .catalogueLambdaHandlerFunctionName(appProps.catalogueLambdaHandlerFunctionName)
-                    .catalogueLambdaUrlPath(appProps.catalogueLambdaUrlPath)
-                    .catalogueLambdaDurationMillis(appProps.catalogueLambdaDuration)
-                    .baseImageTag(envOr("BASE_IMAGE_TAG", appProps.baseImageTag))
-                    .cognitoFeaturePlan(appProps.cognitoFeaturePlan)
-                    .cognitoEnableLogDelivery(appProps.cognitoEnableLogDelivery)
-                    .logCognitoEventHandlerSource(appProps.logCognitoEventHandlerSource)
-                    .myReceiptsLambdaHandlerFunctionName(
-                        appProps.myReceiptsLambdaHandlerFunctionName)
-                    .myReceiptsLambdaUrlPath(appProps.myReceiptsLambdaUrlPath)
-                    .myReceiptsLambdaDurationMillis(appProps.myReceiptsLambdaDuration)
-                    .antonyccClientId(
-                        envOr("DIY_SUBMIT_ANTONYCC_CLIENT_ID", appProps.antonyccClientId))
-                    .antonyccBaseUri(
-                        envOr("DIY_SUBMIT_ANTONYCC_BASE_URI", appProps.antonyccBaseUri))
-                    .acCogClientId(envOr("DIY_SUBMIT_AC_COG_CLIENT_ID", appProps.acCogClientId))
-                    .acCogBaseUri(envOr("DIY_SUBMIT_AC_COG_BASE_URI", appProps.acCogBaseUri))
-                    .build())
-            // .trail(observabilityStack.trail)
-            .build();
+        // Create WebStack with resources used in running the application
+        String webStackEnv = envOr("ENV_NAME", appProps.env);
+        String webStackId =
+                "SubmitWebStack-%s".formatted(webStackEnv != null && !webStackEnv.isBlank() ? webStackEnv : "dev");
+        WebStack webStack = WebStack.Builder.create(app, webStackId)
+                .props(co.uk.diyaccounting.submit.stacks.WebStackProps.builder()
+                        .env(webStackEnv)
+                        .hostedZoneName(appProps.hostedZoneName)
+                        .hostedZoneId(appProps.hostedZoneId)
+                        .subDomainName(appProps.subDomainName)
+                        .certificateArn(envOr("CERTIFICATE_ARN", appProps.certificateArn))
+                        .userPoolArn(identityStack.userPool != null ? identityStack.userPool.getUserPoolArn() : null)
+                        .cloudTrailEnabled(appProps.cloudTrailEnabled)
+                        .xRayEnabled(appProps.xRayEnabled)
+                        .verboseLogging(appProps.verboseLogging)
+                        .cloudTrailLogGroupRetentionPeriodDays(appProps.cloudTrailLogGroupRetentionPeriodDays)
+                        .accessLogGroupRetentionPeriodDays(appProps.accessLogGroupRetentionPeriodDays)
+                        .s3UseExistingBucket(appProps.s3UseExistingBucket)
+                        .s3RetainOriginBucket(appProps.s3RetainOriginBucket)
+                        .s3RetainReceiptsBucket(appProps.s3RetainReceiptsBucket)
+                        .cloudTrailEventSelectorPrefix(appProps.cloudTrailEventSelectorPrefix)
+                        .logS3ObjectEventHandlerSource(appProps.logS3ObjectEventHandlerSource)
+                        .logGzippedS3ObjectEventHandlerSource(appProps.logGzippedS3ObjectEventHandlerSource)
+                        .docRootPath(appProps.docRootPath)
+                        .defaultDocumentAtOrigin(appProps.defaultDocumentAtOrigin)
+                        .error404NotFoundAtDistribution(appProps.error404NotFoundAtDistribution)
+                        .skipLambdaUrlOrigins(appProps.skipLambdaUrlOrigins)
+                        .hmrcClientId(envOr("DIY_SUBMIT_HMRC_CLIENT_ID", appProps.hmrcClientId))
+                        .hmrcClientSecretArn(envOr("DIY_SUBMIT_HMRC_CLIENT_SECRET_ARN", appProps.hmrcClientSecretArn))
+                        .homeUrl(envOr("DIY_SUBMIT_HOME_URL", appProps.homeUrl))
+                        .hmrcBaseUri(envOr("DIY_SUBMIT_HMRC_BASE_URI", appProps.hmrcBaseUri))
+                        .optionalTestAccessToken(
+                                envOr("DIY_SUBMIT_TEST_ACCESS_TOKEN", appProps.optionalTestAccessToken))
+                        .optionalTestS3Endpoint(envOr("DIY_SUBMIT_TEST_S3_ENDPOINT", appProps.optionalTestS3Endpoint))
+                        .optionalTestS3AccessKey(
+                                envOr("DIY_SUBMIT_TEST_S3_ACCESS_KEY", appProps.optionalTestS3AccessKey))
+                        .optionalTestS3SecretKey(
+                                envOr("DIY_SUBMIT_TEST_S3_SECRET_KEY", appProps.optionalTestS3SecretKey))
+                        .receiptsBucketPostfix(
+                                envOr("DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX", appProps.receiptsBucketPostfix))
+                        .lambdaEntry(appProps.lambdaEntry)
+                        .authUrlHmrcLambdaHandlerFunctionName(appProps.authUrlHmrcLambdaHandlerFunctionName)
+                        .authUrlHmrcLambdaUrlPath(appProps.authUrlLambdaUrlPath)
+                        .authUrlHmrcLambdaDurationMillis(appProps.authUrlHmrcLambdaDuration)
+                        .authUrlMockLambdaHandlerFunctionName(appProps.authUrlMockLambdaHandlerFunctionName)
+                        .authUrlMockLambdaUrlPath(appProps.authUrlMockLambdaUrlPath)
+                        .authUrlMockLambdaDurationMillis(appProps.authUrlMockLambdaDuration)
+                        .authUrlGoogleLambdaHandlerFunctionName(appProps.authUrlGoogleLambdaHandlerFunctionName)
+                        .authUrlGoogleLambdaUrlPath(appProps.authUrlGoogleLambdaUrlPath)
+                        .authUrlGoogleLambdaDurationMillis(appProps.authUrlGoogleLambdaDuration)
+                        .authUrlAntonyccLambdaHandlerFunctionName(appProps.authUrlAntonyccLambdaHandlerFunctionName)
+                        .authUrlAntonyccLambdaUrlPath(appProps.authUrlAntonyccLambdaUrlPath)
+                        .authUrlAntonyccLambdaDurationMillis(appProps.authUrlAntonyccLambdaDuration)
+                        .authUrlAcCogLambdaHandlerFunctionName(appProps.authUrlAcCogLambdaHandlerFunctionName)
+                        .authUrlAcCogLambdaUrlPath(appProps.authUrlAcCogLambdaUrlPath)
+                        .authUrlAcCogLambdaDurationMillis(appProps.authUrlAcCogLambdaDuration)
+                        .exchangeHmrcTokenLambdaHandlerFunctionName(appProps.exchangeHmrcTokenLambdaHandlerFunctionName)
+                        .exchangeHmrcTokenLambdaUrlPath(appProps.exchangeHmrcTokenLambdaUrlPath)
+                        .exchangeHmrcTokenLambdaDurationMillis(appProps.exchangeHmrcTokenLambdaDuration)
+                        .exchangeGoogleTokenLambdaHandlerFunctionName(
+                                appProps.exchangeGoogleTokenLambdaHandlerFunctionName)
+                        .exchangeGoogleTokenLambdaUrlPath(appProps.exchangeGoogleTokenLambdaUrlPath)
+                        .exchangeGoogleTokenLambdaDurationMillis(appProps.exchangeGoogleTokenLambdaDuration)
+                        .exchangeAntonyccTokenLambdaHandlerFunctionName(
+                                appProps.exchangeAntonyccTokenLambdaHandlerFunctionName)
+                        .exchangeAntonyccTokenLambdaUrlPath(appProps.exchangeAntonyccTokenLambdaUrlPath)
+                        .exchangeAntonyccTokenLambdaDurationMillis(appProps.exchangeAntonyccTokenLambdaDuration)
+                        .exchangeAcCogTokenLambdaHandlerFunctionName(
+                                appProps.exchangeAcCogTokenLambdaHandlerFunctionName)
+                        .exchangeAcCogTokenLambdaUrlPath(appProps.exchangeAcCogTokenLambdaUrlPath)
+                        .exchangeAcCogTokenLambdaDurationMillis(appProps.exchangeAcCogTokenLambdaDuration)
+                        .submitVatLambdaHandlerFunctionName(appProps.submitVatLambdaHandlerFunctionName)
+                        .submitVatLambdaUrlPath(appProps.submitVatLambdaUrlPath)
+                        .submitVatLambdaDurationMillis(appProps.submitVatLambdaDuration)
+                        .logReceiptLambdaHandlerFunctionName(appProps.logReceiptLambdaHandlerFunctionName)
+                        .logReceiptLambdaUrlPath(appProps.logReceiptLambdaUrlPath)
+                        .logReceiptLambdaDurationMillis(appProps.logReceiptLambdaDuration)
+                        .lambdaUrlAuthType(appProps.lambdaUrlAuthType)
+                        .commitHash(envOr("COMMIT_HASH", appProps.commitHash))
+                        .googleClientId(envOr("DIY_SUBMIT_GOOGLE_CLIENT_ID", appProps.googleClientId))
+                        .googleBaseUri(envOr("DIY_SUBMIT_GOOGLE_BASE_URI", appProps.googleBaseUri))
+                        .googleClientSecretArn(
+                                envOr("DIY_SUBMIT_GOOGLE_CLIENT_SECRET_ARN", appProps.googleClientSecretArn))
+                        .cognitoDomainPrefix(envOr("DIY_SUBMIT_COGNITO_DOMAIN_PREFIX", appProps.cognitoDomainPrefix))
+                        .bundleExpiryDate(appProps.bundleExpiryDate)
+                        .bundleUserLimit(appProps.bundleUserLimit)
+                        .bundleLambdaHandlerFunctionName(appProps.bundleLambdaHandlerFunctionName)
+                        .bundleLambdaUrlPath(appProps.bundleLambdaUrlPath)
+                        .bundleLambdaDurationMillis(appProps.bundleLambdaDuration)
+                        .catalogueLambdaHandlerFunctionName(appProps.catalogueLambdaHandlerFunctionName)
+                        .catalogueLambdaUrlPath(appProps.catalogueLambdaUrlPath)
+                        .catalogueLambdaDurationMillis(appProps.catalogueLambdaDuration)
+                        .baseImageTag(envOr("BASE_IMAGE_TAG", appProps.baseImageTag))
+                        .cognitoFeaturePlan(appProps.cognitoFeaturePlan)
+                        .cognitoEnableLogDelivery(appProps.cognitoEnableLogDelivery)
+                        .logCognitoEventHandlerSource(appProps.logCognitoEventHandlerSource)
+                        .myReceiptsLambdaHandlerFunctionName(appProps.myReceiptsLambdaHandlerFunctionName)
+                        .myReceiptsLambdaUrlPath(appProps.myReceiptsLambdaUrlPath)
+                        .myReceiptsLambdaDurationMillis(appProps.myReceiptsLambdaDuration)
+                        .antonyccClientId(envOr("DIY_SUBMIT_ANTONYCC_CLIENT_ID", appProps.antonyccClientId))
+                        .antonyccBaseUri(envOr("DIY_SUBMIT_ANTONYCC_BASE_URI", appProps.antonyccBaseUri))
+                        .acCogClientId(envOr("DIY_SUBMIT_AC_COG_CLIENT_ID", appProps.acCogClientId))
+                        .acCogBaseUri(envOr("DIY_SUBMIT_AC_COG_BASE_URI", appProps.acCogBaseUri))
+                        .build())
+                // .trail(observabilityStack.trail)
+                .build();
 
-    app.synth();
-  }
-
-  private static WebAppProps loadAppProps(WebApp.Builder builder, Construct scope) {
-    WebAppProps props = WebAppProps.Builder.create().build();
-    // populate from cdk.json context using exact camelCase keys
-    for (Field f : WebAppProps.class.getDeclaredFields()) {
-      if (f.getType() != String.class) continue;
-      try {
-        f.setAccessible(true);
-        String current = (String) f.get(props);
-        String fieldName = f.getName();
-        String ctx = builder.getContextValueString(scope, fieldName, current);
-        if (ctx != null) f.set(props, ctx);
-      } catch (Exception e) {
-        logger.warn("Failed to read context for {}: {}", f.getName(), e.getMessage());
-      }
-    }
-    // default env to dev if not set
-    if (props.env == null || props.env.isBlank()) props.env = "dev";
-    return props;
-  }
-
-  private static String envOr(String key, String fallback) {
-    String v = System.getenv(key);
-    return (v != null && !v.isBlank()) ? v : fallback;
-  }
-
-  public static class Builder {
-    public Construct scope;
-    public String id;
-    public StackProps props;
-
-    public Builder(Construct scope, String id, StackProps props) {
-      this.scope = scope;
-      this.id = id;
-      this.props = props;
+        app.synth();
     }
 
-    public static WebApp.Builder create(Construct scope, String id) {
-      return new WebApp.Builder(scope, id, null);
-    }
-
-    public static WebApp.Builder create(Construct scope, String id, StackProps props) {
-      return new WebApp.Builder(scope, id, props);
-    }
-
-    /*public void loadContextValuesUsingReflection(Construct scope) {
-        Field[] fields = this.getClass().getDeclaredFields();
-        for (Field field : fields) {
-            if (field.getType() == String.class
-                    && !field.getName().equals("scope")
-                    && !field.getName().equals("id")
-                    && !field.getName().equals("props")) {
-                try {
-                    field.setAccessible(true);
-
-                    // Skip if already set
-                    if (field.get(this) != null) {
-                        continue;
-                    }
-
-                    // Set from config
-                    String contextValue = getContextValueString(scope, field.getName());
-                    if (contextValue != null) {
-                        field.set(this, contextValue);
-                    }
-                } catch (IllegalAccessException e) {
-                    logger.warn(
-                            "Failed to set field {} using reflection: {}", field.getName(), e.getMessage());
-                }
+    private static WebAppProps loadAppProps(WebApp.Builder builder, Construct scope) {
+        WebAppProps props = WebAppProps.Builder.create().build();
+        // populate from cdk.json context using exact camelCase keys
+        for (Field f : WebAppProps.class.getDeclaredFields()) {
+            if (f.getType() != String.class) continue;
+            try {
+                f.setAccessible(true);
+                String current = (String) f.get(props);
+                String fieldName = f.getName();
+                String ctx = builder.getContextValueString(scope, fieldName, current);
+                if (ctx != null) f.set(props, ctx);
+            } catch (Exception e) {
+                logger.warn("Failed to read context for {}: {}", f.getName(), e.getMessage());
             }
         }
-    }*/
-
-    // public String getContextValueString(Construct scope, String contextKey) {
-    //    return getContextValueString(scope, contextKey, null);
-    // }
-
-    public String getContextValueString(Construct scope, String contextKey, String defaultValue) {
-      var contextValue = scope.getNode().tryGetContext(contextKey);
-      String defaultedValue;
-      String source;
-      if (contextValue != null && StringUtils.isNotBlank(contextValue.toString())) {
-        defaultedValue = contextValue.toString();
-        source = "CDK context";
-      } else {
-        defaultedValue = defaultValue;
-        source = "default value";
-      }
-      // try {
-      // Avoid creating CfnOutput at App scope; just log for visibility during synth
-      if (logger.isDebugEnabled()) {
-        logger.debug(
-            "Context {} resolved from {} with value: {}", contextKey, source, defaultedValue);
-      }
-      // }catch (Exception e) {
-      //    logger.warn("Failed to create CfnOutput for context key {}: {}", contextKey,
-      // e.getMessage());
-      // }
-      return defaultedValue;
+        // default env to dev if not set
+        if (props.env == null || props.env.isBlank()) props.env = "dev";
+        return props;
     }
-  }
+
+    private static String envOr(String key, String fallback) {
+        String v = System.getenv(key);
+        return (v != null && !v.isBlank()) ? v : fallback;
+    }
+
+    public static class Builder {
+        public Construct scope;
+        public String id;
+        public StackProps props;
+
+        public Builder(Construct scope, String id, StackProps props) {
+            this.scope = scope;
+            this.id = id;
+            this.props = props;
+        }
+
+        public static WebApp.Builder create(Construct scope, String id) {
+            return new WebApp.Builder(scope, id, null);
+        }
+
+        public static WebApp.Builder create(Construct scope, String id, StackProps props) {
+            return new WebApp.Builder(scope, id, props);
+        }
+
+        /*public void loadContextValuesUsingReflection(Construct scope) {
+            Field[] fields = this.getClass().getDeclaredFields();
+            for (Field field : fields) {
+                if (field.getType() == String.class
+                        && !field.getName().equals("scope")
+                        && !field.getName().equals("id")
+                        && !field.getName().equals("props")) {
+                    try {
+                        field.setAccessible(true);
+
+                        // Skip if already set
+                        if (field.get(this) != null) {
+                            continue;
+                        }
+
+                        // Set from config
+                        String contextValue = getContextValueString(scope, field.getName());
+                        if (contextValue != null) {
+                            field.set(this, contextValue);
+                        }
+                    } catch (IllegalAccessException e) {
+                        logger.warn(
+                                "Failed to set field {} using reflection: {}", field.getName(), e.getMessage());
+                    }
+                }
+            }
+        }*/
+
+        // public String getContextValueString(Construct scope, String contextKey) {
+        //    return getContextValueString(scope, contextKey, null);
+        // }
+
+        public String getContextValueString(Construct scope, String contextKey, String defaultValue) {
+            var contextValue = scope.getNode().tryGetContext(contextKey);
+            String defaultedValue;
+            String source;
+            if (contextValue != null && StringUtils.isNotBlank(contextValue.toString())) {
+                defaultedValue = contextValue.toString();
+                source = "CDK context";
+            } else {
+                defaultedValue = defaultValue;
+                source = "default value";
+            }
+            // try {
+            // Avoid creating CfnOutput at App scope; just log for visibility during synth
+            if (logger.isDebugEnabled()) {
+                logger.debug("Context {} resolved from {} with value: {}", contextKey, source, defaultedValue);
+            }
+            // }catch (Exception e) {
+            //    logger.warn("Failed to create CfnOutput for context key {}: {}", contextKey,
+            // e.getMessage());
+            // }
+            return defaultedValue;
+        }
+    }
 }
