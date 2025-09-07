@@ -28,11 +28,12 @@ public class WebApp {
 
     String envName = appProps.env;
 
-    String observabilityStackId = "SubmitObservabilityStack-%s".formatted(envName != null && !envName.isBlank() ? envName : "dev");
+    String observabilityStackEnv = envOr("ENV_NAME", appProps.env);
+    String observabilityStackId = "SubmitObservabilityStack-%s".formatted(observabilityStackEnv != null && !observabilityStackEnv.isBlank() ? observabilityStackEnv : "dev");
     ObservabilityStack observabilityStack =
         ObservabilityStack.Builder.create(app, observabilityStackId)
             .props(co.uk.diyaccounting.submit.stacks.ObservabilityStackProps.builder()
-                .env(appProps.env)
+                .env(observabilityStackEnv)
                 .hostedZoneName(appProps.hostedZoneName)
                 .subDomainName(appProps.subDomainName)
                 .cloudTrailEnabled(appProps.cloudTrailEnabled)
@@ -44,22 +45,24 @@ public class WebApp {
             .build();
 
       // Create DevStack with resources only used during development or deployment (e.g. ECR)
-    String devStackId = "SubmitDevStack-%s".formatted(envName != null && !envName.isBlank() ? envName : "dev");
+    String devStackEnv = envOr("ENV_NAME", appProps.env);
+    String devStackId = "SubmitDevStack-%s".formatted(devStackEnv != null && !devStackEnv.isBlank() ? devStackEnv : "dev");
     DevStack devStack =
         DevStack.Builder.create(app, devStackId)
             .props(co.uk.diyaccounting.submit.stacks.DevStackProps.builder()
-                .env(appProps.env)
+                .env(devStackEnv)
                 .hostedZoneName(appProps.hostedZoneName)
                 .subDomainName(appProps.subDomainName)
                 .build())
             .build();
 
     // Create the identity stack before any user aware services
-    String identityStackId = "SubmitIdentityStack-%s".formatted(envName != null && !envName.isBlank() ? envName : "dev");
+    String identityStackEnv = envOr("ENV_NAME", appProps.env);
+    String identityStackId = "SubmitIdentityStack-%s".formatted(identityStackEnv != null && !identityStackEnv.isBlank() ? identityStackEnv : "dev");
     IdentityStack identityStack =
         IdentityStack.Builder.create(app, identityStackId)
             .props(co.uk.diyaccounting.submit.stacks.IdentityStackProps.builder()
-                .env(envOr("ENV_NAME", appProps.env))
+                .env(identityStackEnv)
                 .hostedZoneName(appProps.hostedZoneName)
                 .hostedZoneId(appProps.hostedZoneId)
                 .subDomainName(appProps.subDomainName)
@@ -75,10 +78,11 @@ public class WebApp {
             .build();
 
     // Create the ApplicationStack
-    String applicationStackId = "SubmitApplicationStack-%s".formatted(envName != null && !envName.isBlank() ? envName : "dev");
+    String applicationStackEnv = envOr("ENV_NAME", appProps.env);
+    String applicationStackId = "SubmitApplicationStack-%s".formatted(applicationStackEnv != null && !applicationStackEnv.isBlank() ? applicationStackEnv : "dev");
     ApplicationStack applicationStack = ApplicationStack.Builder.create(app, applicationStackId)
             .props(co.uk.diyaccounting.submit.stacks.ApplicationStackProps.builder()
-                .env(envOr("ENV_NAME", appProps.env))
+                .env(applicationStackEnv)
                 .hostedZoneName(appProps.hostedZoneName)
                 .subDomainName(envOr("SUB_DOMAIN_NAME", appProps.subDomainName))
                 .cloudTrailEnabled(appProps.cloudTrailEnabled)
@@ -87,11 +91,12 @@ public class WebApp {
             .build();
 
     // Create WebStack with resources used in running the application
-    String webStackId = "SubmitWebStack-%s".formatted(envName != null && !envName.isBlank() ? envName : "dev");
+    String webStackEnv = envOr("ENV_NAME", appProps.env);
+    String webStackId = "SubmitWebStack-%s".formatted(webStackEnv != null && !webStackEnv.isBlank() ? webStackEnv : "dev");
     WebStack webStack =
         WebStack.Builder.create(app, webStackId)
             .props(co.uk.diyaccounting.submit.stacks.WebStackProps.builder()
-                .env(envOr("ENV_NAME", appProps.env))
+                .env(webStackEnv)
                 .hostedZoneName(appProps.hostedZoneName)
                 .hostedZoneId(appProps.hostedZoneId)
                 .subDomainName(appProps.subDomainName)
