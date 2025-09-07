@@ -408,6 +408,94 @@ public class WebStack extends Stack {
       return this;
     }
 
+    public Builder props(WebStackProps p) {
+      if (p == null) return this;
+      this.env = p.env;
+      this.hostedZoneName = p.hostedZoneName;
+      this.hostedZoneId = p.hostedZoneId;
+      this.subDomainName = p.subDomainName;
+      this.certificateArn = p.certificateArn;
+      this.userPoolArn = p.userPoolArn;
+      this.cloudTrailEnabled = p.cloudTrailEnabled;
+      this.xRayEnabled = p.xRayEnabled;
+      this.verboseLogging = p.verboseLogging;
+      this.cloudTrailLogGroupRetentionPeriodDays = p.cloudTrailLogGroupRetentionPeriodDays;
+      this.accessLogGroupRetentionPeriodDays = p.accessLogGroupRetentionPeriodDays;
+      this.s3UseExistingBucket = p.s3UseExistingBucket;
+      this.s3RetainOriginBucket = p.s3RetainOriginBucket;
+      this.s3RetainReceiptsBucket = p.s3RetainReceiptsBucket;
+      this.cloudTrailEventSelectorPrefix = p.cloudTrailEventSelectorPrefix;
+      this.logS3ObjectEventHandlerSource = p.logS3ObjectEventHandlerSource;
+      this.logGzippedS3ObjectEventHandlerSource = p.logGzippedS3ObjectEventHandlerSource;
+      this.docRootPath = p.docRootPath;
+      this.defaultDocumentAtOrigin = p.defaultDocumentAtOrigin;
+      this.error404NotFoundAtDistribution = p.error404NotFoundAtDistribution;
+      this.skipLambdaUrlOrigins = p.skipLambdaUrlOrigins;
+      this.hmrcClientId = p.hmrcClientId;
+      this.hmrcClientSecretArn = p.hmrcClientSecretArn;
+      this.homeUrl = p.homeUrl;
+      this.hmrcBaseUri = p.hmrcBaseUri;
+      this.optionalTestAccessToken = p.optionalTestAccessToken;
+      this.optionalTestS3Endpoint = p.optionalTestS3Endpoint;
+      this.optionalTestS3AccessKey = p.optionalTestS3AccessKey;
+      this.optionalTestS3SecretKey = p.optionalTestS3SecretKey;
+      this.receiptsBucketPostfix = p.receiptsBucketPostfix;
+      this.lambdaEntry = p.lambdaEntry;
+      this.authUrlHmrcLambdaHandlerFunctionName = p.authUrlHmrcLambdaHandlerFunctionName;
+      this.authUrlLambdaUrlPath = p.authUrlHmrcLambdaUrlPath;
+      this.authUrlHmrcLambdaDuration = p.authUrlHmrcLambdaDurationMillis;
+      this.authUrlMockLambdaHandlerFunctionName = p.authUrlMockLambdaHandlerFunctionName;
+      this.authUrlMockLambdaUrlPath = p.authUrlMockLambdaUrlPath;
+      this.authUrlMockLambdaDuration = p.authUrlMockLambdaDurationMillis;
+      this.authUrlGoogleLambdaHandlerFunctionName = p.authUrlGoogleLambdaHandlerFunctionName;
+      this.authUrlGoogleLambdaUrlPath = p.authUrlGoogleLambdaUrlPath;
+      this.authUrlGoogleLambdaDuration = p.authUrlGoogleLambdaDurationMillis;
+      this.authUrlAntonyccLambdaHandlerFunctionName = p.authUrlAntonyccLambdaHandlerFunctionName;
+      this.authUrlAntonyccLambdaUrlPath = p.authUrlAntonyccLambdaUrlPath;
+      this.authUrlAntonyccLambdaDuration = p.authUrlAntonyccLambdaDurationMillis;
+      this.authUrlAcCogLambdaHandlerFunctionName = p.authUrlAcCogLambdaHandlerFunctionName;
+      this.authUrlAcCogLambdaUrlPath = p.authUrlAcCogLambdaUrlPath;
+      this.authUrlAcCogLambdaDuration = p.authUrlAcCogLambdaDurationMillis;
+      this.exchangeHmrcTokenLambdaHandlerFunctionName = p.exchangeHmrcTokenLambdaHandlerFunctionName;
+      this.exchangeHmrcTokenLambdaUrlPath = p.exchangeHmrcTokenLambdaUrlPath;
+      this.exchangeHmrcTokenLambdaDuration = p.exchangeHmrcTokenLambdaDurationMillis;
+      this.exchangeGoogleTokenLambdaHandlerFunctionName = p.exchangeGoogleTokenLambdaHandlerFunctionName;
+      this.exchangeGoogleTokenLambdaUrlPath = p.exchangeGoogleTokenLambdaUrlPath;
+      this.exchangeGoogleTokenLambdaDuration = p.exchangeGoogleTokenLambdaDurationMillis;
+      this.exchangeAntonyccTokenLambdaHandlerFunctionName = p.exchangeAntonyccTokenLambdaHandlerFunctionName;
+      this.exchangeAntonyccTokenLambdaUrlPath = p.exchangeAntonyccTokenLambdaUrlPath;
+      this.exchangeAntonyccTokenLambdaDuration = p.exchangeAntonyccTokenLambdaDurationMillis;
+      this.submitVatLambdaHandlerFunctionName = p.submitVatLambdaHandlerFunctionName;
+      this.submitVatLambdaUrlPath = p.submitVatLambdaUrlPath;
+      this.submitVatLambdaDuration = p.submitVatLambdaDurationMillis;
+      this.logReceiptLambdaHandlerFunctionName = p.logReceiptLambdaHandlerFunctionName;
+      this.logReceiptLambdaUrlPath = p.logReceiptLambdaUrlPath;
+      this.logReceiptLambdaDuration = p.logReceiptLambdaDurationMillis;
+      this.lambdaUrlAuthType = p.lambdaUrlAuthType;
+      this.commitHash = p.commitHash;
+      this.googleClientId = p.googleClientId;
+      this.googleBaseUri = p.googleBaseUri;
+      this.googleClientSecretArn = p.googleClientSecretArn;
+      this.cognitoDomainPrefix = p.cognitoDomainPrefix;
+      this.bundleExpiryDate = p.bundleExpiryDate;
+      this.bundleUserLimit = p.bundleUserLimit;
+      this.bundleLambdaHandlerFunctionName = p.bundleLambdaHandlerFunctionName;
+      this.bundleLambdaUrlPath = p.bundleLambdaUrlPath;
+      this.bundleLambdaDuration = p.bundleLambdaDurationMillis;
+      this.baseImageTag = p.baseImageTag;
+      this.cognitoFeaturePlan = p.cognitoFeaturePlan;
+      this.cognitoEnableLogDelivery = p.cognitoEnableLogDelivery;
+      this.logCognitoEventHandlerSource = p.logCognitoEventHandlerSource;
+      this.myReceiptsLambdaHandlerFunctionName = p.myReceiptsLambdaHandlerFunctionName;
+      this.myReceiptsLambdaUrlPath = p.myReceiptsLambdaUrlPath;
+      this.myReceiptsLambdaDuration = p.myReceiptsLambdaDurationMillis;
+      this.antonyccClientId = p.antonyccClientId;
+      this.antonyccBaseUri = p.antonyccBaseUri;
+      this.acCogClientId = p.acCogClientId;
+      this.acCogBaseUri = p.acCogBaseUri;
+      return this;
+    }
+
     public Builder docRootPath(String docRootPath) {
       this.docRootPath = docRootPath;
       return this;
@@ -1664,5 +1752,76 @@ public class WebStack extends Stack {
             .deleteExisting(true)
             .target(RecordTarget.fromAlias(new CloudFrontTarget(this.distribution)))
             .build();
+
+    // Stack Outputs for Web resources
+    if (this.originBucket != null) {
+      CfnOutput.Builder.create(this, "OriginBucketArn").value(this.originBucket.getBucketArn()).build();
+    }
+    if (this.originAccessLogBucket != null) {
+      CfnOutput.Builder.create(this, "OriginAccessLogBucketArn").value(this.originAccessLogBucket.getBucketArn()).build();
+    }
+    if (this.distributionAccessLogBucket != null) {
+      CfnOutput.Builder.create(this, "DistributionAccessLogBucketArn").value(this.distributionAccessLogBucket.getBucketArn()).build();
+    }
+    if (this.distribution != null) {
+      CfnOutput.Builder.create(this, "DistributionId").value(this.distribution.getDistributionId()).build();
+    }
+    if (this.hostedZone != null) {
+      CfnOutput.Builder.create(this, "HostedZoneId").value(this.hostedZone.getHostedZoneId()).build();
+    }
+    if (this.certificate != null) {
+      CfnOutput.Builder.create(this, "CertificateArn").value(this.certificate.getCertificateArn()).build();
+    }
+    if (this.hmrcClientSecretsManagerSecret != null) {
+      CfnOutput.Builder.create(this, "HmrcClientSecretsManagerSecretArn").value(this.hmrcClientSecretsManagerSecret.getSecretArn()).build();
+    }
+    if (this.cognitoBaseUri != null) {
+      CfnOutput.Builder.create(this, "CognitoBaseUri").value(this.cognitoBaseUri).build();
+      CfnOutput.Builder.create(this, "CognitoGoogleIdpRedirectUri").value(this.cognitoBaseUri + "/oauth2/idpresponse").build();
+    }
+    if (this.aRecord != null) {
+      CfnOutput.Builder.create(this, "ARecord").value(this.aRecord.getDomainName()).build();
+    }
+    if (this.aaaaRecord != null) {
+      CfnOutput.Builder.create(this, "AaaaRecord").value(this.aaaaRecord.getDomainName()).build();
+    }
+
+    if (this.authUrlHmrcLambda != null) {
+      CfnOutput.Builder.create(this, "AuthUrlHmrcLambdaArn").value(this.authUrlHmrcLambda.getFunctionArn()).build();
+      CfnOutput.Builder.create(this, "AuthUrlHmrcLambdaUrl").value(this.authUrlHmrcLambdaUrl.getUrl()).build();
+    }
+    if (this.authUrlMockLambda != null) {
+      CfnOutput.Builder.create(this, "AuthUrlMockLambdaArn").value(this.authUrlMockLambda.getFunctionArn()).build();
+      CfnOutput.Builder.create(this, "AuthUrlMockLambdaUrl").value(this.authUrlMockLambdaUrl.getUrl()).build();
+    }
+    if (this.authUrlGoogleLambda != null) {
+      CfnOutput.Builder.create(this, "AuthUrlGoogleLambdaArn").value(this.authUrlGoogleLambda.getFunctionArn()).build();
+      CfnOutput.Builder.create(this, "AuthUrlGoogleLambdaUrl").value(this.authUrlGoogleLambdaUrl.getUrl()).build();
+    }
+    if (this.exchangeHmrcTokenLambda != null) {
+      CfnOutput.Builder.create(this, "ExchangeHmrcTokenLambdaArn").value(this.exchangeHmrcTokenLambda.getFunctionArn()).build();
+      CfnOutput.Builder.create(this, "ExchangeHmrcTokenLambdaUrl").value(this.exchangeHmrcTokenLambdaUrl.getUrl()).build();
+    }
+    if (this.exchangeGoogleTokenLambda != null) {
+      CfnOutput.Builder.create(this, "ExchangeGoogleTokenLambdaArn").value(this.exchangeGoogleTokenLambda.getFunctionArn()).build();
+      CfnOutput.Builder.create(this, "ExchangeGoogleTokenLambdaUrl").value(this.exchangeGoogleTokenLambdaUrl.getUrl()).build();
+    }
+    if (this.submitVatLambda != null) {
+      CfnOutput.Builder.create(this, "SubmitVatLambdaArn").value(this.submitVatLambda.getFunctionArn()).build();
+      CfnOutput.Builder.create(this, "SubmitVatLambdaUrl").value(this.submitVatLambdaUrl.getUrl()).build();
+    }
+    if (this.logReceiptLambda != null) {
+      CfnOutput.Builder.create(this, "LogReceiptLambdaArn").value(this.logReceiptLambda.getFunctionArn()).build();
+      CfnOutput.Builder.create(this, "LogReceiptLambdaUrl").value(this.logReceiptLambdaUrl.getUrl()).build();
+    }
+    if (this.bundleLambda != null) {
+      CfnOutput.Builder.create(this, "BundleLambdaArn").value(this.bundleLambda.getFunctionArn()).build();
+      CfnOutput.Builder.create(this, "BundleLambdaUrl").value(this.bundleLambdaUrl.getUrl()).build();
+    }
+    if (this.myReceiptsLambda != null) {
+      CfnOutput.Builder.create(this, "MyReceiptsLambdaArn").value(this.myReceiptsLambda.getFunctionArn()).build();
+      CfnOutput.Builder.create(this, "MyReceiptsLambdaUrl").value(this.myReceiptsLambdaUrl.getUrl()).build();
+    }
+
   }
 }

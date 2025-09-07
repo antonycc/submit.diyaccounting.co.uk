@@ -287,6 +287,33 @@ public class IdentityStack extends Stack {
       return this;
     }
 
+    public Builder props(IdentityStackProps p) {
+      if (p == null) return this;
+      this.env = p.env;
+      this.hostedZoneName = p.hostedZoneName;
+      this.hostedZoneId = p.hostedZoneId;
+      this.subDomainName = p.subDomainName;
+      this.authCertificateArn = p.authCertificateArn;
+      this.useExistingAuthCertificate = p.useExistingAuthCertificate;
+      this.accessLogGroupRetentionPeriodDays = p.accessLogGroupRetentionPeriodDays;
+      this.cloudTrailEnabled = p.cloudTrailEnabled;
+      this.cloudTrailEventSelectorPrefix = p.cloudTrailEventSelectorPrefix;
+      this.xRayEnabled = p.xRayEnabled;
+      this.verboseLogging = p.verboseLogging;
+      this.logCognitoEventHandlerSource = p.logCognitoEventHandlerSource;
+      this.homeUrl = p.homeUrl;
+      this.antonyccClientId = p.antonyccClientId;
+      this.antonyccBaseUri = p.antonyccBaseUri;
+      this.acCogClientId = p.acCogClientId;
+      this.acCogBaseUri = p.acCogBaseUri;
+      this.googleClientId = p.googleClientId;
+      this.googleClientSecretArn = p.googleClientSecretArn;
+      this.cognitoDomainPrefix = p.cognitoDomainPrefix;
+      this.cognitoFeaturePlan = p.cognitoFeaturePlan;
+      this.cognitoEnableLogDelivery = p.cognitoEnableLogDelivery;
+      return this;
+    }
+
     public IdentityStack build() {
       return new IdentityStack(this.scope, this.id, this.props, this);
     }
@@ -342,6 +369,10 @@ public class IdentityStack extends Stack {
 
   public static final List<AbstractMap.SimpleEntry<Pattern, String>> domainNameMappings = List.of();
 
+  public static class BuilderPropsAdapter {
+    // left intentionally empty
+  }
+
   public IdentityStack(Construct scope, String id, IdentityStack.Builder builder) {
     this(scope, id, null, builder);
   }
@@ -349,9 +380,7 @@ public class IdentityStack extends Stack {
   public IdentityStack(Construct scope, String id, StackProps props, IdentityStack.Builder builder) {
       super(scope, id, props);
 
-      // Load values from cdk.json here using reflection, then let the properties be overridden by the
-      // mutators
-      builder.loadContextValuesUsingReflection(this);
+      // Values are provided via WebApp after context/env resolution
 
       var hostedZone =
               HostedZone.fromHostedZoneAttributes(
@@ -525,6 +554,30 @@ public class IdentityStack extends Stack {
                       .target(RecordTarget.fromAlias(new UserPoolDomainTarget(this.userPoolDomain)))
                       .build();
       //this.userPoolDomainAaaaRecord.getNode().addDependency(this.aaaaRecord);
+
+      // Stack Outputs for Identity resources
+      if (this.userPool != null) {
+        CfnOutput.Builder.create(this, "UserPoolId").value(this.userPool.getUserPoolId()).build();
+        CfnOutput.Builder.create(this, "UserPoolArn").value(this.userPool.getUserPoolArn()).build();
+      }
+      if (this.userPoolClient != null) {
+        CfnOutput.Builder.create(this, "UserPoolClientId").value(this.userPoolClient.getUserPoolClientId()).build();
+      }
+      if (this.userPoolDomain != null) {
+        CfnOutput.Builder.create(this, "UserPoolDomainName").value(this.userPoolDomain.getDomainName()).build();
+      }
+      if (this.userPoolDomainARecord != null) {
+        CfnOutput.Builder.create(this, "UserPoolDomainARecord").value(this.userPoolDomainARecord.getDomainName()).build();
+      }
+      if (this.userPoolDomainAaaaRecord != null) {
+        CfnOutput.Builder.create(this, "UserPoolDomainAaaaRecord").value(this.userPoolDomainAaaaRecord.getDomainName()).build();
+      }
+      if (this.googleIdentityProvider != null) {
+        CfnOutput.Builder.create(this, "CognitoGoogleIdpId").value(this.googleIdentityProvider.getProviderName()).build();
+      }
+      if (this.acCogIdentityProvider != null) {
+        CfnOutput.Builder.create(this, "CognitoAntonyccIdpId").value(this.acCogIdentityProvider.getProviderName()).build();
+      }
 
   }
 }

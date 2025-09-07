@@ -27,8 +27,7 @@ public class ApplicationStack extends Stack {
   public ApplicationStack(Construct scope, String id, StackProps props, ApplicationStack.Builder builder) {
     super(scope, id, props);
 
-    // Load values from cdk.json context if needed
-    builder.loadContextValuesUsingReflection(this);
+    // Values are provided via WebApp after context/env resolution
 
     // Build naming using same patterns as WebStack
     String domainName = 
@@ -96,6 +95,15 @@ public class ApplicationStack extends Stack {
           return this;
       }
 
+      public Builder props(ApplicationStackProps p){
+        if (p==null) return this;
+        this.env = p.env;
+        this.subDomainName = p.subDomainName;
+        this.hostedZoneName = p.hostedZoneName;
+        this.cloudTrailEnabled = p.cloudTrailEnabled;
+        this.xRayEnabled = p.xRayEnabled;
+        return this;
+      }
 
     public ApplicationStack build() {
       return new ApplicationStack(this.scope, this.id, this.props, this);

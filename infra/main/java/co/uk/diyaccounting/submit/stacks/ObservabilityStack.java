@@ -39,8 +39,7 @@ public class ObservabilityStack extends Stack {
   public ObservabilityStack(Construct scope, String id, StackProps props, ObservabilityStack.Builder builder) {
     super(scope, id, props);
 
-    // Load values from cdk.json context if needed
-    builder.loadContextValuesUsingReflection(this);
+    // Values are provided via WebApp after context/env resolution
 
     // Build naming using same patterns as WebStack
     String domainName = 
@@ -87,6 +86,14 @@ public class ObservabilityStack extends Stack {
                           .includeGlobalServiceEvents(false)
                           .isMultiRegionTrail(false)
                           .build();
+
+          // Outputs for Observability resources
+          if (this.trailBucket != null) {
+            CfnOutput.Builder.create(this, "TrailBucketArn").value(this.trailBucket.getBucketArn()).build();
+          }
+          if (this.trail != null) {
+            CfnOutput.Builder.create(this, "TrailArn").value(this.trail.getTrailArn()).build();
+          }
       }
 
     logger.info("ObservabilityStack created successfully for {}", dashedDomainName);
@@ -165,6 +172,18 @@ public class ObservabilityStack extends Stack {
           return this;
       }
 
+      public Builder props(ObservabilityStackProps p) {
+          if (p == null) return this;
+          this.env = p.env;
+          this.subDomainName = p.subDomainName;
+          this.hostedZoneName = p.hostedZoneName;
+          this.cloudTrailEnabled = p.cloudTrailEnabled;
+          this.cloudTrailLogGroupPrefix = p.cloudTrailLogGroupPrefix;
+          this.cloudTrailLogGroupRetentionPeriodDays = p.cloudTrailLogGroupRetentionPeriodDays;
+          this.accessLogGroupRetentionPeriodDays = p.accessLogGroupRetentionPeriodDays;
+          this.xRayEnabled = p.xRayEnabled;
+          return this;
+      }
 
     public ObservabilityStack build() {
       return new ObservabilityStack(this.scope, this.id, this.props, this);

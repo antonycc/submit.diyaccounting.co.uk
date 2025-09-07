@@ -46,8 +46,7 @@ public class DevStack extends Stack {
   public DevStack(Construct scope, String id, StackProps props, DevStack.Builder builder) {
     super(scope, id, props);
 
-    // Load values from cdk.json context if needed
-    builder.loadContextValuesUsingReflection(this);
+    // Values are provided via WebApp after context/env resolution
 
     // Build naming using same patterns as WebStack
     String domainName = 
@@ -203,6 +202,15 @@ public class DevStack extends Stack {
 
     public Builder retainEcrRepository(String retainEcrRepository) {
       this.retainEcrRepository = Boolean.parseBoolean(retainEcrRepository);
+      return this;
+    }
+
+    public Builder props(DevStackProps p){
+      if (p==null) return this;
+      this.env = p.env;
+      this.subDomainName = p.subDomainName;
+      this.hostedZoneName = p.hostedZoneName;
+      this.retainEcrRepository = Boolean.parseBoolean(p.retainEcrRepository);
       return this;
     }
 
