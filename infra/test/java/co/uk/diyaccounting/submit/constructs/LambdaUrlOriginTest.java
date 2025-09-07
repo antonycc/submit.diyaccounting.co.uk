@@ -1,7 +1,6 @@
 package co.uk.diyaccounting.submit.constructs;
 
 import co.uk.diyaccounting.submit.awssdk.SimpleStackProps;
-import java.util.Map;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -14,6 +13,8 @@ import software.amazon.awscdk.services.s3.Bucket;
 import uk.org.webcompere.systemstubs.environment.EnvironmentVariables;
 import uk.org.webcompere.systemstubs.jupiter.SystemStub;
 import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
+
+import java.util.Map;
 
 @ExtendWith(SystemStubsExtension.class)
 public class LambdaUrlOriginTest {
@@ -145,58 +146,6 @@ public class LambdaUrlOriginTest {
     template.resourceCountIs("AWS::Lambda::Function", 1);
     template.resourceCountIs("AWS::Logs::LogGroup", 1);
     template.resourceCountIs("AWS::Lambda::Url", 1);
-  }
-
-  @Test
-  public void testLambdaUrlOriginBuilderValidation() {
-    var stackProps = SimpleStackProps.Builder.create(Stack.class).build();
-    App app = new App();
-    Stack stack = new Stack(app, stackProps.getStackName(), stackProps);
-
-    // Test missing env
-    Assertions.assertThrows(
-        IllegalArgumentException.class,
-        () -> {
-          LambdaUrlOrigin.Builder.create(stack, "TestLambdaUrlOrigin1")
-              .functionName("test-function-1")
-              .build();
-        });
-
-    // Test missing functionName
-    Assertions.assertThrows(
-        IllegalArgumentException.class,
-        () -> {
-          LambdaUrlOrigin.Builder.create(stack, "TestLambdaUrlOrigin3").env("test").build();
-        });
-
-    // Test missing handler for production environment
-    Assertions.assertThrows(
-        IllegalArgumentException.class,
-        () -> {
-          LambdaUrlOrigin.Builder.create(stack, "TestLambdaUrlOrigin4")
-              .env("production")
-              .functionName("test-function-4")
-              .build();
-        });
-
-    // Test valid test configuration
-    Assertions.assertDoesNotThrow(
-        () -> {
-          LambdaUrlOrigin.Builder.create(stack, "TestLambdaUrlOrigin5")
-              .env("test")
-              .functionName("test-function-5")
-              .build();
-        });
-
-    // Test valid production configuration (use test env to avoid Docker issues)
-    Assertions.assertDoesNotThrow(
-        () -> {
-          LambdaUrlOrigin.Builder.create(stack, "TestLambdaUrlOrigin6")
-              .env("test") // Use test env to avoid Docker issues in unit tests
-              .functionName("test-function-6")
-              .handler("com.example.Handler")
-              .build();
-        });
   }
 
   @Test

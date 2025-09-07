@@ -5,13 +5,14 @@ import co.uk.diyaccounting.submit.stacks.DevStack;
 import co.uk.diyaccounting.submit.stacks.IdentityStack;
 import co.uk.diyaccounting.submit.stacks.ObservabilityStack;
 import co.uk.diyaccounting.submit.stacks.WebStack;
-import java.lang.reflect.Field;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import software.amazon.awscdk.App;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
+
+import java.lang.reflect.Field;
 
 public class WebApp {
 
@@ -199,6 +200,11 @@ public class WebApp {
                     .exchangeAntonyccTokenLambdaUrlPath(appProps.exchangeAntonyccTokenLambdaUrlPath)
                     .exchangeAntonyccTokenLambdaDurationMillis(
                         appProps.exchangeAntonyccTokenLambdaDuration)
+                    .exchangeAcCogTokenLambdaHandlerFunctionName(
+                            appProps.exchangeAcCogTokenLambdaHandlerFunctionName)
+                    .exchangeAcCogTokenLambdaUrlPath(appProps.exchangeAcCogTokenLambdaUrlPath)
+                    .exchangeAcCogTokenLambdaDurationMillis(
+                            appProps.exchangeAcCogTokenLambdaDuration)
                     .submitVatLambdaHandlerFunctionName(appProps.submitVatLambdaHandlerFunctionName)
                     .submitVatLambdaUrlPath(appProps.submitVatLambdaUrlPath)
                     .submitVatLambdaDurationMillis(appProps.submitVatLambdaDuration)
@@ -220,6 +226,9 @@ public class WebApp {
                     .bundleLambdaHandlerFunctionName(appProps.bundleLambdaHandlerFunctionName)
                     .bundleLambdaUrlPath(appProps.bundleLambdaUrlPath)
                     .bundleLambdaDurationMillis(appProps.bundleLambdaDuration)
+                    .catalogueLambdaHandlerFunctionName(appProps.catalogueLambdaHandlerFunctionName)
+                    .catalogueLambdaUrlPath(appProps.catalogueLambdaUrlPath)
+                    .catalogueLambdaDurationMillis(appProps.catalogueLambdaDuration)
                     .baseImageTag(envOr("BASE_IMAGE_TAG", appProps.baseImageTag))
                     .cognitoFeaturePlan(appProps.cognitoFeaturePlan)
                     .cognitoEnableLogDelivery(appProps.cognitoEnableLogDelivery)

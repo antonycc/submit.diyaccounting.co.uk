@@ -1,8 +1,5 @@
 package co.uk.diyaccounting.submit.constructs;
 
-import java.util.List;
-import java.util.Map;
-import java.util.regex.Pattern;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import software.amazon.awscdk.Duration;
@@ -20,7 +17,6 @@ import software.amazon.awscdk.services.cloudfront.ResponseHeadersPolicy;
 import software.amazon.awscdk.services.cloudfront.ViewerProtocolPolicy;
 import software.amazon.awscdk.services.cloudfront.origins.HttpOrigin;
 import software.amazon.awscdk.services.lambda.AssetImageCodeProps;
-import software.amazon.awscdk.services.lambda.Code;
 import software.amazon.awscdk.services.lambda.DockerImageCode;
 import software.amazon.awscdk.services.lambda.DockerImageFunction;
 import software.amazon.awscdk.services.lambda.Function;
@@ -34,6 +30,10 @@ import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.LogGroupProps;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.constructs.Construct;
+
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Pattern;
 
 public class LambdaUrlOrigin {
 
@@ -91,22 +91,22 @@ public class LambdaUrlOrigin {
   }
 
   private Function createLambda(Builder builder) {
-    if ("test".equals(builder.env)) {
-      var functionBuilder =
-          Function.Builder.create(builder.scope, builder.idPrefix + "Lambda")
-              .code(
-                  Code.fromInline(
-                      "exports.handler = async (event) => { return { statusCode: 200, body: 'test'"
-                          + " }; }"))
-              .handler("index.handler")
-              .runtime(builder.testRuntime)
-              .functionName(builder.functionName)
-              .timeout(builder.timeout);
-      if (builder.xRayEnabled) {
-        functionBuilder.tracing(Tracing.ACTIVE);
-      }
-      return functionBuilder.build();
-    } else {
+    //if ("test".equals(builder.env)) {
+    //  var functionBuilder =
+    //      Function.Builder.create(builder.scope, builder.idPrefix + "Fn")
+    //          .code(
+    //              Code.fromInline(
+    //                  "exports.handler = async (event) => { return { statusCode: 200, body: 'test'"
+    //                      + " }; }"))
+    //          .handler("index.handler")
+    //          .runtime(builder.testRuntime)
+    //          .functionName(builder.functionName)
+    //          .timeout(builder.timeout);
+    //  if (builder.xRayEnabled) {
+    //    functionBuilder.tracing(Tracing.ACTIVE);
+    //  }
+    //  return functionBuilder.build();
+    //} else {
       // Prepare build arguments
       var buildArgs = new java.util.HashMap<String, String>();
       buildArgs.put("BUILDKIT_INLINE_CACHE", "1");
@@ -131,7 +131,7 @@ public class LambdaUrlOrigin {
       }
 
       var dockerFunctionBuilder =
-          DockerImageFunction.Builder.create(builder.scope, builder.idPrefix + "Lambda")
+          DockerImageFunction.Builder.create(builder.scope, builder.idPrefix + "Fn")
               .code(dockerImage)
               .environment(environment)
               .functionName(builder.functionName)
@@ -140,7 +140,7 @@ public class LambdaUrlOrigin {
         dockerFunctionBuilder.tracing(Tracing.ACTIVE);
       }
       return dockerFunctionBuilder.build();
-    }
+    //}
   }
 
   private String getLambdaUrlHostToken(FunctionUrl functionUrl) {

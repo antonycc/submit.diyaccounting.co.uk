@@ -56,6 +56,9 @@ public class WebStackProps {
   public final String exchangeAntonyccTokenLambdaHandlerFunctionName;
   public final String exchangeAntonyccTokenLambdaUrlPath;
   public final String exchangeAntonyccTokenLambdaDurationMillis;
+  public final String exchangeAcCogTokenLambdaHandlerFunctionName;
+  public final String exchangeAcCogTokenLambdaUrlPath;
+  public final String exchangeAcCogTokenLambdaDurationMillis;
   public final String submitVatLambdaHandlerFunctionName;
   public final String submitVatLambdaUrlPath;
   public final String submitVatLambdaDurationMillis;
@@ -73,6 +76,9 @@ public class WebStackProps {
   public final String bundleLambdaHandlerFunctionName;
   public final String bundleLambdaUrlPath;
   public final String bundleLambdaDurationMillis;
+  public final String catalogueLambdaHandlerFunctionName;
+  public final String catalogueLambdaUrlPath;
+  public final String catalogueLambdaDurationMillis;
   public final String baseImageTag;
   public final String cognitoFeaturePlan;
   public final String cognitoEnableLogDelivery;
@@ -143,6 +149,10 @@ public class WebStackProps {
         b.exchangeAntonyccTokenLambdaHandlerFunctionName;
     this.exchangeAntonyccTokenLambdaUrlPath = b.exchangeAntonyccTokenLambdaUrlPath;
     this.exchangeAntonyccTokenLambdaDurationMillis = b.exchangeAntonyccTokenLambdaDurationMillis;
+    this.exchangeAcCogTokenLambdaHandlerFunctionName =
+              b.exchangeAcCogTokenLambdaHandlerFunctionName;
+    this.exchangeAcCogTokenLambdaUrlPath = b.exchangeAcCogTokenLambdaUrlPath;
+    this.exchangeAcCogTokenLambdaDurationMillis = b.exchangeAcCogTokenLambdaDurationMillis;
     this.submitVatLambdaHandlerFunctionName = b.submitVatLambdaHandlerFunctionName;
     this.submitVatLambdaUrlPath = b.submitVatLambdaUrlPath;
     this.submitVatLambdaDurationMillis = b.submitVatLambdaDurationMillis;
@@ -160,6 +170,9 @@ public class WebStackProps {
     this.bundleLambdaHandlerFunctionName = b.bundleLambdaHandlerFunctionName;
     this.bundleLambdaUrlPath = b.bundleLambdaUrlPath;
     this.bundleLambdaDurationMillis = b.bundleLambdaDurationMillis;
+    this.catalogueLambdaHandlerFunctionName = b.catalogueLambdaHandlerFunctionName;
+    this.catalogueLambdaUrlPath = b.catalogueLambdaUrlPath;
+    this.catalogueLambdaDurationMillis = b.catalogueLambdaDurationMillis;
     this.baseImageTag = b.baseImageTag;
     this.cognitoFeaturePlan = b.cognitoFeaturePlan;
     this.cognitoEnableLogDelivery = b.cognitoEnableLogDelivery;
@@ -233,6 +246,9 @@ public class WebStackProps {
         exchangeAntonyccTokenLambdaHandlerFunctionName,
         exchangeAntonyccTokenLambdaUrlPath,
         exchangeAntonyccTokenLambdaDurationMillis,
+        exchangeAcCogTokenLambdaHandlerFunctionName,
+        exchangeAcCogTokenLambdaUrlPath,
+        exchangeAcCogTokenLambdaDurationMillis,
         submitVatLambdaHandlerFunctionName,
         submitVatLambdaUrlPath,
         submitVatLambdaDurationMillis,
@@ -250,6 +266,9 @@ public class WebStackProps {
         bundleLambdaHandlerFunctionName,
         bundleLambdaUrlPath,
         bundleLambdaDurationMillis,
+        catalogueLambdaHandlerFunctionName,
+        catalogueLambdaUrlPath,
+        catalogueLambdaDurationMillis,
         baseImageTag,
         cognitoFeaturePlan,
         cognitoEnableLogDelivery,
@@ -537,7 +556,22 @@ public class WebStackProps {
       return this;
     }
 
-    public Builder submitVatLambdaHandlerFunctionName(String v) {
+      public Builder exchangeAcCogTokenLambdaHandlerFunctionName(String v) {
+          this.exchangeAcCogTokenLambdaHandlerFunctionName = v;
+          return this;
+      }
+
+      public Builder exchangeAcCogTokenLambdaUrlPath(String v) {
+          this.exchangeAcCogTokenLambdaUrlPath = v;
+          return this;
+      }
+
+      public Builder exchangeAcCogTokenLambdaDurationMillis(String v) {
+          this.exchangeAcCogTokenLambdaDurationMillis = v;
+          return this;
+      }
+
+      public Builder submitVatLambdaHandlerFunctionName(String v) {
       this.submitVatLambdaHandlerFunctionName = v;
       return this;
     }
@@ -622,7 +656,22 @@ public class WebStackProps {
       return this;
     }
 
-    public Builder baseImageTag(String v) {
+      public Builder catalogueLambdaHandlerFunctionName(String v) {
+          this.catalogueLambdaHandlerFunctionName = v;
+          return this;
+      }
+
+      public Builder catalogueLambdaUrlPath(String v) {
+          this.catalogueLambdaUrlPath = v;
+          return this;
+      }
+
+      public Builder catalogueLambdaDurationMillis(String v) {
+          this.catalogueLambdaDurationMillis = v;
+          return this;
+      }
+
+      public Builder baseImageTag(String v) {
       this.baseImageTag = v;
       return this;
     }

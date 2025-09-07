@@ -8,11 +8,6 @@ import co.uk.diyaccounting.submit.constructs.LambdaUrlOriginOpts;
 import co.uk.diyaccounting.submit.constructs.LogForwardingBucket;
 import co.uk.diyaccounting.submit.functions.LogS3ObjectEvent;
 import co.uk.diyaccounting.submit.utils.ResourceNameUtils;
-import java.util.AbstractMap;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.regex.Pattern;
 import org.apache.hc.core5.http.HttpStatus;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -61,6 +56,12 @@ import software.amazon.awscdk.services.secretsmanager.ISecret;
 import software.amazon.awscdk.services.secretsmanager.Secret;
 import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
+
+import java.util.AbstractMap;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Pattern;
 
 public class WebStack extends Stack {
 
@@ -1051,7 +1052,7 @@ public class WebStack extends Stack {
                 "DIY_SUBMIT_HMRC_BASE_URI", builder.hmrcBaseUri,
                 "DIY_SUBMIT_HMRC_CLIENT_ID", builder.hmrcClientId));
     var authUrlHmrcLambdaUrlOrigin =
-        LambdaUrlOrigin.Builder.create(this, "AuthUrlHmrcLambda")
+        LambdaUrlOrigin.Builder.create(this, "AuthUrlHmrc")
             .imageFilename("authUrlHmrc.Dockerfile")
             .functionName(
                 Builder.buildFunctionName(
@@ -1071,7 +1072,7 @@ public class WebStack extends Stack {
     // authUrl - mock
     var authUrlMockLambdaEnv = new HashMap<>(Map.of("DIY_SUBMIT_HOME_URL", builder.homeUrl));
     var authUrlMockLambdaUrlOrigin =
-        LambdaUrlOrigin.Builder.create(this, "AuthUrlMockLambda")
+        LambdaUrlOrigin.Builder.create(this, "AuthUrlMock")
             .options(lambdaCommonOpts)
             .imageFilename("authUrlMock.Dockerfile")
             .functionName(
@@ -1103,7 +1104,7 @@ public class WebStack extends Stack {
       authUrlGoogleLambdaEnv.put("DIY_SUBMIT_GOOGLE_CLIENT_ID", builder.googleClientId);
     }
     var authUrlGoogleLambdaUrlOrigin =
-        LambdaUrlOrigin.Builder.create(this, "AuthUrlGoogleLambda")
+        LambdaUrlOrigin.Builder.create(this, "AuthUrlGoogle")
             .options(lambdaCommonOpts)
             .imageFilename("authUrlGoogle.Dockerfile")
             .functionName(
@@ -1129,7 +1130,7 @@ public class WebStack extends Stack {
       authUrlAntonyccLambdaEnv.put("DIY_SUBMIT_ANTONYCC_CLIENT_ID", builder.antonyccClientId);
     }
     var authUrlAntonyccLambdaUrlOrigin =
-        LambdaUrlOrigin.Builder.create(this, "AuthUrlAntonyccLambda")
+        LambdaUrlOrigin.Builder.create(this, "AuthUrlAntonycc")
             .options(lambdaCommonOpts)
             .imageFilename("authUrlAntonycc.Dockerfile")
             .functionName(
@@ -1157,7 +1158,7 @@ public class WebStack extends Stack {
                 "DIY_SUBMIT_AC_COG_BASE_URI",
                 builder.acCogBaseUri));
     var authUrlAcCogLambdaUrlOrigin =
-        LambdaUrlOrigin.Builder.create(this, "AuthUrlAcCogLambda")
+        LambdaUrlOrigin.Builder.create(this, "AuthUrlAcCog")
             .options(lambdaCommonOpts)
             .imageFilename("authUrlAcCog.Dockerfile")
             .functionName(
@@ -1197,7 +1198,7 @@ public class WebStack extends Stack {
           "DIY_SUBMIT_TEST_ACCESS_TOKEN", builder.optionalTestAccessToken);
     }
     var exchangeHmrcTokenLambdaUrlOrigin =
-        LambdaUrlOrigin.Builder.create(this, "ExchangeHmrcTokenLambda")
+        LambdaUrlOrigin.Builder.create(this, "ExchangeHmrcToken")
             .options(lambdaCommonOpts)
             .imageFilename("exchangeHmrcToken.Dockerfile")
             .functionName(
@@ -1237,7 +1238,7 @@ public class WebStack extends Stack {
           "DIY_SUBMIT_TEST_ACCESS_TOKEN", builder.optionalTestAccessToken);
     }
     var exchangeGoogleTokenLambdaUrlOrigin =
-        LambdaUrlOrigin.Builder.create(this, "ExchangeGoogleTokenLambda")
+        LambdaUrlOrigin.Builder.create(this, "ExchangeGoogleToken")
             .options(lambdaCommonOpts)
             .imageFilename("exchangeGoogleToken.Dockerfile")
             .functionName(
@@ -1281,7 +1282,7 @@ public class WebStack extends Stack {
           "DIY_SUBMIT_TEST_ACCESS_TOKEN", builder.optionalTestAccessToken);
     }
     var exchangeAntonyccTokenLambdaUrlOrigin =
-        LambdaUrlOrigin.Builder.create(this, "ExchangeAntonyccTokenLambda")
+        LambdaUrlOrigin.Builder.create(this, "ExchangeAntonyccToken")
             .options(lambdaCommonOpts)
             .imageFilename("exchangeAntonyccToken.Dockerfile")
             .functionName(
@@ -1327,7 +1328,7 @@ public class WebStack extends Stack {
           "DIY_SUBMIT_TEST_ACCESS_TOKEN", builder.optionalTestAccessToken);
     }
     var exchangeAcCogTokenLambdaUrlOrigin =
-        LambdaUrlOrigin.Builder.create(this, "ExchangeAcCogTokenLambda")
+        LambdaUrlOrigin.Builder.create(this, "ExchangeAcCogToken")
             .options(lambdaCommonOpts)
             .imageFilename("exchangeAcCogToken.Dockerfile")
             .functionName(
@@ -1360,7 +1361,7 @@ public class WebStack extends Stack {
                 "DIY_SUBMIT_HOME_URL", builder.homeUrl,
                 "DIY_SUBMIT_HMRC_BASE_URI", builder.hmrcBaseUri));
     var submitVatLambdaUrlOrigin =
-        LambdaUrlOrigin.Builder.create(this, "SubmitVatLambda")
+        LambdaUrlOrigin.Builder.create(this, "SubmitVat")
             .options(lambdaCommonOpts)
             .imageFilename("submitVat.Dockerfile")
             .functionName(
@@ -1395,7 +1396,7 @@ public class WebStack extends Stack {
       logReceiptLambdaEnv.putAll(logReceiptLambdaTestEnv);
     }
     var logReceiptLambdaUrlOrigin =
-        LambdaUrlOrigin.Builder.create(this, "LogReceiptLambda")
+        LambdaUrlOrigin.Builder.create(this, "LogReceipt")
             .options(lambdaCommonOpts)
             .imageFilename("logReceipt.Dockerfile")
             .functionName(
@@ -1465,7 +1466,7 @@ public class WebStack extends Stack {
     // if (StringUtils.isNotBlank(builder.catalogLambdaHandlerFunctionName)) {
     var catalogLambdaEnv = new HashMap<>(Map.of("DIY_SUBMIT_HOME_URL", builder.homeUrl));
     var catalogLambdaUrlOrigin =
-        LambdaUrlOrigin.Builder.create(this, "CatalogLambda")
+        LambdaUrlOrigin.Builder.create(this, "Catalog")
             .options(lambdaCommonOpts)
             .imageFilename("getCatalog.Dockerfile")
             .functionName(
@@ -1492,7 +1493,7 @@ public class WebStack extends Stack {
     // if (StringUtils.isNotBlank(builder.myBundlesLambdaHandlerFunctionName)) {
     var myBundlesLambdaEnv = new HashMap<>(Map.of("DIY_SUBMIT_HOME_URL", builder.homeUrl));
     var myBundlesLambdaUrlOrigin =
-        LambdaUrlOrigin.Builder.create(this, "MyBundlesLambda")
+        LambdaUrlOrigin.Builder.create(this, "MyBundles")
             .options(lambdaCommonOpts)
             .imageFilename("myBundles.Dockerfile")
             .functionName(
@@ -1523,7 +1524,7 @@ public class WebStack extends Stack {
                 "DIY_SUBMIT_HOME_URL", builder.homeUrl,
                 "DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX", builder.receiptsBucketPostfix));
     var myReceiptsLambdaUrlOrigin =
-        LambdaUrlOrigin.Builder.create(this, "MyReceiptsLambda")
+        LambdaUrlOrigin.Builder.create(this, "MyReceipts")
             .options(lambdaCommonOpts)
             .imageFilename("myReceipts.Dockerfile")
             .functionName(

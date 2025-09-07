@@ -61,6 +61,9 @@ public class WebAppProps {
   public String exchangeAntonyccTokenLambdaUrlPath;
   public String exchangeAntonyccTokenLambdaHandlerFunctionName;
   public String exchangeAntonyccTokenLambdaDuration;
+  public String exchangeAcCogTokenLambdaUrlPath;
+  public String exchangeAcCogTokenLambdaHandlerFunctionName;
+  public String exchangeAcCogTokenLambdaDuration;
   public String submitVatLambdaUrlPath;
   public String submitVatLambdaHandlerFunctionName;
   public String submitVatLambdaDuration;
@@ -77,6 +80,9 @@ public class WebAppProps {
   public String bundleLambdaUrlPath;
   public String bundleLambdaHandlerFunctionName;
   public String bundleLambdaDuration;
+  public String catalogueLambdaUrlPath;
+  public String catalogueLambdaHandlerFunctionName;
+  public String catalogueLambdaDuration;
   public String bundleExpiryDate;
   public String bundleUserLimit;
   public String baseImageTag;
