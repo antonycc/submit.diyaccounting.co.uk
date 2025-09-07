@@ -180,7 +180,7 @@ public class WebApp {
                 .acCogClientId(envOr("DIY_SUBMIT_AC_COG_CLIENT_ID", appProps.acCogClientId))
                 .acCogBaseUri(envOr("DIY_SUBMIT_AC_COG_BASE_URI", appProps.acCogBaseUri))
                 .build())
-            .trail(observabilityStack.trail)
+            //.trail(observabilityStack.trail)
             .build();
 
     app.synth();

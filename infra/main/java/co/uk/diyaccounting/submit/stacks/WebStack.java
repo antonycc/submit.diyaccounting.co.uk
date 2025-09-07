@@ -28,8 +28,6 @@ import software.amazon.awscdk.services.cloudfront.OriginAccessIdentity;
 import software.amazon.awscdk.services.cloudfront.OriginRequestPolicy;
 import software.amazon.awscdk.services.cloudfront.ResponseHeadersPolicy;
 import software.amazon.awscdk.services.cloudfront.ViewerProtocolPolicy;
-import software.amazon.awscdk.services.cloudtrail.S3EventSelector;
-import software.amazon.awscdk.services.cloudtrail.Trail;
 import software.amazon.awscdk.services.cognito.IUserPool;
 import software.amazon.awscdk.services.cognito.UserPool;
 import software.amazon.awscdk.services.iam.Effect;
@@ -249,7 +247,7 @@ public class WebStack extends Stack {
     public String myReceiptsLambdaHandlerFunctionName;
     public String myReceiptsLambdaUrlPath;
     public String myReceiptsLambdaDuration;
-    public Trail trail;
+    //public Trail trail;
 
     public Builder(Construct scope, String id, StackProps props) {
       this.scope = scope;
@@ -842,10 +840,10 @@ public class WebStack extends Stack {
       return this;
     }
 
-      public Builder trail(Trail trail) {
-          this.trail = trail;
-          return this;
-      }
+     //public Builder trail(Trail trail) {
+     //     this.trail = trail;
+     //     return this;
+     // }
 
       // TODO: Split into Development(<Dev), Observability, Identity, Application, and Web (also fronting Application). See:
     // _developers/backlog/diverse-versions-at-origin.md
@@ -1011,25 +1009,24 @@ public class WebStack extends Stack {
 
     // Add cloud trail to the origin bucket if enabled
     // CloudTrail for the origin bucket
-    if (builder.trail != null && cloudTrailEnabled) {
-      // Add S3 event selector to the CloudTrail
-      if (builder.cloudTrailEventSelectorPrefix == null
-          || builder.cloudTrailEventSelectorPrefix.isBlank()
-          || "none".equals(builder.cloudTrailEventSelectorPrefix)) {
-        builder.trail.addS3EventSelector(
-            List.of(S3EventSelector.builder().bucket(this.originBucket).build()));
-      } else {
-        builder.trail.addS3EventSelector(
-            List.of(
-                S3EventSelector.builder()
-                    .bucket(this.originBucket)
-                    .objectPrefix(builder.cloudTrailEventSelectorPrefix)
-                    .build()));
-      }
-    } else {
-      logger.info("CloudTrail is not enabled for the origin bucket.");
-    }
-
+    //if (builder.trail != null && cloudTrailEnabled) {
+    //  // Add S3 event selector to the CloudTrail
+    //  if (builder.cloudTrailEventSelectorPrefix == null
+    //      || builder.cloudTrailEventSelectorPrefix.isBlank()
+    //      || "none".equals(builder.cloudTrailEventSelectorPrefix)) {
+    //    builder.trail.addS3EventSelector(
+    //        List.of(S3EventSelector.builder().bucket(this.originBucket).build()));
+    //  } else {
+    //    builder.trail.addS3EventSelector(
+    //        List.of(
+    //            S3EventSelector.builder()
+    //                .bucket(this.originBucket)
+    //                .objectPrefix(builder.cloudTrailEventSelectorPrefix)
+    //                .build()));
+    //  }
+    //} else {
+    //  logger.info("CloudTrail is not enabled for the origin bucket.");
+    //}
 
     IUserPool userPool = UserPool.fromUserPoolArn(this, "UserPool", builder.userPoolArn);
 
@@ -1565,23 +1562,23 @@ public class WebStack extends Stack {
 
     // Add S3 event selector to the CloudTrail for receipts bucket
     // TODO Move to the LogForwardingBucket
-    if (builder.trail != null && cloudTrailEnabled) {
-      if (builder.cloudTrailEventSelectorPrefix == null
-          || builder.cloudTrailEventSelectorPrefix.isBlank()
-          || "none".equals(builder.cloudTrailEventSelectorPrefix)) {
-          builder.trail.addS3EventSelector(
-            List.of(S3EventSelector.builder().bucket(this.receiptsBucket).build()));
-      } else {
-          builder.trail.addS3EventSelector(
-            List.of(
-                S3EventSelector.builder()
-                    .bucket(this.receiptsBucket)
-                    .objectPrefix(builder.cloudTrailEventSelectorPrefix)
-                    .build()));
-      }
-    } else {
-      logger.info("CloudTrail is not enabled for the bucket.");
-    }
+    //if (builder.trail != null && cloudTrailEnabled) {
+    //  if (builder.cloudTrailEventSelectorPrefix == null
+    //      || builder.cloudTrailEventSelectorPrefix.isBlank()
+    //      || "none".equals(builder.cloudTrailEventSelectorPrefix)) {
+    //      builder.trail.addS3EventSelector(
+    //        List.of(S3EventSelector.builder().bucket(this.receiptsBucket).build()));
+    //  } else {
+    //      builder.trail.addS3EventSelector(
+    //        List.of(
+    //            S3EventSelector.builder()
+    //                .bucket(this.receiptsBucket)
+    //                .objectPrefix(builder.cloudTrailEventSelectorPrefix)
+    //                .build()));
+    //  }
+    //} else {
+    //  logger.info("CloudTrail is not enabled for the bucket.");
+    //}
 
     // Create a certificate for the website domain
     this.certificate = Certificate.fromCertificateArn(this, "Certificate", builder.certificateArn);
