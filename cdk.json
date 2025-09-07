@@ -37,6 +37,7 @@
     "hmrcClientId": "",
     "hmrcClientSecretArn": "to be replaced with lookup of environment variable DIY_SUBMIT_HMRC_CLIENT_SECRET_ARN",
     "googleClientId": "",
+    "googleBaseUri": "https://accounts.google.com/o/oauth2/v2/auth",
     "googleClientSecretArn": "to be replaced with lookup of environment variable DIY_SUBMIT_GOOGLE_CLIENT_SECRET_ARN",
     "myReceiptsLambdaDuration": "30000",
     "antonyccClientId": "submit-diyaccounting-co-uk",

@@ -46,6 +46,7 @@ public class IdentityStackTest {
         .hostedZoneName("submit.diyaccounting.co.uk")
         .hostedZoneId("ZTEST123456789")
         .subDomainName("submit")
+        .authCertificateArn("arn:aws:acm:eu-west-2:000000000000:certificate/test")
         .accessLogGroupRetentionPeriodDays("30")
         .cloudTrailEnabled("false")
         .cloudTrailEventSelectorPrefix("none")

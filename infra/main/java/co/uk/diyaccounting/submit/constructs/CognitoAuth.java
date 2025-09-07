@@ -5,28 +5,22 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.SecretValue;
-import software.amazon.awscdk.services.cognito.AttributeMapping;
 import software.amazon.awscdk.services.cognito.CfnLogDeliveryConfiguration;
 import software.amazon.awscdk.services.cognito.CfnUserPool;
-import software.amazon.awscdk.services.cognito.CfnUserPoolIdentityProvider;
 import software.amazon.awscdk.services.cognito.OAuthFlows;
 import software.amazon.awscdk.services.cognito.OAuthScope;
 import software.amazon.awscdk.services.cognito.OAuthSettings;
-import software.amazon.awscdk.services.cognito.ProviderAttribute;
-import software.amazon.awscdk.services.cognito.SignInAliases;
 import software.amazon.awscdk.services.cognito.StandardAttributes;
-import software.amazon.awscdk.services.cognito.StringAttribute;
 import software.amazon.awscdk.services.cognito.UserPool;
 import software.amazon.awscdk.services.cognito.UserPoolClient;
 import software.amazon.awscdk.services.cognito.UserPoolClientIdentityProvider;
-import software.amazon.awscdk.services.cognito.UserPoolIdentityProviderGoogle;
 import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.constructs.Construct;
+import software.constructs.IDependable;
 
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Thin coordinator for Cognito resources, created at WebStack scope to preserve logical IDs.
@@ -42,72 +36,24 @@ public class CognitoAuth {
 
   private static final Logger logger = LogManager.getLogger(CognitoAuth.class);
 
-  public final UserPool userPool;
-  public final UserPoolIdentityProviderGoogle googleIdentityProvider;
-  public final CfnUserPoolIdentityProvider acCogIdentityProvider;
   public final UserPoolClient userPoolClient;
-  public final List<UserPoolClientIdentityProvider> identityProviders = new ArrayList<>();
 
   private CognitoAuth(Builder b) {
-    UserPool up =
-        UserPool.Builder.create(b.scope, "UserPool")
-            .userPoolName(b.userPoolName)
-            .selfSignUpEnabled(true)
-            .signInAliases(SignInAliases.builder().email(true).build())
-            .standardAttributes(b.standardAttributes)
-            .customAttributes(
-                Map.of(
-                    "bundles", StringAttribute.Builder.create().maxLen(2048).mutable(true).build()))
-            .removalPolicy(RemovalPolicy.DESTROY)
-            .build();
-    this.userPool = up;
+
+    var userPool = UserPool.fromUserPoolArn(b.scope, "UserPoolInCognitoStack", b.userPoolArn);
 
     // Enable advanced security via L1 CfnUserPool AddOns (AUDIT/ENFORCED)
-    var cfnUserPool = (CfnUserPool) up.getNode().getDefaultChild();
+    var cfnUserPool = (CfnUserPool) userPool.getNode().getDefaultChild();
     if (cfnUserPool != null && b.featurePlan != null && b.featurePlan.equalsIgnoreCase("PLUS")) {
       String asm = b.featurePlan.equalsIgnoreCase("PLUS") ? "ENFORCED" : "AUDIT";
       cfnUserPool.setUserPoolAddOns(
           CfnUserPool.UserPoolAddOnsProperty.builder().advancedSecurityMode(asm).build());
     }
 
-    // Google IdP
-    this.googleIdentityProvider = UserPoolIdentityProviderGoogle.Builder.create(b.scope, "GoogleIdentityProvider")
-              .userPool(up)
-              .clientId(b.googleClientId)
-              .clientSecretValue(b.googleClientSecretValue)
-              .scopes(List.of("email", "openid", "profile"))
-              .attributeMapping(
-                  AttributeMapping.builder()
-                      .email(ProviderAttribute.GOOGLE_EMAIL)
-                      .givenName(ProviderAttribute.GOOGLE_GIVEN_NAME)
-                      .familyName(ProviderAttribute.GOOGLE_FAMILY_NAME)
-                      .build())
-              .build();
-        this.identityProviders.add(UserPoolClientIdentityProvider.GOOGLE);
-
-    // Antonycc OIDC via Cognito IdP (using L1 construct to avoid clientSecret requirement)
-    this.acCogIdentityProvider = CfnUserPoolIdentityProvider.Builder.create(b.scope, "AcCogIdentityProvider")
-          .providerName("ac-cog")
-          .providerType("OIDC")
-          .userPoolId(up.getUserPoolId())
-          .providerDetails(Map.of(
-              "client_id", b.acCogClientId,
-              "issuer", b.acCogIssuerUrl,
-              "authorize_scopes", "email openid profile"
-              // No client_secret provided
-          ))
-          .attributeMapping(Map.of(
-              "email", "email",
-              "given_name", "given_name",
-              "family_name", "family_name"
-          ))
-          .build();
-      this.identityProviders.add(UserPoolClientIdentityProvider.custom("ac-cog"));
-
     // User Pool Client
-    UserPoolClient client =
+    this.userPoolClient =
         UserPoolClient.Builder.create(b.scope, "UserPoolClient")
-            .userPool(up)
+            .userPool(userPool)
             .userPoolClientName(b.userPoolClientName)
             .generateSecret(false)
             .oAuth(
@@ -117,11 +63,9 @@ public class CognitoAuth {
                     .callbackUrls(b.callbackUrls)
                     .logoutUrls(b.logoutUrls)
                     .build())
-            .supportedIdentityProviders(this.identityProviders)
+            .supportedIdentityProviders(b.identityProviders.keySet().stream().toList())
             .build();
-    client.getNode().addDependency(this.googleIdentityProvider);
-    client.getNode().addDependency(this.acCogIdentityProvider);
-    this.userPoolClient = client;
+    b.identityProviders.values().forEach(idp -> this.userPoolClient.getNode().addDependency(idp));
 
     // Configure log delivery to CloudWatch if enabled
     if (b.enableLogDelivery) {
@@ -160,16 +104,16 @@ public class CognitoAuth {
                   .build());
       var delivery =
           CfnLogDeliveryConfiguration.Builder.create(b.scope, "UserPoolLogDelivery")
-              .userPoolId(up.getUserPoolId())
+              .userPoolId(userPool.getUserPoolId())
               .logConfigurations(logConfigs)
               .build();
-      delivery.getNode().addDependency(up);
+      delivery.getNode().addDependency(userPool);
     }
   }
 
   public static class Builder {
     private final Construct scope;
-    private String userPoolName;
+    private String userPoolArn;
     private String userPoolClientName;
     private StandardAttributes standardAttributes;
     private String googleClientId;
@@ -182,6 +126,14 @@ public class CognitoAuth {
     private String acCogIssuerUrl;
     private List<String> callbackUrls;
     private List<String> logoutUrls;
+      public String env;
+      public String hostedZoneName;
+      public String hostedZoneId;
+      public String subDomainName;
+      public String certificateArn;
+      public String authCertificateArn;
+      public String cognitoDomainPrefix;
+      public HashMap<UserPoolClientIdentityProvider, IDependable> identityProviders;
 
     // New optional settings
     private String featurePlan; // PLUS or ESSENTIALS (default ESSENTIALS)
@@ -199,8 +151,13 @@ public class CognitoAuth {
       return new Builder(scope);
     }
 
-    public Builder userPoolName(String name) {
-      this.userPoolName = name;
+    public Builder identityProviders(HashMap<UserPoolClientIdentityProvider, IDependable> identityProviders) {
+      this.identityProviders = identityProviders;
+      return this;
+  }
+
+    public Builder userPoolArn(String name) {
+      this.userPoolArn = name;
       return this;
     }
 
@@ -264,7 +221,36 @@ public class CognitoAuth {
       return this;
     }
 
-    // New builder methods
+      public Builder env(String env) {
+          this.env = env;
+          return this;
+      }
+
+      public Builder hostedZoneName(String hostedZoneName) {
+          this.hostedZoneName = hostedZoneName;
+          return this;
+      }
+
+      public Builder hostedZoneId(String hostedZoneId) {
+          this.hostedZoneId = hostedZoneId;
+          return this;
+      }
+
+      public Builder subDomainName(String subDomainName) {
+          this.subDomainName = subDomainName;
+          return this;
+      }
+
+      public Builder certificateArn(String certificateArn) {
+          this.certificateArn = certificateArn;
+          return this;
+      }
+
+      public Builder cognitoDomainPrefix(String cognitoDomainPrefix) {
+          this.cognitoDomainPrefix = cognitoDomainPrefix;
+          return this;
+      }
+
     public Builder featurePlan(String plan) {
       this.featurePlan = plan;
       return this;
@@ -296,7 +282,7 @@ public class CognitoAuth {
     }
 
     public CognitoAuth build() {
-      if (userPoolName == null || userPoolName.isBlank())
+      if (userPoolArn == null || userPoolArn.isBlank())
         throw new IllegalArgumentException("userPoolName is required");
       if (userPoolClientName == null || userPoolClientName.isBlank())
         throw new IllegalArgumentException("userPoolClientName is required");

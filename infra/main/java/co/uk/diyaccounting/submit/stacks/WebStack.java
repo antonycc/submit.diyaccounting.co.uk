@@ -19,7 +19,6 @@ import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.services.certificatemanager.Certificate;
-import software.amazon.awscdk.services.certificatemanager.CertificateValidation;
 import software.amazon.awscdk.services.certificatemanager.ICertificate;
 import software.amazon.awscdk.services.cloudfront.AllowedMethods;
 import software.amazon.awscdk.services.cloudfront.BehaviorOptions;
@@ -33,7 +32,6 @@ import software.amazon.awscdk.services.cloudtrail.S3EventSelector;
 import software.amazon.awscdk.services.cloudtrail.Trail;
 import software.amazon.awscdk.services.cognito.IUserPool;
 import software.amazon.awscdk.services.cognito.UserPool;
-import software.amazon.awscdk.services.cognito.UserPoolDomain;
 import software.amazon.awscdk.services.iam.Effect;
 import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.iam.ServicePrincipal;
@@ -50,7 +48,6 @@ import software.amazon.awscdk.services.route53.HostedZoneAttributes;
 import software.amazon.awscdk.services.route53.IHostedZone;
 import software.amazon.awscdk.services.route53.RecordTarget;
 import software.amazon.awscdk.services.route53.targets.CloudFrontTarget;
-import software.amazon.awscdk.services.route53.targets.UserPoolDomainTarget;
 import software.amazon.awscdk.services.s3.BlockPublicAccess;
 import software.amazon.awscdk.services.s3.Bucket;
 import software.amazon.awscdk.services.s3.BucketEncryption;
@@ -86,7 +83,6 @@ public class WebStack extends Stack {
   public BucketDeployment deployment;
   public IHostedZone hostedZone;
   public ICertificate certificate;
-  public ICertificate authCertificate;
   public ISecret hmrcClientSecretsManagerSecret;
   //public ISecret googleClientSecretsManagerSecret;
   //public ISecret antonyccClientSecretsManagerSecret;
@@ -134,11 +130,6 @@ public class WebStack extends Stack {
   public FunctionUrl logReceiptLambdaUrl;
   public LogGroup logReceiptLambdaLogGroup;
 
-  // Cognito resources
-  public ARecord userPoolDomainARecord;
-  public AaaaRecord userPoolDomainAaaaRecord;
-  public UserPoolDomain userPoolDomain;
-
   // Cognito URIs
   public String cognitoBaseUri;
 
@@ -172,11 +163,7 @@ public class WebStack extends Stack {
     public String hostedZoneName;
     public String hostedZoneId;
     public String subDomainName;
-    public String useExistingHostedZone;
     public String certificateArn;
-    public String useExistingCertificate;
-    public String authCertificateArn;
-    public String useExistingAuthCertificate;
     public String cloudTrailEnabled;
     public String cloudTrailLogGroupPrefix;
     public String cloudTrailLogGroupRetentionPeriodDays;
@@ -248,6 +235,7 @@ public class WebStack extends Stack {
 
     // Cognito and Bundle Management properties
     public String googleClientId;
+    public String googleBaseUri;
     public String googleClientSecretArn;
     public String cognitoDomainPrefix;
     public String userPoolArn;
@@ -360,28 +348,8 @@ public class WebStack extends Stack {
       return this;
     }
 
-    public Builder useExistingHostedZone(String useExistingHostedZone) {
-      this.useExistingHostedZone = useExistingHostedZone;
-      return this;
-    }
-
     public Builder certificateArn(String certificateArn) {
       this.certificateArn = certificateArn;
-      return this;
-    }
-
-    public Builder useExistingCertificate(String useExistingCertificate) {
-      this.useExistingCertificate = useExistingCertificate;
-      return this;
-    }
-
-    public Builder authCertificateArn(String authCertificateArn) {
-      this.authCertificateArn = authCertificateArn;
-      return this;
-    }
-
-    public Builder useExistingAuthCertificate(String useExistingAuthCertificate) {
-      this.useExistingAuthCertificate = useExistingAuthCertificate;
       return this;
     }
 
@@ -742,6 +710,11 @@ public class WebStack extends Stack {
       return this;
     }
 
+    public Builder googleBaseUri(String googleBaseUri) {
+      this.googleBaseUri = googleBaseUri;
+      return this;
+    }
+
     public Builder googleClientId(String googleClientId) {
       this.googleClientId = googleClientId;
       return this;
@@ -893,33 +866,6 @@ public class WebStack extends Stack {
       return "%s-dist-access-logs".formatted(dashedDomainName);
     }
 
-    public static String buildCognitoDomainName(
-        String env, String cognitoDomainPrefix, String subDomainName, String hostedZoneName) {
-      return env.equals("prod")
-          ? Builder.buildProdCognitoDomainName(cognitoDomainPrefix, subDomainName, hostedZoneName)
-          : Builder.buildNonProdCognitoDomainName(
-              env, cognitoDomainPrefix, subDomainName, hostedZoneName);
-    }
-
-    public static String buildProdCognitoDomainName(
-        String cognitoDomainPrefix, String subDomainName, String hostedZoneName) {
-      return "%s.%s.%s".formatted(cognitoDomainPrefix, subDomainName, hostedZoneName);
-    }
-
-    public static String buildNonProdCognitoDomainName(
-        String env, String cognitoDomainPrefix, String subDomainName, String hostedZoneName) {
-      return "%s.%s.%s.%s".formatted(env, cognitoDomainPrefix, subDomainName, hostedZoneName);
-    }
-
-    public static String buildDashedCognitoDomainName(String cognitoDomainName) {
-      return ResourceNameUtils.convertDotSeparatedToDashSeparated(
-          cognitoDomainName, domainNameMappings);
-    }
-
-    public static String buildCognitoBaseUri(String cognitoDomain) {
-      return "https://%s".formatted(cognitoDomain);
-    }
-
     private static String buildFunctionName(String dashedDomainName, String functionName) {
       return "%s-%s"
           .formatted(
@@ -944,21 +890,14 @@ public class WebStack extends Stack {
     // mutators
     builder.loadContextValuesUsingReflection(this);
 
-    boolean useExistingHostedZone = Boolean.parseBoolean(builder.useExistingHostedZone);
-    if (useExistingHostedZone) {
-      String hostedZoneId = builder.hostedZoneId;
-      this.hostedZone =
+    this.hostedZone =
           HostedZone.fromHostedZoneAttributes(
               this,
               "HostedZone",
               HostedZoneAttributes.builder()
                   .zoneName(builder.hostedZoneName)
-                  .hostedZoneId(hostedZoneId)
+                  .hostedZoneId(builder.hostedZoneId)
                   .build());
-    } else {
-      this.hostedZone =
-          HostedZone.Builder.create(this, "HostedZone").zoneName(builder.hostedZoneName).build();
-    }
 
     this.domainName =
         Builder.buildDomainName(builder.env, builder.subDomainName, builder.hostedZoneName);
@@ -976,26 +915,12 @@ public class WebStack extends Stack {
         Integer.parseInt(builder.cloudTrailLogGroupRetentionPeriodDays);
     boolean xRayEnabled = Boolean.parseBoolean(builder.xRayEnabled);
 
-    boolean useExistingCertificate = Boolean.parseBoolean(builder.useExistingCertificate);
-
-    boolean useExistingAuthCertificate = Boolean.parseBoolean(builder.useExistingAuthCertificate);
-
     int accessLogGroupRetentionPeriodDays =
         Integer.parseInt(builder.accessLogGroupRetentionPeriodDays);
     String originAccessLogBucketName = Builder.buildOriginAccessLogBucketName(dashedDomainName);
 
     String distributionAccessLogBucketName =
         Builder.buildDistributionAccessLogBucketName(dashedDomainName);
-
-    var cognitoDomainName =
-        Builder.buildCognitoDomainName(
-            builder.env,
-            builder.cognitoDomainPrefix != null ? builder.cognitoDomainPrefix : "auth",
-            builder.subDomainName,
-            builder.hostedZoneName);
-    var dashedCognitoDomainName = Builder.buildDashedCognitoDomainName(cognitoDomainName);
-    var cognitoBaseUri = Builder.buildCognitoBaseUri(cognitoDomainName);
-    this.cognitoBaseUri = cognitoBaseUri;
 
     boolean verboseLogging = builder.verboseLogging == null || Boolean.parseBoolean(builder.verboseLogging);
 
@@ -1185,7 +1110,7 @@ public class WebStack extends Stack {
                 "DIY_SUBMIT_COGNITO_CLIENT_ID",
                 builder.googleClientId,
                 "DIY_SUBMIT_COGNITO_BASE_URI",
-                cognitoBaseUri));
+                builder.googleBaseUri));
     // Provide Google client ID for direct-Google fallback when Cognito is not configured
     if (StringUtils.isNotBlank(builder.googleClientId)) {
       authUrlGoogleLambdaEnv.put("DIY_SUBMIT_GOOGLE_CLIENT_ID", builder.googleClientId);
@@ -1248,7 +1173,7 @@ public class WebStack extends Stack {
                               "DIY_SUBMIT_AC_COG_CLIENT_ID",
                                 builder.acCogClientId,
                               "DIY_SUBMIT_AC_COG_BASE_URI",
-                              cognitoBaseUri));
+                              builder.acCogBaseUri));
       var authUrlAcCogLambdaUrlOrigin =
               LambdaUrlOrigin.Builder.create(this, "AuthUrlAcCogLambda")
                       .options(lambdaCommonOpts)
@@ -1315,7 +1240,7 @@ public class WebStack extends Stack {
         new HashMap<>(
             Map.of(
                 "DIY_SUBMIT_HOME_URL", builder.homeUrl,
-                "DIY_SUBMIT_COGNITO_BASE_URI", cognitoBaseUri,
+                "DIY_SUBMIT_COGNITO_BASE_URI", builder.googleBaseUri,
                     "DIY_SUBMIT_COGNITO_CLIENT_ID", builder.googleClientId,
                 "DIY_SUBMIT_GOOGLE_CLIENT_SECRET_ARN", builder.googleClientSecretArn));
     // Provide Google client ID for direct-Google fallback when Cognito is not configured
@@ -1678,18 +1603,7 @@ public class WebStack extends Stack {
     }
 
     // Create a certificate for the website domain
-    if (useExistingCertificate) {
-      this.certificate =
-          Certificate.fromCertificateArn(this, "Certificate", builder.certificateArn);
-    } else {
-      this.certificate =
-          Certificate.Builder.create(this, "Certificate")
-              .domainName(this.domainName)
-              .certificateName(builder.certificateArn)
-              .validation(CertificateValidation.fromDns(this.hostedZone))
-              .transparencyLoggingEnabled(true)
-              .build();
-    }
+    this.certificate = Certificate.fromCertificateArn(this, "Certificate", builder.certificateArn);
 
     // Create the CloudFront distribution using a helper to preserve IDs and reduce inline noise
     var distWithLogging =
@@ -1795,52 +1709,5 @@ public class WebStack extends Stack {
             .deleteExisting(true)
             .target(RecordTarget.fromAlias(new CloudFrontTarget(this.distribution)))
             .build();
-
-    // Create a certificate for Cognito
-    if (useExistingAuthCertificate) {
-      this.authCertificate =
-          Certificate.fromCertificateArn(this, "AuthCertificate", builder.authCertificateArn);
-    } else {
-      this.authCertificate =
-          Certificate.Builder.create(this, "AuthCertificate")
-              .domainName(cognitoDomainName)
-              .certificateName(builder.authCertificateArn)
-              .validation(CertificateValidation.fromDns(this.hostedZone))
-              .transparencyLoggingEnabled(true)
-              .build();
-    }
-
-    // Create Cognito User Pool Domain
-      this.userPoolDomain =
-          UserPoolDomain.Builder.create(this, "UserPoolDomain")
-              .userPool(userPool)
-              .customDomain(
-                  software.amazon.awscdk.services.cognito.CustomDomainOptions.builder()
-                      .domainName(cognitoDomainName)
-                      .certificate(this.authCertificate)
-                      .build())
-              .build();
-      this.userPoolDomain.getNode().addDependency(this.aRecord);
-      this.userPoolDomain.getNode().addDependency(this.aaaaRecord);
-
-      // Create Route53 records for the Cognito UserPoolDomain
-      this.userPoolDomainARecord =
-          ARecord.Builder.create(
-                  this, "UserPoolDomainARecord-%s".formatted(dashedCognitoDomainName))
-              .zone(this.hostedZone)
-              .recordName(cognitoDomainName)
-              .deleteExisting(true)
-              .target(RecordTarget.fromAlias(new UserPoolDomainTarget(this.userPoolDomain)))
-              .build();
-      this.userPoolDomainARecord.getNode().addDependency(this.aRecord);
-      this.userPoolDomainAaaaRecord =
-          AaaaRecord.Builder.create(
-                  this, "UserPoolDomainAaaaRecord-%s".formatted(dashedCognitoDomainName))
-              .zone(this.hostedZone)
-              .recordName(cognitoDomainName)
-              .deleteExisting(true)
-              .target(RecordTarget.fromAlias(new UserPoolDomainTarget(this.userPoolDomain)))
-              .build();
-      this.userPoolDomainAaaaRecord.getNode().addDependency(this.aaaaRecord);
   }
 }

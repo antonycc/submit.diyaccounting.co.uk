@@ -27,6 +27,7 @@ public class WebApp {
     IdentityStack identityStack =
         IdentityStack.Builder.create(app, identityStackId)
             .env(System.getenv("ENV_NAME"))
+            .authCertificateArn(System.getenv("AUTH_CERTIFICATE_ARN"))
             .cognitoFeaturePlan(System.getenv("DIY_SUBMIT_COGNITO_FEATURE_PLAN"))
             .cognitoEnableLogDelivery(System.getenv("DIY_SUBMIT_ENABLE_LOG_DELIVERY"))
             .logCognitoEventHandlerSource(System.getenv("LOG_COGNITO_EVENT_HANDLER_SOURCE"))
@@ -49,12 +50,8 @@ public class WebApp {
             .hostedZoneName(System.getenv("HOSTED_ZONE_NAME"))
             .hostedZoneId(System.getenv("HOSTED_ZONE_ID"))
             .subDomainName(System.getenv("SUB_DOMAIN_NAME"))
-            .useExistingHostedZone(System.getenv("USE_EXISTING_HOSTED_ZONE"))
             .certificateArn(System.getenv("CERTIFICATE_ARN"))
-            .useExistingCertificate(System.getenv("USE_EXISTING_CERTIFICATE"))
-            .authCertificateArn(System.getenv("AUTH_CERTIFICATE_ARN"))
             .userPoolArn(identityStack.userPool.getUserPoolArn())
-            .useExistingAuthCertificate(System.getenv("USE_EXISTING_AUTH_CERTIFICATE"))
             .cloudTrailEnabled(System.getenv("CLOUD_TRAIL_ENABLED"))
             .xRayEnabled(System.getenv("X_RAY_ENABLED"))
             .verboseLogging(System.getenv("VERBOSE_LOGGING"))
@@ -133,6 +130,7 @@ public class WebApp {
             .commitHash(System.getenv("COMMIT_HASH"))
             // Cognito and Bundle Management configuration
             .googleClientId(System.getenv("DIY_SUBMIT_GOOGLE_CLIENT_ID"))
+            .googleBaseUri(System.getenv("DIY_SUBMIT_GOOGLE_BASE_URI"))
             .googleClientSecretArn(System.getenv("DIY_SUBMIT_GOOGLE_CLIENT_SECRET_ARN"))
             .cognitoDomainPrefix(System.getenv("DIY_SUBMIT_COGNITO_DOMAIN_PREFIX"))
             .bundleExpiryDate(System.getenv("DIY_SUBMIT_BUNDLE_EXPIRY_DATE"))
@@ -295,15 +293,15 @@ public class WebApp {
           .build();
 
       CfnOutput.Builder.create(identityStack, "UserPoolDomainName")
-          .value(webStack.userPoolDomain.getDomainName())
+          .value(identityStack.userPoolDomain.getDomainName())
           .build();
 
       CfnOutput.Builder.create(identityStack, "UserPoolDomainARecord")
-          .value(webStack.userPoolDomainARecord.getDomainName())
+          .value(identityStack.userPoolDomainARecord.getDomainName())
           .build();
 
       CfnOutput.Builder.create(webStack, "UserPoolDomainAaaaRecord")
-          .value(webStack.userPoolDomainAaaaRecord.getDomainName())
+          .value(identityStack.userPoolDomainAaaaRecord.getDomainName())
           .build();
       // Conditionally show identity providers
         if (identityStack.googleIdentityProvider != null) {

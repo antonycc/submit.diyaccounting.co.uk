@@ -44,9 +44,7 @@ public class WebStackTest {
         .hostedZoneName("test.submit.diyaccounting.co.uk")
         .hostedZoneId("test")
         .subDomainName("test")
-        .useExistingHostedZone("false")
-        .certificateArn("test")
-        .useExistingCertificate("false")
+        .certificateArn("arn:aws:acm:us-east-1:000000000000:certificate/test")
         .cloudTrailEnabled("true")
         .cloudTrailLogGroupPrefix("/aws/s3/")
         .cloudTrailLogGroupRetentionPeriodDays("3")
@@ -105,6 +103,7 @@ public class WebStackTest {
         .myBundlesLambdaDurationMillis("30000")
         // Provide Google configuration to avoid nulls in Map.of and Secrets during tests
         .googleClientId("test-google-client-id")
+        .googleBaseUri("https://test")
         .googleClientSecretArn(
             "arn:aws:secretsmanager:eu-west-2:000000000000:secret:diy/test/submit/google/client_secret")
         .antonyccClientId("test-antonycc-client-id")
