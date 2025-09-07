@@ -16,10 +16,8 @@ import software.amazon.awscdk.services.s3.BlockPublicAccess;
 import software.amazon.awscdk.services.s3.Bucket;
 import software.amazon.awscdk.services.s3.BucketEncryption;
 import software.amazon.awscdk.services.s3.LifecycleRule;
-import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
 
-import java.text.MessageFormat;
 import java.util.AbstractMap;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -209,39 +207,6 @@ public class ObservabilityStack extends Stack {
         String env, String subDomainName, String hostedZoneName) {
       return ResourceNameUtils.convertDotSeparatedToDashSeparated(
           "%s.%s.%s".formatted(env, subDomainName, hostedZoneName), domainNameMappings);
-    }
-
-    /**
-     * Load context values using reflection, similar to WebStack
-     */
-    public void loadContextValuesUsingReflection(Construct scope) {
-      this.env = getContextValueString(scope, "env", this.env != null ? this.env : "dev");
-      this.subDomainName = getContextValueString(scope, "subDomainName", 
-          this.subDomainName != null ? this.subDomainName : "submit");
-      this.hostedZoneName = getContextValueString(scope, "hostedZoneName", 
-          this.hostedZoneName != null ? this.hostedZoneName : "diyaccounting.co.uk");
-    }
-
-    public String getContextValueString(Construct scope, String contextKey, String defaultValue) {
-      var contextValue = scope.getNode().tryGetContext(contextKey);
-      String defaultedValue;
-      String source;
-      if (contextValue != null && StringUtils.isNotBlank(contextValue.toString())) {
-        defaultedValue = contextValue.toString();
-        source = "CDK context";
-      } else {
-        defaultedValue = defaultValue;
-        source = "default value";
-      }
-      
-      try {
-        CfnOutput.Builder.create(scope, "DevStack" + contextKey)
-            .value(MessageFormat.format("{0} (Source: CDK {1})", defaultedValue, source))
-            .build();
-      } catch (Exception e) {
-        logger.warn("Failed to create CfnOutput for context key {}: {}", contextKey, e.getMessage());
-      }
-      return defaultedValue;
     }
   }
 

@@ -31,12 +31,9 @@ import software.amazon.awscdk.services.route53.RecordTarget;
 import software.amazon.awscdk.services.route53.targets.UserPoolDomainTarget;
 import software.amazon.awscdk.services.secretsmanager.ISecret;
 import software.amazon.awscdk.services.secretsmanager.Secret;
-import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
 import software.constructs.IDependable;
 
-import java.lang.reflect.Field;
-import java.text.MessageFormat;
 import java.util.AbstractMap;
 import java.util.HashMap;
 import java.util.List;
@@ -106,57 +103,6 @@ public class IdentityStack extends Stack {
       this.scope = scope;
       this.id = id;
       this.props = props;
-    }
-
-    public void loadContextValuesUsingReflection(Construct scope) {
-      Field[] fields = this.getClass().getDeclaredFields();
-      for (Field field : fields) {
-        if (field.getType() == String.class
-            && !field.getName().equals("scope")
-            && !field.getName().equals("id")
-            && !field.getName().equals("props")) {
-          try {
-            field.setAccessible(true);
-
-            // Skip if already set
-            if (field.get(this) != null) {
-              continue;
-            }
-
-            // Set from config
-            String contextValue = getContextValueString(scope, field.getName());
-            if (contextValue != null) {
-              field.set(this, contextValue);
-            }
-          } catch (IllegalAccessException e) {
-            logger.warn(
-                "Failed to set field {} using reflection: {}", field.getName(), e.getMessage());
-          }
-        }
-      }
-    }
-
-    public String getContextValueString(Construct scope, String contextKey) {
-      return getContextValueString(scope, contextKey, null);
-    }
-
-    public String getContextValueString(Construct scope, String contextKey, String defaultValue) {
-      var contextValue = scope.getNode().tryGetContext(contextKey);
-      String defaultedValue;
-      String source;
-      if (contextValue != null && StringUtils.isNotBlank(contextValue.toString())) {
-        defaultedValue = contextValue.toString();
-        source = "CDK context";
-      } else {
-        defaultedValue = defaultValue;
-        source = "default value";
-      }
-
-      CfnOutput.Builder.create(scope, contextKey)
-          .value(MessageFormat.format("{0} (Source: CDK {1})", defaultedValue, source))
-          .build();
-
-      return defaultedValue;
     }
 
     public static Builder create(Construct scope, String id) {

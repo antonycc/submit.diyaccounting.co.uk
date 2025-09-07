@@ -59,8 +59,6 @@ import software.amazon.awscdk.services.secretsmanager.Secret;
 import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
 
-import java.lang.reflect.Field;
-import java.text.MessageFormat;
 import java.util.AbstractMap;
 import java.util.HashMap;
 import java.util.List;
@@ -265,60 +263,6 @@ public class WebStack extends Stack {
 
     public static Builder create(Construct scope, String id, StackProps props) {
           return new Builder(scope, id, props);
-    }
-
-      public void loadContextValuesUsingReflection(Construct scope) {
-      Field[] fields = this.getClass().getDeclaredFields();
-      for (Field field : fields) {
-        if (field.getType() == String.class
-            && !field.getName().equals("scope")
-            && !field.getName().equals("id")
-            && !field.getName().equals("props")) {
-          try {
-            field.setAccessible(true);
-
-            // Skip if already set
-            if (field.get(this) != null) {
-              continue;
-            }
-
-            // Set from config
-            String contextValue = getContextValueString(scope, field.getName());
-            if (contextValue != null) {
-              field.set(this, contextValue);
-            }
-          } catch (IllegalAccessException e) {
-            logger.warn(
-                "Failed to set field {} using reflection: {}", field.getName(), e.getMessage());
-          }
-        }
-      }
-    }
-
-    public String getContextValueString(Construct scope, String contextKey) {
-      return getContextValueString(scope, contextKey, null);
-    }
-
-    public String getContextValueString(Construct scope, String contextKey, String defaultValue) {
-      var contextValue = scope.getNode().tryGetContext(contextKey);
-      String defaultedValue;
-      String source;
-      if (contextValue != null && StringUtils.isNotBlank(contextValue.toString())) {
-        defaultedValue = contextValue.toString();
-        source = "CDK context";
-      } else {
-        defaultedValue = defaultValue;
-        source = "default value";
-      }
-      // try {
-      CfnOutput.Builder.create(scope, contextKey)
-          .value(MessageFormat.format("{0} (Source: CDK {1})", defaultedValue, source))
-          .build();
-      // }catch (Exception e) {
-      //    logger.warn("Failed to create CfnOutput for context key {}: {}", contextKey,
-      // e.getMessage());
-      // }
-      return defaultedValue;
     }
 
     public Builder env(String env) {
@@ -966,10 +910,6 @@ public class WebStack extends Stack {
 
   public WebStack(Construct scope, String id, StackProps props, WebStack.Builder builder) {
     super(scope, id, props);
-
-    // Load values from cdk.json here using reflection, then let the properties be overridden by the
-    // mutators
-    builder.loadContextValuesUsingReflection(this);
 
     this.hostedZone =
           HostedZone.fromHostedZoneAttributes(

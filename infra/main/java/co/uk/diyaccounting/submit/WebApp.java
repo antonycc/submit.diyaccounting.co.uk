@@ -28,20 +28,20 @@ public class WebApp {
     WebApp.Builder builder = WebApp.Builder.create(app, "WebApp");
     WebAppProps appProps = loadAppProps(builder, app);
 
-    String envName = appProps.ENV_NAME;
+    String envName = appProps.env;
 
     String observabilityStackId = "SubmitObservabilityStack-%s".formatted(envName != null && !envName.isBlank() ? envName : "dev");
     ObservabilityStack observabilityStack =
         ObservabilityStack.Builder.create(app, observabilityStackId)
             .props(co.uk.diyaccounting.submit.stacks.ObservabilityStackProps.builder()
-                .env(appProps.ENV_NAME)
-                //.hostedZoneName(appProps.HOSTED_ZONE_NAME)
-                //.subDomainName(appProps.SUB_DOMAIN_NAME)
-                //.cloudTrailEnabled(appProps.CLOUD_TRAIL_ENABLED)
-                //.xRayEnabled(appProps.X_RAY_ENABLED)
-                //.cloudTrailLogGroupPrefix(appProps.CLOUD_TRAIL_LOG_GROUP_PREFIX)
-                //.cloudTrailLogGroupRetentionPeriodDays(appProps.CLOUD_TRAIL_LOG_GROUP_RETENTION_PERIOD_DAYS)
-                //.accessLogGroupRetentionPeriodDays(appProps.ACCESS_LOG_GROUP_RETENTION_PERIOD_DAYS)
+                .env(appProps.env)
+                .hostedZoneName(appProps.hostedZoneName)
+                .subDomainName(appProps.subDomainName)
+                .cloudTrailEnabled(appProps.cloudTrailEnabled)
+                .xRayEnabled(appProps.xRayEnabled)
+                .cloudTrailLogGroupPrefix(appProps.cloudTrailLogGroupPrefix)
+                .cloudTrailLogGroupRetentionPeriodDays(appProps.cloudTrailLogGroupRetentionPeriodDays)
+                .accessLogGroupRetentionPeriodDays(appProps.accessLogGroupRetentionPeriodDays)
                 .build())
             .build();
 
@@ -50,10 +50,9 @@ public class WebApp {
     DevStack devStack =
         DevStack.Builder.create(app, devStackId)
             .props(co.uk.diyaccounting.submit.stacks.DevStackProps.builder()
-                .env(appProps.ENV_NAME)
-                //.hostedZoneName(appProps.HOSTED_ZONE_NAME)
-                //.subDomainName(appProps.SUB_DOMAIN_NAME)
-                //.retainEcrRepository(System.getenv("RETAIN_ECR_REPOSITORY"))
+                .env(appProps.env)
+                .hostedZoneName(appProps.hostedZoneName)
+                .subDomainName(appProps.subDomainName)
                 .build())
             .build();
 
@@ -62,21 +61,18 @@ public class WebApp {
     IdentityStack identityStack =
         IdentityStack.Builder.create(app, identityStackId)
             .props(co.uk.diyaccounting.submit.stacks.IdentityStackProps.builder()
-                .env(appProps.ENV_NAME)
-                //.hostedZoneName(appProps.HOSTED_ZONE_NAME)
-                //.hostedZoneId(appProps.HOSTED_ZONE_ID)
-                //.subDomainName(appProps.SUB_DOMAIN_NAME)
-                .authCertificateArn(appProps.AUTH_CERTIFICATE_ARN)
-                //.cognitoFeaturePlan(appProps.DIY_SUBMIT_COGNITO_FEATURE_PLAN)
-                //.cognitoEnableLogDelivery(appProps.DIY_SUBMIT_ENABLE_LOG_DELIVERY)
-                //.logCognitoEventHandlerSource(appProps.LOG_COGNITO_EVENT_HANDLER_SOURCE)
-                .googleClientId(appProps.DIY_SUBMIT_GOOGLE_CLIENT_ID)
-                .googleClientSecretArn(appProps.DIY_SUBMIT_GOOGLE_CLIENT_SECRET_ARN)
-                //.cognitoDomainPrefix(appProps.DIY_SUBMIT_COGNITO_DOMAIN_PREFIX)
-                .antonyccClientId(appProps.DIY_SUBMIT_ANTONYCC_CLIENT_ID)
-                .antonyccBaseUri(appProps.DIY_SUBMIT_ANTONYCC_BASE_URI)
-                .acCogClientId(appProps.DIY_SUBMIT_AC_COG_CLIENT_ID)
-                .acCogBaseUri(appProps.DIY_SUBMIT_AC_COG_BASE_URI)
+                .env(envOr("ENV_NAME", appProps.env))
+                .hostedZoneName(appProps.hostedZoneName)
+                .hostedZoneId(appProps.hostedZoneId)
+                .subDomainName(appProps.subDomainName)
+                .authCertificateArn(envOr("AUTH_CERTIFICATE_ARN", appProps.authCertificateArn))
+                .googleClientId(envOr("DIY_SUBMIT_GOOGLE_CLIENT_ID", appProps.googleClientId))
+                .googleClientSecretArn(envOr("DIY_SUBMIT_GOOGLE_CLIENT_SECRET_ARN", appProps.googleClientSecretArn))
+                .cognitoDomainPrefix(appProps.cognitoDomainPrefix)
+                .antonyccClientId(envOr("DIY_SUBMIT_ANTONYCC_CLIENT_ID", appProps.antonyccClientId))
+                .antonyccBaseUri(envOr("DIY_SUBMIT_ANTONYCC_BASE_URI", appProps.antonyccBaseUri))
+                .acCogClientId(envOr("DIY_SUBMIT_AC_COG_CLIENT_ID", appProps.acCogClientId))
+                .acCogBaseUri(envOr("DIY_SUBMIT_AC_COG_BASE_URI", appProps.acCogBaseUri))
                 .build())
             .build();
 
@@ -84,11 +80,11 @@ public class WebApp {
     String applicationStackId = "SubmitApplicationStack-%s".formatted(envName != null && !envName.isBlank() ? envName : "dev");
     ApplicationStack applicationStack = ApplicationStack.Builder.create(app, applicationStackId)
             .props(co.uk.diyaccounting.submit.stacks.ApplicationStackProps.builder()
-                .env(appProps.ENV_NAME)
-                //.hostedZoneName(appProps.HOSTED_ZONE_NAME)
-                .subDomainName(appProps.SUB_DOMAIN_NAME)
-                //.cloudTrailEnabled(appProps.CLOUD_TRAIL_ENABLED)
-                //.xRayEnabled(appProps.X_RAY_ENABLED)
+                .env(envOr("ENV_NAME", appProps.env))
+                .hostedZoneName(appProps.hostedZoneName)
+                .subDomainName(envOr("SUB_DOMAIN_NAME", appProps.subDomainName))
+                .cloudTrailEnabled(appProps.cloudTrailEnabled)
+                .xRayEnabled(appProps.xRayEnabled)
                 .build())
             .build();
 
@@ -97,89 +93,89 @@ public class WebApp {
     WebStack webStack =
         WebStack.Builder.create(app, webStackId)
             .props(co.uk.diyaccounting.submit.stacks.WebStackProps.builder()
-                .env(appProps.ENV_NAME)
-                //.hostedZoneName(appProps.HOSTED_ZONE_NAME)
-                //.hostedZoneId(appProps.HOSTED_ZONE_ID)
-                //.subDomainName(appProps.SUB_DOMAIN_NAME)
-                .certificateArn(appProps.CERTIFICATE_ARN)
+                .env(envOr("ENV_NAME", appProps.env))
+                .hostedZoneName(appProps.hostedZoneName)
+                .hostedZoneId(appProps.hostedZoneId)
+                .subDomainName(appProps.subDomainName)
+                .certificateArn(envOr("CERTIFICATE_ARN", appProps.certificateArn))
                 .userPoolArn(identityStack.userPool != null ? identityStack.userPool.getUserPoolArn() : null)
-                //.cloudTrailEnabled(appProps.CLOUD_TRAIL_ENABLED)
-                //.xRayEnabled(appProps.X_RAY_ENABLED)
-                //.verboseLogging(appProps.VERBOSE_LOGGING)
-                //.cloudTrailLogGroupRetentionPeriodDays(appProps.CLOUD_TRAIL_LOG_GROUP_RETENTION_PERIOD_DAYS)
-                //.accessLogGroupRetentionPeriodDays(appProps.ACCESS_LOG_GROUP_RETENTION_PERIOD_DAYS)
-                //.s3UseExistingBucket(appProps.USE_EXISTING_BUCKET)
-                //.s3RetainOriginBucket(appProps.RETAIN_ORIGIN_BUCKET)
-                //.s3RetainReceiptsBucket(appProps.RETAIN_RECEIPTS_BUCKET)
-                //.cloudTrailEventSelectorPrefix(appProps.OBJECT_PREFIX)
-                //.logS3ObjectEventHandlerSource(appProps.LOG_S3_OBJECT_EVENT_HANDLER_SOURCE)
-                //.logGzippedS3ObjectEventHandlerSource(appProps.LOG_GZIPPED_S3_OBJECT_EVENT_HANDLER_SOURCE)
-                //.docRootPath(appProps.DOC_ROOT_PATH)
-                //.defaultDocumentAtOrigin(appProps.DEFAULT_HTML_DOCUMENT)
-                //.error404NotFoundAtDistribution(appProps.ERROR_HTML_DOCUMENT)
-                //.skipLambdaUrlOrigins(appProps.SKIP_LAMBDA_URL_ORIGINS)
-                .hmrcClientId(appProps.DIY_SUBMIT_HMRC_CLIENT_ID)
-                .hmrcClientSecretArn(appProps.DIY_SUBMIT_HMRC_CLIENT_SECRET_ARN)
-                .homeUrl(appProps.DIY_SUBMIT_HOME_URL)
-                .hmrcBaseUri(appProps.DIY_SUBMIT_HMRC_BASE_URI)
-                .optionalTestAccessToken(appProps.DIY_SUBMIT_TEST_ACCESS_TOKEN)
-                .optionalTestS3Endpoint(appProps.DIY_SUBMIT_TEST_S3_ENDPOINT)
-                .optionalTestS3AccessKey(appProps.DIY_SUBMIT_TEST_S3_ACCESS_KEY)
-                .optionalTestS3SecretKey(appProps.DIY_SUBMIT_TEST_S3_SECRET_KEY)
-                .receiptsBucketPostfix(appProps.DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX)
-                //.lambdaEntry(appProps.LAMBDA_ENTRY)
-                //.authUrlHmrcLambdaHandlerFunctionName(appProps.AUTH_URL_LAMBDA_HANDLER_FUNCTION_NAME)
-                //.authUrlHmrcLambdaUrlPath(appProps.AUTH_URL_LAMBDA_URL_PATH)
-                //.authUrlHmrcLambdaDurationMillis(appProps.AUTH_URL_LAMBDA_DURATION)
-                //.authUrlMockLambdaHandlerFunctionName(appProps.AUTH_URL_MOCK_LAMBDA_HANDLER_FUNCTION_NAME)
-                //.authUrlMockLambdaUrlPath(appProps.AUTH_URL_MOCK_LAMBDA_URL_PATH)
-                //.authUrlMockLambdaDurationMillis(appProps.AUTH_URL_MOCK_LAMBDA_DURATION)
-                //.authUrlGoogleLambdaHandlerFunctionName(appProps.AUTH_URL_GOOGLE_LAMBDA_HANDLER_FUNCTION_NAME)
-                //.authUrlGoogleLambdaUrlPath(appProps.AUTH_URL_GOOGLE_LAMBDA_URL_PATH)
-                //.authUrlGoogleLambdaDurationMillis(appProps.AUTH_URL_GOOGLE_LAMBDA_DURATION)
-                //.authUrlAntonyccLambdaHandlerFunctionName(appProps.AUTH_URL_ANTONYCC_LAMBDA_HANDLER_FUNCTION_NAME)
-                //.authUrlAntonyccLambdaUrlPath(appProps.AUTH_URL_ANTONYCC_LAMBDA_URL_PATH)
-                //.authUrlAntonyccLambdaDurationMillis(appProps.AUTH_URL_ANTONYCC_LAMBDA_DURATION)
-                //.authUrlAcCogLambdaHandlerFunctionName(appProps.AUTH_URL_AC_COG_LAMBDA_HANDLER_FUNCTION_NAME)
-                //.authUrlAcCogLambdaUrlPath(appProps.AUTH_URL_AC_COG_LAMBDA_URL_PATH)
-                //.authUrlAcCogLambdaDurationMillis(appProps.AUTH_URL_AC_COG_LAMBDA_DURATION)
-                //.exchangeHmrcTokenLambdaHandlerFunctionName(appProps.EXCHANGE_HMRC_TOKEN_LAMBDA_HANDLER_FUNCTION_NAME)
-                //.exchangeHmrcTokenLambdaUrlPath(appProps.EXCHANGE_HMRC_TOKEN_LAMBDA_URL_PATH)
-                //.exchangeHmrcTokenLambdaDurationMillis(appProps.EXCHANGE_HMRC_TOKEN_LAMBDA_DURATION)
-                //.exchangeGoogleTokenLambdaHandlerFunctionName(appProps.EXCHANGE_GOOGLE_TOKEN_LAMBDA_HANDLER_FUNCTION_NAME)
-                //.exchangeGoogleTokenLambdaUrlPath(appProps.EXCHANGE_GOOGLE_TOKEN_LAMBDA_URL_PATH)
-                //.exchangeGoogleTokenLambdaDurationMillis(appProps.EXCHANGE_GOOGLE_TOKEN_LAMBDA_DURATION)
-                //.exchangeAntonyccTokenLambdaHandlerFunctionName(appProps.EXCHANGE_ANTONYCC_TOKEN_LAMBDA_HANDLER_FUNCTION_NAME)
-                //.exchangeAntonyccTokenLambdaUrlPath(appProps.EXCHANGE_ANTONYCC_TOKEN_LAMBDA_URL_PATH)
-                //.exchangeAntonyccTokenLambdaDurationMillis(appProps.EXCHANGE_ANTONYCC_TOKEN_LAMBDA_DURATION)
-                //.submitVatLambdaHandlerFunctionName(appProps.SUBMIT_VAT_LAMBDA_HANDLER_FUNCTION_NAME)
-                //.submitVatLambdaUrlPath(appProps.SUBMIT_VAT_LAMBDA_URL_PATH)
-                //.submitVatLambdaDurationMillis(appProps.SUBMIT_VAT_LAMBDA_DURATION)
-                //.logReceiptLambdaHandlerFunctionName(appProps.LOG_RECEIPT_LAMBDA_HANDLER_FUNCTION_NAME)
-                //.logReceiptLambdaUrlPath(appProps.LOG_RECEIPT_LAMBDA_URL_PATH)
-                //.logReceiptLambdaDurationMillis(appProps.LOG_RECEIPT_LAMBDA_DURATION)
-                //.lambdaUrlAuthType(appProps.LAMBDA_URL_AUTH_TYPE)
-                .commitHash(appProps.COMMIT_HASH)
-                .googleClientId(appProps.DIY_SUBMIT_GOOGLE_CLIENT_ID)
-                .googleBaseUri(appProps.DIY_SUBMIT_GOOGLE_BASE_URI)
-                .googleClientSecretArn(appProps.DIY_SUBMIT_GOOGLE_CLIENT_SECRET_ARN)
-                .cognitoDomainPrefix(appProps.DIY_SUBMIT_COGNITO_DOMAIN_PREFIX)
-                //.bundleExpiryDate(appProps.DIY_SUBMIT_BUNDLE_EXPIRY_DATE)
-                //.bundleUserLimit(appProps.DIY_SUBMIT_BUNDLE_USER_LIMIT)
-                //.bundleLambdaHandlerFunctionName(appProps.BUNDLE_LAMBDA_HANDLER_FUNCTION_NAME)
-                //.bundleLambdaUrlPath(appProps.BUNDLE_LAMBDA_URL_PATH)
-                //.bundleLambdaDurationMillis(appProps.BUNDLE_LAMBDA_DURATION)
-                .baseImageTag(appProps.BASE_IMAGE_TAG)
-                //.cognitoFeaturePlan(appProps.DIY_SUBMIT_COGNITO_FEATURE_PLAN)
-                //.cognitoEnableLogDelivery(appProps.DIY_SUBMIT_ENABLE_LOG_DELIVERY)
-                //.logCognitoEventHandlerSource(appProps.LOG_COGNITO_EVENT_HANDLER_SOURCE)
-                //.myReceiptsLambdaHandlerFunctionName(appProps.MY_RECEIPTS_LAMBDA_HANDLER_FUNCTION_NAME)
-                //.myReceiptsLambdaUrlPath(appProps.MY_RECEIPTS_LAMBDA_URL_PATH)
-                //.myReceiptsLambdaDurationMillis(appProps.MY_RECEIPTS_LAMBDA_DURATION)
-                .antonyccClientId(appProps.DIY_SUBMIT_ANTONYCC_CLIENT_ID)
-                .antonyccBaseUri(appProps.DIY_SUBMIT_ANTONYCC_BASE_URI)
-                .acCogClientId(appProps.DIY_SUBMIT_AC_COG_CLIENT_ID)
-                .acCogBaseUri(appProps.DIY_SUBMIT_AC_COG_BASE_URI)
+                .cloudTrailEnabled(appProps.cloudTrailEnabled)
+                .xRayEnabled(appProps.xRayEnabled)
+                .verboseLogging(appProps.verboseLogging)
+                .cloudTrailLogGroupRetentionPeriodDays(appProps.cloudTrailLogGroupRetentionPeriodDays)
+                .accessLogGroupRetentionPeriodDays(appProps.accessLogGroupRetentionPeriodDays)
+                .s3UseExistingBucket(appProps.s3UseExistingBucket)
+                .s3RetainOriginBucket(appProps.s3RetainOriginBucket)
+                .s3RetainReceiptsBucket(appProps.s3RetainReceiptsBucket)
+                .cloudTrailEventSelectorPrefix(appProps.cloudTrailEventSelectorPrefix)
+                .logS3ObjectEventHandlerSource(appProps.logS3ObjectEventHandlerSource)
+                .logGzippedS3ObjectEventHandlerSource(appProps.logGzippedS3ObjectEventHandlerSource)
+                .docRootPath(appProps.docRootPath)
+                .defaultDocumentAtOrigin(appProps.defaultDocumentAtOrigin)
+                .error404NotFoundAtDistribution(appProps.error404NotFoundAtDistribution)
+                .skipLambdaUrlOrigins(appProps.skipLambdaUrlOrigins)
+                .hmrcClientId(envOr("DIY_SUBMIT_HMRC_CLIENT_ID", appProps.hmrcClientId))
+                .hmrcClientSecretArn(envOr("DIY_SUBMIT_HMRC_CLIENT_SECRET_ARN", appProps.hmrcClientSecretArn))
+                .homeUrl(envOr("DIY_SUBMIT_HOME_URL", appProps.homeUrl))
+                .hmrcBaseUri(envOr("DIY_SUBMIT_HMRC_BASE_URI", appProps.hmrcBaseUri))
+                .optionalTestAccessToken(envOr("DIY_SUBMIT_TEST_ACCESS_TOKEN", appProps.optionalTestAccessToken))
+                .optionalTestS3Endpoint(envOr("DIY_SUBMIT_TEST_S3_ENDPOINT", appProps.optionalTestS3Endpoint))
+                .optionalTestS3AccessKey(envOr("DIY_SUBMIT_TEST_S3_ACCESS_KEY", appProps.optionalTestS3AccessKey))
+                .optionalTestS3SecretKey(envOr("DIY_SUBMIT_TEST_S3_SECRET_KEY", appProps.optionalTestS3SecretKey))
+                .receiptsBucketPostfix(envOr("DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX", appProps.receiptsBucketPostfix))
+                .lambdaEntry(appProps.lambdaEntry)
+                .authUrlHmrcLambdaHandlerFunctionName(appProps.authUrlHmrcLambdaHandlerFunctionName)
+                .authUrlHmrcLambdaUrlPath(appProps.authUrlLambdaUrlPath)
+                .authUrlHmrcLambdaDurationMillis(appProps.authUrlHmrcLambdaDuration)
+                .authUrlMockLambdaHandlerFunctionName(appProps.authUrlMockLambdaHandlerFunctionName)
+                .authUrlMockLambdaUrlPath(appProps.authUrlMockLambdaUrlPath)
+                .authUrlMockLambdaDurationMillis(appProps.authUrlMockLambdaDuration)
+                .authUrlGoogleLambdaHandlerFunctionName(appProps.authUrlGoogleLambdaHandlerFunctionName)
+                .authUrlGoogleLambdaUrlPath(appProps.authUrlGoogleLambdaUrlPath)
+                .authUrlGoogleLambdaDurationMillis(appProps.authUrlGoogleLambdaDuration)
+                .authUrlAntonyccLambdaHandlerFunctionName(appProps.authUrlAntonyccLambdaHandlerFunctionName)
+                .authUrlAntonyccLambdaUrlPath(appProps.authUrlAntonyccLambdaUrlPath)
+                .authUrlAntonyccLambdaDurationMillis(appProps.authUrlAntonyccLambdaDuration)
+                .authUrlAcCogLambdaHandlerFunctionName(appProps.authUrlAcCogLambdaHandlerFunctionName)
+                .authUrlAcCogLambdaUrlPath(appProps.authUrlAcCogLambdaUrlPath)
+                .authUrlAcCogLambdaDurationMillis(appProps.authUrlAcCogLambdaDuration)
+                .exchangeHmrcTokenLambdaHandlerFunctionName(appProps.exchangeHmrcTokenLambdaHandlerFunctionName)
+                .exchangeHmrcTokenLambdaUrlPath(appProps.exchangeHmrcTokenLambdaUrlPath)
+                .exchangeHmrcTokenLambdaDurationMillis(appProps.exchangeHmrcTokenLambdaDuration)
+                .exchangeGoogleTokenLambdaHandlerFunctionName(appProps.exchangeGoogleTokenLambdaHandlerFunctionName)
+                .exchangeGoogleTokenLambdaUrlPath(appProps.exchangeGoogleTokenLambdaUrlPath)
+                .exchangeGoogleTokenLambdaDurationMillis(appProps.exchangeGoogleTokenLambdaDuration)
+                .exchangeAntonyccTokenLambdaHandlerFunctionName(appProps.exchangeAntonyccTokenLambdaHandlerFunctionName)
+                .exchangeAntonyccTokenLambdaUrlPath(appProps.exchangeAntonyccTokenLambdaUrlPath)
+                .exchangeAntonyccTokenLambdaDurationMillis(appProps.exchangeAntonyccTokenLambdaDuration)
+                .submitVatLambdaHandlerFunctionName(appProps.submitVatLambdaHandlerFunctionName)
+                .submitVatLambdaUrlPath(appProps.submitVatLambdaUrlPath)
+                .submitVatLambdaDurationMillis(appProps.submitVatLambdaDuration)
+                .logReceiptLambdaHandlerFunctionName(appProps.logReceiptLambdaHandlerFunctionName)
+                .logReceiptLambdaUrlPath(appProps.logReceiptLambdaUrlPath)
+                .logReceiptLambdaDurationMillis(appProps.logReceiptLambdaDuration)
+                .lambdaUrlAuthType(appProps.lambdaUrlAuthType)
+                .commitHash(envOr("COMMIT_HASH", appProps.commitHash))
+                .googleClientId(envOr("DIY_SUBMIT_GOOGLE_CLIENT_ID", appProps.googleClientId))
+                .googleBaseUri(envOr("DIY_SUBMIT_GOOGLE_BASE_URI", appProps.googleBaseUri))
+                .googleClientSecretArn(envOr("DIY_SUBMIT_GOOGLE_CLIENT_SECRET_ARN", appProps.googleClientSecretArn))
+                .cognitoDomainPrefix(envOr("DIY_SUBMIT_COGNITO_DOMAIN_PREFIX", appProps.cognitoDomainPrefix))
+                .bundleExpiryDate(appProps.bundleExpiryDate)
+                .bundleUserLimit(appProps.bundleUserLimit)
+                .bundleLambdaHandlerFunctionName(appProps.bundleLambdaHandlerFunctionName)
+                .bundleLambdaUrlPath(appProps.bundleLambdaUrlPath)
+                .bundleLambdaDurationMillis(appProps.bundleLambdaDuration)
+                .baseImageTag(envOr("BASE_IMAGE_TAG", appProps.baseImageTag))
+                .cognitoFeaturePlan(appProps.cognitoFeaturePlan)
+                .cognitoEnableLogDelivery(appProps.cognitoEnableLogDelivery)
+                .logCognitoEventHandlerSource(appProps.logCognitoEventHandlerSource)
+                .myReceiptsLambdaHandlerFunctionName(appProps.myReceiptsLambdaHandlerFunctionName)
+                .myReceiptsLambdaUrlPath(appProps.myReceiptsLambdaUrlPath)
+                .myReceiptsLambdaDurationMillis(appProps.myReceiptsLambdaDuration)
+                .antonyccClientId(envOr("DIY_SUBMIT_ANTONYCC_CLIENT_ID", appProps.antonyccClientId))
+                .antonyccBaseUri(envOr("DIY_SUBMIT_ANTONYCC_BASE_URI", appProps.antonyccBaseUri))
+                .acCogClientId(envOr("DIY_SUBMIT_AC_COG_CLIENT_ID", appProps.acCogClientId))
+                .acCogBaseUri(envOr("DIY_SUBMIT_AC_COG_BASE_URI", appProps.acCogBaseUri))
                 .build())
             .trail(observabilityStack.trail)
             .build();
@@ -189,32 +185,27 @@ public class WebApp {
 
   private static WebAppProps loadAppProps(WebApp.Builder builder, Construct scope) {
     WebAppProps props = WebAppProps.Builder.create().build();
-    // populate from cdk.json context
+    // populate from cdk.json context using exact camelCase keys
     for (Field f : WebAppProps.class.getDeclaredFields()) {
       if (f.getType() != String.class) continue;
       try {
         f.setAccessible(true);
         String current = (String) f.get(props);
-        String ctx = builder.getContextValueString(scope, f.getName(), current);
+        String fieldName = f.getName();
+        String ctx = builder.getContextValueString(scope, fieldName, current);
         if (ctx != null) f.set(props, ctx);
       } catch (Exception e) {
         logger.warn("Failed to read context for {}: {}", f.getName(), e.getMessage());
       }
     }
-    // apply environment overrides
-    for (Field f : WebAppProps.class.getDeclaredFields()) {
-      if (f.getType() != String.class) continue;
-      try {
-        f.setAccessible(true);
-        String envVal = System.getenv(f.getName());
-        if (envVal != null && !envVal.isBlank()) f.set(props, envVal);
-      } catch (Exception e) {
-        logger.warn("Failed to apply env override for {}: {}", f.getName(), e.getMessage());
-      }
-    }
-    // default ENV_NAME to dev if not set
-    if (props.ENV_NAME == null || props.ENV_NAME.isBlank()) props.ENV_NAME = "dev";
+    // default env to dev if not set
+    if (props.env == null || props.env.isBlank()) props.env = "dev";
     return props;
+  }
+
+  private static String envOr(String key, String fallback) {
+    String v = System.getenv(key);
+    return (v != null && !v.isBlank()) ? v : fallback;
   }
 
     public static class Builder {
