@@ -4,10 +4,10 @@ import java.util.Map;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.services.cloudfront.AllowedMethods;
+import software.amazon.awscdk.services.cloudfront.CachePolicy;
 import software.amazon.awscdk.services.cloudfront.ICachePolicy;
 import software.amazon.awscdk.services.cloudfront.IOriginRequestPolicy;
 import software.amazon.awscdk.services.cloudfront.IResponseHeadersPolicy;
-import software.amazon.awscdk.services.cloudfront.CachePolicy;
 import software.amazon.awscdk.services.cloudfront.OriginProtocolPolicy;
 import software.amazon.awscdk.services.cloudfront.OriginRequestPolicy;
 import software.amazon.awscdk.services.cloudfront.ResponseHeadersPolicy;
@@ -79,7 +79,9 @@ public class LambdaUrlOriginProps {
     this.baseImageTag = b.baseImageTag;
   }
 
-  public static Builder builder() { return new Builder(); }
+  public static Builder builder() {
+    return new Builder();
+  }
 
   public static class Builder {
     private String env = null;
@@ -107,37 +109,131 @@ public class LambdaUrlOriginProps {
 
     private ICachePolicy cachePolicy = CachePolicy.CACHING_DISABLED;
     private ViewerProtocolPolicy viewerProtocolPolicy = ViewerProtocolPolicy.REDIRECT_TO_HTTPS;
-    private IOriginRequestPolicy originRequestPolicy = OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER;
+    private IOriginRequestPolicy originRequestPolicy =
+        OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER;
 
     private String imageDirectory = ".";
     private String imageFilename = "Dockerfile";
     private Runtime testRuntime = Runtime.NODEJS_22_X;
     private String baseImageTag = null;
 
-    public Builder env(String env) { this.env = env; return this; }
-    public Builder functionName(String functionName) { this.functionName = functionName; return this; }
-    public Builder handler(String handler) { this.handler = handler; return this; }
-    public Builder timeout(Duration timeout) { this.timeout = timeout; return this; }
-    public Builder environment(Map<String, String> environment) { this.environment = environment; return this; }
-    public Builder allowedMethods(AllowedMethods methods) { this.cloudFrontAllowedMethods = methods; return this; }
-    public Builder skipBehaviorOptions(boolean skip) { this.skipBehaviorOptions = skip; return this; }
-    public Builder cloudTrailEnabled(boolean cloudTrailEnabled) { this.cloudTrailEnabled = cloudTrailEnabled; return this; }
-    public Builder xRayEnabled(boolean xRayEnabled) { this.xRayEnabled = xRayEnabled; return this; }
-    public Builder verboseLogging(boolean verboseLogging) { this.verboseLogging = verboseLogging; return this; }
-    public Builder functionUrlAuthType(FunctionUrlAuthType t) { this.functionUrlAuthType = t; return this; }
-    public Builder invokeMode(InvokeMode mode) { this.invokeMode = mode; return this; }
-    public Builder logGroupRetention(RetentionDays d) { this.logGroupRetention = d; return this; }
-    public Builder logGroupRemovalPolicy(RemovalPolicy p) { this.logGroupRemovalPolicy = p; return this; }
-    public Builder protocolPolicy(OriginProtocolPolicy p) { this.protocolPolicy = p; return this; }
-    public Builder responseHeadersPolicy(IResponseHeadersPolicy p) { this.responseHeadersPolicy = p; return this; }
-    public Builder cachePolicy(ICachePolicy p) { this.cachePolicy = p; return this; }
-    public Builder viewerProtocolPolicy(ViewerProtocolPolicy p) { this.viewerProtocolPolicy = p; return this; }
-    public Builder originRequestPolicy(IOriginRequestPolicy p) { this.originRequestPolicy = p; return this; }
-    public Builder imageDirectory(String d) { this.imageDirectory = d; return this; }
-    public Builder imageFilename(String f) { this.imageFilename = f; return this; }
-    public Builder testRuntime(Runtime r) { this.testRuntime = r; return this; }
-    public Builder baseImageTag(String tag) { this.baseImageTag = tag; return this; }
+    public Builder env(String env) {
+      this.env = env;
+      return this;
+    }
 
-    public LambdaUrlOriginProps build() { return new LambdaUrlOriginProps(this); }
+    public Builder functionName(String functionName) {
+      this.functionName = functionName;
+      return this;
+    }
+
+    public Builder handler(String handler) {
+      this.handler = handler;
+      return this;
+    }
+
+    public Builder timeout(Duration timeout) {
+      this.timeout = timeout;
+      return this;
+    }
+
+    public Builder environment(Map<String, String> environment) {
+      this.environment = environment;
+      return this;
+    }
+
+    public Builder allowedMethods(AllowedMethods methods) {
+      this.cloudFrontAllowedMethods = methods;
+      return this;
+    }
+
+    public Builder skipBehaviorOptions(boolean skip) {
+      this.skipBehaviorOptions = skip;
+      return this;
+    }
+
+    public Builder cloudTrailEnabled(boolean cloudTrailEnabled) {
+      this.cloudTrailEnabled = cloudTrailEnabled;
+      return this;
+    }
+
+    public Builder xRayEnabled(boolean xRayEnabled) {
+      this.xRayEnabled = xRayEnabled;
+      return this;
+    }
+
+    public Builder verboseLogging(boolean verboseLogging) {
+      this.verboseLogging = verboseLogging;
+      return this;
+    }
+
+    public Builder functionUrlAuthType(FunctionUrlAuthType t) {
+      this.functionUrlAuthType = t;
+      return this;
+    }
+
+    public Builder invokeMode(InvokeMode mode) {
+      this.invokeMode = mode;
+      return this;
+    }
+
+    public Builder logGroupRetention(RetentionDays d) {
+      this.logGroupRetention = d;
+      return this;
+    }
+
+    public Builder logGroupRemovalPolicy(RemovalPolicy p) {
+      this.logGroupRemovalPolicy = p;
+      return this;
+    }
+
+    public Builder protocolPolicy(OriginProtocolPolicy p) {
+      this.protocolPolicy = p;
+      return this;
+    }
+
+    public Builder responseHeadersPolicy(IResponseHeadersPolicy p) {
+      this.responseHeadersPolicy = p;
+      return this;
+    }
+
+    public Builder cachePolicy(ICachePolicy p) {
+      this.cachePolicy = p;
+      return this;
+    }
+
+    public Builder viewerProtocolPolicy(ViewerProtocolPolicy p) {
+      this.viewerProtocolPolicy = p;
+      return this;
+    }
+
+    public Builder originRequestPolicy(IOriginRequestPolicy p) {
+      this.originRequestPolicy = p;
+      return this;
+    }
+
+    public Builder imageDirectory(String d) {
+      this.imageDirectory = d;
+      return this;
+    }
+
+    public Builder imageFilename(String f) {
+      this.imageFilename = f;
+      return this;
+    }
+
+    public Builder testRuntime(Runtime r) {
+      this.testRuntime = r;
+      return this;
+    }
+
+    public Builder baseImageTag(String tag) {
+      this.baseImageTag = tag;
+      return this;
+    }
+
+    public LambdaUrlOriginProps build() {
+      return new LambdaUrlOriginProps(this);
+    }
   }
 }

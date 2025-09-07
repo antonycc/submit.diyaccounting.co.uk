@@ -1,39 +1,39 @@
 package co.uk.diyaccounting.submit.stacks;
 
 import co.uk.diyaccounting.submit.utils.ResourceNameUtils;
+import java.util.AbstractMap;
+import java.util.List;
+import java.util.regex.Pattern;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
 import software.constructs.Construct;
 
-import java.util.AbstractMap;
-import java.util.List;
-import java.util.regex.Pattern;
-
 public class ApplicationStack extends Stack {
 
   private static final Logger logger = LogManager.getLogger(ApplicationStack.class);
 
-   // CDK resources here
+  // CDK resources here
 
   public ApplicationStack(Construct scope, String id, ApplicationStack.Builder builder) {
     this(scope, id, null, builder);
   }
 
-  public ApplicationStack(Construct scope, String id, StackProps props, ApplicationStack.Builder builder) {
+  public ApplicationStack(
+      Construct scope, String id, StackProps props, ApplicationStack.Builder builder) {
     super(scope, id, props);
 
     // Values are provided via WebApp after context/env resolution
 
     // Build naming using same patterns as WebStack
-    String domainName = 
+    String domainName =
         Builder.buildDomainName(builder.env, builder.subDomainName, builder.hostedZoneName);
-    String dashedDomainName = 
+    String dashedDomainName =
         Builder.buildDashedDomainName(builder.env, builder.subDomainName, builder.hostedZoneName);
 
-      boolean cloudTrailEnabled = Boolean.parseBoolean(builder.cloudTrailEnabled);
-      boolean xRayEnabled = Boolean.parseBoolean(builder.xRayEnabled);
+    boolean cloudTrailEnabled = Boolean.parseBoolean(builder.cloudTrailEnabled);
+    boolean xRayEnabled = Boolean.parseBoolean(builder.xRayEnabled);
 
     logger.info("ApplicationStack created successfully for {}", dashedDomainName);
   }
@@ -45,13 +45,13 @@ public class ApplicationStack extends Stack {
     private Construct scope;
     private String id;
     private StackProps props;
-    
+
     // Environment configuration
     public String env;
     public String subDomainName;
     public String hostedZoneName;
-      public String cloudTrailEnabled;
-      public String xRayEnabled;
+    public String cloudTrailEnabled;
+    public String xRayEnabled;
 
     private Builder() {}
 
@@ -82,25 +82,25 @@ public class ApplicationStack extends Stack {
       return this;
     }
 
-      public Builder cloudTrailEnabled(String cloudTrailEnabled) {
-          this.cloudTrailEnabled = cloudTrailEnabled;
-          return this;
-      }
+    public Builder cloudTrailEnabled(String cloudTrailEnabled) {
+      this.cloudTrailEnabled = cloudTrailEnabled;
+      return this;
+    }
 
-      public Builder xRayEnabled(String xRayEnabled) {
-          this.xRayEnabled = xRayEnabled;
-          return this;
-      }
+    public Builder xRayEnabled(String xRayEnabled) {
+      this.xRayEnabled = xRayEnabled;
+      return this;
+    }
 
-      public Builder props(ApplicationStackProps p){
-        if (p==null) return this;
-        this.env = p.env;
-        this.subDomainName = p.subDomainName;
-        this.hostedZoneName = p.hostedZoneName;
-        this.cloudTrailEnabled = p.cloudTrailEnabled;
-        this.xRayEnabled = p.xRayEnabled;
-        return this;
-      }
+    public Builder props(ApplicationStackProps p) {
+      if (p == null) return this;
+      this.env = p.env;
+      this.subDomainName = p.subDomainName;
+      this.hostedZoneName = p.hostedZoneName;
+      this.cloudTrailEnabled = p.cloudTrailEnabled;
+      this.xRayEnabled = p.xRayEnabled;
+      return this;
+    }
 
     public ApplicationStack build() {
       return new ApplicationStack(this.scope, this.id, this.props, this);

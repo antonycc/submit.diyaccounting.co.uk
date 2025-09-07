@@ -1,7 +1,8 @@
 package co.uk.diyaccounting.submit;
 
 public class WebAppProps {
-  // Fields match cdk.json context keys (camelCase). Environment overrides are applied in WebApp selectively.
+  // Fields match cdk.json context keys (camelCase). Environment overrides are applied in WebApp
+  // selectively.
   // common
   public String env;
   public String hostedZoneName;
@@ -93,14 +94,22 @@ public class WebAppProps {
 
   public static class Builder {
     private final WebAppProps p = new WebAppProps();
-    public static Builder create(){return new Builder();}
-    public WebAppProps build(){return p;}
-    public Builder set(String key, String value){
+
+    public static Builder create() {
+      return new Builder();
+    }
+
+    public WebAppProps build() {
+      return p;
+    }
+
+    public Builder set(String key, String value) {
       try {
         var f = WebAppProps.class.getDeclaredField(key);
         f.setAccessible(true);
         f.set(p, value);
-      } catch (Exception ignored) {}
+      } catch (Exception ignored) {
+      }
       return this;
     }
   }
