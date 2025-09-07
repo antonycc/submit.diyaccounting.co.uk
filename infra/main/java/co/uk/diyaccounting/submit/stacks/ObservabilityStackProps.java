@@ -21,7 +21,9 @@ public class ObservabilityStackProps {
     this.xRayEnabled = b.xRayEnabled;
   }
 
-  public static Builder builder() { return new Builder(); }
+  public static Builder builder() {
+    return new Builder();
+  }
 
   public static class Builder {
     private String env;
@@ -33,15 +35,48 @@ public class ObservabilityStackProps {
     private String accessLogGroupRetentionPeriodDays;
     private String xRayEnabled;
 
-    public Builder env(String v){this.env=v;return this;}
-    public Builder subDomainName(String v){this.subDomainName=v;return this;}
-    public Builder hostedZoneName(String v){this.hostedZoneName=v;return this;}
-    public Builder cloudTrailEnabled(String v){this.cloudTrailEnabled=v;return this;}
-    public Builder cloudTrailLogGroupPrefix(String v){this.cloudTrailLogGroupPrefix=v;return this;}
-    public Builder cloudTrailLogGroupRetentionPeriodDays(String v){this.cloudTrailLogGroupRetentionPeriodDays=v;return this;}
-    public Builder accessLogGroupRetentionPeriodDays(String v){this.accessLogGroupRetentionPeriodDays=v;return this;}
-    public Builder xRayEnabled(String v){this.xRayEnabled=v;return this;}
+    public Builder env(String v) {
+      this.env = v;
+      return this;
+    }
 
-    public ObservabilityStackProps build(){return new ObservabilityStackProps(this);}    
+    public Builder subDomainName(String v) {
+      this.subDomainName = v;
+      return this;
+    }
+
+    public Builder hostedZoneName(String v) {
+      this.hostedZoneName = v;
+      return this;
+    }
+
+    public Builder cloudTrailEnabled(String v) {
+      this.cloudTrailEnabled = v;
+      return this;
+    }
+
+    public Builder cloudTrailLogGroupPrefix(String v) {
+      this.cloudTrailLogGroupPrefix = v;
+      return this;
+    }
+
+    public Builder cloudTrailLogGroupRetentionPeriodDays(String v) {
+      this.cloudTrailLogGroupRetentionPeriodDays = v;
+      return this;
+    }
+
+    public Builder accessLogGroupRetentionPeriodDays(String v) {
+      this.accessLogGroupRetentionPeriodDays = v;
+      return this;
+    }
+
+    public Builder xRayEnabled(String v) {
+      this.xRayEnabled = v;
+      return this;
+    }
+
+    public ObservabilityStackProps build() {
+      return new ObservabilityStackProps(this);
+    }
   }
 }

@@ -180,7 +180,11 @@ public class GitHubOIDCRoles extends Stack {
     }
 
     public GitHubOIDCRoles build() {
-      var p = GitHubOIDCRolesProps.builder().env(props != null ? props.getEnv() : null).repositoryName(this.repositoryName).build();
+      var p =
+          GitHubOIDCRolesProps.builder()
+              .env(props != null ? props.getEnv() : null)
+              .repositoryName(this.repositoryName)
+              .build();
       return new GitHubOIDCRoles(scope, id, p);
     }
   }

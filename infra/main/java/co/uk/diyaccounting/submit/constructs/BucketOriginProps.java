@@ -34,7 +34,9 @@ public class BucketOriginProps {
     this.xRayEnabled = b.xRayEnabled;
   }
 
-  public static Builder builder() { return new Builder(); }
+  public static Builder builder() {
+    return new Builder();
+  }
 
   public static class Builder {
     private String bucketName;
@@ -51,20 +53,73 @@ public class BucketOriginProps {
     private boolean cloudTrailEnabled = false;
     private boolean xRayEnabled = false;
 
-    public Builder bucketName(String bucketName) { this.bucketName = bucketName; return this; }
-    public Builder originAccessLogBucketName(String name) { this.originAccessLogBucketName = name; return this; }
-    public Builder functionNamePrefix(String prefix) { this.functionNamePrefix = prefix; return this; }
-    public Builder logS3ObjectEventHandlerSource(String src) { this.logS3ObjectEventHandlerSource = src; return this; }
-    public Builder accessLogGroupRetentionPeriodDays(int days) { this.accessLogGroupRetentionPeriodDays = days; return this; }
-    public Builder retainBucket(boolean retain) { this.retainBucket = retain; return this; }
-    public Builder useExistingBucket(boolean existing) { this.useExistingBucket = existing; return this; }
-    public Builder versioned(boolean v) { this.versioned = v; return this; }
-    public Builder blockPublicAccess(BlockPublicAccess p) { this.blockPublicAccess = p; return this; }
-    public Builder encryption(BucketEncryption e) { this.encryption = e; return this; }
-    public Builder verboseLogging(boolean v) { this.verboseLogging = v; return this; }
-    public Builder cloudTrailEnabled(boolean v) { this.cloudTrailEnabled = v; return this; }
-    public Builder xRayEnabled(boolean v) { this.xRayEnabled = v; return this; }
+    public Builder bucketName(String bucketName) {
+      this.bucketName = bucketName;
+      return this;
+    }
 
-    public BucketOriginProps build() { return new BucketOriginProps(this); }
+    public Builder originAccessLogBucketName(String name) {
+      this.originAccessLogBucketName = name;
+      return this;
+    }
+
+    public Builder functionNamePrefix(String prefix) {
+      this.functionNamePrefix = prefix;
+      return this;
+    }
+
+    public Builder logS3ObjectEventHandlerSource(String src) {
+      this.logS3ObjectEventHandlerSource = src;
+      return this;
+    }
+
+    public Builder accessLogGroupRetentionPeriodDays(int days) {
+      this.accessLogGroupRetentionPeriodDays = days;
+      return this;
+    }
+
+    public Builder retainBucket(boolean retain) {
+      this.retainBucket = retain;
+      return this;
+    }
+
+    public Builder useExistingBucket(boolean existing) {
+      this.useExistingBucket = existing;
+      return this;
+    }
+
+    public Builder versioned(boolean v) {
+      this.versioned = v;
+      return this;
+    }
+
+    public Builder blockPublicAccess(BlockPublicAccess p) {
+      this.blockPublicAccess = p;
+      return this;
+    }
+
+    public Builder encryption(BucketEncryption e) {
+      this.encryption = e;
+      return this;
+    }
+
+    public Builder verboseLogging(boolean v) {
+      this.verboseLogging = v;
+      return this;
+    }
+
+    public Builder cloudTrailEnabled(boolean v) {
+      this.cloudTrailEnabled = v;
+      return this;
+    }
+
+    public Builder xRayEnabled(boolean v) {
+      this.xRayEnabled = v;
+      return this;
+    }
+
+    public BucketOriginProps build() {
+      return new BucketOriginProps(this);
+    }
   }
 }

@@ -35,7 +35,9 @@ public class DistributionWithLoggingProps {
     this.logHandlerSource = b.logHandlerSource;
   }
 
-  public static Builder builder() { return new Builder(); }
+  public static Builder builder() {
+    return new Builder();
+  }
 
   public static class Builder {
     private String domainName;
@@ -52,20 +54,73 @@ public class DistributionWithLoggingProps {
     private boolean logIncludesCookies = false;
     private String logHandlerSource;
 
-    public Builder domainName(String domainName) { this.domainName = domainName; return this; }
-    public Builder defaultBehavior(BehaviorOptions defaultBehavior) { this.defaultBehavior = defaultBehavior; return this; }
-    public Builder additionalBehaviors(Map<String, BehaviorOptions> m) { this.additionalBehaviors = m; return this; }
-    public Builder defaultRootObject(String s) { this.defaultRootObject = s; return this; }
-    public Builder errorPageKey(String s) { this.errorPageKey = s; return this; }
-    public Builder errorStatusCode(int c) { this.errorStatusCode = c; return this; }
-    public Builder certificate(ICertificate c) { this.certificate = c; return this; }
-    public Builder logBucketName(String s) { this.logBucketName = s; return this; }
-    public Builder logFunctionNamePrefix(String s) { this.logFunctionNamePrefix = s; return this; }
-    public Builder logRetentionDays(int d) { this.logRetentionDays = d; return this; }
-    public Builder cloudTrailEnabled(boolean e) { this.cloudTrailEnabled = e; return this; }
-    public Builder logIncludesCookies(boolean e) { this.logIncludesCookies = e; return this; }
-    public Builder logHandlerSource(String s) { this.logHandlerSource = s; return this; }
+    public Builder domainName(String domainName) {
+      this.domainName = domainName;
+      return this;
+    }
 
-    public DistributionWithLoggingProps build() { return new DistributionWithLoggingProps(this); }
+    public Builder defaultBehavior(BehaviorOptions defaultBehavior) {
+      this.defaultBehavior = defaultBehavior;
+      return this;
+    }
+
+    public Builder additionalBehaviors(Map<String, BehaviorOptions> m) {
+      this.additionalBehaviors = m;
+      return this;
+    }
+
+    public Builder defaultRootObject(String s) {
+      this.defaultRootObject = s;
+      return this;
+    }
+
+    public Builder errorPageKey(String s) {
+      this.errorPageKey = s;
+      return this;
+    }
+
+    public Builder errorStatusCode(int c) {
+      this.errorStatusCode = c;
+      return this;
+    }
+
+    public Builder certificate(ICertificate c) {
+      this.certificate = c;
+      return this;
+    }
+
+    public Builder logBucketName(String s) {
+      this.logBucketName = s;
+      return this;
+    }
+
+    public Builder logFunctionNamePrefix(String s) {
+      this.logFunctionNamePrefix = s;
+      return this;
+    }
+
+    public Builder logRetentionDays(int d) {
+      this.logRetentionDays = d;
+      return this;
+    }
+
+    public Builder cloudTrailEnabled(boolean e) {
+      this.cloudTrailEnabled = e;
+      return this;
+    }
+
+    public Builder logIncludesCookies(boolean e) {
+      this.logIncludesCookies = e;
+      return this;
+    }
+
+    public Builder logHandlerSource(String s) {
+      this.logHandlerSource = s;
+      return this;
+    }
+
+    public DistributionWithLoggingProps build() {
+      return new DistributionWithLoggingProps(this);
+    }
   }
 }

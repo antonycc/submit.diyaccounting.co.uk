@@ -2,6 +2,11 @@ package co.uk.diyaccounting.submit.stacks;
 
 import co.uk.diyaccounting.submit.constructs.CognitoAuth;
 import co.uk.diyaccounting.submit.utils.ResourceNameUtils;
+import java.util.AbstractMap;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Pattern;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import software.amazon.awscdk.CfnOutput;
@@ -34,12 +39,6 @@ import software.amazon.awscdk.services.secretsmanager.Secret;
 import software.constructs.Construct;
 import software.constructs.IDependable;
 
-import java.util.AbstractMap;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.regex.Pattern;
-
 public class IdentityStack extends Stack {
 
   private static final Logger logger = LogManager.getLogger(IdentityStack.class);
@@ -54,17 +53,17 @@ public class IdentityStack extends Stack {
   public UserPoolClient userPoolClient;
   public UserPoolIdentityProviderGoogle googleIdentityProvider;
   public CfnUserPoolIdentityProvider acCogIdentityProvider;
-    public final HashMap<UserPoolClientIdentityProvider, IDependable> identityProviders = new HashMap<>();
-    public final UserPoolDomain userPoolDomain;
-    public final ARecord userPoolDomainARecord;
-    public final AaaaRecord userPoolDomainAaaaRecord;
-    public final String cognitoDomainName;
-    public final String dashedCognitoDomainName;
-    public final ICertificate authCertificate;
+  public final HashMap<UserPoolClientIdentityProvider, IDependable> identityProviders =
+      new HashMap<>();
+  public final UserPoolDomain userPoolDomain;
+  public final ARecord userPoolDomainARecord;
+  public final AaaaRecord userPoolDomainAaaaRecord;
+  public final String cognitoDomainName;
+  public final String dashedCognitoDomainName;
+  public final ICertificate authCertificate;
 
   // Cognito URIs
   public String cognitoBaseUri;
-
 
   public static class Builder {
     public Construct scope;
@@ -85,10 +84,10 @@ public class IdentityStack extends Stack {
     public String homeUrl;
     public String antonyccClientId;
     public String antonyccBaseUri;
-    //public String antonyccClientSecretArn;
+    // public String antonyccClientSecretArn;
     public String acCogClientId;
     public String acCogBaseUri;
-    //public String acCogClientSecretArn;
+    // public String acCogClientSecretArn;
 
     // Cognito and Bundle Management properties
     public String googleClientId;
@@ -188,25 +187,25 @@ public class IdentityStack extends Stack {
       return this;
     }
 
-    //public Builder antonyccClientSecretArn(String antonyccClientSecretArn) {
+    // public Builder antonyccClientSecretArn(String antonyccClientSecretArn) {
     //  this.antonyccClientSecretArn = antonyccClientSecretArn;
     //  return this;
-    //}
+    // }
 
-      public Builder acCogClientId(String acCogClientId) {
-          this.acCogClientId = acCogClientId;
-          return this;
-      }
+    public Builder acCogClientId(String acCogClientId) {
+      this.acCogClientId = acCogClientId;
+      return this;
+    }
 
-      public Builder acCogBaseUri(String acCogBaseUri) {
-          this.acCogBaseUri = acCogBaseUri;
-          return this;
-      }
+    public Builder acCogBaseUri(String acCogBaseUri) {
+      this.acCogBaseUri = acCogBaseUri;
+      return this;
+    }
 
-      //public Builder acCogClientSecretArn(String acCogClientSecretArn) {
-      //    this.acCogClientSecretArn = acCogClientSecretArn;
-      //    return this;
-      //}
+    // public Builder acCogClientSecretArn(String acCogClientSecretArn) {
+    //    this.acCogClientSecretArn = acCogClientSecretArn;
+    //    return this;
+    // }
 
     public Builder googleClientId(String googleClientId) {
       this.googleClientId = googleClientId;
@@ -304,8 +303,8 @@ public class IdentityStack extends Stack {
     }
 
     public static String buildDashedCognitoDomainName(String cognitoDomainName) {
-          return ResourceNameUtils.convertDotSeparatedToDashSeparated(
-                  cognitoDomainName, domainNameMappings);
+      return ResourceNameUtils.convertDotSeparatedToDashSeparated(
+          cognitoDomainName, domainNameMappings);
     }
 
     public static String buildCognitoBaseUri(String cognitoDomain) {
@@ -323,211 +322,234 @@ public class IdentityStack extends Stack {
     this(scope, id, null, builder);
   }
 
-  public IdentityStack(Construct scope, String id, StackProps props, IdentityStack.Builder builder) {
-      super(scope, id, props);
+  public IdentityStack(
+      Construct scope, String id, StackProps props, IdentityStack.Builder builder) {
+    super(scope, id, props);
 
-      // Values are provided via WebApp after context/env resolution
+    // Values are provided via WebApp after context/env resolution
 
-      var hostedZone =
-              HostedZone.fromHostedZoneAttributes(
-                      this,
-                      "HostedZone",
-                      HostedZoneAttributes.builder()
-                              .zoneName(builder.hostedZoneName)
-                              .hostedZoneId(builder.hostedZoneId)
-                              .build());
+    var hostedZone =
+        HostedZone.fromHostedZoneAttributes(
+            this,
+            "HostedZone",
+            HostedZoneAttributes.builder()
+                .zoneName(builder.hostedZoneName)
+                .hostedZoneId(builder.hostedZoneId)
+                .build());
 
-      this.domainName =
-              Builder.buildDomainName(builder.env, builder.subDomainName, builder.hostedZoneName);
-      String dashedDomainName =
-              Builder.buildDashedDomainName(builder.env, builder.subDomainName, builder.hostedZoneName);
+    this.domainName =
+        Builder.buildDomainName(builder.env, builder.subDomainName, builder.hostedZoneName);
+    String dashedDomainName =
+        Builder.buildDashedDomainName(builder.env, builder.subDomainName, builder.hostedZoneName);
 
-      int accessLogGroupRetentionPeriodDays;
-      try {
-              accessLogGroupRetentionPeriodDays = Integer.parseInt(builder.accessLogGroupRetentionPeriodDays);
-      } catch (Exception e) {
-              accessLogGroupRetentionPeriodDays = 30;
-      }
+    int accessLogGroupRetentionPeriodDays;
+    try {
+      accessLogGroupRetentionPeriodDays =
+          Integer.parseInt(builder.accessLogGroupRetentionPeriodDays);
+    } catch (Exception e) {
+      accessLogGroupRetentionPeriodDays = 30;
+    }
 
-      boolean xRayEnabled = Boolean.parseBoolean(builder.xRayEnabled);
+    boolean xRayEnabled = Boolean.parseBoolean(builder.xRayEnabled);
 
-      var cognitoDomainName =
-              Builder.buildCognitoDomainName(
-                      builder.env,
-                      builder.cognitoDomainPrefix != null ? builder.cognitoDomainPrefix : "auth",
-                      builder.subDomainName,
-                      hostedZone.getZoneName());
-      var cognitoBaseUri = Builder.buildCognitoBaseUri(cognitoDomainName);
-      this.cognitoDomainName = cognitoDomainName;
-      this.cognitoBaseUri = cognitoBaseUri;
+    var cognitoDomainName =
+        Builder.buildCognitoDomainName(
+            builder.env,
+            builder.cognitoDomainPrefix != null ? builder.cognitoDomainPrefix : "auth",
+            builder.subDomainName,
+            hostedZone.getZoneName());
+    var cognitoBaseUri = Builder.buildCognitoBaseUri(cognitoDomainName);
+    this.cognitoDomainName = cognitoDomainName;
+    this.cognitoBaseUri = cognitoBaseUri;
 
-      this.dashedCognitoDomainName = Builder.buildDashedCognitoDomainName(cognitoDomainName);
-      this.authCertificate = Certificate.fromCertificateArn(this, "AuthCertificate", builder.authCertificateArn);
+    this.dashedCognitoDomainName = Builder.buildDashedCognitoDomainName(cognitoDomainName);
+    this.authCertificate =
+        Certificate.fromCertificateArn(this, "AuthCertificate", builder.authCertificateArn);
 
-      // Create a secret for the Google client secret and set the ARN to be used in the Lambda
-      // environment variable
-      // this.googleClientSecretsManagerSecret = Secret.Builder.create(this,
-      // "GoogleClientSecretValue")
-      //        .secretStringValue(SecretValue.unsafePlainText(builder.googleClientSecret))
-      //        .description("Google Client Secret for OAuth authentication")
-      //        .build();
-      // Look up the client secret by arn
-      this.googleClientSecretsManagerSecret =
-              Secret.fromSecretPartialArn(this, "GoogleClientSecret", builder.googleClientSecretArn);
+    // Create a secret for the Google client secret and set the ARN to be used in the Lambda
+    // environment variable
+    // this.googleClientSecretsManagerSecret = Secret.Builder.create(this,
+    // "GoogleClientSecretValue")
+    //        .secretStringValue(SecretValue.unsafePlainText(builder.googleClientSecret))
+    //        .description("Google Client Secret for OAuth authentication")
+    //        .build();
+    // Look up the client secret by arn
+    this.googleClientSecretsManagerSecret =
+        Secret.fromSecretPartialArn(this, "GoogleClientSecret", builder.googleClientSecretArn);
 
-      //this.antonyccClientSecretsManagerSecret =
-      //          Secret.fromSecretPartialArn(this, "AntonyccClientSecret", builder.antonyccClientSecretArn);
-      //var antonyccClientSecretArn = this.antonyccClientSecretsManagerSecret.getSecretArn();
+    // this.antonyccClientSecretsManagerSecret =
+    //          Secret.fromSecretPartialArn(this, "AntonyccClientSecret",
+    // builder.antonyccClientSecretArn);
+    // var antonyccClientSecretArn = this.antonyccClientSecretsManagerSecret.getSecretArn();
 
-      //this.acCogClientSecretsManagerSecret =
-      //          Secret.fromSecretPartialArn(this, "AcCogClientSecret", builder.acCogClientSecretArn);
-      //var acCogClientSecretArn = this.acCogClientSecretsManagerSecret.getSecretArn();
+    // this.acCogClientSecretsManagerSecret =
+    //          Secret.fromSecretPartialArn(this, "AcCogClientSecret",
+    // builder.acCogClientSecretArn);
+    // var acCogClientSecretArn = this.acCogClientSecretsManagerSecret.getSecretArn();
 
-      var googleClientSecretValue = this.googleClientSecretsManagerSecret.getSecretValue();
-      //var antonyccClientSecretValue = this.antonyccClientSecretsManagerSecret.getSecretValue();
-      //var acCogClientSecretValue = this.acCogClientSecretsManagerSecret.getSecretValue();
-      // var googleClientSecretValue = this.googleClientSecretsManagerSecret != null
-      //        ? this.googleClientSecretsManagerSecret.getSecretValue()
-      //        : SecretValue.unsafePlainText(builder.googleClientSecret);
+    var googleClientSecretValue = this.googleClientSecretsManagerSecret.getSecretValue();
+    // var antonyccClientSecretValue = this.antonyccClientSecretsManagerSecret.getSecretValue();
+    // var acCogClientSecretValue = this.acCogClientSecretsManagerSecret.getSecretValue();
+    // var googleClientSecretValue = this.googleClientSecretsManagerSecret != null
+    //        ? this.googleClientSecretsManagerSecret.getSecretValue()
+    //        : SecretValue.unsafePlainText(builder.googleClientSecret);
 
-      // Create Cognito User Pool for authentication
-      var standardAttributes =
-              StandardAttributes.builder()
-                      .email(StandardAttribute.builder().required(true).mutable(true).build())
-                      .givenName(StandardAttribute.builder().required(false).mutable(true).build())
-                      .familyName(StandardAttribute.builder().required(false).mutable(true).build())
-                      .build();
-      this.userPool = UserPool.Builder.create(this, "UserPool")
-                      .userPoolName(dashedDomainName + "-user-pool")
-                      .selfSignUpEnabled(true)
-                      .signInAliases(SignInAliases.builder().email(true).build())
-                      .standardAttributes(standardAttributes)
-                      .customAttributes(
-                              Map.of(
-                                      "bundles", StringAttribute.Builder.create().maxLen(2048).mutable(true).build()))
-                      .removalPolicy(RemovalPolicy.DESTROY)
-                      .build();
+    // Create Cognito User Pool for authentication
+    var standardAttributes =
+        StandardAttributes.builder()
+            .email(StandardAttribute.builder().required(true).mutable(true).build())
+            .givenName(StandardAttribute.builder().required(false).mutable(true).build())
+            .familyName(StandardAttribute.builder().required(false).mutable(true).build())
+            .build();
+    this.userPool =
+        UserPool.Builder.create(this, "UserPool")
+            .userPoolName(dashedDomainName + "-user-pool")
+            .selfSignUpEnabled(true)
+            .signInAliases(SignInAliases.builder().email(true).build())
+            .standardAttributes(standardAttributes)
+            .customAttributes(
+                Map.of(
+                    "bundles", StringAttribute.Builder.create().maxLen(2048).mutable(true).build()))
+            .removalPolicy(RemovalPolicy.DESTROY)
+            .build();
 
-      // Google IdP
-      this.googleIdentityProvider = UserPoolIdentityProviderGoogle.Builder.create(this, "GoogleIdentityProvider")
-              .userPool(this.userPool)
-              .clientId(builder.googleClientId)
-              .clientSecretValue(googleClientSecretValue)
-              .scopes(List.of("email", "openid", "profile"))
-              .attributeMapping(
-                      AttributeMapping.builder()
-                              .email(ProviderAttribute.GOOGLE_EMAIL)
-                              .givenName(ProviderAttribute.GOOGLE_GIVEN_NAME)
-                              .familyName(ProviderAttribute.GOOGLE_FAMILY_NAME)
-                              .build())
-              .build();
-      this.identityProviders.put(UserPoolClientIdentityProvider.GOOGLE, this.googleIdentityProvider);
+    // Google IdP
+    this.googleIdentityProvider =
+        UserPoolIdentityProviderGoogle.Builder.create(this, "GoogleIdentityProvider")
+            .userPool(this.userPool)
+            .clientId(builder.googleClientId)
+            .clientSecretValue(googleClientSecretValue)
+            .scopes(List.of("email", "openid", "profile"))
+            .attributeMapping(
+                AttributeMapping.builder()
+                    .email(ProviderAttribute.GOOGLE_EMAIL)
+                    .givenName(ProviderAttribute.GOOGLE_GIVEN_NAME)
+                    .familyName(ProviderAttribute.GOOGLE_FAMILY_NAME)
+                    .build())
+            .build();
+    this.identityProviders.put(UserPoolClientIdentityProvider.GOOGLE, this.googleIdentityProvider);
 
-      // Antonycc OIDC via Cognito IdP (using L1 construct to avoid clientSecret requirement)
-      this.acCogIdentityProvider = CfnUserPoolIdentityProvider.Builder.create(this, "AcCogIdentityProvider")
-              .providerName("ac-cog")
-              .providerType("OIDC")
-              .userPoolId(this.userPool.getUserPoolId())
-              .providerDetails(Map.of(
-                      "client_id", builder.acCogClientId,
-                      "oidc_issuer", builder.acCogBaseUri,
-                      "authorize_scopes", "email openid profile"
-                      // No client_secret provided
-              ))
-              .attributeMapping(Map.of(
-                      "email", "email",
-                      "given_name", "given_name",
-                      "family_name", "family_name"
-              ))
-              .build();
-      this.identityProviders.put(UserPoolClientIdentityProvider.custom("ac-cog"), this.acCogIdentityProvider);
+    // Antonycc OIDC via Cognito IdP (using L1 construct to avoid clientSecret requirement)
+    this.acCogIdentityProvider =
+        CfnUserPoolIdentityProvider.Builder.create(this, "AcCogIdentityProvider")
+            .providerName("ac-cog")
+            .providerType("OIDC")
+            .userPoolId(this.userPool.getUserPoolId())
+            .providerDetails(
+                Map.of(
+                    "client_id", builder.acCogClientId,
+                    "oidc_issuer", builder.acCogBaseUri,
+                    "authorize_scopes", "email openid profile"
+                    // No client_secret provided
+                    ))
+            .attributeMapping(
+                Map.of(
+                    "email", "email",
+                    "given_name", "given_name",
+                    "family_name", "family_name"))
+            .build();
+    this.identityProviders.put(
+        UserPoolClientIdentityProvider.custom("ac-cog"), this.acCogIdentityProvider);
 
-      var cognito =
-              CognitoAuth.Builder.create(this)
-                      .userPoolArn(this.userPool.getUserPoolArn())
-                      .userPoolClientName(dashedDomainName + "-client")
-                      .identityProviders(this.identityProviders)
-                      .standardAttributes(standardAttributes)
-                      .googleClientId(builder.googleClientId)
-                      .googleClientSecretValue(googleClientSecretValue)
-                      //.antonyccClientId(builder.antonyccClientId)
-                      //.antonyccIssuerUrl(builder.antonyccBaseUri)
-                      //.antonyccClientSecretValue(antonyccClientSecretValue)
-                      .acCogClientId(builder.acCogClientId)
-                      .acCogIssuerUrl(builder.acCogBaseUri)
-                      //.acCogClientSecretValue(acCogClientSecretValue)
-                      .callbackUrls(
-                              List.of(
-                                      "https://" + this.domainName + "/",
-                                      "https://" + this.domainName + "/auth/loginWithGoogleCallback.html",
-                                      "https://" + this.domainName + "/auth/loginWithAcCogCallback.html"))
-                      .logoutUrls(List.of("https://" + this.domainName + "/"))
-                      .featurePlan(
-                              builder.cognitoFeaturePlan != null && !builder.cognitoFeaturePlan.isBlank()
-                                      ? builder.cognitoFeaturePlan
-                                      : "ESSENTIALS")
-                      .enableLogDelivery(
-                              builder.cognitoEnableLogDelivery != null
-                                      && !builder.cognitoEnableLogDelivery.isBlank() && Boolean.parseBoolean(builder.cognitoEnableLogDelivery))
-                      .xRayEnabled(xRayEnabled)
-                      .accessLogGroupRetentionPeriodDays(accessLogGroupRetentionPeriodDays)
-                      .logGroupNamePrefix(dashedDomainName)
-                      .lambdaJarPath(builder.logCognitoEventHandlerSource)
-                      .build();
-      this.userPoolClient = cognito.userPoolClient;
+    var cognito =
+        CognitoAuth.Builder.create(this)
+            .userPoolArn(this.userPool.getUserPoolArn())
+            .userPoolClientName(dashedDomainName + "-client")
+            .identityProviders(this.identityProviders)
+            .standardAttributes(standardAttributes)
+            .googleClientId(builder.googleClientId)
+            .googleClientSecretValue(googleClientSecretValue)
+            // .antonyccClientId(builder.antonyccClientId)
+            // .antonyccIssuerUrl(builder.antonyccBaseUri)
+            // .antonyccClientSecretValue(antonyccClientSecretValue)
+            .acCogClientId(builder.acCogClientId)
+            .acCogIssuerUrl(builder.acCogBaseUri)
+            // .acCogClientSecretValue(acCogClientSecretValue)
+            .callbackUrls(
+                List.of(
+                    "https://" + this.domainName + "/",
+                    "https://" + this.domainName + "/auth/loginWithGoogleCallback.html",
+                    "https://" + this.domainName + "/auth/loginWithAcCogCallback.html"))
+            .logoutUrls(List.of("https://" + this.domainName + "/"))
+            .featurePlan(
+                builder.cognitoFeaturePlan != null && !builder.cognitoFeaturePlan.isBlank()
+                    ? builder.cognitoFeaturePlan
+                    : "ESSENTIALS")
+            .enableLogDelivery(
+                builder.cognitoEnableLogDelivery != null
+                    && !builder.cognitoEnableLogDelivery.isBlank()
+                    && Boolean.parseBoolean(builder.cognitoEnableLogDelivery))
+            .xRayEnabled(xRayEnabled)
+            .accessLogGroupRetentionPeriodDays(accessLogGroupRetentionPeriodDays)
+            .logGroupNamePrefix(dashedDomainName)
+            .lambdaJarPath(builder.logCognitoEventHandlerSource)
+            .build();
+    this.userPoolClient = cognito.userPoolClient;
 
-      // Create Cognito User Pool Domain
-      this.userPoolDomain =
-              UserPoolDomain.Builder.create(this, "UserPoolDomain")
-                      .userPool(userPool)
-                      .customDomain(
-                              software.amazon.awscdk.services.cognito.CustomDomainOptions.builder()
-                                      .domainName(cognitoDomainName)
-                                      .certificate(this.authCertificate)
-                                      .build())
-                      .build();
+    // Create Cognito User Pool Domain
+    this.userPoolDomain =
+        UserPoolDomain.Builder.create(this, "UserPoolDomain")
+            .userPool(userPool)
+            .customDomain(
+                software.amazon.awscdk.services.cognito.CustomDomainOptions.builder()
+                    .domainName(cognitoDomainName)
+                    .certificate(this.authCertificate)
+                    .build())
+            .build();
 
-      // Create Route53 records for the Cognito UserPoolDomain as subdomains from the web domain.
-      this.userPoolDomainARecord =
-              ARecord.Builder.create(this, "UserPoolDomainARecord-%s".formatted(dashedCognitoDomainName))
-                      .zone(hostedZone)
-                      .recordName(cognitoDomainName)
-                      .deleteExisting(true)
-                      .target(RecordTarget.fromAlias(new UserPoolDomainTarget(this.userPoolDomain)))
-                      .build();
-      //this.userPoolDomainARecord.getNode().addDependency(this.aRecord);
-      this.userPoolDomainAaaaRecord =
-              AaaaRecord.Builder.create(this, "UserPoolDomainAaaaRecord-%s".formatted(dashedCognitoDomainName))
-                      .zone(hostedZone)
-                      .recordName(cognitoDomainName)
-                      .deleteExisting(true)
-                      .target(RecordTarget.fromAlias(new UserPoolDomainTarget(this.userPoolDomain)))
-                      .build();
-      //this.userPoolDomainAaaaRecord.getNode().addDependency(this.aaaaRecord);
+    // Create Route53 records for the Cognito UserPoolDomain as subdomains from the web domain.
+    this.userPoolDomainARecord =
+        ARecord.Builder.create(this, "UserPoolDomainARecord-%s".formatted(dashedCognitoDomainName))
+            .zone(hostedZone)
+            .recordName(cognitoDomainName)
+            .deleteExisting(true)
+            .target(RecordTarget.fromAlias(new UserPoolDomainTarget(this.userPoolDomain)))
+            .build();
+    // this.userPoolDomainARecord.getNode().addDependency(this.aRecord);
+    this.userPoolDomainAaaaRecord =
+        AaaaRecord.Builder.create(
+                this, "UserPoolDomainAaaaRecord-%s".formatted(dashedCognitoDomainName))
+            .zone(hostedZone)
+            .recordName(cognitoDomainName)
+            .deleteExisting(true)
+            .target(RecordTarget.fromAlias(new UserPoolDomainTarget(this.userPoolDomain)))
+            .build();
+    // this.userPoolDomainAaaaRecord.getNode().addDependency(this.aaaaRecord);
 
-      // Stack Outputs for Identity resources
-      if (this.userPool != null) {
-        CfnOutput.Builder.create(this, "UserPoolId").value(this.userPool.getUserPoolId()).build();
-        CfnOutput.Builder.create(this, "UserPoolArn").value(this.userPool.getUserPoolArn()).build();
-      }
-      if (this.userPoolClient != null) {
-        CfnOutput.Builder.create(this, "UserPoolClientId").value(this.userPoolClient.getUserPoolClientId()).build();
-      }
-      if (this.userPoolDomain != null) {
-        CfnOutput.Builder.create(this, "UserPoolDomainName").value(this.userPoolDomain.getDomainName()).build();
-      }
-      if (this.userPoolDomainARecord != null) {
-        CfnOutput.Builder.create(this, "UserPoolDomainARecord").value(this.userPoolDomainARecord.getDomainName()).build();
-      }
-      if (this.userPoolDomainAaaaRecord != null) {
-        CfnOutput.Builder.create(this, "UserPoolDomainAaaaRecord").value(this.userPoolDomainAaaaRecord.getDomainName()).build();
-      }
-      if (this.googleIdentityProvider != null) {
-        CfnOutput.Builder.create(this, "CognitoGoogleIdpId").value(this.googleIdentityProvider.getProviderName()).build();
-      }
-      if (this.acCogIdentityProvider != null) {
-        CfnOutput.Builder.create(this, "CognitoAntonyccIdpId").value(this.acCogIdentityProvider.getProviderName()).build();
-      }
-
+    // Stack Outputs for Identity resources
+    if (this.userPool != null) {
+      CfnOutput.Builder.create(this, "UserPoolId").value(this.userPool.getUserPoolId()).build();
+      CfnOutput.Builder.create(this, "UserPoolArn").value(this.userPool.getUserPoolArn()).build();
+    }
+    if (this.userPoolClient != null) {
+      CfnOutput.Builder.create(this, "UserPoolClientId")
+          .value(this.userPoolClient.getUserPoolClientId())
+          .build();
+    }
+    if (this.userPoolDomain != null) {
+      CfnOutput.Builder.create(this, "UserPoolDomainName")
+          .value(this.userPoolDomain.getDomainName())
+          .build();
+    }
+    if (this.userPoolDomainARecord != null) {
+      CfnOutput.Builder.create(this, "UserPoolDomainARecord")
+          .value(this.userPoolDomainARecord.getDomainName())
+          .build();
+    }
+    if (this.userPoolDomainAaaaRecord != null) {
+      CfnOutput.Builder.create(this, "UserPoolDomainAaaaRecord")
+          .value(this.userPoolDomainAaaaRecord.getDomainName())
+          .build();
+    }
+    if (this.googleIdentityProvider != null) {
+      CfnOutput.Builder.create(this, "CognitoGoogleIdpId")
+          .value(this.googleIdentityProvider.getProviderName())
+          .build();
+    }
+    if (this.acCogIdentityProvider != null) {
+      CfnOutput.Builder.create(this, "CognitoAntonyccIdpId")
+          .value(this.acCogIdentityProvider.getProviderName())
+          .build();
+    }
   }
 }

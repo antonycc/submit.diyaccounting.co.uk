@@ -1,5 +1,8 @@
 package co.uk.diyaccounting.submit.constructs;
 
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Pattern;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import software.amazon.awscdk.Duration;
@@ -31,10 +34,6 @@ import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.LogGroupProps;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.constructs.Construct;
-
-import java.util.List;
-import java.util.Map;
-import java.util.regex.Pattern;
 
 public class LambdaUrlOrigin {
 

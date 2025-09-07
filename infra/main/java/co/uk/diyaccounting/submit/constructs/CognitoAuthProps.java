@@ -1,12 +1,11 @@
 package co.uk.diyaccounting.submit.constructs;
 
+import java.util.HashMap;
+import java.util.List;
 import software.amazon.awscdk.SecretValue;
 import software.amazon.awscdk.services.cognito.StandardAttributes;
 import software.amazon.awscdk.services.cognito.UserPoolClientIdentityProvider;
 import software.constructs.IDependable;
-
-import java.util.HashMap;
-import java.util.List;
 
 public class CognitoAuthProps {
   public final String userPoolArn;
@@ -59,7 +58,9 @@ public class CognitoAuthProps {
     this.lambdaJarPath = b.lambdaJarPath;
   }
 
-  public static Builder builder() { return new Builder(); }
+  public static Builder builder() {
+    return new Builder();
+  }
 
   public static class Builder {
     private String userPoolArn;
@@ -78,7 +79,8 @@ public class CognitoAuthProps {
     private String certificateArn;
     private String authCertificateArn;
     private String cognitoDomainPrefix;
-    private HashMap<UserPoolClientIdentityProvider, IDependable> identityProviders = new HashMap<>();
+    private HashMap<UserPoolClientIdentityProvider, IDependable> identityProviders =
+        new HashMap<>();
     private String featurePlan;
     private boolean enableLogDelivery = false;
     private boolean xRayEnabled = false;
@@ -86,30 +88,123 @@ public class CognitoAuthProps {
     private String logGroupNamePrefix = "cognito";
     private String lambdaJarPath;
 
-    public Builder identityProviders(HashMap<UserPoolClientIdentityProvider, IDependable> ip) { this.identityProviders = ip; return this; }
-    public Builder userPoolArn(String v) { this.userPoolArn = v; return this; }
-    public Builder userPoolClientName(String v) { this.userPoolClientName = v; return this; }
-    public Builder standardAttributes(StandardAttributes v) { this.standardAttributes = v; return this; }
-    public Builder googleClientId(String v) { this.googleClientId = v; return this; }
-    public Builder googleClientSecretValue(SecretValue v) { this.googleClientSecretValue = v; return this; }
-    public Builder acCogClientId(String v) { this.acCogClientId = v; return this; }
-    public Builder acCogIssuerUrl(String v) { this.acCogIssuerUrl = v; return this; }
-    public Builder callbackUrls(List<String> v) { this.callbackUrls = v; return this; }
-    public Builder logoutUrls(List<String> v) { this.logoutUrls = v; return this; }
-    public Builder env(String v) { this.env = v; return this; }
-    public Builder hostedZoneName(String v) { this.hostedZoneName = v; return this; }
-    public Builder hostedZoneId(String v) { this.hostedZoneId = v; return this; }
-    public Builder subDomainName(String v) { this.subDomainName = v; return this; }
-    public Builder certificateArn(String v) { this.certificateArn = v; return this; }
-    public Builder authCertificateArn(String v) { this.authCertificateArn = v; return this; }
-    public Builder cognitoDomainPrefix(String v) { this.cognitoDomainPrefix = v; return this; }
-    public Builder featurePlan(String v) { this.featurePlan = v; return this; }
-    public Builder enableLogDelivery(boolean v) { this.enableLogDelivery = v; return this; }
-    public Builder xRayEnabled(boolean v) { this.xRayEnabled = v; return this; }
-    public Builder accessLogGroupRetentionPeriodDays(int v) { this.accessLogGroupRetentionPeriodDays = v; return this; }
-    public Builder logGroupNamePrefix(String v) { this.logGroupNamePrefix = v; return this; }
-    public Builder lambdaJarPath(String v) { this.lambdaJarPath = v; return this; }
+    public Builder identityProviders(HashMap<UserPoolClientIdentityProvider, IDependable> ip) {
+      this.identityProviders = ip;
+      return this;
+    }
 
-    public CognitoAuthProps build() { return new CognitoAuthProps(this); }
+    public Builder userPoolArn(String v) {
+      this.userPoolArn = v;
+      return this;
+    }
+
+    public Builder userPoolClientName(String v) {
+      this.userPoolClientName = v;
+      return this;
+    }
+
+    public Builder standardAttributes(StandardAttributes v) {
+      this.standardAttributes = v;
+      return this;
+    }
+
+    public Builder googleClientId(String v) {
+      this.googleClientId = v;
+      return this;
+    }
+
+    public Builder googleClientSecretValue(SecretValue v) {
+      this.googleClientSecretValue = v;
+      return this;
+    }
+
+    public Builder acCogClientId(String v) {
+      this.acCogClientId = v;
+      return this;
+    }
+
+    public Builder acCogIssuerUrl(String v) {
+      this.acCogIssuerUrl = v;
+      return this;
+    }
+
+    public Builder callbackUrls(List<String> v) {
+      this.callbackUrls = v;
+      return this;
+    }
+
+    public Builder logoutUrls(List<String> v) {
+      this.logoutUrls = v;
+      return this;
+    }
+
+    public Builder env(String v) {
+      this.env = v;
+      return this;
+    }
+
+    public Builder hostedZoneName(String v) {
+      this.hostedZoneName = v;
+      return this;
+    }
+
+    public Builder hostedZoneId(String v) {
+      this.hostedZoneId = v;
+      return this;
+    }
+
+    public Builder subDomainName(String v) {
+      this.subDomainName = v;
+      return this;
+    }
+
+    public Builder certificateArn(String v) {
+      this.certificateArn = v;
+      return this;
+    }
+
+    public Builder authCertificateArn(String v) {
+      this.authCertificateArn = v;
+      return this;
+    }
+
+    public Builder cognitoDomainPrefix(String v) {
+      this.cognitoDomainPrefix = v;
+      return this;
+    }
+
+    public Builder featurePlan(String v) {
+      this.featurePlan = v;
+      return this;
+    }
+
+    public Builder enableLogDelivery(boolean v) {
+      this.enableLogDelivery = v;
+      return this;
+    }
+
+    public Builder xRayEnabled(boolean v) {
+      this.xRayEnabled = v;
+      return this;
+    }
+
+    public Builder accessLogGroupRetentionPeriodDays(int v) {
+      this.accessLogGroupRetentionPeriodDays = v;
+      return this;
+    }
+
+    public Builder logGroupNamePrefix(String v) {
+      this.logGroupNamePrefix = v;
+      return this;
+    }
+
+    public Builder lambdaJarPath(String v) {
+      this.lambdaJarPath = v;
+      return this;
+    }
+
+    public CognitoAuthProps build() {
+      return new CognitoAuthProps(this);
+    }
   }
 }

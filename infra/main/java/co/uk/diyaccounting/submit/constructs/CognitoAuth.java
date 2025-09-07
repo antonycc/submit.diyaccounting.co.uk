@@ -1,6 +1,8 @@
 package co.uk.diyaccounting.submit.constructs;
 
 import co.uk.diyaccounting.submit.awssdk.RetentionDaysConverter;
+import java.util.HashMap;
+import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import software.amazon.awscdk.RemovalPolicy;
@@ -18,9 +20,6 @@ import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.constructs.Construct;
 import software.constructs.IDependable;
-
-import java.util.HashMap;
-import java.util.List;
 
 /**
  * Thin coordinator for Cognito resources, created at WebStack scope to preserve logical IDs.
@@ -118,22 +117,22 @@ public class CognitoAuth {
     private StandardAttributes standardAttributes;
     private String googleClientId;
     private SecretValue googleClientSecretValue;
-    //private String antonyccClientId;
-    //private SecretValue antonyccClientSecretValue;
-    //private String antonyccIssuerUrl;
+    // private String antonyccClientId;
+    // private SecretValue antonyccClientSecretValue;
+    // private String antonyccIssuerUrl;
     private String acCogClientId;
-    //private SecretValue acCogClientSecretValue;
+    // private SecretValue acCogClientSecretValue;
     private String acCogIssuerUrl;
     private List<String> callbackUrls;
     private List<String> logoutUrls;
-      public String env;
-      public String hostedZoneName;
-      public String hostedZoneId;
-      public String subDomainName;
-      public String certificateArn;
-      public String authCertificateArn;
-      public String cognitoDomainPrefix;
-      public HashMap<UserPoolClientIdentityProvider, IDependable> identityProviders;
+    public String env;
+    public String hostedZoneName;
+    public String hostedZoneId;
+    public String subDomainName;
+    public String certificateArn;
+    public String authCertificateArn;
+    public String cognitoDomainPrefix;
+    public HashMap<UserPoolClientIdentityProvider, IDependable> identityProviders;
 
     // New optional settings
     private String featurePlan; // PLUS or ESSENTIALS (default ESSENTIALS)
@@ -151,10 +150,11 @@ public class CognitoAuth {
       return new Builder(scope);
     }
 
-    public Builder identityProviders(HashMap<UserPoolClientIdentityProvider, IDependable> identityProviders) {
+    public Builder identityProviders(
+        HashMap<UserPoolClientIdentityProvider, IDependable> identityProviders) {
       this.identityProviders = identityProviders;
       return this;
-  }
+    }
 
     public Builder userPoolArn(String name) {
       this.userPoolArn = name;
@@ -181,37 +181,37 @@ public class CognitoAuth {
       return this;
     }
 
-    //public Builder antonyccClientId(String id) {
+    // public Builder antonyccClientId(String id) {
     //      this.antonyccClientId = id;
     //      return this;
-   // }
+    // }
 
-    //public Builder antonyccClientSecretValue(SecretValue value) {
+    // public Builder antonyccClientSecretValue(SecretValue value) {
     //      this.antonyccClientSecretValue = value;
     //      return this;
-   // }
+    // }
 
-    //public Builder antonyccIssuerUrl(String url) {
+    // public Builder antonyccIssuerUrl(String url) {
     //      this.antonyccIssuerUrl = url;
     //      return this;
-    //}
+    // }
 
-      public Builder acCogClientId(String id) {
-          this.acCogClientId = id;
-          return this;
-      }
+    public Builder acCogClientId(String id) {
+      this.acCogClientId = id;
+      return this;
+    }
 
-      //public Builder acCogClientSecretValue(SecretValue value) {
-      //    this.acCogClientSecretValue = value;
-      //    return this;
-     // }
+    // public Builder acCogClientSecretValue(SecretValue value) {
+    //    this.acCogClientSecretValue = value;
+    //    return this;
+    // }
 
-      public Builder acCogIssuerUrl(String url) {
-          this.acCogIssuerUrl = url;
-          return this;
-      }
+    public Builder acCogIssuerUrl(String url) {
+      this.acCogIssuerUrl = url;
+      return this;
+    }
 
-      public Builder callbackUrls(List<String> urls) {
+    public Builder callbackUrls(List<String> urls) {
       this.callbackUrls = urls;
       return this;
     }
@@ -221,35 +221,35 @@ public class CognitoAuth {
       return this;
     }
 
-      public Builder env(String env) {
-          this.env = env;
-          return this;
-      }
+    public Builder env(String env) {
+      this.env = env;
+      return this;
+    }
 
-      public Builder hostedZoneName(String hostedZoneName) {
-          this.hostedZoneName = hostedZoneName;
-          return this;
-      }
+    public Builder hostedZoneName(String hostedZoneName) {
+      this.hostedZoneName = hostedZoneName;
+      return this;
+    }
 
-      public Builder hostedZoneId(String hostedZoneId) {
-          this.hostedZoneId = hostedZoneId;
-          return this;
-      }
+    public Builder hostedZoneId(String hostedZoneId) {
+      this.hostedZoneId = hostedZoneId;
+      return this;
+    }
 
-      public Builder subDomainName(String subDomainName) {
-          this.subDomainName = subDomainName;
-          return this;
-      }
+    public Builder subDomainName(String subDomainName) {
+      this.subDomainName = subDomainName;
+      return this;
+    }
 
-      public Builder certificateArn(String certificateArn) {
-          this.certificateArn = certificateArn;
-          return this;
-      }
+    public Builder certificateArn(String certificateArn) {
+      this.certificateArn = certificateArn;
+      return this;
+    }
 
-      public Builder cognitoDomainPrefix(String cognitoDomainPrefix) {
-          this.cognitoDomainPrefix = cognitoDomainPrefix;
-          return this;
-      }
+    public Builder cognitoDomainPrefix(String cognitoDomainPrefix) {
+      this.cognitoDomainPrefix = cognitoDomainPrefix;
+      return this;
+    }
 
     public Builder featurePlan(String plan) {
       this.featurePlan = plan;
