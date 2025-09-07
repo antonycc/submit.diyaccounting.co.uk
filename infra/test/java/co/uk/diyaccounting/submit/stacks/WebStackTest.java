@@ -34,7 +34,7 @@ public class WebStackTest {
     WebStack stack = createTestWebStack(app);
 
     Template template = Template.fromStack(stack);
-    template.resourceCountIs("AWS::S3::Bucket", 6);
+    template.resourceCountIs("AWS::S3::Bucket", 4);
     logger.info("WebStack test completed successfully - logging is working!");
   }
 
@@ -46,7 +46,6 @@ public class WebStackTest {
         .subDomainName("test")
         .certificateArn("arn:aws:acm:us-east-1:000000000000:certificate/test")
         .cloudTrailEnabled("true")
-        .cloudTrailLogGroupPrefix("/aws/s3/")
         .cloudTrailLogGroupRetentionPeriodDays("3")
         .accessLogGroupRetentionPeriodDays("30")
         .s3UseExistingBucket("false")

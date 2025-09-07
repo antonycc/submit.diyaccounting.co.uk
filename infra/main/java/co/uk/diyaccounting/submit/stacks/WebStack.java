@@ -40,7 +40,6 @@ import software.amazon.awscdk.services.lambda.FunctionUrl;
 import software.amazon.awscdk.services.lambda.FunctionUrlAuthType;
 import software.amazon.awscdk.services.lambda.Permission;
 import software.amazon.awscdk.services.logs.LogGroup;
-import software.amazon.awscdk.services.logs.RetentionDays;
 import software.amazon.awscdk.services.route53.ARecord;
 import software.amazon.awscdk.services.route53.AaaaRecord;
 import software.amazon.awscdk.services.route53.HostedZone;
@@ -49,10 +48,7 @@ import software.amazon.awscdk.services.route53.IHostedZone;
 import software.amazon.awscdk.services.route53.RecordTarget;
 import software.amazon.awscdk.services.route53.targets.CloudFrontTarget;
 import software.amazon.awscdk.services.s3.BlockPublicAccess;
-import software.amazon.awscdk.services.s3.Bucket;
-import software.amazon.awscdk.services.s3.BucketEncryption;
 import software.amazon.awscdk.services.s3.IBucket;
-import software.amazon.awscdk.services.s3.LifecycleRule;
 import software.amazon.awscdk.services.s3.ObjectOwnership;
 import software.amazon.awscdk.services.s3.assets.AssetOptions;
 import software.amazon.awscdk.services.s3.deployment.BucketDeployment;
@@ -77,7 +73,6 @@ public class WebStack extends Stack {
 
   public String domainName;
   public IBucket originBucket;
-  public LogGroup cloudTrailLogGroup;
   public IBucket originAccessLogBucket;
   public IOrigin origin;
   public BucketDeployment deployment;
@@ -94,8 +89,6 @@ public class WebStack extends Stack {
   public ISource docRootSource;
   public ARecord aRecord;
   public AaaaRecord aaaaRecord;
-  public Bucket trailBucket;
-  public Trail trail;
   public Function authUrlHmrcLambda;
   public FunctionUrl authUrlHmrcLambdaUrl;
   public LogGroup authUrlLambdaLogGroup;
@@ -165,7 +158,6 @@ public class WebStack extends Stack {
     public String subDomainName;
     public String certificateArn;
     public String cloudTrailEnabled;
-    public String cloudTrailLogGroupPrefix;
     public String cloudTrailLogGroupRetentionPeriodDays;
     public String accessLogGroupRetentionPeriodDays;
     public String s3UseExistingBucket;
@@ -259,8 +251,9 @@ public class WebStack extends Stack {
     public String myReceiptsLambdaHandlerFunctionName;
     public String myReceiptsLambdaUrlPath;
     public String myReceiptsLambdaDuration;
+    public Trail trail;
 
-    public Builder(Construct scope, String id, StackProps props) {
+      public Builder(Construct scope, String id, StackProps props) {
       this.scope = scope;
       this.id = id;
       this.props = props;
@@ -355,11 +348,6 @@ public class WebStack extends Stack {
 
     public Builder cloudTrailEnabled(String cloudTrailEnabled) {
       this.cloudTrailEnabled = cloudTrailEnabled;
-      return this;
-    }
-
-    public Builder cloudTrailLogGroupPrefix(String cloudTrailLogGroupPrefix) {
-      this.cloudTrailLogGroupPrefix = cloudTrailLogGroupPrefix;
       return this;
     }
 
@@ -822,7 +810,12 @@ public class WebStack extends Stack {
       return this;
     }
 
-    // TODO: Split into Edge, Identity, Data, App, and Ops. See:
+      public Builder trail(Trail trail) {
+          this.trail = trail;
+          return this;
+      }
+
+      // TODO: Split into Development(<Dev), Observability, Identity, Application, and Web (also fronting Application). See:
     // _developers/backlog/diverse-versions-at-origin.md
 
     public WebStack build() {
@@ -909,10 +902,7 @@ public class WebStack extends Stack {
     boolean s3RetainOriginBucket = Boolean.parseBoolean(builder.s3RetainOriginBucket);
     boolean s3RetainReceiptsBucket = Boolean.parseBoolean(builder.s3RetainReceiptsBucket);
 
-    String trailName = Builder.buildTrailName(dashedDomainName);
     boolean cloudTrailEnabled = Boolean.parseBoolean(builder.cloudTrailEnabled);
-    int cloudTrailLogGroupRetentionPeriodDays =
-        Integer.parseInt(builder.cloudTrailLogGroupRetentionPeriodDays);
     boolean xRayEnabled = Boolean.parseBoolean(builder.xRayEnabled);
 
     int accessLogGroupRetentionPeriodDays =
@@ -941,43 +931,6 @@ public class WebStack extends Stack {
             .verboseLogging(verboseLogging)
             .baseImageTag(builder.baseImageTag)
             .build();
-
-    // Create a CloudTrail for the stack resources
-    RetentionDays cloudTrailLogGroupRetentionPeriod =
-        RetentionDaysConverter.daysToRetentionDays(cloudTrailLogGroupRetentionPeriodDays);
-    if (cloudTrailEnabled) {
-      this.cloudTrailLogGroup =
-          LogGroup.Builder.create(this, "OriginBucketLogGroup")
-              .logGroupName(
-                  "%s%s-cloud-trail".formatted(builder.cloudTrailLogGroupPrefix, dashedDomainName))
-              .retention(cloudTrailLogGroupRetentionPeriod)
-              .removalPolicy(RemovalPolicy.DESTROY)
-              .build();
-      this.trailBucket =
-          Bucket.Builder.create(this, trailName + "CloudTrailBucket")
-              // optional: stable name, otherwise CDK adds a hash (fine too)
-              // .bucketName(ResourceNameUtils.buildBucketName(env, "originbuckettrail"))
-              .encryption(BucketEncryption.S3_MANAGED)
-              .blockPublicAccess(BlockPublicAccess.BLOCK_ALL)
-              .versioned(false)
-              .autoDeleteObjects(true)
-              .removalPolicy(RemovalPolicy.DESTROY)
-              .lifecycleRules(
-                  List.of(
-                      LifecycleRule.builder()
-                          .expiration(Duration.days(cloudTrailLogGroupRetentionPeriodDays))
-                          .build()))
-              .build();
-      this.trail =
-          Trail.Builder.create(this, "OriginBucketTrail")
-              .trailName(trailName)
-              .cloudWatchLogGroup(this.cloudTrailLogGroup)
-              .sendToCloudWatchLogs(true)
-              .cloudWatchLogsRetention(cloudTrailLogGroupRetentionPeriod)
-              .includeGlobalServiceEvents(false)
-              .isMultiRegionTrail(false)
-              .build();
-    }
 
     // Origin bucket for the CloudFront distribution
     String receiptsBucketFullName =
@@ -1030,15 +983,15 @@ public class WebStack extends Stack {
 
     // Add cloud trail to the origin bucket if enabled
     // CloudTrail for the origin bucket
-    if (cloudTrailEnabled) {
+    if (builder.trail != null && cloudTrailEnabled) {
       // Add S3 event selector to the CloudTrail
       if (builder.cloudTrailEventSelectorPrefix == null
           || builder.cloudTrailEventSelectorPrefix.isBlank()
           || "none".equals(builder.cloudTrailEventSelectorPrefix)) {
-        trail.addS3EventSelector(
+        builder.trail.addS3EventSelector(
             List.of(S3EventSelector.builder().bucket(this.originBucket).build()));
       } else {
-        trail.addS3EventSelector(
+        builder.trail.addS3EventSelector(
             List.of(
                 S3EventSelector.builder()
                     .bucket(this.originBucket)
@@ -1584,14 +1537,14 @@ public class WebStack extends Stack {
 
     // Add S3 event selector to the CloudTrail for receipts bucket
     // TODO Move to the LogForwardingBucket
-    if (cloudTrailEnabled) {
+    if (builder.trail != null && cloudTrailEnabled) {
       if (builder.cloudTrailEventSelectorPrefix == null
           || builder.cloudTrailEventSelectorPrefix.isBlank()
           || "none".equals(builder.cloudTrailEventSelectorPrefix)) {
-        trail.addS3EventSelector(
+          builder.trail.addS3EventSelector(
             List.of(S3EventSelector.builder().bucket(this.receiptsBucket).build()));
       } else {
-        trail.addS3EventSelector(
+          builder.trail.addS3EventSelector(
             List.of(
                 S3EventSelector.builder()
                     .bucket(this.receiptsBucket)
@@ -1675,10 +1628,12 @@ public class WebStack extends Stack {
     logger.info("Will deploy files from: %s".formatted(builder.docRootPath));
 
     // Create LogGroup for BucketDeployment
+    var bucketDeploymentRetentionPeriodDays = Integer.parseInt(builder.cloudTrailLogGroupRetentionPeriodDays);
+    var bucketDeploymentRetentionPeriod = RetentionDaysConverter.daysToRetentionDays(bucketDeploymentRetentionPeriodDays);
     LogGroup bucketDeploymentLogGroup =
         LogGroup.Builder.create(this, "BucketDeploymentLogGroup")
             .logGroupName("/aws/lambda/bucket-deployment-%s".formatted(dashedDomainName))
-            .retention(cloudTrailLogGroupRetentionPeriod)
+            .retention(bucketDeploymentRetentionPeriod)
             .removalPolicy(s3RetainOriginBucket ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY)
             .build();
 

@@ -1,18 +1,37 @@
 package co.uk.diyaccounting.submit;
 
+import co.uk.diyaccounting.submit.stacks.ApplicationStack;
 import co.uk.diyaccounting.submit.stacks.DevStack;
 import co.uk.diyaccounting.submit.stacks.IdentityStack;
+import co.uk.diyaccounting.submit.stacks.ObservabilityStack;
 import co.uk.diyaccounting.submit.stacks.WebStack;
 import software.amazon.awscdk.App;
 import software.amazon.awscdk.CfnOutput;
 
 public class WebApp {
-  public static void main(final String[] args) {
-    App app = new App();
+
+    public static void main(final String[] args) {
+
+        App app = new App();
 
     String envName = System.getenv("ENV_NAME");
-    
-    // Create DevStack with resources only used during development or deployment (e.g. ECR)
+
+    String observabilityStackId = "SubmitObservabilityStack-%s".formatted(envName != null && !envName.isBlank() ? envName : "dev");
+    ObservabilityStack observabilityStack =
+        ObservabilityStack.Builder.create(app, observabilityStackId)
+            .env(System.getenv("ENV_NAME"))
+            .hostedZoneName(System.getenv("HOSTED_ZONE_NAME"))
+            .subDomainName(System.getenv("SUB_DOMAIN_NAME"))
+            .cloudTrailEnabled(System.getenv("CLOUD_TRAIL_ENABLED"))
+                .xRayEnabled(System.getenv("X_RAY_ENABLED"))
+                .cloudTrailLogGroupPrefix(System.getenv("CLOUD_TRAIL_LOG_GROUP_PREFIX"))
+                .cloudTrailLogGroupRetentionPeriodDays(
+                        System.getenv("CLOUD_TRAIL_LOG_GROUP_RETENTION_PERIOD_DAYS"))
+            .build();
+
+
+
+      // Create DevStack with resources only used during development or deployment (e.g. ECR)
     String devStackId = "SubmitDevStack-%s".formatted(envName != null && !envName.isBlank() ? envName : "dev");
     DevStack devStack =
         DevStack.Builder.create(app, devStackId)
@@ -42,6 +61,16 @@ public class WebApp {
             //.acCogClientSecretArn(System.getenv("DIY_SUBMIT_AC_COG_CLIENT_SECRET_ARN"))
             .build();
 
+    // Create the ApplicationStack
+    String applicationStackId = "SubmitApplicationStack-%s".formatted(envName != null && !envName.isBlank() ? envName : "dev");
+    ApplicationStack applicationStack = ApplicationStack.Builder.create(app, applicationStackId)
+            .env(System.getenv("ENV_NAME"))
+            .hostedZoneName(System.getenv("HOSTED_ZONE_NAME"))
+            .subDomainName(System.getenv("SUB_DOMAIN_NAME"))
+            .cloudTrailEnabled(System.getenv("CLOUD_TRAIL_ENABLED"))
+            .xRayEnabled(System.getenv("X_RAY_ENABLED"))
+            .build();
+
     // Create WebStack with resources used in running the application
     String webStackId = "SubmitWebStack-%s".formatted(envName != null && !envName.isBlank() ? envName : "dev");
     WebStack webStack =
@@ -53,9 +82,9 @@ public class WebApp {
             .certificateArn(System.getenv("CERTIFICATE_ARN"))
             .userPoolArn(identityStack.userPool.getUserPoolArn())
             .cloudTrailEnabled(System.getenv("CLOUD_TRAIL_ENABLED"))
+            .trail(observabilityStack.trail)
             .xRayEnabled(System.getenv("X_RAY_ENABLED"))
             .verboseLogging(System.getenv("VERBOSE_LOGGING"))
-            .cloudTrailLogGroupPrefix(System.getenv("CLOUD_TRAIL_LOG_GROUP_PREFIX"))
             .cloudTrailLogGroupRetentionPeriodDays(
                 System.getenv("CLOUD_TRAIL_LOG_GROUP_RETENTION_PERIOD_DAYS"))
             .accessLogGroupRetentionPeriodDays(
@@ -218,12 +247,12 @@ public class WebApp {
 
     CfnOutput.Builder.create(webStack, "AaaaRecord").value(webStack.aaaaRecord.getDomainName()).build();
 
-    if (webStack.trail != null) {
+    if (observabilityStack.trail != null) {
       CfnOutput.Builder.create(webStack, "TrailBucketArn")
-          .value(webStack.trailBucket.getBucketArn())
+          .value(observabilityStack.trailBucket.getBucketArn())
           .build();
 
-      CfnOutput.Builder.create(webStack, "TrailArn").value(webStack.trail.getTrailArn()).build();
+      CfnOutput.Builder.create(webStack, "TrailArn").value(observabilityStack.trail.getTrailArn()).build();
     }
 
     CfnOutput.Builder.create(webStack, "AuthUrlHmrcLambdaArn")
