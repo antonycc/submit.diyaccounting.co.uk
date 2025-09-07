@@ -47,8 +47,13 @@ public class ObservabilityStack extends Stack {
 
       String trailName = WebStack.Builder.buildTrailName(dashedDomainName);
       boolean cloudTrailEnabled = Boolean.parseBoolean(builder.cloudTrailEnabled);
-      int cloudTrailLogGroupRetentionPeriodDays =
-              Integer.parseInt(builder.cloudTrailLogGroupRetentionPeriodDays);
+      int cloudTrailLogGroupRetentionPeriodDays;
+      try {
+          cloudTrailLogGroupRetentionPeriodDays = Integer.parseInt(builder.cloudTrailLogGroupRetentionPeriodDays);
+      } catch (Exception e) {
+          // Default to 30 days if not provided or invalid during CI synth
+          cloudTrailLogGroupRetentionPeriodDays = 30;
+      }
       boolean xRayEnabled = Boolean.parseBoolean(builder.xRayEnabled);
 
       // Create a CloudTrail for the stack resources

@@ -8,13 +8,11 @@ import co.uk.diyaccounting.submit.stacks.WebStack;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import software.amazon.awscdk.App;
-import software.amazon.awscdk.CfnOutput;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
 
 import java.lang.reflect.Field;
-import java.text.MessageFormat;
 
 public class WebApp {
 
@@ -271,9 +269,10 @@ public class WebApp {
                 source = "default value";
             }
             // try {
-            CfnOutput.Builder.create(scope, contextKey)
-                    .value(MessageFormat.format("{0} (Source: CDK {1})", defaultedValue, source))
-                    .build();
+            // Avoid creating CfnOutput at App scope; just log for visibility during synth
+            if (logger.isDebugEnabled()) {
+              logger.debug("Context {} resolved from {} with value: {}", contextKey, source, defaultedValue);
+            }
             // }catch (Exception e) {
             //    logger.warn("Failed to create CfnOutput for context key {}: {}", contextKey,
             // e.getMessage());

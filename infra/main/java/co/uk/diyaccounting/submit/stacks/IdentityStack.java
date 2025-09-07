@@ -342,8 +342,12 @@ public class IdentityStack extends Stack {
       String dashedDomainName =
               Builder.buildDashedDomainName(builder.env, builder.subDomainName, builder.hostedZoneName);
 
-      int accessLogGroupRetentionPeriodDays =
-              Integer.parseInt(builder.accessLogGroupRetentionPeriodDays);
+      int accessLogGroupRetentionPeriodDays;
+      try {
+              accessLogGroupRetentionPeriodDays = Integer.parseInt(builder.accessLogGroupRetentionPeriodDays);
+      } catch (Exception e) {
+              accessLogGroupRetentionPeriodDays = 30;
+      }
 
       boolean xRayEnabled = Boolean.parseBoolean(builder.xRayEnabled);
 
