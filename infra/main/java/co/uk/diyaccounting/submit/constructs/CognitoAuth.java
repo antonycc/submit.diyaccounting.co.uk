@@ -294,5 +294,33 @@ public class CognitoAuth {
         throw new IllegalArgumentException("logoutUrls are required");
       return new CognitoAuth(this);
     }
+
+    public Builder props(CognitoAuthProps props) {
+      if (props == null) return this;
+      this.userPoolArn = props.userPoolArn;
+      this.userPoolClientName = props.userPoolClientName;
+      this.standardAttributes = props.standardAttributes;
+      this.googleClientId = props.googleClientId;
+      this.googleClientSecretValue = props.googleClientSecretValue;
+      this.acCogClientId = props.acCogClientId;
+      this.acCogIssuerUrl = props.acCogIssuerUrl;
+      this.callbackUrls = props.callbackUrls;
+      this.logoutUrls = props.logoutUrls;
+      this.env = props.env;
+      this.hostedZoneName = props.hostedZoneName;
+      this.hostedZoneId = props.hostedZoneId;
+      this.subDomainName = props.subDomainName;
+      this.certificateArn = props.certificateArn;
+      this.authCertificateArn = props.authCertificateArn;
+      this.cognitoDomainPrefix = props.cognitoDomainPrefix;
+      this.identityProviders = props.identityProviders;
+      this.featurePlan = props.featurePlan;
+      this.enableLogDelivery = props.enableLogDelivery;
+      this.xRayEnabled = props.xRayEnabled;
+      this.accessLogGroupRetentionPeriodDays = props.accessLogGroupRetentionPeriodDays;
+      this.logGroupNamePrefix = props.logGroupNamePrefix;
+      this.lambdaJarPath = props.lambdaJarPath;
+      return this;
+    }
   }
 }

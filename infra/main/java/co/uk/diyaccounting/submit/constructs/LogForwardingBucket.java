@@ -261,6 +261,23 @@ public class LogForwardingBucket extends Stack {
       return newBuilder;
     }
 
+    public Builder props(LogForwardingBucketProps p) {
+      if (p == null) return this;
+      Builder b = this;
+      if (p.bucketName != null) b = b.bucketName(p.bucketName);
+      if (p.functionNamePrefix != null) b = b.functionNamePrefix(p.functionNamePrefix);
+      if (p.retentionPeriodDays > 0) b = b.retentionPeriodDays(p.retentionPeriodDays);
+      b = b.cloudTrailEnabled(p.cloudTrailEnabled);
+      b = b.xRayEnabled(p.xRayEnabled);
+      b = b.verboseLogging(p.verboseLogging);
+      if (p.removalPolicy != null) b = b.removalPolicy(p.removalPolicy);
+      b = b.versioned(p.versioned);
+      if (p.blockPublicAccess != null) b = b.blockPublicAccess(p.blockPublicAccess);
+      b = b.autoDeleteObjects(p.autoDeleteObjects);
+      if (p.objectOwnership != null) b = b.objectOwnership(p.objectOwnership);
+      return b;
+    }
+
     public IBucket build() {
       final String bucketName = buildBucketName();
       final String functionName = buildFunctionName();

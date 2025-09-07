@@ -335,6 +335,34 @@ public class LambdaUrlOrigin {
       return this;
     }
 
+    public Builder props(LambdaUrlOriginProps props) {
+      if (props == null) return this;
+      this.env = props.env;
+      this.functionName = props.functionName;
+      this.handler = props.handler;
+      this.timeout = props.timeout;
+      this.environment = props.environment;
+      this.cloudFrontAllowedMethods = props.cloudFrontAllowedMethods;
+      this.skipBehaviorOptions = props.skipBehaviorOptions;
+      this.cloudTrailEnabled = props.cloudTrailEnabled;
+      this.xRayEnabled = props.xRayEnabled;
+      this.verboseLogging = props.verboseLogging;
+      this.functionUrlAuthType = props.functionUrlAuthType;
+      this.invokeMode = props.invokeMode;
+      this.logGroupRetention = props.logGroupRetention;
+      this.logGroupRemovalPolicy = props.logGroupRemovalPolicy;
+      this.protocolPolicy = props.protocolPolicy;
+      this.responseHeadersPolicy = props.responseHeadersPolicy;
+      this.cachePolicy = props.cachePolicy;
+      this.viewerProtocolPolicy = props.viewerProtocolPolicy;
+      this.originRequestPolicy = props.originRequestPolicy;
+      this.imageDirectory = props.imageDirectory;
+      this.imageFilename = props.imageFilename;
+      this.testRuntime = props.testRuntime;
+      this.baseImageTag = props.baseImageTag;
+      return this;
+    }
+
     public LambdaUrlOrigin build() {
       // Validate required parameters
       if (env == null || env.isBlank()) {

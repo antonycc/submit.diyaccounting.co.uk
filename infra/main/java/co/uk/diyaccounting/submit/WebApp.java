@@ -5,14 +5,31 @@ import co.uk.diyaccounting.submit.stacks.DevStack;
 import co.uk.diyaccounting.submit.stacks.IdentityStack;
 import co.uk.diyaccounting.submit.stacks.ObservabilityStack;
 import co.uk.diyaccounting.submit.stacks.WebStack;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import software.amazon.awscdk.App;
 import software.amazon.awscdk.CfnOutput;
+import software.amazon.awscdk.StackProps;
+import software.amazon.awssdk.utils.StringUtils;
+import software.constructs.Construct;
+
+import java.lang.reflect.Field;
+import java.text.MessageFormat;
 
 public class WebApp {
 
+    private static final Logger logger = LogManager.getLogger(WebApp.class);
+
     public static void main(final String[] args) {
 
-        App app = new App();
+    App app = new App();
+
+    // TODO: Consult environment for all props in the builder / props file.
+
+    // Load values from cdk.json here using reflection, then let the properties be overridden by the
+    // mutators
+    WebApp.Builder builder = WebApp.Builder.create(app, "WebApp");
+    builder.loadContextValuesUsingReflection(app);
 
     String envName = System.getenv("ENV_NAME");
 
@@ -369,4 +386,78 @@ public class WebApp {
 
     app.synth();
   }
+
+    public static class Builder {
+        public Construct scope;
+        public String id;
+        public StackProps props;
+
+        public Builder(Construct scope, String id, StackProps props) {
+            this.scope = scope;
+            this.id = id;
+            this.props = props;
+        }
+
+        public static WebApp.Builder create(Construct scope, String id) {
+            return new WebApp.Builder(scope, id, null);
+        }
+
+        public static WebApp.Builder create(Construct scope, String id, StackProps props) {
+            return new WebApp.Builder(scope, id, props);
+        }
+
+        public void loadContextValuesUsingReflection(Construct scope) {
+            Field[] fields = this.getClass().getDeclaredFields();
+            for (Field field : fields) {
+                if (field.getType() == String.class
+                        && !field.getName().equals("scope")
+                        && !field.getName().equals("id")
+                        && !field.getName().equals("props")) {
+                    try {
+                        field.setAccessible(true);
+
+                        // Skip if already set
+                        if (field.get(this) != null) {
+                            continue;
+                        }
+
+                        // Set from config
+                        String contextValue = getContextValueString(scope, field.getName());
+                        if (contextValue != null) {
+                            field.set(this, contextValue);
+                        }
+                    } catch (IllegalAccessException e) {
+                        logger.warn(
+                                "Failed to set field {} using reflection: {}", field.getName(), e.getMessage());
+                    }
+                }
+            }
+        }
+
+        public String getContextValueString(Construct scope, String contextKey) {
+            return getContextValueString(scope, contextKey, null);
+        }
+
+        public String getContextValueString(Construct scope, String contextKey, String defaultValue) {
+            var contextValue = scope.getNode().tryGetContext(contextKey);
+            String defaultedValue;
+            String source;
+            if (contextValue != null && StringUtils.isNotBlank(contextValue.toString())) {
+                defaultedValue = contextValue.toString();
+                source = "CDK context";
+            } else {
+                defaultedValue = defaultValue;
+                source = "default value";
+            }
+            // try {
+            CfnOutput.Builder.create(scope, contextKey)
+                    .value(MessageFormat.format("{0} (Source: CDK {1})", defaultedValue, source))
+                    .build();
+            // }catch (Exception e) {
+            //    logger.warn("Failed to create CfnOutput for context key {}: {}", contextKey,
+            // e.getMessage());
+            // }
+            return defaultedValue;
+        }
+    }
 }

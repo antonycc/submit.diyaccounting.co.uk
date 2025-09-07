@@ -174,21 +174,25 @@ public class BucketOrigin {
       if (bucketName == null || bucketName.isBlank()) {
         throw new IllegalArgumentException("bucketName is required");
       }
-      // if (!useExistingBucket) {
-      // if (originAccessLogBucketName == null || originAccessLogBucketName.isBlank()) {
-      //    throw new IllegalArgumentException("originAccessLogBucketName is required when creating
-      // a new bucket");
-      // }
-      // if (functionNamePrefix == null || functionNamePrefix.isBlank()) {
-      //    throw new IllegalArgumentException("functionNamePrefix is required when creating a new
-      // bucket");
-      // }
-      // if (logS3ObjectEventHandlerSource == null || logS3ObjectEventHandlerSource.isBlank()) {
-      //    throw new IllegalArgumentException("logS3ObjectEventHandlerSource is required when
-      // creating a new bucket");
-      // }
-      // }
       return new BucketOrigin(this);
+    }
+
+    public Builder props(BucketOriginProps props) {
+      if (props == null) return this;
+      this.bucketName = props.bucketName;
+      this.originAccessLogBucketName = props.originAccessLogBucketName;
+      this.functionNamePrefix = props.functionNamePrefix;
+      this.logS3ObjectEventHandlerSource = props.logS3ObjectEventHandlerSource;
+      this.accessLogGroupRetentionPeriodDays = props.accessLogGroupRetentionPeriodDays;
+      this.retainBucket = props.retainBucket;
+      this.useExistingBucket = props.useExistingBucket;
+      this.versioned = props.versioned;
+      this.blockPublicAccess = props.blockPublicAccess;
+      this.encryption = props.encryption;
+      this.verboseLogging = props.verboseLogging;
+      this.cloudTrailEnabled = props.cloudTrailEnabled;
+      this.xRayEnabled = props.xRayEnabled;
+      return this;
     }
   }
 }

@@ -253,13 +253,21 @@ public class WebStack extends Stack {
     public String myReceiptsLambdaDuration;
     public Trail trail;
 
-      public Builder(Construct scope, String id, StackProps props) {
+    public Builder(Construct scope, String id, StackProps props) {
       this.scope = scope;
       this.id = id;
       this.props = props;
     }
 
-    public void loadContextValuesUsingReflection(Construct scope) {
+    public static Builder create(Construct scope, String id) {
+          return new Builder(scope, id, null);
+      }
+
+    public static Builder create(Construct scope, String id, StackProps props) {
+          return new Builder(scope, id, props);
+    }
+
+      public void loadContextValuesUsingReflection(Construct scope) {
       Field[] fields = this.getClass().getDeclaredFields();
       for (Field field : fields) {
         if (field.getType() == String.class
@@ -311,14 +319,6 @@ public class WebStack extends Stack {
       // e.getMessage());
       // }
       return defaultedValue;
-    }
-
-    public static Builder create(Construct scope, String id) {
-      return new Builder(scope, id, null);
-    }
-
-    public static Builder create(Construct scope, String id, StackProps props) {
-      return new Builder(scope, id, props);
     }
 
     public Builder env(String env) {

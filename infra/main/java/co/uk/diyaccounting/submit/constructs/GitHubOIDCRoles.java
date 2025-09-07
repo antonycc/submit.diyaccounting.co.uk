@@ -25,7 +25,7 @@ public class GitHubOIDCRoles extends Stack {
   public final Role deploymentRole;
   public final OpenIdConnectProvider oidcProvider;
 
-  public GitHubOIDCRoles(Construct scope, String id, StackProps props, Builder builder) {
+  public GitHubOIDCRoles(Construct scope, String id, GitHubOIDCRolesProps props) {
     super(scope, id, props);
 
     // Create OIDC provider for GitHub Actions
@@ -48,7 +48,7 @@ public class GitHubOIDCRoles extends Stack {
             "token.actions.githubusercontent.com:aud",
             "sts.amazonaws.com",
             "token.actions.githubusercontent.com:sub",
-            "repo:" + builder.repositoryName + ":ref:refs/heads/main"));
+            "repo:" + props.repositoryName + ":ref:refs/heads/main"));
 
     this.testRole =
         Role.Builder.create(this, "GitHubTestRole")
@@ -105,7 +105,7 @@ public class GitHubOIDCRoles extends Stack {
             "token.actions.githubusercontent.com:aud",
             "sts.amazonaws.com",
             "token.actions.githubusercontent.com:sub",
-            "repo:" + builder.repositoryName + ":ref:refs/heads/main"));
+            "repo:" + props.repositoryName + ":ref:refs/heads/main"));
 
     this.deploymentRole =
         Role.Builder.create(this, "GitHubDeploymentRole")
@@ -180,7 +180,8 @@ public class GitHubOIDCRoles extends Stack {
     }
 
     public GitHubOIDCRoles build() {
-      return new GitHubOIDCRoles(scope, id, props, this);
+      var p = GitHubOIDCRolesProps.builder().env(props != null ? props.getEnv() : null).repositoryName(this.repositoryName).build();
+      return new GitHubOIDCRoles(scope, id, p);
     }
   }
 }

@@ -59,7 +59,7 @@ public class ObservabilityStack extends Stack {
               RetentionDaysConverter.daysToRetentionDays(cloudTrailLogGroupRetentionPeriodDays);
       if (cloudTrailEnabled) {
           this.cloudTrailLogGroup =
-                  LogGroup.Builder.create(this, "OriginBucketLogGroup")
+                  LogGroup.Builder.create(this, "CloudTrailGroup")
                           .logGroupName(
                                   "%s%s-cloud-trail".formatted(builder.cloudTrailLogGroupPrefix, dashedDomainName))
                           .retention(cloudTrailLogGroupRetentionPeriod)
@@ -67,8 +67,6 @@ public class ObservabilityStack extends Stack {
                           .build();
           this.trailBucket =
                   Bucket.Builder.create(this, trailName + "CloudTrailBucket")
-                          // optional: stable name, otherwise CDK adds a hash (fine too)
-                          // .bucketName(ResourceNameUtils.buildBucketName(env, "originbuckettrail"))
                           .encryption(BucketEncryption.S3_MANAGED)
                           .blockPublicAccess(BlockPublicAccess.BLOCK_ALL)
                           .versioned(false)
@@ -81,7 +79,7 @@ public class ObservabilityStack extends Stack {
                                                   .build()))
                           .build();
           this.trail =
-                  Trail.Builder.create(this, "OriginBucketTrail")
+                  Trail.Builder.create(this, "Trail")
                           .trailName(trailName)
                           .cloudWatchLogGroup(this.cloudTrailLogGroup)
                           .sendToCloudWatchLogs(true)

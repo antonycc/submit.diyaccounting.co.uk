@@ -163,5 +163,23 @@ public class DistributionWithLogging {
         throw new IllegalArgumentException("logHandlerSource is required");
       return new DistributionWithLogging(this);
     }
+
+    public Builder props(DistributionWithLoggingProps props) {
+      if (props == null) return this;
+      this.domainName = props.domainName;
+      this.defaultBehavior = props.defaultBehavior;
+      this.additionalBehaviors = props.additionalBehaviors;
+      this.defaultRootObject = props.defaultRootObject;
+      this.errorPageKey = props.errorPageKey;
+      this.errorStatusCode = props.errorStatusCode;
+      this.certificate = props.certificate;
+      this.logBucketName = props.logBucketName;
+      this.logFunctionNamePrefix = props.logFunctionNamePrefix;
+      this.logRetentionDays = props.logRetentionDays;
+      this.cloudTrailEnabled = props.cloudTrailEnabled;
+      this.logIncludesCookies = props.logIncludesCookies;
+      this.logHandlerSource = props.logHandlerSource;
+      return this;
+    }
   }
 }
