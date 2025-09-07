@@ -430,7 +430,7 @@ public class IdentityStack extends Stack {
               .userPoolId(this.userPool.getUserPoolId())
               .providerDetails(Map.of(
                       "client_id", builder.acCogClientId,
-                      "issuer", builder.acCogBaseUri,
+                      "oidc_issuer", builder.acCogBaseUri,
                       "authorize_scopes", "email openid profile"
                       // No client_secret provided
               ))
