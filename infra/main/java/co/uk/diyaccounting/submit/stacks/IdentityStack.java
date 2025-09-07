@@ -2,11 +2,6 @@ package co.uk.diyaccounting.submit.stacks;
 
 import co.uk.diyaccounting.submit.constructs.CognitoAuth;
 import co.uk.diyaccounting.submit.utils.ResourceNameUtils;
-import java.util.AbstractMap;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.regex.Pattern;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import software.amazon.awscdk.CfnOutput;
@@ -38,6 +33,12 @@ import software.amazon.awscdk.services.secretsmanager.ISecret;
 import software.amazon.awscdk.services.secretsmanager.Secret;
 import software.constructs.Construct;
 import software.constructs.IDependable;
+
+import java.util.AbstractMap;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Pattern;
 
 public class IdentityStack extends Stack {
 
@@ -439,7 +440,8 @@ public class IdentityStack extends Stack {
                 Map.of(
                     "client_id", builder.acCogClientId,
                     "oidc_issuer", builder.acCogBaseUri,
-                    "authorize_scopes", "email openid profile"
+                    "authorize_scopes", "email openid profile",
+                        "attributes_request_method", "GET"
                     // No client_secret provided
                     ))
             .attributeMapping(
