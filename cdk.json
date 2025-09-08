@@ -35,10 +35,10 @@
     "error404NotFoundAtDistribution": "errors/404-error-distribution.html",
     "skipLambdaUrlOrigins": "false",
     "hmrcClientId": "",
-    "hmrcClientSecretArn": "to be replaced with lookup of environment variable DIY_SUBMIT_HMRC_CLIENT_SECRET_ARN",
+    "hmrcClientSecretArn": "",
     "googleClientId": "",
     "googleBaseUri": "https://accounts.google.com/o/oauth2/v2/auth",
-    "googleClientSecretArn": "to be replaced with lookup of environment variable DIY_SUBMIT_GOOGLE_CLIENT_SECRET_ARN",
+    "googleClientSecretArn": "",
     "myReceiptsLambdaDuration": "30000",
     "antonyccClientId": "submit-diyaccounting-co-uk",
     "antonyccBaseUri": "https://oidc.antonycc.com/",
@@ -103,6 +103,11 @@
     "myBundlesLambdaHandlerFunctionName": "myBundles.httpGet",
     "myBundlesLambdaDuration": "30000",
     "myReceiptsLambdaUrlPath": "/api/my-receipts",
-    "myReceiptsLambdaHandlerFunctionName": "myReceipts.httpGet"
+    "myReceiptsLambdaHandlerFunctionName": "myReceipts.httpGet",
+    "myReceiptsLambdaDuration": "30000",
+    "commitHash": "",
+    "bundleExpiryDate": "2025-12-31",
+    "bundleUserLimit": "1000",
+    "baseImageTag": ""
   }
 }

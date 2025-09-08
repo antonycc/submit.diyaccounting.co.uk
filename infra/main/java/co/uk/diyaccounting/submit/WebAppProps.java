@@ -83,6 +83,12 @@ public class WebAppProps {
     public String catalogueLambdaUrlPath;
     public String catalogueLambdaHandlerFunctionName;
     public String catalogueLambdaDuration;
+    public String myBundlesLambdaUrlPath;
+    public String myBundlesLambdaHandlerFunctionName;
+    public String myBundlesLambdaDuration;
+    public String exchangeTokenLambdaUrlPath;
+    public String exchangeTokenLambdaHandlerFunctionName;
+    public String exchangeTokenLambdaDuration;
     public String bundleExpiryDate;
     public String bundleUserLimit;
     public String baseImageTag;
