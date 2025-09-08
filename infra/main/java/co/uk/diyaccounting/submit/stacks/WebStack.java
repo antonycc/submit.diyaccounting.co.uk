@@ -408,6 +408,9 @@ public class WebStack extends Stack {
             this.exchangeAntonyccTokenLambdaHandlerFunctionName = p.exchangeAntonyccTokenLambdaHandlerFunctionName;
             this.exchangeAntonyccTokenLambdaUrlPath = p.exchangeAntonyccTokenLambdaUrlPath;
             this.exchangeAntonyccTokenLambdaDuration = p.exchangeAntonyccTokenLambdaDurationMillis;
+            this.exchangeAcCogTokenLambdaHandlerFunctionName = p.exchangeAcCogTokenLambdaHandlerFunctionName;
+            this.exchangeAcCogTokenLambdaUrlPath = p.exchangeAcCogTokenLambdaUrlPath;
+            this.exchangeAcCogTokenLambdaDuration = p.exchangeAcCogTokenLambdaDurationMillis;
             this.submitVatLambdaHandlerFunctionName = p.submitVatLambdaHandlerFunctionName;
             this.submitVatLambdaUrlPath = p.submitVatLambdaUrlPath;
             this.submitVatLambdaDuration = p.submitVatLambdaDurationMillis;
@@ -425,6 +428,12 @@ public class WebStack extends Stack {
             this.bundleLambdaHandlerFunctionName = p.bundleLambdaHandlerFunctionName;
             this.bundleLambdaUrlPath = p.bundleLambdaUrlPath;
             this.bundleLambdaDuration = p.bundleLambdaDurationMillis;
+            this.catalogLambdaHandlerFunctionName = p.catalogueLambdaHandlerFunctionName;
+            this.catalogLambdaUrlPath = p.catalogueLambdaUrlPath;
+            this.catalogLambdaDuration = p.catalogueLambdaDurationMillis;
+            this.myBundlesLambdaHandlerFunctionName = p.myBundlesLambdaHandlerFunctionName;
+            this.myBundlesLambdaUrlPath = p.myBundlesLambdaUrlPath;
+            this.myBundlesLambdaDuration = p.myBundlesLambdaDurationMillis;
             this.baseImageTag = p.baseImageTag;
             this.cognitoFeaturePlan = p.cognitoFeaturePlan;
             this.cognitoEnableLogDelivery = p.cognitoEnableLogDelivery;

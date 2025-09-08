@@ -79,6 +79,9 @@ public class WebStackProps {
     public final String catalogueLambdaHandlerFunctionName;
     public final String catalogueLambdaUrlPath;
     public final String catalogueLambdaDurationMillis;
+    public final String myBundlesLambdaHandlerFunctionName;
+    public final String myBundlesLambdaUrlPath;
+    public final String myBundlesLambdaDurationMillis;
     public final String baseImageTag;
     public final String cognitoFeaturePlan;
     public final String cognitoEnableLogDelivery;
@@ -172,6 +175,9 @@ public class WebStackProps {
         this.catalogueLambdaHandlerFunctionName = b.catalogueLambdaHandlerFunctionName;
         this.catalogueLambdaUrlPath = b.catalogueLambdaUrlPath;
         this.catalogueLambdaDurationMillis = b.catalogueLambdaDurationMillis;
+        this.myBundlesLambdaHandlerFunctionName = b.myBundlesLambdaHandlerFunctionName;
+        this.myBundlesLambdaUrlPath = b.myBundlesLambdaUrlPath;
+        this.myBundlesLambdaDurationMillis = b.myBundlesLambdaDurationMillis;
         this.baseImageTag = b.baseImageTag;
         this.cognitoFeaturePlan = b.cognitoFeaturePlan;
         this.cognitoEnableLogDelivery = b.cognitoEnableLogDelivery;
@@ -270,6 +276,9 @@ public class WebStackProps {
                 catalogueLambdaHandlerFunctionName,
                 catalogueLambdaUrlPath,
                 catalogueLambdaDurationMillis,
+                myBundlesLambdaHandlerFunctionName,
+                myBundlesLambdaUrlPath,
+                myBundlesLambdaDurationMillis,
                 baseImageTag,
                 cognitoFeaturePlan,
                 cognitoEnableLogDelivery,
@@ -671,6 +680,21 @@ public class WebStackProps {
 
         public Builder catalogueLambdaDurationMillis(String v) {
             this.catalogueLambdaDurationMillis = v;
+            return this;
+        }
+
+        public Builder myBundlesLambdaHandlerFunctionName(String v) {
+            this.myBundlesLambdaHandlerFunctionName = v;
+            return this;
+        }
+
+        public Builder myBundlesLambdaUrlPath(String v) {
+            this.myBundlesLambdaUrlPath = v;
+            return this;
+        }
+
+        public Builder myBundlesLambdaDurationMillis(String v) {
+            this.myBundlesLambdaDurationMillis = v;
             return this;
         }
 
