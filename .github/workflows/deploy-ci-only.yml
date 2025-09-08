@@ -185,6 +185,15 @@ jobs:
         env:
           BASE_IMAGE_TAG: ${{ needs.build-base-image.outputs.base-image-tag }}
 
+      - name: set-jar-path
+        id: jar-path
+        if: ${{ env.skipDeploy != 'true' }}
+        shell: bash
+        run: |
+          jarPath=$(mvn help:evaluate --quiet --define expression=project.build.directory --define forceStdout)
+          jarFilename=$(mvn help:evaluate --quiet --define expression=project.build.finalName --define forceStdout)
+          echo "jarFilepath=${jarPath?}/${jarFilename?}.jar" | tee -a "${GITHUB_OUTPUT?}"
+
       - name: Configure AWS Credentials
         if: ${{ env.skipDeploy != 'true' }}
         uses: aws-actions/configure-aws-credentials@v5
