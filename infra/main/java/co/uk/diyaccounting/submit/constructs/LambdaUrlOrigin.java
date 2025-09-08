@@ -1,8 +1,5 @@
 package co.uk.diyaccounting.submit.constructs;
 
-import java.util.List;
-import java.util.Map;
-import java.util.regex.Pattern;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import software.amazon.awscdk.Duration;
@@ -33,6 +30,10 @@ import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.LogGroupProps;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.constructs.Construct;
+
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Pattern;
 
 public class LambdaUrlOrigin {
 
@@ -114,12 +115,28 @@ public class LambdaUrlOrigin {
             buildArgs.put("BASE_IMAGE_TAG", builder.baseImageTag);
         }
 
-        var imageCodeProps = AssetImageCodeProps.builder()
+        // If builder.baseImageTag is an ECR image use it directly as the image
+        @org.jetbrains.annotations.NotNull DockerImageCode dockerImage;
+        //if (builder.baseImageTag != null && builder.baseImageTag.matches("^\\d+\\.dkr\\.ecr\\.[a-z0-9-]+\\.amazonaws\\.com/.+")) {
+        //    var imageCodeProps = EcrImageCodeProps.builder()
+        //        .cmd(List.of(builder.handler))
+        //        .build();
+        //    IRepository repository = Repository.fromRepositoryAttributes(
+        //        builder.scope,
+        //        builder.idPrefix + "EcrRepo",
+        //        RepositoryAttributes.builder()
+        //            .repositoryArn(builder.ecrRepositoryArn)
+        //            .repositoryName(builder.ecrRepositoryName)
+        //            .build());
+        //    dockerImage = DockerImageCode.fromEcr(repository, imageCodeProps);
+        //} else {
+            var imageCodeProps = AssetImageCodeProps.builder()
                 .file(builder.imageDirectory + "/" + builder.imageFilename)
                 .cmd(List.of(builder.handler))
                 .buildArgs(buildArgs)
                 .build();
-        var dockerImage = DockerImageCode.fromImageAsset(".", imageCodeProps);
+            dockerImage = DockerImageCode.fromImageAsset(".", imageCodeProps);
+        //}
 
         // Add X-Ray environment variables if enabled
         var environment = new java.util.HashMap<>(builder.environment);
@@ -186,6 +203,9 @@ public class LambdaUrlOrigin {
         public String imageFilename = "Dockerfile";
         public Runtime testRuntime = Runtime.NODEJS_22_X;
         public String baseImageTag = null;
+
+        public String ecrRepositoryArn = null;
+        public String ecrRepositoryName = null;
 
         private Builder(final Construct scope, final String idPrefix) {
             this.scope = scope;
@@ -317,6 +337,16 @@ public class LambdaUrlOrigin {
             return this;
         }
 
+        public Builder ecrRepositoryArn(String ecrRepositoryArn) {
+            this.ecrRepositoryArn = ecrRepositoryArn;
+            return this;
+        }
+
+        public Builder ecrRepositoryName(String ecrRepositoryName) {
+            this.ecrRepositoryName = ecrRepositoryName;
+            return this;
+        }
+
         public Builder options(LambdaUrlOriginOpts opts) {
             if (opts == null) return this;
             if (opts.env != null) this.env = opts.env;
@@ -354,6 +384,8 @@ public class LambdaUrlOrigin {
             this.imageFilename = props.imageFilename;
             this.testRuntime = props.testRuntime;
             this.baseImageTag = props.baseImageTag;
+            this.ecrRepositoryArn = props.ecrRepositoryArn;
+            this.ecrRepositoryName = props.ecrRepositoryName;
             return this;
         }
 

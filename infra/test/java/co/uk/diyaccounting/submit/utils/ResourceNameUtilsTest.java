@@ -1,8 +1,8 @@
 package co.uk.diyaccounting.submit.utils;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ResourceNameUtilsTest {
 
@@ -18,14 +18,6 @@ public class ResourceNameUtilsTest {
     public void testConvertTitleCamelCaseToDashSeparated() {
         String input = "ThisIsTitleCamelCase";
         String expected = "this-is-title-camel-case";
-        String actual = ResourceNameUtils.convertCamelCaseToDashSeparated(input);
-        assertEquals(expected, actual);
-    }
-
-    @Test
-    public void testConvertCamelCaseToDashSeparatedWithEmptyString() {
-        String input = "";
-        String expected = "";
         String actual = ResourceNameUtils.convertCamelCaseToDashSeparated(input);
         assertEquals(expected, actual);
     }

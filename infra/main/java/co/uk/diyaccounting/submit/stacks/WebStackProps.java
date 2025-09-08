@@ -90,6 +90,8 @@ public class WebStackProps {
     public final String antonyccBaseUri;
     public final String acCogClientId;
     public final String acCogBaseUri;
+    public final String ecrRepositoryArn;
+    public final String ecrRepositoryName;
 
     private WebStackProps(Builder b) {
         this.env = b.env;
@@ -181,6 +183,8 @@ public class WebStackProps {
         this.antonyccBaseUri = b.antonyccBaseUri;
         this.acCogClientId = b.acCogClientId;
         this.acCogBaseUri = b.acCogBaseUri;
+        this.ecrRepositoryArn = b.ecrRepositoryArn;
+        this.ecrRepositoryName = b.ecrRepositoryName;
     }
 
     public static Builder builder() {
@@ -276,7 +280,9 @@ public class WebStackProps {
                 antonyccClientId,
                 antonyccBaseUri,
                 acCogClientId,
-                acCogBaseUri;
+                acCogBaseUri,
+                ecrRepositoryArn,
+                ecrRepositoryName;
 
         public Builder env(String v) {
             this.env = v;
@@ -720,6 +726,16 @@ public class WebStackProps {
 
         public Builder acCogBaseUri(String v) {
             this.acCogBaseUri = v;
+            return this;
+        }
+
+        public Builder ecrRepositoryArn(String v) {
+            this.ecrRepositoryArn = v;
+            return this;
+        }
+
+        public Builder ecrRepositoryName(String v) {
+            this.ecrRepositoryName = v;
             return this;
         }
 

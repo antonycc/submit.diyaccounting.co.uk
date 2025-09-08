@@ -1,6 +1,5 @@
 package co.uk.diyaccounting.submit.constructs;
 
-import java.util.Map;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.services.cloudfront.AllowedMethods;
@@ -16,6 +15,8 @@ import software.amazon.awscdk.services.lambda.FunctionUrlAuthType;
 import software.amazon.awscdk.services.lambda.InvokeMode;
 import software.amazon.awscdk.services.lambda.Runtime;
 import software.amazon.awscdk.services.logs.RetentionDays;
+
+import java.util.Map;
 
 /**
  * Props container for LambdaUrlOrigin construct. Mirrors the previous Builder fields
@@ -53,6 +54,9 @@ public class LambdaUrlOriginProps {
     public final Runtime testRuntime;
     public final String baseImageTag;
 
+    public final String ecrRepositoryArn;
+    public final String ecrRepositoryName;
+
     private LambdaUrlOriginProps(Builder b) {
         this.env = b.env;
         this.functionName = b.functionName;
@@ -77,6 +81,8 @@ public class LambdaUrlOriginProps {
         this.imageFilename = b.imageFilename;
         this.testRuntime = b.testRuntime;
         this.baseImageTag = b.baseImageTag;
+        this.ecrRepositoryArn = b.ecrRepositoryArn;
+        this.ecrRepositoryName = b.ecrRepositoryName;
     }
 
     public static Builder builder() {
@@ -115,6 +121,8 @@ public class LambdaUrlOriginProps {
         private String imageFilename = "Dockerfile";
         private Runtime testRuntime = Runtime.NODEJS_22_X;
         private String baseImageTag = null;
+        private String ecrRepositoryArn = null;
+        private String ecrRepositoryName = null;
 
         public Builder env(String env) {
             this.env = env;
@@ -228,6 +236,16 @@ public class LambdaUrlOriginProps {
 
         public Builder baseImageTag(String tag) {
             this.baseImageTag = tag;
+            return this;
+        }
+
+        public Builder ecrRepositoryArn(String arn) {
+            this.ecrRepositoryArn = arn;
+            return this;
+        }
+
+        public Builder ecrRepositoryName(String name) {
+            this.ecrRepositoryName = name;
             return this;
         }
 

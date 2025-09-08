@@ -13,7 +13,8 @@ public class ResourceNameUtils {
 
     public static String convertCamelCaseToDashSeparated(String input) {
         if (input == null || input.isEmpty()) {
-            return input;
+            //return input;
+            throw new IllegalArgumentException("Input cannot be null or empty");
         } else {
             String result = input.chars()
                     .mapToObj(c ->

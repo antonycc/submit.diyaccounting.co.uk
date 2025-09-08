@@ -8,11 +8,6 @@ import co.uk.diyaccounting.submit.constructs.LambdaUrlOriginOpts;
 import co.uk.diyaccounting.submit.constructs.LogForwardingBucket;
 import co.uk.diyaccounting.submit.functions.LogS3ObjectEvent;
 import co.uk.diyaccounting.submit.utils.ResourceNameUtils;
-import java.util.AbstractMap;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.regex.Pattern;
 import org.apache.hc.core5.http.HttpStatus;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -61,6 +56,12 @@ import software.amazon.awscdk.services.secretsmanager.ISecret;
 import software.amazon.awscdk.services.secretsmanager.Secret;
 import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
+
+import java.util.AbstractMap;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Pattern;
 
 public class WebStack extends Stack {
 
@@ -246,6 +247,8 @@ public class WebStack extends Stack {
         public String myReceiptsLambdaHandlerFunctionName;
         public String myReceiptsLambdaUrlPath;
         public String myReceiptsLambdaDuration;
+        public String ecrRepositoryArn;
+        public String ecrRepositoryName;
 
         // public Trail trail;
 
@@ -433,6 +436,8 @@ public class WebStack extends Stack {
             this.antonyccBaseUri = p.antonyccBaseUri;
             this.acCogClientId = p.acCogClientId;
             this.acCogBaseUri = p.acCogBaseUri;
+            this.ecrRepositoryArn = p.ecrRepositoryArn;
+            this.ecrRepositoryName = p.ecrRepositoryName;
             return this;
         }
 
@@ -830,6 +835,16 @@ public class WebStack extends Stack {
             return this;
         }
 
+        public Builder ecrRepositoryArn(String ecrRepositoryArn) {
+            this.ecrRepositoryArn = ecrRepositoryArn;
+            return this;
+        }
+
+        public Builder ecrRepositoryName(String ecrRepositoryName) {
+            this.ecrRepositoryName = ecrRepositoryName;
+            return this;
+        }
+
         // public Builder trail(Trail trail) {
         //     this.trail = trail;
         //     return this;
@@ -879,6 +894,9 @@ public class WebStack extends Stack {
         }
 
         private static String buildFunctionName(String dashedDomainName, String functionName) {
+            if (functionName == null || functionName.isBlank()) {
+                throw new IllegalArgumentException("Function name cannot be null or blank");
+            }
             return "%s-%s".formatted(dashedDomainName, ResourceNameUtils.convertCamelCaseToDashSeparated(functionName));
         }
 
@@ -922,22 +940,6 @@ public class WebStack extends Stack {
         String distributionAccessLogBucketName = Builder.buildDistributionAccessLogBucketName(dashedDomainName);
 
         boolean verboseLogging = builder.verboseLogging == null || Boolean.parseBoolean(builder.verboseLogging);
-
-        // Determine Lambda URL authentication type
-        FunctionUrlAuthType functionUrlAuthType = "AWS_IAM".equalsIgnoreCase(builder.lambdaUrlAuthType)
-                ? FunctionUrlAuthType.AWS_IAM
-                : FunctionUrlAuthType.NONE;
-
-        // Common options for all Lambda URL origins to reduce repetition
-        var lambdaCommonOpts = LambdaUrlOriginOpts.Builder.create()
-                .env(builder.env)
-                .imageDirectory("infra/runtimes")
-                .functionUrlAuthType(functionUrlAuthType)
-                .cloudTrailEnabled(cloudTrailEnabled)
-                .xRayEnabled(xRayEnabled)
-                .verboseLogging(verboseLogging)
-                .baseImageTag(builder.baseImageTag)
-                .build();
 
         // Origin bucket for the CloudFront distribution
         String receiptsBucketFullName = Builder.buildBucketName(dashedDomainName, builder.receiptsBucketPostfix);
@@ -1008,6 +1010,22 @@ public class WebStack extends Stack {
 
         // Lambdas
 
+        // Determine Lambda URL authentication type
+        FunctionUrlAuthType functionUrlAuthType = "AWS_IAM".equalsIgnoreCase(builder.lambdaUrlAuthType)
+            ? FunctionUrlAuthType.AWS_IAM
+            : FunctionUrlAuthType.NONE;
+
+        // Common options for all Lambda URL origins to reduce repetition
+        var lambdaCommonOpts = LambdaUrlOriginOpts.Builder.create()
+            .env(builder.env)
+            .imageDirectory("infra/runtimes")
+            .functionUrlAuthType(functionUrlAuthType)
+            .cloudTrailEnabled(cloudTrailEnabled)
+            .xRayEnabled(xRayEnabled)
+            .verboseLogging(verboseLogging)
+            .baseImageTag(builder.baseImageTag)
+            .build();
+
         var lambdaUrlToOriginsBehaviourMappings = new HashMap<String, BehaviorOptions>();
 
         // authUrl - HMRC
@@ -1017,6 +1035,8 @@ public class WebStack extends Stack {
                 "DIY_SUBMIT_HMRC_CLIENT_ID", builder.hmrcClientId));
         var authUrlHmrcLambdaUrlOrigin = LambdaUrlOrigin.Builder.create(this, "AuthUrlHmrc")
                 .imageFilename("authUrlHmrc.Dockerfile")
+                .ecrRepositoryName(builder.ecrRepositoryName)
+                .ecrRepositoryArn(builder.ecrRepositoryArn)
                 .functionName(Builder.buildFunctionName(dashedDomainName, builder.authUrlHmrcLambdaHandlerFunctionName))
                 .allowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
                 .handler(builder.lambdaEntry + builder.authUrlHmrcLambdaHandlerFunctionName)

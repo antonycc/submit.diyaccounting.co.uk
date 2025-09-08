@@ -5,13 +5,14 @@ import co.uk.diyaccounting.submit.stacks.DevStack;
 import co.uk.diyaccounting.submit.stacks.IdentityStack;
 import co.uk.diyaccounting.submit.stacks.ObservabilityStack;
 import co.uk.diyaccounting.submit.stacks.WebStack;
-import java.lang.reflect.Field;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import software.amazon.awscdk.App;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
+
+import java.lang.reflect.Field;
 
 public class WebApp {
 
@@ -101,6 +102,8 @@ public class WebApp {
         WebStack webStack = WebStack.Builder.create(app, webStackId)
                 .props(co.uk.diyaccounting.submit.stacks.WebStackProps.builder()
                         .env(webStackEnv)
+                        .ecrRepositoryArn(devStack.ecrRepository.getRepositoryArn())
+                        .ecrRepositoryName(devStack.ecrRepository.getRepositoryName())
                         .hostedZoneName(appProps.hostedZoneName)
                         .hostedZoneId(appProps.hostedZoneId)
                         .subDomainName(appProps.subDomainName)
