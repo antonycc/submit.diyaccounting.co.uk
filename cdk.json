@@ -36,14 +36,14 @@
     "skipLambdaUrlOrigins": "false",
     "hmrcClientId": "",
     "hmrcClientSecretArn": "",
-    "googleClientId": "",
+    "googleClientId": "670010122633-j177nir959n1tdnd891uqsgj6fkrj6b1.apps.googleusercontent.com",
     "googleBaseUri": "https://accounts.google.com/o/oauth2/v2/auth",
     "googleClientSecretArn": "",
     "myReceiptsLambdaDuration": "30000",
     "antonyccClientId": "submit-diyaccounting-co-uk",
     "antonyccBaseUri": "https://oidc.antonycc.com/",
-    "acCogClientId": "",
-    "acCogBaseUri": "https://oidc.antonycc.com",
+    "acCogClientId": "4l4j2lh1n6b973bn947ru5dff5",
+    "acCogBaseUri": "",
     "cognitoDomainPrefix": "",
     "cognitoFeaturePlan": "ESSENTIALS",
     "cognitoEnableLogDelivery": "false",
@@ -103,11 +103,6 @@
     "myBundlesLambdaHandlerFunctionName": "myBundles.httpGet",
     "myBundlesLambdaDuration": "30000",
     "myReceiptsLambdaUrlPath": "/api/my-receipts",
-    "myReceiptsLambdaHandlerFunctionName": "myReceipts.httpGet",
-    "myReceiptsLambdaDuration": "30000",
-    "commitHash": "",
-    "bundleExpiryDate": "2025-12-31",
-    "bundleUserLimit": "1000",
-    "baseImageTag": ""
+    "myReceiptsLambdaHandlerFunctionName": "myReceipts.httpGet"
   }
 }

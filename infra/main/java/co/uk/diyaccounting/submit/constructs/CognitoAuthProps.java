@@ -1,20 +1,16 @@
 package co.uk.diyaccounting.submit.constructs;
 
-import java.util.HashMap;
-import java.util.List;
-import software.amazon.awscdk.SecretValue;
 import software.amazon.awscdk.services.cognito.StandardAttributes;
 import software.amazon.awscdk.services.cognito.UserPoolClientIdentityProvider;
 import software.constructs.IDependable;
+
+import java.util.HashMap;
+import java.util.List;
 
 public class CognitoAuthProps {
     public final String userPoolArn;
     public final String userPoolClientName;
     public final StandardAttributes standardAttributes;
-    public final String googleClientId;
-    public final SecretValue googleClientSecretValue;
-    public final String acCogClientId;
-    public final String acCogIssuerUrl;
     public final List<String> callbackUrls;
     public final List<String> logoutUrls;
     public final String env;
@@ -36,10 +32,6 @@ public class CognitoAuthProps {
         this.userPoolArn = b.userPoolArn;
         this.userPoolClientName = b.userPoolClientName;
         this.standardAttributes = b.standardAttributes;
-        this.googleClientId = b.googleClientId;
-        this.googleClientSecretValue = b.googleClientSecretValue;
-        this.acCogClientId = b.acCogClientId;
-        this.acCogIssuerUrl = b.acCogIssuerUrl;
         this.callbackUrls = b.callbackUrls;
         this.logoutUrls = b.logoutUrls;
         this.env = b.env;
@@ -66,10 +58,6 @@ public class CognitoAuthProps {
         private String userPoolArn;
         private String userPoolClientName;
         private StandardAttributes standardAttributes;
-        private String googleClientId;
-        private SecretValue googleClientSecretValue;
-        private String acCogClientId;
-        private String acCogIssuerUrl;
         private List<String> callbackUrls;
         private List<String> logoutUrls;
         private String env;
@@ -104,26 +92,6 @@ public class CognitoAuthProps {
 
         public Builder standardAttributes(StandardAttributes v) {
             this.standardAttributes = v;
-            return this;
-        }
-
-        public Builder googleClientId(String v) {
-            this.googleClientId = v;
-            return this;
-        }
-
-        public Builder googleClientSecretValue(SecretValue v) {
-            this.googleClientSecretValue = v;
-            return this;
-        }
-
-        public Builder acCogClientId(String v) {
-            this.acCogClientId = v;
-            return this;
-        }
-
-        public Builder acCogIssuerUrl(String v) {
-            this.acCogIssuerUrl = v;
             return this;
         }
 

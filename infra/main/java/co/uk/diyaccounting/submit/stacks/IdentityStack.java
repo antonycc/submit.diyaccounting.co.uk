@@ -2,11 +2,6 @@ package co.uk.diyaccounting.submit.stacks;
 
 import co.uk.diyaccounting.submit.constructs.CognitoAuth;
 import co.uk.diyaccounting.submit.utils.ResourceNameUtils;
-import java.util.AbstractMap;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.regex.Pattern;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import software.amazon.awscdk.CfnOutput;
@@ -31,7 +26,6 @@ import software.amazon.awscdk.services.route53.ARecord;
 import software.amazon.awscdk.services.route53.AaaaRecord;
 import software.amazon.awscdk.services.route53.HostedZone;
 import software.amazon.awscdk.services.route53.HostedZoneAttributes;
-import software.amazon.awscdk.services.route53.IHostedZone;
 import software.amazon.awscdk.services.route53.RecordTarget;
 import software.amazon.awscdk.services.route53.targets.UserPoolDomainTarget;
 import software.amazon.awscdk.services.secretsmanager.ISecret;
@@ -39,12 +33,17 @@ import software.amazon.awscdk.services.secretsmanager.Secret;
 import software.constructs.Construct;
 import software.constructs.IDependable;
 
+import java.util.AbstractMap;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Pattern;
+
 public class IdentityStack extends Stack {
 
     private static final Logger logger = LogManager.getLogger(IdentityStack.class);
 
     public String domainName;
-    public IHostedZone hostedZone;
     public ICertificate certificate;
     public ISecret googleClientSecretsManagerSecret;
 
@@ -52,7 +51,7 @@ public class IdentityStack extends Stack {
     public UserPool userPool;
     public UserPoolClient userPoolClient;
     public UserPoolIdentityProviderGoogle googleIdentityProvider;
-    public CfnUserPoolIdentityProvider acCogIdentityProvider;
+    public CfnUserPoolIdentityProvider antonyccIdentityProvider;
     public final HashMap<UserPoolClientIdentityProvider, IDependable> identityProviders = new HashMap<>();
     public final UserPoolDomain userPoolDomain;
     public final ARecord userPoolDomainARecord;
@@ -84,9 +83,6 @@ public class IdentityStack extends Stack {
         public String antonyccClientId;
         public String antonyccBaseUri;
         // public String antonyccClientSecretArn;
-        public String acCogClientId;
-        public String acCogBaseUri;
-        // public String acCogClientSecretArn;
 
         // Cognito and Bundle Management properties
         public String googleClientId;
@@ -191,21 +187,6 @@ public class IdentityStack extends Stack {
         //  return this;
         // }
 
-        public Builder acCogClientId(String acCogClientId) {
-            this.acCogClientId = acCogClientId;
-            return this;
-        }
-
-        public Builder acCogBaseUri(String acCogBaseUri) {
-            this.acCogBaseUri = acCogBaseUri;
-            return this;
-        }
-
-        // public Builder acCogClientSecretArn(String acCogClientSecretArn) {
-        //    this.acCogClientSecretArn = acCogClientSecretArn;
-        //    return this;
-        // }
-
         public Builder googleClientId(String googleClientId) {
             this.googleClientId = googleClientId;
             return this;
@@ -246,12 +227,10 @@ public class IdentityStack extends Stack {
             this.verboseLogging = p.verboseLogging;
             this.logCognitoEventHandlerSource = p.logCognitoEventHandlerSource;
             this.homeUrl = p.homeUrl;
-            this.antonyccClientId = p.antonyccClientId;
-            this.antonyccBaseUri = p.antonyccBaseUri;
-            this.acCogClientId = p.acCogClientId;
-            this.acCogBaseUri = p.acCogBaseUri;
             this.googleClientId = p.googleClientId;
             this.googleClientSecretArn = p.googleClientSecretArn;
+            this.antonyccClientId = p.antonyccClientId;
+            this.antonyccBaseUri = p.antonyccBaseUri;
             this.cognitoDomainPrefix = p.cognitoDomainPrefix;
             this.cognitoFeaturePlan = p.cognitoFeaturePlan;
             this.cognitoEnableLogDelivery = p.cognitoEnableLogDelivery;
@@ -424,15 +403,15 @@ public class IdentityStack extends Stack {
         this.identityProviders.put(UserPoolClientIdentityProvider.GOOGLE, this.googleIdentityProvider);
 
         // Antonycc OIDC via Cognito IdP (using L1 construct to avoid clientSecret requirement)
-        this.acCogIdentityProvider = CfnUserPoolIdentityProvider.Builder.create(this, "AcCogIdentityProvider")
+        this.antonyccIdentityProvider = CfnUserPoolIdentityProvider.Builder.create(this, "AcCogIdentityProvider")
                 .providerName("ac-cog")
                 .providerType("OIDC")
                 .userPoolId(this.userPool.getUserPoolId())
                 .providerDetails(Map.of(
                         "client_id",
-                        builder.acCogClientId,
+                        builder.antonyccClientId,
                         "oidc_issuer",
-                        builder.acCogBaseUri,
+                        builder.antonyccBaseUri,
                         "authorize_scopes",
                         "email openid profile",
                         "attributes_request_method",
@@ -444,21 +423,13 @@ public class IdentityStack extends Stack {
                         "given_name", "given_name",
                         "family_name", "family_name"))
                 .build();
-        this.identityProviders.put(UserPoolClientIdentityProvider.custom("ac-cog"), this.acCogIdentityProvider);
+        this.identityProviders.put(UserPoolClientIdentityProvider.custom("ac-cog"), this.antonyccIdentityProvider);
 
         var cognito = CognitoAuth.Builder.create(this)
                 .userPoolArn(this.userPool.getUserPoolArn())
                 .userPoolClientName(dashedDomainName + "-client")
                 .identityProviders(this.identityProviders)
                 .standardAttributes(standardAttributes)
-                .googleClientId(builder.googleClientId)
-                .googleClientSecretValue(googleClientSecretValue)
-                // .antonyccClientId(builder.antonyccClientId)
-                // .antonyccIssuerUrl(builder.antonyccBaseUri)
-                // .antonyccClientSecretValue(antonyccClientSecretValue)
-                .acCogClientId(builder.acCogClientId)
-                .acCogIssuerUrl(builder.acCogBaseUri)
-                // .acCogClientSecretValue(acCogClientSecretValue)
                 .callbackUrls(List.of(
                         "https://" + this.domainName + "/",
                         "https://" + this.domainName + "/auth/loginWithGoogleCallback.html",
@@ -539,9 +510,9 @@ public class IdentityStack extends Stack {
                     .value(this.googleIdentityProvider.getProviderName())
                     .build();
         }
-        if (this.acCogIdentityProvider != null) {
+        if (this.antonyccIdentityProvider != null) {
             CfnOutput.Builder.create(this, "CognitoAntonyccIdpId")
-                    .value(this.acCogIdentityProvider.getProviderName())
+                    .value(this.antonyccIdentityProvider.getProviderName())
                     .build();
         }
     }

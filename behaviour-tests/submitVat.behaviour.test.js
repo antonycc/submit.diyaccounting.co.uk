@@ -33,18 +33,18 @@ const runTestServer = process.env.DIY_SUBMIT_TEST_SERVER_HTTP === "run";
 const runProxy = process.env.DIY_SUBMIT_TEST_PROXY === "run";
 const runMockOAuth2 = process.env.DIY_SUBMIT_TEST_MOCK_OAUTH2 === "run";
 const runMinioS3 = process.env.DIY_SUBMIT_TEST_MINIO_S3 === "run";
-console.log(
-  `runTestServer: ${runTestServer} (DIY_SUBMIT_TEST_SERVER_HTTP: ${process.env.DIY_SUBMIT_TEST_SERVER_HTTP})`,
-);
-console.log(`runProxy: ${runProxy} (DIY_SUBMIT_TEST_PROXY: ${process.env.DIY_SUBMIT_TEST_PROXY})`);
-console.log(
-  `runMockOAuth2: ${runMockOAuth2} (DIY_SUBMIT_TEST_MOCK_OAUTH2: ${process.env.DIY_SUBMIT_TEST_MOCK_OAUTH2})`,
-);
-console.log(`runMinioS3: ${runMinioS3} (DIY_SUBMIT_TEST_MINIO_S3: ${process.env.DIY_SUBMIT_TEST_MINIO_S3})`);
-
 const testAuthProvider = process.env.DIY_SUBMIT_TEST_AUTH_PROVIDER || "mock";
 const testAuthUsername = process.env.DIY_SUBMIT_TEST_AUTH_USERNAME || "user";
 const testAuthPassword = process.env.DIY_SUBMIT_TEST_AUTH_PASSWORD || "";
+console.log(`runTestServer: ${runTestServer} (DIY_SUBMIT_TEST_SERVER_HTTP: ${process.env.DIY_SUBMIT_TEST_SERVER_HTTP})`);
+console.log(`runProxy: ${runProxy} (DIY_SUBMIT_TEST_PROXY: ${process.env.DIY_SUBMIT_TEST_PROXY})`);
+console.log(`runMockOAuth2: ${runMockOAuth2} (DIY_SUBMIT_TEST_MOCK_OAUTH2: ${process.env.DIY_SUBMIT_TEST_MOCK_OAUTH2})`);
+console.log(`runMinioS3: ${runMinioS3} (DIY_SUBMIT_TEST_MINIO_S3: ${process.env.DIY_SUBMIT_TEST_MINIO_S3})`);
+console.log(`testAuthProvider: ${testAuthProvider} (DIY_SUBMIT_TEST_AUTH_PROVIDER: ${process.env.DIY_SUBMIT_TEST_AUTH_PROVIDER})`);
+console.log(`testAuthUsername: ${testAuthUsername} (DIY_SUBMIT_TEST_AUTH_USERNAME: ${process.env.DIY_SUBMIT_TEST_AUTH_USERNAME})`);
+// console.log
+// (`testAuthPassword: ${testAuthPassword.length} (chars) (DIY_SUBMIT_TEST_AUTH_PASSWORD: ${process.env.DIY_SUBMIT_TEST_AUTH_PASSWORD.length} (chars))`); // don't log passwords
+
 
 const bucketNamePostfix = process.env.DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX;
 const homeUrl = process.env.DIY_SUBMIT_HOME_URL;

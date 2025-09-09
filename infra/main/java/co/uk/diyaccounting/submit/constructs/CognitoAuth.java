@@ -1,12 +1,9 @@
 package co.uk.diyaccounting.submit.constructs;
 
 import co.uk.diyaccounting.submit.awssdk.RetentionDaysConverter;
-import java.util.HashMap;
-import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import software.amazon.awscdk.RemovalPolicy;
-import software.amazon.awscdk.SecretValue;
 import software.amazon.awscdk.services.cognito.CfnLogDeliveryConfiguration;
 import software.amazon.awscdk.services.cognito.CfnUserPool;
 import software.amazon.awscdk.services.cognito.OAuthFlows;
@@ -20,6 +17,9 @@ import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.constructs.Construct;
 import software.constructs.IDependable;
+
+import java.util.HashMap;
+import java.util.List;
 
 /**
  * Thin coordinator for Cognito resources, created at WebStack scope to preserve logical IDs.
@@ -112,14 +112,6 @@ public class CognitoAuth {
         private String userPoolArn;
         private String userPoolClientName;
         private StandardAttributes standardAttributes;
-        private String googleClientId;
-        private SecretValue googleClientSecretValue;
-        // private String antonyccClientId;
-        // private SecretValue antonyccClientSecretValue;
-        // private String antonyccIssuerUrl;
-        private String acCogClientId;
-        // private SecretValue acCogClientSecretValue;
-        private String acCogIssuerUrl;
         private List<String> callbackUrls;
         private List<String> logoutUrls;
         public String env;
@@ -164,46 +156,6 @@ public class CognitoAuth {
 
         public Builder standardAttributes(StandardAttributes attrs) {
             this.standardAttributes = attrs;
-            return this;
-        }
-
-        public Builder googleClientId(String id) {
-            this.googleClientId = id;
-            return this;
-        }
-
-        public Builder googleClientSecretValue(SecretValue value) {
-            this.googleClientSecretValue = value;
-            return this;
-        }
-
-        // public Builder antonyccClientId(String id) {
-        //      this.antonyccClientId = id;
-        //      return this;
-        // }
-
-        // public Builder antonyccClientSecretValue(SecretValue value) {
-        //      this.antonyccClientSecretValue = value;
-        //      return this;
-        // }
-
-        // public Builder antonyccIssuerUrl(String url) {
-        //      this.antonyccIssuerUrl = url;
-        //      return this;
-        // }
-
-        public Builder acCogClientId(String id) {
-            this.acCogClientId = id;
-            return this;
-        }
-
-        // public Builder acCogClientSecretValue(SecretValue value) {
-        //    this.acCogClientSecretValue = value;
-        //    return this;
-        // }
-
-        public Builder acCogIssuerUrl(String url) {
-            this.acCogIssuerUrl = url;
             return this;
         }
 
@@ -295,10 +247,6 @@ public class CognitoAuth {
             this.userPoolArn = props.userPoolArn;
             this.userPoolClientName = props.userPoolClientName;
             this.standardAttributes = props.standardAttributes;
-            this.googleClientId = props.googleClientId;
-            this.googleClientSecretValue = props.googleClientSecretValue;
-            this.acCogClientId = props.acCogClientId;
-            this.acCogIssuerUrl = props.acCogIssuerUrl;
             this.callbackUrls = props.callbackUrls;
             this.logoutUrls = props.logoutUrls;
             this.env = props.env;
