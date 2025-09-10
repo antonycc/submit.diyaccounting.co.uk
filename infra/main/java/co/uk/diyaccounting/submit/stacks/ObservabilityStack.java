@@ -2,9 +2,6 @@ package co.uk.diyaccounting.submit.stacks;
 
 import co.uk.diyaccounting.submit.awssdk.RetentionDaysConverter;
 import co.uk.diyaccounting.submit.utils.ResourceNameUtils;
-import java.util.AbstractMap;
-import java.util.List;
-import java.util.regex.Pattern;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import software.amazon.awscdk.CfnOutput;
@@ -21,6 +18,10 @@ import software.amazon.awscdk.services.s3.BucketEncryption;
 import software.amazon.awscdk.services.s3.LifecycleRule;
 import software.constructs.Construct;
 
+import java.util.AbstractMap;
+import java.util.List;
+import java.util.regex.Pattern;
+
 public class ObservabilityStack extends Stack {
 
     private static final Logger logger = LogManager.getLogger(ObservabilityStack.class);
@@ -29,37 +30,37 @@ public class ObservabilityStack extends Stack {
     public Trail trail;
     public LogGroup cloudTrailLogGroup;
 
-    public ObservabilityStack(Construct scope, String id, ObservabilityStack.Builder builder) {
-        this(scope, id, null, builder);
+    public ObservabilityStack(Construct scope, String id, ObservabilityStackProps props) {
+        this(scope, id, null, props);
     }
 
-    public ObservabilityStack(Construct scope, String id, StackProps props, ObservabilityStack.Builder builder) {
+    public ObservabilityStack(Construct scope, String id, StackProps props, ObservabilityStackProps obsProps) {
         super(scope, id, props);
 
         // Values are provided via WebApp after context/env resolution
 
         // Build naming using same patterns as WebStack
-        String domainName = Builder.buildDomainName(builder.env, builder.subDomainName, builder.hostedZoneName);
+        String domainName = Builder.buildDomainName(obsProps.env, obsProps.subDomainName, obsProps.hostedZoneName);
         String dashedDomainName =
-                Builder.buildDashedDomainName(builder.env, builder.subDomainName, builder.hostedZoneName);
+                Builder.buildDashedDomainName(obsProps.env, obsProps.subDomainName, obsProps.hostedZoneName);
 
         String trailName = WebStack.Builder.buildTrailName(dashedDomainName);
-        boolean cloudTrailEnabled = Boolean.parseBoolean(builder.cloudTrailEnabled);
+        boolean cloudTrailEnabled = Boolean.parseBoolean(obsProps.cloudTrailEnabled);
         int cloudTrailLogGroupRetentionPeriodDays;
         try {
-            cloudTrailLogGroupRetentionPeriodDays = Integer.parseInt(builder.cloudTrailLogGroupRetentionPeriodDays);
+            cloudTrailLogGroupRetentionPeriodDays = Integer.parseInt(obsProps.cloudTrailLogGroupRetentionPeriodDays);
         } catch (Exception e) {
             // Default to 30 days if not provided or invalid during CI synth
             cloudTrailLogGroupRetentionPeriodDays = 30;
         }
-        boolean xRayEnabled = Boolean.parseBoolean(builder.xRayEnabled);
+        boolean xRayEnabled = Boolean.parseBoolean(obsProps.xRayEnabled);
 
         // Create a CloudTrail for the stack resources
         RetentionDays cloudTrailLogGroupRetentionPeriod =
                 RetentionDaysConverter.daysToRetentionDays(cloudTrailLogGroupRetentionPeriodDays);
         if (cloudTrailEnabled) {
             this.cloudTrailLogGroup = LogGroup.Builder.create(this, "CloudTrailGroup")
-                    .logGroupName("%s%s-cloud-trail".formatted(builder.cloudTrailLogGroupPrefix, dashedDomainName))
+                    .logGroupName("%s%s-cloud-trail".formatted(obsProps.cloudTrailLogGroupPrefix, dashedDomainName))
                     .retention(cloudTrailLogGroupRetentionPeriod)
                     .removalPolicy(RemovalPolicy.DESTROY)
                     .build();
@@ -105,8 +106,9 @@ public class ObservabilityStack extends Stack {
         private Construct scope;
         private String id;
         private StackProps props;
+        private ObservabilityStackProps obsProps;
 
-        // Environment configuration
+        // Environment configuration (kept for backward compatibility; values are copied into props if needed)
         public String env;
         public String subDomainName;
         public String hostedZoneName;
@@ -172,6 +174,7 @@ public class ObservabilityStack extends Stack {
 
         public Builder props(ObservabilityStackProps p) {
             if (p == null) return this;
+            this.obsProps = p;
             this.env = p.env;
             this.subDomainName = p.subDomainName;
             this.hostedZoneName = p.hostedZoneName;
@@ -184,7 +187,17 @@ public class ObservabilityStack extends Stack {
         }
 
         public ObservabilityStack build() {
-            return new ObservabilityStack(this.scope, this.id, this.props, this);
+            ObservabilityStackProps p = this.obsProps != null ? this.obsProps : ObservabilityStackProps.builder()
+                    .env(this.env)
+                    .subDomainName(this.subDomainName)
+                    .hostedZoneName(this.hostedZoneName)
+                    .cloudTrailEnabled(this.cloudTrailEnabled)
+                    .cloudTrailLogGroupPrefix(this.cloudTrailLogGroupPrefix)
+                    .cloudTrailLogGroupRetentionPeriodDays(this.cloudTrailLogGroupRetentionPeriodDays)
+                    .accessLogGroupRetentionPeriodDays(this.accessLogGroupRetentionPeriodDays)
+                    .xRayEnabled(this.xRayEnabled)
+                    .build();
+            return new ObservabilityStack(this.scope, this.id, this.props, p);
         }
 
         // Naming utility methods following WebStack patterns

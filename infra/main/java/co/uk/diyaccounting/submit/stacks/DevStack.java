@@ -37,21 +37,23 @@ public class DevStack extends Stack {
     public final LogGroup ecrLogGroup;
     public final Role ecrPublishRole;
 
-    public DevStack(Construct scope, String id, DevStack.Builder builder) {
-        this(scope, id, null, builder);
+    public DevStack(Construct scope, String id, DevStackProps props) {
+        this(scope, id, null, props);
     }
 
-    public DevStack(Construct scope, String id, StackProps props, DevStack.Builder builder) {
+    public DevStack(Construct scope, String id, StackProps props, DevStackProps devProps) {
         super(scope, id, props);
 
         // Values are provided via WebApp after context/env resolution
 
         // Build naming using same patterns as WebStack
-        String domainName = Builder.buildDomainName(builder.env, builder.subDomainName, builder.hostedZoneName);
+        String domainName = Builder.buildDomainName(devProps.env, devProps.subDomainName, devProps.hostedZoneName);
         String dashedDomainName =
-                Builder.buildDashedDomainName(builder.env, builder.subDomainName, builder.hostedZoneName);
+                Builder.buildDashedDomainName(devProps.env, devProps.subDomainName, devProps.hostedZoneName);
 
         logger.info("Creating DevStack for domain: {} (dashed: {})", domainName, dashedDomainName);
+
+        boolean retain = devProps.retainEcrRepository != null && Boolean.parseBoolean(devProps.retainEcrRepository);
 
         // ECR Repository with lifecycle rules
         String ecrRepositoryName = Builder.buildEcrRepositoryName(dashedDomainName);
@@ -66,7 +68,7 @@ public class DevStack extends Stack {
                                 .tagStatus(TagStatus.UNTAGGED)
                                 .maxImageAge(Duration.days(1))
                                 .build()))
-                .removalPolicy(builder.retainEcrRepository ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY)
+                .removalPolicy(retain ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY)
                 .build();
 
         // CloudWatch Log Group for ECR operations with 7-day retention
@@ -156,6 +158,7 @@ public class DevStack extends Stack {
         private Construct scope;
         private String id;
         private StackProps props;
+        private DevStackProps devProps;
 
         // Environment configuration
         public String env;
@@ -199,6 +202,7 @@ public class DevStack extends Stack {
 
         public Builder props(DevStackProps p) {
             if (p == null) return this;
+            this.devProps = p;
             this.env = p.env;
             this.subDomainName = p.subDomainName;
             this.hostedZoneName = p.hostedZoneName;
@@ -207,7 +211,13 @@ public class DevStack extends Stack {
         }
 
         public DevStack build() {
-            return new DevStack(this.scope, this.id, this.props, this);
+            DevStackProps p = this.devProps != null ? this.devProps : DevStackProps.builder()
+                    .env(this.env)
+                    .subDomainName(this.subDomainName)
+                    .hostedZoneName(this.hostedZoneName)
+                    .retainEcrRepository(Boolean.toString(this.retainEcrRepository))
+                    .build();
+            return new DevStack(this.scope, this.id, this.props, p);
         }
 
         // Naming utility methods following WebStack patterns

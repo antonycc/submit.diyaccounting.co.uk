@@ -1,14 +1,15 @@
 package co.uk.diyaccounting.submit.stacks;
 
 import co.uk.diyaccounting.submit.utils.ResourceNameUtils;
-import java.util.AbstractMap;
-import java.util.List;
-import java.util.regex.Pattern;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
 import software.constructs.Construct;
+
+import java.util.AbstractMap;
+import java.util.List;
+import java.util.regex.Pattern;
 
 public class ApplicationStack extends Stack {
 
@@ -18,6 +19,26 @@ public class ApplicationStack extends Stack {
 
     public ApplicationStack(Construct scope, String id, ApplicationStack.Builder builder) {
         this(scope, id, null, builder);
+    }
+
+    public ApplicationStack(Construct scope, String id, ApplicationStackProps appProps) {
+        this(scope, id, null, appProps);
+    }
+
+    public ApplicationStack(Construct scope, String id, StackProps props, ApplicationStackProps p) {
+        super(scope, id, props);
+
+        // Values are provided via WebApp after context/env resolution
+
+        // Build naming using same patterns as WebStack
+        String domainName = Builder.buildDomainName(p.env, p.subDomainName, p.hostedZoneName);
+        String dashedDomainName =
+                Builder.buildDashedDomainName(p.env, p.subDomainName, p.hostedZoneName);
+
+        boolean cloudTrailEnabled = Boolean.parseBoolean(p.cloudTrailEnabled);
+        boolean xRayEnabled = Boolean.parseBoolean(p.xRayEnabled);
+
+        logger.info("ApplicationStack created successfully for {}", dashedDomainName);
     }
 
     public ApplicationStack(Construct scope, String id, StackProps props, ApplicationStack.Builder builder) {
@@ -43,6 +64,7 @@ public class ApplicationStack extends Stack {
         private Construct scope;
         private String id;
         private StackProps props;
+        private ApplicationStackProps appProps;
 
         // Environment configuration
         public String env;
@@ -92,6 +114,7 @@ public class ApplicationStack extends Stack {
 
         public Builder props(ApplicationStackProps p) {
             if (p == null) return this;
+            this.appProps = p;
             this.env = p.env;
             this.subDomainName = p.subDomainName;
             this.hostedZoneName = p.hostedZoneName;
@@ -101,7 +124,14 @@ public class ApplicationStack extends Stack {
         }
 
         public ApplicationStack build() {
-            return new ApplicationStack(this.scope, this.id, this.props, this);
+            ApplicationStackProps p = this.appProps != null ? this.appProps : ApplicationStackProps.builder()
+                    .env(this.env)
+                    .subDomainName(this.subDomainName)
+                    .hostedZoneName(this.hostedZoneName)
+                    .cloudTrailEnabled(this.cloudTrailEnabled)
+                    .xRayEnabled(this.xRayEnabled)
+                    .build();
+            return new ApplicationStack(this.scope, this.id, this.props, p);
         }
 
         // Naming utility methods following WebStack patterns

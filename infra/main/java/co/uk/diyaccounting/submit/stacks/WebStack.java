@@ -147,110 +147,7 @@ public class WebStack extends Stack {
         public Construct scope;
         public String id;
         public StackProps props;
-
-        public String env;
-        public String hostedZoneName;
-        public String hostedZoneId;
-        public String subDomainName;
-        public String certificateArn;
-        public String cloudTrailEnabled;
-        public String cloudTrailLogGroupRetentionPeriodDays;
-        public String accessLogGroupRetentionPeriodDays;
-        public String s3UseExistingBucket;
-        public String s3RetainOriginBucket;
-        public String s3RetainReceiptsBucket;
-        public String cloudTrailEventSelectorPrefix;
-        public String xRayEnabled;
-        public String verboseLogging;
-        public String logS3ObjectEventHandlerSource;
-        public String logGzippedS3ObjectEventHandlerSource;
-        public String docRootPath;
-        public String defaultDocumentAtOrigin;
-        public String error404NotFoundAtDistribution;
-        public String skipLambdaUrlOrigins;
-        public String hmrcClientId;
-        public String hmrcClientSecretArn;
-        public String homeUrl;
-        public String hmrcBaseUri;
-        public String optionalTestRedirectUri;
-        public String optionalTestAccessToken;
-        public String optionalTestS3Endpoint;
-        public String optionalTestS3AccessKey;
-        public String optionalTestS3SecretKey;
-        public String receiptsBucketPostfix;
-        public String lambdaEntry;
-        public String authUrlHmrcLambdaHandlerFunctionName;
-        public String authUrlLambdaUrlPath;
-        public String authUrlHmrcLambdaDuration;
-        public String authUrlMockLambdaHandlerFunctionName;
-        public String authUrlMockLambdaUrlPath;
-        public String authUrlMockLambdaDuration;
-        public String authUrlGoogleLambdaHandlerFunctionName;
-        public String authUrlGoogleLambdaUrlPath;
-        public String authUrlGoogleLambdaDuration;
-        public String authUrlAntonyccLambdaHandlerFunctionName;
-        public String authUrlAntonyccLambdaUrlPath;
-        public String authUrlAntonyccLambdaDuration;
-        public String authUrlAcCogLambdaHandlerFunctionName;
-        public String authUrlAcCogLambdaUrlPath;
-        public String authUrlAcCogLambdaDuration;
-        public String exchangeAntonyccTokenLambdaHandlerFunctionName;
-        public String exchangeAntonyccTokenLambdaUrlPath;
-        public String exchangeAntonyccTokenLambdaDuration;
-        public String exchangeAcCogTokenLambdaHandlerFunctionName;
-        public String exchangeAcCogTokenLambdaUrlPath;
-        public String exchangeAcCogTokenLambdaDuration;
-        public String exchangeHmrcTokenLambdaHandlerFunctionName;
-        public String exchangeHmrcTokenLambdaUrlPath;
-        public String exchangeHmrcTokenLambdaDuration;
-        public String exchangeGoogleTokenLambdaHandlerFunctionName;
-        public String exchangeGoogleTokenLambdaUrlPath;
-        public String exchangeGoogleTokenLambdaDuration;
-        public String submitVatLambdaHandlerFunctionName;
-        public String submitVatLambdaUrlPath;
-        public String submitVatLambdaDuration;
-        public String logReceiptLambdaHandlerFunctionName;
-        public String logReceiptLambdaUrlPath;
-        public String logReceiptLambdaDuration;
-        public String lambdaUrlAuthType;
-        public String commitHash;
-        public String antonyccClientId;
-        public String antonyccBaseUri;
-        // public String antonyccClientSecretArn;
-        public String acCogClientId;
-        public String acCogBaseUri;
-        // public String acCogClientSecretArn;
-
-        // Cognito and Bundle Management properties
-        public String googleClientId;
-        public String googleBaseUri;
-        public String googleClientSecretArn;
-        public String cognitoDomainPrefix;
-        public String userPoolArn;
-        public String bundleExpiryDate;
-        public String bundleUserLimit;
-        public String bundleLambdaHandlerFunctionName;
-        public String bundleLambdaUrlPath;
-        public String bundleLambdaDuration;
-        // Catalog and My Bundles lambdas
-        public String catalogLambdaHandlerFunctionName;
-        public String catalogLambdaUrlPath;
-        public String catalogLambdaDuration;
-        public String myBundlesLambdaHandlerFunctionName;
-        public String myBundlesLambdaUrlPath;
-        public String myBundlesLambdaDuration;
-        public String baseImageTag;
-        // Cognito advanced security/logging flags
-        public String cognitoFeaturePlan;
-        public String cognitoEnableLogDelivery;
-        public String logCognitoEventHandlerSource;
-        public String myReceiptsLambdaHandlerFunctionName;
-        public String myReceiptsLambdaUrlPath;
-        public String myReceiptsLambdaDuration;
-        public String ecrRepositoryArn;
-        public String ecrRepositoryName;
-
-        // public Trail trail;
+        public WebStackProps webStackProps;
 
         public Builder(Construct scope, String id, StackProps props) {
             this.scope = scope;
@@ -266,605 +163,17 @@ public class WebStack extends Stack {
             return new Builder(scope, id, props);
         }
 
-        public Builder env(String env) {
-            this.env = env;
+        public Builder props(WebStackProps webStackProps) {
+            this.webStackProps = webStackProps;
             return this;
         }
-
-        public Builder hostedZoneName(String hostedZoneName) {
-            this.hostedZoneName = hostedZoneName;
-            return this;
-        }
-
-        public Builder hostedZoneId(String hostedZoneId) {
-            this.hostedZoneId = hostedZoneId;
-            return this;
-        }
-
-        public Builder subDomainName(String subDomainName) {
-            this.subDomainName = subDomainName;
-            return this;
-        }
-
-        public Builder certificateArn(String certificateArn) {
-            this.certificateArn = certificateArn;
-            return this;
-        }
-
-        public Builder cloudTrailEnabled(String cloudTrailEnabled) {
-            this.cloudTrailEnabled = cloudTrailEnabled;
-            return this;
-        }
-
-        public Builder cloudTrailLogGroupRetentionPeriodDays(String cloudTrailLogGroupRetentionPeriodDays) {
-            this.cloudTrailLogGroupRetentionPeriodDays = cloudTrailLogGroupRetentionPeriodDays;
-            return this;
-        }
-
-        public Builder accessLogGroupRetentionPeriodDays(String accessLogGroupRetentionPeriodDays) {
-            this.accessLogGroupRetentionPeriodDays = accessLogGroupRetentionPeriodDays;
-            return this;
-        }
-
-        public Builder s3UseExistingBucket(String s3UseExistingBucket) {
-            this.s3UseExistingBucket = s3UseExistingBucket;
-            return this;
-        }
-
-        public Builder s3RetainOriginBucket(String s3RetainOriginBucket) {
-            this.s3RetainOriginBucket = s3RetainOriginBucket;
-            return this;
-        }
-
-        public Builder s3RetainReceiptsBucket(String s3RetainReceiptsBucket) {
-            this.s3RetainReceiptsBucket = s3RetainReceiptsBucket;
-            return this;
-        }
-
-        public Builder cloudTrailEventSelectorPrefix(String cloudTrailEventSelectorPrefix) {
-            this.cloudTrailEventSelectorPrefix = cloudTrailEventSelectorPrefix;
-            return this;
-        }
-
-        public Builder xRayEnabled(String xRayEnabled) {
-            this.xRayEnabled = xRayEnabled;
-            return this;
-        }
-
-        public Builder verboseLogging(String verboseLogging) {
-            this.verboseLogging = verboseLogging;
-            return this;
-        }
-
-        public Builder logS3ObjectEventHandlerSource(String logS3ObjectEventHandlerSource) {
-            this.logS3ObjectEventHandlerSource = logS3ObjectEventHandlerSource;
-            return this;
-        }
-
-        public Builder logGzippedS3ObjectEventHandlerSource(String logGzippedS3ObjectEventHandlerSource) {
-            this.logGzippedS3ObjectEventHandlerSource = logGzippedS3ObjectEventHandlerSource;
-            return this;
-        }
-
-        public Builder logCognitoEventHandlerSource(String logCognitoEventHandlerSource) {
-            this.logCognitoEventHandlerSource = logCognitoEventHandlerSource;
-            return this;
-        }
-
-        public Builder props(WebStackProps p) {
-            if (p == null) return this;
-            this.env = p.env;
-            this.hostedZoneName = p.hostedZoneName;
-            this.hostedZoneId = p.hostedZoneId;
-            this.subDomainName = p.subDomainName;
-            this.certificateArn = p.certificateArn;
-            this.userPoolArn = p.userPoolArn;
-            this.cloudTrailEnabled = p.cloudTrailEnabled;
-            this.xRayEnabled = p.xRayEnabled;
-            this.verboseLogging = p.verboseLogging;
-            this.cloudTrailLogGroupRetentionPeriodDays = p.cloudTrailLogGroupRetentionPeriodDays;
-            this.accessLogGroupRetentionPeriodDays = p.accessLogGroupRetentionPeriodDays;
-            this.s3UseExistingBucket = p.s3UseExistingBucket;
-            this.s3RetainOriginBucket = p.s3RetainOriginBucket;
-            this.s3RetainReceiptsBucket = p.s3RetainReceiptsBucket;
-            this.cloudTrailEventSelectorPrefix = p.cloudTrailEventSelectorPrefix;
-            this.logS3ObjectEventHandlerSource = p.logS3ObjectEventHandlerSource;
-            this.logGzippedS3ObjectEventHandlerSource = p.logGzippedS3ObjectEventHandlerSource;
-            this.docRootPath = p.docRootPath;
-            this.defaultDocumentAtOrigin = p.defaultDocumentAtOrigin;
-            this.error404NotFoundAtDistribution = p.error404NotFoundAtDistribution;
-            this.skipLambdaUrlOrigins = p.skipLambdaUrlOrigins;
-            this.hmrcClientId = p.hmrcClientId;
-            this.hmrcClientSecretArn = p.hmrcClientSecretArn;
-            this.homeUrl = p.homeUrl;
-            this.hmrcBaseUri = p.hmrcBaseUri;
-            this.optionalTestAccessToken = p.optionalTestAccessToken;
-            this.optionalTestS3Endpoint = p.optionalTestS3Endpoint;
-            this.optionalTestS3AccessKey = p.optionalTestS3AccessKey;
-            this.optionalTestS3SecretKey = p.optionalTestS3SecretKey;
-            this.receiptsBucketPostfix = p.receiptsBucketPostfix;
-            this.lambdaEntry = p.lambdaEntry;
-            this.authUrlHmrcLambdaHandlerFunctionName = p.authUrlHmrcLambdaHandlerFunctionName;
-            this.authUrlLambdaUrlPath = p.authUrlHmrcLambdaUrlPath;
-            this.authUrlHmrcLambdaDuration = p.authUrlHmrcLambdaDurationMillis;
-            this.authUrlMockLambdaHandlerFunctionName = p.authUrlMockLambdaHandlerFunctionName;
-            this.authUrlMockLambdaUrlPath = p.authUrlMockLambdaUrlPath;
-            this.authUrlMockLambdaDuration = p.authUrlMockLambdaDurationMillis;
-            this.authUrlGoogleLambdaHandlerFunctionName = p.authUrlGoogleLambdaHandlerFunctionName;
-            this.authUrlGoogleLambdaUrlPath = p.authUrlGoogleLambdaUrlPath;
-            this.authUrlGoogleLambdaDuration = p.authUrlGoogleLambdaDurationMillis;
-            this.authUrlAntonyccLambdaHandlerFunctionName = p.authUrlAntonyccLambdaHandlerFunctionName;
-            this.authUrlAntonyccLambdaUrlPath = p.authUrlAntonyccLambdaUrlPath;
-            this.authUrlAntonyccLambdaDuration = p.authUrlAntonyccLambdaDurationMillis;
-            this.authUrlAcCogLambdaHandlerFunctionName = p.authUrlAcCogLambdaHandlerFunctionName;
-            this.authUrlAcCogLambdaUrlPath = p.authUrlAcCogLambdaUrlPath;
-            this.authUrlAcCogLambdaDuration = p.authUrlAcCogLambdaDurationMillis;
-            this.exchangeHmrcTokenLambdaHandlerFunctionName = p.exchangeHmrcTokenLambdaHandlerFunctionName;
-            this.exchangeHmrcTokenLambdaUrlPath = p.exchangeHmrcTokenLambdaUrlPath;
-            this.exchangeHmrcTokenLambdaDuration = p.exchangeHmrcTokenLambdaDurationMillis;
-            this.exchangeGoogleTokenLambdaHandlerFunctionName = p.exchangeGoogleTokenLambdaHandlerFunctionName;
-            this.exchangeGoogleTokenLambdaUrlPath = p.exchangeGoogleTokenLambdaUrlPath;
-            this.exchangeGoogleTokenLambdaDuration = p.exchangeGoogleTokenLambdaDurationMillis;
-            this.exchangeAntonyccTokenLambdaHandlerFunctionName = p.exchangeAntonyccTokenLambdaHandlerFunctionName;
-            this.exchangeAntonyccTokenLambdaUrlPath = p.exchangeAntonyccTokenLambdaUrlPath;
-            this.exchangeAntonyccTokenLambdaDuration = p.exchangeAntonyccTokenLambdaDurationMillis;
-            this.exchangeAcCogTokenLambdaHandlerFunctionName = p.exchangeAcCogTokenLambdaHandlerFunctionName;
-            this.exchangeAcCogTokenLambdaUrlPath = p.exchangeAcCogTokenLambdaUrlPath;
-            this.exchangeAcCogTokenLambdaDuration = p.exchangeAcCogTokenLambdaDurationMillis;
-            this.submitVatLambdaHandlerFunctionName = p.submitVatLambdaHandlerFunctionName;
-            this.submitVatLambdaUrlPath = p.submitVatLambdaUrlPath;
-            this.submitVatLambdaDuration = p.submitVatLambdaDurationMillis;
-            this.logReceiptLambdaHandlerFunctionName = p.logReceiptLambdaHandlerFunctionName;
-            this.logReceiptLambdaUrlPath = p.logReceiptLambdaUrlPath;
-            this.logReceiptLambdaDuration = p.logReceiptLambdaDurationMillis;
-            this.lambdaUrlAuthType = p.lambdaUrlAuthType;
-            this.commitHash = p.commitHash;
-            this.googleClientId = p.googleClientId;
-            this.googleBaseUri = p.googleBaseUri;
-            this.googleClientSecretArn = p.googleClientSecretArn;
-            this.cognitoDomainPrefix = p.cognitoDomainPrefix;
-            this.bundleExpiryDate = p.bundleExpiryDate;
-            this.bundleUserLimit = p.bundleUserLimit;
-            this.bundleLambdaHandlerFunctionName = p.bundleLambdaHandlerFunctionName;
-            this.bundleLambdaUrlPath = p.bundleLambdaUrlPath;
-            this.bundleLambdaDuration = p.bundleLambdaDurationMillis;
-            this.catalogLambdaHandlerFunctionName = p.catalogueLambdaHandlerFunctionName;
-            this.catalogLambdaUrlPath = p.catalogueLambdaUrlPath;
-            this.catalogLambdaDuration = p.catalogueLambdaDurationMillis;
-            this.myBundlesLambdaHandlerFunctionName = p.myBundlesLambdaHandlerFunctionName;
-            this.myBundlesLambdaUrlPath = p.myBundlesLambdaUrlPath;
-            this.myBundlesLambdaDuration = p.myBundlesLambdaDurationMillis;
-            this.baseImageTag = p.baseImageTag;
-            this.cognitoFeaturePlan = p.cognitoFeaturePlan;
-            this.cognitoEnableLogDelivery = p.cognitoEnableLogDelivery;
-            this.logCognitoEventHandlerSource = p.logCognitoEventHandlerSource;
-            this.myReceiptsLambdaHandlerFunctionName = p.myReceiptsLambdaHandlerFunctionName;
-            this.myReceiptsLambdaUrlPath = p.myReceiptsLambdaUrlPath;
-            this.myReceiptsLambdaDuration = p.myReceiptsLambdaDurationMillis;
-            this.antonyccClientId = p.antonyccClientId;
-            this.antonyccBaseUri = p.antonyccBaseUri;
-            this.acCogClientId = p.acCogClientId;
-            this.acCogBaseUri = p.acCogBaseUri;
-            this.ecrRepositoryArn = p.ecrRepositoryArn;
-            this.ecrRepositoryName = p.ecrRepositoryName;
-            return this;
-        }
-
-        public Builder docRootPath(String docRootPath) {
-            this.docRootPath = docRootPath;
-            return this;
-        }
-
-        public Builder defaultDocumentAtOrigin(String defaultDocumentAtOrigin) {
-            this.defaultDocumentAtOrigin = defaultDocumentAtOrigin;
-            return this;
-        }
-
-        public Builder error404NotFoundAtDistribution(String error404NotFoundAtDistribution) {
-            this.error404NotFoundAtDistribution = error404NotFoundAtDistribution;
-            return this;
-        }
-
-        public Builder skipLambdaUrlOrigins(String skipLambdaUrlOrigins) {
-            this.skipLambdaUrlOrigins = skipLambdaUrlOrigins;
-            return this;
-        }
-
-        public Builder hmrcClientId(String hmrcClientId) {
-            this.hmrcClientId = hmrcClientId;
-            return this;
-        }
-
-        public Builder hmrcClientSecretArn(String hmrcClientSecretArn) {
-            this.hmrcClientSecretArn = hmrcClientSecretArn;
-            return this;
-        }
-
-        public Builder homeUrl(String homeUrl) {
-            this.homeUrl = homeUrl;
-            return this;
-        }
-
-        public Builder hmrcBaseUri(String hmrcBaseUri) {
-            this.hmrcBaseUri = hmrcBaseUri;
-            return this;
-        }
-
-        public Builder optionalTestRedirectUri(String optionalTestRedirectUri) {
-            this.optionalTestRedirectUri = optionalTestRedirectUri;
-            return this;
-        }
-
-        public Builder optionalTestAccessToken(String optionalTestAccessToken) {
-            this.optionalTestAccessToken = optionalTestAccessToken;
-            return this;
-        }
-
-        public Builder optionalTestS3Endpoint(String optionalTestS3Endpoint) {
-            this.optionalTestS3Endpoint = optionalTestS3Endpoint;
-            return this;
-        }
-
-        public Builder optionalTestS3AccessKey(String optionalTestS3AccessKey) {
-            this.optionalTestS3AccessKey = optionalTestS3AccessKey;
-            return this;
-        }
-
-        public Builder optionalTestS3SecretKey(String optionalTestS3SecretKey) {
-            this.optionalTestS3SecretKey = optionalTestS3SecretKey;
-            return this;
-        }
-
-        public Builder receiptsBucketPostfix(String receiptsBucketPostfix) {
-            this.receiptsBucketPostfix = receiptsBucketPostfix;
-            return this;
-        }
-
-        public Builder lambdaEntry(String lambdaEntry) {
-            this.lambdaEntry = lambdaEntry;
-            return this;
-        }
-
-        public Builder authUrlHmrcLambdaHandlerFunctionName(String authUrlHmrcLambdaHandlerFunctionName) {
-            this.authUrlHmrcLambdaHandlerFunctionName = authUrlHmrcLambdaHandlerFunctionName;
-            return this;
-        }
-
-        public Builder authUrlHmrcLambdaUrlPath(String authUrlHmrcLambdaUrlPath) {
-            this.authUrlLambdaUrlPath = authUrlHmrcLambdaUrlPath;
-            return this;
-        }
-
-        public Builder authUrlHmrcLambdaDurationMillis(String authUrlHmrcLambdaDuration) {
-            this.authUrlHmrcLambdaDuration = authUrlHmrcLambdaDuration;
-            return this;
-        }
-
-        public Builder authUrlMockLambdaHandlerFunctionName(String authUrlMockLambdaHandlerFunctionName) {
-            this.authUrlMockLambdaHandlerFunctionName = authUrlMockLambdaHandlerFunctionName;
-            return this;
-        }
-
-        public Builder authUrlMockLambdaUrlPath(String authUrlMockLambdaUrlPath) {
-            this.authUrlMockLambdaUrlPath = authUrlMockLambdaUrlPath;
-            return this;
-        }
-
-        public Builder authUrlMockLambdaDurationMillis(String authUrlMockLambdaDuration) {
-            this.authUrlMockLambdaDuration = authUrlMockLambdaDuration;
-            return this;
-        }
-
-        public Builder authUrlGoogleLambdaHandlerFunctionName(String authUrlGoogleLambdaHandlerFunctionName) {
-            this.authUrlGoogleLambdaHandlerFunctionName = authUrlGoogleLambdaHandlerFunctionName;
-            return this;
-        }
-
-        public Builder authUrlGoogleLambdaUrlPath(String authUrlGoogleLambdaUrlPath) {
-            this.authUrlGoogleLambdaUrlPath = authUrlGoogleLambdaUrlPath;
-            return this;
-        }
-
-        public Builder authUrlGoogleLambdaDurationMillis(String authUrlGoogleLambdaDuration) {
-            this.authUrlGoogleLambdaDuration = authUrlGoogleLambdaDuration;
-            return this;
-        }
-
-        public Builder authUrlAntonyccLambdaHandlerFunctionName(String authUrlAntonyccLambdaHandlerFunctionName) {
-            this.authUrlAntonyccLambdaHandlerFunctionName = authUrlAntonyccLambdaHandlerFunctionName;
-            return this;
-        }
-
-        public Builder authUrlAntonyccLambdaUrlPath(String authUrlAntonyccLambdaUrlPath) {
-            this.authUrlAntonyccLambdaUrlPath = authUrlAntonyccLambdaUrlPath;
-            return this;
-        }
-
-        public Builder authUrlAntonyccLambdaDurationMillis(String authUrlAntonyccLambdaDuration) {
-            this.authUrlAntonyccLambdaDuration = authUrlAntonyccLambdaDuration;
-            return this;
-        }
-
-        public Builder authUrlAcCogLambdaHandlerFunctionName(String authUrlAcCogLambdaHandlerFunctionName) {
-            this.authUrlAcCogLambdaHandlerFunctionName = authUrlAcCogLambdaHandlerFunctionName;
-            return this;
-        }
-
-        public Builder authUrlAcCogLambdaUrlPath(String authUrlAcCogLambdaUrlPath) {
-            this.authUrlAcCogLambdaUrlPath = authUrlAcCogLambdaUrlPath;
-            return this;
-        }
-
-        public Builder authUrlAcCogLambdaDurationMillis(String authUrlAcCogLambdaDuration) {
-            this.authUrlAcCogLambdaDuration = authUrlAcCogLambdaDuration;
-            return this;
-        }
-
-        public Builder antonyccClientId(String antonyccClientId) {
-            this.antonyccClientId = antonyccClientId;
-            return this;
-        }
-
-        public Builder antonyccBaseUri(String antonyccBaseUri) {
-            this.antonyccBaseUri = antonyccBaseUri;
-            return this;
-        }
-
-        // public Builder antonyccClientSecretArn(String antonyccClientSecretArn) {
-        //  this.antonyccClientSecretArn = antonyccClientSecretArn;
-        //  return this;
-        // }
-
-        public Builder acCogClientId(String acCogClientId) {
-            this.acCogClientId = acCogClientId;
-            return this;
-        }
-
-        public Builder acCogBaseUri(String acCogBaseUri) {
-            this.acCogBaseUri = acCogBaseUri;
-            return this;
-        }
-
-        // public Builder acCogClientSecretArn(String acCogClientSecretArn) {
-        //    this.acCogClientSecretArn = acCogClientSecretArn;
-        //    return this;
-        // }
-
-        public Builder exchangeAcCogTokenLambdaHandlerFunctionName(String exchangeAcCogTokenLambdaHandlerFunctionName) {
-            this.exchangeAcCogTokenLambdaHandlerFunctionName = exchangeAcCogTokenLambdaHandlerFunctionName;
-            return this;
-        }
-
-        public Builder exchangeAcCogTokenLambdaUrlPath(String exchangeAcCogTokenLambdaUrlPath) {
-            this.exchangeAcCogTokenLambdaUrlPath = exchangeAcCogTokenLambdaUrlPath;
-            return this;
-        }
-
-        public Builder exchangeAcCogTokenLambdaDurationMillis(String exchangeAcCogTokenLambdaDuration) {
-            this.exchangeAcCogTokenLambdaDuration = exchangeAcCogTokenLambdaDuration;
-            return this;
-        }
-
-        public Builder exchangeAntonyccTokenLambdaHandlerFunctionName(
-                String exchangeAntonyccTokenLambdaHandlerFunctionName) {
-            this.exchangeAntonyccTokenLambdaHandlerFunctionName = exchangeAntonyccTokenLambdaHandlerFunctionName;
-            return this;
-        }
-
-        public Builder exchangeAntonyccTokenLambdaUrlPath(String exchangeAntonyccTokenLambdaUrlPath) {
-            this.exchangeAntonyccTokenLambdaUrlPath = exchangeAntonyccTokenLambdaUrlPath;
-            return this;
-        }
-
-        public Builder exchangeAntonyccTokenLambdaDurationMillis(String exchangeAntonyccTokenLambdaDuration) {
-            this.exchangeAntonyccTokenLambdaDuration = exchangeAntonyccTokenLambdaDuration;
-            return this;
-        }
-
-        public Builder exchangeHmrcTokenLambdaHandlerFunctionName(String exchangeHmrcTokenLambdaHandlerFunctionName) {
-            this.exchangeHmrcTokenLambdaHandlerFunctionName = exchangeHmrcTokenLambdaHandlerFunctionName;
-            return this;
-        }
-
-        public Builder exchangeHmrcTokenLambdaUrlPath(String exchangeHmrcTokenLambdaUrlPath) {
-            this.exchangeHmrcTokenLambdaUrlPath = exchangeHmrcTokenLambdaUrlPath;
-            return this;
-        }
-
-        public Builder exchangeHmrcTokenLambdaDurationMillis(String exchangeHmrcTokenLambdaDuration) {
-            this.exchangeHmrcTokenLambdaDuration = exchangeHmrcTokenLambdaDuration;
-            return this;
-        }
-
-        public Builder exchangeGoogleTokenLambdaHandlerFunctionName(
-                String exchangeGoogleTokenLambdaHandlerFunctionName) {
-            this.exchangeGoogleTokenLambdaHandlerFunctionName = exchangeGoogleTokenLambdaHandlerFunctionName;
-            return this;
-        }
-
-        public Builder exchangeGoogleTokenLambdaUrlPath(String exchangeGoogleTokenLambdaUrlPath) {
-            this.exchangeGoogleTokenLambdaUrlPath = exchangeGoogleTokenLambdaUrlPath;
-            return this;
-        }
-
-        public Builder exchangeGoogleTokenLambdaDurationMillis(String exchangeGoogleTokenLambdaDuration) {
-            this.exchangeGoogleTokenLambdaDuration = exchangeGoogleTokenLambdaDuration;
-            return this;
-        }
-
-        public Builder submitVatLambdaHandlerFunctionName(String submitVatLambdaHandlerFunctionName) {
-            this.submitVatLambdaHandlerFunctionName = submitVatLambdaHandlerFunctionName;
-            return this;
-        }
-
-        public Builder submitVatLambdaUrlPath(String submitVatLambdaUrlPath) {
-            this.submitVatLambdaUrlPath = submitVatLambdaUrlPath;
-            return this;
-        }
-
-        public Builder submitVatLambdaDurationMillis(String submitVatLambdaDuration) {
-            this.submitVatLambdaDuration = submitVatLambdaDuration;
-            return this;
-        }
-
-        public Builder logReceiptLambdaHandlerFunctionName(String logReceiptLambdaHandlerFunctionName) {
-            this.logReceiptLambdaHandlerFunctionName = logReceiptLambdaHandlerFunctionName;
-            return this;
-        }
-
-        public Builder logReceiptLambdaUrlPath(String logReceiptLambdaUrlPath) {
-            this.logReceiptLambdaUrlPath = logReceiptLambdaUrlPath;
-            return this;
-        }
-
-        public Builder logReceiptLambdaDurationMillis(String logReceiptLambdaDuration) {
-            this.logReceiptLambdaDuration = logReceiptLambdaDuration;
-            return this;
-        }
-
-        public Builder lambdaUrlAuthType(String lambdaUrlAuthType) {
-            this.lambdaUrlAuthType = lambdaUrlAuthType;
-            return this;
-        }
-
-        public Builder commitHash(String commitHash) {
-            this.commitHash = commitHash;
-            return this;
-        }
-
-        public Builder googleBaseUri(String googleBaseUri) {
-            this.googleBaseUri = googleBaseUri;
-            return this;
-        }
-
-        public Builder googleClientId(String googleClientId) {
-            this.googleClientId = googleClientId;
-            return this;
-        }
-
-        public Builder googleClientSecretArn(String googleClientSecretArn) {
-            this.googleClientSecretArn = googleClientSecretArn;
-            return this;
-        }
-
-        public Builder cognitoDomainPrefix(String cognitoDomainPrefix) {
-            this.cognitoDomainPrefix = cognitoDomainPrefix;
-            return this;
-        }
-
-        public Builder userPoolArn(String userPoolArn) {
-            this.userPoolArn = userPoolArn;
-            return this;
-        }
-
-        public Builder bundleExpiryDate(String bundleExpiryDate) {
-            this.bundleExpiryDate = bundleExpiryDate;
-            return this;
-        }
-
-        public Builder bundleUserLimit(String bundleUserLimit) {
-            this.bundleUserLimit = bundleUserLimit;
-            return this;
-        }
-
-        public Builder bundleLambdaHandlerFunctionName(String bundleLambdaHandlerFunctionName) {
-            this.bundleLambdaHandlerFunctionName = bundleLambdaHandlerFunctionName;
-            return this;
-        }
-
-        public Builder bundleLambdaUrlPath(String bundleLambdaUrlPath) {
-            this.bundleLambdaUrlPath = bundleLambdaUrlPath;
-            return this;
-        }
-
-        public Builder bundleLambdaDurationMillis(String bundleLambdaDuration) {
-            this.bundleLambdaDuration = bundleLambdaDuration;
-            return this;
-        }
-
-        // Catalog Lambda setters
-        public Builder catalogLambdaHandlerFunctionName(String catalogLambdaHandlerFunctionName) {
-            this.catalogLambdaHandlerFunctionName = catalogLambdaHandlerFunctionName;
-            return this;
-        }
-
-        public Builder catalogLambdaUrlPath(String catalogLambdaUrlPath) {
-            this.catalogLambdaUrlPath = catalogLambdaUrlPath;
-            return this;
-        }
-
-        public Builder catalogLambdaDurationMillis(String catalogLambdaDuration) {
-            this.catalogLambdaDuration = catalogLambdaDuration;
-            return this;
-        }
-
-        // My Bundles Lambda setters
-        public Builder myBundlesLambdaHandlerFunctionName(String myBundlesLambdaHandlerFunctionName) {
-            this.myBundlesLambdaHandlerFunctionName = myBundlesLambdaHandlerFunctionName;
-            return this;
-        }
-
-        public Builder myBundlesLambdaUrlPath(String myBundlesLambdaUrlPath) {
-            this.myBundlesLambdaUrlPath = myBundlesLambdaUrlPath;
-            return this;
-        }
-
-        public Builder myBundlesLambdaDurationMillis(String myBundlesLambdaDuration) {
-            this.myBundlesLambdaDuration = myBundlesLambdaDuration;
-            return this;
-        }
-
-        public Builder baseImageTag(String baseImageTag) {
-            this.baseImageTag = baseImageTag;
-            return this;
-        }
-
-        public Builder cognitoFeaturePlan(String cognitoFeaturePlan) {
-            this.cognitoFeaturePlan = cognitoFeaturePlan;
-            return this;
-        }
-
-        public Builder cognitoEnableLogDelivery(String cognitoEnableLogDelivery) {
-            this.cognitoEnableLogDelivery = cognitoEnableLogDelivery;
-            return this;
-        }
-
-        public Builder myReceiptsLambdaHandlerFunctionName(String myReceiptsLambdaHandlerFunctionName) {
-            this.myReceiptsLambdaHandlerFunctionName = myReceiptsLambdaHandlerFunctionName;
-            return this;
-        }
-
-        public Builder myReceiptsLambdaUrlPath(String myReceiptsLambdaUrlPath) {
-            this.myReceiptsLambdaUrlPath = myReceiptsLambdaUrlPath;
-            return this;
-        }
-
-        public Builder myReceiptsLambdaDurationMillis(String myReceiptsLambdaDuration) {
-            this.myReceiptsLambdaDuration = myReceiptsLambdaDuration;
-            return this;
-        }
-
-        public Builder ecrRepositoryArn(String ecrRepositoryArn) {
-            this.ecrRepositoryArn = ecrRepositoryArn;
-            return this;
-        }
-
-        public Builder ecrRepositoryName(String ecrRepositoryName) {
-            this.ecrRepositoryName = ecrRepositoryName;
-            return this;
-        }
-
-        // public Builder trail(Trail trail) {
-        //     this.trail = trail;
-        //     return this;
-        // }
 
         // TODO: Split into Development(<Dev), Observability, Identity, Application, and Web (also
         // fronting Application). See:
         // _developers/backlog/diverse-versions-at-origin.md
 
         public WebStack build() {
-            return new WebStack(this.scope, this.id, this.props, this);
+            return new WebStack(this.scope, this.id, this.props, this.webStackProps);
         }
 
         public static String buildDomainName(String env, String subDomainName, String hostedZoneName) {
@@ -916,11 +225,11 @@ public class WebStack extends Stack {
 
     public static final List<AbstractMap.SimpleEntry<Pattern, String>> domainNameMappings = List.of();
 
-    public WebStack(Construct scope, String id, WebStack.Builder builder) {
+    public WebStack(Construct scope, String id, WebStackProps builder) {
         this(scope, id, null, builder);
     }
 
-    public WebStack(Construct scope, String id, StackProps props, WebStack.Builder builder) {
+    public WebStack(Construct scope, String id, StackProps props, WebStackProps builder) {
         super(scope, id, props);
 
         this.hostedZone = HostedZone.fromHostedZoneAttributes(
@@ -1050,14 +359,14 @@ public class WebStack extends Stack {
                 .allowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
                 .handler(builder.lambdaEntry + builder.authUrlHmrcLambdaHandlerFunctionName)
                 .environment(authUrlHmrcLambdaEnv)
-                .timeout(Duration.millis(Long.parseLong(builder.authUrlHmrcLambdaDuration)))
+                .timeout(Duration.millis(Long.parseLong(builder.authUrlHmrcLambdaDurationMillis)))
                 .options(lambdaCommonOpts)
                 .build();
         this.authUrlHmrcLambda = authUrlHmrcLambdaUrlOrigin.lambda;
         this.authUrlHmrcLambdaUrl = authUrlHmrcLambdaUrlOrigin.functionUrl;
         this.authUrlLambdaLogGroup = authUrlHmrcLambdaUrlOrigin.logGroup;
         lambdaUrlToOriginsBehaviourMappings.put(
-                builder.authUrlLambdaUrlPath + "*", authUrlHmrcLambdaUrlOrigin.behaviorOptions);
+                builder.authUrlHmrcLambdaUrlPath + "*", authUrlHmrcLambdaUrlOrigin.behaviorOptions);
 
         // authUrl - mock
         var authUrlMockLambdaEnv = new HashMap<>(Map.of("DIY_SUBMIT_HOME_URL", builder.homeUrl));
@@ -1068,7 +377,7 @@ public class WebStack extends Stack {
                 .allowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
                 .handler(builder.lambdaEntry + builder.authUrlMockLambdaHandlerFunctionName)
                 .environment(authUrlMockLambdaEnv)
-                .timeout(Duration.millis(Long.parseLong(builder.authUrlMockLambdaDuration)))
+                .timeout(Duration.millis(Long.parseLong(builder.authUrlMockLambdaDurationMillis)))
                 .build();
         this.authUrlMockLambda = authUrlMockLambdaUrlOrigin.lambda;
         this.authUrlMockLambdaUrl = authUrlMockLambdaUrlOrigin.functionUrl;
@@ -1096,7 +405,7 @@ public class WebStack extends Stack {
                 .allowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
                 .handler(builder.lambdaEntry + builder.authUrlGoogleLambdaHandlerFunctionName)
                 .environment(authUrlGoogleLambdaEnv)
-                .timeout(Duration.millis(Long.parseLong(builder.authUrlGoogleLambdaDuration)))
+                .timeout(Duration.millis(Long.parseLong(builder.authUrlGoogleLambdaDurationMillis)))
                 .build();
         this.authUrlGoogleLambda = authUrlGoogleLambdaUrlOrigin.lambda;
         this.authUrlGoogleLambdaUrl = authUrlGoogleLambdaUrlOrigin.functionUrl;
@@ -1120,7 +429,7 @@ public class WebStack extends Stack {
                 .allowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
                 .handler(builder.lambdaEntry + builder.authUrlAntonyccLambdaHandlerFunctionName)
                 .environment(authUrlAntonyccLambdaEnv)
-                .timeout(Duration.millis(Long.parseLong(builder.authUrlAntonyccLambdaDuration)))
+                .timeout(Duration.millis(Long.parseLong(builder.authUrlAntonyccLambdaDurationMillis)))
                 .build();
         this.authUrlAntonyccLambda = authUrlAntonyccLambdaUrlOrigin.lambda;
         this.authUrlAntonyccLambdaUrl = authUrlAntonyccLambdaUrlOrigin.functionUrl;
@@ -1144,7 +453,7 @@ public class WebStack extends Stack {
                 .allowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
                 .handler(builder.lambdaEntry + builder.authUrlAcCogLambdaHandlerFunctionName)
                 .environment(authUrlAcCogLambdaEnv)
-                .timeout(Duration.millis(Long.parseLong(builder.authUrlAcCogLambdaDuration)))
+                .timeout(Duration.millis(Long.parseLong(builder.authUrlAcCogLambdaDurationMillis)))
                 .build();
         this.authUrlAcCogLambda = authUrlAcCogLambdaUrlOrigin.lambda;
         this.authUrlAcCogLambdaUrl = authUrlAcCogLambdaUrlOrigin.functionUrl;
@@ -1179,7 +488,7 @@ public class WebStack extends Stack {
                 .allowedMethods(AllowedMethods.ALLOW_ALL)
                 .handler(builder.lambdaEntry + builder.exchangeHmrcTokenLambdaHandlerFunctionName)
                 .environment(exchangeHmrcTokenLambdaEnv)
-                .timeout(Duration.millis(Long.parseLong(builder.exchangeHmrcTokenLambdaDuration)))
+                .timeout(Duration.millis(Long.parseLong(builder.exchangeHmrcTokenLambdaDurationMillis)))
                 .build();
         this.exchangeHmrcTokenLambda = exchangeHmrcTokenLambdaUrlOrigin.lambda;
         this.exchangeHmrcTokenLambdaUrl = exchangeHmrcTokenLambdaUrlOrigin.functionUrl;
@@ -1214,8 +523,8 @@ public class WebStack extends Stack {
                 .handler(builder.lambdaEntry + builder.exchangeGoogleTokenLambdaHandlerFunctionName)
                 .environment(exchangeGoogleTokenLambdaEnv)
                 .timeout(Duration.millis(Long.parseLong(
-                        builder.exchangeGoogleTokenLambdaDuration != null
-                                ? builder.exchangeGoogleTokenLambdaDuration
+                        builder.exchangeGoogleTokenLambdaDurationMillis != null
+                                ? builder.exchangeGoogleTokenLambdaDurationMillis
                                 : "30000")))
                 .build();
         this.exchangeGoogleTokenLambda = exchangeGoogleTokenLambdaUrlOrigin.lambda;
@@ -1251,8 +560,8 @@ public class WebStack extends Stack {
                 .handler(builder.lambdaEntry + builder.exchangeAntonyccTokenLambdaHandlerFunctionName)
                 .environment(exchangeAntonyccTokenLambdaEnv)
                 .timeout(Duration.millis(Long.parseLong(
-                        builder.exchangeAntonyccTokenLambdaDuration != null
-                                ? builder.exchangeAntonyccTokenLambdaDuration
+                        builder.exchangeAntonyccTokenLambdaDurationMillis != null
+                                ? builder.exchangeAntonyccTokenLambdaDurationMillis
                                 : "30000")))
                 .build();
         this.exchangeAntonyccTokenLambda = exchangeAntonyccTokenLambdaUrlOrigin.lambda;
@@ -1291,8 +600,8 @@ public class WebStack extends Stack {
                 .handler(builder.lambdaEntry + builder.exchangeAcCogTokenLambdaHandlerFunctionName)
                 .environment(exchangeAcCogTokenLambdaEnv)
                 .timeout(Duration.millis(Long.parseLong(
-                        builder.exchangeAcCogTokenLambdaDuration != null
-                                ? builder.exchangeAcCogTokenLambdaDuration
+                        builder.exchangeAcCogTokenLambdaDurationMillis != null
+                                ? builder.exchangeAcCogTokenLambdaDurationMillis
                                 : "30000")))
                 .build();
         this.exchangeAcCogTokenLambda = exchangeAcCogTokenLambdaUrlOrigin.lambda;
@@ -1315,7 +624,7 @@ public class WebStack extends Stack {
                 .allowedMethods(AllowedMethods.ALLOW_ALL)
                 .handler(builder.lambdaEntry + builder.submitVatLambdaHandlerFunctionName)
                 .environment(submitVatLambdaEnv)
-                .timeout(Duration.millis(Long.parseLong(builder.submitVatLambdaDuration)))
+                .timeout(Duration.millis(Long.parseLong(builder.submitVatLambdaDurationMillis)))
                 .build();
         this.submitVatLambda = submitVatLambdaUrlOrigin.lambda;
         this.submitVatLambdaUrl = submitVatLambdaUrlOrigin.functionUrl;
@@ -1343,7 +652,7 @@ public class WebStack extends Stack {
                 .allowedMethods(AllowedMethods.ALLOW_ALL)
                 .handler(builder.lambdaEntry + builder.logReceiptLambdaHandlerFunctionName)
                 .environment(logReceiptLambdaEnv)
-                .timeout(Duration.millis(Long.parseLong(builder.logReceiptLambdaDuration)))
+                .timeout(Duration.millis(Long.parseLong(builder.logReceiptLambdaDurationMillis)))
                 .build();
         this.logReceiptLambda = logReceiptLambdaUrlOrigin.lambda;
         this.logReceiptLambdaUrl = logReceiptLambdaUrlOrigin.functionUrl;
@@ -1370,7 +679,7 @@ public class WebStack extends Stack {
                     .handler(builder.lambdaEntry + builder.bundleLambdaHandlerFunctionName)
                     .environment(bundleLambdaEnv)
                     .timeout(Duration.millis(Long.parseLong(
-                            builder.bundleLambdaDuration != null ? builder.bundleLambdaDuration : "30000")))
+                            builder.bundleLambdaDurationMillis != null ? builder.bundleLambdaDurationMillis : "30000")))
                     .build();
             this.bundleLambda = bundleLambdaUrlOrigin.lambda;
             this.bundleLambdaUrl = bundleLambdaUrlOrigin.functionUrl;
@@ -1395,18 +704,18 @@ public class WebStack extends Stack {
         var catalogLambdaUrlOrigin = LambdaUrlOrigin.Builder.create(this, "Catalog")
                 .options(lambdaCommonOpts)
                 .imageFilename("getCatalog.Dockerfile")
-                .functionName(Builder.buildFunctionName(dashedDomainName, builder.catalogLambdaHandlerFunctionName))
+                .functionName(Builder.buildFunctionName(dashedDomainName, builder.catalogueLambdaHandlerFunctionName))
                 .allowedMethods(AllowedMethods.ALLOW_ALL)
-                .handler(builder.lambdaEntry + builder.catalogLambdaHandlerFunctionName)
+                .handler(builder.lambdaEntry + builder.catalogueLambdaHandlerFunctionName)
                 .environment(catalogLambdaEnv)
                 .timeout(Duration.millis(Long.parseLong(
-                        builder.catalogLambdaDuration != null ? builder.catalogLambdaDuration : "30000")))
+                        builder.catalogueLambdaDurationMillis != null ? builder.catalogueLambdaDurationMillis : "30000")))
                 .build();
         this.catalogLambda = catalogLambdaUrlOrigin.lambda;
         this.catalogLambdaUrl = catalogLambdaUrlOrigin.functionUrl;
         this.catalogLambdaLogGroup = catalogLambdaUrlOrigin.logGroup;
         lambdaUrlToOriginsBehaviourMappings.put(
-                builder.catalogLambdaUrlPath + "*", catalogLambdaUrlOrigin.behaviorOptions);
+                builder.catalogueLambdaUrlPath + "*", catalogLambdaUrlOrigin.behaviorOptions);
         // }
 
         // My Bundles Lambda
@@ -1420,7 +729,7 @@ public class WebStack extends Stack {
                 .handler(builder.lambdaEntry + builder.myBundlesLambdaHandlerFunctionName)
                 .environment(myBundlesLambdaEnv)
                 .timeout(Duration.millis(Long.parseLong(
-                        builder.myBundlesLambdaDuration != null ? builder.myBundlesLambdaDuration : "30000")))
+                        builder.myBundlesLambdaDurationMillis != null ? builder.myBundlesLambdaDurationMillis : "30000")))
                 .build();
         this.myBundlesLambda = myBundlesLambdaUrlOrigin.lambda;
         this.myBundlesLambdaUrl = myBundlesLambdaUrlOrigin.functionUrl;
@@ -1442,7 +751,7 @@ public class WebStack extends Stack {
                 .handler(builder.lambdaEntry + builder.myReceiptsLambdaHandlerFunctionName)
                 .environment(myReceiptsLambdaEnv)
                 .timeout(Duration.millis(Long.parseLong(
-                        builder.myReceiptsLambdaDuration != null ? builder.myReceiptsLambdaDuration : "30000")))
+                        builder.myReceiptsLambdaDurationMillis != null ? builder.myReceiptsLambdaDurationMillis : "30000")))
                 .build();
         this.myReceiptsLambda = myReceiptsLambdaUrlOrigin.lambda;
         this.myReceiptsLambdaUrl = myReceiptsLambdaUrlOrigin.functionUrl;

@@ -292,6 +292,14 @@ public class IdentityStack extends Stack {
         // left intentionally empty
     }
 
+    public IdentityStack(Construct scope, String id, IdentityStackProps idProps) {
+        this(scope, id, null, idProps);
+    }
+
+    public IdentityStack(Construct scope, String id, StackProps props, IdentityStackProps idProps) {
+        this(scope, id, props, IdentityStack.Builder.create(scope, id, props).props(idProps));
+    }
+
     public IdentityStack(Construct scope, String id, IdentityStack.Builder builder) {
         this(scope, id, null, builder);
     }

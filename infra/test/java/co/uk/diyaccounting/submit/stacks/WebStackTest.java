@@ -38,7 +38,7 @@ public class WebStackTest {
     }
 
     private WebStack createTestWebStack(App app) {
-        return WebStack.Builder.create(app, "TestWebStack")
+        WebStackProps props = WebStackProps.builder()
                 .env("test")
                 .hostedZoneName("test.submit.diyaccounting.co.uk")
                 .hostedZoneId("test")
@@ -62,7 +62,6 @@ public class WebStackTest {
                         "arn:aws:secretsmanager:eu-west-2:000000000000:secret:diy/test/submit/hmrc/client_secret")
                 .homeUrl("https://test.submit.diyaccounting.co.uk/callback")
                 .hmrcBaseUri("https://test-api.service.hmrc.gov.uk")
-                .optionalTestRedirectUri("https://test.submit.diyaccounting.co.uk/test-callback")
                 .optionalTestAccessToken("test access token")
                 .optionalTestS3Endpoint("https://s3.amazonaws.com")
                 .optionalTestS3AccessKey("test-access-key")
@@ -70,18 +69,25 @@ public class WebStackTest {
                 .receiptsBucketPostfix("test-receipts-bucket")
                 .lambdaEntry("co.uk.diyaccounting.submit.handlers.")
                 .authUrlHmrcLambdaHandlerFunctionName("AuthUrlHandler")
+                .authUrlHmrcLambdaUrlPath("/api/hmrc/auth-url")
                 .authUrlHmrcLambdaDurationMillis("30000")
                 .authUrlMockLambdaHandlerFunctionName("AuthUrlHandler")
+                .authUrlMockLambdaUrlPath("/api/mock/auth-url")
                 .authUrlMockLambdaDurationMillis("30000")
                 .authUrlGoogleLambdaHandlerFunctionName("AuthUrlHandler")
+                .authUrlGoogleLambdaUrlPath("/api/google/auth-url")
                 .authUrlGoogleLambdaDurationMillis("30000")
                 .authUrlAntonyccLambdaHandlerFunctionName("AuthUrlHandler")
+                .authUrlAntonyccLambdaUrlPath("/api/antonycc/auth-url")
                 .authUrlAntonyccLambdaDurationMillis("30000")
                 .authUrlAcCogLambdaHandlerFunctionName("AuthUrlHandler")
+                .authUrlAcCogLambdaUrlPath("/api/ac-cog/auth-url")
                 .authUrlAcCogLambdaDurationMillis("30000")
                 .exchangeHmrcTokenLambdaHandlerFunctionName("ExchangeTokenHandler")
+                .exchangeHmrcTokenLambdaUrlPath("/api/hmrc/exchange-token")
                 .exchangeHmrcTokenLambdaDurationMillis("30000")
                 .exchangeGoogleTokenLambdaHandlerFunctionName("ExchangeTokenHandler")
+                .exchangeGoogleTokenLambdaUrlPath("/api/google/exchange-token")
                 .exchangeGoogleTokenLambdaDurationMillis("30000")
                 .exchangeAntonyccTokenLambdaHandlerFunctionName("ExchangeTokenHandler")
                 .exchangeAntonyccTokenLambdaUrlPath("/api/antonycc/exchange-token")
@@ -90,14 +96,19 @@ public class WebStackTest {
                 .exchangeAcCogTokenLambdaUrlPath("/api/ac-cog/exchange-token")
                 .exchangeAcCogTokenLambdaDurationMillis("30000")
                 .submitVatLambdaHandlerFunctionName("SubmitVatHandler")
+                .submitVatLambdaUrlPath("/api/submit-vat")
                 .submitVatLambdaDurationMillis("60000")
                 .logReceiptLambdaHandlerFunctionName("LogReceiptHandler")
+                .logReceiptLambdaUrlPath("/api/log-receipt")
                 .logReceiptLambdaDurationMillis("30000")
                 .myReceiptsLambdaHandlerFunctionName("MyReceiptsHandler")
+                .myReceiptsLambdaUrlPath("/api/my-receipts")
                 .myReceiptsLambdaDurationMillis("30000")
-                .catalogLambdaHandlerFunctionName("CatalogHandler")
-                .catalogLambdaDurationMillis("30000")
+                .catalogueLambdaHandlerFunctionName("CatalogHandler")
+                .catalogueLambdaUrlPath("/api/catalogue")
+                .catalogueLambdaDurationMillis("30000")
                 .myBundlesLambdaHandlerFunctionName("MyBundlesHandler")
+                .myBundlesLambdaUrlPath("/api/my-bundles")
                 .myBundlesLambdaDurationMillis("30000")
                 // Provide Google configuration to avoid nulls in Map.of and Secrets during tests
                 .googleClientId("test-google-client-id")
@@ -105,15 +116,14 @@ public class WebStackTest {
                 .googleClientSecretArn(
                         "arn:aws:secretsmanager:eu-west-2:000000000000:secret:diy/test/submit/google/client_secret")
                 .antonyccClientId("test-antonycc-client-id")
-                // .antonyccClientSecretArn(
-                //
-                // "arn:aws:secretsmanager:eu-west-2:000000000000:secret:diy/test/submit/antonycc/client_secret")
+                .antonyccBaseUri("https://test")
                 .acCogClientId("test-antonycc-client-id")
                 .acCogBaseUri("https://test")
                 .userPoolArn("arn:aws:cognito-idp:eu-west-2:111111111111:userpool/test")
-                // .acCogClientSecretArn(
-                //
-                // "arn:aws:secretsmanager:eu-west-2:000000000000:secret:diy/test/submit/ac-cog/client_secret")
+                .build();
+
+        return WebStack.Builder.create(app, "TestWebStack")
+                .props(props)
                 .build();
     }
 }
