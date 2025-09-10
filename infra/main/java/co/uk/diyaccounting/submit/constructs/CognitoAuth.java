@@ -1,6 +1,8 @@
 package co.uk.diyaccounting.submit.constructs;
 
 import co.uk.diyaccounting.submit.awssdk.RetentionDaysConverter;
+import java.util.HashMap;
+import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import software.amazon.awscdk.RemovalPolicy;
@@ -17,9 +19,6 @@ import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.constructs.Construct;
 import software.constructs.IDependable;
-
-import java.util.HashMap;
-import java.util.List;
 
 /**
  * Thin coordinator for Cognito resources, created at WebStack scope to preserve logical IDs.

@@ -8,6 +8,11 @@ import co.uk.diyaccounting.submit.constructs.LambdaUrlOriginOpts;
 import co.uk.diyaccounting.submit.constructs.LogForwardingBucket;
 import co.uk.diyaccounting.submit.functions.LogS3ObjectEvent;
 import co.uk.diyaccounting.submit.utils.ResourceNameUtils;
+import java.util.AbstractMap;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Pattern;
 import org.apache.hc.core5.http.HttpStatus;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -56,12 +61,6 @@ import software.amazon.awscdk.services.secretsmanager.ISecret;
 import software.amazon.awscdk.services.secretsmanager.Secret;
 import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
-
-import java.util.AbstractMap;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.regex.Pattern;
 
 public class WebStack extends Stack {
 
@@ -1021,19 +1020,19 @@ public class WebStack extends Stack {
 
         // Determine Lambda URL authentication type
         FunctionUrlAuthType functionUrlAuthType = "AWS_IAM".equalsIgnoreCase(builder.lambdaUrlAuthType)
-            ? FunctionUrlAuthType.AWS_IAM
-            : FunctionUrlAuthType.NONE;
+                ? FunctionUrlAuthType.AWS_IAM
+                : FunctionUrlAuthType.NONE;
 
         // Common options for all Lambda URL origins to reduce repetition
         var lambdaCommonOpts = LambdaUrlOriginOpts.Builder.create()
-            .env(builder.env)
-            .imageDirectory("infra/runtimes")
-            .functionUrlAuthType(functionUrlAuthType)
-            .cloudTrailEnabled(cloudTrailEnabled)
-            .xRayEnabled(xRayEnabled)
-            .verboseLogging(verboseLogging)
-            .baseImageTag(builder.baseImageTag)
-            .build();
+                .env(builder.env)
+                .imageDirectory("infra/runtimes")
+                .functionUrlAuthType(functionUrlAuthType)
+                .cloudTrailEnabled(cloudTrailEnabled)
+                .xRayEnabled(xRayEnabled)
+                .verboseLogging(verboseLogging)
+                .baseImageTag(builder.baseImageTag)
+                .build();
 
         var lambdaUrlToOriginsBehaviourMappings = new HashMap<String, BehaviorOptions>();
 

@@ -1,152 +1,155 @@
 <!-- loginWithAcCogCallback.html -->
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>DIY Accounting Submit - Login with Antonycc via Cognito callback</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="stylesheet" href="../submit.css" />
-</head>
-<body>
-<header>
-  <div class="header-nav"></div>
-  <h1>DIY Accounting Submit - Login with Antonycc via Cognito callback</h1>
-  <p class="subtitle">Submit UK VAT returns to HMRC under Making Tax Digital (MTD)</p>
-</header>
+  <head>
+    <meta charset="UTF-8" />
+    <title>DIY Accounting Submit - Login with Antonycc via Cognito callback</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="../submit.css" />
+  </head>
+  <body>
+    <header>
+      <div class="header-nav"></div>
+      <h1>DIY Accounting Submit - Login with Antonycc via Cognito callback</h1>
+      <p class="subtitle">Submit UK VAT returns to HMRC under Making Tax Digital (MTD)</p>
+    </header>
 
-<div id="mainContent">
-  <div id="statusMessagesContainer"></div>
+    <div id="mainContent">
+      <div id="statusMessagesContainer"></div>
 
-  <div id="loadingSpinner" class="spinner" style="display: none"></div>
+      <div id="loadingSpinner" class="spinner" style="display: none"></div>
 
-  <div class="form-container" style="text-align: center">
-    <h2 id="welcomeHeading">Welcome</h2>
-    <p>Return home.</p>
-    <button type="button" class="btn" onclick="window.location.href='../index.html'">Home</button>
-  </div>
-</div>
-
-<footer>
-  <div class="footer-content">
-    <div class="footer-center">
-      <p>&copy; 2025 DIY Accounting Limited</p>
+      <div class="form-container" style="text-align: center">
+        <h2 id="welcomeHeading">Welcome</h2>
+        <p>Return home.</p>
+        <button type="button" class="btn" onclick="window.location.href='../index.html'">Home</button>
+      </div>
     </div>
-  </div>
-</footer>
 
-<script src="../submit.js"></script>
-<script src="../widgets/status-messages.js"></script>
-<script src="../widgets/loading-spinner.js"></script>
-<script>
-  // Check for authentication callback
-  function checkAuthCallback() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const code = urlParams.get("code");
-    const state = urlParams.get("state");
-    const error = urlParams.get("error");
-    const errorDescription = urlParams.get("error_description");
+    <footer>
+      <div class="footer-content">
+        <div class="footer-center">
+          <p>&copy; 2025 DIY Accounting Limited</p>
+        </div>
+      </div>
+    </footer>
 
-    if (code) {
-      console.log("Authentication callback received with code:", code);
-      handleAuthCallback(code, state);
-    } else if (error || errorDescription) {
-      console.error("OAuth error received:", error, errorDescription);
-      showStatus(`Authentication error: ${errorDescription || error}`, "error");
-    }
-  }
+    <script src="../submit.js"></script>
+    <script src="../widgets/status-messages.js"></script>
+    <script src="../widgets/loading-spinner.js"></script>
+    <script>
+      // Check for authentication callback
+      function checkAuthCallback() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const code = urlParams.get("code");
+        const state = urlParams.get("state");
+        const error = urlParams.get("error");
+        const errorDescription = urlParams.get("error_description");
 
-  function base64UrlDecode(str) {
-    // Replace URL-safe chars
-    str = str.replace(/-/g, "+").replace(/_/g, "/");
-    // Add padding if missing
-    const pad = str.length % 4;
-    if (pad) {
-      str += "=".repeat(4 - pad);
-    }
-    return atob(str);
-  }
-
-  // Handle authentication callback from Cognito
-  async function handleAuthCallback(code, state) {
-    try {
-      showLoading();
-      showStatus("Exchanging authorization code for access token...", "info");
-
-      const url = `/api/ac-cog/exchange-token`;
-      const body = {
-        grant_type: "authorization_code",
-        code: code,
-      };
-      console.log(`Exchanging token. Remote call initiated: POST ${url} ++ Body: ${body}`);
-
-      const tokenResponse = await fetch(url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body: new URLSearchParams(body),
-      });
-
-      if (!tokenResponse.ok) {
-        throw new Error("Failed to exchange authorization code for tokens");
+        if (code) {
+          console.log("Authentication callback received with code:", code);
+          handleAuthCallback(code, state);
+        } else if (error || errorDescription) {
+          console.error("OAuth error received:", error, errorDescription);
+          showStatus(`Authentication error: ${errorDescription || error}`, "error");
+        }
       }
 
-      const tokens = await tokenResponse.json();
-      console.log("Received tokens from Cognito " + JSON.stringify(tokens));
-
-      // Store tokens in localStorage (support both snake_case and camelCase fields)
-      const accessToken = tokens.accessToken || tokens.access_token;
-      const idToken = tokens.idToken || tokens.id_token;
-      const refreshToken = tokens.refreshToken || tokens.refresh_token;
-
-      if (accessToken) {
-        localStorage.setItem("cognitoAccessToken", accessToken);
-      }
-      if (idToken) {
-        localStorage.setItem("cognitoIdToken", idToken);
-      }
-      if (refreshToken) {
-        localStorage.setItem("cognitoRefreshToken", refreshToken);
+      function base64UrlDecode(str) {
+        // Replace URL-safe chars
+        str = str.replace(/-/g, "+").replace(/_/g, "/");
+        // Add padding if missing
+        const pad = str.length % 4;
+        if (pad) {
+          str += "=".repeat(4 - pad);
+        }
+        return atob(str);
       }
 
-      // Decode ID token to get user info
-      if (!idToken) {
-        throw new Error("Missing idToken in exchange-token response");
+      // Handle authentication callback from Cognito
+      async function handleAuthCallback(code, state) {
+        try {
+          showLoading();
+          showStatus("Exchanging authorization code for access token...", "info");
+
+          const url = `/api/ac-cog/exchange-token`;
+          const body = {
+            grant_type: "authorization_code",
+            code: code,
+          };
+          console.log(`Exchanging token. Remote call initiated: POST ${url} ++ Body: ${body}`);
+
+          const tokenResponse = await fetch(url, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/x-www-form-urlencoded",
+            },
+            body: new URLSearchParams(body),
+          });
+
+          if (!tokenResponse.ok) {
+            throw new Error("Failed to exchange authorization code for tokens");
+          }
+
+          const tokens = await tokenResponse.json();
+          console.log("Received tokens from Cognito " + JSON.stringify(tokens));
+
+          // Store tokens in localStorage (support both snake_case and camelCase fields)
+          const accessToken = tokens.accessToken || tokens.access_token;
+          const idToken = tokens.idToken || tokens.id_token;
+          const refreshToken = tokens.refreshToken || tokens.refresh_token;
+
+          if (accessToken) {
+            localStorage.setItem("cognitoAccessToken", accessToken);
+          }
+          if (idToken) {
+            localStorage.setItem("cognitoIdToken", idToken);
+          }
+          if (refreshToken) {
+            localStorage.setItem("cognitoRefreshToken", refreshToken);
+          }
+
+          // Decode ID token to get user info
+          if (!idToken) {
+            throw new Error("Missing idToken in exchange-token response");
+          }
+          const base64Payload = idToken.split(".")[1];
+          const jsonPayload = base64UrlDecode(base64Payload);
+          const idTokenPayload = JSON.parse(jsonPayload);
+
+          console.log("Received id_token from Cognito " + JSON.stringify(idTokenPayload));
+
+          // Handle optional email gracefully
+          const userEmail = idTokenPayload.email || null;
+
+          localStorage.setItem(
+            "userInfo",
+            JSON.stringify({
+              sub: idTokenPayload.sub,
+              email: userEmail,
+              given_name: idTokenPayload.given_name,
+              family_name: idTokenPayload.family_name,
+            }),
+          );
+
+          console.log("User authenticated successfully using Cognito:", userEmail || "no email provided");
+          showStatus("Authenticated successfully. Redirecting...", "info");
+
+          // Clear URL parameters
+          window.history.replaceState({}, document.title, window.location.pathname);
+
+          // Redirect to bundles page or home
+          window.location.href = "../index.html";
+        } catch (error) {
+          console.error("Authentication callback error:", error);
+          showStatus(`Authentication failed: ${error.message}`, "error");
+        } finally {
+          hideLoading();
+        }
       }
-      const base64Payload = idToken.split(".")[1];
-      const jsonPayload = base64UrlDecode(base64Payload);
-      const idTokenPayload = JSON.parse(jsonPayload);
 
-      console.log("Received id_token from Cognito " + JSON.stringify(idTokenPayload));
-
-      localStorage.setItem(
-        "userInfo",
-        JSON.stringify({
-          sub: idTokenPayload.sub,
-          email: idTokenPayload.email,
-          given_name: idTokenPayload.given_name,
-          family_name: idTokenPayload.family_name,
-        }),
-      );
-
-      console.log("User authenticated successfully using Cognito:", idTokenPayload.email);
-      showStatus("Authenticated successfully. Redirecting...", "info");
-
-      // Clear URL parameters
-      window.history.replaceState({}, document.title, window.location.pathname);
-
-      // Redirect to bundles page or home
-      window.location.href = "../index.html";
-    } catch (error) {
-      console.error("Authentication callback error:", error);
-      showStatus(`Authentication failed: ${error.message}`, "error");
-    } finally {
-      hideLoading();
-    }
-  }
-
-  // Check if this page was loaded as a callback from authentication
-  checkAuthCallback();
-</script>
-</body>
+      // Check if this page was loaded as a callback from authentication
+      checkAuthCallback();
+    </script>
+  </body>
 </html>
