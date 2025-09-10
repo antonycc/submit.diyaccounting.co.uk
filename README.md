@@ -268,6 +268,51 @@ Tests 5 passed (5)
 Duration 4.97s
 ```
 
+Code style, formatting, and IDE setup
+- JavaScript/Node
+  - Linting: ESLint (Flat config) with eslint-config-google, plus eslint-plugin-prettier to enforce Prettier formatting in lint.
+  - Formatting: Prettier v3 with default options. ESM modules throughout.
+  - Source of truth: eslint.config.js, package.json scripts.
+- Java (CDK/infra)
+  - Formatting: Spotless Maven plugin using Palantir Java Format 2.50.0 with 100-column wrap.
+  - Also: removeUnusedImports, endWithNewline, and POM sorting for pom.xml.
+  - Source of truth: pom.xml (<spotless-maven-plugin> section).
+- Shared
+  - Editor config: .editorconfig sets LF, final newline, trimming, and Java max_line_length=100.
+
+CLI
+- Check: npm run formatting (Prettier check + Spotless check)
+- Fix: npm run formatting-fix (Prettier write + Spotless apply)
+- Lint: npm run linting / npm run linting-fix
+
+IDE quick setup (respect, enforce, and auto-correct)
+- VS Code
+  - Install: ESLint (dbaeumer.vscode-eslint), Prettier - Code formatter (esbenp.prettier-vscode).
+  - Settings (workspace):
+    ```json
+    {
+      "editor.formatOnSave": true,
+      "editor.defaultFormatter": "esbenp.prettier-vscode",
+      "eslint.experimental.useFlatConfig": true,
+      "editor.codeActionsOnSave": {
+        "source.fixAll.eslint": "explicit"
+      }
+    }
+    ```
+  - Run fixes: Ctrl/Cmd+S (format on save) or run npm scripts above.
+- JetBrains IDEs (WebStorm, IntelliJ IDEA Ultimate/Community)
+  - JavaScript: Settings → Languages & Frameworks → JavaScript → Code Quality Tools → ESLint → Automatic.
+  - Prettier: Settings → Tools → Actions on Save → Run Prettier; also enable "Run eslint --fix".
+  - Java: Install "Palantir Java Format" plugin (or Google Java Format) and enable it; optionally add Save Actions plugin to format + optimize imports on save.
+- Eclipse
+  - Install Palantir Java Format via update site: https://palantir.github.io/palantir-java-format/eclipse/update/
+  - Preferences → Java → Code Style → Formatter → select Palantir. Enable Save Actions to format and organize imports.
+- JetBrains Fleet
+  - Enable ESLint and Prettier, set Prettier as default formatter; for Java, run ./mvnw spotless:apply or use Google Java Format plugin when available.
+
+Defer to configs
+- For any questions about rules, rely on eslint.config.js, pom.xml Spotless config, and Prettier defaults: https://prettier.io/docs/en/options.html
+
 Roadmap
 - Production HMRC VAT flow and additional MTD APIs.
 - Expand activities across full product catalog; subscription tiers (basic/advanced).
