@@ -87,8 +87,12 @@ export async function httpGetAntonycc(event) {
   const redirectUri = process.env.DIY_SUBMIT_HOME_URL + "auth/loginWithAntonyccCallback.html";
   const baseUri = process.env.DIY_SUBMIT_ANTONYCC_BASE_URI;
   const scope = "openid profile email";
+
+  // Ensure proper URL construction by removing trailing slash if present before adding path
+  const normalizedBaseUri = baseUri?.endsWith("/") ? baseUri.slice(0, -1) : baseUri;
+
   const authUrl =
-    `${baseUri}/loginDirect.html?` +
+    `${normalizedBaseUri}/loginDirect.html?` +
     "response_type=code" +
     `&client_id=${encodeURIComponent(clientId)}` +
     `&redirect_uri=${encodeURIComponent(redirectUri)}` +
@@ -107,12 +111,12 @@ export async function httpGetAcCog(event) {
   const cognitoBaseUri = (process.env.DIY_SUBMIT_AC_COG_BASE_URI || "").trim();
 
   const authUrl =
-      `${cognitoBaseUri}/oauth2/authorize?response_type=code` +
-      `&client_id=${encodeURIComponent(cognitoClientId)}` +
-      `&redirect_uri=${encodeURIComponent(redirectUri)}` +
-      `&scope=${encodeURIComponent(scope)}` +
-      `&state=${encodeURIComponent(state)}` +
-      `&identity_provider=ac-cog`;
+    `${cognitoBaseUri}/oauth2/authorize?response_type=code` +
+    `&client_id=${encodeURIComponent(cognitoClientId)}` +
+    `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+    `&scope=${encodeURIComponent(scope)}` +
+    `&state=${encodeURIComponent(state)}` +
+    `&identity_provider=ac-cog`;
 
   return httpGet(event, authUrl);
 }
@@ -125,13 +129,6 @@ Prompt to get something from Cognito we can use for the URL above.
 Please modify all the pages in ./web/index.html in @antonycc/oidc so that there is a second login button labelled login with cognito and this take the user to a new page like login.html, only this one calculates the URL to send the user to a cognito rendered login form that is backed by the OIDC Provider in this repository. Implement all the CDK changes required under ./infra to have cognito render a login form (presumably at auth.oidc.antonycc.com) and on login the user should eventually end up back at a new landing page post-authCognito.html (like post-auth.html) but using the conito approch to exchange tokens and get user information. Create new cognito variants of tests in ./tests for the live/web and load journeys. Ensure you have completed all the work for an end to end authentication process similar to what we have for the native oidc provider but using more cognit rendered stuff and this end to end jouney should be able to generate similar token responses to populate local storage and be tested by the actions workflows, dry run all the code you have changed in scenarios for local and pipeline builds and local and AWS running and fix any problems the dry runs  identify. Do as much as you can at once and as much as you can in parrallel checking and fixing every scenario and repeating until you coinsider this a finished feature ready for production use.
 
  */
-
-
-
-
-
-
-
 
 export async function httpGet(event, authUrl) {
   let request;
