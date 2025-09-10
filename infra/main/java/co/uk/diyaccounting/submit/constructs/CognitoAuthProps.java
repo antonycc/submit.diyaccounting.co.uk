@@ -1,11 +1,10 @@
 package co.uk.diyaccounting.submit.constructs;
 
+import java.util.HashMap;
+import java.util.List;
 import software.amazon.awscdk.services.cognito.StandardAttributes;
 import software.amazon.awscdk.services.cognito.UserPoolClientIdentityProvider;
 import software.constructs.IDependable;
-
-import java.util.HashMap;
-import java.util.List;
 
 public class CognitoAuthProps {
     public final String userPoolArn;

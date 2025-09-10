@@ -1,5 +1,8 @@
 package co.uk.diyaccounting.submit.constructs;
 
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Pattern;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import software.amazon.awscdk.Duration;
@@ -30,10 +33,6 @@ import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.LogGroupProps;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.constructs.Construct;
-
-import java.util.List;
-import java.util.Map;
-import java.util.regex.Pattern;
 
 public class LambdaUrlOrigin {
 
@@ -117,7 +116,8 @@ public class LambdaUrlOrigin {
 
         // If builder.baseImageTag is an ECR image use it directly as the image
         @org.jetbrains.annotations.NotNull DockerImageCode dockerImage;
-        //if (builder.baseImageTag != null && builder.baseImageTag.matches("^\\d+\\.dkr\\.ecr\\.[a-z0-9-]+\\.amazonaws\\.com/.+")) {
+        // if (builder.baseImageTag != null &&
+        // builder.baseImageTag.matches("^\\d+\\.dkr\\.ecr\\.[a-z0-9-]+\\.amazonaws\\.com/.+")) {
         //    var imageCodeProps = EcrImageCodeProps.builder()
         //        .cmd(List.of(builder.handler))
         //        .build();
@@ -129,14 +129,14 @@ public class LambdaUrlOrigin {
         //            .repositoryName(builder.ecrRepositoryName)
         //            .build());
         //    dockerImage = DockerImageCode.fromEcr(repository, imageCodeProps);
-        //} else {
-            var imageCodeProps = AssetImageCodeProps.builder()
+        // } else {
+        var imageCodeProps = AssetImageCodeProps.builder()
                 .file(builder.imageDirectory + "/" + builder.imageFilename)
                 .cmd(List.of(builder.handler))
                 .buildArgs(buildArgs)
                 .build();
-            dockerImage = DockerImageCode.fromImageAsset(".", imageCodeProps);
-        //}
+        dockerImage = DockerImageCode.fromImageAsset(".", imageCodeProps);
+        // }
 
         // Add X-Ray environment variables if enabled
         var environment = new java.util.HashMap<>(builder.environment);

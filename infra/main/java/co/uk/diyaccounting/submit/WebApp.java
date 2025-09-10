@@ -5,14 +5,13 @@ import co.uk.diyaccounting.submit.stacks.DevStack;
 import co.uk.diyaccounting.submit.stacks.IdentityStack;
 import co.uk.diyaccounting.submit.stacks.ObservabilityStack;
 import co.uk.diyaccounting.submit.stacks.WebStack;
+import java.lang.reflect.Field;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import software.amazon.awscdk.App;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
-
-import java.lang.reflect.Field;
 
 public class WebApp {
 
@@ -116,8 +115,11 @@ public class WebApp {
                         .s3RetainOriginBucket(appProps.s3RetainOriginBucket)
                         .s3RetainReceiptsBucket(appProps.s3RetainReceiptsBucket)
                         .cloudTrailEventSelectorPrefix(appProps.cloudTrailEventSelectorPrefix)
-                        .logS3ObjectEventHandlerSource(envOr("LOG_S3_OBJECT_EVENT_HANDLER_SOURCE", appProps.logS3ObjectEventHandlerSource))
-                        .logGzippedS3ObjectEventHandlerSource(envOr("LOG_GZIPPED_S3_OBJECT_EVENT_HANDLER_SOURCE", appProps.logGzippedS3ObjectEventHandlerSource))
+                        .logS3ObjectEventHandlerSource(
+                                envOr("LOG_S3_OBJECT_EVENT_HANDLER_SOURCE", appProps.logS3ObjectEventHandlerSource))
+                        .logGzippedS3ObjectEventHandlerSource(envOr(
+                                "LOG_GZIPPED_S3_OBJECT_EVENT_HANDLER_SOURCE",
+                                appProps.logGzippedS3ObjectEventHandlerSource))
                         .docRootPath(appProps.docRootPath)
                         .defaultDocumentAtOrigin(appProps.defaultDocumentAtOrigin)
                         .error404NotFoundAtDistribution(appProps.error404NotFoundAtDistribution)
