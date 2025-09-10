@@ -119,17 +119,20 @@
 
           console.log("Received id_token from Cognito " + JSON.stringify(idTokenPayload));
 
+          // Handle optional email gracefully
+          const userEmail = idTokenPayload.email || null;
+
           localStorage.setItem(
             "userInfo",
             JSON.stringify({
               sub: idTokenPayload.sub,
-              email: idTokenPayload.email,
+              email: userEmail,
               given_name: idTokenPayload.given_name,
               family_name: idTokenPayload.family_name,
             }),
           );
 
-          console.log("User authenticated successfully using Cognito:", idTokenPayload.email);
+          console.log("User authenticated successfully using Cognito:", userEmail || "no email provided");
           showStatus("Authenticated successfully. Redirecting...", "info");
 
           // Clear URL parameters

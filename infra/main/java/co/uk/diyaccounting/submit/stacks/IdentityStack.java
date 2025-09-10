@@ -364,7 +364,7 @@ public class IdentityStack extends Stack {
 
         // Create Cognito User Pool for authentication
         var standardAttributes = StandardAttributes.builder()
-                .email(StandardAttribute.builder().required(true).mutable(true).build())
+                .email(StandardAttribute.builder().required(false).mutable(true).build())
                 .givenName(StandardAttribute.builder()
                         .required(false)
                         .mutable(true)
