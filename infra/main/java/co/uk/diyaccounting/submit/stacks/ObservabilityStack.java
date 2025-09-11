@@ -30,6 +30,10 @@ public class ObservabilityStack extends Stack {
     public Trail trail;
     public LogGroup cloudTrailLogGroup;
 
+    public ObservabilityStack(Construct scope, String id, ObservabilityStack.Builder builder) {
+        this(scope, id, null, builder);
+    }
+
     public ObservabilityStack(Construct scope, String id, ObservabilityStackProps props) {
         this(scope, id, null, props);
     }
@@ -61,6 +65,71 @@ public class ObservabilityStack extends Stack {
         if (cloudTrailEnabled) {
             this.cloudTrailLogGroup = LogGroup.Builder.create(this, "CloudTrailGroup")
                     .logGroupName("%s%s-cloud-trail".formatted(obsProps.cloudTrailLogGroupPrefix, dashedDomainName))
+                    .retention(cloudTrailLogGroupRetentionPeriod)
+                    .removalPolicy(RemovalPolicy.DESTROY)
+                    .build();
+            this.trailBucket = Bucket.Builder.create(this, trailName + "CloudTrailBucket")
+                    .encryption(BucketEncryption.S3_MANAGED)
+                    .blockPublicAccess(BlockPublicAccess.BLOCK_ALL)
+                    .versioned(false)
+                    .autoDeleteObjects(true)
+                    .removalPolicy(RemovalPolicy.DESTROY)
+                    .lifecycleRules(List.of(LifecycleRule.builder()
+                            .expiration(Duration.days(cloudTrailLogGroupRetentionPeriodDays))
+                            .build()))
+                    .build();
+            this.trail = Trail.Builder.create(this, "Trail")
+                    .trailName(trailName)
+                    .cloudWatchLogGroup(this.cloudTrailLogGroup)
+                    .sendToCloudWatchLogs(true)
+                    .cloudWatchLogsRetention(cloudTrailLogGroupRetentionPeriod)
+                    .includeGlobalServiceEvents(false)
+                    .isMultiRegionTrail(false)
+                    .build();
+
+            // Outputs for Observability resources
+            if (this.trailBucket != null) {
+                CfnOutput.Builder.create(this, "TrailBucketArn")
+                        .value(this.trailBucket.getBucketArn())
+                        .build();
+            }
+            if (this.trail != null) {
+                CfnOutput.Builder.create(this, "TrailArn")
+                        .value(this.trail.getTrailArn())
+                        .build();
+            }
+        }
+
+        logger.info("ObservabilityStack created successfully for {}", dashedDomainName);
+    }
+
+    public ObservabilityStack(Construct scope, String id, StackProps props, ObservabilityStack.Builder builder) {
+        super(scope, id, props);
+
+        // Values are provided via WebApp after context/env resolution
+
+        // Build naming using same patterns as WebStack
+        String domainName = Builder.buildDomainName(builder.env, builder.subDomainName, builder.hostedZoneName);
+        String dashedDomainName =
+                Builder.buildDashedDomainName(builder.env, builder.subDomainName, builder.hostedZoneName);
+
+        String trailName = WebStack.Builder.buildTrailName(dashedDomainName);
+        boolean cloudTrailEnabled = Boolean.parseBoolean(builder.cloudTrailEnabled);
+        int cloudTrailLogGroupRetentionPeriodDays;
+        try {
+            cloudTrailLogGroupRetentionPeriodDays = Integer.parseInt(builder.cloudTrailLogGroupRetentionPeriodDays);
+        } catch (Exception e) {
+            // Default to 30 days if not provided or invalid during CI synth
+            cloudTrailLogGroupRetentionPeriodDays = 30;
+        }
+        boolean xRayEnabled = Boolean.parseBoolean(builder.xRayEnabled);
+
+        // Create a CloudTrail for the stack resources
+        RetentionDays cloudTrailLogGroupRetentionPeriod =
+                RetentionDaysConverter.daysToRetentionDays(cloudTrailLogGroupRetentionPeriodDays);
+        if (cloudTrailEnabled) {
+            this.cloudTrailLogGroup = LogGroup.Builder.create(this, "CloudTrailGroup")
+                    .logGroupName("%s%s-cloud-trail".formatted(builder.cloudTrailLogGroupPrefix, dashedDomainName))
                     .retention(cloudTrailLogGroupRetentionPeriod)
                     .removalPolicy(RemovalPolicy.DESTROY)
                     .build();

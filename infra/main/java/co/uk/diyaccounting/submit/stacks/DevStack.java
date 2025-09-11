@@ -37,6 +37,10 @@ public class DevStack extends Stack {
     public final LogGroup ecrLogGroup;
     public final Role ecrPublishRole;
 
+    public DevStack(Construct scope, String id, DevStack.Builder builder) {
+        this(scope, id, null, builder);
+    }
+
     public DevStack(Construct scope, String id, DevStackProps props) {
         this(scope, id, null, props);
     }
@@ -88,6 +92,124 @@ public class DevStack extends Stack {
                         PolicyDocument.Builder.create()
                                 .statements(List.of(
                                         // ECR repository permissions
+                                        PolicyStatement.Builder.create()
+                                                .effect(Effect.ALLOW)
+                                                .actions(List.of(
+                                                        "ecr:GetAuthorizationToken",
+                                                        "ecr:BatchCheckLayerAvailability",
+                                                        "ecr:GetDownloadUrlForLayer",
+                                                        "ecr:BatchGetImage",
+                                                        "ecr:InitiateLayerUpload",
+                                                        "ecr:UploadLayerPart",
+                                                        "ecr:CompleteLayerUpload",
+                                                        "ecr:PutImage",
+                                                        "ecr:ListImages",
+                                                        "ecr:DescribeImages",
+                                                        "ecr:DescribeRepositories"))
+                                                .resources(List.of(this.ecrRepository.getRepositoryArn()))
+                                                .build(),
+                                        // CloudWatch Logs permissions for verbose logging
+                                        PolicyStatement.Builder.create()
+                                                .effect(Effect.ALLOW)
+                                                .actions(List.of(
+                                                        "logs:CreateLogStream",
+                                                        "logs:PutLogEvents",
+                                                        "logs:DescribeLogGroups",
+                                                        "logs:DescribeLogStreams"))
+                                                .resources(List.of(this.ecrLogGroup.getLogGroupArn() + "*"))
+                                                .build(),
+                                        // Additional ECR permissions for scanning and lifecycle
+                                        PolicyStatement.Builder.create()
+                                                .effect(Effect.ALLOW)
+                                                .actions(List.of(
+                                                        "ecr:DescribeImageScanFindings",
+                                                        "ecr:StartImageScan",
+                                                        "ecr:GetLifecyclePolicy",
+                                                        "ecr:GetLifecyclePolicyPreview"))
+                                                .resources(List.of(this.ecrRepository.getRepositoryArn()))
+                                                .build()))
+                                .build()))
+                .build();
+
+        // Output key information
+        CfnOutput.Builder.create(this, "EcrRepositoryArn")
+                .value(this.ecrRepository.getRepositoryArn())
+                .description("ARN of the ECR repository")
+                .build();
+
+        CfnOutput.Builder.create(this, "EcrRepositoryUri")
+                .value(this.ecrRepository.getRepositoryUri())
+                .description("URI of the ECR repository")
+                .build();
+
+        CfnOutput.Builder.create(this, "EcrLogGroupArn")
+                .value(this.ecrLogGroup.getLogGroupArn())
+                .description("ARN of the ECR CloudWatch Log Group")
+                .build();
+
+        CfnOutput.Builder.create(this, "EcrPublishRoleArn")
+                .value(this.ecrPublishRole.getRoleArn())
+                .description("ARN of the ECR publish role")
+                .build();
+
+        logger.info("DevStack created successfully for {}", dashedDomainName);
+    }
+
+    public DevStack(Construct scope, String id, StackProps props, DevStack.Builder builder) {
+        super(scope, id, props);
+
+        // Values are provided via WebApp after context/env resolution
+
+        // Build naming using same patterns as WebStack
+        String domainName = Builder.buildDomainName(builder.env, builder.subDomainName, builder.hostedZoneName);
+        String dashedDomainName =
+                Builder.buildDashedDomainName(builder.env, builder.subDomainName, builder.hostedZoneName);
+
+        logger.info("Creating DevStack for domain: {} (dashed: {})", domainName, dashedDomainName);
+
+        // Determine ECR retention policy from environment boolean
+        String ecr = Builder.buildEcrRepositoryName(dashedDomainName);
+        logger.info("Using ECR repository name: {}", ecr);
+
+        // ECR Repository for storing container images
+        Repository.Builder repoBuilder = Repository.Builder.create(this, "Repository")
+                .repositoryName(ecr)
+                .imageScanOnPush(true) // Scan images for vulnerabilities
+                .lifecycleRules(List.of(
+                        LifecycleRule.builder()
+                                .description("Keep only the 10 most recent images")
+                                .maxImageCount(10)
+                                .tagStatus(TagStatus.ANY)
+                                .build()));
+
+        if (!builder.retainEcrRepository) {
+            repoBuilder.removalPolicy(RemovalPolicy.DESTROY);
+        }
+
+        this.ecrRepository = repoBuilder.build();
+
+        // Log Group for ECR operations (push/pull logs)
+        String logGroupName = Builder.buildEcrLogGroupName(dashedDomainName);
+        this.ecrLogGroup = LogGroup.Builder.create(this, "EcrLogGroup")
+                .logGroupName(logGroupName)
+                .retention(RetentionDays.ONE_WEEK) // Retain logs for 7 days
+                .removalPolicy(RemovalPolicy.DESTROY) // Always clean up logs
+                .build();
+
+        logger.info("Created ECR log group: {}", logGroupName);
+
+        // IAM Role for publishing to ECR from GitHub Actions
+        String roleName = Builder.buildEcrPublishRoleName(dashedDomainName);
+        this.ecrPublishRole = Role.Builder.create(this, "EcrPublishRole")
+                .roleName(roleName)
+                .assumedBy(ServicePrincipal.Builder.create("github.com").build())
+                .description("Role for GitHub Actions to push images to ECR")
+                .maxSessionDuration(Duration.hours(1)) // Limit session duration
+                .inlinePolicies(java.util.Map.of(
+                        "EcrPublishPolicy",
+                        PolicyDocument.Builder.create()
+                                .statements(List.of(
+                                        // Core ECR permissions for image publishing
                                         PolicyStatement.Builder.create()
                                                 .effect(Effect.ALLOW)
                                                 .actions(List.of(
