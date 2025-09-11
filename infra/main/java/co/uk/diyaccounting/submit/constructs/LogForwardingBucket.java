@@ -18,8 +18,6 @@ import software.amazon.awscdk.services.lambda.Code;
 import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.lambda.Runtime;
 import software.amazon.awscdk.services.lambda.Tracing;
-import software.amazon.awscdk.services.lambda.Version;
-import software.amazon.awscdk.services.lambda.VersionProps;
 import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.s3.BlockPublicAccess;
 import software.amazon.awscdk.services.s3.Bucket;
@@ -314,13 +312,14 @@ public class LogForwardingBucket extends Stack {
                     logForwarderBuilder.tracing(Tracing.ACTIVE);
                 }
                 final Function logForwarder = logForwarderBuilder.build();
-                CfnFunction cfnFunction = (CfnFunction) logForwarder.getNode().getDefaultChild();
-                assert cfnFunction != null;
-                cfnFunction.addPropertyOverride("SnapStart", Map.of("ApplyOn", "PublishedVersions"));
-                new Version(
-                        scope,
-                        "%sLogForwarderVersion".formatted(idPrefix),
-                        VersionProps.builder().lambda(logForwarder).build());
+                // Note: SnapStart and Version creation removed to avoid Lambda initialization issues
+                // CfnFunction cfnFunction = (CfnFunction) logForwarder.getNode().getDefaultChild();
+                // assert cfnFunction != null;
+                // cfnFunction.addPropertyOverride("SnapStart", Map.of("ApplyOn", "PublishedVersions"));
+                // new Version(
+                //         scope,
+                //         "%sLogForwarderVersion".formatted(idPrefix),
+                //         VersionProps.builder().lambda(logForwarder).build());
                 logger.info("Created log forwarder %s".formatted(logForwarder.getFunctionName()));
                 logBucket.addEventNotification(EventType.OBJECT_CREATED, new LambdaDestination(logForwarder));
                 logBucket.grantReadWrite(logForwarder);
