@@ -46,12 +46,60 @@
         const error = urlParams.get("error");
         const errorDescription = urlParams.get("error_description");
 
+        // Log all parameters for debugging
+        console.log("Callback parameters:", {
+          code: code,
+          state: state,
+          error: error,
+          error_description: errorDescription,
+          all_params: Object.fromEntries(urlParams.entries())
+        });
+
         if (code) {
           console.log("Authentication callback received with code:", code);
           handleAuthCallback(code, state);
         } else if (error || errorDescription) {
           console.error("OAuth error received:", error, errorDescription);
-          showStatus(`Authentication error: ${errorDescription || error}`, "error");
+          
+          // Handle specific error types
+          let userMessage;
+          switch (error) {
+            case 'invalid_request':
+              userMessage = 'Invalid authentication request. Please check the configuration and try again.';
+              break;
+            case 'unauthorized_client':
+              userMessage = 'Client is not authorized for this authentication flow. Please contact support.';
+              break;
+            case 'access_denied':
+              userMessage = 'Access was denied. You may have cancelled the authentication or do not have permission.';
+              break;
+            case 'unsupported_response_type':
+              userMessage = 'Unsupported response type in authentication request.';
+              break;
+            case 'invalid_scope':
+              userMessage = 'Invalid scope requested in authentication.';
+              break;
+            case 'server_error':
+              userMessage = 'Authentication server error. Please try again later.';
+              break;
+            case 'temporarily_unavailable':
+              userMessage = 'Authentication service is temporarily unavailable. Please try again later.';
+              break;
+            default:
+              userMessage = errorDescription || error || 'An unknown authentication error occurred.';
+          }
+          
+          showStatus(`Authentication failed: ${userMessage}`, "error");
+          
+          // Update welcome heading to indicate error
+          const welcomeHeading = document.getElementById("welcomeHeading");
+          if (welcomeHeading) {
+            welcomeHeading.textContent = "Authentication Error";
+          }
+        } else {
+          // No code or error - this shouldn't happen in normal flow
+          console.log("Callback received with no code or error parameters");
+          showStatus("No authentication code received. Please try logging in again.", "error");
         }
       }
 
