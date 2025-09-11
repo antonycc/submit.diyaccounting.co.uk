@@ -43,27 +43,15 @@ public class WebAppProps {
     public String authUrlMockLambdaUrlPath;
     public String authUrlMockLambdaHandlerFunctionName;
     public String authUrlMockLambdaDuration;
-    public String authUrlGoogleLambdaUrlPath;
-    public String authUrlGoogleLambdaHandlerFunctionName;
-    public String authUrlGoogleLambdaDuration;
-    public String authUrlAntonyccLambdaUrlPath;
-    public String authUrlAntonyccLambdaHandlerFunctionName;
-    public String authUrlAntonyccLambdaDuration;
-    public String authUrlAcCogLambdaUrlPath;
-    public String authUrlAcCogLambdaHandlerFunctionName;
-    public String authUrlAcCogLambdaDuration;
+    public String authUrlCognitoLambdaUrlPath;
+    public String authUrlCognitoLambdaHandlerFunctionName;
+    public String authUrlCognitoLambdaDuration;
     public String exchangeHmrcTokenLambdaUrlPath;
     public String exchangeHmrcTokenLambdaHandlerFunctionName;
     public String exchangeHmrcTokenLambdaDuration;
-    public String exchangeGoogleTokenLambdaUrlPath;
-    public String exchangeGoogleTokenLambdaHandlerFunctionName;
-    public String exchangeGoogleTokenLambdaDuration;
-    public String exchangeAntonyccTokenLambdaUrlPath;
-    public String exchangeAntonyccTokenLambdaHandlerFunctionName;
-    public String exchangeAntonyccTokenLambdaDuration;
-    public String exchangeAcCogTokenLambdaUrlPath;
-    public String exchangeAcCogTokenLambdaHandlerFunctionName;
-    public String exchangeAcCogTokenLambdaDuration;
+    public String exchangeCognitoTokenLambdaUrlPath;
+    public String exchangeCognitoTokenLambdaHandlerFunctionName;
+    public String exchangeCognitoTokenLambdaDuration;
     public String submitVatLambdaUrlPath;
     public String submitVatLambdaHandlerFunctionName;
     public String submitVatLambdaDuration;
@@ -72,7 +60,6 @@ public class WebAppProps {
     public String logReceiptLambdaDuration;
     public String lambdaUrlAuthType;
     public String commitHash;
-    // Cognito / Google
     public String googleClientId;
     public String googleBaseUri;
     public String googleClientSecretArn;
@@ -86,9 +73,6 @@ public class WebAppProps {
     public String myBundlesLambdaUrlPath;
     public String myBundlesLambdaHandlerFunctionName;
     public String myBundlesLambdaDuration;
-    public String exchangeTokenLambdaUrlPath;
-    public String exchangeTokenLambdaHandlerFunctionName;
-    public String exchangeTokenLambdaDuration;
     public String bundleExpiryDate;
     public String bundleUserLimit;
     public String baseImageTag;
@@ -100,8 +84,7 @@ public class WebAppProps {
     public String myReceiptsLambdaDuration;
     public String antonyccClientId;
     public String antonyccBaseUri;
-    public String acCogClientId;
-    public String acCogBaseUri;
+    public String antonyccClientSecretArn;
     public String authCertificateArn;
 
     public static class Builder {

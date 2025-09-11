@@ -56,8 +56,8 @@ public class IdentityStackTest {
                 .googleClientId("test-google-client-id")
                 .googleClientSecretArn(
                         "arn:aws:secretsmanager:eu-west-2:000000000000:secret:diy/test/submit/google/client_secret")
-                // Provide AcCog values used by builder
-                .antonyccClientId("test-accog-client-id")
+                // Provide Cognito values used by builder
+                .antonyccClientId("test-client-id")
                 .antonyccBaseUri("https://test")
                 // Optional/feature flags for Cognito
                 .cognitoDomainPrefix("auth")

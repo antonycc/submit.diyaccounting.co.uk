@@ -67,14 +67,16 @@ public class WebApp {
                         .env(identityStackEnv)
                         .hostedZoneName(envOr("HOSTED_ZONE_NAME", appProps.hostedZoneName))
                         .hostedZoneId(envOr("HOSTED_ZONE_ID", appProps.hostedZoneId))
+                        .cognitoDomainPrefix(appProps.cognitoDomainPrefix)
                         .subDomainName(appProps.subDomainName)
                         .authCertificateArn(envOr("AUTH_CERTIFICATE_ARN", appProps.authCertificateArn))
                         .googleClientId(envOr("DIY_SUBMIT_GOOGLE_CLIENT_ID", appProps.googleClientId))
                         .googleClientSecretArn(
                                 envOr("DIY_SUBMIT_GOOGLE_CLIENT_SECRET_ARN", appProps.googleClientSecretArn))
-                        .cognitoDomainPrefix(appProps.cognitoDomainPrefix)
                         .antonyccClientId(envOr("DIY_SUBMIT_ANTONYCC_CLIENT_ID", appProps.antonyccClientId))
                         .antonyccBaseUri(envOr("DIY_SUBMIT_ANTONYCC_BASE_URI", appProps.antonyccBaseUri))
+                        .antonyccClientSecretArn(
+                                envOr("DIY_SUBMIT_ANTONYCC_CLIENT_SECRET_ARN", appProps.antonyccClientSecretArn))
                         .build())
                 .build();
 
@@ -144,30 +146,16 @@ public class WebApp {
                         .authUrlMockLambdaHandlerFunctionName(appProps.authUrlMockLambdaHandlerFunctionName)
                         .authUrlMockLambdaUrlPath(appProps.authUrlMockLambdaUrlPath)
                         .authUrlMockLambdaDurationMillis(appProps.authUrlMockLambdaDuration)
-                        .authUrlGoogleLambdaHandlerFunctionName(appProps.authUrlGoogleLambdaHandlerFunctionName)
-                        .authUrlGoogleLambdaUrlPath(appProps.authUrlGoogleLambdaUrlPath)
-                        .authUrlGoogleLambdaDurationMillis(appProps.authUrlGoogleLambdaDuration)
-                        .authUrlAntonyccLambdaHandlerFunctionName(appProps.authUrlAntonyccLambdaHandlerFunctionName)
-                        .authUrlAntonyccLambdaUrlPath(appProps.authUrlAntonyccLambdaUrlPath)
-                        .authUrlAntonyccLambdaDurationMillis(appProps.authUrlAntonyccLambdaDuration)
-                        .authUrlAcCogLambdaHandlerFunctionName(appProps.authUrlAcCogLambdaHandlerFunctionName)
-                        .authUrlAcCogLambdaUrlPath(appProps.authUrlAcCogLambdaUrlPath)
-                        .authUrlAcCogLambdaDurationMillis(appProps.authUrlAcCogLambdaDuration)
+                        .authUrlCognitoLambdaHandlerFunctionName(appProps.authUrlCognitoLambdaHandlerFunctionName)
+                        .authUrlCognitoLambdaUrlPath(appProps.authUrlCognitoLambdaUrlPath)
+                        .authUrlCognitoLambdaDurationMillis(appProps.authUrlCognitoLambdaDuration)
                         .exchangeHmrcTokenLambdaHandlerFunctionName(appProps.exchangeHmrcTokenLambdaHandlerFunctionName)
                         .exchangeHmrcTokenLambdaUrlPath(appProps.exchangeHmrcTokenLambdaUrlPath)
                         .exchangeHmrcTokenLambdaDurationMillis(appProps.exchangeHmrcTokenLambdaDuration)
-                        .exchangeGoogleTokenLambdaHandlerFunctionName(
-                                appProps.exchangeGoogleTokenLambdaHandlerFunctionName)
-                        .exchangeGoogleTokenLambdaUrlPath(appProps.exchangeGoogleTokenLambdaUrlPath)
-                        .exchangeGoogleTokenLambdaDurationMillis(appProps.exchangeGoogleTokenLambdaDuration)
-                        .exchangeAntonyccTokenLambdaHandlerFunctionName(
-                                appProps.exchangeAntonyccTokenLambdaHandlerFunctionName)
-                        .exchangeAntonyccTokenLambdaUrlPath(appProps.exchangeAntonyccTokenLambdaUrlPath)
-                        .exchangeAntonyccTokenLambdaDurationMillis(appProps.exchangeAntonyccTokenLambdaDuration)
-                        .exchangeAcCogTokenLambdaHandlerFunctionName(
-                                appProps.exchangeAcCogTokenLambdaHandlerFunctionName)
-                        .exchangeAcCogTokenLambdaUrlPath(appProps.exchangeAcCogTokenLambdaUrlPath)
-                        .exchangeAcCogTokenLambdaDurationMillis(appProps.exchangeAcCogTokenLambdaDuration)
+                        .exchangeCognitoTokenLambdaHandlerFunctionName(
+                                appProps.exchangeCognitoTokenLambdaHandlerFunctionName)
+                        .exchangeCognitoTokenLambdaUrlPath(appProps.exchangeCognitoTokenLambdaUrlPath)
+                        .exchangeCognitoTokenLambdaDurationMillis(appProps.exchangeCognitoTokenLambdaDuration)
                         .submitVatLambdaHandlerFunctionName(appProps.submitVatLambdaHandlerFunctionName)
                         .submitVatLambdaUrlPath(appProps.submitVatLambdaUrlPath)
                         .submitVatLambdaDurationMillis(appProps.submitVatLambdaDuration)
@@ -201,8 +189,8 @@ public class WebApp {
                         .myReceiptsLambdaDurationMillis(appProps.myReceiptsLambdaDuration)
                         .antonyccClientId(envOr("DIY_SUBMIT_ANTONYCC_CLIENT_ID", appProps.antonyccClientId))
                         .antonyccBaseUri(envOr("DIY_SUBMIT_ANTONYCC_BASE_URI", appProps.antonyccBaseUri))
-                        .acCogClientId(envOr("DIY_SUBMIT_AC_COG_CLIENT_ID", appProps.acCogClientId))
-                        .acCogBaseUri(envOr("DIY_SUBMIT_AC_COG_BASE_URI", appProps.acCogBaseUri))
+                        .cognitoClientId(identityStack.userPoolClient.getUserPoolClientId())
+                        .cognitoBaseUri(identityStack.cognitoBaseUri)
                         .build())
                 // .trail(observabilityStack.trail)
                 .build();
@@ -254,38 +242,6 @@ public class WebApp {
             return new WebApp.Builder(scope, id, props);
         }
 
-        /*public void loadContextValuesUsingReflection(Construct scope) {
-            Field[] fields = this.getClass().getDeclaredFields();
-            for (Field field : fields) {
-                if (field.getType() == String.class
-                        && !field.getName().equals("scope")
-                        && !field.getName().equals("id")
-                        && !field.getName().equals("props")) {
-                    try {
-                        field.setAccessible(true);
-
-                        // Skip if already set
-                        if (field.get(this) != null) {
-                            continue;
-                        }
-
-                        // Set from config
-                        String contextValue = getContextValueString(scope, field.getName());
-                        if (contextValue != null) {
-                            field.set(this, contextValue);
-                        }
-                    } catch (IllegalAccessException e) {
-                        logger.warn(
-                                "Failed to set field {} using reflection: {}", field.getName(), e.getMessage());
-                    }
-                }
-            }
-        }*/
-
-        // public String getContextValueString(Construct scope, String contextKey) {
-        //    return getContextValueString(scope, contextKey, null);
-        // }
-
         public String getContextValueString(Construct scope, String contextKey, String defaultValue) {
             var contextValue = scope.getNode().tryGetContext(contextKey);
             String defaultedValue;
@@ -297,15 +253,11 @@ public class WebApp {
                 defaultedValue = defaultValue;
                 source = "default value";
             }
-            // try {
-            // Avoid creating CfnOutput at App scope; just log for visibility during synth
+
             if (logger.isDebugEnabled()) {
                 logger.debug("Context {} resolved from {} with value: {}", contextKey, source, defaultedValue);
             }
-            // }catch (Exception e) {
-            //    logger.warn("Failed to create CfnOutput for context key {}: {}", contextKey,
-            // e.getMessage());
-            // }
+
             return defaultedValue;
         }
     }

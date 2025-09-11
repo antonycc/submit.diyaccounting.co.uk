@@ -53,7 +53,7 @@ describe("System Test – end-to-end AWS-like flow", () => {
       DIY_SUBMIT_HOME_URL: "http://hmrc.redirect:3000/",
       DIY_SUBMIT_HMRC_CLIENT_SECRET: "test hmrc client secret",
       DIY_SUBMIT_COGNITO_CLIENT_ID: "integration-test-cognito-client-id",
-      DIY_SUBMIT_GOOGLE_CLIENT_SECRET: "test google client id",
+      DIY_SUBMIT_GOOGLE_CLIENT_SECRET: "test google client secret",
       DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX: "test-receipts-bucket",
       DIY_SUBMIT_TEST_S3_ENDPOINT: "http://localhost:9000", // Enable S3 operations for tests
     };

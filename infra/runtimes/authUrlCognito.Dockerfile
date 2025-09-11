@@ -4,11 +4,11 @@ FROM ${BASE_IMAGE_TAG}
 
 # Lambda-specific environment variables
 ENV DIY_SUBMIT_HOME_URL=""
-ENV DIY_SUBMIT_AC_COG_BASE_URI=""
-ENV DIY_SUBMIT_AC_COG_CLIENT_ID=""
+ENV DIY_SUBMIT_COGNITO_BASE_URI=""
+ENV DIY_SUBMIT_COGNITO_CLIENT_ID=""
 
 # No need to copy package.json or run npm install - it's already in the base image!
 # The app/ directory is also already copied in the base image
 
 # Set the specific handler for this Lambda
-CMD ["app/functions/authUrl/authUrl.httpGetAcCog"]
+CMD ["app/functions/authUrl/authUrl.httpGetCognito"]

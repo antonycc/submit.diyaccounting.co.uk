@@ -73,22 +73,13 @@ public class WebStackTest {
                 .authUrlHmrcLambdaDurationMillis("30000")
                 .authUrlMockLambdaHandlerFunctionName("AuthUrlHandler")
                 .authUrlMockLambdaDurationMillis("30000")
-                .authUrlGoogleLambdaHandlerFunctionName("AuthUrlHandler")
-                .authUrlGoogleLambdaDurationMillis("30000")
-                .authUrlAntonyccLambdaHandlerFunctionName("AuthUrlHandler")
-                .authUrlAntonyccLambdaDurationMillis("30000")
-                .authUrlAcCogLambdaHandlerFunctionName("AuthUrlHandler")
-                .authUrlAcCogLambdaDurationMillis("30000")
+                .authUrlCognitoLambdaHandlerFunctionName("AuthUrlHandler")
+                .authUrlCognitoLambdaDurationMillis("30000")
                 .exchangeHmrcTokenLambdaHandlerFunctionName("ExchangeTokenHandler")
                 .exchangeHmrcTokenLambdaDurationMillis("30000")
-                .exchangeGoogleTokenLambdaHandlerFunctionName("ExchangeTokenHandler")
-                .exchangeGoogleTokenLambdaDurationMillis("30000")
-                .exchangeAntonyccTokenLambdaHandlerFunctionName("ExchangeTokenHandler")
-                .exchangeAntonyccTokenLambdaUrlPath("/api/antonycc/exchange-token")
-                .exchangeAntonyccTokenLambdaDurationMillis("30000")
-                .exchangeAcCogTokenLambdaHandlerFunctionName("ExchangeTokenHandler")
-                .exchangeAcCogTokenLambdaUrlPath("/api/ac-cog/exchange-token")
-                .exchangeAcCogTokenLambdaDurationMillis("30000")
+                .exchangeCognitoTokenLambdaHandlerFunctionName("ExchangeTokenHandler")
+                .exchangeCognitoTokenLambdaUrlPath("/api/cognito/exchange-token")
+                .exchangeCognitoTokenLambdaDurationMillis("30000")
                 .submitVatLambdaHandlerFunctionName("SubmitVatHandler")
                 .submitVatLambdaDurationMillis("60000")
                 .logReceiptLambdaHandlerFunctionName("LogReceiptHandler")
@@ -108,12 +99,12 @@ public class WebStackTest {
                 // .antonyccClientSecretArn(
                 //
                 // "arn:aws:secretsmanager:eu-west-2:000000000000:secret:diy/test/submit/antonycc/client_secret")
-                .acCogClientId("test-antonycc-client-id")
-                .acCogBaseUri("https://test")
+                .cognitoClientId("test-antonycc-client-id")
+                .cognitoBaseUri("https://test")
                 .userPoolArn("arn:aws:cognito-idp:eu-west-2:111111111111:userpool/test")
-                // .acCogClientSecretArn(
+                // .cognitoClientSecretArn(
                 //
-                // "arn:aws:secretsmanager:eu-west-2:000000000000:secret:diy/test/submit/ac-cog/client_secret")
+                // "arn:aws:secretsmanager:eu-west-2:000000000000:secret:diy/test/submit/cognito/client_secret")
                 .build();
     }
 }

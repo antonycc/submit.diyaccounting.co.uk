@@ -320,15 +320,6 @@ footer {
   color: white;
 }
 
-.antonycc-btn {
-  border-color: #4285f4;
-}
-
-.antonycc-btn:hover {
-  background-color: #4285f4;
-  color: white;
-}
-
 .disabled-btn {
   opacity: 0.6;
   cursor: not-allowed;

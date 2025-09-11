@@ -209,7 +209,7 @@ npx cdk deploy SubmitWebStack-dev
 ```
 Useful outputs (CfnOutput)
 - DistributionId, ARecord, UserPoolId, UserPoolClientId, UserPoolDomainName
-- Lambda URLs: AuthUrlHmrc, AuthUrlMock, AuthUrlGoogle, ExchangeHmrcToken, ExchangeGoogleToken, SubmitVat, LogReceipt, Bundle
+- Lambda URLs: AuthUrlHmrc, AuthUrlMock, ExchangeHmrcToken, ExchangeGoogleToken, SubmitVat, LogReceipt, Bundle
 - Secrets ARNs: HmrcClientSecretsManagerSecretArn, GoogleClientSecretsManagerSecretArn
 
 Observability & Security

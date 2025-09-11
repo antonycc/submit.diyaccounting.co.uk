@@ -3,9 +3,8 @@ ARG BASE_IMAGE_TAG=submit-base:latest
 FROM ${BASE_IMAGE_TAG}
 
 # Lambda-specific environment variables
-ENV DIY_SUBMIT_COGNITO_BASE_URI=""
-ENV DIY_SUBMIT_GOOGLE_CLIENT_SECRET_ARN=""
-ENV DIY_SUBMIT_COGNITO_CLIENT_ID=""
+ENV DIY_SUBMIT_ANTONYCC_BASE_URI=""
+ENV DIY_SUBMIT_ANTONYCC_CLIENT_ID=""
 ENV DIY_SUBMIT_HOME_URL=""
 ENV DIY_SUBMIT_TEST_ACCESS_TOKEN=""
 
@@ -13,4 +12,4 @@ ENV DIY_SUBMIT_TEST_ACCESS_TOKEN=""
 # The app/ directory is also already copied in the base image
 
 # Set the specific handler for this Lambda
-CMD ["app/functions/exchangeToken/exchangeToken.httpPostGoogle"]
+CMD ["app/functions/exchangeToken/exchangeToken.httpPostCognito"]

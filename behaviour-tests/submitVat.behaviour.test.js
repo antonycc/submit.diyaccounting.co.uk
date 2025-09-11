@@ -302,23 +302,23 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
     await page.screenshot({
       path: `target/behaviour-test-results/submitVat-screenshots/060-mock-signed-in-${timestamp}.png`,
     });
-  } else if (testAuthProvider === "ac-cog") {
+  } else if (testAuthProvider === "cognito") {
     await expect(page.getByText(" Continue with @antonycc/oidc via Cognito")).toBeVisible();
     await loggedClick(
       "button:has-text(' Continue with @antonycc/oidc via Cognito')",
-      "Continue with @antonycc/oidc via Cognitor",
+      "Continue with Google via Amazon Cognito",
     );
     await page.waitForLoadState("networkidle");
     await setTimeout(500);
     await page.screenshot({
-      path: `target/behaviour-test-results/submitVat-screenshots/040-ac-cog-provider-auth-${timestamp}.png`,
+      path: `target/behaviour-test-results/submitVat-screenshots/040-cognito-provider-auth-${timestamp}.png`,
     });
     await page.getByRole("heading", { name: "OIDC - Direct Login" }).waitFor();
     await page.getByLabel("Username").fill(testAuthUsername);
     await page.getByLabel("Password").fill(testAuthPassword);
     await setTimeout(100);
     await page.screenshot({
-      path: `target/behaviour-test-results/submitVat-screenshots/050-ac-cog-auth-form-filled-${timestamp}.png`,
+      path: `target/behaviour-test-results/submitVat-screenshots/050-cognito-auth-form-filled-${timestamp}.png`,
     });
 
     // Home page has logged in user email
@@ -326,7 +326,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
     await page.waitForLoadState("networkidle");
     await setTimeout(500);
     await page.screenshot({
-      path: `target/behaviour-test-results/submitVat-screenshots/060-ac-cog-signed-in-${timestamp}.png`,
+      path: `target/behaviour-test-results/submitVat-screenshots/060-cognito-signed-in-${timestamp}.png`,
     });
   }
 

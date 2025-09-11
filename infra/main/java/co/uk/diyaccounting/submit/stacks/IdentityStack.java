@@ -2,6 +2,11 @@ package co.uk.diyaccounting.submit.stacks;
 
 import co.uk.diyaccounting.submit.constructs.CognitoAuth;
 import co.uk.diyaccounting.submit.utils.ResourceNameUtils;
+import java.util.AbstractMap;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Pattern;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import software.amazon.awscdk.CfnOutput;
@@ -33,12 +38,6 @@ import software.amazon.awscdk.services.secretsmanager.Secret;
 import software.constructs.Construct;
 import software.constructs.IDependable;
 
-import java.util.AbstractMap;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.regex.Pattern;
-
 public class IdentityStack extends Stack {
 
     private static final Logger logger = LogManager.getLogger(IdentityStack.class);
@@ -46,6 +45,7 @@ public class IdentityStack extends Stack {
     public String domainName;
     public ICertificate certificate;
     public ISecret googleClientSecretsManagerSecret;
+    public ISecret antonyccClientSecretsManagerSecret;
 
     // Cognito resources
     public UserPool userPool;
@@ -59,9 +59,7 @@ public class IdentityStack extends Stack {
     public final String cognitoDomainName;
     public final String dashedCognitoDomainName;
     public final ICertificate authCertificate;
-
-    // Cognito URIs
-    public String cognitoBaseUri;
+    public final String cognitoBaseUri;
 
     public static class Builder {
         public Construct scope;
@@ -82,13 +80,10 @@ public class IdentityStack extends Stack {
         public String homeUrl;
         public String antonyccClientId;
         public String antonyccBaseUri;
-        // public String antonyccClientSecretArn;
-
-        // Cognito and Bundle Management properties
+        public String antonyccClientSecretArn;
         public String googleClientId;
         public String googleClientSecretArn;
         public String cognitoDomainPrefix;
-        // Cognito advanced security/logging flags
         public String cognitoFeaturePlan;
         public String cognitoEnableLogDelivery;
         public String logCognitoEventHandlerSource;
@@ -182,10 +177,10 @@ public class IdentityStack extends Stack {
             return this;
         }
 
-        // public Builder antonyccClientSecretArn(String antonyccClientSecretArn) {
-        //  this.antonyccClientSecretArn = antonyccClientSecretArn;
-        //  return this;
-        // }
+        public Builder antonyccClientSecretArn(String antonyccClientSecretArn) {
+            this.antonyccClientSecretArn = antonyccClientSecretArn;
+            return this;
+        }
 
         public Builder googleClientId(String googleClientId) {
             this.googleClientId = googleClientId;
@@ -231,6 +226,7 @@ public class IdentityStack extends Stack {
             this.googleClientSecretArn = p.googleClientSecretArn;
             this.antonyccClientId = p.antonyccClientId;
             this.antonyccBaseUri = p.antonyccBaseUri;
+            this.antonyccClientSecretArn = p.antonyccClientSecretArn;
             this.cognitoDomainPrefix = p.cognitoDomainPrefix;
             this.cognitoFeaturePlan = p.cognitoFeaturePlan;
             this.cognitoEnableLogDelivery = p.cognitoEnableLogDelivery;
@@ -280,10 +276,9 @@ public class IdentityStack extends Stack {
             if (hostedZoneName == null || hostedZoneName.isBlank()) {
                 throw new IllegalArgumentException("hostedZoneName is required to build cognito domain name");
             }
-            String prefix = (cognitoDomainPrefix != null && !cognitoDomainPrefix.isBlank()) ? cognitoDomainPrefix : "auth";
             return "prod".equals(env)
-                    ? Builder.buildProdCognitoDomainName(prefix, subDomainName, hostedZoneName)
-                    : Builder.buildNonProdCognitoDomainName(env, prefix, subDomainName, hostedZoneName);
+                    ? Builder.buildProdCognitoDomainName(cognitoDomainPrefix, subDomainName, hostedZoneName)
+                    : Builder.buildNonProdCognitoDomainName(env, cognitoDomainPrefix, subDomainName, hostedZoneName);
         }
 
         public static String buildProdCognitoDomainName(
@@ -342,10 +337,7 @@ public class IdentityStack extends Stack {
         boolean xRayEnabled = Boolean.parseBoolean(builder.xRayEnabled);
 
         var cognitoDomainName = Builder.buildCognitoDomainName(
-                builder.env,
-                builder.cognitoDomainPrefix != null ? builder.cognitoDomainPrefix : "auth",
-                builder.subDomainName,
-                hostedZone.getZoneName());
+                builder.env, builder.cognitoDomainPrefix, builder.subDomainName, hostedZone.getZoneName());
         var cognitoBaseUri = Builder.buildCognitoBaseUri(cognitoDomainName);
         this.cognitoDomainName = cognitoDomainName;
         this.cognitoBaseUri = cognitoBaseUri;
@@ -362,24 +354,26 @@ public class IdentityStack extends Stack {
         //        .build();
         // Look up the client secret by arn
         if (builder.googleClientSecretArn == null || builder.googleClientSecretArn.isBlank()) {
-            throw new IllegalArgumentException("DIY_SUBMIT_GOOGLE_CLIENT_SECRET_ARN must be provided for env=" + builder.env);
+            throw new IllegalArgumentException(
+                    "DIY_SUBMIT_GOOGLE_CLIENT_SECRET_ARN must be provided for env=" + builder.env);
         }
         this.googleClientSecretsManagerSecret =
                 Secret.fromSecretPartialArn(this, "GoogleClientSecret", builder.googleClientSecretArn);
 
-        // this.antonyccClientSecretsManagerSecret =
-        //          Secret.fromSecretPartialArn(this, "AntonyccClientSecret",
-        // builder.antonyccClientSecretArn);
+        if (builder.antonyccClientSecretArn != null && !builder.antonyccClientSecretArn.isBlank()) {
+            this.antonyccClientSecretsManagerSecret =
+                    Secret.fromSecretPartialArn(this, "AntonyccClientSecret", builder.antonyccClientSecretArn);
+        }
         // var antonyccClientSecretArn = this.antonyccClientSecretsManagerSecret.getSecretArn();
 
-        // this.acCogClientSecretsManagerSecret =
-        //          Secret.fromSecretPartialArn(this, "AcCogClientSecret",
-        // builder.acCogClientSecretArn);
-        // var acCogClientSecretArn = this.acCogClientSecretsManagerSecret.getSecretArn();
+        // this.cognitoClientSecretsManagerSecret =
+        //          Secret.fromSecretPartialArn(this, "CognitoClientSecret",
+        // builder.cognitoClientSecretArn);
+        // var cognitoClientSecretArn = this.cognitoClientSecretsManagerSecret.getSecretArn();
 
         var googleClientSecretValue = this.googleClientSecretsManagerSecret.getSecretValue();
         // var antonyccClientSecretValue = this.antonyccClientSecretsManagerSecret.getSecretValue();
-        // var acCogClientSecretValue = this.acCogClientSecretsManagerSecret.getSecretValue();
+        // var cognitoClientSecretValue = this.cognitoClientSecretsManagerSecret.getSecretValue();
         // var googleClientSecretValue = this.googleClientSecretsManagerSecret != null
         //        ? this.googleClientSecretsManagerSecret.getSecretValue()
         //        : SecretValue.unsafePlainText(builder.googleClientSecret);
@@ -425,8 +419,8 @@ public class IdentityStack extends Stack {
         this.identityProviders.put(UserPoolClientIdentityProvider.GOOGLE, this.googleIdentityProvider);
 
         // Antonycc OIDC via Cognito IdP (using L1 construct to avoid clientSecret requirement)
-        this.antonyccIdentityProvider = CfnUserPoolIdentityProvider.Builder.create(this, "AcCogIdentityProvider")
-                .providerName("ac-cog")
+        this.antonyccIdentityProvider = CfnUserPoolIdentityProvider.Builder.create(this, "CognitoIdentityProvider")
+                .providerName("cognito")
                 .providerType("OIDC")
                 .userPoolId(this.userPool.getUserPoolId())
                 .providerDetails(Map.of(
@@ -445,7 +439,7 @@ public class IdentityStack extends Stack {
                         "given_name", "given_name",
                         "family_name", "family_name"))
                 .build();
-        this.identityProviders.put(UserPoolClientIdentityProvider.custom("ac-cog"), this.antonyccIdentityProvider);
+        this.identityProviders.put(UserPoolClientIdentityProvider.custom("cognito"), this.antonyccIdentityProvider);
 
         var cognito = CognitoAuth.Builder.create(this)
                 .userPoolArn(this.userPool.getUserPoolArn())
@@ -455,7 +449,7 @@ public class IdentityStack extends Stack {
                 .callbackUrls(List.of(
                         "https://" + this.domainName + "/",
                         "https://" + this.domainName + "/auth/loginWithGoogleCallback.html",
-                        "https://" + this.domainName + "/auth/loginWithAcCogCallback.html"))
+                        "https://" + this.domainName + "/auth/loginWithCognitoCallback.html"))
                 .logoutUrls(List.of("https://" + this.domainName + "/"))
                 .featurePlan(
                         builder.cognitoFeaturePlan != null && !builder.cognitoFeaturePlan.isBlank()

@@ -38,27 +38,15 @@ public class WebStackProps {
     public final String authUrlMockLambdaHandlerFunctionName;
     public final String authUrlMockLambdaUrlPath;
     public final String authUrlMockLambdaDurationMillis;
-    public final String authUrlGoogleLambdaHandlerFunctionName;
-    public final String authUrlGoogleLambdaUrlPath;
-    public final String authUrlGoogleLambdaDurationMillis;
-    public final String authUrlAntonyccLambdaHandlerFunctionName;
-    public final String authUrlAntonyccLambdaUrlPath;
-    public final String authUrlAntonyccLambdaDurationMillis;
-    public final String authUrlAcCogLambdaHandlerFunctionName;
-    public final String authUrlAcCogLambdaUrlPath;
-    public final String authUrlAcCogLambdaDurationMillis;
+    public final String authUrlCognitoLambdaHandlerFunctionName;
+    public final String authUrlCognitoLambdaUrlPath;
+    public final String authUrlCognitoLambdaDurationMillis;
     public final String exchangeHmrcTokenLambdaHandlerFunctionName;
     public final String exchangeHmrcTokenLambdaUrlPath;
     public final String exchangeHmrcTokenLambdaDurationMillis;
-    public final String exchangeGoogleTokenLambdaHandlerFunctionName;
-    public final String exchangeGoogleTokenLambdaUrlPath;
-    public final String exchangeGoogleTokenLambdaDurationMillis;
-    public final String exchangeAntonyccTokenLambdaHandlerFunctionName;
-    public final String exchangeAntonyccTokenLambdaUrlPath;
-    public final String exchangeAntonyccTokenLambdaDurationMillis;
-    public final String exchangeAcCogTokenLambdaHandlerFunctionName;
-    public final String exchangeAcCogTokenLambdaUrlPath;
-    public final String exchangeAcCogTokenLambdaDurationMillis;
+    public final String exchangeCognitoTokenLambdaHandlerFunctionName;
+    public final String exchangeCognitoTokenLambdaUrlPath;
+    public final String exchangeCognitoTokenLambdaDurationMillis;
     public final String submitVatLambdaHandlerFunctionName;
     public final String submitVatLambdaUrlPath;
     public final String submitVatLambdaDurationMillis;
@@ -91,8 +79,8 @@ public class WebStackProps {
     public final String myReceiptsLambdaDurationMillis;
     public final String antonyccClientId;
     public final String antonyccBaseUri;
-    public final String acCogClientId;
-    public final String acCogBaseUri;
+    public final String cognitoClientId;
+    public final String cognitoBaseUri;
     public final String ecrRepositoryArn;
     public final String ecrRepositoryName;
 
@@ -134,27 +122,15 @@ public class WebStackProps {
         this.authUrlMockLambdaHandlerFunctionName = b.authUrlMockLambdaHandlerFunctionName;
         this.authUrlMockLambdaUrlPath = b.authUrlMockLambdaUrlPath;
         this.authUrlMockLambdaDurationMillis = b.authUrlMockLambdaDurationMillis;
-        this.authUrlGoogleLambdaHandlerFunctionName = b.authUrlGoogleLambdaHandlerFunctionName;
-        this.authUrlGoogleLambdaUrlPath = b.authUrlGoogleLambdaUrlPath;
-        this.authUrlGoogleLambdaDurationMillis = b.authUrlGoogleLambdaDurationMillis;
-        this.authUrlAntonyccLambdaHandlerFunctionName = b.authUrlAntonyccLambdaHandlerFunctionName;
-        this.authUrlAntonyccLambdaUrlPath = b.authUrlAntonyccLambdaUrlPath;
-        this.authUrlAntonyccLambdaDurationMillis = b.authUrlAntonyccLambdaDurationMillis;
-        this.authUrlAcCogLambdaHandlerFunctionName = b.authUrlAcCogLambdaHandlerFunctionName;
-        this.authUrlAcCogLambdaUrlPath = b.authUrlAcCogLambdaUrlPath;
-        this.authUrlAcCogLambdaDurationMillis = b.authUrlAcCogLambdaDurationMillis;
+        this.authUrlCognitoLambdaHandlerFunctionName = b.authUrlCognitoLambdaHandlerFunctionName;
+        this.authUrlCognitoLambdaUrlPath = b.authUrlCognitoLambdaUrlPath;
+        this.authUrlCognitoLambdaDurationMillis = b.authUrlCognitoLambdaDurationMillis;
         this.exchangeHmrcTokenLambdaHandlerFunctionName = b.exchangeHmrcTokenLambdaHandlerFunctionName;
         this.exchangeHmrcTokenLambdaUrlPath = b.exchangeHmrcTokenLambdaUrlPath;
         this.exchangeHmrcTokenLambdaDurationMillis = b.exchangeHmrcTokenLambdaDurationMillis;
-        this.exchangeGoogleTokenLambdaHandlerFunctionName = b.exchangeGoogleTokenLambdaHandlerFunctionName;
-        this.exchangeGoogleTokenLambdaUrlPath = b.exchangeGoogleTokenLambdaUrlPath;
-        this.exchangeGoogleTokenLambdaDurationMillis = b.exchangeGoogleTokenLambdaDurationMillis;
-        this.exchangeAntonyccTokenLambdaHandlerFunctionName = b.exchangeAntonyccTokenLambdaHandlerFunctionName;
-        this.exchangeAntonyccTokenLambdaUrlPath = b.exchangeAntonyccTokenLambdaUrlPath;
-        this.exchangeAntonyccTokenLambdaDurationMillis = b.exchangeAntonyccTokenLambdaDurationMillis;
-        this.exchangeAcCogTokenLambdaHandlerFunctionName = b.exchangeAcCogTokenLambdaHandlerFunctionName;
-        this.exchangeAcCogTokenLambdaUrlPath = b.exchangeAcCogTokenLambdaUrlPath;
-        this.exchangeAcCogTokenLambdaDurationMillis = b.exchangeAcCogTokenLambdaDurationMillis;
+        this.exchangeCognitoTokenLambdaHandlerFunctionName = b.exchangeCognitoTokenLambdaHandlerFunctionName;
+        this.exchangeCognitoTokenLambdaUrlPath = b.exchangeCognitoTokenLambdaUrlPath;
+        this.exchangeCognitoTokenLambdaDurationMillis = b.exchangeCognitoTokenLambdaDurationMillis;
         this.submitVatLambdaHandlerFunctionName = b.submitVatLambdaHandlerFunctionName;
         this.submitVatLambdaUrlPath = b.submitVatLambdaUrlPath;
         this.submitVatLambdaDurationMillis = b.submitVatLambdaDurationMillis;
@@ -187,8 +163,8 @@ public class WebStackProps {
         this.myReceiptsLambdaDurationMillis = b.myReceiptsLambdaDurationMillis;
         this.antonyccClientId = b.antonyccClientId;
         this.antonyccBaseUri = b.antonyccBaseUri;
-        this.acCogClientId = b.acCogClientId;
-        this.acCogBaseUri = b.acCogBaseUri;
+        this.cognitoClientId = b.cognitoClientId;
+        this.cognitoBaseUri = b.cognitoBaseUri;
         this.ecrRepositoryArn = b.ecrRepositoryArn;
         this.ecrRepositoryName = b.ecrRepositoryName;
     }
@@ -235,27 +211,15 @@ public class WebStackProps {
                 authUrlMockLambdaHandlerFunctionName,
                 authUrlMockLambdaUrlPath,
                 authUrlMockLambdaDurationMillis,
-                authUrlGoogleLambdaHandlerFunctionName,
-                authUrlGoogleLambdaUrlPath,
-                authUrlGoogleLambdaDurationMillis,
-                authUrlAntonyccLambdaHandlerFunctionName,
-                authUrlAntonyccLambdaUrlPath,
-                authUrlAntonyccLambdaDurationMillis,
-                authUrlAcCogLambdaHandlerFunctionName,
-                authUrlAcCogLambdaUrlPath,
-                authUrlAcCogLambdaDurationMillis,
+                authUrlCognitoLambdaHandlerFunctionName,
+                authUrlCognitoLambdaUrlPath,
+                authUrlCognitoLambdaDurationMillis,
                 exchangeHmrcTokenLambdaHandlerFunctionName,
                 exchangeHmrcTokenLambdaUrlPath,
                 exchangeHmrcTokenLambdaDurationMillis,
-                exchangeGoogleTokenLambdaHandlerFunctionName,
-                exchangeGoogleTokenLambdaUrlPath,
-                exchangeGoogleTokenLambdaDurationMillis,
-                exchangeAntonyccTokenLambdaHandlerFunctionName,
-                exchangeAntonyccTokenLambdaUrlPath,
-                exchangeAntonyccTokenLambdaDurationMillis,
-                exchangeAcCogTokenLambdaHandlerFunctionName,
-                exchangeAcCogTokenLambdaUrlPath,
-                exchangeAcCogTokenLambdaDurationMillis,
+                exchangeCognitoTokenLambdaHandlerFunctionName,
+                exchangeCognitoTokenLambdaUrlPath,
+                exchangeCognitoTokenLambdaDurationMillis,
                 submitVatLambdaHandlerFunctionName,
                 submitVatLambdaUrlPath,
                 submitVatLambdaDurationMillis,
@@ -288,8 +252,8 @@ public class WebStackProps {
                 myReceiptsLambdaDurationMillis,
                 antonyccClientId,
                 antonyccBaseUri,
-                acCogClientId,
-                acCogBaseUri,
+                cognitoClientId,
+                cognitoBaseUri,
                 ecrRepositoryArn,
                 ecrRepositoryName;
 
@@ -478,48 +442,18 @@ public class WebStackProps {
             return this;
         }
 
-        public Builder authUrlGoogleLambdaHandlerFunctionName(String v) {
-            this.authUrlGoogleLambdaHandlerFunctionName = v;
+        public Builder authUrlCognitoLambdaHandlerFunctionName(String v) {
+            this.authUrlCognitoLambdaHandlerFunctionName = v;
             return this;
         }
 
-        public Builder authUrlGoogleLambdaUrlPath(String v) {
-            this.authUrlGoogleLambdaUrlPath = v;
+        public Builder authUrlCognitoLambdaUrlPath(String v) {
+            this.authUrlCognitoLambdaUrlPath = v;
             return this;
         }
 
-        public Builder authUrlGoogleLambdaDurationMillis(String v) {
-            this.authUrlGoogleLambdaDurationMillis = v;
-            return this;
-        }
-
-        public Builder authUrlAntonyccLambdaHandlerFunctionName(String v) {
-            this.authUrlAntonyccLambdaHandlerFunctionName = v;
-            return this;
-        }
-
-        public Builder authUrlAntonyccLambdaUrlPath(String v) {
-            this.authUrlAntonyccLambdaUrlPath = v;
-            return this;
-        }
-
-        public Builder authUrlAntonyccLambdaDurationMillis(String v) {
-            this.authUrlAntonyccLambdaDurationMillis = v;
-            return this;
-        }
-
-        public Builder authUrlAcCogLambdaHandlerFunctionName(String v) {
-            this.authUrlAcCogLambdaHandlerFunctionName = v;
-            return this;
-        }
-
-        public Builder authUrlAcCogLambdaUrlPath(String v) {
-            this.authUrlAcCogLambdaUrlPath = v;
-            return this;
-        }
-
-        public Builder authUrlAcCogLambdaDurationMillis(String v) {
-            this.authUrlAcCogLambdaDurationMillis = v;
+        public Builder authUrlCognitoLambdaDurationMillis(String v) {
+            this.authUrlCognitoLambdaDurationMillis = v;
             return this;
         }
 
@@ -538,48 +472,18 @@ public class WebStackProps {
             return this;
         }
 
-        public Builder exchangeGoogleTokenLambdaHandlerFunctionName(String v) {
-            this.exchangeGoogleTokenLambdaHandlerFunctionName = v;
+        public Builder exchangeCognitoTokenLambdaHandlerFunctionName(String v) {
+            this.exchangeCognitoTokenLambdaHandlerFunctionName = v;
             return this;
         }
 
-        public Builder exchangeGoogleTokenLambdaUrlPath(String v) {
-            this.exchangeGoogleTokenLambdaUrlPath = v;
+        public Builder exchangeCognitoTokenLambdaUrlPath(String v) {
+            this.exchangeCognitoTokenLambdaUrlPath = v;
             return this;
         }
 
-        public Builder exchangeGoogleTokenLambdaDurationMillis(String v) {
-            this.exchangeGoogleTokenLambdaDurationMillis = v;
-            return this;
-        }
-
-        public Builder exchangeAntonyccTokenLambdaHandlerFunctionName(String v) {
-            this.exchangeAntonyccTokenLambdaHandlerFunctionName = v;
-            return this;
-        }
-
-        public Builder exchangeAntonyccTokenLambdaUrlPath(String v) {
-            this.exchangeAntonyccTokenLambdaUrlPath = v;
-            return this;
-        }
-
-        public Builder exchangeAntonyccTokenLambdaDurationMillis(String v) {
-            this.exchangeAntonyccTokenLambdaDurationMillis = v;
-            return this;
-        }
-
-        public Builder exchangeAcCogTokenLambdaHandlerFunctionName(String v) {
-            this.exchangeAcCogTokenLambdaHandlerFunctionName = v;
-            return this;
-        }
-
-        public Builder exchangeAcCogTokenLambdaUrlPath(String v) {
-            this.exchangeAcCogTokenLambdaUrlPath = v;
-            return this;
-        }
-
-        public Builder exchangeAcCogTokenLambdaDurationMillis(String v) {
-            this.exchangeAcCogTokenLambdaDurationMillis = v;
+        public Builder exchangeCognitoTokenLambdaDurationMillis(String v) {
+            this.exchangeCognitoTokenLambdaDurationMillis = v;
             return this;
         }
 
@@ -743,13 +647,13 @@ public class WebStackProps {
             return this;
         }
 
-        public Builder acCogClientId(String v) {
-            this.acCogClientId = v;
+        public Builder cognitoClientId(String v) {
+            this.cognitoClientId = v;
             return this;
         }
 
-        public Builder acCogBaseUri(String v) {
-            this.acCogBaseUri = v;
+        public Builder cognitoBaseUri(String v) {
+            this.cognitoBaseUri = v;
             return this;
         }
 
