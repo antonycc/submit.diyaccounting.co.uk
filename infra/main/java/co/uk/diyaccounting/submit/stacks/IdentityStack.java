@@ -30,6 +30,7 @@ import software.amazon.awscdk.services.route53.RecordTarget;
 import software.amazon.awscdk.services.route53.targets.UserPoolDomainTarget;
 import software.amazon.awscdk.services.secretsmanager.ISecret;
 import software.amazon.awscdk.services.secretsmanager.Secret;
+import software.amazon.awscdk.SecretValue;
 import software.constructs.Construct;
 import software.constructs.IDependable;
 
@@ -83,6 +84,7 @@ public class IdentityStack extends Stack {
         public String antonyccClientId;
         public String antonyccBaseUri;
         // public String antonyccClientSecretArn;
+        public String acCogClientSecretArn;
 
         // Cognito and Bundle Management properties
         public String googleClientId;
@@ -187,6 +189,11 @@ public class IdentityStack extends Stack {
         //  return this;
         // }
 
+        public Builder acCogClientSecretArn(String acCogClientSecretArn) {
+            this.acCogClientSecretArn = acCogClientSecretArn;
+            return this;
+        }
+
         public Builder googleClientId(String googleClientId) {
             this.googleClientId = googleClientId;
             return this;
@@ -231,6 +238,7 @@ public class IdentityStack extends Stack {
             this.googleClientSecretArn = p.googleClientSecretArn;
             this.antonyccClientId = p.antonyccClientId;
             this.antonyccBaseUri = p.antonyccBaseUri;
+            this.acCogClientSecretArn = p.acCogClientSecretArn;
             this.cognitoDomainPrefix = p.cognitoDomainPrefix;
             this.cognitoFeaturePlan = p.cognitoFeaturePlan;
             this.cognitoEnableLogDelivery = p.cognitoEnableLogDelivery;
@@ -379,7 +387,14 @@ public class IdentityStack extends Stack {
 
         var googleClientSecretValue = this.googleClientSecretsManagerSecret.getSecretValue();
         // var antonyccClientSecretValue = this.antonyccClientSecretsManagerSecret.getSecretValue();
-        // var acCogClientSecretValue = this.acCogClientSecretsManagerSecret.getSecretValue();
+        
+        // AC Cog client secret support
+        ISecret acCogClientSecretsManagerSecret = null;
+        SecretValue acCogClientSecretValue = null;
+        if (builder.acCogClientSecretArn != null && !builder.acCogClientSecretArn.isBlank()) {
+            acCogClientSecretsManagerSecret = Secret.fromSecretPartialArn(this, "AcCogClientSecret", builder.acCogClientSecretArn);
+            acCogClientSecretValue = acCogClientSecretsManagerSecret.getSecretValue();
+        }
         // var googleClientSecretValue = this.googleClientSecretsManagerSecret != null
         //        ? this.googleClientSecretsManagerSecret.getSecretValue()
         //        : SecretValue.unsafePlainText(builder.googleClientSecret);
@@ -424,22 +439,23 @@ public class IdentityStack extends Stack {
                 .build();
         this.identityProviders.put(UserPoolClientIdentityProvider.GOOGLE, this.googleIdentityProvider);
 
-        // Antonycc OIDC via Cognito IdP (using L1 construct to avoid clientSecret requirement)
+        // Antonycc OIDC via Cognito IdP (with optional client_secret support)
+        Map<String, String> acCogProviderDetails = new HashMap<>();
+        acCogProviderDetails.put("client_id", builder.antonyccClientId);
+        acCogProviderDetails.put("oidc_issuer", builder.antonyccBaseUri);
+        acCogProviderDetails.put("authorize_scopes", "email openid profile");
+        acCogProviderDetails.put("attributes_request_method", "GET");
+        
+        // Add client_secret if available
+        if (acCogClientSecretValue != null) {
+            acCogProviderDetails.put("client_secret", acCogClientSecretValue.unsafeUnwrap());
+        }
+        
         this.antonyccIdentityProvider = CfnUserPoolIdentityProvider.Builder.create(this, "AcCogIdentityProvider")
                 .providerName("ac-cog")
                 .providerType("OIDC")
                 .userPoolId(this.userPool.getUserPoolId())
-                .providerDetails(Map.of(
-                        "client_id",
-                        builder.antonyccClientId,
-                        "oidc_issuer",
-                        builder.antonyccBaseUri,
-                        "authorize_scopes",
-                        "email openid profile",
-                        "attributes_request_method",
-                        "GET"
-                        // No client_secret provided
-                        ))
+                .providerDetails(acCogProviderDetails)
                 .attributeMapping(Map.of(
                         "email", "email",
                         "given_name", "given_name",

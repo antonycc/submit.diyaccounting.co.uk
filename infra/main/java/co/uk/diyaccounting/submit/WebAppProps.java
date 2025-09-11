@@ -102,6 +102,7 @@ public class WebAppProps {
     public String antonyccBaseUri;
     public String acCogClientId;
     public String acCogBaseUri;
+    public String acCogClientSecretArn;
     public String authCertificateArn;
 
     public static class Builder {

@@ -219,7 +219,7 @@ public class WebStack extends Stack {
         // public String antonyccClientSecretArn;
         public String acCogClientId;
         public String acCogBaseUri;
-        // public String acCogClientSecretArn;
+        public String acCogClientSecretArn;
 
         // Cognito and Bundle Management properties
         public String googleClientId;
@@ -445,6 +445,7 @@ public class WebStack extends Stack {
             this.antonyccBaseUri = p.antonyccBaseUri;
             this.acCogClientId = p.acCogClientId;
             this.acCogBaseUri = p.acCogBaseUri;
+            this.acCogClientSecretArn = p.acCogClientSecretArn;
             this.ecrRepositoryArn = p.ecrRepositoryArn;
             this.ecrRepositoryName = p.ecrRepositoryName;
             return this;
@@ -625,10 +626,10 @@ public class WebStack extends Stack {
             return this;
         }
 
-        // public Builder acCogClientSecretArn(String acCogClientSecretArn) {
-        //    this.acCogClientSecretArn = acCogClientSecretArn;
-        //    return this;
-        // }
+        public Builder acCogClientSecretArn(String acCogClientSecretArn) {
+           this.acCogClientSecretArn = acCogClientSecretArn;
+           return this;
+        }
 
         public Builder exchangeAcCogTokenLambdaHandlerFunctionName(String exchangeAcCogTokenLambdaHandlerFunctionName) {
             this.exchangeAcCogTokenLambdaHandlerFunctionName = exchangeAcCogTokenLambdaHandlerFunctionName;
@@ -1289,10 +1290,10 @@ public class WebStack extends Stack {
         if (StringUtils.isNotBlank(builder.acCogClientId)) {
             exchangeAcCogTokenLambdaEnv.put("DIY_SUBMIT_AC_COG_CLIENT_ID", builder.acCogClientId);
         }
-        // if (StringUtils.isNotBlank(builder.acCogClientSecretArn)) {
-        //    exchangeAcCogTokenLambdaEnv.put("DIY_SUBMIT_AC_COG_CLIENT_SECRET_ARN",
-        // acCogClientSecretArn);
-        // }
+        if (StringUtils.isNotBlank(builder.acCogClientSecretArn)) {
+           exchangeAcCogTokenLambdaEnv.put("DIY_SUBMIT_AC_COG_CLIENT_SECRET_ARN",
+        builder.acCogClientSecretArn);
+        }
         if (StringUtils.isNotBlank(builder.optionalTestAccessToken)) {
             exchangeAcCogTokenLambdaEnv.put("DIY_SUBMIT_TEST_ACCESS_TOKEN", builder.optionalTestAccessToken);
         }

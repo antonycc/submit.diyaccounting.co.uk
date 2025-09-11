@@ -16,6 +16,7 @@ public class IdentityStackProps {
     public final String homeUrl;
     public final String antonyccClientId;
     public final String antonyccBaseUri;
+    public final String acCogClientSecretArn;
     public final String googleClientId;
     public final String googleClientSecretArn;
     public final String cognitoDomainPrefix;
@@ -38,6 +39,7 @@ public class IdentityStackProps {
         this.homeUrl = b.homeUrl;
         this.antonyccClientId = b.antonyccClientId;
         this.antonyccBaseUri = b.antonyccBaseUri;
+        this.acCogClientSecretArn = b.acCogClientSecretArn;
         this.googleClientId = b.googleClientId;
         this.googleClientSecretArn = b.googleClientSecretArn;
         this.cognitoDomainPrefix = b.cognitoDomainPrefix;
@@ -65,6 +67,7 @@ public class IdentityStackProps {
                 homeUrl,
                 antonyccClientId,
                 antonyccBaseUri,
+                acCogClientSecretArn,
                 googleClientId,
                 googleClientSecretArn,
                 cognitoDomainPrefix,
@@ -143,6 +146,11 @@ public class IdentityStackProps {
 
         public Builder antonyccBaseUri(String v) {
             this.antonyccBaseUri = v;
+            return this;
+        }
+
+        public Builder acCogClientSecretArn(String v) {
+            this.acCogClientSecretArn = v;
             return this;
         }
 

@@ -75,6 +75,7 @@ public class WebApp {
                         .cognitoDomainPrefix(appProps.cognitoDomainPrefix)
                         .antonyccClientId(envOr("DIY_SUBMIT_ANTONYCC_CLIENT_ID", appProps.antonyccClientId))
                         .antonyccBaseUri(envOr("DIY_SUBMIT_ANTONYCC_BASE_URI", appProps.antonyccBaseUri))
+                        .acCogClientSecretArn(envOr("DIY_SUBMIT_AC_COG_CLIENT_SECRET_ARN", appProps.acCogClientSecretArn))
                         .build())
                 .build();
 
@@ -203,6 +204,7 @@ public class WebApp {
                         .antonyccBaseUri(envOr("DIY_SUBMIT_ANTONYCC_BASE_URI", appProps.antonyccBaseUri))
                         .acCogClientId(envOr("DIY_SUBMIT_AC_COG_CLIENT_ID", appProps.acCogClientId))
                         .acCogBaseUri(envOr("DIY_SUBMIT_AC_COG_BASE_URI", appProps.acCogBaseUri))
+                        .acCogClientSecretArn(envOr("DIY_SUBMIT_AC_COG_CLIENT_SECRET_ARN", appProps.acCogClientSecretArn))
                         .build())
                 // .trail(observabilityStack.trail)
                 .build();

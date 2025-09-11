@@ -93,6 +93,7 @@ public class WebStackProps {
     public final String antonyccBaseUri;
     public final String acCogClientId;
     public final String acCogBaseUri;
+    public final String acCogClientSecretArn;
     public final String ecrRepositoryArn;
     public final String ecrRepositoryName;
 
@@ -189,6 +190,7 @@ public class WebStackProps {
         this.antonyccBaseUri = b.antonyccBaseUri;
         this.acCogClientId = b.acCogClientId;
         this.acCogBaseUri = b.acCogBaseUri;
+        this.acCogClientSecretArn = b.acCogClientSecretArn;
         this.ecrRepositoryArn = b.ecrRepositoryArn;
         this.ecrRepositoryName = b.ecrRepositoryName;
     }
@@ -290,6 +292,7 @@ public class WebStackProps {
                 antonyccBaseUri,
                 acCogClientId,
                 acCogBaseUri,
+                acCogClientSecretArn,
                 ecrRepositoryArn,
                 ecrRepositoryName;
 
@@ -750,6 +753,11 @@ public class WebStackProps {
 
         public Builder acCogBaseUri(String v) {
             this.acCogBaseUri = v;
+            return this;
+        }
+
+        public Builder acCogClientSecretArn(String v) {
+            this.acCogClientSecretArn = v;
             return this;
         }
 
