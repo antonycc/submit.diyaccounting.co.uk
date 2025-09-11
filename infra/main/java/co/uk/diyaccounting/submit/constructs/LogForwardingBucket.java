@@ -313,13 +313,6 @@ public class LogForwardingBucket extends Stack {
                 }
                 final Function logForwarder = logForwarderBuilder.build();
                 // Note: SnapStart and Version creation removed to avoid Lambda initialization issues
-                // CfnFunction cfnFunction = (CfnFunction) logForwarder.getNode().getDefaultChild();
-                // assert cfnFunction != null;
-                // cfnFunction.addPropertyOverride("SnapStart", Map.of("ApplyOn", "PublishedVersions"));
-                // new Version(
-                //         scope,
-                //         "%sLogForwarderVersion".formatted(idPrefix),
-                //         VersionProps.builder().lambda(logForwarder).build());
                 logger.info("Created log forwarder %s".formatted(logForwarder.getFunctionName()));
                 logBucket.addEventNotification(EventType.OBJECT_CREATED, new LambdaDestination(logForwarder));
                 logBucket.grantReadWrite(logForwarder);
