@@ -2,11 +2,6 @@ package co.uk.diyaccounting.submit.stacks;
 
 import co.uk.diyaccounting.submit.constructs.CognitoAuth;
 import co.uk.diyaccounting.submit.utils.ResourceNameUtils;
-import java.util.AbstractMap;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.regex.Pattern;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import software.amazon.awscdk.CfnOutput;
@@ -37,6 +32,12 @@ import software.amazon.awscdk.services.secretsmanager.ISecret;
 import software.amazon.awscdk.services.secretsmanager.Secret;
 import software.constructs.Construct;
 import software.constructs.IDependable;
+
+import java.util.AbstractMap;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Pattern;
 
 public class IdentityStack extends Stack {
 
@@ -241,7 +242,16 @@ public class IdentityStack extends Stack {
         }
 
         public static String buildDomainName(String env, String subDomainName, String hostedZoneName) {
-            return env.equals("prod")
+            if (env == null || env.isBlank()) {
+                throw new IllegalArgumentException("env is required to build domain name");
+            }
+            if (subDomainName == null || subDomainName.isBlank()) {
+                throw new IllegalArgumentException("subDomainName is required to build domain name");
+            }
+            if (hostedZoneName == null || hostedZoneName.isBlank()) {
+                throw new IllegalArgumentException("hostedZoneName is required to build domain name");
+            }
+            return "prod".equals(env)
                     ? Builder.buildProdDomainName(subDomainName, hostedZoneName)
                     : Builder.buildNonProdDomainName(env, subDomainName, hostedZoneName);
         }
@@ -261,9 +271,19 @@ public class IdentityStack extends Stack {
 
         public static String buildCognitoDomainName(
                 String env, String cognitoDomainPrefix, String subDomainName, String hostedZoneName) {
-            return env.equals("prod")
-                    ? Builder.buildProdCognitoDomainName(cognitoDomainPrefix, subDomainName, hostedZoneName)
-                    : Builder.buildNonProdCognitoDomainName(env, cognitoDomainPrefix, subDomainName, hostedZoneName);
+            if (env == null || env.isBlank()) {
+                throw new IllegalArgumentException("env is required to build cognito domain name");
+            }
+            if (subDomainName == null || subDomainName.isBlank()) {
+                throw new IllegalArgumentException("subDomainName is required to build cognito domain name");
+            }
+            if (hostedZoneName == null || hostedZoneName.isBlank()) {
+                throw new IllegalArgumentException("hostedZoneName is required to build cognito domain name");
+            }
+            String prefix = (cognitoDomainPrefix != null && !cognitoDomainPrefix.isBlank()) ? cognitoDomainPrefix : "auth";
+            return "prod".equals(env)
+                    ? Builder.buildProdCognitoDomainName(prefix, subDomainName, hostedZoneName)
+                    : Builder.buildNonProdCognitoDomainName(env, prefix, subDomainName, hostedZoneName);
         }
 
         public static String buildProdCognitoDomainName(
@@ -341,6 +361,9 @@ public class IdentityStack extends Stack {
         //        .description("Google Client Secret for OAuth authentication")
         //        .build();
         // Look up the client secret by arn
+        if (builder.googleClientSecretArn == null || builder.googleClientSecretArn.isBlank()) {
+            throw new IllegalArgumentException("DIY_SUBMIT_GOOGLE_CLIENT_SECRET_ARN must be provided for env=" + builder.env);
+        }
         this.googleClientSecretsManagerSecret =
                 Secret.fromSecretPartialArn(this, "GoogleClientSecret", builder.googleClientSecretArn);
 

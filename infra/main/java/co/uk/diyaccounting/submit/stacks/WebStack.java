@@ -8,11 +8,6 @@ import co.uk.diyaccounting.submit.constructs.LambdaUrlOriginOpts;
 import co.uk.diyaccounting.submit.constructs.LogForwardingBucket;
 import co.uk.diyaccounting.submit.functions.LogS3ObjectEvent;
 import co.uk.diyaccounting.submit.utils.ResourceNameUtils;
-import java.util.AbstractMap;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.regex.Pattern;
 import org.apache.hc.core5.http.HttpStatus;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -61,6 +56,12 @@ import software.amazon.awscdk.services.secretsmanager.ISecret;
 import software.amazon.awscdk.services.secretsmanager.Secret;
 import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
+
+import java.util.AbstractMap;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Pattern;
 
 public class WebStack extends Stack {
 
@@ -867,7 +868,16 @@ public class WebStack extends Stack {
         }
 
         public static String buildDomainName(String env, String subDomainName, String hostedZoneName) {
-            return env.equals("prod")
+            if (env == null || env.isBlank()) {
+                throw new IllegalArgumentException("env is required to build domain name");
+            }
+            if (subDomainName == null || subDomainName.isBlank()) {
+                throw new IllegalArgumentException("subDomainName is required to build domain name");
+            }
+            if (hostedZoneName == null || hostedZoneName.isBlank()) {
+                throw new IllegalArgumentException("hostedZoneName is required to build domain name");
+            }
+            return "prod".equals(env)
                     ? Builder.buildProdDomainName(subDomainName, hostedZoneName)
                     : Builder.buildNonProdDomainName(env, subDomainName, hostedZoneName);
         }
@@ -942,7 +952,12 @@ public class WebStack extends Stack {
         boolean cloudTrailEnabled = Boolean.parseBoolean(builder.cloudTrailEnabled);
         boolean xRayEnabled = Boolean.parseBoolean(builder.xRayEnabled);
 
-        int accessLogGroupRetentionPeriodDays = Integer.parseInt(builder.accessLogGroupRetentionPeriodDays);
+        int accessLogGroupRetentionPeriodDays;
+        try {
+            accessLogGroupRetentionPeriodDays = Integer.parseInt(builder.accessLogGroupRetentionPeriodDays);
+        } catch (Exception e) {
+            accessLogGroupRetentionPeriodDays = 30;
+        }
         String originAccessLogBucketName = Builder.buildOriginAccessLogBucketName(dashedDomainName);
 
         String distributionAccessLogBucketName = Builder.buildDistributionAccessLogBucketName(dashedDomainName);
