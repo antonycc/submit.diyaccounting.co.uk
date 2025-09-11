@@ -115,8 +115,7 @@ export async function httpGetAcCog(event) {
     `&client_id=${encodeURIComponent(cognitoClientId)}` +
     `&redirect_uri=${encodeURIComponent(redirectUri)}` +
     `&scope=${encodeURIComponent(scope)}` +
-    `&state=${encodeURIComponent(state)}` +
-    `&identity_provider=ac-cog`;
+    `&state=${encodeURIComponent(state)}`;
 
   return httpGet(event, authUrl);
 }
