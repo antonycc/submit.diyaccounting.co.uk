@@ -33,8 +33,6 @@ on:
         required: true
       DIY_SUBMIT_GOOGLE_CLIENT_SECRET:
         required: true
-      DIY_SUBMIT_TEST_AUTH_PASSWORD:
-        required: true
   workflow_dispatch:
     inputs:
       skipDeploy:
@@ -303,15 +301,15 @@ jobs:
           BASE_IMAGE_TAG="${{ steps.image-tag.outputs.base-image-tag }}"
           ECR_URI="${{ steps.ecr-uri.outputs.ecr-uri }}"
           COMMIT_HASH="${{ github.sha }}"
-          
+
           # Tag with commit hash and latest
           docker tag $BASE_IMAGE_TAG $ECR_URI:$COMMIT_HASH
           docker tag $BASE_IMAGE_TAG $ECR_URI:latest
-          
+
           # Push both tags
           docker push $ECR_URI:$COMMIT_HASH
           docker push $ECR_URI:latest
-          
+
           echo "Successfully pushed Docker image to ECR:"
           echo "  $ECR_URI:$COMMIT_HASH"
           echo "  $ECR_URI:latest"
@@ -396,28 +394,45 @@ jobs:
           output-credentials: true
           retry-max-attempts: 3
 
-      # TODO: Replace submit-deployment-role with a role that can only run tests and access s3.
-      - name: Configure AWS Credentials
+      - name: Assume user provisioning role
         uses: aws-actions/configure-aws-credentials@v5
         with:
-          role-to-assume: arn:aws:iam::887764105431:role/submit-deployment-role
+          role-to-assume: arn:aws:iam::403027849202:role/oidc-external-user-provisioning-role
           role-chaining: true
-          aws-region: eu-west-2
+          aws-region: us-east-1
           audience: sts.amazonaws.com
           role-skip-session-tagging: true
           output-credentials: true
           retry-max-attempts: 3
 
+      - name: Create test username and a test password
+        id: uuid
+        run: |
+          TEST_USERNAME=$(uuidgen | tr '[:upper:]' '[:lower:]')
+          TEST_PASSWORD=$(uuidgen | tr '[:upper:]' '[:lower:]')
+          echo "TEST_USERNAME=${TEST_USERNAME?}"
+          echo "TEST_PASSWORD=${TEST_PASSWORD?}"
+          echo "TEST_USERNAME=${TEST_USERNAME?}" >> "$GITHUB_OUTPUT"
+          echo "TEST_PASSWORD=${TEST_PASSWORD?}" >> "$GITHUB_OUTPUT"
+
+      - name: Provision test user
+        run: |
+          npm run users:provision 'oidc-antonycc-com-prod-users' "${TEST_USERNAME?}" "${TEST_PASSWORD?}"
+        env:
+          TEST_USERNAME: ${{ steps.uuid.outputs.TEST_USERNAME }}
+          TEST_PASSWORD: ${{ steps.uuid.outputs.TEST_PASSWORD }}
+
       - run: cp '.env.ci' '.env.proxy' ; npx dotenv -e '.env.ci' -- npm run test:behaviour
         env:
-          DIY_SUBMIT_TEST_AUTH_PASSWORD: ${{ secrets.DIY_SUBMIT_TEST_AUTH_PASSWORD }}
+          DIY_SUBMIT_TEST_AUTH_USERNAME: ${{ steps.uuid.outputs.TEST_USERNAME }}
+          DIY_SUBMIT_TEST_AUTH_PASSWORD: ${{ steps.uuid.outputs.TEST_PASSWORD }}
 
       - name: Convert Playwright video to MP4
         if: ${{ !cancelled() }}
         run: |
           set -euo pipefail
           root="target/behaviour-test-results"
-          
+
           # Recursively transcode all .webm files, placing output next to source with 'converted' prefix
           pids=()
           while IFS= read -r -d '' f; do
@@ -429,7 +444,7 @@ jobs:
             npm run convert:video -- --in "$f" --out "$out" &
             pids+=($!)
           done < <(find "$root" -type f -name '*.webm' -print0)
-          
+
           # Wait for all transcodes to complete
           fail=0
           for pid in "${pids[@]:-}"; do
@@ -437,7 +452,7 @@ jobs:
               fail=1
             fi
           done
-          
+
           exit $fail
 
       - name: Upload test results
@@ -455,3 +470,10 @@ jobs:
           name: test-reports-behaviour-ci
           path: "target/test-reports/"
           retention-days: 30
+
+      - name: Report generated test credentials
+        if: ${{ !cancelled() }}
+        run: |
+          echo "Test user credentials (valid for 1 hour):"
+          echo "  Username: ${{ steps.uuid.outputs.TEST_USERNAME }}"
+          echo "  Password: ${{ steps.uuid.outputs.TEST_PASSWORD }}"

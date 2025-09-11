@@ -50,8 +50,9 @@ console.log(
 console.log(
   `testAuthUsername: ${testAuthUsername} (DIY_SUBMIT_TEST_AUTH_USERNAME: ${process.env.DIY_SUBMIT_TEST_AUTH_USERNAME})`,
 );
-// console.log
-// (`testAuthPassword: ${testAuthPassword.length} (chars) (DIY_SUBMIT_TEST_AUTH_PASSWORD: ${process.env.DIY_SUBMIT_TEST_AUTH_PASSWORD.length} (chars))`); // don't log passwords
+console.log(
+  `testAuthPassword: ${testAuthPassword} (DIY_SUBMIT_TEST_AUTH_PASSWORD: ${process.env.DIY_SUBMIT_TEST_AUTH_PASSWORD})`,
+);
 
 const bucketNamePostfix = process.env.DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX;
 const homeUrl = process.env.DIY_SUBMIT_HOME_URL;
@@ -303,16 +304,30 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
       path: `target/behaviour-test-results/submitVat-screenshots/060-mock-signed-in-${timestamp}.png`,
     });
   } else if (testAuthProvider === "cognito") {
-    await expect(page.getByText(" Continue with @antonycc/oidc via Cognito")).toBeVisible();
+    await expect(page.getByText("Continue with Google via Amazon Cognito")).toBeVisible();
     await loggedClick(
-      "button:has-text(' Continue with @antonycc/oidc via Cognito')",
+      "button:has-text('Continue with Google via Amazon Cognito')",
       "Continue with Google via Amazon Cognito",
     );
     await page.waitForLoadState("networkidle");
-    await setTimeout(500);
+    await setTimeout(2500);
     await page.screenshot({
       path: `target/behaviour-test-results/submitVat-screenshots/040-cognito-provider-auth-${timestamp}.png`,
     });
+
+    // Make cognito selection
+    const cognitoBtn = page.getByRole("button", { name: "cognito" });
+    // const cognitoBtn = page.locator(
+    //  'input[type="button"][value="cognito"][aria-label="cognito"].idpButton-customizable',
+    // );
+    await expect(cognitoBtn).toBeVisible({ timeout: 10000 });
+    await cognitoBtn.click();
+    await page.waitForLoadState("networkidle");
+    await setTimeout(500);
+    await page.screenshot({
+      path: `target/behaviour-test-results/submitVat-screenshots/045-cognito-button-${timestamp}.png`,
+    });
+
     await page.getByRole("heading", { name: "OIDC - Direct Login" }).waitFor();
     await page.getByLabel("Username").fill(testAuthUsername);
     await page.getByLabel("Password").fill(testAuthPassword);
@@ -335,7 +350,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   await page.waitForLoadState("networkidle");
   await setTimeout(500);
   await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/070-home-${timestamp}.png` });
-  await expect(page.locator(".login-status")).toContainText("user@example.com");
+  await expect(page.getByText(testAuthUsername)).toBeVisible();
 
   // Add bundle
   await expect(page.getByText("Add Bundle")).toBeVisible();
