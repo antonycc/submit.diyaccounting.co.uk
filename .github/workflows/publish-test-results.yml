@@ -1,0 +1,235 @@
+# .github/workflows/publish-test-results.yml
+
+name: publish-test-results
+run-name: "publish test results [${{ inputs.environment }}] [${{ inputs.timestamp }}]"
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: 'Environment (ci or prod)'
+        required: true
+        type: string
+      timestamp:
+        description: 'Timestamp for this test run'
+        required: true
+        type: string
+      artifact-name-reports:
+        description: 'Name of the test reports artifact'
+        required: true
+        type: string
+      artifact-name-results:
+        description: 'Name of the test results artifact'
+        required: true
+        type: string
+    outputs:
+      pages-url:
+        description: 'URL to the published test results on GitHub Pages'
+        value: ${{ jobs.publish-to-pages.outputs.pages-url }}
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow one concurrent deployment
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build-pages:
+    runs-on: ubuntu-latest
+    outputs:
+      timestamp-dir: ${{ steps.create-structure.outputs.timestamp-dir }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Download test reports artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.artifact-name-reports }}
+          path: ./downloaded-reports
+
+      - name: Download test results artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.artifact-name-results }}
+          path: ./downloaded-results
+
+      - name: Create timestamped directory structure
+        id: create-structure
+        run: |
+          set -euo pipefail
+          
+          # Create the timestamped directory
+          TIMESTAMP_DIR="${{ inputs.timestamp }}-${{ inputs.environment }}"
+          mkdir -p "./pages-build/${TIMESTAMP_DIR}"
+          
+          echo "Creating directory structure for: ${TIMESTAMP_DIR}"
+          
+          # Copy HTML reports (main content)
+          if [ -d "./downloaded-reports/html-report" ]; then
+            cp -r ./downloaded-reports/html-report/* "./pages-build/${TIMESTAMP_DIR}/"
+            echo "✓ Copied HTML reports"
+          else
+            echo "⚠️  No HTML reports found in downloaded-reports/"
+            ls -la ./downloaded-reports/ || true
+          fi
+          
+          # Copy test results (videos, traces, screenshots)
+          if [ -d "./downloaded-results" ]; then
+            mkdir -p "./pages-build/${TIMESTAMP_DIR}/test-results"
+            cp -r ./downloaded-results/* "./pages-build/${TIMESTAMP_DIR}/test-results/"
+            echo "✓ Copied test results (videos, traces, screenshots)"
+          else
+            echo "⚠️  No test results found"
+          fi
+          
+          # Create a redirect page for easy access
+          cat > "./pages-build/${TIMESTAMP_DIR}/landing.html" << EOF
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>Test Results - ${{ inputs.environment }} - ${{ inputs.timestamp }}</title>
+              <style>
+                  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; margin: 40px; }
+                  .header { border-bottom: 1px solid #eee; padding-bottom: 20px; margin-bottom: 30px; }
+                  .card { border: 1px solid #ddd; border-radius: 8px; padding: 20px; margin: 20px 0; }
+                  .button { display: inline-block; padding: 12px 24px; background: #0969da; color: white; text-decoration: none; border-radius: 6px; margin: 10px 10px 10px 0; }
+                  .button:hover { background: #0553b1; }
+                  .meta { color: #656d76; font-size: 14px; margin-top: 10px; }
+                  .test-results { background: #f6f8fa; padding: 15px; border-radius: 6px; margin-top: 15px; }
+              </style>
+          </head>
+          <body>
+              <div class="header">
+                  <h1>Playwright Test Results</h1>
+                  <div class="meta">
+                      Environment: <strong>${{ inputs.environment }}</strong><br>
+                      Timestamp: <strong>${{ inputs.timestamp }}</strong><br>
+                      Generated: <strong>$(date -u +"%Y-%m-%d %H:%M:%S UTC")</strong>
+                  </div>
+              </div>
+              
+              <div class="card">
+                  <h2>📊 HTML Test Report</h2>
+                  <p>Interactive test report with detailed results, traces, and screenshots.</p>
+                  <a href="./index.html" class="button">View Test Report</a>
+                  
+                  <div class="test-results">
+                      <h3>📁 Additional Test Artifacts</h3>
+                      <p>Raw test results including videos, traces, and screenshots are available in the <a href="./test-results/">test-results directory</a>.</p>
+                  </div>
+              </div>
+              
+              <div class="card">
+                  <h2>🔗 Navigation</h2>
+                  <a href="../" class="button">← Back to All Test Runs</a>
+                  <a href="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" class="button">View GitHub Action</a>
+              </div>
+          </body>
+          </html>
+          EOF
+          
+          echo "✓ Created index page for test run"
+          
+          # Store the directory name for later use
+          echo "TIMESTAMP_DIR=${TIMESTAMP_DIR}" >> $GITHUB_ENV
+          echo "timestamp-dir=${TIMESTAMP_DIR}" >> $GITHUB_OUTPUT
+
+      - name: Update or create root index page
+        run: |
+          set -euo pipefail
+          
+          # Check if we need to download existing pages
+          EXISTING_PAGES=""
+          if curl -s -f "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/" > /dev/null 2>&1; then
+            EXISTING_PAGES="true"
+            echo "✓ Found existing GitHub Pages"
+          else
+            echo "ℹ️  No existing GitHub Pages found, creating new"
+          fi
+          
+          # Create root index.html
+          cat > "./pages-build/index.html" << EOF
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>Playwright Test Results - Submit DIY Accounting</title>
+              <style>
+                  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; margin: 40px; }
+                  .header { border-bottom: 1px solid #eee; padding-bottom: 20px; margin-bottom: 30px; }
+                  .test-run { border: 1px solid #ddd; border-radius: 8px; padding: 20px; margin: 15px 0; }
+                  .test-run:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+                  .env-badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+                  .env-ci { background: #dbeafe; color: #1e40af; }
+                  .env-prod { background: #dcfce7; color: #166534; }
+                  .button { display: inline-block; padding: 8px 16px; background: #0969da; color: white; text-decoration: none; border-radius: 6px; margin: 5px 5px 5px 0; }
+                  .button:hover { background: #0553b1; }
+                  .meta { color: #656d76; font-size: 14px; margin-top: 10px; }
+                  .latest { border-left: 4px solid #0969da; }
+              </style>
+          </head>
+          <body>
+              <div class="header">
+                  <h1>🎭 Playwright Test Results</h1>
+                  <p>Automated test results for Submit DIY Accounting</p>
+                  <div class="meta">Last updated: $(date -u +"%Y-%m-%d %H:%M:%S UTC")</div>
+              </div>
+              
+              <div class="test-run latest">
+                  <h2>
+                      <span class="env-badge env-${{ inputs.environment }}">${{ inputs.environment }}</span>
+                      ${{ inputs.timestamp }}
+                  </h2>
+                  <p>Latest test results from GitHub Actions workflow</p>
+                  <a href="./${TIMESTAMP_DIR}/" class="button">View Results</a>
+                  <a href="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" class="button">GitHub Action</a>
+                  <div class="meta">
+                      Generated from commit: <code>${{ github.sha }}</code><br>
+                      Workflow: ${{ github.workflow }}
+                  </div>
+              </div>
+              
+              <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee; color: #656d76; font-size: 14px;">
+                  <p>📍 <strong>Direct Link:</strong> <a href="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/${TIMESTAMP_DIR}/">https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/${TIMESTAMP_DIR}/</a></p>
+                  <p>🔄 This page is automatically updated with each test run</p>
+              </div>
+          </body>
+          </html>
+          EOF
+          
+          echo "✓ Created root index page"
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './pages-build'
+
+  publish-to-pages:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}${{ needs.build-pages.outputs.timestamp-dir }}/
+    runs-on: ubuntu-latest
+    needs: build-pages
+    outputs:
+      pages-url: ${{ steps.deployment.outputs.page_url }}${{ needs.build-pages.outputs.timestamp-dir }}/
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: Output Pages URL
+        run: |
+          echo "🚀 Test results published to GitHub Pages!"
+          echo "📊 Direct link: ${{ steps.deployment.outputs.page_url }}${{ needs.build-pages.outputs.timestamp-dir }}/"
+          echo "🏠 All test runs: ${{ steps.deployment.outputs.page_url }}"
