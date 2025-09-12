@@ -101,7 +101,6 @@ jobs:
     secrets:
       HMRC_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
       DIY_SUBMIT_GOOGLE_CLIENT_SECRET: ${{ secrets.DIY_SUBMIT_GOOGLE_CLIENT_SECRET }}
-      DIY_SUBMIT_TEST_AUTH_PASSWORD: ${{ secrets.DIY_SUBMIT_TEST_AUTH_PASSWORD }}
 
   upsert-secrets:
     runs-on: ubuntu-latest
