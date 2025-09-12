@@ -111,6 +111,7 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v5
+        if: ${{ env.skipDeploy != 'true' }}
 
       - name: Configure AWS Credentials
         if: ${{ env.skipDeploy != 'true' }}
@@ -238,19 +239,23 @@ jobs:
       contents: read
     steps:
       - name: Checkout repository
+        if: ${{ env.skipDeploy != 'true' }}
         uses: actions/checkout@v5
         with:
           fetch-depth: 0
           ref: ${{ github.ref }}
 
       - uses: actions/setup-node@v5
+        if: ${{ env.skipDeploy != 'true' }}
         with:
           node-version: 22
           cache: 'npm'
 
       - run: npm install
+        if: ${{ env.skipDeploy != 'true' }}
 
       - name: Configure AWS Credentials
+        if: ${{ env.skipDeploy != 'true' }}
         uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: arn:aws:iam::887764105431:role/submit-github-actions-role
@@ -264,6 +269,7 @@ jobs:
       #- run: aws sts get-caller-identity --region eu-west-2
 
       - name: Configure AWS Credentials
+        if: ${{ env.skipDeploy != 'true' }}
         uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: arn:aws:iam::887764105431:role/submit-deployment-role
@@ -276,7 +282,8 @@ jobs:
 
       #- run: aws sts get-caller-identity --region eu-west-2
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
+        if: ${{ env.skipDeploy != 'true' }}
         with:
           distribution: 'temurin'
           java-version: 17

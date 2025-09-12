@@ -59,6 +59,7 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v5
+        if: ${{ env.skipDeploy != 'true' }}
 
       - name: Configure AWS Credentials
         if: ${{ env.skipDeploy != 'true' }}
