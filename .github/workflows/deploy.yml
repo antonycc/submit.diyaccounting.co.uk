@@ -136,7 +136,7 @@ jobs:
           output-credentials: true
           retry-max-attempts: 3
 
-      - name:
+      - name: Write GitHub secret HMRC_CLIENT_SECRET to temp file (keeps out of logs)
         if: ${{ env.skipDeploy != 'true' }}
         shell: bash
         env:
@@ -282,6 +282,13 @@ jobs:
           java-version: 17
           cache: 'maven'
 
+      - name: Package Java classes for CDK
+        id: package
+        if: ${{ env.skipDeploy != 'true' }}
+        shell: bash
+        run: |
+          ./mvnw package -Dmaven.compiler.source=17 -Dmaven.compiler.target=17 -DskipTests=true
+
       - name: set-jar-path
         id: jar-path
         if: ${{ env.skipDeploy != 'true' }}
@@ -376,7 +383,7 @@ jobs:
         if: ${{ env.skipDeploy != 'true' }}
         id: deployIdentity
         shell: bash
-        run: npx dotenv -e .env.${{ inputs.environment || 'prod' }} -- npx cdk deploy SubmitIdentityStack-${{ inputs.environment || 'prod' }} --exclusively --require-approval never --${{ inputs.environment || 'prod' }} true --verbose --strict --validation
+        run: npx dotenv -e .env.${{ inputs.environment || 'prod' }} -- npx cdk deploy SubmitIdentityStack-${{ inputs.environment || 'prod' }} --exclusively --require-approval never --ci true --verbose --strict --validation
         env:
           GITHUB_ACTOR: ${{ github.actor }}
           ENV_NAME: ${{ inputs.environment || 'prod' }}
