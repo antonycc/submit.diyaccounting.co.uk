@@ -60,14 +60,19 @@ on:
         default: 'prod'
         type: choice
         options:
-          - test
           - prod
+      skipDeploy:
+        description: 'Skip deployment step'
+        type: string
+        required: false
+        default: 'false'
   schedule:
     #- cron: '14 5,11,17,23 * * *'
     - cron: '14 5 * * *'
 
 env:
   environment: ${{ inputs.environment || 'prod' }}
+  skipDeploy: ${{ inputs.skipDeploy || 'false' }}
 
 jobs:
   npm-test:
@@ -77,7 +82,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: 'npm'
@@ -108,7 +113,8 @@ jobs:
       - uses: actions/checkout@v5
 
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        if: ${{ env.skipDeploy != 'true' }}
+        uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: arn:aws:iam::887764105431:role/submit-github-actions-role
           role-chaining: false
@@ -119,7 +125,8 @@ jobs:
           retry-max-attempts: 3
 
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        if: ${{ env.skipDeploy != 'true' }}
+        uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: arn:aws:iam::887764105431:role/submit-deployment-role
           role-chaining: true
@@ -129,7 +136,8 @@ jobs:
           output-credentials: true
           retry-max-attempts: 3
 
-      - name: Write GitHub secret HMRC_CLIENT_SECRET to temp file (keeps out of logs)
+      - name:
+        if: ${{ env.skipDeploy != 'true' }}
         shell: bash
         env:
           GH_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
@@ -140,6 +148,7 @@ jobs:
           echo "::add-mask::$(cat secret.txt)"
 
       - name: Upsert HMRC_CLIENT_SECRET into AWS Secrets Manager
+        if: ${{ env.skipDeploy != 'true' }}
         shell: bash
         env:
           SECRET_NAME: "diy/${{ env.environment}}/submit/hmrc/client_secret"
@@ -158,6 +167,7 @@ jobs:
           shred -u secret.txt
 
       - name: Write GitHub secret DIY_SUBMIT_GOOGLE_CLIENT_SECRET to temp file (keeps out of logs)
+        if: ${{ env.skipDeploy != 'true' }}
         shell: bash
         env:
           GH_SECRET: ${{ secrets.DIY_SUBMIT_GOOGLE_CLIENT_SECRET }}
@@ -168,6 +178,7 @@ jobs:
           echo "::add-mask::$(cat secret.txt)"
 
       - name: Upsert DIY_SUBMIT_GOOGLE_CLIENT_SECRET into AWS Secrets Manager
+        if: ${{ env.skipDeploy != 'true' }}
         shell: bash
         env:
           SECRET_NAME: "diy/${{ env.environment}}/submit/google/client_secret"
@@ -185,7 +196,8 @@ jobs:
           fi
           shred -u secret.txt
 
-      #- name: Write GitHub secret DIY_SUBMIT_ANTONYCC_CLIENT_SECRET to temp file (keeps out of logs)
+      #- name: Write GitHub secret DIY_SUBMIT_ANTONYCC_CLIENT_SECRET to temp file (keeps out of logs)\
+      #  if: ${{ env.skipDeploy != 'true' }}
       #  shell: bash
       #  env:
       #    GH_SECRET: ${{ secrets.DIY_SUBMIT_ANTONYCC_CLIENT_SECRET }}
@@ -196,6 +208,7 @@ jobs:
       #    echo "::add-mask::$(cat secret.txt)"
 
       #- name: Upsert DIY_SUBMIT_ANTONYCC_CLIENT_SECRET into AWS Secrets Manager
+      #  if: ${{ env.skipDeploy != 'true' }}
       #  shell: bash
       #  env:
       #    SECRET_NAME: "diy/${{ env.environment}}/submit/antonycc/client_secret"
@@ -230,7 +243,7 @@ jobs:
           fetch-depth: 0
           ref: ${{ github.ref }}
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: 'npm'
@@ -238,7 +251,7 @@ jobs:
       - run: npm install
 
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: arn:aws:iam::887764105431:role/submit-github-actions-role
           role-chaining: false
@@ -251,7 +264,7 @@ jobs:
       #- run: aws sts get-caller-identity --region eu-west-2
 
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: arn:aws:iam::887764105431:role/submit-deployment-role
           role-chaining: true
@@ -269,6 +282,15 @@ jobs:
           java-version: 17
           cache: 'maven'
 
+      - name: set-jar-path
+        id: jar-path
+        if: ${{ env.skipDeploy != 'true' }}
+        shell: bash
+        run: |
+          jarPath=$(mvn help:evaluate --quiet --define expression=project.build.directory --define forceStdout)
+          jarFilename=$(mvn help:evaluate --quiet --define expression=project.build.finalName --define forceStdout)
+          echo "jarFilepath=${jarPath?}/${jarFilename?}.jar" | tee -a "${GITHUB_OUTPUT?}"
+
       - name: deployObservability
         if: ${{ env.skipDeploy != 'true' }}
         id: deployObservability
@@ -279,6 +301,7 @@ jobs:
           ENV_NAME: ${{ inputs.environment || 'prod' }}
 
       - name: deployDev
+        if: ${{ env.skipDeploy != 'true' }}
         id: deployDev
         shell: bash
         run: npx dotenv -e .env.${{ inputs.environment || 'prod' }} -- npx cdk deploy SubmitDevStack-${{ inputs.environment || 'prod' }} --exclusively --require-approval never --ci true --verbose --strict --validation
@@ -286,13 +309,8 @@ jobs:
           GITHUB_ACTOR: ${{ github.actor }}
           ENV_NAME: ${{ inputs.environment || 'prod' }}
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-        with:
-          driver-opts: |
-            image=moby/buildkit:latest
-
       - name: Setup image tag
+        if: ${{ env.skipDeploy != 'true' }}
         id: image-tag
         run: |
           BASE_IMAGE_TAG="submit-base:${{ github.sha }}"
@@ -300,12 +318,14 @@ jobs:
           echo "Building/loading base image with tag: $BASE_IMAGE_TAG"
 
       - name: Set up Docker Buildx
+        if: ${{ env.skipDeploy != 'true' }}
         uses: docker/setup-buildx-action@v3
         with:
           driver-opts: |
             image=moby/buildkit:latest
 
       - name: Build base image
+        if: ${{ env.skipDeploy != 'true' }}
         id: build
         run: |
           docker buildx build \
@@ -314,6 +334,7 @@ jobs:
             -f Dockerfile .
 
       - name: Get ECR repository URI
+        if: ${{ env.skipDeploy != 'true' }}
         id: ecr-uri
         shell: bash
         run: |
@@ -326,11 +347,13 @@ jobs:
           echo "ECR Repository URI: $ECR_URI"
 
       - name: Login to Amazon ECR
+        if: ${{ env.skipDeploy != 'true' }}
         shell: bash
         run: |
           aws ecr get-login-password --region eu-west-2 | docker login --username AWS --password-stdin ${{ steps.ecr-uri.outputs.ecr-uri }}
 
       - name: Tag and push Docker image to ECR
+        if: ${{ env.skipDeploy != 'true' }}
         shell: bash
         run: |
           BASE_IMAGE_TAG="${{ steps.image-tag.outputs.base-image-tag }}"
@@ -350,6 +373,7 @@ jobs:
           echo "  $ECR_URI:latest"
 
       - name: deployIdentity
+        if: ${{ env.skipDeploy != 'true' }}
         id: deployIdentity
         shell: bash
         run: npx dotenv -e .env.${{ inputs.environment || 'prod' }} -- npx cdk deploy SubmitIdentityStack-${{ inputs.environment || 'prod' }} --exclusively --require-approval never --${{ inputs.environment || 'prod' }} true --verbose --strict --validation
@@ -366,6 +390,7 @@ jobs:
           AUTH_CERTIFICATE_ARN: 'arn:aws:acm:us-east-1:887764105431:certificate/59a025f9-3620-43cd-9b2c-522f385ee223'
 
       - name: deployApplication
+        if: ${{ env.skipDeploy != 'true' }}
         id: deployApplication
         shell: bash
         run: npx dotenv -e .env.${{ inputs.environment || 'prod' }} -- npx cdk deploy SubmitApplicationStack-${{ inputs.environment || 'prod' }} --exclusively --require-approval never --ci true --verbose --strict --validation
@@ -382,6 +407,7 @@ jobs:
           BASE_IMAGE_TAG: ${{ steps.ecr-uri.outputs.ecr-uri }}:${{ github.sha }}
 
       - name: deployWeb
+        if: ${{ env.skipDeploy != 'true' }}
         id: deployWeb
         shell: bash
         run: npx dotenv -e .env.${{ inputs.environment || 'prod' }} -- npx cdk deploy SubmitWebStack-${{ inputs.environment || 'prod' }} --exclusively --require-approval never --ci true --verbose --strict --validation
@@ -416,12 +442,6 @@ jobs:
           cache: 'npm'
 
       - run: npm ci || npm install
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-        with:
-          driver-opts: |
-            image=moby/buildkit:latest
 
       - name: Cache Playwright browsers
         uses: actions/cache@v4
