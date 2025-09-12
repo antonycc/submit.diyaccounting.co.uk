@@ -1,7 +1,5 @@
 # Increase Consistency Prompt
 
-> Formatting and style: Defer to repo configs — ESLint (flat) + Prettier for JS (ESM) and Spotless (Palantir Java Format) for Java. Use npm run formatting / npm run formatting-fix. See README for details.
-
 Analyze the current repository and identify opportunities to increase consistency across code, configuration, documentation, and processes.
 
 Focus on:
@@ -47,3 +45,5 @@ Provide recommendations that:
 - Simplify onboarding for new contributors
 - Support automated tooling and linting
 - Maintain existing functionality while improving consistency
+
+> Formatting and style: Defer to repo configs — ESLint (flat) + Prettier for JS (ESM) and Spotless (Palantir Java Format) for Java. Use npm run formatting / npm run formatting-fix. See README for details.
