@@ -155,17 +155,20 @@ jobs:
       contents: read
     steps:
       - name: Checkout repository
+        if: ${{ env.skipDeploy != 'true' }}
         uses: actions/checkout@v5
         with:
           fetch-depth: 0
           ref: ${{ github.ref }}
 
       - uses: actions/setup-node@v5
+        if: ${{ env.skipDeploy != 'true' }}
         with:
           node-version: 22
           cache: 'npm'
 
       - run: npm install
+        if: ${{ env.skipDeploy != 'true' }}
 
       - uses: actions/setup-java@v5
         if: ${{ env.skipDeploy != 'true' }}
