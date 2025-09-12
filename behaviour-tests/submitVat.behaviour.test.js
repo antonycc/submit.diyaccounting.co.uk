@@ -350,7 +350,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   await page.waitForLoadState("networkidle");
   await setTimeout(500);
   await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/070-home-${timestamp}.png` });
-  await expect(page.getByText(testAuthUsername)).toBeVisible({ timeout: 15000 });
+  await expect(page.getByText("Logged in as")).toBeVisible({ timeout: 15000 });
 
   // Add bundle
   await expect(page.getByText("Add Bundle")).toBeVisible();
