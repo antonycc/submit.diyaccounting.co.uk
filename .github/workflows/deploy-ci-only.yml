@@ -252,12 +252,14 @@ jobs:
           AUTH_CERTIFICATE_ARN: 'arn:aws:acm:us-east-1:887764105431:certificate/59a025f9-3620-43cd-9b2c-522f385ee223'
 
       - name: Set up Docker Buildx
+        if: ${{ env.skipDeploy != 'true' }}
         uses: docker/setup-buildx-action@v3
         with:
           driver-opts: |
             image=moby/buildkit:latest
 
       - name: Setup image tag
+        if: ${{ env.skipDeploy != 'true' }}
         id: image-tag
         run: |
           BASE_IMAGE_TAG="submit-base:${{ github.sha }}"
@@ -265,12 +267,14 @@ jobs:
           echo "Building/loading base image with tag: $BASE_IMAGE_TAG"
 
       - name: Set up Docker Buildx
+        if: ${{ env.skipDeploy != 'true' }}
         uses: docker/setup-buildx-action@v3
         with:
           driver-opts: |
             image=moby/buildkit:latest
 
       - name: Build base image
+        if: ${{ env.skipDeploy != 'true' }}
         id: build
         run: |
           docker buildx build \
@@ -279,6 +283,7 @@ jobs:
             -f Dockerfile .
 
       - name: Get ECR repository URI
+        if: ${{ env.skipDeploy != 'true' }}
         id: ecr-uri
         shell: bash
         run: |
@@ -291,11 +296,13 @@ jobs:
           echo "ECR Repository URI: $ECR_URI"
 
       - name: Login to Amazon ECR
+        if: ${{ env.skipDeploy != 'true' }}
         shell: bash
         run: |
           aws ecr get-login-password --region eu-west-2 | docker login --username AWS --password-stdin ${{ steps.ecr-uri.outputs.ecr-uri }}
 
       - name: Tag and push Docker image to ECR
+        if: ${{ env.skipDeploy != 'true' }}
         shell: bash
         run: |
           BASE_IMAGE_TAG="${{ steps.image-tag.outputs.base-image-tag }}"
