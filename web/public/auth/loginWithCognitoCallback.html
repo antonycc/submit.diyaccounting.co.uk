@@ -120,7 +120,7 @@
           console.log("Received id_token from Cognito " + JSON.stringify(idTokenPayload));
 
           // Handle optional email gracefully
-          const userEmail = idTokenPayload.email || null;
+          const userEmail = idTokenPayload.email;
 
           localStorage.setItem(
             "userInfo",

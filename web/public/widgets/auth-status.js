@@ -1,8 +1,7 @@
 /* eslint-env browser */
 (function () {
   function pickDisplayName(user) {
-    const fullName = [user.given_name, user.family_name].filter(Boolean).join(" ");
-    const candidates = [fullName, "name", "email", "sub"];
+    const candidates = ["given_name", "name", "email", "sub"];
     for (const key of candidates) {
       if (user[key]) {
         return user[key];
