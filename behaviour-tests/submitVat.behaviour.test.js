@@ -328,12 +328,21 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
       path: `target/behaviour-test-results/submitVat-screenshots/045-cognito-button-${timestamp}.png`,
     });
 
+    // Ensure we are at the login page
     await page.getByRole("heading", { name: "OIDC - Direct Login" }).waitFor();
-    await page.getByLabel("Username").fill(testAuthUsername);
-    await page.getByLabel("Password").fill(testAuthPassword);
+    // await page.getByLabel("Username").fill(testAuthUsername);
+    // await page.getByLabel("Password").fill(testAuthPassword);
     await setTimeout(100);
     await page.screenshot({
-      path: `target/behaviour-test-results/submitVat-screenshots/050-cognito-auth-form-filled-${timestamp}.png`,
+      path: `target/behaviour-test-results/submitVat-screenshots/050-cognito-auth-form-empty-${timestamp}.png`,
+    });
+
+    // Fill in some login details
+    await page.getByRole("button", { name: "Fill Form" }).click();
+    await page.waitForLoadState("networkidle");
+    await setTimeout(500);
+    await page.screenshot({
+      path: `target/behaviour-test-results/submitVat-screenshots/055-cognito-auth-form-filled-${timestamp}.png`,
     });
 
     // Home page has logged in user email
