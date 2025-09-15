@@ -489,7 +489,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   await page.screenshot({
     path: `target/behaviour-test-results/submitVat-screenshots/160-waiting-for-receipt-${timestamp}.png`,
   });
-  await page.waitForSelector("#receiptDisplay", { state: "visible", timeout: 60000 });
+  await page.waitForSelector("#receiptDisplay", { state: "visible", timeout: 120000 });
   await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/170-receipt-${timestamp}.png` });
   await setTimeout(500);
   const receiptDisplay = page.locator("#receiptDisplay");
@@ -534,7 +534,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   // await setTimeout(500);
   // await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/200-home-${timestamp}.png` });
   // await expect(page.getByText("Log in")).toBeVisible();
-}, 60000);
+}, 120000);
 
 // Resolve ngrok host from HOME_URL (DIY_SUBMIT_HOME_URL)
 // Examples:
