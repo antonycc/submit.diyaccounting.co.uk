@@ -138,7 +138,7 @@ test.beforeAll(async () => {
   }
 
   console.log("beforeAll hook completed successfully");
-}, 120000); // Set timeout to 60 seconds for beforeAll hook
+}, 180000); // Set timeout to 3 minutes for beforeAll hook
 
 test.afterAll(async () => {
   if (serverProcess) {
@@ -489,6 +489,48 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   await page.screenshot({
     path: `target/behaviour-test-results/submitVat-screenshots/160-waiting-for-receipt-${timestamp}.png`,
   });
+
+  if (runTestServer) {
+    // console.log("Starting server process...");
+    // serverProcess = spawn("npm", ["run", "start"], {
+    //  env: {
+    //    ...process.env,
+    //    DIY_SUBMIT_TEST_S3_ENDPOINT: endpoint,
+    //    DIY_SUBMIT_TEST_SERVER_HTTP_PORT: serverPort.toString(),
+    //  },
+    //  stdio: ["pipe", "pipe", "pipe"],
+    // });
+    await checkIfServerIsRunning(`http://127.0.0.1:${serverPort}`, 1000);
+  } else {
+    console.log("Skipping server process as runTestServer is not set to 'run'");
+  }
+
+  if (runProxy) {
+    // console.log("Starting ngrok process...");
+    // ngrokProcess = spawn("npm", ["run", "proxy", serverPort.toString()], {
+    //  env: {
+    //    ...process.env,
+    //  },
+    //  stdio: ["pipe", "pipe", "pipe"],
+    // });
+    await checkIfServerIsRunning(homeUrl, 1000);
+  } else {
+    console.log("Skipping ngrok process as runProxy is not set to 'run'");
+  }
+
+  if (runMockOAuth2) {
+    // console.log("Starting mock-oauth2-server process...");
+    // serverProcess = spawn("npm", ["run", "auth"], {
+    //  env: {
+    //    ...process.env,
+    //  },
+    //  stdio: ["pipe", "pipe", "pipe"],
+    // });
+    await checkIfServerIsRunning("http://localhost:8080/default/debugger", 2000);
+  } else {
+    console.log("Skipping mock-oauth2-server process as runMockOAuth2 is not set to 'run'");
+  }
+
   await page.waitForSelector("#receiptDisplay", { state: "visible", timeout: 120000 });
   await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/170-receipt-${timestamp}.png` });
   await setTimeout(500);
