@@ -1,65 +1,211 @@
-  package com.myorg;
+# .github/workflows/approvals-notify.yml
+name: approvals-notify
 
-    import java.time.Instant;
-    import java.time.ZoneOffset;
-    import java.time.format.DateTimeFormatter;
+on:
+  # Catch runs that immediately require approval
+  workflow_run:
+    types: [completed, requested]
+  # Also react when a deployment status is created (env protection)
+  deployment_status:
+    types: [created]
 
-    import software.amazon.awscdk.App;
-    import software.amazon.awscdk.Stack;
-    import software.amazon.awscdk.StackProps;
-    import software.amazon.awscdk.Fn;
-    import software.constructs.Construct;
-    import software.amazon.awscdk.services.iam.*;
-    import software.amazon.awscdk.services.scheduler.CfnSchedule;
+permissions:
+  actions: read
+  contents: read
+  pull-requests: read
+  discussions: write
 
-    public class SelfDestructingStack extends Stack {
-    public SelfDestructingStack(final Construct scope, final String id, final StackProps props) {
-    super(scope, id, props);
+concurrency:
+  group: approvals-notify-${{ github.event.workflow_run.id || github.run_id }}
+  cancel-in-progress: false
 
-    // Compute delete-at timestamp at synth time (UTC now + 1 hour).
-    String deleteAtIso = DateTimeFormatter.ISO_INSTANT.format(
-    Instant.now().plusSeconds(3600).atOffset(ZoneOffset.UTC));
+jobs:
+  detect-and-post:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Prepare utils (jq)
+        run: sudo apt-get update -y && sudo apt-get install -y jq
 
-    // Role assumed by EventBridge Scheduler to call CloudFormation DeleteStack.
-    Role schedulerRole = Role.Builder.create(this, "SelfDestructRole")
-    .assumedBy(new ServicePrincipal("scheduler.amazonaws.com"))
-    .inlinePolicies(java.util.Map.of(
-    "AllowDeleteThisStack",
-    PolicyDocument.Builder.create().statements(java.util.List.of(
-    PolicyStatement.Builder.create()
-    .effect(Effect.ALLOW)
-    .actions(java.util.List.of("cloudformation:DeleteStack"))
-    .resources(java.util.List.of(
-    Fn.sub("arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/${AWS::StackName}/*")
-    ))
-    .build()))
-    .build()))
-    .build();
+      # Decide if this event represents "needs human approval"
+      - name: Detect gating condition
+        id: detect
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const evt = context.eventName
+            const out = { shouldRun:false, kind:null, data:{} }
 
-  // One-time schedule: at(<ISO8601>), no window.
-    CfnSchedule.Builder.create(this, "SelfDestructSchedule")
-    .name(Fn.sub("self-destruct-${AWS::StackName}"))
-    .description("Deletes this stack at " + deleteAtIso + " UTC")
-    .scheduleExpression("at(" + deleteAtIso + ")")
-    .flexibleTimeWindow(CfnSchedule.FlexibleTimeWindowProperty.builder()
-    .mode("OFF").build())
-    .target(CfnSchedule.TargetProperty.builder()
-    .arn("arn:aws:scheduler:::aws-sdk:cloudformation:deleteStack")
-    .roleArn(schedulerRole.getRoleArn())
-    .input(Fn.sub("{\"StackName\":\"${AWS::StackName}\"}"))
-    .build())
-    .build();
+            if (evt === 'workflow_run') {
+              const run = context.payload.workflow_run
+              // Case 1: fork PRs or rules that need run approval
+              if (run.conclusion === 'action_required') {
+                out.shouldRun = true
+                out.kind = 'run_approval_required'
+              }
+              // Case 2: env reviewers required (pending deployments)
+              try {
+                const pd = await github.request(
+                  'GET /repos/{owner}/{repo}/actions/runs/{run_id}/pending_deployments',
+                  { owner: context.repo.owner, repo: context.repo.repo, run_id: run.id }
+                )
+                if (Array.isArray(pd.data) && pd.data.length) {
+                  out.shouldRun = true
+                  out.kind = out.kind ?? 'environment_approval_required'
+                  out.data.pending = pd.data.map(d => ({
+                    environment: d.environment?.name,
+                    reviewers: (d.reviewers||[]).map(r => r?.reviewer?.login || r?.team?.name)
+                  }))
+                }
+              } catch (e) {
+                core.info(`pending_deployments lookup skipped: ${e.message}`)
+              }
 
-    // Add your real resources here; they will be deleted when the schedule fires.
-  }
+              // Common context
+              out.data.run = {
+                id: run.id,
+                url: run.html_url,
+                workflow: run.name,
+                event: run.event,
+                status: run.status,
+                conclusion: run.conclusion,
+                attempt: run.run_attempt,
+                head_branch: run.head_branch,
+                head_sha: run.head_sha,
+                actor: run.actor?.login,
+                fork: !!run.head_repository?.fork,
+                pr_numbers: (run.pull_requests||[]).map(p => p.number)
+              }
+            } else if (evt === 'deployment_status') {
+              // Created deployment status; treat queued/pending/in_progress as possibly waiting for reviewers
+              const ds = context.payload.deployment_status
+              const dep = context.payload.deployment
+              if (['queued','pending','in_progress'].includes(ds.state)) {
+                out.shouldRun = true
+                out.kind = 'deployment_status_waiting'
+                out.data.deployment = {
+                  id: dep.id,
+                  environment: dep.environment,
+                  state: ds.state,
+                  description: ds.description,
+                  url: ds.target_url || ds.log_url || null
+                }
+              }
+            }
 
-    public static void main(final String[] args) {
-    App app = new App();
-    new SelfDestructingStack(app, "DemoTtlStack",
-    StackProps.builder()
-    .stackName("demo-ttl")
-    // Leave termination protection off, or deletion will fail.
-    .build());
-    app.synth();
-  }
-  }
+            core.setOutput('shouldRun', String(out.shouldRun))
+            core.setOutput('kind', out.kind || '')
+            core.setOutput('payload', JSON.stringify(out.data))
+
+      - name: Short-circuit if nothing to do
+        if: steps.detect.outputs.shouldRun != 'true'
+        run: echo "No approvals detected. Skipping."
+
+      # Build a readable markdown message using bash + jq
+      - name: Build message
+        if: steps.detect.outputs.shouldRun == 'true'
+        id: msg
+        run: |
+          KIND="${{ steps.detect.outputs.kind }}"
+          DATA='${{ steps.detect.outputs.payload }}'
+          OWNER="${{ github.repository_owner }}"
+          REPO="${{ github.event.repository.name }}"
+          NOW="$(date -u +"%Y-%m-%d %H:%M:%SZ")"
+
+          pr_links=$(echo "$DATA" | jq -r '(.run.pr_numbers // []) | map("[#\(. )](https://github.com/'"$OWNER"'/'"$REPO"'/pull/\(.))") | join(", ")')
+          [ -z "$pr_links" ] && pr_links="_none_"
+
+          run_url=$(echo "$DATA" | jq -r '.run.url // empty')
+          wf=$(echo "$DATA" | jq -r '.run.workflow // empty')
+          actor=$(echo "$DATA" | jq -r '.run.actor // empty')
+          branch=$(echo "$DATA" | jq -r '.run.head_branch // empty')
+          sha=$(echo "$DATA" | jq -r '.run.head_sha // empty')
+
+          if echo "$DATA" | jq -e '.pending[0]' >/dev/null 2>&1; then
+            pending_md=$(echo "$DATA" | jq -r '
+              .pending | map("* **\(.environment)** → reviewers: " + ( (.reviewers // []) | join(", ") ) ) | join("\n")
+            ')
+          else
+            pending_md="_none_"
+          fi
+
+          cat > body.md <<'MD'
+          ### Approval needed · $KIND
+
+          **Repo:** $OWNER/$REPO  
+          **When:** $NOW
+
+          **Workflow:** $wf  
+          **Run:** [$run_url]($run_url)  
+          **Actor:** @$actor  
+          **Branch / SHA:** `$branch` / `$sha`
+
+          **Related PRs:** $pr_links
+
+          **Pending deployments:**  
+          $pending_md
+
+          <sub>Automated notice from approvals-notify.</sub>
+          MD
+
+          echo "file=body.md" >> "$GITHUB_OUTPUT"
+
+      # Create/find a single Discussions thread titled "approvals", then comment to it
+      - name: Post to Discussions
+        if: steps.detect.outputs.shouldRun == 'true'
+        uses: actions/github-script@v7
+        env:
+          BODY_FILE: ${{ steps.msg.outputs.file }}
+        with:
+          script: |
+            const fs = require('fs')
+            const owner = context.repo.owner
+            const repo  = context.repo.repo
+            const title = 'approvals'
+            const body  = fs.readFileSync(process.env.BODY_FILE, 'utf8')
+
+            // 1) Get repo + categories + recent discussions
+            const q = `query($owner:String!, $repo:String!) {
+              repository(owner:$owner, name:$repo) {
+                id
+                discussionCategories(first:50) { nodes { id name } }
+                discussions(first:50, orderBy:{field:UPDATED_AT, direction:DESC}) {
+                  nodes { id title url number }
+                }
+              }
+            }`
+            const info = await github.graphql(q, { owner, repo })
+            const repository = info.repository
+            const generalCat =
+              repository.discussionCategories.nodes.find(c => c.name.toLowerCase() === 'general')
+              || repository.discussionCategories.nodes[0]
+            if (!generalCat) throw new Error('No discussion categories available in repo.')
+
+            // 2) Find or create the single thread named "approvals"
+            let disc = repository.discussions.nodes.find(d => d.title.toLowerCase() === title)
+            if (!disc) {
+              const m = `mutation($repoId:ID!, $catId:ID!, $title:String!, $body:String!) {
+                createDiscussion(input:{repositoryId:$repoId, categoryId:$catId, title:$title, body:$body}) {
+                  discussion { id url number }
+                }
+              }`
+              const created = await github.graphql(m, {
+                repoId: repository.id, catId: generalCat.id, title, body: "Thread for workflow approvals."
+              })
+              disc = created.createDiscussion.discussion
+              core.info(`Created discussion #${disc.number} at ${disc.url}`)
+            }
+
+            // 3) Add a comment with the approval details
+            const m2 = `mutation($discId:ID!, $body:String!) {
+              addDiscussionComment(input:{discussionId:$discId, body:$body}) {
+                comment { url }
+              }
+            }`
+            const res = await github.graphql(m2, { discId: disc.id, body })
+            core.notice(`Posted to Discussions: ${res.addDiscussionComment.comment.url}`)
+
+      # Optional: write to the job summary
+      - name: Summary
+        if: steps.detect.outputs.shouldRun == 'true'
+        run: |
+          echo "### Sent approval notice to Discussions" >> $GITHUB_STEP_SUMMARY
