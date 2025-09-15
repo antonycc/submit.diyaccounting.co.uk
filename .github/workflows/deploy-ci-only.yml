@@ -494,38 +494,3 @@ jobs:
           echo "Test user credentials (valid for 1 hour):"
           echo "  Username: ${{ steps.uuid.outputs.TEST_USERNAME }}"
           echo "  Password: ${{ steps.uuid.outputs.TEST_PASSWORD }}"
-
-  publish-test-results-ci:
-    needs:
-      - npm-behaviour-test-ci
-    if: ${{ !cancelled() }}
-    uses: './.github/workflows/publish-test-results.yml'
-    permissions:
-      contents: read
-      pages: write
-      id-token: write
-    with:
-      environment: 'ci'
-      timestamp: ${{ needs.npm-behaviour-test-ci.outputs.timestamp || github.run_id }}
-      artifact-name-reports: 'test-reports-behaviour-ci'
-      artifact-name-results: 'test-results-behaviour-ci'
-
-  output-results:
-    needs:
-      - publish-test-results-ci
-    runs-on: ubuntu-latest
-    if: ${{ !cancelled() }}
-    steps:
-      - name: Output GitHub Pages URL
-        run: |
-          echo "## 🎭 Playwright Test Results Published" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "✅ **Test results have been published to GitHub Pages!**" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "📊 **Direct Link:** [${{ needs.publish-test-results-ci.outputs.pages-url }}](${{ needs.publish-test-results-ci.outputs.pages-url }})" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "🏠 **All Test Runs:** [GitHub Pages](https://antonycc.github.io/submit.diyaccounting.co.uk/)" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "---" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "🔗 **GitHub Pages URL:** ${{ needs.publish-test-results-ci.outputs.pages-url }}"
