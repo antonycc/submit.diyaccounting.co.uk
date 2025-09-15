@@ -1,0 +1,65 @@
+  package com.myorg;
+
+    import java.time.Instant;
+    import java.time.ZoneOffset;
+    import java.time.format.DateTimeFormatter;
+
+    import software.amazon.awscdk.App;
+    import software.amazon.awscdk.Stack;
+    import software.amazon.awscdk.StackProps;
+    import software.amazon.awscdk.Fn;
+    import software.constructs.Construct;
+    import software.amazon.awscdk.services.iam.*;
+    import software.amazon.awscdk.services.scheduler.CfnSchedule;
+
+    public class SelfDestructingStack extends Stack {
+    public SelfDestructingStack(final Construct scope, final String id, final StackProps props) {
+    super(scope, id, props);
+
+    // Compute delete-at timestamp at synth time (UTC now + 1 hour).
+    String deleteAtIso = DateTimeFormatter.ISO_INSTANT.format(
+    Instant.now().plusSeconds(3600).atOffset(ZoneOffset.UTC));
+
+    // Role assumed by EventBridge Scheduler to call CloudFormation DeleteStack.
+    Role schedulerRole = Role.Builder.create(this, "SelfDestructRole")
+    .assumedBy(new ServicePrincipal("scheduler.amazonaws.com"))
+    .inlinePolicies(java.util.Map.of(
+    "AllowDeleteThisStack",
+    PolicyDocument.Builder.create().statements(java.util.List.of(
+    PolicyStatement.Builder.create()
+    .effect(Effect.ALLOW)
+    .actions(java.util.List.of("cloudformation:DeleteStack"))
+    .resources(java.util.List.of(
+    Fn.sub("arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/${AWS::StackName}/*")
+    ))
+    .build()))
+    .build()))
+    .build();
+
+  // One-time schedule: at(<ISO8601>), no window.
+    CfnSchedule.Builder.create(this, "SelfDestructSchedule")
+    .name(Fn.sub("self-destruct-${AWS::StackName}"))
+    .description("Deletes this stack at " + deleteAtIso + " UTC")
+    .scheduleExpression("at(" + deleteAtIso + ")")
+    .flexibleTimeWindow(CfnSchedule.FlexibleTimeWindowProperty.builder()
+    .mode("OFF").build())
+    .target(CfnSchedule.TargetProperty.builder()
+    .arn("arn:aws:scheduler:::aws-sdk:cloudformation:deleteStack")
+    .roleArn(schedulerRole.getRoleArn())
+    .input(Fn.sub("{\"StackName\":\"${AWS::StackName}\"}"))
+    .build())
+    .build();
+
+    // Add your real resources here; they will be deleted when the schedule fires.
+  }
+
+    public static void main(final String[] args) {
+    App app = new App();
+    new SelfDestructingStack(app, "DemoTtlStack",
+    StackProps.builder()
+    .stackName("demo-ttl")
+    // Leave termination protection off, or deletion will fail.
+    .build());
+    app.synth();
+  }
+  }
