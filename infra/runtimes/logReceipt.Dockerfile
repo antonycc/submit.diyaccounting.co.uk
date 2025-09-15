@@ -10,4 +10,4 @@ ENV DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX=""
 # The app/ directory is also already copied in the base image
 
 # Set the specific handler for this Lambda
-CMD ["app/functions/logReceipt/logReceipt.httpPost"]
+CMD ["app/functions/logReceipt/logReceipt.httpPostMock"]

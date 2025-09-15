@@ -72,7 +72,7 @@
     "exchangeCognitoTokenLambdaHandlerFunctionName": "exchangeToken.httpPostCognito",
     "exchangeCognitoTokenLambdaDuration": "30000",
     "exchangeTokenLambdaUrlPath": "/api/exchange-token",
-    "exchangeTokenLambdaHandlerFunctionName": "exchangeToken.httpPost",
+    "exchangeTokenLambdaHandlerFunctionName": "exchangeToken.httpPostHmrc",
     "exchangeTokenLambdaDuration": "30000",
     "submitVatLambdaUrlPath": "/api/submit-vat",
     "submitVatLambdaHandlerFunctionName": "submitVat.httpPost",

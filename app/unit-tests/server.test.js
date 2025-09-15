@@ -14,7 +14,7 @@ vi.mock("@app/functions/authUrl.js", () => ({
   httpGetHmrc: vi.fn(),
 }));
 vi.mock("@app/functions/exchangeToken.js", () => ({
-  httpPost: vi.fn(),
+  httpPostMock: vi.fn(),
 }));
 vi.mock("@app/functions/submitVat.js", () => ({
   httpPost: vi.fn(),
@@ -25,7 +25,7 @@ vi.mock("@app/functions/logReceipt.js", () => ({
 
 // Import the mocked handlers
 import { httpGetHmrc as authUrlHandler } from "@app/functions/authUrl.js";
-import { httpPost as exchangeTokenHandler } from "@app/functions/exchangeToken.js";
+import { httpPostMock as exchangeTokenHandler } from "@app/functions/exchangeToken.js";
 import { httpPost as submitVatHandler } from "@app/functions/submitVat.js";
 import { httpPost as logReceiptHandler } from "@app/functions/logReceipt.js";
 
@@ -162,7 +162,7 @@ describe("Server Unit Tests", () => {
   });
 
   describe("POST /api/exchange-token", () => {
-    test("should call httpPost with correct event format", async () => {
+    test("should call httpPostMock with correct event format", async () => {
       const mockResponse = {
         statusCode: 200,
         body: JSON.stringify({ accessToken: "test-token" }),
@@ -178,7 +178,7 @@ describe("Server Unit Tests", () => {
       expect(response.body).toEqual({ accessToken: "test-token" });
     });
 
-    test("should handle httpPost errors", async () => {
+    test("should handle httpPostMock errors", async () => {
       const mockResponse = {
         statusCode: 400,
         body: JSON.stringify({ error: "Missing code" }),
@@ -192,7 +192,7 @@ describe("Server Unit Tests", () => {
   });
 
   describe("POST /api/submit-vat", () => {
-    test("should call httpPost with correct event format", async () => {
+    test("should call httpPostMock with correct event format", async () => {
       const mockResponse = {
         statusCode: 200,
         body: JSON.stringify({ formBundleNumber: "12345" }),
@@ -213,7 +213,7 @@ describe("Server Unit Tests", () => {
       expect(response.body).toEqual({ formBundleNumber: "12345" });
     });
 
-    test("should handle httpPost errors", async () => {
+    test("should handle httpPostMock errors", async () => {
       const mockResponse = {
         statusCode: 400,
         body: JSON.stringify({ error: "Missing parameters" }),
@@ -227,7 +227,7 @@ describe("Server Unit Tests", () => {
   });
 
   describe("POST /api/log-receipt", () => {
-    test("should call httpPost with correct event format", async () => {
+    test("should call httpPostMock with correct event format", async () => {
       const mockResponse = {
         statusCode: 200,
         body: JSON.stringify({ status: "receipt logged" }),
@@ -243,7 +243,7 @@ describe("Server Unit Tests", () => {
       expect(response.body).toEqual({ status: "receipt logged" });
     });
 
-    test("should handle httpPost errors", async () => {
+    test("should handle httpPostMock errors", async () => {
       const mockResponse = {
         statusCode: 500,
         body: JSON.stringify({ error: "Failed to log receipt" }),

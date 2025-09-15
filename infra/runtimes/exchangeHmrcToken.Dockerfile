@@ -13,4 +13,4 @@ ENV DIY_SUBMIT_TEST_ACCESS_TOKEN=""
 # The app/ directory is also already copied in the base image
 
 # Set the specific handler for this Lambda
-CMD ["app/functions/exchangeToken/exchangeToken.exchangeTokenHttpPostHmrc"]
+CMD ["app/functions/exchangeToken/exchangeToken.httpPostHmrc"]

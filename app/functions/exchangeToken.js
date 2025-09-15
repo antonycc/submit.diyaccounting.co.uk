@@ -48,7 +48,7 @@ export async function httpPostCognito(event) {
 }
 
 // POST /api/hmrc/exchange-token
-export async function exchangeTokenHttpPostHmrc(event) {
+export async function httpPostHmrc(event) {
   const request = extractRequest(event);
 
   // Validation
@@ -73,7 +73,7 @@ export async function exchangeTokenHttpPostHmrc(event) {
   return httpPostWithUrl(request, url, body);
 }
 
-export async function httpPost(event) {
+export async function httpPostMock(event) {
   const request = extractRequest(event);
   const { code } = JSON.parse(event.body || "{}");
   if (!code) {
@@ -128,7 +128,7 @@ async function performTokenExchange(providerUrl, body) {
     body: requestBody.toString(),
   });
   if (process.env.NODE_ENV === "stubbed") {
-    logger.warn({ message: "httpPost called in stubbed mode, using test access token" });
+    logger.warn({ message: "httpPostMock called in stubbed mode, using test access token" });
     const testAccessToken = process.env.DIY_SUBMIT_TEST_ACCESS_TOKEN;
     response = {
       ok: true,

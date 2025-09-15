@@ -8,11 +8,7 @@ import { readFileSync } from "fs";
 import dotenv from "dotenv";
 
 import { httpGetCognito, httpGetHmrc, httpGetMock } from "../functions/authUrl.js";
-import {
-  httpPost as exchangeTokenHttpPostMock,
-  exchangeTokenHttpPostHmrc,
-  httpPostCognito,
-} from "../functions/exchangeToken.js";
+import { httpPostMock, httpPostHmrc, httpPostCognito } from "../functions/exchangeToken.js";
 import { httpPost as submitVatHttpPost } from "../functions/submitVat.js";
 import { httpPost as logReceiptHttpPost } from "../functions/logReceipt.js";
 import { httpPost as requestBundleHttpPost } from "../functions/bundle.js";
@@ -98,7 +94,7 @@ app.post(exchangeMockTokenPath, async (req, res) => {
     queryStringParameters: req.query || {},
     body: JSON.stringify(req.body),
   };
-  const { statusCode, body } = await exchangeTokenHttpPostMock(event);
+  const { statusCode, body } = await httpPostMock(event);
   res.status(statusCode).json(JSON.parse(body));
 });
 
@@ -109,7 +105,7 @@ app.post(exchangeHmrcTokenPath, async (req, res) => {
     queryStringParameters: req.query || {},
     body: JSON.stringify(req.body),
   };
-  const { statusCode, body } = await exchangeTokenHttpPostHmrc(event);
+  const { statusCode, body } = await httpPostHmrc(event);
   res.status(statusCode).json(JSON.parse(body));
 });
 

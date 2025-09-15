@@ -5,7 +5,7 @@ Below is a structured plan for adding a fully working “bundle” system (allow
 ## Summary of Steps
 
 1. **Add Cognito custom attribute:** Modify the CDK stack to create a `custom:bundles` attribute on the user pool, and pass the user pool ID into the bundle Lambda via environment variables.
-2. **Fix bundle Lambda handler:** Point the `bundle.Dockerfile` handler to the correct file and export name (`app/functions/bundle.js: httpPost`).
+2. **Fix bundle Lambda handler:** Point the `bundle.Dockerfile` handler to the correct file and export name (`app/functions/bundle.js: httpPostMock`).
 3. **Expose `/api/request-bundle` endpoint:**
 
     * Add a new route in `app/bin/server.js` to proxy POST requests to the bundle Lambda.
@@ -32,15 +32,15 @@ Below is a structured plan for adding a fully working “bundle” system (allow
 
 ### 2. Fix the bundle Lambda handler
 
-The existing `infra/runtimes/bundle.Dockerfile` references `app/functions/bundle/bundle.httpPost`, but the actual file is `app/functions/bundle.js` and exports `httpPost`.  Update the Dockerfile as follows:
+The existing `infra/runtimes/bundle.Dockerfile` references `app/functions/bundle/bundle.httpPostMock`, but the actual file is `app/functions/bundle.js` and exports `httpPostMock`.  Update the Dockerfile as follows:
 
 ```dockerfile
 # infra/runtimes/bundle.Dockerfile
 # …
-CMD ["app/functions/bundle.httpPost"]
+CMD ["app/functions/bundle.httpPostMock"]
 ```
 
-Also, ensure that `app/functions/bundle.js` resides in `app/functions` (as it currently does) and that it exports `httpPost` and `httpOptions` as named exports.
+Also, ensure that `app/functions/bundle.js` resides in `app/functions` (as it currently does) and that it exports `httpPostMock` and `httpOptions` as named exports.
 
 ### 3. Expose `/api/request-bundle` endpoint
 
@@ -49,7 +49,7 @@ Also, ensure that `app/functions/bundle.js` resides in `app/functions` (as it cu
     * Open `app/bin/server.js` and import the bundle handler:
 
       ```js
-      import { httpPost as requestBundleHttpPost } from "../functions/bundle.js";
+      import { httpPostMock as requestBundleHttpPost } from "../functions/bundle.js";
       ```
     * Add a new constant for the path, e.g.:
 
@@ -80,7 +80,7 @@ Also, ensure that `app/functions/bundle.js` resides in `app/functions` (as it cu
     * Add configuration keys to `cdk.json` and the `WebApp` builder, similar to other Lambdas:
 
       ```json
-      "requestBundleLambdaHandlerFunctionName": "bundle.httpPost",
+      "requestBundleLambdaHandlerFunctionName": "bundle.httpPostMock",
       "requestBundleLambdaUrlPath": "/api/request-bundle",
       "requestBundleLambdaDuration": "30000"
       ```

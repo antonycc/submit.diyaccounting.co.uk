@@ -10,4 +10,4 @@ ENV DIY_SUBMIT_TEST_RECEIPTS_BUCKET=""
 # The app/ directory is also already copied in the base image
 
 # Set the specific handler for this Lambda
-CMD ["app/functions/submitVat/submitVat.httpPost"]
+CMD ["app/functions/submitVat/submitVat.httpPostMock"]
