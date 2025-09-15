@@ -6,6 +6,39 @@ This project allows UK businesses to submit tax returns to HMRC under the Making
 
 # Build and run locally
 
+## Java code formatting (Maven Spotless + Palantir Java Format)
+
+CLI (applies exactly what the IDE should do):
+- ./mvnw spotless:apply  # formats code
+- ./mvnw spotless:check  # verifies formatting (CI-safe)
+
+Spotless is configured in pom.xml to use palantir-java-format (pinned). This is a Google Java Format fork with a fixed 100-column wrap.
+
+### Eclipse setup to follow Maven (Palantir Java Format)
+1) Install the Palantir Java Format plugin for Eclipse:
+   - Eclipse Marketplace: search for "palantir-java-format" and install; or
+   - Update site: https://palantir.github.io/palantir-java-format/eclipse/update/ (Help → Install New Software... → Add...)
+2) Enable Palantir formatter in Eclipse:
+   - Preferences → Java → Code Style → Formatter:
+     - Select "palantir-java-format" as the active formatter profile.
+     - Optionally disable other custom profiles.
+3) Configure Save Actions to format on save:
+   - Preferences → Java → Editor → Save Actions:
+     - Check "Perform the selected actions on save"
+     - Check "Format source code" (All lines)
+     - Check "Organize imports" (Spotless also removes unused imports; duplication is harmless)
+4) Right margin guide at 100 columns (visual aid only):
+   - Preferences → General → Editors → Text Editors → Show print margin, set to 100.
+   - The repo .editorconfig also sets this for IDEs that honor it.
+
+Notes:
+- Palantir formatter is deterministic and ignores most Eclipse code style settings; it enforces ~Google style with 100 columns.
+- If you have the Google Java Format plugin instead, it will also use 100 columns but may differ subtly from Palantir on some constructs. Prefer the Palantir plugin to match Maven exactly.
+
+### IntelliJ IDEA setup (optional)
+- Install the "Palantir Java Format" plugin or "Google Java Format" with the Palantir fork if available. Then enable it under Settings → Tools → Palantir/Google Java Format.
+- Set Right Margin to 100 (Editor → Code Style → Java) or rely on .editorconfig.
+
 ## Clone the Repository
 
 ```bash
@@ -60,17 +93,17 @@ ngrok runs:
 ```log
 ngrok                                                                                                                                                                                                          (Ctrl+C to quit)
 
-🤖 Want to hang with ngrokkers on our new Discord? http://ngrok.com/discord                                                                                                                                                    
+🤖 Want to hang with ngrokkers on our new Discord? http://ngrok.com/discord
 
-Session Status                online                                                                                                                                                                                           
-Account                       Antony @ Polycode (Plan: Free)                                                                                                                                                                   
-Version                       3.22.1                                                                                                                                                                                           
-Region                        Europe (eu)                                                                                                                                                                                      
-Web Interface                 http://127.0.0.1:4040                                                                                                                                                                            
-Forwarding                    https://d57b-146-70-103-222.ngrok-free.app -> http://localhost:3000                                                                                                                              
+Session Status                online
+Account                       Antony @ Polycode (Plan: Free)
+Version                       3.22.1
+Region                        Europe (eu)
+Web Interface                 http://127.0.0.1:4040
+Forwarding                    https://d57b-146-70-103-222.ngrok-free.app -> http://localhost:3000
 
-Connections                   ttl     opn     rt1     rt5     p50     p90                                                                                                                                                      
-                              0       0       0.00    0.00    0.00    0.00                  
+Connections                   ttl     opn     rt1     rt5     p50     p90
+                              0       0       0.00    0.00    0.00    0.00
 ```
 
 Here you can open https://d57b-146-70-103-222.ngrok-free.app in a browser of your choice (you'll have your own URL
@@ -100,8 +133,8 @@ Add the following repository variables to your GitHub repository settings under 
 | `AWS_CERTIFICATE_ARN`      | The AWS certificate ID for the domain.   | Environment  | String   | `arn:aws:acm:us-east-1:887764105431:certificate/b23cd904-8e3b-4cd0-84f1-57ca11d7fe2b`          |
 | `AWS_CLOUD_TRAIL_ENABLED` | Enable CloudTrail logging.               | Environment  | Boolean  | `true`                          |
 
-To use a repository level variable certificate should be able to cover the domain `submit.diyaccounting.co.uk` and 
-`*.submit.diyaccounting.co.uk`. If a more specific certificate is required, then the `AWS_CERTIFICATE_ARN` variable can 
+To use a repository level variable certificate should be able to cover the domain `submit.diyaccounting.co.uk` and
+`*.submit.diyaccounting.co.uk`. If a more specific certificate is required, then the `AWS_CERTIFICATE_ARN` variable can
 be set at the environment level. Similarly, zone files can be per environment.
 
 ## OIDC Set-up
@@ -347,7 +380,7 @@ You'll need to have run `npx cdk bootstrap` to set up the environment for the CD
 Assume deployment role:
 ```bash
 
-. ./scripts/aws-assume-submit-deployment-role.sh                                     
+. ./scripts/aws-assume-submit-deployment-role.sh
 ```
 
 Output:
@@ -369,14 +402,14 @@ npx cdk bootstrap aws://887764105431/eu-west-2
 
 ```log
 
-~/projects/submit.diyaccounting.co.uk % npx cdk bootstrap aws://887764105431/eu-west-2                                                                                                                                       
+~/projects/submit.diyaccounting.co.uk % npx cdk bootstrap aws://887764105431/eu-west-2
 [INFO] Scanning for projects...
-[INFO] 
+[INFO]
 [INFO] -------------------< submit.diyaccounting.co.uk:web >-------------------
 [INFO] Building web 0.0.1
 [INFO]   from pom.xml
 [INFO] --------------------------------[ jar ]---------------------------------
-[INFO] 
+[INFO]
 [INFO] --- exec:3.5.1:java (default-cli) @ web ---
 [WARNING] aws-cdk-lib.aws_cloudfront_origins.S3Origin is deprecated.
   Use `S3BucketOrigin` or `S3StaticWebsiteOrigin` instead.
@@ -445,7 +478,7 @@ Maven build output:
 Assume deployment role:
 ```bash
 
-. ./scripts/aws-assume-submit-deployment-role.sh                                     
+. ./scripts/aws-assume-submit-deployment-role.sh
 ```
 
 Output:
@@ -478,7 +511,7 @@ npx cdk deploy
 
 Example output:
 ```log
-WebStack | 4/8 | 3:20:29 AM | UPDATE_COMPLETE      | AWS::CloudFormation::Stack                      | WebStack 
+WebStack | 4/8 | 3:20:29 AM | UPDATE_COMPLETE      | AWS::CloudFormation::Stack                      | WebStack
 [03:20:34] Stack WebStack has completed updating
 
  ✅  WebStack

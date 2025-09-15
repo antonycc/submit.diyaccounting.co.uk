@@ -33,6 +33,9 @@ const runTestServer = process.env.DIY_SUBMIT_TEST_SERVER_HTTP === "run";
 const runProxy = process.env.DIY_SUBMIT_TEST_PROXY === "run";
 const runMockOAuth2 = process.env.DIY_SUBMIT_TEST_MOCK_OAUTH2 === "run";
 const runMinioS3 = process.env.DIY_SUBMIT_TEST_MINIO_S3 === "run";
+const testAuthProvider = process.env.DIY_SUBMIT_TEST_AUTH_PROVIDER || "mock";
+const testAuthUsername = process.env.DIY_SUBMIT_TEST_AUTH_USERNAME || "user";
+const testAuthPassword = process.env.DIY_SUBMIT_TEST_AUTH_PASSWORD || "";
 console.log(
   `runTestServer: ${runTestServer} (DIY_SUBMIT_TEST_SERVER_HTTP: ${process.env.DIY_SUBMIT_TEST_SERVER_HTTP})`,
 );
@@ -41,6 +44,15 @@ console.log(
   `runMockOAuth2: ${runMockOAuth2} (DIY_SUBMIT_TEST_MOCK_OAUTH2: ${process.env.DIY_SUBMIT_TEST_MOCK_OAUTH2})`,
 );
 console.log(`runMinioS3: ${runMinioS3} (DIY_SUBMIT_TEST_MINIO_S3: ${process.env.DIY_SUBMIT_TEST_MINIO_S3})`);
+console.log(
+  `testAuthProvider: ${testAuthProvider} (DIY_SUBMIT_TEST_AUTH_PROVIDER: ${process.env.DIY_SUBMIT_TEST_AUTH_PROVIDER})`,
+);
+console.log(
+  `testAuthUsername: ${testAuthUsername} (DIY_SUBMIT_TEST_AUTH_USERNAME: ${process.env.DIY_SUBMIT_TEST_AUTH_USERNAME})`,
+);
+console.log(
+  `testAuthPassword: ${testAuthPassword} (DIY_SUBMIT_TEST_AUTH_PASSWORD: ${process.env.DIY_SUBMIT_TEST_AUTH_PASSWORD})`,
+);
 
 const bucketNamePostfix = process.env.DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX;
 const homeUrl = process.env.DIY_SUBMIT_HOME_URL;
@@ -57,7 +69,7 @@ function getTimestamp() {
   return now.toISOString().replace(/[:.]/g, "-").replace("T", "_").slice(0, -5);
 }
 
-test.setTimeout(180000);
+test.setTimeout(360000);
 
 test.beforeAll(async () => {
   console.log("Starting beforeAll hook...");
@@ -101,13 +113,12 @@ test.beforeAll(async () => {
 
   if (runProxy) {
     console.log("Starting ngrok process...");
-    ngrokProcess = spawn("npm", [ "run", "proxy", serverPort.toString() ], {
-        env: {
-          ...process.env,
-        },
-        stdio: ["pipe", "pipe", "pipe"],
+    ngrokProcess = spawn("npm", ["run", "proxy", serverPort.toString()], {
+      env: {
+        ...process.env,
       },
-    );
+      stdio: ["pipe", "pipe", "pipe"],
+    });
     await checkIfServerIsRunning(homeUrl, 1000);
   } else {
     console.log("Skipping ngrok process as runProxy is not set to 'run'");
@@ -249,54 +260,106 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   await page.waitForLoadState("networkidle");
   await setTimeout(500);
   await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/020-login-${timestamp}.png` });
-  await expect(page.getByText("Continue with mock-oauth2-server")).toBeVisible();
 
-  await loggedClick("button:has-text('Continue with mock-oauth2-server')", "Continue with OAuth provider");
-  await page.waitForLoadState("networkidle");
-  await setTimeout(500);
-  // await page.screenshot({
-  //  path: `target/behaviour-test-results/submitVat-screenshots/030-hand-off-to-provider-auth-${timestamp}.png`,
-  // });
-  // await expect(page.getByText("Hand off to mock-oauth2-server")).toBeVisible();
+  if (testAuthProvider === "mock") {
+    await expect(page.getByText("Continue with mock-oauth2-server")).toBeVisible();
+    await loggedClick("button:has-text('Continue with mock-oauth2-server')", "Continue with OAuth provider");
+    await page.waitForLoadState("networkidle");
+    await setTimeout(500);
+    // await page.screenshot({
+    //  path: `target/behaviour-test-results/submitVat-screenshots/030-hand-off-to-provider-auth-${timestamp}.png`,
+    // });
+    // await expect(page.getByText("Hand off to mock-oauth2-server")).toBeVisible();
 
-  // await loggedClick("button:has-text('Hand off to mock-oauth2-server')", "Hand off to OAuth provider");
-  // await page.waitForLoadState("networkidle");
-  // await setTimeout(500);
-  await page.screenshot({
-    path: `target/behaviour-test-results/submitVat-screenshots/040-provider-auth-${timestamp}.png`,
-  });
-  // await expect(page.getByText("SIGN-IN")).toBeVisible();
-  await expect(page.locator('input[type="submit"][value="Sign-in"]')).toBeVisible({ timeout: 10000 });
+    // await loggedClick("button:has-text('Hand off to mock-oauth2-server')", "Hand off to OAuth provider");
+    // await page.waitForLoadState("networkidle");
+    // await setTimeout(500);
+    await page.screenshot({
+      path: `target/behaviour-test-results/submitVat-screenshots/040-mock-provider-auth-${timestamp}.png`,
+    });
+    // await expect(page.getByText("SIGN-IN")).toBeVisible();
+    await expect(page.locator('input[type="submit"][value="Sign-in"]')).toBeVisible({ timeout: 10000 });
 
-  // <input class="u-full-width" required="" type="text" name="username" placeholder="Enter any user/subject" autofocus="on">
-  const username = "user";
-  await loggedFill('input[name="username"]', `${username}`, "Entering username");
-  await setTimeout(100);
+    // <input class="u-full-width" required="" type="text" name="username" placeholder="Enter any user/subject" autofocus="on">
+    await loggedFill('input[name="username"]', `${testAuthUsername}`, "Entering username");
+    await setTimeout(100);
 
-  // <textarea class="u-full-width claims" name="claims" rows="15" placeholder="Optional claims JSON" autofocus="on"></textarea>
-  // { "email": "user@example.com" }
-  const identityToken = {
-    email: `${username}@example.com`,
-  };
-  await loggedFill('textarea[name="claims"]', JSON.stringify(identityToken), "Entering identity claims");
-  await setTimeout(100);
-  await page.screenshot({
-    path: `target/behaviour-test-results/submitVat-screenshots/050-auth-form-filled-${timestamp}.png`,
-  });
+    // <textarea class="u-full-width claims" name="claims" rows="15" placeholder="Optional claims JSON" autofocus="on"></textarea>
+    // { "email": "user@example.com" }
+    const identityToken = {
+      email: `${testAuthUsername}@example.com`,
+    };
+    await loggedFill('textarea[name="claims"]', JSON.stringify(identityToken), "Entering identity claims");
+    await setTimeout(100);
+    await page.screenshot({
+      path: `target/behaviour-test-results/submitVat-screenshots/050-mock-auth-form-filled-${timestamp}.png`,
+    });
 
-  // Home page has logged in user email
-  // <input class="button-primary" type="submit" value="Sign-in">
-  await loggedClick('input[type="submit"][value="Sign-in"]', "Submitting sign-in form");
-  await page.waitForLoadState("networkidle");
-  await setTimeout(500);
-  await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/060-signed-in-${timestamp}.png` });
+    // Home page has logged in user email
+    // <input class="button-primary" type="submit" value="Sign-in">
+    await loggedClick('input[type="submit"][value="Sign-in"]', "Submitting sign-in form");
+    await page.waitForLoadState("networkidle");
+    await setTimeout(500);
+    await page.screenshot({
+      path: `target/behaviour-test-results/submitVat-screenshots/060-mock-signed-in-${timestamp}.png`,
+    });
+  } else if (testAuthProvider === "cognito") {
+    await expect(page.getByText("Continue with Google via Amazon Cognito")).toBeVisible();
+    await loggedClick(
+      "button:has-text('Continue with Google via Amazon Cognito')",
+      "Continue with Google via Amazon Cognito",
+    );
+    await page.waitForLoadState("networkidle");
+    await setTimeout(2500);
+    await page.screenshot({
+      path: `target/behaviour-test-results/submitVat-screenshots/040-cognito-provider-auth-${timestamp}.png`,
+    });
 
-  // Home page has logged in user email
+    // Make cognito selection
+    const cognitoBtn = page.getByRole("button", { name: "cognito" });
+    // const cognitoBtn = page.locator(
+    //  'input[type="button"][value="cognito"][aria-label="cognito"].idpButton-customizable',
+    // );
+    await expect(cognitoBtn).toBeVisible({ timeout: 10000 });
+    await cognitoBtn.click();
+    await page.waitForLoadState("networkidle");
+    await setTimeout(500);
+    await page.screenshot({
+      path: `target/behaviour-test-results/submitVat-screenshots/045-cognito-button-${timestamp}.png`,
+    });
+
+    // Ensure we are at the login page
+    await page.getByRole("heading", { name: "OIDC - Direct Login" }).waitFor();
+    // await page.getByLabel("Username").fill(testAuthUsername);
+    // await page.getByLabel("Password").fill(testAuthPassword);
+    await setTimeout(100);
+    await page.screenshot({
+      path: `target/behaviour-test-results/submitVat-screenshots/050-cognito-auth-form-empty-${timestamp}.png`,
+    });
+
+    // Fill in some login details
+    await page.getByRole("button", { name: "Fill Form" }).click();
+    await page.waitForLoadState("networkidle");
+    await setTimeout(500);
+    await page.screenshot({
+      path: `target/behaviour-test-results/submitVat-screenshots/055-cognito-auth-form-filled-${timestamp}.png`,
+    });
+
+    // Home page has logged in user email
+    await page.getByRole("button", { name: "Sign in" }).click();
+    await page.waitForLoadState("networkidle");
+    await setTimeout(500);
+    await page.screenshot({
+      path: `target/behaviour-test-results/submitVat-screenshots/060-cognito-signed-in-${timestamp}.png`,
+    });
+  }
+
+  // Page has logged in user email
   console.log("Checking home page...");
   await page.waitForLoadState("networkidle");
   await setTimeout(500);
   await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/070-home-${timestamp}.png` });
-  await expect(page.locator(".login-status")).toContainText("user@example.com");
+  await expect(page.getByText("Logged in as")).toBeVisible({ timeout: 15000 });
 
   // Add bundle
   await expect(page.getByText("Add Bundle")).toBeVisible();
@@ -311,8 +374,8 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   await page.waitForLoadState("networkidle");
   await setTimeout(1500);
   await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/075-bundles-${timestamp}.png` });
-  // TODO: Reinstate when we are generating unique new test users.
-  // await expect(page.getByText("Bundle Added")).toBeVisible();
+
+  await expect(page.getByText("Bundle Added")).toBeVisible();
   await expect(page.getByText("Back to Home")).toBeVisible();
   await loggedClick("button:has-text('Back to Home')", "Back to Home");
   await page.waitForLoadState("networkidle");

@@ -8,21 +8,16 @@ import java.util.Arrays;
 
 public class LogS3ObjectEvent implements RequestHandler<S3Event, Void> {
 
-  public S3 s3 = new S3();
+    public S3 s3 = new S3();
 
-  @Override
-  public Void handleRequest(S3Event s3event, Context context) {
-    s3event
-        .getRecords()
-        .forEach(
-            record -> {
-              var content = s3.getObjectContentAsString(record.getS3());
-              Arrays.stream(content.split("\n"))
-                  .forEach(
-                      line -> {
-                        context.getLogger().log(line);
-                      });
+    @Override
+    public Void handleRequest(S3Event s3event, Context context) {
+        s3event.getRecords().forEach(record -> {
+            var content = s3.getObjectContentAsString(record.getS3());
+            Arrays.stream(content.split("\n")).forEach(line -> {
+                context.getLogger().log(line);
             });
-    return null;
-  }
+        });
+        return null;
+    }
 }

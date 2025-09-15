@@ -1,5 +1,14 @@
 /* eslint-env browser */
 (function () {
+  function pickDisplayName(user) {
+    const candidates = ["given_name", "name", "email", "sub"];
+    for (const key of candidates) {
+      if (user[key]) {
+        return user[key];
+      }
+    }
+    return "Unidentified User";
+  }
   // Update login status display
   function updateLoginStatus() {
     const userInfo = localStorage.getItem("userInfo");
@@ -12,7 +21,7 @@
 
     if (userInfo) {
       const user = JSON.parse(userInfo);
-      const userLabel = user.email ? user.email : user.sub;
+      const userLabel = pickDisplayName(user);
       console.log("User info:", user);
       console.log("User label:", userLabel);
       loginStatusElement.textContent = `Logged in as ${userLabel}`;

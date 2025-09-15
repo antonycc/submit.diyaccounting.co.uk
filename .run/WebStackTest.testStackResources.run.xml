@@ -3,7 +3,7 @@
     <module name="web" />
     <extension name="coverage">
       <pattern>
-        <option name="PATTERN" value="co.uk.diyaccounting.submit.awssdk.*" />
+        <option name="PATTERN" value="co.uk.diyaccounting.submit.stacks.*" />
         <option name="ENABLED" value="true" />
       </pattern>
     </extension>
@@ -17,8 +17,8 @@
         <ENTRY IS_ENABLED="true" PARSER="runconfig" IS_EXECUTABLE="false" />
       </ENTRIES>
     </extension>
-    <option name="PACKAGE_NAME" value="co.uk.diyaccounting.submit.awssdk" />
-    <option name="MAIN_CLASS_NAME" value="co.uk.diyaccounting.submit.awssdk.WebStackTest" />
+    <option name="PACKAGE_NAME" value="co.uk.diyaccounting.submit.stacks" />
+    <option name="MAIN_CLASS_NAME" value="co.uk.diyaccounting.submit.stacks.WebStackTest" />
     <option name="METHOD_NAME" value="testStackResources" />
     <option name="TEST_OBJECT" value="method" />
     <method v="2">

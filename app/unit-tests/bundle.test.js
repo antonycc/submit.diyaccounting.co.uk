@@ -30,7 +30,7 @@ function buildEvent(token, body) {
   };
 }
 
-describe("bundle.js httpPost (MOCK mode)", () => {
+describe("bundle.js httpPostMock (MOCK mode)", () => {
   const originalEnv = process.env;
 
   beforeEach(() => {

@@ -6,4 +6,4 @@ FROM ${BASE_IMAGE_TAG}
 # The app/ directory is also already copied in the base image
 
 # Set the specific handler for this Lambda
-CMD ["app/functions/bundle.httpPost"]
+CMD ["app/functions/bundle.httpPostMock"]

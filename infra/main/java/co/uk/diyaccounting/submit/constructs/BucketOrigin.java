@@ -16,179 +16,179 @@ import software.constructs.Construct;
 
 public class BucketOrigin {
 
-  private static final Logger logger = LogManager.getLogger(BucketOrigin.class);
+    private static final Logger logger = LogManager.getLogger(BucketOrigin.class);
 
-  public final IBucket originBucket;
-  public final IBucket originAccessLogBucket;
-  public final OriginAccessIdentity originIdentity;
-  public final IOrigin origin;
+    public final IBucket originBucket;
+    public final IBucket originAccessLogBucket;
+    public final OriginAccessIdentity originIdentity;
+    public final IOrigin origin;
 
-  private BucketOrigin(Builder builder) {
-    // Create access log bucket using LogForwardingBucket only when creating a new bucket
-    if (builder.useExistingBucket) {
-      this.originBucket = Bucket.fromBucketName(builder.scope, "OriginBucket", builder.bucketName);
-      this.originAccessLogBucket = null;
-    } else {
-      this.originAccessLogBucket =
-          LogForwardingBucket.Builder.create(
-                  builder.scope,
-                  "OriginAccess",
-                  builder.logS3ObjectEventHandlerSource,
-                  LogS3ObjectEvent.class)
-              .bucketName(builder.originAccessLogBucketName)
-              .functionNamePrefix(builder.functionNamePrefix)
-              .retentionPeriodDays(builder.accessLogGroupRetentionPeriodDays)
-              .verboseLogging(builder.verboseLogging)
-              .build();
+    private BucketOrigin(Builder builder) {
+        // Create access log bucket using LogForwardingBucket only when creating a new bucket
+        if (builder.useExistingBucket) {
+            this.originBucket = Bucket.fromBucketName(builder.scope, "OriginBucket", builder.bucketName);
+            this.originAccessLogBucket = null;
+        } else {
+            this.originAccessLogBucket = LogForwardingBucket.Builder.create(
+                            builder.scope,
+                            "OriginAccess",
+                            builder.logS3ObjectEventHandlerSource,
+                            LogS3ObjectEvent.class)
+                    .bucketName(builder.originAccessLogBucketName)
+                    .functionNamePrefix(builder.functionNamePrefix)
+                    .retentionPeriodDays(builder.accessLogGroupRetentionPeriodDays)
+                    .verboseLogging(builder.verboseLogging)
+                    .build();
 
-      // Create the origin bucket
-      this.originBucket =
-          Bucket.Builder.create(builder.scope, "OriginBucket")
-              .bucketName(builder.bucketName)
-              .versioned(builder.versioned)
-              .blockPublicAccess(builder.blockPublicAccess)
-              .encryption(builder.encryption)
-              .removalPolicy(builder.retainBucket ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY)
-              .autoDeleteObjects(!builder.retainBucket)
-              .serverAccessLogsBucket(this.originAccessLogBucket)
-              .build();
+            // Create the origin bucket
+            this.originBucket = Bucket.Builder.create(builder.scope, "OriginBucket")
+                    .bucketName(builder.bucketName)
+                    .versioned(builder.versioned)
+                    .blockPublicAccess(builder.blockPublicAccess)
+                    .encryption(builder.encryption)
+                    .removalPolicy(builder.retainBucket ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY)
+                    .autoDeleteObjects(!builder.retainBucket)
+                    .serverAccessLogsBucket(this.originAccessLogBucket)
+                    .build();
+        }
+
+        // Create origin access identity
+        this.originIdentity = OriginAccessIdentity.Builder.create(builder.scope, "OriginAccessIdentity")
+                .comment("Identity created for access to the web website bucket via the CloudFront" + " distribution")
+                .build();
+
+        // Grant read access to the origin identity
+        originBucket.grantRead(this.originIdentity);
+
+        // Create the S3 bucket origin
+        this.origin = S3BucketOrigin.withOriginAccessIdentity(
+                this.originBucket,
+                S3BucketOriginWithOAIProps.builder()
+                        .originAccessIdentity(this.originIdentity)
+                        .build());
+
+        logger.info("Created BucketOrigin with bucket: {}", this.originBucket.getBucketName());
     }
 
-    // Create origin access identity
-    this.originIdentity =
-        OriginAccessIdentity.Builder.create(builder.scope, "OriginAccessIdentity")
-            .comment(
-                "Identity created for access to the web website bucket via the CloudFront"
-                    + " distribution")
-            .build();
-
-    // Grant read access to the origin identity
-    originBucket.grantRead(this.originIdentity);
-
-    // Create the S3 bucket origin
-    this.origin =
-        S3BucketOrigin.withOriginAccessIdentity(
-            this.originBucket,
-            S3BucketOriginWithOAIProps.builder().originAccessIdentity(this.originIdentity).build());
-
-    logger.info("Created BucketOrigin with bucket: {}", this.originBucket.getBucketName());
-  }
-
-  // Static helper methods from WebStack
-  public static String buildOriginAccessLogBucketName(String dashedDomainName) {
-    return "%s-origin-access-logs".formatted(dashedDomainName);
-  }
-
-  public static String buildDistributionAccessLogBucketName(String dashedDomainName) {
-    return "%s-dist-access-logs".formatted(dashedDomainName);
-  }
-
-  private static String buildBucketName(String dashedDomainName, String bucketName) {
-    return "%s-%s".formatted(dashedDomainName, bucketName);
-  }
-
-  public static class Builder {
-    private final Construct scope;
-    private final String idPrefix;
-    private String bucketName = null;
-    private String originAccessLogBucketName = null;
-    private String functionNamePrefix = null;
-    private String logS3ObjectEventHandlerSource = null;
-    private int accessLogGroupRetentionPeriodDays = 30;
-    private boolean retainBucket = false;
-    private boolean useExistingBucket = false;
-
-    private boolean versioned = false;
-    private BlockPublicAccess blockPublicAccess = BlockPublicAccess.BLOCK_ALL;
-    private BucketEncryption encryption = BucketEncryption.S3_MANAGED;
-
-    private boolean verboseLogging = false;
-    private boolean cloudTrailEnabled = false;
-    private boolean xRayEnabled = false;
-
-    private Builder(final Construct scope, final String idPrefix) {
-      this.scope = scope;
-      this.idPrefix = idPrefix;
+    // Static helper methods from WebStack
+    public static String buildOriginAccessLogBucketName(String dashedDomainName) {
+        return "%s-origin-access-logs".formatted(dashedDomainName);
     }
 
-    public static Builder create(final Construct scope, final String idPrefix) {
-      return new Builder(scope, idPrefix);
+    public static String buildDistributionAccessLogBucketName(String dashedDomainName) {
+        return "%s-dist-access-logs".formatted(dashedDomainName);
     }
 
-    public Builder bucketName(String bucketName) {
-      this.bucketName = bucketName;
-      return this;
+    private static String buildBucketName(String dashedDomainName, String bucketName) {
+        return "%s-%s".formatted(dashedDomainName, bucketName);
     }
 
-    public Builder originAccessLogBucketName(String originAccessLogBucketName) {
-      this.originAccessLogBucketName = originAccessLogBucketName;
-      return this;
-    }
+    public static class Builder {
+        private final Construct scope;
+        private final String idPrefix;
+        private String bucketName = null;
+        private String originAccessLogBucketName = null;
+        private String functionNamePrefix = null;
+        private String logS3ObjectEventHandlerSource = null;
+        private int accessLogGroupRetentionPeriodDays = 30;
+        private boolean retainBucket = false;
+        private boolean useExistingBucket = false;
 
-    public Builder functionNamePrefix(String functionNamePrefix) {
-      this.functionNamePrefix = functionNamePrefix;
-      return this;
-    }
+        private boolean versioned = false;
+        private BlockPublicAccess blockPublicAccess = BlockPublicAccess.BLOCK_ALL;
+        private BucketEncryption encryption = BucketEncryption.S3_MANAGED;
 
-    public Builder logS3ObjectEventHandlerSource(String logS3ObjectEventHandlerSource) {
-      this.logS3ObjectEventHandlerSource = logS3ObjectEventHandlerSource;
-      return this;
-    }
+        private boolean verboseLogging = false;
+        private boolean cloudTrailEnabled = false;
+        private boolean xRayEnabled = false;
 
-    public Builder accessLogGroupRetentionPeriodDays(int accessLogGroupRetentionPeriodDays) {
-      this.accessLogGroupRetentionPeriodDays = accessLogGroupRetentionPeriodDays;
-      return this;
-    }
+        private Builder(final Construct scope, final String idPrefix) {
+            this.scope = scope;
+            this.idPrefix = idPrefix;
+        }
 
-    public Builder retainBucket(boolean retainBucket) {
-      this.retainBucket = retainBucket;
-      return this;
-    }
+        public static Builder create(final Construct scope, final String idPrefix) {
+            return new Builder(scope, idPrefix);
+        }
 
-    public Builder useExistingBucket(boolean useExistingBucket) {
-      this.useExistingBucket = useExistingBucket;
-      return this;
-    }
+        public Builder bucketName(String bucketName) {
+            this.bucketName = bucketName;
+            return this;
+        }
 
-    public Builder versioned(boolean versioned) {
-      this.versioned = versioned;
-      return this;
-    }
+        public Builder originAccessLogBucketName(String originAccessLogBucketName) {
+            this.originAccessLogBucketName = originAccessLogBucketName;
+            return this;
+        }
 
-    public Builder blockPublicAccess(BlockPublicAccess blockPublicAccess) {
-      this.blockPublicAccess = blockPublicAccess;
-      return this;
-    }
+        public Builder functionNamePrefix(String functionNamePrefix) {
+            this.functionNamePrefix = functionNamePrefix;
+            return this;
+        }
 
-    public Builder encryption(BucketEncryption encryption) {
-      this.encryption = encryption;
-      return this;
-    }
+        public Builder logS3ObjectEventHandlerSource(String logS3ObjectEventHandlerSource) {
+            this.logS3ObjectEventHandlerSource = logS3ObjectEventHandlerSource;
+            return this;
+        }
 
-    public Builder verboseLogging(boolean verboseLogging) {
-      this.verboseLogging = verboseLogging;
-      return this;
-    }
+        public Builder accessLogGroupRetentionPeriodDays(int accessLogGroupRetentionPeriodDays) {
+            this.accessLogGroupRetentionPeriodDays = accessLogGroupRetentionPeriodDays;
+            return this;
+        }
 
-    public BucketOrigin build() {
-      if (bucketName == null || bucketName.isBlank()) {
-        throw new IllegalArgumentException("bucketName is required");
-      }
-      // if (!useExistingBucket) {
-      // if (originAccessLogBucketName == null || originAccessLogBucketName.isBlank()) {
-      //    throw new IllegalArgumentException("originAccessLogBucketName is required when creating
-      // a new bucket");
-      // }
-      // if (functionNamePrefix == null || functionNamePrefix.isBlank()) {
-      //    throw new IllegalArgumentException("functionNamePrefix is required when creating a new
-      // bucket");
-      // }
-      // if (logS3ObjectEventHandlerSource == null || logS3ObjectEventHandlerSource.isBlank()) {
-      //    throw new IllegalArgumentException("logS3ObjectEventHandlerSource is required when
-      // creating a new bucket");
-      // }
-      // }
-      return new BucketOrigin(this);
+        public Builder retainBucket(boolean retainBucket) {
+            this.retainBucket = retainBucket;
+            return this;
+        }
+
+        public Builder useExistingBucket(boolean useExistingBucket) {
+            this.useExistingBucket = useExistingBucket;
+            return this;
+        }
+
+        public Builder versioned(boolean versioned) {
+            this.versioned = versioned;
+            return this;
+        }
+
+        public Builder blockPublicAccess(BlockPublicAccess blockPublicAccess) {
+            this.blockPublicAccess = blockPublicAccess;
+            return this;
+        }
+
+        public Builder encryption(BucketEncryption encryption) {
+            this.encryption = encryption;
+            return this;
+        }
+
+        public Builder verboseLogging(boolean verboseLogging) {
+            this.verboseLogging = verboseLogging;
+            return this;
+        }
+
+        public BucketOrigin build() {
+            if (bucketName == null || bucketName.isBlank()) {
+                throw new IllegalArgumentException("bucketName is required");
+            }
+            return new BucketOrigin(this);
+        }
+
+        public Builder props(BucketOriginProps props) {
+            if (props == null) return this;
+            this.bucketName = props.bucketName;
+            this.originAccessLogBucketName = props.originAccessLogBucketName;
+            this.functionNamePrefix = props.functionNamePrefix;
+            this.logS3ObjectEventHandlerSource = props.logS3ObjectEventHandlerSource;
+            this.accessLogGroupRetentionPeriodDays = props.accessLogGroupRetentionPeriodDays;
+            this.retainBucket = props.retainBucket;
+            this.useExistingBucket = props.useExistingBucket;
+            this.versioned = props.versioned;
+            this.blockPublicAccess = props.blockPublicAccess;
+            this.encryption = props.encryption;
+            this.verboseLogging = props.verboseLogging;
+            this.cloudTrailEnabled = props.cloudTrailEnabled;
+            this.xRayEnabled = props.xRayEnabled;
+            return this;
+        }
     }
-  }
 }
