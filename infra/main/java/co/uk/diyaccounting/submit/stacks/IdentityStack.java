@@ -29,10 +29,11 @@ import software.amazon.awscdk.services.cognito.UserPoolDomain;
 import software.amazon.awscdk.services.cognito.UserPoolIdentityProviderGoogle;
 import software.amazon.awscdk.services.route53.ARecord;
 import software.amazon.awscdk.services.route53.AaaaRecord;
+import software.amazon.awscdk.services.route53.AliasRecordTargetConfig;
 import software.amazon.awscdk.services.route53.HostedZone;
 import software.amazon.awscdk.services.route53.HostedZoneAttributes;
+import software.amazon.awscdk.services.route53.IAliasRecordTarget;
 import software.amazon.awscdk.services.route53.RecordTarget;
-import software.amazon.awscdk.services.route53.targets.UserPoolDomainTarget;
 import software.amazon.awscdk.services.secretsmanager.ISecret;
 import software.amazon.awscdk.services.secretsmanager.Secret;
 import software.constructs.Construct;
@@ -480,7 +481,23 @@ public class IdentityStack extends Stack {
                 .zone(hostedZone)
                 .recordName(cognitoDomainName)
                 .deleteExisting(true)
-                .target(RecordTarget.fromAlias(new UserPoolDomainTarget(this.userPoolDomain)))
+                .target(RecordTarget.fromAlias(new IAliasRecordTarget() {
+                    @Override
+                    public AliasRecordTargetConfig bind(
+                            software.amazon.awscdk.services.route53.IRecordSet record,
+                            software.amazon.awscdk.services.route53.IHostedZone zone) {
+                        return AliasRecordTargetConfig.builder()
+                                .dnsName(userPoolDomain.getCloudFrontEndpoint())
+                                // CloudFront hosted zone ID is a well-known constant
+                                .hostedZoneId("Z2FDTNDATAQYW2")
+                                .build();
+                    }
+
+                    @Override
+                    public AliasRecordTargetConfig bind(software.amazon.awscdk.services.route53.IRecordSet record) {
+                        return bind(record, null);
+                    }
+                }))
                 .build();
         // this.userPoolDomainARecord.getNode().addDependency(this.aRecord);
         this.userPoolDomainAaaaRecord = AaaaRecord.Builder.create(
@@ -488,7 +505,23 @@ public class IdentityStack extends Stack {
                 .zone(hostedZone)
                 .recordName(cognitoDomainName)
                 .deleteExisting(true)
-                .target(RecordTarget.fromAlias(new UserPoolDomainTarget(this.userPoolDomain)))
+                .target(RecordTarget.fromAlias(new IAliasRecordTarget() {
+                    @Override
+                    public AliasRecordTargetConfig bind(
+                            software.amazon.awscdk.services.route53.IRecordSet record,
+                            software.amazon.awscdk.services.route53.IHostedZone zone) {
+                        return AliasRecordTargetConfig.builder()
+                                .dnsName(userPoolDomain.getCloudFrontEndpoint())
+                                // CloudFront hosted zone ID is a well-known constant
+                                .hostedZoneId("Z2FDTNDATAQYW2")
+                                .build();
+                    }
+
+                    @Override
+                    public AliasRecordTargetConfig bind(software.amazon.awscdk.services.route53.IRecordSet record) {
+                        return bind(record, null);
+                    }
+                }))
                 .build();
         // this.userPoolDomainAaaaRecord.getNode().addDependency(this.aaaaRecord);
 
