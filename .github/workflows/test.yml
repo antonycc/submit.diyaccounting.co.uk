@@ -60,7 +60,7 @@ on:
               - prod
             type: choice
   schedule:
-    - cron: '23 * * * *'
+    - cron: '23 04 * * *'
 
 env:
   environment: ${{ inputs.environment || 'proxy' }}
