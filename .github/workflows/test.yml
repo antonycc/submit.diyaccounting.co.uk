@@ -77,7 +77,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: 'npm'
@@ -85,6 +85,8 @@ jobs:
       - run: npm ci || npm install
 
       - run: source .env.${{ env.environment }} && npm test
+        env:
+          DIY_SUBMIT_HMRC_CLIENT_SECRET: test
 
   npm-unit-test:
     name: 'npm unit test with coverage'
@@ -95,7 +97,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: 'npm'
@@ -103,6 +105,8 @@ jobs:
       - run: npm ci || npm install
 
       - run: source .env.${{ env.environment }} && npm run test:coverage
+        env:
+          DIY_SUBMIT_HMRC_CLIENT_SECRET: test
 
       - name: Upload coverage reports
         uses: actions/upload-artifact@v4
@@ -121,7 +125,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: 'npm'
@@ -139,7 +143,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: 'npm'
@@ -163,7 +167,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: 'npm'
@@ -181,7 +185,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: 'npm'
@@ -225,7 +229,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: 'npm'
@@ -254,7 +258,7 @@ jobs:
       - run: npx playwright install chromium --with-deps
 
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: arn:aws:iam::887764105431:role/submit-github-actions-role
           role-chaining: false
@@ -267,7 +271,7 @@ jobs:
       - run: aws sts get-caller-identity --region eu-west-2
 
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: arn:aws:iam::887764105431:role/submit-deployment-role
           role-chaining: true
@@ -344,11 +348,13 @@ jobs:
         env:
           DIY_SUBMIT_TEST_AUTH_USERNAME: ${{ steps.uuid.outputs.TEST_USERNAME }}
           DIY_SUBMIT_TEST_AUTH_PASSWORD: ${{ steps.uuid.outputs.TEST_PASSWORD }}
+          DIY_SUBMIT_HMRC_CLIENT_SECRET: ${{ secrets.DIY_SUBMIT_HMRC_CLIENT_SECRET }}
       - run: cp '.env.${{ env.environment }}' '.env.proxy' ; npx dotenv -e '.env.${{ env.environment }}' -- npm run test:behaviour
         if: env.environment != 'proxy'
         env:
           DIY_SUBMIT_TEST_AUTH_USERNAME: ${{ steps.uuid.outputs.TEST_USERNAME }}
           DIY_SUBMIT_TEST_AUTH_PASSWORD: ${{ steps.uuid.outputs.TEST_PASSWORD }}
+          DIY_SUBMIT_HMRC_CLIENT_SECRET: ${{ secrets.DIY_SUBMIT_HMRC_CLIENT_SECRET }}
 
       - name: Convert Playwright video to MP4
         if: ${{ !cancelled() }}
@@ -417,7 +423,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: 17
@@ -443,14 +449,14 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: 'npm'
 
       - run: npm ci
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: 17
