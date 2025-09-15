@@ -300,16 +300,55 @@ jobs:
             exit 1
           fi
 
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: arn:aws:iam::887764105431:role/submit-github-actions-role
+          role-chaining: false
+          aws-region: eu-west-2
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume user provisioning role
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: arn:aws:iam::403027849202:role/oidc-external-user-provisioning-role
+          role-chaining: true
+          aws-region: us-east-1
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Create test username and a test password
+        id: uuid
+        run: |
+          TEST_USERNAME=$(uuidgen | tr '[:upper:]' '[:lower:]')
+          TEST_PASSWORD=$(uuidgen | tr '[:upper:]' '[:lower:]')
+          echo "TEST_USERNAME=${TEST_USERNAME?}"
+          echo "TEST_PASSWORD=${TEST_PASSWORD?}"
+          echo "TEST_USERNAME=${TEST_USERNAME?}" >> "$GITHUB_OUTPUT"
+          echo "TEST_PASSWORD=${TEST_PASSWORD?}" >> "$GITHUB_OUTPUT"
+
+      - name: Provision test user
+        run: |
+          npm run users:provision 'oidc-antonycc-com-prod-users' "${TEST_USERNAME?}" "${TEST_PASSWORD?}"
+        env:
+          TEST_USERNAME: ${{ steps.uuid.outputs.TEST_USERNAME }}
+          TEST_PASSWORD: ${{ steps.uuid.outputs.TEST_PASSWORD }}
+
       - run: npx dotenv -e '.env.${{ env.environment }}' -- npm run test:behaviour
         if: env.environment == 'proxy'
         env:
-          DIY_SUBMIT_HMRC_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
-          DIY_SUBMIT_GOOGLE_CLIENT_SECRET: ${{ secrets.DIY_SUBMIT_GOOGLE_CLIENT_SECRET }}
+          DIY_SUBMIT_TEST_AUTH_USERNAME: ${{ steps.uuid.outputs.TEST_USERNAME }}
+          DIY_SUBMIT_TEST_AUTH_PASSWORD: ${{ steps.uuid.outputs.TEST_PASSWORD }}
       - run: cp '.env.${{ env.environment }}' '.env.proxy' ; npx dotenv -e '.env.${{ env.environment }}' -- npm run test:behaviour
         if: env.environment != 'proxy'
         env:
-          DIY_SUBMIT_HMRC_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
-          DIY_SUBMIT_GOOGLE_CLIENT_SECRET: ${{ secrets.DIY_SUBMIT_GOOGLE_CLIENT_SECRET }}
+          DIY_SUBMIT_TEST_AUTH_USERNAME: ${{ steps.uuid.outputs.TEST_USERNAME }}
+          DIY_SUBMIT_TEST_AUTH_PASSWORD: ${{ steps.uuid.outputs.TEST_PASSWORD }}
 
       - name: Convert Playwright video to MP4
         if: ${{ !cancelled() }}
