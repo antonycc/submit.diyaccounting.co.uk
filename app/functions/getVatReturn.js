@@ -40,7 +40,7 @@ export async function httpGet(event) {
   }
 
   // Validate periodKey format
-  if (periodKey && !/^[A-Z0-9#]{3,5}$/.test(periodKey)) {
+  if (periodKey && !/^[A-Z0-9#]{3,5}$/i.test(periodKey)) {
     errorMessages.push("Invalid periodKey format");
   }
 
