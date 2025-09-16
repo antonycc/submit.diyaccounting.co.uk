@@ -368,7 +368,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   await page.screenshot({
     path: `target/behaviour-test-results/submitVat-screenshots/071-hamburger-menu-${timestamp}.png`,
   });
-  await expect(page.getByText("Bundles")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Bundles" })).toBeVisible();
   await loggedClick("a:has-text('Bundles')", "Clicking Bundles in hamburger menu");
   await page.waitForLoadState("networkidle");
   await setTimeout(500);
