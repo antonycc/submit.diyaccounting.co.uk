@@ -15,6 +15,11 @@ import { httpPost as requestBundleHttpPost, httpDelete as removeBundleHttpDelete
 import { httpGet as getCatalogHttpGet } from "../functions/getCatalog.js";
 import { httpGet as myBundlesHttpGet } from "../functions/myBundles.js";
 import { httpGet as myReceiptsHttpGet, httpGetByName as myReceiptHttpGetByName } from "../functions/myReceipts.js";
+import { httpGet as getVatObligationsHttpGet } from "../functions/getVatObligations.js";
+import { httpGet as getVatReturnHttpGet } from "../functions/getVatReturn.js";
+import { httpGet as getVatLiabilitiesHttpGet } from "../functions/getVatLiabilities.js";
+import { httpGet as getVatPaymentsHttpGet } from "../functions/getVatPayments.js";
+import { httpGet as getVatPenaltiesHttpGet } from "../functions/getVatPenalties.js";
 import logger from "../lib/logger.js";
 import { requireActivity } from "../lib/entitlementsService.js";
 
@@ -270,6 +275,114 @@ app.get(`${myReceiptsPath}/:name`, async (req, res) => {
   try {
     // For GET receipt by name, response body is already JSON string of the receipt
     res.status(statusCode).send(body || "{}");
+  } catch (_e) {
+    res.status(statusCode).send(body || "");
+  }
+});
+
+// VAT API endpoints
+const vatObligationsPath = "/api/vat/obligations";
+const vatReturnPath = "/api/vat/returns";
+const vatLiabilitiesPath = "/api/vat/liabilities";
+const vatPaymentsPath = "/api/vat/payments";
+const vatPenaltiesPath = "/api/vat/penalties";
+
+// VAT Obligations endpoint
+app.get(vatObligationsPath, requireActivity("vat-obligations"), async (req, res) => {
+  const event = {
+    path: req.path,
+    headers: {
+      host: req.get("host") || "localhost:3000",
+      authorization: req.headers.authorization,
+      ...req.headers,
+    },
+    queryStringParameters: req.query || {},
+  };
+  const { statusCode, body, headers } = await getVatObligationsHttpGet(event);
+  if (headers) res.set(headers);
+  try {
+    res.status(statusCode).json(body ? JSON.parse(body) : {});
+  } catch (_e) {
+    res.status(statusCode).send(body || "");
+  }
+});
+
+// VAT Return endpoint (view submitted return)
+app.get(`${vatReturnPath}/:periodKey`, requireActivity("vat-obligations"), async (req, res) => {
+  const event = {
+    path: req.path,
+    headers: {
+      host: req.get("host") || "localhost:3000",
+      authorization: req.headers.authorization,
+      ...req.headers,
+    },
+    pathParameters: { periodKey: req.params.periodKey },
+    queryStringParameters: req.query || {},
+  };
+  const { statusCode, body, headers } = await getVatReturnHttpGet(event);
+  if (headers) res.set(headers);
+  try {
+    res.status(statusCode).json(body ? JSON.parse(body) : {});
+  } catch (_e) {
+    res.status(statusCode).send(body || "");
+  }
+});
+
+// VAT Liabilities endpoint
+app.get(vatLiabilitiesPath, requireActivity("vat-obligations"), async (req, res) => {
+  const event = {
+    path: req.path,
+    headers: {
+      host: req.get("host") || "localhost:3000",
+      authorization: req.headers.authorization,
+      ...req.headers,
+    },
+    queryStringParameters: req.query || {},
+  };
+  const { statusCode, body, headers } = await getVatLiabilitiesHttpGet(event);
+  if (headers) res.set(headers);
+  try {
+    res.status(statusCode).json(body ? JSON.parse(body) : {});
+  } catch (_e) {
+    res.status(statusCode).send(body || "");
+  }
+});
+
+// VAT Payments endpoint
+app.get(vatPaymentsPath, requireActivity("vat-obligations"), async (req, res) => {
+  const event = {
+    path: req.path,
+    headers: {
+      host: req.get("host") || "localhost:3000",
+      authorization: req.headers.authorization,
+      ...req.headers,
+    },
+    queryStringParameters: req.query || {},
+  };
+  const { statusCode, body, headers } = await getVatPaymentsHttpGet(event);
+  if (headers) res.set(headers);
+  try {
+    res.status(statusCode).json(body ? JSON.parse(body) : {});
+  } catch (_e) {
+    res.status(statusCode).send(body || "");
+  }
+});
+
+// VAT Penalties endpoint
+app.get(vatPenaltiesPath, requireActivity("vat-obligations"), async (req, res) => {
+  const event = {
+    path: req.path,
+    headers: {
+      host: req.get("host") || "localhost:3000",
+      authorization: req.headers.authorization,
+      ...req.headers,
+    },
+    queryStringParameters: req.query || {},
+  };
+  const { statusCode, body, headers } = await getVatPenaltiesHttpGet(event);
+  if (headers) res.set(headers);
+  try {
+    res.status(statusCode).json(body ? JSON.parse(body) : {});
   } catch (_e) {
     res.status(statusCode).send(body || "");
   }
