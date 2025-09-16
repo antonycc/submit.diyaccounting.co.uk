@@ -11,7 +11,7 @@ import { httpGetCognito, httpGetHmrc, httpGetMock } from "../functions/authUrl.j
 import { httpPostMock, httpPostHmrc, httpPostCognito } from "../functions/exchangeToken.js";
 import { httpPost as submitVatHttpPost } from "../functions/submitVat.js";
 import { httpPost as logReceiptHttpPost } from "../functions/logReceipt.js";
-import { httpPost as requestBundleHttpPost } from "../functions/bundle.js";
+import { httpPost as requestBundleHttpPost, httpDelete as removeBundleHttpDelete } from "../functions/bundle.js";
 import { httpGet as getCatalogHttpGet } from "../functions/getCatalog.js";
 import { httpGet as myBundlesHttpGet } from "../functions/myBundles.js";
 import { httpGet as myReceiptsHttpGet, httpGetByName as myReceiptHttpGetByName } from "../functions/myReceipts.js";
@@ -177,7 +177,23 @@ app.post(requestBundlePath, async (req, res) => {
   }
 });
 app.options(requestBundlePath, async (_req, res) => {
-  const { statusCode, body } = await requestBundleHttpPost({ httpMethod: "OPTIONS" });
+  res.set({
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Headers": "Content-Type,Authorization",
+    "Access-Control-Allow-Methods": "POST,DELETE,OPTIONS",
+  });
+  res.status(200).send();
+});
+
+// Bundle removal route
+app.delete(requestBundlePath, async (req, res) => {
+  const event = {
+    path: req.path,
+    headers: { host: req.get("host") || "localhost:3000", authorization: req.headers.authorization },
+    queryStringParameters: req.query || {},
+    body: JSON.stringify(req.body),
+  };
+  const { statusCode, body } = await removeBundleHttpDelete(event);
   try {
     res.status(statusCode).json(body ? JSON.parse(body) : {});
   } catch (_e) {
