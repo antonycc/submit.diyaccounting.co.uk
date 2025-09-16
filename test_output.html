@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test renderActivitiesByBundle</title>
+</head>
+<body>
+    <div id="activitiesByBundle" style="text-align: left; margin: 1.5em auto; max-width: 640px"></div>
+    
+    <script>
+      function parseUserBundles() {
+        try {
+          const raw = localStorage.getItem("userBundles");
+          if (!raw) return [];
+          const arr = JSON.parse(raw);
+          if (!Array.isArray(arr)) return [];
+          return arr;
+        } catch (_e) {
+          return [];
+        }
+      }
+
+      function hasBundle(bundles, id) {
+        return (bundles || []).some((b) => typeof b === "string" && (b === id || b.startsWith(id + "|")));
+      }
+
+      function renderActivitiesByBundle() {
+        const container = document.getElementById("activitiesByBundle");
+        if (!container) return;
+
+        // Keep the bundle summary section for now, but we could make this dynamic too
+        const bundles = parseUserBundles();
+        const sections = [];
+
+        // Default bundle always available
+        sections.push(`
+          <section style="margin-bottom:1em;">
+            <h3 style="margin:0 0 .5em 0;">Default bundle</h3>
+            <ul>
+              <li>VAT Obligations (Production) – available</li>
+              <li>View receipts – available</li>
+            </ul>
+          </section>
+        `);
+
+        if (hasBundle(bundles, "test") || hasBundle(bundles, "HMRC_TEST_API")) {
+          sections.push(`
+            <section style="margin-bottom:1em;">
+              <h3 style="margin:0 0 .5em 0;">Test API bundle</h3>
+              <ul>
+                <li>Submit VAT (Sandbox API) – available</li>
+                <li>VAT Obligations (Sandbox API) – available</li>
+              </ul>
+            </section>
+          `);
+        }
+
+        container.innerHTML = sections.join("");
+        container.style.display = "block"; // Make sure it's visible
+        console.log("renderActivitiesByBundle executed, container content:", container.innerHTML);
+      }
+
+      // Test the function
+      renderActivitiesByBundle();
+      
+      // Test with a test bundle
+      localStorage.setItem("userBundles", JSON.stringify(["test"]));
+      renderActivitiesByBundle();
+    </script>
+</body>
+</html>
