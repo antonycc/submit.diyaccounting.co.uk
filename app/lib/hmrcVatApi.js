@@ -9,7 +9,7 @@ import logger from "./logger.js";
  */
 
 function isSandboxBase(base) {
-  return /test|sandbox/i.test(base || "");
+  return /\b(test|sandbox)\b/i.test(base || "");
 }
 
 /**
