@@ -8,7 +8,7 @@ import { readFileSync } from "fs";
 import dotenv from "dotenv";
 
 import { httpGetHmrc as authUrlHttpGet } from "../functions/authUrl.js";
-import { httpPost as exchangeTokenHttpPost } from "../functions/exchangeToken.js";
+import { httpPostMock as exchangeTokenHttpPost } from "../functions/exchangeToken.js";
 import { httpPost as submitVatHttpPost } from "../functions/submitVat.js";
 import { httpPost as logReceiptHttpPost } from "../functions/logReceipt.js";
 

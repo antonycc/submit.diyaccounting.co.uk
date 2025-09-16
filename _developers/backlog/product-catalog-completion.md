@@ -9,7 +9,7 @@
     - Gaps: Grants are read from an in-memory map (via bundle.js) only; no durable persistence (S3/DynamoDB). No schema-driven qualifier validation. No clock/expiry checks at storage level (only parse/compare upon read from the in-memory list). No support for additional qualifiers beyond the two examples.
 
 - Bundle management
-    - Implemented: POST /api/request-bundle (bundle.httpPost) supporting both legacy (Cognito custom:bundles attribute and env-expiry) and catalog-driven on-request/automatic bundles; qualifier check; cap (only counted in memory); ISO duration parsing; returns expiry; OPTIONS for CORS. GET /api/my-bundles implemented and wired.
+    - Implemented: POST /api/request-bundle (bundle.httpPostMock) supporting both legacy (Cognito custom:bundles attribute and env-expiry) and catalog-driven on-request/automatic bundles; qualifier check; cap (only counted in memory); ISO duration parsing; returns expiry; OPTIONS for CORS. GET /api/my-bundles implemented and wired.
     - Gaps: Durable persistence and consistent cap counting absent; legacy path remains (OK), but migration strategy not codified. No per-user grant listing endpoint beyond active bundles (the backlog mentions grants as {subject,bundleId,qualifiers,expiry}).
 
 - Route guards
@@ -48,7 +48,7 @@
     - putGrant({subject,bundleId,qualifiers,expiry}) with upsert semantics
     - countActiveGrants(bundleId, now) for cap checks
 - Wire entitlementsService.getGrantedBundles to call the store (with a fallback to the in-memory store when DIY_SUBMIT_BUNDLE_MOCK=true for local dev/tests).
-- In bundle.httpPost:
+- In bundle.httpPostMock:
     - For catalog-driven on-request flows, before granting: enforce cap using countActiveGrants(bundleId, now), then persist with putGrant. Return expiry ISO string.
     - For automatic flows, continue to return granted without persistence.
 - Migration strategy for legacy bundles (Cognito custom:bundles):
@@ -63,7 +63,7 @@
 
 #### 4) Qualifiers and schema validation
 - Create product-catalog.qualifiers.schema.json (or reuse parts of product-catalog.schema.json) to validate requestBundle.js request payload per bundle’s qualifiers definition.
-- In bundle.httpPost, build a per-bundle AJV validator for the qualifiers object. Unknown keys → 400 unknown_qualifier (already partially handled); missing required qualifiers or mismatches → 400 qualifier_mismatch with details.
+- In bundle.httpPostMock, build a per-bundle AJV validator for the qualifiers object. Unknown keys → 400 unknown_qualifier (already partially handled); missing required qualifiers or mismatches → 400 qualifier_mismatch with details.
 - Extend qualifiersMatch in entitlementsService to a single source of truth shared with bundle.js (e.g., move to src/lib/qualifiers.js).
 
 #### 5) Cap and expiry semantics
@@ -93,7 +93,7 @@
 - Unit tests
     - getCatalog: ETag 200→304 with If-None-Match/If-Modified-Since; validation on/off paths; malformed TOML handling.
     - entitlementsService: qualifiers permutations; automatic vs on-request; expiry boundary; bundlesForActivity edges.
-    - bundle.httpPost: unknown qualifier → 400; missing required qualifier → 400; cap reached → 403; automatic bundles → granted without persistence; legacy path coverage.
+    - bundle.httpPostMock: unknown qualifier → 400; missing required qualifier → 400; cap reached → 403; automatic bundles → granted without persistence; legacy path coverage.
 - Integration tests
     - requireActivity guarding a set of mock endpoints; verify 403 payload shape; verify allowed when bundle is active.
     - Full flow: request-bundle → my-bundles → activities gating.
@@ -110,7 +110,7 @@
 
 ### Concrete next actions (2–3 PRs)
 1) PR A – Persistence and guards
-    - Add DynamoDB table and CDK wiring; implement entitlementsStore; refactor bundle.httpPost and entitlementsService to use it; migrate legacy bundles on read; extend requireActivity to guard more routes; add unit tests for the store and guards.
+    - Add DynamoDB table and CDK wiring; implement entitlementsStore; refactor bundle.httpPostMock and entitlementsService to use it; migrate legacy bundles on read; extend requireActivity to guard more routes; add unit tests for the store and guards.
 2) PR B – Qualifiers/validation and caps
     - AJV-based qualifiers validation; centralize qualifier logic; improve duration parsing; accurate cap enforcement via GSI; add unit and integration tests.
 3) PR C – Dev UX and tests

@@ -249,7 +249,7 @@ export function withObs<TEvent extends APIGatewayProxyEventV2, TResult>(
 
 Use per handler:
 ```ts
-// app/functions/submitVat.httpPost.ts
+// app/functions/submitVat.httpPostMock.ts
 import { withObs, logger, tracer } from '../lib/obs';
 
 export const handler = withObs(async (event, context) => {

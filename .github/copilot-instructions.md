@@ -24,7 +24,7 @@ npm run test:unit
 # Duration: 4 seconds. NEVER CANCEL: Set timeout to 15+ seconds.
 
 # Integration tests with mocked HTTP services
-npm run test:integration  
+npm run test:integration
 # Duration: 3 seconds. NEVER CANCEL: Set timeout to 15+ seconds.
 
 # System tests with Docker containers (MinIO S3)
@@ -158,7 +158,7 @@ Manual testing should be performed using the **proxy environment**. This require
 - **Problem**: Package requires Node 22+, system has Node 20
 - **Solution**: Always use `npm install --ignore-engines`
 
-### Java Version Issues  
+### Java Version Issues
 - **Problem**: pom.xml specifies Java 21, system has Java 17
 - **Solution**: Use compiler overrides: `-Dmaven.compiler.source=17 -Dmaven.compiler.target=17`
 
@@ -174,7 +174,7 @@ Manual testing should be performed using the **proxy environment**. This require
 - **Problem**: Long-running operations may timeout with default settings
 - **Solution**: Always set appropriate timeouts:
   - Unit/Integration tests: 15+ seconds
-  - System tests: 30+ seconds  
+  - System tests: 30+ seconds
   - Browser tests: 60+ seconds
   - Behavior tests: 120+ seconds
   - Maven builds: 90+ seconds
@@ -209,10 +209,13 @@ Manual testing should be performed using the **proxy environment**. This require
 
 **NEVER CANCEL** any of these operations before the specified timeout:
 - `npm install`: 60 seconds (due to Playwright downloads)
-- `./mvnw clean package`: 90 seconds 
+- `./mvnw clean package`: 90 seconds
 - `npm test`: 15 seconds
 - `npm run test:system`: 30 seconds (includes Docker container startup)
 - `npm run test:browser`: 60 seconds (browser automation)
 - `npm run test:behaviour`: 120 seconds (full end-to-end flows)
 
 Always build and exercise your changes through the test suites and manual validation scenarios before considering the work complete.
+
+> Formatting and style: Respect the repo’s formatting tools — ESLint (flat) + Prettier for JS (ESM) and Spotless (Palantir Java Format) for Java. Use npm run formatting / npm run formatting-fix. See README for details.
+> Do not apply styles changes to code that you are not otherwise changes and prefer to match the existing local style when applying the style guides would be jarring.

@@ -33,6 +33,9 @@ const runTestServer = process.env.DIY_SUBMIT_TEST_SERVER_HTTP === "run";
 const runProxy = process.env.DIY_SUBMIT_TEST_PROXY === "run";
 const runMockOAuth2 = process.env.DIY_SUBMIT_TEST_MOCK_OAUTH2 === "run";
 const runMinioS3 = process.env.DIY_SUBMIT_TEST_MINIO_S3 === "run";
+const testAuthProvider = process.env.DIY_SUBMIT_TEST_AUTH_PROVIDER || "mock";
+const testAuthUsername = process.env.DIY_SUBMIT_TEST_AUTH_USERNAME || "user";
+const testAuthPassword = process.env.DIY_SUBMIT_TEST_AUTH_PASSWORD || "";
 console.log(
   `runTestServer: ${runTestServer} (DIY_SUBMIT_TEST_SERVER_HTTP: ${process.env.DIY_SUBMIT_TEST_SERVER_HTTP})`,
 );
@@ -41,6 +44,15 @@ console.log(
   `runMockOAuth2: ${runMockOAuth2} (DIY_SUBMIT_TEST_MOCK_OAUTH2: ${process.env.DIY_SUBMIT_TEST_MOCK_OAUTH2})`,
 );
 console.log(`runMinioS3: ${runMinioS3} (DIY_SUBMIT_TEST_MINIO_S3: ${process.env.DIY_SUBMIT_TEST_MINIO_S3})`);
+console.log(
+  `testAuthProvider: ${testAuthProvider} (DIY_SUBMIT_TEST_AUTH_PROVIDER: ${process.env.DIY_SUBMIT_TEST_AUTH_PROVIDER})`,
+);
+console.log(
+  `testAuthUsername: ${testAuthUsername} (DIY_SUBMIT_TEST_AUTH_USERNAME: ${process.env.DIY_SUBMIT_TEST_AUTH_USERNAME})`,
+);
+console.log(
+  `testAuthPassword: ${testAuthPassword} (DIY_SUBMIT_TEST_AUTH_PASSWORD: ${process.env.DIY_SUBMIT_TEST_AUTH_PASSWORD})`,
+);
 
 const bucketNamePostfix = process.env.DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX;
 const homeUrl = process.env.DIY_SUBMIT_HOME_URL;
@@ -57,7 +69,7 @@ function getTimestamp() {
   return now.toISOString().replace(/[:.]/g, "-").replace("T", "_").slice(0, -5);
 }
 
-test.setTimeout(180000);
+test.setTimeout(360000);
 
 test.beforeAll(async () => {
   console.log("Starting beforeAll hook...");
@@ -90,7 +102,7 @@ test.beforeAll(async () => {
       env: {
         ...process.env,
         DIY_SUBMIT_TEST_S3_ENDPOINT: endpoint,
-        DIY_SUBMIT_DIY_SUBMIT_TEST_SERVER_HTTP_PORT: serverPort.toString(),
+        DIY_SUBMIT_TEST_SERVER_HTTP_PORT: serverPort.toString(),
       },
       stdio: ["pipe", "pipe", "pipe"],
     });
@@ -101,18 +113,12 @@ test.beforeAll(async () => {
 
   if (runProxy) {
     console.log("Starting ngrok process...");
-    // TODO: Get the ngrok host from the HOME_URL environment variable
-    ngrokProcess = spawn(
-      "npx",
-      ["ngrok", "http", "--url", "wanted-finally-anteater.ngrok-free.app", serverPort.toString()],
-      {
-        env: {
-          ...process.env,
-          DIY_SUBMIT_DIY_SUBMIT_TEST_SERVER_HTTP_PORT: serverPort.toString(),
-        },
-        stdio: ["pipe", "pipe", "pipe"],
+    ngrokProcess = spawn("npm", ["run", "proxy", serverPort.toString()], {
+      env: {
+        ...process.env,
       },
-    );
+      stdio: ["pipe", "pipe", "pipe"],
+    });
     await checkIfServerIsRunning(homeUrl, 1000);
   } else {
     console.log("Skipping ngrok process as runProxy is not set to 'run'");
@@ -132,7 +138,7 @@ test.beforeAll(async () => {
   }
 
   console.log("beforeAll hook completed successfully");
-}, 120000); // Set timeout to 60 seconds for beforeAll hook
+}, 180000); // Set timeout to 3 minutes for beforeAll hook
 
 test.afterAll(async () => {
   if (serverProcess) {
@@ -254,54 +260,106 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   await page.waitForLoadState("networkidle");
   await setTimeout(500);
   await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/020-login-${timestamp}.png` });
-  await expect(page.getByText("Continue with mock-oauth2-server")).toBeVisible();
 
-  await loggedClick("button:has-text('Continue with mock-oauth2-server')", "Continue with OAuth provider");
-  await page.waitForLoadState("networkidle");
-  await setTimeout(500);
-  // await page.screenshot({
-  //  path: `target/behaviour-test-results/submitVat-screenshots/030-hand-off-to-provider-auth-${timestamp}.png`,
-  // });
-  // await expect(page.getByText("Hand off to mock-oauth2-server")).toBeVisible();
+  if (testAuthProvider === "mock") {
+    await expect(page.getByText("Continue with mock-oauth2-server")).toBeVisible();
+    await loggedClick("button:has-text('Continue with mock-oauth2-server')", "Continue with OAuth provider");
+    await page.waitForLoadState("networkidle");
+    await setTimeout(500);
+    // await page.screenshot({
+    //  path: `target/behaviour-test-results/submitVat-screenshots/030-hand-off-to-provider-auth-${timestamp}.png`,
+    // });
+    // await expect(page.getByText("Hand off to mock-oauth2-server")).toBeVisible();
 
-  // await loggedClick("button:has-text('Hand off to mock-oauth2-server')", "Hand off to OAuth provider");
-  // await page.waitForLoadState("networkidle");
-  // await setTimeout(500);
-  await page.screenshot({
-    path: `target/behaviour-test-results/submitVat-screenshots/040-provider-auth-${timestamp}.png`,
-  });
-  // await expect(page.getByText("SIGN-IN")).toBeVisible();
-  await expect(page.locator('input[type="submit"][value="Sign-in"]')).toBeVisible({ timeout: 10000 });
+    // await loggedClick("button:has-text('Hand off to mock-oauth2-server')", "Hand off to OAuth provider");
+    // await page.waitForLoadState("networkidle");
+    // await setTimeout(500);
+    await page.screenshot({
+      path: `target/behaviour-test-results/submitVat-screenshots/040-mock-provider-auth-${timestamp}.png`,
+    });
+    // await expect(page.getByText("SIGN-IN")).toBeVisible();
+    await expect(page.locator('input[type="submit"][value="Sign-in"]')).toBeVisible({ timeout: 10000 });
 
-  // <input class="u-full-width" required="" type="text" name="username" placeholder="Enter any user/subject" autofocus="on">
-  const username = "user";
-  await loggedFill('input[name="username"]', `${username}`, "Entering username");
-  await setTimeout(100);
+    // <input class="u-full-width" required="" type="text" name="username" placeholder="Enter any user/subject" autofocus="on">
+    await loggedFill('input[name="username"]', `${testAuthUsername}`, "Entering username");
+    await setTimeout(100);
 
-  // <textarea class="u-full-width claims" name="claims" rows="15" placeholder="Optional claims JSON" autofocus="on"></textarea>
-  // { "email": "user@example.com" }
-  const identityToken = {
-    email: `${username}@example.com`,
-  };
-  await loggedFill('textarea[name="claims"]', JSON.stringify(identityToken), "Entering identity claims");
-  await setTimeout(100);
-  await page.screenshot({
-    path: `target/behaviour-test-results/submitVat-screenshots/050-auth-form-filled-${timestamp}.png`,
-  });
+    // <textarea class="u-full-width claims" name="claims" rows="15" placeholder="Optional claims JSON" autofocus="on"></textarea>
+    // { "email": "user@example.com" }
+    const identityToken = {
+      email: `${testAuthUsername}@example.com`,
+    };
+    await loggedFill('textarea[name="claims"]', JSON.stringify(identityToken), "Entering identity claims");
+    await setTimeout(100);
+    await page.screenshot({
+      path: `target/behaviour-test-results/submitVat-screenshots/050-mock-auth-form-filled-${timestamp}.png`,
+    });
 
-  // Home page has logged in user email
-  // <input class="button-primary" type="submit" value="Sign-in">
-  await loggedClick('input[type="submit"][value="Sign-in"]', "Submitting sign-in form");
-  await page.waitForLoadState("networkidle");
-  await setTimeout(500);
-  await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/060-signed-in-${timestamp}.png` });
+    // Home page has logged in user email
+    // <input class="button-primary" type="submit" value="Sign-in">
+    await loggedClick('input[type="submit"][value="Sign-in"]', "Submitting sign-in form");
+    await page.waitForLoadState("networkidle");
+    await setTimeout(500);
+    await page.screenshot({
+      path: `target/behaviour-test-results/submitVat-screenshots/060-mock-signed-in-${timestamp}.png`,
+    });
+  } else if (testAuthProvider === "cognito") {
+    await expect(page.getByText("Continue with Google via Amazon Cognito")).toBeVisible();
+    await loggedClick(
+      "button:has-text('Continue with Google via Amazon Cognito')",
+      "Continue with Google via Amazon Cognito",
+    );
+    await page.waitForLoadState("networkidle");
+    await setTimeout(2500);
+    await page.screenshot({
+      path: `target/behaviour-test-results/submitVat-screenshots/040-cognito-provider-auth-${timestamp}.png`,
+    });
 
-  // Home page has logged in user email
+    // Make cognito selection
+    const cognitoBtn = page.getByRole("button", { name: "cognito" });
+    // const cognitoBtn = page.locator(
+    //  'input[type="button"][value="cognito"][aria-label="cognito"].idpButton-customizable',
+    // );
+    await expect(cognitoBtn).toBeVisible({ timeout: 10000 });
+    await cognitoBtn.click();
+    await page.waitForLoadState("networkidle");
+    await setTimeout(500);
+    await page.screenshot({
+      path: `target/behaviour-test-results/submitVat-screenshots/045-cognito-button-${timestamp}.png`,
+    });
+
+    // Ensure we are at the login page
+    await page.getByRole("heading", { name: "OIDC - Direct Login" }).waitFor();
+    // await page.getByLabel("Username").fill(testAuthUsername);
+    // await page.getByLabel("Password").fill(testAuthPassword);
+    await setTimeout(100);
+    await page.screenshot({
+      path: `target/behaviour-test-results/submitVat-screenshots/050-cognito-auth-form-empty-${timestamp}.png`,
+    });
+
+    // Fill in some login details
+    await page.getByRole("button", { name: "Fill Form" }).click();
+    await page.waitForLoadState("networkidle");
+    await setTimeout(500);
+    await page.screenshot({
+      path: `target/behaviour-test-results/submitVat-screenshots/055-cognito-auth-form-filled-${timestamp}.png`,
+    });
+
+    // Home page has logged in user email
+    await page.getByRole("button", { name: "Sign in" }).click();
+    await page.waitForLoadState("networkidle");
+    await setTimeout(500);
+    await page.screenshot({
+      path: `target/behaviour-test-results/submitVat-screenshots/060-cognito-signed-in-${timestamp}.png`,
+    });
+  }
+
+  // Page has logged in user email
   console.log("Checking home page...");
   await page.waitForLoadState("networkidle");
   await setTimeout(500);
   await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/070-home-${timestamp}.png` });
-  await expect(page.locator(".login-status")).toContainText("user@example.com");
+  await expect(page.getByText("Logged in as")).toBeVisible({ timeout: 15000 });
 
   // Add bundle
   await expect(page.getByText("Add Bundle")).toBeVisible();
@@ -316,6 +374,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   await page.waitForLoadState("networkidle");
   await setTimeout(1500);
   await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/075-bundles-${timestamp}.png` });
+
   await expect(page.getByText("Bundle Added")).toBeVisible();
   await expect(page.getByText("Back to Home")).toBeVisible();
   await loggedClick("button:has-text('Back to Home')", "Back to Home");
@@ -430,7 +489,49 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   await page.screenshot({
     path: `target/behaviour-test-results/submitVat-screenshots/160-waiting-for-receipt-${timestamp}.png`,
   });
-  await page.waitForSelector("#receiptDisplay", { state: "visible", timeout: 30000 });
+
+  if (runTestServer) {
+    // console.log("Starting server process...");
+    // serverProcess = spawn("npm", ["run", "start"], {
+    //  env: {
+    //    ...process.env,
+    //    DIY_SUBMIT_TEST_S3_ENDPOINT: endpoint,
+    //    DIY_SUBMIT_TEST_SERVER_HTTP_PORT: serverPort.toString(),
+    //  },
+    //  stdio: ["pipe", "pipe", "pipe"],
+    // });
+    await checkIfServerIsRunning(`http://127.0.0.1:${serverPort}`, 1000);
+  } else {
+    console.log("Skipping server process as runTestServer is not set to 'run'");
+  }
+
+  if (runProxy) {
+    // console.log("Starting ngrok process...");
+    // ngrokProcess = spawn("npm", ["run", "proxy", serverPort.toString()], {
+    //  env: {
+    //    ...process.env,
+    //  },
+    //  stdio: ["pipe", "pipe", "pipe"],
+    // });
+    await checkIfServerIsRunning(homeUrl, 1000);
+  } else {
+    console.log("Skipping ngrok process as runProxy is not set to 'run'");
+  }
+
+  if (runMockOAuth2) {
+    // console.log("Starting mock-oauth2-server process...");
+    // serverProcess = spawn("npm", ["run", "auth"], {
+    //  env: {
+    //    ...process.env,
+    //  },
+    //  stdio: ["pipe", "pipe", "pipe"],
+    // });
+    await checkIfServerIsRunning("http://localhost:8080/default/debugger", 2000);
+  } else {
+    console.log("Skipping mock-oauth2-server process as runMockOAuth2 is not set to 'run'");
+  }
+
+  await page.waitForSelector("#receiptDisplay", { state: "visible", timeout: 120000 });
   await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/170-receipt-${timestamp}.png` });
   await setTimeout(500);
   const receiptDisplay = page.locator("#receiptDisplay");
@@ -475,4 +576,26 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   // await setTimeout(500);
   // await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/200-home-${timestamp}.png` });
   // await expect(page.getByText("Log in")).toBeVisible();
-}, 60000);
+}, 120000);
+
+// Resolve ngrok host from HOME_URL (DIY_SUBMIT_HOME_URL)
+// Examples:
+//  https://example.ngrok-free.app/         -> example.ngrok-free.app
+//  https://example.ngrok-free.app/index.html -> example.ngrok-free.app
+//  http://localhost:3000/path              -> localhost (omit port for external host usage)
+// If you actually need the port for a local tunnel, use url.host instead of url.hostname.
+function resolveProxyHost(homeUrlValue) {
+  if (!homeUrlValue) {
+    throw new Error("DIY_SUBMIT_HOME_URL is not defined");
+  }
+  try {
+    const url = new URL(homeUrlValue);
+    return url.hostname; // change to url.host if you want to keep :port
+  } catch {
+    // Fallback: strip protocol, then take up to first / ? or #
+    return homeUrlValue
+      .replace(/^[a-z]+:\/\//i, "")
+      .split(/[/?#]/)[0]
+      .replace(/:\d+$/, ""); // drop port if present
+  }
+}

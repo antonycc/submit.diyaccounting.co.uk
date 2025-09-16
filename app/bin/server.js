@@ -7,8 +7,8 @@ import { fileURLToPath } from "url";
 import { readFileSync } from "fs";
 import dotenv from "dotenv";
 
-import { httpGetGoogle, httpGetHmrc, httpGetMock } from "../functions/authUrl.js";
-import { httpPost as exchangeTokenHttpPost, httpPostGoogle, httpPostHmrc } from "../functions/exchangeToken.js";
+import { httpGetCognito, httpGetHmrc, httpGetMock } from "../functions/authUrl.js";
+import { httpPostMock, httpPostHmrc, httpPostCognito } from "../functions/exchangeToken.js";
 import { httpPost as submitVatHttpPost } from "../functions/submitVat.js";
 import { httpPost as logReceiptHttpPost } from "../functions/logReceipt.js";
 import { httpPost as requestBundleHttpPost } from "../functions/bundle.js";
@@ -26,6 +26,7 @@ import { requireActivity } from "../lib/entitlementsService.js";
 dotenv.config({ path: ".env" });
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+// eslint-disable-next-line sonarjs/x-powered-by
 const app = express();
 
 // Read configuration from cdk.json
@@ -50,12 +51,12 @@ app.use(express.static(path.join(__dirname, "../../web/public")));
 
 const authUrlPath = context.authUrlLambdaUrlPath || "/api/hmrc/auth-url";
 const mockAuthUrlPath = "/api/mock/auth-url";
-const exchangeTokenPath = context.exchangeTokenLambdaUrlPath || "/api/exchange-token";
+const cognitoAuthUrlPath = context.cognitoAuthUrlLambdaUrlPath || "/api/cognito/auth-url";
+const exchangeMockTokenPath = context.exchangeTokenLambdaUrlPath || "/api/exchange-token";
 const exchangeHmrcTokenPath = context.exchangeHmrcTokenLambdaUrlPath || "/api/hmrc/exchange-token";
-const exchangeGoogleTokenPath = context.exchangeGoogleTokenLambdaUrlPath || "/api/google/exchange-token";
+const exchangeCognitoTokenPath = context.exchangeCognitoTokenLambdaUrlPath || "/api/cognito/exchange-token";
 const submitVatPath = context.submitVatLambdaUrlPath || "/api/submit-vat";
 const logReceiptPath = context.logReceiptLambdaUrlPath || "/api/log-receipt";
-const googleAuthUrlPath = context.googleAuthUrlLambdaUrlPath || "/api/google/auth-url";
 const requestBundlePath = context.bundleLambdaUrlPath || "/api/request-bundle";
 const catalogPath = context.catalogLambdaUrlPath || "/api/catalog";
 const myBundlesPath = context.myBundlesLambdaUrlPath || "/api/my-bundles";
@@ -81,24 +82,24 @@ app.get(mockAuthUrlPath, async (req, res) => {
   res["status"](statusCode).json(JSON.parse(body));
 });
 
-app.get(googleAuthUrlPath, async (req, res) => {
+app.get(cognitoAuthUrlPath, async (req, res) => {
   const event = {
     path: req.path,
     headers: { host: req.get("host") || "localhost:3000" },
     queryStringParameters: req.query || {},
   };
-  const { statusCode, body } = await httpGetGoogle(event);
+  const { statusCode, body } = await httpGetCognito(event);
   res.status(statusCode).json(JSON.parse(body));
 });
 
-app.post(exchangeTokenPath, async (req, res) => {
+app.post(exchangeMockTokenPath, async (req, res) => {
   const event = {
     path: req.path,
     headers: { host: req.get("host") || "localhost:3000" },
     queryStringParameters: req.query || {},
     body: JSON.stringify(req.body),
   };
-  const { statusCode, body } = await exchangeTokenHttpPost(event);
+  const { statusCode, body } = await httpPostMock(event);
   res.status(statusCode).json(JSON.parse(body));
 });
 
@@ -113,14 +114,14 @@ app.post(exchangeHmrcTokenPath, async (req, res) => {
   res.status(statusCode).json(JSON.parse(body));
 });
 
-app.post(exchangeGoogleTokenPath, async (req, res) => {
+app.post(exchangeCognitoTokenPath, async (req, res) => {
   const event = {
     path: req.path,
     headers: { host: req.get("host") || "localhost:3000" },
     queryStringParameters: req.query || {},
     body: JSON.stringify(req.body),
   };
-  const { statusCode, body } = await httpPostGoogle(event);
+  const { statusCode, body } = await httpPostCognito(event);
   res.status(statusCode).json(JSON.parse(body));
 });
 
@@ -376,8 +377,7 @@ app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "../../web/public/index.html"));
 });
 
-const DIY_SUBMIT_TEST_SERVER_HTTP_PORT =
-  process.env.DIY_SUBMIT_TEST_SERVER_HTTP_PORT || process.env.DIY_SUBMIT_DIY_SUBMIT_TEST_SERVER_HTTP_PORT || 3000;
+const DIY_SUBMIT_TEST_SERVER_HTTP_PORT = process.env.DIY_SUBMIT_TEST_SERVER_HTTP_PORT || 3000;
 
 // Only start the server if this file is being run directly (compare absolute paths) or under test harness
 const __thisFile = fileURLToPath(import.meta.url);

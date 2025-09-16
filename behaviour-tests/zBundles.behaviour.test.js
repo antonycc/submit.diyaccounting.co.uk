@@ -79,7 +79,7 @@ async function gotoWithPause(page, url) {
 }
 
 test.describe("Bundles behaviour flow (mock auth -> add bundle -> activities)", () => {
-  test.setTimeout(60000);
+  test.setTimeout(120000);
 
   test.beforeAll(async () => {
     process.env = { ...originalEnv };
@@ -90,7 +90,7 @@ test.describe("Bundles behaviour flow (mock auth -> add bundle -> activities)", 
       env: {
         ...process.env,
         DIY_SUBMIT_BUNDLE_MOCK: "true",
-        DIY_SUBMIT_DIY_SUBMIT_TEST_SERVER_HTTP_PORT: String(serverPort),
+        DIY_SUBMIT_TEST_SERVER_HTTP_PORT: String(serverPort),
       },
       stdio: ["pipe", "pipe", "pipe"],
     });

@@ -16,7 +16,7 @@ vi.mock("@aws-sdk/client-s3", () => ({
 
 import { httpPost as logReceiptHandler } from "@app/functions/logReceipt.js";
 
-describe("httpPost", () => {
+describe("httpPostMock", () => {
   const originalEnv = process.env;
 
   beforeEach(() => {

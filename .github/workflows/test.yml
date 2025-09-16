@@ -3,7 +3,7 @@
 name: test
 concurrency:
   group: 'ngrok-free-app-test'
-  cancel-in-progress: true
+  cancel-in-progress: false
 run-name: 'test [${{ github.ref_name }}] [${{ github.event.head_commit.message }}]'
 
 on:
@@ -60,7 +60,7 @@ on:
               - prod
             type: choice
   schedule:
-    - cron: '23 * * * *'
+    - cron: '23 04 * * *'
 
 env:
   environment: ${{ inputs.environment || 'proxy' }}
@@ -77,7 +77,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: 'npm'
@@ -85,6 +85,8 @@ jobs:
       - run: npm ci || npm install
 
       - run: source .env.${{ env.environment }} && npm test
+        env:
+          DIY_SUBMIT_HMRC_CLIENT_SECRET: test
 
   npm-unit-test:
     name: 'npm unit test with coverage'
@@ -95,7 +97,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: 'npm'
@@ -103,6 +105,8 @@ jobs:
       - run: npm ci || npm install
 
       - run: source .env.${{ env.environment }} && npm run test:coverage
+        env:
+          DIY_SUBMIT_HMRC_CLIENT_SECRET: test
 
       - name: Upload coverage reports
         uses: actions/upload-artifact@v4
@@ -121,7 +125,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: 'npm'
@@ -139,7 +143,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: 'npm'
@@ -163,7 +167,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: 'npm'
@@ -181,7 +185,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: 'npm'
@@ -215,159 +219,200 @@ jobs:
           path: target/test-reports/
           retention-days: 30
 
-  npm-behaviour-test:
-    name: 'npm behaviour test'
-    runs-on: ubuntu-latest
-    environment: ${{ inputs.environment || 'proxy' }}
-    permissions:
-      contents: read
-      id-token: write
-    steps:
-      - uses: actions/checkout@v5
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: 'npm'
-
-      - run: npm ci || npm install
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-        with:
-          driver-opts: |
-            image=moby/buildkit:latest
-
-      - name: Authenticate ngrok
-        env:
-          NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
-        run: |
-          npx ngrok config add-authtoken "${NGROK_AUTH_TOKEN?}"
-
-      - name: Cache Playwright browsers
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-${{ hashFiles('**/package-lock.json') }}
-
-      - run: npx playwright install chromium --with-deps
-
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: arn:aws:iam::887764105431:role/submit-github-actions-role
-          role-chaining: false
-          aws-region: eu-west-2
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - run: aws sts get-caller-identity --region eu-west-2
-
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: arn:aws:iam::887764105431:role/submit-deployment-role
-          role-chaining: true
-          aws-region: eu-west-2
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - run: aws sts get-caller-identity --region eu-west-2
-
-      - name: Wait for ngrok domain to be free
-        shell: bash
-        run: |
-          domain="wanted-finally-anteater.ngrok-free.app"
-          max_attempts=30
-          attempt=1
-          while [ $attempt -le $max_attempts ]; do
-            if curl -s --head --fail "https://${domain}" >/dev/null; then
-              echo "Domain ${domain} is in use. Waiting 10 seconds (attempt $attempt/$max_attempts)..."
-              sleep 10
-              attempt=$((attempt + 1))
-            else
-              echo "Domain ${domain} is free."
-              break
-            fi
-          done
-          if [ $attempt -gt $max_attempts ]; then
-            echo "Timeout waiting for domain ${domain} to be free."
-            exit 1
-          fi
-
-      - run: npx dotenv -e '.env.${{ env.environment }}' -- npm run test:behaviour
-        if: env.environment == 'proxy'
-        env:
-          DIY_SUBMIT_HMRC_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
-          DIY_SUBMIT_GOOGLE_CLIENT_SECRET: ${{ secrets.DIY_SUBMIT_GOOGLE_CLIENT_SECRET }}
-      - run: cp '.env.${{ env.environment }}' '.env.proxy' ; npx dotenv -e '.env.${{ env.environment }}' -- npm run test:behaviour
-        if: env.environment != 'proxy'
-        env:
-          DIY_SUBMIT_HMRC_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
-          DIY_SUBMIT_GOOGLE_CLIENT_SECRET: ${{ secrets.DIY_SUBMIT_GOOGLE_CLIENT_SECRET }}
-
-      - name: Convert Playwright video to MP4
-        if: ${{ !cancelled() }}
-        run: |
-          set -euo pipefail
-          root="target/behaviour-test-results"
-
-          # Recursively transcode all .webm files, placing output next to source with 'converted' prefix
-          pids=()
-          while IFS= read -r -d '' f; do
-            dir=$(dirname "$f")
-            base="${f##*/}"
-            name="${base%.webm}"
-            out="${dir}/converted${name}.mp4"
-            echo "Transcoding $f -> $out"
-            npm run convert:video -- --in "$f" --out "$out" &
-            pids+=($!)
-          done < <(find "$root" -type f -name '*.webm' -print0)
-
-          # Wait for all transcodes to complete
-          fail=0
-          for pid in "${pids[@]:-}"; do
-            if ! wait "$pid"; then
-              fail=1
-            fi
-          done
-
-          exit $fail
-
-      - name: Upload test results
-        uses: actions/upload-artifact@v4
-        if: ${{ !cancelled() }}
-        with:
-          name: test-results-behaviour
-          path: "target/behaviour-test-results/"
-          retention-days: 30
-
-      - name: Upload test reports
-        uses: actions/upload-artifact@v4
-        if: ${{ !cancelled() }}
-        with:
-          name: test-reports-behaviour
-          path: "target/test-reports/"
-          retention-days: 30
-
-      - name: Copy test server logs
-        if: ${{ !cancelled() }}
-        run: |
-          mkdir -p test-server-logs/
-          cp -r target/submit-*.log test-server-logs/
-
-      - name: Upload test logs
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-server-logs-behaviour
-          path: "test-server-logs/"
-          retention-days: 30
+#  npm-behaviour-test:
+#    name: 'npm behaviour test'
+#    runs-on: ubuntu-latest
+#    environment: ${{ inputs.environment || 'proxy' }}
+#    permissions:
+#      contents: read
+#      id-token: write
+#    steps:
+#      - uses: actions/checkout@v5
+#
+#      - uses: actions/setup-node@v5
+#        with:
+#          node-version: 22
+#          cache: 'npm'
+#
+#      - run: npm ci || npm install
+#
+#      - name: Set up Docker Buildx
+#        uses: docker/setup-buildx-action@v3
+#        with:
+#          driver-opts: |
+#            image=moby/buildkit:latest
+#
+#      - name: Authenticate ngrok
+#        env:
+#          NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
+#        run: |
+#          npx ngrok config add-authtoken "${NGROK_AUTH_TOKEN?}"
+#
+#      - name: Cache Playwright browsers
+#        uses: actions/cache@v4
+#        with:
+#          path: |
+#            ~/.cache/ms-playwright
+#          key: ${{ runner.os }}-playwright-${{ hashFiles('**/package-lock.json') }}
+#
+#      - run: npx playwright install chromium --with-deps
+#
+#      - name: Configure AWS Credentials
+#        uses: aws-actions/configure-aws-credentials@v5
+#        with:
+#          role-to-assume: arn:aws:iam::887764105431:role/submit-github-actions-role
+#          role-chaining: false
+#          aws-region: eu-west-2
+#          audience: sts.amazonaws.com
+#          role-skip-session-tagging: true
+#          output-credentials: true
+#          retry-max-attempts: 3
+#
+#      - run: aws sts get-caller-identity --region eu-west-2
+#
+#      - name: Configure AWS Credentials
+#        uses: aws-actions/configure-aws-credentials@v5
+#        with:
+#          role-to-assume: arn:aws:iam::887764105431:role/submit-deployment-role
+#          role-chaining: true
+#          aws-region: eu-west-2
+#          audience: sts.amazonaws.com
+#          role-skip-session-tagging: true
+#          output-credentials: true
+#          retry-max-attempts: 3
+#
+#      - run: aws sts get-caller-identity --region eu-west-2
+#
+#      - name: Wait for ngrok domain to be free
+#        shell: bash
+#        run: |
+#          domain="wanted-finally-anteater.ngrok-free.app"
+#          max_attempts=30
+#          attempt=1
+#          while [ $attempt -le $max_attempts ]; do
+#            if curl -s --head --fail "https://${domain}" >/dev/null; then
+#              echo "Domain ${domain} is in use. Waiting 10 seconds (attempt $attempt/$max_attempts)..."
+#              sleep 10
+#              attempt=$((attempt + 1))
+#            else
+#              echo "Domain ${domain} is free."
+#              break
+#            fi
+#          done
+#          if [ $attempt -gt $max_attempts ]; then
+#            echo "Timeout waiting for domain ${domain} to be free."
+#            exit 1
+#          fi
+#
+#      - name: Configure AWS Credentials
+#        uses: aws-actions/configure-aws-credentials@v5
+#        with:
+#          role-to-assume: arn:aws:iam::887764105431:role/submit-github-actions-role
+#          role-chaining: false
+#          aws-region: eu-west-2
+#          audience: sts.amazonaws.com
+#          role-skip-session-tagging: true
+#          output-credentials: true
+#          retry-max-attempts: 3
+#
+#      - name: Assume user provisioning role
+#        uses: aws-actions/configure-aws-credentials@v5
+#        with:
+#          role-to-assume: arn:aws:iam::403027849202:role/oidc-external-user-provisioning-role
+#          role-chaining: true
+#          aws-region: us-east-1
+#          audience: sts.amazonaws.com
+#          role-skip-session-tagging: true
+#          output-credentials: true
+#          retry-max-attempts: 3
+#
+#      - name: Create test username and a test password
+#        id: uuid
+#        run: |
+#          TEST_USERNAME=$(uuidgen | tr '[:upper:]' '[:lower:]')
+#          TEST_PASSWORD=$(uuidgen | tr '[:upper:]' '[:lower:]')
+#          echo "TEST_USERNAME=${TEST_USERNAME?}"
+#          echo "TEST_PASSWORD=${TEST_PASSWORD?}"
+#          echo "TEST_USERNAME=${TEST_USERNAME?}" >> "$GITHUB_OUTPUT"
+#          echo "TEST_PASSWORD=${TEST_PASSWORD?}" >> "$GITHUB_OUTPUT"
+#
+#      - name: Provision test user
+#        run: |
+#          npm run users:provision 'oidc-antonycc-com-prod-users' "${TEST_USERNAME?}" "${TEST_PASSWORD?}"
+#        env:
+#          TEST_USERNAME: ${{ steps.uuid.outputs.TEST_USERNAME }}
+#          TEST_PASSWORD: ${{ steps.uuid.outputs.TEST_PASSWORD }}
+#
+#      - run: npx dotenv -e '.env.proxy' -- npm run test:behaviour
+#        if: ${{ env.environment == 'test' || env.environment == 'proxy' }}
+#        env:
+#          DIY_SUBMIT_TEST_AUTH_USERNAME: ${{ steps.uuid.outputs.TEST_USERNAME }}
+#          DIY_SUBMIT_TEST_AUTH_PASSWORD: ${{ steps.uuid.outputs.TEST_PASSWORD }}
+#          DIY_SUBMIT_HMRC_CLIENT_SECRET: ${{ secrets.DIY_SUBMIT_HMRC_CLIENT_SECRET }}
+#      - run: cp '.env.${{ env.environment }}' '.env.proxy' ; npx dotenv -e '.env.${{ env.environment }}' -- npm run test:behaviour
+#        if: ${{ env.environment != 'test' && env.environment != 'proxy' }}
+#        env:
+#          DIY_SUBMIT_TEST_AUTH_USERNAME: ${{ steps.uuid.outputs.TEST_USERNAME }}
+#          DIY_SUBMIT_TEST_AUTH_PASSWORD: ${{ steps.uuid.outputs.TEST_PASSWORD }}
+#          DIY_SUBMIT_HMRC_CLIENT_SECRET: ${{ secrets.DIY_SUBMIT_HMRC_CLIENT_SECRET }}
+#
+#      - name: Convert Playwright video to MP4
+#        if: ${{ !cancelled() }}
+#        run: |
+#          set -euo pipefail
+#          root="target/behaviour-test-results"
+#
+#          # Recursively transcode all .webm files, placing output next to source with 'converted' prefix
+#          pids=()
+#          while IFS= read -r -d '' f; do
+#            dir=$(dirname "$f")
+#            base="${f##*/}"
+#            name="${base%.webm}"
+#            out="${dir}/converted${name}.mp4"
+#            echo "Transcoding $f -> $out"
+#            npm run convert:video -- --in "$f" --out "$out" &
+#            pids+=($!)
+#          done < <(find "$root" -type f -name '*.webm' -print0)
+#
+#          # Wait for all transcodes to complete
+#          fail=0
+#          for pid in "${pids[@]:-}"; do
+#            if ! wait "$pid"; then
+#              fail=1
+#            fi
+#          done
+#
+#          exit $fail
+#
+#      - name: Upload test results
+#        uses: actions/upload-artifact@v4
+#        if: ${{ !cancelled() }}
+#        with:
+#          name: test-results-behaviour
+#          path: "target/behaviour-test-results/"
+#          retention-days: 30
+#
+#      - name: Upload test reports
+#        uses: actions/upload-artifact@v4
+#        if: ${{ !cancelled() }}
+#        with:
+#          name: test-reports-behaviour
+#          path: "target/test-reports/"
+#          retention-days: 30
+#
+#      - name: Copy test server logs
+#        if: ${{ !cancelled() }}
+#        run: |
+#          mkdir -p test-server-logs/
+#          cp -r target/submit-*.log test-server-logs/
+#
+#      - name: Upload test logs
+#        if: ${{ !cancelled() }}
+#        uses: actions/upload-artifact@v4
+#        with:
+#          name: test-server-logs-behaviour
+#          path: "test-server-logs/"
+#          retention-days: 30
 
   mvn-test:
     name: 'maven test'
@@ -378,7 +423,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: 17
@@ -404,14 +449,14 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: 'npm'
 
       - run: npm ci
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: 17

@@ -19,149 +19,162 @@ import software.constructs.Construct;
  */
 public class DistributionWithLogging {
 
-  public final IBucket logBucket;
-  public final Distribution distribution;
+    public final IBucket logBucket;
+    public final Distribution distribution;
 
-  private DistributionWithLogging(Builder b) {
-    // Create log bucket with same id
-    IBucket distAccess =
-        LogForwardingBucket.Builder.create(
-                b.scope, "DistributionAccess", b.logHandlerSource, LogGzippedS3ObjectEvent.class)
-            .bucketName(b.logBucketName)
-            .functionNamePrefix(b.logFunctionNamePrefix)
-            .retentionPeriodDays(b.logRetentionDays)
-            .cloudTrailEnabled(b.cloudTrailEnabled)
-            .verboseLogging(b.logIncludesCookies)
-            .build();
+    private DistributionWithLogging(Builder b) {
+        // Create log bucket with same id
+        IBucket distAccess = LogForwardingBucket.Builder.create(
+                        b.scope, "DistributionAccess", b.logHandlerSource, LogGzippedS3ObjectEvent.class)
+                .bucketName(b.logBucketName)
+                .functionNamePrefix(b.logFunctionNamePrefix)
+                .retentionPeriodDays(b.logRetentionDays)
+                .cloudTrailEnabled(b.cloudTrailEnabled)
+                .verboseLogging(b.logIncludesCookies)
+                .build();
 
-    this.logBucket = distAccess;
+        this.logBucket = distAccess;
 
-    // Create distribution with same id and props
-    this.distribution =
-        Distribution.Builder.create(b.scope, "Distribution")
-            .domainNames(Collections.singletonList(b.domainName))
-            .defaultBehavior(b.defaultBehavior)
-            .additionalBehaviors(b.additionalBehaviors)
-            .defaultRootObject(b.defaultRootObject)
-            .errorResponses(
-                List.of(
-                    ErrorResponse.builder()
+        // Create distribution with same id and props
+        this.distribution = Distribution.Builder.create(b.scope, "Distribution")
+                .domainNames(Collections.singletonList(b.domainName))
+                .defaultBehavior(b.defaultBehavior)
+                .additionalBehaviors(b.additionalBehaviors)
+                .defaultRootObject(b.defaultRootObject)
+                .errorResponses(List.of(ErrorResponse.builder()
                         .httpStatus(b.errorStatusCode)
                         .responseHttpStatus(b.errorStatusCode)
                         .responsePagePath("/" + b.errorPageKey)
                         .build()))
-            .certificate(b.certificate)
-            .enableIpv6(true)
-            .sslSupportMethod(SSLMethod.SNI)
-            .httpVersion(HttpVersion.HTTP2_AND_3)
-            .enableLogging(true)
-            .logBucket(distAccess)
-            .logIncludesCookies(b.logIncludesCookies)
-            .build();
-  }
-
-  public static class Builder {
-    private final Construct scope;
-    private String domainName;
-    private BehaviorOptions defaultBehavior;
-    private Map<String, BehaviorOptions> additionalBehaviors = Map.of();
-    private String defaultRootObject = "index.html";
-    private String errorPageKey = "error.html";
-    private int errorStatusCode = 404;
-    private ICertificate certificate;
-    private String logBucketName;
-    private String logFunctionNamePrefix;
-    private int logRetentionDays = 3;
-    private boolean cloudTrailEnabled = false;
-    private boolean logIncludesCookies = false;
-    private String logHandlerSource;
-
-    private Builder(Construct scope) {
-      this.scope = scope;
+                .certificate(b.certificate)
+                .enableIpv6(true)
+                .sslSupportMethod(SSLMethod.SNI)
+                .httpVersion(HttpVersion.HTTP2_AND_3)
+                .enableLogging(true)
+                .logBucket(distAccess)
+                .logIncludesCookies(b.logIncludesCookies)
+                .build();
     }
 
-    public static Builder create(Construct scope) {
-      return new Builder(scope);
-    }
+    public static class Builder {
+        private final Construct scope;
+        private String domainName;
+        private BehaviorOptions defaultBehavior;
+        private Map<String, BehaviorOptions> additionalBehaviors = Map.of();
+        private String defaultRootObject = "index.html";
+        private String errorPageKey = "error.html";
+        private int errorStatusCode = 404;
+        private ICertificate certificate;
+        private String logBucketName;
+        private String logFunctionNamePrefix;
+        private int logRetentionDays = 3;
+        private boolean cloudTrailEnabled = false;
+        private boolean logIncludesCookies = false;
+        private String logHandlerSource;
 
-    public Builder domainName(String domainName) {
-      this.domainName = domainName;
-      return this;
-    }
+        private Builder(Construct scope) {
+            this.scope = scope;
+        }
 
-    public Builder defaultBehavior(BehaviorOptions defaultBehavior) {
-      this.defaultBehavior = defaultBehavior;
-      return this;
-    }
+        public static Builder create(Construct scope) {
+            return new Builder(scope);
+        }
 
-    public Builder additionalBehaviors(Map<String, BehaviorOptions> additionalBehaviors) {
-      this.additionalBehaviors = additionalBehaviors;
-      return this;
-    }
+        public Builder domainName(String domainName) {
+            this.domainName = domainName;
+            return this;
+        }
 
-    public Builder defaultRootObject(String defaultRootObject) {
-      this.defaultRootObject = defaultRootObject;
-      return this;
-    }
+        public Builder defaultBehavior(BehaviorOptions defaultBehavior) {
+            this.defaultBehavior = defaultBehavior;
+            return this;
+        }
 
-    public Builder errorPageKey(String errorPageKey) {
-      this.errorPageKey = errorPageKey;
-      return this;
-    }
+        public Builder additionalBehaviors(Map<String, BehaviorOptions> additionalBehaviors) {
+            this.additionalBehaviors = additionalBehaviors;
+            return this;
+        }
 
-    public Builder errorStatusCode(int code) {
-      this.errorStatusCode = code;
-      return this;
-    }
+        public Builder defaultRootObject(String defaultRootObject) {
+            this.defaultRootObject = defaultRootObject;
+            return this;
+        }
 
-    public Builder certificate(ICertificate certificate) {
-      this.certificate = certificate;
-      return this;
-    }
+        public Builder errorPageKey(String errorPageKey) {
+            this.errorPageKey = errorPageKey;
+            return this;
+        }
 
-    public Builder logBucketName(String name) {
-      this.logBucketName = name;
-      return this;
-    }
+        public Builder errorStatusCode(int code) {
+            this.errorStatusCode = code;
+            return this;
+        }
 
-    public Builder logFunctionNamePrefix(String prefix) {
-      this.logFunctionNamePrefix = prefix;
-      return this;
-    }
+        public Builder certificate(ICertificate certificate) {
+            this.certificate = certificate;
+            return this;
+        }
 
-    public Builder logRetentionDays(int days) {
-      this.logRetentionDays = days;
-      return this;
-    }
+        public Builder logBucketName(String name) {
+            this.logBucketName = name;
+            return this;
+        }
 
-    public Builder cloudTrailEnabled(boolean enabled) {
-      this.cloudTrailEnabled = enabled;
-      return this;
-    }
+        public Builder logFunctionNamePrefix(String prefix) {
+            this.logFunctionNamePrefix = prefix;
+            return this;
+        }
 
-    public Builder logIncludesCookies(boolean includes) {
-      this.logIncludesCookies = includes;
-      return this;
-    }
+        public Builder logRetentionDays(int days) {
+            this.logRetentionDays = days;
+            return this;
+        }
 
-    public Builder logHandlerSource(String source) {
-      this.logHandlerSource = source;
-      return this;
-    }
+        public Builder cloudTrailEnabled(boolean enabled) {
+            this.cloudTrailEnabled = enabled;
+            return this;
+        }
 
-    public DistributionWithLogging build() {
-      if (domainName == null || domainName.isBlank())
-        throw new IllegalArgumentException("domainName is required");
-      if (defaultBehavior == null)
-        throw new IllegalArgumentException("defaultBehavior is required");
-      if (certificate == null) throw new IllegalArgumentException("certificate is required");
-      if (logBucketName == null || logBucketName.isBlank())
-        throw new IllegalArgumentException("logBucketName is required");
-      if (logFunctionNamePrefix == null || logFunctionNamePrefix.isBlank())
-        throw new IllegalArgumentException("logFunctionNamePrefix is required");
-      if (logHandlerSource == null || logHandlerSource.isBlank())
-        throw new IllegalArgumentException("logHandlerSource is required");
-      return new DistributionWithLogging(this);
+        public Builder logIncludesCookies(boolean includes) {
+            this.logIncludesCookies = includes;
+            return this;
+        }
+
+        public Builder logHandlerSource(String source) {
+            this.logHandlerSource = source;
+            return this;
+        }
+
+        public DistributionWithLogging build() {
+            if (domainName == null || domainName.isBlank())
+                throw new IllegalArgumentException("domainName is required");
+            if (defaultBehavior == null) throw new IllegalArgumentException("defaultBehavior is required");
+            if (certificate == null) throw new IllegalArgumentException("certificate is required");
+            if (logBucketName == null || logBucketName.isBlank())
+                throw new IllegalArgumentException("logBucketName is required");
+            if (logFunctionNamePrefix == null || logFunctionNamePrefix.isBlank())
+                throw new IllegalArgumentException("logFunctionNamePrefix is required");
+            if (logHandlerSource == null || logHandlerSource.isBlank())
+                throw new IllegalArgumentException("logHandlerSource is required");
+            return new DistributionWithLogging(this);
+        }
+
+        public Builder props(DistributionWithLoggingProps props) {
+            if (props == null) return this;
+            this.domainName = props.domainName;
+            this.defaultBehavior = props.defaultBehavior;
+            this.additionalBehaviors = props.additionalBehaviors;
+            this.defaultRootObject = props.defaultRootObject;
+            this.errorPageKey = props.errorPageKey;
+            this.errorStatusCode = props.errorStatusCode;
+            this.certificate = props.certificate;
+            this.logBucketName = props.logBucketName;
+            this.logFunctionNamePrefix = props.logFunctionNamePrefix;
+            this.logRetentionDays = props.logRetentionDays;
+            this.cloudTrailEnabled = props.cloudTrailEnabled;
+            this.logIncludesCookies = props.logIncludesCookies;
+            this.logHandlerSource = props.logHandlerSource;
+            return this;
+        }
     }
-  }
 }

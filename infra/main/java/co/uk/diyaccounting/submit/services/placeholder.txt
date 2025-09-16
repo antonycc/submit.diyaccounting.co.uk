@@ -1,1 +1,0 @@
-Services which are independent of the AWS SDK but called by the Lambda functions.
