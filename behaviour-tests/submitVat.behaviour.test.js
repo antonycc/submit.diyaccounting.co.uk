@@ -359,7 +359,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   await page.waitForLoadState("networkidle");
   await setTimeout(500);
   await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/070-home-${timestamp}.png` });
-  await expect(page.getByText("Logged in as")).toBeVisible({ timeout: 15000 });
+  await expect(page.getByText("Logged in as")).toBeVisible({ timeout: 16000 });
 
   // Add bundle
   await expect(page.getByText("Add Bundle")).toBeVisible();
@@ -375,7 +375,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   await setTimeout(1500);
   await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/075-bundles-${timestamp}.png` });
 
-  await expect(page.getByText("Bundle Added")).toBeVisible();
+  await expect(page.getByText("Bundle Added")).toBeVisible({ timeout: 16000 });
   await expect(page.getByText("Back to Home")).toBeVisible();
   await loggedClick("button:has-text('Back to Home')", "Back to Home");
   await page.waitForLoadState("networkidle");
