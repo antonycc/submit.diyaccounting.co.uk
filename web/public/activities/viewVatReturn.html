@@ -135,7 +135,7 @@
 
         // Auto-submit if we have URL parameters
         if (vrn && periodKey) {
-          document.getElementById('vatReturnForm').dispatchEvent(new Event('submit'));
+          document.getElementById('vatReturnForm').requestSubmit();
         }
       }
 
