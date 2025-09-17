@@ -299,7 +299,7 @@ jobs:
         id: package
         shell: bash
         run: |
-          source .env.ci && ./mvnw clean package
+          source .env.ci && ./mvnw clean package -Dmaven.compiler.source=17 -Dmaven.compiler.target=17 -DskipTests=true
           ## Set the self-destruct handler JAR path as output
           #echo "self-destruct-handler-source=target/self-destruct-lambda.jar" >> $GITHUB_OUTPUT
 
@@ -438,7 +438,7 @@ jobs:
 
       - name: Build CDK and synthesize all stacks
         run: |
-          ./mvnw --errors clean package -DskipTests \
+          ./mvnw --errors clean package -DskipTests -Dmaven.compiler.source=17 -Dmaven.compiler.target=17 \
             && npx dotenv -e .env.${{ needs.names.outputs.environment-name }} -- \
               npx cdk synth --all --strict --validation --version-reporting=false --path-metadata=false --asset-metadata=false
         env:
@@ -451,7 +451,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: cdk-synthesis
-          path: cdk.out/
+          path: target/
           retention-days: 1
 
   diff-cdk:
@@ -486,7 +486,7 @@ jobs:
         uses: actions/download-artifact@v5
         with:
           name: cdk-synthesis
-          path: cdk.out/
+          path: target/
 
       - name: Configure AWS role via GitHub OIDC
         uses: aws-actions/configure-aws-credentials@v5
@@ -555,7 +555,7 @@ jobs:
         uses: actions/download-artifact@v5
         with:
           name: cdk-synthesis
-          path: cdk.out/
+          path: target/
 
       - name: Configure AWS role via GitHub OIDC
         uses: aws-actions/configure-aws-credentials@v5
@@ -586,7 +586,7 @@ jobs:
               --concurrency 4 \
               --asset-parallelism \
               --asset-prebuild \
-              --outputs-file cdk.out/cdk-outputs-observability.json \
+              --outputs-file target/cdk-outputs-observability.json \
           ;
         env:
           GITHUB_ACTOR: ${{ github.actor }}
@@ -626,7 +626,7 @@ jobs:
 #        uses: actions/download-artifact@v5
 #        with:
 #          name: cdk-synthesis
-#          path: cdk.out/
+#          path: target/
 #
 #      - name: Download self-destruct handler JAR
 #        uses: actions/download-artifact@v5
@@ -657,7 +657,7 @@ jobs:
 #              --concurrency 4 \
 #              --asset-parallelism \
 #              --asset-prebuild \
-#              --outputs-file cdk.out/cdk-outputs-self-destructStack.json \
+#              --outputs-file target/cdk-outputs-self-destructStack.json \
 #          ;
 #        env:
 #          ENV_NAME: ${{ needs.names.outputs.environment-name }}
@@ -697,7 +697,7 @@ jobs:
         uses: actions/download-artifact@v5
         with:
           name: cdk-synthesis
-          path: cdk.out/
+          path: target/
 
       - name: Configure AWS role via GitHub OIDC
         uses: aws-actions/configure-aws-credentials@v5
@@ -722,7 +722,7 @@ jobs:
               --concurrency 4 \
               --asset-parallelism \
               --asset-prebuild \
-              --outputs-file cdk.out/cdk-outputs-dev.json \
+              --outputs-file target/cdk-outputs-dev.json \
           ;
         env:
           GITHUB_ACTOR: ${{ github.actor }}
@@ -733,7 +733,7 @@ jobs:
         id: dev-outputs
         shell: bash
         run: |
-          ECR_REPOSITORY_URI=$(jq -r '.["SubmitDevStack-${{ needs.names.outputs.deployment-name }}"].EcrRepositoryUri' cdk.out/cdk-outputs-dev.json)
+          ECR_REPOSITORY_URI=$(jq -r '.["SubmitDevStack-${{ needs.names.outputs.deployment-name }}"].EcrRepositoryUri' target/cdk-outputs-dev.json)
           echo "ECR_REPOSITORY_URI=$ECR_REPOSITORY_URI"
           echo "ECR_REPOSITORY_URI=$ECR_REPOSITORY_URI" >> $GITHUB_OUTPUT
     outputs:
@@ -774,7 +774,7 @@ jobs:
         uses: actions/download-artifact@v5
         with:
           name: cdk-synthesis
-          path: cdk.out/
+          path: target/
 
       - name: Configure AWS role via GitHub OIDC
         uses: aws-actions/configure-aws-credentials@v5
@@ -800,7 +800,7 @@ jobs:
               --concurrency 4 \
               --asset-parallelism \
               --asset-prebuild \
-              --outputs-file cdk.out/cdk-outputs-identity.json \
+              --outputs-file target/cdk-outputs-identity.json \
             ;
         env:
           ENV_NAME: ${{ needs.names.outputs.environment-name }}
@@ -913,7 +913,7 @@ jobs:
         uses: actions/download-artifact@v5
         with:
           name: cdk-synthesis
-          path: cdk.out/
+          path: target/
 
       - name: Configure AWS role via GitHub OIDC
         uses: aws-actions/configure-aws-credentials@v5
@@ -939,7 +939,7 @@ jobs:
               --concurrency 4 \
               --asset-parallelism \
               --asset-prebuild \
-              --outputs-file cdk.out/cdk-outputs-application.json \
+              --outputs-file target/cdk-outputs-application.json \
             ;
         env:
           ENV_NAME: ${{ needs.names.outputs.environment-name }}
@@ -987,7 +987,7 @@ jobs:
         uses: actions/download-artifact@v5
         with:
           name: cdk-synthesis
-          path: cdk.out/
+          path: target/
 
       - name: Configure AWS role via GitHub OIDC
         uses: aws-actions/configure-aws-credentials@v5
@@ -1013,7 +1013,7 @@ jobs:
               --concurrency 4 \
               --asset-parallelism \
               --asset-prebuild \
-              --outputs-file cdk.out/cdk-outputs-web.json \
+              --outputs-file target/cdk-outputs-web.json \
             ;
         env:
           ENV_NAME: ${{ needs.names.outputs.environment-name }}
@@ -1066,7 +1066,7 @@ jobs:
 #        uses: actions/download-artifact@v5
 #        with:
 #          name: cdk-synthesis
-#          path: cdk.out/
+#          path: target/
 #
 #      - name: Configure AWS role via GitHub OIDC
 #        uses: aws-actions/configure-aws-credentials@v5
@@ -1092,7 +1092,7 @@ jobs:
 #              --concurrency 4 \
 #              --asset-parallelism \
 #              --asset-prebuild \
-#              --outputs-file cdk.out/cdk-outputs-edge.json \
+#              --outputs-file target/cdk-outputs-edge.json \
 #            ;
 #        env:
 #          ENV_NAME: ${{ needs.names.outputs.environment-name }}
@@ -1101,7 +1101,7 @@ jobs:
 #      - name: Resolve stack outputs
 #        id: edge-outputs
 #        run: |
-#          BASE_URL=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-EdgeStack"].BaseUrl' cdk.out/cdk-outputs-edge.json)
+#          BASE_URL=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-EdgeStack"].BaseUrl' target/cdk-outputs-edge.json)
 #          echo "BASE_URL=$BASE_URL"
 #          echo "BASE_URL=$BASE_URL" >> $GITHUB_OUTPUT
 #        shell: bash
@@ -1145,7 +1145,7 @@ jobs:
 #        uses: actions/download-artifact@v5
 #        with:
 #          name: cdk-synthesis
-#          path: cdk.out/
+#          path: target/
 #
 #      - name: Configure AWS role via GitHub OIDC
 #        uses: aws-actions/configure-aws-credentials@v5
@@ -1171,7 +1171,7 @@ jobs:
 #              --concurrency 4 \
 #              --asset-parallelism \
 #              --asset-prebuild \
-#              --outputs-file cdk.out/cdk-outputs-edge.json \
+#              --outputs-file target/cdk-outputs-edge.json \
 #            ;
 #        env:
 #          ENV_NAME: ${{ needs.names.outputs.environment-name }}
@@ -1211,7 +1211,7 @@ jobs:
 #        uses: actions/download-artifact@v5
 #        with:
 #          name: cdk-synthesis
-#          path: cdk.out/
+#          path: target/
 #
 #      - name: Configure AWS role via GitHub OIDC
 #        uses: aws-actions/configure-aws-credentials@v5
@@ -1237,7 +1237,7 @@ jobs:
 #              --concurrency 4 \
 #              --asset-parallelism \
 #              --asset-prebuild \
-#              --outputs-file cdk.out/cdk-outputs-ops.json \
+#              --outputs-file target/cdk-outputs-ops.json \
 #            ;
 #        env:
 #          ENV_NAME: ${{ needs.names.outputs.environment-name }}
@@ -1307,7 +1307,7 @@ jobs:
 #        uses: actions/download-artifact@v5
 #        with:
 #          name: cdk-synthesis
-#          path: cdk.out/
+#          path: target/
 #
 #      - name: Copy .env.demo to web origin S3 bucket
 #        run: |
