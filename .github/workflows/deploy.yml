@@ -319,7 +319,6 @@ jobs:
           role-skip-session-tagging: true
           output-credentials: true
           retry-max-attempts: 3
-          # role-session-name: gha-submit-actions-deploy
 
       - name: Assume AWS deployment role
         uses: aws-actions/configure-aws-credentials@v5
@@ -331,7 +330,6 @@ jobs:
           role-skip-session-tagging: true
           output-credentials: true
           retry-max-attempts: 3
-          #role-session-name: gha-submit-deploy
 
   npm-test-cdk:
     name: 'npm test cdk'
@@ -504,7 +502,10 @@ jobs:
           role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
           role-chaining: false
-          role-session-name: gha-submit-actions-deploy
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
 
       - name: Assume AWS deployment role
         uses: aws-actions/configure-aws-credentials@v5
@@ -512,7 +513,10 @@ jobs:
           role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
           role-chaining: true
-          role-session-name: gha-submit-deploy
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
 
       - name: Diff stacks (CDK)
         run: |
@@ -575,7 +579,10 @@ jobs:
           role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
           role-chaining: false
-          role-session-name: gha-submit-actions-deploy
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
 
       - name: Assume AWS deployment role
         uses: aws-actions/configure-aws-credentials@v5
@@ -583,7 +590,10 @@ jobs:
           role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
           role-chaining: true
-          role-session-name: gha-submit-deploy
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
 
       # Once only per account
       #- name: Bootstrap CDK
@@ -719,7 +729,10 @@ jobs:
           role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
           role-chaining: false
-          role-session-name: gha-submit-actions-deploy
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
 
       - name: Assume AWS deployment role
         uses: aws-actions/configure-aws-credentials@v5
@@ -727,7 +740,10 @@ jobs:
           role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
           role-chaining: true
-          role-session-name: gha-submit-deploy
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
 
       - name: Deploy Dev Stack (CDK)
         run: |
@@ -796,7 +812,10 @@ jobs:
           role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
           role-chaining: false
-          role-session-name: gha-submit-actions-deploy
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
 
       - name: Assume AWS deployment role
         uses: aws-actions/configure-aws-credentials@v5
@@ -804,7 +823,10 @@ jobs:
           role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
           role-chaining: true
-          role-session-name: gha-submit-deploy
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
 
       - name: Deploy Identity stack (CDK)
         run: |
@@ -869,7 +891,10 @@ jobs:
           role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
           role-chaining: false
-          role-session-name: gha-submit-actions-deploy
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
 
       - name: Assume AWS deployment role
         uses: aws-actions/configure-aws-credentials@v5
@@ -877,7 +902,10 @@ jobs:
           role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
           role-chaining: true
-          role-session-name: gha-submit-deploy
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
 
       - name: Login to Amazon ECR
         shell: bash
@@ -937,7 +965,10 @@ jobs:
           role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
           role-chaining: false
-          role-session-name: gha-submit-actions-deploy
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
 
       - name: Assume AWS deployment role
         uses: aws-actions/configure-aws-credentials@v5
@@ -945,7 +976,10 @@ jobs:
           role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
           role-chaining: true
-          role-session-name: gha-submit-deploy
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
 
       - name: Deploy App stack (CDK)
         run: |
@@ -1013,7 +1047,10 @@ jobs:
           role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
           role-chaining: false
-          role-session-name: gha-submit-actions-deploy
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
 
       - name: Assume AWS deployment role
         uses: aws-actions/configure-aws-credentials@v5
@@ -1021,7 +1058,10 @@ jobs:
           role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
           role-chaining: true
-          role-session-name: gha-submit-deploy
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
 
       - name: Deploy Web Stack (CDK)
         run: |
