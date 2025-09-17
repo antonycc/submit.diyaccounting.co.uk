@@ -1,26 +1,28 @@
 # .github/workflows/deploy-ci-only.yml
 
 name: deploy-ci-only
-concurrency: deploy-ci
+concurrency:
+  group: deploy-${{ github.ref_name }}
+  cancel-in-progress: false
 run-name: "deploy ci only [${{ github.ref_name }}] (skipDeploy = [${{ inputs.skipDeploy || 'false' }}])"
 
 on:
-  push:
-    branches:
-      - '**'
-      - '!main'
-      - '!gh_pages'
-    paths:
-      - '.env.ci'
-      - '.env.proxy'
-      - 'infra/**'
-      - 'app/**'
-      - 'web/**'
-      - 'cdk.json'
-      - 'package.json'
-      - 'package-lock.json'
-      - '.github/workflows/deploy-ci-only.yml'
-      - '**/pom.xml'
+#  push:
+#    branches:
+#      - '**'
+#      - '!main'
+#      - '!gh_pages'
+#    paths:
+#      - '.env.ci'
+#      - '.env.proxy'
+#      - 'infra/**'
+#      - 'app/**'
+#      - 'web/**'
+#      - 'cdk.json'
+#      - 'package.json'
+#      - 'package-lock.json'
+#      - '.github/workflows/deploy-ci-only.yml'
+#      - '**/pom.xml'
   workflow_call:
     inputs:
       skipDeploy:
