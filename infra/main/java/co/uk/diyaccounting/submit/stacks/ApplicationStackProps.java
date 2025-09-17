@@ -6,6 +6,9 @@ public class ApplicationStackProps {
     public final String hostedZoneName;
     public final String cloudTrailEnabled;
     public final String xRayEnabled;
+    public final String baseImageTag;
+    public final String ecrRepositoryArn;
+    public final String ecrRepositoryName;
 
     private ApplicationStackProps(Builder b) {
         this.env = b.env;
@@ -13,6 +16,9 @@ public class ApplicationStackProps {
         this.hostedZoneName = b.hostedZoneName;
         this.cloudTrailEnabled = b.cloudTrailEnabled;
         this.xRayEnabled = b.xRayEnabled;
+        this.baseImageTag = b.baseImageTag;
+        this.ecrRepositoryArn = b.ecrRepositoryArn;
+        this.ecrRepositoryName = b.ecrRepositoryName;
     }
 
     public static Builder builder() {
@@ -25,6 +31,9 @@ public class ApplicationStackProps {
         private String hostedZoneName;
         private String cloudTrailEnabled;
         private String xRayEnabled;
+        private String baseImageTag;
+        private String ecrRepositoryArn;
+        private String ecrRepositoryName;
 
         public Builder env(String v) {
             this.env = v;
@@ -48,6 +57,21 @@ public class ApplicationStackProps {
 
         public Builder xRayEnabled(String v) {
             this.xRayEnabled = v;
+            return this;
+        }
+
+        public Builder baseImageTag(String v) {
+            this.baseImageTag = v;
+            return this;
+        }
+
+        public Builder ecrRepositoryArn(String v) {
+            this.ecrRepositoryArn = v;
+            return this;
+        }
+
+        public Builder ecrRepositoryName(String v) {
+            this.ecrRepositoryName = v;
             return this;
         }
 

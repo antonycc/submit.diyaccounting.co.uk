@@ -70,7 +70,6 @@ public class WebStackProps {
     public final String myBundlesLambdaHandlerFunctionName;
     public final String myBundlesLambdaUrlPath;
     public final String myBundlesLambdaDurationMillis;
-    public final String baseImageTag;
     public final String cognitoFeaturePlan;
     public final String cognitoEnableLogDelivery;
     public final String logCognitoEventHandlerSource;
@@ -81,6 +80,7 @@ public class WebStackProps {
     public final String antonyccBaseUri;
     public final String cognitoClientId;
     public final String cognitoBaseUri;
+    public final String baseImageTag;
     public final String ecrRepositoryArn;
     public final String ecrRepositoryName;
 
@@ -154,7 +154,6 @@ public class WebStackProps {
         this.myBundlesLambdaHandlerFunctionName = b.myBundlesLambdaHandlerFunctionName;
         this.myBundlesLambdaUrlPath = b.myBundlesLambdaUrlPath;
         this.myBundlesLambdaDurationMillis = b.myBundlesLambdaDurationMillis;
-        this.baseImageTag = b.baseImageTag;
         this.cognitoFeaturePlan = b.cognitoFeaturePlan;
         this.cognitoEnableLogDelivery = b.cognitoEnableLogDelivery;
         this.logCognitoEventHandlerSource = b.logCognitoEventHandlerSource;
@@ -165,6 +164,7 @@ public class WebStackProps {
         this.antonyccBaseUri = b.antonyccBaseUri;
         this.cognitoClientId = b.cognitoClientId;
         this.cognitoBaseUri = b.cognitoBaseUri;
+        this.baseImageTag = b.baseImageTag;
         this.ecrRepositoryArn = b.ecrRepositoryArn;
         this.ecrRepositoryName = b.ecrRepositoryName;
     }
@@ -243,7 +243,6 @@ public class WebStackProps {
                 myBundlesLambdaHandlerFunctionName,
                 myBundlesLambdaUrlPath,
                 myBundlesLambdaDurationMillis,
-                baseImageTag,
                 cognitoFeaturePlan,
                 cognitoEnableLogDelivery,
                 logCognitoEventHandlerSource,
@@ -254,6 +253,7 @@ public class WebStackProps {
                 antonyccBaseUri,
                 cognitoClientId,
                 cognitoBaseUri,
+                baseImageTag,
                 ecrRepositoryArn,
                 ecrRepositoryName;
 
@@ -602,11 +602,6 @@ public class WebStackProps {
             return this;
         }
 
-        public Builder baseImageTag(String v) {
-            this.baseImageTag = v;
-            return this;
-        }
-
         public Builder cognitoFeaturePlan(String v) {
             this.cognitoFeaturePlan = v;
             return this;
@@ -654,6 +649,11 @@ public class WebStackProps {
 
         public Builder cognitoBaseUri(String v) {
             this.cognitoBaseUri = v;
+            return this;
+        }
+
+        public Builder baseImageTag(String v) {
+            this.baseImageTag = v;
             return this;
         }
 

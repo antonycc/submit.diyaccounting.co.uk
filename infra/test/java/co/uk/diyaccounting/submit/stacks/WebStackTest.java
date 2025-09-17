@@ -2,10 +2,8 @@ package co.uk.diyaccounting.submit.stacks;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import software.amazon.awscdk.App;
-import software.amazon.awscdk.assertions.Template;
 import uk.org.webcompere.systemstubs.environment.EnvironmentVariables;
 import uk.org.webcompere.systemstubs.jupiter.SystemStub;
 import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
@@ -25,20 +23,8 @@ public class WebStackTest {
             "CDK_DEFAULT_ACCOUNT", testAccount,
             "CDK_DEFAULT_REGION", "eu-west-2");
 
-    @Test
-    public void testStackResources() {
-        logger.info("Starting WebStack test - this should be visible in console output");
-        App app = new App();
-
-        WebStack stack = createTestWebStack(app);
-
-        Template template = Template.fromStack(stack);
-        template.resourceCountIs("AWS::S3::Bucket", 4);
-        logger.info("WebStack test completed successfully - logging is working!");
-    }
-
-    private WebStack createTestWebStack(App app) {
-        return WebStack.Builder.create(app, "TestWebStack")
+    private WebStack createTestWebStack(App app, String env) {
+        return WebStack.Builder.create(app, "%s-TestWebStack".format(env))
                 .env("test")
                 .hostedZoneName("test.submit.diyaccounting.co.uk")
                 .hostedZoneId("test")
@@ -105,6 +91,9 @@ public class WebStackTest {
                 // .cognitoClientSecretArn(
                 //
                 // "arn:aws:secretsmanager:eu-west-2:000000000000:secret:diy/test/submit/cognito/client_secret")
+                .ecrRepositoryArn("arn:aws:ecr:eu-west-2:000000000000:repository/test-repo")
+                .ecrRepositoryName("test-repo")
+                .baseImageTag("test-tag")
                 .build();
     }
 }

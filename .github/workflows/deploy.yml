@@ -62,7 +62,7 @@ env:
   JAVA_VERSION: '21'
   NODE_VERSION: '22'
   ACTIONS_ROLE_ARN: 'arn:aws:iam::887764105431:role/submit-github-actions-role'
-  DEPLOY_ROLE_ARN: 'arn:aws:iam::887764105431:role/submit-deployment-role'
+  DEPLOY_ROLE_ARN:  'arn:aws:iam::887764105431:role/submit-deployment-role'
   AWS_REGION: 'eu-west-2'
   BASE_IMAGE_TAG_PREFIX: 'submit-base'
 
@@ -476,6 +476,7 @@ jobs:
         with:
           role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
           role-session-name: gha-submit-actions-deploy
 
       - name: Assume AWS deployment role
@@ -483,6 +484,7 @@ jobs:
         with:
           role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
           role-session-name: gha-submit-deploy
 
       - name: Diff stacks (CDK)
@@ -545,6 +547,7 @@ jobs:
         with:
           role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
           role-session-name: gha-submit-actions-deploy
 
       - name: Assume AWS deployment role
@@ -552,6 +555,7 @@ jobs:
         with:
           role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
           role-session-name: gha-submit-deploy
 
       # Once only per account
@@ -687,6 +691,7 @@ jobs:
         with:
           role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
           role-session-name: gha-submit-actions-deploy
 
       - name: Assume AWS deployment role
@@ -694,6 +699,7 @@ jobs:
         with:
           role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
           role-session-name: gha-submit-deploy
 
       - name: Deploy Dev Stack (CDK)
@@ -762,6 +768,7 @@ jobs:
         with:
           role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
           role-session-name: gha-submit-actions-deploy
 
       - name: Assume AWS deployment role
@@ -769,6 +776,7 @@ jobs:
         with:
           role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
           role-session-name: gha-submit-deploy
 
       - name: Deploy Identity stack (CDK)
@@ -833,6 +841,7 @@ jobs:
         with:
           role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
           role-session-name: gha-submit-actions-deploy
 
       - name: Assume AWS deployment role
@@ -840,6 +849,7 @@ jobs:
         with:
           role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
           role-session-name: gha-submit-deploy
 
       - name: Login to Amazon ECR
@@ -899,6 +909,7 @@ jobs:
         with:
           role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
           role-session-name: gha-submit-actions-deploy
 
       - name: Assume AWS deployment role
@@ -906,6 +917,7 @@ jobs:
         with:
           role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
           role-session-name: gha-submit-deploy
 
       - name: Deploy App stack (CDK)
@@ -973,6 +985,7 @@ jobs:
         with:
           role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
           role-session-name: gha-submit-actions-deploy
 
       - name: Assume AWS deployment role
@@ -980,6 +993,7 @@ jobs:
         with:
           role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
           role-session-name: gha-submit-deploy
 
       - name: Deploy Web Stack (CDK)

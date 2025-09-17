@@ -8,11 +8,6 @@ import co.uk.diyaccounting.submit.constructs.LambdaUrlOriginOpts;
 import co.uk.diyaccounting.submit.constructs.LogForwardingBucket;
 import co.uk.diyaccounting.submit.functions.LogS3ObjectEvent;
 import co.uk.diyaccounting.submit.utils.ResourceNameUtils;
-import java.util.AbstractMap;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.regex.Pattern;
 import org.apache.hc.core5.http.HttpStatus;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -61,6 +56,12 @@ import software.amazon.awscdk.services.secretsmanager.ISecret;
 import software.amazon.awscdk.services.secretsmanager.Secret;
 import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
+
+import java.util.AbstractMap;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Pattern;
 
 public class WebStack extends Stack {
 
@@ -896,6 +897,7 @@ public class WebStack extends Stack {
                 "DIY_SUBMIT_HMRC_CLIENT_ID", builder.hmrcClientId));
         var authUrlHmrcLambdaUrlOrigin = LambdaUrlOrigin.Builder.create(this, "AuthUrlHmrc")
                 .imageFilename("authUrlHmrc.Dockerfile")
+                .baseImageTag(builder.baseImageTag)
                 .ecrRepositoryName(builder.ecrRepositoryName)
                 .ecrRepositoryArn(builder.ecrRepositoryArn)
                 .functionName(Builder.buildFunctionName(dashedDomainName, builder.authUrlHmrcLambdaHandlerFunctionName))
@@ -904,7 +906,7 @@ public class WebStack extends Stack {
                 .environment(authUrlHmrcLambdaEnv)
                 .timeout(Duration.millis(Long.parseLong(builder.authUrlHmrcLambdaDuration)))
                 .options(lambdaCommonOpts)
-                .build();
+                .build(this);
         this.authUrlHmrcLambda = authUrlHmrcLambdaUrlOrigin.lambda;
         this.authUrlHmrcLambdaUrl = authUrlHmrcLambdaUrlOrigin.functionUrl;
         this.authUrlLambdaLogGroup = authUrlHmrcLambdaUrlOrigin.logGroup;
@@ -915,13 +917,16 @@ public class WebStack extends Stack {
         var authUrlMockLambdaEnv = new HashMap<>(Map.of("DIY_SUBMIT_HOME_URL", builder.homeUrl));
         var authUrlMockLambdaUrlOrigin = LambdaUrlOrigin.Builder.create(this, "AuthUrlMock")
                 .options(lambdaCommonOpts)
+                .baseImageTag(builder.baseImageTag)
+                .ecrRepositoryName(builder.ecrRepositoryName)
+                .ecrRepositoryArn(builder.ecrRepositoryArn)
                 .imageFilename("authUrlMock.Dockerfile")
                 .functionName(Builder.buildFunctionName(dashedDomainName, builder.authUrlMockLambdaHandlerFunctionName))
                 .allowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
                 .handler(builder.lambdaEntry + builder.authUrlMockLambdaHandlerFunctionName)
                 .environment(authUrlMockLambdaEnv)
                 .timeout(Duration.millis(Long.parseLong(builder.authUrlMockLambdaDuration)))
-                .build();
+                .build(this);
         this.authUrlMockLambda = authUrlMockLambdaUrlOrigin.lambda;
         this.authUrlMockLambdaUrl = authUrlMockLambdaUrlOrigin.functionUrl;
         this.authUrlMockLambdaLogGroup = authUrlMockLambdaUrlOrigin.logGroup;
@@ -938,6 +943,9 @@ public class WebStack extends Stack {
                 builder.cognitoBaseUri));
         var authUrlCognitoLambdaUrlOrigin = LambdaUrlOrigin.Builder.create(this, "AuthUrlCognito")
                 .options(lambdaCommonOpts)
+                .baseImageTag(builder.baseImageTag)
+                .ecrRepositoryName(builder.ecrRepositoryName)
+                .ecrRepositoryArn(builder.ecrRepositoryArn)
                 .imageFilename("authUrlCognito.Dockerfile")
                 .functionName(
                         Builder.buildFunctionName(dashedDomainName, builder.authUrlCognitoLambdaHandlerFunctionName))
@@ -945,7 +953,7 @@ public class WebStack extends Stack {
                 .handler(builder.lambdaEntry + builder.authUrlCognitoLambdaHandlerFunctionName)
                 .environment(authUrlCognitoLambdaEnv)
                 .timeout(Duration.millis(Long.parseLong(builder.authUrlCognitoLambdaDuration)))
-                .build();
+                .build(this);
         this.authUrlCognitoLambda = authUrlCognitoLambdaUrlOrigin.lambda;
         this.authUrlCognitoLambdaUrl = authUrlCognitoLambdaUrlOrigin.functionUrl;
         this.authUrlCognitoLambdaLogGroup = authUrlCognitoLambdaUrlOrigin.logGroup;
@@ -966,6 +974,9 @@ public class WebStack extends Stack {
         }
         var exchangeHmrcTokenLambdaUrlOrigin = LambdaUrlOrigin.Builder.create(this, "ExchangeHmrcToken")
                 .options(lambdaCommonOpts)
+                .baseImageTag(builder.baseImageTag)
+                .ecrRepositoryName(builder.ecrRepositoryName)
+                .ecrRepositoryArn(builder.ecrRepositoryArn)
                 .imageFilename("exchangeHmrcToken.Dockerfile")
                 .functionName(
                         Builder.buildFunctionName(dashedDomainName, builder.exchangeHmrcTokenLambdaHandlerFunctionName))
@@ -973,7 +984,7 @@ public class WebStack extends Stack {
                 .handler(builder.lambdaEntry + builder.exchangeHmrcTokenLambdaHandlerFunctionName)
                 .environment(exchangeHmrcTokenLambdaEnv)
                 .timeout(Duration.millis(Long.parseLong(builder.exchangeHmrcTokenLambdaDuration)))
-                .build();
+                .build(this);
         this.exchangeHmrcTokenLambda = exchangeHmrcTokenLambdaUrlOrigin.lambda;
         this.exchangeHmrcTokenLambdaUrl = exchangeHmrcTokenLambdaUrlOrigin.functionUrl;
         this.exchangeHmrcTokenLambdaLogGroup = exchangeHmrcTokenLambdaUrlOrigin.logGroup;
@@ -994,6 +1005,9 @@ public class WebStack extends Stack {
         }
         var exchangeCognitoTokenLambdaUrlOrigin = LambdaUrlOrigin.Builder.create(this, "ExchangeCognitoToken")
                 .options(lambdaCommonOpts)
+                .baseImageTag(builder.baseImageTag)
+                .ecrRepositoryName(builder.ecrRepositoryName)
+                .ecrRepositoryArn(builder.ecrRepositoryArn)
                 .imageFilename("exchangeCognitoToken.Dockerfile")
                 .functionName(Builder.buildFunctionName(
                         dashedDomainName, builder.exchangeCognitoTokenLambdaHandlerFunctionName))
@@ -1004,7 +1018,7 @@ public class WebStack extends Stack {
                         builder.exchangeCognitoTokenLambdaDuration != null
                                 ? builder.exchangeCognitoTokenLambdaDuration
                                 : "30000")))
-                .build();
+                .build(this);
         this.exchangeCognitoTokenLambda = exchangeCognitoTokenLambdaUrlOrigin.lambda;
         this.exchangeCognitoTokenLambdaUrl = exchangeCognitoTokenLambdaUrlOrigin.functionUrl;
         this.exchangeCognitoTokenLambdaLogGroup = exchangeCognitoTokenLambdaUrlOrigin.logGroup;
@@ -1017,13 +1031,16 @@ public class WebStack extends Stack {
                 "DIY_SUBMIT_HMRC_BASE_URI", builder.hmrcBaseUri));
         var submitVatLambdaUrlOrigin = LambdaUrlOrigin.Builder.create(this, "SubmitVat")
                 .options(lambdaCommonOpts)
+                .baseImageTag(builder.baseImageTag)
+                .ecrRepositoryName(builder.ecrRepositoryName)
+                .ecrRepositoryArn(builder.ecrRepositoryArn)
                 .imageFilename("submitVat.Dockerfile")
                 .functionName(Builder.buildFunctionName(dashedDomainName, builder.submitVatLambdaHandlerFunctionName))
                 .allowedMethods(AllowedMethods.ALLOW_ALL)
                 .handler(builder.lambdaEntry + builder.submitVatLambdaHandlerFunctionName)
                 .environment(submitVatLambdaEnv)
                 .timeout(Duration.millis(Long.parseLong(builder.submitVatLambdaDuration)))
-                .build();
+                .build(this);
         this.submitVatLambda = submitVatLambdaUrlOrigin.lambda;
         this.submitVatLambdaUrl = submitVatLambdaUrlOrigin.functionUrl;
         this.submitVatLambdaLogGroup = submitVatLambdaUrlOrigin.logGroup;
@@ -1045,13 +1062,16 @@ public class WebStack extends Stack {
         }
         var logReceiptLambdaUrlOrigin = LambdaUrlOrigin.Builder.create(this, "LogReceipt")
                 .options(lambdaCommonOpts)
+                .baseImageTag(builder.baseImageTag)
+                .ecrRepositoryName(builder.ecrRepositoryName)
+                .ecrRepositoryArn(builder.ecrRepositoryArn)
                 .imageFilename("logReceipt.Dockerfile")
                 .functionName(Builder.buildFunctionName(dashedDomainName, builder.logReceiptLambdaHandlerFunctionName))
                 .allowedMethods(AllowedMethods.ALLOW_ALL)
                 .handler(builder.lambdaEntry + builder.logReceiptLambdaHandlerFunctionName)
                 .environment(logReceiptLambdaEnv)
                 .timeout(Duration.millis(Long.parseLong(builder.logReceiptLambdaDuration)))
-                .build();
+                .build(this);
         this.logReceiptLambda = logReceiptLambdaUrlOrigin.lambda;
         this.logReceiptLambdaUrl = logReceiptLambdaUrlOrigin.functionUrl;
         this.logReceiptLambdaLogGroup = logReceiptLambdaUrlOrigin.logGroup;
@@ -1078,7 +1098,7 @@ public class WebStack extends Stack {
                     .environment(bundleLambdaEnv)
                     .timeout(Duration.millis(Long.parseLong(
                             builder.bundleLambdaDuration != null ? builder.bundleLambdaDuration : "30000")))
-                    .build();
+                    .build(this);
             this.bundleLambda = bundleLambdaUrlOrigin.lambda;
             this.bundleLambdaUrl = bundleLambdaUrlOrigin.functionUrl;
             this.bundleLambdaLogGroup = bundleLambdaUrlOrigin.logGroup;
@@ -1100,6 +1120,9 @@ public class WebStack extends Stack {
         var catalogLambdaEnv = new HashMap<>(Map.of("DIY_SUBMIT_HOME_URL", builder.homeUrl));
         var catalogLambdaUrlOrigin = LambdaUrlOrigin.Builder.create(this, "Catalog")
                 .options(lambdaCommonOpts)
+                .baseImageTag(builder.baseImageTag)
+                .ecrRepositoryName(builder.ecrRepositoryName)
+                .ecrRepositoryArn(builder.ecrRepositoryArn)
                 .imageFilename("getCatalog.Dockerfile")
                 .functionName(Builder.buildFunctionName(dashedDomainName, builder.catalogLambdaHandlerFunctionName))
                 .allowedMethods(AllowedMethods.ALLOW_ALL)
@@ -1107,7 +1130,7 @@ public class WebStack extends Stack {
                 .environment(catalogLambdaEnv)
                 .timeout(Duration.millis(Long.parseLong(
                         builder.catalogLambdaDuration != null ? builder.catalogLambdaDuration : "30000")))
-                .build();
+                .build(this);
         this.catalogLambda = catalogLambdaUrlOrigin.lambda;
         this.catalogLambdaUrl = catalogLambdaUrlOrigin.functionUrl;
         this.catalogLambdaLogGroup = catalogLambdaUrlOrigin.logGroup;
@@ -1118,6 +1141,9 @@ public class WebStack extends Stack {
         var myBundlesLambdaEnv = new HashMap<>(Map.of("DIY_SUBMIT_HOME_URL", builder.homeUrl));
         var myBundlesLambdaUrlOrigin = LambdaUrlOrigin.Builder.create(this, "MyBundles")
                 .options(lambdaCommonOpts)
+                .baseImageTag(builder.baseImageTag)
+                .ecrRepositoryName(builder.ecrRepositoryName)
+                .ecrRepositoryArn(builder.ecrRepositoryArn)
                 .imageFilename("myBundles.Dockerfile")
                 .functionName(Builder.buildFunctionName(dashedDomainName, builder.myBundlesLambdaHandlerFunctionName))
                 .allowedMethods(AllowedMethods.ALLOW_ALL)
@@ -1125,7 +1151,7 @@ public class WebStack extends Stack {
                 .environment(myBundlesLambdaEnv)
                 .timeout(Duration.millis(Long.parseLong(
                         builder.myBundlesLambdaDuration != null ? builder.myBundlesLambdaDuration : "30000")))
-                .build();
+                .build(this);
         this.myBundlesLambda = myBundlesLambdaUrlOrigin.lambda;
         this.myBundlesLambdaUrl = myBundlesLambdaUrlOrigin.functionUrl;
         this.myBundlesLambdaLogGroup = myBundlesLambdaUrlOrigin.logGroup;
@@ -1138,6 +1164,9 @@ public class WebStack extends Stack {
                 "DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX", builder.receiptsBucketPostfix));
         var myReceiptsLambdaUrlOrigin = LambdaUrlOrigin.Builder.create(this, "MyReceipts")
                 .options(lambdaCommonOpts)
+                .baseImageTag(builder.baseImageTag)
+                .ecrRepositoryName(builder.ecrRepositoryName)
+                .ecrRepositoryArn(builder.ecrRepositoryArn)
                 .imageFilename("myReceipts.Dockerfile")
                 .functionName(Builder.buildFunctionName(dashedDomainName, builder.myReceiptsLambdaHandlerFunctionName))
                 .allowedMethods(AllowedMethods.ALLOW_ALL)
@@ -1145,7 +1174,7 @@ public class WebStack extends Stack {
                 .environment(myReceiptsLambdaEnv)
                 .timeout(Duration.millis(Long.parseLong(
                         builder.myReceiptsLambdaDuration != null ? builder.myReceiptsLambdaDuration : "30000")))
-                .build();
+                .build(this);
         this.myReceiptsLambda = myReceiptsLambdaUrlOrigin.lambda;
         this.myReceiptsLambdaUrl = myReceiptsLambdaUrlOrigin.functionUrl;
         this.myReceiptsLambdaLogGroup = myReceiptsLambdaUrlOrigin.logGroup;

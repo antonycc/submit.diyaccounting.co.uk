@@ -82,6 +82,9 @@ public class WebApp {
                         .subDomainName(envOr("SUB_DOMAIN_NAME", appProps.subDomainName))
                         .cloudTrailEnabled(envOr("CLOUD_TRAIL_ENABLED", appProps.cloudTrailEnabled))
                         .xRayEnabled(envOr("X_RAY_ENABLED", appProps.xRayEnabled))
+                        .baseImageTag(envOr("BASE_IMAGE_TAG", appProps.baseImageTag))
+                        .ecrRepositoryArn(devStack.ecrRepository.getRepositoryArn())
+                        .ecrRepositoryName(devStack.ecrRepository.getRepositoryName())
                         .build())
                 .build();
 
@@ -90,6 +93,7 @@ public class WebApp {
         WebStack webStack = WebStack.Builder.create(app, webStackId)
                 .props(co.uk.diyaccounting.submit.stacks.WebStackProps.builder()
                         .env(envName)
+                        .baseImageTag(envOr("BASE_IMAGE_TAG", appProps.baseImageTag))
                         .ecrRepositoryArn(devStack.ecrRepository.getRepositoryArn())
                         .ecrRepositoryName(devStack.ecrRepository.getRepositoryName())
                         .hostedZoneName(envOr("HOSTED_ZONE_NAME", appProps.hostedZoneName))
@@ -169,7 +173,6 @@ public class WebApp {
                         .myBundlesLambdaHandlerFunctionName(appProps.myBundlesLambdaHandlerFunctionName)
                         .myBundlesLambdaUrlPath(appProps.myBundlesLambdaUrlPath)
                         .myBundlesLambdaDurationMillis(appProps.myBundlesLambdaDuration)
-                        .baseImageTag(envOr("BASE_IMAGE_TAG", appProps.baseImageTag))
                         .cognitoFeaturePlan(appProps.cognitoFeaturePlan)
                         .cognitoEnableLogDelivery(appProps.cognitoEnableLogDelivery)
                         .logCognitoEventHandlerSource(appProps.logCognitoEventHandlerSource)

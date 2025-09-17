@@ -1,8 +1,5 @@
 package co.uk.diyaccounting.submit.constructs;
 
-import java.util.List;
-import java.util.Map;
-import java.util.regex.Pattern;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import software.amazon.awscdk.Duration;
@@ -19,9 +16,12 @@ import software.amazon.awscdk.services.cloudfront.OriginRequestPolicy;
 import software.amazon.awscdk.services.cloudfront.ResponseHeadersPolicy;
 import software.amazon.awscdk.services.cloudfront.ViewerProtocolPolicy;
 import software.amazon.awscdk.services.cloudfront.origins.HttpOrigin;
-import software.amazon.awscdk.services.lambda.AssetImageCodeProps;
+import software.amazon.awscdk.services.ecr.IRepository;
+import software.amazon.awscdk.services.ecr.Repository;
+import software.amazon.awscdk.services.ecr.RepositoryAttributes;
 import software.amazon.awscdk.services.lambda.DockerImageCode;
 import software.amazon.awscdk.services.lambda.DockerImageFunction;
+import software.amazon.awscdk.services.lambda.EcrImageCodeProps;
 import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.lambda.FunctionUrl;
 import software.amazon.awscdk.services.lambda.FunctionUrlAuthType;
@@ -34,20 +34,53 @@ import software.amazon.awscdk.services.logs.LogGroupProps;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.constructs.Construct;
 
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Pattern;
+
 public class LambdaUrlOrigin {
 
     private static final Logger logger = LogManager.getLogger(LambdaUrlOrigin.class);
     private static final Pattern LAMBDA_URL_HOST_PATTERN = Pattern.compile("https://([^/]+)/");
 
+    public final DockerImageCode dockerImage;
     public final Function lambda;
     public final LogGroup logGroup;
     public final FunctionUrl functionUrl;
     public final BehaviorOptions behaviorOptions;
     public final HttpOrigin apiOrigin;
 
-    private LambdaUrlOrigin(Builder builder) {
+    private LambdaUrlOrigin(final Construct scope, Builder builder) {
+
         // Create the lambda function
-        this.lambda = createLambda(builder);
+        var imageCodeProps = EcrImageCodeProps.builder()
+            .tagOrDigest(builder.baseImageTag) // e.g. "latest" or specific digest for immutability
+            .cmd(List.of(builder.handler))
+            .build();
+        var repositoryAttributes = RepositoryAttributes.builder()
+            .repositoryArn(builder.ecrRepositoryArn)
+            .repositoryName(builder.ecrRepositoryName)
+            .build();
+        IRepository repository =
+            Repository.fromRepositoryAttributes(scope, builder.functionName + "-EcrRepo", repositoryAttributes);
+        this.dockerImage = DockerImageCode.fromEcr(repository, imageCodeProps);
+
+        // Add X-Ray environment variables if enabled
+        var environment = new java.util.HashMap<>(builder.environment);
+        if (builder.xRayEnabled) {
+            environment.put("AWS_XRAY_TRACING_NAME", builder.functionName);
+        }
+
+        var dockerFunctionBuilder = DockerImageFunction.Builder.create(builder.scope, builder.idPrefix + "Fn")
+            .code(this.dockerImage)
+            .environment(environment)
+            .functionName(builder.functionName)
+            .timeout(builder.timeout);
+        if (builder.xRayEnabled) {
+            dockerFunctionBuilder.tracing(Tracing.ACTIVE);
+        }
+
+        this.lambda = dockerFunctionBuilder.build();
 
         // Create log group for the lambda
         this.logGroup = new LogGroup(
@@ -85,75 +118,6 @@ public class LambdaUrlOrigin {
         this.behaviorOptions = behaviorOptionsBuilder.build();
 
         logger.info("Created LambdaUrlOrigin with function: {}", this.lambda.getFunctionName());
-    }
-
-    private Function createLambda(Builder builder) {
-        // if ("test".equals(builder.env)) {
-        //  var functionBuilder =
-        //      Function.Builder.create(builder.scope, builder.idPrefix + "Fn")
-        //          .code(
-        //              Code.fromInline(
-        //                  "exports.handler = async (event) => { return { statusCode: 200, body:
-        // 'test'"
-        //                      + " }; }"))
-        //          .handler("index.handler")
-        //          .runtime(builder.testRuntime)
-        //          .functionName(builder.functionName)
-        //          .timeout(builder.timeout);
-        //  if (builder.xRayEnabled) {
-        //    functionBuilder.tracing(Tracing.ACTIVE);
-        //  }
-        //  return functionBuilder.build();
-        // } else {
-        // Prepare build arguments
-        var buildArgs = new java.util.HashMap<String, String>();
-        buildArgs.put("BUILDKIT_INLINE_CACHE", "1");
-
-        // Add BASE_IMAGE_TAG if provided
-        if (builder.baseImageTag != null && !builder.baseImageTag.isBlank()) {
-            buildArgs.put("BASE_IMAGE_TAG", builder.baseImageTag);
-        }
-
-        // If builder.baseImageTag is an ECR image use it directly as the image
-        @org.jetbrains.annotations.NotNull DockerImageCode dockerImage;
-        // if (builder.baseImageTag != null &&
-        // builder.baseImageTag.matches("^\\d+\\.dkr\\.ecr\\.[a-z0-9-]+\\.amazonaws\\.com/.+")) {
-        //    var imageCodeProps = EcrImageCodeProps.builder()
-        //        .cmd(List.of(builder.handler))
-        //        .build();
-        //    IRepository repository = Repository.fromRepositoryAttributes(
-        //        builder.scope,
-        //        builder.idPrefix + "EcrRepo",
-        //        RepositoryAttributes.builder()
-        //            .repositoryArn(builder.ecrRepositoryArn)
-        //            .repositoryName(builder.ecrRepositoryName)
-        //            .build());
-        //    dockerImage = DockerImageCode.fromEcr(repository, imageCodeProps);
-        // } else {
-        var imageCodeProps = AssetImageCodeProps.builder()
-                .file(builder.imageDirectory + "/" + builder.imageFilename)
-                .cmd(List.of(builder.handler))
-                .buildArgs(buildArgs)
-                .build();
-        dockerImage = DockerImageCode.fromImageAsset(".", imageCodeProps);
-        // }
-
-        // Add X-Ray environment variables if enabled
-        var environment = new java.util.HashMap<>(builder.environment);
-        if (builder.xRayEnabled) {
-            environment.put("AWS_XRAY_TRACING_NAME", builder.functionName);
-        }
-
-        var dockerFunctionBuilder = DockerImageFunction.Builder.create(builder.scope, builder.idPrefix + "Fn")
-                .code(dockerImage)
-                .environment(environment)
-                .functionName(builder.functionName)
-                .timeout(builder.timeout);
-        if (builder.xRayEnabled) {
-            dockerFunctionBuilder.tracing(Tracing.ACTIVE);
-        }
-        return dockerFunctionBuilder.build();
-        // }
     }
 
     private String getLambdaUrlHostToken(FunctionUrl functionUrl) {
@@ -389,7 +353,7 @@ public class LambdaUrlOrigin {
             return this;
         }
 
-        public LambdaUrlOrigin build() {
+        public LambdaUrlOrigin build(final Construct scope) {
             // Validate required parameters
             if (env == null || env.isBlank()) {
                 throw new IllegalArgumentException("env is required");
@@ -401,7 +365,7 @@ public class LambdaUrlOrigin {
                 throw new IllegalArgumentException("handler is required for non-test environments");
             }
 
-            return new LambdaUrlOrigin(this);
+            return new LambdaUrlOrigin(scope, this);
         }
     }
 }
