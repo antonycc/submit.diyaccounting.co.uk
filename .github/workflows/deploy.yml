@@ -378,7 +378,7 @@ jobs:
           driver-opts: |
             image=moby/buildkit:latest
 
-      - name: test:cdk
+      - name: test cdk
         id: test-cdk
         shell: bash
         run: npm run cdk
