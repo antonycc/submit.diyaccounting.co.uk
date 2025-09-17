@@ -348,7 +348,7 @@ jobs:
         if: ${{ env.skipDeploy != 'true' }}
         id: deployWeb
         shell: bash
-        run: npx dotenv -e .env.ci -- npx cdk deploy SubmitWebStack-ci --exclusively --require-approval never --ci true --verbose --strict --validation
+        run: npx dotenv -e .env.ci -- npx cdk deploy WebStack-ci --exclusively --require-approval never --ci true --verbose --strict --validation
         env:
           GITHUB_ACTOR: ${{ github.actor }}
           ENV_NAME: 'ci'

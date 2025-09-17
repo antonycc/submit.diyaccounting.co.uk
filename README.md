@@ -204,8 +204,8 @@ Build, synth, deploy
 
 ./mvnw clean package
 npx cdk bootstrap aws://YOUR_ACCOUNT/YOUR_REGION
-npx cdk synth SubmitWebStack-dev
-npx cdk deploy SubmitWebStack-dev
+npx cdk synth WebStack-dev
+npx cdk deploy WebStack-dev
 ```
 Useful outputs (CfnOutput)
 - DistributionId, ARecord, UserPoolId, UserPoolClientId, UserPoolDomainName

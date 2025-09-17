@@ -382,7 +382,7 @@ jobs:
       - name: test:cdk
         id: test-cdk
         shell: bash
-        run: npm run test:cdk
+        run: npm run cdk
 
   build-cdk:
     name: 'build cdk'

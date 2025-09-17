@@ -548,7 +548,7 @@ WebStack.subDomainName = web (Source: CDK context.)
 WebStack.useExistingCertificate = true (Source: CDK context.)
 WebStack.useExistingHostedZone = true (Source: CDK context.)
 Stack ARN:
-arn:aws:cloudformation:eu-west-2:541134664601:stack/SubmitWebStack/b49af1d0-2f5e-11f0-a683-063fb0a54f1d
+arn:aws:cloudformation:eu-west-2:541134664601:stack/WebStack/b49af1d0-2f5e-11f0-a683-063fb0a54f1d
 
 ✨  Total time: 52.69s
 

@@ -86,7 +86,7 @@ public class WebApp {
                 .build();
 
         // Create WebStack with resources used in running the application
-        String webStackId = "%s-SubmitWebStack".formatted(deploymentName);
+        String webStackId = "%s-WebStack".formatted(deploymentName);
         WebStack webStack = WebStack.Builder.create(app, webStackId)
                 .props(co.uk.diyaccounting.submit.stacks.WebStackProps.builder()
                         .env(envName)
