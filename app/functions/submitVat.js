@@ -12,6 +12,7 @@ import {
   extractClientIPFromHeaders,
 } from "../lib/responses.js";
 import eventToGovClientHeaders from "../lib/eventToGovClientHeaders.js";
+import { validateSubmissionParams } from "../lib/validation.js";
 
 dotenv.config({ path: ".env" });
 
@@ -197,10 +198,12 @@ export async function httpPost(event) {
 
   const detectedIP = extractClientIPFromHeaders(event);
 
-  // Validation
+  // Parse and validate input parameters
   let errorMessages = [];
   const { vatNumber, periodKey, vatDue, accessToken, hmrcAccessToken } = JSON.parse(event.body || "{}");
   const token = accessToken || hmrcAccessToken;
+  
+  // Basic presence validation
   if (!vatNumber) {
     errorMessages.push("Missing vatNumber parameter from body");
   }
@@ -213,8 +216,18 @@ export async function httpPost(event) {
   if (!token) {
     errorMessages.push("Missing accessToken parameter from body");
   }
+  
+  // Enhanced validation using new validation module
+  if (vatNumber && periodKey && vatDue) {
+    const validationResult = validateSubmissionParams({ vatNumber, periodKey, vatDue });
+    if (!validationResult.isValid) {
+      errorMessages = errorMessages.concat(validationResult.errors);
+    }
+  }
+  
   const { govClientHeaders, govClientErrorMessages } = eventToGovClientHeaders(event, detectedIP);
   errorMessages = errorMessages.concat(govClientErrorMessages || []);
+  
   if (errorMessages.length > 0) {
     return httpBadRequestResponse({
       request,

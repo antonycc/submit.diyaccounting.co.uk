@@ -2,6 +2,10 @@
 
 import logger from "./logger.js";
 
+/**
+ * Extracts and validates Gov-Client and Gov-Vendor headers from request event
+ * Implements HMRC fraud prevention guidance requirements
+ */
 export default function eventToGovClientHeaders(event, detectedIP) {
   const govClientBrowserJSUserAgentHeader = (event.headers || {})["Gov-Client-Browser-JS-User-Agent"];
   const govClientDeviceIDHeader = (event.headers || {})["Gov-Client-Device-ID"];
@@ -27,7 +31,50 @@ export default function eventToGovClientHeaders(event, detectedIP) {
   const govClientUserIDsHeader = (event.headers || {})["Gov-Client-User-IDs"];
   const govClientWindowSizeHeader = (event.headers || {})["Gov-Client-Window-Size"];
 
-  // TODO: Also gather system defined values here and validate, failing the request if they are not present.
+  // Validation of required headers per HMRC guidance
+  const govClientErrorMessages = [];
+  
+  // Generate dynamic Gov-Vendor headers from environment
+  const govVendorForwarded = process.env.DIY_SUBMIT_GOV_VENDOR_FORWARDED || 
+    `by=${process.env.DIY_SUBMIT_SERVER_IP || '203.0.113.6'}&for=${detectedIP || '198.51.100.0'}`;
+  
+  const govVendorLicenseIDs = process.env.DIY_SUBMIT_GOV_VENDOR_LICENSE_IDS || 
+    `${process.env.DIY_SUBMIT_SOFTWARE_NAME || 'my-licensed-software'}=${process.env.DIY_SUBMIT_SOFTWARE_LICENSE_HASH || '8D7963490527D33716835EE7C195516D5E562E03B224E9B359836466EE40CDE1'}`;
+  
+  const govVendorProductName = process.env.DIY_SUBMIT_GOV_VENDOR_PRODUCT_NAME || 
+    "DIY Accounting Submit";
+  
+  const govVendorVersion = process.env.DIY_SUBMIT_GOV_VENDOR_VERSION || 
+    process.env.npm_package_name + "-" + process.env.npm_package_version ||
+    "web-submit-diyaccounting-co-uk-0.0.2-4";
+
+  // Enhanced validation based on HMRC fraud prevention guidance
+  if (process.env.DIY_SUBMIT_VALIDATE_GOV_HEADERS === "true") {
+    // Validate required client headers
+    if (!govClientPublicIPHeader || govClientPublicIPHeader === "unknown") {
+      govClientErrorMessages.push("Gov-Client-Public-IP is required and must be a valid IP address");
+    }
+    
+    if (!govClientPublicIPTimestampHeader) {
+      govClientErrorMessages.push("Gov-Client-Public-IP-Timestamp is required");
+    }
+    
+    if (!govClientBrowserJSUserAgentHeader) {
+      govClientErrorMessages.push("Gov-Client-Browser-JS-User-Agent is required for web applications");
+    }
+    
+    if (!govClientScreensHeader) {
+      govClientErrorMessages.push("Gov-Client-Screens is required");
+    }
+    
+    if (!govClientWindowSizeHeader) {
+      govClientErrorMessages.push("Gov-Client-Window-Size is required");
+    }
+    
+    if (!govClientTimezoneHeader) {
+      govClientErrorMessages.push("Gov-Client-Timezone is required");
+    }
+  }
 
   return {
     govClientHeaders: {
@@ -42,12 +89,12 @@ export default function eventToGovClientHeaders(event, detectedIP) {
       "Gov-Client-Timezone": govClientTimezoneHeader,
       "Gov-Client-User-IDs": govClientUserIDsHeader,
       "Gov-Client-Window-Size": govClientWindowSizeHeader,
-      "Gov-Vendor-Forwarded": "by=203.0.113.6&for=198.51.100.0",
-      "Gov-Vendor-License-IDs": "my-licensed-software=8D7963490527D33716835EE7C195516D5E562E03B224E9B359836466EE40CDE1",
-      "Gov-Vendor-Product-Name": "DIY Accounting Submit",
+      "Gov-Vendor-Forwarded": govVendorForwarded,
+      "Gov-Vendor-License-IDs": govVendorLicenseIDs,
+      "Gov-Vendor-Product-Name": govVendorProductName,
       "Gov-Vendor-Public-IP": govVendorPublicIPHeader,
-      "Gov-Vendor-Version": "web-submit-diyaccounting-co-uk-0.0.2-4",
+      "Gov-Vendor-Version": govVendorVersion,
     },
-    govClientErrorMessages: [],
+    govClientErrorMessages,
   };
 }
