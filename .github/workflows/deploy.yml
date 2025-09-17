@@ -27,7 +27,6 @@ on:
         description: 'Hours before self-destruct triggers for non-prod environments'
         required: false
         default: '1'
-
   push:
     branches:
       - '**'
