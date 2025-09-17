@@ -6,6 +6,7 @@ import dotenv from "dotenv";
 
 import logger from "../lib/logger.js";
 import { extractRequest, httpBadRequestResponse, httpOkResponse, httpServerErrorResponse } from "../lib/responses.js";
+import { validateAuthorizationCode, validateOAuthState } from "../lib/oauthSecurity.js";
 
 dotenv.config({ path: ".env" });
 
@@ -19,16 +20,30 @@ let cachedHmrcClientSecret;
 export async function httpPostCognito(event) {
   const request = extractRequest(event);
 
-  // Validation
+  // Enhanced validation with OAuth security
   const decoded = Buffer.from(event.body, "base64").toString("utf-8");
   const searchParams = new URLSearchParams(decoded);
   const code = searchParams.get("code");
+  const state = searchParams.get("state");
 
-  if (!code) {
+  // Validate authorization code
+  const codeValidation = validateAuthorizationCode(code);
+  if (!codeValidation.isValid) {
     return httpBadRequestResponse({
       request,
-      message: "Missing code from event body",
+      message: `Invalid authorization code: ${codeValidation.message}`,
     });
+  }
+
+  // Validate OAuth state if provided (optional validation based on configuration)
+  if (process.env.DIY_SUBMIT_VALIDATE_OAUTH_STATE === "true" && state) {
+    const stateValidation = validateOAuthState(state);
+    if (!stateValidation.isValid) {
+      return httpBadRequestResponse({
+        request,
+        message: `Invalid OAuth state: ${stateValidation.message}`,
+      });
+    }
   }
 
   const redirectUri = process.env.DIY_SUBMIT_HOME_URL + "auth/loginWithCognitoCallback.html";
@@ -51,13 +66,37 @@ export async function httpPostCognito(event) {
 export async function httpPostHmrc(event) {
   const request = extractRequest(event);
 
-  // Validation
-  const { code } = JSON.parse(event.body || "{}");
-  if (!code) {
+  // Enhanced validation with OAuth security
+  let code, state;
+  try {
+    const parsed = JSON.parse(event.body || "{}");
+    code = parsed.code;
+    state = parsed.state;
+  } catch (error) {
     return httpBadRequestResponse({
       request,
-      message: "Missing code from event body",
+      message: "Invalid JSON in request body",
     });
+  }
+  
+  // Validate authorization code
+  const codeValidation = validateAuthorizationCode(code);
+  if (!codeValidation.isValid) {
+    return httpBadRequestResponse({
+      request,
+      message: `Invalid authorization code: ${codeValidation.message}`,
+    });
+  }
+
+  // Validate OAuth state if provided (optional validation based on configuration)
+  if (process.env.DIY_SUBMIT_VALIDATE_OAUTH_STATE === "true" && state) {
+    const stateValidation = validateOAuthState(state);
+    if (!stateValidation.isValid) {
+      return httpBadRequestResponse({
+        request,
+        message: `Invalid OAuth state: ${stateValidation.message}`,
+      });
+    }
   }
 
   // OAuth exchange token post-body
@@ -75,10 +114,40 @@ export async function httpPostHmrc(event) {
 
 export async function httpPostMock(event) {
   const request = extractRequest(event);
-  const { code } = JSON.parse(event.body || "{}");
-  if (!code) {
-    return httpBadRequestResponse({ request, message: "Missing code from event body" });
+  
+  // Enhanced validation with OAuth security
+  let code, state;
+  try {
+    const parsed = JSON.parse(event.body || "{}");
+    code = parsed.code;
+    state = parsed.state;
+  } catch (error) {
+    return httpBadRequestResponse({
+      request,
+      message: "Invalid JSON in request body",
+    });
   }
+  
+  // Validate authorization code
+  const codeValidation = validateAuthorizationCode(code);
+  if (!codeValidation.isValid) {
+    return httpBadRequestResponse({
+      request,
+      message: `Invalid authorization code: ${codeValidation.message}`,
+    });
+  }
+
+  // Validate OAuth state if provided (optional validation based on configuration)
+  if (process.env.DIY_SUBMIT_VALIDATE_OAUTH_STATE === "true" && state) {
+    const stateValidation = validateOAuthState(state);
+    if (!stateValidation.isValid) {
+      return httpBadRequestResponse({
+        request,
+        message: `Invalid OAuth state: ${stateValidation.message}`,
+      });
+    }
+  }
+
   const clientSecret = await retrieveHmrcClientSecret();
   const url = `${process.env.DIY_SUBMIT_HMRC_BASE_URI}/oauth/token`;
   const body = {

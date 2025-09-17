@@ -168,8 +168,11 @@ describe("httpPostMock", () => {
       body: "invalid-json",
     };
 
-    // This should throw an error when parsing JSON
-    await expect(exchangeTokenHandler(event)).rejects.toThrow();
+    const result = await exchangeTokenHandler(event);
+    const body = JSON.parse(result.body);
+
+    expect(result.statusCode).toBe(400);
+    expect(body.message).toBe("Invalid JSON in request body");
   });
 
   test("should handle network errors", async () => {
@@ -189,7 +192,7 @@ describe("httpPostMock", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(400);
-    expect(body.message).toBe("Missing code from event body");
+    expect(body.message).toBe("Invalid authorization code: Authorization code is required");
     expect(fetch).not.toHaveBeenCalled();
   });
 });

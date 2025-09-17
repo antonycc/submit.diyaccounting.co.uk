@@ -143,15 +143,34 @@ export async function submitVat(periodKey, vatDue, vatNumber, hmrcAccessToken, g
     hmrcResponseBody = JSON.parse(process.env.DIY_SUBMIT_TEST_RECEIPT || "{}");
     logger.warn({ message: "httpPostMock called in stubbed mode, using test receipt", receipt: hmrcResponseBody });
   } else {
-    hmrcResponse = await fetch(hmrcRequestUrl, {
-      method: "POST",
-      headers: {
-        ...hmrcRequestHeaders,
-        ...govClientHeaders,
-      },
-      body: JSON.stringify(hmrcRequestBody),
-    });
-    hmrcResponseBody = await hmrcResponse.json();
+    try {
+      hmrcResponse = await fetch(hmrcRequestUrl, {
+        method: "POST",
+        headers: {
+          ...hmrcRequestHeaders,
+          ...govClientHeaders,
+        },
+        body: JSON.stringify(hmrcRequestBody),
+      });
+      hmrcResponseBody = await hmrcResponse.json();
+    } catch (networkError) {
+      logger.error({
+        message: "Network error during HMRC API call",
+        error: networkError.message,
+        url: hmrcRequestUrl,
+      });
+      // Return a synthetic error response for network failures
+      hmrcResponse = {
+        ok: false,
+        status: 503, // Service Unavailable
+        statusText: "Network Error",
+      };
+      hmrcResponseBody = {
+        error: "NETWORK_ERROR",
+        message: "Unable to connect to HMRC API",
+        details: networkError.message,
+      };
+    }
   }
   // const responseBody = await response.json();
 

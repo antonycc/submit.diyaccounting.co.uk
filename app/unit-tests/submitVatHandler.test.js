@@ -41,7 +41,7 @@ describe("httpPostMock", () => {
 
     const event = {
       body: JSON.stringify({
-        vatNumber: "193054661",
+        vatNumber: "193054638", // Valid VRN
         periodKey: "23A1",
         vatDue: "1000.50",
         accessToken: "test access token",
@@ -58,7 +58,7 @@ describe("httpPostMock", () => {
     expect(body.receipt).toEqual(mockReceipt);
 
     // Verify fetch was called with correct parameters
-    expect(fetch).toHaveBeenCalledWith("https://test/organisations/vat/193054661/returns", {
+    expect(fetch).toHaveBeenCalledWith("https://test/organisations/vat/193054638/returns", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -108,7 +108,7 @@ describe("httpPostMock", () => {
   test("should return 400 when periodKey is missing", async () => {
     const event = {
       body: JSON.stringify({
-        vatNumber: "193054661",
+        vatNumber: "193054638",
         vatDue: "1000.50",
         accessToken: "test access token",
       }),
@@ -125,7 +125,7 @@ describe("httpPostMock", () => {
   test("should return 400 when vatDue is missing", async () => {
     const event = {
       body: JSON.stringify({
-        vatNumber: "193054661",
+        vatNumber: "193054638",
         periodKey: "23A1",
         accessToken: "test access token",
       }),
@@ -142,7 +142,7 @@ describe("httpPostMock", () => {
   test("should return 400 when accessToken is missing", async () => {
     const event = {
       body: JSON.stringify({
-        vatNumber: "193054661",
+        vatNumber: "193054638", // Valid VRN to avoid validation error
         periodKey: "23A1",
         vatDue: "1000.50",
       }),
@@ -233,7 +233,7 @@ describe("httpPostMock", () => {
 
     const event = {
       body: JSON.stringify({
-        vatNumber: "invalid",
+        vatNumber: "193054638", // Valid VRN to pass validation
         periodKey: "23A1",
         vatDue: "1000.50",
         accessToken: "test access token",
@@ -244,7 +244,7 @@ describe("httpPostMock", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(500);
-    expect(body.responseBody.error).toBe(errorMessage);
+    expect(body.error.responseBody.error).toBe(errorMessage);
   });
 
   test("should handle HMRC API 401 unauthorized", async () => {
@@ -259,7 +259,7 @@ describe("httpPostMock", () => {
 
     const event = {
       body: JSON.stringify({
-        vatNumber: "193054661",
+        vatNumber: "193054638",
         periodKey: "23A1",
         vatDue: "1000.50",
         accessToken: "invalid-token",
@@ -270,7 +270,7 @@ describe("httpPostMock", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(500);
-    expect(body.responseBody.error).toBe(errorMessage);
+    expect(body.error.responseBody.error).toBe(errorMessage);
   });
 
   test("should handle numeric vatDue as string", async () => {
@@ -283,7 +283,7 @@ describe("httpPostMock", () => {
 
     const event = {
       body: JSON.stringify({
-        vatNumber: "193054661",
+        vatNumber: "193054638",
         periodKey: "23A1",
         vatDue: "1500.75",
         accessToken: "test access token",
@@ -312,7 +312,7 @@ describe("httpPostMock", () => {
 
     const event = {
       body: JSON.stringify({
-        vatNumber: "193054661",
+        vatNumber: "193054638",
         periodKey: "23A1",
         vatDue: 2000.25,
         accessToken: "test access token",
@@ -340,18 +340,26 @@ describe("httpPostMock", () => {
   });
 
   test("should handle network errors", async () => {
+    // Ensure we're not in stubbed mode
+    process.env.NODE_ENV = "test";
+    
     fetch.mockRejectedValueOnce(new Error("Network error"));
 
     const event = {
       body: JSON.stringify({
-        vatNumber: "193054661",
+        vatNumber: "193054638",
         periodKey: "23A1",
         vatDue: "1000.50",
         accessToken: "test access token",
       }),
     };
 
-    await expect(submitVatHandler(event)).rejects.toThrow("Network error");
+    // The function should handle the network error and return a server error response
+    const result = await submitVatHandler(event);
+    const body = JSON.parse(result.body);
+
+    expect(result.statusCode).toBe(500);
+    expect(body.message).toContain("HMRC VAT submission failed");
   });
 
   test("should handle missing body property", async () => {
