@@ -393,7 +393,7 @@ jobs:
         if: ${{ env.skipDeploy != 'true' }}
         id: deployIdentity
         shell: bash
-        run: npx dotenv -e .env.${{ inputs.environment || 'prod' }} -- npx cdk deploy SubmitIdentityStack-${{ inputs.environment || 'prod' }} --exclusively --require-approval never --ci true --verbose --strict --validation
+        run: npx dotenv -e .env.${{ inputs.environment || 'prod' }} -- npx cdk deploy IdentityStack-${{ inputs.environment || 'prod' }} --exclusively --require-approval never --ci true --verbose --strict --validation
         env:
           GITHUB_ACTOR: ${{ github.actor }}
           ENV_NAME: ${{ inputs.environment || 'prod' }}

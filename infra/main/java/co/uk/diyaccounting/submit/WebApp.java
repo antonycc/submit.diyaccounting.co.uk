@@ -5,13 +5,14 @@ import co.uk.diyaccounting.submit.stacks.DevStack;
 import co.uk.diyaccounting.submit.stacks.IdentityStack;
 import co.uk.diyaccounting.submit.stacks.ObservabilityStack;
 import co.uk.diyaccounting.submit.stacks.WebStack;
-import java.lang.reflect.Field;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import software.amazon.awscdk.App;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
+
+import java.lang.reflect.Field;
 
 public class WebApp {
 
@@ -25,17 +26,13 @@ public class WebApp {
         WebApp.Builder builder = WebApp.Builder.create(app, "WebApp");
         WebAppProps appProps = loadAppProps(builder, app);
 
-        String envName = appProps.env;
+        String envName = envOr("ENV_NAME", appProps.deploymentName);
+        String deploymentName = envOr("DEPLOYMENT_NAME", appProps.deploymentName);
 
-        String observabilityStackEnv = envOr("ENV_NAME", appProps.env);
-        String observabilityStackId = "SubmitObservabilityStack-%s"
-                .formatted(
-                        observabilityStackEnv != null && !observabilityStackEnv.isBlank()
-                                ? observabilityStackEnv
-                                : "dev");
+        String observabilityStackId = "%s-SubmitObservabilityStack".formatted(deploymentName);
         ObservabilityStack observabilityStack = ObservabilityStack.Builder.create(app, observabilityStackId)
                 .props(co.uk.diyaccounting.submit.stacks.ObservabilityStackProps.builder()
-                        .env(observabilityStackEnv)
+                        .env(envName)
                         .hostedZoneName(envOr("HOSTED_ZONE_NAME", appProps.hostedZoneName))
                         .subDomainName(appProps.subDomainName)
                         .cloudTrailEnabled(envOr("CLOUD_TRAIL_ENABLED", appProps.cloudTrailEnabled))
@@ -47,24 +44,20 @@ public class WebApp {
                 .build();
 
         // Create DevStack with resources only used during development or deployment (e.g. ECR)
-        String devStackEnv = envOr("ENV_NAME", appProps.env);
-        String devStackId =
-                "SubmitDevStack-%s".formatted(devStackEnv != null && !devStackEnv.isBlank() ? devStackEnv : "dev");
+        String devStackId = "%s-SubmitDevStack".formatted(deploymentName);
         DevStack devStack = DevStack.Builder.create(app, devStackId)
                 .props(co.uk.diyaccounting.submit.stacks.DevStackProps.builder()
-                        .env(devStackEnv)
+                        .env(envName)
                         .hostedZoneName(envOr("HOSTED_ZONE_NAME", appProps.hostedZoneName))
                         .subDomainName(appProps.subDomainName)
                         .build())
                 .build();
 
         // Create the identity stack before any user aware services
-        String identityStackEnv = envOr("ENV_NAME", appProps.env);
-        String identityStackId = "SubmitIdentityStack-%s"
-                .formatted(identityStackEnv != null && !identityStackEnv.isBlank() ? identityStackEnv : "dev");
+        String identityStackId = "%s-IdentityStack".formatted(deploymentName);
         IdentityStack identityStack = IdentityStack.Builder.create(app, identityStackId)
                 .props(co.uk.diyaccounting.submit.stacks.IdentityStackProps.builder()
-                        .env(identityStackEnv)
+                        .env(envName)
                         .hostedZoneName(envOr("HOSTED_ZONE_NAME", appProps.hostedZoneName))
                         .hostedZoneId(envOr("HOSTED_ZONE_ID", appProps.hostedZoneId))
                         .cognitoDomainPrefix(appProps.cognitoDomainPrefix)
@@ -81,12 +74,10 @@ public class WebApp {
                 .build();
 
         // Create the ApplicationStack
-        String applicationStackEnv = envOr("ENV_NAME", appProps.env);
-        String applicationStackId = "SubmitApplicationStack-%s"
-                .formatted(applicationStackEnv != null && !applicationStackEnv.isBlank() ? applicationStackEnv : "dev");
+        String applicationStackId = "%s-SubmitApplicationStack".formatted(deploymentName);
         ApplicationStack applicationStack = ApplicationStack.Builder.create(app, applicationStackId)
                 .props(co.uk.diyaccounting.submit.stacks.ApplicationStackProps.builder()
-                        .env(applicationStackEnv)
+                        .env(envName)
                         .hostedZoneName(envOr("HOSTED_ZONE_NAME", appProps.hostedZoneName))
                         .subDomainName(envOr("SUB_DOMAIN_NAME", appProps.subDomainName))
                         .cloudTrailEnabled(envOr("CLOUD_TRAIL_ENABLED", appProps.cloudTrailEnabled))
@@ -95,12 +86,10 @@ public class WebApp {
                 .build();
 
         // Create WebStack with resources used in running the application
-        String webStackEnv = envOr("ENV_NAME", appProps.env);
-        String webStackId =
-                "SubmitWebStack-%s".formatted(webStackEnv != null && !webStackEnv.isBlank() ? webStackEnv : "dev");
+        String webStackId = "%s-SubmitWebStack".formatted(deploymentName);
         WebStack webStack = WebStack.Builder.create(app, webStackId)
                 .props(co.uk.diyaccounting.submit.stacks.WebStackProps.builder()
-                        .env(webStackEnv)
+                        .env(envName)
                         .ecrRepositoryArn(devStack.ecrRepository.getRepositoryArn())
                         .ecrRepositoryName(devStack.ecrRepository.getRepositoryName())
                         .hostedZoneName(envOr("HOSTED_ZONE_NAME", appProps.hostedZoneName))

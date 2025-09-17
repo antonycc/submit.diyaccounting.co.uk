@@ -244,7 +244,7 @@ jobs:
         if: ${{ env.skipDeploy != 'true' }}
         id: deployIdentity
         shell: bash
-        run: npx dotenv -e .env.ci -- npx cdk deploy SubmitIdentityStack-ci --exclusively --require-approval never --ci true --verbose --strict --validation
+        run: npx dotenv -e .env.ci -- npx cdk deploy IdentityStack-ci --exclusively --require-approval never --ci true --verbose --strict --validation
         env:
           GITHUB_ACTOR: ${{ github.actor }}
           ENV_NAME: 'ci'

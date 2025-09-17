@@ -5,6 +5,7 @@ public class WebAppProps {
     // selectively.
     // common
     public String env;
+    public String deploymentName;
     public String hostedZoneName;
     public String hostedZoneId;
     public String subDomainName;
