@@ -119,6 +119,8 @@ jobs:
   npm-test:
     name: 'npm test'
     runs-on: ubuntu-24.04
+    needs:
+      - names
     permissions:
       contents: read
       packages: read
@@ -134,13 +136,15 @@ jobs:
 
       - run: npm ci || npm install
 
-      - run: source .env.ci && npm test
+      - run: source .env.${{ needs.names.outputs.environment-name }} && npm test
         env:
           DIY_SUBMIT_HMRC_CLIENT_SECRET: test
 
   npm-unit-test:
     name: 'npm unit test with coverage'
     runs-on: ubuntu-latest
+    needs:
+      - names
     permissions:
       contents: read
       id-token: write
@@ -155,7 +159,7 @@ jobs:
 
       - run: npm ci || npm install
 
-      - run: source .env.ci && npm run test:coverage
+      - run: source .env.${{ needs.names.outputs.environment-name }} && npm run test:coverage
         env:
           DIY_SUBMIT_HMRC_CLIENT_SECRET: test
 
@@ -170,6 +174,8 @@ jobs:
   npm-integration-test:
     name: 'npm integration test'
     runs-on: ubuntu-latest
+    needs:
+      - names
     permissions:
       contents: read
       id-token: write
@@ -184,11 +190,13 @@ jobs:
 
       - run: npm ci || npm install
 
-      - run: source .env.ci && npm run test:integration
+      - run: source .env.${{ needs.names.outputs.environment-name }} && npm run test:integration
 
   npm-system-test:
     name: 'npm system test'
     runs-on: ubuntu-latest
+    needs:
+      - names
     permissions:
       contents: read
       id-token: write
@@ -209,11 +217,13 @@ jobs:
           driver-opts: |
             image=moby/buildkit:latest
 
-      - run: source .env.ci && npm run test:system
+      - run: source .env.${{ needs.names.outputs.environment-name }} && npm run test:system
 
   npm-test-web-unit:
     name: 'npm unit test with coverage'
     runs-on: ubuntu-latest
+    needs:
+      - names
     permissions:
       contents: read
       id-token: write
@@ -228,11 +238,13 @@ jobs:
 
       - run: npm ci || npm install
 
-      - run: source .env.ci && npm run test:web-unit
+      - run: source .env.${{ needs.names.outputs.environment-name }} && npm run test:web-unit
 
   npm-browser-test:
     name: 'npm browser test'
     runs-on: ubuntu-latest
+    needs:
+      - names
     permissions:
       contents: read
       id-token: write
@@ -256,7 +268,7 @@ jobs:
 
       - run: npx playwright install chromium --with-deps
 
-      - run: source .env.ci && npm run test:browser
+      - run: source .env.${{ needs.names.outputs.environment-name }} && npm run test:browser
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
@@ -277,6 +289,8 @@ jobs:
   mvn-test:
     name: 'maven test'
     runs-on: ubuntu-latest
+    needs:
+      - names
     permissions:
       contents: read
       id-token: write
@@ -299,7 +313,7 @@ jobs:
         id: package
         shell: bash
         run: |
-          source .env.ci && ./mvnw clean package -Dmaven.compiler.source=17 -Dmaven.compiler.target=17 -DskipTests=true
+          source .env.${{ needs.names.outputs.environment-name }} && ./mvnw clean package -Dmaven.compiler.source=17 -Dmaven.compiler.target=17 -DskipTests=true
           ## Set the self-destruct handler JAR path as output
           #echo "self-destruct-handler-source=target/self-destruct-lambda.jar" >> $GITHUB_OUTPUT
 
@@ -368,6 +382,8 @@ jobs:
   npm-test-cdk:
     name: 'npm test cdk'
     runs-on: ubuntu-24.04
+    needs:
+      - names
     permissions:
       contents: read
       id-token: write
@@ -399,7 +415,7 @@ jobs:
       - name: test:cdk
         id: test-cdk
         shell: bash
-        run: source .env.ci && npm run test:cdk
+        run: source .env.${{ needs.names.outputs.environment-name }} && npm run test:cdk
 
   build-cdk:
     name: 'build cdk'
