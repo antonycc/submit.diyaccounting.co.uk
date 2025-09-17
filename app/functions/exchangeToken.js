@@ -206,13 +206,35 @@ async function performTokenExchange(providerUrl, body) {
       text: async () => JSON.stringify({ access_token: testAccessToken }),
     };
   } else {
-    response = await fetch(providerUrl, {
-      method: "POST",
-      headers: {
-        ...requestHeaders,
-      },
-      body: requestBody,
-    });
+    try {
+      response = await fetch(providerUrl, {
+        method: "POST",
+        headers: {
+          ...requestHeaders,
+        },
+        body: requestBody,
+      });
+    } catch (networkError) {
+      logger.error({
+        message: "Network error during OAuth token exchange",
+        error: networkError.message,
+        url: providerUrl,
+      });
+      // Return a synthetic error response for network failures
+      response = {
+        ok: false,
+        status: 503, // Service Unavailable
+        statusText: "Network Error",
+        json: async () => ({
+          error: "NETWORK_ERROR",
+          error_description: "Unable to connect to OAuth provider",
+        }),
+        text: async () => JSON.stringify({
+          error: "NETWORK_ERROR",
+          error_description: "Unable to connect to OAuth provider",
+        }),
+      };
+    }
   }
 
   let responseTokens;

@@ -176,13 +176,21 @@ describe("httpPostMock", () => {
   });
 
   test("should handle network errors", async () => {
+    // Ensure we're not in stubbed mode
+    process.env.NODE_ENV = "test";
+    
     fetch.mockRejectedValueOnce(new Error("Network error"));
 
     const event = {
-      body: JSON.stringify({ code: "test-code" }),
+      body: JSON.stringify({ code: "valid-auth-code-12345" }),
     };
 
-    await expect(exchangeTokenHandler(event)).rejects.toThrow("Network error");
+    const result = await exchangeTokenHandler(event);
+    const body = JSON.parse(result.body);
+
+    expect(result.statusCode).toBe(500);
+    expect(body.message).toBe("Token exchange failed");
+    expect(body.error.responseBody.error).toBe("NETWORK_ERROR");
   });
 
   test("should handle missing body property", async () => {
