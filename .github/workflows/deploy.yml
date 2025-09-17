@@ -494,7 +494,7 @@ jobs:
         uses: actions/download-artifact@v5
         with:
           name: cdk-synthesis
-          path: cdk.out/
+          path: target/
 
       - name: Configure AWS role via GitHub OIDC
         uses: aws-actions/configure-aws-credentials@v5
@@ -571,7 +571,7 @@ jobs:
         uses: actions/download-artifact@v5
         with:
           name: cdk-synthesis
-          path: cdk.out/
+          path: target/
 
       - name: Configure AWS role via GitHub OIDC
         uses: aws-actions/configure-aws-credentials@v5
@@ -721,7 +721,7 @@ jobs:
         uses: actions/download-artifact@v5
         with:
           name: cdk-synthesis
-          path: cdk.out/
+          path: target/
 
       - name: Configure AWS role via GitHub OIDC
         uses: aws-actions/configure-aws-credentials@v5
@@ -804,7 +804,7 @@ jobs:
         uses: actions/download-artifact@v5
         with:
           name: cdk-synthesis
-          path: cdk.out/
+          path: target/
 
       - name: Configure AWS role via GitHub OIDC
         uses: aws-actions/configure-aws-credentials@v5
@@ -957,7 +957,7 @@ jobs:
         uses: actions/download-artifact@v5
         with:
           name: cdk-synthesis
-          path: cdk.out/
+          path: target/
 
       - name: Configure AWS role via GitHub OIDC
         uses: aws-actions/configure-aws-credentials@v5
@@ -1039,7 +1039,7 @@ jobs:
         uses: actions/download-artifact@v5
         with:
           name: cdk-synthesis
-          path: cdk.out/
+          path: target/
 
       - name: Configure AWS role via GitHub OIDC
         uses: aws-actions/configure-aws-credentials@v5
@@ -1126,7 +1126,7 @@ jobs:
 #        uses: actions/download-artifact@v5
 #        with:
 #          name: cdk-synthesis
-#          path: cdk.out/
+#          path: target/
 #
 #      - name: Configure AWS role via GitHub OIDC
 #        uses: aws-actions/configure-aws-credentials@v5
@@ -1205,7 +1205,7 @@ jobs:
 #        uses: actions/download-artifact@v5
 #        with:
 #          name: cdk-synthesis
-#          path: cdk.out/
+#          path: target/
 #
 #      - name: Configure AWS role via GitHub OIDC
 #        uses: aws-actions/configure-aws-credentials@v5
@@ -1271,7 +1271,7 @@ jobs:
 #        uses: actions/download-artifact@v5
 #        with:
 #          name: cdk-synthesis
-#          path: cdk.out/
+#          path: target/
 #
 #      - name: Configure AWS role via GitHub OIDC
 #        uses: aws-actions/configure-aws-credentials@v5
@@ -1367,7 +1367,7 @@ jobs:
 #        uses: actions/download-artifact@v5
 #        with:
 #          name: cdk-synthesis
-#          path: cdk.out/
+#          path: target/
 #
 #      - name: Copy .env.demo to web origin S3 bucket
 #        run: |
