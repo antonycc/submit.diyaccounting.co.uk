@@ -1,10 +1,10 @@
 {
   "app": "mvn exec:java -Dexec.mainClass=co.uk.diyaccounting.submit.WebApp",
   "output": "./target",
-  "synthDevStack": "npx cdk synth SubmitDevStack-dev --ci true --strict --validation",
+  "synthDevStack": "npx cdk synth DevStack-dev --ci true --strict --validation",
   "synthIdentityStack": "npx cdk synth IdentityStack-dev --ci true --strict --validation",
   "synthWebStack": "npx cdk synth WebStack-dev --ci true --strict --validation",
-  "deployDevStack": "npx cdk deploy SubmitDevStack-dev --require-approval never --ci true --verbose --strict --validation",
+  "deployDevStack": "npx cdk deploy DevStack-dev --require-approval never --ci true --verbose --strict --validation",
   "deployIdentityStack": "npx cdk deploy IdentityStack-dev --require-approval never --ci true --verbose --strict --validation",
   "deployWebStack": "npx cdk deploy WebStack-dev --require-approval never --ci true --verbose --strict --validation",
   "context": {

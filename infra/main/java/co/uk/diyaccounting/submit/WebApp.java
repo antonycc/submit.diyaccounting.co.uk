@@ -30,7 +30,7 @@ public class WebApp {
         String deploymentName = envOr("DEPLOYMENT_NAME", appProps.deploymentName);
 
         // Create ObservabilityStack with resources used in monitoring the application
-        String observabilityStackId = "%s-SubmitObservabilityStack".formatted(deploymentName);
+        String observabilityStackId = "%s-ObservabilityStack".formatted(deploymentName);
         System.out.printf("Synthesizing stack %s for deployment %s to environment %s\n", observabilityStackId, deploymentName, envName);
         ObservabilityStack observabilityStack = ObservabilityStack.Builder.create(app, observabilityStackId)
                 .props(co.uk.diyaccounting.submit.stacks.ObservabilityStackProps.builder()
@@ -46,8 +46,8 @@ public class WebApp {
                 .build();
 
         // Create DevStack with resources only used during development or deployment (e.g. ECR)
-        String devStackId = "%s-SubmitDevStack".formatted(deploymentName);
-        System.out.printf("Synthesizing stack %s for deployment %s to environment %s\n", observabilityStackId, deploymentName, envName);
+        String devStackId = "%s-DevStack".formatted(deploymentName);
+        System.out.printf("Synthesizing stack %s for deployment %s to environment %s\n", devStackId, deploymentName, envName);
         DevStack devStack = DevStack.Builder.create(app, devStackId)
                 .props(co.uk.diyaccounting.submit.stacks.DevStackProps.builder()
                         .env(envName)
@@ -78,7 +78,7 @@ public class WebApp {
                 .build();
 
         // Create the ApplicationStack
-        String applicationStackId = "%s-SubmitApplicationStack".formatted(deploymentName);
+        String applicationStackId = "%s-ApplicationStack".formatted(deploymentName);
         System.out.printf("Synthesizing stack %s for deployment %s to environment %s\n", applicationStackId, deploymentName, envName);
         ApplicationStack applicationStack = ApplicationStack.Builder.create(app, applicationStackId)
                 .props(co.uk.diyaccounting.submit.stacks.ApplicationStackProps.builder()

@@ -312,7 +312,7 @@ jobs:
         if: ${{ env.skipDeploy != 'true' }}
         id: deployObservability
         shell: bash
-        run: npx dotenv -e .env.${{ inputs.environment || 'prod' }} -- npx cdk deploy SubmitObservabilityStack-${{ inputs.environment || 'prod' }} --exclusively --require-approval never --ci true --verbose --strict --validation
+        run: npx dotenv -e .env.${{ inputs.environment || 'prod' }} -- npx cdk deploy ObservabilityStack-${{ inputs.environment || 'prod' }} --exclusively --require-approval never --ci true --verbose --strict --validation
         env:
           GITHUB_ACTOR: ${{ github.actor }}
           ENV_NAME: ${{ inputs.environment || 'prod' }}
@@ -321,7 +321,7 @@ jobs:
         if: ${{ env.skipDeploy != 'true' }}
         id: deployDev
         shell: bash
-        run: npx dotenv -e .env.${{ inputs.environment || 'prod' }} -- npx cdk deploy SubmitDevStack-${{ inputs.environment || 'prod' }} --exclusively --require-approval never --ci true --verbose --strict --validation
+        run: npx dotenv -e .env.${{ inputs.environment || 'prod' }} -- npx cdk deploy DevStack-${{ inputs.environment || 'prod' }} --exclusively --require-approval never --ci true --verbose --strict --validation
         env:
           GITHUB_ACTOR: ${{ github.actor }}
           ENV_NAME: ${{ inputs.environment || 'prod' }}
@@ -355,7 +355,7 @@ jobs:
         id: ecr-uri
         shell: bash
         run: |
-          STACK_NAME="SubmitDevStack-${{ inputs.environment || 'prod' }}"
+          STACK_NAME="DevStack-${{ inputs.environment || 'prod' }}"
           ECR_URI=$(aws cloudformation describe-stacks \
             --stack-name $STACK_NAME \
             --query 'Stacks[0].Outputs[?OutputKey==`EcrRepositoryUri`].OutputValue' \
@@ -410,7 +410,7 @@ jobs:
         if: ${{ env.skipDeploy != 'true' }}
         id: deployApplication
         shell: bash
-        run: npx dotenv -e .env.${{ inputs.environment || 'prod' }} -- npx cdk deploy SubmitApplicationStack-${{ inputs.environment || 'prod' }} --exclusively --require-approval never --ci true --verbose --strict --validation
+        run: npx dotenv -e .env.${{ inputs.environment || 'prod' }} -- npx cdk deploy ApplicationStack-${{ inputs.environment || 'prod' }} --exclusively --require-approval never --ci true --verbose --strict --validation
         env:
           GITHUB_ACTOR: ${{ github.actor }}
           ENV_NAME: ${{ inputs.environment || 'prod' }}
