@@ -56,7 +56,7 @@
           </div>
 
           <!-- Developer Test Scenario Section -->
-          <div id="developerSection" class="form-group" style="display: none;">
+          <div id="developerSection" class="form-group" style="display: none">
             <label for="testScenario">Test Scenario (Developer/Sandbox Only)</label>
             <select id="testScenario" name="testScenario">
               <option value="">Default</option>
@@ -67,29 +67,21 @@
             <div class="help-text">Test different HMRC sandbox scenarios</div>
           </div>
 
-          <button type="submit" id="retrieveBtn" class="submit-button">
-            View Return
-          </button>
+          <button type="submit" id="retrieveBtn" class="submit-button">View Return</button>
         </form>
 
         <div class="developer-controls">
-          <button type="button" id="toggleDeveloperMode" class="developer-button">
-            Show Developer Options
-          </button>
+          <button type="button" id="toggleDeveloperMode" class="developer-button">Show Developer Options</button>
         </div>
       </div>
 
       <!-- Results Display -->
-      <div id="returnResults" class="results-container" style="display: none;">
+      <div id="returnResults" class="results-container" style="display: none">
         <h3>VAT Return Details</h3>
         <div id="returnDetails"></div>
         <div class="button-group">
-          <button type="button" id="newSearchBtn" class="secondary-button">
-            View Another Return
-          </button>
-          <button type="button" id="backToObligationsBtn" class="secondary-button">
-            Back to Obligations
-          </button>
+          <button type="button" id="newSearchBtn" class="secondary-button">View Another Return</button>
+          <button type="button" id="backToObligationsBtn" class="secondary-button">Back to Obligations</button>
         </div>
       </div>
     </div>
@@ -99,121 +91,122 @@
       // Check if we're in sandbox/test mode to show developer options
       function initializePage() {
         const urlParams = new URLSearchParams(window.location.search);
-        const vrn = urlParams.get('vrn');
-        const periodKey = urlParams.get('periodKey');
-        
+        const vrn = urlParams.get("vrn");
+        const periodKey = urlParams.get("periodKey");
+
         if (vrn) {
-          document.getElementById('vrn').value = vrn;
+          document.getElementById("vrn").value = vrn;
         }
         if (periodKey) {
-          document.getElementById('periodKey').value = periodKey;
+          document.getElementById("periodKey").value = periodKey;
         }
 
         const baseUrl = window.location.origin;
-        const isSandbox = baseUrl.includes('test') || baseUrl.includes('sandbox') || 
-                         window.location.hostname === 'localhost' || 
-                         window.location.hostname === '127.0.0.1';
-        
+        const isSandbox =
+          baseUrl.includes("test") ||
+          baseUrl.includes("sandbox") ||
+          window.location.hostname === "localhost" ||
+          window.location.hostname === "127.0.0.1";
+
         if (isSandbox) {
-          const devSection = document.getElementById('developerSection');
+          const devSection = document.getElementById("developerSection");
           if (devSection) {
-            devSection.style.display = 'block';
+            devSection.style.display = "block";
           }
         }
 
         // Toggle developer mode button
-        const toggleBtn = document.getElementById('toggleDeveloperMode');
-        const devSection = document.getElementById('developerSection');
-        
+        const toggleBtn = document.getElementById("toggleDeveloperMode");
+        const devSection = document.getElementById("developerSection");
+
         if (toggleBtn && devSection) {
-          toggleBtn.addEventListener('click', () => {
-            const isVisible = devSection.style.display !== 'none';
-            devSection.style.display = isVisible ? 'none' : 'block';
-            toggleBtn.textContent = isVisible ? 'Show Developer Options' : 'Hide Developer Options';
+          toggleBtn.addEventListener("click", () => {
+            const isVisible = devSection.style.display !== "none";
+            devSection.style.display = isVisible ? "none" : "block";
+            toggleBtn.textContent = isVisible ? "Show Developer Options" : "Hide Developer Options";
           });
         }
 
         // Auto-submit if we have URL parameters
         if (vrn && periodKey) {
-          document.getElementById('vatReturnForm').requestSubmit();
+          document.getElementById("vatReturnForm").requestSubmit();
         }
       }
 
       // Handle form submission
-      document.getElementById('vatReturnForm').addEventListener('submit', async (e) => {
+      document.getElementById("vatReturnForm").addEventListener("submit", async (e) => {
         e.preventDefault();
-        
-        const loadingSpinner = document.getElementById('loadingSpinner');
-        const submitBtn = document.getElementById('retrieveBtn');
-        const statusContainer = document.getElementById('statusMessagesContainer');
-        const resultsContainer = document.getElementById('returnResults');
-        
+
+        const loadingSpinner = document.getElementById("loadingSpinner");
+        const submitBtn = document.getElementById("retrieveBtn");
+        const statusContainer = document.getElementById("statusMessagesContainer");
+        const resultsContainer = document.getElementById("returnResults");
+
         // Clear previous results and status
-        statusContainer.innerHTML = '';
-        resultsContainer.style.display = 'none';
-        
+        statusContainer.innerHTML = "";
+        resultsContainer.style.display = "none";
+
         // Show loading
-        loadingSpinner.style.display = 'block';
+        loadingSpinner.style.display = "block";
         submitBtn.disabled = true;
-        submitBtn.textContent = 'Retrieving...';
-        
+        submitBtn.textContent = "Retrieving...";
+
         try {
           const formData = new FormData(e.target);
-          const vrn = formData.get('vrn');
-          const periodKey = formData.get('periodKey');
-          const testScenario = formData.get('testScenario');
-          
+          const vrn = formData.get("vrn");
+          const periodKey = formData.get("periodKey");
+          const testScenario = formData.get("testScenario");
+
           // Build query parameters
           const params = new URLSearchParams({ vrn });
-          if (testScenario) params.append('Gov-Test-Scenario', testScenario);
-          
+          if (testScenario) params.append("Gov-Test-Scenario", testScenario);
+
           // Get access token (assuming it's stored from previous auth)
-          const accessToken = localStorage.getItem('hmrcAccessToken');
+          const accessToken = localStorage.getItem("hmrcAccessToken");
           if (!accessToken) {
-            throw new Error('No access token found. Please authorize with HMRC first.');
+            throw new Error("No access token found. Please authorize with HMRC first.");
           }
-          
+
           const response = await fetch(`/api/vat/returns/${periodKey}?${params}`, {
-            method: 'GET',
+            method: "GET",
             headers: {
-              'Authorization': `Bearer ${accessToken}`,
-              'Content-Type': 'application/json',
+              "Authorization": `Bearer ${accessToken}`,
+              "Content-Type": "application/json",
             },
           });
-          
+
           const result = await response.json();
-          
+
           if (!response.ok) {
-            throw new Error(result.message || 'Failed to retrieve VAT return');
+            throw new Error(result.message || "Failed to retrieve VAT return");
           }
-          
+
           // Display results
           displayReturn(result);
-          resultsContainer.style.display = 'block';
-          
+          resultsContainer.style.display = "block";
         } catch (error) {
-          console.error('Error retrieving VAT return:', error);
-          showStatusMessage(error.message, 'error');
+          console.error("Error retrieving VAT return:", error);
+          showStatusMessage(error.message, "error");
         } finally {
           // Hide loading
-          loadingSpinner.style.display = 'none';
+          loadingSpinner.style.display = "none";
           submitBtn.disabled = false;
-          submitBtn.textContent = 'View Return';
+          submitBtn.textContent = "View Return";
         }
       });
 
       function displayReturn(returnData) {
-        const detailsContainer = document.getElementById('returnDetails');
-        
+        const detailsContainer = document.getElementById("returnDetails");
+
         const formatCurrency = (value) => {
           const num = parseFloat(value);
-          return isNaN(num) ? '£0.00' : `£${num.toFixed(2)}`;
+          return isNaN(num) ? "£0.00" : `£${num.toFixed(2)}`;
         };
-        
+
         const formatBoolean = (value) => {
-          return value === true ? 'Yes' : value === false ? 'No' : '-';
+          return value === true ? "Yes" : value === false ? "No" : "-";
         };
-        
+
         const detailsHtml = `
           <div class="return-details">
             <div class="detail-section">
@@ -221,11 +214,11 @@
               <div class="detail-grid">
                 <div class="detail-item">
                   <label>Period Key:</label>
-                  <span><strong>${returnData.periodKey || '-'}</strong></span>
+                  <span><strong>${returnData.periodKey || "-"}</strong></span>
                 </div>
                 <div class="detail-item">
                   <label>Finalised:</label>
-                  <span class="${returnData.finalised ? 'status-fulfilled' : 'status-open'}">
+                  <span class="${returnData.finalised ? "status-fulfilled" : "status-open"}">
                     ${formatBoolean(returnData.finalised)}
                   </span>
                 </div>
@@ -281,17 +274,17 @@
             </div>
           </div>
         `;
-        
+
         detailsContainer.innerHTML = detailsHtml;
       }
 
-      function showStatusMessage(message, type = 'info') {
-        const container = document.getElementById('statusMessagesContainer');
-        const messageDiv = document.createElement('div');
+      function showStatusMessage(message, type = "info") {
+        const container = document.getElementById("statusMessagesContainer");
+        const messageDiv = document.createElement("div");
         messageDiv.className = `status-message ${type}`;
         messageDiv.textContent = message;
         container.appendChild(messageDiv);
-        
+
         // Auto-remove after 5 seconds
         setTimeout(() => {
           if (messageDiv.parentNode) {
@@ -301,20 +294,20 @@
       }
 
       // Button handlers
-      document.getElementById('newSearchBtn')?.addEventListener('click', () => {
-        const form = document.getElementById('vatReturnForm');
-        const resultsContainer = document.getElementById('returnResults');
+      document.getElementById("newSearchBtn")?.addEventListener("click", () => {
+        const form = document.getElementById("vatReturnForm");
+        const resultsContainer = document.getElementById("returnResults");
         form.reset();
-        resultsContainer.style.display = 'none';
-        document.getElementById('statusMessagesContainer').innerHTML = '';
+        resultsContainer.style.display = "none";
+        document.getElementById("statusMessagesContainer").innerHTML = "";
       });
 
-      document.getElementById('backToObligationsBtn')?.addEventListener('click', () => {
-        window.location.href = 'vatObligations.html';
+      document.getElementById("backToObligationsBtn")?.addEventListener("click", () => {
+        window.location.href = "vatObligations.html";
       });
 
       // Initialize page when DOM is loaded
-      document.addEventListener('DOMContentLoaded', initializePage);
+      document.addEventListener("DOMContentLoaded", initializePage);
     </script>
 
     <style>
@@ -378,7 +371,7 @@
         .detail-grid {
           grid-template-columns: 1fr;
         }
-        
+
         .detail-item {
           flex-direction: column;
           align-items: flex-start;

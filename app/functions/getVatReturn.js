@@ -74,15 +74,15 @@ export async function httpGet(event) {
       logger.info({ message: "Using stubbed VAT return data", vrn, periodKey, testScenario });
       vatReturn = getStubData("DIY_SUBMIT_TEST_VAT_RETURN", {
         periodKey: periodKey,
-        vatDueSales: 1000.50,
-        vatDueAcquisitions: 0.00,
-        totalVatDue: 1000.50,
-        vatReclaimedCurrPeriod: 0.00,
-        netVatDue: 1000.50,
-        totalValueSalesExVAT: 4000.00,
-        totalValuePurchasesExVAT: 1000.00,
-        totalValueGoodsSuppliedExVAT: 0.00,
-        totalAcquisitionsExVAT: 0.00,
+        vatDueSales: 1000.5,
+        vatDueAcquisitions: 0.0,
+        totalVatDue: 1000.5,
+        vatReclaimedCurrPeriod: 0.0,
+        netVatDue: 1000.5,
+        totalValueSalesExVAT: 4000.0,
+        totalValuePurchasesExVAT: 1000.0,
+        totalValueGoodsSuppliedExVAT: 0.0,
+        totalAcquisitionsExVAT: 0.0,
         finalised: true,
       });
     } else {
@@ -91,7 +91,7 @@ export async function httpGet(event) {
         `/organisations/vat/${vrn}/returns/${periodKey}`,
         accessToken,
         govClientHeaders,
-        testScenario
+        testScenario,
       );
 
       if (!hmrcResult.ok) {

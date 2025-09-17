@@ -80,7 +80,7 @@ describe("getVatObligations handler", () => {
   test("should retrieve VAT obligations with Gov-Test-Scenario", async () => {
     const event = {
       queryStringParameters: {
-        vrn: "193054661",
+        "vrn": "193054661",
         "Gov-Test-Scenario": "QUARTERLY_NONE_MET",
       },
       headers: {
@@ -230,7 +230,7 @@ describe("getVatObligations handler", () => {
           Authorization: "Bearer test-access-token",
           Accept: "application/vnd.hmrc.1.0+json",
         }),
-      })
+      }),
     );
   });
 

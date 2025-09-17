@@ -78,7 +78,7 @@ export async function httpGet(event) {
               to: "2024-03-31",
             },
             type: "VAT Return Debit Charge",
-            originalAmount: 1000.50,
+            originalAmount: 1000.5,
             outstandingAmount: 500.25,
             due: "2024-05-07",
           },
@@ -96,7 +96,7 @@ export async function httpGet(event) {
         accessToken,
         govClientHeaders,
         testScenario,
-        hmrcQueryParams
+        hmrcQueryParams,
       );
 
       if (!hmrcResult.ok) {

@@ -107,7 +107,7 @@ export async function httpGet(event) {
         accessToken,
         govClientHeaders,
         testScenario,
-        hmrcQueryParams
+        hmrcQueryParams,
       );
 
       if (!hmrcResult.ok) {

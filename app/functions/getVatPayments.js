@@ -73,12 +73,12 @@ export async function httpGet(event) {
       payments = getStubData("DIY_SUBMIT_TEST_VAT_PAYMENTS", {
         payments: [
           {
-            amount: 1000.50,
+            amount: 1000.5,
             received: "2024-05-06",
             allocatedToLiability: "2024-05-07",
           },
           {
-            amount: 250.00,
+            amount: 250.0,
             received: "2024-08-06",
             allocatedToLiability: "2024-08-07",
           },
@@ -96,7 +96,7 @@ export async function httpGet(event) {
         accessToken,
         govClientHeaders,
         testScenario,
-        hmrcQueryParams
+        hmrcQueryParams,
       );
 
       if (!hmrcResult.ok) {

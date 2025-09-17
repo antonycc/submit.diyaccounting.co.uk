@@ -33,8 +33,8 @@ describe("Integration – VAT API Endpoints (Direct Handler Testing)", () => {
       }),
       DIY_SUBMIT_TEST_VAT_RETURN: JSON.stringify({
         periodKey: "24A1",
-        vatDueSales: 1000.50,
-        totalVatDue: 1000.50,
+        vatDueSales: 1000.5,
+        totalVatDue: 1000.5,
         finalised: true,
       }),
       DIY_SUBMIT_TEST_VAT_LIABILITIES: JSON.stringify({
@@ -42,7 +42,7 @@ describe("Integration – VAT API Endpoints (Direct Handler Testing)", () => {
           {
             taxPeriod: { from: "2024-01-01", to: "2024-03-31" },
             type: "VAT Return Debit Charge",
-            originalAmount: 1000.50,
+            originalAmount: 1000.5,
             outstandingAmount: 500.25,
             due: "2024-05-07",
           },
@@ -82,7 +82,7 @@ describe("Integration – VAT API Endpoints (Direct Handler Testing)", () => {
 
     expect(result.statusCode).toBe(200);
     expect(body.periodKey).toBe("24A1");
-    expect(body.vatDueSales).toBe(1000.50);
+    expect(body.vatDueSales).toBe(1000.5);
     expect(body.finalised).toBe(true);
   });
 
@@ -145,9 +145,9 @@ describe("Integration – VAT API Endpoints (Direct Handler Testing)", () => {
 
   it("should handle Gov-Test-Scenario headers", async () => {
     const eventWithScenario = {
-      queryStringParameters: { 
-        vrn: "193054661",
-        "Gov-Test-Scenario": "QUARTERLY_NONE_MET"
+      queryStringParameters: {
+        "vrn": "193054661",
+        "Gov-Test-Scenario": "QUARTERLY_NONE_MET",
       },
       headers: { authorization: "Bearer test-access-token" },
     };
