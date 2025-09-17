@@ -1,5 +1,5 @@
 name: deploy
-run-name: "deploy [${{ inputs.environment || 'prod' }}] [${{ github.ref_name }}]"
+run-name: "deploy [${{ env.deploymentName || 'auto' }}] [${{ github.ref_name }}]"
 concurrency:
   group: deploy-${{ github.ref_name }}
   cancel-in-progress: false
@@ -65,6 +65,10 @@ env:
   DEPLOY_ROLE_ARN: 'arn:aws:iam::887764105431:role/submit-deployment-role'
   AWS_REGION: 'eu-west-2'
   BASE_IMAGE_TAG_PREFIX: 'submit-base'
+  skipDeploy: ${{ inputs.skipDeploy || 'false' }}
+  deploymentName: ${{ inputs.deploymentName || '' }}
+  loadTestDuration: ${{ inputs.loadTestDuration || '30s' }}
+  selfDestructDelayHours: ${{ inputs.selfDestructDelayHours || '1' }}
 
 jobs:
 
@@ -79,7 +83,7 @@ jobs:
         id: deployment-config
         run: |
           REF_NAME="${{ github.ref_name }}"
-          INPUT_DEPLOYMENT_NAME="${{ inputs.deploymentName }}"
+          INPUT_DEPLOYMENT_NAME="${{ env.deploymentName }}"
 
           # Clean branch name: lowercase, replace non-alphanumeric with hyphens, collapse consecutive hyphens
           CLEANED=$(echo "$REF_NAME" | tr '[:upper:]' '[:lower:]' | sed -e 's/[^a-z0-9]/-/g' -e 's/-\{2,\}/-/g' -e 's/^-//' -e 's/-$//')
@@ -399,7 +403,7 @@ jobs:
 
   build-cdk:
     name: 'build cdk'
-    if: ${{ inputs.skipDeploy != 'true' }}
+    if: ${{ env.skipDeploy != 'true' }}
     needs:
       - names
       - mvn-test
@@ -452,7 +456,7 @@ jobs:
 
   diff-cdk:
     name: 'diff cdk'
-    if: ${{ inputs.skipDeploy != 'true' }}
+    if: ${{ env.skipDeploy != 'true' }}
     needs:
       - names
       - npm-test
@@ -521,7 +525,7 @@ jobs:
 
   deploy-observability:
     name: 'deploy observability'
-    if: ${{ inputs.skipDeploy != 'true' }}
+    if: ${{ env.skipDeploy != 'true' }}
     needs:
       - names
       - npm-test
@@ -663,7 +667,7 @@ jobs:
 
   deploy-dev:
     name: 'deploy dev'
-    if: ${{ inputs.skipDeploy != 'true' }}
+    if: ${{ env.skipDeploy != 'true' }}
     needs:
       - names
       - npm-test
@@ -737,7 +741,7 @@ jobs:
 
   deploy-identity:
     name: 'deploy identity'
-    if: ${{ inputs.skipDeploy != 'true' }}
+    if: ${{ env.skipDeploy != 'true' }}
     needs:
       - names
       - npm-test
@@ -813,7 +817,7 @@ jobs:
 
   push-images:
     name: 'build and push images'
-    if: ${{ inputs.skipDeploy != 'true' }}
+    if: ${{ env.skipDeploy != 'true' }}
     needs:
       - names
       - build-cdk
@@ -876,7 +880,7 @@ jobs:
 
   deploy-app:
     name: 'deploy app'
-    if: ${{ inputs.skipDeploy != 'true' }}
+    if: ${{ env.skipDeploy != 'true' }}
     needs:
       - names
       - npm-test
@@ -952,7 +956,7 @@ jobs:
 
   deploy-web:
     name: 'deploy web'
-    if: ${{ inputs.skipDeploy != 'true' }}
+    if: ${{ env.skipDeploy != 'true' }}
     needs:
       - names
       - npm-test
@@ -1318,7 +1322,7 @@ jobs:
 #    #  test-password: ${{ steps.uuid.outputs.TEST_PASSWORD }}
 
   test-parameters:
-    if: ${{ !cancelled() && inputs.skipDeploy == 'true' || needs.deploy-web.result == 'success' }}
+    if: ${{ !cancelled() && env.skipDeploy == 'true' || needs.deploy-web.result == 'success' }}
     name: 'calculate test parameters'
     needs:
       - names
@@ -1404,7 +1408,7 @@ jobs:
 #            test-results
 
   web-test:
-    if: ${{ !cancelled() && inputs.skipDeploy == 'true' || needs.deploy-web.result == 'success' }}
+    if: ${{ !cancelled() && env.skipDeploy == 'true' || needs.deploy-web.result == 'success' }}
     name: 'web test'
     needs:
       - names
@@ -1541,7 +1545,7 @@ jobs:
 
   publish-artifacts:
     name: 'publish artifacts to github pages'
-    if: ${{ !cancelled() && inputs.skipDeploy == 'true' || needs.deploy-web.result == 'success' }}
+    if: ${{ !cancelled() && env.skipDeploy == 'true' || needs.deploy-web.result == 'success' }}
     needs:
       - names
       - deploy-web
