@@ -1090,6 +1090,7 @@ public class WebStack extends Stack {
                     "DIY_SUBMIT_BUNDLE_USER_LIMIT",
                     builder.bundleUserLimit != null ? builder.bundleUserLimit : "1000"));
             var bundleLambdaUrlOrigin = LambdaUrlOrigin.Builder.create(this, "BundleLambda")
+                    .options(lambdaCommonOpts)
                     .baseImageTag(builder.baseImageTag)
                     .ecrRepositoryName(builder.ecrRepositoryName)
                     .ecrRepositoryArn(builder.ecrRepositoryArn)

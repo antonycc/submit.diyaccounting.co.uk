@@ -26,10 +26,12 @@ public class WebApp {
         WebApp.Builder builder = WebApp.Builder.create(app, "WebApp");
         WebAppProps appProps = loadAppProps(builder, app);
 
-        String envName = envOr("ENV_NAME", appProps.deploymentName);
+        String envName = envOr("ENV_NAME", appProps.env);
         String deploymentName = envOr("DEPLOYMENT_NAME", appProps.deploymentName);
 
+        // Create ObservabilityStack with resources used in monitoring the application
         String observabilityStackId = "%s-SubmitObservabilityStack".formatted(deploymentName);
+        System.out.printf("Synthesizing stack %s for deployment %s to environment %s\n", observabilityStackId, deploymentName, envName);
         ObservabilityStack observabilityStack = ObservabilityStack.Builder.create(app, observabilityStackId)
                 .props(co.uk.diyaccounting.submit.stacks.ObservabilityStackProps.builder()
                         .env(envName)
@@ -45,6 +47,7 @@ public class WebApp {
 
         // Create DevStack with resources only used during development or deployment (e.g. ECR)
         String devStackId = "%s-SubmitDevStack".formatted(deploymentName);
+        System.out.printf("Synthesizing stack %s for deployment %s to environment %s\n", observabilityStackId, deploymentName, envName);
         DevStack devStack = DevStack.Builder.create(app, devStackId)
                 .props(co.uk.diyaccounting.submit.stacks.DevStackProps.builder()
                         .env(envName)
@@ -55,6 +58,7 @@ public class WebApp {
 
         // Create the identity stack before any user aware services
         String identityStackId = "%s-IdentityStack".formatted(deploymentName);
+        System.out.printf("Synthesizing stack %s for deployment %s to environment %s\n", identityStackId, deploymentName, envName);
         IdentityStack identityStack = IdentityStack.Builder.create(app, identityStackId)
                 .props(co.uk.diyaccounting.submit.stacks.IdentityStackProps.builder()
                         .env(envName)
@@ -75,6 +79,7 @@ public class WebApp {
 
         // Create the ApplicationStack
         String applicationStackId = "%s-SubmitApplicationStack".formatted(deploymentName);
+        System.out.printf("Synthesizing stack %s for deployment %s to environment %s\n", applicationStackId, deploymentName, envName);
         ApplicationStack applicationStack = ApplicationStack.Builder.create(app, applicationStackId)
                 .props(co.uk.diyaccounting.submit.stacks.ApplicationStackProps.builder()
                         .env(envName)
@@ -90,6 +95,7 @@ public class WebApp {
 
         // Create WebStack with resources used in running the application
         String webStackId = "%s-WebStack".formatted(deploymentName);
+        System.out.printf("Synthesizing stack %s for deployment %s to environment %s\n", webStackId, deploymentName, envName);
         WebStack webStack = WebStack.Builder.create(app, webStackId)
                 .props(co.uk.diyaccounting.submit.stacks.WebStackProps.builder()
                         .env(envName)
