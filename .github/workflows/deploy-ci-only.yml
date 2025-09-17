@@ -2,7 +2,7 @@
 
 name: deploy-ci-only
 concurrency:
-  group: deploy-${{ github.ref_name }}
+  group: old-deploy-${{ github.ref_name }}
   cancel-in-progress: false
 run-name: "deploy ci only [${{ github.ref_name }}] (skipDeploy = [${{ inputs.skipDeploy || 'false' }}])"
 

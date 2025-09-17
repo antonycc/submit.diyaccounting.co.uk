@@ -2,9 +2,9 @@
 
 name: old-deploy
 concurrency:
-  group: deploy-${{ github.ref_name }}
+  group: old-deploy-${{ github.ref_name }}
   cancel-in-progress: false
-run-name: "deploy [${{ inputs.environment || 'prod' }}] [${{ github.ref_name }}]"
+run-name: "old-deploy [${{ inputs.environment || 'prod' }}] [${{ github.ref_name }}]"
 
 on:
 #  pull_request:
