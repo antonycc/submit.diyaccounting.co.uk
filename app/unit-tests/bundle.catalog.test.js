@@ -38,14 +38,14 @@ describe("bundle.js – catalog qualifiers and expiry (MOCK)", () => {
     const token = makeIdToken("user-legacy");
     const resFail = await requestBundle(buildEvent(token, { bundleId: "legacy" }));
     expect(resFail.statusCode).toBe(400);
-    const bodyFail = JSON.parse(resFail.body || '{}');
+    const bodyFail = JSON.parse(resFail.body || "{}");
     expect(["qualifier_mismatch", "unknown_qualifier"]).toContain(bodyFail.error);
 
     const resOk = await requestBundle(
       buildEvent(token, { bundleId: "legacy", qualifiers: { transactionId: "t-123" } }),
     );
     expect(resOk.statusCode).toBe(200);
-    const bodyOk = JSON.parse(resOk.body || '{}');
+    const bodyOk = JSON.parse(resOk.body || "{}");
     expect(bodyOk.status).toBe("granted");
   });
 
@@ -63,10 +63,12 @@ describe("bundle.js – catalog qualifiers and expiry (MOCK)", () => {
 
   test("unknown qualifier should return 400 with specific error", async () => {
     const token = makeIdToken("user-unknown-qualifier");
-    const res = await requestBundle(buildEvent(token, { 
-      bundleId: "test", 
-      qualifiers: { unknownField: "value" } 
-    }));
+    const res = await requestBundle(
+      buildEvent(token, {
+        bundleId: "test",
+        qualifiers: { unknownField: "value" },
+      }),
+    );
     expect(res.statusCode).toBe(400);
     const body = JSON.parse(res.body || "{}");
     expect(body.error).toBe("unknown_qualifier");
@@ -82,10 +84,12 @@ describe("bundle.js – catalog qualifiers and expiry (MOCK)", () => {
     expect(bodyFail.error).toBe("qualifier_mismatch");
 
     // Should succeed with correct subscriptionTier
-    const resOk = await requestBundle(buildEvent(token, { 
-      bundleId: "basic", 
-      qualifiers: { subscriptionTier: "Basic" } 
-    }));
+    const resOk = await requestBundle(
+      buildEvent(token, {
+        bundleId: "basic",
+        qualifiers: { subscriptionTier: "Basic" },
+      }),
+    );
     expect(resOk.statusCode).toBe(200);
     const bodyOk = JSON.parse(resOk.body || "{}");
     expect(bodyOk.status).toBe("granted");
@@ -100,14 +104,14 @@ describe("bundle.js – catalog qualifiers and expiry (MOCK)", () => {
       const res = await requestBundle(buildEvent(token, { bundleId: "test" }));
       results.push(res);
     }
-    
+
     // First 10 should succeed (cap=10 for test bundle)
     for (let i = 0; i < 10; i++) {
       expect(results[i].statusCode).toBe(200);
       const body = JSON.parse(results[i].body || "{}");
       expect(body.status).toBe("granted");
     }
-    
+
     // 11th should fail due to cap
     expect(results[10].statusCode).toBe(403);
     const bodyFail = JSON.parse(results[10].body || "{}");

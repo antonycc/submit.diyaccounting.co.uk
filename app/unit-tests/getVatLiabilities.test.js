@@ -20,7 +20,7 @@ describe("getVatLiabilities handler", () => {
             to: "2024-03-31",
           },
           type: "VAT Return Debit Charge",
-          originalAmount: 1000.50,
+          originalAmount: 1000.5,
           outstandingAmount: 500.25,
           due: "2024-05-07",
         },
@@ -46,7 +46,7 @@ describe("getVatLiabilities handler", () => {
     expect(body.liabilities).toBeDefined();
     expect(body.liabilities).toHaveLength(1);
     expect(body.liabilities[0].type).toBe("VAT Return Debit Charge");
-    expect(body.liabilities[0].originalAmount).toBe(1000.50);
+    expect(body.liabilities[0].originalAmount).toBe(1000.5);
   });
 
   test("should retrieve VAT liabilities with date filters", async () => {
@@ -132,7 +132,7 @@ describe("getVatLiabilities handler", () => {
             to: "2024-03-31",
           },
           type: "VAT Return Debit Charge",
-          originalAmount: 1000.50,
+          originalAmount: 1000.5,
           outstandingAmount: 500.25,
           due: "2024-05-07",
         },
@@ -167,7 +167,7 @@ describe("getVatLiabilities handler", () => {
           Authorization: "Bearer test-access-token",
           Accept: "application/vnd.hmrc.1.0+json",
         }),
-      })
+      }),
     );
   });
 

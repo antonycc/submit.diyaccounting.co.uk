@@ -81,7 +81,7 @@
           </div>
 
           <!-- Developer Test Scenario Section -->
-          <div id="developerSection" class="form-group" style="display: none;">
+          <div id="developerSection" class="form-group" style="display: none">
             <label for="testScenario">Test Scenario (Developer/Sandbox Only)</label>
             <select id="testScenario" name="testScenario">
               <option value="">Default</option>
@@ -100,9 +100,7 @@
         </form>
 
         <div class="developer-controls">
-          <button type="button" id="toggleDeveloperMode" class="developer-button">
-            Show Developer Options
-          </button>
+          <button type="button" id="toggleDeveloperMode" class="developer-button">Show Developer Options</button>
         </div>
       </div>
 
@@ -409,37 +407,39 @@
       // Initialize page
       function initializePage() {
         const urlParams = new URLSearchParams(window.location.search);
-        const vrn = urlParams.get('vrn');
-        const periodKey = urlParams.get('periodKey');
-        
+        const vrn = urlParams.get("vrn");
+        const periodKey = urlParams.get("periodKey");
+
         if (vrn) {
-          document.getElementById('vatNumber').value = vrn;
+          document.getElementById("vatNumber").value = vrn;
         }
         if (periodKey) {
-          document.getElementById('periodKey').value = periodKey;
+          document.getElementById("periodKey").value = periodKey;
         }
 
         const baseUrl = window.location.origin;
-        const isSandbox = baseUrl.includes('test') || baseUrl.includes('sandbox') || 
-                         window.location.hostname === 'localhost' || 
-                         window.location.hostname === '127.0.0.1';
-        
+        const isSandbox =
+          baseUrl.includes("test") ||
+          baseUrl.includes("sandbox") ||
+          window.location.hostname === "localhost" ||
+          window.location.hostname === "127.0.0.1";
+
         if (isSandbox) {
-          const devSection = document.getElementById('developerSection');
+          const devSection = document.getElementById("developerSection");
           if (devSection) {
-            devSection.style.display = 'block';
+            devSection.style.display = "block";
           }
         }
 
         // Toggle developer mode button
-        const toggleBtn = document.getElementById('toggleDeveloperMode');
-        const devSection = document.getElementById('developerSection');
-        
+        const toggleBtn = document.getElementById("toggleDeveloperMode");
+        const devSection = document.getElementById("developerSection");
+
         if (toggleBtn && devSection) {
-          toggleBtn.addEventListener('click', () => {
-            const isVisible = devSection.style.display !== 'none';
-            devSection.style.display = isVisible ? 'none' : 'block';
-            toggleBtn.textContent = isVisible ? 'Show Developer Options' : 'Hide Developer Options';
+          toggleBtn.addEventListener("click", () => {
+            const isVisible = devSection.style.display !== "none";
+            devSection.style.display = isVisible ? "none" : "block";
+            toggleBtn.textContent = isVisible ? "Show Developer Options" : "Hide Developer Options";
           });
         }
       }

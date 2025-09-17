@@ -14,15 +14,15 @@ describe("getVatReturn handler", () => {
     // Set stubbed mode
     process.env.DIY_SUBMIT_TEST_VAT_RETURN = JSON.stringify({
       periodKey: "24A1",
-      vatDueSales: 1000.50,
-      vatDueAcquisitions: 0.00,
-      totalVatDue: 1000.50,
-      vatReclaimedCurrPeriod: 0.00,
-      netVatDue: 1000.50,
-      totalValueSalesExVAT: 4000.00,
-      totalValuePurchasesExVAT: 1000.00,
-      totalValueGoodsSuppliedExVAT: 0.00,
-      totalAcquisitionsExVAT: 0.00,
+      vatDueSales: 1000.5,
+      vatDueAcquisitions: 0.0,
+      totalVatDue: 1000.5,
+      vatReclaimedCurrPeriod: 0.0,
+      netVatDue: 1000.5,
+      totalValueSalesExVAT: 4000.0,
+      totalValuePurchasesExVAT: 1000.0,
+      totalValueGoodsSuppliedExVAT: 0.0,
+      totalAcquisitionsExVAT: 0.0,
       finalised: true,
     });
   });
@@ -47,15 +47,15 @@ describe("getVatReturn handler", () => {
 
     expect(result.statusCode).toBe(200);
     expect(body.periodKey).toBe("24A1");
-    expect(body.vatDueSales).toBe(1000.50);
-    expect(body.totalVatDue).toBe(1000.50);
+    expect(body.vatDueSales).toBe(1000.5);
+    expect(body.totalVatDue).toBe(1000.5);
     expect(body.finalised).toBe(true);
   });
 
   test("should retrieve VAT return with Gov-Test-Scenario", async () => {
     const event = {
       queryStringParameters: {
-        vrn: "193054661",
+        "vrn": "193054661",
         "Gov-Test-Scenario": "SINGLE_LIABILITY",
       },
       pathParameters: {
@@ -180,8 +180,8 @@ describe("getVatReturn handler", () => {
 
     const mockResponse = {
       periodKey: "24A1",
-      vatDueSales: 1000.50,
-      totalVatDue: 1000.50,
+      vatDueSales: 1000.5,
+      totalVatDue: 1000.5,
       finalised: true,
     };
 
@@ -216,7 +216,7 @@ describe("getVatReturn handler", () => {
           Authorization: "Bearer test-access-token",
           Accept: "application/vnd.hmrc.1.0+json",
         }),
-      })
+      }),
     );
   });
 

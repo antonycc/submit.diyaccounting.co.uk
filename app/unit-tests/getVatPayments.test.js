@@ -15,12 +15,12 @@ describe("getVatPayments handler", () => {
     process.env.DIY_SUBMIT_TEST_VAT_PAYMENTS = JSON.stringify({
       payments: [
         {
-          amount: 1000.50,
+          amount: 1000.5,
           received: "2024-05-06",
           allocatedToLiability: "2024-05-07",
         },
         {
-          amount: 250.00,
+          amount: 250.0,
           received: "2024-08-06",
           allocatedToLiability: "2024-08-07",
         },
@@ -45,8 +45,8 @@ describe("getVatPayments handler", () => {
     expect(result.statusCode).toBe(200);
     expect(body.payments).toBeDefined();
     expect(body.payments).toHaveLength(2);
-    expect(body.payments[0].amount).toBe(1000.50);
-    expect(body.payments[1].amount).toBe(250.00);
+    expect(body.payments[0].amount).toBe(1000.5);
+    expect(body.payments[1].amount).toBe(250.0);
   });
 
   test("should retrieve VAT payments with date filters", async () => {
@@ -127,7 +127,7 @@ describe("getVatPayments handler", () => {
     const mockResponse = {
       payments: [
         {
-          amount: 1000.50,
+          amount: 1000.5,
           received: "2024-05-06",
           allocatedToLiability: "2024-05-07",
         },
@@ -162,7 +162,7 @@ describe("getVatPayments handler", () => {
           Authorization: "Bearer test-access-token",
           Accept: "application/vnd.hmrc.1.0+json",
         }),
-      })
+      }),
     );
   });
 

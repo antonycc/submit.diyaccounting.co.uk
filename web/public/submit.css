@@ -764,7 +764,7 @@ a.external-link:hover::after {
   background-color: white;
   border: 1px solid #ddd;
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .results-table {
@@ -895,8 +895,12 @@ a.external-link:hover::after {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 /* Mobile responsiveness */
@@ -904,17 +908,17 @@ a.external-link:hover::after {
   .results-table {
     font-size: 0.85em;
   }
-  
+
   .results-table th,
   .results-table td {
     padding: 6px;
   }
-  
+
   .action-button {
     padding: 4px 8px;
     font-size: 0.8em;
   }
-  
+
   .developer-controls {
     padding: 0.5em;
   }

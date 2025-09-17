@@ -17,13 +17,13 @@ describe("getVatPenalties handler", () => {
         {
           penaltyCategory: "LPP1",
           penaltyChargeReference: "CHARGEREF123456789",
-          penaltyAmount: 200.00,
+          penaltyAmount: 200.0,
           period: {
             from: "2024-01-01",
             to: "2024-03-31",
           },
           triggerDate: "2024-05-08",
-          vatOutstandingAmount: 1000.50,
+          vatOutstandingAmount: 1000.5,
         },
       ],
     });
@@ -47,13 +47,13 @@ describe("getVatPenalties handler", () => {
     expect(body.penalties).toBeDefined();
     expect(body.penalties).toHaveLength(1);
     expect(body.penalties[0].penaltyCategory).toBe("LPP1");
-    expect(body.penalties[0].penaltyAmount).toBe(200.00);
+    expect(body.penalties[0].penaltyAmount).toBe(200.0);
   });
 
   test("should retrieve VAT penalties with Gov-Test-Scenario", async () => {
     const event = {
       queryStringParameters: {
-        vrn: "193054661",
+        "vrn": "193054661",
         "Gov-Test-Scenario": "PENALTY_POINTS",
       },
       headers: {
@@ -129,13 +129,13 @@ describe("getVatPenalties handler", () => {
         {
           penaltyCategory: "LPP1",
           penaltyChargeReference: "CHARGEREF123456789",
-          penaltyAmount: 200.00,
+          penaltyAmount: 200.0,
           period: {
             from: "2024-01-01",
             to: "2024-03-31",
           },
           triggerDate: "2024-05-08",
-          vatOutstandingAmount: 1000.50,
+          vatOutstandingAmount: 1000.5,
         },
       ],
     };
@@ -168,7 +168,7 @@ describe("getVatPenalties handler", () => {
           Authorization: "Bearer test-access-token",
           Accept: "application/vnd.hmrc.1.0+json",
         }),
-      })
+      }),
     );
   });
 

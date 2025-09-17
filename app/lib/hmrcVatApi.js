@@ -45,9 +45,9 @@ export async function hmrcVatGet(endpoint, accessToken, govClientHeaders = {}, t
   const baseUrl = getHmrcBaseUrl();
   const queryString = new URLSearchParams(queryParams).toString();
   const url = `${baseUrl}${endpoint}${queryString ? `?${queryString}` : ""}`;
-  
+
   const headers = buildHmrcHeaders(accessToken, govClientHeaders, testScenario);
-  
+
   logger.info({
     message: `Request to GET ${url}`,
     url,
@@ -87,9 +87,9 @@ export async function hmrcVatGet(endpoint, accessToken, govClientHeaders = {}, t
 export async function hmrcVatPost(endpoint, body, accessToken, govClientHeaders = {}, testScenario = null) {
   const baseUrl = getHmrcBaseUrl();
   const url = `${baseUrl}${endpoint}`;
-  
+
   const headers = buildHmrcHeaders(accessToken, govClientHeaders, testScenario);
-  
+
   logger.info({
     message: `Request to POST ${url}`,
     url,

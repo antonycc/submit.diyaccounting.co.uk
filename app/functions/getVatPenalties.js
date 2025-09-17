@@ -67,13 +67,13 @@ export async function httpGet(event) {
           {
             penaltyCategory: "LPP1",
             penaltyChargeReference: "CHARGEREF123456789",
-            penaltyAmount: 200.00,
+            penaltyAmount: 200.0,
             period: {
               from: "2024-01-01",
               to: "2024-03-31",
             },
             triggerDate: "2024-05-08",
-            vatOutstandingAmount: 1000.50,
+            vatOutstandingAmount: 1000.5,
           },
         ],
       });
@@ -83,7 +83,7 @@ export async function httpGet(event) {
         `/organisations/vat/${vrn}/penalties`,
         accessToken,
         govClientHeaders,
-        testScenario
+        testScenario,
       );
 
       if (!hmrcResult.ok) {
