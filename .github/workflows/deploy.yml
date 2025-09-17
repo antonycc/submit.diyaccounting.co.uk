@@ -101,12 +101,11 @@ jobs:
 
           echo "Computed ENV_NAME: $ENV_NAME"
           echo "Computed DEPLOYMENT_NAME: $DEPLOYMENT_NAME"
-          DEPLOYMENT_NAME=ENV_NAME
 
           echo "ENV_NAME=$ENV_NAME" >> "$GITHUB_OUTPUT"
           echo "DEPLOYMENT_NAME=$DEPLOYMENT_NAME" >> "$GITHUB_OUTPUT"
 
-          echo "Actual ENV_NAME: ENV_NAME"
+          echo "Actual ENV_NAME: $ENV_NAME"
           echo "Actual DEPLOYMENT_NAME: $DEPLOYMENT_NAME"
 
     outputs:
@@ -131,7 +130,7 @@ jobs:
 
       - run: npm ci || npm install
 
-      - run: source .env.${{ env.environment }} && npm test
+      - run: source .env.ci && npm test
         env:
           DIY_SUBMIT_HMRC_CLIENT_SECRET: test
 
@@ -152,7 +151,7 @@ jobs:
 
       - run: npm ci || npm install
 
-      - run: source .env.${{ env.environment }} && npm run test:coverage
+      - run: source .env.ci && npm run test:coverage
         env:
           DIY_SUBMIT_HMRC_CLIENT_SECRET: test
 
@@ -181,7 +180,7 @@ jobs:
 
       - run: npm ci || npm install
 
-      - run: source .env.${{ env.environment }} && npm run test:integration
+      - run: source .env.ci && npm run test:integration
 
   npm-system-test:
     name: 'npm system test'
@@ -206,7 +205,7 @@ jobs:
           driver-opts: |
             image=moby/buildkit:latest
 
-      - run: source .env.${{ env.environment }} && npm run test:system
+      - run: source .env.ci && npm run test:system
 
   npm-test-web-unit:
     name: 'npm unit test with coverage'
@@ -225,7 +224,7 @@ jobs:
 
       - run: npm ci || npm install
 
-      - run: source .env.${{ env.environment }} && npm run test:web-unit
+      - run: source .env.ci && npm run test:web-unit
 
   npm-browser-test:
     name: 'npm browser test'
@@ -253,7 +252,7 @@ jobs:
 
       - run: npx playwright install chromium --with-deps
 
-      - run: source .env.${{ env.environment }} && npm run test:browser
+      - run: source .env.ci && npm run test:browser
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
@@ -396,7 +395,7 @@ jobs:
       - name: test:cdk
         id: test-cdk
         shell: bash
-        run: source .env.${{ env.environment }} && npm run test:cdk
+        run: source .env.ci && npm run test:cdk
 
   build-cdk:
     name: 'build cdk'
@@ -508,7 +507,7 @@ jobs:
         env:
           ENV_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
-          BASE_IMAGE_TAG: ${{ needs.build-images.outputs.image-tag }}
+          BASE_IMAGE_TAG: ${{ needs.docker-build.outputs.image-tag }}
           GITHUB_ACTOR: ${{ github.actor }}
           LOG_S3_OBJECT_EVENT_HANDLER_SOURCE: ${{ steps.jar-path.outputs.jarFilepath }}
           LOG_GZIPPED_S3_OBJECT_EVENT_HANDLER_SOURCE: ${{ steps.jar-path.outputs.jarFilepath }}
@@ -577,7 +576,7 @@ jobs:
       - name: Deploy Observability Stack (CDK)
         run: |
           npx dotenv -e .env.${{ needs.names.outputs.environment-name }} -- \
-            npx cdk deploy ${{ needs.names.outputs.deployment-name }}-ObservabilityStack \
+            npx cdk deploy SubmitObservabilityStack-${{ needs.names.outputs.deployment-name }} \
               --require-approval never \
               --ci true \
               --concurrency 4 \
@@ -713,7 +712,7 @@ jobs:
       - name: Deploy Dev Stack (CDK)
         run: |
           npx dotenv -e .env.${{ needs.names.outputs.environment-name }} -- \
-            npx cdk deploy ${{ needs.names.outputs.deployment-name }}-DevStack \
+            npx cdk deploy SubmitDevStack-${{ needs.names.outputs.deployment-name }} \
               --require-approval never \
               --ci true \
               --concurrency 4 \
@@ -730,7 +729,7 @@ jobs:
         id: dev-outputs
         shell: bash
         run: |
-          ECR_REPOSITORY_URI=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-DevStack"].EcrRepositoryUri' cdk.out/cdk-outputs-dev.json)
+          ECR_REPOSITORY_URI=$(jq -r '.["SubmitDevStack-${{ needs.names.outputs.deployment-name }}"].EcrRepositoryUri' cdk.out/cdk-outputs-dev.json)
           echo "ECR_REPOSITORY_URI=$ECR_REPOSITORY_URI"
           echo "ECR_REPOSITORY_URI=$ECR_REPOSITORY_URI" >> $GITHUB_OUTPUT
     outputs:
@@ -744,6 +743,7 @@ jobs:
       - npm-test
       - build-cdk
       - deploy-dev
+      - docker-build
       - push-images
     runs-on: ubuntu-24.04
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
@@ -789,7 +789,7 @@ jobs:
       - name: Deploy App stack (CDK)
         run: |
           npx dotenv -e .env.${{ needs.names.outputs.environment-name }} -- \
-            npx cdk deploy ${{ needs.names.outputs.deployment-name }}-IdentityStack \
+            npx cdk deploy SubmitIdentityStack-${{ needs.names.outputs.deployment-name }} \
               --exclusively \
               --require-approval never \
               --ci true \
@@ -882,6 +882,7 @@ jobs:
       - npm-test
       - build-cdk
       - deploy-dev
+      - docker-build
       - push-images
     runs-on: ubuntu-24.04
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
@@ -927,7 +928,7 @@ jobs:
       - name: Deploy App stack (CDK)
         run: |
           npx dotenv -e .env.${{ needs.names.outputs.environment-name }} -- \
-            npx cdk deploy ${{ needs.names.outputs.deployment-name }}-ApplicationStack \
+            npx cdk deploy SubmitApplicationStack-${{ needs.names.outputs.deployment-name }} \
               --exclusively \
               --require-approval never \
               --ci true \
@@ -1000,7 +1001,7 @@ jobs:
       - name: Deploy Web Stack (CDK)
         run: |
           npx dotenv -e .env.${{ needs.names.outputs.environment-name }} -- \
-            npx cdk deploy ${{ needs.names.outputs.deployment-name }}-WebStack \
+            npx cdk deploy SubmitWebStack-${{ needs.names.outputs.deployment-name }} \
               --exclusively \
               --require-approval never \
               --ci true \
@@ -1316,7 +1317,7 @@ jobs:
 #    #  test-password: ${{ steps.uuid.outputs.TEST_PASSWORD }}
 
   test-parameters:
-    if: ${{ !cancelled() && inputs.skipDeploy == 'true' || needs.deploy-edge.result == 'success' }}
+    if: ${{ !cancelled() && inputs.skipDeploy == 'true' || needs.deploy-web.result == 'success' }}
     name: 'calculate test parameters'
     needs:
       - names
@@ -1402,7 +1403,7 @@ jobs:
 #            test-results
 
   web-test:
-    if: ${{ !cancelled() && inputs.skipDeploy == 'true' || needs.deploy-edge.result == 'success' }}
+    if: ${{ !cancelled() && inputs.skipDeploy == 'true' || needs.deploy-web.result == 'success' }}
     name: 'web test'
     needs:
       - names
@@ -1539,7 +1540,7 @@ jobs:
 
   publish-artifacts:
     name: 'publish artifacts to github pages'
-    if: ${{ !cancelled() && inputs.skipDeploy == 'true' || needs.deploy-edge.result == 'success' }}
+    if: ${{ !cancelled() && inputs.skipDeploy == 'true' || needs.deploy-web.result == 'success' }}
     needs:
       - names
       - deploy-web
