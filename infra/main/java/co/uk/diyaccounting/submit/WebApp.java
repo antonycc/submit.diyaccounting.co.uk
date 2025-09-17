@@ -28,7 +28,7 @@ public class WebApp {
         String envName = appProps.env;
 
         String observabilityStackEnv = envOr("ENV_NAME", appProps.env);
-        String observabilityStackId = "SubmitObservabilityStack-%s"
+        String observabilityStackId = "%s-ObservabilityStack"
                 .formatted(
                         observabilityStackEnv != null && !observabilityStackEnv.isBlank()
                                 ? observabilityStackEnv
@@ -49,7 +49,7 @@ public class WebApp {
         // Create DevStack with resources only used during development or deployment (e.g. ECR)
         String devStackEnv = envOr("ENV_NAME", appProps.env);
         String devStackId =
-                "SubmitDevStack-%s".formatted(devStackEnv != null && !devStackEnv.isBlank() ? devStackEnv : "dev");
+                "%s-DevStack".formatted(devStackEnv != null && !devStackEnv.isBlank() ? devStackEnv : "dev");
         DevStack devStack = DevStack.Builder.create(app, devStackId)
                 .props(co.uk.diyaccounting.submit.stacks.DevStackProps.builder()
                         .env(devStackEnv)
@@ -60,7 +60,7 @@ public class WebApp {
 
         // Create the identity stack before any user aware services
         String identityStackEnv = envOr("ENV_NAME", appProps.env);
-        String identityStackId = "SubmitIdentityStack-%s"
+        String identityStackId = "%s-IdentityStack"
                 .formatted(identityStackEnv != null && !identityStackEnv.isBlank() ? identityStackEnv : "dev");
         IdentityStack identityStack = IdentityStack.Builder.create(app, identityStackId)
                 .props(co.uk.diyaccounting.submit.stacks.IdentityStackProps.builder()
@@ -82,7 +82,7 @@ public class WebApp {
 
         // Create the ApplicationStack
         String applicationStackEnv = envOr("ENV_NAME", appProps.env);
-        String applicationStackId = "SubmitApplicationStack-%s"
+        String applicationStackId = "%s-ApplicationStack"
                 .formatted(applicationStackEnv != null && !applicationStackEnv.isBlank() ? applicationStackEnv : "dev");
         ApplicationStack applicationStack = ApplicationStack.Builder.create(app, applicationStackId)
                 .props(co.uk.diyaccounting.submit.stacks.ApplicationStackProps.builder()
@@ -97,7 +97,7 @@ public class WebApp {
         // Create WebStack with resources used in running the application
         String webStackEnv = envOr("ENV_NAME", appProps.env);
         String webStackId =
-                "SubmitWebStack-%s".formatted(webStackEnv != null && !webStackEnv.isBlank() ? webStackEnv : "dev");
+                "%s-WebStack".formatted(webStackEnv != null && !webStackEnv.isBlank() ? webStackEnv : "dev");
         WebStack webStack = WebStack.Builder.create(app, webStackId)
                 .props(co.uk.diyaccounting.submit.stacks.WebStackProps.builder()
                         .env(webStackEnv)

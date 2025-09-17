@@ -141,7 +141,7 @@ jobs:
 
       - name: Destroy ApplicationStack
         if: ${{ env.DEPLOYMENT_NAME != 'prod' }}
-        run: npx dotenv -e .env.${{ env.ENV_NAME }} -- npx cdk destroy SubmitApplicationStack-${DEPLOYMENT_NAME} --exclusively --force
+        run: npx dotenv -e .env.${{ env.ENV_NAME }} -- npx cdk destroy ${DEPLOYMENT_NAME}-ApplicationStack --exclusively --force
         env:
           DEPLOYMENT_NAME: ${{ env.DEPLOYMENT_NAME }}
           ENV_NAME: ${{ env.ENV_NAME }}
@@ -149,7 +149,7 @@ jobs:
 
       - name: Destroy WebStack
         if: ${{ env.DEPLOYMENT_NAME != 'prod' }}
-        run: npx dotenv -e .env.${{ env.ENV_NAME }} -- npx cdk destroy SubmitWebStack-${DEPLOYMENT_NAME} --exclusively --force
+        run: npx dotenv -e .env.${{ env.ENV_NAME }} -- npx cdk destroy ${DEPLOYMENT_NAME}-WebStack --exclusively --force
         env:
           DEPLOYMENT_NAME: ${{ env.DEPLOYMENT_NAME }}
           ENV_NAME: ${{ env.ENV_NAME }}
@@ -157,7 +157,7 @@ jobs:
 
       - name: Destroy IdentityStack
         if: ${{ env.DEPLOYMENT_NAME != 'prod' }}
-        run: npx dotenv -e .env.${{ env.ENV_NAME }} -- npx cdk destroy SubmitIdentityStack-${DEPLOYMENT_NAME} --exclusively --force
+        run: npx dotenv -e .env.${{ env.ENV_NAME }} -- npx cdk destroy ${DEPLOYMENT_NAME}-IdentityStack --exclusively --force
         env:
           DEPLOYMENT_NAME: ${{ env.DEPLOYMENT_NAME }}
           ENV_NAME: ${{ env.ENV_NAME }}
@@ -165,7 +165,7 @@ jobs:
 
       - name: Destroy DevStack
         if: ${{ env.DEPLOYMENT_NAME != 'prod' }}
-        run: npx dotenv -e .env.${{ env.ENV_NAME }} -- npx cdk destroy SubmitDevStack-${DEPLOYMENT_NAME} --exclusively --force
+        run: npx dotenv -e .env.${{ env.ENV_NAME }} -- npx cdk destroy ${DEPLOYMENT_NAME}-DevStack --exclusively --force
         env:
           DEPLOYMENT_NAME: ${{ env.DEPLOYMENT_NAME }}
           ENV_NAME: ${{ env.ENV_NAME }}
@@ -180,7 +180,7 @@ jobs:
 
       - name: Destroy ObservabilityStack
         if: ${{ env.DEPLOYMENT_NAME != 'prod' }}
-        run: npx dotenv -e .env.${{ env.ENV_NAME }} -- npx cdk destroy SubmitObservabilityStack-${DEPLOYMENT_NAME} --exclusively --force
+        run: npx dotenv -e .env.${{ env.ENV_NAME }} -- npx cdk destroy ${DEPLOYMENT_NAME}-ObservabilityStack --exclusively --force
         env:
           DEPLOYMENT_NAME: ${{ env.DEPLOYMENT_NAME }}
           ENV_NAME: ${{ env.ENV_NAME }}

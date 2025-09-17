@@ -580,7 +580,7 @@ jobs:
       - name: Deploy Observability Stack (CDK)
         run: |
           npx dotenv -e .env.${{ needs.names.outputs.environment-name }} -- \
-            npx cdk deploy SubmitObservabilityStack-${{ needs.names.outputs.deployment-name }} \
+            npx cdk deploy ${{ needs.names.outputs.deployment-name }}-ObservabilityStack \
               --require-approval never \
               --ci true \
               --concurrency 4 \
@@ -716,7 +716,7 @@ jobs:
       - name: Deploy Dev Stack (CDK)
         run: |
           npx dotenv -e .env.${{ needs.names.outputs.environment-name }} -- \
-            npx cdk deploy SubmitDevStack-${{ needs.names.outputs.deployment-name }} \
+            npx cdk deploy ${{ needs.names.outputs.deployment-name }}-DevStack \
               --require-approval never \
               --ci true \
               --concurrency 4 \
@@ -733,7 +733,7 @@ jobs:
         id: dev-outputs
         shell: bash
         run: |
-          ECR_REPOSITORY_URI=$(jq -r '.["SubmitDevStack-${{ needs.names.outputs.deployment-name }}"].EcrRepositoryUri' target/cdk-outputs-dev.json)
+          ECR_REPOSITORY_URI=$(jq -r '."${{ needs.names.outputs.deployment-name }}-DevStack".EcrRepositoryUri' target/cdk-outputs-dev.json)
           echo "ECR_REPOSITORY_URI=$ECR_REPOSITORY_URI"
           echo "ECR_REPOSITORY_URI=$ECR_REPOSITORY_URI" >> $GITHUB_OUTPUT
     outputs:
@@ -793,7 +793,7 @@ jobs:
       - name: Deploy App stack (CDK)
         run: |
           npx dotenv -e .env.${{ needs.names.outputs.environment-name }} -- \
-            npx cdk deploy SubmitIdentityStack-${{ needs.names.outputs.deployment-name }} \
+            npx cdk deploy ${{ needs.names.outputs.deployment-name }}-IdentityStack \
               --exclusively \
               --require-approval never \
               --ci true \
@@ -932,7 +932,7 @@ jobs:
       - name: Deploy App stack (CDK)
         run: |
           npx dotenv -e .env.${{ needs.names.outputs.environment-name }} -- \
-            npx cdk deploy SubmitApplicationStack-${{ needs.names.outputs.deployment-name }} \
+            npx cdk deploy ${{ needs.names.outputs.deployment-name }}-ApplicationStack \
               --exclusively \
               --require-approval never \
               --ci true \
@@ -1006,7 +1006,7 @@ jobs:
       - name: Deploy Web Stack (CDK)
         run: |
           npx dotenv -e .env.${{ needs.names.outputs.environment-name }} -- \
-            npx cdk deploy SubmitWebStack-${{ needs.names.outputs.deployment-name }} \
+            npx cdk deploy ${{ needs.names.outputs.deployment-name }}-WebStack \
               --exclusively \
               --require-approval never \
               --ci true \
