@@ -1256,6 +1256,8 @@ public class WebStack extends Stack {
             logger.info("No commit hash provided, skipping submit.version generation");
         }
 
+        var deployPostfix = java.util.UUID.randomUUID().toString().substring(0, 8);
+
         // Deploy the web website files to the web website bucket and invalidate distribution
         this.docRootSource = Source.asset(
                 builder.docRootPath,
@@ -1266,8 +1268,8 @@ public class WebStack extends Stack {
         var bucketDeploymentRetentionPeriodDays = Integer.parseInt(builder.cloudTrailLogGroupRetentionPeriodDays);
         var bucketDeploymentRetentionPeriod =
                 RetentionDaysConverter.daysToRetentionDays(bucketDeploymentRetentionPeriodDays);
-        LogGroup bucketDeploymentLogGroup = LogGroup.Builder.create(this, "BucketDeploymentLogGroup")
-                .logGroupName("/aws/lambda/bucket-deployment-%s".formatted(dashedDomainName))
+        LogGroup bucketDeploymentLogGroup = LogGroup.Builder.create(this, "BucketDeploymentLogGroup-" + deployPostfix)
+                .logGroupName("/aws/lambda/bucket-deployment-%s-%s".formatted(dashedDomainName, deployPostfix))
                 .retention(bucketDeploymentRetentionPeriod)
                 .removalPolicy(s3RetainOriginBucket ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY)
                 .build();
@@ -1276,7 +1278,19 @@ public class WebStack extends Stack {
                 .sources(List.of(this.docRootSource))
                 .destinationBucket(this.originBucket)
                 .distribution(this.distribution)
-                .distributionPaths(List.of("/*"))
+                .distributionPaths(List.of(
+                    "/account/*",
+                    "/activities/*",
+                    "/auth/*",
+                    "/errors/*",
+                    "/images/*",
+                    "/widgets/*",
+                    "/favicon.ico",
+                    "/index.html",
+                    "/submit.css",
+                    "/submit.js",
+                    "/submit.version"
+                ))
                 .retainOnDelete(false)
                 .logGroup(bucketDeploymentLogGroup)
                 .expires(Expiration.after(Duration.minutes(5)))

@@ -921,7 +921,7 @@ jobs:
           docker push ${{ needs.deploy-dev.outputs.ecr-repository-uri }}:${{ github.sha }}
           docker push ${{ needs.deploy-dev.outputs.ecr-repository-uri }}:latest
     outputs:
-      base-image-tag: ${{ needs.deploy-dev.outputs.ecr-repository-uri }}:${{ github.sha }}
+      base-image-tag: ${{ github.sha }}
 
   deploy-app:
     name: 'deploy app'
