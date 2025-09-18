@@ -4,6 +4,8 @@ import co.uk.diyaccounting.submit.stacks.ApplicationStack;
 import co.uk.diyaccounting.submit.stacks.DevStack;
 import co.uk.diyaccounting.submit.stacks.IdentityStack;
 import co.uk.diyaccounting.submit.stacks.ObservabilityStack;
+import co.uk.diyaccounting.submit.stacks.PublishStack;
+import co.uk.diyaccounting.submit.stacks.PublishStackProps;
 import co.uk.diyaccounting.submit.stacks.WebStack;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -192,6 +194,61 @@ public class WebApp {
                         .build())
                 // .trail(observabilityStack.trail)
                 .build();
+
+
+        // Create the Edge stack (CloudFront, Route53)
+        /*
+        String edgeStackId = "%s-EdgeStack".formatted(deploymentName);
+        EdgeStack edgeStack = new EdgeStack(
+            app,
+            edgeStackId,
+            EdgeStackProps.builder()
+                .envName(envName)
+                .deploymentName(deploymentName)
+                .hostedZoneName(this.application.hostedZoneName)
+                .hostedZoneId(this.application.hostedZoneId)
+                .domainName(this.application.domainName)
+                .baseUrl(this.application.baseUrl)
+                .resourceNamePrefix(this.application.resourceNamePrefix)
+                .compressedResourceNamePrefix(this.application.compressedResourceNamePrefix)
+                .certificateArn(this.application.certificateArn)
+                .logsBucketArn(this.application.observabilityStack.logsBucket.getBucketArn())
+                // .webBucket(this.application.webStack.webBucket)
+                .webBehaviorOptions(this.application.webStack.behaviorOptions)
+                .jwksEndpointFunctionArn(this.application.appStack.jwksEndpoint.function.getFunctionArn())
+                .authorizeEndpointFunctionArn(
+                    this.application.appStack.authorizeEndpoint.function.getFunctionArn())
+                .tokenEndpointFunctionArn(this.application.appStack.tokenEndpoint.function.getFunctionArn())
+                .userinfoEndpointFunctionArn(
+                    this.application.appStack.userinfoEndpoint.function.getFunctionArn())
+                .additionalOriginsBehaviourMappings(
+                    this.application.appStack.additionalOriginsBehaviourMappings)
+                .build());
+        edgeStack.addDependency(observabilityStack);
+        edgeStack.addDependency(applicationStack);
+        edgeStack.addDependency(webStack);
+        */
+
+        // Create the Publish stack (Bucket Deployments to CloudFront)
+        String publishStackId = "%s-PublishStack".formatted(deploymentName);
+        PublishStack publishStack = new PublishStack(
+            app,
+            publishStackId,
+            PublishStackProps.builder()
+                .envName(envName)
+                .deploymentName(deploymentName)
+                .domainName(webStack.domainName)
+                .baseUrl(webStack.baseUrl)
+                .webBucket(webStack.originBucket)
+                .resourceNamePrefix(webStack.resourceNamePrefix)
+                .distributionId(webStack.distribution.getDistributionId())
+                .webBucket(webStack.originBucket)
+                .commitHash(appProps.commitHash)
+                .docRootPath(appProps.docRootPath)
+                .build());
+        //publishStack.addDependency(edgeStack);
+        //publishStack.addDependency(applicationStack);
+        publishStack.addDependency(webStack);
 
         app.synth();
     }

@@ -1,11 +1,9 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.services.s3.Bucket;
 
 public class PublishStackProps implements StackProps {
-    public final Environment env;
     public final String envName;
     public final String deploymentName;
     public final String domainName;
@@ -13,10 +11,10 @@ public class PublishStackProps implements StackProps {
     public final String resourceNamePrefix;
     public final String distributionId;
     public final Bucket webBucket;
-    public final Bucket wellKnownBucket;
+    public final String commitHash;
+    public final String docRootPath;
 
     private PublishStackProps(Builder builder) {
-        this.env = builder.env;
         this.envName = builder.envName;
         this.deploymentName = builder.deploymentName;
         this.domainName = builder.domainName;
@@ -24,12 +22,8 @@ public class PublishStackProps implements StackProps {
         this.baseUrl = builder.baseUrl;
         this.resourceNamePrefix = builder.resourceNamePrefix;
         this.webBucket = builder.webBucket;
-        this.wellKnownBucket = builder.wellKnownBucket;
-    }
-
-    @Override
-    public Environment getEnv() {
-        return this.env;
+        this.commitHash = builder.commitHash;
+        this.docRootPath = builder.docRootPath;
     }
 
     public static Builder builder() {
@@ -37,7 +31,6 @@ public class PublishStackProps implements StackProps {
     }
 
     public static class Builder {
-        private Environment env;
         private String envName;
         private String deploymentName;
         private String domainName;
@@ -45,12 +38,8 @@ public class PublishStackProps implements StackProps {
         private String resourceNamePrefix;
         private String distributionId;
         private Bucket webBucket;
-        private Bucket wellKnownBucket;
-
-        public Builder env(Environment env) {
-            this.env = env;
-            return this;
-        }
+        private String commitHash;
+        private String docRootPath;
 
         public Builder envName(String envName) {
             this.envName = envName;
@@ -87,8 +76,13 @@ public class PublishStackProps implements StackProps {
             return this;
         }
 
-        public Builder wellKnownBucket(Bucket wellKnownBucket) {
-            this.wellKnownBucket = wellKnownBucket;
+        public Builder commitHash(String commitHash) {
+            this.commitHash = commitHash;
+            return this;
+        }
+
+        public Builder docRootPath(String docRootPath) {
+            this.docRootPath = docRootPath;
             return this;
         }
 

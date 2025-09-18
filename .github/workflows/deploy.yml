@@ -38,7 +38,6 @@ on:
       - 'infra/main'
       - 'tests/**'
       - 'web/public/**'
-      - 'well-known/**'
       - '.env.ci'
       - '.env.prod'
       - 'cdk.json'
@@ -1167,76 +1166,81 @@ jobs:
 #        shell: bash
 #    outputs:
 #      base-url: ${{ steps.edge-outputs.outputs.BASE_URL }}
-#
-#  deploy-publish:
-#    name: 'deploy publish'
-#    if: ${{ inputs.skipDeploy != 'true' }}
-#    needs:
-#      - names
-#      - npm-test
-#      - build-cdk
-#      - deploy-app
-#      - deploy-web
-#      - deploy-edge
-#    runs-on: ubuntu-24.04
-#    environment:
-#      name: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
-#      url: ${{ steps.edge-outputs.outputs.BASE_URL }}
-#    steps:
-#      - name: Checkout
-#        uses: actions/checkout@v5
-#
-#      - name: Setup Node
-#        uses: actions/setup-node@v5
-#        with:
-#          node-version: ${{ env.NODE_VERSION }}
-#          cache: 'npm'
-#
-#      - name: Node dependencies
-#        run: npm ci
-#
-#      - uses: actions/setup-java@v5
-#        with:
-#          distribution: 'temurin'
-#          java-version: ${{ env.JAVA_VERSION }}
-#          cache: 'maven'
-#
-#      - name: Download CDK synthesis artifacts
-#        uses: actions/download-artifact@v5
-#        with:
-#          name: cdk-synthesis
-#          path: target/
-#
-#      - name: Configure AWS role via GitHub OIDC
-#        uses: aws-actions/configure-aws-credentials@v5
-#        with:
-#          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
-#          aws-region: ${{ env.AWS_REGION }}
-#          role-session-name: gha-submit-actions-deploy
-#
-#      - name: Assume AWS deployment role
-#        uses: aws-actions/configure-aws-credentials@v5
-#        with:
-#          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
-#          aws-region: ${{ env.AWS_REGION }}
-#          role-session-name: gha-submit-deploy
-#
-#      - name: Deploy Publish Stack (CDK)
-#        run: |
-#          npx dotenv -e .env.${{ needs.names.outputs.environment-name }} -- \
-#            npx cdk deploy ${{ needs.names.outputs.deployment-name }}-PublishStack \
-#              --exclusively \
-#              --require-approval never \
-#              --ci true \
-#              --concurrency 4 \
-#              --asset-parallelism \
-#              --asset-prebuild \
-#              --outputs-file cdk.out/cdk-outputs-edge.json \
-#            ;
-#        env:
-#          ENV_NAME: ${{ needs.names.outputs.environment-name }}
-#          DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
-#
+
+  deploy-publish:
+    name: 'deploy publish'
+    if: ${{ inputs.skipDeploy != 'true' }}
+    needs:
+      - names
+      - npm-test
+      - build-cdk
+      - deploy-app
+      - deploy-web
+    runs-on: ubuntu-24.04
+    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Node dependencies
+        run: npm ci
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: 'maven'
+
+      - name: Download CDK synthesis artifacts
+        uses: actions/download-artifact@v5
+        with:
+          name: cdk-synthesis
+          path: target/
+
+      - name: Configure AWS role via GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Deploy Publish Stack (CDK)
+        run: |
+          npx dotenv -e .env.${{ needs.names.outputs.environment-name }} -- \
+            npx cdk deploy ${{ needs.names.outputs.deployment-name }}-PublishStack \
+              --exclusively \
+              --require-approval never \
+              --ci true \
+              --concurrency 4 \
+              --asset-parallelism \
+              --asset-prebuild \
+              --outputs-file cdk.out/cdk-outputs-edge.json \
+            ;
+        env:
+          ENV_NAME: ${{ needs.names.outputs.environment-name }}
+          DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
+
 #  deploy-ops:
 #    name: 'deploy ops'
 #    if: ${{ inputs.skipDeploy != 'true' }}
@@ -1389,7 +1393,7 @@ jobs:
       - deploy-app
       - deploy-web
       #- deploy-edge
-      #- deploy-publish
+      - deploy-publish
       #- demo-credentials
     runs-on: ubuntu-24.04
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
@@ -1476,7 +1480,7 @@ jobs:
       - deploy-app
       - deploy-web
       #- deploy-edge
-      #- deploy-publish
+      - deploy-publish
       - test-parameters
     runs-on: ubuntu-24.04
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
@@ -1648,7 +1652,6 @@ jobs:
 
           # Copy web assets to root
           cp -r web/* gh-pages/
-          cp -r well-known gh-pages/
 
           # Create artifacts directory structure
           mkdir -p gh-pages/artifacts

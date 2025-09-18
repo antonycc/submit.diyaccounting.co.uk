@@ -1,6 +1,5 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import co.uk.diyaccounting.submit.awssdk.RetentionDaysConverter;
 import co.uk.diyaccounting.submit.constructs.BucketOrigin;
 import co.uk.diyaccounting.submit.constructs.DistributionWithLogging;
 import co.uk.diyaccounting.submit.constructs.LambdaUrlOrigin;
@@ -11,12 +10,9 @@ import co.uk.diyaccounting.submit.utils.ResourceNameUtils;
 import org.apache.hc.core5.http.HttpStatus;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import software.amazon.awscdk.AssetHashType;
 import software.amazon.awscdk.CfnOutput;
 import software.amazon.awscdk.Duration;
-import software.amazon.awscdk.Expiration;
 import software.amazon.awscdk.RemovalPolicy;
-import software.amazon.awscdk.Size;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.services.certificatemanager.Certificate;
@@ -47,12 +43,11 @@ import software.amazon.awscdk.services.route53.IHostedZone;
 import software.amazon.awscdk.services.route53.RecordTarget;
 import software.amazon.awscdk.services.route53.targets.CloudFrontTarget;
 import software.amazon.awscdk.services.s3.BlockPublicAccess;
+import software.amazon.awscdk.services.s3.Bucket;
 import software.amazon.awscdk.services.s3.IBucket;
 import software.amazon.awscdk.services.s3.ObjectOwnership;
-import software.amazon.awscdk.services.s3.assets.AssetOptions;
 import software.amazon.awscdk.services.s3.deployment.BucketDeployment;
 import software.amazon.awscdk.services.s3.deployment.ISource;
-import software.amazon.awscdk.services.s3.deployment.Source;
 import software.amazon.awscdk.services.secretsmanager.ISecret;
 import software.amazon.awscdk.services.secretsmanager.Secret;
 import software.amazon.awssdk.utils.StringUtils;
@@ -64,12 +59,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateCompressedResourceNamePrefix;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateResourceNamePrefix;
+
 public class WebStack extends Stack {
 
     private static final Logger logger = LogManager.getLogger(WebStack.class);
 
+    public String resourceNamePrefix;
+    public String baseUrl;
     public String domainName;
-    public IBucket originBucket;
+    public Bucket originBucket;
     public IBucket originAccessLogBucket;
     public IOrigin origin;
     public BucketDeployment deployment;
@@ -817,6 +817,15 @@ public class WebStack extends Stack {
         String dashedDomainName =
                 Builder.buildDashedDomainName(builder.env, builder.subDomainName, builder.hostedZoneName);
         String originBucketName = Builder.buildOriginBucketName(dashedDomainName);
+
+        this.baseUrl = "https://" + domainName;
+
+        // Generate predictable resource name prefix based on domain and environment
+        String resourceNamePrefix =
+            generateResourceNamePrefix(domainName, builder.env);
+        String compressedResourceNamePrefix =
+            generateCompressedResourceNamePrefix(domainName, builder.env);
+
         boolean s3UseExistingBucket = Boolean.parseBoolean(builder.s3UseExistingBucket);
         boolean s3RetainOriginBucket = Boolean.parseBoolean(builder.s3RetainOriginBucket);
         boolean s3RetainReceiptsBucket = Boolean.parseBoolean(builder.s3RetainReceiptsBucket);
@@ -838,12 +847,12 @@ public class WebStack extends Stack {
         // Origin bucket for the CloudFront distribution
         String receiptsBucketFullName = Builder.buildBucketName(dashedDomainName, builder.receiptsBucketPostfix);
         BucketOrigin bucketOrigin;
-        if (s3UseExistingBucket) {
-            bucketOrigin = BucketOrigin.Builder.create(this, "Origin")
-                    .bucketName(originBucketName)
-                    .useExistingBucket(true)
-                    .build();
-        } else {
+        //if (s3UseExistingBucket) {
+        //    bucketOrigin = BucketOrigin.Builder.create(this, "Origin")
+        //            .bucketName(originBucketName)
+        //            .useExistingBucket(true)
+        //            .build();
+        //} else {
             bucketOrigin = BucketOrigin.Builder.create(this, "Origin")
                     .bucketName(originBucketName)
                     .originAccessLogBucketName(originAccessLogBucketName)
@@ -854,7 +863,8 @@ public class WebStack extends Stack {
                     .verboseLogging(verboseLogging)
                     .useExistingBucket(false)
                     .build();
-        }
+        //}
+
         this.originBucket = bucketOrigin.originBucket;
         this.originAccessLogBucket = bucketOrigin.originAccessLogBucket;
         this.originIdentity = bucketOrigin.originIdentity;
@@ -1243,6 +1253,9 @@ public class WebStack extends Stack {
 
         this.distributionUrl = "https://%s/".formatted(this.distribution.getDomainName());
         logger.info("Distribution URL: %s".formatted(distributionUrl));
+        logger.info("Base URL: %s".formatted(baseUrl));
+
+        /*
 
         // Generate submit.version file with commit hash if provided
         if (builder.commitHash != null && !builder.commitHash.isBlank()) {
@@ -1299,7 +1312,7 @@ public class WebStack extends Stack {
                 .memoryLimit(1024)
                 .ephemeralStorageSize(Size.gibibytes(2))
                 .build();
-
+*/
         // Create Route53 record for use with CloudFront distribution
         this.aRecord = ARecord.Builder.create(this, "ARecord-%s".formatted(dashedDomainName))
                 .zone(this.hostedZone)

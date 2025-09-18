@@ -1,13 +1,11 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.services.cloudfront.BehaviorOptions;
 
 import java.util.Map;
 
 public class EdgeStackProps implements StackProps {
-    public final Environment env;
     public final String envName;
     public final String deploymentName;
     public final String hostedZoneName;
@@ -20,8 +18,6 @@ public class EdgeStackProps implements StackProps {
     public final String logsBucketArn;
     // public final Bucket webBucket;
     public final BehaviorOptions webBehaviorOptions;
-    // public final Bucket wellKnownBucket;
-    public final BehaviorOptions wellKnownBehaviorOptions;
     public final String jwksEndpointFunctionArn;
     public final String authorizeEndpointFunctionArn;
     public final String tokenEndpointFunctionArn;
@@ -29,7 +25,6 @@ public class EdgeStackProps implements StackProps {
     public final Map<String, BehaviorOptions> additionalOriginsBehaviourMappings;
 
     private EdgeStackProps(Builder builder) {
-        this.env = builder.env;
         this.envName = builder.envName;
         this.deploymentName = builder.deploymentName;
         this.hostedZoneName = builder.hostedZoneName;
@@ -42,8 +37,6 @@ public class EdgeStackProps implements StackProps {
         this.logsBucketArn = builder.logsBucketArn;
         // this.webBucket = builder.webBucket;
         this.webBehaviorOptions = builder.webBehaviorOptions;
-        // this.wellKnownBucket = builder.wellKnownBucket;
-        this.wellKnownBehaviorOptions = builder.wellKnownBehaviorOptions;
         this.jwksEndpointFunctionArn = builder.jwksEndpointFunctionArn;
         this.authorizeEndpointFunctionArn = builder.authorizeEndpointFunctionArn;
         this.tokenEndpointFunctionArn = builder.tokenEndpointFunctionArn;
@@ -51,17 +44,11 @@ public class EdgeStackProps implements StackProps {
         this.additionalOriginsBehaviourMappings = builder.additionalOriginsBehaviourMappings;
     }
 
-    @Override
-    public Environment getEnv() {
-        return this.env;
-    }
-
     public static Builder builder() {
         return new Builder();
     }
 
     public static class Builder {
-        private Environment env;
         private String envName;
         private String deploymentName;
         private String hostedZoneName;
@@ -74,18 +61,11 @@ public class EdgeStackProps implements StackProps {
         private String logsBucketArn;
         // private Bucket webBucket;
         private BehaviorOptions webBehaviorOptions;
-        // private Bucket wellKnownBucket;
-        private BehaviorOptions wellKnownBehaviorOptions;
         private String jwksEndpointFunctionArn;
         private String authorizeEndpointFunctionArn;
         private String tokenEndpointFunctionArn;
         private String userinfoEndpointFunctionArn;
         private Map<String, BehaviorOptions> additionalOriginsBehaviourMappings;
-
-        public Builder env(Environment env) {
-            this.env = env;
-            return this;
-        }
 
         public Builder envName(String envName) {
             this.envName = envName;
@@ -144,16 +124,6 @@ public class EdgeStackProps implements StackProps {
 
         public Builder webBehaviorOptions(BehaviorOptions webBehaviorOptions) {
             this.webBehaviorOptions = webBehaviorOptions;
-            return this;
-        }
-
-        // public Builder wellKnownBucket(Bucket wellKnownBucket) {
-        //    this.wellKnownBucket = wellKnownBucket;
-        //    return this;
-        // }
-
-        public Builder wellKnownBehaviorOptions(BehaviorOptions wellKnownBehaviorOptions) {
-            this.wellKnownBehaviorOptions = wellKnownBehaviorOptions;
             return this;
         }
 
