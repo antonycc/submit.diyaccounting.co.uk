@@ -11,6 +11,7 @@ public class SelfDestructStackProps implements StackProps {
     public final String compressedResourceNamePrefix;
     public final String observabilityStackName;
     public final String devStackName;
+    public final String identityStackName;
     public final String authStackName;
     public final String applicationStackName;
     public final String webStackName;
@@ -28,6 +29,7 @@ public class SelfDestructStackProps implements StackProps {
         this.compressedResourceNamePrefix = builder.compressedResourceNamePrefix;
         this.observabilityStackName = builder.observabilityStackName;
         this.devStackName = builder.devStackName;
+        this.identityStackName = builder.identityStackName;
         this.authStackName = builder.authStackName;
         this.applicationStackName = builder.applicationStackName;
         this.webStackName = builder.webStackName;
@@ -55,6 +57,7 @@ public class SelfDestructStackProps implements StackProps {
         private String compressedResourceNamePrefix;
         private String observabilityStackName;
         private String devStackName;
+        private String identityStackName;
         private String authStackName;
         private String applicationStackName;
         private String webStackName;
@@ -96,6 +99,11 @@ public class SelfDestructStackProps implements StackProps {
 
         public Builder devStackName(String devStackName) {
             this.devStackName = devStackName;
+            return this;
+        }
+
+        public Builder identityStackName(String identityStackName) {
+            this.identityStackName = identityStackName;
             return this;
         }
 

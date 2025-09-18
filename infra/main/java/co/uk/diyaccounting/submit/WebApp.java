@@ -192,6 +192,8 @@ public class WebApp {
                 .resourceNamePrefix(webStack.resourceNamePrefix)
                 .compressedResourceNamePrefix(webStack.compressedResourceNamePrefix)
                 .lambdaFunctionArns(lambdaArns)
+                .distributionId(edgeStack.distribution.getDistributionId())
+                .originBucketArn(webStack.originBucket.getBucketArn())
                 .receiptsBucketArn(receiptsBucketArn)
                 //.tokenEndpointFunctionArn(this.application.appStack.tokenEndpoint.function.getFunctionArn())
                 //.userinfoEndpointFunctionArn(
@@ -220,6 +222,7 @@ public class WebApp {
                         .compressedResourceNamePrefix(webStack.compressedResourceNamePrefix)
                         .observabilityStackName(observabilityStack.getStackName())
                         .devStackName(devStack.getStackName())
+                        .identityStackName(identityStack.getStackName())
                         .authStackName(applicationStack.getStackName())
                         .applicationStackName(applicationStack.getStackName())
                         .webStackName(webStack.getStackName())
