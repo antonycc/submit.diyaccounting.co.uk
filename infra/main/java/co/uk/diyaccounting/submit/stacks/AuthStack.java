@@ -15,7 +15,6 @@ import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.lambda.FunctionUrl;
 import software.amazon.awscdk.services.lambda.FunctionUrlAuthType;
 import software.amazon.awscdk.services.logs.LogGroup;
-import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
 
 import java.util.AbstractMap;
@@ -79,7 +78,10 @@ public class AuthStack extends Stack {
         var lambdaUrlToOriginsBehaviourMappings = new HashMap<String, BehaviorOptions>();
 
         // authUrl - mock
-        var authUrlMockLambdaEnv = new HashMap<>(Map.of("DIY_SUBMIT_HOME_URL", builder.homeUrl));
+        var authUrlMockLambdaEnv = new HashMap<String, String>();
+        //if (StringUtils.isNotBlank(builder.homeUrl)) {
+            authUrlMockLambdaEnv.put("DIY_SUBMIT_HOME_URL", builder.homeUrl);
+        //}
         var authUrlMockLambdaUrlOrigin = LambdaUrlOrigin.Builder.create(this, "AuthUrlMock")
             .options(lambdaCommonOpts)
             .baseImageTag(builder.baseImageTag)
@@ -99,13 +101,16 @@ public class AuthStack extends Stack {
             "/api/mock/auth-url" + "*", authUrlMockLambdaUrlOrigin.behaviorOptions);
 
         // authUrl - Google or Antonycc via Cognito
-        var authUrlCognitoLambdaEnv = new HashMap<>(Map.of(
-            "DIY_SUBMIT_HOME_URL",
-            builder.homeUrl,
-            "DIY_SUBMIT_COGNITO_CLIENT_ID",
-            builder.cognitoClientId,
-            "DIY_SUBMIT_COGNITO_BASE_URI",
-            builder.cognitoBaseUri));
+        var authUrlCognitoLambdaEnv = new HashMap<String, String>();
+        //if (StringUtils.isNotBlank(builder.homeUrl)) {
+            authUrlCognitoLambdaEnv.put("DIY_SUBMIT_HOME_URL", builder.homeUrl);
+        //}
+        //if (StringUtils.isNotBlank(builder.cognitoClientId)) {
+            authUrlCognitoLambdaEnv.put("DIY_SUBMIT_COGNITO_CLIENT_ID", builder.cognitoClientId);
+        //}
+        //if (StringUtils.isNotBlank(builder.cognitoBaseUri)) {
+            authUrlCognitoLambdaEnv.put("DIY_SUBMIT_COGNITO_BASE_URI", builder.cognitoBaseUri);
+        //}
         var authUrlCognitoLambdaUrlOrigin = LambdaUrlOrigin.Builder.create(this, "AuthUrlCognito")
             .options(lambdaCommonOpts)
             .baseImageTag(builder.baseImageTag)
@@ -126,16 +131,19 @@ public class AuthStack extends Stack {
             "/api/cognito/auth-url" + "*", authUrlCognitoLambdaUrlOrigin.behaviorOptions);
 
         // exchangeToken - Google or Antonycc via Cognito
-        var exchangeCognitoTokenLambdaEnv = new HashMap<>(Map.of("DIY_SUBMIT_HOME_URL", builder.homeUrl));
-        if (StringUtils.isNotBlank(builder.cognitoBaseUri)) {
+        var exchangeCognitoTokenLambdaEnv = new HashMap<String, String>();
+        //if (StringUtils.isNotBlank(builder.homeUrl)) {
+            exchangeCognitoTokenLambdaEnv.put("DIY_SUBMIT_HOME_URL", builder.homeUrl);
+        //}
+        //if (StringUtils.isNotBlank(builder.cognitoBaseUri)) {
             exchangeCognitoTokenLambdaEnv.put("DIY_SUBMIT_COGNITO_BASE_URI", builder.cognitoBaseUri);
-        }
-        if (StringUtils.isNotBlank(builder.cognitoClientId)) {
+        //}
+        //if (StringUtils.isNotBlank(builder.cognitoClientId)) {
             exchangeCognitoTokenLambdaEnv.put("DIY_SUBMIT_COGNITO_CLIENT_ID", builder.cognitoClientId);
-        }
-        if (StringUtils.isNotBlank(builder.optionalTestAccessToken)) {
+        //}
+        //if (StringUtils.isNotBlank(builder.optionalTestAccessToken)) {
             exchangeCognitoTokenLambdaEnv.put("DIY_SUBMIT_TEST_ACCESS_TOKEN", builder.optionalTestAccessToken);
-        }
+        //}
         var exchangeCognitoTokenLambdaUrlOrigin = LambdaUrlOrigin.Builder.create(this, "ExchangeCognitoToken")
             .options(lambdaCommonOpts)
             .baseImageTag(builder.baseImageTag)
@@ -185,9 +193,6 @@ public class AuthStack extends Stack {
         public String hostedZoneName;
         public String cloudTrailEnabled;
         public String xRayEnabled;
-        // Lambda/config properties
-        public String verboseLogging;
-        public String lambdaUrlAuthType;
         public String baseImageTag;
         public String ecrRepositoryArn;
         public String ecrRepositoryName;
@@ -196,6 +201,8 @@ public class AuthStack extends Stack {
         public String cognitoClientId;
         public String cognitoBaseUri;
         public String optionalTestAccessToken;
+        public String verboseLogging;
+        public String lambdaUrlAuthType;
 
         private Builder() {}
 
@@ -246,6 +253,11 @@ public class AuthStack extends Stack {
             this.baseImageTag = p.baseImageTag;
             this.ecrRepositoryArn = p.ecrRepositoryArn;
             this.ecrRepositoryName = p.ecrRepositoryName;
+            this.homeUrl = p.homeUrl;
+            this.cognitoClientId = p.cognitoClientId;
+            this.cognitoBaseUri = p.cognitoBaseUri;
+            this.optionalTestAccessToken = p.optionalTestAccessToken;
+
             return this;
         }
 
