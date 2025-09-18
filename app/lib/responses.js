@@ -54,7 +54,13 @@ export function extractRequest(event) {
   let request;
   if (event.headers) {
     try {
-      const baseRequestUrl = event.headers.referer || `https://${event.headers.host || "unknown-host"}`;
+      let baseRequestUrl;
+      if (event.headers.referer) {
+        const refererUrl = new URL(event.headers.referer);
+        baseRequestUrl = `${refererUrl.protocol}//${refererUrl.host}`;
+      } else {
+        baseRequestUrl = `https://${event.headers.host || "unknown-host"}`;
+      }
       const path = event.rawPath || event.path || event.requestContext?.http?.path || "";
       const queryString = event.rawQueryString || "";
       request = new URL(`${baseRequestUrl}${path}?${queryString}`);
