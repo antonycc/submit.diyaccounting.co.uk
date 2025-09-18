@@ -1,21 +1,12 @@
 package co.uk.diyaccounting.submit.stacks;
 
 import co.uk.diyaccounting.submit.constructs.BucketOrigin;
-import co.uk.diyaccounting.submit.constructs.DistributionWithLogging;
-import co.uk.diyaccounting.submit.constructs.LambdaUrlOrigin;
-import co.uk.diyaccounting.submit.constructs.LambdaUrlOriginOpts;
-import co.uk.diyaccounting.submit.constructs.LogForwardingBucket;
-import co.uk.diyaccounting.submit.functions.LogS3ObjectEvent;
 import co.uk.diyaccounting.submit.utils.ResourceNameUtils;
-import org.apache.hc.core5.http.HttpStatus;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import software.amazon.awscdk.CfnOutput;
-import software.amazon.awscdk.Duration;
-import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
-import software.amazon.awscdk.services.certificatemanager.Certificate;
 import software.amazon.awscdk.services.certificatemanager.ICertificate;
 import software.amazon.awscdk.services.cloudfront.AllowedMethods;
 import software.amazon.awscdk.services.cloudfront.BehaviorOptions;
@@ -25,38 +16,20 @@ import software.amazon.awscdk.services.cloudfront.OriginAccessIdentity;
 import software.amazon.awscdk.services.cloudfront.OriginRequestPolicy;
 import software.amazon.awscdk.services.cloudfront.ResponseHeadersPolicy;
 import software.amazon.awscdk.services.cloudfront.ViewerProtocolPolicy;
-import software.amazon.awscdk.services.cognito.IUserPool;
-import software.amazon.awscdk.services.cognito.UserPool;
-import software.amazon.awscdk.services.iam.Effect;
-import software.amazon.awscdk.services.iam.PolicyStatement;
-import software.amazon.awscdk.services.iam.ServicePrincipal;
-import software.amazon.awscdk.services.lambda.Function;
-import software.amazon.awscdk.services.lambda.FunctionUrl;
-import software.amazon.awscdk.services.lambda.FunctionUrlAuthType;
-import software.amazon.awscdk.services.lambda.Permission;
-import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.route53.ARecord;
 import software.amazon.awscdk.services.route53.AaaaRecord;
 import software.amazon.awscdk.services.route53.HostedZone;
 import software.amazon.awscdk.services.route53.HostedZoneAttributes;
 import software.amazon.awscdk.services.route53.IHostedZone;
-import software.amazon.awscdk.services.route53.RecordTarget;
-import software.amazon.awscdk.services.route53.targets.CloudFrontTarget;
-import software.amazon.awscdk.services.s3.BlockPublicAccess;
 import software.amazon.awscdk.services.s3.Bucket;
 import software.amazon.awscdk.services.s3.IBucket;
-import software.amazon.awscdk.services.s3.ObjectOwnership;
 import software.amazon.awscdk.services.s3.deployment.BucketDeployment;
 import software.amazon.awscdk.services.s3.deployment.ISource;
 import software.amazon.awscdk.services.secretsmanager.ISecret;
-import software.amazon.awscdk.services.secretsmanager.Secret;
-import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
 
 import java.util.AbstractMap;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.regex.Pattern;
 
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateCompressedResourceNamePrefix;
@@ -85,41 +58,7 @@ public class WebStack extends Stack {
     public ISource docRootSource;
     public ARecord aRecord;
     public AaaaRecord aaaaRecord;
-    public Function authUrlHmrcLambda;
-    public FunctionUrl authUrlHmrcLambdaUrl;
-    public LogGroup authUrlLambdaLogGroup;
-    public Function authUrlMockLambda;
-    public FunctionUrl authUrlMockLambdaUrl;
-    public LogGroup authUrlMockLambdaLogGroup;
-    public Function authUrlCognitoLambda;
-    public FunctionUrl authUrlCognitoLambdaUrl;
-    public LogGroup authUrlCognitoLambdaLogGroup;
-    public Function exchangeHmrcTokenLambda;
-    public FunctionUrl exchangeHmrcTokenLambdaUrl;
-    public LogGroup exchangeHmrcTokenLambdaLogGroup;
-    public Function exchangeCognitoTokenLambda;
-    public FunctionUrl exchangeCognitoTokenLambdaUrl;
-    public LogGroup exchangeCognitoTokenLambdaLogGroup;
-    public Function submitVatLambda;
-    public FunctionUrl submitVatLambdaUrl;
-    public LogGroup submitVatLambdaLogGroup;
-    public Function logReceiptLambda;
-    public FunctionUrl logReceiptLambdaUrl;
-    public LogGroup logReceiptLambdaLogGroup;
     public String cognitoBaseUri;
-    public Function bundleLambda;
-    public FunctionUrl bundleLambdaUrl;
-    public LogGroup bundleLambdaLogGroup;
-    public Function catalogLambda;
-    public FunctionUrl catalogLambdaUrl;
-    public LogGroup catalogLambdaLogGroup;
-    public Function myBundlesLambda;
-    public FunctionUrl myBundlesLambdaUrl;
-    public LogGroup myBundlesLambdaLogGroup;
-    public IBucket receiptsBucket;
-    public Function myReceiptsLambda;
-    public FunctionUrl myReceiptsLambdaUrl;
-    public LogGroup myReceiptsLambdaLogGroup;
 
     public static class Builder {
         public Construct scope;
@@ -646,331 +585,8 @@ public class WebStack extends Stack {
                 .compress(true)
                 .build();
 
+        /*
         IUserPool userPool = UserPool.fromUserPoolArn(this, "UserPool", builder.userPoolArn);
-
-        // Lambdas
-
-        // Determine Lambda URL authentication type
-        FunctionUrlAuthType functionUrlAuthType = "AWS_IAM".equalsIgnoreCase(builder.lambdaUrlAuthType)
-                ? FunctionUrlAuthType.AWS_IAM
-                : FunctionUrlAuthType.NONE;
-
-        // Common options for all Lambda URL origins to reduce repetition
-        var lambdaCommonOpts = LambdaUrlOriginOpts.Builder.create()
-                .env(builder.env)
-                .imageDirectory("infra/runtimes")
-                .functionUrlAuthType(functionUrlAuthType)
-                .cloudTrailEnabled(cloudTrailEnabled)
-                .xRayEnabled(xRayEnabled)
-                .verboseLogging(verboseLogging)
-                .baseImageTag(builder.baseImageTag)
-                .build();
-
-        var lambdaUrlToOriginsBehaviourMappings = new HashMap<String, BehaviorOptions>();
-
-        // authUrl - HMRC
-        var authUrlHmrcLambdaEnv = new HashMap<>(Map.of(
-                "DIY_SUBMIT_HOME_URL", builder.homeUrl,
-                "DIY_SUBMIT_HMRC_BASE_URI", builder.hmrcBaseUri,
-                "DIY_SUBMIT_HMRC_CLIENT_ID", builder.hmrcClientId));
-        var authUrlHmrcLambdaUrlOrigin = LambdaUrlOrigin.Builder.create(this, "AuthUrlHmrc")
-                .imageFilename("authUrlHmrc.Dockerfile")
-                .baseImageTag(builder.baseImageTag)
-                .ecrRepositoryName(builder.ecrRepositoryName)
-                .ecrRepositoryArn(builder.ecrRepositoryArn)
-                .functionName(Builder.buildFunctionName(dashedDomainName, "authUrl.httpGetHmrc"))
-                .allowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
-                .handler(builder.lambdaEntry + "authUrl.httpGetHmrc")
-                .environment(authUrlHmrcLambdaEnv)
-                .timeout(Duration.millis(Long.parseLong("30000")))
-                .options(lambdaCommonOpts)
-                .build(this);
-        this.authUrlHmrcLambda = authUrlHmrcLambdaUrlOrigin.lambda;
-        this.authUrlHmrcLambdaUrl = authUrlHmrcLambdaUrlOrigin.functionUrl;
-        this.authUrlLambdaLogGroup = authUrlHmrcLambdaUrlOrigin.logGroup;
-        lambdaUrlToOriginsBehaviourMappings.put(
-                "/api/hmrc/auth-url" + "*", authUrlHmrcLambdaUrlOrigin.behaviorOptions);
-
-        // authUrl - mock
-        var authUrlMockLambdaEnv = new HashMap<>(Map.of("DIY_SUBMIT_HOME_URL", builder.homeUrl));
-        var authUrlMockLambdaUrlOrigin = LambdaUrlOrigin.Builder.create(this, "AuthUrlMock")
-                .options(lambdaCommonOpts)
-                .baseImageTag(builder.baseImageTag)
-                .ecrRepositoryName(builder.ecrRepositoryName)
-                .ecrRepositoryArn(builder.ecrRepositoryArn)
-                .imageFilename("authUrlMock.Dockerfile")
-                .functionName(Builder.buildFunctionName(dashedDomainName, "authUrl.httpGetMock"))
-                .allowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
-                .handler(builder.lambdaEntry + "authUrl.httpGetMock")
-                .environment(authUrlMockLambdaEnv)
-                .timeout(Duration.millis(Long.parseLong("30000")))
-                .build(this);
-        this.authUrlMockLambda = authUrlMockLambdaUrlOrigin.lambda;
-        this.authUrlMockLambdaUrl = authUrlMockLambdaUrlOrigin.functionUrl;
-        this.authUrlMockLambdaLogGroup = authUrlMockLambdaUrlOrigin.logGroup;
-        lambdaUrlToOriginsBehaviourMappings.put(
-                "/api/mock/auth-url" + "*", authUrlMockLambdaUrlOrigin.behaviorOptions);
-
-        // authUrl - Google or Antonycc via Cognito
-        var authUrlCognitoLambdaEnv = new HashMap<>(Map.of(
-                "DIY_SUBMIT_HOME_URL",
-                builder.homeUrl,
-                "DIY_SUBMIT_COGNITO_CLIENT_ID",
-                builder.cognitoClientId,
-                "DIY_SUBMIT_COGNITO_BASE_URI",
-                builder.cognitoBaseUri));
-        var authUrlCognitoLambdaUrlOrigin = LambdaUrlOrigin.Builder.create(this, "AuthUrlCognito")
-                .options(lambdaCommonOpts)
-                .baseImageTag(builder.baseImageTag)
-                .ecrRepositoryName(builder.ecrRepositoryName)
-                .ecrRepositoryArn(builder.ecrRepositoryArn)
-                .imageFilename("authUrlCognito.Dockerfile")
-                .functionName(
-                        Builder.buildFunctionName(dashedDomainName, "authUrl.httpGetCognito"))
-                .allowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
-                .handler(builder.lambdaEntry + "authUrl.httpGetCognito")
-                .environment(authUrlCognitoLambdaEnv)
-                .timeout(Duration.millis(Long.parseLong("30000")))
-                .build(this);
-        this.authUrlCognitoLambda = authUrlCognitoLambdaUrlOrigin.lambda;
-        this.authUrlCognitoLambdaUrl = authUrlCognitoLambdaUrlOrigin.functionUrl;
-        this.authUrlCognitoLambdaLogGroup = authUrlCognitoLambdaUrlOrigin.logGroup;
-        lambdaUrlToOriginsBehaviourMappings.put(
-                "/api/cognito/auth-url" + "*", authUrlCognitoLambdaUrlOrigin.behaviorOptions);
-
-        // exchangeToken - HMRC
-        this.hmrcClientSecretsManagerSecret =
-                Secret.fromSecretPartialArn(this, "HmrcClientSecret", builder.hmrcClientSecretArn);
-        var hmrcClientSecretArn = this.hmrcClientSecretsManagerSecret.getSecretArn();
-        var exchangeHmrcTokenLambdaEnv = new HashMap<>(Map.of(
-                "DIY_SUBMIT_HOME_URL", builder.homeUrl,
-                "DIY_SUBMIT_HMRC_BASE_URI", builder.hmrcBaseUri,
-                "DIY_SUBMIT_HMRC_CLIENT_ID", builder.hmrcClientId,
-                "DIY_SUBMIT_HMRC_CLIENT_SECRET_ARN", hmrcClientSecretArn));
-        if (StringUtils.isNotBlank(builder.optionalTestAccessToken)) {
-            exchangeHmrcTokenLambdaEnv.put("DIY_SUBMIT_TEST_ACCESS_TOKEN", builder.optionalTestAccessToken);
-        }
-        var exchangeHmrcTokenLambdaUrlOrigin = LambdaUrlOrigin.Builder.create(this, "ExchangeHmrcToken")
-                .options(lambdaCommonOpts)
-                .baseImageTag(builder.baseImageTag)
-                .ecrRepositoryName(builder.ecrRepositoryName)
-                .ecrRepositoryArn(builder.ecrRepositoryArn)
-                .imageFilename("exchangeHmrcToken.Dockerfile")
-                .functionName(
-                        Builder.buildFunctionName(dashedDomainName, "exchangeToken.httpPostHmrc"))
-                .allowedMethods(AllowedMethods.ALLOW_ALL)
-                .handler(builder.lambdaEntry + "exchangeToken.httpPostHmrc")
-                .environment(exchangeHmrcTokenLambdaEnv)
-                .timeout(Duration.millis(Long.parseLong("30000")))
-                .build(this);
-        this.exchangeHmrcTokenLambda = exchangeHmrcTokenLambdaUrlOrigin.lambda;
-        this.exchangeHmrcTokenLambdaUrl = exchangeHmrcTokenLambdaUrlOrigin.functionUrl;
-        this.exchangeHmrcTokenLambdaLogGroup = exchangeHmrcTokenLambdaUrlOrigin.logGroup;
-        lambdaUrlToOriginsBehaviourMappings.put(
-                "/api/hmrc/exchange-token" + "*", exchangeHmrcTokenLambdaUrlOrigin.behaviorOptions);
-        this.hmrcClientSecretsManagerSecret.grantRead(this.exchangeHmrcTokenLambda);
-
-        // exchangeToken - Google or Antonycc via Cognito
-        var exchangeCognitoTokenLambdaEnv = new HashMap<>(Map.of("DIY_SUBMIT_HOME_URL", builder.homeUrl));
-        if (StringUtils.isNotBlank(builder.cognitoBaseUri)) {
-            exchangeCognitoTokenLambdaEnv.put("DIY_SUBMIT_COGNITO_BASE_URI", builder.cognitoBaseUri);
-        }
-        if (StringUtils.isNotBlank(builder.cognitoClientId)) {
-            exchangeCognitoTokenLambdaEnv.put("DIY_SUBMIT_COGNITO_CLIENT_ID", builder.cognitoClientId);
-        }
-        if (StringUtils.isNotBlank(builder.optionalTestAccessToken)) {
-            exchangeCognitoTokenLambdaEnv.put("DIY_SUBMIT_TEST_ACCESS_TOKEN", builder.optionalTestAccessToken);
-        }
-        var exchangeCognitoTokenLambdaUrlOrigin = LambdaUrlOrigin.Builder.create(this, "ExchangeCognitoToken")
-                .options(lambdaCommonOpts)
-                .baseImageTag(builder.baseImageTag)
-                .ecrRepositoryName(builder.ecrRepositoryName)
-                .ecrRepositoryArn(builder.ecrRepositoryArn)
-                .imageFilename("exchangeCognitoToken.Dockerfile")
-                .functionName(Builder.buildFunctionName(
-                        dashedDomainName, "exchangeToken.httpPostCognito"))
-                .allowedMethods(AllowedMethods.ALLOW_ALL)
-                .handler(builder.lambdaEntry + "exchangeToken.httpPostCognito")
-                .environment(exchangeCognitoTokenLambdaEnv)
-                .timeout(Duration.millis(Long.parseLong("30000")))
-                .build(this);
-        this.exchangeCognitoTokenLambda = exchangeCognitoTokenLambdaUrlOrigin.lambda;
-        this.exchangeCognitoTokenLambdaUrl = exchangeCognitoTokenLambdaUrlOrigin.functionUrl;
-        this.exchangeCognitoTokenLambdaLogGroup = exchangeCognitoTokenLambdaUrlOrigin.logGroup;
-        lambdaUrlToOriginsBehaviourMappings.put(
-                "/api/cognito/exchange-token" + "*", exchangeCognitoTokenLambdaUrlOrigin.behaviorOptions);
-
-        // submitVat
-        var submitVatLambdaEnv = new HashMap<>(Map.of(
-                "DIY_SUBMIT_HOME_URL", builder.homeUrl,
-                "DIY_SUBMIT_HMRC_BASE_URI", builder.hmrcBaseUri));
-        var submitVatLambdaUrlOrigin = LambdaUrlOrigin.Builder.create(this, "SubmitVat")
-                .options(lambdaCommonOpts)
-                .baseImageTag(builder.baseImageTag)
-                .ecrRepositoryName(builder.ecrRepositoryName)
-                .ecrRepositoryArn(builder.ecrRepositoryArn)
-                .imageFilename("submitVat.Dockerfile")
-                .functionName(Builder.buildFunctionName(dashedDomainName, "submitVat.httpPost"))
-                .allowedMethods(AllowedMethods.ALLOW_ALL)
-                .handler(builder.lambdaEntry + "submitVat.httpPost")
-                .environment(submitVatLambdaEnv)
-                .timeout(Duration.millis(Long.parseLong("60000")))
-                .build(this);
-        this.submitVatLambda = submitVatLambdaUrlOrigin.lambda;
-        this.submitVatLambdaUrl = submitVatLambdaUrlOrigin.functionUrl;
-        this.submitVatLambdaLogGroup = submitVatLambdaUrlOrigin.logGroup;
-        lambdaUrlToOriginsBehaviourMappings.put(
-                "/api/submit-vat" + "*", submitVatLambdaUrlOrigin.behaviorOptions);
-
-        var logReceiptLambdaEnv = new HashMap<>(Map.of(
-                "DIY_SUBMIT_HOME_URL", builder.homeUrl,
-                "DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX", builder.receiptsBucketPostfix));
-        if (StringUtils.isNotBlank(builder.optionalTestS3Endpoint)
-                        && StringUtils.isNotBlank(builder.optionalTestS3AccessKey)
-                || StringUtils.isNotBlank(builder.optionalTestS3SecretKey)) {
-            // For production like integrations without AWS we can use test S3 credentials
-            var logReceiptLambdaTestEnv = new HashMap<>(Map.of(
-                    "DIY_SUBMIT_TEST_S3_ENDPOINT", builder.optionalTestS3Endpoint,
-                    "DIY_SUBMIT_TEST_S3_ACCESS_KEY", builder.optionalTestS3AccessKey,
-                    "DIY_SUBMIT_TEST_S3_SECRET_KEY", builder.optionalTestS3SecretKey));
-            logReceiptLambdaEnv.putAll(logReceiptLambdaTestEnv);
-        }
-        var logReceiptLambdaUrlOrigin = LambdaUrlOrigin.Builder.create(this, "LogReceipt")
-                .options(lambdaCommonOpts)
-                .baseImageTag(builder.baseImageTag)
-                .ecrRepositoryName(builder.ecrRepositoryName)
-                .ecrRepositoryArn(builder.ecrRepositoryArn)
-                .imageFilename("logReceipt.Dockerfile")
-                .functionName(Builder.buildFunctionName(dashedDomainName, "logReceipt.httpPost"))
-                .allowedMethods(AllowedMethods.ALLOW_ALL)
-                .handler(builder.lambdaEntry + "logReceipt.httpPost")
-                .environment(logReceiptLambdaEnv)
-                .timeout(Duration.millis(Long.parseLong("30000")))
-                .build(this);
-        this.logReceiptLambda = logReceiptLambdaUrlOrigin.lambda;
-        this.logReceiptLambdaUrl = logReceiptLambdaUrlOrigin.functionUrl;
-        this.logReceiptLambdaLogGroup = logReceiptLambdaUrlOrigin.logGroup;
-        lambdaUrlToOriginsBehaviourMappings.put(
-                "/api/log-receipt" + "*", logReceiptLambdaUrlOrigin.behaviorOptions);
-
-        // Create Bundle Management Lambda
-        if (StringUtils.isNotBlank("bundle.httpPost")) {
-            var bundleLambdaEnv = new HashMap<>(Map.of(
-                    "DIY_SUBMIT_HOME_URL",
-                    builder.homeUrl,
-                    "DIY_SUBMIT_USER_POOL_ID",
-                    userPool.getUserPoolId(),
-                    "DIY_SUBMIT_BUNDLE_EXPIRY_DATE",
-                    builder.bundleExpiryDate != null ? builder.bundleExpiryDate : "2025-12-31",
-                    "DIY_SUBMIT_BUNDLE_USER_LIMIT",
-                    builder.bundleUserLimit != null ? builder.bundleUserLimit : "1000"));
-            var bundleLambdaUrlOrigin = LambdaUrlOrigin.Builder.create(this, "BundleLambda")
-                    .options(lambdaCommonOpts)
-                    .baseImageTag(builder.baseImageTag)
-                    .ecrRepositoryName(builder.ecrRepositoryName)
-                    .ecrRepositoryArn(builder.ecrRepositoryArn)
-                    .imageFilename("bundle.Dockerfile")
-                    .functionName(Builder.buildFunctionName(dashedDomainName, "bundle.httpPost"))
-                    .allowedMethods(AllowedMethods.ALLOW_ALL)
-                    .handler(builder.lambdaEntry + "bundle.httpPost")
-                    .environment(bundleLambdaEnv)
-                    .timeout(Duration.millis(Long.parseLong("30000")))
-                    .build(this);
-            this.bundleLambda = bundleLambdaUrlOrigin.lambda;
-            this.bundleLambdaUrl = bundleLambdaUrlOrigin.functionUrl;
-            this.bundleLambdaLogGroup = bundleLambdaUrlOrigin.logGroup;
-            lambdaUrlToOriginsBehaviourMappings.put(
-                    "/api/request-bundle" + "*", bundleLambdaUrlOrigin.behaviorOptions);
-
-            // Grant Cognito permissions to the bundle Lambda
-            this.bundleLambda.addToRolePolicy(PolicyStatement.Builder.create()
-                    .effect(Effect.ALLOW)
-                    .actions(List.of(
-                            "cognito-idp:AdminGetUser",
-                            "cognito-idp:AdminUpdateUserAttributes",
-                            "cognito-idp:ListUsers"))
-                    .resources(List.of(userPool.getUserPoolArn()))
-                    .build());
-        }
-
-        // Catalog Lambda
-        var catalogLambdaEnv = new HashMap<>(Map.of("DIY_SUBMIT_HOME_URL", builder.homeUrl));
-        var catalogLambdaUrlOrigin = LambdaUrlOrigin.Builder.create(this, "Catalog")
-                .options(lambdaCommonOpts)
-                .baseImageTag(builder.baseImageTag)
-                .ecrRepositoryName(builder.ecrRepositoryName)
-                .ecrRepositoryArn(builder.ecrRepositoryArn)
-                .imageFilename("getCatalog.Dockerfile")
-                .functionName(Builder.buildFunctionName(dashedDomainName, "getCatalog.httpGet"))
-                .allowedMethods(AllowedMethods.ALLOW_ALL)
-                .handler(builder.lambdaEntry + "getCatalog.httpGet")
-                .environment(catalogLambdaEnv)
-                .timeout(Duration.millis(Long.parseLong("30000")))
-                .build(this);
-        this.catalogLambda = catalogLambdaUrlOrigin.lambda;
-        this.catalogLambdaUrl = catalogLambdaUrlOrigin.functionUrl;
-        this.catalogLambdaLogGroup = catalogLambdaUrlOrigin.logGroup;
-        lambdaUrlToOriginsBehaviourMappings.put(
-                "/api/catalog" + "*", catalogLambdaUrlOrigin.behaviorOptions);
-
-        // My Bundles Lambda
-        var myBundlesLambdaEnv = new HashMap<>(Map.of("DIY_SUBMIT_HOME_URL", builder.homeUrl));
-        var myBundlesLambdaUrlOrigin = LambdaUrlOrigin.Builder.create(this, "MyBundles")
-                .options(lambdaCommonOpts)
-                .baseImageTag(builder.baseImageTag)
-                .ecrRepositoryName(builder.ecrRepositoryName)
-                .ecrRepositoryArn(builder.ecrRepositoryArn)
-                .imageFilename("myBundles.Dockerfile")
-                .functionName(Builder.buildFunctionName(dashedDomainName, "myBundles.httpGet"))
-                .allowedMethods(AllowedMethods.ALLOW_ALL)
-                .handler(builder.lambdaEntry + "myBundles.httpGet")
-                .environment(myBundlesLambdaEnv)
-                .timeout(Duration.millis(Long.parseLong("30000")))
-                .build(this);
-        this.myBundlesLambda = myBundlesLambdaUrlOrigin.lambda;
-        this.myBundlesLambdaUrl = myBundlesLambdaUrlOrigin.functionUrl;
-        this.myBundlesLambdaLogGroup = myBundlesLambdaUrlOrigin.logGroup;
-        lambdaUrlToOriginsBehaviourMappings.put(
-                "/api/my-bundles" + "*", myBundlesLambdaUrlOrigin.behaviorOptions);
-
-        // myReceipts Lambda
-        var myReceiptsLambdaEnv = new HashMap<>(Map.of(
-                "DIY_SUBMIT_HOME_URL", builder.homeUrl,
-                "DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX", builder.receiptsBucketPostfix));
-        var myReceiptsLambdaUrlOrigin = LambdaUrlOrigin.Builder.create(this, "MyReceipts")
-                .options(lambdaCommonOpts)
-                .baseImageTag(builder.baseImageTag)
-                .ecrRepositoryName(builder.ecrRepositoryName)
-                .ecrRepositoryArn(builder.ecrRepositoryArn)
-                .imageFilename("myReceipts.Dockerfile")
-                .functionName(Builder.buildFunctionName(dashedDomainName, "myReceipts.httpGet"))
-                .allowedMethods(AllowedMethods.ALLOW_ALL)
-                .handler(builder.lambdaEntry + "myReceipts.httpGet")
-                .environment(myReceiptsLambdaEnv)
-                .timeout(Duration.millis(Long.parseLong("30000")))
-                .build(this);
-        this.myReceiptsLambda = myReceiptsLambdaUrlOrigin.lambda;
-        this.myReceiptsLambdaUrl = myReceiptsLambdaUrlOrigin.functionUrl;
-        this.myReceiptsLambdaLogGroup = myReceiptsLambdaUrlOrigin.logGroup;
-        lambdaUrlToOriginsBehaviourMappings.put(
-                "/api/my-receipts" + "*", myReceiptsLambdaUrlOrigin.behaviorOptions);
-
-        // Create receipts bucket for storing VAT submission receipts
-        this.receiptsBucket = LogForwardingBucket.Builder.create(
-                        this, "ReceiptsBucket", builder.logS3ObjectEventHandlerSource, LogS3ObjectEvent.class)
-                .bucketName(receiptsBucketFullName)
-                .versioned(true)
-                .blockPublicAccess(BlockPublicAccess.BLOCK_ALL)
-                .objectOwnership(ObjectOwnership.OBJECT_WRITER)
-                .autoDeleteObjects(!s3RetainReceiptsBucket)
-                .functionNamePrefix("%s-receipts-bucket-".formatted(dashedDomainName))
-                .retentionPeriodDays(2555) // 7 years for tax records as per HMRC requirements
-                .cloudTrailEnabled(cloudTrailEnabled)
-                .verboseLogging(verboseLogging)
-                .removalPolicy(s3RetainReceiptsBucket ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY)
-                .build();
-        this.receiptsBucket.grantWrite(this.logReceiptLambda);
-        this.receiptsBucket.grantRead(this.myReceiptsLambda);
 
         // Create a certificate for the website domain
         this.certificate = Certificate.fromCertificateArn(this, "Certificate", builder.certificateArn);
@@ -1014,7 +630,7 @@ public class WebStack extends Stack {
         this.distributionUrl = "https://%s/".formatted(this.distribution.getDomainName());
         logger.info("Distribution URL: %s".formatted(distributionUrl));
         logger.info("Base URL: %s".formatted(baseUrl));
-
+*/
         /*
 
         // Generate submit.version file with commit hash if provided
@@ -1074,18 +690,18 @@ public class WebStack extends Stack {
                 .build();
 */
         // Create Route53 record for use with CloudFront distribution
-        this.aRecord = ARecord.Builder.create(this, "ARecord-%s".formatted(dashedDomainName))
-                .zone(this.hostedZone)
-                .recordName(this.domainName)
-                .deleteExisting(true)
-                .target(RecordTarget.fromAlias(new CloudFrontTarget(this.distribution)))
-                .build();
-        this.aaaaRecord = AaaaRecord.Builder.create(this, "AaaaRecord-%s".formatted(dashedDomainName))
-                .zone(this.hostedZone)
-                .recordName(this.domainName)
-                .deleteExisting(true)
-                .target(RecordTarget.fromAlias(new CloudFrontTarget(this.distribution)))
-                .build();
+        //this.aRecord = ARecord.Builder.create(this, "ARecord-%s".formatted(dashedDomainName))
+        //        .zone(this.hostedZone)
+        //        .recordName(this.domainName)
+        //        .deleteExisting(true)
+        //        .target(RecordTarget.fromAlias(new CloudFrontTarget(this.distribution)))
+        //        .build();
+        //this.aaaaRecord = AaaaRecord.Builder.create(this, "AaaaRecord-%s".formatted(dashedDomainName))
+        //        .zone(this.hostedZone)
+        //        .recordName(this.domainName)
+        //        .deleteExisting(true)
+        //        .target(RecordTarget.fromAlias(new CloudFrontTarget(this.distribution)))
+        //        .build();
 
         // Stack Outputs for Web resources
         if (this.originBucket != null) {
@@ -1098,6 +714,7 @@ public class WebStack extends Stack {
                     .value(this.originAccessLogBucket.getBucketArn())
                     .build();
         }
+        /*
         if (this.distributionAccessLogBucket != null) {
             CfnOutput.Builder.create(this, "DistributionAccessLogBucketArn")
                     .value(this.distributionAccessLogBucket.getBucketArn())
@@ -1118,85 +735,29 @@ public class WebStack extends Stack {
                     .value(this.certificate.getCertificateArn())
                     .build();
         }
-        if (this.hmrcClientSecretsManagerSecret != null) {
-            CfnOutput.Builder.create(this, "HmrcClientSecretsManagerSecretArn")
-                    .value(this.hmrcClientSecretsManagerSecret.getSecretArn())
-                    .build();
-        }
-        if (this.cognitoBaseUri != null) {
-            CfnOutput.Builder.create(this, "CognitoBaseUri")
-                    .value(this.cognitoBaseUri)
-                    .build();
-            CfnOutput.Builder.create(this, "CognitoGoogleIdpRedirectUri")
-                    .value(this.cognitoBaseUri + "/oauth2/idpresponse")
-                    .build();
-        }
-        if (this.aRecord != null) {
-            CfnOutput.Builder.create(this, "ARecord")
-                    .value(this.aRecord.getDomainName())
-                    .build();
-        }
-        if (this.aaaaRecord != null) {
-            CfnOutput.Builder.create(this, "AaaaRecord")
-                    .value(this.aaaaRecord.getDomainName())
-                    .build();
-        }
-
-        if (this.authUrlHmrcLambda != null) {
-            CfnOutput.Builder.create(this, "AuthUrlHmrcLambdaArn")
-                    .value(this.authUrlHmrcLambda.getFunctionArn())
-                    .build();
-            CfnOutput.Builder.create(this, "AuthUrlHmrcLambdaUrl")
-                    .value(this.authUrlHmrcLambdaUrl.getUrl())
-                    .build();
-        }
-        if (this.authUrlMockLambda != null) {
-            CfnOutput.Builder.create(this, "AuthUrlMockLambdaArn")
-                    .value(this.authUrlMockLambda.getFunctionArn())
-                    .build();
-            CfnOutput.Builder.create(this, "AuthUrlMockLambdaUrl")
-                    .value(this.authUrlMockLambdaUrl.getUrl())
-                    .build();
-        }
-        if (this.exchangeHmrcTokenLambda != null) {
-            CfnOutput.Builder.create(this, "ExchangeHmrcTokenLambdaArn")
-                    .value(this.exchangeHmrcTokenLambda.getFunctionArn())
-                    .build();
-            CfnOutput.Builder.create(this, "ExchangeHmrcTokenLambdaUrl")
-                    .value(this.exchangeHmrcTokenLambdaUrl.getUrl())
-                    .build();
-        }
-        if (this.submitVatLambda != null) {
-            CfnOutput.Builder.create(this, "SubmitVatLambdaArn")
-                    .value(this.submitVatLambda.getFunctionArn())
-                    .build();
-            CfnOutput.Builder.create(this, "SubmitVatLambdaUrl")
-                    .value(this.submitVatLambdaUrl.getUrl())
-                    .build();
-        }
-        if (this.logReceiptLambda != null) {
-            CfnOutput.Builder.create(this, "LogReceiptLambdaArn")
-                    .value(this.logReceiptLambda.getFunctionArn())
-                    .build();
-            CfnOutput.Builder.create(this, "LogReceiptLambdaUrl")
-                    .value(this.logReceiptLambdaUrl.getUrl())
-                    .build();
-        }
-        if (this.bundleLambda != null) {
-            CfnOutput.Builder.create(this, "BundleLambdaArn")
-                    .value(this.bundleLambda.getFunctionArn())
-                    .build();
-            CfnOutput.Builder.create(this, "BundleLambdaUrl")
-                    .value(this.bundleLambdaUrl.getUrl())
-                    .build();
-        }
-        if (this.myReceiptsLambda != null) {
-            CfnOutput.Builder.create(this, "MyReceiptsLambdaArn")
-                    .value(this.myReceiptsLambda.getFunctionArn())
-                    .build();
-            CfnOutput.Builder.create(this, "MyReceiptsLambdaUrl")
-                    .value(this.myReceiptsLambdaUrl.getUrl())
-                    .build();
-        }
+        */
+        //if (this.hmrcClientSecretsManagerSecret != null) {
+        //    CfnOutput.Builder.create(this, "HmrcClientSecretsManagerSecretArn")
+        //            .value(this.hmrcClientSecretsManagerSecret.getSecretArn())
+        //            .build();
+        //}
+        //if (this.cognitoBaseUri != null) {
+        //    CfnOutput.Builder.create(this, "CognitoBaseUri")
+        //            .value(this.cognitoBaseUri)
+        //            .build();
+        //    CfnOutput.Builder.create(this, "CognitoGoogleIdpRedirectUri")
+        //            .value(this.cognitoBaseUri + "/oauth2/idpresponse")
+        //            .build();
+        //}
+        //if (this.aRecord != null) {
+        //    CfnOutput.Builder.create(this, "ARecord")
+        //            .value(this.aRecord.getDomainName())
+        //            .build();
+        //}
+        //if (this.aaaaRecord != null) {
+        //    CfnOutput.Builder.create(this, "AaaaRecord")
+        //            .value(this.aaaaRecord.getDomainName())
+        //            .build();
+        //}
     }
 }

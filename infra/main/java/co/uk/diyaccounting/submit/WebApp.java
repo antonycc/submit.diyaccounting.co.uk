@@ -2,6 +2,8 @@ package co.uk.diyaccounting.submit;
 
 import co.uk.diyaccounting.submit.stacks.ApplicationStack;
 import co.uk.diyaccounting.submit.stacks.DevStack;
+import co.uk.diyaccounting.submit.stacks.EdgeStack;
+import co.uk.diyaccounting.submit.stacks.EdgeStackProps;
 import co.uk.diyaccounting.submit.stacks.IdentityStack;
 import co.uk.diyaccounting.submit.stacks.ObservabilityStack;
 import co.uk.diyaccounting.submit.stacks.PublishStack;
@@ -163,7 +165,6 @@ public class WebApp {
 
 
         // Create the Edge stack (CloudFront, Route53)
-        /*
         String edgeStackId = "%s-EdgeStack".formatted(deploymentName);
         EdgeStack edgeStack = new EdgeStack(
             app,
@@ -181,19 +182,20 @@ public class WebApp {
                 .logsBucketArn(this.application.observabilityStack.logsBucket.getBucketArn())
                 // .webBucket(this.application.webStack.webBucket)
                 .webBehaviorOptions(this.application.webStack.behaviorOptions)
-                .jwksEndpointFunctionArn(this.application.appStack.jwksEndpoint.function.getFunctionArn())
-                .authorizeEndpointFunctionArn(
-                    this.application.appStack.authorizeEndpoint.function.getFunctionArn())
-                .tokenEndpointFunctionArn(this.application.appStack.tokenEndpoint.function.getFunctionArn())
-                .userinfoEndpointFunctionArn(
-                    this.application.appStack.userinfoEndpoint.function.getFunctionArn())
                 .additionalOriginsBehaviourMappings(
                     this.application.appStack.additionalOriginsBehaviourMappings)
                 .build());
+        authorizeEndpointFunction.addPermission(
+            props.compressedResourceNamePrefix + "-cf-auth", distributionInvokeFnUrl);
+        tokenEndpointFunction.addPermission(
+            props.compressedResourceNamePrefix + "-cf-token", distributionInvokeFnUrl);
+        userinfoEndpointFunction.addPermission(
+            props.compressedResourceNamePrefix + "-cf-userinfo", distributionInvokeFnUrl);
+        jwksEndpointFunction.addPermission(
+            props.compressedResourceNamePrefix + "-cf-jwks", distributionInvokeFnUrl);
         edgeStack.addDependency(observabilityStack);
         edgeStack.addDependency(applicationStack);
         edgeStack.addDependency(webStack);
-        */
 
         // Create the Publish stack (Bucket Deployments to CloudFront)
         String publishStackId = "%s-PublishStack".formatted(deploymentName);

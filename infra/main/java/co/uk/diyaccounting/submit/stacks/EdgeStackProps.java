@@ -16,12 +16,7 @@ public class EdgeStackProps implements StackProps {
     public final String compressedResourceNamePrefix;
     public final String certificateArn;
     public final String logsBucketArn;
-    // public final Bucket webBucket;
     public final BehaviorOptions webBehaviorOptions;
-    public final String jwksEndpointFunctionArn;
-    public final String authorizeEndpointFunctionArn;
-    public final String tokenEndpointFunctionArn;
-    public final String userinfoEndpointFunctionArn;
     public final Map<String, BehaviorOptions> additionalOriginsBehaviourMappings;
 
     private EdgeStackProps(Builder builder) {
@@ -35,12 +30,7 @@ public class EdgeStackProps implements StackProps {
         this.compressedResourceNamePrefix = builder.compressedResourceNamePrefix;
         this.certificateArn = builder.certificateArn;
         this.logsBucketArn = builder.logsBucketArn;
-        // this.webBucket = builder.webBucket;
         this.webBehaviorOptions = builder.webBehaviorOptions;
-        this.jwksEndpointFunctionArn = builder.jwksEndpointFunctionArn;
-        this.authorizeEndpointFunctionArn = builder.authorizeEndpointFunctionArn;
-        this.tokenEndpointFunctionArn = builder.tokenEndpointFunctionArn;
-        this.userinfoEndpointFunctionArn = builder.userinfoEndpointFunctionArn;
         this.additionalOriginsBehaviourMappings = builder.additionalOriginsBehaviourMappings;
     }
 
@@ -59,12 +49,7 @@ public class EdgeStackProps implements StackProps {
         private String compressedResourceNamePrefix;
         private String certificateArn;
         private String logsBucketArn;
-        // private Bucket webBucket;
         private BehaviorOptions webBehaviorOptions;
-        private String jwksEndpointFunctionArn;
-        private String authorizeEndpointFunctionArn;
-        private String tokenEndpointFunctionArn;
-        private String userinfoEndpointFunctionArn;
         private Map<String, BehaviorOptions> additionalOriginsBehaviourMappings;
 
         public Builder envName(String envName) {
@@ -117,33 +102,8 @@ public class EdgeStackProps implements StackProps {
             return this;
         }
 
-        // public Builder webBucket(Bucket webBucket) {
-        //    this.webBucket = webBucket;
-        //    return this;
-        // }
-
         public Builder webBehaviorOptions(BehaviorOptions webBehaviorOptions) {
             this.webBehaviorOptions = webBehaviorOptions;
-            return this;
-        }
-
-        public Builder jwksEndpointFunctionArn(String jwksEndpointFunctionArn) {
-            this.jwksEndpointFunctionArn = jwksEndpointFunctionArn;
-            return this;
-        }
-
-        public Builder authorizeEndpointFunctionArn(String authorizeEndpointFunctionArn) {
-            this.authorizeEndpointFunctionArn = authorizeEndpointFunctionArn;
-            return this;
-        }
-
-        public Builder tokenEndpointFunctionArn(String tokenEndpointFunctionArn) {
-            this.tokenEndpointFunctionArn = tokenEndpointFunctionArn;
-            return this;
-        }
-
-        public Builder userinfoEndpointFunctionArn(String userinfoEndpointFunctionArn) {
-            this.userinfoEndpointFunctionArn = userinfoEndpointFunctionArn;
             return this;
         }
 

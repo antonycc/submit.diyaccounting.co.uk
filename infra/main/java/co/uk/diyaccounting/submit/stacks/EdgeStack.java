@@ -8,10 +8,7 @@ import software.amazon.awscdk.services.certificatemanager.Certificate;
 import software.amazon.awscdk.services.cloudfront.Distribution;
 import software.amazon.awscdk.services.cloudfront.SSLMethod;
 import software.amazon.awscdk.services.iam.ServicePrincipal;
-import software.amazon.awscdk.services.lambda.Function;
-import software.amazon.awscdk.services.lambda.FunctionAttributes;
 import software.amazon.awscdk.services.lambda.FunctionUrlAuthType;
-import software.amazon.awscdk.services.lambda.IFunction;
 import software.amazon.awscdk.services.lambda.Permission;
 import software.amazon.awscdk.services.route53.ARecord;
 import software.amazon.awscdk.services.route53.ARecordProps;
@@ -30,6 +27,7 @@ import java.util.Map;
 
 public class EdgeStack extends Stack {
     public final Distribution distribution;
+    public final Permission distributionInvokeFnUrl;
     public final ARecord aliasRecord;
     public final String baseUrl;
 
@@ -57,34 +55,6 @@ public class EdgeStack extends Stack {
         // Use Resources from the passed props
         this.baseUrl = props.baseUrl;
         IBucket logsBucket = Bucket.fromBucketArn(this, props.resourceNamePrefix + "-LogsBucket", props.logsBucketArn);
-        IFunction jwksEndpointFunction = Function.fromFunctionAttributes(
-                this,
-                props.resourceNamePrefix + "-JwksEndpointFunction",
-                FunctionAttributes.builder()
-                        .functionArn(props.jwksEndpointFunctionArn)
-                        .sameEnvironment(true)
-                        .build());
-        IFunction authorizeEndpointFunction = Function.fromFunctionAttributes(
-                this,
-                props.resourceNamePrefix + "-AuthorizeEndpointFunction",
-                FunctionAttributes.builder()
-                        .functionArn(props.authorizeEndpointFunctionArn)
-                        .sameEnvironment(true)
-                        .build());
-        IFunction tokenEndpointFunction = Function.fromFunctionAttributes(
-                this,
-                props.resourceNamePrefix + "-TokenEndpointFunction",
-                FunctionAttributes.builder()
-                        .functionArn(props.tokenEndpointFunctionArn)
-                        .sameEnvironment(true)
-                        .build());
-        IFunction userinfoEndpointFunction = Function.fromFunctionAttributes(
-                this,
-                props.resourceNamePrefix + "-UserinfoEndpointFunction",
-                FunctionAttributes.builder()
-                        .functionArn(props.userinfoEndpointFunctionArn)
-                        .sameEnvironment(true)
-                        .build());
 
         // Hosted zone (must exist)
         IHostedZone zone = HostedZone.fromHostedZoneAttributes(
@@ -184,6 +154,8 @@ public class EdgeStack extends Stack {
                         .sampledRequestsEnabled(true)
                         .build())
                 .build();
+
+        // CloudFront distribution for the web origin and all the URL Lambdas.
         this.distribution = Distribution.Builder.create(this, props.resourceNamePrefix + "-WebDist")
                 .defaultBehavior(props.webBehaviorOptions)
                 .additionalBehaviors(props.additionalOriginsBehaviourMappings)
@@ -199,20 +171,12 @@ public class EdgeStack extends Stack {
                 .build();
 
         // Grant CloudFront access to the origin lambdas with compressed names
-        Permission invokeFunctionUrlPermission = Permission.builder()
+        this.distributionInvokeFnUrl = Permission.builder()
                 .principal(new ServicePrincipal("cloudfront.amazonaws.com"))
                 .action("lambda:InvokeFunctionUrl")
                 .functionUrlAuthType(FunctionUrlAuthType.NONE)
                 .sourceArn(this.distribution.getDistributionArn())
                 .build();
-        authorizeEndpointFunction.addPermission(
-                props.compressedResourceNamePrefix + "-cf-auth", invokeFunctionUrlPermission);
-        tokenEndpointFunction.addPermission(
-                props.compressedResourceNamePrefix + "-cf-token", invokeFunctionUrlPermission);
-        userinfoEndpointFunction.addPermission(
-                props.compressedResourceNamePrefix + "-cf-userinfo", invokeFunctionUrlPermission);
-        jwksEndpointFunction.addPermission(
-                props.compressedResourceNamePrefix + "-cf-jwks", invokeFunctionUrlPermission);
 
         // A record
         this.aliasRecord = new ARecord(
@@ -228,9 +192,15 @@ public class EdgeStack extends Stack {
         new CfnOutput(
                 this, "BaseUrl", CfnOutputProps.builder().value(this.baseUrl).build());
         new CfnOutput(
-                this,
-                "AliasRecord",
-                CfnOutputProps.builder().value(this.aliasRecord.getDomainName()).build());
+            this,
+            "CertificateArn",
+            CfnOutputProps.builder().value(cert.getCertificateArn()).build());
+        new CfnOutput(
+            this,
+            "WebAclId",
+            CfnOutputProps.builder()
+                .value(webAcl.getAttrArn())
+                .build());
         new CfnOutput(
                 this,
                 "WebDistributionDomainName",
@@ -243,5 +213,16 @@ public class EdgeStack extends Stack {
                 CfnOutputProps.builder()
                         .value(this.distribution.getDistributionId())
                         .build());
+        new CfnOutput(
+                this,
+                "DistributionInvokePrincipalAccount",
+                CfnOutputProps.builder()
+                        .value(this.distributionInvokeFnUrl.getPrincipal().getPrincipalAccount())
+                        .build());
+        new CfnOutput(
+            this,
+            "AliasRecord",
+            CfnOutputProps.builder().value(this.aliasRecord.getDomainName()).build());
+
     }
 }
