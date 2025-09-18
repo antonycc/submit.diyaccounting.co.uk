@@ -38,6 +38,7 @@ public class AuthStack extends Stack {
     public Function exchangeCognitoTokenLambda;
     public FunctionUrl exchangeCognitoTokenLambdaUrl;
     public LogGroup exchangeCognitoTokenLambdaLogGroup;
+    public Map<String, BehaviorOptions> additionalOriginsBehaviourMappings;
 
     public AuthStack(Construct scope, String id, AuthStack.Builder builder) {
         this(scope, id, null, builder);
@@ -55,6 +56,7 @@ public class AuthStack extends Stack {
 
         boolean cloudTrailEnabled = Boolean.parseBoolean(builder.cloudTrailEnabled);
         boolean xRayEnabled = Boolean.parseBoolean(builder.xRayEnabled);
+        boolean verboseLogging = builder.verboseLogging == null || Boolean.parseBoolean(builder.verboseLogging);
 
         // Lambdas
 
@@ -164,14 +166,9 @@ public class AuthStack extends Stack {
                 .build();
         }
 
+        this.additionalOriginsBehaviourMappings = lambdaUrlToOriginsBehaviourMappings;
 
-
-
-
-
-
-
-        logger.info("ApplicationStack created successfully for {}", dashedDomainName);
+        logger.info("AuthStack created successfully for {}", dashedDomainName);
     }
 
     /**
@@ -188,6 +185,17 @@ public class AuthStack extends Stack {
         public String hostedZoneName;
         public String cloudTrailEnabled;
         public String xRayEnabled;
+        // Lambda/config properties
+        public String verboseLogging;
+        public String lambdaUrlAuthType;
+        public String baseImageTag;
+        public String ecrRepositoryArn;
+        public String ecrRepositoryName;
+        public String lambdaEntry;
+        public String homeUrl;
+        public String cognitoClientId;
+        public String cognitoBaseUri;
+        public String optionalTestAccessToken;
 
         private Builder() {}
 
@@ -228,13 +236,16 @@ public class AuthStack extends Stack {
             return this;
         }
 
-        public Builder props(ApplicationStackProps p) {
+        public Builder props(AuthStackProps p) {
             if (p == null) return this;
             this.env = p.env;
             this.subDomainName = p.subDomainName;
             this.hostedZoneName = p.hostedZoneName;
             this.cloudTrailEnabled = p.cloudTrailEnabled;
             this.xRayEnabled = p.xRayEnabled;
+            this.baseImageTag = p.baseImageTag;
+            this.ecrRepositoryArn = p.ecrRepositoryArn;
+            this.ecrRepositoryName = p.ecrRepositoryName;
             return this;
         }
 

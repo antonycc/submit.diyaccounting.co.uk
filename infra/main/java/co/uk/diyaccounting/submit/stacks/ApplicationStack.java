@@ -14,8 +14,6 @@ import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.services.cloudfront.AllowedMethods;
 import software.amazon.awscdk.services.cloudfront.BehaviorOptions;
-import software.amazon.awscdk.services.iam.Effect;
-import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.lambda.FunctionUrl;
 import software.amazon.awscdk.services.lambda.FunctionUrlAuthType;
@@ -63,6 +61,7 @@ public class ApplicationStack extends Stack {
     public FunctionUrl myReceiptsLambdaUrl;
     public LogGroup myReceiptsLambdaLogGroup;
     public IBucket receiptsBucket;
+    public Map<String, BehaviorOptions> additionalOriginsBehaviourMappings;
 
 
     public ApplicationStack(Construct scope, String id, ApplicationStack.Builder builder) {
@@ -81,6 +80,7 @@ public class ApplicationStack extends Stack {
 
         boolean cloudTrailEnabled = Boolean.parseBoolean(builder.cloudTrailEnabled);
         boolean xRayEnabled = Boolean.parseBoolean(builder.xRayEnabled);
+        boolean verboseLogging = builder.verboseLogging == null || Boolean.parseBoolean(builder.verboseLogging);
 
         // Lambdas
 
@@ -89,18 +89,24 @@ public class ApplicationStack extends Stack {
             ? FunctionUrlAuthType.AWS_IAM
             : FunctionUrlAuthType.NONE;
 
-        // Common options for all Lambda URL origins to reduce repetition
-        var lambdaCommonOpts = LambdaUrlOriginOpts.Builder.create()
-            .env(builder.env)
-            .imageDirectory("infra/runtimes")
-            .functionUrlAuthType(functionUrlAuthType)
-            .cloudTrailEnabled(cloudTrailEnabled)
-            .xRayEnabled(xRayEnabled)
-            .verboseLogging(verboseLogging)
-            .baseImageTag(builder.baseImageTag)
-            .build();
-
         var lambdaUrlToOriginsBehaviourMappings = new HashMap<String, BehaviorOptions>();
+
+        boolean hasImageAndRepo = StringUtils.isNotBlank(builder.baseImageTag)
+            && StringUtils.isNotBlank(builder.ecrRepositoryName)
+            && StringUtils.isNotBlank(builder.ecrRepositoryArn)
+            && StringUtils.isNotBlank(builder.lambdaEntry);
+
+        if (hasImageAndRepo) {
+            // Common options for all Lambda URL origins to reduce repetition
+            var lambdaCommonOpts = LambdaUrlOriginOpts.Builder.create()
+                .env(builder.env)
+                .imageDirectory("infra/runtimes")
+                .functionUrlAuthType(functionUrlAuthType)
+                .cloudTrailEnabled(cloudTrailEnabled)
+                .xRayEnabled(xRayEnabled)
+                .verboseLogging(verboseLogging)
+                .baseImageTag(builder.baseImageTag)
+                .build();
 
         // authUrl - HMRC
         var authUrlHmrcLambdaEnv = new HashMap<>(Map.of(
@@ -126,16 +132,16 @@ public class ApplicationStack extends Stack {
             "/api/hmrc/auth-url" + "*", authUrlHmrcLambdaUrlOrigin.behaviorOptions);
 
         // exchangeToken - HMRC
-        this.hmrcClientSecretsManagerSecret =
-            Secret.fromSecretPartialArn(this, "HmrcClientSecret", builder.hmrcClientSecretArn);
-        var hmrcClientSecretArn = this.hmrcClientSecretsManagerSecret.getSecretArn();
-        var exchangeHmrcTokenLambdaEnv = new HashMap<>(Map.of(
+        Map<String, String> exchangeHmrcEnvBase = new HashMap<>(Map.of(
             "DIY_SUBMIT_HOME_URL", builder.homeUrl,
             "DIY_SUBMIT_HMRC_BASE_URI", builder.hmrcBaseUri,
-            "DIY_SUBMIT_HMRC_CLIENT_ID", builder.hmrcClientId,
-            "DIY_SUBMIT_HMRC_CLIENT_SECRET_ARN", hmrcClientSecretArn));
+            "DIY_SUBMIT_HMRC_CLIENT_ID", builder.hmrcClientId));
+        if (StringUtils.isNotBlank(builder.hmrcClientSecretArn)) {
+            var hmrcSecret = Secret.fromSecretPartialArn(this, "HmrcClientSecret", builder.hmrcClientSecretArn);
+            exchangeHmrcEnvBase.put("DIY_SUBMIT_HMRC_CLIENT_SECRET_ARN", hmrcSecret.getSecretArn());
+        }
         if (StringUtils.isNotBlank(builder.optionalTestAccessToken)) {
-            exchangeHmrcTokenLambdaEnv.put("DIY_SUBMIT_TEST_ACCESS_TOKEN", builder.optionalTestAccessToken);
+            exchangeHmrcEnvBase.put("DIY_SUBMIT_TEST_ACCESS_TOKEN", builder.optionalTestAccessToken);
         }
         var exchangeHmrcTokenLambdaUrlOrigin = LambdaUrlOrigin.Builder.create(this, "ExchangeHmrcToken")
             .options(lambdaCommonOpts)
@@ -147,7 +153,7 @@ public class ApplicationStack extends Stack {
                 WebStack.Builder.buildFunctionName(dashedDomainName, "exchangeToken.httpPostHmrc"))
             .allowedMethods(AllowedMethods.ALLOW_ALL)
             .handler(builder.lambdaEntry + "exchangeToken.httpPostHmrc")
-            .environment(exchangeHmrcTokenLambdaEnv)
+            .environment(exchangeHmrcEnvBase)
             .timeout(Duration.millis(Long.parseLong("30000")))
             .build(this);
         this.exchangeHmrcTokenLambda = exchangeHmrcTokenLambdaUrlOrigin.lambda;
@@ -155,7 +161,6 @@ public class ApplicationStack extends Stack {
         this.exchangeHmrcTokenLambdaLogGroup = exchangeHmrcTokenLambdaUrlOrigin.logGroup;
         lambdaUrlToOriginsBehaviourMappings.put(
             "/api/hmrc/exchange-token" + "*", exchangeHmrcTokenLambdaUrlOrigin.behaviorOptions);
-        this.hmrcClientSecretsManagerSecret.grantRead(this.exchangeHmrcTokenLambda);
 
         // submitVat
         var submitVatLambdaEnv = new HashMap<>(Map.of(
@@ -211,45 +216,6 @@ public class ApplicationStack extends Stack {
             "/api/log-receipt" + "*", logReceiptLambdaUrlOrigin.behaviorOptions);
 
         // Create Bundle Management Lambda
-        if (StringUtils.isNotBlank("bundle.httpPost")) {
-            var bundleLambdaEnv = new HashMap<>(Map.of(
-                "DIY_SUBMIT_HOME_URL",
-                builder.homeUrl,
-                "DIY_SUBMIT_USER_POOL_ID",
-                userPool.getUserPoolId(),
-                "DIY_SUBMIT_BUNDLE_EXPIRY_DATE",
-                builder.bundleExpiryDate != null ? builder.bundleExpiryDate : "2025-12-31",
-                "DIY_SUBMIT_BUNDLE_USER_LIMIT",
-                builder.bundleUserLimit != null ? builder.bundleUserLimit : "1000"));
-            var bundleLambdaUrlOrigin = LambdaUrlOrigin.Builder.create(this, "BundleLambda")
-                .options(lambdaCommonOpts)
-                .baseImageTag(builder.baseImageTag)
-                .ecrRepositoryName(builder.ecrRepositoryName)
-                .ecrRepositoryArn(builder.ecrRepositoryArn)
-                .imageFilename("bundle.Dockerfile")
-                .functionName(WebStack.Builder.buildFunctionName(dashedDomainName, "bundle.httpPost"))
-                .allowedMethods(AllowedMethods.ALLOW_ALL)
-                .handler(builder.lambdaEntry + "bundle.httpPost")
-                .environment(bundleLambdaEnv)
-                .timeout(Duration.millis(Long.parseLong("30000")))
-                .build(this);
-            this.bundleLambda = bundleLambdaUrlOrigin.lambda;
-            this.bundleLambdaUrl = bundleLambdaUrlOrigin.functionUrl;
-            this.bundleLambdaLogGroup = bundleLambdaUrlOrigin.logGroup;
-            lambdaUrlToOriginsBehaviourMappings.put(
-                "/api/request-bundle" + "*", bundleLambdaUrlOrigin.behaviorOptions);
-
-            // Grant Cognito permissions to the bundle Lambda
-            this.bundleLambda.addToRolePolicy(PolicyStatement.Builder.create()
-                .effect(Effect.ALLOW)
-                .actions(List.of(
-                    "cognito-idp:AdminGetUser",
-                    "cognito-idp:AdminUpdateUserAttributes",
-                    "cognito-idp:ListUsers"))
-                .resources(List.of(userPool.getUserPoolArn()))
-                .build());
-        }
-
         // Catalog Lambda
         var catalogLambdaEnv = new HashMap<>(Map.of("DIY_SUBMIT_HOME_URL", builder.homeUrl));
         var catalogLambdaUrlOrigin = LambdaUrlOrigin.Builder.create(this, "Catalog")
@@ -313,22 +279,32 @@ public class ApplicationStack extends Stack {
             "/api/my-receipts" + "*", myReceiptsLambdaUrlOrigin.behaviorOptions);
 
         // Create receipts bucket for storing VAT submission receipts
-        this.receiptsBucket = LogForwardingBucket.Builder.create(
-                this, "ReceiptsBucket", builder.logS3ObjectEventHandlerSource, LogS3ObjectEvent.class)
-            .bucketName(receiptsBucketFullName)
-            .versioned(true)
-            .blockPublicAccess(BlockPublicAccess.BLOCK_ALL)
-            .objectOwnership(ObjectOwnership.OBJECT_WRITER)
-            .autoDeleteObjects(!s3RetainReceiptsBucket)
-            .functionNamePrefix("%s-receipts-bucket-".formatted(dashedDomainName))
-            .retentionPeriodDays(2555) // 7 years for tax records as per HMRC requirements
-            .cloudTrailEnabled(cloudTrailEnabled)
-            .verboseLogging(verboseLogging)
-            .removalPolicy(s3RetainReceiptsBucket ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY)
-            .build();
-        this.receiptsBucket.grantWrite(this.logReceiptLambda);
-        this.receiptsBucket.grantRead(this.myReceiptsLambda);
+        boolean s3RetainReceiptsBucket = builder.s3RetainReceiptsBucket != null
+            && Boolean.parseBoolean(builder.s3RetainReceiptsBucket);
+        String receiptsBucketPostfix = StringUtils.isNotBlank(builder.receiptsBucketPostfix)
+            ? builder.receiptsBucketPostfix
+            : "receipts";
+        String receiptsBucketFullName = "%s-%s".formatted(dashedDomainName, receiptsBucketPostfix);
+        if (StringUtils.isNotBlank(builder.logS3ObjectEventHandlerSource)) {
+            this.receiptsBucket = LogForwardingBucket.Builder.create(
+                    this, "ReceiptsBucket", builder.logS3ObjectEventHandlerSource, LogS3ObjectEvent.class)
+                .bucketName(receiptsBucketFullName)
+                .versioned(true)
+                .blockPublicAccess(BlockPublicAccess.BLOCK_ALL)
+                .objectOwnership(ObjectOwnership.OBJECT_WRITER)
+                .autoDeleteObjects(!s3RetainReceiptsBucket)
+                .functionNamePrefix("%s-receipts-bucket-".formatted(dashedDomainName))
+                .retentionPeriodDays(2555) // 7 years for tax records as per HMRC requirements
+                .cloudTrailEnabled(cloudTrailEnabled)
+                .verboseLogging(verboseLogging)
+                .removalPolicy(s3RetainReceiptsBucket ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY)
+                .build();
+            if (this.logReceiptLambda != null) this.receiptsBucket.grantWrite(this.logReceiptLambda);
+            if (this.myReceiptsLambda != null) this.receiptsBucket.grantRead(this.myReceiptsLambda);
+        }
 
+        this.additionalOriginsBehaviourMappings = lambdaUrlToOriginsBehaviourMappings;
+        }
 
         if (this.authUrlHmrcLambda != null) {
             CfnOutput.Builder.create(this, "AuthUrlHmrcLambdaArn")
@@ -400,6 +376,28 @@ public class ApplicationStack extends Stack {
         public String hostedZoneName;
         public String cloudTrailEnabled;
         public String xRayEnabled;
+        // Lambda/config properties
+        public String verboseLogging;
+        public String lambdaUrlAuthType;
+        public String baseImageTag;
+        public String ecrRepositoryArn;
+        public String ecrRepositoryName;
+        public String lambdaEntry;
+        public String homeUrl;
+        public String hmrcBaseUri;
+        public String hmrcClientId;
+        public String hmrcClientSecretArn;
+        public String optionalTestAccessToken;
+        public String optionalTestS3Endpoint;
+        public String optionalTestS3AccessKey;
+        public String optionalTestS3SecretKey;
+        public String receiptsBucketPostfix;
+        public String logS3ObjectEventHandlerSource;
+        public String s3RetainReceiptsBucket;
+        public String bundleExpiryDate;
+        public String bundleUserLimit;
+        public String cognitoClientId;
+        public String cognitoBaseUri;
 
         private Builder() {}
 
@@ -447,6 +445,23 @@ public class ApplicationStack extends Stack {
             this.hostedZoneName = p.hostedZoneName;
             this.cloudTrailEnabled = p.cloudTrailEnabled;
             this.xRayEnabled = p.xRayEnabled;
+            this.verboseLogging = p.verboseLogging;
+            this.baseImageTag = p.baseImageTag;
+            this.ecrRepositoryArn = p.ecrRepositoryArn;
+            this.ecrRepositoryName = p.ecrRepositoryName;
+            this.lambdaUrlAuthType = p.lambdaUrlAuthType;
+            this.lambdaEntry = p.lambdaEntry;
+            this.homeUrl = p.homeUrl;
+            this.hmrcBaseUri = p.hmrcBaseUri;
+            this.hmrcClientId = p.hmrcClientId;
+            this.hmrcClientSecretArn = p.hmrcClientSecretArn;
+            this.optionalTestAccessToken = p.optionalTestAccessToken;
+            this.optionalTestS3Endpoint = p.optionalTestS3Endpoint;
+            this.optionalTestS3AccessKey = p.optionalTestS3AccessKey;
+            this.optionalTestS3SecretKey = p.optionalTestS3SecretKey;
+            this.receiptsBucketPostfix = p.receiptsBucketPostfix;
+            this.logS3ObjectEventHandlerSource = p.logS3ObjectEventHandlerSource;
+            this.s3RetainReceiptsBucket = p.s3RetainReceiptsBucket;
             return this;
         }
 

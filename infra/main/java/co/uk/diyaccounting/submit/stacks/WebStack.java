@@ -40,10 +40,12 @@ public class WebStack extends Stack {
     private static final Logger logger = LogManager.getLogger(WebStack.class);
 
     public String resourceNamePrefix;
+    public String compressedResourceNamePrefix;
     public String baseUrl;
     public String domainName;
     public Bucket originBucket;
     public IBucket originAccessLogBucket;
+    public BehaviorOptions behaviorOptions;
     public IOrigin origin;
     public BucketDeployment deployment;
     public IHostedZone hostedZone;
@@ -490,7 +492,7 @@ public class WebStack extends Stack {
             return "%s-dist-access-logs".formatted(dashedDomainName);
         }
 
-        private static String buildFunctionName(String dashedDomainName, String functionName) {
+        public static String buildFunctionName(String dashedDomainName, String functionName) {
             if (functionName == null || functionName.isBlank()) {
                 throw new IllegalArgumentException("Function name cannot be null or blank");
             }
@@ -531,6 +533,8 @@ public class WebStack extends Stack {
             generateResourceNamePrefix(domainName, builder.env);
         String compressedResourceNamePrefix =
             generateCompressedResourceNamePrefix(domainName, builder.env);
+        this.resourceNamePrefix = resourceNamePrefix;
+        this.compressedResourceNamePrefix = compressedResourceNamePrefix;
 
         boolean s3UseExistingBucket = Boolean.parseBoolean(builder.s3UseExistingBucket);
         boolean s3RetainOriginBucket = Boolean.parseBoolean(builder.s3RetainOriginBucket);
@@ -584,6 +588,7 @@ public class WebStack extends Stack {
                 .responseHeadersPolicy(ResponseHeadersPolicy.CORS_ALLOW_ALL_ORIGINS_WITH_PREFLIGHT_AND_SECURITY_HEADERS)
                 .compress(true)
                 .build();
+        this.behaviorOptions = s3BucketOriginBehaviour;
 
         /*
         IUserPool userPool = UserPool.fromUserPoolArn(this, "UserPool", builder.userPoolArn);

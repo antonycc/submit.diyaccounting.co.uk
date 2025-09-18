@@ -214,12 +214,6 @@ public class EdgeStack extends Stack {
                         .value(this.distribution.getDistributionId())
                         .build());
         new CfnOutput(
-                this,
-                "DistributionInvokePrincipalAccount",
-                CfnOutputProps.builder()
-                        .value(this.distributionInvokeFnUrl.getPrincipal().getPrincipalAccount())
-                        .build());
-        new CfnOutput(
             this,
             "AliasRecord",
             CfnOutputProps.builder().value(this.aliasRecord.getDomainName()).build());

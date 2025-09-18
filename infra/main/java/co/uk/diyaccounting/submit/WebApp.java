@@ -172,27 +172,18 @@ public class WebApp {
             EdgeStackProps.builder()
                 .envName(envName)
                 .deploymentName(deploymentName)
-                .hostedZoneName(this.application.hostedZoneName)
-                .hostedZoneId(this.application.hostedZoneId)
-                .domainName(this.application.domainName)
-                .baseUrl(this.application.baseUrl)
-                .resourceNamePrefix(this.application.resourceNamePrefix)
-                .compressedResourceNamePrefix(this.application.compressedResourceNamePrefix)
-                .certificateArn(this.application.certificateArn)
-                .logsBucketArn(this.application.observabilityStack.logsBucket.getBucketArn())
-                // .webBucket(this.application.webStack.webBucket)
-                .webBehaviorOptions(this.application.webStack.behaviorOptions)
+                .hostedZoneName(envOr("HOSTED_ZONE_NAME", appProps.hostedZoneName))
+                .hostedZoneId(envOr("HOSTED_ZONE_ID", appProps.hostedZoneId))
+                .domainName(webStack.domainName)
+                .baseUrl(webStack.baseUrl)
+                .resourceNamePrefix(webStack.resourceNamePrefix)
+                .compressedResourceNamePrefix(webStack.compressedResourceNamePrefix)
+                .certificateArn(envOr("CERTIFICATE_ARN", appProps.certificateArn))
+                .logsBucketArn(webStack.originAccessLogBucket.getBucketArn())
+                .webBehaviorOptions(webStack.behaviorOptions)
                 .additionalOriginsBehaviourMappings(
-                    this.application.appStack.additionalOriginsBehaviourMappings)
+                    applicationStack.additionalOriginsBehaviourMappings)
                 .build());
-        authorizeEndpointFunction.addPermission(
-            props.compressedResourceNamePrefix + "-cf-auth", distributionInvokeFnUrl);
-        tokenEndpointFunction.addPermission(
-            props.compressedResourceNamePrefix + "-cf-token", distributionInvokeFnUrl);
-        userinfoEndpointFunction.addPermission(
-            props.compressedResourceNamePrefix + "-cf-userinfo", distributionInvokeFnUrl);
-        jwksEndpointFunction.addPermission(
-            props.compressedResourceNamePrefix + "-cf-jwks", distributionInvokeFnUrl);
         edgeStack.addDependency(observabilityStack);
         edgeStack.addDependency(applicationStack);
         edgeStack.addDependency(webStack);
@@ -209,7 +200,7 @@ public class WebApp {
                 .baseUrl(webStack.baseUrl)
                 .webBucket(webStack.originBucket)
                 .resourceNamePrefix(webStack.resourceNamePrefix)
-                .distributionId(webStack.distribution.getDistributionId())
+                .distributionId(edgeStack.distribution.getDistributionId())
                 .webBucket(webStack.originBucket)
                 .commitHash(appProps.commitHash)
                 .docRootPath(appProps.docRootPath)
