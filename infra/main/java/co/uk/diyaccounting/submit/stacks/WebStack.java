@@ -157,27 +157,6 @@ public class WebStack extends Stack {
         public String optionalTestS3SecretKey;
         public String receiptsBucketPostfix;
         public String lambdaEntry;
-        public String authUrlHmrcLambdaHandlerFunctionName;
-        public String authUrlLambdaUrlPath;
-        public String authUrlHmrcLambdaDuration;
-        public String authUrlMockLambdaHandlerFunctionName;
-        public String authUrlMockLambdaUrlPath;
-        public String authUrlMockLambdaDuration;
-        public String authUrlCognitoLambdaHandlerFunctionName;
-        public String authUrlCognitoLambdaUrlPath;
-        public String authUrlCognitoLambdaDuration;
-        public String exchangeHmrcTokenLambdaHandlerFunctionName;
-        public String exchangeHmrcTokenLambdaUrlPath;
-        public String exchangeHmrcTokenLambdaDuration;
-        public String exchangeCognitoTokenLambdaHandlerFunctionName;
-        public String exchangeCognitoTokenLambdaUrlPath;
-        public String exchangeCognitoTokenLambdaDuration;
-        public String submitVatLambdaHandlerFunctionName;
-        public String submitVatLambdaUrlPath;
-        public String submitVatLambdaDuration;
-        public String logReceiptLambdaHandlerFunctionName;
-        public String logReceiptLambdaUrlPath;
-        public String logReceiptLambdaDuration;
         public String lambdaUrlAuthType;
         public String commitHash;
         public String antonyccClientId;
@@ -192,22 +171,10 @@ public class WebStack extends Stack {
         public String userPoolArn;
         public String bundleExpiryDate;
         public String bundleUserLimit;
-        public String bundleLambdaHandlerFunctionName;
-        public String bundleLambdaUrlPath;
-        public String bundleLambdaDuration;
-        public String catalogLambdaHandlerFunctionName;
-        public String catalogLambdaUrlPath;
-        public String catalogLambdaDuration;
-        public String myBundlesLambdaHandlerFunctionName;
-        public String myBundlesLambdaUrlPath;
-        public String myBundlesLambdaDuration;
         public String baseImageTag;
         public String cognitoFeaturePlan;
         public String cognitoEnableLogDelivery;
         public String logCognitoEventHandlerSource;
-        public String myReceiptsLambdaHandlerFunctionName;
-        public String myReceiptsLambdaUrlPath;
-        public String myReceiptsLambdaDuration;
         public String ecrRepositoryArn;
         public String ecrRepositoryName;
 
@@ -345,27 +312,6 @@ public class WebStack extends Stack {
             this.optionalTestS3SecretKey = p.optionalTestS3SecretKey;
             this.receiptsBucketPostfix = p.receiptsBucketPostfix;
             this.lambdaEntry = p.lambdaEntry;
-            this.authUrlHmrcLambdaHandlerFunctionName = p.authUrlHmrcLambdaHandlerFunctionName;
-            this.authUrlLambdaUrlPath = p.authUrlHmrcLambdaUrlPath;
-            this.authUrlHmrcLambdaDuration = p.authUrlHmrcLambdaDurationMillis;
-            this.authUrlMockLambdaHandlerFunctionName = p.authUrlMockLambdaHandlerFunctionName;
-            this.authUrlMockLambdaUrlPath = p.authUrlMockLambdaUrlPath;
-            this.authUrlMockLambdaDuration = p.authUrlMockLambdaDurationMillis;
-            this.authUrlCognitoLambdaHandlerFunctionName = p.authUrlCognitoLambdaHandlerFunctionName;
-            this.authUrlCognitoLambdaUrlPath = p.authUrlCognitoLambdaUrlPath;
-            this.authUrlCognitoLambdaDuration = p.authUrlCognitoLambdaDurationMillis;
-            this.exchangeHmrcTokenLambdaHandlerFunctionName = p.exchangeHmrcTokenLambdaHandlerFunctionName;
-            this.exchangeHmrcTokenLambdaUrlPath = p.exchangeHmrcTokenLambdaUrlPath;
-            this.exchangeHmrcTokenLambdaDuration = p.exchangeHmrcTokenLambdaDurationMillis;
-            this.exchangeCognitoTokenLambdaHandlerFunctionName = p.exchangeCognitoTokenLambdaHandlerFunctionName;
-            this.exchangeCognitoTokenLambdaUrlPath = p.exchangeCognitoTokenLambdaUrlPath;
-            this.exchangeCognitoTokenLambdaDuration = p.exchangeCognitoTokenLambdaDurationMillis;
-            this.submitVatLambdaHandlerFunctionName = p.submitVatLambdaHandlerFunctionName;
-            this.submitVatLambdaUrlPath = p.submitVatLambdaUrlPath;
-            this.submitVatLambdaDuration = p.submitVatLambdaDurationMillis;
-            this.logReceiptLambdaHandlerFunctionName = p.logReceiptLambdaHandlerFunctionName;
-            this.logReceiptLambdaUrlPath = p.logReceiptLambdaUrlPath;
-            this.logReceiptLambdaDuration = p.logReceiptLambdaDurationMillis;
             this.lambdaUrlAuthType = p.lambdaUrlAuthType;
             this.commitHash = p.commitHash;
             this.googleClientId = p.googleClientId;
@@ -374,22 +320,10 @@ public class WebStack extends Stack {
             this.cognitoDomainPrefix = p.cognitoDomainPrefix;
             this.bundleExpiryDate = p.bundleExpiryDate;
             this.bundleUserLimit = p.bundleUserLimit;
-            this.bundleLambdaHandlerFunctionName = p.bundleLambdaHandlerFunctionName;
-            this.bundleLambdaUrlPath = p.bundleLambdaUrlPath;
-            this.bundleLambdaDuration = p.bundleLambdaDurationMillis;
-            this.catalogLambdaHandlerFunctionName = p.catalogueLambdaHandlerFunctionName;
-            this.catalogLambdaUrlPath = p.catalogueLambdaUrlPath;
-            this.catalogLambdaDuration = p.catalogueLambdaDurationMillis;
-            this.myBundlesLambdaHandlerFunctionName = p.myBundlesLambdaHandlerFunctionName;
-            this.myBundlesLambdaUrlPath = p.myBundlesLambdaUrlPath;
-            this.myBundlesLambdaDuration = p.myBundlesLambdaDurationMillis;
             this.baseImageTag = p.baseImageTag;
             this.cognitoFeaturePlan = p.cognitoFeaturePlan;
             this.cognitoEnableLogDelivery = p.cognitoEnableLogDelivery;
             this.logCognitoEventHandlerSource = p.logCognitoEventHandlerSource;
-            this.myReceiptsLambdaHandlerFunctionName = p.myReceiptsLambdaHandlerFunctionName;
-            this.myReceiptsLambdaUrlPath = p.myReceiptsLambdaUrlPath;
-            this.myReceiptsLambdaDuration = p.myReceiptsLambdaDurationMillis;
             this.antonyccClientId = p.antonyccClientId;
             this.antonyccBaseUri = p.antonyccBaseUri;
             this.cognitoClientId = p.cognitoClientId;
@@ -474,51 +408,6 @@ public class WebStack extends Stack {
             return this;
         }
 
-        public Builder authUrlHmrcLambdaHandlerFunctionName(String authUrlHmrcLambdaHandlerFunctionName) {
-            this.authUrlHmrcLambdaHandlerFunctionName = authUrlHmrcLambdaHandlerFunctionName;
-            return this;
-        }
-
-        public Builder authUrlHmrcLambdaUrlPath(String authUrlHmrcLambdaUrlPath) {
-            this.authUrlLambdaUrlPath = authUrlHmrcLambdaUrlPath;
-            return this;
-        }
-
-        public Builder authUrlHmrcLambdaDurationMillis(String authUrlHmrcLambdaDuration) {
-            this.authUrlHmrcLambdaDuration = authUrlHmrcLambdaDuration;
-            return this;
-        }
-
-        public Builder authUrlMockLambdaHandlerFunctionName(String authUrlMockLambdaHandlerFunctionName) {
-            this.authUrlMockLambdaHandlerFunctionName = authUrlMockLambdaHandlerFunctionName;
-            return this;
-        }
-
-        public Builder authUrlMockLambdaUrlPath(String authUrlMockLambdaUrlPath) {
-            this.authUrlMockLambdaUrlPath = authUrlMockLambdaUrlPath;
-            return this;
-        }
-
-        public Builder authUrlMockLambdaDurationMillis(String authUrlMockLambdaDuration) {
-            this.authUrlMockLambdaDuration = authUrlMockLambdaDuration;
-            return this;
-        }
-
-        public Builder authUrlCognitoLambdaHandlerFunctionName(String authUrlCognitoLambdaHandlerFunctionName) {
-            this.authUrlCognitoLambdaHandlerFunctionName = authUrlCognitoLambdaHandlerFunctionName;
-            return this;
-        }
-
-        public Builder authUrlCognitoLambdaUrlPath(String authUrlCognitoLambdaUrlPath) {
-            this.authUrlCognitoLambdaUrlPath = authUrlCognitoLambdaUrlPath;
-            return this;
-        }
-
-        public Builder authUrlCognitoLambdaDurationMillis(String authUrlCognitoLambdaDuration) {
-            this.authUrlCognitoLambdaDuration = authUrlCognitoLambdaDuration;
-            return this;
-        }
-
         public Builder antonyccClientId(String antonyccClientId) {
             this.antonyccClientId = antonyccClientId;
             return this;
@@ -541,67 +430,6 @@ public class WebStack extends Stack {
 
         public Builder cognitoBaseUri(String cognitoBaseUri) {
             this.cognitoBaseUri = cognitoBaseUri;
-            return this;
-        }
-
-        public Builder exchangeCognitoTokenLambdaHandlerFunctionName(
-                String exchangeCognitoTokenLambdaHandlerFunctionName) {
-            this.exchangeCognitoTokenLambdaHandlerFunctionName = exchangeCognitoTokenLambdaHandlerFunctionName;
-            return this;
-        }
-
-        public Builder exchangeCognitoTokenLambdaUrlPath(String exchangeCognitoTokenLambdaUrlPath) {
-            this.exchangeCognitoTokenLambdaUrlPath = exchangeCognitoTokenLambdaUrlPath;
-            return this;
-        }
-
-        public Builder exchangeCognitoTokenLambdaDurationMillis(String exchangeCognitoTokenLambdaDuration) {
-            this.exchangeCognitoTokenLambdaDuration = exchangeCognitoTokenLambdaDuration;
-            return this;
-        }
-
-        public Builder exchangeHmrcTokenLambdaHandlerFunctionName(String exchangeHmrcTokenLambdaHandlerFunctionName) {
-            this.exchangeHmrcTokenLambdaHandlerFunctionName = exchangeHmrcTokenLambdaHandlerFunctionName;
-            return this;
-        }
-
-        public Builder exchangeHmrcTokenLambdaUrlPath(String exchangeHmrcTokenLambdaUrlPath) {
-            this.exchangeHmrcTokenLambdaUrlPath = exchangeHmrcTokenLambdaUrlPath;
-            return this;
-        }
-
-        public Builder exchangeHmrcTokenLambdaDurationMillis(String exchangeHmrcTokenLambdaDuration) {
-            this.exchangeHmrcTokenLambdaDuration = exchangeHmrcTokenLambdaDuration;
-            return this;
-        }
-
-        public Builder submitVatLambdaHandlerFunctionName(String submitVatLambdaHandlerFunctionName) {
-            this.submitVatLambdaHandlerFunctionName = submitVatLambdaHandlerFunctionName;
-            return this;
-        }
-
-        public Builder submitVatLambdaUrlPath(String submitVatLambdaUrlPath) {
-            this.submitVatLambdaUrlPath = submitVatLambdaUrlPath;
-            return this;
-        }
-
-        public Builder submitVatLambdaDurationMillis(String submitVatLambdaDuration) {
-            this.submitVatLambdaDuration = submitVatLambdaDuration;
-            return this;
-        }
-
-        public Builder logReceiptLambdaHandlerFunctionName(String logReceiptLambdaHandlerFunctionName) {
-            this.logReceiptLambdaHandlerFunctionName = logReceiptLambdaHandlerFunctionName;
-            return this;
-        }
-
-        public Builder logReceiptLambdaUrlPath(String logReceiptLambdaUrlPath) {
-            this.logReceiptLambdaUrlPath = logReceiptLambdaUrlPath;
-            return this;
-        }
-
-        public Builder logReceiptLambdaDurationMillis(String logReceiptLambdaDuration) {
-            this.logReceiptLambdaDuration = logReceiptLambdaDuration;
             return this;
         }
 
@@ -650,52 +478,6 @@ public class WebStack extends Stack {
             return this;
         }
 
-        public Builder bundleLambdaHandlerFunctionName(String bundleLambdaHandlerFunctionName) {
-            this.bundleLambdaHandlerFunctionName = bundleLambdaHandlerFunctionName;
-            return this;
-        }
-
-        public Builder bundleLambdaUrlPath(String bundleLambdaUrlPath) {
-            this.bundleLambdaUrlPath = bundleLambdaUrlPath;
-            return this;
-        }
-
-        public Builder bundleLambdaDurationMillis(String bundleLambdaDuration) {
-            this.bundleLambdaDuration = bundleLambdaDuration;
-            return this;
-        }
-
-        // Catalog Lambda setters
-        public Builder catalogLambdaHandlerFunctionName(String catalogLambdaHandlerFunctionName) {
-            this.catalogLambdaHandlerFunctionName = catalogLambdaHandlerFunctionName;
-            return this;
-        }
-
-        public Builder catalogLambdaUrlPath(String catalogLambdaUrlPath) {
-            this.catalogLambdaUrlPath = catalogLambdaUrlPath;
-            return this;
-        }
-
-        public Builder catalogLambdaDurationMillis(String catalogLambdaDuration) {
-            this.catalogLambdaDuration = catalogLambdaDuration;
-            return this;
-        }
-
-        public Builder myBundlesLambdaHandlerFunctionName(String myBundlesLambdaHandlerFunctionName) {
-            this.myBundlesLambdaHandlerFunctionName = myBundlesLambdaHandlerFunctionName;
-            return this;
-        }
-
-        public Builder myBundlesLambdaUrlPath(String myBundlesLambdaUrlPath) {
-            this.myBundlesLambdaUrlPath = myBundlesLambdaUrlPath;
-            return this;
-        }
-
-        public Builder myBundlesLambdaDurationMillis(String myBundlesLambdaDuration) {
-            this.myBundlesLambdaDuration = myBundlesLambdaDuration;
-            return this;
-        }
-
         public Builder baseImageTag(String baseImageTag) {
             this.baseImageTag = baseImageTag;
             return this;
@@ -708,21 +490,6 @@ public class WebStack extends Stack {
 
         public Builder cognitoEnableLogDelivery(String cognitoEnableLogDelivery) {
             this.cognitoEnableLogDelivery = cognitoEnableLogDelivery;
-            return this;
-        }
-
-        public Builder myReceiptsLambdaHandlerFunctionName(String myReceiptsLambdaHandlerFunctionName) {
-            this.myReceiptsLambdaHandlerFunctionName = myReceiptsLambdaHandlerFunctionName;
-            return this;
-        }
-
-        public Builder myReceiptsLambdaUrlPath(String myReceiptsLambdaUrlPath) {
-            this.myReceiptsLambdaUrlPath = myReceiptsLambdaUrlPath;
-            return this;
-        }
-
-        public Builder myReceiptsLambdaDurationMillis(String myReceiptsLambdaDuration) {
-            this.myReceiptsLambdaDuration = myReceiptsLambdaDuration;
             return this;
         }
 
