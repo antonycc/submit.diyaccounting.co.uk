@@ -1,9 +1,6 @@
 package co.uk.diyaccounting.submit.constructs;
 
 import co.uk.diyaccounting.submit.functions.LogGzippedS3ObjectEvent;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
 import software.amazon.awscdk.services.certificatemanager.ICertificate;
 import software.amazon.awscdk.services.cloudfront.BehaviorOptions;
 import software.amazon.awscdk.services.cloudfront.Distribution;
@@ -12,6 +9,10 @@ import software.amazon.awscdk.services.cloudfront.HttpVersion;
 import software.amazon.awscdk.services.cloudfront.SSLMethod;
 import software.amazon.awscdk.services.s3.IBucket;
 import software.constructs.Construct;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Thin coordinator that creates the DistributionAccess log bucket and the Distribution

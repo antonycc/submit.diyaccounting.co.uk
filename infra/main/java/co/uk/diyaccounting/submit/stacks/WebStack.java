@@ -16,6 +16,7 @@ import software.amazon.awscdk.CfnOutput;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Expiration;
 import software.amazon.awscdk.RemovalPolicy;
+import software.amazon.awscdk.Size;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.services.certificatemanager.Certificate;
@@ -1291,10 +1292,12 @@ public class WebStack extends Stack {
                     "/submit.js",
                     "/submit.version"
                 ))
-                .retainOnDelete(false)
                 .logGroup(bucketDeploymentLogGroup)
+                .retainOnDelete(true)
                 .expires(Expiration.after(Duration.minutes(5)))
-                .prune(true)
+                .prune(false)
+                .memoryLimit(1024)
+                .ephemeralStorageSize(Size.gibibytes(2))
                 .build();
 
         // Create Route53 record for use with CloudFront distribution
