@@ -1,6 +1,7 @@
 package co.uk.diyaccounting.submit;
 
 import co.uk.diyaccounting.submit.stacks.ApplicationStack;
+import co.uk.diyaccounting.submit.stacks.AuthStack;
 import co.uk.diyaccounting.submit.stacks.DevStack;
 import co.uk.diyaccounting.submit.stacks.EdgeStack;
 import co.uk.diyaccounting.submit.stacks.EdgeStackProps;
@@ -21,6 +22,8 @@ import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
 
 import java.lang.reflect.Field;
+
+import static co.uk.diyaccounting.submit.utils.Kind.concat;
 
 public class WebApp {
 
@@ -85,6 +88,30 @@ public class WebApp {
                         .build())
                 .build();
 
+        // Create the AuthStack with resources used in authentication and authorisation
+        String authStackId = "%s-AuthStack".formatted(deploymentName);
+        System.out.printf("Synthesizing stack %s for deployment %s to environment %s\n", authStackId, deploymentName, envName);
+        AuthStack authStack = AuthStack.Builder.create(app, authStackId)
+                .props(co.uk.diyaccounting.submit.stacks.AuthStackProps.builder()
+                        .env(envName)
+                        .subDomainName(appProps.subDomainName)
+                        .hostedZoneName(envOr("HOSTED_ZONE_NAME", appProps.hostedZoneName))
+                        //.hostedZoneId(envOr("HOSTED_ZONE_ID", appProps.hostedZoneId))
+                        .subDomainName(appProps.subDomainName)
+                        .cloudTrailEnabled(envOr("CLOUD_TRAIL_ENABLED", appProps.cloudTrailEnabled))
+                        .xRayEnabled(envOr("X_RAY_ENABLED", appProps.xRayEnabled))
+                        .baseImageTag(envOr("BASE_IMAGE_TAG", appProps.baseImageTag))
+                        .ecrRepositoryArn(devStack.ecrRepository.getRepositoryArn())
+                        .ecrRepositoryName(devStack.ecrRepository.getRepositoryName())
+                        //.userPool(identityStack.userPool)
+                        //.userPoolClient(identityStack.userPoolClient)
+                        //.userPoolDomain(identityStack.userPoolDomain)
+                        //.identityPool(identityStack.identityPool)
+                        //.googleClientId(envOr("DIY_SUBMIT_GOOGLE_CLIENT_ID", appProps.googleClientId))
+                        //.antonyccClientId(envOr("DIY_SUBMIT_ANTONYCC_CLIENT_ID", appProps.antonyccClientId))
+                        .build())
+                .build();
+
         // Create the ApplicationStack
         String applicationStackId = "%s-ApplicationStack".formatted(deploymentName);
         System.out.printf("Synthesizing stack %s for deployment %s to environment %s\n", applicationStackId, deploymentName, envName);
@@ -122,7 +149,6 @@ public class WebApp {
                 // .trail(observabilityStack.trail)
                 .build();
 
-
         // Create the Edge stack (CloudFront, Route53)
         String edgeStackId = "%s-EdgeStack".formatted(deploymentName);
         EdgeStack edgeStack = new EdgeStack(
@@ -141,10 +167,14 @@ public class WebApp {
                 .logsBucketArn(webStack.originAccessLogBucket.getBucketArn())
                 .webBehaviorOptions(webStack.behaviorOptions)
                 .additionalOriginsBehaviourMappings(
-                    applicationStack.additionalOriginsBehaviourMappings)
+                    concat(
+                        authStack.additionalOriginsBehaviourMappings,
+                        applicationStack.additionalOriginsBehaviourMappings
+                    ))
                 .build());
         edgeStack.addDependency(observabilityStack);
         edgeStack.addDependency(applicationStack);
+        edgeStack.addDependency(authStack);
         edgeStack.addDependency(webStack);
 
         // Create the Publish stack (Bucket Deployments to CloudFront)
@@ -241,6 +271,13 @@ public class WebApp {
 
         app.synth();
     }
+
+    //private static Map<String, BehaviorOptions> concat(Map<String, BehaviorOptions> a, Map<String, BehaviorOptions> b) {
+    //    return new java.util.HashMap<>() {{
+    //        putAll(a);
+    //        putAll(b);
+    //    }};
+    //}
 
     private static WebAppProps loadAppProps(WebApp.Builder builder, Construct scope) {
         WebAppProps props = WebAppProps.Builder.create().build();
