@@ -226,51 +226,13 @@ public class WebStack extends Stack {
             this.hostedZoneName = p.hostedZoneName;
             this.hostedZoneId = p.hostedZoneId;
             this.subDomainName = p.subDomainName;
-            this.certificateArn = p.certificateArn;
-            this.userPoolArn = p.userPoolArn;
             this.cloudTrailEnabled = p.cloudTrailEnabled;
             this.xRayEnabled = p.xRayEnabled;
             this.verboseLogging = p.verboseLogging;
-            this.cloudTrailLogGroupRetentionPeriodDays = p.cloudTrailLogGroupRetentionPeriodDays;
             this.accessLogGroupRetentionPeriodDays = p.accessLogGroupRetentionPeriodDays;
             this.s3UseExistingBucket = p.s3UseExistingBucket;
             this.s3RetainOriginBucket = p.s3RetainOriginBucket;
-            this.s3RetainReceiptsBucket = p.s3RetainReceiptsBucket;
-            this.cloudTrailEventSelectorPrefix = p.cloudTrailEventSelectorPrefix;
             this.logS3ObjectEventHandlerSource = p.logS3ObjectEventHandlerSource;
-            this.logGzippedS3ObjectEventHandlerSource = p.logGzippedS3ObjectEventHandlerSource;
-            this.docRootPath = p.docRootPath;
-            this.defaultDocumentAtOrigin = p.defaultDocumentAtOrigin;
-            this.error404NotFoundAtDistribution = p.error404NotFoundAtDistribution;
-            this.skipLambdaUrlOrigins = p.skipLambdaUrlOrigins;
-            this.hmrcClientId = p.hmrcClientId;
-            this.hmrcClientSecretArn = p.hmrcClientSecretArn;
-            this.homeUrl = p.homeUrl;
-            this.hmrcBaseUri = p.hmrcBaseUri;
-            this.optionalTestAccessToken = p.optionalTestAccessToken;
-            this.optionalTestS3Endpoint = p.optionalTestS3Endpoint;
-            this.optionalTestS3AccessKey = p.optionalTestS3AccessKey;
-            this.optionalTestS3SecretKey = p.optionalTestS3SecretKey;
-            this.receiptsBucketPostfix = p.receiptsBucketPostfix;
-            this.lambdaEntry = p.lambdaEntry;
-            this.lambdaUrlAuthType = p.lambdaUrlAuthType;
-            this.commitHash = p.commitHash;
-            this.googleClientId = p.googleClientId;
-            this.googleBaseUri = p.googleBaseUri;
-            this.googleClientSecretArn = p.googleClientSecretArn;
-            this.cognitoDomainPrefix = p.cognitoDomainPrefix;
-            this.bundleExpiryDate = p.bundleExpiryDate;
-            this.bundleUserLimit = p.bundleUserLimit;
-            this.baseImageTag = p.baseImageTag;
-            this.cognitoFeaturePlan = p.cognitoFeaturePlan;
-            this.cognitoEnableLogDelivery = p.cognitoEnableLogDelivery;
-            this.logCognitoEventHandlerSource = p.logCognitoEventHandlerSource;
-            this.antonyccClientId = p.antonyccClientId;
-            this.antonyccBaseUri = p.antonyccBaseUri;
-            this.cognitoClientId = p.cognitoClientId;
-            this.cognitoBaseUri = p.cognitoBaseUri;
-            this.ecrRepositoryArn = p.ecrRepositoryArn;
-            this.ecrRepositoryName = p.ecrRepositoryName;
             return this;
         }
 
@@ -538,9 +500,6 @@ public class WebStack extends Stack {
 
         boolean s3UseExistingBucket = Boolean.parseBoolean(builder.s3UseExistingBucket);
         boolean s3RetainOriginBucket = Boolean.parseBoolean(builder.s3RetainOriginBucket);
-        boolean s3RetainReceiptsBucket = Boolean.parseBoolean(builder.s3RetainReceiptsBucket);
-        boolean cloudTrailEnabled = Boolean.parseBoolean(builder.cloudTrailEnabled);
-        boolean xRayEnabled = Boolean.parseBoolean(builder.xRayEnabled);
         int accessLogGroupRetentionPeriodDays;
         try {
             accessLogGroupRetentionPeriodDays = Integer.parseInt(builder.accessLogGroupRetentionPeriodDays);
@@ -551,11 +510,9 @@ public class WebStack extends Stack {
             accessLogGroupRetentionPeriodDays = 30;
         }
         String originAccessLogBucketName = Builder.buildOriginAccessLogBucketName(dashedDomainName);
-        String distributionAccessLogBucketName = Builder.buildDistributionAccessLogBucketName(dashedDomainName);
         boolean verboseLogging = builder.verboseLogging == null || Boolean.parseBoolean(builder.verboseLogging);
 
         // Origin bucket for the CloudFront distribution
-        String receiptsBucketFullName = Builder.buildBucketName(dashedDomainName, builder.receiptsBucketPostfix);
         BucketOrigin bucketOrigin;
         //if (s3UseExistingBucket) {
         //    bucketOrigin = BucketOrigin.Builder.create(this, "Origin")
