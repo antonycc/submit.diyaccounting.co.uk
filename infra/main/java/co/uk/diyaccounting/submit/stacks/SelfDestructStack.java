@@ -40,17 +40,17 @@ public class SelfDestructStack extends Stack {
 
         // Apply cost allocation tags for all resources in this stack
         Tags.of(this).add("Environment", props.envName);
-        Tags.of(this).add("Application", "oidc-provider");
-        Tags.of(this).add("CostCenter", "@antonycc/oidc");
-        Tags.of(this).add("Owner", "@antonycc/oidc");
-        Tags.of(this).add("Project", "oidc-provider");
+        Tags.of(this).add("Application", "@antonycc/submit.diyaccounting.co.uk");
+        Tags.of(this).add("CostCenter", "@antonycc/submit.diyaccounting.co.uk");
+        Tags.of(this).add("Owner", "@antonycc/submit.diyaccounting.co.uk");
+        Tags.of(this).add("Project", "@antonycc/submit.diyaccounting.co.uk");
         Tags.of(this).add("DeploymentName", props.deploymentName);
         Tags.of(this).add("Stack", "SelfDestructStack");
         Tags.of(this).add("ManagedBy", "aws-cdk");
 
         // Enhanced cost optimization tags
         Tags.of(this).add("BillingPurpose", "authentication-infrastructure");
-        Tags.of(this).add("ResourceType", "serverless-oidc");
+        Tags.of(this).add("ResourceType", "serverless-web-app");
         Tags.of(this).add("Criticality", "low");
         Tags.of(this).add("DataClassification", "public");
         Tags.of(this).add("BackupRequired", "false");
@@ -111,7 +111,8 @@ public class SelfDestructStack extends Stack {
         environment.put("AWS_XRAY_TRACING_NAME", functionName);
         environment.put("OBSERVABILITY_STACK_NAME", props.observabilityStackName);
         environment.put("DEV_STACK_NAME", props.devStackName);
-        environment.put("APP_STACK_NAME", props.appStackName);
+        environment.put("AUTH_STACK_NAME", props.applicationStackName);
+        environment.put("APPLICATION_STACK_NAME", props.applicationStackName);
         environment.put("WEB_STACK_NAME", props.webStackName);
         environment.put("EDGE_STACK_NAME", props.edgeStackName);
         environment.put("PUBLISH_STACK_NAME", props.publishStackName);
@@ -122,7 +123,7 @@ public class SelfDestructStack extends Stack {
         this.selfDestructFunction = Function.Builder.create(this, props.resourceNamePrefix + "-SelfDestructFunction")
                 .functionName(functionName)
                 .runtime(Runtime.JAVA_21)
-                .handler("com.antonycc.oidc.functions.SelfDestructHandler::handleRequest")
+                .handler("co.uk.diyaccounting.submit.functions.SelfDestructHandler::handleRequest")
                 .code(Code.fromAsset(props.selfDestructHandlerSource))
                 .timeout(Duration.minutes(15)) // Allow time for stack deletions
                 .memorySize(512) // Increased memory for Java runtime

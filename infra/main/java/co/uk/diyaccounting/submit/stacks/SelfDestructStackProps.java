@@ -11,7 +11,8 @@ public class SelfDestructStackProps implements StackProps {
     public final String compressedResourceNamePrefix;
     public final String observabilityStackName;
     public final String devStackName;
-    public final String appStackName;
+    public final String authStackName;
+    public final String applicationStackName;
     public final String webStackName;
     public final String edgeStackName;
     public final String publishStackName;
@@ -27,7 +28,8 @@ public class SelfDestructStackProps implements StackProps {
         this.compressedResourceNamePrefix = builder.compressedResourceNamePrefix;
         this.observabilityStackName = builder.observabilityStackName;
         this.devStackName = builder.devStackName;
-        this.appStackName = builder.appStackName;
+        this.authStackName = builder.authStackName;
+        this.applicationStackName = builder.applicationStackName;
         this.webStackName = builder.webStackName;
         this.edgeStackName = builder.edgeStackName;
         this.publishStackName = builder.publishStackName;
@@ -53,7 +55,8 @@ public class SelfDestructStackProps implements StackProps {
         private String compressedResourceNamePrefix;
         private String observabilityStackName;
         private String devStackName;
-        private String appStackName;
+        private String authStackName;
+        private String applicationStackName;
         private String webStackName;
         private String edgeStackName;
         private String publishStackName;
@@ -96,8 +99,13 @@ public class SelfDestructStackProps implements StackProps {
             return this;
         }
 
-        public Builder appStackName(String appStackName) {
-            this.appStackName = appStackName;
+        public Builder authStackName(String authStackName) {
+            this.authStackName = this.authStackName;
+            return this;
+        }
+
+        public Builder applicationStackName(String applicationStackName) {
+            this.applicationStackName = applicationStackName;
             return this;
         }
 

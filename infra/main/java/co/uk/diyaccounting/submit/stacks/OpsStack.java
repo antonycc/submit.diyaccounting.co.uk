@@ -9,6 +9,11 @@ import software.amazon.awscdk.services.cloudwatch.ComparisonOperator;
 import software.amazon.awscdk.services.cloudwatch.Dashboard;
 import software.amazon.awscdk.services.cloudwatch.GraphWidget;
 import software.amazon.awscdk.services.cloudwatch.TreatMissingData;
+import software.amazon.awscdk.services.cloudwatch.Metric;
+import software.amazon.awscdk.services.cloudwatch.MetricOptions;
+import software.amazon.awscdk.Duration;
+import software.amazon.awscdk.services.s3.Bucket;
+import software.amazon.awscdk.services.s3.IBucket;
 import software.amazon.awscdk.services.dynamodb.ITable;
 import software.amazon.awscdk.services.dynamodb.Operation;
 import software.amazon.awscdk.services.dynamodb.OperationsMetricOptions;
@@ -21,13 +26,6 @@ import software.constructs.Construct;
 import java.util.List;
 
 public class OpsStack extends Stack {
-    public final Alarm authorizeErrorAlarm;
-    public final Alarm authorizeDurationAlarm;
-    public final Alarm tokenErrorAlarm;
-    public final Alarm lambdaThrottleAlarm;
-    public final Alarm dynamoDbUserThrottleAlarm;
-    public final Alarm dynamoDbAuthCodeThrottleAlarm;
-    public final Alarm dynamoDbRefreshTokenThrottleAlarm;
     public final Dashboard operationalDashboard;
 
     public OpsStack(final Construct scope, final String id, final OpsStackProps props) {
@@ -35,257 +33,238 @@ public class OpsStack extends Stack {
 
         // Apply cost allocation tags for all resources in this stack
         Tags.of(this).add("Environment", props.envName);
-        Tags.of(this).add("Application", "oidc-provider");
-        Tags.of(this).add("CostCenter", "@antonycc/oidc");
-        Tags.of(this).add("Owner", "@antonycc/oidc");
-        Tags.of(this).add("Project", "oidc-provider");
+        Tags.of(this).add("Application", "@antonycc/submit.diyaccounting.co.uk");
+        Tags.of(this).add("CostCenter", "@antonycc/submit.diyaccounting.co.uk");
+        Tags.of(this).add("Owner", "@antonycc/submit.diyaccounting.co.uk");
+        Tags.of(this).add("Project", "@antonycc/submit.diyaccounting.co.uk");
         Tags.of(this).add("DeploymentName", props.deploymentName);
         Tags.of(this).add("Stack", "OpsStack");
         Tags.of(this).add("ManagedBy", "aws-cdk");
 
         // Enhanced cost optimization tags
         Tags.of(this).add("BillingPurpose", "authentication-infrastructure");
-        Tags.of(this).add("ResourceType", "serverless-oidc");
+        Tags.of(this).add("ResourceType", "serverless-web-app");
         Tags.of(this).add("Criticality", "low");
         Tags.of(this).add("DataClassification", "public");
         Tags.of(this).add("BackupRequired", "false");
         Tags.of(this).add("MonitoringEnabled", "true");
 
-        // Use resources from the passed props
-        IFunction jwksEndpointFunction = Function.fromFunctionAttributes(
-                this,
-                props.resourceNamePrefix + "-JwksEndpointFunction",
-                FunctionAttributes.builder()
-                        .functionArn(props.jwksEndpointFunctionArn)
-                        .sameEnvironment(true)
-                        .build());
-        IFunction authorizeEndpointFunction = Function.fromFunctionAttributes(
-                this,
-                props.resourceNamePrefix + "-AuthorizeEndpointFunction",
-                FunctionAttributes.builder()
-                        .functionArn(props.authorizeEndpointFunctionArn)
-                        .sameEnvironment(true)
-                        .build());
-        IFunction tokenEndpointFunction = Function.fromFunctionAttributes(
-                this,
-                props.resourceNamePrefix + "-TokenEndpointFunction",
-                FunctionAttributes.builder()
-                        .functionArn(props.tokenEndpointFunctionArn)
-                        .sameEnvironment(true)
-                        .build());
-        IFunction userinfoEndpointFunction = Function.fromFunctionAttributes(
-                this,
-                props.resourceNamePrefix + "-UserinfoEndpointFunction",
-                FunctionAttributes.builder()
-                        .functionArn(props.userinfoEndpointFunctionArn)
-                        .sameEnvironment(true)
-                        .build());
-        ITable usersTable = Table.fromTableArn(this, props.resourceNamePrefix + "-UsersTable", props.usersTableArn);
-        ITable authCodesTable =
-                Table.fromTableArn(this, props.resourceNamePrefix + "-AuthCodesTable", props.authCodesTableArn);
-        ITable refreshTokensTable =
-                Table.fromTableArn(this, props.resourceNamePrefix + "-RefreshTokensTable", props.refreshTokensTableArn);
+        // Import resources from props
+        // Lambda functions
+        java.util.List<IFunction> lambdaFunctions = new java.util.ArrayList<>();
+        java.util.List<Metric> lambdaInvocations = new java.util.ArrayList<>();
+        java.util.List<Metric> lambdaErrors = new java.util.ArrayList<>();
+        java.util.List<Metric> lambdaDurationsP95 = new java.util.ArrayList<>();
+        java.util.List<Metric> lambdaThrottles = new java.util.ArrayList<>();
+        if (props.lambdaFunctionArns != null) {
+            for (int i = 0; i < props.lambdaFunctionArns.size(); i++) {
+                String arn = props.lambdaFunctionArns.get(i);
+                String fnName = arn.substring(arn.lastIndexOf(":") + 1);
+                IFunction fn = Function.fromFunctionAttributes(
+                        this,
+                        props.resourceNamePrefix + "-Fn-" + i,
+                        FunctionAttributes.builder().functionArn(arn).sameEnvironment(true).build());
+                lambdaFunctions.add(fn);
+                lambdaInvocations.add(fn.metricInvocations());
+                lambdaErrors.add(fn.metricErrors());
+                lambdaDurationsP95.add(fn.metricDuration().with(MetricOptions.builder().statistic("p95").build()));
+                lambdaThrottles.add(fn.metricThrottles());
+                // Per-function error alarm (>=1 error in 5 minutes)
+                Alarm.Builder.create(this, props.resourceNamePrefix + "-LambdaErrors-" + fnName)
+                        .alarmName(props.compressedResourceNamePrefix + "-" + fnName + "-errors")
+                        .metric(fn.metricErrors())
+                        .threshold(1.0)
+                        .evaluationPeriods(1)
+                        .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
+                        .treatMissingData(TreatMissingData.NOT_BREACHING)
+                        .alarmDescription("Lambda errors >= 1 for function " + fnName)
+                        .build();
+            }
+        }
 
-        // Error rate alarm for authorize endpoint
-        this.authorizeErrorAlarm = Alarm.Builder.create(this, props.resourceNamePrefix + "-AuthorizeErrorAlarm")
-                .alarmName(props.compressedResourceNamePrefix + "-authorize-errors")
-                .metric(authorizeEndpointFunction.metricErrors())
-                .threshold(3.0) // Alert on 3+ errors in evaluation period
-                .evaluationPeriods(2) // Over 2 evaluation periods (10 minutes)
-                .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
-                .treatMissingData(TreatMissingData.NOT_BREACHING)
-                .alarmDescription("High error rate detected in authorize endpoint")
+        // S3 buckets
+        IBucket originBucket = Bucket.fromBucketArn(this, props.resourceNamePrefix + "-OriginBucket", props.originBucketArn);
+        IBucket receiptsBucket = null;
+        if (props.receiptsBucketArn != null && !props.receiptsBucketArn.isBlank()) {
+            receiptsBucket = Bucket.fromBucketArn(this, props.resourceNamePrefix + "-ReceiptsBucket", props.receiptsBucketArn);
+        }
+
+        // CloudFront metrics (Global)
+        java.util.Map<String, String> cfDims = java.util.Map.of(
+                "DistributionId", props.distributionId,
+                "Region", "Global");
+        Metric cfRequests = Metric.Builder.create()
+                .namespace("AWS/CloudFront")
+                .metricName("Requests")
+                .dimensionsMap(cfDims)
+                .statistic("Sum")
+                .period(Duration.minutes(5))
+                .build();
+        Metric cf4xx = Metric.Builder.create()
+                .namespace("AWS/CloudFront")
+                .metricName("4xxErrorRate")
+                .dimensionsMap(cfDims)
+                .statistic("Average")
+                .period(Duration.minutes(5))
+                .build();
+        Metric cf5xx = Metric.Builder.create()
+                .namespace("AWS/CloudFront")
+                .metricName("5xxErrorRate")
+                .dimensionsMap(cfDims)
+                .statistic("Average")
+                .period(Duration.minutes(5))
                 .build();
 
-        // Duration alarm for authorize endpoint (cold start monitoring)
-        this.authorizeDurationAlarm = Alarm.Builder.create(this, props.resourceNamePrefix + "-AuthorizeDurationAlarm")
-                .alarmName(props.compressedResourceNamePrefix + "-authorize-duration")
-                .metric(authorizeEndpointFunction.metricDuration())
-                .threshold(10000.0) // Alert if duration > 10 seconds
-                .evaluationPeriods(3) // Over 3 evaluation periods (15 minutes)
+        // Alarms: CloudFront error rates
+        Alarm cloudFront5xxAlarm = Alarm.Builder.create(this, props.resourceNamePrefix + "-CloudFront5xxAlarm")
+                .alarmName(props.compressedResourceNamePrefix + "-cf-5xx-rate")
+                .metric(cf5xx)
+                .threshold(1.0) // >1% 5xx error rate
+                .evaluationPeriods(2)
                 .comparisonOperator(ComparisonOperator.GREATER_THAN_THRESHOLD)
                 .treatMissingData(TreatMissingData.NOT_BREACHING)
-                .alarmDescription("High duration detected in authorize endpoint - possible cold start issues")
+                .alarmDescription("CloudFront 5xx error rate > 1%")
                 .build();
-
-        // Error rate alarm for token endpoint (most critical)
-        this.tokenErrorAlarm = Alarm.Builder.create(this, props.resourceNamePrefix + "-TokenErrorAlarm")
-                .alarmName(props.compressedResourceNamePrefix + "-token-errors")
-                .metric(tokenEndpointFunction.metricErrors())
-                .threshold(2.0) // Lower threshold for critical token endpoint
+        Alarm cloudFront4xxAlarm = Alarm.Builder.create(this, props.resourceNamePrefix + "-CloudFront4xxAlarm")
+                .alarmName(props.compressedResourceNamePrefix + "-cf-4xx-rate")
+                .metric(cf4xx)
+                .threshold(5.0) // >5% 4xx error rate
                 .evaluationPeriods(2)
-                .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
+                .comparisonOperator(ComparisonOperator.GREATER_THAN_THRESHOLD)
                 .treatMissingData(TreatMissingData.NOT_BREACHING)
-                .alarmDescription("High error rate detected in token endpoint - critical for authentication flow")
+                .alarmDescription("CloudFront 4xx error rate > 5%")
                 .build();
 
-        // Throttle alarm for all endpoints (simplified approach)
-        this.lambdaThrottleAlarm = Alarm.Builder.create(this, props.resourceNamePrefix + "-LambdaThrottleAlarm")
-                .alarmName(props.compressedResourceNamePrefix + "-lambda-throttles")
-                .metric(authorizeEndpointFunction.metricThrottles())
-                .threshold(1.0) // Alert on any throttling
-                .evaluationPeriods(1)
-                .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
-                .treatMissingData(TreatMissingData.NOT_BREACHING)
-                .alarmDescription("Lambda function throttling detected - may need reserved concurrency")
+        // Dashboard
+        java.util.List<java.util.List<software.amazon.awscdk.services.cloudwatch.IWidget>> rows = new java.util.ArrayList<>();
+        // Row 1: CloudFront requests and error rates
+        rows.add(java.util.List.of(
+                GraphWidget.Builder.create()
+                        .title("CloudFront Requests")
+                        .left(java.util.List.of(cfRequests))
+                        .width(12)
+                        .height(6)
+                        .build(),
+                GraphWidget.Builder.create()
+                        .title("CloudFront Error Rates (4xx/5xx)")
+                        .left(java.util.List.of(cf4xx, cf5xx))
+                        .width(12)
+                        .height(6)
+                        .build()
+        ));
+        // Row 2: Lambda invocations and errors
+        if (!lambdaInvocations.isEmpty()) {
+            rows.add(java.util.List.of(
+                    GraphWidget.Builder.create()
+                            .title("Lambda Invocations by Function")
+                            .left(lambdaInvocations)
+                            .width(12)
+                            .height(6)
+                            .build(),
+                    GraphWidget.Builder.create()
+                            .title("Lambda Errors by Function")
+                            .left(lambdaErrors)
+                            .width(12)
+                            .height(6)
+                            .build()
+            ));
+            rows.add(java.util.List.of(
+                    GraphWidget.Builder.create()
+                            .title("Lambda p95 Duration by Function")
+                            .left(lambdaDurationsP95)
+                            .width(12)
+                            .height(6)
+                            .build(),
+                    GraphWidget.Builder.create()
+                            .title("Lambda Throttles by Function")
+                            .left(lambdaThrottles)
+                            .width(12)
+                            .height(6)
+                            .build()
+            ));
+        }
+        // Row 3: S3 origin and receipts bucket errors/requests
+        Metric s3OriginAllReq = Metric.Builder.create()
+                .namespace("AWS/S3")
+                .metricName("AllRequests")
+                .dimensionsMap(java.util.Map.of("BucketName", originBucket.getBucketName(), "FilterId", "EntireBucket"))
+                .statistic("Sum")
+                .period(Duration.minutes(5))
+                .build();
+        Metric s3Origin4xx = Metric.Builder.create()
+                .namespace("AWS/S3")
+                .metricName("4xxErrors")
+                .dimensionsMap(java.util.Map.of("BucketName", originBucket.getBucketName(), "FilterId", "EntireBucket"))
+                .statistic("Sum")
+                .period(Duration.minutes(5))
+                .build();
+        Metric s3Origin5xx = Metric.Builder.create()
+                .namespace("AWS/S3")
+                .metricName("5xxErrors")
+                .dimensionsMap(java.util.Map.of("BucketName", originBucket.getBucketName(), "FilterId", "EntireBucket"))
+                .statistic("Sum")
+                .period(Duration.minutes(5))
                 .build();
 
-        OperationsMetricOptions dynamoDbMetricOptions = OperationsMetricOptions.builder()
-                .operations(List.of(
-                        Operation.GET_ITEM,
-                        Operation.PUT_ITEM,
-                        Operation.UPDATE_ITEM,
-                        Operation.DELETE_ITEM,
-                        Operation.QUERY,
-                        Operation.SCAN))
-                .build();
+        Metric s3ReceiptsAllReq = null;
+        Metric s3Receipts4xx = null;
+        Metric s3Receipts5xx = null;
+        if (receiptsBucket != null) {
+            s3ReceiptsAllReq = Metric.Builder.create()
+                    .namespace("AWS/S3")
+                    .metricName("AllRequests")
+                    .dimensionsMap(java.util.Map.of("BucketName", receiptsBucket.getBucketName(), "FilterId", "EntireBucket"))
+                    .statistic("Sum")
+                    .period(Duration.minutes(5))
+                    .build();
+            s3Receipts4xx = Metric.Builder.create()
+                    .namespace("AWS/S3")
+                    .metricName("4xxErrors")
+                    .dimensionsMap(java.util.Map.of("BucketName", receiptsBucket.getBucketName(), "FilterId", "EntireBucket"))
+                    .statistic("Sum")
+                    .period(Duration.minutes(5))
+                    .build();
+            s3Receipts5xx = Metric.Builder.create()
+                    .namespace("AWS/S3")
+                    .metricName("5xxErrors")
+                    .dimensionsMap(java.util.Map.of("BucketName", receiptsBucket.getBucketName(), "FilterId", "EntireBucket"))
+                    .statistic("Sum")
+                    .period(Duration.minutes(5))
+                    .build();
+        }
 
-        // DynamoDB user table throttling alarm
-        this.dynamoDbUserThrottleAlarm = Alarm.Builder.create(
-                        this, props.resourceNamePrefix + "-DynamoDbUserThrottleAlarm")
-                .alarmName(props.compressedResourceNamePrefix + "-dynamodb-user-throttles")
-                .metric(usersTable.metricThrottledRequestsForOperations(dynamoDbMetricOptions))
-                .threshold(1.0) // Alert on any throttling
-                .evaluationPeriods(2) // Over 2 evaluation periods (10 minutes)
-                .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
-                .treatMissingData(TreatMissingData.NOT_BREACHING)
-                .alarmDescription("DynamoDB throttling detected on users table - may need on-demand scaling review")
-                .build();
+        rows.add(java.util.List.of(
+                GraphWidget.Builder.create()
+                        .title("S3 Origin Requests/Errors")
+                        .left(java.util.List.of(s3OriginAllReq, s3Origin4xx, s3Origin5xx))
+                        .width(12)
+                        .height(6)
+                        .build(),
+                receiptsBucket != null ? GraphWidget.Builder.create()
+                        .title("S3 Receipts Requests/Errors")
+                        .left(java.util.List.of(s3ReceiptsAllReq, s3Receipts4xx, s3Receipts5xx))
+                        .width(12)
+                        .height(6)
+                        .build() : GraphWidget.Builder.create().title("S3 Receipts (not configured)").left(java.util.List.of()).width(12).height(6).build()
+        ));
 
-        // DynamoDB auth codes table throttling alarm
-        this.dynamoDbAuthCodeThrottleAlarm = Alarm.Builder.create(
-                        this, props.resourceNamePrefix + "-DynamoDbAuthCodesThrottleAlarm")
-                .alarmName(props.compressedResourceNamePrefix + "-dynamodb-auth-codes-throttles")
-                .metric(authCodesTable.metricThrottledRequestsForOperations(dynamoDbMetricOptions))
-                .threshold(1.0)
-                .evaluationPeriods(2)
-                .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
-                .treatMissingData(TreatMissingData.NOT_BREACHING)
-                .alarmDescription("DynamoDB throttling detected on auth codes table - critical for authentication flow")
-                .build();
-
-        // DynamoDB refresh tokens table throttling alarm
-        this.dynamoDbRefreshTokenThrottleAlarm = Alarm.Builder.create(
-                        this, props.resourceNamePrefix + "-DynamoDbRefreshTokensThrottleAlarm")
-                .alarmName(props.compressedResourceNamePrefix + "-dynamodb-refresh-tokens-throttles")
-                .metric(refreshTokensTable.metricThrottledRequestsForOperations(dynamoDbMetricOptions))
-                .threshold(1.0)
-                .evaluationPeriods(2)
-                .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
-                .treatMissingData(TreatMissingData.NOT_BREACHING)
-                .alarmDescription("DynamoDB throttling detected on refresh tokens table - may impact token refresh")
-                .build();
-
-        // Create CloudWatch dashboard with key metrics
         this.operationalDashboard = Dashboard.Builder.create(this, props.resourceNamePrefix + "-OperationalDashboard")
                 .dashboardName(props.compressedResourceNamePrefix + "-operations")
-                .widgets(List.of(List.of(
-                        // Lambda invocation metrics
-                        GraphWidget.Builder.create()
-                                .title("Lambda Invocations by Endpoint")
-                                .region(this.getRegion())
-                                .left(List.of(
-                                        authorizeEndpointFunction.metricInvocations(),
-                                        tokenEndpointFunction.metricInvocations(),
-                                        userinfoEndpointFunction.metricInvocations(),
-                                        jwksEndpointFunction.metricInvocations()))
-                                .width(12)
-                                .height(6)
-                                .build(),
-                        // Lambda error metrics
-                        GraphWidget.Builder.create()
-                                .title("Lambda Errors by Endpoint")
-                                .region(this.getRegion())
-                                .left(List.of(
-                                        authorizeEndpointFunction.metricErrors(),
-                                        tokenEndpointFunction.metricErrors(),
-                                        userinfoEndpointFunction.metricErrors(),
-                                        jwksEndpointFunction.metricErrors()))
-                                .width(12)
-                                .height(6)
-                                .build(),
-                        // Lambda duration metrics
-                        GraphWidget.Builder.create()
-                                .title("Lambda Duration by Endpoint")
-                                .region(this.getRegion())
-                                .left(List.of(
-                                        authorizeEndpointFunction.metricDuration(),
-                                        tokenEndpointFunction.metricDuration(),
-                                        userinfoEndpointFunction.metricDuration(),
-                                        jwksEndpointFunction.metricDuration()))
-                                .width(12)
-                                .height(6)
-                                .build(),
-                        // Lambda throttle metrics
-                        GraphWidget.Builder.create()
-                                .title("Lambda Throttles")
-                                .region(this.getRegion())
-                                .left(List.of(
-                                        authorizeEndpointFunction.metricThrottles(),
-                                        tokenEndpointFunction.metricThrottles(),
-                                        userinfoEndpointFunction.metricThrottles(),
-                                        jwksEndpointFunction.metricThrottles()))
-                                .width(12)
-                                .height(6)
-                                .build(),
-                        GraphWidget.Builder.create()
-                                .title("DynamoDB Consumed Capacity")
-                                .region(this.getRegion())
-                                .left(List.of(
-                                        usersTable.metricConsumedReadCapacityUnits(),
-                                        authCodesTable.metricConsumedReadCapacityUnits(),
-                                        refreshTokensTable.metricConsumedReadCapacityUnits()))
-                                .right(List.of(
-                                        usersTable.metricConsumedWriteCapacityUnits(),
-                                        authCodesTable.metricConsumedWriteCapacityUnits(),
-                                        refreshTokensTable.metricConsumedWriteCapacityUnits()))
-                                .width(12)
-                                .height(6)
-                                .build())))
+                .widgets(rows)
                 .build();
 
         // Outputs
         new CfnOutput(
                 this,
-                "AuthorizeErrorAlarmArn",
+                "CloudFront5xxAlarmArn",
                 CfnOutputProps.builder()
-                        .value(this.authorizeErrorAlarm.getAlarmArn())
+                        .value(cloudFront5xxAlarm.getAlarmArn())
                         .build());
         new CfnOutput(
                 this,
-                "AuthorizeDurationAlarmArn",
+                "CloudFront4xxAlarmArn",
                 CfnOutputProps.builder()
-                        .value(this.authorizeDurationAlarm.getAlarmArn())
-                        .build());
-        new CfnOutput(
-                this,
-                "TokenErrorAlarmArn",
-                CfnOutputProps.builder()
-                        .value(this.tokenErrorAlarm.getAlarmArn())
-                        .build());
-        new CfnOutput(
-                this,
-                "LambdaThrottleAlarmArn",
-                CfnOutputProps.builder()
-                        .value(this.lambdaThrottleAlarm.getAlarmArn())
-                        .build());
-        new CfnOutput(
-                this,
-                "DynamoDbUserThrottleAlarmArn",
-                CfnOutputProps.builder()
-                        .value(this.dynamoDbUserThrottleAlarm.getAlarmArn())
-                        .build());
-        new CfnOutput(
-                this,
-                "DynamoDbAuthCodeThrottleAlarmArn",
-                CfnOutputProps.builder()
-                        .value(this.dynamoDbAuthCodeThrottleAlarm.getAlarmArn())
-                        .build());
-        new CfnOutput(
-                this,
-                "DynamoDbRefreshTokenThrottleAlarmArn",
-                CfnOutputProps.builder()
-                        .value(this.dynamoDbRefreshTokenThrottleAlarm.getAlarmArn())
+                        .value(cloudFront4xxAlarm.getAlarmArn())
                         .build());
         new CfnOutput(
                 this,

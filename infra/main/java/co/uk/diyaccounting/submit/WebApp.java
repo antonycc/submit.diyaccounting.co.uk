@@ -6,8 +6,12 @@ import co.uk.diyaccounting.submit.stacks.EdgeStack;
 import co.uk.diyaccounting.submit.stacks.EdgeStackProps;
 import co.uk.diyaccounting.submit.stacks.IdentityStack;
 import co.uk.diyaccounting.submit.stacks.ObservabilityStack;
+import co.uk.diyaccounting.submit.stacks.OpsStack;
+import co.uk.diyaccounting.submit.stacks.OpsStackProps;
 import co.uk.diyaccounting.submit.stacks.PublishStack;
 import co.uk.diyaccounting.submit.stacks.PublishStackProps;
+import co.uk.diyaccounting.submit.stacks.SelfDestructStack;
+import co.uk.diyaccounting.submit.stacks.SelfDestructStackProps;
 import co.uk.diyaccounting.submit.stacks.WebStack;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -163,6 +167,74 @@ public class WebApp {
         //publishStack.addDependency(edgeStack);
         //publishStack.addDependency(applicationStack);
         publishStack.addDependency(webStack);
+
+        // Create the Ops stack (Alarms, etc.)
+        // Build list of Lambda function ARNs for OpsStack
+        java.util.List<String> lambdaArns = new java.util.ArrayList<>();
+        if (applicationStack.authUrlHmrcLambda != null) lambdaArns.add(applicationStack.authUrlHmrcLambda.getFunctionArn());
+        if (applicationStack.exchangeHmrcTokenLambda != null) lambdaArns.add(applicationStack.exchangeHmrcTokenLambda.getFunctionArn());
+        if (applicationStack.submitVatLambda != null) lambdaArns.add(applicationStack.submitVatLambda.getFunctionArn());
+        if (applicationStack.logReceiptLambda != null) lambdaArns.add(applicationStack.logReceiptLambda.getFunctionArn());
+        if (applicationStack.catalogLambda != null) lambdaArns.add(applicationStack.catalogLambda.getFunctionArn());
+        if (applicationStack.myBundlesLambda != null) lambdaArns.add(applicationStack.myBundlesLambda.getFunctionArn());
+        if (applicationStack.myReceiptsLambda != null) lambdaArns.add(applicationStack.myReceiptsLambda.getFunctionArn());
+        String receiptsBucketArn = applicationStack.receiptsBucket != null ? applicationStack.receiptsBucket.getBucketArn() : null;
+
+        String opsStackId = "%s-OpsStack".formatted(deploymentName);
+        OpsStack opsStack = new OpsStack(
+            app,
+            opsStackId,
+            OpsStackProps.builder()
+                //.env(env)
+                .envName(envName)
+                .deploymentName(deploymentName)
+                .domainName(webStack.domainName)
+                .resourceNamePrefix(webStack.resourceNamePrefix)
+                .compressedResourceNamePrefix(webStack.compressedResourceNamePrefix)
+                .lambdaFunctionArns(lambdaArns)
+                .receiptsBucketArn(receiptsBucketArn)
+                //.tokenEndpointFunctionArn(this.application.appStack.tokenEndpoint.function.getFunctionArn())
+                //.userinfoEndpointFunctionArn(
+                //    this.application.appStack.userinfoEndpoint.function.getFunctionArn())
+                //.usersTableArn(this.application.appStack.usersTable.getTableArn())
+                //.authCodesTableArn(this.application.appStack.authCodesTable.getTableArn())
+                //.refreshTokensTableArn(this.application.appStack.refreshTokensTable.getTableArn())
+                .build());
+        opsStack.addDependency(applicationStack);
+        opsStack.addDependency(webStack);
+
+        // Create the SelfDestruct stack only for non-prod deployments and when JAR exists
+        if (!"prod".equals(deploymentName)) {
+            String handlerSource = envOr("SELF_DESTRUCT_HANDLER_SOURCE", "target/self-destruct-lambda.jar");
+            java.nio.file.Path handlerPath = java.nio.file.Paths.get(handlerSource);
+            if (java.nio.file.Files.exists(handlerPath)) {
+                String selfDestructStackId = "%s-SelfDestructStack".formatted(deploymentName);
+                SelfDestructStack selfDestructStack = new SelfDestructStack(
+                    app,
+                    selfDestructStackId,
+                    SelfDestructStackProps.builder()
+                        //.env(env)
+                        .envName(envName)
+                        .deploymentName(deploymentName)
+                        .resourceNamePrefix(webStack.resourceNamePrefix)
+                        .compressedResourceNamePrefix(webStack.compressedResourceNamePrefix)
+                        .observabilityStackName(observabilityStack.getStackName())
+                        .devStackName(devStack.getStackName())
+                        .authStackName(applicationStack.getStackName())
+                        .applicationStackName(applicationStack.getStackName())
+                        .webStackName(webStack.getStackName())
+                        .edgeStackName(edgeStack.getStackName())
+                        .publishStackName(publishStack.getStackName())
+                        .opsStackName(opsStack.getStackName())
+                        .selfDestructDelayHours(envOr("SELF_DESTRUCT_DELAY_HOURS", "1"))
+                        .selfDestructHandlerSource(handlerSource)
+                        .build());
+                // SelfDestructStack has no dependencies - it should be able to delete everything
+            } else {
+                System.out.println(
+                    "Skipping SelfDestructStack creation - handler JAR not found at: " + handlerSource);
+            }
+        }
 
         app.synth();
     }

@@ -10,13 +10,10 @@ public class OpsStackProps implements StackProps {
     public final String domainName;
     public final String resourceNamePrefix;
     public final String compressedResourceNamePrefix;
-    public final String jwksEndpointFunctionArn;
-    public final String authorizeEndpointFunctionArn;
-    public final String tokenEndpointFunctionArn;
-    public final String userinfoEndpointFunctionArn;
-    public final String usersTableArn;
-    public final String authCodesTableArn;
-    public final String refreshTokensTableArn;
+    public final String distributionId;
+    public final String originBucketArn;
+    public final String receiptsBucketArn; // optional, may be null
+    public final java.util.List<String> lambdaFunctionArns;
 
     private OpsStackProps(Builder builder) {
         this.env = builder.env;
@@ -25,13 +22,10 @@ public class OpsStackProps implements StackProps {
         this.domainName = builder.domainName;
         this.resourceNamePrefix = builder.resourceNamePrefix;
         this.compressedResourceNamePrefix = builder.compressedResourceNamePrefix;
-        this.jwksEndpointFunctionArn = builder.jwksEndpointFunctionArn;
-        this.authorizeEndpointFunctionArn = builder.authorizeEndpointFunctionArn;
-        this.tokenEndpointFunctionArn = builder.tokenEndpointFunctionArn;
-        this.userinfoEndpointFunctionArn = builder.userinfoEndpointFunctionArn;
-        this.usersTableArn = builder.usersTableArn;
-        this.authCodesTableArn = builder.authCodesTableArn;
-        this.refreshTokensTableArn = builder.refreshTokensTableArn;
+        this.distributionId = builder.distributionId;
+        this.originBucketArn = builder.originBucketArn;
+        this.receiptsBucketArn = builder.receiptsBucketArn;
+        this.lambdaFunctionArns = builder.lambdaFunctionArns;
     }
 
     @Override
@@ -50,13 +44,10 @@ public class OpsStackProps implements StackProps {
         private String domainName;
         private String resourceNamePrefix;
         private String compressedResourceNamePrefix;
-        private String jwksEndpointFunctionArn;
-        private String authorizeEndpointFunctionArn;
-        private String tokenEndpointFunctionArn;
-        private String userinfoEndpointFunctionArn;
-        private String usersTableArn;
-        private String authCodesTableArn;
-        private String refreshTokensTableArn;
+        private String distributionId;
+        private String originBucketArn;
+        private String receiptsBucketArn;
+        private java.util.List<String> lambdaFunctionArns;
 
         public Builder env(Environment env) {
             this.env = env;
@@ -88,40 +79,27 @@ public class OpsStackProps implements StackProps {
             return this;
         }
 
-        public Builder jwksEndpointFunctionArn(String jwksEndpointFunctionArn) {
-            this.jwksEndpointFunctionArn = jwksEndpointFunctionArn;
+        public Builder distributionId(String distributionId) {
+            this.distributionId = distributionId;
             return this;
         }
 
-        public Builder authorizeEndpointFunctionArn(String authorizeEndpointFunctionArn) {
-            this.authorizeEndpointFunctionArn = authorizeEndpointFunctionArn;
+        public Builder originBucketArn(String originBucketArn) {
+            this.originBucketArn = originBucketArn;
             return this;
         }
 
-        public Builder tokenEndpointFunctionArn(String tokenEndpointFunctionArn) {
-            this.tokenEndpointFunctionArn = tokenEndpointFunctionArn;
+        public Builder receiptsBucketArn(String receiptsBucketArn) {
+            this.receiptsBucketArn = receiptsBucketArn;
             return this;
         }
 
-        public Builder userinfoEndpointFunctionArn(String userinfoEndpointFunctionArn) {
-            this.userinfoEndpointFunctionArn = userinfoEndpointFunctionArn;
+        public Builder lambdaFunctionArns(java.util.List<String> lambdaFunctionArns) {
+            this.lambdaFunctionArns = lambdaFunctionArns;
             return this;
         }
 
-        public Builder usersTableArn(String usersTableArn) {
-            this.usersTableArn = usersTableArn;
-            return this;
-        }
 
-        public Builder authCodesTableArn(String authCodesTableArn) {
-            this.authCodesTableArn = authCodesTableArn;
-            return this;
-        }
-
-        public Builder refreshTokensTableArn(String refreshTokensTableArn) {
-            this.refreshTokensTableArn = refreshTokensTableArn;
-            return this;
-        }
 
         public OpsStackProps build() {
             return new OpsStackProps(this);

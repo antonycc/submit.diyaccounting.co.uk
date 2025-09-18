@@ -43,7 +43,8 @@ public class SelfDestructHandler implements RequestHandler<Map<String, Object>, 
         addStackNameIfPresent(stacksToDelete, System.getenv("PUBLISH_STACK_NAME"));
         addStackNameIfPresent(stacksToDelete, System.getenv("EDGE_STACK_NAME"));
         addStackNameIfPresent(stacksToDelete, System.getenv("WEB_STACK_NAME"));
-        addStackNameIfPresent(stacksToDelete, System.getenv("APP_STACK_NAME"));
+        addStackNameIfPresent(stacksToDelete, System.getenv("AUTH_STACK_NAME"));
+        addStackNameIfPresent(stacksToDelete, System.getenv("APPLICATION_STACK_NAME"));
         addStackNameIfPresent(stacksToDelete, System.getenv("DEV_STACK_NAME"));
         addStackNameIfPresent(stacksToDelete, System.getenv("OBSERVABILITY_STACK_NAME"));
         addStackNameIfPresent(stacksToDelete, System.getenv("SELF_DESTRUCT_STACK_NAME")); // Delete self last

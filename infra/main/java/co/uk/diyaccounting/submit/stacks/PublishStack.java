@@ -29,16 +29,16 @@ public class PublishStack extends Stack {
         // Apply cost allocation tags for all resources in this stack
         Tags.of(this).add("Environment", props.envName);
         Tags.of(this).add("Application", "submit");
-        Tags.of(this).add("CostCenter", "@antonycc/oidc");
-        Tags.of(this).add("Owner", "@antonycc/oidc");
-        Tags.of(this).add("Project", "oidc-provider");
+        Tags.of(this).add("CostCenter", "@antonycc/submit.diyaccounting.co.uk");
+        Tags.of(this).add("Owner", "@antonycc/submit.diyaccounting.co.uk");
+        Tags.of(this).add("Project", "@antonycc/submit.diyaccounting.co.uk");
         Tags.of(this).add("DeploymentName", props.deploymentName);
         Tags.of(this).add("Stack", "PublishStack");
         Tags.of(this).add("ManagedBy", "aws-cdk");
 
         // Enhanced cost optimization tags
         Tags.of(this).add("BillingPurpose", "authentication-infrastructure");
-        Tags.of(this).add("ResourceType", "serverless-oidc");
+        Tags.of(this).add("ResourceType", "serverless-web-app");
         Tags.of(this).add("Criticality", "low");
         Tags.of(this).add("DataClassification", "public");
         Tags.of(this).add("BackupRequired", "false");
