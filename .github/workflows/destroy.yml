@@ -132,13 +132,21 @@ jobs:
           ENV_NAME: ${{ env.ENV_NAME }}
           GITHUB_ACTOR: ${{ github.actor }}
 
-      #- name: Destroy EdgeStack
-      #  if: ${{ env.DEPLOYMENT_NAME != 'prod' }}
-      #  run: npx dotenv -e .env.${{ env.ENV_NAME }} -- npx cdk destroy ${DEPLOYMENT_NAME}-EdgeStack --exclusively --force
-      #  env:
-      #    DEPLOYMENT_NAME: ${{ env.DEPLOYMENT_NAME }}
-      #    ENV_NAME: ${{ env.ENV_NAME }}
-      #    GITHUB_ACTOR: ${{ github.actor }}
+      - name: Destroy EdgeStack
+        if: ${{ env.DEPLOYMENT_NAME != 'prod' }}
+        run: npx dotenv -e .env.${{ env.ENV_NAME }} -- npx cdk destroy ${DEPLOYMENT_NAME}-EdgeStack --exclusively --force
+        env:
+          DEPLOYMENT_NAME: ${{ env.DEPLOYMENT_NAME }}
+          ENV_NAME: ${{ env.ENV_NAME }}
+          GITHUB_ACTOR: ${{ github.actor }}
+
+      - name: Destroy AuthStack
+        if: ${{ env.DEPLOYMENT_NAME != 'prod' }}
+        run: npx dotenv -e .env.${{ env.ENV_NAME }} -- npx cdk destroy ${DEPLOYMENT_NAME}-AuthStack --exclusively --force
+        env:
+          DEPLOYMENT_NAME: ${{ env.DEPLOYMENT_NAME }}
+          ENV_NAME: ${{ env.ENV_NAME }}
+          GITHUB_ACTOR: ${{ github.actor }}
 
       - name: Destroy ApplicationStack
         if: ${{ env.DEPLOYMENT_NAME != 'prod' }}
