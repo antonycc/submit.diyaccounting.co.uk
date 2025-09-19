@@ -1,12 +1,6 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import co.uk.diyaccounting.submit.constructs.CognitoAuth;
 import co.uk.diyaccounting.submit.utils.ResourceNameUtils;
-import java.util.AbstractMap;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.regex.Pattern;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import software.amazon.awscdk.CfnOutput;
@@ -17,6 +11,9 @@ import software.amazon.awscdk.services.certificatemanager.Certificate;
 import software.amazon.awscdk.services.certificatemanager.ICertificate;
 import software.amazon.awscdk.services.cognito.AttributeMapping;
 import software.amazon.awscdk.services.cognito.CfnUserPoolIdentityProvider;
+import software.amazon.awscdk.services.cognito.OAuthFlows;
+import software.amazon.awscdk.services.cognito.OAuthScope;
+import software.amazon.awscdk.services.cognito.OAuthSettings;
 import software.amazon.awscdk.services.cognito.ProviderAttribute;
 import software.amazon.awscdk.services.cognito.SignInAliases;
 import software.amazon.awscdk.services.cognito.StandardAttribute;
@@ -38,6 +35,12 @@ import software.amazon.awscdk.services.secretsmanager.ISecret;
 import software.amazon.awscdk.services.secretsmanager.Secret;
 import software.constructs.Construct;
 import software.constructs.IDependable;
+
+import java.util.AbstractMap;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Pattern;
 
 public class IdentityStack extends Stack {
 
@@ -85,9 +88,6 @@ public class IdentityStack extends Stack {
         public String googleClientId;
         public String googleClientSecretArn;
         public String cognitoDomainPrefix;
-        public String cognitoFeaturePlan;
-        public String cognitoEnableLogDelivery;
-        public String logCognitoEventHandlerSource;
 
         public Builder(Construct scope, String id, StackProps props) {
             this.scope = scope;
@@ -158,11 +158,6 @@ public class IdentityStack extends Stack {
             return this;
         }
 
-        public Builder logCognitoEventHandlerSource(String logCognitoEventHandlerSource) {
-            this.logCognitoEventHandlerSource = logCognitoEventHandlerSource;
-            return this;
-        }
-
         public Builder homeUrl(String homeUrl) {
             this.homeUrl = homeUrl;
             return this;
@@ -198,16 +193,6 @@ public class IdentityStack extends Stack {
             return this;
         }
 
-        public Builder cognitoFeaturePlan(String cognitoFeaturePlan) {
-            this.cognitoFeaturePlan = cognitoFeaturePlan;
-            return this;
-        }
-
-        public Builder cognitoEnableLogDelivery(String cognitoEnableLogDelivery) {
-            this.cognitoEnableLogDelivery = cognitoEnableLogDelivery;
-            return this;
-        }
-
         public Builder props(IdentityStackProps p) {
             if (p == null) return this;
             this.env = p.env;
@@ -221,7 +206,6 @@ public class IdentityStack extends Stack {
             this.cloudTrailEventSelectorPrefix = p.cloudTrailEventSelectorPrefix;
             this.xRayEnabled = p.xRayEnabled;
             this.verboseLogging = p.verboseLogging;
-            this.logCognitoEventHandlerSource = p.logCognitoEventHandlerSource;
             this.homeUrl = p.homeUrl;
             this.googleClientId = p.googleClientId;
             this.googleClientSecretArn = p.googleClientSecretArn;
@@ -229,8 +213,6 @@ public class IdentityStack extends Stack {
             this.antonyccBaseUri = p.antonyccBaseUri;
             this.antonyccClientSecretArn = p.antonyccClientSecretArn;
             this.cognitoDomainPrefix = p.cognitoDomainPrefix;
-            this.cognitoFeaturePlan = p.cognitoFeaturePlan;
-            this.cognitoEnableLogDelivery = p.cognitoEnableLogDelivery;
             return this;
         }
 
@@ -442,29 +424,48 @@ public class IdentityStack extends Stack {
                 .build();
         this.identityProviders.put(UserPoolClientIdentityProvider.custom("cognito"), this.antonyccIdentityProvider);
 
-        var cognito = CognitoAuth.Builder.create(this)
-                .userPoolArn(this.userPool.getUserPoolArn())
-                .userPoolClientName(dashedDomainName + "-client")
-                .identityProviders(this.identityProviders)
-                .standardAttributes(standardAttributes)
+        // User Pool Client
+        this.userPoolClient = UserPoolClient.Builder.create(this, "UserPoolClient")
+            .userPool(userPool)
+            .userPoolClientName(dashedDomainName + "-client")
+            .generateSecret(false)
+            .oAuth(OAuthSettings.builder()
+                .flows(OAuthFlows.builder().authorizationCodeGrant(true).build())
+                .scopes(List.of(OAuthScope.EMAIL, OAuthScope.OPENID, OAuthScope.PROFILE))
                 .callbackUrls(List.of(
-                        "https://" + this.domainName + "/",
-                        "https://" + this.domainName + "/auth/loginWithGoogleCallback.html",
-                        "https://" + this.domainName + "/auth/loginWithCognitoCallback.html"))
+                    "https://" + this.domainName + "/",
+                    "https://" + this.domainName + "/auth/loginWithGoogleCallback.html",
+                    "https://" + this.domainName + "/auth/loginWithCognitoCallback.html"))
                 .logoutUrls(List.of("https://" + this.domainName + "/"))
-                .featurePlan(
-                        builder.cognitoFeaturePlan != null && !builder.cognitoFeaturePlan.isBlank()
-                                ? builder.cognitoFeaturePlan
-                                : "ESSENTIALS")
-                .enableLogDelivery(builder.cognitoEnableLogDelivery != null
-                        && !builder.cognitoEnableLogDelivery.isBlank()
-                        && Boolean.parseBoolean(builder.cognitoEnableLogDelivery))
-                .xRayEnabled(xRayEnabled)
-                .accessLogGroupRetentionPeriodDays(accessLogGroupRetentionPeriodDays)
-                .logGroupNamePrefix(dashedDomainName)
-                .lambdaJarPath(builder.logCognitoEventHandlerSource)
-                .build();
-        this.userPoolClient = cognito.userPoolClient;
+                .build())
+            .supportedIdentityProviders(this.identityProviders.keySet().stream().toList())
+            .build();
+        this.identityProviders
+            .values()
+            .forEach(idp -> this.userPoolClient.getNode().addDependency(idp));
+
+        //var cognito = CognitoAuth.Builder.create(this)
+                //.userPoolArn(this.userPool.getUserPoolArn())
+                //.userPoolClientName(dashedDomainName + "-client")
+                //.identityProviders(this.identityProviders)
+                //.standardAttributes(standardAttributes)
+                //.callbackUrls(List.of(
+                //        "https://" + this.domainName + "/",
+                //        "https://" + this.domainName + "/auth/loginWithGoogleCallback.html",
+                //        "https://" + this.domainName + "/auth/loginWithCognitoCallback.html"))
+                //.logoutUrls(List.of("https://" + this.domainName + "/"))
+                //.featurePlan(
+                //        builder.cognitoFeaturePlan != null && !builder.cognitoFeaturePlan.isBlank()
+                //                ? builder.cognitoFeaturePlan
+                //                : "ESSENTIALS")
+                //.enableLogDelivery(builder.cognitoEnableLogDelivery != null
+                //        && !builder.cognitoEnableLogDelivery.isBlank()
+                //        && Boolean.parseBoolean(builder.cognitoEnableLogDelivery))
+                //.xRayEnabled(xRayEnabled)
+                //.accessLogGroupRetentionPeriodDays(accessLogGroupRetentionPeriodDays)
+                //.logGroupNamePrefix(dashedDomainName)
+                //.build();
+        //this.userPoolClient = cognito.userPoolClient;
 
         // Create Cognito User Pool Domain
         this.userPoolDomain = UserPoolDomain.Builder.create(this, "UserPoolDomain")

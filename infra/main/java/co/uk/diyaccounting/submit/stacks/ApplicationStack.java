@@ -2,8 +2,6 @@ package co.uk.diyaccounting.submit.stacks;
 
 import co.uk.diyaccounting.submit.constructs.LambdaUrlOrigin;
 import co.uk.diyaccounting.submit.constructs.LambdaUrlOriginOpts;
-import co.uk.diyaccounting.submit.constructs.LogForwardingBucket;
-import co.uk.diyaccounting.submit.functions.LogS3ObjectEvent;
 import co.uk.diyaccounting.submit.utils.ResourceNameUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -19,6 +17,8 @@ import software.amazon.awscdk.services.lambda.FunctionUrl;
 import software.amazon.awscdk.services.lambda.FunctionUrlAuthType;
 import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.s3.BlockPublicAccess;
+import software.amazon.awscdk.services.s3.Bucket;
+import software.amazon.awscdk.services.s3.BucketEncryption;
 import software.amazon.awscdk.services.s3.IBucket;
 import software.amazon.awscdk.services.s3.ObjectOwnership;
 import software.amazon.awscdk.services.secretsmanager.Secret;
@@ -30,6 +30,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
+
+import static co.uk.diyaccounting.submit.awssdk.S3.createLifecycleRules;
 
 public class ApplicationStack extends Stack {
 
@@ -76,7 +78,7 @@ public class ApplicationStack extends Stack {
         // Build naming using same patterns as WebStack
         String domainName = Builder.buildDomainName(builder.env, builder.subDomainName, builder.hostedZoneName);
         String dashedDomainName =
-                Builder.buildDashedDomainName(builder.env, builder.subDomainName, builder.hostedZoneName);
+            Builder.buildDashedDomainName(builder.env, builder.subDomainName, builder.hostedZoneName);
 
         boolean cloudTrailEnabled = Boolean.parseBoolean(builder.cloudTrailEnabled);
         boolean xRayEnabled = Boolean.parseBoolean(builder.xRayEnabled);
@@ -91,22 +93,16 @@ public class ApplicationStack extends Stack {
 
         var lambdaUrlToOriginsBehaviourMappings = new HashMap<String, BehaviorOptions>();
 
-        boolean hasImageAndRepo = StringUtils.isNotBlank(builder.baseImageTag)
-            && StringUtils.isNotBlank(builder.ecrRepositoryName)
-            && StringUtils.isNotBlank(builder.ecrRepositoryArn)
-            && StringUtils.isNotBlank(builder.lambdaEntry);
-
-        if (hasImageAndRepo) {
-            // Common options for all Lambda URL origins to reduce repetition
-            var lambdaCommonOpts = LambdaUrlOriginOpts.Builder.create()
-                .env(builder.env)
-                .imageDirectory("infra/runtimes")
-                .functionUrlAuthType(functionUrlAuthType)
-                .cloudTrailEnabled(cloudTrailEnabled)
-                .xRayEnabled(xRayEnabled)
-                .verboseLogging(verboseLogging)
-                .baseImageTag(builder.baseImageTag)
-                .build();
+        // Common options for all Lambda URL origins to reduce repetition
+        var lambdaCommonOpts = LambdaUrlOriginOpts.Builder.create()
+            .env(builder.env)
+            .imageDirectory("infra/runtimes")
+            .functionUrlAuthType(functionUrlAuthType)
+            .cloudTrailEnabled(cloudTrailEnabled)
+            .xRayEnabled(xRayEnabled)
+            .verboseLogging(verboseLogging)
+            .baseImageTag(builder.baseImageTag)
+            .build();
 
         // authUrl - HMRC
         var authUrlHmrcLambdaEnv = new HashMap<>(Map.of(
@@ -285,26 +281,21 @@ public class ApplicationStack extends Stack {
             ? builder.receiptsBucketPostfix
             : "receipts";
         String receiptsBucketFullName = "%s-%s".formatted(dashedDomainName, receiptsBucketPostfix);
-        if (StringUtils.isNotBlank(builder.logS3ObjectEventHandlerSource)) {
-            this.receiptsBucket = LogForwardingBucket.Builder.create(
-                    this, "ReceiptsBucket", builder.logS3ObjectEventHandlerSource, LogS3ObjectEvent.class)
-                .bucketName(receiptsBucketFullName)
-                .versioned(true)
-                .blockPublicAccess(BlockPublicAccess.BLOCK_ALL)
-                .objectOwnership(ObjectOwnership.OBJECT_WRITER)
-                .autoDeleteObjects(!s3RetainReceiptsBucket)
-                .functionNamePrefix("%s-receipts-bucket-".formatted(dashedDomainName))
-                .retentionPeriodDays(2555) // 7 years for tax records as per HMRC requirements
-                .cloudTrailEnabled(cloudTrailEnabled)
-                .verboseLogging(verboseLogging)
-                .removalPolicy(s3RetainReceiptsBucket ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY)
-                .build();
-            if (this.logReceiptLambda != null) this.receiptsBucket.grantWrite(this.logReceiptLambda);
-            if (this.myReceiptsLambda != null) this.receiptsBucket.grantRead(this.myReceiptsLambda);
-        }
+        this.receiptsBucket = Bucket.Builder.create(builder.scope, "ReceiptsBucket")
+            .bucketName(receiptsBucketFullName)
+            .versioned(false)
+            .blockPublicAccess(BlockPublicAccess.BLOCK_ALL)
+            .encryption(BucketEncryption.S3_MANAGED)
+            .removalPolicy(s3RetainReceiptsBucket ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY)
+            .autoDeleteObjects(true)
+            .lifecycleRules(createLifecycleRules(2555)) // 7 years for tax records as per HMRC requirements
+            .objectOwnership(ObjectOwnership.OBJECT_WRITER)
+            .build();
+        if (this.logReceiptLambda != null)
+            this.receiptsBucket.grantWrite(this.logReceiptLambda);
+        if (this.myReceiptsLambda != null) this.receiptsBucket.grantRead(this.myReceiptsLambda);
 
         this.additionalOriginsBehaviourMappings = lambdaUrlToOriginsBehaviourMappings;
-        }
 
         if (this.authUrlHmrcLambda != null) {
             CfnOutput.Builder.create(this, "AuthUrlHmrcLambdaArn")
@@ -357,8 +348,6 @@ public class ApplicationStack extends Stack {
         }
 
 
-
-
         logger.info("ApplicationStack created successfully for {}", dashedDomainName);
     }
 
@@ -392,14 +381,14 @@ public class ApplicationStack extends Stack {
         public String optionalTestS3AccessKey;
         public String optionalTestS3SecretKey;
         public String receiptsBucketPostfix;
-        public String logS3ObjectEventHandlerSource;
         public String s3RetainReceiptsBucket;
         public String bundleExpiryDate;
         public String bundleUserLimit;
         public String cognitoClientId;
         public String cognitoBaseUri;
 
-        private Builder() {}
+        private Builder() {
+        }
 
         public static Builder create(Construct scope, String id) {
             Builder builder = new Builder();
@@ -460,7 +449,6 @@ public class ApplicationStack extends Stack {
             this.optionalTestS3AccessKey = p.optionalTestS3AccessKey;
             this.optionalTestS3SecretKey = p.optionalTestS3SecretKey;
             this.receiptsBucketPostfix = p.receiptsBucketPostfix;
-            this.logS3ObjectEventHandlerSource = p.logS3ObjectEventHandlerSource;
             this.s3RetainReceiptsBucket = p.s3RetainReceiptsBucket;
             return this;
         }
@@ -472,8 +460,8 @@ public class ApplicationStack extends Stack {
         // Naming utility methods following WebStack patterns
         public static String buildDomainName(String env, String subDomainName, String hostedZoneName) {
             return env.equals("prod")
-                    ? Builder.buildProdDomainName(subDomainName, hostedZoneName)
-                    : Builder.buildNonProdDomainName(env, subDomainName, hostedZoneName);
+                ? Builder.buildProdDomainName(subDomainName, hostedZoneName)
+                : Builder.buildNonProdDomainName(env, subDomainName, hostedZoneName);
         }
 
         public static String buildProdDomainName(String subDomainName, String hostedZoneName) {
@@ -486,7 +474,7 @@ public class ApplicationStack extends Stack {
 
         public static String buildDashedDomainName(String env, String subDomainName, String hostedZoneName) {
             return ResourceNameUtils.convertDotSeparatedToDashSeparated(
-                    "%s.%s.%s".formatted(env, subDomainName, hostedZoneName), domainNameMappings);
+                "%s.%s.%s".formatted(env, subDomainName, hostedZoneName), domainNameMappings);
         }
     }
 

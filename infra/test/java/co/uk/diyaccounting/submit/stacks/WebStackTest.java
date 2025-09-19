@@ -37,8 +37,6 @@ public class WebStackTest {
                 .s3RetainOriginBucket("false")
                 .s3RetainReceiptsBucket("false")
                 .cloudTrailEventSelectorPrefix("none")
-                .logS3ObjectEventHandlerSource("none")
-                .logGzippedS3ObjectEventHandlerSource("none")
                 .docRootPath("web/public/")
                 .defaultDocumentAtOrigin("errors/404-error-origin.html")
                 .error404NotFoundAtDistribution("errors/404-error-distribution.html")

@@ -545,8 +545,6 @@ jobs:
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
           BASE_IMAGE_TAG: "${{ env.BASE_IMAGE_TAG_PREFIX }}:${{ github.sha }}"
           GITHUB_ACTOR: ${{ github.actor }}
-          LOG_S3_OBJECT_EVENT_HANDLER_SOURCE: ${{ steps.jar-path.outputs.jarFilepath }}
-          LOG_GZIPPED_S3_OBJECT_EVENT_HANDLER_SOURCE: ${{ steps.jar-path.outputs.jarFilepath }}
           CERTIFICATE_ARN: ${{ vars.AWS_CERTIFICATE_ARN }}
           CLOUD_TRAIL_ENABLED: ${{ vars.AWS_CLOUD_TRAIL_ENABLED }}
           X_RAY_ENABLED: ${{ vars.AWS_X_RAY_ENABLED }}
@@ -1104,8 +1102,6 @@ jobs:
           ENV_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
           GITHUB_ACTOR: ${{ github.actor }}
-          LOG_S3_OBJECT_EVENT_HANDLER_SOURCE: ${{ steps.jar-path.outputs.jarFilepath }}
-          LOG_GZIPPED_S3_OBJECT_EVENT_HANDLER_SOURCE: ${{ steps.jar-path.outputs.jarFilepath }}
           CERTIFICATE_ARN: ${{ vars.AWS_CERTIFICATE_ARN }}
           CLOUD_TRAIL_ENABLED: ${{ vars.AWS_CLOUD_TRAIL_ENABLED }}
           X_RAY_ENABLED: ${{ vars.AWS_X_RAY_ENABLED }}

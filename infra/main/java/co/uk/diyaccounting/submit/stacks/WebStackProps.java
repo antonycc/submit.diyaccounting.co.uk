@@ -16,8 +16,6 @@ public class WebStackProps {
     public final String s3RetainOriginBucket;
     public final String s3RetainReceiptsBucket;
     public final String cloudTrailEventSelectorPrefix;
-    public final String logS3ObjectEventHandlerSource;
-    public final String logGzippedS3ObjectEventHandlerSource;
     public final String docRootPath;
     public final String defaultDocumentAtOrigin;
     public final String error404NotFoundAtDistribution;
@@ -40,9 +38,6 @@ public class WebStackProps {
     public final String cognitoDomainPrefix;
     public final String bundleExpiryDate;
     public final String bundleUserLimit;
-    public final String cognitoFeaturePlan;
-    public final String cognitoEnableLogDelivery;
-    public final String logCognitoEventHandlerSource;
     public final String antonyccClientId;
     public final String antonyccBaseUri;
     public final String cognitoClientId;
@@ -67,8 +62,6 @@ public class WebStackProps {
         this.s3RetainOriginBucket = b.s3RetainOriginBucket;
         this.s3RetainReceiptsBucket = b.s3RetainReceiptsBucket;
         this.cloudTrailEventSelectorPrefix = b.cloudTrailEventSelectorPrefix;
-        this.logS3ObjectEventHandlerSource = b.logS3ObjectEventHandlerSource;
-        this.logGzippedS3ObjectEventHandlerSource = b.logGzippedS3ObjectEventHandlerSource;
         this.docRootPath = b.docRootPath;
         this.defaultDocumentAtOrigin = b.defaultDocumentAtOrigin;
         this.error404NotFoundAtDistribution = b.error404NotFoundAtDistribution;
@@ -91,9 +84,6 @@ public class WebStackProps {
         this.cognitoDomainPrefix = b.cognitoDomainPrefix;
         this.bundleExpiryDate = b.bundleExpiryDate;
         this.bundleUserLimit = b.bundleUserLimit;
-        this.cognitoFeaturePlan = b.cognitoFeaturePlan;
-        this.cognitoEnableLogDelivery = b.cognitoEnableLogDelivery;
-        this.logCognitoEventHandlerSource = b.logCognitoEventHandlerSource;
         this.antonyccClientId = b.antonyccClientId;
         this.antonyccBaseUri = b.antonyccBaseUri;
         this.cognitoClientId = b.cognitoClientId;
@@ -123,8 +113,6 @@ public class WebStackProps {
                 s3RetainOriginBucket,
                 s3RetainReceiptsBucket,
                 cloudTrailEventSelectorPrefix,
-                logS3ObjectEventHandlerSource,
-                logGzippedS3ObjectEventHandlerSource,
                 docRootPath,
                 defaultDocumentAtOrigin,
                 error404NotFoundAtDistribution,
@@ -147,9 +135,6 @@ public class WebStackProps {
                 cognitoDomainPrefix,
                 bundleExpiryDate,
                 bundleUserLimit,
-                cognitoFeaturePlan,
-                cognitoEnableLogDelivery,
-                logCognitoEventHandlerSource,
                 antonyccClientId,
                 antonyccBaseUri,
                 cognitoClientId,
@@ -230,16 +215,6 @@ public class WebStackProps {
 
         public Builder cloudTrailEventSelectorPrefix(String v) {
             this.cloudTrailEventSelectorPrefix = v;
-            return this;
-        }
-
-        public Builder logS3ObjectEventHandlerSource(String v) {
-            this.logS3ObjectEventHandlerSource = v;
-            return this;
-        }
-
-        public Builder logGzippedS3ObjectEventHandlerSource(String v) {
-            this.logGzippedS3ObjectEventHandlerSource = v;
             return this;
         }
 
@@ -350,21 +325,6 @@ public class WebStackProps {
 
         public Builder bundleUserLimit(String v) {
             this.bundleUserLimit = v;
-            return this;
-        }
-
-        public Builder cognitoFeaturePlan(String v) {
-            this.cognitoFeaturePlan = v;
-            return this;
-        }
-
-        public Builder cognitoEnableLogDelivery(String v) {
-            this.cognitoEnableLogDelivery = v;
-            return this;
-        }
-
-        public Builder logCognitoEventHandlerSource(String v) {
-            this.logCognitoEventHandlerSource = v;
             return this;
         }
 

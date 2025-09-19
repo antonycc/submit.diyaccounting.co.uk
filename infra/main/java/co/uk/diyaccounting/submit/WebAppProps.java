@@ -20,8 +20,6 @@ public class WebAppProps {
     public String s3RetainOriginBucket;
     public String s3RetainReceiptsBucket;
     public String cloudTrailEventSelectorPrefix;
-    public String logS3ObjectEventHandlerSource;
-    public String logGzippedS3ObjectEventHandlerSource;
     public String docRootPath;
     public String defaultDocumentAtOrigin;
     public String error404NotFoundAtDistribution;
@@ -47,9 +45,6 @@ public class WebAppProps {
     public String bundleExpiryDate;
     public String bundleUserLimit;
     public String baseImageTag;
-    public String cognitoFeaturePlan;
-    public String cognitoEnableLogDelivery;
-    public String logCognitoEventHandlerSource;
     public String antonyccClientId;
     public String antonyccBaseUri;
     public String antonyccClientSecretArn;

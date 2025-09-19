@@ -1,10 +1,11 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import co.uk.diyaccounting.submit.constructs.BucketOrigin;
 import co.uk.diyaccounting.submit.utils.ResourceNameUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import software.amazon.awscdk.CfnOutput;
+import software.amazon.awscdk.Duration;
+import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.services.certificatemanager.ICertificate;
@@ -16,13 +17,19 @@ import software.amazon.awscdk.services.cloudfront.OriginAccessIdentity;
 import software.amazon.awscdk.services.cloudfront.OriginRequestPolicy;
 import software.amazon.awscdk.services.cloudfront.ResponseHeadersPolicy;
 import software.amazon.awscdk.services.cloudfront.ViewerProtocolPolicy;
+import software.amazon.awscdk.services.cloudfront.origins.S3BucketOrigin;
+import software.amazon.awscdk.services.cloudfront.origins.S3BucketOriginWithOAIProps;
 import software.amazon.awscdk.services.route53.ARecord;
 import software.amazon.awscdk.services.route53.AaaaRecord;
 import software.amazon.awscdk.services.route53.HostedZone;
 import software.amazon.awscdk.services.route53.HostedZoneAttributes;
 import software.amazon.awscdk.services.route53.IHostedZone;
+import software.amazon.awscdk.services.s3.BlockPublicAccess;
 import software.amazon.awscdk.services.s3.Bucket;
+import software.amazon.awscdk.services.s3.BucketEncryption;
 import software.amazon.awscdk.services.s3.IBucket;
+import software.amazon.awscdk.services.s3.LifecycleRule;
+import software.amazon.awscdk.services.s3.ObjectOwnership;
 import software.amazon.awscdk.services.s3.deployment.BucketDeployment;
 import software.amazon.awscdk.services.s3.deployment.ISource;
 import software.amazon.awscdk.services.secretsmanager.ISecret;
@@ -81,8 +88,6 @@ public class WebStack extends Stack {
         public String cloudTrailEventSelectorPrefix;
         public String xRayEnabled;
         public String verboseLogging;
-        public String logS3ObjectEventHandlerSource;
-        public String logGzippedS3ObjectEventHandlerSource;
         public String docRootPath;
         public String defaultDocumentAtOrigin;
         public String error404NotFoundAtDistribution;
@@ -113,9 +118,6 @@ public class WebStack extends Stack {
         public String bundleExpiryDate;
         public String bundleUserLimit;
         public String baseImageTag;
-        public String cognitoFeaturePlan;
-        public String cognitoEnableLogDelivery;
-        public String logCognitoEventHandlerSource;
         public String ecrRepositoryArn;
         public String ecrRepositoryName;
 
@@ -205,21 +207,6 @@ public class WebStack extends Stack {
             return this;
         }
 
-        public Builder logS3ObjectEventHandlerSource(String logS3ObjectEventHandlerSource) {
-            this.logS3ObjectEventHandlerSource = logS3ObjectEventHandlerSource;
-            return this;
-        }
-
-        public Builder logGzippedS3ObjectEventHandlerSource(String logGzippedS3ObjectEventHandlerSource) {
-            this.logGzippedS3ObjectEventHandlerSource = logGzippedS3ObjectEventHandlerSource;
-            return this;
-        }
-
-        public Builder logCognitoEventHandlerSource(String logCognitoEventHandlerSource) {
-            this.logCognitoEventHandlerSource = logCognitoEventHandlerSource;
-            return this;
-        }
-
         public Builder props(WebStackProps p) {
             if (p == null) return this;
             this.env = p.env;
@@ -232,7 +219,6 @@ public class WebStack extends Stack {
             this.accessLogGroupRetentionPeriodDays = p.accessLogGroupRetentionPeriodDays;
             this.s3UseExistingBucket = p.s3UseExistingBucket;
             this.s3RetainOriginBucket = p.s3RetainOriginBucket;
-            this.logS3ObjectEventHandlerSource = p.logS3ObjectEventHandlerSource;
             return this;
         }
 
@@ -386,16 +372,6 @@ public class WebStack extends Stack {
             return this;
         }
 
-        public Builder cognitoFeaturePlan(String cognitoFeaturePlan) {
-            this.cognitoFeaturePlan = cognitoFeaturePlan;
-            return this;
-        }
-
-        public Builder cognitoEnableLogDelivery(String cognitoEnableLogDelivery) {
-            this.cognitoEnableLogDelivery = cognitoEnableLogDelivery;
-            return this;
-        }
-
         public Builder ecrRepositoryArn(String ecrRepositoryArn) {
             this.ecrRepositoryArn = ecrRepositoryArn;
             return this;
@@ -513,31 +489,73 @@ public class WebStack extends Stack {
         boolean verboseLogging = builder.verboseLogging == null || Boolean.parseBoolean(builder.verboseLogging);
 
         // Origin bucket for the CloudFront distribution
-        BucketOrigin bucketOrigin;
+        //BucketOrigin bucketOrigin;
         //if (s3UseExistingBucket) {
         //    bucketOrigin = BucketOrigin.Builder.create(this, "Origin")
         //            .bucketName(originBucketName)
         //            .useExistingBucket(true)
         //            .build();
         //} else {
-            bucketOrigin = BucketOrigin.Builder.create(this, "Origin")
-                    .bucketName(originBucketName)
-                    .originAccessLogBucketName(originAccessLogBucketName)
-                    .functionNamePrefix("%s-origin-access-".formatted(dashedDomainName))
-                    .logS3ObjectEventHandlerSource(builder.logS3ObjectEventHandlerSource)
-                    .accessLogGroupRetentionPeriodDays(accessLogGroupRetentionPeriodDays)
-                    .retainBucket(s3RetainOriginBucket)
-                    .verboseLogging(verboseLogging)
-                    .useExistingBucket(false)
-                    .build();
+            //bucketOrigin = BucketOrigin.Builder.create(this, "Origin")
+                    //.bucketName(originBucketName)
+                    //.originAccessLogBucketName(originAccessLogBucketName)
+                    //.functionNamePrefix("%s-origin-access-".formatted(dashedDomainName))
+                    //.accessLogGroupRetentionPeriodDays(accessLogGroupRetentionPeriodDays)
+                    //.retainBucket(s3RetainOriginBucket)
+                    //.verboseLogging(verboseLogging)
+                    //.useExistingBucket(false)
+                    //.build();
         //}
 
-        this.originBucket = bucketOrigin.originBucket;
-        this.originAccessLogBucket = bucketOrigin.originAccessLogBucket;
-        this.originIdentity = bucketOrigin.originIdentity;
-        this.origin = bucketOrigin.origin;
+        var idPrefix = "%s-origin-access-".formatted(dashedDomainName);
+        logger.info("Setting expiration period to %d days for %s".formatted(accessLogGroupRetentionPeriodDays, idPrefix));
+        this.originAccessLogBucket = Bucket.Builder.create(scope, "%sLogBucket".formatted(idPrefix))
+            .bucketName(originAccessLogBucketName)
+            .objectOwnership(ObjectOwnership.OBJECT_WRITER)
+            .versioned(false)
+            .blockPublicAccess(BlockPublicAccess.BLOCK_ALL)
+            .encryption(BucketEncryption.S3_MANAGED)
+            .removalPolicy(RemovalPolicy.DESTROY)
+            .autoDeleteObjects(true)
+            .lifecycleRules(List.of(LifecycleRule.builder()
+                .id("%sLogsLifecycleRule".formatted(idPrefix))
+                .enabled(true)
+                .expiration(Duration.days(accessLogGroupRetentionPeriodDays))
+                .build())
+            )
+            .build();
+        logger.info("Created log bucket %s".formatted(this.originAccessLogBucket));
 
-        final BehaviorOptions s3BucketOriginBehaviour = BehaviorOptions.builder()
+        // Create the origin bucket
+        this.originBucket = Bucket.Builder.create(builder.scope, "OriginBucket")
+            .bucketName(originBucketName)
+            .versioned(false)
+            .blockPublicAccess(BlockPublicAccess.BLOCK_ALL)
+            .encryption(BucketEncryption.S3_MANAGED)
+            .removalPolicy(RemovalPolicy.DESTROY)
+            .autoDeleteObjects(true)
+            .serverAccessLogsBucket(this.originAccessLogBucket)
+            .build();
+        //}
+
+        // Create origin access identity
+        this.originIdentity = OriginAccessIdentity.Builder.create(builder.scope, "OriginAccessIdentity")
+            .comment("Identity created for access to the web website bucket via the CloudFront" + " distribution")
+            .build();
+
+        // Grant read access to the origin identity
+        originBucket.grantRead(this.originIdentity);
+
+        // Create the S3 bucket origin
+        this.origin = S3BucketOrigin.withOriginAccessIdentity(
+            this.originBucket,
+            S3BucketOriginWithOAIProps.builder()
+                .originAccessIdentity(this.originIdentity)
+                .build());
+
+        logger.info("Created BucketOrigin with bucket: {}", this.originBucket.getBucketName());
+
+        this.behaviorOptions = BehaviorOptions.builder()
                 .origin(this.origin)
                 .allowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
                 .originRequestPolicy(OriginRequestPolicy.CORS_S3_ORIGIN)
@@ -545,7 +563,6 @@ public class WebStack extends Stack {
                 .responseHeadersPolicy(ResponseHeadersPolicy.CORS_ALLOW_ALL_ORIGINS_WITH_PREFLIGHT_AND_SECURITY_HEADERS)
                 .compress(true)
                 .build();
-        this.behaviorOptions = s3BucketOriginBehaviour;
 
         /*
         IUserPool userPool = UserPool.fromUserPoolArn(this, "UserPool", builder.userPoolArn);
@@ -567,7 +584,6 @@ public class WebStack extends Stack {
                 .logRetentionDays(accessLogGroupRetentionPeriodDays)
                 .cloudTrailEnabled(cloudTrailEnabled)
                 .logIncludesCookies(verboseLogging)
-                .logHandlerSource(builder.logGzippedS3ObjectEventHandlerSource)
                 .build();
         this.distributionAccessLogBucket = distWithLogging.logBucket;
         this.distribution = distWithLogging.distribution;

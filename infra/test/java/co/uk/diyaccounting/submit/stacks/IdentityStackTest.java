@@ -61,10 +61,6 @@ public class IdentityStackTest {
                 .antonyccBaseUri("https://test")
                 // Optional/feature flags for Cognito
                 .cognitoDomainPrefix("auth")
-                .cognitoFeaturePlan("ESSENTIALS")
-                .cognitoEnableLogDelivery("false")
-                // No actual lambda jar in unit tests
-                .logCognitoEventHandlerSource("none")
                 .build();
     }
 }

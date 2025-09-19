@@ -431,8 +431,6 @@ jobs:
         env:
           GITHUB_ACTOR: ${{ github.actor }}
           ENV_NAME: ${{ inputs.environment || 'prod' }}
-          LOG_S3_OBJECT_EVENT_HANDLER_SOURCE: ${{ steps.jar-path.outputs.jarFilepath }}
-          LOG_GZIPPED_S3_OBJECT_EVENT_HANDLER_SOURCE: ${{ steps.jar-path.outputs.jarFilepath }}
           CERTIFICATE_ARN: ${{ vars.AWS_CERTIFICATE_ARN }}
           CLOUD_TRAIL_ENABLED: ${{ vars.AWS_CLOUD_TRAIL_ENABLED }}
           X_RAY_ENABLED: ${{ vars.AWS_X_RAY_ENABLED }}

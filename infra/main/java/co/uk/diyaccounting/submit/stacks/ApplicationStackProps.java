@@ -21,7 +21,6 @@ public class ApplicationStackProps {
     public final String optionalTestS3AccessKey;
     public final String optionalTestS3SecretKey;
     public final String receiptsBucketPostfix;
-    public final String logS3ObjectEventHandlerSource;
     public final String s3RetainReceiptsBucket;
 
     private ApplicationStackProps(Builder b) {
@@ -45,7 +44,6 @@ public class ApplicationStackProps {
         this.optionalTestS3AccessKey = b.optionalTestS3AccessKey;
         this.optionalTestS3SecretKey = b.optionalTestS3SecretKey;
         this.receiptsBucketPostfix = b.receiptsBucketPostfix;
-        this.logS3ObjectEventHandlerSource = b.logS3ObjectEventHandlerSource;
         this.s3RetainReceiptsBucket = b.s3RetainReceiptsBucket;
     }
 
@@ -74,7 +72,6 @@ public class ApplicationStackProps {
         private String optionalTestS3AccessKey;
         private String optionalTestS3SecretKey;
         private String receiptsBucketPostfix;
-        private String logS3ObjectEventHandlerSource;
         private String s3RetainReceiptsBucket;
 
         public Builder env(String v) {
@@ -174,11 +171,6 @@ public class ApplicationStackProps {
 
         public Builder receiptsBucketPostfix(String v) {
             this.receiptsBucketPostfix = v;
-            return this;
-        }
-
-        public Builder logS3ObjectEventHandlerSource(String v) {
-            this.logS3ObjectEventHandlerSource = v;
             return this;
         }
 

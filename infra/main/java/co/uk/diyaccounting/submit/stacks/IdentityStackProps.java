@@ -12,7 +12,6 @@ public class IdentityStackProps {
     public final String cloudTrailEventSelectorPrefix;
     public final String xRayEnabled;
     public final String verboseLogging;
-    public final String logCognitoEventHandlerSource;
     public final String homeUrl;
     public final String antonyccClientId;
     public final String antonyccBaseUri;
@@ -35,7 +34,6 @@ public class IdentityStackProps {
         this.cloudTrailEventSelectorPrefix = b.cloudTrailEventSelectorPrefix;
         this.xRayEnabled = b.xRayEnabled;
         this.verboseLogging = b.verboseLogging;
-        this.logCognitoEventHandlerSource = b.logCognitoEventHandlerSource;
         this.homeUrl = b.homeUrl;
         this.antonyccClientId = b.antonyccClientId;
         this.antonyccBaseUri = b.antonyccBaseUri;
@@ -63,7 +61,6 @@ public class IdentityStackProps {
                 cloudTrailEventSelectorPrefix,
                 xRayEnabled,
                 verboseLogging,
-                logCognitoEventHandlerSource,
                 homeUrl,
                 antonyccClientId,
                 antonyccBaseUri,
@@ -129,11 +126,6 @@ public class IdentityStackProps {
             return this;
         }
 
-        public Builder logCognitoEventHandlerSource(String v) {
-            this.logCognitoEventHandlerSource = v;
-            return this;
-        }
-
         public Builder homeUrl(String v) {
             this.homeUrl = v;
             return this;
@@ -166,16 +158,6 @@ public class IdentityStackProps {
 
         public Builder cognitoDomainPrefix(String v) {
             this.cognitoDomainPrefix = v;
-            return this;
-        }
-
-        public Builder cognitoFeaturePlan(String v) {
-            this.cognitoFeaturePlan = v;
-            return this;
-        }
-
-        public Builder cognitoEnableLogDelivery(String v) {
-            this.cognitoEnableLogDelivery = v;
             return this;
         }
 

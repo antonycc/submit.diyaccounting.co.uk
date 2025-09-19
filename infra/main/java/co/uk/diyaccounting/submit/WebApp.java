@@ -90,22 +90,6 @@ public class WebApp {
                         .build())
                 .build();
 
-        // Create the ApplicationStack
-        String applicationStackId = "%s-ApplicationStack".formatted(deploymentName);
-        System.out.printf("Synthesizing stack %s for deployment %s to environment %s\n", applicationStackId, deploymentName, envName);
-        ApplicationStack applicationStack = ApplicationStack.Builder.create(app, applicationStackId)
-                .props(co.uk.diyaccounting.submit.stacks.ApplicationStackProps.builder()
-                        .env(envName)
-                        .hostedZoneName(envOr("HOSTED_ZONE_NAME", appProps.hostedZoneName))
-                        .subDomainName(envOr("SUB_DOMAIN_NAME", appProps.subDomainName))
-                        .cloudTrailEnabled(envOr("CLOUD_TRAIL_ENABLED", appProps.cloudTrailEnabled))
-                        .xRayEnabled(envOr("X_RAY_ENABLED", appProps.xRayEnabled))
-                        .baseImageTag(envOr("BASE_IMAGE_TAG", appProps.baseImageTag))
-                        .ecrRepositoryArn(devStack.ecrRepository.getRepositoryArn())
-                        .ecrRepositoryName(devStack.ecrRepository.getRepositoryName())
-                        .build())
-                .build();
-
         // Create WebStack with resources used in running the application
         String webStackId = "%s-WebStack".formatted(deploymentName);
         System.out.printf("Synthesizing stack %s for deployment %s to environment %s\n", webStackId, deploymentName, envName);
@@ -121,8 +105,6 @@ public class WebApp {
                         .accessLogGroupRetentionPeriodDays(appProps.accessLogGroupRetentionPeriodDays)
                         .s3UseExistingBucket(appProps.s3UseExistingBucket)
                         .s3RetainOriginBucket(appProps.s3RetainOriginBucket)
-                        .logS3ObjectEventHandlerSource(
-                                envOr("LOG_S3_OBJECT_EVENT_HANDLER_SOURCE", appProps.logS3ObjectEventHandlerSource))
                         .build())
                 // .trail(observabilityStack.trail)
                 .build();
@@ -156,6 +138,32 @@ public class WebApp {
         authStack.addDependency(devStack);
         authStack.addDependency(webStack);
         authStack.addDependency(identityStack);
+
+        // Create the ApplicationStack
+        String applicationStackId = "%s-ApplicationStack".formatted(deploymentName);
+        System.out.printf("Synthesizing stack %s for deployment %s to environment %s\n", applicationStackId, deploymentName, envName);
+        ApplicationStack applicationStack = ApplicationStack.Builder.create(app, applicationStackId)
+            .props(co.uk.diyaccounting.submit.stacks.ApplicationStackProps.builder()
+                .env(envName)
+                .hostedZoneName(envOr("HOSTED_ZONE_NAME", appProps.hostedZoneName))
+                .subDomainName(envOr("SUB_DOMAIN_NAME", appProps.subDomainName))
+                .cloudTrailEnabled(envOr("CLOUD_TRAIL_ENABLED", appProps.cloudTrailEnabled))
+                .xRayEnabled(envOr("X_RAY_ENABLED", appProps.xRayEnabled))
+                .baseImageTag(envOr("BASE_IMAGE_TAG", appProps.baseImageTag))
+                .ecrRepositoryArn(devStack.ecrRepository.getRepositoryArn())
+                .ecrRepositoryName(devStack.ecrRepository.getRepositoryName())
+                .homeUrl(envOr("HOME_URL", webStack.baseUrl))
+                .hmrcBaseUri(envOr("HMRC_BASE_URI", appProps.hmrcBaseUri))
+                .hmrcClientId(envOr("DIY_SUBMIT_HMRC_CLIENT_ID", appProps.hmrcClientId))
+                //.hmrcClientSecretArn(
+                //.cognitoClientId(identityStack.userPoolClient.getUserPoolClientId())
+                //.cognitoBaseUri(identityStack.userPoolDomain.getDomainName())
+                .optionalTestAccessToken(envOr("OPTIONAL_TEST_ACCESS_TOKEN", appProps.optionalTestAccessToken))
+                .build())
+            .build();
+        applicationStack.addDependency(devStack);
+        applicationStack.addDependency(webStack);
+        applicationStack.addDependency(identityStack);
 
         // Create the Edge stack (CloudFront, Route53)
         String edgeStackId = "%s-EdgeStack".formatted(deploymentName);
