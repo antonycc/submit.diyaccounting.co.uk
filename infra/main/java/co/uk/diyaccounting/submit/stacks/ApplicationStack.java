@@ -11,7 +11,6 @@ import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.services.cloudfront.AllowedMethods;
-import software.amazon.awscdk.services.cloudfront.BehaviorOptions;
 import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.lambda.FunctionUrl;
 import software.amazon.awscdk.services.lambda.FunctionUrlAuthType;
@@ -63,7 +62,7 @@ public class ApplicationStack extends Stack {
     public FunctionUrl myReceiptsLambdaUrl;
     public LogGroup myReceiptsLambdaLogGroup;
     public IBucket receiptsBucket;
-    public Map<String, BehaviorOptions> additionalOriginsBehaviourMappings;
+    public Map<String, String> additionalOriginsBehaviourMappings;
 
 
     public ApplicationStack(Construct scope, String id, ApplicationStack.Builder builder) {
@@ -91,7 +90,8 @@ public class ApplicationStack extends Stack {
             ? FunctionUrlAuthType.AWS_IAM
             : FunctionUrlAuthType.NONE;
 
-        var lambdaUrlToOriginsBehaviourMappings = new HashMap<String, BehaviorOptions>();
+        //var lambdaUrlToOriginsBehaviourMappings = new HashMap<String, BehaviorOptions>();
+        var lambdaUrlToOriginsBehaviourMappings = new HashMap<String, String>();
 
         // Common options for all Lambda URL origins to reduce repetition
         var lambdaCommonOpts = LambdaUrlOriginOpts.Builder.create()
@@ -109,7 +109,6 @@ public class ApplicationStack extends Stack {
             "DIY_SUBMIT_HOME_URL", builder.homeUrl,
             "DIY_SUBMIT_HMRC_BASE_URI", builder.hmrcBaseUri,
             "DIY_SUBMIT_HMRC_CLIENT_ID", builder.hmrcClientId));
-
         var authUrlHmrcLambdaUrlOrigin = LambdaUrlOrigin.Builder.create(this, "AuthUrlHmrc")
             .imageFilename("authUrlHmrc.Dockerfile")
             .baseImageTag(builder.baseImageTag)
@@ -126,7 +125,7 @@ public class ApplicationStack extends Stack {
         this.authUrlHmrcLambdaUrl = authUrlHmrcLambdaUrlOrigin.functionUrl;
         this.authUrlHmrcLambdaLogGroup = authUrlHmrcLambdaUrlOrigin.logGroup;
         lambdaUrlToOriginsBehaviourMappings.put(
-            "/api/hmrc/auth-url" + "*", authUrlHmrcLambdaUrlOrigin.behaviorOptions);
+            "/api/hmrc/auth-url" + "*", authUrlHmrcLambdaUrlOrigin.lambdaUrlHost);
 
         // exchangeToken - HMRC
         Map<String, String> exchangeHmrcEnvBase = new HashMap<>(Map.of(
@@ -157,7 +156,7 @@ public class ApplicationStack extends Stack {
         this.exchangeHmrcTokenLambdaUrl = exchangeHmrcTokenLambdaUrlOrigin.functionUrl;
         this.exchangeHmrcTokenLambdaLogGroup = exchangeHmrcTokenLambdaUrlOrigin.logGroup;
         lambdaUrlToOriginsBehaviourMappings.put(
-            "/api/hmrc/exchange-token" + "*", exchangeHmrcTokenLambdaUrlOrigin.behaviorOptions);
+            "/api/hmrc/exchange-token" + "*", exchangeHmrcTokenLambdaUrlOrigin.lambdaUrlHost);
 
         // submitVat
         var submitVatLambdaEnv = new HashMap<>(Map.of(
@@ -179,7 +178,7 @@ public class ApplicationStack extends Stack {
         this.submitVatLambdaUrl = submitVatLambdaUrlOrigin.functionUrl;
         this.submitVatLambdaLogGroup = submitVatLambdaUrlOrigin.logGroup;
         lambdaUrlToOriginsBehaviourMappings.put(
-            "/api/submit-vat" + "*", submitVatLambdaUrlOrigin.behaviorOptions);
+            "/api/submit-vat" + "*", submitVatLambdaUrlOrigin.lambdaUrlHost);
 
         var logReceiptLambdaEnv = new HashMap<>(Map.of(
             "DIY_SUBMIT_HOME_URL", builder.homeUrl,
@@ -210,7 +209,7 @@ public class ApplicationStack extends Stack {
         this.logReceiptLambdaUrl = logReceiptLambdaUrlOrigin.functionUrl;
         this.logReceiptLambdaLogGroup = logReceiptLambdaUrlOrigin.logGroup;
         lambdaUrlToOriginsBehaviourMappings.put(
-            "/api/log-receipt" + "*", logReceiptLambdaUrlOrigin.behaviorOptions);
+            "/api/log-receipt" + "*", logReceiptLambdaUrlOrigin.lambdaUrlHost);
 
         // Create Bundle Management Lambda
         // Catalog Lambda
@@ -231,7 +230,7 @@ public class ApplicationStack extends Stack {
         this.catalogLambdaUrl = catalogLambdaUrlOrigin.functionUrl;
         this.catalogLambdaLogGroup = catalogLambdaUrlOrigin.logGroup;
         lambdaUrlToOriginsBehaviourMappings.put(
-            "/api/catalog" + "*", catalogLambdaUrlOrigin.behaviorOptions);
+            "/api/catalog" + "*", catalogLambdaUrlOrigin.lambdaUrlHost);
 
         // My Bundles Lambda
         var myBundlesLambdaEnv = new HashMap<>(Map.of("DIY_SUBMIT_HOME_URL", builder.homeUrl));
@@ -251,7 +250,7 @@ public class ApplicationStack extends Stack {
         this.myBundlesLambdaUrl = myBundlesLambdaUrlOrigin.functionUrl;
         this.myBundlesLambdaLogGroup = myBundlesLambdaUrlOrigin.logGroup;
         lambdaUrlToOriginsBehaviourMappings.put(
-            "/api/my-bundles" + "*", myBundlesLambdaUrlOrigin.behaviorOptions);
+            "/api/my-bundles" + "*", myBundlesLambdaUrlOrigin.lambdaUrlHost);
 
         // myReceipts Lambda
         var myReceiptsLambdaEnv = new HashMap<>(Map.of(
@@ -272,8 +271,10 @@ public class ApplicationStack extends Stack {
         this.myReceiptsLambda = myReceiptsLambdaUrlOrigin.lambda;
         this.myReceiptsLambdaUrl = myReceiptsLambdaUrlOrigin.functionUrl;
         this.myReceiptsLambdaLogGroup = myReceiptsLambdaUrlOrigin.logGroup;
+        //lambdaUrlToOriginsBehaviourMappings.put(
+        //    "/api/my-receipts" + "*", myReceiptsLambdaUrlOrigin.behaviorOptions);
         lambdaUrlToOriginsBehaviourMappings.put(
-            "/api/my-receipts" + "*", myReceiptsLambdaUrlOrigin.behaviorOptions);
+            "/api/my-receipts" + "*", myReceiptsLambdaUrlOrigin.lambdaUrlHost);
 
         // Create receipts bucket for storing VAT submission receipts
         boolean s3RetainReceiptsBucket = builder.s3RetainReceiptsBucket != null

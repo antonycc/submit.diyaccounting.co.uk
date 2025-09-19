@@ -16,9 +16,13 @@ import software.amazon.awscdk.services.cloudfront.IOrigin;
 import software.amazon.awscdk.services.cloudfront.OriginAccessIdentity;
 import software.amazon.awscdk.services.cloudfront.OriginRequestPolicy;
 import software.amazon.awscdk.services.cloudfront.ResponseHeadersPolicy;
+import software.amazon.awscdk.services.cloudfront.S3OriginAccessControl;
+import software.amazon.awscdk.services.cloudfront.Signing;
 import software.amazon.awscdk.services.cloudfront.ViewerProtocolPolicy;
 import software.amazon.awscdk.services.cloudfront.origins.S3BucketOrigin;
-import software.amazon.awscdk.services.cloudfront.origins.S3BucketOriginWithOAIProps;
+import software.amazon.awscdk.services.cloudfront.origins.S3BucketOriginWithOACProps;
+import software.amazon.awscdk.services.iam.PolicyStatement;
+import software.amazon.awscdk.services.iam.ServicePrincipal;
 import software.amazon.awscdk.services.route53.ARecord;
 import software.amazon.awscdk.services.route53.AaaaRecord;
 import software.amazon.awscdk.services.route53.HostedZone;
@@ -539,20 +543,32 @@ public class WebStack extends Stack {
         //}
 
         // Create origin access identity
-        this.originIdentity = OriginAccessIdentity.Builder.create(this, "OriginAccessIdentity")
-            .comment("Identity created for access to the web website bucket via the CloudFront" + " distribution")
-            .build();
+        //this.originIdentity = OriginAccessIdentity.Builder.create(this, "OriginAccessIdentity")
+        //    .comment("Identity created for access to the web website bucket via the CloudFront" + " distribution")
+            // Either generate a stable name when cross-env is needed
+            //.originAccessIdentityName(PhysicalName.GENERATE_IF_NEEDED)
+            // Or pick an explicit, deterministic name you control (recommended)
+            // .originAccessIdentityName(this.compressedResourceNamePrefix + "-oai")
+        //    .build();
 
         // Grant read access to the origin identity
-        originBucket.grantRead(this.originIdentity);
+        //originBucket.grantRead(this.originIdentity);
 
         // Create the S3 bucket origin
-        this.origin = S3BucketOrigin.withOriginAccessIdentity(
+        //this.origin = S3BucketOrigin.withOriginAccessIdentity(
+        //    this.originBucket,
+        //    S3BucketOriginWithOAIProps.builder()
+        //        .originAccessIdentity(this.originIdentity)
+        //        .build());
+        S3OriginAccessControl oac = S3OriginAccessControl.Builder.create(this, "MyOAC")
+            .signing(Signing.SIGV4_ALWAYS) // NEVER // SIGV4_NO_OVERRIDE
+            .build();
+        this.origin = S3BucketOrigin.withOriginAccessControl(
             this.originBucket,
-            S3BucketOriginWithOAIProps.builder()
-                .originAccessIdentity(this.originIdentity)
-                .build());
-
+            S3BucketOriginWithOACProps.builder()
+                .originAccessControl(oac)
+                .build()
+            );
         logger.info("Created BucketOrigin with bucket: {}", this.originBucket.getBucketName());
 
         this.behaviorOptions = BehaviorOptions.builder()
@@ -563,6 +579,19 @@ public class WebStack extends Stack {
                 .responseHeadersPolicy(ResponseHeadersPolicy.CORS_ALLOW_ALL_ORIGINS_WITH_PREFLIGHT_AND_SECURITY_HEADERS)
                 .compress(true)
                 .build();
+
+        // Allow CloudFront service to GetObject via OAC, scoped to your account’s distributions
+        this.originBucket.addToResourcePolicy(PolicyStatement.Builder.create()
+            .sid("AllowCloudFrontReadViaOAC")
+            .principals(java.util.List.of(new ServicePrincipal("cloudfront.amazonaws.com")))
+            .actions(java.util.List.of("s3:GetObject"))
+            .resources(java.util.List.of(this.originBucket.getBucketArn() + "/*"))
+            .conditions(java.util.Map.of(
+                // Limit to distributions in your account (no distribution ARN token needed)
+                "StringEquals", java.util.Map.of("AWS:SourceAccount", this.getAccount()),
+                "ArnLike", java.util.Map.of("AWS:SourceArn", "arn:aws:cloudfront::" + this.getAccount() + ":distribution/*")
+            ))
+            .build());
 
         /*
         IUserPool userPool = UserPool.fromUserPoolArn(this, "UserPool", builder.userPoolArn);

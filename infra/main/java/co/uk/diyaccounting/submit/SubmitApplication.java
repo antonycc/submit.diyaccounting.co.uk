@@ -153,8 +153,8 @@ public class SubmitApplication {
                 .baseImageTag(envOr("BASE_IMAGE_TAG", appProps.baseImageTag))
                 .ecrRepositoryArn(devStack.ecrRepository.getRepositoryArn())
                 .ecrRepositoryName(devStack.ecrRepository.getRepositoryName())
-                .homeUrl(envOr("HOME_URL", webStack.baseUrl))
-                .hmrcBaseUri(envOr("HMRC_BASE_URI", appProps.hmrcBaseUri))
+                .homeUrl(envOr("DIY_SUBMIT_HOME_URL", webStack.baseUrl))
+                .hmrcBaseUri(envOr("DIY_SUBMIT_HMRC_BASE_URI", appProps.hmrcBaseUri))
                 .hmrcClientId(envOr("DIY_SUBMIT_HMRC_CLIENT_ID", appProps.hmrcClientId))
                 .lambdaUrlAuthType(envOr("LAMBDA_URL_AUTH_TYPE", appProps.lambdaUrlAuthType))
                 .lambdaEntry(envOr("LAMBDA_ENTRY", appProps.lambdaEntry))
@@ -190,7 +190,8 @@ public class SubmitApplication {
                 .compressedResourceNamePrefix(webStack.compressedResourceNamePrefix)
                 .certificateArn(envOr("CERTIFICATE_ARN", appProps.certificateArn))
                 .logsBucketArn(webStack.originAccessLogBucket.getBucketArn())
-                .webBehaviorOptions(webStack.behaviorOptions)
+                .webBucketArn(webStack.originBucket.getBucketArn())
+                //.webBehaviorOptions(webStack.behaviorOptions)
                 .additionalOriginsBehaviourMappings(
                     concat(
                         authStack.additionalOriginsBehaviourMappings,

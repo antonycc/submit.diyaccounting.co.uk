@@ -17,8 +17,9 @@ public class EdgeStackProps implements StackProps {
     public final String compressedResourceNamePrefix;
     public final String certificateArn;
     public final String logsBucketArn;
-    public final BehaviorOptions webBehaviorOptions;
-    public final Map<String, BehaviorOptions> additionalOriginsBehaviourMappings;
+    //public final BehaviorOptions webBehaviorOptions;
+    public final String webBucketArn;
+    public final Map<String, String> additionalOriginsBehaviourMappings;
 
     // Explicit env to allow this stack to target us-east-1 for CloudFront/WAF
     private final Environment env;
@@ -34,7 +35,8 @@ public class EdgeStackProps implements StackProps {
         this.compressedResourceNamePrefix = builder.compressedResourceNamePrefix;
         this.certificateArn = builder.certificateArn;
         this.logsBucketArn = builder.logsBucketArn;
-        this.webBehaviorOptions = builder.webBehaviorOptions;
+        this.webBucketArn = builder.webBucketArn;
+        //this.webBehaviorOptions = builder.webBehaviorOptions;
         this.additionalOriginsBehaviourMappings = builder.additionalOriginsBehaviourMappings;
         this.env = builder.env;
     }
@@ -59,9 +61,10 @@ public class EdgeStackProps implements StackProps {
         private String resourceNamePrefix;
         private String compressedResourceNamePrefix;
         private String certificateArn;
+        private String webBucketArn;
         private String logsBucketArn;
         private BehaviorOptions webBehaviorOptions;
-        private Map<String, BehaviorOptions> additionalOriginsBehaviourMappings;
+        private Map<String, String> additionalOriginsBehaviourMappings;
         private Environment env; // optional
 
         public Builder envName(String envName) {
@@ -104,6 +107,11 @@ public class EdgeStackProps implements StackProps {
             return this;
         }
 
+        public Builder webBucketArn(String webBucketArn) {
+            this.webBucketArn = webBucketArn;
+            return this;
+        }
+
         public Builder certificateArn(String certificateArn) {
             this.certificateArn = certificateArn;
             return this;
@@ -114,13 +122,13 @@ public class EdgeStackProps implements StackProps {
             return this;
         }
 
-        public Builder webBehaviorOptions(BehaviorOptions webBehaviorOptions) {
-            this.webBehaviorOptions = webBehaviorOptions;
-            return this;
-        }
+        //public Builder webBehaviorOptions(BehaviorOptions webBehaviorOptions) {
+        //    this.webBehaviorOptions = webBehaviorOptions;
+        //    return this;
+        //}
 
         public Builder additionalOriginsBehaviourMappings(
-                Map<String, BehaviorOptions> additionalOriginsBehaviourMappings) {
+                Map<String, String> additionalOriginsBehaviourMappings) {
             this.additionalOriginsBehaviourMappings = additionalOriginsBehaviourMappings;
             return this;
         }

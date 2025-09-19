@@ -49,6 +49,7 @@ public class LambdaUrlOrigin {
     public final FunctionUrl functionUrl;
     public final BehaviorOptions behaviorOptions;
     public final HttpOrigin apiOrigin;
+    public final String lambdaUrlHost;
 
     private LambdaUrlOrigin(final Construct scope, Builder builder) {
 
@@ -99,8 +100,8 @@ public class LambdaUrlOrigin {
 
         this.functionUrl = this.lambda.addFunctionUrl(functionUrlOptionsBuilder.build());
 
-        String lambdaUrlHost = getLambdaUrlHostToken(this.functionUrl);
-        this.apiOrigin = HttpOrigin.Builder.create(lambdaUrlHost)
+        this.lambdaUrlHost = getLambdaUrlHostToken(this.functionUrl);
+        this.apiOrigin = HttpOrigin.Builder.create(this.lambdaUrlHost)
                 .protocolPolicy(builder.protocolPolicy)
                 .build();
 

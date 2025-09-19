@@ -10,7 +10,6 @@ import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.services.cloudfront.AllowedMethods;
-import software.amazon.awscdk.services.cloudfront.BehaviorOptions;
 import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.lambda.FunctionUrl;
 import software.amazon.awscdk.services.lambda.FunctionUrlAuthType;
@@ -38,7 +37,7 @@ public class AuthStack extends Stack {
     public Function exchangeCognitoTokenLambda;
     public FunctionUrl exchangeCognitoTokenLambdaUrl;
     public LogGroup exchangeCognitoTokenLambdaLogGroup;
-    public Map<String, BehaviorOptions> additionalOriginsBehaviourMappings;
+    public Map<String, String> additionalOriginsBehaviourMappings;
 
     public AuthStack(Construct scope, String id, AuthStack.Builder builder) {
         this(scope, id, null, builder);
@@ -76,7 +75,7 @@ public class AuthStack extends Stack {
             .baseImageTag(builder.baseImageTag)
             .build();
 
-        var lambdaUrlToOriginsBehaviourMappings = new HashMap<String, BehaviorOptions>();
+        var lambdaUrlToOriginsBehaviourMappings = new HashMap<String, String>();
 
         // authUrl - mock
         var authUrlMockLambdaEnv = new HashMap<String, String>();
@@ -99,7 +98,7 @@ public class AuthStack extends Stack {
         this.authUrlMockLambdaUrl = authUrlMockLambdaUrlOrigin.functionUrl;
         this.authUrlMockLambdaLogGroup = authUrlMockLambdaUrlOrigin.logGroup;
         lambdaUrlToOriginsBehaviourMappings.put(
-            "/api/mock/auth-url" + "*", authUrlMockLambdaUrlOrigin.behaviorOptions);
+            "/api/mock/auth-url" + "*", authUrlMockLambdaUrlOrigin.lambdaUrlHost);
 
         // authUrl - Google or Antonycc via Cognito
         var authUrlCognitoLambdaEnv = new HashMap<String, String>();
@@ -129,7 +128,7 @@ public class AuthStack extends Stack {
         this.authUrlCognitoLambdaUrl = authUrlCognitoLambdaUrlOrigin.functionUrl;
         this.authUrlCognitoLambdaLogGroup = authUrlCognitoLambdaUrlOrigin.logGroup;
         lambdaUrlToOriginsBehaviourMappings.put(
-            "/api/cognito/auth-url" + "*", authUrlCognitoLambdaUrlOrigin.behaviorOptions);
+            "/api/cognito/auth-url" + "*", authUrlCognitoLambdaUrlOrigin.lambdaUrlHost);
 
         // exchangeToken - Google or Antonycc via Cognito
         var exchangeCognitoTokenLambdaEnv = new HashMap<String, String>();
@@ -162,7 +161,7 @@ public class AuthStack extends Stack {
         this.exchangeCognitoTokenLambdaUrl = exchangeCognitoTokenLambdaUrlOrigin.functionUrl;
         this.exchangeCognitoTokenLambdaLogGroup = exchangeCognitoTokenLambdaUrlOrigin.logGroup;
         lambdaUrlToOriginsBehaviourMappings.put(
-            "/api/cognito/exchange-token" + "*", exchangeCognitoTokenLambdaUrlOrigin.behaviorOptions);
+            "/api/cognito/exchange-token" + "*", exchangeCognitoTokenLambdaUrlOrigin.lambdaUrlHost);
 
 
 

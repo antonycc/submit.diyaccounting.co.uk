@@ -2,12 +2,27 @@ package co.uk.diyaccounting.submit.stacks;
 
 import software.amazon.awscdk.CfnOutput;
 import software.amazon.awscdk.CfnOutputProps;
+import software.amazon.awscdk.Fn;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.Tags;
 import software.amazon.awscdk.services.certificatemanager.Certificate;
+import software.amazon.awscdk.services.cloudfront.AllowedMethods;
+import software.amazon.awscdk.services.cloudfront.BehaviorOptions;
+import software.amazon.awscdk.services.cloudfront.CachePolicy;
 import software.amazon.awscdk.services.cloudfront.Distribution;
+import software.amazon.awscdk.services.cloudfront.IOrigin;
+import software.amazon.awscdk.services.cloudfront.OriginProtocolPolicy;
+import software.amazon.awscdk.services.cloudfront.OriginRequestPolicy;
+import software.amazon.awscdk.services.cloudfront.ResponseHeadersPolicy;
+import software.amazon.awscdk.services.cloudfront.S3OriginAccessControl;
 import software.amazon.awscdk.services.cloudfront.SSLMethod;
+import software.amazon.awscdk.services.cloudfront.Signing;
+import software.amazon.awscdk.services.cloudfront.ViewerProtocolPolicy;
+import software.amazon.awscdk.services.cloudfront.origins.HttpOrigin;
+import software.amazon.awscdk.services.cloudfront.origins.S3BucketOrigin;
+import software.amazon.awscdk.services.cloudfront.origins.S3BucketOriginWithOACProps;
 import software.amazon.awscdk.services.iam.ServicePrincipal;
+import software.amazon.awscdk.services.lambda.FunctionUrl;
 import software.amazon.awscdk.services.lambda.FunctionUrlAuthType;
 import software.amazon.awscdk.services.lambda.Permission;
 import software.amazon.awscdk.services.route53.ARecord;
@@ -22,6 +37,7 @@ import software.amazon.awscdk.services.s3.IBucket;
 import software.amazon.awscdk.services.wafv2.CfnWebACL;
 import software.constructs.Construct;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -55,6 +71,7 @@ public class EdgeStack extends Stack {
         // Use Resources from the passed props
         this.baseUrl = props.baseUrl;
         IBucket logsBucket = Bucket.fromBucketArn(this, props.resourceNamePrefix + "-LogsBucket", props.logsBucketArn);
+        IBucket originBucket = Bucket.fromBucketArn(this, props.resourceNamePrefix + "-WebBucket", props.webBucketArn);
 
         // Hosted zone (must exist)
         IHostedZone zone = HostedZone.fromHostedZoneAttributes(
@@ -155,10 +172,55 @@ public class EdgeStack extends Stack {
                         .build())
                 .build();
 
+        //S3OriginAccessControl originAccessControl = S3OriginAccessControl.Builder.create(this, props.resourceNamePrefix + "-OAC")
+        //        //.name(props.compressedResourceNamePrefix + "-oac")
+        //        .originAccessControlName(props.compressedResourceNamePrefix + "-oac")
+        //        .description("OAC for " + props.resourceNamePrefix + " CloudFront distribution")
+        //        //.originAccessControlOriginType("s3")
+        //        //.signingBehavior("always")
+        //        //.signingProtocol("sigv4")
+        //        .signing(Signing.builder()
+        //            .signingBehavior(SigningBehavior.ALWAYS)
+        //            .signingProtocol(SigningProtocol.SIGV4)
+        //            .build())
+        //        .build();
+
+        S3OriginAccessControl oac = S3OriginAccessControl.Builder.create(this, "MyOAC")
+            .signing(Signing.SIGV4_ALWAYS) // NEVER // SIGV4_NO_OVERRIDE
+            .build();
+        IOrigin localOrigin = S3BucketOrigin.withOriginAccessControl(
+            originBucket,
+            S3BucketOriginWithOACProps.builder()
+                .originAccessControl(oac)
+                .build()
+        );
+        //logger.info("Created BucketOrigin with bucket: {}", this.originBucket.getBucketName());
+
+        BehaviorOptions localBehaviorOptions = BehaviorOptions.builder()
+            .origin(localOrigin)
+            .allowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
+            .originRequestPolicy(OriginRequestPolicy.CORS_S3_ORIGIN)
+            .viewerProtocolPolicy(ViewerProtocolPolicy.REDIRECT_TO_HTTPS)
+            .responseHeadersPolicy(ResponseHeadersPolicy.CORS_ALLOW_ALL_ORIGINS_WITH_PREFLIGHT_AND_SECURITY_HEADERS)
+            .compress(true)
+            .build();
+
+        // Create additional behaviours for the URL origins using the mappings provided in props
+        // Use function createBehaviorOptionsForLambdaUrlHost to transform the lambda URL host into BehaviorOptions
+        HashMap<String, BehaviorOptions> additionalBehaviors = //new HashMap<String, BehaviorOptions>();
+            props.additionalOriginsBehaviourMappings.entrySet().stream().collect(
+                HashMap::new,
+                (map, entry) -> map.put(
+                    entry.getKey(),
+                    createBehaviorOptionsForLambdaUrlHost(entry.getValue())
+                ),
+                HashMap::putAll
+            );
+
         // CloudFront distribution for the web origin and all the URL Lambdas.
         this.distribution = Distribution.Builder.create(this, props.resourceNamePrefix + "-WebDist")
-                .defaultBehavior(props.webBehaviorOptions)
-                .additionalBehaviors(props.additionalOriginsBehaviourMappings)
+                .defaultBehavior(localBehaviorOptions) // props.webBehaviorOptions)
+                .additionalBehaviors(additionalBehaviors)
                 .domainNames(List.of(domainName))
                 .certificate(cert)
                 .defaultRootObject("index.html")
@@ -218,5 +280,26 @@ public class EdgeStack extends Stack {
             "AliasRecord",
             CfnOutputProps.builder().value(this.aliasRecord.getDomainName()).build());
 
+    }
+
+    private String getLambdaUrlHostToken(FunctionUrl functionUrl) {
+        String urlHostToken = Fn.select(2, Fn.split("/", functionUrl.getUrl()));
+        return urlHostToken;
+    }
+
+    public BehaviorOptions createBehaviorOptionsForLambdaUrlHost(String lambdaUrlHost) {
+        var origin = HttpOrigin.Builder.create(lambdaUrlHost)
+            .protocolPolicy(OriginProtocolPolicy.HTTPS_ONLY)
+            .build();
+        var behaviorOptions = BehaviorOptions.builder()
+            .origin(origin)
+            .allowedMethods(AllowedMethods.ALLOW_ALL)
+            .cachePolicy(CachePolicy.CACHING_DISABLED)
+            .originRequestPolicy(OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER)
+            .viewerProtocolPolicy(ViewerProtocolPolicy.REDIRECT_TO_HTTPS)
+            .responseHeadersPolicy(ResponseHeadersPolicy.CORS_ALLOW_ALL_ORIGINS_WITH_PREFLIGHT_AND_SECURITY_HEADERS)
+            .build();
+            ;
+        return behaviorOptions;
     }
 }

@@ -2,28 +2,22 @@ package co.uk.diyaccounting.submit.stacks;
 
 import software.amazon.awscdk.CfnOutput;
 import software.amazon.awscdk.CfnOutputProps;
+import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.Tags;
 import software.amazon.awscdk.services.cloudwatch.Alarm;
 import software.amazon.awscdk.services.cloudwatch.ComparisonOperator;
 import software.amazon.awscdk.services.cloudwatch.Dashboard;
 import software.amazon.awscdk.services.cloudwatch.GraphWidget;
-import software.amazon.awscdk.services.cloudwatch.TreatMissingData;
 import software.amazon.awscdk.services.cloudwatch.Metric;
 import software.amazon.awscdk.services.cloudwatch.MetricOptions;
-import software.amazon.awscdk.Duration;
-import software.amazon.awscdk.services.s3.Bucket;
-import software.amazon.awscdk.services.s3.IBucket;
-import software.amazon.awscdk.services.dynamodb.ITable;
-import software.amazon.awscdk.services.dynamodb.Operation;
-import software.amazon.awscdk.services.dynamodb.OperationsMetricOptions;
-import software.amazon.awscdk.services.dynamodb.Table;
+import software.amazon.awscdk.services.cloudwatch.TreatMissingData;
 import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.lambda.FunctionAttributes;
 import software.amazon.awscdk.services.lambda.IFunction;
+import software.amazon.awscdk.services.s3.Bucket;
+import software.amazon.awscdk.services.s3.IBucket;
 import software.constructs.Construct;
-
-import java.util.List;
 
 public class OpsStack extends Stack {
     public final Dashboard operationalDashboard;
@@ -59,7 +53,7 @@ public class OpsStack extends Stack {
         if (props.lambdaFunctionArns != null) {
             for (int i = 0; i < props.lambdaFunctionArns.size(); i++) {
                 String arn = props.lambdaFunctionArns.get(i);
-                String fnName = arn.substring(arn.lastIndexOf(":") + 1);
+                //String fnName = arn.substring(arn.lastIndexOf(":") + 1);
                 IFunction fn = Function.fromFunctionAttributes(
                         this,
                         props.resourceNamePrefix + "-Fn-" + i,
@@ -70,14 +64,14 @@ public class OpsStack extends Stack {
                 lambdaDurationsP95.add(fn.metricDuration().with(MetricOptions.builder().statistic("p95").build()));
                 lambdaThrottles.add(fn.metricThrottles());
                 // Per-function error alarm (>=1 error in 5 minutes)
-                Alarm.Builder.create(this, props.resourceNamePrefix + "-LambdaErrors-" + fnName)
-                        .alarmName(props.compressedResourceNamePrefix + "-" + fnName + "-errors")
+                Alarm.Builder.create(this, props.resourceNamePrefix + "-LambdaErrors-" + i)
+                        .alarmName(props.compressedResourceNamePrefix + "-" + fn.getFunctionName() + "-errors")
                         .metric(fn.metricErrors())
                         .threshold(1.0)
                         .evaluationPeriods(1)
                         .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
                         .treatMissingData(TreatMissingData.NOT_BREACHING)
-                        .alarmDescription("Lambda errors >= 1 for function " + fnName)
+                        .alarmDescription("Lambda errors >= 1 for function " + fn.getFunctionName())
                         .build();
             }
         }

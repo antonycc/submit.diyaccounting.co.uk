@@ -23,7 +23,6 @@ class ApplicationStackTest {
                 .ecrRepositoryArn(devStack.ecrRepository.getRepositoryArn())
                 .ecrRepositoryName(devStack.ecrRepository.getRepositoryName())
                 .homeUrl(envOr("HOME_URL", webStack.baseUrl))
-                .hmrcBaseUri(envOr("HMRC_BASE_URI", appProps.hmrcBaseUri))
                 .hmrcClientId(envOr("DIY_SUBMIT_HMRC_CLIENT_ID", appProps.hmrcClientId))
                 .lambdaUrlAuthType(envOr("LAMBDA_URL_AUTH_TYPE", appProps.lambdaUrlAuthType))
                 .lambdaEntry(envOr("LAMBDA_ENTRY", appProps.lambdaEntry))
