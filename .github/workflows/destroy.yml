@@ -116,13 +116,13 @@ jobs:
       - name: Build CDK and synth
         run: ./mvnw --errors clean package
 
-      #- name: Destroy OpsStack
-      #  if: ${{ env.DEPLOYMENT_NAME != 'prod' }}
-      #  run: npx dotenv -e .env.${{ env.ENV_NAME }} -- npx cdk destroy ${DEPLOYMENT_NAME}-OpsStack --exclusively --force
-      #  env:
-      #    DEPLOYMENT_NAME: ${{ env.DEPLOYMENT_NAME }}
-      #    ENV_NAME: ${{ env.ENV_NAME }}
-      #    GITHUB_ACTOR: ${{ github.actor }}
+      - name: Destroy OpsStack
+        if: ${{ env.DEPLOYMENT_NAME != 'prod' }}
+        run: npx dotenv -e .env.${{ env.ENV_NAME }} -- npx cdk destroy ${DEPLOYMENT_NAME}-OpsStack --exclusively --force
+        env:
+          DEPLOYMENT_NAME: ${{ env.DEPLOYMENT_NAME }}
+          ENV_NAME: ${{ env.ENV_NAME }}
+          GITHUB_ACTOR: ${{ github.actor }}
 
       - name: Destroy PublishStack
         if: ${{ env.DEPLOYMENT_NAME != 'prod' }}

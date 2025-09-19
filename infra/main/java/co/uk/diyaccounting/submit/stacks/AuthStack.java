@@ -15,6 +15,7 @@ import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.lambda.FunctionUrl;
 import software.amazon.awscdk.services.lambda.FunctionUrlAuthType;
 import software.amazon.awscdk.services.logs.LogGroup;
+import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
 
 import java.util.AbstractMap;
@@ -141,9 +142,9 @@ public class AuthStack extends Stack {
         //if (StringUtils.isNotBlank(builder.cognitoClientId)) {
             exchangeCognitoTokenLambdaEnv.put("DIY_SUBMIT_COGNITO_CLIENT_ID", builder.cognitoClientId);
         //}
-        //if (StringUtils.isNotBlank(builder.optionalTestAccessToken)) {
+        if (StringUtils.isNotBlank(builder.optionalTestAccessToken)) {
             exchangeCognitoTokenLambdaEnv.put("DIY_SUBMIT_TEST_ACCESS_TOKEN", builder.optionalTestAccessToken);
-        //}
+        }
         var exchangeCognitoTokenLambdaUrlOrigin = LambdaUrlOrigin.Builder.create(this, "ExchangeCognitoToken")
             .options(lambdaCommonOpts)
             .baseImageTag(builder.baseImageTag)

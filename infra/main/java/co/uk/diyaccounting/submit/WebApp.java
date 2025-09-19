@@ -88,30 +88,6 @@ public class WebApp {
                         .build())
                 .build();
 
-        // Create the AuthStack with resources used in authentication and authorisation
-        String authStackId = "%s-AuthStack".formatted(deploymentName);
-        System.out.printf("Synthesizing stack %s for deployment %s to environment %s\n", authStackId, deploymentName, envName);
-        AuthStack authStack = AuthStack.Builder.create(app, authStackId)
-                .props(co.uk.diyaccounting.submit.stacks.AuthStackProps.builder()
-                        .env(envName)
-                        .subDomainName(appProps.subDomainName)
-                        .hostedZoneName(envOr("HOSTED_ZONE_NAME", appProps.hostedZoneName))
-                        //.hostedZoneId(envOr("HOSTED_ZONE_ID", appProps.hostedZoneId))
-                        .subDomainName(appProps.subDomainName)
-                        .cloudTrailEnabled(envOr("CLOUD_TRAIL_ENABLED", appProps.cloudTrailEnabled))
-                        .xRayEnabled(envOr("X_RAY_ENABLED", appProps.xRayEnabled))
-                        .baseImageTag(envOr("BASE_IMAGE_TAG", appProps.baseImageTag))
-                        .ecrRepositoryArn(devStack.ecrRepository.getRepositoryArn())
-                        .ecrRepositoryName(devStack.ecrRepository.getRepositoryName())
-                        //.userPool(identityStack.userPool)
-                        //.userPoolClient(identityStack.userPoolClient)
-                        //.userPoolDomain(identityStack.userPoolDomain)
-                        //.identityPool(identityStack.identityPool)
-                        //.googleClientId(envOr("DIY_SUBMIT_GOOGLE_CLIENT_ID", appProps.googleClientId))
-                        //.antonyccClientId(envOr("DIY_SUBMIT_ANTONYCC_CLIENT_ID", appProps.antonyccClientId))
-                        .build())
-                .build();
-
         // Create the ApplicationStack
         String applicationStackId = "%s-ApplicationStack".formatted(deploymentName);
         System.out.printf("Synthesizing stack %s for deployment %s to environment %s\n", applicationStackId, deploymentName, envName);
@@ -148,6 +124,36 @@ public class WebApp {
                         .build())
                 // .trail(observabilityStack.trail)
                 .build();
+
+        // Create the AuthStack with resources used in authentication and authorisation
+        String authStackId = "%s-AuthStack".formatted(deploymentName);
+        System.out.printf("Synthesizing stack %s for deployment %s to environment %s\n", authStackId, deploymentName, envName);
+        AuthStack authStack = AuthStack.Builder.create(app, authStackId)
+            .props(co.uk.diyaccounting.submit.stacks.AuthStackProps.builder()
+                .env(envName)
+                .hostedZoneName(envOr("HOSTED_ZONE_NAME", appProps.hostedZoneName))
+                //.hostedZoneId(envOr("HOSTED_ZONE_ID", appProps.hostedZoneId))
+                .subDomainName(appProps.subDomainName)
+                .cloudTrailEnabled(envOr("CLOUD_TRAIL_ENABLED", appProps.cloudTrailEnabled))
+                .xRayEnabled(envOr("X_RAY_ENABLED", appProps.xRayEnabled))
+                .baseImageTag(envOr("BASE_IMAGE_TAG", appProps.baseImageTag))
+                .ecrRepositoryArn(devStack.ecrRepository.getRepositoryArn())
+                .ecrRepositoryName(devStack.ecrRepository.getRepositoryName())
+                .homeUrl(envOr("HOME_URL", webStack.baseUrl))
+                .cognitoClientId(identityStack.userPoolClient.getUserPoolClientId())
+                .cognitoBaseUri(identityStack.userPoolDomain.getDomainName())
+                .optionalTestAccessToken(envOr("OPTIONAL_TEST_ACCESS_TOKEN", appProps.optionalTestAccessToken))
+                //.userPool(identityStack.userPool)
+                //.userPoolClient(identityStack.userPoolClient)
+                //.userPoolDomain(identityStack.userPoolDomain)
+                //.identityPool(identityStack.identityPool)
+                //.googleClientId(envOr("DIY_SUBMIT_GOOGLE_CLIENT_ID", appProps.googleClientId))
+                //.antonyccClientId(envOr("DIY_SUBMIT_ANTONYCC_CLIENT_ID", appProps.antonyccClientId))
+                .build())
+            .build();
+        authStack.addDependency(devStack);
+        authStack.addDependency(webStack);
+        authStack.addDependency(identityStack);
 
         // Create the Edge stack (CloudFront, Route53)
         String edgeStackId = "%s-EdgeStack".formatted(deploymentName);
