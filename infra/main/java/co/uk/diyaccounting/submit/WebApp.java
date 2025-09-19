@@ -39,10 +39,11 @@ public class WebApp {
 
         String envName = envOr("ENV_NAME", appProps.env);
         String deploymentName = envOr("DEPLOYMENT_NAME", appProps.deploymentName);
-
+      
         // Create ObservabilityStack with resources used in monitoring the application
         String observabilityStackId = "%s-ObservabilityStack".formatted(deploymentName);
         System.out.printf("Synthesizing stack %s for deployment %s to environment %s\n", observabilityStackId, deploymentName, envName);
+
         ObservabilityStack observabilityStack = ObservabilityStack.Builder.create(app, observabilityStackId)
                 .props(co.uk.diyaccounting.submit.stacks.ObservabilityStackProps.builder()
                         .env(envName)

@@ -74,14 +74,13 @@ jobs:
 
           echo "Computed ENV_NAME: $ENV_NAME"
           echo "Computed DEPLOYMENT_NAME: $DEPLOYMENT_NAME"
-          DEPLOYMENT_NAME=ENV_NAME
 
           echo "ENV_NAME=$ENV_NAME" >> "$GITHUB_ENV"
           echo "DEPLOYMENT_NAME=$DEPLOYMENT_NAME" >> "$GITHUB_ENV"
           echo "ENV_NAME=$ENV_NAME" >> "$GITHUB_OUTPUT"
           echo "DEPLOYMENT_NAME=$DEPLOYMENT_NAME" >> "$GITHUB_OUTPUT"
 
-          echo "Actual ENV_NAME: ENV_NAME"
+          echo "Actual ENV_NAME: $ENV_NAME"
           echo "Actual DEPLOYMENT_NAME: $DEPLOYMENT_NAME"
 
       - name: Setup Node
