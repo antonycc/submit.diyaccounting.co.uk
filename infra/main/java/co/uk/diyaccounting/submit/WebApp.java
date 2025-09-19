@@ -1,17 +1,29 @@
 package co.uk.diyaccounting.submit;
 
 import co.uk.diyaccounting.submit.stacks.ApplicationStack;
+import co.uk.diyaccounting.submit.stacks.AuthStack;
 import co.uk.diyaccounting.submit.stacks.DevStack;
+import co.uk.diyaccounting.submit.stacks.EdgeStack;
+import co.uk.diyaccounting.submit.stacks.EdgeStackProps;
 import co.uk.diyaccounting.submit.stacks.IdentityStack;
 import co.uk.diyaccounting.submit.stacks.ObservabilityStack;
+import co.uk.diyaccounting.submit.stacks.OpsStack;
+import co.uk.diyaccounting.submit.stacks.OpsStackProps;
+import co.uk.diyaccounting.submit.stacks.PublishStack;
+import co.uk.diyaccounting.submit.stacks.PublishStackProps;
+import co.uk.diyaccounting.submit.stacks.SelfDestructStack;
+import co.uk.diyaccounting.submit.stacks.SelfDestructStackProps;
 import co.uk.diyaccounting.submit.stacks.WebStack;
-import java.lang.reflect.Field;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import software.amazon.awscdk.App;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
+
+import java.lang.reflect.Field;
+
+import static co.uk.diyaccounting.submit.utils.Kind.concat;
 
 public class WebApp {
 
@@ -25,17 +37,16 @@ public class WebApp {
         WebApp.Builder builder = WebApp.Builder.create(app, "WebApp");
         WebAppProps appProps = loadAppProps(builder, app);
 
-        String envName = appProps.env;
+        String envName = envOr("ENV_NAME", appProps.env);
+        String deploymentName = envOr("DEPLOYMENT_NAME", appProps.deploymentName);
+      
+        // Create ObservabilityStack with resources used in monitoring the application
+        String observabilityStackId = "%s-ObservabilityStack".formatted(deploymentName);
+        System.out.printf("Synthesizing stack %s for deployment %s to environment %s\n", observabilityStackId, deploymentName, envName);
 
-        String observabilityStackEnv = envOr("ENV_NAME", appProps.env);
-        String observabilityStackId = "SubmitObservabilityStack-%s"
-                .formatted(
-                        observabilityStackEnv != null && !observabilityStackEnv.isBlank()
-                                ? observabilityStackEnv
-                                : "dev");
         ObservabilityStack observabilityStack = ObservabilityStack.Builder.create(app, observabilityStackId)
                 .props(co.uk.diyaccounting.submit.stacks.ObservabilityStackProps.builder()
-                        .env(observabilityStackEnv)
+                        .env(envName)
                         .hostedZoneName(envOr("HOSTED_ZONE_NAME", appProps.hostedZoneName))
                         .subDomainName(appProps.subDomainName)
                         .cloudTrailEnabled(envOr("CLOUD_TRAIL_ENABLED", appProps.cloudTrailEnabled))
@@ -47,24 +58,22 @@ public class WebApp {
                 .build();
 
         // Create DevStack with resources only used during development or deployment (e.g. ECR)
-        String devStackEnv = envOr("ENV_NAME", appProps.env);
-        String devStackId =
-                "SubmitDevStack-%s".formatted(devStackEnv != null && !devStackEnv.isBlank() ? devStackEnv : "dev");
+        String devStackId = "%s-DevStack".formatted(deploymentName);
+        System.out.printf("Synthesizing stack %s for deployment %s to environment %s\n", devStackId, deploymentName, envName);
         DevStack devStack = DevStack.Builder.create(app, devStackId)
                 .props(co.uk.diyaccounting.submit.stacks.DevStackProps.builder()
-                        .env(devStackEnv)
+                        .env(envName)
                         .hostedZoneName(envOr("HOSTED_ZONE_NAME", appProps.hostedZoneName))
                         .subDomainName(appProps.subDomainName)
                         .build())
                 .build();
 
         // Create the identity stack before any user aware services
-        String identityStackEnv = envOr("ENV_NAME", appProps.env);
-        String identityStackId = "SubmitIdentityStack-%s"
-                .formatted(identityStackEnv != null && !identityStackEnv.isBlank() ? identityStackEnv : "dev");
+        String identityStackId = "%s-IdentityStack".formatted(deploymentName);
+        System.out.printf("Synthesizing stack %s for deployment %s to environment %s\n", identityStackId, deploymentName, envName);
         IdentityStack identityStack = IdentityStack.Builder.create(app, identityStackId)
                 .props(co.uk.diyaccounting.submit.stacks.IdentityStackProps.builder()
-                        .env(identityStackEnv)
+                        .env(envName)
                         .hostedZoneName(envOr("HOSTED_ZONE_NAME", appProps.hostedZoneName))
                         .hostedZoneId(envOr("HOSTED_ZONE_ID", appProps.hostedZoneId))
                         .cognitoDomainPrefix(appProps.cognitoDomainPrefix)
@@ -81,122 +90,201 @@ public class WebApp {
                 .build();
 
         // Create the ApplicationStack
-        String applicationStackEnv = envOr("ENV_NAME", appProps.env);
-        String applicationStackId = "SubmitApplicationStack-%s"
-                .formatted(applicationStackEnv != null && !applicationStackEnv.isBlank() ? applicationStackEnv : "dev");
+        String applicationStackId = "%s-ApplicationStack".formatted(deploymentName);
+        System.out.printf("Synthesizing stack %s for deployment %s to environment %s\n", applicationStackId, deploymentName, envName);
         ApplicationStack applicationStack = ApplicationStack.Builder.create(app, applicationStackId)
                 .props(co.uk.diyaccounting.submit.stacks.ApplicationStackProps.builder()
-                        .env(applicationStackEnv)
+                        .env(envName)
                         .hostedZoneName(envOr("HOSTED_ZONE_NAME", appProps.hostedZoneName))
                         .subDomainName(envOr("SUB_DOMAIN_NAME", appProps.subDomainName))
                         .cloudTrailEnabled(envOr("CLOUD_TRAIL_ENABLED", appProps.cloudTrailEnabled))
                         .xRayEnabled(envOr("X_RAY_ENABLED", appProps.xRayEnabled))
+                        .baseImageTag(envOr("BASE_IMAGE_TAG", appProps.baseImageTag))
+                        .ecrRepositoryArn(devStack.ecrRepository.getRepositoryArn())
+                        .ecrRepositoryName(devStack.ecrRepository.getRepositoryName())
                         .build())
                 .build();
 
         // Create WebStack with resources used in running the application
-        String webStackEnv = envOr("ENV_NAME", appProps.env);
-        String webStackId =
-                "SubmitWebStack-%s".formatted(webStackEnv != null && !webStackEnv.isBlank() ? webStackEnv : "dev");
+        String webStackId = "%s-WebStack".formatted(deploymentName);
+        System.out.printf("Synthesizing stack %s for deployment %s to environment %s\n", webStackId, deploymentName, envName);
         WebStack webStack = WebStack.Builder.create(app, webStackId)
                 .props(co.uk.diyaccounting.submit.stacks.WebStackProps.builder()
-                        .env(webStackEnv)
-                        .ecrRepositoryArn(devStack.ecrRepository.getRepositoryArn())
-                        .ecrRepositoryName(devStack.ecrRepository.getRepositoryName())
+                        .env(envName)
                         .hostedZoneName(envOr("HOSTED_ZONE_NAME", appProps.hostedZoneName))
                         .hostedZoneId(envOr("HOSTED_ZONE_ID", appProps.hostedZoneId))
                         .subDomainName(appProps.subDomainName)
-                        .certificateArn(envOr("CERTIFICATE_ARN", appProps.certificateArn))
-                        .userPoolArn(identityStack.userPool != null ? identityStack.userPool.getUserPoolArn() : null)
                         .cloudTrailEnabled(envOr("CLOUD_TRAIL_ENABLED", appProps.cloudTrailEnabled))
                         .xRayEnabled(envOr("X_RAY_ENABLED", appProps.xRayEnabled))
                         .verboseLogging(envOr("VERBOSE_LOGGING", appProps.verboseLogging))
-                        .cloudTrailLogGroupRetentionPeriodDays(appProps.cloudTrailLogGroupRetentionPeriodDays)
                         .accessLogGroupRetentionPeriodDays(appProps.accessLogGroupRetentionPeriodDays)
                         .s3UseExistingBucket(appProps.s3UseExistingBucket)
                         .s3RetainOriginBucket(appProps.s3RetainOriginBucket)
-                        .s3RetainReceiptsBucket(appProps.s3RetainReceiptsBucket)
-                        .cloudTrailEventSelectorPrefix(appProps.cloudTrailEventSelectorPrefix)
                         .logS3ObjectEventHandlerSource(
                                 envOr("LOG_S3_OBJECT_EVENT_HANDLER_SOURCE", appProps.logS3ObjectEventHandlerSource))
-                        .logGzippedS3ObjectEventHandlerSource(envOr(
-                                "LOG_GZIPPED_S3_OBJECT_EVENT_HANDLER_SOURCE",
-                                appProps.logGzippedS3ObjectEventHandlerSource))
-                        .docRootPath(appProps.docRootPath)
-                        .defaultDocumentAtOrigin(appProps.defaultDocumentAtOrigin)
-                        .error404NotFoundAtDistribution(appProps.error404NotFoundAtDistribution)
-                        .skipLambdaUrlOrigins(appProps.skipLambdaUrlOrigins)
-                        .hmrcClientId(envOr("DIY_SUBMIT_HMRC_CLIENT_ID", appProps.hmrcClientId))
-                        .hmrcClientSecretArn(envOr("DIY_SUBMIT_HMRC_CLIENT_SECRET_ARN", appProps.hmrcClientSecretArn))
-                        .homeUrl(envOr("DIY_SUBMIT_HOME_URL", appProps.homeUrl))
-                        .hmrcBaseUri(envOr("DIY_SUBMIT_HMRC_BASE_URI", appProps.hmrcBaseUri))
-                        .optionalTestAccessToken(
-                                envOr("DIY_SUBMIT_TEST_ACCESS_TOKEN", appProps.optionalTestAccessToken))
-                        .optionalTestS3Endpoint(envOr("DIY_SUBMIT_TEST_S3_ENDPOINT", appProps.optionalTestS3Endpoint))
-                        .optionalTestS3AccessKey(
-                                envOr("DIY_SUBMIT_TEST_S3_ACCESS_KEY", appProps.optionalTestS3AccessKey))
-                        .optionalTestS3SecretKey(
-                                envOr("DIY_SUBMIT_TEST_S3_SECRET_KEY", appProps.optionalTestS3SecretKey))
-                        .receiptsBucketPostfix(
-                                envOr("DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX", appProps.receiptsBucketPostfix))
-                        .lambdaEntry(appProps.lambdaEntry)
-                        .authUrlHmrcLambdaHandlerFunctionName(appProps.authUrlHmrcLambdaHandlerFunctionName)
-                        .authUrlHmrcLambdaUrlPath(appProps.authUrlLambdaUrlPath)
-                        .authUrlHmrcLambdaDurationMillis(appProps.authUrlHmrcLambdaDuration)
-                        .authUrlMockLambdaHandlerFunctionName(appProps.authUrlMockLambdaHandlerFunctionName)
-                        .authUrlMockLambdaUrlPath(appProps.authUrlMockLambdaUrlPath)
-                        .authUrlMockLambdaDurationMillis(appProps.authUrlMockLambdaDuration)
-                        .authUrlCognitoLambdaHandlerFunctionName(appProps.authUrlCognitoLambdaHandlerFunctionName)
-                        .authUrlCognitoLambdaUrlPath(appProps.authUrlCognitoLambdaUrlPath)
-                        .authUrlCognitoLambdaDurationMillis(appProps.authUrlCognitoLambdaDuration)
-                        .exchangeHmrcTokenLambdaHandlerFunctionName(appProps.exchangeHmrcTokenLambdaHandlerFunctionName)
-                        .exchangeHmrcTokenLambdaUrlPath(appProps.exchangeHmrcTokenLambdaUrlPath)
-                        .exchangeHmrcTokenLambdaDurationMillis(appProps.exchangeHmrcTokenLambdaDuration)
-                        .exchangeCognitoTokenLambdaHandlerFunctionName(
-                                appProps.exchangeCognitoTokenLambdaHandlerFunctionName)
-                        .exchangeCognitoTokenLambdaUrlPath(appProps.exchangeCognitoTokenLambdaUrlPath)
-                        .exchangeCognitoTokenLambdaDurationMillis(appProps.exchangeCognitoTokenLambdaDuration)
-                        .submitVatLambdaHandlerFunctionName(appProps.submitVatLambdaHandlerFunctionName)
-                        .submitVatLambdaUrlPath(appProps.submitVatLambdaUrlPath)
-                        .submitVatLambdaDurationMillis(appProps.submitVatLambdaDuration)
-                        .logReceiptLambdaHandlerFunctionName(appProps.logReceiptLambdaHandlerFunctionName)
-                        .logReceiptLambdaUrlPath(appProps.logReceiptLambdaUrlPath)
-                        .logReceiptLambdaDurationMillis(appProps.logReceiptLambdaDuration)
-                        .lambdaUrlAuthType(appProps.lambdaUrlAuthType)
-                        .commitHash(envOr("COMMIT_HASH", appProps.commitHash))
-                        .googleClientId(envOr("DIY_SUBMIT_GOOGLE_CLIENT_ID", appProps.googleClientId))
-                        .googleBaseUri(envOr("DIY_SUBMIT_GOOGLE_BASE_URI", appProps.googleBaseUri))
-                        .googleClientSecretArn(
-                                envOr("DIY_SUBMIT_GOOGLE_CLIENT_SECRET_ARN", appProps.googleClientSecretArn))
-                        .cognitoDomainPrefix(envOr("DIY_SUBMIT_COGNITO_DOMAIN_PREFIX", appProps.cognitoDomainPrefix))
-                        .bundleExpiryDate(appProps.bundleExpiryDate)
-                        .bundleUserLimit(appProps.bundleUserLimit)
-                        .bundleLambdaHandlerFunctionName(appProps.bundleLambdaHandlerFunctionName)
-                        .bundleLambdaUrlPath(appProps.bundleLambdaUrlPath)
-                        .bundleLambdaDurationMillis(appProps.bundleLambdaDuration)
-                        .catalogueLambdaHandlerFunctionName(appProps.catalogueLambdaHandlerFunctionName)
-                        .catalogueLambdaUrlPath(appProps.catalogueLambdaUrlPath)
-                        .catalogueLambdaDurationMillis(appProps.catalogueLambdaDuration)
-                        .myBundlesLambdaHandlerFunctionName(appProps.myBundlesLambdaHandlerFunctionName)
-                        .myBundlesLambdaUrlPath(appProps.myBundlesLambdaUrlPath)
-                        .myBundlesLambdaDurationMillis(appProps.myBundlesLambdaDuration)
-                        .baseImageTag(envOr("BASE_IMAGE_TAG", appProps.baseImageTag))
-                        .cognitoFeaturePlan(appProps.cognitoFeaturePlan)
-                        .cognitoEnableLogDelivery(appProps.cognitoEnableLogDelivery)
-                        .logCognitoEventHandlerSource(appProps.logCognitoEventHandlerSource)
-                        .myReceiptsLambdaHandlerFunctionName(appProps.myReceiptsLambdaHandlerFunctionName)
-                        .myReceiptsLambdaUrlPath(appProps.myReceiptsLambdaUrlPath)
-                        .myReceiptsLambdaDurationMillis(appProps.myReceiptsLambdaDuration)
-                        .antonyccClientId(envOr("DIY_SUBMIT_ANTONYCC_CLIENT_ID", appProps.antonyccClientId))
-                        .antonyccBaseUri(envOr("DIY_SUBMIT_ANTONYCC_BASE_URI", appProps.antonyccBaseUri))
-                        .cognitoClientId(identityStack.userPoolClient.getUserPoolClientId())
-                        .cognitoBaseUri(identityStack.cognitoBaseUri)
                         .build())
                 // .trail(observabilityStack.trail)
                 .build();
 
+        // Create the AuthStack with resources used in authentication and authorisation
+        String authStackId = "%s-AuthStack".formatted(deploymentName);
+        System.out.printf("Synthesizing stack %s for deployment %s to environment %s\n", authStackId, deploymentName, envName);
+        AuthStack authStack = AuthStack.Builder.create(app, authStackId)
+            .props(co.uk.diyaccounting.submit.stacks.AuthStackProps.builder()
+                .env(envName)
+                .hostedZoneName(envOr("HOSTED_ZONE_NAME", appProps.hostedZoneName))
+                //.hostedZoneId(envOr("HOSTED_ZONE_ID", appProps.hostedZoneId))
+                .subDomainName(appProps.subDomainName)
+                .cloudTrailEnabled(envOr("CLOUD_TRAIL_ENABLED", appProps.cloudTrailEnabled))
+                .xRayEnabled(envOr("X_RAY_ENABLED", appProps.xRayEnabled))
+                .baseImageTag(envOr("BASE_IMAGE_TAG", appProps.baseImageTag))
+                .ecrRepositoryArn(devStack.ecrRepository.getRepositoryArn())
+                .ecrRepositoryName(devStack.ecrRepository.getRepositoryName())
+                .homeUrl(envOr("HOME_URL", webStack.baseUrl))
+                .cognitoClientId(identityStack.userPoolClient.getUserPoolClientId())
+                .cognitoBaseUri(identityStack.userPoolDomain.getDomainName())
+                .optionalTestAccessToken(envOr("OPTIONAL_TEST_ACCESS_TOKEN", appProps.optionalTestAccessToken))
+                //.userPool(identityStack.userPool)
+                //.userPoolClient(identityStack.userPoolClient)
+                //.userPoolDomain(identityStack.userPoolDomain)
+                //.identityPool(identityStack.identityPool)
+                //.googleClientId(envOr("DIY_SUBMIT_GOOGLE_CLIENT_ID", appProps.googleClientId))
+                //.antonyccClientId(envOr("DIY_SUBMIT_ANTONYCC_CLIENT_ID", appProps.antonyccClientId))
+                .build())
+            .build();
+        authStack.addDependency(devStack);
+        authStack.addDependency(webStack);
+        authStack.addDependency(identityStack);
+
+        // Create the Edge stack (CloudFront, Route53)
+        String edgeStackId = "%s-EdgeStack".formatted(deploymentName);
+        EdgeStack edgeStack = new EdgeStack(
+            app,
+            edgeStackId,
+            EdgeStackProps.builder()
+                .envName(envName)
+                .deploymentName(deploymentName)
+                .hostedZoneName(envOr("HOSTED_ZONE_NAME", appProps.hostedZoneName))
+                .hostedZoneId(envOr("HOSTED_ZONE_ID", appProps.hostedZoneId))
+                .domainName(webStack.domainName)
+                .baseUrl(webStack.baseUrl)
+                .resourceNamePrefix(webStack.resourceNamePrefix)
+                .compressedResourceNamePrefix(webStack.compressedResourceNamePrefix)
+                .certificateArn(envOr("CERTIFICATE_ARN", appProps.certificateArn))
+                .logsBucketArn(webStack.originAccessLogBucket.getBucketArn())
+                .webBehaviorOptions(webStack.behaviorOptions)
+                .additionalOriginsBehaviourMappings(
+                    concat(
+                        authStack.additionalOriginsBehaviourMappings,
+                        applicationStack.additionalOriginsBehaviourMappings
+                    ))
+                .build());
+        edgeStack.addDependency(observabilityStack);
+        edgeStack.addDependency(applicationStack);
+        edgeStack.addDependency(authStack);
+        edgeStack.addDependency(webStack);
+
+        // Create the Publish stack (Bucket Deployments to CloudFront)
+        String publishStackId = "%s-PublishStack".formatted(deploymentName);
+        PublishStack publishStack = new PublishStack(
+            app,
+            publishStackId,
+            PublishStackProps.builder()
+                .envName(envName)
+                .deploymentName(deploymentName)
+                .domainName(webStack.domainName)
+                .baseUrl(webStack.baseUrl)
+                .webBucket(webStack.originBucket)
+                .resourceNamePrefix(webStack.resourceNamePrefix)
+                .distributionId(edgeStack.distribution.getDistributionId())
+                .webBucket(webStack.originBucket)
+                .commitHash(appProps.commitHash)
+                .docRootPath(appProps.docRootPath)
+                .build());
+        //publishStack.addDependency(edgeStack);
+        //publishStack.addDependency(applicationStack);
+        publishStack.addDependency(webStack);
+
+        // Create the Ops stack (Alarms, etc.)
+        // Build list of Lambda function ARNs for OpsStack
+        java.util.List<String> lambdaArns = new java.util.ArrayList<>();
+        if (applicationStack.authUrlHmrcLambda != null) lambdaArns.add(applicationStack.authUrlHmrcLambda.getFunctionArn());
+        if (applicationStack.exchangeHmrcTokenLambda != null) lambdaArns.add(applicationStack.exchangeHmrcTokenLambda.getFunctionArn());
+        if (applicationStack.submitVatLambda != null) lambdaArns.add(applicationStack.submitVatLambda.getFunctionArn());
+        if (applicationStack.logReceiptLambda != null) lambdaArns.add(applicationStack.logReceiptLambda.getFunctionArn());
+        if (applicationStack.catalogLambda != null) lambdaArns.add(applicationStack.catalogLambda.getFunctionArn());
+        if (applicationStack.myBundlesLambda != null) lambdaArns.add(applicationStack.myBundlesLambda.getFunctionArn());
+        if (applicationStack.myReceiptsLambda != null) lambdaArns.add(applicationStack.myReceiptsLambda.getFunctionArn());
+        String receiptsBucketArn = applicationStack.receiptsBucket != null ? applicationStack.receiptsBucket.getBucketArn() : null;
+
+        String opsStackId = "%s-OpsStack".formatted(deploymentName);
+        OpsStack opsStack = new OpsStack(
+            app,
+            opsStackId,
+            OpsStackProps.builder()
+                //.env(env)
+                .envName(envName)
+                .deploymentName(deploymentName)
+                .domainName(webStack.domainName)
+                .resourceNamePrefix(webStack.resourceNamePrefix)
+                .compressedResourceNamePrefix(webStack.compressedResourceNamePrefix)
+                .lambdaFunctionArns(lambdaArns)
+                .distributionId(edgeStack.distribution.getDistributionId())
+                .originBucketArn(webStack.originBucket.getBucketArn())
+                .receiptsBucketArn(receiptsBucketArn)
+                //.tokenEndpointFunctionArn(this.application.appStack.tokenEndpoint.function.getFunctionArn())
+                //.userinfoEndpointFunctionArn(
+                //    this.application.appStack.userinfoEndpoint.function.getFunctionArn())
+                //.usersTableArn(this.application.appStack.usersTable.getTableArn())
+                //.authCodesTableArn(this.application.appStack.authCodesTable.getTableArn())
+                //.refreshTokensTableArn(this.application.appStack.refreshTokensTable.getTableArn())
+                .build());
+        opsStack.addDependency(applicationStack);
+        opsStack.addDependency(webStack);
+
+        // Create the SelfDestruct stack only for non-prod deployments and when JAR exists
+        if (!"prod".equals(deploymentName)) {
+            String handlerSource = envOr("SELF_DESTRUCT_HANDLER_SOURCE", "target/self-destruct-lambda.jar");
+            java.nio.file.Path handlerPath = java.nio.file.Paths.get(handlerSource);
+            if (java.nio.file.Files.exists(handlerPath)) {
+                String selfDestructStackId = "%s-SelfDestructStack".formatted(deploymentName);
+                SelfDestructStack selfDestructStack = new SelfDestructStack(
+                    app,
+                    selfDestructStackId,
+                    SelfDestructStackProps.builder()
+                        //.env(env)
+                        .envName(envName)
+                        .deploymentName(deploymentName)
+                        .resourceNamePrefix(webStack.resourceNamePrefix)
+                        .compressedResourceNamePrefix(webStack.compressedResourceNamePrefix)
+                        .observabilityStackName(observabilityStack.getStackName())
+                        .devStackName(devStack.getStackName())
+                        .identityStackName(identityStack.getStackName())
+                        .authStackName(applicationStack.getStackName())
+                        .applicationStackName(applicationStack.getStackName())
+                        .webStackName(webStack.getStackName())
+                        .edgeStackName(edgeStack.getStackName())
+                        .publishStackName(publishStack.getStackName())
+                        .opsStackName(opsStack.getStackName())
+                        .selfDestructDelayHours(envOr("SELF_DESTRUCT_DELAY_HOURS", "1"))
+                        .selfDestructHandlerSource(handlerSource)
+                        .build());
+                // SelfDestructStack has no dependencies - it should be able to delete everything
+            } else {
+                System.out.println(
+                    "Skipping SelfDestructStack creation - handler JAR not found at: " + handlerSource);
+            }
+        }
+
         app.synth();
     }
+
+    //private static Map<String, BehaviorOptions> concat(Map<String, BehaviorOptions> a, Map<String, BehaviorOptions> b) {
+    //    return new java.util.HashMap<>() {{
+    //        putAll(a);
+    //        putAll(b);
+    //    }};
+    //}
 
     private static WebAppProps loadAppProps(WebApp.Builder builder, Construct scope) {
         WebAppProps props = WebAppProps.Builder.create().build();

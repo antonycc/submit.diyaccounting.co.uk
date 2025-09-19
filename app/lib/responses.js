@@ -52,19 +52,27 @@ function httpResponse({ statusCode, headers, data, request, levelledLogger }) {
 
 export function extractRequest(event) {
   let request;
-  if (event.headers && event.headers.host) {
+  if (event.headers) {
     try {
-      const host = event.headers.host;
+      let baseRequestUrl;
+      if (event.headers.referer) {
+        const refererUrl = new URL(event.headers.referer);
+        baseRequestUrl = `${refererUrl.protocol}//${refererUrl.host}`;
+      } else {
+        baseRequestUrl = `https://${event.headers.host || "unknown-host"}`;
+      }
       const path = event.rawPath || event.path || event.requestContext?.http?.path || "";
       const queryString = event.rawQueryString || "";
-      request = new URL(`${path}?${queryString}`, `https://${host}`);
-      Object.keys(event.queryStringParameters).forEach((key) => {
-        request.searchParams.append(key, event.queryStringParameters[key]);
-      });
+      request = new URL(`${baseRequestUrl}${path}?${queryString}`);
+      if (event.queryStringParameters) {
+        Object.keys(event.queryStringParameters).forEach((key) => {
+          request.searchParams.append(key, event.queryStringParameters[key]);
+        });
+      }
       logger.info({ message: "Processing request with event", request, event });
     } catch (err) {
       logger.warn({ message: "Error building request URL from event", error: err, event });
-      request = "https://unknown"; // Fallback URL in case of error
+      request = "https://unknown-url"; // Fallback URL in case of error
     }
   } else {
     logger.warn({ message: "Event has missing URL path or host header", event });

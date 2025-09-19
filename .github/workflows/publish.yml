@@ -20,8 +20,8 @@ on:
           - premajor
           - preminor
           - prepatch
-  schedule:
-    - cron: '14 6 9 * *'
+#  schedule:
+#    - cron: '14 6 9 * *'
 
 jobs:
   npm-test:
@@ -143,17 +143,17 @@ jobs:
         run: |
           # Replace web-<some version>.jar with web-<newVersion>.jar in cdk.json
           sed -i 's/web-.*\.jar/web-${{ needs.publish-npm.outputs.newVersion }}.jar/g' cdk.json
-          
+
           # Check if there are changes to commit
           if git diff --quiet cdk.json; then
             echo "No changes to commit"
           else
             echo "Committing version updates using gh CLI"
-            
+
             # Configure git user for the commit
             git config --local user.email "action@github.com"
             git config --local user.name "GitHub Actions[bot]"
-            
+
             # Commit and push using standard git (gh CLI doesn't provide commit functionality)
             git add cdk.json
             git commit -m "${{ needs.publish-npm.outputs.newVersion }}"
