@@ -1355,7 +1355,7 @@ jobs:
               --concurrency 4 \
               --asset-parallelism \
               --asset-prebuild \
-              --outputs-file cdk.out/cdk-outputs-edge.json \
+              --outputs-file cdk.out/cdk-outputs-publish.json \
             ;
         env:
           ENV_NAME: ${{ needs.names.outputs.environment-name }}
