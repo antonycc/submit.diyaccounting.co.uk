@@ -109,6 +109,7 @@ public class ApplicationStack extends Stack {
             "DIY_SUBMIT_HOME_URL", builder.homeUrl,
             "DIY_SUBMIT_HMRC_BASE_URI", builder.hmrcBaseUri,
             "DIY_SUBMIT_HMRC_CLIENT_ID", builder.hmrcClientId));
+
         var authUrlHmrcLambdaUrlOrigin = LambdaUrlOrigin.Builder.create(this, "AuthUrlHmrc")
             .imageFilename("authUrlHmrc.Dockerfile")
             .baseImageTag(builder.baseImageTag)
