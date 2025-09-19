@@ -1,5 +1,5 @@
 {
-  "app": "mvn exec:java -Dexec.mainClass=co.uk.diyaccounting.submit.WebApp",
+  "app": "mvn exec:java -Dexec.mainClass=co.uk.diyaccounting.submit.SubmitApplication",
   "output": "./target",
   "context": {
     "env": "dev",

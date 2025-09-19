@@ -77,7 +77,7 @@ Also, ensure that `app/functions/bundle.js` resides in `app/functions` (as it cu
 
 2. **CDK/Java:**
 
-    * Add configuration keys to `cdk.json` and the `WebApp` builder, similar to other Lambdas:
+    * Add configuration keys to `cdk.json` and the `SubmitApplication` builder, similar to other Lambdas:
 
       ```json
       "requestBundleLambdaHandlerFunctionName": "bundle.httpPostMock",
@@ -87,7 +87,7 @@ Also, ensure that `app/functions/bundle.js` resides in `app/functions` (as it cu
     * In `WebStack.java`, create a new `Function` for the bundle Lambda (e.g., `requestBundleLambda`) using the same runtime and layers as other JS Lambdas.  Use the Docker image built from `bundle.Dockerfile`.
     * Create a `FunctionUrl` for this Lambda with the appropriate auth type (likely `AWS_IAM` if you want Cognito tokens verified upstream; for local development you might use `NONE`).
     * Add environment variables: `DIY_SUBMIT_BUNDLE_EXPIRY_DATE`, `DIY_SUBMIT_BUNDLE_USER_LIMIT`, `DIY_SUBMIT_USER_POOL_ID`, and `AWS_REGION`.
-    * Export the function ARN and URL in `WebApp.java` (similar to other outputs) for downstream reference.
+    * Export the function ARN and URL in `SubmitApplication.java` (similar to other outputs) for downstream reference.
 
 ### 4. Add environment variables
 

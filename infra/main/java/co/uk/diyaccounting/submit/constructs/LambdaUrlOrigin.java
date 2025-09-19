@@ -71,7 +71,7 @@ public class LambdaUrlOrigin {
             environment.put("AWS_XRAY_TRACING_NAME", builder.functionName);
         }
 
-        var dockerFunctionBuilder = DockerImageFunction.Builder.create(builder.scope, builder.idPrefix + "Fn")
+        var dockerFunctionBuilder = DockerImageFunction.Builder.create(scope, builder.idPrefix + "Fn")
             .code(this.dockerImage)
             .environment(environment)
             .functionName(builder.functionName)
@@ -84,7 +84,7 @@ public class LambdaUrlOrigin {
 
         // Create log group for the lambda
         this.logGroup = new LogGroup(
-                builder.scope,
+                scope,
                 builder.idPrefix + "LogGroup",
                 LogGroupProps.builder()
                         .logGroupName("/aws/lambda/" + this.lambda.getFunctionName())

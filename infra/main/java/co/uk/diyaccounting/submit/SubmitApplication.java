@@ -26,17 +26,17 @@ import java.lang.reflect.Field;
 
 import static co.uk.diyaccounting.submit.utils.Kind.concat;
 
-public class WebApp {
+public class SubmitApplication {
 
-    private static final Logger logger = LogManager.getLogger(WebApp.class);
+    private static final Logger logger = LogManager.getLogger(SubmitApplication.class);
 
     public static void main(final String[] args) {
 
         App app = new App();
 
         // Build app-level props from cdk.json context with environment overrides
-        WebApp.Builder builder = WebApp.Builder.create(app, "WebApp");
-        WebAppProps appProps = loadAppProps(builder, app);
+        SubmitApplication.Builder builder = SubmitApplication.Builder.create(app, "SubmitApplication");
+        SubmitApplicationProps appProps = loadAppProps(builder, app);
 
         String envName = envOr("ENV_NAME", appProps.env);
         String deploymentName = envOr("DEPLOYMENT_NAME", appProps.deploymentName);
@@ -149,12 +149,21 @@ public class WebApp {
                 .subDomainName(envOr("SUB_DOMAIN_NAME", appProps.subDomainName))
                 .cloudTrailEnabled(envOr("CLOUD_TRAIL_ENABLED", appProps.cloudTrailEnabled))
                 .xRayEnabled(envOr("X_RAY_ENABLED", appProps.xRayEnabled))
+                .verboseLogging(envOr("VERBOSE_LOGGING", appProps.verboseLogging))
                 .baseImageTag(envOr("BASE_IMAGE_TAG", appProps.baseImageTag))
                 .ecrRepositoryArn(devStack.ecrRepository.getRepositoryArn())
                 .ecrRepositoryName(devStack.ecrRepository.getRepositoryName())
                 .homeUrl(envOr("HOME_URL", webStack.baseUrl))
                 .hmrcBaseUri(envOr("HMRC_BASE_URI", appProps.hmrcBaseUri))
                 .hmrcClientId(envOr("DIY_SUBMIT_HMRC_CLIENT_ID", appProps.hmrcClientId))
+                .lambdaUrlAuthType(envOr("LAMBDA_URL_AUTH_TYPE", appProps.lambdaUrlAuthType))
+                .lambdaEntry(envOr("LAMBDA_ENTRY", appProps.lambdaEntry))
+                .hmrcClientSecretArn(envOr("DIY_SUBMIT_HMRC_CLIENT_SECRET_ARN", appProps.hmrcClientSecretArn))
+                .receiptsBucketPostfix(envOr("RECEIPTS_BUCKET_POSTFIX", appProps.receiptsBucketPostfix))
+                .optionalTestS3Endpoint(envOr("OPTIONAL_TEST_S3_ENDPOINT", appProps.optionalTestS3Endpoint))
+                .optionalTestS3AccessKey(envOr("OPTIONAL_TEST_S3_ACCESS_KEY", appProps.optionalTestS3AccessKey))
+                .optionalTestS3SecretKey(envOr("OPTIONAL_TEST_S3_SECRET_KEY", appProps.optionalTestS3SecretKey))
+                .s3RetainReceiptsBucket(appProps.s3RetainReceiptsBucket)
                 //.hmrcClientSecretArn(
                 //.cognitoClientId(identityStack.userPoolClient.getUserPoolClientId())
                 //.cognitoBaseUri(identityStack.userPoolDomain.getDomainName())
@@ -297,10 +306,10 @@ public class WebApp {
     //    }};
     //}
 
-    private static WebAppProps loadAppProps(WebApp.Builder builder, Construct scope) {
-        WebAppProps props = WebAppProps.Builder.create().build();
+    private static SubmitApplicationProps loadAppProps(SubmitApplication.Builder builder, Construct scope) {
+        SubmitApplicationProps props = SubmitApplicationProps.Builder.create().build();
         // populate from cdk.json context using exact camelCase keys
-        for (Field f : WebAppProps.class.getDeclaredFields()) {
+        for (Field f : SubmitApplicationProps.class.getDeclaredFields()) {
             if (f.getType() != String.class) continue;
             try {
                 f.setAccessible(true);
@@ -333,12 +342,12 @@ public class WebApp {
             this.props = props;
         }
 
-        public static WebApp.Builder create(Construct scope, String id) {
-            return new WebApp.Builder(scope, id, null);
+        public static SubmitApplication.Builder create(Construct scope, String id) {
+            return new SubmitApplication.Builder(scope, id, null);
         }
 
-        public static WebApp.Builder create(Construct scope, String id, StackProps props) {
-            return new WebApp.Builder(scope, id, props);
+        public static SubmitApplication.Builder create(Construct scope, String id, StackProps props) {
+            return new SubmitApplication.Builder(scope, id, props);
         }
 
         public String getContextValueString(Construct scope, String contextKey, String defaultValue) {

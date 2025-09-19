@@ -509,7 +509,7 @@ public class WebStack extends Stack {
 
         var idPrefix = "%s-origin-access-".formatted(dashedDomainName);
         logger.info("Setting expiration period to %d days for %s".formatted(accessLogGroupRetentionPeriodDays, idPrefix));
-        this.originAccessLogBucket = Bucket.Builder.create(scope, "%sLogBucket".formatted(idPrefix))
+        this.originAccessLogBucket = Bucket.Builder.create(this, "%sLogBucket".formatted(idPrefix))
             .bucketName(originAccessLogBucketName)
             .objectOwnership(ObjectOwnership.OBJECT_WRITER)
             .versioned(false)
@@ -527,7 +527,7 @@ public class WebStack extends Stack {
         logger.info("Created log bucket %s".formatted(this.originAccessLogBucket));
 
         // Create the origin bucket
-        this.originBucket = Bucket.Builder.create(builder.scope, "OriginBucket")
+        this.originBucket = Bucket.Builder.create(this, "OriginBucket")
             .bucketName(originBucketName)
             .versioned(false)
             .blockPublicAccess(BlockPublicAccess.BLOCK_ALL)
@@ -539,7 +539,7 @@ public class WebStack extends Stack {
         //}
 
         // Create origin access identity
-        this.originIdentity = OriginAccessIdentity.Builder.create(builder.scope, "OriginAccessIdentity")
+        this.originIdentity = OriginAccessIdentity.Builder.create(this, "OriginAccessIdentity")
             .comment("Identity created for access to the web website bucket via the CloudFront" + " distribution")
             .build();
 

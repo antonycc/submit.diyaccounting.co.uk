@@ -296,7 +296,7 @@ public class IdentityStack extends Stack {
     public IdentityStack(Construct scope, String id, StackProps props, IdentityStack.Builder builder) {
         super(scope, id, props);
 
-        // Values are provided via WebApp after context/env resolution
+        // Values are provided via SubmitApplication after context/env resolution
 
         var hostedZone = HostedZone.fromHostedZoneAttributes(
                 this,

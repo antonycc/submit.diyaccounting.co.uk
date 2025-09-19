@@ -45,7 +45,7 @@ public class DevStack extends Stack {
     public DevStack(Construct scope, String id, StackProps props, DevStack.Builder builder) {
         super(scope, id, props);
 
-        // Values are provided via WebApp after context/env resolution
+        // Values are provided via SubmitApplication after context/env resolution
 
         // Build naming using same patterns as WebStack
         String domainName = Builder.buildDomainName(builder.env, builder.subDomainName, builder.hostedZoneName);

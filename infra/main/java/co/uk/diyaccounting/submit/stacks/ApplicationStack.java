@@ -73,10 +73,10 @@ public class ApplicationStack extends Stack {
     public ApplicationStack(Construct scope, String id, StackProps props, ApplicationStack.Builder builder) {
         super(scope, id, props);
 
-        // Values are provided via WebApp after context/env resolution
+        // Values are provided via SubmitApplication after context/env resolution
 
         // Build naming using same patterns as WebStack
-        String domainName = Builder.buildDomainName(builder.env, builder.subDomainName, builder.hostedZoneName);
+        //String domainName = Builder.buildDomainName(builder.env, builder.subDomainName, builder.hostedZoneName);
         String dashedDomainName =
             Builder.buildDashedDomainName(builder.env, builder.subDomainName, builder.hostedZoneName);
 
@@ -185,7 +185,7 @@ public class ApplicationStack extends Stack {
             "DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX", builder.receiptsBucketPostfix));
         if (StringUtils.isNotBlank(builder.optionalTestS3Endpoint)
             && StringUtils.isNotBlank(builder.optionalTestS3AccessKey)
-            || StringUtils.isNotBlank(builder.optionalTestS3SecretKey)) {
+            && StringUtils.isNotBlank(builder.optionalTestS3SecretKey)) {
             // For production like integrations without AWS we can use test S3 credentials
             var logReceiptLambdaTestEnv = new HashMap<>(Map.of(
                 "DIY_SUBMIT_TEST_S3_ENDPOINT", builder.optionalTestS3Endpoint,
@@ -281,7 +281,7 @@ public class ApplicationStack extends Stack {
             ? builder.receiptsBucketPostfix
             : "receipts";
         String receiptsBucketFullName = "%s-%s".formatted(dashedDomainName, receiptsBucketPostfix);
-        this.receiptsBucket = Bucket.Builder.create(builder.scope, "ReceiptsBucket")
+        this.receiptsBucket = Bucket.Builder.create(this, "ReceiptsBucket")
             .bucketName(receiptsBucketFullName)
             .versioned(false)
             .blockPublicAccess(BlockPublicAccess.BLOCK_ALL)
@@ -424,6 +424,81 @@ public class ApplicationStack extends Stack {
 
         public Builder xRayEnabled(String xRayEnabled) {
             this.xRayEnabled = xRayEnabled;
+            return this;
+        }
+
+        public Builder verboseLogging(String verboseLogging) {
+            this.verboseLogging = verboseLogging;
+            return this;
+        }
+
+        public Builder baseImageTag(String baseImageTag) {
+            this.baseImageTag = baseImageTag;
+            return this;
+        }
+
+        public Builder ecrRepositoryArn(String ecrRepositoryArn) {
+            this.ecrRepositoryArn = ecrRepositoryArn;
+            return this;
+        }
+
+        public Builder ecrRepositoryName(String ecrRepositoryName) {
+            this.ecrRepositoryName = ecrRepositoryName;
+            return this;
+        }
+
+        public Builder lambdaEntry(String lambdaEntry) {
+            this.lambdaEntry = lambdaEntry;
+            return this;
+        }
+
+        public Builder homeUrl(String homeUrl) {
+            this.homeUrl = homeUrl;
+            return this;
+        }
+
+        public Builder hmrcBaseUri(String hmrcBaseUri) {
+            this.hmrcBaseUri = hmrcBaseUri;
+            return this;
+        }
+
+        public Builder hmrcClientId(String hmrcClientId) {
+            this.hmrcClientId = hmrcClientId;
+            return this;
+        }
+
+        public Builder hmrcClientSecretArn(String hmrcClientSecretArn) {
+            this.hmrcClientSecretArn = hmrcClientSecretArn;
+            return this;
+        }
+
+        public Builder optionalTestAccessToken(String optionalTestAccessToken) {
+            this.optionalTestAccessToken = optionalTestAccessToken;
+            return this;
+        }
+
+        public Builder optionalTestS3Endpoint(String optionalTestS3Endpoint) {
+            this.optionalTestS3Endpoint = optionalTestS3Endpoint;
+            return this;
+        }
+
+        public Builder optionalTestS3AccessKey(String optionalTestS3AccessKey) {
+            this.optionalTestS3AccessKey = optionalTestS3AccessKey;
+            return this;
+        }
+
+        public Builder optionalTestS3SecretKey(String optionalTestS3SecretKey) {
+            this.optionalTestS3SecretKey = optionalTestS3SecretKey;
+            return this;
+        }
+
+        public Builder receiptsBucketPostfix(String receiptsBucketPostfix) {
+            this.receiptsBucketPostfix = receiptsBucketPostfix;
+            return this;
+        }
+
+        public Builder s3RetainReceiptsBucket(String s3RetainReceiptsBucket) {
+            this.s3RetainReceiptsBucket = s3RetainReceiptsBucket;
             return this;
         }
 
