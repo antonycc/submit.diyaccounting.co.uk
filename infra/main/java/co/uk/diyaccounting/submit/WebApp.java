@@ -18,6 +18,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import software.amazon.awscdk.App;
 import software.amazon.awscdk.StackProps;
+import software.amazon.awscdk.Environment;
 import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
 
@@ -39,7 +40,7 @@ public class WebApp {
 
         String envName = envOr("ENV_NAME", appProps.env);
         String deploymentName = envOr("DEPLOYMENT_NAME", appProps.deploymentName);
-      
+
         // Create ObservabilityStack with resources used in monitoring the application
         String observabilityStackId = "%s-ObservabilityStack".formatted(deploymentName);
         System.out.printf("Synthesizing stack %s for deployment %s to environment %s\n", observabilityStackId, deploymentName, envName);
@@ -178,6 +179,8 @@ public class WebApp {
                         authStack.additionalOriginsBehaviourMappings,
                         applicationStack.additionalOriginsBehaviourMappings
                     ))
+                // Force this stack (and thus WAF) into us-east-1 as required by CloudFront
+                .env(Environment.builder().region("us-east-1").build())
                 .build());
         edgeStack.addDependency(observabilityStack);
         edgeStack.addDependency(applicationStack);
