@@ -1,7 +1,6 @@
 package co.uk.diyaccounting.submit.constructs;
 
 import co.uk.diyaccounting.submit.awssdk.SimpleStackProps;
-import java.util.Map;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -12,6 +11,8 @@ import software.amazon.awscdk.services.cloudfront.AllowedMethods;
 import uk.org.webcompere.systemstubs.environment.EnvironmentVariables;
 import uk.org.webcompere.systemstubs.jupiter.SystemStub;
 import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
+
+import java.util.Map;
 
 @ExtendWith(SystemStubsExtension.class)
 public class LambdaUrlOriginTest {
@@ -38,11 +39,15 @@ public class LambdaUrlOriginTest {
                 .handler("com.example.Handler")
                 .timeout(Duration.seconds(45))
                 .environment(Map.of("TEST_VAR", "test_value"))
+                .ecrRepositoryArn("arn:aws:ecr:eu-west-2:000000000000:repository/test-repo")
+                .ecrRepositoryName("test-repo")
+                .baseImageTag("test-tag")
                 .allowedMethods(AllowedMethods.ALLOW_ALL);
 
         Assertions.assertNotNull(builder);
 
-        LambdaUrlOrigin lambdaUrlOrigin = builder.build();
+        var scope = stack;
+        LambdaUrlOrigin lambdaUrlOrigin = builder.build(scope);
         Assertions.assertNotNull(lambdaUrlOrigin);
         Assertions.assertNotNull(lambdaUrlOrigin.lambda);
         Assertions.assertNotNull(lambdaUrlOrigin.logGroup);

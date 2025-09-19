@@ -1,9 +1,6 @@
 package co.uk.diyaccounting.submit.stacks;
 
 import co.uk.diyaccounting.submit.utils.ResourceNameUtils;
-import java.util.AbstractMap;
-import java.util.List;
-import java.util.regex.Pattern;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import software.amazon.awscdk.CfnOutput;
@@ -23,6 +20,10 @@ import software.amazon.awscdk.services.iam.ServicePrincipal;
 import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.constructs.Construct;
+
+import java.util.AbstractMap;
+import java.util.List;
+import java.util.regex.Pattern;
 
 /**
  * DevStack for Docker container development and deployment infrastructure.
@@ -66,7 +67,8 @@ public class DevStack extends Stack {
                                 .tagStatus(TagStatus.UNTAGGED)
                                 .maxImageAge(Duration.days(1))
                                 .build()))
-                .removalPolicy(builder.retainEcrRepository ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY)
+                .emptyOnDelete(true)
+                .removalPolicy(RemovalPolicy.DESTROY)
                 .build();
 
         // CloudWatch Log Group for ECR operations with 7-day retention

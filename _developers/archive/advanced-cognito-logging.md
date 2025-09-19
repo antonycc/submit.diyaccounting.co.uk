@@ -144,7 +144,7 @@ Cognito triggers fire at various stages (pre‑sign‑up, post‑confirmation, p
    X_RAY_ENABLED=true
    ```
 
-   Run `npx cdk deploy SubmitWebStack-dev --require-approval never --verbose`.
+   Run `npx cdk deploy WebStack-dev --require-approval never --verbose`.
 
 3. **Verify resources**:
 

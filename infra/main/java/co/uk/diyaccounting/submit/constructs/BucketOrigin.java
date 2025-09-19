@@ -18,17 +18,17 @@ public class BucketOrigin {
 
     private static final Logger logger = LogManager.getLogger(BucketOrigin.class);
 
-    public final IBucket originBucket;
+    public final Bucket originBucket;
     public final IBucket originAccessLogBucket;
     public final OriginAccessIdentity originIdentity;
     public final IOrigin origin;
 
     private BucketOrigin(Builder builder) {
         // Create access log bucket using LogForwardingBucket only when creating a new bucket
-        if (builder.useExistingBucket) {
-            this.originBucket = Bucket.fromBucketName(builder.scope, "OriginBucket", builder.bucketName);
-            this.originAccessLogBucket = null;
-        } else {
+        //if (builder.useExistingBucket) {
+        //    this.originBucket = Bucket.fromBucketName(builder.scope, "OriginBucket", builder.bucketName);
+        //    this.originAccessLogBucket = null;
+        //} else {
             this.originAccessLogBucket = LogForwardingBucket.Builder.create(
                             builder.scope,
                             "OriginAccess",
@@ -50,7 +50,7 @@ public class BucketOrigin {
                     .autoDeleteObjects(!builder.retainBucket)
                     .serverAccessLogsBucket(this.originAccessLogBucket)
                     .build();
-        }
+        //}
 
         // Create origin access identity
         this.originIdentity = OriginAccessIdentity.Builder.create(builder.scope, "OriginAccessIdentity")

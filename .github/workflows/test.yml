@@ -7,46 +7,46 @@ concurrency:
 run-name: 'test [${{ github.ref_name }}] [${{ github.event.head_commit.message }}]'
 
 on:
-  pull_request:
-    branches:
-      - '**'
-      - '!gh_pages'
-    paths:
-      - 'app/**'
-      - 'behaviour-tests/**'
-      - 'infra/**'
-      - 'web/**'
-      - '.env.test'
-      - '.env.proxy'
-      - 'cdk.json'
-      - 'Dockerfile'
-      - 'LICENSE'
-      - 'package.json'
-      - 'package-lock.json'
-      - 'pom.xml'
-      - 'product-catalogue.toml'
-      - '.github/workflows/test.yml'
-      - '.github/workflows/deploy-ci-only.yml'
-  push:
-    branches:
-      - '**'
-      - '!gh_pages'
-    paths:
-      - 'app/**'
-      - 'behaviour-tests/**'
-      - 'infra/**'
-      - 'web/**'
-      - '.env.test'
-      - '.env.proxy'
-      - 'cdk.json'
-      - 'Dockerfile'
-      - 'LICENSE'
-      - 'package.json'
-      - 'package-lock.json'
-      - 'pom.xml'
-      - 'product-catalogue.toml'
-      - '.github/workflows/test.yml'
-      - '.github/workflows/deploy-ci-only.yml'
+#  pull_request:
+#    branches:
+#      - '**'
+#      - '!gh_pages'
+#    paths:
+#      - 'app/**'
+#      - 'behaviour-tests/**'
+#      - 'infra/**'
+#      - 'web/**'
+#      - '.env.test'
+#      - '.env.proxy'
+#      - 'cdk.json'
+#      - 'Dockerfile'
+#      - 'LICENSE'
+#      - 'package.json'
+#      - 'package-lock.json'
+#      - 'pom.xml'
+#      - 'product-catalogue.toml'
+#      - '.github/workflows/test.yml'
+#      - '.github/workflows/deploy-ci-only.yml'
+#  push:
+#    branches:
+#      - '**'
+#      - '!gh_pages'
+#    paths:
+#      - 'app/**'
+#      - 'behaviour-tests/**'
+#      - 'infra/**'
+#      - 'web/**'
+#      - '.env.test'
+#      - '.env.proxy'
+#      - 'cdk.json'
+#      - 'Dockerfile'
+#      - 'LICENSE'
+#      - 'package.json'
+#      - 'package-lock.json'
+#      - 'pom.xml'
+#      - 'product-catalogue.toml'
+#      - '.github/workflows/test.yml'
+#      - '.github/workflows/deploy-ci-only.yml'
   workflow_dispatch:
     inputs:
         environment:

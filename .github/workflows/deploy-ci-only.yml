@@ -2,7 +2,7 @@
 
 name: deploy-ci-only
 concurrency:
-  group: deploy-${{ github.ref_name }}
+  group: old-deploy-${{ github.ref_name }}
   cancel-in-progress: false
 run-name: "deploy ci only [${{ github.ref_name }}] (skipDeploy = [${{ inputs.skipDeploy || 'false' }}])"
 
@@ -226,7 +226,7 @@ jobs:
         if: ${{ env.skipDeploy != 'true' }}
         id: deployObservability
         shell: bash
-        run: npx dotenv -e .env.ci -- npx cdk deploy SubmitObservabilityStack-ci --exclusively --require-approval never --ci true --verbose --strict --validation
+        run: npx dotenv -e .env.ci -- npx cdk deploy ObservabilityStack-ci --exclusively --require-approval never --ci true --verbose --strict --validation
         env:
           GITHUB_ACTOR: ${{ github.actor }}
           ENV_NAME: 'ci'
@@ -235,7 +235,7 @@ jobs:
         if: ${{ env.skipDeploy != 'true' }}
         id: deployDev
         shell: bash
-        run: npx dotenv -e .env.ci -- npx cdk deploy SubmitDevStack-ci --exclusively --require-approval never --ci true --verbose --strict --validation
+        run: npx dotenv -e .env.ci -- npx cdk deploy DevStack-ci --exclusively --require-approval never --ci true --verbose --strict --validation
         env:
           GITHUB_ACTOR: ${{ github.actor }}
           ENV_NAME: 'ci'
@@ -244,7 +244,7 @@ jobs:
         if: ${{ env.skipDeploy != 'true' }}
         id: deployIdentity
         shell: bash
-        run: npx dotenv -e .env.ci -- npx cdk deploy SubmitIdentityStack-ci --exclusively --require-approval never --ci true --verbose --strict --validation
+        run: npx dotenv -e .env.ci -- npx cdk deploy IdentityStack-ci --exclusively --require-approval never --ci true --verbose --strict --validation
         env:
           GITHUB_ACTOR: ${{ github.actor }}
           ENV_NAME: 'ci'
@@ -293,7 +293,7 @@ jobs:
         id: ecr-uri
         shell: bash
         run: |
-          STACK_NAME="SubmitDevStack-ci"
+          STACK_NAME="DevStack-ci"
           ECR_URI=$(aws cloudformation describe-stacks \
             --stack-name $STACK_NAME \
             --query 'Stacks[0].Outputs[?OutputKey==`EcrRepositoryUri`].OutputValue' \
@@ -331,7 +331,7 @@ jobs:
         if: ${{ env.skipDeploy != 'true' }}
         id: deployApplication
         shell: bash
-        run: npx dotenv -e .env.ci -- npx cdk deploy SubmitApplicationStack-ci --exclusively --require-approval never --ci true --verbose --strict --validation
+        run: npx dotenv -e .env.ci -- npx cdk deploy ApplicationStack-ci --exclusively --require-approval never --ci true --verbose --strict --validation
         env:
           GITHUB_ACTOR: ${{ github.actor }}
           ENV_NAME: 'ci'
@@ -348,7 +348,7 @@ jobs:
         if: ${{ env.skipDeploy != 'true' }}
         id: deployWeb
         shell: bash
-        run: npx dotenv -e .env.ci -- npx cdk deploy SubmitWebStack-ci --exclusively --require-approval never --ci true --verbose --strict --validation
+        run: npx dotenv -e .env.ci -- npx cdk deploy WebStack-ci --exclusively --require-approval never --ci true --verbose --strict --validation
         env:
           GITHUB_ACTOR: ${{ github.actor }}
           ENV_NAME: 'ci'
