@@ -261,7 +261,7 @@ jobs:
           key: ${{ runner.os }}-playwright-${{ hashFiles('**/package-lock.json') }}
 
       - run: npx playwright install chromium --with-deps
-      
+
       - run: npm run test:browser
 
       - name: Upload test results
@@ -462,7 +462,7 @@ jobs:
 
       - name: Build CDK and synthesize all stacks
         run: |
-          ./mvnw --errors clean package -DskipTests -Dmaven.compiler.source=17 -Dmaven.compiler.target=17 \
+          ./mvnw --errors clean package -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
             && npx dotenv -e .env.${{ needs.names.outputs.environment-name }} -- \
               npx cdk synth --all --strict --validation --version-reporting=false --path-metadata=false --asset-metadata=false
         env:
@@ -516,7 +516,6 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
-          role-chaining: false
           aws-region: ${{ env.AWS_REGION }}
           role-chaining: false
           audience: sts.amazonaws.com
@@ -528,7 +527,6 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
-          role-chaining: true
           aws-region: ${{ env.AWS_REGION }}
           role-chaining: true
           audience: sts.amazonaws.com
@@ -595,7 +593,6 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
-          role-chaining: false
           aws-region: ${{ env.AWS_REGION }}
           role-chaining: false
           audience: sts.amazonaws.com
@@ -607,7 +604,6 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
-          role-chaining: true
           aws-region: ${{ env.AWS_REGION }}
           role-chaining: true
           audience: sts.amazonaws.com
@@ -630,7 +626,7 @@ jobs:
               --concurrency 4 \
               --asset-parallelism \
               --asset-prebuild \
-              --outputs-file target/cdk-outputs-observability.json \
+              --outputs-file cdk.out/cdk-outputs-observability.json \
           ;
         env:
           GITHUB_ACTOR: ${{ github.actor }}
@@ -755,7 +751,6 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
-          role-chaining: false
           aws-region: ${{ env.AWS_REGION }}
           role-chaining: false
           audience: sts.amazonaws.com
@@ -767,7 +762,6 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
-          role-chaining: true
           aws-region: ${{ env.AWS_REGION }}
           role-chaining: true
           audience: sts.amazonaws.com
@@ -784,7 +778,7 @@ jobs:
               --concurrency 4 \
               --asset-parallelism \
               --asset-prebuild \
-              --outputs-file target/cdk-outputs-dev.json \
+              --outputs-file cdk.out/cdk-outputs-dev.json \
           ;
         env:
           GITHUB_ACTOR: ${{ github.actor }}
@@ -840,7 +834,6 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
-          role-chaining: false
           aws-region: ${{ env.AWS_REGION }}
           role-chaining: false
           audience: sts.amazonaws.com
@@ -852,7 +845,6 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
-          role-chaining: true
           aws-region: ${{ env.AWS_REGION }}
           role-chaining: true
           audience: sts.amazonaws.com
@@ -870,7 +862,7 @@ jobs:
               --concurrency 4 \
               --asset-parallelism \
               --asset-prebuild \
-              --outputs-file target/cdk-outputs-identity.json \
+              --outputs-file cdk.out/cdk-outputs-identity.json \
             ;
         env:
           ENV_NAME: ${{ needs.names.outputs.environment-name }}
@@ -921,7 +913,6 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
-          role-chaining: false
           aws-region: ${{ env.AWS_REGION }}
           role-chaining: false
           audience: sts.amazonaws.com
@@ -933,7 +924,6 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
-          role-chaining: true
           aws-region: ${{ env.AWS_REGION }}
           role-chaining: true
           audience: sts.amazonaws.com
@@ -998,7 +988,6 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
-          role-chaining: false
           aws-region: ${{ env.AWS_REGION }}
           role-chaining: false
           audience: sts.amazonaws.com
@@ -1010,7 +999,6 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
-          role-chaining: true
           aws-region: ${{ env.AWS_REGION }}
           role-chaining: true
           audience: sts.amazonaws.com
@@ -1028,7 +1016,7 @@ jobs:
               --concurrency 4 \
               --asset-parallelism \
               --asset-prebuild \
-              --outputs-file target/cdk-outputs-application.json \
+              --outputs-file cdk.out/cdk-outputs-application.json \
             ;
         env:
           ENV_NAME: ${{ needs.names.outputs.environment-name }}
@@ -1082,7 +1070,6 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
-          role-chaining: false
           aws-region: ${{ env.AWS_REGION }}
           role-chaining: false
           audience: sts.amazonaws.com
@@ -1094,7 +1081,6 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
-          role-chaining: true
           aws-region: ${{ env.AWS_REGION }}
           role-chaining: true
           audience: sts.amazonaws.com
@@ -1112,7 +1098,7 @@ jobs:
               --concurrency 4 \
               --asset-parallelism \
               --asset-prebuild \
-              --outputs-file target/cdk-outputs-web.json \
+              --outputs-file cdk.out/cdk-outputs-web.json \
             ;
         env:
           ENV_NAME: ${{ needs.names.outputs.environment-name }}
