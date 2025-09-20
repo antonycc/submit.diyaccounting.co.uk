@@ -23,6 +23,7 @@ public class EdgeStackProps implements StackProps {
 
     // Explicit env to allow this stack to target us-east-1 for CloudFront/WAF
     private final Environment env;
+    private final Boolean crossRegionReferences;
 
     private EdgeStackProps(Builder builder) {
         this.envName = builder.envName;
@@ -39,12 +40,18 @@ public class EdgeStackProps implements StackProps {
         //this.webBehaviorOptions = builder.webBehaviorOptions;
         this.additionalOriginsBehaviourMappings = builder.additionalOriginsBehaviourMappings;
         this.env = builder.env;
+        this.crossRegionReferences = builder.crossRegionReferences;
     }
 
     // Ensure Stack consumes our explicit env (region/account) when provided
     @Override
     public Environment getEnv() {
         return this.env;
+    }
+
+    @Override
+    public Boolean getCrossRegionReferences() {
+        return this.crossRegionReferences;
     }
 
     public static Builder builder() {
@@ -66,6 +73,7 @@ public class EdgeStackProps implements StackProps {
         private BehaviorOptions webBehaviorOptions;
         private Map<String, String> additionalOriginsBehaviourMappings;
         private Environment env; // optional
+        private Boolean crossRegionReferences; // optional
 
         public Builder envName(String envName) {
             this.envName = envName;
@@ -135,6 +143,11 @@ public class EdgeStackProps implements StackProps {
 
         public Builder env(Environment env) {
             this.env = env;
+            return this;
+        }
+
+        public Builder crossRegionReferences(Boolean crossRegionReferences) {
+            this.crossRegionReferences = crossRegionReferences;
             return this;
         }
 

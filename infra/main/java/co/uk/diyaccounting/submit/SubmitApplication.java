@@ -92,7 +92,38 @@ public class SubmitApplication {
         // Create WebStack with resources used in running the application
         String webStackId = "%s-WebStack".formatted(deploymentName);
         System.out.printf("Synthesizing stack %s for deployment %s to environment %s\n", webStackId, deploymentName, envName);
-        WebStack webStack = WebStack.Builder.create(app, webStackId)
+        // Determine primary environment (account/region) from CDK env
+        String cdkDefaultAccount = System.getenv("CDK_DEFAULT_ACCOUNT");
+        String cdkDefaultRegion = System.getenv("CDK_DEFAULT_REGION");
+        software.amazon.awscdk.Environment primaryEnv = null;
+        if (cdkDefaultAccount != null && !cdkDefaultAccount.isBlank() && cdkDefaultRegion != null && !cdkDefaultRegion.isBlank()) {
+            primaryEnv = software.amazon.awscdk.Environment.builder()
+                    .account(cdkDefaultAccount)
+                    .region(cdkDefaultRegion)
+                    .build();
+        }
+
+        WebStack webStack = (primaryEnv != null)
+                ? WebStack.Builder.create(app, webStackId,
+                        StackProps.builder()
+                                .env(primaryEnv)
+                                .crossRegionReferences(true)
+                                .build())
+                .props(co.uk.diyaccounting.submit.stacks.WebStackProps.builder()
+                        .env(envName)
+                        .hostedZoneName(envOr("HOSTED_ZONE_NAME", appProps.hostedZoneName))
+                        .hostedZoneId(envOr("HOSTED_ZONE_ID", appProps.hostedZoneId))
+                        .subDomainName(appProps.subDomainName)
+                        .cloudTrailEnabled(envOr("CLOUD_TRAIL_ENABLED", appProps.cloudTrailEnabled))
+                        .xRayEnabled(envOr("X_RAY_ENABLED", appProps.xRayEnabled))
+                        .verboseLogging(envOr("VERBOSE_LOGGING", appProps.verboseLogging))
+                        .accessLogGroupRetentionPeriodDays(appProps.accessLogGroupRetentionPeriodDays)
+                        .s3UseExistingBucket(appProps.s3UseExistingBucket)
+                        .s3RetainOriginBucket(appProps.s3RetainOriginBucket)
+                        .build())
+                // .trail(observabilityStack.trail)
+                .build()
+                : WebStack.Builder.create(app, webStackId)
                 .props(co.uk.diyaccounting.submit.stacks.WebStackProps.builder()
                         .env(envName)
                         .hostedZoneName(envOr("HOSTED_ZONE_NAME", appProps.hostedZoneName))
@@ -204,6 +235,7 @@ public class SubmitApplication {
                 .webBucketArn(webStack.originBucket.getBucketArn())
                 //.webBehaviorOptions(webStack.behaviorOptions)
                 .additionalOriginsBehaviourMappings(additionalBehaviourMappings)
+                .crossRegionReferences(true)
                 // Force this stack (and thus WAF) into us-east-1 as required by CloudFront
                 .env(Environment.builder().region("us-east-1").build())
                 .build());
@@ -228,7 +260,8 @@ public class SubmitApplication {
                 .webBucket(webStack.originBucket)
                 .commitHash(appProps.commitHash)
                 .docRootPath(appProps.docRootPath)
-                .env(Environment.builder().region("us-east-1").build())
+                .crossRegionReferences(true)
+                .env(primaryEnv)
                 .build());
         //publishStack.addDependency(edgeStack);
         //publishStack.addDependency(applicationStack);
@@ -251,7 +284,7 @@ public class SubmitApplication {
             app,
             opsStackId,
             OpsStackProps.builder()
-                //.env(env)
+                .env(primaryEnv)
                 .envName(envName)
                 .deploymentName(deploymentName)
                 .domainName(webStack.domainName)
@@ -261,6 +294,7 @@ public class SubmitApplication {
                 .distributionId(edgeStack.distribution.getDistributionId())
                 .originBucketArn(webStack.originBucket.getBucketArn())
                 .receiptsBucketArn(receiptsBucketArn)
+                .crossRegionReferences(true)
                 //.tokenEndpointFunctionArn(this.application.appStack.tokenEndpoint.function.getFunctionArn())
                 //.userinfoEndpointFunctionArn(
                 //    this.application.appStack.userinfoEndpoint.function.getFunctionArn())

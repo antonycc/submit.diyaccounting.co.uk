@@ -14,6 +14,7 @@ public class OpsStackProps implements StackProps {
     public final String originBucketArn;
     public final String receiptsBucketArn; // optional, may be null
     public final java.util.List<String> lambdaFunctionArns;
+    private final Boolean crossRegionReferences;
 
     private OpsStackProps(Builder builder) {
         this.env = builder.env;
@@ -26,11 +27,17 @@ public class OpsStackProps implements StackProps {
         this.originBucketArn = builder.originBucketArn;
         this.receiptsBucketArn = builder.receiptsBucketArn;
         this.lambdaFunctionArns = builder.lambdaFunctionArns;
+        this.crossRegionReferences = builder.crossRegionReferences;
     }
 
     @Override
     public Environment getEnv() {
         return this.env;
+    }
+
+    @Override
+    public Boolean getCrossRegionReferences() {
+        return this.crossRegionReferences;
     }
 
     public static Builder builder() {
@@ -48,6 +55,7 @@ public class OpsStackProps implements StackProps {
         private String originBucketArn;
         private String receiptsBucketArn;
         private java.util.List<String> lambdaFunctionArns;
+        private Boolean crossRegionReferences;
 
         public Builder env(Environment env) {
             this.env = env;
@@ -99,7 +107,10 @@ public class OpsStackProps implements StackProps {
             return this;
         }
 
-
+        public Builder crossRegionReferences(Boolean crossRegionReferences) {
+            this.crossRegionReferences = crossRegionReferences;
+            return this;
+        }
 
         public OpsStackProps build() {
             return new OpsStackProps(this);

@@ -15,6 +15,7 @@ public class PublishStackProps implements StackProps {
     public final String commitHash;
     public final String docRootPath;
     public final Environment env;
+    private final Boolean crossRegionReferences;
 
     private PublishStackProps(Builder builder) {
         this.envName = builder.envName;
@@ -27,12 +28,18 @@ public class PublishStackProps implements StackProps {
         this.commitHash = builder.commitHash;
         this.docRootPath = builder.docRootPath;
         this.env = builder.env;
+        this.crossRegionReferences = builder.crossRegionReferences;
     }
 
     // Ensure Stack consumes our explicit env (region/account) when provided
     @Override
     public Environment getEnv() {
         return this.env;
+    }
+
+    @Override
+    public Boolean getCrossRegionReferences() {
+        return this.crossRegionReferences;
     }
 
     public static Builder builder() {
@@ -50,6 +57,7 @@ public class PublishStackProps implements StackProps {
         private String commitHash;
         private String docRootPath;
         private Environment env;
+        private Boolean crossRegionReferences;
 
         public Builder envName(String envName) {
             this.envName = envName;
@@ -98,6 +106,11 @@ public class PublishStackProps implements StackProps {
 
         public Builder env(Environment env) {
             this.env = env;
+            return this;
+        }
+
+        public Builder crossRegionReferences(Boolean crossRegionReferences) {
+            this.crossRegionReferences = crossRegionReferences;
             return this;
         }
 
