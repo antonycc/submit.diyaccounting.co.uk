@@ -37,24 +37,24 @@ public class DevStack extends Stack {
     public final LogGroup ecrLogGroup;
     public final Role ecrPublishRole;
 
-    public DevStack(Construct scope, String id, DevStack.Builder builder) {
-        this(scope, id, null, builder);
+    public DevStack(Construct scope, String id, DevStackProps props) {
+        this(scope, id, null, props);
     }
 
-    public DevStack(Construct scope, String id, StackProps props, DevStack.Builder builder) {
-        super(scope, id, props);
+    public DevStack(Construct scope, String id, StackProps stackProps, DevStackProps props) {
+        super(scope, id, stackProps);
 
         // Values are provided via SubmitApplication after context/env resolution
 
         // Build naming using same patterns as WebStack
-        String domainName = Builder.buildDomainName(builder.env, builder.subDomainName, builder.hostedZoneName);
+        String domainName = buildDomainName(props.env(), props.subDomainName(), props.hostedZoneName());
         String dashedDomainName =
-                Builder.buildDashedDomainName(builder.env, builder.subDomainName, builder.hostedZoneName);
+                buildDashedDomainName(props.env(), props.subDomainName(), props.hostedZoneName());
 
         logger.info("Creating DevStack for domain: {} (dashed: {})", domainName, dashedDomainName);
 
         // ECR Repository with lifecycle rules
-        String ecrRepositoryName = Builder.buildEcrRepositoryName(dashedDomainName);
+        String ecrRepositoryName = buildEcrRepositoryName(dashedDomainName);
         this.ecrRepository = Repository.Builder.create(this, "EcrRepository")
                 .repositoryName(ecrRepositoryName)
                 .imageScanOnPush(true) // Enable vulnerability scanning
@@ -71,7 +71,7 @@ public class DevStack extends Stack {
                 .build();
 
         // CloudWatch Log Group for ECR operations with 7-day retention
-        String ecrLogGroupName = Builder.buildEcrLogGroupName(dashedDomainName);
+        String ecrLogGroupName = buildEcrLogGroupName(dashedDomainName);
         this.ecrLogGroup = LogGroup.Builder.create(this, "EcrLogGroup")
                 .logGroupName(ecrLogGroupName)
                 .retention(RetentionDays.ONE_WEEK) // 7-day retention as requested
@@ -80,7 +80,7 @@ public class DevStack extends Stack {
 
         // IAM Role for ECR publishing with comprehensive permissions
         this.ecrPublishRole = Role.Builder.create(this, "EcrPublishRole")
-                .roleName(Builder.buildEcrPublishRoleName(dashedDomainName))
+                .roleName(buildEcrPublishRoleName(dashedDomainName))
                 .assumedBy(new ServicePrincipal("lambda.amazonaws.com"))
                 .inlinePolicies(java.util.Map.of(
                         "EcrPublishPolicy",
@@ -150,98 +150,36 @@ public class DevStack extends Stack {
         logger.info("DevStack created successfully for {}", dashedDomainName);
     }
 
-    /**
-     * Builder class following the same pattern as WebStack.Builder
-     */
-    public static class Builder {
-        private Construct scope;
-        private String id;
-        private StackProps props;
+    // Naming utility methods following WebStack patterns
+    public static String buildDomainName(String env, String subDomainName, String hostedZoneName) {
+        return env.equals("prod")
+                ? buildProdDomainName(subDomainName, hostedZoneName)
+                : buildNonProdDomainName(env, subDomainName, hostedZoneName);
+    }
 
-        // Environment configuration
-        public String env;
-        public String subDomainName;
-        public String hostedZoneName;
-        public boolean retainEcrRepository = false;
+    public static String buildProdDomainName(String subDomainName, String hostedZoneName) {
+        return "%s.%s".formatted(subDomainName, hostedZoneName);
+    }
 
-        private Builder() {}
+    public static String buildNonProdDomainName(String env, String subDomainName, String hostedZoneName) {
+        return "%s.%s.%s".formatted(env, subDomainName, hostedZoneName);
+    }
 
-        public static Builder create(Construct scope, String id) {
-            Builder builder = new Builder();
-            builder.scope = scope;
-            builder.id = id;
-            return builder;
-        }
+    public static String buildDashedDomainName(String env, String subDomainName, String hostedZoneName) {
+        return ResourceNameUtils.convertDotSeparatedToDashSeparated(
+                "%s.%s.%s".formatted(env, subDomainName, hostedZoneName), domainNameMappings);
+    }
 
-        public Builder props(StackProps props) {
-            this.props = props;
-            return this;
-        }
+    public static String buildEcrRepositoryName(String dashedDomainName) {
+        return "%s-ecr".formatted(dashedDomainName);
+    }
 
-        public Builder env(String env) {
-            this.env = env;
-            return this;
-        }
+    public static String buildEcrLogGroupName(String dashedDomainName) {
+        return "/aws/ecr/%s".formatted(dashedDomainName);
+    }
 
-        public Builder subDomainName(String subDomainName) {
-            this.subDomainName = subDomainName;
-            return this;
-        }
-
-        public Builder hostedZoneName(String hostedZoneName) {
-            this.hostedZoneName = hostedZoneName;
-            return this;
-        }
-
-        public Builder retainEcrRepository(String retainEcrRepository) {
-            this.retainEcrRepository = Boolean.parseBoolean(retainEcrRepository);
-            return this;
-        }
-
-        public Builder props(DevStackProps p) {
-            if (p == null) return this;
-            this.env = p.env();
-            this.subDomainName = p.subDomainName();
-            this.hostedZoneName = p.hostedZoneName();
-            this.retainEcrRepository = Boolean.parseBoolean(p.retainEcrRepository());
-            return this;
-        }
-
-        public DevStack build() {
-            return new DevStack(this.scope, this.id, this.props, this);
-        }
-
-        // Naming utility methods following WebStack patterns
-        public static String buildDomainName(String env, String subDomainName, String hostedZoneName) {
-            return env.equals("prod")
-                    ? Builder.buildProdDomainName(subDomainName, hostedZoneName)
-                    : Builder.buildNonProdDomainName(env, subDomainName, hostedZoneName);
-        }
-
-        public static String buildProdDomainName(String subDomainName, String hostedZoneName) {
-            return "%s.%s".formatted(subDomainName, hostedZoneName);
-        }
-
-        public static String buildNonProdDomainName(String env, String subDomainName, String hostedZoneName) {
-            return "%s.%s.%s".formatted(env, subDomainName, hostedZoneName);
-        }
-
-        public static String buildDashedDomainName(String env, String subDomainName, String hostedZoneName) {
-            return ResourceNameUtils.convertDotSeparatedToDashSeparated(
-                    "%s.%s.%s".formatted(env, subDomainName, hostedZoneName), domainNameMappings);
-        }
-
-        public static String buildEcrRepositoryName(String dashedDomainName) {
-            return "%s-ecr".formatted(dashedDomainName);
-        }
-
-        public static String buildEcrLogGroupName(String dashedDomainName) {
-            return "/aws/ecr/%s".formatted(dashedDomainName);
-        }
-
-        public static String buildEcrPublishRoleName(String dashedDomainName) {
-            return "%s-ecr-publish-role".formatted(dashedDomainName);
-        }
+    public static String buildEcrPublishRoleName(String dashedDomainName) {
+        return "%s-ecr-publish-role".formatted(dashedDomainName);
     }
 
     // Use same domain name mappings as WebStack

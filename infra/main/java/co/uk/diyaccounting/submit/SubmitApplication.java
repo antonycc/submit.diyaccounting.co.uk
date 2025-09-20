@@ -62,13 +62,12 @@ public class SubmitApplication {
         String devStackId = "%s-DevStack".formatted(deploymentName);
         System.out.printf(
                 "Synthesizing stack %s for deployment %s to environment %s\n", devStackId, deploymentName, envName);
-        DevStack devStack = DevStack.Builder.create(app, devStackId)
-                .props(co.uk.diyaccounting.submit.stacks.DevStackProps.builder()
+        DevStack devStack = new DevStack(app, devStackId,
+                co.uk.diyaccounting.submit.stacks.DevStackProps.builder()
                         .env(envName)
                         .hostedZoneName(envOr("HOSTED_ZONE_NAME", appProps.hostedZoneName))
                         .subDomainName(appProps.subDomainName)
-                        .build())
-                .build();
+                        .build());
 
         // Create the identity stack before any user aware services
         String identityStackId = "%s-IdentityStack".formatted(deploymentName);
