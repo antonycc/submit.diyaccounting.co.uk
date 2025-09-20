@@ -486,27 +486,27 @@ public class ApplicationStack extends Stack {
 
         public Builder props(ApplicationStackProps p) {
             if (p == null) return this;
-            this.env = p.env;
-            this.subDomainName = p.subDomainName;
-            this.hostedZoneName = p.hostedZoneName;
-            this.cloudTrailEnabled = p.cloudTrailEnabled;
-            this.xRayEnabled = p.xRayEnabled;
-            this.verboseLogging = p.verboseLogging;
-            this.baseImageTag = p.baseImageTag;
-            this.ecrRepositoryArn = p.ecrRepositoryArn;
-            this.ecrRepositoryName = p.ecrRepositoryName;
-            this.lambdaUrlAuthType = p.lambdaUrlAuthType;
-            this.lambdaEntry = p.lambdaEntry;
-            this.homeUrl = p.homeUrl;
-            this.hmrcBaseUri = p.hmrcBaseUri;
-            this.hmrcClientId = p.hmrcClientId;
-            this.hmrcClientSecretArn = p.hmrcClientSecretArn;
-            this.optionalTestAccessToken = p.optionalTestAccessToken;
-            this.optionalTestS3Endpoint = p.optionalTestS3Endpoint;
-            this.optionalTestS3AccessKey = p.optionalTestS3AccessKey;
-            this.optionalTestS3SecretKey = p.optionalTestS3SecretKey;
-            this.receiptsBucketPostfix = p.receiptsBucketPostfix;
-            this.s3RetainReceiptsBucket = p.s3RetainReceiptsBucket;
+            this.env = p.env();
+            this.subDomainName = p.subDomainName();
+            this.hostedZoneName = p.hostedZoneName();
+            this.cloudTrailEnabled = p.cloudTrailEnabled();
+            this.xRayEnabled = p.xRayEnabled();
+            this.verboseLogging = p.verboseLogging();
+            this.baseImageTag = p.baseImageTag();
+            this.ecrRepositoryArn = p.ecrRepositoryArn();
+            this.ecrRepositoryName = p.ecrRepositoryName();
+            this.lambdaUrlAuthType = p.lambdaUrlAuthType();
+            this.lambdaEntry = p.lambdaEntry();
+            this.homeUrl = p.homeUrl();
+            this.hmrcBaseUri = p.hmrcBaseUri();
+            this.hmrcClientId = p.hmrcClientId();
+            this.hmrcClientSecretArn = p.hmrcClientSecretArn();
+            this.optionalTestAccessToken = p.optionalTestAccessToken();
+            this.optionalTestS3Endpoint = p.optionalTestS3Endpoint();
+            this.optionalTestS3AccessKey = p.optionalTestS3AccessKey();
+            this.optionalTestS3SecretKey = p.optionalTestS3SecretKey();
+            this.receiptsBucketPostfix = p.receiptsBucketPostfix();
+            this.s3RetainReceiptsBucket = p.s3RetainReceiptsBucket();
             return this;
         }
 

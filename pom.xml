@@ -102,6 +102,11 @@
                 <artifactId>system-stubs-jupiter</artifactId>
                 <version>2.1.8</version>
             </dependency>
+            <dependency>
+                <groupId>org.immutables</groupId>
+                <artifactId>value</artifactId>
+                <version>2.10.1</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -183,6 +188,11 @@
             <artifactId>system-stubs-jupiter</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.immutables</groupId>
+            <artifactId>value</artifactId>
+            <scope>provided</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -251,8 +261,14 @@
                 <configuration>
                     <source>${maven.compiler.source}</source>
                     <target>${maven.compiler.target}</target>
-                    <!-- Suppress annotation processing warning -->
-                    <proc>none</proc>
+                    <!-- Enable annotation processing for immutables -->
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.immutables</groupId>
+                            <artifactId>value</artifactId>
+                            <version>2.10.1</version>
+                        </path>
+                    </annotationProcessorPaths>
                     <!-- JVM arguments to suppress class sharing warnings during compilation -->
                     <compilerArgs>
                         <arg>-J-Xshare:off</arg>
