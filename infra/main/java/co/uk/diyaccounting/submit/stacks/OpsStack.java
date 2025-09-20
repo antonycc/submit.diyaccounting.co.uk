@@ -53,15 +53,19 @@ public class OpsStack extends Stack {
         if (props.lambdaFunctionArns != null) {
             for (int i = 0; i < props.lambdaFunctionArns.size(); i++) {
                 String arn = props.lambdaFunctionArns.get(i);
-                //String fnName = arn.substring(arn.lastIndexOf(":") + 1);
+                // String fnName = arn.substring(arn.lastIndexOf(":") + 1);
                 IFunction fn = Function.fromFunctionAttributes(
                         this,
                         props.resourceNamePrefix + "-Fn-" + i,
-                        FunctionAttributes.builder().functionArn(arn).sameEnvironment(true).build());
+                        FunctionAttributes.builder()
+                                .functionArn(arn)
+                                .sameEnvironment(true)
+                                .build());
                 lambdaFunctions.add(fn);
                 lambdaInvocations.add(fn.metricInvocations());
                 lambdaErrors.add(fn.metricErrors());
-                lambdaDurationsP95.add(fn.metricDuration().with(MetricOptions.builder().statistic("p95").build()));
+                lambdaDurationsP95.add(fn.metricDuration()
+                        .with(MetricOptions.builder().statistic("p95").build()));
                 lambdaThrottles.add(fn.metricThrottles());
                 // Per-function error alarm (>=1 error in 5 minutes)
                 Alarm.Builder.create(this, props.resourceNamePrefix + "-LambdaErrors-" + i)
@@ -77,16 +81,17 @@ public class OpsStack extends Stack {
         }
 
         // S3 buckets
-        IBucket originBucket = Bucket.fromBucketArn(this, props.resourceNamePrefix + "-OriginBucket", props.originBucketArn);
+        IBucket originBucket =
+                Bucket.fromBucketArn(this, props.resourceNamePrefix + "-OriginBucket", props.originBucketArn);
         IBucket receiptsBucket = null;
         if (props.receiptsBucketArn != null && !props.receiptsBucketArn.isBlank()) {
-            receiptsBucket = Bucket.fromBucketArn(this, props.resourceNamePrefix + "-ReceiptsBucket", props.receiptsBucketArn);
+            receiptsBucket =
+                    Bucket.fromBucketArn(this, props.resourceNamePrefix + "-ReceiptsBucket", props.receiptsBucketArn);
         }
 
         // CloudFront metrics (Global)
-        java.util.Map<String, String> cfDims = java.util.Map.of(
-                "DistributionId", props.distributionId,
-                "Region", "Global");
+        java.util.Map<String, String> cfDims =
+                java.util.Map.of("DistributionId", props.distributionId, "Region", "Global");
         Metric cfRequests = Metric.Builder.create()
                 .namespace("AWS/CloudFront")
                 .metricName("Requests")
@@ -130,7 +135,8 @@ public class OpsStack extends Stack {
                 .build();
 
         // Dashboard
-        java.util.List<java.util.List<software.amazon.awscdk.services.cloudwatch.IWidget>> rows = new java.util.ArrayList<>();
+        java.util.List<java.util.List<software.amazon.awscdk.services.cloudwatch.IWidget>> rows =
+                new java.util.ArrayList<>();
         // Row 1: CloudFront requests and error rates
         rows.add(java.util.List.of(
                 GraphWidget.Builder.create()
@@ -144,8 +150,7 @@ public class OpsStack extends Stack {
                         .left(java.util.List.of(cf4xx, cf5xx))
                         .width(12)
                         .height(6)
-                        .build()
-        ));
+                        .build()));
         // Row 2: Lambda invocations and errors
         if (!lambdaInvocations.isEmpty()) {
             rows.add(java.util.List.of(
@@ -160,8 +165,7 @@ public class OpsStack extends Stack {
                             .left(lambdaErrors)
                             .width(12)
                             .height(6)
-                            .build()
-            ));
+                            .build()));
             rows.add(java.util.List.of(
                     GraphWidget.Builder.create()
                             .title("Lambda p95 Duration by Function")
@@ -174,8 +178,7 @@ public class OpsStack extends Stack {
                             .left(lambdaThrottles)
                             .width(12)
                             .height(6)
-                            .build()
-            ));
+                            .build()));
         }
         // Row 3: S3 origin and receipts bucket errors/requests
         Metric s3OriginAllReq = Metric.Builder.create()
@@ -207,21 +210,24 @@ public class OpsStack extends Stack {
             s3ReceiptsAllReq = Metric.Builder.create()
                     .namespace("AWS/S3")
                     .metricName("AllRequests")
-                    .dimensionsMap(java.util.Map.of("BucketName", receiptsBucket.getBucketName(), "FilterId", "EntireBucket"))
+                    .dimensionsMap(
+                            java.util.Map.of("BucketName", receiptsBucket.getBucketName(), "FilterId", "EntireBucket"))
                     .statistic("Sum")
                     .period(Duration.minutes(5))
                     .build();
             s3Receipts4xx = Metric.Builder.create()
                     .namespace("AWS/S3")
                     .metricName("4xxErrors")
-                    .dimensionsMap(java.util.Map.of("BucketName", receiptsBucket.getBucketName(), "FilterId", "EntireBucket"))
+                    .dimensionsMap(
+                            java.util.Map.of("BucketName", receiptsBucket.getBucketName(), "FilterId", "EntireBucket"))
                     .statistic("Sum")
                     .period(Duration.minutes(5))
                     .build();
             s3Receipts5xx = Metric.Builder.create()
                     .namespace("AWS/S3")
                     .metricName("5xxErrors")
-                    .dimensionsMap(java.util.Map.of("BucketName", receiptsBucket.getBucketName(), "FilterId", "EntireBucket"))
+                    .dimensionsMap(
+                            java.util.Map.of("BucketName", receiptsBucket.getBucketName(), "FilterId", "EntireBucket"))
                     .statistic("Sum")
                     .period(Duration.minutes(5))
                     .build();
@@ -234,13 +240,19 @@ public class OpsStack extends Stack {
                         .width(12)
                         .height(6)
                         .build(),
-                receiptsBucket != null ? GraphWidget.Builder.create()
-                        .title("S3 Receipts Requests/Errors")
-                        .left(java.util.List.of(s3ReceiptsAllReq, s3Receipts4xx, s3Receipts5xx))
-                        .width(12)
-                        .height(6)
-                        .build() : GraphWidget.Builder.create().title("S3 Receipts (not configured)").left(java.util.List.of()).width(12).height(6).build()
-        ));
+                receiptsBucket != null
+                        ? GraphWidget.Builder.create()
+                                .title("S3 Receipts Requests/Errors")
+                                .left(java.util.List.of(s3ReceiptsAllReq, s3Receipts4xx, s3Receipts5xx))
+                                .width(12)
+                                .height(6)
+                                .build()
+                        : GraphWidget.Builder.create()
+                                .title("S3 Receipts (not configured)")
+                                .left(java.util.List.of())
+                                .width(12)
+                                .height(6)
+                                .build()));
 
         this.operationalDashboard = Dashboard.Builder.create(this, props.resourceNamePrefix + "-OperationalDashboard")
                 .dashboardName(props.compressedResourceNamePrefix + "-operations")
@@ -251,15 +263,11 @@ public class OpsStack extends Stack {
         new CfnOutput(
                 this,
                 "CloudFront5xxAlarmArn",
-                CfnOutputProps.builder()
-                        .value(cloudFront5xxAlarm.getAlarmArn())
-                        .build());
+                CfnOutputProps.builder().value(cloudFront5xxAlarm.getAlarmArn()).build());
         new CfnOutput(
                 this,
                 "CloudFront4xxAlarmArn",
-                CfnOutputProps.builder()
-                        .value(cloudFront4xxAlarm.getAlarmArn())
-                        .build());
+                CfnOutputProps.builder().value(cloudFront4xxAlarm.getAlarmArn()).build());
         new CfnOutput(
                 this,
                 "OperationalDashboard",

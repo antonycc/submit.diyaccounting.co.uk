@@ -1,6 +1,11 @@
 package co.uk.diyaccounting.submit.stacks;
 
 import co.uk.diyaccounting.submit.utils.ResourceNameUtils;
+import java.util.AbstractMap;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Pattern;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import software.amazon.awscdk.CfnOutput;
@@ -35,12 +40,6 @@ import software.amazon.awscdk.services.secretsmanager.ISecret;
 import software.amazon.awscdk.services.secretsmanager.Secret;
 import software.constructs.Construct;
 import software.constructs.IDependable;
-
-import java.util.AbstractMap;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.regex.Pattern;
 
 public class IdentityStack extends Stack {
 
@@ -426,46 +425,47 @@ public class IdentityStack extends Stack {
 
         // User Pool Client
         this.userPoolClient = UserPoolClient.Builder.create(this, "UserPoolClient")
-            .userPool(userPool)
-            .userPoolClientName(dashedDomainName + "-client")
-            .generateSecret(false)
-            .oAuth(OAuthSettings.builder()
-                .flows(OAuthFlows.builder().authorizationCodeGrant(true).build())
-                .scopes(List.of(OAuthScope.EMAIL, OAuthScope.OPENID, OAuthScope.PROFILE))
-                .callbackUrls(List.of(
-                    "https://" + this.domainName + "/",
-                    "https://" + this.domainName + "/auth/loginWithGoogleCallback.html",
-                    "https://" + this.domainName + "/auth/loginWithCognitoCallback.html"))
-                .logoutUrls(List.of("https://" + this.domainName + "/"))
-                .build())
-            .supportedIdentityProviders(this.identityProviders.keySet().stream().toList())
-            .build();
+                .userPool(userPool)
+                .userPoolClientName(dashedDomainName + "-client")
+                .generateSecret(false)
+                .oAuth(OAuthSettings.builder()
+                        .flows(OAuthFlows.builder().authorizationCodeGrant(true).build())
+                        .scopes(List.of(OAuthScope.EMAIL, OAuthScope.OPENID, OAuthScope.PROFILE))
+                        .callbackUrls(List.of(
+                                "https://" + this.domainName + "/",
+                                "https://" + this.domainName + "/auth/loginWithGoogleCallback.html",
+                                "https://" + this.domainName + "/auth/loginWithCognitoCallback.html"))
+                        .logoutUrls(List.of("https://" + this.domainName + "/"))
+                        .build())
+                .supportedIdentityProviders(
+                        this.identityProviders.keySet().stream().toList())
+                .build();
         this.identityProviders
-            .values()
-            .forEach(idp -> this.userPoolClient.getNode().addDependency(idp));
+                .values()
+                .forEach(idp -> this.userPoolClient.getNode().addDependency(idp));
 
-        //var cognito = CognitoAuth.Builder.create(this)
-                //.userPoolArn(this.userPool.getUserPoolArn())
-                //.userPoolClientName(dashedDomainName + "-client")
-                //.identityProviders(this.identityProviders)
-                //.standardAttributes(standardAttributes)
-                //.callbackUrls(List.of(
-                //        "https://" + this.domainName + "/",
-                //        "https://" + this.domainName + "/auth/loginWithGoogleCallback.html",
-                //        "https://" + this.domainName + "/auth/loginWithCognitoCallback.html"))
-                //.logoutUrls(List.of("https://" + this.domainName + "/"))
-                //.featurePlan(
-                //        builder.cognitoFeaturePlan != null && !builder.cognitoFeaturePlan.isBlank()
-                //                ? builder.cognitoFeaturePlan
-                //                : "ESSENTIALS")
-                //.enableLogDelivery(builder.cognitoEnableLogDelivery != null
-                //        && !builder.cognitoEnableLogDelivery.isBlank()
-                //        && Boolean.parseBoolean(builder.cognitoEnableLogDelivery))
-                //.xRayEnabled(xRayEnabled)
-                //.accessLogGroupRetentionPeriodDays(accessLogGroupRetentionPeriodDays)
-                //.logGroupNamePrefix(dashedDomainName)
-                //.build();
-        //this.userPoolClient = cognito.userPoolClient;
+        // var cognito = CognitoAuth.Builder.create(this)
+        // .userPoolArn(this.userPool.getUserPoolArn())
+        // .userPoolClientName(dashedDomainName + "-client")
+        // .identityProviders(this.identityProviders)
+        // .standardAttributes(standardAttributes)
+        // .callbackUrls(List.of(
+        //        "https://" + this.domainName + "/",
+        //        "https://" + this.domainName + "/auth/loginWithGoogleCallback.html",
+        //        "https://" + this.domainName + "/auth/loginWithCognitoCallback.html"))
+        // .logoutUrls(List.of("https://" + this.domainName + "/"))
+        // .featurePlan(
+        //        builder.cognitoFeaturePlan != null && !builder.cognitoFeaturePlan.isBlank()
+        //                ? builder.cognitoFeaturePlan
+        //                : "ESSENTIALS")
+        // .enableLogDelivery(builder.cognitoEnableLogDelivery != null
+        //        && !builder.cognitoEnableLogDelivery.isBlank()
+        //        && Boolean.parseBoolean(builder.cognitoEnableLogDelivery))
+        // .xRayEnabled(xRayEnabled)
+        // .accessLogGroupRetentionPeriodDays(accessLogGroupRetentionPeriodDays)
+        // .logGroupNamePrefix(dashedDomainName)
+        // .build();
+        // this.userPoolClient = cognito.userPoolClient;
 
         // Create Cognito User Pool Domain
         this.userPoolDomain = UserPoolDomain.Builder.create(this, "UserPoolDomain")

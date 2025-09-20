@@ -1,5 +1,6 @@
 package co.uk.diyaccounting.submit.stacks;
 
+import java.util.List;
 import software.amazon.awscdk.AssetHashType;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Expiration;
@@ -16,8 +17,6 @@ import software.amazon.awscdk.services.s3.assets.AssetOptions;
 import software.amazon.awscdk.services.s3.deployment.BucketDeployment;
 import software.amazon.awscdk.services.s3.deployment.Source;
 import software.constructs.Construct;
-
-import java.util.List;
 
 public class PublishStack extends Stack {
     public final BucketDeployment webDeployment;
@@ -46,7 +45,7 @@ public class PublishStack extends Stack {
 
         // Use Resources from the passed props
         this.baseUrl = props.baseUrl;
-        //DistributionAttributes distributionAttributes = DistributionAttributes.builder()
+        // DistributionAttributes distributionAttributes = DistributionAttributes.builder()
         //        .domainName(props.domainName)
         //        //.distributionId(props.distributionArn)
         //        .build();
@@ -59,81 +58,80 @@ public class PublishStack extends Stack {
         IDistribution distribution = Distribution.fromDistributionAttributes(
                 this, props.resourceNamePrefix + "-ImportedWebDist", distributionAttributes);
         // Distribution from ARN
-        //S3BucketOrigin origin = S3BucketOrigin.Builder.create(props.webBucket).build();
-        //this.originBucket = props.webBucket;
-        //this.originAccessIdentity = origin.getOriginAccessIdentity();
+        // S3BucketOrigin origin = S3BucketOrigin.Builder.create(props.webBucket).build();
+        // this.originBucket = props.webBucket;
+        // this.originAccessIdentity = origin.getOriginAccessIdentity();
 
+        /*
 
-                /*
+                // Generate submit.version file with commit hash if provided
+                if (builder.commitHash != null && !builder.commitHash.isBlank()) {
+                    try {
+                        java.nio.file.Path sourceFilePath = java.nio.file.Paths.get(builder.docRootPath, "submit.version");
+                        java.nio.file.Files.writeString(sourceFilePath, builder.commitHash.trim());
+                        logger.info("Created submit.version file with commit hash: %s".formatted(builder.commitHash));
+                    } catch (Exception e) {
+                        logger.warn("Failed to create submit.version file: %s".formatted(e.getMessage()));
+                    }
+                } else {
+                    logger.info("No commit hash provided, skipping submit.version generation");
+                }
 
-        // Generate submit.version file with commit hash if provided
-        if (builder.commitHash != null && !builder.commitHash.isBlank()) {
-            try {
-                java.nio.file.Path sourceFilePath = java.nio.file.Paths.get(builder.docRootPath, "submit.version");
-                java.nio.file.Files.writeString(sourceFilePath, builder.commitHash.trim());
-                logger.info("Created submit.version file with commit hash: %s".formatted(builder.commitHash));
-            } catch (Exception e) {
-                logger.warn("Failed to create submit.version file: %s".formatted(e.getMessage()));
-            }
-        } else {
-            logger.info("No commit hash provided, skipping submit.version generation");
-        }
+                var deployPostfix = java.util.UUID.randomUUID().toString().substring(0, 8);
 
-        var deployPostfix = java.util.UUID.randomUUID().toString().substring(0, 8);
+                // Deploy the web website files to the web website bucket and invalidate distribution
+                this.docRootSource = Source.asset(
+                        builder.docRootPath,
+                        AssetOptions.builder().assetHashType(AssetHashType.SOURCE).build());
+                logger.info("Will deploy files from: %s".formatted(builder.docRootPath));
 
-        // Deploy the web website files to the web website bucket and invalidate distribution
-        this.docRootSource = Source.asset(
-                builder.docRootPath,
-                AssetOptions.builder().assetHashType(AssetHashType.SOURCE).build());
-        logger.info("Will deploy files from: %s".formatted(builder.docRootPath));
+                // Create LogGroup for BucketDeployment
+                var bucketDeploymentRetentionPeriodDays = Integer.parseInt(builder.cloudTrailLogGroupRetentionPeriodDays);
+                var bucketDeploymentRetentionPeriod =
+                        RetentionDaysConverter.daysToRetentionDays(bucketDeploymentRetentionPeriodDays);
+                LogGroup bucketDeploymentLogGroup = LogGroup.Builder.create(this, "BucketDeploymentLogGroup-" + deployPostfix)
+                        .logGroupName("/aws/lambda/bucket-deployment-%s-%s".formatted(dashedDomainName, deployPostfix))
+                        .retention(bucketDeploymentRetentionPeriod)
+                        .removalPolicy(s3RetainOriginBucket ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY)
+                        .build();
 
-        // Create LogGroup for BucketDeployment
-        var bucketDeploymentRetentionPeriodDays = Integer.parseInt(builder.cloudTrailLogGroupRetentionPeriodDays);
-        var bucketDeploymentRetentionPeriod =
-                RetentionDaysConverter.daysToRetentionDays(bucketDeploymentRetentionPeriodDays);
-        LogGroup bucketDeploymentLogGroup = LogGroup.Builder.create(this, "BucketDeploymentLogGroup-" + deployPostfix)
-                .logGroupName("/aws/lambda/bucket-deployment-%s-%s".formatted(dashedDomainName, deployPostfix))
-                .retention(bucketDeploymentRetentionPeriod)
-                .removalPolicy(s3RetainOriginBucket ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY)
-                .build();
-
-        this.deployment = BucketDeployment.Builder.create(this, "DocRootToOriginDeployment")
-                .sources(List.of(this.docRootSource))
-                .destinationBucket(this.originBucket)
-                .distribution(this.distribution)
-                .distributionPaths(List.of(
-                    "/account/*",
-                    "/activities/*",
-                    "/auth/*",
-                    "/errors/*",
-                    "/images/*",
-                    "/widgets/*",
-                    "/favicon.ico",
-                    "/index.html",
-                    "/submit.css",
-                    "/submit.js",
-                    "/submit.version"
-                ))
-                .logGroup(bucketDeploymentLogGroup)
-                .retainOnDelete(true)
-                .expires(Expiration.after(Duration.minutes(5)))
-                .prune(false)
-                .memoryLimit(1024)
-                .ephemeralStorageSize(Size.gibibytes(2))
-                .build();
-*/
+                this.deployment = BucketDeployment.Builder.create(this, "DocRootToOriginDeployment")
+                        .sources(List.of(this.docRootSource))
+                        .destinationBucket(this.originBucket)
+                        .distribution(this.distribution)
+                        .distributionPaths(List.of(
+                            "/account/*",
+                            "/activities/*",
+                            "/auth/*",
+                            "/errors/*",
+                            "/images/*",
+                            "/widgets/*",
+                            "/favicon.ico",
+                            "/index.html",
+                            "/submit.css",
+                            "/submit.js",
+                            "/submit.version"
+                        ))
+                        .logGroup(bucketDeploymentLogGroup)
+                        .retainOnDelete(true)
+                        .expires(Expiration.after(Duration.minutes(5)))
+                        .prune(false)
+                        .memoryLimit(1024)
+                        .ephemeralStorageSize(Size.gibibytes(2))
+                        .build();
+        */
 
         // Generate submit.version file with commit hash if provided
         if (props.commitHash != null && !props.commitHash.isBlank()) {
             try {
                 java.nio.file.Path sourceFilePath = java.nio.file.Paths.get(props.docRootPath, "submit.version");
                 java.nio.file.Files.writeString(sourceFilePath, props.commitHash.trim());
-                //logger.info("Created submit.version file with commit hash: %s".formatted(builder.commitHash));
+                // logger.info("Created submit.version file with commit hash: %s".formatted(builder.commitHash));
             } catch (Exception e) {
-                //logger.warn("Failed to create submit.version file: %s".formatted(e.getMessage()));
+                // logger.warn("Failed to create submit.version file: %s".formatted(e.getMessage()));
             }
-        //} else {
-            //logger.info("No commit hash provided, skipping submit.version generation");
+            // } else {
+            // logger.info("No commit hash provided, skipping submit.version generation");
         }
 
         var deployPostfix = java.util.UUID.randomUUID().toString().substring(0, 8);
@@ -142,9 +140,10 @@ public class PublishStack extends Stack {
         var webDocRootSource = Source.asset(
                 "web/public",
                 AssetOptions.builder().assetHashType(AssetHashType.SOURCE).build());
-        var webDeploymentLogGroup = LogGroup.Builder.create(this, props.resourceNamePrefix + "-WebDeploymentLogGroup-" + deployPostfix)
+        var webDeploymentLogGroup = LogGroup.Builder.create(
+                        this, props.resourceNamePrefix + "-WebDeploymentLogGroup-" + deployPostfix)
                 .logGroupName("/deployment/" + props.resourceNamePrefix + "-web-deployment-" + deployPostfix)
-                //.logGroupName("/deployment/" + props.resourceNamePrefix + "-web-deployment")
+                // .logGroupName("/deployment/" + props.resourceNamePrefix + "-web-deployment")
                 .retention(RetentionDays.ONE_DAY)
                 .removalPolicy(RemovalPolicy.DESTROY)
                 .build();
@@ -154,18 +153,17 @@ public class PublishStack extends Stack {
                 .destinationBucket(props.webBucket)
                 .distribution(distribution)
                 .distributionPaths(List.of(
-                    "/account/*",
-                    "/activities/*",
-                    "/auth/*",
-                    "/errors/*",
-                    "/images/*",
-                    "/widgets/*",
-                    "/favicon.ico",
-                    "/index.html",
-                    "/submit.css",
-                    "/submit.js",
-                    "/submit.version"
-                ))
+                        "/account/*",
+                        "/activities/*",
+                        "/auth/*",
+                        "/errors/*",
+                        "/images/*",
+                        "/widgets/*",
+                        "/favicon.ico",
+                        "/index.html",
+                        "/submit.css",
+                        "/submit.js",
+                        "/submit.version"))
                 .retainOnDelete(true)
                 .logGroup(webDeploymentLogGroup)
                 .expires(Expiration.after(Duration.minutes(5)))

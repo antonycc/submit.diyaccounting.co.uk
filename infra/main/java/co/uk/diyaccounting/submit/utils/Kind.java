@@ -23,8 +23,7 @@ public final class Kind {
     // Typed with an explicit conflict policy (e.g. keep-old, keep-new, combine).
     @SafeVarargs
     public static <K, V> Map<K, V> concatWith(
-        BiFunction<? super V, ? super V, ? extends V> combiner,
-        Map<? extends K, ? extends V>... maps) {
+            BiFunction<? super V, ? super V, ? extends V> combiner, Map<? extends K, ? extends V>... maps) {
         var out = new LinkedHashMap<K, V>();
         if (maps == null) return out;
         for (var m : maps) {

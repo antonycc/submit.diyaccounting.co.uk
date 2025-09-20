@@ -11,7 +11,6 @@ public class ResourceNameUtils {
     private static final List<AbstractMap.SimpleEntry<Pattern, String>> dashSeparatedMappings =
             List.of(new AbstractMap.SimpleEntry<>(Pattern.compile("\\."), "-"));
 
-
     /**
      * Generate a predictable resource name prefix based on domain name and deployment name.
      * Converts domain like "oidc.example.com" to "oidc-example-com" and adds deployment name.
@@ -63,11 +62,11 @@ public class ResourceNameUtils {
         }
         var derivedResourceName = sb.append('-').append(deploymentName).toString();
         var truncatedResourceName =
-            derivedResourceName.length() > 16 ? derivedResourceName.substring(0, 16) : derivedResourceName;
+                derivedResourceName.length() > 16 ? derivedResourceName.substring(0, 16) : derivedResourceName;
 
         return truncatedResourceName;
     }
-    
+
     public static String convertCamelCaseToDashSeparated(String input) {
         if (input == null || input.isEmpty()) {
             return input;
@@ -112,13 +111,13 @@ public class ResourceNameUtils {
 
         // Replace any invalid characters with dashes and normalize
         String cleanPrefix = resourceNamePrefix
-            .replaceAll("[^a-zA-Z0-9+=,.@-]", "-")
-            .replaceAll("-+", "-") // Collapse multiple dashes
-            .replaceAll("^-+|-+$", ""); // Remove leading/trailing dashes
+                .replaceAll("[^a-zA-Z0-9+=,.@-]", "-")
+                .replaceAll("-+", "-") // Collapse multiple dashes
+                .replaceAll("^-+|-+$", ""); // Remove leading/trailing dashes
 
         String cleanSuffix = suffix.replaceAll("[^a-zA-Z0-9+=,.@-]", "-")
-            .replaceAll("-+", "-")
-            .replaceAll("^-+|-+$", "");
+                .replaceAll("-+", "-")
+                .replaceAll("^-+|-+$", "");
 
         String fullName = cleanPrefix + "-" + cleanSuffix;
 

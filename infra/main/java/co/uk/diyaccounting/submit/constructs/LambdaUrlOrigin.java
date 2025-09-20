@@ -1,5 +1,7 @@
 package co.uk.diyaccounting.submit.constructs;
 
+import java.util.List;
+import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import software.amazon.awscdk.Duration;
@@ -29,35 +31,32 @@ import software.amazon.awscdk.services.logs.LogGroupProps;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.constructs.Construct;
 
-import java.util.List;
-import java.util.Map;
-
 public class LambdaUrlOrigin {
 
     private static final Logger logger = LogManager.getLogger(LambdaUrlOrigin.class);
-    //private static final Pattern LAMBDA_URL_HOST_PATTERN = Pattern.compile("https://([^/]+)/");
+    // private static final Pattern LAMBDA_URL_HOST_PATTERN = Pattern.compile("https://([^/]+)/");
 
     public final DockerImageCode dockerImage;
     public final Function lambda;
     public final LogGroup logGroup;
-    //public final FunctionUrl functionUrl;
-    //public final BehaviorOptions behaviorOptions;
-    //public final HttpOrigin apiOrigin;
-    //public final String lambdaUrlHost;
+    // public final FunctionUrl functionUrl;
+    // public final BehaviorOptions behaviorOptions;
+    // public final HttpOrigin apiOrigin;
+    // public final String lambdaUrlHost;
 
     private LambdaUrlOrigin(final Construct scope, Builder builder) {
 
         // Create the lambda function
         var imageCodeProps = EcrImageCodeProps.builder()
-            .tagOrDigest(builder.baseImageTag) // e.g. "latest" or specific digest for immutability
-            .cmd(List.of(builder.handler))
-            .build();
+                .tagOrDigest(builder.baseImageTag) // e.g. "latest" or specific digest for immutability
+                .cmd(List.of(builder.handler))
+                .build();
         var repositoryAttributes = RepositoryAttributes.builder()
-            .repositoryArn(builder.ecrRepositoryArn)
-            .repositoryName(builder.ecrRepositoryName)
-            .build();
+                .repositoryArn(builder.ecrRepositoryArn)
+                .repositoryName(builder.ecrRepositoryName)
+                .build();
         IRepository repository =
-            Repository.fromRepositoryAttributes(scope, builder.functionName + "-EcrRepo", repositoryAttributes);
+                Repository.fromRepositoryAttributes(scope, builder.functionName + "-EcrRepo", repositoryAttributes);
         this.dockerImage = DockerImageCode.fromEcr(repository, imageCodeProps);
 
         // Add X-Ray environment variables if enabled
@@ -67,10 +66,10 @@ public class LambdaUrlOrigin {
         }
 
         var dockerFunctionBuilder = DockerImageFunction.Builder.create(scope, builder.idPrefix + "Fn")
-            .code(this.dockerImage)
-            .environment(environment)
-            .functionName(builder.functionName)
-            .timeout(builder.timeout);
+                .code(this.dockerImage)
+                .environment(environment)
+                .functionName(builder.functionName)
+                .timeout(builder.timeout);
         if (builder.xRayEnabled) {
             dockerFunctionBuilder.tracing(Tracing.ACTIVE);
         }
@@ -88,37 +87,37 @@ public class LambdaUrlOrigin {
                         .build());
 
         // Create function URL
-        //FunctionUrlOptions.Builder functionUrlOptionsBuilder = FunctionUrlOptions.builder()
+        // FunctionUrlOptions.Builder functionUrlOptionsBuilder = FunctionUrlOptions.builder()
         //        .authType(builder.functionUrlAuthType)
         //        .invokeMode(builder.invokeMode);
 
-        //this.functionUrl = this.lambda.addFunctionUrl(functionUrlOptionsBuilder.build());
+        // this.functionUrl = this.lambda.addFunctionUrl(functionUrlOptionsBuilder.build());
 
-        //this.lambdaUrlHost = getLambdaUrlHostToken(this.functionUrl);
-        //this.apiOrigin = HttpOrigin.Builder.create(this.lambdaUrlHost)
+        // this.lambdaUrlHost = getLambdaUrlHostToken(this.functionUrl);
+        // this.apiOrigin = HttpOrigin.Builder.create(this.lambdaUrlHost)
         //        .protocolPolicy(builder.protocolPolicy)
         //        .build();
 
-        //BehaviorOptions.Builder behaviorOptionsBuilder = BehaviorOptions.builder()
+        // BehaviorOptions.Builder behaviorOptionsBuilder = BehaviorOptions.builder()
         //        .origin(this.apiOrigin)
         //        .allowedMethods(builder.cloudFrontAllowedMethods)
         //        .cachePolicy(builder.cachePolicy)
         //        .originRequestPolicy(builder.originRequestPolicy)
         //        .viewerProtocolPolicy(builder.viewerProtocolPolicy);
 
-        //if (builder.responseHeadersPolicy != null) {
+        // if (builder.responseHeadersPolicy != null) {
         //    behaviorOptionsBuilder.responseHeadersPolicy(builder.responseHeadersPolicy);
-        //}
+        // }
 
-        //this.behaviorOptions = behaviorOptionsBuilder.build();
+        // this.behaviorOptions = behaviorOptionsBuilder.build();
 
         logger.info("Created LambdaUrlOrigin with function: {}", this.lambda.getFunctionName());
     }
 
-    //private String getLambdaUrlHostToken(FunctionUrl functionUrl) {
+    // private String getLambdaUrlHostToken(FunctionUrl functionUrl) {
     //    String urlHostToken = Fn.select(2, Fn.split("/", functionUrl.getUrl()));
     //    return urlHostToken;
-    //}
+    // }
 
     public static class Builder {
         public final Construct scope;

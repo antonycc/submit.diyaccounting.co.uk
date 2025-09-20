@@ -3,6 +3,10 @@ package co.uk.diyaccounting.submit.stacks;
 import co.uk.diyaccounting.submit.constructs.LambdaUrlOrigin;
 import co.uk.diyaccounting.submit.constructs.LambdaUrlOriginOpts;
 import co.uk.diyaccounting.submit.utils.ResourceNameUtils;
+import java.util.AbstractMap;
+import java.util.HashMap;
+import java.util.List;
+import java.util.regex.Pattern;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import software.amazon.awscdk.CfnOutput;
@@ -17,18 +21,13 @@ import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
 
-import java.util.AbstractMap;
-import java.util.HashMap;
-import java.util.List;
-import java.util.regex.Pattern;
-
 public class AuthStack extends Stack {
 
     private static final Logger logger = LogManager.getLogger(AuthStack.class);
 
     // CDK resources here
     public Function authUrlMockLambda;
-    //public FunctionUrl authUrlMockLambdaUrl;
+    // public FunctionUrl authUrlMockLambdaUrl;
     public LogGroup authUrlMockLambdaLogGroup;
     public Function authUrlCognitoLambda;
     public FunctionUrl authUrlCognitoLambdaUrl;
@@ -36,7 +35,7 @@ public class AuthStack extends Stack {
     public Function exchangeCognitoTokenLambda;
     public FunctionUrl exchangeCognitoTokenLambdaUrl;
     public LogGroup exchangeCognitoTokenLambdaLogGroup;
-    //public Map<String, String> additionalOriginsBehaviourMappings;
+    // public Map<String, String> additionalOriginsBehaviourMappings;
 
     public AuthStack(Construct scope, String id, AuthStack.Builder builder) {
         this(scope, id, null, builder);
@@ -60,136 +59,132 @@ public class AuthStack extends Stack {
 
         // Determine Lambda URL authentication type
         FunctionUrlAuthType functionUrlAuthType = "AWS_IAM".equalsIgnoreCase(builder.lambdaUrlAuthType)
-            ? FunctionUrlAuthType.AWS_IAM
-            : FunctionUrlAuthType.NONE;
+                ? FunctionUrlAuthType.AWS_IAM
+                : FunctionUrlAuthType.NONE;
 
         // Common options for all Lambda URL origins to reduce repetition
         var lambdaCommonOpts = LambdaUrlOriginOpts.Builder.create()
-            .env(builder.env)
-            .imageDirectory("infra/runtimes")
-            .functionUrlAuthType(functionUrlAuthType)
-            .cloudTrailEnabled(cloudTrailEnabled)
-            .xRayEnabled(xRayEnabled)
-            .verboseLogging(verboseLogging)
-            .baseImageTag(builder.baseImageTag)
-            .build();
+                .env(builder.env)
+                .imageDirectory("infra/runtimes")
+                .functionUrlAuthType(functionUrlAuthType)
+                .cloudTrailEnabled(cloudTrailEnabled)
+                .xRayEnabled(xRayEnabled)
+                .verboseLogging(verboseLogging)
+                .baseImageTag(builder.baseImageTag)
+                .build();
 
-        //var lambdaUrlToOriginsBehaviourMappings = new HashMap<String, String>();
+        // var lambdaUrlToOriginsBehaviourMappings = new HashMap<String, String>();
 
         // authUrl - mock
         var authUrlMockLambdaEnv = new HashMap<String, String>();
-        //if (StringUtils.isNotBlank(builder.homeUrl)) {
-            authUrlMockLambdaEnv.put("DIY_SUBMIT_HOME_URL", builder.homeUrl);
-        //}
+        // if (StringUtils.isNotBlank(builder.homeUrl)) {
+        authUrlMockLambdaEnv.put("DIY_SUBMIT_HOME_URL", builder.homeUrl);
+        // }
         var authUrlMockLambdaUrlOrigin = LambdaUrlOrigin.Builder.create(this, "AuthUrlMock")
-            .options(lambdaCommonOpts)
-            .baseImageTag(builder.baseImageTag)
-            .ecrRepositoryName(builder.ecrRepositoryName)
-            .ecrRepositoryArn(builder.ecrRepositoryArn)
-            .imageFilename("authUrlMock.Dockerfile")
-            .functionName(WebStack.Builder.buildFunctionName(dashedDomainName, "authUrl.httpGetMock"))
-            .allowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
-            .handler(builder.lambdaEntry + "authUrl.httpGetMock")
-            .environment(authUrlMockLambdaEnv)
-            .timeout(Duration.millis(Long.parseLong("30000")))
-            .build(this);
+                .options(lambdaCommonOpts)
+                .baseImageTag(builder.baseImageTag)
+                .ecrRepositoryName(builder.ecrRepositoryName)
+                .ecrRepositoryArn(builder.ecrRepositoryArn)
+                .imageFilename("authUrlMock.Dockerfile")
+                .functionName(WebStack.Builder.buildFunctionName(dashedDomainName, "authUrl.httpGetMock"))
+                .allowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
+                .handler(builder.lambdaEntry + "authUrl.httpGetMock")
+                .environment(authUrlMockLambdaEnv)
+                .timeout(Duration.millis(Long.parseLong("30000")))
+                .build(this);
         this.authUrlMockLambda = authUrlMockLambdaUrlOrigin.lambda;
-        //this.authUrlMockLambdaUrl = authUrlMockLambdaUrlOrigin.functionUrl;
+        // this.authUrlMockLambdaUrl = authUrlMockLambdaUrlOrigin.functionUrl;
         this.authUrlMockLambdaLogGroup = authUrlMockLambdaUrlOrigin.logGroup;
-        //lambdaUrlToOriginsBehaviourMappings.put(
+        // lambdaUrlToOriginsBehaviourMappings.put(
         //    "/api/mock/auth-url" + "*", authUrlMockLambdaUrlOrigin.lambda.getFunctionArn());
 
         // authUrl - Google or Antonycc via Cognito
         var authUrlCognitoLambdaEnv = new HashMap<String, String>();
-        //if (StringUtils.isNotBlank(builder.homeUrl)) {
-            authUrlCognitoLambdaEnv.put("DIY_SUBMIT_HOME_URL", builder.homeUrl);
-        //}
-        //if (StringUtils.isNotBlank(builder.cognitoClientId)) {
-            authUrlCognitoLambdaEnv.put("DIY_SUBMIT_COGNITO_CLIENT_ID", builder.cognitoClientId);
-        //}
-        //if (StringUtils.isNotBlank(builder.cognitoBaseUri)) {
-            authUrlCognitoLambdaEnv.put("DIY_SUBMIT_COGNITO_BASE_URI", builder.cognitoBaseUri);
-        //}
+        // if (StringUtils.isNotBlank(builder.homeUrl)) {
+        authUrlCognitoLambdaEnv.put("DIY_SUBMIT_HOME_URL", builder.homeUrl);
+        // }
+        // if (StringUtils.isNotBlank(builder.cognitoClientId)) {
+        authUrlCognitoLambdaEnv.put("DIY_SUBMIT_COGNITO_CLIENT_ID", builder.cognitoClientId);
+        // }
+        // if (StringUtils.isNotBlank(builder.cognitoBaseUri)) {
+        authUrlCognitoLambdaEnv.put("DIY_SUBMIT_COGNITO_BASE_URI", builder.cognitoBaseUri);
+        // }
         var authUrlCognitoLambdaUrlOrigin = LambdaUrlOrigin.Builder.create(this, "AuthUrlCognito")
-            .options(lambdaCommonOpts)
-            .baseImageTag(builder.baseImageTag)
-            .ecrRepositoryName(builder.ecrRepositoryName)
-            .ecrRepositoryArn(builder.ecrRepositoryArn)
-            .imageFilename("authUrlCognito.Dockerfile")
-            .functionName(
-                WebStack.Builder.buildFunctionName(dashedDomainName, "authUrl.httpGetCognito"))
-            .allowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
-            .handler(builder.lambdaEntry + "authUrl.httpGetCognito")
-            .environment(authUrlCognitoLambdaEnv)
-            .timeout(Duration.millis(Long.parseLong("30000")))
-            .build(this);
+                .options(lambdaCommonOpts)
+                .baseImageTag(builder.baseImageTag)
+                .ecrRepositoryName(builder.ecrRepositoryName)
+                .ecrRepositoryArn(builder.ecrRepositoryArn)
+                .imageFilename("authUrlCognito.Dockerfile")
+                .functionName(WebStack.Builder.buildFunctionName(dashedDomainName, "authUrl.httpGetCognito"))
+                .allowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
+                .handler(builder.lambdaEntry + "authUrl.httpGetCognito")
+                .environment(authUrlCognitoLambdaEnv)
+                .timeout(Duration.millis(Long.parseLong("30000")))
+                .build(this);
         this.authUrlCognitoLambda = authUrlCognitoLambdaUrlOrigin.lambda;
-        //this.authUrlCognitoLambdaUrl = authUrlCognitoLambdaUrlOrigin.functionUrl;
+        // this.authUrlCognitoLambdaUrl = authUrlCognitoLambdaUrlOrigin.functionUrl;
         this.authUrlCognitoLambdaLogGroup = authUrlCognitoLambdaUrlOrigin.logGroup;
-        //lambdaUrlToOriginsBehaviourMappings.put(
+        // lambdaUrlToOriginsBehaviourMappings.put(
         //    "/api/cognito/auth-url" + "*", authUrlCognitoLambdaUrlOrigin.lambda.getFunctionArn());
 
         // exchangeToken - Google or Antonycc via Cognito
         var exchangeCognitoTokenLambdaEnv = new HashMap<String, String>();
-        //if (StringUtils.isNotBlank(builder.homeUrl)) {
-            exchangeCognitoTokenLambdaEnv.put("DIY_SUBMIT_HOME_URL", builder.homeUrl);
-        //}
-        //if (StringUtils.isNotBlank(builder.cognitoBaseUri)) {
-            exchangeCognitoTokenLambdaEnv.put("DIY_SUBMIT_COGNITO_BASE_URI", builder.cognitoBaseUri);
-        //}
-        //if (StringUtils.isNotBlank(builder.cognitoClientId)) {
-            exchangeCognitoTokenLambdaEnv.put("DIY_SUBMIT_COGNITO_CLIENT_ID", builder.cognitoClientId);
-        //}
+        // if (StringUtils.isNotBlank(builder.homeUrl)) {
+        exchangeCognitoTokenLambdaEnv.put("DIY_SUBMIT_HOME_URL", builder.homeUrl);
+        // }
+        // if (StringUtils.isNotBlank(builder.cognitoBaseUri)) {
+        exchangeCognitoTokenLambdaEnv.put("DIY_SUBMIT_COGNITO_BASE_URI", builder.cognitoBaseUri);
+        // }
+        // if (StringUtils.isNotBlank(builder.cognitoClientId)) {
+        exchangeCognitoTokenLambdaEnv.put("DIY_SUBMIT_COGNITO_CLIENT_ID", builder.cognitoClientId);
+        // }
         if (StringUtils.isNotBlank(builder.optionalTestAccessToken)) {
             exchangeCognitoTokenLambdaEnv.put("DIY_SUBMIT_TEST_ACCESS_TOKEN", builder.optionalTestAccessToken);
         }
         var exchangeCognitoTokenLambdaUrlOrigin = LambdaUrlOrigin.Builder.create(this, "ExchangeCognitoToken")
-            .options(lambdaCommonOpts)
-            .baseImageTag(builder.baseImageTag)
-            .ecrRepositoryName(builder.ecrRepositoryName)
-            .ecrRepositoryArn(builder.ecrRepositoryArn)
-            .imageFilename("exchangeCognitoToken.Dockerfile")
-            .functionName(WebStack.Builder.buildFunctionName(
-                dashedDomainName, "exchangeToken.httpPostCognito"))
-            .allowedMethods(AllowedMethods.ALLOW_ALL)
-            .handler(builder.lambdaEntry + "exchangeToken.httpPostCognito")
-            .environment(exchangeCognitoTokenLambdaEnv)
-            .timeout(Duration.millis(Long.parseLong("30000")))
-            .build(this);
+                .options(lambdaCommonOpts)
+                .baseImageTag(builder.baseImageTag)
+                .ecrRepositoryName(builder.ecrRepositoryName)
+                .ecrRepositoryArn(builder.ecrRepositoryArn)
+                .imageFilename("exchangeCognitoToken.Dockerfile")
+                .functionName(WebStack.Builder.buildFunctionName(dashedDomainName, "exchangeToken.httpPostCognito"))
+                .allowedMethods(AllowedMethods.ALLOW_ALL)
+                .handler(builder.lambdaEntry + "exchangeToken.httpPostCognito")
+                .environment(exchangeCognitoTokenLambdaEnv)
+                .timeout(Duration.millis(Long.parseLong("30000")))
+                .build(this);
         this.exchangeCognitoTokenLambda = exchangeCognitoTokenLambdaUrlOrigin.lambda;
-        //this.exchangeCognitoTokenLambdaUrl = exchangeCognitoTokenLambdaUrlOrigin.functionUrl;
+        // this.exchangeCognitoTokenLambdaUrl = exchangeCognitoTokenLambdaUrlOrigin.functionUrl;
         this.exchangeCognitoTokenLambdaLogGroup = exchangeCognitoTokenLambdaUrlOrigin.logGroup;
-        //lambdaUrlToOriginsBehaviourMappings.put(
+        // lambdaUrlToOriginsBehaviourMappings.put(
         //    "/api/cognito/exchange-token" + "*", exchangeCognitoTokenLambdaUrlOrigin.lambda.getFunctionArn());
 
-        //if (this.authUrlMockLambda != null) {
+        // if (this.authUrlMockLambda != null) {
         //    CfnOutput.Builder.create(this, "AuthUrlMockLambdaArn")
         //        .value(this.authUrlMockLambda.getFunctionArn())
         //        .build();
-            //CfnOutput.Builder.create(this, "AuthUrlMockLambdaUrl")
-            //    .value(this.authUrlMockLambdaUrl.getUrl())
-            //    .build();
-        //}
+        // CfnOutput.Builder.create(this, "AuthUrlMockLambdaUrl")
+        //    .value(this.authUrlMockLambdaUrl.getUrl())
+        //    .build();
+        // }
 
-        //this.additionalOriginsBehaviourMappings = lambdaUrlToOriginsBehaviourMappings;
-
+        // this.additionalOriginsBehaviourMappings = lambdaUrlToOriginsBehaviourMappings;
 
         if (this.authUrlMockLambda != null) {
             CfnOutput.Builder.create(this, "AuthUrlMockLambdaArn")
-                .value(this.authUrlMockLambda.getFunctionArn())
-                .build();
+                    .value(this.authUrlMockLambda.getFunctionArn())
+                    .build();
         }
         if (this.authUrlCognitoLambda != null) {
             CfnOutput.Builder.create(this, "AuthUrlCognitoLambdaArn")
-                .value(this.authUrlCognitoLambda.getFunctionArn())
-                .build();
+                    .value(this.authUrlCognitoLambda.getFunctionArn())
+                    .build();
         }
         if (this.exchangeCognitoTokenLambda != null) {
             CfnOutput.Builder.create(this, "ExchangeCognitoTokenLambdaArn")
-                .value(this.exchangeCognitoTokenLambda.getFunctionArn())
-                .build();
+                    .value(this.exchangeCognitoTokenLambda.getFunctionArn())
+                    .build();
         }
-
 
         logger.info("AuthStack created successfully for {}", dashedDomainName);
     }

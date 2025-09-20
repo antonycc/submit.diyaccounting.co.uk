@@ -1,5 +1,8 @@
 package co.uk.diyaccounting.submit.stacks;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import software.amazon.awscdk.CfnOutput;
 import software.amazon.awscdk.CfnOutputProps;
 import software.amazon.awscdk.Fn;
@@ -38,10 +41,6 @@ import software.amazon.awscdk.services.s3.Bucket;
 import software.amazon.awscdk.services.s3.IBucket;
 import software.amazon.awscdk.services.wafv2.CfnWebACL;
 import software.constructs.Construct;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 public class EdgeStack extends Stack {
     public final Distribution distribution;
@@ -174,7 +173,8 @@ public class EdgeStack extends Stack {
                         .build())
                 .build();
 
-        //S3OriginAccessControl originAccessControl = S3OriginAccessControl.Builder.create(this, props.resourceNamePrefix + "-OAC")
+        // S3OriginAccessControl originAccessControl = S3OriginAccessControl.Builder.create(this,
+        // props.resourceNamePrefix + "-OAC")
         //        //.name(props.compressedResourceNamePrefix + "-oac")
         //        .originAccessControlName(props.compressedResourceNamePrefix + "-oac")
         //        .description("OAC for " + props.resourceNamePrefix + " CloudFront distribution")
@@ -188,36 +188,31 @@ public class EdgeStack extends Stack {
         //        .build();
 
         S3OriginAccessControl oac = S3OriginAccessControl.Builder.create(this, "MyOAC")
-            .signing(Signing.SIGV4_ALWAYS) // NEVER // SIGV4_NO_OVERRIDE
-            .build();
+                .signing(Signing.SIGV4_ALWAYS) // NEVER // SIGV4_NO_OVERRIDE
+                .build();
         IOrigin localOrigin = S3BucketOrigin.withOriginAccessControl(
-            originBucket,
-            S3BucketOriginWithOACProps.builder()
-                .originAccessControl(oac)
-                .build()
-        );
-        //logger.info("Created BucketOrigin with bucket: {}", this.originBucket.getBucketName());
+                originBucket,
+                S3BucketOriginWithOACProps.builder().originAccessControl(oac).build());
+        // logger.info("Created BucketOrigin with bucket: {}", this.originBucket.getBucketName());
 
         BehaviorOptions localBehaviorOptions = BehaviorOptions.builder()
-            .origin(localOrigin)
-            .allowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
-            .originRequestPolicy(OriginRequestPolicy.CORS_S3_ORIGIN)
-            .viewerProtocolPolicy(ViewerProtocolPolicy.REDIRECT_TO_HTTPS)
-            .responseHeadersPolicy(ResponseHeadersPolicy.CORS_ALLOW_ALL_ORIGINS_WITH_PREFLIGHT_AND_SECURITY_HEADERS)
-            .compress(true)
-            .build();
+                .origin(localOrigin)
+                .allowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
+                .originRequestPolicy(OriginRequestPolicy.CORS_S3_ORIGIN)
+                .viewerProtocolPolicy(ViewerProtocolPolicy.REDIRECT_TO_HTTPS)
+                .responseHeadersPolicy(ResponseHeadersPolicy.CORS_ALLOW_ALL_ORIGINS_WITH_PREFLIGHT_AND_SECURITY_HEADERS)
+                .compress(true)
+                .build();
 
         // Create additional behaviours for the URL origins using the mappings provided in props
         // Use function createBehaviorOptionsForLambdaUrlHost to transform the lambda URL host into BehaviorOptions
-        HashMap<String, BehaviorOptions> additionalBehaviors = //new HashMap<String, BehaviorOptions>();
-            props.additionalOriginsBehaviourMappings.entrySet().stream().collect(
-                HashMap::new,
-                (map, entry) -> map.put(
-                    entry.getKey(),
-                    createBehaviorOptionsForLambdaUrl(entry.getValue())
-                ),
-                HashMap::putAll
-            );
+        HashMap<String, BehaviorOptions> additionalBehaviors = // new HashMap<String, BehaviorOptions>();
+                props.additionalOriginsBehaviourMappings.entrySet().stream()
+                        .collect(
+                                HashMap::new,
+                                (map, entry) ->
+                                        map.put(entry.getKey(), createBehaviorOptionsForLambdaUrl(entry.getValue())),
+                                HashMap::putAll);
 
         // CloudFront distribution for the web origin and all the URL Lambdas.
         this.distribution = Distribution.Builder.create(this, props.resourceNamePrefix + "-WebDist")
@@ -256,15 +251,13 @@ public class EdgeStack extends Stack {
         new CfnOutput(
                 this, "BaseUrl", CfnOutputProps.builder().value(this.baseUrl).build());
         new CfnOutput(
-            this,
-            "CertificateArn",
-            CfnOutputProps.builder().value(cert.getCertificateArn()).build());
+                this,
+                "CertificateArn",
+                CfnOutputProps.builder().value(cert.getCertificateArn()).build());
         new CfnOutput(
-            this,
-            "WebAclId",
-            CfnOutputProps.builder()
-                .value(webAcl.getAttrArn())
-                .build());
+                this,
+                "WebAclId",
+                CfnOutputProps.builder().value(webAcl.getAttrArn()).build());
         new CfnOutput(
                 this,
                 "WebDistributionDomainName",
@@ -278,35 +271,30 @@ public class EdgeStack extends Stack {
                         .value(this.distribution.getDistributionId())
                         .build());
         new CfnOutput(
-            this,
-            "AliasRecord",
-            CfnOutputProps.builder().value(this.aliasRecord.getDomainName()).build());
-
+                this,
+                "AliasRecord",
+                CfnOutputProps.builder().value(this.aliasRecord.getDomainName()).build());
     }
 
     public BehaviorOptions createBehaviorOptionsForLambdaUrl(String lambdaArn) {
         var lambda = software.amazon.awscdk.services.lambda.Function.fromFunctionArn(
-            this,
-            lambdaArn.replace(":", "-").replace("/", "-"),
-            lambdaArn
-        );
-        var functionUrlBuilder = FunctionUrlOptions.builder()
-            .authType(FunctionUrlAuthType.NONE)
-            .invokeMode(InvokeMode.BUFFERED);
+                this, lambdaArn.replace(":", "-").replace("/", "-"), lambdaArn);
+        var functionUrlBuilder =
+                FunctionUrlOptions.builder().authType(FunctionUrlAuthType.NONE).invokeMode(InvokeMode.BUFFERED);
         var functionUrl = lambda.addFunctionUrl(functionUrlBuilder.build());
         var lambdaUrlHost = getLambdaUrlHostToken(functionUrl);
         var origin = HttpOrigin.Builder.create(lambdaUrlHost)
-            .protocolPolicy(OriginProtocolPolicy.HTTPS_ONLY)
-            .build();
+                .protocolPolicy(OriginProtocolPolicy.HTTPS_ONLY)
+                .build();
         var behaviorOptions = BehaviorOptions.builder()
-            .origin(origin)
-            .allowedMethods(AllowedMethods.ALLOW_ALL)
-            .cachePolicy(CachePolicy.CACHING_DISABLED)
-            .originRequestPolicy(OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER)
-            .viewerProtocolPolicy(ViewerProtocolPolicy.REDIRECT_TO_HTTPS)
-            .responseHeadersPolicy(ResponseHeadersPolicy.CORS_ALLOW_ALL_ORIGINS_WITH_PREFLIGHT_AND_SECURITY_HEADERS)
-            .build();
-            ;
+                .origin(origin)
+                .allowedMethods(AllowedMethods.ALLOW_ALL)
+                .cachePolicy(CachePolicy.CACHING_DISABLED)
+                .originRequestPolicy(OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER)
+                .viewerProtocolPolicy(ViewerProtocolPolicy.REDIRECT_TO_HTTPS)
+                .responseHeadersPolicy(ResponseHeadersPolicy.CORS_ALLOW_ALL_ORIGINS_WITH_PREFLIGHT_AND_SECURITY_HEADERS)
+                .build();
+        ;
         return behaviorOptions;
     }
 

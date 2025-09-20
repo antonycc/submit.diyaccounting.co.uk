@@ -1,6 +1,7 @@
 package co.uk.diyaccounting.submit.constructs;
 
 import co.uk.diyaccounting.submit.awssdk.SimpleStackProps;
+import java.util.Map;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -11,8 +12,6 @@ import software.amazon.awscdk.services.cloudfront.AllowedMethods;
 import uk.org.webcompere.systemstubs.environment.EnvironmentVariables;
 import uk.org.webcompere.systemstubs.jupiter.SystemStub;
 import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
-
-import java.util.Map;
 
 @ExtendWith(SystemStubsExtension.class)
 public class LambdaUrlOriginTest {
@@ -51,7 +50,7 @@ public class LambdaUrlOriginTest {
         Assertions.assertNotNull(lambdaUrlOrigin);
         Assertions.assertNotNull(lambdaUrlOrigin.lambda);
         Assertions.assertNotNull(lambdaUrlOrigin.logGroup);
-        //Assertions.assertNotNull(lambdaUrlOrigin.functionUrl);
-        //Assertions.assertNotNull(lambdaUrlOrigin.behaviorOptions);
+        // Assertions.assertNotNull(lambdaUrlOrigin.functionUrl);
+        // Assertions.assertNotNull(lambdaUrlOrigin.behaviorOptions);
     }
 }

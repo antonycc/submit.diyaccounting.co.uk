@@ -1,10 +1,9 @@
 package co.uk.diyaccounting.submit.stacks;
 
+import java.util.Map;
 import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.services.cloudfront.BehaviorOptions;
-
-import java.util.Map;
 
 public class EdgeStackProps implements StackProps {
     public final String envName;
@@ -17,7 +16,7 @@ public class EdgeStackProps implements StackProps {
     public final String compressedResourceNamePrefix;
     public final String certificateArn;
     public final String logsBucketArn;
-    //public final BehaviorOptions webBehaviorOptions;
+    // public final BehaviorOptions webBehaviorOptions;
     public final String webBucketArn;
     public final Map<String, String> additionalOriginsBehaviourMappings;
 
@@ -37,7 +36,7 @@ public class EdgeStackProps implements StackProps {
         this.certificateArn = builder.certificateArn;
         this.logsBucketArn = builder.logsBucketArn;
         this.webBucketArn = builder.webBucketArn;
-        //this.webBehaviorOptions = builder.webBehaviorOptions;
+        // this.webBehaviorOptions = builder.webBehaviorOptions;
         this.additionalOriginsBehaviourMappings = builder.additionalOriginsBehaviourMappings;
         this.env = builder.env;
         this.crossRegionReferences = builder.crossRegionReferences;
@@ -130,13 +129,12 @@ public class EdgeStackProps implements StackProps {
             return this;
         }
 
-        //public Builder webBehaviorOptions(BehaviorOptions webBehaviorOptions) {
+        // public Builder webBehaviorOptions(BehaviorOptions webBehaviorOptions) {
         //    this.webBehaviorOptions = webBehaviorOptions;
         //    return this;
-        //}
+        // }
 
-        public Builder additionalOriginsBehaviourMappings(
-                Map<String, String> additionalOriginsBehaviourMappings) {
+        public Builder additionalOriginsBehaviourMappings(Map<String, String> additionalOriginsBehaviourMappings) {
             this.additionalOriginsBehaviourMappings = additionalOriginsBehaviourMappings;
             return this;
         }

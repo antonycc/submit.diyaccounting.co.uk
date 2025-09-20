@@ -1,6 +1,12 @@
 package co.uk.diyaccounting.submit.stacks;
 
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateCompressedResourceNamePrefix;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateResourceNamePrefix;
+
 import co.uk.diyaccounting.submit.utils.ResourceNameUtils;
+import java.util.AbstractMap;
+import java.util.List;
+import java.util.regex.Pattern;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import software.amazon.awscdk.CfnOutput;
@@ -38,13 +44,6 @@ import software.amazon.awscdk.services.s3.deployment.BucketDeployment;
 import software.amazon.awscdk.services.s3.deployment.ISource;
 import software.amazon.awscdk.services.secretsmanager.ISecret;
 import software.constructs.Construct;
-
-import java.util.AbstractMap;
-import java.util.List;
-import java.util.regex.Pattern;
-
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateCompressedResourceNamePrefix;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateResourceNamePrefix;
 
 public class WebStack extends Stack {
 
@@ -471,10 +470,8 @@ public class WebStack extends Stack {
         this.baseUrl = "https://" + domainName;
 
         // Generate predictable resource name prefix based on domain and environment
-        String resourceNamePrefix =
-            generateResourceNamePrefix(domainName, builder.env);
-        String compressedResourceNamePrefix =
-            generateCompressedResourceNamePrefix(domainName, builder.env);
+        String resourceNamePrefix = generateResourceNamePrefix(domainName, builder.env);
+        String compressedResourceNamePrefix = generateCompressedResourceNamePrefix(domainName, builder.env);
         this.resourceNamePrefix = resourceNamePrefix;
         this.compressedResourceNamePrefix = compressedResourceNamePrefix;
 
@@ -493,82 +490,79 @@ public class WebStack extends Stack {
         boolean verboseLogging = builder.verboseLogging == null || Boolean.parseBoolean(builder.verboseLogging);
 
         // Origin bucket for the CloudFront distribution
-        //BucketOrigin bucketOrigin;
-        //if (s3UseExistingBucket) {
+        // BucketOrigin bucketOrigin;
+        // if (s3UseExistingBucket) {
         //    bucketOrigin = BucketOrigin.Builder.create(this, "Origin")
         //            .bucketName(originBucketName)
         //            .useExistingBucket(true)
         //            .build();
-        //} else {
-            //bucketOrigin = BucketOrigin.Builder.create(this, "Origin")
-                    //.bucketName(originBucketName)
-                    //.originAccessLogBucketName(originAccessLogBucketName)
-                    //.functionNamePrefix("%s-origin-access-".formatted(dashedDomainName))
-                    //.accessLogGroupRetentionPeriodDays(accessLogGroupRetentionPeriodDays)
-                    //.retainBucket(s3RetainOriginBucket)
-                    //.verboseLogging(verboseLogging)
-                    //.useExistingBucket(false)
-                    //.build();
-        //}
+        // } else {
+        // bucketOrigin = BucketOrigin.Builder.create(this, "Origin")
+        // .bucketName(originBucketName)
+        // .originAccessLogBucketName(originAccessLogBucketName)
+        // .functionNamePrefix("%s-origin-access-".formatted(dashedDomainName))
+        // .accessLogGroupRetentionPeriodDays(accessLogGroupRetentionPeriodDays)
+        // .retainBucket(s3RetainOriginBucket)
+        // .verboseLogging(verboseLogging)
+        // .useExistingBucket(false)
+        // .build();
+        // }
 
         var idPrefix = "%s-origin-access-".formatted(dashedDomainName);
-        logger.info("Setting expiration period to %d days for %s".formatted(accessLogGroupRetentionPeriodDays, idPrefix));
+        logger.info(
+                "Setting expiration period to %d days for %s".formatted(accessLogGroupRetentionPeriodDays, idPrefix));
         this.originAccessLogBucket = Bucket.Builder.create(this, "%sLogBucket".formatted(idPrefix))
-            .bucketName(originAccessLogBucketName)
-            .objectOwnership(ObjectOwnership.OBJECT_WRITER)
-            .versioned(false)
-            .blockPublicAccess(BlockPublicAccess.BLOCK_ALL)
-            .encryption(BucketEncryption.S3_MANAGED)
-            .removalPolicy(RemovalPolicy.DESTROY)
-            .autoDeleteObjects(true)
-            .lifecycleRules(List.of(LifecycleRule.builder()
-                .id("%sLogsLifecycleRule".formatted(idPrefix))
-                .enabled(true)
-                .expiration(Duration.days(accessLogGroupRetentionPeriodDays))
-                .build())
-            )
-            .build();
+                .bucketName(originAccessLogBucketName)
+                .objectOwnership(ObjectOwnership.OBJECT_WRITER)
+                .versioned(false)
+                .blockPublicAccess(BlockPublicAccess.BLOCK_ALL)
+                .encryption(BucketEncryption.S3_MANAGED)
+                .removalPolicy(RemovalPolicy.DESTROY)
+                .autoDeleteObjects(true)
+                .lifecycleRules(List.of(LifecycleRule.builder()
+                        .id("%sLogsLifecycleRule".formatted(idPrefix))
+                        .enabled(true)
+                        .expiration(Duration.days(accessLogGroupRetentionPeriodDays))
+                        .build()))
+                .build();
         logger.info("Created log bucket %s".formatted(this.originAccessLogBucket));
 
         // Create the origin bucket
         this.originBucket = Bucket.Builder.create(this, "OriginBucket")
-            .bucketName(originBucketName)
-            .versioned(false)
-            .blockPublicAccess(BlockPublicAccess.BLOCK_ALL)
-            .encryption(BucketEncryption.S3_MANAGED)
-            .removalPolicy(RemovalPolicy.DESTROY)
-            .autoDeleteObjects(true)
-            .serverAccessLogsBucket(this.originAccessLogBucket)
-            .build();
-        //}
+                .bucketName(originBucketName)
+                .versioned(false)
+                .blockPublicAccess(BlockPublicAccess.BLOCK_ALL)
+                .encryption(BucketEncryption.S3_MANAGED)
+                .removalPolicy(RemovalPolicy.DESTROY)
+                .autoDeleteObjects(true)
+                .serverAccessLogsBucket(this.originAccessLogBucket)
+                .build();
+        // }
 
         // Create origin access identity
-        //this.originIdentity = OriginAccessIdentity.Builder.create(this, "OriginAccessIdentity")
+        // this.originIdentity = OriginAccessIdentity.Builder.create(this, "OriginAccessIdentity")
         //    .comment("Identity created for access to the web website bucket via the CloudFront" + " distribution")
-            // Either generate a stable name when cross-env is needed
-            //.originAccessIdentityName(PhysicalName.GENERATE_IF_NEEDED)
-            // Or pick an explicit, deterministic name you control (recommended)
-            // .originAccessIdentityName(this.compressedResourceNamePrefix + "-oai")
+        // Either generate a stable name when cross-env is needed
+        // .originAccessIdentityName(PhysicalName.GENERATE_IF_NEEDED)
+        // Or pick an explicit, deterministic name you control (recommended)
+        // .originAccessIdentityName(this.compressedResourceNamePrefix + "-oai")
         //    .build();
 
         // Grant read access to the origin identity
-        //originBucket.grantRead(this.originIdentity);
+        // originBucket.grantRead(this.originIdentity);
 
         // Create the S3 bucket origin
-        //this.origin = S3BucketOrigin.withOriginAccessIdentity(
+        // this.origin = S3BucketOrigin.withOriginAccessIdentity(
         //    this.originBucket,
         //    S3BucketOriginWithOAIProps.builder()
         //        .originAccessIdentity(this.originIdentity)
         //        .build());
         S3OriginAccessControl oac = S3OriginAccessControl.Builder.create(this, "MyOAC")
-            .signing(Signing.SIGV4_ALWAYS) // NEVER // SIGV4_NO_OVERRIDE
-            .build();
+                .signing(Signing.SIGV4_ALWAYS) // NEVER // SIGV4_NO_OVERRIDE
+                .build();
         this.origin = S3BucketOrigin.withOriginAccessControl(
-            this.originBucket,
-            S3BucketOriginWithOACProps.builder()
-                .originAccessControl(oac)
-                .build()
-            );
+                this.originBucket,
+                S3BucketOriginWithOACProps.builder().originAccessControl(oac).build());
         logger.info("Created BucketOrigin with bucket: {}", this.originBucket.getBucketName());
 
         this.behaviorOptions = BehaviorOptions.builder()
@@ -582,128 +576,130 @@ public class WebStack extends Stack {
 
         // Allow CloudFront service to GetObject via OAC, scoped to your account’s distributions
         this.originBucket.addToResourcePolicy(PolicyStatement.Builder.create()
-            .sid("AllowCloudFrontReadViaOAC")
-            .principals(java.util.List.of(new ServicePrincipal("cloudfront.amazonaws.com")))
-            .actions(java.util.List.of("s3:GetObject"))
-            .resources(java.util.List.of(this.originBucket.getBucketArn() + "/*"))
-            .conditions(java.util.Map.of(
-                // Limit to distributions in your account (no distribution ARN token needed)
-                "StringEquals", java.util.Map.of("AWS:SourceAccount", this.getAccount()),
-                "ArnLike", java.util.Map.of("AWS:SourceArn", "arn:aws:cloudfront::" + this.getAccount() + ":distribution/*")
-            ))
-            .build());
+                .sid("AllowCloudFrontReadViaOAC")
+                .principals(java.util.List.of(new ServicePrincipal("cloudfront.amazonaws.com")))
+                .actions(java.util.List.of("s3:GetObject"))
+                .resources(java.util.List.of(this.originBucket.getBucketArn() + "/*"))
+                .conditions(java.util.Map.of(
+                        // Limit to distributions in your account (no distribution ARN token needed)
+                        "StringEquals", java.util.Map.of("AWS:SourceAccount", this.getAccount()),
+                        "ArnLike",
+                                java.util.Map.of(
+                                        "AWS:SourceArn",
+                                        "arn:aws:cloudfront::" + this.getAccount() + ":distribution/*")))
+                .build());
 
         /*
-        IUserPool userPool = UserPool.fromUserPoolArn(this, "UserPool", builder.userPoolArn);
+                IUserPool userPool = UserPool.fromUserPoolArn(this, "UserPool", builder.userPoolArn);
 
-        // Create a certificate for the website domain
-        this.certificate = Certificate.fromCertificateArn(this, "Certificate", builder.certificateArn);
+                // Create a certificate for the website domain
+                this.certificate = Certificate.fromCertificateArn(this, "Certificate", builder.certificateArn);
 
-        // Create the CloudFront distribution using a helper to preserve IDs and reduce inline noise
-        var distWithLogging = DistributionWithLogging.Builder.create(this)
-                .domainName(this.domainName)
-                .defaultBehavior(s3BucketOriginBehaviour)
-                .additionalBehaviors(lambdaUrlToOriginsBehaviourMappings)
-                .defaultRootObject(builder.defaultDocumentAtOrigin)
-                .errorPageKey(builder.error404NotFoundAtDistribution)
-                .errorStatusCode(HttpStatus.SC_NOT_FOUND)
-                .certificate(this.certificate)
-                .logBucketName(distributionAccessLogBucketName)
-                .logFunctionNamePrefix("%s-dist-access-".formatted(dashedDomainName))
-                .logRetentionDays(accessLogGroupRetentionPeriodDays)
-                .cloudTrailEnabled(cloudTrailEnabled)
-                .logIncludesCookies(verboseLogging)
-                .build();
-        this.distributionAccessLogBucket = distWithLogging.logBucket;
-        this.distribution = distWithLogging.distribution;
+                // Create the CloudFront distribution using a helper to preserve IDs and reduce inline noise
+                var distWithLogging = DistributionWithLogging.Builder.create(this)
+                        .domainName(this.domainName)
+                        .defaultBehavior(s3BucketOriginBehaviour)
+                        .additionalBehaviors(lambdaUrlToOriginsBehaviourMappings)
+                        .defaultRootObject(builder.defaultDocumentAtOrigin)
+                        .errorPageKey(builder.error404NotFoundAtDistribution)
+                        .errorStatusCode(HttpStatus.SC_NOT_FOUND)
+                        .certificate(this.certificate)
+                        .logBucketName(distributionAccessLogBucketName)
+                        .logFunctionNamePrefix("%s-dist-access-".formatted(dashedDomainName))
+                        .logRetentionDays(accessLogGroupRetentionPeriodDays)
+                        .cloudTrailEnabled(cloudTrailEnabled)
+                        .logIncludesCookies(verboseLogging)
+                        .build();
+                this.distributionAccessLogBucket = distWithLogging.logBucket;
+                this.distribution = distWithLogging.distribution;
 
-        Permission invokeFunctionUrlPermission = Permission.builder()
-                .principal(new ServicePrincipal("cloudfront.amazonaws.com"))
-                .action("lambda:InvokeFunctionUrl")
-                .functionUrlAuthType(functionUrlAuthType)
-                .sourceArn(this.distribution.getDistributionArn()) // restrict to your distribution
-                .build();
-        authUrlHmrcLambda.addPermission("AuthLambdaAllowCloudFrontInvoke", invokeFunctionUrlPermission);
-        exchangeHmrcTokenLambda.addPermission("ExchangeTokenLambdaAllowCloudFrontInvoke", invokeFunctionUrlPermission);
-        submitVatLambda.addPermission("SubmitVatLambdaAllowCloudFrontInvoke", invokeFunctionUrlPermission);
-        logReceiptLambda.addPermission("LogReceiptLambdaAllowCloudFrontInvoke", invokeFunctionUrlPermission);
-        if (this.bundleLambda != null)
-            this.bundleLambda.addPermission("BundleLambdaAllowCloudFrontInvoke", invokeFunctionUrlPermission);
-        if (this.catalogLambda != null)
-            this.catalogLambda.addPermission("CatalogLambdaAllowCloudFrontInvoke", invokeFunctionUrlPermission);
-        if (this.myBundlesLambda != null)
-            this.myBundlesLambda.addPermission("MyBundlesLambdaAllowCloudFrontInvoke", invokeFunctionUrlPermission);
+                Permission invokeFunctionUrlPermission = Permission.builder()
+                        .principal(new ServicePrincipal("cloudfront.amazonaws.com"))
+                        .action("lambda:InvokeFunctionUrl")
+                        .functionUrlAuthType(functionUrlAuthType)
+                        .sourceArn(this.distribution.getDistributionArn()) // restrict to your distribution
+                        .build();
+                authUrlHmrcLambda.addPermission("AuthLambdaAllowCloudFrontInvoke", invokeFunctionUrlPermission);
+                exchangeHmrcTokenLambda.addPermission("ExchangeTokenLambdaAllowCloudFrontInvoke", invokeFunctionUrlPermission);
+                submitVatLambda.addPermission("SubmitVatLambdaAllowCloudFrontInvoke", invokeFunctionUrlPermission);
+                logReceiptLambda.addPermission("LogReceiptLambdaAllowCloudFrontInvoke", invokeFunctionUrlPermission);
+                if (this.bundleLambda != null)
+                    this.bundleLambda.addPermission("BundleLambdaAllowCloudFrontInvoke", invokeFunctionUrlPermission);
+                if (this.catalogLambda != null)
+                    this.catalogLambda.addPermission("CatalogLambdaAllowCloudFrontInvoke", invokeFunctionUrlPermission);
+                if (this.myBundlesLambda != null)
+                    this.myBundlesLambda.addPermission("MyBundlesLambdaAllowCloudFrontInvoke", invokeFunctionUrlPermission);
 
-        this.distributionUrl = "https://%s/".formatted(this.distribution.getDomainName());
-        logger.info("Distribution URL: %s".formatted(distributionUrl));
-        logger.info("Base URL: %s".formatted(baseUrl));
-*/
+                this.distributionUrl = "https://%s/".formatted(this.distribution.getDomainName());
+                logger.info("Distribution URL: %s".formatted(distributionUrl));
+                logger.info("Base URL: %s".formatted(baseUrl));
+        */
         /*
 
-        // Generate submit.version file with commit hash if provided
-        if (builder.commitHash != null && !builder.commitHash.isBlank()) {
-            try {
-                java.nio.file.Path sourceFilePath = java.nio.file.Paths.get(builder.docRootPath, "submit.version");
-                java.nio.file.Files.writeString(sourceFilePath, builder.commitHash.trim());
-                logger.info("Created submit.version file with commit hash: %s".formatted(builder.commitHash));
-            } catch (Exception e) {
-                logger.warn("Failed to create submit.version file: %s".formatted(e.getMessage()));
-            }
-        } else {
-            logger.info("No commit hash provided, skipping submit.version generation");
-        }
+                // Generate submit.version file with commit hash if provided
+                if (builder.commitHash != null && !builder.commitHash.isBlank()) {
+                    try {
+                        java.nio.file.Path sourceFilePath = java.nio.file.Paths.get(builder.docRootPath, "submit.version");
+                        java.nio.file.Files.writeString(sourceFilePath, builder.commitHash.trim());
+                        logger.info("Created submit.version file with commit hash: %s".formatted(builder.commitHash));
+                    } catch (Exception e) {
+                        logger.warn("Failed to create submit.version file: %s".formatted(e.getMessage()));
+                    }
+                } else {
+                    logger.info("No commit hash provided, skipping submit.version generation");
+                }
 
-        var deployPostfix = java.util.UUID.randomUUID().toString().substring(0, 8);
+                var deployPostfix = java.util.UUID.randomUUID().toString().substring(0, 8);
 
-        // Deploy the web website files to the web website bucket and invalidate distribution
-        this.docRootSource = Source.asset(
-                builder.docRootPath,
-                AssetOptions.builder().assetHashType(AssetHashType.SOURCE).build());
-        logger.info("Will deploy files from: %s".formatted(builder.docRootPath));
+                // Deploy the web website files to the web website bucket and invalidate distribution
+                this.docRootSource = Source.asset(
+                        builder.docRootPath,
+                        AssetOptions.builder().assetHashType(AssetHashType.SOURCE).build());
+                logger.info("Will deploy files from: %s".formatted(builder.docRootPath));
 
-        // Create LogGroup for BucketDeployment
-        var bucketDeploymentRetentionPeriodDays = Integer.parseInt(builder.cloudTrailLogGroupRetentionPeriodDays);
-        var bucketDeploymentRetentionPeriod =
-                RetentionDaysConverter.daysToRetentionDays(bucketDeploymentRetentionPeriodDays);
-        LogGroup bucketDeploymentLogGroup = LogGroup.Builder.create(this, "BucketDeploymentLogGroup-" + deployPostfix)
-                .logGroupName("/aws/lambda/bucket-deployment-%s-%s".formatted(dashedDomainName, deployPostfix))
-                .retention(bucketDeploymentRetentionPeriod)
-                .removalPolicy(s3RetainOriginBucket ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY)
-                .build();
+                // Create LogGroup for BucketDeployment
+                var bucketDeploymentRetentionPeriodDays = Integer.parseInt(builder.cloudTrailLogGroupRetentionPeriodDays);
+                var bucketDeploymentRetentionPeriod =
+                        RetentionDaysConverter.daysToRetentionDays(bucketDeploymentRetentionPeriodDays);
+                LogGroup bucketDeploymentLogGroup = LogGroup.Builder.create(this, "BucketDeploymentLogGroup-" + deployPostfix)
+                        .logGroupName("/aws/lambda/bucket-deployment-%s-%s".formatted(dashedDomainName, deployPostfix))
+                        .retention(bucketDeploymentRetentionPeriod)
+                        .removalPolicy(s3RetainOriginBucket ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY)
+                        .build();
 
-        this.deployment = BucketDeployment.Builder.create(this, "DocRootToOriginDeployment")
-                .sources(List.of(this.docRootSource))
-                .destinationBucket(this.originBucket)
-                .distribution(this.distribution)
-                .distributionPaths(List.of(
-                    "/account/*",
-                    "/activities/*",
-                    "/auth/*",
-                    "/errors/*",
-                    "/images/*",
-                    "/widgets/*",
-                    "/favicon.ico",
-                    "/index.html",
-                    "/submit.css",
-                    "/submit.js",
-                    "/submit.version"
-                ))
-                .logGroup(bucketDeploymentLogGroup)
-                .retainOnDelete(true)
-                .expires(Expiration.after(Duration.minutes(5)))
-                .prune(false)
-                .memoryLimit(1024)
-                .ephemeralStorageSize(Size.gibibytes(2))
-                .build();
-*/
+                this.deployment = BucketDeployment.Builder.create(this, "DocRootToOriginDeployment")
+                        .sources(List.of(this.docRootSource))
+                        .destinationBucket(this.originBucket)
+                        .distribution(this.distribution)
+                        .distributionPaths(List.of(
+                            "/account/*",
+                            "/activities/*",
+                            "/auth/*",
+                            "/errors/*",
+                            "/images/*",
+                            "/widgets/*",
+                            "/favicon.ico",
+                            "/index.html",
+                            "/submit.css",
+                            "/submit.js",
+                            "/submit.version"
+                        ))
+                        .logGroup(bucketDeploymentLogGroup)
+                        .retainOnDelete(true)
+                        .expires(Expiration.after(Duration.minutes(5)))
+                        .prune(false)
+                        .memoryLimit(1024)
+                        .ephemeralStorageSize(Size.gibibytes(2))
+                        .build();
+        */
         // Create Route53 record for use with CloudFront distribution
-        //this.aRecord = ARecord.Builder.create(this, "ARecord-%s".formatted(dashedDomainName))
+        // this.aRecord = ARecord.Builder.create(this, "ARecord-%s".formatted(dashedDomainName))
         //        .zone(this.hostedZone)
         //        .recordName(this.domainName)
         //        .deleteExisting(true)
         //        .target(RecordTarget.fromAlias(new CloudFrontTarget(this.distribution)))
         //        .build();
-        //this.aaaaRecord = AaaaRecord.Builder.create(this, "AaaaRecord-%s".formatted(dashedDomainName))
+        // this.aaaaRecord = AaaaRecord.Builder.create(this, "AaaaRecord-%s".formatted(dashedDomainName))
         //        .zone(this.hostedZone)
         //        .recordName(this.domainName)
         //        .deleteExisting(true)
@@ -743,28 +739,28 @@ public class WebStack extends Stack {
                     .build();
         }
         */
-        //if (this.hmrcClientSecretsManagerSecret != null) {
+        // if (this.hmrcClientSecretsManagerSecret != null) {
         //    CfnOutput.Builder.create(this, "HmrcClientSecretsManagerSecretArn")
         //            .value(this.hmrcClientSecretsManagerSecret.getSecretArn())
         //            .build();
-        //}
-        //if (this.cognitoBaseUri != null) {
+        // }
+        // if (this.cognitoBaseUri != null) {
         //    CfnOutput.Builder.create(this, "CognitoBaseUri")
         //            .value(this.cognitoBaseUri)
         //            .build();
         //    CfnOutput.Builder.create(this, "CognitoGoogleIdpRedirectUri")
         //            .value(this.cognitoBaseUri + "/oauth2/idpresponse")
         //            .build();
-        //}
-        //if (this.aRecord != null) {
+        // }
+        // if (this.aRecord != null) {
         //    CfnOutput.Builder.create(this, "ARecord")
         //            .value(this.aRecord.getDomainName())
         //            .build();
-        //}
-        //if (this.aaaaRecord != null) {
+        // }
+        // if (this.aaaaRecord != null) {
         //    CfnOutput.Builder.create(this, "AaaaRecord")
         //            .value(this.aaaaRecord.getDomainName())
         //            .build();
-        //}
+        // }
     }
 }
