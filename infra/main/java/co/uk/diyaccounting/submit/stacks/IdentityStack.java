@@ -195,24 +195,24 @@ public class IdentityStack extends Stack {
 
         public Builder props(IdentityStackProps p) {
             if (p == null) return this;
-            this.env = p.env;
-            this.hostedZoneName = p.hostedZoneName;
-            this.hostedZoneId = p.hostedZoneId;
-            this.subDomainName = p.subDomainName;
-            this.authCertificateArn = p.authCertificateArn;
-            this.useExistingAuthCertificate = p.useExistingAuthCertificate;
-            this.accessLogGroupRetentionPeriodDays = p.accessLogGroupRetentionPeriodDays;
-            this.cloudTrailEnabled = p.cloudTrailEnabled;
-            this.cloudTrailEventSelectorPrefix = p.cloudTrailEventSelectorPrefix;
-            this.xRayEnabled = p.xRayEnabled;
-            this.verboseLogging = p.verboseLogging;
-            this.homeUrl = p.homeUrl;
-            this.googleClientId = p.googleClientId;
-            this.googleClientSecretArn = p.googleClientSecretArn;
-            this.antonyccClientId = p.antonyccClientId;
-            this.antonyccBaseUri = p.antonyccBaseUri;
-            this.antonyccClientSecretArn = p.antonyccClientSecretArn;
-            this.cognitoDomainPrefix = p.cognitoDomainPrefix;
+            this.env = p.env();
+            this.hostedZoneName = p.hostedZoneName();
+            this.hostedZoneId = p.hostedZoneId();
+            this.subDomainName = p.subDomainName();
+            this.authCertificateArn = p.authCertificateArn();
+            this.useExistingAuthCertificate = p.useExistingAuthCertificate();
+            this.accessLogGroupRetentionPeriodDays = p.accessLogGroupRetentionPeriodDays();
+            this.cloudTrailEnabled = p.cloudTrailEnabled();
+            this.cloudTrailEventSelectorPrefix = p.cloudTrailEventSelectorPrefix();
+            this.xRayEnabled = p.xRayEnabled();
+            this.verboseLogging = p.verboseLogging();
+            this.homeUrl = p.homeUrl();
+            this.googleClientId = p.googleClientId();
+            this.googleClientSecretArn = p.googleClientSecretArn();
+            this.antonyccClientId = p.antonyccClientId();
+            this.antonyccBaseUri = p.antonyccBaseUri();
+            this.antonyccClientSecretArn = p.antonyccClientSecretArn();
+            this.cognitoDomainPrefix = p.cognitoDomainPrefix();
             return this;
         }
 

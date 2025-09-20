@@ -260,18 +260,18 @@ public class AuthStack extends Stack {
 
         public Builder props(AuthStackProps p) {
             if (p == null) return this;
-            this.env = p.env;
-            this.subDomainName = p.subDomainName;
-            this.hostedZoneName = p.hostedZoneName;
-            this.cloudTrailEnabled = p.cloudTrailEnabled;
-            this.xRayEnabled = p.xRayEnabled;
-            this.baseImageTag = p.baseImageTag;
-            this.ecrRepositoryArn = p.ecrRepositoryArn;
-            this.ecrRepositoryName = p.ecrRepositoryName;
-            this.homeUrl = p.homeUrl;
-            this.cognitoClientId = p.cognitoClientId;
-            this.cognitoBaseUri = p.cognitoBaseUri;
-            this.optionalTestAccessToken = p.optionalTestAccessToken;
+            this.env = p.env();
+            this.subDomainName = p.subDomainName();
+            this.hostedZoneName = p.hostedZoneName();
+            this.cloudTrailEnabled = p.cloudTrailEnabled();
+            this.xRayEnabled = p.xRayEnabled();
+            this.baseImageTag = p.baseImageTag();
+            this.ecrRepositoryArn = p.ecrRepositoryArn();
+            this.ecrRepositoryName = p.ecrRepositoryName();
+            this.homeUrl = p.homeUrl();
+            this.cognitoClientId = p.cognitoClientId();
+            this.cognitoBaseUri = p.cognitoBaseUri();
+            this.optionalTestAccessToken = p.optionalTestAccessToken();
 
             return this;
         }

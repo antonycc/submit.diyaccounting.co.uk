@@ -172,14 +172,14 @@ public class ObservabilityStack extends Stack {
 
         public Builder props(ObservabilityStackProps p) {
             if (p == null) return this;
-            this.env = p.env;
-            this.subDomainName = p.subDomainName;
-            this.hostedZoneName = p.hostedZoneName;
-            this.cloudTrailEnabled = p.cloudTrailEnabled;
-            this.cloudTrailLogGroupPrefix = p.cloudTrailLogGroupPrefix;
-            this.cloudTrailLogGroupRetentionPeriodDays = p.cloudTrailLogGroupRetentionPeriodDays;
-            this.accessLogGroupRetentionPeriodDays = p.accessLogGroupRetentionPeriodDays;
-            this.xRayEnabled = p.xRayEnabled;
+            this.env = p.env();
+            this.subDomainName = p.subDomainName();
+            this.hostedZoneName = p.hostedZoneName();
+            this.cloudTrailEnabled = p.cloudTrailEnabled();
+            this.cloudTrailLogGroupPrefix = p.cloudTrailLogGroupPrefix();
+            this.cloudTrailLogGroupRetentionPeriodDays = p.cloudTrailLogGroupRetentionPeriodDays();
+            this.accessLogGroupRetentionPeriodDays = p.accessLogGroupRetentionPeriodDays();
+            this.xRayEnabled = p.xRayEnabled();
             return this;
         }
 

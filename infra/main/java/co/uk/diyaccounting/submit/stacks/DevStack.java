@@ -201,10 +201,10 @@ public class DevStack extends Stack {
 
         public Builder props(DevStackProps p) {
             if (p == null) return this;
-            this.env = p.env;
-            this.subDomainName = p.subDomainName;
-            this.hostedZoneName = p.hostedZoneName;
-            this.retainEcrRepository = Boolean.parseBoolean(p.retainEcrRepository);
+            this.env = p.env();
+            this.subDomainName = p.subDomainName();
+            this.hostedZoneName = p.hostedZoneName();
+            this.retainEcrRepository = Boolean.parseBoolean(p.retainEcrRepository());
             return this;
         }
 
