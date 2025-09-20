@@ -212,16 +212,16 @@ public class WebStack extends Stack {
 
         public Builder props(WebStackProps p) {
             if (p == null) return this;
-            this.env = p.env;
-            this.hostedZoneName = p.hostedZoneName;
-            this.hostedZoneId = p.hostedZoneId;
-            this.subDomainName = p.subDomainName;
-            this.cloudTrailEnabled = p.cloudTrailEnabled;
-            this.xRayEnabled = p.xRayEnabled;
-            this.verboseLogging = p.verboseLogging;
-            this.accessLogGroupRetentionPeriodDays = p.accessLogGroupRetentionPeriodDays;
-            this.s3UseExistingBucket = p.s3UseExistingBucket;
-            this.s3RetainOriginBucket = p.s3RetainOriginBucket;
+            this.env = p.env();
+            this.hostedZoneName = p.hostedZoneName();
+            this.hostedZoneId = p.hostedZoneId();
+            this.subDomainName = p.subDomainName();
+            this.cloudTrailEnabled = p.cloudTrailEnabled();
+            this.xRayEnabled = p.xRayEnabled();
+            this.verboseLogging = p.verboseLogging();
+            this.accessLogGroupRetentionPeriodDays = p.accessLogGroupRetentionPeriodDays();
+            this.s3UseExistingBucket = p.s3UseExistingBucket();
+            this.s3RetainOriginBucket = p.s3RetainOriginBucket();
             return this;
         }
 
