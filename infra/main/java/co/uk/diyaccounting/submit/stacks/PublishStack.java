@@ -46,12 +46,22 @@ public class PublishStack extends Stack {
 
         // Use Resources from the passed props
         this.baseUrl = props.baseUrl;
+        //DistributionAttributes distributionAttributes = DistributionAttributes.builder()
+        //        .domainName(props.domainName)
+        //        //.distributionId(props.distributionArn)
+        //        .build();
+        // Distribution from ARN
+        var distributionId = props.distributionArn.split("/")[1];
         DistributionAttributes distributionAttributes = DistributionAttributes.builder()
                 .domainName(props.domainName)
-                .distributionId(props.distributionId)
+                .distributionId(distributionId)
                 .build();
         IDistribution distribution = Distribution.fromDistributionAttributes(
                 this, props.resourceNamePrefix + "-ImportedWebDist", distributionAttributes);
+        // Distribution from ARN
+        //S3BucketOrigin origin = S3BucketOrigin.Builder.create(props.webBucket).build();
+        //this.originBucket = props.webBucket;
+        //this.originAccessIdentity = origin.getOriginAccessIdentity();
 
 
                 /*

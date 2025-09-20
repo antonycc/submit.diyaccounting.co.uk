@@ -3,10 +3,8 @@ package co.uk.diyaccounting.submit.constructs;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import software.amazon.awscdk.Duration;
-import software.amazon.awscdk.Fn;
 import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.services.cloudfront.AllowedMethods;
-import software.amazon.awscdk.services.cloudfront.BehaviorOptions;
 import software.amazon.awscdk.services.cloudfront.CachePolicy;
 import software.amazon.awscdk.services.cloudfront.ICachePolicy;
 import software.amazon.awscdk.services.cloudfront.IOriginRequestPolicy;
@@ -15,7 +13,6 @@ import software.amazon.awscdk.services.cloudfront.OriginProtocolPolicy;
 import software.amazon.awscdk.services.cloudfront.OriginRequestPolicy;
 import software.amazon.awscdk.services.cloudfront.ResponseHeadersPolicy;
 import software.amazon.awscdk.services.cloudfront.ViewerProtocolPolicy;
-import software.amazon.awscdk.services.cloudfront.origins.HttpOrigin;
 import software.amazon.awscdk.services.ecr.IRepository;
 import software.amazon.awscdk.services.ecr.Repository;
 import software.amazon.awscdk.services.ecr.RepositoryAttributes;
@@ -23,9 +20,7 @@ import software.amazon.awscdk.services.lambda.DockerImageCode;
 import software.amazon.awscdk.services.lambda.DockerImageFunction;
 import software.amazon.awscdk.services.lambda.EcrImageCodeProps;
 import software.amazon.awscdk.services.lambda.Function;
-import software.amazon.awscdk.services.lambda.FunctionUrl;
 import software.amazon.awscdk.services.lambda.FunctionUrlAuthType;
-import software.amazon.awscdk.services.lambda.FunctionUrlOptions;
 import software.amazon.awscdk.services.lambda.InvokeMode;
 import software.amazon.awscdk.services.lambda.Runtime;
 import software.amazon.awscdk.services.lambda.Tracing;
@@ -36,20 +31,19 @@ import software.constructs.Construct;
 
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Pattern;
 
 public class LambdaUrlOrigin {
 
     private static final Logger logger = LogManager.getLogger(LambdaUrlOrigin.class);
-    private static final Pattern LAMBDA_URL_HOST_PATTERN = Pattern.compile("https://([^/]+)/");
+    //private static final Pattern LAMBDA_URL_HOST_PATTERN = Pattern.compile("https://([^/]+)/");
 
     public final DockerImageCode dockerImage;
     public final Function lambda;
     public final LogGroup logGroup;
-    public final FunctionUrl functionUrl;
-    public final BehaviorOptions behaviorOptions;
-    public final HttpOrigin apiOrigin;
-    public final String lambdaUrlHost;
+    //public final FunctionUrl functionUrl;
+    //public final BehaviorOptions behaviorOptions;
+    //public final HttpOrigin apiOrigin;
+    //public final String lambdaUrlHost;
 
     private LambdaUrlOrigin(final Construct scope, Builder builder) {
 
@@ -94,37 +88,37 @@ public class LambdaUrlOrigin {
                         .build());
 
         // Create function URL
-        FunctionUrlOptions.Builder functionUrlOptionsBuilder = FunctionUrlOptions.builder()
-                .authType(builder.functionUrlAuthType)
-                .invokeMode(builder.invokeMode);
+        //FunctionUrlOptions.Builder functionUrlOptionsBuilder = FunctionUrlOptions.builder()
+        //        .authType(builder.functionUrlAuthType)
+        //        .invokeMode(builder.invokeMode);
 
-        this.functionUrl = this.lambda.addFunctionUrl(functionUrlOptionsBuilder.build());
+        //this.functionUrl = this.lambda.addFunctionUrl(functionUrlOptionsBuilder.build());
 
-        this.lambdaUrlHost = getLambdaUrlHostToken(this.functionUrl);
-        this.apiOrigin = HttpOrigin.Builder.create(this.lambdaUrlHost)
-                .protocolPolicy(builder.protocolPolicy)
-                .build();
+        //this.lambdaUrlHost = getLambdaUrlHostToken(this.functionUrl);
+        //this.apiOrigin = HttpOrigin.Builder.create(this.lambdaUrlHost)
+        //        .protocolPolicy(builder.protocolPolicy)
+        //        .build();
 
-        BehaviorOptions.Builder behaviorOptionsBuilder = BehaviorOptions.builder()
-                .origin(this.apiOrigin)
-                .allowedMethods(builder.cloudFrontAllowedMethods)
-                .cachePolicy(builder.cachePolicy)
-                .originRequestPolicy(builder.originRequestPolicy)
-                .viewerProtocolPolicy(builder.viewerProtocolPolicy);
+        //BehaviorOptions.Builder behaviorOptionsBuilder = BehaviorOptions.builder()
+        //        .origin(this.apiOrigin)
+        //        .allowedMethods(builder.cloudFrontAllowedMethods)
+        //        .cachePolicy(builder.cachePolicy)
+        //        .originRequestPolicy(builder.originRequestPolicy)
+        //        .viewerProtocolPolicy(builder.viewerProtocolPolicy);
 
-        if (builder.responseHeadersPolicy != null) {
-            behaviorOptionsBuilder.responseHeadersPolicy(builder.responseHeadersPolicy);
-        }
+        //if (builder.responseHeadersPolicy != null) {
+        //    behaviorOptionsBuilder.responseHeadersPolicy(builder.responseHeadersPolicy);
+        //}
 
-        this.behaviorOptions = behaviorOptionsBuilder.build();
+        //this.behaviorOptions = behaviorOptionsBuilder.build();
 
         logger.info("Created LambdaUrlOrigin with function: {}", this.lambda.getFunctionName());
     }
 
-    private String getLambdaUrlHostToken(FunctionUrl functionUrl) {
-        String urlHostToken = Fn.select(2, Fn.split("/", functionUrl.getUrl()));
-        return urlHostToken;
-    }
+    //private String getLambdaUrlHostToken(FunctionUrl functionUrl) {
+    //    String urlHostToken = Fn.select(2, Fn.split("/", functionUrl.getUrl()));
+    //    return urlHostToken;
+    //}
 
     public static class Builder {
         public final Construct scope;

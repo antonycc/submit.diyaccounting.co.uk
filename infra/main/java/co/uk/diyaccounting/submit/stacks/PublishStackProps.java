@@ -1,5 +1,6 @@
 package co.uk.diyaccounting.submit.stacks;
 
+import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.services.s3.Bucket;
 
@@ -9,21 +10,29 @@ public class PublishStackProps implements StackProps {
     public final String domainName;
     public final String baseUrl;
     public final String resourceNamePrefix;
-    public final String distributionId;
+    public final String distributionArn;
     public final Bucket webBucket;
     public final String commitHash;
     public final String docRootPath;
+    public final Environment env;
 
     private PublishStackProps(Builder builder) {
         this.envName = builder.envName;
         this.deploymentName = builder.deploymentName;
         this.domainName = builder.domainName;
-        this.distributionId = builder.distributionId;
+        this.distributionArn = builder.distributionArn;
         this.baseUrl = builder.baseUrl;
         this.resourceNamePrefix = builder.resourceNamePrefix;
         this.webBucket = builder.webBucket;
         this.commitHash = builder.commitHash;
         this.docRootPath = builder.docRootPath;
+        this.env = builder.env;
+    }
+
+    // Ensure Stack consumes our explicit env (region/account) when provided
+    @Override
+    public Environment getEnv() {
+        return this.env;
     }
 
     public static Builder builder() {
@@ -36,10 +45,11 @@ public class PublishStackProps implements StackProps {
         private String domainName;
         private String baseUrl;
         private String resourceNamePrefix;
-        private String distributionId;
+        private String distributionArn;
         private Bucket webBucket;
         private String commitHash;
         private String docRootPath;
+        private Environment env;
 
         public Builder envName(String envName) {
             this.envName = envName;
@@ -66,8 +76,8 @@ public class PublishStackProps implements StackProps {
             return this;
         }
 
-        public Builder distributionId(String distributionId) {
-            this.distributionId = distributionId;
+        public Builder distributionArn(String distributionArn) {
+            this.distributionArn = distributionArn;
             return this;
         }
 
@@ -83,6 +93,11 @@ public class PublishStackProps implements StackProps {
 
         public Builder docRootPath(String docRootPath) {
             this.docRootPath = docRootPath;
+            return this;
+        }
+
+        public Builder env(Environment env) {
+            this.env = env;
             return this;
         }
 

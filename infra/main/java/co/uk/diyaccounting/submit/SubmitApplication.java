@@ -17,14 +17,13 @@ import co.uk.diyaccounting.submit.stacks.WebStack;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import software.amazon.awscdk.App;
-import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.Environment;
+import software.amazon.awscdk.StackProps;
 import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
 
 import java.lang.reflect.Field;
-
-import static co.uk.diyaccounting.submit.utils.Kind.concat;
+import java.util.Map;
 
 public class SubmitApplication {
 
@@ -174,6 +173,18 @@ public class SubmitApplication {
         applicationStack.addDependency(webStack);
         applicationStack.addDependency(identityStack);
 
+        Map<String, String> additionalBehaviourMappings = new java.util.HashMap<>();
+        additionalBehaviourMappings.put("/api/mock/auth-url" + "*", envOr("DIY_SUBMIT_AUTH_URL_MOCK_LAMBDA_ARN", authStack.authUrlMockLambda.getFunctionArn()));
+        additionalBehaviourMappings.put("/api/cognito/auth-url" + "*", envOr("DIY_SUBMIT_AUTH_URL_COGNITO_LAMBDA_ARN", authStack.authUrlCognitoLambda.getFunctionArn()));
+        additionalBehaviourMappings.put("/api/cognito/exchange-token" + "*", envOr("DIY_SUBMIT_COGNITO_EXCHANGE_TOKEN_LAMBDA_ARN", authStack.exchangeCognitoTokenLambda.getFunctionArn()));
+        additionalBehaviourMappings.put("/api/hmrc/auth-url" + "*", envOr("DIY_SUBMIT_AUTH_URL_HMRC_LAMBDA_ARN", applicationStack.authUrlHmrcLambda.getFunctionArn()));
+        additionalBehaviourMappings.put("/api/hmrc/exchange-token" + "*", envOr("DIY_SUBMIT_EXCHANGE_HMRC_TOKEN_LAMBDA_ARN", applicationStack.exchangeHmrcTokenLambda.getFunctionArn()));
+        additionalBehaviourMappings.put("/api/submit-vat" + "*", envOr("DIY_SUBMIT_SUBMIT_VAT_LAMBDA_ARN", applicationStack.submitVatLambda.getFunctionArn()));
+        additionalBehaviourMappings.put("/api/log-receipt" + "*", envOr("DIY_SUBMIT_LOG_RECEIPT_LAMBDA_ARN", applicationStack.logReceiptLambda.getFunctionArn()));
+        additionalBehaviourMappings.put("/api/catalog" + "*", envOr("DIY_SUBMIT_CATALOG_LAMBDA_ARN", applicationStack.catalogLambda.getFunctionArn()));
+        additionalBehaviourMappings.put("/api/my-bundles" + "*", envOr("DIY_SUBMIT_MY_BUNDLES_LAMBDA_ARN", applicationStack.myBundlesLambda.getFunctionArn()));
+        additionalBehaviourMappings.put("/api/my-receipts" + "*", envOr("DIY_SUBMIT_MY_RECEIPTS_LAMBDA_ARN", applicationStack.myReceiptsLambda.getFunctionArn()));
+
         // Create the Edge stack (CloudFront, Route53)
         String edgeStackId = "%s-EdgeStack".formatted(deploymentName);
         EdgeStack edgeStack = new EdgeStack(
@@ -192,11 +203,7 @@ public class SubmitApplication {
                 .logsBucketArn(webStack.originAccessLogBucket.getBucketArn())
                 .webBucketArn(webStack.originBucket.getBucketArn())
                 //.webBehaviorOptions(webStack.behaviorOptions)
-                .additionalOriginsBehaviourMappings(
-                    concat(
-                        authStack.additionalOriginsBehaviourMappings,
-                        applicationStack.additionalOriginsBehaviourMappings
-                    ))
+                .additionalOriginsBehaviourMappings(additionalBehaviourMappings)
                 // Force this stack (and thus WAF) into us-east-1 as required by CloudFront
                 .env(Environment.builder().region("us-east-1").build())
                 .build());
@@ -217,10 +224,11 @@ public class SubmitApplication {
                 .baseUrl(webStack.baseUrl)
                 .webBucket(webStack.originBucket)
                 .resourceNamePrefix(webStack.resourceNamePrefix)
-                .distributionId(edgeStack.distribution.getDistributionId())
+                .distributionArn(edgeStack.distribution.getDistributionArn())
                 .webBucket(webStack.originBucket)
                 .commitHash(appProps.commitHash)
                 .docRootPath(appProps.docRootPath)
+                .env(Environment.builder().region("us-east-1").build())
                 .build());
         //publishStack.addDependency(edgeStack);
         //publishStack.addDependency(applicationStack);

@@ -20,7 +20,6 @@ import software.constructs.Construct;
 import java.util.AbstractMap;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.regex.Pattern;
 
 public class AuthStack extends Stack {
@@ -29,7 +28,7 @@ public class AuthStack extends Stack {
 
     // CDK resources here
     public Function authUrlMockLambda;
-    public FunctionUrl authUrlMockLambdaUrl;
+    //public FunctionUrl authUrlMockLambdaUrl;
     public LogGroup authUrlMockLambdaLogGroup;
     public Function authUrlCognitoLambda;
     public FunctionUrl authUrlCognitoLambdaUrl;
@@ -37,7 +36,7 @@ public class AuthStack extends Stack {
     public Function exchangeCognitoTokenLambda;
     public FunctionUrl exchangeCognitoTokenLambdaUrl;
     public LogGroup exchangeCognitoTokenLambdaLogGroup;
-    public Map<String, String> additionalOriginsBehaviourMappings;
+    //public Map<String, String> additionalOriginsBehaviourMappings;
 
     public AuthStack(Construct scope, String id, AuthStack.Builder builder) {
         this(scope, id, null, builder);
@@ -75,7 +74,7 @@ public class AuthStack extends Stack {
             .baseImageTag(builder.baseImageTag)
             .build();
 
-        var lambdaUrlToOriginsBehaviourMappings = new HashMap<String, String>();
+        //var lambdaUrlToOriginsBehaviourMappings = new HashMap<String, String>();
 
         // authUrl - mock
         var authUrlMockLambdaEnv = new HashMap<String, String>();
@@ -95,10 +94,10 @@ public class AuthStack extends Stack {
             .timeout(Duration.millis(Long.parseLong("30000")))
             .build(this);
         this.authUrlMockLambda = authUrlMockLambdaUrlOrigin.lambda;
-        this.authUrlMockLambdaUrl = authUrlMockLambdaUrlOrigin.functionUrl;
+        //this.authUrlMockLambdaUrl = authUrlMockLambdaUrlOrigin.functionUrl;
         this.authUrlMockLambdaLogGroup = authUrlMockLambdaUrlOrigin.logGroup;
-        lambdaUrlToOriginsBehaviourMappings.put(
-            "/api/mock/auth-url" + "*", authUrlMockLambdaUrlOrigin.lambdaUrlHost);
+        //lambdaUrlToOriginsBehaviourMappings.put(
+        //    "/api/mock/auth-url" + "*", authUrlMockLambdaUrlOrigin.lambda.getFunctionArn());
 
         // authUrl - Google or Antonycc via Cognito
         var authUrlCognitoLambdaEnv = new HashMap<String, String>();
@@ -125,10 +124,10 @@ public class AuthStack extends Stack {
             .timeout(Duration.millis(Long.parseLong("30000")))
             .build(this);
         this.authUrlCognitoLambda = authUrlCognitoLambdaUrlOrigin.lambda;
-        this.authUrlCognitoLambdaUrl = authUrlCognitoLambdaUrlOrigin.functionUrl;
+        //this.authUrlCognitoLambdaUrl = authUrlCognitoLambdaUrlOrigin.functionUrl;
         this.authUrlCognitoLambdaLogGroup = authUrlCognitoLambdaUrlOrigin.logGroup;
-        lambdaUrlToOriginsBehaviourMappings.put(
-            "/api/cognito/auth-url" + "*", authUrlCognitoLambdaUrlOrigin.lambdaUrlHost);
+        //lambdaUrlToOriginsBehaviourMappings.put(
+        //    "/api/cognito/auth-url" + "*", authUrlCognitoLambdaUrlOrigin.lambda.getFunctionArn());
 
         // exchangeToken - Google or Antonycc via Cognito
         var exchangeCognitoTokenLambdaEnv = new HashMap<String, String>();
@@ -158,23 +157,39 @@ public class AuthStack extends Stack {
             .timeout(Duration.millis(Long.parseLong("30000")))
             .build(this);
         this.exchangeCognitoTokenLambda = exchangeCognitoTokenLambdaUrlOrigin.lambda;
-        this.exchangeCognitoTokenLambdaUrl = exchangeCognitoTokenLambdaUrlOrigin.functionUrl;
+        //this.exchangeCognitoTokenLambdaUrl = exchangeCognitoTokenLambdaUrlOrigin.functionUrl;
         this.exchangeCognitoTokenLambdaLogGroup = exchangeCognitoTokenLambdaUrlOrigin.logGroup;
-        lambdaUrlToOriginsBehaviourMappings.put(
-            "/api/cognito/exchange-token" + "*", exchangeCognitoTokenLambdaUrlOrigin.lambdaUrlHost);
+        //lambdaUrlToOriginsBehaviourMappings.put(
+        //    "/api/cognito/exchange-token" + "*", exchangeCognitoTokenLambdaUrlOrigin.lambda.getFunctionArn());
 
+        //if (this.authUrlMockLambda != null) {
+        //    CfnOutput.Builder.create(this, "AuthUrlMockLambdaArn")
+        //        .value(this.authUrlMockLambda.getFunctionArn())
+        //        .build();
+            //CfnOutput.Builder.create(this, "AuthUrlMockLambdaUrl")
+            //    .value(this.authUrlMockLambdaUrl.getUrl())
+            //    .build();
+        //}
+
+        //this.additionalOriginsBehaviourMappings = lambdaUrlToOriginsBehaviourMappings;
 
 
         if (this.authUrlMockLambda != null) {
             CfnOutput.Builder.create(this, "AuthUrlMockLambdaArn")
                 .value(this.authUrlMockLambda.getFunctionArn())
                 .build();
-            CfnOutput.Builder.create(this, "AuthUrlMockLambdaUrl")
-                .value(this.authUrlMockLambdaUrl.getUrl())
+        }
+        if (this.authUrlCognitoLambda != null) {
+            CfnOutput.Builder.create(this, "AuthUrlCognitoLambdaArn")
+                .value(this.authUrlCognitoLambda.getFunctionArn())
+                .build();
+        }
+        if (this.exchangeCognitoTokenLambda != null) {
+            CfnOutput.Builder.create(this, "ExchangeCognitoTokenLambdaArn")
+                .value(this.exchangeCognitoTokenLambda.getFunctionArn())
                 .build();
         }
 
-        this.additionalOriginsBehaviourMappings = lambdaUrlToOriginsBehaviourMappings;
 
         logger.info("AuthStack created successfully for {}", dashedDomainName);
     }

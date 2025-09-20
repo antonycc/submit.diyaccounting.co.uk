@@ -24,6 +24,8 @@ import software.amazon.awscdk.services.cloudfront.origins.S3BucketOriginWithOACP
 import software.amazon.awscdk.services.iam.ServicePrincipal;
 import software.amazon.awscdk.services.lambda.FunctionUrl;
 import software.amazon.awscdk.services.lambda.FunctionUrlAuthType;
+import software.amazon.awscdk.services.lambda.FunctionUrlOptions;
+import software.amazon.awscdk.services.lambda.InvokeMode;
 import software.amazon.awscdk.services.lambda.Permission;
 import software.amazon.awscdk.services.route53.ARecord;
 import software.amazon.awscdk.services.route53.ARecordProps;
@@ -212,7 +214,7 @@ public class EdgeStack extends Stack {
                 HashMap::new,
                 (map, entry) -> map.put(
                     entry.getKey(),
-                    createBehaviorOptionsForLambdaUrlHost(entry.getValue())
+                    createBehaviorOptionsForLambdaUrl(entry.getValue())
                 ),
                 HashMap::putAll
             );
@@ -282,12 +284,17 @@ public class EdgeStack extends Stack {
 
     }
 
-    private String getLambdaUrlHostToken(FunctionUrl functionUrl) {
-        String urlHostToken = Fn.select(2, Fn.split("/", functionUrl.getUrl()));
-        return urlHostToken;
-    }
-
-    public BehaviorOptions createBehaviorOptionsForLambdaUrlHost(String lambdaUrlHost) {
+    public BehaviorOptions createBehaviorOptionsForLambdaUrl(String lambdaArn) {
+        var lambda = software.amazon.awscdk.services.lambda.Function.fromFunctionArn(
+            this,
+            lambdaArn.replace(":", "-").replace("/", "-"),
+            lambdaArn
+        );
+        var functionUrlBuilder = FunctionUrlOptions.builder()
+            .authType(FunctionUrlAuthType.NONE)
+            .invokeMode(InvokeMode.BUFFERED);
+        var functionUrl = lambda.addFunctionUrl(functionUrlBuilder.build());
+        var lambdaUrlHost = getLambdaUrlHostToken(functionUrl);
         var origin = HttpOrigin.Builder.create(lambdaUrlHost)
             .protocolPolicy(OriginProtocolPolicy.HTTPS_ONLY)
             .build();
@@ -301,5 +308,10 @@ public class EdgeStack extends Stack {
             .build();
             ;
         return behaviorOptions;
+    }
+
+    private String getLambdaUrlHostToken(FunctionUrl functionUrl) {
+        String urlHostToken = Fn.select(2, Fn.split("/", functionUrl.getUrl()));
+        return urlHostToken;
     }
 }
