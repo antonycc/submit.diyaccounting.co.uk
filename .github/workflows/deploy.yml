@@ -464,7 +464,24 @@ jobs:
         run: |
           ./mvnw --errors clean package -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
             && npx dotenv -e .env.${{ needs.names.outputs.environment-name }} -- \
-              npx cdk synth --all --strict --validation --version-reporting=false --path-metadata=false --asset-metadata=false
+              npx cdk synth \
+                --strict \
+                --validation \
+                --version-reporting=false \
+                --path-metadata=false \
+                --asset-metadata=false \
+                --exclusively \
+                  ${{ needs.names.outputs.deployment-name }}-ObservabilityStack \
+                  ${{ needs.names.outputs.deployment-name }}-DevStack \
+                  ${{ needs.names.outputs.deployment-name }}-IdentityStack \
+                  ${{ needs.names.outputs.deployment-name }}-WebStack \
+                  ${{ needs.names.outputs.deployment-name }}-AuthStack \
+                  ${{ needs.names.outputs.deployment-name }}-ApplicationStack \
+          ;
+        # ${{ needs.names.outputs.deployment-name }}-SelfDestructStack \
+        # ${{ needs.names.outputs.deployment-name }}-EdgeStack \
+        # ${{ needs.names.outputs.deployment-name }}-PublishStack \
+        # ${{ needs.names.outputs.deployment-name }}-OpsStack \
         env:
           ENV_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
@@ -623,7 +640,6 @@ jobs:
               --ci true \
               --concurrency 4 \
               --asset-parallelism \
-              --asset-prebuild \
               --outputs-file cdk.out/cdk-outputs-observability.json \
           ;
         env:
@@ -702,7 +718,6 @@ jobs:
 #              --ci true \
 #              --concurrency 4 \
 #              --asset-parallelism \
-#              --asset-prebuild \
 #              --outputs-file cdk.out/cdk-outputs-self-destructStack.json \
 #          ;
 #        env:
@@ -775,7 +790,6 @@ jobs:
               --ci true \
               --concurrency 4 \
               --asset-parallelism \
-              --asset-prebuild \
               --outputs-file cdk.out/cdk-outputs-dev.json \
           ;
         env:
@@ -859,7 +873,6 @@ jobs:
               --ci true \
               --concurrency 4 \
               --asset-parallelism \
-              --asset-prebuild \
               --outputs-file cdk.out/cdk-outputs-identity.json \
             ;
         env:
@@ -1011,7 +1024,6 @@ jobs:
               --ci true \
               --concurrency 4 \
               --asset-parallelism \
-              --asset-prebuild \
               --outputs-file cdk.out/cdk-outputs-web.json \
             ;
         env:
@@ -1097,7 +1109,6 @@ jobs:
               --ci true \
               --concurrency 4 \
               --asset-parallelism \
-              --asset-prebuild \
               --outputs-file cdk.out/cdk-outputs-auth.json \
             ;
         env:
@@ -1206,7 +1217,6 @@ jobs:
               --ci true \
               --concurrency 4 \
               --asset-parallelism \
-              --asset-prebuild \
               --outputs-file cdk.out/cdk-outputs-application.json \
             ;
         env:
@@ -1297,12 +1307,6 @@ jobs:
           java-version: ${{ env.JAVA_VERSION }}
           cache: 'maven'
 
-      - name: Download CDK synthesis artifacts
-        uses: actions/download-artifact@v5
-        with:
-          name: cdk-synthesis
-          path: target/
-
       - name: Configure AWS role via GitHub OIDC
         uses: aws-actions/configure-aws-credentials@v5
         with:
@@ -1334,7 +1338,6 @@ jobs:
               --ci true \
               --concurrency 4 \
               --asset-parallelism \
-              --asset-prebuild \
               --outputs-file cdk.out/cdk-outputs-edge.json \
             ;
         env:
@@ -1402,12 +1405,6 @@ jobs:
           java-version: ${{ env.JAVA_VERSION }}
           cache: 'maven'
 
-      - name: Download CDK synthesis artifacts
-        uses: actions/download-artifact@v5
-        with:
-          name: cdk-synthesis
-          path: target/
-
       - name: Configure AWS role via GitHub OIDC
         uses: aws-actions/configure-aws-credentials@v5
         with:
@@ -1439,88 +1436,86 @@ jobs:
               --ci true \
               --concurrency 4 \
               --asset-parallelism \
-              --asset-prebuild \
               --outputs-file cdk.out/cdk-outputs-publish.json \
             ;
         env:
           ENV_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
 
-  deploy-ops:
-    name: 'deploy ops'
-    if: ${{ inputs.skipDeploy != 'true' }}
-    needs:
-      - names
-      - npm-test
-      - build-cdk
-      - deploy-auth
-      - deploy-application
-      - deploy-web
-      - deploy-edge
-    runs-on: ubuntu-24.04
-    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v5
-
-      - name: Setup Node
-        uses: actions/setup-node@v5
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Node dependencies
-        run: npm ci
-
-      - uses: actions/setup-java@v5
-        with:
-          distribution: 'temurin'
-          java-version: ${{ env.JAVA_VERSION }}
-          cache: 'maven'
-
-      - name: Download CDK synthesis artifacts
-        uses: actions/download-artifact@v5
-        with:
-          name: cdk-synthesis
-          path: target/
-
-      - name: Configure AWS role via GitHub OIDC
-        uses: aws-actions/configure-aws-credentials@v5
-        with:
-          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-          role-chaining: false
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - name: Assume AWS deployment role
-        uses: aws-actions/configure-aws-credentials@v5
-        with:
-          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-          role-chaining: true
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - name: Deploy Ops Stack (CDK)
-        run: |
-          npx dotenv -e .env.${{ needs.names.outputs.environment-name }} -- \
-            npx cdk deploy ${{ needs.names.outputs.deployment-name }}-OpsStack \
-              --exclusively \
-              --require-approval never \
-              --ci true \
-              --concurrency 4 \
-              --asset-parallelism \
-              --asset-prebuild \
-              --outputs-file cdk-out/cdk-outputs-ops.json \
-            ;
-        env:
-          ENV_NAME: ${{ needs.names.outputs.environment-name }}
-          DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
+#  deploy-ops:
+#    name: 'deploy ops'
+#    if: ${{ inputs.skipDeploy != 'true' }}
+#    needs:
+#      - names
+#      - npm-test
+#      - build-cdk
+#      - deploy-auth
+#      - deploy-application
+#      - deploy-web
+#      - deploy-edge
+#    runs-on: ubuntu-24.04
+#    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+#    steps:
+#      - name: Checkout
+#        uses: actions/checkout@v5
+#
+#      - name: Setup Node
+#        uses: actions/setup-node@v5
+#        with:
+#          node-version: ${{ env.NODE_VERSION }}
+#          cache: 'npm'
+#
+#      - name: Node dependencies
+#        run: npm ci
+#
+#      - uses: actions/setup-java@v5
+#        with:
+#          distribution: 'temurin'
+#          java-version: ${{ env.JAVA_VERSION }}
+#          cache: 'maven'
+#
+#      - name: Download CDK synthesis artifacts
+#        uses: actions/download-artifact@v5
+#        with:
+#          name: cdk-synthesis
+#          path: target/
+#
+#      - name: Configure AWS role via GitHub OIDC
+#        uses: aws-actions/configure-aws-credentials@v5
+#        with:
+#          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+#          aws-region: ${{ env.AWS_REGION }}
+#          role-chaining: false
+#          audience: sts.amazonaws.com
+#          role-skip-session-tagging: true
+#          output-credentials: true
+#          retry-max-attempts: 3
+#
+#      - name: Assume AWS deployment role
+#        uses: aws-actions/configure-aws-credentials@v5
+#        with:
+#          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+#          aws-region: ${{ env.AWS_REGION }}
+#          role-chaining: true
+#          audience: sts.amazonaws.com
+#          role-skip-session-tagging: true
+#          output-credentials: true
+#          retry-max-attempts: 3
+#
+#      - name: Deploy Ops Stack (CDK)
+#        run: |
+#          npx dotenv -e .env.${{ needs.names.outputs.environment-name }} -- \
+#            npx cdk deploy ${{ needs.names.outputs.deployment-name }}-OpsStack \
+#              --exclusively \
+#              --require-approval never \
+#              --ci true \
+#              --concurrency 4 \
+#              --asset-parallelism \
+#              --outputs-file cdk-out/cdk-outputs-ops.json \
+#            ;
+#        env:
+#          ENV_NAME: ${{ needs.names.outputs.environment-name }}
+#          DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
 
   test-parameters:
     if: ${{ !cancelled() && inputs.skipDeploy == 'true' || needs.deploy-web.result == 'success' }}
