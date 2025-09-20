@@ -205,16 +205,16 @@ public class SubmitApplication {
         applicationStack.addDependency(identityStack);
 
         Map<String, String> additionalBehaviourMappings = new java.util.HashMap<>();
-        additionalBehaviourMappings.put("/api/mock/auth-url" + "*", envOr("DIY_SUBMIT_AUTH_URL_MOCK_LAMBDA_ARN", null)); // authStack.authUrlMockLambda.getFunctionArn()));
-        additionalBehaviourMappings.put("/api/cognito/auth-url" + "*", envOr("DIY_SUBMIT_AUTH_URL_COGNITO_LAMBDA_ARN", null)); // authStack.authUrlCognitoLambda.getFunctionArn()));
-        additionalBehaviourMappings.put("/api/cognito/exchange-token" + "*", envOr("DIY_SUBMIT_COGNITO_EXCHANGE_TOKEN_LAMBDA_ARN", null)); // authStack.exchangeCognitoTokenLambda.getFunctionArn()));
-        additionalBehaviourMappings.put("/api/hmrc/auth-url" + "*", envOr("DIY_SUBMIT_AUTH_URL_HMRC_LAMBDA_ARN", null)); // applicationStack.authUrlHmrcLambda.getFunctionArn()));
-        additionalBehaviourMappings.put("/api/hmrc/exchange-token" + "*", envOr("DIY_SUBMIT_EXCHANGE_HMRC_TOKEN_LAMBDA_ARN", null)); // applicationStack.exchangeHmrcTokenLambda.getFunctionArn()));
-        additionalBehaviourMappings.put("/api/submit-vat" + "*", envOr("DIY_SUBMIT_SUBMIT_VAT_LAMBDA_ARN", null)); // applicationStack.submitVatLambda.getFunctionArn()));
-        additionalBehaviourMappings.put("/api/log-receipt" + "*", envOr("DIY_SUBMIT_LOG_RECEIPT_LAMBDA_ARN", null)); // applicationStack.logReceiptLambda.getFunctionArn()));
-        additionalBehaviourMappings.put("/api/catalog" + "*", envOr("DIY_SUBMIT_CATALOG_LAMBDA_ARN", null)); // applicationStack.catalogLambda.getFunctionArn()));
-        additionalBehaviourMappings.put("/api/my-bundles" + "*", envOr("DIY_SUBMIT_MY_BUNDLES_LAMBDA_ARN", null)); // applicationStack.myBundlesLambda.getFunctionArn()));
-        additionalBehaviourMappings.put("/api/my-receipts" + "*", envOr("DIY_SUBMIT_MY_RECEIPTS_LAMBDA_ARN", null)); // applicationStack.myReceiptsLambda.getFunctionArn()));
+        putIfNotNull(additionalBehaviourMappings, "/api/mock/auth-url" + "*", envOr("DIY_SUBMIT_AUTH_URL_MOCK_LAMBDA_ARN", null)); // authStack.authUrlMockLambda.getFunctionArn()));
+        putIfNotNull(additionalBehaviourMappings, "/api/cognito/auth-url" + "*", envOr("DIY_SUBMIT_AUTH_URL_COGNITO_LAMBDA_ARN", null)); // authStack.authUrlCognitoLambda.getFunctionArn()));
+        putIfNotNull(additionalBehaviourMappings, "/api/cognito/exchange-token" + "*", envOr("DIY_SUBMIT_COGNITO_EXCHANGE_TOKEN_LAMBDA_ARN", null)); // authStack.exchangeCognitoTokenLambda.getFunctionArn()));
+        putIfNotNull(additionalBehaviourMappings, "/api/hmrc/auth-url" + "*", envOr("DIY_SUBMIT_AUTH_URL_HMRC_LAMBDA_ARN", null)); // applicationStack.authUrlHmrcLambda.getFunctionArn()));
+        putIfNotNull(additionalBehaviourMappings, "/api/hmrc/exchange-token" + "*", envOr("DIY_SUBMIT_EXCHANGE_HMRC_TOKEN_LAMBDA_ARN", null)); // applicationStack.exchangeHmrcTokenLambda.getFunctionArn()));
+        putIfNotNull(additionalBehaviourMappings, "/api/submit-vat" + "*", envOr("DIY_SUBMIT_SUBMIT_VAT_LAMBDA_ARN", null)); // applicationStack.submitVatLambda.getFunctionArn()));
+        putIfNotNull(additionalBehaviourMappings, "/api/log-receipt" + "*", envOr("DIY_SUBMIT_LOG_RECEIPT_LAMBDA_ARN", null)); // applicationStack.logReceiptLambda.getFunctionArn()));
+        putIfNotNull(additionalBehaviourMappings, "/api/catalog" + "*", envOr("DIY_SUBMIT_CATALOG_LAMBDA_ARN", null)); // applicationStack.catalogLambda.getFunctionArn()));
+        putIfNotNull(additionalBehaviourMappings, "/api/my-bundles" + "*", envOr("DIY_SUBMIT_MY_BUNDLES_LAMBDA_ARN", null)); // applicationStack.myBundlesLambda.getFunctionArn()));
+        putIfNotNull(additionalBehaviourMappings, "/api/my-receipts" + "*", envOr("DIY_SUBMIT_MY_RECEIPTS_LAMBDA_ARN", null)); // applicationStack.myReceiptsLambda.getFunctionArn()));
 
         // Create the Edge stack (CloudFront, Route53)
         String edgeStackId = "%s-EdgeStack".formatted(deploymentName);
@@ -367,6 +367,12 @@ public class SubmitApplication {
         // default env to dev if not set
         if (props.env == null || props.env.isBlank()) props.env = "dev";
         return props;
+    }
+
+    public static void putIfNotNull(Map<String, String> map, String key, String value) {
+        if (value != null) {
+            map.put(key, value);
+        }
     }
 
     private static String envOr(String key, String fallback) {
