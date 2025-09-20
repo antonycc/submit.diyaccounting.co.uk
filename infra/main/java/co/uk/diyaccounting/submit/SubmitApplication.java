@@ -205,16 +205,16 @@ public class SubmitApplication {
         applicationStack.addDependency(identityStack);
 
         Map<String, String> additionalBehaviourMappings = new java.util.HashMap<>();
-        additionalBehaviourMappings.put("/api/mock/auth-url" + "*", envOr("DIY_SUBMIT_AUTH_URL_MOCK_LAMBDA_ARN", authStack.authUrlMockLambda.getFunctionArn()));
-        additionalBehaviourMappings.put("/api/cognito/auth-url" + "*", envOr("DIY_SUBMIT_AUTH_URL_COGNITO_LAMBDA_ARN", authStack.authUrlCognitoLambda.getFunctionArn()));
-        additionalBehaviourMappings.put("/api/cognito/exchange-token" + "*", envOr("DIY_SUBMIT_COGNITO_EXCHANGE_TOKEN_LAMBDA_ARN", authStack.exchangeCognitoTokenLambda.getFunctionArn()));
-        additionalBehaviourMappings.put("/api/hmrc/auth-url" + "*", envOr("DIY_SUBMIT_AUTH_URL_HMRC_LAMBDA_ARN", applicationStack.authUrlHmrcLambda.getFunctionArn()));
-        additionalBehaviourMappings.put("/api/hmrc/exchange-token" + "*", envOr("DIY_SUBMIT_EXCHANGE_HMRC_TOKEN_LAMBDA_ARN", applicationStack.exchangeHmrcTokenLambda.getFunctionArn()));
-        additionalBehaviourMappings.put("/api/submit-vat" + "*", envOr("DIY_SUBMIT_SUBMIT_VAT_LAMBDA_ARN", applicationStack.submitVatLambda.getFunctionArn()));
-        additionalBehaviourMappings.put("/api/log-receipt" + "*", envOr("DIY_SUBMIT_LOG_RECEIPT_LAMBDA_ARN", applicationStack.logReceiptLambda.getFunctionArn()));
-        additionalBehaviourMappings.put("/api/catalog" + "*", envOr("DIY_SUBMIT_CATALOG_LAMBDA_ARN", applicationStack.catalogLambda.getFunctionArn()));
-        additionalBehaviourMappings.put("/api/my-bundles" + "*", envOr("DIY_SUBMIT_MY_BUNDLES_LAMBDA_ARN", applicationStack.myBundlesLambda.getFunctionArn()));
-        additionalBehaviourMappings.put("/api/my-receipts" + "*", envOr("DIY_SUBMIT_MY_RECEIPTS_LAMBDA_ARN", applicationStack.myReceiptsLambda.getFunctionArn()));
+        additionalBehaviourMappings.put("/api/mock/auth-url" + "*", envOr("DIY_SUBMIT_AUTH_URL_MOCK_LAMBDA_ARN", null)); // authStack.authUrlMockLambda.getFunctionArn()));
+        additionalBehaviourMappings.put("/api/cognito/auth-url" + "*", envOr("DIY_SUBMIT_AUTH_URL_COGNITO_LAMBDA_ARN", null)); // authStack.authUrlCognitoLambda.getFunctionArn()));
+        additionalBehaviourMappings.put("/api/cognito/exchange-token" + "*", envOr("DIY_SUBMIT_COGNITO_EXCHANGE_TOKEN_LAMBDA_ARN", null)); // authStack.exchangeCognitoTokenLambda.getFunctionArn()));
+        additionalBehaviourMappings.put("/api/hmrc/auth-url" + "*", envOr("DIY_SUBMIT_AUTH_URL_HMRC_LAMBDA_ARN", null)); // applicationStack.authUrlHmrcLambda.getFunctionArn()));
+        additionalBehaviourMappings.put("/api/hmrc/exchange-token" + "*", envOr("DIY_SUBMIT_EXCHANGE_HMRC_TOKEN_LAMBDA_ARN", null)); // applicationStack.exchangeHmrcTokenLambda.getFunctionArn()));
+        additionalBehaviourMappings.put("/api/submit-vat" + "*", envOr("DIY_SUBMIT_SUBMIT_VAT_LAMBDA_ARN", null)); // applicationStack.submitVatLambda.getFunctionArn()));
+        additionalBehaviourMappings.put("/api/log-receipt" + "*", envOr("DIY_SUBMIT_LOG_RECEIPT_LAMBDA_ARN", null)); // applicationStack.logReceiptLambda.getFunctionArn()));
+        additionalBehaviourMappings.put("/api/catalog" + "*", envOr("DIY_SUBMIT_CATALOG_LAMBDA_ARN", null)); // applicationStack.catalogLambda.getFunctionArn()));
+        additionalBehaviourMappings.put("/api/my-bundles" + "*", envOr("DIY_SUBMIT_MY_BUNDLES_LAMBDA_ARN", null)); // applicationStack.myBundlesLambda.getFunctionArn()));
+        additionalBehaviourMappings.put("/api/my-receipts" + "*", envOr("DIY_SUBMIT_MY_RECEIPTS_LAMBDA_ARN", null)); // applicationStack.myReceiptsLambda.getFunctionArn()));
 
         // Create the Edge stack (CloudFront, Route53)
         String edgeStackId = "%s-EdgeStack".formatted(deploymentName);
