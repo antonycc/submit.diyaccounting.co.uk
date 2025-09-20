@@ -185,8 +185,8 @@ public class SubmitApplication {
         System.out.printf(
                 "Synthesizing stack %s for deployment %s to environment %s\n",
                 applicationStackId, deploymentName, envName);
-        ApplicationStack applicationStack = ApplicationStack.Builder.create(app, applicationStackId)
-                .props(co.uk.diyaccounting.submit.stacks.ApplicationStackProps.builder()
+        ApplicationStack applicationStack = new ApplicationStack(app, applicationStackId,
+                co.uk.diyaccounting.submit.stacks.ApplicationStackProps.builder()
                         .env(envName)
                         .hostedZoneName(envOr("HOSTED_ZONE_NAME", appProps.hostedZoneName))
                         .subDomainName(envOr("SUB_DOMAIN_NAME", appProps.subDomainName))
@@ -211,8 +211,7 @@ public class SubmitApplication {
                         // .cognitoClientId(identityStack.userPoolClient.getUserPoolClientId())
                         // .cognitoBaseUri(identityStack.userPoolDomain.getDomainName())
                         .optionalTestAccessToken(envOr("OPTIONAL_TEST_ACCESS_TOKEN", appProps.optionalTestAccessToken))
-                        .build())
-                .build();
+                        .build());
         applicationStack.addDependency(devStack);
         applicationStack.addDependency(webStack);
         applicationStack.addDependency(identityStack);

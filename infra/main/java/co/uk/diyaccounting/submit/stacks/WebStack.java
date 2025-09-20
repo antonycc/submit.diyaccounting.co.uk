@@ -763,4 +763,11 @@ public class WebStack extends Stack {
         //            .build();
         // }
     }
+
+    public static String buildFunctionName(String dashedDomainName, String functionName) {
+        if (functionName == null || functionName.isBlank()) {
+            throw new IllegalArgumentException("Function name cannot be null or blank");
+        }
+        return "%s-%s".formatted(dashedDomainName, ResourceNameUtils.convertCamelCaseToDashSeparated(functionName));
+    }
 }

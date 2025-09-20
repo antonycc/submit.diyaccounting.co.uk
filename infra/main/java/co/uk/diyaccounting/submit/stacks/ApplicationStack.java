@@ -62,28 +62,28 @@ public class ApplicationStack extends Stack {
     public IBucket receiptsBucket;
     // public Map<String, String> additionalOriginsBehaviourMappings;
 
-    public ApplicationStack(Construct scope, String id, ApplicationStack.Builder builder) {
-        this(scope, id, null, builder);
+    public ApplicationStack(Construct scope, String id, ApplicationStackProps props) {
+        this(scope, id, null, props);
     }
 
-    public ApplicationStack(Construct scope, String id, StackProps props, ApplicationStack.Builder builder) {
-        super(scope, id, props);
+    public ApplicationStack(Construct scope, String id, StackProps stackProps, ApplicationStackProps props) {
+        super(scope, id, stackProps);
 
         // Values are provided via SubmitApplication after context/env resolution
 
         // Build naming using same patterns as WebStack
-        // String domainName = Builder.buildDomainName(builder.env, builder.subDomainName, builder.hostedZoneName);
+        // String domainName = buildDomainName(props.env(), props.subDomainName(), props.hostedZoneName());
         String dashedDomainName =
-                Builder.buildDashedDomainName(builder.env, builder.subDomainName, builder.hostedZoneName);
+                buildDashedDomainName(props.env(), props.subDomainName(), props.hostedZoneName());
 
-        boolean cloudTrailEnabled = Boolean.parseBoolean(builder.cloudTrailEnabled);
-        boolean xRayEnabled = Boolean.parseBoolean(builder.xRayEnabled);
-        boolean verboseLogging = builder.verboseLogging == null || Boolean.parseBoolean(builder.verboseLogging);
+        boolean cloudTrailEnabled = Boolean.parseBoolean(props.cloudTrailEnabled());
+        boolean xRayEnabled = Boolean.parseBoolean(props.xRayEnabled());
+        boolean verboseLogging = props.verboseLogging() == null || Boolean.parseBoolean(props.verboseLogging());
 
         // Lambdas
 
         // Determine Lambda URL authentication type
-        FunctionUrlAuthType functionUrlAuthType = "AWS_IAM".equalsIgnoreCase(builder.lambdaUrlAuthType)
+        FunctionUrlAuthType functionUrlAuthType = "AWS_IAM".equalsIgnoreCase(props.lambdaUrlAuthType())
                 ? FunctionUrlAuthType.AWS_IAM
                 : FunctionUrlAuthType.NONE;
 
@@ -92,28 +92,28 @@ public class ApplicationStack extends Stack {
 
         // Common options for all Lambda URL origins to reduce repetition
         var lambdaCommonOpts = LambdaUrlOriginOpts.Builder.create()
-                .env(builder.env)
+                .env(props.env())
                 .imageDirectory("infra/runtimes")
                 .functionUrlAuthType(functionUrlAuthType)
                 .cloudTrailEnabled(cloudTrailEnabled)
                 .xRayEnabled(xRayEnabled)
                 .verboseLogging(verboseLogging)
-                .baseImageTag(builder.baseImageTag)
+                .baseImageTag(props.baseImageTag())
                 .build();
 
         // authUrl - HMRC
         var authUrlHmrcLambdaEnv = new HashMap<>(Map.of(
-                "DIY_SUBMIT_HOME_URL", builder.homeUrl,
-                "DIY_SUBMIT_HMRC_BASE_URI", builder.hmrcBaseUri,
-                "DIY_SUBMIT_HMRC_CLIENT_ID", builder.hmrcClientId));
+                "DIY_SUBMIT_HOME_URL", props.homeUrl(),
+                "DIY_SUBMIT_HMRC_BASE_URI", props.hmrcBaseUri(),
+                "DIY_SUBMIT_HMRC_CLIENT_ID", props.hmrcClientId()));
         var authUrlHmrcLambdaUrlOrigin = LambdaUrlOrigin.Builder.create(this, "AuthUrlHmrc")
                 .imageFilename("authUrlHmrc.Dockerfile")
-                .baseImageTag(builder.baseImageTag)
-                .ecrRepositoryName(builder.ecrRepositoryName)
-                .ecrRepositoryArn(builder.ecrRepositoryArn)
-                .functionName(WebStack.Builder.buildFunctionName(dashedDomainName, "authUrl.httpGetHmrc"))
+                .baseImageTag(props.baseImageTag())
+                .ecrRepositoryName(props.ecrRepositoryName())
+                .ecrRepositoryArn(props.ecrRepositoryArn())
+                .functionName(WebStack.buildFunctionName(dashedDomainName, "authUrl.httpGetHmrc"))
                 .allowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
-                .handler(builder.lambdaEntry + "authUrl.httpGetHmrc")
+                .handler(props.lambdaEntry() + "authUrl.httpGetHmrc")
                 .environment(authUrlHmrcLambdaEnv)
                 .timeout(Duration.millis(Long.parseLong("30000")))
                 .options(lambdaCommonOpts)
@@ -126,25 +126,25 @@ public class ApplicationStack extends Stack {
 
         // exchangeToken - HMRC
         Map<String, String> exchangeHmrcEnvBase = new HashMap<>(Map.of(
-                "DIY_SUBMIT_HOME_URL", builder.homeUrl,
-                "DIY_SUBMIT_HMRC_BASE_URI", builder.hmrcBaseUri,
-                "DIY_SUBMIT_HMRC_CLIENT_ID", builder.hmrcClientId));
-        if (StringUtils.isNotBlank(builder.hmrcClientSecretArn)) {
-            var hmrcSecret = Secret.fromSecretPartialArn(this, "HmrcClientSecret", builder.hmrcClientSecretArn);
+                "DIY_SUBMIT_HOME_URL", props.homeUrl(),
+                "DIY_SUBMIT_HMRC_BASE_URI", props.hmrcBaseUri(),
+                "DIY_SUBMIT_HMRC_CLIENT_ID", props.hmrcClientId()));
+        if (StringUtils.isNotBlank(props.hmrcClientSecretArn())) {
+            var hmrcSecret = Secret.fromSecretPartialArn(this, "HmrcClientSecret", props.hmrcClientSecretArn());
             exchangeHmrcEnvBase.put("DIY_SUBMIT_HMRC_CLIENT_SECRET_ARN", hmrcSecret.getSecretArn());
         }
-        if (StringUtils.isNotBlank(builder.optionalTestAccessToken)) {
-            exchangeHmrcEnvBase.put("DIY_SUBMIT_TEST_ACCESS_TOKEN", builder.optionalTestAccessToken);
+        if (StringUtils.isNotBlank(props.optionalTestAccessToken())) {
+            exchangeHmrcEnvBase.put("DIY_SUBMIT_TEST_ACCESS_TOKEN", props.optionalTestAccessToken());
         }
         var exchangeHmrcTokenLambdaUrlOrigin = LambdaUrlOrigin.Builder.create(this, "ExchangeHmrcToken")
                 .options(lambdaCommonOpts)
-                .baseImageTag(builder.baseImageTag)
-                .ecrRepositoryName(builder.ecrRepositoryName)
-                .ecrRepositoryArn(builder.ecrRepositoryArn)
+                .baseImageTag(props.baseImageTag())
+                .ecrRepositoryName(props.ecrRepositoryName())
+                .ecrRepositoryArn(props.ecrRepositoryArn())
                 .imageFilename("exchangeHmrcToken.Dockerfile")
-                .functionName(WebStack.Builder.buildFunctionName(dashedDomainName, "exchangeToken.httpPostHmrc"))
+                .functionName(WebStack.buildFunctionName(dashedDomainName, "exchangeToken.httpPostHmrc"))
                 .allowedMethods(AllowedMethods.ALLOW_ALL)
-                .handler(builder.lambdaEntry + "exchangeToken.httpPostHmrc")
+                .handler(props.lambdaEntry() + "exchangeToken.httpPostHmrc")
                 .environment(exchangeHmrcEnvBase)
                 .timeout(Duration.millis(Long.parseLong("30000")))
                 .build(this);
@@ -156,17 +156,17 @@ public class ApplicationStack extends Stack {
 
         // submitVat
         var submitVatLambdaEnv = new HashMap<>(Map.of(
-                "DIY_SUBMIT_HOME_URL", builder.homeUrl,
-                "DIY_SUBMIT_HMRC_BASE_URI", builder.hmrcBaseUri));
+                "DIY_SUBMIT_HOME_URL", props.homeUrl(),
+                "DIY_SUBMIT_HMRC_BASE_URI", props.hmrcBaseUri()));
         var submitVatLambdaUrlOrigin = LambdaUrlOrigin.Builder.create(this, "SubmitVat")
                 .options(lambdaCommonOpts)
-                .baseImageTag(builder.baseImageTag)
-                .ecrRepositoryName(builder.ecrRepositoryName)
-                .ecrRepositoryArn(builder.ecrRepositoryArn)
+                .baseImageTag(props.baseImageTag())
+                .ecrRepositoryName(props.ecrRepositoryName())
+                .ecrRepositoryArn(props.ecrRepositoryArn())
                 .imageFilename("submitVat.Dockerfile")
-                .functionName(WebStack.Builder.buildFunctionName(dashedDomainName, "submitVat.httpPost"))
+                .functionName(WebStack.buildFunctionName(dashedDomainName, "submitVat.httpPost"))
                 .allowedMethods(AllowedMethods.ALLOW_ALL)
-                .handler(builder.lambdaEntry + "submitVat.httpPost")
+                .handler(props.lambdaEntry() + "submitVat.httpPost")
                 .environment(submitVatLambdaEnv)
                 .timeout(Duration.millis(Long.parseLong("60000")))
                 .build(this);
@@ -177,27 +177,27 @@ public class ApplicationStack extends Stack {
         //    "/api/submit-vat" + "*", submitVatLambdaUrlOrigin.lambda.getFunctionArn());
 
         var logReceiptLambdaEnv = new HashMap<>(Map.of(
-                "DIY_SUBMIT_HOME_URL", builder.homeUrl,
-                "DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX", builder.receiptsBucketPostfix));
-        if (StringUtils.isNotBlank(builder.optionalTestS3Endpoint)
-                && StringUtils.isNotBlank(builder.optionalTestS3AccessKey)
-                && StringUtils.isNotBlank(builder.optionalTestS3SecretKey)) {
+                "DIY_SUBMIT_HOME_URL", props.homeUrl(),
+                "DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX", props.receiptsBucketPostfix()));
+        if (StringUtils.isNotBlank(props.optionalTestS3Endpoint())
+                && StringUtils.isNotBlank(props.optionalTestS3AccessKey())
+                && StringUtils.isNotBlank(props.optionalTestS3SecretKey())) {
             // For production like integrations without AWS we can use test S3 credentials
             var logReceiptLambdaTestEnv = new HashMap<>(Map.of(
-                    "DIY_SUBMIT_TEST_S3_ENDPOINT", builder.optionalTestS3Endpoint,
-                    "DIY_SUBMIT_TEST_S3_ACCESS_KEY", builder.optionalTestS3AccessKey,
-                    "DIY_SUBMIT_TEST_S3_SECRET_KEY", builder.optionalTestS3SecretKey));
+                    "DIY_SUBMIT_TEST_S3_ENDPOINT", props.optionalTestS3Endpoint(),
+                    "DIY_SUBMIT_TEST_S3_ACCESS_KEY", props.optionalTestS3AccessKey(),
+                    "DIY_SUBMIT_TEST_S3_SECRET_KEY", props.optionalTestS3SecretKey()));
             logReceiptLambdaEnv.putAll(logReceiptLambdaTestEnv);
         }
         var logReceiptLambdaUrlOrigin = LambdaUrlOrigin.Builder.create(this, "LogReceipt")
                 .options(lambdaCommonOpts)
-                .baseImageTag(builder.baseImageTag)
-                .ecrRepositoryName(builder.ecrRepositoryName)
-                .ecrRepositoryArn(builder.ecrRepositoryArn)
+                .baseImageTag(props.baseImageTag())
+                .ecrRepositoryName(props.ecrRepositoryName())
+                .ecrRepositoryArn(props.ecrRepositoryArn())
                 .imageFilename("logReceipt.Dockerfile")
-                .functionName(WebStack.Builder.buildFunctionName(dashedDomainName, "logReceipt.httpPost"))
+                .functionName(WebStack.buildFunctionName(dashedDomainName, "logReceipt.httpPost"))
                 .allowedMethods(AllowedMethods.ALLOW_ALL)
-                .handler(builder.lambdaEntry + "logReceipt.httpPost")
+                .handler(props.lambdaEntry() + "logReceipt.httpPost")
                 .environment(logReceiptLambdaEnv)
                 .timeout(Duration.millis(Long.parseLong("30000")))
                 .build(this);
@@ -209,16 +209,16 @@ public class ApplicationStack extends Stack {
 
         // Create Bundle Management Lambda
         // Catalog Lambda
-        var catalogLambdaEnv = new HashMap<>(Map.of("DIY_SUBMIT_HOME_URL", builder.homeUrl));
+        var catalogLambdaEnv = new HashMap<>(Map.of("DIY_SUBMIT_HOME_URL", props.homeUrl()));
         var catalogLambdaUrlOrigin = LambdaUrlOrigin.Builder.create(this, "Catalog")
                 .options(lambdaCommonOpts)
-                .baseImageTag(builder.baseImageTag)
-                .ecrRepositoryName(builder.ecrRepositoryName)
-                .ecrRepositoryArn(builder.ecrRepositoryArn)
+                .baseImageTag(props.baseImageTag())
+                .ecrRepositoryName(props.ecrRepositoryName())
+                .ecrRepositoryArn(props.ecrRepositoryArn())
                 .imageFilename("getCatalog.Dockerfile")
-                .functionName(WebStack.Builder.buildFunctionName(dashedDomainName, "getCatalog.httpGet"))
+                .functionName(WebStack.buildFunctionName(dashedDomainName, "getCatalog.httpGet"))
                 .allowedMethods(AllowedMethods.ALLOW_ALL)
-                .handler(builder.lambdaEntry + "getCatalog.httpGet")
+                .handler(props.lambdaEntry() + "getCatalog.httpGet")
                 .environment(catalogLambdaEnv)
                 .timeout(Duration.millis(Long.parseLong("30000")))
                 .build(this);
@@ -229,16 +229,16 @@ public class ApplicationStack extends Stack {
         //    "/api/catalog" + "*", catalogLambdaUrlOrigin.lambda.getFunctionArn());
 
         // My Bundles Lambda
-        var myBundlesLambdaEnv = new HashMap<>(Map.of("DIY_SUBMIT_HOME_URL", builder.homeUrl));
+        var myBundlesLambdaEnv = new HashMap<>(Map.of("DIY_SUBMIT_HOME_URL", props.homeUrl()));
         var myBundlesLambdaUrlOrigin = LambdaUrlOrigin.Builder.create(this, "MyBundles")
                 .options(lambdaCommonOpts)
-                .baseImageTag(builder.baseImageTag)
-                .ecrRepositoryName(builder.ecrRepositoryName)
-                .ecrRepositoryArn(builder.ecrRepositoryArn)
+                .baseImageTag(props.baseImageTag())
+                .ecrRepositoryName(props.ecrRepositoryName())
+                .ecrRepositoryArn(props.ecrRepositoryArn())
                 .imageFilename("myBundles.Dockerfile")
-                .functionName(WebStack.Builder.buildFunctionName(dashedDomainName, "myBundles.httpGet"))
+                .functionName(WebStack.buildFunctionName(dashedDomainName, "myBundles.httpGet"))
                 .allowedMethods(AllowedMethods.ALLOW_ALL)
-                .handler(builder.lambdaEntry + "myBundles.httpGet")
+                .handler(props.lambdaEntry() + "myBundles.httpGet")
                 .environment(myBundlesLambdaEnv)
                 .timeout(Duration.millis(Long.parseLong("30000")))
                 .build(this);
@@ -250,17 +250,17 @@ public class ApplicationStack extends Stack {
 
         // myReceipts Lambda
         var myReceiptsLambdaEnv = new HashMap<>(Map.of(
-                "DIY_SUBMIT_HOME_URL", builder.homeUrl,
-                "DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX", builder.receiptsBucketPostfix));
+                "DIY_SUBMIT_HOME_URL", props.homeUrl(),
+                "DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX", props.receiptsBucketPostfix()));
         var myReceiptsLambdaUrlOrigin = LambdaUrlOrigin.Builder.create(this, "MyReceipts")
                 .options(lambdaCommonOpts)
-                .baseImageTag(builder.baseImageTag)
-                .ecrRepositoryName(builder.ecrRepositoryName)
-                .ecrRepositoryArn(builder.ecrRepositoryArn)
+                .baseImageTag(props.baseImageTag())
+                .ecrRepositoryName(props.ecrRepositoryName())
+                .ecrRepositoryArn(props.ecrRepositoryArn())
                 .imageFilename("myReceipts.Dockerfile")
-                .functionName(WebStack.Builder.buildFunctionName(dashedDomainName, "myReceipts.httpGet"))
+                .functionName(WebStack.buildFunctionName(dashedDomainName, "myReceipts.httpGet"))
                 .allowedMethods(AllowedMethods.ALLOW_ALL)
-                .handler(builder.lambdaEntry + "myReceipts.httpGet")
+                .handler(props.lambdaEntry() + "myReceipts.httpGet")
                 .environment(myReceiptsLambdaEnv)
                 .timeout(Duration.millis(Long.parseLong("30000")))
                 .build(this);
@@ -274,9 +274,9 @@ public class ApplicationStack extends Stack {
 
         // Create receipts bucket for storing VAT submission receipts
         boolean s3RetainReceiptsBucket =
-                builder.s3RetainReceiptsBucket != null && Boolean.parseBoolean(builder.s3RetainReceiptsBucket);
+                props.s3RetainReceiptsBucket() != null && Boolean.parseBoolean(props.s3RetainReceiptsBucket());
         String receiptsBucketPostfix =
-                StringUtils.isNotBlank(builder.receiptsBucketPostfix) ? builder.receiptsBucketPostfix : "receipts";
+                StringUtils.isNotBlank(props.receiptsBucketPostfix()) ? props.receiptsBucketPostfix() : "receipts";
         String receiptsBucketFullName = "%s-%s".formatted(dashedDomainName, receiptsBucketPostfix);
         this.receiptsBucket = Bucket.Builder.create(this, "ReceiptsBucket")
                 .bucketName(receiptsBucketFullName)
@@ -327,205 +327,23 @@ public class ApplicationStack extends Stack {
         logger.info("ApplicationStack created successfully for {}", dashedDomainName);
     }
 
-    /**
-     * Builder class following the same pattern as WebStack.Builder
-     */
-    public static class Builder {
-        private Construct scope;
-        private String id;
-        private StackProps props;
-
-        // Environment configuration
-        public String env;
-        public String subDomainName;
-        public String hostedZoneName;
-        public String cloudTrailEnabled;
-        public String xRayEnabled;
-        // Lambda/config properties
-        public String verboseLogging;
-        public String lambdaUrlAuthType;
-        public String baseImageTag;
-        public String ecrRepositoryArn;
-        public String ecrRepositoryName;
-        public String lambdaEntry;
-        public String homeUrl;
-        public String hmrcBaseUri;
-        public String hmrcClientId;
-        public String hmrcClientSecretArn;
-        public String optionalTestAccessToken;
-        public String optionalTestS3Endpoint;
-        public String optionalTestS3AccessKey;
-        public String optionalTestS3SecretKey;
-        public String receiptsBucketPostfix;
-        public String s3RetainReceiptsBucket;
-        public String bundleExpiryDate;
-        public String bundleUserLimit;
-        public String cognitoClientId;
-        public String cognitoBaseUri;
-
-        private Builder() {}
-
-        public static Builder create(Construct scope, String id) {
-            Builder builder = new Builder();
-            builder.scope = scope;
-            builder.id = id;
-            return builder;
-        }
-
-        public Builder props(StackProps props) {
-            this.props = props;
-            return this;
-        }
-
-        public Builder env(String env) {
-            this.env = env;
-            return this;
-        }
-
-        public Builder subDomainName(String subDomainName) {
-            this.subDomainName = subDomainName;
-            return this;
-        }
-
-        public Builder hostedZoneName(String hostedZoneName) {
-            this.hostedZoneName = hostedZoneName;
-            return this;
-        }
-
-        public Builder cloudTrailEnabled(String cloudTrailEnabled) {
-            this.cloudTrailEnabled = cloudTrailEnabled;
-            return this;
-        }
-
-        public Builder xRayEnabled(String xRayEnabled) {
-            this.xRayEnabled = xRayEnabled;
-            return this;
-        }
-
-        public Builder verboseLogging(String verboseLogging) {
-            this.verboseLogging = verboseLogging;
-            return this;
-        }
-
-        public Builder baseImageTag(String baseImageTag) {
-            this.baseImageTag = baseImageTag;
-            return this;
-        }
-
-        public Builder ecrRepositoryArn(String ecrRepositoryArn) {
-            this.ecrRepositoryArn = ecrRepositoryArn;
-            return this;
-        }
-
-        public Builder ecrRepositoryName(String ecrRepositoryName) {
-            this.ecrRepositoryName = ecrRepositoryName;
-            return this;
-        }
-
-        public Builder lambdaEntry(String lambdaEntry) {
-            this.lambdaEntry = lambdaEntry;
-            return this;
-        }
-
-        public Builder homeUrl(String homeUrl) {
-            this.homeUrl = homeUrl;
-            return this;
-        }
-
-        public Builder hmrcBaseUri(String hmrcBaseUri) {
-            this.hmrcBaseUri = hmrcBaseUri;
-            return this;
-        }
-
-        public Builder hmrcClientId(String hmrcClientId) {
-            this.hmrcClientId = hmrcClientId;
-            return this;
-        }
-
-        public Builder hmrcClientSecretArn(String hmrcClientSecretArn) {
-            this.hmrcClientSecretArn = hmrcClientSecretArn;
-            return this;
-        }
-
-        public Builder optionalTestAccessToken(String optionalTestAccessToken) {
-            this.optionalTestAccessToken = optionalTestAccessToken;
-            return this;
-        }
-
-        public Builder optionalTestS3Endpoint(String optionalTestS3Endpoint) {
-            this.optionalTestS3Endpoint = optionalTestS3Endpoint;
-            return this;
-        }
-
-        public Builder optionalTestS3AccessKey(String optionalTestS3AccessKey) {
-            this.optionalTestS3AccessKey = optionalTestS3AccessKey;
-            return this;
-        }
-
-        public Builder optionalTestS3SecretKey(String optionalTestS3SecretKey) {
-            this.optionalTestS3SecretKey = optionalTestS3SecretKey;
-            return this;
-        }
-
-        public Builder receiptsBucketPostfix(String receiptsBucketPostfix) {
-            this.receiptsBucketPostfix = receiptsBucketPostfix;
-            return this;
-        }
-
-        public Builder s3RetainReceiptsBucket(String s3RetainReceiptsBucket) {
-            this.s3RetainReceiptsBucket = s3RetainReceiptsBucket;
-            return this;
-        }
-
-        public Builder props(ApplicationStackProps p) {
-            if (p == null) return this;
-            this.env = p.env();
-            this.subDomainName = p.subDomainName();
-            this.hostedZoneName = p.hostedZoneName();
-            this.cloudTrailEnabled = p.cloudTrailEnabled();
-            this.xRayEnabled = p.xRayEnabled();
-            this.verboseLogging = p.verboseLogging();
-            this.baseImageTag = p.baseImageTag();
-            this.ecrRepositoryArn = p.ecrRepositoryArn();
-            this.ecrRepositoryName = p.ecrRepositoryName();
-            this.lambdaUrlAuthType = p.lambdaUrlAuthType();
-            this.lambdaEntry = p.lambdaEntry();
-            this.homeUrl = p.homeUrl();
-            this.hmrcBaseUri = p.hmrcBaseUri();
-            this.hmrcClientId = p.hmrcClientId();
-            this.hmrcClientSecretArn = p.hmrcClientSecretArn();
-            this.optionalTestAccessToken = p.optionalTestAccessToken();
-            this.optionalTestS3Endpoint = p.optionalTestS3Endpoint();
-            this.optionalTestS3AccessKey = p.optionalTestS3AccessKey();
-            this.optionalTestS3SecretKey = p.optionalTestS3SecretKey();
-            this.receiptsBucketPostfix = p.receiptsBucketPostfix();
-            this.s3RetainReceiptsBucket = p.s3RetainReceiptsBucket();
-            return this;
-        }
-
-        public ApplicationStack build() {
-            return new ApplicationStack(this.scope, this.id, this.props, this);
-        }
-
-        // Naming utility methods following WebStack patterns
+    // Naming utility methods following WebStack patterns
         public static String buildDomainName(String env, String subDomainName, String hostedZoneName) {
             return env.equals("prod")
-                    ? Builder.buildProdDomainName(subDomainName, hostedZoneName)
-                    : Builder.buildNonProdDomainName(env, subDomainName, hostedZoneName);
+                    ? buildProdDomainName(subDomainName, hostedZoneName)
+                    : buildNonProdDomainName(env, subDomainName, hostedZoneName);
         }
 
         public static String buildProdDomainName(String subDomainName, String hostedZoneName) {
             return "%s.%s".formatted(subDomainName, hostedZoneName);
         }
+    public static String buildNonProdDomainName(String env, String subDomainName, String hostedZoneName) {
+        return "%s.%s.%s".formatted(env, subDomainName, hostedZoneName);
+    }
 
-        public static String buildNonProdDomainName(String env, String subDomainName, String hostedZoneName) {
-            return "%s.%s.%s".formatted(env, subDomainName, hostedZoneName);
-        }
-
-        public static String buildDashedDomainName(String env, String subDomainName, String hostedZoneName) {
-            return ResourceNameUtils.convertDotSeparatedToDashSeparated(
-                    "%s.%s.%s".formatted(env, subDomainName, hostedZoneName), domainNameMappings);
-        }
+    public static String buildDashedDomainName(String env, String subDomainName, String hostedZoneName) {
+        return ResourceNameUtils.convertDotSeparatedToDashSeparated(
+                "%s.%s.%s".formatted(env, subDomainName, hostedZoneName), domainNameMappings);
     }
 
     // Use same domain name mappings as WebStack
