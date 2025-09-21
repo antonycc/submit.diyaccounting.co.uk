@@ -52,12 +52,12 @@ public class EdgeStack extends Stack {
         super(scope, id, props);
 
         // Apply cost allocation tags for all resources in this stack
-        Tags.of(this).add("Environment", props.envName);
+        Tags.of(this).add("Environment", props.envName());
         Tags.of(this).add("Application", "@antonycc/submit.diyaccounting.co.uk");
         Tags.of(this).add("CostCenter", "@antonycc/submit.diyaccounting.co.uk");
         Tags.of(this).add("Owner", "@antonycc/submit.diyaccounting.co.uk");
         Tags.of(this).add("Project", "@antonycc/submit.diyaccounting.co.uk");
-        Tags.of(this).add("DeploymentName", props.deploymentName);
+        Tags.of(this).add("DeploymentName", props.deploymentName());
         Tags.of(this).add("Stack", "EdgeStack");
         Tags.of(this).add("ManagedBy", "aws-cdk");
 
@@ -70,33 +70,33 @@ public class EdgeStack extends Stack {
         Tags.of(this).add("MonitoringEnabled", "true");
 
         // Use Resources from the passed props
-        this.baseUrl = props.baseUrl;
-        IBucket logsBucket = Bucket.fromBucketArn(this, props.resourceNamePrefix + "-LogsBucket", props.logsBucketArn);
-        IBucket originBucket = Bucket.fromBucketArn(this, props.resourceNamePrefix + "-WebBucket", props.webBucketArn);
+        this.baseUrl = props.baseUrl();
+        IBucket logsBucket = Bucket.fromBucketArn(this, props.resourceNamePrefix() + "-LogsBucket", props.logsBucketArn());
+        IBucket originBucket = Bucket.fromBucketArn(this, props.resourceNamePrefix() + "-WebBucket", props.webBucketArn());
 
         // Hosted zone (must exist)
         IHostedZone zone = HostedZone.fromHostedZoneAttributes(
                 this,
-                props.resourceNamePrefix + "-Zone",
+                props.resourceNamePrefix() + "-Zone",
                 HostedZoneAttributes.builder()
-                        .hostedZoneId(props.hostedZoneId)
-                        .zoneName(props.hostedZoneName)
+                        .hostedZoneId(props.hostedZoneId())
+                        .zoneName(props.hostedZoneName())
                         .build());
-        String domainName = props.domainName;
-        String recordName = props.hostedZoneName.equals(props.domainName)
+        String domainName = props.domainName();
+        String recordName = props.hostedZoneName().equals(props.domainName())
                 ? null
-                : (props.domainName.endsWith("." + props.hostedZoneName)
-                        ? props.domainName.substring(0, props.domainName.length() - (props.hostedZoneName.length() + 1))
-                        : props.domainName);
+                : (props.domainName().endsWith("." + props.hostedZoneName())
+                        ? props.domainName().substring(0, props.domainName().length() - (props.hostedZoneName().length() + 1))
+                        : props.domainName());
 
         // TLS certificate from existing ACM (must be in us-east-1 for CloudFront)
-        var cert = Certificate.fromCertificateArn(this, props.resourceNamePrefix + "-WebCert", props.certificateArn);
+        var cert = Certificate.fromCertificateArn(this, props.resourceNamePrefix() + "-WebCert", props.certificateArn());
 
         // Buckets
 
         // AWS WAF WebACL for CloudFront protection against common attacks and rate limiting
-        CfnWebACL webAcl = CfnWebACL.Builder.create(this, props.resourceNamePrefix + "-WebAcl")
-                .name(props.compressedResourceNamePrefix + "-waf")
+        CfnWebACL webAcl = CfnWebACL.Builder.create(this, props.resourceNamePrefix() + "-WebAcl")
+                .name(props.compressedResourceNamePrefix() + "-waf")
                 .scope("CLOUDFRONT")
                 .defaultAction(CfnWebACL.DefaultActionProperty.builder()
                         .allow(CfnWebACL.AllowActionProperty.builder().build())
@@ -168,16 +168,16 @@ public class EdgeStack extends Stack {
                         "WAF WebACL for OIDC provider CloudFront distribution - provides rate limiting and protection against common attacks")
                 .visibilityConfig(CfnWebACL.VisibilityConfigProperty.builder()
                         .cloudWatchMetricsEnabled(true)
-                        .metricName(props.compressedResourceNamePrefix + "-waf")
+                        .metricName(props.compressedResourceNamePrefix() + "-waf")
                         .sampledRequestsEnabled(true)
                         .build())
                 .build();
 
         // S3OriginAccessControl originAccessControl = S3OriginAccessControl.Builder.create(this,
-        // props.resourceNamePrefix + "-OAC")
-        //        //.name(props.compressedResourceNamePrefix + "-oac")
-        //        .originAccessControlName(props.compressedResourceNamePrefix + "-oac")
-        //        .description("OAC for " + props.resourceNamePrefix + " CloudFront distribution")
+        // props.resourceNamePrefix() + "-OAC")
+        //        //.name(props.compressedResourceNamePrefix() + "-oac")
+        //        .originAccessControlName(props.compressedResourceNamePrefix() + "-oac")
+        //        .description("OAC for " + props.resourceNamePrefix() + " CloudFront distribution")
         //        //.originAccessControlOriginType("s3")
         //        //.signingBehavior("always")
         //        //.signingProtocol("sigv4")
@@ -207,7 +207,7 @@ public class EdgeStack extends Stack {
         // Create additional behaviours for the URL origins using the mappings provided in props
         // Use function createBehaviorOptionsForLambdaUrlHost to transform the lambda URL host into BehaviorOptions
         HashMap<String, BehaviorOptions> additionalBehaviors = // new HashMap<String, BehaviorOptions>();
-                props.additionalOriginsBehaviourMappings.entrySet().stream()
+                props.additionalOriginsBehaviourMappings().entrySet().stream()
                         .collect(
                                 HashMap::new,
                                 (map, entry) ->
@@ -215,8 +215,8 @@ public class EdgeStack extends Stack {
                                 HashMap::putAll);
 
         // CloudFront distribution for the web origin and all the URL Lambdas.
-        this.distribution = Distribution.Builder.create(this, props.resourceNamePrefix + "-WebDist")
-                .defaultBehavior(localBehaviorOptions) // props.webBehaviorOptions)
+        this.distribution = Distribution.Builder.create(this, props.resourceNamePrefix() + "-WebDist")
+                .defaultBehavior(localBehaviorOptions) // props.webBehaviorOptions())
                 .additionalBehaviors(additionalBehaviors)
                 .domainNames(List.of(domainName))
                 .certificate(cert)
@@ -240,7 +240,7 @@ public class EdgeStack extends Stack {
         // A record
         this.aliasRecord = new ARecord(
                 this,
-                props.resourceNamePrefix + "-AliasRecord",
+                props.resourceNamePrefix() + "-AliasRecord",
                 ARecordProps.builder()
                         .recordName(recordName)
                         .zone(zone)

@@ -26,12 +26,12 @@ public class PublishStack extends Stack {
         super(scope, id, props);
 
         // Apply cost allocation tags for all resources in this stack
-        Tags.of(this).add("Environment", props.envName);
+        Tags.of(this).add("Environment", props.envName());
         Tags.of(this).add("Application", "submit");
         Tags.of(this).add("CostCenter", "@antonycc/submit.diyaccounting.co.uk");
         Tags.of(this).add("Owner", "@antonycc/submit.diyaccounting.co.uk");
         Tags.of(this).add("Project", "@antonycc/submit.diyaccounting.co.uk");
-        Tags.of(this).add("DeploymentName", props.deploymentName);
+        Tags.of(this).add("DeploymentName", props.deploymentName());
         Tags.of(this).add("Stack", "PublishStack");
         Tags.of(this).add("ManagedBy", "aws-cdk");
 
@@ -44,22 +44,22 @@ public class PublishStack extends Stack {
         Tags.of(this).add("MonitoringEnabled", "true");
 
         // Use Resources from the passed props
-        this.baseUrl = props.baseUrl;
+        this.baseUrl = props.baseUrl();
         // DistributionAttributes distributionAttributes = DistributionAttributes.builder()
-        //        .domainName(props.domainName)
-        //        //.distributionId(props.distributionArn)
+        //        .domainName(props.domainName())
+        //        //.distributionId(props.distributionArn())
         //        .build();
         // Distribution from ARN
-        var distributionId = props.distributionArn.split("/")[1];
+        var distributionId = props.distributionArn().split("/")[1];
         DistributionAttributes distributionAttributes = DistributionAttributes.builder()
-                .domainName(props.domainName)
+                .domainName(props.domainName())
                 .distributionId(distributionId)
                 .build();
         IDistribution distribution = Distribution.fromDistributionAttributes(
-                this, props.resourceNamePrefix + "-ImportedWebDist", distributionAttributes);
+                this, props.resourceNamePrefix() + "-ImportedWebDist", distributionAttributes);
         // Distribution from ARN
-        // S3BucketOrigin origin = S3BucketOrigin.Builder.create(props.webBucket).build();
-        // this.originBucket = props.webBucket;
+        // S3BucketOrigin origin = S3BucketOrigin.Builder.create(props.webBucket()).build();
+        // this.originBucket = props.webBucket();
         // this.originAccessIdentity = origin.getOriginAccessIdentity();
 
         /*
@@ -122,10 +122,10 @@ public class PublishStack extends Stack {
         */
 
         // Generate submit.version file with commit hash if provided
-        if (props.commitHash != null && !props.commitHash.isBlank()) {
+        if (props.commitHash() != null && !props.commitHash().isBlank()) {
             try {
-                java.nio.file.Path sourceFilePath = java.nio.file.Paths.get(props.docRootPath, "submit.version");
-                java.nio.file.Files.writeString(sourceFilePath, props.commitHash.trim());
+                java.nio.file.Path sourceFilePath = java.nio.file.Paths.get(props.docRootPath(), "submit.version");
+                java.nio.file.Files.writeString(sourceFilePath, props.commitHash().trim());
                 // logger.info("Created submit.version file with commit hash: %s".formatted(builder.commitHash));
             } catch (Exception e) {
                 // logger.warn("Failed to create submit.version file: %s".formatted(e.getMessage()));
@@ -141,16 +141,16 @@ public class PublishStack extends Stack {
                 "web/public",
                 AssetOptions.builder().assetHashType(AssetHashType.SOURCE).build());
         var webDeploymentLogGroup = LogGroup.Builder.create(
-                        this, props.resourceNamePrefix + "-WebDeploymentLogGroup-" + deployPostfix)
-                .logGroupName("/deployment/" + props.resourceNamePrefix + "-web-deployment-" + deployPostfix)
-                // .logGroupName("/deployment/" + props.resourceNamePrefix + "-web-deployment")
+                        this, props.resourceNamePrefix() + "-WebDeploymentLogGroup-" + deployPostfix)
+                .logGroupName("/deployment/" + props.resourceNamePrefix() + "-web-deployment-" + deployPostfix)
+                // .logGroupName("/deployment/" + props.resourceNamePrefix() + "-web-deployment")
                 .retention(RetentionDays.ONE_DAY)
                 .removalPolicy(RemovalPolicy.DESTROY)
                 .build();
         this.webDeployment = BucketDeployment.Builder.create(
-                        this, props.resourceNamePrefix + "-DocRootToWebOriginDeployment")
+                        this, props.resourceNamePrefix() + "-DocRootToWebOriginDeployment")
                 .sources(List.of(webDocRootSource))
-                .destinationBucket(props.webBucket)
+                .destinationBucket(props.webBucket())
                 .distribution(distribution)
                 .distributionPaths(List.of(
                         "/account/*",

@@ -38,12 +38,12 @@ public class SelfDestructStack extends Stack {
         super(scope, id, props);
 
         // Apply cost allocation tags for all resources in this stack
-        Tags.of(this).add("Environment", props.envName);
+        Tags.of(this).add("Environment", props.envName());
         Tags.of(this).add("Application", "@antonycc/submit.diyaccounting.co.uk");
         Tags.of(this).add("CostCenter", "@antonycc/submit.diyaccounting.co.uk");
         Tags.of(this).add("Owner", "@antonycc/submit.diyaccounting.co.uk");
         Tags.of(this).add("Project", "@antonycc/submit.diyaccounting.co.uk");
-        Tags.of(this).add("DeploymentName", props.deploymentName);
+        Tags.of(this).add("DeploymentName", props.deploymentName());
         Tags.of(this).add("Stack", "SelfDestructStack");
         Tags.of(this).add("ManagedBy", "aws-cdk");
 
@@ -56,16 +56,16 @@ public class SelfDestructStack extends Stack {
         Tags.of(this).add("MonitoringEnabled", "true");
 
         // Log group for self-destruct function
-        String functionName = props.resourceNamePrefix + "-self-destruct";
-        this.logGroup = LogGroup.Builder.create(this, props.resourceNamePrefix + "-SelfDestructLogGroup")
+        String functionName = props.resourceNamePrefix() + "-self-destruct";
+        this.logGroup = LogGroup.Builder.create(this, props.resourceNamePrefix() + "-SelfDestructLogGroup")
                 .logGroupName("/aws/lambda/" + functionName)
                 .retention(RetentionDays.ONE_WEEK) // Longer retention for operations
                 .removalPolicy(RemovalPolicy.DESTROY)
                 .build();
 
         // IAM role for the self-destruct Lambda function
-        String roleName = generateIamCompatibleName(props.resourceNamePrefix, "-self-destruct-role");
-        this.functionRole = Role.Builder.create(this, props.resourceNamePrefix + "-SelfDestructRole")
+        String roleName = generateIamCompatibleName(props.resourceNamePrefix(), "-self-destruct-role");
+        this.functionRole = Role.Builder.create(this, props.resourceNamePrefix() + "-SelfDestructRole")
                 .roleName(roleName)
                 .assumedBy(new ServicePrincipal("lambda.amazonaws.com"))
                 .managedPolicies(List.of(
@@ -108,22 +108,22 @@ public class SelfDestructStack extends Stack {
         // Environment variables for the function
         Map<String, String> environment = new HashMap<>();
         environment.put("AWS_XRAY_TRACING_NAME", functionName);
-        environment.put("OBSERVABILITY_STACK_NAME", props.observabilityStackName);
-        environment.put("DEV_STACK_NAME", props.devStackName);
-        environment.put("AUTH_STACK_NAME", props.applicationStackName);
-        environment.put("APPLICATION_STACK_NAME", props.applicationStackName);
-        environment.put("WEB_STACK_NAME", props.webStackName);
-        environment.put("EDGE_STACK_NAME", props.edgeStackName);
-        environment.put("PUBLISH_STACK_NAME", props.publishStackName);
-        environment.put("OPS_STACK_NAME", props.opsStackName);
+        environment.put("OBSERVABILITY_STACK_NAME", props.observabilityStackName());
+        environment.put("DEV_STACK_NAME", props.devStackName());
+        environment.put("AUTH_STACK_NAME", props.applicationStackName());
+        environment.put("APPLICATION_STACK_NAME", props.applicationStackName());
+        environment.put("WEB_STACK_NAME", props.webStackName());
+        environment.put("EDGE_STACK_NAME", props.edgeStackName());
+        environment.put("PUBLISH_STACK_NAME", props.publishStackName());
+        environment.put("OPS_STACK_NAME", props.opsStackName());
         environment.put("SELF_DESTRUCT_STACK_NAME", this.getStackName());
 
         // Lambda function for self-destruction
-        this.selfDestructFunction = Function.Builder.create(this, props.resourceNamePrefix + "-SelfDestructFunction")
+        this.selfDestructFunction = Function.Builder.create(this, props.resourceNamePrefix() + "-SelfDestructFunction")
                 .functionName(functionName)
                 .runtime(Runtime.JAVA_21)
                 .handler("co.uk.diyaccounting.submit.functions.SelfDestructHandler::handleRequest")
-                .code(Code.fromAsset(props.selfDestructHandlerSource))
+                .code(Code.fromAsset(props.selfDestructHandlerSource()))
                 .timeout(Duration.minutes(15)) // Allow time for stack deletions
                 .memorySize(512) // Increased memory for Java runtime
                 .role(this.functionRole)
@@ -133,9 +133,9 @@ public class SelfDestructStack extends Stack {
                 .build();
 
         // Create EventBridge rule to trigger self-destruct after specified delay
-        int delayHours = Integer.parseInt(props.selfDestructDelayHours);
-        String ruleName = generateIamCompatibleName(props.compressedResourceNamePrefix, "sd-schedule");
-        this.selfDestructSchedule = Rule.Builder.create(this, props.resourceNamePrefix + "-SelfDestructSchedule")
+        int delayHours = Integer.parseInt(props.selfDestructDelayHours());
+        String ruleName = generateIamCompatibleName(props.compressedResourceNamePrefix(), "sd-schedule");
+        this.selfDestructSchedule = Rule.Builder.create(this, props.resourceNamePrefix() + "-SelfDestructSchedule")
                 .ruleName(ruleName)
                 .description("Automatically triggers self-destruct after " + delayHours + " hours")
                 .schedule(Schedule.rate(Duration.hours(delayHours)))
@@ -144,7 +144,7 @@ public class SelfDestructStack extends Stack {
                                 "source",
                                 "eventbridge-schedule",
                                 "deploymentName",
-                                props.deploymentName,
+                                props.deploymentName(),
                                 "delayHours",
                                 delayHours)))
                         .build()))

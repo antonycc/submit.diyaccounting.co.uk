@@ -26,12 +26,12 @@ public class OpsStack extends Stack {
         super(scope, id, props);
 
         // Apply cost allocation tags for all resources in this stack
-        Tags.of(this).add("Environment", props.envName);
+        Tags.of(this).add("Environment", props.envName());
         Tags.of(this).add("Application", "@antonycc/submit.diyaccounting.co.uk");
         Tags.of(this).add("CostCenter", "@antonycc/submit.diyaccounting.co.uk");
         Tags.of(this).add("Owner", "@antonycc/submit.diyaccounting.co.uk");
         Tags.of(this).add("Project", "@antonycc/submit.diyaccounting.co.uk");
-        Tags.of(this).add("DeploymentName", props.deploymentName);
+        Tags.of(this).add("DeploymentName", props.deploymentName());
         Tags.of(this).add("Stack", "OpsStack");
         Tags.of(this).add("ManagedBy", "aws-cdk");
 
@@ -50,13 +50,13 @@ public class OpsStack extends Stack {
         java.util.List<Metric> lambdaErrors = new java.util.ArrayList<>();
         java.util.List<Metric> lambdaDurationsP95 = new java.util.ArrayList<>();
         java.util.List<Metric> lambdaThrottles = new java.util.ArrayList<>();
-        if (props.lambdaFunctionArns != null) {
-            for (int i = 0; i < props.lambdaFunctionArns.size(); i++) {
-                String arn = props.lambdaFunctionArns.get(i);
+        if (props.lambdaFunctionArns() != null) {
+            for (int i = 0; i < props.lambdaFunctionArns().size(); i++) {
+                String arn = props.lambdaFunctionArns().get(i);
                 // String fnName = arn.substring(arn.lastIndexOf(":") + 1);
                 IFunction fn = Function.fromFunctionAttributes(
                         this,
-                        props.resourceNamePrefix + "-Fn-" + i,
+                        props.resourceNamePrefix() + "-Fn-" + i,
                         FunctionAttributes.builder()
                                 .functionArn(arn)
                                 .sameEnvironment(true)
@@ -68,8 +68,8 @@ public class OpsStack extends Stack {
                         .with(MetricOptions.builder().statistic("p95").build()));
                 lambdaThrottles.add(fn.metricThrottles());
                 // Per-function error alarm (>=1 error in 5 minutes)
-                Alarm.Builder.create(this, props.resourceNamePrefix + "-LambdaErrors-" + i)
-                        .alarmName(props.compressedResourceNamePrefix + "-" + fn.getFunctionName() + "-errors")
+                Alarm.Builder.create(this, props.resourceNamePrefix() + "-LambdaErrors-" + i)
+                        .alarmName(props.compressedResourceNamePrefix() + "-" + fn.getFunctionName() + "-errors")
                         .metric(fn.metricErrors())
                         .threshold(1.0)
                         .evaluationPeriods(1)
@@ -82,16 +82,16 @@ public class OpsStack extends Stack {
 
         // S3 buckets
         IBucket originBucket =
-                Bucket.fromBucketArn(this, props.resourceNamePrefix + "-OriginBucket", props.originBucketArn);
+                Bucket.fromBucketArn(this, props.resourceNamePrefix() + "-OriginBucket", props.originBucketArn());
         IBucket receiptsBucket = null;
-        if (props.receiptsBucketArn != null && !props.receiptsBucketArn.isBlank()) {
+        if (props.receiptsBucketArn() != null && !props.receiptsBucketArn().isBlank()) {
             receiptsBucket =
-                    Bucket.fromBucketArn(this, props.resourceNamePrefix + "-ReceiptsBucket", props.receiptsBucketArn);
+                    Bucket.fromBucketArn(this, props.resourceNamePrefix() + "-ReceiptsBucket", props.receiptsBucketArn());
         }
 
         // CloudFront metrics (Global)
         java.util.Map<String, String> cfDims =
-                java.util.Map.of("DistributionId", props.distributionId, "Region", "Global");
+                java.util.Map.of("DistributionId", props.distributionId(), "Region", "Global");
         Metric cfRequests = Metric.Builder.create()
                 .namespace("AWS/CloudFront")
                 .metricName("Requests")
@@ -115,8 +115,8 @@ public class OpsStack extends Stack {
                 .build();
 
         // Alarms: CloudFront error rates
-        Alarm cloudFront5xxAlarm = Alarm.Builder.create(this, props.resourceNamePrefix + "-CloudFront5xxAlarm")
-                .alarmName(props.compressedResourceNamePrefix + "-cf-5xx-rate")
+        Alarm cloudFront5xxAlarm = Alarm.Builder.create(this, props.resourceNamePrefix() + "-CloudFront5xxAlarm")
+                .alarmName(props.compressedResourceNamePrefix() + "-cf-5xx-rate")
                 .metric(cf5xx)
                 .threshold(1.0) // >1% 5xx error rate
                 .evaluationPeriods(2)
@@ -124,8 +124,8 @@ public class OpsStack extends Stack {
                 .treatMissingData(TreatMissingData.NOT_BREACHING)
                 .alarmDescription("CloudFront 5xx error rate > 1%")
                 .build();
-        Alarm cloudFront4xxAlarm = Alarm.Builder.create(this, props.resourceNamePrefix + "-CloudFront4xxAlarm")
-                .alarmName(props.compressedResourceNamePrefix + "-cf-4xx-rate")
+        Alarm cloudFront4xxAlarm = Alarm.Builder.create(this, props.resourceNamePrefix() + "-CloudFront4xxAlarm")
+                .alarmName(props.compressedResourceNamePrefix() + "-cf-4xx-rate")
                 .metric(cf4xx)
                 .threshold(5.0) // >5% 4xx error rate
                 .evaluationPeriods(2)
@@ -254,8 +254,8 @@ public class OpsStack extends Stack {
                                 .height(6)
                                 .build()));
 
-        this.operationalDashboard = Dashboard.Builder.create(this, props.resourceNamePrefix + "-OperationalDashboard")
-                .dashboardName(props.compressedResourceNamePrefix + "-operations")
+        this.operationalDashboard = Dashboard.Builder.create(this, props.resourceNamePrefix() + "-OperationalDashboard")
+                .dashboardName(props.compressedResourceNamePrefix() + "-operations")
                 .widgets(rows)
                 .build();
 
