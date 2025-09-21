@@ -12,6 +12,8 @@ import software.amazon.awscdk.services.cloudfront.DistributionAttributes;
 import software.amazon.awscdk.services.cloudfront.IDistribution;
 import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
+import software.amazon.awscdk.services.s3.Bucket;
+import software.amazon.awscdk.services.s3.IBucket;
 import software.amazon.awscdk.services.s3.assets.AssetOptions;
 import software.amazon.awscdk.services.s3.deployment.BucketDeployment;
 import software.amazon.awscdk.services.s3.deployment.Source;
@@ -62,7 +64,7 @@ public class PublishStack extends Stack {
         //S3BucketOrigin origin = S3BucketOrigin.Builder.create(props.webBucket).build();
         //this.originBucket = props.webBucket;
         //this.originAccessIdentity = origin.getOriginAccessIdentity();
-
+        IBucket originBucket = Bucket.fromBucketArn(this, props.resourceNamePrefix + "-WebBucket", props.webBucketArn);
 
                 /*
 
@@ -71,12 +73,12 @@ public class PublishStack extends Stack {
             try {
                 java.nio.file.Path sourceFilePath = java.nio.file.Paths.get(builder.docRootPath, "submit.version");
                 java.nio.file.Files.writeString(sourceFilePath, builder.commitHash.trim());
-                logger.info("Created submit.version file with commit hash: %s".formatted(builder.commitHash));
+                infof("Created submit.version file with commit hash: %s".formatted(builder.commitHash));
             } catch (Exception e) {
-                logger.warn("Failed to create submit.version file: %s".formatted(e.getMessage()));
+                warnf("Failed to create submit.version file: %s".formatted(e.getMessage()));
             }
         } else {
-            logger.info("No commit hash provided, skipping submit.version generation");
+            infof("No commit hash provided, skipping submit.version generation");
         }
 
         var deployPostfix = java.util.UUID.randomUUID().toString().substring(0, 8);
@@ -85,7 +87,7 @@ public class PublishStack extends Stack {
         this.docRootSource = Source.asset(
                 builder.docRootPath,
                 AssetOptions.builder().assetHashType(AssetHashType.SOURCE).build());
-        logger.info("Will deploy files from: %s".formatted(builder.docRootPath));
+        infof("Will deploy files from: %s".formatted(builder.docRootPath));
 
         // Create LogGroup for BucketDeployment
         var bucketDeploymentRetentionPeriodDays = Integer.parseInt(builder.cloudTrailLogGroupRetentionPeriodDays);
@@ -128,12 +130,12 @@ public class PublishStack extends Stack {
             try {
                 java.nio.file.Path sourceFilePath = java.nio.file.Paths.get(props.docRootPath, "submit.version");
                 java.nio.file.Files.writeString(sourceFilePath, props.commitHash.trim());
-                //logger.info("Created submit.version file with commit hash: %s".formatted(builder.commitHash));
+                //infof("Created submit.version file with commit hash: %s".formatted(builder.commitHash));
             } catch (Exception e) {
-                //logger.warn("Failed to create submit.version file: %s".formatted(e.getMessage()));
+                //warnf("Failed to create submit.version file: %s".formatted(e.getMessage()));
             }
         //} else {
-            //logger.info("No commit hash provided, skipping submit.version generation");
+            //infof("No commit hash provided, skipping submit.version generation");
         }
 
         var deployPostfix = java.util.UUID.randomUUID().toString().substring(0, 8);
@@ -151,7 +153,7 @@ public class PublishStack extends Stack {
         this.webDeployment = BucketDeployment.Builder.create(
                         this, props.resourceNamePrefix + "-DocRootToWebOriginDeployment")
                 .sources(List.of(webDocRootSource))
-                .destinationBucket(props.webBucket)
+                .destinationBucket(originBucket)
                 .distribution(distribution)
                 .distributionPaths(List.of(
                     "/account/*",

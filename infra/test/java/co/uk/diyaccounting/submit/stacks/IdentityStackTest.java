@@ -1,7 +1,5 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import software.amazon.awscdk.App;
@@ -10,10 +8,11 @@ import uk.org.webcompere.systemstubs.environment.EnvironmentVariables;
 import uk.org.webcompere.systemstubs.jupiter.SystemStub;
 import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
 
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+
 @ExtendWith(SystemStubsExtension.class)
 public class IdentityStackTest {
 
-    private static final Logger logger = LogManager.getLogger(IdentityStackTest.class);
     private static final String testAccount = "111111111111";
 
     @SystemStub
@@ -27,7 +26,7 @@ public class IdentityStackTest {
 
     @Test
     public void testIdentityStackResources() {
-        logger.info("Starting IdentityStack test - this should be visible in console output");
+        infof("Starting IdentityStack test - this should be visible in console output");
         App app = new App();
 
         IdentityStack stack = createTestIdentityStack(app);
@@ -36,7 +35,7 @@ public class IdentityStackTest {
         // Minimal assertions to verify key Cognito resources are created
         template.resourceCountIs("AWS::Cognito::UserPool", 1);
         template.resourceCountIs("AWS::Cognito::UserPoolClient", 1);
-        logger.info("IdentityStack test completed successfully - logging is working!");
+        infof("IdentityStack test completed successfully - logging is working!");
     }
 
     private IdentityStack createTestIdentityStack(App app) {

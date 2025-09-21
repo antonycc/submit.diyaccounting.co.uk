@@ -1,7 +1,5 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.extension.ExtendWith;
 import software.amazon.awscdk.App;
 import uk.org.webcompere.systemstubs.environment.EnvironmentVariables;
@@ -11,7 +9,6 @@ import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
 @ExtendWith(SystemStubsExtension.class)
 public class WebStackTest {
 
-    private static final Logger logger = LogManager.getLogger(WebStackTest.class);
     private static final String testAccount = "111111111111";
 
     @SystemStub

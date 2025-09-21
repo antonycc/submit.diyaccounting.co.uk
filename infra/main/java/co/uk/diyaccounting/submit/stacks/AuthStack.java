@@ -3,8 +3,6 @@ package co.uk.diyaccounting.submit.stacks;
 import co.uk.diyaccounting.submit.constructs.LambdaUrlOrigin;
 import co.uk.diyaccounting.submit.constructs.LambdaUrlOriginOpts;
 import co.uk.diyaccounting.submit.utils.ResourceNameUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import software.amazon.awscdk.CfnOutput;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Stack;
@@ -22,9 +20,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.regex.Pattern;
 
-public class AuthStack extends Stack {
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
 
-    private static final Logger logger = LogManager.getLogger(AuthStack.class);
+public class AuthStack extends Stack {
 
     // CDK resources here
     public Function authUrlMockLambda;
@@ -190,8 +188,7 @@ public class AuthStack extends Stack {
                 .build();
         }
 
-
-        logger.info("AuthStack created successfully for {}", dashedDomainName);
+        infof("AuthStack created successfully for %s", dashedDomainName);
     }
 
     /**

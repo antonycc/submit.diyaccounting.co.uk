@@ -66,4 +66,20 @@ public final class Kind {
         }
         return out;
     }
+
+    public static void logf(String fmt, Object... args) {
+        System.out.printf(fmt + "%n", args);
+    }
+
+    public static void infof(String fmt, Object... args) {
+        logf("[INFO] " + fmt, args);
+    }
+
+    public static void warnf(String fmt, Object... args) {
+        logf("[WARN] " + fmt, args);
+    }
+
+    public static void errorf(String fmt, Object... args) {
+        logf("[ERROR] " + fmt, args);
+    }
 }

@@ -2,7 +2,9 @@ package co.uk.diyaccounting.submit.stacks;
 
 import software.amazon.awscdk.CfnOutput;
 import software.amazon.awscdk.CfnOutputProps;
+import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Fn;
+import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.Tags;
 import software.amazon.awscdk.services.certificatemanager.Certificate;
@@ -34,8 +36,12 @@ import software.amazon.awscdk.services.route53.HostedZoneAttributes;
 import software.amazon.awscdk.services.route53.IHostedZone;
 import software.amazon.awscdk.services.route53.RecordTarget;
 import software.amazon.awscdk.services.route53.targets.CloudFrontTarget;
+import software.amazon.awscdk.services.s3.BlockPublicAccess;
 import software.amazon.awscdk.services.s3.Bucket;
+import software.amazon.awscdk.services.s3.BucketEncryption;
 import software.amazon.awscdk.services.s3.IBucket;
+import software.amazon.awscdk.services.s3.LifecycleRule;
+import software.amazon.awscdk.services.s3.ObjectOwnership;
 import software.amazon.awscdk.services.wafv2.CfnWebACL;
 import software.constructs.Construct;
 
@@ -54,7 +60,7 @@ public class EdgeStack extends Stack {
 
         // Apply cost allocation tags for all resources in this stack
         Tags.of(this).add("Environment", props.envName);
-        Tags.of(this).add("Application", "@antonycc/submit.diyaccounting.co.uk");
+        Tags.of(this).add("Application", "@antonycc/submit.diyaccounting.co.uk/cdk-delivery.json");
         Tags.of(this).add("CostCenter", "@antonycc/submit.diyaccounting.co.uk");
         Tags.of(this).add("Owner", "@antonycc/submit.diyaccounting.co.uk");
         Tags.of(this).add("Project", "@antonycc/submit.diyaccounting.co.uk");
@@ -72,7 +78,6 @@ public class EdgeStack extends Stack {
 
         // Use Resources from the passed props
         this.baseUrl = props.baseUrl;
-        IBucket logsBucket = Bucket.fromBucketArn(this, props.resourceNamePrefix + "-LogsBucket", props.logsBucketArn);
         IBucket originBucket = Bucket.fromBucketArn(this, props.resourceNamePrefix + "-WebBucket", props.webBucketArn);
 
         // Hosted zone (must exist)
@@ -196,7 +201,7 @@ public class EdgeStack extends Stack {
                 .originAccessControl(oac)
                 .build()
         );
-        //logger.info("Created BucketOrigin with bucket: {}", this.originBucket.getBucketName());
+        //infof("Created BucketOrigin with bucket: %s", this.originBucket.getBucketName());
 
         BehaviorOptions localBehaviorOptions = BehaviorOptions.builder()
             .origin(localOrigin)
@@ -210,7 +215,7 @@ public class EdgeStack extends Stack {
         // Create additional behaviours for the URL origins using the mappings provided in props
         // Use function createBehaviorOptionsForLambdaUrlHost to transform the lambda URL host into BehaviorOptions
         HashMap<String, BehaviorOptions> additionalBehaviors = //new HashMap<String, BehaviorOptions>();
-            props.additionalOriginsBehaviourMappings.entrySet().stream().collect(
+            props.pathsToOriginLambdaFunctionArns.entrySet().stream().collect(
                 HashMap::new,
                 (map, entry) -> map.put(
                     entry.getKey(),
@@ -218,6 +223,23 @@ public class EdgeStack extends Stack {
                 ),
                 HashMap::putAll
             );
+
+
+        Bucket logsBucket = Bucket.Builder.create(this, props.resourceNamePrefix + "-LogsBucket")
+            .bucketName(props.resourceNamePrefix + "-logs-bucket")
+            .objectOwnership(ObjectOwnership.OBJECT_WRITER)
+            .versioned(false)
+            .blockPublicAccess(BlockPublicAccess.BLOCK_ALL)
+            .encryption(BucketEncryption.S3_MANAGED)
+            .removalPolicy(RemovalPolicy.DESTROY)
+            .autoDeleteObjects(true)
+            .lifecycleRules(List.of(LifecycleRule.builder()
+                .id(props.resourceNamePrefix + "-LogsLifecycleRule")
+                .enabled(true)
+                .expiration(Duration.days(props.accessLogGroupRetentionPeriodDays))
+                .build())
+            )
+            .build();
 
         // CloudFront distribution for the web origin and all the URL Lambdas.
         this.distribution = Distribution.Builder.create(this, props.resourceNamePrefix + "-WebDist")

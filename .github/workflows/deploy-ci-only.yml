@@ -18,7 +18,7 @@ on:
 #      - 'infra/**'
 #      - 'app/**'
 #      - 'web/**'
-#      - 'cdk.json'
+#      - 'cdk-application.json'
 #      - 'package.json'
 #      - 'package-lock.json'
 #      - '.github/workflows/deploy-ci-only.yml'

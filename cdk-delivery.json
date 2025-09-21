@@ -1,0 +1,28 @@
+{
+  "app": "java -jar target/submit-delivery.jar",
+  "output": "./cdk-submit-delivery.out",
+  "context": {
+    "aws:cdk:bundling-cache": "target/.cdk-cache",
+    "env": "dev",
+    "deploymentName": "dev",
+    "domainName": "",
+    "baseUrl": "",
+    "hostedZoneName": "diyaccounting.co.uk",
+    "hostedZoneId": "Z0315522208PWZSSBI9AL",
+    "certificateArn": "arn:aws:acm:us-east-1:887764105431:certificate/b23cd904-8e3b-4cd0-84f1-57ca11d7fe2b",
+    "originBucketArn": "",
+    "docRootPath": "web/public",
+    "authUrlMockLambdaFunctionArn": "",
+    "authUrlCognitoLambdaFunctionArn": "",
+    "exchangeCognitoTokenLambdaFunctionArn": "",
+    "authUrlHmrcLambdaFunctionArn": "",
+    "exchangeHmrcTokenLambdaFunctionArn": "",
+    "submitVatLambdaFunctionArn": "",
+    "logReceiptLambdaFunctionArn": "",
+    "catalogLambdaFunctionArn": "",
+    "myBundlesLambdaFunctionArn": "",
+    "myReceiptsLambdaFunctionArn": "",
+    "selfDestructHandlerSource": "",
+    "selfDestructDelayHours": "1"
+  }
+}

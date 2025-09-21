@@ -2,11 +2,6 @@ package co.uk.diyaccounting.submit.stacks;
 
 import co.uk.diyaccounting.submit.awssdk.RetentionDaysConverter;
 import co.uk.diyaccounting.submit.utils.ResourceNameUtils;
-import java.util.AbstractMap;
-import java.util.List;
-import java.util.regex.Pattern;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import software.amazon.awscdk.CfnOutput;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.RemovalPolicy;
@@ -21,9 +16,13 @@ import software.amazon.awscdk.services.s3.BucketEncryption;
 import software.amazon.awscdk.services.s3.LifecycleRule;
 import software.constructs.Construct;
 
-public class ObservabilityStack extends Stack {
+import java.util.AbstractMap;
+import java.util.List;
+import java.util.regex.Pattern;
 
-    private static final Logger logger = LogManager.getLogger(ObservabilityStack.class);
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+
+public class ObservabilityStack extends Stack {
 
     public Bucket trailBucket;
     public Trail trail;
@@ -95,7 +94,7 @@ public class ObservabilityStack extends Stack {
             }
         }
 
-        logger.info("ObservabilityStack created successfully for {}", dashedDomainName);
+        infof("ObservabilityStack created successfully for %s", dashedDomainName);
     }
 
     /**

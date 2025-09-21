@@ -5,16 +5,15 @@ import software.amazon.awscdk.StackProps;
 
 public class OpsStackProps implements StackProps {
     public final Environment env;
+    private final Boolean crossRegionReferences;
     public final String envName;
     public final String deploymentName;
     public final String domainName;
     public final String resourceNamePrefix;
     public final String compressedResourceNamePrefix;
-    public final String distributionId;
     public final String originBucketArn;
     public final String receiptsBucketArn; // optional, may be null
     public final java.util.List<String> lambdaFunctionArns;
-    private final Boolean crossRegionReferences;
 
     private OpsStackProps(Builder builder) {
         this.env = builder.env;
@@ -23,7 +22,6 @@ public class OpsStackProps implements StackProps {
         this.domainName = builder.domainName;
         this.resourceNamePrefix = builder.resourceNamePrefix;
         this.compressedResourceNamePrefix = builder.compressedResourceNamePrefix;
-        this.distributionId = builder.distributionId;
         this.originBucketArn = builder.originBucketArn;
         this.receiptsBucketArn = builder.receiptsBucketArn;
         this.lambdaFunctionArns = builder.lambdaFunctionArns;
@@ -51,7 +49,6 @@ public class OpsStackProps implements StackProps {
         private String domainName;
         private String resourceNamePrefix;
         private String compressedResourceNamePrefix;
-        private String distributionId;
         private String originBucketArn;
         private String receiptsBucketArn;
         private java.util.List<String> lambdaFunctionArns;
@@ -84,11 +81,6 @@ public class OpsStackProps implements StackProps {
 
         public Builder compressedResourceNamePrefix(String compressedResourceNamePrefix) {
             this.compressedResourceNamePrefix = compressedResourceNamePrefix;
-            return this;
-        }
-
-        public Builder distributionId(String distributionId) {
-            this.distributionId = distributionId;
             return this;
         }
 

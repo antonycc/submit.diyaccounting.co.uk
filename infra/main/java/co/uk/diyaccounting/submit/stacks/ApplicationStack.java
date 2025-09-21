@@ -3,8 +3,6 @@ package co.uk.diyaccounting.submit.stacks;
 import co.uk.diyaccounting.submit.constructs.LambdaUrlOrigin;
 import co.uk.diyaccounting.submit.constructs.LambdaUrlOriginOpts;
 import co.uk.diyaccounting.submit.utils.ResourceNameUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import software.amazon.awscdk.CfnOutput;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.RemovalPolicy;
@@ -30,10 +28,9 @@ import java.util.Map;
 import java.util.regex.Pattern;
 
 import static co.uk.diyaccounting.submit.awssdk.S3.createLifecycleRules;
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
 
 public class ApplicationStack extends Stack {
-
-    private static final Logger logger = LogManager.getLogger(ApplicationStack.class);
 
     // CDK resources here
     public Function authUrlHmrcLambda;
@@ -330,7 +327,7 @@ public class ApplicationStack extends Stack {
         }
 
 
-        logger.info("ApplicationStack created successfully for {}", dashedDomainName);
+        infof("ApplicationStack created successfully for %s", dashedDomainName);
     }
 
     /**

@@ -136,7 +136,7 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Update cdk.json version references and commit
+      - name: Update cdk-application.json version references and commit
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash

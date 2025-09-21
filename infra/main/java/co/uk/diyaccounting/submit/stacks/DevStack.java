@@ -1,8 +1,6 @@
 package co.uk.diyaccounting.submit.stacks;
 
 import co.uk.diyaccounting.submit.utils.ResourceNameUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import software.amazon.awscdk.CfnOutput;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.RemovalPolicy;
@@ -25,13 +23,13 @@ import java.util.AbstractMap;
 import java.util.List;
 import java.util.regex.Pattern;
 
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+
 /**
  * DevStack for Docker container development and deployment infrastructure.
  * Creates ECR repositories with comprehensive logging and publishing facilities.
  */
 public class DevStack extends Stack {
-
-    private static final Logger logger = LogManager.getLogger(DevStack.class);
 
     // Public properties for stack outputs
     public final IRepository ecrRepository;
@@ -52,7 +50,7 @@ public class DevStack extends Stack {
         String dashedDomainName =
                 Builder.buildDashedDomainName(builder.env, builder.subDomainName, builder.hostedZoneName);
 
-        logger.info("Creating DevStack for domain: {} (dashed: {})", domainName, dashedDomainName);
+        infof("Creating DevStack for domain: %s (dashed: %s)", domainName, dashedDomainName);
 
         // ECR Repository with lifecycle rules
         String ecrRepositoryName = Builder.buildEcrRepositoryName(dashedDomainName);
@@ -148,7 +146,7 @@ public class DevStack extends Stack {
                 .description("ARN of the ECR publish role")
                 .build();
 
-        logger.info("DevStack created successfully for {}", dashedDomainName);
+        infof("DevStack created successfully for %s", dashedDomainName);
     }
 
     /**

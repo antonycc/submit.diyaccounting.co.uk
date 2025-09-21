@@ -2,7 +2,6 @@ package co.uk.diyaccounting.submit.stacks;
 
 import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.StackProps;
-import software.amazon.awscdk.services.s3.Bucket;
 
 public class PublishStackProps implements StackProps {
     public final String envName;
@@ -11,7 +10,7 @@ public class PublishStackProps implements StackProps {
     public final String baseUrl;
     public final String resourceNamePrefix;
     public final String distributionArn;
-    public final Bucket webBucket;
+    public final String webBucketArn;
     public final String commitHash;
     public final String docRootPath;
     public final Environment env;
@@ -24,7 +23,7 @@ public class PublishStackProps implements StackProps {
         this.distributionArn = builder.distributionArn;
         this.baseUrl = builder.baseUrl;
         this.resourceNamePrefix = builder.resourceNamePrefix;
-        this.webBucket = builder.webBucket;
+        this.webBucketArn = builder.webBucketArn;
         this.commitHash = builder.commitHash;
         this.docRootPath = builder.docRootPath;
         this.env = builder.env;
@@ -53,7 +52,7 @@ public class PublishStackProps implements StackProps {
         private String baseUrl;
         private String resourceNamePrefix;
         private String distributionArn;
-        private Bucket webBucket;
+        private String webBucketArn;
         private String commitHash;
         private String docRootPath;
         private Environment env;
@@ -89,8 +88,8 @@ public class PublishStackProps implements StackProps {
             return this;
         }
 
-        public Builder webBucket(Bucket webBucket) {
-            this.webBucket = webBucket;
+        public Builder webBucketArn(String webBucketArn) {
+            this.webBucketArn = webBucketArn;
             return this;
         }
 

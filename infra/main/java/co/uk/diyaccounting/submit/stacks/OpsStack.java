@@ -83,69 +83,10 @@ public class OpsStack extends Stack {
             receiptsBucket = Bucket.fromBucketArn(this, props.resourceNamePrefix + "-ReceiptsBucket", props.receiptsBucketArn);
         }
 
-        // CloudFront metrics (Global)
-        java.util.Map<String, String> cfDims = java.util.Map.of(
-                "DistributionId", props.distributionId,
-                "Region", "Global");
-        Metric cfRequests = Metric.Builder.create()
-                .namespace("AWS/CloudFront")
-                .metricName("Requests")
-                .dimensionsMap(cfDims)
-                .statistic("Sum")
-                .period(Duration.minutes(5))
-                .build();
-        Metric cf4xx = Metric.Builder.create()
-                .namespace("AWS/CloudFront")
-                .metricName("4xxErrorRate")
-                .dimensionsMap(cfDims)
-                .statistic("Average")
-                .period(Duration.minutes(5))
-                .build();
-        Metric cf5xx = Metric.Builder.create()
-                .namespace("AWS/CloudFront")
-                .metricName("5xxErrorRate")
-                .dimensionsMap(cfDims)
-                .statistic("Average")
-                .period(Duration.minutes(5))
-                .build();
-
-        // Alarms: CloudFront error rates
-        Alarm cloudFront5xxAlarm = Alarm.Builder.create(this, props.resourceNamePrefix + "-CloudFront5xxAlarm")
-                .alarmName(props.compressedResourceNamePrefix + "-cf-5xx-rate")
-                .metric(cf5xx)
-                .threshold(1.0) // >1% 5xx error rate
-                .evaluationPeriods(2)
-                .comparisonOperator(ComparisonOperator.GREATER_THAN_THRESHOLD)
-                .treatMissingData(TreatMissingData.NOT_BREACHING)
-                .alarmDescription("CloudFront 5xx error rate > 1%")
-                .build();
-        Alarm cloudFront4xxAlarm = Alarm.Builder.create(this, props.resourceNamePrefix + "-CloudFront4xxAlarm")
-                .alarmName(props.compressedResourceNamePrefix + "-cf-4xx-rate")
-                .metric(cf4xx)
-                .threshold(5.0) // >5% 4xx error rate
-                .evaluationPeriods(2)
-                .comparisonOperator(ComparisonOperator.GREATER_THAN_THRESHOLD)
-                .treatMissingData(TreatMissingData.NOT_BREACHING)
-                .alarmDescription("CloudFront 4xx error rate > 5%")
-                .build();
-
         // Dashboard
         java.util.List<java.util.List<software.amazon.awscdk.services.cloudwatch.IWidget>> rows = new java.util.ArrayList<>();
         // Row 1: CloudFront requests and error rates
-        rows.add(java.util.List.of(
-                GraphWidget.Builder.create()
-                        .title("CloudFront Requests")
-                        .left(java.util.List.of(cfRequests))
-                        .width(12)
-                        .height(6)
-                        .build(),
-                GraphWidget.Builder.create()
-                        .title("CloudFront Error Rates (4xx/5xx)")
-                        .left(java.util.List.of(cf4xx, cf5xx))
-                        .width(12)
-                        .height(6)
-                        .build()
-        ));
+        // Moved to DeliveryStack
         // Row 2: Lambda invocations and errors
         if (!lambdaInvocations.isEmpty()) {
             rows.add(java.util.List.of(
@@ -248,18 +189,6 @@ public class OpsStack extends Stack {
                 .build();
 
         // Outputs
-        new CfnOutput(
-                this,
-                "CloudFront5xxAlarmArn",
-                CfnOutputProps.builder()
-                        .value(cloudFront5xxAlarm.getAlarmArn())
-                        .build());
-        new CfnOutput(
-                this,
-                "CloudFront4xxAlarmArn",
-                CfnOutputProps.builder()
-                        .value(cloudFront4xxAlarm.getAlarmArn())
-                        .build());
         new CfnOutput(
                 this,
                 "OperationalDashboard",

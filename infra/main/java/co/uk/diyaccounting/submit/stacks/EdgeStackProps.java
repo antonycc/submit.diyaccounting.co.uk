@@ -2,7 +2,6 @@ package co.uk.diyaccounting.submit.stacks;
 
 import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.StackProps;
-import software.amazon.awscdk.services.cloudfront.BehaviorOptions;
 
 import java.util.Map;
 
@@ -16,14 +15,12 @@ public class EdgeStackProps implements StackProps {
     public final String resourceNamePrefix;
     public final String compressedResourceNamePrefix;
     public final String certificateArn;
-    public final String logsBucketArn;
-    //public final BehaviorOptions webBehaviorOptions;
+    public final int accessLogGroupRetentionPeriodDays;
     public final String webBucketArn;
-    public final Map<String, String> additionalOriginsBehaviourMappings;
+    public final Map<String, String> pathsToOriginLambdaFunctionArns;
 
     // Explicit env to allow this stack to target us-east-1 for CloudFront/WAF
     private final Environment env;
-    private final Boolean crossRegionReferences;
 
     private EdgeStackProps(Builder builder) {
         this.envName = builder.envName;
@@ -35,23 +32,16 @@ public class EdgeStackProps implements StackProps {
         this.resourceNamePrefix = builder.resourceNamePrefix;
         this.compressedResourceNamePrefix = builder.compressedResourceNamePrefix;
         this.certificateArn = builder.certificateArn;
-        this.logsBucketArn = builder.logsBucketArn;
+        this.accessLogGroupRetentionPeriodDays = builder.accessLogGroupRetentionPeriodDays;
         this.webBucketArn = builder.webBucketArn;
-        //this.webBehaviorOptions = builder.webBehaviorOptions;
-        this.additionalOriginsBehaviourMappings = builder.additionalOriginsBehaviourMappings;
+        this.pathsToOriginLambdaFunctionArns = builder.pathsToOriginLambdaFunctionArns;
         this.env = builder.env;
-        this.crossRegionReferences = builder.crossRegionReferences;
     }
 
     // Ensure Stack consumes our explicit env (region/account) when provided
     @Override
     public Environment getEnv() {
         return this.env;
-    }
-
-    @Override
-    public Boolean getCrossRegionReferences() {
-        return this.crossRegionReferences;
     }
 
     public static Builder builder() {
@@ -69,11 +59,9 @@ public class EdgeStackProps implements StackProps {
         private String compressedResourceNamePrefix;
         private String certificateArn;
         private String webBucketArn;
-        private String logsBucketArn;
-        private BehaviorOptions webBehaviorOptions;
-        private Map<String, String> additionalOriginsBehaviourMappings;
-        private Environment env; // optional
-        private Boolean crossRegionReferences; // optional
+        private int accessLogGroupRetentionPeriodDays;
+        private Map<String, String> pathsToOriginLambdaFunctionArns;
+        private Environment env;
 
         public Builder envName(String envName) {
             this.envName = envName;
@@ -125,29 +113,19 @@ public class EdgeStackProps implements StackProps {
             return this;
         }
 
-        public Builder logsBucketArn(String logsBucketArn) {
-            this.logsBucketArn = logsBucketArn;
+        public Builder accessLogGroupRetentionPeriodDays(int accessLogGroupRetentionPeriodDays) {
+            this.accessLogGroupRetentionPeriodDays = accessLogGroupRetentionPeriodDays;
             return this;
         }
 
-        //public Builder webBehaviorOptions(BehaviorOptions webBehaviorOptions) {
-        //    this.webBehaviorOptions = webBehaviorOptions;
-        //    return this;
-        //}
-
-        public Builder additionalOriginsBehaviourMappings(
-                Map<String, String> additionalOriginsBehaviourMappings) {
-            this.additionalOriginsBehaviourMappings = additionalOriginsBehaviourMappings;
+        public Builder pathsToOriginLambdaFunctionArns(
+                Map<String, String> pathsToOriginLambdaFunctionArns) {
+            this.pathsToOriginLambdaFunctionArns = pathsToOriginLambdaFunctionArns;
             return this;
         }
 
         public Builder env(Environment env) {
             this.env = env;
-            return this;
-        }
-
-        public Builder crossRegionReferences(Boolean crossRegionReferences) {
-            this.crossRegionReferences = crossRegionReferences;
             return this;
         }
 

@@ -1,8 +1,6 @@
 package co.uk.diyaccounting.submit.stacks;
 
 import co.uk.diyaccounting.submit.utils.ResourceNameUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import software.amazon.awscdk.CfnOutput;
 import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.Stack;
@@ -43,8 +41,6 @@ import java.util.Map;
 import java.util.regex.Pattern;
 
 public class IdentityStack extends Stack {
-
-    private static final Logger logger = LogManager.getLogger(IdentityStack.class);
 
     public String domainName;
     public ICertificate certificate;

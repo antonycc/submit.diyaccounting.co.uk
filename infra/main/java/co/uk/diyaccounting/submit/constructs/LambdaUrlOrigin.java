@@ -1,7 +1,5 @@
 package co.uk.diyaccounting.submit.constructs;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.services.cloudfront.AllowedMethods;
@@ -32,9 +30,10 @@ import software.constructs.Construct;
 import java.util.List;
 import java.util.Map;
 
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+
 public class LambdaUrlOrigin {
 
-    private static final Logger logger = LogManager.getLogger(LambdaUrlOrigin.class);
     //private static final Pattern LAMBDA_URL_HOST_PATTERN = Pattern.compile("https://([^/]+)/");
 
     public final DockerImageCode dockerImage;
@@ -112,7 +111,7 @@ public class LambdaUrlOrigin {
 
         //this.behaviorOptions = behaviorOptionsBuilder.build();
 
-        logger.info("Created LambdaUrlOrigin with function: {}", this.lambda.getFunctionName());
+        infof("Created LambdaUrlOrigin with function: %s", this.lambda.getFunctionName());
     }
 
     //private String getLambdaUrlHostToken(FunctionUrl functionUrl) {
