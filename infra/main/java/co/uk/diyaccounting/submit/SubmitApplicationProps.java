@@ -1,7 +1,7 @@
 package co.uk.diyaccounting.submit;
 
 public class SubmitApplicationProps {
-    // Fields match cdk-application.json context keys (camelCase). Environment overrides are applied in SubmitApplication
+    // Fields match cdk.json context keys (camelCase). Environment overrides are applied in SubmitApplication
     // selectively.
     // common
     public String env;
@@ -9,7 +9,6 @@ public class SubmitApplicationProps {
     public String hostedZoneName;
     public String hostedZoneId;
     public String subDomainName;
-    public String certificateArn;
     public String cloudTrailEnabled;
     public String xRayEnabled;
     public String verboseLogging;

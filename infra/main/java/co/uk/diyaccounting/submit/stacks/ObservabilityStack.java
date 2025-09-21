@@ -2,7 +2,6 @@ package co.uk.diyaccounting.submit.stacks;
 
 import co.uk.diyaccounting.submit.awssdk.RetentionDaysConverter;
 import co.uk.diyaccounting.submit.utils.ResourceNameUtils;
-import software.amazon.awscdk.CfnOutput;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.Stack;
@@ -20,6 +19,7 @@ import java.util.AbstractMap;
 import java.util.List;
 import java.util.regex.Pattern;
 
+import static co.uk.diyaccounting.submit.awssdk.KindCdk.cfnOutput;
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 
 public class ObservabilityStack extends Stack {
@@ -82,19 +82,11 @@ public class ObservabilityStack extends Stack {
                     .build();
 
             // Outputs for Observability resources
-            if (this.trailBucket != null) {
-                CfnOutput.Builder.create(this, "TrailBucketArn")
-                        .value(this.trailBucket.getBucketArn())
-                        .build();
-            }
-            if (this.trail != null) {
-                CfnOutput.Builder.create(this, "TrailArn")
-                        .value(this.trail.getTrailArn())
-                        .build();
-            }
+            cfnOutput(this, "TrailBucketArn", this.trailBucket.getBucketArn());
+            cfnOutput(this, "TrailArn", this.trail.getTrailArn());
         }
 
-        infof("ObservabilityStack created successfully for %s", dashedDomainName);
+        infof("ObservabilityStack %s created successfully for %s", this.getNode().getId(), dashedDomainName);
     }
 
     /**

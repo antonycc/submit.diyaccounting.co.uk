@@ -21,9 +21,13 @@ import software.constructs.Construct;
 
 import java.util.List;
 
+import static co.uk.diyaccounting.submit.awssdk.KindCdk.cfnOutput;
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+
 public class PublishStack extends Stack {
     public final BucketDeployment webDeployment;
     public final String baseUrl;
+    public final LogGroup webDeploymentLogGroup;
 
     public PublishStack(final Construct scope, final String id, final PublishStackProps props) {
         super(scope, id, props);
@@ -142,9 +146,9 @@ public class PublishStack extends Stack {
 
         // Deploy the web website files to the web website bucket and invalidate distribution
         var webDocRootSource = Source.asset(
-                "web/public",
+                "../web/public",
                 AssetOptions.builder().assetHashType(AssetHashType.SOURCE).build());
-        var webDeploymentLogGroup = LogGroup.Builder.create(this, props.resourceNamePrefix + "-WebDeploymentLogGroup-" + deployPostfix)
+        this.webDeploymentLogGroup = LogGroup.Builder.create(this, props.resourceNamePrefix + "-WebDeploymentLogGroup-" + deployPostfix)
                 .logGroupName("/deployment/" + props.resourceNamePrefix + "-web-deployment-" + deployPostfix)
                 //.logGroupName("/deployment/" + props.resourceNamePrefix + "-web-deployment")
                 .retention(RetentionDays.ONE_DAY)
@@ -177,5 +181,9 @@ public class PublishStack extends Stack {
                 .build();
 
         // Outputs
+        cfnOutput(this, "WebDeploymentLogGroupArn", this.webDeploymentLogGroup.getLogGroupArn());
+        cfnOutput(this, "BaseUrl", this.baseUrl);
+
+        infof("PublishStack %s created successfully for %s", this.getNode().getId(), props.resourceNamePrefix);
     }
 }

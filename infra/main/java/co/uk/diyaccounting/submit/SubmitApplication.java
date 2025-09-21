@@ -1,5 +1,6 @@
 package co.uk.diyaccounting.submit;
 
+import co.uk.diyaccounting.submit.awssdk.KindCdk;
 import co.uk.diyaccounting.submit.stacks.ApplicationStack;
 import co.uk.diyaccounting.submit.stacks.AuthStack;
 import co.uk.diyaccounting.submit.stacks.DevStack;
@@ -12,13 +13,15 @@ import co.uk.diyaccounting.submit.stacks.SelfDestructStackProps;
 import co.uk.diyaccounting.submit.stacks.WebStack;
 import software.amazon.awscdk.App;
 import software.amazon.awscdk.StackProps;
-import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
 
 import java.lang.reflect.Field;
 
+import static co.uk.diyaccounting.submit.utils.Kind.envOr;
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.Kind.warnf;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateCompressedResourceNamePrefix;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateResourceNamePrefix;
 
 public class SubmitApplication {
 
@@ -26,7 +29,7 @@ public class SubmitApplication {
 
         App app = new App();
 
-        // Build app-level props from cdk-application.json context with environment overrides
+        // Build app-level props from cdk.json context with environment overrides
         SubmitApplication.Builder builder = SubmitApplication.Builder.create(app, "SubmitApplication");
         SubmitApplicationProps appProps = loadAppProps(builder, app);
 
@@ -49,17 +52,29 @@ public class SubmitApplication {
         var receiptsBucketPostfix = envOr("RECEIPTS_BUCKET_POSTFIX", appProps.receiptsBucketPostfix);
         var baseImageTag = envOr("BASE_IMAGE_TAG", appProps.baseImageTag);
         var selfDestructDelayHours = envOr("SELF_DESTRUCT_DELAY_HOURS", "1");
-        var selfDestructHandlerSource = envOr("SELF_DESTRUCT_HANDLER_SOURCE", "target/self-destruct-lambda.jar");
+        var selfDestructHandlerSource = envOr("SELF_DESTRUCT_HANDLER_SOURCE", "../target/self-destruct-lambda.jar");
         var cloudTrailEnabled = envOr("CLOUD_TRAIL_ENABLED", appProps.cloudTrailEnabled);
         var xRayEnabled = envOr("X_RAY_ENABLED", appProps.xRayEnabled);
         var verboseLogging = envOr("VERBOSE_LOGGING", appProps.verboseLogging);
         var s3UseExistingBucket = envOr("S3_USE_EXISTING_BUCKET", appProps.s3UseExistingBucket);
         var s3RetainOriginBucket = envOr("S3_RETAIN_ORIGIN_BUCKET", appProps.s3RetainOriginBucket);
         var s3RetainReceiptsBucket = envOr("S3_RETAIN_RECEIPTS_BUCKET", appProps.s3RetainReceiptsBucket);
+        var authCertificateArn = envOr("AUTH_CERTIFICATE_ARN", appProps.authCertificateArn);
+        var googleClientId = envOr("DIY_SUBMIT_GOOGLE_CLIENT_ID", appProps.googleClientId);
+        var googleClientSecretArn = envOr("DIY_SUBMIT_GOOGLE_CLIENT_SECRET_ARN", appProps.googleClientSecretArn);
+        var antonyccClientId = envOr("DIY_SUBMIT_ANTONYCC_CLIENT_ID", appProps.antonyccClientId);
+        var antonyccBaseUri = envOr("DIY_SUBMIT_ANTONYCC_BASE_URI", appProps.antonyccBaseUri);
+        var antonyccClientSecretArn = envOr("DIY_SUBMIT_ANTONYCC_CLIENT_SECRET_ARN", appProps.antonyccClientSecretArn);
+
+        // Generate predictable resource name prefix based on domain and environment
+        String domainName = WebStack.Builder.buildDomainName(envName, subDomainName, hostedZoneName);
+        String baseUrl = "https://" + domainName;
+        String resourceNamePrefix = generateResourceNamePrefix(domainName, envName);
+        String compressedResourceNamePrefix = generateCompressedResourceNamePrefix(domainName, envName);
 
         // Create ObservabilityStack with resources used in monitoring the application
         String observabilityStackId = "%s-ObservabilityStack".formatted(deploymentName);
-        System.out.printf("Synthesizing stack %s for deployment %s to environment %s\n", observabilityStackId, deploymentName, envName);
+        infof("Synthesizing stack %s for deployment %s to environment %s", observabilityStackId, deploymentName, envName);
 
         ObservabilityStack observabilityStack = ObservabilityStack.Builder.create(app, observabilityStackId)
                 .props(co.uk.diyaccounting.submit.stacks.ObservabilityStackProps.builder()
@@ -76,7 +91,7 @@ public class SubmitApplication {
 
         // Create DevStack with resources only used during development or deployment (e.g. ECR)
         String devStackId = "%s-DevStack".formatted(deploymentName);
-        System.out.printf("Synthesizing stack %s for deployment %s to environment %s\n", devStackId, deploymentName, envName);
+        infof("Synthesizing stack %s for deployment %s to environment %s", devStackId, deploymentName, envName);
         DevStack devStack = DevStack.Builder.create(app, devStackId)
                 .props(co.uk.diyaccounting.submit.stacks.DevStackProps.builder()
                         .env(envName)
@@ -87,7 +102,7 @@ public class SubmitApplication {
 
         // Create the identity stack before any user aware services
         String identityStackId = "%s-IdentityStack".formatted(deploymentName);
-        System.out.printf("Synthesizing stack %s for deployment %s to environment %s\n", identityStackId, deploymentName, envName);
+        infof("Synthesizing stack %s for deployment %s to environment %s", identityStackId, deploymentName, envName);
         IdentityStack identityStack = IdentityStack.Builder.create(app, identityStackId)
                 .props(co.uk.diyaccounting.submit.stacks.IdentityStackProps.builder()
                         .env(envName)
@@ -95,20 +110,14 @@ public class SubmitApplication {
                         .hostedZoneId(hostedZoneId)
                         .cognitoDomainPrefix(appProps.cognitoDomainPrefix)
                         .subDomainName(appProps.subDomainName)
-                        .authCertificateArn(envOr("AUTH_CERTIFICATE_ARN", appProps.authCertificateArn))
-                        .googleClientId(envOr("DIY_SUBMIT_GOOGLE_CLIENT_ID", appProps.googleClientId))
-                        .googleClientSecretArn(
-                                envOr("DIY_SUBMIT_GOOGLE_CLIENT_SECRET_ARN", appProps.googleClientSecretArn))
-                        .antonyccClientId(envOr("DIY_SUBMIT_ANTONYCC_CLIENT_ID", appProps.antonyccClientId))
-                        .antonyccBaseUri(envOr("DIY_SUBMIT_ANTONYCC_BASE_URI", appProps.antonyccBaseUri))
-                        .antonyccClientSecretArn(
-                                envOr("DIY_SUBMIT_ANTONYCC_CLIENT_SECRET_ARN", appProps.antonyccClientSecretArn))
+                        .authCertificateArn(authCertificateArn)
+                        .googleClientId(googleClientId)
+                        .googleClientSecretArn(googleClientSecretArn)
+                        .antonyccClientId(antonyccClientId)
+                        .antonyccBaseUri(antonyccBaseUri)
+                        .antonyccClientSecretArn(antonyccClientSecretArn)
                         .build())
                 .build();
-
-        // Create WebStack with resources used in running the application
-        String webStackId = "%s-WebStack".formatted(deploymentName);
-        System.out.printf("Synthesizing stack %s for deployment %s to environment %s\n", webStackId, deploymentName, envName);
 
         // Determine primary environment (account/region) from CDK env
         String cdkDefaultAccount = System.getenv("CDK_DEFAULT_ACCOUNT");
@@ -121,45 +130,49 @@ public class SubmitApplication {
                     .build();
         }
 
-        WebStack webStack = (primaryEnv != null)
-                ? WebStack.Builder.create(app, webStackId,
-                        StackProps.builder()
-                                .env(primaryEnv)
-                                .crossRegionReferences(true)
-                                .build())
-                .props(co.uk.diyaccounting.submit.stacks.WebStackProps.builder()
-                        .env(envName)
-                        .hostedZoneName(hostedZoneName)
-                        .hostedZoneId(hostedZoneId)
-                        .subDomainName(subDomainName)
-                        .cloudTrailEnabled(cloudTrailEnabled)
-                        .xRayEnabled(xRayEnabled)
-                        .verboseLogging(verboseLogging)
-                        .accessLogGroupRetentionPeriodDays(appProps.accessLogGroupRetentionPeriodDays)
-                        .s3UseExistingBucket(s3UseExistingBucket)
-                        .s3RetainOriginBucket(s3RetainOriginBucket)
-                        .build())
-                // .trail(observabilityStack.trail)
-                .build()
-                : WebStack.Builder.create(app, webStackId)
-                .props(co.uk.diyaccounting.submit.stacks.WebStackProps.builder()
-                        .env(envName)
-                        .hostedZoneName(hostedZoneName)
-                        .hostedZoneId(hostedZoneId)
-                        .subDomainName(subDomainName)
-                        .cloudTrailEnabled(cloudTrailEnabled)
-                        .xRayEnabled(xRayEnabled)
-                        .verboseLogging(verboseLogging)
-                        .accessLogGroupRetentionPeriodDays(appProps.accessLogGroupRetentionPeriodDays)
-                        .s3UseExistingBucket(s3UseExistingBucket)
-                        .s3RetainOriginBucket(s3RetainOriginBucket)
-                        .build())
-                // .trail(observabilityStack.trail)
-                .build();
+        // Create WebStack with resources used in running the application
+//        String webStackId = "%s-WebStack".formatted(deploymentName);
+//        infof("Synthesizing stack %s for deployment %s to environment %s", webStackId, deploymentName, envName);
+//
+//        WebStack webStack = (primaryEnv != null)
+//                ? WebStack.Builder.create(app, webStackId,
+//                        StackProps.builder()
+//                                .env(primaryEnv)
+//                                .crossRegionReferences(true)
+//                                .build())
+//                .props(co.uk.diyaccounting.submit.stacks.WebStackProps.builder()
+//                        .env(envName)
+//                        .hostedZoneName(hostedZoneName)
+//                        .hostedZoneId(hostedZoneId)
+//                        .subDomainName(subDomainName)
+//                        .cloudTrailEnabled(cloudTrailEnabled)
+//                        .xRayEnabled(xRayEnabled)
+//                        .verboseLogging(verboseLogging)
+//                        .accessLogGroupRetentionPeriodDays(appProps.accessLogGroupRetentionPeriodDays)
+//                        .s3UseExistingBucket(s3UseExistingBucket)
+//                        .s3RetainOriginBucket(s3RetainOriginBucket)
+//                        .build())
+//                // .trail(observabilityStack.trail)
+//                .build()
+//                : WebStack.Builder.create(app, webStackId)
+//                .props(co.uk.diyaccounting.submit.stacks.WebStackProps.builder()
+//                        .env(envName)
+//                        .hostedZoneName(hostedZoneName)
+//                        .hostedZoneId(hostedZoneId)
+//                        .subDomainName(subDomainName)
+//                        .cloudTrailEnabled(cloudTrailEnabled)
+//                        .xRayEnabled(xRayEnabled)
+//                        .verboseLogging(verboseLogging)
+//                        .accessLogGroupRetentionPeriodDays(appProps.accessLogGroupRetentionPeriodDays)
+//                        .s3UseExistingBucket(s3UseExistingBucket)
+//                        .s3RetainOriginBucket(s3RetainOriginBucket)
+//                        .build())
+//                // .trail(observabilityStack.trail)
+//                .build();
 
         // Create the AuthStack with resources used in authentication and authorisation
         String authStackId = "%s-AuthStack".formatted(deploymentName);
-        System.out.printf("Synthesizing stack %s for deployment %s to environment %s\n", authStackId, deploymentName, envName);
+        infof("Synthesizing stack %s for deployment %s to environment %s", authStackId, deploymentName, envName);
         AuthStack authStack = AuthStack.Builder.create(app, authStackId)
             .props(co.uk.diyaccounting.submit.stacks.AuthStackProps.builder()
                 .env(envName)
@@ -170,7 +183,7 @@ public class SubmitApplication {
                 .baseImageTag(baseImageTag)
                 .ecrRepositoryArn(devStack.ecrRepository.getRepositoryArn())
                 .ecrRepositoryName(devStack.ecrRepository.getRepositoryName())
-                .homeUrl(envOr("HOME_URL", webStack.baseUrl))
+                .homeUrl(baseUrl)
                 .cognitoClientId(identityStack.userPoolClient.getUserPoolClientId())
                 .cognitoBaseUri(identityStack.userPoolDomain.getDomainName())
                 .optionalTestAccessToken(optionalTestAccessToken)
@@ -183,12 +196,12 @@ public class SubmitApplication {
                 .build())
             .build();
         authStack.addDependency(devStack);
-        authStack.addDependency(webStack);
+        //authStack.addDependency(webStack);
         authStack.addDependency(identityStack);
 
         // Create the ApplicationStack
         String applicationStackId = "%s-ApplicationStack".formatted(deploymentName);
-        System.out.printf("Synthesizing stack %s for deployment %s to environment %s\n", applicationStackId, deploymentName, envName);
+        infof("Synthesizing stack %s for deployment %s to environment %s", applicationStackId, deploymentName, envName);
         ApplicationStack applicationStack = ApplicationStack.Builder.create(app, applicationStackId)
             .props(co.uk.diyaccounting.submit.stacks.ApplicationStackProps.builder()
                 .env(envName)
@@ -200,7 +213,7 @@ public class SubmitApplication {
                 .baseImageTag(baseImageTag)
                 .ecrRepositoryArn(devStack.ecrRepository.getRepositoryArn())
                 .ecrRepositoryName(devStack.ecrRepository.getRepositoryName())
-                .homeUrl(envOr("DIY_SUBMIT_HOME_URL", webStack.baseUrl))
+                .homeUrl(baseUrl)
                 .hmrcBaseUri(hmrcBaseUri)
                 .hmrcClientId(hmrcClientId)
                 .lambdaUrlAuthType(lambdaUrlAuthType)
@@ -215,7 +228,7 @@ public class SubmitApplication {
                 .build())
             .build();
         applicationStack.addDependency(devStack);
-        applicationStack.addDependency(webStack);
+        //applicationStack.addDependency(webStack);
         applicationStack.addDependency(identityStack);
 
         // Create the Ops stack (Alarms, etc.)
@@ -238,15 +251,15 @@ public class SubmitApplication {
                 .env(primaryEnv)
                 .envName(envName)
                 .deploymentName(deploymentName)
-                .domainName(webStack.domainName)
-                .resourceNamePrefix(webStack.resourceNamePrefix)
-                .compressedResourceNamePrefix(webStack.compressedResourceNamePrefix)
+                .domainName(domainName)
+                .resourceNamePrefix(resourceNamePrefix)
+                .compressedResourceNamePrefix(compressedResourceNamePrefix)
                 .lambdaFunctionArns(lambdaArns)
-                .originBucketArn(webStack.originBucket.getBucketArn())
+                //.originBucketArn(webStack.originBucket.getBucketArn())
                 .receiptsBucketArn(receiptsBucketArn)
                 .build());
         opsStack.addDependency(applicationStack);
-        opsStack.addDependency(webStack);
+        //opsStack.addDependency(webStack);
 
         // Create the SelfDestruct stack only for non-prod deployments and when JAR exists
         if (!"prod".equals(deploymentName)) {
@@ -257,14 +270,14 @@ public class SubmitApplication {
                 SelfDestructStackProps.builder()
                     .envName(envName)
                     .deploymentName(deploymentName)
-                    .resourceNamePrefix(webStack.resourceNamePrefix)
-                    .compressedResourceNamePrefix(webStack.compressedResourceNamePrefix)
+                    .resourceNamePrefix(resourceNamePrefix)
+                    .compressedResourceNamePrefix(compressedResourceNamePrefix)
                     .observabilityStackName(observabilityStack.getStackName())
                     .devStackName(devStack.getStackName())
                     .identityStackName(identityStack.getStackName())
                     .authStackName(applicationStack.getStackName())
                     .applicationStackName(applicationStack.getStackName())
-                    .webStackName(webStack.getStackName())
+                    //.webStackName(webStack.getStackName())
                     .opsStackName(opsStack.getStackName())
                     .selfDestructDelayHours(selfDestructDelayHours)
                     .selfDestructHandlerSource(selfDestructHandlerSource)
@@ -276,14 +289,14 @@ public class SubmitApplication {
 
     private static SubmitApplicationProps loadAppProps(SubmitApplication.Builder builder, Construct scope) {
         SubmitApplicationProps props = SubmitApplicationProps.Builder.create().build();
-        // populate from cdk-application.json context using exact camelCase keys
+        // populate from cdk.json context using exact camelCase keys
         for (Field f : SubmitApplicationProps.class.getDeclaredFields()) {
             if (f.getType() != String.class) continue;
             try {
                 f.setAccessible(true);
                 String current = (String) f.get(props);
                 String fieldName = f.getName();
-                String ctx = builder.getContextValueString(scope, fieldName, current);
+                String ctx = KindCdk.getContextValueString(scope, fieldName, current);
                 if (ctx != null) f.set(props, ctx);
             } catch (Exception e) {
                 warnf("Failed to read context for %s: %s", f.getName(), e.getMessage());
@@ -292,11 +305,6 @@ public class SubmitApplication {
         // default env to dev if not set
         if (props.env == null || props.env.isBlank()) props.env = "dev";
         return props;
-    }
-
-    private static String envOr(String key, String fallback) {
-        String v = System.getenv(key);
-        return (v != null && !v.isBlank()) ? v : fallback;
     }
 
     public static class Builder {
@@ -316,23 +324,6 @@ public class SubmitApplication {
 
         public static SubmitApplication.Builder create(Construct scope, String id, StackProps props) {
             return new SubmitApplication.Builder(scope, id, props);
-        }
-
-        public String getContextValueString(Construct scope, String contextKey, String defaultValue) {
-            var contextValue = scope.getNode().tryGetContext(contextKey);
-            String defaultedValue;
-            String source;
-            if (StringUtils.isNotBlank(contextValue.toString())) {
-                defaultedValue = contextValue.toString();
-                source = "CDK context";
-            } else {
-                defaultedValue = defaultValue;
-                source = "default value";
-            }
-
-            infof("Context %s resolved from %s with value: %s", contextKey, source, defaultedValue);
-
-            return defaultedValue;
         }
     }
 }

@@ -102,6 +102,11 @@
                 <artifactId>system-stubs-jupiter</artifactId>
                 <version>2.1.8</version>
             </dependency>
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-simple</artifactId>
+                <version>2.0.16</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -143,6 +148,13 @@
         <dependency>
             <groupId>com.fasterxml.jackson.dataformat</groupId>
             <artifactId>jackson-dataformat-yaml</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!-- Route logs to System.out -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
             <scope>runtime</scope>
         </dependency>
 

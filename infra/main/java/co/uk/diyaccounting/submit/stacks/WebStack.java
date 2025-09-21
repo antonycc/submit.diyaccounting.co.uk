@@ -1,7 +1,6 @@
 package co.uk.diyaccounting.submit.stacks;
 
 import co.uk.diyaccounting.submit.utils.ResourceNameUtils;
-import software.amazon.awscdk.CfnOutput;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.Stack;
@@ -20,8 +19,8 @@ import java.util.AbstractMap;
 import java.util.List;
 import java.util.regex.Pattern;
 
+import static co.uk.diyaccounting.submit.awssdk.KindCdk.cfnOutput;
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.Kind.warnf;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateCompressedResourceNamePrefix;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateResourceNamePrefix;
 
@@ -390,17 +389,17 @@ public class WebStack extends Stack {
             return "%s.%s.%s".formatted(env, subDomainName, hostedZoneName);
         }
 
-        public static String buildDashedDomainName(String env, String subDomainName, String hostedZoneName) {
-            return ResourceNameUtils.convertDotSeparatedToDashSeparated(
-                    "%s.%s.%s".formatted(env, subDomainName, hostedZoneName), domainNameMappings);
-        }
-
         public static String buildOriginBucketName(String dashedDomainName) {
             return dashedDomainName;
         }
 
         public static String buildTrailName(String dashedDomainName) {
             return "%s-cloud-trail".formatted(dashedDomainName);
+        }
+
+        public static String buildDashedDomainName(String env, String subDomainName, String hostedZoneName) {
+            return ResourceNameUtils.convertDotSeparatedToDashSeparated(
+                "%s.%s.%s".formatted(env, subDomainName, hostedZoneName), domainNameMappings);
         }
 
         public static String buildOriginAccessLogBucketName(String dashedDomainName) {
@@ -445,8 +444,6 @@ public class WebStack extends Stack {
                 Builder.buildDashedDomainName(builder.env, builder.subDomainName, builder.hostedZoneName);
         String originBucketName = Builder.buildOriginBucketName(dashedDomainName);
 
-        this.baseUrl = "https://" + domainName;
-
         // Generate predictable resource name prefix based on domain and environment
         String resourceNamePrefix =
             generateResourceNamePrefix(domainName, builder.env);
@@ -455,19 +452,10 @@ public class WebStack extends Stack {
         this.resourceNamePrefix = resourceNamePrefix;
         this.compressedResourceNamePrefix = compressedResourceNamePrefix;
 
-        boolean s3UseExistingBucket = Boolean.parseBoolean(builder.s3UseExistingBucket);
-        boolean s3RetainOriginBucket = Boolean.parseBoolean(builder.s3RetainOriginBucket);
-        int accessLogGroupRetentionPeriodDays;
-        try {
-            accessLogGroupRetentionPeriodDays = Integer.parseInt(builder.accessLogGroupRetentionPeriodDays);
-        } catch (Exception e) {
-            warnf(
-                    "Invalid access log group retention period days '%s', defaulting to 30 days",
-                    builder.accessLogGroupRetentionPeriodDays);
-            accessLogGroupRetentionPeriodDays = 30;
-        }
+        //boolean s3UseExistingBucket = Boolean.parseBoolean(builder.s3UseExistingBucket);
+        //boolean s3RetainOriginBucket = Boolean.parseBoolean(builder.s3RetainOriginBucket);
+        int accessLogGroupRetentionPeriodDays = Integer.parseInt(builder.accessLogGroupRetentionPeriodDays);
         String originAccessLogBucketName = Builder.buildOriginAccessLogBucketName(dashedDomainName);
-        boolean verboseLogging = builder.verboseLogging == null || Boolean.parseBoolean(builder.verboseLogging);
 
         // Origin bucket for the CloudFront distribution
         //BucketOrigin bucketOrigin;
@@ -505,7 +493,7 @@ public class WebStack extends Stack {
                 .build())
             )
             .build();
-        infof("Created log bucket %s".formatted(this.originAccessLogBucket));
+        infof("Created log bucket %s with name",this.originAccessLogBucket.getNode().getId(), originAccessLogBucketName);
 
         // Create the origin bucket
         this.originBucket = Bucket.Builder.create(this, "OriginBucket")
@@ -517,6 +505,7 @@ public class WebStack extends Stack {
             .autoDeleteObjects(true)
             .serverAccessLogsBucket(this.originAccessLogBucket)
             .build();
+        infof("Created origin bucket %s with name %s", this.originBucket.getNode().getId(), originBucketName);
         //}
 
         // Create origin access identity
@@ -689,14 +678,10 @@ public class WebStack extends Stack {
 
         // Stack Outputs for Web resources
         if (this.originBucket != null) {
-            CfnOutput.Builder.create(this, "OriginBucketArn")
-                    .value(this.originBucket.getBucketArn())
-                    .build();
+            cfnOutput(this, "OriginBucketArn", this.originBucket.getBucketArn());
         }
         if (this.originAccessLogBucket != null) {
-            CfnOutput.Builder.create(this, "OriginAccessLogBucketArn")
-                    .value(this.originAccessLogBucket.getBucketArn())
-                    .build();
+            cfnOutput(this, "OriginAccessLogBucketArn", this.originAccessLogBucket.getBucketArn());
         }
         /*
         if (this.distributionAccessLogBucket != null) {
@@ -743,5 +728,7 @@ public class WebStack extends Stack {
         //            .value(this.aaaaRecord.getDomainName())
         //            .build();
         //}
+
+        infof("WebStack %s created successfully for %s", this.getNode().getId(), dashedDomainName);
     }
 }

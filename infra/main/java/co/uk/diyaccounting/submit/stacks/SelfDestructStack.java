@@ -1,7 +1,5 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import software.amazon.awscdk.CfnOutput;
-import software.amazon.awscdk.CfnOutputProps;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.Stack;
@@ -27,6 +25,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static co.uk.diyaccounting.submit.awssdk.KindCdk.cfnOutput;
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.Kind.putIfNotNull;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateIamCompatibleName;
 
 public class SelfDestructStack extends Stack {
@@ -108,16 +109,16 @@ public class SelfDestructStack extends Stack {
 
         // Environment variables for the function
         Map<String, String> environment = new HashMap<>();
-        environment.put("AWS_XRAY_TRACING_NAME", functionName);
-        environment.put("OBSERVABILITY_STACK_NAME", props.observabilityStackName);
-        environment.put("DEV_STACK_NAME", props.devStackName);
-        environment.put("AUTH_STACK_NAME", props.applicationStackName);
-        environment.put("APPLICATION_STACK_NAME", props.applicationStackName);
-        environment.put("WEB_STACK_NAME", props.webStackName);
-        environment.put("EDGE_STACK_NAME", props.edgeStackName);
-        environment.put("PUBLISH_STACK_NAME", props.publishStackName);
-        environment.put("OPS_STACK_NAME", props.opsStackName);
-        environment.put("SELF_DESTRUCT_STACK_NAME", this.getStackName());
+        putIfNotNull(environment,"AWS_XRAY_TRACING_NAME", functionName);
+        putIfNotNull(environment,"OBSERVABILITY_STACK_NAME", props.observabilityStackName);
+        putIfNotNull(environment,"DEV_STACK_NAME", props.devStackName);
+        putIfNotNull(environment,"AUTH_STACK_NAME", props.applicationStackName);
+        putIfNotNull(environment,"APPLICATION_STACK_NAME", props.applicationStackName);
+        putIfNotNull(environment,"WEB_STACK_NAME", props.webStackName);
+        putIfNotNull(environment,"EDGE_STACK_NAME", props.edgeStackName);
+        putIfNotNull(environment,"PUBLISH_STACK_NAME", props.publishStackName);
+        putIfNotNull(environment,"OPS_STACK_NAME", props.opsStackName);
+        putIfNotNull(environment,"SELF_DESTRUCT_STACK_NAME", this.getStackName());
 
         // Lambda function for self-destruction
         this.selfDestructFunction = Function.Builder.create(this, props.resourceNamePrefix + "-SelfDestructFunction")
@@ -152,36 +153,11 @@ public class SelfDestructStack extends Stack {
                 .build();
 
         // Output the function ARN for manual invocation
-        new CfnOutput(
-                this,
-                "SelfDestructFunctionArn",
-                CfnOutputProps.builder()
-                        .value(this.selfDestructFunction.getFunctionArn())
-                        .description("ARN of the self-destruct Lambda function")
-                        .build());
+        cfnOutput(this, "SelfDestructFunctionArn", this.selfDestructFunction.getFunctionArn());
+        cfnOutput(this, "SelfDestructScheduleArn", this.selfDestructSchedule.getRuleArn());
+        cfnOutput(this, "SelfDestructScheduleInfo", "Self-destruct will trigger automatically after " + delayHours + " hours");
+        cfnOutput(this, "SelfDestructInstructions", "aws lambda invoke --function-name " + functionName + " /tmp/response.json");
 
-        new CfnOutput(
-                this,
-                "SelfDestructScheduleArn",
-                CfnOutputProps.builder()
-                        .value(this.selfDestructSchedule.getRuleArn())
-                        .description("ARN of the EventBridge rule for scheduled self-destruct")
-                        .build());
-
-        new CfnOutput(
-                this,
-                "SelfDestructScheduleInfo",
-                CfnOutputProps.builder()
-                        .value("Self-destruct will trigger automatically after " + delayHours + " hours")
-                        .description("Automatic self-destruct schedule information")
-                        .build());
-
-        new CfnOutput(
-                this,
-                "SelfDestructInstructions",
-                CfnOutputProps.builder()
-                        .value("aws lambda invoke --function-name " + functionName + " /tmp/response.json")
-                        .description("Command to trigger immediate manual self-destruction")
-                        .build());
+        infof("SelfDestructStack %s created successfully for %s", this.getNode().getId(), props.resourceNamePrefix);
     }
 }

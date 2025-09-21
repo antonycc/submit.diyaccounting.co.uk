@@ -20,8 +20,8 @@ import { GenericContainer } from "testcontainers";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// Read configuration from cdk-application.json
-const cdkJsonPath = path.join(__dirname, "../../cdk-application.json");
+// Read configuration from cdk.json
+const cdkJsonPath = path.join(__dirname, "../../cdk.json");
 logger.info(`Reading CDK configuration from ${cdkJsonPath}`);
 const cdkConfig = JSON.parse(readFileSync(cdkJsonPath, "utf8"));
 // logger.info("CDK configuration:", cdkConfig);

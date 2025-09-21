@@ -73,8 +73,8 @@ public class LambdaUrlOrigin {
         if (builder.xRayEnabled) {
             dockerFunctionBuilder.tracing(Tracing.ACTIVE);
         }
-
         this.lambda = dockerFunctionBuilder.build();
+        infof("Created Lambda %s with function %s", this.lambda.getNode().getId(), this.lambda.toString());
 
         // Create log group for the lambda
         this.logGroup = new LogGroup(
@@ -85,6 +85,7 @@ public class LambdaUrlOrigin {
                         .retention(builder.logGroupRetention)
                         .removalPolicy(builder.logGroupRemovalPolicy)
                         .build());
+        infof("Created log group %s with retention %s", this.logGroup.getNode().getId(), builder.logGroupRetention);
 
         // Create function URL
         //FunctionUrlOptions.Builder functionUrlOptionsBuilder = FunctionUrlOptions.builder()
@@ -110,8 +111,6 @@ public class LambdaUrlOrigin {
         //}
 
         //this.behaviorOptions = behaviorOptionsBuilder.build();
-
-        infof("Created LambdaUrlOrigin with function: %s", this.lambda.getFunctionName());
     }
 
     //private String getLambdaUrlHostToken(FunctionUrl functionUrl) {

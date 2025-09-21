@@ -1,24 +1,16 @@
 package co.uk.diyaccounting.submit;
 
-// Fields match cdk-delivery.json context keys (camelCase). Environment overrides are applied in SubmitDelivery
+// Fields match cdk.json context keys (camelCase). Environment overrides are applied in SubmitDelivery
 public class SubmitDeliveryProps {
     public String env;
     public String deploymentName;
     public String hostedZoneName;
     public String hostedZoneId;
-    public String subDomainName;
     public String certificateArn;
-    public String cloudTrailEnabled;
-    public String xRayEnabled;
-    public String verboseLogging;
-    public String cloudTrailLogGroupRetentionPeriodDays;
     public String accessLogGroupRetentionPeriodDays;
     public String docRootPath;
-    public String lambdaEntry;
-    public String commitHash;
     public String domainName;
     public String baseUrl;
-    public String originBucketArn;
     public String authUrlMockLambdaFunctionArn;
     public String authUrlCognitoLambdaFunctionArn;
     public String exchangeCognitoTokenLambdaFunctionArn;

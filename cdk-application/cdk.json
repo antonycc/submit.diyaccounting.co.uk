@@ -1,8 +1,7 @@
 {
-  "app": "java -jar target/submit-application.jar",
-  "output": "./cdk-submit-application.out",
+  "app": "java -jar ../target/submit-application.jar",
+  "output": "../cdk-submit-application.out",
   "context": {
-    "aws:cdk:bundling-cache": "target/.cdk-cache",
     "env": "dev",
     "deploymentName": "dev",
     "hostedZoneName": "diyaccounting.co.uk",

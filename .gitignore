@@ -344,3 +344,5 @@ fabric.properties
 /client*-results/
 /behaviour*-results/
 /run-manually*-results/
+/cdk-submit-application.out/
+/cdk-submit-delivery.out/

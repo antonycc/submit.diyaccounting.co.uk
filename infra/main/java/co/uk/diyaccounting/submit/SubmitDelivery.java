@@ -9,13 +9,14 @@ import co.uk.diyaccounting.submit.stacks.SelfDestructStackProps;
 import software.amazon.awscdk.App;
 import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.StackProps;
-import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
 
 import java.lang.reflect.Field;
 import java.util.Map;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.awssdk.KindCdk.getContextValueString;
+import static co.uk.diyaccounting.submit.utils.Kind.envOr;
+import static co.uk.diyaccounting.submit.utils.Kind.putIfNotNull;
 import static co.uk.diyaccounting.submit.utils.Kind.warnf;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateCompressedResourceNamePrefix;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateResourceNamePrefix;
@@ -26,14 +27,14 @@ public class SubmitDelivery {
 
         App app = new App();
 
-        // Build app-level props from cdk-application.json context with environment overrides
+        // Build app-level props from cdk.json context with environment overrides
         SubmitDelivery.Builder builder = SubmitDelivery.Builder.create(app, "SubmitApplication");
         SubmitDeliveryProps appProps = loadAppProps(builder, app);
 
         // Environment e.g. ci, prod, and deployment name e.g. ci-branchname, prod
         var envName = envOr("ENV_NAME", appProps.env);
         var deploymentName = envOr("DEPLOYMENT_NAME", appProps.deploymentName);
-        var commitHash = envOr("COMMIT_HASH", appProps.commitHash);
+        var commitHash = envOr("COMMIT_HASH", "local");
 
         // Determine primary environment (account/region) from CDK env
         String cdkDefaultAccount = System.getenv("CDK_DEFAULT_ACCOUNT");
@@ -52,7 +53,6 @@ public class SubmitDelivery {
         var certificateArn = envOr("CERTIFICATE_ARN", appProps.certificateArn);
         var domainName = envOr("DOMAIN_NAME", appProps.domainName);
         var baseUrl = envOr("DIY_SUBMIT_HOME_URL", appProps.baseUrl);
-        var originBucketArn = envOr("ORIGIN_BUCKET_ARN", appProps.originBucketArn);
         var docRootPath = envOr("DOC_ROOT_PATH", appProps.docRootPath);
         var authUrlMockLambdaFunctionArn = envOr("DIY_SUBMIT_AUTH_URL_MOCK_LAMBDA_ARN", appProps.authUrlMockLambdaFunctionArn);
         var authUrlCognitoLambdaFunctionArn = envOr("DIY_SUBMIT_AUTH_URL_COGNITO_LAMBDA_ARN", appProps.authUrlCognitoLambdaFunctionArn);
@@ -98,12 +98,12 @@ public class SubmitDelivery {
                 .resourceNamePrefix(resourceNamePrefix)
                 .compressedResourceNamePrefix(compressedResourceNamePrefix)
                 .certificateArn(certificateArn)
-                .webBucketArn(originBucketArn)
                 .pathsToOriginLambdaFunctionArns(pathsToOriginLambdaFunctionArns)
                 // Force this stack (and thus WAF) into us-east-1 as required by CloudFront
                 .env(Environment.builder().region("us-east-1").build())
                 .build());
         String distributionArn = edgeStack.distribution.getDistributionArn();
+        String webBucketArn = edgeStack.originBucket.getBucketArn();
 
         // Create the Publish stack (Bucket Deployments to CloudFront)
         String publishStackId = "%s-PublishStack".formatted(deploymentName);
@@ -115,7 +115,7 @@ public class SubmitDelivery {
                 .deploymentName(deploymentName)
                 .domainName(domainName)
                 .baseUrl(baseUrl)
-                .webBucketArn(originBucketArn)
+                .webBucketArn(webBucketArn)
                 .resourceNamePrefix(resourceNamePrefix)
                 .distributionArn(distributionArn)
                 .commitHash(commitHash)
@@ -148,14 +148,14 @@ public class SubmitDelivery {
 
     private static SubmitDeliveryProps loadAppProps(SubmitDelivery.Builder builder, Construct scope) {
         SubmitDeliveryProps props = SubmitDeliveryProps.Builder.create().build();
-        // populate from cdk-delivery.json context using exact camelCase keys
+        // populate from cdk.json context using exact camelCase keys
         for (Field f : SubmitDeliveryProps.class.getDeclaredFields()) {
             if (f.getType() != String.class) continue;
             try {
                 f.setAccessible(true);
                 String current = (String) f.get(props);
                 String fieldName = f.getName();
-                String ctx = builder.getContextValueString(scope, fieldName, current);
+                String ctx = getContextValueString(scope, fieldName, current);
                 if (ctx != null) f.set(props, ctx);
             } catch (Exception e) {
                 warnf("Failed to read context for %s: %s", f.getName(), e.getMessage());
@@ -164,17 +164,6 @@ public class SubmitDelivery {
         // default env to dev if not set
         if (props.env == null || props.env.isBlank()) props.env = "dev";
         return props;
-    }
-
-    public static void putIfNotNull(Map<String, String> map, String key, String value) {
-        if (value != null) {
-            map.put(key, value);
-        }
-    }
-
-    private static String envOr(String key, String fallback) {
-        String v = System.getenv(key);
-        return (v != null && !v.isBlank()) ? v : fallback;
     }
 
     public static class Builder {
@@ -194,23 +183,6 @@ public class SubmitDelivery {
 
         public static SubmitDelivery.Builder create(Construct scope, String id, StackProps props) {
             return new SubmitDelivery.Builder(scope, id, props);
-        }
-
-        public String getContextValueString(Construct scope, String contextKey, String defaultValue) {
-            var contextValue = scope.getNode().tryGetContext(contextKey);
-            String defaultedValue;
-            String source;
-            if (StringUtils.isNotBlank(contextValue.toString())) {
-                defaultedValue = contextValue.toString();
-                source = "CDK context";
-            } else {
-                defaultedValue = defaultValue;
-                source = "default value";
-            }
-
-            infof("Context %s resolved from %s with value: %s", contextKey, source, defaultedValue);
-
-            return defaultedValue;
         }
     }
 }

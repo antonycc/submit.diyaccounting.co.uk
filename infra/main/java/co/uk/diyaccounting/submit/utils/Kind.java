@@ -67,6 +67,13 @@ public final class Kind {
         return out;
     }
 
+    // Safe putIfNotNull
+    public static <K, V> void putIfNotNull(Map<K, V> map, K key, V value) {
+        if (value != null) {
+            map.put(key, value);
+        }
+    }
+
     public static void logf(String fmt, Object... args) {
         System.out.printf(fmt + "%n", args);
     }
@@ -81,5 +88,10 @@ public final class Kind {
 
     public static void errorf(String fmt, Object... args) {
         logf("[ERROR] " + fmt, args);
+    }
+
+    public static String envOr(String key, String fallback) {
+        String v = System.getenv(key);
+        return (v != null && !v.isBlank()) ? v : fallback;
     }
 }

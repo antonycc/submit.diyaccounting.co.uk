@@ -1,7 +1,5 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import software.amazon.awscdk.CfnOutput;
-import software.amazon.awscdk.CfnOutputProps;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.Tags;
@@ -18,6 +16,9 @@ import software.amazon.awscdk.services.lambda.IFunction;
 import software.amazon.awscdk.services.s3.Bucket;
 import software.amazon.awscdk.services.s3.IBucket;
 import software.constructs.Construct;
+
+import static co.uk.diyaccounting.submit.awssdk.KindCdk.cfnOutput;
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
 
 public class OpsStack extends Stack {
     public final Dashboard operationalDashboard;
@@ -77,7 +78,7 @@ public class OpsStack extends Stack {
         }
 
         // S3 buckets
-        IBucket originBucket = Bucket.fromBucketArn(this, props.resourceNamePrefix + "-OriginBucket", props.originBucketArn);
+        //IBucket originBucket = Bucket.fromBucketArn(this, props.resourceNamePrefix + "-OriginBucket", props.originBucketArn);
         IBucket receiptsBucket = null;
         if (props.receiptsBucketArn != null && !props.receiptsBucketArn.isBlank()) {
             receiptsBucket = Bucket.fromBucketArn(this, props.resourceNamePrefix + "-ReceiptsBucket", props.receiptsBucketArn);
@@ -119,27 +120,27 @@ public class OpsStack extends Stack {
             ));
         }
         // Row 3: S3 origin and receipts bucket errors/requests
-        Metric s3OriginAllReq = Metric.Builder.create()
-                .namespace("AWS/S3")
-                .metricName("AllRequests")
-                .dimensionsMap(java.util.Map.of("BucketName", originBucket.getBucketName(), "FilterId", "EntireBucket"))
-                .statistic("Sum")
-                .period(Duration.minutes(5))
-                .build();
-        Metric s3Origin4xx = Metric.Builder.create()
-                .namespace("AWS/S3")
-                .metricName("4xxErrors")
-                .dimensionsMap(java.util.Map.of("BucketName", originBucket.getBucketName(), "FilterId", "EntireBucket"))
-                .statistic("Sum")
-                .period(Duration.minutes(5))
-                .build();
-        Metric s3Origin5xx = Metric.Builder.create()
-                .namespace("AWS/S3")
-                .metricName("5xxErrors")
-                .dimensionsMap(java.util.Map.of("BucketName", originBucket.getBucketName(), "FilterId", "EntireBucket"))
-                .statistic("Sum")
-                .period(Duration.minutes(5))
-                .build();
+//        Metric s3OriginAllReq = Metric.Builder.create()
+//                .namespace("AWS/S3")
+//                .metricName("AllRequests")
+//                .dimensionsMap(java.util.Map.of("BucketName", originBucket.getBucketName(), "FilterId", "EntireBucket"))
+//                .statistic("Sum")
+//                .period(Duration.minutes(5))
+//                .build();
+//        Metric s3Origin4xx = Metric.Builder.create()
+//                .namespace("AWS/S3")
+//                .metricName("4xxErrors")
+//                .dimensionsMap(java.util.Map.of("BucketName", originBucket.getBucketName(), "FilterId", "EntireBucket"))
+//                .statistic("Sum")
+//                .period(Duration.minutes(5))
+//                .build();
+//        Metric s3Origin5xx = Metric.Builder.create()
+//                .namespace("AWS/S3")
+//                .metricName("5xxErrors")
+//                .dimensionsMap(java.util.Map.of("BucketName", originBucket.getBucketName(), "FilterId", "EntireBucket"))
+//                .statistic("Sum")
+//                .period(Duration.minutes(5))
+//                .build();
 
         Metric s3ReceiptsAllReq = null;
         Metric s3Receipts4xx = null;
@@ -169,12 +170,12 @@ public class OpsStack extends Stack {
         }
 
         rows.add(java.util.List.of(
-                GraphWidget.Builder.create()
-                        .title("S3 Origin Requests/Errors")
-                        .left(java.util.List.of(s3OriginAllReq, s3Origin4xx, s3Origin5xx))
-                        .width(12)
-                        .height(6)
-                        .build(),
+//                GraphWidget.Builder.create()
+//                        .title("S3 Origin Requests/Errors")
+//                        .left(java.util.List.of(s3OriginAllReq, s3Origin4xx, s3Origin5xx))
+//                        .width(12)
+//                        .height(6)
+//                        .build(),
                 receiptsBucket != null ? GraphWidget.Builder.create()
                         .title("S3 Receipts Requests/Errors")
                         .left(java.util.List.of(s3ReceiptsAllReq, s3Receipts4xx, s3Receipts5xx))
@@ -189,12 +190,9 @@ public class OpsStack extends Stack {
                 .build();
 
         // Outputs
-        new CfnOutput(
-                this,
-                "OperationalDashboard",
-                CfnOutputProps.builder()
-                        .value("https://" + this.getRegion() + ".console.aws.amazon.com/cloudwatch/home?region="
-                                + this.getRegion() + "#dashboards:name=" + this.operationalDashboard.getDashboardName())
-                        .build());
+        cfnOutput(this, "OperationalDashboard", "https://" + this.getRegion() + ".console.aws.amazon.com/cloudwatch/home?region="
+                + this.getRegion() + "#dashboards:name=" + this.operationalDashboard.getDashboardName());
+
+        infof("OpsStack %s created successfully for %s", this.getNode().getId(), props.resourceNamePrefix);
     }
 }

@@ -3,7 +3,6 @@ package co.uk.diyaccounting.submit.stacks;
 import co.uk.diyaccounting.submit.constructs.LambdaUrlOrigin;
 import co.uk.diyaccounting.submit.constructs.LambdaUrlOriginOpts;
 import co.uk.diyaccounting.submit.utils.ResourceNameUtils;
-import software.amazon.awscdk.CfnOutput;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
@@ -20,6 +19,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.regex.Pattern;
 
+import static co.uk.diyaccounting.submit.awssdk.KindCdk.cfnOutput;
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 
 public class AuthStack extends Stack {
@@ -94,6 +94,7 @@ public class AuthStack extends Stack {
         this.authUrlMockLambda = authUrlMockLambdaUrlOrigin.lambda;
         //this.authUrlMockLambdaUrl = authUrlMockLambdaUrlOrigin.functionUrl;
         this.authUrlMockLambdaLogGroup = authUrlMockLambdaUrlOrigin.logGroup;
+        infof("Created Lambda %s for mock auth URL with handler %s", this.authUrlMockLambda.getNode().getId(), builder.lambdaEntry + "authUrl.httpGetMock");
         //lambdaUrlToOriginsBehaviourMappings.put(
         //    "/api/mock/auth-url" + "*", authUrlMockLambdaUrlOrigin.lambda.getFunctionArn());
 
@@ -124,6 +125,7 @@ public class AuthStack extends Stack {
         this.authUrlCognitoLambda = authUrlCognitoLambdaUrlOrigin.lambda;
         //this.authUrlCognitoLambdaUrl = authUrlCognitoLambdaUrlOrigin.functionUrl;
         this.authUrlCognitoLambdaLogGroup = authUrlCognitoLambdaUrlOrigin.logGroup;
+        infof("Created Lambda %s for Cognito auth URL with handler %s", this.authUrlCognitoLambda.getNode().getId(), builder.lambdaEntry + "authUrl.httpGetCognito");
         //lambdaUrlToOriginsBehaviourMappings.put(
         //    "/api/cognito/auth-url" + "*", authUrlCognitoLambdaUrlOrigin.lambda.getFunctionArn());
 
@@ -157,6 +159,7 @@ public class AuthStack extends Stack {
         this.exchangeCognitoTokenLambda = exchangeCognitoTokenLambdaUrlOrigin.lambda;
         //this.exchangeCognitoTokenLambdaUrl = exchangeCognitoTokenLambdaUrlOrigin.functionUrl;
         this.exchangeCognitoTokenLambdaLogGroup = exchangeCognitoTokenLambdaUrlOrigin.logGroup;
+        infof("Created Lambda %s for Cognito exchange token with handler %s", this.exchangeCognitoTokenLambda.getNode().getId(), builder.lambdaEntry + "exchangeToken.httpPostCognito");
         //lambdaUrlToOriginsBehaviourMappings.put(
         //    "/api/cognito/exchange-token" + "*", exchangeCognitoTokenLambdaUrlOrigin.lambda.getFunctionArn());
 
@@ -171,24 +174,11 @@ public class AuthStack extends Stack {
 
         //this.additionalOriginsBehaviourMappings = lambdaUrlToOriginsBehaviourMappings;
 
+        cfnOutput(this, "AuthUrlMockLambdaArn", this.authUrlMockLambda.getFunctionArn());
+        cfnOutput(this, "AuthUrlCognitoLambdaArn", this.authUrlCognitoLambda.getFunctionArn());
+        cfnOutput(this, "ExchangeCognitoTokenLambdaArn", this.exchangeCognitoTokenLambda.getFunctionArn());
 
-        if (this.authUrlMockLambda != null) {
-            CfnOutput.Builder.create(this, "AuthUrlMockLambdaArn")
-                .value(this.authUrlMockLambda.getFunctionArn())
-                .build();
-        }
-        if (this.authUrlCognitoLambda != null) {
-            CfnOutput.Builder.create(this, "AuthUrlCognitoLambdaArn")
-                .value(this.authUrlCognitoLambda.getFunctionArn())
-                .build();
-        }
-        if (this.exchangeCognitoTokenLambda != null) {
-            CfnOutput.Builder.create(this, "ExchangeCognitoTokenLambdaArn")
-                .value(this.exchangeCognitoTokenLambda.getFunctionArn())
-                .build();
-        }
-
-        infof("AuthStack created successfully for %s", dashedDomainName);
+        infof("AuthStack %s created successfully for %s", this.getNode().getId(), dashedDomainName);
     }
 
     /**

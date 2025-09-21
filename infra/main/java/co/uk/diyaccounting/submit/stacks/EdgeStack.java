@@ -1,7 +1,5 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import software.amazon.awscdk.CfnOutput;
-import software.amazon.awscdk.CfnOutputProps;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Fn;
 import software.amazon.awscdk.RemovalPolicy;
@@ -23,6 +21,7 @@ import software.amazon.awscdk.services.cloudfront.ViewerProtocolPolicy;
 import software.amazon.awscdk.services.cloudfront.origins.HttpOrigin;
 import software.amazon.awscdk.services.cloudfront.origins.S3BucketOrigin;
 import software.amazon.awscdk.services.cloudfront.origins.S3BucketOriginWithOACProps;
+import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.iam.ServicePrincipal;
 import software.amazon.awscdk.services.lambda.FunctionUrl;
 import software.amazon.awscdk.services.lambda.FunctionUrlAuthType;
@@ -49,7 +48,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static co.uk.diyaccounting.submit.awssdk.KindCdk.cfnOutput;
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.convertDotSeparatedToDashSeparated;
+
 public class EdgeStack extends Stack {
+
+    public Bucket originBucket;
+    public IBucket originAccessLogBucket;
     public final Distribution distribution;
     public final Permission distributionInvokeFnUrl;
     public final ARecord aliasRecord;
@@ -60,7 +66,7 @@ public class EdgeStack extends Stack {
 
         // Apply cost allocation tags for all resources in this stack
         Tags.of(this).add("Environment", props.envName);
-        Tags.of(this).add("Application", "@antonycc/submit.diyaccounting.co.uk/cdk-delivery.json");
+        Tags.of(this).add("Application", "@antonycc/submit.diyaccounting.co.uk/cdk.json");
         Tags.of(this).add("CostCenter", "@antonycc/submit.diyaccounting.co.uk");
         Tags.of(this).add("Owner", "@antonycc/submit.diyaccounting.co.uk");
         Tags.of(this).add("Project", "@antonycc/submit.diyaccounting.co.uk");
@@ -78,7 +84,6 @@ public class EdgeStack extends Stack {
 
         // Use Resources from the passed props
         this.baseUrl = props.baseUrl;
-        IBucket originBucket = Bucket.fromBucketArn(this, props.resourceNamePrefix + "-WebBucket", props.webBucketArn);
 
         // Hosted zone (must exist)
         IHostedZone zone = HostedZone.fromHostedZoneAttributes(
@@ -99,6 +104,8 @@ public class EdgeStack extends Stack {
         var cert = Certificate.fromCertificateArn(this, props.resourceNamePrefix + "-WebCert", props.certificateArn);
 
         // Buckets
+
+        String originBucketName = convertDotSeparatedToDashSeparated(domainName);
 
         // AWS WAF WebACL for CloudFront protection against common attacks and rate limiting
         CfnWebACL webAcl = CfnWebACL.Builder.create(this, props.resourceNamePrefix + "-WebAcl")
@@ -179,6 +186,50 @@ public class EdgeStack extends Stack {
                         .build())
                 .build();
 
+        //var idPrefix = "%s-origin-access-".formatted(dashedDomainName);
+        var originAccessLogBucket = originBucketName + "-logs";
+        infof("Setting expiration period to %d days for %s", props.accessLogGroupRetentionPeriodDays, props.compressedResourceNamePrefix);
+        this.originAccessLogBucket = Bucket.Builder.create(this, "%sLogBucket".formatted(props.compressedResourceNamePrefix))
+            .bucketName(originAccessLogBucket)
+            .objectOwnership(ObjectOwnership.OBJECT_WRITER)
+            .versioned(false)
+            .blockPublicAccess(BlockPublicAccess.BLOCK_ALL)
+            .encryption(BucketEncryption.S3_MANAGED)
+            .removalPolicy(RemovalPolicy.DESTROY)
+            .autoDeleteObjects(true)
+            .lifecycleRules(List.of(LifecycleRule.builder()
+                .id("%sLogsLifecycleRule".formatted(props.compressedResourceNamePrefix))
+                .enabled(true)
+                .expiration(Duration.days(props.accessLogGroupRetentionPeriodDays))
+                .build())
+            )
+            .build();
+        infof("Created log bucket %s with name",this.originAccessLogBucket.getNode().getId(), originAccessLogBucket);
+
+        // Create the origin bucket
+        this.originBucket = Bucket.Builder.create(this, "OriginBucket")
+            .bucketName(originBucketName)
+            .versioned(false)
+            .blockPublicAccess(BlockPublicAccess.BLOCK_ALL)
+            .encryption(BucketEncryption.S3_MANAGED)
+            .removalPolicy(RemovalPolicy.DESTROY)
+            .autoDeleteObjects(true)
+            .serverAccessLogsBucket(this.originAccessLogBucket)
+            .build();
+        infof("Created origin bucket %s with name %s", this.originBucket.getNode().getId(), originBucketName);
+
+        this.originBucket.addToResourcePolicy(PolicyStatement.Builder.create()
+            .sid("AllowCloudFrontReadViaOAC")
+            .principals(java.util.List.of(new ServicePrincipal("cloudfront.amazonaws.com")))
+            .actions(java.util.List.of("s3:GetObject"))
+            .resources(java.util.List.of(this.originBucket.getBucketArn() + "/*"))
+            .conditions(java.util.Map.of(
+                // Limit to distributions in your account (no distribution ARN token needed)
+                "StringEquals", java.util.Map.of("AWS:SourceAccount", this.getAccount()),
+                "ArnLike", java.util.Map.of("AWS:SourceArn", "arn:aws:cloudfront::" + this.getAccount() + ":distribution/*")
+            ))
+            .build());
+
         //S3OriginAccessControl originAccessControl = S3OriginAccessControl.Builder.create(this, props.resourceNamePrefix + "-OAC")
         //        //.name(props.compressedResourceNamePrefix + "-oac")
         //        .originAccessControlName(props.compressedResourceNamePrefix + "-oac")
@@ -196,7 +247,7 @@ public class EdgeStack extends Stack {
             .signing(Signing.SIGV4_ALWAYS) // NEVER // SIGV4_NO_OVERRIDE
             .build();
         IOrigin localOrigin = S3BucketOrigin.withOriginAccessControl(
-            originBucket,
+            this.originBucket,
             S3BucketOriginWithOACProps.builder()
                 .originAccessControl(oac)
                 .build()
@@ -275,35 +326,14 @@ public class EdgeStack extends Stack {
                         .build());
 
         // Outputs
-        new CfnOutput(
-                this, "BaseUrl", CfnOutputProps.builder().value(this.baseUrl).build());
-        new CfnOutput(
-            this,
-            "CertificateArn",
-            CfnOutputProps.builder().value(cert.getCertificateArn()).build());
-        new CfnOutput(
-            this,
-            "WebAclId",
-            CfnOutputProps.builder()
-                .value(webAcl.getAttrArn())
-                .build());
-        new CfnOutput(
-                this,
-                "WebDistributionDomainName",
-                CfnOutputProps.builder()
-                        .value(this.distribution.getDomainName())
-                        .build());
-        new CfnOutput(
-                this,
-                "DistributionId",
-                CfnOutputProps.builder()
-                        .value(this.distribution.getDistributionId())
-                        .build());
-        new CfnOutput(
-            this,
-            "AliasRecord",
-            CfnOutputProps.builder().value(this.aliasRecord.getDomainName()).build());
+        cfnOutput(this, "BaseUrl", this.baseUrl);
+        cfnOutput(this, "CertificateArn", cert.getCertificateArn());
+        cfnOutput(this, "WebAclId", webAcl.getAttrArn());
+        cfnOutput(this, "WebDistributionDomainName", this.distribution.getDomainName());
+        cfnOutput(this, "DistributionId", this.distribution.getDistributionId());
+        cfnOutput(this, "AliasRecord", this.aliasRecord.getDomainName());
 
+        infof("EdgeStack %s created successfully for %s", this.getNode().getId(), this.baseUrl);
     }
 
     public BehaviorOptions createBehaviorOptionsForLambdaUrl(String lambdaArn) {

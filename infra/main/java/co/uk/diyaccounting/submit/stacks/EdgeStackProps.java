@@ -16,7 +16,6 @@ public class EdgeStackProps implements StackProps {
     public final String compressedResourceNamePrefix;
     public final String certificateArn;
     public final int accessLogGroupRetentionPeriodDays;
-    public final String webBucketArn;
     public final Map<String, String> pathsToOriginLambdaFunctionArns;
 
     // Explicit env to allow this stack to target us-east-1 for CloudFront/WAF
@@ -33,7 +32,6 @@ public class EdgeStackProps implements StackProps {
         this.compressedResourceNamePrefix = builder.compressedResourceNamePrefix;
         this.certificateArn = builder.certificateArn;
         this.accessLogGroupRetentionPeriodDays = builder.accessLogGroupRetentionPeriodDays;
-        this.webBucketArn = builder.webBucketArn;
         this.pathsToOriginLambdaFunctionArns = builder.pathsToOriginLambdaFunctionArns;
         this.env = builder.env;
     }
@@ -58,7 +56,6 @@ public class EdgeStackProps implements StackProps {
         private String resourceNamePrefix;
         private String compressedResourceNamePrefix;
         private String certificateArn;
-        private String webBucketArn;
         private int accessLogGroupRetentionPeriodDays;
         private Map<String, String> pathsToOriginLambdaFunctionArns;
         private Environment env;
@@ -100,11 +97,6 @@ public class EdgeStackProps implements StackProps {
 
         public Builder compressedResourceNamePrefix(String compressedResourceNamePrefix) {
             this.compressedResourceNamePrefix = compressedResourceNamePrefix;
-            return this;
-        }
-
-        public Builder webBucketArn(String webBucketArn) {
-            this.webBucketArn = webBucketArn;
             return this;
         }
 

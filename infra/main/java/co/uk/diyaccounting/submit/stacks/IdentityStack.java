@@ -1,7 +1,6 @@
 package co.uk.diyaccounting.submit.stacks;
 
 import co.uk.diyaccounting.submit.utils.ResourceNameUtils;
-import software.amazon.awscdk.CfnOutput;
 import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
@@ -39,6 +38,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
+
+import static co.uk.diyaccounting.submit.awssdk.KindCdk.cfnOutput;
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
 
 public class IdentityStack extends Stack {
 
@@ -524,42 +526,22 @@ public class IdentityStack extends Stack {
 
         // Stack Outputs for Identity resources
         if (this.userPool != null) {
-            CfnOutput.Builder.create(this, "UserPoolId")
-                    .value(this.userPool.getUserPoolId())
-                    .build();
-            CfnOutput.Builder.create(this, "UserPoolArn")
-                    .value(this.userPool.getUserPoolArn())
-                    .build();
+            cfnOutput(this, "UserPoolId", this.userPool.getUserPoolId());
+            cfnOutput(this, "UserPoolArn", this.userPool.getUserPoolArn());
         }
         if (this.userPoolClient != null) {
-            CfnOutput.Builder.create(this, "UserPoolClientId")
-                    .value(this.userPoolClient.getUserPoolClientId())
-                    .build();
+            cfnOutput(this, "UserPoolClientId", this.userPoolClient.getUserPoolClientId());
         }
-        if (this.userPoolDomain != null) {
-            CfnOutput.Builder.create(this, "UserPoolDomainName")
-                    .value(this.userPoolDomain.getDomainName())
-                    .build();
-        }
-        if (this.userPoolDomainARecord != null) {
-            CfnOutput.Builder.create(this, "UserPoolDomainARecord")
-                    .value(this.userPoolDomainARecord.getDomainName())
-                    .build();
-        }
-        if (this.userPoolDomainAaaaRecord != null) {
-            CfnOutput.Builder.create(this, "UserPoolDomainAaaaRecord")
-                    .value(this.userPoolDomainAaaaRecord.getDomainName())
-                    .build();
-        }
+        cfnOutput(this, "UserPoolDomainName", this.userPoolDomain.getDomainName());
+        cfnOutput(this, "UserPoolDomainARecord", this.userPoolDomainARecord.getDomainName());
+        cfnOutput(this, "UserPoolDomainAaaaRecord", this.userPoolDomainAaaaRecord.getDomainName());
         if (this.googleIdentityProvider != null) {
-            CfnOutput.Builder.create(this, "CognitoGoogleIdpId")
-                    .value(this.googleIdentityProvider.getProviderName())
-                    .build();
+            cfnOutput(this, "CognitoGoogleIdpId", this.googleIdentityProvider.getProviderName());
         }
         if (this.antonyccIdentityProvider != null) {
-            CfnOutput.Builder.create(this, "CognitoAntonyccIdpId")
-                    .value(this.antonyccIdentityProvider.getProviderName())
-                    .build();
+            cfnOutput(this, "CognitoAntonyccIdpId", this.antonyccIdentityProvider.getProviderName());
         }
+
+        infof("IdentityStack %s created successfully for %s", this.getNode().getId(), dashedDomainName);
     }
 }

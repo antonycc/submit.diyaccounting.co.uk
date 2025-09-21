@@ -1,7 +1,6 @@
 package co.uk.diyaccounting.submit.stacks;
 
 import co.uk.diyaccounting.submit.utils.ResourceNameUtils;
-import software.amazon.awscdk.CfnOutput;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.Stack;
@@ -23,6 +22,7 @@ import java.util.AbstractMap;
 import java.util.List;
 import java.util.regex.Pattern;
 
+import static co.uk.diyaccounting.submit.awssdk.KindCdk.cfnOutput;
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 
 /**
@@ -126,27 +126,12 @@ public class DevStack extends Stack {
                 .build();
 
         // Output key information
-        CfnOutput.Builder.create(this, "EcrRepositoryArn")
-                .value(this.ecrRepository.getRepositoryArn())
-                .description("ARN of the ECR repository")
-                .build();
+        cfnOutput(this, "EcrRepositoryArn", this.ecrRepository.getRepositoryArn());
+        cfnOutput(this, "EcrRepositoryUri", this.ecrRepository.getRepositoryUri());
+        cfnOutput(this, "EcrLogGroupArn", this.ecrLogGroup.getLogGroupArn());
+        cfnOutput(this, "EcrPublishRoleArn", this.ecrPublishRole.getRoleArn());
 
-        CfnOutput.Builder.create(this, "EcrRepositoryUri")
-                .value(this.ecrRepository.getRepositoryUri())
-                .description("URI of the ECR repository")
-                .build();
-
-        CfnOutput.Builder.create(this, "EcrLogGroupArn")
-                .value(this.ecrLogGroup.getLogGroupArn())
-                .description("ARN of the ECR CloudWatch Log Group")
-                .build();
-
-        CfnOutput.Builder.create(this, "EcrPublishRoleArn")
-                .value(this.ecrPublishRole.getRoleArn())
-                .description("ARN of the ECR publish role")
-                .build();
-
-        infof("DevStack created successfully for %s", dashedDomainName);
+        infof("DevStack %s created successfully for %s", this.getNode().getId(), dashedDomainName);
     }
 
     /**

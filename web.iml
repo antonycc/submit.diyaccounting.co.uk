@@ -13,6 +13,8 @@
       <excludeFolder url="file://$MODULE_DIR$/coverage" />
       <excludeFolder url="file://$MODULE_DIR$/test-reports" />
       <excludeFolder url="file://$MODULE_DIR$/test-results" />
+      <excludeFolder url="file://$MODULE_DIR$/cdk-submit-application.out" />
+      <excludeFolder url="file://$MODULE_DIR$/cdk-submit-delivery.out" />
     </content>
   </component>
 </module>

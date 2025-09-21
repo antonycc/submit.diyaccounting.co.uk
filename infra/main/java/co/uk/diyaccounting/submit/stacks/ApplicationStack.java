@@ -3,7 +3,6 @@ package co.uk.diyaccounting.submit.stacks;
 import co.uk.diyaccounting.submit.constructs.LambdaUrlOrigin;
 import co.uk.diyaccounting.submit.constructs.LambdaUrlOriginOpts;
 import co.uk.diyaccounting.submit.utils.ResourceNameUtils;
-import software.amazon.awscdk.CfnOutput;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.Stack;
@@ -27,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
+import static co.uk.diyaccounting.submit.awssdk.KindCdk.cfnOutput;
 import static co.uk.diyaccounting.submit.awssdk.S3.createLifecycleRules;
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 
@@ -45,9 +45,9 @@ public class ApplicationStack extends Stack {
     public Function logReceiptLambda;
     //public FunctionUrl logReceiptLambdaUrl;
     public LogGroup logReceiptLambdaLogGroup;
-    public Function bundleLambda;
+    //public Function bundleLambda;
     //public FunctionUrl bundleLambdaUrl;
-    public LogGroup bundleLambdaLogGroup;
+    //public LogGroup bundleLambdaLogGroup;
     public Function catalogLambda;
     //public FunctionUrl catalogLambdaUrl;
     public LogGroup catalogLambdaLogGroup;
@@ -120,6 +120,7 @@ public class ApplicationStack extends Stack {
         this.authUrlHmrcLambda = authUrlHmrcLambdaUrlOrigin.lambda;
         //this.authUrlHmrcLambdaUrl = authUrlHmrcLambdaUrlOrigin.functionUrl;
         this.authUrlHmrcLambdaLogGroup = authUrlHmrcLambdaUrlOrigin.logGroup;
+        infof("Created Lambda %s for HMRC auth URL with handler %s", this.authUrlHmrcLambda.getNode().getId(), builder.lambdaEntry + "authUrl.httpGetHmrc");
         //lambdaUrlToOriginsBehaviourMappings.put(
         //    "/api/hmrc/auth-url" + "*", authUrlHmrcLambdaUrlOrigin.lambda.getFunctionArn());
 
@@ -151,6 +152,7 @@ public class ApplicationStack extends Stack {
         this.exchangeHmrcTokenLambda = exchangeHmrcTokenLambdaUrlOrigin.lambda;
         //this.exchangeHmrcTokenLambdaUrl = exchangeHmrcTokenLambdaUrlOrigin.functionUrl;
         this.exchangeHmrcTokenLambdaLogGroup = exchangeHmrcTokenLambdaUrlOrigin.logGroup;
+        infof("Created Lambda %s for HMRC exchange token with handler %s", this.exchangeHmrcTokenLambda.getNode().getId(), builder.lambdaEntry + "exchangeToken.httpPostHmrc");
         //lambdaUrlToOriginsBehaviourMappings.put(
         //    "/api/hmrc/exchange-token" + "*", exchangeHmrcTokenLambdaUrlOrigin.lambda.getFunctionArn());
 
@@ -173,6 +175,7 @@ public class ApplicationStack extends Stack {
         this.submitVatLambda = submitVatLambdaUrlOrigin.lambda;
         //this.submitVatLambdaUrl = submitVatLambdaUrlOrigin.functionUrl;
         this.submitVatLambdaLogGroup = submitVatLambdaUrlOrigin.logGroup;
+        infof("Created Lambda %s for VAT submission with handler %s", this.submitVatLambda.getNode().getId(), builder.lambdaEntry + "submitVat.httpPost");
         //lambdaUrlToOriginsBehaviourMappings.put(
         //    "/api/submit-vat" + "*", submitVatLambdaUrlOrigin.lambda.getFunctionArn());
 
@@ -204,6 +207,7 @@ public class ApplicationStack extends Stack {
         this.logReceiptLambda = logReceiptLambdaUrlOrigin.lambda;
         //this.logReceiptLambdaUrl = logReceiptLambdaUrlOrigin.functionUrl;
         this.logReceiptLambdaLogGroup = logReceiptLambdaUrlOrigin.logGroup;
+        infof("Created Lambda %s for logging receipts with handler %s", this.logReceiptLambda.getNode().getId(), builder.lambdaEntry + "logReceipt.httpPost");
         //lambdaUrlToOriginsBehaviourMappings.put(
         //    "/api/log-receipt" + "*", logReceiptLambdaUrlOrigin.lambda.getFunctionArn());
 
@@ -225,6 +229,7 @@ public class ApplicationStack extends Stack {
         this.catalogLambda = catalogLambdaUrlOrigin.lambda;
         //this.catalogLambdaUrl = catalogLambdaUrlOrigin.functionUrl;
         this.catalogLambdaLogGroup = catalogLambdaUrlOrigin.logGroup;
+        infof("Created Lambda %s for catalog retrieval with handler %s", this.catalogLambda.getNode().getId(), builder.lambdaEntry + "getCatalog.httpGet");
         //lambdaUrlToOriginsBehaviourMappings.put(
         //    "/api/catalog" + "*", catalogLambdaUrlOrigin.lambda.getFunctionArn());
 
@@ -245,6 +250,7 @@ public class ApplicationStack extends Stack {
         this.myBundlesLambda = myBundlesLambdaUrlOrigin.lambda;
         //this.myBundlesLambdaUrl = myBundlesLambdaUrlOrigin.functionUrl;
         this.myBundlesLambdaLogGroup = myBundlesLambdaUrlOrigin.logGroup;
+        infof("Created Lambda %s for my bundles retrieval with handler %s", this.myBundlesLambda.getNode().getId(), builder.lambdaEntry + "myBundles.httpGet");
         //lambdaUrlToOriginsBehaviourMappings.put(
         //    "/api/my-bundles" + "*", myBundlesLambdaUrlOrigin.lambda.getFunctionArn());
 
@@ -267,6 +273,7 @@ public class ApplicationStack extends Stack {
         this.myReceiptsLambda = myReceiptsLambdaUrlOrigin.lambda;
         //this.myReceiptsLambdaUrl = myReceiptsLambdaUrlOrigin.functionUrl;
         this.myReceiptsLambdaLogGroup = myReceiptsLambdaUrlOrigin.logGroup;
+        infof("Created Lambda %s for my receipts retrieval with handler %s", this.myReceiptsLambda.getNode().getId(), builder.lambdaEntry + "myReceipts.httpGet");
         //lambdaUrlToOriginsBehaviourMappings.put(
         //    "/api/my-receipts" + "*", myReceiptsLambdaUrlOrigin.behaviorOptions);
         //lambdaUrlToOriginsBehaviourMappings.put(
@@ -289,45 +296,23 @@ public class ApplicationStack extends Stack {
             .lifecycleRules(createLifecycleRules(2555)) // 7 years for tax records as per HMRC requirements
             .objectOwnership(ObjectOwnership.OBJECT_WRITER)
             .build();
+        infof("Created receipts bucket with name %s and id %s", receiptsBucketFullName, this.receiptsBucket.getNode().getId());
         if (this.logReceiptLambda != null)
             this.receiptsBucket.grantWrite(this.logReceiptLambda);
         if (this.myReceiptsLambda != null) this.receiptsBucket.grantRead(this.myReceiptsLambda);
 
-        //this.additionalOriginsBehaviourMappings = lambdaUrlToOriginsBehaviourMappings;
+        cfnOutput(this, "AuthUrlHmrcLambdaArn", this.authUrlHmrcLambda.getFunctionArn());
+        cfnOutput(this, "ExchangeHmrcTokenLambdaArn", this.exchangeHmrcTokenLambda.getFunctionArn());
+        cfnOutput(this, "SubmitVatLambdaArn", this.submitVatLambda.getFunctionArn());
+        cfnOutput(this, "LogReceiptLambdaArn", this.logReceiptLambda.getFunctionArn());
+        // cfnOutput(this, "BundleLambdaArn", this.bundleLambda.getFunctionArn());
+        cfnOutput(this, "CatalogLambdaArn", this.catalogLambda.getFunctionArn());
+        cfnOutput(this, "MyBundlesLambdaArn", this.myBundlesLambda.getFunctionArn());
+        cfnOutput(this, "MyReceiptsLambdaArn", this.myReceiptsLambda.getFunctionArn());
+        cfnOutput(this, "ReceiptsBucketName", this.receiptsBucket.getBucketName());
+        cfnOutput(this, "ReceiptsBucketArn", this.receiptsBucket.getBucketArn());
 
-        if (this.authUrlHmrcLambda != null) {
-            CfnOutput.Builder.create(this, "AuthUrlHmrcLambdaArn")
-                .value(this.authUrlHmrcLambda.getFunctionArn())
-                .build();
-        }
-        if (this.exchangeHmrcTokenLambda != null) {
-            CfnOutput.Builder.create(this, "ExchangeHmrcTokenLambdaArn")
-                .value(this.exchangeHmrcTokenLambda.getFunctionArn())
-                .build();
-        }
-        if (this.submitVatLambda != null) {
-            CfnOutput.Builder.create(this, "SubmitVatLambdaArn")
-                .value(this.submitVatLambda.getFunctionArn())
-                .build();
-        }
-        if (this.logReceiptLambda != null) {
-            CfnOutput.Builder.create(this, "LogReceiptLambdaArn")
-                .value(this.logReceiptLambda.getFunctionArn())
-                .build();
-        }
-        if (this.bundleLambda != null) {
-            CfnOutput.Builder.create(this, "BundleLambdaArn")
-                .value(this.bundleLambda.getFunctionArn())
-                .build();
-        }
-        if (this.myReceiptsLambda != null) {
-            CfnOutput.Builder.create(this, "MyReceiptsLambdaArn")
-                .value(this.myReceiptsLambda.getFunctionArn())
-                .build();
-        }
-
-
-        infof("ApplicationStack created successfully for %s", dashedDomainName);
+        infof("ApplicationStack %s created successfully for %s", this.getNode().getId(), dashedDomainName);
     }
 
     /**
