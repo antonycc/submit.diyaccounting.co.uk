@@ -488,6 +488,17 @@ jobs:
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
           SELF_DESTRUCT_DELAY_HOURS: ${{ inputs.selfDestructDelayHours || '1' }}
           SELF_DESTRUCT_HANDLER_SOURCE: ${{ needs.mvn-test.outputs.self-destruct-handler-source }}
+          BASE_IMAGE_TAG: "${{ env.BASE_IMAGE_TAG_PREFIX }}:${{ github.sha }}"
+          GITHUB_ACTOR: ${{ github.actor }}
+          CERTIFICATE_ARN: ${{ vars.AWS_CERTIFICATE_ARN }}
+          CLOUD_TRAIL_ENABLED: ${{ vars.AWS_CLOUD_TRAIL_ENABLED }}
+          X_RAY_ENABLED: ${{ vars.AWS_X_RAY_ENABLED }}
+          VERBOSE_LOGGING: ${{ vars.AWS_VERBOSE_LOGGING }}
+          HOSTED_ZONE_ID: ${{ vars.AWS_HOSTED_ZONE_ID }}
+          HOSTED_ZONE_NAME: ${{ vars.AWS_HOSTED_ZONE_NAME }}
+          COMMIT_HASH: ${{ github.sha }}
+          DIY_SUBMIT_GOOGLE_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ needs.names.outputs.environment-name }}/submit/google/client_secret"
+          AUTH_CERTIFICATE_ARN: 'arn:aws:acm:us-east-1:887764105431:certificate/59a025f9-3620-43cd-9b2c-522f385ee223'
 
       - name: Upload CDK synthesis artifacts
         uses: actions/upload-artifact@v4
@@ -570,6 +581,8 @@ jobs:
           HOSTED_ZONE_ID: ${{ vars.AWS_HOSTED_ZONE_ID }}
           HOSTED_ZONE_NAME: ${{ vars.AWS_HOSTED_ZONE_NAME }}
           COMMIT_HASH: ${{ github.sha }}
+          DIY_SUBMIT_GOOGLE_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ needs.names.outputs.environment-name }}/submit/google/client_secret"
+          AUTH_CERTIFICATE_ARN: 'arn:aws:acm:us-east-1:887764105431:certificate/59a025f9-3620-43cd-9b2c-522f385ee223'
 
   deploy-observability:
     name: 'deploy observability'
