@@ -499,6 +499,7 @@ jobs:
           SELF_DESTRUCT_DELAY_HOURS: ${{ inputs.selfDestructDelayHours || '1' }}
           SELF_DESTRUCT_HANDLER_SOURCE: "../${{ needs.mvn-package.outputs.self-destruct-handler-source }}"
           BASE_IMAGE_TAG: ${{ github.sha }}
+          #BASE_IMAGE_TAG: "${{ env.BASE_IMAGE_TAG_PREFIX }}:${{ github.sha }}"
           GITHUB_ACTOR: ${{ github.actor }}
           CERTIFICATE_ARN: ${{ vars.AWS_CERTIFICATE_ARN }}
           CLOUD_TRAIL_ENABLED: ${{ vars.AWS_CLOUD_TRAIL_ENABLED }}
@@ -847,6 +848,7 @@ jobs:
           ENV_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
           BASE_IMAGE_TAG: ${{ github.sha }}
+          #BASE_IMAGE_TAG: "${{ env.BASE_IMAGE_TAG_PREFIX }}:${{ github.sha }}"
           GITHUB_ACTOR: ${{ github.actor }}
           CLOUD_TRAIL_ENABLED: ${{ vars.AWS_CLOUD_TRAIL_ENABLED }}
           X_RAY_ENABLED: ${{ vars.AWS_X_RAY_ENABLED }}
