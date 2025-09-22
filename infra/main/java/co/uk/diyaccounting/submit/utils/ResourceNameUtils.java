@@ -11,6 +11,27 @@ public class ResourceNameUtils {
     private static final List<AbstractMap.SimpleEntry<Pattern, String>> dashSeparatedMappings =
             List.of(new AbstractMap.SimpleEntry<>(Pattern.compile("\\."), "-"));
 
+    public static final List<AbstractMap.SimpleEntry<Pattern, String>> domainNameMappings = List.of();
+
+    // Naming utility methods following WebStack patterns
+    public static String buildDomainName(String env, String subDomainName, String hostedZoneName) {
+        return env.equals("prod")
+                ? buildProdDomainName(subDomainName, hostedZoneName)
+                : buildNonProdDomainName(env, subDomainName, hostedZoneName);
+    }
+
+    public static String buildProdDomainName(String subDomainName, String hostedZoneName) {
+        return "%s.%s".formatted(subDomainName, hostedZoneName);
+    }
+
+    public static String buildNonProdDomainName(String env, String subDomainName, String hostedZoneName) {
+        return "%s.%s.%s".formatted(env, subDomainName, hostedZoneName);
+    }
+
+    public static String buildDashedDomainName(String env, String subDomainName, String hostedZoneName) {
+        return ResourceNameUtils.convertDotSeparatedToDashSeparated(
+                "%s.%s.%s".formatted(env, subDomainName, hostedZoneName), domainNameMappings);
+    }
 
     /**
      * Generate a predictable resource name prefix based on domain name and deployment name.
@@ -63,11 +84,11 @@ public class ResourceNameUtils {
         }
         var derivedResourceName = sb.append('-').append(deploymentName).toString();
         var truncatedResourceName =
-            derivedResourceName.length() > 16 ? derivedResourceName.substring(0, 16) : derivedResourceName;
+                derivedResourceName.length() > 16 ? derivedResourceName.substring(0, 16) : derivedResourceName;
 
         return truncatedResourceName;
     }
-    
+
     public static String convertCamelCaseToDashSeparated(String input) {
         if (input == null || input.isEmpty()) {
             return input;
@@ -112,13 +133,13 @@ public class ResourceNameUtils {
 
         // Replace any invalid characters with dashes and normalize
         String cleanPrefix = resourceNamePrefix
-            .replaceAll("[^a-zA-Z0-9+=,.@-]", "-")
-            .replaceAll("-+", "-") // Collapse multiple dashes
-            .replaceAll("^-+|-+$", ""); // Remove leading/trailing dashes
+                .replaceAll("[^a-zA-Z0-9+=,.@-]", "-")
+                .replaceAll("-+", "-") // Collapse multiple dashes
+                .replaceAll("^-+|-+$", ""); // Remove leading/trailing dashes
 
         String cleanSuffix = suffix.replaceAll("[^a-zA-Z0-9+=,.@-]", "-")
-            .replaceAll("-+", "-")
-            .replaceAll("^-+|-+$", "");
+                .replaceAll("-+", "-")
+                .replaceAll("^-+|-+$", "");
 
         String fullName = cleanPrefix + "-" + cleanSuffix;
 
@@ -130,6 +151,63 @@ public class ResourceNameUtils {
         }
 
         return fullName;
+    }
+
+    public static String buildTrailName(String dashedDomainName) {
+        return "%s-cloud-trail".formatted(dashedDomainName);
+    }
+
+    public static String buildFunctionName(String dashedDomainName, String functionName) {
+        if (functionName == null || functionName.isBlank()) {
+            throw new IllegalArgumentException("Function name cannot be null or blank");
+        }
+        return "%s-%s".formatted(dashedDomainName, ResourceNameUtils.convertCamelCaseToDashSeparated(functionName));
+    }
+
+    public static String buildEcrRepositoryName(String dashedDomainName) {
+        return "%s-ecr".formatted(dashedDomainName);
+    }
+
+    public static String buildEcrLogGroupName(String dashedDomainName) {
+        return "/aws/ecr/%s".formatted(dashedDomainName);
+    }
+
+    public static String buildEcrPublishRoleName(String dashedDomainName) {
+        return "%s-ecr-publish-role".formatted(dashedDomainName);
+    }
+
+    public static String buildCognitoDomainName(
+            String env, String cognitoDomainPrefix, String subDomainName, String hostedZoneName) {
+        if (env == null || env.isBlank()) {
+            throw new IllegalArgumentException("env is required to build cognito domain name");
+        }
+        if (subDomainName == null || subDomainName.isBlank()) {
+            throw new IllegalArgumentException("subDomainName is required to build cognito domain name");
+        }
+        if (hostedZoneName == null || hostedZoneName.isBlank()) {
+            throw new IllegalArgumentException("hostedZoneName is required to build cognito domain name");
+        }
+        return "prod".equals(env)
+                ? buildProdCognitoDomainName(cognitoDomainPrefix, subDomainName, hostedZoneName)
+                : buildNonProdCognitoDomainName(env, cognitoDomainPrefix, subDomainName, hostedZoneName);
+    }
+
+    public static String buildProdCognitoDomainName(
+            String cognitoDomainPrefix, String subDomainName, String hostedZoneName) {
+        return "%s.%s.%s".formatted(cognitoDomainPrefix, subDomainName, hostedZoneName);
+    }
+
+    public static String buildNonProdCognitoDomainName(
+            String env, String cognitoDomainPrefix, String subDomainName, String hostedZoneName) {
+        return "%s.%s.%s.%s".formatted(env, cognitoDomainPrefix, subDomainName, hostedZoneName);
+    }
+
+    public static String buildDashedCognitoDomainName(String cognitoDomainName) {
+        return ResourceNameUtils.convertDotSeparatedToDashSeparated(cognitoDomainName, domainNameMappings);
+    }
+
+    public static String buildCognitoBaseUri(String cognitoDomain) {
+        return "https://%s".formatted(cognitoDomain);
     }
 
     public static String applyMappings(String input, List<AbstractMap.SimpleEntry<Pattern, String>> mappings) {

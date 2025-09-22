@@ -68,14 +68,29 @@
                 <version>5.3.5</version>
             </dependency>
             <dependency>
+                <groupId>org.immutables</groupId>
+                <artifactId>value</artifactId>
+                <version>2.10.1</version>
+            </dependency>
+            <dependency>
                 <groupId>org.mockito</groupId>
                 <artifactId>mockito-core</artifactId>
                 <version>5.19.0</version>
             </dependency>
             <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-simple</artifactId>
+                <version>2.0.16</version>
+            </dependency>
+            <dependency>
                 <groupId>software.amazon.awscdk</groupId>
                 <artifactId>aws-cdk-lib</artifactId>
                 <version>${cdk.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>software.amazon.awssdk</groupId>
+                <artifactId>cloudformation</artifactId>
+                <version>2.33.11</version>
             </dependency>
             <dependency>
                 <groupId>software.amazon.awssdk</groupId>
@@ -88,11 +103,6 @@
                 <version>2.33.11</version>
             </dependency>
             <dependency>
-                <groupId>software.amazon.awssdk</groupId>
-                <artifactId>cloudformation</artifactId>
-                <version>2.33.11</version>
-            </dependency>
-            <dependency>
                 <groupId>software.constructs</groupId>
                 <artifactId>constructs</artifactId>
                 <version>10.4.2</version>
@@ -101,11 +111,6 @@
                 <groupId>uk.org.webcompere</groupId>
                 <artifactId>system-stubs-jupiter</artifactId>
                 <version>2.1.8</version>
-            </dependency>
-            <dependency>
-                <groupId>org.slf4j</groupId>
-                <artifactId>slf4j-simple</artifactId>
-                <version>2.0.16</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -131,6 +136,10 @@
         </dependency>
         <dependency>
             <groupId>software.amazon.awssdk</groupId>
+            <artifactId>cloudformation</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
             <artifactId>lambda</artifactId>
         </dependency>
         <dependency>
@@ -138,12 +147,13 @@
             <artifactId>s3</artifactId>
         </dependency>
         <dependency>
-            <groupId>software.amazon.awssdk</groupId>
-            <artifactId>cloudformation</artifactId>
-        </dependency>
-        <dependency>
             <groupId>software.constructs</groupId>
             <artifactId>constructs</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.immutables</groupId>
+            <artifactId>value</artifactId>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.dataformat</groupId>
@@ -248,7 +258,15 @@
                     <source>${maven.compiler.source}</source>
                     <target>${maven.compiler.target}</target>
                     <!-- Suppress annotation processing warning -->
-                    <proc>none</proc>
+                    <!--proc>none</proc-->
+                    <!-- Enable annotation processing for immutables -->
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.immutables</groupId>
+                            <artifactId>value</artifactId>
+                            <version>2.10.1</version>
+                        </path>
+                    </annotationProcessorPaths>
                     <!-- JVM arguments to suppress class sharing warnings during compilation -->
                     <compilerArgs>
                         <arg>-J-Xshare:off</arg>
@@ -292,6 +310,69 @@
                 <version>3.6.0</version>
 
                 <executions>
+
+                    <execution>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <phase>package</phase>
+                        <configuration>
+                            <finalName>self-destruct-lambda</finalName>
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>co.uk.diyaccounting.submit.functions.SelfDestructHandler</mainClass>
+                                </transformer>
+                            </transformers>
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <!-- Exclude signature files -->
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.DSA</exclude>
+                                        <exclude>META-INF/*.RSA</exclude>
+                                        <exclude>META-INF/DEPENDENCIES</exclude>
+                                        <exclude>META-INF/MANIFEST.MF</exclude>
+
+                                        <!-- Exclude duplicate Maven metadata -->
+                                        <exclude>META-INF/maven/**</exclude>
+
+                                        <!-- Exclude module info -->
+                                        <exclude>**/module-info.class</exclude>
+
+                                        <!-- Exclude version properties -->
+                                        <exclude>META-INF/io.netty.versions.properties</exclude>
+                                        <exclude>META-INF/*.properties</exclude>
+
+                                        <!-- Exclude native image configurations that may conflict -->
+                                        <exclude>META-INF/native-image/**</exclude>
+
+                                        <!-- Exclude duplicate license and notice files -->
+                                        <exclude>META-INF/LICENSE*</exclude>
+                                        <exclude>META-INF/NOTICE*</exclude>
+                                        <exclude>META-INF/*LICENSE*</exclude>
+                                        <exclude>META-INF/*NOTICE*</exclude>
+                                        <exclude>META-INF/FastDoubleParser-LICENSE</exclude>
+                                        <exclude>META-INF/FastDoubleParser-NOTICE</exclude>
+                                        <exclude>META-INF/bigint-LICENSE</exclude>
+
+                                        <!-- Exclude version-specific directories -->
+                                        <exclude>META-INF.versions.*/**</exclude>
+
+                                        <!-- Exclude duplicate resource files -->
+                                        <exclude>Log4j-*.dtd</exclude>
+                                        <exclude>Log4j-*.xsd</exclude>
+                                        <exclude>Log4j-*.properties</exclude>
+                                        <exclude>mime.types</exclude>
+                                        <exclude>VersionInfo.java</exclude>
+                                        <exclude>mozilla/public-suffix-list.txt</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                            <minimizeJar>false</minimizeJar>
+                            <createSourcesJar>false</createSourcesJar>
+                        </configuration>
+                    </execution>
 
                     <execution>
                         <id>shade-submit-application</id>
@@ -372,69 +453,6 @@
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <mainClass>co.uk.diyaccounting.submit.SubmitDelivery</mainClass>
-                                </transformer>
-                            </transformers>
-                            <filters>
-                                <filter>
-                                    <artifact>*:*</artifact>
-                                    <excludes>
-                                        <!-- Exclude signature files -->
-                                        <exclude>META-INF/*.SF</exclude>
-                                        <exclude>META-INF/*.DSA</exclude>
-                                        <exclude>META-INF/*.RSA</exclude>
-                                        <exclude>META-INF/DEPENDENCIES</exclude>
-                                        <exclude>META-INF/MANIFEST.MF</exclude>
-
-                                        <!-- Exclude duplicate Maven metadata -->
-                                        <exclude>META-INF/maven/**</exclude>
-
-                                        <!-- Exclude module info -->
-                                        <exclude>**/module-info.class</exclude>
-
-                                        <!-- Exclude version properties -->
-                                        <exclude>META-INF/io.netty.versions.properties</exclude>
-                                        <exclude>META-INF/*.properties</exclude>
-
-                                        <!-- Exclude native image configurations that may conflict -->
-                                        <exclude>META-INF/native-image/**</exclude>
-
-                                        <!-- Exclude duplicate license and notice files -->
-                                        <exclude>META-INF/LICENSE*</exclude>
-                                        <exclude>META-INF/NOTICE*</exclude>
-                                        <exclude>META-INF/*LICENSE*</exclude>
-                                        <exclude>META-INF/*NOTICE*</exclude>
-                                        <exclude>META-INF/FastDoubleParser-LICENSE</exclude>
-                                        <exclude>META-INF/FastDoubleParser-NOTICE</exclude>
-                                        <exclude>META-INF/bigint-LICENSE</exclude>
-
-                                        <!-- Exclude version-specific directories -->
-                                        <exclude>META-INF.versions.*/**</exclude>
-
-                                        <!-- Exclude duplicate resource files -->
-                                        <exclude>Log4j-*.dtd</exclude>
-                                        <exclude>Log4j-*.xsd</exclude>
-                                        <exclude>Log4j-*.properties</exclude>
-                                        <exclude>mime.types</exclude>
-                                        <exclude>VersionInfo.java</exclude>
-                                        <exclude>mozilla/public-suffix-list.txt</exclude>
-                                    </excludes>
-                                </filter>
-                            </filters>
-                            <minimizeJar>false</minimizeJar>
-                            <createSourcesJar>false</createSourcesJar>
-                        </configuration>
-                    </execution>
-
-                    <execution>
-                        <goals>
-                            <goal>shade</goal>
-                        </goals>
-                        <phase>package</phase>
-                        <configuration>
-                            <finalName>self-destruct-lambda</finalName>
-                            <transformers>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>co.uk.diyaccounting.submit.functions.SelfDestructHandler</mainClass>
                                 </transformer>
                             </transformers>
                             <filters>

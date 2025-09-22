@@ -39,27 +39,32 @@ public class IdentityStackTest {
     }
 
     private IdentityStack createTestIdentityStack(App app) {
-        return IdentityStack.Builder.create(app, "TestIdentityStack")
-                .env("test")
-                .hostedZoneName("submit.diyaccounting.co.uk")
-                .hostedZoneId("ZTEST123456789")
-                .subDomainName("submit")
-                .authCertificateArn("arn:aws:acm:eu-west-2:000000000000:certificate/test")
-                .accessLogGroupRetentionPeriodDays("30")
-                .cloudTrailEnabled("false")
-                .cloudTrailEventSelectorPrefix("none")
-                .xRayEnabled("false")
-                .verboseLogging("false")
-                .homeUrl("https://test.submit.diyaccounting.co.uk/")
-                // Provide Google configuration to avoid lookups/nulls in tests
-                .googleClientId("test-google-client-id")
-                .googleClientSecretArn(
-                        "arn:aws:secretsmanager:eu-west-2:000000000000:secret:diy/test/submit/google/client_secret")
-                // Provide Cognito values used by builder
-                .antonyccClientId("test-client-id")
-                .antonyccBaseUri("https://test")
-                // Optional/feature flags for Cognito
-                .cognitoDomainPrefix("auth")
-                .build();
+        return new IdentityStack(
+                app,
+                "TestIdentityStack",
+                IdentityStack.IdentityStackProps.builder()
+                        .env("test")
+                        .hostedZoneName("submit.diyaccounting.co.uk")
+                        .hostedZoneId("ZTEST123456789")
+                        .subDomainName("submit")
+                        .authCertificateArn("arn:aws:acm:eu-west-2:000000000000:certificate/test")
+                        .accessLogGroupRetentionPeriodDays("30")
+                        .cloudTrailEnabled("false")
+                        .xRayEnabled("false")
+                        .verboseLogging("false")
+                        .homeUrl("https://test.submit.diyaccounting.co.uk/")
+                        // Provide Google configuration to avoid lookups/nulls in tests
+                        .googleClientId("test-google-client-id")
+                        .googleClientSecretArn(
+                                "arn:aws:secretsmanager:eu-west-2:000000000000:secret:diy/test/submit/google/client_secret")
+                        // Provide Cognito values used by builder
+                        .antonyccClientId("test-client-id")
+                        .antonyccBaseUri("https://test")
+                        // Optional/feature flags for Cognito
+                        .cognitoDomainPrefix("auth")
+                        .useExistingAuthCertificate("true")
+                        .cognitoFeaturePlan("ESSENTIALS")
+                        .cognitoEnableLogDelivery("false")
+                        .build());
     }
 }

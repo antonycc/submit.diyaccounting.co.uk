@@ -1,293 +1,207 @@
 package co.uk.diyaccounting.submit.stacks;
 
 import co.uk.diyaccounting.submit.constructs.LambdaUrlOrigin;
-import co.uk.diyaccounting.submit.constructs.LambdaUrlOriginOpts;
-import co.uk.diyaccounting.submit.utils.ResourceNameUtils;
+import co.uk.diyaccounting.submit.constructs.LambdaUrlOriginProps;
+import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.services.cloudfront.AllowedMethods;
 import software.amazon.awscdk.services.lambda.Function;
-import software.amazon.awscdk.services.lambda.FunctionUrl;
 import software.amazon.awscdk.services.lambda.FunctionUrlAuthType;
 import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
 
-import java.util.AbstractMap;
 import java.util.HashMap;
-import java.util.List;
-import java.util.regex.Pattern;
+import java.util.Optional;
 
 import static co.uk.diyaccounting.submit.awssdk.KindCdk.cfnOutput;
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildFunctionName;
 
 public class AuthStack extends Stack {
 
-    // CDK resources here
     public Function authUrlMockLambda;
-    //public FunctionUrl authUrlMockLambdaUrl;
     public LogGroup authUrlMockLambdaLogGroup;
     public Function authUrlCognitoLambda;
-    public FunctionUrl authUrlCognitoLambdaUrl;
     public LogGroup authUrlCognitoLambdaLogGroup;
     public Function exchangeCognitoTokenLambda;
-    public FunctionUrl exchangeCognitoTokenLambdaUrl;
     public LogGroup exchangeCognitoTokenLambdaLogGroup;
-    //public Map<String, String> additionalOriginsBehaviourMappings;
 
-    public AuthStack(Construct scope, String id, AuthStack.Builder builder) {
-        this(scope, id, null, builder);
+    @Value.Immutable
+    public interface AuthStackProps {
+        String env();
+        String subDomainName();
+        String resourceNamePrefix();
+
+        String compressedResourceNamePrefix();
+        String hostedZoneName();
+        String cloudTrailEnabled();
+        String xRayEnabled();
+        String baseImageTag();
+        String ecrRepositoryArn();
+        String ecrRepositoryName();
+        String lambdaEntry();
+        String lambdaUrlAuthType();
+        String homeUrl();
+        String cognitoClientId();
+        String cognitoBaseUri();
+
+        // Optional test access token for local/dev testing without real Cognito interaction
+        //@Value.Default
+        Optional<String> optionalTestAccessToken(); // {
+            //return Optional.empty();
+        //}
+
+        static ImmutableAuthStackProps.Builder builder() {
+            return ImmutableAuthStackProps.builder();
+        }
     }
 
-    public AuthStack(Construct scope, String id, StackProps props, AuthStack.Builder builder) {
-        super(scope, id, props);
+    public AuthStack(Construct scope, String id, AuthStackProps props) {
+        this(scope, id, null, props);
+    }
+
+    public AuthStack(Construct scope, String id, StackProps stackProps, AuthStackProps props) {
+        super(scope, id, stackProps);
 
         // Values are provided via SubmitApplication after context/env resolution
 
         // Build naming using same patterns as WebStack
-        String domainName = Builder.buildDomainName(builder.env, builder.subDomainName, builder.hostedZoneName);
-        String dashedDomainName =
-                Builder.buildDashedDomainName(builder.env, builder.subDomainName, builder.hostedZoneName);
+        //String dashedDomainName = buildNonProdDomainName(props.env(), props.subDomainName(), props.hostedZoneName());
 
-        boolean cloudTrailEnabled = Boolean.parseBoolean(builder.cloudTrailEnabled);
-        boolean xRayEnabled = Boolean.parseBoolean(builder.xRayEnabled);
-        boolean verboseLogging = builder.verboseLogging == null || Boolean.parseBoolean(builder.verboseLogging);
+        boolean cloudTrailEnabled = Boolean.parseBoolean(props.cloudTrailEnabled());
+        boolean xRayEnabled = Boolean.parseBoolean(props.xRayEnabled());
 
         // Lambdas
 
         // Determine Lambda URL authentication type
-        FunctionUrlAuthType functionUrlAuthType = "AWS_IAM".equalsIgnoreCase(builder.lambdaUrlAuthType)
-            ? FunctionUrlAuthType.AWS_IAM
-            : FunctionUrlAuthType.NONE;
+        FunctionUrlAuthType functionUrlAuthType = "AWS_IAM".equalsIgnoreCase(props.lambdaUrlAuthType())
+                ? FunctionUrlAuthType.AWS_IAM
+                : FunctionUrlAuthType.NONE;
 
-        // Common options for all Lambda URL origins to reduce repetition
-        var lambdaCommonOpts = LambdaUrlOriginOpts.Builder.create()
-            .env(builder.env)
-            .imageDirectory("infra/runtimes")
-            .functionUrlAuthType(functionUrlAuthType)
-            .cloudTrailEnabled(cloudTrailEnabled)
-            .xRayEnabled(xRayEnabled)
-            .verboseLogging(verboseLogging)
-            .baseImageTag(builder.baseImageTag)
-            .build();
-
-        //var lambdaUrlToOriginsBehaviourMappings = new HashMap<String, String>();
+        // var lambdaUrlToOriginsBehaviourMappings = new HashMap<String, String>();
 
         // authUrl - mock
         var authUrlMockLambdaEnv = new HashMap<String, String>();
-        //if (StringUtils.isNotBlank(builder.homeUrl)) {
-            authUrlMockLambdaEnv.put("DIY_SUBMIT_HOME_URL", builder.homeUrl);
-        //}
-        var authUrlMockLambdaUrlOrigin = LambdaUrlOrigin.Builder.create(this, "AuthUrlMock")
-            .options(lambdaCommonOpts)
-            .baseImageTag(builder.baseImageTag)
-            .ecrRepositoryName(builder.ecrRepositoryName)
-            .ecrRepositoryArn(builder.ecrRepositoryArn)
-            .imageFilename("authUrlMock.Dockerfile")
-            .functionName(WebStack.Builder.buildFunctionName(dashedDomainName, "authUrl.httpGetMock"))
-            .allowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
-            .handler(builder.lambdaEntry + "authUrl.httpGetMock")
-            .environment(authUrlMockLambdaEnv)
-            .timeout(Duration.millis(Long.parseLong("30000")))
-            .build(this);
+        // if (StringUtils.isNotBlank(props.homeUrl)) {
+        authUrlMockLambdaEnv.put("DIY_SUBMIT_HOME_URL", props.homeUrl());
+        // }
+        var authUrlMockLambdaUrlOrigin = new LambdaUrlOrigin(
+                this,
+                LambdaUrlOriginProps.builder()
+                        .env(props.env())
+                        .idPrefix("AuthUrlMock")
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.ecrRepositoryName())
+                        .ecrRepositoryArn(props.ecrRepositoryArn())
+                        .imageFilename("authUrlMock.Dockerfile")
+                        .functionName(buildFunctionName(props.compressedResourceNamePrefix(), "authUrl.httpGetMock"))
+                        .cloudFrontAllowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
+                        .handler(props.lambdaEntry() + "authUrl.httpGetMock")
+                        .environment(authUrlMockLambdaEnv)
+                        .timeout(Duration.millis(Long.parseLong("30000")))
+                        .build());
         this.authUrlMockLambda = authUrlMockLambdaUrlOrigin.lambda;
-        //this.authUrlMockLambdaUrl = authUrlMockLambdaUrlOrigin.functionUrl;
+        // this.authUrlMockLambdaUrl = authUrlMockLambdaUrlOrigin.functionUrl;
         this.authUrlMockLambdaLogGroup = authUrlMockLambdaUrlOrigin.logGroup;
-        infof("Created Lambda %s for mock auth URL with handler %s", this.authUrlMockLambda.getNode().getId(), builder.lambdaEntry + "authUrl.httpGetMock");
-        //lambdaUrlToOriginsBehaviourMappings.put(
+        infof(
+                "Created Lambda %s for mock auth URL with handler %s",
+                this.authUrlMockLambda.getNode().getId(), props.lambdaEntry() + "authUrl.httpGetMock");
+        // lambdaUrlToOriginsBehaviourMappings.put(
         //    "/api/mock/auth-url" + "*", authUrlMockLambdaUrlOrigin.lambda.getFunctionArn());
 
         // authUrl - Google or Antonycc via Cognito
         var authUrlCognitoLambdaEnv = new HashMap<String, String>();
-        //if (StringUtils.isNotBlank(builder.homeUrl)) {
-            authUrlCognitoLambdaEnv.put("DIY_SUBMIT_HOME_URL", builder.homeUrl);
-        //}
-        //if (StringUtils.isNotBlank(builder.cognitoClientId)) {
-            authUrlCognitoLambdaEnv.put("DIY_SUBMIT_COGNITO_CLIENT_ID", builder.cognitoClientId);
-        //}
-        //if (StringUtils.isNotBlank(builder.cognitoBaseUri)) {
-            authUrlCognitoLambdaEnv.put("DIY_SUBMIT_COGNITO_BASE_URI", builder.cognitoBaseUri);
-        //}
-        var authUrlCognitoLambdaUrlOrigin = LambdaUrlOrigin.Builder.create(this, "AuthUrlCognito")
-            .options(lambdaCommonOpts)
-            .baseImageTag(builder.baseImageTag)
-            .ecrRepositoryName(builder.ecrRepositoryName)
-            .ecrRepositoryArn(builder.ecrRepositoryArn)
-            .imageFilename("authUrlCognito.Dockerfile")
-            .functionName(
-                WebStack.Builder.buildFunctionName(dashedDomainName, "authUrl.httpGetCognito"))
-            .allowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
-            .handler(builder.lambdaEntry + "authUrl.httpGetCognito")
-            .environment(authUrlCognitoLambdaEnv)
-            .timeout(Duration.millis(Long.parseLong("30000")))
-            .build(this);
+        // if (StringUtils.isNotBlank(props.homeUrl)) {
+        authUrlCognitoLambdaEnv.put("DIY_SUBMIT_HOME_URL", props.homeUrl());
+        // }
+        // if (StringUtils.isNotBlank(props.cognitoClientId)) {
+        authUrlCognitoLambdaEnv.put("DIY_SUBMIT_COGNITO_CLIENT_ID", props.cognitoClientId());
+        // }
+        // if (StringUtils.isNotBlank(props.cognitoBaseUri)) {
+        authUrlCognitoLambdaEnv.put("DIY_SUBMIT_COGNITO_BASE_URI", props.cognitoBaseUri());
+        // }
+        var authUrlCognitoLambdaUrlOrigin = new LambdaUrlOrigin(
+                this,
+                LambdaUrlOriginProps.builder()
+                        .env(props.env())
+                        .idPrefix("AuthUrlCognito")
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.ecrRepositoryName())
+                        .ecrRepositoryArn(props.ecrRepositoryArn())
+                        .imageFilename("authUrlCognito.Dockerfile")
+                        .functionName(buildFunctionName(props.compressedResourceNamePrefix(), "authUrl.httpGetCognito"))
+                        .cloudFrontAllowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
+                        .handler(props.lambdaEntry() + "authUrl.httpGetCognito")
+                        .environment(authUrlCognitoLambdaEnv)
+                        .timeout(Duration.millis(Long.parseLong("30000")))
+                        .build());
         this.authUrlCognitoLambda = authUrlCognitoLambdaUrlOrigin.lambda;
-        //this.authUrlCognitoLambdaUrl = authUrlCognitoLambdaUrlOrigin.functionUrl;
+        // this.authUrlCognitoLambdaUrl = authUrlCognitoLambdaUrlOrigin.functionUrl;
         this.authUrlCognitoLambdaLogGroup = authUrlCognitoLambdaUrlOrigin.logGroup;
-        infof("Created Lambda %s for Cognito auth URL with handler %s", this.authUrlCognitoLambda.getNode().getId(), builder.lambdaEntry + "authUrl.httpGetCognito");
-        //lambdaUrlToOriginsBehaviourMappings.put(
+        infof(
+                "Created Lambda %s for Cognito auth URL with handler %s",
+                this.authUrlCognitoLambda.getNode().getId(), props.lambdaEntry() + "authUrl.httpGetCognito");
+        // lambdaUrlToOriginsBehaviourMappings.put(
         //    "/api/cognito/auth-url" + "*", authUrlCognitoLambdaUrlOrigin.lambda.getFunctionArn());
 
         // exchangeToken - Google or Antonycc via Cognito
         var exchangeCognitoTokenLambdaEnv = new HashMap<String, String>();
-        //if (StringUtils.isNotBlank(builder.homeUrl)) {
-            exchangeCognitoTokenLambdaEnv.put("DIY_SUBMIT_HOME_URL", builder.homeUrl);
-        //}
-        //if (StringUtils.isNotBlank(builder.cognitoBaseUri)) {
-            exchangeCognitoTokenLambdaEnv.put("DIY_SUBMIT_COGNITO_BASE_URI", builder.cognitoBaseUri);
-        //}
-        //if (StringUtils.isNotBlank(builder.cognitoClientId)) {
-            exchangeCognitoTokenLambdaEnv.put("DIY_SUBMIT_COGNITO_CLIENT_ID", builder.cognitoClientId);
-        //}
-        if (StringUtils.isNotBlank(builder.optionalTestAccessToken)) {
-            exchangeCognitoTokenLambdaEnv.put("DIY_SUBMIT_TEST_ACCESS_TOKEN", builder.optionalTestAccessToken);
+        // if (StringUtils.isNotBlank(props.homeUrl)) {
+        exchangeCognitoTokenLambdaEnv.put("DIY_SUBMIT_HOME_URL", props.homeUrl());
+        // }
+        // if (StringUtils.isNotBlank(props.cognitoBaseUri)) {
+        exchangeCognitoTokenLambdaEnv.put("DIY_SUBMIT_COGNITO_BASE_URI", props.cognitoBaseUri());
+        // }
+        // if (StringUtils.isNotBlank(props.cognitoClientId)) {
+        exchangeCognitoTokenLambdaEnv.put("DIY_SUBMIT_COGNITO_CLIENT_ID", props.cognitoClientId());
+        // }
+        if (props.optionalTestAccessToken().isPresent()
+                && StringUtils.isNotBlank(props.optionalTestAccessToken().get())) {
+            exchangeCognitoTokenLambdaEnv.put("DIY_SUBMIT_TEST_ACCESS_TOKEN", props.optionalTestAccessToken().get());
         }
-        var exchangeCognitoTokenLambdaUrlOrigin = LambdaUrlOrigin.Builder.create(this, "ExchangeCognitoToken")
-            .options(lambdaCommonOpts)
-            .baseImageTag(builder.baseImageTag)
-            .ecrRepositoryName(builder.ecrRepositoryName)
-            .ecrRepositoryArn(builder.ecrRepositoryArn)
-            .imageFilename("exchangeCognitoToken.Dockerfile")
-            .functionName(WebStack.Builder.buildFunctionName(
-                dashedDomainName, "exchangeToken.httpPostCognito"))
-            .allowedMethods(AllowedMethods.ALLOW_ALL)
-            .handler(builder.lambdaEntry + "exchangeToken.httpPostCognito")
-            .environment(exchangeCognitoTokenLambdaEnv)
-            .timeout(Duration.millis(Long.parseLong("30000")))
-            .build(this);
+        var exchangeCognitoTokenLambdaUrlOrigin = new LambdaUrlOrigin(
+                this,
+                LambdaUrlOriginProps.builder()
+                        .env(props.env())
+                        .idPrefix("ExchangeCognitoToken")
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.ecrRepositoryName())
+                        .ecrRepositoryArn(props.ecrRepositoryArn())
+                        .imageFilename("exchangeCognitoToken.Dockerfile")
+                        .functionName(buildFunctionName(props.compressedResourceNamePrefix(), "exchangeToken.httpPostCognito"))
+                        .cloudFrontAllowedMethods(AllowedMethods.ALLOW_ALL)
+                        .handler(props.lambdaEntry() + "exchangeToken.httpPostCognito")
+                        .environment(exchangeCognitoTokenLambdaEnv)
+                        .timeout(Duration.millis(Long.parseLong("30000")))
+                        .build());
         this.exchangeCognitoTokenLambda = exchangeCognitoTokenLambdaUrlOrigin.lambda;
-        //this.exchangeCognitoTokenLambdaUrl = exchangeCognitoTokenLambdaUrlOrigin.functionUrl;
+        // this.exchangeCognitoTokenLambdaUrl = exchangeCognitoTokenLambdaUrlOrigin.functionUrl;
         this.exchangeCognitoTokenLambdaLogGroup = exchangeCognitoTokenLambdaUrlOrigin.logGroup;
-        infof("Created Lambda %s for Cognito exchange token with handler %s", this.exchangeCognitoTokenLambda.getNode().getId(), builder.lambdaEntry + "exchangeToken.httpPostCognito");
-        //lambdaUrlToOriginsBehaviourMappings.put(
+        infof(
+                "Created Lambda %s for Cognito exchange token with handler %s",
+                this.exchangeCognitoTokenLambda.getNode().getId(),
+                props.lambdaEntry() + "exchangeToken.httpPostCognito");
+        // lambdaUrlToOriginsBehaviourMappings.put(
         //    "/api/cognito/exchange-token" + "*", exchangeCognitoTokenLambdaUrlOrigin.lambda.getFunctionArn());
 
-        //if (this.authUrlMockLambda != null) {
+        // if (this.authUrlMockLambda != null) {
         //    CfnOutput.Builder.create(this, "AuthUrlMockLambdaArn")
         //        .value(this.authUrlMockLambda.getFunctionArn())
         //        .build();
-            //CfnOutput.Builder.create(this, "AuthUrlMockLambdaUrl")
-            //    .value(this.authUrlMockLambdaUrl.getUrl())
-            //    .build();
-        //}
+        // CfnOutput.Builder.create(this, "AuthUrlMockLambdaUrl")
+        //    .value(this.authUrlMockLambdaUrl.getUrl())
+        //    .build();
+        // }
 
-        //this.additionalOriginsBehaviourMappings = lambdaUrlToOriginsBehaviourMappings;
+        // this.additionalOriginsBehaviourMappings = lambdaUrlToOriginsBehaviourMappings;
 
         cfnOutput(this, "AuthUrlMockLambdaArn", this.authUrlMockLambda.getFunctionArn());
         cfnOutput(this, "AuthUrlCognitoLambdaArn", this.authUrlCognitoLambda.getFunctionArn());
         cfnOutput(this, "ExchangeCognitoTokenLambdaArn", this.exchangeCognitoTokenLambda.getFunctionArn());
 
-        infof("AuthStack %s created successfully for %s", this.getNode().getId(), dashedDomainName);
+        infof("AuthStack %s created successfully for %s", this.getNode().getId(), props.compressedResourceNamePrefix());
     }
-
-    /**
-     * Builder class following the same pattern as WebStack.Builder
-     */
-    public static class Builder {
-        private Construct scope;
-        private String id;
-        private StackProps props;
-
-        // Environment configuration
-        public String env;
-        public String subDomainName;
-        public String hostedZoneName;
-        public String cloudTrailEnabled;
-        public String xRayEnabled;
-        public String baseImageTag;
-        public String ecrRepositoryArn;
-        public String ecrRepositoryName;
-        public String lambdaEntry;
-        public String homeUrl;
-        public String cognitoClientId;
-        public String cognitoBaseUri;
-        public String optionalTestAccessToken;
-        public String verboseLogging;
-        public String lambdaUrlAuthType;
-
-        private Builder() {}
-
-        public static Builder create(Construct scope, String id) {
-            Builder builder = new Builder();
-            builder.scope = scope;
-            builder.id = id;
-            return builder;
-        }
-
-        public Builder props(StackProps props) {
-            this.props = props;
-            return this;
-        }
-
-        public Builder env(String env) {
-            this.env = env;
-            return this;
-        }
-
-        public Builder subDomainName(String subDomainName) {
-            this.subDomainName = subDomainName;
-            return this;
-        }
-
-        public Builder hostedZoneName(String hostedZoneName) {
-            this.hostedZoneName = hostedZoneName;
-            return this;
-        }
-
-        public Builder cloudTrailEnabled(String cloudTrailEnabled) {
-            this.cloudTrailEnabled = cloudTrailEnabled;
-            return this;
-        }
-
-        public Builder xRayEnabled(String xRayEnabled) {
-            this.xRayEnabled = xRayEnabled;
-            return this;
-        }
-
-        public Builder props(AuthStackProps p) {
-            if (p == null) return this;
-            this.env = p.env;
-            this.subDomainName = p.subDomainName;
-            this.hostedZoneName = p.hostedZoneName;
-            this.cloudTrailEnabled = p.cloudTrailEnabled;
-            this.xRayEnabled = p.xRayEnabled;
-            this.baseImageTag = p.baseImageTag;
-            this.ecrRepositoryArn = p.ecrRepositoryArn;
-            this.ecrRepositoryName = p.ecrRepositoryName;
-            this.homeUrl = p.homeUrl;
-            this.cognitoClientId = p.cognitoClientId;
-            this.cognitoBaseUri = p.cognitoBaseUri;
-            this.optionalTestAccessToken = p.optionalTestAccessToken;
-
-            return this;
-        }
-
-        public AuthStack build() {
-            return new AuthStack(this.scope, this.id, this.props, this);
-        }
-
-        // Naming utility methods following WebStack patterns
-        public static String buildDomainName(String env, String subDomainName, String hostedZoneName) {
-            return env.equals("prod")
-                    ? Builder.buildProdDomainName(subDomainName, hostedZoneName)
-                    : Builder.buildNonProdDomainName(env, subDomainName, hostedZoneName);
-        }
-
-        public static String buildProdDomainName(String subDomainName, String hostedZoneName) {
-            return "%s.%s".formatted(subDomainName, hostedZoneName);
-        }
-
-        public static String buildNonProdDomainName(String env, String subDomainName, String hostedZoneName) {
-            return "%s.%s.%s".formatted(env, subDomainName, hostedZoneName);
-        }
-
-        public static String buildDashedDomainName(String env, String subDomainName, String hostedZoneName) {
-            return ResourceNameUtils.convertDotSeparatedToDashSeparated(
-                    "%s.%s.%s".formatted(env, subDomainName, hostedZoneName), domainNameMappings);
-        }
-    }
-
-    // Use same domain name mappings as WebStack
-    public static final List<AbstractMap.SimpleEntry<Pattern, String>> domainNameMappings = List.of();
 }

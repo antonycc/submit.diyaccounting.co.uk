@@ -1,6 +1,10 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDashedDomainName;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDomainName;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import org.junit.jupiter.api.Test;
 import software.amazon.awscdk.App;
@@ -11,16 +15,19 @@ class ObservabilityStackTest {
     void shouldCreateObservabilityResourcesWhenEnabled() {
         App app = new App();
 
-        ObservabilityStack stack = ObservabilityStack.Builder.create(app, "TestObservabilityStack")
-                .env("test")
-                .hostedZoneName("diyaccounting.co.uk")
-                .subDomainName("submit")
-                .cloudTrailEnabled("true")
-                .cloudTrailLogGroupPrefix("/aws/cloudtrail/")
-                .cloudTrailLogGroupRetentionPeriodDays("7")
-                .accessLogGroupRetentionPeriodDays("7")
-                .xRayEnabled("false")
-                .build();
+        ObservabilityStack stack = new ObservabilityStack(
+                app,
+                "TestObservabilityStack",
+                ObservabilityStack.ObservabilityStackProps.builder()
+                        .env("test")
+                        .hostedZoneName("diyaccounting.co.uk")
+                        .subDomainName("submit")
+                        .cloudTrailEnabled("true")
+                        .cloudTrailLogGroupPrefix("/aws/cloudtrail/")
+                        .cloudTrailLogGroupRetentionPeriodDays("7")
+                        .accessLogGroupRetentionPeriodDays("7")
+                        .xRayEnabled("false")
+                        .build());
 
         // Basic sanity checks
         assertNotNull(stack, "ObservabilityStack should be created");
@@ -38,16 +45,19 @@ class ObservabilityStackTest {
     void shouldNotCreateCloudTrailWhenDisabled() {
         App app = new App();
 
-        ObservabilityStack stack = ObservabilityStack.Builder.create(app, "TestObservabilityStackDisabled")
-                .env("test")
-                .hostedZoneName("diyaccounting.co.uk")
-                .subDomainName("submit")
-                .cloudTrailEnabled("false")
-                .cloudTrailLogGroupPrefix("/aws/cloudtrail/")
-                .cloudTrailLogGroupRetentionPeriodDays("7")
-                .accessLogGroupRetentionPeriodDays("7")
-                .xRayEnabled("false")
-                .build();
+        ObservabilityStack stack = new ObservabilityStack(
+                app,
+                "TestObservabilityStackDisabled",
+                ObservabilityStack.ObservabilityStackProps.builder()
+                        .env("test")
+                        .hostedZoneName("diyaccounting.co.uk")
+                        .subDomainName("submit")
+                        .cloudTrailEnabled("false")
+                        .cloudTrailLogGroupPrefix("/aws/cloudtrail/")
+                        .cloudTrailLogGroupRetentionPeriodDays("7")
+                        .accessLogGroupRetentionPeriodDays("7")
+                        .xRayEnabled("false")
+                        .build());
 
         // When disabled, optional resources remain null
         assertNull(stack.cloudTrailLogGroup, "CloudTrail Log Group should not be created when disabled");
@@ -58,13 +68,13 @@ class ObservabilityStackTest {
     @Test
     void shouldBuildCorrectNamingPatterns() {
         // Domain name building like DevStack
-        String prodDomain = ObservabilityStack.Builder.buildDomainName("prod", "submit", "diyaccounting.co.uk");
+        String prodDomain = buildDomainName("prod", "submit", "diyaccounting.co.uk");
         assertEquals("submit.diyaccounting.co.uk", prodDomain);
 
-        String devDomain = ObservabilityStack.Builder.buildDomainName("dev", "submit", "diyaccounting.co.uk");
+        String devDomain = buildDomainName("dev", "submit", "diyaccounting.co.uk");
         assertEquals("dev.submit.diyaccounting.co.uk", devDomain);
 
-        String dashed = ObservabilityStack.Builder.buildDashedDomainName("dev", "submit", "diyaccounting.co.uk");
+        String dashed = buildDashedDomainName("dev", "submit", "diyaccounting.co.uk");
         assertEquals("dev-submit-diyaccounting-co-uk", dashed);
     }
 }

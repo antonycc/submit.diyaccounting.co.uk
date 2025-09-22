@@ -4,16 +4,15 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import software.amazon.awssdk.services.cloudformation.CloudFormationClient;
-import software.amazon.awssdk.services.cloudformation.model.CloudFormationException;
-import software.amazon.awssdk.services.cloudformation.model.DeleteStackRequest;
-import software.amazon.awssdk.services.cloudformation.model.DescribeStacksRequest;
-
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import software.amazon.awssdk.services.cloudformation.CloudFormationClient;
+import software.amazon.awssdk.services.cloudformation.model.CloudFormationException;
+import software.amazon.awssdk.services.cloudformation.model.DeleteStackRequest;
+import software.amazon.awssdk.services.cloudformation.model.DescribeStacksRequest;
 
 /**
  * AWS Lambda handler for self-destructing CloudFormation stacks.
@@ -126,7 +125,8 @@ public class SelfDestructHandler implements RequestHandler<Map<String, Object>, 
                         DescribeStacksRequest.builder().stackName(stackName).build());
                 context.getLogger().log("Stack " + stackName + " still exists, waiting...");
             } catch (CloudFormationException e) {
-                if (e.awsErrorDetails() != null && "ValidationError".equals(e.awsErrorDetails().errorCode())) {
+                if (e.awsErrorDetails() != null
+                        && "ValidationError".equals(e.awsErrorDetails().errorCode())) {
                     context.getLogger().log("Stack " + stackName + " deleted.");
                     return true;
                 }

@@ -39,7 +39,6 @@ public class WebStack extends Stack {
     //public ICertificate certificate;
     //public ISecret hmrcClientSecretsManagerSecret;
     // public ISecret googleClientSecretsManagerSecret;
-    // public ISecret antonyccClientSecretsManagerSecret;
     //public IBucket distributionAccessLogBucket;
     //public OriginAccessIdentity originIdentity;
     //public Distribution distribution;
@@ -87,7 +86,6 @@ public class WebStack extends Stack {
         public String commitHash;
         public String antonyccClientId;
         public String antonyccBaseUri;
-        // public String antonyccClientSecretArn;
         public String cognitoClientId;
         public String cognitoBaseUri;
         public String googleClientId;
@@ -286,11 +284,6 @@ public class WebStack extends Stack {
             this.antonyccBaseUri = antonyccBaseUri;
             return this;
         }
-
-        // public Builder antonyccClientSecretArn(String antonyccClientSecretArn) {
-        //  this.antonyccClientSecretArn = antonyccClientSecretArn;
-        //  return this;
-        // }
 
         public Builder cognitoClientId(String cognitoClientId) {
             this.cognitoClientId = cognitoClientId;
