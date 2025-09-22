@@ -51,7 +51,7 @@
   "author": "",
   "license": "GPL-3.0",
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.890.0",
+    "@aws-sdk/client-s3": "^3.893.0",
     "@aws-sdk/client-secrets-manager": "^3.890.0",
     "@iarna/toml": "^3.0.0",
     "dotenv": "^17.2.2",
