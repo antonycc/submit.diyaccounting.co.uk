@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import org.junit.jupiter.api.Test;
 import software.amazon.awscdk.App;
+import software.amazon.awscdk.Environment;
 
 class ApplicationStackTest {
 
@@ -40,7 +41,9 @@ class ApplicationStackTest {
                 app,
                 "TestApplicationStack",
                 ApplicationStack.ApplicationStackProps.builder()
-                        .env("test")
+                        .env(Environment.builder().region("eu-west-2").build())
+                        .crossRegionReferences(false)
+                        .envName("test")
                         .hostedZoneName("diyaccounting.co.uk")
                         .subDomainName("submit")
                         .cloudTrailEnabled("false")

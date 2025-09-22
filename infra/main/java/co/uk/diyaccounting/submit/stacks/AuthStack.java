@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.Optional;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;
+import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.services.cloudfront.AllowedMethods;
@@ -29,8 +30,8 @@ public class AuthStack extends Stack {
     public LogGroup exchangeCognitoTokenLambdaLogGroup;
 
     @Value.Immutable
-    public interface AuthStackProps {
-        String env();
+    public interface AuthStackProps extends StackProps {
+        String envName();
 
         String subDomainName();
 
@@ -65,6 +66,15 @@ public class AuthStack extends Stack {
         Optional<String> optionalTestAccessToken(); // {
         // return Optional.empty();
         // }
+
+        @Override
+        Environment getEnv();
+
+        @Override
+        @Value.Default
+        default Boolean getCrossRegionReferences() {
+            return null;
+        }
 
         static ImmutableAuthStackProps.Builder builder() {
             return ImmutableAuthStackProps.builder();
@@ -103,7 +113,6 @@ public class AuthStack extends Stack {
         var authUrlMockLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
                 LambdaUrlOriginProps.builder()
-                        .env(props.env())
                         .idPrefix("AuthUrlMock")
                         .baseImageTag(props.baseImageTag())
                         .ecrRepositoryName(props.ecrRepositoryName())
@@ -138,7 +147,6 @@ public class AuthStack extends Stack {
         var authUrlCognitoLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
                 LambdaUrlOriginProps.builder()
-                        .env(props.env())
                         .idPrefix("AuthUrlCognito")
                         .baseImageTag(props.baseImageTag())
                         .ecrRepositoryName(props.ecrRepositoryName())
@@ -179,7 +187,6 @@ public class AuthStack extends Stack {
         var exchangeCognitoTokenLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
                 LambdaUrlOriginProps.builder()
-                        .env(props.env())
                         .idPrefix("ExchangeCognitoToken")
                         .baseImageTag(props.baseImageTag())
                         .ecrRepositoryName(props.ecrRepositoryName())

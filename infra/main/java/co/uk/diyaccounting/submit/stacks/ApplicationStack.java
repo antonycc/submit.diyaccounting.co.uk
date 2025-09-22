@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.Optional;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;
+import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
@@ -60,8 +61,8 @@ public class ApplicationStack extends Stack {
     // public Map<String, String> additionalOriginsBehaviourMappings;
 
     @Value.Immutable
-    public interface ApplicationStackProps {
-        String env();
+    public interface ApplicationStackProps extends StackProps {
+        String envName();
 
         String subDomainName();
 
@@ -119,6 +120,15 @@ public class ApplicationStack extends Stack {
 
         String s3RetainReceiptsBucket();
 
+        @Override
+        Environment getEnv();
+
+        @Override
+        @Value.Default
+        default Boolean getCrossRegionReferences() {
+            return null;
+        }
+
         static ImmutableApplicationStackProps.Builder builder() {
             return ImmutableApplicationStackProps.builder();
         }
@@ -134,7 +144,7 @@ public class ApplicationStack extends Stack {
         // Values are provided via SubmitApplication after context/env resolution
 
         // Build naming using same patterns as WebStack
-        String dashedDomainName = buildDashedDomainName(props.env(), props.subDomainName(), props.hostedZoneName());
+        String dashedDomainName = buildDashedDomainName(props.envName(), props.subDomainName(), props.hostedZoneName());
 
         boolean cloudTrailEnabled = Boolean.parseBoolean(props.cloudTrailEnabled());
         boolean xRayEnabled = Boolean.parseBoolean(props.xRayEnabled());
@@ -155,7 +165,6 @@ public class ApplicationStack extends Stack {
         var authUrlHmrcLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
                 LambdaUrlOriginProps.builder()
-                        .env(props.env())
                         .idPrefix("AuthUrlHmrc")
                         .imageFilename("authUrlHmrc.Dockerfile")
                         .baseImageTag(props.baseImageTag())
@@ -194,7 +203,6 @@ public class ApplicationStack extends Stack {
         var exchangeHmrcTokenLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
                 LambdaUrlOriginProps.builder()
-                        .env(props.env())
                         .idPrefix("ExchangeHmrcToken")
                         .baseImageTag(props.baseImageTag())
                         .ecrRepositoryName(props.ecrRepositoryName())
@@ -222,7 +230,6 @@ public class ApplicationStack extends Stack {
         var submitVatLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
                 LambdaUrlOriginProps.builder()
-                        .env(props.env())
                         .idPrefix("SubmitVat")
                         .baseImageTag(props.baseImageTag())
                         .ecrRepositoryName(props.ecrRepositoryName())
@@ -265,7 +272,6 @@ public class ApplicationStack extends Stack {
         var logReceiptLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
                 LambdaUrlOriginProps.builder()
-                        .env(props.env())
                         .idPrefix("LogReceipt")
                         .baseImageTag(props.baseImageTag())
                         .ecrRepositoryName(props.ecrRepositoryName())
@@ -292,7 +298,6 @@ public class ApplicationStack extends Stack {
         var catalogLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
                 LambdaUrlOriginProps.builder()
-                        .env(props.env())
                         .idPrefix("Catalog")
                         .baseImageTag(props.baseImageTag())
                         .ecrRepositoryName(props.ecrRepositoryName())
@@ -318,7 +323,6 @@ public class ApplicationStack extends Stack {
         var myBundlesLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
                 LambdaUrlOriginProps.builder()
-                        .env(props.env())
                         .idPrefix("MyBundles")
                         .baseImageTag(props.baseImageTag())
                         .ecrRepositoryName(props.ecrRepositoryName())
@@ -346,7 +350,6 @@ public class ApplicationStack extends Stack {
         var myReceiptsLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
                 LambdaUrlOriginProps.builder()
-                        .env(props.env())
                         .idPrefix("MyReceipts")
                         .baseImageTag(props.baseImageTag())
                         .ecrRepositoryName(props.ecrRepositoryName())

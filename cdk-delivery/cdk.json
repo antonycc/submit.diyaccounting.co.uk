@@ -22,7 +22,7 @@
     "catalogLambdaFunctionArn": "",
     "myBundlesLambdaFunctionArn": "",
     "myReceiptsLambdaFunctionArn": "",
-    "selfDestructHandlerSource": "",
+    "selfDestructHandlerSource": "../target/self-destruct-lambda.jar",
     "selfDestructDelayHours": "1"
   }
 }

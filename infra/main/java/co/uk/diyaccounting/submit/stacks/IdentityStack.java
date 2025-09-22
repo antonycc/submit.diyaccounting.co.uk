@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.immutables.value.Value;
+import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
@@ -63,8 +64,8 @@ public class IdentityStack extends Stack {
     public final String cognitoBaseUri;
 
     @Value.Immutable
-    public interface IdentityStackProps {
-        String env();
+    public interface IdentityStackProps extends StackProps {
+        String envName();
 
         String subDomainName();
 
@@ -100,6 +101,15 @@ public class IdentityStack extends Stack {
 
         String cognitoEnableLogDelivery();
 
+        @Override
+        Environment getEnv();
+
+        @Override
+        @Value.Default
+        default Boolean getCrossRegionReferences() {
+            return null;
+        }
+
         static ImmutableIdentityStackProps.Builder builder() {
             return ImmutableIdentityStackProps.builder();
         }
@@ -122,8 +132,8 @@ public class IdentityStack extends Stack {
                         .hostedZoneId(props.hostedZoneId())
                         .build());
 
-        this.domainName = buildDomainName(props.env(), props.subDomainName(), props.hostedZoneName());
-        String dashedDomainName = buildDashedDomainName(props.env(), props.subDomainName(), props.hostedZoneName());
+        this.domainName = buildDomainName(props.envName(), props.subDomainName(), props.hostedZoneName());
+        String dashedDomainName = buildDashedDomainName(props.envName(), props.subDomainName(), props.hostedZoneName());
 
         int accessLogGroupRetentionPeriodDays;
         try {
@@ -135,7 +145,7 @@ public class IdentityStack extends Stack {
         boolean xRayEnabled = Boolean.parseBoolean(props.xRayEnabled());
 
         var cognitoDomainName = buildCognitoDomainName(
-                props.env(), props.cognitoDomainPrefix(), props.subDomainName(), hostedZone.getZoneName());
+                props.envName(), props.cognitoDomainPrefix(), props.subDomainName(), hostedZone.getZoneName());
         var cognitoBaseUri = buildCognitoBaseUri(cognitoDomainName);
         this.cognitoDomainName = cognitoDomainName;
         this.cognitoBaseUri = cognitoBaseUri;
@@ -154,7 +164,7 @@ public class IdentityStack extends Stack {
         if (props.googleClientSecretArn() == null
                 || props.googleClientSecretArn().isBlank()) {
             throw new IllegalArgumentException(
-                    "DIY_SUBMIT_GOOGLE_CLIENT_SECRET_ARN must be provided for env=" + props.env());
+                    "DIY_SUBMIT_GOOGLE_CLIENT_SECRET_ARN must be provided for env=" + props.envName());
         }
         this.googleClientSecretsManagerSecret =
                 Secret.fromSecretPartialArn(this, "GoogleClientSecret", props.googleClientSecretArn());

@@ -11,6 +11,7 @@ import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildEcrReposit
 import java.util.List;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;
+import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
@@ -34,14 +35,23 @@ public class DevStack extends Stack {
     public final Role ecrPublishRole;
 
     @Value.Immutable
-    public static interface DevStackProps {
-        String env();
+    public interface DevStackProps extends StackProps {
+        String envName();
 
         String subDomainName();
 
         String hostedZoneName();
 
         String retainEcrRepository();
+
+        @Override
+        Environment getEnv();
+
+        @Override
+        @Value.Default
+        default Boolean getCrossRegionReferences() {
+            return null;
+        }
 
         static ImmutableDevStackProps.Builder builder() {
             return ImmutableDevStackProps.builder();
@@ -58,8 +68,8 @@ public class DevStack extends Stack {
         // Values are provided via SubmitApplication after context/env resolution
 
         // Build naming using same patterns as WebStack
-        String domainName = buildDomainName(props.env(), props.subDomainName(), props.hostedZoneName());
-        String dashedDomainName = buildDashedDomainName(props.env(), props.subDomainName(), props.hostedZoneName());
+        String domainName = buildDomainName(props.envName(), props.subDomainName(), props.hostedZoneName());
+        String dashedDomainName = buildDashedDomainName(props.envName(), props.subDomainName(), props.hostedZoneName());
 
         infof("Creating DevStack for domain: %s (dashed: %s)", domainName, dashedDomainName);
 

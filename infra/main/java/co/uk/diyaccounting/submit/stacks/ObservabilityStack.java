@@ -10,6 +10,7 @@ import co.uk.diyaccounting.submit.awssdk.RetentionDaysConverter;
 import java.util.List;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;
+import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
@@ -29,8 +30,8 @@ public class ObservabilityStack extends Stack {
     public LogGroup cloudTrailLogGroup;
 
     @Value.Immutable
-    public interface ObservabilityStackProps {
-        String env();
+    public interface ObservabilityStackProps extends StackProps {
+        String envName();
 
         String subDomainName();
 
@@ -45,6 +46,15 @@ public class ObservabilityStack extends Stack {
         String accessLogGroupRetentionPeriodDays();
 
         String xRayEnabled();
+
+        @Override
+        Environment getEnv();
+
+        @Override
+        @Value.Default
+        default Boolean getCrossRegionReferences() {
+            return null;
+        }
 
         static ImmutableObservabilityStackProps.Builder builder() {
             return ImmutableObservabilityStackProps.builder();
@@ -61,8 +71,8 @@ public class ObservabilityStack extends Stack {
         // Values are provided via SubmitApplication after context/env resolution
 
         // Build naming using same patterns as WebStack
-        String domainName = buildDomainName(props.env(), props.subDomainName(), props.hostedZoneName());
-        String dashedDomainName = buildDashedDomainName(props.env(), props.subDomainName(), props.hostedZoneName());
+        String domainName = buildDomainName(props.envName(), props.subDomainName(), props.hostedZoneName());
+        String dashedDomainName = buildDashedDomainName(props.envName(), props.subDomainName(), props.hostedZoneName());
 
         String trailName = buildTrailName(dashedDomainName);
         boolean cloudTrailEnabled = Boolean.parseBoolean(props.cloudTrailEnabled());

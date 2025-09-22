@@ -48,9 +48,14 @@ public class OpsStack extends Stack {
 
         List<String> lambdaFunctionArns();
 
-        // StackProps interface methods
         @Override
         Environment getEnv();
+
+        @Override
+        @Value.Default
+        default Boolean getCrossRegionReferences() {
+            return null;
+        }
 
         static ImmutableOpsStackProps.Builder builder() {
             return ImmutableOpsStackProps.builder();

@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 import org.junit.jupiter.api.Test;
 import software.amazon.awscdk.App;
+import software.amazon.awscdk.Environment;
 
 class ObservabilityStackTest {
 
@@ -19,7 +20,9 @@ class ObservabilityStackTest {
                 app,
                 "TestObservabilityStack",
                 ObservabilityStack.ObservabilityStackProps.builder()
-                        .env("test")
+                        .env(Environment.builder().region("eu-west-2").build())
+                        .crossRegionReferences(false)
+                        .envName("test")
                         .hostedZoneName("diyaccounting.co.uk")
                         .subDomainName("submit")
                         .cloudTrailEnabled("true")
@@ -49,7 +52,9 @@ class ObservabilityStackTest {
                 app,
                 "TestObservabilityStackDisabled",
                 ObservabilityStack.ObservabilityStackProps.builder()
-                        .env("test")
+                        .env(Environment.builder().region("eu-west-2").build())
+                        .crossRegionReferences(false)
+                        .envName("test")
                         .hostedZoneName("diyaccounting.co.uk")
                         .subDomainName("submit")
                         .cloudTrailEnabled("false")

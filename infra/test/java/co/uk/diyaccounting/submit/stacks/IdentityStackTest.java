@@ -5,6 +5,7 @@ import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import software.amazon.awscdk.App;
+import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.assertions.Template;
 import uk.org.webcompere.systemstubs.environment.EnvironmentVariables;
 import uk.org.webcompere.systemstubs.jupiter.SystemStub;
@@ -43,7 +44,9 @@ public class IdentityStackTest {
                 app,
                 "TestIdentityStack",
                 IdentityStack.IdentityStackProps.builder()
-                        .env("test")
+                        .env(Environment.builder().region("eu-west-2").build())
+                        .crossRegionReferences(false)
+                        .envName("test")
                         .hostedZoneName("submit.diyaccounting.co.uk")
                         .hostedZoneId("ZTEST123456789")
                         .subDomainName("submit")

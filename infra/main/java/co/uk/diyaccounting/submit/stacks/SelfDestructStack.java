@@ -5,9 +5,11 @@ import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.Kind.putIfNotNull;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateIamCompatibleName;
 
+import co.uk.diyaccounting.submit.utils.Kind;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
@@ -49,29 +51,26 @@ public class SelfDestructStack extends Stack {
 
         String compressedResourceNamePrefix();
 
-        String observabilityStackName();
+        Optional<String> observabilityStackName();
 
-        String devStackName();
+        Optional<String> devStackName();
 
-        String identityStackName();
+        Optional<String> identityStackName();
 
-        String authStackName();
+        Optional<String> authStackName();
 
-        String applicationStackName();
+        Optional<String> applicationStackName();
 
-        String webStackName();
+        Optional<String> edgeStackName();
 
-        String edgeStackName();
+        Optional<String> publishStackName();
 
-        String publishStackName();
-
-        String opsStackName();
+        Optional<String> opsStackName();
 
         String selfDestructDelayHours();
 
         String selfDestructHandlerSource();
 
-        // StackProps interface methods
         @Override
         Environment getEnv();
 
@@ -160,14 +159,13 @@ public class SelfDestructStack extends Stack {
         // Environment variables for the function
         Map<String, String> environment = new HashMap<>();
         putIfNotNull(environment, "AWS_XRAY_TRACING_NAME", functionName);
-        putIfNotNull(environment, "OBSERVABILITY_STACK_NAME", props.observabilityStackName());
-        putIfNotNull(environment, "DEV_STACK_NAME", props.devStackName());
-        putIfNotNull(environment, "AUTH_STACK_NAME", props.applicationStackName());
-        putIfNotNull(environment, "APPLICATION_STACK_NAME", props.applicationStackName());
-        putIfNotNull(environment, "WEB_STACK_NAME", props.webStackName());
-        putIfNotNull(environment, "EDGE_STACK_NAME", props.edgeStackName());
-        putIfNotNull(environment, "PUBLISH_STACK_NAME", props.publishStackName());
-        putIfNotNull(environment, "OPS_STACK_NAME", props.opsStackName());
+        Kind.putIfPresent(environment, "OBSERVABILITY_STACK_NAME", props.observabilityStackName());
+        Kind.putIfPresent(environment, "DEV_STACK_NAME", props.devStackName());
+        Kind.putIfPresent(environment, "AUTH_STACK_NAME", props.applicationStackName());
+        Kind.putIfPresent(environment, "APPLICATION_STACK_NAME", props.applicationStackName());
+        Kind.putIfPresent(environment, "EDGE_STACK_NAME", props.edgeStackName());
+        Kind.putIfPresent(environment, "PUBLISH_STACK_NAME", props.publishStackName());
+        Kind.putIfPresent(environment, "OPS_STACK_NAME", props.opsStackName());
         putIfNotNull(environment, "SELF_DESTRUCT_STACK_NAME", this.getStackName());
 
         // Lambda function for self-destruction

@@ -90,8 +90,23 @@ public class SubmitApplication {
         // Build app-level props from cdk.json context with environment overrides
         SubmitApplicationProps appProps = loadAppProps(app);
 
+        // Determine environment and deployment name from env or appProps
         String envName = envOr("ENV_NAME", appProps.env);
         String deploymentName = envOr("DEPLOYMENT_NAME", appProps.deploymentName);
+
+        // Determine primary environment (account/region) from CDK env
+        String cdkDefaultAccount = System.getenv("CDK_DEFAULT_ACCOUNT");
+        String cdkDefaultRegion = System.getenv("CDK_DEFAULT_REGION");
+        software.amazon.awscdk.Environment primaryEnv = null;
+        if (cdkDefaultAccount != null
+                && !cdkDefaultAccount.isBlank()
+                && cdkDefaultRegion != null
+                && !cdkDefaultRegion.isBlank()) {
+            primaryEnv = software.amazon.awscdk.Environment.builder()
+                    .account(cdkDefaultAccount)
+                    .region(cdkDefaultRegion)
+                    .build();
+        }
 
         // Allow environment variables to override any appProps values
         var hostedZoneId = envOr("HOSTED_ZONE_ID", appProps.hostedZoneId);
@@ -109,7 +124,7 @@ public class SubmitApplication {
         var receiptsBucketPostfix = envOr("RECEIPTS_BUCKET_POSTFIX", appProps.receiptsBucketPostfix);
         var baseImageTag = envOr("BASE_IMAGE_TAG", appProps.baseImageTag);
         var selfDestructDelayHours = envOr("SELF_DESTRUCT_DELAY_HOURS", "1");
-        var selfDestructHandlerSource = envOr("SELF_DESTRUCT_HANDLER_SOURCE", "../target/self-destruct-lambda.jar");
+        var selfDestructHandlerSource = envOr("SELF_DESTRUCT_HANDLER_SOURCE", appProps.selfDestructHandlerSource);
         var cloudTrailEnabled = envOr("CLOUD_TRAIL_ENABLED", appProps.cloudTrailEnabled);
         var xRayEnabled = envOr("X_RAY_ENABLED", appProps.xRayEnabled);
         var verboseLogging = envOr("VERBOSE_LOGGING", appProps.verboseLogging);
@@ -138,7 +153,9 @@ public class SubmitApplication {
                 app,
                 observabilityStackId,
                 ObservabilityStack.ObservabilityStackProps.builder()
-                        .env(envName)
+                        .env(primaryEnv)
+                        .crossRegionReferences(false)
+                        .envName(envName)
                         .hostedZoneName(hostedZoneName)
                         .subDomainName(subDomainName)
                         .cloudTrailEnabled(cloudTrailEnabled)
@@ -155,7 +172,9 @@ public class SubmitApplication {
                 app,
                 devStackId,
                 DevStack.DevStackProps.builder()
-                        .env(envName)
+                        .env(primaryEnv)
+                        .crossRegionReferences(false)
+                        .envName(envName)
                         .hostedZoneName(hostedZoneName)
                         .subDomainName(subDomainName)
                         .retainEcrRepository("false")
@@ -168,7 +187,9 @@ public class SubmitApplication {
                 app,
                 identityStackId,
                 IdentityStack.IdentityStackProps.builder()
-                        .env(envName)
+                        .env(primaryEnv)
+                        .crossRegionReferences(false)
+                        .envName(envName)
                         .hostedZoneName(hostedZoneName)
                         .hostedZoneId(hostedZoneId)
                         .cognitoDomainPrefix(appProps.cognitoDomainPrefix)
@@ -188,20 +209,6 @@ public class SubmitApplication {
                         .cognitoEnableLogDelivery("false")
                         .build());
 
-        // Determine primary environment (account/region) from CDK env
-        String cdkDefaultAccount = System.getenv("CDK_DEFAULT_ACCOUNT");
-        String cdkDefaultRegion = System.getenv("CDK_DEFAULT_REGION");
-        software.amazon.awscdk.Environment primaryEnv = null;
-        if (cdkDefaultAccount != null
-                && !cdkDefaultAccount.isBlank()
-                && cdkDefaultRegion != null
-                && !cdkDefaultRegion.isBlank()) {
-            primaryEnv = software.amazon.awscdk.Environment.builder()
-                    .account(cdkDefaultAccount)
-                    .region(cdkDefaultRegion)
-                    .build();
-        }
-
         // Create the AuthStack with resources used in authentication and authorisation
         String authStackId = "%s-AuthStack".formatted(deploymentName);
         infof("Synthesizing stack %s for deployment %s to environment %s", authStackId, deploymentName, envName);
@@ -209,7 +216,9 @@ public class SubmitApplication {
                 app,
                 authStackId,
                 AuthStack.AuthStackProps.builder()
-                        .env(envName)
+                        .env(primaryEnv)
+                        .crossRegionReferences(false)
+                        .envName(envName)
                         .hostedZoneName(hostedZoneName)
                         .subDomainName(subDomainName)
                         .resourceNamePrefix(resourceNamePrefix)
@@ -243,7 +252,9 @@ public class SubmitApplication {
                 app,
                 applicationStackId,
                 ApplicationStack.ApplicationStackProps.builder()
-                        .env(envName)
+                        .env(primaryEnv)
+                        .crossRegionReferences(false)
+                        .envName(envName)
                         .hostedZoneName(hostedZoneName)
                         .subDomainName(subDomainName)
                         .resourceNamePrefix(resourceNamePrefix)
@@ -294,6 +305,7 @@ public class SubmitApplication {
                 opsStackId,
                 OpsStack.OpsStackProps.builder()
                         .env(primaryEnv)
+                        .crossRegionReferences(false)
                         .envName(envName)
                         .deploymentName(deploymentName)
                         .domainName(domainName)
@@ -313,6 +325,8 @@ public class SubmitApplication {
                     app,
                     selfDestructStackId,
                     SelfDestructStack.SelfDestructStackProps.builder()
+                            .env(primaryEnv)
+                            .crossRegionReferences(false)
                             .envName(envName)
                             .deploymentName(deploymentName)
                             .resourceNamePrefix(resourceNamePrefix)

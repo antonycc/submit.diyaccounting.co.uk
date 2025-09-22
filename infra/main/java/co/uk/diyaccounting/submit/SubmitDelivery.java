@@ -1,20 +1,21 @@
 package co.uk.diyaccounting.submit;
 
+import co.uk.diyaccounting.submit.stacks.EdgeStack;
+import co.uk.diyaccounting.submit.stacks.PublishStack;
+import co.uk.diyaccounting.submit.stacks.SelfDestructStack;
+import software.amazon.awscdk.App;
+import software.amazon.awscdk.Environment;
+import software.constructs.Construct;
+
+import java.lang.reflect.Field;
+import java.util.Map;
+
 import static co.uk.diyaccounting.submit.awssdk.KindCdk.getContextValueString;
 import static co.uk.diyaccounting.submit.utils.Kind.envOr;
 import static co.uk.diyaccounting.submit.utils.Kind.putIfNotNull;
 import static co.uk.diyaccounting.submit.utils.Kind.warnf;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateCompressedResourceNamePrefix;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateResourceNamePrefix;
-
-import co.uk.diyaccounting.submit.stacks.EdgeStack;
-import co.uk.diyaccounting.submit.stacks.PublishStack;
-import co.uk.diyaccounting.submit.stacks.SelfDestructStack;
-import java.lang.reflect.Field;
-import java.util.Map;
-import software.amazon.awscdk.App;
-import software.amazon.awscdk.Environment;
-import software.constructs.Construct;
 
 public class SubmitDelivery {
 
@@ -166,6 +167,8 @@ public class SubmitDelivery {
                 app,
                 edgeStackId,
                 EdgeStack.EdgeStackProps.builder()
+                        .env(Environment.builder().region("us-east-1").build())
+                        .crossRegionReferences(true)
                         .envName(envName)
                         .deploymentName(deploymentName)
                         .hostedZoneName(hostedZoneName)
@@ -177,9 +180,6 @@ public class SubmitDelivery {
                         .certificateArn(certificateArn)
                         .pathsToOriginLambdaFunctionArns(pathsToOriginLambdaFunctionArns)
                         .accessLogGroupRetentionPeriodDays(Integer.parseInt(accessLogGroupRetentionPeriodDays))
-                        // Force this stack (and thus WAF) into us-east-1 as required by CloudFront
-                        .env(Environment.builder().region("us-east-1").build())
-                        .crossRegionReferences(true)
                         .build());
         String distributionArn = edgeStack.distribution.getDistributionArn();
         String webBucketArn = edgeStack.originBucket.getBucketArn();
@@ -190,6 +190,8 @@ public class SubmitDelivery {
                 app,
                 publishStackId,
                 PublishStack.PublishStackProps.builder()
+                        .env(Environment.builder().region("us-east-1").build())
+                        .crossRegionReferences(false)
                         .envName(envName)
                         .deploymentName(deploymentName)
                         .domainName(domainName)
@@ -199,8 +201,6 @@ public class SubmitDelivery {
                         .distributionArn(distributionArn)
                         .commitHash(commitHash)
                         .docRootPath(docRootPath)
-                        .crossRegionReferences(true)
-                        .env(Environment.builder().region("us-east-1").build())
                         .build());
         publishStack.addDependency(edgeStack);
 
@@ -211,6 +211,8 @@ public class SubmitDelivery {
                     app,
                     selfDestructStackId,
                     SelfDestructStack.SelfDestructStackProps.builder()
+                            .env(Environment.builder().region("us-east-1").build())
+                            .crossRegionReferences(false)
                             .envName(envName)
                             .deploymentName(deploymentName)
                             .resourceNamePrefix(resourceNamePrefix)

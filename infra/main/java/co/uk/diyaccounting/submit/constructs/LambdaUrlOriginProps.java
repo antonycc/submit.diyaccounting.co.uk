@@ -24,7 +24,6 @@ import software.amazon.awscdk.services.logs.RetentionDays;
  */
 @Value.Immutable
 public interface LambdaUrlOriginProps {
-    String env();
 
     String functionName();
 

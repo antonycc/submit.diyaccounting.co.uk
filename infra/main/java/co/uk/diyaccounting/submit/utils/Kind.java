@@ -3,6 +3,7 @@ package co.uk.diyaccounting.submit.utils;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.BiFunction;
 
 public final class Kind {
@@ -66,13 +67,6 @@ public final class Kind {
         return out;
     }
 
-    // Safe putIfNotNull
-    public static <K, V> void putIfNotNull(Map<K, V> map, K key, V value) {
-        if (value != null) {
-            map.put(key, value);
-        }
-    }
-
     public static void logf(String fmt, Object... args) {
         System.out.printf(fmt + "%n", args);
     }
@@ -89,9 +83,28 @@ public final class Kind {
         logf("[ERROR] " + fmt, args);
     }
 
+    // Safe putIfNotNull
+    public static <K, V> void putIfNotNull(Map<K, V> map, K key, V value) {
+        if (value != null) {
+            map.put(key, value);
+            infof("Put key %s with value %s", key, value);
+        } else {
+            infof("Did not put key %s with null/empty value %s", key, value);
+        }
+    }
+
+    public static <K, V> void putIfPresent(Map<K, V> map, K key, Optional<? extends V> value) {
+        if (value != null && value.isPresent()) {
+            map.put(key, value.get());
+            infof("Put key %s with value %s", key, value);
+        } else {
+            infof("Did not put key %s with null/empty value %s", key, value);
+        }
+    }
+
     public static String envOr(String key, String fallback) {
         String v = System.getenv(key);
-        if (v != null && !v.isBlank()){
+        if (v != null && !v.isBlank()) {
             infof("Using environment variable %s for value %s", key, v);
             return v;
         } else {
