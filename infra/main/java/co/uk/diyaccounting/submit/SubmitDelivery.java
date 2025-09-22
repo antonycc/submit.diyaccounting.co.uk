@@ -7,11 +7,14 @@ import software.amazon.awscdk.App;
 import software.amazon.awscdk.Environment;
 import software.constructs.Construct;
 
+import java.io.File;
 import java.lang.reflect.Field;
+import java.nio.file.Paths;
 import java.util.Map;
 
 import static co.uk.diyaccounting.submit.awssdk.KindCdk.getContextValueString;
 import static co.uk.diyaccounting.submit.utils.Kind.envOr;
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.Kind.putIfNotNull;
 import static co.uk.diyaccounting.submit.utils.Kind.warnf;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateCompressedResourceNamePrefix;
@@ -66,26 +69,6 @@ public class SubmitDelivery {
         }
     }
 
-    // populate props from cdk.json context using exact camelCase keys
-    private static SubmitDeliveryProps loadAppProps(Construct scope) {
-        SubmitDeliveryProps props = SubmitDeliveryProps.Builder.create().build();
-        for (Field f : SubmitDeliveryProps.class.getDeclaredFields()) {
-            if (f.getType() != String.class) continue;
-            try {
-                f.setAccessible(true);
-                String current = (String) f.get(props);
-                String fieldName = f.getName();
-                String ctx = getContextValueString(scope, fieldName, current);
-                if (ctx != null) f.set(props, ctx);
-            } catch (Exception e) {
-                warnf("Failed to read context for %s: %s", f.getName(), e.getMessage());
-            }
-        }
-        // default env to dev if not set
-        if (props.env == null || props.env.isBlank()) props.env = "dev";
-        return props;
-    }
-
     public static void main(final String[] args) {
 
         App app = new App();
@@ -99,50 +82,81 @@ public class SubmitDelivery {
         var commitHash = envOr("COMMIT_HASH", "local");
 
         // Determine primary environment (account/region) from CDK env
-//        String cdkDefaultAccount = System.getenv("CDK_DEFAULT_ACCOUNT");
-//        String cdkDefaultRegion = System.getenv("CDK_DEFAULT_REGION");
-//        Environment primaryEnv = null;
-//        if (cdkDefaultAccount != null
-//                && !cdkDefaultAccount.isBlank()
-//                && cdkDefaultRegion != null
-//                && !cdkDefaultRegion.isBlank()) {
-//            primaryEnv = Environment.builder()
-//                    .account(cdkDefaultAccount)
-//                    .region(cdkDefaultRegion)
-//                    .build();
-//        } else {
-//            primaryEnv = Environment.builder()
-//                .build();
-//        }
+        //        String cdkDefaultAccount = System.getenv("CDK_DEFAULT_ACCOUNT");
+        //        String cdkDefaultRegion = System.getenv("CDK_DEFAULT_REGION");
+        //        Environment primaryEnv = null;
+        //        if (cdkDefaultAccount != null
+        //                && !cdkDefaultAccount.isBlank()
+        //                && cdkDefaultRegion != null
+        //                && !cdkDefaultRegion.isBlank()) {
+        //            primaryEnv = Environment.builder()
+        //                    .account(cdkDefaultAccount)
+        //                    .region(cdkDefaultRegion)
+        //                    .build();
+        //        } else {
+        //            primaryEnv = Environment.builder()
+        //                .build();
+        //        }
 
         // Resource name prefixes
-        var hostedZoneName = envOr("HOSTED_ZONE_NAME", appProps.hostedZoneName);
-        var hostedZoneId = envOr("HOSTED_ZONE_ID", appProps.hostedZoneId);
-        var certificateArn = envOr("CERTIFICATE_ARN", appProps.certificateArn);
-        var domainName = envOr("DOMAIN_NAME", appProps.domainName);
-        var baseUrl = envOr("DIY_SUBMIT_HOME_URL", appProps.baseUrl);
-        var docRootPath = envOr("DOC_ROOT_PATH", appProps.docRootPath);
-        var authUrlMockLambdaFunctionArn =
-                envOr("DIY_SUBMIT_AUTH_URL_MOCK_LAMBDA_ARN", appProps.authUrlMockLambdaFunctionArn);
-        var authUrlCognitoLambdaFunctionArn =
-                envOr("DIY_SUBMIT_AUTH_URL_COGNITO_LAMBDA_ARN", appProps.authUrlCognitoLambdaFunctionArn);
-        var exchangeCognitoTokenLambdaFunctionArn =
-                envOr("DIY_SUBMIT_COGNITO_EXCHANGE_TOKEN_LAMBDA_ARN", appProps.exchangeCognitoTokenLambdaFunctionArn);
-        var authUrlHmrcLambdaFunctionArn =
-                envOr("DIY_SUBMIT_AUTH_URL_HMRC_LAMBDA_ARN", appProps.authUrlHmrcLambdaFunctionArn);
-        var exchangeHmrcTokenLambdaFunctionArn =
-                envOr("DIY_SUBMIT_EXCHANGE_HMRC_TOKEN_LAMBDA_ARN", appProps.exchangeHmrcTokenLambdaFunctionArn);
-        var submitVatLambdaFunctionArn = envOr("DIY_SUBMIT_SUBMIT_VAT_LAMBDA_ARN", appProps.submitVatLambdaFunctionArn);
-        var logReceiptLambdaFunctionArn =
-                envOr("DIY_SUBMIT_LOG_RECEIPT_LAMBDA_ARN", appProps.logReceiptLambdaFunctionArn);
-        var catalogLambdaFunctionArn = envOr("DIY_SUBMIT_CATALOG_LAMBDA_ARN", appProps.catalogLambdaFunctionArn);
-        var myBundlesLambdaFunctionArn = envOr("DIY_SUBMIT_MY_BUNDLES_LAMBDA_ARN", appProps.myBundlesLambdaFunctionArn);
-        var myReceiptsLambdaFunctionArn =
-                envOr("DIY_SUBMIT_MY_RECEIPTS_LAMBDA_ARN", appProps.myReceiptsLambdaFunctionArn);
-        var selfDestructHandlerSource = envOr("SELF_DESTRUCT_HANDLER_SOURCE", appProps.selfDestructHandlerSource);
-        var selfDestructDelayHours = envOr("SELF_DESTRUCT_DELAY_HOURS", appProps.selfDestructDelayHours);
-        var accessLogGroupRetentionPeriodDays =
-                envOr("ACCESS_LOG_GROUP_RETENTION_PERIOD_DAYS", appProps.accessLogGroupRetentionPeriodDays);
+        var hostedZoneName = envOr("HOSTED_ZONE_NAME", appProps.hostedZoneName, "(from hostedZoneName in cdk.json)");
+        var hostedZoneId = envOr("HOSTED_ZONE_ID", appProps.hostedZoneId, "(from hostedZoneId in cdk.json)");
+        var certificateArn = envOr("CERTIFICATE_ARN", appProps.certificateArn, "(from certificateArn in cdk.json)");
+        var domainName = envOr("DOMAIN_NAME", appProps.domainName, "(from domainName in cdk.json)");
+        var baseUrl = envOr("DIY_SUBMIT_HOME_URL", appProps.baseUrl, "(from baseUrl in cdk.json)");
+        var docRootPath = envOr("DOC_ROOT_PATH", appProps.docRootPath, "(from docRootPath in cdk.json)");
+        var authUrlMockLambdaFunctionArn = envOr(
+                "DIY_SUBMIT_AUTH_URL_MOCK_LAMBDA_ARN",
+                appProps.authUrlMockLambdaFunctionArn,
+                "(from authUrlMockLambdaFunctionArn in cdk.json)");
+        var authUrlCognitoLambdaFunctionArn = envOr(
+                "DIY_SUBMIT_AUTH_URL_COGNITO_LAMBDA_ARN",
+                appProps.authUrlCognitoLambdaFunctionArn,
+                "(from authUrlCognitoLambdaFunctionArn in cdk.json)");
+        var exchangeCognitoTokenLambdaFunctionArn = envOr(
+                "DIY_SUBMIT_COGNITO_EXCHANGE_TOKEN_LAMBDA_ARN",
+                appProps.exchangeCognitoTokenLambdaFunctionArn,
+                "(from exchangeCognitoTokenLambdaFunctionArn in cdk.json)");
+        var authUrlHmrcLambdaFunctionArn = envOr(
+                "DIY_SUBMIT_AUTH_URL_HMRC_LAMBDA_ARN",
+                appProps.authUrlHmrcLambdaFunctionArn,
+                "(from authUrlHmrcLambdaFunctionArn in cdk.json)");
+        var exchangeHmrcTokenLambdaFunctionArn = envOr(
+                "DIY_SUBMIT_EXCHANGE_HMRC_TOKEN_LAMBDA_ARN",
+                appProps.exchangeHmrcTokenLambdaFunctionArn,
+                "(from exchangeHmrcTokenLambdaFunctionArn in cdk.json)");
+        var submitVatLambdaFunctionArn = envOr(
+                "DIY_SUBMIT_SUBMIT_VAT_LAMBDA_ARN",
+                appProps.submitVatLambdaFunctionArn,
+                "(from submitVatLambdaFunctionArn in cdk.json)");
+        var logReceiptLambdaFunctionArn = envOr(
+                "DIY_SUBMIT_LOG_RECEIPT_LAMBDA_ARN",
+                appProps.logReceiptLambdaFunctionArn,
+                "(from logReceiptLambdaFunctionArn in cdk.json)");
+        var catalogLambdaFunctionArn = envOr(
+                "DIY_SUBMIT_CATALOG_LAMBDA_ARN",
+                appProps.catalogLambdaFunctionArn,
+                "(from catalogLambdaFunctionArn in cdk.json)");
+        var myBundlesLambdaFunctionArn = envOr(
+                "DIY_SUBMIT_MY_BUNDLES_LAMBDA_ARN",
+                appProps.myBundlesLambdaFunctionArn,
+                "(from myBundlesLambdaFunctionArn in cdk.json)");
+        var myReceiptsLambdaFunctionArn = envOr(
+                "DIY_SUBMIT_MY_RECEIPTS_LAMBDA_ARN",
+                appProps.myReceiptsLambdaFunctionArn,
+                "(from myReceiptsLambdaFunctionArn in cdk.json)");
+        var selfDestructHandlerSource = envOr(
+                "SELF_DESTRUCT_HANDLER_SOURCE",
+                appProps.selfDestructHandlerSource,
+                "(from selfDestructHandlerSource in cdk.json)");
+        var selfDestructDelayHours = envOr(
+                "SELF_DESTRUCT_DELAY_HOURS",
+                appProps.selfDestructDelayHours,
+                "(from selfDestructDelayHours in cdk.json)");
+        var accessLogGroupRetentionPeriodDays = envOr(
+                "ACCESS_LOG_GROUP_RETENTION_PERIOD_DAYS",
+                appProps.accessLogGroupRetentionPeriodDays,
+                "(from accessLogGroupRetentionPeriodDays in cdk.json)");
 
         // Derived values from domain and deployment name
         var resourceNamePrefix = generateResourceNamePrefix(domainName, deploymentName);
@@ -184,8 +198,6 @@ public class SubmitDelivery {
                         .pathsToOriginLambdaFunctionArns(pathsToOriginLambdaFunctionArns)
                         .accessLogGroupRetentionPeriodDays(Integer.parseInt(accessLogGroupRetentionPeriodDays))
                         .build());
-        String distributionArn = edgeStack.distribution.getDistributionArn();
-        String webBucketArn = edgeStack.originBucket.getBucketArn();
 
         // Create the Publish stack (Bucket Deployments to CloudFront)
         String publishStackId = "%s-PublishStack".formatted(deploymentName);
@@ -199,9 +211,9 @@ public class SubmitDelivery {
                         .deploymentName(deploymentName)
                         .domainName(domainName)
                         .baseUrl(baseUrl)
-                        .webBucketArn(webBucketArn)
+                        .webBucketArn(edgeStack.originBucket.getBucketArn()) // TODO: Get bucker by predicted name
                         .resourceNamePrefix(resourceNamePrefix)
-                        .distributionArn(distributionArn)
+                        .distributionArn(edgeStack.distribution.getDistributionArn()) // TODO: Get distribution by domain name
                         .commitHash(commitHash)
                         .docRootPath(docRootPath)
                         .build());
@@ -228,5 +240,32 @@ public class SubmitDelivery {
         }
 
         app.synth();
+    }
+
+    // populate props from cdk.json context using exact camelCase keys
+    private static SubmitDeliveryProps loadAppProps(Construct scope) {
+        SubmitDeliveryProps props = SubmitDeliveryProps.Builder.create().build();
+        var cdkPath = Paths.get("cdk.json").toAbsolutePath();
+        if(!new File("cdk.json").exists()){
+            warnf("Cannot find application properties (cdk.json) at %s", cdkPath);
+        } else {
+            infof("Loading application properties from cdk.json %s", cdkPath);
+            for (Field f : SubmitDeliveryProps.class.getDeclaredFields()) {
+                if (f.getType() != String.class) continue;
+                try {
+                    f.setAccessible(true);
+                    String current = (String) f.get(props);
+                    String fieldName = f.getName();
+                    String ctx = getContextValueString(scope, fieldName, current);
+                    if (ctx != null) f.set(props, ctx);
+                    infof("Loaded context %s=%s", fieldName, ctx);
+                } catch (Exception e) {
+                    warnf("Failed to read context for %s: %s", f.getName(), e.getMessage());
+                }
+            }
+        }
+        // default env to dev if not set
+        if (props.env == null || props.env.isBlank()) props.env = "dev";
+        return props;
     }
 }

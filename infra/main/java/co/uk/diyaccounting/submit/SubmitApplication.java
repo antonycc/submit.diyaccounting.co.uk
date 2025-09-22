@@ -12,7 +12,9 @@ import software.amazon.awscdk.App;
 import software.amazon.awscdk.Environment;
 import software.constructs.Construct;
 
+import java.io.File;
 import java.lang.reflect.Field;
+import java.nio.file.Paths;
 
 import static co.uk.diyaccounting.submit.utils.Kind.envOr;
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
@@ -107,39 +109,76 @@ public class SubmitApplication {
                     .account(cdkDefaultAccount)
                     .region(cdkDefaultRegion)
                     .build();
+            infof("Using primary environment account %s region %s", cdkDefaultAccount, cdkDefaultRegion);
         } else {
-            primaryEnv = Environment.builder()
-                .build();
+            primaryEnv = Environment.builder().build();
+            warnf("CDK_DEFAULT_ACCOUNT or CDK_DEFAULT_REGION environment variables are not set, using environment agnostic stacks");
         }
 
         // Allow environment variables to override any appProps values
-        var hostedZoneId = envOr("HOSTED_ZONE_ID", appProps.hostedZoneId);
-        var hostedZoneName = envOr("HOSTED_ZONE_NAME", appProps.hostedZoneName);
-        var subDomainName = envOr("SUB_DOMAIN_NAME", appProps.subDomainName);
-        var hmrcBaseUri = envOr("DIY_SUBMIT_HMRC_BASE_URI", appProps.hmrcBaseUri);
-        var hmrcClientId = envOr("DIY_SUBMIT_HMRC_CLIENT_ID", appProps.hmrcClientId);
-        var hmrcClientSecretArn = envOr("DIY_SUBMIT_HMRC_CLIENT_SECRET_ARN", appProps.hmrcClientSecretArn);
-        var optionalTestAccessToken = envOr("OPTIONAL_TEST_ACCESS_TOKEN", appProps.optionalTestAccessToken);
-        var optionalTestS3Endpoint = envOr("OPTIONAL_TEST_S3_ENDPOINT", appProps.optionalTestS3Endpoint);
-        var optionalTestS3AccessKey = envOr("OPTIONAL_TEST_S3_ACCESS_KEY", appProps.optionalTestS3AccessKey);
-        var optionalTestS3SecretKey = envOr("OPTIONAL_TEST_S3_SECRET_KEY", appProps.optionalTestS3SecretKey);
-        var lambdaEntry = envOr("LAMBDA_ENTRY", appProps.lambdaEntry);
-        var lambdaUrlAuthType = envOr("LAMBDA_URL_AUTH_TYPE", appProps.lambdaUrlAuthType);
-        var receiptsBucketPostfix = envOr("RECEIPTS_BUCKET_POSTFIX", appProps.receiptsBucketPostfix);
-        var baseImageTag = envOr("BASE_IMAGE_TAG", appProps.baseImageTag);
-        var selfDestructDelayHours = envOr("SELF_DESTRUCT_DELAY_HOURS", "1");
-        var selfDestructHandlerSource = envOr("SELF_DESTRUCT_HANDLER_SOURCE", appProps.selfDestructHandlerSource);
-        var cloudTrailEnabled = envOr("CLOUD_TRAIL_ENABLED", appProps.cloudTrailEnabled);
-        var xRayEnabled = envOr("X_RAY_ENABLED", appProps.xRayEnabled);
-        var verboseLogging = envOr("VERBOSE_LOGGING", appProps.verboseLogging);
-        var s3UseExistingBucket = envOr("S3_USE_EXISTING_BUCKET", appProps.s3UseExistingBucket);
-        var s3RetainOriginBucket = envOr("S3_RETAIN_ORIGIN_BUCKET", appProps.s3RetainOriginBucket);
-        var s3RetainReceiptsBucket = envOr("S3_RETAIN_RECEIPTS_BUCKET", appProps.s3RetainReceiptsBucket);
-        var authCertificateArn = envOr("AUTH_CERTIFICATE_ARN", appProps.authCertificateArn);
-        var googleClientId = envOr("DIY_SUBMIT_GOOGLE_CLIENT_ID", appProps.googleClientId);
-        var googleClientSecretArn = envOr("DIY_SUBMIT_GOOGLE_CLIENT_SECRET_ARN", appProps.googleClientSecretArn);
-        var antonyccClientId = envOr("DIY_SUBMIT_ANTONYCC_CLIENT_ID", appProps.antonyccClientId);
-        var antonyccBaseUri = envOr("DIY_SUBMIT_ANTONYCC_BASE_URI", appProps.antonyccBaseUri);
+        var hostedZoneId = envOr("HOSTED_ZONE_ID", appProps.hostedZoneId, "(from hostedZoneId in cdk.json)");
+        var hostedZoneName = envOr("HOSTED_ZONE_NAME", appProps.hostedZoneName, "(from hostedZoneName in cdk.json)");
+        var subDomainName = envOr("SUB_DOMAIN_NAME", appProps.subDomainName, "(from subDomainName in cdk.json)");
+        var hmrcBaseUri = envOr("DIY_SUBMIT_HMRC_BASE_URI", appProps.hmrcBaseUri, "(from hmrcBaseUri in cdk.json)");
+        var hmrcClientId = envOr("DIY_SUBMIT_HMRC_CLIENT_ID", appProps.hmrcClientId, "(from hmrcClientId in cdk.json)");
+        var hmrcClientSecretArn = envOr(
+                "DIY_SUBMIT_HMRC_CLIENT_SECRET_ARN",
+                appProps.hmrcClientSecretArn,
+                "(from hmrcClientSecretArn in cdk.json)");
+        var optionalTestAccessToken = envOr(
+                "OPTIONAL_TEST_ACCESS_TOKEN",
+                appProps.optionalTestAccessToken,
+                "(from optionalTestAccessToken in cdk.json)");
+        var optionalTestS3Endpoint = envOr(
+                "OPTIONAL_TEST_S3_ENDPOINT",
+                appProps.optionalTestS3Endpoint,
+                "(from optionalTestS3Endpoint in cdk.json)");
+        var optionalTestS3AccessKey = envOr(
+                "OPTIONAL_TEST_S3_ACCESS_KEY",
+                appProps.optionalTestS3AccessKey,
+                "(from optionalTestS3AccessKey in cdk.json)");
+        var optionalTestS3SecretKey = envOr(
+                "OPTIONAL_TEST_S3_SECRET_KEY",
+                appProps.optionalTestS3SecretKey,
+                "(from optionalTestS3SecretKey in cdk.json)");
+        var lambdaEntry = envOr("LAMBDA_ENTRY", appProps.lambdaEntry, "(from lambdaEntry in cdk.json)");
+        var lambdaUrlAuthType =
+                envOr("LAMBDA_URL_AUTH_TYPE", appProps.lambdaUrlAuthType, "(from lambdaUrlAuthType in cdk.json)");
+        var receiptsBucketPostfix = envOr(
+                "RECEIPTS_BUCKET_POSTFIX", appProps.receiptsBucketPostfix, "(from receiptsBucketPostfix in cdk.json)");
+        var baseImageTag = envOr("BASE_IMAGE_TAG", appProps.baseImageTag, "(from baseImageTag in cdk.json)");
+        var selfDestructDelayHours = envOr(
+                "SELF_DESTRUCT_DELAY_HOURS",
+                appProps.selfDestructDelayHours,
+                "(from selfDestructDelayHours in cdk.json)");
+        var selfDestructHandlerSource = envOr(
+                "SELF_DESTRUCT_HANDLER_SOURCE",
+                appProps.selfDestructHandlerSource,
+                "(from selfDestructHandlerSource in cdk.json)");
+        var cloudTrailEnabled =
+                envOr("CLOUD_TRAIL_ENABLED", appProps.cloudTrailEnabled, "(from cloudTrailEnabled in cdk.json)");
+        var xRayEnabled = envOr("X_RAY_ENABLED", appProps.xRayEnabled, "(from xRayEnabled in cdk.json)");
+        var verboseLogging = envOr("VERBOSE_LOGGING", appProps.verboseLogging, "(from verboseLogging in cdk.json)");
+        var s3UseExistingBucket =
+                envOr("S3_USE_EXISTING_BUCKET", appProps.s3UseExistingBucket, "(from s3UseExistingBucket in cdk.json)");
+        var s3RetainOriginBucket = envOr(
+                "S3_RETAIN_ORIGIN_BUCKET", appProps.s3RetainOriginBucket, "(from s3RetainOriginBucket in cdk.json)");
+        var s3RetainReceiptsBucket = envOr(
+                "S3_RETAIN_RECEIPTS_BUCKET",
+                appProps.s3RetainReceiptsBucket,
+                "(from s3RetainReceiptsBucket in cdk.json)");
+        var authCertificateArn =
+                envOr("AUTH_CERTIFICATE_ARN", appProps.authCertificateArn, "(from authCertificateArn in cdk.json)");
+        var googleClientId =
+                envOr("DIY_SUBMIT_GOOGLE_CLIENT_ID", appProps.googleClientId, "(from googleClientId in cdk.json)");
+        var googleClientSecretArn = envOr(
+                "DIY_SUBMIT_GOOGLE_CLIENT_SECRET_ARN",
+                appProps.googleClientSecretArn,
+                "(from googleClientSecretArn in cdk.json)");
+        var antonyccClientId = envOr(
+                "DIY_SUBMIT_ANTONYCC_CLIENT_ID", appProps.antonyccClientId, "(from antonyccClientId in cdk.json)");
+        var antonyccBaseUri =
+                envOr("DIY_SUBMIT_ANTONYCC_BASE_URI", appProps.antonyccBaseUri, "(from antonyccBaseUri in cdk.json)");
 
         // Generate predictable resource name prefix based on domain and environment
         String domainName = buildDomainName(envName, subDomainName, hostedZoneName);
@@ -230,13 +269,13 @@ public class SubmitApplication {
                         .cloudTrailEnabled(cloudTrailEnabled)
                         .xRayEnabled(xRayEnabled)
                         .baseImageTag(baseImageTag)
-                        .ecrRepositoryArn(devStack.ecrRepository.getRepositoryArn())
-                        .ecrRepositoryName(devStack.ecrRepository.getRepositoryName())
+                        .ecrRepositoryArn(devStack.ecrRepository.getRepositoryArn())   // TODO: Internally compute from name
+                        .ecrRepositoryName(devStack.ecrRepository.getRepositoryName()) // TODO: Get by predictable name
                         .homeUrl(baseUrl)
                         .lambdaEntry(lambdaEntry)
                         .lambdaUrlAuthType(lambdaUrlAuthType)
-                        .cognitoClientId(identityStack.userPoolClient.getUserPoolClientId())
-                        .cognitoBaseUri(identityStack.userPoolDomain.getDomainName())
+                        .cognitoClientId(identityStack.userPoolClient.getUserPoolClientId())   // TODO: Research a way around needing this.
+                        .cognitoBaseUri(identityStack.userPoolDomain.getDomainName())  // TODO: Get calculated value
                         // .optionalTestAccessToken(optionalTestAccessToken)
                         // .userPool(identityStack.userPool)
                         // .userPoolClient(identityStack.userPoolClient)
@@ -267,8 +306,8 @@ public class SubmitApplication {
                         .xRayEnabled(xRayEnabled)
                         .verboseLogging(verboseLogging)
                         .baseImageTag(baseImageTag)
-                        .ecrRepositoryArn(devStack.ecrRepository.getRepositoryArn())
-                        .ecrRepositoryName(devStack.ecrRepository.getRepositoryName())
+                        .ecrRepositoryArn(devStack.ecrRepository.getRepositoryArn())   // TODO: Internally compute from name
+                        .ecrRepositoryName(devStack.ecrRepository.getRepositoryName()) // TODO: Get by predictable name
                         .homeUrl(baseUrl)
                         .hmrcBaseUri(hmrcBaseUri)
                         .hmrcClientId(hmrcClientId)
@@ -288,6 +327,7 @@ public class SubmitApplication {
 
         // Create the Ops stack (Alarms, etc.)
         // Build list of Lambda function ARNs for OpsStack
+        // TODO: Compute ARNs internally in OpsStack from predictable names
         java.util.List<String> lambdaArns = new java.util.ArrayList<>();
         if (applicationStack.authUrlHmrcLambda != null)
             lambdaArns.add(applicationStack.authUrlHmrcLambda.getFunctionArn());
@@ -350,21 +390,29 @@ public class SubmitApplication {
         app.synth();
     }
 
+    // populate from cdk.json context using exact camelCase keys
     private static SubmitApplicationProps loadAppProps(Construct scope) {
         SubmitApplicationProps props = SubmitApplicationProps.Builder.create().build();
-        // populate from cdk.json context using exact camelCase keys
-        for (Field f : SubmitApplicationProps.class.getDeclaredFields()) {
-            if (f.getType() != String.class) continue;
-            try {
-                f.setAccessible(true);
-                String current = (String) f.get(props);
-                String fieldName = f.getName();
-                String ctx = KindCdk.getContextValueString(scope, fieldName, current);
-                if (ctx != null) f.set(props, ctx);
-            } catch (Exception e) {
-                warnf("Failed to read context for %s: %s", f.getName(), e.getMessage());
+        var cdkPath = Paths.get("cdk.json").toAbsolutePath();
+        if(!new File("cdk.json").exists()){
+            warnf("Cannot find application properties (cdk.json) at %s", cdkPath);
+        } else {
+            infof("Loading application properties from cdk.json %s", cdkPath);
+            for (Field f : SubmitApplicationProps.class.getDeclaredFields()) {
+                if (f.getType() != String.class) continue;
+                try {
+                    f.setAccessible(true);
+                    String current = (String) f.get(props);
+                    String fieldName = f.getName();
+                    String ctx = KindCdk.getContextValueString(scope, fieldName, current);
+                    if (ctx != null) f.set(props, ctx);
+                    infof("Load context %s=%s", fieldName, ctx);
+                } catch (Exception e) {
+                    warnf("Failed to read context for %s: %s", f.getName(), e.getMessage());
+                }
             }
         }
+
         // default env to dev if not set
         if (props.env == null || props.env.isBlank()) props.env = "dev";
         return props;

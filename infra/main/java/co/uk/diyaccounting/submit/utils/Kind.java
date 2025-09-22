@@ -102,14 +102,21 @@ public final class Kind {
         }
     }
 
-    public static String envOr(String key, String fallback) {
-        String v = System.getenv(key);
-        if (v != null && !v.isBlank()) {
-            infof("Using environment variable %s for value %s", key, v);
-            return v;
+    public static String envOr(String environmentVariable, String alternativeValue) {
+        return envOr(environmentVariable, alternativeValue, "");
+    }
+
+    public static String envOr(String environmentVariable, String alternativeValue, String alternativeSource) {
+        String environmentValue = System.getenv(environmentVariable);
+        if (environmentValue != null && !environmentValue.isBlank()) {
+            infof("Using environment variable %s for value %s", environmentVariable, environmentValue);
+            return environmentValue;
         } else {
-            infof("Using environment variable %s blank using fallback value %s", key, v);
-            return fallback;
+            var sourceLabel = alternativeSource == null ? "" : " " + alternativeSource;
+            infof(
+                    "Using environment variable %s is null or blank using alternative%s, value %s",
+                    environmentVariable, sourceLabel, environmentValue);
+            return alternativeValue;
         }
     }
 }
