@@ -84,10 +84,6 @@ public class EdgeStack extends Stack {
 
         String certificateArn();
 
-        String logsBucketArn();
-
-        String webBucketArn();
-
         Map<String, String> pathsToOriginLambdaFunctionArns();
 
         int accessLogGroupRetentionPeriodDays();
