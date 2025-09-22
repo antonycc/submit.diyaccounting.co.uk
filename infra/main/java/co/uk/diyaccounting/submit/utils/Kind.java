@@ -85,20 +85,20 @@ public final class Kind {
 
     // Safe putIfNotNull
     public static <K, V> void putIfNotNull(Map<K, V> map, K key, V value) {
-        if (value != null) {
+        if (value != null && !(value instanceof String && ((String) value).isBlank())) {
             map.put(key, value);
             infof("Put key %s with value %s", key, value);
         } else {
-            infof("Did not put key %s with null/empty value %s", key, value);
+            infof("Did not put key %s with null/blank value of %s", key, value);
         }
     }
 
     public static <K, V> void putIfPresent(Map<K, V> map, K key, Optional<? extends V> value) {
-        if (value != null && value.isPresent()) {
+        if (value != null && value.isPresent()&& !(value.get() instanceof String && ((String) value.get()).isBlank())) {
             map.put(key, value.get());
             infof("Put key %s with value %s", key, value.get());
         } else {
-            infof("Did not put key %s with null/empty value %s", key, value.get());
+            infof("Did not put key %s with null/not present/blank value", key);
         }
     }
 
