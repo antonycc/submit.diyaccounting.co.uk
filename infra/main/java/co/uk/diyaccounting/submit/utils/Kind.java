@@ -91,6 +91,12 @@ public final class Kind {
 
     public static String envOr(String key, String fallback) {
         String v = System.getenv(key);
-        return (v != null && !v.isBlank()) ? v : fallback;
+        if (v != null && !v.isBlank()){
+            infof("Using environment variable %s for value %s", key, v);
+            return v;
+        } else {
+            infof("Using environment variable %s blank using fallback value %s", key, v);
+            return fallback;
+        }
     }
 }

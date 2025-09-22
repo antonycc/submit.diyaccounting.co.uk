@@ -1,12 +1,5 @@
 package co.uk.diyaccounting.submit;
 
-import static co.uk.diyaccounting.submit.utils.Kind.envOr;
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.Kind.warnf;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDomainName;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateCompressedResourceNamePrefix;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateResourceNamePrefix;
-
 import co.uk.diyaccounting.submit.awssdk.KindCdk;
 import co.uk.diyaccounting.submit.stacks.ApplicationStack;
 import co.uk.diyaccounting.submit.stacks.AuthStack;
@@ -15,9 +8,17 @@ import co.uk.diyaccounting.submit.stacks.IdentityStack;
 import co.uk.diyaccounting.submit.stacks.ObservabilityStack;
 import co.uk.diyaccounting.submit.stacks.OpsStack;
 import co.uk.diyaccounting.submit.stacks.SelfDestructStack;
-import java.lang.reflect.Field;
 import software.amazon.awscdk.App;
 import software.constructs.Construct;
+
+import java.lang.reflect.Field;
+
+import static co.uk.diyaccounting.submit.utils.Kind.envOr;
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.Kind.warnf;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDomainName;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateCompressedResourceNamePrefix;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateResourceNamePrefix;
 
 public class SubmitApplication {
 
