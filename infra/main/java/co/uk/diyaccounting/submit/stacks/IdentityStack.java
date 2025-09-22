@@ -1,5 +1,16 @@
 package co.uk.diyaccounting.submit.stacks;
 
+import static co.uk.diyaccounting.submit.awssdk.KindCdk.cfnOutput;
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildCognitoBaseUri;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildCognitoDomainName;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDashedCognitoDomainName;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDashedDomainName;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDomainName;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.immutables.value.Value;
 import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.Stack;
@@ -33,18 +44,6 @@ import software.amazon.awscdk.services.secretsmanager.Secret;
 import software.constructs.Construct;
 import software.constructs.IDependable;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import static co.uk.diyaccounting.submit.awssdk.KindCdk.cfnOutput;
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildCognitoBaseUri;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildCognitoDomainName;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDashedCognitoDomainName;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDashedDomainName;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDomainName;
-
 public class IdentityStack extends Stack {
 
     public String domainName;
@@ -66,22 +65,39 @@ public class IdentityStack extends Stack {
     @Value.Immutable
     public interface IdentityStackProps {
         String env();
+
         String subDomainName();
+
         String hostedZoneName();
+
         String hostedZoneId();
+
         String authCertificateArn();
+
         String useExistingAuthCertificate();
+
         String accessLogGroupRetentionPeriodDays();
+
         String cloudTrailEnabled();
+
         String xRayEnabled();
+
         String verboseLogging();
+
         String homeUrl();
+
         String antonyccClientId();
+
         String antonyccBaseUri();
+
         String googleClientId();
+
         String googleClientSecretArn();
+
         String cognitoDomainPrefix();
+
         String cognitoFeaturePlan();
+
         String cognitoEnableLogDelivery();
 
         static ImmutableIdentityStackProps.Builder builder() {

@@ -1,7 +1,13 @@
 package co.uk.diyaccounting.submit.stacks;
 
+import static co.uk.diyaccounting.submit.awssdk.KindCdk.cfnOutput;
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildFunctionName;
+
 import co.uk.diyaccounting.submit.constructs.LambdaUrlOrigin;
 import co.uk.diyaccounting.submit.constructs.LambdaUrlOriginProps;
+import java.util.HashMap;
+import java.util.Optional;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Stack;
@@ -12,13 +18,6 @@ import software.amazon.awscdk.services.lambda.FunctionUrlAuthType;
 import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
-
-import java.util.HashMap;
-import java.util.Optional;
-
-import static co.uk.diyaccounting.submit.awssdk.KindCdk.cfnOutput;
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildFunctionName;
 
 public class AuthStack extends Stack {
 
@@ -32,27 +31,40 @@ public class AuthStack extends Stack {
     @Value.Immutable
     public interface AuthStackProps {
         String env();
+
         String subDomainName();
+
         String resourceNamePrefix();
 
         String compressedResourceNamePrefix();
+
         String hostedZoneName();
+
         String cloudTrailEnabled();
+
         String xRayEnabled();
+
         String baseImageTag();
+
         String ecrRepositoryArn();
+
         String ecrRepositoryName();
+
         String lambdaEntry();
+
         String lambdaUrlAuthType();
+
         String homeUrl();
+
         String cognitoClientId();
+
         String cognitoBaseUri();
 
         // Optional test access token for local/dev testing without real Cognito interaction
-        //@Value.Default
+        // @Value.Default
         Optional<String> optionalTestAccessToken(); // {
-            //return Optional.empty();
-        //}
+        // return Optional.empty();
+        // }
 
         static ImmutableAuthStackProps.Builder builder() {
             return ImmutableAuthStackProps.builder();
@@ -69,7 +81,7 @@ public class AuthStack extends Stack {
         // Values are provided via SubmitApplication after context/env resolution
 
         // Build naming using same patterns as WebStack
-        //String dashedDomainName = buildNonProdDomainName(props.env(), props.subDomainName(), props.hostedZoneName());
+        // String dashedDomainName = buildNonProdDomainName(props.env(), props.subDomainName(), props.hostedZoneName());
 
         boolean cloudTrailEnabled = Boolean.parseBoolean(props.cloudTrailEnabled());
         boolean xRayEnabled = Boolean.parseBoolean(props.xRayEnabled());
@@ -160,7 +172,9 @@ public class AuthStack extends Stack {
         // }
         if (props.optionalTestAccessToken().isPresent()
                 && StringUtils.isNotBlank(props.optionalTestAccessToken().get())) {
-            exchangeCognitoTokenLambdaEnv.put("DIY_SUBMIT_TEST_ACCESS_TOKEN", props.optionalTestAccessToken().get());
+            exchangeCognitoTokenLambdaEnv.put(
+                    "DIY_SUBMIT_TEST_ACCESS_TOKEN",
+                    props.optionalTestAccessToken().get());
         }
         var exchangeCognitoTokenLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
@@ -171,7 +185,8 @@ public class AuthStack extends Stack {
                         .ecrRepositoryName(props.ecrRepositoryName())
                         .ecrRepositoryArn(props.ecrRepositoryArn())
                         .imageFilename("exchangeCognitoToken.Dockerfile")
-                        .functionName(buildFunctionName(props.compressedResourceNamePrefix(), "exchangeToken.httpPostCognito"))
+                        .functionName(buildFunctionName(
+                                props.compressedResourceNamePrefix(), "exchangeToken.httpPostCognito"))
                         .cloudFrontAllowedMethods(AllowedMethods.ALLOW_ALL)
                         .handler(props.lambdaEntry() + "exchangeToken.httpPostCognito")
                         .environment(exchangeCognitoTokenLambdaEnv)

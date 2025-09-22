@@ -1,7 +1,16 @@
 package co.uk.diyaccounting.submit.stacks;
 
+import static co.uk.diyaccounting.submit.awssdk.KindCdk.cfnOutput;
+import static co.uk.diyaccounting.submit.awssdk.S3.createLifecycleRules;
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDashedDomainName;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildFunctionName;
+
 import co.uk.diyaccounting.submit.constructs.LambdaUrlOrigin;
 import co.uk.diyaccounting.submit.constructs.LambdaUrlOriginProps;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.RemovalPolicy;
@@ -19,16 +28,6 @@ import software.amazon.awscdk.services.s3.ObjectOwnership;
 import software.amazon.awscdk.services.secretsmanager.Secret;
 import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-
-import static co.uk.diyaccounting.submit.awssdk.KindCdk.cfnOutput;
-import static co.uk.diyaccounting.submit.awssdk.S3.createLifecycleRules;
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDashedDomainName;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildFunctionName;
 
 public class ApplicationStack extends Stack {
 
@@ -67,6 +66,7 @@ public class ApplicationStack extends Stack {
         String subDomainName();
 
         String hostedZoneName();
+
         String resourceNamePrefix();
 
         String compressedResourceNamePrefix();
@@ -95,25 +95,25 @@ public class ApplicationStack extends Stack {
 
         String hmrcClientSecretArn();
 
-        //@Value.Default
+        // @Value.Default
         Optional<String> optionalTestAccessToken(); // {
-            // return Optional.empty();
+        // return Optional.empty();
         // }
 
-        //@Value.Default
-        Optional<String> optionalTestS3Endpoint() ; //{
-            // return Optional.empty();
-        //}
+        // @Value.Default
+        Optional<String> optionalTestS3Endpoint(); // {
+        // return Optional.empty();
+        // }
 
-        //@Value.Default
+        // @Value.Default
         Optional<String> optionalTestS3AccessKey(); // {
-            //return Optional.empty();
-        //}
+        // return Optional.empty();
+        // }
 
-        //@Value.Default
-        Optional<String> optionalTestS3SecretKey() ;//{
-            //return Optional.empty();
-        //}
+        // @Value.Default
+        Optional<String> optionalTestS3SecretKey(); // {
+        // return Optional.empty();
+        // }
 
         String receiptsBucketPostfix();
 
@@ -186,8 +186,10 @@ public class ApplicationStack extends Stack {
             exchangeHmrcEnvBase.put("DIY_SUBMIT_HMRC_CLIENT_SECRET_ARN", hmrcSecret.getSecretArn());
         }
         if (props.optionalTestAccessToken().isPresent()
-            && StringUtils.isNotBlank(props.optionalTestAccessToken().get())) {
-            exchangeHmrcEnvBase.put("DIY_SUBMIT_TEST_ACCESS_TOKEN", props.optionalTestAccessToken().get());
+                && StringUtils.isNotBlank(props.optionalTestAccessToken().get())) {
+            exchangeHmrcEnvBase.put(
+                    "DIY_SUBMIT_TEST_ACCESS_TOKEN",
+                    props.optionalTestAccessToken().get());
         }
         var exchangeHmrcTokenLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
@@ -252,9 +254,12 @@ public class ApplicationStack extends Stack {
                 && StringUtils.isNotBlank(props.optionalTestS3SecretKey().get())) {
             // For production like integrations without AWS we can use test S3 credentials
             var logReceiptLambdaTestEnv = new HashMap<>(Map.of(
-                    "DIY_SUBMIT_TEST_S3_ENDPOINT", props.optionalTestS3Endpoint().get(),
-                    "DIY_SUBMIT_TEST_S3_ACCESS_KEY", props.optionalTestS3AccessKey().get(),
-                    "DIY_SUBMIT_TEST_S3_SECRET_KEY", props.optionalTestS3SecretKey().get()));
+                    "DIY_SUBMIT_TEST_S3_ENDPOINT",
+                            props.optionalTestS3Endpoint().get(),
+                    "DIY_SUBMIT_TEST_S3_ACCESS_KEY",
+                            props.optionalTestS3AccessKey().get(),
+                    "DIY_SUBMIT_TEST_S3_SECRET_KEY",
+                            props.optionalTestS3SecretKey().get()));
             logReceiptLambdaEnv.putAll(logReceiptLambdaTestEnv);
         }
         var logReceiptLambdaUrlOrigin = new LambdaUrlOrigin(

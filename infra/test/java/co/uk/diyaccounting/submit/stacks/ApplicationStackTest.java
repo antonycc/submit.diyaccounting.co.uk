@@ -1,12 +1,12 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import org.junit.jupiter.api.Test;
-import software.amazon.awscdk.App;
-
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDashedDomainName;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDomainName;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+
+import org.junit.jupiter.api.Test;
+import software.amazon.awscdk.App;
 
 class ApplicationStackTest {
 
@@ -47,8 +47,8 @@ class ApplicationStackTest {
                         .xRayEnabled("false")
                         .verboseLogging("true")
                         .baseImageTag("latest")
-                    .resourceNamePrefix("TestApp")
-                    .compressedResourceNamePrefix("TAp")
+                        .resourceNamePrefix("TestApp")
+                        .compressedResourceNamePrefix("TAp")
                         .ecrRepositoryArn("arn:aws:ecr:us-east-1:123:mine")
                         .ecrRepositoryName("test-repo")
                         .homeUrl("https://www.diyaccounting.co.uk")
@@ -58,10 +58,10 @@ class ApplicationStackTest {
                         .lambdaEntry("src/main/java/co/uk/diyaccounting/submit/lambda /SubmitHandler.java")
                         .hmrcClientSecretArn("arn:aws:secretsmanager:us-east-1:123:secret:hmrc-secret")
                         .receiptsBucketPostfix("test")
-                        //.optionalTestS3Endpoint("http://localhost:4566")
-                        //.optionalTestS3AccessKey("test-access-key")
-                        //.optionalTestS3SecretKey("test-secret-key")
-                        //.optionalTestAccessToken("test-secret-key")
+                        // .optionalTestS3Endpoint("http://localhost:4566")
+                        // .optionalTestS3AccessKey("test-access-key")
+                        // .optionalTestS3SecretKey("test-secret-key")
+                        // .optionalTestAccessToken("test-secret-key")
                         .s3RetainReceiptsBucket("false")
                         .lambdaUrlAuthType("NONE")
                         .build());

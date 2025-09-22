@@ -1,5 +1,12 @@
 package co.uk.diyaccounting.submit;
 
+import static co.uk.diyaccounting.submit.utils.Kind.envOr;
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.Kind.warnf;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDomainName;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateCompressedResourceNamePrefix;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateResourceNamePrefix;
+
 import co.uk.diyaccounting.submit.awssdk.KindCdk;
 import co.uk.diyaccounting.submit.stacks.ApplicationStack;
 import co.uk.diyaccounting.submit.stacks.AuthStack;
@@ -8,17 +15,9 @@ import co.uk.diyaccounting.submit.stacks.IdentityStack;
 import co.uk.diyaccounting.submit.stacks.ObservabilityStack;
 import co.uk.diyaccounting.submit.stacks.OpsStack;
 import co.uk.diyaccounting.submit.stacks.SelfDestructStack;
+import java.lang.reflect.Field;
 import software.amazon.awscdk.App;
 import software.constructs.Construct;
-
-import java.lang.reflect.Field;
-
-import static co.uk.diyaccounting.submit.utils.Kind.envOr;
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.Kind.warnf;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDomainName;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateCompressedResourceNamePrefix;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateResourceNamePrefix;
 
 public class SubmitApplication {
 
@@ -178,14 +177,14 @@ public class SubmitApplication {
                         .googleClientSecretArn(googleClientSecretArn)
                         .antonyccClientId(antonyccClientId)
                         .antonyccBaseUri(antonyccBaseUri)
-                    .useExistingAuthCertificate("true")
-                    .accessLogGroupRetentionPeriodDays(appProps.accessLogGroupRetentionPeriodDays)
-                    .cloudTrailEnabled(cloudTrailEnabled)
-                    .xRayEnabled(xRayEnabled)
-                    .verboseLogging(verboseLogging)
-                    .homeUrl(baseUrl)
-                    .cognitoFeaturePlan("ESSENTIALS")
-                    .cognitoEnableLogDelivery("false")
+                        .useExistingAuthCertificate("true")
+                        .accessLogGroupRetentionPeriodDays(appProps.accessLogGroupRetentionPeriodDays)
+                        .cloudTrailEnabled(cloudTrailEnabled)
+                        .xRayEnabled(xRayEnabled)
+                        .verboseLogging(verboseLogging)
+                        .homeUrl(baseUrl)
+                        .cognitoFeaturePlan("ESSENTIALS")
+                        .cognitoEnableLogDelivery("false")
                         .build());
 
         // Determine primary environment (account/region) from CDK env
@@ -212,8 +211,8 @@ public class SubmitApplication {
                         .env(envName)
                         .hostedZoneName(hostedZoneName)
                         .subDomainName(subDomainName)
-                    .resourceNamePrefix(resourceNamePrefix)
-                    .compressedResourceNamePrefix(compressedResourceNamePrefix)
+                        .resourceNamePrefix(resourceNamePrefix)
+                        .compressedResourceNamePrefix(compressedResourceNamePrefix)
                         .cloudTrailEnabled(cloudTrailEnabled)
                         .xRayEnabled(xRayEnabled)
                         .baseImageTag(baseImageTag)
@@ -224,7 +223,7 @@ public class SubmitApplication {
                         .lambdaUrlAuthType(lambdaUrlAuthType)
                         .cognitoClientId(identityStack.userPoolClient.getUserPoolClientId())
                         .cognitoBaseUri(identityStack.userPoolDomain.getDomainName())
-                        //.optionalTestAccessToken(optionalTestAccessToken)
+                        // .optionalTestAccessToken(optionalTestAccessToken)
                         // .userPool(identityStack.userPool)
                         // .userPoolClient(identityStack.userPoolClient)
                         // .userPoolDomain(identityStack.userPoolDomain)
@@ -246,8 +245,8 @@ public class SubmitApplication {
                         .env(envName)
                         .hostedZoneName(hostedZoneName)
                         .subDomainName(subDomainName)
-                            .resourceNamePrefix(resourceNamePrefix)
-                            .compressedResourceNamePrefix(compressedResourceNamePrefix)
+                        .resourceNamePrefix(resourceNamePrefix)
+                        .compressedResourceNamePrefix(compressedResourceNamePrefix)
                         .cloudTrailEnabled(cloudTrailEnabled)
                         .xRayEnabled(xRayEnabled)
                         .verboseLogging(verboseLogging)
@@ -261,11 +260,11 @@ public class SubmitApplication {
                         .lambdaEntry(lambdaEntry)
                         .hmrcClientSecretArn(hmrcClientSecretArn)
                         .receiptsBucketPostfix(receiptsBucketPostfix)
-                        //.optionalTestS3Endpoint(optionalTestS3Endpoint)
-                        //.optionalTestS3AccessKey(optionalTestS3AccessKey)
-                        //.optionalTestS3SecretKey(optionalTestS3SecretKey)
+                        // .optionalTestS3Endpoint(optionalTestS3Endpoint)
+                        // .optionalTestS3AccessKey(optionalTestS3AccessKey)
+                        // .optionalTestS3SecretKey(optionalTestS3SecretKey)
                         .s3RetainReceiptsBucket(s3RetainReceiptsBucket)
-                        //.optionalTestAccessToken(optionalTestAccessToken)
+                        // .optionalTestAccessToken(optionalTestAccessToken)
                         .build());
         applicationStack.addDependency(devStack);
         // applicationStack.addDependency(webStack);

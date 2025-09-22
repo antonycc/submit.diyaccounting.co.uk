@@ -1,5 +1,9 @@
 package co.uk.diyaccounting.submit.stacks;
 
+import static co.uk.diyaccounting.submit.awssdk.KindCdk.cfnOutput;
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+
+import java.util.List;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
@@ -20,11 +24,6 @@ import software.amazon.awscdk.services.s3.Bucket;
 import software.amazon.awscdk.services.s3.IBucket;
 import software.constructs.Construct;
 
-import java.util.List;
-
-import static co.uk.diyaccounting.submit.awssdk.KindCdk.cfnOutput;
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-
 public class OpsStack extends Stack {
 
     public final Dashboard operationalDashboard;
@@ -41,9 +40,9 @@ public class OpsStack extends Stack {
 
         String compressedResourceNamePrefix();
 
-        //String distributionId();
+        // String distributionId();
 
-        //String originBucketArn();
+        // String originBucketArn();
 
         String receiptsBucketArn(); // optional, may be null
 
