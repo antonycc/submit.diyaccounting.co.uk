@@ -14,6 +14,7 @@ import software.constructs.Construct;
 
 import java.io.File;
 import java.lang.reflect.Field;
+import java.nio.file.Files;
 import java.nio.file.Paths;
 
 import static co.uk.diyaccounting.submit.utils.Kind.envOr;
@@ -364,27 +365,32 @@ public class SubmitApplication {
 
         // Create the SelfDestruct stack only for non-prod deployments and when JAR exists
         if (!"prod".equals(deploymentName)) {
-            String selfDestructStackId = "%s-SelfDestructStack".formatted(deploymentName);
-            SelfDestructStack selfDestructStack = new SelfDestructStack(
-                    app,
-                    selfDestructStackId,
-                    SelfDestructStack.SelfDestructStackProps.builder()
-                            .env(primaryEnv)
-                            .crossRegionReferences(false)
-                            .envName(envName)
-                            .deploymentName(deploymentName)
-                            .resourceNamePrefix(resourceNamePrefix)
-                            .compressedResourceNamePrefix(compressedResourceNamePrefix)
-                            .observabilityStackName(observabilityStack.getStackName())
-                            .devStackName(devStack.getStackName())
-                            .identityStackName(identityStack.getStackName())
-                            .authStackName(applicationStack.getStackName())
-                            .applicationStackName(applicationStack.getStackName())
-                            // .webStackName(webStack.getStackName())
-                            .opsStackName(opsStack.getStackName())
-                            .selfDestructDelayHours(selfDestructDelayHours)
-                            .selfDestructHandlerSource(selfDestructHandlerSource)
-                            .build());
+            java.nio.file.Path handlerPath = java.nio.file.Paths.get(selfDestructHandlerSource);
+            if (java.nio.file.Files.exists(handlerPath) && java.nio.file.Files.isRegularFile(handlerPath)) {
+                String selfDestructStackId = "%s-SelfDestructStack".formatted(deploymentName);
+                SelfDestructStack selfDestructStack = new SelfDestructStack(
+                        app,
+                        selfDestructStackId,
+                        SelfDestructStack.SelfDestructStackProps.builder()
+                                .env(primaryEnv)
+                                .crossRegionReferences(false)
+                                .envName(envName)
+                                .deploymentName(deploymentName)
+                                .resourceNamePrefix(resourceNamePrefix)
+                                .compressedResourceNamePrefix(compressedResourceNamePrefix)
+                                .observabilityStackName(observabilityStack.getStackName())
+                                .devStackName(devStack.getStackName())
+                                .identityStackName(identityStack.getStackName())
+                                .authStackName(applicationStack.getStackName())
+                                .applicationStackName(applicationStack.getStackName())
+                                // .webStackName(webStack.getStackName())
+                                .opsStackName(opsStack.getStackName())
+                                .selfDestructDelayHours(selfDestructDelayHours)
+                                .selfDestructHandlerSource(selfDestructHandlerSource)
+                                .build());
+            } else {
+                infof("Skipping SelfDestructStack creation - handler JAR not found at: %s", selfDestructHandlerSource);
+            }
         }
 
         app.synth();
