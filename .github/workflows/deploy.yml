@@ -1017,6 +1017,8 @@ jobs:
           DIY_SUBMIT_HMRC_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ needs.names.outputs.environment-name }}/submit/hmrc/client_secret"
           DIY_SUBMIT_GOOGLE_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ needs.names.outputs.environment-name }}/submit/google/client_secret"
 
+      - run: cat cdk-submit-application.out/cdk-outputs-auth.json | jq '.'
+
       # Extract for:
       # additionalBehaviourMappings.put("/api/mock/auth-url" + "*", envOr("DIY_SUBMIT_AUTH_URL_MOCK_LAMBDA_ARN", authStack.authUrlMockLambda.getFunctionArn()));
       # additionalBehaviourMappings.put("/api/cognito/auth-url" + "*", envOr("DIY_SUBMIT_AUTH_URL_COGNITO_LAMBDA_ARN", authStack.authUrlCognitoLambda.getFunctionArn()));
@@ -1129,6 +1131,8 @@ jobs:
           DIY_SUBMIT_HMRC_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ needs.names.outputs.environment-name }}/submit/hmrc/client_secret"
           DIY_SUBMIT_GOOGLE_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ needs.names.outputs.environment-name }}/submit/google/client_secret"
 
+      - run: cat cdk-submit-application.out/cdk-outputs-application.json | jq '.'
+
       # Extract for:
       #        additionalBehaviourMappings.put("/api/hmrc/auth-url" + "*", envOr("DIY_SUBMIT_AUTH_URL_HMRC_LAMBDA_ARN", applicationStack.authUrlHmrcLambda.getFunctionArn()));
       #        additionalBehaviourMappings.put("/api/hmrc/exchange-token" + "*", envOr("DIY_SUBMIT_EXCHANGE_HMRC_TOKEN_LAMBDA_ARN", applicationStack.exchangeHmrcTokenLambda.getFunctionArn()));
@@ -1148,18 +1152,18 @@ jobs:
           DIY_SUBMIT_MY_BUNDLES_LAMBDA_ARN=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-ApplicationStack"].MyBundlesLambdaArn' cdk-submit-application.out/cdk-outputs-application.json)
           DIY_SUBMIT_MY_RECEIPTS_LAMBDA_ARN=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-ApplicationStack"].MyReceiptsLambdaArn' cdk-submit-application.out/cdk-outputs-application.json)
           echo "DIY_SUBMIT_AUTH_URL_HMRC_LAMBDA_ARN=$DIY_SUBMIT_AUTH_URL_HMRC_LAMBDA_ARN"
-          echo "DIY_SUBMIT_EXCHANGE_HMRC_TOKEN_LAMBDA_ARN=$DIY_SUBMIT_EXCHANGE_HMRC_TOKEN_LAMBDA_ARN"
-          echo "DIY_SUBMIT_SUBMIT_VAT_LAMBDA_ARN=$DIY_SUBMIT_SUBMIT_VAT_LAMBDA_ARN"
-          echo "DIY_SUBMIT_LOG_RECEIPT_LAMBDA_ARN=$DIY_SUBMIT_LOG_RECEIPT_LAMBDA_ARN"
-          echo "DIY_SUBMIT_CATALOG_LAMBDA_ARN=$DIY_SUBMIT_CATALOG_LAMBDA_ARN"
-          echo "DIY_SUBMIT_MY_BUNDLES_LAMBDA_ARN=$DIY_SUBMIT_MY_BUNDLES_LAMBDA_ARN"
-          echo "DIY_SUBMIT_MY_RECEIPTS_LAMBDA_ARN=$DIY_SUBMIT_MY_RECEIPTS_LAMBDA_ARN"
           echo "DIY_SUBMIT_AUTH_URL_HMRC_LAMBDA_ARN=$DIY_SUBMIT_AUTH_URL_HMRC_LAMBDA_ARN" >> $GITHUB_OUTPUT
+          echo "DIY_SUBMIT_EXCHANGE_HMRC_TOKEN_LAMBDA_ARN=$DIY_SUBMIT_EXCHANGE_HMRC_TOKEN_LAMBDA_ARN"
           echo "DIY_SUBMIT_EXCHANGE_HMRC_TOKEN_LAMBDA_ARN=$DIY_SUBMIT_EXCHANGE_HMRC_TOKEN_LAMBDA_ARN" >> $GITHUB_OUTPUT
+          echo "DIY_SUBMIT_SUBMIT_VAT_LAMBDA_ARN=$DIY_SUBMIT_SUBMIT_VAT_LAMBDA_ARN"
           echo "DIY_SUBMIT_SUBMIT_VAT_LAMBDA_ARN=$DIY_SUBMIT_SUBMIT_VAT_LAMBDA_ARN" >> $GITHUB_OUTPUT
+          echo "DIY_SUBMIT_LOG_RECEIPT_LAMBDA_ARN=$DIY_SUBMIT_LOG_RECEIPT_LAMBDA_ARN"
           echo "DIY_SUBMIT_LOG_RECEIPT_LAMBDA_ARN=$DIY_SUBMIT_LOG_RECEIPT_LAMBDA_ARN" >> $GITHUB_OUTPUT
+          echo "DIY_SUBMIT_CATALOG_LAMBDA_ARN=$DIY_SUBMIT_CATALOG_LAMBDA_ARN"
           echo "DIY_SUBMIT_CATALOG_LAMBDA_ARN=$DIY_SUBMIT_CATALOG_LAMBDA_ARN" >> $GITHUB_OUTPUT
+          echo "DIY_SUBMIT_MY_BUNDLES_LAMBDA_ARN=$DIY_SUBMIT_MY_BUNDLES_LAMBDA_ARN"
           echo "DIY_SUBMIT_MY_BUNDLES_LAMBDA_ARN=$DIY_SUBMIT_MY_BUNDLES_LAMBDA_ARN" >> $GITHUB_OUTPUT
+          echo "DIY_SUBMIT_MY_RECEIPTS_LAMBDA_ARN=$DIY_SUBMIT_MY_RECEIPTS_LAMBDA_ARN"
           echo "DIY_SUBMIT_MY_RECEIPTS_LAMBDA_ARN=$DIY_SUBMIT_MY_RECEIPTS_LAMBDA_ARN" >> $GITHUB_OUTPUT
         shell: bash
     outputs:
