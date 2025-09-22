@@ -90,7 +90,7 @@
     "npm-check-updates": "^18.1.1",
     "prettier": "^3.6.2",
     "supertest": "^7.1.4",
-    "testcontainers": "^11.5.1",
+    "testcontainers": "^11.6.0",
     "uuid": "^13.0.0",
     "vitest": "^3.2.4"
   },
