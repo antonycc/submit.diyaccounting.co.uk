@@ -675,7 +675,9 @@ jobs:
           cd cdk-application \
             && cat ../.env.${{ needs.names.outputs.environment-name }} \
             && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
-              npx cdk deploy ${{ needs.names.outputs.deployment-name }}-ObservabilityStack \
+              npx cdk deploy \
+                --app ../cdk-submit-application.out/ \
+                ${{ needs.names.outputs.deployment-name }}-ObservabilityStack \
                 --require-approval never \
                 --ci true \
                 --concurrency 4 \
@@ -757,7 +759,9 @@ jobs:
 #          cd cdk-application \
 #            && cat ../.env.${{ needs.names.outputs.environment-name }} \
 #            && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
-#               npx cdk deploy ${{ needs.names.outputs.deployment-name }}-SelfDestructStack \
+#               npx cdk deploy \
+  #                --app ../cdk-submit-application.out/ \
+  #                ${{ needs.names.outputs.deployment-name }}-SelfDestructStack \
 #                 --require-approval never \
 #                 --ci true \
 #                 --concurrency 4 \
@@ -831,7 +835,9 @@ jobs:
           cd cdk-application \
             && cat ../.env.${{ needs.names.outputs.environment-name }} \
             && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
-              npx cdk deploy ${{ needs.names.outputs.deployment-name }}-DevStack \
+              npx cdk deploy \
+                --app ../cdk-submit-application.out/ \
+                ${{ needs.names.outputs.deployment-name }}-DevStack \
                 --require-approval never \
                 --ci true \
                 --concurrency 4 \
@@ -916,7 +922,9 @@ jobs:
           cd cdk-application \
             && cat ../.env.${{ needs.names.outputs.environment-name }} \
             && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
-              npx cdk deploy ${{ needs.names.outputs.deployment-name }}-IdentityStack \
+              npx cdk deploy \
+                --app ../cdk-submit-application.out/ \
+                ${{ needs.names.outputs.deployment-name }}-IdentityStack \
                 --exclusively \
                 --require-approval never \
                 --ci true \
@@ -1073,7 +1081,9 @@ jobs:
           cd cdk-application \
             && cat ../.env.${{ needs.names.outputs.environment-name }} \
             && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
-              npx cdk deploy ${{ needs.names.outputs.deployment-name }}-AuthStack \
+              npx cdk deploy \
+                --app ../cdk-submit-application.out/ \
+                ${{ needs.names.outputs.deployment-name }}-AuthStack \
                 --exclusively \
                 --require-approval never \
                 --ci true \
@@ -1183,7 +1193,9 @@ jobs:
           cd cdk-application \
             && cat ../.env.${{ needs.names.outputs.environment-name }} \
             && npx dotenv -e ../.env.env.${{ needs.names.outputs.environment-name }} -- \
-              npx cdk deploy ${{ needs.names.outputs.deployment-name }}-ApplicationStack \
+              npx cdk deploy \
+                --app ../cdk-submit-application.out/ \
+                ${{ needs.names.outputs.deployment-name }}-ApplicationStack \
                 --exclusively \
                 --require-approval never \
                 --ci true \
@@ -1317,7 +1329,8 @@ jobs:
             && cd cdk-delivery \
             && cat ../.env.${{ needs.names.outputs.environment-name }} \
             && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
-              npx cdk deploy ${{ needs.names.outputs.deployment-name }}-EdgeStack \
+              npx cdk deploy \
+                ${{ needs.names.outputs.deployment-name }}-EdgeStack \
                 --exclusively \
                 --require-approval never \
                 --ci true \
@@ -1418,7 +1431,8 @@ jobs:
             && cd cdk-delivery \
             && cat ../.env.${{ needs.names.outputs.environment-name }} \
             && npx dotenv -e .env.${{ needs.names.outputs.environment-name }} -- \
-              npx cdk deploy ${{ needs.names.outputs.deployment-name }}-PublishStack \
+              npx cdk deploy \
+                ${{ needs.names.outputs.deployment-name }}-PublishStack \
                 --exclusively \
                 --require-approval never \
                 --ci true \
