@@ -96,9 +96,9 @@ public final class Kind {
     public static <K, V> void putIfPresent(Map<K, V> map, K key, Optional<? extends V> value) {
         if (value != null && value.isPresent()) {
             map.put(key, value.get());
-            infof("Put key %s with value %s", key, value);
+            infof("Put key %s with value %s", key, value.get());
         } else {
-            infof("Did not put key %s with null/empty value %s", key, value);
+            infof("Did not put key %s with null/empty value %s", key, value.get());
         }
     }
 

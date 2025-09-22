@@ -1105,7 +1105,7 @@ jobs:
         run: |
           cd cdk-application \
             && cat ../.env.${{ needs.names.outputs.environment-name }} \
-            && npx dotenv -e ../.env.env.${{ needs.names.outputs.environment-name }} -- \
+            && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
               npx cdk deploy \
                 --app ../cdk-submit-application.out/ \
                 ${{ needs.names.outputs.deployment-name }}-ApplicationStack \
