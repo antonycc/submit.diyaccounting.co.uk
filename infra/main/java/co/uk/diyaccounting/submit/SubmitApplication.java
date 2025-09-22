@@ -182,7 +182,7 @@ public class SubmitApplication {
 
         // Generate predictable resource name prefix based on domain and environment
         String domainName = buildDomainName(envName, subDomainName, hostedZoneName);
-        String baseUrl = "https://" + domainName;
+        String baseUrl = "https://%s/".formatted(domainName);
         String resourceNamePrefix = generateResourceNamePrefix(domainName, envName);
         String compressedResourceNamePrefix = generateCompressedResourceNamePrefix(domainName, envName);
 
