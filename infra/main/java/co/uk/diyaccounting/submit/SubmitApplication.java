@@ -275,7 +275,7 @@ public class SubmitApplication {
                         .lambdaEntry(lambdaEntry)
                         .lambdaUrlAuthType(lambdaUrlAuthType)
                         .cognitoClientId(identityStack.userPoolClient.getUserPoolClientId())   // TODO: Research a way around needing this.
-                        .cognitoBaseUri(identityStack.userPoolDomain.getDomainName())  // TODO: Get calculated value
+                        .cognitoBaseUri("https://" + identityStack.userPoolDomain.getDomainName())  // TODO: Get calculated value
                         // .optionalTestAccessToken(optionalTestAccessToken)
                         // .userPool(identityStack.userPool)
                         // .userPoolClient(identityStack.userPoolClient)
