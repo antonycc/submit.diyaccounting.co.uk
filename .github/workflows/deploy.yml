@@ -474,7 +474,8 @@ jobs:
         run: |
           ./mvnw --errors clean package -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
             && cd cdk-application \
-            && npx dotenv -e ..\.env.${{ needs.names.outputs.environment-name }} -- \
+            && cat ../.env.${{ needs.names.outputs.environment-name }} \
+            && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
               npx cdk synth \
                 --strict \
                 --validation \
@@ -523,7 +524,6 @@ jobs:
     needs:
       - names
       - npm-test
-      - build-cdk
     runs-on: ubuntu-24.04
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
     steps:
@@ -544,12 +544,6 @@ jobs:
           distribution: 'temurin'
           java-version: ${{ env.JAVA_VERSION }}
           cache: 'maven'
-
-      - name: Download CDK synthesis artifacts
-        uses: actions/download-artifact@v5
-        with:
-          name: cdk-synthesis
-          path: target/
 
       - name: Configure AWS role via GitHub OIDC
         uses: aws-actions/configure-aws-credentials@v5
@@ -575,13 +569,33 @@ jobs:
 
       - name: Diff stacks (CDK)
         run: |
-          npx dotenv -e .env.${{ needs.names.outputs.environment-name }} -- \
-            npx cdk diff --all \
-              --ci true \
-          ;
+          ./mvnw --errors clean package -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
+            && cd cdk-application \
+            && cat ../.env.${{ needs.names.outputs.environment-name }} \
+            && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
+              npx cdk diff \
+                --strict \
+                --validation \
+                --version-reporting=false \
+                --path-metadata=false \
+                --asset-metadata=false \
+                --exclusively \
+                  ${{ needs.names.outputs.deployment-name }}-ObservabilityStack \
+                  ${{ needs.names.outputs.deployment-name }}-DevStack \
+                  ${{ needs.names.outputs.deployment-name }}-IdentityStack \
+                  ${{ needs.names.outputs.deployment-name }}-AuthStack \
+                  ${{ needs.names.outputs.deployment-name }}-ApplicationStack \
+            ; cd .. \
+            ;
+        # ${{ needs.names.outputs.deployment-name }}-SelfDestructStack \
+        # ${{ needs.names.outputs.deployment-name }}-EdgeStack \
+        # ${{ needs.names.outputs.deployment-name }}-PublishStack \
+        # ${{ needs.names.outputs.deployment-name }}-OpsStack \
         env:
           ENV_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
+          SELF_DESTRUCT_DELAY_HOURS: ${{ inputs.selfDestructDelayHours || '1' }}
+          SELF_DESTRUCT_HANDLER_SOURCE: ${{ needs.mvn-test.outputs.self-destruct-handler-source }}
           BASE_IMAGE_TAG: "${{ env.BASE_IMAGE_TAG_PREFIX }}:${{ github.sha }}"
           GITHUB_ACTOR: ${{ github.actor }}
           CERTIFICATE_ARN: ${{ vars.AWS_CERTIFICATE_ARN }}
@@ -659,19 +673,21 @@ jobs:
       - name: Deploy Observability Stack (CDK)
         run: |
           cd cdk-application \
+            && cat ../.env.${{ needs.names.outputs.environment-name }} \
             && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
               npx cdk deploy ${{ needs.names.outputs.deployment-name }}-ObservabilityStack \
                 --require-approval never \
                 --ci true \
                 --concurrency 4 \
                 --asset-parallelism \
-                --outputs-file cdk-submit-application.out/cdk-outputs-observability.json \
+                --outputs-file ../cdk-submit-application.out/cdk-outputs-observability.json \
           ; cd .. \
           ;
         env:
           GITHUB_ACTOR: ${{ github.actor }}
           ENV_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
+
 
 #  deploy-self-destruct:
 #    name: 'deploy self-destruct'
@@ -739,13 +755,14 @@ jobs:
 #      - name: Deploy Self-Destruct Stack (CDK)
 #        run: |
 #          cd cdk-application \
-#            && npx dotenv -e ../.env.env.${{ needs.names.outputs.environment-name }} -- \
+#            && cat ../.env.${{ needs.names.outputs.environment-name }} \
+#            && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
 #               npx cdk deploy ${{ needs.names.outputs.deployment-name }}-SelfDestructStack \
 #                 --require-approval never \
 #                 --ci true \
 #                 --concurrency 4 \
 #                 --asset-parallelism \
-#                 --outputs-file cdk-submit-application.out/cdk-outputs-self-destructStack.json \
+#                 --outputs-file ../cdk-submit-application.out/cdk-outputs-self-destructStack.json \
 #          ;
 #        env:
 #          ENV_NAME: ${{ needs.names.outputs.environment-name }}
@@ -812,13 +829,14 @@ jobs:
       - name: Deploy Dev Stack (CDK)
         run: |
           cd cdk-application \
-            && npx dotenv -e ../.env.env.${{ needs.names.outputs.environment-name }} -- \
+            && cat ../.env.${{ needs.names.outputs.environment-name }} \
+            && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
               npx cdk deploy ${{ needs.names.outputs.deployment-name }}-DevStack \
                 --require-approval never \
                 --ci true \
                 --concurrency 4 \
                 --asset-parallelism \
-                --outputs-file cdk-submit-application.out/cdk-outputs-dev.json \
+                --outputs-file ../cdk-submit-application.out/cdk-outputs-dev.json \
             ; cd .. \
           ;
         env:
@@ -895,15 +913,17 @@ jobs:
 
       - name: Deploy Identity stack (CDK)
         run: |
-          npx dotenv -e .env.${{ needs.names.outputs.environment-name }} -- \
-            npx cdk deploy ${{ needs.names.outputs.deployment-name }}-IdentityStack \
-              --exclusively \
-              --require-approval never \
-              --ci true \
-              --concurrency 4 \
-              --asset-parallelism \
-              --outputs-file cdk-submit-application.out/cdk-outputs-identity.json \
-            ; cd .. \
+          cd cdk-application \
+            && cat ../.env.${{ needs.names.outputs.environment-name }} \
+            && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
+              npx cdk deploy ${{ needs.names.outputs.deployment-name }}-IdentityStack \
+                --exclusively \
+                --require-approval never \
+                --ci true \
+                --concurrency 4 \
+                --asset-parallelism \
+                --outputs-file ../cdk-submit-application.out/cdk-outputs-identity.json \
+              ; cd .. \
             ;
         env:
           ENV_NAME: ${{ needs.names.outputs.environment-name }}
@@ -1051,14 +1071,15 @@ jobs:
       - name: Deploy Auth stack (CDK)
         run: |
           cd cdk-application \
-            && npx dotenv -e ../.env.env.${{ needs.names.outputs.environment-name }} -- \
+            && cat ../.env.${{ needs.names.outputs.environment-name }} \
+            && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
               npx cdk deploy ${{ needs.names.outputs.deployment-name }}-AuthStack \
                 --exclusively \
                 --require-approval never \
                 --ci true \
                 --concurrency 4 \
                 --asset-parallelism \
-                --outputs-file cdk-submit-application.out/cdk-outputs-auth.json \
+                --outputs-file ../cdk-submit-application.out/cdk-outputs-auth.json \
             ; cd .. \
             ;
         env:
@@ -1159,15 +1180,17 @@ jobs:
 
       - name: Deploy Application stack (CDK)
         run: |
-          npx dotenv -e .env.${{ needs.names.outputs.environment-name }} -- \
-            npx cdk deploy ${{ needs.names.outputs.deployment-name }}-ApplicationStack \
-              --exclusively \
-              --require-approval never \
-              --ci true \
-              --concurrency 4 \
-              --asset-parallelism \
-              --outputs-file cdk-submit-application.out/cdk-outputs-application.json \
-            ; cd .. \
+          cd cdk-application \
+            && cat ../.env.${{ needs.names.outputs.environment-name }} \
+            && npx dotenv -e ../.env.env.${{ needs.names.outputs.environment-name }} -- \
+              npx cdk deploy ${{ needs.names.outputs.deployment-name }}-ApplicationStack \
+                --exclusively \
+                --require-approval never \
+                --ci true \
+                --concurrency 4 \
+                --asset-parallelism \
+                --outputs-file ../cdk-submit-application.out/cdk-outputs-application.json \
+              ; cd .. \
             ;
         env:
           ENV_NAME: ${{ needs.names.outputs.environment-name }}
@@ -1292,15 +1315,16 @@ jobs:
         run: |
           ./mvnw --errors clean package -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
             && cd cdk-delivery \
+            && cat ../.env.${{ needs.names.outputs.environment-name }} \
             && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
-            npx cdk deploy ${{ needs.names.outputs.deployment-name }}-EdgeStack \
-              --exclusively \
-              --require-approval never \
-              --ci true \
-              --concurrency 4 \
-              --asset-parallelism \
-              --outputs-file cdk-submit-delivery.out/cdk-outputs-edge.json \
-            ; cd .. \
+              npx cdk deploy ${{ needs.names.outputs.deployment-name }}-EdgeStack \
+                --exclusively \
+                --require-approval never \
+                --ci true \
+                --concurrency 4 \
+                --asset-parallelism \
+                --outputs-file ../cdk-submit-delivery.out/cdk-outputs-edge.json \
+              ; cd .. \
             ;
         env:
           ENV_NAME: ${{ needs.names.outputs.environment-name }}
@@ -1392,15 +1416,16 @@ jobs:
         run: |
           ./mvnw --errors clean package -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
             && cd cdk-delivery \
+            && cat ../.env.${{ needs.names.outputs.environment-name }} \
             && npx dotenv -e .env.${{ needs.names.outputs.environment-name }} -- \
-            npx cdk deploy ${{ needs.names.outputs.deployment-name }}-PublishStack \
-              --exclusively \
-              --require-approval never \
-              --ci true \
-              --concurrency 4 \
-              --asset-parallelism \
-              --outputs-file cdk-submit-application.out/cdk-outputs-publish.json \
-            ; cd .. \
+              npx cdk deploy ${{ needs.names.outputs.deployment-name }}-PublishStack \
+                --exclusively \
+                --require-approval never \
+                --ci true \
+                --concurrency 4 \
+                --asset-parallelism \
+                --outputs-file ../cdk-submit-application.out/cdk-outputs-publish.json \
+              ; cd .. \
             ;
         env:
           ENV_NAME: ${{ needs.names.outputs.environment-name }}
@@ -1468,6 +1493,7 @@ jobs:
 #      - name: Deploy Ops Stack (CDK)
 #        run: |
 #          cd cdk-application \
+#           && cat ../.env.${{ needs.names.outputs.environment-name }} \
 #           && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
 #             npx cdk deploy ${{ needs.names.outputs.deployment-name }}-OpsStack \
 #              --exclusively \
