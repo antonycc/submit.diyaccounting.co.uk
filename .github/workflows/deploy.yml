@@ -1057,6 +1057,7 @@ jobs:
       authUrlCognitoLambdaUrl: ${{ steps.auth-outputs.outputs.DIY_SUBMIT_AUTH_URL_COGNITO_LAMBDA_URL }}
       exchangeCognitoTokenLambdaUrl: ${{ steps.auth-outputs.outputs.DIY_SUBMIT_COGNITO_EXCHANGE_TOKEN_LAMBDA_URL }}
 
+  # TODO: Split into stacks for MTD (HMRC AUth, VAT Submission and receipts) and Account (Bundles etc...)
   deploy-application:
     name: 'deploy application'
     if: ${{ inputs.skipDeploy != 'true' }}
