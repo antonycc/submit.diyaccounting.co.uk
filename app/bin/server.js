@@ -30,7 +30,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 
 // Read configuration from cdk.json
-const cdkJsonPath = path.join(__dirname, "../../cdk.json");
+const cdkJsonPath = path.join(__dirname, "../../cdk-application/cdk.json");
 logger.info(`Reading CDK configuration from ${cdkJsonPath}`);
 const cdkConfig = JSON.parse(readFileSync(cdkJsonPath, "utf8"));
 // logger.info(`CDK configuration: ${JSON.stringify(cdkConfig, null, 2)}`);
