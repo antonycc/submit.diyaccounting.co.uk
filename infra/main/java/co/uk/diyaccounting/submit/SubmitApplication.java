@@ -9,6 +9,7 @@ import co.uk.diyaccounting.submit.stacks.ObservabilityStack;
 import co.uk.diyaccounting.submit.stacks.OpsStack;
 import co.uk.diyaccounting.submit.stacks.SelfDestructStack;
 import software.amazon.awscdk.App;
+import software.amazon.awscdk.Environment;
 import software.constructs.Construct;
 
 import java.lang.reflect.Field;
@@ -102,10 +103,13 @@ public class SubmitApplication {
                 && !cdkDefaultAccount.isBlank()
                 && cdkDefaultRegion != null
                 && !cdkDefaultRegion.isBlank()) {
-            primaryEnv = software.amazon.awscdk.Environment.builder()
+            primaryEnv = Environment.builder()
                     .account(cdkDefaultAccount)
                     .region(cdkDefaultRegion)
                     .build();
+        } else {
+            primaryEnv = Environment.builder()
+                .build();
         }
 
         // Allow environment variables to override any appProps values

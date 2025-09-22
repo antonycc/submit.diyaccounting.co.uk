@@ -99,18 +99,21 @@ public class SubmitDelivery {
         var commitHash = envOr("COMMIT_HASH", "local");
 
         // Determine primary environment (account/region) from CDK env
-        String cdkDefaultAccount = System.getenv("CDK_DEFAULT_ACCOUNT");
-        String cdkDefaultRegion = System.getenv("CDK_DEFAULT_REGION");
-        Environment primaryEnv = null;
-        if (cdkDefaultAccount != null
-                && !cdkDefaultAccount.isBlank()
-                && cdkDefaultRegion != null
-                && !cdkDefaultRegion.isBlank()) {
-            primaryEnv = Environment.builder()
-                    .account(cdkDefaultAccount)
-                    .region(cdkDefaultRegion)
-                    .build();
-        }
+//        String cdkDefaultAccount = System.getenv("CDK_DEFAULT_ACCOUNT");
+//        String cdkDefaultRegion = System.getenv("CDK_DEFAULT_REGION");
+//        Environment primaryEnv = null;
+//        if (cdkDefaultAccount != null
+//                && !cdkDefaultAccount.isBlank()
+//                && cdkDefaultRegion != null
+//                && !cdkDefaultRegion.isBlank()) {
+//            primaryEnv = Environment.builder()
+//                    .account(cdkDefaultAccount)
+//                    .region(cdkDefaultRegion)
+//                    .build();
+//        } else {
+//            primaryEnv = Environment.builder()
+//                .build();
+//        }
 
         // Resource name prefixes
         var hostedZoneName = envOr("HOSTED_ZONE_NAME", appProps.hostedZoneName);
