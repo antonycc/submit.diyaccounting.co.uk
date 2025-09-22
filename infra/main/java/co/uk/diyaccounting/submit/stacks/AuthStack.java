@@ -1,13 +1,7 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.awssdk.KindCdk.cfnOutput;
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildFunctionName;
-
 import co.uk.diyaccounting.submit.constructs.LambdaUrlOrigin;
 import co.uk.diyaccounting.submit.constructs.LambdaUrlOriginProps;
-import java.util.HashMap;
-import java.util.Optional;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
@@ -21,6 +15,13 @@ import software.amazon.awscdk.services.lambda.InvokeMode;
 import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
+
+import java.util.HashMap;
+import java.util.Optional;
+
+import static co.uk.diyaccounting.submit.awssdk.KindCdk.cfnOutput;
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildFunctionName;
 
 public class AuthStack extends Stack {
 
@@ -120,7 +121,7 @@ public class AuthStack extends Stack {
                         .ecrRepositoryName(props.ecrRepositoryName())
                         .ecrRepositoryArn(props.ecrRepositoryArn())
                         .imageFilename("authUrlMock.Dockerfile")
-                        .functionName(buildFunctionName(props.compressedResourceNamePrefix(), "authUrl.httpGetMock"))
+                        .functionName(buildFunctionName(props.resourceNamePrefix(), "authUrl.httpGetMock"))
                         .cloudFrontAllowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
                         .handler(props.lambdaEntry() + "authUrl.httpGetMock")
                         .environment(authUrlMockLambdaEnv)
@@ -154,7 +155,7 @@ public class AuthStack extends Stack {
                         .ecrRepositoryName(props.ecrRepositoryName())
                         .ecrRepositoryArn(props.ecrRepositoryArn())
                         .imageFilename("authUrlCognito.Dockerfile")
-                        .functionName(buildFunctionName(props.compressedResourceNamePrefix(), "authUrl.httpGetCognito"))
+                        .functionName(buildFunctionName(props.resourceNamePrefix(), "authUrl.httpGetCognito"))
                         .cloudFrontAllowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
                         .handler(props.lambdaEntry() + "authUrl.httpGetCognito")
                         .environment(authUrlCognitoLambdaEnv)
@@ -195,7 +196,7 @@ public class AuthStack extends Stack {
                         .ecrRepositoryArn(props.ecrRepositoryArn())
                         .imageFilename("exchangeCognitoToken.Dockerfile")
                         .functionName(buildFunctionName(
-                                props.compressedResourceNamePrefix(), "exchangeToken.httpPostCognito"))
+                                props.resourceNamePrefix(), "exchangeToken.httpPostCognito"))
                         .cloudFrontAllowedMethods(AllowedMethods.ALLOW_ALL)
                         .handler(props.lambdaEntry() + "exchangeToken.httpPostCognito")
                         .environment(exchangeCognitoTokenLambdaEnv)
@@ -239,12 +240,12 @@ public class AuthStack extends Stack {
         cfnOutput(this, "AuthUrlMockLambdaArn", this.authUrlMockLambda.getFunctionArn());
         cfnOutput(this, "AuthUrlCognitoLambdaArn", this.authUrlCognitoLambda.getFunctionArn());
         cfnOutput(this, "ExchangeCognitoTokenLambdaArn", this.exchangeCognitoTokenLambda.getFunctionArn());
-        
+
         // Output Function URLs for EdgeStack to use as HTTP origins
         cfnOutput(this, "AuthUrlMockLambdaUrl", authUrlMockUrl.getUrl());
         cfnOutput(this, "AuthUrlCognitoLambdaUrl", authUrlCognitoUrl.getUrl());
         cfnOutput(this, "ExchangeCognitoTokenLambdaUrl", exchangeCognitoTokenUrl.getUrl());
 
-        infof("AuthStack %s created successfully for %s", this.getNode().getId(), props.compressedResourceNamePrefix());
+        infof("AuthStack %s created successfully for %s", this.getNode().getId(), props.resourceNamePrefix());
     }
 }
