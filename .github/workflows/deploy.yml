@@ -280,7 +280,7 @@ jobs:
           path: target/test-reports/
           retention-days: 30
 
-  mvn-test:
+  mvn-package:
     name: 'maven test'
     runs-on: ubuntu-latest
     needs:
@@ -308,8 +308,7 @@ jobs:
         shell: bash
         run: |
           ./mvnw clean package
-          ## Set the self-destruct handler JAR path as output
-          echo "self-destruct-handler-source=target/self-destruct-lambda.jar" >> $GITHUB_OUTPUT
+          echo "SELF_DESTRUCT_HANDLER_SOURCE=target/self-destruct-lambda.jar" >> $GITHUB_OUTPUT
 
       - name: Upload self-destruct handler JAR
         uses: actions/upload-artifact@v4
@@ -318,7 +317,7 @@ jobs:
           path: target/self-destruct-lambda.jar
           retention-days: 1
     outputs:
-      self-destruct-handler-source: ${{ steps.package.outputs.self-destruct-handler-source }}
+      self-destruct-handler-source: ${{ steps.package.outputs.SELF_DESTRUCT_HANDLER_SOURCE }}
 
   test-aws-credentials:
     name: 'test aws credentials'
@@ -430,7 +429,7 @@ jobs:
     if: ${{ !contains(github.event.inputs.skipDeploy, 'true') }}
     needs:
       - names
-      - mvn-test
+      - mvn-package
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -498,7 +497,7 @@ jobs:
           ENV_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
           SELF_DESTRUCT_DELAY_HOURS: ${{ inputs.selfDestructDelayHours || '1' }}
-          SELF_DESTRUCT_HANDLER_SOURCE: "../${{ needs.mvn-test.outputs.self-destruct-handler-source }}"
+          SELF_DESTRUCT_HANDLER_SOURCE: "../${{ needs.mvn-package.outputs.self-destruct-handler-source }}"
           BASE_IMAGE_TAG: "${{ env.BASE_IMAGE_TAG_PREFIX }}:${{ github.sha }}"
           GITHUB_ACTOR: ${{ github.actor }}
           CERTIFICATE_ARN: ${{ vars.AWS_CERTIFICATE_ARN }}
@@ -524,6 +523,7 @@ jobs:
     needs:
       - names
       - npm-test
+      - mvn-package
     runs-on: ubuntu-24.04
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
     steps:
@@ -595,7 +595,7 @@ jobs:
           ENV_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
           SELF_DESTRUCT_DELAY_HOURS: ${{ inputs.selfDestructDelayHours || '1' }}
-          SELF_DESTRUCT_HANDLER_SOURCE: "../${{ needs.mvn-test.outputs.self-destruct-handler-source }}"
+          SELF_DESTRUCT_HANDLER_SOURCE: "../${{ needs.mvn-package.outputs.self-destruct-handler-source }}"
           BASE_IMAGE_TAG: "${{ env.BASE_IMAGE_TAG_PREFIX }}:${{ github.sha }}"
           GITHUB_ACTOR: ${{ github.actor }}
           CERTIFICATE_ARN: ${{ vars.AWS_CERTIFICATE_ARN }}
@@ -698,7 +698,7 @@ jobs:
 #      - names
 #      - npm-test
 #      - build-cdk
-#      - mvn-test
+#      - mvn-package
 #    runs-on: ubuntu-24.04
 #    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
 #    steps:
@@ -772,7 +772,7 @@ jobs:
 #          ENV_NAME: ${{ needs.names.outputs.environment-name }}
 #          DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
 #          SELF_DESTRUCT_DELAY_HOURS: ${{ inputs.selfDestructDelayHours || '1' }}
-#          SELF_DESTRUCT_HANDLER_SOURCE: "../${{ needs.mvn-test.outputs.self-destruct-handler-source }}"
+#          SELF_DESTRUCT_HANDLER_SOURCE: "../${{ needs.mvn-package.outputs.self-destruct-handler-source }}"
 
   deploy-dev:
     name: 'deploy dev'
