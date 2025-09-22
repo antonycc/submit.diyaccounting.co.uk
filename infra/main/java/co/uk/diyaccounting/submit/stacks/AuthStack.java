@@ -16,6 +16,8 @@ import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.services.cloudfront.AllowedMethods;
 import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.lambda.FunctionUrlAuthType;
+import software.amazon.awscdk.services.lambda.FunctionUrlOptions;
+import software.amazon.awscdk.services.lambda.InvokeMode;
 import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
@@ -220,9 +222,28 @@ public class AuthStack extends Stack {
 
         // this.additionalOriginsBehaviourMappings = lambdaUrlToOriginsBehaviourMappings;
 
+        // Create Function URLs for cross-region access
+        var authUrlMockUrl = this.authUrlMockLambda.addFunctionUrl(FunctionUrlOptions.builder()
+                .authType(functionUrlAuthType)
+                .invokeMode(InvokeMode.BUFFERED)
+                .build());
+        var authUrlCognitoUrl = this.authUrlCognitoLambda.addFunctionUrl(FunctionUrlOptions.builder()
+                .authType(functionUrlAuthType)
+                .invokeMode(InvokeMode.BUFFERED)
+                .build());
+        var exchangeCognitoTokenUrl = this.exchangeCognitoTokenLambda.addFunctionUrl(FunctionUrlOptions.builder()
+                .authType(functionUrlAuthType)
+                .invokeMode(InvokeMode.BUFFERED)
+                .build());
+
         cfnOutput(this, "AuthUrlMockLambdaArn", this.authUrlMockLambda.getFunctionArn());
         cfnOutput(this, "AuthUrlCognitoLambdaArn", this.authUrlCognitoLambda.getFunctionArn());
         cfnOutput(this, "ExchangeCognitoTokenLambdaArn", this.exchangeCognitoTokenLambda.getFunctionArn());
+        
+        // Output Function URLs for EdgeStack to use as HTTP origins
+        cfnOutput(this, "AuthUrlMockLambdaUrl", authUrlMockUrl.getUrl());
+        cfnOutput(this, "AuthUrlCognitoLambdaUrl", authUrlCognitoUrl.getUrl());
+        cfnOutput(this, "ExchangeCognitoTokenLambdaUrl", exchangeCognitoTokenUrl.getUrl());
 
         infof("AuthStack %s created successfully for %s", this.getNode().getId(), props.compressedResourceNamePrefix());
     }

@@ -85,6 +85,8 @@ public class EdgeStack extends Stack {
 
         Map<String, String> pathsToOriginLambdaFunctionArns();
 
+        Map<String, String> pathsToOriginLambdaFunctionUrls();
+
         int accessLogGroupRetentionPeriodDays();
 
         // StackProps interface methods
@@ -315,10 +317,10 @@ public class EdgeStack extends Stack {
                 .compress(true)
                 .build();
 
-        // Create additional behaviours for the URL origins using the mappings provided in props
-        // Use function createBehaviorOptionsForLambdaUrlHost to transform the lambda URL host into BehaviorOptions
+        // Create additional behaviours for the URL origins using the Function URL mappings provided in props
+        // Use function createBehaviorOptionsForLambdaUrl to transform the Function URL into BehaviorOptions
         HashMap<String, BehaviorOptions> additionalBehaviors = // new HashMap<String, BehaviorOptions>();
-                props.pathsToOriginLambdaFunctionArns().entrySet().stream()
+                props.pathsToOriginLambdaFunctionUrls().entrySet().stream()
                         .collect(
                                 HashMap::new,
                                 (map, entry) ->
@@ -384,13 +386,9 @@ public class EdgeStack extends Stack {
         infof("EdgeStack %s created successfully for %s", this.getNode().getId(), this.baseUrl);
     }
 
-    public BehaviorOptions createBehaviorOptionsForLambdaUrl(String lambdaArn) {
-        var lambda = software.amazon.awscdk.services.lambda.Function.fromFunctionArn(
-                this, lambdaArn.replace(":", "-").replace("/", "-"), lambdaArn);
-        var functionUrlBuilder =
-                FunctionUrlOptions.builder().authType(FunctionUrlAuthType.NONE).invokeMode(InvokeMode.BUFFERED);
-        var functionUrl = lambda.addFunctionUrl(functionUrlBuilder.build());
-        var lambdaUrlHost = getLambdaUrlHostToken(functionUrl);
+    public BehaviorOptions createBehaviorOptionsForLambdaUrl(String lambdaFunctionUrl) {
+        // Extract the host from the Function URL (e.g., "https://abc123.lambda-url.us-east-1.on.aws/" -> "abc123.lambda-url.us-east-1.on.aws")
+        var lambdaUrlHost = getLambdaUrlHostFromUrl(lambdaFunctionUrl);
         var origin = HttpOrigin.Builder.create(lambdaUrlHost)
                 .protocolPolicy(OriginProtocolPolicy.HTTPS_ONLY)
                 .build();
@@ -402,12 +400,19 @@ public class EdgeStack extends Stack {
                 .viewerProtocolPolicy(ViewerProtocolPolicy.REDIRECT_TO_HTTPS)
                 .responseHeadersPolicy(ResponseHeadersPolicy.CORS_ALLOW_ALL_ORIGINS_WITH_PREFLIGHT_AND_SECURITY_HEADERS)
                 .build();
-        ;
         return behaviorOptions;
     }
 
-    private String getLambdaUrlHostToken(FunctionUrl functionUrl) {
-        String urlHostToken = Fn.select(2, Fn.split("/", functionUrl.getUrl()));
-        return urlHostToken;
+    private String getLambdaUrlHostFromUrl(String functionUrl) {
+        // Extract host from Function URL (e.g., "https://abc123.lambda-url.us-east-1.on.aws/" -> "abc123.lambda-url.us-east-1.on.aws")
+        if (functionUrl.startsWith("https://")) {
+            String withoutProtocol = functionUrl.substring(8);
+            int slashIndex = withoutProtocol.indexOf('/');
+            if (slashIndex > 0) {
+                return withoutProtocol.substring(0, slashIndex);
+            }
+            return withoutProtocol;
+        }
+        return functionUrl; // fallback if format unexpected
     }
 }

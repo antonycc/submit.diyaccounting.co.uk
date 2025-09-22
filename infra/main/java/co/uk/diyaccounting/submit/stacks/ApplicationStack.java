@@ -20,6 +20,8 @@ import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.services.cloudfront.AllowedMethods;
 import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.lambda.FunctionUrlAuthType;
+import software.amazon.awscdk.services.lambda.FunctionUrlOptions;
+import software.amazon.awscdk.services.lambda.InvokeMode;
 import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.s3.BlockPublicAccess;
 import software.amazon.awscdk.services.s3.Bucket;
@@ -394,6 +396,36 @@ public class ApplicationStack extends Stack {
         if (this.logReceiptLambda != null) this.receiptsBucket.grantWrite(this.logReceiptLambda);
         if (this.myReceiptsLambda != null) this.receiptsBucket.grantRead(this.myReceiptsLambda);
 
+        // Create Function URLs for cross-region access
+        var authUrlHmrcUrl = this.authUrlHmrcLambda.addFunctionUrl(FunctionUrlOptions.builder()
+                .authType(functionUrlAuthType)
+                .invokeMode(InvokeMode.BUFFERED)
+                .build());
+        var exchangeHmrcTokenUrl = this.exchangeHmrcTokenLambda.addFunctionUrl(FunctionUrlOptions.builder()
+                .authType(functionUrlAuthType)
+                .invokeMode(InvokeMode.BUFFERED)
+                .build());
+        var submitVatUrl = this.submitVatLambda.addFunctionUrl(FunctionUrlOptions.builder()
+                .authType(functionUrlAuthType)
+                .invokeMode(InvokeMode.BUFFERED)
+                .build());
+        var logReceiptUrl = this.logReceiptLambda.addFunctionUrl(FunctionUrlOptions.builder()
+                .authType(functionUrlAuthType)
+                .invokeMode(InvokeMode.BUFFERED)
+                .build());
+        var catalogUrl = this.catalogLambda.addFunctionUrl(FunctionUrlOptions.builder()
+                .authType(functionUrlAuthType)
+                .invokeMode(InvokeMode.BUFFERED)
+                .build());
+        var myBundlesUrl = this.myBundlesLambda.addFunctionUrl(FunctionUrlOptions.builder()
+                .authType(functionUrlAuthType)
+                .invokeMode(InvokeMode.BUFFERED)
+                .build());
+        var myReceiptsUrl = this.myReceiptsLambda.addFunctionUrl(FunctionUrlOptions.builder()
+                .authType(functionUrlAuthType)
+                .invokeMode(InvokeMode.BUFFERED)
+                .build());
+
         cfnOutput(this, "AuthUrlHmrcLambdaArn", this.authUrlHmrcLambda.getFunctionArn());
         cfnOutput(this, "ExchangeHmrcTokenLambdaArn", this.exchangeHmrcTokenLambda.getFunctionArn());
         cfnOutput(this, "SubmitVatLambdaArn", this.submitVatLambda.getFunctionArn());
@@ -402,6 +434,15 @@ public class ApplicationStack extends Stack {
         cfnOutput(this, "CatalogLambdaArn", this.catalogLambda.getFunctionArn());
         cfnOutput(this, "MyBundlesLambdaArn", this.myBundlesLambda.getFunctionArn());
         cfnOutput(this, "MyReceiptsLambdaArn", this.myReceiptsLambda.getFunctionArn());
+        
+        // Output Function URLs for EdgeStack to use as HTTP origins
+        cfnOutput(this, "AuthUrlHmrcLambdaUrl", authUrlHmrcUrl.getUrl());
+        cfnOutput(this, "ExchangeHmrcTokenLambdaUrl", exchangeHmrcTokenUrl.getUrl());
+        cfnOutput(this, "SubmitVatLambdaUrl", submitVatUrl.getUrl());
+        cfnOutput(this, "LogReceiptLambdaUrl", logReceiptUrl.getUrl());
+        cfnOutput(this, "CatalogLambdaUrl", catalogUrl.getUrl());
+        cfnOutput(this, "MyBundlesLambdaUrl", myBundlesUrl.getUrl());
+        cfnOutput(this, "MyReceiptsLambdaUrl", myReceiptsUrl.getUrl());
         cfnOutput(this, "ReceiptsBucketName", this.receiptsBucket.getBucketName());
         cfnOutput(this, "ReceiptsBucketArn", this.receiptsBucket.getBucketArn());
 

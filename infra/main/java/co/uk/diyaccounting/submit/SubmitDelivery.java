@@ -43,6 +43,17 @@ public class SubmitDelivery {
         public String catalogLambdaFunctionArn;
         public String myBundlesLambdaFunctionArn;
         public String myReceiptsLambdaFunctionArn;
+        // Function URLs for cross-region EdgeStack deployment
+        public String authUrlMockLambdaFunctionUrl;
+        public String authUrlCognitoLambdaFunctionUrl;
+        public String exchangeCognitoTokenLambdaFunctionUrl;
+        public String authUrlHmrcLambdaFunctionUrl;
+        public String exchangeHmrcTokenLambdaFunctionUrl;
+        public String submitVatLambdaFunctionUrl;
+        public String logReceiptLambdaFunctionUrl;
+        public String catalogLambdaFunctionUrl;
+        public String myBundlesLambdaFunctionUrl;
+        public String myReceiptsLambdaFunctionUrl;
         public String selfDestructHandlerSource;
         public String selfDestructDelayHours;
 
@@ -145,6 +156,48 @@ public class SubmitDelivery {
                 "DIY_SUBMIT_MY_RECEIPTS_LAMBDA_ARN",
                 appProps.myReceiptsLambdaFunctionArn,
                 "(from myReceiptsLambdaFunctionArn in cdk.json)");
+        
+        // Function URL environment variables for EdgeStack
+        var authUrlMockLambdaFunctionUrl = envOr(
+                "DIY_SUBMIT_AUTH_URL_MOCK_LAMBDA_URL",
+                appProps.authUrlMockLambdaFunctionUrl,
+                "(from authUrlMockLambdaFunctionUrl in cdk.json)");
+        var authUrlCognitoLambdaFunctionUrl = envOr(
+                "DIY_SUBMIT_AUTH_URL_COGNITO_LAMBDA_URL",
+                appProps.authUrlCognitoLambdaFunctionUrl,
+                "(from authUrlCognitoLambdaFunctionUrl in cdk.json)");
+        var exchangeCognitoTokenLambdaFunctionUrl = envOr(
+                "DIY_SUBMIT_COGNITO_EXCHANGE_TOKEN_LAMBDA_URL",
+                appProps.exchangeCognitoTokenLambdaFunctionUrl,
+                "(from exchangeCognitoTokenLambdaFunctionUrl in cdk.json)");
+        var authUrlHmrcLambdaFunctionUrl = envOr(
+                "DIY_SUBMIT_AUTH_URL_HMRC_LAMBDA_URL",
+                appProps.authUrlHmrcLambdaFunctionUrl,
+                "(from authUrlHmrcLambdaFunctionUrl in cdk.json)");
+        var exchangeHmrcTokenLambdaFunctionUrl = envOr(
+                "DIY_SUBMIT_EXCHANGE_HMRC_TOKEN_LAMBDA_URL",
+                appProps.exchangeHmrcTokenLambdaFunctionUrl,
+                "(from exchangeHmrcTokenLambdaFunctionUrl in cdk.json)");
+        var submitVatLambdaFunctionUrl = envOr(
+                "DIY_SUBMIT_SUBMIT_VAT_LAMBDA_URL",
+                appProps.submitVatLambdaFunctionUrl,
+                "(from submitVatLambdaFunctionUrl in cdk.json)");
+        var logReceiptLambdaFunctionUrl = envOr(
+                "DIY_SUBMIT_LOG_RECEIPT_LAMBDA_URL",
+                appProps.logReceiptLambdaFunctionUrl,
+                "(from logReceiptLambdaFunctionUrl in cdk.json)");
+        var catalogLambdaFunctionUrl = envOr(
+                "DIY_SUBMIT_CATALOG_LAMBDA_URL",
+                appProps.catalogLambdaFunctionUrl,
+                "(from catalogLambdaFunctionUrl in cdk.json)");
+        var myBundlesLambdaFunctionUrl = envOr(
+                "DIY_SUBMIT_MY_BUNDLES_LAMBDA_URL",
+                appProps.myBundlesLambdaFunctionUrl,
+                "(from myBundlesLambdaFunctionUrl in cdk.json)");
+        var myReceiptsLambdaFunctionUrl = envOr(
+                "DIY_SUBMIT_MY_RECEIPTS_LAMBDA_URL",
+                appProps.myReceiptsLambdaFunctionUrl,
+                "(from myReceiptsLambdaFunctionUrl in cdk.json)");
         var selfDestructHandlerSource = envOr(
                 "SELF_DESTRUCT_HANDLER_SOURCE",
                 appProps.selfDestructHandlerSource,
@@ -178,6 +231,23 @@ public class SubmitDelivery {
         putIfNotNull(pathsToOriginLambdaFunctionArns, "/api/my-bundles" + "*", myBundlesLambdaFunctionArn);
         putIfNotNull(pathsToOriginLambdaFunctionArns, "/api/my-receipts" + "*", myReceiptsLambdaFunctionArn);
 
+        // Create Function URLs map for EdgeStack (cross-region compatible)
+        Map<String, String> pathsToOriginLambdaFunctionUrls = new java.util.HashMap<>();
+        putIfNotNull(pathsToOriginLambdaFunctionUrls, "/api/mock/auth-url" + "*", authUrlMockLambdaFunctionUrl);
+        putIfNotNull(pathsToOriginLambdaFunctionUrls, "/api/cognito/auth-url" + "*", authUrlCognitoLambdaFunctionUrl);
+        putIfNotNull(
+                pathsToOriginLambdaFunctionUrls,
+                "/api/cognito/exchange-token" + "*",
+                exchangeCognitoTokenLambdaFunctionUrl);
+        putIfNotNull(pathsToOriginLambdaFunctionUrls, "/api/hmrc/auth-url" + "*", authUrlHmrcLambdaFunctionUrl);
+        putIfNotNull(
+                pathsToOriginLambdaFunctionUrls, "/api/hmrc/exchange-token" + "*", exchangeHmrcTokenLambdaFunctionUrl);
+        putIfNotNull(pathsToOriginLambdaFunctionUrls, "/api/submit-vat" + "*", submitVatLambdaFunctionUrl);
+        putIfNotNull(pathsToOriginLambdaFunctionUrls, "/api/log-receipt" + "*", logReceiptLambdaFunctionUrl);
+        putIfNotNull(pathsToOriginLambdaFunctionUrls, "/api/catalog" + "*", catalogLambdaFunctionUrl);
+        putIfNotNull(pathsToOriginLambdaFunctionUrls, "/api/my-bundles" + "*", myBundlesLambdaFunctionUrl);
+        putIfNotNull(pathsToOriginLambdaFunctionUrls, "/api/my-receipts" + "*", myReceiptsLambdaFunctionUrl);
+
         // Create the Edge stack (CloudFront, Route53)
         String edgeStackId = "%s-EdgeStack".formatted(deploymentName);
         EdgeStack edgeStack = new EdgeStack(
@@ -196,6 +266,7 @@ public class SubmitDelivery {
                         .compressedResourceNamePrefix(compressedResourceNamePrefix)
                         .certificateArn(certificateArn)
                         .pathsToOriginLambdaFunctionArns(pathsToOriginLambdaFunctionArns)
+                        .pathsToOriginLambdaFunctionUrls(pathsToOriginLambdaFunctionUrls)
                         .accessLogGroupRetentionPeriodDays(Integer.parseInt(accessLogGroupRetentionPeriodDays))
                         .build());
 
