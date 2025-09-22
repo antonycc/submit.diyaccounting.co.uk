@@ -1,16 +1,8 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.awssdk.KindCdk.cfnOutput;
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.convertDotSeparatedToDashSeparated;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
-import software.amazon.awscdk.Fn;
 import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
@@ -33,10 +25,7 @@ import software.amazon.awscdk.services.cloudfront.origins.S3BucketOrigin;
 import software.amazon.awscdk.services.cloudfront.origins.S3BucketOriginWithOACProps;
 import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.iam.ServicePrincipal;
-import software.amazon.awscdk.services.lambda.FunctionUrl;
 import software.amazon.awscdk.services.lambda.FunctionUrlAuthType;
-import software.amazon.awscdk.services.lambda.FunctionUrlOptions;
-import software.amazon.awscdk.services.lambda.InvokeMode;
 import software.amazon.awscdk.services.lambda.Permission;
 import software.amazon.awscdk.services.route53.ARecord;
 import software.amazon.awscdk.services.route53.ARecordProps;
@@ -53,6 +42,14 @@ import software.amazon.awscdk.services.s3.LifecycleRule;
 import software.amazon.awscdk.services.s3.ObjectOwnership;
 import software.amazon.awscdk.services.wafv2.CfnWebACL;
 import software.constructs.Construct;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import static co.uk.diyaccounting.submit.awssdk.KindCdk.cfnOutput;
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.convertDotSeparatedToDashSeparated;
 
 public class EdgeStack extends Stack {
 
@@ -153,7 +150,7 @@ public class EdgeStack extends Stack {
 
         // Buckets
 
-        String originBucketName = convertDotSeparatedToDashSeparated(domainName);
+        String originBucketName = convertDotSeparatedToDashSeparated("origin-" + domainName);
 
         // AWS WAF WebACL for CloudFront protection against common attacks and rate limiting
         CfnWebACL webAcl = CfnWebACL.Builder.create(this, props.resourceNamePrefix() + "-WebAcl")
