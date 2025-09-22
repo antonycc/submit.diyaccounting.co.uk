@@ -498,7 +498,7 @@ jobs:
           ENV_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
           SELF_DESTRUCT_DELAY_HOURS: ${{ inputs.selfDestructDelayHours || '1' }}
-          SELF_DESTRUCT_HANDLER_SOURCE: ${{ needs.mvn-test.outputs.self-destruct-handler-source }}
+          SELF_DESTRUCT_HANDLER_SOURCE: "../${{ needs.mvn-test.outputs.self-destruct-handler-source }}"
           BASE_IMAGE_TAG: "${{ env.BASE_IMAGE_TAG_PREFIX }}:${{ github.sha }}"
           GITHUB_ACTOR: ${{ github.actor }}
           CERTIFICATE_ARN: ${{ vars.AWS_CERTIFICATE_ARN }}
@@ -595,7 +595,7 @@ jobs:
           ENV_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
           SELF_DESTRUCT_DELAY_HOURS: ${{ inputs.selfDestructDelayHours || '1' }}
-          SELF_DESTRUCT_HANDLER_SOURCE: ${{ needs.mvn-test.outputs.self-destruct-handler-source }}
+          SELF_DESTRUCT_HANDLER_SOURCE: "../${{ needs.mvn-test.outputs.self-destruct-handler-source }}"
           BASE_IMAGE_TAG: "${{ env.BASE_IMAGE_TAG_PREFIX }}:${{ github.sha }}"
           GITHUB_ACTOR: ${{ github.actor }}
           CERTIFICATE_ARN: ${{ vars.AWS_CERTIFICATE_ARN }}
@@ -768,7 +768,7 @@ jobs:
 #          ENV_NAME: ${{ needs.names.outputs.environment-name }}
 #          DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
 #          SELF_DESTRUCT_DELAY_HOURS: ${{ inputs.selfDestructDelayHours || '1' }}
-#          SELF_DESTRUCT_HANDLER_SOURCE: ${{ needs.mvn-test.outputs.self-destruct-handler-source }}
+#          SELF_DESTRUCT_HANDLER_SOURCE: "../${{ needs.mvn-test.outputs.self-destruct-handler-source }}"
 
   deploy-dev:
     name: 'deploy dev'
