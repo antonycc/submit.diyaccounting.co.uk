@@ -460,6 +460,16 @@ jobs:
           name: self-destruct-handler-${{ github.sha }}
           path: target/
 
+      - run: find . -type f -iname ".*" -ls
+
+      - run: find . -type f -ls
+
+      - run: find /home/runner/work/submit.diyaccounting.co.uk/submit.diyaccounting.co.uk/cdk-application -type f -iname ".*" -ls
+
+      - run: find /home/runner/work/submit.diyaccounting.co.uk/submit.diyaccounting.co.uk/cdk-application -type f -ls
+
+      - run: cat /home/runner/work/submit.diyaccounting.co.uk/submit.diyaccounting.co.uk/cdk-application/cdk.json
+
       - name: Build CDK and synthesize all stacks in the Application Stack
         run: |
           ./mvnw --errors clean package -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
@@ -1267,6 +1277,16 @@ jobs:
           role-skip-session-tagging: true
           output-credentials: true
           retry-max-attempts: 3
+
+      - run: find . -type f -iname ".*" -ls
+
+      - run: find . -type f -ls
+
+      - run: find /home/runner/work/submit.diyaccounting.co.uk/submit.diyaccounting.co.uk/cdk-delivery -type f -iname ".*" -ls
+
+      - run: find /home/runner/work/submit.diyaccounting.co.uk/submit.diyaccounting.co.uk/cdk-delivery -type f -ls
+
+      - run: cat /home/runner/work/submit.diyaccounting.co.uk/submit.diyaccounting.co.uk/cdk-delivery/cdk.json
 
       - name: Build CDK and synthesize and deploy the EdgeStack in the Delivery Application
         run: |
