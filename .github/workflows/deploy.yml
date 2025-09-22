@@ -498,7 +498,7 @@ jobs:
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
           SELF_DESTRUCT_DELAY_HOURS: ${{ inputs.selfDestructDelayHours || '1' }}
           SELF_DESTRUCT_HANDLER_SOURCE: "../${{ needs.mvn-package.outputs.self-destruct-handler-source }}"
-          BASE_IMAGE_TAG: "${{ env.BASE_IMAGE_TAG_PREFIX }}:${{ github.sha }}"
+          BASE_IMAGE_TAG: ${{ github.sha }}
           GITHUB_ACTOR: ${{ github.actor }}
           CERTIFICATE_ARN: ${{ vars.AWS_CERTIFICATE_ARN }}
           CLOUD_TRAIL_ENABLED: ${{ vars.AWS_CLOUD_TRAIL_ENABLED }}
@@ -777,6 +777,7 @@ jobs:
       - npm-test
       - build-cdk
       - deploy-dev
+      - push-images
     runs-on: ubuntu-24.04
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
     steps:
@@ -845,7 +846,7 @@ jobs:
         env:
           ENV_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
-          BASE_IMAGE_TAG: "${{ env.BASE_IMAGE_TAG_PREFIX }}:${{ github.sha }}"
+          BASE_IMAGE_TAG: ${{ github.sha }}
           GITHUB_ACTOR: ${{ github.actor }}
           CLOUD_TRAIL_ENABLED: ${{ vars.AWS_CLOUD_TRAIL_ENABLED }}
           X_RAY_ENABLED: ${{ vars.AWS_X_RAY_ENABLED }}
