@@ -27,6 +27,7 @@ public interface LambdaUrlOriginProps {
     String env();
     String functionName();
     String handler();
+    String idPrefix();
     
     @Value.Default
     default Duration timeout() {

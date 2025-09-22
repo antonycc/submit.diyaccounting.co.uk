@@ -91,7 +91,7 @@ public class ApplicationStack extends Stack {
         // var lambdaUrlToOriginsBehaviourMappings = new HashMap<String, String>();
 
         // Common options for all Lambda URL origins to reduce repetition
-        var lambdaCommonOpts = LambdaUrlOriginOpts.Builder.create()
+        var lambdaCommonOpts = LambdaUrlOriginOpts.builder()
                 .env(props.env())
                 .imageDirectory("infra/runtimes")
                 .functionUrlAuthType(functionUrlAuthType)

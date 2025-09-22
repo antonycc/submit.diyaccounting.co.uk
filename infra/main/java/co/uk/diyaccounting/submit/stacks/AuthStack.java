@@ -63,7 +63,7 @@ public class AuthStack extends Stack {
                 : FunctionUrlAuthType.NONE;
 
         // Common options for all Lambda URL origins to reduce repetition
-        var lambdaCommonOpts = LambdaUrlOriginOpts.Builder.create()
+        var lambdaCommonOpts = LambdaUrlOriginOpts.builder()
                 .env(builder.env)
                 .imageDirectory("infra/runtimes")
                 .functionUrlAuthType(functionUrlAuthType)
