@@ -259,8 +259,9 @@ public class SubmitApplication {
                 app,
                 authStackId,
                 AuthStack.AuthStackProps.builder()
-                        .env(primaryEnv)
-                        .crossRegionReferences(false)
+                        //.env(primaryEnv)
+                        .env(Environment.builder().region("us-east-1").build())
+                        .crossRegionReferences(true)
                         .envName(envName)
                         .hostedZoneName(hostedZoneName)
                         .subDomainName(subDomainName)
@@ -295,8 +296,9 @@ public class SubmitApplication {
                 app,
                 applicationStackId,
                 ApplicationStack.ApplicationStackProps.builder()
-                        .env(primaryEnv)
-                        .crossRegionReferences(false)
+                        //.env(primaryEnv)
+                        .env(Environment.builder().region("us-east-1").build())
+                        .crossRegionReferences(true)
                         .envName(envName)
                         .hostedZoneName(hostedZoneName)
                         .subDomainName(subDomainName)
