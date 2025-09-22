@@ -1536,6 +1536,14 @@ jobs:
           npm ci --ignore-scripts
           npx playwright install chromium --with-deps
 
+      - name: Generate test credentials
+        id: uuid
+        run: |
+          TEST_USERNAME="test-$(uuidgen | tr '[:upper:]' '[:lower:]' | head -c 8)"
+          TEST_PASSWORD="$(uuidgen | tr '[:upper:]' '[:lower:]' | head -c 16)"
+          echo "TEST_USERNAME=$TEST_USERNAME" >> $GITHUB_OUTPUT
+          echo "TEST_PASSWORD=$TEST_PASSWORD" >> $GITHUB_OUTPUT
+
       - run: cp '.env.${{ needs.names.outputs.environment-name }}' '.env.proxy' ; npx dotenv -e '.env.${{ needs.names.outputs.environment-name }}' -- npm run test:behaviour
         env:
           BASE_URL: ${{ needs.test-parameters.outputs.base-url }}
