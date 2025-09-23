@@ -1029,19 +1029,19 @@ jobs:
           DIY_SUBMIT_AUTH_URL_MOCK_LAMBDA_ARN=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-AuthStack"].AuthUrlMockLambdaArn' cdk-submit-application.out/cdk-outputs-auth.json)
           DIY_SUBMIT_AUTH_URL_COGNITO_LAMBDA_ARN=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-AuthStack"].AuthUrlCognitoLambdaArn' cdk-submit-application.out/cdk-outputs-auth.json)
           DIY_SUBMIT_COGNITO_EXCHANGE_TOKEN_LAMBDA_ARN=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-AuthStack"].ExchangeCognitoTokenLambdaArn' cdk-submit-application.out/cdk-outputs-auth.json)
-          
+
           # Extract Function URLs for cross-region access
           DIY_SUBMIT_AUTH_URL_MOCK_LAMBDA_URL=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-AuthStack"].AuthUrlMockLambdaUrl' cdk-submit-application.out/cdk-outputs-auth.json)
           DIY_SUBMIT_AUTH_URL_COGNITO_LAMBDA_URL=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-AuthStack"].AuthUrlCognitoLambdaUrl' cdk-submit-application.out/cdk-outputs-auth.json)
           DIY_SUBMIT_COGNITO_EXCHANGE_TOKEN_LAMBDA_URL=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-AuthStack"].ExchangeCognitoTokenLambdaUrl' cdk-submit-application.out/cdk-outputs-auth.json)
-          
+
           echo "DIY_SUBMIT_AUTH_URL_MOCK_LAMBDA_ARN=$DIY_SUBMIT_AUTH_URL_MOCK_LAMBDA_ARN"
           echo "DIY_SUBMIT_AUTH_URL_COGNITO_LAMBDA_ARN=$DIY_SUBMIT_AUTH_URL_COGNITO_LAMBDA_ARN"
           echo "DIY_SUBMIT_COGNITO_EXCHANGE_TOKEN_LAMBDA_ARN=$DIY_SUBMIT_COGNITO_EXCHANGE_TOKEN_LAMBDA_ARN"
           echo "DIY_SUBMIT_AUTH_URL_MOCK_LAMBDA_URL=$DIY_SUBMIT_AUTH_URL_MOCK_LAMBDA_URL"
           echo "DIY_SUBMIT_AUTH_URL_COGNITO_LAMBDA_URL=$DIY_SUBMIT_AUTH_URL_COGNITO_LAMBDA_URL"
           echo "DIY_SUBMIT_COGNITO_EXCHANGE_TOKEN_LAMBDA_URL=$DIY_SUBMIT_COGNITO_EXCHANGE_TOKEN_LAMBDA_URL"
-          
+
           echo "DIY_SUBMIT_AUTH_URL_MOCK_LAMBDA_ARN=$DIY_SUBMIT_AUTH_URL_MOCK_LAMBDA_ARN" >> $GITHUB_OUTPUT
           echo "DIY_SUBMIT_AUTH_URL_COGNITO_LAMBDA_ARN=$DIY_SUBMIT_AUTH_URL_COGNITO_LAMBDA_ARN" >> $GITHUB_OUTPUT
           echo "DIY_SUBMIT_COGNITO_EXCHANGE_TOKEN_LAMBDA_ARN=$DIY_SUBMIT_COGNITO_EXCHANGE_TOKEN_LAMBDA_ARN" >> $GITHUB_OUTPUT
@@ -1168,7 +1168,7 @@ jobs:
           DIY_SUBMIT_CATALOG_LAMBDA_ARN=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-ApplicationStack"].CatalogLambdaArn' cdk-submit-application.out/cdk-outputs-application.json)
           DIY_SUBMIT_MY_BUNDLES_LAMBDA_ARN=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-ApplicationStack"].MyBundlesLambdaArn' cdk-submit-application.out/cdk-outputs-application.json)
           DIY_SUBMIT_MY_RECEIPTS_LAMBDA_ARN=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-ApplicationStack"].MyReceiptsLambdaArn' cdk-submit-application.out/cdk-outputs-application.json)
-          
+
           # Extract Function URLs for cross-region access
           DIY_SUBMIT_AUTH_URL_HMRC_LAMBDA_URL=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-ApplicationStack"].AuthUrlHmrcLambdaUrl' cdk-submit-application.out/cdk-outputs-application.json)
           DIY_SUBMIT_EXCHANGE_HMRC_TOKEN_LAMBDA_URL=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-ApplicationStack"].ExchangeHmrcTokenLambdaUrl' cdk-submit-application.out/cdk-outputs-application.json)
@@ -1177,7 +1177,7 @@ jobs:
           DIY_SUBMIT_CATALOG_LAMBDA_URL=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-ApplicationStack"].CatalogLambdaUrl' cdk-submit-application.out/cdk-outputs-application.json)
           DIY_SUBMIT_MY_BUNDLES_LAMBDA_URL=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-ApplicationStack"].MyBundlesLambdaUrl' cdk-submit-application.out/cdk-outputs-application.json)
           DIY_SUBMIT_MY_RECEIPTS_LAMBDA_URL=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-ApplicationStack"].MyReceiptsLambdaUrl' cdk-submit-application.out/cdk-outputs-application.json)
-          
+
           echo "DIY_SUBMIT_AUTH_URL_HMRC_LAMBDA_ARN=$DIY_SUBMIT_AUTH_URL_HMRC_LAMBDA_ARN"
           echo "DIY_SUBMIT_AUTH_URL_HMRC_LAMBDA_ARN=$DIY_SUBMIT_AUTH_URL_HMRC_LAMBDA_ARN" >> $GITHUB_OUTPUT
           echo "DIY_SUBMIT_EXCHANGE_HMRC_TOKEN_LAMBDA_ARN=$DIY_SUBMIT_EXCHANGE_HMRC_TOKEN_LAMBDA_ARN"
@@ -1192,7 +1192,7 @@ jobs:
           echo "DIY_SUBMIT_MY_BUNDLES_LAMBDA_ARN=$DIY_SUBMIT_MY_BUNDLES_LAMBDA_ARN" >> $GITHUB_OUTPUT
           echo "DIY_SUBMIT_MY_RECEIPTS_LAMBDA_ARN=$DIY_SUBMIT_MY_RECEIPTS_LAMBDA_ARN"
           echo "DIY_SUBMIT_MY_RECEIPTS_LAMBDA_ARN=$DIY_SUBMIT_MY_RECEIPTS_LAMBDA_ARN" >> $GITHUB_OUTPUT
-          
+
           echo "DIY_SUBMIT_AUTH_URL_HMRC_LAMBDA_URL=$DIY_SUBMIT_AUTH_URL_HMRC_LAMBDA_URL"
           echo "DIY_SUBMIT_AUTH_URL_HMRC_LAMBDA_URL=$DIY_SUBMIT_AUTH_URL_HMRC_LAMBDA_URL" >> $GITHUB_OUTPUT
           echo "DIY_SUBMIT_EXCHANGE_HMRC_TOKEN_LAMBDA_URL=$DIY_SUBMIT_EXCHANGE_HMRC_TOKEN_LAMBDA_URL"
@@ -1645,8 +1645,8 @@ jobs:
           name: web-test-artifacts
           retention-days: 30
           path: |
-            "target/behaviour-test-results/"
-            "target/test-reports/"
+            target/behaviour-test-results/
+            target/test-reports/
 
 #  load-test:
 #    if: ${{ !cancelled() && inputs.skipDeploy == 'true' || needs.deploy-edge.result == 'success' }}
