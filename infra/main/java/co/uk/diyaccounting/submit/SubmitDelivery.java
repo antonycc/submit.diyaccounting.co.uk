@@ -238,7 +238,7 @@ public class SubmitDelivery {
         putIfNotNull(pathsToOriginLambdaFunctionUrls, "/api/submit-vat" + "*", submitVatLambdaFunctionUrl);
         putIfNotNull(pathsToOriginLambdaFunctionUrls, "/api/log-receipt" + "*", logReceiptLambdaFunctionUrl);
         putIfNotNull(pathsToOriginLambdaFunctionUrls, "/api/catalog" + "*", catalogLambdaFunctionUrl);
-        putIfNotNull(pathsToOriginLambdaFunctionUrls, "/api/request-bundles" + "*", requestBundlesLambdaFunctionUrl);
+        putIfNotNull(pathsToOriginLambdaFunctionUrls, "/api/request-bundle" + "*", requestBundlesLambdaFunctionUrl);
         putIfNotNull(pathsToOriginLambdaFunctionUrls, "/api/my-bundles" + "*", myBundlesLambdaFunctionUrl);
         putIfNotNull(pathsToOriginLambdaFunctionUrls, "/api/my-receipts" + "*", myReceiptsLambdaFunctionUrl);
 
