@@ -1647,7 +1647,7 @@ jobs:
 
           exit $fail
 
-      - name: Upload artifacts
+      - name: Upload artifacts (results)
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
         with:
@@ -1655,6 +1655,14 @@ jobs:
           retention-days: 30
           path: |
             target/behaviour-test-results/
+
+      - name: Upload artifacts (reports)
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-test-reports
+          retention-days: 30
+          path: |
             target/test-reports/
 
 #  load-test:
@@ -1766,8 +1774,8 @@ jobs:
           mkdir -p gh-pages/artifacts
 
           # Copy test artifacts
-          if [ -d "artifacts/load-test-artifacts" ]; then
-            cp -r artifacts/load-test-artifacts gh-pages/artifacts/load-test/
+          if [ -d "artifacts/web-test-artifacts" ]; then
+            cp -r artifacts/web-test-artifacts gh-pages/artifacts/web-test/
           fi
 
           # Create index page for artifacts
@@ -1786,7 +1794,7 @@ jobs:
 
                   <h2>Available Artifacts</h2>
                   <ul>
-                      <li><a href="load-test/">Load Test Results</a></li>
+                      <li><a href="web-test/">Web Test Results</a></li>
                   </ul>
               </div>
           </body>
