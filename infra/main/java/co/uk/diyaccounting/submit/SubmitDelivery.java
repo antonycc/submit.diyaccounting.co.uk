@@ -1,17 +1,5 @@
 package co.uk.diyaccounting.submit;
 
-import co.uk.diyaccounting.submit.stacks.EdgeStack;
-import co.uk.diyaccounting.submit.stacks.PublishStack;
-import co.uk.diyaccounting.submit.stacks.SelfDestructStack;
-import software.amazon.awscdk.App;
-import software.amazon.awscdk.Environment;
-import software.constructs.Construct;
-
-import java.io.File;
-import java.lang.reflect.Field;
-import java.nio.file.Paths;
-import java.util.Map;
-
 import static co.uk.diyaccounting.submit.awssdk.KindCdk.getContextValueString;
 import static co.uk.diyaccounting.submit.utils.Kind.envOr;
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
@@ -19,6 +7,17 @@ import static co.uk.diyaccounting.submit.utils.Kind.putIfNotNull;
 import static co.uk.diyaccounting.submit.utils.Kind.warnf;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateCompressedResourceNamePrefix;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateResourceNamePrefix;
+
+import co.uk.diyaccounting.submit.stacks.EdgeStack;
+import co.uk.diyaccounting.submit.stacks.PublishStack;
+import co.uk.diyaccounting.submit.stacks.SelfDestructStack;
+import java.io.File;
+import java.lang.reflect.Field;
+import java.nio.file.Paths;
+import java.util.Map;
+import software.amazon.awscdk.App;
+import software.amazon.awscdk.Environment;
+import software.constructs.Construct;
 
 public class SubmitDelivery {
 
@@ -278,7 +277,8 @@ public class SubmitDelivery {
                         .baseUrl(baseUrl)
                         .webBucketArn(edgeStack.originBucket.getBucketArn()) // TODO: Get bucker by predicted name
                         .resourceNamePrefix(resourceNamePrefix)
-                        .distributionArn(edgeStack.distribution.getDistributionArn()) // TODO: Get distribution by domain name
+                        .distributionArn(
+                                edgeStack.distribution.getDistributionArn()) // TODO: Get distribution by domain name
                         .commitHash(commitHash)
                         .docRootPath(docRootPath)
                         .build());
@@ -311,7 +311,7 @@ public class SubmitDelivery {
     private static SubmitDeliveryProps loadAppProps(Construct scope) {
         SubmitDeliveryProps props = SubmitDeliveryProps.Builder.create().build();
         var cdkPath = Paths.get("cdk.json").toAbsolutePath();
-        if(!new File("cdk.json").exists()){
+        if (!new File("cdk.json").exists()) {
             warnf("Cannot find application properties (cdk.json) at %s", cdkPath);
         } else {
             infof("Loading application properties from cdk.json %s", cdkPath);

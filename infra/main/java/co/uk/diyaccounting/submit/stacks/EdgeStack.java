@@ -1,5 +1,12 @@
 package co.uk.diyaccounting.submit.stacks;
 
+import static co.uk.diyaccounting.submit.awssdk.KindCdk.cfnOutput;
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.convertDotSeparatedToDashSeparated;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
@@ -42,14 +49,6 @@ import software.amazon.awscdk.services.s3.LifecycleRule;
 import software.amazon.awscdk.services.s3.ObjectOwnership;
 import software.amazon.awscdk.services.wafv2.CfnWebACL;
 import software.constructs.Construct;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import static co.uk.diyaccounting.submit.awssdk.KindCdk.cfnOutput;
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.convertDotSeparatedToDashSeparated;
 
 public class EdgeStack extends Stack {
 
@@ -382,7 +381,8 @@ public class EdgeStack extends Stack {
     }
 
     public BehaviorOptions createBehaviorOptionsForLambdaUrl(String lambdaFunctionUrl) {
-        // Extract the host from the Function URL (e.g., "https://abc123.lambda-url.us-east-1.on.aws/" -> "abc123.lambda-url.us-east-1.on.aws")
+        // Extract the host from the Function URL (e.g., "https://abc123.lambda-url.us-east-1.on.aws/" ->
+        // "abc123.lambda-url.us-east-1.on.aws")
         var lambdaUrlHost = getLambdaUrlHostFromUrl(lambdaFunctionUrl);
         var origin = HttpOrigin.Builder.create(lambdaUrlHost)
                 .protocolPolicy(OriginProtocolPolicy.HTTPS_ONLY)
@@ -399,7 +399,8 @@ public class EdgeStack extends Stack {
     }
 
     private String getLambdaUrlHostFromUrl(String functionUrl) {
-        // Extract host from Function URL (e.g., "https://abc123.lambda-url.us-east-1.on.aws/" -> "abc123.lambda-url.us-east-1.on.aws")
+        // Extract host from Function URL (e.g., "https://abc123.lambda-url.us-east-1.on.aws/" ->
+        // "abc123.lambda-url.us-east-1.on.aws")
         if (functionUrl.startsWith("https://")) {
             String withoutProtocol = functionUrl.substring(8);
             int slashIndex = withoutProtocol.indexOf('/');

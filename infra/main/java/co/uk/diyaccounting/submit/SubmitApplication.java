@@ -1,5 +1,12 @@
 package co.uk.diyaccounting.submit;
 
+import static co.uk.diyaccounting.submit.utils.Kind.envOr;
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.Kind.warnf;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDomainName;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateCompressedResourceNamePrefix;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateResourceNamePrefix;
+
 import co.uk.diyaccounting.submit.awssdk.KindCdk;
 import co.uk.diyaccounting.submit.stacks.ApplicationStack;
 import co.uk.diyaccounting.submit.stacks.AuthStack;
@@ -8,20 +15,12 @@ import co.uk.diyaccounting.submit.stacks.IdentityStack;
 import co.uk.diyaccounting.submit.stacks.ObservabilityStack;
 import co.uk.diyaccounting.submit.stacks.OpsStack;
 import co.uk.diyaccounting.submit.stacks.SelfDestructStack;
-import software.amazon.awscdk.App;
-import software.amazon.awscdk.Environment;
-import software.constructs.Construct;
-
 import java.io.File;
 import java.lang.reflect.Field;
 import java.nio.file.Paths;
-
-import static co.uk.diyaccounting.submit.utils.Kind.envOr;
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.Kind.warnf;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDomainName;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateCompressedResourceNamePrefix;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateResourceNamePrefix;
+import software.amazon.awscdk.App;
+import software.amazon.awscdk.Environment;
+import software.constructs.Construct;
 
 public class SubmitApplication {
 
@@ -112,7 +111,8 @@ public class SubmitApplication {
             infof("Using primary environment account %s region %s", cdkDefaultAccount, cdkDefaultRegion);
         } else {
             primaryEnv = Environment.builder().build();
-            warnf("CDK_DEFAULT_ACCOUNT or CDK_DEFAULT_REGION environment variables are not set, using environment agnostic stacks");
+            warnf(
+                    "CDK_DEFAULT_ACCOUNT or CDK_DEFAULT_REGION environment variables are not set, using environment agnostic stacks");
         }
 
         // Allow environment variables to override any appProps values
@@ -269,13 +269,17 @@ public class SubmitApplication {
                         .cloudTrailEnabled(cloudTrailEnabled)
                         .xRayEnabled(xRayEnabled)
                         .baseImageTag(baseImageTag)
-                        .ecrRepositoryArn(devStack.ecrRepository.getRepositoryArn())   // TODO: Internally compute from name
+                        .ecrRepositoryArn(
+                                devStack.ecrRepository.getRepositoryArn()) // TODO: Internally compute from name
                         .ecrRepositoryName(devStack.ecrRepository.getRepositoryName()) // TODO: Get by predictable name
                         .homeUrl(baseUrl)
                         .lambdaEntry(lambdaEntry)
                         .lambdaUrlAuthType(lambdaUrlAuthType)
-                        .cognitoClientId(identityStack.userPoolClient.getUserPoolClientId())   // TODO: Research a way around needing this.
-                        .cognitoBaseUri("https://" + identityStack.userPoolDomain.getDomainName())  // TODO: Get calculated value
+                        .cognitoClientId(
+                                identityStack.userPoolClient
+                                        .getUserPoolClientId()) // TODO: Research a way around needing this.
+                        .cognitoBaseUri(
+                                "https://" + identityStack.userPoolDomain.getDomainName()) // TODO: Get calculated value
                         // .optionalTestAccessToken(optionalTestAccessToken)
                         // .userPool(identityStack.userPool)
                         // .userPoolClient(identityStack.userPoolClient)
@@ -306,12 +310,14 @@ public class SubmitApplication {
                         .xRayEnabled(xRayEnabled)
                         .verboseLogging(verboseLogging)
                         .baseImageTag(baseImageTag)
-                        .ecrRepositoryArn(devStack.ecrRepository.getRepositoryArn())   // TODO: Internally compute from name
+                        .ecrRepositoryArn(
+                                devStack.ecrRepository.getRepositoryArn()) // TODO: Internally compute from name
                         .ecrRepositoryName(devStack.ecrRepository.getRepositoryName()) // TODO: Get by predictable name
                         .homeUrl(baseUrl)
                         .hmrcBaseUri(hmrcBaseUri)
                         .hmrcClientId(hmrcClientId)
-                        .cognitoUserPoolId(identityStack.userPool.getUserPoolId()) // TODO: Research a way around needing this.
+                        .cognitoUserPoolId(
+                                identityStack.userPool.getUserPoolId()) // TODO: Research a way around needing this.
                         .lambdaUrlAuthType(lambdaUrlAuthType)
                         .lambdaEntry(lambdaEntry)
                         .hmrcClientSecretArn(hmrcClientSecretArn)
@@ -397,7 +403,7 @@ public class SubmitApplication {
     private static SubmitApplicationProps loadAppProps(Construct scope) {
         SubmitApplicationProps props = SubmitApplicationProps.Builder.create().build();
         var cdkPath = Paths.get("cdk.json").toAbsolutePath();
-        if(!new File("cdk.json").exists()){
+        if (!new File("cdk.json").exists()) {
             warnf("Cannot find application properties (cdk.json) at %s", cdkPath);
         } else {
             infof("Loading application properties from cdk.json %s", cdkPath);
