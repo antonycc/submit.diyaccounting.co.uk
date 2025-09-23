@@ -1516,7 +1516,7 @@ jobs:
         uses: actions/checkout@v5
 
     outputs:
-      base-url: ${{ ( needs.names.outputs.deployment-name == 'prod' && 'https://submit.diyaccounting.co.uk' || format('https://{0}.submit.diyaccounting.co.uk', needs.names.outputs.deployment-name) ) }}
+      base-url: ${{ needs.deploy-edge.outputs.base-url || ( needs.names.outputs.deployment-name == 'prod' && 'https://submit.diyaccounting.co.uk' || format('https://{0}.submit.diyaccounting.co.uk', needs.names.outputs.deployment-name) ) }}
 
 #  api-test:
 #    if: ${{ !cancelled() && inputs.skipDeploy == 'true' || needs.deploy-edge.result == 'success' }}
