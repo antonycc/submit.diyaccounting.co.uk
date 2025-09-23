@@ -1728,7 +1728,7 @@ jobs:
 
   publish-artifacts:
     name: 'publish artifacts to github pages'
-    if: ${{ !cancelled() && inputs.skipDeploy == 'true' || needs.deploy-edge.result == 'success' }}
+    if: ${{ !cancelled() && needs.names.outputs.environment-name != 'prod' && ( inputs.skipDeploy == 'true' || needs.deploy-edge.result == 'success' ) }}
     needs:
       - names
       - deploy-edge
