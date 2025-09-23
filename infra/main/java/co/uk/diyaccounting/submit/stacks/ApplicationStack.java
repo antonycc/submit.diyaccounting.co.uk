@@ -1,16 +1,7 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.awssdk.KindCdk.cfnOutput;
-import static co.uk.diyaccounting.submit.awssdk.S3.createLifecycleRules;
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDashedDomainName;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildFunctionName;
-
 import co.uk.diyaccounting.submit.constructs.LambdaUrlOrigin;
 import co.uk.diyaccounting.submit.constructs.LambdaUrlOriginProps;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
@@ -31,6 +22,16 @@ import software.amazon.awscdk.services.s3.ObjectOwnership;
 import software.amazon.awscdk.services.secretsmanager.Secret;
 import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+
+import static co.uk.diyaccounting.submit.awssdk.KindCdk.cfnOutput;
+import static co.uk.diyaccounting.submit.awssdk.S3.createLifecycleRules;
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDashedDomainName;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildFunctionName;
 
 public class ApplicationStack extends Stack {
 
@@ -53,6 +54,8 @@ public class ApplicationStack extends Stack {
     public Function catalogLambda;
     // public FunctionUrl catalogLambdaUrl;
     public LogGroup catalogLambdaLogGroup;
+    public Function requestBundlesLambda;
+    public LogGroup requestBundlesLambdaLogGroup;
     public Function myBundlesLambda;
     // public FunctionUrl myBundlesLambdaUrl;
     public LogGroup myBundlesLambdaLogGroup;
@@ -97,6 +100,8 @@ public class ApplicationStack extends Stack {
         String hmrcClientId();
 
         String hmrcClientSecretArn();
+
+        String cognitoUserPoolId();
 
         // @Value.Default
         Optional<String> optionalTestAccessToken(); // {
@@ -320,6 +325,32 @@ public class ApplicationStack extends Stack {
         // lambdaUrlToOriginsBehaviourMappings.put(
         //    "/api/catalog" + "*", catalogLambdaUrlOrigin.lambda.getFunctionArn());
 
+        // Request Bundles Lambda
+        var requestBundlesLambdaEnv = new HashMap<>(Map.of(
+            "DIY_SUBMIT_USER_POOL_ID", props.cognitoUserPoolId(),
+            "DIY_SUBMIT_BUNDLE_EXPIRY_DATE", "2025-12-31",
+            "DIY_SUBMIT_BUNDLE_USER_LIMIT", "10"
+        ));
+        var requestBundlesLambdaUrlOrigin = new LambdaUrlOrigin(
+            this,
+            LambdaUrlOriginProps.builder()
+                .idPrefix("RequestBundles")
+                .baseImageTag(props.baseImageTag())
+                .ecrRepositoryName(props.ecrRepositoryName())
+                .ecrRepositoryArn(props.ecrRepositoryArn())
+                .imageFilename("requestBundles.Dockerfile")
+                .functionName(buildFunctionName(dashedDomainName, "requestBundles.httpPost"))
+                .cloudFrontAllowedMethods(AllowedMethods.ALLOW_ALL)
+                .handler(props.lambdaEntry() + "requestBundles.httpPost")
+                .environment(requestBundlesLambdaEnv)
+                .timeout(Duration.millis(Long.parseLong("30000")))
+                .build());
+        this.requestBundlesLambda = requestBundlesLambdaUrlOrigin.lambda;
+        this.requestBundlesLambdaLogGroup = requestBundlesLambdaUrlOrigin.logGroup;
+        infof(
+            "Created Lambda %s for request bundles with handler %s",
+            this.requestBundlesLambda.getNode().getId(), props.lambdaEntry() + "requestBundles.httpPost");
+
         // My Bundles Lambda
         var myBundlesLambdaEnv = new HashMap<>(Map.of("DIY_SUBMIT_HOME_URL", props.homeUrl()));
         var myBundlesLambdaUrlOrigin = new LambdaUrlOrigin(
@@ -417,6 +448,10 @@ public class ApplicationStack extends Stack {
                 .authType(functionUrlAuthType)
                 .invokeMode(InvokeMode.BUFFERED)
                 .build());
+        var requestBundlesUrl = this.requestBundlesLambda.addFunctionUrl(FunctionUrlOptions.builder()
+                .authType(functionUrlAuthType)
+                .invokeMode(InvokeMode.BUFFERED)
+                .build());
         var myBundlesUrl = this.myBundlesLambda.addFunctionUrl(FunctionUrlOptions.builder()
                 .authType(functionUrlAuthType)
                 .invokeMode(InvokeMode.BUFFERED)
@@ -432,15 +467,17 @@ public class ApplicationStack extends Stack {
         cfnOutput(this, "LogReceiptLambdaArn", this.logReceiptLambda.getFunctionArn());
         // cfnOutput(this, "BundleLambdaArn", this.bundleLambda.getFunctionArn());
         cfnOutput(this, "CatalogLambdaArn", this.catalogLambda.getFunctionArn());
+        cfnOutput(this, "RequestBundlesLambdaArn", this.requestBundlesLambda.getFunctionArn());
         cfnOutput(this, "MyBundlesLambdaArn", this.myBundlesLambda.getFunctionArn());
         cfnOutput(this, "MyReceiptsLambdaArn", this.myReceiptsLambda.getFunctionArn());
-        
+
         // Output Function URLs for EdgeStack to use as HTTP origins
         cfnOutput(this, "AuthUrlHmrcLambdaUrl", authUrlHmrcUrl.getUrl());
         cfnOutput(this, "ExchangeHmrcTokenLambdaUrl", exchangeHmrcTokenUrl.getUrl());
         cfnOutput(this, "SubmitVatLambdaUrl", submitVatUrl.getUrl());
         cfnOutput(this, "LogReceiptLambdaUrl", logReceiptUrl.getUrl());
         cfnOutput(this, "CatalogLambdaUrl", catalogUrl.getUrl());
+        cfnOutput(this, "RequestBundlesLambdaUrl", requestBundlesUrl.getUrl());
         cfnOutput(this, "MyBundlesLambdaUrl", myBundlesUrl.getUrl());
         cfnOutput(this, "MyReceiptsLambdaUrl", myReceiptsUrl.getUrl());
         cfnOutput(this, "ReceiptsBucketName", this.receiptsBucket.getBucketName());

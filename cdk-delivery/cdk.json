@@ -20,6 +20,7 @@
     "submitVatLambdaFunctionArn": "",
     "logReceiptLambdaFunctionArn": "",
     "catalogLambdaFunctionArn": "",
+    "requestBundlesLambdaFunctionUrl": "",
     "myBundlesLambdaFunctionArn": "",
     "myReceiptsLambdaFunctionArn": "",
     "selfDestructHandlerSource": "../target/self-destruct-lambda.jar",

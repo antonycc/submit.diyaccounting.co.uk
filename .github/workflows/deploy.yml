@@ -1166,6 +1166,7 @@ jobs:
           DIY_SUBMIT_SUBMIT_VAT_LAMBDA_ARN=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-ApplicationStack"].SubmitVatLambdaArn' cdk-submit-application.out/cdk-outputs-application.json)
           DIY_SUBMIT_LOG_RECEIPT_LAMBDA_ARN=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-ApplicationStack"].LogReceiptLambdaArn' cdk-submit-application.out/cdk-outputs-application.json)
           DIY_SUBMIT_CATALOG_LAMBDA_ARN=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-ApplicationStack"].CatalogLambdaArn' cdk-submit-application.out/cdk-outputs-application.json)
+          DIY_SUBMIT_REQUEST_BUNDLES_LAMBDA_ARN=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-ApplicationStack"].RequestBundlesLambdaArn' cdk-submit-application.out/cdk-outputs-application.json)
           DIY_SUBMIT_MY_BUNDLES_LAMBDA_ARN=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-ApplicationStack"].MyBundlesLambdaArn' cdk-submit-application.out/cdk-outputs-application.json)
           DIY_SUBMIT_MY_RECEIPTS_LAMBDA_ARN=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-ApplicationStack"].MyReceiptsLambdaArn' cdk-submit-application.out/cdk-outputs-application.json)
 
@@ -1175,6 +1176,7 @@ jobs:
           DIY_SUBMIT_SUBMIT_VAT_LAMBDA_URL=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-ApplicationStack"].SubmitVatLambdaUrl' cdk-submit-application.out/cdk-outputs-application.json)
           DIY_SUBMIT_LOG_RECEIPT_LAMBDA_URL=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-ApplicationStack"].LogReceiptLambdaUrl' cdk-submit-application.out/cdk-outputs-application.json)
           DIY_SUBMIT_CATALOG_LAMBDA_URL=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-ApplicationStack"].CatalogLambdaUrl' cdk-submit-application.out/cdk-outputs-application.json)
+          DIY_SUBMIT_REQUEST_BUNDLES_LAMBDA_URL=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-ApplicationStack"].RequestBundlesLambdaUrl' cdk-submit-application.out/cdk-outputs-application.json)
           DIY_SUBMIT_MY_BUNDLES_LAMBDA_URL=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-ApplicationStack"].MyBundlesLambdaUrl' cdk-submit-application.out/cdk-outputs-application.json)
           DIY_SUBMIT_MY_RECEIPTS_LAMBDA_URL=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-ApplicationStack"].MyReceiptsLambdaUrl' cdk-submit-application.out/cdk-outputs-application.json)
 
@@ -1188,6 +1190,8 @@ jobs:
           echo "DIY_SUBMIT_LOG_RECEIPT_LAMBDA_ARN=$DIY_SUBMIT_LOG_RECEIPT_LAMBDA_ARN" >> $GITHUB_OUTPUT
           echo "DIY_SUBMIT_CATALOG_LAMBDA_ARN=$DIY_SUBMIT_CATALOG_LAMBDA_ARN"
           echo "DIY_SUBMIT_CATALOG_LAMBDA_ARN=$DIY_SUBMIT_CATALOG_LAMBDA_ARN" >> $GITHUB_OUTPUT
+          echo "DIY_SUBMIT_REQUEST_BUNDLES_LAMBDA_ARN=$DIY_SUBMIT_REQUEST_BUNDLES_LAMBDA_ARN"
+          echo "DIY_SUBMIT_REQUEST_BUNDLES_LAMBDA_ARN=$DIY_SUBMIT_REQUEST_BUNDLES_LAMBDA_ARN" >> $GITHUB_OUTPUT
           echo "DIY_SUBMIT_MY_BUNDLES_LAMBDA_ARN=$DIY_SUBMIT_MY_BUNDLES_LAMBDA_ARN"
           echo "DIY_SUBMIT_MY_BUNDLES_LAMBDA_ARN=$DIY_SUBMIT_MY_BUNDLES_LAMBDA_ARN" >> $GITHUB_OUTPUT
           echo "DIY_SUBMIT_MY_RECEIPTS_LAMBDA_ARN=$DIY_SUBMIT_MY_RECEIPTS_LAMBDA_ARN"
@@ -1203,6 +1207,8 @@ jobs:
           echo "DIY_SUBMIT_LOG_RECEIPT_LAMBDA_URL=$DIY_SUBMIT_LOG_RECEIPT_LAMBDA_URL" >> $GITHUB_OUTPUT
           echo "DIY_SUBMIT_CATALOG_LAMBDA_URL=$DIY_SUBMIT_CATALOG_LAMBDA_URL"
           echo "DIY_SUBMIT_CATALOG_LAMBDA_URL=$DIY_SUBMIT_CATALOG_LAMBDA_URL" >> $GITHUB_OUTPUT
+          echo "DIY_SUBMIT_REQUEST_BUNDLES_LAMBDA_URL=$DIY_SUBMIT_REQUEST_BUNDLES_LAMBDA_URL"
+          echo "DIY_SUBMIT_REQUEST_BUNDLES_LAMBDA_URL=$DIY_SUBMIT_REQUEST_BUNDLES_LAMBDA_URL" >> $GITHUB_OUTPUT
           echo "DIY_SUBMIT_MY_BUNDLES_LAMBDA_URL=$DIY_SUBMIT_MY_BUNDLES_LAMBDA_URL"
           echo "DIY_SUBMIT_MY_BUNDLES_LAMBDA_URL=$DIY_SUBMIT_MY_BUNDLES_LAMBDA_URL" >> $GITHUB_OUTPUT
           echo "DIY_SUBMIT_MY_RECEIPTS_LAMBDA_URL=$DIY_SUBMIT_MY_RECEIPTS_LAMBDA_URL"
@@ -1221,6 +1227,7 @@ jobs:
       submitVatLambdaUrl: ${{ steps.application-outputs.outputs.DIY_SUBMIT_SUBMIT_VAT_LAMBDA_URL }}
       logReceiptLambdaUrl: ${{ steps.application-outputs.outputs.DIY_SUBMIT_LOG_RECEIPT_LAMBDA_URL }}
       catalogLambdaUrl: ${{ steps.application-outputs.outputs.DIY_SUBMIT_CATALOG_LAMBDA_URL }}
+      requestBundlesLambdaUrl: ${{ steps.application-outputs.outputs.DIY_SUBMIT_REQUEST_BUNDLES_LAMBDA_URL }}
       myBundlesLambdaUrl: ${{ steps.application-outputs.outputs.DIY_SUBMIT_MY_BUNDLES_LAMBDA_URL }}
       myReceiptsLambdaUrl: ${{ steps.application-outputs.outputs.DIY_SUBMIT_MY_RECEIPTS_LAMBDA_URL }}
 
@@ -1315,6 +1322,7 @@ jobs:
           DIY_SUBMIT_SUBMIT_VAT_LAMBDA_ARN: ${{ needs.deploy-application.outputs.submitVatLambdaArn }}
           DIY_SUBMIT_LOG_RECEIPT_LAMBDA_ARN: ${{ needs.deploy-application.outputs.logReceiptLambdaArn }}
           DIY_SUBMIT_CATALOG_LAMBDA_ARN: ${{ needs.deploy-application.outputs.catalogLambdaArn }}
+          DIY_SUBMIT_REQUEST_BUNDLES_LAMBDA_ARN: ${{ needs.deploy-application.outputs.requestBundlesLambdaArn }}
           DIY_SUBMIT_MY_BUNDLES_LAMBDA_ARN: ${{ needs.deploy-application.outputs.myBundlesLambdaArn }}
           DIY_SUBMIT_MY_RECEIPTS_LAMBDA_ARN: ${{ needs.deploy-application.outputs.myReceiptsLambdaArn }}
           # Function URLs for cross-region EdgeStack deployment
@@ -1326,6 +1334,7 @@ jobs:
           DIY_SUBMIT_SUBMIT_VAT_LAMBDA_URL: ${{ needs.deploy-application.outputs.submitVatLambdaUrl }}
           DIY_SUBMIT_LOG_RECEIPT_LAMBDA_URL: ${{ needs.deploy-application.outputs.logReceiptLambdaUrl }}
           DIY_SUBMIT_CATALOG_LAMBDA_URL: ${{ needs.deploy-application.outputs.catalogLambdaUrl }}
+          DIY_SUBMIT_REQUEST_BUNDLES_LAMBDA_URL: ${{ needs.deploy-application.outputs.requestBundlesLambdaUrl }}
           DIY_SUBMIT_MY_BUNDLES_LAMBDA_URL: ${{ needs.deploy-application.outputs.myBundlesLambdaUrl }}
           DIY_SUBMIT_MY_RECEIPTS_LAMBDA_URL: ${{ needs.deploy-application.outputs.myReceiptsLambdaUrl }}
 

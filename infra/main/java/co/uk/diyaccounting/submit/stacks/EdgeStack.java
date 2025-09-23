@@ -80,8 +80,6 @@ public class EdgeStack extends Stack {
 
         String certificateArn();
 
-        Map<String, String> pathsToOriginLambdaFunctionArns();
-
         Map<String, String> pathsToOriginLambdaFunctionUrls();
 
         int accessLogGroupRetentionPeriodDays();

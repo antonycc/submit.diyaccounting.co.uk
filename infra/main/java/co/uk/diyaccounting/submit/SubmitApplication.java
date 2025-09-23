@@ -311,6 +311,7 @@ public class SubmitApplication {
                         .homeUrl(baseUrl)
                         .hmrcBaseUri(hmrcBaseUri)
                         .hmrcClientId(hmrcClientId)
+                        .cognitoUserPoolId(identityStack.userPool.getUserPoolId()) // TODO: Research a way around needing this.
                         .lambdaUrlAuthType(lambdaUrlAuthType)
                         .lambdaEntry(lambdaEntry)
                         .hmrcClientSecretArn(hmrcClientSecretArn)
@@ -337,6 +338,8 @@ public class SubmitApplication {
         if (applicationStack.logReceiptLambda != null)
             lambdaArns.add(applicationStack.logReceiptLambda.getFunctionArn());
         if (applicationStack.catalogLambda != null) lambdaArns.add(applicationStack.catalogLambda.getFunctionArn());
+        if (applicationStack.requestBundlesLambda != null)
+            lambdaArns.add(applicationStack.requestBundlesLambda.getFunctionArn());
         if (applicationStack.myBundlesLambda != null) lambdaArns.add(applicationStack.myBundlesLambda.getFunctionArn());
         if (applicationStack.myReceiptsLambda != null)
             lambdaArns.add(applicationStack.myReceiptsLambda.getFunctionArn());

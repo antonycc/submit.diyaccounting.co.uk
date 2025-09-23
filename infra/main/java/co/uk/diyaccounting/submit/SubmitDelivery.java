@@ -41,6 +41,7 @@ public class SubmitDelivery {
         public String submitVatLambdaFunctionArn;
         public String logReceiptLambdaFunctionArn;
         public String catalogLambdaFunctionArn;
+        public String requestBundlesLambdaFunctionArn;
         public String myBundlesLambdaFunctionArn;
         public String myReceiptsLambdaFunctionArn;
         // Function URLs for cross-region EdgeStack deployment
@@ -52,6 +53,7 @@ public class SubmitDelivery {
         public String submitVatLambdaFunctionUrl;
         public String logReceiptLambdaFunctionUrl;
         public String catalogLambdaFunctionUrl;
+        public String requestBundlesLambdaFunctionUrl;
         public String myBundlesLambdaFunctionUrl;
         public String myReceiptsLambdaFunctionUrl;
         public String selfDestructHandlerSource;
@@ -148,6 +150,10 @@ public class SubmitDelivery {
                 "DIY_SUBMIT_CATALOG_LAMBDA_ARN",
                 appProps.catalogLambdaFunctionArn,
                 "(from catalogLambdaFunctionArn in cdk.json)");
+        var requestBundlesLambdaFunctionArn = envOr(
+                "DIY_SUBMIT_REQUEST_BUNDLES_LAMBDA_ARN",
+                appProps.requestBundlesLambdaFunctionArn,
+                "(from requestBundlesLambdaFunctionArn in cdk.json)");
         var myBundlesLambdaFunctionArn = envOr(
                 "DIY_SUBMIT_MY_BUNDLES_LAMBDA_ARN",
                 appProps.myBundlesLambdaFunctionArn,
@@ -156,7 +162,7 @@ public class SubmitDelivery {
                 "DIY_SUBMIT_MY_RECEIPTS_LAMBDA_ARN",
                 appProps.myReceiptsLambdaFunctionArn,
                 "(from myReceiptsLambdaFunctionArn in cdk.json)");
-        
+
         // Function URL environment variables for EdgeStack
         var authUrlMockLambdaFunctionUrl = envOr(
                 "DIY_SUBMIT_AUTH_URL_MOCK_LAMBDA_URL",
@@ -190,6 +196,10 @@ public class SubmitDelivery {
                 "DIY_SUBMIT_CATALOG_LAMBDA_URL",
                 appProps.catalogLambdaFunctionUrl,
                 "(from catalogLambdaFunctionUrl in cdk.json)");
+        var requestBundlesLambdaFunctionUrl = envOr(
+                "DIY_SUBMIT_REQUEST_BUNDLES_LAMBDA_URL",
+                appProps.requestBundlesLambdaFunctionUrl,
+                "(from requestBundlesLambdaFunctionUrl in cdk.json)");
         var myBundlesLambdaFunctionUrl = envOr(
                 "DIY_SUBMIT_MY_BUNDLES_LAMBDA_URL",
                 appProps.myBundlesLambdaFunctionUrl,
@@ -215,22 +225,6 @@ public class SubmitDelivery {
         var resourceNamePrefix = generateResourceNamePrefix(domainName, deploymentName);
         var compressedResourceNamePrefix = generateCompressedResourceNamePrefix(domainName, deploymentName);
 
-        Map<String, String> pathsToOriginLambdaFunctionArns = new java.util.HashMap<>();
-        putIfNotNull(pathsToOriginLambdaFunctionArns, "/api/mock/auth-url" + "*", authUrlMockLambdaFunctionArn);
-        putIfNotNull(pathsToOriginLambdaFunctionArns, "/api/cognito/auth-url" + "*", authUrlCognitoLambdaFunctionArn);
-        putIfNotNull(
-                pathsToOriginLambdaFunctionArns,
-                "/api/cognito/exchange-token" + "*",
-                exchangeCognitoTokenLambdaFunctionArn);
-        putIfNotNull(pathsToOriginLambdaFunctionArns, "/api/hmrc/auth-url" + "*", authUrlHmrcLambdaFunctionArn);
-        putIfNotNull(
-                pathsToOriginLambdaFunctionArns, "/api/hmrc/exchange-token" + "*", exchangeHmrcTokenLambdaFunctionArn);
-        putIfNotNull(pathsToOriginLambdaFunctionArns, "/api/submit-vat" + "*", submitVatLambdaFunctionArn);
-        putIfNotNull(pathsToOriginLambdaFunctionArns, "/api/log-receipt" + "*", logReceiptLambdaFunctionArn);
-        putIfNotNull(pathsToOriginLambdaFunctionArns, "/api/catalog" + "*", catalogLambdaFunctionArn);
-        putIfNotNull(pathsToOriginLambdaFunctionArns, "/api/my-bundles" + "*", myBundlesLambdaFunctionArn);
-        putIfNotNull(pathsToOriginLambdaFunctionArns, "/api/my-receipts" + "*", myReceiptsLambdaFunctionArn);
-
         // Create Function URLs map for EdgeStack (cross-region compatible)
         Map<String, String> pathsToOriginLambdaFunctionUrls = new java.util.HashMap<>();
         putIfNotNull(pathsToOriginLambdaFunctionUrls, "/api/mock/auth-url" + "*", authUrlMockLambdaFunctionUrl);
@@ -245,6 +239,7 @@ public class SubmitDelivery {
         putIfNotNull(pathsToOriginLambdaFunctionUrls, "/api/submit-vat" + "*", submitVatLambdaFunctionUrl);
         putIfNotNull(pathsToOriginLambdaFunctionUrls, "/api/log-receipt" + "*", logReceiptLambdaFunctionUrl);
         putIfNotNull(pathsToOriginLambdaFunctionUrls, "/api/catalog" + "*", catalogLambdaFunctionUrl);
+        putIfNotNull(pathsToOriginLambdaFunctionUrls, "/api/request-bundles" + "*", requestBundlesLambdaFunctionUrl);
         putIfNotNull(pathsToOriginLambdaFunctionUrls, "/api/my-bundles" + "*", myBundlesLambdaFunctionUrl);
         putIfNotNull(pathsToOriginLambdaFunctionUrls, "/api/my-receipts" + "*", myReceiptsLambdaFunctionUrl);
 
@@ -265,7 +260,6 @@ public class SubmitDelivery {
                         .resourceNamePrefix(resourceNamePrefix)
                         .compressedResourceNamePrefix(compressedResourceNamePrefix)
                         .certificateArn(certificateArn)
-                        .pathsToOriginLambdaFunctionArns(pathsToOriginLambdaFunctionArns)
                         .pathsToOriginLambdaFunctionUrls(pathsToOriginLambdaFunctionUrls)
                         .accessLogGroupRetentionPeriodDays(Integer.parseInt(accessLogGroupRetentionPeriodDays))
                         .build());
