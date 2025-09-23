@@ -1,16 +1,7 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.awssdk.KindCdk.cfnOutput;
-import static co.uk.diyaccounting.submit.awssdk.S3.createLifecycleRules;
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDashedDomainName;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildFunctionName;
-
 import co.uk.diyaccounting.submit.constructs.LambdaUrlOrigin;
 import co.uk.diyaccounting.submit.constructs.LambdaUrlOriginProps;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
@@ -31,6 +22,16 @@ import software.amazon.awscdk.services.s3.ObjectOwnership;
 import software.amazon.awscdk.services.secretsmanager.Secret;
 import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+
+import static co.uk.diyaccounting.submit.awssdk.KindCdk.cfnOutput;
+import static co.uk.diyaccounting.submit.awssdk.S3.createLifecycleRules;
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDashedDomainName;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildFunctionName;
 
 public class ApplicationStack extends Stack {
 
@@ -337,9 +338,9 @@ public class ApplicationStack extends Stack {
                         .ecrRepositoryName(props.ecrRepositoryName())
                         .ecrRepositoryArn(props.ecrRepositoryArn())
                         .imageFilename("requestBundles.Dockerfile")
-                        .functionName(buildFunctionName(dashedDomainName, "requestBundles.httpPost"))
+                        .functionName(buildFunctionName(dashedDomainName, "bundle.httpPost"))
                         .cloudFrontAllowedMethods(AllowedMethods.ALLOW_ALL)
-                        .handler(props.lambdaEntry() + "requestBundles.httpPost")
+                        .handler(props.lambdaEntry() + "bundle.httpPost")
                         .environment(requestBundlesLambdaEnv)
                         .timeout(Duration.millis(Long.parseLong("30000")))
                         .build());
