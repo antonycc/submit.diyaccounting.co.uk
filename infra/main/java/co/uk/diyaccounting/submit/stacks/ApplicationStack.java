@@ -352,26 +352,24 @@ public class ApplicationStack extends Stack {
         infof(
                 "Created Lambda %s for request bundles with handler %s",
                 this.requestBundlesLambda.getNode().getId(), props.lambdaEntry() + "bundle.httpPost");
-        
+
         // Grant the RequestBundlesLambda permission to access Cognito User Pool
-        if (StringUtils.isNotBlank(props.cognitoUserPoolId())) {
-            var cognitoUserPoolArn = String.format("arn:aws:cognito-idp:%s:%s:userpool/%s", 
-                    props.getEnv().getRegion(), 
-                    props.getEnv().getAccount(), 
-                    props.cognitoUserPoolId());
-            
-            this.requestBundlesLambda.addToRolePolicy(PolicyStatement.Builder.create()
-                    .effect(Effect.ALLOW)
-                    .actions(List.of(
-                            "cognito-idp:AdminGetUser",
-                            "cognito-idp:AdminUpdateUserAttributes",
-                            "cognito-idp:ListUsers"))
-                    .resources(List.of(cognitoUserPoolArn))
-                    .build());
-            
-            infof("Granted Cognito permissions to %s for User Pool %s", 
-                    this.requestBundlesLambda.getFunctionName(), props.cognitoUserPoolId());
-        }
+        var cognitoUserPoolArn = String.format("arn:aws:cognito-idp:%s:%s:userpool/%s",
+                props.getEnv().getRegion(),
+                props.getEnv().getAccount(),
+                props.cognitoUserPoolId());
+
+        this.requestBundlesLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .actions(List.of(
+                        "cognito-idp:AdminGetUser",
+                        "cognito-idp:AdminUpdateUserAttributes",
+                        "cognito-idp:ListUsers"))
+                .resources(List.of(cognitoUserPoolArn))
+                .build());
+
+        infof("Granted Cognito permissions to %s for User Pool %s",
+                this.requestBundlesLambda.getFunctionName(), props.cognitoUserPoolId());
 
         // My Bundles Lambda
         var myBundlesLambdaEnv = new HashMap<>(Map.of("DIY_SUBMIT_HOME_URL", props.homeUrl()));
