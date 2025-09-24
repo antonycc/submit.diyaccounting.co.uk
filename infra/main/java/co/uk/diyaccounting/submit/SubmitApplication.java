@@ -331,10 +331,7 @@ public class SubmitApplication {
                         .build());
         applicationStack.addDependency(devStack);
         applicationStack.addDependency(identityStack);
-        var requestBundlesLambdaGrantPrincipal = applicationStack.requestBundlesLambda.getGrantPrincipal();
-        identityStack.userPool.grant(requestBundlesLambdaGrantPrincipal, "cognito-idp:AdminGetUser");
-        var myBundlesLambdaGrantPrincipal = applicationStack.myBundlesLambda.getGrantPrincipal();
-        identityStack.userPool.grant(myBundlesLambdaGrantPrincipal, "cognito-idp:AdminGetUser");
+S
 
         // Create the Ops stack (Alarms, etc.)
         // Build list of Lambda function ARNs for OpsStack
