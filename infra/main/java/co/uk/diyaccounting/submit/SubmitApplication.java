@@ -331,7 +331,6 @@ public class SubmitApplication {
                         .build());
         applicationStack.addDependency(devStack);
         applicationStack.addDependency(identityStack);
-S
 
         // Create the Ops stack (Alarms, etc.)
         // Build list of Lambda function ARNs for OpsStack
