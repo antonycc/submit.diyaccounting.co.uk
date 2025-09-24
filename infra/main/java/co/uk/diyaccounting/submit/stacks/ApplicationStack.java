@@ -20,10 +20,13 @@ import software.amazon.awscdk.services.s3.BucketEncryption;
 import software.amazon.awscdk.services.s3.IBucket;
 import software.amazon.awscdk.services.s3.ObjectOwnership;
 import software.amazon.awscdk.services.secretsmanager.Secret;
+import software.amazon.awscdk.services.iam.PolicyStatement;
+import software.amazon.awscdk.services.iam.Effect;
 import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -348,7 +351,27 @@ public class ApplicationStack extends Stack {
         this.requestBundlesLambdaLogGroup = requestBundlesLambdaUrlOrigin.logGroup;
         infof(
                 "Created Lambda %s for request bundles with handler %s",
-                this.requestBundlesLambda.getNode().getId(), props.lambdaEntry() + "requestBundles.httpPost");
+                this.requestBundlesLambda.getNode().getId(), props.lambdaEntry() + "bundle.httpPost");
+        
+        // Grant the RequestBundlesLambda permission to access Cognito User Pool
+        if (StringUtils.isNotBlank(props.cognitoUserPoolId())) {
+            var cognitoUserPoolArn = String.format("arn:aws:cognito-idp:%s:%s:userpool/%s", 
+                    props.getEnv().getRegion(), 
+                    props.getEnv().getAccount(), 
+                    props.cognitoUserPoolId());
+            
+            this.requestBundlesLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                    .effect(Effect.ALLOW)
+                    .actions(List.of(
+                            "cognito-idp:AdminGetUser",
+                            "cognito-idp:AdminUpdateUserAttributes",
+                            "cognito-idp:ListUsers"))
+                    .resources(List.of(cognitoUserPoolArn))
+                    .build());
+            
+            infof("Granted Cognito permissions to %s for User Pool %s", 
+                    this.requestBundlesLambda.getFunctionName(), props.cognitoUserPoolId());
+        }
 
         // My Bundles Lambda
         var myBundlesLambdaEnv = new HashMap<>(Map.of("DIY_SUBMIT_HOME_URL", props.homeUrl()));
