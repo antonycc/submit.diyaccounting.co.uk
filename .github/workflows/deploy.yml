@@ -206,11 +206,12 @@ jobs:
 
       - run: npm ci || npm install
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-        with:
-          driver-opts: |
-            image=moby/buildkit:latest
+#      - name: Set up Docker Buildx
+#        uses: docker/setup-buildx-action@v3
+#        with:
+#          driver-opts: |
+#            image=moby/buildkit:latest
+
       - run: npm run test:system
 
   npm-test-web-unit:
@@ -297,11 +298,11 @@ jobs:
           java-version: ${{ env.JAVA_VERSION }}
           cache: 'maven'
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-        with:
-          driver-opts: |
-            image=moby/buildkit:latest
+#      - name: Set up Docker Buildx
+#        uses: docker/setup-buildx-action@v3
+#        with:
+#          driver-opts: |
+#            image=moby/buildkit:latest
 
       - name: package
         id: package
@@ -371,11 +372,11 @@ jobs:
           java-version: ${{ env.JAVA_VERSION }}
           cache: 'maven'
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-        with:
-          driver-opts: |
-            image=moby/buildkit:latest
+#      - name: Set up Docker Buildx
+#        uses: docker/setup-buildx-action@v3
+#        with:
+#          driver-opts: |
+#            image=moby/buildkit:latest
 
       - name: test cdk
         id: test-cdk
@@ -399,18 +400,18 @@ jobs:
       - name: Node dependencies
         run: npm ci
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-        with:
-          driver-opts: |
-            image=moby/buildkit:latest
+#      - name: Set up Docker Buildx
+#        uses: docker/setup-buildx-action@v3
+#        with:
+#          driver-opts: |
+#            image=moby/buildkit:latest
 
       - name: Build base image
         run: |
-          docker buildx build \
-            --load \
+          docker build \
             -t "${{ env.BASE_IMAGE_TAG_PREFIX }}:${{ github.sha }}" \
             -f Dockerfile .
+      # docker buildx build \
 
       - name: Save image artifact
         run: |
