@@ -367,6 +367,7 @@ public class EdgeStack extends Stack {
                         .recordName(recordName)
                         .zone(zone)
                         .target(RecordTarget.fromAlias(new CloudFrontTarget(this.distribution)))
+                        .deleteExisting(true)
                         .build());
 
         // Outputs
