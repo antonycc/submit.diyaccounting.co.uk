@@ -40,10 +40,6 @@ public class OpsStack extends Stack {
 
         String compressedResourceNamePrefix();
 
-        // String distributionId();
-
-        // String originBucketArn();
-
         String receiptsBucketArn(); // optional, may be null
 
         List<String> lambdaFunctionArns();
@@ -93,7 +89,6 @@ public class OpsStack extends Stack {
         if (props.lambdaFunctionArns() != null) {
             for (int i = 0; i < props.lambdaFunctionArns().size(); i++) {
                 String arn = props.lambdaFunctionArns().get(i);
-                // String fnName = arn.substring(arn.lastIndexOf(":") + 1);
                 IFunction fn = Function.fromFunctionAttributes(
                         this,
                         props.resourceNamePrefix() + "-Fn-" + i,
@@ -121,8 +116,6 @@ public class OpsStack extends Stack {
         }
 
         // S3 buckets
-        // IBucket originBucket = Bucket.fromBucketArn(this, props.resourceNamePrefix + "-OriginBucket",
-        // props.originBucketArn);
         IBucket receiptsBucket = null;
         if (props.receiptsBucketArn() != null && !props.receiptsBucketArn().isBlank()) {
             receiptsBucket = Bucket.fromBucketArn(
@@ -163,31 +156,6 @@ public class OpsStack extends Stack {
                             .height(6)
                             .build()));
         }
-        // Row 3: S3 origin and receipts bucket errors/requests
-        //        Metric s3OriginAllReq = Metric.Builder.create()
-        //                .namespace("AWS/S3")
-        //                .metricName("AllRequests")
-        //                .dimensionsMap(java.util.Map.of("BucketName", originBucket.getBucketName(), "FilterId",
-        // "EntireBucket"))
-        //                .statistic("Sum")
-        //                .period(Duration.minutes(5))
-        //                .build();
-        //        Metric s3Origin4xx = Metric.Builder.create()
-        //                .namespace("AWS/S3")
-        //                .metricName("4xxErrors")
-        //                .dimensionsMap(java.util.Map.of("BucketName", originBucket.getBucketName(), "FilterId",
-        // "EntireBucket"))
-        //                .statistic("Sum")
-        //                .period(Duration.minutes(5))
-        //                .build();
-        //        Metric s3Origin5xx = Metric.Builder.create()
-        //                .namespace("AWS/S3")
-        //                .metricName("5xxErrors")
-        //                .dimensionsMap(java.util.Map.of("BucketName", originBucket.getBucketName(), "FilterId",
-        // "EntireBucket"))
-        //                .statistic("Sum")
-        //                .period(Duration.minutes(5))
-        //                .build();
 
         Metric s3ReceiptsAllReq = null;
         Metric s3Receipts4xx = null;
@@ -220,12 +188,6 @@ public class OpsStack extends Stack {
         }
 
         rows.add(java.util.List.of(
-                //                GraphWidget.Builder.create()
-                //                        .title("S3 Origin Requests/Errors")
-                //                        .left(java.util.List.of(s3OriginAllReq, s3Origin4xx, s3Origin5xx))
-                //                        .width(12)
-                //                        .height(6)
-                //                        .build(),
                 receiptsBucket != null
                         ? GraphWidget.Builder.create()
                                 .title("S3 Receipts Requests/Errors")

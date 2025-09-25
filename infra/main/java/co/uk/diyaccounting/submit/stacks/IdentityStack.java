@@ -97,10 +97,6 @@ public class IdentityStack extends Stack {
 
         String cognitoDomainPrefix();
 
-        String cognitoFeaturePlan();
-
-        String cognitoEnableLogDelivery();
-
         @Override
         Environment getEnv();
 
@@ -142,8 +138,6 @@ public class IdentityStack extends Stack {
             accessLogGroupRetentionPeriodDays = 30;
         }
 
-        boolean xRayEnabled = Boolean.parseBoolean(props.xRayEnabled());
-
         var cognitoDomainName = buildCognitoDomainName(
                 props.envName(), props.cognitoDomainPrefix(), props.subDomainName(), hostedZone.getZoneName());
         var cognitoBaseUri = buildCognitoBaseUri(cognitoDomainName);
@@ -154,12 +148,7 @@ public class IdentityStack extends Stack {
         this.authCertificate = Certificate.fromCertificateArn(this, "AuthCertificate", props.authCertificateArn());
 
         // Create a secret for the Google client secret and set the ARN to be used in the Lambda
-        // environment variable
-        // this.googleClientSecretsManagerSecret = Secret.Builder.create(this,
-        // "GoogleClientSecretValue")
-        //        .secretStringValue(SecretValue.unsafePlainText(builder.googleClientSecret))
-        //        .description("Google Client Secret for OAuth authentication")
-        //        .build();
+
         // Look up the client secret by arn
         if (props.googleClientSecretArn() == null
                 || props.googleClientSecretArn().isBlank()) {
@@ -169,16 +158,7 @@ public class IdentityStack extends Stack {
         this.googleClientSecretsManagerSecret =
                 Secret.fromSecretPartialArn(this, "GoogleClientSecret", props.googleClientSecretArn());
 
-        // this.cognitoClientSecretsManagerSecret =
-        //          Secret.fromSecretPartialArn(this, "CognitoClientSecret",
-        // builder.cognitoClientSecretArn);
-        // var cognitoClientSecretArn = this.cognitoClientSecretsManagerSecret.getSecretArn();
-
         var googleClientSecretValue = this.googleClientSecretsManagerSecret.getSecretValue();
-        // var cognitoClientSecretValue = this.cognitoClientSecretsManagerSecret.getSecretValue();
-        // var googleClientSecretValue = this.googleClientSecretsManagerSecret != null
-        //        ? this.googleClientSecretsManagerSecret.getSecretValue()
-        //        : SecretValue.unsafePlainText(builder.googleClientSecret);
 
         // Create Cognito User Pool for authentication
         var standardAttributes = StandardAttributes.builder()
@@ -263,29 +243,6 @@ public class IdentityStack extends Stack {
         this.identityProviders
                 .values()
                 .forEach(idp -> this.userPoolClient.getNode().addDependency(idp));
-
-        // var cognito = CognitoAuth.Builder.create(this)
-        // .userPoolArn(this.userPool.getUserPoolArn())
-        // .userPoolClientName(dashedDomainName + "-client")
-        // .identityProviders(this.identityProviders)
-        // .standardAttributes(standardAttributes)
-        // .callbackUrls(List.of(
-        //        "https://" + this.domainName + "/",
-        //        "https://" + this.domainName + "/auth/loginWithGoogleCallback.html",
-        //        "https://" + this.domainName + "/auth/loginWithCognitoCallback.html"))
-        // .logoutUrls(List.of("https://" + this.domainName + "/"))
-        // .featurePlan(
-        //        builder.cognitoFeaturePlan != null && !builder.cognitoFeaturePlan.isBlank()
-        //                ? builder.cognitoFeaturePlan
-        //                : "ESSENTIALS")
-        // .enableLogDelivery(builder.cognitoEnableLogDelivery != null
-        //        && !builder.cognitoEnableLogDelivery.isBlank()
-        //        && Boolean.parseBoolean(builder.cognitoEnableLogDelivery))
-        // .xRayEnabled(xRayEnabled)
-        // .accessLogGroupRetentionPeriodDays(accessLogGroupRetentionPeriodDays)
-        // .logGroupNamePrefix(dashedDomainName)
-        // .build();
-        // this.userPoolClient = cognito.userPoolClient;
 
         // Create Cognito User Pool Domain
         this.userPoolDomain = UserPoolDomain.Builder.create(this, "UserPoolDomain")

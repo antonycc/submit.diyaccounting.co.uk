@@ -117,11 +117,6 @@ public interface LambdaUrlOriginProps {
     }
 
     @Value.Default
-    default String imageFilename() {
-        return "Dockerfile";
-    }
-
-    @Value.Default
     default Runtime testRuntime() {
         return Runtime.NODEJS_22_X;
     }

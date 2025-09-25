@@ -27,7 +27,6 @@ class DevStackTest {
                         .envName("test")
                         .hostedZoneName("diyaccounting.co.uk")
                         .subDomainName("submit")
-                        .retainEcrRepository("false")
                         .build());
 
         assertNotNull(devStack, "DevStack should be created");
