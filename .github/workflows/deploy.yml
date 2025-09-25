@@ -1704,10 +1704,8 @@ jobs:
 
                   <h2>Available Test output</h2>
                   <ul>
-                      <li><a href="web-test-artifacts/">Web Test Artifacts</a></li>
-                      <li><a href="web-test-reports/">Web Test Reports</a></li>
-                      <li><a href="test-results-browser/">Browser Test Artifacts</a></li>
-                      <li><a href="test-reports-browser/">Browser Test Reports</a></li>
+                      <li><a href="web-test-reports/html-report/index.html">Web Test Reports</a></li>
+                      <li><a href="test-reports-browser/html-report/index.html">Browser Test Reports</a></li>
                   </ul>
               </div>
           </body>
