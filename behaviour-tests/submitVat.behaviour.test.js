@@ -178,33 +178,6 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   const timestamp = getTimestamp();
   const testUrl = runTestServer ? `http://127.0.0.1:${serverPort}` : homeUrl;
 
-  // Pre-check: Skip test if target URL is not accessible (e.g., DNS issues, deployment not ready)
-  if (!runTestServer) {
-    try {
-      console.log(`[CONNECTIVITY CHECK] Testing accessibility of: ${testUrl}`);
-      const response = await fetch(testUrl, { 
-        method: 'HEAD', 
-        signal: AbortSignal.timeout(5000),
-        headers: { 'User-Agent': 'SubmitVAT-BehaviorTest/1.0' }
-      });
-      console.log(`[CONNECTIVITY CHECK] Response status: ${response.status}`);
-    } catch (error) {
-      const errorMsg = error.message || String(error);
-      console.log(`[CONNECTIVITY CHECK] Failed: ${errorMsg}`);
-      
-      // Skip test if domain doesn't resolve or connection fails
-      if (errorMsg.includes('ENOTFOUND') || 
-          errorMsg.includes('ECONNREFUSED') || 
-          errorMsg.includes('ETIMEDOUT') ||
-          errorMsg.includes('fetch failed') ||
-          errorMsg.includes('TimeoutError')) {
-        test.skip(true, `Skipping test: Target URL ${testUrl} is not accessible (${errorMsg}). This may indicate the deployment is not ready or DNS issues.`);
-      }
-      // Re-throw other unexpected errors
-      throw error;
-    }
-  }
-
   // Add console logging to capture browser messages
   page.on("console", (msg) => {
     console.log(`[BROWSER CONSOLE ${msg.type()}]: ${msg.text()}`);
