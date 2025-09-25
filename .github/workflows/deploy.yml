@@ -67,6 +67,17 @@ env:
   deploymentName: ${{ inputs.deploymentName || '' }}
   loadTestDuration: ${{ inputs.loadTestDuration || '30s' }}
   selfDestructDelayHours: ${{ inputs.selfDestructDelayHours || '1' }}
+  GITHUB_ACTOR: ${{ github.actor }}
+  SELF_DESTRUCT_DELAY_HOURS: ${{ inputs.selfDestructDelayHours || '1' }}
+  BASE_IMAGE_TAG: ${{ github.sha }}
+  CERTIFICATE_ARN: ${{ vars.AWS_CERTIFICATE_ARN }}
+  CLOUD_TRAIL_ENABLED: ${{ vars.AWS_CLOUD_TRAIL_ENABLED }}
+  X_RAY_ENABLED: ${{ vars.AWS_X_RAY_ENABLED }}
+  VERBOSE_LOGGING: ${{ vars.AWS_VERBOSE_LOGGING }}
+  HOSTED_ZONE_ID: ${{ vars.AWS_HOSTED_ZONE_ID }}
+  HOSTED_ZONE_NAME: ${{ vars.AWS_HOSTED_ZONE_NAME }}
+  COMMIT_HASH: ${{ github.sha }}
+  AUTH_CERTIFICATE_ARN: 'arn:aws:acm:us-east-1:887764105431:certificate/59a025f9-3620-43cd-9b2c-522f385ee223'
 
 jobs:
 
@@ -281,8 +292,31 @@ jobs:
           path: target/test-reports/
           retention-days: 30
 
-  mvn-package:
+  mvn-test:
     name: 'maven test'
+    runs-on: ubuntu-latest
+    needs:
+      - names
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: 'maven'
+
+      - name: package
+        id: package
+        shell: bash
+        run: |
+          ./mvnw clean package
+
+  mvn-package:
+    name: 'maven package'
     runs-on: ubuntu-latest
     needs:
       - names
@@ -308,7 +342,7 @@ jobs:
         id: package
         shell: bash
         run: |
-          ./mvnw clean package
+          ./mvnw clean package -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }}
           echo "SELF_DESTRUCT_HANDLER_SOURCE=target/self-destruct-lambda.jar" >> $GITHUB_OUTPUT
 
       - name: Upload self-destruct handler JAR
@@ -425,107 +459,107 @@ jobs:
           path: docker-image/image.tar
           if-no-files-found: error
 
-  build-cdk:
-    name: 'build cdk'
-    if: ${{ !contains(github.event.inputs.skipDeploy, 'true') }}
-    needs:
-      - names
-      - mvn-package
-    runs-on: ubuntu-24.04
-    permissions:
-      contents: read
-      id-token: write
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v5
-
-      - name: Setup Node
-        uses: actions/setup-node@v5
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Node dependencies
-        run: npm ci
-
-      - uses: actions/setup-java@v5
-        with:
-          distribution: 'temurin'
-          java-version: ${{ env.JAVA_VERSION }}
-          cache: 'maven'
-
-      - name: Download self-destruct handler JAR
-        uses: actions/download-artifact@v5
-        with:
-          name: self-destruct-handler-${{ github.sha }}
-          path: target/
-
-      - run: find . -type f -iname ".*" -ls
-
-      - run: find . -type f -ls
-
-      - run: find /home/runner/work/submit.diyaccounting.co.uk/submit.diyaccounting.co.uk/cdk-application -type f -iname ".*" -ls
-
-      - run: find /home/runner/work/submit.diyaccounting.co.uk/submit.diyaccounting.co.uk/cdk-application -type f -ls
-
-      - run: cat /home/runner/work/submit.diyaccounting.co.uk/submit.diyaccounting.co.uk/cdk-application/cdk.json
-
-      - name: Build CDK and synthesize all stacks in the Application Stack
-        run: |
-          ./mvnw --errors clean package -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
-            && cd cdk-application \
-            && cat ../.env.${{ needs.names.outputs.environment-name }} \
-            && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
-              npx cdk synth \
-                --strict \
-                --validation \
-                --version-reporting=false \
-                --path-metadata=false \
-                --asset-metadata=false \
-                --exclusively \
-                  ${{ needs.names.outputs.deployment-name }}-ObservabilityStack \
-                  ${{ needs.names.outputs.deployment-name }}-DevStack \
-                  ${{ needs.names.outputs.deployment-name }}-IdentityStack \
-                  ${{ needs.names.outputs.deployment-name }}-AuthStack \
-                  ${{ needs.names.outputs.deployment-name }}-ApplicationStack \
-            ; cd .. \
-            ;
-        # ${{ needs.names.outputs.deployment-name }}-SelfDestructStack \
-        # ${{ needs.names.outputs.deployment-name }}-EdgeStack \
-        # ${{ needs.names.outputs.deployment-name }}-PublishStack \
-        # ${{ needs.names.outputs.deployment-name }}-OpsStack \
-        env:
-          ENV_NAME: ${{ needs.names.outputs.environment-name }}
-          DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
-          SELF_DESTRUCT_DELAY_HOURS: ${{ inputs.selfDestructDelayHours || '1' }}
-          SELF_DESTRUCT_HANDLER_SOURCE: "../${{ needs.mvn-package.outputs.self-destruct-handler-source }}"
-          BASE_IMAGE_TAG: ${{ github.sha }}
-          #BASE_IMAGE_TAG: "${{ env.BASE_IMAGE_TAG_PREFIX }}:${{ github.sha }}"
-          GITHUB_ACTOR: ${{ github.actor }}
-          CERTIFICATE_ARN: ${{ vars.AWS_CERTIFICATE_ARN }}
-          CLOUD_TRAIL_ENABLED: ${{ vars.AWS_CLOUD_TRAIL_ENABLED }}
-          X_RAY_ENABLED: ${{ vars.AWS_X_RAY_ENABLED }}
-          VERBOSE_LOGGING: ${{ vars.AWS_VERBOSE_LOGGING }}
-          HOSTED_ZONE_ID: ${{ vars.AWS_HOSTED_ZONE_ID }}
-          HOSTED_ZONE_NAME: ${{ vars.AWS_HOSTED_ZONE_NAME }}
-          COMMIT_HASH: ${{ github.sha }}
-          DIY_SUBMIT_GOOGLE_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ needs.names.outputs.environment-name }}/submit/google/client_secret"
-          AUTH_CERTIFICATE_ARN: 'arn:aws:acm:us-east-1:887764105431:certificate/59a025f9-3620-43cd-9b2c-522f385ee223'
-
-      - name: Upload CDK synthesis artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: cdk-synthesis
-          path: cdk-submit-application.out
-          retention-days: 1
+#  build-cdk:
+#    name: 'build cdk'
+#    if: ${{ !contains(github.event.inputs.skipDeploy, 'true') }}
+#    needs:
+#      - names
+#      - mvn-package
+#    runs-on: ubuntu-24.04
+#    permissions:
+#      contents: read
+#      id-token: write
+#    steps:
+#      - name: Checkout
+#        uses: actions/checkout@v5
+#
+#      - name: Setup Node
+#        uses: actions/setup-node@v5
+#        with:
+#          node-version: ${{ env.NODE_VERSION }}
+#          cache: 'npm'
+#
+#      - name: Node dependencies
+#        run: npm ci
+#
+#      - uses: actions/setup-java@v5
+#        with:
+#          distribution: 'temurin'
+#          java-version: ${{ env.JAVA_VERSION }}
+#          cache: 'maven'
+#
+#      - name: Download self-destruct handler JAR
+#        uses: actions/download-artifact@v5
+#        with:
+#          name: self-destruct-handler-${{ github.sha }}
+#          path: target/
+#
+#      - run: find . -type f -iname ".*" -ls
+#
+#      - run: find . -type f -ls
+#
+#      - run: find /home/runner/work/submit.diyaccounting.co.uk/submit.diyaccounting.co.uk/cdk-application -type f -iname ".*" -ls
+#
+#      - run: find /home/runner/work/submit.diyaccounting.co.uk/submit.diyaccounting.co.uk/cdk-application -type f -ls
+#
+#      - run: cat /home/runner/work/submit.diyaccounting.co.uk/submit.diyaccounting.co.uk/cdk-application/cdk.json
+#
+#      - name: Build CDK and synthesize all stacks in the Application Stack
+#        run: |
+#          ./mvnw --errors clean package -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
+#            && cd cdk-application \
+#            && cat ../.env.${{ needs.names.outputs.environment-name }} \
+#            && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
+#              npx cdk synth \
+#                --strict \
+#                --validation \
+#                --version-reporting=false \
+#                --path-metadata=false \
+#                --asset-metadata=false \
+#                --exclusively \
+#                  ${{ needs.names.outputs.deployment-name }}-ObservabilityStack \
+#                  ${{ needs.names.outputs.deployment-name }}-DevStack \
+#                  ${{ needs.names.outputs.deployment-name }}-IdentityStack \
+#                  ${{ needs.names.outputs.deployment-name }}-AuthStack \
+#                  ${{ needs.names.outputs.deployment-name }}-ApplicationStack \
+#            ; cd .. \
+#            ;
+#        # ${{ needs.names.outputs.deployment-name }}-SelfDestructStack \
+#        # ${{ needs.names.outputs.deployment-name }}-EdgeStack \
+#        # ${{ needs.names.outputs.deployment-name }}-PublishStack \
+#        # ${{ needs.names.outputs.deployment-name }}-OpsStack \
+#        env:
+#          ENV_NAME: ${{ needs.names.outputs.environment-name }}
+#          DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
+#          SELF_DESTRUCT_DELAY_HOURS: ${{ inputs.selfDestructDelayHours || '1' }}
+#          SELF_DESTRUCT_HANDLER_SOURCE: "../${{ needs.mvn-package.outputs.self-destruct-handler-source }}"
+#          BASE_IMAGE_TAG: ${{ github.sha }}
+#          #BASE_IMAGE_TAG: "${{ env.BASE_IMAGE_TAG_PREFIX }}:${{ github.sha }}"
+#          GITHUB_ACTOR: ${{ github.actor }}
+#          CERTIFICATE_ARN: ${{ vars.AWS_CERTIFICATE_ARN }}
+#          CLOUD_TRAIL_ENABLED: ${{ vars.AWS_CLOUD_TRAIL_ENABLED }}
+#          X_RAY_ENABLED: ${{ vars.AWS_X_RAY_ENABLED }}
+#          VERBOSE_LOGGING: ${{ vars.AWS_VERBOSE_LOGGING }}
+#          HOSTED_ZONE_ID: ${{ vars.AWS_HOSTED_ZONE_ID }}
+#          HOSTED_ZONE_NAME: ${{ vars.AWS_HOSTED_ZONE_NAME }}
+#          COMMIT_HASH: ${{ github.sha }}
+#          DIY_SUBMIT_GOOGLE_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ needs.names.outputs.environment-name }}/submit/google/client_secret"
+#          AUTH_CERTIFICATE_ARN: 'arn:aws:acm:us-east-1:887764105431:certificate/59a025f9-3620-43cd-9b2c-522f385ee223'
+#
+#      - name: Upload CDK synthesis artifacts
+#        uses: actions/upload-artifact@v4
+#        with:
+#          name: cdk-synthesis
+#          path: cdk-submit-application.out
+#          retention-days: 1
 
   deploy-observability:
     name: 'deploy observability'
     if: ${{ !contains(github.event.inputs.skipDeploy, 'true') }}
     needs:
       - names
-      - npm-test
-      - build-cdk
+      - mvn-package
+    #  - build-cdk
     runs-on: ubuntu-24.04
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
     steps:
@@ -547,11 +581,11 @@ jobs:
           java-version: ${{ env.JAVA_VERSION }}
           cache: 'maven'
 
-      - name: Download CDK synthesis artifacts
-        uses: actions/download-artifact@v5
-        with:
-          name: cdk-synthesis
-          path: cdk-submit-application.out/
+#      - name: Download CDK synthesis artifacts
+#        uses: actions/download-artifact@v5
+#        with:
+#          name: cdk-synthesis
+#          path: cdk-submit-application.out/
 
       - name: Configure AWS role via GitHub OIDC
         uses: aws-actions/configure-aws-credentials@v5
@@ -581,13 +615,14 @@ jobs:
       #  env:
       #    CDK_NEW_BOOTSTRAP: '1'
 
+      # --app ../cdk-submit-application.out/ \
       - name: Deploy Observability Stack (CDK)
         run: |
-          cd cdk-application \
+          ./mvnw --errors clean package -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
+            && cd cdk-application \
             && cat ../.env.${{ needs.names.outputs.environment-name }} \
             && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
               npx cdk deploy \
-                --app ../cdk-submit-application.out/ \
                 ${{ needs.names.outputs.deployment-name }}-ObservabilityStack \
                 --require-approval never \
                 --ci true \
@@ -597,10 +632,10 @@ jobs:
           ; cd .. \
           ;
         env:
-          GITHUB_ACTOR: ${{ github.actor }}
           ENV_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
-
+          SELF_DESTRUCT_HANDLER_SOURCE: "../${{ needs.mvn-package.outputs.self-destruct-handler-source }}"
+          DIY_SUBMIT_GOOGLE_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ needs.names.outputs.environment-name }}/submit/google/client_secret"
 
 #  deploy-self-destruct:
 #    name: 'deploy self-destruct'
@@ -690,8 +725,8 @@ jobs:
     if: ${{ !contains(github.event.inputs.skipDeploy, 'true') }}
     needs:
       - names
-      - npm-test
-      - build-cdk
+      - mvn-package
+      #- build-cdk
     runs-on: ubuntu-24.04
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
     steps:
@@ -713,11 +748,11 @@ jobs:
           java-version: ${{ env.JAVA_VERSION }}
           cache: 'maven'
 
-      - name: Download CDK synthesis artifacts
-        uses: actions/download-artifact@v5
-        with:
-          name: cdk-synthesis
-          path: cdk-submit-application.out/
+#      - name: Download CDK synthesis artifacts
+#        uses: actions/download-artifact@v5
+#        with:
+#          name: cdk-synthesis
+#          path: cdk-submit-application.out/
 
       - name: Configure AWS role via GitHub OIDC
         uses: aws-actions/configure-aws-credentials@v5
@@ -741,13 +776,14 @@ jobs:
           output-credentials: true
           retry-max-attempts: 3
 
+      #                 --app ../cdk-submit-application.out/ \
       - name: Deploy Dev Stack (CDK)
         run: |
-          cd cdk-application \
+          ./mvnw --errors clean package -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
+            && cd cdk-application \
             && cat ../.env.${{ needs.names.outputs.environment-name }} \
             && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
               npx cdk deploy \
-                --app ../cdk-submit-application.out/ \
                 ${{ needs.names.outputs.deployment-name }}-DevStack \
                 --require-approval never \
                 --ci true \
@@ -757,9 +793,10 @@ jobs:
             ; cd .. \
           ;
         env:
-          GITHUB_ACTOR: ${{ github.actor }}
           ENV_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
+          SELF_DESTRUCT_HANDLER_SOURCE: "../${{ needs.mvn-package.outputs.self-destruct-handler-source }}"
+          DIY_SUBMIT_GOOGLE_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ needs.names.outputs.environment-name }}/submit/google/client_secret"
 
       - name: Resolve stack outputs
         id: dev-outputs
@@ -777,8 +814,9 @@ jobs:
     needs:
       - names
       - npm-test
-      - build-cdk
-      - deploy-dev
+      - mvn-package
+      #- build-cdk
+      #- deploy-dev
       - push-images
     runs-on: ubuntu-24.04
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
@@ -801,11 +839,11 @@ jobs:
           java-version: ${{ env.JAVA_VERSION }}
           cache: 'maven'
 
-      - name: Download CDK synthesis artifacts
-        uses: actions/download-artifact@v5
-        with:
-          name: cdk-synthesis
-          path: cdk-submit-application.out/
+#      - name: Download CDK synthesis artifacts
+#        uses: actions/download-artifact@v5
+#        with:
+#          name: cdk-synthesis
+#          path: cdk-submit-application.out/
 
       - name: Configure AWS role via GitHub OIDC
         uses: aws-actions/configure-aws-credentials@v5
@@ -831,7 +869,8 @@ jobs:
 
       - name: Deploy Identity stack (CDK)
         run: |
-          cd cdk-application \
+          ./mvnw --errors clean package -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
+            && cd cdk-application \
             && cat ../.env.${{ needs.names.outputs.environment-name }} \
             && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
               npx cdk deploy \
@@ -848,23 +887,15 @@ jobs:
         env:
           ENV_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
-          BASE_IMAGE_TAG: ${{ github.sha }}
-          #BASE_IMAGE_TAG: "${{ env.BASE_IMAGE_TAG_PREFIX }}:${{ github.sha }}"
-          GITHUB_ACTOR: ${{ github.actor }}
-          CLOUD_TRAIL_ENABLED: ${{ vars.AWS_CLOUD_TRAIL_ENABLED }}
-          X_RAY_ENABLED: ${{ vars.AWS_X_RAY_ENABLED }}
-          VERBOSE_LOGGING: ${{ vars.AWS_VERBOSE_LOGGING }}
-          HOSTED_ZONE_ID: ${{ vars.AWS_HOSTED_ZONE_ID }}
-          HOSTED_ZONE_NAME: ${{ vars.AWS_HOSTED_ZONE_NAME }}
+          SELF_DESTRUCT_HANDLER_SOURCE: "../${{ needs.mvn-package.outputs.self-destruct-handler-source }}"
           DIY_SUBMIT_GOOGLE_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ needs.names.outputs.environment-name }}/submit/google/client_secret"
-          AUTH_CERTIFICATE_ARN: 'arn:aws:acm:us-east-1:887764105431:certificate/59a025f9-3620-43cd-9b2c-522f385ee223'
 
   push-images:
     name: 'build and push images'
     if: ${{ !contains(github.event.inputs.skipDeploy, 'true') }}
     needs:
       - names
-      - build-cdk
+      #- build-cdk
       - deploy-dev
       - docker-build
     runs-on: ubuntu-24.04
@@ -935,7 +966,8 @@ jobs:
     needs:
       - names
       - npm-test
-      - build-cdk
+      - mvn-package
+      #- build-cdk
       - deploy-dev
       - push-images
       - deploy-identity
@@ -961,11 +993,11 @@ jobs:
           java-version: ${{ env.JAVA_VERSION }}
           cache: 'maven'
 
-      - name: Download CDK synthesis artifacts
-        uses: actions/download-artifact@v5
-        with:
-          name: cdk-synthesis
-          path: cdk-submit-application.out/
+#      - name: Download CDK synthesis artifacts
+#        uses: actions/download-artifact@v5
+#        with:
+#          name: cdk-synthesis
+#          path: cdk-submit-application.out/
 
       - name: Configure AWS role via GitHub OIDC
         uses: aws-actions/configure-aws-credentials@v5
@@ -989,13 +1021,14 @@ jobs:
           output-credentials: true
           retry-max-attempts: 3
 
+        #                 --app ../cdk-submit-application.out/ \
       - name: Deploy Auth stack (CDK)
         run: |
-          cd cdk-application \
+          ./mvnw --errors clean package -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
+            && cd cdk-application \
             && cat ../.env.${{ needs.names.outputs.environment-name }} \
             && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
               npx cdk deploy \
-                --app ../cdk-submit-application.out/ \
                 ${{ needs.names.outputs.deployment-name }}-AuthStack \
                 --exclusively \
                 --require-approval never \
@@ -1008,15 +1041,9 @@ jobs:
         env:
           ENV_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
-          BASE_IMAGE_TAG: ${{ needs.push-images.outputs.base-image-tag }}
-          GITHUB_ACTOR: ${{ github.actor }}
-          CLOUD_TRAIL_ENABLED: ${{ vars.AWS_CLOUD_TRAIL_ENABLED }}
-          X_RAY_ENABLED: ${{ vars.AWS_X_RAY_ENABLED }}
-          VERBOSE_LOGGING: ${{ vars.AWS_VERBOSE_LOGGING }}
-          HOSTED_ZONE_ID: ${{ vars.AWS_HOSTED_ZONE_ID }}
-          HOSTED_ZONE_NAME: ${{ vars.AWS_HOSTED_ZONE_NAME }}
-          DIY_SUBMIT_HMRC_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ needs.names.outputs.environment-name }}/submit/hmrc/client_secret"
+          SELF_DESTRUCT_HANDLER_SOURCE: "../${{ needs.mvn-package.outputs.self-destruct-handler-source }}"
           DIY_SUBMIT_GOOGLE_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ needs.names.outputs.environment-name }}/submit/google/client_secret"
+          DIY_SUBMIT_HMRC_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ needs.names.outputs.environment-name }}/submit/hmrc/client_secret"
 
       - run: cat cdk-submit-application.out/cdk-outputs-auth.json | jq '.'
 
@@ -1065,7 +1092,8 @@ jobs:
     needs:
       - names
       - npm-test
-      - build-cdk
+      - mvn-package
+      #- build-cdk
       - deploy-dev
       - docker-build
       - push-images
@@ -1092,11 +1120,11 @@ jobs:
           java-version: ${{ env.JAVA_VERSION }}
           cache: 'maven'
 
-      - name: Download CDK synthesis artifacts
-        uses: actions/download-artifact@v5
-        with:
-          name: cdk-synthesis
-          path: cdk-submit-application.out/
+#      - name: Download CDK synthesis artifacts
+#        uses: actions/download-artifact@v5
+#        with:
+#          name: cdk-synthesis
+#          path: cdk-submit-application.out/
 
       - name: Configure AWS role via GitHub OIDC
         uses: aws-actions/configure-aws-credentials@v5
@@ -1120,13 +1148,14 @@ jobs:
           output-credentials: true
           retry-max-attempts: 3
 
+      # --app ../cdk-submit-application.out/ \
       - name: Deploy Application stack (CDK)
         run: |
-          cd cdk-application \
+          ./mvnw --errors clean package -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
+            && cd cdk-application \
             && cat ../.env.${{ needs.names.outputs.environment-name }} \
             && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
               npx cdk deploy \
-                --app ../cdk-submit-application.out/ \
                 ${{ needs.names.outputs.deployment-name }}-ApplicationStack \
                 --exclusively \
                 --require-approval never \
@@ -1139,15 +1168,10 @@ jobs:
         env:
           ENV_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
-          BASE_IMAGE_TAG: ${{ needs.push-images.outputs.base-image-tag }}
-          GITHUB_ACTOR: ${{ github.actor }}
-          CLOUD_TRAIL_ENABLED: ${{ vars.AWS_CLOUD_TRAIL_ENABLED }}
-          X_RAY_ENABLED: ${{ vars.AWS_X_RAY_ENABLED }}
-          VERBOSE_LOGGING: ${{ vars.AWS_VERBOSE_LOGGING }}
-          HOSTED_ZONE_ID: ${{ vars.AWS_HOSTED_ZONE_ID }}
-          HOSTED_ZONE_NAME: ${{ vars.AWS_HOSTED_ZONE_NAME }}
-          DIY_SUBMIT_HMRC_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ needs.names.outputs.environment-name }}/submit/hmrc/client_secret"
+          SELF_DESTRUCT_HANDLER_SOURCE: "../${{ needs.mvn-package.outputs.self-destruct-handler-source }}"
           DIY_SUBMIT_GOOGLE_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ needs.names.outputs.environment-name }}/submit/google/client_secret"
+          DIY_SUBMIT_HMRC_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ needs.names.outputs.environment-name }}/submit/hmrc/client_secret"
+          BASE_IMAGE_TAG: ${{ needs.push-images.outputs.base-image-tag }}
 
       - run: cat cdk-submit-application.out/cdk-outputs-application.json | jq '.'
 
@@ -1238,7 +1262,8 @@ jobs:
     needs:
       - names
       - npm-test
-      - build-cdk
+      - mvn-package
+      #- build-cdk
       - deploy-auth
       - deploy-application
     runs-on: ubuntu-24.04
@@ -1315,6 +1340,7 @@ jobs:
         env:
           ENV_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
+          SELF_DESTRUCT_HANDLER_SOURCE: "../${{ needs.mvn-package.outputs.self-destruct-handler-source }}"
           DOMAIN_NAME: ${{ needs.names.outputs.deployment-name == 'prod' && 'submit.diyaccounting.co.uk' || format('{0}.submit.diyaccounting.co.uk', needs.names.outputs.deployment-name) }}
           DIY_SUBMIT_HOME_URL: ${{ needs.names.outputs.deployment-name == 'prod' && 'https://submit.diyaccounting.co.uk/' || format('https://{0}.submit.diyaccounting.co.uk/', needs.names.outputs.deployment-name) }}
           HOSTED_ZONE_NAME: ${{ vars.AWS_HOSTED_ZONE_NAME }}
@@ -1371,7 +1397,8 @@ jobs:
     needs:
       - names
       - npm-test
-      - build-cdk
+      #- build-cdk
+      - mvn-package
       - deploy-edge
     runs-on: ubuntu-24.04
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
@@ -1435,6 +1462,12 @@ jobs:
         env:
           ENV_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
+          SELF_DESTRUCT_HANDLER_SOURCE: "../${{ needs.mvn-package.outputs.self-destruct-handler-source }}"
+          DOMAIN_NAME: ${{ needs.names.outputs.deployment-name == 'prod' && 'submit.diyaccounting.co.uk' || format('{0}.submit.diyaccounting.co.uk', needs.names.outputs.deployment-name) }}
+          DIY_SUBMIT_HOME_URL: ${{ needs.names.outputs.deployment-name == 'prod' && 'https://submit.diyaccounting.co.uk/' || format('https://{0}.submit.diyaccounting.co.uk/', needs.names.outputs.deployment-name) }}
+          HOSTED_ZONE_NAME: ${{ vars.AWS_HOSTED_ZONE_NAME }}
+          HOSTED_ZONE_ID: ${{ vars.AWS_HOSTED_ZONE_ID }}
+          CERTIFICATE_ARN: ${{ vars.AWS_CERTIFICATE_ARN }}
 
 #  deploy-ops:
 #    name: 'deploy ops'
@@ -1585,7 +1618,7 @@ jobs:
     name: 'web test'
     needs:
       - names
-      - build-cdk
+      #- build-cdk
       - deploy-application
       - deploy-edge
       - deploy-publish
