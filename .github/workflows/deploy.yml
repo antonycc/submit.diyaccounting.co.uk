@@ -70,6 +70,7 @@ env:
   ACTIONS_ROLE_ARN: 'arn:aws:iam::887764105431:role/submit-github-actions-role'
   DEPLOY_ROLE_ARN:  'arn:aws:iam::887764105431:role/submit-deployment-role'
   AWS_REGION: 'eu-west-2'
+  AWS_ACCOUNT_ID: '887764105431'
   BASE_IMAGE_TAG_PREFIX: 'submit-base'
   skipDeploy: ${{ inputs.skipDeploy || 'false' }}
   deploymentName: ${{ inputs.deploymentName || '' }}
@@ -712,21 +713,8 @@ jobs:
           SELF_DESTRUCT_HANDLER_SOURCE: "../${{ needs.mvn-package.outputs.self-destruct-handler-source }}"
           DIY_SUBMIT_GOOGLE_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ needs.names.outputs.environment-name }}/submit/google/client_secret"
 
-      - name: Resolve stack outputs
-        if: ${{ env.FORCE_STATIC_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
-        id: dev-outputs
-        shell: bash
-        run: |
-          STACK_NAME="${{ needs.names.outputs.deployment-name }}-DevStack"
-          if [ -f cdk-submit-application.out/cdk-outputs-dev.json ]; then
-            ECR_REPOSITORY_URI=$(jq -r '."${{ needs.names.outputs.deployment-name }}-DevStack".EcrRepositoryUri' cdk-submit-application.out/cdk-outputs-dev.json)
-          else
-            ECR_REPOSITORY_URI=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" | jq -r '.Stacks[0].Outputs[] | select(.OutputKey=="EcrRepositoryUri") | .OutputValue')
-          fi
-          echo "ECR_REPOSITORY_URI=$ECR_REPOSITORY_URI"
-          echo "ECR_REPOSITORY_URI=$ECR_REPOSITORY_URI" >> $GITHUB_OUTPUT
     outputs:
-      ecr-repository-uri: ${{ steps.dev-outputs.outputs.ECR_REPOSITORY_URI }}
+      ecr-repository-uri: ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ needs.names.outputs.deployment-name }}-submit-diyaccounting-co-uk-ecr
 
   deploy-identity:
     name: 'deploy identity'
@@ -819,7 +807,7 @@ jobs:
           DIY_SUBMIT_GOOGLE_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ needs.names.outputs.environment-name }}/submit/google/client_secret"
 
   push-images:
-    name: 'build and push images'
+    name: 'push images'
     if: ${{ !contains(github.event.inputs.skipDeploy, 'true') }}
     needs:
       - names
@@ -1636,7 +1624,7 @@ jobs:
     runs-on: ubuntu-24.04
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      url: ${{ steps.deployment.outputs.page_url }}artifacts
     permissions:
       contents: read
       pages: write
@@ -1665,14 +1653,29 @@ jobs:
           mkdir -p gh-pages
 
           # Copy web assets to root
-          cp -r web/* gh-pages/
+          cp -vr web/* gh-pages/
 
           # Create artifacts directory structure
           mkdir -p gh-pages/artifacts
 
-          # Copy test artifacts
+          # Copy web test artifacts
           if [ -d "artifacts/web-test-artifacts" ]; then
-            cp -r artifacts/web-test-artifacts gh-pages/artifacts/web-test/
+            cp -vr artifacts/web-test-artifacts gh-pages/artifacts/.
+          fi
+
+          # Copy web test reports
+          if [ -d "artifacts/web-test-reports" ]; then
+            cp -vr artifacts/web-test-reports gh-pages/artifacts/.
+          fi
+
+          # Copy browser test artifacts
+          if [ -d "artifacts/test-results-browser" ]; then
+            cp -vr artifacts/test-results-browser gh-pages/artifacts/.
+          fi
+
+          # Copy browser test reports
+          if [ -d "artifacts/test-reports-browser" ]; then
+            cp -vr artifacts/test-reports-browser gh-pages/artifacts/.
           fi
 
           # Create index page for artifacts
@@ -1686,12 +1689,16 @@ jobs:
           <body>
               <div class="container">
                   <h1>Test Artifacts</h1>
-                  <p>Generated from deployment: <strong>${{ needs.names.outputs.deployment-name }}</strong></p>
-                  <p>Service Base URL: <a href="${{ needs.test-parameters.outputs.base-url }}" target="_blank">${{ needs.test-parameters.outputs.base-url }}</a></p>
+                  <p>Generated from to deployment: <strong>${{ needs.names.outputs.deployment-name }}</strong></p>
+                  <p>GitHub Actions run: <a href="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" target="_blank">${{ github.run_id }}</a></p>
+                  <p>Tested service base URL: <a href="${{ needs.test-parameters.outputs.base-url }}" target="_blank">${{ needs.test-parameters.outputs.base-url }}</a></p>
 
-                  <h2>Available Artifacts</h2>
+                  <h2>Available Test output</h2>
                   <ul>
-                      <li><a href="web-test/">Web Test Results</a></li>
+                      <li><a href="web-test-artifacts/">Web Test Artifacts</a></li>
+                      <li><a href="web-test-reports/">Web Test Reports</a></li>
+                      <li><a href="test-results-browser/">Browser Test Artifacts</a></li>
+                      <li><a href="test-reports-browser/">Browser Test Reports</a></li>
                   </ul>
               </div>
           </body>
@@ -1713,8 +1720,8 @@ jobs:
       - name: Output deployment URLs
         run: |
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "🚀 **Service Base URL**: ${{ needs.test-parameters.outputs.base-url }}" >> $GITHUB_STEP_SUMMARY
-          #echo "📊 **Load Test Report**: ${{ steps.deployment.outputs.page_url }}artifacts/load-test/load-test-report.html" >> $GITHUB_STEP_SUMMARY
+          echo "🚀 **Tested service base URL**: ${{ needs.test-parameters.outputs.base-url }}" >> $GITHUB_STEP_SUMMARY
+          #echo "📊 **Test Reports**: ${{ steps.deployment.outputs.page_url }}artifacts" >> $GITHUB_STEP_SUMMARY
           echo "📁 **GitHub Pages**: ${{ steps.deployment.outputs.page_url }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 

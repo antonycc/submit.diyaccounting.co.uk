@@ -1,5 +1,17 @@
 package co.uk.diyaccounting.submit;
 
+import co.uk.diyaccounting.submit.stacks.EdgeStack;
+import co.uk.diyaccounting.submit.stacks.PublishStack;
+import co.uk.diyaccounting.submit.stacks.SelfDestructStack;
+import software.amazon.awscdk.App;
+import software.amazon.awscdk.Environment;
+import software.constructs.Construct;
+
+import java.io.File;
+import java.lang.reflect.Field;
+import java.nio.file.Paths;
+import java.util.Map;
+
 import static co.uk.diyaccounting.submit.awssdk.KindCdk.getContextValueString;
 import static co.uk.diyaccounting.submit.utils.Kind.envOr;
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
@@ -7,17 +19,6 @@ import static co.uk.diyaccounting.submit.utils.Kind.putIfNotNull;
 import static co.uk.diyaccounting.submit.utils.Kind.warnf;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateCompressedResourceNamePrefix;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateResourceNamePrefix;
-
-import co.uk.diyaccounting.submit.stacks.EdgeStack;
-import co.uk.diyaccounting.submit.stacks.PublishStack;
-import co.uk.diyaccounting.submit.stacks.SelfDestructStack;
-import java.io.File;
-import java.lang.reflect.Field;
-import java.nio.file.Paths;
-import java.util.Map;
-import software.amazon.awscdk.App;
-import software.amazon.awscdk.Environment;
-import software.constructs.Construct;
 
 public class SubmitDelivery {
 
@@ -117,50 +118,6 @@ public class SubmitDelivery {
         var domainName = envOr("DOMAIN_NAME", appProps.domainName, "(from domainName in cdk.json)");
         var baseUrl = envOr("DIY_SUBMIT_HOME_URL", appProps.baseUrl, "(from baseUrl in cdk.json)");
         var docRootPath = envOr("DOC_ROOT_PATH", appProps.docRootPath, "(from docRootPath in cdk.json)");
-        var authUrlMockLambdaFunctionArn = envOr(
-                "DIY_SUBMIT_AUTH_URL_MOCK_LAMBDA_ARN",
-                appProps.authUrlMockLambdaFunctionArn,
-                "(from authUrlMockLambdaFunctionArn in cdk.json)");
-        var authUrlCognitoLambdaFunctionArn = envOr(
-                "DIY_SUBMIT_AUTH_URL_COGNITO_LAMBDA_ARN",
-                appProps.authUrlCognitoLambdaFunctionArn,
-                "(from authUrlCognitoLambdaFunctionArn in cdk.json)");
-        var exchangeCognitoTokenLambdaFunctionArn = envOr(
-                "DIY_SUBMIT_COGNITO_EXCHANGE_TOKEN_LAMBDA_ARN",
-                appProps.exchangeCognitoTokenLambdaFunctionArn,
-                "(from exchangeCognitoTokenLambdaFunctionArn in cdk.json)");
-        var authUrlHmrcLambdaFunctionArn = envOr(
-                "DIY_SUBMIT_AUTH_URL_HMRC_LAMBDA_ARN",
-                appProps.authUrlHmrcLambdaFunctionArn,
-                "(from authUrlHmrcLambdaFunctionArn in cdk.json)");
-        var exchangeHmrcTokenLambdaFunctionArn = envOr(
-                "DIY_SUBMIT_EXCHANGE_HMRC_TOKEN_LAMBDA_ARN",
-                appProps.exchangeHmrcTokenLambdaFunctionArn,
-                "(from exchangeHmrcTokenLambdaFunctionArn in cdk.json)");
-        var submitVatLambdaFunctionArn = envOr(
-                "DIY_SUBMIT_SUBMIT_VAT_LAMBDA_ARN",
-                appProps.submitVatLambdaFunctionArn,
-                "(from submitVatLambdaFunctionArn in cdk.json)");
-        var logReceiptLambdaFunctionArn = envOr(
-                "DIY_SUBMIT_LOG_RECEIPT_LAMBDA_ARN",
-                appProps.logReceiptLambdaFunctionArn,
-                "(from logReceiptLambdaFunctionArn in cdk.json)");
-        var catalogLambdaFunctionArn = envOr(
-                "DIY_SUBMIT_CATALOG_LAMBDA_ARN",
-                appProps.catalogLambdaFunctionArn,
-                "(from catalogLambdaFunctionArn in cdk.json)");
-        var requestBundlesLambdaFunctionArn = envOr(
-                "DIY_SUBMIT_REQUEST_BUNDLES_LAMBDA_ARN",
-                appProps.requestBundlesLambdaFunctionArn,
-                "(from requestBundlesLambdaFunctionArn in cdk.json)");
-        var myBundlesLambdaFunctionArn = envOr(
-                "DIY_SUBMIT_MY_BUNDLES_LAMBDA_ARN",
-                appProps.myBundlesLambdaFunctionArn,
-                "(from myBundlesLambdaFunctionArn in cdk.json)");
-        var myReceiptsLambdaFunctionArn = envOr(
-                "DIY_SUBMIT_MY_RECEIPTS_LAMBDA_ARN",
-                appProps.myReceiptsLambdaFunctionArn,
-                "(from myReceiptsLambdaFunctionArn in cdk.json)");
 
         // Function URL environment variables for EdgeStack
         var authUrlMockLambdaFunctionUrl = envOr(
