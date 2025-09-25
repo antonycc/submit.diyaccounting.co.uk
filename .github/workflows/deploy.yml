@@ -713,9 +713,6 @@ jobs:
           SELF_DESTRUCT_HANDLER_SOURCE: "../${{ needs.mvn-package.outputs.self-destruct-handler-source }}"
           DIY_SUBMIT_GOOGLE_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ needs.names.outputs.environment-name }}/submit/google/client_secret"
 
-    outputs:
-      ecr-repository-uri: ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ needs.names.outputs.deployment-name }}-submit-diyaccounting-co-uk-ecr
-
   deploy-identity:
     name: 'deploy identity'
     if: ${{ !contains(github.event.inputs.skipDeploy, 'true') }}
@@ -843,13 +840,19 @@ jobs:
         shell: bash
         run: |
           aws ecr get-login-password --region ${{ env.AWS_REGION }} \
-            | docker login --username AWS --password-stdin ${{ needs.deploy-dev.outputs.ecr-repository-uri }}
+            | docker login \
+                --username AWS \
+                --password-stdin "${ECR_REPOSITORY_BASE_URL?}/${ECR_REPOSITORY_NAME?}" \
+            ;
+        env:
+          ECR_REPOSITORY_BASE_URL: ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com
+          ECR_REPOSITORY_NAME: ${{ needs.names.outputs.deployment-name }}-submit-diyaccounting-co-uk-ecr
 
       - name: Check if image already exists in ECR
         id: image-exists
         shell: bash
         run: |
-          REPO_URI="${{ needs.deploy-dev.outputs.ecr-repository-uri }}"
+          REPO_URI="${ECR_REPOSITORY_BASE_URL?}/${ECR_REPOSITORY_NAME?}"
           REPO_NAME="${REPO_URI##*/}"
           echo "Checking if image with tag ${{ github.sha }} exists in $REPO_NAME"
           if aws ecr describe-images --repository-name "$REPO_NAME" --image-ids imageTag="${{ github.sha }}" >/dev/null 2>&1; then
@@ -857,6 +860,9 @@ jobs:
           else
             echo "exists=false" >> "$GITHUB_OUTPUT"
           fi
+        env:
+          ECR_REPOSITORY_BASE_URL: ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com
+          ECR_REPOSITORY_NAME: ${{ needs.names.outputs.deployment-name }}-submit-diyaccounting-co-uk-ecr
 
       - name: Checkout
         if: ${{ steps.image-exists.outputs.exists != 'true' }}
@@ -888,10 +894,13 @@ jobs:
         if: ${{ steps.image-exists.outputs.exists != 'true' }}
         shell: bash
         run: |
-          docker tag "${{ env.BASE_IMAGE_TAG_PREFIX }}:${{ github.sha }}" ${{ needs.deploy-dev.outputs.ecr-repository-uri }}:${{ github.sha }}
-          docker tag "${{ env.BASE_IMAGE_TAG_PREFIX }}:${{ github.sha }}" ${{ needs.deploy-dev.outputs.ecr-repository-uri }}:latest
-          docker push ${{ needs.deploy-dev.outputs.ecr-repository-uri }}:${{ github.sha }}
-          docker push ${{ needs.deploy-dev.outputs.ecr-repository-uri }}:latest
+          docker tag "${{ env.BASE_IMAGE_TAG_PREFIX }}:${{ github.sha }}" "${ECR_REPOSITORY_BASE_URL?}/${ECR_REPOSITORY_NAME?}:${{ github.sha }}"
+          docker tag "${{ env.BASE_IMAGE_TAG_PREFIX }}:${{ github.sha }}" "${ECR_REPOSITORY_BASE_URL?}/${ECR_REPOSITORY_NAME?}:latest"
+          docker push "${ECR_REPOSITORY_BASE_URL?}/${ECR_REPOSITORY_NAME?}:${{ github.sha }}"
+          docker push "${ECR_REPOSITORY_BASE_URL?}/${ECR_REPOSITORY_NAME?}:latest"
+        env:
+          ECR_REPOSITORY_BASE_URL: ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com
+          ECR_REPOSITORY_NAME: ${{ needs.names.outputs.deployment-name }}-submit-diyaccounting-co-uk-ecr
     outputs:
       base-image-tag: ${{ github.sha }}
 
