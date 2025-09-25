@@ -817,7 +817,7 @@ jobs:
       - mvn-package
       #- build-cdk
       #- deploy-dev
-      - push-images
+      #- push-images
     runs-on: ubuntu-24.04
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
     steps:
@@ -867,6 +867,7 @@ jobs:
           output-credentials: true
           retry-max-attempts: 3
 
+      # --app ../cdk-submit-application.out/ \
       - name: Deploy Identity stack (CDK)
         run: |
           ./mvnw --errors clean package -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
@@ -874,7 +875,6 @@ jobs:
             && cat ../.env.${{ needs.names.outputs.environment-name }} \
             && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
               npx cdk deploy \
-                --app ../cdk-submit-application.out/ \
                 ${{ needs.names.outputs.deployment-name }}-IdentityStack \
                 --exclusively \
                 --require-approval never \
