@@ -33,14 +33,14 @@ on:
       - '!gh_pages'
     paths:
       - '.github/workflows/deploy.yml'
-      - 'app/functions'
-      - 'app/lib'
-      - 'infra/main'
+      - 'app/functions/**'
+      - 'app/lib/**'
+      - 'infra/main/**'
       - 'tests/**'
       - 'web/public/**'
       - '.env.ci'
       - '.env.prod'
-      - 'cdk.json'
+      - '../../cdk.json'
       - 'Dockerfile'
       - 'LICENSE'
       - 'package.json'
@@ -206,11 +206,12 @@ jobs:
 
       - run: npm ci || npm install
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-        with:
-          driver-opts: |
-            image=moby/buildkit:latest
+#      - name: Set up Docker Buildx
+#        uses: docker/setup-buildx-action@v3
+#        with:
+#          driver-opts: |
+#            image=moby/buildkit:latest
+
       - run: npm run test:system
 
   npm-test-web-unit:
@@ -261,7 +262,7 @@ jobs:
           key: ${{ runner.os }}-playwright-${{ hashFiles('**/package-lock.json') }}
 
       - run: npx playwright install chromium --with-deps
-      
+
       - run: npm run test:browser
 
       - name: Upload test results
@@ -280,7 +281,7 @@ jobs:
           path: target/test-reports/
           retention-days: 30
 
-  mvn-test:
+  mvn-package:
     name: 'maven test'
     runs-on: ubuntu-latest
     needs:
@@ -297,19 +298,18 @@ jobs:
           java-version: ${{ env.JAVA_VERSION }}
           cache: 'maven'
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-        with:
-          driver-opts: |
-            image=moby/buildkit:latest
+#      - name: Set up Docker Buildx
+#        uses: docker/setup-buildx-action@v3
+#        with:
+#          driver-opts: |
+#            image=moby/buildkit:latest
 
       - name: package
         id: package
         shell: bash
         run: |
           ./mvnw clean package
-          ## Set the self-destruct handler JAR path as output
-          echo "self-destruct-handler-source=target/self-destruct-lambda.jar" >> $GITHUB_OUTPUT
+          echo "SELF_DESTRUCT_HANDLER_SOURCE=target/self-destruct-lambda.jar" >> $GITHUB_OUTPUT
 
       - name: Upload self-destruct handler JAR
         uses: actions/upload-artifact@v4
@@ -318,7 +318,7 @@ jobs:
           path: target/self-destruct-lambda.jar
           retention-days: 1
     outputs:
-      self-destruct-handler-source: ${{ steps.package.outputs.self-destruct-handler-source }}
+      self-destruct-handler-source: ${{ steps.package.outputs.SELF_DESTRUCT_HANDLER_SOURCE }}
 
   test-aws-credentials:
     name: 'test aws credentials'
@@ -372,11 +372,11 @@ jobs:
           java-version: ${{ env.JAVA_VERSION }}
           cache: 'maven'
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-        with:
-          driver-opts: |
-            image=moby/buildkit:latest
+#      - name: Set up Docker Buildx
+#        uses: docker/setup-buildx-action@v3
+#        with:
+#          driver-opts: |
+#            image=moby/buildkit:latest
 
       - name: test cdk
         id: test-cdk
@@ -400,18 +400,18 @@ jobs:
       - name: Node dependencies
         run: npm ci
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-        with:
-          driver-opts: |
-            image=moby/buildkit:latest
+#      - name: Set up Docker Buildx
+#        uses: docker/setup-buildx-action@v3
+#        with:
+#          driver-opts: |
+#            image=moby/buildkit:latest
 
       - name: Build base image
         run: |
-          docker buildx build \
-            --load \
+          docker build \
             -t "${{ env.BASE_IMAGE_TAG_PREFIX }}:${{ github.sha }}" \
             -f Dockerfile .
+      # docker buildx build \
 
       - name: Save image artifact
         run: |
@@ -430,7 +430,7 @@ jobs:
     if: ${{ !contains(github.event.inputs.skipDeploy, 'true') }}
     needs:
       - names
-      - mvn-test
+      - mvn-package
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -460,95 +460,48 @@ jobs:
           name: self-destruct-handler-${{ github.sha }}
           path: target/
 
-      - name: Build CDK and synthesize all stacks
+      - run: find . -type f -iname ".*" -ls
+
+      - run: find . -type f -ls
+
+      - run: find /home/runner/work/submit.diyaccounting.co.uk/submit.diyaccounting.co.uk/cdk-application -type f -iname ".*" -ls
+
+      - run: find /home/runner/work/submit.diyaccounting.co.uk/submit.diyaccounting.co.uk/cdk-application -type f -ls
+
+      - run: cat /home/runner/work/submit.diyaccounting.co.uk/submit.diyaccounting.co.uk/cdk-application/cdk.json
+
+      - name: Build CDK and synthesize all stacks in the Application Stack
         run: |
-          ./mvnw --errors clean package -DskipTests -Dmaven.compiler.source=17 -Dmaven.compiler.target=17 \
-            && npx dotenv -e .env.${{ needs.names.outputs.environment-name }} -- \
-              npx cdk synth --all --strict --validation --version-reporting=false --path-metadata=false --asset-metadata=false
+          ./mvnw --errors clean package -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
+            && cd cdk-application \
+            && cat ../.env.${{ needs.names.outputs.environment-name }} \
+            && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
+              npx cdk synth \
+                --strict \
+                --validation \
+                --version-reporting=false \
+                --path-metadata=false \
+                --asset-metadata=false \
+                --exclusively \
+                  ${{ needs.names.outputs.deployment-name }}-ObservabilityStack \
+                  ${{ needs.names.outputs.deployment-name }}-DevStack \
+                  ${{ needs.names.outputs.deployment-name }}-IdentityStack \
+                  ${{ needs.names.outputs.deployment-name }}-AuthStack \
+                  ${{ needs.names.outputs.deployment-name }}-ApplicationStack \
+            ; cd .. \
+            ;
+        # ${{ needs.names.outputs.deployment-name }}-SelfDestructStack \
+        # ${{ needs.names.outputs.deployment-name }}-EdgeStack \
+        # ${{ needs.names.outputs.deployment-name }}-PublishStack \
+        # ${{ needs.names.outputs.deployment-name }}-OpsStack \
         env:
           ENV_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
           SELF_DESTRUCT_DELAY_HOURS: ${{ inputs.selfDestructDelayHours || '1' }}
-          SELF_DESTRUCT_HANDLER_SOURCE: ${{ needs.mvn-test.outputs.self-destruct-handler-source }}
-
-      - name: Upload CDK synthesis artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: cdk-synthesis
-          path: target/
-          retention-days: 1
-
-  diff-cdk:
-    name: 'diff cdk'
-    if: ${{ !contains(github.event.inputs.skipDeploy, 'true') }}
-    needs:
-      - names
-      - npm-test
-      - build-cdk
-    runs-on: ubuntu-24.04
-    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v5
-
-      - name: Setup Node
-        uses: actions/setup-node@v5
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Node dependencies
-        run: npm ci
-
-      - uses: actions/setup-java@v5
-        with:
-          distribution: 'temurin'
-          java-version: ${{ env.JAVA_VERSION }}
-          cache: 'maven'
-
-      - name: Download CDK synthesis artifacts
-        uses: actions/download-artifact@v5
-        with:
-          name: cdk-synthesis
-          path: target/
-
-      - name: Configure AWS role via GitHub OIDC
-        uses: aws-actions/configure-aws-credentials@v5
-        with:
-          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
-          role-chaining: false
-          aws-region: ${{ env.AWS_REGION }}
-          role-chaining: false
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - name: Assume AWS deployment role
-        uses: aws-actions/configure-aws-credentials@v5
-        with:
-          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
-          role-chaining: true
-          aws-region: ${{ env.AWS_REGION }}
-          role-chaining: true
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - name: Diff stacks (CDK)
-        run: |
-          npx dotenv -e .env.${{ needs.names.outputs.environment-name }} -- \
-            npx cdk diff --all \
-              --ci true \
-          ;
-        env:
-          ENV_NAME: ${{ needs.names.outputs.environment-name }}
-          DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
-          BASE_IMAGE_TAG: "${{ env.BASE_IMAGE_TAG_PREFIX }}:${{ github.sha }}"
+          SELF_DESTRUCT_HANDLER_SOURCE: "../${{ needs.mvn-package.outputs.self-destruct-handler-source }}"
+          BASE_IMAGE_TAG: ${{ github.sha }}
+          #BASE_IMAGE_TAG: "${{ env.BASE_IMAGE_TAG_PREFIX }}:${{ github.sha }}"
           GITHUB_ACTOR: ${{ github.actor }}
-          LOG_S3_OBJECT_EVENT_HANDLER_SOURCE: ${{ steps.jar-path.outputs.jarFilepath }}
-          LOG_GZIPPED_S3_OBJECT_EVENT_HANDLER_SOURCE: ${{ steps.jar-path.outputs.jarFilepath }}
           CERTIFICATE_ARN: ${{ vars.AWS_CERTIFICATE_ARN }}
           CLOUD_TRAIL_ENABLED: ${{ vars.AWS_CLOUD_TRAIL_ENABLED }}
           X_RAY_ENABLED: ${{ vars.AWS_X_RAY_ENABLED }}
@@ -556,6 +509,15 @@ jobs:
           HOSTED_ZONE_ID: ${{ vars.AWS_HOSTED_ZONE_ID }}
           HOSTED_ZONE_NAME: ${{ vars.AWS_HOSTED_ZONE_NAME }}
           COMMIT_HASH: ${{ github.sha }}
+          DIY_SUBMIT_GOOGLE_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ needs.names.outputs.environment-name }}/submit/google/client_secret"
+          AUTH_CERTIFICATE_ARN: 'arn:aws:acm:us-east-1:887764105431:certificate/59a025f9-3620-43cd-9b2c-522f385ee223'
+
+      - name: Upload CDK synthesis artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: cdk-synthesis
+          path: cdk-submit-application.out
+          retention-days: 1
 
   deploy-observability:
     name: 'deploy observability'
@@ -589,13 +551,12 @@ jobs:
         uses: actions/download-artifact@v5
         with:
           name: cdk-synthesis
-          path: target/
+          path: cdk-submit-application.out/
 
       - name: Configure AWS role via GitHub OIDC
         uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
-          role-chaining: false
           aws-region: ${{ env.AWS_REGION }}
           role-chaining: false
           audience: sts.amazonaws.com
@@ -607,7 +568,6 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
-          role-chaining: true
           aws-region: ${{ env.AWS_REGION }}
           role-chaining: true
           audience: sts.amazonaws.com
@@ -623,99 +583,107 @@ jobs:
 
       - name: Deploy Observability Stack (CDK)
         run: |
-          npx dotenv -e .env.${{ needs.names.outputs.environment-name }} -- \
-            npx cdk deploy ${{ needs.names.outputs.deployment-name }}-ObservabilityStack \
-              --require-approval never \
-              --ci true \
-              --concurrency 4 \
-              --asset-parallelism \
-              --asset-prebuild \
-              --outputs-file target/cdk-outputs-observability.json \
+          cd cdk-application \
+            && cat ../.env.${{ needs.names.outputs.environment-name }} \
+            && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
+              npx cdk deploy \
+                --app ../cdk-submit-application.out/ \
+                ${{ needs.names.outputs.deployment-name }}-ObservabilityStack \
+                --require-approval never \
+                --ci true \
+                --concurrency 4 \
+                --asset-parallelism \
+                --outputs-file ../cdk-submit-application.out/cdk-outputs-observability.json \
+          ; cd .. \
           ;
         env:
           GITHUB_ACTOR: ${{ github.actor }}
           ENV_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
 
-  deploy-self-destruct:
-    name: 'deploy self-destruct'
-    if: ${{ inputs.skipDeploy != 'true' && needs.names.outputs.environment-name != 'prod' }}
-    needs:
-      - names
-      - npm-test
-      - build-cdk
-      - mvn-test
-    runs-on: ubuntu-24.04
-    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v5
 
-      - name: Setup Node
-        uses: actions/setup-node@v5
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Node dependencies
-        run: npm ci
-
-      - uses: actions/setup-java@v5
-        with:
-          distribution: 'temurin'
-          java-version: ${{ env.JAVA_VERSION }}
-          cache: 'maven'
-
-      - name: Download CDK synthesis artifacts
-        uses: actions/download-artifact@v5
-        with:
-          name: cdk-synthesis
-          path: cdk.out/
-
-      - name: Download self-destruct handler JAR
-        uses: actions/download-artifact@v5
-        with:
-          name: self-destruct-handler-${{ github.sha }}
-          path: target/
-
-      - name: Configure AWS role via GitHub OIDC
-        uses: aws-actions/configure-aws-credentials@v5
-        with:
-          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-          role-chaining: false
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - name: Assume AWS deployment role
-        uses: aws-actions/configure-aws-credentials@v5
-        with:
-          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-          role-chaining: true
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - name: Deploy Self-Destruct Stack (CDK)
-        run: |
-          npx dotenv -e .env.${{ needs.names.outputs.environment-name }} -- \
-            npx cdk deploy ${{ needs.names.outputs.deployment-name }}-SelfDestructStack \
-              --require-approval never \
-              --ci true \
-              --concurrency 4 \
-              --asset-parallelism \
-              --asset-prebuild \
-              --outputs-file cdk.out/cdk-outputs-self-destructStack.json \
-          ;
-        env:
-          ENV_NAME: ${{ needs.names.outputs.environment-name }}
-          DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
-          SELF_DESTRUCT_DELAY_HOURS: ${{ inputs.selfDestructDelayHours || '1' }}
-          SELF_DESTRUCT_HANDLER_SOURCE: ${{ needs.mvn-test.outputs.self-destruct-handler-source }}
+#  deploy-self-destruct:
+#    name: 'deploy self-destruct'
+#    if: ${{ inputs.skipDeploy != 'true' && needs.names.outputs.environment-name != 'prod' }}
+#    needs:
+#      - names
+#      - npm-test
+#      - build-cdk
+#      - mvn-package
+#    runs-on: ubuntu-24.04
+#    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+#    steps:
+#      - name: Checkout
+#        uses: actions/checkout@v5
+#
+#      - name: Setup Node
+#        uses: actions/setup-node@v5
+#        with:
+#          node-version: ${{ env.NODE_VERSION }}
+#          cache: 'npm'
+#
+#      - name: Node dependencies
+#        run: npm ci
+#
+#      - uses: actions/setup-java@v5
+#        with:
+#          distribution: 'temurin'
+#          java-version: ${{ env.JAVA_VERSION }}
+#          cache: 'maven'
+#
+#      - name: Download CDK synthesis artifacts
+#        uses: actions/download-artifact@v5
+#        with:
+#          name: cdk-synthesis
+#          path: cdk.out/
+#
+#      - name: Download self-destruct handler JAR
+#        uses: actions/download-artifact@v5
+#        with:
+#          name: self-destruct-handler-${{ github.sha }}
+#          path: cdk-submit-application.out/
+#
+#      - name: Configure AWS role via GitHub OIDC
+#        uses: aws-actions/configure-aws-credentials@v5
+#        with:
+#          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+#          aws-region: ${{ env.AWS_REGION }}
+#          role-chaining: false
+#          audience: sts.amazonaws.com
+#          role-skip-session-tagging: true
+#          output-credentials: true
+#          retry-max-attempts: 3
+#
+#      - name: Assume AWS deployment role
+#        uses: aws-actions/configure-aws-credentials@v5
+#        with:
+#          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+#          aws-region: ${{ env.AWS_REGION }}
+#          role-chaining: true
+#          audience: sts.amazonaws.com
+#          role-skip-session-tagging: true
+#          output-credentials: true
+#          retry-max-attempts: 3
+#
+#      - name: Deploy Self-Destruct Stack (CDK)
+#        run: |
+#          cd cdk-application \
+#            && cat ../.env.${{ needs.names.outputs.environment-name }} \
+#            && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
+#               npx cdk deploy \
+  #                --app ../cdk-submit-application.out/ \
+  #                ${{ needs.names.outputs.deployment-name }}-SelfDestructStack \
+#                 --require-approval never \
+#                 --ci true \
+#                 --concurrency 4 \
+#                 --asset-parallelism \
+#                 --outputs-file ../cdk-submit-application.out/cdk-outputs-self-destructStack.json \
+#          ;
+#        env:
+#          ENV_NAME: ${{ needs.names.outputs.environment-name }}
+#          DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
+#          SELF_DESTRUCT_DELAY_HOURS: ${{ inputs.selfDestructDelayHours || '1' }}
+#          SELF_DESTRUCT_HANDLER_SOURCE: "../${{ needs.mvn-package.outputs.self-destruct-handler-source }}"
 
   deploy-dev:
     name: 'deploy dev'
@@ -749,13 +717,12 @@ jobs:
         uses: actions/download-artifact@v5
         with:
           name: cdk-synthesis
-          path: target/
+          path: cdk-submit-application.out/
 
       - name: Configure AWS role via GitHub OIDC
         uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
-          role-chaining: false
           aws-region: ${{ env.AWS_REGION }}
           role-chaining: false
           audience: sts.amazonaws.com
@@ -767,7 +734,6 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
-          role-chaining: true
           aws-region: ${{ env.AWS_REGION }}
           role-chaining: true
           audience: sts.amazonaws.com
@@ -777,14 +743,18 @@ jobs:
 
       - name: Deploy Dev Stack (CDK)
         run: |
-          npx dotenv -e .env.${{ needs.names.outputs.environment-name }} -- \
-            npx cdk deploy ${{ needs.names.outputs.deployment-name }}-DevStack \
-              --require-approval never \
-              --ci true \
-              --concurrency 4 \
-              --asset-parallelism \
-              --asset-prebuild \
-              --outputs-file target/cdk-outputs-dev.json \
+          cd cdk-application \
+            && cat ../.env.${{ needs.names.outputs.environment-name }} \
+            && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
+              npx cdk deploy \
+                --app ../cdk-submit-application.out/ \
+                ${{ needs.names.outputs.deployment-name }}-DevStack \
+                --require-approval never \
+                --ci true \
+                --concurrency 4 \
+                --asset-parallelism \
+                --outputs-file ../cdk-submit-application.out/cdk-outputs-dev.json \
+            ; cd .. \
           ;
         env:
           GITHUB_ACTOR: ${{ github.actor }}
@@ -795,7 +765,7 @@ jobs:
         id: dev-outputs
         shell: bash
         run: |
-          ECR_REPOSITORY_URI=$(jq -r '."${{ needs.names.outputs.deployment-name }}-DevStack".EcrRepositoryUri' target/cdk-outputs-dev.json)
+          ECR_REPOSITORY_URI=$(jq -r '."${{ needs.names.outputs.deployment-name }}-DevStack".EcrRepositoryUri' cdk-submit-application.out/cdk-outputs-dev.json)
           echo "ECR_REPOSITORY_URI=$ECR_REPOSITORY_URI"
           echo "ECR_REPOSITORY_URI=$ECR_REPOSITORY_URI" >> $GITHUB_OUTPUT
     outputs:
@@ -809,6 +779,7 @@ jobs:
       - npm-test
       - build-cdk
       - deploy-dev
+      - push-images
     runs-on: ubuntu-24.04
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
     steps:
@@ -834,13 +805,12 @@ jobs:
         uses: actions/download-artifact@v5
         with:
           name: cdk-synthesis
-          path: target/
+          path: cdk-submit-application.out/
 
       - name: Configure AWS role via GitHub OIDC
         uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
-          role-chaining: false
           aws-region: ${{ env.AWS_REGION }}
           role-chaining: false
           audience: sts.amazonaws.com
@@ -852,7 +822,6 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
-          role-chaining: true
           aws-region: ${{ env.AWS_REGION }}
           role-chaining: true
           audience: sts.amazonaws.com
@@ -862,20 +831,25 @@ jobs:
 
       - name: Deploy Identity stack (CDK)
         run: |
-          npx dotenv -e .env.${{ needs.names.outputs.environment-name }} -- \
-            npx cdk deploy ${{ needs.names.outputs.deployment-name }}-IdentityStack \
-              --exclusively \
-              --require-approval never \
-              --ci true \
-              --concurrency 4 \
-              --asset-parallelism \
-              --asset-prebuild \
-              --outputs-file target/cdk-outputs-identity.json \
+          cd cdk-application \
+            && cat ../.env.${{ needs.names.outputs.environment-name }} \
+            && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
+              npx cdk deploy \
+                --app ../cdk-submit-application.out/ \
+                ${{ needs.names.outputs.deployment-name }}-IdentityStack \
+                --exclusively \
+                --require-approval never \
+                --ci true \
+                --concurrency 4 \
+                --asset-parallelism \
+                --outputs-file ../cdk-submit-application.out/cdk-outputs-identity.json \
+              ; cd .. \
             ;
         env:
           ENV_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
-          BASE_IMAGE_TAG: "${{ env.BASE_IMAGE_TAG_PREFIX }}:${{ github.sha }}"
+          BASE_IMAGE_TAG: ${{ github.sha }}
+          #BASE_IMAGE_TAG: "${{ env.BASE_IMAGE_TAG_PREFIX }}:${{ github.sha }}"
           GITHUB_ACTOR: ${{ github.actor }}
           CLOUD_TRAIL_ENABLED: ${{ vars.AWS_CLOUD_TRAIL_ENABLED }}
           X_RAY_ENABLED: ${{ vars.AWS_X_RAY_ENABLED }}
@@ -921,7 +895,6 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
-          role-chaining: false
           aws-region: ${{ env.AWS_REGION }}
           role-chaining: false
           audience: sts.amazonaws.com
@@ -933,7 +906,6 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
-          role-chaining: true
           aws-region: ${{ env.AWS_REGION }}
           role-chaining: true
           audience: sts.amazonaws.com
@@ -957,178 +929,6 @@ jobs:
     outputs:
       base-image-tag: ${{ github.sha }}
 
-  deploy-application:
-    name: 'deploy application'
-    if: ${{ inputs.skipDeploy != 'true' }}
-    needs:
-      - names
-      - npm-test
-      - build-cdk
-      - deploy-dev
-      - docker-build
-      - push-images
-    runs-on: ubuntu-24.04
-    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v5
-
-      - name: Setup Node
-        uses: actions/setup-node@v5
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Node dependencies
-        run: npm ci
-
-      - uses: actions/setup-java@v5
-        with:
-          distribution: 'temurin'
-          java-version: ${{ env.JAVA_VERSION }}
-          cache: 'maven'
-
-      - name: Download CDK synthesis artifacts
-        uses: actions/download-artifact@v5
-        with:
-          name: cdk-synthesis
-          path: target/
-
-      - name: Configure AWS role via GitHub OIDC
-        uses: aws-actions/configure-aws-credentials@v5
-        with:
-          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
-          role-chaining: false
-          aws-region: ${{ env.AWS_REGION }}
-          role-chaining: false
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - name: Assume AWS deployment role
-        uses: aws-actions/configure-aws-credentials@v5
-        with:
-          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
-          role-chaining: true
-          aws-region: ${{ env.AWS_REGION }}
-          role-chaining: true
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - name: Deploy Application stack (CDK)
-        run: |
-          npx dotenv -e .env.${{ needs.names.outputs.environment-name }} -- \
-            npx cdk deploy ${{ needs.names.outputs.deployment-name }}-ApplicationStack \
-              --exclusively \
-              --require-approval never \
-              --ci true \
-              --concurrency 4 \
-              --asset-parallelism \
-              --asset-prebuild \
-              --outputs-file target/cdk-outputs-application.json \
-            ;
-        env:
-          ENV_NAME: ${{ needs.names.outputs.environment-name }}
-          DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
-          BASE_IMAGE_TAG: ${{ needs.push-images.outputs.base-image-tag }}
-          GITHUB_ACTOR: ${{ github.actor }}
-          CLOUD_TRAIL_ENABLED: ${{ vars.AWS_CLOUD_TRAIL_ENABLED }}
-          X_RAY_ENABLED: ${{ vars.AWS_X_RAY_ENABLED }}
-          VERBOSE_LOGGING: ${{ vars.AWS_VERBOSE_LOGGING }}
-          HOSTED_ZONE_ID: ${{ vars.AWS_HOSTED_ZONE_ID }}
-          HOSTED_ZONE_NAME: ${{ vars.AWS_HOSTED_ZONE_NAME }}
-          DIY_SUBMIT_HMRC_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ needs.names.outputs.environment-name }}/submit/hmrc/client_secret"
-          DIY_SUBMIT_GOOGLE_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ needs.names.outputs.environment-name }}/submit/google/client_secret"
-
-  deploy-web:
-    name: 'deploy web'
-    if: ${{ !contains(github.event.inputs.skipDeploy, 'true') }}
-    needs:
-      - names
-      - npm-test
-      - build-cdk
-      - push-images
-    runs-on: ubuntu-24.04
-    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v5
-
-      - name: Setup Node
-        uses: actions/setup-node@v5
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Node dependencies
-        run: npm ci
-
-      - uses: actions/setup-java@v5
-        with:
-          distribution: 'temurin'
-          java-version: ${{ env.JAVA_VERSION }}
-          cache: 'maven'
-
-      - name: Download CDK synthesis artifacts
-        uses: actions/download-artifact@v5
-        with:
-          name: cdk-synthesis
-          path: target/
-
-      - name: Configure AWS role via GitHub OIDC
-        uses: aws-actions/configure-aws-credentials@v5
-        with:
-          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
-          role-chaining: false
-          aws-region: ${{ env.AWS_REGION }}
-          role-chaining: false
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - name: Assume AWS deployment role
-        uses: aws-actions/configure-aws-credentials@v5
-        with:
-          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
-          role-chaining: true
-          aws-region: ${{ env.AWS_REGION }}
-          role-chaining: true
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - name: Deploy Web Stack (CDK)
-        run: |
-          npx dotenv -e .env.${{ needs.names.outputs.environment-name }} -- \
-            npx cdk deploy ${{ needs.names.outputs.deployment-name }}-WebStack \
-              --exclusively \
-              --require-approval never \
-              --ci true \
-              --concurrency 4 \
-              --asset-parallelism \
-              --asset-prebuild \
-              --outputs-file target/cdk-outputs-web.json \
-            ;
-        env:
-          ENV_NAME: ${{ needs.names.outputs.environment-name }}
-          DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
-          GITHUB_ACTOR: ${{ github.actor }}
-          LOG_S3_OBJECT_EVENT_HANDLER_SOURCE: ${{ steps.jar-path.outputs.jarFilepath }}
-          LOG_GZIPPED_S3_OBJECT_EVENT_HANDLER_SOURCE: ${{ steps.jar-path.outputs.jarFilepath }}
-          CERTIFICATE_ARN: ${{ vars.AWS_CERTIFICATE_ARN }}
-          CLOUD_TRAIL_ENABLED: ${{ vars.AWS_CLOUD_TRAIL_ENABLED }}
-          X_RAY_ENABLED: ${{ vars.AWS_X_RAY_ENABLED }}
-          VERBOSE_LOGGING: ${{ vars.AWS_VERBOSE_LOGGING }}
-          HOSTED_ZONE_ID: ${{ vars.AWS_HOSTED_ZONE_ID }}
-          HOSTED_ZONE_NAME: ${{ vars.AWS_HOSTED_ZONE_NAME }}
-          COMMIT_HASH: ${{ github.sha }}
-          BASE_IMAGE_TAG: ${{ needs.push-images.outputs.base-image-tag }}
-
   deploy-auth:
     name: 'deploy auth'
     if: ${{ inputs.skipDeploy != 'true' }}
@@ -1139,7 +939,6 @@ jobs:
       - deploy-dev
       - push-images
       - deploy-identity
-      - deploy-web
       - deploy-observability
     runs-on: ubuntu-24.04
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
@@ -1166,7 +965,7 @@ jobs:
         uses: actions/download-artifact@v5
         with:
           name: cdk-synthesis
-          path: target/
+          path: cdk-submit-application.out/
 
       - name: Configure AWS role via GitHub OIDC
         uses: aws-actions/configure-aws-credentials@v5
@@ -1192,15 +991,19 @@ jobs:
 
       - name: Deploy Auth stack (CDK)
         run: |
-          npx dotenv -e .env.${{ needs.names.outputs.environment-name }} -- \
-            npx cdk deploy ${{ needs.names.outputs.deployment-name }}-AuthStack \
-              --exclusively \
-              --require-approval never \
-              --ci true \
-              --concurrency 4 \
-              --asset-parallelism \
-              --asset-prebuild \
-              --outputs-file cdk.out/cdk-outputs-auth.json \
+          cd cdk-application \
+            && cat ../.env.${{ needs.names.outputs.environment-name }} \
+            && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
+              npx cdk deploy \
+                --app ../cdk-submit-application.out/ \
+                ${{ needs.names.outputs.deployment-name }}-AuthStack \
+                --exclusively \
+                --require-approval never \
+                --ci true \
+                --concurrency 4 \
+                --asset-parallelism \
+                --outputs-file ../cdk-submit-application.out/cdk-outputs-auth.json \
+            ; cd .. \
             ;
         env:
           ENV_NAME: ${{ needs.names.outputs.environment-name }}
@@ -1215,6 +1018,220 @@ jobs:
           DIY_SUBMIT_HMRC_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ needs.names.outputs.environment-name }}/submit/hmrc/client_secret"
           DIY_SUBMIT_GOOGLE_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ needs.names.outputs.environment-name }}/submit/google/client_secret"
 
+      - run: cat cdk-submit-application.out/cdk-outputs-auth.json | jq '.'
+
+      # Extract for:
+      # additionalBehaviourMappings.put("/api/mock/auth-url" + "*", envOr("DIY_SUBMIT_AUTH_URL_MOCK_LAMBDA_ARN", authStack.authUrlMockLambda.getFunctionArn()));
+      # additionalBehaviourMappings.put("/api/cognito/auth-url" + "*", envOr("DIY_SUBMIT_AUTH_URL_COGNITO_LAMBDA_ARN", authStack.authUrlCognitoLambda.getFunctionArn()));
+      # additionalBehaviourMappings.put("/api/cognito/exchange-token" + "*", envOr("DIY_SUBMIT_COGNITO_EXCHANGE_TOKEN_LAMBDA_ARN", authStack.exchangeCognitoTokenLambda.getFunctionArn()));
+      - name: Resolve stack outputs
+        id: auth-outputs
+        run: |
+          DIY_SUBMIT_AUTH_URL_MOCK_LAMBDA_ARN=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-AuthStack"].AuthUrlMockLambdaArn' cdk-submit-application.out/cdk-outputs-auth.json)
+          DIY_SUBMIT_AUTH_URL_COGNITO_LAMBDA_ARN=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-AuthStack"].AuthUrlCognitoLambdaArn' cdk-submit-application.out/cdk-outputs-auth.json)
+          DIY_SUBMIT_COGNITO_EXCHANGE_TOKEN_LAMBDA_ARN=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-AuthStack"].ExchangeCognitoTokenLambdaArn' cdk-submit-application.out/cdk-outputs-auth.json)
+
+          # Extract Function URLs for cross-region access
+          DIY_SUBMIT_AUTH_URL_MOCK_LAMBDA_URL=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-AuthStack"].AuthUrlMockLambdaUrl' cdk-submit-application.out/cdk-outputs-auth.json)
+          DIY_SUBMIT_AUTH_URL_COGNITO_LAMBDA_URL=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-AuthStack"].AuthUrlCognitoLambdaUrl' cdk-submit-application.out/cdk-outputs-auth.json)
+          DIY_SUBMIT_COGNITO_EXCHANGE_TOKEN_LAMBDA_URL=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-AuthStack"].ExchangeCognitoTokenLambdaUrl' cdk-submit-application.out/cdk-outputs-auth.json)
+
+          echo "DIY_SUBMIT_AUTH_URL_MOCK_LAMBDA_ARN=$DIY_SUBMIT_AUTH_URL_MOCK_LAMBDA_ARN"
+          echo "DIY_SUBMIT_AUTH_URL_COGNITO_LAMBDA_ARN=$DIY_SUBMIT_AUTH_URL_COGNITO_LAMBDA_ARN"
+          echo "DIY_SUBMIT_COGNITO_EXCHANGE_TOKEN_LAMBDA_ARN=$DIY_SUBMIT_COGNITO_EXCHANGE_TOKEN_LAMBDA_ARN"
+          echo "DIY_SUBMIT_AUTH_URL_MOCK_LAMBDA_URL=$DIY_SUBMIT_AUTH_URL_MOCK_LAMBDA_URL"
+          echo "DIY_SUBMIT_AUTH_URL_COGNITO_LAMBDA_URL=$DIY_SUBMIT_AUTH_URL_COGNITO_LAMBDA_URL"
+          echo "DIY_SUBMIT_COGNITO_EXCHANGE_TOKEN_LAMBDA_URL=$DIY_SUBMIT_COGNITO_EXCHANGE_TOKEN_LAMBDA_URL"
+
+          echo "DIY_SUBMIT_AUTH_URL_MOCK_LAMBDA_ARN=$DIY_SUBMIT_AUTH_URL_MOCK_LAMBDA_ARN" >> $GITHUB_OUTPUT
+          echo "DIY_SUBMIT_AUTH_URL_COGNITO_LAMBDA_ARN=$DIY_SUBMIT_AUTH_URL_COGNITO_LAMBDA_ARN" >> $GITHUB_OUTPUT
+          echo "DIY_SUBMIT_COGNITO_EXCHANGE_TOKEN_LAMBDA_ARN=$DIY_SUBMIT_COGNITO_EXCHANGE_TOKEN_LAMBDA_ARN" >> $GITHUB_OUTPUT
+          echo "DIY_SUBMIT_AUTH_URL_MOCK_LAMBDA_URL=$DIY_SUBMIT_AUTH_URL_MOCK_LAMBDA_URL" >> $GITHUB_OUTPUT
+          echo "DIY_SUBMIT_AUTH_URL_COGNITO_LAMBDA_URL=$DIY_SUBMIT_AUTH_URL_COGNITO_LAMBDA_URL" >> $GITHUB_OUTPUT
+          echo "DIY_SUBMIT_COGNITO_EXCHANGE_TOKEN_LAMBDA_URL=$DIY_SUBMIT_COGNITO_EXCHANGE_TOKEN_LAMBDA_URL" >> $GITHUB_OUTPUT
+        shell: bash
+    outputs:
+      authUrlMockLambdaArn: ${{ steps.auth-outputs.outputs.DIY_SUBMIT_AUTH_URL_MOCK_LAMBDA_ARN }}
+      authUrlCognitoLambdaArn: ${{ steps.auth-outputs.outputs.DIY_SUBMIT_AUTH_URL_COGNITO_LAMBDA_ARN }}
+      exchangeCognitoTokenLambdaArn: ${{ steps.auth-outputs.outputs.DIY_SUBMIT_COGNITO_EXCHANGE_TOKEN_LAMBDA_ARN }}
+      authUrlMockLambdaUrl: ${{ steps.auth-outputs.outputs.DIY_SUBMIT_AUTH_URL_MOCK_LAMBDA_URL }}
+      authUrlCognitoLambdaUrl: ${{ steps.auth-outputs.outputs.DIY_SUBMIT_AUTH_URL_COGNITO_LAMBDA_URL }}
+      exchangeCognitoTokenLambdaUrl: ${{ steps.auth-outputs.outputs.DIY_SUBMIT_COGNITO_EXCHANGE_TOKEN_LAMBDA_URL }}
+
+  # TODO: Split into stacks for MTD (HMRC AUth, VAT Submission and receipts) and Account (Bundles etc...)
+  deploy-application:
+    name: 'deploy application'
+    if: ${{ inputs.skipDeploy != 'true' }}
+    needs:
+      - names
+      - npm-test
+      - build-cdk
+      - deploy-dev
+      - docker-build
+      - push-images
+      - deploy-identity
+      - deploy-observability
+    runs-on: ubuntu-24.04
+    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Node dependencies
+        run: npm ci
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: 'maven'
+
+      - name: Download CDK synthesis artifacts
+        uses: actions/download-artifact@v5
+        with:
+          name: cdk-synthesis
+          path: cdk-submit-application.out/
+
+      - name: Configure AWS role via GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Deploy Application stack (CDK)
+        run: |
+          cd cdk-application \
+            && cat ../.env.${{ needs.names.outputs.environment-name }} \
+            && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
+              npx cdk deploy \
+                --app ../cdk-submit-application.out/ \
+                ${{ needs.names.outputs.deployment-name }}-ApplicationStack \
+                --exclusively \
+                --require-approval never \
+                --ci true \
+                --concurrency 4 \
+                --asset-parallelism \
+                --outputs-file ../cdk-submit-application.out/cdk-outputs-application.json \
+              ; cd .. \
+            ;
+        env:
+          ENV_NAME: ${{ needs.names.outputs.environment-name }}
+          DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
+          BASE_IMAGE_TAG: ${{ needs.push-images.outputs.base-image-tag }}
+          GITHUB_ACTOR: ${{ github.actor }}
+          CLOUD_TRAIL_ENABLED: ${{ vars.AWS_CLOUD_TRAIL_ENABLED }}
+          X_RAY_ENABLED: ${{ vars.AWS_X_RAY_ENABLED }}
+          VERBOSE_LOGGING: ${{ vars.AWS_VERBOSE_LOGGING }}
+          HOSTED_ZONE_ID: ${{ vars.AWS_HOSTED_ZONE_ID }}
+          HOSTED_ZONE_NAME: ${{ vars.AWS_HOSTED_ZONE_NAME }}
+          DIY_SUBMIT_HMRC_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ needs.names.outputs.environment-name }}/submit/hmrc/client_secret"
+          DIY_SUBMIT_GOOGLE_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ needs.names.outputs.environment-name }}/submit/google/client_secret"
+
+      - run: cat cdk-submit-application.out/cdk-outputs-application.json | jq '.'
+
+      # Extract for:
+      #        additionalBehaviourMappings.put("/api/hmrc/auth-url" + "*", envOr("DIY_SUBMIT_AUTH_URL_HMRC_LAMBDA_ARN", applicationStack.authUrlHmrcLambda.getFunctionArn()));
+      #        additionalBehaviourMappings.put("/api/hmrc/exchange-token" + "*", envOr("DIY_SUBMIT_EXCHANGE_HMRC_TOKEN_LAMBDA_ARN", applicationStack.exchangeHmrcTokenLambda.getFunctionArn()));
+      #        additionalBehaviourMappings.put("/api/submit-vat" + "*", envOr("DIY_SUBMIT_SUBMIT_VAT_LAMBDA_ARN", applicationStack.submitVatLambda.getFunctionArn()));
+      #        additionalBehaviourMappings.put("/api/log-receipt" + "*", envOr("DIY_SUBMIT_LOG_RECEIPT_LAMBDA_ARN", applicationStack.logReceiptLambda.getFunctionArn()));
+      #        additionalBehaviourMappings.put("/api/catalog" + "*", envOr("DIY_SUBMIT_CATALOG_LAMBDA_ARN", applicationStack.catalogLambda.getFunctionArn()));
+      #        additionalBehaviourMappings.put("/api/my-bundles" + "*", envOr("DIY_SUBMIT_MY_BUNDLES_LAMBDA_ARN", applicationStack.myBundlesLambda.getFunctionArn()));
+      #        additionalBehaviourMappings.put("/api/my-receipts" + "*", envOr("DIY_SUBMIT_MY_RECEIPTS_LAMBDA_ARN", applicationStack.myReceiptsLambda.getFunctionArn()));
+      - name: Resolve stack outputs
+        id: application-outputs
+        run: |
+          DIY_SUBMIT_AUTH_URL_HMRC_LAMBDA_ARN=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-ApplicationStack"].AuthUrlHmrcLambdaArn' cdk-submit-application.out/cdk-outputs-application.json)
+          DIY_SUBMIT_EXCHANGE_HMRC_TOKEN_LAMBDA_ARN=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-ApplicationStack"].ExchangeHmrcTokenLambdaArn' cdk-submit-application.out/cdk-outputs-application.json)
+          DIY_SUBMIT_SUBMIT_VAT_LAMBDA_ARN=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-ApplicationStack"].SubmitVatLambdaArn' cdk-submit-application.out/cdk-outputs-application.json)
+          DIY_SUBMIT_LOG_RECEIPT_LAMBDA_ARN=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-ApplicationStack"].LogReceiptLambdaArn' cdk-submit-application.out/cdk-outputs-application.json)
+          DIY_SUBMIT_CATALOG_LAMBDA_ARN=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-ApplicationStack"].CatalogLambdaArn' cdk-submit-application.out/cdk-outputs-application.json)
+          DIY_SUBMIT_REQUEST_BUNDLES_LAMBDA_ARN=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-ApplicationStack"].RequestBundlesLambdaArn' cdk-submit-application.out/cdk-outputs-application.json)
+          DIY_SUBMIT_MY_BUNDLES_LAMBDA_ARN=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-ApplicationStack"].MyBundlesLambdaArn' cdk-submit-application.out/cdk-outputs-application.json)
+          DIY_SUBMIT_MY_RECEIPTS_LAMBDA_ARN=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-ApplicationStack"].MyReceiptsLambdaArn' cdk-submit-application.out/cdk-outputs-application.json)
+
+          # Extract Function URLs for cross-region access
+          DIY_SUBMIT_AUTH_URL_HMRC_LAMBDA_URL=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-ApplicationStack"].AuthUrlHmrcLambdaUrl' cdk-submit-application.out/cdk-outputs-application.json)
+          DIY_SUBMIT_EXCHANGE_HMRC_TOKEN_LAMBDA_URL=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-ApplicationStack"].ExchangeHmrcTokenLambdaUrl' cdk-submit-application.out/cdk-outputs-application.json)
+          DIY_SUBMIT_SUBMIT_VAT_LAMBDA_URL=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-ApplicationStack"].SubmitVatLambdaUrl' cdk-submit-application.out/cdk-outputs-application.json)
+          DIY_SUBMIT_LOG_RECEIPT_LAMBDA_URL=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-ApplicationStack"].LogReceiptLambdaUrl' cdk-submit-application.out/cdk-outputs-application.json)
+          DIY_SUBMIT_CATALOG_LAMBDA_URL=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-ApplicationStack"].CatalogLambdaUrl' cdk-submit-application.out/cdk-outputs-application.json)
+          DIY_SUBMIT_REQUEST_BUNDLES_LAMBDA_URL=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-ApplicationStack"].RequestBundlesLambdaUrl' cdk-submit-application.out/cdk-outputs-application.json)
+          DIY_SUBMIT_MY_BUNDLES_LAMBDA_URL=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-ApplicationStack"].MyBundlesLambdaUrl' cdk-submit-application.out/cdk-outputs-application.json)
+          DIY_SUBMIT_MY_RECEIPTS_LAMBDA_URL=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-ApplicationStack"].MyReceiptsLambdaUrl' cdk-submit-application.out/cdk-outputs-application.json)
+
+          echo "DIY_SUBMIT_AUTH_URL_HMRC_LAMBDA_ARN=$DIY_SUBMIT_AUTH_URL_HMRC_LAMBDA_ARN"
+          echo "DIY_SUBMIT_AUTH_URL_HMRC_LAMBDA_ARN=$DIY_SUBMIT_AUTH_URL_HMRC_LAMBDA_ARN" >> $GITHUB_OUTPUT
+          echo "DIY_SUBMIT_EXCHANGE_HMRC_TOKEN_LAMBDA_ARN=$DIY_SUBMIT_EXCHANGE_HMRC_TOKEN_LAMBDA_ARN"
+          echo "DIY_SUBMIT_EXCHANGE_HMRC_TOKEN_LAMBDA_ARN=$DIY_SUBMIT_EXCHANGE_HMRC_TOKEN_LAMBDA_ARN" >> $GITHUB_OUTPUT
+          echo "DIY_SUBMIT_SUBMIT_VAT_LAMBDA_ARN=$DIY_SUBMIT_SUBMIT_VAT_LAMBDA_ARN"
+          echo "DIY_SUBMIT_SUBMIT_VAT_LAMBDA_ARN=$DIY_SUBMIT_SUBMIT_VAT_LAMBDA_ARN" >> $GITHUB_OUTPUT
+          echo "DIY_SUBMIT_LOG_RECEIPT_LAMBDA_ARN=$DIY_SUBMIT_LOG_RECEIPT_LAMBDA_ARN"
+          echo "DIY_SUBMIT_LOG_RECEIPT_LAMBDA_ARN=$DIY_SUBMIT_LOG_RECEIPT_LAMBDA_ARN" >> $GITHUB_OUTPUT
+          echo "DIY_SUBMIT_CATALOG_LAMBDA_ARN=$DIY_SUBMIT_CATALOG_LAMBDA_ARN"
+          echo "DIY_SUBMIT_CATALOG_LAMBDA_ARN=$DIY_SUBMIT_CATALOG_LAMBDA_ARN" >> $GITHUB_OUTPUT
+          echo "DIY_SUBMIT_REQUEST_BUNDLES_LAMBDA_ARN=$DIY_SUBMIT_REQUEST_BUNDLES_LAMBDA_ARN"
+          echo "DIY_SUBMIT_REQUEST_BUNDLES_LAMBDA_ARN=$DIY_SUBMIT_REQUEST_BUNDLES_LAMBDA_ARN" >> $GITHUB_OUTPUT
+          echo "DIY_SUBMIT_MY_BUNDLES_LAMBDA_ARN=$DIY_SUBMIT_MY_BUNDLES_LAMBDA_ARN"
+          echo "DIY_SUBMIT_MY_BUNDLES_LAMBDA_ARN=$DIY_SUBMIT_MY_BUNDLES_LAMBDA_ARN" >> $GITHUB_OUTPUT
+          echo "DIY_SUBMIT_MY_RECEIPTS_LAMBDA_ARN=$DIY_SUBMIT_MY_RECEIPTS_LAMBDA_ARN"
+          echo "DIY_SUBMIT_MY_RECEIPTS_LAMBDA_ARN=$DIY_SUBMIT_MY_RECEIPTS_LAMBDA_ARN" >> $GITHUB_OUTPUT
+
+          echo "DIY_SUBMIT_AUTH_URL_HMRC_LAMBDA_URL=$DIY_SUBMIT_AUTH_URL_HMRC_LAMBDA_URL"
+          echo "DIY_SUBMIT_AUTH_URL_HMRC_LAMBDA_URL=$DIY_SUBMIT_AUTH_URL_HMRC_LAMBDA_URL" >> $GITHUB_OUTPUT
+          echo "DIY_SUBMIT_EXCHANGE_HMRC_TOKEN_LAMBDA_URL=$DIY_SUBMIT_EXCHANGE_HMRC_TOKEN_LAMBDA_URL"
+          echo "DIY_SUBMIT_EXCHANGE_HMRC_TOKEN_LAMBDA_URL=$DIY_SUBMIT_EXCHANGE_HMRC_TOKEN_LAMBDA_URL" >> $GITHUB_OUTPUT
+          echo "DIY_SUBMIT_SUBMIT_VAT_LAMBDA_URL=$DIY_SUBMIT_SUBMIT_VAT_LAMBDA_URL"
+          echo "DIY_SUBMIT_SUBMIT_VAT_LAMBDA_URL=$DIY_SUBMIT_SUBMIT_VAT_LAMBDA_URL" >> $GITHUB_OUTPUT
+          echo "DIY_SUBMIT_LOG_RECEIPT_LAMBDA_URL=$DIY_SUBMIT_LOG_RECEIPT_LAMBDA_URL"
+          echo "DIY_SUBMIT_LOG_RECEIPT_LAMBDA_URL=$DIY_SUBMIT_LOG_RECEIPT_LAMBDA_URL" >> $GITHUB_OUTPUT
+          echo "DIY_SUBMIT_CATALOG_LAMBDA_URL=$DIY_SUBMIT_CATALOG_LAMBDA_URL"
+          echo "DIY_SUBMIT_CATALOG_LAMBDA_URL=$DIY_SUBMIT_CATALOG_LAMBDA_URL" >> $GITHUB_OUTPUT
+          echo "DIY_SUBMIT_REQUEST_BUNDLES_LAMBDA_URL=$DIY_SUBMIT_REQUEST_BUNDLES_LAMBDA_URL"
+          echo "DIY_SUBMIT_REQUEST_BUNDLES_LAMBDA_URL=$DIY_SUBMIT_REQUEST_BUNDLES_LAMBDA_URL" >> $GITHUB_OUTPUT
+          echo "DIY_SUBMIT_MY_BUNDLES_LAMBDA_URL=$DIY_SUBMIT_MY_BUNDLES_LAMBDA_URL"
+          echo "DIY_SUBMIT_MY_BUNDLES_LAMBDA_URL=$DIY_SUBMIT_MY_BUNDLES_LAMBDA_URL" >> $GITHUB_OUTPUT
+          echo "DIY_SUBMIT_MY_RECEIPTS_LAMBDA_URL=$DIY_SUBMIT_MY_RECEIPTS_LAMBDA_URL"
+          echo "DIY_SUBMIT_MY_RECEIPTS_LAMBDA_URL=$DIY_SUBMIT_MY_RECEIPTS_LAMBDA_URL" >> $GITHUB_OUTPUT
+        shell: bash
+    outputs:
+      authUrlHmrcLambdaArn: ${{ steps.application-outputs.outputs.DIY_SUBMIT_AUTH_URL_HMRC_LAMBDA_ARN }}
+      exchangeHmrcTokenLambdaArn: ${{ steps.application-outputs.outputs.DIY_SUBMIT_EXCHANGE_HMRC_TOKEN_LAMBDA_ARN }}
+      submitVatLambdaArn: ${{ steps.application-outputs.outputs.DIY_SUBMIT_SUBMIT_VAT_LAMBDA_ARN }}
+      logReceiptLambdaArn: ${{ steps.application-outputs.outputs.DIY_SUBMIT_LOG_RECEIPT_LAMBDA_ARN }}
+      catalogLambdaArn: ${{ steps.application-outputs.outputs.DIY_SUBMIT_CATALOG_LAMBDA_ARN }}
+      myBundlesLambdaArn: ${{ steps.application-outputs.outputs.DIY_SUBMIT_MY_BUNDLES_LAMBDA_ARN }}
+      myReceiptsLambdaArn: ${{ steps.application-outputs.outputs.DIY_SUBMIT_MY_RECEIPTS_LAMBDA_ARN }}
+      authUrlHmrcLambdaUrl: ${{ steps.application-outputs.outputs.DIY_SUBMIT_AUTH_URL_HMRC_LAMBDA_URL }}
+      exchangeHmrcTokenLambdaUrl: ${{ steps.application-outputs.outputs.DIY_SUBMIT_EXCHANGE_HMRC_TOKEN_LAMBDA_URL }}
+      submitVatLambdaUrl: ${{ steps.application-outputs.outputs.DIY_SUBMIT_SUBMIT_VAT_LAMBDA_URL }}
+      logReceiptLambdaUrl: ${{ steps.application-outputs.outputs.DIY_SUBMIT_LOG_RECEIPT_LAMBDA_URL }}
+      catalogLambdaUrl: ${{ steps.application-outputs.outputs.DIY_SUBMIT_CATALOG_LAMBDA_URL }}
+      requestBundlesLambdaUrl: ${{ steps.application-outputs.outputs.DIY_SUBMIT_REQUEST_BUNDLES_LAMBDA_URL }}
+      myBundlesLambdaUrl: ${{ steps.application-outputs.outputs.DIY_SUBMIT_MY_BUNDLES_LAMBDA_URL }}
+      myReceiptsLambdaUrl: ${{ steps.application-outputs.outputs.DIY_SUBMIT_MY_RECEIPTS_LAMBDA_URL }}
+
   deploy-edge:
     name: 'deploy edge'
     if: ${{ inputs.skipDeploy != 'true' }}
@@ -1224,7 +1241,6 @@ jobs:
       - build-cdk
       - deploy-auth
       - deploy-application
-      - deploy-web
     runs-on: ubuntu-24.04
     environment:
       name: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
@@ -1248,46 +1264,96 @@ jobs:
           java-version: ${{ env.JAVA_VERSION }}
           cache: 'maven'
 
-      - name: Download CDK synthesis artifacts
-        uses: actions/download-artifact@v5
-        with:
-          name: cdk-synthesis
-          path: target/
-
       - name: Configure AWS role via GitHub OIDC
         uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
-          role-session-name: gha-submit-actions-deploy
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
 
       - name: Assume AWS deployment role
         uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
-          role-session-name: gha-submit-deploy
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
 
-      - name: Deploy Edge Stack (CDK)
+      - run: find . -type f -iname ".*" -ls
+
+      - run: find . -type f -ls
+
+      - run: find /home/runner/work/submit.diyaccounting.co.uk/submit.diyaccounting.co.uk/cdk-delivery -type f -iname ".*" -ls
+
+      - run: find /home/runner/work/submit.diyaccounting.co.uk/submit.diyaccounting.co.uk/cdk-delivery -type f -ls
+
+      - run: cat /home/runner/work/submit.diyaccounting.co.uk/submit.diyaccounting.co.uk/cdk-delivery/cdk.json
+
+      - name: Build CDK and synthesize and deploy the EdgeStack in the Delivery Application
         run: |
-          npx dotenv -e .env.${{ needs.names.outputs.environment-name }} -- \
-            npx cdk deploy ${{ needs.names.outputs.deployment-name }}-EdgeStack \
-              --exclusively \
-              --require-approval never \
-              --ci true \
-              --concurrency 4 \
-              --asset-parallelism \
-              --asset-prebuild \
-              --outputs-file cdk.out/cdk-outputs-edge.json \
+          ./mvnw --errors clean package -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
+            && cd cdk-delivery \
+            && cat ../.env.${{ needs.names.outputs.environment-name }} \
+            && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
+              npx cdk deploy \
+                ${{ needs.names.outputs.deployment-name }}-EdgeStack \
+                --exclusively \
+                --require-approval never \
+                --ci true \
+                --concurrency 4 \
+                --asset-parallelism \
+                --outputs-file ../cdk-submit-delivery.out/cdk-outputs-edge.json \
+              ; cd .. \
             ;
         env:
           ENV_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
+          DIY_SUBMIT_AUTH_URL_MOCK_LAMBDA_ARN: ${{ needs.deploy-auth.outputs.authUrlMockLambdaArn }}
+          DIY_SUBMIT_AUTH_URL_COGNITO_LAMBDA_ARN: ${{ needs.deploy-auth.outputs.authUrlCognitoLambdaArn }}
+          DIY_SUBMIT_COGNITO_EXCHANGE_TOKEN_LAMBDA_ARN: ${{ needs.deploy-auth.outputs.exchangeCognitoTokenLambdaArn }}
+          DIY_SUBMIT_AUTH_URL_HMRC_LAMBDA_ARN: ${{ needs.deploy-application.outputs.authUrlHmrcLambdaArn }}
+          DIY_SUBMIT_EXCHANGE_HMRC_TOKEN_LAMBDA_ARN: ${{ needs.deploy-application.outputs.exchangeHmrcTokenLambdaArn }}
+          DIY_SUBMIT_SUBMIT_VAT_LAMBDA_ARN: ${{ needs.deploy-application.outputs.submitVatLambdaArn }}
+          DIY_SUBMIT_LOG_RECEIPT_LAMBDA_ARN: ${{ needs.deploy-application.outputs.logReceiptLambdaArn }}
+          DIY_SUBMIT_CATALOG_LAMBDA_ARN: ${{ needs.deploy-application.outputs.catalogLambdaArn }}
+          DIY_SUBMIT_REQUEST_BUNDLES_LAMBDA_ARN: ${{ needs.deploy-application.outputs.requestBundlesLambdaArn }}
+          DIY_SUBMIT_MY_BUNDLES_LAMBDA_ARN: ${{ needs.deploy-application.outputs.myBundlesLambdaArn }}
+          DIY_SUBMIT_MY_RECEIPTS_LAMBDA_ARN: ${{ needs.deploy-application.outputs.myReceiptsLambdaArn }}
+          # Function URLs for cross-region EdgeStack deployment
+          DIY_SUBMIT_AUTH_URL_MOCK_LAMBDA_URL: ${{ needs.deploy-auth.outputs.authUrlMockLambdaUrl }}
+          DIY_SUBMIT_AUTH_URL_COGNITO_LAMBDA_URL: ${{ needs.deploy-auth.outputs.authUrlCognitoLambdaUrl }}
+          DIY_SUBMIT_COGNITO_EXCHANGE_TOKEN_LAMBDA_URL: ${{ needs.deploy-auth.outputs.exchangeCognitoTokenLambdaUrl }}
+          DIY_SUBMIT_AUTH_URL_HMRC_LAMBDA_URL: ${{ needs.deploy-application.outputs.authUrlHmrcLambdaUrl }}
+          DIY_SUBMIT_EXCHANGE_HMRC_TOKEN_LAMBDA_URL: ${{ needs.deploy-application.outputs.exchangeHmrcTokenLambdaUrl }}
+          DIY_SUBMIT_SUBMIT_VAT_LAMBDA_URL: ${{ needs.deploy-application.outputs.submitVatLambdaUrl }}
+          DIY_SUBMIT_LOG_RECEIPT_LAMBDA_URL: ${{ needs.deploy-application.outputs.logReceiptLambdaUrl }}
+          DIY_SUBMIT_CATALOG_LAMBDA_URL: ${{ needs.deploy-application.outputs.catalogLambdaUrl }}
+          DIY_SUBMIT_REQUEST_BUNDLES_LAMBDA_URL: ${{ needs.deploy-application.outputs.requestBundlesLambdaUrl }}
+          DIY_SUBMIT_MY_BUNDLES_LAMBDA_URL: ${{ needs.deploy-application.outputs.myBundlesLambdaUrl }}
+          DIY_SUBMIT_MY_RECEIPTS_LAMBDA_URL: ${{ needs.deploy-application.outputs.myReceiptsLambdaUrl }}
+
+      #authUrlMockLambdaArn: ${{ steps.auth-outputs.outputs.DIY_SUBMIT_AUTH_URL_MOCK_LAMBDA_ARN }}
+      #authUrlCognitoLambdaArn: ${{ steps.auth-outputs.outputs.DIY_SUBMIT_AUTH_URL_COGNITO_LAMBDA_ARN }}
+      #exchangeCognitoTokenLambdaArn: ${{ steps.auth-outputs.outputs.DIY_SUBMIT_COGNITO_EXCHANGE_TOKEN_LAMBDA_ARN }}
+#      authUrlHmrcLambdaArn: ${{ steps.application-outputs.outputs.DIY_SUBMIT_AUTH_URL_HMRC_LAMBDA_ARN }}
+#      exchangeHmrcTokenLambdaArn: ${{ steps.application-outputs.outputs.DIY_SUBMIT_EXCHANGE_HMRC_TOKEN_LAMBDA_ARN }}
+#      submitVatLambdaArn: ${{ steps.application-outputs.outputs.DIY_SUBMIT_SUBMIT_VAT_LAMBDA_ARN }}
+#      logReceiptLambdaArn: ${{ steps.application-outputs.outputs.DIY_SUBMIT_LOG_RECEIPT_LAMBDA_ARN }}
+#      catalogLambdaArn: ${{ steps.application-outputs.outputs.DIY_SUBMIT_CATALOG_LAMBDA_ARN }}
+#      myBundlesLambdaArn: ${{ steps.application-outputs.outputs.DIY_SUBMIT_MY_BUNDLES_LAMBDA_ARN }}
+#      myReceiptsLambdaArn: ${{ steps.application-outputs.outputs.DIY_SUBMIT_MY_RECEIPTS_LAMBDA_ARN }}
 
       - name: Resolve stack outputs
         id: edge-outputs
         run: |
-          BASE_URL=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-EdgeStack"].BaseUrl' cdk.out/cdk-outputs-edge.json)
+          BASE_URL=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-EdgeStack"].BaseUrl' cdk-submit-delivery.out/cdk-outputs-edge.json)
           echo "BASE_URL=$BASE_URL"
           echo "BASE_URL=$BASE_URL" >> $GITHUB_OUTPUT
         shell: bash
@@ -1301,7 +1367,7 @@ jobs:
       - names
       - npm-test
       - build-cdk
-      - deploy-web
+      - deploy-edge
     runs-on: ubuntu-24.04
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
     steps:
@@ -1322,12 +1388,6 @@ jobs:
           distribution: 'temurin'
           java-version: ${{ env.JAVA_VERSION }}
           cache: 'maven'
-
-      - name: Download CDK synthesis artifacts
-        uses: actions/download-artifact@v5
-        with:
-          name: cdk-synthesis
-          path: target/
 
       - name: Configure AWS role via GitHub OIDC
         uses: aws-actions/configure-aws-credentials@v5
@@ -1351,104 +1411,109 @@ jobs:
           output-credentials: true
           retry-max-attempts: 3
 
-      - name: Deploy Publish Stack (CDK)
+      - name: Build CDK and synthesize and deploy the PublishStack in the Delivery Application
         run: |
-          npx dotenv -e .env.${{ needs.names.outputs.environment-name }} -- \
-            npx cdk deploy ${{ needs.names.outputs.deployment-name }}-PublishStack \
-              --exclusively \
-              --require-approval never \
-              --ci true \
-              --concurrency 4 \
-              --asset-parallelism \
-              --asset-prebuild \
-              --outputs-file cdk.out/cdk-outputs-edge.json \
+          ./mvnw --errors clean package -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
+            && cd cdk-delivery \
+            && cat ../.env.${{ needs.names.outputs.environment-name }} \
+            && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
+              npx cdk deploy \
+                ${{ needs.names.outputs.deployment-name }}-PublishStack \
+                --exclusively \
+                --require-approval never \
+                --ci true \
+                --concurrency 4 \
+                --asset-parallelism \
+                --outputs-file ../cdk-submit-application.out/cdk-outputs-publish.json \
+              ; cd .. \
             ;
         env:
           ENV_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
 
-  deploy-ops:
-    name: 'deploy ops'
-    if: ${{ inputs.skipDeploy != 'true' }}
-    needs:
-      - names
-      - npm-test
-      - build-cdk
-      - deploy-auth
-      - deploy-application
-      - deploy-web
-    runs-on: ubuntu-24.04
-    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v5
-
-      - name: Setup Node
-        uses: actions/setup-node@v5
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Node dependencies
-        run: npm ci
-
-      - uses: actions/setup-java@v5
-        with:
-          distribution: 'temurin'
-          java-version: ${{ env.JAVA_VERSION }}
-          cache: 'maven'
-
-      - name: Download CDK synthesis artifacts
-        uses: actions/download-artifact@v5
-        with:
-          name: cdk-synthesis
-          path: target/
-
-      - name: Configure AWS role via GitHub OIDC
-        uses: aws-actions/configure-aws-credentials@v5
-        with:
-          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-          role-chaining: false
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - name: Assume AWS deployment role
-        uses: aws-actions/configure-aws-credentials@v5
-        with:
-          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-          role-chaining: true
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - name: Deploy Ops Stack (CDK)
-        run: |
-          npx dotenv -e .env.${{ needs.names.outputs.environment-name }} -- \
-            npx cdk deploy ${{ needs.names.outputs.deployment-name }}-OpsStack \
-              --exclusively \
-              --require-approval never \
-              --ci true \
-              --concurrency 4 \
-              --asset-parallelism \
-              --asset-prebuild \
-              --outputs-file cdk-out/cdk-outputs-ops.json \
-            ;
-        env:
-          ENV_NAME: ${{ needs.names.outputs.environment-name }}
-          DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
+#  deploy-ops:
+#    name: 'deploy ops'
+#    if: ${{ inputs.skipDeploy != 'true' }}
+#    needs:
+#      - names
+#      - npm-test
+#      - build-cdk
+#      - deploy-auth
+#      - deploy-application
+#      - deploy-edge
+#    runs-on: ubuntu-24.04
+#    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+#    steps:
+#      - name: Checkout
+#        uses: actions/checkout@v5
+#
+#      - name: Setup Node
+#        uses: actions/setup-node@v5
+#        with:
+#          node-version: ${{ env.NODE_VERSION }}
+#          cache: 'npm'
+#
+#      - name: Node dependencies
+#        run: npm ci
+#
+#      - uses: actions/setup-java@v5
+#        with:
+#          distribution: 'temurin'
+#          java-version: ${{ env.JAVA_VERSION }}
+#          cache: 'maven'
+#
+#      - name: Download CDK synthesis artifacts
+#        uses: actions/download-artifact@v5
+#        with:
+#          name: cdk-synthesis
+#          path: cdk-submit-application.out/
+#
+#      - name: Configure AWS role via GitHub OIDC
+#        uses: aws-actions/configure-aws-credentials@v5
+#        with:
+#          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+#          aws-region: ${{ env.AWS_REGION }}
+#          role-chaining: false
+#          audience: sts.amazonaws.com
+#          role-skip-session-tagging: true
+#          output-credentials: true
+#          retry-max-attempts: 3
+#
+#      - name: Assume AWS deployment role
+#        uses: aws-actions/configure-aws-credentials@v5
+#        with:
+#          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+#          aws-region: ${{ env.AWS_REGION }}
+#          role-chaining: true
+#          audience: sts.amazonaws.com
+#          role-skip-session-tagging: true
+#          output-credentials: true
+#          retry-max-attempts: 3
+#
+#      - name: Deploy Ops Stack (CDK)
+#        run: |
+#          cd cdk-application \
+#           && cat ../.env.${{ needs.names.outputs.environment-name }} \
+#           && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
+#             npx cdk deploy ${{ needs.names.outputs.deployment-name }}-OpsStack \
+#              --exclusively \
+#              --require-approval never \
+#              --ci true \
+#              --concurrency 4 \
+#              --asset-parallelism \
+#              --outputs-file cdk-out/cdk-outputs-ops.json \
+#           ; cd .. \
+#           ;
+#        env:
+#          ENV_NAME: ${{ needs.names.outputs.environment-name }}
+#          DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
 
   test-parameters:
-    if: ${{ !cancelled() && inputs.skipDeploy == 'true' || needs.deploy-web.result == 'success' }}
+    if: ${{ !cancelled() && inputs.skipDeploy == 'true' || needs.deploy-edge.result == 'success' }}
     name: 'calculate test parameters'
     needs:
       - names
       - deploy-application
-      - deploy-web
       - deploy-edge
       - deploy-publish
     runs-on: ubuntu-24.04
@@ -1461,7 +1526,7 @@ jobs:
         uses: actions/checkout@v5
 
     outputs:
-      base-url: ${{ ( needs.names.outputs.deployment-name == 'prod' && 'https://submit.diyaccounting.co.uk' || format('https://{0}.submit.diyaccounting.co.uk', needs.names.outputs.deployment-name) ) }}
+      base-url: ${{ needs.deploy-edge.outputs.base-url || ( needs.names.outputs.deployment-name == 'prod' && 'https://submit.diyaccounting.co.uk' || format('https://{0}.submit.diyaccounting.co.uk', needs.names.outputs.deployment-name) ) }}
 
 #  api-test:
 #    if: ${{ !cancelled() && inputs.skipDeploy == 'true' || needs.deploy-edge.result == 'success' }}
@@ -1470,9 +1535,8 @@ jobs:
 #      - names
 #      - build-cdk
 #      - deploy-application
-#      - deploy-web
-#      #- deploy-edge
-#      #- deploy-publish
+#      - deploy-edge
+#      - deploy-publish
 #      - test-parameters
 #    runs-on: ubuntu-24.04
 #    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
@@ -1512,14 +1576,13 @@ jobs:
 #            test-results
 
   web-test:
-    if: ${{ !cancelled() && inputs.skipDeploy == 'true' || needs.deploy-web.result == 'success' }}
+    if: ${{ !cancelled() && inputs.skipDeploy == 'true' || needs.deploy-edge.result == 'success' }}
     name: 'web test'
     needs:
       - names
       - build-cdk
       - deploy-application
-      - deploy-web
-      #- deploy-edge
+      - deploy-edge
       - deploy-publish
       - test-parameters
     runs-on: ubuntu-24.04
@@ -1542,6 +1605,14 @@ jobs:
           npm -v
           npm ci --ignore-scripts
           npx playwright install chromium --with-deps
+
+      - name: Generate test credentials
+        id: uuid
+        run: |
+          TEST_USERNAME="test-$(uuidgen | tr '[:upper:]' '[:lower:]' | head -c 8)"
+          TEST_PASSWORD="$(uuidgen | tr '[:upper:]' '[:lower:]' | head -c 16)"
+          echo "TEST_USERNAME=$TEST_USERNAME" >> $GITHUB_OUTPUT
+          echo "TEST_PASSWORD=$TEST_PASSWORD" >> $GITHUB_OUTPUT
 
       - run: cp '.env.${{ needs.names.outputs.environment-name }}' '.env.proxy' ; npx dotenv -e '.env.${{ needs.names.outputs.environment-name }}' -- npm run test:behaviour
         env:
@@ -1577,23 +1648,31 @@ jobs:
 
           exit $fail
 
-      - name: Upload artifacts
+      - name: Upload artifacts (results)
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
         with:
           name: web-test-artifacts
           retention-days: 30
           path: |
-            "target/behaviour-test-results/"
-            "target/test-reports/"
+            target/behaviour-test-results/
+
+      - name: Upload artifacts (reports)
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-test-reports
+          retention-days: 30
+          path: |
+            target/test-reports/
 
 #  load-test:
-#    if: ${{ !cancelled() && inputs.skipDeploy == 'true' || needs.deploy-web.result == 'success' }}
+#    if: ${{ !cancelled() && inputs.skipDeploy == 'true' || needs.deploy-edge.result == 'success' }}
 #    name: 'load test'
 #    needs:
 #      - names
 #      - build-cdk
-#      - deploy-web
+#      - deploy-edge
 #      - deploy-edge
 #      - deploy-publish
 #      - test-parameters
@@ -1650,11 +1729,10 @@ jobs:
 
   publish-artifacts:
     name: 'publish artifacts to github pages'
-    if: ${{ !cancelled() && inputs.skipDeploy == 'true' || needs.deploy-web.result == 'success' }}
+    if: ${{ !cancelled() && needs.names.outputs.environment-name == 'prod' && ( inputs.skipDeploy == 'true' || needs.deploy-edge.result == 'success' ) }}
     needs:
       - names
-      - deploy-web
-      #- deploy-edge
+      - deploy-edge
       - test-parameters
       #- api-test
       - web-test
@@ -1697,8 +1775,8 @@ jobs:
           mkdir -p gh-pages/artifacts
 
           # Copy test artifacts
-          if [ -d "artifacts/load-test-artifacts" ]; then
-            cp -r artifacts/load-test-artifacts gh-pages/artifacts/load-test/
+          if [ -d "artifacts/web-test-artifacts" ]; then
+            cp -r artifacts/web-test-artifacts gh-pages/artifacts/web-test/
           fi
 
           # Create index page for artifacts
@@ -1717,7 +1795,7 @@ jobs:
 
                   <h2>Available Artifacts</h2>
                   <ul>
-                      <li><a href="load-test/">Load Test Results</a></li>
+                      <li><a href="web-test/">Web Test Results</a></li>
                   </ul>
               </div>
           </body>

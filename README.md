@@ -102,7 +102,7 @@ Key environment variables (selected)
 - Cognito/Google: DIY_SUBMIT_COGNITO_CLIENT_ID, DIY_SUBMIT_COGNITO_BASE_URI, DIY_SUBMIT_GOOGLE_CLIENT_ID, DIY_SUBMIT_GOOGLE_CLIENT_SECRET
 - Bundles: DIY_SUBMIT_BUNDLE_EXPIRY_DATE, DIY_SUBMIT_BUNDLE_USER_LIMIT, DIY_SUBMIT_BUNDLE_MOCK, DIY_SUBMIT_USER_POOL_ID, AWS_REGION
 - Local S3: DIY_SUBMIT_TEST_S3_ENDPOINT, DIY_SUBMIT_TEST_S3_ACCESS_KEY, DIY_SUBMIT_TEST_S3_SECRET_KEY, DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX
-See infra/main/java/co/uk/diyaccounting/submit/WebApp.java for the full set mapped into the CDK stack.
+See infra/main/java/co/uk/diyaccounting/submit/SubmitApplication.java for the full set mapped into the CDK stack.
 
 API Reference
 Auth URL endpoints

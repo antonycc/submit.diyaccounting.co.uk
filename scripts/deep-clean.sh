@@ -30,6 +30,8 @@ fi
 if [[ -e 'pom.xml' ]]; then
   rm -rf target
   rm -rf cdk.out
+  rm -rf cdk-submit-application.out
+  rm -rf cdk-submit-delivery.out
   rm -rf cdk.log
   rm -rf ~/.m2/repository
   rm -rf .aws-sam

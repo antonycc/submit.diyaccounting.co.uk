@@ -1,10 +1,11 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import software.amazon.awscdk.App;
+import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.assertions.Template;
 import uk.org.webcompere.systemstubs.environment.EnvironmentVariables;
 import uk.org.webcompere.systemstubs.jupiter.SystemStub;
@@ -13,7 +14,6 @@ import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
 @ExtendWith(SystemStubsExtension.class)
 public class IdentityStackTest {
 
-    private static final Logger logger = LogManager.getLogger(IdentityStackTest.class);
     private static final String testAccount = "111111111111";
 
     @SystemStub
@@ -27,7 +27,7 @@ public class IdentityStackTest {
 
     @Test
     public void testIdentityStackResources() {
-        logger.info("Starting IdentityStack test - this should be visible in console output");
+        infof("Starting IdentityStack test - this should be visible in console output");
         App app = new App();
 
         IdentityStack stack = createTestIdentityStack(app);
@@ -36,35 +36,38 @@ public class IdentityStackTest {
         // Minimal assertions to verify key Cognito resources are created
         template.resourceCountIs("AWS::Cognito::UserPool", 1);
         template.resourceCountIs("AWS::Cognito::UserPoolClient", 1);
-        logger.info("IdentityStack test completed successfully - logging is working!");
+        infof("IdentityStack test completed successfully - logging is working!");
     }
 
     private IdentityStack createTestIdentityStack(App app) {
-        return IdentityStack.Builder.create(app, "TestIdentityStack")
-                .env("test")
-                .hostedZoneName("submit.diyaccounting.co.uk")
-                .hostedZoneId("ZTEST123456789")
-                .subDomainName("submit")
-                .authCertificateArn("arn:aws:acm:eu-west-2:000000000000:certificate/test")
-                .accessLogGroupRetentionPeriodDays("30")
-                .cloudTrailEnabled("false")
-                .cloudTrailEventSelectorPrefix("none")
-                .xRayEnabled("false")
-                .verboseLogging("false")
-                .homeUrl("https://test.submit.diyaccounting.co.uk/")
-                // Provide Google configuration to avoid lookups/nulls in tests
-                .googleClientId("test-google-client-id")
-                .googleClientSecretArn(
-                        "arn:aws:secretsmanager:eu-west-2:000000000000:secret:diy/test/submit/google/client_secret")
-                // Provide Cognito values used by builder
-                .antonyccClientId("test-client-id")
-                .antonyccBaseUri("https://test")
-                // Optional/feature flags for Cognito
-                .cognitoDomainPrefix("auth")
-                .cognitoFeaturePlan("ESSENTIALS")
-                .cognitoEnableLogDelivery("false")
-                // No actual lambda jar in unit tests
-                .logCognitoEventHandlerSource("none")
-                .build();
+        return new IdentityStack(
+                app,
+                "TestIdentityStack",
+                IdentityStack.IdentityStackProps.builder()
+                        .env(Environment.builder().region("eu-west-2").build())
+                        .crossRegionReferences(false)
+                        .envName("test")
+                        .hostedZoneName("submit.diyaccounting.co.uk")
+                        .hostedZoneId("ZTEST123456789")
+                        .subDomainName("submit")
+                        .authCertificateArn("arn:aws:acm:eu-west-2:000000000000:certificate/test")
+                        .accessLogGroupRetentionPeriodDays("30")
+                        .cloudTrailEnabled("false")
+                        .xRayEnabled("false")
+                        .verboseLogging("false")
+                        .homeUrl("https://test.submit.diyaccounting.co.uk/")
+                        // Provide Google configuration to avoid lookups/nulls in tests
+                        .googleClientId("test-google-client-id")
+                        .googleClientSecretArn(
+                                "arn:aws:secretsmanager:eu-west-2:000000000000:secret:diy/test/submit/google/client_secret")
+                        // Provide Cognito values used by builder
+                        .antonyccClientId("test-client-id")
+                        .antonyccBaseUri("https://test")
+                        // Optional/feature flags for Cognito
+                        .cognitoDomainPrefix("auth")
+                        .useExistingAuthCertificate("true")
+                        .cognitoFeaturePlan("ESSENTIALS")
+                        .cognitoEnableLogDelivery("false")
+                        .build());
     }
 }

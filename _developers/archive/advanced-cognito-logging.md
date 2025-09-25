@@ -5,7 +5,7 @@ Here is a detailed plan to extend the **cdk-refactor** branch so that Cognito’
 ## 1. Understand the current state
 
 * **CognitoAuth.java** – currently creates a `UserPool`, optional Google IdP and `UserPoolClient`. It does **not** set an advanced security mode or feature plan, nor does it configure log delivery or Lambda triggers.
-* **WebApp.java** – passes many environment variables to `WebStack` (e.g., `CLOUD_TRAIL_ENABLED`, `X_RAY_ENABLED`, `ACCESS_LOG_GROUP_RETENTION_PERIOD_DAYS`, Google client settings, etc.).  These values are used to toggle CloudTrail, X‑Ray and log retention in `WebStack`.
+* **SubmitApplication.java** – passes many environment variables to `WebStack` (e.g., `CLOUD_TRAIL_ENABLED`, `X_RAY_ENABLED`, `ACCESS_LOG_GROUP_RETENTION_PERIOD_DAYS`, Google client settings, etc.).  These values are used to toggle CloudTrail, X‑Ray and log retention in `WebStack`.
 * **WebStack.java** – when `cloudTrailEnabled` is true it creates a CloudTrail trail for S3 events and sends logs to CloudWatch; when `xRayEnabled` is true it sets `Tracing.ACTIVE` on each Lambda via the `LambdaUrlOrigin` builder.  The pattern is applied consistently to API Lambdas via `LambdaUrlOrigin` but no Cognito triggers exist.
 * **LogS3ObjectEvent.java** – demonstrates a simple Lambda that reads an S3 object and logs each line to CloudWatch via `context.getLogger().log`.  This is the pattern to emulate for Cognito triggers.
 
@@ -50,9 +50,9 @@ AWS’s advanced security features produce risk scores and log sign‑in/sign‑
    delivery.addDependency(userPool);
    ```
 
-4. **Modify `CognitoAuth.Builder`** – Add new builder fields to accept the feature plan, retention days and whether to enable log delivery.  Use the retention days passed down from `WebApp` (re‑use `ACCESS_LOG_GROUP_RETENTION_PERIOD_DAYS` to avoid introducing another env var).  Set `.featurePlan(...)` or `.advancedSecurityMode(...)` on the `UserPool` builder accordingly.  Create the log groups and the `CfnUserPoolLogDeliveryConfiguration` inside the `CognitoAuth` constructor.
+4. **Modify `CognitoAuth.Builder`** – Add new builder fields to accept the feature plan, retention days and whether to enable log delivery.  Use the retention days passed down from `SubmitApplication` (re‑use `ACCESS_LOG_GROUP_RETENTION_PERIOD_DAYS` to avoid introducing another env var).  Set `.featurePlan(...)` or `.advancedSecurityMode(...)` on the `UserPool` builder accordingly.  Create the log groups and the `CfnUserPoolLogDeliveryConfiguration` inside the `CognitoAuth` constructor.
 
-5. **Propagate settings from `WebApp`** – In `WebApp.java` add environment variables such as `DIY_SUBMIT_COGNITO_FEATURE_PLAN` and optional `DIY_SUBMIT_ENABLE_LOG_DELIVERY`.  Pass these to `WebStack.Builder` via new builder methods like `.cognitoFeaturePlan(...)` and `.cognitoEnableLogDelivery(...)`.
+5. **Propagate settings from `SubmitApplication`** – In `SubmitApplication.java` add environment variables such as `DIY_SUBMIT_COGNITO_FEATURE_PLAN` and optional `DIY_SUBMIT_ENABLE_LOG_DELIVERY`.  Pass these to `WebStack.Builder` via new builder methods like `.cognitoFeaturePlan(...)` and `.cognitoEnableLogDelivery(...)`.
 
 6. **Update `WebStack`** – Accept the new builder fields and forward them to `CognitoAuth.Builder`.  Use the existing `accessLogGroupRetentionPeriodDays` for the Cognito log groups.  Make the retention period conversion using `RetentionDaysConverter` as is done for other logs.
 
