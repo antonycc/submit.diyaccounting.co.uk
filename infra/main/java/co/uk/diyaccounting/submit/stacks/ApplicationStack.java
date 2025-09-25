@@ -230,13 +230,17 @@ public class ApplicationStack extends Stack {
         // Grant access to HMRC client secret in Secrets Manager
         if (StringUtils.isNotBlank(props.hmrcClientSecretArn())) {
             var hmrcSecret = Secret.fromSecretPartialArn(this, "HmrcClientSecret", props.hmrcClientSecretArn());
+            // Use the provided ARN with wildcard suffix to handle AWS Secrets Manager's automatic suffix
+            String secretArnWithWildcard = props.hmrcClientSecretArn().endsWith("-*") 
+                ? props.hmrcClientSecretArn() 
+                : props.hmrcClientSecretArn() + "-*";
             this.exchangeHmrcTokenLambda.addToRolePolicy(PolicyStatement.Builder.create()
                     .effect(Effect.ALLOW)
                     .actions(List.of("secretsmanager:GetSecretValue"))
-                    .resources(List.of(hmrcSecret.getSecretArn()))
+                    .resources(List.of(secretArnWithWildcard))
                     .build());
-            infof("Granted Secrets Manager access to %s for secret %s",
-                    this.exchangeHmrcTokenLambda.getFunctionName(), props.hmrcClientSecretArn());
+            infof("Granted Secrets Manager access to %s for secret %s (with wildcard: %s)",
+                    this.exchangeHmrcTokenLambda.getFunctionName(), props.hmrcClientSecretArn(), secretArnWithWildcard);
         }
 
         infof(
