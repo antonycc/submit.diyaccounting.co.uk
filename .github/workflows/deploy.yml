@@ -966,15 +966,6 @@ jobs:
       - name: Node dependencies
         run: npm ci
 
-      - name: Download image artifact
-        uses: actions/download-artifact@v5
-        with:
-          name: docker-image
-          path: docker-image/
-
-      - name: Load Docker image
-        run: docker load -i docker-image/image.tar
-
       - name: Configure AWS role via GitHub OIDC
         uses: aws-actions/configure-aws-credentials@v5
         with:
@@ -1002,6 +993,15 @@ jobs:
         run: |
           aws ecr get-login-password --region ${{ env.AWS_REGION }} \
             | docker login --username AWS --password-stdin ${{ needs.deploy-dev.outputs.ecr-repository-uri }}
+
+      - name: Download image artifact
+        uses: actions/download-artifact@v5
+        with:
+          name: docker-image
+          path: docker-image/
+
+      - name: Load Docker image
+        run: docker load -i docker-image/image.tar
 
       - name: Tag and push Docker image to ECR
         shell: bash
