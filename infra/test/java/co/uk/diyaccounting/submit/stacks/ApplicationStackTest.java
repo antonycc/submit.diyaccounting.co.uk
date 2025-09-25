@@ -1,13 +1,13 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import org.junit.jupiter.api.Test;
-import software.amazon.awscdk.App;
-import software.amazon.awscdk.Environment;
-
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDashedDomainName;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDomainName;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+
+import org.junit.jupiter.api.Test;
+import software.amazon.awscdk.App;
+import software.amazon.awscdk.Environment;
 
 class ApplicationStackTest {
 

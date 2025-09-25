@@ -42,8 +42,6 @@ public class DevStack extends Stack {
 
         String hostedZoneName();
 
-        String retainEcrRepository();
-
         @Override
         Environment getEnv();
 

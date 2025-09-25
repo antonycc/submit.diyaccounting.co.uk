@@ -1,7 +1,5 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import software.amazon.awscdk.App;
@@ -10,6 +8,8 @@ import software.amazon.awscdk.assertions.Template;
 import uk.org.webcompere.systemstubs.environment.EnvironmentVariables;
 import uk.org.webcompere.systemstubs.jupiter.SystemStub;
 import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
 
 @ExtendWith(SystemStubsExtension.class)
 public class IdentityStackTest {
@@ -66,8 +66,6 @@ public class IdentityStackTest {
                         // Optional/feature flags for Cognito
                         .cognitoDomainPrefix("auth")
                         .useExistingAuthCertificate("true")
-                        .cognitoFeaturePlan("ESSENTIALS")
-                        .cognitoEnableLogDelivery("false")
                         .build());
     }
 }

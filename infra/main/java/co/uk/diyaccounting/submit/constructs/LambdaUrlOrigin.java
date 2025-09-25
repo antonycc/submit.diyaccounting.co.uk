@@ -22,10 +22,6 @@ public class LambdaUrlOrigin {
     public final DockerImageCode dockerImage;
     public final Function lambda;
     public final LogGroup logGroup;
-    // public final FunctionUrl functionUrl;
-    // public final BehaviorOptions behaviorOptions;
-    // public final HttpOrigin apiOrigin;
-    // public final String lambdaUrlHost;
 
     public LambdaUrlOrigin(final Construct scope, LambdaUrlOriginProps props) {
 
@@ -69,30 +65,5 @@ public class LambdaUrlOrigin {
                         .removalPolicy(props.logGroupRemovalPolicy())
                         .build());
         infof("Created log group %s with retention %s", this.logGroup.getNode().getId(), props.logGroupRetention());
-
-        // Create function URL
-        // FunctionUrlOptions.Builder functionUrlOptionsBuilder = FunctionUrlOptions.builder()
-        //        .authType(builder.functionUrlAuthType)
-        //        .invokeMode(builder.invokeMode);
-
-        // this.functionUrl = this.lambda.addFunctionUrl(functionUrlOptionsBuilder.build());
-
-        // this.lambdaUrlHost = getLambdaUrlHostToken(this.functionUrl);
-        // this.apiOrigin = HttpOrigin.Builder.create(this.lambdaUrlHost)
-        //        .protocolPolicy(builder.protocolPolicy)
-        //        .build();
-
-        // BehaviorOptions.Builder behaviorOptionsBuilder = BehaviorOptions.builder()
-        //        .origin(this.apiOrigin)
-        //        .allowedMethods(builder.cloudFrontAllowedMethods)
-        //        .cachePolicy(builder.cachePolicy)
-        //        .originRequestPolicy(builder.originRequestPolicy)
-        //        .viewerProtocolPolicy(builder.viewerProtocolPolicy);
-
-        // if (builder.responseHeadersPolicy != null) {
-        //    behaviorOptionsBuilder.responseHeadersPolicy(builder.responseHeadersPolicy);
-        // }
-
-        // this.behaviorOptions = behaviorOptionsBuilder.build();
     }
 }

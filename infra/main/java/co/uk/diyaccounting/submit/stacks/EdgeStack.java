@@ -280,20 +280,6 @@ public class EdgeStack extends Stack {
                                         "arn:aws:cloudfront::" + this.getAccount() + ":distribution/*")))
                 .build());
 
-        // S3OriginAccessControl originAccessControl = S3OriginAccessControl.Builder.create(this,
-        // props.resourceNamePrefix + "-OAC")
-        //        //.name(props.compressedResourceNamePrefix + "-oac")
-        //        .originAccessControlName(props.compressedResourceNamePrefix + "-oac")
-        //        .description("OAC for " + props.resourceNamePrefix + " CloudFront distribution")
-        //        //.originAccessControlOriginType("s3")
-        //        //.signingBehavior("always")
-        //        //.signingProtocol("sigv4")
-        //        .signing(Signing.builder()
-        //            .signingBehavior(SigningBehavior.ALWAYS)
-        //            .signingProtocol(SigningProtocol.SIGV4)
-        //            .build())
-        //        .build();
-
         S3OriginAccessControl oac = S3OriginAccessControl.Builder.create(this, "MyOAC")
                 .signing(Signing.SIGV4_ALWAYS) // NEVER // SIGV4_NO_OVERRIDE
                 .build();

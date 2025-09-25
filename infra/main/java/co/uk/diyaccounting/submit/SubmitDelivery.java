@@ -1,17 +1,5 @@
 package co.uk.diyaccounting.submit;
 
-import co.uk.diyaccounting.submit.stacks.EdgeStack;
-import co.uk.diyaccounting.submit.stacks.PublishStack;
-import co.uk.diyaccounting.submit.stacks.SelfDestructStack;
-import software.amazon.awscdk.App;
-import software.amazon.awscdk.Environment;
-import software.constructs.Construct;
-
-import java.io.File;
-import java.lang.reflect.Field;
-import java.nio.file.Paths;
-import java.util.Map;
-
 import static co.uk.diyaccounting.submit.awssdk.KindCdk.getContextValueString;
 import static co.uk.diyaccounting.submit.utils.Kind.envOr;
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
@@ -19,6 +7,17 @@ import static co.uk.diyaccounting.submit.utils.Kind.putIfNotNull;
 import static co.uk.diyaccounting.submit.utils.Kind.warnf;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateCompressedResourceNamePrefix;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateResourceNamePrefix;
+
+import co.uk.diyaccounting.submit.stacks.EdgeStack;
+import co.uk.diyaccounting.submit.stacks.PublishStack;
+import co.uk.diyaccounting.submit.stacks.SelfDestructStack;
+import java.io.File;
+import java.lang.reflect.Field;
+import java.nio.file.Paths;
+import java.util.Map;
+import software.amazon.awscdk.App;
+import software.amazon.awscdk.Environment;
+import software.constructs.Construct;
 
 public class SubmitDelivery {
 
@@ -93,23 +92,6 @@ public class SubmitDelivery {
         var envName = envOr("ENV_NAME", appProps.env);
         var deploymentName = envOr("DEPLOYMENT_NAME", appProps.deploymentName);
         var commitHash = envOr("COMMIT_HASH", "local");
-
-        // Determine primary environment (account/region) from CDK env
-        //        String cdkDefaultAccount = System.getenv("CDK_DEFAULT_ACCOUNT");
-        //        String cdkDefaultRegion = System.getenv("CDK_DEFAULT_REGION");
-        //        Environment primaryEnv = null;
-        //        if (cdkDefaultAccount != null
-        //                && !cdkDefaultAccount.isBlank()
-        //                && cdkDefaultRegion != null
-        //                && !cdkDefaultRegion.isBlank()) {
-        //            primaryEnv = Environment.builder()
-        //                    .account(cdkDefaultAccount)
-        //                    .region(cdkDefaultRegion)
-        //                    .build();
-        //        } else {
-        //            primaryEnv = Environment.builder()
-        //                .build();
-        //        }
 
         // Resource name prefixes
         var hostedZoneName = envOr("HOSTED_ZONE_NAME", appProps.hostedZoneName, "(from hostedZoneName in cdk.json)");

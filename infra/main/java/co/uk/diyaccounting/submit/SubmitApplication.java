@@ -1,5 +1,12 @@
 package co.uk.diyaccounting.submit;
 
+import static co.uk.diyaccounting.submit.utils.Kind.envOr;
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.Kind.warnf;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDomainName;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateCompressedResourceNamePrefix;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateResourceNamePrefix;
+
 import co.uk.diyaccounting.submit.awssdk.KindCdk;
 import co.uk.diyaccounting.submit.stacks.ApplicationStack;
 import co.uk.diyaccounting.submit.stacks.AuthStack;
@@ -8,20 +15,12 @@ import co.uk.diyaccounting.submit.stacks.IdentityStack;
 import co.uk.diyaccounting.submit.stacks.ObservabilityStack;
 import co.uk.diyaccounting.submit.stacks.OpsStack;
 import co.uk.diyaccounting.submit.stacks.SelfDestructStack;
-import software.amazon.awscdk.App;
-import software.amazon.awscdk.Environment;
-import software.constructs.Construct;
-
 import java.io.File;
 import java.lang.reflect.Field;
 import java.nio.file.Paths;
-
-import static co.uk.diyaccounting.submit.utils.Kind.envOr;
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.Kind.warnf;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDomainName;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateCompressedResourceNamePrefix;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateResourceNamePrefix;
+import software.amazon.awscdk.App;
+import software.amazon.awscdk.Environment;
+import software.constructs.Construct;
 
 public class SubmitApplication {
 
@@ -221,7 +220,6 @@ public class SubmitApplication {
                         .envName(envName)
                         .hostedZoneName(hostedZoneName)
                         .subDomainName(subDomainName)
-                        .retainEcrRepository("false")
                         .build());
 
         // Create the identity stack before any user aware services
@@ -249,8 +247,6 @@ public class SubmitApplication {
                         .xRayEnabled(xRayEnabled)
                         .verboseLogging(verboseLogging)
                         .homeUrl(baseUrl)
-                        .cognitoFeaturePlan("ESSENTIALS")
-                        .cognitoEnableLogDelivery("false")
                         .build());
 
         // Create the AuthStack with resources used in authentication and authorisation
@@ -332,9 +328,17 @@ public class SubmitApplication {
         applicationStack.addDependency(devStack);
         applicationStack.addDependency(identityStack);
         var requestBundlesLambdaGrantPrincipal = applicationStack.requestBundlesLambda.getGrantPrincipal();
-        identityStack.userPool.grant(requestBundlesLambdaGrantPrincipal, "cognito-idp:AdminGetUser", "cognito-idp:AdminUpdateUserAttributes", "cognito-idp:ListUsers");
+        identityStack.userPool.grant(
+                requestBundlesLambdaGrantPrincipal,
+                "cognito-idp:AdminGetUser",
+                "cognito-idp:AdminUpdateUserAttributes",
+                "cognito-idp:ListUsers");
         var myBundlesLambdaGrantPrincipal = applicationStack.myBundlesLambda.getGrantPrincipal();
-        identityStack.userPool.grant(myBundlesLambdaGrantPrincipal, "cognito-idp:AdminGetUser", "cognito-idp:AdminUpdateUserAttributes", "cognito-idp:ListUsers");
+        identityStack.userPool.grant(
+                myBundlesLambdaGrantPrincipal,
+                "cognito-idp:AdminGetUser",
+                "cognito-idp:AdminUpdateUserAttributes",
+                "cognito-idp:ListUsers");
 
         // Create the Ops stack (Alarms, etc.)
         // Build list of Lambda function ARNs for OpsStack
