@@ -27,6 +27,14 @@ on:
         description: 'Hours before self-destruct triggers for non-prod environments'
         required: false
         default: '1'
+      forceStaticStackDeployment:
+        description: 'Force re-deploy of static stacks (dev/observability/identity) even if they already exist'
+        type: choice
+        options:
+            - 'true'
+            - 'false'
+        required: false
+        default: 'false'
   push:
     branches:
       - '**'
@@ -70,6 +78,7 @@ env:
   GITHUB_ACTOR: ${{ github.actor }}
   SELF_DESTRUCT_DELAY_HOURS: ${{ inputs.selfDestructDelayHours || '1' }}
   BASE_IMAGE_TAG: ${{ github.sha }}
+  FORCE_STATIC_STACK_DEPLOYMENT: ${{ inputs.forceStaticStackDeployment || 'false' }}
   CERTIFICATE_ARN: ${{ vars.AWS_CERTIFICATE_ARN }}
   CLOUD_TRAIL_ENABLED: ${{ vars.AWS_CLOUD_TRAIL_ENABLED }}
   X_RAY_ENABLED: ${{ vars.AWS_X_RAY_ENABLED }}
@@ -615,8 +624,21 @@ jobs:
       #  env:
       #    CDK_NEW_BOOTSTRAP: '1'
 
+      - name: Check if ObservabilityStack exists
+        id: static-skip
+        shell: bash
+        run: |
+          STACK_NAME="${{ needs.names.outputs.deployment-name }}-ObservabilityStack"
+          echo "Checking existence of $STACK_NAME"
+          if aws cloudformation describe-stacks --stack-name "$STACK_NAME" >/dev/null 2>&1; then
+            echo "skipStaticStackDeployment=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skipStaticStackDeployment=false" >> "$GITHUB_OUTPUT"
+          fi
+
       # --app ../cdk-submit-application.out/ \
       - name: Deploy Observability Stack (CDK)
+        if: ${{ env.FORCE_STATIC_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
         run: |
           ./mvnw --errors clean package -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
             && cd cdk-application \
@@ -776,8 +798,21 @@ jobs:
           output-credentials: true
           retry-max-attempts: 3
 
+      - name: Check if DevStack exists
+        id: static-skip
+        shell: bash
+        run: |
+          STACK_NAME="${{ needs.names.outputs.deployment-name }}-DevStack"
+          echo "Checking existence of $STACK_NAME"
+          if aws cloudformation describe-stacks --stack-name "$STACK_NAME" >/dev/null 2>&1; then
+            echo "skipStaticStackDeployment=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skipStaticStackDeployment=false" >> "$GITHUB_OUTPUT"
+          fi
+
       #                 --app ../cdk-submit-application.out/ \
       - name: Deploy Dev Stack (CDK)
+        if: ${{ env.FORCE_STATIC_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
         run: |
           ./mvnw --errors clean package -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
             && cd cdk-application \
@@ -802,7 +837,12 @@ jobs:
         id: dev-outputs
         shell: bash
         run: |
-          ECR_REPOSITORY_URI=$(jq -r '."${{ needs.names.outputs.deployment-name }}-DevStack".EcrRepositoryUri' cdk-submit-application.out/cdk-outputs-dev.json)
+          STACK_NAME="${{ needs.names.outputs.deployment-name }}-DevStack"
+          if [ -f cdk-submit-application.out/cdk-outputs-dev.json ]; then
+            ECR_REPOSITORY_URI=$(jq -r '."${{ needs.names.outputs.deployment-name }}-DevStack".EcrRepositoryUri' cdk-submit-application.out/cdk-outputs-dev.json)
+          else
+            ECR_REPOSITORY_URI=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" | jq -r '.Stacks[0].Outputs[] | select(.OutputKey=="EcrRepositoryUri") | .OutputValue')
+          fi
           echo "ECR_REPOSITORY_URI=$ECR_REPOSITORY_URI"
           echo "ECR_REPOSITORY_URI=$ECR_REPOSITORY_URI" >> $GITHUB_OUTPUT
     outputs:
@@ -867,8 +907,21 @@ jobs:
           output-credentials: true
           retry-max-attempts: 3
 
+      - name: Check if IdentityStack exists
+        id: static-skip
+        shell: bash
+        run: |
+          STACK_NAME="${{ needs.names.outputs.deployment-name }}-IdentityStack"
+          echo "Checking existence of $STACK_NAME"
+          if aws cloudformation describe-stacks --stack-name "$STACK_NAME" >/dev/null 2>&1; then
+            echo "skipStaticStackDeployment=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skipStaticStackDeployment=false" >> "$GITHUB_OUTPUT"
+          fi
+
       # --app ../cdk-submit-application.out/ \
       - name: Deploy Identity stack (CDK)
+        if: ${{ env.FORCE_STATIC_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
         run: |
           ./mvnw --errors clean package -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
             && cd cdk-application \
@@ -1311,6 +1364,18 @@ jobs:
           output-credentials: true
           retry-max-attempts: 3
 
+      - name: Check if EdgeStack exists
+        id: static-skip
+        shell: bash
+        run: |
+          STACK_NAME="${{ needs.names.outputs.deployment-name }}-EdgeStack"
+          echo "Checking existence of $STACK_NAME"
+          if aws cloudformation describe-stacks --region "us-east-1" --stack-name "$STACK_NAME" >/dev/null 2>&1; then
+            echo "skipStaticStackDeployment=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skipStaticStackDeployment=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - run: find . -type f -iname ".*" -ls
 
       - run: find . -type f -ls
@@ -1322,6 +1387,7 @@ jobs:
       - run: cat /home/runner/work/submit.diyaccounting.co.uk/submit.diyaccounting.co.uk/cdk-delivery/cdk.json
 
       - name: Build CDK and synthesize and deploy the EdgeStack in the Delivery Application
+        if: ${{ env.FORCE_STATIC_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
         run: |
           ./mvnw --errors clean package -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
             && cd cdk-delivery \
@@ -1382,6 +1448,7 @@ jobs:
 #      myReceiptsLambdaArn: ${{ steps.application-outputs.outputs.DIY_SUBMIT_MY_RECEIPTS_LAMBDA_ARN }}
 
       - name: Resolve stack outputs
+        if: ${{ env.FORCE_STATIC_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
         id: edge-outputs
         run: |
           BASE_URL=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-EdgeStack"].BaseUrl' cdk-submit-delivery.out/cdk-outputs-edge.json)
