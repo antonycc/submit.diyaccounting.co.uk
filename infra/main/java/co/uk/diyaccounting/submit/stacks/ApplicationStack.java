@@ -227,6 +227,19 @@ public class ApplicationStack extends Stack {
         this.exchangeHmrcTokenLambda = exchangeHmrcTokenLambdaUrlOrigin.lambda;
         // this.exchangeHmrcTokenLambdaUrl = exchangeHmrcTokenLambdaUrlOrigin.functionUrl;
         this.exchangeHmrcTokenLambdaLogGroup = exchangeHmrcTokenLambdaUrlOrigin.logGroup;
+
+        // Grant access to HMRC client secret in Secrets Manager
+        if (StringUtils.isNotBlank(props.hmrcClientSecretArn())) {
+            var hmrcSecret = Secret.fromSecretPartialArn(this, "HmrcClientSecret", props.hmrcClientSecretArn());
+            this.exchangeHmrcTokenLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                    .effect(Effect.ALLOW)
+                    .actions(List.of("secretsmanager:GetSecretValue"))
+                    .resources(List.of(hmrcSecret.getSecretArn()))
+                    .build());
+            infof("Granted Secrets Manager access to %s for secret %s",
+                    this.exchangeHmrcTokenLambda.getFunctionName(), props.hmrcClientSecretArn());
+        }
+
         infof(
                 "Created Lambda %s for HMRC exchange token with handler %s",
                 this.exchangeHmrcTokenLambda.getNode().getId(), props.lambdaEntry() + "exchangeToken.httpPostHmrc");

@@ -489,6 +489,7 @@ export async function httpDelete(event) {
     const bundleToRemove = body.bundleId;
     const removeAll = body.removeAll;
 
+    // Validate that we have either a specific bundle ID or removeAll flag
     if (!bundleToRemove && !removeAll) {
       return {
         statusCode: 400,
@@ -496,7 +497,7 @@ export async function httpDelete(event) {
           "Content-Type": "application/json",
           "Access-Control-Allow-Origin": "*",
         },
-        body: JSON.stringify({ error: "Missing bundleId or removeAll parameter" }),
+        body: JSON.stringify({ error: "Missing bundle Id in request" }),
       };
     }
 
