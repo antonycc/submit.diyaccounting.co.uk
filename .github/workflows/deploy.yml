@@ -994,16 +994,32 @@ jobs:
           aws ecr get-login-password --region ${{ env.AWS_REGION }} \
             | docker login --username AWS --password-stdin ${{ needs.deploy-dev.outputs.ecr-repository-uri }}
 
+      - name: Check if image already exists in ECR
+        id: image-exists
+        shell: bash
+        run: |
+          REPO_URI="${{ needs.deploy-dev.outputs.ecr-repository-uri }}"
+          REPO_NAME="${REPO_URI##*/}"
+          echo "Checking if image with tag ${{ github.sha }} exists in $REPO_NAME"
+          if aws ecr describe-images --repository-name "$REPO_NAME" --image-ids imageTag="${{ github.sha }}" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Download image artifact
+        if: ${{ steps.image-exists.outputs.exists != 'true' }}
         uses: actions/download-artifact@v5
         with:
           name: docker-image
           path: docker-image/
 
       - name: Load Docker image
+        if: ${{ steps.image-exists.outputs.exists != 'true' }}
         run: docker load -i docker-image/image.tar
 
       - name: Tag and push Docker image to ECR
+        if: ${{ steps.image-exists.outputs.exists != 'true' }}
         shell: bash
         run: |
           docker tag "${{ env.BASE_IMAGE_TAG_PREFIX }}:${{ github.sha }}" ${{ needs.deploy-dev.outputs.ecr-repository-uri }}:${{ github.sha }}
