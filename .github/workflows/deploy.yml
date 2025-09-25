@@ -572,24 +572,6 @@ jobs:
     runs-on: ubuntu-24.04
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v5
-
-      - name: Setup Node
-        uses: actions/setup-node@v5
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Node dependencies
-        run: npm ci
-
-      - uses: actions/setup-java@v5
-        with:
-          distribution: 'temurin'
-          java-version: ${{ env.JAVA_VERSION }}
-          cache: 'maven'
-
 #      - name: Download CDK synthesis artifacts
 #        uses: actions/download-artifact@v5
 #        with:
@@ -631,10 +613,34 @@ jobs:
           STACK_NAME="${{ needs.names.outputs.deployment-name }}-ObservabilityStack"
           echo "Checking existence of $STACK_NAME"
           if aws cloudformation describe-stacks --stack-name "$STACK_NAME" >/dev/null 2>&1; then
+            echo "skipStaticStackDeployment=true"
             echo "skipStaticStackDeployment=true" >> "$GITHUB_OUTPUT"
           else
+            echo "skipStaticStackDeployment=false"
             echo "skipStaticStackDeployment=false" >> "$GITHUB_OUTPUT"
           fi
+
+      - name: Checkout
+        if: ${{ env.FORCE_STATIC_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        if: ${{ env.FORCE_STATIC_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
+        uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Node dependencies
+        if: ${{ env.FORCE_STATIC_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
+        run: npm ci
+
+      - uses: actions/setup-java@v5
+        if: ${{ env.FORCE_STATIC_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: 'maven'
 
       # --app ../cdk-submit-application.out/ \
       - name: Deploy Observability Stack (CDK)
