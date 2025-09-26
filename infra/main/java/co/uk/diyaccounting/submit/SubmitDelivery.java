@@ -1,5 +1,17 @@
 package co.uk.diyaccounting.submit;
 
+import co.uk.diyaccounting.submit.stacks.EdgeStack;
+import co.uk.diyaccounting.submit.stacks.PublishStack;
+import co.uk.diyaccounting.submit.stacks.SelfDestructStack;
+import software.amazon.awscdk.App;
+import software.amazon.awscdk.Environment;
+import software.constructs.Construct;
+
+import java.io.File;
+import java.lang.reflect.Field;
+import java.nio.file.Paths;
+import java.util.Map;
+
 import static co.uk.diyaccounting.submit.awssdk.KindCdk.getContextValueString;
 import static co.uk.diyaccounting.submit.utils.Kind.envOr;
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
@@ -7,17 +19,6 @@ import static co.uk.diyaccounting.submit.utils.Kind.putIfNotNull;
 import static co.uk.diyaccounting.submit.utils.Kind.warnf;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateCompressedResourceNamePrefix;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateResourceNamePrefix;
-
-import co.uk.diyaccounting.submit.stacks.EdgeStack;
-import co.uk.diyaccounting.submit.stacks.PublishStack;
-import co.uk.diyaccounting.submit.stacks.SelfDestructStack;
-import java.io.File;
-import java.lang.reflect.Field;
-import java.nio.file.Paths;
-import java.util.Map;
-import software.amazon.awscdk.App;
-import software.amazon.awscdk.Environment;
-import software.constructs.Construct;
 
 public class SubmitDelivery {
 
@@ -92,6 +93,7 @@ public class SubmitDelivery {
         var envName = envOr("ENV_NAME", appProps.env);
         var deploymentName = envOr("DEPLOYMENT_NAME", appProps.deploymentName);
         var commitHash = envOr("COMMIT_HASH", "local");
+        var websiteHash = envOr("WEBSITE_HASH", "local");
 
         // Resource name prefixes
         var hostedZoneName = envOr("HOSTED_ZONE_NAME", appProps.hostedZoneName, "(from hostedZoneName in cdk.json)");
@@ -219,6 +221,7 @@ public class SubmitDelivery {
                         .distributionArn(
                                 edgeStack.distribution.getDistributionArn()) // TODO: Get distribution by domain name
                         .commitHash(commitHash)
+                        .websiteHash(websiteHash)
                         .docRootPath(docRootPath)
                         .build());
         publishStack.addDependency(edgeStack);
