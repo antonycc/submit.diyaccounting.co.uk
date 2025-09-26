@@ -95,7 +95,7 @@ function qualifiersSatisfied(bundle, claims, requestQualifiers = {}) {
  */
 export async function httpPost(event) {
   // Routing for URL Lambda which also accepts HTTP DELETE
-  if (event.httpMethod === "DELETE" || event.requestContext.http.method === "DELETE") {
+  if (event.httpMethod === "DELETE" || event.requestContext?.http?.method === "DELETE") {
     return httpDelete(event);
   }
 

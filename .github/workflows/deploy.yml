@@ -1525,6 +1525,7 @@ jobs:
     name: 'web test'
     needs:
       - names
+      - playwright-install
       - deploy-application
       - deploy-edge
       - deploy-publish
