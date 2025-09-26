@@ -54,6 +54,8 @@ public class PublishStack extends Stack {
 
         String websiteHash();
 
+        String buildNumber();
+
         String docRootPath();
 
         // StackProps interface methods
@@ -130,6 +132,32 @@ public class PublishStack extends Stack {
             infof("No website hash provided, skipping submit.hash generation");
         }
 
+        // Generate a file containing the environment name for runtime use
+        if (props.envName() != null && !props.envName().isBlank()) {
+            try {
+                java.nio.file.Path sourceFilePath = java.nio.file.Paths.get(props.docRootPath(), "submit.env");
+                java.nio.file.Files.writeString(sourceFilePath, props.envName().trim());
+                infof("Created submit.env file with environment name: %s".formatted(props.envName()));
+            } catch (Exception e) {
+                warnf("Failed to create submit.env file: %s".formatted(e.getMessage()));
+            }
+        } else {
+            infof("No environment name provided, skipping submit.env generation");
+        }
+
+        // Generate a file containing the build number for runtime use
+        if (props.buildNumber() != null && !props.buildNumber().isBlank()) {
+            try {
+                java.nio.file.Path sourceFilePath = java.nio.file.Paths.get(props.docRootPath(), "submit.build");
+                java.nio.file.Files.writeString(sourceFilePath, props.buildNumber().trim());
+                infof("Created submit.build file with build number: %s".formatted(props.buildNumber()));
+            } catch (Exception e) {
+                warnf("Failed to create submit.build file: %s".formatted(e.getMessage()));
+            }
+        } else {
+            infof("No build number provided, skipping submit.build generation");
+        }
+
         var deployPostfix = java.util.UUID.randomUUID().toString().substring(0, 8);
 
         // Deploy the web website files to the web website bucket and invalidate distribution
@@ -158,7 +186,11 @@ public class PublishStack extends Stack {
                         "/index.html",
                         "/submit.css",
                         "/submit.js",
-                        "/submit.version"))
+                        "/submit.version",
+                        "/submit.hash",
+                        "/submit.env"
+                    )
+                )
                 .retainOnDelete(true)
                 .logGroup(webDeploymentLogGroup)
                 .expires(Expiration.after(Duration.minutes(5)))

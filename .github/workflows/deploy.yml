@@ -1367,6 +1367,7 @@ jobs:
         env:
           ENV_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
+          BUILD_NUMBER: ${{ github.run_number }}
           SELF_DESTRUCT_HANDLER_SOURCE: "../${{ needs.mvn-package.outputs.self-destruct-handler-source }}"
           DOMAIN_NAME: ${{ needs.names.outputs.deployment-name == 'prod' && 'submit.diyaccounting.co.uk' || format('{0}.submit.diyaccounting.co.uk', needs.names.outputs.deployment-name) }}
           DIY_SUBMIT_HOME_URL: ${{ needs.names.outputs.deployment-name == 'prod' && 'https://submit.diyaccounting.co.uk/' || format('https://{0}.submit.diyaccounting.co.uk/', needs.names.outputs.deployment-name) }}

@@ -94,6 +94,7 @@ public class SubmitDelivery {
         var deploymentName = envOr("DEPLOYMENT_NAME", appProps.deploymentName);
         var commitHash = envOr("COMMIT_HASH", "local");
         var websiteHash = envOr("WEBSITE_HASH", "local");
+        var buildNumber = envOr("BUILD_NUMBER", "local");
 
         // Resource name prefixes
         var hostedZoneName = envOr("HOSTED_ZONE_NAME", appProps.hostedZoneName, "(from hostedZoneName in cdk.json)");
@@ -222,6 +223,7 @@ public class SubmitDelivery {
                                 edgeStack.distribution.getDistributionArn()) // TODO: Get distribution by domain name
                         .commitHash(commitHash)
                         .websiteHash(websiteHash)
+                        .buildNumber(buildNumber)
                         .docRootPath(docRootPath)
                         .build());
         publishStack.addDependency(edgeStack);
