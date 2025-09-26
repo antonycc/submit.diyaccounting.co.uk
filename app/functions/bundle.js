@@ -94,6 +94,11 @@ function qualifiersSatisfied(bundle, claims, requestQualifiers = {}) {
  * @returns {Object} Response object
  */
 export async function httpPost(event) {
+  // Routing for URL Lambda which also accepts HTTP DELETE
+  if (event.httpMethod === "DELETE" || event.requestContext.http.method === "DELETE") {
+    return httpDelete(event);
+  }
+
   try {
     console.log("[DEBUG_LOG] Bundle request received:", JSON.stringify(event, null, 2));
 

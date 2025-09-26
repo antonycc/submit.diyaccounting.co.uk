@@ -1543,6 +1543,10 @@ jobs:
 
       #- name: Node dependencies
       #  run: npm ci
+      - name: Install JS deps (skip browser download)
+        run: npm ci --ignore-scripts
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
 
       - name: Download Playwright browsers
         uses: actions/download-artifact@v5
@@ -1550,11 +1554,11 @@ jobs:
           name: playwright-browsers
           path: ~/.cache/ms-playwright
 
+          #npm ci --ignore-scripts
+          #npx playwright install chromium --with-deps
       - name: Install dependencies and Playwright browsers
         run: |
           npm -v
-          npm ci --ignore-scripts
-          #npx playwright install chromium --with-deps
           chmod -R u+rwX ~/.cache/ms-playwright
 
       - name: Generate test credentials
