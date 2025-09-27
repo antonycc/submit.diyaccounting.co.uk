@@ -1,6 +1,6 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.awssdk.KindCdk.cfnOutput;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildFunctionName;
 

@@ -450,7 +450,7 @@ jobs:
     if: ${{ !contains(github.event.inputs.skipDeploy, 'true') }}
     needs:
       - names
-      - mvn-package
+      #- mvn-package
     runs-on: ubuntu-24.04
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
     steps:
@@ -538,7 +538,7 @@ jobs:
         env:
           ENV_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
-          SELF_DESTRUCT_HANDLER_SOURCE: "../${{ needs.mvn-package.outputs.self-destruct-handler-source }}"
+          SELF_DESTRUCT_HANDLER_SOURCE: "../infra/test/resources/fake-self-destruct-lambda.jar"
           DIY_SUBMIT_GOOGLE_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ needs.names.outputs.environment-name }}/submit/google/client_secret"
 
 # TODO: Reinstate self-destruct deployment for non-prod environments in the submit application stack
@@ -631,7 +631,7 @@ jobs:
     if: ${{ !contains(github.event.inputs.skipDeploy, 'true') }}
     needs:
       - names
-      - mvn-package
+      #- mvn-package
     runs-on: ubuntu-24.04
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
     steps:
@@ -711,7 +711,7 @@ jobs:
         env:
           ENV_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
-          SELF_DESTRUCT_HANDLER_SOURCE: "../${{ needs.mvn-package.outputs.self-destruct-handler-source }}"
+          SELF_DESTRUCT_HANDLER_SOURCE: "../infra/test/resources/fake-self-destruct-lambda.jar"
           DIY_SUBMIT_GOOGLE_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ needs.names.outputs.environment-name }}/submit/google/client_secret"
 
   deploy-identity:
@@ -719,8 +719,8 @@ jobs:
     if: ${{ !contains(github.event.inputs.skipDeploy, 'true') }}
     needs:
       - names
-      - npm-test
-      - mvn-package
+      #- npm-test
+      #- mvn-package
     runs-on: ubuntu-24.04
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
     steps:
@@ -801,7 +801,7 @@ jobs:
         env:
           ENV_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
-          SELF_DESTRUCT_HANDLER_SOURCE: "../${{ needs.mvn-package.outputs.self-destruct-handler-source }}"
+          SELF_DESTRUCT_HANDLER_SOURCE: "../infra/test/resources/fake-self-destruct-lambda.jar"
           DIY_SUBMIT_GOOGLE_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ needs.names.outputs.environment-name }}/submit/google/client_secret"
 
   push-images:
@@ -910,8 +910,8 @@ jobs:
     if: ${{ inputs.skipDeploy != 'true' }}
     needs:
       - names
-      - npm-test
-      - mvn-package
+      #- npm-test
+      #- mvn-package
       - deploy-dev
       - push-images
       - deploy-identity
@@ -978,7 +978,7 @@ jobs:
         env:
           ENV_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
-          SELF_DESTRUCT_HANDLER_SOURCE: "../${{ needs.mvn-package.outputs.self-destruct-handler-source }}"
+          SELF_DESTRUCT_HANDLER_SOURCE: "../infra/test/resources/fake-self-destruct-lambda.jar"
           DIY_SUBMIT_GOOGLE_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ needs.names.outputs.environment-name }}/submit/google/client_secret"
           DIY_SUBMIT_HMRC_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ needs.names.outputs.environment-name }}/submit/hmrc/client_secret"
 
@@ -1011,8 +1011,8 @@ jobs:
     if: ${{ inputs.skipDeploy != 'true' }}
     needs:
       - names
-      - npm-test
-      - mvn-package
+      #- npm-test
+      #- mvn-package
       - deploy-dev
       - docker-build
       - push-images
@@ -1080,7 +1080,7 @@ jobs:
         env:
           ENV_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
-          SELF_DESTRUCT_HANDLER_SOURCE: "../${{ needs.mvn-package.outputs.self-destruct-handler-source }}"
+          SELF_DESTRUCT_HANDLER_SOURCE: "../infra/test/resources/fake-self-destruct-lambda.jar"
           DIY_SUBMIT_GOOGLE_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ needs.names.outputs.environment-name }}/submit/google/client_secret"
           DIY_SUBMIT_HMRC_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ needs.names.outputs.environment-name }}/submit/hmrc/client_secret"
           BASE_IMAGE_TAG: ${{ needs.push-images.outputs.base-image-tag }}
@@ -1130,8 +1130,8 @@ jobs:
     if: ${{ inputs.skipDeploy != 'true' }}
     needs:
       - names
-      - npm-test
-      - mvn-package
+      #- npm-test
+      #- mvn-package
       - deploy-auth
       - deploy-application
     runs-on: ubuntu-24.04
@@ -1216,7 +1216,7 @@ jobs:
         env:
           ENV_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
-          SELF_DESTRUCT_HANDLER_SOURCE: "../${{ needs.mvn-package.outputs.self-destruct-handler-source }}"
+          SELF_DESTRUCT_HANDLER_SOURCE: "../infra/test/resources/fake-self-destruct-lambda.jar"
           DOMAIN_NAME: ${{ needs.names.outputs.deployment-name == 'prod' && 'submit.diyaccounting.co.uk' || format('{0}.submit.diyaccounting.co.uk', needs.names.outputs.deployment-name) }}
           DIY_SUBMIT_HOME_URL: ${{ needs.names.outputs.deployment-name == 'prod' && 'https://submit.diyaccounting.co.uk/' || format('https://{0}.submit.diyaccounting.co.uk/', needs.names.outputs.deployment-name) }}
           HOSTED_ZONE_NAME: ${{ vars.AWS_HOSTED_ZONE_NAME }}
@@ -1250,8 +1250,8 @@ jobs:
     if: ${{ inputs.skipDeploy != 'true' }}
     needs:
       - names
-      - npm-test
-      - mvn-package
+      #- npm-test
+      #- mvn-package
       - deploy-edge
     runs-on: ubuntu-24.04
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
@@ -1345,7 +1345,7 @@ jobs:
           ENV_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
           BUILD_NUMBER: ${{ github.run_number }}
-          SELF_DESTRUCT_HANDLER_SOURCE: "../${{ needs.mvn-package.outputs.self-destruct-handler-source }}"
+          SELF_DESTRUCT_HANDLER_SOURCE: "../infra/test/resources/fake-self-destruct-lambda.jar"
           DOMAIN_NAME: ${{ needs.names.outputs.deployment-name == 'prod' && 'submit.diyaccounting.co.uk' || format('{0}.submit.diyaccounting.co.uk', needs.names.outputs.deployment-name) }}
           DIY_SUBMIT_HOME_URL: ${{ needs.names.outputs.deployment-name == 'prod' && 'https://submit.diyaccounting.co.uk/' || format('https://{0}.submit.diyaccounting.co.uk/', needs.names.outputs.deployment-name) }}
           HOSTED_ZONE_NAME: ${{ vars.AWS_HOSTED_ZONE_NAME }}

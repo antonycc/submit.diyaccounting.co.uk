@@ -1,13 +1,6 @@
 package co.uk.diyaccounting.submit;
 
-import static co.uk.diyaccounting.submit.utils.Kind.envOr;
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.Kind.warnf;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDomainName;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateCompressedResourceNamePrefix;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateResourceNamePrefix;
-
-import co.uk.diyaccounting.submit.awssdk.KindCdk;
+import co.uk.diyaccounting.submit.utils.KindCdk;
 import co.uk.diyaccounting.submit.stacks.ApplicationStack;
 import co.uk.diyaccounting.submit.stacks.AuthStack;
 import co.uk.diyaccounting.submit.stacks.DevStack;
@@ -15,14 +8,29 @@ import co.uk.diyaccounting.submit.stacks.IdentityStack;
 import co.uk.diyaccounting.submit.stacks.ObservabilityStack;
 import co.uk.diyaccounting.submit.stacks.OpsStack;
 import co.uk.diyaccounting.submit.stacks.SelfDestructStack;
-import java.io.File;
-import java.lang.reflect.Field;
-import java.nio.file.Paths;
 import software.amazon.awscdk.App;
 import software.amazon.awscdk.Environment;
 import software.constructs.Construct;
 
+import java.lang.reflect.Field;
+import java.nio.file.Paths;
+
+import static co.uk.diyaccounting.submit.utils.Kind.envOr;
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.Kind.warnf;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDomainName;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateCompressedResourceNamePrefix;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateResourceNamePrefix;
+
 public class SubmitApplication {
+
+    public final ObservabilityStack observabilityStack;
+    public final DevStack devStack;
+    public final IdentityStack identityStack;
+    public final AuthStack authStack;
+    public final ApplicationStack applicationStack;
+    public final OpsStack opsStack;
+    public final SelfDestructStack selfDestructStack;
 
     public static class SubmitApplicationProps {
         // Fields match cdk.json context keys (camelCase). Environment overrides are applied in SubmitApplication
@@ -39,8 +47,6 @@ public class SubmitApplication {
         public String cloudTrailLogGroupPrefix;
         public String cloudTrailLogGroupRetentionPeriodDays;
         public String accessLogGroupRetentionPeriodDays;
-        public String s3UseExistingBucket;
-        public String s3RetainOriginBucket;
         public String s3RetainReceiptsBucket;
         public String hmrcClientId;
         public String hmrcClientSecretArn;
@@ -54,10 +60,6 @@ public class SubmitApplication {
         public String selfDestructHandlerSource;
         public String selfDestructDelayHours;
         public String authCertificateArn;
-        public String optionalTestAccessToken;
-        public String optionalTestS3Endpoint;
-        public String optionalTestS3AccessKey;
-        public String optionalTestS3SecretKey;
         public String receiptsBucketPostfix;
         public String lambdaEntry;
         public String lambdaUrlAuthType;
@@ -88,9 +90,25 @@ public class SubmitApplication {
     public static void main(final String[] args) {
 
         App app = new App();
-
-        // Build app-level props from cdk.json context with environment overrides
         SubmitApplicationProps appProps = loadAppProps(app);
+        var submitApplication = new SubmitApplication(app, appProps);
+        app.synth();
+        infof("CDK synth complete");
+
+        infof("Created stack:", submitApplication.observabilityStack.getStackName());
+        infof("Created stack:", submitApplication.devStack.getStackName());
+        infof("Created stack:", submitApplication.identityStack.getStackName());
+        infof("Created stack:", submitApplication.authStack.getStackName());
+        infof("Created stack:", submitApplication.applicationStack.getStackName());
+        infof("Created stack:", submitApplication.opsStack.getStackName());
+        if (submitApplication.selfDestructStack != null) {
+            infof("Created stack:", submitApplication.selfDestructStack.getStackName());
+        } else {
+            infof("No SelfDestruct stack created for prod deployment");
+        }
+    }
+
+    public SubmitApplication(App app, SubmitApplicationProps appProps){
 
         // Determine environment and deployment name from env or appProps
         String envName = envOr("ENV_NAME", appProps.env);
@@ -125,22 +143,6 @@ public class SubmitApplication {
                 "DIY_SUBMIT_HMRC_CLIENT_SECRET_ARN",
                 appProps.hmrcClientSecretArn,
                 "(from hmrcClientSecretArn in cdk.json)");
-        var optionalTestAccessToken = envOr(
-                "OPTIONAL_TEST_ACCESS_TOKEN",
-                appProps.optionalTestAccessToken,
-                "(from optionalTestAccessToken in cdk.json)");
-        var optionalTestS3Endpoint = envOr(
-                "OPTIONAL_TEST_S3_ENDPOINT",
-                appProps.optionalTestS3Endpoint,
-                "(from optionalTestS3Endpoint in cdk.json)");
-        var optionalTestS3AccessKey = envOr(
-                "OPTIONAL_TEST_S3_ACCESS_KEY",
-                appProps.optionalTestS3AccessKey,
-                "(from optionalTestS3AccessKey in cdk.json)");
-        var optionalTestS3SecretKey = envOr(
-                "OPTIONAL_TEST_S3_SECRET_KEY",
-                appProps.optionalTestS3SecretKey,
-                "(from optionalTestS3SecretKey in cdk.json)");
         var lambdaEntry = envOr("LAMBDA_ENTRY", appProps.lambdaEntry, "(from lambdaEntry in cdk.json)");
         var lambdaUrlAuthType =
                 envOr("LAMBDA_URL_AUTH_TYPE", appProps.lambdaUrlAuthType, "(from lambdaUrlAuthType in cdk.json)");
@@ -159,10 +161,6 @@ public class SubmitApplication {
                 envOr("CLOUD_TRAIL_ENABLED", appProps.cloudTrailEnabled, "(from cloudTrailEnabled in cdk.json)");
         var xRayEnabled = envOr("X_RAY_ENABLED", appProps.xRayEnabled, "(from xRayEnabled in cdk.json)");
         var verboseLogging = envOr("VERBOSE_LOGGING", appProps.verboseLogging, "(from verboseLogging in cdk.json)");
-        var s3UseExistingBucket =
-                envOr("S3_USE_EXISTING_BUCKET", appProps.s3UseExistingBucket, "(from s3UseExistingBucket in cdk.json)");
-        var s3RetainOriginBucket = envOr(
-                "S3_RETAIN_ORIGIN_BUCKET", appProps.s3RetainOriginBucket, "(from s3RetainOriginBucket in cdk.json)");
         var s3RetainReceiptsBucket = envOr(
                 "S3_RETAIN_RECEIPTS_BUCKET",
                 appProps.s3RetainReceiptsBucket,
@@ -191,8 +189,7 @@ public class SubmitApplication {
         infof(
                 "Synthesizing stack %s for deployment %s to environment %s",
                 observabilityStackId, deploymentName, envName);
-
-        ObservabilityStack observabilityStack = new ObservabilityStack(
+        this.observabilityStack = new ObservabilityStack(
                 app,
                 observabilityStackId,
                 ObservabilityStack.ObservabilityStackProps.builder()
@@ -211,7 +208,7 @@ public class SubmitApplication {
         // Create DevStack with resources only used during development or deployment (e.g. ECR)
         String devStackId = "%s-DevStack".formatted(deploymentName);
         infof("Synthesizing stack %s for deployment %s to environment %s", devStackId, deploymentName, envName);
-        DevStack devStack = new DevStack(
+        this.devStack = new DevStack(
                 app,
                 devStackId,
                 DevStack.DevStackProps.builder()
@@ -225,7 +222,7 @@ public class SubmitApplication {
         // Create the identity stack before any user aware services
         String identityStackId = "%s-IdentityStack".formatted(deploymentName);
         infof("Synthesizing stack %s for deployment %s to environment %s", identityStackId, deploymentName, envName);
-        IdentityStack identityStack = new IdentityStack(
+        this.identityStack = new IdentityStack(
                 app,
                 identityStackId,
                 IdentityStack.IdentityStackProps.builder()
@@ -252,7 +249,7 @@ public class SubmitApplication {
         // Create the AuthStack with resources used in authentication and authorisation
         String authStackId = "%s-AuthStack".formatted(deploymentName);
         infof("Synthesizing stack %s for deployment %s to environment %s", authStackId, deploymentName, envName);
-        AuthStack authStack = new AuthStack(
+        this.authStack = new AuthStack(
                 app,
                 authStackId,
                 AuthStack.AuthStackProps.builder()
@@ -267,32 +264,24 @@ public class SubmitApplication {
                         .xRayEnabled(xRayEnabled)
                         .baseImageTag(baseImageTag)
                         .ecrRepositoryArn(
-                                devStack.ecrRepository.getRepositoryArn()) // TODO: Internally compute from name
-                        .ecrRepositoryName(devStack.ecrRepository.getRepositoryName()) // TODO: Get by predictable name
+                            this.devStack.ecrRepository.getRepositoryArn()) // TODO: Internally compute from name
+                        .ecrRepositoryName(this.devStack.ecrRepository.getRepositoryName()) // TODO: Get by predictable name
                         .homeUrl(baseUrl)
                         .lambdaEntry(lambdaEntry)
                         .lambdaUrlAuthType(lambdaUrlAuthType)
                         .cognitoClientId(
-                                identityStack.userPoolClient
+                            this.identityStack.userPoolClient
                                         .getUserPoolClientId()) // TODO: Research a way around needing this.
                         .cognitoBaseUri(
-                                "https://" + identityStack.userPoolDomain.getDomainName()) // TODO: Get calculated value
-                        // .optionalTestAccessToken(optionalTestAccessToken)
-                        // .userPool(identityStack.userPool)
-                        // .userPoolClient(identityStack.userPoolClient)
-                        // .userPoolDomain(identityStack.userPoolDomain)
-                        // .identityPool(identityStack.identityPool)
-                        // .googleClientId(envOr("DIY_SUBMIT_GOOGLE_CLIENT_ID", appProps.googleClientId))
-                        // .antonyccClientId(envOr("DIY_SUBMIT_ANTONYCC_CLIENT_ID", appProps.antonyccClientId))
+                                "https://" + this.identityStack.userPoolDomain.getDomainName()) // TODO: Get calculated value
                         .build());
-        authStack.addDependency(devStack);
-        // authStack.addDependency(webStack);
-        authStack.addDependency(identityStack);
+        this.authStack.addDependency(devStack);
+        this.authStack.addDependency(identityStack);
 
         // Create the ApplicationStack
         String applicationStackId = "%s-ApplicationStack".formatted(deploymentName);
         infof("Synthesizing stack %s for deployment %s to environment %s", applicationStackId, deploymentName, envName);
-        ApplicationStack applicationStack = new ApplicationStack(
+        this.applicationStack = new ApplicationStack(
                 app,
                 applicationStackId,
                 ApplicationStack.ApplicationStackProps.builder()
@@ -308,32 +297,28 @@ public class SubmitApplication {
                         .verboseLogging(verboseLogging)
                         .baseImageTag(baseImageTag)
                         .ecrRepositoryArn(
-                                devStack.ecrRepository.getRepositoryArn()) // TODO: Internally compute from name
-                        .ecrRepositoryName(devStack.ecrRepository.getRepositoryName()) // TODO: Get by predictable name
+                            this.devStack.ecrRepository.getRepositoryArn()) // TODO: Internally compute from name
+                        .ecrRepositoryName(this.devStack.ecrRepository.getRepositoryName()) // TODO: Get by predictable name
                         .homeUrl(baseUrl)
                         .hmrcBaseUri(hmrcBaseUri)
                         .hmrcClientId(hmrcClientId)
                         .cognitoUserPoolId(
-                                identityStack.userPool.getUserPoolId()) // TODO: Research a way around needing this.
+                            this.identityStack.userPool.getUserPoolId()) // TODO: Research a way around needing this.
                         .lambdaUrlAuthType(lambdaUrlAuthType)
                         .lambdaEntry(lambdaEntry)
                         .hmrcClientSecretArn(hmrcClientSecretArn)
                         .receiptsBucketPostfix(receiptsBucketPostfix)
-                        // .optionalTestS3Endpoint(optionalTestS3Endpoint)
-                        // .optionalTestS3AccessKey(optionalTestS3AccessKey)
-                        // .optionalTestS3SecretKey(optionalTestS3SecretKey)
                         .s3RetainReceiptsBucket(s3RetainReceiptsBucket)
-                        // .optionalTestAccessToken(optionalTestAccessToken)
                         .build());
-        applicationStack.addDependency(devStack);
-        applicationStack.addDependency(identityStack);
-        var requestBundlesLambdaGrantPrincipal = applicationStack.requestBundlesLambda.getGrantPrincipal();
+        this.applicationStack.addDependency(devStack);
+        this.applicationStack.addDependency(identityStack);
+        var requestBundlesLambdaGrantPrincipal = this.applicationStack.requestBundlesLambda.getGrantPrincipal();
         identityStack.userPool.grant(
                 requestBundlesLambdaGrantPrincipal,
                 "cognito-idp:AdminGetUser",
                 "cognito-idp:AdminUpdateUserAttributes",
                 "cognito-idp:ListUsers");
-        var myBundlesLambdaGrantPrincipal = applicationStack.myBundlesLambda.getGrantPrincipal();
+        var myBundlesLambdaGrantPrincipal = this.applicationStack.myBundlesLambda.getGrantPrincipal();
         identityStack.userPool.grant(
                 myBundlesLambdaGrantPrincipal,
                 "cognito-idp:AdminGetUser",
@@ -344,24 +329,24 @@ public class SubmitApplication {
         // Build list of Lambda function ARNs for OpsStack
         // TODO: Compute ARNs internally in OpsStack from predictable names
         java.util.List<String> lambdaArns = new java.util.ArrayList<>();
-        if (applicationStack.authUrlHmrcLambda != null)
-            lambdaArns.add(applicationStack.authUrlHmrcLambda.getFunctionArn());
-        if (applicationStack.exchangeHmrcTokenLambda != null)
-            lambdaArns.add(applicationStack.exchangeHmrcTokenLambda.getFunctionArn());
-        if (applicationStack.submitVatLambda != null) lambdaArns.add(applicationStack.submitVatLambda.getFunctionArn());
-        if (applicationStack.logReceiptLambda != null)
-            lambdaArns.add(applicationStack.logReceiptLambda.getFunctionArn());
-        if (applicationStack.catalogLambda != null) lambdaArns.add(applicationStack.catalogLambda.getFunctionArn());
-        if (applicationStack.requestBundlesLambda != null)
-            lambdaArns.add(applicationStack.requestBundlesLambda.getFunctionArn());
-        if (applicationStack.myBundlesLambda != null) lambdaArns.add(applicationStack.myBundlesLambda.getFunctionArn());
-        if (applicationStack.myReceiptsLambda != null)
-            lambdaArns.add(applicationStack.myReceiptsLambda.getFunctionArn());
+        if (this.applicationStack.authUrlHmrcLambda != null)
+            lambdaArns.add(this.applicationStack.authUrlHmrcLambda.getFunctionArn());
+        if (this.applicationStack.exchangeHmrcTokenLambda != null)
+            lambdaArns.add(this.applicationStack.exchangeHmrcTokenLambda.getFunctionArn());
+        if (this.applicationStack.submitVatLambda != null) lambdaArns.add(this.applicationStack.submitVatLambda.getFunctionArn());
+        if (this.applicationStack.logReceiptLambda != null)
+            lambdaArns.add(this.applicationStack.logReceiptLambda.getFunctionArn());
+        if (this.applicationStack.catalogLambda != null) lambdaArns.add(this.applicationStack.catalogLambda.getFunctionArn());
+        if (this.applicationStack.requestBundlesLambda != null)
+            lambdaArns.add(this.applicationStack.requestBundlesLambda.getFunctionArn());
+        if (this.applicationStack.myBundlesLambda != null) lambdaArns.add(this.applicationStack.myBundlesLambda.getFunctionArn());
+        if (this.applicationStack.myReceiptsLambda != null)
+            lambdaArns.add(this.applicationStack.myReceiptsLambda.getFunctionArn());
         String receiptsBucketArn =
-                applicationStack.receiptsBucket != null ? applicationStack.receiptsBucket.getBucketArn() : null;
+            this.applicationStack.receiptsBucket != null ? this.applicationStack.receiptsBucket.getBucketArn() : null;
 
         String opsStackId = "%s-OpsStack".formatted(deploymentName);
-        OpsStack opsStack = new OpsStack(
+        this.opsStack = new OpsStack(
                 app,
                 opsStackId,
                 OpsStack.OpsStackProps.builder()
@@ -373,16 +358,14 @@ public class SubmitApplication {
                         .resourceNamePrefix(resourceNamePrefix)
                         .compressedResourceNamePrefix(compressedResourceNamePrefix)
                         .lambdaFunctionArns(lambdaArns)
-                        // .originBucketArn(webStack.originBucket.getBucketArn())
                         .receiptsBucketArn(receiptsBucketArn)
                         .build());
-        opsStack.addDependency(applicationStack);
-        // opsStack.addDependency(webStack);
+        this.opsStack.addDependency(applicationStack);
 
         // Create the SelfDestruct stack only for non-prod deployments and when JAR exists
         if (!"prod".equals(deploymentName)) {
             String selfDestructStackId = "%s-SelfDestructStack".formatted(deploymentName);
-            SelfDestructStack selfDestructStack = new SelfDestructStack(
+            this.selfDestructStack = new SelfDestructStack(
                     app,
                     selfDestructStackId,
                     SelfDestructStack.SelfDestructStackProps.builder()
@@ -397,21 +380,23 @@ public class SubmitApplication {
                             .identityStackName(identityStack.getStackName())
                             .authStackName(applicationStack.getStackName())
                             .applicationStackName(applicationStack.getStackName())
-                            // .webStackName(webStack.getStackName())
                             .opsStackName(opsStack.getStackName())
                             .selfDestructDelayHours(selfDestructDelayHours)
                             .selfDestructHandlerSource(selfDestructHandlerSource)
                             .build());
+        } else {
+            this.selfDestructStack = null;
         }
-
-        app.synth();
     }
 
     // populate from cdk.json context using exact camelCase keys
-    private static SubmitApplicationProps loadAppProps(Construct scope) {
+    public static SubmitApplicationProps loadAppProps(Construct scope) {
+        return loadAppProps(scope, null);
+    }
+    public static SubmitApplicationProps loadAppProps(Construct scope, String pathPrefix) {
         SubmitApplicationProps props = SubmitApplicationProps.Builder.create().build();
-        var cdkPath = Paths.get("cdk.json").toAbsolutePath();
-        if (!new File("cdk.json").exists()) {
+        var cdkPath = Paths.get((pathPrefix == null ? "" : pathPrefix) + "cdk.json").toAbsolutePath();
+        if (!cdkPath.toFile().exists()) {
             warnf("Cannot find application properties (cdk.json) at %s", cdkPath);
         } else {
             infof("Loading application properties from cdk.json %s", cdkPath);

@@ -82,41 +82,44 @@ jobs:
       deployment-name: ${{ steps.deployment-config.outputs.DEPLOYMENT_NAME }}
       base-url: ${{ steps.deployment-config.outputs.DEPLOYMENT_NAME == 'prod' && 'https://submit.diyaccounting.co.uk' || format('https://{0}.submit.diyaccounting.co.uk', steps.deployment-config.outputs.DEPLOYMENT_NAME) }}
 
-  playwright-install:
-    name: 'playwright-install'
-    runs-on: ubuntu-24.04
-    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v5
-
-      - name: Setup Node
-        uses: actions/setup-node@v5
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Install Node dependencies (skip browser download)
-        run: npm ci --ignore-scripts
-        env:
-          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
-
-      - name: Install Playwright browsers (Chromium only)
-        run: npx playwright install chromium
-
-      - name: Upload Playwright browsers
-        uses: actions/upload-artifact@v4
-        with:
-          name: playwright-browsers
-          path: ~/.cache/ms-playwright
-          retention-days: 5
+#  playwright-install:
+#    name: 'playwright-install'
+#    runs-on: ubuntu-24.04
+#    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+#    steps:
+#      - name: Checkout
+#        uses: actions/checkout@v5
+#
+#      - name: Setup Node
+#        uses: actions/setup-node@v5
+#        with:
+#          node-version: ${{ env.NODE_VERSION }}
+#          cache: 'npm'
+#
+#      - name: Install Node dependencies (skip browser download)
+#        run: npm ci --ignore-scripts
+#        env:
+#          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+#
+#      - name: Install Playwright browsers (Chromium only)
+#        run: npx playwright install chromium
+#
+#      - name: Upload Playwright browsers
+#        uses: actions/upload-artifact@v4
+#        with:
+#          name: playwright-browsers
+#          path: ~/.cache/ms-playwright
+#          retention-days: 5
 
   web-test:
     name: 'web test'
     needs:
       - names
-      - playwright-install
+      #- playwright-install
     runs-on: ubuntu-24.04
+    container: mcr.microsoft.com/playwright:v1.55.1-jammy
+    # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags
+    # and extension with ubuntu distribution e.g. https://releases.ubuntu.com/jammy/
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
     steps:
       - name: Checkout
@@ -133,20 +136,20 @@ jobs:
         env:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
 
-      - name: Download Playwright browsers
-        uses: actions/download-artifact@v5
-        with:
-          name: playwright-browsers
-          path: ~/.cache/ms-playwright
+#      - name: Download Playwright browsers
+#        uses: actions/download-artifact@v5
+#        with:
+#          name: playwright-browsers
+#          path: ~/.cache/ms-playwright
 
           #npm ci --ignore-scripts
           #npx playwright install chromium --with-deps
           #chmod -R u+rwX ~/.cache/ms-playwright
-      - name: Install Playwright Linux dependencies (Chromium) and fix permissions
-        run: |
-          sudo npx playwright install-deps chromium
-          chmod -R a+rX ~/.cache/ms-playwright
-          chmod -R a+rx ~/.cache/ms-playwright/*/chrome-linux/
+#      - name: Install Playwright Linux dependencies (Chromium) and fix permissions
+#        run: |
+#          sudo npx playwright install-deps chromium
+#          chmod -R a+rX ~/.cache/ms-playwright
+#          chmod -R a+rx ~/.cache/ms-playwright/*/chrome-linux/
 
       - run: cp '.env.${{ needs.names.outputs.environment-name }}' '.env.proxy' ; npx dotenv -e '.env.${{ needs.names.outputs.environment-name }}' -- npm run test:behaviour
         env:

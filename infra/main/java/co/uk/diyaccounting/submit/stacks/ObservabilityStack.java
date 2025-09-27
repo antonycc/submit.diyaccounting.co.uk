@@ -1,12 +1,12 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.awssdk.KindCdk.cfnOutput;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDashedDomainName;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDomainName;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildTrailName;
 
-import co.uk.diyaccounting.submit.awssdk.RetentionDaysConverter;
+import co.uk.diyaccounting.submit.utils.RetentionDaysConverter;
 import java.util.List;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;

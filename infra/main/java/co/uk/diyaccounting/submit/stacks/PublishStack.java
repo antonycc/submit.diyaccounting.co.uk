@@ -24,7 +24,7 @@ import software.constructs.Construct;
 
 import java.util.List;
 
-import static co.uk.diyaccounting.submit.awssdk.KindCdk.cfnOutput;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.Kind.warnf;
 
@@ -109,8 +109,8 @@ public class PublishStack extends Stack {
         // Generate submit.version file with commit hash if provided
         if (props.commitHash() != null && !props.commitHash().isBlank()) {
             try {
-                java.nio.file.Path sourceFilePath = java.nio.file.Paths.get(props.docRootPath(), "submit.version");
-                java.nio.file.Files.writeString(sourceFilePath, props.commitHash().trim());
+                java.nio.file.Path versionFilepath = java.nio.file.Paths.get(props.docRootPath(), "submit.version");
+                java.nio.file.Files.writeString(versionFilepath, props.commitHash().trim());
                 infof("Created submit.version file with commit hash: %s".formatted(props.commitHash()));
             } catch (Exception e) {
                 warnf("Failed to create submit.version file: %s".formatted(e.getMessage()));
@@ -122,8 +122,8 @@ public class PublishStack extends Stack {
         // Generate a file containing a hash of the website files for deployment optimization
         if (props.websiteHash() != null && !props.websiteHash().isBlank()) {
             try {
-                java.nio.file.Path sourceFilePath = java.nio.file.Paths.get(props.docRootPath(), "submit.hash");
-                java.nio.file.Files.writeString(sourceFilePath, props.websiteHash().trim());
+                java.nio.file.Path hashFilepath = java.nio.file.Paths.get(props.docRootPath(), "submit.hash");
+                java.nio.file.Files.writeString(hashFilepath, props.websiteHash().trim());
                 infof("Created submit.hash file with website hash: %s".formatted(props.websiteHash()));
             } catch (Exception e) {
                 warnf("Failed to create submit.hash file: %s".formatted(e.getMessage()));
@@ -135,8 +135,8 @@ public class PublishStack extends Stack {
         // Generate a file containing the environment name for runtime use
         if (props.envName() != null && !props.envName().isBlank()) {
             try {
-                java.nio.file.Path sourceFilePath = java.nio.file.Paths.get(props.docRootPath(), "submit.env");
-                java.nio.file.Files.writeString(sourceFilePath, props.envName().trim());
+                java.nio.file.Path envFilepath = java.nio.file.Paths.get(props.docRootPath(), "submit.env");
+                java.nio.file.Files.writeString(envFilepath, props.envName().trim());
                 infof("Created submit.env file with environment name: %s".formatted(props.envName()));
             } catch (Exception e) {
                 warnf("Failed to create submit.env file: %s".formatted(e.getMessage()));
@@ -148,8 +148,8 @@ public class PublishStack extends Stack {
         // Generate a file containing the build number for runtime use
         if (props.buildNumber() != null && !props.buildNumber().isBlank()) {
             try {
-                java.nio.file.Path sourceFilePath = java.nio.file.Paths.get(props.docRootPath(), "submit.build");
-                java.nio.file.Files.writeString(sourceFilePath, props.buildNumber().trim());
+                java.nio.file.Path buildNumberFilepath = java.nio.file.Paths.get(props.docRootPath(), "submit.build");
+                java.nio.file.Files.writeString(buildNumberFilepath, props.buildNumber().trim());
                 infof("Created submit.build file with build number: %s".formatted(props.buildNumber()));
             } catch (Exception e) {
                 warnf("Failed to create submit.build file: %s".formatted(e.getMessage()));
@@ -161,8 +161,11 @@ public class PublishStack extends Stack {
         var deployPostfix = java.util.UUID.randomUUID().toString().substring(0, 8);
 
         // Deploy the web website files to the web website bucket and invalidate distribution
+        // Resolve the document root path from props to avoid path mismatches between generation and deployment
+        var publicDir = java.nio.file.Paths.get(props.docRootPath()).toAbsolutePath().normalize();
+        infof("Using public doc root: %s".formatted(publicDir));
         var webDocRootSource = Source.asset(
-                "../web/public",
+                publicDir.toString(),
                 AssetOptions.builder().assetHashType(AssetHashType.SOURCE).build());
         this.webDeploymentLogGroup = LogGroup.Builder.create(
                         this, props.resourceNamePrefix() + "-WebDeploymentLogGroup-" + deployPostfix)
