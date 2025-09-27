@@ -161,8 +161,11 @@ public class PublishStack extends Stack {
         var deployPostfix = java.util.UUID.randomUUID().toString().substring(0, 8);
 
         // Deploy the web website files to the web website bucket and invalidate distribution
+        // Resolve the document root path from props to avoid path mismatches between generation and deployment
+        var publicDir = java.nio.file.Paths.get(props.docRootPath()).toAbsolutePath().normalize();
+        infof("Using public doc root: %s".formatted(publicDir));
         var webDocRootSource = Source.asset(
-                "../web/public",
+                publicDir.toString(),
                 AssetOptions.builder().assetHashType(AssetHashType.SOURCE).build());
         this.webDeploymentLogGroup = LogGroup.Builder.create(
                         this, props.resourceNamePrefix() + "-WebDeploymentLogGroup-" + deployPostfix)
