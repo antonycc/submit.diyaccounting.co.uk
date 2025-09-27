@@ -136,11 +136,11 @@ jobs:
         env:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
 
-      - name: Download Playwright browsers
-        uses: actions/download-artifact@v5
-        with:
-          name: playwright-browsers
-          path: ~/.cache/ms-playwright
+#      - name: Download Playwright browsers
+#        uses: actions/download-artifact@v5
+#        with:
+#          name: playwright-browsers
+#          path: ~/.cache/ms-playwright
 
           #npm ci --ignore-scripts
           #npx playwright install chromium --with-deps
