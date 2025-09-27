@@ -112,7 +112,6 @@ jobs:
           retention-days: 5
 
   web-test:
-    if: ${{ !cancelled() && inputs.skipDeploy == 'true' || needs.deploy-edge.result == 'success' }}
     name: 'web test'
     needs:
       - names
