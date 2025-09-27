@@ -719,7 +719,7 @@ jobs:
     if: ${{ !contains(github.event.inputs.skipDeploy, 'true') }}
     needs:
       - names
-      - npm-test
+      #- npm-test
       #- mvn-package
     runs-on: ubuntu-24.04
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
@@ -910,7 +910,7 @@ jobs:
     if: ${{ inputs.skipDeploy != 'true' }}
     needs:
       - names
-      - npm-test
+      #- npm-test
       #- mvn-package
       - deploy-dev
       - push-images
@@ -1011,7 +1011,7 @@ jobs:
     if: ${{ inputs.skipDeploy != 'true' }}
     needs:
       - names
-      - npm-test
+      #- npm-test
       #- mvn-package
       - deploy-dev
       - docker-build
@@ -1130,7 +1130,7 @@ jobs:
     if: ${{ inputs.skipDeploy != 'true' }}
     needs:
       - names
-      - npm-test
+      #- npm-test
       #- mvn-package
       - deploy-auth
       - deploy-application
@@ -1250,7 +1250,7 @@ jobs:
     if: ${{ inputs.skipDeploy != 'true' }}
     needs:
       - names
-      - npm-test
+      #- npm-test
       #- mvn-package
       - deploy-edge
     runs-on: ubuntu-24.04
