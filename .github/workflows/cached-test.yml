@@ -1,0 +1,171 @@
+name: cached library test
+run-name: "test with cache from ${{ github.ref_name }}"
+concurrency:
+  group: cache-test-${{ github.ref_name }}
+  cancel-in-progress: true
+
+on:
+  workflow_dispatch:
+    inputs:
+      deploymentName:
+        description: 'Deployment name (ci for shared CI, or custom name)'
+        required: false
+        default: ''
+  push:
+    branches:
+      - '**'
+      - '!gh_pages'
+    paths:
+      - '.github/workflows/cached-test.yml'
+  #schedule:
+  #  - cron: '23 4 * * *'
+
+permissions:
+  id-token: write
+  contents: read
+  pages: write
+
+env:
+  JAVA_VERSION: '21'
+  NODE_VERSION: '22'
+  ACTIONS_ROLE_ARN: 'arn:aws:iam::887764105431:role/submit-github-actions-role'
+  DEPLOY_ROLE_ARN:  'arn:aws:iam::887764105431:role/submit-deployment-role'
+  AWS_REGION: 'eu-west-2'
+  AWS_ACCOUNT_ID: '887764105431'
+  skipDeploy: ${{ inputs.skipDeploy || 'false' }}
+  deploymentName: ${{ inputs.deploymentName || '' }}
+jobs:
+
+  names:
+    runs-on: ubuntu-24.04
+    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Compute deployment name and environment
+        id: deployment-config
+        run: |
+          REF_NAME="${{ github.ref_name }}"
+          INPUT_DEPLOYMENT_NAME="${{ github.event.inputs.deploymentName }}"
+
+          # Clean branch name: lowercase, replace non-alphanumeric with hyphens, collapse consecutive hyphens
+          CLEANED=$(echo "$REF_NAME" | tr '[:upper:]' '[:lower:]' | sed -e 's/[^a-z0-9]/-/g' -e 's/-\{2,\}/-/g' -e 's/^-//' -e 's/-$//')
+
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+              ENV_NAME="prod"
+              DEPLOYMENT_NAME="prod"
+          elif [ "$INPUT_DEPLOYMENT_NAME" = "ci" ]; then
+              ENV_NAME="ci"
+              DEPLOYMENT_NAME="ci"
+          elif [ -n "$INPUT_DEPLOYMENT_NAME" ]; then
+              ENV_NAME="ci"
+              DEPLOYMENT_NAME="$INPUT_DEPLOYMENT_NAME"
+          else
+              ENV_NAME="ci"
+              # Truncate to 16 chars for branch-based deployments
+              DEPLOYMENT_NAME="ci-${CLEANED:0:16}"
+          fi
+
+          echo "Computed ENV_NAME: $ENV_NAME"
+          echo "Computed DEPLOYMENT_NAME: $DEPLOYMENT_NAME"
+          DEPLOYMENT_NAME=$ENV_NAME
+
+          echo "ENV_NAME=$ENV_NAME" >> "$GITHUB_OUTPUT"
+          echo "DEPLOYMENT_NAME=$DEPLOYMENT_NAME" >> "$GITHUB_OUTPUT"
+
+          echo "Actual ENV_NAME: $ENV_NAME"
+          echo "Actual DEPLOYMENT_NAME: $DEPLOYMENT_NAME"
+
+    outputs:
+      environment-name: ${{ steps.deployment-config.outputs.ENV_NAME }}
+      deployment-name: ${{ steps.deployment-config.outputs.DEPLOYMENT_NAME }}
+      base-url: ${{ steps.deployment-config.outputs.DEPLOYMENT_NAME == 'prod' && 'https://submit.diyaccounting.co.uk' || format('https://{0}.submit.diyaccounting.co.uk', steps.deployment-config.outputs.DEPLOYMENT_NAME) }}
+
+  playwright-install:
+    name: 'playwright-install'
+    runs-on: ubuntu-24.04
+    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install Node dependencies (skip browser download)
+        run: npm ci --ignore-scripts
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+
+      - name: Install Playwright browsers (Chromium only)
+        run: npx playwright install chromium
+
+      - name: Upload Playwright browsers
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-browsers
+          path: ~/.cache/ms-playwright
+          retention-days: 5
+
+  web-test:
+    name: 'web test'
+    needs:
+      - names
+      - playwright-install
+    runs-on: ubuntu-24.04
+    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install Node dependencies (skip browser download)
+        run: npm ci --ignore-scripts
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+
+      - name: Download Playwright browsers
+        uses: actions/download-artifact@v5
+        with:
+          name: playwright-browsers
+          path: ~/.cache/ms-playwright
+
+          #npm ci --ignore-scripts
+          #npx playwright install chromium --with-deps
+          #chmod -R u+rwX ~/.cache/ms-playwright
+      - name: Install Playwright Linux dependencies (Chromium) and fix permissions
+        run: |
+          sudo npx playwright install-deps chromium
+          chmod -R a+rX ~/.cache/ms-playwright
+          chmod -R a+rx ~/.cache/ms-playwright/*/chrome-linux/
+
+      - run: cp '.env.${{ needs.names.outputs.environment-name }}' '.env.proxy' ; npx dotenv -e '.env.${{ needs.names.outputs.environment-name }}' -- npm run test:behaviour
+        env:
+          BASE_URL: ${{ needs.names.outputs.base-url }}
+
+      - name: Upload artifacts (results)
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-test-artifacts
+          retention-days: 30
+          path: |
+            target/behaviour-test-results/
+
+      - name: Upload artifacts (reports)
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-test-reports
+          retention-days: 30
+          path: |
+            target/test-reports/

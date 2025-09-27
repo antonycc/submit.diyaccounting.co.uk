@@ -1,10 +1,5 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.awssdk.KindCdk.cfnOutput;
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.Kind.warnf;
-
-import java.util.List;
 import org.immutables.value.Value;
 import software.amazon.awscdk.AssetHashType;
 import software.amazon.awscdk.Duration;
@@ -26,6 +21,12 @@ import software.amazon.awscdk.services.s3.assets.AssetOptions;
 import software.amazon.awscdk.services.s3.deployment.BucketDeployment;
 import software.amazon.awscdk.services.s3.deployment.Source;
 import software.constructs.Construct;
+
+import java.util.List;
+
+import static co.uk.diyaccounting.submit.awssdk.KindCdk.cfnOutput;
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.Kind.warnf;
 
 public class PublishStack extends Stack {
 
@@ -50,6 +51,10 @@ public class PublishStack extends Stack {
         String webBucketArn();
 
         String commitHash();
+
+        String websiteHash();
+
+        String buildNumber();
 
         String docRootPath();
 
@@ -105,14 +110,52 @@ public class PublishStack extends Stack {
         if (props.commitHash() != null && !props.commitHash().isBlank()) {
             try {
                 java.nio.file.Path sourceFilePath = java.nio.file.Paths.get(props.docRootPath(), "submit.version");
-                java.nio.file.Files.writeString(
-                        sourceFilePath, props.commitHash().trim());
+                java.nio.file.Files.writeString(sourceFilePath, props.commitHash().trim());
                 infof("Created submit.version file with commit hash: %s".formatted(props.commitHash()));
             } catch (Exception e) {
                 warnf("Failed to create submit.version file: %s".formatted(e.getMessage()));
             }
         } else {
             infof("No commit hash provided, skipping submit.version generation");
+        }
+
+        // Generate a file containing a hash of the website files for deployment optimization
+        if (props.websiteHash() != null && !props.websiteHash().isBlank()) {
+            try {
+                java.nio.file.Path sourceFilePath = java.nio.file.Paths.get(props.docRootPath(), "submit.hash");
+                java.nio.file.Files.writeString(sourceFilePath, props.websiteHash().trim());
+                infof("Created submit.hash file with website hash: %s".formatted(props.websiteHash()));
+            } catch (Exception e) {
+                warnf("Failed to create submit.hash file: %s".formatted(e.getMessage()));
+            }
+        } else {
+            infof("No website hash provided, skipping submit.hash generation");
+        }
+
+        // Generate a file containing the environment name for runtime use
+        if (props.envName() != null && !props.envName().isBlank()) {
+            try {
+                java.nio.file.Path sourceFilePath = java.nio.file.Paths.get(props.docRootPath(), "submit.env");
+                java.nio.file.Files.writeString(sourceFilePath, props.envName().trim());
+                infof("Created submit.env file with environment name: %s".formatted(props.envName()));
+            } catch (Exception e) {
+                warnf("Failed to create submit.env file: %s".formatted(e.getMessage()));
+            }
+        } else {
+            infof("No environment name provided, skipping submit.env generation");
+        }
+
+        // Generate a file containing the build number for runtime use
+        if (props.buildNumber() != null && !props.buildNumber().isBlank()) {
+            try {
+                java.nio.file.Path sourceFilePath = java.nio.file.Paths.get(props.docRootPath(), "submit.build");
+                java.nio.file.Files.writeString(sourceFilePath, props.buildNumber().trim());
+                infof("Created submit.build file with build number: %s".formatted(props.buildNumber()));
+            } catch (Exception e) {
+                warnf("Failed to create submit.build file: %s".formatted(e.getMessage()));
+            }
+        } else {
+            infof("No build number provided, skipping submit.build generation");
         }
 
         var deployPostfix = java.util.UUID.randomUUID().toString().substring(0, 8);
@@ -143,7 +186,12 @@ public class PublishStack extends Stack {
                         "/index.html",
                         "/submit.css",
                         "/submit.js",
-                        "/submit.version"))
+                        "/submit.version",
+                        "/submit.hash",
+                        "/submit.build",
+                        "/submit.env"
+                    )
+                )
                 .retainOnDelete(true)
                 .logGroup(webDeploymentLogGroup)
                 .expires(Expiration.after(Duration.minutes(5)))
