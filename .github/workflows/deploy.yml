@@ -410,35 +410,6 @@ jobs:
         shell: bash
         run: npm run cdk
 
-  playwright-install:
-    name: 'playwright-install'
-    runs-on: ubuntu-24.04
-    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v5
-
-      - name: Setup Node
-        uses: actions/setup-node@v5
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Install JS deps (skip browser download)
-        run: npm ci
-        env:
-          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
-
-      - name: Install Playwright browsers (Chromium only)
-        run: npx playwright install --with-deps chromium
-
-      - name: Upload Playwright browsers
-        uses: actions/upload-artifact@v4
-        with:
-          name: playwright-browsers
-          path: ~/.cache/ms-playwright
-          retention-days: 5
-
   docker-build:
     name: 'docker build'
     runs-on: ubuntu-24.04
