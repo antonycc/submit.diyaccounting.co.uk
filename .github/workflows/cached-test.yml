@@ -96,13 +96,13 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
-      - name: Install JS deps (skip browser download)
-        run: npm ci
+      - name: Install Node dependencies (skip browser download)
+        run: npm ci --ignore-scripts
         env:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
 
       - name: Install Playwright browsers (Chromium only)
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install chromium
 
       - name: Upload Playwright browsers
         uses: actions/upload-artifact@v4
@@ -128,9 +128,7 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
-      - name: Node dependencies
-        run: npm ci
-      - name: Install JS deps (skip browser download)
+      - name: Install Node dependencies (skip browser download)
         run: npm ci --ignore-scripts
         env:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
@@ -144,9 +142,11 @@ jobs:
           #npm ci --ignore-scripts
           #npx playwright install chromium --with-deps
           #chmod -R u+rwX ~/.cache/ms-playwright
-      - name: Install dependencies and Playwright browsers
+      - name: Install Playwright Linux dependencies (Chromium) and fix permissions
         run: |
-          chmod -R u+rwX ~/.cache/ms-playwright
+          sudo npx playwright install-deps chromium
+          chmod -R a+rX ~/.cache/ms-playwright
+          chmod -R a+rx ~/.cache/ms-playwright/*/chrome-linux/
 
       - run: cp '.env.${{ needs.names.outputs.environment-name }}' '.env.proxy' ; npx dotenv -e '.env.${{ needs.names.outputs.environment-name }}' -- npm run test:behaviour
         env:
