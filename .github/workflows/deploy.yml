@@ -1526,7 +1526,7 @@ jobs:
     name: 'web test'
     needs:
       - names
-      - playwright-install
+      #- playwright-install
       - deploy-application
       - deploy-edge
       - deploy-publish
@@ -1558,10 +1558,11 @@ jobs:
 
           #npm ci --ignore-scripts
           #npx playwright install chromium --with-deps
+          #chmod -R u+rwX ~/.cache/ms-playwright
       - name: Install dependencies and Playwright browsers
         run: |
           npm -v
-          chmod -R u+rwX ~/.cache/ms-playwright
+          npx playwright install chromium --with-deps
 
       - name: Generate test credentials
         id: uuid
