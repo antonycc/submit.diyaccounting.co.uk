@@ -511,22 +511,68 @@ export async function httpDelete(event) {
     if (isMockMode()) {
       currentBundles = __inMemoryBundles.get(userId) || [];
     } else {
-      // TODO: Add AWS Cognito implementation similar to httpPost
-      console.log("[DEBUG_LOG] AWS Cognito delete not implemented in full mode");
-      return {
-        statusCode: 501,
-        headers: {
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*",
-        },
-        body: JSON.stringify({ error: "Delete not implemented for production mode" }),
-      };
+      const userPoolId = process.env.DIY_SUBMIT_USER_POOL_ID;
+      if (!userPoolId) {
+        return {
+          statusCode: 500,
+          headers: {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*",
+          },
+          body: JSON.stringify({ error: "Server configuration error" }),
+        };
+      }
+      try {
+        const mod = await getCognitoModule();
+        const client = await getCognitoClient();
+        const getUserCommand = new mod.AdminGetUserCommand({
+          UserPoolId: userPoolId,
+          Username: userId,
+        });
+        const userResponse = await client.send(getUserCommand);
+        const bundlesAttribute = userResponse.UserAttributes?.find((attr) => attr.Name === "custom:bundles");
+        if (bundlesAttribute && typeof bundlesAttribute.Value === "string") {
+          currentBundles = bundlesAttribute.Value.split("|").filter((bundle) => bundle.length > 0);
+        }
+      } catch (error) {
+        console.log("[DEBUG_LOG] Error fetching user for delete:", error?.message || error);
+        return {
+          statusCode: 404,
+          headers: {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*",
+          },
+          body: JSON.stringify({ error: "User not found" }),
+        };
+      }
     }
 
     if (removeAll) {
       // Remove all bundles
       if (isMockMode()) {
         __inMemoryBundles.set(userId, []);
+      } else {
+        try {
+          const userPoolId = process.env.DIY_SUBMIT_USER_POOL_ID;
+          const mod = await getCognitoModule();
+          const client = await getCognitoClient();
+          const updateCommand = new mod.AdminUpdateUserAttributesCommand({
+            UserPoolId: userPoolId,
+            Username: userId,
+            UserAttributes: [{ Name: "custom:bundles", Value: "" }],
+          });
+          await client.send(updateCommand);
+        } catch (error) {
+          console.log("[DEBUG_LOG] Error clearing bundles in Cognito:", error?.message || error);
+          return {
+            statusCode: 500,
+            headers: {
+              "Content-Type": "application/json",
+              "Access-Control-Allow-Origin": "*",
+            },
+            body: JSON.stringify({ error: "Failed to remove all bundles" }),
+          };
+        }
       }
       return {
         statusCode: 200,
@@ -559,6 +605,28 @@ export async function httpDelete(event) {
 
       if (isMockMode()) {
         __inMemoryBundles.set(userId, bundlesAfterRemoval);
+      } else {
+        try {
+          const userPoolId = process.env.DIY_SUBMIT_USER_POOL_ID;
+          const mod = await getCognitoModule();
+          const client = await getCognitoClient();
+          const updateCommand = new mod.AdminUpdateUserAttributesCommand({
+            UserPoolId: userPoolId,
+            Username: userId,
+            UserAttributes: [{ Name: "custom:bundles", Value: bundlesAfterRemoval.join("|") }],
+          });
+          await client.send(updateCommand);
+        } catch (error) {
+          console.log("[DEBUG_LOG] Error updating bundles in Cognito:", error?.message || error);
+          return {
+            statusCode: 500,
+            headers: {
+              "Content-Type": "application/json",
+              "Access-Control-Allow-Origin": "*",
+            },
+            body: JSON.stringify({ error: "Failed to remove bundle" }),
+          };
+        }
       }
 
       return {

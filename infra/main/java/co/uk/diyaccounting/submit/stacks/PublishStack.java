@@ -188,6 +188,7 @@ public class PublishStack extends Stack {
                         "/submit.js",
                         "/submit.version",
                         "/submit.hash",
+                        "/submit.build",
                         "/submit.env"
                     )
                 )
