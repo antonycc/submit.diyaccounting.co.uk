@@ -135,6 +135,7 @@ jobs:
     outputs:
       environment-name: ${{ steps.deployment-config.outputs.ENV_NAME }}
       deployment-name: ${{ steps.deployment-config.outputs.DEPLOYMENT_NAME }}
+      base-url: ${{ steps.deployment-config.outputs.DEPLOYMENT_NAME == 'prod' && 'https://submit.diyaccounting.co.uk' || format('https://{0}.submit.diyaccounting.co.uk', steps.deployment-config.outputs.DEPLOYMENT_NAME) }}
 
   npm-test:
     name: 'npm test'
@@ -1336,7 +1337,7 @@ jobs:
         id: publish-compare
         shell: bash
         run: |
-          EDGE_HASH_URL="${{ needs.deploy-edge.outputs.base-url }}/submit.hash"
+          EDGE_HASH_URL="${{ needs.names.outputs.base-url }}/submit.hash"
           echo "Fetching existing hash from $EDGE_HASH_URL"
           EXISTING_HASH=$(curl --fail --silent --show-error --location "$EDGE_HASH_URL" || echo "")
           echo "EXISTING_HASH=$EXISTING_HASH"
@@ -1454,25 +1455,6 @@ jobs:
 #          ENV_NAME: ${{ needs.names.outputs.environment-name }}
 #          DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
 
-  test-parameters:
-    if: ${{ !cancelled() && inputs.skipDeploy == 'true' || needs.deploy-edge.result == 'success' }}
-    name: 'calculate test parameters'
-    needs:
-      - names
-      - deploy-application
-      - deploy-edge
-      - deploy-publish
-    runs-on: ubuntu-24.04
-    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
-    env:
-      BASE_URL: ${{ needs.deploy-edge.outputs.base-url || ( needs.names.outputs.deployment-name == 'prod' && 'https://submit.diyaccounting.co.uk' || format('https://{0}.submit.diyaccounting.co.uk', needs.names.outputs.deployment-name) ) }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v5
-
-    outputs:
-      base-url: ${{ needs.deploy-edge.outputs.base-url || ( needs.names.outputs.deployment-name == 'prod' && 'https://submit.diyaccounting.co.uk' || format('https://{0}.submit.diyaccounting.co.uk', needs.names.outputs.deployment-name) ) }}
-
 # TODO: Configure or copy and convert the system test API test to test against deployed environment
 #  api-test:
 #    if: ${{ !cancelled() && inputs.skipDeploy == 'true' || needs.deploy-edge.result == 'success' }}
@@ -1483,7 +1465,6 @@ jobs:
 #      - deploy-application
 #      - deploy-edge
 #      - deploy-publish
-#      - test-parameters
 #    runs-on: ubuntu-24.04
 #    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
 #    steps:
@@ -1510,7 +1491,7 @@ jobs:
 #          echo "BASE_URL=${BASE_URL}"
 #          npm run test:api
 #        env:
-#          BASE_URL: ${{ needs.test-parameters.outputs.base-url }}
+#          BASE_URL: ${{ needs.names.outputs.base-url }}
 #
 #      - name: Upload artifacts
 #        if: ${{ !cancelled() }}
@@ -1530,7 +1511,6 @@ jobs:
       - deploy-application
       - deploy-edge
       - deploy-publish
-      - test-parameters
     runs-on: ubuntu-24.04
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
     steps:
@@ -1574,7 +1554,7 @@ jobs:
 
       - run: cp '.env.${{ needs.names.outputs.environment-name }}' '.env.proxy' ; npx dotenv -e '.env.${{ needs.names.outputs.environment-name }}' -- npm run test:behaviour
         env:
-          BASE_URL: ${{ needs.test-parameters.outputs.base-url }}
+          BASE_URL: ${{ needs.names.outputs.base-url }}
           DIY_SUBMIT_TEST_AUTH_USERNAME: ${{ steps.uuid.outputs.TEST_USERNAME }}
           DIY_SUBMIT_TEST_AUTH_PASSWORD: ${{ steps.uuid.outputs.TEST_PASSWORD }}
 
@@ -1634,7 +1614,6 @@ jobs:
 #      - deploy-edge
 #      - deploy-edge
 #      - deploy-publish
-#      - test-parameters
 #    runs-on: ubuntu-24.04
 #    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
 #    steps:
@@ -1671,7 +1650,7 @@ jobs:
 #            --out 'dashboard=export=load-test-report.html&port=-1&record=load-test-events.json&period=1s' \
 #            --summary-export=load-test-summary.json
 #        env:
-#          BASE_URL: ${{ needs.test-parameters.outputs.base-url }}
+#          BASE_URL: ${{ needs.names.outputs.base-url }}
 #          TEST_USERNAME: ${{ needs.test-parameters.outputs.test-username }}
 #          TEST_PASSWORD: ${{ needs.test-parameters.outputs.test-password }}
 #          DURATION: ${{ inputs.loadTestDuration }}
@@ -1694,7 +1673,6 @@ jobs:
     needs:
       - names
       - deploy-edge
-      - test-parameters
       #- api-test
       - web-test
       #- load-test
@@ -1768,7 +1746,7 @@ jobs:
                   <h1>Test Artifacts</h1>
                   <p>Generated from to deployment: <strong>${{ needs.names.outputs.deployment-name }}</strong></p>
                   <p>GitHub Actions run: <a href="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" target="_blank">${{ github.run_id }}</a></p>
-                  <p>Tested service base URL: <a href="${{ needs.test-parameters.outputs.base-url }}" target="_blank">${{ needs.test-parameters.outputs.base-url }}</a></p>
+                  <p>Tested service base URL: <a href="${{ needs.names.outputs.base-url }}" target="_blank">${{ needs.names.outputs.base-url }}</a></p>
 
                   <h2>Available Test output</h2>
                   <ul>
@@ -1795,12 +1773,12 @@ jobs:
       - name: Output deployment URLs
         run: |
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "🚀 **Tested service base URL**: ${{ needs.test-parameters.outputs.base-url }}" >> $GITHUB_STEP_SUMMARY
+          echo "🚀 **Tested service base URL**: ${{ needs.names.outputs.base-url }}" >> $GITHUB_STEP_SUMMARY
           #echo "📊 **Test Reports**: ${{ steps.deployment.outputs.page_url }}artifacts" >> $GITHUB_STEP_SUMMARY
           echo "📁 **GitHub Pages**: ${{ steps.deployment.outputs.page_url }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
     outputs:
-      service-base-url: ${{ needs.test-parameters.outputs.base-url }}
+      service-base-url: ${{ needs.names.outputs.base-url }}
       github-pages-url: ${{ steps.deployment.outputs.page_url }}
       artifacts-url: ${{ steps.deployment.outputs.page_url }}artifacts/
