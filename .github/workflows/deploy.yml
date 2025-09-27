@@ -1288,50 +1288,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Setup Node
-        uses: actions/setup-node@v5
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Node dependencies
-        run: npm ci
-
-      - uses: actions/setup-java@v5
-        with:
-          distribution: 'temurin'
-          java-version: ${{ env.JAVA_VERSION }}
-          cache: 'maven'
-
-      - name: Configure AWS role via GitHub OIDC
-        uses: aws-actions/configure-aws-credentials@v5
-        with:
-          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-          role-chaining: false
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - name: Assume AWS deployment role
-        uses: aws-actions/configure-aws-credentials@v5
-        with:
-          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-          role-chaining: true
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
       - name: Compute hash of static website content
         id: publish-hash
         shell: bash
         run: |
-            WEBSITE_HASH=$(find 'web/public' -type f -exec sha256sum {} + | sort -k 2 | sha256sum | awk '{print $1}')
-            echo "WEBSITE_HASH=$WEBSITE_HASH"
-            echo "WEBSITE_HASH=$WEBSITE_HASH" >> $GITHUB_OUTPUT
+          WEBSITE_HASH=$(find 'web/public' -type f -exec sha256sum {} + | sort -k 2 | sha256sum | awk '{print $1}')
+          echo "WEBSITE_HASH=$WEBSITE_HASH"
+          echo "WEBSITE_HASH=$WEBSITE_HASH" >> $GITHUB_OUTPUT
 
       - name: Compare current submit.hash with computed hash
         id: publish-compare
@@ -1347,6 +1310,48 @@ jobs:
           else
             echo "skipPublishStackDeployment=false" >> "$GITHUB_OUTPUT"
           fi
+
+      - name: Setup Node
+        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_PUBLISH_STACK_DEPLOYMENT == 'true' || steps.publish-compare.outputs.skipPublishStackDeployment != 'true' }}
+        uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Node dependencies
+        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_PUBLISH_STACK_DEPLOYMENT == 'true' || steps.publish-compare.outputs.skipPublishStackDeployment != 'true' }}
+        run: npm ci
+
+      - uses: actions/setup-java@v5
+        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_PUBLISH_STACK_DEPLOYMENT == 'true' || steps.publish-compare.outputs.skipPublishStackDeployment != 'true' }}
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: 'maven'
+
+      - name: Configure AWS role via GitHub OIDC
+        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_PUBLISH_STACK_DEPLOYMENT == 'true' || steps.publish-compare.outputs.skipPublishStackDeployment != 'true' }}
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_PUBLISH_STACK_DEPLOYMENT == 'true' || steps.publish-compare.outputs.skipPublishStackDeployment != 'true' }}
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
 
       - name: Build CDK and synthesize and deploy the PublishStack in the Delivery Application
         if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_PUBLISH_STACK_DEPLOYMENT == 'true' || steps.publish-compare.outputs.skipPublishStackDeployment != 'true' }}
