@@ -1542,7 +1542,7 @@ jobs:
       - name: Install dependencies and Playwright browsers
         run: |
           npm -v
-          pm ci --ignore-scripts
+          npm ci --ignore-scripts
           npx playwright install chromium --with-deps
 
       - name: Generate test credentials
