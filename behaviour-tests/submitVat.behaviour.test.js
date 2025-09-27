@@ -223,7 +223,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
     await gotoWithRetries(page, url, {
       description,
       waitUntil: "domcontentloaded",
-      readySelector: "#activitiesByBundle",
+      readySelector: "#dynamicActivities",
     });
   };
 
