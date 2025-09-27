@@ -1,6 +1,6 @@
 package co.uk.diyaccounting.submit;
 
-import co.uk.diyaccounting.submit.awssdk.KindCdk;
+import co.uk.diyaccounting.submit.utils.KindCdk;
 import co.uk.diyaccounting.submit.stacks.ApplicationStack;
 import co.uk.diyaccounting.submit.stacks.AuthStack;
 import co.uk.diyaccounting.submit.stacks.DevStack;

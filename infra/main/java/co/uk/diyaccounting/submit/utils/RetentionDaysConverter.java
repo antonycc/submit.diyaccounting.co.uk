@@ -1,4 +1,4 @@
-package co.uk.diyaccounting.submit.awssdk;
+package co.uk.diyaccounting.submit.utils;
 
 import software.amazon.awscdk.services.logs.RetentionDays;
 

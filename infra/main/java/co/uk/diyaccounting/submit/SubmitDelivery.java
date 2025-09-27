@@ -11,7 +11,7 @@ import java.lang.reflect.Field;
 import java.nio.file.Paths;
 import java.util.Map;
 
-import static co.uk.diyaccounting.submit.awssdk.KindCdk.getContextValueString;
+import static co.uk.diyaccounting.submit.utils.KindCdk.getContextValueString;
 import static co.uk.diyaccounting.submit.utils.Kind.envOr;
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.Kind.putIfNotNull;
