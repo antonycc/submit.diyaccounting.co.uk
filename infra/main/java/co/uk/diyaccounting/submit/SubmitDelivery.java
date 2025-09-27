@@ -7,7 +7,6 @@ import software.amazon.awscdk.App;
 import software.amazon.awscdk.Environment;
 import software.constructs.Construct;
 
-import java.io.File;
 import java.lang.reflect.Field;
 import java.nio.file.Paths;
 import java.util.Map;
@@ -22,6 +21,10 @@ import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateResourc
 
 public class SubmitDelivery {
 
+    public final EdgeStack edgeStack;
+    public final PublishStack publishStack;
+    public final SelfDestructStack selfDestructStack;
+
     // Fields match cdk.json context keys (camelCase). Environment overrides are applied in SubmitDelivery
     public static class SubmitDeliveryProps {
         public String env;
@@ -33,18 +36,6 @@ public class SubmitDelivery {
         public String docRootPath;
         public String domainName;
         public String baseUrl;
-        public String authUrlMockLambdaFunctionArn;
-        public String authUrlCognitoLambdaFunctionArn;
-        public String exchangeCognitoTokenLambdaFunctionArn;
-        public String authUrlHmrcLambdaFunctionArn;
-        public String exchangeHmrcTokenLambdaFunctionArn;
-        public String submitVatLambdaFunctionArn;
-        public String logReceiptLambdaFunctionArn;
-        public String catalogLambdaFunctionArn;
-        public String requestBundlesLambdaFunctionArn;
-        public String myBundlesLambdaFunctionArn;
-        public String myReceiptsLambdaFunctionArn;
-        // Function URLs for cross-region EdgeStack deployment
         public String authUrlMockLambdaFunctionUrl;
         public String authUrlCognitoLambdaFunctionUrl;
         public String exchangeCognitoTokenLambdaFunctionUrl;
@@ -85,10 +76,21 @@ public class SubmitDelivery {
     public static void main(final String[] args) {
 
         App app = new App();
-
-        // Build app-level props from cdk.json context with environment overrides
         SubmitDeliveryProps appProps = loadAppProps(app);
+        var submitDelivery = new SubmitDelivery(app, appProps);
+        app.synth();
+        infof("CDK synth complete");
 
+        infof("Created stack:", submitDelivery.edgeStack.getStackName());
+        infof("Created stack:", submitDelivery.publishStack.getStackName());
+        if (submitDelivery.selfDestructStack != null) {
+            infof("Created stack:", submitDelivery.selfDestructStack.getStackName());
+        } else {
+            infof("No SelfDestruct stack created for prod deployment");
+        }
+    }
+
+    public SubmitDelivery(App app, SubmitDeliveryProps appProps){
         // Environment e.g. ci, prod, and deployment name e.g. ci-branchname, prod
         var envName = envOr("ENV_NAME", appProps.env);
         var deploymentName = envOr("DEPLOYMENT_NAME", appProps.deploymentName);
@@ -186,7 +188,7 @@ public class SubmitDelivery {
 
         // Create the Edge stack (CloudFront, Route53)
         String edgeStackId = "%s-EdgeStack".formatted(deploymentName);
-        EdgeStack edgeStack = new EdgeStack(
+        this.edgeStack = new EdgeStack(
                 app,
                 edgeStackId,
                 EdgeStack.EdgeStackProps.builder()
@@ -207,7 +209,7 @@ public class SubmitDelivery {
 
         // Create the Publish stack (Bucket Deployments to CloudFront)
         String publishStackId = "%s-PublishStack".formatted(deploymentName);
-        PublishStack publishStack = new PublishStack(
+        this.publishStack = new PublishStack(
                 app,
                 publishStackId,
                 PublishStack.PublishStackProps.builder()
@@ -217,21 +219,21 @@ public class SubmitDelivery {
                         .deploymentName(deploymentName)
                         .domainName(domainName)
                         .baseUrl(baseUrl)
-                        .webBucketArn(edgeStack.originBucket.getBucketArn()) // TODO: Get bucker by predicted name
+                        .webBucketArn(this.edgeStack.originBucket.getBucketArn()) // TODO: Get bucker by predicted name
                         .resourceNamePrefix(resourceNamePrefix)
                         .distributionArn(
-                                edgeStack.distribution.getDistributionArn()) // TODO: Get distribution by domain name
+                            this.edgeStack.distribution.getDistributionArn()) // TODO: Get distribution by domain name
                         .commitHash(commitHash)
                         .websiteHash(websiteHash)
                         .buildNumber(buildNumber)
                         .docRootPath(docRootPath)
                         .build());
-        publishStack.addDependency(edgeStack);
+        this.publishStack.addDependency(this.edgeStack);
 
         // Create the SelfDestruct stack only for non-prod deployments
         if (!"prod".equals(deploymentName)) {
             String selfDestructStackId = "%s-SelfDestructStack".formatted(deploymentName);
-            SelfDestructStack selfDestructStack = new SelfDestructStack(
+            this.selfDestructStack = new SelfDestructStack(
                     app,
                     selfDestructStackId,
                     SelfDestructStack.SelfDestructStackProps.builder()
@@ -241,21 +243,24 @@ public class SubmitDelivery {
                             .deploymentName(deploymentName)
                             .resourceNamePrefix(resourceNamePrefix)
                             .compressedResourceNamePrefix(compressedResourceNamePrefix)
-                            .edgeStackName(edgeStack.getStackName())
-                            .publishStackName(publishStack.getStackName())
+                            .edgeStackName(this.edgeStack.getStackName())
+                            .publishStackName(this.publishStack.getStackName())
                             .selfDestructDelayHours(selfDestructDelayHours)
                             .selfDestructHandlerSource(selfDestructHandlerSource)
                             .build());
+        } else {
+            this.selfDestructStack = null;
         }
-
-        app.synth();
     }
 
     // populate props from cdk.json context using exact camelCase keys
-    private static SubmitDeliveryProps loadAppProps(Construct scope) {
+    public static SubmitDelivery.SubmitDeliveryProps loadAppProps(Construct scope) {
+        return loadAppProps(scope, null);
+    }
+    public static SubmitDeliveryProps loadAppProps(Construct scope, String pathPrefix) {
         SubmitDeliveryProps props = SubmitDeliveryProps.Builder.create().build();
-        var cdkPath = Paths.get("cdk.json").toAbsolutePath();
-        if (!new File("cdk.json").exists()) {
+        var cdkPath = Paths.get((pathPrefix == null ? "" : pathPrefix) + "cdk.json").toAbsolutePath();
+        if (!cdkPath.toFile().exists()) {
             warnf("Cannot find application properties (cdk.json) at %s", cdkPath);
         } else {
             infof("Loading application properties from cdk.json %s", cdkPath);
