@@ -1513,34 +1513,6 @@ jobs:
           DIY_SUBMIT_HMRC_TEST_USERNAME: ${{ vars.DIY_SUBMIT_HMRC_TEST_USERNAME }}
           DIY_SUBMIT_HMRC_TEST_PASSWORD: ${{ secrets.DIY_SUBMIT_HMRC_TEST_PASSWORD }}
 
-      - name: Convert Playwright video to MP4
-        if: ${{ !cancelled() }}
-        run: |
-          set -euo pipefail
-          root="target/behaviour-test-results"
-
-          # Recursively transcode all .webm files, placing output next to source with 'converted' prefix
-          pids=()
-          while IFS= read -r -d '' f; do
-            dir=$(dirname "$f")
-            base="${f##*/}"
-            name="${base%.webm}"
-            out="${dir}/converted${name}.mp4"
-            echo "Transcoding $f -> $out"
-            npm run convert:video -- --in "$f" --out "$out" &
-            pids+=($!)
-          done < <(find "$root" -type f -name '*.webm' -print0)
-
-          # Wait for all transcodes to complete
-          fail=0
-          for pid in "${pids[@]:-}"; do
-            if ! wait "$pid"; then
-              fail=1
-            fi
-          done
-
-          exit $fail
-
       - name: Upload artifacts (results)
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
@@ -1657,6 +1629,34 @@ jobs:
         with:
           path: artifacts/
         continue-on-error: true
+
+      - name: Convert Playwright video to MP4
+        if: ${{ !cancelled() }}
+        run: |
+          set -euo pipefail
+          root="artifacts/web-test-artifacts"
+
+          # Recursively transcode all .webm files, placing output next to source with 'converted' prefix
+          pids=()
+          while IFS= read -r -d '' f; do
+            dir=$(dirname "$f")
+            base="${f##*/}"
+            name="${base%.webm}"
+            out="${dir}/converted${name}.mp4"
+            echo "Transcoding $f -> $out"
+            npm run convert:video -- --in "$f" --out "$out" &
+            pids+=($!)
+          done < <(find "$root" -type f -name '*.webm' -print0)
+
+          # Wait for all transcodes to complete
+          fail=0
+          for pid in "${pids[@]:-}"; do
+            if ! wait "$pid"; then
+              fail=1
+            fi
+          done
+
+          exit $fail
 
       - name: Create GitHub Pages content
         run: |
