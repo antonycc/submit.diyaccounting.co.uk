@@ -301,20 +301,26 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
     await page.waitForLoadState("networkidle");
     await page.waitForTimeout(500);
     await page.screenshot({
-      path: `target/behaviour-test-results/submitVat-screenshots/040-cognito-provider-auth-${timestamp}.png`,
+      path: `target/behaviour-test-results/submitVat-screenshots/040-cognito-provider-auth-clicked-${timestamp}.png`,
     });
 
     // Make cognito selection
+    await page.waitForLoadState("networkidle");
+    await page.waitForTimeout(500);
     const cognitoBtn = page.getByRole("button", { name: "cognito" });
     // const cognitoBtn = page.locator(
     //  'input[type="button"][value="cognito"][aria-label="cognito"].idpButton-customizable',
     // );
     await expect(cognitoBtn).toBeVisible({ timeout: 10000 });
+    await page.screenshot({
+      path: `target/behaviour-test-results/submitVat-screenshots/043-cognito-button-${timestamp}.png`,
+    });
+
     await cognitoBtn.click();
     await page.waitForLoadState("networkidle");
     await page.waitForTimeout(500);
     await page.screenshot({
-      path: `target/behaviour-test-results/submitVat-screenshots/045-cognito-button-${timestamp}.png`,
+      path: `target/behaviour-test-results/submitVat-screenshots/045-cognito-button-clicked-${timestamp}.png`,
     });
 
     // Ensure we are at the login page
