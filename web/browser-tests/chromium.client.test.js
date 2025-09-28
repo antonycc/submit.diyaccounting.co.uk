@@ -233,7 +233,7 @@ test.describe("Client System Test - VAT Flow in Browser", () => {
     test("should show loading spinner during form submission", async ({ page }) => {
       const timestamp = getTimestamp();
       // Fill in valid form data
-      await page.locator("#vatNumber").fill("193054661");
+      await page.locator("#vatNumber").fill("111222333");
       await setTimeout(100);
       await page.locator("#periodKey").fill("24A1");
       await setTimeout(100);

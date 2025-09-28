@@ -200,7 +200,7 @@ describe("Server Unit Tests", () => {
       submitVatHandler.mockResolvedValue(mockResponse);
 
       const requestBody = {
-        vatNumber: "193054661",
+        vatNumber: "111222333",
         periodKey: "18A1",
         vatDue: "100.00",
         accessToken: "test-token",

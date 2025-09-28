@@ -31,7 +31,7 @@ describe("getVatLiabilities handler", () => {
   test("should retrieve VAT liabilities successfully", async () => {
     const event = {
       queryStringParameters: {
-        vrn: "193054661",
+        vrn: "111222333",
       },
       headers: {
         ...buildGovClientTestHeaders(),
@@ -52,7 +52,7 @@ describe("getVatLiabilities handler", () => {
   test("should retrieve VAT liabilities with date filters", async () => {
     const event = {
       queryStringParameters: {
-        vrn: "193054661",
+        vrn: "111222333",
         from: "2024-01-01",
         to: "2024-06-30",
       },
@@ -106,7 +106,7 @@ describe("getVatLiabilities handler", () => {
   test("should return 400 when authorization header is missing", async () => {
     const event = {
       queryStringParameters: {
-        vrn: "193054661",
+        vrn: "111222333",
       },
       headers: {
         ...buildGovClientTestHeaders(),
@@ -146,7 +146,7 @@ describe("getVatLiabilities handler", () => {
 
     const event = {
       queryStringParameters: {
-        vrn: "193054661",
+        vrn: "111222333",
       },
       headers: {
         ...buildGovClientTestHeaders(),
@@ -160,7 +160,7 @@ describe("getVatLiabilities handler", () => {
     expect(result.statusCode).toBe(200);
     expect(body.liabilities).toBeDefined();
     expect(fetch).toHaveBeenCalledWith(
-      expect.stringContaining("/organisations/vat/193054661/liabilities"),
+      expect.stringContaining("/organisations/vat/111222333/liabilities"),
       expect.objectContaining({
         method: "GET",
         headers: expect.objectContaining({
@@ -185,7 +185,7 @@ describe("getVatLiabilities handler", () => {
 
     const event = {
       queryStringParameters: {
-        vrn: "193054661",
+        vrn: "111222333",
       },
       headers: {
         ...buildGovClientTestHeaders(),

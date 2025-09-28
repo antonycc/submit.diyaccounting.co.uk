@@ -138,7 +138,7 @@ Manual testing should be performed using the **proxy environment**. This require
 3. **Manual test flows:**
    - **VAT Submission Flow**:
      - Open: http://127.0.0.1:3000/submitVat.html
-     - Fill form with test data (VAT number: 193054661, Period: 24A1, Amount: 1000.00)
+     - Fill form with test data (VAT number: 176540158, Period: 24A1, Amount: 1000.00)
      - Verify form validation and submission process
    - **Bundle/Entitlement System**:
      - Open: http://127.0.0.1:3000/bundles.html

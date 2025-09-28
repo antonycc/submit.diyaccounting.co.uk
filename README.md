@@ -146,7 +146,7 @@ Headers: Authorization: Bearer <accessToken>
 Request (example)
 ```json
 {
-  "vatNumber": "193054661",
+  "vatNumber": "176540158",
   "periodKey": "24A1",
   "vatDue": "2400.00"
 }

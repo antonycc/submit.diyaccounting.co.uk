@@ -32,7 +32,7 @@ describe("getVatPenalties handler", () => {
   test("should retrieve VAT penalties successfully", async () => {
     const event = {
       queryStringParameters: {
-        vrn: "193054661",
+        vrn: "111222333",
       },
       headers: {
         ...buildGovClientTestHeaders(),
@@ -53,7 +53,7 @@ describe("getVatPenalties handler", () => {
   test("should retrieve VAT penalties with Gov-Test-Scenario", async () => {
     const event = {
       queryStringParameters: {
-        "vrn": "193054661",
+        "vrn": "111222333",
         "Gov-Test-Scenario": "PENALTY_POINTS",
       },
       headers: {
@@ -106,7 +106,7 @@ describe("getVatPenalties handler", () => {
   test("should return 400 when authorization header is missing", async () => {
     const event = {
       queryStringParameters: {
-        vrn: "193054661",
+        vrn: "111222333",
       },
       headers: {
         ...buildGovClientTestHeaders(),
@@ -147,7 +147,7 @@ describe("getVatPenalties handler", () => {
 
     const event = {
       queryStringParameters: {
-        vrn: "193054661",
+        vrn: "111222333",
       },
       headers: {
         ...buildGovClientTestHeaders(),
@@ -161,7 +161,7 @@ describe("getVatPenalties handler", () => {
     expect(result.statusCode).toBe(200);
     expect(body.penalties).toBeDefined();
     expect(fetch).toHaveBeenCalledWith(
-      expect.stringContaining("/organisations/vat/193054661/penalties"),
+      expect.stringContaining("/organisations/vat/111222333/penalties"),
       expect.objectContaining({
         method: "GET",
         headers: expect.objectContaining({
@@ -186,7 +186,7 @@ describe("getVatPenalties handler", () => {
 
     const event = {
       queryStringParameters: {
-        vrn: "193054661",
+        vrn: "111222333",
       },
       headers: {
         ...buildGovClientTestHeaders(),

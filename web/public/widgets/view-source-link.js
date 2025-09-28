@@ -10,13 +10,12 @@
         const text = await response.text();
         const commitHash = text.trim();
         if (commitHash) {
-          const currentPage = window.location.pathname.split("/").pop() || "index.html";
           const githubUrl = `https://github.com/antonycc/submit.diyaccounting.co.uk/blob/${commitHash}/web/public/${window.location.pathname}`;
           const viewSourceLink = document.getElementById("viewSourceLink");
           if (viewSourceLink) {
             viewSourceLink.href = githubUrl;
             viewSourceLink.target = "_blank";
-            viewSourceLink.textContent = `source: ${currentPage}@${commitHash.substring(0, 7)}`;
+            viewSourceLink.textContent = `source: @${commitHash.substring(0, 7)}`;
             viewSourceLink.style.display = "inline";
           }
         }
