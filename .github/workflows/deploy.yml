@@ -1483,11 +1483,13 @@ jobs:
     name: 'web test'
     needs:
       - names
-      #- playwright-install
       - deploy-application
       - deploy-edge
       - deploy-publish
     runs-on: ubuntu-24.04
+    container: mcr.microsoft.com/playwright:v1.55.1-jammy
+    # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags
+    # and extension with ubuntu distribution e.g. https://releases.ubuntu.com/jammy/
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
     steps:
       - name: Checkout
@@ -1499,34 +1501,11 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
-      #- name: Node dependencies
-      #  run: npm ci
-      #- name: Install JS deps (skip browser download)
-      #  run: npm ci --ignore-scripts
-      #  env:
-      #    PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
-
-      #- name: Download Playwright browsers
-      #  uses: actions/download-artifact@v5
-      #  with:
-      #    name: playwright-browsers
-      #    path: ~/.cache/ms-playwright
-
-          #npm ci --ignore-scripts
-          #npx playwright install chromium --with-deps
-          #chmod -R u+rwX ~/.cache/ms-playwright
-      - name: Install dependencies and Playwright browsers
+      - name: Install dependencies
         run: |
           npm ci --ignore-scripts
-          npx playwright install chromium --with-deps
-
-#      - name: Generate test credentials
-#        id: uuid
-#        run: |
-#          TEST_USERNAME="test-$(uuidgen | tr '[:upper:]' '[:lower:]' | head -c 8)"
-#          TEST_PASSWORD="$(uuidgen | tr '[:upper:]' '[:lower:]' | head -c 16)"
-#          echo "TEST_USERNAME=$TEST_USERNAME" >> $GITHUB_OUTPUT
-#          echo "TEST_PASSWORD=$TEST_PASSWORD" >> $GITHUB_OUTPUT
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
 
       - run: cp '.env.${{ needs.names.outputs.environment-name }}' '.env.proxy' ; npx dotenv -e '.env.${{ needs.names.outputs.environment-name }}' -- npm run test:behaviour
         env:
