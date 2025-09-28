@@ -41,8 +41,6 @@
     "users:provision": "node app/bin/provision-user.mjs",
     "test:submitVatBehaviourProxyRunning": "npx dotenv -e .env.proxyRunning -- playwright test behaviour-tests/submitVat.behaviour.test.js",
     "test:submitVatBehaviour": "playwright test behaviour-tests/submitVat.behaviour.test.js",
-    "test:userJourneysBehaviour": "playwright test behaviour-tests/journeys.behaviour.test.js",
-    "test:zBundlesBehaviour": "playwright test behaviour-tests/zBundles.behaviour.test.js",
     "clean": "./scripts/clean-tests.sh",
     "start": "npx dotenv -e .env.proxy -- node app/bin/server.js",
     "proxy": "npx dotenv -e .env.proxy -- npx ngrok http --url wanted-finally-anteater.ngrok-free.app",
