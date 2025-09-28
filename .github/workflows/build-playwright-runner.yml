@@ -2,7 +2,7 @@
 name: build-playwright-image
 
 env:
-  PLAYWRIGHT_VERSION: '1.55.1' # Match with @playwright/test in package.json and Dockerfile.playwright-runner
+  PLAYWRIGHT_VERSION: '1.55.1' # Match with @playwright/test in package.json and: Dockerfile.playwright-runner
   PLAYWRIGHT_IMAGE: 'ghcr.io/${{ github.repository }}/playwright-runner'
 
 on:
