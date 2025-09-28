@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
   push:
     paths:
-      - 'build-playwright-runner.yml'
+      - '.github/workflows/build-playwright-runner.yml'
       - 'Dockerfile.playwright-runner'
 
 permissions:
