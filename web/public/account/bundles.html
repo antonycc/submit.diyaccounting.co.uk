@@ -294,10 +294,6 @@
           return;
         }
 
-        if (!confirm(`Are you sure you want to remove the "${bundleId}" bundle?`)) {
-          return;
-        }
-
         try {
           const response = await fetch("/api/request-bundle", {
             method: "DELETE",
