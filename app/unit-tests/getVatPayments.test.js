@@ -31,7 +31,7 @@ describe("getVatPayments handler", () => {
   test("should retrieve VAT payments successfully", async () => {
     const event = {
       queryStringParameters: {
-        vrn: "193054661",
+        vrn: "111222333",
       },
       headers: {
         ...buildGovClientTestHeaders(),
@@ -52,7 +52,7 @@ describe("getVatPayments handler", () => {
   test("should retrieve VAT payments with date filters", async () => {
     const event = {
       queryStringParameters: {
-        vrn: "193054661",
+        vrn: "111222333",
         from: "2024-01-01",
         to: "2024-06-30",
       },
@@ -106,7 +106,7 @@ describe("getVatPayments handler", () => {
   test("should return 400 when authorization header is missing", async () => {
     const event = {
       queryStringParameters: {
-        vrn: "193054661",
+        vrn: "111222333",
       },
       headers: {
         ...buildGovClientTestHeaders(),
@@ -141,7 +141,7 @@ describe("getVatPayments handler", () => {
 
     const event = {
       queryStringParameters: {
-        vrn: "193054661",
+        vrn: "111222333",
       },
       headers: {
         ...buildGovClientTestHeaders(),
@@ -155,7 +155,7 @@ describe("getVatPayments handler", () => {
     expect(result.statusCode).toBe(200);
     expect(body.payments).toBeDefined();
     expect(fetch).toHaveBeenCalledWith(
-      expect.stringContaining("/organisations/vat/193054661/payments"),
+      expect.stringContaining("/organisations/vat/111222333/payments"),
       expect.objectContaining({
         method: "GET",
         headers: expect.objectContaining({
@@ -180,7 +180,7 @@ describe("getVatPayments handler", () => {
 
     const event = {
       queryStringParameters: {
-        vrn: "193054661",
+        vrn: "111222333",
       },
       headers: {
         ...buildGovClientTestHeaders(),

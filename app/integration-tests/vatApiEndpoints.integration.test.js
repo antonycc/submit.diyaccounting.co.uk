@@ -57,7 +57,7 @@ describe("Integration – VAT API Endpoints (Direct Handler Testing)", () => {
 
   it("should retrieve VAT obligations in stubbed mode", async () => {
     const event = {
-      queryStringParameters: { vrn: "193054661" },
+      queryStringParameters: { vrn: "111222333" },
       headers: { authorization: "Bearer test-access-token" },
     };
 
@@ -72,7 +72,7 @@ describe("Integration – VAT API Endpoints (Direct Handler Testing)", () => {
 
   it("should retrieve VAT return in stubbed mode", async () => {
     const event = {
-      queryStringParameters: { vrn: "193054661" },
+      queryStringParameters: { vrn: "111222333" },
       pathParameters: { periodKey: "24A1" },
       headers: { authorization: "Bearer test-access-token" },
     };
@@ -88,7 +88,7 @@ describe("Integration – VAT API Endpoints (Direct Handler Testing)", () => {
 
   it("should retrieve VAT liabilities in stubbed mode", async () => {
     const event = {
-      queryStringParameters: { vrn: "193054661" },
+      queryStringParameters: { vrn: "111222333" },
       headers: { authorization: "Bearer test-access-token" },
     };
 
@@ -122,7 +122,7 @@ describe("Integration – VAT API Endpoints (Direct Handler Testing)", () => {
 
   it("should require authorization for all endpoints", async () => {
     const noAuthEvent = {
-      queryStringParameters: { vrn: "193054661" },
+      queryStringParameters: { vrn: "111222333" },
       headers: {},
     };
 
@@ -146,7 +146,7 @@ describe("Integration – VAT API Endpoints (Direct Handler Testing)", () => {
   it("should handle Gov-Test-Scenario headers", async () => {
     const eventWithScenario = {
       queryStringParameters: {
-        "vrn": "193054661",
+        "vrn": "111222333",
         "Gov-Test-Scenario": "QUARTERLY_NONE_MET",
       },
       headers: { authorization: "Bearer test-access-token" },

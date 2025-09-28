@@ -36,7 +36,7 @@ describe("getVatObligations handler", () => {
   test("should retrieve VAT obligations successfully", async () => {
     const event = {
       queryStringParameters: {
-        vrn: "193054661",
+        vrn: "111222333",
       },
       headers: {
         ...buildGovClientTestHeaders(),
@@ -59,7 +59,7 @@ describe("getVatObligations handler", () => {
   test("should retrieve VAT obligations with date filters", async () => {
     const event = {
       queryStringParameters: {
-        vrn: "193054661",
+        vrn: "111222333",
         from: "2024-01-01",
         to: "2024-06-30",
         status: "O",
@@ -80,7 +80,7 @@ describe("getVatObligations handler", () => {
   test("should retrieve VAT obligations with Gov-Test-Scenario", async () => {
     const event = {
       queryStringParameters: {
-        "vrn": "193054661",
+        "vrn": "111222333",
         "Gov-Test-Scenario": "QUARTERLY_NONE_MET",
       },
       headers: {
@@ -133,7 +133,7 @@ describe("getVatObligations handler", () => {
   test("should return 400 when date format is invalid", async () => {
     const event = {
       queryStringParameters: {
-        vrn: "193054661",
+        vrn: "111222333",
         from: "invalid-date",
       },
       headers: {
@@ -152,7 +152,7 @@ describe("getVatObligations handler", () => {
   test("should return 400 when status format is invalid", async () => {
     const event = {
       queryStringParameters: {
-        vrn: "193054661",
+        vrn: "111222333",
         status: "INVALID",
       },
       headers: {
@@ -171,7 +171,7 @@ describe("getVatObligations handler", () => {
   test("should return 400 when authorization header is missing", async () => {
     const event = {
       queryStringParameters: {
-        vrn: "193054661",
+        vrn: "111222333",
       },
       headers: {
         ...buildGovClientTestHeaders(),
@@ -209,7 +209,7 @@ describe("getVatObligations handler", () => {
 
     const event = {
       queryStringParameters: {
-        vrn: "193054661",
+        vrn: "111222333",
       },
       headers: {
         ...buildGovClientTestHeaders(),
@@ -223,7 +223,7 @@ describe("getVatObligations handler", () => {
     expect(result.statusCode).toBe(200);
     expect(body.obligations).toBeDefined();
     expect(fetch).toHaveBeenCalledWith(
-      expect.stringContaining("/organisations/vat/193054661/obligations"),
+      expect.stringContaining("/organisations/vat/111222333/obligations"),
       expect.objectContaining({
         method: "GET",
         headers: expect.objectContaining({
@@ -248,7 +248,7 @@ describe("getVatObligations handler", () => {
 
     const event = {
       queryStringParameters: {
-        vrn: "193054661",
+        vrn: "111222333",
       },
       headers: {
         ...buildGovClientTestHeaders(),

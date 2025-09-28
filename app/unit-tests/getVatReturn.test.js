@@ -30,7 +30,7 @@ describe("getVatReturn handler", () => {
   test("should retrieve VAT return successfully", async () => {
     const event = {
       queryStringParameters: {
-        vrn: "193054661",
+        vrn: "111222333",
         periodKey: "24A1",
       },
       pathParameters: {
@@ -55,7 +55,7 @@ describe("getVatReturn handler", () => {
   test("should retrieve VAT return with Gov-Test-Scenario", async () => {
     const event = {
       queryStringParameters: {
-        "vrn": "193054661",
+        "vrn": "111222333",
         "Gov-Test-Scenario": "SINGLE_LIABILITY",
       },
       pathParameters: {
@@ -96,7 +96,7 @@ describe("getVatReturn handler", () => {
   test("should return 400 when periodKey is missing", async () => {
     const event = {
       queryStringParameters: {
-        vrn: "193054661",
+        vrn: "111222333",
       },
       pathParameters: {},
       headers: {
@@ -136,7 +136,7 @@ describe("getVatReturn handler", () => {
   test("should return 400 when periodKey format is invalid", async () => {
     const event = {
       queryStringParameters: {
-        vrn: "193054661",
+        vrn: "111222333",
       },
       pathParameters: {
         periodKey: "invalid-period",
@@ -157,7 +157,7 @@ describe("getVatReturn handler", () => {
   test("should return 400 when authorization header is missing", async () => {
     const event = {
       queryStringParameters: {
-        vrn: "193054661",
+        vrn: "111222333",
       },
       pathParameters: {
         periodKey: "24A1",
@@ -192,7 +192,7 @@ describe("getVatReturn handler", () => {
 
     const event = {
       queryStringParameters: {
-        vrn: "193054661",
+        vrn: "111222333",
       },
       pathParameters: {
         periodKey: "24A1",
@@ -209,7 +209,7 @@ describe("getVatReturn handler", () => {
     expect(result.statusCode).toBe(200);
     expect(body.periodKey).toBe("24A1");
     expect(fetch).toHaveBeenCalledWith(
-      expect.stringContaining("/organisations/vat/193054661/returns/24A1"),
+      expect.stringContaining("/organisations/vat/111222333/returns/24A1"),
       expect.objectContaining({
         method: "GET",
         headers: expect.objectContaining({
@@ -232,7 +232,7 @@ describe("getVatReturn handler", () => {
 
     const event = {
       queryStringParameters: {
-        vrn: "193054661",
+        vrn: "111222333",
       },
       pathParameters: {
         periodKey: "24A1",
@@ -264,7 +264,7 @@ describe("getVatReturn handler", () => {
 
     const event = {
       queryStringParameters: {
-        vrn: "193054661",
+        vrn: "111222333",
       },
       pathParameters: {
         periodKey: "24A1",

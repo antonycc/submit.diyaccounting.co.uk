@@ -27,6 +27,7 @@ const serverPort = 3500;
 // Read HMRC credentials from environment variables
 const hmrcTestUsername = process.env.DIY_SUBMIT_HMRC_TEST_USERNAME;
 const hmrcTestPassword = process.env.DIY_SUBMIT_HMRC_TEST_PASSWORD;
+const hmrcTestVatNumber = process.env.DIY_SUBMIT_HMRC_TEST_VAT_NUMBER;
 
 // S3 credentials for the test MinIO instance
 const optionalTestS3AccessKey = process.env.DIY_SUBMIT_TEST_S3_ACCESS_KEY;
@@ -153,22 +154,6 @@ test.afterAll(async () => {
   }
 });
 
-test.afterEach(async ({}, testInfo) => {
-  console.log(`afterEach called, testInfo.video exists: ${!!testInfo.video}`);
-
-  // Handle video file renaming and moving
-  if (testInfo.video) {
-    try {
-      const videoPath = await testInfo.video.path();
-      console.log(`Video path: ${videoPath}`);
-    } catch (error) {
-      console.log(`Failed to locate video: ${error.message}`);
-    }
-  } else {
-    console.log(`No video in testInfo`);
-  }
-});
-
 test.use({
   video: {
     mode: "on",
@@ -249,7 +234,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   // Home page has a welcome message and clickable login link
   console.log("Checking home page...");
   await page.waitForLoadState("networkidle");
-  await setTimeout(500);
+  await page.waitForTimeout(500);
   await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/010-home-${timestamp}.png` });
   await expect(page.getByText("Log in")).toBeVisible();
   await loggedClick("a:has-text('Log in')", "Clicking login link");
@@ -262,14 +247,14 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   console.log("Logging in...");
 
   await page.waitForLoadState("networkidle");
-  await setTimeout(500);
+  await page.waitForTimeout(500);
   await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/020-login-${timestamp}.png` });
 
   if (testAuthProvider === "mock") {
     await expect(page.getByText("Continue with mock-oauth2-server")).toBeVisible();
     await loggedClick("button:has-text('Continue with mock-oauth2-server')", "Continue with OAuth provider");
     await page.waitForLoadState("networkidle");
-    await setTimeout(500);
+    await page.waitForTimeout(500);
     // await page.screenshot({
     //  path: `target/behaviour-test-results/submitVat-screenshots/030-hand-off-to-provider-auth-${timestamp}.png`,
     // });
@@ -277,7 +262,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
 
     // await loggedClick("button:has-text('Hand off to mock-oauth2-server')", "Hand off to OAuth provider");
     // await page.waitForLoadState("networkidle");
-    // await setTimeout(500);
+    // await page.waitForTimeout(500);
     await page.screenshot({
       path: `target/behaviour-test-results/submitVat-screenshots/040-mock-provider-auth-${timestamp}.png`,
     });
@@ -286,7 +271,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
 
     // <input class="u-full-width" required="" type="text" name="username" placeholder="Enter any user/subject" autofocus="on">
     await loggedFill('input[name="username"]', `${testAuthUsername}`, "Entering username");
-    await setTimeout(100);
+    await page.waitForTimeout(100);
 
     // <textarea class="u-full-width claims" name="claims" rows="15" placeholder="Optional claims JSON" autofocus="on"></textarea>
     // { "email": "user@example.com" }
@@ -294,7 +279,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
       email: `${testAuthUsername}@example.com`,
     };
     await loggedFill('textarea[name="claims"]', JSON.stringify(identityToken), "Entering identity claims");
-    await setTimeout(100);
+    await page.waitForTimeout(100);
     await page.screenshot({
       path: `target/behaviour-test-results/submitVat-screenshots/050-mock-auth-form-filled-${timestamp}.png`,
     });
@@ -303,7 +288,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
     // <input class="button-primary" type="submit" value="Sign-in">
     await loggedClick('input[type="submit"][value="Sign-in"]', "Submitting sign-in form");
     await page.waitForLoadState("networkidle");
-    await setTimeout(500);
+    await page.waitForTimeout(500);
     await page.screenshot({
       path: `target/behaviour-test-results/submitVat-screenshots/060-mock-signed-in-${timestamp}.png`,
     });
@@ -314,7 +299,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
       "Continue with Google via Amazon Cognito",
     );
     await page.waitForLoadState("networkidle");
-    await setTimeout(2500);
+    await page.waitForTimeout(500);
     await page.screenshot({
       path: `target/behaviour-test-results/submitVat-screenshots/040-cognito-provider-auth-${timestamp}.png`,
     });
@@ -327,7 +312,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
     await expect(cognitoBtn).toBeVisible({ timeout: 10000 });
     await cognitoBtn.click();
     await page.waitForLoadState("networkidle");
-    await setTimeout(500);
+    await page.waitForTimeout(500);
     await page.screenshot({
       path: `target/behaviour-test-results/submitVat-screenshots/045-cognito-button-${timestamp}.png`,
     });
@@ -336,7 +321,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
     await page.getByRole("heading", { name: "OIDC - Direct Login" }).waitFor();
     // await page.getByLabel("Username").fill(testAuthUsername);
     // await page.getByLabel("Password").fill(testAuthPassword);
-    await setTimeout(100);
+    await page.waitForTimeout(100);
     await page.screenshot({
       path: `target/behaviour-test-results/submitVat-screenshots/050-cognito-auth-form-empty-${timestamp}.png`,
     });
@@ -344,7 +329,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
     // Fill in some login details
     await page.getByRole("button", { name: "Fill Form" }).click();
     await page.waitForLoadState("networkidle");
-    await setTimeout(500);
+    await page.waitForTimeout(500);
     await page.screenshot({
       path: `target/behaviour-test-results/submitVat-screenshots/055-cognito-auth-form-filled-${timestamp}.png`,
     });
@@ -352,7 +337,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
     // Home page has logged in user email
     await page.getByRole("button", { name: "Sign in" }).click();
     await page.waitForLoadState("networkidle");
-    await setTimeout(500);
+    await page.waitForTimeout(500);
     await page.screenshot({
       path: `target/behaviour-test-results/submitVat-screenshots/060-cognito-signed-in-${timestamp}.png`,
     });
@@ -361,21 +346,21 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   // Page has logged in user email
   console.log("Checking home page...");
   await page.waitForLoadState("networkidle");
-  await setTimeout(500);
+  await page.waitForTimeout(500);
   await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/070-home-${timestamp}.png` });
   await expect(page.getByText("Logged in as")).toBeVisible({ timeout: 16000 });
 
   // Go to bundles via hamburger menu
   console.log("Opening hamburger menu...");
   await loggedClick("button.hamburger-btn", "Opening hamburger menu");
-  await setTimeout(500);
+  await page.waitForTimeout(500);
   await page.screenshot({
     path: `target/behaviour-test-results/submitVat-screenshots/071-hamburger-menu-${timestamp}.png`,
   });
   await expect(page.getByRole("link", { name: "Bundles" })).toBeVisible();
   await loggedClick("a:has-text('Bundles')", "Clicking Bundles in hamburger menu");
   await page.waitForLoadState("networkidle");
-  await setTimeout(500);
+  await page.waitForTimeout(500);
   await page.screenshot({
     path: `target/behaviour-test-results/submitVat-screenshots/072-bundles-page-${timestamp}.png`,
   });
@@ -383,10 +368,10 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   // Remove all bundles first (idempotent operation)
   console.log("Removing all bundles first...");
   await loggedClick("#removeAllBtn", "Remove All Bundles");
-  await setTimeout(500);
+  await page.waitForTimeout(500);
   // Accept the confirmation dialog
   await page.on("dialog", (dialog) => dialog.accept());
-  await setTimeout(1000);
+  await page.waitForTimeout(500);
   await page.screenshot({
     path: `target/behaviour-test-results/submitVat-screenshots/073-removed-all-bundles-${timestamp}.png`,
   });
@@ -395,7 +380,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   await expect(page.getByText("Request test")).toBeVisible();
   await loggedClick("button:has-text('Request test')", "Request test");
   await page.waitForLoadState("networkidle");
-  await setTimeout(1500);
+  await page.waitForTimeout(500);
   await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/075-bundles-${timestamp}.png` });
   await expect(page.getByText("Added ✓")).toBeVisible({ timeout: 16000 });
 
@@ -403,7 +388,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   await expect(page.getByText("Back to Home")).toBeVisible();
   await loggedClick("button:has-text('Back to Home')", "Back to Home");
   await page.waitForLoadState("networkidle");
-  await setTimeout(500);
+  await page.waitForTimeout(500);
   await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/077-home-${timestamp}.png` });
 
   // await expect(page.getByText("Submit VAT")).toBeVisible();
@@ -415,7 +400,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   // Click "VAT Return Submission" on activities page
   await loggedClick("button:has-text('Submit VAT (Sandbox API)')", "Starting VAT return submission");
   await page.waitForLoadState("networkidle");
-  await setTimeout(500);
+  await page.waitForTimeout(500);
   await page.screenshot({
     path: `target/behaviour-test-results/submitVat-screenshots/090-start-submission-${timestamp}.png`,
   });
@@ -423,12 +408,12 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
 
   // Fill out the VAT form using the correct field IDs from submitVat.html
   const randomFourCharacters = Math.random().toString(36).substring(2, 6);
-  await loggedFill("#vatNumber", "193054661", "Entering VAT number");
-  await setTimeout(100);
+  await loggedFill("#vatNumber", hmrcTestVatNumber, "Entering VAT number");
+  await page.waitForTimeout(100);
   await loggedFill("#periodKey", randomFourCharacters, "Entering period key");
-  await setTimeout(100);
+  await page.waitForTimeout(100);
   await loggedFill("#vatDue", "1000.00", "Entering VAT due amount");
-  await setTimeout(500);
+  await page.waitForTimeout(500);
   await page.screenshot({
     path: `target/behaviour-test-results/submitVat-screenshots/100-form-filled-${timestamp}.png`,
   });
@@ -438,7 +423,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   await loggedClick("#submitBtn", "Submitting VAT form");
   const applicationName = "DIY Accounting Submit";
   await page.waitForLoadState("networkidle");
-  await setTimeout(500);
+  await page.waitForTimeout(500);
   await page.screenshot({
     path: `target/behaviour-test-results/submitVat-screenshots/110-hmrc-permission-${timestamp}.png`,
   });
@@ -446,11 +431,11 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   await expect(page.getByRole("button", { name: "Continue" })).toContainText("Continue");
 
   //  Submit the permission form and expect the sign in option to be visible
-  await setTimeout(100);
+  await page.waitForTimeout(100);
   console.log(`[USER INTERACTION] Clicking: Continue button - Continuing with HMRC permission`);
   await page.getByRole("button", { name: "Continue" }).click();
   await page.waitForLoadState("networkidle");
-  await setTimeout(500);
+  await page.waitForTimeout(500);
   await page.screenshot({
     path: `target/behaviour-test-results/submitVat-screenshots/120-submit-permission-${timestamp}.png`,
   });
@@ -462,20 +447,20 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   console.log(`[USER INTERACTION] Clicking: Sign in to HMRC button - Starting HMRC authentication`);
   await page.getByRole("button", { name: "Sign in to the HMRC online service" }).click();
   await page.waitForLoadState("networkidle");
-  await setTimeout(500);
+  await page.waitForTimeout(500);
   await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/130-hmrc-auth-${timestamp}.png` });
   await expect(page.locator("#userId")).toBeVisible();
   await expect(page.locator("#password")).toBeVisible();
 
   // Fill in credentials and submit expecting this to initiate the HMRC sign in process
   await loggedFill("#userId", hmrcTestUsername, "Entering HMRC user ID");
-  await setTimeout(100);
+  await page.waitForTimeout(100);
   await loggedFill("#password", hmrcTestPassword, "Entering HMRC password");
-  await setTimeout(100);
+  await page.waitForTimeout(100);
   console.log(`[USER INTERACTION] Clicking: Sign in button - Submitting HMRC credentials`);
   await page.getByRole("button", { name: "Sign in" }).click();
   await page.waitForLoadState("networkidle");
-  await setTimeout(500);
+  await page.waitForTimeout(500);
   await page.screenshot({
     path: `target/behaviour-test-results/submitVat-screenshots/140-hmrc-credentials-${timestamp}.png`,
   });
@@ -484,7 +469,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   //  Submit the give permission form
   await page.click("#givePermission");
   await page.waitForLoadState("networkidle");
-  await setTimeout(500);
+  await page.waitForTimeout(500);
   await page.screenshot({
     path: `target/behaviour-test-results/submitVat-screenshots/150-give-permission-${timestamp}.png`,
   });
@@ -557,7 +542,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
 
   await page.waitForSelector("#receiptDisplay", { state: "visible", timeout: 120000 });
   await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/170-receipt-${timestamp}.png` });
-  await setTimeout(500);
+  await page.waitForTimeout(500);
   const receiptDisplay = page.locator("#receiptDisplay");
   await expect(receiptDisplay).toBeVisible();
 
@@ -583,7 +568,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   console.log("Going back to home page");
   await page.click("#homePageFromMainBtn");
   await page.waitForLoadState("networkidle");
-  await setTimeout(500);
+  await page.waitForTimeout(500);
   await page.screenshot({
     path: `target/behaviour-test-results/submitVat-screenshots/175-back-to-home-${timestamp}.png`,
   });
@@ -591,14 +576,14 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   // Use hamburger menu to go to receipts
   console.log("Opening hamburger menu to go to receipts...");
   await loggedClick("button.hamburger-btn", "Opening hamburger menu for receipts");
-  await setTimeout(500);
+  await page.waitForTimeout(500);
   await page.screenshot({
     path: `target/behaviour-test-results/submitVat-screenshots/176-hamburger-menu-receipts-${timestamp}.png`,
   });
   await expect(page.getByRole("link", { name: "Receipts" })).toBeVisible({ timeout: 16000 });
   await loggedClick("a:has-text('Receipts')", "Clicking Receipts in hamburger menu");
   await page.waitForLoadState("networkidle");
-  await setTimeout(500);
+  await page.waitForTimeout(500);
   await page.screenshot({
     path: `target/behaviour-test-results/submitVat-screenshots/177-receipts-page-${timestamp}.png`,
   });
@@ -616,7 +601,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
     console.log("Found receipts, clicking on first receipt...");
     await firstReceiptLink.click();
     await page.waitForLoadState("networkidle");
-    await setTimeout(500);
+    await page.waitForTimeout(500);
     await page.screenshot({
       path: `target/behaviour-test-results/submitVat-screenshots/178-receipt-detail-${timestamp}.png`,
     });
@@ -627,10 +612,10 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   // Return to home via hamburger menu
   console.log("Returning to home via hamburger menu...");
   await loggedClick("button.hamburger-btn", "Opening hamburger menu to go home");
-  await setTimeout(500);
+  await page.waitForTimeout(500);
   await loggedClick("a:has-text('Home')", "Clicking Home in hamburger menu");
   await page.waitForLoadState("networkidle");
-  await setTimeout(500);
+  await page.waitForTimeout(500);
   await page.screenshot({
     path: `target/behaviour-test-results/submitVat-screenshots/179-back-home-via-menu-${timestamp}.png`,
   });
@@ -642,7 +627,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   // Log out from home page
   console.log("Logging out from home page");
   await page.waitForLoadState("networkidle");
-  await setTimeout(500);
+  await page.waitForTimeout(500);
   await page.screenshot({
     path: `target/behaviour-test-results/submitVat-screenshots/180-home-before-logout-${timestamp}.png`,
   });
@@ -650,35 +635,13 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
 
   await page.click("a:has-text('Logout')");
   await page.waitForLoadState("networkidle");
-  await setTimeout(500);
+  await page.waitForTimeout(500);
   await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/190-home-${timestamp}.png` });
 
   // Home page has a welcome message and clickable login link
   // console.log("Checking home page...");
   // await page.waitForLoadState("networkidle");
-  // await setTimeout(500);
+  // await page.waitForTimeout(500);
   // await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/200-home-${timestamp}.png` });
   // await expect(page.getByText("Log in")).toBeVisible();
 }, 120000);
-
-// Resolve ngrok host from HOME_URL (DIY_SUBMIT_HOME_URL)
-// Examples:
-//  https://example.ngrok-free.app/         -> example.ngrok-free.app
-//  https://example.ngrok-free.app/index.html -> example.ngrok-free.app
-//  http://localhost:3000/path              -> localhost (omit port for external host usage)
-// If you actually need the port for a local tunnel, use url.host instead of url.hostname.
-function resolveProxyHost(homeUrlValue) {
-  if (!homeUrlValue) {
-    throw new Error("DIY_SUBMIT_HOME_URL is not defined");
-  }
-  try {
-    const url = new URL(homeUrlValue);
-    return url.hostname; // change to url.host if you want to keep :port
-  } catch {
-    // Fallback: strip protocol, then take up to first / ? or #
-    return homeUrlValue
-      .replace(/^[a-z]+:\/\//i, "")
-      .split(/[/?#]/)[0]
-      .replace(/:\d+$/, ""); // drop port if present
-  }
-}

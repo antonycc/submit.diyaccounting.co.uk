@@ -1512,6 +1512,7 @@ jobs:
           BASE_URL: ${{ needs.names.outputs.base-url }}
           DIY_SUBMIT_HMRC_TEST_USERNAME: ${{ vars.DIY_SUBMIT_HMRC_TEST_USERNAME }}
           DIY_SUBMIT_HMRC_TEST_PASSWORD: ${{ secrets.DIY_SUBMIT_HMRC_TEST_PASSWORD }}
+          DIY_SUBMIT_HMRC_TEST_VAT_NUMBER: ${{ vars.DIY_SUBMIT_HMRC_TEST_VAT_NUMBER }}
 
       - name: Upload artifacts (results)
         if: ${{ !cancelled() }}
