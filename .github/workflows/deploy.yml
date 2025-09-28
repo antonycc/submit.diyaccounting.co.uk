@@ -1076,7 +1076,7 @@ jobs:
                 --concurrency 4 \
                 --asset-parallelism \
                 --outputs-file ../cdk-submit-application.out/cdk-outputs-application.json \
-              ; cd .. \
+            ; cd .. \
             ;
         env:
           ENV_NAME: ${{ needs.names.outputs.environment-name }}

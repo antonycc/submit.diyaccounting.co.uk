@@ -123,17 +123,16 @@ jobs:
       - name: Build CDK and synth
         run: ./mvnw --errors clean package
 
-      - name: Destroy OpsStack
-        if: ${{ env.DEPLOYMENT_NAME != 'prod' }}
-        run: npx dotenv -e .env.${{ env.ENV_NAME }} -- npx cdk destroy ${DEPLOYMENT_NAME}-OpsStack --exclusively --force
-        env:
-          DEPLOYMENT_NAME: ${{ env.DEPLOYMENT_NAME }}
-          ENV_NAME: ${{ env.ENV_NAME }}
-          GITHUB_ACTOR: ${{ github.actor }}
-
       - name: Destroy PublishStack
         if: ${{ env.DEPLOYMENT_NAME != 'prod' }}
-        run: npx dotenv -e .env.${{ env.ENV_NAME }} -- npx cdk destroy ${DEPLOYMENT_NAME}-PublishStack --exclusively --force
+        run: |
+          cd cdk-delivery && \
+            npx dotenv -e .env.${{ env.ENV_NAME }} -- \
+              npx cdk destroy \
+              ${DEPLOYMENT_NAME}-PublishStack \
+              --exclusively --force \
+          ; cd .. \
+          ;
         env:
           DEPLOYMENT_NAME: ${{ env.DEPLOYMENT_NAME }}
           ENV_NAME: ${{ env.ENV_NAME }}
@@ -141,7 +140,43 @@ jobs:
 
       - name: Destroy EdgeStack
         if: ${{ env.DEPLOYMENT_NAME != 'prod' }}
-        run: npx dotenv -e .env.${{ env.ENV_NAME }} -- npx cdk destroy ${DEPLOYMENT_NAME}-EdgeStack --exclusively --force
+        run: |
+          cd cdk-delivery && \
+            npx dotenv -e .env.${{ env.ENV_NAME }} -- \
+              npx cdk destroy \
+              ${DEPLOYMENT_NAME}-EdgeStack \
+              --exclusively --force \
+          ; cd .. \
+          ;
+        env:
+          DEPLOYMENT_NAME: ${{ env.DEPLOYMENT_NAME }}
+          ENV_NAME: ${{ env.ENV_NAME }}
+          GITHUB_ACTOR: ${{ github.actor }}
+
+      - name: Destroy SelfDestructStack (Delivery)
+        if: ${{ env.DEPLOYMENT_NAME != 'prod' }}
+        run: |
+          cd cdk-delivery && \
+            npx dotenv -e .env.${{ env.ENV_NAME }} -- \
+              npx cdk destroy \
+              ${DEPLOYMENT_NAME}-SelfDestructStack \
+              --exclusively --force \
+          ; cd .. \
+          ;
+        env:
+          DEPLOYMENT_NAME: ${{ env.DEPLOYMENT_NAME }}
+          ENV_NAME: ${{ env.ENV_NAME }}
+
+      - name: Destroy OpsStack
+        if: ${{ env.DEPLOYMENT_NAME != 'prod' }}
+        run: |
+          cd cdk-application && \
+            npx dotenv -e .env.${{ env.ENV_NAME }} -- \
+              npx cdk destroy \
+              ${DEPLOYMENT_NAME}-OpsStack \
+              --exclusively --force \
+          ; cd .. \
+          ;
         env:
           DEPLOYMENT_NAME: ${{ env.DEPLOYMENT_NAME }}
           ENV_NAME: ${{ env.ENV_NAME }}
@@ -149,7 +184,14 @@ jobs:
 
       - name: Destroy AuthStack
         if: ${{ env.DEPLOYMENT_NAME != 'prod' }}
-        run: npx dotenv -e .env.${{ env.ENV_NAME }} -- npx cdk destroy ${DEPLOYMENT_NAME}-AuthStack --exclusively --force
+        run: |
+          cd cdk-application && \
+            npx dotenv -e .env.${{ env.ENV_NAME }} -- \
+              npx cdk destroy \
+              ${DEPLOYMENT_NAME}-AuthStack \
+              --exclusively --force \
+          ; cd .. \
+          ;
         env:
           DEPLOYMENT_NAME: ${{ env.DEPLOYMENT_NAME }}
           ENV_NAME: ${{ env.ENV_NAME }}
@@ -157,15 +199,14 @@ jobs:
 
       - name: Destroy ApplicationStack
         if: ${{ env.DEPLOYMENT_NAME != 'prod' }}
-        run: npx dotenv -e .env.${{ env.ENV_NAME }} -- npx cdk destroy ${DEPLOYMENT_NAME}-ApplicationStack --exclusively --force
-        env:
-          DEPLOYMENT_NAME: ${{ env.DEPLOYMENT_NAME }}
-          ENV_NAME: ${{ env.ENV_NAME }}
-          GITHUB_ACTOR: ${{ github.actor }}
-
-      - name: Destroy WebStack
-        if: ${{ env.DEPLOYMENT_NAME != 'prod' }}
-        run: npx dotenv -e .env.${{ env.ENV_NAME }} -- npx cdk destroy ${DEPLOYMENT_NAME}-WebStack --exclusively --force
+        run: |
+          cd cdk-application && \
+            npx dotenv -e .env.${{ env.ENV_NAME }} -- \
+              npx cdk destroy \
+              ${DEPLOYMENT_NAME}-ApplictionStack \
+              --exclusively --force \
+          ; cd .. \
+          ;
         env:
           DEPLOYMENT_NAME: ${{ env.DEPLOYMENT_NAME }}
           ENV_NAME: ${{ env.ENV_NAME }}
@@ -173,7 +214,14 @@ jobs:
 
       - name: Destroy IdentityStack
         if: ${{ env.DEPLOYMENT_NAME != 'prod' }}
-        run: npx dotenv -e .env.${{ env.ENV_NAME }} -- npx cdk destroy ${DEPLOYMENT_NAME}-IdentityStack --exclusively --force
+        run: |
+          cd cdk-application && \
+            npx dotenv -e .env.${{ env.ENV_NAME }} -- \
+              npx cdk destroy \
+              ${DEPLOYMENT_NAME}-IdentityStack \
+              --exclusively --force \
+          ; cd .. \
+          ;
         env:
           DEPLOYMENT_NAME: ${{ env.DEPLOYMENT_NAME }}
           ENV_NAME: ${{ env.ENV_NAME }}
@@ -181,22 +229,43 @@ jobs:
 
       - name: Destroy DevStack
         if: ${{ env.DEPLOYMENT_NAME != 'prod' }}
-        run: npx dotenv -e .env.${{ env.ENV_NAME }} -- npx cdk destroy ${DEPLOYMENT_NAME}-DevStack --exclusively --force
+        run: |
+          cd cdk-application && \
+            npx dotenv -e .env.${{ env.ENV_NAME }} -- \
+              npx cdk destroy \
+              ${DEPLOYMENT_NAME}-DevStack \
+              --exclusively --force \
+          ; cd .. \
+          ;
         env:
           DEPLOYMENT_NAME: ${{ env.DEPLOYMENT_NAME }}
           ENV_NAME: ${{ env.ENV_NAME }}
           GITHUB_ACTOR: ${{ github.actor }}
 
-      - name: Destroy SelfDestructStack
+      - name: Destroy SelfDestructStack (Application)
         if: ${{ env.DEPLOYMENT_NAME != 'prod' }}
-        run: npx dotenv -e .env.${{ env.ENV_NAME }} -- npx cdk destroy ${DEPLOYMENT_NAME}-SelfDestructStack --exclusively --force
+        run: |
+          cd cdk-application && \
+            npx dotenv -e .env.${{ env.ENV_NAME }} -- \
+              npx cdk destroy \
+              ${DEPLOYMENT_NAME}-SelfDestructStack \
+              --exclusively --force \
+          ; cd .. \
+          ;
         env:
           DEPLOYMENT_NAME: ${{ env.DEPLOYMENT_NAME }}
           ENV_NAME: ${{ env.ENV_NAME }}
 
       - name: Destroy ObservabilityStack
         if: ${{ env.DEPLOYMENT_NAME != 'prod' }}
-        run: npx dotenv -e .env.${{ env.ENV_NAME }} -- npx cdk destroy ${DEPLOYMENT_NAME}-ObservabilityStack --exclusively --force
+        run: |
+          cd cdk-application && \
+            npx dotenv -e .env.${{ env.ENV_NAME }} -- \
+              npx cdk destroy \
+              ${DEPLOYMENT_NAME}-ObservabilityStack \
+              --exclusively --force \
+          ; cd .. \
+          ;
         env:
           DEPLOYMENT_NAME: ${{ env.DEPLOYMENT_NAME }}
           ENV_NAME: ${{ env.ENV_NAME }}
