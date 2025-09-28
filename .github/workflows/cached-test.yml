@@ -102,8 +102,8 @@ jobs:
 
       - name: Install Node dependencies (skip browser download)
         run: npm ci --ignore-scripts
-        env:
-          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+        #env:
+        #  PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
 
       - run: cp '.env.${{ needs.names.outputs.environment-name }}' '.env.proxy' ; npx dotenv -e '.env.${{ needs.names.outputs.environment-name }}' -- npm run test:behaviour
         env:
