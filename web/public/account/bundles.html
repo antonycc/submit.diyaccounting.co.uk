@@ -235,12 +235,14 @@
 
             return `
             <div class="service-item" style="text-align:left; margin-bottom: 1em; background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 5px; padding: 1em;">
-              <h4 style="margin: 0 0 0.5em 0;">${bundleId}</h4>
-              ${expiryInfo ? `<p style="font-size: 0.9em; color: #666; margin: 0 0 0.5em 0;">Expires: ${expiryInfo}</p>` : ""}
-              <button type="button" class="btn" data-remove-bundle-id="${bundleId}"
-                      style="background-color: #dc3545; border-color: #dc3545; color: white; font-size: 0.8em; padding: 0.3em 0.8em;">
-                Remove
-              </button>
+              <span style="display:flex; align-items:center; gap:0.75em">
+                <span>${bundleId}</span>
+                <button type="button" class="btn" data-remove-bundle-id="${bundleId}"
+                  style="background-color: #dc3545; border-color: #dc3545; color: white; font-size: 0.8em; padding: 0.15em 0.5em; min-width: unset; width:auto; display:inline-flex; align-items:center;">
+                    Remove
+                </button>
+                ${expiryInfo ? `<span>(expires: ${expiryInfo})</span>` : ""}
+              </span>
             </div>`;
           })
           .join("");
