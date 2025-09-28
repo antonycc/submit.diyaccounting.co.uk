@@ -180,6 +180,9 @@
                 statusEl.textContent = `Granted ${body.expiry ? `(expires ${body.expiry})` : ""}`;
                 statusEl.style.color = "#2c7a7b";
               }
+              // Refresh bundles lists (added and to be deleted)
+              try { renderCurrentBundles(); } catch {}
+              try { updateBundleStatus(); } catch {}
             } else {
               btn.textContent = original;
               btn.disabled = false;

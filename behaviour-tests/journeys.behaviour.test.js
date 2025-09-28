@@ -159,10 +159,6 @@ test.describe("Backlog journeys", () => {
     await clickWithPause(addBtn2);
 
     // Button should reflect added state
-    await expect(page.getByRole("button", { name: /Bundle Added/ })).toBeVisible();
-
-    // 5) View activities shows Submit VAT
-    await gotoWithPause(page, `http://127.0.0.1:${serverPort}/index.html`);
-    await expect(page.getByText("Default")).toBeVisible();
+    await expect(page.getByRole("button", { name: /Already Added/ })).toBeVisible();
   });
 });

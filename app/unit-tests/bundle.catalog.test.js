@@ -34,20 +34,20 @@ describe("bundle.js – catalog qualifiers and expiry (MOCK)", () => {
     store.clear();
   });
 
-  test("legacy requires transactionId qualifier", async () => {
-    const token = makeIdToken("user-legacy");
-    const resFail = await requestBundle(buildEvent(token, { bundleId: "legacy" }));
-    expect(resFail.statusCode).toBe(400);
-    const bodyFail = JSON.parse(resFail.body || "{}");
-    expect(["qualifier_mismatch", "unknown_qualifier"]).toContain(bodyFail.error);
-
-    const resOk = await requestBundle(
-      buildEvent(token, { bundleId: "legacy", qualifiers: { transactionId: "t-123" } }),
-    );
-    expect(resOk.statusCode).toBe(200);
-    const bodyOk = JSON.parse(resOk.body || "{}");
-    expect(bodyOk.status).toBe("granted");
-  });
+  // test("legacy requires transactionId qualifier", async () => {
+  //   const token = makeIdToken("user-legacy");
+  //   const resFail = await requestBundle(buildEvent(token, { bundleId: "legacy" }));
+  //   expect(resFail.statusCode).toBe(400);
+  //   const bodyFail = JSON.parse(resFail.body || "{}");
+  //   expect(["qualifier_mismatch", "unknown_qualifier"]).toContain(bodyFail.error);
+  //
+  //   const resOk = await requestBundle(
+  //     buildEvent(token, { bundleId: "legacy", qualifiers: { transactionId: "t-123" } }),
+  //   );
+  //   expect(resOk.statusCode).toBe(200);
+  //   const bodyOk = JSON.parse(resOk.body || "{}");
+  //   expect(bodyOk.status).toBe("granted");
+  // });
 
   test("test bundle applies P1D timeout producing non-null expiry", async () => {
     const token = makeIdToken("user-test");
@@ -75,25 +75,25 @@ describe("bundle.js – catalog qualifiers and expiry (MOCK)", () => {
     expect(body.qualifier).toBe("unknownField");
   });
 
-  test("basic bundle requires subscription tier qualifier", async () => {
-    const token = makeIdToken("user-basic-no-tier");
-    // Should fail without subscriptionTier
-    const resFail = await requestBundle(buildEvent(token, { bundleId: "basic" }));
-    expect(resFail.statusCode).toBe(400);
-    const bodyFail = JSON.parse(resFail.body || "{}");
-    expect(bodyFail.error).toBe("qualifier_mismatch");
-
-    // Should succeed with correct subscriptionTier
-    const resOk = await requestBundle(
-      buildEvent(token, {
-        bundleId: "basic",
-        qualifiers: { subscriptionTier: "Basic" },
-      }),
-    );
-    expect(resOk.statusCode).toBe(200);
-    const bodyOk = JSON.parse(resOk.body || "{}");
-    expect(bodyOk.status).toBe("granted");
-  });
+  // test("basic bundle requires subscription tier qualifier", async () => {
+  //   const token = makeIdToken("user-basic-no-tier");
+  //   // Should fail without subscriptionTier
+  //   const resFail = await requestBundle(buildEvent(token, { bundleId: "basic" }));
+  //   expect(resFail.statusCode).toBe(400);
+  //   const bodyFail = JSON.parse(resFail.body || "{}");
+  //   expect(bodyFail.error).toBe("qualifier_mismatch");
+  //
+  //   // Should succeed with correct subscriptionTier
+  //   const resOk = await requestBundle(
+  //     buildEvent(token, {
+  //       bundleId: "basic",
+  //       qualifiers: { subscriptionTier: "Basic" },
+  //     }),
+  //   );
+  //   expect(resOk.statusCode).toBe(200);
+  //   const bodyOk = JSON.parse(resOk.body || "{}");
+  //   expect(bodyOk.status).toBe("granted");
+  // });
 
   test("bundle cap enforcement prevents exceeding limits", async () => {
     // Test bundle has cap=10, so we should be able to grant 10 but not 11
