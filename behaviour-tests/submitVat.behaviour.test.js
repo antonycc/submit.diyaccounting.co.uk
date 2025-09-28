@@ -318,7 +318,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
     });
 
     // Ensure we are at the login page
-    await page.getByRole("heading", { name: "OIDC - Direct Login" }).waitFor();
+    await page.getByRole("heading", { name: "OIDC - Direct Login" }).waitFor({ timeout: 10000 });
     // await page.getByLabel("Username").fill(testAuthUsername);
     // await page.getByLabel("Password").fill(testAuthPassword);
     await page.waitForTimeout(100);
