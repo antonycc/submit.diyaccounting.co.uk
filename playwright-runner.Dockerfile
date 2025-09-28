@@ -22,7 +22,7 @@ RUN npm -g config set audit false \
  && npm -g config set fund false \
  && npm init -y \
  && npm i -D @playwright/test@1.55.1 \
- && npx playwright install --with-deps \
+ && npx playwright install chromium --with-deps \
  && npm rm -D @playwright/test
 
 # You’ll mount your repo and run whatever you need
