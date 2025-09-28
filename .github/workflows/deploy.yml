@@ -1531,8 +1531,8 @@ jobs:
       - run: cp '.env.${{ needs.names.outputs.environment-name }}' '.env.proxy' ; npx dotenv -e '.env.${{ needs.names.outputs.environment-name }}' -- npm run test:behaviour
         env:
           BASE_URL: ${{ needs.names.outputs.base-url }}
-          #DIY_SUBMIT_TEST_AUTH_USERNAME: ${{ steps.uuid.outputs.TEST_USERNAME }}
-          #DIY_SUBMIT_TEST_AUTH_PASSWORD: ${{ steps.uuid.outputs.TEST_PASSWORD }}
+          DIY_SUBMIT_HMRC_TEST_USERNAME: ${{ vars.DIY_SUBMIT_HMRC_TEST_USERNAME }}
+          DIY_SUBMIT_HMRC_TEST_PASSWORD: ${{ secrets.DIY_SUBMIT_HMRC_TEST_PASSWORD }}
 
       - name: Convert Playwright video to MP4
         if: ${{ !cancelled() }}
