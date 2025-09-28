@@ -541,7 +541,6 @@ jobs:
           SELF_DESTRUCT_HANDLER_SOURCE: "../infra/test/resources/fake-self-destruct-lambda.jar"
           DIY_SUBMIT_GOOGLE_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ needs.names.outputs.environment-name }}/submit/google/client_secret"
 
-  # TODO: Add self-destruct deployment for non-prod environments in the submit delivery stack
   deploy-application-self-destruct:
     name: 'deploy self-destruct'
     if: ${{ inputs.skipDeploy != 'true' && needs.names.outputs.environment-name != 'prod' }}
@@ -1131,6 +1130,105 @@ jobs:
       myBundlesLambdaUrl: ${{ steps.application-outputs.outputs.DIY_SUBMIT_MY_BUNDLES_LAMBDA_URL }}
       myReceiptsLambdaUrl: ${{ steps.application-outputs.outputs.DIY_SUBMIT_MY_RECEIPTS_LAMBDA_URL }}
 
+  deploy-delivery-self-destruct:
+    name: 'deploy delivery self-destruct'
+    if: ${{ inputs.skipDeploy != 'true' && needs.names.outputs.environment-name != 'prod' }}
+    needs:
+      - names
+      - mvn-package
+      - deploy-auth
+      - deploy-application
+    runs-on: ubuntu-24.04
+    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    steps:
+
+      - name: Configure AWS role via GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Check if SelfDestructStack exists
+        id: static-skip
+        shell: bash
+        run: |
+          STACK_NAME="${{ needs.names.outputs.deployment-name }}-SelfDestructStack"
+          echo "Checking existence of $STACK_NAME"
+          if aws cloudformation describe-stacks --stack-name "$STACK_NAME" >/dev/null 2>&1; then
+            echo "skipStaticStackDeployment=true"
+            echo "skipStaticStackDeployment=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skipStaticStackDeployment=false"
+            echo "skipStaticStackDeployment=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout
+        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
+        uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Node dependencies
+        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
+        run: npm ci
+
+      - uses: actions/setup-java@v5
+        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: 'maven'
+
+      - name: Download self-destruct handler JAR
+        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
+        uses: actions/download-artifact@v5
+        with:
+          name: self-destruct-handler-${{ github.sha }}
+          path: cdk-submit-application.out/
+
+      - name: Deploy Observability Stack (CDK)
+        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
+        run: |
+          ./mvnw --errors clean package -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
+            && cd cdk-delivery \
+            && cat ../.env.${{ needs.names.outputs.environment-name }} \
+            && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
+              npx cdk deploy \
+                ${{ needs.names.outputs.deployment-name }}-SelfDestructStack \
+                --require-approval never \
+                --ci true \
+                --concurrency 4 \
+                --asset-parallelism \
+                --outputs-file ../cdk-submit-application.out/cdk-outputs-self-destruct.json \
+          ; cd .. \
+          ;
+        env:
+          ENV_NAME: ${{ needs.names.outputs.environment-name }}
+          DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
+          DIY_SUBMIT_GOOGLE_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ needs.names.outputs.environment-name }}/submit/google/client_secret"
+          SELF_DESTRUCT_HANDLER_SOURCE: "../${{ needs.mvn-package.outputs.self-destruct-handler-source }}"
+
   deploy-edge:
     name: 'deploy edge'
     if: ${{ inputs.skipDeploy != 'true' }}
@@ -1355,83 +1453,101 @@ jobs:
           CERTIFICATE_ARN: ${{ vars.AWS_CERTIFICATE_ARN }}
           WEBSITE_HASH: ${{ steps.publish-hash.outputs.WEBSITE_HASH }}
 
-# TODO: Reinstate Ops stack deployment
-#  deploy-ops:
-#    name: 'deploy ops'
-#    if: ${{ inputs.skipDeploy != 'true' }}
-#    needs:
-#      - names
-#      - npm-test
-#      - build-cdk
-#      - deploy-auth
-#      - deploy-application
-#      - deploy-edge
-#    runs-on: ubuntu-24.04
-#    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
-#    steps:
-#      - name: Checkout
-#        uses: actions/checkout@v5
-#
-#      - name: Setup Node
-#        uses: actions/setup-node@v5
-#        with:
-#          node-version: ${{ env.NODE_VERSION }}
-#          cache: 'npm'
-#
-#      - name: Node dependencies
-#        run: npm ci
-#
-#      - uses: actions/setup-java@v5
-#        with:
-#          distribution: 'temurin'
-#          java-version: ${{ env.JAVA_VERSION }}
-#          cache: 'maven'
-#
-#      - name: Download CDK synthesis artifacts
-#        uses: actions/download-artifact@v5
-#        with:
-#          name: cdk-synthesis
-#          path: cdk-submit-application.out/
-#
-#      - name: Configure AWS role via GitHub OIDC
-#        uses: aws-actions/configure-aws-credentials@v5
-#        with:
-#          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
-#          aws-region: ${{ env.AWS_REGION }}
-#          role-chaining: false
-#          audience: sts.amazonaws.com
-#          role-skip-session-tagging: true
-#          output-credentials: true
-#          retry-max-attempts: 3
-#
-#      - name: Assume AWS deployment role
-#        uses: aws-actions/configure-aws-credentials@v5
-#        with:
-#          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
-#          aws-region: ${{ env.AWS_REGION }}
-#          role-chaining: true
-#          audience: sts.amazonaws.com
-#          role-skip-session-tagging: true
-#          output-credentials: true
-#          retry-max-attempts: 3
-#
-#      - name: Deploy Ops Stack (CDK)
-#        run: |
-#          cd cdk-application \
-#           && cat ../.env.${{ needs.names.outputs.environment-name }} \
-#           && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
-#             npx cdk deploy ${{ needs.names.outputs.deployment-name }}-OpsStack \
-#              --exclusively \
-#              --require-approval never \
-#              --ci true \
-#              --concurrency 4 \
-#              --asset-parallelism \
-#              --outputs-file cdk-out/cdk-outputs-ops.json \
-#           ; cd .. \
-#           ;
-#        env:
-#          ENV_NAME: ${{ needs.names.outputs.environment-name }}
-#          DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
+  deploy-ops:
+    name: 'deploy ops'
+    if: ${{ inputs.skipDeploy != 'true' }}
+    needs:
+      - names
+      - npm-test
+      - deploy-edge
+    runs-on: ubuntu-24.04
+    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    steps:
+
+      - name: Configure AWS role via GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Check if OpsStack exists
+        id: static-skip
+        shell: bash
+        run: |
+          STACK_NAME="${{ needs.names.outputs.deployment-name }}-OpsStack"
+          echo "Checking existence of $STACK_NAME"
+          if aws cloudformation describe-stacks --stack-name "$STACK_NAME" >/dev/null 2>&1; then
+            echo "skipStaticStackDeployment=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skipStaticStackDeployment=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout
+        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.publish-compare.outputs.skipPublishStackDeployment != 'true' }}
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.publish-compare.outputs.skipPublishStackDeployment != 'true' }}
+        uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Node dependencies
+        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.publish-compare.outputs.skipPublishStackDeployment != 'true' }}
+        run: npm ci
+
+      - uses: actions/setup-java@v5
+        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.publish-compare.outputs.skipPublishStackDeployment != 'true' }}
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: 'maven'
+
+      - name: Deploy Ops Stack (CDK)
+        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.publish-compare.outputs.skipPublishStackDeployment != 'true' }}
+        run: |
+          ./mvnw --errors clean package -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
+            && cd cdk-application \
+            && cat ../.env.${{ needs.names.outputs.environment-name }} \
+            && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
+              npx cdk deploy \
+                ${{ needs.names.outputs.deployment-name }}-OpsStack \
+                --exclusively \
+                --require-approval never \
+                --ci true \
+                --concurrency 4 \
+                --asset-parallelism \
+                --outputs-file ../cdk-submit-application.out/cdk-outputs-publish.json \
+              ; cd .. \
+            ;
+        env:
+          ENV_NAME: ${{ needs.names.outputs.environment-name }}
+          DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
+          BUILD_NUMBER: ${{ github.run_number }}
+          SELF_DESTRUCT_HANDLER_SOURCE: "../infra/test/resources/fake-self-destruct-lambda.jar"
+          DOMAIN_NAME: ${{ needs.names.outputs.deployment-name == 'prod' && 'submit.diyaccounting.co.uk' || format('{0}.submit.diyaccounting.co.uk', needs.names.outputs.deployment-name) }}
+          DIY_SUBMIT_HOME_URL: ${{ needs.names.outputs.deployment-name == 'prod' && 'https://submit.diyaccounting.co.uk/' || format('https://{0}.submit.diyaccounting.co.uk/', needs.names.outputs.deployment-name) }}
+          HOSTED_ZONE_NAME: ${{ vars.AWS_HOSTED_ZONE_NAME }}
+          HOSTED_ZONE_ID: ${{ vars.AWS_HOSTED_ZONE_ID }}
+          CERTIFICATE_ARN: ${{ vars.AWS_CERTIFICATE_ARN }}
+          WEBSITE_HASH: ${{ steps.publish-hash.outputs.WEBSITE_HASH }}
 
 # TODO: Configure or copy and convert the system test API test to test against deployed environment
 #  api-test:
