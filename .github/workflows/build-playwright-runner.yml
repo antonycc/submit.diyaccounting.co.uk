@@ -1,6 +1,10 @@
 # .github/workflows/build-playwright-runner.yml
 name: build-playwright-image
 
+env:
+  PLAYWRIGHT_VERSION: '1.55.1' # Match with @playwright/test in package.json and Dockerfile.playwright-runner
+  PLAYWRIGHT_IMAGE: ghcr.io/${{ github.repository }}/playwright-runner
+
 on:
   workflow_dispatch:
   push:
@@ -20,17 +24,18 @@ jobs:
         uses: actions/checkout@v5
 
       - name: Login GHCR
-        run: echo '${{ secrets.GITHUB_TOKEN }}' | docker login ghcr.io -u '${{ github.actor }}' --password-stdin
+        run: |
+          echo '${{ secrets.GITHUB_TOKEN }}' \
+            | docker login ghcr.io \
+              --username '${{ github.actor }}' \
+              --password-stdin
 
       - name: Build and push
-        env:
-          IMG: ghcr.io/${{ github.repository }}/playwright-runner
-          PW: ${{ steps.ver.outputs.pw }}
         run: |
           docker build \
             -f playwright-runner.Dockerfile \
-            -t "$IMG:$PW" .
-          docker push "$IMG:$PW"
+            -t '${{ PLAYWRIGHT_IMAGE }}:${{ PLAYWRIGHT_VERSION }}' .
+          docker push '${{ PLAYWRIGHT_IMAGE }}:${{ PLAYWRIGHT_VERSION }}'
 
       - name: Summary
-        run: echo "Pushed ghcr.io/${{ github.repository }}/playwright-runner:${{ steps.ver.outputs.pw }}"
+        run: echo 'Pushed ${{ PLAYWRIGHT_IMAGE }}:${{ PLAYWRIGHT_VERSION }}'
