@@ -101,9 +101,12 @@ jobs:
     needs:
       - names
     runs-on: ubuntu-24.04
-    container:
-      image: ghcr.io/${{ github.repository }}/playwright-runner:1.55.1
-      options: --init
+    container: mcr.microsoft.com/playwright:v1.55.1-jammy
+    # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags
+    # and extension with ubuntu distribution e.g. https://releases.ubuntu.com/jammy/
+    #container:
+    #  image: ghcr.io/${{ github.repository }}/playwright-runner:1.55.1
+    #  options: --init
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
     steps:
       - name: Checkout
