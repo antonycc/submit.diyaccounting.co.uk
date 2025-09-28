@@ -10,7 +10,7 @@ on:
   push:
     paths:
       - '.github/workflows/build-playwright-runner.yml'
-      - 'Dockerfile.playwright-runner'
+      - 'playwright-runner.Dockerfile'
 
 permissions:
   contents: read
