@@ -30,8 +30,23 @@ env:
   DEPLOY_ROLE_ARN:  'arn:aws:iam::887764105431:role/submit-deployment-role'
   AWS_REGION: 'eu-west-2'
   AWS_ACCOUNT_ID: '887764105431'
+  BASE_IMAGE_TAG_PREFIX: 'submit-base'
   skipDeploy: ${{ inputs.skipDeploy || 'false' }}
   deploymentName: ${{ inputs.deploymentName || '' }}
+  loadTestDuration: ${{ inputs.loadTestDuration || '30s' }}
+  selfDestructDelayHours: ${{ inputs.selfDestructDelayHours || '1' }}
+  GITHUB_ACTOR: ${{ github.actor }}
+  SELF_DESTRUCT_DELAY_HOURS: ${{ inputs.selfDestructDelayHours || '1' }}
+  BASE_IMAGE_TAG: ${{ github.sha }}
+  FORCE_STATIC_STACK_DEPLOYMENT: ${{ inputs.forceStaticStackDeployment || 'false' }}
+  CERTIFICATE_ARN: ${{ vars.AWS_CERTIFICATE_ARN }}
+  CLOUD_TRAIL_ENABLED: ${{ vars.AWS_CLOUD_TRAIL_ENABLED }}
+  X_RAY_ENABLED: ${{ vars.AWS_X_RAY_ENABLED }}
+  VERBOSE_LOGGING: ${{ vars.AWS_VERBOSE_LOGGING }}
+  HOSTED_ZONE_ID: ${{ vars.AWS_HOSTED_ZONE_ID }}
+  HOSTED_ZONE_NAME: ${{ vars.AWS_HOSTED_ZONE_NAME }}
+  COMMIT_HASH: ${{ github.sha }}
+  AUTH_CERTIFICATE_ARN: 'arn:aws:acm:us-east-1:887764105431:certificate/59a025f9-3620-43cd-9b2c-522f385ee223'
 
 jobs:
 
@@ -100,10 +115,15 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
-      - name: Install Node dependencies (skip browser download)
-        run: npm ci --ignore-scripts
+      #- name: Install Node dependencies (skip browser download)
+      #  run: npm ci --ignore-scripts
         #env:
         #  PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+
+      - name: Install dependencies and Playwright browsers
+        run: |
+          npm ci --ignore-scripts
+          npx playwright install chromium --with-deps
 
       - run: cp '.env.${{ needs.names.outputs.environment-name }}' '.env.proxy' ; npx dotenv -e '.env.${{ needs.names.outputs.environment-name }}' -- npm run test:behaviour
         env:

@@ -1517,7 +1517,6 @@ jobs:
           #chmod -R u+rwX ~/.cache/ms-playwright
       - name: Install dependencies and Playwright browsers
         run: |
-          npm -v
           npm ci --ignore-scripts
           npx playwright install chromium --with-deps
 
