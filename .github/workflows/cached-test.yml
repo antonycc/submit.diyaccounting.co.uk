@@ -123,7 +123,7 @@ jobs:
       - name: Install dependencies and Playwright browsers
         run: |
           npm ci --ignore-scripts
-          npx playwright install chromium --with-deps
+          #npx playwright install chromium --with-deps
 
       - run: cp '.env.${{ needs.names.outputs.environment-name }}' '.env.proxy' ; npx dotenv -e '.env.${{ needs.names.outputs.environment-name }}' -- npm run test:behaviour
         env:
