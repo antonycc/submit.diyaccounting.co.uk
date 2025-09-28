@@ -475,6 +475,29 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
     await expect(page.getByRole("button", { name: "Continue" })).toContainText("Continue");
   });
 
+  await test.step("Accept additional cookies and hide banner if presented", async () => {
+    // Accept cookies if the banner is present
+    const acceptCookiesButton = page.getByRole("button", { name: "Accept additional cookies" });
+    if (await acceptCookiesButton.isVisible()) {
+      console.log("[USER INTERACTION] Clicking: Accept additional cookies button - Accepting cookies");
+      await acceptCookiesButton.click();
+      await page.waitForTimeout(500);
+      await page.screenshot({
+        path: `target/behaviour-test-results/submitVat-screenshots/115-accepted-cookies-${timestamp}.png`,
+      });
+    }
+    // Hide the cookies message if it's still visible
+    const hideCookiesButton = page.getByRole("button", { name: "Hide cookies message" });
+    if (await hideCookiesButton.isVisible()) {
+      console.log("[USER INTERACTION] Clicking: Hide cookies message button - Hiding cookies message");
+      await hideCookiesButton.click();
+      await page.waitForTimeout(500);
+      await page.screenshot({
+        path: `target/behaviour-test-results/submitVat-screenshots/116-hid-cookies-message-${timestamp}.png`,
+      });
+    }
+  });
+
   await test.step("The user continues and is offered to sign in to the HMRC online service", async () => {
     //  Submit the permission form and expect the sign in option to be visible
     await page.waitForTimeout(100);
