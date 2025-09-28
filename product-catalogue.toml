@@ -108,11 +108,11 @@ name = "Submit VAT"
 bundles = ["guest", "basic", "legacy"]
 path = "activities/submitVat.html"
 
-[[activities]]
-id = "vat-obligations"
-name = "VAT Obligations"
-bundles = ["default"]
-path = "account/receipts.html"
+#[[activities]]
+#id = "vat-obligations"
+#name = "VAT Obligations"
+#bundles = ["default"]
+#path = "account/receipts.html"
 
 #[[activities]]
 #id = "self-employed"
