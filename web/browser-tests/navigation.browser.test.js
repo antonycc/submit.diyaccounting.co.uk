@@ -147,7 +147,7 @@ test.describe("Navigation Browser Tests", () => {
       });
 
       // Verify services page content
-      await expect(page.locator("h2")).toContainText("Add Bundle");
+      await expect(page.locator("h2")).toContainText("Bundles");
     });
   });
 });

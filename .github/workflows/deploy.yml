@@ -27,8 +27,8 @@ on:
         description: 'Hours before self-destruct triggers for non-prod environments'
         required: false
         default: '1'
-      forceStaticStackDeployment:
-        description: 'Force re-deploy of static stacks (dev/observability/identity) even if they already exist'
+      forceAllStackDeployment:
+        description: 'Force re-deploy of all stacks even if they already exist or pass comparison checks'
         type: choice
         options:
             - 'true'
@@ -79,7 +79,7 @@ env:
   GITHUB_ACTOR: ${{ github.actor }}
   SELF_DESTRUCT_DELAY_HOURS: ${{ inputs.selfDestructDelayHours || '1' }}
   BASE_IMAGE_TAG: ${{ github.sha }}
-  FORCE_STATIC_STACK_DEPLOYMENT: ${{ inputs.forceStaticStackDeployment || 'false' }}
+  FORCE_ALL_STACK_DEPLOYMENT: ${{ inputs.forceAllStackDeployment || 'false' }}
   CERTIFICATE_ARN: ${{ vars.AWS_CERTIFICATE_ARN }}
   CLOUD_TRAIL_ENABLED: ${{ vars.AWS_CLOUD_TRAIL_ENABLED }}
   X_RAY_ENABLED: ${{ vars.AWS_X_RAY_ENABLED }}
@@ -498,29 +498,29 @@ jobs:
           fi
 
       - name: Checkout
-        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_STATIC_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
+        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
         uses: actions/checkout@v5
 
       - name: Setup Node
-        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_STATIC_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
+        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
         uses: actions/setup-node@v5
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
       - name: Node dependencies
-        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_STATIC_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
+        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
         run: npm ci
 
       - uses: actions/setup-java@v5
-        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_STATIC_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
+        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
         with:
           distribution: 'temurin'
           java-version: ${{ env.JAVA_VERSION }}
           cache: 'maven'
 
       - name: Deploy Observability Stack (CDK)
-        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_STATIC_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
+        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
         run: |
           ./mvnw --errors clean package -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
             && cd cdk-application \
@@ -671,29 +671,29 @@ jobs:
           fi
 
       - name: Checkout
-        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_STATIC_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
+        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
         uses: actions/checkout@v5
 
       - name: Setup Node
-        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_STATIC_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
+        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
         uses: actions/setup-node@v5
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
       - name: Node dependencies
-        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_STATIC_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
+        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
         run: npm ci
 
       - uses: actions/setup-java@v5
-        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_STATIC_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
+        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
         with:
           distribution: 'temurin'
           java-version: ${{ env.JAVA_VERSION }}
           cache: 'maven'
 
       - name: Deploy Dev Stack (CDK)
-        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_STATIC_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
+        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
         run: |
           ./mvnw --errors clean package -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
             && cd cdk-application \
@@ -760,29 +760,29 @@ jobs:
           fi
 
       - name: Checkout
-        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_STATIC_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
+        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
         uses: actions/checkout@v5
 
       - name: Setup Node
-        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_STATIC_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
+        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
         uses: actions/setup-node@v5
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
       - name: Node dependencies
-        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_STATIC_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
+        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
         run: npm ci
 
       - uses: actions/setup-java@v5
-        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_STATIC_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
+        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
         with:
           distribution: 'temurin'
           java-version: ${{ env.JAVA_VERSION }}
           cache: 'maven'
 
       - name: Deploy Identity stack (CDK)
-        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_STATIC_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
+        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
         run: |
           ./mvnw --errors clean package -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
             && cd cdk-application \
@@ -1175,29 +1175,29 @@ jobs:
           fi
 
       - name: Checkout
-        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_STATIC_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
+        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
         uses: actions/checkout@v5
 
       - name: Setup Node
-        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_STATIC_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
+        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
         uses: actions/setup-node@v5
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
       - name: Node dependencies
-        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_STATIC_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
+        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
         run: npm ci
 
       - uses: actions/setup-java@v5
-        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_STATIC_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
+        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
         with:
           distribution: 'temurin'
           java-version: ${{ env.JAVA_VERSION }}
           cache: 'maven'
 
       - name: Build CDK and synthesize and deploy the EdgeStack in the Delivery Application
-        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_STATIC_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
+        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
         run: |
           ./mvnw --errors clean package -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
             && cd cdk-delivery \
@@ -1235,7 +1235,7 @@ jobs:
           DIY_SUBMIT_MY_RECEIPTS_LAMBDA_URL: ${{ needs.deploy-application.outputs.myReceiptsLambdaUrl }}
 
       - name: Resolve stack outputs
-        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_STATIC_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
+        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
         id: edge-outputs
         run: |
           BASE_URL=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-EdgeStack"].BaseUrl' cdk-submit-delivery.out/cdk-outputs-edge.json)
@@ -1283,25 +1283,25 @@ jobs:
           fi
 
       - name: Setup Node
-        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_PUBLISH_STACK_DEPLOYMENT == 'true' || steps.publish-compare.outputs.skipPublishStackDeployment != 'true' }}
+        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.publish-compare.outputs.skipPublishStackDeployment != 'true' }}
         uses: actions/setup-node@v5
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
       - name: Node dependencies
-        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_PUBLISH_STACK_DEPLOYMENT == 'true' || steps.publish-compare.outputs.skipPublishStackDeployment != 'true' }}
+        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.publish-compare.outputs.skipPublishStackDeployment != 'true' }}
         run: npm ci
 
       - uses: actions/setup-java@v5
-        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_PUBLISH_STACK_DEPLOYMENT == 'true' || steps.publish-compare.outputs.skipPublishStackDeployment != 'true' }}
+        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.publish-compare.outputs.skipPublishStackDeployment != 'true' }}
         with:
           distribution: 'temurin'
           java-version: ${{ env.JAVA_VERSION }}
           cache: 'maven'
 
       - name: Configure AWS role via GitHub OIDC
-        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_PUBLISH_STACK_DEPLOYMENT == 'true' || steps.publish-compare.outputs.skipPublishStackDeployment != 'true' }}
+        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.publish-compare.outputs.skipPublishStackDeployment != 'true' }}
         uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
@@ -1313,7 +1313,7 @@ jobs:
           retry-max-attempts: 3
 
       - name: Assume AWS deployment role
-        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_PUBLISH_STACK_DEPLOYMENT == 'true' || steps.publish-compare.outputs.skipPublishStackDeployment != 'true' }}
+        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.publish-compare.outputs.skipPublishStackDeployment != 'true' }}
         uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
@@ -1325,7 +1325,7 @@ jobs:
           retry-max-attempts: 3
 
       - name: Build CDK and synthesize and deploy the PublishStack in the Delivery Application
-        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_PUBLISH_STACK_DEPLOYMENT == 'true' || steps.publish-compare.outputs.skipPublishStackDeployment != 'true' }}
+        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.publish-compare.outputs.skipPublishStackDeployment != 'true' }}
         run: |
           ./mvnw --errors clean package -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
             && cd cdk-delivery \
@@ -1483,11 +1483,13 @@ jobs:
     name: 'web test'
     needs:
       - names
-      #- playwright-install
       - deploy-application
       - deploy-edge
       - deploy-publish
     runs-on: ubuntu-24.04
+    container: mcr.microsoft.com/playwright:v1.55.1-jammy
+    # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags
+    # and extension with ubuntu distribution e.g. https://releases.ubuntu.com/jammy/
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
     steps:
       - name: Checkout
@@ -1499,69 +1501,17 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
-      #- name: Node dependencies
-      #  run: npm ci
-      #- name: Install JS deps (skip browser download)
-      #  run: npm ci --ignore-scripts
-      #  env:
-      #    PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
-
-      #- name: Download Playwright browsers
-      #  uses: actions/download-artifact@v5
-      #  with:
-      #    name: playwright-browsers
-      #    path: ~/.cache/ms-playwright
-
-          #npm ci --ignore-scripts
-          #npx playwright install chromium --with-deps
-          #chmod -R u+rwX ~/.cache/ms-playwright
-      - name: Install dependencies and Playwright browsers
+      - name: Install dependencies
         run: |
-          npm -v
           npm ci --ignore-scripts
-          npx playwright install chromium --with-deps
-
-      - name: Generate test credentials
-        id: uuid
-        run: |
-          TEST_USERNAME="test-$(uuidgen | tr '[:upper:]' '[:lower:]' | head -c 8)"
-          TEST_PASSWORD="$(uuidgen | tr '[:upper:]' '[:lower:]' | head -c 16)"
-          echo "TEST_USERNAME=$TEST_USERNAME" >> $GITHUB_OUTPUT
-          echo "TEST_PASSWORD=$TEST_PASSWORD" >> $GITHUB_OUTPUT
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
 
       - run: cp '.env.${{ needs.names.outputs.environment-name }}' '.env.proxy' ; npx dotenv -e '.env.${{ needs.names.outputs.environment-name }}' -- npm run test:behaviour
         env:
           BASE_URL: ${{ needs.names.outputs.base-url }}
-          DIY_SUBMIT_TEST_AUTH_USERNAME: ${{ steps.uuid.outputs.TEST_USERNAME }}
-          DIY_SUBMIT_TEST_AUTH_PASSWORD: ${{ steps.uuid.outputs.TEST_PASSWORD }}
-
-      - name: Convert Playwright video to MP4
-        if: ${{ !cancelled() }}
-        run: |
-          set -euo pipefail
-          root="target/behaviour-test-results"
-
-          # Recursively transcode all .webm files, placing output next to source with 'converted' prefix
-          pids=()
-          while IFS= read -r -d '' f; do
-            dir=$(dirname "$f")
-            base="${f##*/}"
-            name="${base%.webm}"
-            out="${dir}/converted${name}.mp4"
-            echo "Transcoding $f -> $out"
-            npm run convert:video -- --in "$f" --out "$out" &
-            pids+=($!)
-          done < <(find "$root" -type f -name '*.webm' -print0)
-
-          # Wait for all transcodes to complete
-          fail=0
-          for pid in "${pids[@]:-}"; do
-            if ! wait "$pid"; then
-              fail=1
-            fi
-          done
-
-          exit $fail
+          DIY_SUBMIT_HMRC_TEST_USERNAME: ${{ vars.DIY_SUBMIT_HMRC_TEST_USERNAME }}
+          DIY_SUBMIT_HMRC_TEST_PASSWORD: ${{ secrets.DIY_SUBMIT_HMRC_TEST_PASSWORD }}
 
       - name: Upload artifacts (results)
         if: ${{ !cancelled() }}
@@ -1679,6 +1629,43 @@ jobs:
         with:
           path: artifacts/
         continue-on-error: true
+
+      - name: Convert Playwright video to MP4
+        if: ${{ !cancelled() }}
+        run: |
+          set -euo pipefail
+          root="artifacts/web-test-artifacts"
+
+          # Recursively transcode all .webm files, placing output next to source with 'converted' prefix
+          pids=()
+          while IFS= read -r -d '' f; do
+            dir=$(dirname "$f")
+            base="${f##*/}"
+            name="${base%.webm}"
+            out="${dir}/converted${name}.mp4"
+            echo "Transcoding $f -> $out"
+            npm run convert:video -- --in "$f" --out "$out" &
+            pids+=($!)
+          done < <(find "$root" -type f -name '*.webm' -print0)
+
+          # Wait for all transcodes to complete
+          fail=0
+          for pid in "${pids[@]:-}"; do
+            if ! wait "$pid"; then
+              fail=1
+            fi
+          done
+
+          exit $fail
+
+      - name: Upload artifacts (converted videos)
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-test-artifacts-converted
+          retention-days: 30
+          path: |
+            artifacts/web-test-artifacts
 
       - name: Create GitHub Pages content
         run: |

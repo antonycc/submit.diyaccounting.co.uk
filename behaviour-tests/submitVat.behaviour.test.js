@@ -24,6 +24,10 @@ const originalEnv = { ...process.env };
 // Test specific dedicated server port
 const serverPort = 3500;
 
+// Read HMRC credentials from environment variables
+const hmrcTestUsername = process.env.DIY_SUBMIT_HMRC_TEST_USERNAME;
+const hmrcTestPassword = process.env.DIY_SUBMIT_HMRC_TEST_PASSWORD;
+
 // S3 credentials for the test MinIO instance
 const optionalTestS3AccessKey = process.env.DIY_SUBMIT_TEST_S3_ACCESS_KEY;
 const optionalTestS3SecretKey = process.env.DIY_SUBMIT_TEST_S3_SECRET_KEY;
@@ -223,7 +227,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
     await gotoWithRetries(page, url, {
       description,
       waitUntil: "domcontentloaded",
-      readySelector: "#activitiesByBundle",
+      readySelector: "#dynamicActivities",
     });
   };
 
@@ -393,9 +397,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   await page.waitForLoadState("networkidle");
   await setTimeout(1500);
   await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/075-bundles-${timestamp}.png` });
-  await expect(page.getByText("Bundle Added")).toBeVisible({ timeout: 16000 });
-
-  await expect(page.getByText("Bundle Added")).toBeVisible();
+  await expect(page.getByText("Added ✓")).toBeVisible({ timeout: 16000 });
 
   // Return to home
   await expect(page.getByText("Back to Home")).toBeVisible();
@@ -466,9 +468,9 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
   await expect(page.locator("#password")).toBeVisible();
 
   // Fill in credentials and submit expecting this to initiate the HMRC sign in process
-  await loggedFill("#userId", "888772612756", "Entering HMRC user ID");
+  await loggedFill("#userId", hmrcTestUsername, "Entering HMRC user ID");
   await setTimeout(100);
-  await loggedFill("#password", "dE9SRyKeA30M", "Entering HMRC password");
+  await loggedFill("#password", hmrcTestPassword, "Entering HMRC password");
   await setTimeout(100);
   console.log(`[USER INTERACTION] Clicking: Sign in button - Submitting HMRC credentials`);
   await page.getByRole("button", { name: "Sign in" }).click();

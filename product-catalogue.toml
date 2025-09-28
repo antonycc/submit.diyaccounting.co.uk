@@ -14,31 +14,31 @@ auth = "required"
 cap = 10
 timeout = "P1D"
 
-[[bundles]]
-id = "guest"
-name = "Guest"
-allocation = "on-request"
-auth = "required"
-cap = 10
-timeout = "P1M"
+#[[bundles]]
+#id = "guest"
+#name = "Guest"
+#allocation = "on-request"
+#auth = "required"
+#cap = 10
+#timeout = "P1M"
 
-[[bundles]]
-id = "legacy"
-name = "Legacy"
-allocation = "on-request"
-auth = "required"
-cap = 1000
-timeout = "P1Y"
-[bundles.qualifiers]
-requiresTransactionId = true
+#[[bundles]]
+#id = "legacy"
+#name = "Legacy"
+#allocation = "on-request"
+#auth = "required"
+#cap = 1000
+#timeout = "P1Y"
+#[bundles.qualifiers]
+#requiresTransactionId = true
 
-[[bundles]]
-id = "basic"
-name = "Basic"
-allocation = "on-request"
-auth = "required"
-[bundles.qualifiers]
-subscriptionTier = "Basic"
+#[[bundles]]
+#id = "basic"
+#name = "Basic"
+#allocation = "on-request"
+#auth = "required"
+#[bundles.qualifiers]
+#subscriptionTier = "Basic"
 
 #[[bundles]]
 #id = "advanced"

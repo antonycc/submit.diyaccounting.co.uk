@@ -66,7 +66,7 @@ describe("User Journeys Frontend Tests", () => {
       document.documentElement.innerHTML = htmlContent;
 
       const pageTitle = document.querySelector("h2");
-      expect(pageTitle.textContent).toBe("Add Bundle");
+      expect(pageTitle.textContent).toBe("Bundles");
     });
   });
 });

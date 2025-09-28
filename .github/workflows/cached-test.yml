@@ -17,8 +17,6 @@ on:
       - '!gh_pages'
     paths:
       - '.github/workflows/cached-test.yml'
-  #schedule:
-  #  - cron: '23 4 * * *'
 
 permissions:
   id-token: write
@@ -32,8 +30,24 @@ env:
   DEPLOY_ROLE_ARN:  'arn:aws:iam::887764105431:role/submit-deployment-role'
   AWS_REGION: 'eu-west-2'
   AWS_ACCOUNT_ID: '887764105431'
+  BASE_IMAGE_TAG_PREFIX: 'submit-base'
   skipDeploy: ${{ inputs.skipDeploy || 'false' }}
   deploymentName: ${{ inputs.deploymentName || '' }}
+  loadTestDuration: ${{ inputs.loadTestDuration || '30s' }}
+  selfDestructDelayHours: ${{ inputs.selfDestructDelayHours || '1' }}
+  GITHUB_ACTOR: ${{ github.actor }}
+  SELF_DESTRUCT_DELAY_HOURS: ${{ inputs.selfDestructDelayHours || '1' }}
+  BASE_IMAGE_TAG: ${{ github.sha }}
+  FORCE_STATIC_STACK_DEPLOYMENT: ${{ inputs.forceStaticStackDeployment || 'false' }}
+  CERTIFICATE_ARN: ${{ vars.AWS_CERTIFICATE_ARN }}
+  CLOUD_TRAIL_ENABLED: ${{ vars.AWS_CLOUD_TRAIL_ENABLED }}
+  X_RAY_ENABLED: ${{ vars.AWS_X_RAY_ENABLED }}
+  VERBOSE_LOGGING: ${{ vars.AWS_VERBOSE_LOGGING }}
+  HOSTED_ZONE_ID: ${{ vars.AWS_HOSTED_ZONE_ID }}
+  HOSTED_ZONE_NAME: ${{ vars.AWS_HOSTED_ZONE_NAME }}
+  COMMIT_HASH: ${{ github.sha }}
+  AUTH_CERTIFICATE_ARN: 'arn:aws:acm:us-east-1:887764105431:certificate/59a025f9-3620-43cd-9b2c-522f385ee223'
+
 jobs:
 
   names:
@@ -82,44 +96,17 @@ jobs:
       deployment-name: ${{ steps.deployment-config.outputs.DEPLOYMENT_NAME }}
       base-url: ${{ steps.deployment-config.outputs.DEPLOYMENT_NAME == 'prod' && 'https://submit.diyaccounting.co.uk' || format('https://{0}.submit.diyaccounting.co.uk', steps.deployment-config.outputs.DEPLOYMENT_NAME) }}
 
-#  playwright-install:
-#    name: 'playwright-install'
-#    runs-on: ubuntu-24.04
-#    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
-#    steps:
-#      - name: Checkout
-#        uses: actions/checkout@v5
-#
-#      - name: Setup Node
-#        uses: actions/setup-node@v5
-#        with:
-#          node-version: ${{ env.NODE_VERSION }}
-#          cache: 'npm'
-#
-#      - name: Install Node dependencies (skip browser download)
-#        run: npm ci --ignore-scripts
-#        env:
-#          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
-#
-#      - name: Install Playwright browsers (Chromium only)
-#        run: npx playwright install chromium
-#
-#      - name: Upload Playwright browsers
-#        uses: actions/upload-artifact@v4
-#        with:
-#          name: playwright-browsers
-#          path: ~/.cache/ms-playwright
-#          retention-days: 5
-
   web-test:
     name: 'web test'
     needs:
       - names
-      #- playwright-install
     runs-on: ubuntu-24.04
     container: mcr.microsoft.com/playwright:v1.55.1-jammy
     # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags
     # and extension with ubuntu distribution e.g. https://releases.ubuntu.com/jammy/
+    #container:
+    #  image: ghcr.io/${{ github.repository }}/playwright-runner:1.55.1
+    #  options: --init
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
     steps:
       - name: Checkout
@@ -131,29 +118,22 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
-      - name: Install Node dependencies (skip browser download)
-        run: npm ci --ignore-scripts
+      #- name: Install Node dependencies (skip browser download)
+      #  run: npm ci --ignore-scripts
+        #env:
+        #  PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+
+      - name: Install dependencies and Playwright browsers
+        run: |
+          npm ci --ignore-scripts
         env:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
-
-#      - name: Download Playwright browsers
-#        uses: actions/download-artifact@v5
-#        with:
-#          name: playwright-browsers
-#          path: ~/.cache/ms-playwright
-
-          #npm ci --ignore-scripts
-          #npx playwright install chromium --with-deps
-          #chmod -R u+rwX ~/.cache/ms-playwright
-#      - name: Install Playwright Linux dependencies (Chromium) and fix permissions
-#        run: |
-#          sudo npx playwright install-deps chromium
-#          chmod -R a+rX ~/.cache/ms-playwright
-#          chmod -R a+rx ~/.cache/ms-playwright/*/chrome-linux/
 
       - run: cp '.env.${{ needs.names.outputs.environment-name }}' '.env.proxy' ; npx dotenv -e '.env.${{ needs.names.outputs.environment-name }}' -- npm run test:behaviour
         env:
           BASE_URL: ${{ needs.names.outputs.base-url }}
+          DIY_SUBMIT_HMRC_TEST_USERNAME: ${{ vars.DIY_SUBMIT_HMRC_TEST_USERNAME }}
+          DIY_SUBMIT_HMRC_TEST_PASSWORD: ${{ secrets.DIY_SUBMIT_HMRC_TEST_PASSWORD }}
 
       - name: Upload artifacts (results)
         if: ${{ !cancelled() }}
@@ -172,3 +152,70 @@ jobs:
           retention-days: 30
           path: |
             target/test-reports/
+
+  convert-artifacts:
+    name: 'convert artifacts'
+    needs:
+      - names
+      - web-test
+    runs-on: ubuntu-24.04
+    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Node dependencies
+        run: npm ci
+
+      - name: Download all test artifacts
+        uses: actions/download-artifact@v5
+        with:
+          path: artifacts/
+        continue-on-error: true
+
+      - name: Convert Playwright video to MP4
+        if: ${{ !cancelled() }}
+        run: |
+          set -euo pipefail
+          root="artifacts/web-test-artifacts"
+
+          # Recursively transcode all .webm files, placing output next to source with 'converted' prefix
+          pids=()
+          while IFS= read -r -d '' f; do
+            dir=$(dirname "$f")
+            base="${f##*/}"
+            name="${base%.webm}"
+            out="${dir}/converted${name}.mp4"
+            echo "Transcoding $f -> $out"
+            npm run convert:video -- --in "$f" --out "$out" &
+            pids+=($!)
+          done < <(find "$root" -type f -name '*.webm' -print0)
+
+          # Wait for all transcodes to complete
+          fail=0
+          for pid in "${pids[@]:-}"; do
+            if ! wait "$pid"; then
+              fail=1
+            fi
+          done
+
+          exit $fail
+
+      - name: Upload artifacts (converted videos)
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-test-artifacts-converted
+          retention-days: 30
+          path: |
+            artifacts/web-test-artifacts
