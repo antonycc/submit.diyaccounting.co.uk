@@ -1,9 +1,9 @@
-<!-- auth/bundles.html -->
+<!-- account/bundles.html -->
 <!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>DIY Accounting Submit - Add Bundle</title>
+    <title>DIY Accounting Submit - Bundles</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" href="../submit.css" />
   </head>
@@ -28,8 +28,12 @@
     </header>
 
     <div id="mainContent">
+      <div id="statusMessagesContainer"></div>
+
+      <div id="loadingSpinner" class="spinner" style="display: none"></div>
+
       <div class="form-container" style="text-align: center">
-        <h2>Add Bundle</h2>
+        <h2>Bundles</h2>
 
         <div class="bundles-list" id="catalogBundles"></div>
 
@@ -77,6 +81,8 @@
     <script src="../submit.js"></script>
     <script src="../widgets/hamburger-menu.js"></script>
     <script src="../widgets/auth-status.js"></script>
+    <script src="../widgets/status-messages.js"></script>
+    <script src="../widgets/loading-spinner.js"></script>
     <script type="module" src="../widgets/view-source-link.js"></script>
     <script src="../widgets/localstorage-viewer.js"></script>
 
@@ -97,44 +103,23 @@
       const hasBundle = (bundles, id) =>
         (bundles || []).some((b) => typeof b === "string" && (b === id || b.startsWith(id + "|")));
 
-      const markGranted = (btn, message = "Already Added ✓") => {
+      const markToRequest = (btn, message = "Request bundle") => {
+        btn.textContent = message;
+        btn.disabled = false;
+        btn.style.backgroundColor = "#2c5aa0";
+      };
+
+      const markGranted = (btn, message = "Added ✓") => {
         btn.textContent = message;
         btn.disabled = true;
         btn.style.backgroundColor = "#28a745";
-        const status = btn.closest(".service-item")?.querySelector(".status");
-        if (status) {
-          status.textContent = "Active";
-          status.style.color = "#2c7a7b";
-        }
       };
 
       // --- render one catalog card
       const cardHtml = (b) => {
-        const q = b.qualifiers || {};
-        const info = [
-          `allocation: ${b.allocation}`,
-          b.auth ? `auth: ${b.auth}` : "",
-          b.cap != null ? `cap: ${b.cap}` : "",
-          b.timeout ? `timeout: ${b.timeout}` : "",
-        ]
-          .filter(Boolean)
-          .join(" • ");
-
-        const qFields = [];
-        if (q.requiresTransactionId) qFields.push('<label>Transaction ID <input name="transactionId" /></label>');
-        if (Object.prototype.hasOwnProperty.call(q, "subscriptionTier")) {
-          qFields.push(
-            `<label>Subscription Tier <input name="subscriptionTier" value="${q.subscriptionTier}" /></label>`,
-          );
-        }
-
         return `
           <div class="service-item" style="text-align:left">
-            <h3>${b.name || b.id}</h3>
-            <p class="service-description">${info}</p>
-            ${qFields.length ? `<div class="qualifiers" style="display:flex; gap:.5em; flex-wrap:wrap">${qFields.join(" ")}</div>` : ""}
             <button type="button" class="btn service-btn" data-bundle-id="${b.id}">Request ${b.id}</button>
-            <div class="status" style="font-size:.9em; color:#666; margin-top:.25em"></div>
           </div>`;
       };
 
@@ -145,14 +130,13 @@
 
         const idToken = getIdToken();
         if (!idToken) {
-          alert("Please log in first to request bundles.");
+          showStatus("Please log in first to request bundles.", "warning");
           window.location.href = "../auth/login.html";
           return;
         }
 
         const bundleId = btn.getAttribute("data-bundle-id");
         const card = btn.closest(".service-item");
-        const statusEl = card?.querySelector(".status");
         const original = btn.textContent;
 
         const qualifiers = {};
@@ -175,18 +159,12 @@
           if (r.ok) {
             if (Array.isArray(body.bundles)) localStorage.setItem("userBundles", JSON.stringify(body.bundles));
             if (body.status === "granted" || body.status === "already_granted") {
-              markGranted(btn, body.status === "granted" ? "Bundle Added ✓" : "Already Added ✓");
-              if (statusEl) {
-                statusEl.textContent = `Granted ${body.expiry ? `(expires ${body.expiry})` : ""}`;
-                statusEl.style.color = "#2c7a7b";
-              }
+              markGranted(btn, "Added ✓");
+              showStatus(`Bundle "${bundleId}" added successfully.`, "success");
             } else {
               btn.textContent = original;
               btn.disabled = false;
-              if (statusEl) {
-                statusEl.textContent = "Unknown response";
-                statusEl.style.color = "#b00020";
-              }
+              showStatus(`Bundle ${bundleId} request failed: unexpected response`, "error");
             }
             // Refresh bundles lists
             try { renderCurrentBundles(); } catch {}
@@ -194,20 +172,12 @@
           } else {
             btn.textContent = original;
             btn.disabled = false;
-            if (statusEl) {
-              statusEl.textContent = `Error: ${body.error || r.status}`;
-              statusEl.style.color = "#b00020";
-            }
-            alert(`Failed to request bundle: ${body.error || "Unknown error"}`);
+            showStatus(`Failed to request bundle: ${body.error || "Unknown error"}`, "error");
           }
         } catch (err) {
           btn.textContent = original;
           btn.disabled = false;
-          if (statusEl) {
-            statusEl.textContent = `Error: ${err?.message || err}`;
-            statusEl.style.color = "#b00020";
-          }
-          alert("Failed to request bundle. Please try again.");
+          showStatus(`Failed to request bundle. Error: ${err?.message || err}.`, "error");
         }
       });
 
@@ -216,7 +186,11 @@
         const bundles = parseUserBundles();
         document.querySelectorAll("button[data-bundle-id]").forEach((btn) => {
           const id = btn.getAttribute("data-bundle-id");
-          if (hasBundle(bundles, id)) markGranted(btn);
+          if (hasBundle(bundles, id)) {
+            markGranted(btn);
+          } else {
+            markToRequest(btn, `Request ${id}`);
+          }
         });
       }
 
@@ -289,7 +263,7 @@
       async function removeBundle(bundleId) {
         const idToken = getIdToken();
         if (!idToken) {
-          alert("Please log in first to remove bundles.");
+          showStatus("Please log in first to remove bundles.", "warning");
           window.location.href = "../auth/login.html";
           return;
         }
@@ -312,12 +286,12 @@
             }
             renderCurrentBundles();
             updateBundleStatus(); // Update the request buttons
-            alert(`Bundle "${bundleId}" removed successfully.`);
+            showStatus(`Bundle "${bundleId}" removed successfully.`, "success");
           } else {
-            alert(`Failed to remove bundle: ${result.error || "Unknown error"}`);
+            showStatus(`Failed to remove bundle: ${result.error || "Unknown error"}`, "error");
           }
         } catch (error) {
-          alert("Failed to remove bundle. Please try again.");
+          showStatus("Failed to remove bundle. Please try again.", "error");
           console.error("Remove bundle error:", error);
         }
       }
@@ -326,12 +300,8 @@
       async function removeAllBundles() {
         const idToken = getIdToken();
         if (!idToken) {
-          alert("Please log in first to remove bundles.");
+          showStatus("Please log in first to remove bundles.", "warning");
           window.location.href = "../auth/login.html";
-          return;
-        }
-
-        if (!confirm("Are you sure you want to remove ALL bundles? This action cannot be undone.")) {
           return;
         }
 
@@ -351,12 +321,12 @@
             localStorage.setItem("userBundles", JSON.stringify([]));
             renderCurrentBundles();
             updateBundleStatus(); // Update the request buttons
-            alert("All bundles removed successfully.");
+            showStatus("All bundles removed successfully.", "success");
           } else {
-            alert(`Failed to remove all bundles: ${result.error || "Unknown error"}`);
+            showStatus(`Failed to remove all bundles: ${result.error || "Unknown error"}`, "error");
           }
         } catch (error) {
-          alert("Failed to remove all bundles. Please try again.");
+          showStatus("Failed to remove all bundles. Please try again.", "error");
           console.error("Remove all bundles error:", error);
         }
       }

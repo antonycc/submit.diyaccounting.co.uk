@@ -145,7 +145,7 @@ test.describe("Bundles behaviour flow (mock auth -> add bundle -> activities)", 
     await clickWithPause(addBtn);
 
     // Button should change to added or already added
-    await expect(page.getByRole("button", { name: /Added ✓|Already Added ✓/ })).toBeVisible();
+    await expect(page.getByRole("button", { name: /Added ✓/ })).toBeVisible();
 
     // Go to activities and verify sections
     // await gotoWithPause(page, `http://127.0.0.1:${serverPort}/index.html`);

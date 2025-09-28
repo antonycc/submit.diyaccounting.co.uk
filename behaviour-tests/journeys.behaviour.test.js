@@ -159,6 +159,6 @@ test.describe("Backlog journeys", () => {
     await clickWithPause(addBtn2);
 
     // Button should reflect added state
-    await expect(page.getByRole("button", { name: /Already Added/ })).toBeVisible();
+    await expect(page.getByRole("button", { name: /Added ✓/ })).toBeVisible();
   });
 });
