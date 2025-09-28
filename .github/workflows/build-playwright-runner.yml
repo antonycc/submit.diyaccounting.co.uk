@@ -1,0 +1,36 @@
+# .github/workflows/build-playwright-runner.yml
+name: build-playwright-image
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'build-playwright-runner.yml'
+      - 'Dockerfile.playwright-runner'
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Login GHCR
+        run: echo '${{ secrets.GITHUB_TOKEN }}' | docker login ghcr.io -u '${{ github.actor }}' --password-stdin
+
+      - name: Build and push
+        env:
+          IMG: ghcr.io/${{ github.repository }}/playwright-runner
+          PW: ${{ steps.ver.outputs.pw }}
+        run: |
+          docker build \
+            -f playwright-runner.Dockerfile \
+            -t "$IMG:$PW" .
+          docker push "$IMG:$PW"
+
+      - name: Summary
+        run: echo "Pushed ghcr.io/${{ github.repository }}/playwright-runner:${{ steps.ver.outputs.pw }}"
