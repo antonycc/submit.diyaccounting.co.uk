@@ -334,7 +334,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
 
     // Fill in some login details
     await page.getByRole("button", { name: "Fill Form" }).click();
-    await page.waitForLoadState("networkidle");
+    // await page.waitForLoadState("networkidle");
     await page.waitForTimeout(500);
     await page.screenshot({
       path: `target/behaviour-test-results/submitVat-screenshots/055-cognito-auth-form-filled-${timestamp}.png`,
