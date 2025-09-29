@@ -165,8 +165,9 @@ public class SubmitDelivery {
                 "(from accessLogGroupRetentionPeriodDays in cdk.json)");
 
         // Derived values from domain and deployment name
-        var resourceNamePrefix = generateResourceNamePrefix(domainName, deploymentName);
-        var compressedResourceNamePrefix = generateCompressedResourceNamePrefix(domainName, deploymentName);
+        String resourceNamePrefix = "d-%s".formatted(generateResourceNamePrefix(domainName, envName));
+        String compressedResourceNamePrefix = "d-%s".formatted(generateCompressedResourceNamePrefix(domainName, envName));
+        String selfDestructLogGroupName = "/aws/lambda/%s-self-destruct".formatted(resourceNamePrefix);
 
         // Create Function URLs map for EdgeStack (cross-region compatible)
         Map<String, String> pathsToOriginLambdaFunctionUrls = new java.util.HashMap<>();
@@ -243,6 +244,7 @@ public class SubmitDelivery {
                             .deploymentName(deploymentName)
                             .resourceNamePrefix(resourceNamePrefix)
                             .compressedResourceNamePrefix(compressedResourceNamePrefix)
+                            .selfDestructLogGroupName(selfDestructLogGroupName)
                             .edgeStackName(this.edgeStack.getStackName())
                             .publishStackName(this.publishStack.getStackName())
                             .selfDestructDelayHours(selfDestructDelayHours)

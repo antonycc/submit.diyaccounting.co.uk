@@ -1,13 +1,6 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDashedDomainName;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDomainName;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildTrailName;
-
 import co.uk.diyaccounting.submit.utils.RetentionDaysConverter;
-import java.util.List;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
@@ -23,15 +16,30 @@ import software.amazon.awscdk.services.s3.BucketEncryption;
 import software.amazon.awscdk.services.s3.LifecycleRule;
 import software.constructs.Construct;
 
+import java.util.List;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDashedDomainName;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDomainName;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildTrailName;
+
 public class ObservabilityStack extends Stack {
 
     public Bucket trailBucket;
     public Trail trail;
     public LogGroup cloudTrailLogGroup;
+    public LogGroup selfDestructLogGroup;
 
     @Value.Immutable
     public interface ObservabilityStackProps extends StackProps {
         String envName();
+
+        String deploymentName();
+
+        String resourceNamePrefix();
+
+        String compressedResourceNamePrefix();
 
         String subDomainName();
 
@@ -46,6 +54,8 @@ public class ObservabilityStack extends Stack {
         String accessLogGroupRetentionPeriodDays();
 
         String xRayEnabled();
+
+        String selfDestructLogGroupName();
 
         @Override
         Environment getEnv();
@@ -111,6 +121,12 @@ public class ObservabilityStack extends Stack {
             cfnOutput(this, "TrailBucketArn", this.trailBucket.getBucketArn());
             cfnOutput(this, "TrailArn", this.trail.getTrailArn());
         }
+
+        this.selfDestructLogGroup = LogGroup.Builder.create(this, props.resourceNamePrefix() + "-SelfDestructLogGroup")
+            .logGroupName(props.selfDestructLogGroupName())
+            .retention(RetentionDays.ONE_WEEK) // Longer retention for operations
+            .removalPolicy(RemovalPolicy.DESTROY)
+            .build();
 
         infof(
                 "ObservabilityStack %s created successfully for %s",

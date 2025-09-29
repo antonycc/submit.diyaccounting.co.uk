@@ -181,8 +181,9 @@ public class SubmitApplication {
         // Generate predictable resource name prefix based on domain and environment
         String domainName = buildDomainName(envName, subDomainName, hostedZoneName);
         String baseUrl = "https://%s/".formatted(domainName);
-        String resourceNamePrefix = generateResourceNamePrefix(domainName, envName);
-        String compressedResourceNamePrefix = generateCompressedResourceNamePrefix(domainName, envName);
+        String resourceNamePrefix = "a-%s".formatted(generateResourceNamePrefix(domainName, envName));
+        String compressedResourceNamePrefix = "a-%s".formatted(generateCompressedResourceNamePrefix(domainName, envName));
+        String selfDestructLogGroupName = "/aws/lambda/%s-self-destruct".formatted(resourceNamePrefix);
 
         // Create ObservabilityStack with resources used in monitoring the application
         String observabilityStackId = "%s-ObservabilityStack".formatted(deploymentName);
@@ -196,9 +197,13 @@ public class SubmitApplication {
                         .env(primaryEnv)
                         .crossRegionReferences(false)
                         .envName(envName)
+                        .deploymentName(deploymentName)
+                        .resourceNamePrefix(resourceNamePrefix)
+                        .compressedResourceNamePrefix(compressedResourceNamePrefix)
                         .hostedZoneName(hostedZoneName)
                         .subDomainName(subDomainName)
                         .cloudTrailEnabled(cloudTrailEnabled)
+                        .selfDestructLogGroupName(selfDestructLogGroupName)
                         .xRayEnabled(xRayEnabled)
                         .cloudTrailLogGroupPrefix(appProps.cloudTrailLogGroupPrefix)
                         .cloudTrailLogGroupRetentionPeriodDays(appProps.cloudTrailLogGroupRetentionPeriodDays)
@@ -375,6 +380,7 @@ public class SubmitApplication {
                             .deploymentName(deploymentName)
                             .resourceNamePrefix(resourceNamePrefix)
                             .compressedResourceNamePrefix(compressedResourceNamePrefix)
+                            .selfDestructLogGroupName(selfDestructLogGroupName)
                             .observabilityStackName(observabilityStack.getStackName())
                             .devStackName(devStack.getStackName())
                             .identityStackName(identityStack.getStackName())
