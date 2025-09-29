@@ -87,7 +87,7 @@
     "happy-dom": "^18.0.1",
     "msw": "^2.11.3",
     "ngrok": "^5.0.0-beta.2",
-    "npm-check-updates": "^18.3.0",
+    "npm-check-updates": "^19.0.0",
     "prettier": "^3.6.2",
     "supertest": "^7.1.4",
     "testcontainers": "^11.6.0",
