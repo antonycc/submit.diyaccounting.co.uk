@@ -197,12 +197,12 @@ public class SubmitDelivery {
                         .crossRegionReferences(true)
                         .envName(envName)
                         .deploymentName(deploymentName)
+                        .resourceNamePrefix(resourceNamePrefix)
+                        .compressedResourceNamePrefix(compressedResourceNamePrefix)
                         .hostedZoneName(hostedZoneName)
                         .hostedZoneId(hostedZoneId)
                         .domainName(domainName)
                         .baseUrl(baseUrl)
-                        .resourceNamePrefix(resourceNamePrefix)
-                        .compressedResourceNamePrefix(compressedResourceNamePrefix)
                         .certificateArn(certificateArn)
                         .pathsToOriginLambdaFunctionUrls(pathsToOriginLambdaFunctionUrls)
                         .accessLogGroupRetentionPeriodDays(Integer.parseInt(accessLogGroupRetentionPeriodDays))
@@ -218,10 +218,11 @@ public class SubmitDelivery {
                         .crossRegionReferences(false)
                         .envName(envName)
                         .deploymentName(deploymentName)
+                        .resourceNamePrefix(resourceNamePrefix)
+                        .compressedResourceNamePrefix(compressedResourceNamePrefix)
                         .domainName(domainName)
                         .baseUrl(baseUrl)
                         .webBucketArn(this.edgeStack.originBucket.getBucketArn()) // TODO: Get bucker by predicted name
-                        .resourceNamePrefix(resourceNamePrefix)
                         .distributionArn(
                             this.edgeStack.distribution.getDistributionArn()) // TODO: Get distribution by domain name
                         .commitHash(commitHash)

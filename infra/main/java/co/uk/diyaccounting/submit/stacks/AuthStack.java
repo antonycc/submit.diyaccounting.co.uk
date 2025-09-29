@@ -1,13 +1,7 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildFunctionName;
-
 import co.uk.diyaccounting.submit.constructs.LambdaUrlOrigin;
 import co.uk.diyaccounting.submit.constructs.LambdaUrlOriginProps;
-import java.util.HashMap;
-import java.util.Optional;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
@@ -22,6 +16,13 @@ import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
 
+import java.util.HashMap;
+import java.util.Optional;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildFunctionName;
+
 public class AuthStack extends Stack {
 
     public Function authUrlMockLambda;
@@ -32,14 +33,17 @@ public class AuthStack extends Stack {
     public LogGroup exchangeCognitoTokenLambdaLogGroup;
 
     @Value.Immutable
-    public interface AuthStackProps extends StackProps {
+    public interface AuthStackProps extends StackProps, SubmitStackProps {
+
         String envName();
 
-        String subDomainName();
+        String deploymentName();
 
         String resourceNamePrefix();
 
         String compressedResourceNamePrefix();
+
+        String subDomainName();
 
         String hostedZoneName();
 

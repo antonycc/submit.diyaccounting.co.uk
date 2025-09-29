@@ -21,7 +21,6 @@ import java.util.List;
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDashedDomainName;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDomainName;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildTrailName;
 
 public class ObservabilityStack extends Stack {
@@ -32,7 +31,8 @@ public class ObservabilityStack extends Stack {
     public LogGroup selfDestructLogGroup;
 
     @Value.Immutable
-    public interface ObservabilityStackProps extends StackProps {
+    public interface ObservabilityStackProps extends StackProps, SubmitStackProps {
+
         String envName();
 
         String deploymentName();
@@ -81,13 +81,11 @@ public class ObservabilityStack extends Stack {
         // Values are provided via SubmitApplication after context/env resolution
 
         // Build naming using same patterns as WebStack
-        String domainName = buildDomainName(props.envName(), props.subDomainName(), props.hostedZoneName());
         String dashedDomainName = buildDashedDomainName(props.envName(), props.subDomainName(), props.hostedZoneName());
 
         String trailName = buildTrailName(dashedDomainName);
         boolean cloudTrailEnabled = Boolean.parseBoolean(props.cloudTrailEnabled());
         int cloudTrailLogGroupRetentionPeriodDays = Integer.parseInt(props.cloudTrailLogGroupRetentionPeriodDays());
-        boolean xRayEnabled = Boolean.parseBoolean(props.xRayEnabled());
 
         // Create a CloudTrail for the stack resources
         RetentionDays cloudTrailLogGroupRetentionPeriod =

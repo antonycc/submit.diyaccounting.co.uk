@@ -41,7 +41,8 @@ public class SelfDestructStack extends Stack {
     public final Rule selfDestructSchedule;
 
     @Value.Immutable
-    public interface SelfDestructStackProps extends StackProps {
+    public interface SelfDestructStackProps extends StackProps, SubmitStackProps {
+
         String envName();
 
         String deploymentName();

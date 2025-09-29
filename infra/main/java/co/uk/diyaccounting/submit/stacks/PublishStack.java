@@ -35,16 +35,19 @@ public class PublishStack extends Stack {
     public final LogGroup webDeploymentLogGroup;
 
     @Value.Immutable
-    public static interface PublishStackProps extends StackProps {
+    public interface PublishStackProps extends StackProps, SubmitStackProps {
+
         String envName();
 
         String deploymentName();
 
+        String resourceNamePrefix();
+
+        String compressedResourceNamePrefix();
+
         String domainName();
 
         String baseUrl();
-
-        String resourceNamePrefix();
 
         String distributionArn();
 

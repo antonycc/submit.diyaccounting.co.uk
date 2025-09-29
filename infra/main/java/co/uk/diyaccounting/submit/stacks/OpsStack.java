@@ -1,9 +1,5 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-
-import java.util.List;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
@@ -24,21 +20,27 @@ import software.amazon.awscdk.services.s3.Bucket;
 import software.amazon.awscdk.services.s3.IBucket;
 import software.constructs.Construct;
 
+import java.util.List;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+
 public class OpsStack extends Stack {
 
     public final Dashboard operationalDashboard;
 
     @Value.Immutable
-    public interface OpsStackProps extends StackProps {
+    public interface OpsStackProps extends StackProps, SubmitStackProps {
+
         String envName();
 
         String deploymentName();
 
-        String domainName();
-
         String resourceNamePrefix();
 
         String compressedResourceNamePrefix();
+
+        String domainName();
 
         String receiptsBucketArn(); // optional, may be null
 
