@@ -134,10 +134,10 @@ jobs:
         run: ./mvnw --errors clean package -DskipTests
 
       - name: Destroy PublishStack
-        if: ${{ env.DEPLOYMENT_NAME != 'prod' }}
+        if: ${{ needs.names.outputs.deployment-name != 'prod' }}
         run: |
           cd cdk-delivery && \
-            npx dotenv -e .env.${{ env.ENV_NAME }} -- \
+            npx dotenv -e .env.${{ needs.names.outputs.environment-name }} -- \
               npx cdk destroy \
               ${DEPLOYMENT_NAME}-PublishStack \
               --exclusively --force \
@@ -156,10 +156,10 @@ jobs:
           WEBSITE_HASH: 'self-destruct'
 
       - name: Destroy EdgeStack
-        if: ${{ env.DEPLOYMENT_NAME != 'prod' }}
+        if: ${{ needs.names.outputs.deployment-name != 'prod' }}
         run: |
           cd cdk-delivery && \
-            npx dotenv -e .env.${{ env.ENV_NAME }} -- \
+            npx dotenv -e .env.${{ needs.names.outputs.environment-name }} -- \
               npx cdk destroy \
               ${DEPLOYMENT_NAME}-EdgeStack \
               --exclusively --force \
@@ -176,10 +176,10 @@ jobs:
           CERTIFICATE_ARN: ${{ vars.AWS_CERTIFICATE_ARN }}
 
       - name: Destroy OpsStack
-        if: ${{ env.DEPLOYMENT_NAME != 'prod' }}
+        if: ${{ needs.names.outputs.deployment-name != 'prod' }}
         run: |
           cd cdk-application && \
-            npx dotenv -e .env.${{ env.ENV_NAME }} -- \
+            npx dotenv -e .env.${{ needs.names.outputs.environment-name }} -- \
               npx cdk destroy \
               ${DEPLOYMENT_NAME}-OpsStack \
               --exclusively --force \
@@ -198,10 +198,10 @@ jobs:
           WEBSITE_HASH: 'self-destruct'
 
       - name: Destroy AuthStack
-        if: ${{ env.DEPLOYMENT_NAME != 'prod' }}
+        if: ${{ needs.names.outputs.deployment-name != 'prod' }}
         run: |
           cd cdk-application && \
-            npx dotenv -e .env.${{ env.ENV_NAME }} -- \
+            npx dotenv -e .env.${{ needs.names.outputs.environment-name }} -- \
               npx cdk destroy \
               ${DEPLOYMENT_NAME}-AuthStack \
               --exclusively --force \
@@ -215,10 +215,10 @@ jobs:
           DIY_SUBMIT_HMRC_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ needs.names.outputs.environment-name }}/submit/hmrc/client_secret"
 
       - name: Destroy ApplicationStack
-        if: ${{ env.DEPLOYMENT_NAME != 'prod' }}
+        if: ${{ needs.names.outputs.deployment-name != 'prod' }}
         run: |
           cd cdk-application && \
-            npx dotenv -e .env.${{ env.ENV_NAME }} -- \
+            npx dotenv -e .env.${{ needs.names.outputs.environment-name }} -- \
               npx cdk destroy \
               ${DEPLOYMENT_NAME}-ApplictionStack \
               --exclusively --force \
@@ -233,10 +233,10 @@ jobs:
           BASE_IMAGE_TAG: 'latest'
 
       - name: Destroy IdentityStack
-        if: ${{ env.DEPLOYMENT_NAME != 'prod' }}
+        if: ${{ needs.names.outputs.deployment-name != 'prod' }}
         run: |
           cd cdk-application && \
-            npx dotenv -e .env.${{ env.ENV_NAME }} -- \
+            npx dotenv -e .env.${{ needs.names.outputs.environment-name }} -- \
               npx cdk destroy \
               ${DEPLOYMENT_NAME}-IdentityStack \
               --exclusively --force \
@@ -249,10 +249,10 @@ jobs:
           DIY_SUBMIT_GOOGLE_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ needs.names.outputs.environment-name }}/submit/google/client_secret"
 
       - name: Destroy DevStack
-        if: ${{ env.DEPLOYMENT_NAME != 'prod' }}
+        if: ${{ needs.names.outputs.deployment-name != 'prod' }}
         run: |
           cd cdk-application && \
-            npx dotenv -e .env.${{ env.ENV_NAME }} -- \
+            npx dotenv -e .env.${{ needs.names.outputs.environment-name }} -- \
               npx cdk destroy \
               ${DEPLOYMENT_NAME}-DevStack \
               --exclusively --force \
@@ -265,10 +265,10 @@ jobs:
           DIY_SUBMIT_GOOGLE_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ needs.names.outputs.environment-name }}/submit/google/client_secret"
 
       - name: Destroy SelfDestructStack (Delivery)
-        if: ${{ env.DEPLOYMENT_NAME != 'prod' }}
+        if: ${{ needs.names.outputs.deployment-name != 'prod' }}
         run: |
           cd cdk-delivery && \
-            npx dotenv -e .env.${{ env.ENV_NAME }} -- \
+            npx dotenv -e .env.${{ needs.names.outputs.environment-name }} -- \
               npx cdk destroy \
               ${DEPLOYMENT_NAME}-SelfDestructStack \
               --exclusively --force \
@@ -281,10 +281,10 @@ jobs:
           SELF_DESTRUCT_HANDLER_SOURCE: "../infra/test/resources/fake-self-destruct-lambda.jar"
 
       - name: Destroy SelfDestructStack (Application)
-        if: ${{ env.DEPLOYMENT_NAME != 'prod' }}
+        if: ${{ needs.names.outputs.deployment-name != 'prod' }}
         run: |
           cd cdk-application && \
-            npx dotenv -e .env.${{ env.ENV_NAME }} -- \
+            npx dotenv -e .env.${{ needs.names.outputs.environment-name }} -- \
               npx cdk destroy \
               ${DEPLOYMENT_NAME}-SelfDestructStack \
               --exclusively --force \
@@ -297,10 +297,10 @@ jobs:
           SELF_DESTRUCT_HANDLER_SOURCE: "../infra/test/resources/fake-self-destruct-lambda.jar"
 
       - name: Destroy ObservabilityStack
-        if: ${{ env.DEPLOYMENT_NAME != 'prod' }}
+        if: ${{ needs.names.outputs.deployment-name != 'prod' }}
         run: |
           cd cdk-application && \
-            npx dotenv -e .env.${{ env.ENV_NAME }} -- \
+            npx dotenv -e .env.${{ needs.names.outputs.environment-name }} -- \
               npx cdk destroy \
               ${DEPLOYMENT_NAME}-ObservabilityStack \
               --exclusively --force \
