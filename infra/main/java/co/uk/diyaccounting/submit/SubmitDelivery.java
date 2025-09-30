@@ -1,24 +1,23 @@
 package co.uk.diyaccounting.submit;
 
-import co.uk.diyaccounting.submit.stacks.EdgeStack;
-import co.uk.diyaccounting.submit.stacks.PublishStack;
-import co.uk.diyaccounting.submit.stacks.SelfDestructStack;
-import software.amazon.awscdk.App;
-import software.amazon.awscdk.Environment;
-import software.constructs.Construct;
-
-import java.lang.reflect.Field;
-import java.nio.file.Paths;
-import java.util.Map;
-
-import static co.uk.diyaccounting.submit.utils.KindCdk.getContextValueString;
 import static co.uk.diyaccounting.submit.utils.Kind.envOr;
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.Kind.putIfNotNull;
 import static co.uk.diyaccounting.submit.utils.Kind.warnf;
+import static co.uk.diyaccounting.submit.utils.KindCdk.getContextValueString;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDashedDomainName;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateCompressedResourceNamePrefix;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateResourceNamePrefix;
+
+import co.uk.diyaccounting.submit.stacks.EdgeStack;
+import co.uk.diyaccounting.submit.stacks.PublishStack;
+import co.uk.diyaccounting.submit.stacks.SelfDestructStack;
+import java.lang.reflect.Field;
+import java.nio.file.Paths;
+import java.util.Map;
+import software.amazon.awscdk.App;
+import software.amazon.awscdk.Environment;
+import software.constructs.Construct;
 
 public class SubmitDelivery {
 
@@ -92,7 +91,7 @@ public class SubmitDelivery {
         }
     }
 
-    public SubmitDelivery(App app, SubmitDeliveryProps appProps){
+    public SubmitDelivery(App app, SubmitDeliveryProps appProps) {
         // Environment e.g. ci, prod, and deployment name e.g. ci-branchname, prod
         var envName = envOr("ENV_NAME", appProps.env);
         var deploymentName = envOr("DEPLOYMENT_NAME", appProps.deploymentName);
@@ -167,7 +166,7 @@ public class SubmitDelivery {
                 "(from accessLogGroupRetentionPeriodDays in cdk.json)");
 
         var cloudTrailEnabled =
-            envOr("CLOUD_TRAIL_ENABLED", appProps.cloudTrailEnabled, "(from cloudTrailEnabled in cdk.json)");
+                envOr("CLOUD_TRAIL_ENABLED", appProps.cloudTrailEnabled, "(from cloudTrailEnabled in cdk.json)");
 
         // Derived values from domain and deployment name
         String resourceNamePrefix = "d-%s".formatted(generateResourceNamePrefix(domainName));
@@ -234,7 +233,8 @@ public class SubmitDelivery {
                         .cloudTrailEnabled(cloudTrailEnabled)
                         .webBucketArn(this.edgeStack.originBucket.getBucketArn()) // TODO: Get bucker by predicted name
                         .distributionArn(
-                            this.edgeStack.distribution.getDistributionArn()) // TODO: Get distribution by domain name
+                                this.edgeStack.distribution
+                                        .getDistributionArn()) // TODO: Get distribution by domain name
                         .commitHash(commitHash)
                         .websiteHash(websiteHash)
                         .buildNumber(buildNumber)
@@ -274,9 +274,11 @@ public class SubmitDelivery {
     public static SubmitDelivery.SubmitDeliveryProps loadAppProps(Construct scope) {
         return loadAppProps(scope, null);
     }
+
     public static SubmitDeliveryProps loadAppProps(Construct scope, String pathPrefix) {
         SubmitDeliveryProps props = SubmitDeliveryProps.Builder.create().build();
-        var cdkPath = Paths.get((pathPrefix == null ? "" : pathPrefix) + "cdk.json").toAbsolutePath();
+        var cdkPath =
+                Paths.get((pathPrefix == null ? "" : pathPrefix) + "cdk.json").toAbsolutePath();
         if (!cdkPath.toFile().exists()) {
             warnf("Cannot find application properties (cdk.json) at %s", cdkPath);
         } else {

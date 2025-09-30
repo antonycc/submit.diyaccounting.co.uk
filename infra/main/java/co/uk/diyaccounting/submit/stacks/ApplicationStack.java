@@ -1,7 +1,16 @@
 package co.uk.diyaccounting.submit.stacks;
 
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildFunctionName;
+import static co.uk.diyaccounting.submit.utils.S3.createLifecycleRules;
+
 import co.uk.diyaccounting.submit.constructs.LambdaUrlOrigin;
 import co.uk.diyaccounting.submit.constructs.LambdaUrlOriginProps;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
@@ -24,16 +33,6 @@ import software.amazon.awscdk.services.s3.ObjectOwnership;
 import software.amazon.awscdk.services.secretsmanager.Secret;
 import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildFunctionName;
-import static co.uk.diyaccounting.submit.utils.S3.createLifecycleRules;
 
 public class ApplicationStack extends Stack {
 
@@ -180,7 +179,8 @@ public class ApplicationStack extends Stack {
                     "DIY_SUBMIT_TEST_ACCESS_TOKEN",
                     props.optionalTestAccessToken().get());
         }
-        var exchangeHmrcTokenLambdaFunctionName = buildFunctionName(props.resourceNamePrefix(), "exchangeToken.httpPostHmrc");
+        var exchangeHmrcTokenLambdaFunctionName =
+                buildFunctionName(props.resourceNamePrefix(), "exchangeToken.httpPostHmrc");
         var exchangeHmrcTokenLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
                 LambdaUrlOriginProps.builder()
@@ -199,7 +199,8 @@ public class ApplicationStack extends Stack {
 
         // Grant access to HMRC client secret in Secrets Manager
         if (StringUtils.isNotBlank(props.hmrcClientSecretArn())) {
-            var hmrcSecret = Secret.fromSecretPartialArn(this, props.resourceNamePrefix() + "-HmrcClientSecret", props.hmrcClientSecretArn());
+            var hmrcSecret = Secret.fromSecretPartialArn(
+                    this, props.resourceNamePrefix() + "-HmrcClientSecret", props.hmrcClientSecretArn());
             // Use the provided ARN with wildcard suffix to handle AWS Secrets Manager's automatic suffix
             String secretArnWithWildcard = props.hmrcClientSecretArn().endsWith("-*")
                     ? props.hmrcClientSecretArn()
@@ -261,7 +262,8 @@ public class ApplicationStack extends Stack {
                             props.optionalTestS3SecretKey().get()));
             logReceiptLambdaEnv.putAll(logReceiptLambdaTestEnv);
         }
-        var logReceiptLambdaUrlOriginFunctionName = buildFunctionName(props.resourceNamePrefix(), "logReceipt.httpPost");
+        var logReceiptLambdaUrlOriginFunctionName =
+                buildFunctionName(props.resourceNamePrefix(), "logReceipt.httpPost");
         var logReceiptLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
                 LambdaUrlOriginProps.builder()
@@ -408,8 +410,9 @@ public class ApplicationStack extends Stack {
                 .lifecycleRules(createLifecycleRules(2555)) // 7 years for tax records as per HMRC requirements
                 .objectOwnership(ObjectOwnership.OBJECT_WRITER)
                 .build();
-        infof("Created receipts bucket with name %s and id %s",
-            receiptsBucketFullName, this.receiptsBucket.getNode().getId());
+        infof(
+                "Created receipts bucket with name %s and id %s",
+                receiptsBucketFullName, this.receiptsBucket.getNode().getId());
         if (this.logReceiptLambda != null) this.receiptsBucket.grantWrite(this.logReceiptLambda);
         if (this.myReceiptsLambda != null) this.receiptsBucket.grantRead(this.myReceiptsLambda);
 

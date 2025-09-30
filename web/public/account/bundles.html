@@ -175,8 +175,12 @@
               showStatus(`Bundle ${bundleId} request failed: unexpected response`, "error");
             }
             // Refresh bundles lists
-            try { renderCurrentBundles(); } catch {}
-            try { updateBundleStatus(); } catch {}
+            try {
+              renderCurrentBundles();
+            } catch {}
+            try {
+              updateBundleStatus();
+            } catch {}
           } else {
             btn.textContent = original;
             btn.disabled = false;

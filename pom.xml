@@ -173,6 +173,17 @@
             <artifactId>slf4j-simple</artifactId>
             <scope>runtime</scope>
         </dependency>
+        <dependency>
+            <groupId>io.github.cdklabs</groupId>
+            <artifactId>cdknag</artifactId>
+            <version>2.36.2</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit-pioneer</groupId>
+            <artifactId>junit-pioneer</artifactId>
+            <scope>test</scope>
+        </dependency>
 
         <!-- JUnit 5 for testing with Mockito -->
         <dependency>
@@ -193,17 +204,6 @@
         <dependency>
             <groupId>uk.org.webcompere</groupId>
             <artifactId>system-stubs-jupiter</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.junit-pioneer</groupId>
-            <artifactId>junit-pioneer</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.github.cdklabs</groupId>
-            <artifactId>cdknag</artifactId>
-            <version>2.36.2</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

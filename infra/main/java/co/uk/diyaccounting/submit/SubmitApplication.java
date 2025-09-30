@@ -1,20 +1,5 @@
 package co.uk.diyaccounting.submit;
 
-import co.uk.diyaccounting.submit.utils.KindCdk;
-import co.uk.diyaccounting.submit.stacks.ApplicationStack;
-import co.uk.diyaccounting.submit.stacks.AuthStack;
-import co.uk.diyaccounting.submit.stacks.DevStack;
-import co.uk.diyaccounting.submit.stacks.IdentityStack;
-import co.uk.diyaccounting.submit.stacks.ObservabilityStack;
-import co.uk.diyaccounting.submit.stacks.OpsStack;
-import co.uk.diyaccounting.submit.stacks.SelfDestructStack;
-import software.amazon.awscdk.App;
-import software.amazon.awscdk.Environment;
-import software.constructs.Construct;
-
-import java.lang.reflect.Field;
-import java.nio.file.Paths;
-
 import static co.uk.diyaccounting.submit.utils.Kind.envOr;
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.Kind.warnf;
@@ -23,6 +8,20 @@ import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDashedDoma
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDomainName;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateCompressedResourceNamePrefix;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateResourceNamePrefix;
+
+import co.uk.diyaccounting.submit.stacks.ApplicationStack;
+import co.uk.diyaccounting.submit.stacks.AuthStack;
+import co.uk.diyaccounting.submit.stacks.DevStack;
+import co.uk.diyaccounting.submit.stacks.IdentityStack;
+import co.uk.diyaccounting.submit.stacks.ObservabilityStack;
+import co.uk.diyaccounting.submit.stacks.OpsStack;
+import co.uk.diyaccounting.submit.stacks.SelfDestructStack;
+import co.uk.diyaccounting.submit.utils.KindCdk;
+import java.lang.reflect.Field;
+import java.nio.file.Paths;
+import software.amazon.awscdk.App;
+import software.amazon.awscdk.Environment;
+import software.constructs.Construct;
 
 public class SubmitApplication {
 
@@ -108,7 +107,7 @@ public class SubmitApplication {
         }
     }
 
-    public SubmitApplication(App app, SubmitApplicationProps appProps){
+    public SubmitApplication(App app, SubmitApplicationProps appProps) {
 
         // Determine environment and deployment name from env or appProps
         String envName = envOr("ENV_NAME", appProps.env);
@@ -178,7 +177,8 @@ public class SubmitApplication {
 
         // Generate predictable resource name prefix based on domain and environment
         var domainName = buildDomainName(deploymentName, subDomainName, hostedZoneName);
-        var cognitoDomainName = buildCognitoDomainName(deploymentName, appProps.cognitoDomainPrefix, subDomainName, hostedZoneName);
+        var cognitoDomainName =
+                buildCognitoDomainName(deploymentName, appProps.cognitoDomainPrefix, subDomainName, hostedZoneName);
 
         // Generate predictable resource names
         var baseUrl = "https://%s/".formatted(domainName);
@@ -276,15 +276,15 @@ public class SubmitApplication {
                         .cloudTrailEnabled(cloudTrailEnabled)
                         .baseImageTag(baseImageTag)
                         .ecrRepositoryArn(
-                            this.devStack.ecrRepository.getRepositoryArn()) // TODO: Internally compute from name
-                        .ecrRepositoryName(this.devStack.ecrRepository.getRepositoryName()) // TODO: Get by predictable name
+                                this.devStack.ecrRepository.getRepositoryArn()) // TODO: Internally compute from name
+                        .ecrRepositoryName(
+                                this.devStack.ecrRepository.getRepositoryName()) // TODO: Get by predictable name
                         .lambdaEntry(lambdaEntry)
                         .lambdaUrlAuthType(lambdaUrlAuthType)
-                        .cognitoClientId(
-                            this.identityStack.userPoolClient
-                                        .getUserPoolClientId()) // TODO: Research a way around needing this.
-                        .cognitoBaseUri(
-                                "https://" + this.identityStack.userPoolDomain.getDomainName()) // TODO: Get calculated value
+                        .cognitoClientId(this.identityStack.userPoolClient
+                                .getUserPoolClientId()) // TODO: Research a way around needing this.
+                        .cognitoBaseUri("https://"
+                                + this.identityStack.userPoolDomain.getDomainName()) // TODO: Get calculated value
                         .build());
         this.authStack.addDependency(devStack);
         this.authStack.addDependency(identityStack);
@@ -308,12 +308,14 @@ public class SubmitApplication {
                         .cloudTrailEnabled(cloudTrailEnabled)
                         .baseImageTag(baseImageTag)
                         .ecrRepositoryArn(
-                            this.devStack.ecrRepository.getRepositoryArn()) // TODO: Internally compute from name
-                        .ecrRepositoryName(this.devStack.ecrRepository.getRepositoryName()) // TODO: Get by predictable name
+                                this.devStack.ecrRepository.getRepositoryArn()) // TODO: Internally compute from name
+                        .ecrRepositoryName(
+                                this.devStack.ecrRepository.getRepositoryName()) // TODO: Get by predictable name
                         .hmrcBaseUri(hmrcBaseUri)
                         .hmrcClientId(hmrcClientId)
                         .cognitoUserPoolId(
-                            this.identityStack.userPool.getUserPoolId()) // TODO: Research a way around needing this.
+                                this.identityStack.userPool
+                                        .getUserPoolId()) // TODO: Research a way around needing this.
                         .lambdaUrlAuthType(lambdaUrlAuthType)
                         .lambdaEntry(lambdaEntry)
                         .hmrcClientSecretArn(hmrcClientSecretArn)
@@ -343,17 +345,21 @@ public class SubmitApplication {
             lambdaArns.add(this.applicationStack.authUrlHmrcLambda.getFunctionArn());
         if (this.applicationStack.exchangeHmrcTokenLambda != null)
             lambdaArns.add(this.applicationStack.exchangeHmrcTokenLambda.getFunctionArn());
-        if (this.applicationStack.submitVatLambda != null) lambdaArns.add(this.applicationStack.submitVatLambda.getFunctionArn());
+        if (this.applicationStack.submitVatLambda != null)
+            lambdaArns.add(this.applicationStack.submitVatLambda.getFunctionArn());
         if (this.applicationStack.logReceiptLambda != null)
             lambdaArns.add(this.applicationStack.logReceiptLambda.getFunctionArn());
-        if (this.applicationStack.catalogLambda != null) lambdaArns.add(this.applicationStack.catalogLambda.getFunctionArn());
+        if (this.applicationStack.catalogLambda != null)
+            lambdaArns.add(this.applicationStack.catalogLambda.getFunctionArn());
         if (this.applicationStack.requestBundlesLambda != null)
             lambdaArns.add(this.applicationStack.requestBundlesLambda.getFunctionArn());
-        if (this.applicationStack.myBundlesLambda != null) lambdaArns.add(this.applicationStack.myBundlesLambda.getFunctionArn());
+        if (this.applicationStack.myBundlesLambda != null)
+            lambdaArns.add(this.applicationStack.myBundlesLambda.getFunctionArn());
         if (this.applicationStack.myReceiptsLambda != null)
             lambdaArns.add(this.applicationStack.myReceiptsLambda.getFunctionArn());
-        String receiptsBucketArn =
-            this.applicationStack.receiptsBucket != null ? this.applicationStack.receiptsBucket.getBucketArn() : null;
+        String receiptsBucketArn = this.applicationStack.receiptsBucket != null
+                ? this.applicationStack.receiptsBucket.getBucketArn()
+                : null;
 
         String opsStackId = "%s-OpsStack".formatted(deploymentName);
         this.opsStack = new OpsStack(
@@ -411,9 +417,11 @@ public class SubmitApplication {
     public static SubmitApplicationProps loadAppProps(Construct scope) {
         return loadAppProps(scope, null);
     }
+
     public static SubmitApplicationProps loadAppProps(Construct scope, String pathPrefix) {
         SubmitApplicationProps props = SubmitApplicationProps.Builder.create().build();
-        var cdkPath = Paths.get((pathPrefix == null ? "" : pathPrefix) + "cdk.json").toAbsolutePath();
+        var cdkPath =
+                Paths.get((pathPrefix == null ? "" : pathPrefix) + "cdk.json").toAbsolutePath();
         if (!cdkPath.toFile().exists()) {
             warnf("Cannot find application properties (cdk.json) at %s", cdkPath);
         } else {

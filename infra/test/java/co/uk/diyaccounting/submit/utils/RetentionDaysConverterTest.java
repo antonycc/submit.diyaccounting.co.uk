@@ -1,9 +1,9 @@
 package co.uk.diyaccounting.submit.utils;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import org.junit.jupiter.api.Test;
 import software.amazon.awscdk.services.logs.RetentionDays;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class RetentionDaysConverterTest {
 

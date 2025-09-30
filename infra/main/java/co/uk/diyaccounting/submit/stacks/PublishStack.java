@@ -1,5 +1,10 @@
 package co.uk.diyaccounting.submit.stacks;
 
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.Kind.warnf;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+
+import java.util.List;
 import org.immutables.value.Value;
 import software.amazon.awscdk.AssetHashType;
 import software.amazon.awscdk.Duration;
@@ -21,12 +26,6 @@ import software.amazon.awscdk.services.s3.assets.AssetOptions;
 import software.amazon.awscdk.services.s3.deployment.BucketDeployment;
 import software.amazon.awscdk.services.s3.deployment.Source;
 import software.constructs.Construct;
-
-import java.util.List;
-
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.Kind.warnf;
 
 public class PublishStack extends Stack {
 
@@ -122,7 +121,8 @@ public class PublishStack extends Stack {
         if (props.commitHash() != null && !props.commitHash().isBlank()) {
             try {
                 java.nio.file.Path versionFilepath = java.nio.file.Paths.get(props.docRootPath(), "submit.version");
-                java.nio.file.Files.writeString(versionFilepath, props.commitHash().trim());
+                java.nio.file.Files.writeString(
+                        versionFilepath, props.commitHash().trim());
                 infof("Created submit.version file with commit hash: %s".formatted(props.commitHash()));
             } catch (Exception e) {
                 warnf("Failed to create submit.version file: %s".formatted(e.getMessage()));
@@ -135,7 +135,8 @@ public class PublishStack extends Stack {
         if (props.websiteHash() != null && !props.websiteHash().isBlank()) {
             try {
                 java.nio.file.Path hashFilepath = java.nio.file.Paths.get(props.docRootPath(), "submit.hash");
-                java.nio.file.Files.writeString(hashFilepath, props.websiteHash().trim());
+                java.nio.file.Files.writeString(
+                        hashFilepath, props.websiteHash().trim());
                 infof("Created submit.hash file with website hash: %s".formatted(props.websiteHash()));
             } catch (Exception e) {
                 warnf("Failed to create submit.hash file: %s".formatted(e.getMessage()));
@@ -161,7 +162,8 @@ public class PublishStack extends Stack {
         if (props.buildNumber() != null && !props.buildNumber().isBlank()) {
             try {
                 java.nio.file.Path buildNumberFilepath = java.nio.file.Paths.get(props.docRootPath(), "submit.build");
-                java.nio.file.Files.writeString(buildNumberFilepath, props.buildNumber().trim());
+                java.nio.file.Files.writeString(
+                        buildNumberFilepath, props.buildNumber().trim());
                 infof("Created submit.build file with build number: %s".formatted(props.buildNumber()));
             } catch (Exception e) {
                 warnf("Failed to create submit.build file: %s".formatted(e.getMessage()));
@@ -174,7 +176,8 @@ public class PublishStack extends Stack {
 
         // Deploy the web website files to the web website bucket and invalidate distribution
         // Resolve the document root path from props to avoid path mismatches between generation and deployment
-        var publicDir = java.nio.file.Paths.get(props.docRootPath()).toAbsolutePath().normalize();
+        var publicDir =
+                java.nio.file.Paths.get(props.docRootPath()).toAbsolutePath().normalize();
         infof("Using public doc root: %s".formatted(publicDir));
         var webDocRootSource = Source.asset(
                 publicDir.toString(),
@@ -204,9 +207,7 @@ public class PublishStack extends Stack {
                         "/submit.version",
                         "/submit.hash",
                         "/submit.build",
-                        "/submit.env"
-                    )
-                )
+                        "/submit.env"))
                 .retainOnDelete(true)
                 .logGroup(webDeploymentLogGroup)
                 .expires(Expiration.after(Duration.minutes(5)))

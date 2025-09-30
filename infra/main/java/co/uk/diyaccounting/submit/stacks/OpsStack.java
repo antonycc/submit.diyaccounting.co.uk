@@ -1,5 +1,9 @@
 package co.uk.diyaccounting.submit.stacks;
 
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+
+import java.util.List;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
@@ -19,11 +23,6 @@ import software.amazon.awscdk.services.lambda.IFunction;
 import software.amazon.awscdk.services.s3.Bucket;
 import software.amazon.awscdk.services.s3.IBucket;
 import software.constructs.Construct;
-
-import java.util.List;
-
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 public class OpsStack extends Stack {
 
@@ -97,7 +96,7 @@ public class OpsStack extends Stack {
 
         // Import resources from props
         // Lambda functions
-        //java.util.List<IFunction> lambdaFunctions = new java.util.ArrayList<>();
+        // java.util.List<IFunction> lambdaFunctions = new java.util.ArrayList<>();
         java.util.List<Metric> lambdaInvocations = new java.util.ArrayList<>();
         java.util.List<Metric> lambdaErrors = new java.util.ArrayList<>();
         java.util.List<Metric> lambdaDurationsP95 = new java.util.ArrayList<>();
@@ -112,7 +111,7 @@ public class OpsStack extends Stack {
                                 .functionArn(arn)
                                 .sameEnvironment(true)
                                 .build());
-                //lambdaFunctions.add(fn);
+                // lambdaFunctions.add(fn);
                 lambdaInvocations.add(fn.metricInvocations());
                 lambdaErrors.add(fn.metricErrors());
                 lambdaDurationsP95.add(fn.metricDuration()

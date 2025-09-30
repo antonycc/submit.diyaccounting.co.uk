@@ -1,13 +1,12 @@
 package co.uk.diyaccounting.submit.utils;
 
+import static org.junit.jupiter.api.Assertions.*;
+
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import software.amazon.awscdk.services.s3.LifecycleRule;
 import software.amazon.awscdk.services.s3.StorageClass;
 import software.amazon.awscdk.services.s3.Transition;
-
-import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 class S3Test {
 

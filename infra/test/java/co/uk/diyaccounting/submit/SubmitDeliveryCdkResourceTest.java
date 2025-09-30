@@ -1,22 +1,21 @@
 package co.uk.diyaccounting.submit;
 
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.jetbrains.annotations.NotNull;
-import org.junit.jupiter.api.Test;
-import org.junitpioneer.jupiter.SetEnvironmentVariable;
-import software.amazon.awscdk.App;
-import software.amazon.awscdk.AppProps;
-import software.amazon.awscdk.assertions.Template;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import org.jetbrains.annotations.NotNull;
+import org.junit.jupiter.api.Test;
+import org.junitpioneer.jupiter.SetEnvironmentVariable;
+import software.amazon.awscdk.App;
+import software.amazon.awscdk.AppProps;
+import software.amazon.awscdk.assertions.Template;
 
 @SetEnvironmentVariable.SetEnvironmentVariables({
     @SetEnvironmentVariable(key = "", value = "test"),
@@ -26,7 +25,9 @@ import static co.uk.diyaccounting.submit.utils.Kind.infof;
     @SetEnvironmentVariable(key = "DOMAIN_NAME", value = "test.submit.diyaccounting.co.uk"),
     @SetEnvironmentVariable(key = "DIY_SUBMIT_HOME_URL", value = "https://test.submit.diyaccounting.co.uk"),
     @SetEnvironmentVariable(key = "DOC_ROOT_PATH", value = "./web/public"),
-    @SetEnvironmentVariable(key = "SELF_DESTRUCT_HANDLER_SOURCE", value = "./infra/test/resources/fake-self-destruct-lambda.jar"),
+    @SetEnvironmentVariable(
+            key = "SELF_DESTRUCT_HANDLER_SOURCE",
+            value = "./infra/test/resources/fake-self-destruct-lambda.jar"),
 })
 class SubmitDeliveryCdkResourceTest {
 
@@ -52,7 +53,8 @@ class SubmitDeliveryCdkResourceTest {
         Template.fromStack(submitDelivery.selfDestructStack).resourceCountIs("AWS::Lambda::Function", 1);
     }
 
-    private static @NotNull Map<String, Object> buildContextPropertyMapFromCdkJsonPath(Path cdkJsonPath) throws IOException {
+    private static @NotNull Map<String, Object> buildContextPropertyMapFromCdkJsonPath(Path cdkJsonPath)
+            throws IOException {
         String json = Files.readString(cdkJsonPath);
 
         // 2) Extract the "context" object

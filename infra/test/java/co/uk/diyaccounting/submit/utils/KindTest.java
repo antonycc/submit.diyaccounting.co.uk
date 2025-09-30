@@ -1,11 +1,10 @@
 package co.uk.diyaccounting.submit.utils;
 
-import org.junit.jupiter.api.Test;
-import org.junitpioneer.jupiter.SetEnvironmentVariable;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.*;
-
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
+import org.junitpioneer.jupiter.SetEnvironmentVariable;
 
 class KindTest {
 

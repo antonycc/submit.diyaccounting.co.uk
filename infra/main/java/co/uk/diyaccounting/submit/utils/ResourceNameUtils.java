@@ -138,7 +138,7 @@ public class ResourceNameUtils {
         }
         var derivedResourceName = sb.toString();
         var truncatedResourceName =
-            derivedResourceName.length() > 16 ? derivedResourceName.substring(0, 16) : derivedResourceName;
+                derivedResourceName.length() > 16 ? derivedResourceName.substring(0, 16) : derivedResourceName;
 
         return truncatedResourceName;
     }

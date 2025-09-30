@@ -1,6 +1,11 @@
 package co.uk.diyaccounting.submit.stacks;
 
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildTrailName;
+
 import co.uk.diyaccounting.submit.utils.RetentionDaysConverter;
+import java.util.List;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
@@ -15,12 +20,6 @@ import software.amazon.awscdk.services.s3.Bucket;
 import software.amazon.awscdk.services.s3.BucketEncryption;
 import software.amazon.awscdk.services.s3.LifecycleRule;
 import software.constructs.Construct;
-
-import java.util.List;
-
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildTrailName;
 
 public class ObservabilityStack extends Stack {
 
@@ -92,7 +91,8 @@ public class ObservabilityStack extends Stack {
                 RetentionDaysConverter.daysToRetentionDays(cloudTrailLogGroupRetentionPeriodDays);
         if (cloudTrailEnabled) {
             this.cloudTrailLogGroup = LogGroup.Builder.create(this, props.resourceNamePrefix() + "-CloudTrailGroup")
-                    .logGroupName("%s%s-cloud-trail".formatted(props.cloudTrailLogGroupPrefix(), props.dashedDomainName()))
+                    .logGroupName(
+                            "%s%s-cloud-trail".formatted(props.cloudTrailLogGroupPrefix(), props.dashedDomainName()))
                     .retention(cloudTrailLogGroupRetentionPeriod)
                     .removalPolicy(RemovalPolicy.DESTROY)
                     .build();
@@ -121,10 +121,10 @@ public class ObservabilityStack extends Stack {
         }
 
         this.selfDestructLogGroup = LogGroup.Builder.create(this, props.resourceNamePrefix() + "-SelfDestructLogGroup")
-            .logGroupName(props.selfDestructLogGroupName())
-            .retention(RetentionDays.ONE_WEEK) // Longer retention for operations
-            .removalPolicy(RemovalPolicy.DESTROY)
-            .build();
+                .logGroupName(props.selfDestructLogGroupName())
+                .retention(RetentionDays.ONE_WEEK) // Longer retention for operations
+                .removalPolicy(RemovalPolicy.DESTROY)
+                .build();
 
         infof(
                 "ObservabilityStack %s created successfully for %s",
