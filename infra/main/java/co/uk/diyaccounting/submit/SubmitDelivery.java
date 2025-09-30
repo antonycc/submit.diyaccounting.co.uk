@@ -16,6 +16,7 @@ import static co.uk.diyaccounting.submit.utils.Kind.envOr;
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.Kind.putIfNotNull;
 import static co.uk.diyaccounting.submit.utils.Kind.warnf;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDashedDomainName;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateCompressedResourceNamePrefix;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateResourceNamePrefix;
 
@@ -35,6 +36,7 @@ public class SubmitDelivery {
         public String accessLogGroupRetentionPeriodDays;
         public String docRootPath;
         public String domainName;
+        public String cloudTrailEnabled;
         public String baseUrl;
         public String authUrlMockLambdaFunctionUrl;
         public String authUrlCognitoLambdaFunctionUrl;
@@ -164,10 +166,14 @@ public class SubmitDelivery {
                 appProps.accessLogGroupRetentionPeriodDays,
                 "(from accessLogGroupRetentionPeriodDays in cdk.json)");
 
+        var cloudTrailEnabled =
+            envOr("CLOUD_TRAIL_ENABLED", appProps.cloudTrailEnabled, "(from cloudTrailEnabled in cdk.json)");
+
         // Derived values from domain and deployment name
         String resourceNamePrefix = "d-%s".formatted(generateResourceNamePrefix(domainName, envName));
         String compressedResourceNamePrefix = "d-%s".formatted(generateCompressedResourceNamePrefix(domainName, envName));
         String selfDestructLogGroupName = "/aws/lambda/%s-self-destruct".formatted(resourceNamePrefix);
+        String dashedDomainName = buildDashedDomainName(domainName);
 
         // Create Function URLs map for EdgeStack (cross-region compatible)
         Map<String, String> pathsToOriginLambdaFunctionUrls = new java.util.HashMap<>();
@@ -199,10 +205,12 @@ public class SubmitDelivery {
                         .deploymentName(deploymentName)
                         .resourceNamePrefix(resourceNamePrefix)
                         .compressedResourceNamePrefix(compressedResourceNamePrefix)
+                        .domainName(domainName)
+                        .dashedDomainName(dashedDomainName)
+                        .baseUrl(baseUrl)
+                        .cloudTrailEnabled(cloudTrailEnabled)
                         .hostedZoneName(hostedZoneName)
                         .hostedZoneId(hostedZoneId)
-                        .domainName(domainName)
-                        .baseUrl(baseUrl)
                         .certificateArn(certificateArn)
                         .pathsToOriginLambdaFunctionUrls(pathsToOriginLambdaFunctionUrls)
                         .accessLogGroupRetentionPeriodDays(Integer.parseInt(accessLogGroupRetentionPeriodDays))
@@ -221,7 +229,9 @@ public class SubmitDelivery {
                         .resourceNamePrefix(resourceNamePrefix)
                         .compressedResourceNamePrefix(compressedResourceNamePrefix)
                         .domainName(domainName)
+                        .dashedDomainName(dashedDomainName)
                         .baseUrl(baseUrl)
+                        .cloudTrailEnabled(cloudTrailEnabled)
                         .webBucketArn(this.edgeStack.originBucket.getBucketArn()) // TODO: Get bucker by predicted name
                         .distributionArn(
                             this.edgeStack.distribution.getDistributionArn()) // TODO: Get distribution by domain name
@@ -245,6 +255,10 @@ public class SubmitDelivery {
                             .deploymentName(deploymentName)
                             .resourceNamePrefix(resourceNamePrefix)
                             .compressedResourceNamePrefix(compressedResourceNamePrefix)
+                            .domainName(domainName)
+                            .dashedDomainName(dashedDomainName)
+                            .baseUrl(baseUrl)
+                            .cloudTrailEnabled(cloudTrailEnabled)
                             .selfDestructLogGroupName(selfDestructLogGroupName)
                             .edgeStackName(this.edgeStack.getStackName())
                             .publishStackName(this.publishStack.getStackName())

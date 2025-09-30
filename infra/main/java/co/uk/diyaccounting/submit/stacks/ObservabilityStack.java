@@ -20,7 +20,6 @@ import java.util.List;
 
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDashedDomainName;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildTrailName;
 
 public class ObservabilityStack extends Stack {
@@ -34,6 +33,15 @@ public class ObservabilityStack extends Stack {
     public interface ObservabilityStackProps extends StackProps, SubmitStackProps {
 
         @Override
+        Environment getEnv();
+
+        @Override
+        @Value.Default
+        default Boolean getCrossRegionReferences() {
+            return null;
+        }
+
+        @Override
         String envName();
 
         @Override
@@ -45,30 +53,23 @@ public class ObservabilityStack extends Stack {
         @Override
         String compressedResourceNamePrefix();
 
-        String subDomainName();
+        @Override
+        String dashedDomainName();
 
-        String hostedZoneName();
+        @Override
+        String domainName();
 
+        @Override
+        String baseUrl();
+
+        @Override
         String cloudTrailEnabled();
 
         String cloudTrailLogGroupPrefix();
 
         String cloudTrailLogGroupRetentionPeriodDays();
 
-        String accessLogGroupRetentionPeriodDays();
-
-        String xRayEnabled();
-
         String selfDestructLogGroupName();
-
-        @Override
-        Environment getEnv();
-
-        @Override
-        @Value.Default
-        default Boolean getCrossRegionReferences() {
-            return null;
-        }
 
         static ImmutableObservabilityStackProps.Builder builder() {
             return ImmutableObservabilityStackProps.builder();
@@ -82,12 +83,7 @@ public class ObservabilityStack extends Stack {
     public ObservabilityStack(Construct scope, String id, StackProps stackProps, ObservabilityStackProps props) {
         super(scope, id, stackProps);
 
-        // Values are provided via SubmitApplication after context/env resolution
-
-        // Build naming using same patterns as WebStack
-        String dashedDomainName = buildDashedDomainName(props.envName(), props.subDomainName(), props.hostedZoneName());
-
-        String trailName = buildTrailName(dashedDomainName);
+        String trailName = buildTrailName(props.dashedDomainName());
         boolean cloudTrailEnabled = Boolean.parseBoolean(props.cloudTrailEnabled());
         int cloudTrailLogGroupRetentionPeriodDays = Integer.parseInt(props.cloudTrailLogGroupRetentionPeriodDays());
 
@@ -96,7 +92,7 @@ public class ObservabilityStack extends Stack {
                 RetentionDaysConverter.daysToRetentionDays(cloudTrailLogGroupRetentionPeriodDays);
         if (cloudTrailEnabled) {
             this.cloudTrailLogGroup = LogGroup.Builder.create(this, "CloudTrailGroup")
-                    .logGroupName("%s%s-cloud-trail".formatted(props.cloudTrailLogGroupPrefix(), dashedDomainName))
+                    .logGroupName("%s%s-cloud-trail".formatted(props.cloudTrailLogGroupPrefix(), props.dashedDomainName()))
                     .retention(cloudTrailLogGroupRetentionPeriod)
                     .removalPolicy(RemovalPolicy.DESTROY)
                     .build();
@@ -132,6 +128,6 @@ public class ObservabilityStack extends Stack {
 
         infof(
                 "ObservabilityStack %s created successfully for %s",
-                this.getNode().getId(), dashedDomainName);
+                this.getNode().getId(), props.dashedDomainName());
     }
 }

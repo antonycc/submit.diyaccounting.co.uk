@@ -8,4 +8,12 @@ public interface SubmitStackProps {
     String resourceNamePrefix();
 
     String compressedResourceNamePrefix();
+
+    String domainName();
+
+    String dashedDomainName();
+
+    String baseUrl();
+
+    String cloudTrailEnabled();
 }

@@ -36,6 +36,15 @@ public class AuthStack extends Stack {
     public interface AuthStackProps extends StackProps, SubmitStackProps {
 
         @Override
+        Environment getEnv();
+
+        @Override
+        @Value.Default
+        default Boolean getCrossRegionReferences() {
+            return null;
+        }
+
+        @Override
         String envName();
 
         @Override
@@ -47,13 +56,17 @@ public class AuthStack extends Stack {
         @Override
         String compressedResourceNamePrefix();
 
-        String subDomainName();
+        @Override
+        String dashedDomainName();
 
-        String hostedZoneName();
+        @Override
+        String domainName();
 
+        @Override
+        String baseUrl();
+
+        @Override
         String cloudTrailEnabled();
-
-        String xRayEnabled();
 
         String baseImageTag();
 
@@ -65,26 +78,12 @@ public class AuthStack extends Stack {
 
         String lambdaUrlAuthType();
 
-        String homeUrl();
-
         String cognitoClientId();
 
         String cognitoBaseUri();
 
         // Optional test access token for local/dev testing without real Cognito interaction
-        // @Value.Default
-        Optional<String> optionalTestAccessToken(); // {
-        // return Optional.empty();
-        // }
-
-        @Override
-        Environment getEnv();
-
-        @Override
-        @Value.Default
-        default Boolean getCrossRegionReferences() {
-            return null;
-        }
+        Optional<String> optionalTestAccessToken(); //
 
         static ImmutableAuthStackProps.Builder builder() {
             return ImmutableAuthStackProps.builder();
@@ -107,7 +106,7 @@ public class AuthStack extends Stack {
 
         // authUrl - mock
         var authUrlMockLambdaEnv = new HashMap<String, String>();
-        authUrlMockLambdaEnv.put("DIY_SUBMIT_HOME_URL", props.homeUrl());
+        authUrlMockLambdaEnv.put("DIY_SUBMIT_HOME_URL", props.baseUrl());
         var authUrlMockLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
                 LambdaUrlOriginProps.builder()
@@ -129,7 +128,7 @@ public class AuthStack extends Stack {
 
         // authUrl - Google or Antonycc via Cognito
         var authUrlCognitoLambdaEnv = new HashMap<String, String>();
-        authUrlCognitoLambdaEnv.put("DIY_SUBMIT_HOME_URL", props.homeUrl());
+        authUrlCognitoLambdaEnv.put("DIY_SUBMIT_HOME_URL", props.baseUrl());
         authUrlCognitoLambdaEnv.put("DIY_SUBMIT_COGNITO_CLIENT_ID", props.cognitoClientId());
         authUrlCognitoLambdaEnv.put("DIY_SUBMIT_COGNITO_BASE_URI", props.cognitoBaseUri());
         var authUrlCognitoLambdaUrlOrigin = new LambdaUrlOrigin(
@@ -153,7 +152,7 @@ public class AuthStack extends Stack {
 
         // exchangeToken - Google or Antonycc via Cognito
         var exchangeCognitoTokenLambdaEnv = new HashMap<String, String>();
-        exchangeCognitoTokenLambdaEnv.put("DIY_SUBMIT_HOME_URL", props.homeUrl());
+        exchangeCognitoTokenLambdaEnv.put("DIY_SUBMIT_HOME_URL", props.baseUrl());
         exchangeCognitoTokenLambdaEnv.put("DIY_SUBMIT_COGNITO_BASE_URI", props.cognitoBaseUri());
         exchangeCognitoTokenLambdaEnv.put("DIY_SUBMIT_COGNITO_CLIENT_ID", props.cognitoClientId());
         if (props.optionalTestAccessToken().isPresent()

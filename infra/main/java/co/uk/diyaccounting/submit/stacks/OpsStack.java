@@ -33,6 +33,15 @@ public class OpsStack extends Stack {
     public interface OpsStackProps extends StackProps, SubmitStackProps {
 
         @Override
+        Environment getEnv();
+
+        @Override
+        @Value.Default
+        default Boolean getCrossRegionReferences() {
+            return null;
+        }
+
+        @Override
         String envName();
 
         @Override
@@ -44,20 +53,21 @@ public class OpsStack extends Stack {
         @Override
         String compressedResourceNamePrefix();
 
+        @Override
+        String dashedDomainName();
+
+        @Override
         String domainName();
+
+        @Override
+        String baseUrl();
+
+        @Override
+        String cloudTrailEnabled();
 
         String receiptsBucketArn(); // optional, may be null
 
         List<String> lambdaFunctionArns();
-
-        @Override
-        Environment getEnv();
-
-        @Override
-        @Value.Default
-        default Boolean getCrossRegionReferences() {
-            return null;
-        }
 
         static ImmutableOpsStackProps.Builder builder() {
             return ImmutableOpsStackProps.builder();
@@ -87,7 +97,7 @@ public class OpsStack extends Stack {
 
         // Import resources from props
         // Lambda functions
-        java.util.List<IFunction> lambdaFunctions = new java.util.ArrayList<>();
+        //java.util.List<IFunction> lambdaFunctions = new java.util.ArrayList<>();
         java.util.List<Metric> lambdaInvocations = new java.util.ArrayList<>();
         java.util.List<Metric> lambdaErrors = new java.util.ArrayList<>();
         java.util.List<Metric> lambdaDurationsP95 = new java.util.ArrayList<>();
@@ -102,7 +112,7 @@ public class OpsStack extends Stack {
                                 .functionArn(arn)
                                 .sameEnvironment(true)
                                 .build());
-                lambdaFunctions.add(fn);
+                //lambdaFunctions.add(fn);
                 lambdaInvocations.add(fn.metricInvocations());
                 lambdaErrors.add(fn.metricErrors());
                 lambdaDurationsP95.add(fn.metricDuration()

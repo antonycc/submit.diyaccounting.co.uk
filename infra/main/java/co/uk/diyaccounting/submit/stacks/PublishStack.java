@@ -31,11 +31,19 @@ import static co.uk.diyaccounting.submit.utils.Kind.warnf;
 public class PublishStack extends Stack {
 
     public final BucketDeployment webDeployment;
-    public final String baseUrl;
     public final LogGroup webDeploymentLogGroup;
 
     @Value.Immutable
     public interface PublishStackProps extends StackProps, SubmitStackProps {
+
+        @Override
+        Environment getEnv();
+
+        @Override
+        @Value.Default
+        default Boolean getCrossRegionReferences() {
+            return null;
+        }
 
         @Override
         String envName();
@@ -49,9 +57,17 @@ public class PublishStack extends Stack {
         @Override
         String compressedResourceNamePrefix();
 
+        @Override
+        String dashedDomainName();
+
+        @Override
         String domainName();
 
+        @Override
         String baseUrl();
+
+        @Override
+        String cloudTrailEnabled();
 
         String distributionArn();
 
@@ -64,16 +80,6 @@ public class PublishStack extends Stack {
         String buildNumber();
 
         String docRootPath();
-
-        // StackProps interface methods
-        @Override
-        Environment getEnv();
-
-        @Override
-        @Value.Default
-        default Boolean getCrossRegionReferences() {
-            return null;
-        }
 
         static ImmutablePublishStackProps.Builder builder() {
             return ImmutablePublishStackProps.builder();
@@ -102,7 +108,6 @@ public class PublishStack extends Stack {
         Tags.of(this).add("MonitoringEnabled", "true");
 
         // Use Resources from the passed props
-        this.baseUrl = props.baseUrl();
         var distributionId = props.distributionArn().split("/")[1];
         DistributionAttributes distributionAttributes = DistributionAttributes.builder()
                 .domainName(props.domainName())
@@ -212,7 +217,7 @@ public class PublishStack extends Stack {
 
         // Outputs
         cfnOutput(this, "WebDeploymentLogGroupArn", this.webDeploymentLogGroup.getLogGroupArn());
-        cfnOutput(this, "BaseUrl", this.baseUrl);
+        cfnOutput(this, "BaseUrl", props.baseUrl());
 
         infof("PublishStack %s created successfully for %s", this.getNode().getId(), props.resourceNamePrefix());
     }

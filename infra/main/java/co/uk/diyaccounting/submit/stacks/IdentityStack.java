@@ -41,10 +41,7 @@ import java.util.Map;
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildCognitoBaseUri;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildCognitoDomainName;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDashedCognitoDomainName;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDashedDomainName;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDomainName;
 
 public class IdentityStack extends Stack {
 
@@ -59,13 +56,21 @@ public class IdentityStack extends Stack {
     public final UserPoolDomain userPoolDomain;
     public final ARecord userPoolDomainARecord;
     public final AaaaRecord userPoolDomainAaaaRecord;
-    public final String cognitoDomainName;
     public final String dashedCognitoDomainName;
     public final ICertificate authCertificate;
     public final String cognitoBaseUri;
 
     @Value.Immutable
     public interface IdentityStackProps extends StackProps, SubmitStackProps {
+
+        @Override
+        Environment getEnv();
+
+        @Override
+        @Value.Default
+        default Boolean getCrossRegionReferences() {
+            return null;
+        }
 
         @Override
         String envName();
@@ -79,25 +84,25 @@ public class IdentityStack extends Stack {
         @Override
         String compressedResourceNamePrefix();
 
-        String subDomainName();
+        @Override
+        String dashedDomainName();
+
+        @Override
+        String domainName();
+
+        @Override
+        String baseUrl();
+
+        @Override
+        String cloudTrailEnabled();
+
+        String cognitoDomainName();
 
         String hostedZoneName();
 
         String hostedZoneId();
 
         String authCertificateArn();
-
-        String useExistingAuthCertificate();
-
-        String accessLogGroupRetentionPeriodDays();
-
-        String cloudTrailEnabled();
-
-        String xRayEnabled();
-
-        String verboseLogging();
-
-        String homeUrl();
 
         String antonyccClientId();
 
@@ -106,17 +111,6 @@ public class IdentityStack extends Stack {
         String googleClientId();
 
         String googleClientSecretArn();
-
-        String cognitoDomainPrefix();
-
-        @Override
-        Environment getEnv();
-
-        @Override
-        @Value.Default
-        default Boolean getCrossRegionReferences() {
-            return null;
-        }
 
         static ImmutableIdentityStackProps.Builder builder() {
             return ImmutableIdentityStackProps.builder();
@@ -140,16 +134,10 @@ public class IdentityStack extends Stack {
                         .hostedZoneId(props.hostedZoneId())
                         .build());
 
-        this.domainName = buildDomainName(props.envName(), props.subDomainName(), props.hostedZoneName());
-        String dashedDomainName = buildDashedDomainName(props.envName(), props.subDomainName(), props.hostedZoneName());
-
-        var cognitoDomainName = buildCognitoDomainName(
-                props.envName(), props.cognitoDomainPrefix(), props.subDomainName(), hostedZone.getZoneName());
-        var cognitoBaseUri = buildCognitoBaseUri(cognitoDomainName);
-        this.cognitoDomainName = cognitoDomainName;
+        var cognitoBaseUri = buildCognitoBaseUri(props.cognitoDomainName());
         this.cognitoBaseUri = cognitoBaseUri;
 
-        this.dashedCognitoDomainName = buildDashedCognitoDomainName(cognitoDomainName);
+        this.dashedCognitoDomainName = buildDashedCognitoDomainName(props.cognitoDomainName());
         this.authCertificate = Certificate.fromCertificateArn(this, "AuthCertificate", props.authCertificateArn());
 
         // Create a secret for the Google client secret and set the ARN to be used in the Lambda
@@ -178,7 +166,7 @@ public class IdentityStack extends Stack {
                         .build())
                 .build();
         this.userPool = UserPool.Builder.create(this, "UserPool")
-                .userPoolName(dashedDomainName + "-user-pool")
+                .userPoolName(props.dashedDomainName() + "-user-pool")
                 .selfSignUpEnabled(true)
                 .signInAliases(SignInAliases.builder().email(true).build())
                 .standardAttributes(standardAttributes)
@@ -231,7 +219,7 @@ public class IdentityStack extends Stack {
         // User Pool Client
         this.userPoolClient = UserPoolClient.Builder.create(this, "UserPoolClient")
                 .userPool(userPool)
-                .userPoolClientName(dashedDomainName + "-client")
+                .userPoolClientName(props.dashedDomainName() + "-client")
                 .generateSecret(false)
                 .oAuth(OAuthSettings.builder()
                         .flows(OAuthFlows.builder().authorizationCodeGrant(true).build())
@@ -253,7 +241,7 @@ public class IdentityStack extends Stack {
         this.userPoolDomain = UserPoolDomain.Builder.create(this, "UserPoolDomain")
                 .userPool(userPool)
                 .customDomain(software.amazon.awscdk.services.cognito.CustomDomainOptions.builder()
-                        .domainName(cognitoDomainName)
+                        .domainName(props.cognitoDomainName())
                         .certificate(this.authCertificate)
                         .build())
                 .build();
@@ -262,7 +250,7 @@ public class IdentityStack extends Stack {
         this.userPoolDomainARecord = ARecord.Builder.create(
                         this, "UserPoolDomainARecord-%s".formatted(dashedCognitoDomainName))
                 .zone(hostedZone)
-                .recordName(cognitoDomainName)
+                .recordName(props.cognitoDomainName())
                 .deleteExisting(true)
                 .target(RecordTarget.fromAlias(new IAliasRecordTarget() {
                     @Override
@@ -286,7 +274,7 @@ public class IdentityStack extends Stack {
         this.userPoolDomainAaaaRecord = AaaaRecord.Builder.create(
                         this, "UserPoolDomainAaaaRecord-%s".formatted(dashedCognitoDomainName))
                 .zone(hostedZone)
-                .recordName(cognitoDomainName)
+                .recordName(props.cognitoDomainName())
                 .deleteExisting(true)
                 .target(RecordTarget.fromAlias(new IAliasRecordTarget() {
                     @Override
@@ -326,6 +314,6 @@ public class IdentityStack extends Stack {
             cfnOutput(this, "CognitoAntonyccIdpId", this.antonyccIdentityProvider.getProviderName());
         }
 
-        infof("IdentityStack %s created successfully for %s", this.getNode().getId(), dashedDomainName);
+        infof("IdentityStack %s created successfully for %s", this.getNode().getId(), props.dashedDomainName());
     }
 }

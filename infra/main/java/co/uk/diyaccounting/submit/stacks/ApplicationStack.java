@@ -32,7 +32,6 @@ import java.util.Optional;
 
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDashedDomainName;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildFunctionName;
 import static co.uk.diyaccounting.submit.utils.S3.createLifecycleRules;
 
@@ -61,6 +60,15 @@ public class ApplicationStack extends Stack {
     public interface ApplicationStackProps extends StackProps, SubmitStackProps {
 
         @Override
+        Environment getEnv();
+
+        @Override
+        @Value.Default
+        default Boolean getCrossRegionReferences() {
+            return null;
+        }
+
+        @Override
         String envName();
 
         @Override
@@ -72,15 +80,17 @@ public class ApplicationStack extends Stack {
         @Override
         String compressedResourceNamePrefix();
 
-        String subDomainName();
+        @Override
+        String dashedDomainName();
 
-        String hostedZoneName();
+        @Override
+        String domainName();
 
+        @Override
+        String baseUrl();
+
+        @Override
         String cloudTrailEnabled();
-
-        String xRayEnabled();
-
-        String verboseLogging();
 
         String baseImageTag();
 
@@ -91,8 +101,6 @@ public class ApplicationStack extends Stack {
         String lambdaUrlAuthType();
 
         String lambdaEntry();
-
-        String homeUrl();
 
         String hmrcBaseUri();
 
@@ -114,15 +122,6 @@ public class ApplicationStack extends Stack {
 
         String s3RetainReceiptsBucket();
 
-        @Override
-        Environment getEnv();
-
-        @Override
-        @Value.Default
-        default Boolean getCrossRegionReferences() {
-            return null;
-        }
-
         static ImmutableApplicationStackProps.Builder builder() {
             return ImmutableApplicationStackProps.builder();
         }
@@ -135,11 +134,6 @@ public class ApplicationStack extends Stack {
     public ApplicationStack(Construct scope, String id, StackProps stackProps, ApplicationStackProps props) {
         super(scope, id, stackProps);
 
-        // Values are provided via SubmitApplication after context/env resolution
-
-        // Build naming using same patterns as WebStack
-        String dashedDomainName = buildDashedDomainName(props.envName(), props.subDomainName(), props.hostedZoneName());
-
         // Lambdas
 
         // Determine Lambda URL authentication type
@@ -149,7 +143,7 @@ public class ApplicationStack extends Stack {
 
         // authUrl - HMRC
         var authUrlHmrcLambdaEnv = new HashMap<>(Map.of(
-                "DIY_SUBMIT_HOME_URL", props.homeUrl(),
+                "DIY_SUBMIT_HOME_URL", props.baseUrl(),
                 "DIY_SUBMIT_HMRC_BASE_URI", props.hmrcBaseUri(),
                 "DIY_SUBMIT_HMRC_CLIENT_ID", props.hmrcClientId()));
         var authUrlHmrcLambdaUrlOrigin = new LambdaUrlOrigin(
@@ -173,7 +167,7 @@ public class ApplicationStack extends Stack {
 
         // exchangeToken - HMRC
         Map<String, String> exchangeHmrcEnvBase = new HashMap<>(Map.of(
-                "DIY_SUBMIT_HOME_URL", props.homeUrl(),
+                "DIY_SUBMIT_HOME_URL", props.baseUrl(),
                 "DIY_SUBMIT_HMRC_BASE_URI", props.hmrcBaseUri(),
                 "DIY_SUBMIT_HMRC_CLIENT_ID", props.hmrcClientId()));
         if (StringUtils.isNotBlank(props.hmrcClientSecretArn())) {
@@ -224,7 +218,7 @@ public class ApplicationStack extends Stack {
 
         // submitVat
         var submitVatLambdaEnv = new HashMap<>(Map.of(
-                "DIY_SUBMIT_HOME_URL", props.homeUrl(),
+                "DIY_SUBMIT_HOME_URL", props.baseUrl(),
                 "DIY_SUBMIT_HMRC_BASE_URI", props.hmrcBaseUri()));
         var submitVatLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
@@ -246,7 +240,7 @@ public class ApplicationStack extends Stack {
                 this.submitVatLambda.getNode().getId(), props.lambdaEntry() + "submitVat.httpPost");
 
         var logReceiptLambdaEnv = new HashMap<>(Map.of(
-                "DIY_SUBMIT_HOME_URL", props.homeUrl(),
+                "DIY_SUBMIT_HOME_URL", props.baseUrl(),
                 "DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX", props.receiptsBucketPostfix()));
         if (props.optionalTestS3Endpoint().isPresent()
                 && StringUtils.isNotBlank(props.optionalTestS3Endpoint().get())
@@ -285,7 +279,7 @@ public class ApplicationStack extends Stack {
 
         // Create Bundle Management Lambda
         // Catalog Lambda
-        var catalogLambdaEnv = new HashMap<>(Map.of("DIY_SUBMIT_HOME_URL", props.homeUrl()));
+        var catalogLambdaEnv = new HashMap<>(Map.of("DIY_SUBMIT_HOME_URL", props.baseUrl()));
         var catalogLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
                 LambdaUrlOriginProps.builder()
@@ -346,7 +340,7 @@ public class ApplicationStack extends Stack {
                 this.requestBundlesLambda.getFunctionName(), props.cognitoUserPoolId());
 
         // My Bundles Lambda
-        var myBundlesLambdaEnv = new HashMap<>(Map.of("DIY_SUBMIT_HOME_URL", props.homeUrl()));
+        var myBundlesLambdaEnv = new HashMap<>(Map.of("DIY_SUBMIT_HOME_URL", props.baseUrl()));
         var myBundlesLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
                 LambdaUrlOriginProps.builder()
@@ -369,7 +363,7 @@ public class ApplicationStack extends Stack {
 
         // myReceipts Lambda
         var myReceiptsLambdaEnv = new HashMap<>(Map.of(
-                "DIY_SUBMIT_HOME_URL", props.homeUrl(),
+                "DIY_SUBMIT_HOME_URL", props.baseUrl(),
                 "DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX", props.receiptsBucketPostfix()));
         var myReceiptsLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
@@ -395,7 +389,7 @@ public class ApplicationStack extends Stack {
                 props.s3RetainReceiptsBucket() != null && Boolean.parseBoolean(props.s3RetainReceiptsBucket());
         String receiptsBucketPostfix =
                 StringUtils.isNotBlank(props.receiptsBucketPostfix()) ? props.receiptsBucketPostfix() : "receipts";
-        String receiptsBucketFullName = "%s-%s".formatted(dashedDomainName, receiptsBucketPostfix);
+        String receiptsBucketFullName = "%s-%s".formatted(props.dashedDomainName(), receiptsBucketPostfix);
         this.receiptsBucket = Bucket.Builder.create(this, "ReceiptsBucket")
                 .bucketName(receiptsBucketFullName)
                 .versioned(false)
@@ -467,6 +461,6 @@ public class ApplicationStack extends Stack {
         cfnOutput(this, "ReceiptsBucketName", this.receiptsBucket.getBucketName());
         cfnOutput(this, "ReceiptsBucketArn", this.receiptsBucket.getBucketArn());
 
-        infof("ApplicationStack %s created successfully for %s", this.getNode().getId(), dashedDomainName);
+        infof("ApplicationStack %s created successfully for %s", this.getNode().getId(), props.dashedDomainName());
     }
 }

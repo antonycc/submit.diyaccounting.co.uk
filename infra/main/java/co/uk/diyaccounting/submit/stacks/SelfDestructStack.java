@@ -44,6 +44,15 @@ public class SelfDestructStack extends Stack {
     public interface SelfDestructStackProps extends StackProps, SubmitStackProps {
 
         @Override
+        Environment getEnv();
+
+        @Override
+        @Value.Default
+        default Boolean getCrossRegionReferences() {
+            return null;
+        }
+
+        @Override
         String envName();
 
         @Override
@@ -54,6 +63,18 @@ public class SelfDestructStack extends Stack {
 
         @Override
         String compressedResourceNamePrefix();
+
+        @Override
+        String dashedDomainName();
+
+        @Override
+        String domainName();
+
+        @Override
+        String baseUrl();
+
+        @Override
+        String cloudTrailEnabled();
 
         String selfDestructLogGroupName();
 
@@ -76,15 +97,6 @@ public class SelfDestructStack extends Stack {
         String selfDestructDelayHours();
 
         String selfDestructHandlerSource();
-
-        @Override
-        Environment getEnv();
-
-        @Override
-        @Value.Default
-        default Boolean getCrossRegionReferences() {
-            return null;
-        }
 
         static ImmutableSelfDestructStackProps.Builder builder() {
             return ImmutableSelfDestructStackProps.builder();

@@ -33,6 +33,10 @@ public class ResourceNameUtils {
                 "%s.%s.%s".formatted(env, subDomainName, hostedZoneName), domainNameMappings);
     }
 
+    public static String buildDashedDomainName(String domainName) {
+        return ResourceNameUtils.convertDotSeparatedToDashSeparated(domainName, domainNameMappings);
+    }
+
     /**
      * Generate a predictable resource name prefix based on domain name and deployment name.
      * Converts domain like "oidc.example.com" to "oidc-example-com" and adds deployment name.

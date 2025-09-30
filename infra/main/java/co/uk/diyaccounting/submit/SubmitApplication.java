@@ -18,6 +18,8 @@ import java.nio.file.Paths;
 import static co.uk.diyaccounting.submit.utils.Kind.envOr;
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.Kind.warnf;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildCognitoDomainName;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDashedDomainName;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDomainName;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateCompressedResourceNamePrefix;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateResourceNamePrefix;
@@ -42,8 +44,6 @@ public class SubmitApplication {
         public String hostedZoneId;
         public String subDomainName;
         public String cloudTrailEnabled;
-        public String xRayEnabled;
-        public String verboseLogging;
         public String cloudTrailLogGroupPrefix;
         public String cloudTrailLogGroupRetentionPeriodDays;
         public String accessLogGroupRetentionPeriodDays;
@@ -159,8 +159,6 @@ public class SubmitApplication {
                 "(from selfDestructHandlerSource in cdk.json)");
         var cloudTrailEnabled =
                 envOr("CLOUD_TRAIL_ENABLED", appProps.cloudTrailEnabled, "(from cloudTrailEnabled in cdk.json)");
-        var xRayEnabled = envOr("X_RAY_ENABLED", appProps.xRayEnabled, "(from xRayEnabled in cdk.json)");
-        var verboseLogging = envOr("VERBOSE_LOGGING", appProps.verboseLogging, "(from verboseLogging in cdk.json)");
         var s3RetainReceiptsBucket = envOr(
                 "S3_RETAIN_RECEIPTS_BUCKET",
                 appProps.s3RetainReceiptsBucket,
@@ -179,11 +177,13 @@ public class SubmitApplication {
                 envOr("DIY_SUBMIT_ANTONYCC_BASE_URI", appProps.antonyccBaseUri, "(from antonyccBaseUri in cdk.json)");
 
         // Generate predictable resource name prefix based on domain and environment
-        String domainName = buildDomainName(envName, subDomainName, hostedZoneName);
-        String baseUrl = "https://%s/".formatted(domainName);
-        String resourceNamePrefix = "a-%s".formatted(generateResourceNamePrefix(domainName, envName));
-        String compressedResourceNamePrefix = "a-%s".formatted(generateCompressedResourceNamePrefix(domainName, envName));
-        String selfDestructLogGroupName = "/aws/lambda/%s-self-destruct".formatted(resourceNamePrefix);
+        var domainName = buildDomainName(envName, subDomainName, hostedZoneName);
+        var dashedDomainName = buildDashedDomainName(envName, subDomainName, hostedZoneName);
+        var baseUrl = "https://%s/".formatted(domainName);
+        var resourceNamePrefix = "a-%s".formatted(generateResourceNamePrefix(domainName, envName));
+        var compressedResourceNamePrefix = "a-%s".formatted(generateCompressedResourceNamePrefix(domainName, envName));
+        var selfDestructLogGroupName = "/aws/lambda/%s-self-destruct".formatted(resourceNamePrefix);
+        var cognitoDomainName = buildCognitoDomainName(envName, appProps.cognitoDomainPrefix, subDomainName, hostedZoneName);
 
         // Create ObservabilityStack with resources used in monitoring the application
         String observabilityStackId = "%s-ObservabilityStack".formatted(deploymentName);
@@ -200,14 +200,13 @@ public class SubmitApplication {
                         .deploymentName(deploymentName)
                         .resourceNamePrefix(resourceNamePrefix)
                         .compressedResourceNamePrefix(compressedResourceNamePrefix)
-                        .hostedZoneName(hostedZoneName)
-                        .subDomainName(subDomainName)
+                        .domainName(domainName)
+                        .dashedDomainName(dashedDomainName)
+                        .baseUrl(baseUrl)
                         .cloudTrailEnabled(cloudTrailEnabled)
                         .selfDestructLogGroupName(selfDestructLogGroupName)
-                        .xRayEnabled(xRayEnabled)
                         .cloudTrailLogGroupPrefix(appProps.cloudTrailLogGroupPrefix)
                         .cloudTrailLogGroupRetentionPeriodDays(appProps.cloudTrailLogGroupRetentionPeriodDays)
-                        .accessLogGroupRetentionPeriodDays(appProps.accessLogGroupRetentionPeriodDays)
                         .build());
 
         // Create DevStack with resources only used during development or deployment (e.g. ECR)
@@ -223,8 +222,10 @@ public class SubmitApplication {
                         .deploymentName(deploymentName)
                         .resourceNamePrefix(resourceNamePrefix)
                         .compressedResourceNamePrefix(compressedResourceNamePrefix)
-                        .hostedZoneName(hostedZoneName)
-                        .subDomainName(subDomainName)
+                        .domainName(domainName)
+                        .dashedDomainName(dashedDomainName)
+                        .baseUrl(baseUrl)
+                        .cloudTrailEnabled(cloudTrailEnabled)
                         .build());
 
         // Create the identity stack before any user aware services
@@ -240,21 +241,18 @@ public class SubmitApplication {
                         .deploymentName(deploymentName)
                         .resourceNamePrefix(resourceNamePrefix)
                         .compressedResourceNamePrefix(compressedResourceNamePrefix)
+                        .domainName(domainName)
+                        .dashedDomainName(dashedDomainName)
+                        .baseUrl(baseUrl)
+                        .cloudTrailEnabled(cloudTrailEnabled)
                         .hostedZoneName(hostedZoneName)
                         .hostedZoneId(hostedZoneId)
-                        .cognitoDomainPrefix(appProps.cognitoDomainPrefix)
-                        .subDomainName(appProps.subDomainName)
+                        .cognitoDomainName(cognitoDomainName)
                         .authCertificateArn(authCertificateArn)
                         .googleClientId(googleClientId)
                         .googleClientSecretArn(googleClientSecretArn)
                         .antonyccClientId(antonyccClientId)
                         .antonyccBaseUri(antonyccBaseUri)
-                        .useExistingAuthCertificate("true")
-                        .accessLogGroupRetentionPeriodDays(appProps.accessLogGroupRetentionPeriodDays)
-                        .cloudTrailEnabled(cloudTrailEnabled)
-                        .xRayEnabled(xRayEnabled)
-                        .verboseLogging(verboseLogging)
-                        .homeUrl(baseUrl)
                         .build());
 
         // Create the AuthStack with resources used in authentication and authorisation
@@ -270,15 +268,14 @@ public class SubmitApplication {
                         .deploymentName(deploymentName)
                         .resourceNamePrefix(resourceNamePrefix)
                         .compressedResourceNamePrefix(compressedResourceNamePrefix)
-                        .hostedZoneName(hostedZoneName)
-                        .subDomainName(subDomainName)
+                        .domainName(domainName)
+                        .dashedDomainName(dashedDomainName)
+                        .baseUrl(baseUrl)
                         .cloudTrailEnabled(cloudTrailEnabled)
-                        .xRayEnabled(xRayEnabled)
                         .baseImageTag(baseImageTag)
                         .ecrRepositoryArn(
                             this.devStack.ecrRepository.getRepositoryArn()) // TODO: Internally compute from name
                         .ecrRepositoryName(this.devStack.ecrRepository.getRepositoryName()) // TODO: Get by predictable name
-                        .homeUrl(baseUrl)
                         .lambdaEntry(lambdaEntry)
                         .lambdaUrlAuthType(lambdaUrlAuthType)
                         .cognitoClientId(
@@ -303,16 +300,14 @@ public class SubmitApplication {
                         .deploymentName(deploymentName)
                         .resourceNamePrefix(resourceNamePrefix)
                         .compressedResourceNamePrefix(compressedResourceNamePrefix)
-                        .hostedZoneName(hostedZoneName)
-                        .subDomainName(subDomainName)
+                        .domainName(domainName)
+                        .dashedDomainName(dashedDomainName)
+                        .baseUrl(baseUrl)
                         .cloudTrailEnabled(cloudTrailEnabled)
-                        .xRayEnabled(xRayEnabled)
-                        .verboseLogging(verboseLogging)
                         .baseImageTag(baseImageTag)
                         .ecrRepositoryArn(
                             this.devStack.ecrRepository.getRepositoryArn()) // TODO: Internally compute from name
                         .ecrRepositoryName(this.devStack.ecrRepository.getRepositoryName()) // TODO: Get by predictable name
-                        .homeUrl(baseUrl)
                         .hmrcBaseUri(hmrcBaseUri)
                         .hmrcClientId(hmrcClientId)
                         .cognitoUserPoolId(
@@ -370,6 +365,9 @@ public class SubmitApplication {
                         .resourceNamePrefix(resourceNamePrefix)
                         .compressedResourceNamePrefix(compressedResourceNamePrefix)
                         .domainName(domainName)
+                        .dashedDomainName(dashedDomainName)
+                        .baseUrl(baseUrl)
+                        .cloudTrailEnabled(cloudTrailEnabled)
                         .lambdaFunctionArns(lambdaArns)
                         .receiptsBucketArn(receiptsBucketArn)
                         .build());
@@ -388,6 +386,10 @@ public class SubmitApplication {
                             .deploymentName(deploymentName)
                             .resourceNamePrefix(resourceNamePrefix)
                             .compressedResourceNamePrefix(compressedResourceNamePrefix)
+                            .domainName(domainName)
+                            .dashedDomainName(dashedDomainName)
+                            .baseUrl(baseUrl)
+                            .cloudTrailEnabled(cloudTrailEnabled)
                             .selfDestructLogGroupName(selfDestructLogGroupName)
                             .observabilityStackName(observabilityStack.getStackName())
                             .devStackName(devStack.getStackName())
