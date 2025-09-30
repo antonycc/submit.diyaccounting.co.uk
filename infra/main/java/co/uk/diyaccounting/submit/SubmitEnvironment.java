@@ -1,17 +1,19 @@
 package co.uk.diyaccounting.submit;
 
-import static co.uk.diyaccounting.submit.utils.Kind.envOr;
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.Kind.warnf;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.*;
-
 import co.uk.diyaccounting.submit.stacks.ApexStack;
-import java.lang.reflect.Field;
-import java.nio.file.Paths;
-import java.util.*;
 import software.amazon.awscdk.App;
 import software.amazon.awscdk.Environment;
 import software.constructs.Construct;
+
+import java.lang.reflect.Field;
+import java.nio.file.Paths;
+
+import static co.uk.diyaccounting.submit.utils.Kind.envOr;
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.Kind.warnf;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDashedDomainName;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateCompressedResourceNamePrefix;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateResourceNamePrefix;
 
 public class SubmitEnvironment {
 
@@ -69,8 +71,8 @@ public class SubmitEnvironment {
         var domainName = envOr("DOMAIN_NAME", appProps.domainName);
         var baseUrl = envOr("DIY_SUBMIT_HOME_URL", appProps.baseUrl);
 
-        String resourceNamePrefix = "apex-%s".formatted(generateResourceNamePrefix(domainName));
-        String compressedResourceNamePrefix = "apex-%s".formatted(generateCompressedResourceNamePrefix(domainName));
+        String resourceNamePrefix = "env-%s".formatted(generateResourceNamePrefix(domainName));
+        String compressedResourceNamePrefix = "e-%s".formatted(generateCompressedResourceNamePrefix(domainName));
         String dashedDomainName = buildDashedDomainName(domainName);
 
         String apexStackId = "%s-ApexStack".formatted(envName);
