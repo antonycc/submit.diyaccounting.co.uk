@@ -127,7 +127,7 @@ jobs:
           aws cloudformation describe-stacks --region eu-west-2 --query "Stacks[].StackName" --output text | tr '\t' '\n' | sort
           aws cloudformation describe-stacks --region us-east-1 --query "Stacks[].StackName" --output text | tr '\t' '\n' | sort
 
-      - name: Node test
+      - name: Node dependencies
         run: npm ci
 
       - name: Build CDK
