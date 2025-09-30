@@ -1,13 +1,5 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildCognitoBaseUri;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDashedCognitoDomainName;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.RemovalPolicy;
@@ -42,9 +34,17 @@ import software.amazon.awscdk.services.secretsmanager.Secret;
 import software.constructs.Construct;
 import software.constructs.IDependable;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildCognitoBaseUri;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDashedCognitoDomainName;
+
 public class IdentityStack extends Stack {
 
-    public String domainName;
     public ICertificate certificate;
     public ISecret googleClientSecretsManagerSecret;
     public UserPool userPool;
@@ -226,10 +226,10 @@ public class IdentityStack extends Stack {
                         .flows(OAuthFlows.builder().authorizationCodeGrant(true).build())
                         .scopes(List.of(OAuthScope.EMAIL, OAuthScope.OPENID, OAuthScope.PROFILE))
                         .callbackUrls(List.of(
-                                "https://" + this.domainName + "/",
-                                "https://" + this.domainName + "/auth/loginWithMockCallback.html",
-                                "https://" + this.domainName + "/auth/loginWithCognitoCallback.html"))
-                        .logoutUrls(List.of("https://" + this.domainName + "/"))
+                                "https://" + props.domainName() + "/",
+                                "https://" + props.domainName() + "/auth/loginWithMockCallback.html",
+                                "https://" + props.domainName() + "/auth/loginWithCognitoCallback.html"))
+                        .logoutUrls(List.of("https://" + props.domainName() + "/"))
                         .build())
                 .supportedIdentityProviders(
                         this.identityProviders.keySet().stream().toList())
