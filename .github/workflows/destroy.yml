@@ -137,7 +137,7 @@ jobs:
           cd cdk-delivery && \
             npx dotenv -e .env.${{ steps.names.outputs.ENV_NAME }} -- \
               npx cdk destroy \
-              ${DEPLOYMENT_NAME}-PublishStack \
+              ${{ steps.names.outputs.DEPLOYMENT_NAME }}-PublishStack \
               --exclusively --force \
           ; cd .. \
           ;
@@ -159,7 +159,7 @@ jobs:
           cd cdk-delivery && \
             npx dotenv -e .env.${{ steps.names.outputs.ENV_NAME }} -- \
               npx cdk destroy \
-              ${DEPLOYMENT_NAME}-EdgeStack \
+              ${{ steps.names.outputs.DEPLOYMENT_NAME }}-EdgeStack \
               --exclusively --force \
           ; cd .. \
           ;
@@ -179,7 +179,7 @@ jobs:
           cd cdk-application && \
             npx dotenv -e .env.${{ steps.names.outputs.ENV_NAME }} -- \
               npx cdk destroy \
-              ${DEPLOYMENT_NAME}-OpsStack \
+              ${{ steps.names.outputs.DEPLOYMENT_NAME }}-OpsStack \
               --exclusively --force \
           ; cd .. \
           ;
@@ -203,7 +203,7 @@ jobs:
           cd cdk-application && \
             npx dotenv -e .env.${{ steps.names.outputs.ENV_NAME }} -- \
               npx cdk destroy \
-              ${DEPLOYMENT_NAME}-AuthStack \
+              ${{ steps.names.outputs.DEPLOYMENT_NAME }}-AuthStack \
               --exclusively --force \
           ; cd .. \
           ;
@@ -220,7 +220,7 @@ jobs:
           cd cdk-application && \
             npx dotenv -e .env.${{ steps.names.outputs.ENV_NAME }} -- \
               npx cdk destroy \
-              ${DEPLOYMENT_NAME}-ApplictionStack \
+              ${{ steps.names.outputs.DEPLOYMENT_NAME }}-ApplictionStack \
               --exclusively --force \
           ; cd .. \
           ;
@@ -238,7 +238,7 @@ jobs:
           cd cdk-application && \
             npx dotenv -e .env.${{ steps.names.outputs.ENV_NAME }} -- \
               npx cdk destroy \
-              ${DEPLOYMENT_NAME}-IdentityStack \
+              ${{ steps.names.outputs.DEPLOYMENT_NAME }}-IdentityStack \
               --exclusively --force \
           ; cd .. \
           ;
@@ -254,7 +254,7 @@ jobs:
           cd cdk-application && \
             npx dotenv -e .env.${{ steps.names.outputs.ENV_NAME }} -- \
               npx cdk destroy \
-              ${DEPLOYMENT_NAME}-DevStack \
+              ${{ steps.names.outputs.DEPLOYMENT_NAME }}-DevStack \
               --exclusively --force \
           ; cd .. \
           ;
@@ -270,7 +270,7 @@ jobs:
           cd cdk-delivery && \
             npx dotenv -e .env.${{ steps.names.outputs.ENV_NAME }} -- \
               npx cdk destroy \
-              ${DEPLOYMENT_NAME}-SelfDestructStack \
+              ${{ steps.names.outputs.DEPLOYMENT_NAME }}-SelfDestructStack \
               --exclusively --force \
           ; cd .. \
           ;
@@ -286,7 +286,7 @@ jobs:
           cd cdk-application && \
             npx dotenv -e .env.${{ steps.names.outputs.ENV_NAME }} -- \
               npx cdk destroy \
-              ${DEPLOYMENT_NAME}-SelfDestructStack \
+              ${{ steps.names.outputs.DEPLOYMENT_NAME }}-SelfDestructStack \
               --exclusively --force \
           ; cd .. \
           ;
@@ -302,7 +302,7 @@ jobs:
           cd cdk-application && \
             npx dotenv -e .env.${{ steps.names.outputs.ENV_NAME }} -- \
               npx cdk destroy \
-              ${DEPLOYMENT_NAME}-ObservabilityStack \
+              ${{ steps.names.outputs.DEPLOYMENT_NAME }}-ObservabilityStack \
               --exclusively --force \
           ; cd .. \
           ;
