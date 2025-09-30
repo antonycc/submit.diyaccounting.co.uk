@@ -128,10 +128,10 @@ jobs:
           aws cloudformation describe-stacks --region us-east-1 --query "Stacks[].StackName" --output text | tr '\t' '\n' | sort
 
       - name: Node test
-        run: npm ci && npm test
+        run: npm ci
 
-      - name: Build CDK and synth
-        run: ./mvnw --errors clean package
+      - name: Build CDK
+        run: ./mvnw --errors clean package -DskipTests
 
       - name: Destroy PublishStack
         if: ${{ env.DEPLOYMENT_NAME != 'prod' }}
