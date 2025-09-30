@@ -135,7 +135,7 @@ jobs:
         if: ${{ steps.names.outputs.DEPLOYMENT_NAME != 'prod' }}
         run: |
           cd cdk-delivery && \
-            npx dotenv -e .env.${{ steps.names.outputs.ENV_NAME }} -- \
+            npx dotenv -e ../.env.${{ steps.names.outputs.ENV_NAME }} -- \
               npx cdk destroy \
               ${{ steps.names.outputs.DEPLOYMENT_NAME }}-PublishStack \
               --exclusively --force \
@@ -157,7 +157,7 @@ jobs:
         if: ${{ steps.names.outputs.DEPLOYMENT_NAME != 'prod' }}
         run: |
           cd cdk-delivery && \
-            npx dotenv -e .env.${{ steps.names.outputs.ENV_NAME }} -- \
+            npx dotenv -e ../.env.${{ steps.names.outputs.ENV_NAME }} -- \
               npx cdk destroy \
               ${{ steps.names.outputs.DEPLOYMENT_NAME }}-EdgeStack \
               --exclusively --force \
@@ -177,7 +177,7 @@ jobs:
         if: ${{ steps.names.outputs.DEPLOYMENT_NAME != 'prod' }}
         run: |
           cd cdk-application && \
-            npx dotenv -e .env.${{ steps.names.outputs.ENV_NAME }} -- \
+            npx dotenv -e ../.env.${{ steps.names.outputs.ENV_NAME }} -- \
               npx cdk destroy \
               ${{ steps.names.outputs.DEPLOYMENT_NAME }}-OpsStack \
               --exclusively --force \
@@ -201,7 +201,7 @@ jobs:
         if: ${{ steps.names.outputs.DEPLOYMENT_NAME != 'prod' }}
         run: |
           cd cdk-application && \
-            npx dotenv -e .env.${{ steps.names.outputs.ENV_NAME }} -- \
+            npx dotenv -e ../.env.${{ steps.names.outputs.ENV_NAME }} -- \
               npx cdk destroy \
               ${{ steps.names.outputs.DEPLOYMENT_NAME }}-AuthStack \
               --exclusively --force \
@@ -218,7 +218,7 @@ jobs:
         if: ${{ steps.names.outputs.DEPLOYMENT_NAME != 'prod' }}
         run: |
           cd cdk-application && \
-            npx dotenv -e .env.${{ steps.names.outputs.ENV_NAME }} -- \
+            npx dotenv -e ../.env.${{ steps.names.outputs.ENV_NAME }} -- \
               npx cdk destroy \
               ${{ steps.names.outputs.DEPLOYMENT_NAME }}-ApplictionStack \
               --exclusively --force \
@@ -236,7 +236,7 @@ jobs:
         if: ${{ steps.names.outputs.DEPLOYMENT_NAME != 'prod' }}
         run: |
           cd cdk-application && \
-            npx dotenv -e .env.${{ steps.names.outputs.ENV_NAME }} -- \
+            npx dotenv -e ../.env.${{ steps.names.outputs.ENV_NAME }} -- \
               npx cdk destroy \
               ${{ steps.names.outputs.DEPLOYMENT_NAME }}-IdentityStack \
               --exclusively --force \
@@ -252,7 +252,7 @@ jobs:
         if: ${{ steps.names.outputs.DEPLOYMENT_NAME != 'prod' }}
         run: |
           cd cdk-application && \
-            npx dotenv -e .env.${{ steps.names.outputs.ENV_NAME }} -- \
+            npx dotenv -e ../.env.${{ steps.names.outputs.ENV_NAME }} -- \
               npx cdk destroy \
               ${{ steps.names.outputs.DEPLOYMENT_NAME }}-DevStack \
               --exclusively --force \
@@ -268,7 +268,7 @@ jobs:
         if: ${{ steps.names.outputs.DEPLOYMENT_NAME != 'prod' }}
         run: |
           cd cdk-delivery && \
-            npx dotenv -e .env.${{ steps.names.outputs.ENV_NAME }} -- \
+            npx dotenv -e ../.env.${{ steps.names.outputs.ENV_NAME }} -- \
               npx cdk destroy \
               ${{ steps.names.outputs.DEPLOYMENT_NAME }}-SelfDestructStack \
               --exclusively --force \
@@ -284,7 +284,7 @@ jobs:
         if: ${{ steps.names.outputs.DEPLOYMENT_NAME != 'prod' }}
         run: |
           cd cdk-application && \
-            npx dotenv -e .env.${{ steps.names.outputs.ENV_NAME }} -- \
+            npx dotenv -e ../.env.${{ steps.names.outputs.ENV_NAME }} -- \
               npx cdk destroy \
               ${{ steps.names.outputs.DEPLOYMENT_NAME }}-SelfDestructStack \
               --exclusively --force \
@@ -300,7 +300,7 @@ jobs:
         if: ${{ steps.names.outputs.DEPLOYMENT_NAME != 'prod' }}
         run: |
           cd cdk-application && \
-            npx dotenv -e .env.${{ steps.names.outputs.ENV_NAME }} -- \
+            npx dotenv -e ../.env.${{ steps.names.outputs.ENV_NAME }} -- \
               npx cdk destroy \
               ${{ steps.names.outputs.DEPLOYMENT_NAME }}-ObservabilityStack \
               --exclusively --force \
