@@ -43,12 +43,16 @@ public class SelfDestructStack extends Stack {
     @Value.Immutable
     public interface SelfDestructStackProps extends StackProps, SubmitStackProps {
 
+        @Override
         String envName();
 
+        @Override
         String deploymentName();
 
+        @Override
         String resourceNamePrefix();
 
+        @Override
         String compressedResourceNamePrefix();
 
         String selfDestructLogGroupName();

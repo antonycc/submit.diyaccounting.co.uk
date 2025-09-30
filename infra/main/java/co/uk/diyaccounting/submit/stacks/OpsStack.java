@@ -32,12 +32,16 @@ public class OpsStack extends Stack {
     @Value.Immutable
     public interface OpsStackProps extends StackProps, SubmitStackProps {
 
+        @Override
         String envName();
 
+        @Override
         String deploymentName();
 
+        @Override
         String resourceNamePrefix();
 
+        @Override
         String compressedResourceNamePrefix();
 
         String domainName();

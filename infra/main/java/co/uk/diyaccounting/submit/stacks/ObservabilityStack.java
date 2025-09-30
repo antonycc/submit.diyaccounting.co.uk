@@ -33,12 +33,16 @@ public class ObservabilityStack extends Stack {
     @Value.Immutable
     public interface ObservabilityStackProps extends StackProps, SubmitStackProps {
 
+        @Override
         String envName();
 
+        @Override
         String deploymentName();
 
+        @Override
         String resourceNamePrefix();
 
+        @Override
         String compressedResourceNamePrefix();
 
         String subDomainName();

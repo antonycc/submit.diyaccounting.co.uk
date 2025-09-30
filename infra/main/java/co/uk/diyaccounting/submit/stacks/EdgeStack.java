@@ -63,12 +63,16 @@ public class EdgeStack extends Stack {
     @Value.Immutable
     public interface EdgeStackProps extends StackProps, SubmitStackProps {
 
+        @Override
         String envName();
 
+        @Override
         String deploymentName();
 
+        @Override
         String resourceNamePrefix();
 
+        @Override
         String compressedResourceNamePrefix();
 
         String hostedZoneName();

@@ -19,19 +19,17 @@ import java.util.Map;
  * AWS Lambda handler for self-destructing CloudFormation stacks.
  * Deletes stacks in the correct order to handle dependencies.
  */
-public class SelfDestructHandler implements RequestHandler<Map<String, Object>, Map<String, Object>> {
+public record SelfDestructHandler(
+    CloudFormationClient cloudFormationClient
+) implements RequestHandler<Map<String, Object>, Map<String, Object>> {
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
-    private final CloudFormationClient cloudFormationClient;
 
     public SelfDestructHandler() {
-        this.cloudFormationClient = CloudFormationClient.builder().build();
+        this(CloudFormationClient.builder().build());
     }
 
     // Constructor for testing with custom client
-    public SelfDestructHandler(CloudFormationClient cloudFormationClient) {
-        this.cloudFormationClient = cloudFormationClient;
-    }
 
     @Override
     public Map<String, Object> handleRequest(Map<String, Object> event, Context context) {
@@ -60,7 +58,7 @@ public class SelfDestructHandler implements RequestHandler<Map<String, Object>, 
                 // Check if stack exists
                 try {
                     cloudFormationClient.describeStacks(
-                            DescribeStacksRequest.builder().stackName(stackName).build());
+                        DescribeStacksRequest.builder().stackName(stackName).build());
                 } catch (CloudFormationException e) {
                     if (e.getMessage().contains("does not exist")) {
                         context.getLogger().log("Stack " + stackName + " does not exist, skipping");
@@ -72,7 +70,7 @@ public class SelfDestructHandler implements RequestHandler<Map<String, Object>, 
 
                 context.getLogger().log("Deleting stack: " + stackName);
                 cloudFormationClient.deleteStack(
-                        DeleteStackRequest.builder().stackName(stackName).build());
+                    DeleteStackRequest.builder().stackName(stackName).build());
 
                 results.add(new StackDeletionResult(stackName, "deletion_initiated", null));
                 context.getLogger().log("Deletion initiated for stack: " + stackName);
@@ -123,11 +121,11 @@ public class SelfDestructHandler implements RequestHandler<Map<String, Object>, 
         while (waited < maxWaitSeconds) {
             try {
                 cloudFormationClient.describeStacks(
-                        DescribeStacksRequest.builder().stackName(stackName).build());
+                    DescribeStacksRequest.builder().stackName(stackName).build());
                 context.getLogger().log("Stack " + stackName + " still exists, waiting...");
             } catch (CloudFormationException e) {
                 if (e.awsErrorDetails() != null
-                        && "ValidationError".equals(e.awsErrorDetails().errorCode())) {
+                    && "ValidationError".equals(e.awsErrorDetails().errorCode())) {
                     context.getLogger().log("Stack " + stackName + " deleted.");
                     return true;
                 }
@@ -149,32 +147,15 @@ public class SelfDestructHandler implements RequestHandler<Map<String, Object>, 
     /**
      * Result of a stack deletion operation
      */
-    public static class StackDeletionResult {
-        @JsonProperty("stackName")
-        private final String stackName;
-
-        @JsonProperty("status")
-        private final String status;
-
-        @JsonProperty("error")
-        private final String error;
-
+    public record StackDeletionResult(
+        @JsonProperty("stackName") String stackName,
+        @JsonProperty("status") String status,
+        @JsonProperty("error") String error
+    ) {
         public StackDeletionResult(String stackName, String status, String error) {
             this.stackName = stackName;
             this.status = status;
             this.error = error;
-        }
-
-        public String getStackName() {
-            return stackName;
-        }
-
-        public String getStatus() {
-            return status;
-        }
-
-        public String getError() {
-            return error;
         }
     }
 }

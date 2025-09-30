@@ -37,12 +37,16 @@ public class PublishStack extends Stack {
     @Value.Immutable
     public interface PublishStackProps extends StackProps, SubmitStackProps {
 
+        @Override
         String envName();
 
+        @Override
         String deploymentName();
 
+        @Override
         String resourceNamePrefix();
 
+        @Override
         String compressedResourceNamePrefix();
 
         String domainName();

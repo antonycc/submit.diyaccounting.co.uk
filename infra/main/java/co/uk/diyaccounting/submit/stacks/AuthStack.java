@@ -35,12 +35,16 @@ public class AuthStack extends Stack {
     @Value.Immutable
     public interface AuthStackProps extends StackProps, SubmitStackProps {
 
+        @Override
         String envName();
 
+        @Override
         String deploymentName();
 
+        @Override
         String resourceNamePrefix();
 
+        @Override
         String compressedResourceNamePrefix();
 
         String subDomainName();
