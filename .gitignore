@@ -346,3 +346,4 @@ fabric.properties
 /run-manually*-results/
 /cdk-submit-application.out/
 /cdk-submit-delivery.out/
+/cdk-submit-environment.out/

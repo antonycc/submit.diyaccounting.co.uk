@@ -15,6 +15,7 @@
       <excludeFolder url="file://$MODULE_DIR$/test-results" />
       <excludeFolder url="file://$MODULE_DIR$/cdk-submit-application.out" />
       <excludeFolder url="file://$MODULE_DIR$/cdk-submit-delivery.out" />
+      <excludeFolder url="file://$MODULE_DIR$/cdk-submit-environment.out" />
     </content>
   </component>
 </module>
