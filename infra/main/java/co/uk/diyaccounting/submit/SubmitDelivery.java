@@ -170,8 +170,8 @@ public class SubmitDelivery {
             envOr("CLOUD_TRAIL_ENABLED", appProps.cloudTrailEnabled, "(from cloudTrailEnabled in cdk.json)");
 
         // Derived values from domain and deployment name
-        String resourceNamePrefix = "d-%s".formatted(generateResourceNamePrefix(domainName, envName));
-        String compressedResourceNamePrefix = "d-%s".formatted(generateCompressedResourceNamePrefix(domainName, envName));
+        String resourceNamePrefix = "d-%s".formatted(generateResourceNamePrefix(domainName));
+        String compressedResourceNamePrefix = "d-%s".formatted(generateCompressedResourceNamePrefix(domainName));
         String selfDestructLogGroupName = "/aws/lambda/%s-self-destruct".formatted(resourceNamePrefix);
         String dashedDomainName = buildDashedDomainName(domainName);
 

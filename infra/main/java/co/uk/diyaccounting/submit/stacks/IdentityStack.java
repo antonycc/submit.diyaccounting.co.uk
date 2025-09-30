@@ -128,17 +128,16 @@ public class IdentityStack extends Stack {
 
         var hostedZone = HostedZone.fromHostedZoneAttributes(
                 this,
-                "HostedZone",
+            props.resourceNamePrefix() + "-HostedZone",
                 HostedZoneAttributes.builder()
                         .zoneName(props.hostedZoneName())
                         .hostedZoneId(props.hostedZoneId())
                         .build());
 
-        var cognitoBaseUri = buildCognitoBaseUri(props.cognitoDomainName());
-        this.cognitoBaseUri = cognitoBaseUri;
+        this.cognitoBaseUri = buildCognitoBaseUri(props.cognitoDomainName());
 
         this.dashedCognitoDomainName = buildDashedCognitoDomainName(props.cognitoDomainName());
-        this.authCertificate = Certificate.fromCertificateArn(this, "AuthCertificate", props.authCertificateArn());
+        this.authCertificate = Certificate.fromCertificateArn(this, props.resourceNamePrefix() + "-AuthCertificate", props.authCertificateArn());
 
         // Create a secret for the Google client secret and set the ARN to be used in the Lambda
 
@@ -149,7 +148,7 @@ public class IdentityStack extends Stack {
                     "DIY_SUBMIT_GOOGLE_CLIENT_SECRET_ARN must be provided for env=" + props.envName());
         }
         this.googleClientSecretsManagerSecret =
-                Secret.fromSecretPartialArn(this, "GoogleClientSecret", props.googleClientSecretArn());
+                Secret.fromSecretPartialArn(this, props.resourceNamePrefix() + "-GoogleClientSecret", props.googleClientSecretArn());
 
         var googleClientSecretValue = this.googleClientSecretsManagerSecret.getSecretValue();
 
@@ -165,7 +164,7 @@ public class IdentityStack extends Stack {
                         .mutable(true)
                         .build())
                 .build();
-        this.userPool = UserPool.Builder.create(this, "UserPool")
+        this.userPool = UserPool.Builder.create(this, props.resourceNamePrefix() + "-UserPool")
                 .userPoolName(props.dashedDomainName() + "-user-pool")
                 .selfSignUpEnabled(true)
                 .signInAliases(SignInAliases.builder().email(true).build())
@@ -180,7 +179,7 @@ public class IdentityStack extends Stack {
                 .build();
 
         // Google IdP
-        this.googleIdentityProvider = UserPoolIdentityProviderGoogle.Builder.create(this, "GoogleIdentityProvider")
+        this.googleIdentityProvider = UserPoolIdentityProviderGoogle.Builder.create(this, props.resourceNamePrefix() + "-GoogleIdentityProvider")
                 .userPool(this.userPool)
                 .clientId(props.googleClientId())
                 .clientSecretValue(googleClientSecretValue)
@@ -194,7 +193,7 @@ public class IdentityStack extends Stack {
         this.identityProviders.put(UserPoolClientIdentityProvider.GOOGLE, this.googleIdentityProvider);
 
         // Antonycc OIDC via Cognito IdP (using L1 construct to avoid clientSecret requirement)
-        this.antonyccIdentityProvider = CfnUserPoolIdentityProvider.Builder.create(this, "CognitoIdentityProvider")
+        this.antonyccIdentityProvider = CfnUserPoolIdentityProvider.Builder.create(this, props.resourceNamePrefix() + "-CognitoIdentityProvider")
                 .providerName("cognito")
                 .providerType("OIDC")
                 .userPoolId(this.userPool.getUserPoolId())
@@ -217,7 +216,7 @@ public class IdentityStack extends Stack {
         this.identityProviders.put(UserPoolClientIdentityProvider.custom("cognito"), this.antonyccIdentityProvider);
 
         // User Pool Client
-        this.userPoolClient = UserPoolClient.Builder.create(this, "UserPoolClient")
+        this.userPoolClient = UserPoolClient.Builder.create(this, props.resourceNamePrefix() + "-UserPoolClient")
                 .userPool(userPool)
                 .userPoolClientName(props.dashedDomainName() + "-client")
                 .generateSecret(false)
@@ -238,7 +237,7 @@ public class IdentityStack extends Stack {
                 .forEach(idp -> this.userPoolClient.getNode().addDependency(idp));
 
         // Create Cognito User Pool Domain
-        this.userPoolDomain = UserPoolDomain.Builder.create(this, "UserPoolDomain")
+        this.userPoolDomain = UserPoolDomain.Builder.create(this, props.resourceNamePrefix() + "-UserPoolDomain")
                 .userPool(userPool)
                 .customDomain(software.amazon.awscdk.services.cognito.CustomDomainOptions.builder()
                         .domainName(props.cognitoDomainName())
@@ -248,7 +247,7 @@ public class IdentityStack extends Stack {
 
         // Create Route53 records for the Cognito UserPoolDomain as subdomains from the web domain.
         this.userPoolDomainARecord = ARecord.Builder.create(
-                        this, "UserPoolDomainARecord-%s".formatted(dashedCognitoDomainName))
+                        this, props.resourceNamePrefix() + "-UserPoolDomainARecord")
                 .zone(hostedZone)
                 .recordName(props.cognitoDomainName())
                 .deleteExisting(true)
@@ -270,9 +269,9 @@ public class IdentityStack extends Stack {
                     }
                 }))
                 .build();
-        // this.userPoolDomainARecord.getNode().addDependency(this.aRecord);
+
         this.userPoolDomainAaaaRecord = AaaaRecord.Builder.create(
-                        this, "UserPoolDomainAaaaRecord-%s".formatted(dashedCognitoDomainName))
+                        this, props.resourceNamePrefix() + "-UserPoolDomainAaaaRecord")
                 .zone(hostedZone)
                 .recordName(props.cognitoDomainName())
                 .deleteExisting(true)

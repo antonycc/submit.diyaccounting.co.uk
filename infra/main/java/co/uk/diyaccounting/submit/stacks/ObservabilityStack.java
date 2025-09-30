@@ -91,12 +91,12 @@ public class ObservabilityStack extends Stack {
         RetentionDays cloudTrailLogGroupRetentionPeriod =
                 RetentionDaysConverter.daysToRetentionDays(cloudTrailLogGroupRetentionPeriodDays);
         if (cloudTrailEnabled) {
-            this.cloudTrailLogGroup = LogGroup.Builder.create(this, "CloudTrailGroup")
+            this.cloudTrailLogGroup = LogGroup.Builder.create(this, props.resourceNamePrefix() + "-CloudTrailGroup")
                     .logGroupName("%s%s-cloud-trail".formatted(props.cloudTrailLogGroupPrefix(), props.dashedDomainName()))
                     .retention(cloudTrailLogGroupRetentionPeriod)
                     .removalPolicy(RemovalPolicy.DESTROY)
                     .build();
-            this.trailBucket = Bucket.Builder.create(this, trailName + "CloudTrailBucket")
+            this.trailBucket = Bucket.Builder.create(this, props.resourceNamePrefix() + "-CloudTrailBucket")
                     .encryption(BucketEncryption.S3_MANAGED)
                     .blockPublicAccess(BlockPublicAccess.BLOCK_ALL)
                     .versioned(false)
@@ -106,7 +106,7 @@ public class ObservabilityStack extends Stack {
                             .expiration(Duration.days(cloudTrailLogGroupRetentionPeriodDays))
                             .build()))
                     .build();
-            this.trail = Trail.Builder.create(this, "Trail")
+            this.trail = Trail.Builder.create(this, props.resourceNamePrefix() + "-Trail")
                     .trailName(trailName)
                     .cloudWatchLogGroup(this.cloudTrailLogGroup)
                     .sendToCloudWatchLogs(true)

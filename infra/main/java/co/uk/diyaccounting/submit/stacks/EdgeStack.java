@@ -150,8 +150,10 @@ public class EdgeStack extends Stack {
                         : props.domainName());
 
         // TLS certificate from existing ACM (must be in us-east-1 for CloudFront)
-        var cert =
-                Certificate.fromCertificateArn(this, props.resourceNamePrefix() + "-WebCert", props.certificateArn());
+        var cert = Certificate.fromCertificateArn(
+            this,
+            props.resourceNamePrefix() + "-WebCert", props.certificateArn()
+        );
 
         // Buckets
 
@@ -241,8 +243,7 @@ public class EdgeStack extends Stack {
         infof(
                 "Setting expiration period to %d days for %s",
                 props.accessLogGroupRetentionPeriodDays(), props.compressedResourceNamePrefix());
-        this.originAccessLogBucket = Bucket.Builder.create(
-                        this, "%sLogBucket".formatted(props.compressedResourceNamePrefix()))
+        this.originAccessLogBucket = Bucket.Builder.create(this, props.resourceNamePrefix() + "-LogBucket")
                 .bucketName(originAccessLogBucket)
                 .objectOwnership(ObjectOwnership.OBJECT_WRITER)
                 .versioned(false)
@@ -261,7 +262,7 @@ public class EdgeStack extends Stack {
                 this.originAccessLogBucket.getNode().getId(), originAccessLogBucket);
 
         // Create the origin bucket
-        this.originBucket = Bucket.Builder.create(this, "OriginBucket")
+        this.originBucket = Bucket.Builder.create(this, props.resourceNamePrefix() + "-OriginBucket")
                 .bucketName(originBucketName)
                 .versioned(false)
                 .blockPublicAccess(BlockPublicAccess.BLOCK_ALL)

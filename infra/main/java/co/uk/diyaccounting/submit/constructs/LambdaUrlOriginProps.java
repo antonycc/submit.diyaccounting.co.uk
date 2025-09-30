@@ -1,6 +1,5 @@
 package co.uk.diyaccounting.submit.constructs;
 
-import java.util.Map;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.RemovalPolicy;
@@ -17,6 +16,8 @@ import software.amazon.awscdk.services.lambda.FunctionUrlAuthType;
 import software.amazon.awscdk.services.lambda.InvokeMode;
 import software.amazon.awscdk.services.lambda.Runtime;
 import software.amazon.awscdk.services.logs.RetentionDays;
+
+import java.util.Map;
 
 /**
  * Props container for LambdaUrlOrigin construct. Mirrors the previous Builder fields
@@ -53,11 +54,6 @@ public interface LambdaUrlOriginProps {
 
     @Value.Default
     default boolean cloudTrailEnabled() {
-        return false;
-    }
-
-    @Value.Default
-    default boolean verboseLogging() {
         return false;
     }
 

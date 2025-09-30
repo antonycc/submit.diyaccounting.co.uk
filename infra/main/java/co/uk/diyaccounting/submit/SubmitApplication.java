@@ -177,13 +177,15 @@ public class SubmitApplication {
                 envOr("DIY_SUBMIT_ANTONYCC_BASE_URI", appProps.antonyccBaseUri, "(from antonyccBaseUri in cdk.json)");
 
         // Generate predictable resource name prefix based on domain and environment
-        var domainName = buildDomainName(envName, subDomainName, hostedZoneName);
-        var dashedDomainName = buildDashedDomainName(envName, subDomainName, hostedZoneName);
+        var domainName = buildDomainName(deploymentName, subDomainName, hostedZoneName);
+        var cognitoDomainName = buildCognitoDomainName(deploymentName, appProps.cognitoDomainPrefix, subDomainName, hostedZoneName);
+
+        // Generate predictable resource names
         var baseUrl = "https://%s/".formatted(domainName);
-        var resourceNamePrefix = "a-%s".formatted(generateResourceNamePrefix(domainName, envName));
-        var compressedResourceNamePrefix = "a-%s".formatted(generateCompressedResourceNamePrefix(domainName, envName));
+        var dashedDomainName = buildDashedDomainName(domainName);
+        var resourceNamePrefix = "a-%s".formatted(generateResourceNamePrefix(domainName));
+        var compressedResourceNamePrefix = "a-%s".formatted(generateCompressedResourceNamePrefix(domainName));
         var selfDestructLogGroupName = "/aws/lambda/%s-self-destruct".formatted(resourceNamePrefix);
-        var cognitoDomainName = buildCognitoDomainName(envName, appProps.cognitoDomainPrefix, subDomainName, hostedZoneName);
 
         // Create ObservabilityStack with resources used in monitoring the application
         String observabilityStackId = "%s-ObservabilityStack".formatted(deploymentName);

@@ -107,14 +107,15 @@ public class AuthStack extends Stack {
         // authUrl - mock
         var authUrlMockLambdaEnv = new HashMap<String, String>();
         authUrlMockLambdaEnv.put("DIY_SUBMIT_HOME_URL", props.baseUrl());
+        var authUrlMockLambdaFunctionName = buildFunctionName(props.resourceNamePrefix(), "authUrl.httpGetMock");
         var authUrlMockLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
                 LambdaUrlOriginProps.builder()
-                        .idPrefix("AuthUrlMock")
+                        .idPrefix(authUrlMockLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
                         .ecrRepositoryName(props.ecrRepositoryName())
                         .ecrRepositoryArn(props.ecrRepositoryArn())
-                        .functionName(buildFunctionName(props.resourceNamePrefix(), "authUrl.httpGetMock"))
+                        .functionName(authUrlMockLambdaFunctionName)
                         .cloudFrontAllowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
                         .handler(props.lambdaEntry() + "authUrl.httpGetMock")
                         .environment(authUrlMockLambdaEnv)
@@ -131,14 +132,15 @@ public class AuthStack extends Stack {
         authUrlCognitoLambdaEnv.put("DIY_SUBMIT_HOME_URL", props.baseUrl());
         authUrlCognitoLambdaEnv.put("DIY_SUBMIT_COGNITO_CLIENT_ID", props.cognitoClientId());
         authUrlCognitoLambdaEnv.put("DIY_SUBMIT_COGNITO_BASE_URI", props.cognitoBaseUri());
+        var authUrlCognitoLambdaFunctionName = buildFunctionName(props.resourceNamePrefix(), "authUrl.httpGetCognito");
         var authUrlCognitoLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
                 LambdaUrlOriginProps.builder()
-                        .idPrefix("AuthUrlCognito")
+                        .idPrefix(authUrlCognitoLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
                         .ecrRepositoryName(props.ecrRepositoryName())
                         .ecrRepositoryArn(props.ecrRepositoryArn())
-                        .functionName(buildFunctionName(props.resourceNamePrefix(), "authUrl.httpGetCognito"))
+                        .functionName(authUrlCognitoLambdaFunctionName)
                         .cloudFrontAllowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
                         .handler(props.lambdaEntry() + "authUrl.httpGetCognito")
                         .environment(authUrlCognitoLambdaEnv)
@@ -161,14 +163,16 @@ public class AuthStack extends Stack {
                     "DIY_SUBMIT_TEST_ACCESS_TOKEN",
                     props.optionalTestAccessToken().get());
         }
+        var exchangeCognitoTokenLambdaUrlOriginFunctionName =
+                buildFunctionName(props.resourceNamePrefix(), "exchangeToken.httpPostCognito");
         var exchangeCognitoTokenLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
                 LambdaUrlOriginProps.builder()
-                        .idPrefix("ExchangeCognitoToken")
+                        .idPrefix(exchangeCognitoTokenLambdaUrlOriginFunctionName)
                         .baseImageTag(props.baseImageTag())
                         .ecrRepositoryName(props.ecrRepositoryName())
                         .ecrRepositoryArn(props.ecrRepositoryArn())
-                        .functionName(buildFunctionName(props.resourceNamePrefix(), "exchangeToken.httpPostCognito"))
+                        .functionName(exchangeCognitoTokenLambdaUrlOriginFunctionName)
                         .cloudFrontAllowedMethods(AllowedMethods.ALLOW_ALL)
                         .handler(props.lambdaEntry() + "exchangeToken.httpPostCognito")
                         .environment(exchangeCognitoTokenLambdaEnv)

@@ -47,6 +47,14 @@ public class ResourceNameUtils {
     }
 
     /**
+     * Generate a predictable resource name prefix based on domain name.
+     * Converts domain like "oidc.example.com" to "oidc-example-com".
+     */
+    public static String generateResourceNamePrefix(String domainName) {
+        return domainName.replace('.', '-');
+    }
+
+    /**
      * Generate a shortened predictable resource name prefix based on domain and deployment name.
      * Steps:
      * 1. Replace dots with dashes.
@@ -89,6 +97,48 @@ public class ResourceNameUtils {
         var derivedResourceName = sb.append('-').append(deploymentName).toString();
         var truncatedResourceName =
                 derivedResourceName.length() > 16 ? derivedResourceName.substring(0, 16) : derivedResourceName;
+
+        return truncatedResourceName;
+    }
+
+    /**
+     * Generate a shortened predictable resource name prefix based on domain.
+     * Steps:
+     * 1. Replace dots with dashes.
+     * 2. Split on dashes.
+     * 3. Keep segment "oidc" intact; compress all other non-empty segments to their first letter.
+     *
+     * Examples:
+     *   domain=oidc.example.com  -> oidc-e-c
+     *   domain=login.auth.service.example.com -> l-a-s-e-c
+     *
+     * @param domainName fully qualified domain name (e.g. "oidc.example.com")
+     * @return compressed resource name prefix
+     */
+    public static String generateCompressedResourceNamePrefix(String domainName) {
+        if (domainName == null || domainName.isBlank()) {
+            throw new IllegalArgumentException("domainName must be non-empty");
+        }
+
+        String dashed = domainName.replace('.', '-').toLowerCase();
+        String[] parts = dashed.split("-+");
+        StringBuilder sb = new StringBuilder();
+        for (String part : parts) {
+            if (part.isEmpty()) {
+                continue;
+            }
+            if (sb.length() > 0) {
+                sb.append('-');
+            }
+            if ("oidc".equals(part)) {
+                sb.append("oidc");
+            } else {
+                sb.append(part.charAt(0));
+            }
+        }
+        var derivedResourceName = sb.toString();
+        var truncatedResourceName =
+            derivedResourceName.length() > 16 ? derivedResourceName.substring(0, 16) : derivedResourceName;
 
         return truncatedResourceName;
     }
