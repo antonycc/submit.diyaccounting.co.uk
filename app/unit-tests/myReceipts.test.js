@@ -29,7 +29,7 @@ describe("myReceipts functions", () => {
     process.env.DIY_SUBMIT_TEST_S3_ENDPOINT = "http://localhost:9000"; // enable S3 client config
   });
 
-  test("httpGet lists receipts sorted and parsed", async () => {
+  test("handle lists receipts sorted and parsed", async () => {
     const userSub = "abc123";
     const auth = `Bearer ${makeJwt(userSub)}`;
     const listResp = {
@@ -60,7 +60,7 @@ describe("myReceipts functions", () => {
     expect(json.receipts[0].key).toContain(`receipts/${userSub}/`);
   });
 
-  test("httpGet returns 401 when no auth", async () => {
+  test("handle returns 401 when no auth", async () => {
     const { statusCode } = await listReceipts({ headers: {} });
     expect(statusCode).toBe(401);
   });

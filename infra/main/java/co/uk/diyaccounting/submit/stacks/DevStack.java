@@ -1,12 +1,5 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildEcrLogGroupName;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildEcrPublishRoleName;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildEcrRepositoryName;
-
-import java.util.List;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
@@ -25,6 +18,13 @@ import software.amazon.awscdk.services.iam.ServicePrincipal;
 import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.constructs.Construct;
+
+import java.util.List;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildEcrLogGroupName;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildEcrPublishRoleName;
 
 public class DevStack extends Stack {
 
@@ -68,6 +68,8 @@ public class DevStack extends Stack {
         @Override
         String cloudTrailEnabled();
 
+        String ecrRepositoryName();
+
         static ImmutableDevStackProps.Builder builder() {
             return ImmutableDevStackProps.builder();
         }
@@ -83,9 +85,8 @@ public class DevStack extends Stack {
         infof("Creating DevStack for domain: %s (dashed: %s)", props.domainName(), props.dashedDomainName());
 
         // ECR Repository with lifecycle rules
-        String ecrRepositoryName = buildEcrRepositoryName(props.dashedDomainName());
         this.ecrRepository = Repository.Builder.create(this, props.resourceNamePrefix() + "-EcrRepository")
-                .repositoryName(ecrRepositoryName)
+                .repositoryName(props.ecrRepositoryName())
                 .imageScanOnPush(true) // Enable vulnerability scanning
                 .imageTagMutability(software.amazon.awscdk.services.ecr.TagMutability.MUTABLE)
                 .lifecycleRules(List.of(

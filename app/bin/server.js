@@ -12,7 +12,7 @@ import { httpPostMock, httpPostHmrc, httpPostCognito } from "../functions/exchan
 import { httpPost as submitVatHttpPost } from "../functions/submitVat.js";
 import { httpPost as logReceiptHttpPost } from "../functions/logReceipt.js";
 import { httpPost as requestBundleHttpPost, httpDelete as removeBundleHttpDelete } from "../functions/bundle.js";
-import { httpGet as getCatalogHttpGet } from "../functions/getCatalog.js";
+import { handle as getCatalogHttpGet } from "../functions/catalogGet.js";
 import { httpGet as myBundlesHttpGet } from "../functions/myBundles.js";
 import { httpGet as myReceiptsHttpGet, httpGetByName as myReceiptHttpGetByName } from "../functions/myReceipts.js";
 import { httpGet as getVatObligationsHttpGet } from "../functions/getVatObligations.js";

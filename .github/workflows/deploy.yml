@@ -268,14 +268,7 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
-      - run: npm ci || npm install
-
-      - name: Cache Playwright browsers
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-${{ hashFiles('**/package-lock.json') }}
+      - run: npm ci
 
       - run: npx playwright install chromium --with-deps
 
@@ -488,8 +481,12 @@ jobs:
         shell: bash
         run: |
           STACK_NAME="${{ needs.names.outputs.deployment-name }}-ObservabilityStack"
-          echo "Checking existence of $STACK_NAME"
-          if aws cloudformation describe-stacks --stack-name "$STACK_NAME" >/dev/null 2>&1; then
+          echo "Checking for existing COMPLETE stack: $STACK_NAME"
+          COUNT=$(aws cloudformation list-stacks \
+            --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE \
+            --query "length(StackSummaries[?StackName=='${STACK_NAME}'])" \
+            --output text)
+          if [ "$COUNT" -ge 1 ]; then
             echo "skipStaticStackDeployment=true"
             echo "skipStaticStackDeployment=true" >> "$GITHUB_OUTPUT"
           else
@@ -578,8 +575,12 @@ jobs:
         shell: bash
         run: |
           STACK_NAME="${{ needs.names.outputs.deployment-name }}-SelfDestructStack"
-          echo "Checking existence of $STACK_NAME"
-          if aws cloudformation describe-stacks --stack-name "$STACK_NAME" >/dev/null 2>&1; then
+          echo "Checking for existing COMPLETE stack: $STACK_NAME"
+          COUNT=$(aws cloudformation list-stacks \
+            --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE \
+            --query "length(StackSummaries[?StackName=='${STACK_NAME}'])" \
+            --output text)
+          if [ "$COUNT" -ge 1 ]; then
             echo "skipStaticStackDeployment=true"
             echo "skipStaticStackDeployment=true" >> "$GITHUB_OUTPUT"
           else
@@ -674,8 +675,12 @@ jobs:
         shell: bash
         run: |
           STACK_NAME="${{ needs.names.outputs.deployment-name }}-DevStack"
-          echo "Checking existence of $STACK_NAME"
-          if aws cloudformation describe-stacks --stack-name "$STACK_NAME" >/dev/null 2>&1; then
+          echo "Checking for existing COMPLETE stack: $STACK_NAME"
+          COUNT=$(aws cloudformation list-stacks \
+            --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE \
+            --query "length(StackSummaries[?StackName=='${STACK_NAME}'])" \
+            --output text)
+          if [ "$COUNT" -ge 1 ]; then
             echo "skipStaticStackDeployment=true" >> "$GITHUB_OUTPUT"
           else
             echo "skipStaticStackDeployment=false" >> "$GITHUB_OUTPUT"
@@ -761,8 +766,12 @@ jobs:
         shell: bash
         run: |
           STACK_NAME="${{ needs.names.outputs.deployment-name }}-IdentityStack"
-          echo "Checking existence of $STACK_NAME"
-          if aws cloudformation describe-stacks --stack-name "$STACK_NAME" >/dev/null 2>&1; then
+          echo "Checking for existing COMPLETE stack: $STACK_NAME"
+          COUNT=$(aws cloudformation list-stacks \
+            --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE \
+            --query "length(StackSummaries[?StackName=='${STACK_NAME}'])" \
+            --output text)
+          if [ "$COUNT" -ge 1 ]; then
             echo "skipStaticStackDeployment=true" >> "$GITHUB_OUTPUT"
           else
             echo "skipStaticStackDeployment=false" >> "$GITHUB_OUTPUT"
@@ -1169,8 +1178,12 @@ jobs:
         shell: bash
         run: |
           STACK_NAME="${{ needs.names.outputs.deployment-name }}-SelfDestructStack"
-          echo "Checking existence of $STACK_NAME"
-          if aws cloudformation describe-stacks --stack-name "$STACK_NAME" >/dev/null 2>&1; then
+          echo "Checking for existing COMPLETE stack: $STACK_NAME"
+          COUNT=$(aws cloudformation list-stacks \
+            --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE \
+            --query "length(StackSummaries[?StackName=='${STACK_NAME}'])" \
+            --output text)
+          if [ "$COUNT" -ge 1 ]; then
             echo "skipStaticStackDeployment=true"
             echo "skipStaticStackDeployment=true" >> "$GITHUB_OUTPUT"
           else
@@ -1269,8 +1282,13 @@ jobs:
         shell: bash
         run: |
           STACK_NAME="${{ needs.names.outputs.deployment-name }}-EdgeStack"
-          echo "Checking existence of $STACK_NAME"
-          if aws cloudformation describe-stacks --region "us-east-1" --stack-name "$STACK_NAME" >/dev/null 2>&1; then
+          echo "Checking for existing COMPLETE stack: $STACK_NAME"
+          COUNT=$(aws cloudformation list-stacks \
+            --region "us-east-1" \
+            --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE \
+            --query "length(StackSummaries[?StackName=='${STACK_NAME}'])" \
+            --output text)
+          if [ "$COUNT" -ge 1 ]; then
             echo "skipStaticStackDeployment=true" >> "$GITHUB_OUTPUT"
           else
             echo "skipStaticStackDeployment=false" >> "$GITHUB_OUTPUT"

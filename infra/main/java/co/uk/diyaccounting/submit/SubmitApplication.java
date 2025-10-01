@@ -21,6 +21,7 @@ import static co.uk.diyaccounting.submit.utils.Kind.warnf;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildCognitoDomainName;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDashedDomainName;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDomainName;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildEcrRepositoryName;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateCompressedResourceNamePrefix;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateResourceNamePrefix;
 
@@ -132,6 +133,8 @@ public class SubmitApplication {
             warnf(
                     "CDK_DEFAULT_ACCOUNT or CDK_DEFAULT_REGION environment variables are not set, using environment agnostic stacks");
         }
+        var regionName = primaryEnv.getRegion() != null ? primaryEnv.getRegion() : null;
+        var awsAccount = primaryEnv.getAccount() != null ? primaryEnv.getAccount() : null;
 
         // Allow environment variables to override any appProps values
         var hostedZoneId = envOr("HOSTED_ZONE_ID", appProps.hostedZoneId, "(from hostedZoneId in cdk.json)");
@@ -188,6 +191,10 @@ public class SubmitApplication {
         var compressedResourceNamePrefix = "a-%s".formatted(generateCompressedResourceNamePrefix(domainName));
         var selfDestructLogGroupName = "/aws/lambda/%s-self-destruct".formatted(resourceNamePrefix);
 
+        var ecrRepositoryArn = "arn:aws:ecr:%s:%s:repository/%s-ecr"
+            .formatted(regionName, awsAccount, dashedDomainName);
+        var ecrRepositoryName = buildEcrRepositoryName(dashedDomainName);
+
         // Create ObservabilityStack with resources used in monitoring the application
         String observabilityStackId = "%s-ObservabilityStack".formatted(deploymentName);
         infof(
@@ -229,6 +236,7 @@ public class SubmitApplication {
                         .dashedDomainName(dashedDomainName)
                         .baseUrl(baseUrl)
                         .cloudTrailEnabled(cloudTrailEnabled)
+                        .ecrRepositoryName(ecrRepositoryName)
                         .build());
 
         // Create the identity stack before any user aware services
@@ -276,16 +284,13 @@ public class SubmitApplication {
                         .baseUrl(baseUrl)
                         .cloudTrailEnabled(cloudTrailEnabled)
                         .baseImageTag(baseImageTag)
-                        .ecrRepositoryArn(
-                                this.devStack.ecrRepository.getRepositoryArn()) // TODO: Internally compute from name
-                        .ecrRepositoryName(
-                                this.devStack.ecrRepository.getRepositoryName()) // TODO: Get by predictable name
+                        .ecrRepositoryArn(ecrRepositoryArn)
+                        .ecrRepositoryName(ecrRepositoryName)
                         .lambdaEntry(lambdaEntry)
                         .lambdaUrlAuthType(lambdaUrlAuthType)
                         .cognitoClientId(this.identityStack.userPoolClient
                                 .getUserPoolClientId()) // TODO: Research a way around needing this.
-                        .cognitoBaseUri("https://"
-                                + this.identityStack.userPoolDomain.getDomainName()) // TODO: Get calculated value
+                        .cognitoBaseUri("https://%s".formatted(cognitoDomainName))
                         .build());
         this.authStack.addDependency(devStack);
         this.authStack.addDependency(identityStack);
@@ -308,10 +313,8 @@ public class SubmitApplication {
                         .baseUrl(baseUrl)
                         .cloudTrailEnabled(cloudTrailEnabled)
                         .baseImageTag(baseImageTag)
-                        .ecrRepositoryArn(
-                                this.devStack.ecrRepository.getRepositoryArn()) // TODO: Internally compute from name
-                        .ecrRepositoryName(
-                                this.devStack.ecrRepository.getRepositoryName()) // TODO: Get by predictable name
+                        .ecrRepositoryArn(ecrRepositoryArn)
+                        .ecrRepositoryName(ecrRepositoryName)
                         .hmrcBaseUri(hmrcBaseUri)
                         .hmrcClientId(hmrcClientId)
                         .cognitoUserPoolId(

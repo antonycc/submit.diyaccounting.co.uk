@@ -5,11 +5,10 @@ Analyze the current repository and all available prompts in the `./prompts` dire
 ## Selection Process
 
 1. **Review All Available Prompts**: Examine each prompt file in the `./prompts` directory to understand their focus areas:
-   - `expand-capabilities.md` - Adding new features and integrations
-   - `prune-focus.md` - Removing unused code and simplifying complexity
-   - `abstract-libraries.md` - Replacing custom code with proven libraries
-   - `increase-consistency.md` - Standardizing patterns and conventions
-   - `refresh-documentation.md` - Updating and improving documentation
+   - `todo-inator.md` - Complete a cluster of related TODOs end-to-end with iterative implementation and verification
+   - `security-compliance-hardening.md` - Strengthen security posture and compliance readiness for production
+   - `create-new-prompt.md` - Identify gaps and design a new strategic prompt for the repository
+   - `what-next-for-mtd-vat-submission.md` - Plan the path to HMRC approval and real customer VAT submissions
 
 2. **Repository Analysis**: Evaluate the current state of the repository across all areas:
    - Code quality and consistency patterns
@@ -79,7 +78,7 @@ Begin your response with:
 - Provide concrete, actionable recommendations
 - Focus on changes that can be implemented incrementally
 - Maintain compatibility with existing functionality
-- Consider the project's serverless OIDC provider context and AWS architecture
+- Consider the project's AWS serverless architecture, Cognito identity usage, and HMRC OAuth 2.0 integration context
 
 > Formatting and style: Use the repository’s tooling — ESLint (flat config) + Prettier for JS (ESM) and Spotless (Palantir Java Format) for Java. Run npm run formatting / npm run formatting-fix. See README → Code style, formatting, and IDE setup.
 > Do not apply styles changes to code that you are not otherwise changes and prefer to match the existing local style when applying the style guides would be jarring.

@@ -5,11 +5,10 @@ Analyze the current repository and the existing prompts in the `prompts/` direct
 ## Current Prompts Analysis
 
 Review the existing prompts and their focus areas:
-- `expand-capabilities.md` - New features and integrations
-- `prune-focus.md` - Code cleanup and simplification
-- `abstract-libraries.md` - Library adoption and abstraction
-- `increase-consistency.md` - Standardization across codebase
-- `refresh-documentation.md` - Documentation improvements
+- `todo-inator.md` - Execute a themed batch of TODOs to completion with tests and verification
+- `security-compliance-hardening.md` - Security posture and compliance readiness improvements
+- `create-new-prompt.md` - Identify gaps and define a new strategic prompt
+- `what-next-for-mtd-vat-submission.md` - Roadmap to HMRC readiness and VAT submission capability
 
 ## Task: Create a New Strategic Prompt
 

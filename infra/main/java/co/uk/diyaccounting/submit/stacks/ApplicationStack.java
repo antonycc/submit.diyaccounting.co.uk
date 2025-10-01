@@ -1,16 +1,7 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildFunctionName;
-import static co.uk.diyaccounting.submit.utils.S3.createLifecycleRules;
-
 import co.uk.diyaccounting.submit.constructs.LambdaUrlOrigin;
 import co.uk.diyaccounting.submit.constructs.LambdaUrlOriginProps;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
@@ -33,6 +24,16 @@ import software.amazon.awscdk.services.s3.ObjectOwnership;
 import software.amazon.awscdk.services.secretsmanager.Secret;
 import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildFunctionName;
+import static co.uk.diyaccounting.submit.utils.S3.createLifecycleRules;
 
 public class ApplicationStack extends Stack {
 
@@ -145,17 +146,18 @@ public class ApplicationStack extends Stack {
                 "DIY_SUBMIT_HOME_URL", props.baseUrl(),
                 "DIY_SUBMIT_HMRC_BASE_URI", props.hmrcBaseUri(),
                 "DIY_SUBMIT_HMRC_CLIENT_ID", props.hmrcClientId()));
-        var authUrlHmrcLambdaFunctionName = buildFunctionName(props.resourceNamePrefix(), "authUrl.httpGetHmrc");
+        var authUrlHmrcLambdaUrlOriginFunctionHandler = "authUrl.httpGetHmrc";
+        var authUrlHmrcLambdaUrlOriginFunctionName = buildFunctionName(props.compressedResourceNamePrefix(), authUrlHmrcLambdaUrlOriginFunctionHandler);
         var authUrlHmrcLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
                 LambdaUrlOriginProps.builder()
-                        .idPrefix(authUrlHmrcLambdaFunctionName)
+                        .idPrefix(authUrlHmrcLambdaUrlOriginFunctionName)
                         .baseImageTag(props.baseImageTag())
                         .ecrRepositoryName(props.ecrRepositoryName())
                         .ecrRepositoryArn(props.ecrRepositoryArn())
-                        .functionName(authUrlHmrcLambdaFunctionName)
+                        .functionName(authUrlHmrcLambdaUrlOriginFunctionName)
                         .cloudFrontAllowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
-                        .handler(props.lambdaEntry() + "authUrl.httpGetHmrc")
+                        .handler(props.lambdaEntry() + authUrlHmrcLambdaUrlOriginFunctionHandler)
                         .environment(authUrlHmrcLambdaEnv)
                         .timeout(Duration.millis(Long.parseLong("30000")))
                         .build());
@@ -163,7 +165,7 @@ public class ApplicationStack extends Stack {
         this.authUrlHmrcLambdaLogGroup = authUrlHmrcLambdaUrlOrigin.logGroup;
         infof(
                 "Created Lambda %s for HMRC auth URL with handler %s",
-                this.authUrlHmrcLambda.getNode().getId(), props.lambdaEntry() + "authUrl.httpGetHmrc");
+                this.authUrlHmrcLambda.getNode().getId(), props.lambdaEntry() + authUrlHmrcLambdaUrlOriginFunctionHandler);
 
         // exchangeToken - HMRC
         Map<String, String> exchangeHmrcEnvBase = new HashMap<>(Map.of(
@@ -179,18 +181,19 @@ public class ApplicationStack extends Stack {
                     "DIY_SUBMIT_TEST_ACCESS_TOKEN",
                     props.optionalTestAccessToken().get());
         }
-        var exchangeHmrcTokenLambdaFunctionName =
-                buildFunctionName(props.resourceNamePrefix(), "exchangeToken.httpPostHmrc");
+        var exchangeHmrcTokenLambdaUrlOriginFunctionHandler = "exchangeToken.httpPostHmrc";
+        var exchangeHmrcTokenLambdaUrlOriginFunctionName =
+                buildFunctionName(props.compressedResourceNamePrefix(), exchangeHmrcTokenLambdaUrlOriginFunctionHandler);
         var exchangeHmrcTokenLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
                 LambdaUrlOriginProps.builder()
-                        .idPrefix(exchangeHmrcTokenLambdaFunctionName)
+                        .idPrefix(exchangeHmrcTokenLambdaUrlOriginFunctionName)
                         .baseImageTag(props.baseImageTag())
                         .ecrRepositoryName(props.ecrRepositoryName())
                         .ecrRepositoryArn(props.ecrRepositoryArn())
-                        .functionName(exchangeHmrcTokenLambdaFunctionName)
+                        .functionName(exchangeHmrcTokenLambdaUrlOriginFunctionName)
                         .cloudFrontAllowedMethods(AllowedMethods.ALLOW_ALL)
-                        .handler(props.lambdaEntry() + "exchangeToken.httpPostHmrc")
+                        .handler(props.lambdaEntry() + exchangeHmrcTokenLambdaUrlOriginFunctionHandler)
                         .environment(exchangeHmrcEnvBase)
                         .timeout(Duration.millis(Long.parseLong("30000")))
                         .build());
@@ -217,23 +220,24 @@ public class ApplicationStack extends Stack {
 
         infof(
                 "Created Lambda %s for HMRC exchange token with handler %s",
-                this.exchangeHmrcTokenLambda.getNode().getId(), props.lambdaEntry() + "exchangeToken.httpPostHmrc");
+                this.exchangeHmrcTokenLambda.getNode().getId(), props.lambdaEntry() + exchangeHmrcTokenLambdaUrlOriginFunctionHandler);
 
         // submitVat
         var submitVatLambdaEnv = new HashMap<>(Map.of(
                 "DIY_SUBMIT_HOME_URL", props.baseUrl(),
                 "DIY_SUBMIT_HMRC_BASE_URI", props.hmrcBaseUri()));
-        var submitVatLambdaFunctionName = buildFunctionName(props.resourceNamePrefix(), "submitVat.httpPost");
+        var submitVatLambdaUrlOriginFunctionHandler = "submitVat.httpPost";
+        var submitVatLambdaUrlOriginFunctionName = buildFunctionName(props.compressedResourceNamePrefix(), submitVatLambdaUrlOriginFunctionHandler);
         var submitVatLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
                 LambdaUrlOriginProps.builder()
-                        .idPrefix(submitVatLambdaFunctionName)
+                        .idPrefix(submitVatLambdaUrlOriginFunctionName)
                         .baseImageTag(props.baseImageTag())
                         .ecrRepositoryName(props.ecrRepositoryName())
                         .ecrRepositoryArn(props.ecrRepositoryArn())
-                        .functionName(submitVatLambdaFunctionName)
+                        .functionName(submitVatLambdaUrlOriginFunctionName)
                         .cloudFrontAllowedMethods(AllowedMethods.ALLOW_ALL)
-                        .handler(props.lambdaEntry() + "submitVat.httpPost")
+                        .handler(props.lambdaEntry() + submitVatLambdaUrlOriginFunctionHandler)
                         .environment(submitVatLambdaEnv)
                         .timeout(Duration.millis(Long.parseLong("60000")))
                         .build());
@@ -241,7 +245,7 @@ public class ApplicationStack extends Stack {
         this.submitVatLambdaLogGroup = submitVatLambdaUrlOrigin.logGroup;
         infof(
                 "Created Lambda %s for VAT submission with handler %s",
-                this.submitVatLambda.getNode().getId(), props.lambdaEntry() + "submitVat.httpPost");
+                this.submitVatLambda.getNode().getId(), props.lambdaEntry() + submitVatLambdaUrlOriginFunctionHandler);
 
         var logReceiptLambdaEnv = new HashMap<>(Map.of(
                 "DIY_SUBMIT_HOME_URL", props.baseUrl(),
@@ -262,8 +266,9 @@ public class ApplicationStack extends Stack {
                             props.optionalTestS3SecretKey().get()));
             logReceiptLambdaEnv.putAll(logReceiptLambdaTestEnv);
         }
+        var logReceiptLambdaUrlOriginFunctionHandler = "logReceipt.httpPost";
         var logReceiptLambdaUrlOriginFunctionName =
-                buildFunctionName(props.resourceNamePrefix(), "logReceipt.httpPost");
+                buildFunctionName(props.compressedResourceNamePrefix(), logReceiptLambdaUrlOriginFunctionHandler);
         var logReceiptLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
                 LambdaUrlOriginProps.builder()
@@ -273,7 +278,7 @@ public class ApplicationStack extends Stack {
                         .ecrRepositoryArn(props.ecrRepositoryArn())
                         .functionName(logReceiptLambdaUrlOriginFunctionName)
                         .cloudFrontAllowedMethods(AllowedMethods.ALLOW_ALL)
-                        .handler(props.lambdaEntry() + "logReceipt.httpPost")
+                        .handler(props.lambdaEntry() + logReceiptLambdaUrlOriginFunctionHandler)
                         .environment(logReceiptLambdaEnv)
                         .timeout(Duration.millis(Long.parseLong("30000")))
                         .build());
@@ -281,12 +286,14 @@ public class ApplicationStack extends Stack {
         this.logReceiptLambdaLogGroup = logReceiptLambdaUrlOrigin.logGroup;
         infof(
                 "Created Lambda %s for logging receipts with handler %s",
-                this.logReceiptLambda.getNode().getId(), props.lambdaEntry() + "logReceipt.httpPost");
+                this.logReceiptLambda.getNode().getId(), props.lambdaEntry() + logReceiptLambdaUrlOriginFunctionHandler);
 
+        // TODO: Spread this prototype out to other Lambdas
         // Create Bundle Management Lambda
         // Catalog Lambda
         var catalogLambdaEnv = new HashMap<>(Map.of("DIY_SUBMIT_HOME_URL", props.baseUrl()));
-        var catalogLambdaUrlOriginFunctionName = buildFunctionName(props.resourceNamePrefix(), "getCatalog.httpGet");
+        var catalogLambdaUrlOriginFunctionHandler = "catalogGet.handle";
+        var catalogLambdaUrlOriginFunctionName = buildFunctionName(props.compressedResourceNamePrefix(), catalogLambdaUrlOriginFunctionHandler);
         var catalogLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
                 LambdaUrlOriginProps.builder()
@@ -296,32 +303,32 @@ public class ApplicationStack extends Stack {
                         .ecrRepositoryArn(props.ecrRepositoryArn())
                         .functionName(catalogLambdaUrlOriginFunctionName)
                         .cloudFrontAllowedMethods(AllowedMethods.ALLOW_ALL)
-                        .handler(props.lambdaEntry() + "getCatalog.httpGet")
+                        .handler(props.lambdaEntry() + catalogLambdaUrlOriginFunctionHandler)
                         .environment(catalogLambdaEnv)
                         .timeout(Duration.millis(Long.parseLong("30000")))
                         .build());
         this.catalogLambda = catalogLambdaUrlOrigin.lambda;
         this.catalogLambdaLogGroup = catalogLambdaUrlOrigin.logGroup;
-        infof(
-                "Created Lambda %s for catalog retrieval with handler %s",
-                this.catalogLambda.getNode().getId(), props.lambdaEntry() + "getCatalog.httpGet");
+        infof("Created Lambda %s for catalog retrieval with handler %s",
+                this.catalogLambda.getNode().getId(), props.lambdaEntry() + catalogLambdaUrlOriginFunctionHandler);
 
         // Request Bundles Lambda
         var requestBundlesLambdaEnv = new HashMap<>(Map.of(
                 "DIY_SUBMIT_USER_POOL_ID", props.cognitoUserPoolId(),
                 "DIY_SUBMIT_BUNDLE_EXPIRY_DATE", "2025-12-31",
                 "DIY_SUBMIT_BUNDLE_USER_LIMIT", "10"));
-        var requestBundlesLambdaFunctionName = buildFunctionName(props.resourceNamePrefix(), "bundle.httpPost");
+        var requestBundlesLambdaUrlOriginFunctionHandler = "bundle.httpPost";
+        var requestBundlesLambdaUrlOriginFunctionName = buildFunctionName(props.compressedResourceNamePrefix(), requestBundlesLambdaUrlOriginFunctionHandler);
         var requestBundlesLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
                 LambdaUrlOriginProps.builder()
-                        .idPrefix(requestBundlesLambdaFunctionName)
+                        .idPrefix(requestBundlesLambdaUrlOriginFunctionName)
                         .baseImageTag(props.baseImageTag())
                         .ecrRepositoryName(props.ecrRepositoryName())
                         .ecrRepositoryArn(props.ecrRepositoryArn())
-                        .functionName(requestBundlesLambdaFunctionName)
+                        .functionName(requestBundlesLambdaUrlOriginFunctionName)
                         .cloudFrontAllowedMethods(AllowedMethods.ALLOW_ALL)
-                        .handler(props.lambdaEntry() + "bundle.httpPost")
+                        .handler(props.lambdaEntry() + requestBundlesLambdaUrlOriginFunctionHandler)
                         .environment(requestBundlesLambdaEnv)
                         .timeout(Duration.millis(Long.parseLong("30000")))
                         .build());
@@ -329,7 +336,7 @@ public class ApplicationStack extends Stack {
         this.requestBundlesLambdaLogGroup = requestBundlesLambdaUrlOrigin.logGroup;
         infof(
                 "Created Lambda %s for request bundles with handler %s",
-                this.requestBundlesLambda.getNode().getId(), props.lambdaEntry() + "bundle.httpPost");
+                this.requestBundlesLambda.getNode().getId(), props.lambdaEntry() + requestBundlesLambdaUrlOriginFunctionHandler);
 
         // Grant the RequestBundlesLambda permission to access Cognito User Pool
         var cognitoUserPoolArn = String.format(
@@ -349,7 +356,8 @@ public class ApplicationStack extends Stack {
 
         // My Bundles Lambda
         var myBundlesLambdaEnv = new HashMap<>(Map.of("DIY_SUBMIT_HOME_URL", props.baseUrl()));
-        var myBundlesLambdaUrlOriginFunctionName = buildFunctionName(props.resourceNamePrefix(), "myBundles.httpGet");
+        var myBundlesLambdaUrlOriginFunctionHandler = "myBundles.httpGet";
+        var myBundlesLambdaUrlOriginFunctionName = buildFunctionName(props.compressedResourceNamePrefix(), myBundlesLambdaUrlOriginFunctionHandler);
         var myBundlesLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
                 LambdaUrlOriginProps.builder()
@@ -359,7 +367,7 @@ public class ApplicationStack extends Stack {
                         .ecrRepositoryArn(props.ecrRepositoryArn())
                         .functionName(myBundlesLambdaUrlOriginFunctionName)
                         .cloudFrontAllowedMethods(AllowedMethods.ALLOW_ALL)
-                        .handler(props.lambdaEntry() + "myBundles.httpGet")
+                        .handler(props.lambdaEntry() + myBundlesLambdaUrlOriginFunctionHandler)
                         .environment(myBundlesLambdaEnv)
                         .timeout(Duration.millis(Long.parseLong("30000")))
                         .build());
@@ -368,13 +376,14 @@ public class ApplicationStack extends Stack {
         this.myBundlesLambdaLogGroup = myBundlesLambdaUrlOrigin.logGroup;
         infof(
                 "Created Lambda %s for my bundles retrieval with handler %s",
-                this.myBundlesLambda.getNode().getId(), props.lambdaEntry() + "myBundles.httpGet");
+                this.myBundlesLambda.getNode().getId(), props.lambdaEntry() + myBundlesLambdaUrlOriginFunctionHandler);
 
         // myReceipts Lambda
         var myReceiptsLambdaEnv = new HashMap<>(Map.of(
                 "DIY_SUBMIT_HOME_URL", props.baseUrl(),
                 "DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX", props.receiptsBucketPostfix()));
-        var myReceiptsLambdaUrlOriginFunctionName = buildFunctionName(props.resourceNamePrefix(), "myReceipts.httpGet");
+        var myReceiptsLambdaUrlOriginFunctionHandler = "myReceipts.httpGet";
+        var myReceiptsLambdaUrlOriginFunctionName = buildFunctionName(props.compressedResourceNamePrefix(), myReceiptsLambdaUrlOriginFunctionHandler);
         var myReceiptsLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
                 LambdaUrlOriginProps.builder()
@@ -384,7 +393,7 @@ public class ApplicationStack extends Stack {
                         .ecrRepositoryArn(props.ecrRepositoryArn())
                         .functionName(myReceiptsLambdaUrlOriginFunctionName)
                         .cloudFrontAllowedMethods(AllowedMethods.ALLOW_ALL)
-                        .handler(props.lambdaEntry() + "myReceipts.httpGet")
+                        .handler(props.lambdaEntry() + myReceiptsLambdaUrlOriginFunctionHandler)
                         .environment(myReceiptsLambdaEnv)
                         .timeout(Duration.millis(Long.parseLong("30000")))
                         .build());
@@ -392,7 +401,7 @@ public class ApplicationStack extends Stack {
         this.myReceiptsLambdaLogGroup = myReceiptsLambdaUrlOrigin.logGroup;
         infof(
                 "Created Lambda %s for my receipts retrieval with handler %s",
-                this.myReceiptsLambda.getNode().getId(), props.lambdaEntry() + "myReceipts.httpGet");
+                this.myReceiptsLambda.getNode().getId(), props.lambdaEntry() + myReceiptsLambdaUrlOriginFunctionHandler);
 
         // Create receipts bucket for storing VAT submission receipts
         boolean s3RetainReceiptsBucket =

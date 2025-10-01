@@ -1,4 +1,4 @@
-// app/functions/getCatalog.js
+// app/functions/catalogGet.js
 import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
@@ -28,7 +28,7 @@ async function ensureLoaded() {
 }
 
 // GET /api/catalog
-export async function httpGet(event) {
+export async function handle(event) {
   const request = extractRequest(event);
   logger.info({ message: "getCatalog entry", route: "/api/catalog", request });
   try {
