@@ -4,15 +4,17 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import software.amazon.awssdk.services.cloudformation.CloudFormationClient;
+import software.amazon.awssdk.services.cloudformation.model.CloudFormationException;
+import software.amazon.awssdk.services.cloudformation.model.DeleteStackRequest;
+import software.amazon.awssdk.services.cloudformation.model.DescribeStacksRequest;
+import software.amazon.awssdk.utils.StringUtils;
+
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import software.amazon.awssdk.services.cloudformation.CloudFormationClient;
-import software.amazon.awssdk.services.cloudformation.model.CloudFormationException;
-import software.amazon.awssdk.services.cloudformation.model.DeleteStackRequest;
-import software.amazon.awssdk.services.cloudformation.model.DescribeStacksRequest;
 
 /**
  * AWS Lambda handler for self-destructing CloudFormation stacks.
@@ -42,8 +44,8 @@ public record SelfDestructHandler(CloudFormationClient cloudFormationClient)
         addStackNameIfPresent(stacksToDelete, System.getenv("AUTH_STACK_NAME"));
         addStackNameIfPresent(stacksToDelete, System.getenv("APPLICATION_STACK_NAME"));
         addStackNameIfPresent(stacksToDelete, System.getenv("DEV_STACK_NAME"));
-        addStackNameIfPresent(stacksToDelete, System.getenv("SELF_DESTRUCT_STACK_NAME"));
-        addStackNameIfPresent(stacksToDelete, System.getenv("OBSERVABILITY_STACK_NAME"));
+        var selfDestructStackName = System.getenv("SELF_DESTRUCT_STACK_NAME");
+        var observabilityStackName = System.getenv("OBSERVABILITY_STACK_NAME");
 
         context.getLogger().log("Stacks to delete in order: " + String.join(", ", stacksToDelete));
 
@@ -52,45 +54,41 @@ public record SelfDestructHandler(CloudFormationClient cloudFormationClient)
         for (String stackName : stacksToDelete) {
             try {
                 context.getLogger().log("Checking if stack " + stackName + " exists...");
-
-                // Check if stack exists
-                try {
-                    cloudFormationClient.describeStacks(
-                            DescribeStacksRequest.builder().stackName(stackName).build());
-                } catch (CloudFormationException e) {
-                    if (e.getMessage().contains("does not exist")) {
-                        context.getLogger().log("Stack " + stackName + " does not exist, skipping");
-                        results.add(new StackDeletionResult(stackName, "not_found", null));
-                        continue;
-                    }
-                    throw e;
-                }
-
-                context.getLogger().log("Deleting stack: " + stackName);
-                cloudFormationClient.deleteStack(
-                        DeleteStackRequest.builder().stackName(stackName).build());
-
-                results.add(new StackDeletionResult(stackName, "deletion_initiated", null));
-                context.getLogger().log("Deletion initiated for stack: " + stackName);
-
-                // Wait for stack to be fully deleted before proceeding (except for self-destruct stack)
-                if (!stackName.equals(System.getenv("SELF_DESTRUCT_STACK_NAME"))) {
-                    boolean deleted = waitForStackDeletion(stackName, context, 600); // 10 min timeout
-                    if (!deleted) {
-                        context.getLogger().log("Stack " + stackName + " did not delete in time.");
-                    }
-                }
-
+                deleteStackIfExistsAndWait(context, stackName);
             } catch (Exception error) {
                 context.getLogger().log("Error deleting stack " + stackName + ": " + error.getMessage());
                 results.add(new StackDeletionResult(stackName, "error", error.getMessage()));
             }
         }
 
-        context.getLogger().log("Self-destruct sequence completed");
+        if (StringUtils.isNotBlank(selfDestructStackName) && results.stream().noneMatch(r -> "error".equals(r.status()))) {
+            try {
+                context.getLogger().log("Checking if stack " + selfDestructStackName + " exists...");
+                deleteStackIfExistsAndWait(context, selfDestructStackName);
+            } catch (Exception error) {
+                context.getLogger().log("Error deleting stack " + selfDestructStackName + ": " + error.getMessage());
+                results.add(new StackDeletionResult(selfDestructStackName, "error", error.getMessage()));
+            }
+        }
+
+        if (StringUtils.isNotBlank(observabilityStackName) && results.stream().noneMatch(r -> "error".equals(r.status()))) {
+            try {
+                context.getLogger().log("Checking if stack " + observabilityStackName + " exists...");
+                deleteStackIfExistsAndWait(context, observabilityStackName);
+            } catch (Exception error) {
+                context.getLogger().log("Error deleting stack " + observabilityStackName + ": " + error.getMessage());
+                results.add(new StackDeletionResult(observabilityStackName, "error", error.getMessage()));
+            }
+        }
 
         Map<String, Object> response = new HashMap<>();
-        response.put("statusCode", 200);
+        if (results.stream().anyMatch(r -> "error".equals(r.status()))) {
+            context.getLogger().log("One or more stacks failed to delete.");
+            response.put("statusCode", 500);
+        } else {
+            context.getLogger().log("Self-destruct sequence completed");
+            response.put("statusCode", 200);
+        }
 
         Map<String, Object> body = new HashMap<>();
         body.put("message", "Self-destruct sequence completed");
@@ -107,8 +105,37 @@ public record SelfDestructHandler(CloudFormationClient cloudFormationClient)
         return response;
     }
 
+    private void deleteStackIfExistsAndWait(Context context, String stackName) {
+        // Check if stack exists
+        try {
+            cloudFormationClient.describeStacks(
+                    DescribeStacksRequest.builder().stackName(stackName).build());
+        } catch (CloudFormationException e) {
+            if (e.getMessage().contains("does not exist")) {
+                context.getLogger().log("Stack " + stackName + " does not exist, skipping");
+                return;
+            }
+            throw e;
+        }
+
+        context.getLogger().log("Deleting stack: " + stackName);
+        cloudFormationClient.deleteStack(
+                DeleteStackRequest.builder().stackName(stackName).build());
+
+        context.getLogger().log("Deletion initiated for stack: " + stackName);
+
+        // Wait for stack to be fully deleted before proceeding (except for self-destruct stack)
+        if (!stackName.equals(System.getenv("SELF_DESTRUCT_STACK_NAME"))) {
+            boolean deleted = waitForStackDeletion(stackName, context, 600); // 10 min timeout
+            if (!deleted) {
+                context.getLogger().log("Stack " + stackName + " did not delete in time.");
+            }
+        }
+        return;
+    }
+
     private void addStackNameIfPresent(List<String> stackList, String stackName) {
-        if (stackName != null && !stackName.trim().isEmpty()) {
+        if (StringUtils.isNotBlank(stackName)) {
             stackList.add(stackName);
         }
     }
