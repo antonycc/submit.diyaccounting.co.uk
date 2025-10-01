@@ -106,7 +106,7 @@ public class AuthStack extends Stack {
         // authUrl - mock
         var authUrlMockLambdaEnv = new HashMap<String, String>();
         authUrlMockLambdaEnv.put("DIY_SUBMIT_HOME_URL", props.baseUrl());
-        var authUrlMockLambdaFunctionName = buildFunctionName(props.resourceNamePrefix(), "authUrl.httpGetMock");
+        var authUrlMockLambdaFunctionName = buildFunctionName(props.compressedResourceNamePrefix(), "authUrl.httpGetMock");
         var authUrlMockLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
                 LambdaUrlOriginProps.builder()
@@ -131,7 +131,7 @@ public class AuthStack extends Stack {
         authUrlCognitoLambdaEnv.put("DIY_SUBMIT_HOME_URL", props.baseUrl());
         authUrlCognitoLambdaEnv.put("DIY_SUBMIT_COGNITO_CLIENT_ID", props.cognitoClientId());
         authUrlCognitoLambdaEnv.put("DIY_SUBMIT_COGNITO_BASE_URI", props.cognitoBaseUri());
-        var authUrlCognitoLambdaFunctionName = buildFunctionName(props.resourceNamePrefix(), "authUrl.httpGetCognito");
+        var authUrlCognitoLambdaFunctionName = buildFunctionName(props.compressedResourceNamePrefix(), "authUrl.httpGetCognito");
         var authUrlCognitoLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
                 LambdaUrlOriginProps.builder()
@@ -163,7 +163,7 @@ public class AuthStack extends Stack {
                     props.optionalTestAccessToken().get());
         }
         var exchangeCognitoTokenLambdaUrlOriginFunctionName =
-                buildFunctionName(props.resourceNamePrefix(), "exchangeToken.httpPostCognito");
+                buildFunctionName(props.compressedResourceNamePrefix(), "exchangeToken.httpPostCognito");
         var exchangeCognitoTokenLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
                 LambdaUrlOriginProps.builder()

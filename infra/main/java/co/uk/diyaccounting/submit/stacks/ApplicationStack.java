@@ -1,16 +1,7 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildFunctionName;
-import static co.uk.diyaccounting.submit.utils.S3.createLifecycleRules;
-
 import co.uk.diyaccounting.submit.constructs.LambdaUrlOrigin;
 import co.uk.diyaccounting.submit.constructs.LambdaUrlOriginProps;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
@@ -33,6 +24,16 @@ import software.amazon.awscdk.services.s3.ObjectOwnership;
 import software.amazon.awscdk.services.secretsmanager.Secret;
 import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildFunctionName;
+import static co.uk.diyaccounting.submit.utils.S3.createLifecycleRules;
 
 public class ApplicationStack extends Stack {
 
@@ -145,7 +146,7 @@ public class ApplicationStack extends Stack {
                 "DIY_SUBMIT_HOME_URL", props.baseUrl(),
                 "DIY_SUBMIT_HMRC_BASE_URI", props.hmrcBaseUri(),
                 "DIY_SUBMIT_HMRC_CLIENT_ID", props.hmrcClientId()));
-        var authUrlHmrcLambdaFunctionName = buildFunctionName(props.resourceNamePrefix(), "authUrl.httpGetHmrc");
+        var authUrlHmrcLambdaFunctionName = buildFunctionName(props.compressedResourceNamePrefix(), "authUrl.httpGetHmrc");
         var authUrlHmrcLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
                 LambdaUrlOriginProps.builder()
@@ -180,7 +181,7 @@ public class ApplicationStack extends Stack {
                     props.optionalTestAccessToken().get());
         }
         var exchangeHmrcTokenLambdaFunctionName =
-                buildFunctionName(props.resourceNamePrefix(), "exchangeToken.httpPostHmrc");
+                buildFunctionName(props.compressedResourceNamePrefix(), "exchangeToken.httpPostHmrc");
         var exchangeHmrcTokenLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
                 LambdaUrlOriginProps.builder()
@@ -223,7 +224,7 @@ public class ApplicationStack extends Stack {
         var submitVatLambdaEnv = new HashMap<>(Map.of(
                 "DIY_SUBMIT_HOME_URL", props.baseUrl(),
                 "DIY_SUBMIT_HMRC_BASE_URI", props.hmrcBaseUri()));
-        var submitVatLambdaFunctionName = buildFunctionName(props.resourceNamePrefix(), "submitVat.httpPost");
+        var submitVatLambdaFunctionName = buildFunctionName(props.compressedResourceNamePrefix(), "submitVat.httpPost");
         var submitVatLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
                 LambdaUrlOriginProps.builder()
@@ -263,7 +264,7 @@ public class ApplicationStack extends Stack {
             logReceiptLambdaEnv.putAll(logReceiptLambdaTestEnv);
         }
         var logReceiptLambdaUrlOriginFunctionName =
-                buildFunctionName(props.resourceNamePrefix(), "logReceipt.httpPost");
+                buildFunctionName(props.compressedResourceNamePrefix(), "logReceipt.httpPost");
         var logReceiptLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
                 LambdaUrlOriginProps.builder()
@@ -286,7 +287,7 @@ public class ApplicationStack extends Stack {
         // Create Bundle Management Lambda
         // Catalog Lambda
         var catalogLambdaEnv = new HashMap<>(Map.of("DIY_SUBMIT_HOME_URL", props.baseUrl()));
-        var catalogLambdaUrlOriginFunctionName = buildFunctionName(props.resourceNamePrefix(), "getCatalog.httpGet");
+        var catalogLambdaUrlOriginFunctionName = buildFunctionName(props.compressedResourceNamePrefix(), "getCatalog.httpGet");
         var catalogLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
                 LambdaUrlOriginProps.builder()
@@ -311,7 +312,7 @@ public class ApplicationStack extends Stack {
                 "DIY_SUBMIT_USER_POOL_ID", props.cognitoUserPoolId(),
                 "DIY_SUBMIT_BUNDLE_EXPIRY_DATE", "2025-12-31",
                 "DIY_SUBMIT_BUNDLE_USER_LIMIT", "10"));
-        var requestBundlesLambdaFunctionName = buildFunctionName(props.resourceNamePrefix(), "bundle.httpPost");
+        var requestBundlesLambdaFunctionName = buildFunctionName(props.compressedResourceNamePrefix(), "bundle.httpPost");
         var requestBundlesLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
                 LambdaUrlOriginProps.builder()
@@ -349,7 +350,7 @@ public class ApplicationStack extends Stack {
 
         // My Bundles Lambda
         var myBundlesLambdaEnv = new HashMap<>(Map.of("DIY_SUBMIT_HOME_URL", props.baseUrl()));
-        var myBundlesLambdaUrlOriginFunctionName = buildFunctionName(props.resourceNamePrefix(), "myBundles.httpGet");
+        var myBundlesLambdaUrlOriginFunctionName = buildFunctionName(props.compressedResourceNamePrefix(), "myBundles.httpGet");
         var myBundlesLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
                 LambdaUrlOriginProps.builder()
@@ -374,7 +375,7 @@ public class ApplicationStack extends Stack {
         var myReceiptsLambdaEnv = new HashMap<>(Map.of(
                 "DIY_SUBMIT_HOME_URL", props.baseUrl(),
                 "DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX", props.receiptsBucketPostfix()));
-        var myReceiptsLambdaUrlOriginFunctionName = buildFunctionName(props.resourceNamePrefix(), "myReceipts.httpGet");
+        var myReceiptsLambdaUrlOriginFunctionName = buildFunctionName(props.compressedResourceNamePrefix(), "myReceipts.httpGet");
         var myReceiptsLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
                 LambdaUrlOriginProps.builder()
