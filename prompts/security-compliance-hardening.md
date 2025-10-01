@@ -1,6 +1,6 @@
 # Security & Compliance Hardening Prompt
 
-Analyze the current OIDC provider implementation and enhance security posture while ensuring compliance readiness for production deployment.
+Analyze the current identity and authentication implementation and integrations (AWS Cognito, HMRC OAuth 2.0) and enhance security posture while ensuring compliance readiness for production deployment.
 
 Focus on:
 - Comprehensive security audit and vulnerability assessment
