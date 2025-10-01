@@ -1,6 +1,6 @@
 // app/unit-tests/getCatalog.test.js
 import { describe, it, expect } from "vitest";
-import { httpGet as getCatalog } from "@app/functions/getCatalog.js";
+import { handle as getCatalog } from "@app/functions/catalogGet.js";
 
 describe("getCatalog endpoint function", () => {
   it("returns 200 with ETag and supports 304 on If-None-Match", async () => {
