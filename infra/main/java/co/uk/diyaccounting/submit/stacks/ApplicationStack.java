@@ -351,7 +351,7 @@ public class ApplicationStack extends Stack {
 
         // My Bundles Lambda
         var myBundlesLambdaEnv = new HashMap<>(Map.of("DIY_SUBMIT_HOME_URL", props.baseUrl()));
-        var myBundlesLambdaUrlOriginFunctionName = buildFunctionName(props.compressedResourceNamePrefix(), "myBundles.handle");
+        var myBundlesLambdaUrlOriginFunctionName = buildFunctionName(props.compressedResourceNamePrefix(), "myBundles.httpGet");
         var myBundlesLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
                 LambdaUrlOriginProps.builder()
@@ -361,7 +361,7 @@ public class ApplicationStack extends Stack {
                         .ecrRepositoryArn(props.ecrRepositoryArn())
                         .functionName(myBundlesLambdaUrlOriginFunctionName)
                         .cloudFrontAllowedMethods(AllowedMethods.ALLOW_ALL)
-                        .handler(props.lambdaEntry() + "myBundles.handle")
+                        .handler(props.lambdaEntry() + "myBundles.httpGet")
                         .environment(myBundlesLambdaEnv)
                         .timeout(Duration.millis(Long.parseLong("30000")))
                         .build());
@@ -370,13 +370,13 @@ public class ApplicationStack extends Stack {
         this.myBundlesLambdaLogGroup = myBundlesLambdaUrlOrigin.logGroup;
         infof(
                 "Created Lambda %s for my bundles retrieval with handler %s",
-                this.myBundlesLambda.getNode().getId(), props.lambdaEntry() + "myBundles.handle");
+                this.myBundlesLambda.getNode().getId(), props.lambdaEntry() + "myBundles.httpGet");
 
         // myReceipts Lambda
         var myReceiptsLambdaEnv = new HashMap<>(Map.of(
                 "DIY_SUBMIT_HOME_URL", props.baseUrl(),
                 "DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX", props.receiptsBucketPostfix()));
-        var myReceiptsLambdaUrlOriginFunctionName = buildFunctionName(props.compressedResourceNamePrefix(), "myReceipts.handle");
+        var myReceiptsLambdaUrlOriginFunctionName = buildFunctionName(props.compressedResourceNamePrefix(), "myReceipts.httpGet");
         var myReceiptsLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
                 LambdaUrlOriginProps.builder()
@@ -386,7 +386,7 @@ public class ApplicationStack extends Stack {
                         .ecrRepositoryArn(props.ecrRepositoryArn())
                         .functionName(myReceiptsLambdaUrlOriginFunctionName)
                         .cloudFrontAllowedMethods(AllowedMethods.ALLOW_ALL)
-                        .handler(props.lambdaEntry() + "myReceipts.handle")
+                        .handler(props.lambdaEntry() + "myReceipts.httpGet")
                         .environment(myReceiptsLambdaEnv)
                         .timeout(Duration.millis(Long.parseLong("30000")))
                         .build());
@@ -394,7 +394,7 @@ public class ApplicationStack extends Stack {
         this.myReceiptsLambdaLogGroup = myReceiptsLambdaUrlOrigin.logGroup;
         infof(
                 "Created Lambda %s for my receipts retrieval with handler %s",
-                this.myReceiptsLambda.getNode().getId(), props.lambdaEntry() + "myReceipts.handle");
+                this.myReceiptsLambda.getNode().getId(), props.lambdaEntry() + "myReceipts.httpGet");
 
         // Create receipts bucket for storing VAT submission receipts
         boolean s3RetainReceiptsBucket =
