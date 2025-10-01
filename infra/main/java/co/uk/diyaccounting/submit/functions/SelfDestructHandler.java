@@ -18,19 +18,16 @@ import software.amazon.awssdk.services.cloudformation.model.DescribeStacksReques
  * AWS Lambda handler for self-destructing CloudFormation stacks.
  * Deletes stacks in the correct order to handle dependencies.
  */
-public class SelfDestructHandler implements RequestHandler<Map<String, Object>, Map<String, Object>> {
+public record SelfDestructHandler(CloudFormationClient cloudFormationClient)
+        implements RequestHandler<Map<String, Object>, Map<String, Object>> {
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
-    private final CloudFormationClient cloudFormationClient;
 
     public SelfDestructHandler() {
-        this.cloudFormationClient = CloudFormationClient.builder().build();
+        this(CloudFormationClient.builder().build());
     }
 
     // Constructor for testing with custom client
-    public SelfDestructHandler(CloudFormationClient cloudFormationClient) {
-        this.cloudFormationClient = cloudFormationClient;
-    }
 
     @Override
     public Map<String, Object> handleRequest(Map<String, Object> event, Context context) {
@@ -41,12 +38,12 @@ public class SelfDestructHandler implements RequestHandler<Map<String, Object>, 
         addStackNameIfPresent(stacksToDelete, System.getenv("OPS_STACK_NAME"));
         addStackNameIfPresent(stacksToDelete, System.getenv("PUBLISH_STACK_NAME"));
         addStackNameIfPresent(stacksToDelete, System.getenv("EDGE_STACK_NAME"));
-        addStackNameIfPresent(stacksToDelete, System.getenv("WEB_STACK_NAME"));
+        addStackNameIfPresent(stacksToDelete, System.getenv("IDENTITY_STACK_NAME"));
         addStackNameIfPresent(stacksToDelete, System.getenv("AUTH_STACK_NAME"));
         addStackNameIfPresent(stacksToDelete, System.getenv("APPLICATION_STACK_NAME"));
         addStackNameIfPresent(stacksToDelete, System.getenv("DEV_STACK_NAME"));
+        addStackNameIfPresent(stacksToDelete, System.getenv("SELF_DESTRUCT_STACK_NAME"));
         addStackNameIfPresent(stacksToDelete, System.getenv("OBSERVABILITY_STACK_NAME"));
-        addStackNameIfPresent(stacksToDelete, System.getenv("SELF_DESTRUCT_STACK_NAME")); // Delete self last
 
         context.getLogger().log("Stacks to delete in order: " + String.join(", ", stacksToDelete));
 
@@ -148,32 +145,14 @@ public class SelfDestructHandler implements RequestHandler<Map<String, Object>, 
     /**
      * Result of a stack deletion operation
      */
-    public static class StackDeletionResult {
-        @JsonProperty("stackName")
-        private final String stackName;
-
-        @JsonProperty("status")
-        private final String status;
-
-        @JsonProperty("error")
-        private final String error;
-
+    public record StackDeletionResult(
+            @JsonProperty("stackName") String stackName,
+            @JsonProperty("status") String status,
+            @JsonProperty("error") String error) {
         public StackDeletionResult(String stackName, String status, String error) {
             this.stackName = stackName;
             this.status = status;
             this.error = error;
-        }
-
-        public String getStackName() {
-            return stackName;
-        }
-
-        public String getStatus() {
-            return status;
-        }
-
-        public String getError() {
-            return error;
         }
     }
 }

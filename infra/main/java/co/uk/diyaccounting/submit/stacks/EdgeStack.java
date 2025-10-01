@@ -1,7 +1,7 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.convertDotSeparatedToDashSeparated;
 
 import java.util.HashMap;
@@ -57,33 +57,10 @@ public class EdgeStack extends Stack {
     public final Distribution distribution;
     public final Permission distributionInvokeFnUrl;
     public final ARecord aliasRecord;
-    public final String baseUrl;
 
     @Value.Immutable
-    public interface EdgeStackProps extends StackProps {
-        String envName();
+    public interface EdgeStackProps extends StackProps, SubmitStackProps {
 
-        String deploymentName();
-
-        String hostedZoneName();
-
-        String hostedZoneId();
-
-        String domainName();
-
-        String baseUrl();
-
-        String resourceNamePrefix();
-
-        String compressedResourceNamePrefix();
-
-        String certificateArn();
-
-        Map<String, String> pathsToOriginLambdaFunctionUrls();
-
-        int accessLogGroupRetentionPeriodDays();
-
-        // StackProps interface methods
         @Override
         Environment getEnv();
 
@@ -92,6 +69,40 @@ public class EdgeStack extends Stack {
         default Boolean getCrossRegionReferences() {
             return null;
         }
+
+        @Override
+        String envName();
+
+        @Override
+        String deploymentName();
+
+        @Override
+        String resourceNamePrefix();
+
+        @Override
+        String compressedResourceNamePrefix();
+
+        @Override
+        String dashedDomainName();
+
+        @Override
+        String domainName();
+
+        @Override
+        String baseUrl();
+
+        @Override
+        String cloudTrailEnabled();
+
+        String hostedZoneName();
+
+        String hostedZoneId();
+
+        String certificateArn();
+
+        Map<String, String> pathsToOriginLambdaFunctionUrls();
+
+        int accessLogGroupRetentionPeriodDays();
 
         static ImmutableEdgeStackProps.Builder builder() {
             return ImmutableEdgeStackProps.builder();
@@ -119,9 +130,6 @@ public class EdgeStack extends Stack {
         Tags.of(this).add("BackupRequired", "false");
         Tags.of(this).add("MonitoringEnabled", "true");
 
-        // Use Resources from the passed props
-        this.baseUrl = props.baseUrl();
-
         // Hosted zone (must exist)
         IHostedZone zone = HostedZone.fromHostedZoneAttributes(
                 this,
@@ -130,7 +138,6 @@ public class EdgeStack extends Stack {
                         .hostedZoneId(props.hostedZoneId())
                         .zoneName(props.hostedZoneName())
                         .build());
-        String domainName = props.domainName();
         String recordName = props.hostedZoneName().equals(props.domainName())
                 ? null
                 : (props.domainName().endsWith("." + props.hostedZoneName())
@@ -147,7 +154,7 @@ public class EdgeStack extends Stack {
 
         // Buckets
 
-        String originBucketName = convertDotSeparatedToDashSeparated("origin-" + domainName);
+        String originBucketName = convertDotSeparatedToDashSeparated("origin-" + props.domainName());
 
         // AWS WAF WebACL for CloudFront protection against common attacks and rate limiting
         CfnWebACL webAcl = CfnWebACL.Builder.create(this, props.resourceNamePrefix() + "-WebAcl")
@@ -233,8 +240,7 @@ public class EdgeStack extends Stack {
         infof(
                 "Setting expiration period to %d days for %s",
                 props.accessLogGroupRetentionPeriodDays(), props.compressedResourceNamePrefix());
-        this.originAccessLogBucket = Bucket.Builder.create(
-                        this, "%sLogBucket".formatted(props.compressedResourceNamePrefix()))
+        this.originAccessLogBucket = Bucket.Builder.create(this, props.resourceNamePrefix() + "-LogBucket")
                 .bucketName(originAccessLogBucket)
                 .objectOwnership(ObjectOwnership.OBJECT_WRITER)
                 .versioned(false)
@@ -253,7 +259,7 @@ public class EdgeStack extends Stack {
                 this.originAccessLogBucket.getNode().getId(), originAccessLogBucket);
 
         // Create the origin bucket
-        this.originBucket = Bucket.Builder.create(this, "OriginBucket")
+        this.originBucket = Bucket.Builder.create(this, props.resourceNamePrefix() + "-OriginBucket")
                 .bucketName(originBucketName)
                 .versioned(false)
                 .blockPublicAccess(BlockPublicAccess.BLOCK_ALL)
@@ -326,7 +332,7 @@ public class EdgeStack extends Stack {
         this.distribution = Distribution.Builder.create(this, props.resourceNamePrefix() + "-WebDist")
                 .defaultBehavior(localBehaviorOptions) // props.webBehaviorOptions)
                 .additionalBehaviors(additionalBehaviors)
-                .domainNames(List.of(domainName))
+                .domainNames(List.of(props.domainName()))
                 .certificate(cert)
                 .defaultRootObject("index.html")
                 .enableLogging(true)
@@ -357,14 +363,14 @@ public class EdgeStack extends Stack {
                         .build());
 
         // Outputs
-        cfnOutput(this, "BaseUrl", this.baseUrl);
+        cfnOutput(this, "BaseUrl", props.baseUrl());
         cfnOutput(this, "CertificateArn", cert.getCertificateArn());
         cfnOutput(this, "WebAclId", webAcl.getAttrArn());
         cfnOutput(this, "WebDistributionDomainName", this.distribution.getDomainName());
         cfnOutput(this, "DistributionId", this.distribution.getDistributionId());
         cfnOutput(this, "AliasRecord", this.aliasRecord.getDomainName());
 
-        infof("EdgeStack %s created successfully for %s", this.getNode().getId(), this.baseUrl);
+        infof("EdgeStack %s created successfully for %s", this.getNode().getId(), props.baseUrl());
     }
 
     public BehaviorOptions createBehaviorOptionsForLambdaUrl(String lambdaFunctionUrl) {
@@ -374,7 +380,7 @@ public class EdgeStack extends Stack {
         var origin = HttpOrigin.Builder.create(lambdaUrlHost)
                 .protocolPolicy(OriginProtocolPolicy.HTTPS_ONLY)
                 .build();
-        var behaviorOptions = BehaviorOptions.builder()
+        return BehaviorOptions.builder()
                 .origin(origin)
                 .allowedMethods(AllowedMethods.ALLOW_ALL)
                 .cachePolicy(CachePolicy.CACHING_DISABLED)
@@ -382,7 +388,6 @@ public class EdgeStack extends Stack {
                 .viewerProtocolPolicy(ViewerProtocolPolicy.REDIRECT_TO_HTTPS)
                 .responseHeadersPolicy(ResponseHeadersPolicy.CORS_ALLOW_ALL_ORIGINS_WITH_PREFLIGHT_AND_SECURITY_HEADERS)
                 .build();
-        return behaviorOptions;
     }
 
     private String getLambdaUrlHostFromUrl(String functionUrl) {

@@ -1,9 +1,7 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDashedDomainName;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDomainName;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildTrailName;
 
 import co.uk.diyaccounting.submit.utils.RetentionDaysConverter;
@@ -28,24 +26,10 @@ public class ObservabilityStack extends Stack {
     public Bucket trailBucket;
     public Trail trail;
     public LogGroup cloudTrailLogGroup;
+    public LogGroup selfDestructLogGroup;
 
     @Value.Immutable
-    public interface ObservabilityStackProps extends StackProps {
-        String envName();
-
-        String subDomainName();
-
-        String hostedZoneName();
-
-        String cloudTrailEnabled();
-
-        String cloudTrailLogGroupPrefix();
-
-        String cloudTrailLogGroupRetentionPeriodDays();
-
-        String accessLogGroupRetentionPeriodDays();
-
-        String xRayEnabled();
+    public interface ObservabilityStackProps extends StackProps, SubmitStackProps {
 
         @Override
         Environment getEnv();
@@ -55,6 +39,36 @@ public class ObservabilityStack extends Stack {
         default Boolean getCrossRegionReferences() {
             return null;
         }
+
+        @Override
+        String envName();
+
+        @Override
+        String deploymentName();
+
+        @Override
+        String resourceNamePrefix();
+
+        @Override
+        String compressedResourceNamePrefix();
+
+        @Override
+        String dashedDomainName();
+
+        @Override
+        String domainName();
+
+        @Override
+        String baseUrl();
+
+        @Override
+        String cloudTrailEnabled();
+
+        String cloudTrailLogGroupPrefix();
+
+        String cloudTrailLogGroupRetentionPeriodDays();
+
+        String selfDestructLogGroupName();
 
         static ImmutableObservabilityStackProps.Builder builder() {
             return ImmutableObservabilityStackProps.builder();
@@ -68,27 +82,21 @@ public class ObservabilityStack extends Stack {
     public ObservabilityStack(Construct scope, String id, StackProps stackProps, ObservabilityStackProps props) {
         super(scope, id, stackProps);
 
-        // Values are provided via SubmitApplication after context/env resolution
-
-        // Build naming using same patterns as WebStack
-        String domainName = buildDomainName(props.envName(), props.subDomainName(), props.hostedZoneName());
-        String dashedDomainName = buildDashedDomainName(props.envName(), props.subDomainName(), props.hostedZoneName());
-
-        String trailName = buildTrailName(dashedDomainName);
+        String trailName = buildTrailName(props.dashedDomainName());
         boolean cloudTrailEnabled = Boolean.parseBoolean(props.cloudTrailEnabled());
         int cloudTrailLogGroupRetentionPeriodDays = Integer.parseInt(props.cloudTrailLogGroupRetentionPeriodDays());
-        boolean xRayEnabled = Boolean.parseBoolean(props.xRayEnabled());
 
         // Create a CloudTrail for the stack resources
         RetentionDays cloudTrailLogGroupRetentionPeriod =
                 RetentionDaysConverter.daysToRetentionDays(cloudTrailLogGroupRetentionPeriodDays);
         if (cloudTrailEnabled) {
-            this.cloudTrailLogGroup = LogGroup.Builder.create(this, "CloudTrailGroup")
-                    .logGroupName("%s%s-cloud-trail".formatted(props.cloudTrailLogGroupPrefix(), dashedDomainName))
+            this.cloudTrailLogGroup = LogGroup.Builder.create(this, props.resourceNamePrefix() + "-CloudTrailGroup")
+                    .logGroupName(
+                            "%s%s-cloud-trail".formatted(props.cloudTrailLogGroupPrefix(), props.dashedDomainName()))
                     .retention(cloudTrailLogGroupRetentionPeriod)
                     .removalPolicy(RemovalPolicy.DESTROY)
                     .build();
-            this.trailBucket = Bucket.Builder.create(this, trailName + "CloudTrailBucket")
+            this.trailBucket = Bucket.Builder.create(this, props.resourceNamePrefix() + "-CloudTrailBucket")
                     .encryption(BucketEncryption.S3_MANAGED)
                     .blockPublicAccess(BlockPublicAccess.BLOCK_ALL)
                     .versioned(false)
@@ -98,7 +106,7 @@ public class ObservabilityStack extends Stack {
                             .expiration(Duration.days(cloudTrailLogGroupRetentionPeriodDays))
                             .build()))
                     .build();
-            this.trail = Trail.Builder.create(this, "Trail")
+            this.trail = Trail.Builder.create(this, props.resourceNamePrefix() + "-Trail")
                     .trailName(trailName)
                     .cloudWatchLogGroup(this.cloudTrailLogGroup)
                     .sendToCloudWatchLogs(true)
@@ -112,8 +120,14 @@ public class ObservabilityStack extends Stack {
             cfnOutput(this, "TrailArn", this.trail.getTrailArn());
         }
 
+        this.selfDestructLogGroup = LogGroup.Builder.create(this, props.resourceNamePrefix() + "-SelfDestructLogGroup")
+                .logGroupName(props.selfDestructLogGroupName())
+                .retention(RetentionDays.ONE_WEEK) // Longer retention for operations
+                .removalPolicy(RemovalPolicy.DESTROY)
+                .build();
+
         infof(
                 "ObservabilityStack %s created successfully for %s",
-                this.getNode().getId(), dashedDomainName);
+                this.getNode().getId(), props.dashedDomainName());
     }
 }

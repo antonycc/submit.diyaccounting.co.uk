@@ -57,16 +57,6 @@ public interface LambdaUrlOriginProps {
     }
 
     @Value.Default
-    default boolean xRayEnabled() {
-        return false;
-    }
-
-    @Value.Default
-    default boolean verboseLogging() {
-        return false;
-    }
-
-    @Value.Default
     default FunctionUrlAuthType functionUrlAuthType() {
         return FunctionUrlAuthType.NONE;
     }

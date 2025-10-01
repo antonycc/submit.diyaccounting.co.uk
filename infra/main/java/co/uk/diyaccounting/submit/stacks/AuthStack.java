@@ -1,7 +1,7 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildFunctionName;
 
 import co.uk.diyaccounting.submit.constructs.LambdaUrlOrigin;
@@ -32,20 +32,40 @@ public class AuthStack extends Stack {
     public LogGroup exchangeCognitoTokenLambdaLogGroup;
 
     @Value.Immutable
-    public interface AuthStackProps extends StackProps {
+    public interface AuthStackProps extends StackProps, SubmitStackProps {
+
+        @Override
+        Environment getEnv();
+
+        @Override
+        @Value.Default
+        default Boolean getCrossRegionReferences() {
+            return null;
+        }
+
+        @Override
         String envName();
 
-        String subDomainName();
+        @Override
+        String deploymentName();
 
+        @Override
         String resourceNamePrefix();
 
+        @Override
         String compressedResourceNamePrefix();
 
-        String hostedZoneName();
+        @Override
+        String dashedDomainName();
 
+        @Override
+        String domainName();
+
+        @Override
+        String baseUrl();
+
+        @Override
         String cloudTrailEnabled();
-
-        String xRayEnabled();
 
         String baseImageTag();
 
@@ -57,26 +77,12 @@ public class AuthStack extends Stack {
 
         String lambdaUrlAuthType();
 
-        String homeUrl();
-
         String cognitoClientId();
 
         String cognitoBaseUri();
 
         // Optional test access token for local/dev testing without real Cognito interaction
-        // @Value.Default
-        Optional<String> optionalTestAccessToken(); // {
-        // return Optional.empty();
-        // }
-
-        @Override
-        Environment getEnv();
-
-        @Override
-        @Value.Default
-        default Boolean getCrossRegionReferences() {
-            return null;
-        }
+        Optional<String> optionalTestAccessToken(); //
 
         static ImmutableAuthStackProps.Builder builder() {
             return ImmutableAuthStackProps.builder();
@@ -99,15 +105,16 @@ public class AuthStack extends Stack {
 
         // authUrl - mock
         var authUrlMockLambdaEnv = new HashMap<String, String>();
-        authUrlMockLambdaEnv.put("DIY_SUBMIT_HOME_URL", props.homeUrl());
+        authUrlMockLambdaEnv.put("DIY_SUBMIT_HOME_URL", props.baseUrl());
+        var authUrlMockLambdaFunctionName = buildFunctionName(props.resourceNamePrefix(), "authUrl.httpGetMock");
         var authUrlMockLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
                 LambdaUrlOriginProps.builder()
-                        .idPrefix("AuthUrlMock")
+                        .idPrefix(authUrlMockLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
                         .ecrRepositoryName(props.ecrRepositoryName())
                         .ecrRepositoryArn(props.ecrRepositoryArn())
-                        .functionName(buildFunctionName(props.resourceNamePrefix(), "authUrl.httpGetMock"))
+                        .functionName(authUrlMockLambdaFunctionName)
                         .cloudFrontAllowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
                         .handler(props.lambdaEntry() + "authUrl.httpGetMock")
                         .environment(authUrlMockLambdaEnv)
@@ -121,17 +128,18 @@ public class AuthStack extends Stack {
 
         // authUrl - Google or Antonycc via Cognito
         var authUrlCognitoLambdaEnv = new HashMap<String, String>();
-        authUrlCognitoLambdaEnv.put("DIY_SUBMIT_HOME_URL", props.homeUrl());
+        authUrlCognitoLambdaEnv.put("DIY_SUBMIT_HOME_URL", props.baseUrl());
         authUrlCognitoLambdaEnv.put("DIY_SUBMIT_COGNITO_CLIENT_ID", props.cognitoClientId());
         authUrlCognitoLambdaEnv.put("DIY_SUBMIT_COGNITO_BASE_URI", props.cognitoBaseUri());
+        var authUrlCognitoLambdaFunctionName = buildFunctionName(props.resourceNamePrefix(), "authUrl.httpGetCognito");
         var authUrlCognitoLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
                 LambdaUrlOriginProps.builder()
-                        .idPrefix("AuthUrlCognito")
+                        .idPrefix(authUrlCognitoLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
                         .ecrRepositoryName(props.ecrRepositoryName())
                         .ecrRepositoryArn(props.ecrRepositoryArn())
-                        .functionName(buildFunctionName(props.resourceNamePrefix(), "authUrl.httpGetCognito"))
+                        .functionName(authUrlCognitoLambdaFunctionName)
                         .cloudFrontAllowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
                         .handler(props.lambdaEntry() + "authUrl.httpGetCognito")
                         .environment(authUrlCognitoLambdaEnv)
@@ -145,7 +153,7 @@ public class AuthStack extends Stack {
 
         // exchangeToken - Google or Antonycc via Cognito
         var exchangeCognitoTokenLambdaEnv = new HashMap<String, String>();
-        exchangeCognitoTokenLambdaEnv.put("DIY_SUBMIT_HOME_URL", props.homeUrl());
+        exchangeCognitoTokenLambdaEnv.put("DIY_SUBMIT_HOME_URL", props.baseUrl());
         exchangeCognitoTokenLambdaEnv.put("DIY_SUBMIT_COGNITO_BASE_URI", props.cognitoBaseUri());
         exchangeCognitoTokenLambdaEnv.put("DIY_SUBMIT_COGNITO_CLIENT_ID", props.cognitoClientId());
         if (props.optionalTestAccessToken().isPresent()
@@ -154,14 +162,16 @@ public class AuthStack extends Stack {
                     "DIY_SUBMIT_TEST_ACCESS_TOKEN",
                     props.optionalTestAccessToken().get());
         }
+        var exchangeCognitoTokenLambdaUrlOriginFunctionName =
+                buildFunctionName(props.resourceNamePrefix(), "exchangeToken.httpPostCognito");
         var exchangeCognitoTokenLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
                 LambdaUrlOriginProps.builder()
-                        .idPrefix("ExchangeCognitoToken")
+                        .idPrefix(exchangeCognitoTokenLambdaUrlOriginFunctionName)
                         .baseImageTag(props.baseImageTag())
                         .ecrRepositoryName(props.ecrRepositoryName())
                         .ecrRepositoryArn(props.ecrRepositoryArn())
-                        .functionName(buildFunctionName(props.resourceNamePrefix(), "exchangeToken.httpPostCognito"))
+                        .functionName(exchangeCognitoTokenLambdaUrlOriginFunctionName)
                         .cloudFrontAllowedMethods(AllowedMethods.ALLOW_ALL)
                         .handler(props.lambdaEntry() + "exchangeToken.httpPostCognito")
                         .environment(exchangeCognitoTokenLambdaEnv)

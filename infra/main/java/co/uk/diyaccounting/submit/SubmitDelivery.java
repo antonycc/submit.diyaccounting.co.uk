@@ -11,11 +11,12 @@ import java.lang.reflect.Field;
 import java.nio.file.Paths;
 import java.util.Map;
 
-import static co.uk.diyaccounting.submit.utils.KindCdk.getContextValueString;
 import static co.uk.diyaccounting.submit.utils.Kind.envOr;
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.Kind.putIfNotNull;
 import static co.uk.diyaccounting.submit.utils.Kind.warnf;
+import static co.uk.diyaccounting.submit.utils.KindCdk.getContextValueString;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDashedDomainName;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateCompressedResourceNamePrefix;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateResourceNamePrefix;
 
@@ -35,6 +36,7 @@ public class SubmitDelivery {
         public String accessLogGroupRetentionPeriodDays;
         public String docRootPath;
         public String domainName;
+        public String cloudTrailEnabled;
         public String baseUrl;
         public String authUrlMockLambdaFunctionUrl;
         public String authUrlCognitoLambdaFunctionUrl;
@@ -90,7 +92,7 @@ public class SubmitDelivery {
         }
     }
 
-    public SubmitDelivery(App app, SubmitDeliveryProps appProps){
+    public SubmitDelivery(App app, SubmitDeliveryProps appProps) {
         // Environment e.g. ci, prod, and deployment name e.g. ci-branchname, prod
         var envName = envOr("ENV_NAME", appProps.env);
         var deploymentName = envOr("DEPLOYMENT_NAME", appProps.deploymentName);
@@ -164,9 +166,14 @@ public class SubmitDelivery {
                 appProps.accessLogGroupRetentionPeriodDays,
                 "(from accessLogGroupRetentionPeriodDays in cdk.json)");
 
+        var cloudTrailEnabled =
+                envOr("CLOUD_TRAIL_ENABLED", appProps.cloudTrailEnabled, "(from cloudTrailEnabled in cdk.json)");
+
         // Derived values from domain and deployment name
-        var resourceNamePrefix = generateResourceNamePrefix(domainName, deploymentName);
-        var compressedResourceNamePrefix = generateCompressedResourceNamePrefix(domainName, deploymentName);
+        String resourceNamePrefix = "del-%s".formatted(generateResourceNamePrefix(domainName));
+        String compressedResourceNamePrefix = "d-%s".formatted(generateCompressedResourceNamePrefix(domainName));
+        String selfDestructLogGroupName = "/aws/lambda/%s-self-destruct".formatted(resourceNamePrefix);
+        String dashedDomainName = buildDashedDomainName(domainName);
 
         // Create Function URLs map for EdgeStack (cross-region compatible)
         Map<String, String> pathsToOriginLambdaFunctionUrls = new java.util.HashMap<>();
@@ -196,12 +203,14 @@ public class SubmitDelivery {
                         .crossRegionReferences(true)
                         .envName(envName)
                         .deploymentName(deploymentName)
-                        .hostedZoneName(hostedZoneName)
-                        .hostedZoneId(hostedZoneId)
-                        .domainName(domainName)
-                        .baseUrl(baseUrl)
                         .resourceNamePrefix(resourceNamePrefix)
                         .compressedResourceNamePrefix(compressedResourceNamePrefix)
+                        .domainName(domainName)
+                        .dashedDomainName(dashedDomainName)
+                        .baseUrl(baseUrl)
+                        .cloudTrailEnabled(cloudTrailEnabled)
+                        .hostedZoneName(hostedZoneName)
+                        .hostedZoneId(hostedZoneId)
                         .certificateArn(certificateArn)
                         .pathsToOriginLambdaFunctionUrls(pathsToOriginLambdaFunctionUrls)
                         .accessLogGroupRetentionPeriodDays(Integer.parseInt(accessLogGroupRetentionPeriodDays))
@@ -217,12 +226,16 @@ public class SubmitDelivery {
                         .crossRegionReferences(false)
                         .envName(envName)
                         .deploymentName(deploymentName)
-                        .domainName(domainName)
-                        .baseUrl(baseUrl)
-                        .webBucketArn(this.edgeStack.originBucket.getBucketArn()) // TODO: Get bucker by predicted name
                         .resourceNamePrefix(resourceNamePrefix)
+                        .compressedResourceNamePrefix(compressedResourceNamePrefix)
+                        .domainName(domainName)
+                        .dashedDomainName(dashedDomainName)
+                        .baseUrl(baseUrl)
+                        .cloudTrailEnabled(cloudTrailEnabled)
+                        .webBucketArn(this.edgeStack.originBucket.getBucketArn()) // TODO: Get bucker by predicted name
                         .distributionArn(
-                            this.edgeStack.distribution.getDistributionArn()) // TODO: Get distribution by domain name
+                                this.edgeStack.distribution
+                                        .getDistributionArn()) // TODO: Get distribution by domain name
                         .commitHash(commitHash)
                         .websiteHash(websiteHash)
                         .buildNumber(buildNumber)
@@ -243,6 +256,11 @@ public class SubmitDelivery {
                             .deploymentName(deploymentName)
                             .resourceNamePrefix(resourceNamePrefix)
                             .compressedResourceNamePrefix(compressedResourceNamePrefix)
+                            .domainName(domainName)
+                            .dashedDomainName(dashedDomainName)
+                            .baseUrl(baseUrl)
+                            .cloudTrailEnabled(cloudTrailEnabled)
+                            .selfDestructLogGroupName(selfDestructLogGroupName)
                             .edgeStackName(this.edgeStack.getStackName())
                             .publishStackName(this.publishStack.getStackName())
                             .selfDestructDelayHours(selfDestructDelayHours)
@@ -257,9 +275,11 @@ public class SubmitDelivery {
     public static SubmitDelivery.SubmitDeliveryProps loadAppProps(Construct scope) {
         return loadAppProps(scope, null);
     }
+
     public static SubmitDeliveryProps loadAppProps(Construct scope, String pathPrefix) {
         SubmitDeliveryProps props = SubmitDeliveryProps.Builder.create().build();
-        var cdkPath = Paths.get((pathPrefix == null ? "" : pathPrefix) + "cdk.json").toAbsolutePath();
+        var cdkPath =
+                Paths.get((pathPrefix == null ? "" : pathPrefix) + "cdk.json").toAbsolutePath();
         if (!cdkPath.toFile().exists()) {
             warnf("Cannot find application properties (cdk.json) at %s", cdkPath);
         } else {

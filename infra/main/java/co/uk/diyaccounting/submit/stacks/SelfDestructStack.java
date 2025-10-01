@@ -1,11 +1,11 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.Kind.putIfNotNull;
+import static co.uk.diyaccounting.submit.utils.Kind.putIfPresent;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateIamCompatibleName;
 
-import co.uk.diyaccounting.submit.utils.Kind;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -13,7 +13,6 @@ import java.util.Optional;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
-import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.Tags;
@@ -30,26 +29,53 @@ import software.amazon.awscdk.services.lambda.Code;
 import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.lambda.Runtime;
 import software.amazon.awscdk.services.lambda.Tracing;
+import software.amazon.awscdk.services.logs.ILogGroup;
 import software.amazon.awscdk.services.logs.LogGroup;
-import software.amazon.awscdk.services.logs.RetentionDays;
 import software.constructs.Construct;
 
 public class SelfDestructStack extends Stack {
 
-    public final LogGroup logGroup;
     public final Role functionRole;
     public final Function selfDestructFunction;
     public final Rule selfDestructSchedule;
 
     @Value.Immutable
-    public interface SelfDestructStackProps extends StackProps {
+    public interface SelfDestructStackProps extends StackProps, SubmitStackProps {
+
+        @Override
+        Environment getEnv();
+
+        @Override
+        @Value.Default
+        default Boolean getCrossRegionReferences() {
+            return null;
+        }
+
+        @Override
         String envName();
 
+        @Override
         String deploymentName();
 
+        @Override
         String resourceNamePrefix();
 
+        @Override
         String compressedResourceNamePrefix();
+
+        @Override
+        String dashedDomainName();
+
+        @Override
+        String domainName();
+
+        @Override
+        String baseUrl();
+
+        @Override
+        String cloudTrailEnabled();
+
+        String selfDestructLogGroupName();
 
         Optional<String> observabilityStackName();
 
@@ -70,15 +96,6 @@ public class SelfDestructStack extends Stack {
         String selfDestructDelayHours();
 
         String selfDestructHandlerSource();
-
-        @Override
-        Environment getEnv();
-
-        @Override
-        @Value.Default
-        default Boolean getCrossRegionReferences() {
-            return null;
-        }
 
         static ImmutableSelfDestructStackProps.Builder builder() {
             return ImmutableSelfDestructStackProps.builder();
@@ -106,13 +123,11 @@ public class SelfDestructStack extends Stack {
         Tags.of(this).add("BackupRequired", "false");
         Tags.of(this).add("MonitoringEnabled", "true");
 
-        // Log group for self-destruct function
         String functionName = props.resourceNamePrefix() + "-self-destruct";
-        this.logGroup = LogGroup.Builder.create(this, props.resourceNamePrefix() + "-SelfDestructLogGroup")
-                .logGroupName("/aws/lambda/" + functionName)
-                .retention(RetentionDays.ONE_WEEK) // Longer retention for operations
-                .removalPolicy(RemovalPolicy.DESTROY)
-                .build();
+
+        // Log group for self-destruct function
+        ILogGroup logGroup = LogGroup.fromLogGroupName(
+                this, props.resourceNamePrefix() + "-SelfDestructLogGroup", props.selfDestructLogGroupName());
 
         // IAM role for the self-destruct Lambda function
         String roleName = generateIamCompatibleName(props.resourceNamePrefix(), "-self-destruct-role");
@@ -159,13 +174,14 @@ public class SelfDestructStack extends Stack {
         // Environment variables for the function
         Map<String, String> environment = new HashMap<>();
         putIfNotNull(environment, "AWS_XRAY_TRACING_NAME", functionName);
-        Kind.putIfPresent(environment, "OBSERVABILITY_STACK_NAME", props.observabilityStackName());
-        Kind.putIfPresent(environment, "DEV_STACK_NAME", props.devStackName());
-        Kind.putIfPresent(environment, "AUTH_STACK_NAME", props.applicationStackName());
-        Kind.putIfPresent(environment, "APPLICATION_STACK_NAME", props.applicationStackName());
-        Kind.putIfPresent(environment, "EDGE_STACK_NAME", props.edgeStackName());
-        Kind.putIfPresent(environment, "PUBLISH_STACK_NAME", props.publishStackName());
-        Kind.putIfPresent(environment, "OPS_STACK_NAME", props.opsStackName());
+        putIfPresent(environment, "OBSERVABILITY_STACK_NAME", props.observabilityStackName());
+        putIfPresent(environment, "DEV_STACK_NAME", props.devStackName());
+        putIfPresent(environment, "IDENTITY_STACK_NAME", props.identityStackName());
+        putIfPresent(environment, "AUTH_STACK_NAME", props.applicationStackName());
+        putIfPresent(environment, "APPLICATION_STACK_NAME", props.applicationStackName());
+        putIfPresent(environment, "EDGE_STACK_NAME", props.edgeStackName());
+        putIfPresent(environment, "PUBLISH_STACK_NAME", props.publishStackName());
+        putIfPresent(environment, "OPS_STACK_NAME", props.opsStackName());
         putIfNotNull(environment, "SELF_DESTRUCT_STACK_NAME", this.getStackName());
 
         // Lambda function for self-destruction
@@ -179,7 +195,7 @@ public class SelfDestructStack extends Stack {
                 .role(this.functionRole)
                 .environment(environment)
                 .tracing(Tracing.ACTIVE)
-                .logGroup(this.logGroup)
+                .logGroup(logGroup)
                 .build();
 
         // Create EventBridge rule to trigger self-destruct after specified delay

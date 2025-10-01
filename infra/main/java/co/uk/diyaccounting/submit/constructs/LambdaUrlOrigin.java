@@ -35,23 +35,20 @@ public class LambdaUrlOrigin {
                 .repositoryName(props.ecrRepositoryName())
                 .build();
         IRepository repository =
-                Repository.fromRepositoryAttributes(scope, props.functionName() + "-EcrRepo", repositoryAttributes);
+                Repository.fromRepositoryAttributes(scope, props.idPrefix() + "-EcrRepo", repositoryAttributes);
         this.dockerImage = DockerImageCode.fromEcr(repository, imageCodeProps);
 
         // Add X-Ray environment variables if enabled
         var environment = new java.util.HashMap<>(props.environment());
-        if (props.xRayEnabled()) {
-            environment.put("AWS_XRAY_TRACING_NAME", props.functionName());
-        }
+        environment.put("AWS_XRAY_TRACING_NAME", props.functionName());
 
-        var dockerFunctionBuilder = DockerImageFunction.Builder.create(scope, props.idPrefix() + "Fn")
+        var dockerFunctionBuilder = DockerImageFunction.Builder.create(scope, props.idPrefix() + "-Fn")
                 .code(this.dockerImage)
                 .environment(environment)
                 .functionName(props.functionName())
                 .timeout(props.timeout());
-        if (props.xRayEnabled()) {
-            dockerFunctionBuilder.tracing(Tracing.ACTIVE);
-        }
+        dockerFunctionBuilder.tracing(Tracing.ACTIVE);
+
         this.lambda = dockerFunctionBuilder.build();
         infof("Created Lambda %s with function %s", this.lambda.getNode().getId(), this.lambda.toString());
 

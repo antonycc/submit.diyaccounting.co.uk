@@ -1,10 +1,9 @@
 package co.uk.diyaccounting.submit.utils;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
 
 class ResourceNameUtilsTest {
 
@@ -20,7 +19,9 @@ class ResourceNameUtilsTest {
     @Test
     void compressedAndRegularPrefixesAndTruncation() {
         assertEquals("oidc-e-c-dev", ResourceNameUtils.generateCompressedResourceNamePrefix("oidc.example.com", "dev"));
-        assertEquals("l-a-s-e-c-prod", ResourceNameUtils.generateCompressedResourceNamePrefix("login.auth.service.example.com", "prod"));
+        assertEquals(
+                "l-a-s-e-c-prod",
+                ResourceNameUtils.generateCompressedResourceNamePrefix("login.auth.service.example.com", "prod"));
 
         // Truncation to 16 chars (including '-')
         String longDomain = "really.long.domain.name.example.com";
@@ -61,14 +62,22 @@ class ResourceNameUtilsTest {
     @Test
     void cognitoDomains() {
         assertEquals("cog.app.example.com", ResourceNameUtils.buildProdCognitoDomainName("cog", "app", "example.com"));
-        assertEquals("dev.cog.app.example.com", ResourceNameUtils.buildNonProdCognitoDomainName("dev", "cog", "app", "example.com"));
+        assertEquals(
+                "dev.cog.app.example.com",
+                ResourceNameUtils.buildNonProdCognitoDomainName("dev", "cog", "app", "example.com"));
         assertEquals("https://login.example.com", ResourceNameUtils.buildCognitoBaseUri("login.example.com"));
         assertEquals("cog-app-example-com", ResourceNameUtils.buildDashedCognitoDomainName("cog.app.example.com"));
 
-        assertThrows(IllegalArgumentException.class, () -> ResourceNameUtils.buildCognitoDomainName(null, "c", "s", "hz"));
-        assertThrows(IllegalArgumentException.class, () -> ResourceNameUtils.buildCognitoDomainName("dev", "c", "", "hz"));
-        assertThrows(IllegalArgumentException.class, () -> ResourceNameUtils.buildCognitoDomainName("dev", "c", "s", " "));
-        assertEquals("dev.cog.app.example.com", ResourceNameUtils.buildCognitoDomainName("dev", "cog", "app", "example.com"));
-        assertEquals("cog.app.example.com", ResourceNameUtils.buildCognitoDomainName("prod", "cog", "app", "example.com"));
+        assertThrows(
+                IllegalArgumentException.class, () -> ResourceNameUtils.buildCognitoDomainName(null, "c", "s", "hz"));
+        assertThrows(
+                IllegalArgumentException.class, () -> ResourceNameUtils.buildCognitoDomainName("dev", "c", "", "hz"));
+        assertThrows(
+                IllegalArgumentException.class, () -> ResourceNameUtils.buildCognitoDomainName("dev", "c", "s", " "));
+        assertEquals(
+                "dev.cog.app.example.com",
+                ResourceNameUtils.buildCognitoDomainName("dev", "cog", "app", "example.com"));
+        assertEquals(
+                "cog.app.example.com", ResourceNameUtils.buildCognitoDomainName("prod", "cog", "app", "example.com"));
     }
 }

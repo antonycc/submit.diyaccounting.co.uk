@@ -1,12 +1,11 @@
 package co.uk.diyaccounting.submit.utils;
 
+import java.util.List;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.services.s3.LifecycleRule;
 import software.amazon.awscdk.services.s3.StorageClass;
 import software.amazon.awscdk.services.s3.Transition;
 import software.amazon.awssdk.services.s3.S3Client;
-
-import java.util.List;
 
 public class S3 {
 

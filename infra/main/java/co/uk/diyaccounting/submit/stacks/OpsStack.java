@@ -1,7 +1,7 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 import java.util.List;
 import org.immutables.value.Value;
@@ -29,20 +29,7 @@ public class OpsStack extends Stack {
     public final Dashboard operationalDashboard;
 
     @Value.Immutable
-    public interface OpsStackProps extends StackProps {
-        String envName();
-
-        String deploymentName();
-
-        String domainName();
-
-        String resourceNamePrefix();
-
-        String compressedResourceNamePrefix();
-
-        String receiptsBucketArn(); // optional, may be null
-
-        List<String> lambdaFunctionArns();
+    public interface OpsStackProps extends StackProps, SubmitStackProps {
 
         @Override
         Environment getEnv();
@@ -52,6 +39,34 @@ public class OpsStack extends Stack {
         default Boolean getCrossRegionReferences() {
             return null;
         }
+
+        @Override
+        String envName();
+
+        @Override
+        String deploymentName();
+
+        @Override
+        String resourceNamePrefix();
+
+        @Override
+        String compressedResourceNamePrefix();
+
+        @Override
+        String dashedDomainName();
+
+        @Override
+        String domainName();
+
+        @Override
+        String baseUrl();
+
+        @Override
+        String cloudTrailEnabled();
+
+        String receiptsBucketArn(); // optional, may be null
+
+        List<String> lambdaFunctionArns();
 
         static ImmutableOpsStackProps.Builder builder() {
             return ImmutableOpsStackProps.builder();
@@ -81,7 +96,7 @@ public class OpsStack extends Stack {
 
         // Import resources from props
         // Lambda functions
-        java.util.List<IFunction> lambdaFunctions = new java.util.ArrayList<>();
+        // java.util.List<IFunction> lambdaFunctions = new java.util.ArrayList<>();
         java.util.List<Metric> lambdaInvocations = new java.util.ArrayList<>();
         java.util.List<Metric> lambdaErrors = new java.util.ArrayList<>();
         java.util.List<Metric> lambdaDurationsP95 = new java.util.ArrayList<>();
@@ -96,7 +111,7 @@ public class OpsStack extends Stack {
                                 .functionArn(arn)
                                 .sameEnvironment(true)
                                 .build());
-                lambdaFunctions.add(fn);
+                // lambdaFunctions.add(fn);
                 lambdaInvocations.add(fn.metricInvocations());
                 lambdaErrors.add(fn.metricErrors());
                 lambdaDurationsP95.add(fn.metricDuration()

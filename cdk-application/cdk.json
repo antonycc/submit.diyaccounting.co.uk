@@ -8,8 +8,6 @@
     "hostedZoneId": "Z0315522208PWZSSBI9AL",
     "subDomainName": "submit",
     "cloudTrailEnabled": "true",
-    "xRayEnabled": "true",
-    "verboseLogging": "true",
     "cloudTrailLogGroupPrefix": "/aws/cloudtrail/",
     "cloudTrailLogGroupRetentionPeriodDays": "7",
     "accessLogGroupRetentionPeriodDays": "30",

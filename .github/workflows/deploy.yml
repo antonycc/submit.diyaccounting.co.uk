@@ -616,7 +616,7 @@ jobs:
           name: self-destruct-handler-${{ github.sha }}
           path: cdk-submit-application.out/
 
-      - name: Deploy Observability Stack (CDK)
+      - name: Deploy SelfDestruct Stack (CDK)
         if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
         run: |
           ./mvnw --errors clean package -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \

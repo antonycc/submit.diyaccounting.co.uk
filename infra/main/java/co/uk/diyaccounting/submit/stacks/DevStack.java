@@ -1,9 +1,7 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDashedDomainName;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDomainName;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildEcrLogGroupName;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildEcrPublishRoleName;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildEcrRepositoryName;
@@ -35,12 +33,7 @@ public class DevStack extends Stack {
     public final Role ecrPublishRole;
 
     @Value.Immutable
-    public interface DevStackProps extends StackProps {
-        String envName();
-
-        String subDomainName();
-
-        String hostedZoneName();
+    public interface DevStackProps extends StackProps, SubmitStackProps {
 
         @Override
         Environment getEnv();
@@ -50,6 +43,30 @@ public class DevStack extends Stack {
         default Boolean getCrossRegionReferences() {
             return null;
         }
+
+        @Override
+        String envName();
+
+        @Override
+        String deploymentName();
+
+        @Override
+        String resourceNamePrefix();
+
+        @Override
+        String compressedResourceNamePrefix();
+
+        @Override
+        String dashedDomainName();
+
+        @Override
+        String domainName();
+
+        @Override
+        String baseUrl();
+
+        @Override
+        String cloudTrailEnabled();
 
         static ImmutableDevStackProps.Builder builder() {
             return ImmutableDevStackProps.builder();
@@ -63,17 +80,11 @@ public class DevStack extends Stack {
     public DevStack(Construct scope, String id, StackProps stackProps, DevStackProps props) {
         super(scope, id, stackProps);
 
-        // Values are provided via SubmitApplication after context/env resolution
-
-        // Build naming using same patterns as WebStack
-        String domainName = buildDomainName(props.envName(), props.subDomainName(), props.hostedZoneName());
-        String dashedDomainName = buildDashedDomainName(props.envName(), props.subDomainName(), props.hostedZoneName());
-
-        infof("Creating DevStack for domain: %s (dashed: %s)", domainName, dashedDomainName);
+        infof("Creating DevStack for domain: %s (dashed: %s)", props.domainName(), props.dashedDomainName());
 
         // ECR Repository with lifecycle rules
-        String ecrRepositoryName = buildEcrRepositoryName(dashedDomainName);
-        this.ecrRepository = Repository.Builder.create(this, "EcrRepository")
+        String ecrRepositoryName = buildEcrRepositoryName(props.dashedDomainName());
+        this.ecrRepository = Repository.Builder.create(this, props.resourceNamePrefix() + "-EcrRepository")
                 .repositoryName(ecrRepositoryName)
                 .imageScanOnPush(true) // Enable vulnerability scanning
                 .imageTagMutability(software.amazon.awscdk.services.ecr.TagMutability.MUTABLE)
@@ -89,16 +100,16 @@ public class DevStack extends Stack {
                 .build();
 
         // CloudWatch Log Group for ECR operations with 7-day retention
-        String ecrLogGroupName = buildEcrLogGroupName(dashedDomainName);
-        this.ecrLogGroup = LogGroup.Builder.create(this, "EcrLogGroup")
+        String ecrLogGroupName = buildEcrLogGroupName(props.dashedDomainName());
+        this.ecrLogGroup = LogGroup.Builder.create(this, props.resourceNamePrefix() + "-EcrLogGroup")
                 .logGroupName(ecrLogGroupName)
                 .retention(RetentionDays.ONE_WEEK) // 7-day retention as requested
                 .removalPolicy(RemovalPolicy.DESTROY)
                 .build();
 
         // IAM Role for ECR publishing with comprehensive permissions
-        this.ecrPublishRole = Role.Builder.create(this, "EcrPublishRole")
-                .roleName(buildEcrPublishRoleName(dashedDomainName))
+        this.ecrPublishRole = Role.Builder.create(this, props.resourceNamePrefix() + "-EcrPublishRole")
+                .roleName(buildEcrPublishRoleName(props.dashedDomainName()))
                 .assumedBy(new ServicePrincipal("lambda.amazonaws.com"))
                 .inlinePolicies(java.util.Map.of(
                         "EcrPublishPolicy",
@@ -150,6 +161,6 @@ public class DevStack extends Stack {
         cfnOutput(this, "EcrLogGroupArn", this.ecrLogGroup.getLogGroupArn());
         cfnOutput(this, "EcrPublishRoleArn", this.ecrPublishRole.getRoleArn());
 
-        infof("DevStack %s created successfully for %s", this.getNode().getId(), dashedDomainName);
+        infof("DevStack %s created successfully for %s", this.getNode().getId(), props.dashedDomainName());
     }
 }
