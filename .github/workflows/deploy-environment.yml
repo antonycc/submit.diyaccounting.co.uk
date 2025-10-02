@@ -95,7 +95,7 @@ jobs:
       - name: Deploy ApexStack
         run: |
           ./mvnw --errors clean package -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
-          && ./cdk-environment \
+          && cd ./cdk-environment \
           && npx cdk deploy \
             ${{ needs.names.outputs.environment-name }}-ApexStack \
             --require-approval never \

@@ -120,16 +120,6 @@ public class SubmitEnvironment {
                     String fieldName = f.getName();
                     String ctx =
                             co.uk.diyaccounting.submit.utils.KindCdk.getContextValueString(scope, fieldName, current);
-                    if (ctx == null) {
-                        // Accept synonyms from cdk-environment/cdk.json
-                        if ("activeLabel".equals(fieldName)) {
-                            ctx = co.uk.diyaccounting.submit.utils.KindCdk.getContextValueString(
-                                    scope, "apexActiveLabel", null);
-                        } else if ("deploymentOriginsCsv".equals(fieldName)) {
-                            ctx = co.uk.diyaccounting.submit.utils.KindCdk.getContextValueString(
-                                    scope, "apexDeploymentOrigins", null);
-                        }
-                    }
                     if (ctx != null) f.set(props, ctx);
                 } catch (Exception ignored) {
                 }
