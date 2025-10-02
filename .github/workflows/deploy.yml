@@ -7,6 +7,14 @@ concurrency:
 on:
   workflow_dispatch:
     inputs:
+      forceAllStackDeployment:
+        description: 'Force re-deploy of all stacks even if they already exist or pass comparison checks'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+        required: false
+        default: 'false'
       skipDeploy:
         description: 'Run tests only (no deploy)'
         type: choice
@@ -15,26 +23,19 @@ on:
             - 'false'
         required: false
         default: 'false'
-      loadTestDuration:
-        description: 'Duration for load test (e.g. 30s, 10m, 1h)'
-        required: false
-        default: '30s'
       deploymentName:
         description: 'Deployment name (ci for shared CI, or custom name)'
         required: false
         default: ''
+      loadTestDuration:
+        description: 'Duration for load test (e.g. 30s, 10m, 1h)'
+        required: false
+        default: '30s'
       selfDestructDelayHours:
         description: 'Hours before self-destruct triggers for non-prod environments'
         required: false
         default: '1'
-      forceAllStackDeployment:
-        description: 'Force re-deploy of all stacks even if they already exist or pass comparison checks'
-        type: choice
-        options:
-            - 'true'
-            - 'false'
-        required: false
-        default: 'false'
+
   push:
     branches:
       - '**'
