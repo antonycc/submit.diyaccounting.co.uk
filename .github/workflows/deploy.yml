@@ -865,7 +865,7 @@ jobs:
             ;
         env:
           ECR_REPOSITORY_BASE_URL: ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com
-          ECR_REPOSITORY_NAME: ${{ needs.names.outputs.deployment-name }}-submit-diyaccounting-co-uk-ecr
+          ECR_REPOSITORY_NAME: app-${{ needs.names.outputs.deployment-name }}-submit-diyaccounting-co-uk-ecr
 
       - name: Check if image already exists in ECR
         id: image-exists
@@ -881,7 +881,7 @@ jobs:
           fi
         env:
           ECR_REPOSITORY_BASE_URL: ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com
-          ECR_REPOSITORY_NAME: ${{ needs.names.outputs.deployment-name }}-submit-diyaccounting-co-uk-ecr
+          ECR_REPOSITORY_NAME: app-${{ needs.names.outputs.deployment-name }}-submit-diyaccounting-co-uk-ecr
 
       - name: Checkout
         if: ${{ steps.image-exists.outputs.exists != 'true' }}
@@ -919,7 +919,7 @@ jobs:
           docker push "${ECR_REPOSITORY_BASE_URL?}/${ECR_REPOSITORY_NAME?}:latest"
         env:
           ECR_REPOSITORY_BASE_URL: ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com
-          ECR_REPOSITORY_NAME: ${{ needs.names.outputs.deployment-name }}-submit-diyaccounting-co-uk-ecr
+          ECR_REPOSITORY_NAME: app-${{ needs.names.outputs.deployment-name }}-submit-diyaccounting-co-uk-ecr
     outputs:
       base-image-tag: ${{ github.sha }}
 

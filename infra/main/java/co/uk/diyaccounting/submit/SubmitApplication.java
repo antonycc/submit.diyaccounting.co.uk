@@ -192,8 +192,8 @@ public class SubmitApplication {
         var selfDestructLogGroupName = "/aws/lambda/%s-self-destruct".formatted(resourceNamePrefix);
 
         var ecrRepositoryArn = "arn:aws:ecr:%s:%s:repository/%s-ecr"
-            .formatted(regionName, awsAccount, dashedDomainName);
-        var ecrRepositoryName = buildEcrRepositoryName(dashedDomainName);
+            .formatted(regionName, awsAccount, resourceNamePrefix);
+        var ecrRepositoryName = buildEcrRepositoryName(resourceNamePrefix);
 
         // Create ObservabilityStack with resources used in monitoring the application
         String observabilityStackId = "%s-ObservabilityStack".formatted(deploymentName);
