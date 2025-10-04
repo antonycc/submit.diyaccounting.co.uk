@@ -160,7 +160,7 @@ public class HmrcStack extends Stack {
                 "DIY_SUBMIT_HMRC_BASE_URI", props.hmrcBaseUri(),
                 "DIY_SUBMIT_HMRC_CLIENT_ID", props.hmrcClientId()));
         if (StringUtils.isNotBlank(props.hmrcClientSecretArn())) {
-            exchangeHmrcEnvBase.put("DIY_SUBMIT_HMRC_CLIENT_SECRET_ARN", props.hmrcClientSecretArn());
+            exchangeHmrcEnvBase.put("HMRC_CLIENT_SECRET_ARN", props.hmrcClientSecretArn());
         }
         if (props.optionalTestAccessToken().isPresent()
                 && StringUtils.isNotBlank(props.optionalTestAccessToken().get())) {

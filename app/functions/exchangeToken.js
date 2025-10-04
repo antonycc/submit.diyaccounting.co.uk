@@ -221,7 +221,7 @@ async function retrieveHmrcClientSecret() {
     logger.info(`Secret retrieved from environment variable DIY_SUBMIT_HMRC_CLIENT_SECRET and cached`);
     // Only update the cached secret if it isn't set
   } else if (!cachedHmrcClientSecret) {
-    const secretArn = process.env.DIY_SUBMIT_HMRC_CLIENT_SECRET_ARN; // set via Lambda environment variable
+    const secretArn = process.env.HMRC_CLIENT_SECRET_ARN; // set via Lambda environment variable
     const data = await secretsClient.send(new GetSecretValueCommand({ SecretId: secretArn }));
     cachedHmrcClientSecret = data.SecretString;
     logger.info(`Secret retrieved from Secrets Manager with Arn ${secretArn} and cached`);

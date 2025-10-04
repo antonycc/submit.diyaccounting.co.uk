@@ -17,7 +17,7 @@ describe("Integration – VAT API Endpoints (Direct Handler Testing)", () => {
     // Reset environment variables with stubbed mode enabled
     process.env = {
       ...originalEnv,
-      DIY_SUBMIT_BUNDLE_MOCK: "true",
+      DIY_SUBMIT_TEST_BUNDLE_MOCK: "true",
       // Enable stubbed mode for predictable responses
       DIY_SUBMIT_TEST_VAT_OBLIGATIONS: JSON.stringify({
         obligations: [

@@ -134,8 +134,8 @@ public class AccountStack extends Stack {
         // Request Bundles Lambda
         var requestBundlesLambdaEnv = new HashMap<>(Map.of(
                 "DIY_SUBMIT_USER_POOL_ID", userPool.getUserPoolId(),
-                "DIY_SUBMIT_BUNDLE_EXPIRY_DATE", "2025-12-31",
-                "DIY_SUBMIT_BUNDLE_USER_LIMIT", "10"));
+                "DIY_SUBMIT_TEST_BUNDLE_EXPIRY_DATE", "2025-12-31",
+                "DIY_SUBMIT_TEST_BUNDLE_USER_LIMIT", "10"));
         var requestBundlesLambdaUrlOriginFunctionHandler = "bundle.httpPost";
         var requestBundlesLambdaUrlOriginFunctionName = buildFunctionName(props.compressedResourceNamePrefix(), requestBundlesLambdaUrlOriginFunctionHandler);
         var requestBundlesLambdaUrlOrigin = new LambdaUrlOrigin(

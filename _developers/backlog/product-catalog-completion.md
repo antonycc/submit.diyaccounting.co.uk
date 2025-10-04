@@ -47,7 +47,7 @@
     - listGrants(subject)
     - putGrant({subject,bundleId,qualifiers,expiry}) with upsert semantics
     - countActiveGrants(bundleId, now) for cap checks
-- Wire entitlementsService.getGrantedBundles to call the store (with a fallback to the in-memory store when DIY_SUBMIT_BUNDLE_MOCK=true for local dev/tests).
+- Wire entitlementsService.getGrantedBundles to call the store (with a fallback to the in-memory store when DIY_SUBMIT_TEST_BUNDLE_MOCK=true for local dev/tests).
 - In bundle.httpPostMock:
     - For catalog-driven on-request flows, before granting: enforce cap using countActiveGrants(bundleId, now), then persist with putGrant. Return expiry ISO string.
     - For automatic flows, continue to return granted without persistence.
@@ -100,7 +100,7 @@
 - Playwright
     - CATALOG_DRIVEN_UI on: activities populate; requesting a bundle enables an activity; error scenarios (unauthenticated, cap reached mocked).
 - Mocks
-    - Use aws-sdk-client-mock for DynamoDB and S3; feature flag DIY_SUBMIT_BUNDLE_MOCK for in-memory mode.
+    - Use aws-sdk-client-mock for DynamoDB and S3; feature flag DIY_SUBMIT_TEST_BUNDLE_MOCK for in-memory mode.
 
 
 ### Extend the “competing” legacy feature to align
@@ -121,7 +121,7 @@
 - Feature flags:
     - CATALOG_DRIVEN_UI=true to enable new UI.
     - DIY_SUBMIT_ENABLE_CATALOG_GUARDS=true to enforce activity guards.
-    - DIY_SUBMIT_BUNDLE_MOCK=true for local dev without AWS.
+    - DIY_SUBMIT_TEST_BUNDLE_MOCK=true for local dev without AWS.
 - Environment:
     - Provide DIY_SUBMIT_ENTITLEMENTS_TABLE (after DynamoDB added).
     - Continue to set DIY_SUBMIT_TEST_S3_* for non-AWS S3 testing.

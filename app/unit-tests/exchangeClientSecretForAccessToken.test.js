@@ -80,7 +80,7 @@ describe("exchangeClientSecretForAccessToken", () => {
       const testSecretArn = "arn:aws:secretsmanager:us-east-1:123456789012:secret:test-secret";
       const testSecretValue = "test-client-secret-from-secrets-manager";
 
-      process.env.DIY_SUBMIT_HMRC_CLIENT_SECRET_ARN = testSecretArn;
+      process.env.HMRC_CLIENT_SECRET_ARN = testSecretArn;
       delete process.env.DIY_SUBMIT_HMRC_CLIENT_SECRET;
 
       // Mock Secrets Manager response
@@ -118,7 +118,7 @@ describe("exchangeClientSecretForAccessToken", () => {
       const testSecretArn = "arn:aws:secretsmanager:us-east-1:123456789012:secret:test-secret";
       const testSecretValue = "cached-secret-value";
 
-      process.env.DIY_SUBMIT_HMRC_CLIENT_SECRET_ARN = testSecretArn;
+      process.env.HMRC_CLIENT_SECRET_ARN = testSecretArn;
       delete process.env.DIY_SUBMIT_HMRC_CLIENT_SECRET;
 
       // Mock Secrets Manager response
@@ -155,7 +155,7 @@ describe("exchangeClientSecretForAccessToken", () => {
       const testSecretArn = "arn:aws:secretsmanager:us-east-1:123456789012:secret:test-secret";
       const testSecretValue = "secret-with-special-chars!@#$%";
 
-      process.env.DIY_SUBMIT_HMRC_CLIENT_SECRET_ARN = testSecretArn;
+      process.env.HMRC_CLIENT_SECRET_ARN = testSecretArn;
       delete process.env.DIY_SUBMIT_HMRC_CLIENT_SECRET;
 
       // Mock Secrets Manager response with the expected structure
@@ -193,7 +193,7 @@ describe("exchangeClientSecretForAccessToken", () => {
       const testSecretArn = "arn:aws:secretsmanager:us-east-1:123456789012:secret:test-secret";
 
       process.env.DIY_SUBMIT_HMRC_CLIENT_SECRET = envSecret;
-      process.env.DIY_SUBMIT_HMRC_CLIENT_SECRET_ARN = testSecretArn;
+      process.env.HMRC_CLIENT_SECRET_ARN = testSecretArn;
 
       // Mock Secrets Manager response (should not be called)
       secretsManagerMock.on(GetSecretValueCommand).resolves({

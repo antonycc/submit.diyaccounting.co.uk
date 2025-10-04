@@ -28,9 +28,9 @@ describe("Integration – /api/request-bundle route (MOCK)", () => {
   const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
   beforeEach(() => {
-    process.env.DIY_SUBMIT_BUNDLE_MOCK = "true";
-    process.env.DIY_SUBMIT_BUNDLE_EXPIRY_DATE = "2025-12-31";
-    process.env.DIY_SUBMIT_BUNDLE_USER_LIMIT = "1000";
+    process.env.DIY_SUBMIT_TEST_BUNDLE_MOCK = "true";
+    process.env.DIY_SUBMIT_TEST_BUNDLE_EXPIRY_DATE = "2025-12-31";
+    process.env.DIY_SUBMIT_TEST_BUNDLE_USER_LIMIT = "1000";
 
     app = express();
     app.use(express.json());

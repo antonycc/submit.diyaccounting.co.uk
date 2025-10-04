@@ -40,8 +40,8 @@ export function __getInMemoryBundlesStore() {
 
 function isMockMode() {
   return (
-    String(process.env.DIY_SUBMIT_BUNDLE_MOCK || "").toLowerCase() === "true" ||
-    process.env.DIY_SUBMIT_BUNDLE_MOCK === "1"
+    String(process.env.DIY_SUBMIT_TEST_BUNDLE_MOCK || "").toLowerCase() === "true" ||
+    process.env.DIY_SUBMIT_TEST_BUNDLE_MOCK === "1"
   );
 }
 
@@ -233,7 +233,7 @@ export async function httpPost(event) {
 
     if (!catalogBundle) {
       // Legacy behavior preserved (HMRC_TEST_API or other external bundles using envs)
-      const expiryDate = process.env.DIY_SUBMIT_BUNDLE_EXPIRY_DATE || "2025-12-31";
+      const expiryDate = process.env.DIY_SUBMIT_TEST_BUNDLE_EXPIRY_DATE || "2025-12-31";
       if (new Date() > new Date(expiryDate)) {
         return {
           statusCode: 403,
@@ -246,7 +246,7 @@ export async function httpPost(event) {
       }
 
       // Check user limit for this bundle
-      const userLimit = parseInt(process.env.DIY_SUBMIT_BUNDLE_USER_LIMIT || "1000");
+      const userLimit = parseInt(process.env.DIY_SUBMIT_TEST_BUNDLE_USER_LIMIT || "1000");
       let currentCount;
       if (isMockMode()) {
         currentCount = 0;

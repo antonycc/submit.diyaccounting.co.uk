@@ -189,7 +189,7 @@ jobs:
           BUILD_NUMBER: ${{ github.run_number }}
           SELF_DESTRUCT_HANDLER_SOURCE: "../infra/test/resources/fake-self-destruct-lambda.jar"
           GOOGLE_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ steps.names.outputs.ENV_NAME }}/submit/google/client_secret"
-          DIY_SUBMIT_HMRC_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ steps.names.outputs.ENV_NAME }}/submit/hmrc/client_secret"
+          HMRC_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ steps.names.outputs.ENV_NAME }}/submit/hmrc/client_secret"
           DIY_SUBMIT_DOMAIN_NAME: ${{ steps.names.outputs.DEPLOYMENT_NAME == 'prod' && 'submit.diyaccounting.co.uk' || format('{0}.submit.diyaccounting.co.uk', steps.names.outputs.DEPLOYMENT_NAME) }}
           DIY_SUBMIT_BASE_URL: ${{ steps.names.outputs.DEPLOYMENT_NAME == 'prod' && 'https://submit.diyaccounting.co.uk/' || format('https://{0}.submit.diyaccounting.co.uk/', steps.names.outputs.DEPLOYMENT_NAME) }}
           HOSTED_ZONE_NAME: ${{ vars.AWS_HOSTED_ZONE_NAME }}
@@ -212,7 +212,7 @@ jobs:
           DEPLOYMENT_NAME: ${{ steps.names.outputs.DEPLOYMENT_NAME }}
           SELF_DESTRUCT_HANDLER_SOURCE: "../infra/test/resources/fake-self-destruct-lambda.jar"
           GOOGLE_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ steps.names.outputs.ENV_NAME }}/submit/google/client_secret"
-          DIY_SUBMIT_HMRC_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ steps.names.outputs.ENV_NAME }}/submit/hmrc/client_secret"
+          HMRC_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ steps.names.outputs.ENV_NAME }}/submit/hmrc/client_secret"
 
       - name: Destroy HmrcStack
         if: ${{ steps.names.outputs.DEPLOYMENT_NAME != 'prod' }}
@@ -229,7 +229,7 @@ jobs:
           DEPLOYMENT_NAME: ${{ steps.names.outputs.DEPLOYMENT_NAME }}
           SELF_DESTRUCT_HANDLER_SOURCE: "../infra/test/resources/fake-self-destruct-lambda.jar"
           GOOGLE_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ steps.names.outputs.ENV_NAME }}/submit/google/client_secret"
-          DIY_SUBMIT_HMRC_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ steps.names.outputs.ENV_NAME }}/submit/hmrc/client_secret"
+          HMRC_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ steps.names.outputs.ENV_NAME }}/submit/hmrc/client_secret"
           BASE_IMAGE_TAG: 'latest'
 
       - name: Destroy IdentityStack

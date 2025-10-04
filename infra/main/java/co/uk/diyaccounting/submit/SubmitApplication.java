@@ -36,14 +36,11 @@ public class SubmitApplication {
 
     public static class SubmitApplicationProps {
         // Fields match cdk.json context keys (camelCase). Environment overrides are applied in SubmitApplication
-        // selectively.
-        // common
         public String envName;
         public String deploymentName;
         public String hostedZoneName;
         public String subDomainName;
         public String cloudTrailEnabled;
-        public String s3RetainReceiptsBucket;
         public String hmrcClientId;
         public String hmrcClientSecretArn;
         public String cognitoDomainPrefix;
@@ -90,6 +87,7 @@ public class SubmitApplication {
         infof("Created stack:", submitApplication.devStack.getStackName());
         infof("Created stack:", submitApplication.authStack.getStackName());
         infof("Created stack:", submitApplication.hmrcStack.getStackName());
+        infof("Created stack:", submitApplication.accountStack.getStackName());
         infof("Created stack:", submitApplication.opsStack.getStackName());
         if (submitApplication.selfDestructStack != null) {
             infof("Created stack:", submitApplication.selfDestructStack.getStackName());
@@ -125,18 +123,19 @@ public class SubmitApplication {
         var regionName = primaryEnv.getRegion() != null ? primaryEnv.getRegion() : null;
         var awsAccount = primaryEnv.getAccount() != null ? primaryEnv.getAccount() : null;
 
-        // Allow environment variables to override any appProps values
-        var hostedZoneName = envOr("HOSTED_ZONE_NAME", appProps.hostedZoneName, "(from hostedZoneName in cdk.json)");
-        var subDomainName = envOr("SUB_DOMAIN_NAME", appProps.subDomainName, "(from subDomainName in cdk.json)");
-        var hmrcBaseUri = envOr("DIY_SUBMIT_HMRC_BASE_URI", appProps.hmrcBaseUri, "(from hmrcBaseUri in cdk.json)");
-        var hmrcClientId = envOr("DIY_SUBMIT_HMRC_CLIENT_ID", appProps.hmrcClientId, "(from hmrcClientId in cdk.json)");
+        // Allow environment variables to override some appProps values
+        var cognitoUserPoolArn = envOr(
+            "COGNITO_USER_POOL_ARN",
+            appProps.userPoolArn,
+            "(from cognitoDomainPrefix in cdk.json)");
+        var cognitoUserPoolClientId = envOr(
+            "COGNITO_USER_POOL_CLIENT_ID",
+            appProps.userPoolClientId,
+            "(from cognitoDomainPrefix in cdk.json)");
         var hmrcClientSecretArn = envOr(
-                "DIY_SUBMIT_HMRC_CLIENT_SECRET_ARN",
+                "HMRC_CLIENT_SECRET_ARN",
                 appProps.hmrcClientSecretArn,
                 "(from hmrcClientSecretArn in cdk.json)");
-        var lambdaEntry = envOr("LAMBDA_ENTRY", appProps.lambdaEntry, "(from lambdaEntry in cdk.json)");
-        var lambdaUrlAuthType =
-                envOr("LAMBDA_URL_AUTH_TYPE", appProps.lambdaUrlAuthType, "(from lambdaUrlAuthType in cdk.json)");
         var baseImageTag = envOr("BASE_IMAGE_TAG", appProps.baseImageTag, "(from baseImageTag in cdk.json)");
         var selfDestructDelayHours = envOr(
                 "SELF_DESTRUCT_DELAY_HOURS",
@@ -148,19 +147,11 @@ public class SubmitApplication {
                 "(from selfDestructHandlerSource in cdk.json)");
         var cloudTrailEnabled =
                 envOr("CLOUD_TRAIL_ENABLED", appProps.cloudTrailEnabled, "(from cloudTrailEnabled in cdk.json)");
-        var cognitoUserPoolArn = envOr(
-                "COGNITO_USER_POOL_ARN",
-                appProps.userPoolArn,
-                "(from cognitoDomainPrefix in cdk.json)");
-        var cognitoUserPoolClientId = envOr(
-                "COGNITO_USER_POOL_CLIENT_ID",
-                appProps.userPoolClientId,
-                "(from cognitoDomainPrefix in cdk.json)");
 
         // Generate predictable resource name prefix based on domain and environment
-        var domainName = buildDomainName(deploymentName, subDomainName, hostedZoneName);
+        var domainName = buildDomainName(deploymentName, appProps.subDomainName, appProps.hostedZoneName);
         var cognitoDomainName =
-                buildCognitoDomainName(deploymentName, appProps.cognitoDomainPrefix, subDomainName, hostedZoneName);
+                buildCognitoDomainName(deploymentName, appProps.cognitoDomainPrefix, appProps.subDomainName, appProps.hostedZoneName);
 
         // Generate predictable resource names
         var baseUrl = "https://%s/".formatted(domainName);
@@ -214,8 +205,8 @@ public class SubmitApplication {
                         .baseImageTag(baseImageTag)
                         .ecrRepositoryArn(ecrRepositoryArn)
                         .ecrRepositoryName(ecrRepositoryName)
-                        .lambdaEntry(lambdaEntry)
-                        .lambdaUrlAuthType(lambdaUrlAuthType)
+                        .lambdaEntry(appProps.lambdaEntry)
+                        .lambdaUrlAuthType(appProps.lambdaUrlAuthType)
                         .cognitoClientId(cognitoUserPoolClientId)
                         .cognitoBaseUri("https://%s".formatted(cognitoDomainName))
                         .build());
@@ -241,10 +232,10 @@ public class SubmitApplication {
                         .baseImageTag(baseImageTag)
                         .ecrRepositoryArn(ecrRepositoryArn)
                         .ecrRepositoryName(ecrRepositoryName)
-                        .hmrcBaseUri(hmrcBaseUri)
-                        .hmrcClientId(hmrcClientId)
-                        .lambdaUrlAuthType(lambdaUrlAuthType)
-                        .lambdaEntry(lambdaEntry)
+                        .hmrcBaseUri(appProps.hmrcBaseUri)
+                        .hmrcClientId(appProps.hmrcClientId)
+                        .lambdaUrlAuthType(appProps.lambdaUrlAuthType)
+                        .lambdaEntry(appProps.lambdaEntry)
                         .hmrcClientSecretArn(hmrcClientSecretArn)
                         .receiptsBucketFullName(receiptsBucketFullName)
                         .build());
@@ -271,8 +262,8 @@ public class SubmitApplication {
                 .ecrRepositoryArn(ecrRepositoryArn)
                 .ecrRepositoryName(ecrRepositoryName)
                 .cognitoUserPoolArn(cognitoUserPoolArn)
-                .lambdaUrlAuthType(lambdaUrlAuthType)
-                .lambdaEntry(lambdaEntry)
+                .lambdaUrlAuthType(appProps.lambdaUrlAuthType)
+                .lambdaEntry(appProps.lambdaEntry)
                 .build());
         this.accountStack.addDependency(devStack);
 

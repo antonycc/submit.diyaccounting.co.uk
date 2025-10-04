@@ -19,23 +19,20 @@ import java.util.Map;
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 
 @SetEnvironmentVariable.SetEnvironmentVariables({
-    @SetEnvironmentVariable(key = "", value = "test"),
+    @SetEnvironmentVariable(key = "ENV_NAME", value = "test"),
     @SetEnvironmentVariable(key = "DEPLOYMENT_NAME", value = "test"),
+    @SetEnvironmentVariable(key = "COGNITO_USER_POOL_ARN",
+        value = "arn:aws:cognito-idp:eu-west-2:111111111111:userpool/eu-west-2_123456789"),
+    @SetEnvironmentVariable(key = "COGNITO_USER_POOL_CLIENT_ID", value = "test-cognito-client-id"),
+    @SetEnvironmentVariable(key = "HMRC_CLIENT_SECRET_ARN",
+        value = "arn:aws:secretsmanager:eu-west-2:111111111111:secret:test-hmrc-secret"),
+    @SetEnvironmentVariable(key = "BASE_IMAGE_TAG", value = "latest"),
+    @SetEnvironmentVariable(key = "CLOUD_TRAIL_ENABLED", value = "true"),
+    @SetEnvironmentVariable(key = "SELF_DESTRUCT_DELAY_HOURS", value = "1"),
+    @SetEnvironmentVariable(key = "SELF_DESTRUCT_HANDLER_SOURCE",
+        value = "./infra/test/resources/fake-self-destruct-lambda.jar"),
     @SetEnvironmentVariable(key = "CDK_DEFAULT_ACCOUNT", value = "111111111111"),
     @SetEnvironmentVariable(key = "CDK_DEFAULT_REGION", value = "eu-west-2"),
-    @SetEnvironmentVariable(key = "COGNITO_USER_POOL_ARN", value = "arn:aws:cognito-idp:eu-west-2:111111111111:userpool/eu-west-2_123456789"),
-    @SetEnvironmentVariable(
-            key = "GOOGLE_CLIENT_SECRET_ARN",
-            value = "arn:aws:secretsmanager:eu-west-2:111111111111:secret:test-google-secret"),
-    @SetEnvironmentVariable(key = "DIY_SUBMIT_HMRC_BASE_URI", value = "https://test-api.service.hmrc.gov.uk"),
-    @SetEnvironmentVariable(key = "DIY_SUBMIT_HMRC_CLIENT_ID", value = "test-hmrc-client-id"),
-    @SetEnvironmentVariable(
-            key = "DIY_SUBMIT_HMRC_CLIENT_SECRET_ARN",
-            value = "arn:aws:secretsmanager:eu-west-2:111111111111:secret:test-hmrc-secret"),
-    @SetEnvironmentVariable(key = "COGNITO_USER_POOL_CLIENT_ID", value = "test-cognito-client-id"),
-    @SetEnvironmentVariable(
-            key = "SELF_DESTRUCT_HANDLER_SOURCE",
-            value = "./infra/test/resources/fake-self-destruct-lambda.jar"),
 })
 class SubmitApplicationCdkResourceTest {
 
