@@ -9,15 +9,7 @@ import { extractRequest, httpBadRequestResponse, httpOkResponse, httpServerError
 dotenv.config({ path: ".env" });
 
 export async function logReceipt(key, receipt) {
-  const homeUrl = process.env.DIY_SUBMIT_HOME_URL;
-  const receiptsBucketPostfix = process.env.DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX;
-  const { hostname } = new URL(homeUrl);
-  let envPrefix = "";
-  if (homeUrl === "https://submit.diyaccounting.co.uk/") {
-    envPrefix = "prod.";
-  }
-  const dashedDomain = `${envPrefix}${hostname}`.split(".").join("-");
-  const receiptsBucketFullName = `${dashedDomain}-${receiptsBucketPostfix}`;
+  const receiptsBucketFullName = process.env.DIY_SUBMIT_RECEIPTS_BUCKET_FULL_NAME;
 
   // Configure S3 client for containerized MinIO if environment variables are set
   let s3Config = {};

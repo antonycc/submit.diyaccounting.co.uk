@@ -214,7 +214,7 @@ jobs:
           DIY_SUBMIT_GOOGLE_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ steps.names.outputs.ENV_NAME }}/submit/google/client_secret"
           DIY_SUBMIT_HMRC_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ steps.names.outputs.ENV_NAME }}/submit/hmrc/client_secret"
 
-      - name: Destroy ApplicationStack
+      - name: Destroy HmrcStack
         if: ${{ steps.names.outputs.DEPLOYMENT_NAME != 'prod' }}
         run: |
           cd cdk-application && \

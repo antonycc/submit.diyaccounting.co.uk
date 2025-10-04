@@ -78,15 +78,13 @@ public class SelfDestructStack extends Stack {
 
         String selfDestructLogGroupName();
 
-        Optional<String> observabilityStackName();
-
         Optional<String> devStackName();
-
-        Optional<String> identityStackName();
 
         Optional<String> authStackName();
 
-        Optional<String> applicationStackName();
+        Optional<String> hmrcStackName();
+
+        Optional<String> accountStackName();
 
         Optional<String> edgeStackName();
 
@@ -175,11 +173,10 @@ public class SelfDestructStack extends Stack {
         // Environment variables for the function
         Map<String, String> environment = new HashMap<>();
         putIfNotNull(environment, "AWS_XRAY_TRACING_NAME", functionName);
-        putIfPresent(environment, "OBSERVABILITY_STACK_NAME", props.observabilityStackName());
         putIfPresent(environment, "DEV_STACK_NAME", props.devStackName());
-        putIfPresent(environment, "IDENTITY_STACK_NAME", props.identityStackName());
-        putIfPresent(environment, "AUTH_STACK_NAME", props.applicationStackName());
-        putIfPresent(environment, "APPLICATION_STACK_NAME", props.applicationStackName());
+        putIfPresent(environment, "AUTH_STACK_NAME", props.authStackName());
+        putIfPresent(environment, "HMRC_STACK_NAME", props.hmrcStackName());
+        putIfPresent(environment, "ACCOUNT_STACK_NAME", props.accountStackName());
         putIfPresent(environment, "EDGE_STACK_NAME", props.edgeStackName());
         putIfPresent(environment, "PUBLISH_STACK_NAME", props.publishStackName());
         putIfPresent(environment, "OPS_STACK_NAME", props.opsStackName());

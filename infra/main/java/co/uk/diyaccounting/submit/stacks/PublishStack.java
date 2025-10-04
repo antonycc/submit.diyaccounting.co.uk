@@ -1,16 +1,10 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.Kind.warnf;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-
-import java.util.List;
 import org.immutables.value.Value;
 import software.amazon.awscdk.AssetHashType;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.Expiration;
-import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.Size;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
@@ -18,8 +12,8 @@ import software.amazon.awscdk.Tags;
 import software.amazon.awscdk.services.cloudfront.Distribution;
 import software.amazon.awscdk.services.cloudfront.DistributionAttributes;
 import software.amazon.awscdk.services.cloudfront.IDistribution;
+import software.amazon.awscdk.services.logs.ILogGroup;
 import software.amazon.awscdk.services.logs.LogGroup;
-import software.amazon.awscdk.services.logs.RetentionDays;
 import software.amazon.awscdk.services.s3.Bucket;
 import software.amazon.awscdk.services.s3.IBucket;
 import software.amazon.awscdk.services.s3.assets.AssetOptions;
@@ -27,10 +21,15 @@ import software.amazon.awscdk.services.s3.deployment.BucketDeployment;
 import software.amazon.awscdk.services.s3.deployment.Source;
 import software.constructs.Construct;
 
+import java.util.List;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.Kind.warnf;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+
 public class PublishStack extends Stack {
 
     public final BucketDeployment webDeployment;
-    public final LogGroup webDeploymentLogGroup;
 
     @Value.Immutable
     public interface PublishStackProps extends StackProps, SubmitStackProps {
@@ -79,6 +78,8 @@ public class PublishStack extends Stack {
         String buildNumber();
 
         String docRootPath();
+
+        String webDeploymentLogGroupArn();
 
         static ImmutablePublishStackProps.Builder builder() {
             return ImmutablePublishStackProps.builder();
@@ -172,7 +173,11 @@ public class PublishStack extends Stack {
             infof("No build number provided, skipping submit.build generation");
         }
 
-        var deployPostfix = java.util.UUID.randomUUID().toString().substring(0, 8);
+        // Lookup Log Group for web deployment
+        ILogGroup webDeploymentLogGroup = LogGroup.fromLogGroupArn(
+                this,
+                props.resourceNamePrefix() + "-ImportedWebDeploymentLogGroup",
+            props.webDeploymentLogGroupArn());
 
         // Deploy the web website files to the web website bucket and invalidate distribution
         // Resolve the document root path from props to avoid path mismatches between generation and deployment
@@ -182,12 +187,6 @@ public class PublishStack extends Stack {
         var webDocRootSource = Source.asset(
                 publicDir.toString(),
                 AssetOptions.builder().assetHashType(AssetHashType.SOURCE).build());
-        this.webDeploymentLogGroup = LogGroup.Builder.create(
-                        this, props.resourceNamePrefix() + "-WebDeploymentLogGroup-" + deployPostfix)
-                .logGroupName("/deployment/" + props.resourceNamePrefix() + "-web-deployment-" + deployPostfix)
-                .retention(RetentionDays.ONE_DAY)
-                .removalPolicy(RemovalPolicy.DESTROY)
-                .build();
         this.webDeployment = BucketDeployment.Builder.create(
                         this, props.resourceNamePrefix() + "-DocRootToWebOriginDeployment")
                 .sources(List.of(webDocRootSource))
@@ -217,7 +216,6 @@ public class PublishStack extends Stack {
                 .build();
 
         // Outputs
-        cfnOutput(this, "WebDeploymentLogGroupArn", this.webDeploymentLogGroup.getLogGroupArn());
         cfnOutput(this, "BaseUrl", props.baseUrl());
 
         infof("PublishStack %s created successfully for %s", this.getNode().getId(), props.resourceNamePrefix());

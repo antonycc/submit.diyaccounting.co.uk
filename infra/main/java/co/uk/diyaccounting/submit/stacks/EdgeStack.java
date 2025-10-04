@@ -1,14 +1,6 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.convertDotSeparatedToDashSeparated;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import org.immutables.value.Value;
-import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.Stack;
@@ -45,15 +37,20 @@ import software.amazon.awscdk.services.s3.BlockPublicAccess;
 import software.amazon.awscdk.services.s3.Bucket;
 import software.amazon.awscdk.services.s3.BucketEncryption;
 import software.amazon.awscdk.services.s3.IBucket;
-import software.amazon.awscdk.services.s3.LifecycleRule;
-import software.amazon.awscdk.services.s3.ObjectOwnership;
 import software.amazon.awscdk.services.wafv2.CfnWebACL;
 import software.constructs.Construct;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.convertDotSeparatedToDashSeparated;
 
 public class EdgeStack extends Stack {
 
     public Bucket originBucket;
-    public IBucket originAccessLogBucket;
     public final Distribution distribution;
     public final Permission distributionInvokeFnUrl;
     public final ARecord aliasRecord;
@@ -99,6 +96,10 @@ public class EdgeStack extends Stack {
         String hostedZoneId();
 
         String certificateArn();
+
+        String originAccessLogBucketArn();
+
+        String distributionAccessLogBucketArn();
 
         Map<String, String> pathsToOriginLambdaFunctionUrls();
 
@@ -235,28 +236,15 @@ public class EdgeStack extends Stack {
                         .build())
                 .build();
 
-        // var idPrefix = "%s-origin-access-".formatted(dashedDomainName);
-        var originAccessLogBucket = originBucketName + "-logs";
-        infof(
-                "Setting expiration period to %d days for %s",
-                props.accessLogGroupRetentionPeriodDays(), props.compressedResourceNamePrefix());
-        this.originAccessLogBucket = Bucket.Builder.create(this, props.resourceNamePrefix() + "-LogBucket")
-                .bucketName(originAccessLogBucket)
-                .objectOwnership(ObjectOwnership.OBJECT_WRITER)
-                .versioned(false)
-                .blockPublicAccess(BlockPublicAccess.BLOCK_ALL)
-                .encryption(BucketEncryption.S3_MANAGED)
-                .removalPolicy(RemovalPolicy.DESTROY)
-                .autoDeleteObjects(true)
-                .lifecycleRules(List.of(LifecycleRule.builder()
-                        .id("%sLogsLifecycleRule".formatted(props.compressedResourceNamePrefix()))
-                        .enabled(true)
-                        .expiration(Duration.days(props.accessLogGroupRetentionPeriodDays()))
-                        .build()))
-                .build();
-        infof(
-                "Created log bucket %s with name",
-                this.originAccessLogBucket.getNode().getId(), originAccessLogBucket);
+        // Lookup log buckets
+        IBucket originAccessLogBucket = Bucket.fromBucketArn(
+                this,
+                props.resourceNamePrefix() + "-ImportedOriginAccessLogBucket",
+                props.originAccessLogBucketArn());
+        IBucket distributionLogsBucket = Bucket.fromBucketName(
+                this,
+                props.resourceNamePrefix() + "-ImportedDistributionLogBucket",
+                props.distributionAccessLogBucketArn());
 
         // Create the origin bucket
         this.originBucket = Bucket.Builder.create(this, props.resourceNamePrefix() + "-OriginBucket")
@@ -266,7 +254,7 @@ public class EdgeStack extends Stack {
                 .encryption(BucketEncryption.S3_MANAGED)
                 .removalPolicy(RemovalPolicy.DESTROY)
                 .autoDeleteObjects(true)
-                .serverAccessLogsBucket(this.originAccessLogBucket)
+                .serverAccessLogsBucket(originAccessLogBucket)
                 .build();
         infof(
                 "Created origin bucket %s with name %s",
@@ -313,21 +301,6 @@ public class EdgeStack extends Stack {
                                         map.put(entry.getKey(), createBehaviorOptionsForLambdaUrl(entry.getValue())),
                                 HashMap::putAll);
 
-        Bucket logsBucket = Bucket.Builder.create(this, props.resourceNamePrefix() + "-LogsBucket")
-                .bucketName(props.resourceNamePrefix() + "-logs-bucket")
-                .objectOwnership(ObjectOwnership.OBJECT_WRITER)
-                .versioned(false)
-                .blockPublicAccess(BlockPublicAccess.BLOCK_ALL)
-                .encryption(BucketEncryption.S3_MANAGED)
-                .removalPolicy(RemovalPolicy.DESTROY)
-                .autoDeleteObjects(true)
-                .lifecycleRules(List.of(LifecycleRule.builder()
-                        .id(props.resourceNamePrefix() + "-LogsLifecycleRule")
-                        .enabled(true)
-                        .expiration(Duration.days(props.accessLogGroupRetentionPeriodDays()))
-                        .build()))
-                .build();
-
         // CloudFront distribution for the web origin and all the URL Lambdas.
         this.distribution = Distribution.Builder.create(this, props.resourceNamePrefix() + "-WebDist")
                 .defaultBehavior(localBehaviorOptions) // props.webBehaviorOptions)
@@ -336,7 +309,7 @@ public class EdgeStack extends Stack {
                 .certificate(cert)
                 .defaultRootObject("index.html")
                 .enableLogging(true)
-                .logBucket(logsBucket)
+                .logBucket(distributionLogsBucket)
                 .logFilePrefix("cloudfront/")
                 .enableIpv6(true)
                 .sslSupportMethod(SSLMethod.SNI)

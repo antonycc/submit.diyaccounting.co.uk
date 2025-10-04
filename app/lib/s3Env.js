@@ -2,12 +2,7 @@
 import { S3Client } from "@aws-sdk/client-s3";
 
 export function makeReceiptsS3(env = process.env) {
-  const homeUrl = env.DIY_SUBMIT_HOME_URL;
-  const postfix = env.DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX;
-  const { hostname } = new URL(homeUrl);
-  const envPrefix = homeUrl === "https://submit.diyaccounting.co.uk/" ? "prod." : "";
-  const dashedDomain = `${envPrefix}${hostname}`.split(".").join("-");
-  const Bucket = `${dashedDomain}-${postfix}`;
+  const Bucket = env.DIY_SUBMIT_RECEIPTS_BUCKET_FULL_NAME;
 
   let config = {};
   if (env.NODE_ENV !== "stubbed" && env.DIY_SUBMIT_TEST_S3_ENDPOINT && env.DIY_SUBMIT_TEST_S3_ENDPOINT !== "off") {
