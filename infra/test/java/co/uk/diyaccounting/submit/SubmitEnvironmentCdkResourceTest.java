@@ -16,15 +16,21 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
+@SetEnvironmentVariable.SetEnvironmentVariables({
+    @SetEnvironmentVariable(key = "ENV_NAME", value = "test"),
+    @SetEnvironmentVariable(key = "DEPLOYMENT_NAME", value = "test-deploy"),
+    @SetEnvironmentVariable(key = "DIY_SUBMIT_DOMAIN_NAME", value = "test.submit.diyaccounting.co.uk"),
+    @SetEnvironmentVariable(key = "DIY_SUBMIT_BASE_URL", value = "https://test.submit.diyaccounting.co.uk"),
+    @SetEnvironmentVariable(key = "GOOGLE_CLIENT_SECRET_ARN", value = "arn:aws:secretsmanager:us-east-1:111111111111:secret:test-google-secret"),
+    @SetEnvironmentVariable(key = "CLOUD_TRAIL_ENABLED", value = "true"),
+    @SetEnvironmentVariable(key = "ACCESS_LOG_GROUP_RETENTION_PERIOD_DAYS", value = "1"),
+    @SetEnvironmentVariable(key = "S3_RETAIN_RECEIPTS_BUCKET", value = "false"),
+    @SetEnvironmentVariable(key = "CDK_DEFAULT_ACCOUNT", value = "111111111111"),
+    @SetEnvironmentVariable(key = "CDK_DEFAULT_REGION", value = "us-east-1")
+})
 class SubmitEnvironmentCdkResourceTest {
 
     @Test
-    @SetEnvironmentVariable(key = "CDK_DEFAULT_ACCOUNT", value = "111111111111")
-    @SetEnvironmentVariable(key = "CDK_DEFAULT_REGION", value = "us-east-1")
-    @SetEnvironmentVariable(key = "DIY_SUBMIT_GOOGLE_CLIENT_ID", value = "test-google-client-id")
-    @SetEnvironmentVariable(key = "DIY_SUBMIT_GOOGLE_CLIENT_SECRET_ARN", value = "arn:aws:secretsmanager:us-east-1:111111111111:secret:test-google-secret")
-    @SetEnvironmentVariable(key = "DIY_SUBMIT_ANTONYCC_CLIENT_ID", value = "test-antonycc-client-id")
-    @SetEnvironmentVariable(key = "DIY_SUBMIT_ANTONYCC_BASE_URI", value = "https://api.antonycc.gov.uk")
     void shouldCreateApexStackWithResources() throws IOException {
         // 1) Load the CDK context from cdk-environment/cdk.json
         Path cdkJsonPath = Path.of("cdk-environment/cdk.json").toAbsolutePath();
@@ -54,6 +60,15 @@ class SubmitEnvironmentCdkResourceTest {
         // 4) Make sure core resources exist on the Apex stack
         Template.fromStack(env.apexStack).resourceCountIs("AWS::CloudFront::Distribution", 1);
         Template.fromStack(env.apexStack).resourceCountIs("AWS::Route53::RecordSet", 1);
+
+        // 5) Identity stack should create a Cognito User Pool
+        Template.fromStack(env.identityStack).resourceCountIs("AWS::Cognito::UserPool", 1);
+
+        // 6) Data stack should create a receipts S3 bucket
+        Template.fromStack(env.dataStack).resourceCountIs("AWS::S3::Bucket", 1);
+
+        // 7) Observability stack should enable CloudTrail (Trail present)
+        Template.fromStack(env.observabilityStack).resourceCountIs("AWS::CloudTrail::Trail", 1);
     }
 
     private static @NotNull Map<String, Object> buildContextPropertyMapFromCdkJsonPath(Path cdkJsonPath)

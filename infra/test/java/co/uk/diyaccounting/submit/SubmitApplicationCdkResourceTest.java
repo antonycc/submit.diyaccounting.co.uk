@@ -25,7 +25,7 @@ import static co.uk.diyaccounting.submit.utils.Kind.infof;
     @SetEnvironmentVariable(key = "CDK_DEFAULT_REGION", value = "eu-west-2"),
     @SetEnvironmentVariable(key = "COGNITO_USER_POOL_ARN", value = "arn:aws:cognito-idp:eu-west-2:111111111111:userpool/eu-west-2_123456789"),
     @SetEnvironmentVariable(
-            key = "DIY_SUBMIT_GOOGLE_CLIENT_SECRET_ARN",
+            key = "GOOGLE_CLIENT_SECRET_ARN",
             value = "arn:aws:secretsmanager:eu-west-2:111111111111:secret:test-google-secret"),
     @SetEnvironmentVariable(key = "DIY_SUBMIT_HMRC_BASE_URI", value = "https://test-api.service.hmrc.gov.uk"),
     @SetEnvironmentVariable(key = "DIY_SUBMIT_HMRC_CLIENT_ID", value = "test-hmrc-client-id"),

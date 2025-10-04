@@ -9,8 +9,6 @@ import co.uk.diyaccounting.submit.stacks.SelfDestructStack;
 import co.uk.diyaccounting.submit.utils.KindCdk;
 import software.amazon.awscdk.App;
 import software.amazon.awscdk.Environment;
-import software.amazon.awscdk.services.cognito.IUserPool;
-import software.amazon.awscdk.services.cognito.UserPool;
 import software.constructs.Construct;
 
 import java.lang.reflect.Field;
@@ -40,7 +38,7 @@ public class SubmitApplication {
         // Fields match cdk.json context keys (camelCase). Environment overrides are applied in SubmitApplication
         // selectively.
         // common
-        public String env;
+        public String envName;
         public String deploymentName;
         public String hostedZoneName;
         public String subDomainName;
@@ -103,7 +101,7 @@ public class SubmitApplication {
     public SubmitApplication(App app, SubmitApplicationProps appProps) {
 
         // Determine environment and deployment name from env or appProps
-        String envName = envOr("ENV_NAME", appProps.env);
+        String envName = envOr("ENV_NAME", appProps.envName);
         String deploymentName = envOr("DEPLOYMENT_NAME", appProps.deploymentName);
 
         // Determine primary environment (account/region) from CDK env
@@ -378,7 +376,7 @@ public class SubmitApplication {
         }
 
         // default env to dev if not set
-        if (props.env == null || props.env.isBlank()) props.env = "dev";
+        if (props.envName == null || props.envName.isBlank()) props.envName = "dev";
         return props;
     }
 }

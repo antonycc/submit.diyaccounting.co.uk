@@ -146,7 +146,7 @@ jobs:
           DEPLOYMENT_NAME: ${{ steps.names.outputs.DEPLOYMENT_NAME }}
           BUILD_NUMBER: ${{ github.run_number }}
           SELF_DESTRUCT_HANDLER_SOURCE: "../infra/test/resources/fake-self-destruct-lambda.jar"
-          DOMAIN_NAME: ${{ steps.names.outputs.DEPLOYMENT_NAME == 'prod' && 'submit.diyaccounting.co.uk' || format('{0}.submit.diyaccounting.co.uk', steps.names.outputs.DEPLOYMENT_NAME) }}
+          DIY_SUBMIT_DOMAIN_NAME: ${{ steps.names.outputs.DEPLOYMENT_NAME == 'prod' && 'submit.diyaccounting.co.uk' || format('{0}.submit.diyaccounting.co.uk', steps.names.outputs.DEPLOYMENT_NAME) }}
           DIY_SUBMIT_HOME_URL: ${{ steps.names.outputs.DEPLOYMENT_NAME == 'prod' && 'https://submit.diyaccounting.co.uk/' || format('https://{0}.submit.diyaccounting.co.uk/', steps.names.outputs.DEPLOYMENT_NAME) }}
           HOSTED_ZONE_NAME: ${{ vars.AWS_HOSTED_ZONE_NAME }}
           HOSTED_ZONE_ID: ${{ vars.AWS_HOSTED_ZONE_ID }}
@@ -167,7 +167,7 @@ jobs:
           ENV_NAME: ${{ steps.names.outputs.ENV_NAME }}
           DEPLOYMENT_NAME: ${{ steps.names.outputs.DEPLOYMENT_NAME }}
           SELF_DESTRUCT_HANDLER_SOURCE: "../infra/test/resources/fake-self-destruct-lambda.jar"
-          DOMAIN_NAME: ${{ steps.names.outputs.DEPLOYMENT_NAME == 'prod' && 'submit.diyaccounting.co.uk' || format('{0}.submit.diyaccounting.co.uk', steps.names.outputs.DEPLOYMENT_NAME) }}
+          DIY_SUBMIT_DOMAIN_NAME: ${{ steps.names.outputs.DEPLOYMENT_NAME == 'prod' && 'submit.diyaccounting.co.uk' || format('{0}.submit.diyaccounting.co.uk', steps.names.outputs.DEPLOYMENT_NAME) }}
           DIY_SUBMIT_HOME_URL: ${{ steps.names.outputs.DEPLOYMENT_NAME == 'prod' && 'https://submit.diyaccounting.co.uk/' || format('https://{0}.submit.diyaccounting.co.uk/', steps.names.outputs.DEPLOYMENT_NAME) }}
           HOSTED_ZONE_NAME: ${{ vars.AWS_HOSTED_ZONE_NAME }}
           HOSTED_ZONE_ID: ${{ vars.AWS_HOSTED_ZONE_ID }}
@@ -188,9 +188,9 @@ jobs:
           DEPLOYMENT_NAME: ${{ steps.names.outputs.DEPLOYMENT_NAME }}
           BUILD_NUMBER: ${{ github.run_number }}
           SELF_DESTRUCT_HANDLER_SOURCE: "../infra/test/resources/fake-self-destruct-lambda.jar"
-          DIY_SUBMIT_GOOGLE_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ steps.names.outputs.ENV_NAME }}/submit/google/client_secret"
+          GOOGLE_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ steps.names.outputs.ENV_NAME }}/submit/google/client_secret"
           DIY_SUBMIT_HMRC_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ steps.names.outputs.ENV_NAME }}/submit/hmrc/client_secret"
-          DOMAIN_NAME: ${{ steps.names.outputs.DEPLOYMENT_NAME == 'prod' && 'submit.diyaccounting.co.uk' || format('{0}.submit.diyaccounting.co.uk', steps.names.outputs.DEPLOYMENT_NAME) }}
+          DIY_SUBMIT_DOMAIN_NAME: ${{ steps.names.outputs.DEPLOYMENT_NAME == 'prod' && 'submit.diyaccounting.co.uk' || format('{0}.submit.diyaccounting.co.uk', steps.names.outputs.DEPLOYMENT_NAME) }}
           DIY_SUBMIT_HOME_URL: ${{ steps.names.outputs.DEPLOYMENT_NAME == 'prod' && 'https://submit.diyaccounting.co.uk/' || format('https://{0}.submit.diyaccounting.co.uk/', steps.names.outputs.DEPLOYMENT_NAME) }}
           HOSTED_ZONE_NAME: ${{ vars.AWS_HOSTED_ZONE_NAME }}
           HOSTED_ZONE_ID: ${{ vars.AWS_HOSTED_ZONE_ID }}
@@ -211,7 +211,7 @@ jobs:
           ENV_NAME: ${{ steps.names.outputs.ENV_NAME }}
           DEPLOYMENT_NAME: ${{ steps.names.outputs.DEPLOYMENT_NAME }}
           SELF_DESTRUCT_HANDLER_SOURCE: "../infra/test/resources/fake-self-destruct-lambda.jar"
-          DIY_SUBMIT_GOOGLE_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ steps.names.outputs.ENV_NAME }}/submit/google/client_secret"
+          GOOGLE_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ steps.names.outputs.ENV_NAME }}/submit/google/client_secret"
           DIY_SUBMIT_HMRC_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ steps.names.outputs.ENV_NAME }}/submit/hmrc/client_secret"
 
       - name: Destroy HmrcStack
@@ -228,7 +228,7 @@ jobs:
           ENV_NAME: ${{ steps.names.outputs.ENV_NAME }}
           DEPLOYMENT_NAME: ${{ steps.names.outputs.DEPLOYMENT_NAME }}
           SELF_DESTRUCT_HANDLER_SOURCE: "../infra/test/resources/fake-self-destruct-lambda.jar"
-          DIY_SUBMIT_GOOGLE_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ steps.names.outputs.ENV_NAME }}/submit/google/client_secret"
+          GOOGLE_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ steps.names.outputs.ENV_NAME }}/submit/google/client_secret"
           DIY_SUBMIT_HMRC_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ steps.names.outputs.ENV_NAME }}/submit/hmrc/client_secret"
           BASE_IMAGE_TAG: 'latest'
 
@@ -246,7 +246,7 @@ jobs:
           ENV_NAME: ${{ steps.names.outputs.ENV_NAME }}
           DEPLOYMENT_NAME: ${{ steps.names.outputs.DEPLOYMENT_NAME }}
           SELF_DESTRUCT_HANDLER_SOURCE: "../infra/test/resources/fake-self-destruct-lambda.jar"
-          DIY_SUBMIT_GOOGLE_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ steps.names.outputs.ENV_NAME }}/submit/google/client_secret"
+          GOOGLE_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ steps.names.outputs.ENV_NAME }}/submit/google/client_secret"
 
       - name: Destroy DevStack
         if: ${{ steps.names.outputs.DEPLOYMENT_NAME != 'prod' }}
@@ -262,7 +262,7 @@ jobs:
           ENV_NAME: ${{ steps.names.outputs.ENV_NAME }}
           DEPLOYMENT_NAME: ${{ steps.names.outputs.DEPLOYMENT_NAME }}
           SELF_DESTRUCT_HANDLER_SOURCE: "../infra/test/resources/fake-self-destruct-lambda.jar"
-          DIY_SUBMIT_GOOGLE_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ steps.names.outputs.ENV_NAME }}/submit/google/client_secret"
+          GOOGLE_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ steps.names.outputs.ENV_NAME }}/submit/google/client_secret"
 
       - name: Destroy SelfDestructStack (Delivery)
         if: ${{ steps.names.outputs.DEPLOYMENT_NAME != 'prod' }}
@@ -277,7 +277,7 @@ jobs:
         env:
           ENV_NAME: ${{ steps.names.outputs.ENV_NAME }}
           DEPLOYMENT_NAME: ${{ steps.names.outputs.DEPLOYMENT_NAME }}
-          DIY_SUBMIT_GOOGLE_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ steps.names.outputs.ENV_NAME }}/submit/google/client_secret"
+          GOOGLE_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ steps.names.outputs.ENV_NAME }}/submit/google/client_secret"
           SELF_DESTRUCT_HANDLER_SOURCE: "../infra/test/resources/fake-self-destruct-lambda.jar"
 
       - name: Destroy SelfDestructStack (Application)
@@ -293,7 +293,7 @@ jobs:
         env:
           ENV_NAME: ${{ steps.names.outputs.ENV_NAME }}
           DEPLOYMENT_NAME: ${{ steps.names.outputs.DEPLOYMENT_NAME }}
-          DIY_SUBMIT_GOOGLE_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ steps.names.outputs.ENV_NAME }}/submit/google/client_secret"
+          GOOGLE_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ steps.names.outputs.ENV_NAME }}/submit/google/client_secret"
           SELF_DESTRUCT_HANDLER_SOURCE: "../infra/test/resources/fake-self-destruct-lambda.jar"
 
       - name: Destroy ObservabilityStack
@@ -310,7 +310,7 @@ jobs:
           ENV_NAME: ${{ steps.names.outputs.ENV_NAME }}
           DEPLOYMENT_NAME: ${{ steps.names.outputs.DEPLOYMENT_NAME }}
           SELF_DESTRUCT_HANDLER_SOURCE: "../infra/test/resources/fake-self-destruct-lambda.jar"
-          DIY_SUBMIT_GOOGLE_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ steps.names.outputs.ENV_NAME }}/submit/google/client_secret"
+          GOOGLE_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ steps.names.outputs.ENV_NAME }}/submit/google/client_secret"
 
       - name: CDK stacks after
         if: ${{ !cancelled() }}

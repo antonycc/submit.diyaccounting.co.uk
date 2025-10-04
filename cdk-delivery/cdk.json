@@ -2,7 +2,7 @@
   "app": "java -jar ../target/submit-delivery.jar",
   "output": "../cdk-submit-delivery.out",
   "context": {
-    "env": "dev",
+    "envName": "dev",
     "deploymentName": "dev",
     "domainName": "",
     "baseUrl": "",

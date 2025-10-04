@@ -2,7 +2,7 @@
   "app": "java -jar ../target/submit-application.jar",
   "output": "../cdk-submit-application.out",
   "context": {
-    "env": "dev",
+    "envName": "dev",
     "deploymentName": "dev",
     "hostedZoneName": "diyaccounting.co.uk",
     "hostedZoneId": "Z0315522208PWZSSBI9AL",

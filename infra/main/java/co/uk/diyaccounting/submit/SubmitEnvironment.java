@@ -28,7 +28,7 @@ public class SubmitEnvironment {
 
     public static class SubmitEnvironmentProps {
 
-        public String env;
+        public String envName;
         public String hostedZoneName;
         public String hostedZoneId;
         public String certificateArn;
@@ -83,7 +83,7 @@ public class SubmitEnvironment {
     public SubmitEnvironment(App app, SubmitEnvironmentProps appProps) {
 
         // Determine environment and deployment name from env or appProps
-        var envName = envOr("ENV_NAME", appProps.env);
+        var envName = envOr("ENV_NAME", appProps.envName);
         var deploymentName = envOr("DEPLOYMENT_NAME", envName);
 
         // Determine primary environment (account/region) from CDK env
@@ -104,12 +104,16 @@ public class SubmitEnvironment {
             warnf(
                 "CDK_DEFAULT_ACCOUNT or CDK_DEFAULT_REGION environment variables are not set, using environment agnostic stacks");
         }
-        var regionName = primaryEnv.getRegion() != null ? primaryEnv.getRegion() : null;
-        var awsAccount = primaryEnv.getAccount() != null ? primaryEnv.getAccount() : null;
 
-        var hostedZoneName = envOr("HOSTED_ZONE_NAME", appProps.hostedZoneName);
-        var hostedZoneId = envOr("HOSTED_ZONE_ID", appProps.hostedZoneId);
-        var certificateArn = envOr("CERTIFICATE_ARN", appProps.certificateArn);
+        // Load configuration from environment variables not defaulted in the cdk.json
+        var domainName = envOr("DIY_SUBMIT_DOMAIN_NAME", appProps.domainName);
+        var baseUrl = envOr("DIY_SUBMIT_BASE_URL", appProps.baseUrl);
+        var googleClientSecretArn = envOr(
+            "GOOGLE_CLIENT_SECRET_ARN",
+            appProps.googleClientSecretArn,
+            "(from googleClientSecretArn in cdk.json)");
+
+        // Support environment specific overrides of some cdk.json values
         var cloudTrailEnabled =
             envOr("CLOUD_TRAIL_ENABLED", appProps.cloudTrailEnabled, "(from cloudTrailEnabled in cdk.json)");
         var accessLogGroupRetentionPeriodDays = Integer.parseInt(envOr(
@@ -117,26 +121,12 @@ public class SubmitEnvironment {
             appProps.accessLogGroupRetentionPeriodDays,
             "30"
         ));
-        var authCertificateArn =
-            envOr("AUTH_CERTIFICATE_ARN", appProps.authCertificateArn, "(from authCertificateArn in cdk.json)");
-        var googleClientId =
-            envOr("DIY_SUBMIT_GOOGLE_CLIENT_ID", appProps.googleClientId, "(from googleClientId in cdk.json)");
-        var googleClientSecretArn = envOr(
-            "DIY_SUBMIT_GOOGLE_CLIENT_SECRET_ARN",
-            appProps.googleClientSecretArn,
-            "(from googleClientSecretArn in cdk.json)");
-        var antonyccClientId = envOr(
-            "DIY_SUBMIT_ANTONYCC_CLIENT_ID", appProps.antonyccClientId, "(from antonyccClientId in cdk.json)");
-        var antonyccBaseUri =
-            envOr("DIY_SUBMIT_ANTONYCC_BASE_URI", appProps.antonyccBaseUri, "(from antonyccBaseUri in cdk.json)");
         var s3RetainReceiptsBucket = envOr(
             "S3_RETAIN_RECEIPTS_BUCKET", appProps.s3RetainReceiptsBucket, "(from s3RetainReceiptsBucket in cdk.json)");
 
         // Generate predictable resource name prefix based on domain and environment
-        var domainName = envOr("DOMAIN_NAME", appProps.domainName);
         var cognitoDomainName =
             buildCognitoDomainName(deploymentName, appProps.cognitoDomainPrefix, domainName);
-        var baseUrl = envOr("DIY_SUBMIT_HOME_URL", appProps.baseUrl);
 
         // Generate predictable resource names
         String resourceNamePrefix = "env-%s".formatted(generateResourceNamePrefix(domainName));
@@ -208,14 +198,14 @@ public class SubmitEnvironment {
                 .dashedDomainName(dashedDomainName)
                 .baseUrl(baseUrl)
                 .cloudTrailEnabled(cloudTrailEnabled)
-                .hostedZoneName(hostedZoneName)
-                .hostedZoneId(hostedZoneId)
+                .hostedZoneName(appProps.hostedZoneName)
+                .hostedZoneId(appProps.hostedZoneId)
                 .cognitoDomainName(cognitoDomainName)
-                .authCertificateArn(authCertificateArn)
-                .googleClientId(googleClientId)
+                .authCertificateArn(appProps.authCertificateArn)
+                .googleClientId(appProps.googleClientId)
                 .googleClientSecretArn(googleClientSecretArn)
-                .antonyccClientId(antonyccClientId)
-                .antonyccBaseUri(antonyccBaseUri)
+                .antonyccClientId(appProps.antonyccClientId)
+                .antonyccBaseUri(appProps.antonyccBaseUri)
                 .build());
 
         String apexStackId = "%s-ApexStack".formatted(envName);
@@ -233,9 +223,9 @@ public class SubmitEnvironment {
                         .dashedDomainName(dashedDomainName)
                         .baseUrl(baseUrl)
                         .cloudTrailEnabled(cloudTrailEnabled)
-                        .hostedZoneName(hostedZoneName)
-                        .hostedZoneId(hostedZoneId)
-                        .certificateArn(certificateArn)
+                        .hostedZoneName(appProps.hostedZoneName)
+                        .hostedZoneId(appProps.hostedZoneId)
+                        .certificateArn(appProps.certificateArn)
                         .accessLogGroupRetentionPeriodDays(accessLogGroupRetentionPeriodDays)
                         .build());
     }
@@ -265,7 +255,7 @@ public class SubmitEnvironment {
                 }
             }
         }
-        if (props.env == null || props.env.isBlank()) props.env = "dev";
+        if (props.envName == null || props.envName.isBlank()) props.envName = "dev";
         return props;
     }
 }

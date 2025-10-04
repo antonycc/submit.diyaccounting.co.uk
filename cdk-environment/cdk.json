@@ -2,18 +2,23 @@
   "app": "java -jar ../target/submit-environment.jar",
   "output": "../cdk-submit-environment.out",
   "context": {
-    "env": "dev",
-    "deploymentName": "dev",
+    "envName": "",
+    "deploymentName": "",
+    "domainName": "",
+    "baseUrl": "",
+    "googleClientSecretArn": "",
     "hostedZoneName": "diyaccounting.co.uk",
     "hostedZoneId": "Z0315522208PWZSSBI9AL",
-    "domainName": "dev.submit.diyaccounting.co.uk",
-    "baseUrl": "https://dev.submit.diyaccounting.co.uk",
     "cloudTrailEnabled": "true",
     "cloudTrailLogGroupPrefix": "/aws/cloudtrail/",
     "cloudTrailLogGroupRetentionPeriodDays": "7",
     "accessLogGroupRetentionPeriodDays": "30",
     "s3RetainReceiptsBucket": "false",
     "certificateArn": "arn:aws:acm:us-east-1:887764105431:certificate/b23cd904-8e3b-4cd0-84f1-57ca11d7fe2b",
-    "authCertificateArn": "arn:aws:acm:us-east-1:887764105431:certificate/59a025f9-3620-43cd-9b2c-522f385ee223"
+    "authCertificateArn": "arn:aws:acm:us-east-1:887764105431:certificate/59a025f9-3620-43cd-9b2c-522f385ee223",
+    "googleClientId": "670010122633-j177nir959n1tdnd891uqsgj6fkrj6b1.apps.googleusercontent.com",
+    "antonyccClientId": "submit-diyaccounting-co-uk",
+    "antonyccBaseUri": "https://oidc.antonycc.com/",
+    "cognitoDomainPrefix": "auth"
   }
 }

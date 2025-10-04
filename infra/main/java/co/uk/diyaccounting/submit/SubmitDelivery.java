@@ -28,7 +28,7 @@ public class SubmitDelivery {
 
     // Fields match cdk.json context keys (camelCase). Environment overrides are applied in SubmitDelivery
     public static class SubmitDeliveryProps {
-        public String env;
+        public String envName;
         public String deploymentName;
         public String hostedZoneName;
         public String hostedZoneId;
@@ -96,7 +96,7 @@ public class SubmitDelivery {
 
     public SubmitDelivery(App app, SubmitDeliveryProps appProps) {
         // Environment e.g. ci, prod, and deployment name e.g. ci-branchname, prod
-        var envName = envOr("ENV_NAME", appProps.env);
+        var envName = envOr("ENV_NAME", appProps.envName);
         var deploymentName = envOr("DEPLOYMENT_NAME", appProps.deploymentName);
         var commitHash = envOr("COMMIT_HASH", "local");
         var websiteHash = envOr("WEBSITE_HASH", "local");
@@ -106,7 +106,7 @@ public class SubmitDelivery {
         var hostedZoneName = envOr("HOSTED_ZONE_NAME", appProps.hostedZoneName, "(from hostedZoneName in cdk.json)");
         var hostedZoneId = envOr("HOSTED_ZONE_ID", appProps.hostedZoneId, "(from hostedZoneId in cdk.json)");
         var certificateArn = envOr("CERTIFICATE_ARN", appProps.certificateArn, "(from certificateArn in cdk.json)");
-        var domainName = envOr("DOMAIN_NAME", appProps.domainName, "(from domainName in cdk.json)");
+        var domainName = envOr("DIY_SUBMIT_DOMAIN_NAME", appProps.domainName, "(from domainName in cdk.json)");
         var baseUrl = envOr("DIY_SUBMIT_HOME_URL", appProps.baseUrl, "(from baseUrl in cdk.json)");
         var docRootPath = envOr("DOC_ROOT_PATH", appProps.docRootPath, "(from docRootPath in cdk.json)");
 
@@ -308,7 +308,7 @@ public class SubmitDelivery {
             }
         }
         // default env to dev if not set
-        if (props.env == null || props.env.isBlank()) props.env = "dev";
+        if (props.envName == null || props.envName.isBlank()) props.envName = "dev";
         return props;
     }
 }

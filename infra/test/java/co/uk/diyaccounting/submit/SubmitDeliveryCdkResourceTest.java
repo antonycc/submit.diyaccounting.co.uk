@@ -23,7 +23,7 @@ import static co.uk.diyaccounting.submit.utils.Kind.infof;
     @SetEnvironmentVariable(key = "DEPLOYMENT_NAME", value = "test"),
     @SetEnvironmentVariable(key = "CDK_DEFAULT_ACCOUNT", value = "111111111111"),
     @SetEnvironmentVariable(key = "CDK_DEFAULT_REGION", value = "eu-west-2"),
-    @SetEnvironmentVariable(key = "DOMAIN_NAME", value = "test.submit.diyaccounting.co.uk"),
+    @SetEnvironmentVariable(key = "DIY_SUBMIT_DOMAIN_NAME", value = "test.submit.diyaccounting.co.uk"),
     @SetEnvironmentVariable(key = "DIY_SUBMIT_HOME_URL", value = "https://test.submit.diyaccounting.co.uk"),
     @SetEnvironmentVariable(key = "DOC_ROOT_PATH", value = "./web/public"),
     @SetEnvironmentVariable(

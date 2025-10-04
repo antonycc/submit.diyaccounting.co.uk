@@ -145,7 +145,7 @@ public class IdentityStack extends Stack {
         if (props.googleClientSecretArn() == null
                 || props.googleClientSecretArn().isBlank()) {
             throw new IllegalArgumentException(
-                    "DIY_SUBMIT_GOOGLE_CLIENT_SECRET_ARN must be provided for env=" + props.envName());
+                    "GOOGLE_CLIENT_SECRET_ARN must be provided for env=" + props.envName());
         }
         this.googleClientSecretsManagerSecret = Secret.fromSecretPartialArn(
                 this, props.resourceNamePrefix() + "-GoogleClientSecret", props.googleClientSecretArn());
