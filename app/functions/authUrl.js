@@ -11,7 +11,7 @@ export async function httpGetHmrc(event) {
   const state = event.queryStringParameters?.state;
   const clientId = process.env.DIY_SUBMIT_HMRC_CLIENT_ID;
   const redirectUri = process.env.DIY_SUBMIT_BASE_URL + "activities/submitVatCallback.html";
-  const hmrcBase = process.env.DIY_SUBMIT_HMRC_BASE_URI;
+  const hmrcBase = process.env.HMRC_BASE_URI;
   const scope = "write:vat read:vat";
   const authUrl =
     `${hmrcBase}/oauth/authorize?response_type=code` +

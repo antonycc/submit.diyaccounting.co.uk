@@ -90,8 +90,8 @@ export async function httpPost(event) {
   if (!key) {
     errorMessages.push("Missing key parameter derived from body");
   }
-  if (!process.env.DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX) {
-    errorMessages.push("DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX environment variable is not set, cannot log receipt");
+  if (!process.env.DIY_SUBMIT_RECEIPTS_BUCKET_FULL_NAME) {
+    errorMessages.push("DIY_SUBMIT_RECEIPTS_BUCKET_FULL_NAME environment variable is not set, cannot log receipt");
   }
   if (errorMessages.length > 0) {
     return httpBadRequestResponse({

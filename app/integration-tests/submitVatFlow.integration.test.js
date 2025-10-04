@@ -48,13 +48,13 @@ describe("System Test – end-to-end AWS-like flow", () => {
     process.env = {
       ...originalEnv,
       DIY_SUBMIT_TEST_SERVER_HTTP_PORT: "3000",
-      DIY_SUBMIT_HMRC_BASE_URI: "https://test.test.test.uk",
+      HMRC_BASE_URI: "https://test.test.test.uk",
       DIY_SUBMIT_HMRC_CLIENT_ID: "test client id",
       DIY_SUBMIT_BASE_URL: "http://hmrc.redirect:3000/",
       DIY_SUBMIT_HMRC_CLIENT_SECRET: "test hmrc client secret",
       DIY_SUBMIT_COGNITO_CLIENT_ID: "integration-test-cognito-client-id",
       DIY_SUBMIT_GOOGLE_CLIENT_SECRET: "test google client secret",
-      DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX: "test-receipts-bucket",
+      DIY_SUBMIT_RECEIPTS_BUCKET_FULL_NAME: "test-receipts-bucket",
       DIY_SUBMIT_TEST_S3_ENDPOINT: "http://localhost:9000", // Enable S3 operations for tests
     };
 
@@ -96,7 +96,7 @@ describe("System Test – end-to-end AWS-like flow", () => {
     const s3 = new S3Client({});
     const getResult = await s3.send(
       new GetObjectCommand({
-        Bucket: process.env.DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX,
+        Bucket: process.env.DIY_SUBMIT_RECEIPTS_BUCKET_FULL_NAME,
         Key: `receipts/${receipt.formBundleNumber}.json`,
       }),
     );

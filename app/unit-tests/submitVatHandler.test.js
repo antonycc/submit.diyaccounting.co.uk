@@ -23,6 +23,7 @@ describe("httpPostMock", () => {
 
     process.env = {
       ...originalEnv,
+      HMRC_BASE_URI: "https://test",
     };
   });
 

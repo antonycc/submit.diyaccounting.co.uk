@@ -23,6 +23,8 @@ describe("httpGetHmrc", () => {
   beforeEach(() => {
     process.env = {
       ...originalEnv,
+      HMRC_BASE_URI: "https://test",
+      DIY_SUBMIT_HMRC_CLIENT_ID: "test client id",
     };
   });
 
@@ -44,7 +46,7 @@ describe("httpGetHmrc", () => {
     expect(body.authUrl).toContain("https://test/oauth/authorize");
     expect(body.authUrl).toContain("response_type=code");
     expect(body.authUrl).toContain("client_id=test%20client%20id");
-    expect(body.authUrl).toContain("redirect_uri=http%3A%2F%2Fhmrc.test.redirect%3A3000");
+    expect(body.authUrl).toContain("redirect_uri=https%3A%2F%2Ftest%2Factivities%2FsubmitVatCallback.html");
     expect(body.authUrl).toContain("scope=write%3Avat%20read%3Avat");
     expect(body.authUrl).toContain("state=test-state-123");
   });

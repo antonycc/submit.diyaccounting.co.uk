@@ -116,7 +116,7 @@ export async function submitVat(periodKey, vatDue, vatNumber, hmrcAccessToken, g
 
   let hmrcResponseBody;
   let hmrcResponse;
-  const hmrcBase = process.env.DIY_SUBMIT_HMRC_BASE_URI;
+  const hmrcBase = process.env.HMRC_BASE_URI;
   const hmrcRequestUrl = `${hmrcBase}/organisations/vat/${vatNumber}/returns`;
   logger.info({
     message: `Request to POST ${hmrcRequestUrl}`,
@@ -240,7 +240,7 @@ export async function httpPost(event) {
         return httpBadRequestResponse({ request, message: "Invalid Authorization token" });
       }
       const bundles = await getUserBundlesFromCognito(userPoolId, decoded.sub);
-      const hmrcBase = process.env.DIY_SUBMIT_HMRC_BASE_URI;
+      const hmrcBase = process.env.HMRC_BASE_URI;
       const sandbox = isSandboxBase(hmrcBase);
       if (sandbox) {
         if (

@@ -84,7 +84,7 @@ export async function ensureMinioBucketExists(
 
 // Only start the server if this file is being run directly
 if (import.meta.url === `file://${process.argv[1]}`) {
-  const bucketNamePostfix = process.env.DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX;
+  const bucketNamePostfix = process.env.DIY_SUBMIT_RECEIPTS_BUCKET_FULL_NAME;
   const homeUrl = process.env.DIY_SUBMIT_BASE_URL;
   const { hostname } = new URL(homeUrl);
   const dashedDomain = hostname.split(".").join("-");

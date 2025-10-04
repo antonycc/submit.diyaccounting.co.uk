@@ -22,6 +22,8 @@ describe("httpPostMock", () => {
 
     process.env = {
       ...originalEnv,
+      HMRC_BASE_URI: "https://test",
+      DIY_SUBMIT_HMRC_CLIENT_ID: "test client id",
     };
   });
 
@@ -66,7 +68,7 @@ describe("httpPostMock", () => {
     expect(params.get("grant_type")).toBe("authorization_code");
     expect(params.get("client_id")).toBe("test client id");
     // expect(params.get("client_secret")).toBe("test hmrc client secret");
-    expect(params.get("redirect_uri")).toBe("http://hmrc.test.redirect:3000/activities/submitVatCallback.html");
+    expect(params.get("redirect_uri")).toBe("https://test/activities/submitVatCallback.html");
     expect(params.get("code")).toBe("test-auth-code");
   });
 

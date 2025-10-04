@@ -131,7 +131,7 @@ public class HmrcStack extends Stack {
         // authUrl - HMRC
         var authUrlHmrcLambdaEnv = new HashMap<>(Map.of(
                 "DIY_SUBMIT_BASE_URL", props.baseUrl(),
-                "DIY_SUBMIT_HMRC_BASE_URI", props.hmrcBaseUri(),
+                "HMRC_BASE_URI", props.hmrcBaseUri(),
                 "DIY_SUBMIT_HMRC_CLIENT_ID", props.hmrcClientId()));
         var authUrlHmrcLambdaUrlOriginFunctionHandler = "authUrl.httpGetHmrc";
         var authUrlHmrcLambdaUrlOriginFunctionName = buildFunctionName(props.compressedResourceNamePrefix(), authUrlHmrcLambdaUrlOriginFunctionHandler);
@@ -157,7 +157,7 @@ public class HmrcStack extends Stack {
         // exchangeToken - HMRC
         Map<String, String> exchangeHmrcEnvBase = new HashMap<>(Map.of(
                 "DIY_SUBMIT_BASE_URL", props.baseUrl(),
-                "DIY_SUBMIT_HMRC_BASE_URI", props.hmrcBaseUri(),
+                "HMRC_BASE_URI", props.hmrcBaseUri(),
                 "DIY_SUBMIT_HMRC_CLIENT_ID", props.hmrcClientId()));
         if (StringUtils.isNotBlank(props.hmrcClientSecretArn())) {
             exchangeHmrcEnvBase.put("HMRC_CLIENT_SECRET_ARN", props.hmrcClientSecretArn());
@@ -212,7 +212,7 @@ public class HmrcStack extends Stack {
         // submitVat
         var submitVatLambdaEnv = new HashMap<>(Map.of(
                 "DIY_SUBMIT_BASE_URL", props.baseUrl(),
-                "DIY_SUBMIT_HMRC_BASE_URI", props.hmrcBaseUri()));
+                "HMRC_BASE_URI", props.hmrcBaseUri()));
         var submitVatLambdaUrlOriginFunctionHandler = "submitVat.httpPost";
         var submitVatLambdaUrlOriginFunctionName = buildFunctionName(props.compressedResourceNamePrefix(), submitVatLambdaUrlOriginFunctionHandler);
         var submitVatLambdaUrlOrigin = new LambdaUrlOrigin(

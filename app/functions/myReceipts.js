@@ -37,11 +37,11 @@ export async function httpGet(event) {
       body: JSON.stringify({ error: "unauthorized", message: "Authentication required" }),
     };
   }
-  if (!process.env.DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX) {
+  if (!process.env.DIY_SUBMIT_RECEIPTS_BUCKET_FULL_NAME) {
     return httpServerErrorResponse({
       request,
       headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
-      message: "DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX not set",
+      message: "DIY_SUBMIT_RECEIPTS_BUCKET_FULL_NAME not set",
     });
   }
 

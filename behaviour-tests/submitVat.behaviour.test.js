@@ -59,7 +59,7 @@ console.log(
   `testAuthPassword: ${testAuthPassword} (DIY_SUBMIT_TEST_AUTH_PASSWORD: ${process.env.DIY_SUBMIT_TEST_AUTH_PASSWORD})`,
 );
 
-const bucketNamePostfix = process.env.DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX;
+const bucketNamePostfix = process.env.DIY_SUBMIT_RECEIPTS_BUCKET_FULL_NAME;
 const homeUrl = process.env.DIY_SUBMIT_BASE_URL;
 const { hostname } = new URL(homeUrl);
 const dashedDomain = hostname.split(".").join("-");

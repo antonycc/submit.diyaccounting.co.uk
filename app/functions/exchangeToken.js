@@ -62,7 +62,7 @@ export async function httpPostHmrc(event) {
 
   // OAuth exchange token post-body
   const clientSecret = await retrieveHmrcClientSecret();
-  const url = `${process.env.DIY_SUBMIT_HMRC_BASE_URI}/oauth/token`;
+  const url = `${process.env.HMRC_BASE_URI}/oauth/token`;
   const body = {
     grant_type: "authorization_code",
     client_id: process.env.DIY_SUBMIT_HMRC_CLIENT_ID,
@@ -80,7 +80,7 @@ export async function httpPostMock(event) {
     return httpBadRequestResponse({ request, message: "Missing code from event body" });
   }
   const clientSecret = await retrieveHmrcClientSecret();
-  const url = `${process.env.DIY_SUBMIT_HMRC_BASE_URI}/oauth/token`;
+  const url = `${process.env.HMRC_BASE_URI}/oauth/token`;
   const body = {
     grant_type: "authorization_code",
     client_id: process.env.DIY_SUBMIT_HMRC_CLIENT_ID,
@@ -99,7 +99,7 @@ export async function exchangeToken(providerUrlOrCode, maybeBody) {
     // TODO: Remove this when tests are otherwise stable.
     logger.warn({ message: "exchangeToken called with code and no body, defaulting to HMRC" });
     const clientSecret = await retrieveHmrcClientSecret();
-    const url = `${process.env.DIY_SUBMIT_HMRC_BASE_URI}/oauth/token`;
+    const url = `${process.env.HMRC_BASE_URI}/oauth/token`;
     const body = {
       grant_type: "authorization_code",
       client_id: process.env.DIY_SUBMIT_HMRC_CLIENT_ID,
