@@ -64,8 +64,6 @@ public class OpsStack extends Stack {
         @Override
         String cloudTrailEnabled();
 
-        String receiptsBucketArn(); // optional, may be null
-
         List<String> lambdaFunctionArns();
 
         static ImmutableOpsStackProps.Builder builder() {
@@ -130,13 +128,6 @@ public class OpsStack extends Stack {
             }
         }
 
-        // S3 buckets
-        IBucket receiptsBucket = null;
-        if (props.receiptsBucketArn() != null && !props.receiptsBucketArn().isBlank()) {
-            receiptsBucket = Bucket.fromBucketArn(
-                    this, props.resourceNamePrefix() + "-ReceiptsBucket", props.receiptsBucketArn());
-        }
-
         // Dashboard
         java.util.List<java.util.List<software.amazon.awscdk.services.cloudwatch.IWidget>> rows =
                 new java.util.ArrayList<>();
@@ -171,51 +162,6 @@ public class OpsStack extends Stack {
                             .height(6)
                             .build()));
         }
-
-        Metric s3ReceiptsAllReq = null;
-        Metric s3Receipts4xx = null;
-        Metric s3Receipts5xx = null;
-        if (receiptsBucket != null) {
-            s3ReceiptsAllReq = Metric.Builder.create()
-                    .namespace("AWS/S3")
-                    .metricName("AllRequests")
-                    .dimensionsMap(
-                            java.util.Map.of("BucketName", receiptsBucket.getBucketName(), "FilterId", "EntireBucket"))
-                    .statistic("Sum")
-                    .period(Duration.minutes(5))
-                    .build();
-            s3Receipts4xx = Metric.Builder.create()
-                    .namespace("AWS/S3")
-                    .metricName("4xxErrors")
-                    .dimensionsMap(
-                            java.util.Map.of("BucketName", receiptsBucket.getBucketName(), "FilterId", "EntireBucket"))
-                    .statistic("Sum")
-                    .period(Duration.minutes(5))
-                    .build();
-            s3Receipts5xx = Metric.Builder.create()
-                    .namespace("AWS/S3")
-                    .metricName("5xxErrors")
-                    .dimensionsMap(
-                            java.util.Map.of("BucketName", receiptsBucket.getBucketName(), "FilterId", "EntireBucket"))
-                    .statistic("Sum")
-                    .period(Duration.minutes(5))
-                    .build();
-        }
-
-        rows.add(java.util.List.of(
-                receiptsBucket != null
-                        ? GraphWidget.Builder.create()
-                                .title("S3 Receipts Requests/Errors")
-                                .left(java.util.List.of(s3ReceiptsAllReq, s3Receipts4xx, s3Receipts5xx))
-                                .width(12)
-                                .height(6)
-                                .build()
-                        : GraphWidget.Builder.create()
-                                .title("S3 Receipts (not configured)")
-                                .left(java.util.List.of())
-                                .width(12)
-                                .height(6)
-                                .build()));
 
         this.operationalDashboard = Dashboard.Builder.create(this, props.resourceNamePrefix() + "-OperationalDashboard")
                 .dashboardName(props.compressedResourceNamePrefix() + "-operations")

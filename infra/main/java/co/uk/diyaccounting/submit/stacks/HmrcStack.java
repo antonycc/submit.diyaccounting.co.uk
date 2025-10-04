@@ -8,6 +8,8 @@ import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.services.cloudfront.AllowedMethods;
+import software.amazon.awscdk.services.cognito.IUserPool;
+import software.amazon.awscdk.services.cognito.UserPool;
 import software.amazon.awscdk.services.iam.Effect;
 import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.lambda.Function;
@@ -45,7 +47,7 @@ public class HmrcStack extends Stack {
     public LogGroup myReceiptsLambdaLogGroup;
 
     @Value.Immutable
-    public interface ApplicationStackProps extends StackProps, SubmitStackProps {
+    public interface HmrcStackProps extends StackProps, SubmitStackProps {
 
         @Override
         Environment getEnv();
@@ -96,8 +98,6 @@ public class HmrcStack extends Stack {
 
         String hmrcClientSecretArn();
 
-        String cognitoUserPoolId();
-
         String receiptsBucketFullName();
 
         // TODO: Delete these and ensure the tests set environment which the server.js reads
@@ -109,16 +109,16 @@ public class HmrcStack extends Stack {
 
         Optional<String> optionalTestS3SecretKey(); // {
 
-        static ImmutableApplicationStackProps.Builder builder() {
-            return ImmutableApplicationStackProps.builder();
+        static ImmutableHmrcStackProps.Builder builder() {
+            return ImmutableHmrcStackProps.builder();
         }
     }
 
-    public HmrcStack(Construct scope, String id, ApplicationStackProps props) {
+    public HmrcStack(Construct scope, String id, HmrcStackProps props) {
         this(scope, id, null, props);
     }
 
-    public HmrcStack(Construct scope, String id, StackProps stackProps, ApplicationStackProps props) {
+    public HmrcStack(Construct scope, String id, StackProps stackProps, HmrcStackProps props) {
         super(scope, id, stackProps);
 
         // Lambdas
@@ -301,7 +301,7 @@ public class HmrcStack extends Stack {
                 this.myReceiptsLambda.getNode().getId(), props.lambdaEntry() + myReceiptsLambdaUrlOriginFunctionHandler);
 
         // Grant the LogReceiptLambda and MyReceiptsLambda write and read access respectively to the receipts S3 bucket
-        IBucket receiptsBucket = Bucket.fromBucketArn(
+        IBucket receiptsBucket = Bucket.fromBucketName(
                 this,
                 props.resourceNamePrefix() + "-ImportedReceiptsBucket",
                 props.receiptsBucketFullName());

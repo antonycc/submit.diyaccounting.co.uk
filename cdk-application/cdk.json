@@ -8,9 +8,6 @@
     "hostedZoneId": "Z0315522208PWZSSBI9AL",
     "subDomainName": "submit",
     "cloudTrailEnabled": "true",
-    "cloudTrailLogGroupPrefix": "/aws/cloudtrail/",
-    "cloudTrailLogGroupRetentionPeriodDays": "7",
-    "accessLogGroupRetentionPeriodDays": "30",
     "s3UseExistingBucket": "false",
     "s3RetainOriginBucket": "false",
     "s3RetainReceiptsBucket": "false",
@@ -25,12 +22,10 @@
     "baseImageTag": "latest",
     "selfDestructHandlerSource": "../target/self-destruct-lambda.jar",
     "selfDestructDelayHours": "1",
-    "authCertificateArn": "arn:aws:acm:us-east-1:887764105431:certificate/59a025f9-3620-43cd-9b2c-522f385ee223",
     "optionalTestAccessToken": "",
     "optionalTestS3Endpoint": "",
     "optionalTestS3AccessKey": "",
     "optionalTestS3SecretKey": "",
-    "receiptsBucketPostfix": "receipts",
     "lambdaEntry": "app/functions/",
     "lambdaUrlAuthType": "none"
   }

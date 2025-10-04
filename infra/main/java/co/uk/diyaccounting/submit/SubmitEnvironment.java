@@ -38,14 +38,13 @@ public class SubmitEnvironment {
         public String cloudTrailEnabled;
         public String cloudTrailLogGroupPrefix;
         public String cloudTrailLogGroupRetentionPeriodDays;
-        public String receiptsBucketPostfix;
         public String authCertificateArn;
         public String googleClientId;
         public String googleClientSecretArn;
         public String antonyccClientId;
         public String antonyccBaseUri;
         public String cognitoDomainPrefix;
-        public String subDomainName;
+        public String s3RetainReceiptsBucket;
 
         public static class Builder {
             private final SubmitEnvironmentProps p = new SubmitEnvironmentProps();
@@ -130,8 +129,8 @@ public class SubmitEnvironment {
             "DIY_SUBMIT_ANTONYCC_CLIENT_ID", appProps.antonyccClientId, "(from antonyccClientId in cdk.json)");
         var antonyccBaseUri =
             envOr("DIY_SUBMIT_ANTONYCC_BASE_URI", appProps.antonyccBaseUri, "(from antonyccBaseUri in cdk.json)");
-        var receiptsBucketPostfix = envOr(
-            "RECEIPTS_BUCKET_POSTFIX", appProps.receiptsBucketPostfix, "(from receiptsBucketPostfix in cdk.json)");
+        var s3RetainReceiptsBucket = envOr(
+            "S3_RETAIN_RECEIPTS_BUCKET", appProps.s3RetainReceiptsBucket, "(from s3RetainReceiptsBucket in cdk.json)");
 
         // Generate predictable resource name prefix based on domain and environment
         var domainName = envOr("DOMAIN_NAME", appProps.domainName);
@@ -167,10 +166,11 @@ public class SubmitEnvironment {
                 .selfDestructLogGroupName(selfDestructLogGroupName)
                 .cloudTrailLogGroupPrefix(appProps.cloudTrailLogGroupPrefix)
                 .cloudTrailLogGroupRetentionPeriodDays(appProps.cloudTrailLogGroupRetentionPeriodDays)
+                .accessLogGroupRetentionPeriodDays(accessLogGroupRetentionPeriodDays)
                 .build());
 
         // Create DataStack with shared persistence for all deployments
-        String dataStackId = "%s-ObservabilityStack".formatted(deploymentName);
+        String dataStackId = "%s-DataStack".formatted(deploymentName);
         infof(
             "Synthesizing stack %s for deployment %s to environment %s",
             dataStackId, deploymentName, envName);
@@ -188,7 +188,7 @@ public class SubmitEnvironment {
                 .dashedDomainName(dashedDomainName)
                 .baseUrl(baseUrl)
                 .cloudTrailEnabled(cloudTrailEnabled)
-                .receiptsBucketPostfix(receiptsBucketPostfix)
+                .s3RetainReceiptsBucket(s3RetainReceiptsBucket)
                 .build());
 
         // Create the identity stack before any user aware services

@@ -8,6 +8,8 @@ import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.services.cloudfront.AllowedMethods;
+import software.amazon.awscdk.services.cognito.IUserPool;
+import software.amazon.awscdk.services.cognito.UserPool;
 import software.amazon.awscdk.services.iam.Effect;
 import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.lambda.Function;
@@ -81,10 +83,10 @@ public class AccountStack extends Stack {
 
         String lambdaEntry();
 
-        String cognitoUserPoolId();
+        String cognitoUserPoolArn();
 
-        static ImmutableApplicationStackProps.Builder builder() {
-            return ImmutableApplicationStackProps.builder();
+        static ImmutableAccountStackProps.Builder builder() {
+            return ImmutableAccountStackProps.builder();
         }
     }
 
@@ -94,6 +96,11 @@ public class AccountStack extends Stack {
 
     public AccountStack(Construct scope, String id, StackProps stackProps, AccountStackProps props) {
         super(scope, id, stackProps);
+
+        // Lookup existing Cognito UserPool
+        IUserPool userPool = UserPool.fromUserPoolArn(
+            this, "ImportedUserPool-%s".formatted(props.deploymentName()),
+            props.cognitoUserPoolArn());
 
         // Lambdas
 
@@ -126,7 +133,7 @@ public class AccountStack extends Stack {
 
         // Request Bundles Lambda
         var requestBundlesLambdaEnv = new HashMap<>(Map.of(
-                "DIY_SUBMIT_USER_POOL_ID", props.cognitoUserPoolId(),
+                "DIY_SUBMIT_USER_POOL_ID", userPool.getUserPoolId(),
                 "DIY_SUBMIT_BUNDLE_EXPIRY_DATE", "2025-12-31",
                 "DIY_SUBMIT_BUNDLE_USER_LIMIT", "10"));
         var requestBundlesLambdaUrlOriginFunctionHandler = "bundle.httpPost";
@@ -155,8 +162,13 @@ public class AccountStack extends Stack {
         var account = props.getEnv() != null ? props.getEnv().getAccount() : "";
         var cognitoUserPoolArn = String.format(
                 "arn:aws:cognito-idp:%s:%s:userpool/%s",
-            region, account, props.cognitoUserPoolId());
-
+            region, account, userPool.getUserPoolId());
+        var requestBundlesLambdaGrantPrincipal = this.requestBundlesLambda.getGrantPrincipal();
+        userPool.grant(
+            requestBundlesLambdaGrantPrincipal,
+            "cognito-idp:AdminGetUser",
+            "cognito-idp:AdminUpdateUserAttributes",
+            "cognito-idp:ListUsers");
         this.requestBundlesLambda.addToRolePolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)
                 .actions(List.of(
@@ -166,7 +178,7 @@ public class AccountStack extends Stack {
 
         infof(
                 "Granted Cognito permissions to %s for User Pool %s",
-                this.requestBundlesLambda.getFunctionName(), props.cognitoUserPoolId());
+                this.requestBundlesLambda.getFunctionName(), userPool.getUserPoolId());
 
         // My Bundles Lambda
         var myBundlesLambdaEnv = new HashMap<>(Map.of("DIY_SUBMIT_HOME_URL", props.baseUrl()));
@@ -187,6 +199,12 @@ public class AccountStack extends Stack {
                         .build());
         this.myBundlesLambda = myBundlesLambdaUrlOrigin.lambda;
         this.myBundlesLambdaLogGroup = myBundlesLambdaUrlOrigin.logGroup;
+        var myBundlesLambdaGrantPrincipal = this.myBundlesLambda.getGrantPrincipal();
+        userPool.grant(
+            myBundlesLambdaGrantPrincipal,
+            "cognito-idp:AdminGetUser",
+            "cognito-idp:AdminUpdateUserAttributes",
+            "cognito-idp:ListUsers");
         infof(
                 "Created Lambda %s for my bundles retrieval with handler %s",
                 this.myBundlesLambda.getNode().getId(), props.lambdaEntry() + myBundlesLambdaUrlOriginFunctionHandler);

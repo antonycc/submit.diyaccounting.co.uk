@@ -57,12 +57,10 @@ public class DataStack extends Stack {
         @Override
         String cloudTrailEnabled();
 
-        String receiptsBucketPostfix();
-
         String s3RetainReceiptsBucket();
 
-        static ImmutableApplicationStackProps.Builder builder() {
-            return ImmutableApplicationStackProps.builder();
+        static ImmutableDataStackProps.Builder builder() {
+            return ImmutableDataStackProps.builder();
         }
     }
 
@@ -76,9 +74,7 @@ public class DataStack extends Stack {
         // Create receipts bucket for storing VAT submission receipts
         boolean s3RetainReceiptsBucket =
                 props.s3RetainReceiptsBucket() != null && Boolean.parseBoolean(props.s3RetainReceiptsBucket());
-        String receiptsBucketPostfix =
-                StringUtils.isNotBlank(props.receiptsBucketPostfix()) ? props.receiptsBucketPostfix() : "receipts";
-        String receiptsBucketFullName = "%s-%s".formatted(props.dashedDomainName(), receiptsBucketPostfix);
+        String receiptsBucketFullName = "%s-receipts".formatted(props.dashedDomainName());
         this.receiptsBucket = Bucket.Builder.create(this, props.resourceNamePrefix() + "-ReceiptsBucket")
                 .bucketName(receiptsBucketFullName)
                 .versioned(false)

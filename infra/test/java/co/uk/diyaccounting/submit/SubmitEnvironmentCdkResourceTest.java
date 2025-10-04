@@ -2,12 +2,6 @@ package co.uk.diyaccounting.submit;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 import org.junitpioneer.jupiter.SetEnvironmentVariable;
@@ -15,11 +9,22 @@ import software.amazon.awscdk.App;
 import software.amazon.awscdk.AppProps;
 import software.amazon.awscdk.assertions.Template;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+
 class SubmitEnvironmentCdkResourceTest {
 
     @Test
     @SetEnvironmentVariable(key = "CDK_DEFAULT_ACCOUNT", value = "111111111111")
     @SetEnvironmentVariable(key = "CDK_DEFAULT_REGION", value = "us-east-1")
+    @SetEnvironmentVariable(key = "DIY_SUBMIT_GOOGLE_CLIENT_ID", value = "test-google-client-id")
+    @SetEnvironmentVariable(key = "DIY_SUBMIT_GOOGLE_CLIENT_SECRET_ARN", value = "arn:aws:secretsmanager:us-east-1:111111111111:secret:test-google-secret")
+    @SetEnvironmentVariable(key = "DIY_SUBMIT_ANTONYCC_CLIENT_ID", value = "test-antonycc-client-id")
+    @SetEnvironmentVariable(key = "DIY_SUBMIT_ANTONYCC_BASE_URI", value = "https://api.antonycc.gov.uk")
     void shouldCreateApexStackWithResources() throws IOException {
         // 1) Load the CDK context from cdk-environment/cdk.json
         Path cdkJsonPath = Path.of("cdk-environment/cdk.json").toAbsolutePath();

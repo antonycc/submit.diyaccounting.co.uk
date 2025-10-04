@@ -150,15 +150,11 @@ public class SubmitApplication {
                 "(from selfDestructHandlerSource in cdk.json)");
         var cloudTrailEnabled =
                 envOr("CLOUD_TRAIL_ENABLED", appProps.cloudTrailEnabled, "(from cloudTrailEnabled in cdk.json)");
-        var s3RetainReceiptsBucket = envOr(
-                "S3_RETAIN_RECEIPTS_BUCKET",
-                appProps.s3RetainReceiptsBucket,
-                "(from s3RetainReceiptsBucket in cdk.json)");
-        var userPoolArn = envOr(
+        var cognitoUserPoolArn = envOr(
                 "COGNITO_USER_POOL_ARN",
                 appProps.userPoolArn,
                 "(from cognitoDomainPrefix in cdk.json)");
-        var userPoolClientId = envOr(
+        var cognitoUserPoolClientId = envOr(
                 "COGNITO_USER_POOL_CLIENT_ID",
                 appProps.userPoolClientId,
                 "(from cognitoDomainPrefix in cdk.json)");
@@ -174,16 +170,11 @@ public class SubmitApplication {
         var resourceNamePrefix = "app-%s".formatted(generateResourceNamePrefix(domainName));
         var compressedResourceNamePrefix = "a-%s".formatted(generateCompressedResourceNamePrefix(domainName));
         var selfDestructLogGroupName = "/aws/lambda/%s-self-destruct".formatted(resourceNamePrefix);
-        String originBucketName = "origin-%s".formatted(dashedDomainName);
+        String receiptsBucketFullName = "%s-receipts".formatted(dashedDomainName);
 
         var ecrRepositoryArn = "arn:aws:ecr:%s:%s:repository/%s-ecr"
             .formatted(regionName, awsAccount, resourceNamePrefix);
         var ecrRepositoryName = buildEcrRepositoryName(resourceNamePrefix);
-
-        // Lookup existing Cognito UserPool
-        IUserPool userPool = UserPool.fromUserPoolArn(
-                app, "ImportedUserPool-%s".formatted(deploymentName),
-                userPoolArn);
 
         // Create DevStack with resources only used during development or deployment (e.g. ECR)
         String devStackId = "%s-DevStack".formatted(deploymentName);
@@ -227,7 +218,7 @@ public class SubmitApplication {
                         .ecrRepositoryName(ecrRepositoryName)
                         .lambdaEntry(lambdaEntry)
                         .lambdaUrlAuthType(lambdaUrlAuthType)
-                        .cognitoClientId(userPoolClientId)
+                        .cognitoClientId(cognitoUserPoolClientId)
                         .cognitoBaseUri("https://%s".formatted(cognitoDomainName))
                         .build());
         this.authStack.addDependency(devStack);
@@ -238,7 +229,7 @@ public class SubmitApplication {
         this.hmrcStack = new HmrcStack(
                 app,
                 hmrcStackId,
-                HmrcStack.ApplicationStackProps.builder()
+                HmrcStack.HmrcStackProps.builder()
                         .env(primaryEnv)
                         .crossRegionReferences(false)
                         .envName(envName)
@@ -254,10 +245,10 @@ public class SubmitApplication {
                         .ecrRepositoryName(ecrRepositoryName)
                         .hmrcBaseUri(hmrcBaseUri)
                         .hmrcClientId(hmrcClientId)
-                        .cognitoUserPoolId(userPool.getUserPoolId())
                         .lambdaUrlAuthType(lambdaUrlAuthType)
                         .lambdaEntry(lambdaEntry)
                         .hmrcClientSecretArn(hmrcClientSecretArn)
+                        .receiptsBucketFullName(receiptsBucketFullName)
                         .build());
         this.hmrcStack.addDependency(devStack);
 
@@ -281,26 +272,11 @@ public class SubmitApplication {
                 .baseImageTag(baseImageTag)
                 .ecrRepositoryArn(ecrRepositoryArn)
                 .ecrRepositoryName(ecrRepositoryName)
-                .hmrcBaseUri(hmrcBaseUri)
-                .hmrcClientId(hmrcClientId)
-                .cognitoUserPoolId(userPool.getUserPoolId())
+                .cognitoUserPoolArn(cognitoUserPoolArn)
                 .lambdaUrlAuthType(lambdaUrlAuthType)
                 .lambdaEntry(lambdaEntry)
-                .hmrcClientSecretArn(hmrcClientSecretArn)
                 .build());
         this.accountStack.addDependency(devStack);
-        var requestBundlesLambdaGrantPrincipal = this.accountStack.requestBundlesLambda.getGrantPrincipal();
-        userPool.grant(
-            requestBundlesLambdaGrantPrincipal,
-            "cognito-idp:AdminGetUser",
-            "cognito-idp:AdminUpdateUserAttributes",
-            "cognito-idp:ListUsers");
-        var myBundlesLambdaGrantPrincipal = this.accountStack.myBundlesLambda.getGrantPrincipal();
-        userPool.grant(
-            myBundlesLambdaGrantPrincipal,
-            "cognito-idp:AdminGetUser",
-            "cognito-idp:AdminUpdateUserAttributes",
-            "cognito-idp:ListUsers");
 
         // Create the Ops stack (Alarms, etc.)
         // Build list of Lambda function ARNs for OpsStack

@@ -26,6 +26,7 @@ import java.util.List;
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.Kind.warnf;
 import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.convertDotSeparatedToDashSeparated;
 
 public class PublishStack extends Stack {
 
@@ -67,9 +68,7 @@ public class PublishStack extends Stack {
         @Override
         String cloudTrailEnabled();
 
-        String distributionArn();
-
-        String webBucketArn();
+        String distributionId();
 
         String commitHash();
 
@@ -108,15 +107,17 @@ public class PublishStack extends Stack {
         Tags.of(this).add("MonitoringEnabled", "true");
 
         // Use Resources from the passed props
-        var distributionId = props.distributionArn().split("/")[1];
+
         DistributionAttributes distributionAttributes = DistributionAttributes.builder()
                 .domainName(props.domainName())
-                .distributionId(distributionId)
+                .distributionId(props.distributionId())
                 .build();
         IDistribution distribution = Distribution.fromDistributionAttributes(
                 this, props.resourceNamePrefix() + "-ImportedWebDist", distributionAttributes);
+
+        String originBucketName = convertDotSeparatedToDashSeparated("origin-" + props.domainName());
         IBucket originBucket =
-                Bucket.fromBucketArn(this, props.resourceNamePrefix() + "-WebBucket", props.webBucketArn());
+                Bucket.fromBucketName(this, props.resourceNamePrefix() + "-WebBucket", originBucketName);
 
         // Generate submit.version file with commit hash if provided
         if (props.commitHash() != null && !props.commitHash().isBlank()) {

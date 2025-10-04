@@ -23,6 +23,7 @@ import java.util.List;
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildTrailName;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.convertDotSeparatedToDashSeparated;
 
 public class ObservabilityStack extends Stack {
 
@@ -69,8 +70,6 @@ public class ObservabilityStack extends Stack {
 
         @Override
         String cloudTrailEnabled();
-
-        String originBucketName();
 
         String cloudTrailLogGroupPrefix();
 
@@ -140,7 +139,8 @@ public class ObservabilityStack extends Stack {
 
         // TODO: Re-instate log shipping to CloudWatch Logs for origin access and add xray tracing
         // S3 bucket for origin access logs with specified retention
-        var originAccessLogBucket = props.originBucketName() + "-logs";
+        String originBucketName = convertDotSeparatedToDashSeparated("origin-" + props.domainName());
+        var originAccessLogBucket = originBucketName + "-logs";
         infof(
             "Setting expiration period to %d days for %s",
             props.accessLogGroupRetentionPeriodDays(), props.compressedResourceNamePrefix());

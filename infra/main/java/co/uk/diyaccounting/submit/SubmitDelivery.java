@@ -33,7 +33,9 @@ public class SubmitDelivery {
         public String hostedZoneName;
         public String hostedZoneId;
         public String certificateArn;
-        public String accessLogGroupRetentionPeriodDays;
+        public String originAccessLogBucketArn;
+        public String distributionAccessLogBucketArn;
+        public String webDeploymentLogGroupArn;
         public String docRootPath;
         public String domainName;
         public String cloudTrailEnabled;
@@ -161,11 +163,18 @@ public class SubmitDelivery {
                 "SELF_DESTRUCT_DELAY_HOURS",
                 appProps.selfDestructDelayHours,
                 "(from selfDestructDelayHours in cdk.json)");
-        var accessLogGroupRetentionPeriodDays = envOr(
-                "ACCESS_LOG_GROUP_RETENTION_PERIOD_DAYS",
-                appProps.accessLogGroupRetentionPeriodDays,
-                "(from accessLogGroupRetentionPeriodDays in cdk.json)");
-
+        var originAccessLogBucketArn = envOr(
+                "ORIGIN_ACCESS_LOG_BUCKET_ARN",
+                appProps.originAccessLogBucketArn,
+                "(from originAccessLogBucketArn in cdk.json)");
+        var distributionAccessLogBucketArn = envOr(
+                "DISTRIBUTION_ACCESS_LOG_BUCKET_ARN",
+                appProps.distributionAccessLogBucketArn,
+                "(from distributionAccessLogBucketArn in cdk.json)");
+        var webDeploymentLogGroupArn = envOr(
+                "WEB_DEPLOYMENT_LOG_GROUP_ARN",
+                appProps.webDeploymentLogGroupArn,
+                "(from webDeploymentLogGroupArn in cdk.json)");
         var cloudTrailEnabled =
                 envOr("CLOUD_TRAIL_ENABLED", appProps.cloudTrailEnabled, "(from cloudTrailEnabled in cdk.json)");
 
@@ -213,10 +222,12 @@ public class SubmitDelivery {
                         .hostedZoneId(hostedZoneId)
                         .certificateArn(certificateArn)
                         .pathsToOriginLambdaFunctionUrls(pathsToOriginLambdaFunctionUrls)
-                        .accessLogGroupRetentionPeriodDays(Integer.parseInt(accessLogGroupRetentionPeriodDays))
+                        .originAccessLogBucketArn(originAccessLogBucketArn)
+                        .distributionAccessLogBucketArn(distributionAccessLogBucketArn)
                         .build());
 
         // Create the Publish stack (Bucket Deployments to CloudFront)
+        String distributionId = this.edgeStack.distribution.getDistributionId();
         String publishStackId = "%s-PublishStack".formatted(deploymentName);
         this.publishStack = new PublishStack(
                 app,
@@ -232,12 +243,10 @@ public class SubmitDelivery {
                         .dashedDomainName(dashedDomainName)
                         .baseUrl(baseUrl)
                         .cloudTrailEnabled(cloudTrailEnabled)
-                        .webBucketArn(this.edgeStack.originBucket.getBucketArn()) // TODO: Get bucker by predicted name
-                        .distributionArn(
-                                this.edgeStack.distribution
-                                        .getDistributionArn()) // TODO: Get distribution by domain name
+                        .distributionId(distributionId)
                         .commitHash(commitHash)
                         .websiteHash(websiteHash)
+                        .webDeploymentLogGroupArn(webDeploymentLogGroupArn)
                         .buildNumber(buildNumber)
                         .docRootPath(docRootPath)
                         .build());

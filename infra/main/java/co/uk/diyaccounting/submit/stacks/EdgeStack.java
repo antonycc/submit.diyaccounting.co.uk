@@ -103,8 +103,6 @@ public class EdgeStack extends Stack {
 
         Map<String, String> pathsToOriginLambdaFunctionUrls();
 
-        int accessLogGroupRetentionPeriodDays();
-
         static ImmutableEdgeStackProps.Builder builder() {
             return ImmutableEdgeStackProps.builder();
         }
@@ -241,7 +239,7 @@ public class EdgeStack extends Stack {
                 this,
                 props.resourceNamePrefix() + "-ImportedOriginAccessLogBucket",
                 props.originAccessLogBucketArn());
-        IBucket distributionLogsBucket = Bucket.fromBucketName(
+        IBucket distributionLogsBucket = Bucket.fromBucketArn(
                 this,
                 props.resourceNamePrefix() + "-ImportedDistributionLogBucket",
                 props.distributionAccessLogBucketArn());

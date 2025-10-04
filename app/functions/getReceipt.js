@@ -27,14 +27,13 @@ function userCtxFromEvent(event) {
 
 function buildBucketAndClient() {
   const homeUrl = process.env.DIY_SUBMIT_HOME_URL;
-  const receiptsBucketPostfix = process.env.DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX;
   const { hostname } = new URL(homeUrl);
   let envPrefix = "";
   if (homeUrl === "https://submit.diyaccounting.co.uk/") {
     envPrefix = "prod.";
   }
   const dashedDomain = `${envPrefix}${hostname}`.split(".").join("-");
-  const receiptsBucketFullName = `${dashedDomain}-${receiptsBucketPostfix}`;
+  const receiptsBucketFullName = `${dashedDomain}-receipts`;
 
   let s3Config = {};
   if (
