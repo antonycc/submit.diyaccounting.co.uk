@@ -33,14 +33,14 @@ npm run build
 Set environment (choose one path)
 - HMRC sandbox only (no Cognito/Google):
 ```env
-DIY_SUBMIT_HOME_URL=https://your-ngrok-domain.ngrok-free.app/
+DIY_SUBMIT_BASE_URL=https://your-ngrok-domain.ngrok-free.app/
 DIY_SUBMIT_HMRC_BASE_URI=https://test-api.service.hmrc.gov.uk
 DIY_SUBMIT_HMRC_CLIENT_ID=your_hmrc_client_id
 DIY_SUBMIT_HMRC_CLIENT_SECRET=your_hmrc_client_secret
 ```
 - Cognito (Google sign-in) fronting Google IdP:
 ```env
-DIY_SUBMIT_HOME_URL=https://submit.example.com/
+DIY_SUBMIT_BASE_URL=https://submit.example.com/
 DIY_SUBMIT_COGNITO_BASE_URI=https://auth.submit.example.com
 DIY_SUBMIT_COGNITO_CLIENT_ID=your_cognito_userpool_client_id
 # Optional fallback for local-only flows without Cognito
@@ -98,7 +98,7 @@ ASCII diagram
 ```
 
 Key environment variables (selected)
-- HMRC: DIY_SUBMIT_HMRC_CLIENT_ID, DIY_SUBMIT_HMRC_CLIENT_SECRET, DIY_SUBMIT_HMRC_BASE_URI, DIY_SUBMIT_HOME_URL
+- HMRC: DIY_SUBMIT_HMRC_CLIENT_ID, DIY_SUBMIT_HMRC_CLIENT_SECRET, DIY_SUBMIT_HMRC_BASE_URI, DIY_SUBMIT_BASE_URL
 - Cognito/Google: DIY_SUBMIT_COGNITO_CLIENT_ID, DIY_SUBMIT_COGNITO_BASE_URI, DIY_SUBMIT_GOOGLE_CLIENT_ID, DIY_SUBMIT_GOOGLE_CLIENT_SECRET
 - Bundles: DIY_SUBMIT_BUNDLE_EXPIRY_DATE, DIY_SUBMIT_BUNDLE_USER_LIMIT, DIY_SUBMIT_BUNDLE_MOCK, DIY_SUBMIT_USER_POOL_ID, AWS_REGION
 - Local S3: DIY_SUBMIT_TEST_S3_ENDPOINT, DIY_SUBMIT_TEST_S3_ACCESS_KEY, DIY_SUBMIT_TEST_S3_SECRET_KEY, DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX
@@ -190,7 +190,7 @@ export HOSTED_ZONE_ID=Z123ABC...
 export SUB_DOMAIN_NAME=submit
 export USE_EXISTING_HOSTED_ZONE=true
 export USE_EXISTING_CERTIFICATE=true
-export DIY_SUBMIT_HOME_URL=https://submit.example.com/
+export DIY_SUBMIT_BASE_URL=https://submit.example.com/
 export DIY_SUBMIT_HMRC_BASE_URI=https://test-api.service.hmrc.gov.uk
 export DIY_SUBMIT_HMRC_CLIENT_ID=...
 export DIY_SUBMIT_HMRC_CLIENT_SECRET=...

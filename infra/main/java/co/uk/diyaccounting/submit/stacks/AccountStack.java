@@ -110,7 +110,7 @@ public class AccountStack extends Stack {
                 : FunctionUrlAuthType.NONE;
 
         // Catalog Lambda
-        var catalogLambdaEnv = new HashMap<>(Map.of("DIY_SUBMIT_HOME_URL", props.baseUrl()));
+        var catalogLambdaEnv = new HashMap<>(Map.of("DIY_SUBMIT_BASE_URL", props.baseUrl()));
         var catalogLambdaUrlOriginFunctionHandler = "catalogGet.handle";
         var catalogLambdaUrlOriginFunctionName = buildFunctionName(props.compressedResourceNamePrefix(), catalogLambdaUrlOriginFunctionHandler);
         var catalogLambdaUrlOrigin = new LambdaUrlOrigin(
@@ -181,7 +181,7 @@ public class AccountStack extends Stack {
                 this.requestBundlesLambda.getFunctionName(), userPool.getUserPoolId());
 
         // My Bundles Lambda
-        var myBundlesLambdaEnv = new HashMap<>(Map.of("DIY_SUBMIT_HOME_URL", props.baseUrl()));
+        var myBundlesLambdaEnv = new HashMap<>(Map.of("DIY_SUBMIT_BASE_URL", props.baseUrl()));
         var myBundlesLambdaUrlOriginFunctionHandler = "myBundles.httpGet";
         var myBundlesLambdaUrlOriginFunctionName = buildFunctionName(props.compressedResourceNamePrefix(), myBundlesLambdaUrlOriginFunctionHandler);
         var myBundlesLambdaUrlOrigin = new LambdaUrlOrigin(

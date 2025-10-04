@@ -50,7 +50,7 @@ describe("System Test – end-to-end AWS-like flow", () => {
       DIY_SUBMIT_TEST_SERVER_HTTP_PORT: "3000",
       DIY_SUBMIT_HMRC_BASE_URI: "https://test.test.test.uk",
       DIY_SUBMIT_HMRC_CLIENT_ID: "test client id",
-      DIY_SUBMIT_HOME_URL: "http://hmrc.redirect:3000/",
+      DIY_SUBMIT_BASE_URL: "http://hmrc.redirect:3000/",
       DIY_SUBMIT_HMRC_CLIENT_SECRET: "test hmrc client secret",
       DIY_SUBMIT_COGNITO_CLIENT_ID: "integration-test-cognito-client-id",
       DIY_SUBMIT_GOOGLE_CLIENT_SECRET: "test google client secret",

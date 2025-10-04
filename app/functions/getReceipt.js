@@ -26,7 +26,7 @@ function userCtxFromEvent(event) {
 }
 
 function buildBucketAndClient() {
-  const homeUrl = process.env.DIY_SUBMIT_HOME_URL;
+  const homeUrl = process.env.DIY_SUBMIT_BASE_URL;
   const { hostname } = new URL(homeUrl);
   let envPrefix = "";
   if (homeUrl === "https://submit.diyaccounting.co.uk/") {

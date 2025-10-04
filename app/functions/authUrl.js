@@ -10,7 +10,7 @@ dotenv.config({ path: ".env" });
 export async function httpGetHmrc(event) {
   const state = event.queryStringParameters?.state;
   const clientId = process.env.DIY_SUBMIT_HMRC_CLIENT_ID;
-  const redirectUri = process.env.DIY_SUBMIT_HOME_URL + "activities/submitVatCallback.html";
+  const redirectUri = process.env.DIY_SUBMIT_BASE_URL + "activities/submitVatCallback.html";
   const hmrcBase = process.env.DIY_SUBMIT_HMRC_BASE_URI;
   const scope = "write:vat read:vat";
   const authUrl =
@@ -25,7 +25,7 @@ export async function httpGetHmrc(event) {
 // GET /api/mock/auth-url?state={state}
 export async function httpGetMock(event) {
   const state = event.queryStringParameters?.state;
-  const redirectUri = process.env.DIY_SUBMIT_HOME_URL + "auth/loginWithMockCallback.html";
+  const redirectUri = process.env.DIY_SUBMIT_BASE_URL + "auth/loginWithMockCallback.html";
   const mockBase = "http://localhost:8080";
   const scope = "openid somescope";
   const authUrl =
@@ -42,7 +42,7 @@ export async function httpGetMock(event) {
 // GET /api/cognito/auth-url?state={state}
 export async function httpGetCognito(event) {
   const state = event.queryStringParameters?.state;
-  const redirectUri = process.env.DIY_SUBMIT_HOME_URL + "auth/loginWithCognitoCallback.html";
+  const redirectUri = process.env.DIY_SUBMIT_BASE_URL + "auth/loginWithCognitoCallback.html";
   const scope = "openid profile email";
 
   const cognitoClientId = (process.env.DIY_SUBMIT_COGNITO_CLIENT_ID || "").trim();

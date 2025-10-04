@@ -130,7 +130,7 @@ public class HmrcStack extends Stack {
 
         // authUrl - HMRC
         var authUrlHmrcLambdaEnv = new HashMap<>(Map.of(
-                "DIY_SUBMIT_HOME_URL", props.baseUrl(),
+                "DIY_SUBMIT_BASE_URL", props.baseUrl(),
                 "DIY_SUBMIT_HMRC_BASE_URI", props.hmrcBaseUri(),
                 "DIY_SUBMIT_HMRC_CLIENT_ID", props.hmrcClientId()));
         var authUrlHmrcLambdaUrlOriginFunctionHandler = "authUrl.httpGetHmrc";
@@ -156,7 +156,7 @@ public class HmrcStack extends Stack {
 
         // exchangeToken - HMRC
         Map<String, String> exchangeHmrcEnvBase = new HashMap<>(Map.of(
-                "DIY_SUBMIT_HOME_URL", props.baseUrl(),
+                "DIY_SUBMIT_BASE_URL", props.baseUrl(),
                 "DIY_SUBMIT_HMRC_BASE_URI", props.hmrcBaseUri(),
                 "DIY_SUBMIT_HMRC_CLIENT_ID", props.hmrcClientId()));
         if (StringUtils.isNotBlank(props.hmrcClientSecretArn())) {
@@ -211,7 +211,7 @@ public class HmrcStack extends Stack {
 
         // submitVat
         var submitVatLambdaEnv = new HashMap<>(Map.of(
-                "DIY_SUBMIT_HOME_URL", props.baseUrl(),
+                "DIY_SUBMIT_BASE_URL", props.baseUrl(),
                 "DIY_SUBMIT_HMRC_BASE_URI", props.hmrcBaseUri()));
         var submitVatLambdaUrlOriginFunctionHandler = "submitVat.httpPost";
         var submitVatLambdaUrlOriginFunctionName = buildFunctionName(props.compressedResourceNamePrefix(), submitVatLambdaUrlOriginFunctionHandler);
@@ -235,7 +235,7 @@ public class HmrcStack extends Stack {
                 this.submitVatLambda.getNode().getId(), props.lambdaEntry() + submitVatLambdaUrlOriginFunctionHandler);
 
         var logReceiptLambdaEnv = new HashMap<>(Map.of(
-            "DIY_SUBMIT_HOME_URL", props.baseUrl(),
+            "DIY_SUBMIT_BASE_URL", props.baseUrl(),
             "DIY_SUBMIT_RECEIPTS_BUCKET_FULL_NAME", props.receiptsBucketFullName()));
         if (props.optionalTestS3Endpoint().isPresent()
             && StringUtils.isNotBlank(props.optionalTestS3Endpoint().get())
@@ -277,7 +277,7 @@ public class HmrcStack extends Stack {
 
         // myReceipts Lambda
         var myReceiptsLambdaEnv = new HashMap<>(Map.of(
-                "DIY_SUBMIT_HOME_URL", props.baseUrl(),
+                "DIY_SUBMIT_BASE_URL", props.baseUrl(),
                 "DIY_SUBMIT_RECEIPTS_BUCKET_FULL_NAME", props.receiptsBucketFullName()));
         var myReceiptsLambdaUrlOriginFunctionHandler = "myReceipts.httpGet";
         var myReceiptsLambdaUrlOriginFunctionName = buildFunctionName(props.compressedResourceNamePrefix(), myReceiptsLambdaUrlOriginFunctionHandler);

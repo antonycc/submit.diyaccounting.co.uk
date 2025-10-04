@@ -87,7 +87,7 @@ describe("Integration – Server Express App", () => {
       DIY_SUBMIT_HMRC_CLIENT_SECRET: "integration-test-secret",
       DIY_SUBMIT_COGNITO_CLIENT_ID: "integration-test-cognito-client-id",
       DIY_SUBMIT_GOOGLE_CLIENT_SECRET: "integration-test-google-secret",
-      DIY_SUBMIT_HOME_URL: "https://test.submit.diyaccounting.co.uk/",
+      DIY_SUBMIT_BASE_URL: "https://test.submit.diyaccounting.co.uk/",
       DIY_SUBMIT_HMRC_BASE_URI: "https://test-api.service.hmrc.gov.uk",
       DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX: "integration-test-bucket",
       DIY_SUBMIT_TEST_SERVER_HTTP_PORT: "3001",

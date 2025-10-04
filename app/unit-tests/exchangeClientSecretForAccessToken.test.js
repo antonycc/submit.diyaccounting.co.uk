@@ -36,7 +36,7 @@ describe("exchangeClientSecretForAccessToken", () => {
     process.env = {
       ...originalEnv,
       DIY_SUBMIT_HMRC_CLIENT_ID: "test-client-id",
-      DIY_SUBMIT_HOME_URL: "http://localhost:3000",
+      DIY_SUBMIT_BASE_URL: "http://localhost:3000",
       DIY_SUBMIT_HMRC_BASE_URI: "https://test-api.service.hmrc.gov.uk",
       NODE_ENV: "test",
     };

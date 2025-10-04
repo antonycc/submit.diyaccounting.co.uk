@@ -106,7 +106,7 @@ public class AuthStack extends Stack {
 
         // authUrl - mock
         var authUrlMockLambdaEnv = new HashMap<String, String>();
-        authUrlMockLambdaEnv.put("DIY_SUBMIT_HOME_URL", props.baseUrl());
+        authUrlMockLambdaEnv.put("DIY_SUBMIT_BASE_URL", props.baseUrl());
         var authUrlMockLambdaUrlOriginFunctionHandler = "authUrl.httpGetMock";
         var authUrlMockLambdaFunctionName = buildFunctionName(props.compressedResourceNamePrefix(), authUrlMockLambdaUrlOriginFunctionHandler);
         var authUrlMockLambdaUrlOrigin = new LambdaUrlOrigin(
@@ -130,7 +130,7 @@ public class AuthStack extends Stack {
 
         // authUrl - Google or Antonycc via Cognito
         var authUrlCognitoLambdaEnv = new HashMap<String, String>();
-        authUrlCognitoLambdaEnv.put("DIY_SUBMIT_HOME_URL", props.baseUrl());
+        authUrlCognitoLambdaEnv.put("DIY_SUBMIT_BASE_URL", props.baseUrl());
         authUrlCognitoLambdaEnv.put("DIY_SUBMIT_COGNITO_CLIENT_ID", props.cognitoClientId());
         authUrlCognitoLambdaEnv.put("DIY_SUBMIT_COGNITO_BASE_URI", props.cognitoBaseUri());
         var authUrlCognitoLambdaUrlOriginFunctionHandler = "authUrl.httpGetCognito";
@@ -156,7 +156,7 @@ public class AuthStack extends Stack {
 
         // exchangeToken - Google or Antonycc via Cognito
         var exchangeCognitoTokenLambdaEnv = new HashMap<String, String>();
-        exchangeCognitoTokenLambdaEnv.put("DIY_SUBMIT_HOME_URL", props.baseUrl());
+        exchangeCognitoTokenLambdaEnv.put("DIY_SUBMIT_BASE_URL", props.baseUrl());
         exchangeCognitoTokenLambdaEnv.put("DIY_SUBMIT_COGNITO_BASE_URI", props.cognitoBaseUri());
         exchangeCognitoTokenLambdaEnv.put("DIY_SUBMIT_COGNITO_CLIENT_ID", props.cognitoClientId());
         if (props.optionalTestAccessToken().isPresent()

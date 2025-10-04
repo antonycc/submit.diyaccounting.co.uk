@@ -103,56 +103,52 @@ public class SubmitDelivery {
         var buildNumber = envOr("BUILD_NUMBER", "local");
 
         // Resource name prefixes
-        var hostedZoneName = envOr("HOSTED_ZONE_NAME", appProps.hostedZoneName, "(from hostedZoneName in cdk.json)");
-        var hostedZoneId = envOr("HOSTED_ZONE_ID", appProps.hostedZoneId, "(from hostedZoneId in cdk.json)");
-        var certificateArn = envOr("CERTIFICATE_ARN", appProps.certificateArn, "(from certificateArn in cdk.json)");
         var domainName = envOr("DIY_SUBMIT_DOMAIN_NAME", appProps.domainName, "(from domainName in cdk.json)");
-        var baseUrl = envOr("DIY_SUBMIT_HOME_URL", appProps.baseUrl, "(from baseUrl in cdk.json)");
-        var docRootPath = envOr("DOC_ROOT_PATH", appProps.docRootPath, "(from docRootPath in cdk.json)");
+        var baseUrl = envOr("DIY_SUBMIT_BASE_URL", appProps.baseUrl, "(from baseUrl in cdk.json)");
 
         // Function URL environment variables for EdgeStack
         var authUrlMockLambdaFunctionUrl = envOr(
-                "DIY_SUBMIT_AUTH_URL_MOCK_LAMBDA_URL",
+                "AUTH_URL_MOCK_LAMBDA_URL",
                 appProps.authUrlMockLambdaFunctionUrl,
                 "(from authUrlMockLambdaFunctionUrl in cdk.json)");
         var authUrlCognitoLambdaFunctionUrl = envOr(
-                "DIY_SUBMIT_AUTH_URL_COGNITO_LAMBDA_URL",
+                "AUTH_URL_COGNITO_LAMBDA_URL",
                 appProps.authUrlCognitoLambdaFunctionUrl,
                 "(from authUrlCognitoLambdaFunctionUrl in cdk.json)");
         var exchangeCognitoTokenLambdaFunctionUrl = envOr(
-                "DIY_SUBMIT_COGNITO_EXCHANGE_TOKEN_LAMBDA_URL",
+                "COGNITO_EXCHANGE_TOKEN_LAMBDA_URL",
                 appProps.exchangeCognitoTokenLambdaFunctionUrl,
                 "(from exchangeCognitoTokenLambdaFunctionUrl in cdk.json)");
         var authUrlHmrcLambdaFunctionUrl = envOr(
-                "DIY_SUBMIT_AUTH_URL_HMRC_LAMBDA_URL",
+                "AUTH_URL_HMRC_LAMBDA_URL",
                 appProps.authUrlHmrcLambdaFunctionUrl,
                 "(from authUrlHmrcLambdaFunctionUrl in cdk.json)");
         var exchangeHmrcTokenLambdaFunctionUrl = envOr(
-                "DIY_SUBMIT_EXCHANGE_HMRC_TOKEN_LAMBDA_URL",
+                "EXCHANGE_HMRC_TOKEN_LAMBDA_URL",
                 appProps.exchangeHmrcTokenLambdaFunctionUrl,
                 "(from exchangeHmrcTokenLambdaFunctionUrl in cdk.json)");
         var submitVatLambdaFunctionUrl = envOr(
-                "DIY_SUBMIT_SUBMIT_VAT_LAMBDA_URL",
+                "SUBMIT_VAT_LAMBDA_URL",
                 appProps.submitVatLambdaFunctionUrl,
                 "(from submitVatLambdaFunctionUrl in cdk.json)");
         var logReceiptLambdaFunctionUrl = envOr(
-                "DIY_SUBMIT_LOG_RECEIPT_LAMBDA_URL",
+                "LOG_RECEIPT_LAMBDA_URL",
                 appProps.logReceiptLambdaFunctionUrl,
                 "(from logReceiptLambdaFunctionUrl in cdk.json)");
         var catalogLambdaFunctionUrl = envOr(
-                "DIY_SUBMIT_CATALOG_LAMBDA_URL",
+                "CATALOG_LAMBDA_URL",
                 appProps.catalogLambdaFunctionUrl,
                 "(from catalogLambdaFunctionUrl in cdk.json)");
         var requestBundlesLambdaFunctionUrl = envOr(
-                "DIY_SUBMIT_REQUEST_BUNDLES_LAMBDA_URL",
+                "REQUEST_BUNDLES_LAMBDA_URL",
                 appProps.requestBundlesLambdaFunctionUrl,
                 "(from requestBundlesLambdaFunctionUrl in cdk.json)");
         var myBundlesLambdaFunctionUrl = envOr(
-                "DIY_SUBMIT_MY_BUNDLES_LAMBDA_URL",
+                "MY_BUNDLES_LAMBDA_URL",
                 appProps.myBundlesLambdaFunctionUrl,
                 "(from myBundlesLambdaFunctionUrl in cdk.json)");
         var myReceiptsLambdaFunctionUrl = envOr(
-                "DIY_SUBMIT_MY_RECEIPTS_LAMBDA_URL",
+                "MY_RECEIPTS_LAMBDA_URL",
                 appProps.myReceiptsLambdaFunctionUrl,
                 "(from myReceiptsLambdaFunctionUrl in cdk.json)");
         var selfDestructHandlerSource = envOr(
@@ -177,6 +173,10 @@ public class SubmitDelivery {
                 "(from webDeploymentLogGroupArn in cdk.json)");
         var cloudTrailEnabled =
                 envOr("CLOUD_TRAIL_ENABLED", appProps.cloudTrailEnabled, "(from cloudTrailEnabled in cdk.json)");
+        var docRootPath = envOr(
+                "DOC_ROOT_PATH",
+                appProps.docRootPath,
+                "(from docRootPath in cdk.json)");
 
         // Derived values from domain and deployment name
         String resourceNamePrefix = "del-%s".formatted(generateResourceNamePrefix(domainName));
@@ -218,9 +218,9 @@ public class SubmitDelivery {
                         .dashedDomainName(dashedDomainName)
                         .baseUrl(baseUrl)
                         .cloudTrailEnabled(cloudTrailEnabled)
-                        .hostedZoneName(hostedZoneName)
-                        .hostedZoneId(hostedZoneId)
-                        .certificateArn(certificateArn)
+                        .hostedZoneName(appProps.hostedZoneName)
+                        .hostedZoneId(appProps.hostedZoneId)
+                        .certificateArn(appProps.certificateArn)
                         .pathsToOriginLambdaFunctionUrls(pathsToOriginLambdaFunctionUrls)
                         .originAccessLogBucketArn(originAccessLogBucketArn)
                         .distributionAccessLogBucketArn(distributionAccessLogBucketArn)

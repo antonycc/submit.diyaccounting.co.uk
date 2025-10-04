@@ -31,7 +31,7 @@ export async function httpPostCognito(event) {
     });
   }
 
-  const redirectUri = process.env.DIY_SUBMIT_HOME_URL + "auth/loginWithCognitoCallback.html";
+  const redirectUri = process.env.DIY_SUBMIT_BASE_URL + "auth/loginWithCognitoCallback.html";
 
   const cognitoClientId = (process.env.DIY_SUBMIT_COGNITO_CLIENT_ID || "").trim();
   const CognitoBaseUri = (process.env.DIY_SUBMIT_COGNITO_BASE_URI || "").trim();
@@ -67,7 +67,7 @@ export async function httpPostHmrc(event) {
     grant_type: "authorization_code",
     client_id: process.env.DIY_SUBMIT_HMRC_CLIENT_ID,
     client_secret: clientSecret,
-    redirect_uri: process.env.DIY_SUBMIT_HOME_URL + "activities/submitVatCallback.html",
+    redirect_uri: process.env.DIY_SUBMIT_BASE_URL + "activities/submitVatCallback.html",
     code,
   };
   return httpPostWithUrl(request, url, body);
@@ -85,7 +85,7 @@ export async function httpPostMock(event) {
     grant_type: "authorization_code",
     client_id: process.env.DIY_SUBMIT_HMRC_CLIENT_ID,
     client_secret: clientSecret,
-    redirect_uri: process.env.DIY_SUBMIT_HOME_URL + "activities/submitVatCallback.html",
+    redirect_uri: process.env.DIY_SUBMIT_BASE_URL + "activities/submitVatCallback.html",
     code,
   };
   return httpPostWithUrl(request, url, body);
@@ -104,7 +104,7 @@ export async function exchangeToken(providerUrlOrCode, maybeBody) {
       grant_type: "authorization_code",
       client_id: process.env.DIY_SUBMIT_HMRC_CLIENT_ID,
       client_secret: clientSecret,
-      redirect_uri: process.env.DIY_SUBMIT_HOME_URL + "activities/submitVatCallback.html",
+      redirect_uri: process.env.DIY_SUBMIT_BASE_URL + "activities/submitVatCallback.html",
       code: providerUrlOrCode,
     };
     return performTokenExchange(url, body);
