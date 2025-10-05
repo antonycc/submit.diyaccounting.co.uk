@@ -1,22 +1,21 @@
 package co.uk.diyaccounting.submit;
 
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.jetbrains.annotations.NotNull;
-import org.junit.jupiter.api.Test;
-import org.junitpioneer.jupiter.SetEnvironmentVariable;
-import software.amazon.awscdk.App;
-import software.amazon.awscdk.AppProps;
-import software.amazon.awscdk.assertions.Template;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import org.jetbrains.annotations.NotNull;
+import org.junit.jupiter.api.Test;
+import org.junitpioneer.jupiter.SetEnvironmentVariable;
+import software.amazon.awscdk.App;
+import software.amazon.awscdk.AppProps;
+import software.amazon.awscdk.assertions.Template;
 
 @SetEnvironmentVariable.SetEnvironmentVariables({
     @SetEnvironmentVariable(key = "ENV_NAME", value = "test"),
@@ -28,9 +27,13 @@ import static co.uk.diyaccounting.submit.utils.Kind.infof;
     @SetEnvironmentVariable(key = "DIY_SUBMIT_BASE_URL", value = "https://tt-witheight.submit.diyaccounting.co.uk"),
     @SetEnvironmentVariable(key = "AUTH_URL_MOCK_LAMBDA_URL", value = "https://tt-witheight.lambda.mock/auth"),
     @SetEnvironmentVariable(key = "AUTH_URL_COGNITO_LAMBDA_URL", value = "https://tt-witheight.lambda.cognito/auth"),
-    @SetEnvironmentVariable(key = "COGNITO_EXCHANGE_TOKEN_LAMBDA_URL", value = "https://tt-witheight.lambda.cognito/exchange"),
+    @SetEnvironmentVariable(
+            key = "COGNITO_EXCHANGE_TOKEN_LAMBDA_URL",
+            value = "https://tt-witheight.lambda.cognito/exchange"),
     @SetEnvironmentVariable(key = "AUTH_URL_HMRC_LAMBDA_URL", value = "https://tt-witheight.lambda.hmrc/auth"),
-    @SetEnvironmentVariable(key = "EXCHANGE_HMRC_TOKEN_LAMBDA_URL", value = "https://tt-witheight.lambda.hmrc/exchange"),
+    @SetEnvironmentVariable(
+            key = "EXCHANGE_HMRC_TOKEN_LAMBDA_URL",
+            value = "https://tt-witheight.lambda.hmrc/exchange"),
     @SetEnvironmentVariable(key = "SUBMIT_VAT_LAMBDA_URL", value = "https://tt-witheight.lambda.hmrc/submit"),
     @SetEnvironmentVariable(key = "LOG_RECEIPT_LAMBDA_URL", value = "https://tt-witheight.lambda.hmrc/log"),
     @SetEnvironmentVariable(key = "CATALOG_LAMBDA_URL", value = "https://tt-witheight.lambda.catalogue/get"),

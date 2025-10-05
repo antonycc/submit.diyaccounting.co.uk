@@ -48,7 +48,7 @@ export async function httpPostCognito(event) {
 export async function httpPostHmrc(event) {
   validateEnv(["HMRC_BASE_URI", "HMRC_CLIENT_ID", "DIY_SUBMIT_BASE_URL", "HMRC_CLIENT_SECRET_ARN"]);
   const secretArn = process.env.HMRC_CLIENT_SECRET_ARN;
-  const overrideSecret = process.env.DIY_SUBMIT_HMRC_CLIENT_SECRET;
+  const overrideSecret = process.env.HMRC_CLIENT_SECRET;
 
   const request = extractRequest(event);
 
@@ -77,7 +77,7 @@ export async function httpPostHmrc(event) {
 export async function httpPostMock(event) {
   validateEnv(["HMRC_BASE_URI", "HMRC_CLIENT_ID", "DIY_SUBMIT_BASE_URL", "HMRC_CLIENT_SECRET_ARN"]);
   const secretArn = process.env.HMRC_CLIENT_SECRET_ARN;
-  const overrideSecret = process.env.DIY_SUBMIT_HMRC_CLIENT_SECRET;
+  const overrideSecret = process.env.HMRC_CLIENT_SECRET;
 
   const request = extractRequest(event);
   const { code } = JSON.parse(event.body || "{}");
@@ -99,7 +99,7 @@ export async function httpPostMock(event) {
 export async function exchangeToken(providerUrlOrCode, maybeBody) {
   validateEnv(["HMRC_BASE_URI", "HMRC_CLIENT_ID", "DIY_SUBMIT_BASE_URL", "HMRC_CLIENT_SECRET_ARN"]);
   const secretArn = process.env.HMRC_CLIENT_SECRET_ARN;
-  const overrideSecret = process.env.DIY_SUBMIT_HMRC_CLIENT_SECRET;
+  const overrideSecret = process.env.HMRC_CLIENT_SECRET;
 
   // Overloaded signature for tests/backward-compat:
   // - exchangeToken(code)

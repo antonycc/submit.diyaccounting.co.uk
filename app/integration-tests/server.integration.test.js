@@ -84,9 +84,9 @@ describe("Integration – Server Express App", () => {
     process.env = {
       ...process.env,
       HMRC_CLIENT_ID: "integration-test-client-id",
-      DIY_SUBMIT_HMRC_CLIENT_SECRET: "integration-test-secret",
+      HMRC_CLIENT_SECRET: "integration-test-secret",
       COGNITO_CLIENT_ID: "integration-test-cognito-client-id",
-      DIY_SUBMIT_GOOGLE_CLIENT_SECRET: "integration-test-google-secret",
+      GOOGLE_CLIENT_SECRET: "integration-test-google-secret",
       DIY_SUBMIT_BASE_URL: "https://test.submit.diyaccounting.co.uk/",
       HMRC_BASE_URI: "https://test-api.service.hmrc.gov.uk",
       DIY_SUBMIT_RECEIPTS_BUCKET_FULL_NAME: "integration-test-bucket",

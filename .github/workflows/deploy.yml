@@ -76,19 +76,12 @@ env:
   skipDeploy: ${{ inputs.skipDeploy || 'false' }}
   deploymentName: ${{ inputs.deploymentName || '' }}
   loadTestDuration: ${{ inputs.loadTestDuration || '30s' }}
-  selfDestructDelayHours: ${{ inputs.selfDestructDelayHours || '1' }}
   GITHUB_ACTOR: ${{ github.actor }}
   SELF_DESTRUCT_DELAY_HOURS: ${{ inputs.selfDestructDelayHours || '1' }}
   BASE_IMAGE_TAG: ${{ github.sha }}
   FORCE_ALL_STACK_DEPLOYMENT: ${{ inputs.forceAllStackDeployment || 'false' }}
-  CERTIFICATE_ARN: ${{ vars.AWS_CERTIFICATE_ARN }}
-  CLOUD_TRAIL_ENABLED: ${{ vars.AWS_CLOUD_TRAIL_ENABLED }}
-  X_RAY_ENABLED: ${{ vars.AWS_X_RAY_ENABLED }}
-  VERBOSE_LOGGING: ${{ vars.AWS_VERBOSE_LOGGING }}
-  HOSTED_ZONE_ID: ${{ vars.AWS_HOSTED_ZONE_ID }}
-  HOSTED_ZONE_NAME: ${{ vars.AWS_HOSTED_ZONE_NAME }}
   COMMIT_HASH: ${{ github.sha }}
-  AUTH_CERTIFICATE_ARN: 'arn:aws:acm:us-east-1:887764105431:certificate/59a025f9-3620-43cd-9b2c-522f385ee223'
+  BUILD_NUMBER: ${{ github.run_number }}
 
 jobs:
 
@@ -125,7 +118,7 @@ jobs:
 
           echo "Computed ENV_NAME: $ENV_NAME"
           echo "Computed DEPLOYMENT_NAME: $DEPLOYMENT_NAME"
-          # DEPLOYMENT_NAME=$ENV_NAME
+          #DEPLOYMENT_NAME=$ENV_NAME
 
           echo "ENV_NAME=$ENV_NAME" >> "$GITHUB_OUTPUT"
           echo "DEPLOYMENT_NAME=$DEPLOYMENT_NAME" >> "$GITHUB_OUTPUT"
@@ -336,7 +329,9 @@ jobs:
         shell: bash
         run: |
           ./mvnw clean package -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }}
+          echo "SELF_DESTRUCT_HANDLER_SOURCE=target/self-destruct-lambda.jar"
           echo "SELF_DESTRUCT_HANDLER_SOURCE=target/self-destruct-lambda.jar" >> $GITHUB_OUTPUT
+          ls -l "SELF_DESTRUCT_HANDLER_SOURCE=${SELF_DESTRUCT_HANDLER_SOURCE}?"
 
       - name: Upload self-destruct handler JAR
         uses: actions/upload-artifact@v4
@@ -539,6 +534,9 @@ jobs:
           ENV_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
           SELF_DESTRUCT_HANDLER_SOURCE: "../${{ needs.mvn-package.outputs.self-destruct-handler-source }}"
+          # Set by deploy-environment.yml after the environment's AuthStack is deployed
+          COGNITO_USER_POOL_ARN: ${{ vars.COGNITO_USER_POOL_ARN }}
+          COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
 
   deploy-dev:
     name: 'deploy dev'
@@ -629,6 +627,9 @@ jobs:
           ENV_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
           SELF_DESTRUCT_HANDLER_SOURCE: "../infra/test/resources/fake-self-destruct-lambda.jar"
+          # Set by deploy-environment.yml after the environment's AuthStack is deployed
+          COGNITO_USER_POOL_ARN: ${{ vars.COGNITO_USER_POOL_ARN }}
+          COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
 
   push-images:
     name: 'push images'
@@ -801,6 +802,10 @@ jobs:
           ENV_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
           SELF_DESTRUCT_HANDLER_SOURCE: "../infra/test/resources/fake-self-destruct-lambda.jar"
+          BASE_IMAGE_TAG: ${{ needs.push-images.outputs.base-image-tag }}
+          # Set by deploy-environment.yml after the environment's AuthStack is deployed
+          COGNITO_USER_POOL_ARN: ${{ vars.COGNITO_USER_POOL_ARN }}
+          COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
 
       - run: cat cdk-submit-application.out/cdk-outputs-auth.json | jq '.'
 
@@ -818,9 +823,6 @@ jobs:
           echo "COGNITO_EXCHANGE_TOKEN_LAMBDA_URL=$COGNITO_EXCHANGE_TOKEN_LAMBDA_URL" >> $GITHUB_OUTPUT
         shell: bash
     outputs:
-      authUrlMockLambdaArn: ${{ steps.auth-outputs.outputs.DIY_SUBMIT_AUTH_URL_MOCK_LAMBDA_ARN }}
-      authUrlCognitoLambdaArn: ${{ steps.auth-outputs.outputs.DIY_SUBMIT_AUTH_URL_COGNITO_LAMBDA_ARN }}
-      exchangeCognitoTokenLambdaArn: ${{ steps.auth-outputs.outputs.DIY_SUBMIT_COGNITO_EXCHANGE_TOKEN_LAMBDA_ARN }}
       authUrlMockLambdaUrl: ${{ steps.auth-outputs.outputs.AUTH_URL_MOCK_LAMBDA_URL }}
       authUrlCognitoLambdaUrl: ${{ steps.auth-outputs.outputs.AUTH_URL_COGNITO_LAMBDA_URL }}
       exchangeCognitoTokenLambdaUrl: ${{ steps.auth-outputs.outputs.COGNITO_EXCHANGE_TOKEN_LAMBDA_URL }}
@@ -897,6 +899,9 @@ jobs:
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
           SELF_DESTRUCT_HANDLER_SOURCE: "../infra/test/resources/fake-self-destruct-lambda.jar"
           BASE_IMAGE_TAG: ${{ needs.push-images.outputs.base-image-tag }}
+          # Set by deploy-environment.yml after the environment's AuthStack is deployed
+          COGNITO_USER_POOL_ARN: ${{ vars.COGNITO_USER_POOL_ARN }}
+          COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
 
       - run: cat cdk-submit-application.out/cdk-outputs-hmrc.json | jq '.'
 
@@ -999,6 +1004,9 @@ jobs:
           SELF_DESTRUCT_HANDLER_SOURCE: "../infra/test/resources/fake-self-destruct-lambda.jar"
           HMRC_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ needs.names.outputs.environment-name }}/submit/hmrc/client_secret"
           BASE_IMAGE_TAG: ${{ needs.push-images.outputs.base-image-tag }}
+          # Set by deploy-environment.yml after the environment's AuthStack is deployed
+          COGNITO_USER_POOL_ARN: ${{ vars.COGNITO_USER_POOL_ARN }}
+          COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
 
       - run: cat cdk-submit-application.out/cdk-outputs-account.json | jq '.'
 
@@ -1102,7 +1110,7 @@ jobs:
           name: self-destruct-handler-${{ github.sha }}
           path: cdk-submit-application.out/
 
-      - name: Deploy Observability Stack (CDK)
+      - name: Deploy SelfDestruct Stack (CDK)
         if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
         run: |
           ./mvnw --errors clean package -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
@@ -1122,6 +1130,20 @@ jobs:
           ENV_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
           SELF_DESTRUCT_HANDLER_SOURCE: "../${{ needs.mvn-package.outputs.self-destruct-handler-source }}"
+          WEBSITE_HASH: "placeholder"
+          DIY_SUBMIT_DOMAIN_NAME: ${{ needs.names.outputs.deployment-name == 'prod' && 'submit.diyaccounting.co.uk' || format('{0}.submit.diyaccounting.co.uk', needs.names.outputs.deployment-name) }}
+          DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.deployment-name == 'prod' && 'https://submit.diyaccounting.co.uk/' || format('https://{0}.submit.diyaccounting.co.uk/', needs.names.outputs.deployment-name) }}
+          AUTH_URL_MOCK_LAMBDA_URL: ${{ needs.deploy-auth.outputs.authUrlMockLambdaUrl }}
+          AUTH_URL_COGNITO_LAMBDA_URL: ${{ needs.deploy-auth.outputs.authUrlCognitoLambdaUrl }}
+          COGNITO_EXCHANGE_TOKEN_LAMBDA_URL: ${{ needs.deploy-auth.outputs.exchangeCognitoTokenLambdaUrl }}
+          AUTH_URL_HMRC_LAMBDA_URL: ${{ needs.deploy-application.outputs.authUrlHmrcLambdaUrl }}
+          EXCHANGE_HMRC_TOKEN_LAMBDA_URL: ${{ needs.deploy-application.outputs.exchangeHmrcTokenLambdaUrl }}
+          SUBMIT_VAT_LAMBDA_URL: ${{ needs.deploy-application.outputs.submitVatLambdaUrl }}
+          LOG_RECEIPT_LAMBDA_URL: ${{ needs.deploy-application.outputs.logReceiptLambdaUrl }}
+          CATALOG_LAMBDA_URL: ${{ needs.deploy-application.outputs.catalogLambdaUrl }}
+          REQUEST_BUNDLES_LAMBDA_URL: ${{ needs.deploy-application.outputs.requestBundlesLambdaUrl }}
+          MY_BUNDLES_LAMBDA_URL: ${{ needs.deploy-application.outputs.myBundlesLambdaUrl }}
+          MY_RECEIPTS_LAMBDA_URL: ${{ needs.deploy-application.outputs.myReceiptsLambdaUrl }}
 
   deploy-edge:
     name: 'deploy edge'
@@ -1219,11 +1241,9 @@ jobs:
           ENV_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
           SELF_DESTRUCT_HANDLER_SOURCE: "../infra/test/resources/fake-self-destruct-lambda.jar"
+          WEBSITE_HASH: "placeholder"
           DIY_SUBMIT_DOMAIN_NAME: ${{ needs.names.outputs.deployment-name == 'prod' && 'submit.diyaccounting.co.uk' || format('{0}.submit.diyaccounting.co.uk', needs.names.outputs.deployment-name) }}
           DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.deployment-name == 'prod' && 'https://submit.diyaccounting.co.uk/' || format('https://{0}.submit.diyaccounting.co.uk/', needs.names.outputs.deployment-name) }}
-          HOSTED_ZONE_NAME: ${{ vars.AWS_HOSTED_ZONE_NAME }}
-          HOSTED_ZONE_ID: ${{ vars.AWS_HOSTED_ZONE_ID }}
-          CERTIFICATE_ARN: ${{ vars.AWS_CERTIFICATE_ARN }}
           AUTH_URL_MOCK_LAMBDA_URL: ${{ needs.deploy-auth.outputs.authUrlMockLambdaUrl }}
           AUTH_URL_COGNITO_LAMBDA_URL: ${{ needs.deploy-auth.outputs.authUrlCognitoLambdaUrl }}
           COGNITO_EXCHANGE_TOKEN_LAMBDA_URL: ${{ needs.deploy-auth.outputs.exchangeCognitoTokenLambdaUrl }}
@@ -1344,14 +1364,21 @@ jobs:
         env:
           ENV_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
-          BUILD_NUMBER: ${{ github.run_number }}
           SELF_DESTRUCT_HANDLER_SOURCE: "../infra/test/resources/fake-self-destruct-lambda.jar"
+          WEBSITE_HASH: ${{ steps.publish-hash.outputs.WEBSITE_HASH }}
           DIY_SUBMIT_DOMAIN_NAME: ${{ needs.names.outputs.deployment-name == 'prod' && 'submit.diyaccounting.co.uk' || format('{0}.submit.diyaccounting.co.uk', needs.names.outputs.deployment-name) }}
           DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.deployment-name == 'prod' && 'https://submit.diyaccounting.co.uk/' || format('https://{0}.submit.diyaccounting.co.uk/', needs.names.outputs.deployment-name) }}
-          HOSTED_ZONE_NAME: ${{ vars.AWS_HOSTED_ZONE_NAME }}
-          HOSTED_ZONE_ID: ${{ vars.AWS_HOSTED_ZONE_ID }}
-          CERTIFICATE_ARN: ${{ vars.AWS_CERTIFICATE_ARN }}
-          WEBSITE_HASH: ${{ steps.publish-hash.outputs.WEBSITE_HASH }}
+          AUTH_URL_MOCK_LAMBDA_URL: ${{ needs.deploy-auth.outputs.authUrlMockLambdaUrl }}
+          AUTH_URL_COGNITO_LAMBDA_URL: ${{ needs.deploy-auth.outputs.authUrlCognitoLambdaUrl }}
+          COGNITO_EXCHANGE_TOKEN_LAMBDA_URL: ${{ needs.deploy-auth.outputs.exchangeCognitoTokenLambdaUrl }}
+          AUTH_URL_HMRC_LAMBDA_URL: ${{ needs.deploy-application.outputs.authUrlHmrcLambdaUrl }}
+          EXCHANGE_HMRC_TOKEN_LAMBDA_URL: ${{ needs.deploy-application.outputs.exchangeHmrcTokenLambdaUrl }}
+          SUBMIT_VAT_LAMBDA_URL: ${{ needs.deploy-application.outputs.submitVatLambdaUrl }}
+          LOG_RECEIPT_LAMBDA_URL: ${{ needs.deploy-application.outputs.logReceiptLambdaUrl }}
+          CATALOG_LAMBDA_URL: ${{ needs.deploy-application.outputs.catalogLambdaUrl }}
+          REQUEST_BUNDLES_LAMBDA_URL: ${{ needs.deploy-application.outputs.requestBundlesLambdaUrl }}
+          MY_BUNDLES_LAMBDA_URL: ${{ needs.deploy-application.outputs.myBundlesLambdaUrl }}
+          MY_RECEIPTS_LAMBDA_URL: ${{ needs.deploy-application.outputs.myReceiptsLambdaUrl }}
 
   deploy-ops:
     name: 'deploy ops'
@@ -1440,14 +1467,11 @@ jobs:
         env:
           ENV_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
-          BUILD_NUMBER: ${{ github.run_number }}
           SELF_DESTRUCT_HANDLER_SOURCE: "../infra/test/resources/fake-self-destruct-lambda.jar"
-          DIY_SUBMIT_DOMAIN_NAME: ${{ needs.names.outputs.deployment-name == 'prod' && 'submit.diyaccounting.co.uk' || format('{0}.submit.diyaccounting.co.uk', needs.names.outputs.deployment-name) }}
-          DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.deployment-name == 'prod' && 'https://submit.diyaccounting.co.uk/' || format('https://{0}.submit.diyaccounting.co.uk/', needs.names.outputs.deployment-name) }}
-          HOSTED_ZONE_NAME: ${{ vars.AWS_HOSTED_ZONE_NAME }}
-          HOSTED_ZONE_ID: ${{ vars.AWS_HOSTED_ZONE_ID }}
-          CERTIFICATE_ARN: ${{ vars.AWS_CERTIFICATE_ARN }}
-          WEBSITE_HASH: ${{ steps.publish-hash.outputs.WEBSITE_HASH }}
+          BASE_IMAGE_TAG: ${{ needs.push-images.outputs.base-image-tag }}
+          # Set by deploy-environment.yml after the environment's AuthStack is deployed
+          COGNITO_USER_POOL_ARN: ${{ vars.COGNITO_USER_POOL_ARN }}
+          COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
 
 # TODO: Configure or copy and convert the system test API test to test against deployed environment
 #  api-test:
@@ -1530,9 +1554,9 @@ jobs:
       - run: cp '.env.${{ needs.names.outputs.environment-name }}' '.env.proxy' ; npx dotenv -e '.env.${{ needs.names.outputs.environment-name }}' -- npm run test:behaviour
         env:
           BASE_URL: ${{ needs.names.outputs.base-url }}
-          DIY_SUBMIT_HMRC_TEST_USERNAME: ${{ vars.DIY_SUBMIT_HMRC_TEST_USERNAME }}
-          DIY_SUBMIT_HMRC_TEST_PASSWORD: ${{ secrets.DIY_SUBMIT_HMRC_TEST_PASSWORD }}
-          DIY_SUBMIT_HMRC_TEST_VAT_NUMBER: ${{ vars.DIY_SUBMIT_HMRC_TEST_VAT_NUMBER }}
+          TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
+          TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
+          TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
 
       - name: Upload artifacts (results)
         if: ${{ !cancelled() }}

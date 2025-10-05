@@ -21,8 +21,19 @@ env:
   JAVA_VERSION: '21'
   NODE_VERSION: '22'
   ACTIONS_ROLE_ARN: 'arn:aws:iam::887764105431:role/submit-github-actions-role'
-  DEPLOY_ROLE_ARN: 'arn:aws:iam::887764105431:role/submit-deployment-role'
+  DEPLOY_ROLE_ARN:  'arn:aws:iam::887764105431:role/submit-deployment-role'
   AWS_REGION: 'eu-west-2'
+  AWS_ACCOUNT_ID: '887764105431'
+  BASE_IMAGE_TAG_PREFIX: 'submit-base'
+  skipDeploy: ${{ inputs.skipDeploy || 'false' }}
+  deploymentName: ${{ inputs.deploymentName || '' }}
+  loadTestDuration: ${{ inputs.loadTestDuration || '30s' }}
+  GITHUB_ACTOR: ${{ github.actor }}
+  SELF_DESTRUCT_DELAY_HOURS: ${{ inputs.selfDestructDelayHours || '1' }}
+  BASE_IMAGE_TAG: ${{ github.sha }}
+  FORCE_ALL_STACK_DEPLOYMENT: ${{ inputs.forceAllStackDeployment || 'false' }}
+  COMMIT_HASH: ${{ github.sha }}
+  BUILD_NUMBER: ${{ github.run_number }}
 
 jobs:
   destroy:
@@ -74,14 +85,15 @@ jobs:
           else
               ENV_NAME="ci"
               # Truncate to 16 chars for branch-based deployments
-              DEPLOYMENT_NAME="ci-${CLEANED:0:16}"
+              DEPLOYMENT_NAME="ci-${CLEANED:0:8}"
           fi
 
           echo "Computed ENV_NAME: $ENV_NAME"
           echo "Computed DEPLOYMENT_NAME: $DEPLOYMENT_NAME"
+          #DEPLOYMENT_NAME=$ENV_NAME
 
-          echo "ENV_NAME=$ENV_NAME" >> "$GITHUB_OUTPUT"
-          echo "DEPLOYMENT_NAME=$DEPLOYMENT_NAME" >> "$GITHUB_OUTPUT"
+          echo "ENV_NAME=$environmentment-name" >> "$GITHUB_OUTPUT"
+          echo "DEPLOYMENT_NAME=$deployment-name" >> "$GITHUB_OUTPUT"
 
           echo "Actual ENV_NAME: $ENV_NAME"
           echo "Actual DEPLOYMENT_NAME: $DEPLOYMENT_NAME"
@@ -132,185 +144,150 @@ jobs:
         run: ./mvnw --errors clean package -DskipTests
 
       - name: Destroy PublishStack
-        if: ${{ steps.names.outputs.DEPLOYMENT_NAME != 'prod' }}
+        if: ${{ steps.names.outputs.deployment-name != 'prod' }}
         run: |
           cd cdk-delivery && \
-            npx dotenv -e ../.env.${{ steps.names.outputs.ENV_NAME }} -- \
+            npx dotenv -e ../.env.${{ steps.names.outputs.environment-name }} -- \
               npx cdk destroy \
-              ${{ steps.names.outputs.DEPLOYMENT_NAME }}-PublishStack \
+              ${{ steps.names.outputs.deployment-name }}-PublishStack \
               --exclusively --force \
           ; cd .. \
           ;
         env:
-          ENV_NAME: ${{ steps.names.outputs.ENV_NAME }}
-          DEPLOYMENT_NAME: ${{ steps.names.outputs.DEPLOYMENT_NAME }}
-          BUILD_NUMBER: ${{ github.run_number }}
+          ENV_NAME: ${{ needs.names.outputs.environment-name }}
+          DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
           SELF_DESTRUCT_HANDLER_SOURCE: "../infra/test/resources/fake-self-destruct-lambda.jar"
-          DIY_SUBMIT_DOMAIN_NAME: ${{ steps.names.outputs.DEPLOYMENT_NAME == 'prod' && 'submit.diyaccounting.co.uk' || format('{0}.submit.diyaccounting.co.uk', steps.names.outputs.DEPLOYMENT_NAME) }}
-          DIY_SUBMIT_BASE_URL: ${{ steps.names.outputs.DEPLOYMENT_NAME == 'prod' && 'https://submit.diyaccounting.co.uk/' || format('https://{0}.submit.diyaccounting.co.uk/', steps.names.outputs.DEPLOYMENT_NAME) }}
-          HOSTED_ZONE_NAME: ${{ vars.AWS_HOSTED_ZONE_NAME }}
-          HOSTED_ZONE_ID: ${{ vars.AWS_HOSTED_ZONE_ID }}
-          CERTIFICATE_ARN: ${{ vars.AWS_CERTIFICATE_ARN }}
-          WEBSITE_HASH: 'self-destruct'
+          WEBSITE_HASH: 'placeholder'
+          DIY_SUBMIT_DOMAIN_NAME: ${{ needs.names.outputs.deployment-name == 'prod' && 'submit.diyaccounting.co.uk' || format('{0}.submit.diyaccounting.co.uk', needs.names.outputs.deployment-name) }}
+          DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.deployment-name == 'prod' && 'https://submit.diyaccounting.co.uk/' || format('https://{0}.submit.diyaccounting.co.uk/', needs.names.outputs.deployment-name) }}
 
       - name: Destroy EdgeStack
-        if: ${{ steps.names.outputs.DEPLOYMENT_NAME != 'prod' }}
+        if: ${{ steps.names.outputs.deployment-name != 'prod' }}
         run: |
           cd cdk-delivery && \
-            npx dotenv -e ../.env.${{ steps.names.outputs.ENV_NAME }} -- \
+            npx dotenv -e ../.env.${{ steps.names.outputs.environment-name }} -- \
               npx cdk destroy \
-              ${{ steps.names.outputs.DEPLOYMENT_NAME }}-EdgeStack \
+              ${{ steps.names.outputs.deployment-name }}-EdgeStack \
               --exclusively --force \
           ; cd .. \
           ;
         env:
-          ENV_NAME: ${{ steps.names.outputs.ENV_NAME }}
-          DEPLOYMENT_NAME: ${{ steps.names.outputs.DEPLOYMENT_NAME }}
+          ENV_NAME: ${{ needs.names.outputs.environment-name }}
+          DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
           SELF_DESTRUCT_HANDLER_SOURCE: "../infra/test/resources/fake-self-destruct-lambda.jar"
-          DIY_SUBMIT_DOMAIN_NAME: ${{ steps.names.outputs.DEPLOYMENT_NAME == 'prod' && 'submit.diyaccounting.co.uk' || format('{0}.submit.diyaccounting.co.uk', steps.names.outputs.DEPLOYMENT_NAME) }}
-          DIY_SUBMIT_BASE_URL: ${{ steps.names.outputs.DEPLOYMENT_NAME == 'prod' && 'https://submit.diyaccounting.co.uk/' || format('https://{0}.submit.diyaccounting.co.uk/', steps.names.outputs.DEPLOYMENT_NAME) }}
-          HOSTED_ZONE_NAME: ${{ vars.AWS_HOSTED_ZONE_NAME }}
-          HOSTED_ZONE_ID: ${{ vars.AWS_HOSTED_ZONE_ID }}
-          CERTIFICATE_ARN: ${{ vars.AWS_CERTIFICATE_ARN }}
+          WEBSITE_HASH: 'placeholder'
+          DIY_SUBMIT_DOMAIN_NAME: ${{ needs.names.outputs.deployment-name == 'prod' && 'submit.diyaccounting.co.uk' || format('{0}.submit.diyaccounting.co.uk', needs.names.outputs.deployment-name) }}
+          DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.deployment-name == 'prod' && 'https://submit.diyaccounting.co.uk/' || format('https://{0}.submit.diyaccounting.co.uk/', needs.names.outputs.deployment-name) }}
 
       - name: Destroy OpsStack
-        if: ${{ steps.names.outputs.DEPLOYMENT_NAME != 'prod' }}
+        if: ${{ steps.names.outputs.deployment-name != 'prod' }}
         run: |
           cd cdk-application && \
-            npx dotenv -e ../.env.${{ steps.names.outputs.ENV_NAME }} -- \
+            npx dotenv -e ../.env.${{ steps.names.outputs.environment-name }} -- \
               npx cdk destroy \
-              ${{ steps.names.outputs.DEPLOYMENT_NAME }}-OpsStack \
+              ${{ steps.names.outputs.deployment-name }}-OpsStack \
               --exclusively --force \
           ; cd .. \
           ;
         env:
-          ENV_NAME: ${{ steps.names.outputs.ENV_NAME }}
-          DEPLOYMENT_NAME: ${{ steps.names.outputs.DEPLOYMENT_NAME }}
-          BUILD_NUMBER: ${{ github.run_number }}
+          ENV_NAME: ${{ needs.names.outputs.environment-name }}
+          DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
           SELF_DESTRUCT_HANDLER_SOURCE: "../infra/test/resources/fake-self-destruct-lambda.jar"
-          GOOGLE_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ steps.names.outputs.ENV_NAME }}/submit/google/client_secret"
-          HMRC_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ steps.names.outputs.ENV_NAME }}/submit/hmrc/client_secret"
-          DIY_SUBMIT_DOMAIN_NAME: ${{ steps.names.outputs.DEPLOYMENT_NAME == 'prod' && 'submit.diyaccounting.co.uk' || format('{0}.submit.diyaccounting.co.uk', steps.names.outputs.DEPLOYMENT_NAME) }}
-          DIY_SUBMIT_BASE_URL: ${{ steps.names.outputs.DEPLOYMENT_NAME == 'prod' && 'https://submit.diyaccounting.co.uk/' || format('https://{0}.submit.diyaccounting.co.uk/', steps.names.outputs.DEPLOYMENT_NAME) }}
-          HOSTED_ZONE_NAME: ${{ vars.AWS_HOSTED_ZONE_NAME }}
-          HOSTED_ZONE_ID: ${{ vars.AWS_HOSTED_ZONE_ID }}
-          CERTIFICATE_ARN: ${{ vars.AWS_CERTIFICATE_ARN }}
-          WEBSITE_HASH: 'self-destruct'
+          BASE_IMAGE_TAG: ${{ needs.push-images.outputs.base-image-tag }}
+          # Set by deploy-environment.yml after the environment's AuthStack is deployed
+          COGNITO_USER_POOL_ARN: ${{ vars.COGNITO_USER_POOL_ARN }}
+          COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
 
       - name: Destroy AuthStack
-        if: ${{ steps.names.outputs.DEPLOYMENT_NAME != 'prod' }}
+        if: ${{ steps.names.outputs.deployment-name != 'prod' }}
         run: |
           cd cdk-application && \
-            npx dotenv -e ../.env.${{ steps.names.outputs.ENV_NAME }} -- \
+            npx dotenv -e ../.env.${{ steps.names.outputs.environment-name }} -- \
               npx cdk destroy \
-              ${{ steps.names.outputs.DEPLOYMENT_NAME }}-AuthStack \
+              ${{ steps.names.outputs.deployment-name }}-AuthStack \
               --exclusively --force \
           ; cd .. \
           ;
         env:
-          ENV_NAME: ${{ steps.names.outputs.ENV_NAME }}
-          DEPLOYMENT_NAME: ${{ steps.names.outputs.DEPLOYMENT_NAME }}
+          ENV_NAME: ${{ needs.names.outputs.environment-name }}
+          DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
           SELF_DESTRUCT_HANDLER_SOURCE: "../infra/test/resources/fake-self-destruct-lambda.jar"
-          GOOGLE_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ steps.names.outputs.ENV_NAME }}/submit/google/client_secret"
-          HMRC_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ steps.names.outputs.ENV_NAME }}/submit/hmrc/client_secret"
+          BASE_IMAGE_TAG: ${{ needs.push-images.outputs.base-image-tag }}
+          # Set by deploy-environment.yml after the environment's AuthStack is deployed
+          COGNITO_USER_POOL_ARN: ${{ vars.COGNITO_USER_POOL_ARN }}
+          COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
 
       - name: Destroy HmrcStack
-        if: ${{ steps.names.outputs.DEPLOYMENT_NAME != 'prod' }}
+        if: ${{ steps.names.outputs.deployment-name != 'prod' }}
         run: |
           cd cdk-application && \
-            npx dotenv -e ../.env.${{ steps.names.outputs.ENV_NAME }} -- \
+            npx dotenv -e ../.env.${{ steps.names.outputs.environment-name }} -- \
               npx cdk destroy \
-              ${{ steps.names.outputs.DEPLOYMENT_NAME }}-ApplictionStack \
+              ${{ steps.names.outputs.deployment-name }}-ApplictionStack \
               --exclusively --force \
           ; cd .. \
           ;
         env:
-          ENV_NAME: ${{ steps.names.outputs.ENV_NAME }}
-          DEPLOYMENT_NAME: ${{ steps.names.outputs.DEPLOYMENT_NAME }}
+          ENV_NAME: ${{ needs.names.outputs.environment-name }}
+          DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
           SELF_DESTRUCT_HANDLER_SOURCE: "../infra/test/resources/fake-self-destruct-lambda.jar"
-          GOOGLE_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ steps.names.outputs.ENV_NAME }}/submit/google/client_secret"
-          HMRC_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ steps.names.outputs.ENV_NAME }}/submit/hmrc/client_secret"
-          BASE_IMAGE_TAG: 'latest'
-
-      - name: Destroy IdentityStack
-        if: ${{ steps.names.outputs.DEPLOYMENT_NAME != 'prod' }}
-        run: |
-          cd cdk-application && \
-            npx dotenv -e ../.env.${{ steps.names.outputs.ENV_NAME }} -- \
-              npx cdk destroy \
-              ${{ steps.names.outputs.DEPLOYMENT_NAME }}-IdentityStack \
-              --exclusively --force \
-          ; cd .. \
-          ;
-        env:
-          ENV_NAME: ${{ steps.names.outputs.ENV_NAME }}
-          DEPLOYMENT_NAME: ${{ steps.names.outputs.DEPLOYMENT_NAME }}
-          SELF_DESTRUCT_HANDLER_SOURCE: "../infra/test/resources/fake-self-destruct-lambda.jar"
-          GOOGLE_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ steps.names.outputs.ENV_NAME }}/submit/google/client_secret"
+          BASE_IMAGE_TAG: ${{ needs.push-images.outputs.base-image-tag }}
+          # Set by deploy-environment.yml after the environment's AuthStack is deployed
+          COGNITO_USER_POOL_ARN: ${{ vars.COGNITO_USER_POOL_ARN }}
+          COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
 
       - name: Destroy DevStack
-        if: ${{ steps.names.outputs.DEPLOYMENT_NAME != 'prod' }}
+        if: ${{ steps.names.outputs.deployment-name != 'prod' }}
         run: |
           cd cdk-application && \
-            npx dotenv -e ../.env.${{ steps.names.outputs.ENV_NAME }} -- \
+            npx dotenv -e ../.env.${{ steps.names.outputs.environment-name }} -- \
               npx cdk destroy \
-              ${{ steps.names.outputs.DEPLOYMENT_NAME }}-DevStack \
+              ${{ steps.names.outputs.deployment-name }}-DevStack \
               --exclusively --force \
           ; cd .. \
           ;
         env:
-          ENV_NAME: ${{ steps.names.outputs.ENV_NAME }}
-          DEPLOYMENT_NAME: ${{ steps.names.outputs.DEPLOYMENT_NAME }}
+          ENV_NAME: ${{ needs.names.outputs.environment-name }}
+          DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
           SELF_DESTRUCT_HANDLER_SOURCE: "../infra/test/resources/fake-self-destruct-lambda.jar"
-          GOOGLE_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ steps.names.outputs.ENV_NAME }}/submit/google/client_secret"
+          BASE_IMAGE_TAG: ${{ needs.push-images.outputs.base-image-tag }}
+          # Set by deploy-environment.yml after the environment's AuthStack is deployed
+          COGNITO_USER_POOL_ARN: ${{ vars.COGNITO_USER_POOL_ARN }}
+          COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
 
       - name: Destroy SelfDestructStack (Delivery)
-        if: ${{ steps.names.outputs.DEPLOYMENT_NAME != 'prod' }}
+        if: ${{ steps.names.outputs.deployment-name != 'prod' }}
         run: |
           cd cdk-delivery && \
-            npx dotenv -e ../.env.${{ steps.names.outputs.ENV_NAME }} -- \
+            npx dotenv -e ../.env.${{ steps.names.outputs.environment-name }} -- \
               npx cdk destroy \
-              ${{ steps.names.outputs.DEPLOYMENT_NAME }}-SelfDestructStack \
+              ${{ steps.names.outputs.deployment-name }}-SelfDestructStack \
               --exclusively --force \
           ; cd .. \
           ;
         env:
-          ENV_NAME: ${{ steps.names.outputs.ENV_NAME }}
-          DEPLOYMENT_NAME: ${{ steps.names.outputs.DEPLOYMENT_NAME }}
-          GOOGLE_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ steps.names.outputs.ENV_NAME }}/submit/google/client_secret"
-          SELF_DESTRUCT_HANDLER_SOURCE: "../infra/test/resources/fake-self-destruct-lambda.jar"
+          ENV_NAME: ${{ needs.names.outputs.environment-name }}
+          DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
+          SELF_DESTRUCT_HANDLER_SOURCE: "../${{ needs.mvn-package.outputs.self-destruct-handler-source }}"
+          WEBSITE_HASH: "placeholder"
 
       - name: Destroy SelfDestructStack (Application)
-        if: ${{ steps.names.outputs.DEPLOYMENT_NAME != 'prod' }}
+        if: ${{ steps.names.outputs.deployment-name != 'prod' }}
         run: |
           cd cdk-application && \
-            npx dotenv -e ../.env.${{ steps.names.outputs.ENV_NAME }} -- \
+            npx dotenv -e ../.env.${{ steps.names.outputs.environment-name }} -- \
               npx cdk destroy \
-              ${{ steps.names.outputs.DEPLOYMENT_NAME }}-SelfDestructStack \
+              ${{ steps.names.outputs.deployment-name }}-SelfDestructStack \
               --exclusively --force \
           ; cd .. \
           ;
         env:
-          ENV_NAME: ${{ steps.names.outputs.ENV_NAME }}
-          DEPLOYMENT_NAME: ${{ steps.names.outputs.DEPLOYMENT_NAME }}
-          GOOGLE_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ steps.names.outputs.ENV_NAME }}/submit/google/client_secret"
-          SELF_DESTRUCT_HANDLER_SOURCE: "../infra/test/resources/fake-self-destruct-lambda.jar"
-
-      - name: Destroy ObservabilityStack
-        if: ${{ steps.names.outputs.DEPLOYMENT_NAME != 'prod' }}
-        run: |
-          cd cdk-application && \
-            npx dotenv -e ../.env.${{ steps.names.outputs.ENV_NAME }} -- \
-              npx cdk destroy \
-              ${{ steps.names.outputs.DEPLOYMENT_NAME }}-ObservabilityStack \
-              --exclusively --force \
-          ; cd .. \
-          ;
-        env:
-          ENV_NAME: ${{ steps.names.outputs.ENV_NAME }}
-          DEPLOYMENT_NAME: ${{ steps.names.outputs.DEPLOYMENT_NAME }}
-          SELF_DESTRUCT_HANDLER_SOURCE: "../infra/test/resources/fake-self-destruct-lambda.jar"
-          GOOGLE_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:diy/${{ steps.names.outputs.ENV_NAME }}/submit/google/client_secret"
+          ENV_NAME: ${{ needs.names.outputs.environment-name }}
+          DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
+          SELF_DESTRUCT_HANDLER_SOURCE: "../${{ needs.mvn-package.outputs.self-destruct-handler-source }}"
+          # Set by deploy-environment.yml after the environment's AuthStack is deployed
+          COGNITO_USER_POOL_ARN: ${{ vars.COGNITO_USER_POOL_ARN }}
+          COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
 
       - name: CDK stacks after
         if: ${{ !cancelled() }}

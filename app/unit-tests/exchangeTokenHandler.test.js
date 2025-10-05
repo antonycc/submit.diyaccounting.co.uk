@@ -38,7 +38,7 @@ describe("httpPostMock", () => {
       token_type: "Bearer",
       expires_in: 3600,
     };
-    process.env.DIY_SUBMIT_HMRC_CLIENT_SECRET = mockSecret;
+    process.env.HMRC_CLIENT_SECRET = mockSecret;
     fetch.mockResolvedValueOnce({
       ok: true,
       json: () => Promise.resolve(mockResponse),

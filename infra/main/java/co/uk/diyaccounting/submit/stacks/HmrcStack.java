@@ -1,8 +1,14 @@
 package co.uk.diyaccounting.submit.stacks;
 
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildFunctionName;
+
 import co.uk.diyaccounting.submit.constructs.LambdaUrlOrigin;
 import co.uk.diyaccounting.submit.constructs.LambdaUrlOriginProps;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
+import java.util.List;
+import java.util.Optional;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
@@ -21,13 +27,6 @@ import software.amazon.awscdk.services.s3.IBucket;
 import software.amazon.awscdk.services.secretsmanager.Secret;
 import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
-
-import java.util.List;
-import java.util.Optional;
-
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildFunctionName;
 
 public class HmrcStack extends Stack {
 
@@ -167,8 +166,8 @@ public class HmrcStack extends Stack {
                     "TEST_ACCESS_TOKEN", props.optionalTestAccessToken().get());
         }
         var exchangeHmrcTokenLambdaUrlOriginFunctionHandler = "token.httpPostHmrc";
-        var exchangeHmrcTokenLambdaUrlOriginFunctionName = buildFunctionName(
-                props.resourceNamePrefix(), exchangeHmrcTokenLambdaUrlOriginFunctionHandler);
+        var exchangeHmrcTokenLambdaUrlOriginFunctionName =
+                buildFunctionName(props.resourceNamePrefix(), exchangeHmrcTokenLambdaUrlOriginFunctionHandler);
         var exchangeHmrcTokenLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
                 LambdaUrlOriginProps.builder()

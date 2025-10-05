@@ -19,9 +19,9 @@ const serverPort = 3500;
 console.log(`serverPort: ${serverPort}`);
 
 // Read HMRC credentials from environment variables
-const hmrcTestUsername = process.env.DIY_SUBMIT_HMRC_TEST_USERNAME;
-const hmrcTestPassword = process.env.DIY_SUBMIT_HMRC_TEST_PASSWORD;
-const hmrcTestVatNumber = process.env.DIY_SUBMIT_HMRC_TEST_VAT_NUMBER;
+const hmrcTestUsername = process.env.TEST_HMRC_USERNAME;
+const hmrcTestPassword = process.env.TEST_HMRC_PASSWORD;
+const hmrcTestVatNumber = process.env.TEST_HMRC_VAT_NUMBER;
 console.log(`hmrcTestUsername: ${hmrcTestUsername}`);
 console.log(`hmrcTestPassword: ${hmrcTestPassword.trim().length} chars`);
 console.log(`hmrcTestVatNumber: ${hmrcTestVatNumber}`);

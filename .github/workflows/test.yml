@@ -86,7 +86,7 @@ jobs:
 
       - run: source .env.${{ env.environment }} && npm test
         env:
-          DIY_SUBMIT_HMRC_CLIENT_SECRET: test
+          HMRC_CLIENT_SECRET: test
 
   npm-unit-test:
     name: 'npm unit test with coverage'
@@ -106,7 +106,7 @@ jobs:
 
       - run: source .env.${{ env.environment }} && npm run test:coverage
         env:
-          DIY_SUBMIT_HMRC_CLIENT_SECRET: test
+          HMRC_CLIENT_SECRET: test
 
       - name: Upload coverage reports
         uses: actions/upload-artifact@v4
@@ -348,13 +348,13 @@ jobs:
 #        env:
 #          TEST_AUTH_USERNAME: ${{ steps.uuid.outputs.TEST_USERNAME }}
 #          TEST_AUTH_PASSWORD: ${{ steps.uuid.outputs.TEST_PASSWORD }}
-#          DIY_SUBMIT_HMRC_CLIENT_SECRET: ${{ secrets.DIY_SUBMIT_HMRC_CLIENT_SECRET }}
+#          HMRC_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
 #      - run: cp '.env.${{ env.environment }}' '.env.proxy' ; npx dotenv -e '.env.${{ env.environment }}' -- npm run test:behaviour
 #        if: ${{ env.environment != 'test' && env.environment != 'proxy' }}
 #        env:
 #          TEST_AUTH_USERNAME: ${{ steps.uuid.outputs.TEST_USERNAME }}
 #          TEST_AUTH_PASSWORD: ${{ steps.uuid.outputs.TEST_PASSWORD }}
-#          DIY_SUBMIT_HMRC_CLIENT_SECRET: ${{ secrets.DIY_SUBMIT_HMRC_CLIENT_SECRET }}
+#          HMRC_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
 #
 #      - name: Convert Playwright video to MP4
 #        if: ${{ !cancelled() }}
