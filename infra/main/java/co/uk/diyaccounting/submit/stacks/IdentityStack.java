@@ -1,5 +1,13 @@
 package co.uk.diyaccounting.submit.stacks;
 
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildCognitoBaseUri;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDashedCognitoDomainName;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.RemovalPolicy;
@@ -33,15 +41,6 @@ import software.amazon.awscdk.services.secretsmanager.ISecret;
 import software.amazon.awscdk.services.secretsmanager.Secret;
 import software.constructs.Construct;
 import software.constructs.IDependable;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildCognitoBaseUri;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDashedCognitoDomainName;
 
 public class IdentityStack extends Stack {
 
@@ -144,8 +143,7 @@ public class IdentityStack extends Stack {
         // Look up the client secret by arn
         if (props.googleClientSecretArn() == null
                 || props.googleClientSecretArn().isBlank()) {
-            throw new IllegalArgumentException(
-                    "GOOGLE_CLIENT_SECRET_ARN must be provided for env=" + props.envName());
+            throw new IllegalArgumentException("GOOGLE_CLIENT_SECRET_ARN must be provided for env=" + props.envName());
         }
         this.googleClientSecretsManagerSecret = Secret.fromSecretPartialArn(
                 this, props.resourceNamePrefix() + "-GoogleClientSecret", props.googleClientSecretArn());

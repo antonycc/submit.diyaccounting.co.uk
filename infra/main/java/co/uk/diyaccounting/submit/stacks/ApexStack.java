@@ -1,5 +1,11 @@
 package co.uk.diyaccounting.submit.stacks;
 
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.RemovalPolicy;
@@ -33,13 +39,6 @@ import software.amazon.awscdk.services.s3.ObjectOwnership;
 import software.amazon.awscdk.services.s3.deployment.BucketDeployment;
 import software.amazon.awscdk.services.s3.deployment.Source;
 import software.constructs.Construct;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 public class ApexStack extends Stack {
 
@@ -86,7 +85,6 @@ public class ApexStack extends Stack {
         String hostedZoneId();
 
         String certificateArn();
-
 
         /** Logging TTL in days */
         int accessLogGroupRetentionPeriodDays();
@@ -137,32 +135,31 @@ public class ApexStack extends Stack {
                 .signing(Signing.SIGV4_ALWAYS)
                 .build();
         IOrigin maintenanceOrigin = S3BucketOrigin.withOriginAccessControl(
-                maintenanceBucket, S3BucketOriginWithOACProps.builder().originAccessControl(oac).build());
+                maintenanceBucket,
+                S3BucketOriginWithOACProps.builder().originAccessControl(oac).build());
 
         // Upload a minimal maintenance page
-        String maintenanceHtml =
-                "<!doctype html>\n" +
-                "<html lang=\"en\">\n" +
-                "<head>\n" +
-                "  <meta charset=\"utf-8\"/>\n" +
-                "  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"/>\n" +
-                "  <title>Maintenance – " + props.domainName() + "</title>\n" +
-                "  <style>\n" +
-                "    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif;margin:0;background:#f8f9fa;color:#222}\n" +
-                "    .wrap{max-width:720px;margin:12vh auto;padding:2rem;background:#fff;border:1px solid #e5e7eb;border-radius:12px;box-shadow:0 2px 24px rgba(0,0,0,.05);text-align:center}\n" +
-                "    h1{margin:0 0 .25em 0;font-size:2rem}\n" +
-                "    p{margin:.25em 0;color:#555}\n" +
-                "    small{color:#777}\n" +
-                "  </style>\n" +
-                "</head>\n" +
-                "<body>\n" +
-                "  <div class=\"wrap\">\n" +
-                "    <h1>We'll be right back</h1>\n" +
-                "    <p>The site is temporarily unavailable while we deploy an update.</p>\n" +
-                "    <p><small>Domain: " + props.domainName() + "</small></p>\n" +
-                "  </div>\n" +
-                "</body>\n" +
-                "</html>\n";
+        String maintenanceHtml = "<!doctype html>\n" + "<html lang=\"en\">\n"
+                + "<head>\n"
+                + "  <meta charset=\"utf-8\"/>\n"
+                + "  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"/>\n"
+                + "  <title>Maintenance – "
+                + props.domainName() + "</title>\n" + "  <style>\n"
+                + "    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif;margin:0;background:#f8f9fa;color:#222}\n"
+                + "    .wrap{max-width:720px;margin:12vh auto;padding:2rem;background:#fff;border:1px solid #e5e7eb;border-radius:12px;box-shadow:0 2px 24px rgba(0,0,0,.05);text-align:center}\n"
+                + "    h1{margin:0 0 .25em 0;font-size:2rem}\n"
+                + "    p{margin:.25em 0;color:#555}\n"
+                + "    small{color:#777}\n"
+                + "  </style>\n"
+                + "</head>\n"
+                + "<body>\n"
+                + "  <div class=\"wrap\">\n"
+                + "    <h1>We'll be right back</h1>\n"
+                + "    <p>The site is temporarily unavailable while we deploy an update.</p>\n"
+                + "    <p><small>Domain: "
+                + props.domainName() + "</small></p>\n" + "  </div>\n"
+                + "</body>\n"
+                + "</html>\n";
         BucketDeployment.Builder.create(this, props.resourceNamePrefix() + "-HoldingDeploy")
                 .sources(List.of(Source.data("index.html", maintenanceHtml)))
                 .destinationBucket(maintenanceBucket)

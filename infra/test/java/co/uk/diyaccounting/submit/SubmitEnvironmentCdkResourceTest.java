@@ -2,6 +2,12 @@ package co.uk.diyaccounting.submit;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 import org.junitpioneer.jupiter.SetEnvironmentVariable;
@@ -9,19 +15,14 @@ import software.amazon.awscdk.App;
 import software.amazon.awscdk.AppProps;
 import software.amazon.awscdk.assertions.Template;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-
 @SetEnvironmentVariable.SetEnvironmentVariables({
     @SetEnvironmentVariable(key = "ENV_NAME", value = "test"),
     @SetEnvironmentVariable(key = "DEPLOYMENT_NAME", value = "test-deploy"),
     @SetEnvironmentVariable(key = "DIY_SUBMIT_DOMAIN_NAME", value = "test.submit.diyaccounting.co.uk"),
     @SetEnvironmentVariable(key = "DIY_SUBMIT_BASE_URL", value = "https://test.submit.diyaccounting.co.uk"),
-    @SetEnvironmentVariable(key = "GOOGLE_CLIENT_SECRET_ARN", value = "arn:aws:secretsmanager:us-east-1:111111111111:secret:test-google-secret"),
+    @SetEnvironmentVariable(
+            key = "GOOGLE_CLIENT_SECRET_ARN",
+            value = "arn:aws:secretsmanager:us-east-1:111111111111:secret:test-google-secret"),
     @SetEnvironmentVariable(key = "CLOUD_TRAIL_ENABLED", value = "true"),
     @SetEnvironmentVariable(key = "ACCESS_LOG_GROUP_RETENTION_PERIOD_DAYS", value = "1"),
     @SetEnvironmentVariable(key = "S3_RETAIN_RECEIPTS_BUCKET", value = "false"),

@@ -1,8 +1,13 @@
 package co.uk.diyaccounting.submit.stacks;
 
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildFunctionName;
+
 import co.uk.diyaccounting.submit.constructs.LambdaUrlOrigin;
 import co.uk.diyaccounting.submit.constructs.LambdaUrlOriginProps;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
+import java.util.List;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
@@ -19,14 +24,6 @@ import software.amazon.awscdk.services.lambda.FunctionUrlOptions;
 import software.amazon.awscdk.services.lambda.InvokeMode;
 import software.amazon.awscdk.services.logs.LogGroup;
 import software.constructs.Construct;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildFunctionName;
 
 public class AccountStack extends Stack {
 
@@ -100,8 +97,7 @@ public class AccountStack extends Stack {
 
         // Lookup existing Cognito UserPool
         IUserPool userPool = UserPool.fromUserPoolArn(
-            this, "ImportedUserPool-%s".formatted(props.deploymentName()),
-            props.cognitoUserPoolArn());
+                this, "ImportedUserPool-%s".formatted(props.deploymentName()), props.cognitoUserPoolArn());
 
         // Lambdas
 
@@ -111,12 +107,11 @@ public class AccountStack extends Stack {
                 : FunctionUrlAuthType.NONE;
 
         // Catalog Lambda
-        //var catalogLambdaEnv = new HashMap<>(Map.of("DIY_SUBMIT_BASE_URL", props.baseUrl()));
-        var catalogLambdaEnv = new PopulatedMap<String, String>()
-                .with("DIY_SUBMIT_BASE_URL", props.baseUrl()
-                );
+        // var catalogLambdaEnv = new HashMap<>(Map.of("DIY_SUBMIT_BASE_URL", props.baseUrl()));
+        var catalogLambdaEnv = new PopulatedMap<String, String>().with("DIY_SUBMIT_BASE_URL", props.baseUrl());
         var catalogLambdaUrlOriginFunctionHandler = "catalogGet.handle";
-        var catalogLambdaUrlOriginFunctionName = buildFunctionName(props.compressedResourceNamePrefix(), catalogLambdaUrlOriginFunctionHandler);
+        var catalogLambdaUrlOriginFunctionName =
+                buildFunctionName(props.compressedResourceNamePrefix(), catalogLambdaUrlOriginFunctionHandler);
         var catalogLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
                 LambdaUrlOriginProps.builder()
@@ -132,7 +127,8 @@ public class AccountStack extends Stack {
                         .build());
         this.catalogLambda = catalogLambdaUrlOrigin.lambda;
         this.catalogLambdaLogGroup = catalogLambdaUrlOrigin.logGroup;
-        infof("Created Lambda %s for catalog retrieval with handler %s",
+        infof(
+                "Created Lambda %s for catalog retrieval with handler %s",
                 this.catalogLambda.getNode().getId(), props.lambdaEntry() + catalogLambdaUrlOriginFunctionHandler);
 
         // Request Bundles Lambda
@@ -141,7 +137,8 @@ public class AccountStack extends Stack {
                 .with("TEST_BUNDLE_EXPIRY_DATE", "2025-12-31")
                 .with("TEST_BUNDLE_USER_LIMIT", "10");
         var requestBundlesLambdaUrlOriginFunctionHandler = "bundle.httpPost";
-        var requestBundlesLambdaUrlOriginFunctionName = buildFunctionName(props.compressedResourceNamePrefix(), requestBundlesLambdaUrlOriginFunctionHandler);
+        var requestBundlesLambdaUrlOriginFunctionName =
+                buildFunctionName(props.compressedResourceNamePrefix(), requestBundlesLambdaUrlOriginFunctionHandler);
         var requestBundlesLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
                 LambdaUrlOriginProps.builder()
@@ -159,20 +156,20 @@ public class AccountStack extends Stack {
         this.requestBundlesLambdaLogGroup = requestBundlesLambdaUrlOrigin.logGroup;
         infof(
                 "Created Lambda %s for request bundles with handler %s",
-                this.requestBundlesLambda.getNode().getId(), props.lambdaEntry() + requestBundlesLambdaUrlOriginFunctionHandler);
+                this.requestBundlesLambda.getNode().getId(),
+                props.lambdaEntry() + requestBundlesLambdaUrlOriginFunctionHandler);
 
         // Grant the RequestBundlesLambda permission to access Cognito User Pool
         var region = props.getEnv() != null ? props.getEnv().getRegion() : "us-east-1";
         var account = props.getEnv() != null ? props.getEnv().getAccount() : "";
-        var cognitoUserPoolArn = String.format(
-                "arn:aws:cognito-idp:%s:%s:userpool/%s",
-            region, account, userPool.getUserPoolId());
+        var cognitoUserPoolArn =
+                String.format("arn:aws:cognito-idp:%s:%s:userpool/%s", region, account, userPool.getUserPoolId());
         var requestBundlesLambdaGrantPrincipal = this.requestBundlesLambda.getGrantPrincipal();
         userPool.grant(
-            requestBundlesLambdaGrantPrincipal,
-            "cognito-idp:AdminGetUser",
-            "cognito-idp:AdminUpdateUserAttributes",
-            "cognito-idp:ListUsers");
+                requestBundlesLambdaGrantPrincipal,
+                "cognito-idp:AdminGetUser",
+                "cognito-idp:AdminUpdateUserAttributes",
+                "cognito-idp:ListUsers");
         this.requestBundlesLambda.addToRolePolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)
                 .actions(List.of(
@@ -185,10 +182,10 @@ public class AccountStack extends Stack {
                 this.requestBundlesLambda.getFunctionName(), userPool.getUserPoolId());
 
         // My Bundles Lambda
-        var myBundlesLambdaEnv = new PopulatedMap<String, String>()
-                .with("DIY_SUBMIT_BASE_URL", props.baseUrl());
+        var myBundlesLambdaEnv = new PopulatedMap<String, String>().with("DIY_SUBMIT_BASE_URL", props.baseUrl());
         var myBundlesLambdaUrlOriginFunctionHandler = "myBundles.httpGet";
-        var myBundlesLambdaUrlOriginFunctionName = buildFunctionName(props.compressedResourceNamePrefix(), myBundlesLambdaUrlOriginFunctionHandler);
+        var myBundlesLambdaUrlOriginFunctionName =
+                buildFunctionName(props.compressedResourceNamePrefix(), myBundlesLambdaUrlOriginFunctionHandler);
         var myBundlesLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
                 LambdaUrlOriginProps.builder()
@@ -206,10 +203,10 @@ public class AccountStack extends Stack {
         this.myBundlesLambdaLogGroup = myBundlesLambdaUrlOrigin.logGroup;
         var myBundlesLambdaGrantPrincipal = this.myBundlesLambda.getGrantPrincipal();
         userPool.grant(
-            myBundlesLambdaGrantPrincipal,
-            "cognito-idp:AdminGetUser",
-            "cognito-idp:AdminUpdateUserAttributes",
-            "cognito-idp:ListUsers");
+                myBundlesLambdaGrantPrincipal,
+                "cognito-idp:AdminGetUser",
+                "cognito-idp:AdminUpdateUserAttributes",
+                "cognito-idp:ListUsers");
         infof(
                 "Created Lambda %s for my bundles retrieval with handler %s",
                 this.myBundlesLambda.getNode().getId(), props.lambdaEntry() + myBundlesLambdaUrlOriginFunctionHandler);

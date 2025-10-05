@@ -9,7 +9,7 @@ import java.util.function.Function;
 
 public final class PopulatedMap<K extends CharSequence, V extends CharSequence> extends HashMap<K, V> {
 
-    public PopulatedMap() { }
+    public PopulatedMap() {}
 
     public PopulatedMap(int initialCapacity) {
         super(initialCapacity);

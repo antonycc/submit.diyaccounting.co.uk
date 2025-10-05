@@ -1,5 +1,12 @@
 package co.uk.diyaccounting.submit.stacks;
 
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.convertDotSeparatedToDashSeparated;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.RemovalPolicy;
@@ -39,14 +46,6 @@ import software.amazon.awscdk.services.s3.BucketEncryption;
 import software.amazon.awscdk.services.s3.IBucket;
 import software.amazon.awscdk.services.wafv2.CfnWebACL;
 import software.constructs.Construct;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.convertDotSeparatedToDashSeparated;
 
 public class EdgeStack extends Stack {
 
@@ -236,9 +235,7 @@ public class EdgeStack extends Stack {
 
         // Lookup log buckets
         IBucket originAccessLogBucket = Bucket.fromBucketArn(
-                this,
-                props.resourceNamePrefix() + "-ImportedOriginAccessLogBucket",
-                props.originAccessLogBucketArn());
+                this, props.resourceNamePrefix() + "-ImportedOriginAccessLogBucket", props.originAccessLogBucketArn());
         IBucket distributionLogsBucket = Bucket.fromBucketArn(
                 this,
                 props.resourceNamePrefix() + "-ImportedDistributionLogBucket",

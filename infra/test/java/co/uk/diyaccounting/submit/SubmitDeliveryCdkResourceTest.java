@@ -1,22 +1,21 @@
 package co.uk.diyaccounting.submit;
 
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.jetbrains.annotations.NotNull;
-import org.junit.jupiter.api.Test;
-import org.junitpioneer.jupiter.SetEnvironmentVariable;
-import software.amazon.awscdk.App;
-import software.amazon.awscdk.AppProps;
-import software.amazon.awscdk.assertions.Template;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import org.jetbrains.annotations.NotNull;
+import org.junit.jupiter.api.Test;
+import org.junitpioneer.jupiter.SetEnvironmentVariable;
+import software.amazon.awscdk.App;
+import software.amazon.awscdk.AppProps;
+import software.amazon.awscdk.assertions.Template;
 
 @SetEnvironmentVariable.SetEnvironmentVariables({
     @SetEnvironmentVariable(key = "ENV_NAME", value = "test"),
@@ -39,12 +38,14 @@ import static co.uk.diyaccounting.submit.utils.Kind.infof;
     @SetEnvironmentVariable(key = "MY_RECEIPTS_LAMBDA_URL", value = "https://lambda.receipts/my"),
     @SetEnvironmentVariable(key = "ORIGIN_ACCESS_LOG_BUCKET_ARN", value = "arn:aws:s3:::my-log-bucket"),
     @SetEnvironmentVariable(key = "DISTRIBUTION_ACCESS_LOG_BUCKET_ARN", value = "arn:aws:s3:::my-log-bucket"),
-    @SetEnvironmentVariable(key = "WEB_DEPLOYMENT_LOG_GROUP_ARN",
-        value = "arn:aws:logs:eu-west-2:111111111111:log-group:/aws/lambda/my-log-group"),
+    @SetEnvironmentVariable(
+            key = "WEB_DEPLOYMENT_LOG_GROUP_ARN",
+            value = "arn:aws:logs:eu-west-2:111111111111:log-group:/aws/lambda/my-log-group"),
     @SetEnvironmentVariable(key = "CLOUD_TRAIL_ENABLED", value = "true"),
     @SetEnvironmentVariable(key = "SELF_DESTRUCT_DELAY_HOURS", value = "1"),
-    @SetEnvironmentVariable(key = "SELF_DESTRUCT_HANDLER_SOURCE",
-        value = "./infra/test/resources/fake-self-destruct-lambda.jar"),
+    @SetEnvironmentVariable(
+            key = "SELF_DESTRUCT_HANDLER_SOURCE",
+            value = "./infra/test/resources/fake-self-destruct-lambda.jar"),
     @SetEnvironmentVariable(key = "DOC_ROOT_PATH", value = "./web/public"),
     @SetEnvironmentVariable(key = "CDK_DEFAULT_ACCOUNT", value = "111111111111"),
     @SetEnvironmentVariable(key = "CDK_DEFAULT_REGION", value = "eu-west-2"),

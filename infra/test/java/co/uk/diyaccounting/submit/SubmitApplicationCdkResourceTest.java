@@ -1,7 +1,15 @@
 package co.uk.diyaccounting.submit;
 
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 import org.junitpioneer.jupiter.SetEnvironmentVariable;
@@ -9,28 +17,22 @@ import software.amazon.awscdk.App;
 import software.amazon.awscdk.AppProps;
 import software.amazon.awscdk.assertions.Template;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-
 @SetEnvironmentVariable.SetEnvironmentVariables({
     @SetEnvironmentVariable(key = "ENV_NAME", value = "test"),
     @SetEnvironmentVariable(key = "DEPLOYMENT_NAME", value = "test"),
-    @SetEnvironmentVariable(key = "COGNITO_USER_POOL_ARN",
-        value = "arn:aws:cognito-idp:eu-west-2:111111111111:userpool/eu-west-2_123456789"),
+    @SetEnvironmentVariable(
+            key = "COGNITO_USER_POOL_ARN",
+            value = "arn:aws:cognito-idp:eu-west-2:111111111111:userpool/eu-west-2_123456789"),
     @SetEnvironmentVariable(key = "COGNITO_USER_POOL_CLIENT_ID", value = "test-cognito-client-id"),
-    @SetEnvironmentVariable(key = "HMRC_CLIENT_SECRET_ARN",
-        value = "arn:aws:secretsmanager:eu-west-2:111111111111:secret:test-hmrc-secret"),
+    @SetEnvironmentVariable(
+            key = "HMRC_CLIENT_SECRET_ARN",
+            value = "arn:aws:secretsmanager:eu-west-2:111111111111:secret:test-hmrc-secret"),
     @SetEnvironmentVariable(key = "BASE_IMAGE_TAG", value = "latest"),
     @SetEnvironmentVariable(key = "CLOUD_TRAIL_ENABLED", value = "true"),
     @SetEnvironmentVariable(key = "SELF_DESTRUCT_DELAY_HOURS", value = "1"),
-    @SetEnvironmentVariable(key = "SELF_DESTRUCT_HANDLER_SOURCE",
-        value = "./infra/test/resources/fake-self-destruct-lambda.jar"),
+    @SetEnvironmentVariable(
+            key = "SELF_DESTRUCT_HANDLER_SOURCE",
+            value = "./infra/test/resources/fake-self-destruct-lambda.jar"),
     @SetEnvironmentVariable(key = "CDK_DEFAULT_ACCOUNT", value = "111111111111"),
     @SetEnvironmentVariable(key = "CDK_DEFAULT_REGION", value = "eu-west-2"),
 })
@@ -63,7 +65,7 @@ class SubmitApplicationCdkResourceTest {
         infof("Created stack:", submitApplication.opsStack.getStackName());
         Template.fromStack(submitApplication.opsStack).resourceCountIs("AWS::CloudWatch::Dashboard", 1);
 
-        if(submitApplication.selfDestructStack != null) {
+        if (submitApplication.selfDestructStack != null) {
             infof("Created stack:", submitApplication.selfDestructStack.getStackName());
             Template.fromStack(submitApplication.selfDestructStack).resourceCountIs("AWS::Lambda::Function", 1);
         }

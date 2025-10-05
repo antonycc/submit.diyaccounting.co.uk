@@ -1,16 +1,5 @@
 package co.uk.diyaccounting.submit;
 
-import co.uk.diyaccounting.submit.stacks.ApexStack;
-import co.uk.diyaccounting.submit.stacks.DataStack;
-import co.uk.diyaccounting.submit.stacks.IdentityStack;
-import co.uk.diyaccounting.submit.stacks.ObservabilityStack;
-import software.amazon.awscdk.App;
-import software.amazon.awscdk.Environment;
-import software.constructs.Construct;
-
-import java.lang.reflect.Field;
-import java.nio.file.Paths;
-
 import static co.uk.diyaccounting.submit.utils.Kind.envOr;
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.Kind.warnf;
@@ -18,6 +7,16 @@ import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildCognitoDom
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDashedDomainName;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateCompressedResourceNamePrefix;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateResourceNamePrefix;
+
+import co.uk.diyaccounting.submit.stacks.ApexStack;
+import co.uk.diyaccounting.submit.stacks.DataStack;
+import co.uk.diyaccounting.submit.stacks.IdentityStack;
+import co.uk.diyaccounting.submit.stacks.ObservabilityStack;
+import java.lang.reflect.Field;
+import java.nio.file.Paths;
+import software.amazon.awscdk.App;
+import software.amazon.awscdk.Environment;
+import software.constructs.Construct;
 
 public class SubmitEnvironment {
 
@@ -91,42 +90,38 @@ public class SubmitEnvironment {
         String cdkDefaultRegion = System.getenv("CDK_DEFAULT_REGION");
         software.amazon.awscdk.Environment primaryEnv = null;
         if (cdkDefaultAccount != null
-            && !cdkDefaultAccount.isBlank()
-            && cdkDefaultRegion != null
-            && !cdkDefaultRegion.isBlank()) {
+                && !cdkDefaultAccount.isBlank()
+                && cdkDefaultRegion != null
+                && !cdkDefaultRegion.isBlank()) {
             primaryEnv = Environment.builder()
-                .account(cdkDefaultAccount)
-                .region(cdkDefaultRegion)
-                .build();
+                    .account(cdkDefaultAccount)
+                    .region(cdkDefaultRegion)
+                    .build();
             infof("Using primary environment account %s region %s", cdkDefaultAccount, cdkDefaultRegion);
         } else {
             primaryEnv = Environment.builder().build();
             warnf(
-                "CDK_DEFAULT_ACCOUNT or CDK_DEFAULT_REGION environment variables are not set, using environment agnostic stacks");
+                    "CDK_DEFAULT_ACCOUNT or CDK_DEFAULT_REGION environment variables are not set, using environment agnostic stacks");
         }
 
         // Load configuration from environment variables not defaulted in the cdk.json
         var domainName = envOr("DIY_SUBMIT_DOMAIN_NAME", appProps.domainName);
         var baseUrl = envOr("DIY_SUBMIT_BASE_URL", appProps.baseUrl);
         var googleClientSecretArn = envOr(
-            "GOOGLE_CLIENT_SECRET_ARN",
-            appProps.googleClientSecretArn,
-            "(from googleClientSecretArn in cdk.json)");
+                "GOOGLE_CLIENT_SECRET_ARN", appProps.googleClientSecretArn, "(from googleClientSecretArn in cdk.json)");
 
         // Support environment specific overrides of some cdk.json values
         var cloudTrailEnabled =
-            envOr("CLOUD_TRAIL_ENABLED", appProps.cloudTrailEnabled, "(from cloudTrailEnabled in cdk.json)");
-        var accessLogGroupRetentionPeriodDays = Integer.parseInt(envOr(
-            "ACCESS_LOG_GROUP_RETENTION_PERIOD_DAYS",
-            appProps.accessLogGroupRetentionPeriodDays,
-            "30"
-        ));
+                envOr("CLOUD_TRAIL_ENABLED", appProps.cloudTrailEnabled, "(from cloudTrailEnabled in cdk.json)");
+        var accessLogGroupRetentionPeriodDays = Integer.parseInt(
+                envOr("ACCESS_LOG_GROUP_RETENTION_PERIOD_DAYS", appProps.accessLogGroupRetentionPeriodDays, "30"));
         var s3RetainReceiptsBucket = envOr(
-            "S3_RETAIN_RECEIPTS_BUCKET", appProps.s3RetainReceiptsBucket, "(from s3RetainReceiptsBucket in cdk.json)");
+                "S3_RETAIN_RECEIPTS_BUCKET",
+                appProps.s3RetainReceiptsBucket,
+                "(from s3RetainReceiptsBucket in cdk.json)");
 
         // Generate predictable resource name prefix based on domain and environment
-        var cognitoDomainName =
-            buildCognitoDomainName(deploymentName, appProps.cognitoDomainPrefix, domainName);
+        var cognitoDomainName = buildCognitoDomainName(deploymentName, appProps.cognitoDomainPrefix, domainName);
 
         // Generate predictable resource names
         String resourceNamePrefix = "env-%s".formatted(generateResourceNamePrefix(domainName));
@@ -137,76 +132,74 @@ public class SubmitEnvironment {
         // Create ObservabilityStack with resources used in monitoring the application
         String observabilityStackId = "%s-ObservabilityStack".formatted(deploymentName);
         infof(
-            "Synthesizing stack %s for deployment %s to environment %s",
-            observabilityStackId, deploymentName, envName);
+                "Synthesizing stack %s for deployment %s to environment %s",
+                observabilityStackId, deploymentName, envName);
         this.observabilityStack = new ObservabilityStack(
-            app,
-            observabilityStackId,
-            ObservabilityStack.ObservabilityStackProps.builder()
-                .env(primaryEnv)
-                .crossRegionReferences(false)
-                .envName(envName)
-                .deploymentName(deploymentName)
-                .resourceNamePrefix(resourceNamePrefix)
-                .compressedResourceNamePrefix(compressedResourceNamePrefix)
-                .domainName(domainName)
-                .dashedDomainName(dashedDomainName)
-                .baseUrl(baseUrl)
-                .cloudTrailEnabled(cloudTrailEnabled)
-                .selfDestructLogGroupName(selfDestructLogGroupName)
-                .cloudTrailLogGroupPrefix(appProps.cloudTrailLogGroupPrefix)
-                .cloudTrailLogGroupRetentionPeriodDays(appProps.cloudTrailLogGroupRetentionPeriodDays)
-                .accessLogGroupRetentionPeriodDays(accessLogGroupRetentionPeriodDays)
-                .build());
+                app,
+                observabilityStackId,
+                ObservabilityStack.ObservabilityStackProps.builder()
+                        .env(primaryEnv)
+                        .crossRegionReferences(false)
+                        .envName(envName)
+                        .deploymentName(deploymentName)
+                        .resourceNamePrefix(resourceNamePrefix)
+                        .compressedResourceNamePrefix(compressedResourceNamePrefix)
+                        .domainName(domainName)
+                        .dashedDomainName(dashedDomainName)
+                        .baseUrl(baseUrl)
+                        .cloudTrailEnabled(cloudTrailEnabled)
+                        .selfDestructLogGroupName(selfDestructLogGroupName)
+                        .cloudTrailLogGroupPrefix(appProps.cloudTrailLogGroupPrefix)
+                        .cloudTrailLogGroupRetentionPeriodDays(appProps.cloudTrailLogGroupRetentionPeriodDays)
+                        .accessLogGroupRetentionPeriodDays(accessLogGroupRetentionPeriodDays)
+                        .build());
 
         // Create DataStack with shared persistence for all deployments
         String dataStackId = "%s-DataStack".formatted(deploymentName);
-        infof(
-            "Synthesizing stack %s for deployment %s to environment %s",
-            dataStackId, deploymentName, envName);
+        infof("Synthesizing stack %s for deployment %s to environment %s", dataStackId, deploymentName, envName);
         this.dataStack = new DataStack(
-            app,
-            dataStackId,
-            DataStack.DataStackProps.builder()
-                .env(primaryEnv)
-                .crossRegionReferences(false)
-                .envName(envName)
-                .deploymentName(deploymentName)
-                .resourceNamePrefix(resourceNamePrefix)
-                .compressedResourceNamePrefix(compressedResourceNamePrefix)
-                .domainName(domainName)
-                .dashedDomainName(dashedDomainName)
-                .baseUrl(baseUrl)
-                .cloudTrailEnabled(cloudTrailEnabled)
-                .s3RetainReceiptsBucket(s3RetainReceiptsBucket)
-                .build());
+                app,
+                dataStackId,
+                DataStack.DataStackProps.builder()
+                        .env(primaryEnv)
+                        .crossRegionReferences(false)
+                        .envName(envName)
+                        .deploymentName(deploymentName)
+                        .resourceNamePrefix(resourceNamePrefix)
+                        .compressedResourceNamePrefix(compressedResourceNamePrefix)
+                        .domainName(domainName)
+                        .dashedDomainName(dashedDomainName)
+                        .baseUrl(baseUrl)
+                        .cloudTrailEnabled(cloudTrailEnabled)
+                        .s3RetainReceiptsBucket(s3RetainReceiptsBucket)
+                        .build());
 
         // Create the identity stack before any user aware services
         String identityStackId = "%s-IdentityStack".formatted(deploymentName);
         infof("Synthesizing stack %s for deployment %s to environment %s", identityStackId, deploymentName, envName);
         this.identityStack = new IdentityStack(
-            app,
-            identityStackId,
-            IdentityStack.IdentityStackProps.builder()
-                .env(primaryEnv)
-                .crossRegionReferences(false)
-                .envName(envName)
-                .deploymentName(deploymentName)
-                .resourceNamePrefix(resourceNamePrefix)
-                .compressedResourceNamePrefix(compressedResourceNamePrefix)
-                .domainName(domainName)
-                .dashedDomainName(dashedDomainName)
-                .baseUrl(baseUrl)
-                .cloudTrailEnabled(cloudTrailEnabled)
-                .hostedZoneName(appProps.hostedZoneName)
-                .hostedZoneId(appProps.hostedZoneId)
-                .cognitoDomainName(cognitoDomainName)
-                .authCertificateArn(appProps.authCertificateArn)
-                .googleClientId(appProps.googleClientId)
-                .googleClientSecretArn(googleClientSecretArn)
-                .antonyccClientId(appProps.antonyccClientId)
-                .antonyccBaseUri(appProps.antonyccBaseUri)
-                .build());
+                app,
+                identityStackId,
+                IdentityStack.IdentityStackProps.builder()
+                        .env(primaryEnv)
+                        .crossRegionReferences(false)
+                        .envName(envName)
+                        .deploymentName(deploymentName)
+                        .resourceNamePrefix(resourceNamePrefix)
+                        .compressedResourceNamePrefix(compressedResourceNamePrefix)
+                        .domainName(domainName)
+                        .dashedDomainName(dashedDomainName)
+                        .baseUrl(baseUrl)
+                        .cloudTrailEnabled(cloudTrailEnabled)
+                        .hostedZoneName(appProps.hostedZoneName)
+                        .hostedZoneId(appProps.hostedZoneId)
+                        .cognitoDomainName(cognitoDomainName)
+                        .authCertificateArn(appProps.authCertificateArn)
+                        .googleClientId(appProps.googleClientId)
+                        .googleClientSecretArn(googleClientSecretArn)
+                        .antonyccClientId(appProps.antonyccClientId)
+                        .antonyccBaseUri(appProps.antonyccBaseUri)
+                        .build());
 
         String apexStackId = "%s-ApexStack".formatted(envName);
         this.apexStack = new ApexStack(

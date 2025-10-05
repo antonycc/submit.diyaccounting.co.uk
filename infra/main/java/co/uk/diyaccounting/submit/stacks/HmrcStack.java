@@ -1,8 +1,14 @@
 package co.uk.diyaccounting.submit.stacks;
 
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildFunctionName;
+
 import co.uk.diyaccounting.submit.constructs.LambdaUrlOrigin;
 import co.uk.diyaccounting.submit.constructs.LambdaUrlOriginProps;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
+import java.util.List;
+import java.util.Optional;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
@@ -21,15 +27,6 @@ import software.amazon.awscdk.services.s3.IBucket;
 import software.amazon.awscdk.services.secretsmanager.Secret;
 import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildFunctionName;
 
 public class HmrcStack extends Stack {
 
@@ -133,7 +130,8 @@ public class HmrcStack extends Stack {
                 .with("HMRC_BASE_URI", props.hmrcBaseUri())
                 .with("HMRC_CLIENT_ID", props.hmrcClientId());
         var authUrlHmrcLambdaUrlOriginFunctionHandler = "authUrl.httpGetHmrc";
-        var authUrlHmrcLambdaUrlOriginFunctionName = buildFunctionName(props.compressedResourceNamePrefix(), authUrlHmrcLambdaUrlOriginFunctionHandler);
+        var authUrlHmrcLambdaUrlOriginFunctionName =
+                buildFunctionName(props.compressedResourceNamePrefix(), authUrlHmrcLambdaUrlOriginFunctionHandler);
         var authUrlHmrcLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
                 LambdaUrlOriginProps.builder()
@@ -151,7 +149,8 @@ public class HmrcStack extends Stack {
         this.authUrlHmrcLambdaLogGroup = authUrlHmrcLambdaUrlOrigin.logGroup;
         infof(
                 "Created Lambda %s for HMRC auth URL with handler %s",
-                this.authUrlHmrcLambda.getNode().getId(), props.lambdaEntry() + authUrlHmrcLambdaUrlOriginFunctionHandler);
+                this.authUrlHmrcLambda.getNode().getId(),
+                props.lambdaEntry() + authUrlHmrcLambdaUrlOriginFunctionHandler);
 
         // exchangeToken - HMRC
         var exchangeHmrcEnvBase = new PopulatedMap<String, String>()
@@ -164,12 +163,11 @@ public class HmrcStack extends Stack {
         if (props.optionalTestAccessToken().isPresent()
                 && StringUtils.isNotBlank(props.optionalTestAccessToken().get())) {
             exchangeHmrcEnvBase.with(
-                    "TEST_ACCESS_TOKEN",
-                    props.optionalTestAccessToken().get());
+                    "TEST_ACCESS_TOKEN", props.optionalTestAccessToken().get());
         }
         var exchangeHmrcTokenLambdaUrlOriginFunctionHandler = "exchangeToken.httpPostHmrc";
-        var exchangeHmrcTokenLambdaUrlOriginFunctionName =
-                buildFunctionName(props.compressedResourceNamePrefix(), exchangeHmrcTokenLambdaUrlOriginFunctionHandler);
+        var exchangeHmrcTokenLambdaUrlOriginFunctionName = buildFunctionName(
+                props.compressedResourceNamePrefix(), exchangeHmrcTokenLambdaUrlOriginFunctionHandler);
         var exchangeHmrcTokenLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
                 LambdaUrlOriginProps.builder()
@@ -206,14 +204,16 @@ public class HmrcStack extends Stack {
 
         infof(
                 "Created Lambda %s for HMRC exchange token with handler %s",
-                this.exchangeHmrcTokenLambda.getNode().getId(), props.lambdaEntry() + exchangeHmrcTokenLambdaUrlOriginFunctionHandler);
+                this.exchangeHmrcTokenLambda.getNode().getId(),
+                props.lambdaEntry() + exchangeHmrcTokenLambdaUrlOriginFunctionHandler);
 
         // submitVat
         var submitVatLambdaEnv = new PopulatedMap<String, String>()
                 .with("DIY_SUBMIT_BASE_URL", props.baseUrl())
                 .with("HMRC_BASE_URI", props.hmrcBaseUri());
         var submitVatLambdaUrlOriginFunctionHandler = "submitVat.httpPost";
-        var submitVatLambdaUrlOriginFunctionName = buildFunctionName(props.compressedResourceNamePrefix(), submitVatLambdaUrlOriginFunctionHandler);
+        var submitVatLambdaUrlOriginFunctionName =
+                buildFunctionName(props.compressedResourceNamePrefix(), submitVatLambdaUrlOriginFunctionHandler);
         var submitVatLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
                 LambdaUrlOriginProps.builder()
@@ -234,48 +234,50 @@ public class HmrcStack extends Stack {
                 this.submitVatLambda.getNode().getId(), props.lambdaEntry() + submitVatLambdaUrlOriginFunctionHandler);
 
         var logReceiptLambdaEnv = new PopulatedMap<String, String>()
-            .with("DIY_SUBMIT_BASE_URL", props.baseUrl())
-            .with("DIY_SUBMIT_RECEIPTS_BUCKET_FULL_NAME", props.receiptsBucketFullName());
+                .with("DIY_SUBMIT_BASE_URL", props.baseUrl())
+                .with("DIY_SUBMIT_RECEIPTS_BUCKET_FULL_NAME", props.receiptsBucketFullName());
         if (props.optionalTestS3Endpoint().isPresent()
-            && StringUtils.isNotBlank(props.optionalTestS3Endpoint().get())
-            && props.optionalTestS3AccessKey().isPresent()
-            && StringUtils.isNotBlank(props.optionalTestS3AccessKey().get())
-            && props.optionalTestS3SecretKey().isPresent()
-            && StringUtils.isNotBlank(props.optionalTestS3SecretKey().get())) {
+                && StringUtils.isNotBlank(props.optionalTestS3Endpoint().get())
+                && props.optionalTestS3AccessKey().isPresent()
+                && StringUtils.isNotBlank(props.optionalTestS3AccessKey().get())
+                && props.optionalTestS3SecretKey().isPresent()
+                && StringUtils.isNotBlank(props.optionalTestS3SecretKey().get())) {
             // For production like integrations without AWS we can use test S3 credentials
             logReceiptLambdaEnv
-                .with("TEST_S3_ENDPOINT", props.optionalTestS3Endpoint().get())
-                .with("TEST_S3_ACCESS_KEY", props.optionalTestS3AccessKey().get())
-                .with("TEST_S3_SECRET_KEY", props.optionalTestS3SecretKey().get());
+                    .with("TEST_S3_ENDPOINT", props.optionalTestS3Endpoint().get())
+                    .with("TEST_S3_ACCESS_KEY", props.optionalTestS3AccessKey().get())
+                    .with("TEST_S3_SECRET_KEY", props.optionalTestS3SecretKey().get());
         }
         var logReceiptLambdaUrlOriginFunctionHandler = "logReceipt.httpPost";
         var logReceiptLambdaUrlOriginFunctionName =
-            buildFunctionName(props.compressedResourceNamePrefix(), logReceiptLambdaUrlOriginFunctionHandler);
+                buildFunctionName(props.compressedResourceNamePrefix(), logReceiptLambdaUrlOriginFunctionHandler);
         var logReceiptLambdaUrlOrigin = new LambdaUrlOrigin(
-            this,
-            LambdaUrlOriginProps.builder()
-                .idPrefix(logReceiptLambdaUrlOriginFunctionName)
-                .baseImageTag(props.baseImageTag())
-                .ecrRepositoryName(props.ecrRepositoryName())
-                .ecrRepositoryArn(props.ecrRepositoryArn())
-                .functionName(logReceiptLambdaUrlOriginFunctionName)
-                .cloudFrontAllowedMethods(AllowedMethods.ALLOW_ALL)
-                .handler(props.lambdaEntry() + logReceiptLambdaUrlOriginFunctionHandler)
-                .environment(logReceiptLambdaEnv)
-                .timeout(Duration.millis(Long.parseLong("30000")))
-                .build());
+                this,
+                LambdaUrlOriginProps.builder()
+                        .idPrefix(logReceiptLambdaUrlOriginFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.ecrRepositoryName())
+                        .ecrRepositoryArn(props.ecrRepositoryArn())
+                        .functionName(logReceiptLambdaUrlOriginFunctionName)
+                        .cloudFrontAllowedMethods(AllowedMethods.ALLOW_ALL)
+                        .handler(props.lambdaEntry() + logReceiptLambdaUrlOriginFunctionHandler)
+                        .environment(logReceiptLambdaEnv)
+                        .timeout(Duration.millis(Long.parseLong("30000")))
+                        .build());
         this.logReceiptLambda = logReceiptLambdaUrlOrigin.lambda;
         this.logReceiptLambdaLogGroup = logReceiptLambdaUrlOrigin.logGroup;
         infof(
-            "Created Lambda %s for logging receipts with handler %s",
-            this.logReceiptLambda.getNode().getId(), props.lambdaEntry() + logReceiptLambdaUrlOriginFunctionHandler);
+                "Created Lambda %s for logging receipts with handler %s",
+                this.logReceiptLambda.getNode().getId(),
+                props.lambdaEntry() + logReceiptLambdaUrlOriginFunctionHandler);
 
         // myReceipts Lambda
         var myReceiptsLambdaEnv = new PopulatedMap<String, String>()
                 .with("DIY_SUBMIT_BASE_URL", props.baseUrl())
                 .with("DIY_SUBMIT_RECEIPTS_BUCKET_FULL_NAME", props.receiptsBucketFullName());
         var myReceiptsLambdaUrlOriginFunctionHandler = "myReceipts.httpGet";
-        var myReceiptsLambdaUrlOriginFunctionName = buildFunctionName(props.compressedResourceNamePrefix(), myReceiptsLambdaUrlOriginFunctionHandler);
+        var myReceiptsLambdaUrlOriginFunctionName =
+                buildFunctionName(props.compressedResourceNamePrefix(), myReceiptsLambdaUrlOriginFunctionHandler);
         var myReceiptsLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
                 LambdaUrlOriginProps.builder()
@@ -293,13 +295,12 @@ public class HmrcStack extends Stack {
         this.myReceiptsLambdaLogGroup = myReceiptsLambdaUrlOrigin.logGroup;
         infof(
                 "Created Lambda %s for my receipts retrieval with handler %s",
-                this.myReceiptsLambda.getNode().getId(), props.lambdaEntry() + myReceiptsLambdaUrlOriginFunctionHandler);
+                this.myReceiptsLambda.getNode().getId(),
+                props.lambdaEntry() + myReceiptsLambdaUrlOriginFunctionHandler);
 
         // Grant the LogReceiptLambda and MyReceiptsLambda write and read access respectively to the receipts S3 bucket
         IBucket receiptsBucket = Bucket.fromBucketName(
-                this,
-                props.resourceNamePrefix() + "-ImportedReceiptsBucket",
-                props.receiptsBucketFullName());
+                this, props.resourceNamePrefix() + "-ImportedReceiptsBucket", props.receiptsBucketFullName());
         receiptsBucket.grantWrite(this.logReceiptLambda);
         receiptsBucket.grantRead(this.myReceiptsLambda);
 
