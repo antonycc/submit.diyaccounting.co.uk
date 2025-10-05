@@ -1,9 +1,6 @@
 // app/functions/getReceipt.js
 import { GetObjectCommand, S3Client } from "@aws-sdk/client-s3";
-import dotenv from "dotenv";
 import logger from "../lib/logger.js";
-
-dotenv.config({ path: ".env" });
 
 function decodeJwtNoVerify(token) {
   try {

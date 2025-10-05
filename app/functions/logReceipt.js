@@ -1,12 +1,9 @@
 // app/functions/logReceipt.js
 
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
-import dotenv from "dotenv";
-
 import logger from "../lib/logger.js";
 import { extractRequest, httpBadRequestResponse, httpOkResponse, httpServerErrorResponse } from "../lib/responses.js";
-
-dotenv.config({ path: ".env" });
+import { validateEnv } from "@app/lib/env.js";
 
 export async function logReceipt(key, receipt) {
   const receiptsBucketFullName = process.env.DIY_SUBMIT_RECEIPTS_BUCKET_FULL_NAME;
@@ -41,6 +38,8 @@ export async function logReceipt(key, receipt) {
 
 // POST /api/log-receipt
 export async function httpPost(event) {
+  validateEnv(["DIY_SUBMIT_RECEIPTS_BUCKET_FULL_NAME"]);
+
   const request = extractRequest(event);
 
   // Parse body – allow either {receipt: {...}} or direct receipt fields
@@ -85,9 +84,6 @@ export async function httpPost(event) {
   }
   if (!key) {
     errorMessages.push("Missing key parameter derived from body");
-  }
-  if (!process.env.DIY_SUBMIT_RECEIPTS_BUCKET_FULL_NAME) {
-    errorMessages.push("DIY_SUBMIT_RECEIPTS_BUCKET_FULL_NAME environment variable is not set, cannot log receipt");
   }
   if (errorMessages.length > 0) {
     return httpBadRequestResponse({

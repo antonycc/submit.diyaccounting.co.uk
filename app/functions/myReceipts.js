@@ -1,13 +1,11 @@
 // app/functions/myReceipts.js
 import { ListObjectsV2Command, GetObjectCommand } from "@aws-sdk/client-s3";
-import dotenv from "dotenv";
 import logger from "../lib/logger.js";
 import { extractRequest, httpOkResponse, httpBadRequestResponse, httpServerErrorResponse } from "../lib/responses.js";
 import { getUserSub } from "../lib/auth.js";
 import { makeReceiptsS3 } from "../lib/s3Env.js";
 import { streamToString } from "../lib/streams.js";
-
-dotenv.config({ path: ".env" });
+import { validateEnv } from "@app/lib/env.js";
 
 function parseReceiptKey(key) {
   // receipts/{sub}/{timestamp}-{bundle}.json
@@ -26,6 +24,8 @@ function parseReceiptKey(key) {
 
 // GET /api/my/receipts
 export async function httpGet(event) {
+  validateEnv(["DIY_SUBMIT_RECEIPTS_BUCKET_FULL_NAME"]);
+
   const request = extractRequest(event);
   logger.info({ message: "myReceipts list entry", route: "/api/my/receipts" });
 
@@ -36,13 +36,6 @@ export async function httpGet(event) {
       headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
       body: JSON.stringify({ error: "unauthorized", message: "Authentication required" }),
     };
-  }
-  if (!process.env.DIY_SUBMIT_RECEIPTS_BUCKET_FULL_NAME) {
-    return httpServerErrorResponse({
-      request,
-      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
-      message: "DIY_SUBMIT_RECEIPTS_BUCKET_FULL_NAME not set",
-    });
   }
 
   const { s3, Bucket } = makeReceiptsS3(process.env);
@@ -91,6 +84,8 @@ export async function httpGet(event) {
 
 // GET /api/my/receipts/{name} or ?name= or ?key=
 export async function httpGetByName(event) {
+  validateEnv(["DIY_SUBMIT_RECEIPTS_BUCKET_FULL_NAME"]);
+
   const request = extractRequest(event);
   logger.info({ message: "myReceipts get entry", route: "/api/my/receipts/{name}" });
 

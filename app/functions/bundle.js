@@ -1,6 +1,7 @@
 // app/functions/bundle.js
 
 import { loadCatalogFromRoot } from "../lib/productCatalogHelper.js";
+import { validateEnv } from "@app/lib/env.js";
 
 // AWS Cognito SDK is loaded lazily only when not in MOCK mode to avoid requiring it during tests
 let __cognitoModule;
@@ -95,6 +96,7 @@ export async function httpPost(event) {
   if (event.httpMethod === "DELETE" || event.requestContext?.http?.method === "DELETE") {
     return httpDelete(event);
   }
+  validateEnv(["DIY_SUBMIT_USER_POOL_ID"]);
 
   try {
     console.log("[DEBUG_LOG] Bundle request received:", JSON.stringify(event, null, 2));

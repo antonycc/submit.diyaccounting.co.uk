@@ -136,10 +136,10 @@ public class AccountStack extends Stack {
                 this.catalogLambda.getNode().getId(), props.lambdaEntry() + catalogLambdaUrlOriginFunctionHandler);
 
         // Request Bundles Lambda
-        var requestBundlesLambdaEnv = new HashMap<>(Map.of(
-                "DIY_SUBMIT_USER_POOL_ID", userPool.getUserPoolId(),
-                "TEST_BUNDLE_EXPIRY_DATE", "2025-12-31",
-                "TEST_BUNDLE_USER_LIMIT", "10"));
+        var requestBundlesLambdaEnv = new PopulatedMap<String, String>()
+                .with("DIY_SUBMIT_USER_POOL_ID", userPool.getUserPoolId())
+                .with("TEST_BUNDLE_EXPIRY_DATE", "2025-12-31")
+                .with("TEST_BUNDLE_USER_LIMIT", "10");
         var requestBundlesLambdaUrlOriginFunctionHandler = "bundle.httpPost";
         var requestBundlesLambdaUrlOriginFunctionName = buildFunctionName(props.compressedResourceNamePrefix(), requestBundlesLambdaUrlOriginFunctionHandler);
         var requestBundlesLambdaUrlOrigin = new LambdaUrlOrigin(
@@ -185,7 +185,8 @@ public class AccountStack extends Stack {
                 this.requestBundlesLambda.getFunctionName(), userPool.getUserPoolId());
 
         // My Bundles Lambda
-        var myBundlesLambdaEnv = new HashMap<>(Map.of("DIY_SUBMIT_BASE_URL", props.baseUrl()));
+        var myBundlesLambdaEnv = new PopulatedMap<String, String>()
+                .with("DIY_SUBMIT_BASE_URL", props.baseUrl());
         var myBundlesLambdaUrlOriginFunctionHandler = "myBundles.httpGet";
         var myBundlesLambdaUrlOriginFunctionName = buildFunctionName(props.compressedResourceNamePrefix(), myBundlesLambdaUrlOriginFunctionHandler);
         var myBundlesLambdaUrlOrigin = new LambdaUrlOrigin(

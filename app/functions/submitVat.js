@@ -1,6 +1,5 @@
 // app/functions/submitVat.js
 
-import dotenv from "dotenv";
 import fetch from "node-fetch";
 
 import logger from "../lib/logger.js";
@@ -12,8 +11,7 @@ import {
   extractClientIPFromHeaders,
 } from "../lib/responses.js";
 import eventToGovClientHeaders from "../lib/eventToGovClientHeaders.js";
-
-dotenv.config({ path: ".env" });
+import { validateEnv } from "@app/lib/env.js";
 
 // Lazy load AWS Cognito SDK only if bundle enforcement is on
 let __cognitoModule;
@@ -193,6 +191,8 @@ export async function submitVat(periodKey, vatDue, vatNumber, hmrcAccessToken, g
 
 // POST /api/submit-vat
 export async function httpPost(event) {
+  validateEnv(["HMRC_BASE_URI", "DIY_SUBMIT_USER_POOL_ID"]);
+
   const request = extractRequest(event);
 
   const detectedIP = extractClientIPFromHeaders(event);

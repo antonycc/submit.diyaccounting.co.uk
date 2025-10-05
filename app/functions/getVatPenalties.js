@@ -1,6 +1,5 @@
 // app/functions/getVatPenalties.js
 
-import dotenv from "dotenv";
 import logger from "../lib/logger.js";
 import {
   extractRequest,
@@ -11,8 +10,6 @@ import {
 } from "../lib/responses.js";
 import eventToGovClientHeaders from "../lib/eventToGovClientHeaders.js";
 import { hmrcVatGet, shouldUseStub, getStubData } from "../lib/hmrcVatApi.js";
-
-dotenv.config({ path: ".env" });
 
 // GET /api/vat/penalties
 export async function httpGet(event) {
