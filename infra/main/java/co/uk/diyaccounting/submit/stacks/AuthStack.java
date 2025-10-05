@@ -1,13 +1,8 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildFunctionName;
-
 import co.uk.diyaccounting.submit.constructs.LambdaUrlOrigin;
 import co.uk.diyaccounting.submit.constructs.LambdaUrlOriginProps;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
-import java.util.Optional;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
@@ -21,6 +16,12 @@ import software.amazon.awscdk.services.lambda.InvokeMode;
 import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
+
+import java.util.Optional;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildFunctionName;
 
 public class AuthStack extends Stack {
 
@@ -107,7 +108,7 @@ public class AuthStack extends Stack {
         var authUrlMockLambdaEnv = new PopulatedMap<String, String>().with("DIY_SUBMIT_BASE_URL", props.baseUrl());
         var authUrlMockLambdaUrlOriginFunctionHandler = "authUrl.httpGetMock";
         var authUrlMockLambdaFunctionName =
-                buildFunctionName(props.compressedResourceNamePrefix(), authUrlMockLambdaUrlOriginFunctionHandler);
+                buildFunctionName(props.resourceNamePrefix(), authUrlMockLambdaUrlOriginFunctionHandler);
         var authUrlMockLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
                 LambdaUrlOriginProps.builder()
@@ -135,7 +136,7 @@ public class AuthStack extends Stack {
                 .with("COGNITO_BASE_URI", props.cognitoBaseUri());
         var authUrlCognitoLambdaUrlOriginFunctionHandler = "authUrl.httpGetCognito";
         var authUrlCognitoLambdaFunctionName =
-                buildFunctionName(props.compressedResourceNamePrefix(), authUrlCognitoLambdaUrlOriginFunctionHandler);
+                buildFunctionName(props.resourceNamePrefix(), authUrlCognitoLambdaUrlOriginFunctionHandler);
         var authUrlCognitoLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
                 LambdaUrlOriginProps.builder()
@@ -168,7 +169,7 @@ public class AuthStack extends Stack {
         }
         var exchangeCognitoTokenLambdaUrlOriginFunctionHandler = "exchangeToken.httpPostCognito";
         var exchangeCognitoTokenLambdaUrlOriginFunctionName = buildFunctionName(
-                props.compressedResourceNamePrefix(), exchangeCognitoTokenLambdaUrlOriginFunctionHandler);
+                props.resourceNamePrefix(), exchangeCognitoTokenLambdaUrlOriginFunctionHandler);
         var exchangeCognitoTokenLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
                 LambdaUrlOriginProps.builder()

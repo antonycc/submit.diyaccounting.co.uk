@@ -20,20 +20,20 @@ import static co.uk.diyaccounting.submit.utils.Kind.infof;
 
 @SetEnvironmentVariable.SetEnvironmentVariables({
     @SetEnvironmentVariable(key = "ENV_NAME", value = "test"),
-    @SetEnvironmentVariable(key = "DEPLOYMENT_NAME", value = "test"),
+    @SetEnvironmentVariable(key = "DEPLOYMENT_NAME", value = "tt-witheight"),
     @SetEnvironmentVariable(
             key = "COGNITO_USER_POOL_ARN",
             value = "arn:aws:cognito-idp:eu-west-2:111111111111:userpool/eu-west-2_123456789"),
-    @SetEnvironmentVariable(key = "COGNITO_CLIENT_ID", value = "test-cognito-client-id"),
+    @SetEnvironmentVariable(key = "COGNITO_CLIENT_ID", value = "tt-witheight-cognito-client-id"),
     @SetEnvironmentVariable(
             key = "HMRC_CLIENT_SECRET_ARN",
-            value = "arn:aws:secretsmanager:eu-west-2:111111111111:secret:test-hmrc-secret"),
+            value = "arn:aws:secretsmanager:eu-west-2:111111111111:secret:tt-witheight-hmrc-secret"),
     @SetEnvironmentVariable(key = "BASE_IMAGE_TAG", value = "test"),
     @SetEnvironmentVariable(key = "CLOUD_TRAIL_ENABLED", value = "true"),
     @SetEnvironmentVariable(key = "SELF_DESTRUCT_DELAY_HOURS", value = "1"),
     @SetEnvironmentVariable(
             key = "SELF_DESTRUCT_HANDLER_SOURCE",
-            value = "./infra/test/resources/fake-self-destruct-lambda.jar"),
+            value = "./infra/tt-witheight/resources/fake-self-destruct-lambda.jar"),
     @SetEnvironmentVariable(key = "CDK_DEFAULT_ACCOUNT", value = "111111111111"),
     @SetEnvironmentVariable(key = "CDK_DEFAULT_REGION", value = "eu-west-2"),
 })

@@ -120,7 +120,7 @@ jobs:
           else
               ENV_NAME="ci"
               # Truncate to 16 chars for branch-based deployments
-              DEPLOYMENT_NAME="ci-${CLEANED:0:16}"
+              DEPLOYMENT_NAME="ci-${CLEANED:0:8}"
           fi
 
           echo "Computed ENV_NAME: $ENV_NAME"

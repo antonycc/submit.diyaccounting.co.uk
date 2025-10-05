@@ -1,8 +1,5 @@
 package co.uk.diyaccounting.submit.constructs;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-
-import java.util.List;
 import software.amazon.awscdk.services.ecr.IRepository;
 import software.amazon.awscdk.services.ecr.Repository;
 import software.amazon.awscdk.services.ecr.RepositoryAttributes;
@@ -14,6 +11,10 @@ import software.amazon.awscdk.services.lambda.Tracing;
 import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.LogGroupProps;
 import software.constructs.Construct;
+
+import java.util.List;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
 
 public class LambdaUrlOrigin {
 
@@ -42,7 +43,7 @@ public class LambdaUrlOrigin {
         var environment = new java.util.HashMap<>(props.environment());
         environment.put("AWS_XRAY_TRACING_NAME", props.functionName());
 
-        var dockerFunctionBuilder = DockerImageFunction.Builder.create(scope, props.idPrefix() + "-Fn")
+        var dockerFunctionBuilder = DockerImageFunction.Builder.create(scope, props.idPrefix() + "-fn")
                 .code(this.dockerImage)
                 .environment(environment)
                 .functionName(props.functionName())

@@ -1,14 +1,8 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildFunctionName;
-
 import co.uk.diyaccounting.submit.constructs.LambdaUrlOrigin;
 import co.uk.diyaccounting.submit.constructs.LambdaUrlOriginProps;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
-import java.util.List;
-import java.util.Optional;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
@@ -27,6 +21,13 @@ import software.amazon.awscdk.services.s3.IBucket;
 import software.amazon.awscdk.services.secretsmanager.Secret;
 import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
+
+import java.util.List;
+import java.util.Optional;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildFunctionName;
 
 public class HmrcStack extends Stack {
 
@@ -131,7 +132,7 @@ public class HmrcStack extends Stack {
                 .with("HMRC_CLIENT_ID", props.hmrcClientId());
         var authUrlHmrcLambdaUrlOriginFunctionHandler = "authUrl.httpGetHmrc";
         var authUrlHmrcLambdaUrlOriginFunctionName =
-                buildFunctionName(props.compressedResourceNamePrefix(), authUrlHmrcLambdaUrlOriginFunctionHandler);
+                buildFunctionName(props.resourceNamePrefix(), authUrlHmrcLambdaUrlOriginFunctionHandler);
         var authUrlHmrcLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
                 LambdaUrlOriginProps.builder()
@@ -167,7 +168,7 @@ public class HmrcStack extends Stack {
         }
         var exchangeHmrcTokenLambdaUrlOriginFunctionHandler = "exchangeToken.httpPostHmrc";
         var exchangeHmrcTokenLambdaUrlOriginFunctionName = buildFunctionName(
-                props.compressedResourceNamePrefix(), exchangeHmrcTokenLambdaUrlOriginFunctionHandler);
+                props.resourceNamePrefix(), exchangeHmrcTokenLambdaUrlOriginFunctionHandler);
         var exchangeHmrcTokenLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
                 LambdaUrlOriginProps.builder()
@@ -213,7 +214,7 @@ public class HmrcStack extends Stack {
                 .with("HMRC_BASE_URI", props.hmrcBaseUri());
         var submitVatLambdaUrlOriginFunctionHandler = "submitVat.httpPost";
         var submitVatLambdaUrlOriginFunctionName =
-                buildFunctionName(props.compressedResourceNamePrefix(), submitVatLambdaUrlOriginFunctionHandler);
+                buildFunctionName(props.resourceNamePrefix(), submitVatLambdaUrlOriginFunctionHandler);
         var submitVatLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
                 LambdaUrlOriginProps.builder()
@@ -250,7 +251,7 @@ public class HmrcStack extends Stack {
         }
         var logReceiptLambdaUrlOriginFunctionHandler = "logReceipt.httpPost";
         var logReceiptLambdaUrlOriginFunctionName =
-                buildFunctionName(props.compressedResourceNamePrefix(), logReceiptLambdaUrlOriginFunctionHandler);
+                buildFunctionName(props.resourceNamePrefix(), logReceiptLambdaUrlOriginFunctionHandler);
         var logReceiptLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
                 LambdaUrlOriginProps.builder()
@@ -277,7 +278,7 @@ public class HmrcStack extends Stack {
                 .with("DIY_SUBMIT_RECEIPTS_BUCKET_FULL_NAME", props.receiptsBucketFullName());
         var myReceiptsLambdaUrlOriginFunctionHandler = "myReceipts.httpGet";
         var myReceiptsLambdaUrlOriginFunctionName =
-                buildFunctionName(props.compressedResourceNamePrefix(), myReceiptsLambdaUrlOriginFunctionHandler);
+                buildFunctionName(props.resourceNamePrefix(), myReceiptsLambdaUrlOriginFunctionHandler);
         var myReceiptsLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
                 LambdaUrlOriginProps.builder()

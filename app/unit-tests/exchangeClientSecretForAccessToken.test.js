@@ -208,7 +208,7 @@ describe("exchangeClientSecretForAccessToken", () => {
       });
 
       // Re-import the module to get fresh instance
-      const { exchangeToken: exchangeFunction } = await import("@app/functions/exchangeToken.js");
+      const { exchangeToken } = await import("@app/functions/exchangeToken.js");
 
       // Act
       const result = await exchangeToken("test-auth-code");
@@ -233,7 +233,7 @@ describe("exchangeClientSecretForAccessToken", () => {
       process.env.DIY_SUBMIT_HMRC_CLIENT_SECRET = "any-secret";
 
       // Re-import the module to get fresh instance
-      const { exchangeToken: exchangeFunction } = await import("@app/functions/exchangeToken.js");
+      const { exchangeToken } = await import("@app/functions/exchangeToken.js");
 
       // Act
       const result = await exchangeToken("test-auth-code");

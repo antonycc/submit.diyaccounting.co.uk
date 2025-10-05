@@ -1,13 +1,8 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildFunctionName;
-
 import co.uk.diyaccounting.submit.constructs.LambdaUrlOrigin;
 import co.uk.diyaccounting.submit.constructs.LambdaUrlOriginProps;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
-import java.util.List;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
@@ -24,6 +19,12 @@ import software.amazon.awscdk.services.lambda.FunctionUrlOptions;
 import software.amazon.awscdk.services.lambda.InvokeMode;
 import software.amazon.awscdk.services.logs.LogGroup;
 import software.constructs.Construct;
+
+import java.util.List;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildFunctionName;
 
 public class AccountStack extends Stack {
 
@@ -111,7 +112,7 @@ public class AccountStack extends Stack {
         var catalogLambdaEnv = new PopulatedMap<String, String>().with("DIY_SUBMIT_BASE_URL", props.baseUrl());
         var catalogLambdaUrlOriginFunctionHandler = "catalogGet.handle";
         var catalogLambdaUrlOriginFunctionName =
-                buildFunctionName(props.compressedResourceNamePrefix(), catalogLambdaUrlOriginFunctionHandler);
+                buildFunctionName(props.resourceNamePrefix(), catalogLambdaUrlOriginFunctionHandler);
         var catalogLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
                 LambdaUrlOriginProps.builder()
@@ -138,7 +139,7 @@ public class AccountStack extends Stack {
                 .with("TEST_BUNDLE_USER_LIMIT", "10");
         var requestBundlesLambdaUrlOriginFunctionHandler = "bundle.httpPost";
         var requestBundlesLambdaUrlOriginFunctionName =
-                buildFunctionName(props.compressedResourceNamePrefix(), requestBundlesLambdaUrlOriginFunctionHandler);
+                buildFunctionName(props.resourceNamePrefix(), requestBundlesLambdaUrlOriginFunctionHandler);
         var requestBundlesLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
                 LambdaUrlOriginProps.builder()
@@ -185,7 +186,7 @@ public class AccountStack extends Stack {
         var myBundlesLambdaEnv = new PopulatedMap<String, String>().with("DIY_SUBMIT_BASE_URL", props.baseUrl());
         var myBundlesLambdaUrlOriginFunctionHandler = "myBundles.httpGet";
         var myBundlesLambdaUrlOriginFunctionName =
-                buildFunctionName(props.compressedResourceNamePrefix(), myBundlesLambdaUrlOriginFunctionHandler);
+                buildFunctionName(props.resourceNamePrefix(), myBundlesLambdaUrlOriginFunctionHandler);
         var myBundlesLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
                 LambdaUrlOriginProps.builder()
