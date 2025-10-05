@@ -3,7 +3,7 @@
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import logger from "../lib/logger.js";
 import { extractRequest, httpBadRequestResponse, httpOkResponse, httpServerErrorResponse } from "../lib/responses.js";
-import { validateEnv } from "@app/lib/env.js";
+import { validateEnv } from "../lib/env.js";
 
 export async function logReceipt(key, receipt) {
   const receiptsBucketFullName = process.env.DIY_SUBMIT_RECEIPTS_BUCKET_FULL_NAME;

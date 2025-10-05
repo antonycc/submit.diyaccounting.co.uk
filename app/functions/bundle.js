@@ -1,7 +1,7 @@
 // app/functions/bundle.js
 
 import { loadCatalogFromRoot } from "../lib/productCatalogHelper.js";
-import { validateEnv } from "@app/lib/env.js";
+import { validateEnv } from "../lib/env.js";
 
 // AWS Cognito SDK is loaded lazily only when not in MOCK mode to avoid requiring it during tests
 let __cognitoModule;
@@ -96,7 +96,7 @@ export async function httpPost(event) {
   if (event.httpMethod === "DELETE" || event.requestContext?.http?.method === "DELETE") {
     return httpDelete(event);
   }
-  validateEnv(["DIY_SUBMIT_USER_POOL_ID"]);
+  validateEnv(["COGNITO_USER_POOL_ID"]);
 
   try {
     console.log("[DEBUG_LOG] Bundle request received:", JSON.stringify(event, null, 2));
@@ -133,7 +133,7 @@ export async function httpPost(event) {
     }
 
     const userId = decodedToken.sub;
-    const userPoolId = process.env.DIY_SUBMIT_USER_POOL_ID;
+    const userPoolId = process.env.COGNITO_USER_POOL_ID;
 
     if (!userPoolId && !isMockMode()) {
       console.log("[DEBUG_LOG] Missing USER_POOL_ID environment variable (non-mock mode)");
@@ -510,7 +510,7 @@ export async function httpDelete(event) {
     if (isMockMode()) {
       currentBundles = __inMemoryBundles.get(userId) || [];
     } else {
-      const userPoolId = process.env.DIY_SUBMIT_USER_POOL_ID;
+      const userPoolId = process.env.COGNITO_USER_POOL_ID;
       if (!userPoolId) {
         return {
           statusCode: 500,
@@ -552,7 +552,7 @@ export async function httpDelete(event) {
         __inMemoryBundles.set(userId, []);
       } else {
         try {
-          const userPoolId = process.env.DIY_SUBMIT_USER_POOL_ID;
+          const userPoolId = process.env.COGNITO_USER_POOL_ID;
           const mod = await getCognitoModule();
           const client = await getCognitoClient();
           const updateCommand = new mod.AdminUpdateUserAttributesCommand({
@@ -606,7 +606,7 @@ export async function httpDelete(event) {
         __inMemoryBundles.set(userId, bundlesAfterRemoval);
       } else {
         try {
-          const userPoolId = process.env.DIY_SUBMIT_USER_POOL_ID;
+          const userPoolId = process.env.COGNITO_USER_POOL_ID;
           const mod = await getCognitoModule();
           const client = await getCognitoClient();
           const updateCommand = new mod.AdminUpdateUserAttributesCommand({

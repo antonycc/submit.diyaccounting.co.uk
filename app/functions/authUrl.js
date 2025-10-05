@@ -1,7 +1,7 @@
 // app/functions/authUrl.js
 
 import { extractRequest, httpBadRequestResponse, httpOkResponse, httpServerErrorResponse } from "../lib/responses.js";
-import { validateEnv } from "@app/lib/env.js";
+import { validateEnv } from "../lib/env.js";
 
 // GET /api/hmrc/auth-url?state={state}
 export async function httpGetHmrc(event) {
@@ -45,10 +45,10 @@ export async function httpGetMock(event) {
 
 // GET /api/cognito/auth-url?state={state}
 export async function httpGetCognito(event) {
-  validateEnv(["DIY_SUBMIT_COGNITO_CLIENT_ID", "DIY_SUBMIT_COGNITO_BASE_URI", "DIY_SUBMIT_BASE_URL"]);
+  validateEnv(["COGNITO_CLIENT_ID", "COGNITO_BASE_URI", "DIY_SUBMIT_BASE_URL"]);
   const redirectUri = process.env.DIY_SUBMIT_BASE_URL + "auth/loginWithCognitoCallback.html";
-  const cognitoClientId = process.env.DIY_SUBMIT_COGNITO_CLIENT_ID;
-  const cognitoBaseUri = process.env.DIY_SUBMIT_COGNITO_BASE_URI;
+  const cognitoClientId = process.env.COGNITO_CLIENT_ID;
+  const cognitoBaseUri = process.env.COGNITO_BASE_URI;
 
   const state = event.queryStringParameters?.state;
 

@@ -137,7 +137,7 @@ public class AccountStack extends Stack {
 
         // Request Bundles Lambda
         var requestBundlesLambdaEnv = new PopulatedMap<String, String>()
-                .with("DIY_SUBMIT_USER_POOL_ID", userPool.getUserPoolId())
+                .with("COGNITO_USER_POOL_ID", userPool.getUserPoolId())
                 .with("TEST_BUNDLE_EXPIRY_DATE", "2025-12-31")
                 .with("TEST_BUNDLE_USER_LIMIT", "10");
         var requestBundlesLambdaUrlOriginFunctionHandler = "bundle.httpPost";

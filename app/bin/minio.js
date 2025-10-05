@@ -2,7 +2,6 @@
 // app/bin/server.js
 
 import path from "path";
-import express from "express";
 import { fileURLToPath } from "url";
 import { readFileSync } from "fs";
 import dotenv from "dotenv";

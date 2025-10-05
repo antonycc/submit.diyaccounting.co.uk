@@ -6,7 +6,6 @@ import express from "express";
 import { fileURLToPath } from "url";
 import { readFileSync } from "fs";
 import dotenv from "dotenv";
-
 import { httpGetCognito, httpGetHmrc, httpGetMock } from "../functions/authUrl.js";
 import { httpPostMock, httpPostHmrc, httpPostCognito } from "../functions/exchangeToken.js";
 import { httpPost as submitVatHttpPost } from "../functions/submitVat.js";
@@ -22,8 +21,12 @@ import { httpGet as getVatPaymentsHttpGet } from "../functions/getVatPayments.js
 import { httpGet as getVatPenaltiesHttpGet } from "../functions/getVatPenalties.js";
 import logger from "../lib/logger.js";
 import { requireActivity } from "../lib/entitlementsService.js";
+import { dotenvConfigIfNotBlank, validateEnv } from "../lib/env.js";
 
-dotenv.config({ path: ".env" });
+// dotenv.config({ path: ".env" });
+// dotenv.config({ path: ".env.test" });
+dotenvConfigIfNotBlank({ path: ".env" });
+dotenvConfigIfNotBlank({ path: ".env.test" });
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // eslint-disable-next-line sonarjs/x-powered-by
@@ -401,9 +404,17 @@ const __argv1 = process.argv[1] ? path.resolve(process.argv[1]) : "";
 const __runDirect = __thisFile === __argv1 || String(process.env.TEST_SERVER_HTTP || "") === "run";
 
 if (__runDirect) {
+  validateEnv([
+    "DIY_SUBMIT_BASE_URL",
+    "COGNITO_CLIENT_ID",
+    "COGNITO_BASE_URI",
+    "HMRC_BASE_URI",
+    "HMRC_CLIENT_ID",
+    "HMRC_CLIENT_SECRET_ARN",
+    "DIY_SUBMIT_RECEIPTS_BUCKET_FULL_NAME",
+  ]);
   app.listen(TEST_SERVER_HTTP_PORT, () => {
-    const hmrcBase = process.env.HMRC_BASE_URI || "HMRC_BASE_URI not set";
-    const message = `Listening at http://127.0.0.1:${TEST_SERVER_HTTP_PORT} for ${hmrcBase}`;
+    const message = `Listening at http://127.0.0.1:${TEST_SERVER_HTTP_PORT}`;
     console.log(message);
     logger.info(message);
   });

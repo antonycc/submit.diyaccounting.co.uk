@@ -5,7 +5,7 @@ import { extractRequest, httpOkResponse, httpServerErrorResponse } from "../lib/
 import { getUserSub } from "../lib/auth.js";
 import { makeReceiptsS3 } from "../lib/s3Env.js";
 import { streamToString } from "../lib/streams.js";
-import { validateEnv } from "@app/lib/env.js";
+import { validateEnv } from "../lib/env.js";
 
 function parseItemFromKey(key) {
   // receipts/{sub}/{timestamp}-{bundleId}.json

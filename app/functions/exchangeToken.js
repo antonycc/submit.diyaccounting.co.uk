@@ -5,7 +5,7 @@ import { SecretsManagerClient, GetSecretValueCommand } from "@aws-sdk/client-sec
 
 import logger from "../lib/logger.js";
 import { extractRequest, httpBadRequestResponse, httpOkResponse, httpServerErrorResponse } from "../lib/responses.js";
-import { validateEnv } from "@app/lib/env.js";
+import { validateEnv } from "../lib/env.js";
 
 const secretsClient = new SecretsManagerClient();
 
@@ -14,10 +14,10 @@ let cachedHmrcClientSecret;
 
 // POST /api/cognito/exchange-token
 export async function httpPostCognito(event) {
-  validateEnv(["DIY_SUBMIT_BASE_URL", "DIY_SUBMIT_COGNITO_CLIENT_ID", "DIY_SUBMIT_COGNITO_BASE_URI"]);
+  validateEnv(["DIY_SUBMIT_BASE_URL", "COGNITO_CLIENT_ID", "COGNITO_BASE_URI"]);
   const redirectUri = process.env.DIY_SUBMIT_BASE_URL + "auth/loginWithCognitoCallback.html";
-  const cognitoClientId = process.env.DIY_SUBMIT_COGNITO_CLIENT_ID;
-  const CognitoBaseUri = process.env.DIY_SUBMIT_COGNITO_BASE_URI;
+  const cognitoClientId = process.env.COGNITO_CLIENT_ID;
+  const CognitoBaseUri = process.env.COGNITO_BASE_URI;
 
   const request = extractRequest(event);
 

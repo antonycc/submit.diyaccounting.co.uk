@@ -11,7 +11,7 @@ import {
   extractClientIPFromHeaders,
 } from "../lib/responses.js";
 import eventToGovClientHeaders from "../lib/eventToGovClientHeaders.js";
-import { validateEnv } from "@app/lib/env.js";
+import { validateEnv } from "../lib/env.js";
 
 // Lazy load AWS Cognito SDK only if bundle enforcement is on
 let __cognitoModule;
@@ -191,7 +191,7 @@ export async function submitVat(periodKey, vatDue, vatNumber, hmrcAccessToken, g
 
 // POST /api/submit-vat
 export async function httpPost(event) {
-  validateEnv(["HMRC_BASE_URI", "DIY_SUBMIT_USER_POOL_ID"]);
+  validateEnv(["HMRC_BASE_URI", "COGNITO_USER_POOL_ID"]);
 
   const request = extractRequest(event);
 
@@ -228,7 +228,7 @@ export async function httpPost(event) {
     const enforceBundles =
       String(process.env.DIY_SUBMIT_ENFORCE_BUNDLES || "").toLowerCase() === "true" ||
       process.env.DIY_SUBMIT_ENFORCE_BUNDLES === "1";
-    const userPoolId = process.env.DIY_SUBMIT_USER_POOL_ID;
+    const userPoolId = process.env.COGNITO_USER_POOL_ID;
     if (enforceBundles && userPoolId) {
       const authHeader = event.headers?.authorization || event.headers?.Authorization;
       if (!authHeader || !authHeader.startsWith("Bearer ")) {

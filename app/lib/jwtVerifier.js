@@ -17,7 +17,7 @@ function base64UrlDecodePayload(token) {
 }
 
 function deriveCognitoConfigFromEnv() {
-  const userPoolId = process.env.DIY_SUBMIT_USER_POOL_ID;
+  const userPoolId = process.env.COGNITO_USER_POOL_ID;
   const region = process.env.AWS_REGION || process.env.AWS_DEFAULT_REGION || "eu-west-2";
   if (!userPoolId) return null;
   const issuer = `https://cognito-idp.${region}.amazonaws.com/${userPoolId}`;
