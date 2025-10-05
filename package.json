@@ -37,7 +37,7 @@
     "test:integration": "vitest --run app/integration-tests/*.test.js",
     "test:system": "vitest --run app/system-tests/*.test.js",
     "test:browser": "playwright test --project=browser-tests web/browser-tests/*.test.js",
-    "test:behaviour": "playwright test --project=behaviour-tests behaviour-tests/*.test.js",
+    "test:behaviour": "npx dotenv -e ../.env.proxy -- playwright test --project=behaviour-tests behaviour-tests/*.test.js",
     "playwright:install": "npx playwright install chromium --with-deps",
     "users:provision": "node app/bin/provision-user.mjs",
     "test:submitVatBehaviourProxyRunning": "npx dotenv -e .env.proxyRunning -- playwright test behaviour-tests/submitVat.behaviour.test.js",

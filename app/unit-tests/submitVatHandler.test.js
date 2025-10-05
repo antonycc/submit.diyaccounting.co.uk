@@ -1,6 +1,6 @@
 // app/unit-tests/submitVatHandler.test.js
 
-import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, test, expect, vi, beforeEach } from "vitest";
 import dotenv from "dotenv";
 
 import { httpPost as submitVatHandler } from "@app/functions/submitVat.js";

@@ -5,6 +5,9 @@ import fetch from "node-fetch";
 
 import { httpGet } from "../functions/getVatReturn.js";
 import { buildGovClientTestHeaders } from "./govClientTestHeader.js";
+import dotenv from "dotenv";
+
+dotenv.config({ path: ".env.test" });
 
 vi.mock("node-fetch");
 

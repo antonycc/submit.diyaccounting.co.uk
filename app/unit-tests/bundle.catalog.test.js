@@ -1,6 +1,9 @@
 // app/unit-tests/bundle.catalog.test.js
 import { describe, test, beforeEach, expect } from "vitest";
 import { httpPost as requestBundle, __getInMemoryBundlesStore } from "@app/functions/bundle.js";
+import dotenv from "dotenv";
+
+dotenv.config({ path: ".env.test" });
 
 function base64UrlEncode(obj) {
   const json = JSON.stringify(obj);

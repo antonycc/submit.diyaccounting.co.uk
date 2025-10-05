@@ -4,6 +4,9 @@ import { test, expect } from "@playwright/test";
 import fs from "fs";
 import path from "path";
 import { setTimeout } from "timers/promises";
+import dotenv from "dotenv";
+
+dotenv.config({ path: ".env.test" });
 
 test.describe("Navigation Browser Tests", () => {
   let indexHtmlContent;

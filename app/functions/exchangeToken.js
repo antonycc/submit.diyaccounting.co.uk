@@ -75,14 +75,16 @@ export async function httpPostHmrc(event) {
 }
 
 export async function httpPostMock(event) {
-  validateEnv(["HMRC_BASE_URI", "HMRC_CLIENT_ID", "DIY_SUBMIT_BASE_URL"]);
+  validateEnv(["HMRC_BASE_URI", "HMRC_CLIENT_ID", "DIY_SUBMIT_BASE_URL", "HMRC_CLIENT_SECRET_ARN"]);
+  const secretArn = process.env.HMRC_CLIENT_SECRET_ARN;
+  const overrideSecret = process.env.DIY_SUBMIT_HMRC_CLIENT_SECRET;
 
   const request = extractRequest(event);
   const { code } = JSON.parse(event.body || "{}");
   if (!code) {
     return httpBadRequestResponse({ request, message: "Missing code from event body" });
   }
-  const clientSecret = await retrieveHmrcClientSecret();
+  const clientSecret = await retrieveHmrcClientSecret(overrideSecret, secretArn);
   const url = `${process.env.HMRC_BASE_URI}/oauth/token`;
   const body = {
     grant_type: "authorization_code",
@@ -95,13 +97,17 @@ export async function httpPostMock(event) {
 }
 
 export async function exchangeToken(providerUrlOrCode, maybeBody) {
+  validateEnv(["HMRC_BASE_URI", "HMRC_CLIENT_ID", "DIY_SUBMIT_BASE_URL", "HMRC_CLIENT_SECRET_ARN"]);
+  const secretArn = process.env.HMRC_CLIENT_SECRET_ARN;
+  const overrideSecret = process.env.DIY_SUBMIT_HMRC_CLIENT_SECRET;
+
   // Overloaded signature for tests/backward-compat:
   // - exchangeToken(code)
   // - exchangeToken(providerUrl, body)
   if (typeof providerUrlOrCode === "string" && (!maybeBody || typeof maybeBody !== "object")) {
     // TODO: Remove this when tests are otherwise stable.
     logger.warn({ message: "exchangeToken called with code and no body, defaulting to HMRC" });
-    const clientSecret = await retrieveHmrcClientSecret();
+    const clientSecret = await retrieveHmrcClientSecret(overrideSecret, secretArn);
     const url = `${process.env.HMRC_BASE_URI}/oauth/token`;
     const body = {
       grant_type: "authorization_code",

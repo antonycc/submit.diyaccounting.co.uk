@@ -1,6 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
+import dotenv from "dotenv";
+
+dotenv.config({ path: ".env.test" });
 
 // Load the script content and eval it in this context to populate window.* functions via happy-dom
 const submitJsPath = path.join(process.cwd(), "web/public/submit.js");
