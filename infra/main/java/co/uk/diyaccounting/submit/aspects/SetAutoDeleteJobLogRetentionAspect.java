@@ -14,12 +14,12 @@ public class SetAutoDeleteJobLogRetentionAspect implements IAspect {
 
     public SetAutoDeleteJobLogRetentionAspect(String deploymentName, Number retentionDays) {
         this.retentionDays = retentionDays;
-        this.match =
-            Pattern.compile(
-                "%s.*CustomCDKBucketDeployment|".formatted(deploymentName) +
-                    "%s.*CustomDeleteExistingRecordSet|".formatted(deploymentName) +
-                    "%s.*CustomS3AutoDeleteObjects".formatted(deploymentName),
-                Pattern.CASE_INSENSITIVE);
+        // Escapes deploymentName and groups alternates once
+        this.match = Pattern.compile(
+            "(?:%s.*Custom(?:CDKBucketDeployment|DeleteExistingRecordSet|S3AutoDeleteObjects))"
+                .formatted(Pattern.quote(deploymentName)),
+            Pattern.CASE_INSENSITIVE
+        );
     }
 
     @Override
