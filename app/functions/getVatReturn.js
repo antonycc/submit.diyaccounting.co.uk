@@ -70,9 +70,9 @@ export async function httpGet(event) {
     let vatReturn;
 
     // Check if we should use stubbed data
-    if (shouldUseStub("DIY_SUBMIT_TEST_VAT_RETURN")) {
+    if (shouldUseStub("TEST_VAT_RETURN")) {
       logger.info({ message: "Using stubbed VAT return data", vrn, periodKey, testScenario });
-      vatReturn = getStubData("DIY_SUBMIT_TEST_VAT_RETURN", {
+      vatReturn = getStubData("TEST_VAT_RETURN", {
         periodKey: periodKey,
         vatDueSales: 1000.5,
         vatDueAcquisitions: 0.0,

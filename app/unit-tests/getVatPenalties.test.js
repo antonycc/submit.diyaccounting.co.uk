@@ -12,7 +12,7 @@ describe("getVatPenalties handler", () => {
   beforeEach(() => {
     vi.resetAllMocks();
     // Set stubbed mode
-    process.env.DIY_SUBMIT_TEST_VAT_PENALTIES = JSON.stringify({
+    process.env.TEST_VAT_PENALTIES = JSON.stringify({
       penalties: [
         {
           penaltyCategory: "LPP1",
@@ -122,7 +122,7 @@ describe("getVatPenalties handler", () => {
 
   test("should call HMRC API when not in stubbed mode", async () => {
     // Remove stubbed mode
-    delete process.env.DIY_SUBMIT_TEST_VAT_PENALTIES;
+    delete process.env.TEST_VAT_PENALTIES;
 
     const mockResponse = {
       penalties: [
@@ -174,7 +174,7 @@ describe("getVatPenalties handler", () => {
 
   test("should handle HMRC API error", async () => {
     // Remove stubbed mode
-    delete process.env.DIY_SUBMIT_TEST_VAT_PENALTIES;
+    delete process.env.TEST_VAT_PENALTIES;
 
     const errorMessage = "INVALID_VRN";
 

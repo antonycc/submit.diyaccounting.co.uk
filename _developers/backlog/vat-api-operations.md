@@ -14,14 +14,14 @@ Only `submitVat.js` exists for submitting returns.  There are no endpoints or pa
 
 ### Back‑end functions
 
-1. **getVatObligations.js** – Extract `vrn`, optional `from`, `to`, `status` and `Gov-Test-Scenario`.  Build a GET request to `/organisations/vat/{vrn}/obligations`.  In stubbed mode (controlled by `DIY_SUBMIT_TEST_VAT_OBLIGATIONS`), return static JSON.  Otherwise call HMRC, adding the necessary fraud‑prevention headers and the `Gov-Test-Scenario` header.  Return the list of obligations.
-2. **getVatReturn.js** – Accept `vrn` and `periodKey`.  Call `/organisations/vat/{vrn}/returns/{periodKey}` and return the response.  If HMRC returns 404, propagate it.  In stubbed mode, read from `DIY_SUBMIT_TEST_VAT_RETURN`.
+1. **getVatObligations.js** – Extract `vrn`, optional `from`, `to`, `status` and `Gov-Test-Scenario`.  Build a GET request to `/organisations/vat/{vrn}/obligations`.  In stubbed mode (controlled by `TEST_VAT_OBLIGATIONS`), return static JSON.  Otherwise call HMRC, adding the necessary fraud‑prevention headers and the `Gov-Test-Scenario` header.  Return the list of obligations.
+2. **getVatReturn.js** – Accept `vrn` and `periodKey`.  Call `/organisations/vat/{vrn}/returns/{periodKey}` and return the response.  If HMRC returns 404, propagate it.  In stubbed mode, read from `TEST_VAT_RETURN`.
 3. **getVatLiability.js** – Accept `vrn` and optional `taxYear`.  Call `/organisations/vat/{vrn}/liabilities`.  Map the response into a simplified array of liabilities.
 4. **getVatPayment.js** – Accept `vrn` and optional filters (start, end).  Call `/organisations/vat/{vrn}/payments` and return payments.
 5. **getVatPenalties.js** – Accept `vrn` and optional period.  Call `/organisations/vat/{vrn}/penalties`.  Support `Gov‑Test‑Scenario` to simulate penalty scenarios.
 6. **Common utilities** – Factor out request construction, including base URI selection (`HMRC_BASE_URI`), adding the access token from Cognito, and attaching fraud‑prevention headers.  Use environment variables for timeouts.
 7. **Routing** – Register each handler under `/api/vat/…` in `server.js`, guarded by `requireActivity('vat-obligations')` or `requireActivity('submit-vat')` as appropriate.  Update CDK to create the corresponding `Function` and `FunctionUrl` resources.
-8. **Stubbed environment variables** – Add `DIY_SUBMIT_TEST_VAT_OBLIGATIONS`, `…VAT_RETURN`, `…VAT_LIABILITY` etc.  Provide sample JSON in `app/test/stubs/vat/*.json`.
+8. **Stubbed environment variables** – Add `TEST_VAT_OBLIGATIONS`, `…VAT_RETURN`, `…VAT_LIABILITY` etc.  Provide sample JSON in `app/test/stubs/vat/*.json`.
 
 ### Front‑end pages
 

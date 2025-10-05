@@ -68,9 +68,9 @@ export async function httpGet(event) {
     let liabilities;
 
     // Check if we should use stubbed data
-    if (shouldUseStub("DIY_SUBMIT_TEST_VAT_LIABILITIES")) {
+    if (shouldUseStub("TEST_VAT_LIABILITIES")) {
       logger.info({ message: "Using stubbed VAT liabilities data", testScenario });
-      liabilities = getStubData("DIY_SUBMIT_TEST_VAT_LIABILITIES", {
+      liabilities = getStubData("TEST_VAT_LIABILITIES", {
         liabilities: [
           {
             taxPeriod: {

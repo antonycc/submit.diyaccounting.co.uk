@@ -2,6 +2,7 @@ package co.uk.diyaccounting.submit.stacks;
 
 import co.uk.diyaccounting.submit.constructs.LambdaUrlOrigin;
 import co.uk.diyaccounting.submit.constructs.LambdaUrlOriginProps;
+import co.uk.diyaccounting.submit.utils.PopulatedMap;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
@@ -110,7 +111,10 @@ public class AccountStack extends Stack {
                 : FunctionUrlAuthType.NONE;
 
         // Catalog Lambda
-        var catalogLambdaEnv = new HashMap<>(Map.of("DIY_SUBMIT_BASE_URL", props.baseUrl()));
+        //var catalogLambdaEnv = new HashMap<>(Map.of("DIY_SUBMIT_BASE_URL", props.baseUrl()));
+        var catalogLambdaEnv = new PopulatedMap<String, String>()
+                .with("DIY_SUBMIT_BASE_URL", props.baseUrl()
+                );
         var catalogLambdaUrlOriginFunctionHandler = "catalogGet.handle";
         var catalogLambdaUrlOriginFunctionName = buildFunctionName(props.compressedResourceNamePrefix(), catalogLambdaUrlOriginFunctionHandler);
         var catalogLambdaUrlOrigin = new LambdaUrlOrigin(
@@ -134,8 +138,8 @@ public class AccountStack extends Stack {
         // Request Bundles Lambda
         var requestBundlesLambdaEnv = new HashMap<>(Map.of(
                 "DIY_SUBMIT_USER_POOL_ID", userPool.getUserPoolId(),
-                "DIY_SUBMIT_TEST_BUNDLE_EXPIRY_DATE", "2025-12-31",
-                "DIY_SUBMIT_TEST_BUNDLE_USER_LIMIT", "10"));
+                "TEST_BUNDLE_EXPIRY_DATE", "2025-12-31",
+                "TEST_BUNDLE_USER_LIMIT", "10"));
         var requestBundlesLambdaUrlOriginFunctionHandler = "bundle.httpPost";
         var requestBundlesLambdaUrlOriginFunctionName = buildFunctionName(props.compressedResourceNamePrefix(), requestBundlesLambdaUrlOriginFunctionHandler);
         var requestBundlesLambdaUrlOrigin = new LambdaUrlOrigin(

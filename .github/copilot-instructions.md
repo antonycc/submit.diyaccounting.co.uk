@@ -130,8 +130,8 @@ Manual testing should be performed using the **proxy environment**. This require
 2. **Start the Express server with the MinIO endpoint:**
    - Pass the MinIO endpoint to the server by overriding the environment variable:
      ```bash
-     DIY_SUBMIT_TEST_S3_ENDPOINT=<minio_endpoint_url> npm run start
-     # Example: DIY_SUBMIT_TEST_S3_ENDPOINT=http://127.0.0.1:9000 npm run start
+     TEST_S3_ENDPOINT=<minio_endpoint_url> npm run start
+     # Example: TEST_S3_ENDPOINT=http://127.0.0.1:9000 npm run start
      # Verify "Listening at http://127.0.0.1:3000" appears
      ```
 

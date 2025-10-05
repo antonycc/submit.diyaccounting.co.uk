@@ -9,9 +9,9 @@ import { ensureMinioBucketExists, startMinio } from "@app/bin/minio.js";
 import { checkIfServerIsRunning } from "@app/lib/serverHelper.js";
 import { gotoWithRetries } from "@app/lib/gotoWithRetries.js";
 
-dotenv.config({ path: ".env" }); // e.g. Not checked in, HMRC API credentials
-// TODO: remove the override and ensure the tests pass with .env.test, then change the pipeline tests to copy over .env.test.
-dotenv.config({ path: ".env.proxy" });
+dotenv.config({ path: ".env.test" });
+dotenv.config({ path: ".env" }); // Not checked in, HMRC API credentials
+
 const envFilepath = process.env.DIY_SUBMIT_ENV_FILEPATH;
 if (envFilepath) {
   console.log(`Loaded configuration from env file: ${envFilepath}`);
@@ -30,34 +30,24 @@ const hmrcTestPassword = process.env.DIY_SUBMIT_HMRC_TEST_PASSWORD;
 const hmrcTestVatNumber = process.env.DIY_SUBMIT_HMRC_TEST_VAT_NUMBER;
 
 // S3 credentials for the test MinIO instance
-const optionalTestS3AccessKey = process.env.DIY_SUBMIT_TEST_S3_ACCESS_KEY;
-const optionalTestS3SecretKey = process.env.DIY_SUBMIT_TEST_S3_SECRET_KEY;
+const optionalTestS3AccessKey = process.env.TEST_S3_ACCESS_KEY;
+const optionalTestS3SecretKey = process.env.TEST_S3_SECRET_KEY;
 
 // Environment variables for the test server and proxy
-const runTestServer = process.env.DIY_SUBMIT_TEST_SERVER_HTTP === "run";
-const runProxy = process.env.DIY_SUBMIT_TEST_PROXY === "run";
-const runMockOAuth2 = process.env.DIY_SUBMIT_TEST_MOCK_OAUTH2 === "run";
-const runMinioS3 = process.env.DIY_SUBMIT_TEST_MINIO_S3 === "run";
-const testAuthProvider = process.env.DIY_SUBMIT_TEST_AUTH_PROVIDER || "mock";
-const testAuthUsername = process.env.DIY_SUBMIT_TEST_AUTH_USERNAME || "user";
-const testAuthPassword = process.env.DIY_SUBMIT_TEST_AUTH_PASSWORD || "";
-console.log(
-  `runTestServer: ${runTestServer} (DIY_SUBMIT_TEST_SERVER_HTTP: ${process.env.DIY_SUBMIT_TEST_SERVER_HTTP})`,
-);
-console.log(`runProxy: ${runProxy} (DIY_SUBMIT_TEST_PROXY: ${process.env.DIY_SUBMIT_TEST_PROXY})`);
-console.log(
-  `runMockOAuth2: ${runMockOAuth2} (DIY_SUBMIT_TEST_MOCK_OAUTH2: ${process.env.DIY_SUBMIT_TEST_MOCK_OAUTH2})`,
-);
-console.log(`runMinioS3: ${runMinioS3} (DIY_SUBMIT_TEST_MINIO_S3: ${process.env.DIY_SUBMIT_TEST_MINIO_S3})`);
-console.log(
-  `testAuthProvider: ${testAuthProvider} (DIY_SUBMIT_TEST_AUTH_PROVIDER: ${process.env.DIY_SUBMIT_TEST_AUTH_PROVIDER})`,
-);
-console.log(
-  `testAuthUsername: ${testAuthUsername} (DIY_SUBMIT_TEST_AUTH_USERNAME: ${process.env.DIY_SUBMIT_TEST_AUTH_USERNAME})`,
-);
-console.log(
-  `testAuthPassword: ${testAuthPassword} (DIY_SUBMIT_TEST_AUTH_PASSWORD: ${process.env.DIY_SUBMIT_TEST_AUTH_PASSWORD})`,
-);
+const runTestServer = process.env.TEST_SERVER_HTTP === "run";
+const runProxy = process.env.TEST_PROXY === "run";
+const runMockOAuth2 = process.env.TEST_MOCK_OAUTH2 === "run";
+const runMinioS3 = process.env.TEST_MINIO_S3 === "run";
+const testAuthProvider = process.env.TEST_AUTH_PROVIDER || "mock";
+const testAuthUsername = process.env.TEST_AUTH_USERNAME || "user";
+const testAuthPassword = process.env.TEST_AUTH_PASSWORD || "";
+console.log(`runTestServer: ${runTestServer} (TEST_SERVER_HTTP: ${process.env.TEST_SERVER_HTTP})`);
+console.log(`runProxy: ${runProxy} (TEST_PROXY: ${process.env.TEST_PROXY})`);
+console.log(`runMockOAuth2: ${runMockOAuth2} (TEST_MOCK_OAUTH2: ${process.env.TEST_MOCK_OAUTH2})`);
+console.log(`runMinioS3: ${runMinioS3} (TEST_MINIO_S3: ${process.env.TEST_MINIO_S3})`);
+console.log(`testAuthProvider: ${testAuthProvider} (TEST_AUTH_PROVIDER: ${process.env.TEST_AUTH_PROVIDER})`);
+console.log(`testAuthUsername: ${testAuthUsername} (TEST_AUTH_USERNAME: ${process.env.TEST_AUTH_USERNAME})`);
+console.log(`testAuthPassword: ${testAuthPassword} (TEST_AUTH_PASSWORD: ${process.env.TEST_AUTH_PASSWORD})`);
 
 const bucketNamePostfix = process.env.DIY_SUBMIT_RECEIPTS_BUCKET_FULL_NAME;
 const homeUrl = process.env.DIY_SUBMIT_BASE_URL;
@@ -98,7 +88,7 @@ test.beforeAll(async () => {
     await setTimeout(2000);
     await ensureMinioBucketExists(receiptsBucketFullName, endpoint, optionalTestS3AccessKey, optionalTestS3SecretKey);
   } else {
-    console.log("Skipping Minio container creation because DIY_SUBMIT_TEST_MINIO_S3 is not set to 'run'");
+    console.log("Skipping Minio container creation because TEST_MINIO_S3 is not set to 'run'");
   }
 
   if (runTestServer) {
@@ -106,8 +96,8 @@ test.beforeAll(async () => {
     serverProcess = spawn("npm", ["run", "start"], {
       env: {
         ...process.env,
-        DIY_SUBMIT_TEST_S3_ENDPOINT: endpoint,
-        DIY_SUBMIT_TEST_SERVER_HTTP_PORT: serverPort.toString(),
+        TEST_S3_ENDPOINT: endpoint,
+        TEST_SERVER_HTTP_PORT: serverPort.toString(),
       },
       stdio: ["pipe", "pipe", "pipe"],
     });

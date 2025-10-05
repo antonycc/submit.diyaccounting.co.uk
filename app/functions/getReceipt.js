@@ -36,17 +36,13 @@ function buildBucketAndClient() {
   const receiptsBucketFullName = `${dashedDomain}-receipts`;
 
   let s3Config = {};
-  if (
-    process.env.NODE_ENV !== "stubbed" &&
-    process.env.DIY_SUBMIT_TEST_S3_ENDPOINT &&
-    process.env.DIY_SUBMIT_TEST_S3_ENDPOINT !== "off"
-  ) {
+  if (process.env.NODE_ENV !== "stubbed" && process.env.TEST_S3_ENDPOINT && process.env.TEST_S3_ENDPOINT !== "off") {
     s3Config = {
-      endpoint: process.env.DIY_SUBMIT_TEST_S3_ENDPOINT,
+      endpoint: process.env.TEST_S3_ENDPOINT,
       region: "us-east-1",
       credentials: {
-        accessKeyId: process.env.DIY_SUBMIT_TEST_S3_ACCESS_KEY,
-        secretAccessKey: process.env.DIY_SUBMIT_TEST_S3_SECRET_KEY,
+        accessKeyId: process.env.TEST_S3_ACCESS_KEY,
+        secretAccessKey: process.env.TEST_S3_SECRET_KEY,
       },
       forcePathStyle: true,
     };

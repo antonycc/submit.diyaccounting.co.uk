@@ -162,7 +162,7 @@ public class AuthStack extends Stack {
         if (props.optionalTestAccessToken().isPresent()
                 && StringUtils.isNotBlank(props.optionalTestAccessToken().get())) {
             exchangeCognitoTokenLambdaEnv.put(
-                    "DIY_SUBMIT_TEST_ACCESS_TOKEN",
+                    "TEST_ACCESS_TOKEN",
                     props.optionalTestAccessToken().get());
         }
         var exchangeCognitoTokenLambdaUrlOriginFunctionHandler = "exchangeToken.httpPostCognito";

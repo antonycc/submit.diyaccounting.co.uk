@@ -35,7 +35,7 @@ describe("exchangeClientSecretForAccessToken", () => {
     // Reset environment variables
     process.env = {
       ...originalEnv,
-      DIY_SUBMIT_HMRC_CLIENT_ID: "test-client-id",
+      HMRC_CLIENT_ID: "test-client-id",
       DIY_SUBMIT_BASE_URL: "http://localhost:3000",
       HMRC_BASE_URI: "https://test-api.service.hmrc.gov.uk",
       NODE_ENV: "test",
@@ -229,7 +229,7 @@ describe("exchangeClientSecretForAccessToken", () => {
       // Arrange
       const testAccessToken = "stubbed-test-token";
       process.env.NODE_ENV = "stubbed";
-      process.env.DIY_SUBMIT_TEST_ACCESS_TOKEN = testAccessToken;
+      process.env.TEST_ACCESS_TOKEN = testAccessToken;
       process.env.DIY_SUBMIT_HMRC_CLIENT_SECRET = "any-secret";
 
       // Re-import the module to get fresh instance

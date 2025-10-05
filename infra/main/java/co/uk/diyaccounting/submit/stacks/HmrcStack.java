@@ -8,8 +8,6 @@ import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.services.cloudfront.AllowedMethods;
-import software.amazon.awscdk.services.cognito.IUserPool;
-import software.amazon.awscdk.services.cognito.UserPool;
 import software.amazon.awscdk.services.iam.Effect;
 import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.lambda.Function;
@@ -132,7 +130,7 @@ public class HmrcStack extends Stack {
         var authUrlHmrcLambdaEnv = new HashMap<>(Map.of(
                 "DIY_SUBMIT_BASE_URL", props.baseUrl(),
                 "HMRC_BASE_URI", props.hmrcBaseUri(),
-                "DIY_SUBMIT_HMRC_CLIENT_ID", props.hmrcClientId()));
+                "HMRC_CLIENT_ID", props.hmrcClientId()));
         var authUrlHmrcLambdaUrlOriginFunctionHandler = "authUrl.httpGetHmrc";
         var authUrlHmrcLambdaUrlOriginFunctionName = buildFunctionName(props.compressedResourceNamePrefix(), authUrlHmrcLambdaUrlOriginFunctionHandler);
         var authUrlHmrcLambdaUrlOrigin = new LambdaUrlOrigin(
@@ -158,14 +156,14 @@ public class HmrcStack extends Stack {
         Map<String, String> exchangeHmrcEnvBase = new HashMap<>(Map.of(
                 "DIY_SUBMIT_BASE_URL", props.baseUrl(),
                 "HMRC_BASE_URI", props.hmrcBaseUri(),
-                "DIY_SUBMIT_HMRC_CLIENT_ID", props.hmrcClientId()));
+                "HMRC_CLIENT_ID", props.hmrcClientId()));
         if (StringUtils.isNotBlank(props.hmrcClientSecretArn())) {
             exchangeHmrcEnvBase.put("HMRC_CLIENT_SECRET_ARN", props.hmrcClientSecretArn());
         }
         if (props.optionalTestAccessToken().isPresent()
                 && StringUtils.isNotBlank(props.optionalTestAccessToken().get())) {
             exchangeHmrcEnvBase.put(
-                    "DIY_SUBMIT_TEST_ACCESS_TOKEN",
+                    "TEST_ACCESS_TOKEN",
                     props.optionalTestAccessToken().get());
         }
         var exchangeHmrcTokenLambdaUrlOriginFunctionHandler = "exchangeToken.httpPostHmrc";
@@ -245,11 +243,11 @@ public class HmrcStack extends Stack {
             && StringUtils.isNotBlank(props.optionalTestS3SecretKey().get())) {
             // For production like integrations without AWS we can use test S3 credentials
             var logReceiptLambdaTestEnv = new HashMap<>(Map.of(
-                "DIY_SUBMIT_TEST_S3_ENDPOINT",
+                "TEST_S3_ENDPOINT",
                 props.optionalTestS3Endpoint().get(),
-                "DIY_SUBMIT_TEST_S3_ACCESS_KEY",
+                "TEST_S3_ACCESS_KEY",
                 props.optionalTestS3AccessKey().get(),
-                "DIY_SUBMIT_TEST_S3_SECRET_KEY",
+                "TEST_S3_SECRET_KEY",
                 props.optionalTestS3SecretKey().get()));
             logReceiptLambdaEnv.putAll(logReceiptLambdaTestEnv);
         }

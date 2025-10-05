@@ -24,7 +24,7 @@ describe("httpGetHmrc", () => {
     process.env = {
       ...originalEnv,
       HMRC_BASE_URI: "https://test",
-      DIY_SUBMIT_HMRC_CLIENT_ID: "test client id",
+      HMRC_CLIENT_ID: "test client id",
     };
   });
 

@@ -65,7 +65,7 @@ export async function httpPostHmrc(event) {
   const url = `${process.env.HMRC_BASE_URI}/oauth/token`;
   const body = {
     grant_type: "authorization_code",
-    client_id: process.env.DIY_SUBMIT_HMRC_CLIENT_ID,
+    client_id: process.env.HMRC_CLIENT_ID,
     client_secret: clientSecret,
     redirect_uri: process.env.DIY_SUBMIT_BASE_URL + "activities/submitVatCallback.html",
     code,
@@ -83,7 +83,7 @@ export async function httpPostMock(event) {
   const url = `${process.env.HMRC_BASE_URI}/oauth/token`;
   const body = {
     grant_type: "authorization_code",
-    client_id: process.env.DIY_SUBMIT_HMRC_CLIENT_ID,
+    client_id: process.env.HMRC_CLIENT_ID,
     client_secret: clientSecret,
     redirect_uri: process.env.DIY_SUBMIT_BASE_URL + "activities/submitVatCallback.html",
     code,
@@ -102,7 +102,7 @@ export async function exchangeToken(providerUrlOrCode, maybeBody) {
     const url = `${process.env.HMRC_BASE_URI}/oauth/token`;
     const body = {
       grant_type: "authorization_code",
-      client_id: process.env.DIY_SUBMIT_HMRC_CLIENT_ID,
+      client_id: process.env.HMRC_CLIENT_ID,
       client_secret: clientSecret,
       redirect_uri: process.env.DIY_SUBMIT_BASE_URL + "activities/submitVatCallback.html",
       code: providerUrlOrCode,
@@ -129,7 +129,7 @@ async function performTokenExchange(providerUrl, body) {
   });
   if (process.env.NODE_ENV === "stubbed") {
     logger.warn({ message: "httpPostMock called in stubbed mode, using test access token" });
-    const testAccessToken = process.env.DIY_SUBMIT_TEST_ACCESS_TOKEN;
+    const testAccessToken = process.env.TEST_ACCESS_TOKEN;
     response = {
       ok: true,
       status: 200,

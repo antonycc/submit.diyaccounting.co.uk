@@ -138,8 +138,8 @@ export async function submitVat(periodKey, vatDue, vatNumber, hmrcAccessToken, g
       json: async () => ({ access_token: hmrcAccessToken }),
       text: async () => JSON.stringify({ access_token: hmrcAccessToken }),
     };
-    // DIY_SUBMIT_TEST_RECEIPT is already a JSON string, so parse it first
-    hmrcResponseBody = JSON.parse(process.env.DIY_SUBMIT_TEST_RECEIPT || "{}");
+    // TEST_RECEIPT is already a JSON string, so parse it first
+    hmrcResponseBody = JSON.parse(process.env.TEST_RECEIPT || "{}");
     logger.warn({ message: "httpPostMock called in stubbed mode, using test receipt", receipt: hmrcResponseBody });
   } else {
     hmrcResponse = await fetch(hmrcRequestUrl, {

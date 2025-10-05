@@ -26,7 +26,7 @@ describe("myReceipts functions", () => {
     s3Mock.reset();
     process.env.DIY_SUBMIT_BASE_URL = "https://hmrc-test-redirect"; // matches unit test expectation style
     process.env.DIY_SUBMIT_RECEIPTS_BUCKET_FULL_NAME = "test-receipts-bucket";
-    process.env.DIY_SUBMIT_TEST_S3_ENDPOINT = "http://localhost:9000"; // enable S3 client config
+    process.env.TEST_S3_ENDPOINT = "http://localhost:9000"; // enable S3 client config
   });
 
   test("handle lists receipts sorted and parsed", async () => {

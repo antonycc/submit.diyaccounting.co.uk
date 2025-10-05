@@ -25,7 +25,7 @@ describe("httpPostMock", () => {
     process.env = {
       ...originalEnv,
       DIY_SUBMIT_RECEIPTS_BUCKET_FULL_NAME: "test-receipts-bucket",
-      DIY_SUBMIT_TEST_S3_ENDPOINT: "http://localhost:9000", // Enable S3 operations for tests
+      TEST_S3_ENDPOINT: "http://localhost:9000", // Enable S3 operations for tests
     };
   });
 

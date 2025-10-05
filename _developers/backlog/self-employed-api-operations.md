@@ -45,7 +45,7 @@ There is no self‑employment code in the repository.  The product catalogue inc
 
 ## Testing & iteration strategy
 
-1. **Stubbed data:** For each handler, provide stubbed JSON via environment variables (e.g. `DIY_SUBMIT_TEST_SE_LIST_PERIODS`).  Use examples from the HMRC spec.
+1. **Stubbed data:** For each handler, provide stubbed JSON via environment variables (e.g. `TEST_SE_LIST_PERIODS`).  Use examples from the HMRC spec.
 2. **Unit tests:** Write Jest tests to verify parameter extraction, validation and error handling.  Use `nock` to mock HMRC responses.  Test JSON schema validation with both valid and invalid bodies.
 3. **Integration tests:** Use `supertest` to call the Express routes, including entitlements middleware.  Ensure unauthorized access returns `403`.
 4. **Playwright tests:** Build end‑to‑end flows: create a period, view it, amend it, delete it; view and edit annual summaries; view cumulative summaries.  Validate error handling (overlapping periods, invalid dates).  Use `Gov‑Test‑Scenario` values to simulate HMRC errors.

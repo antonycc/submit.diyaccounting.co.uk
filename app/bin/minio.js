@@ -89,8 +89,8 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const { hostname } = new URL(homeUrl);
   const dashedDomain = hostname.split(".").join("-");
   const receiptsBucketFullName = `${dashedDomain}-${bucketNamePostfix}`;
-  const optionalTestS3AccessKey = process.env.DIY_SUBMIT_TEST_S3_ACCESS_KEY;
-  const optionalTestS3SecretKey = process.env.DIY_SUBMIT_TEST_S3_SECRET_KEY;
+  const optionalTestS3AccessKey = process.env.TEST_S3_ACCESS_KEY;
+  const optionalTestS3SecretKey = process.env.TEST_S3_SECRET_KEY;
 
   let container;
 

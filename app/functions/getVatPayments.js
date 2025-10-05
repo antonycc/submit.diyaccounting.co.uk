@@ -68,9 +68,9 @@ export async function httpGet(event) {
     let payments;
 
     // Check if we should use stubbed data
-    if (shouldUseStub("DIY_SUBMIT_TEST_VAT_PAYMENTS")) {
+    if (shouldUseStub("TEST_VAT_PAYMENTS")) {
       logger.info({ message: "Using stubbed VAT payments data", testScenario });
-      payments = getStubData("DIY_SUBMIT_TEST_VAT_PAYMENTS", {
+      payments = getStubData("TEST_VAT_PAYMENTS", {
         payments: [
           {
             amount: 1000.5,

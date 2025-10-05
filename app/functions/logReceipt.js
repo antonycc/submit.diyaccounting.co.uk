@@ -13,18 +13,14 @@ export async function logReceipt(key, receipt) {
 
   // Configure S3 client for containerized MinIO if environment variables are set
   let s3Config = {};
-  if (
-    process.env.NODE_ENV !== "stubbed" &&
-    process.env.DIY_SUBMIT_TEST_S3_ENDPOINT &&
-    process.env.DIY_SUBMIT_TEST_S3_ENDPOINT !== "off"
-  ) {
+  if (process.env.NODE_ENV !== "stubbed" && process.env.TEST_S3_ENDPOINT && process.env.TEST_S3_ENDPOINT !== "off") {
     s3Config = buildTestS3Config();
   }
 
   if (process.env.NODE_ENV === "stubbed") {
     logger.warn({ message: ".NODE_ENV environment variable is stubbedL No receipt saved." });
-  } else if (process.env.DIY_SUBMIT_TEST_S3_ENDPOINT === "off") {
-    logger.warn({ message: "DIY_SUBMIT_TEST_S3_ENDPOINT is set to 'off': No receipt saved." });
+  } else if (process.env.TEST_S3_ENDPOINT === "off") {
+    logger.warn({ message: "TEST_S3_ENDPOINT is set to 'off': No receipt saved." });
   } else {
     const s3Client = new S3Client(s3Config);
     try {
@@ -125,11 +121,11 @@ export async function httpPost(event) {
 
 function buildTestS3Config() {
   return {
-    endpoint: process.env.DIY_SUBMIT_TEST_S3_ENDPOINT,
+    endpoint: process.env.TEST_S3_ENDPOINT,
     region: "us-east-1",
     credentials: {
-      accessKeyId: process.env.DIY_SUBMIT_TEST_S3_ACCESS_KEY,
-      secretAccessKey: process.env.DIY_SUBMIT_TEST_S3_SECRET_KEY,
+      accessKeyId: process.env.TEST_S3_ACCESS_KEY,
+      secretAccessKey: process.env.TEST_S3_SECRET_KEY,
     },
     forcePathStyle: true,
   };

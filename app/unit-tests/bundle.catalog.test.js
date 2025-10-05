@@ -28,7 +28,7 @@ function buildEvent(token, body) {
 
 describe("bundle.js – catalog qualifiers and expiry (MOCK)", () => {
   beforeEach(() => {
-    process.env.DIY_SUBMIT_TEST_BUNDLE_MOCK = "true";
+    process.env.TEST_BUNDLE_MOCK = "true";
     // Clear the in-memory store before each test
     const store = __getInMemoryBundlesStore();
     store.clear();

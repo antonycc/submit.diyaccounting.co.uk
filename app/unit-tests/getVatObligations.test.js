@@ -12,7 +12,7 @@ describe("getVatObligations handler", () => {
   beforeEach(() => {
     vi.resetAllMocks();
     // Set stubbed mode
-    process.env.DIY_SUBMIT_TEST_VAT_OBLIGATIONS = JSON.stringify({
+    process.env.TEST_VAT_OBLIGATIONS = JSON.stringify({
       obligations: [
         {
           start: "2024-01-01",
@@ -187,7 +187,7 @@ describe("getVatObligations handler", () => {
 
   test("should call HMRC API when not in stubbed mode", async () => {
     // Remove stubbed mode
-    delete process.env.DIY_SUBMIT_TEST_VAT_OBLIGATIONS;
+    delete process.env.TEST_VAT_OBLIGATIONS;
 
     const mockResponse = {
       obligations: [
@@ -236,7 +236,7 @@ describe("getVatObligations handler", () => {
 
   test("should handle HMRC API error", async () => {
     // Remove stubbed mode
-    delete process.env.DIY_SUBMIT_TEST_VAT_OBLIGATIONS;
+    delete process.env.TEST_VAT_OBLIGATIONS;
 
     const errorMessage = "INVALID_VRN";
 
