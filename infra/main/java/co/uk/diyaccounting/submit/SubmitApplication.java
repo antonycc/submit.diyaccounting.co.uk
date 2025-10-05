@@ -125,7 +125,7 @@ public class SubmitApplication {
         var cognitoUserPoolArn =
                 envOr("COGNITO_USER_POOL_ARN", appProps.userPoolArn, "(from cognitoDomainPrefix in cdk.json)");
         var cognitoUserPoolClientId = envOr(
-                "COGNITO_USER_POOL_CLIENT_ID", appProps.userPoolClientId, "(from cognitoDomainPrefix in cdk.json)");
+                "COGNITO_CLIENT_ID", appProps.userPoolClientId, "(from cognitoDomainPrefix in cdk.json)");
         var hmrcClientSecretArn =
                 envOr("HMRC_CLIENT_SECRET_ARN", appProps.hmrcClientSecretArn, "(from hmrcClientSecretArn in cdk.json)");
         var baseImageTag = envOr("BASE_IMAGE_TAG", appProps.baseImageTag, "(from baseImageTag in cdk.json)");

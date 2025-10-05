@@ -1,12 +1,6 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildTrailName;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.convertDotSeparatedToDashSeparated;
-
 import co.uk.diyaccounting.submit.utils.RetentionDaysConverter;
-import java.util.List;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
@@ -23,6 +17,12 @@ import software.amazon.awscdk.services.s3.IBucket;
 import software.amazon.awscdk.services.s3.LifecycleRule;
 import software.amazon.awscdk.services.s3.ObjectOwnership;
 import software.constructs.Construct;
+
+import java.util.List;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildTrailName;
 
 public class ObservabilityStack extends Stack {
 
@@ -129,16 +129,17 @@ public class ObservabilityStack extends Stack {
         }
 
         // Log group for web deployment operations with 1-day retention
+        var webDeploymentLogGroupName = "/deployment/%s-web-deployment".formatted(props.resourceNamePrefix());
         this.webDeploymentLogGroup = LogGroup.Builder.create(
                         this, props.resourceNamePrefix() + "-WebDeploymentLogGroup")
-                .logGroupName("/deployment/" + props.resourceNamePrefix() + "-web-deployment")
+                .logGroupName(webDeploymentLogGroupName)
                 .retention(RetentionDays.ONE_DAY)
                 .removalPolicy(RemovalPolicy.DESTROY)
                 .build();
 
         // TODO: Re-instate log shipping to CloudWatch Logs for origin access and add xray tracing
         // S3 bucket for origin access logs with specified retention
-        String originBucketName = convertDotSeparatedToDashSeparated("origin-" + props.domainName());
+        String originBucketName = "origin-%s".formatted(props.dashedDomainName());
         var originAccessLogBucket = originBucketName + "-logs";
         infof(
                 "Setting expiration period to %d days for %s",
@@ -163,8 +164,9 @@ public class ObservabilityStack extends Stack {
 
         // TODO: Re-instate log shipping to CloudWatch Logs for distribution access and add xray tracing
         // S3 bucket for CloudFront distribution logs with specified retention
+        String distributionLogsBucketName = "distribution-%s-logs".formatted(props.dashedDomainName());
         this.distributionLogsBucket = Bucket.Builder.create(this, props.resourceNamePrefix() + "-LogsBucket")
-                .bucketName(props.resourceNamePrefix() + "-logs-bucket")
+                .bucketName(distributionLogsBucketName)
                 .objectOwnership(ObjectOwnership.OBJECT_WRITER)
                 .versioned(false)
                 .blockPublicAccess(BlockPublicAccess.BLOCK_ALL)

@@ -1,15 +1,7 @@
 package co.uk.diyaccounting.submit;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 import org.junitpioneer.jupiter.SetEnvironmentVariable;
@@ -17,17 +9,26 @@ import software.amazon.awscdk.App;
 import software.amazon.awscdk.AppProps;
 import software.amazon.awscdk.assertions.Template;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+
 @SetEnvironmentVariable.SetEnvironmentVariables({
     @SetEnvironmentVariable(key = "ENV_NAME", value = "test"),
     @SetEnvironmentVariable(key = "DEPLOYMENT_NAME", value = "test"),
     @SetEnvironmentVariable(
             key = "COGNITO_USER_POOL_ARN",
             value = "arn:aws:cognito-idp:eu-west-2:111111111111:userpool/eu-west-2_123456789"),
-    @SetEnvironmentVariable(key = "COGNITO_USER_POOL_CLIENT_ID", value = "test-cognito-client-id"),
+    @SetEnvironmentVariable(key = "COGNITO_CLIENT_ID", value = "test-cognito-client-id"),
     @SetEnvironmentVariable(
             key = "HMRC_CLIENT_SECRET_ARN",
             value = "arn:aws:secretsmanager:eu-west-2:111111111111:secret:test-hmrc-secret"),
-    @SetEnvironmentVariable(key = "BASE_IMAGE_TAG", value = "latest"),
+    @SetEnvironmentVariable(key = "BASE_IMAGE_TAG", value = "test"),
     @SetEnvironmentVariable(key = "CLOUD_TRAIL_ENABLED", value = "true"),
     @SetEnvironmentVariable(key = "SELF_DESTRUCT_DELAY_HOURS", value = "1"),
     @SetEnvironmentVariable(
