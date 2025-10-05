@@ -1,4 +1,4 @@
-name: deploy environment (ApexStack)
+name: deploy environment
 
 on:
   workflow_dispatch:
@@ -40,6 +40,9 @@ jobs:
       - names
     runs-on: ubuntu-24.04
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    permissions:
+      id-token: write
+      contents: read
     steps:
 
       - name: Configure AWS role via GitHub OIDC
@@ -95,6 +98,9 @@ jobs:
       - create-secrets
     runs-on: ubuntu-24.04
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    permissions:
+      id-token: write
+      contents: read
     steps:
 
       - name: Configure AWS role via GitHub OIDC
@@ -169,6 +175,9 @@ jobs:
       - create-secrets
     runs-on: ubuntu-24.04
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    permissions:
+      id-token: write
+      contents: read
     steps:
 
       - name: Configure AWS role via GitHub OIDC
@@ -290,7 +299,7 @@ jobs:
     runs-on: ubuntu-24.04
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
     permissions:
-      id-token: write   # for OIDC
+      id-token: write
       contents: read
     steps:
 
