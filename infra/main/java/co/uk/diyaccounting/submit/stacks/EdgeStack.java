@@ -7,7 +7,10 @@ import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.convertDotSepar
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
 import org.immutables.value.Value;
+import software.amazon.awscdk.Aspects;
 import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.Stack;
@@ -330,6 +333,8 @@ public class EdgeStack extends Stack {
                         .target(RecordTarget.fromAlias(new CloudFrontTarget(this.distribution)))
                         .deleteExisting(true)
                         .build());
+
+        Aspects.of(this).add(new SetAutoDeleteJobLogRetentionAspect(props.deploymentName(), 1));
 
         // Outputs
         cfnOutput(this, "BaseUrl", props.baseUrl());

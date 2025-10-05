@@ -10,7 +10,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+
+import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
 import org.immutables.value.Value;
+import software.amazon.awscdk.Aspects;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.Stack;
@@ -212,6 +215,8 @@ public class SelfDestructStack extends Stack {
                                 delayHours)))
                         .build()))
                 .build();
+
+        Aspects.of(this).add(new SetAutoDeleteJobLogRetentionAspect(props.deploymentName(), 1));
 
         // Output the function ARN for manual invocation
         cfnOutput(this, "SelfDestructFunctionArn", this.selfDestructFunction.getFunctionArn());

@@ -6,7 +6,10 @@ import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildEcrLogGrou
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildEcrPublishRoleName;
 
 import java.util.List;
+
+import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
 import org.immutables.value.Value;
+import software.amazon.awscdk.Aspects;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.RemovalPolicy;
@@ -154,6 +157,8 @@ public class DevStack extends Stack {
                                                 .build()))
                                 .build()))
                 .build();
+
+        Aspects.of(this).add(new SetAutoDeleteJobLogRetentionAspect(props.deploymentName(), 1));
 
         // Output key information
         cfnOutput(this, "EcrRepositoryArn", this.ecrRepository.getRepositoryArn());

@@ -8,7 +8,10 @@ import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDashedCogn
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
 import org.immutables.value.Value;
+import software.amazon.awscdk.Aspects;
 import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.Stack;
@@ -293,6 +296,8 @@ public class IdentityStack extends Stack {
                 }))
                 .build();
         // this.userPoolDomainAaaaRecord.getNode().addDependency(this.aaaaRecord);
+
+        Aspects.of(this).add(new SetAutoDeleteJobLogRetentionAspect(props.deploymentName(), 1));
 
         // Stack Outputs for Identity resources
         if (this.userPool != null) {
