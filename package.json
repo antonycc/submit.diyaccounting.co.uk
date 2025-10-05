@@ -18,7 +18,6 @@
     "linting": "eslint .",
     "linting-fix": "eslint --fix .",
     "docker:build": "docker build -t submit-base:latest -f Dockerfile .",
-    "docker:buildPlaywright": "docker build -t playwright-runner:latest -f playwright-runner.Dockerfile",
     "cdk:synth-application": "cd cdk-application && npx dotenv -e ../.env -- npx dotenv -e ../.env.${ENV_NAME:-prod} -- npx cdk synth --require-approval never --ci true --strict --validation --exclusively ${ENV_NAME:-prod}-DevStack ${ENV_NAME:-prod}-AuthStack ${ENV_NAME:-prod}-HmrcStack ${ENV_NAME:-prod}-AccountStack ${ENV_NAME:-prod}-OpsStack ${ENV_NAME:-prod}-SelfDestructStack && cd ..",
     "cdk:synth-delivery":    "cd cdk-delivery    && npx dotenv -e ../.env -- npx dotenv -e ../.env.${ENV_NAME:-prod} -- npx cdk synth --require-approval never --ci true --strict --validation --exclusively ${ENV_NAME:-prod}-EdgeStack ${ENV_NAME:-prod}-PublishStack ${ENV_NAME:-prod}-SelfDestructStack && cd ..",
     "cdk:synth-environment": "cd cdk-environment && npx dotenv -e ../.env -- npx dotenv -e ../.env.${ENV_NAME:-prod} -- npx cdk synth --require-approval never --ci true --strict --validation ${ENV_NAME:-prod}-ObservabilityStack ${ENV_NAME:-prod}-IdentityStack ${ENV_NAME:-prod}-ApexStack && cd ..",

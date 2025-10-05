@@ -114,7 +114,7 @@ public class OpsStack extends Stack {
                 lambdaThrottles.add(fn.metricThrottles());
                 // Per-function error alarm (>=1 error in 5 minutes)
                 Alarm.Builder.create(this, props.resourceNamePrefix() + "-LambdaErrors-" + i)
-                        .alarmName(props.compressedResourceNamePrefix() + "-" + fn.getFunctionName() + "-errors")
+                        .alarmName(fn.getFunctionName() + "-errors")
                         .metric(fn.metricErrors())
                         .threshold(1.0)
                         .evaluationPeriods(1)
@@ -161,7 +161,7 @@ public class OpsStack extends Stack {
         }
 
         this.operationalDashboard = Dashboard.Builder.create(this, props.resourceNamePrefix() + "-OperationalDashboard")
-                .dashboardName(props.compressedResourceNamePrefix() + "-operations")
+                .dashboardName(props.resourceNamePrefix() + "-operations")
                 .widgets(rows)
                 .build();
 

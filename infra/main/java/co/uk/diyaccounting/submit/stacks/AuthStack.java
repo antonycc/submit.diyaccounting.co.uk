@@ -167,7 +167,7 @@ public class AuthStack extends Stack {
             exchangeCognitoTokenLambdaEnv.with(
                     "TEST_ACCESS_TOKEN", props.optionalTestAccessToken().get());
         }
-        var exchangeCognitoTokenLambdaUrlOriginFunctionHandler = "exchangeToken.httpPostCognito";
+        var exchangeCognitoTokenLambdaUrlOriginFunctionHandler = "token.httpPostCognito";
         var exchangeCognitoTokenLambdaUrlOriginFunctionName = buildFunctionName(
                 props.resourceNamePrefix(), exchangeCognitoTokenLambdaUrlOriginFunctionHandler);
         var exchangeCognitoTokenLambdaUrlOrigin = new LambdaUrlOrigin(

@@ -1,5 +1,16 @@
 package co.uk.diyaccounting.submit;
 
+import co.uk.diyaccounting.submit.stacks.EdgeStack;
+import co.uk.diyaccounting.submit.stacks.PublishStack;
+import co.uk.diyaccounting.submit.stacks.SelfDestructStack;
+import software.amazon.awscdk.App;
+import software.amazon.awscdk.Environment;
+import software.constructs.Construct;
+
+import java.lang.reflect.Field;
+import java.nio.file.Paths;
+import java.util.Map;
+
 import static co.uk.diyaccounting.submit.utils.Kind.envOr;
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.Kind.putIfNotNull;
@@ -8,16 +19,6 @@ import static co.uk.diyaccounting.submit.utils.KindCdk.getContextValueString;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDashedDomainName;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateCompressedResourceNamePrefix;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateResourceNamePrefix;
-
-import co.uk.diyaccounting.submit.stacks.EdgeStack;
-import co.uk.diyaccounting.submit.stacks.PublishStack;
-import co.uk.diyaccounting.submit.stacks.SelfDestructStack;
-import java.lang.reflect.Field;
-import java.nio.file.Paths;
-import java.util.Map;
-import software.amazon.awscdk.App;
-import software.amazon.awscdk.Environment;
-import software.constructs.Construct;
 
 public class SubmitDelivery {
 
@@ -84,10 +85,10 @@ public class SubmitDelivery {
         app.synth();
         infof("CDK synth complete");
 
-        infof("Created stack:", submitDelivery.edgeStack.getStackName());
-        infof("Created stack:", submitDelivery.publishStack.getStackName());
+        infof("Created stack: %s", submitDelivery.edgeStack.getStackName());
+        infof("Created stack: %s", submitDelivery.publishStack.getStackName());
         if (submitDelivery.selfDestructStack != null) {
-            infof("Created stack:", submitDelivery.selfDestructStack.getStackName());
+            infof("Created stack: %s", submitDelivery.selfDestructStack.getStackName());
         } else {
             infof("No SelfDestruct stack created for prod deployment");
         }

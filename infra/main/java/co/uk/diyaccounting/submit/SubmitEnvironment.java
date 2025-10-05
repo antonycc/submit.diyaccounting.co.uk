@@ -1,5 +1,16 @@
 package co.uk.diyaccounting.submit;
 
+import co.uk.diyaccounting.submit.stacks.ApexStack;
+import co.uk.diyaccounting.submit.stacks.DataStack;
+import co.uk.diyaccounting.submit.stacks.IdentityStack;
+import co.uk.diyaccounting.submit.stacks.ObservabilityStack;
+import software.amazon.awscdk.App;
+import software.amazon.awscdk.Environment;
+import software.constructs.Construct;
+
+import java.lang.reflect.Field;
+import java.nio.file.Paths;
+
 import static co.uk.diyaccounting.submit.utils.Kind.envOr;
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.Kind.warnf;
@@ -7,16 +18,6 @@ import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildCognitoDom
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDashedDomainName;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateCompressedResourceNamePrefix;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateResourceNamePrefix;
-
-import co.uk.diyaccounting.submit.stacks.ApexStack;
-import co.uk.diyaccounting.submit.stacks.DataStack;
-import co.uk.diyaccounting.submit.stacks.IdentityStack;
-import co.uk.diyaccounting.submit.stacks.ObservabilityStack;
-import java.lang.reflect.Field;
-import java.nio.file.Paths;
-import software.amazon.awscdk.App;
-import software.amazon.awscdk.Environment;
-import software.constructs.Construct;
 
 public class SubmitEnvironment {
 
@@ -74,9 +75,9 @@ public class SubmitEnvironment {
         var submitEnvironment = new SubmitEnvironment(app, appProps);
         app.synth();
         infof("CDK synth complete. Created stack: %s", submitEnvironment.apexStack.getStackName());
-        infof("Created stack:", submitEnvironment.observabilityStack.getStackName());
-        infof("Created stack:", submitEnvironment.identityStack.getStackName());
-        infof("Created stack:", submitEnvironment.apexStack.getStackName());
+        infof("Created stack: %s", submitEnvironment.observabilityStack.getStackName());
+        infof("Created stack: %s", submitEnvironment.identityStack.getStackName());
+        infof("Created stack: %s", submitEnvironment.apexStack.getStackName());
     }
 
     public SubmitEnvironment(App app, SubmitEnvironmentProps appProps) {

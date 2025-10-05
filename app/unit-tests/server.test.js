@@ -13,7 +13,7 @@ dotenvConfigIfNotBlank({ path: ".env.test" });
 vi.mock("@app/functions/authUrl.js", () => ({
   httpGetHmrc: vi.fn(),
 }));
-vi.mock("@app/functions/exchangeToken.js", () => ({
+vi.mock("@app/functions/token.js", () => ({
   httpPostMock: vi.fn(),
 }));
 vi.mock("@app/functions/submitVat.js", () => ({
@@ -25,7 +25,7 @@ vi.mock("@app/functions/logReceipt.js", () => ({
 
 // Import the mocked handlers
 import { httpGetHmrc as authUrlHandler } from "@app/functions/authUrl.js";
-import { httpPostMock as exchangeTokenHandler } from "@app/functions/exchangeToken.js";
+import { httpPostMock as exchangeTokenHandler } from "@app/functions/token.js";
 import { httpPost as submitVatHandler } from "@app/functions/submitVat.js";
 import { httpPost as logReceiptHandler } from "@app/functions/logReceipt.js";
 

@@ -143,7 +143,7 @@ public class ObservabilityStack extends Stack {
         var originAccessLogBucket = originBucketName + "-logs";
         infof(
                 "Setting expiration period to %d days for %s",
-                props.accessLogGroupRetentionPeriodDays(), props.compressedResourceNamePrefix());
+                props.accessLogGroupRetentionPeriodDays(), props.resourceNamePrefix());
         this.originAccessLogBucket = Bucket.Builder.create(this, props.resourceNamePrefix() + "-LogBucket")
                 .bucketName(originAccessLogBucket)
                 .objectOwnership(ObjectOwnership.OBJECT_WRITER)

@@ -33,7 +33,7 @@ import static co.uk.diyaccounting.submit.utils.Kind.infof;
     @SetEnvironmentVariable(key = "SELF_DESTRUCT_DELAY_HOURS", value = "1"),
     @SetEnvironmentVariable(
             key = "SELF_DESTRUCT_HANDLER_SOURCE",
-            value = "./infra/tt-witheight/resources/fake-self-destruct-lambda.jar"),
+            value = "./infra/test/resources/fake-self-destruct-lambda.jar"),
     @SetEnvironmentVariable(key = "CDK_DEFAULT_ACCOUNT", value = "111111111111"),
     @SetEnvironmentVariable(key = "CDK_DEFAULT_REGION", value = "eu-west-2"),
 })

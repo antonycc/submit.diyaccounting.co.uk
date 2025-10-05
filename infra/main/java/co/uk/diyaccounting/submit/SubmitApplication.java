@@ -1,5 +1,19 @@
 package co.uk.diyaccounting.submit;
 
+import co.uk.diyaccounting.submit.stacks.AccountStack;
+import co.uk.diyaccounting.submit.stacks.AuthStack;
+import co.uk.diyaccounting.submit.stacks.DevStack;
+import co.uk.diyaccounting.submit.stacks.HmrcStack;
+import co.uk.diyaccounting.submit.stacks.OpsStack;
+import co.uk.diyaccounting.submit.stacks.SelfDestructStack;
+import co.uk.diyaccounting.submit.utils.KindCdk;
+import software.amazon.awscdk.App;
+import software.amazon.awscdk.Environment;
+import software.constructs.Construct;
+
+import java.lang.reflect.Field;
+import java.nio.file.Paths;
+
 import static co.uk.diyaccounting.submit.utils.Kind.envOr;
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.Kind.warnf;
@@ -9,19 +23,6 @@ import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDomainName
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildEcrRepositoryName;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateCompressedResourceNamePrefix;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateResourceNamePrefix;
-
-import co.uk.diyaccounting.submit.stacks.AccountStack;
-import co.uk.diyaccounting.submit.stacks.AuthStack;
-import co.uk.diyaccounting.submit.stacks.DevStack;
-import co.uk.diyaccounting.submit.stacks.HmrcStack;
-import co.uk.diyaccounting.submit.stacks.OpsStack;
-import co.uk.diyaccounting.submit.stacks.SelfDestructStack;
-import co.uk.diyaccounting.submit.utils.KindCdk;
-import java.lang.reflect.Field;
-import java.nio.file.Paths;
-import software.amazon.awscdk.App;
-import software.amazon.awscdk.Environment;
-import software.constructs.Construct;
 
 public class SubmitApplication {
 
@@ -82,13 +83,13 @@ public class SubmitApplication {
         app.synth();
         infof("CDK synth complete");
 
-        infof("Created stack:", submitApplication.devStack.getStackName());
-        infof("Created stack:", submitApplication.authStack.getStackName());
-        infof("Created stack:", submitApplication.hmrcStack.getStackName());
-        infof("Created stack:", submitApplication.accountStack.getStackName());
-        infof("Created stack:", submitApplication.opsStack.getStackName());
+        infof("Created stack: %s", submitApplication.devStack.getStackName());
+        infof("Created stack: %s", submitApplication.authStack.getStackName());
+        infof("Created stack: %s", submitApplication.hmrcStack.getStackName());
+        infof("Created stack: %s", submitApplication.accountStack.getStackName());
+        infof("Created stack: %s", submitApplication.opsStack.getStackName());
         if (submitApplication.selfDestructStack != null) {
-            infof("Created stack:", submitApplication.selfDestructStack.getStackName());
+            infof("Created stack: %s", submitApplication.selfDestructStack.getStackName());
         } else {
             infof("No SelfDestruct stack created for prod deployment");
         }

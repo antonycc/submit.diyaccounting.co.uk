@@ -6,7 +6,7 @@ import express from "express";
 import { fileURLToPath } from "url";
 import { readFileSync } from "fs";
 import { httpGetCognito, httpGetHmrc, httpGetMock } from "../functions/authUrl.js";
-import { httpPostMock, httpPostHmrc, httpPostCognito } from "../functions/exchangeToken.js";
+import { httpPostMock, httpPostHmrc, httpPostCognito } from "../functions/token.js";
 import { httpPost as submitVatHttpPost } from "../functions/submitVat.js";
 import { httpPost as logReceiptHttpPost } from "../functions/logReceipt.js";
 import { httpPost as requestBundleHttpPost, httpDelete as removeBundleHttpDelete } from "../functions/bundle.js";

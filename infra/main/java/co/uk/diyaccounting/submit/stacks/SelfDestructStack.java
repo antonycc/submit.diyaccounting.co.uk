@@ -197,7 +197,7 @@ public class SelfDestructStack extends Stack {
 
         // Create EventBridge rule to trigger self-destruct after specified delay
         int delayHours = Integer.parseInt(props.selfDestructDelayHours());
-        String ruleName = generateIamCompatibleName(props.compressedResourceNamePrefix(), "sd-schedule");
+        String ruleName = generateIamCompatibleName(props.resourceNamePrefix(), "sd-schedule");
         this.selfDestructSchedule = Rule.Builder.create(this, props.resourceNamePrefix() + "-SelfDestructSchedule")
                 .ruleName(ruleName)
                 .description("Automatically triggers self-destruct after " + delayHours + " hours")

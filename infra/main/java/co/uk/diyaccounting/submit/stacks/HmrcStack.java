@@ -166,7 +166,7 @@ public class HmrcStack extends Stack {
             exchangeHmrcEnvBase.with(
                     "TEST_ACCESS_TOKEN", props.optionalTestAccessToken().get());
         }
-        var exchangeHmrcTokenLambdaUrlOriginFunctionHandler = "exchangeToken.httpPostHmrc";
+        var exchangeHmrcTokenLambdaUrlOriginFunctionHandler = "token.httpPostHmrc";
         var exchangeHmrcTokenLambdaUrlOriginFunctionName = buildFunctionName(
                 props.resourceNamePrefix(), exchangeHmrcTokenLambdaUrlOriginFunctionHandler);
         var exchangeHmrcTokenLambdaUrlOrigin = new LambdaUrlOrigin(

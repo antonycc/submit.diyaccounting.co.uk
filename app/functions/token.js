@@ -1,4 +1,4 @@
-// app/functions/exchangeToken.js
+// app/functions/token.js
 
 import fetch from "node-fetch";
 import { SecretsManagerClient, GetSecretValueCommand } from "@aws-sdk/client-secrets-manager";
