@@ -33,6 +33,8 @@ public class SubmitEnvironment {
         public String certificateArn;
         public String domainName;
         public String baseUrl;
+        public String subDomainName;
+        public String cognitoDomainPrefix;
         public String accessLogGroupRetentionPeriodDays;
         public String cloudTrailEnabled;
         public String cloudTrailLogGroupPrefix;
@@ -42,7 +44,6 @@ public class SubmitEnvironment {
         public String googleClientSecretArn;
         public String antonyccClientId;
         public String antonyccBaseUri;
-        public String cognitoDomainPrefix;
         public String s3RetainReceiptsBucket;
 
         public static class Builder {
@@ -121,7 +122,7 @@ public class SubmitEnvironment {
                 "(from s3RetainReceiptsBucket in cdk.json)");
 
         // Generate predictable resource name prefix based on domain and environment
-        var cognitoDomainName = buildCognitoDomainName(deploymentName, appProps.cognitoDomainPrefix, domainName);
+        var cognitoDomainName = buildCognitoDomainName(deploymentName, appProps.cognitoDomainPrefix, appProps.subDomainName, appProps.hostedZoneName);
 
         // Generate predictable resource names
         String resourceNamePrefix = "env-%s".formatted(generateResourceNamePrefix(domainName));

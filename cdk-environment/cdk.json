@@ -7,6 +7,8 @@
     "domainName": "",
     "baseUrl": "",
     "googleClientSecretArn": "",
+    "subDomainName": "submit",
+    "cognitoDomainPrefix": "auth",
     "hostedZoneName": "diyaccounting.co.uk",
     "hostedZoneId": "Z0315522208PWZSSBI9AL",
     "cloudTrailEnabled": "true",
@@ -18,7 +20,6 @@
     "authCertificateArn": "arn:aws:acm:us-east-1:887764105431:certificate/59a025f9-3620-43cd-9b2c-522f385ee223",
     "googleClientId": "670010122633-j177nir959n1tdnd891uqsgj6fkrj6b1.apps.googleusercontent.com",
     "antonyccClientId": "submit-diyaccounting-co-uk",
-    "antonyccBaseUri": "https://oidc.antonycc.com/",
-    "cognitoDomainPrefix": "auth"
+    "antonyccBaseUri": "https://oidc.antonycc.com/"
   }
 }
