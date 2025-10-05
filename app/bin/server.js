@@ -5,7 +5,6 @@ import path from "path";
 import express from "express";
 import { fileURLToPath } from "url";
 import { readFileSync } from "fs";
-import dotenv from "dotenv";
 import { httpGetCognito, httpGetHmrc, httpGetMock } from "../functions/authUrl.js";
 import { httpPostMock, httpPostHmrc, httpPostCognito } from "../functions/exchangeToken.js";
 import { httpPost as submitVatHttpPost } from "../functions/submitVat.js";
@@ -23,8 +22,6 @@ import logger from "../lib/logger.js";
 import { requireActivity } from "../lib/entitlementsService.js";
 import { dotenvConfigIfNotBlank, validateEnv } from "../lib/env.js";
 
-// dotenv.config({ path: ".env" });
-// dotenv.config({ path: ".env.test" });
 dotenvConfigIfNotBlank({ path: ".env" });
 dotenvConfigIfNotBlank({ path: ".env.test" });
 

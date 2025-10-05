@@ -3,44 +3,43 @@
 import { test, expect } from "@playwright/test";
 import { spawn } from "child_process";
 import { setTimeout } from "timers/promises";
-import dotenv from "dotenv";
+import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import { ensureMinioBucketExists, startMinio } from "@app/bin/minio.js";
 
 import { checkIfServerIsRunning } from "@app/lib/serverHelper.js";
 import { gotoWithRetries } from "@app/lib/gotoWithRetries.js";
 
-dotenv.config({ path: ".env.test" });
-dotenv.config({ path: ".env" }); // Not checked in, HMRC API credentials
-
-const envFilepath = process.env.DIY_SUBMIT_ENV_FILEPATH;
-if (envFilepath) {
-  console.log(`Loaded configuration from env file: ${envFilepath}`);
-} else {
-  console.log(`No configuration loaded from an env file.`);
-}
+dotenvConfigIfNotBlank({ path: ".env.test" });
+dotenvConfigIfNotBlank({ path: ".env" }); // Not checked in, HMRC API credentials
 
 const originalEnv = { ...process.env };
 
 // Test specific dedicated server port
 const serverPort = 3500;
+console.log(`serverPort: ${serverPort}`);
 
 // Read HMRC credentials from environment variables
 const hmrcTestUsername = process.env.DIY_SUBMIT_HMRC_TEST_USERNAME;
 const hmrcTestPassword = process.env.DIY_SUBMIT_HMRC_TEST_PASSWORD;
 const hmrcTestVatNumber = process.env.DIY_SUBMIT_HMRC_TEST_VAT_NUMBER;
+console.log(`hmrcTestUsername: ${hmrcTestUsername}`);
+console.log(`hmrcTestPassword: ${hmrcTestPassword.trim().length} chars`);
+console.log(`hmrcTestVatNumber: ${hmrcTestVatNumber}`);
 
 // S3 credentials for the test MinIO instance
 const optionalTestS3AccessKey = process.env.TEST_S3_ACCESS_KEY;
 const optionalTestS3SecretKey = process.env.TEST_S3_SECRET_KEY;
+console.log(`optionalTestS3AccessKey: ${optionalTestS3AccessKey}`);
+console.log(`optionalTestS3SecretKey: ${optionalTestS3SecretKey.trim().length} chars`);
 
 // Environment variables for the test server and proxy
-const runTestServer = process.env.TEST_SERVER_HTTP === "run";
-const runProxy = process.env.TEST_PROXY === "run";
-const runMockOAuth2 = process.env.TEST_MOCK_OAUTH2 === "run";
-const runMinioS3 = process.env.TEST_MINIO_S3 === "run";
-const testAuthProvider = process.env.TEST_AUTH_PROVIDER || "mock";
-const testAuthUsername = process.env.TEST_AUTH_USERNAME || "user";
-const testAuthPassword = process.env.TEST_AUTH_PASSWORD || "";
+const runTestServer = process.env.TEST_SERVER_HTTP;
+const runProxy = process.env.TEST_PROXY;
+const runMockOAuth2 = process.env.TEST_MOCK_OAUTH2;
+const runMinioS3 = process.env.TEST_MINIO_S3;
+const testAuthProvider = process.env.TEST_AUTH_PROVIDER;
+const testAuthUsername = process.env.TEST_AUTH_USERNAME;
+const testAuthPassword = process.env.TEST_AUTH_PASSWORD;
 console.log(`runTestServer: ${runTestServer} (TEST_SERVER_HTTP: ${process.env.TEST_SERVER_HTTP})`);
 console.log(`runProxy: ${runProxy} (TEST_PROXY: ${process.env.TEST_PROXY})`);
 console.log(`runMockOAuth2: ${runMockOAuth2} (TEST_MOCK_OAUTH2: ${process.env.TEST_MOCK_OAUTH2})`);
@@ -49,11 +48,10 @@ console.log(`testAuthProvider: ${testAuthProvider} (TEST_AUTH_PROVIDER: ${proces
 console.log(`testAuthUsername: ${testAuthUsername} (TEST_AUTH_USERNAME: ${process.env.TEST_AUTH_USERNAME})`);
 console.log(`testAuthPassword: ${testAuthPassword} (TEST_AUTH_PASSWORD: ${process.env.TEST_AUTH_PASSWORD})`);
 
-const bucketNamePostfix = process.env.DIY_SUBMIT_RECEIPTS_BUCKET_FULL_NAME;
-const homeUrl = process.env.DIY_SUBMIT_BASE_URL;
-const { hostname } = new URL(homeUrl);
-const dashedDomain = hostname.split(".").join("-");
-const receiptsBucketFullName = `${dashedDomain}-${bucketNamePostfix}`;
+const receiptsBucketFullName = process.env.DIY_SUBMIT_RECEIPTS_BUCKET_FULL_NAME;
+const baseUrl = process.env.DIY_SUBMIT_BASE_URL;
+console.log(`receiptsBucketFullName: ${receiptsBucketFullName}`);
+console.log(`baseUrl: ${baseUrl}`);
 
 let serverProcess;
 let ngrokProcess;
@@ -77,12 +75,6 @@ test.beforeAll(async () => {
 
   if (runMinioS3) {
     console.log("Starting minio process...");
-    // serverProcess = spawn("npm", ["run", "storage"], {
-    //  env: {
-    //    ...process.env,
-    //  },
-    //  stdio: ["pipe", "pipe", "pipe"],
-    // });
     endpoint = await startMinio(receiptsBucketFullName, optionalTestS3AccessKey, optionalTestS3SecretKey);
     console.log("Waiting for server to initialize...");
     await setTimeout(2000);
@@ -93,6 +85,7 @@ test.beforeAll(async () => {
 
   if (runTestServer) {
     console.log("Starting server process...");
+    // eslint-disable-next-line sonarjs/no-os-command-from-path
     serverProcess = spawn("npm", ["run", "start"], {
       env: {
         ...process.env,
@@ -108,19 +101,21 @@ test.beforeAll(async () => {
 
   if (runProxy) {
     console.log("Starting ngrok process...");
+    // eslint-disable-next-line sonarjs/no-os-command-from-path
     ngrokProcess = spawn("npm", ["run", "proxy", serverPort.toString()], {
       env: {
         ...process.env,
       },
       stdio: ["pipe", "pipe", "pipe"],
     });
-    await checkIfServerIsRunning(homeUrl, 1000);
+    await checkIfServerIsRunning(baseUrl, 1000);
   } else {
     console.log("Skipping ngrok process as runProxy is not set to 'run'");
   }
 
   if (runMockOAuth2) {
     console.log("Starting mock-oauth2-server process...");
+    // eslint-disable-next-line sonarjs/no-os-command-from-path
     serverProcess = spawn("npm", ["run", "auth"], {
       env: {
         ...process.env,
@@ -155,7 +150,7 @@ test.outputDir = "target/behaviour-with-auth-test-results";
 
 test("Submit VAT return end-to-end flow with browser emulation", async ({ page }) => {
   const timestamp = getTimestamp();
-  const testUrl = runTestServer ? `http://127.0.0.1:${serverPort}` : homeUrl;
+  const testUrl = runTestServer ? `http://127.0.0.1:${serverPort}` : baseUrl;
 
   // Add console logging to capture browser messages
   page.on("console", (msg) => {
@@ -439,6 +434,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
 
   await test.step("The user completes the VAT form with valid values and sees the Submit button", async () => {
     // Fill out the VAT form using the correct field IDs from submitVat.html
+    // eslint-disable-next-line sonarjs/pseudo-random
     const randomFourCharacters = Math.random().toString(36).substring(2, 6);
     await loggedFill("#vatNumber", hmrcTestVatNumber, "Entering VAT number");
     await page.waitForTimeout(100);
@@ -575,7 +571,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
     }
 
     if (runProxy) {
-      await checkIfServerIsRunning(homeUrl, 1000);
+      await checkIfServerIsRunning(baseUrl, 1000);
     } else {
       console.log("Skipping ngrok process as runProxy is not set to 'run'");
     }

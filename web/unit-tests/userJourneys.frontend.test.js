@@ -4,9 +4,9 @@ import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
 import { Window } from "happy-dom";
 import fs from "fs";
 import path from "path";
-import dotenv from "dotenv";
+import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 
-dotenv.config({ path: ".env.test" });
+dotenvConfigIfNotBlank({ path: ".env.test" });
 
 describe("User Journeys Frontend Tests", () => {
   let window;

@@ -4,18 +4,14 @@
 import path from "path";
 import { fileURLToPath } from "url";
 import { readFileSync } from "fs";
-import dotenv from "dotenv";
-
-import { httpGetHmrc as authUrlHttpGet } from "../functions/authUrl.js";
-import { httpPostMock as exchangeTokenHttpPost } from "../functions/exchangeToken.js";
-import { httpPost as submitVatHttpPost } from "../functions/submitVat.js";
-import { httpPost as logReceiptHttpPost } from "../functions/logReceipt.js";
-
-dotenv.config({ path: ".env" });
-
-import logger from "../lib/logger.js";
+import { dotenvConfigIfNotBlank } from "../lib/env.js";
 import { CreateBucketCommand, HeadBucketCommand, S3Client } from "@aws-sdk/client-s3";
 import { GenericContainer } from "testcontainers";
+
+dotenvConfigIfNotBlank({ path: ".env" });
+dotenvConfigIfNotBlank({ path: ".env.test" });
+
+import logger from "../lib/logger.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -83,11 +79,7 @@ export async function ensureMinioBucketExists(
 
 // Only start the server if this file is being run directly
 if (import.meta.url === `file://${process.argv[1]}`) {
-  const bucketNamePostfix = process.env.DIY_SUBMIT_RECEIPTS_BUCKET_FULL_NAME;
-  const homeUrl = process.env.DIY_SUBMIT_BASE_URL;
-  const { hostname } = new URL(homeUrl);
-  const dashedDomain = hostname.split(".").join("-");
-  const receiptsBucketFullName = `${dashedDomain}-${bucketNamePostfix}`;
+  const receiptsBucketFullName = process.env.DIY_SUBMIT_RECEIPTS_BUCKET_FULL_NAME;
   const optionalTestS3AccessKey = process.env.TEST_S3_ACCESS_KEY;
   const optionalTestS3SecretKey = process.env.TEST_S3_SECRET_KEY;
 

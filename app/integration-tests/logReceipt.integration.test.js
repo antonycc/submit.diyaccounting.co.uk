@@ -4,11 +4,11 @@ import { describe, beforeAll, afterAll, beforeEach, afterEach, it, expect, vi } 
 import { setupServer } from "msw/node";
 import { mockClient } from "aws-sdk-client-mock";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
-import dotenv from "dotenv";
+import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 
 import { httpPost as logReceiptHandler } from "@app/functions/logReceipt.js";
 
-dotenv.config({ path: ".env.test" });
+dotenvConfigIfNotBlank({ path: ".env.test" });
 
 const s3Mock = mockClient(S3Client);
 

@@ -1,11 +1,11 @@
 // app/unit-tests/module-index.test.js
 
 import { describe, test, expect, beforeEach } from "vitest";
-import dotenv from "dotenv";
+import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 
 import anything from "../index.js";
 
-dotenv.config({ path: ".env.test" });
+dotenvConfigIfNotBlank({ path: ".env.test" });
 
 describe("Index Module Exports", () => {
   const originalEnv = process.env;

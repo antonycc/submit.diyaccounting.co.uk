@@ -1,8 +1,8 @@
 // app/unit-tests/govClientTestHeader.js
 
-import dotenv from "dotenv";
+import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 
-dotenv.config({ path: ".env.test" });
+dotenvConfigIfNotBlank({ path: ".env.test" });
 
 // TODO Read from .env file
 

@@ -1,8 +1,8 @@
 // app/unit-tests/myReceipts.test.js
 import { describe, test, expect, beforeEach, vi } from "vitest";
-import dotenv from "dotenv";
+import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 
-dotenv.config({ path: ".env.test" });
+dotenvConfigIfNotBlank({ path: ".env.test" });
 
 // Mock AWS S3 client
 import { mockClient } from "aws-sdk-client-mock";

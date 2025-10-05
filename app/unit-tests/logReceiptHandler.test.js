@@ -1,9 +1,9 @@
 // app/unit-tests/logReceiptHandler.test.js
 
 import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
-import dotenv from "dotenv";
+import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 
-dotenv.config({ path: ".env.test" });
+dotenvConfigIfNotBlank({ path: ".env.test" });
 
 // Mock AWS S3 client - must be done before importing main.js
 const mockSend = vi.fn();

@@ -4,9 +4,9 @@ import { test, expect } from "@playwright/test";
 import fs from "fs";
 import path from "path";
 import { setTimeout } from "timers/promises";
-import dotenv from "dotenv";
+import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 
-dotenv.config({ path: ".env.test" });
+dotenvConfigIfNotBlank({ path: ".env.test" });
 
 // Generate timestamp for file naming
 function getTimestamp() {

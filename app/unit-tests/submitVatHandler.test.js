@@ -1,11 +1,11 @@
 // app/unit-tests/submitVatHandler.test.js
 
 import { describe, test, expect, vi, beforeEach } from "vitest";
-import dotenv from "dotenv";
+import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 
 import { httpPost as submitVatHandler } from "@app/functions/submitVat.js";
 
-dotenv.config({ path: ".env.test" });
+dotenvConfigIfNotBlank({ path: ".env.test" });
 
 // Mock node-fetch
 vi.mock("node-fetch", () => ({

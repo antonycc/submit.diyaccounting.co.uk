@@ -7,18 +7,33 @@ import { validateEnv } from "../lib/env.js";
 
 export async function logReceipt(key, receipt) {
   const receiptsBucketFullName = process.env.DIY_SUBMIT_RECEIPTS_BUCKET_FULL_NAME;
+  const testMinioS3 = process.env.TEST_MINIO_S3;
+  const testS3Endpoint = process.env.TEST_S3_ENDPOINT;
+
+  logger.info({
+    message:
+      `Environment variables: ` +
+      `DIY_SUBMIT_RECEIPTS_BUCKET_FULL_NAME=${receiptsBucketFullName}, ` +
+      `TEST_MINIO_S3=${testMinioS3}, ` +
+      `TEST_S3_ENDPOINT=${testS3Endpoint}`,
+  });
 
   // Configure S3 client for containerized MinIO if environment variables are set
   let s3Config = {};
-  if (process.env.NODE_ENV !== "stubbed" && process.env.TEST_S3_ENDPOINT && process.env.TEST_S3_ENDPOINT !== "off") {
+  // if (process.env.NODE_ENV !== "stubbed" && process.env.TEST_S3_ENDPOINT && process.env.TEST_S3_ENDPOINT !== "off") {
+  if (testMinioS3 === "run" || testMinioS3 === "useExisting") {
+    logger.info({ message: `Using TEST_S3_ENDPOINT ${testS3Endpoint}` });
     s3Config = buildTestS3Config();
   }
 
   if (process.env.NODE_ENV === "stubbed") {
     logger.warn({ message: ".NODE_ENV environment variable is stubbedL No receipt saved." });
-  } else if (process.env.TEST_S3_ENDPOINT === "off") {
+  } else if (testMinioS3 === "off") {
     logger.warn({ message: "TEST_S3_ENDPOINT is set to 'off': No receipt saved." });
   } else {
+    logger.info({
+      message: `Logging receipt to S3 bucket ${receiptsBucketFullName} with key ${key} with config ${JSON.stringify(s3Config)}`,
+    });
     const s3Client = new S3Client(s3Config);
     try {
       await s3Client.send(

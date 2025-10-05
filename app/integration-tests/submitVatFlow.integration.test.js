@@ -10,9 +10,9 @@ import { httpGetHmrc as authUrlHandler } from "@app/functions/authUrl.js";
 import { httpPostMock as exchangeTokenHandler } from "@app/functions/exchangeToken.js";
 import { httpPost as submitVatHandler } from "@app/functions/submitVat.js";
 import { httpPost as logReceiptHandler } from "@app/functions/logReceipt.js";
-import dotenv from "dotenv";
+import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 
-dotenv.config({ path: ".env.test" });
+dotenvConfigIfNotBlank({ path: ".env.test" });
 
 const HMRC = "https://test.test.test.uk";
 let store;

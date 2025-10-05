@@ -9,9 +9,9 @@ import request from "supertest";
 import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
-import dotenv from "dotenv";
+import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 
-dotenv.config({ path: ".env.test" });
+dotenvConfigIfNotBlank({ path: ".env.test" });
 
 // Import the actual handlers (not mocked for integration test)
 import { httpGetHmrc as authUrlHandler } from "@app/functions/authUrl.js";

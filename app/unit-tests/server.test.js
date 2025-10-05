@@ -5,9 +5,9 @@ import request from "supertest";
 import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
-import dotenv from "dotenv";
+import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 
-dotenv.config({ path: ".env.test" });
+dotenvConfigIfNotBlank({ path: ".env.test" });
 
 // Mock the handlers from their respective function files
 vi.mock("@app/functions/authUrl.js", () => ({

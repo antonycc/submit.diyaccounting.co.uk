@@ -2,9 +2,9 @@
 
 import { describe, test, expect, beforeEach, afterEach } from "vitest";
 import { httpGetHmrc as authUrlHandler } from "@app/functions/authUrl.js";
-import dotenv from "dotenv";
+import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 
-dotenv.config({ path: ".env.test" });
+dotenvConfigIfNotBlank({ path: ".env.test" });
 
 describe("httpGetHmrc", () => {
   const originalEnv = process.env;

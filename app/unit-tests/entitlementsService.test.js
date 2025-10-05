@@ -2,9 +2,9 @@
 import { describe, it, beforeEach, expect } from "vitest";
 import { getActiveBundles, isActivityAllowed } from "@app/lib/entitlementsService.js";
 import { __getInMemoryBundlesStore } from "@app/functions/bundle.js";
-import dotenv from "dotenv";
+import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 
-dotenv.config({ path: ".env.test" });
+dotenvConfigIfNotBlank({ path: ".env.test" });
 
 describe("entitlementsService", () => {
   const store = __getInMemoryBundlesStore();

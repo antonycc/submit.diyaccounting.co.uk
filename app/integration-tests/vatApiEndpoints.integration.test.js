@@ -1,13 +1,13 @@
 // app/integration-tests/vatApiEndpoints.integration.test.js
 
 import { describe, beforeAll, afterAll, beforeEach, it, expect, vi } from "vitest";
-import dotenv from "dotenv";
+import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 
 import { httpGet as getVatObligationsHandler } from "@app/functions/getVatObligations.js";
 import { httpGet as getVatReturnHandler } from "@app/functions/getVatReturn.js";
 import { httpGet as getVatLiabilitiesHandler } from "@app/functions/getVatLiabilities.js";
 
-dotenv.config({ path: ".env.test" });
+dotenvConfigIfNotBlank({ path: ".env.test" });
 
 describe("Integration – VAT API Endpoints (Direct Handler Testing)", () => {
   const originalEnv = process.env;

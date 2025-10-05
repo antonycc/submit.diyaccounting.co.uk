@@ -2,15 +2,15 @@
 
 import dotenv from "dotenv";
 import fs from "fs";
-import logger from "./logger.js";
 
 export function dotenvConfigIfNotBlank({ path }) {
   if (!fs.existsSync(path)) {
     if (path !== ".env") {
-      logger.warn(`dotenvConfigIfNotBlank: Environment config file not found: ${path}`);
+      `dotenvConfigIfNotBlank: Environment config file not found: ${path}`;
     }
     return;
   }
+  console.log(`dotenvConfigIfNotBlank: Loading environment config from ${path}`);
   const parsed = dotenv.parse(fs.readFileSync(path));
   for (const [key, value] of Object.entries(parsed)) {
     const current = process.env[key];

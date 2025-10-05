@@ -1,10 +1,10 @@
 // app/unit-tests/bundle.test.js
 import { describe, test, beforeEach, expect } from "vitest";
-import dotenv from "dotenv";
+import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 
 import { httpPost as requestBundle } from "@app/functions/bundle.js";
 
-dotenv.config({ path: ".env.test" });
+dotenvConfigIfNotBlank({ path: ".env.test" });
 
 function base64UrlEncode(obj) {
   const json = JSON.stringify(obj);

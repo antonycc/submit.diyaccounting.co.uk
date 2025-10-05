@@ -1,9 +1,9 @@
 // app/lib/logger.js
 
 import winston from "winston";
-import dotenv from "dotenv";
+import { dotenvConfigIfNotBlank } from "./env.js";
 
-dotenv.config({ path: ".env" });
+dotenvConfigIfNotBlank({ path: ".env" });
 
 const { createLogger, format, transports } = winston;
 const logTransports = [];

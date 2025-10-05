@@ -1,9 +1,9 @@
 // app/unit-tests/gotoWithRetries.test.js
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import * as nav from "../lib/gotoWithRetries.js";
-import dotenv from "dotenv";
+import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 
-dotenv.config({ path: ".env.test" });
+dotenvConfigIfNotBlank({ path: ".env.test" });
 
 function makeMockPage() {
   return {

@@ -3,11 +3,11 @@
 import { describe, beforeEach, afterEach, test, expect, vi } from "vitest";
 import { mockClient } from "aws-sdk-client-mock";
 import { SecretsManagerClient, GetSecretValueCommand } from "@aws-sdk/client-secrets-manager";
-import dotenv from "dotenv";
+import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 
 import { exchangeToken, resetCachedSecret } from "@app/functions/exchangeToken.js";
 
-dotenv.config({ path: ".env.test" });
+dotenvConfigIfNotBlank({ path: ".env.test" });
 
 // Mock node-fetch
 vi.mock("node-fetch", () => ({

@@ -2,9 +2,9 @@
 // app/bin/main.js
 
 import { fileURLToPath } from "url";
-import dotenv from "dotenv";
+import { dotenvConfigIfNotBlank } from "../lib/env.js";
 
-dotenv.config({ path: ".env" });
+dotenvConfigIfNotBlank({ path: ".env" });
 
 export function main(args) {
   console.log(`Run with: ${JSON.stringify(args)}`);

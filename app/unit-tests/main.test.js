@@ -1,12 +1,12 @@
 // app/unit-tests/main.test.js
 
 import { describe, test, expect, beforeEach } from "vitest";
-import dotenv from "dotenv";
+import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 
 import * as mainModule from "@app/bin/main.js";
 import { main } from "@app/bin/main.js";
 
-dotenv.config({ path: ".env.test" });
+dotenvConfigIfNotBlank({ path: ".env.test" });
 
 describe("Main Module Import", () => {
   const originalEnv = process.env;
