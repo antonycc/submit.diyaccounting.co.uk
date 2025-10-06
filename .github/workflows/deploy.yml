@@ -908,11 +908,11 @@ jobs:
       - name: Resolve stack outputs
         id: hmrc-outputs
         run: |
-          AUTH_URL_HMRC_LAMBDA_URL=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-ApplicationStack"].AuthUrlHmrcLambdaUrl' cdk-submit-application.out/cdk-outputs-application.json)
-          EXCHANGE_HMRC_TOKEN_LAMBDA_URL=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-ApplicationStack"].ExchangeHmrcTokenLambdaUrl' cdk-submit-application.out/cdk-outputs-application.json)
-          SUBMIT_VAT_LAMBDA_URL=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-ApplicationStack"].SubmitVatLambdaUrl' cdk-submit-application.out/cdk-outputs-application.json)
-          LOG_RECEIPT_LAMBDA_URL=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-ApplicationStack"].LogReceiptLambdaUrl' cdk-submit-application.out/cdk-outputs-application.json)
-          MY_RECEIPTS_LAMBDA_URL=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-ApplicationStack"].MyReceiptsLambdaUrl' cdk-submit-application.out/cdk-outputs-application.json)
+          AUTH_URL_HMRC_LAMBDA_URL=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-HmrcStack"].AuthUrlHmrcLambdaUrl' cdk-submit-application.out/cdk-outputs-hmrc.json)
+          EXCHANGE_HMRC_TOKEN_LAMBDA_URL=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-HmrcStack"].ExchangeHmrcTokenLambdaUrl' cdk-submit-application.out/cdk-outputs-hmrc.json)
+          SUBMIT_VAT_LAMBDA_URL=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-HmrcStack"].SubmitVatLambdaUrl' cdk-submit-application.out/cdk-outputs-hmrc.json)
+          LOG_RECEIPT_LAMBDA_URL=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-HmrcStack"].LogReceiptLambdaUrl' cdk-submit-application.out/cdk-outputs-hmrc.json)
+          MY_RECEIPTS_LAMBDA_URL=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-HmrcStack"].MyReceiptsLambdaUrl' cdk-submit-application.out/cdk-outputs-hmrc.json)
           echo "AUTH_URL_HMRC_LAMBDA_URL=$AUTH_URL_HMRC_LAMBDA_URL"
           echo "AUTH_URL_HMRC_LAMBDA_URL=$AUTH_URL_HMRC_LAMBDA_URL" >> $GITHUB_OUTPUT
           echo "EXCHANGE_HMRC_TOKEN_LAMBDA_URL=$EXCHANGE_HMRC_TOKEN_LAMBDA_URL"
@@ -925,11 +925,11 @@ jobs:
           echo "MY_RECEIPTS_LAMBDA_URL=$MY_RECEIPTS_LAMBDA_URL" >> $GITHUB_OUTPUT
         shell: bash
     outputs:
-      authUrlHmrcLambdaUrl: ${{ steps.application-outputs.outputs.AUTH_URL_HMRC_LAMBDA_URL }}
-      exchangeHmrcTokenLambdaUrl: ${{ steps.application-outputs.outputs.EXCHANGE_HMRC_TOKEN_LAMBDA_URL }}
-      submitVatLambdaUrl: ${{ steps.application-outputs.outputs.SUBMIT_VAT_LAMBDA_URL }}
-      logReceiptLambdaUrl: ${{ steps.application-outputs.outputs.LOG_RECEIPT_LAMBDA_URL }}
-      myReceiptsLambdaUrl: ${{ steps.application-outputs.outputs.MY_RECEIPTS_LAMBDA_URL }}
+      authUrlHmrcLambdaUrl: ${{ steps.hmrc-outputs.outputs.AUTH_URL_HMRC_LAMBDA_URL }}
+      exchangeHmrcTokenLambdaUrl: ${{ steps.hmrc-outputs.outputs.EXCHANGE_HMRC_TOKEN_LAMBDA_URL }}
+      submitVatLambdaUrl: ${{ steps.hmrc-outputs.outputs.SUBMIT_VAT_LAMBDA_URL }}
+      logReceiptLambdaUrl: ${{ steps.hmrc-outputs.outputs.LOG_RECEIPT_LAMBDA_URL }}
+      myReceiptsLambdaUrl: ${{ steps.hmrc-outputs.outputs.MY_RECEIPTS_LAMBDA_URL }}
 
   deploy-account:
     name: 'deploy account'
@@ -1013,9 +1013,9 @@ jobs:
       - name: Resolve stack outputs
         id: account-outputs
         run: |
-          CATALOG_LAMBDA_URL=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-ApplicationStack"].CatalogLambdaUrl' cdk-submit-application.out/cdk-outputs-application.json)
-          REQUEST_BUNDLES_LAMBDA_URL=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-ApplicationStack"].RequestBundlesLambdaUrl' cdk-submit-application.out/cdk-outputs-application.json)
-          MY_BUNDLES_LAMBDA_URL=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-ApplicationStack"].MyBundlesLambdaUrl' cdk-submit-application.out/cdk-outputs-application.json)
+          CATALOG_LAMBDA_URL=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-AccountStack"].CatalogLambdaUrl' cdk-submit-application.out/cdk-outputs-account.json)
+          REQUEST_BUNDLES_LAMBDA_URL=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-AccountStack"].RequestBundlesLambdaUrl' cdk-submit-application.out/cdk-outputs-account.json)
+          MY_BUNDLES_LAMBDA_URL=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-AccountStack"].MyBundlesLambdaUrl' cdk-submit-application.out/cdk-outputs-account.json)
           echo "CATALOG_LAMBDA_URL=$CATALOG_LAMBDA_URL"
           echo "CATALOG_LAMBDA_URL=$CATALOG_LAMBDA_URL" >> $GITHUB_OUTPUT
           echo "REQUEST_BUNDLES_LAMBDA_URL=$REQUEST_BUNDLES_LAMBDA_URL"
@@ -1024,9 +1024,9 @@ jobs:
           echo "MY_BUNDLES_LAMBDA_URL=$MY_BUNDLES_LAMBDA_URL" >> $GITHUB_OUTPUT
         shell: bash
     outputs:
-      catalogLambdaUrl: ${{ steps.application-outputs.outputs.CATALOG_LAMBDA_URL }}
-      requestBundlesLambdaUrl: ${{ steps.application-outputs.outputs.REQUEST_BUNDLES_LAMBDA_URL }}
-      myBundlesLambdaUrl: ${{ steps.application-outputs.outputs.MY_BUNDLES_LAMBDA_URL }}
+      catalogLambdaUrl: ${{ steps.account-outputs.outputs.CATALOG_LAMBDA_URL }}
+      requestBundlesLambdaUrl: ${{ steps.account-outputs.outputs.REQUEST_BUNDLES_LAMBDA_URL }}
+      myBundlesLambdaUrl: ${{ steps.account-outputs.outputs.MY_BUNDLES_LAMBDA_URL }}
 
   deploy-delivery-self-destruct:
     name: 'deploy delivery self-destruct'
