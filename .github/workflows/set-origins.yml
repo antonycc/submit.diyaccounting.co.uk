@@ -39,14 +39,13 @@ env:
 jobs:
   names:
     name: names
-    env: ${{ github.event.inputs.environment }}
     runs-on: ubuntu-24.04
     outputs:
-      environment-name: ${{ steps.out.outputs.environment_name }}
+      environment-name: ${{ steps.out.outputs.environment-name }}
     steps:
       - id: out
         run: |
-          echo "environment_name=${{ github.event.inputs.environment }}" >> "$GITHUB_OUTPUT"
+          echo "environment-name=${{ github.event.inputs.environment || github.workflow_call.inputs.environment }}" >> "$GITHUB_OUTPUT"
 
   update-apex-origins:
     name: update apex origins
