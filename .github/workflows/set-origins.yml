@@ -1,6 +1,17 @@
-name: apex origins (register/remove on ApexStack)
+name: set origins
 
 on:
+  workflow_call:
+    inputs:
+      environment:
+        description: 'Target environment (binds to GitHub Environment)'
+        required: true
+        type: string
+      originsCsv:
+        description: 'Comma-separated list of app origins to serve from apex (e.g. ci-123.example.com,ci-124.example.com). Leave blank to display maintenance page.'
+        required: false
+        type: string
+        default: ''
   workflow_dispatch:
     inputs:
       environment:
@@ -12,7 +23,7 @@ on:
           - ci
         default: ci
       originsCsv:
-        description: 'Comma-separated list of app origins to serve from apex (e.g. ci-123.example.com,ci-124.example.com). Leave blank to restore maintenance page.'
+        description: 'Comma-separated list of app origins to serve from apex (e.g. ci-123.example.com,ci-124.example.com). Leave blank to display maintenance page.'
         required: false
         default: ''
 

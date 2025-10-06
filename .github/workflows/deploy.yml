@@ -1473,9 +1473,44 @@ jobs:
           COGNITO_USER_POOL_ARN: ${{ vars.COGNITO_USER_POOL_ARN }}
           COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
 
-# TODO: Configure or copy and convert the system test API test to test against deployed environment
+  # Invoke .github/workflows/set-origins.yml to set this domain as the apex origin
+  #  workflow_call:
+  #    inputs:
+  #      environment:
+  #        description: 'Target environment (binds to GitHub Environment)'
+  #        required: true
+  #        type: string
+  #      originsCsv:
+  #        description: 'Comma-separated list of app origins to serve from apex (e.g. ci-123.example.com,ci-124.example.com). Leave blank to display maintenance page.'
+  #        required: false
+  #        type: string
+  #        default: ''
+  set-origins:
+    if: ${{ !cancelled() && inputs.skipDeploy == 'true' || needs.deploy-publish.result == 'success' }}
+    name: 'web test'
+    needs:
+      - names
+      - deploy-auth
+      - deploy-hmrc
+      - deploy-account
+      - deploy-edge
+      - deploy-publish
+    runs-on: ubuntu-24.04
+    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set origins
+        uses: 'antonycc/submit.diyaccounting.co.uk/.github/workflows/set-origins.yml@lambdas'
+        with:
+          environment: "${{ needs.names.outputs.environment-name }}"
+          originsCsv:  "${{ needs.names.outputs.deployment-name == 'prod' && 'submit.diyaccounting.co.uk' || format('{0}.submit.diyaccounting.co.uk', needs.names.outputs.deployment-name) }}"
+
+
+  # TODO: Configure or copy and convert the system test API test to test against deployed environment
 #  api-test:
-#    if: ${{ !cancelled() && inputs.skipDeploy == 'true' || needs.deploy-edge.result == 'success' }}
+#    if: ${{ !cancelled() && inputs.skipDeploy == 'true' || needs.deploy-publish.result == 'success' }}
 #    name: 'api test'
 #    needs:
 #      - names
@@ -1483,6 +1518,7 @@ jobs:
 #      - deploy-application
 #      - deploy-edge
 #      - deploy-publish
+#      - set-origins
 #    runs-on: ubuntu-24.04
 #    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
 #    steps:
@@ -1521,7 +1557,7 @@ jobs:
 #            test-results
 
   web-test:
-    if: ${{ !cancelled() && inputs.skipDeploy == 'true' || needs.deploy-edge.result == 'success' }}
+    if: ${{ !cancelled() && inputs.skipDeploy == 'true' || needs.deploy-publish.result == 'success' }}
     name: 'web test'
     needs:
       - names
@@ -1530,6 +1566,7 @@ jobs:
       - deploy-account
       - deploy-edge
       - deploy-publish
+      - set-origins
     runs-on: ubuntu-24.04
     container: mcr.microsoft.com/playwright:v1.55.1-jammy
     # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags
@@ -1578,7 +1615,7 @@ jobs:
 
 # TODO: Reinstate load test
 #  load-test:
-#    if: ${{ !cancelled() && inputs.skipDeploy == 'true' || needs.deploy-edge.result == 'success' }}
+#    if: ${{ !cancelled() && inputs.skipDeploy == 'true' || needs.deploy-publish.result == 'success' }}
 #    name: 'load test'
 #    needs:
 #      - names
@@ -1586,6 +1623,7 @@ jobs:
 #      - deploy-edge
 #      - deploy-edge
 #      - deploy-publish
+#      - set-origins
 #    runs-on: ubuntu-24.04
 #    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
 #    steps:
