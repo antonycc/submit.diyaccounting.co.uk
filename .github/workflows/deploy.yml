@@ -398,6 +398,13 @@ jobs:
         id: test-cdk
         shell: bash
         run: npm run cdk
+        env:
+          ENV_NAME: ${{ needs.names.outputs.environment-name }}
+          DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
+          SELF_DESTRUCT_HANDLER_SOURCE: "../${{ needs.mvn-package.outputs.self-destruct-handler-source }}"
+          # Set by deploy-environment.yml after the environment's AuthStack is deployed
+          COGNITO_USER_POOL_ARN: ${{ vars.COGNITO_USER_POOL_ARN }}
+          COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
 
   docker-build:
     name: 'docker build'
