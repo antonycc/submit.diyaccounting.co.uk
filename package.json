@@ -68,7 +68,7 @@
     "@ffprobe-installer/ffprobe": "^2.1.2",
     "@microsoft/eslint-formatter-sarif": "^3.1.0",
     "@openai/codex": "^0.44.0",
-    "@playwright/test": "^1.55.1",
+    "@playwright/test": "^1.56.0",
     "@vitest/coverage-v8": "^3.2.4",
     "aws-cdk": "^2.1029.4",
     "aws-sdk-client-mock": "^4.1.0",
