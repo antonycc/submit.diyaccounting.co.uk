@@ -356,18 +356,18 @@ jobs:
             await github.rest.repos.createOrUpdateEnvironment({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              environment_name,
+              environment_name: envName,
             });
 
             // create or update the variable
             await github.rest.actions.createEnvironmentVariable({
-              repository_id,
-              environment_name,
-              name,
-              value,
+              repository_id: repositoryId,
+              environment_name: envName,
+              name: varName,
+              value: varValue,
             });
 
-            core.info(`Set env var ${name} in ${environment_name}`);
+            core.info(`Set env var ${varName} to value ${varValue} in ${envName}`);
 
       - name: Create a GitHub environment variable for COGNITO_CLIENT_ID in the current environment
         uses: actions/github-script@v8
@@ -385,15 +385,15 @@ jobs:
             await github.rest.repos.createOrUpdateEnvironment({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              environment_name,
+              environment_name: envName,
             });
 
             // create or update the variable
             await github.rest.actions.createEnvironmentVariable({
-              repository_id,
-              environment_name,
-              name,
-              value,
+              repository_id: repositoryId,
+              environment_name: envName,
+              name: varName,
+              value: varValue,
             });
 
-            core.info(`Set env var ${name} in ${environment_name}`);
+            core.info(`Set env var ${varName} to value ${varValue} in ${envName}`);
