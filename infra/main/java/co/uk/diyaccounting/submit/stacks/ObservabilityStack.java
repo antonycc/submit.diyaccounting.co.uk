@@ -191,7 +191,7 @@ public class ObservabilityStack extends Stack {
                 "ObservabilityStack %s created successfully for %s",
                 this.getNode().getId(), props.dashedDomainName());
 
-        Aspects.of(this).add(new SetAutoDeleteJobLogRetentionAspect(props.deploymentName(), 2));
+        Aspects.of(this).add(new SetAutoDeleteJobLogRetentionAspect(props.deploymentName(), RetentionDays.THREE_DAYS));
 
         // Outputs for Observability resources
         cfnOutput(this, "WebDeploymentLogGroupArn", this.webDeploymentLogGroup.getLogGroupArn());
