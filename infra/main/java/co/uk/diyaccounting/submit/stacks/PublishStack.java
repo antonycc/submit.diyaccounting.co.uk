@@ -215,7 +215,7 @@ public class PublishStack extends Stack {
                 .ephemeralStorageSize(Size.gibibytes(2))
                 .build();
 
-        Aspects.of(this).add(new SetAutoDeleteJobLogRetentionAspect(props.deploymentName(), 1));
+        Aspects.of(this).add(new SetAutoDeleteJobLogRetentionAspect(props.deploymentName(), 2));
 
         // Outputs
         cfnOutput(this, "BaseUrl", props.baseUrl());

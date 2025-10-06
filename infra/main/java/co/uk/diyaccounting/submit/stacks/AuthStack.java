@@ -205,7 +205,7 @@ public class AuthStack extends Stack {
                 .invokeMode(InvokeMode.BUFFERED)
                 .build());
 
-        Aspects.of(this).add(new SetAutoDeleteJobLogRetentionAspect(props.deploymentName(), 1));
+        Aspects.of(this).add(new SetAutoDeleteJobLogRetentionAspect(props.deploymentName(), 2));
 
         cfnOutput(this, "AuthUrlMockLambdaArn", this.authUrlMockLambda.getFunctionArn());
         cfnOutput(this, "AuthUrlCognitoLambdaArn", this.authUrlCognitoLambda.getFunctionArn());

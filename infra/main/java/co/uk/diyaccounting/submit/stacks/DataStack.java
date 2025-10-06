@@ -90,11 +90,11 @@ public class DataStack extends Stack {
                 "Created receipts bucket with name %s and id %s",
                 receiptsBucketFullName, this.receiptsBucket.getNode().getId());
 
-        Aspects.of(this).add(new SetAutoDeleteJobLogRetentionAspect(props.deploymentName(), 1));
+        Aspects.of(this).add(new SetAutoDeleteJobLogRetentionAspect(props.deploymentName(), 2));
 
         cfnOutput(this, "ReceiptsBucketName", this.receiptsBucket.getBucketName());
         cfnOutput(this, "ReceiptsBucketArn", this.receiptsBucket.getBucketArn());
 
-        infof("DatsStack %s created successfully for %s", this.getNode().getId(), props.dashedDomainName());
+        infof("DataStack %s created successfully for %s", this.getNode().getId(), props.dashedDomainName());
     }
 }

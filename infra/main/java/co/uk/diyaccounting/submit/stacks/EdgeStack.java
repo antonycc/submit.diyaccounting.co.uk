@@ -334,7 +334,7 @@ public class EdgeStack extends Stack {
                         .deleteExisting(true)
                         .build());
 
-        Aspects.of(this).add(new SetAutoDeleteJobLogRetentionAspect(props.deploymentName(), 1));
+        Aspects.of(this).add(new SetAutoDeleteJobLogRetentionAspect(props.deploymentName(), 2));
 
         // Outputs
         cfnOutput(this, "BaseUrl", props.baseUrl());

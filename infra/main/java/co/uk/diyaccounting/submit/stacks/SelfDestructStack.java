@@ -216,7 +216,7 @@ public class SelfDestructStack extends Stack {
                         .build()))
                 .build();
 
-        Aspects.of(this).add(new SetAutoDeleteJobLogRetentionAspect(props.deploymentName(), 1));
+        Aspects.of(this).add(new SetAutoDeleteJobLogRetentionAspect(props.deploymentName(), 2));
 
         // Output the function ARN for manual invocation
         cfnOutput(this, "SelfDestructFunctionArn", this.selfDestructFunction.getFunctionArn());

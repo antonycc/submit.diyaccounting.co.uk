@@ -297,7 +297,7 @@ public class IdentityStack extends Stack {
                 .build();
         // this.userPoolDomainAaaaRecord.getNode().addDependency(this.aaaaRecord);
 
-        Aspects.of(this).add(new SetAutoDeleteJobLogRetentionAspect(props.deploymentName(), 1));
+        Aspects.of(this).add(new SetAutoDeleteJobLogRetentionAspect(props.deploymentName(), 2));
 
         // Stack Outputs for Identity resources
         if (this.userPool != null) {

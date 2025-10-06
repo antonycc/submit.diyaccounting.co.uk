@@ -227,7 +227,7 @@ public class AccountStack extends Stack {
                 .invokeMode(InvokeMode.BUFFERED)
                 .build());
 
-        Aspects.of(this).add(new SetAutoDeleteJobLogRetentionAspect(props.deploymentName(),1));
+        Aspects.of(this).add(new SetAutoDeleteJobLogRetentionAspect(props.deploymentName(), 2));
 
         cfnOutput(this, "CatalogLambdaArn", this.catalogLambda.getFunctionArn());
         cfnOutput(this, "RequestBundlesLambdaArn", this.requestBundlesLambda.getFunctionArn());
