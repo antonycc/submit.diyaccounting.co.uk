@@ -344,7 +344,7 @@ jobs:
       - name: Create a GitHub environment variable for COGNITO_USER_POOL_ARN in the current environment
         uses: actions/github-script@v8
         with:
-          github-token: ${{ secrets.PERSONAL_ACCESS_TOKEN || env.GITHUB_TOKEN }}
+          github-token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
           script: |
             const repositoryId = context.payload.repository.id;
             console.log(`Repository: ${repositoryId}`);
@@ -372,7 +372,7 @@ jobs:
       - name: Create a GitHub environment variable for COGNITO_CLIENT_ID in the current environment
         uses: actions/github-script@v8
         with:
-          github-token: ${{ secrets.PERSONAL_ACCESS_TOKEN || env.GITHUB_TOKEN }}
+          github-token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
           script: |
             const repositoryId = context.payload.repository.id;
             console.log(`Repository: ${repositoryId}`);
