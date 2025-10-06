@@ -326,41 +326,56 @@ jobs:
 
       - name: Create a GitHub environment variable for COGNITO_USER_POOL_ARN in the current environment
         uses: actions/github-script@v8
-        env:
-          GH_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN || secrets.GITHUB_TOKEN }}
         with:
           script: |
-            const envName = '${{ needs.names.outputs.environment-name }}';
-            const varName = 'COGNITO_USER_POOL_ARN';
-            const varValue = '${{ steps.identity-outputs.outputs.COGNITO_USER_POOL_ARN }}';
+            const envName = "${ENV_NAME?}";
+            const varName = "${VAR_NAME?}";
+            const varValue = "${VAR_VALUE?}";
+
+            if (!varValue || varValue === 'null') {
+              core.setFailed(`${varName} output missing (got: ${varValue}). Verify jq keys in lines 319-324 match cdk-outputs-identity.json.`);
+              return;
+            }
+
             console.log(`Setting environment variable ${varName} in environment ${envName}`);
-            await github.actions.createEnvironmentVariable({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                environment_name: envName,
-                name: varName,
-                value: varValue,
-                visibility: 'selected',
+            await github.rest.actions.createEnvironmentVariable({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              environment_name: envName,
+              name: varName,
+              value: varValue
             });
             console.log(`Set environment variable ${varName} in environment ${envName}`);
+        env:
+          GH_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN || secrets.GITHUB_TOKEN }}
+          ENV_NAME: ${{ needs.names.outputs.environment-name }}
+          VAR_NAME: "COGNITO_USER_POOL_ARN"
+          VAR_VALUE: ${{ steps.identity-outputs.outputs.COGNITO_USER_POOL_ARN }}
 
       - name: Create a GitHub environment variable for COGNITO_CLIENT_ID in the current environment
         uses: actions/github-script@v8
-        env:
-          GH_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN || secrets.GITHUB_TOKEN }}
         with:
           script: |
-            const envName = '${{ needs.names.outputs.environment-name }}';
-            const varName = 'COGNITO_CLIENT_ID';
-            const varValue = '${{ steps.identity-outputs.outputs.COGNITO_CLIENT_ID }}';
+            const envName = "${ENV_NAME?}";
+            const varName = "${VAR_NAME?}";
+            const varValue = "${VAR_VALUE?}";
+
+            if (!varValue || varValue === 'null') {
+              core.setFailed(`${varName} output missing (got: ${varValue}). Verify jq keys in lines 319-324 match cdk-outputs-identity.json.`);
+              return;
+            }
+
             console.log(`Setting environment variable ${varName} in environment ${envName}`);
-            await github.actions.createEnvironmentVariable({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                environment_name: envName,
-                name: varName,
-                value: varValue,
-                visibility: 'selected',
+            await github.rest.actions.createEnvironmentVariable({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              environment_name: envName,
+              name: varName,
+              value: varValue
             });
             console.log(`Set environment variable ${varName} in environment ${envName}`);
-
+        env:
+          GH_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN || secrets.GITHUB_TOKEN }}
+          ENV_NAME: ${{ needs.names.outputs.environment-name }}
+          VAR_NAME: "COGNITO_CLIENT_ID"
+          VAR_VALUE: ${{ steps.identity-outputs.outputs.COGNITO_CLIENT_ID }}

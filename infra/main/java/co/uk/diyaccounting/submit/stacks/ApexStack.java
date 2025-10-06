@@ -141,6 +141,7 @@ public class ApexStack extends Stack {
                 maintenanceBucket,
                 S3BucketOriginWithOACProps.builder().originAccessControl(oac).build());
 
+        // TODO: Move to file ./web/holding/index.html and load from repository files
         // Upload a minimal maintenance page
         String maintenanceHtml = "<!doctype html>\n" + "<html lang=\"en\">\n"
                 + "<head>\n"
