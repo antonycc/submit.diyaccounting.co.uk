@@ -27,9 +27,9 @@ describe("Integration – /api/my-receipts", () => {
 
   beforeEach(() => {
     s3Mock.reset();
-    process.env.DIY_SUBMIT_HOME_URL = "https://hmrc-test-redirect/";
-    process.env.DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX = "integration-test-bucket";
-    process.env.DIY_SUBMIT_TEST_S3_ENDPOINT = "http://localhost:9000";
+    process.env.DIY_SUBMIT_BASE_URL = "https://hmrc-test-redirect/";
+    process.env.DIY_SUBMIT_RECEIPTS_BUCKET_FULL_NAME = "integration-test-bucket";
+    process.env.TEST_S3_ENDPOINT = "http://localhost:9000";
 
     app = express();
     app.use(express.json());

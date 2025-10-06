@@ -5,15 +5,15 @@ import request from "supertest";
 import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
-import dotenv from "dotenv";
+import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 
-dotenv.config({ path: ".env.test" });
+dotenvConfigIfNotBlank({ path: ".env.test" });
 
 // Mock the handlers from their respective function files
 vi.mock("@app/functions/authUrl.js", () => ({
   httpGetHmrc: vi.fn(),
 }));
-vi.mock("@app/functions/exchangeToken.js", () => ({
+vi.mock("@app/functions/token.js", () => ({
   httpPostMock: vi.fn(),
 }));
 vi.mock("@app/functions/submitVat.js", () => ({
@@ -25,7 +25,7 @@ vi.mock("@app/functions/logReceipt.js", () => ({
 
 // Import the mocked handlers
 import { httpGetHmrc as authUrlHandler } from "@app/functions/authUrl.js";
-import { httpPostMock as exchangeTokenHandler } from "@app/functions/exchangeToken.js";
+import { httpPostMock as exchangeTokenHandler } from "@app/functions/token.js";
 import { httpPost as submitVatHandler } from "@app/functions/submitVat.js";
 import { httpPost as logReceiptHandler } from "@app/functions/logReceipt.js";
 

@@ -1,8 +1,11 @@
 package co.uk.diyaccounting.submit.stacks;
 
+import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
 import co.uk.diyaccounting.submit.constructs.LambdaUrlOrigin;
 import co.uk.diyaccounting.submit.constructs.LambdaUrlOriginProps;
+import co.uk.diyaccounting.submit.utils.PopulatedMap;
 import org.immutables.value.Value;
+import software.amazon.awscdk.Aspects;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.Stack;
@@ -13,10 +16,10 @@ import software.amazon.awscdk.services.lambda.FunctionUrlAuthType;
 import software.amazon.awscdk.services.lambda.FunctionUrlOptions;
 import software.amazon.awscdk.services.lambda.InvokeMode;
 import software.amazon.awscdk.services.logs.LogGroup;
+import software.amazon.awscdk.services.logs.RetentionDays;
 import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
 
-import java.util.HashMap;
 import java.util.Optional;
 
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
@@ -105,10 +108,10 @@ public class AuthStack extends Stack {
                 : FunctionUrlAuthType.NONE;
 
         // authUrl - mock
-        var authUrlMockLambdaEnv = new HashMap<String, String>();
-        authUrlMockLambdaEnv.put("DIY_SUBMIT_HOME_URL", props.baseUrl());
+        var authUrlMockLambdaEnv = new PopulatedMap<String, String>().with("DIY_SUBMIT_BASE_URL", props.baseUrl());
         var authUrlMockLambdaUrlOriginFunctionHandler = "authUrl.httpGetMock";
-        var authUrlMockLambdaFunctionName = buildFunctionName(props.compressedResourceNamePrefix(), authUrlMockLambdaUrlOriginFunctionHandler);
+        var authUrlMockLambdaFunctionName =
+                buildFunctionName(props.resourceNamePrefix(), authUrlMockLambdaUrlOriginFunctionHandler);
         var authUrlMockLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
                 LambdaUrlOriginProps.builder()
@@ -126,15 +129,17 @@ public class AuthStack extends Stack {
         this.authUrlMockLambdaLogGroup = authUrlMockLambdaUrlOrigin.logGroup;
         infof(
                 "Created Lambda %s for mock auth URL with handler %s",
-                this.authUrlMockLambda.getNode().getId(), props.lambdaEntry() + authUrlMockLambdaUrlOriginFunctionHandler);
+                this.authUrlMockLambda.getNode().getId(),
+                props.lambdaEntry() + authUrlMockLambdaUrlOriginFunctionHandler);
 
         // authUrl - Google or Antonycc via Cognito
-        var authUrlCognitoLambdaEnv = new HashMap<String, String>();
-        authUrlCognitoLambdaEnv.put("DIY_SUBMIT_HOME_URL", props.baseUrl());
-        authUrlCognitoLambdaEnv.put("DIY_SUBMIT_COGNITO_CLIENT_ID", props.cognitoClientId());
-        authUrlCognitoLambdaEnv.put("DIY_SUBMIT_COGNITO_BASE_URI", props.cognitoBaseUri());
+        var authUrlCognitoLambdaEnv = new PopulatedMap<String, String>()
+                .with("DIY_SUBMIT_BASE_URL", props.baseUrl())
+                .with("COGNITO_CLIENT_ID", props.cognitoClientId())
+                .with("COGNITO_BASE_URI", props.cognitoBaseUri());
         var authUrlCognitoLambdaUrlOriginFunctionHandler = "authUrl.httpGetCognito";
-        var authUrlCognitoLambdaFunctionName = buildFunctionName(props.compressedResourceNamePrefix(), authUrlCognitoLambdaUrlOriginFunctionHandler);
+        var authUrlCognitoLambdaFunctionName =
+                buildFunctionName(props.resourceNamePrefix(), authUrlCognitoLambdaUrlOriginFunctionHandler);
         var authUrlCognitoLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
                 LambdaUrlOriginProps.builder()
@@ -152,22 +157,22 @@ public class AuthStack extends Stack {
         this.authUrlCognitoLambdaLogGroup = authUrlCognitoLambdaUrlOrigin.logGroup;
         infof(
                 "Created Lambda %s for Cognito auth URL with handler %s",
-                this.authUrlCognitoLambda.getNode().getId(), props.lambdaEntry() + authUrlCognitoLambdaUrlOriginFunctionHandler);
+                this.authUrlCognitoLambda.getNode().getId(),
+                props.lambdaEntry() + authUrlCognitoLambdaUrlOriginFunctionHandler);
 
         // exchangeToken - Google or Antonycc via Cognito
-        var exchangeCognitoTokenLambdaEnv = new HashMap<String, String>();
-        exchangeCognitoTokenLambdaEnv.put("DIY_SUBMIT_HOME_URL", props.baseUrl());
-        exchangeCognitoTokenLambdaEnv.put("DIY_SUBMIT_COGNITO_BASE_URI", props.cognitoBaseUri());
-        exchangeCognitoTokenLambdaEnv.put("DIY_SUBMIT_COGNITO_CLIENT_ID", props.cognitoClientId());
+        var exchangeCognitoTokenLambdaEnv = new PopulatedMap<String, String>()
+                .with("DIY_SUBMIT_BASE_URL", props.baseUrl())
+                .with("COGNITO_BASE_URI", props.cognitoBaseUri())
+                .with("COGNITO_CLIENT_ID", props.cognitoClientId());
         if (props.optionalTestAccessToken().isPresent()
                 && StringUtils.isNotBlank(props.optionalTestAccessToken().get())) {
-            exchangeCognitoTokenLambdaEnv.put(
-                    "DIY_SUBMIT_TEST_ACCESS_TOKEN",
-                    props.optionalTestAccessToken().get());
+            exchangeCognitoTokenLambdaEnv.with(
+                    "TEST_ACCESS_TOKEN", props.optionalTestAccessToken().get());
         }
-        var exchangeCognitoTokenLambdaUrlOriginFunctionHandler = "exchangeToken.httpPostCognito";
+        var exchangeCognitoTokenLambdaUrlOriginFunctionHandler = "token.httpPostCognito";
         var exchangeCognitoTokenLambdaUrlOriginFunctionName =
-                buildFunctionName(props.compressedResourceNamePrefix(), exchangeCognitoTokenLambdaUrlOriginFunctionHandler);
+                buildFunctionName(props.resourceNamePrefix(), exchangeCognitoTokenLambdaUrlOriginFunctionHandler);
         var exchangeCognitoTokenLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
                 LambdaUrlOriginProps.builder()
@@ -201,6 +206,8 @@ public class AuthStack extends Stack {
                 .authType(functionUrlAuthType)
                 .invokeMode(InvokeMode.BUFFERED)
                 .build());
+
+        Aspects.of(this).add(new SetAutoDeleteJobLogRetentionAspect(props.deploymentName(), RetentionDays.THREE_DAYS));
 
         cfnOutput(this, "AuthUrlMockLambdaArn", this.authUrlMockLambda.getFunctionArn());
         cfnOutput(this, "AuthUrlCognitoLambdaArn", this.authUrlCognitoLambda.getFunctionArn());

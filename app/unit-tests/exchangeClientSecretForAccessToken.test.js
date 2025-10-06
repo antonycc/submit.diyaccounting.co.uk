@@ -3,11 +3,11 @@
 import { describe, beforeEach, afterEach, test, expect, vi } from "vitest";
 import { mockClient } from "aws-sdk-client-mock";
 import { SecretsManagerClient, GetSecretValueCommand } from "@aws-sdk/client-secrets-manager";
-import dotenv from "dotenv";
+import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 
-import { exchangeToken, resetCachedSecret } from "@app/functions/exchangeToken.js";
+import { exchangeToken, resetCachedSecret } from "@app/functions/token.js";
 
-dotenv.config({ path: ".env.test" });
+dotenvConfigIfNotBlank({ path: ".env.test" });
 
 // Mock node-fetch
 vi.mock("node-fetch", () => ({
@@ -35,9 +35,9 @@ describe("exchangeClientSecretForAccessToken", () => {
     // Reset environment variables
     process.env = {
       ...originalEnv,
-      DIY_SUBMIT_HMRC_CLIENT_ID: "test-client-id",
-      DIY_SUBMIT_HOME_URL: "http://localhost:3000",
-      DIY_SUBMIT_HMRC_BASE_URI: "https://test-api.service.hmrc.gov.uk",
+      HMRC_CLIENT_ID: "test-client-id",
+      DIY_SUBMIT_BASE_URL: "http://localhost:3000",
+      HMRC_BASE_URI: "https://test-api.service.hmrc.gov.uk",
       NODE_ENV: "test",
     };
 
@@ -51,10 +51,10 @@ describe("exchangeClientSecretForAccessToken", () => {
   });
 
   describe("secret retrieval", () => {
-    test("should use environment variable when DIY_SUBMIT_HMRC_CLIENT_SECRET is set", async () => {
+    test("should use environment variable when HMRC_CLIENT_SECRET is set", async () => {
       // Arrange
       const testSecret = "test-client-secret-from-env";
-      process.env.DIY_SUBMIT_HMRC_CLIENT_SECRET = testSecret;
+      process.env.HMRC_CLIENT_SECRET = testSecret;
 
       const fetch = await import("node-fetch");
       fetch.default.mockResolvedValue({
@@ -80,8 +80,8 @@ describe("exchangeClientSecretForAccessToken", () => {
       const testSecretArn = "arn:aws:secretsmanager:us-east-1:123456789012:secret:test-secret";
       const testSecretValue = "test-client-secret-from-secrets-manager";
 
-      process.env.DIY_SUBMIT_HMRC_CLIENT_SECRET_ARN = testSecretArn;
-      delete process.env.DIY_SUBMIT_HMRC_CLIENT_SECRET;
+      process.env.HMRC_CLIENT_SECRET_ARN = testSecretArn;
+      delete process.env.HMRC_CLIENT_SECRET;
 
       // Mock Secrets Manager response
       secretsManagerMock.on(GetSecretValueCommand).resolves({
@@ -118,8 +118,8 @@ describe("exchangeClientSecretForAccessToken", () => {
       const testSecretArn = "arn:aws:secretsmanager:us-east-1:123456789012:secret:test-secret";
       const testSecretValue = "cached-secret-value";
 
-      process.env.DIY_SUBMIT_HMRC_CLIENT_SECRET_ARN = testSecretArn;
-      delete process.env.DIY_SUBMIT_HMRC_CLIENT_SECRET;
+      process.env.HMRC_CLIENT_SECRET_ARN = testSecretArn;
+      delete process.env.HMRC_CLIENT_SECRET;
 
       // Mock Secrets Manager response
       secretsManagerMock.on(GetSecretValueCommand).resolves({
@@ -155,8 +155,8 @@ describe("exchangeClientSecretForAccessToken", () => {
       const testSecretArn = "arn:aws:secretsmanager:us-east-1:123456789012:secret:test-secret";
       const testSecretValue = "secret-with-special-chars!@#$%";
 
-      process.env.DIY_SUBMIT_HMRC_CLIENT_SECRET_ARN = testSecretArn;
-      delete process.env.DIY_SUBMIT_HMRC_CLIENT_SECRET;
+      process.env.HMRC_CLIENT_SECRET_ARN = testSecretArn;
+      delete process.env.HMRC_CLIENT_SECRET;
 
       // Mock Secrets Manager response with the expected structure
       secretsManagerMock.on(GetSecretValueCommand).resolves({
@@ -192,8 +192,8 @@ describe("exchangeClientSecretForAccessToken", () => {
       const secretsManagerSecret = "secrets-manager-secret";
       const testSecretArn = "arn:aws:secretsmanager:us-east-1:123456789012:secret:test-secret";
 
-      process.env.DIY_SUBMIT_HMRC_CLIENT_SECRET = envSecret;
-      process.env.DIY_SUBMIT_HMRC_CLIENT_SECRET_ARN = testSecretArn;
+      process.env.HMRC_CLIENT_SECRET = envSecret;
+      process.env.HMRC_CLIENT_SECRET_ARN = testSecretArn;
 
       // Mock Secrets Manager response (should not be called)
       secretsManagerMock.on(GetSecretValueCommand).resolves({
@@ -208,7 +208,7 @@ describe("exchangeClientSecretForAccessToken", () => {
       });
 
       // Re-import the module to get fresh instance
-      const { exchangeToken: exchangeFunction } = await import("@app/functions/exchangeToken.js");
+      const { exchangeToken } = await import("@app/functions/token.js");
 
       // Act
       const result = await exchangeToken("test-auth-code");
@@ -229,11 +229,11 @@ describe("exchangeClientSecretForAccessToken", () => {
       // Arrange
       const testAccessToken = "stubbed-test-token";
       process.env.NODE_ENV = "stubbed";
-      process.env.DIY_SUBMIT_TEST_ACCESS_TOKEN = testAccessToken;
-      process.env.DIY_SUBMIT_HMRC_CLIENT_SECRET = "any-secret";
+      process.env.TEST_ACCESS_TOKEN = testAccessToken;
+      process.env.HMRC_CLIENT_SECRET = "any-secret";
 
       // Re-import the module to get fresh instance
-      const { exchangeToken: exchangeFunction } = await import("@app/functions/exchangeToken.js");
+      const { exchangeToken } = await import("@app/functions/token.js");
 
       // Act
       const result = await exchangeToken("test-auth-code");

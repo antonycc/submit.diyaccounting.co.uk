@@ -5,6 +5,9 @@ import fetch from "node-fetch";
 
 import { httpGet } from "../functions/getVatLiabilities.js";
 import { buildGovClientTestHeaders } from "./govClientTestHeader.js";
+import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
+
+dotenvConfigIfNotBlank({ path: ".env.test" });
 
 vi.mock("node-fetch");
 
@@ -12,7 +15,7 @@ describe("getVatLiabilities handler", () => {
   beforeEach(() => {
     vi.resetAllMocks();
     // Set stubbed mode
-    process.env.DIY_SUBMIT_TEST_VAT_LIABILITIES = JSON.stringify({
+    process.env.TEST_VAT_LIABILITIES = JSON.stringify({
       liabilities: [
         {
           taxPeriod: {
@@ -122,7 +125,7 @@ describe("getVatLiabilities handler", () => {
 
   test("should call HMRC API when not in stubbed mode", async () => {
     // Remove stubbed mode
-    delete process.env.DIY_SUBMIT_TEST_VAT_LIABILITIES;
+    delete process.env.TEST_VAT_LIABILITIES;
 
     const mockResponse = {
       liabilities: [
@@ -173,7 +176,7 @@ describe("getVatLiabilities handler", () => {
 
   test("should handle HMRC API error", async () => {
     // Remove stubbed mode
-    delete process.env.DIY_SUBMIT_TEST_VAT_LIABILITIES;
+    delete process.env.TEST_VAT_LIABILITIES;
 
     const errorMessage = "INVALID_VRN";
 

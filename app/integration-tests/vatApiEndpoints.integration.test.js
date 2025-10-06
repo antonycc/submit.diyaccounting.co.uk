@@ -1,13 +1,13 @@
 // app/integration-tests/vatApiEndpoints.integration.test.js
 
 import { describe, beforeAll, afterAll, beforeEach, it, expect, vi } from "vitest";
-import dotenv from "dotenv";
+import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 
 import { httpGet as getVatObligationsHandler } from "@app/functions/getVatObligations.js";
 import { httpGet as getVatReturnHandler } from "@app/functions/getVatReturn.js";
 import { httpGet as getVatLiabilitiesHandler } from "@app/functions/getVatLiabilities.js";
 
-dotenv.config({ path: ".env.test" });
+dotenvConfigIfNotBlank({ path: ".env.test" });
 
 describe("Integration – VAT API Endpoints (Direct Handler Testing)", () => {
   const originalEnv = process.env;
@@ -17,9 +17,9 @@ describe("Integration – VAT API Endpoints (Direct Handler Testing)", () => {
     // Reset environment variables with stubbed mode enabled
     process.env = {
       ...originalEnv,
-      DIY_SUBMIT_BUNDLE_MOCK: "true",
+      TEST_BUNDLE_MOCK: "true",
       // Enable stubbed mode for predictable responses
-      DIY_SUBMIT_TEST_VAT_OBLIGATIONS: JSON.stringify({
+      TEST_VAT_OBLIGATIONS: JSON.stringify({
         obligations: [
           {
             start: "2024-01-01",
@@ -31,13 +31,13 @@ describe("Integration – VAT API Endpoints (Direct Handler Testing)", () => {
           },
         ],
       }),
-      DIY_SUBMIT_TEST_VAT_RETURN: JSON.stringify({
+      TEST_VAT_RETURN: JSON.stringify({
         periodKey: "24A1",
         vatDueSales: 1000.5,
         totalVatDue: 1000.5,
         finalised: true,
       }),
-      DIY_SUBMIT_TEST_VAT_LIABILITIES: JSON.stringify({
+      TEST_VAT_LIABILITIES: JSON.stringify({
         liabilities: [
           {
             taxPeriod: { from: "2024-01-01", to: "2024-03-31" },

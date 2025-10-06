@@ -42,7 +42,7 @@ public class LambdaUrlOrigin {
         var environment = new java.util.HashMap<>(props.environment());
         environment.put("AWS_XRAY_TRACING_NAME", props.functionName());
 
-        var dockerFunctionBuilder = DockerImageFunction.Builder.create(scope, props.idPrefix() + "-Fn")
+        var dockerFunctionBuilder = DockerImageFunction.Builder.create(scope, props.idPrefix() + "-fn")
                 .code(this.dockerImage)
                 .environment(environment)
                 .functionName(props.functionName())

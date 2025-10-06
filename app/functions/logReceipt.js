@@ -1,39 +1,39 @@
 // app/functions/logReceipt.js
 
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
-import dotenv from "dotenv";
-
 import logger from "../lib/logger.js";
 import { extractRequest, httpBadRequestResponse, httpOkResponse, httpServerErrorResponse } from "../lib/responses.js";
-
-dotenv.config({ path: ".env" });
+import { validateEnv } from "../lib/env.js";
 
 export async function logReceipt(key, receipt) {
-  const homeUrl = process.env.DIY_SUBMIT_HOME_URL;
-  const receiptsBucketPostfix = process.env.DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX;
-  const { hostname } = new URL(homeUrl);
-  let envPrefix = "";
-  if (homeUrl === "https://submit.diyaccounting.co.uk/") {
-    envPrefix = "prod.";
-  }
-  const dashedDomain = `${envPrefix}${hostname}`.split(".").join("-");
-  const receiptsBucketFullName = `${dashedDomain}-${receiptsBucketPostfix}`;
+  const receiptsBucketFullName = process.env.DIY_SUBMIT_RECEIPTS_BUCKET_FULL_NAME;
+  const testMinioS3 = process.env.TEST_MINIO_S3;
+  const testS3Endpoint = process.env.TEST_S3_ENDPOINT;
+
+  logger.info({
+    message:
+      `Environment variables: ` +
+      `DIY_SUBMIT_RECEIPTS_BUCKET_FULL_NAME=${receiptsBucketFullName}, ` +
+      `TEST_MINIO_S3=${testMinioS3}, ` +
+      `TEST_S3_ENDPOINT=${testS3Endpoint}`,
+  });
 
   // Configure S3 client for containerized MinIO if environment variables are set
   let s3Config = {};
-  if (
-    process.env.NODE_ENV !== "stubbed" &&
-    process.env.DIY_SUBMIT_TEST_S3_ENDPOINT &&
-    process.env.DIY_SUBMIT_TEST_S3_ENDPOINT !== "off"
-  ) {
+  // if (process.env.NODE_ENV !== "stubbed" && process.env.TEST_S3_ENDPOINT && process.env.TEST_S3_ENDPOINT !== "off") {
+  if (testMinioS3 === "run" || testMinioS3 === "useExisting") {
+    logger.info({ message: `Using TEST_S3_ENDPOINT ${testS3Endpoint}` });
     s3Config = buildTestS3Config();
   }
 
   if (process.env.NODE_ENV === "stubbed") {
     logger.warn({ message: ".NODE_ENV environment variable is stubbedL No receipt saved." });
-  } else if (process.env.DIY_SUBMIT_TEST_S3_ENDPOINT === "off") {
-    logger.warn({ message: "DIY_SUBMIT_TEST_S3_ENDPOINT is set to 'off': No receipt saved." });
+  } else if (testMinioS3 === "off") {
+    logger.warn({ message: "TEST_S3_ENDPOINT is set to 'off': No receipt saved." });
   } else {
+    logger.info({
+      message: `Logging receipt to S3 bucket ${receiptsBucketFullName} with key ${key} with config ${JSON.stringify(s3Config)}`,
+    });
     const s3Client = new S3Client(s3Config);
     try {
       await s3Client.send(
@@ -53,6 +53,8 @@ export async function logReceipt(key, receipt) {
 
 // POST /api/log-receipt
 export async function httpPost(event) {
+  validateEnv(["DIY_SUBMIT_RECEIPTS_BUCKET_FULL_NAME"]);
+
   const request = extractRequest(event);
 
   // Parse body – allow either {receipt: {...}} or direct receipt fields
@@ -98,9 +100,6 @@ export async function httpPost(event) {
   if (!key) {
     errorMessages.push("Missing key parameter derived from body");
   }
-  if (!process.env.DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX) {
-    errorMessages.push("DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX environment variable is not set, cannot log receipt");
-  }
   if (errorMessages.length > 0) {
     return httpBadRequestResponse({
       request,
@@ -133,11 +132,11 @@ export async function httpPost(event) {
 
 function buildTestS3Config() {
   return {
-    endpoint: process.env.DIY_SUBMIT_TEST_S3_ENDPOINT,
+    endpoint: process.env.TEST_S3_ENDPOINT,
     region: "us-east-1",
     credentials: {
-      accessKeyId: process.env.DIY_SUBMIT_TEST_S3_ACCESS_KEY,
-      secretAccessKey: process.env.DIY_SUBMIT_TEST_S3_SECRET_KEY,
+      accessKeyId: process.env.TEST_S3_ACCESS_KEY,
+      secretAccessKey: process.env.TEST_S3_SECRET_KEY,
     },
     forcePathStyle: true,
   };

@@ -1,6 +1,9 @@
 // app/unit-tests/bundle.catalog.test.js
 import { describe, test, beforeEach, expect } from "vitest";
 import { httpPost as requestBundle, __getInMemoryBundlesStore } from "@app/functions/bundle.js";
+import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
+
+dotenvConfigIfNotBlank({ path: ".env.test" });
 
 function base64UrlEncode(obj) {
   const json = JSON.stringify(obj);
@@ -28,7 +31,7 @@ function buildEvent(token, body) {
 
 describe("bundle.js – catalog qualifiers and expiry (MOCK)", () => {
   beforeEach(() => {
-    process.env.DIY_SUBMIT_BUNDLE_MOCK = "true";
+    process.env.TEST_BUNDLE_MOCK = "true";
     // Clear the in-memory store before each test
     const store = __getInMemoryBundlesStore();
     store.clear();

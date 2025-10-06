@@ -2,7 +2,6 @@
 // app/bin/convert.js
 
 import path from "path";
-import { existsSync } from "fs";
 import { fileURLToPath } from "url";
 import ffmpeg from "fluent-ffmpeg";
 import ffmpegStatic from "ffmpeg-static";

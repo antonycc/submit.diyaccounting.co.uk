@@ -1,6 +1,5 @@
 // app/functions/getVatObligations.js
 
-import dotenv from "dotenv";
 import logger from "../lib/logger.js";
 import {
   extractRequest,
@@ -11,8 +10,6 @@ import {
 } from "../lib/responses.js";
 import eventToGovClientHeaders from "../lib/eventToGovClientHeaders.js";
 import { hmrcVatGet, shouldUseStub, getStubData } from "../lib/hmrcVatApi.js";
-
-dotenv.config({ path: ".env" });
 
 // GET /api/vat/obligations
 export async function httpGet(event) {
@@ -73,9 +70,9 @@ export async function httpGet(event) {
     let obligations;
 
     // Check if we should use stubbed data
-    if (shouldUseStub("DIY_SUBMIT_TEST_VAT_OBLIGATIONS")) {
+    if (shouldUseStub("TEST_VAT_OBLIGATIONS")) {
       logger.info({ message: "Using stubbed VAT obligations data", testScenario });
-      obligations = getStubData("DIY_SUBMIT_TEST_VAT_OBLIGATIONS", {
+      obligations = getStubData("TEST_VAT_OBLIGATIONS", {
         obligations: [
           {
             start: "2024-01-01",

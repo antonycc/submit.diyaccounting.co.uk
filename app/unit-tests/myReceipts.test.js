@@ -1,8 +1,8 @@
 // app/unit-tests/myReceipts.test.js
 import { describe, test, expect, beforeEach, vi } from "vitest";
-import dotenv from "dotenv";
+import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 
-dotenv.config({ path: ".env.test" });
+dotenvConfigIfNotBlank({ path: ".env.test" });
 
 // Mock AWS S3 client
 import { mockClient } from "aws-sdk-client-mock";
@@ -24,9 +24,9 @@ function makeJwt(sub = "test-user-sub") {
 describe("myReceipts functions", () => {
   beforeEach(() => {
     s3Mock.reset();
-    process.env.DIY_SUBMIT_HOME_URL = "https://hmrc-test-redirect"; // matches unit test expectation style
-    process.env.DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX = "test-receipts-bucket";
-    process.env.DIY_SUBMIT_TEST_S3_ENDPOINT = "http://localhost:9000"; // enable S3 client config
+    process.env.DIY_SUBMIT_BASE_URL = "https://hmrc-test-redirect"; // matches unit test expectation style
+    process.env.DIY_SUBMIT_RECEIPTS_BUCKET_FULL_NAME = "test-receipts-bucket";
+    process.env.TEST_S3_ENDPOINT = "http://localhost:9000"; // enable S3 client config
   });
 
   test("handle lists receipts sorted and parsed", async () => {

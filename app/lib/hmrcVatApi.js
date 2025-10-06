@@ -16,7 +16,7 @@ function isSandboxBase(base) {
  * Build the base URL for HMRC API calls
  */
 export function getHmrcBaseUrl() {
-  return process.env.DIY_SUBMIT_HMRC_BASE_URI || "https://test-api.service.hmrc.gov.uk";
+  return process.env.HMRC_BASE_URI || "https://test-api.service.hmrc.gov.uk";
 }
 
 /**

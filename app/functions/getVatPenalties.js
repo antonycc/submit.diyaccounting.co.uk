@@ -1,6 +1,5 @@
 // app/functions/getVatPenalties.js
 
-import dotenv from "dotenv";
 import logger from "../lib/logger.js";
 import {
   extractRequest,
@@ -11,8 +10,6 @@ import {
 } from "../lib/responses.js";
 import eventToGovClientHeaders from "../lib/eventToGovClientHeaders.js";
 import { hmrcVatGet, shouldUseStub, getStubData } from "../lib/hmrcVatApi.js";
-
-dotenv.config({ path: ".env" });
 
 // GET /api/vat/penalties
 export async function httpGet(event) {
@@ -60,9 +57,9 @@ export async function httpGet(event) {
     let penalties;
 
     // Check if we should use stubbed data
-    if (shouldUseStub("DIY_SUBMIT_TEST_VAT_PENALTIES")) {
+    if (shouldUseStub("TEST_VAT_PENALTIES")) {
       logger.info({ message: "Using stubbed VAT penalties data", testScenario });
-      penalties = getStubData("DIY_SUBMIT_TEST_VAT_PENALTIES", {
+      penalties = getStubData("TEST_VAT_PENALTIES", {
         penalties: [
           {
             penaltyCategory: "LPP1",

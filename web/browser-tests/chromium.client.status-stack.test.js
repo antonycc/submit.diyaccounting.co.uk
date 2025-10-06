@@ -3,9 +3,9 @@
 import { test, expect, chromium } from "@playwright/test";
 import fs from "fs";
 import path from "path";
-import dotenv from "dotenv";
+import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 
-dotenv.config({ path: ".env.test" });
+dotenvConfigIfNotBlank({ path: ".env.test" });
 
 function getTimestamp() {
   const now = new Date();

@@ -1,16 +1,5 @@
 package co.uk.diyaccounting.submit;
 
-import co.uk.diyaccounting.submit.stacks.EdgeStack;
-import co.uk.diyaccounting.submit.stacks.PublishStack;
-import co.uk.diyaccounting.submit.stacks.SelfDestructStack;
-import software.amazon.awscdk.App;
-import software.amazon.awscdk.Environment;
-import software.constructs.Construct;
-
-import java.lang.reflect.Field;
-import java.nio.file.Paths;
-import java.util.Map;
-
 import static co.uk.diyaccounting.submit.utils.Kind.envOr;
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.Kind.putIfNotNull;
@@ -20,6 +9,16 @@ import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDashedDoma
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateCompressedResourceNamePrefix;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateResourceNamePrefix;
 
+import co.uk.diyaccounting.submit.stacks.EdgeStack;
+import co.uk.diyaccounting.submit.stacks.PublishStack;
+import co.uk.diyaccounting.submit.stacks.SelfDestructStack;
+import java.lang.reflect.Field;
+import java.nio.file.Paths;
+import java.util.Map;
+import software.amazon.awscdk.App;
+import software.amazon.awscdk.Environment;
+import software.constructs.Construct;
+
 public class SubmitDelivery {
 
     public final EdgeStack edgeStack;
@@ -28,12 +27,14 @@ public class SubmitDelivery {
 
     // Fields match cdk.json context keys (camelCase). Environment overrides are applied in SubmitDelivery
     public static class SubmitDeliveryProps {
-        public String env;
+        public String envName;
         public String deploymentName;
         public String hostedZoneName;
         public String hostedZoneId;
         public String certificateArn;
-        public String accessLogGroupRetentionPeriodDays;
+        public String originAccessLogBucketArn;
+        public String distributionAccessLogBucketArn;
+        public String webDeploymentLogGroupArn;
         public String docRootPath;
         public String domainName;
         public String cloudTrailEnabled;
@@ -83,10 +84,10 @@ public class SubmitDelivery {
         app.synth();
         infof("CDK synth complete");
 
-        infof("Created stack:", submitDelivery.edgeStack.getStackName());
-        infof("Created stack:", submitDelivery.publishStack.getStackName());
+        infof("Created stack: %s", submitDelivery.edgeStack.getStackName());
+        infof("Created stack: %s", submitDelivery.publishStack.getStackName());
         if (submitDelivery.selfDestructStack != null) {
-            infof("Created stack:", submitDelivery.selfDestructStack.getStackName());
+            infof("Created stack: %s", submitDelivery.selfDestructStack.getStackName());
         } else {
             infof("No SelfDestruct stack created for prod deployment");
         }
@@ -94,63 +95,57 @@ public class SubmitDelivery {
 
     public SubmitDelivery(App app, SubmitDeliveryProps appProps) {
         // Environment e.g. ci, prod, and deployment name e.g. ci-branchname, prod
-        var envName = envOr("ENV_NAME", appProps.env);
+        var envName = envOr("ENV_NAME", appProps.envName);
         var deploymentName = envOr("DEPLOYMENT_NAME", appProps.deploymentName);
         var commitHash = envOr("COMMIT_HASH", "local");
         var websiteHash = envOr("WEBSITE_HASH", "local");
         var buildNumber = envOr("BUILD_NUMBER", "local");
 
         // Resource name prefixes
-        var hostedZoneName = envOr("HOSTED_ZONE_NAME", appProps.hostedZoneName, "(from hostedZoneName in cdk.json)");
-        var hostedZoneId = envOr("HOSTED_ZONE_ID", appProps.hostedZoneId, "(from hostedZoneId in cdk.json)");
-        var certificateArn = envOr("CERTIFICATE_ARN", appProps.certificateArn, "(from certificateArn in cdk.json)");
-        var domainName = envOr("DOMAIN_NAME", appProps.domainName, "(from domainName in cdk.json)");
-        var baseUrl = envOr("DIY_SUBMIT_HOME_URL", appProps.baseUrl, "(from baseUrl in cdk.json)");
-        var docRootPath = envOr("DOC_ROOT_PATH", appProps.docRootPath, "(from docRootPath in cdk.json)");
+        var domainName = envOr("DIY_SUBMIT_DOMAIN_NAME", appProps.domainName, "(from domainName in cdk.json)");
+        var baseUrl = envOr("DIY_SUBMIT_BASE_URL", appProps.baseUrl, "(from baseUrl in cdk.json)");
 
         // Function URL environment variables for EdgeStack
         var authUrlMockLambdaFunctionUrl = envOr(
-                "DIY_SUBMIT_AUTH_URL_MOCK_LAMBDA_URL",
+                "AUTH_URL_MOCK_LAMBDA_URL",
                 appProps.authUrlMockLambdaFunctionUrl,
                 "(from authUrlMockLambdaFunctionUrl in cdk.json)");
         var authUrlCognitoLambdaFunctionUrl = envOr(
-                "DIY_SUBMIT_AUTH_URL_COGNITO_LAMBDA_URL",
+                "AUTH_URL_COGNITO_LAMBDA_URL",
                 appProps.authUrlCognitoLambdaFunctionUrl,
                 "(from authUrlCognitoLambdaFunctionUrl in cdk.json)");
         var exchangeCognitoTokenLambdaFunctionUrl = envOr(
-                "DIY_SUBMIT_COGNITO_EXCHANGE_TOKEN_LAMBDA_URL",
+                "COGNITO_EXCHANGE_TOKEN_LAMBDA_URL",
                 appProps.exchangeCognitoTokenLambdaFunctionUrl,
                 "(from exchangeCognitoTokenLambdaFunctionUrl in cdk.json)");
         var authUrlHmrcLambdaFunctionUrl = envOr(
-                "DIY_SUBMIT_AUTH_URL_HMRC_LAMBDA_URL",
+                "AUTH_URL_HMRC_LAMBDA_URL",
                 appProps.authUrlHmrcLambdaFunctionUrl,
                 "(from authUrlHmrcLambdaFunctionUrl in cdk.json)");
         var exchangeHmrcTokenLambdaFunctionUrl = envOr(
-                "DIY_SUBMIT_EXCHANGE_HMRC_TOKEN_LAMBDA_URL",
+                "EXCHANGE_HMRC_TOKEN_LAMBDA_URL",
                 appProps.exchangeHmrcTokenLambdaFunctionUrl,
                 "(from exchangeHmrcTokenLambdaFunctionUrl in cdk.json)");
         var submitVatLambdaFunctionUrl = envOr(
-                "DIY_SUBMIT_SUBMIT_VAT_LAMBDA_URL",
+                "SUBMIT_VAT_LAMBDA_URL",
                 appProps.submitVatLambdaFunctionUrl,
                 "(from submitVatLambdaFunctionUrl in cdk.json)");
         var logReceiptLambdaFunctionUrl = envOr(
-                "DIY_SUBMIT_LOG_RECEIPT_LAMBDA_URL",
+                "LOG_RECEIPT_LAMBDA_URL",
                 appProps.logReceiptLambdaFunctionUrl,
                 "(from logReceiptLambdaFunctionUrl in cdk.json)");
         var catalogLambdaFunctionUrl = envOr(
-                "DIY_SUBMIT_CATALOG_LAMBDA_URL",
-                appProps.catalogLambdaFunctionUrl,
-                "(from catalogLambdaFunctionUrl in cdk.json)");
+                "CATALOG_LAMBDA_URL", appProps.catalogLambdaFunctionUrl, "(from catalogLambdaFunctionUrl in cdk.json)");
         var requestBundlesLambdaFunctionUrl = envOr(
-                "DIY_SUBMIT_REQUEST_BUNDLES_LAMBDA_URL",
+                "REQUEST_BUNDLES_LAMBDA_URL",
                 appProps.requestBundlesLambdaFunctionUrl,
                 "(from requestBundlesLambdaFunctionUrl in cdk.json)");
         var myBundlesLambdaFunctionUrl = envOr(
-                "DIY_SUBMIT_MY_BUNDLES_LAMBDA_URL",
+                "MY_BUNDLES_LAMBDA_URL",
                 appProps.myBundlesLambdaFunctionUrl,
                 "(from myBundlesLambdaFunctionUrl in cdk.json)");
         var myReceiptsLambdaFunctionUrl = envOr(
-                "DIY_SUBMIT_MY_RECEIPTS_LAMBDA_URL",
+                "MY_RECEIPTS_LAMBDA_URL",
                 appProps.myReceiptsLambdaFunctionUrl,
                 "(from myReceiptsLambdaFunctionUrl in cdk.json)");
         var selfDestructHandlerSource = envOr(
@@ -161,13 +156,21 @@ public class SubmitDelivery {
                 "SELF_DESTRUCT_DELAY_HOURS",
                 appProps.selfDestructDelayHours,
                 "(from selfDestructDelayHours in cdk.json)");
-        var accessLogGroupRetentionPeriodDays = envOr(
-                "ACCESS_LOG_GROUP_RETENTION_PERIOD_DAYS",
-                appProps.accessLogGroupRetentionPeriodDays,
-                "(from accessLogGroupRetentionPeriodDays in cdk.json)");
-
+        var originAccessLogBucketArn = envOr(
+                "ORIGIN_ACCESS_LOG_BUCKET_ARN",
+                appProps.originAccessLogBucketArn,
+                "(from originAccessLogBucketArn in cdk.json)");
+        var distributionAccessLogBucketArn = envOr(
+                "DISTRIBUTION_ACCESS_LOG_BUCKET_ARN",
+                appProps.distributionAccessLogBucketArn,
+                "(from distributionAccessLogBucketArn in cdk.json)");
+        var webDeploymentLogGroupArn = envOr(
+                "WEB_DEPLOYMENT_LOG_GROUP_ARN",
+                appProps.webDeploymentLogGroupArn,
+                "(from webDeploymentLogGroupArn in cdk.json)");
         var cloudTrailEnabled =
                 envOr("CLOUD_TRAIL_ENABLED", appProps.cloudTrailEnabled, "(from cloudTrailEnabled in cdk.json)");
+        var docRootPath = envOr("DOC_ROOT_PATH", appProps.docRootPath, "(from docRootPath in cdk.json)");
 
         // Derived values from domain and deployment name
         String resourceNamePrefix = "del-%s".formatted(generateResourceNamePrefix(domainName));
@@ -209,14 +212,16 @@ public class SubmitDelivery {
                         .dashedDomainName(dashedDomainName)
                         .baseUrl(baseUrl)
                         .cloudTrailEnabled(cloudTrailEnabled)
-                        .hostedZoneName(hostedZoneName)
-                        .hostedZoneId(hostedZoneId)
-                        .certificateArn(certificateArn)
+                        .hostedZoneName(appProps.hostedZoneName)
+                        .hostedZoneId(appProps.hostedZoneId)
+                        .certificateArn(appProps.certificateArn)
                         .pathsToOriginLambdaFunctionUrls(pathsToOriginLambdaFunctionUrls)
-                        .accessLogGroupRetentionPeriodDays(Integer.parseInt(accessLogGroupRetentionPeriodDays))
+                        .originAccessLogBucketArn(originAccessLogBucketArn)
+                        .distributionAccessLogBucketArn(distributionAccessLogBucketArn)
                         .build());
 
         // Create the Publish stack (Bucket Deployments to CloudFront)
+        String distributionId = this.edgeStack.distribution.getDistributionId();
         String publishStackId = "%s-PublishStack".formatted(deploymentName);
         this.publishStack = new PublishStack(
                 app,
@@ -232,12 +237,10 @@ public class SubmitDelivery {
                         .dashedDomainName(dashedDomainName)
                         .baseUrl(baseUrl)
                         .cloudTrailEnabled(cloudTrailEnabled)
-                        .webBucketArn(this.edgeStack.originBucket.getBucketArn()) // TODO: Get bucker by predicted name
-                        .distributionArn(
-                                this.edgeStack.distribution
-                                        .getDistributionArn()) // TODO: Get distribution by domain name
+                        .distributionId(distributionId)
                         .commitHash(commitHash)
                         .websiteHash(websiteHash)
+                        .webDeploymentLogGroupArn(webDeploymentLogGroupArn)
                         .buildNumber(buildNumber)
                         .docRootPath(docRootPath)
                         .build());
@@ -299,7 +302,7 @@ public class SubmitDelivery {
             }
         }
         // default env to dev if not set
-        if (props.env == null || props.env.isBlank()) props.env = "dev";
+        if (props.envName == null || props.envName.isBlank()) props.envName = "dev";
         return props;
     }
 }

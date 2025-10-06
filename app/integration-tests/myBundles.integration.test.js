@@ -30,7 +30,7 @@ describe("Integration – /api/my-bundles (MOCK)", () => {
   const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
   beforeEach(() => {
-    process.env.DIY_SUBMIT_BUNDLE_MOCK = "true";
+    process.env.TEST_BUNDLE_MOCK = "true";
 
     app = express();
     app.use(express.json());

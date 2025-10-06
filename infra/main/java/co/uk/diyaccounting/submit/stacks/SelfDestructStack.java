@@ -1,6 +1,8 @@
 package co.uk.diyaccounting.submit.stacks;
 
+import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
 import org.immutables.value.Value;
+import software.amazon.awscdk.Aspects;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.Stack;
@@ -21,6 +23,7 @@ import software.amazon.awscdk.services.lambda.Runtime;
 import software.amazon.awscdk.services.lambda.Tracing;
 import software.amazon.awscdk.services.logs.ILogGroup;
 import software.amazon.awscdk.services.logs.LogGroup;
+import software.amazon.awscdk.services.logs.RetentionDays;
 import software.constructs.Construct;
 
 import java.util.HashMap;
@@ -78,15 +81,13 @@ public class SelfDestructStack extends Stack {
 
         String selfDestructLogGroupName();
 
-        Optional<String> observabilityStackName();
-
         Optional<String> devStackName();
-
-        Optional<String> identityStackName();
 
         Optional<String> authStackName();
 
-        Optional<String> applicationStackName();
+        Optional<String> hmrcStackName();
+
+        Optional<String> accountStackName();
 
         Optional<String> edgeStackName();
 
@@ -175,11 +176,10 @@ public class SelfDestructStack extends Stack {
         // Environment variables for the function
         Map<String, String> environment = new HashMap<>();
         putIfNotNull(environment, "AWS_XRAY_TRACING_NAME", functionName);
-        putIfPresent(environment, "OBSERVABILITY_STACK_NAME", props.observabilityStackName());
         putIfPresent(environment, "DEV_STACK_NAME", props.devStackName());
-        putIfPresent(environment, "IDENTITY_STACK_NAME", props.identityStackName());
-        putIfPresent(environment, "AUTH_STACK_NAME", props.applicationStackName());
-        putIfPresent(environment, "APPLICATION_STACK_NAME", props.applicationStackName());
+        putIfPresent(environment, "AUTH_STACK_NAME", props.authStackName());
+        putIfPresent(environment, "HMRC_STACK_NAME", props.hmrcStackName());
+        putIfPresent(environment, "ACCOUNT_STACK_NAME", props.accountStackName());
         putIfPresent(environment, "EDGE_STACK_NAME", props.edgeStackName());
         putIfPresent(environment, "PUBLISH_STACK_NAME", props.publishStackName());
         putIfPresent(environment, "OPS_STACK_NAME", props.opsStackName());
@@ -201,7 +201,7 @@ public class SelfDestructStack extends Stack {
 
         // Create EventBridge rule to trigger self-destruct after specified delay
         int delayHours = Integer.parseInt(props.selfDestructDelayHours());
-        String ruleName = generateIamCompatibleName(props.compressedResourceNamePrefix(), "sd-schedule");
+        String ruleName = generateIamCompatibleName(props.resourceNamePrefix(), "sd-schedule");
         this.selfDestructSchedule = Rule.Builder.create(this, props.resourceNamePrefix() + "-SelfDestructSchedule")
                 .ruleName(ruleName)
                 .description("Automatically triggers self-destruct after " + delayHours + " hours")
@@ -216,6 +216,8 @@ public class SelfDestructStack extends Stack {
                                 delayHours)))
                         .build()))
                 .build();
+
+        Aspects.of(this).add(new SetAutoDeleteJobLogRetentionAspect(props.deploymentName(), RetentionDays.THREE_DAYS));
 
         // Output the function ARN for manual invocation
         cfnOutput(this, "SelfDestructFunctionArn", this.selfDestructFunction.getFunctionArn());

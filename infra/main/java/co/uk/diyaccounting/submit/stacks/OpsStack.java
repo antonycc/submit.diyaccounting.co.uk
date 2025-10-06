@@ -1,11 +1,8 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-
-import java.util.List;
+import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
 import org.immutables.value.Value;
-import software.amazon.awscdk.Duration;
+import software.amazon.awscdk.Aspects;
 import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
@@ -20,9 +17,13 @@ import software.amazon.awscdk.services.cloudwatch.TreatMissingData;
 import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.lambda.FunctionAttributes;
 import software.amazon.awscdk.services.lambda.IFunction;
-import software.amazon.awscdk.services.s3.Bucket;
-import software.amazon.awscdk.services.s3.IBucket;
+import software.amazon.awscdk.services.logs.RetentionDays;
 import software.constructs.Construct;
+
+import java.util.List;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 public class OpsStack extends Stack {
 
@@ -63,8 +64,6 @@ public class OpsStack extends Stack {
 
         @Override
         String cloudTrailEnabled();
-
-        String receiptsBucketArn(); // optional, may be null
 
         List<String> lambdaFunctionArns();
 
@@ -119,7 +118,7 @@ public class OpsStack extends Stack {
                 lambdaThrottles.add(fn.metricThrottles());
                 // Per-function error alarm (>=1 error in 5 minutes)
                 Alarm.Builder.create(this, props.resourceNamePrefix() + "-LambdaErrors-" + i)
-                        .alarmName(props.compressedResourceNamePrefix() + "-" + fn.getFunctionName() + "-errors")
+                        .alarmName(fn.getFunctionName() + "-errors")
                         .metric(fn.metricErrors())
                         .threshold(1.0)
                         .evaluationPeriods(1)
@@ -128,13 +127,6 @@ public class OpsStack extends Stack {
                         .alarmDescription("Lambda errors >= 1 for function " + fn.getFunctionName())
                         .build();
             }
-        }
-
-        // S3 buckets
-        IBucket receiptsBucket = null;
-        if (props.receiptsBucketArn() != null && !props.receiptsBucketArn().isBlank()) {
-            receiptsBucket = Bucket.fromBucketArn(
-                    this, props.resourceNamePrefix() + "-ReceiptsBucket", props.receiptsBucketArn());
         }
 
         // Dashboard
@@ -171,56 +163,12 @@ public class OpsStack extends Stack {
                             .height(6)
                             .build()));
         }
-
-        Metric s3ReceiptsAllReq = null;
-        Metric s3Receipts4xx = null;
-        Metric s3Receipts5xx = null;
-        if (receiptsBucket != null) {
-            s3ReceiptsAllReq = Metric.Builder.create()
-                    .namespace("AWS/S3")
-                    .metricName("AllRequests")
-                    .dimensionsMap(
-                            java.util.Map.of("BucketName", receiptsBucket.getBucketName(), "FilterId", "EntireBucket"))
-                    .statistic("Sum")
-                    .period(Duration.minutes(5))
-                    .build();
-            s3Receipts4xx = Metric.Builder.create()
-                    .namespace("AWS/S3")
-                    .metricName("4xxErrors")
-                    .dimensionsMap(
-                            java.util.Map.of("BucketName", receiptsBucket.getBucketName(), "FilterId", "EntireBucket"))
-                    .statistic("Sum")
-                    .period(Duration.minutes(5))
-                    .build();
-            s3Receipts5xx = Metric.Builder.create()
-                    .namespace("AWS/S3")
-                    .metricName("5xxErrors")
-                    .dimensionsMap(
-                            java.util.Map.of("BucketName", receiptsBucket.getBucketName(), "FilterId", "EntireBucket"))
-                    .statistic("Sum")
-                    .period(Duration.minutes(5))
-                    .build();
-        }
-
-        rows.add(java.util.List.of(
-                receiptsBucket != null
-                        ? GraphWidget.Builder.create()
-                                .title("S3 Receipts Requests/Errors")
-                                .left(java.util.List.of(s3ReceiptsAllReq, s3Receipts4xx, s3Receipts5xx))
-                                .width(12)
-                                .height(6)
-                                .build()
-                        : GraphWidget.Builder.create()
-                                .title("S3 Receipts (not configured)")
-                                .left(java.util.List.of())
-                                .width(12)
-                                .height(6)
-                                .build()));
-
         this.operationalDashboard = Dashboard.Builder.create(this, props.resourceNamePrefix() + "-OperationalDashboard")
-                .dashboardName(props.compressedResourceNamePrefix() + "-operations")
+                .dashboardName(props.resourceNamePrefix() + "-operations")
                 .widgets(rows)
                 .build();
+
+        Aspects.of(this).add(new SetAutoDeleteJobLogRetentionAspect(props.deploymentName(), RetentionDays.THREE_DAYS));
 
         // Outputs
         cfnOutput(

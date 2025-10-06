@@ -4,11 +4,11 @@ import { describe, beforeAll, afterAll, beforeEach, afterEach, it, expect, vi } 
 import { setupServer } from "msw/node";
 import { mockClient } from "aws-sdk-client-mock";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
-import dotenv from "dotenv";
+import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 
 import { httpPost as logReceiptHandler } from "@app/functions/logReceipt.js";
 
-dotenv.config({ path: ".env.test" });
+dotenvConfigIfNotBlank({ path: ".env.test" });
 
 const s3Mock = mockClient(S3Client);
 
@@ -27,13 +27,13 @@ describe("Integration – log receipt flow", () => {
     vi.resetAllMocks();
     process.env = {
       ...originalEnv,
-      DIY_SUBMIT_TEST_SERVER_HTTP_PORT: "3000",
-      DIY_SUBMIT_HMRC_BASE_URI: "https://test.test.test.uk",
-      DIY_SUBMIT_HMRC_CLIENT_ID: "test client id",
-      DIY_SUBMIT_HOME_URL: "http://hmrc.redirect:3000/",
-      DIY_SUBMIT_HMRC_CLIENT_SECRET: "test hmrc client secret",
-      DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX: "test-receipts-bucket",
-      DIY_SUBMIT_TEST_S3_ENDPOINT: "http://localhost:9000", // Enable S3 operations for tests
+      TEST_SERVER_HTTP_PORT: "3000",
+      HMRC_BASE_URI: "https://test.test.test.uk",
+      HMRC_CLIENT_ID: "test client id",
+      DIY_SUBMIT_BASE_URL: "http://hmrc.redirect:3000/",
+      HMRC_CLIENT_SECRET: "test hmrc client secret",
+      DIY_SUBMIT_RECEIPTS_BUCKET_FULL_NAME: "test-receipts-bucket",
+      TEST_S3_ENDPOINT: "http://localhost:9000", // Enable S3 operations for tests
     };
     s3Mock.reset();
   });
@@ -60,7 +60,7 @@ describe("Integration – log receipt flow", () => {
     expect(s3Mock.calls()).toHaveLength(1);
     const [firstCall] = s3Mock.calls();
     expect(firstCall.args[0].input).toEqual({
-      Bucket: "hmrc-redirect-test-receipts-bucket",
+      Bucket: "test-receipts-bucket",
       Key: "receipts/FOO123.json",
       Body: JSON.stringify(fakeReceipt),
       ContentType: "application/json",

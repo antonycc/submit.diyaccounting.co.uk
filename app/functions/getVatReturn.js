@@ -1,6 +1,5 @@
 // app/functions/getVatReturn.js
 
-import dotenv from "dotenv";
 import logger from "../lib/logger.js";
 import {
   extractRequest,
@@ -11,8 +10,6 @@ import {
 } from "../lib/responses.js";
 import eventToGovClientHeaders from "../lib/eventToGovClientHeaders.js";
 import { hmrcVatGet, shouldUseStub, getStubData } from "../lib/hmrcVatApi.js";
-
-dotenv.config({ path: ".env" });
 
 // GET /api/vat/returns/:periodKey
 export async function httpGet(event) {
@@ -70,9 +67,9 @@ export async function httpGet(event) {
     let vatReturn;
 
     // Check if we should use stubbed data
-    if (shouldUseStub("DIY_SUBMIT_TEST_VAT_RETURN")) {
+    if (shouldUseStub("TEST_VAT_RETURN")) {
       logger.info({ message: "Using stubbed VAT return data", vrn, periodKey, testScenario });
-      vatReturn = getStubData("DIY_SUBMIT_TEST_VAT_RETURN", {
+      vatReturn = getStubData("TEST_VAT_RETURN", {
         periodKey: periodKey,
         vatDueSales: 1000.5,
         vatDueAcquisitions: 0.0,

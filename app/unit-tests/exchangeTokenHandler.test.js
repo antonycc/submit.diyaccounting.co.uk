@@ -1,11 +1,11 @@
 // app/unit-tests/exchangeTokenHandler.test.js
 
 import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
-import dotenv from "dotenv";
+import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 
-import { httpPostMock as exchangeTokenHandler } from "@app/functions/exchangeToken.js";
+import { httpPostMock as exchangeTokenHandler } from "@app/functions/token.js";
 
-dotenv.config({ path: ".env.test" });
+dotenvConfigIfNotBlank({ path: ".env.test" });
 
 // Mock node-fetch
 vi.mock("node-fetch", () => ({
@@ -22,6 +22,8 @@ describe("httpPostMock", () => {
 
     process.env = {
       ...originalEnv,
+      HMRC_BASE_URI: "https://test",
+      HMRC_CLIENT_ID: "test client id",
     };
   });
 
@@ -36,7 +38,7 @@ describe("httpPostMock", () => {
       token_type: "Bearer",
       expires_in: 3600,
     };
-    process.env.DIY_SUBMIT_HMRC_CLIENT_SECRET = mockSecret;
+    process.env.HMRC_CLIENT_SECRET = mockSecret;
     fetch.mockResolvedValueOnce({
       ok: true,
       json: () => Promise.resolve(mockResponse),
@@ -66,7 +68,7 @@ describe("httpPostMock", () => {
     expect(params.get("grant_type")).toBe("authorization_code");
     expect(params.get("client_id")).toBe("test client id");
     // expect(params.get("client_secret")).toBe("test hmrc client secret");
-    expect(params.get("redirect_uri")).toBe("http://hmrc.test.redirect:3000/activities/submitVatCallback.html");
+    expect(params.get("redirect_uri")).toBe("https://test/activities/submitVatCallback.html");
     expect(params.get("code")).toBe("test-auth-code");
   });
 

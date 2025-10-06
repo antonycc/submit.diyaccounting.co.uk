@@ -1,9 +1,6 @@
 // app/functions/getReceipt.js
 import { GetObjectCommand, S3Client } from "@aws-sdk/client-s3";
-import dotenv from "dotenv";
 import logger from "../lib/logger.js";
-
-dotenv.config({ path: ".env" });
 
 function decodeJwtNoVerify(token) {
   try {
@@ -26,28 +23,23 @@ function userCtxFromEvent(event) {
 }
 
 function buildBucketAndClient() {
-  const homeUrl = process.env.DIY_SUBMIT_HOME_URL;
-  const receiptsBucketPostfix = process.env.DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX;
+  const homeUrl = process.env.DIY_SUBMIT_BASE_URL;
   const { hostname } = new URL(homeUrl);
   let envPrefix = "";
   if (homeUrl === "https://submit.diyaccounting.co.uk/") {
     envPrefix = "prod.";
   }
   const dashedDomain = `${envPrefix}${hostname}`.split(".").join("-");
-  const receiptsBucketFullName = `${dashedDomain}-${receiptsBucketPostfix}`;
+  const receiptsBucketFullName = `${dashedDomain}-receipts`;
 
   let s3Config = {};
-  if (
-    process.env.NODE_ENV !== "stubbed" &&
-    process.env.DIY_SUBMIT_TEST_S3_ENDPOINT &&
-    process.env.DIY_SUBMIT_TEST_S3_ENDPOINT !== "off"
-  ) {
+  if (process.env.NODE_ENV !== "stubbed" && process.env.TEST_S3_ENDPOINT && process.env.TEST_S3_ENDPOINT !== "off") {
     s3Config = {
-      endpoint: process.env.DIY_SUBMIT_TEST_S3_ENDPOINT,
+      endpoint: process.env.TEST_S3_ENDPOINT,
       region: "us-east-1",
       credentials: {
-        accessKeyId: process.env.DIY_SUBMIT_TEST_S3_ACCESS_KEY,
-        secretAccessKey: process.env.DIY_SUBMIT_TEST_S3_SECRET_KEY,
+        accessKeyId: process.env.TEST_S3_ACCESS_KEY,
+        secretAccessKey: process.env.TEST_S3_SECRET_KEY,
       },
       forcePathStyle: true,
     };

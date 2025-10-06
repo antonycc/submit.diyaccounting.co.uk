@@ -26,7 +26,7 @@ describe("Integration – requireActivity middleware", () => {
   let app;
 
   beforeEach(() => {
-    process.env.DIY_SUBMIT_BUNDLE_MOCK = "true";
+    process.env.TEST_BUNDLE_MOCK = "true";
     app = express();
     app.use(express.json());
 

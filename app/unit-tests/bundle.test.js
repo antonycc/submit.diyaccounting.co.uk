@@ -1,10 +1,10 @@
 // app/unit-tests/bundle.test.js
 import { describe, test, beforeEach, expect } from "vitest";
-import dotenv from "dotenv";
+import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 
 import { httpPost as requestBundle } from "@app/functions/bundle.js";
 
-dotenv.config({ path: ".env.test" });
+dotenvConfigIfNotBlank({ path: ".env.test" });
 
 function base64UrlEncode(obj) {
   const json = JSON.stringify(obj);
@@ -34,7 +34,7 @@ describe("bundle.js httpPostMock (MOCK mode)", () => {
   const originalEnv = process.env;
 
   beforeEach(() => {
-    process.env = { ...originalEnv, DIY_SUBMIT_BUNDLE_MOCK: "true" };
+    process.env = { ...originalEnv, TEST_BUNDLE_MOCK: "true" };
   });
 
   test("401 when Authorization missing", async () => {
@@ -49,23 +49,23 @@ describe("bundle.js httpPostMock (MOCK mode)", () => {
   });
 
   test("403 when bundle expired", async () => {
-    process.env.DIY_SUBMIT_BUNDLE_EXPIRY_DATE = "2000-01-01";
+    process.env.TEST_BUNDLE_EXPIRY_DATE = "2000-01-01";
     const token = makeIdToken("user-expired");
     const res = await requestBundle(buildEvent(token, { bundleId: "HMRC_TEST_API" }));
     expect(res.statusCode).toBe(403);
   });
 
   test("403 when user limit reached", async () => {
-    process.env.DIY_SUBMIT_BUNDLE_EXPIRY_DATE = "2025-12-31";
-    process.env.DIY_SUBMIT_BUNDLE_USER_LIMIT = "0";
+    process.env.TEST_BUNDLE_EXPIRY_DATE = "2025-12-31";
+    process.env.TEST_BUNDLE_USER_LIMIT = "0";
     const token = makeIdToken("user-limit");
     const res = await requestBundle(buildEvent(token, { bundleId: "HMRC_TEST_API" }));
     expect(res.statusCode).toBe(403);
   });
 
   test("200 granted and 200 already_granted on duplicate", async () => {
-    process.env.DIY_SUBMIT_BUNDLE_EXPIRY_DATE = "2025-12-31";
-    process.env.DIY_SUBMIT_BUNDLE_USER_LIMIT = "1000";
+    process.env.TEST_BUNDLE_EXPIRY_DATE = "2025-12-31";
+    process.env.TEST_BUNDLE_USER_LIMIT = "1000";
     const token = makeIdToken("user-success");
 
     const res1 = await requestBundle(buildEvent(token, { bundleId: "HMRC_TEST_API" }));

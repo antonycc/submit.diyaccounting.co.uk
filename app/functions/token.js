@@ -1,22 +1,24 @@
-// app/functions/exchangeToken.js
+// app/functions/token.js
 
 import fetch from "node-fetch";
 import { SecretsManagerClient, GetSecretValueCommand } from "@aws-sdk/client-secrets-manager";
-import dotenv from "dotenv";
 
 import logger from "../lib/logger.js";
 import { extractRequest, httpBadRequestResponse, httpOkResponse, httpServerErrorResponse } from "../lib/responses.js";
-
-dotenv.config({ path: ".env" });
+import { validateEnv } from "../lib/env.js";
 
 const secretsClient = new SecretsManagerClient();
 
 // caching via module-level variables
-let cachedGoogleClientSecret;
 let cachedHmrcClientSecret;
 
 // POST /api/cognito/exchange-token
 export async function httpPostCognito(event) {
+  validateEnv(["DIY_SUBMIT_BASE_URL", "COGNITO_CLIENT_ID", "COGNITO_BASE_URI"]);
+  const redirectUri = process.env.DIY_SUBMIT_BASE_URL + "auth/loginWithCognitoCallback.html";
+  const cognitoClientId = process.env.COGNITO_CLIENT_ID;
+  const CognitoBaseUri = process.env.COGNITO_BASE_URI;
+
   const request = extractRequest(event);
 
   // Validation
@@ -31,11 +33,6 @@ export async function httpPostCognito(event) {
     });
   }
 
-  const redirectUri = process.env.DIY_SUBMIT_HOME_URL + "auth/loginWithCognitoCallback.html";
-
-  const cognitoClientId = (process.env.DIY_SUBMIT_COGNITO_CLIENT_ID || "").trim();
-  const CognitoBaseUri = (process.env.DIY_SUBMIT_COGNITO_BASE_URI || "").trim();
-
   // Exchange via Cognito
   const url = `${CognitoBaseUri}/oauth2/token`;
   const body = {
@@ -49,6 +46,10 @@ export async function httpPostCognito(event) {
 
 // POST /api/hmrc/exchange-token
 export async function httpPostHmrc(event) {
+  validateEnv(["HMRC_BASE_URI", "HMRC_CLIENT_ID", "DIY_SUBMIT_BASE_URL", "HMRC_CLIENT_SECRET_ARN"]);
+  const secretArn = process.env.HMRC_CLIENT_SECRET_ARN;
+  const overrideSecret = process.env.HMRC_CLIENT_SECRET;
+
   const request = extractRequest(event);
 
   // Validation
@@ -61,50 +62,58 @@ export async function httpPostHmrc(event) {
   }
 
   // OAuth exchange token post-body
-  const clientSecret = await retrieveHmrcClientSecret();
-  const url = `${process.env.DIY_SUBMIT_HMRC_BASE_URI}/oauth/token`;
+  const clientSecret = await retrieveHmrcClientSecret(overrideSecret, secretArn);
+  const url = `${process.env.HMRC_BASE_URI}/oauth/token`;
   const body = {
     grant_type: "authorization_code",
-    client_id: process.env.DIY_SUBMIT_HMRC_CLIENT_ID,
+    client_id: process.env.HMRC_CLIENT_ID,
     client_secret: clientSecret,
-    redirect_uri: process.env.DIY_SUBMIT_HOME_URL + "activities/submitVatCallback.html",
+    redirect_uri: process.env.DIY_SUBMIT_BASE_URL + "activities/submitVatCallback.html",
     code,
   };
   return httpPostWithUrl(request, url, body);
 }
 
 export async function httpPostMock(event) {
+  validateEnv(["HMRC_BASE_URI", "HMRC_CLIENT_ID", "DIY_SUBMIT_BASE_URL", "HMRC_CLIENT_SECRET_ARN"]);
+  const secretArn = process.env.HMRC_CLIENT_SECRET_ARN;
+  const overrideSecret = process.env.HMRC_CLIENT_SECRET;
+
   const request = extractRequest(event);
   const { code } = JSON.parse(event.body || "{}");
   if (!code) {
     return httpBadRequestResponse({ request, message: "Missing code from event body" });
   }
-  const clientSecret = await retrieveHmrcClientSecret();
-  const url = `${process.env.DIY_SUBMIT_HMRC_BASE_URI}/oauth/token`;
+  const clientSecret = await retrieveHmrcClientSecret(overrideSecret, secretArn);
+  const url = `${process.env.HMRC_BASE_URI}/oauth/token`;
   const body = {
     grant_type: "authorization_code",
-    client_id: process.env.DIY_SUBMIT_HMRC_CLIENT_ID,
+    client_id: process.env.HMRC_CLIENT_ID,
     client_secret: clientSecret,
-    redirect_uri: process.env.DIY_SUBMIT_HOME_URL + "activities/submitVatCallback.html",
+    redirect_uri: process.env.DIY_SUBMIT_BASE_URL + "activities/submitVatCallback.html",
     code,
   };
   return httpPostWithUrl(request, url, body);
 }
 
 export async function exchangeToken(providerUrlOrCode, maybeBody) {
+  validateEnv(["HMRC_BASE_URI", "HMRC_CLIENT_ID", "DIY_SUBMIT_BASE_URL", "HMRC_CLIENT_SECRET_ARN"]);
+  const secretArn = process.env.HMRC_CLIENT_SECRET_ARN;
+  const overrideSecret = process.env.HMRC_CLIENT_SECRET;
+
   // Overloaded signature for tests/backward-compat:
   // - exchangeToken(code)
   // - exchangeToken(providerUrl, body)
   if (typeof providerUrlOrCode === "string" && (!maybeBody || typeof maybeBody !== "object")) {
     // TODO: Remove this when tests are otherwise stable.
     logger.warn({ message: "exchangeToken called with code and no body, defaulting to HMRC" });
-    const clientSecret = await retrieveHmrcClientSecret();
-    const url = `${process.env.DIY_SUBMIT_HMRC_BASE_URI}/oauth/token`;
+    const clientSecret = await retrieveHmrcClientSecret(overrideSecret, secretArn);
+    const url = `${process.env.HMRC_BASE_URI}/oauth/token`;
     const body = {
       grant_type: "authorization_code",
-      client_id: process.env.DIY_SUBMIT_HMRC_CLIENT_ID,
+      client_id: process.env.HMRC_CLIENT_ID,
       client_secret: clientSecret,
-      redirect_uri: process.env.DIY_SUBMIT_HOME_URL + "activities/submitVatCallback.html",
+      redirect_uri: process.env.DIY_SUBMIT_BASE_URL + "activities/submitVatCallback.html",
       code: providerUrlOrCode,
     };
     return performTokenExchange(url, body);
@@ -129,7 +138,7 @@ async function performTokenExchange(providerUrl, body) {
   });
   if (process.env.NODE_ENV === "stubbed") {
     logger.warn({ message: "httpPostMock called in stubbed mode, using test access token" });
-    const testAccessToken = process.env.DIY_SUBMIT_TEST_ACCESS_TOKEN;
+    const testAccessToken = process.env.TEST_ACCESS_TOKEN;
     response = {
       ok: true,
       status: 200,
@@ -213,15 +222,12 @@ export async function httpPostWithUrl(request, url, body) {
   });
 }
 
-async function retrieveHmrcClientSecret() {
-  const secretFromEnv = process.env.DIY_SUBMIT_HMRC_CLIENT_SECRET;
-  // Always update the secret from the environment variable if it exists
-  if (secretFromEnv) {
-    cachedHmrcClientSecret = secretFromEnv;
-    logger.info(`Secret retrieved from environment variable DIY_SUBMIT_HMRC_CLIENT_SECRET and cached`);
+async function retrieveHmrcClientSecret(overrideSecret, secretArn) {
+  if (overrideSecret) {
+    cachedHmrcClientSecret = overrideSecret;
+    logger.info(`Secret retrieved from override and cached`);
     // Only update the cached secret if it isn't set
   } else if (!cachedHmrcClientSecret) {
-    const secretArn = process.env.DIY_SUBMIT_HMRC_CLIENT_SECRET_ARN; // set via Lambda environment variable
     const data = await secretsClient.send(new GetSecretValueCommand({ SecretId: secretArn }));
     cachedHmrcClientSecret = data.SecretString;
     logger.info(`Secret retrieved from Secrets Manager with Arn ${secretArn} and cached`);
@@ -231,7 +237,6 @@ async function retrieveHmrcClientSecret() {
 
 // Export function to reset cached secret for testing
 export function resetCachedSecrets() {
-  cachedGoogleClientSecret = undefined;
   cachedHmrcClientSecret = undefined;
 }
 

@@ -1,6 +1,5 @@
 // app/functions/submitVat.js
 
-import dotenv from "dotenv";
 import fetch from "node-fetch";
 
 import logger from "../lib/logger.js";
@@ -12,8 +11,7 @@ import {
   extractClientIPFromHeaders,
 } from "../lib/responses.js";
 import eventToGovClientHeaders from "../lib/eventToGovClientHeaders.js";
-
-dotenv.config({ path: ".env" });
+import { validateEnv } from "../lib/env.js";
 
 // Lazy load AWS Cognito SDK only if bundle enforcement is on
 let __cognitoModule;
@@ -116,7 +114,7 @@ export async function submitVat(periodKey, vatDue, vatNumber, hmrcAccessToken, g
 
   let hmrcResponseBody;
   let hmrcResponse;
-  const hmrcBase = process.env.DIY_SUBMIT_HMRC_BASE_URI;
+  const hmrcBase = process.env.HMRC_BASE_URI;
   const hmrcRequestUrl = `${hmrcBase}/organisations/vat/${vatNumber}/returns`;
   logger.info({
     message: `Request to POST ${hmrcRequestUrl}`,
@@ -138,8 +136,8 @@ export async function submitVat(periodKey, vatDue, vatNumber, hmrcAccessToken, g
       json: async () => ({ access_token: hmrcAccessToken }),
       text: async () => JSON.stringify({ access_token: hmrcAccessToken }),
     };
-    // DIY_SUBMIT_TEST_RECEIPT is already a JSON string, so parse it first
-    hmrcResponseBody = JSON.parse(process.env.DIY_SUBMIT_TEST_RECEIPT || "{}");
+    // TEST_RECEIPT is already a JSON string, so parse it first
+    hmrcResponseBody = JSON.parse(process.env.TEST_RECEIPT || "{}");
     logger.warn({ message: "httpPostMock called in stubbed mode, using test receipt", receipt: hmrcResponseBody });
   } else {
     hmrcResponse = await fetch(hmrcRequestUrl, {
@@ -193,6 +191,8 @@ export async function submitVat(periodKey, vatDue, vatNumber, hmrcAccessToken, g
 
 // POST /api/submit-vat
 export async function httpPost(event) {
+  validateEnv(["HMRC_BASE_URI", "COGNITO_USER_POOL_ID"]);
+
   const request = extractRequest(event);
 
   const detectedIP = extractClientIPFromHeaders(event);
@@ -228,7 +228,7 @@ export async function httpPost(event) {
     const enforceBundles =
       String(process.env.DIY_SUBMIT_ENFORCE_BUNDLES || "").toLowerCase() === "true" ||
       process.env.DIY_SUBMIT_ENFORCE_BUNDLES === "1";
-    const userPoolId = process.env.DIY_SUBMIT_USER_POOL_ID;
+    const userPoolId = process.env.COGNITO_USER_POOL_ID;
     if (enforceBundles && userPoolId) {
       const authHeader = event.headers?.authorization || event.headers?.Authorization;
       if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -240,7 +240,7 @@ export async function httpPost(event) {
         return httpBadRequestResponse({ request, message: "Invalid Authorization token" });
       }
       const bundles = await getUserBundlesFromCognito(userPoolId, decoded.sub);
-      const hmrcBase = process.env.DIY_SUBMIT_HMRC_BASE_URI;
+      const hmrcBase = process.env.HMRC_BASE_URI;
       const sandbox = isSandboxBase(hmrcBase);
       if (sandbox) {
         if (

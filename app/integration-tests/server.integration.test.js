@@ -9,13 +9,13 @@ import request from "supertest";
 import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
-import dotenv from "dotenv";
+import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 
-dotenv.config({ path: ".env.test" });
+dotenvConfigIfNotBlank({ path: ".env.test" });
 
 // Import the actual handlers (not mocked for integration test)
 import { httpGetHmrc as authUrlHandler } from "@app/functions/authUrl.js";
-import { httpPostMock as exchangeTokenHandler } from "@app/functions/exchangeToken.js";
+import { httpPostMock as exchangeTokenHandler } from "@app/functions/token.js";
 import { httpPost as submitVatHandler } from "@app/functions/submitVat.js";
 import { httpPost as logReceiptHandler } from "@app/functions/logReceipt.js";
 
@@ -83,15 +83,15 @@ describe("Integration – Server Express App", () => {
     // Set up test environment variables
     process.env = {
       ...process.env,
-      DIY_SUBMIT_HMRC_CLIENT_ID: "integration-test-client-id",
-      DIY_SUBMIT_HMRC_CLIENT_SECRET: "integration-test-secret",
-      DIY_SUBMIT_COGNITO_CLIENT_ID: "integration-test-cognito-client-id",
-      DIY_SUBMIT_GOOGLE_CLIENT_SECRET: "integration-test-google-secret",
-      DIY_SUBMIT_HOME_URL: "https://test.submit.diyaccounting.co.uk/",
-      DIY_SUBMIT_HMRC_BASE_URI: "https://test-api.service.hmrc.gov.uk",
-      DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX: "integration-test-bucket",
-      DIY_SUBMIT_TEST_SERVER_HTTP_PORT: "3001",
-      DIY_SUBMIT_TEST_S3_ENDPOINT: "http://localhost:9000", // Enable S3 operations for tests
+      HMRC_CLIENT_ID: "integration-test-client-id",
+      HMRC_CLIENT_SECRET: "integration-test-secret",
+      COGNITO_CLIENT_ID: "integration-test-cognito-client-id",
+      GOOGLE_CLIENT_SECRET: "integration-test-google-secret",
+      DIY_SUBMIT_BASE_URL: "https://test.submit.diyaccounting.co.uk/",
+      HMRC_BASE_URI: "https://test-api.service.hmrc.gov.uk",
+      DIY_SUBMIT_RECEIPTS_BUCKET_FULL_NAME: "integration-test-bucket",
+      TEST_SERVER_HTTP_PORT: "3001",
+      TEST_S3_ENDPOINT: "http://localhost:9000", // Enable S3 operations for tests
     };
 
     s3Mock.reset();
@@ -233,7 +233,7 @@ describe("Integration – Server Express App", () => {
       expect(s3Mock.calls()).toHaveLength(1);
       const s3Call = s3Mock.calls()[0];
       expect(s3Call.args[0].input).toMatchObject({
-        Bucket: "test-submit-diyaccounting-co-uk-integration-test-bucket",
+        Bucket: "integration-test-bucket",
         Key: "receipts/test-bundle-123.json",
         ContentType: "application/json",
       });

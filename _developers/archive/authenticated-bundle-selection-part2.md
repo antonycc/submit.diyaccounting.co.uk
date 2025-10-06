@@ -10,7 +10,7 @@ Below is a structured plan for adding a fully working “bundle” system (allow
 
     * Add a new route in `app/bin/server.js` to proxy POST requests to the bundle Lambda.
     * Update `cdk.json` and the Java stack to define and deploy a new Lambda (`BundleLambda`), its function URL and environment variables.
-4. **Add environment variables:** Define `DIY_SUBMIT_USER_POOL_ID`, `DIY_SUBMIT_BUNDLE_EXPIRY_DATE` and `DIY_SUBMIT_BUNDLE_USER_LIMIT` in `.env.dev`, `.env.test` and GitHub secrets.
+4. **Add environment variables:** Define `COGNITO_USER_POOL_ID`, `TEST_BUNDLE_EXPIRY_DATE` and `TEST_BUNDLE_USER_LIMIT` in `.env.dev`, `.env.test` and GitHub secrets.
 5. **Update the front‑end:** Ensure `bundles.html` uses the correct token (`idToken` or `accessToken`) for the Authorization header and update the button states consistently.
 6. **Write/adjust tests:**
 
@@ -28,7 +28,7 @@ Below is a structured plan for adding a fully working “bundle” system (allow
 1. In `infra/main/java/co/uk/diyaccounting/submit/constructs/WebStack.java`, locate where the Cognito user pool is defined.
 2. Add a new custom attribute named `custom:bundles` of type string with a reasonable maximum length (2048 characters) to the user pool definition (the backlog doc specifies this).
 3. After creating the user pool, export its ID as an output (e.g., `CfnOutput` with key `UserPoolId`) so it can be passed to the bundle Lambda.
-4. Update the environment variables section of the bundle Lambda definition to include `DIY_SUBMIT_USER_POOL_ID` and set its value to the exported user pool ID.
+4. Update the environment variables section of the bundle Lambda definition to include `COGNITO_USER_POOL_ID` and set its value to the exported user pool ID.
 
 ### 2. Fix the bundle Lambda handler
 
@@ -86,7 +86,7 @@ Also, ensure that `app/functions/bundle.js` resides in `app/functions` (as it cu
       ```
     * In `WebStack.java`, create a new `Function` for the bundle Lambda (e.g., `requestBundleLambda`) using the same runtime and layers as other JS Lambdas.  Use the Docker image built from `bundle.Dockerfile`.
     * Create a `FunctionUrl` for this Lambda with the appropriate auth type (likely `AWS_IAM` if you want Cognito tokens verified upstream; for local development you might use `NONE`).
-    * Add environment variables: `DIY_SUBMIT_BUNDLE_EXPIRY_DATE`, `DIY_SUBMIT_BUNDLE_USER_LIMIT`, `DIY_SUBMIT_USER_POOL_ID`, and `AWS_REGION`.
+    * Add environment variables: `TEST_BUNDLE_EXPIRY_DATE`, `TEST_BUNDLE_USER_LIMIT`, `COGNITO_USER_POOL_ID`, and `AWS_REGION`.
     * Export the function ARN and URL in `SubmitApplication.java` (similar to other outputs) for downstream reference.
 
 ### 4. Add environment variables
@@ -94,9 +94,9 @@ Also, ensure that `app/functions/bundle.js` resides in `app/functions` (as it cu
 * Open `.env.dev`, `.env.test`, `.env.prod` and add default values:
 
   ```env
-  DIY_SUBMIT_USER_POOL_ID=<populate in CDK outputs or tests>
-  DIY_SUBMIT_BUNDLE_EXPIRY_DATE=2025-12-31
-  DIY_SUBMIT_BUNDLE_USER_LIMIT=1000
+  COGNITO_USER_POOL_ID=<populate in CDK outputs or tests>
+  TEST_BUNDLE_EXPIRY_DATE=2025-12-31
+  TEST_BUNDLE_USER_LIMIT=1000
   ```
 * For CI, add these variables to the repository secrets or `set-repository-variables.yml`.
 * Ensure that tests (`.env.test`) set a fake user pool ID or use stubbing so that Cognito API calls don’t fail.

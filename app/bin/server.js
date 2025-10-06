@@ -5,10 +5,8 @@ import path from "path";
 import express from "express";
 import { fileURLToPath } from "url";
 import { readFileSync } from "fs";
-import dotenv from "dotenv";
-
 import { httpGetCognito, httpGetHmrc, httpGetMock } from "../functions/authUrl.js";
-import { httpPostMock, httpPostHmrc, httpPostCognito } from "../functions/exchangeToken.js";
+import { httpPostMock, httpPostHmrc, httpPostCognito } from "../functions/token.js";
 import { httpPost as submitVatHttpPost } from "../functions/submitVat.js";
 import { httpPost as logReceiptHttpPost } from "../functions/logReceipt.js";
 import { httpPost as requestBundleHttpPost, httpDelete as removeBundleHttpDelete } from "../functions/bundle.js";
@@ -22,8 +20,10 @@ import { httpGet as getVatPaymentsHttpGet } from "../functions/getVatPayments.js
 import { httpGet as getVatPenaltiesHttpGet } from "../functions/getVatPenalties.js";
 import logger from "../lib/logger.js";
 import { requireActivity } from "../lib/entitlementsService.js";
+import { dotenvConfigIfNotBlank, validateEnv } from "../lib/env.js";
 
-dotenv.config({ path: ".env" });
+dotenvConfigIfNotBlank({ path: ".env" });
+dotenvConfigIfNotBlank({ path: ".env.test" });
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // eslint-disable-next-line sonarjs/x-powered-by
@@ -393,17 +393,25 @@ app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "../../web/public/index.html"));
 });
 
-const DIY_SUBMIT_TEST_SERVER_HTTP_PORT = process.env.DIY_SUBMIT_TEST_SERVER_HTTP_PORT || 3000;
+const TEST_SERVER_HTTP_PORT = process.env.TEST_SERVER_HTTP_PORT || 3000;
 
 // Only start the server if this file is being run directly (compare absolute paths) or under test harness
 const __thisFile = fileURLToPath(import.meta.url);
 const __argv1 = process.argv[1] ? path.resolve(process.argv[1]) : "";
-const __runDirect = __thisFile === __argv1 || String(process.env.DIY_SUBMIT_TEST_SERVER_HTTP || "") === "run";
+const __runDirect = __thisFile === __argv1 || String(process.env.TEST_SERVER_HTTP || "") === "run";
 
 if (__runDirect) {
-  app.listen(DIY_SUBMIT_TEST_SERVER_HTTP_PORT, () => {
-    const hmrcBase = process.env.DIY_SUBMIT_HMRC_BASE_URI || "DIY_SUBMIT_HMRC_BASE_URI not set";
-    const message = `Listening at http://127.0.0.1:${DIY_SUBMIT_TEST_SERVER_HTTP_PORT} for ${hmrcBase}`;
+  validateEnv([
+    "DIY_SUBMIT_BASE_URL",
+    "COGNITO_CLIENT_ID",
+    "COGNITO_BASE_URI",
+    "HMRC_BASE_URI",
+    "HMRC_CLIENT_ID",
+    "HMRC_CLIENT_SECRET_ARN",
+    "DIY_SUBMIT_RECEIPTS_BUCKET_FULL_NAME",
+  ]);
+  app.listen(TEST_SERVER_HTTP_PORT, () => {
+    const message = `Listening at http://127.0.0.1:${TEST_SERVER_HTTP_PORT}`;
     console.log(message);
     logger.info(message);
   });

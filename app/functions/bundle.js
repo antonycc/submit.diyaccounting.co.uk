@@ -1,6 +1,7 @@
 // app/functions/bundle.js
 
 import { loadCatalogFromRoot } from "../lib/productCatalogHelper.js";
+import { validateEnv } from "../lib/env.js";
 
 // AWS Cognito SDK is loaded lazily only when not in MOCK mode to avoid requiring it during tests
 let __cognitoModule;
@@ -39,10 +40,7 @@ export function __getInMemoryBundlesStore() {
 }
 
 function isMockMode() {
-  return (
-    String(process.env.DIY_SUBMIT_BUNDLE_MOCK || "").toLowerCase() === "true" ||
-    process.env.DIY_SUBMIT_BUNDLE_MOCK === "1"
-  );
+  return String(process.env.TEST_BUNDLE_MOCK || "").toLowerCase() === "true" || process.env.TEST_BUNDLE_MOCK === "1";
 }
 
 function parseIsoDurationToDate(fromDate, iso) {
@@ -98,6 +96,7 @@ export async function httpPost(event) {
   if (event.httpMethod === "DELETE" || event.requestContext?.http?.method === "DELETE") {
     return httpDelete(event);
   }
+  validateEnv(["COGNITO_USER_POOL_ID"]);
 
   try {
     console.log("[DEBUG_LOG] Bundle request received:", JSON.stringify(event, null, 2));
@@ -134,7 +133,7 @@ export async function httpPost(event) {
     }
 
     const userId = decodedToken.sub;
-    const userPoolId = process.env.DIY_SUBMIT_USER_POOL_ID;
+    const userPoolId = process.env.COGNITO_USER_POOL_ID;
 
     if (!userPoolId && !isMockMode()) {
       console.log("[DEBUG_LOG] Missing USER_POOL_ID environment variable (non-mock mode)");
@@ -233,7 +232,7 @@ export async function httpPost(event) {
 
     if (!catalogBundle) {
       // Legacy behavior preserved (HMRC_TEST_API or other external bundles using envs)
-      const expiryDate = process.env.DIY_SUBMIT_BUNDLE_EXPIRY_DATE || "2025-12-31";
+      const expiryDate = process.env.TEST_BUNDLE_EXPIRY_DATE || "2025-12-31";
       if (new Date() > new Date(expiryDate)) {
         return {
           statusCode: 403,
@@ -246,7 +245,7 @@ export async function httpPost(event) {
       }
 
       // Check user limit for this bundle
-      const userLimit = parseInt(process.env.DIY_SUBMIT_BUNDLE_USER_LIMIT || "1000");
+      const userLimit = parseInt(process.env.TEST_BUNDLE_USER_LIMIT || "1000");
       let currentCount;
       if (isMockMode()) {
         currentCount = 0;
@@ -511,7 +510,7 @@ export async function httpDelete(event) {
     if (isMockMode()) {
       currentBundles = __inMemoryBundles.get(userId) || [];
     } else {
-      const userPoolId = process.env.DIY_SUBMIT_USER_POOL_ID;
+      const userPoolId = process.env.COGNITO_USER_POOL_ID;
       if (!userPoolId) {
         return {
           statusCode: 500,
@@ -553,7 +552,7 @@ export async function httpDelete(event) {
         __inMemoryBundles.set(userId, []);
       } else {
         try {
-          const userPoolId = process.env.DIY_SUBMIT_USER_POOL_ID;
+          const userPoolId = process.env.COGNITO_USER_POOL_ID;
           const mod = await getCognitoModule();
           const client = await getCognitoClient();
           const updateCommand = new mod.AdminUpdateUserAttributesCommand({
@@ -607,7 +606,7 @@ export async function httpDelete(event) {
         __inMemoryBundles.set(userId, bundlesAfterRemoval);
       } else {
         try {
-          const userPoolId = process.env.DIY_SUBMIT_USER_POOL_ID;
+          const userPoolId = process.env.COGNITO_USER_POOL_ID;
           const mod = await getCognitoModule();
           const client = await getCognitoClient();
           const updateCommand = new mod.AdminUpdateUserAttributesCommand({

@@ -1,6 +1,5 @@
 // app/functions/getVatPayments.js
 
-import dotenv from "dotenv";
 import logger from "../lib/logger.js";
 import {
   extractRequest,
@@ -11,8 +10,6 @@ import {
 } from "../lib/responses.js";
 import eventToGovClientHeaders from "../lib/eventToGovClientHeaders.js";
 import { hmrcVatGet, shouldUseStub, getStubData } from "../lib/hmrcVatApi.js";
-
-dotenv.config({ path: ".env" });
 
 // GET /api/vat/payments
 export async function httpGet(event) {
@@ -68,9 +65,9 @@ export async function httpGet(event) {
     let payments;
 
     // Check if we should use stubbed data
-    if (shouldUseStub("DIY_SUBMIT_TEST_VAT_PAYMENTS")) {
+    if (shouldUseStub("TEST_VAT_PAYMENTS")) {
       logger.info({ message: "Using stubbed VAT payments data", testScenario });
-      payments = getStubData("DIY_SUBMIT_TEST_VAT_PAYMENTS", {
+      payments = getStubData("TEST_VAT_PAYMENTS", {
         payments: [
           {
             amount: 1000.5,

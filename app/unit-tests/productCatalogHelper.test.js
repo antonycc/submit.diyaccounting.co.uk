@@ -5,9 +5,11 @@ import {
   parseCatalog,
   loadCatalogFromRoot,
   bundlesForActivity,
-  activitiesForBundle,
   isActivityAvailable,
 } from "../lib/productCatalogHelper.js";
+import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
+
+dotenvConfigIfNotBlank({ path: ".env.test" });
 
 describe("productCatalogHelper", () => {
   const tomlPath = path.join(process.cwd(), "product-catalogue.toml");

@@ -246,9 +246,26 @@ public class ResourceNameUtils {
                 : buildNonProdCognitoDomainName(env, cognitoDomainPrefix, subDomainName, hostedZoneName);
     }
 
+    public static String buildCognitoDomainName(String env, String cognitoDomainPrefix, String domainName) {
+        if (env == null || env.isBlank()) {
+            throw new IllegalArgumentException("env is required to build cognito domain name");
+        }
+        return "prod".equals(env)
+                ? buildProdCognitoDomainName(cognitoDomainPrefix, domainName)
+                : buildNonProdCognitoDomainName(env, cognitoDomainPrefix, domainName);
+    }
+
+    public static String buildProdCognitoDomainName(String cognitoDomainPrefix, String domainName) {
+        return "%s.%s".formatted(cognitoDomainPrefix, domainName);
+    }
+
     public static String buildProdCognitoDomainName(
             String cognitoDomainPrefix, String subDomainName, String hostedZoneName) {
         return "%s.%s.%s".formatted(cognitoDomainPrefix, subDomainName, hostedZoneName);
+    }
+
+    public static String buildNonProdCognitoDomainName(String env, String cognitoDomainPrefix, String domainName) {
+        return "%s.%s.%s".formatted(env, cognitoDomainPrefix, domainName);
     }
 
     public static String buildNonProdCognitoDomainName(

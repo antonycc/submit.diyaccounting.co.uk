@@ -5,6 +5,9 @@ import fetch from "node-fetch";
 
 import { httpGet } from "../functions/getVatReturn.js";
 import { buildGovClientTestHeaders } from "./govClientTestHeader.js";
+import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
+
+dotenvConfigIfNotBlank({ path: ".env.test" });
 
 vi.mock("node-fetch");
 
@@ -12,7 +15,7 @@ describe("getVatReturn handler", () => {
   beforeEach(() => {
     vi.resetAllMocks();
     // Set stubbed mode
-    process.env.DIY_SUBMIT_TEST_VAT_RETURN = JSON.stringify({
+    process.env.TEST_VAT_RETURN = JSON.stringify({
       periodKey: "24A1",
       vatDueSales: 1000.5,
       vatDueAcquisitions: 0.0,
@@ -176,7 +179,7 @@ describe("getVatReturn handler", () => {
 
   test("should call HMRC API when not in stubbed mode", async () => {
     // Remove stubbed mode
-    delete process.env.DIY_SUBMIT_TEST_VAT_RETURN;
+    delete process.env.TEST_VAT_RETURN;
 
     const mockResponse = {
       periodKey: "24A1",
@@ -222,7 +225,7 @@ describe("getVatReturn handler", () => {
 
   test("should handle HMRC API 404 error", async () => {
     // Remove stubbed mode
-    delete process.env.DIY_SUBMIT_TEST_VAT_RETURN;
+    delete process.env.TEST_VAT_RETURN;
 
     fetch.mockResolvedValueOnce({
       ok: false,
@@ -252,7 +255,7 @@ describe("getVatReturn handler", () => {
 
   test("should handle HMRC API error", async () => {
     // Remove stubbed mode
-    delete process.env.DIY_SUBMIT_TEST_VAT_RETURN;
+    delete process.env.TEST_VAT_RETURN;
 
     const errorMessage = "INVALID_VRN";
 

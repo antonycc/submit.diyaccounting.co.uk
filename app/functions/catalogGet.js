@@ -5,11 +5,7 @@ import crypto from "node:crypto";
 import { loadCatalogFromRoot } from "../lib/productCatalogHelper.js";
 import { extractRequest } from "../lib/responses.js";
 
-import dotenv from "dotenv";
-
 import logger from "../lib/logger.js";
-
-dotenv.config({ path: ".env" });
 
 let cached = null; // { json, etag, lastModified, object, validated }
 

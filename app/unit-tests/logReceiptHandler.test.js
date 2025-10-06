@@ -1,9 +1,9 @@
 // app/unit-tests/logReceiptHandler.test.js
 
 import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
-import dotenv from "dotenv";
+import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 
-dotenv.config({ path: ".env.test" });
+dotenvConfigIfNotBlank({ path: ".env.test" });
 
 // Mock AWS S3 client - must be done before importing main.js
 const mockSend = vi.fn();
@@ -24,8 +24,8 @@ describe("httpPostMock", () => {
 
     process.env = {
       ...originalEnv,
-      DIY_SUBMIT_RECEIPTS_BUCKET_POSTFIX: "test-receipts-bucket",
-      DIY_SUBMIT_TEST_S3_ENDPOINT: "http://localhost:9000", // Enable S3 operations for tests
+      DIY_SUBMIT_RECEIPTS_BUCKET_FULL_NAME: "test-receipts-bucket",
+      TEST_S3_ENDPOINT: "http://localhost:9000", // Enable S3 operations for tests
     };
   });
 
@@ -56,7 +56,7 @@ describe("httpPostMock", () => {
 
     // Verify S3 client was called with correct parameters
     expect(mockSend).toHaveBeenCalledWith({
-      Bucket: "hmrc-test-redirect-test-receipts-bucket",
+      Bucket: "test-receipts-bucket",
       Key: "receipts/123456789012.json",
       Body: JSON.stringify(receipt),
       ContentType: "application/json",
@@ -155,7 +155,7 @@ describe("httpPostMock", () => {
 
     // Verify S3 client was called with special characters in key
     expect(mockSend).toHaveBeenCalledWith({
-      Bucket: "hmrc-test-redirect-test-receipts-bucket",
+      Bucket: "test-receipts-bucket",
       Key: "receipts/ABC-123_456.789.json",
       Body: JSON.stringify(receipt),
       ContentType: "application/json",
