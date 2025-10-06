@@ -1495,18 +1495,15 @@ jobs:
       - deploy-account
       - deploy-edge
       - deploy-publish
-    runs-on: ubuntu-24.04
-    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v5
-
-      - name: Set origins
-        uses: 'antonycc/submit.diyaccounting.co.uk/.github/workflows/set-origins.yml@lambdas'
-        with:
-          environment: "${{ needs.names.outputs.environment-name }}"
-          originsCsv:  "${{ needs.names.outputs.deployment-name == 'prod' && 'submit.diyaccounting.co.uk' || format('{0}.submit.diyaccounting.co.uk', needs.names.outputs.deployment-name) }}"
-
+      - deploy-publish
+    uses: 'antonycc/submit.diyaccounting.co.uk/.github/workflows/set-origins.yml@main'
+    permissions:
+      id-token: write
+      contents: read
+    with:
+      environment: "${{ needs.names.outputs.environment-name }}"
+      originsCsv:  "${{ needs.names.outputs.deployment-name == 'prod' && 'submit.diyaccounting.co.uk' || format('{0}.submit.diyaccounting.co.uk', needs.names.outputs.deployment-name) }}"
+    secrets: inherit
 
   # TODO: Configure or copy and convert the system test API test to test against deployed environment
 #  api-test:
