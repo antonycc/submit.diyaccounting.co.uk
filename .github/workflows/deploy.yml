@@ -331,7 +331,7 @@ jobs:
           ./mvnw clean package -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }}
           echo "SELF_DESTRUCT_HANDLER_SOURCE=target/self-destruct-lambda.jar"
           echo "SELF_DESTRUCT_HANDLER_SOURCE=target/self-destruct-lambda.jar" >> $GITHUB_OUTPUT
-          ls -l "SELF_DESTRUCT_HANDLER_SOURCE=${SELF_DESTRUCT_HANDLER_SOURCE}?"
+          ls -l "${SELF_DESTRUCT_HANDLER_SOURCE?}"
 
       - name: Upload self-destruct handler JAR
         uses: actions/upload-artifact@v4
