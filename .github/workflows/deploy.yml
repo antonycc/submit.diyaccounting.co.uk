@@ -1506,7 +1506,7 @@ jobs:
       - deploy-edge
       - deploy-publish
       - deploy-publish
-    uses: 'antonycc/submit.diyaccounting.co.uk/.github/workflows/set-origins.yml@main'
+    uses: 'antonycc/submit.diyaccounting.co.uk/.github/workflows/set-origins.yml@lambdas2'
     permissions:
       id-token: write
       contents: read
