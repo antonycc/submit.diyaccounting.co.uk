@@ -371,6 +371,9 @@ jobs:
 
   npm-test-cdk:
     name: 'npm test cdk'
+    needs:
+      - names
+      - mvn-package
     runs-on: ubuntu-24.04
     permissions:
       contents: read
