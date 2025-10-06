@@ -323,6 +323,22 @@ jobs:
           echo "COGNITO_USER_POOL_ARN=$COGNITO_USER_POOL_ARN" >> $GITHUB_OUTPUT
           echo "COGNITO_CLIENT_ID=$COGNITO_CLIENT_ID" >> $GITHUB_OUTPUT
         shell: bash
+    outputs:
+      COGNITO_USER_POOL_ARN: ${{ steps.identity-outputs.outputs.COGNITO_USER_POOL_ARN }}
+      COGNITO_CLIENT_ID: ${{ steps.identity-outputs.outputs.COGNITO_CLIENT_ID }}
+
+  set-repository-environment-variables:
+    name: 'set repository environment variables'
+    needs:
+      - names
+      - create-secrets
+      - deploy-identity
+    runs-on: ubuntu-24.04
+    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    permissions:
+      id-token: write
+      contents: read
+    steps:
 
       - name: Create a GitHub environment variable for COGNITO_USER_POOL_ARN in the current environment
         uses: actions/github-script@v8
@@ -350,7 +366,7 @@ jobs:
           GH_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN || secrets.GITHUB_TOKEN }}
           ENV_NAME: ${{ needs.names.outputs.environment-name }}
           VAR_NAME: "COGNITO_USER_POOL_ARN"
-          VAR_VALUE: ${{ steps.identity-outputs.outputs.COGNITO_USER_POOL_ARN }}
+          VAR_VALUE: ${{ needs.deploy-identity.outputs.COGNITO_USER_POOL_ARN }}
 
       - name: Create a GitHub environment variable for COGNITO_CLIENT_ID in the current environment
         uses: actions/github-script@v8
@@ -378,4 +394,4 @@ jobs:
           GH_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN || secrets.GITHUB_TOKEN }}
           ENV_NAME: ${{ needs.names.outputs.environment-name }}
           VAR_NAME: "COGNITO_CLIENT_ID"
-          VAR_VALUE: ${{ steps.identity-outputs.outputs.COGNITO_CLIENT_ID }}
+          VAR_VALUE: ${{ needs.deploy-identity.outputs.COGNITO_CLIENT_ID }}
