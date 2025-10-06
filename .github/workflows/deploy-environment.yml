@@ -346,24 +346,28 @@ jobs:
           GH_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN || secrets.GITHUB_TOKEN }}
         with:
           script: |
+            const repositoryId = context.repo.owner + '/' + context.repo.repo;
+            console.log(`Repository: ${repositoryId}`);
             const envName = '${{ needs.names.outputs.environment-name }}';
             const varName = 'COGNITO_USER_POOL_ARN';
             const varValue = '${{ needs.deploy-identity.outputs.COGNITO_USER_POOL_ARN }}';
 
-            if (!varValue || varValue === 'null') {
-              core.setFailed(`${varName} output missing (got: ${varValue}). Verify jq keys in lines 319-324 match cdk-outputs-identity.json.`);
-              return;
-            }
-
-            console.log(`Setting environment variable ${varName} in environment ${envName}`);
-            await github.rest.actions.createEnvironmentVariable({
+            // ensure the environment exists
+            await github.rest.repos.createOrUpdateEnvironment({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              environment_name: envName,
-              name: varName,
-              value: varValue
+              environment_name,
             });
-            console.log(`Set environment variable ${varName} in environment ${envName}`);
+
+            // create or update the variable
+            await github.rest.actions.createEnvironmentVariable({
+              repository_id,
+              environment_name,
+              name,
+              value,
+            });
+
+            core.info(`Set env var ${name} in ${environment_name}`);
 
       - name: Create a GitHub environment variable for COGNITO_CLIENT_ID in the current environment
         uses: actions/github-script@v8
@@ -371,21 +375,25 @@ jobs:
           GH_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN || secrets.GITHUB_TOKEN }}
         with:
           script: |
+            const repositoryId = context.repo.owner + '/' + context.repo.repo;
+            console.log(`Repository: ${repositoryId}`);
             const envName = '${{ needs.names.outputs.environment-name }}';
             const varName = 'COGNITO_CLIENT_ID';
             const varValue = '${{ needs.deploy-identity.outputs.COGNITO_CLIENT_ID }}';
 
-            if (!varValue || varValue === 'null') {
-              core.setFailed(`${varName} output missing (got: ${varValue}). Verify jq keys in lines 319-324 match cdk-outputs-identity.json.`);
-              return;
-            }
-
-            console.log(`Setting environment variable ${varName} in environment ${envName}`);
-            await github.rest.actions.createEnvironmentVariable({
+            // ensure the environment exists
+            await github.rest.repos.createOrUpdateEnvironment({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              environment_name: envName,
-              name: varName,
-              value: varValue
+              environment_name,
             });
-            console.log(`Set environment variable ${varName} in environment ${envName}`);
+
+            // create or update the variable
+            await github.rest.actions.createEnvironmentVariable({
+              repository_id,
+              environment_name,
+              name,
+              value,
+            });
+
+            core.info(`Set env var ${name} in ${environment_name}`);
