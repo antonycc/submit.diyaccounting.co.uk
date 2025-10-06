@@ -1494,7 +1494,7 @@ jobs:
   #        default: ''
   set-origins:
     if: ${{ !cancelled() && inputs.skipDeploy == 'true' || needs.deploy-publish.result == 'success' }}
-    name: 'web test'
+    name: 'set origins'
     needs:
       - names
       - deploy-auth
