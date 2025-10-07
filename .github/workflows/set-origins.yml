@@ -43,120 +43,13 @@ jobs:
     permissions:
       id-token: write
       contents: read
+    env:
+      ENVIRONMENT_NAME: ${{ inputs.environment }}
     steps:
-      - name: Configure AWS role via GitHub OIDC
-        uses: aws-actions/configure-aws-credentials@v5
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set origins using local composite action
+        uses: ./.github/actions/set-origins
         with:
-          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-          role-chaining: false
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - name: Assume AWS deployment role
-        uses: aws-actions/configure-aws-credentials@v5
-        with:
-          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-          role-chaining: true
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - name: Resolve ApexStack distribution id
-        id: resolve
-        run: |
-          set -euo pipefail
-          STACK_NAME="${{ inputs.environment }}-ApexStack"
-          DIST_ID=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" --query "Stacks[0].Outputs[?OutputKey=='ApexDistributionId'].OutputValue" --output text)
-          if [ -z "$DIST_ID" ] || [ "$DIST_ID" = "None" ]; then
-            echo "Failed to resolve distribution id from stack outputs for $STACK_NAME" >&2
-            exit 1
-          fi
-          echo "DIST_ID=$DIST_ID" | tee -a "$GITHUB_ENV"
-
-      - name: Update origins using GitHub Script (AWS SDK)
-        id: update
-        uses: actions/github-script@v8
-        env:
-          ORIGINS_CSV: ${{ inputs.originsCsv }}
-        with:
-          script: |
-            const { CloudFrontClient, GetDistributionConfigCommand, UpdateDistributionCommand, CreateInvalidationCommand } = await import('@aws-sdk/client-cloudfront');
-
-            // Helper functions
-            const sanitize = (s) => s.replace(/[^A-Za-z0-9_-]/g, '-');
-            const parseHosts = (csv) => (csv || '').split(',').map(s => s.trim()).filter(Boolean).slice(0, 2);
-
-            const client = new CloudFrontClient({ region: process.env.AWS_REGION });
-            const id = process.env.DIST_ID;
-            const hosts = parseHosts(process.env.ORIGINS_CSV);
-
-            // Get current config + ETag
-            const getResp = await client.send(new GetDistributionConfigCommand({ Id: id }));
-            const etag = getResp.ETag;
-            const cfg = structuredClone(getResp.DistributionConfig);
-
-            // Determine maintenance origin id from /maintenance/* behavior, else current default
-            const maintOriginId = ((cfg.CacheBehaviors?.Items || []).find(b => b.PathPattern === '/maintenance/*')?.TargetOriginId)
-              || cfg.DefaultCacheBehavior.TargetOriginId;
-
-            // Remove previous app-* origins and app-failover group
-            cfg.Origins.Items = (cfg.Origins.Items || []).filter(o => !String(o.Id || '').startsWith('app-'));
-            cfg.Origins.Quantity = cfg.Origins.Items.length;
-            if (cfg.OriginGroups) {
-              cfg.OriginGroups.Items = (cfg.OriginGroups.Items || []).filter(g => g.Id !== 'app-failover');
-              cfg.OriginGroups.Quantity = cfg.OriginGroups.Items.length;
-            }
-
-            if (hosts.length === 0) {
-              // Switch to maintenance
-              cfg.DefaultCacheBehavior.TargetOriginId = maintOriginId;
-            } else {
-              // Add 1 or 2 custom origins for provided hosts
-              const mkOrigin = (h) => ({
-                Id: `app-${sanitize(h)}`,
-                DomainName: h,
-                OriginPath: '',
-                CustomOriginConfig: {
-                  HTTPPort: 80,
-                  HTTPSPort: 443,
-                  OriginProtocolPolicy: 'https-only',
-                  OriginSslProtocols: { Quantity: 1, Items: ['TLSv1.2'] }
-                }
-              });
-              cfg.Origins.Items.push(...hosts.map(mkOrigin));
-              cfg.Origins.Quantity = cfg.Origins.Items.length;
-
-              if (hosts.length > 1) {
-                cfg.OriginGroups = cfg.OriginGroups || { Quantity: 0, Items: [] };
-                const group = {
-                  Id: 'app-failover',
-                  FailoverCriteria: { StatusCodes: { Quantity: 4, Items: [500, 502, 503, 504] } },
-                  Members: { Quantity: 2, Items: hosts.slice(0, 2).map(h => ({ OriginId: `app-${sanitize(h)}` })) }
-                };
-                cfg.OriginGroups.Items = [group, ...(cfg.OriginGroups.Items || []).filter(g => g.Id !== 'app-failover')];
-                cfg.OriginGroups.Quantity = cfg.OriginGroups.Items.length;
-                cfg.DefaultCacheBehavior.TargetOriginId = 'app-failover';
-              } else {
-                cfg.DefaultCacheBehavior.TargetOriginId = `app-${sanitize(hosts[0])}`;
-              }
-            }
-
-            // Apply update
-            await client.send(new UpdateDistributionCommand({
-              Id: id,
-              IfMatch: etag,
-              DistributionConfig: cfg,
-            }));
-
-            // Invalidate root for faster cutover
-            await client.send(new CreateInvalidationCommand({ DistributionId: id, InvalidationBatch: { CallerReference: `${Date.now()}`, Paths: { Quantity: 1, Items: ['/index.html'] } } }));
-
-            core.info(`Updated distribution ${id}. Set default origin to ${cfg.DefaultCacheBehavior.TargetOriginId}.`)
-
-      - name: Done
-        run: echo "Updated distribution $DIST_ID successfully."
+          originsCsv: ${{ inputs.originsCsv }}

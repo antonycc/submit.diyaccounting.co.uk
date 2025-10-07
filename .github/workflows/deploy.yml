@@ -1507,14 +1507,20 @@ jobs:
       - deploy-edge
       - deploy-publish
       - deploy-publish
-    uses: antonycc/submit.diyaccounting.co.uk/.github/workflows/set-origins.yml@main
+    runs-on: ubuntu-24.04
+    environment: ${{ needs.names.outputs.environment-name }}
     permissions:
       id-token: write
       contents: read
-    with:
-      environment: "${{ needs.names.outputs.environment-name }}"
-      originsCsv:  "${{ needs.names.outputs.deployment-name == 'prod' && 'submit.diyaccounting.co.uk' || format('{0}.submit.diyaccounting.co.uk', needs.names.outputs.deployment-name) }}"
-    secrets: inherit
+    env:
+      ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+      - name: Use local set-origins composite action
+        uses: ./.github/actions/set-origins
+        with:
+          originsCsv:  "${{ needs.names.outputs.deployment-name == 'prod' && 'submit.diyaccounting.co.uk' || format('{0}.submit.diyaccounting.co.uk', needs.names.outputs.deployment-name) }}"
 
   # TODO: Configure or copy and convert the system test API test to test against deployed environment
 #  api-test:
