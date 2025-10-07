@@ -1506,7 +1506,7 @@ jobs:
       - deploy-edge
       - deploy-publish
       - deploy-publish
-    uses: '.github/workflows/set-origins.yml'
+    uses: ./.github/workflows/set-origins.yml
     permissions:
       id-token: write
       contents: read
