@@ -35,23 +35,11 @@ env:
   AWS_REGION: 'eu-west-2'
 
 jobs:
-  names:
-    name: names
-    runs-on: ubuntu-24.04
-    steps:
-      - id: out
-        run: |
-          echo "ENVIRONMENT_NAME=${{ inputs.environment }}"
-          echo "ENVIRONMENT_NAME=${{ inputs.environment }}" >> "$GITHUB_OUTPUT"
-    outputs:
-      environment-name: ${{ steps.out.outputs.ENVIRONMENT_NAME }}
 
   update-apex-origins:
     name: update apex origins
-    needs:
-      - names
     runs-on: ubuntu-24.04
-    environment: ${{ needs.names.outputs.environment-name }}
+    environment: ${{ inputs.environment }}
     permissions:
       id-token: write
       contents: read
@@ -82,7 +70,7 @@ jobs:
         id: resolve
         run: |
           set -euo pipefail
-          STACK_NAME="${{ needs.names.outputs.environment-name }}-ApexStack"
+          STACK_NAME="${{ inputs.environment }}-ApexStack"
           DIST_ID=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" --query "Stacks[0].Outputs[?OutputKey=='ApexDistributionId'].OutputValue" --output text)
           if [ -z "$DIST_ID" ] || [ "$DIST_ID" = "None" ]; then
             echo "Failed to resolve distribution id from stack outputs for $STACK_NAME" >&2
