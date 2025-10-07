@@ -375,6 +375,7 @@ jobs:
       - names
       - mvn-package
     runs-on: ubuntu-24.04
+    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
     permissions:
       contents: read
       id-token: write
@@ -1506,7 +1507,7 @@ jobs:
       - deploy-edge
       - deploy-publish
       - deploy-publish
-    uses: ./.github/workflows/set-origins.yml
+    uses: .github/workflows/set-origins.yml
     permissions:
       id-token: write
       contents: read
