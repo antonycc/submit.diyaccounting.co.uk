@@ -1,5 +1,5 @@
 name: "Set Apex Origins"
-description: "Update CloudFront Apex distribution origins and default target based on provided originsCsv (0/1/2 hosts)."
+description: "Configure CloudFront Apex distribution origins and default behavior based on provided originsCsv (0/1/2 hosts)."
 
 inputs:
   originsCsv:
@@ -37,14 +37,13 @@ runs:
       shell: bash
       run: |
         set -euo pipefail
-        # Expect caller job to define environment: which sets github's Environment; also export ENVIRONMENT_NAME
-        STACK_NAME="${ENVIRONMENT_NAME:-${{ inputs.environment || '' }}}-ApexStack"
         if [ -z "${ENVIRONMENT_NAME:-}" ]; then
-          echo "ENVIRONMENT_NAME not set by caller; inferring from GitHub environment if available" >&2
+          echo "ENVIRONMENT_NAME env var must be set (e.g. ci or prod)" >&2
+          exit 1
         fi
-        # Try reading stack outputs
-        DIST_ID=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" --query "Stacks[0].Outputs[?OutputKey=='ApexDistributionId'].OutputValue" --output text || true)
-        if [ -z "$DIST_ID" ] || [ "$DIST_ID" = "None" ] || [ "$DIST_ID" = "null" ]; then
+        STACK_NAME="${ENVIRONMENT_NAME}-ApexStack"
+        DIST_ID=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" --query "Stacks[0].Outputs[?OutputKey=='ApexDistributionId'].OutputValue" --output text)
+        if [ -z "$DIST_ID" ] || [ "$DIST_ID" = "None" ]; then
           echo "Failed to resolve distribution id from stack outputs for $STACK_NAME" >&2
           exit 1
         fi
