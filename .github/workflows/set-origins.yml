@@ -92,90 +92,85 @@ jobs:
           fi
           echo "DIST_ID=$DIST_ID" | tee -a "$GITHUB_ENV"
 
-      - name: Fetch current distribution config
-        run: |
-          set -euo pipefail
-          aws cloudfront get-distribution-config --id "$DIST_ID" > /tmp/cfg.json
-          ETAG=$(jq -r '.ETag' /tmp/cfg.json)
-          jq '.DistributionConfig' /tmp/cfg.json > /tmp/dist.json
-          echo "ETAG=$ETAG" >> "$GITHUB_ENV"
-
-      - name: Update origins and default behavior via AWS CLI
+      - name: Update origins using GitHub Script (AWS SDK)
+        id: update
+        uses: actions/github-script@v7
         env:
           ORIGINS_CSV: ${{ inputs.originsCsv }}
-        run: |
-          set -euo pipefail
-          # Determine maintenance origin id from the /maintenance/* behavior, else use current default
-          MAINT_ORIGIN_ID=$(jq -r '(.CacheBehaviors.Items // [] | map(select(.PathPattern=="/maintenance/*")) | .[0].TargetOriginId) // .DefaultCacheBehavior.TargetOriginId' /tmp/dist.json)
-          echo "Maintenance origin id: $MAINT_ORIGIN_ID"
+        with:
+          script: |
+            const { CloudFrontClient, GetDistributionConfigCommand, UpdateDistributionCommand, CreateInvalidationCommand } = await import('@aws-sdk/client-cloudfront');
 
-          # First, remove any previously added app-* origins and the app-failover group
-          jq '.
-            | .Origins.Items = (.Origins.Items | map(select((.Id|startswith("app-"))|not)))
-            | .Origins.Quantity = (.Origins.Items|length)
-            | (if .OriginGroups? then (.OriginGroups.Items = (.OriginGroups.Items | map(select(.Id != "app-failover")))) | .OriginGroups.Quantity = (.OriginGroups.Items|length) else . end)
-          ' /tmp/dist.json > /tmp/clean.json
+            // Helper functions
+            const sanitize = (s) => s.replace(/[^A-Za-z0-9_-]/g, '-');
+            const parseHosts = (csv) => (csv || '').split(',').map(s => s.trim()).filter(Boolean).slice(0, 2);
 
-          if [ -z "${ORIGINS_CSV// }" ]; then
-            echo "No origins provided. Switching default to maintenance and removing app origins."
-            jq --arg maint "$MAINT_ORIGIN_ID" '.DefaultCacheBehavior.TargetOriginId = $maint' /tmp/clean.json > /tmp/updated.json
-          else
-            echo "Configuring app origins from CSV: $ORIGINS_CSV"
-            jq -n --arg csv "$ORIGINS_CSV" '
-              def sanitize(s): s|gsub("[^A-Za-z0-9_-]"; "-");
-              ($csv | split(",") | map(.|gsub("^\\s+|\\s+$";"")) | map(select(. != ""))) as $hosts
-              | {hosts: $hosts[:2]}
-            ' > /tmp/hosts.json
+            const client = new CloudFrontClient({ region: process.env.AWS_REGION });
+            const id = process.env.DIST_ID;
+            const hosts = parseHosts(process.env.ORIGINS_CSV);
 
-            COUNT=$(jq '.hosts|length' /tmp/hosts.json)
-            if [ "$COUNT" -eq 0 ]; then
-              echo "Parsed no hosts, falling back to maintenance."
-              jq --arg maint "$MAINT_ORIGIN_ID" '.DefaultCacheBehavior.TargetOriginId = $maint' /tmp/clean.json > /tmp/updated.json
-            else
-              jq -s '
-                def sanitize(s): s|gsub("[^A-Za-z0-9_-]"; "-");
-                def mkorigin(h): {
-                  Id: ("app-" + sanitize(h)),
-                  DomainName: h,
-                  OriginPath: "",
-                  CustomOriginConfig: {
-                    HTTPPort: 80,
-                    HTTPSPort: 443,
-                    OriginProtocolPolicy: "https-only",
-                    OriginSSLProtocols: { Quantity: 1, Items: ["TLSv1.2"] }
-                  }
+            // Get current config + ETag
+            const getResp = await client.send(new GetDistributionConfigCommand({ Id: id }));
+            const etag = getResp.ETag;
+            const cfg = structuredClone(getResp.DistributionConfig);
+
+            // Determine maintenance origin id from /maintenance/* behavior, else current default
+            const maintOriginId = ((cfg.CacheBehaviors?.Items || []).find(b => b.PathPattern === '/maintenance/*')?.TargetOriginId)
+              || cfg.DefaultCacheBehavior.TargetOriginId;
+
+            // Remove previous app-* origins and app-failover group
+            cfg.Origins.Items = (cfg.Origins.Items || []).filter(o => !String(o.Id || '').startsWith('app-'));
+            cfg.Origins.Quantity = cfg.Origins.Items.length;
+            if (cfg.OriginGroups) {
+              cfg.OriginGroups.Items = (cfg.OriginGroups.Items || []).filter(g => g.Id !== 'app-failover');
+              cfg.OriginGroups.Quantity = cfg.OriginGroups.Items.length;
+            }
+
+            if (hosts.length === 0) {
+              // Switch to maintenance
+              cfg.DefaultCacheBehavior.TargetOriginId = maintOriginId;
+            } else {
+              // Add 1 or 2 custom origins for provided hosts
+              const mkOrigin = (h) => ({
+                Id: `app-${sanitize(h)}`,
+                DomainName: h,
+                OriginPath: '',
+                CustomOriginConfig: {
+                  HTTPPort: 80,
+                  HTTPSPort: 443,
+                  OriginProtocolPolicy: 'https-only',
+                  OriginSslProtocols: { Quantity: 1, Items: ['TLSv1.2'] }
+                }
+              });
+              cfg.Origins.Items.push(...hosts.map(mkOrigin));
+              cfg.Origins.Quantity = cfg.Origins.Items.length;
+
+              if (hosts.length > 1) {
+                cfg.OriginGroups = cfg.OriginGroups || { Quantity: 0, Items: [] };
+                const group = {
+                  Id: 'app-failover',
+                  FailoverCriteria: { StatusCodes: { Quantity: 4, Items: [500, 502, 503, 504] } },
+                  Members: { Quantity: 2, Items: hosts.slice(0, 2).map(h => ({ OriginId: `app-${sanitize(h)}` })) }
                 };
-                (.[0]) as $cfg | (.[1].hosts) as $H
-                | $cfg
-                | .Origins.Items += ($H | map(mkorigin(.)))
-                | .Origins.Quantity = (.Origins.Items|length)
-                | if ($H|length) > 1 then
-                    .OriginGroups = (.OriginGroups // {Quantity:0, Items:[]})
-                    | .OriginGroups.Items = ([{
-                        Id: "app-failover",
-                        FailoverCriteria: { StatusCodes: { Quantity: 4, Items: [500,502,503,504]}},
-                        Members: { Quantity: 2, Items: [
-                          {OriginId: ("app-" + sanitize($H[0]))},
-                          {OriginId: ("app-" + sanitize($H[1]))}
-                        ]}
-                      }] + ((.OriginGroups.Items // []) | map(select(.Id != "app-failover"))))
-                    | .OriginGroups.Quantity = (.OriginGroups.Items|length)
-                    | .DefaultCacheBehavior.TargetOriginId = "app-failover"
-                  else
-                    .DefaultCacheBehavior.TargetOriginId = ("app-" + sanitize($H[0]))
-                  end
-              ' /tmp/clean.json /tmp/hosts.json > /tmp/updated.json
-            fi
-          fi
+                cfg.OriginGroups.Items = [group, ...(cfg.OriginGroups.Items || []).filter(g => g.Id !== 'app-failover')];
+                cfg.OriginGroups.Quantity = cfg.OriginGroups.Items.length;
+                cfg.DefaultCacheBehavior.TargetOriginId = 'app-failover';
+              } else {
+                cfg.DefaultCacheBehavior.TargetOriginId = `app-${sanitize(hosts[0])}`;
+              }
+            }
 
-          mv /tmp/updated.json /tmp/dist.json
+            // Apply update
+            await client.send(new UpdateDistributionCommand({
+              Id: id,
+              IfMatch: etag,
+              DistributionConfig: cfg,
+            }));
 
-      - name: Apply distribution update
-        run: |
-          set -euo pipefail
-          aws cloudfront update-distribution --id "$DIST_ID" --if-match "$ETAG" --distribution-config file:///tmp/dist.json
-          # Invalidate the root object for quicker cutover
-          aws cloudfront create-invalidation --distribution-id "$DIST_ID" --paths "/index.html"
+            // Invalidate root for faster cutover
+            await client.send(new CreateInvalidationCommand({ DistributionId: id, InvalidationBatch: { CallerReference: `${Date.now()}`, Paths: { Quantity: 1, Items: ['/index.html'] } } }));
+
+            core.info(`Updated distribution ${id}. Set default origin to ${cfg.DefaultCacheBehavior.TargetOriginId}.`)
 
       - name: Done
         run: echo "Updated distribution $DIST_ID successfully."
