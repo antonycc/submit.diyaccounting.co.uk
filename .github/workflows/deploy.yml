@@ -41,7 +41,6 @@ on:
       - '**'
       - '!gh_pages'
     paths:
-      - '.github/workflows/deploy.yml'
       - 'app/functions/**'
       - 'app/lib/**'
       - 'infra/main/**'
@@ -56,6 +55,7 @@ on:
       - 'package-lock.json'
       - 'pom.xml'
       - 'product-catalogue.toml'
+      - '.github/workflows/set-origins.yml'
       - '.github/workflows/deploy.yml'
   schedule:
     - cron: '23 4 * * *'
