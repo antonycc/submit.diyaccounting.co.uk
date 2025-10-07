@@ -401,7 +401,7 @@ jobs:
       - name: test cdk
         id: test-cdk
         shell: bash
-        run: npm run cdk
+        run: npm run cdk${{ github.ref == 'refs/heads/main' && '' || '-ci' }}
         env:
           ENV_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
