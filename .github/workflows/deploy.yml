@@ -48,7 +48,7 @@ on:
       - 'web/public/**'
       - '.env.ci'
       - '.env.prod'
-      - '../../cdk.json'
+      - '*/cdk.json'
       - 'Dockerfile'
       - 'LICENSE'
       - 'package.json'
