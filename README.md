@@ -184,7 +184,7 @@ Prereqs
 Environment (example)
 ```bash
 
-export ENV_NAME=dev
+export ENVIRONMENT_NAME=dev
 export HOSTED_ZONE_NAME=example.com
 export HOSTED_ZONE_ID=Z123ABC...
 export SUB_DOMAIN_NAME=submit

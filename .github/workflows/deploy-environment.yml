@@ -29,10 +29,10 @@ jobs:
     steps:
       - id: deployment-config
         run: |
-          echo "ENV_NAME=${{ github.event.inputs.environment }}" >> "$GITHUB_OUTPUT"
+          echo "ENVIRONMENT_NAME=${{ github.event.inputs.environment }}" >> "$GITHUB_OUTPUT"
     outputs:
-      environment-name: ${{ steps.deployment-config.outputs.ENV_NAME }}
-      deployment-name: ${{ steps.deployment-config.outputs.ENV_NAME }}
+      environment-name: ${{ steps.deployment-config.outputs.ENVIRONMENT_NAME }}
+      deployment-name: ${{ steps.deployment-config.outputs.ENVIRONMENT_NAME }}
 
   create-secrets:
     name: create secrets
@@ -165,7 +165,7 @@ jobs:
           ; cd .. \
           ;
         env:
-          ENV_NAME: ${{ needs.names.outputs.environment-name }}
+          ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
 
   deploy-apex:
@@ -237,7 +237,7 @@ jobs:
               ; cd .. \
             ;
         env:
-          ENV_NAME: ${{ needs.names.outputs.environment-name }}
+          ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
 
   deploy-identity:
@@ -310,7 +310,7 @@ jobs:
               ; cd .. \
             ;
         env:
-          ENV_NAME: ${{ needs.names.outputs.environment-name }}
+          ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
 
       - name: Resolve stack outputs

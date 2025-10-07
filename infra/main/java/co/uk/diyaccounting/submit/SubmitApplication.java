@@ -97,7 +97,7 @@ public class SubmitApplication {
     public SubmitApplication(App app, SubmitApplicationProps appProps) {
 
         // Determine environment and deployment name from env or appProps
-        String envName = envOr("ENV_NAME", appProps.envName);
+        String envName = envOr("ENVIRONMENT_NAME", appProps.envName);
         String deploymentName = envOr("DEPLOYMENT_NAME", appProps.deploymentName);
 
         // Determine primary environment (account/region) from CDK env

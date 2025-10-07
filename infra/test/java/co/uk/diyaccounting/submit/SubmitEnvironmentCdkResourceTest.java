@@ -16,7 +16,7 @@ import software.amazon.awscdk.AppProps;
 import software.amazon.awscdk.assertions.Template;
 
 @SetEnvironmentVariable.SetEnvironmentVariables({
-    @SetEnvironmentVariable(key = "ENV_NAME", value = "test"),
+    @SetEnvironmentVariable(key = "ENVIRONMENT_NAME", value = "test"),
     @SetEnvironmentVariable(key = "DEPLOYMENT_NAME", value = "tt-witheight"),
     @SetEnvironmentVariable(key = "DIY_SUBMIT_DOMAIN_NAME", value = "tt-witheight.submit.diyaccounting.co.uk"),
     @SetEnvironmentVariable(key = "DIY_SUBMIT_BASE_URL", value = "https://tt-witheight.submit.diyaccounting.co.uk"),

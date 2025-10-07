@@ -18,7 +18,7 @@ import software.amazon.awscdk.AppProps;
 import software.amazon.awscdk.assertions.Template;
 
 @SetEnvironmentVariable.SetEnvironmentVariables({
-    @SetEnvironmentVariable(key = "ENV_NAME", value = "test"),
+    @SetEnvironmentVariable(key = "ENVIRONMENT_NAME", value = "test"),
     @SetEnvironmentVariable(key = "DEPLOYMENT_NAME", value = "tt-witheight"),
     @SetEnvironmentVariable(key = "COMMIT_HASH", value = "local"),
     @SetEnvironmentVariable(key = "WEBSITE_HASH", value = "local"),

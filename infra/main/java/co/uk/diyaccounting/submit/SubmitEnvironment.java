@@ -83,7 +83,7 @@ public class SubmitEnvironment {
     public SubmitEnvironment(App app, SubmitEnvironmentProps appProps) {
 
         // Determine environment and deployment name from env or appProps
-        var envName = envOr("ENV_NAME", appProps.envName);
+        var envName = envOr("ENVIRONMENT_NAME", appProps.envName);
         var deploymentName = envOr("DEPLOYMENT_NAME", envName);
 
         // Determine primary environment (account/region) from CDK env

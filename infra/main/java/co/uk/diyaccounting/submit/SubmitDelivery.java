@@ -95,7 +95,7 @@ public class SubmitDelivery {
 
     public SubmitDelivery(App app, SubmitDeliveryProps appProps) {
         // Environment e.g. ci, prod, and deployment name e.g. ci-branchname, prod
-        var envName = envOr("ENV_NAME", appProps.envName);
+        var envName = envOr("ENVIRONMENT_NAME", appProps.envName);
         var deploymentName = envOr("DEPLOYMENT_NAME", appProps.deploymentName);
         var commitHash = envOr("COMMIT_HASH", "local");
         var websiteHash = envOr("WEBSITE_HASH", "local");

@@ -42,10 +42,10 @@ jobs:
     steps:
       - id: out
         run: |
-          echo "ENV_NAME=${{ inputs.environment }}"
-          echo "ENV_NAME=${{ inputs.environment }}" >> "$GITHUB_OUTPUT"
+          echo "ENVIRONMENT_NAME=${{ inputs.environment }}"
+          echo "ENVIRONMENT_NAME=${{ inputs.environment }}" >> "$GITHUB_OUTPUT"
     outputs:
-      environment-name: ${{ steps.out.outputs.ENV_NAME }}
+      environment-name: ${{ steps.out.outputs.ENVIRONMENT_NAME }}
 
   update-apex-origins:
     name: update apex origins

@@ -74,28 +74,28 @@ jobs:
           CLEANED=$(echo "$REF_NAME" | tr '[:upper:]' '[:lower:]' | sed -e 's/[^a-z0-9]/-/g' -e 's/-\{2,\}/-/g' -e 's/^-//' -e 's/-$//')
 
           if [ "$REF_NAME" = "main" ]; then
-              ENV_NAME="prod"
+              ENVIRONMENT_NAME="prod"
               DEPLOYMENT_NAME="prod"
           elif [ "$INPUT_DEPLOYMENT_NAME" = "ci" ]; then
-              ENV_NAME="ci"
+              ENVIRONMENT_NAME="ci"
               DEPLOYMENT_NAME="ci"
           elif [ -n "$INPUT_DEPLOYMENT_NAME" ]; then
-              ENV_NAME="ci"
+              ENVIRONMENT_NAME="ci"
               DEPLOYMENT_NAME="$INPUT_DEPLOYMENT_NAME"
           else
-              ENV_NAME="ci"
+              ENVIRONMENT_NAME="ci"
               # Truncate to 16 chars for branch-based deployments
               DEPLOYMENT_NAME="ci-${CLEANED:0:8}"
           fi
 
-          echo "Computed ENV_NAME: $ENV_NAME"
+          echo "Computed ENVIRONMENT_NAME: $ENVIRONMENT_NAME"
           echo "Computed DEPLOYMENT_NAME: $DEPLOYMENT_NAME"
-          #DEPLOYMENT_NAME=$ENV_NAME
+          #DEPLOYMENT_NAME=$ENVIRONMENT_NAME
 
-          echo "ENV_NAME=$environmentment-name" >> "$GITHUB_OUTPUT"
+          echo "ENVIRONMENT_NAME=$environmentment-name" >> "$GITHUB_OUTPUT"
           echo "DEPLOYMENT_NAME=$deployment-name" >> "$GITHUB_OUTPUT"
 
-          echo "Actual ENV_NAME: $ENV_NAME"
+          echo "Actual ENVIRONMENT_NAME: $ENVIRONMENT_NAME"
           echo "Actual DEPLOYMENT_NAME: $DEPLOYMENT_NAME"
 
       - name: Setup Node
@@ -154,7 +154,7 @@ jobs:
           ; cd .. \
           ;
         env:
-          ENV_NAME: ${{ needs.names.outputs.environment-name }}
+          ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
           SELF_DESTRUCT_HANDLER_SOURCE: "../infra/test/resources/fake-self-destruct-lambda.jar"
           WEBSITE_HASH: 'placeholder'
@@ -172,7 +172,7 @@ jobs:
           ; cd .. \
           ;
         env:
-          ENV_NAME: ${{ needs.names.outputs.environment-name }}
+          ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
           SELF_DESTRUCT_HANDLER_SOURCE: "../infra/test/resources/fake-self-destruct-lambda.jar"
           WEBSITE_HASH: 'placeholder'
@@ -190,7 +190,7 @@ jobs:
           ; cd .. \
           ;
         env:
-          ENV_NAME: ${{ needs.names.outputs.environment-name }}
+          ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
           SELF_DESTRUCT_HANDLER_SOURCE: "../infra/test/resources/fake-self-destruct-lambda.jar"
           BASE_IMAGE_TAG: ${{ needs.push-images.outputs.base-image-tag }}
@@ -209,7 +209,7 @@ jobs:
           ; cd .. \
           ;
         env:
-          ENV_NAME: ${{ needs.names.outputs.environment-name }}
+          ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
           SELF_DESTRUCT_HANDLER_SOURCE: "../infra/test/resources/fake-self-destruct-lambda.jar"
           BASE_IMAGE_TAG: ${{ needs.push-images.outputs.base-image-tag }}
@@ -228,7 +228,7 @@ jobs:
           ; cd .. \
           ;
         env:
-          ENV_NAME: ${{ needs.names.outputs.environment-name }}
+          ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
           SELF_DESTRUCT_HANDLER_SOURCE: "../infra/test/resources/fake-self-destruct-lambda.jar"
           BASE_IMAGE_TAG: ${{ needs.push-images.outputs.base-image-tag }}
@@ -247,7 +247,7 @@ jobs:
           ; cd .. \
           ;
         env:
-          ENV_NAME: ${{ needs.names.outputs.environment-name }}
+          ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
           SELF_DESTRUCT_HANDLER_SOURCE: "../infra/test/resources/fake-self-destruct-lambda.jar"
           BASE_IMAGE_TAG: ${{ needs.push-images.outputs.base-image-tag }}
@@ -266,7 +266,7 @@ jobs:
           ; cd .. \
           ;
         env:
-          ENV_NAME: ${{ needs.names.outputs.environment-name }}
+          ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
           SELF_DESTRUCT_HANDLER_SOURCE: "../${{ needs.mvn-package.outputs.self-destruct-handler-source }}"
           WEBSITE_HASH: "placeholder"
@@ -282,7 +282,7 @@ jobs:
           ; cd .. \
           ;
         env:
-          ENV_NAME: ${{ needs.names.outputs.environment-name }}
+          ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
           SELF_DESTRUCT_HANDLER_SOURCE: "../${{ needs.mvn-package.outputs.self-destruct-handler-source }}"
           # Set by deploy-environment.yml after the environment's AuthStack is deployed
