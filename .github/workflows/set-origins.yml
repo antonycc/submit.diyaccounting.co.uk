@@ -44,7 +44,7 @@ jobs:
       - id: out
         run: |
           echo "ENV_NAME=${{ inputs.environment }}"
-          echo "ENV_NAME=${{ puts.environment }}" >> "$GITHUB_OUTPUT"
+          echo "ENV_NAME=${{ inputs.environment }}" >> "$GITHUB_OUTPUT"
     outputs:
       environment-name: ${{ steps.out.outputs.ENV_NAME }}
 
