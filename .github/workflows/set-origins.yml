@@ -24,7 +24,6 @@ on:
       originsCsv:
         description: 'Comma-separated list of app origins to serve from apex (e.g. ci-123.example.com,ci-124.example.com). Leave blank to display maintenance page.'
         required: false
-        default: ''
 
 permissions:
   id-token: write
