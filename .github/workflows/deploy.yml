@@ -94,42 +94,15 @@ jobs:
 
       - name: Compute deployment name and environment
         id: deployment-config
-        run: |
-          REF_NAME="${{ github.ref_name }}"
-          INPUT_DEPLOYMENT_NAME="${{ github.event.inputs.deploymentName }}"
-
-          # Clean branch name: lowercase, replace non-alphanumeric with hyphens, collapse consecutive hyphens
-          CLEANED=$(echo "$REF_NAME" | tr '[:upper:]' '[:lower:]' | sed -e 's/[^a-z0-9]/-/g' -e 's/-\{2,\}/-/g' -e 's/^-//' -e 's/-$//')
-
-          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
-              ENVIRONMENT_NAME="prod"
-              DEPLOYMENT_NAME="prod"
-          elif [ "$INPUT_DEPLOYMENT_NAME" = "ci" ]; then
-              ENVIRONMENT_NAME="ci"
-              DEPLOYMENT_NAME="ci"
-          elif [ -n "$INPUT_DEPLOYMENT_NAME" ]; then
-              ENVIRONMENT_NAME="ci"
-              DEPLOYMENT_NAME="$INPUT_DEPLOYMENT_NAME"
-          else
-              ENVIRONMENT_NAME="ci"
-              # Truncate to 16 chars for branch-based deployments
-              DEPLOYMENT_NAME="ci-${CLEANED:0:8}"
-          fi
-
-          echo "Computed ENVIRONMENT_NAME: $ENVIRONMENT_NAME"
-          echo "Computed DEPLOYMENT_NAME: $DEPLOYMENT_NAME"
-          #DEPLOYMENT_NAME=$ENVIRONMENT_NAME
-
-          echo "ENVIRONMENT_NAME=$ENVIRONMENT_NAME" >> "$GITHUB_OUTPUT"
-          echo "DEPLOYMENT_NAME=$DEPLOYMENT_NAME" >> "$GITHUB_OUTPUT"
-
-          echo "Actual ENVIRONMENT_NAME: $ENVIRONMENT_NAME"
-          echo "Actual DEPLOYMENT_NAME: $DEPLOYMENT_NAME"
+        uses: ./.github/actions/deployment-config
+        with:
+          deploymentName: ${{ github.event.inputs.deploymentName || '' }}
+          prodBranchName: main
 
     outputs:
       environment-name: ${{ steps.deployment-config.outputs.ENVIRONMENT_NAME }}
       deployment-name: ${{ steps.deployment-config.outputs.DEPLOYMENT_NAME }}
-      base-url: ${{ steps.deployment-config.outputs.DEPLOYMENT_NAME == 'prod' && 'https://submit.diyaccounting.co.uk' || format('https://{0}.submit.diyaccounting.co.uk', steps.deployment-config.outputs.DEPLOYMENT_NAME) }}
+      base-url: ${{ steps.deployment-config.outputs.BASE_URL }}
 
   npm-test:
     name: 'npm test'

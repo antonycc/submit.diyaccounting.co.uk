@@ -19,6 +19,7 @@ runs:
         audience: sts.amazonaws.com
         role-skip-session-tagging: true
         output-credentials: true
+        output-env-credentials: true
         retry-max-attempts: 3
 
     - name: Assume AWS deployment role
@@ -30,6 +31,7 @@ runs:
         audience: sts.amazonaws.com
         role-skip-session-tagging: true
         output-credentials: true
+        output-env-credentials: true
         retry-max-attempts: 3
 
     - name: Resolve ApexStack distribution id
@@ -37,11 +39,14 @@ runs:
       shell: bash
       run: |
         set -euo pipefail
+        export AWS_DEFAULT_REGION="${AWS_REGION:-eu-west-2}"
         if [ -z "${ENVIRONMENT_NAME:-}" ]; then
           echo "ENVIRONMENT_NAME env var must be set (e.g. ci or prod)" >&2
           exit 1
         fi
         STACK_NAME="${ENVIRONMENT_NAME}-ApexStack"
+        echo "Resolving distribution for stack $STACK_NAME in region ${AWS_REGION:-} (AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION)"
+        aws sts get-caller-identity || { echo "AWS credentials not configured" >&2; exit 1; }
         DIST_ID=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" --query "Stacks[0].Outputs[?OutputKey=='ApexDistributionId'].OutputValue" --output text)
         if [ -z "$DIST_ID" ] || [ "$DIST_ID" = "None" ]; then
           echo "Failed to resolve distribution id from stack outputs for $STACK_NAME" >&2

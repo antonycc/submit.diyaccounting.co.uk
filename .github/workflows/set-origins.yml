@@ -11,6 +11,11 @@ on:
         description: 'Comma-separated list of app origins to serve from apex (e.g. ci-123.example.com,ci-124.example.com). Leave blank to display maintenance page.'
         required: false
         type: string
+      generateFromBranch:
+        description: 'If true and originsCsv not provided, compute domain from branch using shared deployment-config.'
+        required: false
+        type: boolean
+        default: false
   workflow_dispatch:
     inputs:
       environment:
@@ -24,6 +29,11 @@ on:
       originsCsv:
         description: 'Comma-separated list of app origins to serve from apex (e.g. ci-123.example.com,ci-124.example.com). Leave blank to display maintenance page.'
         required: false
+      generateFromBranch:
+        description: 'If true and originsCsv not provided, compute domain from branch using shared deployment-config.'
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   id-token: write
@@ -49,7 +59,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
+      - name: Compute deployment config (for generated domain)
+        id: deployment-config
+        uses: ./.github/actions/deployment-config
+        with:
+          deploymentName: ''
+          prodBranchName: main
+
       - name: Set origins using local composite action
         uses: ./.github/actions/set-origins
         with:
-          originsCsv: ${{ inputs.originsCsv }}
+          originsCsv: ${{ inputs.originsCsv || (inputs.generateFromBranch && (steps.deployment-config.outputs.DEPLOYMENT_NAME == 'prod' && 'submit.diyaccounting.co.uk' || format('{0}.submit.diyaccounting.co.uk', steps.deployment-config.outputs.DEPLOYMENT_NAME))) || '' }}
