@@ -3,9 +3,20 @@
  * Update CloudFront distribution origins and default behavior based on provided origins (0/1/2 hosts).
  *
  * Usage examples:
- *   node app/actions/set-apex-origins.mjs --id ABC123 --origins "app1.example.com,app2.example.com"
- *   DIST_ID=ABC123 ORIGINS_CSV="app1.example.com" node app/actions/set-apex-origins.mjs
- *   # region is derived from AWS_REGION; can be overridden with --region
+ * ```shell
+ * $ ./scripts/aws-assume-submit-deployment-role.sh
+ * $ ./scripts/list-domains.sh
+ * ci-lambdas2.submit.diyaccounting.co.uk
+ * EA95FLLZ97JYC
+ * d28wz0w96thcu.cloudfront.net
+ * [
+ *   "ci.submit.diyaccounting.co.uk"
+ * ]
+ * $ ./app/actions/set-apex-origins.mjs \
+ *    --distribution-id EA95FLLZ97JYC \
+ *    --origins ci-lambdas2.submit.diyaccounting.co.uk \
+ *    ;
+ * ```
  */
 
 import {
@@ -72,7 +83,9 @@ async function main() {
     throw new Error("DIST_ID is not set and --id not provided");
   }
 
-  console.log(`[set-apex-origins] dist=${id} region=${region || "(default)"} origins=${(origins || "").trim() || "(none)"} dryRun=${String(!!dryRun)}`);
+  console.log(
+    `[set-apex-origins] dist=${id} region=${region || "(default)"} origins=${(origins || "").trim() || "(none)"} dryRun=${String(!!dryRun)}`,
+  );
 
   const client = new CloudFrontClient({ region });
   const hosts = parseHosts(origins || "");
@@ -87,9 +100,11 @@ async function main() {
   // Ensure Origins container exists
   cfg.Origins = cfg.Origins || { Quantity: 0, Items: [] };
 
-  const beforeOrigins = (getResp.DistributionConfig.Origins?.Items || []);
+  const beforeOrigins = getResp.DistributionConfig.Origins?.Items || [];
   const missingBefore = beforeOrigins.filter((o) => !o.CustomHeaders && !o.OriginCustomHeaders).length;
-  console.log(`[set-apex-origins] fetched origins: ${beforeOrigins.length}, missing CustomHeaders (or OriginCustomHeaders) on fetch: ${missingBefore}`);
+  console.log(
+    `[set-apex-origins] fetched origins: ${beforeOrigins.length}, missing CustomHeaders (or OriginCustomHeaders) on fetch: ${missingBefore}`,
+  );
 
   const maintOriginId =
     (cfg.CacheBehaviors?.Items || []).find((b) => b.PathPattern === "/maintenance/*")?.TargetOriginId ||
@@ -148,9 +163,7 @@ async function main() {
       o.CustomHeaders = { Quantity: 0, Items: [] };
     } else {
       if (typeof o.CustomHeaders.Quantity !== "number") {
-        o.CustomHeaders.Quantity = Array.isArray(o.CustomHeaders.Items)
-          ? o.CustomHeaders.Items.length
-          : 0;
+        o.CustomHeaders.Quantity = Array.isArray(o.CustomHeaders.Items) ? o.CustomHeaders.Items.length : 0;
       }
       if (o.CustomHeaders.Quantity === 0 && !Array.isArray(o.CustomHeaders.Items)) {
         // Some SDKs omit Items when Quantity is 0; include it for safety
@@ -174,8 +187,12 @@ async function main() {
     }
   }
 
-  const afterMissing = (cfg.Origins.Items || []).filter((o) => !o.CustomHeaders || typeof o.CustomHeaders !== "object").length;
-  console.log(`[set-apex-origins] normalized origins: ${cfg.Origins.Items.length}, missing CustomHeaders after normalization: ${afterMissing}`);
+  const afterMissing = (cfg.Origins.Items || []).filter(
+    (o) => !o.CustomHeaders || typeof o.CustomHeaders !== "object",
+  ).length;
+  console.log(
+    `[set-apex-origins] normalized origins: ${cfg.Origins.Items.length}, missing CustomHeaders after normalization: ${afterMissing}`,
+  );
 
   if (dryRun) {
     const summary = {
@@ -188,7 +205,8 @@ async function main() {
         customHeaderNames: Array.isArray(o.CustomHeaders?.Items) ? o.CustomHeaders.Items.map((h) => h.HeaderName) : [],
         type: o.S3OriginConfig ? "s3" : "custom",
       })),
-      originGroups: cfg.OriginGroups?.Items?.map((g) => ({ Id: g.Id, members: g.Members?.Items?.map((m) => m.OriginId) })) || [],
+      originGroups:
+        cfg.OriginGroups?.Items?.map((g) => ({ Id: g.Id, members: g.Members?.Items?.map((m) => m.OriginId) })) || [],
     };
     console.log("[set-apex-origins] DRY RUN summary:");
     console.log(JSON.stringify(summary, null, 2));
