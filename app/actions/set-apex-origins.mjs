@@ -40,6 +40,8 @@ Options:
 Examples:
   node app/actions/set-apex-origins.mjs --id ABC123 --origins "a.example.com,b.example.com"
   DIST_ID=ABC123 ORIGINS_CSV=a.example.com node app/actions/set-apex-origins.mjs
+
+  ./app/actions/set-apex-origins.mjs --distribution-id EA95FLLZ97JYC --origins ci-lambdas2.submit.diyaccounting.co.uk
 `);
 }
 
