@@ -1,12 +1,6 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Aspects;
 import software.amazon.awscdk.Environment;
@@ -16,6 +10,7 @@ import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.services.certificatemanager.Certificate;
 import software.amazon.awscdk.services.cloudfront.AllowedMethods;
 import software.amazon.awscdk.services.cloudfront.BehaviorOptions;
+import software.amazon.awscdk.services.cloudfront.CfnDistribution;
 import software.amazon.awscdk.services.cloudfront.Distribution;
 import software.amazon.awscdk.services.cloudfront.HttpVersion;
 import software.amazon.awscdk.services.cloudfront.IOrigin;
@@ -42,6 +37,14 @@ import software.amazon.awscdk.services.s3.ObjectOwnership;
 import software.amazon.awscdk.services.s3.deployment.BucketDeployment;
 import software.amazon.awscdk.services.s3.deployment.Source;
 import software.constructs.Construct;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 public class ApexStack extends Stack {
 
@@ -199,6 +202,11 @@ public class ApexStack extends Stack {
                 .httpVersion(HttpVersion.HTTP2_AND_3)
                 .priceClass(PriceClass.PRICE_CLASS_100)
                 .build();
+        var cfn = (CfnDistribution) this.distribution.getNode().getDefaultChild();
+        Objects.requireNonNull(cfn).addPropertyOverride(
+            "DistributionConfig.Origins.Items.0.OriginCustomHeaders",
+            Map.of("Quantity", 0, "Items", List.of())
+        );
 
         // Alias A/AAAA for apex
         this.apexAlias = new ARecord(

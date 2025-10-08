@@ -16,13 +16,19 @@ import {
 } from "@aws-sdk/client-cloudfront";
 
 function parseArgs(argv) {
-  const args = { id: process.env.DIST_ID, origins: process.env.ORIGINS_CSV, region: process.env.AWS_REGION };
+  const args = {
+    id: process.env.DIST_ID,
+    origins: process.env.ORIGINS_CSV,
+    region: process.env.AWS_REGION,
+    dryRun: /^(1|true|yes)$/i.test(process.env.DRY_RUN || ""),
+  };
   for (let i = 2; i < argv.length; i++) {
     const a = argv[i];
     if (a === "-h" || a === "--help") args.help = true;
     else if (a === "-i" || a === "--id" || a === "--distribution-id") args.id = argv[++i];
     else if (a === "-o" || a === "--origins" || a === "--origins-csv") args.origins = argv[++i];
     else if (a === "-r" || a === "--region") args.region = argv[++i];
+    else if (a === "-n" || a === "--dry-run") args.dryRun = true;
     else if (!args.origins && !a.startsWith("-")) args.origins = a; // allow positional origins csv
   }
   return args;
@@ -35,11 +41,13 @@ Options:
   -i, --id, --distribution-id   CloudFront distribution id (or set DIST_ID env)
   -o, --origins, --origins-csv  Comma-separated list of origin hosts (or set ORIGINS_CSV env)
   -r, --region                  AWS region (defaults to AWS_REGION env)
+  -n, --dry-run                 Print planned changes and exit (or set DRY_RUN=1)
   -h, --help                    Show this help
 
 Examples:
   node app/actions/set-apex-origins.mjs --id ABC123 --origins "a.example.com,b.example.com"
   DIST_ID=ABC123 ORIGINS_CSV=a.example.com node app/actions/set-apex-origins.mjs
+  DRY_RUN=1 ./app/actions/set-apex-origins.mjs --id ABC123 --origins "a.example.com,b.example.com"
 
   ./app/actions/set-apex-origins.mjs --distribution-id EA95FLLZ97JYC --origins ci-lambdas2.submit.diyaccounting.co.uk
 `);
@@ -54,7 +62,7 @@ const parseHosts = (csv) =>
     .slice(0, 2);
 
 async function main() {
-  const { id, origins, region, help } = parseArgs(process.argv);
+  const { id, origins, region, help, dryRun } = parseArgs(process.argv);
   if (help) {
     printHelp();
     return;
@@ -63,6 +71,8 @@ async function main() {
   if (!id) {
     throw new Error("DIST_ID is not set and --id not provided");
   }
+
+  console.log(`[set-apex-origins] dist=${id} region=${region || "(default)"} origins=${(origins || "").trim() || "(none)"} dryRun=${String(!!dryRun)}`);
 
   const client = new CloudFrontClient({ region });
   const hosts = parseHosts(origins || "");
@@ -74,10 +84,18 @@ async function main() {
     ? structuredClone(getResp.DistributionConfig)
     : JSON.parse(JSON.stringify(getResp.DistributionConfig));
 
+  // Ensure Origins container exists
+  cfg.Origins = cfg.Origins || { Quantity: 0, Items: [] };
+
+  const beforeOrigins = (getResp.DistributionConfig.Origins?.Items || []);
+  const missingBefore = beforeOrigins.filter((o) => !o.CustomHeaders && !o.OriginCustomHeaders).length;
+  console.log(`[set-apex-origins] fetched origins: ${beforeOrigins.length}, missing CustomHeaders (or OriginCustomHeaders) on fetch: ${missingBefore}`);
+
   const maintOriginId =
     (cfg.CacheBehaviors?.Items || []).find((b) => b.PathPattern === "/maintenance/*")?.TargetOriginId ||
     cfg.DefaultCacheBehavior.TargetOriginId;
 
+  // Remove any previously added app-* origins
   cfg.Origins.Items = (cfg.Origins.Items || []).filter((o) => !String(o.Id || "").startsWith("app-"));
   cfg.Origins.Quantity = cfg.Origins.Items.length;
   if (cfg.OriginGroups) {
@@ -92,7 +110,7 @@ async function main() {
       Id: `app-${sanitize(h)}`,
       DomainName: h,
       OriginPath: "",
-      OriginCustomHeaders: { Quantity: 0, Items: [] },
+      CustomHeaders: { Quantity: 0, Items: [] },
       CustomOriginConfig: {
         HTTPPort: 80,
         HTTPSPort: 443,
@@ -125,12 +143,19 @@ async function main() {
     // Ensure OriginPath is a string
     if (typeof o.OriginPath !== "string") o.OriginPath = "";
 
-    // Ensure OriginCustomHeaders exists, even if empty
-    if (!o.OriginCustomHeaders) {
-      o.OriginCustomHeaders = { Quantity: 0, Items: [] };
-    } else if (o.OriginCustomHeaders.Quantity === 0 && !o.OriginCustomHeaders.Items) {
-      // Some SDKs omit Items when Quantity is 0; include it for safety
-      o.OriginCustomHeaders.Items = [];
+    // Ensure CustomHeaders exists, even if empty
+    if (!o.CustomHeaders || typeof o.CustomHeaders !== "object") {
+      o.CustomHeaders = { Quantity: 0, Items: [] };
+    } else {
+      if (typeof o.CustomHeaders.Quantity !== "number") {
+        o.CustomHeaders.Quantity = Array.isArray(o.CustomHeaders.Items)
+          ? o.CustomHeaders.Items.length
+          : 0;
+      }
+      if (o.CustomHeaders.Quantity === 0 && !Array.isArray(o.CustomHeaders.Items)) {
+        // Some SDKs omit Items when Quantity is 0; include it for safety
+        o.CustomHeaders.Items = [];
+      }
     }
 
     // Safe defaults for connection settings (accepted by both S3 and Custom origins)
@@ -147,6 +172,28 @@ async function main() {
       if (c.HTTPPort == null) c.HTTPPort = 80;
       if (c.HTTPSPort == null) c.HTTPSPort = 443;
     }
+  }
+
+  const afterMissing = (cfg.Origins.Items || []).filter((o) => !o.CustomHeaders || typeof o.CustomHeaders !== "object").length;
+  console.log(`[set-apex-origins] normalized origins: ${cfg.Origins.Items.length}, missing CustomHeaders after normalization: ${afterMissing}`);
+
+  if (dryRun) {
+    const summary = {
+      defaultTarget: cfg.DefaultCacheBehavior.TargetOriginId,
+      origins: (cfg.Origins.Items || []).map((o) => ({
+        Id: o.Id,
+        DomainName: o.DomainName,
+        hasCustomHeaders: !!o.CustomHeaders,
+        customHeadersQuantity: o.CustomHeaders?.Quantity ?? null,
+        customHeaderNames: Array.isArray(o.CustomHeaders?.Items) ? o.CustomHeaders.Items.map((h) => h.HeaderName) : [],
+        type: o.S3OriginConfig ? "s3" : "custom",
+      })),
+      originGroups: cfg.OriginGroups?.Items?.map((g) => ({ Id: g.Id, members: g.Members?.Items?.map((m) => m.OriginId) })) || [],
+    };
+    console.log("[set-apex-origins] DRY RUN summary:");
+    console.log(JSON.stringify(summary, null, 2));
+    console.log("[set-apex-origins] DRY RUN complete. No changes sent to CloudFront.");
+    return;
   }
 
   await client.send(
@@ -171,6 +218,16 @@ async function main() {
 }
 
 main().catch((err) => {
-  console.error(err?.stack || err?.message || String(err));
+  try {
+    console.error("[set-apex-origins] ERROR:", {
+      name: err?.name,
+      message: err?.message,
+      code: err?.code || err?.Code,
+      $metadata: err?.$metadata,
+    });
+  } catch (_) {
+    // fallback if JSON serialization fails
+  }
+  if (err?.stack) console.error(err.stack);
   process.exitCode = 1;
 });
