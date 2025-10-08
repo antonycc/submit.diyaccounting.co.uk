@@ -359,15 +359,31 @@ jobs:
               environment_name: envName,
             });
 
-            // create or update the variable
-            await github.rest.actions.createEnvironmentVariable({
-              repository_id: repositoryId,
-              environment_name: envName,
-              name: varName,
-              value: varValue,
-            });
-
-            core.info(`Set env var ${varName} to value ${varValue} in ${envName}`);
+            // create or update the variable (handle 409 Already exists)
+            try {
+              await github.rest.actions.createEnvironmentVariable({
+                repository_id: repositoryId,
+                environment_name: envName,
+                name: varName,
+                value: varValue,
+              });
+              core.info(`Created env var ${varName} in ${envName}`);
+            } catch (error) {
+              const status = error?.status || error?.response?.status || error?.data?.status;
+              if (String(status) === '409') {
+                core.info(`Variable ${varName} already exists in ${envName}, updating it.`);
+                await github.rest.actions.updateEnvironmentVariable({
+                  repository_id: repositoryId,
+                  environment_name: envName,
+                  name: varName,
+                  value: varValue,
+                });
+                core.info(`Updated env var ${varName} to value ${varValue} in ${envName}`);
+              } else {
+                core.setFailed(`Failed to set ${varName} in ${envName}: ${error.message || error}`);
+                throw error;
+              }
+            }
 
       - name: Create a GitHub environment variable for COGNITO_CLIENT_ID in the current environment
         uses: actions/github-script@v8
@@ -387,12 +403,28 @@ jobs:
               environment_name: envName,
             });
 
-            // create or update the variable
-            await github.rest.actions.createEnvironmentVariable({
-              repository_id: repositoryId,
-              environment_name: envName,
-              name: varName,
-              value: varValue,
-            });
-
-            core.info(`Set env var ${varName} to value ${varValue} in ${envName}`);
+            // create or update the variable (handle 409 Already exists)
+            try {
+              await github.rest.actions.createEnvironmentVariable({
+                repository_id: repositoryId,
+                environment_name: envName,
+                name: varName,
+                value: varValue,
+              });
+              core.info(`Created env var ${varName} in ${envName}`);
+            } catch (error) {
+              const status = error?.status || error?.response?.status || error?.data?.status;
+              if (String(status) === '409') {
+                core.info(`Variable ${varName} already exists in ${envName}, updating it.`);
+                await github.rest.actions.updateEnvironmentVariable({
+                  repository_id: repositoryId,
+                  environment_name: envName,
+                  name: varName,
+                  value: varValue,
+                });
+                core.info(`Updated env var ${varName} to value ${varValue} in ${envName}`);
+              } else {
+                core.setFailed(`Failed to set ${varName} in ${envName}: ${error.message || error}`);
+                throw error;
+              }
+            }
