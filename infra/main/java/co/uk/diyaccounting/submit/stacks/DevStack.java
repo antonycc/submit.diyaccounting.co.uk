@@ -5,9 +5,8 @@ import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildEcrLogGroupName;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildEcrPublishRoleName;
 
-import java.util.List;
-
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
+import java.util.List;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Aspects;
 import software.amazon.awscdk.Duration;

@@ -122,7 +122,8 @@ public class SubmitEnvironment {
                 "(from s3RetainReceiptsBucket in cdk.json)");
 
         // Generate predictable resource name prefix based on domain and environment
-        var cognitoDomainName = buildCognitoDomainName(deploymentName, appProps.cognitoDomainPrefix, appProps.subDomainName, appProps.hostedZoneName);
+        var cognitoDomainName = buildCognitoDomainName(
+                deploymentName, appProps.cognitoDomainPrefix, appProps.subDomainName, appProps.hostedZoneName);
 
         // Generate predictable resource names
         String resourceNamePrefix = "env-%s".formatted(generateResourceNamePrefix(domainName));
