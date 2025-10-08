@@ -108,6 +108,7 @@ runs:
             Id: `app-${sanitize(h)}`,
             DomainName: h,
             OriginPath: '',
+            OriginCustomHeaders: { Quantity: 0, Items: [] },
             CustomOriginConfig: {
               HTTPPort: 80,
               HTTPSPort: 443,
