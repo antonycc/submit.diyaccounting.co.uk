@@ -35,7 +35,6 @@ on:
         description: 'Hours before self-destruct triggers for non-prod environments'
         required: false
         default: '1'
-
   push:
     branches:
       - '**'
@@ -48,7 +47,8 @@ on:
       - 'web/public/**'
       - '.env.ci'
       - '.env.prod'
-      - '*/cdk.json'
+      - './cdk-application/cdk.json'
+      - './cdk-delivery/cdk.json'
       - 'Dockerfile'
       - 'LICENSE'
       - 'package.json'

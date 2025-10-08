@@ -11,6 +11,17 @@ on:
           - prod
           - ci
         default: ci
+  push:
+    branches:
+      - '**'
+      - '!gh_pages'
+    paths:
+      - '.env.ci'
+      - '.env.prod'
+      - './cdk-environment/cdk.json'
+      - '.github/workflows/deploy-environment.yml'
+  schedule:
+    - cron: '43 3 * * *'
 
 env:
   JAVA_VERSION: '21'
