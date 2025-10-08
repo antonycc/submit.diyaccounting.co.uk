@@ -73,7 +73,7 @@ runs:
         ORIGINS_CSV: ${{ inputs.originsCsv }}
       run: |
         set -euo pipefail
-        node - <<'NODE'
+        node --input-type=module - <<'NODE'
         import { CloudFrontClient, GetDistributionConfigCommand, UpdateDistributionCommand, CreateInvalidationCommand } from '@aws-sdk/client-cloudfront';
 
         const sanitize = (s) => s.replace(/[^A-Za-z0-9_-]/g, '-');
@@ -133,6 +133,35 @@ runs:
             cfg.DefaultCacheBehavior.TargetOriginId = 'app-failover';
           } else {
             cfg.DefaultCacheBehavior.TargetOriginId = `app-${sanitize(hosts[0])}`;
+          }
+        }
+
+        // Normalize ALL origins to satisfy UpdateDistribution requirements
+        for (const o of (cfg.Origins.Items || [])) {
+          // Ensure OriginPath is a string
+          if (typeof o.OriginPath !== 'string') o.OriginPath = '';
+
+          // Ensure OriginCustomHeaders exists, even if empty
+          if (!o.OriginCustomHeaders) {
+            o.OriginCustomHeaders = { Quantity: 0, Items: [] };
+          } else if (o.OriginCustomHeaders.Quantity === 0 && !o.OriginCustomHeaders.Items) {
+            // Some SDKs omit Items when Quantity is 0; include it for safety
+            o.OriginCustomHeaders.Items = [];
+          }
+
+          // Safe defaults for connection settings (accepted by both S3 and Custom origins)
+          if (o.ConnectionAttempts == null) o.ConnectionAttempts = 3;
+          if (o.ConnectionTimeout == null) o.ConnectionTimeout = 10;
+
+          // Ensure CustomOriginConfig has required fields (if present)
+          if (o.CustomOriginConfig) {
+            const c = o.CustomOriginConfig;
+            if (!c.OriginProtocolPolicy) c.OriginProtocolPolicy = 'https-only';
+            if (!c.OriginSslProtocols) c.OriginSslProtocols = { Quantity: 1, Items: ['TLSv1.2'] };
+            if (c.OriginReadTimeout == null) c.OriginReadTimeout = 30;
+            if (c.OriginKeepaliveTimeout == null) c.OriginKeepaliveTimeout = 5;
+            if (c.HTTPPort == null) c.HTTPPort = 80;
+            if (c.HTTPSPort == null) c.HTTPSPort = 443;
           }
         }
 
