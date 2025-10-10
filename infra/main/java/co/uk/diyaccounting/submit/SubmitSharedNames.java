@@ -17,8 +17,8 @@ public class SubmitSharedNames {
     public String dashedDomainName;
 
     public String receiptsBucketName;
-    public String originAccessLogBucketName;
-    public String distributionAccessLogBucketName;
+    //public String originAccessLogBucketName;
+    //public String distributionAccessLogBucketName;
     public String selfDestructLogGroupName;
     public String webDeploymentLogGroupName;
 
@@ -135,8 +135,8 @@ public class SubmitSharedNames {
         this.apexStackId = "env-%s-ApexStack".formatted(props.envName);
 
         this.receiptsBucketName = "%s-receipts".formatted(this.envDashedDomainName);
-        this.originAccessLogBucketName = "origin-%s".formatted(this.envDashedDomainName);
-        this.distributionAccessLogBucketName = "distribution-%s".formatted(this.envDashedDomainName);
+        //this.originAccessLogBucketName = "origin-%s".formatted(this.envDashedDomainName);
+        //this.distributionAccessLogBucketName = "distribution-%s".formatted(this.envDashedDomainName);
         this.selfDestructLogGroupName = "/aws/lambda/%s-self-destruct".formatted(this.envResourceNamePrefix);
         this.webDeploymentLogGroupName = "/deployment/%s-web-deployment".formatted(this.envResourceNamePrefix);
 

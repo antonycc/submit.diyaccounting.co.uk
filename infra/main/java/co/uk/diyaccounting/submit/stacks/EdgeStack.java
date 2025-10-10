@@ -1,14 +1,7 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.convertDotSeparatedToDashSeparated;
-
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Aspects;
 import software.amazon.awscdk.Environment;
@@ -47,9 +40,16 @@ import software.amazon.awscdk.services.route53.targets.CloudFrontTarget;
 import software.amazon.awscdk.services.s3.BlockPublicAccess;
 import software.amazon.awscdk.services.s3.Bucket;
 import software.amazon.awscdk.services.s3.BucketEncryption;
-import software.amazon.awscdk.services.s3.IBucket;
 import software.amazon.awscdk.services.wafv2.CfnWebACL;
 import software.constructs.Construct;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.convertDotSeparatedToDashSeparated;
 
 public class EdgeStack extends Stack {
 
@@ -229,14 +229,14 @@ public class EdgeStack extends Stack {
                 .build();
 
         // Lookup log buckets
-        IBucket originAccessLogBucket = Bucket.fromBucketName(
-                this,
-                props.resourceNamePrefix() + "-ImportedOriginAccessLogBucket",
-                props.sharedNames().originAccessLogBucketName);
-        IBucket distributionLogsBucket = Bucket.fromBucketName(
-                this,
-                props.resourceNamePrefix() + "-ImportedDistributionLogBucket",
-                props.sharedNames().distributionAccessLogBucketName);
+        //IBucket originAccessLogBucket = Bucket.fromBucketName(
+        //        this,
+        //        props.resourceNamePrefix() + "-ImportedOriginAccessLogBucket",
+        //        props.sharedNames().originAccessLogBucketName);
+        //IBucket distributionLogsBucket = Bucket.fromBucketName(
+        //        this,
+        //        props.resourceNamePrefix() + "-ImportedDistributionLogBucket",
+        //        props.sharedNames().distributionAccessLogBucketName);
 
         // Create the origin bucket
         this.originBucket = Bucket.Builder.create(this, props.resourceNamePrefix() + "-OriginBucket")
@@ -246,7 +246,7 @@ public class EdgeStack extends Stack {
                 .encryption(BucketEncryption.S3_MANAGED)
                 .removalPolicy(RemovalPolicy.DESTROY)
                 .autoDeleteObjects(true)
-                // TODO: Re-instate or find an alternative way to reference an existing bucket for access logs
+                // TODO: Find an alternative for access logs
                 // .serverAccessLogsBucket(originAccessLogBucket)
                 .build();
         infof(
@@ -302,7 +302,8 @@ public class EdgeStack extends Stack {
                 .certificate(cert)
                 .defaultRootObject("index.html")
                 .enableLogging(true)
-                .logBucket(distributionLogsBucket)
+                // TODO: Find an alternative for access logs
+                //.logBucket(distributionLogsBucket)
                 .logFilePrefix("cloudfront/")
                 .enableIpv6(true)
                 .sslSupportMethod(SSLMethod.SNI)

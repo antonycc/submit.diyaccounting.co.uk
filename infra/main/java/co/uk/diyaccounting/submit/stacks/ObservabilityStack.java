@@ -1,13 +1,8 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildTrailName;
-
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
 import co.uk.diyaccounting.submit.utils.RetentionDaysConverter;
-import java.util.List;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Aspects;
 import software.amazon.awscdk.Duration;
@@ -23,8 +18,13 @@ import software.amazon.awscdk.services.s3.Bucket;
 import software.amazon.awscdk.services.s3.BucketEncryption;
 import software.amazon.awscdk.services.s3.IBucket;
 import software.amazon.awscdk.services.s3.LifecycleRule;
-import software.amazon.awscdk.services.s3.ObjectOwnership;
 import software.constructs.Construct;
+
+import java.util.List;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildTrailName;
 
 public class ObservabilityStack extends Stack {
 
@@ -131,48 +131,49 @@ public class ObservabilityStack extends Stack {
                 .removalPolicy(RemovalPolicy.DESTROY)
                 .build();
 
-        // TODO: Re-instate log shipping to CloudWatch Logs for origin access and add xray tracing
+        // TODO: Find alternative to log buckets for CloudFront distribution logs
         // S3 bucket for origin access logs with specified retention
-        String originBucketName = "origin-%s".formatted(props.sharedNames().dashedDomainName);
-        var originAccessLogBucket = originBucketName + "-logs";
-        infof(
-                "Setting expiration period to %d days for %s",
-                props.accessLogGroupRetentionPeriodDays(), props.resourceNamePrefix());
-        this.originAccessLogBucket = Bucket.Builder.create(this, props.resourceNamePrefix() + "-LogBucket")
-                .bucketName(originAccessLogBucket)
-                .objectOwnership(ObjectOwnership.OBJECT_WRITER)
-                .versioned(false)
-                .blockPublicAccess(BlockPublicAccess.BLOCK_ALL)
-                .encryption(BucketEncryption.S3_MANAGED)
-                .removalPolicy(RemovalPolicy.DESTROY)
-                .autoDeleteObjects(true)
-                .lifecycleRules(List.of(LifecycleRule.builder()
-                        .id("%sLogsLifecycleRule".formatted(props.compressedResourceNamePrefix()))
-                        .enabled(true)
-                        .expiration(Duration.days(props.accessLogGroupRetentionPeriodDays()))
-                        .build()))
-                .build();
-        infof(
-                "Created log bucket %s with name",
-                this.originAccessLogBucket.getNode().getId(), originAccessLogBucket);
+        //String originBucketName = "origin-%s".formatted(props.sharedNames().dashedDomainName);
+        //var originAccessLogBucket = originBucketName + "-logs";
+        //infof(
+        //        "Setting expiration period to %d days for %s",
+        //        props.accessLogGroupRetentionPeriodDays(), props.resourceNamePrefix());
+        //this.originAccessLogBucket = Bucket.Builder.create(this, props.resourceNamePrefix() + "-LogBucket")
+        //        .bucketName(originAccessLogBucket)
+        //        .objectOwnership(ObjectOwnership.OBJECT_WRITER)
+        //        .versioned(false)
+        //        .blockPublicAccess(BlockPublicAccess.BLOCK_ALL)
+        //        .encryption(BucketEncryption.S3_MANAGED)
+        //        .removalPolicy(RemovalPolicy.DESTROY)
+        //        .autoDeleteObjects(true)
+        //        .lifecycleRules(List.of(LifecycleRule.builder()
+        //                .id("%sLogsLifecycleRule".formatted(props.compressedResourceNamePrefix()))
+        //                .enabled(true)
+        //                .expiration(Duration.days(props.accessLogGroupRetentionPeriodDays()))
+        //                .build()))
+        //        .build();
+        //infof(
+        //        "Created log bucket %s with name",
+        //        this.originAccessLogBucket.getNode().getId(), originAccessLogBucket);
 
-        // TODO: Re-instate log shipping to CloudWatch Logs for distribution access and add xray tracing
+        // TODO: Find alternative to log buckets for CloudFront distribution logs
         // S3 bucket for CloudFront distribution logs with specified retention
-        String distributionLogsBucketName = "distribution-%s-logs".formatted(props.sharedNames().dashedDomainName);
-        this.distributionLogsBucket = Bucket.Builder.create(this, props.resourceNamePrefix() + "-LogsBucket")
-                .bucketName(distributionLogsBucketName)
-                .objectOwnership(ObjectOwnership.OBJECT_WRITER)
-                .versioned(false)
-                .blockPublicAccess(BlockPublicAccess.BLOCK_ALL)
-                .encryption(BucketEncryption.S3_MANAGED)
-                .removalPolicy(RemovalPolicy.DESTROY)
-                .autoDeleteObjects(true)
-                .lifecycleRules(List.of(LifecycleRule.builder()
-                        .id(props.resourceNamePrefix() + "-LogsLifecycleRule")
-                        .enabled(true)
-                        .expiration(Duration.days(props.accessLogGroupRetentionPeriodDays()))
-                        .build()))
-                .build();
+        //String distributionLogsBucketName = "distribution-%s-logs".formatted(props.sharedNames().dashedDomainName);
+        //this.distributionLogsBucket = Bucket.Builder.create(this, props.resourceNamePrefix() + "-LogsBucket")
+        //        .bucketName(distributionLogsBucketName)
+        //        .objectOwnership(ObjectOwnership.OBJECT_WRITER)
+        //        .versioned(false)
+        //        .blockPublicAccess(BlockPublicAccess.BLOCK_ALL)
+        //        .blockPublicAccess(BlockPublicAccess.BLOCK_ALL)
+        //        .encryption(BucketEncryption.S3_MANAGED)
+        //        .removalPolicy(RemovalPolicy.DESTROY)
+        //        .autoDeleteObjects(true)
+        //        .lifecycleRules(List.of(LifecycleRule.builder()
+        //                .id(props.resourceNamePrefix() + "-LogsLifecycleRule")
+        //                .enabled(true)
+        //                .expiration(Duration.days(props.accessLogGroupRetentionPeriodDays()))
+        //                .build()))
+        //        .build();
 
         // Log group for self-destruct operations with 1-week retention
         this.selfDestructLogGroup = LogGroup.Builder.create(this, props.resourceNamePrefix() + "-SelfDestructLogGroup")
