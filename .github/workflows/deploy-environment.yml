@@ -35,12 +35,12 @@ env:
 jobs:
   names:
     name: names
-    environment: ${{ github.event.inputs.environment }}
+    environment: ${{ inputs.environment }}
     runs-on: ubuntu-24.04
     steps:
       - id: deployment-config
         run: |
-          echo "ENVIRONMENT_NAME=${{ github.event.inputs.environment }}" >> "$GITHUB_OUTPUT"
+          echo "ENVIRONMENT_NAME=${{ inputs.environment }}" >> "$GITHUB_OUTPUT"
     outputs:
       environment-name: ${{ steps.deployment-config.outputs.ENVIRONMENT_NAME }}
       deployment-name: ${{ steps.deployment-config.outputs.ENVIRONMENT_NAME }}
@@ -173,7 +173,7 @@ jobs:
                 --concurrency 4 \
                 --asset-parallelism \
                 --outputs-file ../cdk-submit-environment.out/cdk-outputs-observability.json \
-          ; cd .. \
+          && cd .. \
           ;
         env:
           ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
@@ -244,7 +244,7 @@ jobs:
                 --concurrency 4 \
                 --asset-parallelism \
                 --outputs-file ../cdk-submit-environment.out/cdk-outputs-data.json \
-          ; cd .. \
+          && cd .. \
           ;
         env:
           ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
@@ -316,7 +316,7 @@ jobs:
                 --concurrency 4 \
                 --asset-parallelism \
                 --outputs-file ../cdk-submit-environment.out/cdk-outputs-apex.json \
-              ; cd .. \
+              && cd .. \
             ;
         env:
           ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
@@ -389,7 +389,7 @@ jobs:
                 --concurrency 4 \
                 --asset-parallelism \
                 --outputs-file ../cdk-submit-environment.out/cdk-outputs-identity.json \
-              ; cd .. \
+              && cd .. \
             ;
         env:
           ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}

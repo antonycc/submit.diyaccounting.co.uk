@@ -512,7 +512,7 @@ jobs:
                 --concurrency 4 \
                 --asset-parallelism \
                 --outputs-file ../cdk-submit-application.out/cdk-outputs-self-destruct.json \
-          ; cd .. \
+          && cd .. \
           ;
         env:
           ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
@@ -605,7 +605,7 @@ jobs:
                 --concurrency 4 \
                 --asset-parallelism \
                 --outputs-file ../cdk-submit-application.out/cdk-outputs-dev.json \
-            ; cd .. \
+            && cd .. \
           ;
         env:
           ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
@@ -780,7 +780,7 @@ jobs:
                 --concurrency 4 \
                 --asset-parallelism \
                 --outputs-file ../cdk-submit-application.out/cdk-outputs-auth.json \
-            ; cd .. \
+            && cd .. \
             ;
         env:
           ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
@@ -876,7 +876,7 @@ jobs:
                 --concurrency 4 \
                 --asset-parallelism \
                 --outputs-file ../cdk-submit-application.out/cdk-outputs-hmrc.json \
-            ; cd .. \
+            && cd .. \
             ;
         env:
           ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
@@ -980,7 +980,7 @@ jobs:
                 --concurrency 4 \
                 --asset-parallelism \
                 --outputs-file ../cdk-submit-application.out/cdk-outputs-account.json \
-            ; cd .. \
+            && cd .. \
             ;
         env:
           ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
@@ -1108,7 +1108,7 @@ jobs:
                 --concurrency 4 \
                 --asset-parallelism \
                 --outputs-file ../cdk-submit-application.out/cdk-outputs-self-destruct.json \
-          ; cd .. \
+          && cd .. \
           ;
         env:
           ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
@@ -1217,7 +1217,7 @@ jobs:
                 --concurrency 4 \
                 --asset-parallelism \
                 --outputs-file ../cdk-submit-delivery.out/cdk-outputs-edge.json \
-              ; cd .. \
+              && cd .. \
             ;
         env:
           ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
@@ -1339,7 +1339,7 @@ jobs:
                 --concurrency 4 \
                 --asset-parallelism \
                 --outputs-file ../cdk-submit-application.out/cdk-outputs-publish.json \
-              ; cd .. \
+              && cd .. \
             ;
         env:
           ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
@@ -1440,7 +1440,7 @@ jobs:
                 --concurrency 4 \
                 --asset-parallelism \
                 --outputs-file ../cdk-submit-application.out/cdk-outputs-publish.json \
-              ; cd .. \
+              && cd .. \
             ;
         env:
           ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
