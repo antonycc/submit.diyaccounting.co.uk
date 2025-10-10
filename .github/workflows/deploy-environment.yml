@@ -35,12 +35,12 @@ env:
 jobs:
   names:
     name: names
-    environment: ${{ inputs.environment }}
+    environment: ${{ inputs.environment || 'ci' }}
     runs-on: ubuntu-24.04
     steps:
       - id: deployment-config
         run: |
-          echo "ENVIRONMENT_NAME=${{ inputs.environment }}" >> "$GITHUB_OUTPUT"
+          echo "ENVIRONMENT_NAME=${{ inputs.environment || 'ci' }}" >> "$GITHUB_OUTPUT"
     outputs:
       environment-name: ${{ steps.deployment-config.outputs.ENVIRONMENT_NAME }}
       deployment-name: ${{ steps.deployment-config.outputs.ENVIRONMENT_NAME }}
