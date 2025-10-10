@@ -398,8 +398,8 @@ jobs:
       - name: Resolve stack outputs
         id: identity-outputs
         run: |
-          COGNITO_USER_POOL_ARN=$(jq -r '.["${{ needs.names.outputs.environment-name }}-IdentityStack"].UserPoolArn' cdk-submit-environment.out/cdk-outputs-identity.json)
-          COGNITO_CLIENT_ID=$(jq -r '.["${{ needs.names.outputs.environment-name }}-IdentityStack"].UserPoolClientId' cdk-submit-environment.out/cdk-outputs-identity.json)
+          COGNITO_USER_POOL_ARN=$(jq -r '.["env-${{ needs.names.outputs.environment-name }}-IdentityStack"].UserPoolArn' cdk-submit-environment.out/cdk-outputs-identity.json)
+          COGNITO_CLIENT_ID=$(jq -r '.["env-${{ needs.names.outputs.environment-name }}-IdentityStack"].UserPoolClientId' cdk-submit-environment.out/cdk-outputs-identity.json)
           echo "COGNITO_USER_POOL_ARN=$COGNITO_USER_POOL_ARN"
           echo "COGNITO_CLIENT_ID=$COGNITO_CLIENT_ID"
           echo "COGNITO_USER_POOL_ARN=$COGNITO_USER_POOL_ARN" >> $GITHUB_OUTPUT
