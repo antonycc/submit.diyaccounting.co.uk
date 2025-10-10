@@ -32,7 +32,7 @@ describe("Integration – log receipt flow", () => {
       HMRC_CLIENT_ID: "test client id",
       DIY_SUBMIT_BASE_URL: "http://hmrc.redirect:3000/",
       HMRC_CLIENT_SECRET: "test hmrc client secret",
-      DIY_SUBMIT_RECEIPTS_BUCKET_FULL_NAME: "test-receipts-bucket",
+      DIY_SUBMIT_RECEIPTS_BUCKET_NAME: "test-receipts-bucket",
       TEST_S3_ENDPOINT: "http://localhost:9000", // Enable S3 operations for tests
     };
     s3Mock.reset();

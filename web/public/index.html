@@ -185,8 +185,7 @@
           // Fetch catalog
           const response = await fetch("/api/catalog");
           if (!response.ok) {
-            dynamicContainer.innerHTML =
-              '<p style="color: #b00020;">Unable to load activities. Please try again later.</p>';
+            dynamicContainer.innerHTML = '<p style="color: #b00020;">Unable to load activities. Please try again later.</p>';
             return;
           }
 
@@ -195,9 +194,7 @@
           const activeBundles = getActiveBundles(catalog, userBundles);
 
           // Filter activities user can access
-          const accessibleActivities = (catalog.activities || []).filter((activity) =>
-            canAccessActivity(activity, activeBundles),
-          );
+          const accessibleActivities = (catalog.activities || []).filter((activity) => canAccessActivity(activity, activeBundles));
 
           if (accessibleActivities.length === 0) {
             dynamicContainer.innerHTML =
@@ -222,8 +219,7 @@
           dynamicContainer.innerHTML = buttons;
         } catch (error) {
           console.error("Error loading activities:", error);
-          dynamicContainer.innerHTML =
-            '<p style="color: #b00020;">Error loading activities. Please refresh the page.</p>';
+          dynamicContainer.innerHTML = '<p style="color: #b00020;">Error loading activities. Please refresh the page.</p>';
         }
       }
 

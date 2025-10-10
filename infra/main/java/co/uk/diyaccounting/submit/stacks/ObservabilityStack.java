@@ -4,6 +4,7 @@ import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildTrailName;
 
+import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
 import co.uk.diyaccounting.submit.utils.RetentionDaysConverter;
 import java.util.List;
@@ -60,24 +61,16 @@ public class ObservabilityStack extends Stack {
         String compressedResourceNamePrefix();
 
         @Override
-        String dashedDomainName();
-
-        @Override
-        String domainName();
-
-        @Override
-        String baseUrl();
-
-        @Override
         String cloudTrailEnabled();
+
+        @Override
+        SubmitSharedNames sharedNames();
 
         String cloudTrailLogGroupPrefix();
 
         String cloudTrailLogGroupRetentionPeriodDays();
 
         int accessLogGroupRetentionPeriodDays();
-
-        String selfDestructLogGroupName();
 
         static ImmutableObservabilityStackProps.Builder builder() {
             return ImmutableObservabilityStackProps.builder();
@@ -91,7 +84,7 @@ public class ObservabilityStack extends Stack {
     public ObservabilityStack(Construct scope, String id, StackProps stackProps, ObservabilityStackProps props) {
         super(scope, id, stackProps);
 
-        String trailName = buildTrailName(props.dashedDomainName());
+        String trailName = buildTrailName(props.sharedNames().dashedDomainName);
         boolean cloudTrailEnabled = Boolean.parseBoolean(props.cloudTrailEnabled());
         int cloudTrailLogGroupRetentionPeriodDays = Integer.parseInt(props.cloudTrailLogGroupRetentionPeriodDays());
 
@@ -100,8 +93,8 @@ public class ObservabilityStack extends Stack {
                 RetentionDaysConverter.daysToRetentionDays(cloudTrailLogGroupRetentionPeriodDays);
         if (cloudTrailEnabled) {
             this.cloudTrailLogGroup = LogGroup.Builder.create(this, props.resourceNamePrefix() + "-CloudTrailGroup")
-                    .logGroupName(
-                            "%s%s-cloud-trail".formatted(props.cloudTrailLogGroupPrefix(), props.dashedDomainName()))
+                    .logGroupName("%s%s-cloud-trail"
+                            .formatted(props.cloudTrailLogGroupPrefix(), props.sharedNames().dashedDomainName))
                     .retention(cloudTrailLogGroupRetentionPeriod)
                     .removalPolicy(RemovalPolicy.DESTROY)
                     .build();
@@ -140,7 +133,7 @@ public class ObservabilityStack extends Stack {
 
         // TODO: Re-instate log shipping to CloudWatch Logs for origin access and add xray tracing
         // S3 bucket for origin access logs with specified retention
-        String originBucketName = "origin-%s".formatted(props.dashedDomainName());
+        String originBucketName = "origin-%s".formatted(props.sharedNames().dashedDomainName);
         var originAccessLogBucket = originBucketName + "-logs";
         infof(
                 "Setting expiration period to %d days for %s",
@@ -165,7 +158,7 @@ public class ObservabilityStack extends Stack {
 
         // TODO: Re-instate log shipping to CloudWatch Logs for distribution access and add xray tracing
         // S3 bucket for CloudFront distribution logs with specified retention
-        String distributionLogsBucketName = "distribution-%s-logs".formatted(props.dashedDomainName());
+        String distributionLogsBucketName = "distribution-%s-logs".formatted(props.sharedNames().dashedDomainName);
         this.distributionLogsBucket = Bucket.Builder.create(this, props.resourceNamePrefix() + "-LogsBucket")
                 .bucketName(distributionLogsBucketName)
                 .objectOwnership(ObjectOwnership.OBJECT_WRITER)
@@ -183,13 +176,13 @@ public class ObservabilityStack extends Stack {
 
         // Log group for self-destruct operations with 1-week retention
         this.selfDestructLogGroup = LogGroup.Builder.create(this, props.resourceNamePrefix() + "-SelfDestructLogGroup")
-                .logGroupName(props.selfDestructLogGroupName())
+                .logGroupName(props.sharedNames().selfDestructLogGroupName)
                 .retention(RetentionDays.ONE_WEEK) // Longer retention for operations
                 .removalPolicy(RemovalPolicy.DESTROY)
                 .build();
         infof(
                 "ObservabilityStack %s created successfully for %s",
-                this.getNode().getId(), props.dashedDomainName());
+                this.getNode().getId(), props.sharedNames().dashedDomainName);
 
         Aspects.of(this).add(new SetAutoDeleteJobLogRetentionAspect(props.deploymentName(), RetentionDays.THREE_DAYS));
 

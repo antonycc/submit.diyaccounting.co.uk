@@ -4,6 +4,7 @@ import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 import static co.uk.diyaccounting.submit.utils.S3.createLifecycleRules;
 
+import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Aspects;
@@ -48,16 +49,10 @@ public class DataStack extends Stack {
         String compressedResourceNamePrefix();
 
         @Override
-        String dashedDomainName();
-
-        @Override
-        String domainName();
-
-        @Override
-        String baseUrl();
-
-        @Override
         String cloudTrailEnabled();
+
+        @Override
+        SubmitSharedNames sharedNames();
 
         String s3RetainReceiptsBucket();
 
@@ -76,9 +71,9 @@ public class DataStack extends Stack {
         // Create receipts bucket for storing VAT submission receipts
         boolean s3RetainReceiptsBucket =
                 props.s3RetainReceiptsBucket() != null && Boolean.parseBoolean(props.s3RetainReceiptsBucket());
-        String receiptsBucketFullName = "%s-receipts".formatted(props.dashedDomainName());
+        String receiptsBucketName = "%s-receipts".formatted(props.sharedNames().dashedDomainName);
         this.receiptsBucket = Bucket.Builder.create(this, props.resourceNamePrefix() + "-ReceiptsBucket")
-                .bucketName(receiptsBucketFullName)
+                .bucketName(receiptsBucketName)
                 .versioned(false)
                 .blockPublicAccess(BlockPublicAccess.BLOCK_ALL)
                 .encryption(BucketEncryption.S3_MANAGED)
@@ -89,13 +84,13 @@ public class DataStack extends Stack {
                 .build();
         infof(
                 "Created receipts bucket with name %s and id %s",
-                receiptsBucketFullName, this.receiptsBucket.getNode().getId());
+                receiptsBucketName, this.receiptsBucket.getNode().getId());
 
         Aspects.of(this).add(new SetAutoDeleteJobLogRetentionAspect(props.deploymentName(), RetentionDays.THREE_DAYS));
 
         cfnOutput(this, "ReceiptsBucketName", this.receiptsBucket.getBucketName());
         cfnOutput(this, "ReceiptsBucketArn", this.receiptsBucket.getBucketArn());
 
-        infof("DataStack %s created successfully for %s", this.getNode().getId(), props.dashedDomainName());
+        infof("DataStack %s created successfully for %s", this.getNode().getId(), props.sharedNames().dashedDomainName);
     }
 }

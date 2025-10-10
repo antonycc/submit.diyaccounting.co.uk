@@ -2,15 +2,14 @@ package co.uk.diyaccounting.submit.stacks;
 
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.Kind.putIfNotNull;
-import static co.uk.diyaccounting.submit.utils.Kind.putIfPresent;
 import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateIamCompatibleName;
 
+import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Aspects;
 import software.amazon.awscdk.Duration;
@@ -67,32 +66,10 @@ public class SelfDestructStack extends Stack {
         String compressedResourceNamePrefix();
 
         @Override
-        String dashedDomainName();
-
-        @Override
-        String domainName();
-
-        @Override
-        String baseUrl();
-
-        @Override
         String cloudTrailEnabled();
 
-        String selfDestructLogGroupName();
-
-        Optional<String> devStackName();
-
-        Optional<String> authStackName();
-
-        Optional<String> hmrcStackName();
-
-        Optional<String> accountStackName();
-
-        Optional<String> edgeStackName();
-
-        Optional<String> publishStackName();
-
-        Optional<String> opsStackName();
+        @Override
+        SubmitSharedNames sharedNames();
 
         String selfDestructDelayHours();
 
@@ -128,7 +105,9 @@ public class SelfDestructStack extends Stack {
 
         // Log group for self-destruct function
         ILogGroup logGroup = LogGroup.fromLogGroupName(
-                this, props.resourceNamePrefix() + "-ISelfDestructLogGroup", props.selfDestructLogGroupName());
+                this,
+                props.resourceNamePrefix() + "-ISelfDestructLogGroup",
+                props.sharedNames().selfDestructLogGroupName);
 
         // IAM role for the self-destruct Lambda function
         String roleName = generateIamCompatibleName(props.resourceNamePrefix(), "-self-destruct-role");
@@ -175,13 +154,13 @@ public class SelfDestructStack extends Stack {
         // Environment variables for the function
         Map<String, String> environment = new HashMap<>();
         putIfNotNull(environment, "AWS_XRAY_TRACING_NAME", functionName);
-        putIfPresent(environment, "DEV_STACK_NAME", props.devStackName());
-        putIfPresent(environment, "AUTH_STACK_NAME", props.authStackName());
-        putIfPresent(environment, "HMRC_STACK_NAME", props.hmrcStackName());
-        putIfPresent(environment, "ACCOUNT_STACK_NAME", props.accountStackName());
-        putIfPresent(environment, "EDGE_STACK_NAME", props.edgeStackName());
-        putIfPresent(environment, "PUBLISH_STACK_NAME", props.publishStackName());
-        putIfPresent(environment, "OPS_STACK_NAME", props.opsStackName());
+        putIfNotNull(environment, "DEV_STACK_NAME", props.sharedNames().devStackId);
+        putIfNotNull(environment, "AUTH_STACK_NAME", props.sharedNames().authStackId);
+        putIfNotNull(environment, "HMRC_STACK_NAME", props.sharedNames().hmrcStackId);
+        putIfNotNull(environment, "ACCOUNT_STACK_NAME", props.sharedNames().accountStackId);
+        putIfNotNull(environment, "EDGE_STACK_NAME", props.sharedNames().edgeStackId);
+        putIfNotNull(environment, "PUBLISH_STACK_NAME", props.sharedNames().publishStackId);
+        putIfNotNull(environment, "OPS_STACK_NAME", props.sharedNames().opsStackId);
         putIfNotNull(environment, "SELF_DESTRUCT_STACK_NAME", this.getStackName());
 
         // Lambda function for self-destruction

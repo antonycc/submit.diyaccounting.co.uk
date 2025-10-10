@@ -45,9 +45,7 @@ describe("gotoWithRetries", () => {
     const fatal = new Error("HTTP 401 Unauthorized");
     page.goto.mockRejectedValueOnce(fatal);
 
-    await expect(nav.gotoWithRetries(page, "https://example.com", { maxRetries: 4 })).rejects.toThrowError(
-      /Unauthorized/,
-    );
+    await expect(nav.gotoWithRetries(page, "https://example.com", { maxRetries: 4 })).rejects.toThrowError(/Unauthorized/);
 
     expect(page.goto).toHaveBeenCalledTimes(1);
   });

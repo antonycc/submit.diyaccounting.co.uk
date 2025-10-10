@@ -1,7 +1,7 @@
 {
   "singleQuote": false,
   "trailingComma": "all",
-  "printWidth": 120,
+  "printWidth": 140,
   "tabWidth": 2,
   "useTabs": false,
   "quoteProps": "consistent",
@@ -14,7 +14,7 @@
       "files": "*.html",
       "options": {
         "parser": "html",
-        "printWidth": 120,
+        "printWidth": 140,
         "tabWidth": 2,
         "useTabs": false
       }
@@ -23,7 +23,7 @@
       "files": "*.css",
       "options": {
         "parser": "css",
-        "printWidth": 120,
+        "printWidth": 140,
         "tabWidth": 2,
         "useTabs": false
       }
@@ -32,7 +32,7 @@
       "files": "*.json",
       "options": {
         "parser": "json",
-        "printWidth": 120,
+        "printWidth": 140,
         "tabWidth": 2,
         "useTabs": false
       }

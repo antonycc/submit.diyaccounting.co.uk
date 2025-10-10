@@ -24,7 +24,7 @@ function parseReceiptKey(key) {
 
 // GET /api/my/receipts
 export async function httpGet(event) {
-  validateEnv(["DIY_SUBMIT_RECEIPTS_BUCKET_FULL_NAME"]);
+  validateEnv(["DIY_SUBMIT_RECEIPTS_BUCKET_NAME"]);
 
   const request = extractRequest(event);
   logger.info({ message: "myReceipts list entry", route: "/api/my/receipts" });
@@ -84,7 +84,7 @@ export async function httpGet(event) {
 
 // GET /api/my/receipts/{name} or ?name= or ?key=
 export async function httpGetByName(event) {
-  validateEnv(["DIY_SUBMIT_RECEIPTS_BUCKET_FULL_NAME"]);
+  validateEnv(["DIY_SUBMIT_RECEIPTS_BUCKET_NAME"]);
 
   const request = extractRequest(event);
   logger.info({ message: "myReceipts get entry", route: "/api/my/receipts/{name}" });

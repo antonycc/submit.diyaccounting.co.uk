@@ -18,8 +18,6 @@ import software.amazon.awscdk.assertions.Template;
 @SetEnvironmentVariable.SetEnvironmentVariables({
     @SetEnvironmentVariable(key = "ENVIRONMENT_NAME", value = "test"),
     @SetEnvironmentVariable(key = "DEPLOYMENT_NAME", value = "tt-witheight"),
-    @SetEnvironmentVariable(key = "DIY_SUBMIT_DOMAIN_NAME", value = "tt-witheight.submit.diyaccounting.co.uk"),
-    @SetEnvironmentVariable(key = "DIY_SUBMIT_BASE_URL", value = "https://tt-witheight.submit.diyaccounting.co.uk"),
     @SetEnvironmentVariable(
             key = "GOOGLE_CLIENT_SECRET_ARN",
             value = "arn:aws:secretsmanager:us-east-1:111111111111:secret:tt-witheight-google-secret"),

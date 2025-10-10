@@ -408,7 +408,7 @@ if (__runDirect) {
     "HMRC_BASE_URI",
     "HMRC_CLIENT_ID",
     "HMRC_CLIENT_SECRET_ARN",
-    "DIY_SUBMIT_RECEIPTS_BUCKET_FULL_NAME",
+    "DIY_SUBMIT_RECEIPTS_BUCKET_NAME",
   ]);
   app.listen(TEST_SERVER_HTTP_PORT, () => {
     const message = `Listening at http://127.0.0.1:${TEST_SERVER_HTTP_PORT}`;

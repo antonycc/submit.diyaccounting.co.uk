@@ -6,14 +6,14 @@ import { extractRequest, httpBadRequestResponse, httpOkResponse, httpServerError
 import { validateEnv } from "../lib/env.js";
 
 export async function logReceipt(key, receipt) {
-  const receiptsBucketFullName = process.env.DIY_SUBMIT_RECEIPTS_BUCKET_FULL_NAME;
+  const receiptsBucketName = process.env.DIY_SUBMIT_RECEIPTS_BUCKET_NAME;
   const testMinioS3 = process.env.TEST_MINIO_S3;
   const testS3Endpoint = process.env.TEST_S3_ENDPOINT;
 
   logger.info({
     message:
       `Environment variables: ` +
-      `DIY_SUBMIT_RECEIPTS_BUCKET_FULL_NAME=${receiptsBucketFullName}, ` +
+      `DIY_SUBMIT_RECEIPTS_BUCKET_NAME=${receiptsBucketName}, ` +
       `TEST_MINIO_S3=${testMinioS3}, ` +
       `TEST_S3_ENDPOINT=${testS3Endpoint}`,
   });
@@ -32,13 +32,13 @@ export async function logReceipt(key, receipt) {
     logger.warn({ message: "TEST_S3_ENDPOINT is set to 'off': No receipt saved." });
   } else {
     logger.info({
-      message: `Logging receipt to S3 bucket ${receiptsBucketFullName} with key ${key} with config ${JSON.stringify(s3Config)}`,
+      message: `Logging receipt to S3 bucket ${receiptsBucketName} with key ${key} with config ${JSON.stringify(s3Config)}`,
     });
     const s3Client = new S3Client(s3Config);
     try {
       await s3Client.send(
         new PutObjectCommand({
-          Bucket: receiptsBucketFullName,
+          Bucket: receiptsBucketName,
           Key: key,
           Body: JSON.stringify(receipt),
           ContentType: "application/json",
@@ -53,7 +53,7 @@ export async function logReceipt(key, receipt) {
 
 // POST /api/log-receipt
 export async function httpPost(event) {
-  validateEnv(["DIY_SUBMIT_RECEIPTS_BUCKET_FULL_NAME"]);
+  validateEnv(["DIY_SUBMIT_RECEIPTS_BUCKET_NAME"]);
 
   const request = extractRequest(event);
 
@@ -83,11 +83,7 @@ export async function httpPost(event) {
   const formBundle = receipt?.formBundleNumber;
   const timestamp = new Date().toISOString();
   const key =
-    userSub && formBundle
-      ? `receipts/${userSub}/${timestamp}-${formBundle}.json`
-      : formBundle
-        ? `receipts/${formBundle}.json`
-        : null;
+    userSub && formBundle ? `receipts/${userSub}/${timestamp}-${formBundle}.json` : formBundle ? `receipts/${formBundle}.json` : null;
 
   // Validation
   const errorMessages = [];

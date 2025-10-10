@@ -84,12 +84,7 @@ export async function httpGet(event) {
       });
     } else {
       // Call HMRC API
-      const hmrcResult = await hmrcVatGet(
-        `/organisations/vat/${vrn}/returns/${periodKey}`,
-        accessToken,
-        govClientHeaders,
-        testScenario,
-      );
+      const hmrcResult = await hmrcVatGet(`/organisations/vat/${vrn}/returns/${periodKey}`, accessToken, govClientHeaders, testScenario);
 
       if (!hmrcResult.ok) {
         // Handle 404 specifically for not found returns

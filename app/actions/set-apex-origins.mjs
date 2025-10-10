@@ -187,9 +187,7 @@ async function main() {
     }
   }
 
-  const afterMissing = (cfg.Origins.Items || []).filter(
-    (o) => !o.CustomHeaders || typeof o.CustomHeaders !== "object",
-  ).length;
+  const afterMissing = (cfg.Origins.Items || []).filter((o) => !o.CustomHeaders || typeof o.CustomHeaders !== "object").length;
   console.log(
     `[set-apex-origins] normalized origins: ${cfg.Origins.Items.length}, missing CustomHeaders after normalization: ${afterMissing}`,
   );
@@ -205,8 +203,7 @@ async function main() {
         customHeaderNames: Array.isArray(o.CustomHeaders?.Items) ? o.CustomHeaders.Items.map((h) => h.HeaderName) : [],
         type: o.S3OriginConfig ? "s3" : "custom",
       })),
-      originGroups:
-        cfg.OriginGroups?.Items?.map((g) => ({ Id: g.Id, members: g.Members?.Items?.map((m) => m.OriginId) })) || [],
+      originGroups: cfg.OriginGroups?.Items?.map((g) => ({ Id: g.Id, members: g.Members?.Items?.map((m) => m.OriginId) })) || [],
     };
     console.log("[set-apex-origins] DRY RUN summary:");
     console.log(JSON.stringify(summary, null, 2));

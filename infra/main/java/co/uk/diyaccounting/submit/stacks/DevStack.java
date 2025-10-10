@@ -5,6 +5,7 @@ import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildEcrLogGroupName;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildEcrPublishRoleName;
 
+import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
 import java.util.List;
 import org.immutables.value.Value;
@@ -58,18 +59,10 @@ public class DevStack extends Stack {
         String compressedResourceNamePrefix();
 
         @Override
-        String dashedDomainName();
-
-        @Override
-        String domainName();
-
-        @Override
-        String baseUrl();
-
-        @Override
         String cloudTrailEnabled();
 
-        String ecrRepositoryName();
+        @Override
+        SubmitSharedNames sharedNames();
 
         static ImmutableDevStackProps.Builder builder() {
             return ImmutableDevStackProps.builder();
@@ -83,11 +76,13 @@ public class DevStack extends Stack {
     public DevStack(Construct scope, String id, StackProps stackProps, DevStackProps props) {
         super(scope, id, stackProps);
 
-        infof("Creating DevStack for domain: %s (dashed: %s)", props.domainName(), props.dashedDomainName());
+        infof(
+                "Creating DevStack for domain: %s (dashed: %s)",
+                props.sharedNames().domainName, props.sharedNames().dashedDomainName);
 
         // ECR Repository with lifecycle rules
         this.ecrRepository = Repository.Builder.create(this, props.resourceNamePrefix() + "-EcrRepository")
-                .repositoryName(props.ecrRepositoryName())
+                .repositoryName(props.sharedNames().ecrRepositoryName)
                 .imageScanOnPush(true) // Enable vulnerability scanning
                 .imageTagMutability(software.amazon.awscdk.services.ecr.TagMutability.MUTABLE)
                 .lifecycleRules(List.of(
@@ -102,7 +97,7 @@ public class DevStack extends Stack {
                 .build();
 
         // CloudWatch Log Group for ECR operations with 7-day retention
-        String ecrLogGroupName = buildEcrLogGroupName(props.dashedDomainName());
+        String ecrLogGroupName = buildEcrLogGroupName(props.sharedNames().dashedDomainName);
         this.ecrLogGroup = LogGroup.Builder.create(this, props.resourceNamePrefix() + "-EcrLogGroup")
                 .logGroupName(ecrLogGroupName)
                 .retention(RetentionDays.ONE_WEEK) // 7-day retention as requested
@@ -111,7 +106,7 @@ public class DevStack extends Stack {
 
         // IAM Role for ECR publishing with comprehensive permissions
         this.ecrPublishRole = Role.Builder.create(this, props.resourceNamePrefix() + "-EcrPublishRole")
-                .roleName(buildEcrPublishRoleName(props.dashedDomainName()))
+                .roleName(buildEcrPublishRoleName(props.sharedNames().dashedDomainName))
                 .assumedBy(new ServicePrincipal("lambda.amazonaws.com"))
                 .inlinePolicies(java.util.Map.of(
                         "EcrPublishPolicy",
@@ -165,6 +160,6 @@ public class DevStack extends Stack {
         cfnOutput(this, "EcrLogGroupArn", this.ecrLogGroup.getLogGroupArn());
         cfnOutput(this, "EcrPublishRoleArn", this.ecrPublishRole.getRoleArn());
 
-        infof("DevStack %s created successfully for %s", this.getNode().getId(), props.dashedDomainName());
+        infof("DevStack %s created successfully for %s", this.getNode().getId(), props.sharedNames().dashedDomainName);
     }
 }

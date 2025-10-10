@@ -56,9 +56,7 @@ describe("User Journeys Frontend Tests", () => {
       const htmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/auth/login.html"), "utf-8");
       document.documentElement.innerHTML = htmlContent;
 
-      const googleBtn = Array.from(document.querySelectorAll("button")).find((btn) =>
-        btn.textContent.includes("Continue with Google"),
-      );
+      const googleBtn = Array.from(document.querySelectorAll("button")).find((btn) => btn.textContent.includes("Continue with Google"));
       expect(googleBtn).toBeTruthy();
     });
   });

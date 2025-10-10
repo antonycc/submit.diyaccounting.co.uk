@@ -28,7 +28,7 @@ describe("Integration – /api/my-receipts", () => {
   beforeEach(() => {
     s3Mock.reset();
     process.env.DIY_SUBMIT_BASE_URL = "https://hmrc-test-redirect/";
-    process.env.DIY_SUBMIT_RECEIPTS_BUCKET_FULL_NAME = "integration-test-bucket";
+    process.env.DIY_SUBMIT_RECEIPTS_BUCKET_NAME = "integration-test-bucket";
     process.env.TEST_S3_ENDPOINT = "http://localhost:9000";
 
     app = express();
@@ -76,9 +76,7 @@ describe("Integration – /api/my-receipts", () => {
     expect(list.receipts.length).toBe(1);
     expect(list.receipts[0].formBundleNumber).toBe("XYZ");
 
-    const resGet = await request(app)
-      .get("/api/my-receipts/2025-08-01T10:00:00.000Z-XYZ.json")
-      .set("Authorization", `Bearer ${token}`);
+    const resGet = await request(app).get("/api/my-receipts/2025-08-01T10:00:00.000Z-XYZ.json").set("Authorization", `Bearer ${token}`);
     expect(resGet.status).toBe(200);
     const rec = JSON.parse(resGet.text || "{}");
     expect(rec.formBundleNumber).toBe("XYZ");

@@ -54,10 +54,7 @@ describe("Integration – requireActivity middleware", () => {
     expect(bodyForbidden.error).toBe("not_allowed");
     expect(Array.isArray(bodyForbidden.bundles)).toBe(true);
 
-    const resGrant = await request(app)
-      .post("/api/request-bundle")
-      .set("Authorization", `Bearer ${token}`)
-      .send({ bundleId: "test" });
+    const resGrant = await request(app).post("/api/request-bundle").set("Authorization", `Bearer ${token}`).send({ bundleId: "test" });
     expect(resGrant.status).toBe(200);
 
     const resAllowed = await request(app).post("/protected").set("Authorization", `Bearer ${token}`).send({});

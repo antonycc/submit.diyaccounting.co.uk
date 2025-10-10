@@ -23,8 +23,6 @@ import software.amazon.awscdk.assertions.Template;
     @SetEnvironmentVariable(key = "COMMIT_HASH", value = "local"),
     @SetEnvironmentVariable(key = "WEBSITE_HASH", value = "local"),
     @SetEnvironmentVariable(key = "BUILD_NUMBER", value = "local"),
-    @SetEnvironmentVariable(key = "DIY_SUBMIT_DOMAIN_NAME", value = "tt-witheight.submit.diyaccounting.co.uk"),
-    @SetEnvironmentVariable(key = "DIY_SUBMIT_BASE_URL", value = "https://tt-witheight.submit.diyaccounting.co.uk"),
     @SetEnvironmentVariable(key = "AUTH_URL_MOCK_LAMBDA_URL", value = "https://tt-witheight.lambda.mock/auth"),
     @SetEnvironmentVariable(key = "AUTH_URL_COGNITO_LAMBDA_URL", value = "https://tt-witheight.lambda.cognito/auth"),
     @SetEnvironmentVariable(
@@ -40,11 +38,6 @@ import software.amazon.awscdk.assertions.Template;
     @SetEnvironmentVariable(key = "REQUEST_BUNDLES_LAMBDA_URL", value = "https://tt-witheight.lambda.bundles/request"),
     @SetEnvironmentVariable(key = "MY_BUNDLES_LAMBDA_URL", value = "https://tt-witheight.lambda.bundles/my"),
     @SetEnvironmentVariable(key = "MY_RECEIPTS_LAMBDA_URL", value = "https://tt-witheight.lambda.receipts/my"),
-    @SetEnvironmentVariable(key = "ORIGIN_ACCESS_LOG_BUCKET_ARN", value = "arn:aws:s3:::tt-witheight-log-bucket"),
-    @SetEnvironmentVariable(key = "DISTRIBUTION_ACCESS_LOG_BUCKET_ARN", value = "arn:aws:s3:::tt-witheight-log-bucket"),
-    @SetEnvironmentVariable(
-            key = "WEB_DEPLOYMENT_LOG_GROUP_ARN",
-            value = "arn:aws:logs:eu-west-2:111111111111:log-group:/aws/lambda/test-log-group"),
     @SetEnvironmentVariable(key = "CLOUD_TRAIL_ENABLED", value = "true"),
     @SetEnvironmentVariable(key = "SELF_DESTRUCT_DELAY_HOURS", value = "1"),
     @SetEnvironmentVariable(

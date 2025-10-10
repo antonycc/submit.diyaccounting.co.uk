@@ -3,10 +3,6 @@ package co.uk.diyaccounting.submit;
 import static co.uk.diyaccounting.submit.utils.Kind.envOr;
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.Kind.warnf;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildCognitoDomainName;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDashedDomainName;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateCompressedResourceNamePrefix;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateResourceNamePrefix;
 
 import co.uk.diyaccounting.submit.stacks.ApexStack;
 import co.uk.diyaccounting.submit.stacks.DataStack;
@@ -105,9 +101,17 @@ public class SubmitEnvironment {
                     "CDK_DEFAULT_ACCOUNT or CDK_DEFAULT_REGION environment variables are not set, using environment agnostic stacks");
         }
 
+        var nameProps = new SubmitSharedNames.SubmitSharedNamesProps();
+        nameProps.envName = envName;
+        nameProps.deploymentName = deploymentName;
+        nameProps.hostedZoneName = appProps.hostedZoneName;
+        nameProps.subDomainName = appProps.subDomainName;
+        nameProps.cognitoDomainPrefix = appProps.cognitoDomainPrefix;
+        nameProps.regionName = primaryEnv.getRegion();
+        nameProps.awsAccount = primaryEnv.getAccount();
+        var sharedNames = new SubmitSharedNames(nameProps);
+
         // Load configuration from environment variables not defaulted in the cdk.json
-        var domainName = envOr("DIY_SUBMIT_DOMAIN_NAME", appProps.domainName);
-        var baseUrl = envOr("DIY_SUBMIT_BASE_URL", appProps.baseUrl);
         var googleClientSecretArn = envOr(
                 "GOOGLE_CLIENT_SECRET_ARN", appProps.googleClientSecretArn, "(from googleClientSecretArn in cdk.json)");
 
@@ -121,81 +125,64 @@ public class SubmitEnvironment {
                 appProps.s3RetainReceiptsBucket,
                 "(from s3RetainReceiptsBucket in cdk.json)");
 
-        // Generate predictable resource name prefix based on domain and environment
-        var cognitoDomainName = buildCognitoDomainName(
-                deploymentName, appProps.cognitoDomainPrefix, appProps.subDomainName, appProps.hostedZoneName);
-
-        // Generate predictable resource names
-        String resourceNamePrefix = "env-%s".formatted(generateResourceNamePrefix(domainName));
-        String compressedResourceNamePrefix = "e-%s".formatted(generateCompressedResourceNamePrefix(domainName));
-        String dashedDomainName = buildDashedDomainName(domainName);
-        var selfDestructLogGroupName = "/aws/lambda/%s-self-destruct".formatted(resourceNamePrefix);
-
         // Create ObservabilityStack with resources used in monitoring the application
-        String observabilityStackId = "%s-ObservabilityStack".formatted(deploymentName);
         infof(
                 "Synthesizing stack %s for deployment %s to environment %s",
-                observabilityStackId, deploymentName, envName);
+                sharedNames.observabilityStackId, deploymentName, envName);
         this.observabilityStack = new ObservabilityStack(
                 app,
-                observabilityStackId,
+                sharedNames.observabilityStackId,
                 ObservabilityStack.ObservabilityStackProps.builder()
                         .env(primaryEnv)
                         .crossRegionReferences(false)
                         .envName(envName)
                         .deploymentName(deploymentName)
-                        .resourceNamePrefix(resourceNamePrefix)
-                        .compressedResourceNamePrefix(compressedResourceNamePrefix)
-                        .domainName(domainName)
-                        .dashedDomainName(dashedDomainName)
-                        .baseUrl(baseUrl)
+                        .resourceNamePrefix(sharedNames.envResourceNamePrefix)
+                        .compressedResourceNamePrefix(sharedNames.envCompressedResourceNamePrefix)
                         .cloudTrailEnabled(cloudTrailEnabled)
-                        .selfDestructLogGroupName(selfDestructLogGroupName)
+                        .sharedNames(sharedNames)
                         .cloudTrailLogGroupPrefix(appProps.cloudTrailLogGroupPrefix)
                         .cloudTrailLogGroupRetentionPeriodDays(appProps.cloudTrailLogGroupRetentionPeriodDays)
                         .accessLogGroupRetentionPeriodDays(accessLogGroupRetentionPeriodDays)
                         .build());
 
         // Create DataStack with shared persistence for all deployments
-        String dataStackId = "%s-DataStack".formatted(deploymentName);
-        infof("Synthesizing stack %s for deployment %s to environment %s", dataStackId, deploymentName, envName);
+        infof(
+                "Synthesizing stack %s for deployment %s to environment %s",
+                sharedNames.dataStackId, deploymentName, envName);
         this.dataStack = new DataStack(
                 app,
-                dataStackId,
+                sharedNames.dataStackId,
                 DataStack.DataStackProps.builder()
                         .env(primaryEnv)
                         .crossRegionReferences(false)
                         .envName(envName)
                         .deploymentName(deploymentName)
-                        .resourceNamePrefix(resourceNamePrefix)
-                        .compressedResourceNamePrefix(compressedResourceNamePrefix)
-                        .domainName(domainName)
-                        .dashedDomainName(dashedDomainName)
-                        .baseUrl(baseUrl)
+                        .resourceNamePrefix(sharedNames.envResourceNamePrefix)
+                        .compressedResourceNamePrefix(sharedNames.envCompressedResourceNamePrefix)
                         .cloudTrailEnabled(cloudTrailEnabled)
+                        .sharedNames(sharedNames)
                         .s3RetainReceiptsBucket(s3RetainReceiptsBucket)
                         .build());
 
         // Create the identity stack before any user aware services
-        String identityStackId = "%s-IdentityStack".formatted(deploymentName);
-        infof("Synthesizing stack %s for deployment %s to environment %s", identityStackId, deploymentName, envName);
+        infof(
+                "Synthesizing stack %s for deployment %s to environment %s",
+                sharedNames.identityStackId, deploymentName, envName);
         this.identityStack = new IdentityStack(
                 app,
-                identityStackId,
+                sharedNames.identityStackId,
                 IdentityStack.IdentityStackProps.builder()
                         .env(primaryEnv)
                         .crossRegionReferences(false)
                         .envName(envName)
                         .deploymentName(deploymentName)
-                        .resourceNamePrefix(resourceNamePrefix)
-                        .compressedResourceNamePrefix(compressedResourceNamePrefix)
-                        .domainName(domainName)
-                        .dashedDomainName(dashedDomainName)
-                        .baseUrl(baseUrl)
+                        .resourceNamePrefix(sharedNames.envResourceNamePrefix)
+                        .compressedResourceNamePrefix(sharedNames.envCompressedResourceNamePrefix)
                         .cloudTrailEnabled(cloudTrailEnabled)
+                        .sharedNames(sharedNames)
                         .hostedZoneName(appProps.hostedZoneName)
                         .hostedZoneId(appProps.hostedZoneId)
-                        .cognitoDomainName(cognitoDomainName)
                         .authCertificateArn(appProps.authCertificateArn)
                         .googleClientId(appProps.googleClientId)
                         .googleClientSecretArn(googleClientSecretArn)
@@ -203,21 +190,18 @@ public class SubmitEnvironment {
                         .antonyccBaseUri(appProps.antonyccBaseUri)
                         .build());
 
-        String apexStackId = "%s-ApexStack".formatted(envName);
         this.apexStack = new ApexStack(
                 app,
-                apexStackId,
+                sharedNames.apexStackId,
                 ApexStack.ApexStackProps.builder()
                         .env(primaryEnv)
                         .crossRegionReferences(false)
                         .envName(envName)
                         .deploymentName(envName)
-                        .resourceNamePrefix(resourceNamePrefix)
-                        .compressedResourceNamePrefix(compressedResourceNamePrefix)
-                        .domainName(domainName)
-                        .dashedDomainName(dashedDomainName)
-                        .baseUrl(baseUrl)
+                        .resourceNamePrefix(sharedNames.envResourceNamePrefix)
+                        .compressedResourceNamePrefix(sharedNames.envCompressedResourceNamePrefix)
                         .cloudTrailEnabled(cloudTrailEnabled)
+                        .sharedNames(sharedNames)
                         .hostedZoneName(appProps.hostedZoneName)
                         .hostedZoneId(appProps.hostedZoneId)
                         .certificateArn(appProps.certificateArn)

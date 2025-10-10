@@ -1,6 +1,14 @@
 package co.uk.diyaccounting.submit.stacks;
 
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+
+import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Aspects;
 import software.amazon.awscdk.Environment;
@@ -38,14 +46,6 @@ import software.amazon.awscdk.services.s3.deployment.BucketDeployment;
 import software.amazon.awscdk.services.s3.deployment.Source;
 import software.constructs.Construct;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-
 public class ApexStack extends Stack {
 
     public Distribution distribution;
@@ -75,16 +75,10 @@ public class ApexStack extends Stack {
         String compressedResourceNamePrefix();
 
         @Override
-        String dashedDomainName();
-
-        @Override
-        String domainName(); // apex, e.g. submit.diyaccounting.co.uk
-
-        @Override
-        String baseUrl();
-
-        @Override
         String cloudTrailEnabled();
+
+        @Override
+        SubmitSharedNames sharedNames();
 
         String hostedZoneName();
 
@@ -113,15 +107,16 @@ public class ApexStack extends Stack {
                         .build());
 
         // Record name for apex or subdomain
-        String recordName = props.hostedZoneName().equals(props.domainName())
+        String recordName = props.hostedZoneName().equals(props.sharedNames().domainName)
                 ? null
-                : (props.domainName().endsWith("." + props.hostedZoneName())
-                        ? props.domainName()
+                : (props.sharedNames().domainName.endsWith("." + props.hostedZoneName())
+                        ? props.sharedNames()
+                                .domainName
                                 .substring(
                                         0,
-                                        props.domainName().length()
+                                        props.sharedNames().domainName.length()
                                                 - (props.hostedZoneName().length() + 1))
-                        : props.domainName());
+                        : props.sharedNames().domainName);
 
         // ACM cert (us-east-1 for CloudFront)
         var cert =
@@ -151,7 +146,7 @@ public class ApexStack extends Stack {
                 + "  <meta charset=\"utf-8\"/>\n"
                 + "  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"/>\n"
                 + "  <title>Maintenance – "
-                + props.domainName() + "</title>\n" + "  <style>\n"
+                + props.sharedNames().domainName + "</title>\n" + "  <style>\n"
                 + "    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif;margin:0;background:#f8f9fa;color:#222}\n"
                 + "    .wrap{max-width:720px;margin:12vh auto;padding:2rem;background:#fff;border:1px solid #e5e7eb;border-radius:12px;box-shadow:0 2px 24px rgba(0,0,0,.05);text-align:center}\n"
                 + "    h1{margin:0 0 .25em 0;font-size:2rem}\n"
@@ -164,7 +159,7 @@ public class ApexStack extends Stack {
                 + "    <h1>We'll be right back</h1>\n"
                 + "    <p>The site is temporarily unavailable while we deploy an update.</p>\n"
                 + "    <p><small>Domain: "
-                + props.domainName() + "</small></p>\n" + "  </div>\n"
+                + props.sharedNames().domainName + "</small></p>\n" + "  </div>\n"
                 + "</body>\n"
                 + "</html>\n";
         BucketDeployment.Builder.create(this, props.resourceNamePrefix() + "-HoldingDeploy")
@@ -190,7 +185,7 @@ public class ApexStack extends Stack {
 
         // Distribution with all hostnames (apex + extras)
         List<String> altNames = new ArrayList<>();
-        altNames.add(props.domainName());
+        altNames.add(props.sharedNames().domainName);
 
         this.distribution = Distribution.Builder.create(this, props.resourceNamePrefix() + "-ApexDist")
                 .defaultBehavior(defaultBehavior)
@@ -203,10 +198,10 @@ public class ApexStack extends Stack {
                 .priceClass(PriceClass.PRICE_CLASS_100)
                 .build();
         var cfn = (CfnDistribution) this.distribution.getNode().getDefaultChild();
-        Objects.requireNonNull(cfn).addPropertyOverride(
-            "DistributionConfig.Origins.Items.0.OriginCustomHeaders",
-            Map.of("Quantity", 0, "Items", List.of())
-        );
+        Objects.requireNonNull(cfn)
+                .addPropertyOverride(
+                        "DistributionConfig.Origins.Items.0.OriginCustomHeaders",
+                        Map.of("Quantity", 0, "Items", List.of()));
 
         // Alias A/AAAA for apex
         this.apexAlias = new ARecord(

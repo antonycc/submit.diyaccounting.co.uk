@@ -4,6 +4,7 @@ import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.convertDotSeparatedToDashSeparated;
 
+import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
 import java.util.HashMap;
 import java.util.List;
@@ -82,15 +83,6 @@ public class EdgeStack extends Stack {
         String compressedResourceNamePrefix();
 
         @Override
-        String dashedDomainName();
-
-        @Override
-        String domainName();
-
-        @Override
-        String baseUrl();
-
-        @Override
         String cloudTrailEnabled();
 
         String hostedZoneName();
@@ -99,11 +91,10 @@ public class EdgeStack extends Stack {
 
         String certificateArn();
 
-        String originAccessLogBucketArn();
-
-        String distributionAccessLogBucketArn();
-
         Map<String, String> pathsToOriginLambdaFunctionUrls();
+
+        @Override
+        SubmitSharedNames sharedNames();
 
         static ImmutableEdgeStackProps.Builder builder() {
             return ImmutableEdgeStackProps.builder();
@@ -139,15 +130,16 @@ public class EdgeStack extends Stack {
                         .hostedZoneId(props.hostedZoneId())
                         .zoneName(props.hostedZoneName())
                         .build());
-        String recordName = props.hostedZoneName().equals(props.domainName())
+        String recordName = props.hostedZoneName().equals(props.sharedNames().domainName)
                 ? null
-                : (props.domainName().endsWith("." + props.hostedZoneName())
-                        ? props.domainName()
+                : (props.sharedNames().domainName.endsWith("." + props.hostedZoneName())
+                        ? props.sharedNames()
+                                .domainName
                                 .substring(
                                         0,
-                                        props.domainName().length()
+                                        props.sharedNames().domainName.length()
                                                 - (props.hostedZoneName().length() + 1))
-                        : props.domainName());
+                        : props.sharedNames().domainName);
 
         // TLS certificate from existing ACM (must be in us-east-1 for CloudFront)
         var cert =
@@ -155,7 +147,7 @@ public class EdgeStack extends Stack {
 
         // Buckets
 
-        String originBucketName = convertDotSeparatedToDashSeparated("origin-" + props.domainName());
+        String originBucketName = convertDotSeparatedToDashSeparated("origin-" + props.sharedNames().domainName);
 
         // AWS WAF WebACL for CloudFront protection against common attacks and rate limiting
         CfnWebACL webAcl = CfnWebACL.Builder.create(this, props.resourceNamePrefix() + "-WebAcl")
@@ -237,12 +229,14 @@ public class EdgeStack extends Stack {
                 .build();
 
         // Lookup log buckets
-        IBucket originAccessLogBucket = Bucket.fromBucketArn(
-                this, props.resourceNamePrefix() + "-ImportedOriginAccessLogBucket", props.originAccessLogBucketArn());
-        IBucket distributionLogsBucket = Bucket.fromBucketArn(
+        IBucket originAccessLogBucket = Bucket.fromBucketName(
+                this,
+                props.resourceNamePrefix() + "-ImportedOriginAccessLogBucket",
+                props.sharedNames().originAccessLogBucketName);
+        IBucket distributionLogsBucket = Bucket.fromBucketName(
                 this,
                 props.resourceNamePrefix() + "-ImportedDistributionLogBucket",
-                props.distributionAccessLogBucketArn());
+                props.sharedNames().distributionAccessLogBucketName);
 
         // Create the origin bucket
         this.originBucket = Bucket.Builder.create(this, props.resourceNamePrefix() + "-OriginBucket")
@@ -304,7 +298,7 @@ public class EdgeStack extends Stack {
         this.distribution = Distribution.Builder.create(this, props.resourceNamePrefix() + "-WebDist")
                 .defaultBehavior(localBehaviorOptions) // props.webBehaviorOptions)
                 .additionalBehaviors(additionalBehaviors)
-                .domainNames(List.of(props.domainName()))
+                .domainNames(List.of(props.sharedNames().domainName))
                 .certificate(cert)
                 .defaultRootObject("index.html")
                 .enableLogging(true)
@@ -337,14 +331,14 @@ public class EdgeStack extends Stack {
         Aspects.of(this).add(new SetAutoDeleteJobLogRetentionAspect(props.deploymentName(), RetentionDays.THREE_DAYS));
 
         // Outputs
-        cfnOutput(this, "BaseUrl", props.baseUrl());
+        cfnOutput(this, "BaseUrl", props.sharedNames().baseUrl);
         cfnOutput(this, "CertificateArn", cert.getCertificateArn());
         cfnOutput(this, "WebAclId", webAcl.getAttrArn());
         cfnOutput(this, "WebDistributionDomainName", this.distribution.getDomainName());
         cfnOutput(this, "DistributionId", this.distribution.getDistributionId());
         cfnOutput(this, "AliasRecord", this.aliasRecord.getDomainName());
 
-        infof("EdgeStack %s created successfully for %s", this.getNode().getId(), props.baseUrl());
+        infof("EdgeStack %s created successfully for %s", this.getNode().getId(), props.sharedNames().baseUrl);
     }
 
     public BehaviorOptions createBehaviorOptionsForLambdaUrl(String lambdaFunctionUrl) {

@@ -149,7 +149,7 @@ jobs:
           cd cdk-delivery && \
             npx dotenv -e ../.env.${{ steps.names.outputs.environment-name }} -- \
               npx cdk destroy \
-              ${{ steps.names.outputs.deployment-name }}-PublishStack \
+              del-${{ steps.names.outputs.deployment-name }}-PublishStack \
               --exclusively --force \
           ; cd .. \
           ;
@@ -158,8 +158,6 @@ jobs:
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
           SELF_DESTRUCT_HANDLER_SOURCE: "../infra/test/resources/fake-self-destruct-lambda.jar"
           WEBSITE_HASH: 'placeholder'
-          DIY_SUBMIT_DOMAIN_NAME: ${{ needs.names.outputs.deployment-name == 'prod' && 'submit.diyaccounting.co.uk' || format('{0}.submit.diyaccounting.co.uk', needs.names.outputs.deployment-name) }}
-          DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.deployment-name == 'prod' && 'https://submit.diyaccounting.co.uk/' || format('https://{0}.submit.diyaccounting.co.uk/', needs.names.outputs.deployment-name) }}
 
       - name: Destroy EdgeStack
         if: ${{ steps.names.outputs.deployment-name != 'prod' }}
@@ -167,7 +165,7 @@ jobs:
           cd cdk-delivery && \
             npx dotenv -e ../.env.${{ steps.names.outputs.environment-name }} -- \
               npx cdk destroy \
-              ${{ steps.names.outputs.deployment-name }}-EdgeStack \
+              del-${{ steps.names.outputs.deployment-name }}-EdgeStack \
               --exclusively --force \
           ; cd .. \
           ;
@@ -176,8 +174,6 @@ jobs:
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
           SELF_DESTRUCT_HANDLER_SOURCE: "../infra/test/resources/fake-self-destruct-lambda.jar"
           WEBSITE_HASH: 'placeholder'
-          DIY_SUBMIT_DOMAIN_NAME: ${{ needs.names.outputs.deployment-name == 'prod' && 'submit.diyaccounting.co.uk' || format('{0}.submit.diyaccounting.co.uk', needs.names.outputs.deployment-name) }}
-          DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.deployment-name == 'prod' && 'https://submit.diyaccounting.co.uk/' || format('https://{0}.submit.diyaccounting.co.uk/', needs.names.outputs.deployment-name) }}
 
       - name: Destroy OpsStack
         if: ${{ steps.names.outputs.deployment-name != 'prod' }}
@@ -185,7 +181,7 @@ jobs:
           cd cdk-application && \
             npx dotenv -e ../.env.${{ steps.names.outputs.environment-name }} -- \
               npx cdk destroy \
-              ${{ steps.names.outputs.deployment-name }}-OpsStack \
+              app-${{ steps.names.outputs.deployment-name }}-OpsStack \
               --exclusively --force \
           ; cd .. \
           ;
@@ -198,13 +194,13 @@ jobs:
           COGNITO_USER_POOL_ARN: ${{ vars.COGNITO_USER_POOL_ARN }}
           COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
 
-      - name: Destroy AuthStack
+      - name: Destroy AccountStack
         if: ${{ steps.names.outputs.deployment-name != 'prod' }}
         run: |
           cd cdk-application && \
             npx dotenv -e ../.env.${{ steps.names.outputs.environment-name }} -- \
               npx cdk destroy \
-              ${{ steps.names.outputs.deployment-name }}-AuthStack \
+              app-${{ steps.names.outputs.deployment-name }}-AccountStack \
               --exclusively --force \
           ; cd .. \
           ;
@@ -223,7 +219,26 @@ jobs:
           cd cdk-application && \
             npx dotenv -e ../.env.${{ steps.names.outputs.environment-name }} -- \
               npx cdk destroy \
-              ${{ steps.names.outputs.deployment-name }}-ApplictionStack \
+              app-${{ steps.names.outputs.deployment-name }}-HmrcStack \
+              --exclusively --force \
+          ; cd .. \
+          ;
+        env:
+          ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
+          DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
+          SELF_DESTRUCT_HANDLER_SOURCE: "../infra/test/resources/fake-self-destruct-lambda.jar"
+          BASE_IMAGE_TAG: ${{ needs.push-images.outputs.base-image-tag }}
+          # Set by deploy-environment.yml after the environment's AuthStack is deployed
+          COGNITO_USER_POOL_ARN: ${{ vars.COGNITO_USER_POOL_ARN }}
+          COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
+
+      - name: Destroy AuthStack
+        if: ${{ steps.names.outputs.deployment-name != 'prod' }}
+        run: |
+          cd cdk-application && \
+            npx dotenv -e ../.env.${{ steps.names.outputs.environment-name }} -- \
+              npx cdk destroy \
+              app-${{ steps.names.outputs.deployment-name }}-AuthStack \
               --exclusively --force \
           ; cd .. \
           ;
@@ -242,7 +257,7 @@ jobs:
           cd cdk-application && \
             npx dotenv -e ../.env.${{ steps.names.outputs.environment-name }} -- \
               npx cdk destroy \
-              ${{ steps.names.outputs.deployment-name }}-DevStack \
+              app-${{ steps.names.outputs.deployment-name }}-DevStack \
               --exclusively --force \
           ; cd .. \
           ;
@@ -261,7 +276,7 @@ jobs:
           cd cdk-delivery && \
             npx dotenv -e ../.env.${{ steps.names.outputs.environment-name }} -- \
               npx cdk destroy \
-              ${{ steps.names.outputs.deployment-name }}-SelfDestructStack \
+              del-${{ steps.names.outputs.deployment-name }}-SelfDestructStack \
               --exclusively --force \
           ; cd .. \
           ;
@@ -277,7 +292,7 @@ jobs:
           cd cdk-application && \
             npx dotenv -e ../.env.${{ steps.names.outputs.environment-name }} -- \
               npx cdk destroy \
-              ${{ steps.names.outputs.deployment-name }}-SelfDestructStack \
+              app-${{ steps.names.outputs.deployment-name }}-SelfDestructStack \
               --exclusively --force \
           ; cd .. \
           ;

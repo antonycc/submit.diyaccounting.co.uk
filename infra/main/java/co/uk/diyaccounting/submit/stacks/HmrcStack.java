@@ -4,6 +4,7 @@ import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildFunctionName;
 
+import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
 import co.uk.diyaccounting.submit.constructs.LambdaUrlOrigin;
 import co.uk.diyaccounting.submit.constructs.LambdaUrlOriginProps;
@@ -70,22 +71,9 @@ public class HmrcStack extends Stack {
         String compressedResourceNamePrefix();
 
         @Override
-        String dashedDomainName();
-
-        @Override
-        String domainName();
-
-        @Override
-        String baseUrl();
-
-        @Override
         String cloudTrailEnabled();
 
         String baseImageTag();
-
-        String ecrRepositoryArn();
-
-        String ecrRepositoryName();
 
         String lambdaUrlAuthType();
 
@@ -97,7 +85,8 @@ public class HmrcStack extends Stack {
 
         String hmrcClientSecretArn();
 
-        String receiptsBucketFullName();
+        @Override
+        SubmitSharedNames sharedNames();
 
         // TODO: Delete these and ensure the tests set environment which the server.js reads
         Optional<String> optionalTestAccessToken(); // {
@@ -129,7 +118,7 @@ public class HmrcStack extends Stack {
 
         // authUrl - HMRC
         var authUrlHmrcLambdaEnv = new PopulatedMap<String, String>()
-                .with("DIY_SUBMIT_BASE_URL", props.baseUrl())
+                .with("DIY_SUBMIT_BASE_URL", props.sharedNames().baseUrl)
                 .with("HMRC_BASE_URI", props.hmrcBaseUri())
                 .with("HMRC_CLIENT_ID", props.hmrcClientId());
         var authUrlHmrcLambdaUrlOriginFunctionHandler = "authUrl.httpGetHmrc";
@@ -140,8 +129,8 @@ public class HmrcStack extends Stack {
                 LambdaUrlOriginProps.builder()
                         .idPrefix(authUrlHmrcLambdaUrlOriginFunctionName)
                         .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryName(props.ecrRepositoryName())
-                        .ecrRepositoryArn(props.ecrRepositoryArn())
+                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .functionName(authUrlHmrcLambdaUrlOriginFunctionName)
                         .cloudFrontAllowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
                         .handler(props.lambdaEntry() + authUrlHmrcLambdaUrlOriginFunctionHandler)
@@ -157,7 +146,7 @@ public class HmrcStack extends Stack {
 
         // exchangeToken - HMRC
         var exchangeHmrcEnvBase = new PopulatedMap<String, String>()
-                .with("DIY_SUBMIT_BASE_URL", props.baseUrl())
+                .with("DIY_SUBMIT_BASE_URL", props.sharedNames().baseUrl)
                 .with("HMRC_BASE_URI", props.hmrcBaseUri())
                 .with("HMRC_CLIENT_ID", props.hmrcClientId());
         if (StringUtils.isNotBlank(props.hmrcClientSecretArn())) {
@@ -176,8 +165,8 @@ public class HmrcStack extends Stack {
                 LambdaUrlOriginProps.builder()
                         .idPrefix(exchangeHmrcTokenLambdaUrlOriginFunctionName)
                         .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryName(props.ecrRepositoryName())
-                        .ecrRepositoryArn(props.ecrRepositoryArn())
+                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .functionName(exchangeHmrcTokenLambdaUrlOriginFunctionName)
                         .cloudFrontAllowedMethods(AllowedMethods.ALLOW_ALL)
                         .handler(props.lambdaEntry() + exchangeHmrcTokenLambdaUrlOriginFunctionHandler)
@@ -212,21 +201,18 @@ public class HmrcStack extends Stack {
 
         // submitVat
         var submitVatLambdaEnv = new PopulatedMap<String, String>()
-                .with("DIY_SUBMIT_BASE_URL", props.baseUrl())
+                .with("DIY_SUBMIT_BASE_URL", props.sharedNames().baseUrl)
                 .with("HMRC_BASE_URI", props.hmrcBaseUri());
-        var submitVatLambdaUrlOriginFunctionHandler = "submitVat.httpPost";
-        var submitVatLambdaUrlOriginFunctionName =
-                buildFunctionName(props.resourceNamePrefix(), submitVatLambdaUrlOriginFunctionHandler);
         var submitVatLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
                 LambdaUrlOriginProps.builder()
-                        .idPrefix(submitVatLambdaUrlOriginFunctionName)
+                        .idPrefix(props.sharedNames().submitVatLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryName(props.ecrRepositoryName())
-                        .ecrRepositoryArn(props.ecrRepositoryArn())
-                        .functionName(submitVatLambdaUrlOriginFunctionName)
+                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                        .functionName(props.sharedNames().submitVatLambdaFunctionName)
                         .cloudFrontAllowedMethods(AllowedMethods.ALLOW_ALL)
-                        .handler(props.lambdaEntry() + submitVatLambdaUrlOriginFunctionHandler)
+                        .handler(props.lambdaEntry() + props.sharedNames().submitVatLambdaHandler)
                         .environment(submitVatLambdaEnv)
                         .timeout(Duration.millis(Long.parseLong("60000")))
                         .build());
@@ -234,11 +220,12 @@ public class HmrcStack extends Stack {
         this.submitVatLambdaLogGroup = submitVatLambdaUrlOrigin.logGroup;
         infof(
                 "Created Lambda %s for VAT submission with handler %s",
-                this.submitVatLambda.getNode().getId(), props.lambdaEntry() + submitVatLambdaUrlOriginFunctionHandler);
+                this.submitVatLambda.getNode().getId(),
+                props.lambdaEntry() + props.sharedNames().submitVatLambdaHandler);
 
         var logReceiptLambdaEnv = new PopulatedMap<String, String>()
-                .with("DIY_SUBMIT_BASE_URL", props.baseUrl())
-                .with("DIY_SUBMIT_RECEIPTS_BUCKET_FULL_NAME", props.receiptsBucketFullName());
+                .with("DIY_SUBMIT_BASE_URL", props.sharedNames().baseUrl)
+                .with("DIY_SUBMIT_RECEIPTS_BUCKET_NAME", props.sharedNames().receiptsBucketName);
         if (props.optionalTestS3Endpoint().isPresent()
                 && StringUtils.isNotBlank(props.optionalTestS3Endpoint().get())
                 && props.optionalTestS3AccessKey().isPresent()
@@ -251,19 +238,16 @@ public class HmrcStack extends Stack {
                     .with("TEST_S3_ACCESS_KEY", props.optionalTestS3AccessKey().get())
                     .with("TEST_S3_SECRET_KEY", props.optionalTestS3SecretKey().get());
         }
-        var logReceiptLambdaUrlOriginFunctionHandler = "logReceipt.httpPost";
-        var logReceiptLambdaUrlOriginFunctionName =
-                buildFunctionName(props.resourceNamePrefix(), logReceiptLambdaUrlOriginFunctionHandler);
         var logReceiptLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
                 LambdaUrlOriginProps.builder()
-                        .idPrefix(logReceiptLambdaUrlOriginFunctionName)
+                        .idPrefix(props.sharedNames().logReceiptLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryName(props.ecrRepositoryName())
-                        .ecrRepositoryArn(props.ecrRepositoryArn())
-                        .functionName(logReceiptLambdaUrlOriginFunctionName)
+                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                        .functionName(props.sharedNames().logReceiptLambdaFunctionName)
                         .cloudFrontAllowedMethods(AllowedMethods.ALLOW_ALL)
-                        .handler(props.lambdaEntry() + logReceiptLambdaUrlOriginFunctionHandler)
+                        .handler(props.lambdaEntry() + props.sharedNames().logReceiptLambdaHandler)
                         .environment(logReceiptLambdaEnv)
                         .timeout(Duration.millis(Long.parseLong("30000")))
                         .build());
@@ -272,25 +256,22 @@ public class HmrcStack extends Stack {
         infof(
                 "Created Lambda %s for logging receipts with handler %s",
                 this.logReceiptLambda.getNode().getId(),
-                props.lambdaEntry() + logReceiptLambdaUrlOriginFunctionHandler);
+                props.lambdaEntry() + props.sharedNames().logReceiptLambdaHandler);
 
         // myReceipts Lambda
         var myReceiptsLambdaEnv = new PopulatedMap<String, String>()
-                .with("DIY_SUBMIT_BASE_URL", props.baseUrl())
-                .with("DIY_SUBMIT_RECEIPTS_BUCKET_FULL_NAME", props.receiptsBucketFullName());
-        var myReceiptsLambdaUrlOriginFunctionHandler = "myReceipts.httpGet";
-        var myReceiptsLambdaUrlOriginFunctionName =
-                buildFunctionName(props.resourceNamePrefix(), myReceiptsLambdaUrlOriginFunctionHandler);
+                .with("DIY_SUBMIT_BASE_URL", props.sharedNames().baseUrl)
+                .with("DIY_SUBMIT_RECEIPTS_BUCKET_NAME", props.sharedNames().receiptsBucketName);
         var myReceiptsLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
                 LambdaUrlOriginProps.builder()
-                        .idPrefix(myReceiptsLambdaUrlOriginFunctionName)
+                        .idPrefix(props.sharedNames().myReceiptsLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryName(props.ecrRepositoryName())
-                        .ecrRepositoryArn(props.ecrRepositoryArn())
-                        .functionName(myReceiptsLambdaUrlOriginFunctionName)
+                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                        .functionName(props.sharedNames().myReceiptsLambdaFunctionName)
                         .cloudFrontAllowedMethods(AllowedMethods.ALLOW_ALL)
-                        .handler(props.lambdaEntry() + myReceiptsLambdaUrlOriginFunctionHandler)
+                        .handler(props.lambdaEntry() + props.sharedNames().myReceiptsLambdaHandler)
                         .environment(myReceiptsLambdaEnv)
                         .timeout(Duration.millis(Long.parseLong("30000")))
                         .build());
@@ -299,11 +280,11 @@ public class HmrcStack extends Stack {
         infof(
                 "Created Lambda %s for my receipts retrieval with handler %s",
                 this.myReceiptsLambda.getNode().getId(),
-                props.lambdaEntry() + myReceiptsLambdaUrlOriginFunctionHandler);
+                props.lambdaEntry() + props.sharedNames().myReceiptsLambdaHandler);
 
         // Grant the LogReceiptLambda and MyReceiptsLambda write and read access respectively to the receipts S3 bucket
         IBucket receiptsBucket = Bucket.fromBucketName(
-                this, props.resourceNamePrefix() + "-ImportedReceiptsBucket", props.receiptsBucketFullName());
+                this, props.resourceNamePrefix() + "-ImportedReceiptsBucket", props.sharedNames().receiptsBucketName);
         receiptsBucket.grantWrite(this.logReceiptLambda);
         receiptsBucket.grantRead(this.myReceiptsLambda);
 
@@ -344,6 +325,6 @@ public class HmrcStack extends Stack {
         cfnOutput(this, "LogReceiptLambdaUrl", logReceiptUrl.getUrl());
         cfnOutput(this, "MyReceiptsLambdaUrl", myReceiptsUrl.getUrl());
 
-        infof("HmrcStack %s created successfully for %s", this.getNode().getId(), props.dashedDomainName());
+        infof("HmrcStack %s created successfully for %s", this.getNode().getId(), props.sharedNames().dashedDomainName);
     }
 }

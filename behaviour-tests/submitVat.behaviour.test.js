@@ -48,9 +48,9 @@ console.log(`testAuthProvider: ${testAuthProvider} (TEST_AUTH_PROVIDER: ${proces
 console.log(`testAuthUsername: ${testAuthUsername} (TEST_AUTH_USERNAME: ${process.env.TEST_AUTH_USERNAME})`);
 console.log(`testAuthPassword: ${testAuthPassword} (TEST_AUTH_PASSWORD: ${process.env.TEST_AUTH_PASSWORD})`);
 
-const receiptsBucketFullName = process.env.DIY_SUBMIT_RECEIPTS_BUCKET_FULL_NAME;
+const receiptsBucketName = process.env.DIY_SUBMIT_RECEIPTS_BUCKET_NAME;
 const baseUrl = process.env.DIY_SUBMIT_BASE_URL;
-console.log(`receiptsBucketFullName: ${receiptsBucketFullName}`);
+console.log(`receiptsBucketName: ${receiptsBucketName}`);
 console.log(`baseUrl: ${baseUrl}`);
 
 let serverProcess;
@@ -75,10 +75,10 @@ test.beforeAll(async () => {
 
   if (runMinioS3) {
     console.log("Starting minio process...");
-    endpoint = await startMinio(receiptsBucketFullName, optionalTestS3AccessKey, optionalTestS3SecretKey);
+    endpoint = await startMinio(receiptsBucketName, optionalTestS3AccessKey, optionalTestS3SecretKey);
     console.log("Waiting for server to initialize...");
     await setTimeout(2000);
-    await ensureMinioBucketExists(receiptsBucketFullName, endpoint, optionalTestS3AccessKey, optionalTestS3SecretKey);
+    await ensureMinioBucketExists(receiptsBucketName, endpoint, optionalTestS3AccessKey, optionalTestS3SecretKey);
   } else {
     console.log("Skipping Minio container creation because TEST_MINIO_S3 is not set to 'run'");
   }
@@ -182,23 +182,16 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
 
   // Create helper functions for logging user interactions (narrative steps)
   const loggedClick = async (selector, description = "") =>
-    await test.step(
-      description ? `The user clicks ${description}` : `The user clicks selector ${selector}`,
-      async () => {
-        console.log(`[USER INTERACTION] Clicking: ${selector} ${description ? "- " + description : ""}`);
-        await page.click(selector);
-      },
-    );
+    await test.step(description ? `The user clicks ${description}` : `The user clicks selector ${selector}`, async () => {
+      console.log(`[USER INTERACTION] Clicking: ${selector} ${description ? "- " + description : ""}`);
+      await page.click(selector);
+    });
 
   const loggedFill = async (selector, value, description = "") =>
     await test.step(
-      description
-        ? `The user fills ${description} with "${value}"`
-        : `The user fills selector ${selector} with "${value}"`,
+      description ? `The user fills ${description} with "${value}"` : `The user fills selector ${selector} with "${value}"`,
       async () => {
-        console.log(
-          `[USER INTERACTION] Filling: ${selector} with value: "${value}" ${description ? "- " + description : ""}`,
-        );
+        console.log(`[USER INTERACTION] Filling: ${selector} with value: "${value}" ${description ? "- " + description : ""}`);
         await page.fill(selector, value);
       },
     );
@@ -291,10 +284,7 @@ test("Submit VAT return end-to-end flow with browser emulation", async ({ page }
     });
   } else if (testAuthProvider === "cognito") {
     await expect(page.getByText("Continue with Google via Amazon Cognito")).toBeVisible();
-    await loggedClick(
-      "button:has-text('Continue with Google via Amazon Cognito')",
-      "Continue with Google via Amazon Cognito",
-    );
+    await loggedClick("button:has-text('Continue with Google via Amazon Cognito')", "Continue with Google via Amazon Cognito");
     await page.waitForLoadState("networkidle");
     await page.waitForTimeout(500);
     await page.screenshot({

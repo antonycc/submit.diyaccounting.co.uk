@@ -455,7 +455,7 @@ jobs:
         id: static-skip
         shell: bash
         run: |
-          STACK_NAME="${{ needs.names.outputs.deployment-name }}-SelfDestructStack"
+          STACK_NAME="app-${{ needs.names.outputs.deployment-name }}-SelfDestructStack"
           echo "Checking for existing COMPLETE stack: $STACK_NAME"
           COUNT=$(aws cloudformation list-stacks \
             --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE \
@@ -506,7 +506,7 @@ jobs:
             && cat ../.env.${{ needs.names.outputs.environment-name }} \
             && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
               npx cdk deploy \
-                ${{ needs.names.outputs.deployment-name }}-SelfDestructStack \
+                app-${{ needs.names.outputs.deployment-name }}-SelfDestructStack \
                 --require-approval never \
                 --ci true \
                 --concurrency 4 \
@@ -557,7 +557,7 @@ jobs:
         id: static-skip
         shell: bash
         run: |
-          STACK_NAME="${{ needs.names.outputs.deployment-name }}-DevStack"
+          STACK_NAME="app-${{ needs.names.outputs.deployment-name }}-DevStack"
           echo "Checking for existing COMPLETE stack: $STACK_NAME"
           COUNT=$(aws cloudformation list-stacks \
             --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE \
@@ -599,7 +599,7 @@ jobs:
             && cat ../.env.${{ needs.names.outputs.environment-name }} \
             && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
               npx cdk deploy \
-                ${{ needs.names.outputs.deployment-name }}-DevStack \
+                app-${{ needs.names.outputs.deployment-name }}-DevStack \
                 --require-approval never \
                 --ci true \
                 --concurrency 4 \
@@ -773,7 +773,7 @@ jobs:
             && cat ../.env.${{ needs.names.outputs.environment-name }} \
             && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
               npx cdk deploy \
-                ${{ needs.names.outputs.deployment-name }}-AuthStack \
+                app-${{ needs.names.outputs.deployment-name }}-AuthStack \
                 --exclusively \
                 --require-approval never \
                 --ci true \
@@ -869,7 +869,7 @@ jobs:
             && cat ../.env.${{ needs.names.outputs.environment-name }} \
             && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
               npx cdk deploy \
-                ${{ needs.names.outputs.deployment-name }}-HmrcStack \
+                app-${{ needs.names.outputs.deployment-name }}-HmrcStack \
                 --exclusively \
                 --require-approval never \
                 --ci true \
@@ -973,7 +973,7 @@ jobs:
             && cat ../.env.${{ needs.names.outputs.environment-name }} \
             && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
               npx cdk deploy \
-                ${{ needs.names.outputs.deployment-name }}-AccountStack \
+                app-${{ needs.names.outputs.deployment-name }}-AccountStack \
                 --exclusively \
                 --require-approval never \
                 --ci true \
@@ -1051,7 +1051,7 @@ jobs:
         id: static-skip
         shell: bash
         run: |
-          STACK_NAME="${{ needs.names.outputs.deployment-name }}-SelfDestructStack"
+          STACK_NAME="del-${{ needs.names.outputs.deployment-name }}-SelfDestructStack"
           echo "Checking for existing COMPLETE stack: $STACK_NAME"
           COUNT=$(aws cloudformation list-stacks \
             --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE \
@@ -1102,7 +1102,7 @@ jobs:
             && cat ../.env.${{ needs.names.outputs.environment-name }} \
             && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
               npx cdk deploy \
-                ${{ needs.names.outputs.deployment-name }}-SelfDestructStack \
+                del-${{ needs.names.outputs.deployment-name }}-SelfDestructStack \
                 --require-approval never \
                 --ci true \
                 --concurrency 4 \
@@ -1115,8 +1115,6 @@ jobs:
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
           SELF_DESTRUCT_HANDLER_SOURCE: "../${{ needs.mvn-package.outputs.self-destruct-handler-source }}"
           WEBSITE_HASH: "placeholder"
-          DIY_SUBMIT_DOMAIN_NAME: ${{ needs.names.outputs.deployment-name == 'prod' && 'submit.diyaccounting.co.uk' || format('{0}.submit.diyaccounting.co.uk', needs.names.outputs.deployment-name) }}
-          DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.deployment-name == 'prod' && 'https://submit.diyaccounting.co.uk/' || format('https://{0}.submit.diyaccounting.co.uk/', needs.names.outputs.deployment-name) }}
           AUTH_URL_MOCK_LAMBDA_URL: ${{ needs.deploy-auth.outputs.authUrlMockLambdaUrl }}
           AUTH_URL_COGNITO_LAMBDA_URL: ${{ needs.deploy-auth.outputs.authUrlCognitoLambdaUrl }}
           COGNITO_EXCHANGE_TOKEN_LAMBDA_URL: ${{ needs.deploy-auth.outputs.exchangeCognitoTokenLambdaUrl }}
@@ -1169,7 +1167,7 @@ jobs:
         id: static-skip
         shell: bash
         run: |
-          STACK_NAME="${{ needs.names.outputs.deployment-name }}-EdgeStack"
+          STACK_NAME="del-${{ needs.names.outputs.deployment-name }}-EdgeStack"
           echo "Checking for existing COMPLETE stack: $STACK_NAME"
           COUNT=$(aws cloudformation list-stacks \
             --region "us-east-1" \
@@ -1212,7 +1210,7 @@ jobs:
             && cat ../.env.${{ needs.names.outputs.environment-name }} \
             && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
               npx cdk deploy \
-                ${{ needs.names.outputs.deployment-name }}-EdgeStack \
+                del-${{ needs.names.outputs.deployment-name }}-EdgeStack \
                 --exclusively \
                 --require-approval never \
                 --ci true \
@@ -1226,8 +1224,6 @@ jobs:
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
           SELF_DESTRUCT_HANDLER_SOURCE: "../infra/test/resources/fake-self-destruct-lambda.jar"
           WEBSITE_HASH: "placeholder"
-          DIY_SUBMIT_DOMAIN_NAME: ${{ needs.names.outputs.deployment-name == 'prod' && 'submit.diyaccounting.co.uk' || format('{0}.submit.diyaccounting.co.uk', needs.names.outputs.deployment-name) }}
-          DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.deployment-name == 'prod' && 'https://submit.diyaccounting.co.uk/' || format('https://{0}.submit.diyaccounting.co.uk/', needs.names.outputs.deployment-name) }}
           AUTH_URL_MOCK_LAMBDA_URL: ${{ needs.deploy-auth.outputs.authUrlMockLambdaUrl }}
           AUTH_URL_COGNITO_LAMBDA_URL: ${{ needs.deploy-auth.outputs.authUrlCognitoLambdaUrl }}
           COGNITO_EXCHANGE_TOKEN_LAMBDA_URL: ${{ needs.deploy-auth.outputs.exchangeCognitoTokenLambdaUrl }}
@@ -1336,7 +1332,7 @@ jobs:
             && cat ../.env.${{ needs.names.outputs.environment-name }} \
             && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
               npx cdk deploy \
-                ${{ needs.names.outputs.deployment-name }}-PublishStack \
+                del-${{ needs.names.outputs.deployment-name }}-PublishStack \
                 --exclusively \
                 --require-approval never \
                 --ci true \
@@ -1350,8 +1346,6 @@ jobs:
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
           SELF_DESTRUCT_HANDLER_SOURCE: "../infra/test/resources/fake-self-destruct-lambda.jar"
           WEBSITE_HASH: ${{ steps.publish-hash.outputs.WEBSITE_HASH }}
-          DIY_SUBMIT_DOMAIN_NAME: ${{ needs.names.outputs.deployment-name == 'prod' && 'submit.diyaccounting.co.uk' || format('{0}.submit.diyaccounting.co.uk', needs.names.outputs.deployment-name) }}
-          DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.deployment-name == 'prod' && 'https://submit.diyaccounting.co.uk/' || format('https://{0}.submit.diyaccounting.co.uk/', needs.names.outputs.deployment-name) }}
           AUTH_URL_MOCK_LAMBDA_URL: ${{ needs.deploy-auth.outputs.authUrlMockLambdaUrl }}
           AUTH_URL_COGNITO_LAMBDA_URL: ${{ needs.deploy-auth.outputs.authUrlCognitoLambdaUrl }}
           COGNITO_EXCHANGE_TOKEN_LAMBDA_URL: ${{ needs.deploy-auth.outputs.exchangeCognitoTokenLambdaUrl }}
@@ -1401,7 +1395,7 @@ jobs:
         id: static-skip
         shell: bash
         run: |
-          STACK_NAME="${{ needs.names.outputs.deployment-name }}-OpsStack"
+          STACK_NAME="app-${{ needs.names.outputs.deployment-name }}-OpsStack"
           echo "Checking existence of $STACK_NAME"
           if aws cloudformation describe-stacks --stack-name "$STACK_NAME" >/dev/null 2>&1; then
             echo "skipStaticStackDeployment=true" >> "$GITHUB_OUTPUT"
@@ -1439,7 +1433,7 @@ jobs:
             && cat ../.env.${{ needs.names.outputs.environment-name }} \
             && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
               npx cdk deploy \
-                ${{ needs.names.outputs.deployment-name }}-OpsStack \
+                app-${{ needs.names.outputs.deployment-name }}-OpsStack \
                 --exclusively \
                 --require-approval never \
                 --ci true \

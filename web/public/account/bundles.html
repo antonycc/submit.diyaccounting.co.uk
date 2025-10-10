@@ -108,8 +108,7 @@
         }
       };
 
-      const hasBundle = (bundles, id) =>
-        (bundles || []).some((b) => typeof b === "string" && (b === id || b.startsWith(id + "|")));
+      const hasBundle = (bundles, id) => (bundles || []).some((b) => typeof b === "string" && (b === id || b.startsWith(id + "|")));
 
       const markToRequest = (btn, message = "Request bundle") => {
         btn.textContent = message;
