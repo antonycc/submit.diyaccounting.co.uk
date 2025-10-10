@@ -377,7 +377,7 @@ jobs:
         run: npm run cdk${{ github.ref == 'refs/heads/main' && '' || '-ci' }}
         env:
           ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
-          DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
+          DEPLOYMENT_NAME: ${{ needs.names.outputs.environment-name }}
           SELF_DESTRUCT_HANDLER_SOURCE: "../${{ needs.mvn-package.outputs.self-destruct-handler-source }}"
           # Set by deploy-environment.yml after the environment's AuthStack is deployed
           COGNITO_USER_POOL_ARN: ${{ vars.COGNITO_USER_POOL_ARN }}
