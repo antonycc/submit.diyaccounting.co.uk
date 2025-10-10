@@ -137,7 +137,9 @@ public class SubmitSharedNames {
         this.receiptsBucketName = "%s-receipts".formatted(this.envDashedDomainName);
         //this.originAccessLogBucketName = "origin-%s".formatted(this.envDashedDomainName);
         //this.distributionAccessLogBucketName = "distribution-%s".formatted(this.envDashedDomainName);
+        // TODO: Create in US EAST Observability stack and EU WEST Observability stack
         this.selfDestructLogGroupName = "/aws/lambda/%s-self-destruct".formatted(this.envResourceNamePrefix);
+        // TODO: Create in US EAST Observability stack
         this.webDeploymentLogGroupName = "/deployment/%s-web-deployment".formatted(this.envResourceNamePrefix);
 
         this.appResourceNamePrefix = "app-%s".formatted(generateResourceNamePrefix(this.domainName));

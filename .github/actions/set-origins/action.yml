@@ -44,7 +44,7 @@ runs:
           echo "ENVIRONMENT_NAME env var must be set (e.g. ci or prod)" >&2
           exit 1
         fi
-        STACK_NAME="${ENVIRONMENT_NAME}-ApexStack"
+        STACK_NAME="env-${ENVIRONMENT_NAME}-ApexStack"
         echo "Resolving distribution for stack $STACK_NAME in region ${AWS_REGION:-} (AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION)"
         aws sts get-caller-identity || { echo "AWS credentials not configured" >&2; exit 1; }
         DIST_ID=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" --query "Stacks[0].Outputs[?OutputKey=='ApexDistributionId'].OutputValue" --output text)
