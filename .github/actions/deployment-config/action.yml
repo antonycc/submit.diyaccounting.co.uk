@@ -1,5 +1,5 @@
 name: "Deployment Config"
-description: "Compute ENVIRONMENT_NAME, DEPLOYMENT_NAME and BASE_URL consistently from branch name and optional input."
+description: "Compute ENVIRONMENT_NAME, DEPLOYMENT_NAME and DIY_SUBMIT_BASE_URL consistently from branch name and optional input."
 
 inputs:
   deploymentName:
@@ -18,9 +18,9 @@ outputs:
   DEPLOYMENT_NAME:
     description: "Computed deployment name"
     value: ${{ steps.compute.outputs.DEPLOYMENT_NAME }}
-  BASE_URL:
+  DIY_SUBMIT_BASE_URL:
     description: "Computed base URL for the deployment"
-    value: ${{ steps.compute.outputs.BASE_URL }}
+    value: ${{ steps.compute.outputs.DIY_SUBMIT_BASE_URL }}
 
 runs:
   using: "composite"
@@ -54,11 +54,11 @@ runs:
         fi
 
         if [ "$DEPLOYMENT_NAME" = "prod" ]; then
-          BASE_URL="https://prod-${COMMIT_SHA?}.submit.diyaccounting.co.uk"
+          DIY_SUBMIT_BASE_URL="https://prod-${COMMIT_SHA?}.submit.diyaccounting.co.uk"
         else
-          BASE_URL="https://${DEPLOYMENT_NAME?}.submit.diyaccounting.co.uk"
+          DIY_SUBMIT_BASE_URL="https://${DEPLOYMENT_NAME?}.submit.diyaccounting.co.uk"
         fi
 
         echo "ENVIRONMENT_NAME=$ENVIRONMENT_NAME" | tee -a "$GITHUB_OUTPUT"
         echo "DEPLOYMENT_NAME=$DEPLOYMENT_NAME" | tee -a "$GITHUB_OUTPUT"
-        echo "BASE_URL=$BASE_URL" | tee -a "$GITHUB_OUTPUT"
+        echo "DIY_SUBMIT_BASE_URL=$DIY_SUBMIT_BASE_URL" | tee -a "$GITHUB_OUTPUT"

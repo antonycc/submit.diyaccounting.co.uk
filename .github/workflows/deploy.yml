@@ -101,7 +101,7 @@ jobs:
     outputs:
       environment-name: ${{ steps.deployment-config.outputs.ENVIRONMENT_NAME }}
       deployment-name: ${{ steps.deployment-config.outputs.DEPLOYMENT_NAME }}
-      base-url: ${{ steps.deployment-config.outputs.BASE_URL }}
+      base-url: ${{ steps.deployment-config.outputs.DIY_SUBMIT_BASE_URL }}
 
   npm-test:
     name: 'npm test'
@@ -1123,7 +1123,7 @@ jobs:
     runs-on: ubuntu-24.04
     environment:
       name: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
-      url: ${{ steps.edge-outputs.outputs.BASE_URL }}
+      url: ${{ steps.edge-outputs.outputs.DIY_SUBMIT_BASE_URL }}
     steps:
 
       - name: Configure AWS role via GitHub OIDC
@@ -1225,12 +1225,12 @@ jobs:
         if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
         id: edge-outputs
         run: |
-          BASE_URL=$(jq -r '.["del-${{ needs.names.outputs.deployment-name }}-EdgeStack"].BaseUrl' cdk-submit-delivery.out/cdk-outputs-edge.json)
-          echo "BASE_URL=$BASE_URL"
-          echo "BASE_URL=$BASE_URL" >> $GITHUB_OUTPUT
+          DIY_SUBMIT_BASE_URL=$(jq -r '.["del-${{ needs.names.outputs.deployment-name }}-EdgeStack"].BaseUrl' cdk-submit-delivery.out/cdk-outputs-edge.json)
+          echo "DIY_SUBMIT_BASE_URL=$DIY_SUBMIT_BASE_URL"
+          echo "DIY_SUBMIT_BASE_URL=$DIY_SUBMIT_BASE_URL" >> $GITHUB_OUTPUT
         shell: bash
     outputs:
-      base-url: ${{ steps.edge-outputs.outputs.BASE_URL }}
+      base-url: ${{ steps.edge-outputs.outputs.DIY_SUBMIT_BASE_URL }}
 
   deploy-publish:
     name: 'deploy publish'
@@ -1507,10 +1507,10 @@ jobs:
 #
 #      - name: Run Playwright API test
 #        run: |
-#          echo "BASE_URL=${BASE_URL}"
+#          echo "DIY_SUBMIT_BASE_URL=${DIY_SUBMIT_BASE_URL}"
 #          npm run test:api
 #        env:
-#          BASE_URL: ${{ needs.names.outputs.base-url }}
+#          DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.base-url }}
 #
 #      - name: Upload artifacts
 #        if: ${{ !cancelled() }}
@@ -1558,7 +1558,7 @@ jobs:
       #
       - run: cp '.env.${{ needs.names.outputs.environment-name }}' '.env.test' ; npx dotenv -e '.env.${{ needs.names.outputs.environment-name }}' -- npm run test:behaviour
         env:
-          BASE_URL: ${{ needs.names.outputs.base-url }}
+          DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.base-url }}
           TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
           TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
           TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
@@ -1628,7 +1628,7 @@ jobs:
 #            --out 'dashboard=export=load-test-report.html&port=-1&record=load-test-events.json&period=1s' \
 #            --summary-export=load-test-summary.json
 #        env:
-#          BASE_URL: ${{ needs.names.outputs.base-url }}
+#          DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.base-url }}
 #          TEST_USERNAME: ${{ needs.test-parameters.outputs.test-username }}
 #          TEST_PASSWORD: ${{ needs.test-parameters.outputs.test-password }}
 #          DURATION: ${{ inputs.loadTestDuration }}
