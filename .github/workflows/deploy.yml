@@ -73,8 +73,6 @@ env:
   AWS_REGION: 'eu-west-2'
   AWS_ACCOUNT_ID: '887764105431'
   BASE_IMAGE_TAG_PREFIX: 'submit-base'
-  # Skip deploy if this was push invoked and the commit message contains "skip:"
-  skipDeploy: ${{ ((inputs.skipDeploy == 'true') || (github.event_name == 'push' && contains(github.event.head_commit.message, 'skip:'))) && 'true' || 'false' }}
   deploymentName: ${{ inputs.deploymentName || '' }}
   loadTestDuration: ${{ inputs.loadTestDuration || '30s' }}
   GITHUB_ACTOR: ${{ github.actor }}
@@ -395,9 +393,30 @@ jobs:
           COGNITO_USER_POOL_ARN: ${{ vars.COGNITO_USER_POOL_ARN }}
           COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
 
+  skip-deploy-check:
+    name: 'skip deploy check'
+    if: ${{ (inputs.skipDeploy != 'true') && (github.event_name != 'push' || !contains(github.event.head_commit.message, 'skip:')) }}
+    runs-on: ubuntu-24.04
+    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    steps:
+      - name: Check if skipDeploy is set
+        id: check
+        run: |
+          inputsSkipDeploy="${{ inputs.skipDeploy }}"
+          skipDeploy="${{ (inputs.skipDeploy != 'true') && (github.event_name != 'push' || !contains(github.event.head_commit.message, 'skip:')) }}"
+          echo "inputsSkipDeploy=$inputsSkipDeploy"
+          echo "inputsSkipDeploy=$inputsSkipDeploy" >> "$GITHUB_OUTPUT"
+          echo "skipDeploy=$skipDeploy"
+          echo "skipDeploy=$skipDeploy" >> "$GITHUB_OUTPUT"
+
+    outputs:
+      inputsSkipDeploy: ${{ steps.check.outputs.inputsSkipDeploy }}
+      skipDeploy: ${{ steps.check.outputs.skipDeploy }}
+
   docker-build:
     name: 'docker build'
-    if: ${{ env.skipDeploy != 'true' }}
+    needs:
+      - skip-deploy-check
     runs-on: ubuntu-24.04
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
     steps:
@@ -432,10 +451,10 @@ jobs:
           if-no-files-found: error
 
   deploy-application-self-destruct:
-    name: 'deploy self-destruct'
-    if: ${{ inputs.skipDeploy != 'true' && needs.names.outputs.environment-name != 'prod' }}
+    name: 'deploy application self-destruct'
     needs:
       - names
+      - skip-deploy-check
       - mvn-package
     runs-on: ubuntu-24.04
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
@@ -513,9 +532,9 @@ jobs:
 
   deploy-dev:
     name: 'deploy dev'
-    if: ${{ !contains(github.event.inputs.skipDeploy, 'true') }}
     needs:
       - names
+      - skip-deploy-check
     runs-on: ubuntu-24.04
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
     steps:
@@ -606,9 +625,9 @@ jobs:
 
   push-images:
     name: 'push images'
-    if: ${{ !contains(github.event.inputs.skipDeploy, 'true') }}
     needs:
       - names
+      - skip-deploy-check
       - deploy-dev
       - docker-build
     runs-on: ubuntu-24.04
@@ -707,9 +726,9 @@ jobs:
 
   deploy-auth:
     name: 'deploy auth'
-    if: ${{ env.skipDeploy != 'true' }}
     needs:
       - names
+      - skip-deploy-check
       - deploy-dev
       - push-images
     runs-on: ubuntu-24.04
@@ -802,9 +821,9 @@ jobs:
 
   deploy-hmrc:
     name: 'deploy hmrc'
-    if: ${{ env.skipDeploy != 'true' }}
     needs:
       - names
+      - skip-deploy-check
       - deploy-dev
       - docker-build
       - push-images
@@ -906,9 +925,9 @@ jobs:
 
   deploy-account:
     name: 'deploy account'
-    if: ${{ env.skipDeploy != 'true' }}
     needs:
       - names
+      - skip-deploy-check
       - deploy-dev
       - docker-build
       - push-images
@@ -1003,9 +1022,9 @@ jobs:
 
   deploy-delivery-self-destruct:
     name: 'deploy delivery self-destruct'
-    if: ${{ inputs.skipDeploy != 'true' && needs.names.outputs.environment-name != 'prod' }}
     needs:
       - names
+      - skip-deploy-check
       - mvn-package
       - deploy-auth
       - deploy-hmrc
@@ -1084,20 +1103,20 @@ jobs:
           AUTH_URL_MOCK_LAMBDA_URL: ${{ needs.deploy-auth.outputs.authUrlMockLambdaUrl }}
           AUTH_URL_COGNITO_LAMBDA_URL: ${{ needs.deploy-auth.outputs.authUrlCognitoLambdaUrl }}
           COGNITO_EXCHANGE_TOKEN_LAMBDA_URL: ${{ needs.deploy-auth.outputs.exchangeCognitoTokenLambdaUrl }}
-          AUTH_URL_HMRC_LAMBDA_URL: ${{ needs.deploy-application.outputs.authUrlHmrcLambdaUrl }}
-          EXCHANGE_HMRC_TOKEN_LAMBDA_URL: ${{ needs.deploy-application.outputs.exchangeHmrcTokenLambdaUrl }}
-          SUBMIT_VAT_LAMBDA_URL: ${{ needs.deploy-application.outputs.submitVatLambdaUrl }}
-          LOG_RECEIPT_LAMBDA_URL: ${{ needs.deploy-application.outputs.logReceiptLambdaUrl }}
-          CATALOG_LAMBDA_URL: ${{ needs.deploy-application.outputs.catalogLambdaUrl }}
-          REQUEST_BUNDLES_LAMBDA_URL: ${{ needs.deploy-application.outputs.requestBundlesLambdaUrl }}
-          MY_BUNDLES_LAMBDA_URL: ${{ needs.deploy-application.outputs.myBundlesLambdaUrl }}
-          MY_RECEIPTS_LAMBDA_URL: ${{ needs.deploy-application.outputs.myReceiptsLambdaUrl }}
+          AUTH_URL_HMRC_LAMBDA_URL: ${{ needs.deploy-hmrc.outputs.authUrlHmrcLambdaUrl }}
+          EXCHANGE_HMRC_TOKEN_LAMBDA_URL: ${{ needs.deploy-hmrc.outputs.exchangeHmrcTokenLambdaUrl }}
+          SUBMIT_VAT_LAMBDA_URL: ${{ needs.deploy-hmrc.outputs.submitVatLambdaUrl }}
+          LOG_RECEIPT_LAMBDA_URL: ${{ needs.deploy-hmrc.outputs.logReceiptLambdaUrl }}
+          MY_RECEIPTS_LAMBDA_URL: ${{ needs.deploy-hmrc.outputs.myReceiptsLambdaUrl }}
+          CATALOG_LAMBDA_URL: ${{ needs.deploy-account.outputs.catalogLambdaUrl }}
+          REQUEST_BUNDLES_LAMBDA_URL: ${{ needs.deploy-account.outputs.requestBundlesLambdaUrl }}
+          MY_BUNDLES_LAMBDA_URL: ${{ needs.deploy-account.outputs.myBundlesLambdaUrl }}
 
   deploy-edge:
     name: 'deploy edge'
-    if: ${{ env.skipDeploy != 'true' }}
     needs:
       - names
+      - skip-deploy-check
       - deploy-auth
       - deploy-hmrc
       - deploy-account
@@ -1193,14 +1212,14 @@ jobs:
           AUTH_URL_MOCK_LAMBDA_URL: ${{ needs.deploy-auth.outputs.authUrlMockLambdaUrl }}
           AUTH_URL_COGNITO_LAMBDA_URL: ${{ needs.deploy-auth.outputs.authUrlCognitoLambdaUrl }}
           COGNITO_EXCHANGE_TOKEN_LAMBDA_URL: ${{ needs.deploy-auth.outputs.exchangeCognitoTokenLambdaUrl }}
-          AUTH_URL_HMRC_LAMBDA_URL: ${{ needs.deploy-application.outputs.authUrlHmrcLambdaUrl }}
-          EXCHANGE_HMRC_TOKEN_LAMBDA_URL: ${{ needs.deploy-application.outputs.exchangeHmrcTokenLambdaUrl }}
-          SUBMIT_VAT_LAMBDA_URL: ${{ needs.deploy-application.outputs.submitVatLambdaUrl }}
-          LOG_RECEIPT_LAMBDA_URL: ${{ needs.deploy-application.outputs.logReceiptLambdaUrl }}
-          CATALOG_LAMBDA_URL: ${{ needs.deploy-application.outputs.catalogLambdaUrl }}
-          REQUEST_BUNDLES_LAMBDA_URL: ${{ needs.deploy-application.outputs.requestBundlesLambdaUrl }}
-          MY_BUNDLES_LAMBDA_URL: ${{ needs.deploy-application.outputs.myBundlesLambdaUrl }}
-          MY_RECEIPTS_LAMBDA_URL: ${{ needs.deploy-application.outputs.myReceiptsLambdaUrl }}
+          AUTH_URL_HMRC_LAMBDA_URL: ${{ needs.deploy-hmrc.outputs.authUrlHmrcLambdaUrl }}
+          EXCHANGE_HMRC_TOKEN_LAMBDA_URL: ${{ needs.deploy-hmrc.outputs.exchangeHmrcTokenLambdaUrl }}
+          SUBMIT_VAT_LAMBDA_URL: ${{ needs.deploy-hmrc.outputs.submitVatLambdaUrl }}
+          LOG_RECEIPT_LAMBDA_URL: ${{ needs.deploy-hmrc.outputs.logReceiptLambdaUrl }}
+          MY_RECEIPTS_LAMBDA_URL: ${{ needs.deploy-hmrc.outputs.myReceiptsLambdaUrl }}
+          CATALOG_LAMBDA_URL: ${{ needs.deploy-account.outputs.catalogLambdaUrl }}
+          REQUEST_BUNDLES_LAMBDA_URL: ${{ needs.deploy-account.outputs.requestBundlesLambdaUrl }}
+          MY_BUNDLES_LAMBDA_URL: ${{ needs.deploy-account.outputs.myBundlesLambdaUrl }}
 
       - name: Resolve stack outputs
         if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
@@ -1215,9 +1234,9 @@ jobs:
 
   deploy-publish:
     name: 'deploy publish'
-    if: ${{ env.skipDeploy != 'true' }}
     needs:
       - names
+      - skip-deploy-check
       - deploy-edge
     runs-on: ubuntu-24.04
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
@@ -1315,20 +1334,20 @@ jobs:
           AUTH_URL_MOCK_LAMBDA_URL: ${{ needs.deploy-auth.outputs.authUrlMockLambdaUrl }}
           AUTH_URL_COGNITO_LAMBDA_URL: ${{ needs.deploy-auth.outputs.authUrlCognitoLambdaUrl }}
           COGNITO_EXCHANGE_TOKEN_LAMBDA_URL: ${{ needs.deploy-auth.outputs.exchangeCognitoTokenLambdaUrl }}
-          AUTH_URL_HMRC_LAMBDA_URL: ${{ needs.deploy-application.outputs.authUrlHmrcLambdaUrl }}
-          EXCHANGE_HMRC_TOKEN_LAMBDA_URL: ${{ needs.deploy-application.outputs.exchangeHmrcTokenLambdaUrl }}
-          SUBMIT_VAT_LAMBDA_URL: ${{ needs.deploy-application.outputs.submitVatLambdaUrl }}
-          LOG_RECEIPT_LAMBDA_URL: ${{ needs.deploy-application.outputs.logReceiptLambdaUrl }}
-          CATALOG_LAMBDA_URL: ${{ needs.deploy-application.outputs.catalogLambdaUrl }}
-          REQUEST_BUNDLES_LAMBDA_URL: ${{ needs.deploy-application.outputs.requestBundlesLambdaUrl }}
-          MY_BUNDLES_LAMBDA_URL: ${{ needs.deploy-application.outputs.myBundlesLambdaUrl }}
-          MY_RECEIPTS_LAMBDA_URL: ${{ needs.deploy-application.outputs.myReceiptsLambdaUrl }}
+          AUTH_URL_HMRC_LAMBDA_URL: ${{ needs.deploy-hmrc.outputs.authUrlHmrcLambdaUrl }}
+          EXCHANGE_HMRC_TOKEN_LAMBDA_URL: ${{ needs.deploy-hmrc.outputs.exchangeHmrcTokenLambdaUrl }}
+          SUBMIT_VAT_LAMBDA_URL: ${{ needs.deploy-hmrc.outputs.submitVatLambdaUrl }}
+          LOG_RECEIPT_LAMBDA_URL: ${{ needs.deploy-hmrc.outputs.logReceiptLambdaUrl }}
+          MY_RECEIPTS_LAMBDA_URL: ${{ needs.deploy-hmrc.outputs.myReceiptsLambdaUrl }}
+          CATALOG_LAMBDA_URL: ${{ needs.deploy-account.outputs.catalogLambdaUrl }}
+          REQUEST_BUNDLES_LAMBDA_URL: ${{ needs.deploy-account.outputs.requestBundlesLambdaUrl }}
+          MY_BUNDLES_LAMBDA_URL: ${{ needs.deploy-account.outputs.myBundlesLambdaUrl }}
 
   deploy-ops:
     name: 'deploy ops'
-    if: ${{ env.skipDeploy != 'true' }}
     needs:
       - names
+      - skip-deploy-check
       - npm-test
       - deploy-edge
     runs-on: ubuntu-24.04
@@ -1430,15 +1449,14 @@ jobs:
   #        type: string
   #        default: ''
   set-origins:
-    if: ${{ !cancelled() && inputs.skipDeploy == 'true' || needs.deploy-publish.result == 'success' }}
     name: 'set origins'
     needs:
       - names
+      - skip-deploy-check
       - deploy-auth
       - deploy-hmrc
       - deploy-account
       - deploy-edge
-      - deploy-publish
       - deploy-publish
     runs-on: ubuntu-24.04
     environment: ${{ needs.names.outputs.environment-name }}
@@ -1504,10 +1522,11 @@ jobs:
 #            test-results
 
   web-test:
-    if: ${{ !cancelled() && inputs.skipDeploy == 'true' || needs.deploy-publish.result == 'success' }}
+    if: ${{ (!cancelled() && needs.skip-deploy-check.outputs.skipDeploy == 'true') || (needs.deploy-publish.result == 'success') }}
     name: 'web test'
     needs:
       - names
+      - skip-deploy-check
       - deploy-auth
       - deploy-hmrc
       - deploy-account
