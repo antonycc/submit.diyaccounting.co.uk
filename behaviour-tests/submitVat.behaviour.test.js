@@ -73,7 +73,7 @@ test.beforeAll(async () => {
   // Retain the custom s3 endpoint for the storage bucket (if there is one) to pass to the HTTP server (if needed).
   let endpoint;
 
-  if (runMinioS3) {
+  if (runMinioS3 === "run") {
     console.log("Starting minio process...");
     endpoint = await startMinio(receiptsBucketName, optionalTestS3AccessKey, optionalTestS3SecretKey);
     console.log("Waiting for server to initialize...");
@@ -83,7 +83,7 @@ test.beforeAll(async () => {
     console.log("Skipping Minio container creation because TEST_MINIO_S3 is not set to 'run'");
   }
 
-  if (runTestServer) {
+  if (runTestServer === "run") {
     console.log("Starting server process...");
     // eslint-disable-next-line sonarjs/no-os-command-from-path
     serverProcess = spawn("npm", ["run", "start"], {
@@ -99,7 +99,7 @@ test.beforeAll(async () => {
     console.log("Skipping server process as runTestServer is not set to 'run'");
   }
 
-  if (runProxy) {
+  if (runProxy === "run") {
     console.log("Starting ngrok process...");
     // eslint-disable-next-line sonarjs/no-os-command-from-path
     ngrokProcess = spawn("npm", ["run", "proxy", serverPort.toString()], {
@@ -113,7 +113,7 @@ test.beforeAll(async () => {
     console.log("Skipping ngrok process as runProxy is not set to 'run'");
   }
 
-  if (runMockOAuth2) {
+  if (runMockOAuth2 === "run") {
     console.log("Starting mock-oauth2-server process...");
     // eslint-disable-next-line sonarjs/no-os-command-from-path
     serverProcess = spawn("npm", ["run", "auth"], {
