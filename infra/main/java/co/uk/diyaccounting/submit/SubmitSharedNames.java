@@ -211,7 +211,7 @@ public class SubmitSharedNames {
         this.catalogLambdaHandler = "catalogGet.handle";
         this.catalogLambdaFunctionName = buildFunctionName(this.appResourceNamePrefix, this.catalogLambdaHandler);
         this.catalogLambdaArn = "%s-catalog".formatted(appLambdaArnPrefix);
-        this.catalogLambdaUrlPath = "/api/catalog";
+        this.catalogLambdaUrlPath = "/api/catalog"; // TODO change to /api/catalog-get to support verbs.
 
         this.requestBundlesLambdaHandler = "bundle.httpPost";
         this.requestBundlesLambdaFunctionName =
