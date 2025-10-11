@@ -1522,7 +1522,7 @@ jobs:
 #            test-results
 
   web-test:
-    if: ${{ (!cancelled() && needs.skip-deploy-check.outputs.skipDeploy == 'true') || (needs.deploy-publish.result == 'success') }}
+    if: ${{ !cancelled() }}
     name: 'web test'
     needs:
       - names
