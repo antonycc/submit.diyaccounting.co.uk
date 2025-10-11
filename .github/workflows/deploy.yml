@@ -306,14 +306,24 @@ jobs:
           echo "SELF_DESTRUCT_HANDLER_SOURCE=target/self-destruct-lambda.jar" >> $GITHUB_OUTPUT
           ls -l target/self-destruct-lambda.jar
 
+      - name: Self Destruct Start Datetime (ISO 8601) now plus SELF_DESTRUCT_DELAY_HOURS
+        id: self-destruct-start
+        shell: bash
+        run: |
+          SELF_DESTRUCT_START_DATETIME=$(date -u -d "+${{ env.SELF_DESTRUCT_DELAY_HOURS }} hours" +"%Y-%m-%dT%H:%M:%SZ")
+          echo "SELF_DESTRUCT_START_DATETIME=$SELF_DESTRUCT_START_DATETIME"
+          echo "SELF_DESTRUCT_START_DATETIME=$SELF_DESTRUCT_START_DATETIME" >> $GITHUB_OUTPUT
+
       - name: Upload self-destruct handler JAR
         uses: actions/upload-artifact@v4
         with:
           name: self-destruct-handler-${{ github.sha }}
           path: target/self-destruct-lambda.jar
           retention-days: 1
+
     outputs:
       self-destruct-handler-source: ${{ steps.package.outputs.SELF_DESTRUCT_HANDLER_SOURCE }}
+      self-destruct-start-datetime: ${{ steps.self-destruct-start.outputs.SELF_DESTRUCT_START_DATETIME }}
 
   test-aws-credentials:
     name: 'test aws credentials'
@@ -379,6 +389,7 @@ jobs:
           ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.environment-name }}
           SELF_DESTRUCT_HANDLER_SOURCE: "../${{ needs.mvn-package.outputs.self-destruct-handler-source }}"
+          SELF_DESTRUCT_START_DATETIME: ${{ needs.mvn-package.outputs.self-destruct-start-datetime }}
           # Set by deploy-environment.yml after the environment's AuthStack is deployed
           COGNITO_USER_POOL_ARN: ${{ vars.COGNITO_USER_POOL_ARN }}
           COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
@@ -451,55 +462,31 @@ jobs:
           output-credentials: true
           retry-max-attempts: 3
 
-      - name: Check if SelfDestructStack exists
-        id: static-skip
-        shell: bash
-        run: |
-          STACK_NAME="app-${{ needs.names.outputs.deployment-name }}-SelfDestructStack"
-          echo "Checking for existing COMPLETE stack: $STACK_NAME"
-          COUNT=$(aws cloudformation list-stacks \
-            --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE \
-            --query "length(StackSummaries[?StackName=='${STACK_NAME}'])" \
-            --output text)
-          if [ "$COUNT" -ge 1 ]; then
-            echo "skipStaticStackDeployment=true"
-            echo "skipStaticStackDeployment=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "skipStaticStackDeployment=false"
-            echo "skipStaticStackDeployment=false" >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Checkout
-        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
         uses: actions/checkout@v5
 
       - name: Setup Node
-        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
         uses: actions/setup-node@v5
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
       - name: Node dependencies
-        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
         run: npm ci
 
       - uses: actions/setup-java@v5
-        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
         with:
           distribution: 'temurin'
           java-version: ${{ env.JAVA_VERSION }}
           cache: 'maven'
 
       - name: Download self-destruct handler JAR
-        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
         uses: actions/download-artifact@v5
         with:
           name: self-destruct-handler-${{ github.sha }}
           path: cdk-submit-application.out/
 
       - name: Deploy SelfDestruct Stack (CDK)
-        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
         run: |
           ./mvnw --errors clean package -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
             && cd cdk-application \
@@ -518,6 +505,7 @@ jobs:
           ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
           SELF_DESTRUCT_HANDLER_SOURCE: "../${{ needs.mvn-package.outputs.self-destruct-handler-source }}"
+          SELF_DESTRUCT_START_DATETIME: ${{ needs.mvn-package.outputs.self-destruct-start-datetime }}
           # Set by deploy-environment.yml after the environment's AuthStack is deployed
           COGNITO_USER_POOL_ARN: ${{ vars.COGNITO_USER_POOL_ARN }}
           COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
@@ -1047,55 +1035,31 @@ jobs:
           output-credentials: true
           retry-max-attempts: 3
 
-      - name: Check if SelfDestructStack exists
-        id: static-skip
-        shell: bash
-        run: |
-          STACK_NAME="del-${{ needs.names.outputs.deployment-name }}-SelfDestructStack"
-          echo "Checking for existing COMPLETE stack: $STACK_NAME"
-          COUNT=$(aws cloudformation list-stacks \
-            --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE \
-            --query "length(StackSummaries[?StackName=='${STACK_NAME}'])" \
-            --output text)
-          if [ "$COUNT" -ge 1 ]; then
-            echo "skipStaticStackDeployment=true"
-            echo "skipStaticStackDeployment=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "skipStaticStackDeployment=false"
-            echo "skipStaticStackDeployment=false" >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Checkout
-        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
         uses: actions/checkout@v5
 
       - name: Setup Node
-        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
         uses: actions/setup-node@v5
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
       - name: Node dependencies
-        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
         run: npm ci
 
       - uses: actions/setup-java@v5
-        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
         with:
           distribution: 'temurin'
           java-version: ${{ env.JAVA_VERSION }}
           cache: 'maven'
 
       - name: Download self-destruct handler JAR
-        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
         uses: actions/download-artifact@v5
         with:
           name: self-destruct-handler-${{ github.sha }}
           path: cdk-submit-application.out/
 
       - name: Deploy SelfDestruct Stack (CDK)
-        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
         run: |
           ./mvnw --errors clean package -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
             && cd cdk-delivery \
@@ -1114,6 +1078,7 @@ jobs:
           ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
           SELF_DESTRUCT_HANDLER_SOURCE: "../${{ needs.mvn-package.outputs.self-destruct-handler-source }}"
+          SELF_DESTRUCT_START_DATETIME: ${{ needs.mvn-package.outputs.self-destruct-start-datetime }}
           WEBSITE_HASH: "placeholder"
           AUTH_URL_MOCK_LAMBDA_URL: ${{ needs.deploy-auth.outputs.authUrlMockLambdaUrl }}
           AUTH_URL_COGNITO_LAMBDA_URL: ${{ needs.deploy-auth.outputs.authUrlCognitoLambdaUrl }}

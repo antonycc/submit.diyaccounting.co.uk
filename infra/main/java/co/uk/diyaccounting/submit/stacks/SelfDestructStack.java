@@ -1,16 +1,7 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.Kind.putIfNotNull;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateIamCompatibleName;
-
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Aspects;
 import software.amazon.awscdk.Duration;
@@ -18,6 +9,7 @@ import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.Tags;
+import software.amazon.awscdk.services.events.CronOptions;
 import software.amazon.awscdk.services.events.Rule;
 import software.amazon.awscdk.services.events.RuleTargetInput;
 import software.amazon.awscdk.services.events.Schedule;
@@ -35,6 +27,17 @@ import software.amazon.awscdk.services.logs.ILogGroup;
 import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.constructs.Construct;
+
+import java.time.ZonedDateTime;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.Kind.putIfNotNull;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateIamCompatibleName;
 
 public class SelfDestructStack extends Stack {
 
@@ -74,7 +77,9 @@ public class SelfDestructStack extends Stack {
 
         String selfDestructLogGroupName();
 
-        String selfDestructDelayHours();
+        int selfDestructDelayHours();
+
+        ZonedDateTime selfDestructStartDatetime();
 
         String selfDestructHandlerSource();
 
@@ -184,22 +189,36 @@ public class SelfDestructStack extends Stack {
                 .logGroup(logGroup)
                 .build();
 
-        // Create EventBridge rule to trigger self-destruct after specified delay
-        int delayHours = Integer.parseInt(props.selfDestructDelayHours());
+        // Create EventBridge rule to trigger self-destruct every delayHours starting at a specific instant.
+        // Suggested type for selfDestructStartDatetime: java.time.ZonedDateTime (ensure it is defined earlier).
+
         String ruleName = generateIamCompatibleName(props.resourceNamePrefix(), "sd-schedule");
+
+        // Hour field using anchored start hour with /delayHours if it divides 24; otherwise single fixed hour (no true interval possible)
+        String hourExpression = (24 % props.selfDestructDelayHours() == 0)
+                ? props.selfDestructStartDatetime().getHour() + "/" + props.selfDestructDelayHours()
+                : String.valueOf(props.selfDestructStartDatetime().getHour());
+        Schedule cron = Schedule.cron(CronOptions.builder()
+            .minute(String.valueOf(props.selfDestructStartDatetime().getMinute()))
+            .hour(hourExpression)
+            .day("*")
+            .month("*")
+            .year("*")
+            .build());
+
+        LambdaFunction destructFunctionTarget = LambdaFunction.Builder.create(this.selfDestructFunction)
+            .event(RuleTargetInput.fromObject(Map.of(
+                "source", "eventbridge-schedule",
+                "deploymentName", props.deploymentName(),
+                "delayHours", props.selfDestructDelayHours(),
+                "startAt", props.selfDestructStartDatetime().toString())))
+            .build();
+
         this.selfDestructSchedule = Rule.Builder.create(this, props.resourceNamePrefix() + "-SelfDestructSchedule")
                 .ruleName(ruleName)
-                .description("Automatically triggers self-destruct after " + delayHours + " hours")
-                .schedule(Schedule.rate(Duration.hours(delayHours)))
-                .targets(List.of(LambdaFunction.Builder.create(this.selfDestructFunction)
-                        .event(RuleTargetInput.fromObject(Map.of(
-                                "source",
-                                "eventbridge-schedule",
-                                "deploymentName",
-                                props.deploymentName(),
-                                "delayHours",
-                                delayHours)))
-                        .build()))
+                .description("Automatically triggers self-destruct every " + props.selfDestructDelayHours() + " hours starting at " + props.selfDestructStartDatetime())
+                .schedule(cron)
+                .targets(List.of(destructFunctionTarget))
                 .build();
 
         Aspects.of(this).add(new SetAutoDeleteJobLogRetentionAspect(props.deploymentName(), RetentionDays.THREE_DAYS));
@@ -210,7 +229,7 @@ public class SelfDestructStack extends Stack {
         cfnOutput(
                 this,
                 "SelfDestructScheduleInfo",
-                "Self-destruct will trigger automatically after " + delayHours + " hours");
+                "Self-destruct will trigger automatically at " + props.selfDestructStartDatetime() + " and then again every " + props.selfDestructDelayHours() + " hours");
         cfnOutput(
                 this,
                 "SelfDestructInstructions",
