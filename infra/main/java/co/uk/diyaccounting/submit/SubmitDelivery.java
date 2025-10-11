@@ -1,22 +1,21 @@
 package co.uk.diyaccounting.submit;
 
-import co.uk.diyaccounting.submit.stacks.EdgeStack;
-import co.uk.diyaccounting.submit.stacks.PublishStack;
-import co.uk.diyaccounting.submit.stacks.SelfDestructStack;
-import co.uk.diyaccounting.submit.utils.KindCdk;
-import software.amazon.awscdk.App;
-import software.amazon.awscdk.Environment;
-import software.constructs.Construct;
-
-import java.lang.reflect.Field;
-import java.nio.file.Paths;
-import java.util.Map;
-
 import static co.uk.diyaccounting.submit.utils.Kind.envOr;
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.Kind.putIfNotNull;
 import static co.uk.diyaccounting.submit.utils.Kind.warnf;
 import static co.uk.diyaccounting.submit.utils.KindCdk.getContextValueString;
+
+import co.uk.diyaccounting.submit.stacks.EdgeStack;
+import co.uk.diyaccounting.submit.stacks.PublishStack;
+import co.uk.diyaccounting.submit.stacks.SelfDestructStack;
+import co.uk.diyaccounting.submit.utils.KindCdk;
+import java.lang.reflect.Field;
+import java.nio.file.Paths;
+import java.util.Map;
+import software.amazon.awscdk.App;
+import software.amazon.awscdk.Environment;
+import software.constructs.Construct;
 
 public class SubmitDelivery {
 
@@ -255,6 +254,7 @@ public class SubmitDelivery {
                             .compressedResourceNamePrefix(sharedNames.delCompressedResourceNamePrefix)
                             .cloudTrailEnabled(cloudTrailEnabled)
                             .sharedNames(sharedNames)
+                            .selfDestructLogGroupName(sharedNames.ue1SelfDestructLogGroupName)
                             .selfDestructDelayHours(selfDestructDelayHours)
                             .selfDestructHandlerSource(selfDestructHandlerSource)
                             .build());

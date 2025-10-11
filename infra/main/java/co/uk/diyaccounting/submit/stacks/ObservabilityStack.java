@@ -119,7 +119,7 @@ public class ObservabilityStack extends Stack {
 
         // Log group for self-destruct operations with 1-week retention
         this.selfDestructLogGroup = LogGroup.Builder.create(this, props.resourceNamePrefix() + "-SelfDestructLogGroup")
-                .logGroupName(props.sharedNames().selfDestructLogGroupName)
+                .logGroupName(props.sharedNames().ew2SelfDestructLogGroupName)
                 .retention(RetentionDays.ONE_WEEK) // Longer retention for operations
                 .removalPolicy(RemovalPolicy.DESTROY)
                 .build();

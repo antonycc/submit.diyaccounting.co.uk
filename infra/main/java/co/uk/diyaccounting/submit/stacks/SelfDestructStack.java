@@ -72,6 +72,8 @@ public class SelfDestructStack extends Stack {
         @Override
         SubmitSharedNames sharedNames();
 
+        String selfDestructLogGroupName();
+
         String selfDestructDelayHours();
 
         String selfDestructHandlerSource();
@@ -112,7 +114,7 @@ public class SelfDestructStack extends Stack {
                         .formatted(
                                 Objects.requireNonNull(props.getEnv()).getRegion(),
                                 props.getEnv().getAccount(),
-                                props.sharedNames().selfDestructLogGroupName));
+                                props.selfDestructLogGroupName()));
 
         // IAM role for the self-destruct Lambda function
         String roleName = generateIamCompatibleName(props.resourceNamePrefix(), "-self-destruct-role");

@@ -248,6 +248,7 @@ public class SubmitApplication {
                             .compressedResourceNamePrefix(sharedNames.appCompressedResourceNamePrefix)
                             .cloudTrailEnabled(cloudTrailEnabled)
                             .sharedNames(sharedNames)
+                            .selfDestructLogGroupName(sharedNames.ew2SelfDestructLogGroupName)
                             .selfDestructDelayHours(selfDestructDelayHours)
                             .selfDestructHandlerSource(selfDestructHandlerSource)
                             .build());
