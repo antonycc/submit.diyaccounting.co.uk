@@ -16,7 +16,7 @@ on:
         required: false
         default: 'false'
       skipDeploy:
-        description: 'Run tests only (no deploy)'
+        description: 'Skip deploy (run tests only, no deployment)'
         type: choice
         options:
             - 'true'
@@ -73,7 +73,8 @@ env:
   AWS_REGION: 'eu-west-2'
   AWS_ACCOUNT_ID: '887764105431'
   BASE_IMAGE_TAG_PREFIX: 'submit-base'
-  skipDeploy: ${{ inputs.skipDeploy || 'false' }}
+  # Skip deploy if this was push invoked and the commit message contains "skip:"
+  skipDeploy: ${{ ((inputs.skipDeploy == 'true') || (github.event_name == 'push' && contains(github.event.head_commit.message, 'skip:'))) && 'true' || 'false' }}
   deploymentName: ${{ inputs.deploymentName || '' }}
   loadTestDuration: ${{ inputs.loadTestDuration || '30s' }}
   GITHUB_ACTOR: ${{ github.actor }}
@@ -396,7 +397,7 @@ jobs:
 
   docker-build:
     name: 'docker build'
-    if: ${{ inputs.skipDeploy != 'true' }}
+    if: ${{ env.skipDeploy != 'true' }}
     runs-on: ubuntu-24.04
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
     steps:
@@ -706,7 +707,7 @@ jobs:
 
   deploy-auth:
     name: 'deploy auth'
-    if: ${{ inputs.skipDeploy != 'true' }}
+    if: ${{ env.skipDeploy != 'true' }}
     needs:
       - names
       - deploy-dev
@@ -801,7 +802,7 @@ jobs:
 
   deploy-hmrc:
     name: 'deploy hmrc'
-    if: ${{ inputs.skipDeploy != 'true' }}
+    if: ${{ env.skipDeploy != 'true' }}
     needs:
       - names
       - deploy-dev
@@ -905,7 +906,7 @@ jobs:
 
   deploy-account:
     name: 'deploy account'
-    if: ${{ inputs.skipDeploy != 'true' }}
+    if: ${{ env.skipDeploy != 'true' }}
     needs:
       - names
       - deploy-dev
@@ -1094,7 +1095,7 @@ jobs:
 
   deploy-edge:
     name: 'deploy edge'
-    if: ${{ inputs.skipDeploy != 'true' }}
+    if: ${{ env.skipDeploy != 'true' }}
     needs:
       - names
       - deploy-auth
@@ -1214,7 +1215,7 @@ jobs:
 
   deploy-publish:
     name: 'deploy publish'
-    if: ${{ inputs.skipDeploy != 'true' }}
+    if: ${{ env.skipDeploy != 'true' }}
     needs:
       - names
       - deploy-edge
@@ -1325,7 +1326,7 @@ jobs:
 
   deploy-ops:
     name: 'deploy ops'
-    if: ${{ inputs.skipDeploy != 'true' }}
+    if: ${{ env.skipDeploy != 'true' }}
     needs:
       - names
       - npm-test
