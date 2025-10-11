@@ -244,6 +244,6 @@ public class SubmitSharedNames {
         this.delSelfDestructStackId = "del-%s-SelfDestructStack".formatted(props.deploymentName);
 
         this.originBucketName = convertDotSeparatedToDashSeparated("origin-" + this.delResourceNamePrefix);
-        this.originAccessLogBucketName = "origin-%s".formatted(this.delResourceNamePrefix);
+        this.originAccessLogBucketName = "origin-%s-access-logs".formatted(this.delResourceNamePrefix);
     }
 }
