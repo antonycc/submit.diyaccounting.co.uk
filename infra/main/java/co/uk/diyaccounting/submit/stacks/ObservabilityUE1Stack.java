@@ -1,11 +1,7 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
-import java.util.List;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Aspects;
 import software.amazon.awscdk.Duration;
@@ -22,6 +18,11 @@ import software.amazon.awscdk.services.s3.IBucket;
 import software.amazon.awscdk.services.s3.LifecycleRule;
 import software.amazon.awscdk.services.s3.ObjectOwnership;
 import software.constructs.Construct;
+
+import java.util.List;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 public class ObservabilityUE1Stack extends Stack {
 
@@ -82,10 +83,8 @@ public class ObservabilityUE1Stack extends Stack {
                 .build();
 
         // TODO: Find alternative to log buckets for CloudFront distribution logs
-        // S3 bucket for CloudFront distribution logs with specified retention
-        String distributionLogsBucketName = "distribution-%s-logs".formatted(props.sharedNames().dashedDomainName);
         this.distributionLogsBucket = Bucket.Builder.create(this, props.resourceNamePrefix() + "-LogsBucket")
-                .bucketName(distributionLogsBucketName)
+                .bucketName(props.sharedNames().distributionAccessLogBucketName)
                 .objectOwnership(ObjectOwnership.OBJECT_WRITER)
                 .versioned(false)
                 .blockPublicAccess(BlockPublicAccess.BLOCK_ALL)

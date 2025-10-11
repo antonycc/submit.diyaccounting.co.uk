@@ -140,7 +140,7 @@ public class SubmitSharedNames {
         this.apexStackId = "env-%s-ApexStack".formatted(props.envName);
 
         this.receiptsBucketName = "%s-receipts".formatted(this.envDashedDomainName);
-        this.distributionAccessLogBucketName = "distribution-%s".formatted(this.envDashedDomainName);
+        this.distributionAccessLogBucketName = "distribution-%s-logs".formatted(this.envDashedDomainName);
 
         this.ew2SelfDestructLogGroupName =
                 "/aws/lambda/%s-self-destruct-eu-west-2".formatted(this.envResourceNamePrefix);
