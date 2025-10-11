@@ -10,6 +10,7 @@ import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Aspects;
 import software.amazon.awscdk.Duration;
@@ -104,10 +105,14 @@ public class SelfDestructStack extends Stack {
         String functionName = props.resourceNamePrefix() + "-self-destruct";
 
         // Log group for self-destruct function
-        ILogGroup logGroup = LogGroup.fromLogGroupName(
+        ILogGroup logGroup = LogGroup.fromLogGroupArn(
                 this,
                 props.resourceNamePrefix() + "-ISelfDestructLogGroup",
-                props.sharedNames().selfDestructLogGroupName);
+                "arn:aws:logs:%s:%s:log-group:%s:*"
+                        .formatted(
+                                Objects.requireNonNull(props.getEnv()).getRegion(),
+                                props.getEnv().getAccount(),
+                                props.sharedNames().selfDestructLogGroupName));
 
         // IAM role for the self-destruct Lambda function
         String roleName = generateIamCompatibleName(props.resourceNamePrefix(), "-self-destruct-role");

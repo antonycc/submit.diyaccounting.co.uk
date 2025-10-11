@@ -159,7 +159,7 @@ public class IdentityStack extends Stack {
                         .build())
                 .build();
         this.userPool = UserPool.Builder.create(this, props.resourceNamePrefix() + "-UserPool")
-                .userPoolName(props.sharedNames().dashedDomainName + "-user-pool")
+                .userPoolName(props.resourceNamePrefix() + "-user-pool")
                 .selfSignUpEnabled(true)
                 .signInAliases(SignInAliases.builder().email(true).build())
                 .standardAttributes(standardAttributes)
@@ -214,7 +214,7 @@ public class IdentityStack extends Stack {
         // User Pool Client
         this.userPoolClient = UserPoolClient.Builder.create(this, props.resourceNamePrefix() + "-UserPoolClient")
                 .userPool(userPool)
-                .userPoolClientName(props.sharedNames().dashedDomainName + "-client")
+                .userPoolClientName(props.resourceNamePrefix() + "-client")
                 .generateSecret(false)
                 .oAuth(OAuthSettings.builder()
                         .flows(OAuthFlows.builder().authorizationCodeGrant(true).build())

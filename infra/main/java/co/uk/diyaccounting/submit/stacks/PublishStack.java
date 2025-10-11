@@ -11,6 +11,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Objects;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Aspects;
 import software.amazon.awscdk.AssetHashType;
@@ -113,7 +114,8 @@ public class PublishStack extends Stack {
         IDistribution distribution = Distribution.fromDistributionAttributes(
                 this, props.resourceNamePrefix() + "-ImportedWebDist", distributionAttributes);
 
-        String originBucketName = convertDotSeparatedToDashSeparated("origin-" + props.sharedNames().domainName);
+        String originBucketName =
+                convertDotSeparatedToDashSeparated("origin-" + distributionAttributes.getDomainName());
         IBucket originBucket = Bucket.fromBucketName(this, props.resourceNamePrefix() + "-WebBucket", originBucketName);
 
         // Generate submit.version file with commit hash if provided
@@ -169,10 +171,14 @@ public class PublishStack extends Stack {
         }
 
         // Lookup Log Group for web deployment
-        ILogGroup webDeploymentLogGroup = LogGroup.fromLogGroupName(
+        ILogGroup webDeploymentLogGroup = LogGroup.fromLogGroupArn(
                 this,
                 props.resourceNamePrefix() + "-ImportedWebDeploymentLogGroup",
-                props.sharedNames().webDeploymentLogGroupName);
+                "arn:aws:logs:%s:%s:log-group:%s"
+                        .formatted(
+                                Objects.requireNonNull(props.getEnv()).getRegion(),
+                                props.getEnv().getAccount(),
+                                props.sharedNames().webDeploymentLogGroupName));
 
         // Deploy the web website files to the web website bucket and invalidate distribution
         // Resolve the document root path from props to avoid path mismatches between generation and deployment

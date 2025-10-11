@@ -18,6 +18,7 @@ import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.services.ecr.IRepository;
 import software.amazon.awscdk.services.ecr.LifecycleRule;
 import software.amazon.awscdk.services.ecr.Repository;
+import software.amazon.awscdk.services.ecr.TagMutability;
 import software.amazon.awscdk.services.ecr.TagStatus;
 import software.amazon.awscdk.services.iam.Effect;
 import software.amazon.awscdk.services.iam.PolicyDocument;
@@ -84,7 +85,7 @@ public class DevStack extends Stack {
         this.ecrRepository = Repository.Builder.create(this, props.resourceNamePrefix() + "-EcrRepository")
                 .repositoryName(props.sharedNames().ecrRepositoryName)
                 .imageScanOnPush(true) // Enable vulnerability scanning
-                .imageTagMutability(software.amazon.awscdk.services.ecr.TagMutability.MUTABLE)
+                .imageTagMutability(TagMutability.MUTABLE)
                 .lifecycleRules(List.of(
                         // Remove untagged images after 1 day
                         LifecycleRule.builder()
@@ -97,7 +98,7 @@ public class DevStack extends Stack {
                 .build();
 
         // CloudWatch Log Group for ECR operations with 7-day retention
-        String ecrLogGroupName = buildEcrLogGroupName(props.sharedNames().dashedDomainName);
+        String ecrLogGroupName = buildEcrLogGroupName(props.resourceNamePrefix());
         this.ecrLogGroup = LogGroup.Builder.create(this, props.resourceNamePrefix() + "-EcrLogGroup")
                 .logGroupName(ecrLogGroupName)
                 .retention(RetentionDays.ONE_WEEK) // 7-day retention as requested
@@ -106,7 +107,7 @@ public class DevStack extends Stack {
 
         // IAM Role for ECR publishing with comprehensive permissions
         this.ecrPublishRole = Role.Builder.create(this, props.resourceNamePrefix() + "-EcrPublishRole")
-                .roleName(buildEcrPublishRoleName(props.sharedNames().dashedDomainName))
+                .roleName(buildEcrPublishRoleName(props.resourceNamePrefix()))
                 .assumedBy(new ServicePrincipal("lambda.amazonaws.com"))
                 .inlinePolicies(java.util.Map.of(
                         "EcrPublishPolicy",

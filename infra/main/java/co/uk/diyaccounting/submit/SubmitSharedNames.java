@@ -5,6 +5,7 @@ import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDashedDoma
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDomainName;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildEcrRepositoryName;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildFunctionName;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.convertDotSeparatedToDashSeparated;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateCompressedResourceNamePrefix;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateResourceNamePrefix;
 
@@ -17,8 +18,9 @@ public class SubmitSharedNames {
     public String dashedDomainName;
 
     public String receiptsBucketName;
-    //public String originAccessLogBucketName;
-    //public String distributionAccessLogBucketName;
+    public String originBucketName;
+    public String originAccessLogBucketName;
+    public String distributionAccessLogBucketName;
     public String selfDestructLogGroupName;
     public String webDeploymentLogGroupName;
 
@@ -26,6 +28,7 @@ public class SubmitSharedNames {
     public String envResourceNamePrefix;
     public String envCompressedResourceNamePrefix;
     public String observabilityStackId;
+    public String observabilityUE1StackId;
     public String dataStackId;
     public String identityStackId;
     public String apexStackId;
@@ -130,16 +133,15 @@ public class SubmitSharedNames {
         this.envCompressedResourceNamePrefix =
                 "e-%s".formatted(generateCompressedResourceNamePrefix(this.envDomainName));
         this.observabilityStackId = "env-%s-ObservabilityStack".formatted(props.envName);
+        this.observabilityUE1StackId = "env-%s-ObservabilityUE1Stack".formatted(props.envName);
         this.dataStackId = "env-%s-DataStack".formatted(props.envName);
         this.identityStackId = "env-%s-IdentityStack".formatted(props.envName);
         this.apexStackId = "env-%s-ApexStack".formatted(props.envName);
 
         this.receiptsBucketName = "%s-receipts".formatted(this.envDashedDomainName);
-        //this.originAccessLogBucketName = "origin-%s".formatted(this.envDashedDomainName);
-        //this.distributionAccessLogBucketName = "distribution-%s".formatted(this.envDashedDomainName);
-        // TODO: Create in US EAST Observability stack and EU WEST Observability stack
+        this.distributionAccessLogBucketName = "distribution-%s".formatted(this.envDashedDomainName);
+
         this.selfDestructLogGroupName = "/aws/lambda/%s-self-destruct".formatted(this.envResourceNamePrefix);
-        // TODO: Create in US EAST Observability stack
         this.webDeploymentLogGroupName = "/deployment/%s-web-deployment".formatted(this.envResourceNamePrefix);
 
         this.appResourceNamePrefix = "app-%s".formatted(generateResourceNamePrefix(this.domainName));
@@ -236,5 +238,8 @@ public class SubmitSharedNames {
         this.edgeStackId = "del-%s-EdgeStack".formatted(props.deploymentName);
         this.publishStackId = "del-%s-PublishStack".formatted(props.deploymentName);
         this.delSelfDestructStackId = "del-%s-SelfDestructStack".formatted(props.deploymentName);
+
+        this.originBucketName = convertDotSeparatedToDashSeparated("origin-" + this.delResourceNamePrefix);
+        this.originAccessLogBucketName = "origin-%s".formatted(this.delResourceNamePrefix);
     }
 }

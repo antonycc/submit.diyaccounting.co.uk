@@ -71,9 +71,8 @@ public class DataStack extends Stack {
         // Create receipts bucket for storing VAT submission receipts
         boolean s3RetainReceiptsBucket =
                 props.s3RetainReceiptsBucket() != null && Boolean.parseBoolean(props.s3RetainReceiptsBucket());
-        String receiptsBucketName = "%s-receipts".formatted(props.sharedNames().dashedDomainName);
         this.receiptsBucket = Bucket.Builder.create(this, props.resourceNamePrefix() + "-ReceiptsBucket")
-                .bucketName(receiptsBucketName)
+                .bucketName(props.sharedNames().receiptsBucketName)
                 .versioned(false)
                 .blockPublicAccess(BlockPublicAccess.BLOCK_ALL)
                 .encryption(BucketEncryption.S3_MANAGED)
@@ -84,7 +83,8 @@ public class DataStack extends Stack {
                 .build();
         infof(
                 "Created receipts bucket with name %s and id %s",
-                receiptsBucketName, this.receiptsBucket.getNode().getId());
+                this.receiptsBucket.getBucketName(),
+                this.receiptsBucket.getNode().getId());
 
         Aspects.of(this).add(new SetAutoDeleteJobLogRetentionAspect(props.deploymentName(), RetentionDays.THREE_DAYS));
 

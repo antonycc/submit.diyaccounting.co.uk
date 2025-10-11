@@ -95,23 +95,7 @@ public class SubmitApplication {
         String deploymentName = envOr("DEPLOYMENT_NAME", appProps.deploymentName);
 
         // Determine primary environment (account/region) from CDK env
-        String cdkDefaultAccount = System.getenv("CDK_DEFAULT_ACCOUNT");
-        String cdkDefaultRegion = System.getenv("CDK_DEFAULT_REGION");
-        software.amazon.awscdk.Environment primaryEnv = null;
-        if (cdkDefaultAccount != null
-                && !cdkDefaultAccount.isBlank()
-                && cdkDefaultRegion != null
-                && !cdkDefaultRegion.isBlank()) {
-            primaryEnv = Environment.builder()
-                    .account(cdkDefaultAccount)
-                    .region(cdkDefaultRegion)
-                    .build();
-            infof("Using primary environment account %s region %s", cdkDefaultAccount, cdkDefaultRegion);
-        } else {
-            primaryEnv = Environment.builder().build();
-            warnf(
-                    "CDK_DEFAULT_ACCOUNT or CDK_DEFAULT_REGION environment variables are not set, using environment agnostic stacks");
-        }
+        Environment primaryEnv = KindCdk.buildPrimaryEnvironment();
 
         var nameProps = new SubmitSharedNames.SubmitSharedNamesProps();
         nameProps.envName = envName;

@@ -8,6 +8,8 @@ import co.uk.diyaccounting.submit.stacks.ApexStack;
 import co.uk.diyaccounting.submit.stacks.DataStack;
 import co.uk.diyaccounting.submit.stacks.IdentityStack;
 import co.uk.diyaccounting.submit.stacks.ObservabilityStack;
+import co.uk.diyaccounting.submit.stacks.ObservabilityUE1Stack;
+import co.uk.diyaccounting.submit.utils.KindCdk;
 import java.lang.reflect.Field;
 import java.nio.file.Paths;
 import software.amazon.awscdk.App;
@@ -17,6 +19,7 @@ import software.constructs.Construct;
 public class SubmitEnvironment {
 
     public final ObservabilityStack observabilityStack;
+    public final ObservabilityUE1Stack observabilityUE1Stack;
     public final DataStack dataStack;
     public final IdentityStack identityStack;
     public final ApexStack apexStack;
@@ -83,23 +86,11 @@ public class SubmitEnvironment {
         var deploymentName = envOr("DEPLOYMENT_NAME", envName);
 
         // Determine primary environment (account/region) from CDK env
-        String cdkDefaultAccount = System.getenv("CDK_DEFAULT_ACCOUNT");
-        String cdkDefaultRegion = System.getenv("CDK_DEFAULT_REGION");
-        software.amazon.awscdk.Environment primaryEnv = null;
-        if (cdkDefaultAccount != null
-                && !cdkDefaultAccount.isBlank()
-                && cdkDefaultRegion != null
-                && !cdkDefaultRegion.isBlank()) {
-            primaryEnv = Environment.builder()
-                    .account(cdkDefaultAccount)
-                    .region(cdkDefaultRegion)
-                    .build();
-            infof("Using primary environment account %s region %s", cdkDefaultAccount, cdkDefaultRegion);
-        } else {
-            primaryEnv = Environment.builder().build();
-            warnf(
-                    "CDK_DEFAULT_ACCOUNT or CDK_DEFAULT_REGION environment variables are not set, using environment agnostic stacks");
-        }
+        Environment primaryEnv = KindCdk.buildPrimaryEnvironment();
+        Environment usEast1Env = Environment.builder()
+                .region("us-east-1")
+                .account(primaryEnv.getAccount())
+                .build();
 
         var nameProps = new SubmitSharedNames.SubmitSharedNamesProps();
         nameProps.envName = envName;
@@ -114,8 +105,6 @@ public class SubmitEnvironment {
         // Load configuration from environment variables not defaulted in the cdk.json
         var googleClientSecretArn = envOr(
                 "GOOGLE_CLIENT_SECRET_ARN", appProps.googleClientSecretArn, "(from googleClientSecretArn in cdk.json)");
-
-        // Support environment specific overrides of some cdk.json values
         var cloudTrailEnabled =
                 envOr("CLOUD_TRAIL_ENABLED", appProps.cloudTrailEnabled, "(from cloudTrailEnabled in cdk.json)");
         var accessLogGroupRetentionPeriodDays = Integer.parseInt(
@@ -144,6 +133,25 @@ public class SubmitEnvironment {
                         .cloudTrailLogGroupPrefix(appProps.cloudTrailLogGroupPrefix)
                         .cloudTrailLogGroupRetentionPeriodDays(appProps.cloudTrailLogGroupRetentionPeriodDays)
                         .accessLogGroupRetentionPeriodDays(accessLogGroupRetentionPeriodDays)
+                        .build());
+
+        // Create ObservabilityUE1Stack with resources used in monitoring the application us-east-1
+        infof(
+                "Synthesizing stack %s for deployment %s to environment %s",
+                sharedNames.observabilityUE1StackId, deploymentName, envName);
+        this.observabilityUE1Stack = new ObservabilityUE1Stack(
+                app,
+                sharedNames.observabilityUE1StackId,
+                ObservabilityUE1Stack.ObservabilityUE1StackProps.builder()
+                        .env(usEast1Env)
+                        .crossRegionReferences(false)
+                        .envName(envName)
+                        .deploymentName(deploymentName)
+                        .resourceNamePrefix(sharedNames.envResourceNamePrefix)
+                        .compressedResourceNamePrefix(sharedNames.envCompressedResourceNamePrefix)
+                        .cloudTrailEnabled(cloudTrailEnabled)
+                        .sharedNames(sharedNames)
+                        .logGroupRetentionPeriodDays(accessLogGroupRetentionPeriodDays)
                         .build());
 
         // Create DataStack with shared persistence for all deployments

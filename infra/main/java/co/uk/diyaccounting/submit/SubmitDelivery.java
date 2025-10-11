@@ -1,20 +1,22 @@
 package co.uk.diyaccounting.submit;
 
+import co.uk.diyaccounting.submit.stacks.EdgeStack;
+import co.uk.diyaccounting.submit.stacks.PublishStack;
+import co.uk.diyaccounting.submit.stacks.SelfDestructStack;
+import co.uk.diyaccounting.submit.utils.KindCdk;
+import software.amazon.awscdk.App;
+import software.amazon.awscdk.Environment;
+import software.constructs.Construct;
+
+import java.lang.reflect.Field;
+import java.nio.file.Paths;
+import java.util.Map;
+
 import static co.uk.diyaccounting.submit.utils.Kind.envOr;
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.Kind.putIfNotNull;
 import static co.uk.diyaccounting.submit.utils.Kind.warnf;
 import static co.uk.diyaccounting.submit.utils.KindCdk.getContextValueString;
-
-import co.uk.diyaccounting.submit.stacks.EdgeStack;
-import co.uk.diyaccounting.submit.stacks.PublishStack;
-import co.uk.diyaccounting.submit.stacks.SelfDestructStack;
-import java.lang.reflect.Field;
-import java.nio.file.Paths;
-import java.util.Map;
-import software.amazon.awscdk.App;
-import software.amazon.awscdk.Environment;
-import software.constructs.Construct;
 
 public class SubmitDelivery {
 
@@ -35,6 +37,7 @@ public class SubmitDelivery {
         public String domainName;
         public String cloudTrailEnabled;
         public String baseUrl;
+        public String accessLogGroupRetentionPeriodDays;
         public String authUrlMockLambdaFunctionUrl;
         public String authUrlCognitoLambdaFunctionUrl;
         public String exchangeCognitoTokenLambdaFunctionUrl;
@@ -99,23 +102,11 @@ public class SubmitDelivery {
         var buildNumber = envOr("BUILD_NUMBER", "local");
 
         // Determine primary environment (account/region) from CDK env
-        String cdkDefaultAccount = System.getenv("CDK_DEFAULT_ACCOUNT");
-        String cdkDefaultRegion = System.getenv("CDK_DEFAULT_REGION");
-        software.amazon.awscdk.Environment primaryEnv = null;
-        if (cdkDefaultAccount != null
-                && !cdkDefaultAccount.isBlank()
-                && cdkDefaultRegion != null
-                && !cdkDefaultRegion.isBlank()) {
-            primaryEnv = Environment.builder()
-                    .account(cdkDefaultAccount)
-                    .region(cdkDefaultRegion)
-                    .build();
-            infof("Using primary environment account %s region %s", cdkDefaultAccount, cdkDefaultRegion);
-        } else {
-            primaryEnv = Environment.builder().build();
-            warnf(
-                    "CDK_DEFAULT_ACCOUNT or CDK_DEFAULT_REGION environment variables are not set, using environment agnostic stacks");
-        }
+        Environment primaryEnv = KindCdk.buildPrimaryEnvironment();
+        Environment usEast1Env = Environment.builder()
+                .region("us-east-1")
+                .account(primaryEnv.getAccount())
+                .build();
 
         var nameProps = new SubmitSharedNames.SubmitSharedNamesProps();
         nameProps.envName = envName;
@@ -126,6 +117,21 @@ public class SubmitDelivery {
         nameProps.regionName = primaryEnv.getRegion();
         nameProps.awsAccount = primaryEnv.getAccount();
         var sharedNames = new SubmitSharedNames(nameProps);
+
+        // Support environment specific overrides of some cdk.json values
+        var cloudTrailEnabled =
+                envOr("CLOUD_TRAIL_ENABLED", appProps.cloudTrailEnabled, "(from cloudTrailEnabled in cdk.json)");
+        var accessLogGroupRetentionPeriodDays = Integer.parseInt(
+                envOr("ACCESS_LOG_GROUP_RETENTION_PERIOD_DAYS", appProps.accessLogGroupRetentionPeriodDays, "30"));
+        var selfDestructHandlerSource = envOr(
+                "SELF_DESTRUCT_HANDLER_SOURCE",
+                appProps.selfDestructHandlerSource,
+                "(from selfDestructHandlerSource in cdk.json)");
+        var selfDestructDelayHours = envOr(
+                "SELF_DESTRUCT_DELAY_HOURS",
+                appProps.selfDestructDelayHours,
+                "(from selfDestructDelayHours in cdk.json)");
+        var docRootPath = envOr("DOC_ROOT_PATH", appProps.docRootPath, "(from docRootPath in cdk.json)");
 
         // Function URL environment variables for EdgeStack
         var authUrlMockLambdaFunctionUrl = envOr(
@@ -170,17 +176,6 @@ public class SubmitDelivery {
                 "MY_RECEIPTS_LAMBDA_URL",
                 appProps.myReceiptsLambdaFunctionUrl,
                 "(from myReceiptsLambdaFunctionUrl in cdk.json)");
-        var selfDestructHandlerSource = envOr(
-                "SELF_DESTRUCT_HANDLER_SOURCE",
-                appProps.selfDestructHandlerSource,
-                "(from selfDestructHandlerSource in cdk.json)");
-        var selfDestructDelayHours = envOr(
-                "SELF_DESTRUCT_DELAY_HOURS",
-                appProps.selfDestructDelayHours,
-                "(from selfDestructDelayHours in cdk.json)");
-        var cloudTrailEnabled =
-                envOr("CLOUD_TRAIL_ENABLED", appProps.cloudTrailEnabled, "(from cloudTrailEnabled in cdk.json)");
-        var docRootPath = envOr("DOC_ROOT_PATH", appProps.docRootPath, "(from docRootPath in cdk.json)");
 
         // Create Function URLs map for EdgeStack (cross-region compatible)
         Map<String, String> pathsToFns = new java.util.HashMap<>();
@@ -209,7 +204,7 @@ public class SubmitDelivery {
                 app,
                 sharedNames.edgeStackId,
                 EdgeStack.EdgeStackProps.builder()
-                        .env(Environment.builder().region("us-east-1").build())
+                        .env(usEast1Env)
                         .crossRegionReferences(true)
                         .envName(envName)
                         .deploymentName(deploymentName)
@@ -221,6 +216,7 @@ public class SubmitDelivery {
                         .hostedZoneId(appProps.hostedZoneId)
                         .certificateArn(appProps.certificateArn)
                         .pathsToOriginLambdaFunctionUrls(pathsToFns)
+                        .logGroupRetentionPeriodDays(accessLogGroupRetentionPeriodDays)
                         .build());
 
         // Create the Publish stack (Bucket Deployments to CloudFront)
@@ -229,7 +225,7 @@ public class SubmitDelivery {
                 app,
                 sharedNames.publishStackId,
                 PublishStack.PublishStackProps.builder()
-                        .env(Environment.builder().region("us-east-1").build())
+                        .env(usEast1Env)
                         .crossRegionReferences(false)
                         .envName(envName)
                         .deploymentName(deploymentName)
@@ -251,7 +247,7 @@ public class SubmitDelivery {
                     app,
                     sharedNames.delSelfDestructStackId,
                     SelfDestructStack.SelfDestructStackProps.builder()
-                            .env(Environment.builder().region("us-east-1").build())
+                            .env(usEast1Env)
                             .crossRegionReferences(false)
                             .envName(envName)
                             .deploymentName(deploymentName)
