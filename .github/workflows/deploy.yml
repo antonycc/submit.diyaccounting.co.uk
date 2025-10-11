@@ -1534,7 +1534,9 @@ jobs:
         env:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
 
-      - run: cp '.env.${{ needs.names.outputs.environment-name }}' '.env.proxy' ; npx dotenv -e '.env.${{ needs.names.outputs.environment-name }}' -- npm run test:behaviour
+#cp '.env.${{ needs.names.outputs.environment-name }}' '.env.test' ; npx dotenv -e '.env.${{ needs.names.outputs.environment-name }}' -- npm run test:behaviour
+      #
+      - run: cp '.env.${{ needs.names.outputs.environment-name }}' '.env.test' ; npx dotenv -e '.env.${{ needs.names.outputs.environment-name }}' -- npm run test:behaviour
         env:
           BASE_URL: ${{ needs.names.outputs.base-url }}
           TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
