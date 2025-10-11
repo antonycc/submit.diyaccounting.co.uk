@@ -1344,7 +1344,7 @@ jobs:
           MY_BUNDLES_LAMBDA_URL: ${{ needs.deploy-account.outputs.myBundlesLambdaUrl }}
 
   deploy-ops:
-    name: 'deploy ops'
+    name: 'deploy ops with dashboard'
     needs:
       - names
       - skip-deploy-check
