@@ -349,9 +349,6 @@ jobs:
         env:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
 
-      - name: Verify Docker is running
-        run: docker info
-
       - name: Run behaviour tests
         run: npm run test:behaviour
         env:
