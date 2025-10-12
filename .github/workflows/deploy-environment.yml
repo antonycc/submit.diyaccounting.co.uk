@@ -477,14 +477,18 @@ jobs:
         id: identity-outputs
         run: |
           COGNITO_USER_POOL_ARN=$(jq -r '.["env-${{ needs.names.outputs.environment-name }}-IdentityStack"].UserPoolArn' cdk-submit-environment.out/cdk-outputs-identity.json)
+          COGNITO_USER_POOL_ID=$(jq -r '.["env-${{ needs.names.outputs.environment-name }}-IdentityStack"].UserPoolId' cdk-submit-environment.out/cdk-outputs-identity.json)
           COGNITO_CLIENT_ID=$(jq -r '.["env-${{ needs.names.outputs.environment-name }}-IdentityStack"].UserPoolClientId' cdk-submit-environment.out/cdk-outputs-identity.json)
           echo "COGNITO_USER_POOL_ARN=$COGNITO_USER_POOL_ARN"
+          echo "COGNITO_USER_POOL_ID=$COGNITO_USER_POOL_ID"
           echo "COGNITO_CLIENT_ID=$COGNITO_CLIENT_ID"
           echo "COGNITO_USER_POOL_ARN=$COGNITO_USER_POOL_ARN" >> $GITHUB_OUTPUT
+          echo "COGNITO_USER_POOL_ID=$COGNITO_USER_POOL_ID" >> $GITHUB_OUTPUT
           echo "COGNITO_CLIENT_ID=$COGNITO_CLIENT_ID" >> $GITHUB_OUTPUT
         shell: bash
     outputs:
       COGNITO_USER_POOL_ARN: ${{ steps.identity-outputs.outputs.COGNITO_USER_POOL_ARN }}
+      COGNITO_USER_POOL_ID: ${{ steps.identity-outputs.outputs.COGNITO_USER_POOL_ID }}
       COGNITO_CLIENT_ID: ${{ steps.identity-outputs.outputs.COGNITO_CLIENT_ID }}
 
   set-repository-environment-variables:
@@ -511,6 +515,50 @@ jobs:
             const envName = '${{ needs.names.outputs.environment-name }}';
             const varName = 'COGNITO_USER_POOL_ARN';
             const varValue = '${{ needs.deploy-identity.outputs.COGNITO_USER_POOL_ARN }}';
+
+            // ensure the environment exists
+            await github.rest.repos.createOrUpdateEnvironment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              environment_name: envName,
+            });
+
+            // create or update the variable (handle 409 Already exists)
+            try {
+              await github.rest.actions.createEnvironmentVariable({
+                repository_id: repositoryId,
+                environment_name: envName,
+                name: varName,
+                value: varValue,
+              });
+              core.info(`Created env var ${varName} in ${envName}`);
+            } catch (error) {
+              const status = error?.status || error?.response?.status || error?.data?.status;
+              if (String(status) === '409') {
+                core.info(`Variable ${varName} already exists in ${envName}, updating it.`);
+                await github.rest.actions.updateEnvironmentVariable({
+                  repository_id: repositoryId,
+                  environment_name: envName,
+                  name: varName,
+                  value: varValue,
+                });
+                core.info(`Updated env var ${varName} to value ${varValue} in ${envName}`);
+              } else {
+                core.setFailed(`Failed to set ${varName} in ${envName}: ${error.message || error}`);
+                throw error;
+              }
+            }
+
+      - name: Create a GitHub environment variable for COGNITO_USER_POOL_ID in the current environment
+        uses: actions/github-script@v8
+        with:
+          github-token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          script: |
+            const repositoryId = context.payload.repository.id;
+            console.log(`Repository: ${repositoryId}`);
+            const envName = '${{ needs.names.outputs.environment-name }}';
+            const varName = 'COGNITO_USER_POOL_ID';
+            const varValue = '${{ needs.deploy-identity.outputs.COGNITO_USER_POOL_ID }}';
 
             // ensure the environment exists
             await github.rest.repos.createOrUpdateEnvironment({

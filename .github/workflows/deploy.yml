@@ -1256,7 +1256,7 @@ jobs:
         id: publish-compare
         shell: bash
         run: |
-          EDGE_HASH_URL="${{ needs.names.outputs.base-url }}/submit.hash"
+          EDGE_HASH_URL="${{ needs.deploy-edge.outputs.base-url }}/submit.hash"
           echo "Fetching existing hash from $EDGE_HASH_URL"
           EXISTING_HASH=$(curl --fail --silent --show-error --location "$EDGE_HASH_URL" || echo "")
           echo "EXISTING_HASH=$EXISTING_HASH"
@@ -1342,6 +1342,52 @@ jobs:
           CATALOG_LAMBDA_URL: ${{ needs.deploy-account.outputs.catalogLambdaUrl }}
           REQUEST_BUNDLES_LAMBDA_URL: ${{ needs.deploy-account.outputs.requestBundlesLambdaUrl }}
           MY_BUNDLES_LAMBDA_URL: ${{ needs.deploy-account.outputs.myBundlesLambdaUrl }}
+
+      - name: Fetch existing Cognito App Client URLs
+        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.publish-compare.outputs.skipPublishStackDeployment != 'true' }}
+        id: fetch-cognito-client-urls
+        uses: actions/github-script@v7
+        env:
+          COGNITO_USER_POOL_ID: ${{ vars.COGNITO_USER_POOL_ID }}
+          COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
+          AWS_REGION: ${{ env.AWS_REGION }}
+        with:
+          script: |
+            const { execSync } = require('child_process');
+            const core = require('@actions/core');
+            const userPoolId = process.env.COGNITO_USER_POOL_ID;
+            const clientId = process.env.COGNITO_CLIENT_ID;
+            const region = process.env.AWS_REGION;
+
+            const raw = execSync(`aws cognito-idp describe-user-pool-client --user-pool-id ${userPoolId} --client-id ${clientId} --region ${region}`, { encoding: 'utf8' });
+            const parsed = JSON.parse(raw).UserPoolClient || {};
+            const existingCallbacks = parsed.CallbackURLs || [];
+            const existingLogouts = parsed.LogoutURLs || [];
+
+            const toArg = arr => arr.map(v => JSON.stringify(v)).join(' ');
+            core.setOutput('callback_urls_arg', toArg(existingCallbacks));
+            core.setOutput('logout_urls_arg', toArg(existingLogouts));
+
+            core.notice(`Existing callback URLs: ${existingCallbacks.join(', ') || '(none)'}`);
+            core.notice(`Existing logout URLs: ${existingLogouts.join(', ') || '(none)'}`);
+
+      - name: Add callback URL to Cognito App Client
+        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.publish-compare.outputs.skipPublishStackDeployment != 'true' }}
+        run: |
+          aws cognito-idp update-user-pool-client \
+            --user-pool-id "${COGNITO_USER_POOL_ID?}" \
+            --client-id "${COGNITO_CLIENT_ID?}" \
+            --callback-urls "${CALLBACK_URLS?}, ${DEPLOYED_CALLBACK_URLS?}" \
+            --logout-urls "${LOGOUT_URLS?}, ${DEPLOYED_LOGOUT_URLS?}" \
+            --region "$AWS_REGION"
+        env:
+          COGNITO_USER_POOL_ID: ${{ vars.COGNITO_USER_POOL_ID }}
+          COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
+          AWS_REGION: ${{ env.AWS_REGION }}
+          CALLBACK_URLS: ${{ steps.fetch-cognito-client-urls.outputs.callback_urls_arg }}
+          DEPLOYED_CALLBACK_URLS: "${{ needs.deploy-edge.outputs.base-url }}/auth/loginWithMockCallback.html, ${{ needs.deploy-edge.outputs.base-url }}/auth/loginWithCognitoCallback.html"
+          LOGOUT_URLS: ${{ steps.fetch-cognito-client-urls.outputs.logout_urls_arg }}
+          DEPLOYED_LOGOUT_URLS: "${{ needs.deploy-edge.outputs.base-url }}/"
 
   deploy-ops:
     name: 'deploy ops with dashboard'
