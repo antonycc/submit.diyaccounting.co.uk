@@ -1362,8 +1362,8 @@ jobs:
 
             const add = (arr)=>Array.from(new Set(arr))
             const cbWanted = add([...(d.CallbackURLs||[]),
-              `${process.env.BASE_URL}/auth/loginWithMockCallback.html`,
-              `${process.env.BASE_URL}/auth/loginWithCognitoCallback.html`
+              `${process.env.BASE_URL}auth/loginWithMockCallback.html`,
+              `${process.env.BASE_URL}auth/loginWithCognitoCallback.html`
             ])
             const loWanted = add([...(d.LogoutURLs||[]),
               `${process.env.BASE_URL}/`
