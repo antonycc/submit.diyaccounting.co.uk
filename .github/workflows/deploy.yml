@@ -342,13 +342,17 @@ jobs:
 
       - name: Install dependencies
         run: |
-          npm ci --ignore-scripts
+          npm install
         env:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
 
-      - run: npm run test:behaviour
+      - name: Verify Docker is running
+        run: docker info
+
+      - name: Run behaviour tests
+        run: npm run test:behaviour
         env:
-          DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.base-url }}
+          #DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.base-url }}
           TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
           TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
           TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
@@ -442,8 +446,6 @@ jobs:
     outputs:
       self-destruct-handler-source: ${{ steps.package.outputs.SELF_DESTRUCT_HANDLER_SOURCE }}
       self-destruct-start-datetime: ${{ steps.self-destruct-start.outputs.SELF_DESTRUCT_START_DATETIME }}
-
-
 
   skip-deploy-check:
     name: 'skip deploy check'
