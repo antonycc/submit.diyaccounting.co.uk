@@ -34,7 +34,7 @@ on:
       selfDestructDelayHours:
         description: 'Hours before self-destruct triggers for non-prod environments'
         required: false
-        default: '4'
+        default: '8'
   push:
     branches:
       - '**'
@@ -1751,7 +1751,7 @@ jobs:
   # TODO: Get the Playwright report and load test report into the GitHub pages site and navigable from the front page
   publish-artifacts:
     name: 'publish artifacts to github pages'
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() && needs.names.outputs.environment-name == 'prod' }}
     needs:
       - names
       - deploy-edge
