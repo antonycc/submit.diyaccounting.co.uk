@@ -26,6 +26,11 @@ import {
   CreateInvalidationCommand,
 } from "@aws-sdk/client-cloudfront";
 
+// Forward ALL viewer headers, cookies, and query strings
+const ORIGIN_REQUEST_POLICY_ID = process.env.ORIGIN_REQUEST_POLICY_ID || "216adef6-5c7f-47e4-b989-5492eafa07d3"; // Managed-AllViewer
+// Disable caching so everything reaches the origin unchanged
+const CACHE_POLICY_ID = process.env.CACHE_POLICY_ID || "4135ea2d-6df8-44a3-9df4-7b4d7bf0d68a"; // Managed-CachingDisabled
+
 function parseArgs(argv) {
   const args = {
     id: process.env.DIST_ID,
@@ -40,7 +45,7 @@ function parseArgs(argv) {
     else if (a === "-o" || a === "--origins" || a === "--origins-csv") args.origins = argv[++i];
     else if (a === "-r" || a === "--region") args.region = argv[++i];
     else if (a === "-n" || a === "--dry-run") args.dryRun = true;
-    else if (!args.origins && !a.startsWith("-")) args.origins = a; // allow positional origins csv
+    else if (!args.origins && !a.startsWith("-")) args.origins = a;
   }
   return args;
 }
@@ -78,10 +83,7 @@ async function main() {
     printHelp();
     return;
   }
-
-  if (!id) {
-    throw new Error("DIST_ID is not set and --id not provided");
-  }
+  if (!id) throw new Error("DIST_ID is not set and --id not provided");
 
   console.log(
     `[set-apex-origins] dist=${id} region=${region || "(default)"} origins=${(origins || "").trim() || "(none)"} dryRun=${String(!!dryRun)}`,
@@ -92,12 +94,10 @@ async function main() {
 
   const getResp = await client.send(new GetDistributionConfigCommand({ Id: id }));
   const etag = getResp.ETag;
-  // structuredClone is available in Node 22; fallback if needed
   const cfg = globalThis.structuredClone
     ? structuredClone(getResp.DistributionConfig)
     : JSON.parse(JSON.stringify(getResp.DistributionConfig));
 
-  // Ensure Origins container exists
   cfg.Origins = cfg.Origins || { Quantity: 0, Items: [] };
 
   const beforeOrigins = getResp.DistributionConfig.Origins?.Items || [];
@@ -153,29 +153,19 @@ async function main() {
     }
   }
 
-  // Normalize ALL origins to satisfy UpdateDistribution requirements
+  // Normalize ALL origins
   for (const o of cfg.Origins.Items || []) {
-    // Ensure OriginPath is a string
     if (typeof o.OriginPath !== "string") o.OriginPath = "";
-
-    // Ensure CustomHeaders exists, even if empty
     if (!o.CustomHeaders || typeof o.CustomHeaders !== "object") {
       o.CustomHeaders = { Quantity: 0, Items: [] };
     } else {
       if (typeof o.CustomHeaders.Quantity !== "number") {
         o.CustomHeaders.Quantity = Array.isArray(o.CustomHeaders.Items) ? o.CustomHeaders.Items.length : 0;
       }
-      if (o.CustomHeaders.Quantity === 0 && !Array.isArray(o.CustomHeaders.Items)) {
-        // Some SDKs omit Items when Quantity is 0; include it for safety
-        o.CustomHeaders.Items = [];
-      }
+      if (o.CustomHeaders.Quantity === 0 && !Array.isArray(o.CustomHeaders.Items)) o.CustomHeaders.Items = [];
     }
-
-    // Safe defaults for connection settings (accepted by both S3 and Custom origins)
     if (o.ConnectionAttempts == null) o.ConnectionAttempts = 3;
     if (o.ConnectionTimeout == null) o.ConnectionTimeout = 10;
-
-    // Ensure CustomOriginConfig has required fields (if present)
     if (o.CustomOriginConfig) {
       const c = o.CustomOriginConfig;
       if (!c.OriginProtocolPolicy) c.OriginProtocolPolicy = "https-only";
@@ -187,6 +177,24 @@ async function main() {
     }
   }
 
+  // PASS-THROUGH: apply policies to default and all cache behaviors
+  const applyPassThrough = (b) => {
+    if (!b) return;
+    b.CachePolicyId = CACHE_POLICY_ID;
+    b.OriginRequestPolicyId = ORIGIN_REQUEST_POLICY_ID;
+    // allow all methods so auth callbacks with POST work
+    b.AllowedMethods = {
+      Quantity: 7,
+      Items: ["GET", "HEAD", "OPTIONS", "PUT", "PATCH", "POST", "DELETE"],
+    };
+    b.CachedMethods = { Quantity: 3, Items: ["GET", "HEAD", "OPTIONS"] };
+    // remove deprecated forwarding section if present
+    if (b.ForwardedValues) delete b.ForwardedValues;
+  };
+
+  applyPassThrough(cfg.DefaultCacheBehavior);
+  for (const b of cfg.CacheBehaviors?.Items || []) applyPassThrough(b);
+
   const afterMissing = (cfg.Origins.Items || []).filter((o) => !o.CustomHeaders || typeof o.CustomHeaders !== "object").length;
   console.log(
     `[set-apex-origins] normalized origins: ${cfg.Origins.Items.length}, missing CustomHeaders after normalization: ${afterMissing}`,
@@ -195,12 +203,15 @@ async function main() {
   if (dryRun) {
     const summary = {
       defaultTarget: cfg.DefaultCacheBehavior.TargetOriginId,
+      defaultBehavior: {
+        CachePolicyId: cfg.DefaultCacheBehavior.CachePolicyId,
+        OriginRequestPolicyId: cfg.DefaultCacheBehavior.OriginRequestPolicyId,
+      },
       origins: (cfg.Origins.Items || []).map((o) => ({
         Id: o.Id,
         DomainName: o.DomainName,
         hasCustomHeaders: !!o.CustomHeaders,
         customHeadersQuantity: o.CustomHeaders?.Quantity ?? null,
-        customHeaderNames: Array.isArray(o.CustomHeaders?.Items) ? o.CustomHeaders.Items.map((h) => h.HeaderName) : [],
         type: o.S3OriginConfig ? "s3" : "custom",
       })),
       originGroups: cfg.OriginGroups?.Items?.map((g) => ({ Id: g.Id, members: g.Members?.Items?.map((m) => m.OriginId) })) || [],
@@ -240,9 +251,7 @@ main().catch((err) => {
       code: err?.code || err?.Code,
       $metadata: err?.$metadata,
     });
-  } catch (_) {
-    // fallback if JSON serialization fails
-  }
+  } catch (_) {}
   if (err?.stack) console.error(err.stack);
   process.exitCode = 1;
 });
