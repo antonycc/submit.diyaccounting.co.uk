@@ -186,8 +186,10 @@ async function main() {
     b.AllowedMethods = {
       Quantity: 7,
       Items: ["GET", "HEAD", "OPTIONS", "PUT", "PATCH", "POST", "DELETE"],
+      // CloudFront expects CachedMethods nested under AllowedMethods
+      // Use only GET and HEAD for caching; caching itself is disabled by policy
+      CachedMethods: { Quantity: 2, Items: ["GET", "HEAD"] },
     };
-    b.CachedMethods = { Quantity: 3, Items: ["GET", "HEAD", "OPTIONS"] };
     // remove deprecated forwarding section if present
     if (b.ForwardedValues) delete b.ForwardedValues;
   };
