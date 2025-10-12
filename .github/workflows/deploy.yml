@@ -1344,7 +1344,7 @@ jobs:
           MY_BUNDLES_LAMBDA_URL: ${{ needs.deploy-account.outputs.myBundlesLambdaUrl }}
 
       - name: Upsert Cognito callback/logout URLs
-        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.publish-compare.outputs.skipPublishStackDeployment != 'true' }}
+        if: ${{ contains(needs.deploy-edge.outputs.base-url, 'submit') }}
         uses: actions/github-script@v8
         env:
           USER_POOL_ID: ${{ vars.COGNITO_USER_POOL_ID }}
