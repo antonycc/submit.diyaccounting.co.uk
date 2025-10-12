@@ -1751,7 +1751,7 @@ jobs:
   # TODO: Get the Playwright report and load test report into the GitHub pages site and navigable from the front page
   publish-artifacts:
     name: 'publish artifacts to github pages'
-    if: ${{ !cancelled() && needs.names.outputs.environment-name == 'prod' && ( inputs.skipDeploy == 'true' || needs.deploy-edge.result == 'success' ) }}
+    if: ${{ !cancelled() }}
     needs:
       - names
       - deploy-edge
@@ -1832,6 +1832,16 @@ jobs:
           # Create artifacts directory structure
           mkdir -p gh-pages/artifacts
 
+          # Copy origin test artifacts
+          if [ -d "artifacts/origin-test-artifacts" ]; then
+            cp -vr artifacts/origin-test-artifacts gh-pages/artifacts/.
+          fi
+
+          # Copy origin test reports
+          if [ -d "artifacts/origin-test-reports" ]; then
+            cp -vr artifacts/origin-test-reports gh-pages/artifacts/.
+          fi
+
           # Copy web test artifacts
           if [ -d "artifacts/web-test-artifacts" ]; then
             cp -vr artifacts/web-test-artifacts gh-pages/artifacts/.
@@ -1869,6 +1879,7 @@ jobs:
 
                   <h2>Available Test output</h2>
                   <ul>
+                      <li><a href="origin-test-reports/html-report/index.html">Origin Test Reports</a></li>
                       <li><a href="web-test-reports/html-report/index.html">Web Test Reports</a></li>
                       <li><a href="test-reports-browser/html-report/index.html">Browser Test Reports</a></li>
                   </ul>
