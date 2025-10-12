@@ -331,6 +331,9 @@ jobs:
     # and extension with ubuntu distribution e.g. https://releases.ubuntu.com/jammy/
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
     steps:
+      - name: Set up Docker
+        uses: docker/setup-buildx-action@v3
+
       - name: Checkout
         uses: actions/checkout@v5
 
@@ -474,6 +477,9 @@ jobs:
     runs-on: ubuntu-24.04
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
     steps:
+      - name: Set up Docker
+        uses: docker/setup-buildx-action@v3
+
       - name: Checkout
         uses: actions/checkout@v5
 
