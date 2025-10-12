@@ -1546,6 +1546,8 @@ jobs:
   #        default: ''
   set-origins:
     name: 'set origins'
+    # TODO: revert to set origin only on success when stable
+    if: ${{ !cancelled() && (needs.names.outputs.environment-name != 'prod' || needs.origin-test.outputs.result == 'success') }}
     needs:
       - names
       - skip-deploy-check
