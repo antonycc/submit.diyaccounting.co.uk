@@ -1,7 +1,17 @@
 package co.uk.diyaccounting.submit.stacks;
 
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.Kind.putIfNotNull;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateIamCompatibleName;
+
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
+import java.time.ZonedDateTime;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Aspects;
 import software.amazon.awscdk.Duration;
@@ -27,17 +37,6 @@ import software.amazon.awscdk.services.logs.ILogGroup;
 import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.constructs.Construct;
-
-import java.time.ZonedDateTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.Kind.putIfNotNull;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateIamCompatibleName;
 
 public class SelfDestructStack extends Stack {
 
@@ -194,29 +193,31 @@ public class SelfDestructStack extends Stack {
 
         String ruleName = generateIamCompatibleName(props.resourceNamePrefix(), "sd-schedule");
 
-        // Hour field using anchored start hour with /delayHours if it divides 24; otherwise single fixed hour (no true interval possible)
+        // Hour field using anchored start hour with /delayHours if it divides 24; otherwise single fixed hour (no true
+        // interval possible)
         String hourExpression = (24 % props.selfDestructDelayHours() == 0)
                 ? props.selfDestructStartDatetime().getHour() + "/" + props.selfDestructDelayHours()
                 : String.valueOf(props.selfDestructStartDatetime().getHour());
         Schedule cron = Schedule.cron(CronOptions.builder()
-            .minute(String.valueOf(props.selfDestructStartDatetime().getMinute()))
-            .hour(hourExpression)
-            .day("*")
-            .month("*")
-            .year("*")
-            .build());
+                .minute(String.valueOf(props.selfDestructStartDatetime().getMinute()))
+                .hour(hourExpression)
+                .day("*")
+                .month("*")
+                .year("*")
+                .build());
 
         LambdaFunction destructFunctionTarget = LambdaFunction.Builder.create(this.selfDestructFunction)
-            .event(RuleTargetInput.fromObject(Map.of(
-                "source", "eventbridge-schedule",
-                "deploymentName", props.deploymentName(),
-                "delayHours", props.selfDestructDelayHours(),
-                "startAt", props.selfDestructStartDatetime().toString())))
-            .build();
+                .event(RuleTargetInput.fromObject(Map.of(
+                        "source", "eventbridge-schedule",
+                        "deploymentName", props.deploymentName(),
+                        "delayHours", props.selfDestructDelayHours(),
+                        "startAt", props.selfDestructStartDatetime().toString())))
+                .build();
 
         this.selfDestructSchedule = Rule.Builder.create(this, props.resourceNamePrefix() + "-SelfDestructSchedule")
                 .ruleName(ruleName)
-                .description("Automatically triggers self-destruct every " + props.selfDestructDelayHours() + " hours starting at " + props.selfDestructStartDatetime())
+                .description("Automatically triggers self-destruct every " + props.selfDestructDelayHours()
+                        + " hours starting at " + props.selfDestructStartDatetime())
                 .schedule(cron)
                 .targets(List.of(destructFunctionTarget))
                 .build();
@@ -229,7 +230,8 @@ public class SelfDestructStack extends Stack {
         cfnOutput(
                 this,
                 "SelfDestructScheduleInfo",
-                "Self-destruct will trigger automatically at " + props.selfDestructStartDatetime() + " and then again every " + props.selfDestructDelayHours() + " hours");
+                "Self-destruct will trigger automatically at " + props.selfDestructStartDatetime()
+                        + " and then again every " + props.selfDestructDelayHours() + " hours");
         cfnOutput(
                 this,
                 "SelfDestructInstructions",

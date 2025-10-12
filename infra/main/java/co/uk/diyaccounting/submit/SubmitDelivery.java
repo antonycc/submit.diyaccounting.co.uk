@@ -1,24 +1,23 @@
 package co.uk.diyaccounting.submit;
 
-import co.uk.diyaccounting.submit.stacks.EdgeStack;
-import co.uk.diyaccounting.submit.stacks.PublishStack;
-import co.uk.diyaccounting.submit.stacks.SelfDestructStack;
-import co.uk.diyaccounting.submit.utils.KindCdk;
-import software.amazon.awscdk.App;
-import software.amazon.awscdk.Environment;
-import software.constructs.Construct;
-
-import java.lang.reflect.Field;
-import java.nio.file.Paths;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.Map;
-
 import static co.uk.diyaccounting.submit.utils.Kind.envOr;
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.Kind.putIfNotNull;
 import static co.uk.diyaccounting.submit.utils.Kind.warnf;
 import static co.uk.diyaccounting.submit.utils.KindCdk.getContextValueString;
+
+import co.uk.diyaccounting.submit.stacks.EdgeStack;
+import co.uk.diyaccounting.submit.stacks.PublishStack;
+import co.uk.diyaccounting.submit.stacks.SelfDestructStack;
+import co.uk.diyaccounting.submit.utils.KindCdk;
+import java.lang.reflect.Field;
+import java.nio.file.Paths;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Map;
+import software.amazon.awscdk.App;
+import software.amazon.awscdk.Environment;
+import software.constructs.Construct;
 
 public class SubmitDelivery {
 
@@ -130,15 +129,14 @@ public class SubmitDelivery {
                 appProps.selfDestructHandlerSource,
                 "(from selfDestructHandlerSource in cdk.json)");
         var selfDestructDelayHoursString = envOr(
-            "SELF_DESTRUCT_DELAY_HOURS",
-            appProps.selfDestructDelayHours,
-            "(from selfDestructDelayHours in cdk.json)");
+                "SELF_DESTRUCT_DELAY_HOURS",
+                appProps.selfDestructDelayHours,
+                "(from selfDestructDelayHours in cdk.json)");
         int selfDestructDelayHours = Integer.parseInt(selfDestructDelayHoursString);
         var selfDestructStartDatetimeIso = envOr(
-            "SELF_DESTRUCT_START_DATETIME",
-            ZonedDateTime.now().plusHours(selfDestructDelayHours).format(DateTimeFormatter.ISO_DATE_TIME),
-            "(from current time plus delay hours)"
-        );
+                "SELF_DESTRUCT_START_DATETIME",
+                ZonedDateTime.now().plusHours(selfDestructDelayHours).format(DateTimeFormatter.ISO_DATE_TIME),
+                "(from current time plus delay hours)");
         ZonedDateTime selfDestructStartDatetime = ZonedDateTime.parse(selfDestructStartDatetimeIso);
         infof("Self-destruct start datetime: %s", selfDestructStartDatetime);
         var docRootPath = envOr("DOC_ROOT_PATH", appProps.docRootPath, "(from docRootPath in cdk.json)");

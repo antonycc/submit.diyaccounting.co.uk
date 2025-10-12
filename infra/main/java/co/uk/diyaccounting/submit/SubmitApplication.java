@@ -1,5 +1,9 @@
 package co.uk.diyaccounting.submit;
 
+import static co.uk.diyaccounting.submit.utils.Kind.envOr;
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.Kind.warnf;
+
 import co.uk.diyaccounting.submit.stacks.AccountStack;
 import co.uk.diyaccounting.submit.stacks.AuthStack;
 import co.uk.diyaccounting.submit.stacks.DevStack;
@@ -7,18 +11,13 @@ import co.uk.diyaccounting.submit.stacks.HmrcStack;
 import co.uk.diyaccounting.submit.stacks.OpsStack;
 import co.uk.diyaccounting.submit.stacks.SelfDestructStack;
 import co.uk.diyaccounting.submit.utils.KindCdk;
-import software.amazon.awscdk.App;
-import software.amazon.awscdk.Environment;
-import software.constructs.Construct;
-
 import java.lang.reflect.Field;
 import java.nio.file.Paths;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-
-import static co.uk.diyaccounting.submit.utils.Kind.envOr;
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.Kind.warnf;
+import software.amazon.awscdk.App;
+import software.amazon.awscdk.Environment;
+import software.constructs.Construct;
 
 public class SubmitApplication {
 
@@ -124,10 +123,9 @@ public class SubmitApplication {
                 "(from selfDestructDelayHours in cdk.json)");
         int selfDestructDelayHours = Integer.parseInt(selfDestructDelayHoursString);
         var selfDestructStartDatetimeIso = envOr(
-            "SELF_DESTRUCT_START_DATETIME",
-            ZonedDateTime.now().plusHours(selfDestructDelayHours).format(DateTimeFormatter.ISO_DATE_TIME),
-            "(from current time plus delay hours)"
-        );
+                "SELF_DESTRUCT_START_DATETIME",
+                ZonedDateTime.now().plusHours(selfDestructDelayHours).format(DateTimeFormatter.ISO_DATE_TIME),
+                "(from current time plus delay hours)");
         ZonedDateTime selfDestructStartDatetime = ZonedDateTime.parse(selfDestructStartDatetimeIso);
         infof("Self-destruct start datetime: %s", selfDestructStartDatetime);
         var selfDestructHandlerSource = envOr(

@@ -1,7 +1,16 @@
 package co.uk.diyaccounting.submit.stacks;
 
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.Kind.warnf;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
+import java.util.Objects;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Aspects;
 import software.amazon.awscdk.AssetHashType;
@@ -24,16 +33,6 @@ import software.amazon.awscdk.services.s3.assets.AssetOptions;
 import software.amazon.awscdk.services.s3.deployment.BucketDeployment;
 import software.amazon.awscdk.services.s3.deployment.Source;
 import software.constructs.Construct;
-
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.List;
-import java.util.Objects;
-
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.Kind.warnf;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 public class PublishStack extends Stack {
 
@@ -114,7 +113,8 @@ public class PublishStack extends Stack {
         IDistribution distribution = Distribution.fromDistributionAttributes(
                 this, props.resourceNamePrefix() + "-ImportedWebDist", distributionAttributes);
 
-        IBucket originBucket = Bucket.fromBucketName(this, props.resourceNamePrefix() + "-WebBucket", props.sharedNames().originBucketName);
+        IBucket originBucket = Bucket.fromBucketName(
+                this, props.resourceNamePrefix() + "-WebBucket", props.sharedNames().originBucketName);
 
         // Generate submit.version file with commit hash if provided
         if (props.commitHash() != null && !props.commitHash().isBlank()) {
