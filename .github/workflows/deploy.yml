@@ -1480,7 +1480,7 @@ jobs:
 
   origin-test:
     if: ${{ !cancelled() }}
-    name: 'web test'
+    name: 'origin test'
     needs:
       - names
       - skip-deploy-check
