@@ -1,16 +1,9 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Aspects;
-import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.Stack;
@@ -48,10 +41,15 @@ import software.amazon.awscdk.services.s3.BlockPublicAccess;
 import software.amazon.awscdk.services.s3.Bucket;
 import software.amazon.awscdk.services.s3.BucketEncryption;
 import software.amazon.awscdk.services.s3.IBucket;
-import software.amazon.awscdk.services.s3.LifecycleRule;
-import software.amazon.awscdk.services.s3.ObjectOwnership;
 import software.amazon.awscdk.services.wafv2.CfnWebACL;
 import software.constructs.Construct;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 public class EdgeStack extends Stack {
 
@@ -231,26 +229,26 @@ public class EdgeStack extends Stack {
 
         // TODO: Find alternative to log buckets for CloudFront distribution logs
         // S3 bucket for origin access logs with specified retention
-        infof(
-                "Setting expiration period to %d days for %s",
-                props.logGroupRetentionPeriodDays(), props.resourceNamePrefix());
-        this.originAccessLogBucket = Bucket.Builder.create(this, props.resourceNamePrefix() + "-LogBucket")
-                .bucketName(props.sharedNames().originAccessLogBucketName)
-                .objectOwnership(ObjectOwnership.OBJECT_WRITER)
-                .versioned(false)
-                .blockPublicAccess(BlockPublicAccess.BLOCK_ALL)
-                .encryption(BucketEncryption.S3_MANAGED)
-                .removalPolicy(RemovalPolicy.DESTROY)
-                .autoDeleteObjects(true)
-                .lifecycleRules(List.of(LifecycleRule.builder()
-                        .id("%sLogsLifecycleRule".formatted(props.compressedResourceNamePrefix()))
-                        .enabled(true)
-                        .expiration(Duration.days(props.logGroupRetentionPeriodDays()))
-                        .build()))
-                .build();
-        infof(
-                "Created log bucket %s with name",
-                this.originAccessLogBucket.getNode().getId(), originAccessLogBucket);
+//        infof(
+//                "Setting expiration period to %d days for %s",
+//                props.logGroupRetentionPeriodDays(), props.resourceNamePrefix());
+//        this.originAccessLogBucket = Bucket.Builder.create(this, props.resourceNamePrefix() + "-LogBucket")
+//                .bucketName(props.sharedNames().originAccessLogBucketName)
+//                .objectOwnership(ObjectOwnership.OBJECT_WRITER)
+//                .versioned(false)
+//                .blockPublicAccess(BlockPublicAccess.BLOCK_ALL)
+//                .encryption(BucketEncryption.S3_MANAGED)
+//                .removalPolicy(RemovalPolicy.DESTROY)
+//                .autoDeleteObjects(true)
+//                .lifecycleRules(List.of(LifecycleRule.builder()
+//                        .id("%sLogsLifecycleRule".formatted(props.compressedResourceNamePrefix()))
+//                        .enabled(true)
+//                        .expiration(Duration.days(props.logGroupRetentionPeriodDays()))
+//                        .build()))
+//                .build();
+//        infof(
+//                "Created log bucket %s with name",
+//                this.originAccessLogBucket.getNode().getId(), originAccessLogBucket);
 
         // Create the origin bucket
         this.originBucket = Bucket.Builder.create(this, props.resourceNamePrefix() + "-OriginBucket")
@@ -261,7 +259,7 @@ public class EdgeStack extends Stack {
                 .removalPolicy(RemovalPolicy.DESTROY)
                 .autoDeleteObjects(true)
                 // TODO: Find an alternative for access logs
-                .serverAccessLogsBucket(originAccessLogBucket)
+                //.serverAccessLogsBucket(originAccessLogBucket)
                 .build();
         infof(
                 "Created origin bucket %s with name %s",
