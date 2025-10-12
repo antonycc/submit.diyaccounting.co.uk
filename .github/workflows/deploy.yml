@@ -1478,6 +1478,65 @@ jobs:
           COGNITO_USER_POOL_ARN: ${{ vars.COGNITO_USER_POOL_ARN }}
           COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
 
+  origin-test:
+    if: ${{ !cancelled() }}
+    name: 'web test'
+    needs:
+      - names
+      - skip-deploy-check
+      - deploy-auth
+      - deploy-hmrc
+      - deploy-account
+      - deploy-edge
+      - deploy-publish
+    runs-on: ubuntu-24.04
+    container: mcr.microsoft.com/playwright:v1.55.1-jammy
+    # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags
+    # and extension with ubuntu distribution e.g. https://releases.ubuntu.com/jammy/
+    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          npm ci --ignore-scripts
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+
+      #cp '.env.${{ needs.names.outputs.environment-name }}' '.env.test' ; npx dotenv -e '.env.${{ needs.names.outputs.environment-name }}' -- npm run test:behaviour
+      #
+      - run: cp '.env.${{ needs.names.outputs.environment-name }}' '.env.test' ; npx dotenv -e '.env.${{ needs.names.outputs.environment-name }}' -- npm run test:originBehaviour
+        env:
+          DIY_SUBMIT_BASE_URL: ${{ needs.deploy-edge.outputs.base-url }}
+          TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
+          TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
+          TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
+
+      - name: Upload artifacts (results)
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: origin-test-artifacts
+          retention-days: 30
+          path: |
+            target/behaviour-test-results/
+
+      - name: Upload artifacts (reports)
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: origin-test-reports
+          retention-days: 30
+          path: |
+            target/test-reports/
+
   # Invoke .github/workflows/set-origins.yml to set this domain as the apex origin
   #  workflow_call:
   #    inputs:
@@ -1500,6 +1559,7 @@ jobs:
       - deploy-account
       - deploy-edge
       - deploy-publish
+      - origin-test
     runs-on: ubuntu-24.04
     environment: ${{ needs.names.outputs.environment-name }}
     permissions:
@@ -1526,6 +1586,7 @@ jobs:
 #      - deploy-edge
 #      - deploy-publish
 #      - set-origins
+  #    - origin-test
 #    runs-on: ubuntu-24.04
 #    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
 #    steps:
@@ -1575,6 +1636,7 @@ jobs:
       - deploy-edge
       - deploy-publish
       - set-origins
+      - origin-test
     runs-on: ubuntu-24.04
     container: mcr.microsoft.com/playwright:v1.55.1-jammy
     # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags
@@ -1598,7 +1660,7 @@ jobs:
 
 #cp '.env.${{ needs.names.outputs.environment-name }}' '.env.test' ; npx dotenv -e '.env.${{ needs.names.outputs.environment-name }}' -- npm run test:behaviour
       #
-      - run: cp '.env.${{ needs.names.outputs.environment-name }}' '.env.test' ; npx dotenv -e '.env.${{ needs.names.outputs.environment-name }}' -- npm run test:behaviour
+      - run: cp '.env.${{ needs.names.outputs.environment-name }}' '.env.test' ; npx dotenv -e '.env.${{ needs.names.outputs.environment-name }}' -- npm run test:webBehaviour
         env:
           DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.base-url }}
           TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
