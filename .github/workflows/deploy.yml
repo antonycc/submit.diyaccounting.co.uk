@@ -279,6 +279,125 @@ jobs:
         run: |
           ./mvnw clean package
 
+  npm-test-cdk:
+    name: 'npm test cdk'
+    needs:
+      - names
+      - mvn-package
+    runs-on: ubuntu-24.04
+    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Node dependencies
+        run: npm ci
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: 'maven'
+
+      - name: test cdk
+        id: test-cdk
+        shell: bash
+        run: npm run cdk${{ github.ref == 'refs/heads/main' && '' || '-ci' }}
+        env:
+          ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
+          DEPLOYMENT_NAME: ${{ needs.names.outputs.environment-name }}
+          SELF_DESTRUCT_HANDLER_SOURCE: "../${{ needs.mvn-package.outputs.self-destruct-handler-source }}"
+          SELF_DESTRUCT_START_DATETIME: ${{ needs.mvn-package.outputs.self-destruct-start-datetime }}
+          # Set by deploy-environment.yml after the environment's AuthStack is deployed
+          COGNITO_USER_POOL_ARN: ${{ vars.COGNITO_USER_POOL_ARN }}
+          COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
+
+  behaviour-test:
+    name: 'behaviour test (proxy)'
+    needs:
+      - names
+    runs-on: ubuntu-24.04
+    container: mcr.microsoft.com/playwright:v1.55.1-jammy
+    # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags
+    # and extension with ubuntu distribution e.g. https://releases.ubuntu.com/jammy/
+    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          npm ci --ignore-scripts
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+
+      - run: npm run test:behaviour
+        env:
+          DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.base-url }}
+          TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
+          TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
+          TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
+
+      - name: Upload artifacts (results)
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: behaviour-test-artifacts
+          retention-days: 30
+          path: |
+            target/behaviour-test-results/
+
+      - name: Upload artifacts (reports)
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: behaviour-test-reports
+          retention-days: 30
+          path: |
+            target/test-reports/
+
+  test-aws-credentials:
+    name: 'test aws credentials'
+    runs-on: ubuntu-24.04
+    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    steps:
+      - name: Configure AWS role via GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
   mvn-package:
     name: 'maven package'
     runs-on: ubuntu-latest
@@ -324,74 +443,7 @@ jobs:
       self-destruct-handler-source: ${{ steps.package.outputs.SELF_DESTRUCT_HANDLER_SOURCE }}
       self-destruct-start-datetime: ${{ steps.self-destruct-start.outputs.SELF_DESTRUCT_START_DATETIME }}
 
-  test-aws-credentials:
-    name: 'test aws credentials'
-    runs-on: ubuntu-24.04
-    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
-    steps:
-      - name: Configure AWS role via GitHub OIDC
-        uses: aws-actions/configure-aws-credentials@v5
-        with:
-          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-          role-chaining: false
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
 
-      - name: Assume AWS deployment role
-        uses: aws-actions/configure-aws-credentials@v5
-        with:
-          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-          role-chaining: true
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-  npm-test-cdk:
-    name: 'npm test cdk'
-    needs:
-      - names
-      - mvn-package
-    runs-on: ubuntu-24.04
-    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
-    permissions:
-      contents: read
-      id-token: write
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v5
-
-      - name: Setup Node
-        uses: actions/setup-node@v5
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Node dependencies
-        run: npm ci
-
-      - uses: actions/setup-java@v5
-        with:
-          distribution: 'temurin'
-          java-version: ${{ env.JAVA_VERSION }}
-          cache: 'maven'
-
-      - name: test cdk
-        id: test-cdk
-        shell: bash
-        run: npm run cdk${{ github.ref == 'refs/heads/main' && '' || '-ci' }}
-        env:
-          ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
-          DEPLOYMENT_NAME: ${{ needs.names.outputs.environment-name }}
-          SELF_DESTRUCT_HANDLER_SOURCE: "../${{ needs.mvn-package.outputs.self-destruct-handler-source }}"
-          SELF_DESTRUCT_START_DATETIME: ${{ needs.mvn-package.outputs.self-destruct-start-datetime }}
-          # Set by deploy-environment.yml after the environment's AuthStack is deployed
-          COGNITO_USER_POOL_ARN: ${{ vars.COGNITO_USER_POOL_ARN }}
-          COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
 
   skip-deploy-check:
     name: 'skip deploy check'
@@ -1829,6 +1881,16 @@ jobs:
           # Create artifacts directory structure
           mkdir -p gh-pages/artifacts
 
+          # Copy behaviour test artifacts
+          if [ -d "artifacts/behaviour-test-artifacts" ]; then
+            cp -vr artifacts/behaviour-test-artifacts gh-pages/artifacts/.
+          fi
+
+          # Copy behaviour test reports
+          if [ -d "artifacts/behaviour-test-reports" ]; then
+            cp -vr artifacts/behaviour-test-reports gh-pages/artifacts/.
+          fi
+
           # Copy origin test artifacts
           if [ -d "artifacts/origin-test-artifacts" ]; then
             cp -vr artifacts/origin-test-artifacts gh-pages/artifacts/.
@@ -1876,6 +1938,7 @@ jobs:
 
                   <h2>Available Test output</h2>
                   <ul>
+                      <li><a href="behaviour-test-reports/html-report/index.html">Behaviour Test Reports</a></li>
                       <li><a href="origin-test-reports/html-report/index.html">Origin Test Reports</a></li>
                       <li><a href="web-test-reports/html-report/index.html">Web Test Reports</a></li>
                       <li><a href="test-reports-browser/html-report/index.html">Browser Test Reports</a></li>
