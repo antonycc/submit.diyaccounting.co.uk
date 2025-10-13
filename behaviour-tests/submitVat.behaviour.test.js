@@ -9,7 +9,6 @@ import {
   runLocalOAuth2Server,
   runLocalS3,
   runLocalSslProxy,
-  timestamp,
 } from "./helpers/behaviour-helpers.js";
 import { goToHomePage, goToHomePageExpectNotLoggedIn, goToHomePageUsingHamburgerMenu } from "./steps/behaviour-steps.js";
 import {
@@ -20,7 +19,7 @@ import {
 } from "./steps/behaviour-login-steps.js";
 import { clearBundles, goToBundlesPage, requestTestBundle } from "./steps/behaviour-bundle-steps.js";
 import { goToReceiptsPageUsingHamburgerMenu, verifyAtLeastOneClickableReceipt } from "./steps/behaviour-hmrc-receipts-steps.js";
-import { fillInVat, initSubmitVat, submitFormVat, verifyVatSubmission } from "./steps/behaviour-hmrc-vat-steps.js";
+import { completeVat, fillInVat, initSubmitVat, submitFormVat, verifyVatSubmission } from "./steps/behaviour-hmrc-vat-steps.js";
 import {
   acceptCookiesHmrc,
   fillInHmrcAuth,
@@ -29,6 +28,7 @@ import {
   initHmrcAuth,
   submitHmrcAuth,
 } from "./steps/behaviour-hmrc-steps.js";
+import { checkIfServerIsRunning } from "@app/lib/serverHelper.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 dotenvConfigIfNotBlank({ path: ".env" }); // Not checked in, HMRC API credentials
@@ -88,57 +88,6 @@ test.use({
   },
 });
 
-async function completeVat(page) {
-  await test.step("The user waits for the VAT submission to complete and for the receipt to appear", async () => {
-    // Wait for the submission process to complete and receipt to be displayed
-    console.log("Waiting for VAT submission to complete and receipt to be displayed...");
-
-    // Check current page URL and elements
-    console.log(`Current URL: ${page.url()}`);
-    const receiptExists = await page.locator("#receiptDisplay").count();
-    console.log(`Receipt element exists: ${receiptExists > 0}`);
-
-    if (receiptExists > 0) {
-      const receiptStyle = await page.locator("#receiptDisplay").getAttribute("style");
-      console.log(`Receipt element style: ${receiptStyle}`);
-    }
-
-    const formExists = await page.locator("#vatForm").count();
-    console.log(`Form element exists: ${formExists > 0}`);
-
-    if (formExists > 0) {
-      const formStyle = await page.locator("#vatForm").getAttribute("style");
-      console.log(`Form element style: ${formStyle}`);
-    }
-
-    await page.screenshot({
-      path: `target/behaviour-test-results/submitVat-screenshots/160-waiting-for-receipt-${timestamp()}.png`,
-    });
-
-    // if (runTestServer) {
-    //   await checkIfServerIsRunning(`http://127.0.0.1:${serverPort}`, 1000);
-    // } else {
-    //   console.log("Skipping server process as runTestServer is not set to 'run'");
-    // }
-    //
-    // if (runProxy) {
-    //   await checkIfServerIsRunning(baseUrl, 1000);
-    // } else {
-    //   console.log("Skipping ngrok process as runProxy is not set to 'run'");
-    // }
-    //
-    // if (runMockOAuth2) {
-    //   await checkIfServerIsRunning("http://localhost:8080/default/debugger", 2000);
-    // } else {
-    //   console.log("Skipping mock-oauth2-server process as runMockOAuth2 is not set to 'run'");
-    // }
-
-    await page.waitForSelector("#receiptDisplay", { state: "visible", timeout: 120000 });
-    await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/170-receipt-${timestamp()}.png` });
-    await page.waitForTimeout(500);
-  });
-}
-
 test("Log in, add test bundle, submit VAT return, log out", async ({ page }) => {
   const testUrl = runTestServer === "run" && runProxy !== "run" ? `http://127.0.0.1:${serverPort}` : baseUrl;
 
@@ -185,7 +134,7 @@ test("Log in, add test bundle, submit VAT return, log out", async ({ page }) => 
   await submitHmrcAuth(page);
   await grantPermissionHmrcAuth(page);
 
-  await completeVat(page);
+  await completeVat(page, checkServersAreRunning);
   await verifyVatSubmission(page);
 
   /* ********** */
@@ -204,3 +153,23 @@ test("Log in, add test bundle, submit VAT return, log out", async ({ page }) => 
 
   await logOutAndExpectToBeLoggedOut(page);
 });
+
+async function checkServersAreRunning() {
+  if (runTestServer) {
+    await checkIfServerIsRunning(`http://127.0.0.1:${serverPort}`, 1000);
+  } else {
+    console.log("Skipping server process as runTestServer is not set to 'run'");
+  }
+
+  if (runProxy) {
+    await checkIfServerIsRunning(baseUrl, 1000);
+  } else {
+    console.log("Skipping ngrok process as runProxy is not set to 'run'");
+  }
+
+  if (runMockOAuth2) {
+    await checkIfServerIsRunning("http://localhost:8080/default/debugger", 2000);
+  } else {
+    console.log("Skipping mock-oauth2-server process as runMockOAuth2 is not set to 'run'");
+  }
+}
