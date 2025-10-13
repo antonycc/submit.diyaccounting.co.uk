@@ -48,10 +48,13 @@ test.beforeAll(async () => {
     ...originalEnv,
   };
 
+  const runLocalOAuth2ServerPromise = runLocalOAuth2Server(runMockOAuth2);
+
   const endpoint = await runLocalS3(runMinioS3, receiptsBucketName, optionalTestS3AccessKey, optionalTestS3SecretKey);
   serverProcess = await runLocalHttpServer(runTestServer, endpoint, serverPort);
   ngrokProcess = await runLocalSslProxy(runProxy, serverPort, baseUrl);
-  await runLocalOAuth2Server(runMockOAuth2);
+
+  await runLocalOAuth2ServerPromise;
 
   console.log("beforeAll hook completed successfully");
 });

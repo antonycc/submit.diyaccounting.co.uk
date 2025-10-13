@@ -3,7 +3,7 @@ import { ensureMinioBucketExists, startMinio } from "@app/bin/minio.js";
 import { spawn } from "child_process";
 import { checkIfServerIsRunning } from "@app/lib/serverHelper.js";
 import { test } from "@playwright/test";
-import { gotoWithRetries } from "@app/lib/gotoWithRetries.js";
+import { gotoWithRetries } from "./gotoWithRetries.js";
 
 export function getEnvVarAndLog(name, envKey, defaultValue) {
   let value;

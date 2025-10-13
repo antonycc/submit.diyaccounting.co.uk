@@ -1,6 +1,6 @@
 // app/unit-tests/gotoWithRetries.test.js
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import * as nav from "../lib/gotoWithRetries.js";
+import * as nav from "../../behaviour-tests/helpers/gotoWithRetries.js";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });

@@ -326,6 +326,7 @@ jobs:
     needs:
       - names
     runs-on: ubuntu-24.04
+    # TODO: Reinstate this because it could have just been the missing NGROK_AUTH_TOKEN that held up the tests
     #container: mcr.microsoft.com/playwright:v1.55.1-jammy
     # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags
     # and extension with ubuntu distribution e.g. https://releases.ubuntu.com/jammy/
@@ -347,6 +348,12 @@ jobs:
         run: |
           npm install
           npx playwright install chromium --with-deps
+
+      - name: Authenticate ngrok
+        env:
+          NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
+        run: |
+          npx ngrok config add-authtoken "${NGROK_AUTH_TOKEN?}"
 
       - name: Run behaviour tests
         run: npm run test:behaviour
