@@ -356,7 +356,11 @@ jobs:
           npx ngrok config add-authtoken "${NGROK_AUTH_TOKEN?}"
 
       - name: Run behaviour tests
-        run: npm run test:behaviour
+        run: |
+          npm run test:behaviour || exit_code=$? \
+          ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
+          ; exit ${exit_code:-0} \
+          ;
         env:
           #DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.base-url }}
           TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}

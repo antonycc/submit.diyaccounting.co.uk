@@ -1,7 +1,7 @@
 // behaviour-tests/behaviour-helpers.js
 import { ensureMinioBucketExists, startMinio } from "@app/bin/minio.js";
 import { spawn } from "child_process";
-import { checkIfServerIsRunning } from "@app/lib/serverHelper.js";
+import { checkIfServerIsRunning } from "./serverHelper.js";
 import { test } from "@playwright/test";
 import { gotoWithRetries } from "./gotoWithRetries.js";
 

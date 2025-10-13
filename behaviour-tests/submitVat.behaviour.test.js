@@ -28,7 +28,7 @@ import {
   initHmrcAuth,
   submitHmrcAuth,
 } from "./steps/behaviour-hmrc-steps.js";
-import { checkIfServerIsRunning } from "@app/lib/serverHelper.js";
+import { checkIfServerIsRunning } from "./helpers/serverHelper.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 dotenvConfigIfNotBlank({ path: ".env" }); // Not checked in, HMRC API credentials
@@ -50,6 +50,7 @@ const hmrcTestUsername = getEnvVarAndLog("hmrcTestUsername", "TEST_HMRC_USERNAME
 const hmrcTestPassword = getEnvVarAndLog("hmrcTestPassword", "TEST_HMRC_PASSWORD", null);
 const hmrcTestVatNumber = getEnvVarAndLog("hmrcTestVatNumber", "TEST_HMRC_VAT_NUMBER", null);
 
+let s3Endpoint;
 let serverProcess;
 let ngrokProcess;
 
@@ -63,8 +64,8 @@ test.beforeAll(async () => {
 
   const runLocalOAuth2ServerPromise = runLocalOAuth2Server(runMockOAuth2);
 
-  const endpoint = await runLocalS3(runMinioS3, receiptsBucketName, optionalTestS3AccessKey, optionalTestS3SecretKey);
-  serverProcess = await runLocalHttpServer(runTestServer, endpoint, serverPort);
+  s3Endpoint = await runLocalS3(runMinioS3, receiptsBucketName, optionalTestS3AccessKey, optionalTestS3SecretKey);
+  serverProcess = await runLocalHttpServer(runTestServer, s3Endpoint, serverPort);
   ngrokProcess = await runLocalSslProxy(runProxy, serverPort, baseUrl);
 
   await runLocalOAuth2ServerPromise;
@@ -156,19 +157,25 @@ test("Log in, add test bundle, submit VAT return, log out", async ({ page }) => 
 
 async function checkServersAreRunning() {
   if (runTestServer) {
-    await checkIfServerIsRunning(`http://127.0.0.1:${serverPort}`, 1000);
+    await checkIfServerIsRunning(`http://127.0.0.1:${serverPort}`, 1000, async function () {
+      serverProcess = await runLocalHttpServer(runTestServer, s3Endpoint, serverPort);
+    });
   } else {
     console.log("Skipping server process as runTestServer is not set to 'run'");
   }
 
   if (runProxy) {
-    await checkIfServerIsRunning(baseUrl, 1000);
+    await checkIfServerIsRunning(baseUrl, 1000, async function () {
+      ngrokProcess = await runLocalSslProxy(runProxy, serverPort, baseUrl);
+    });
   } else {
     console.log("Skipping ngrok process as runProxy is not set to 'run'");
   }
 
   if (runMockOAuth2) {
-    await checkIfServerIsRunning("http://localhost:8080/default/debugger", 2000);
+    await checkIfServerIsRunning("http://localhost:8080/default/debugger", 2000, async function () {
+      await runLocalOAuth2Server(runMockOAuth2);
+    });
   } else {
     console.log("Skipping mock-oauth2-server process as runMockOAuth2 is not set to 'run'");
   }
