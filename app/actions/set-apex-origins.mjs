@@ -29,7 +29,7 @@ import {
 // Forward ALL viewer headers, cookies, and query strings
 const ORIGIN_REQUEST_POLICY_ID = process.env.ORIGIN_REQUEST_POLICY_ID || "216adef6-5c7f-47e4-b989-5492eafa07d3"; // Managed-AllViewer
 // Disable caching so everything reaches the origin unchanged
-const CACHE_POLICY_ID = process.env.CACHE_POLICY_ID || "4135ea2d-6df8-44a3-9df4-7b4d7bf0d68a"; // Managed-CachingDisabled
+const CACHE_POLICY_ID = process.env.CACHE_POLICY_ID || "4135ea2d-6df8-44a3-9df3-4b5a84be39ad"; // Managed-CachingDisabled
 
 function parseArgs(argv) {
   const args = {
@@ -198,8 +198,7 @@ async function main() {
     if ("MaxTTL" in b) delete b.MaxTTL;
     // Defensive: ensure AllowedMethods has correct quantities
     if (b.AllowedMethods?.Items) b.AllowedMethods.Quantity = b.AllowedMethods.Items.length;
-    if (b.AllowedMethods?.CachedMethods?.Items)
-      b.AllowedMethods.CachedMethods.Quantity = b.AllowedMethods.CachedMethods.Items.length;
+    if (b.AllowedMethods?.CachedMethods?.Items) b.AllowedMethods.CachedMethods.Quantity = b.AllowedMethods.CachedMethods.Items.length;
   };
 
   applyPassThrough(cfg.DefaultCacheBehavior);
