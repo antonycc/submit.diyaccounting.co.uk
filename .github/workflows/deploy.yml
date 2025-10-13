@@ -326,7 +326,7 @@ jobs:
     needs:
       - names
     runs-on: ubuntu-24.04
-    container: mcr.microsoft.com/playwright:v1.55.1-jammy
+    #container: mcr.microsoft.com/playwright:v1.55.1-jammy
     # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags
     # and extension with ubuntu distribution e.g. https://releases.ubuntu.com/jammy/
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
@@ -346,8 +346,7 @@ jobs:
       - name: Install dependencies
         run: |
           npm install
-        env:
-          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+          npx playwright install chromium --with-deps
 
       - name: Run behaviour tests
         run: npm run test:behaviour
