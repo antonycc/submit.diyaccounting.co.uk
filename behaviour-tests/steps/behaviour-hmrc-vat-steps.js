@@ -2,7 +2,6 @@
 
 import { expect, test } from "@playwright/test";
 import { loggedClick, loggedFill, timestamp } from "../helpers/behaviour-helpers.js";
-import { checkIfServerIsRunning } from "../helpers/serverHelper.js";
 
 export async function initSubmitVat(page) {
   await test.step("The user begins a VAT return and sees the VAT submission form", async () => {
