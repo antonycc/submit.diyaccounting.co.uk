@@ -192,6 +192,14 @@ async function main() {
     };
     // remove deprecated forwarding section if present
     if (b.ForwardedValues) delete b.ForwardedValues;
+    // When using CachePolicyId, legacy TTL fields must not be present
+    if ("MinTTL" in b) delete b.MinTTL;
+    if ("DefaultTTL" in b) delete b.DefaultTTL;
+    if ("MaxTTL" in b) delete b.MaxTTL;
+    // Defensive: ensure AllowedMethods has correct quantities
+    if (b.AllowedMethods?.Items) b.AllowedMethods.Quantity = b.AllowedMethods.Items.length;
+    if (b.AllowedMethods?.CachedMethods?.Items)
+      b.AllowedMethods.CachedMethods.Quantity = b.AllowedMethods.CachedMethods.Items.length;
   };
 
   applyPassThrough(cfg.DefaultCacheBehavior);
