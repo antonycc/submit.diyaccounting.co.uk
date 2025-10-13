@@ -21,6 +21,7 @@ export async function fillInVat(page, hmrcTestVatNumber) {
     // Fill out the VAT form using the correct field IDs from submitVat.html
     // eslint-disable-next-line sonarjs/pseudo-random
     const randomFourCharacters = Math.random().toString(36).substring(2, 6);
+    await page.waitForTimeout(100);
     await loggedFill(page, "#vatNumber", hmrcTestVatNumber, "Entering VAT number");
     await page.waitForTimeout(100);
     await loggedFill(page, "#periodKey", randomFourCharacters, "Entering period key");
