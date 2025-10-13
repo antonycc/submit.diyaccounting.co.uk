@@ -52,38 +52,42 @@ export async function submitFormVat(page) {
 }
 
 export async function completeVat(page, checkServersAreRunning) {
-  await test.step("The user waits for the VAT submission to complete and for the receipt to appear", async () => {
-    // Wait for the submission process to complete and receipt to be displayed
-    console.log("Waiting for VAT submission to complete and receipt to be displayed...");
+  await test.step(
+    "The user waits for the VAT submission to complete and for the receipt to appear",
+    async () => {
+      // Wait for the submission process to complete and receipt to be displayed
+      console.log("Waiting for VAT submission to complete and receipt to be displayed...");
 
-    // Check current page URL and elements
-    console.log(`Current URL: ${page.url()}`);
-    const receiptExists = await page.locator("#receiptDisplay").count();
-    console.log(`Receipt element exists: ${receiptExists > 0}`);
+      // Check current page URL and elements
+      console.log(`Current URL: ${page.url()}`);
+      const receiptExists = await page.locator("#receiptDisplay").count();
+      console.log(`Receipt element exists: ${receiptExists > 0}`);
 
-    if (receiptExists > 0) {
-      const receiptStyle = await page.locator("#receiptDisplay").getAttribute("style");
-      console.log(`Receipt element style: ${receiptStyle}`);
-    }
+      if (receiptExists > 0) {
+        const receiptStyle = await page.locator("#receiptDisplay").getAttribute("style");
+        console.log(`Receipt element style: ${receiptStyle}`);
+      }
 
-    const formExists = await page.locator("#vatForm").count();
-    console.log(`Form element exists: ${formExists > 0}`);
+      const formExists = await page.locator("#vatForm").count();
+      console.log(`Form element exists: ${formExists > 0}`);
 
-    if (formExists > 0) {
-      const formStyle = await page.locator("#vatForm").getAttribute("style");
-      console.log(`Form element style: ${formStyle}`);
-    }
+      if (formExists > 0) {
+        const formStyle = await page.locator("#vatForm").getAttribute("style");
+        console.log(`Form element style: ${formStyle}`);
+      }
 
-    await page.screenshot({
-      path: `target/behaviour-test-results/submitVat-screenshots/160-waiting-for-receipt-${timestamp()}.png`,
-    });
+      await page.screenshot({
+        path: `target/behaviour-test-results/submitVat-screenshots/160-waiting-for-receipt-${timestamp()}.png`,
+      });
 
-    await checkServersAreRunning();
+      await checkServersAreRunning();
 
-    await page.waitForSelector("#receiptDisplay", { state: "visible", timeout: 120000 });
-    await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/170-receipt-${timestamp()}.png` });
-    await page.waitForTimeout(500);
-  });
+      await page.waitForSelector("#receiptDisplay", { state: "visible", timeout: 120000 });
+      await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/170-receipt-${timestamp()}.png` });
+      await page.waitForTimeout(500);
+    },
+    { timeout: 60000 },
+  );
 }
 
 export async function verifyVatSubmission(page) {
