@@ -32,13 +32,9 @@ import software.amazon.awscdk.services.cloudfront.ViewerProtocolPolicy;
 import software.amazon.awscdk.services.cloudfront.origins.S3BucketOrigin;
 import software.amazon.awscdk.services.cloudfront.origins.S3BucketOriginWithOACProps;
 import software.amazon.awscdk.services.logs.RetentionDays;
-import software.amazon.awscdk.services.route53.ARecord;
-import software.amazon.awscdk.services.route53.ARecordProps;
 import software.amazon.awscdk.services.route53.HostedZone;
 import software.amazon.awscdk.services.route53.HostedZoneAttributes;
 import software.amazon.awscdk.services.route53.IHostedZone;
-import software.amazon.awscdk.services.route53.RecordTarget;
-import software.amazon.awscdk.services.route53.targets.CloudFrontTarget;
 import software.amazon.awscdk.services.s3.BlockPublicAccess;
 import software.amazon.awscdk.services.s3.Bucket;
 import software.amazon.awscdk.services.s3.BucketEncryption;
@@ -50,7 +46,6 @@ import software.constructs.Construct;
 public class ApexStack extends Stack {
 
     public Distribution distribution;
-    public ARecord apexAlias;
 
     @Value.Immutable
     public interface ApexStackProps extends StackProps, SubmitStackProps {
@@ -205,22 +200,11 @@ public class ApexStack extends Stack {
                         "DistributionConfig.Origins.Items.0.OriginCustomHeaders",
                         Map.of("Quantity", 0, "Items", List.of()));
 
-        // Alias A/AAAA for apex
-        this.apexAlias = new ARecord(
-                this,
-                props.resourceNamePrefix() + "-ApexAlias",
-                ARecordProps.builder()
-                        .recordName(recordName)
-                        .zone(zone)
-                        .target(RecordTarget.fromAlias(new CloudFrontTarget(this.distribution)))
-                        .deleteExisting(true)
-                        .build());
 
         Aspects.of(this).add(new SetAutoDeleteJobLogRetentionAspect(props.deploymentName(), RetentionDays.THREE_DAYS));
 
         // Outputs
         cfnOutput(this, "ApexDistributionDomainName", this.distribution.getDomainName());
         cfnOutput(this, "ApexDistributionId", this.distribution.getDistributionId());
-        cfnOutput(this, "ApexAlias", this.apexAlias.getDomainName());
     }
 }
