@@ -32,13 +32,7 @@ import software.amazon.awscdk.services.cloudfront.ViewerProtocolPolicy;
 import software.amazon.awscdk.services.cloudfront.origins.S3BucketOrigin;
 import software.amazon.awscdk.services.cloudfront.origins.S3BucketOriginWithOACProps;
 import software.amazon.awscdk.services.logs.RetentionDays;
-import software.amazon.awscdk.services.route53.ARecord;
-import software.amazon.awscdk.services.route53.ARecordProps;
-import software.amazon.awscdk.services.route53.HostedZone;
-import software.amazon.awscdk.services.route53.HostedZoneAttributes;
-import software.amazon.awscdk.services.route53.IHostedZone;
-import software.amazon.awscdk.services.route53.RecordTarget;
-import software.amazon.awscdk.services.route53.targets.CloudFrontTarget;
+// Removed Route 53 alias import. ApexStack no longer creates an alias record.
 import software.amazon.awscdk.services.s3.BlockPublicAccess;
 import software.amazon.awscdk.services.s3.Bucket;
 import software.amazon.awscdk.services.s3.BucketEncryption;
@@ -50,7 +44,7 @@ import software.constructs.Construct;
 public class ApexStack extends Stack {
 
     public Distribution distribution;
-    public ARecord apexAlias;
+    // ApexStack no longer stores an alias record. DNS is managed externally via weighted records.
 
     @Value.Immutable
     public interface ApexStackProps extends StackProps, SubmitStackProps {
@@ -97,27 +91,6 @@ public class ApexStack extends Stack {
 
     public ApexStack(final Construct scope, final String id, final ApexStackProps props) {
         super(scope, id, props);
-
-        // Hosted zone
-        IHostedZone zone = HostedZone.fromHostedZoneAttributes(
-                this,
-                props.resourceNamePrefix() + "-Zone",
-                HostedZoneAttributes.builder()
-                        .hostedZoneId(props.hostedZoneId())
-                        .zoneName(props.hostedZoneName())
-                        .build());
-
-        // Record name for apex or subdomain
-        String recordName = props.hostedZoneName().equals(props.sharedNames().domainName)
-                ? null
-                : (props.sharedNames().domainName.endsWith("." + props.hostedZoneName())
-                        ? props.sharedNames()
-                                .domainName
-                                .substring(
-                                        0,
-                                        props.sharedNames().domainName.length()
-                                                - (props.hostedZoneName().length() + 1))
-                        : props.sharedNames().domainName);
 
         // ACM cert (us-east-1 for CloudFront)
         var cert =
@@ -205,22 +178,12 @@ public class ApexStack extends Stack {
                         "DistributionConfig.Origins.Items.0.OriginCustomHeaders",
                         Map.of("Quantity", 0, "Items", List.of()));
 
-        // Alias A/AAAA for apex
-        this.apexAlias = new ARecord(
-                this,
-                props.resourceNamePrefix() + "-ApexAlias",
-                ARecordProps.builder()
-                        .recordName(recordName)
-                        .zone(zone)
-                        .target(RecordTarget.fromAlias(new CloudFrontTarget(this.distribution)))
-                        .deleteExisting(true)
-                        .build());
-
-        Aspects.of(this).add(new SetAutoDeleteJobLogRetentionAspect(props.deploymentName(), RetentionDays.THREE_DAYS));
-
         // Outputs
         cfnOutput(this, "ApexDistributionDomainName", this.distribution.getDomainName());
         cfnOutput(this, "ApexDistributionId", this.distribution.getDistributionId());
-        cfnOutput(this, "ApexAlias", this.apexAlias.getDomainName());
+
+        // Keep the short log retention aspect. No alias record is created here;
+        // DNS records are managed via Route 53 weighted aliases in the CI workflow.
+        Aspects.of(this).add(new SetAutoDeleteJobLogRetentionAspect(props.deploymentName(), RetentionDays.THREE_DAYS));
     }
 }

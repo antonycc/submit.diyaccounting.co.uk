@@ -1,0 +1,119 @@
+# .github/actions/set-alias-records/action.yml
+name: "Set DNS alias records"
+description: "Configure weighted Route 53 alias records for the apex and CI domains."
+runs:
+  using: "composite"
+  steps:
+    - name: Configure AWS credentials via GitHub OIDC
+      uses: aws-actions/configure-aws-credentials@v5
+      with:
+        role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+        aws-region: ${{ env.AWS_REGION }}
+    - name: Assume deployment role
+      uses: aws-actions/configure-aws-credentials@v5
+      with:
+        role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+        aws-region: ${{ env.AWS_REGION }}
+        role-chaining: true
+
+    - name: Install jq
+      run: sudo apt-get update && sudo apt-get install -y jq
+      shell: bash
+
+    - name: Update weighted alias records
+      shell: bash
+      run: |
+        set -euo pipefail
+        # Determine the record name.  Prod uses the naked domain, CI uses env subdomain.
+        if [ "$ENVIRONMENT_NAME" = "prod" ]; then
+          RECORD_NAME="$HOSTED_ZONE_NAME"
+        else
+          RECORD_NAME="$ENVIRONMENT_NAME.$HOSTED_ZONE_NAME"
+        fi
+        # Resolve CloudFront distribution domain names from the stacks
+        EDGE_STACK_NAME="del-${DEPLOYMENT_NAME}-EdgeStack"
+        PRIMARY_DOMAIN=$(aws cloudformation describe-stacks --stack-name "$EDGE_STACK_NAME" \
+          --query "Stacks[0].Outputs[?OutputKey=='WebDistributionDomainName'].OutputValue" --output text)
+        APEX_STACK_NAME="env-${ENVIRONMENT_NAME}-ApexStack"
+        MAINT_DOMAIN=$(aws cloudformation describe-stacks --stack-name "$APEX_STACK_NAME" \
+          --query "Stacks[0].Outputs[?OutputKey=='ApexDistributionDomainName'].OutputValue" --output text)
+
+        # Build change batch for A and AAAA records with weights 100/0.  SetIdentifier equals deployment name.
+        jq -n \
+          --arg rn "$RECORD_NAME." \
+          --arg pid "$DEPLOYMENT_NAME" \
+          --arg primary "$PRIMARY_DOMAIN" \
+          --arg maint "$MAINT_DOMAIN" \
+          '{
+            Changes: [
+              {
+                Action: "UPSERT",
+                ResourceRecordSet: {
+                  Name: $rn,
+                  Type: "A",
+                  SetIdentifier: $pid,
+                  Weight: 100,
+                  AliasTarget: {
+                    HostedZoneId: "Z2FDTNDATAQYW2",
+                    DNSName: $primary,
+                    EvaluateTargetHealth: false
+                  }
+                }
+              },
+              {
+                Action: "UPSERT",
+                ResourceRecordSet: {
+                  Name: $rn,
+                  Type: "A",
+                  SetIdentifier: "maintenance",
+                  Weight: 0,
+                  AliasTarget: {
+                    HostedZoneId: "Z2FDTNDATAQYW2",
+                    DNSName: $maint,
+                    EvaluateTargetHealth: false
+                  }
+                }
+              }
+            ]
+          }' > /tmp/a.json
+
+        jq -n \
+          --arg rn "$RECORD_NAME." \
+          --arg pid "$DEPLOYMENT_NAME" \
+          --arg primary "$PRIMARY_DOMAIN" \
+          --arg maint "$MAINT_DOMAIN" \
+          '{
+            Changes: [
+              {
+                Action: "UPSERT",
+                ResourceRecordSet: {
+                  Name: $rn,
+                  Type: "AAAA",
+                  SetIdentifier: $pid,
+                  Weight: 100,
+                  AliasTarget: {
+                    HostedZoneId: "Z2FDTNDATAQYW2",
+                    DNSName: $primary,
+                    EvaluateTargetHealth: false
+                  }
+                }
+              },
+              {
+                Action: "UPSERT",
+                ResourceRecordSet: {
+                  Name: $rn,
+                  Type: "AAAA",
+                  SetIdentifier: "maintenance",
+                  Weight: 0,
+                  AliasTarget: {
+                    HostedZoneId: "Z2FDTNDATAQYW2",
+                    DNSName: $maint,
+                    EvaluateTargetHealth: false
+                  }
+                }
+              }
+            ]
+          }' > /tmp/aaaa.json
+
+        aws route53 change-resource-record-sets --hosted-zone-id "$HOSTED_ZONE_ID" --change-batch file:///tmp/a.json
+        aws route53 change-resource-record-sets --hosted-zone-id "$HOSTED_ZONE_ID" --change-batch file:///tmp/aaaa.json
