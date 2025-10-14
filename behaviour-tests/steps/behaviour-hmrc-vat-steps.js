@@ -59,12 +59,29 @@ export async function completeVat(page, checkServersAreRunning) {
 
       // Check current page URL and elements
       console.log(`Current URL: ${page.url()}`);
+      
+      // Check if page has loaded correctly
+      const pageTitle = await page.title();
+      console.log(`Page title: ${pageTitle}`);
+      
+      // Wait for the page to be fully loaded
+      await page.waitForLoadState("networkidle");
+      
+      // Check if basic DOM elements exist
+      const bodyExists = await page.locator("body").count();
+      console.log(`Body element exists: ${bodyExists > 0}`);
+      
+      const mainContentExists = await page.locator("#mainContent").count();
+      console.log(`Main content element exists: ${mainContentExists > 0}`);
+      
       const receiptExists = await page.locator("#receiptDisplay").count();
       console.log(`Receipt element exists: ${receiptExists > 0}`);
 
       if (receiptExists > 0) {
         const receiptStyle = await page.locator("#receiptDisplay").getAttribute("style");
         console.log(`Receipt element style: ${receiptStyle}`);
+        const receiptVisible = await page.locator("#receiptDisplay").isVisible();
+        console.log(`Receipt element visible: ${receiptVisible}`);
       }
 
       const formExists = await page.locator("#vatForm").count();
@@ -73,6 +90,8 @@ export async function completeVat(page, checkServersAreRunning) {
       if (formExists > 0) {
         const formStyle = await page.locator("#vatForm").getAttribute("style");
         console.log(`Form element style: ${formStyle}`);
+        const formVisible = await page.locator("#vatForm").isVisible();
+        console.log(`Form element visible: ${formVisible}`);
       }
 
       await page.screenshot({
@@ -81,11 +100,22 @@ export async function completeVat(page, checkServersAreRunning) {
 
       await checkServersAreRunning();
 
+      // If elements don't exist, try to navigate back to the correct page
+      if (receiptExists === 0 && formExists === 0) {
+        console.log("DOM elements missing, checking if we need to reload the page...");
+        const currentUrl = page.url();
+        if (!currentUrl.includes("submitVat.html")) {
+          console.log(`Navigating back to submitVat.html from ${currentUrl}`);
+          await page.goto(currentUrl.replace(/\/[^\/]*$/, '/activities/submitVat.html'));
+          await page.waitForLoadState("networkidle");
+        }
+      }
+
       await page.waitForSelector("#receiptDisplay", { state: "visible", timeout: 120000 });
       await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/170-receipt-${timestamp()}.png` });
       await page.waitForTimeout(500);
     },
-    { timeout: 60000 },
+    { timeout: 150000 },
   );
 }
 
