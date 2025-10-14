@@ -129,12 +129,24 @@ test("Log in, add test bundle, submit VAT return, log out", async ({ page }) => 
   await fillInVat(page, hmrcTestVatNumber);
   await submitFormVat(page);
 
-  await acceptCookiesHmrc(page);
-  await goToHmrcAuth(page);
-  await initHmrcAuth(page);
-  await fillInHmrcAuth(page, hmrcTestUsername, hmrcTestPassword);
-  await submitHmrcAuth(page);
-  await grantPermissionHmrcAuth(page);
+  // Handle OAuth flow - use mock OAuth in stubbed mode
+  const isStubbed = process.env.NODE_ENV === "stubbed";
+  
+  if (isStubbed) {
+    // Mock OAuth flow
+    const { initMockAuth, fillInMockAuth, submitMockAuth } = await import("./steps/behaviour-login-steps.js");
+    await initMockAuth(page);
+    await fillInMockAuth(page, "hmrc-test-user");
+    await submitMockAuth(page);
+  } else {
+    // Real HMRC OAuth flow
+    await acceptCookiesHmrc(page);
+    await goToHmrcAuth(page);
+    await initHmrcAuth(page);
+    await fillInHmrcAuth(page, hmrcTestUsername, hmrcTestPassword);
+    await submitHmrcAuth(page);
+    await grantPermissionHmrcAuth(page);
+  }
 
   await completeVat(page, checkServersAreRunning);
   await verifyVatSubmission(page);

@@ -36,18 +36,33 @@ export async function fillInVat(page, hmrcTestVatNumber) {
 }
 
 export async function submitFormVat(page) {
-  await test.step("The user submits the VAT form and reviews the HMRC permission page", async () => {
-    // Expect the HMRC permission page to be visible
-    await loggedClick(page, "#submitBtn", "Submitting VAT form");
-    const applicationName = "DIY Accounting Submit";
-    await page.waitForLoadState("networkidle");
-    await page.waitForTimeout(500);
-    await page.screenshot({
-      path: `target/behaviour-test-results/submitVat-screenshots/110-hmrc-permission-${timestamp()}.png`,
+  const isStubbed = process.env.NODE_ENV === "stubbed";
+  
+  if (isStubbed) {
+    await test.step("The user submits the VAT form and is redirected to mock OAuth", async () => {
+      await loggedClick(page, "#submitBtn", "Submitting VAT form");
+      await page.waitForLoadState("networkidle");
+      await page.waitForTimeout(500);
+      await page.screenshot({
+        path: `target/behaviour-test-results/submitVat-screenshots/110-mock-oauth-${timestamp()}.png`,
+      });
+      // Expect mock OAuth2 server page
+      await expect(page.getByText("Continue with mock-oauth2-server")).toBeVisible({ timeout: 10000 });
     });
-    await expect(page.locator("#appNameParagraph")).toContainText(applicationName, { timeout: 10000 });
-    await expect(page.getByRole("button", { name: "Continue" })).toContainText("Continue");
-  });
+  } else {
+    await test.step("The user submits the VAT form and reviews the HMRC permission page", async () => {
+      // Expect the HMRC permission page to be visible
+      await loggedClick(page, "#submitBtn", "Submitting VAT form");
+      const applicationName = "DIY Accounting Submit";
+      await page.waitForLoadState("networkidle");
+      await page.waitForTimeout(500);
+      await page.screenshot({
+        path: `target/behaviour-test-results/submitVat-screenshots/110-hmrc-permission-${timestamp()}.png`,
+      });
+      await expect(page.locator("#appNameParagraph")).toContainText(applicationName, { timeout: 10000 });
+      await expect(page.getByRole("button", { name: "Continue" })).toContainText("Continue");
+    });
+  }
 }
 
 export async function completeVat(page, checkServersAreRunning) {

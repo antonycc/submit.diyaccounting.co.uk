@@ -6,12 +6,28 @@ import { validateEnv } from "../lib/env.js";
 // GET /api/hmrc/auth-url?state={state}
 export async function httpGetHmrc(event) {
   validateEnv(["HMRC_BASE_URI", "HMRC_CLIENT_ID", "DIY_SUBMIT_BASE_URL"]);
-  const clientId = process.env.HMRC_CLIENT_ID;
-  const redirectUri = process.env.DIY_SUBMIT_BASE_URL + "activities/submitVatCallback.html";
-  const hmrcBase = process.env.HMRC_BASE_URI;
-
+  const baseUrl = process.env.DIY_SUBMIT_BASE_URL.endsWith('/') ? process.env.DIY_SUBMIT_BASE_URL : process.env.DIY_SUBMIT_BASE_URL + '/';
+  const redirectUri = baseUrl + "activities/submitVatCallback.html";
   const state = event.queryStringParameters?.state;
 
+  // Use mock OAuth2 server when in stubbed mode
+  if (process.env.NODE_ENV === "stubbed") {
+    const mockBase = "http://localhost:8080";
+    const scope = "openid somescope";
+    const authUrl =
+      `${mockBase}/oauth/authorize?` +
+      "response_type=code" +
+      "&client_id=debugger" +
+      `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+      `&scope=${encodeURIComponent(scope)}` +
+      `&state=${encodeURIComponent(state)}` +
+      "&identity_provider=MockOAuth2Server";
+    return httpGet(event, authUrl);
+  }
+
+  // Use real HMRC OAuth in production
+  const clientId = process.env.HMRC_CLIENT_ID;
+  const hmrcBase = process.env.HMRC_BASE_URI;
   const scope = "write:vat read:vat";
 
   const authUrl =
@@ -26,7 +42,8 @@ export async function httpGetHmrc(event) {
 // GET /api/mock/auth-url?state={state}
 export async function httpGetMock(event) {
   validateEnv(["DIY_SUBMIT_BASE_URL"]);
-  const redirectUri = process.env.DIY_SUBMIT_BASE_URL + "auth/loginWithMockCallback.html";
+  const baseUrl = process.env.DIY_SUBMIT_BASE_URL.endsWith('/') ? process.env.DIY_SUBMIT_BASE_URL : process.env.DIY_SUBMIT_BASE_URL + '/';
+  const redirectUri = baseUrl + "auth/loginWithMockCallback.html";
 
   const state = event.queryStringParameters?.state;
 
@@ -46,7 +63,8 @@ export async function httpGetMock(event) {
 // GET /api/cognito/auth-url?state={state}
 export async function httpGetCognito(event) {
   validateEnv(["COGNITO_CLIENT_ID", "COGNITO_BASE_URI", "DIY_SUBMIT_BASE_URL"]);
-  const redirectUri = process.env.DIY_SUBMIT_BASE_URL + "auth/loginWithCognitoCallback.html";
+  const baseUrl = process.env.DIY_SUBMIT_BASE_URL.endsWith('/') ? process.env.DIY_SUBMIT_BASE_URL : process.env.DIY_SUBMIT_BASE_URL + '/';
+  const redirectUri = baseUrl + "auth/loginWithCognitoCallback.html";
   const cognitoClientId = process.env.COGNITO_CLIENT_ID;
   const cognitoBaseUri = process.env.COGNITO_BASE_URI;
 
