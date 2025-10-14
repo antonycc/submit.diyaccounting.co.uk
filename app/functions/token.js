@@ -15,7 +15,8 @@ let cachedHmrcClientSecret;
 // POST /api/cognito/exchange-token
 export async function httpPostCognito(event) {
   validateEnv(["DIY_SUBMIT_BASE_URL", "COGNITO_CLIENT_ID", "COGNITO_BASE_URI"]);
-  const redirectUri = process.env.DIY_SUBMIT_BASE_URL + "auth/loginWithCognitoCallback.html";
+  const maybeSlash = process.env.DIY_SUBMIT_BASE_URL?.endsWith("/") ? "" : "/";
+  const redirectUri = `${process.env.DIY_SUBMIT_BASE_URL}${maybeSlash}auth/loginWithCognitoCallback.html`;
   const cognitoClientId = process.env.COGNITO_CLIENT_ID;
   const CognitoBaseUri = process.env.COGNITO_BASE_URI;
 
@@ -64,11 +65,12 @@ export async function httpPostHmrc(event) {
   // OAuth exchange token post-body
   const clientSecret = await retrieveHmrcClientSecret(overrideSecret, secretArn);
   const url = `${process.env.HMRC_BASE_URI}/oauth/token`;
+  const maybeSlash = process.env.DIY_SUBMIT_BASE_URL?.endsWith("/") ? "" : "/";
   const body = {
     grant_type: "authorization_code",
     client_id: process.env.HMRC_CLIENT_ID,
     client_secret: clientSecret,
-    redirect_uri: process.env.DIY_SUBMIT_BASE_URL + "activities/submitVatCallback.html",
+    redirect_uri: `${process.env.DIY_SUBMIT_BASE_URL}${maybeSlash}activities/submitVatCallback.html`,
     code,
   };
   return httpPostWithUrl(request, url, body);
@@ -85,12 +87,14 @@ export async function httpPostMock(event) {
     return httpBadRequestResponse({ request, message: "Missing code from event body" });
   }
   const clientSecret = await retrieveHmrcClientSecret(overrideSecret, secretArn);
-  const url = `${process.env.HMRC_BASE_URI}/oauth/token`;
+  const maybeHmrcSlash = process.env.HMRC_BASE_URI?.endsWith("/") ? "" : "/";
+  const url = `${process.env.HMRC_BASE_URI}${maybeHmrcSlash}oauth/token`;
+  const maybeSlash = process.env.DIY_SUBMIT_BASE_URL?.endsWith("/") ? "" : "/";
   const body = {
     grant_type: "authorization_code",
     client_id: process.env.HMRC_CLIENT_ID,
     client_secret: clientSecret,
-    redirect_uri: process.env.DIY_SUBMIT_BASE_URL + "activities/submitVatCallback.html",
+    redirect_uri: `${process.env.DIY_SUBMIT_BASE_URL}${maybeSlash}activities/submitVatCallback.html`,
     code,
   };
   return httpPostWithUrl(request, url, body);
@@ -108,12 +112,14 @@ export async function exchangeToken(providerUrlOrCode, maybeBody) {
     // TODO: Remove this when tests are otherwise stable.
     logger.warn({ message: "exchangeToken called with code and no body, defaulting to HMRC" });
     const clientSecret = await retrieveHmrcClientSecret(overrideSecret, secretArn);
-    const url = `${process.env.HMRC_BASE_URI}/oauth/token`;
+    const maybeHmrcSlash = process.env.HMRC_BASE_URI?.endsWith("/") ? "" : "/";
+    const url = `${process.env.HMRC_BASE_URI}${maybeHmrcSlash}oauth/token`;
+    const maybeSlash = process.env.DIY_SUBMIT_BASE_URL?.endsWith("/") ? "" : "/";
     const body = {
       grant_type: "authorization_code",
       client_id: process.env.HMRC_CLIENT_ID,
       client_secret: clientSecret,
-      redirect_uri: process.env.DIY_SUBMIT_BASE_URL + "activities/submitVatCallback.html",
+      redirect_uri: `${process.env.DIY_SUBMIT_BASE_URL}${maybeSlash}activities/submitVatCallback.html`,
       code: providerUrlOrCode,
     };
     return performTokenExchange(url, body);
