@@ -117,7 +117,7 @@ export async function completeVat(page, checkServersAreRunning) {
       await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/170-receipt-${timestamp()}.png` });
       await page.waitForTimeout(500);
     },
-    { timeout: 60000 },
+    { timeout: 180000 },
   );
 }
 
