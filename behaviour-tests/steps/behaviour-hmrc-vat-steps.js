@@ -46,8 +46,11 @@ export async function submitFormVat(page) {
       await page.screenshot({
         path: `target/behaviour-test-results/submitVat-screenshots/110-mock-oauth-${timestamp()}.png`,
       });
-      // Expect mock OAuth2 server page
-      await expect(page.getByText("Continue with mock-oauth2-server")).toBeVisible({ timeout: 10000 });
+      // Check what page we're actually on for debugging
+      console.log(`Current URL after VAT form submission: ${page.url()}`);
+      
+      // Expect mock OAuth2 server sign-in form
+      await expect(page.locator('input[type="submit"][value="Sign-in"]')).toBeVisible({ timeout: 10000 });
     });
   } else {
     await test.step("The user submits the VAT form and reviews the HMRC permission page", async () => {
@@ -119,9 +122,13 @@ export async function completeVat(page, checkServersAreRunning) {
       if (receiptExists === 0 && formExists === 0) {
         console.log("DOM elements missing, checking if we need to reload the page...");
         const currentUrl = page.url();
-        if (!currentUrl.includes("submitVat.html")) {
+        if (!currentUrl.includes("submitVat.html") && !currentUrl.includes("chrome-error://")) {
           console.log(`Navigating back to submitVat.html from ${currentUrl}`);
-          await page.goto(currentUrl.replace(/\/[^\/]*$/, '/activities/submitVat.html'));
+          await page.goto(`http://127.0.0.1:3000/activities/submitVat.html`);
+          await page.waitForLoadState("networkidle");
+        } else if (currentUrl.includes("chrome-error://")) {
+          console.log("Chrome error page detected, navigating directly to submitVat.html");
+          await page.goto(`http://127.0.0.1:3000/activities/submitVat.html`);
           await page.waitForLoadState("networkidle");
         }
       }

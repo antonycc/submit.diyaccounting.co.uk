@@ -133,9 +133,8 @@ test("Log in, add test bundle, submit VAT return, log out", async ({ page }) => 
   const isStubbed = process.env.NODE_ENV === "stubbed";
   
   if (isStubbed) {
-    // Mock OAuth flow
-    const { initMockAuth, fillInMockAuth, submitMockAuth } = await import("./steps/behaviour-login-steps.js");
-    await initMockAuth(page);
+    // Mock OAuth flow - we're already at the login form, skip provider selection
+    const { fillInMockAuth, submitMockAuth } = await import("./steps/behaviour-login-steps.js");
     await fillInMockAuth(page, "hmrc-test-user");
     await submitMockAuth(page);
   } else {
