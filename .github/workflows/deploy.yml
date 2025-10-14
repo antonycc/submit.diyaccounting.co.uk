@@ -1631,13 +1631,15 @@ jobs:
       contents: read
     env:
       ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
+      DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
+      AWS_REGION: 'eu-west-2'
+      AWS_HOSTED_ZONE_ID: ${{ vars.AWS_HOSTED_ZONE_ID }}
+      AWS_HOSTED_ZONE_NAME: ${{ vars.AWS_HOSTED_ZONE_NAME }}
     steps:
       - name: Checkout
         uses: actions/checkout@v5
-      - name: Use local set-origins composite action
-        uses: ./.github/actions/set-origins
-        with:
-          originsCsv:  "${{ needs.names.outputs.deployment-name == 'prod' && 'submit.diyaccounting.co.uk' || format('{0}.submit.diyaccounting.co.uk', needs.names.outputs.deployment-name) }}"
+      - name: Use local set-alias-records composite action
+        uses: ./.github/actions/set-alias-records
 
   # TODO: Configure or copy and convert the system test API test to test against deployed environment
 #  api-test:
@@ -1987,27 +1989,3 @@ jobs:
       service-base-url: ${{ needs.names.outputs.base-url }}
       github-pages-url: ${{ steps.deployment.outputs.page_url }}
       artifacts-url: ${{ steps.deployment.outputs.page_url }}artifacts/
-
-  # --- Appending new DNS alias update job ---
-  set-alias-records:
-    name: 'set alias records'
-    if: ${{ !cancelled() }}
-    needs:
-      - names
-    runs-on: ubuntu-24.04
-    environment: ${{ needs.names.outputs.environment-name }}
-    permissions:
-      id-token: write
-      contents: read
-    env:
-      # Update to your actual Route 53 hosted zone for the submit apex domain
-      HOSTED_ZONE_NAME: submit.diyaccounting.co.uk
-      HOSTED_ZONE_ID: ZABCDEFGHIJKL
-      ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
-      DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
-      AWS_REGION: 'eu-west-2'
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v5
-      - name: Use local set-alias-records composite action
-        uses: ./.github/actions/set-alias-records

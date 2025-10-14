@@ -25,9 +25,9 @@ runs:
         set -euo pipefail
         # Determine the record name.  Prod uses the naked domain, CI uses env subdomain.
         if [ "$ENVIRONMENT_NAME" = "prod" ]; then
-          RECORD_NAME="$HOSTED_ZONE_NAME"
+          RECORD_NAME="$AWS_HOSTED_ZONE_NAME"
         else
-          RECORD_NAME="$ENVIRONMENT_NAME.$HOSTED_ZONE_NAME"
+          RECORD_NAME="$ENVIRONMENT_NAME.$AWS_HOSTED_ZONE_NAME"
         fi
         # Resolve CloudFront distribution domain names from the stacks
         EDGE_STACK_NAME="env-${ENVIRONMENT_NAME}-${DEPLOYMENT_NAME}-EdgeStack"
@@ -117,5 +117,5 @@ runs:
             ]
           }' > /tmp/aaaa.json
 
-        aws route53 change-resource-record-sets --hosted-zone-id "$HOSTED_ZONE_ID" --change-batch file:///tmp/a.json
-        aws route53 change-resource-record-sets --hosted-zone-id "$HOSTED_ZONE_ID" --change-batch file:///tmp/aaaa.json
+        aws route53 change-resource-record-sets --hosted-zone-id "$AWS_HOSTED_ZONE_ID" --change-batch file:///tmp/a.json
+        aws route53 change-resource-record-sets --hosted-zone-id "$AWS_HOSTED_ZONE_ID" --change-batch file:///tmp/aaaa.json
