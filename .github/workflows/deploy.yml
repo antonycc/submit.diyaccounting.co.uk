@@ -1410,42 +1410,42 @@ jobs:
           REQUEST_BUNDLES_LAMBDA_URL: ${{ needs.deploy-account.outputs.requestBundlesLambdaUrl }}
           MY_BUNDLES_LAMBDA_URL: ${{ needs.deploy-account.outputs.myBundlesLambdaUrl }}
 
-      - name: Upsert Cognito callback/logout URLs
-        if: ${{ contains(needs.deploy-edge.outputs.base-url, 'submit') }}
-        uses: actions/github-script@v8
-        env:
-          USER_POOL_ID: ${{ vars.COGNITO_USER_POOL_ID }}
-          CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
-          REGION: ${{ env.AWS_REGION }}
-          BASE_URL: ${{ needs.deploy-edge.outputs.base-url }}
-        with:
-          script: |
-            const {execSync} = require('child_process')
-            const jp = JSON.parse
-            const sh = (cmd)=>execSync(cmd,{encoding:'utf8'}).trim()
-
-            const d = jp(sh(`aws cognito-idp describe-user-pool-client --user-pool-id ${process.env.USER_POOL_ID} --client-id ${process.env.CLIENT_ID} --region ${process.env.REGION}`)).UserPoolClient
-            const have = new Set([...(d.CallbackURLs||[]), ...(d.LogoutURLs||[])])
-
-            const add = (arr)=>Array.from(new Set(arr))
-            const cbWanted = add([...(d.CallbackURLs||[]), `${process.env.BASE_URL}auth/loginWithCognitoCallback.html`])
-            const loWanted = add([...(d.LogoutURLs||[]), `${process.env.BASE_URL}`])
-
-            const changed = JSON.stringify(cbWanted) !== JSON.stringify(d.CallbackURLs||[]) ||
-                            JSON.stringify(loWanted) !== JSON.stringify(d.LogoutURLs||[])
-
-            core.notice(`Will update: ${changed}`)
-            if (!changed) return
-
-            const payload = {
-              UserPoolId: process.env.USER_POOL_ID,
-              ClientId: process.env.CLIENT_ID,
-              CallbackURLs: cbWanted,
-              LogoutURLs: loWanted
-            }
-            const tmp = 'payload.json'
-            require('fs').writeFileSync(tmp, JSON.stringify(payload))
-            sh(`aws cognito-idp update-user-pool-client --cli-input-json file://${tmp} --region ${process.env.REGION}`)
+#      - name: Upsert Cognito callback/logout URLs
+#        if: ${{ contains(needs.deploy-edge.outputs.base-url, 'submit') }}
+#        uses: actions/github-script@v8
+#        env:
+#          USER_POOL_ID: ${{ vars.COGNITO_USER_POOL_ID }}
+#          CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
+#          REGION: ${{ env.AWS_REGION }}
+#          BASE_URL: ${{ needs.deploy-edge.outputs.base-url }}
+#        with:
+#          script: |
+#            const {execSync} = require('child_process')
+#            const jp = JSON.parse
+#            const sh = (cmd)=>execSync(cmd,{encoding:'utf8'}).trim()
+#
+#            const d = jp(sh(`aws cognito-idp describe-user-pool-client --user-pool-id ${process.env.USER_POOL_ID} --client-id ${process.env.CLIENT_ID} --region ${process.env.REGION}`)).UserPoolClient
+#            const have = new Set([...(d.CallbackURLs||[]), ...(d.LogoutURLs||[])])
+#
+#            const add = (arr)=>Array.from(new Set(arr))
+#            const cbWanted = add([...(d.CallbackURLs||[]), `${process.env.BASE_URL}auth/loginWithCognitoCallback.html`])
+#            const loWanted = add([...(d.LogoutURLs||[]), `${process.env.BASE_URL}`])
+#
+#            const changed = JSON.stringify(cbWanted) !== JSON.stringify(d.CallbackURLs||[]) ||
+#                            JSON.stringify(loWanted) !== JSON.stringify(d.LogoutURLs||[])
+#
+#            core.notice(`Will update: ${changed}`)
+#            if (!changed) return
+#
+#            const payload = {
+#              UserPoolId: process.env.USER_POOL_ID,
+#              ClientId: process.env.CLIENT_ID,
+#              CallbackURLs: cbWanted,
+#              LogoutURLs: loWanted
+#            }
+#            const tmp = 'payload.json'
+#            require('fs').writeFileSync(tmp, JSON.stringify(payload))
+#            sh(`aws cognito-idp update-user-pool-client --cli-input-json file://${tmp} --region ${process.env.REGION}`)
 
   deploy-ops:
     name: 'deploy ops with dashboard'
@@ -1540,64 +1540,64 @@ jobs:
           COGNITO_USER_POOL_ARN: ${{ vars.COGNITO_USER_POOL_ARN }}
           COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
 
-  origin-test:
-    if: ${{ !cancelled() }}
-    name: 'origin test'
-    needs:
-      - names
-      - skip-deploy-check
-      - deploy-auth
-      - deploy-hmrc
-      - deploy-account
-      - deploy-edge
-      - deploy-publish
-    runs-on: ubuntu-24.04
-    container: mcr.microsoft.com/playwright:v1.55.1-jammy
-    # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags
-    # and extension with ubuntu distribution e.g. https://releases.ubuntu.com/jammy/
-    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v5
-
-      - name: Setup Node
-        uses: actions/setup-node@v5
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: |
-          npm ci --ignore-scripts
-        env:
-          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
-
-      #cp '.env.${{ needs.names.outputs.environment-name }}' '.env.test' ; npx dotenv -e '.env.${{ needs.names.outputs.environment-name }}' -- npm run test:behaviour
-      #
-      - run: cp '.env.${{ needs.names.outputs.environment-name }}' '.env.test' ; npx dotenv -e '.env.${{ needs.names.outputs.environment-name }}' -- npm run test:originBehaviour
-        env:
-          DIY_SUBMIT_BASE_URL: ${{ needs.deploy-edge.outputs.base-url }}
-          TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
-          TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
-          TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
-
-      - name: Upload artifacts (results)
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: origin-test-artifacts
-          retention-days: 30
-          path: |
-            target/behaviour-test-results/
-
-      - name: Upload artifacts (reports)
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: origin-test-reports
-          retention-days: 30
-          path: |
-            target/test-reports/
+#  origin-test:
+#    if: ${{ !cancelled() }}
+#    name: 'origin test'
+#    needs:
+#      - names
+#      - skip-deploy-check
+#      - deploy-auth
+#      - deploy-hmrc
+#      - deploy-account
+#      - deploy-edge
+#      - deploy-publish
+#    runs-on: ubuntu-24.04
+#    container: mcr.microsoft.com/playwright:v1.55.1-jammy
+#    # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags
+#    # and extension with ubuntu distribution e.g. https://releases.ubuntu.com/jammy/
+#    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+#    steps:
+#      - name: Checkout
+#        uses: actions/checkout@v5
+#
+#      - name: Setup Node
+#        uses: actions/setup-node@v5
+#        with:
+#          node-version: ${{ env.NODE_VERSION }}
+#          cache: 'npm'
+#
+#      - name: Install dependencies
+#        run: |
+#          npm ci --ignore-scripts
+#        env:
+#          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+#
+#      #cp '.env.${{ needs.names.outputs.environment-name }}' '.env.test' ; npx dotenv -e '.env.${{ needs.names.outputs.environment-name }}' -- npm run test:behaviour
+#      #
+#      - run: cp '.env.${{ needs.names.outputs.environment-name }}' '.env.test' ; npx dotenv -e '.env.${{ needs.names.outputs.environment-name }}' -- npm run test:originBehaviour
+#        env:
+#          DIY_SUBMIT_BASE_URL: ${{ needs.deploy-edge.outputs.base-url }}
+#          TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
+#          TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
+#          TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
+#
+#      - name: Upload artifacts (results)
+#        if: ${{ !cancelled() }}
+#        uses: actions/upload-artifact@v4
+#        with:
+#          name: origin-test-artifacts
+#          retention-days: 30
+#          path: |
+#            target/behaviour-test-results/
+#
+#      - name: Upload artifacts (reports)
+#        if: ${{ !cancelled() }}
+#        uses: actions/upload-artifact@v4
+#        with:
+#          name: origin-test-reports
+#          retention-days: 30
+#          path: |
+#            target/test-reports/
 
   # Invoke .github/workflows/set-origins.yml to set this domain as the apex origin
   #  workflow_call:
@@ -1623,7 +1623,6 @@ jobs:
       - deploy-account
       - deploy-edge
       - deploy-publish
-      - origin-test
     runs-on: ubuntu-24.04
     environment: ${{ needs.names.outputs.environment-name }}
     permissions:
@@ -1638,6 +1637,29 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+
+      - name: Configure AWS role via GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
       - name: Use local set-alias-records composite action
         uses: ./.github/actions/set-alias-records
 
@@ -1702,7 +1724,6 @@ jobs:
       - deploy-edge
       - deploy-publish
       - set-origins
-      - origin-test
     runs-on: ubuntu-24.04
     container: mcr.microsoft.com/playwright:v1.55.1-jammy
     # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags

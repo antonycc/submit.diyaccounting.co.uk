@@ -3,17 +3,17 @@ description: "Configure weighted Route 53 alias records for the apex and CI doma
 runs:
   using: "composite"
   steps:
-    - name: Configure AWS credentials via GitHub OIDC
-      uses: aws-actions/configure-aws-credentials@v5
-      with:
-        role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
-        aws-region: ${{ env.AWS_REGION }}
-    - name: Assume deployment role
-      uses: aws-actions/configure-aws-credentials@v5
-      with:
-        role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
-        aws-region: ${{ env.AWS_REGION }}
-        role-chaining: true
+#    - name: Configure AWS credentials via GitHub OIDC
+#      uses: aws-actions/configure-aws-credentials@v5
+#      with:
+#        role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+#        aws-region: ${{ env.AWS_REGION }}
+#    - name: Assume deployment role
+#      uses: aws-actions/configure-aws-credentials@v5
+#      with:
+#        role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+#        aws-region: ${{ env.AWS_REGION }}
+#        role-chaining: true
 
     - name: Install jq
       run: sudo apt-get update && sudo apt-get install -y jq
