@@ -101,7 +101,10 @@ jobs:
     outputs:
       environment-name: ${{ steps.deployment-config.outputs.ENVIRONMENT_NAME }}
       deployment-name: ${{ steps.deployment-config.outputs.DEPLOYMENT_NAME }}
-      base-url: ${{ steps.deployment-config.outputs.DIY_SUBMIT_BASE_URL }}
+      base-domain: ${{ steps.deployment-config.outputs.DIY_SUBMIT_BASE_DOMAIN }}
+      base-url:      ${{ steps.deployment-config.outputs.DIY_SUBMIT_BASE_URL }}
+      apex-domain: ${{ steps.deployment-config.outputs.DIY_SUBMIT_BASE_DOMAIN }}
+      apex-url: ${{ steps.deployment-config.outputs.DIY_SUBMIT_APEX_URL }}
 
   npm-test:
     name: 'npm test'
@@ -1634,6 +1637,8 @@ jobs:
       AWS_REGION: 'eu-west-2'
       AWS_HOSTED_ZONE_ID: ${{ vars.AWS_HOSTED_ZONE_ID }}
       AWS_HOSTED_ZONE_NAME: ${{ vars.AWS_HOSTED_ZONE_NAME }}
+      DIY_SUBMIT_BASE_DOMAIN: ${{ needs.names.outputs.base-domain }}
+      DIY_SUBMIT_APEX_DOMAIN: ${{ needs.names.outputs.apex-domain }}
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -1749,7 +1754,7 @@ jobs:
       #
       - run: cp '.env.${{ needs.names.outputs.environment-name }}' '.env.test' ; npx dotenv -e '.env.${{ needs.names.outputs.environment-name }}' -- npm run test:webBehaviour
         env:
-          DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.base-url }}
+          DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.apex-url }}
           TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
           TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
           TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}

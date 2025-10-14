@@ -23,7 +23,7 @@ function makeJwt(sub = "test-user-sub") {
 describe("myReceipts functions", () => {
   beforeEach(() => {
     s3Mock.reset();
-    process.env.DIY_SUBMIT_BASE_URL = "https://hmrc-test-redirect"; // matches unit test expectation style
+    process.env.DIY_SUBMIT_BASE_URL = "https://hmrc-test-redirect/"; // matches unit test expectation style
     process.env.DIY_SUBMIT_RECEIPTS_BUCKET_NAME = "test-receipts-bucket";
     process.env.TEST_S3_ENDPOINT = "http://localhost:9000"; // enable S3 client config
   });

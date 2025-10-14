@@ -18,9 +18,18 @@ outputs:
   DEPLOYMENT_NAME:
     description: "Computed deployment name"
     value: ${{ steps.compute.outputs.DEPLOYMENT_NAME }}
+  DIY_SUBMIT_BASE_DOMAIN:
+    description: "Base hostname for the deployment"
+    value: ${{ steps.compute.outputs.DIY_SUBMIT_BASE_DOMAIN }}
   DIY_SUBMIT_BASE_URL:
-    description: "Computed base URL for the deployment"
+    description: "Base URL for the deployment"
     value: ${{ steps.compute.outputs.DIY_SUBMIT_BASE_URL }}
+  DIY_SUBMIT_APEX_DOMAIN:
+    description: "Apex hostname for the deployment"
+    value: ${{ steps.compute.outputs.DIY_SUBMIT_APEX_DOMAIN }}
+  DIY_SUBMIT_APEX_URL:
+    description: "Apex URL for the deployment"
+    value: ${{ steps.compute.outputs.DIY_SUBMIT_APEX_URL }}
 
 runs:
   using: "composite"
@@ -54,11 +63,22 @@ runs:
         fi
 
         if [ "$DEPLOYMENT_NAME" = "prod" ]; then
-          DIY_SUBMIT_BASE_URL="https://prod-${COMMIT_SHA?}.submit.diyaccounting.co.uk"
+          DIY_SUBMIT_BASE_DOMAIN="prod-${COMMIT_SHA?}.submit.diyaccounting.co.uk"
         else
-          DIY_SUBMIT_BASE_URL="https://${DEPLOYMENT_NAME?}.submit.diyaccounting.co.uk"
+          DIY_SUBMIT_BASE_DOMAIN="${DEPLOYMENT_NAME?}.submit.diyaccounting.co.uk"
         fi
+        DIY_SUBMIT_BASE_URL="https://${DIY_SUBMIT_BASE_DOMAIN}/"
+
+        if [ "$DEPLOYMENT_NAME" = "prod" ]; then
+          DIY_SUBMIT_APEX_DOMAIN="submit.diyaccounting.co.uk"
+        else
+          DIY_SUBMIT_APEX_DOMAIN="${ENVIRONMENT_NAME?}.submit.diyaccounting.co.uk"
+        fi
+        DIY_SUBMIT_APEX_URL="https://${DIY_SUBMIT_APEX_DOMAIN?}/"
 
         echo "ENVIRONMENT_NAME=$ENVIRONMENT_NAME" | tee -a "$GITHUB_OUTPUT"
         echo "DEPLOYMENT_NAME=$DEPLOYMENT_NAME" | tee -a "$GITHUB_OUTPUT"
+        echo "DIY_SUBMIT_BASE_DOMAIN=$DIY_SUBMIT_BASE_DOMAIN" | tee -a "$GITHUB_OUTPUT"
         echo "DIY_SUBMIT_BASE_URL=$DIY_SUBMIT_BASE_URL" | tee -a "$GITHUB_OUTPUT"
+        echo "DIY_SUBMIT_APEX_DOMAIN=$DIY_SUBMIT_APEX_DOMAIN" | tee -a "$GITHUB_OUTPUT"
+        echo "DIY_SUBMIT_APEX_URL=$DIY_SUBMIT_APEX_URL" | tee -a "$GITHUB_OUTPUT"
