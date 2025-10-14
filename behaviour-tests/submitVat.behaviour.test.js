@@ -29,6 +29,7 @@ import {
   submitHmrcAuth,
 } from "./steps/behaviour-hmrc-steps.js";
 import { checkIfServerIsRunning } from "./helpers/serverHelper.js";
+import { ensureMinioBucketExists } from "@app/bin/minio.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 dotenvConfigIfNotBlank({ path: ".env" }); // Not checked in, HMRC API credentials
@@ -156,6 +157,17 @@ test("Log in, add test bundle, submit VAT return, log out", async ({ page }) => 
 });
 
 async function checkServersAreRunning() {
+  if (runMinioS3) {
+    try {
+      await ensureMinioBucketExists(receiptsBucketName, s3Endpoint, optionalTestS3AccessKey, optionalTestS3SecretKey);
+    } catch (error) {
+      console.log("S3 endpoint not responding, restarting local S3 server...", error);
+      s3Endpoint = await runLocalS3(runMinioS3, receiptsBucketName, optionalTestS3AccessKey, optionalTestS3SecretKey);
+    }
+  } else {
+    console.log("Skipping local-s3-server process as runMinioS3 is not set to 'run'");
+  }
+
   if (runTestServer) {
     await checkIfServerIsRunning(`http://127.0.0.1:${serverPort}`, 1000, async function () {
       serverProcess = await runLocalHttpServer(runTestServer, s3Endpoint, serverPort);
@@ -170,13 +182,5 @@ async function checkServersAreRunning() {
     });
   } else {
     console.log("Skipping ngrok process as runProxy is not set to 'run'");
-  }
-
-  if (runMockOAuth2) {
-    await checkIfServerIsRunning("http://localhost:8080/default/debugger", 2000, async function () {
-      await runLocalOAuth2Server(runMockOAuth2);
-    });
-  } else {
-    console.log("Skipping mock-oauth2-server process as runMockOAuth2 is not set to 'run'");
   }
 }
