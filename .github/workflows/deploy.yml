@@ -2005,7 +2005,7 @@ jobs:
       HOSTED_ZONE_ID: ZABCDEFGHIJKL
       ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
       DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
-      AWS_REGION: ${{ env.AWS_REGION }}
+      AWS_REGION: 'eu-west-2'
     steps:
       - name: Checkout
         uses: actions/checkout@v5
