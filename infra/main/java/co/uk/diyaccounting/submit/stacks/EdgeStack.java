@@ -1,13 +1,7 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Aspects;
 import software.amazon.awscdk.Environment;
@@ -38,6 +32,8 @@ import software.amazon.awscdk.services.lambda.Permission;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.amazon.awscdk.services.route53.ARecord;
 import software.amazon.awscdk.services.route53.ARecordProps;
+import software.amazon.awscdk.services.route53.AaaaRecord;
+import software.amazon.awscdk.services.route53.AaaaRecordProps;
 import software.amazon.awscdk.services.route53.HostedZone;
 import software.amazon.awscdk.services.route53.HostedZoneAttributes;
 import software.amazon.awscdk.services.route53.IHostedZone;
@@ -50,6 +46,13 @@ import software.amazon.awscdk.services.s3.IBucket;
 import software.amazon.awscdk.services.wafv2.CfnWebACL;
 import software.constructs.Construct;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+
 public class EdgeStack extends Stack {
 
     public Bucket originBucket;
@@ -57,6 +60,7 @@ public class EdgeStack extends Stack {
     public final Distribution distribution;
     public final Permission distributionInvokeFnUrl;
     public final ARecord aliasRecord;
+    public final AaaaRecord aliasRecordV6;
 
     @Value.Immutable
     public interface EdgeStackProps extends StackProps, SubmitStackProps {
@@ -266,14 +270,14 @@ public class EdgeStack extends Stack {
 
         this.originBucket.addToResourcePolicy(PolicyStatement.Builder.create()
                 .sid("AllowCloudFrontReadViaOAC")
-                .principals(java.util.List.of(new ServicePrincipal("cloudfront.amazonaws.com")))
-                .actions(java.util.List.of("s3:GetObject"))
-                .resources(java.util.List.of(this.originBucket.getBucketArn() + "/*"))
-                .conditions(java.util.Map.of(
+                .principals(List.of(new ServicePrincipal("cloudfront.amazonaws.com")))
+                .actions(List.of("s3:GetObject"))
+                .resources(List.of(this.originBucket.getBucketArn() + "/*"))
+                .conditions(Map.of(
                         // Limit to distributions in your account (no distribution ARN token needed)
-                        "StringEquals", java.util.Map.of("AWS:SourceAccount", this.getAccount()),
+                        "StringEquals", Map.of("AWS:SourceAccount", this.getAccount()),
                         "ArnLike",
-                                java.util.Map.of(
+                                Map.of(
                                         "AWS:SourceArn",
                                         "arn:aws:cloudfront::" + this.getAccount() + ":distribution/*")))
                 .build());
@@ -345,6 +349,16 @@ public class EdgeStack extends Stack {
                         .target(RecordTarget.fromAlias(new CloudFrontTarget(this.distribution)))
                         .deleteExisting(true)
                         .build());
+        // AAAA record
+        this.aliasRecordV6 = new AaaaRecord(
+                this,
+                props.resourceNamePrefix() + "-AliasRecordV6",
+                    AaaaRecordProps.builder()
+                        .recordName(recordName)
+                        .zone(zone)
+                        .target(RecordTarget.fromAlias(new CloudFrontTarget(this.distribution)))
+                        .deleteExisting(true)
+                        .build());
 
         Aspects.of(this).add(new SetAutoDeleteJobLogRetentionAspect(props.deploymentName(), RetentionDays.THREE_DAYS));
 
@@ -355,6 +369,7 @@ public class EdgeStack extends Stack {
         cfnOutput(this, "WebDistributionDomainName", this.distribution.getDomainName());
         cfnOutput(this, "DistributionId", this.distribution.getDistributionId());
         cfnOutput(this, "AliasRecord", this.aliasRecord.getDomainName());
+        cfnOutput(this, "AliasRecordV6", this.aliasRecordV6.getDomainName());
 
         infof("EdgeStack %s created successfully for %s", this.getNode().getId(), props.sharedNames().baseUrl);
     }
