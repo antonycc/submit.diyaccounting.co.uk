@@ -103,12 +103,18 @@ export async function completeVat(page, checkServersAreRunning, testUrl, serverP
         console.log("DOM elements missing, checking if we need to reload the page...");
         const currentUrl = page.url();
         if (!currentUrl.includes("submitVat.html") && !currentUrl.includes("chrome-error://")) {
-          const fallbackUrl = `http://127.0.0.1:${serverPort}/activities/submitVat.html`;
+          // Use testUrl if available, otherwise fall back to localhost with port
+          const fallbackUrl = testUrl 
+            ? `${testUrl.replace(/\/$/, '')}/activities/submitVat.html`
+            : `http://127.0.0.1:${serverPort}/activities/submitVat.html`;
           console.log(`Navigating back to submitVat.html from ${currentUrl} to ${fallbackUrl}`);
           await page.goto(fallbackUrl);
           await page.waitForLoadState("networkidle");
         } else if (currentUrl.includes("chrome-error://")) {
-          const fallbackUrl = `http://127.0.0.1:${serverPort}/activities/submitVat.html`;
+          // Use testUrl if available, otherwise fall back to localhost with port
+          const fallbackUrl = testUrl 
+            ? `${testUrl.replace(/\/$/, '')}/activities/submitVat.html`
+            : `http://127.0.0.1:${serverPort}/activities/submitVat.html`;
           console.log(`Chrome error page detected, navigating directly to ${fallbackUrl}`);
           await page.goto(fallbackUrl);
           await page.waitForLoadState("networkidle");
