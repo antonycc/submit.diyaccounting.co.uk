@@ -103,7 +103,7 @@ jobs:
       deployment-name: ${{ steps.deployment-config.outputs.DEPLOYMENT_NAME }}
       base-domain: ${{ steps.deployment-config.outputs.DIY_SUBMIT_BASE_DOMAIN }}
       base-url:      ${{ steps.deployment-config.outputs.DIY_SUBMIT_BASE_URL }}
-      apex-domain: ${{ steps.deployment-config.outputs.DIY_SUBMIT_BASE_DOMAIN }}
+      apex-domain: ${{ steps.deployment-config.outputs.DIY_SUBMIT_APEX_DOMAIN }}
       apex-url: ${{ steps.deployment-config.outputs.DIY_SUBMIT_APEX_URL }}
 
   npm-test:
