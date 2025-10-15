@@ -127,8 +127,7 @@ public class SubmitSharedNames {
         this.domainName = buildDomainName(props.deploymentName, props.subDomainName, props.hostedZoneName);
         this.cognitoDomainName = buildCognitoDomainName(
                 props.envName, props.cognitoDomainPrefix, props.subDomainName, props.hostedZoneName);
-        this.holdingDomainName = buildCognitoDomainName(
-            props.envName, "holding", props.subDomainName, props.hostedZoneName);
+        this.holdingDomainName = buildDomainName("%s-holding".formatted(props.envName), props.subDomainName, props.hostedZoneName);
         this.baseUrl = "https://%s/".formatted(this.domainName);
         this.dashedDomainName = buildDashedDomainName(this.domainName);
 
