@@ -14,10 +14,12 @@ public class SubmitSharedNames {
     public String domainName;
     public String envDomainName;
     public String cognitoDomainName;
+    public String holdingDomainName;
     public String baseUrl;
     public String dashedDomainName;
 
     public String receiptsBucketName;
+    public String holdingBucketName;
     public String originBucketName;
     public String originAccessLogBucketName;
     public String distributionAccessLogBucketName;
@@ -125,6 +127,8 @@ public class SubmitSharedNames {
         this.domainName = buildDomainName(props.deploymentName, props.subDomainName, props.hostedZoneName);
         this.cognitoDomainName = buildCognitoDomainName(
                 props.envName, props.cognitoDomainPrefix, props.subDomainName, props.hostedZoneName);
+        this.holdingDomainName = buildCognitoDomainName(
+            props.envName, "holding", props.subDomainName, props.hostedZoneName);
         this.baseUrl = "https://%s/".formatted(this.domainName);
         this.dashedDomainName = buildDashedDomainName(this.domainName);
 
@@ -243,6 +247,7 @@ public class SubmitSharedNames {
         this.publishStackId = "del-%s-PublishStack".formatted(props.deploymentName);
         this.delSelfDestructStackId = "del-%s-SelfDestructStack".formatted(props.deploymentName);
 
+        this.holdingBucketName = convertDotSeparatedToDashSeparated("holding-" + this.envResourceNamePrefix);
         this.originBucketName = convertDotSeparatedToDashSeparated("origin-" + this.delResourceNamePrefix);
         this.originAccessLogBucketName = "origin-%s-access-logs".formatted(this.delResourceNamePrefix);
     }

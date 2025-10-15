@@ -144,7 +144,7 @@ test("Log in, add test bundle, submit VAT return, log out", async ({ page }) => 
   await submitHmrcAuth(page);
   await grantPermissionHmrcAuth(page);
 
-  await completeVat(page, checkServersAreRunning);
+  await completeVat(page, baseUrl, checkServersAreRunning);
   await verifyVatSubmission(page);
 
   /* ********** */
