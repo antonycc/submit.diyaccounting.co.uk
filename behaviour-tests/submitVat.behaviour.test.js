@@ -164,44 +164,45 @@ test("Log in, add test bundle, submit VAT return, log out", async ({ page }) => 
   await logOutAndExpectToBeLoggedOut(page);
 
   if (serverProcess) {
-    console.log("Gracefully shutting down HTTP server process...");
-    serverProcess.kill("SIGTERM");
-    // Wait for graceful shutdown, then force kill if needed
-    await new Promise((resolve) => {
-      const timer = setTimeout(() => {
-        if (!serverProcess.killed) {
-          console.log("Force killing HTTP server process...");
-          serverProcess.kill("SIGKILL");
-        }
-        resolve();
-      }, 2000);
-      
-      serverProcess.on("exit", () => {
-        clearTimeout(timer);
-        resolve();
-      });
-    });
+    await gracefulProcessShutdown(serverProcess, "HTTP server");
   }
   if (ngrokProcess) {
-    console.log("Gracefully shutting down ngrok process...");
-    ngrokProcess.kill("SIGTERM");
-    // Wait for graceful shutdown, then force kill if needed
-    await new Promise((resolve) => {
-      const timer = setTimeout(() => {
-        if (!ngrokProcess.killed) {
-          console.log("Force killing ngrok process...");
-          ngrokProcess.kill("SIGKILL");
-        }
-        resolve();
-      }, 2000);
-      
-      ngrokProcess.on("exit", () => {
-        clearTimeout(timer);
-        resolve();
-      });
-    });
+    await gracefulProcessShutdown(ngrokProcess, "ngrok");
   }
 });
+
+// Helper function for graceful process shutdown with timeout
+async function gracefulProcessShutdown(process, processName, timeout = 2000) {
+  if (!process || process.killed) return;
+  
+  console.log(`Gracefully terminating ${processName} process...`);
+  process.kill("SIGTERM");
+  
+  return new Promise((resolve) => {
+    let resolved = false;
+    
+    const timer = setTimeout(() => {
+      if (!resolved) {
+        resolved = true;
+        if (!process.killed) {
+          console.log(`Force killing ${processName} process...`);
+          process.kill("SIGKILL");
+        }
+        resolve();
+      }
+    }, timeout);
+    
+    const exitHandler = () => {
+      if (!resolved) {
+        resolved = true;
+        clearTimeout(timer);
+        resolve();
+      }
+    };
+    
+    process.once("exit", exitHandler);
+  });
+}
 
 async function checkServersAreRunning() {
   if (runMinioS3) {
@@ -219,23 +220,7 @@ async function checkServersAreRunning() {
     await checkIfServerIsRunning(`http://127.0.0.1:${serverPort}`, 1000, async function () {
       // Kill the existing server process if it exists but is not responding
       if (serverProcess && !serverProcess.killed) {
-        console.log("Gracefully terminating existing HTTP server process before restart...");
-        serverProcess.kill("SIGTERM");
-        // Wait for graceful shutdown with proper cleanup
-        await new Promise((resolve) => {
-          const timer = setTimeout(() => {
-            if (!serverProcess.killed) {
-              console.log("Force killing HTTP server process...");
-              serverProcess.kill("SIGKILL");
-            }
-            resolve();
-          }, 1000);
-          
-          serverProcess.on("exit", () => {
-            clearTimeout(timer);
-            resolve();
-          });
-        });
+        await gracefulProcessShutdown(serverProcess, "HTTP server", 1000);
       }
       serverProcess = await runLocalHttpServer(runTestServer, s3Endpoint, serverPort);
     });
@@ -247,23 +232,7 @@ async function checkServersAreRunning() {
     await checkIfServerIsRunning(baseUrl, 1000, async function () {
       // Kill the existing ngrok process if it exists but is not responding
       if (ngrokProcess && !ngrokProcess.killed) {
-        console.log("Gracefully terminating existing ngrok process before restart...");
-        ngrokProcess.kill("SIGTERM");
-        // Wait for graceful shutdown with proper cleanup
-        await new Promise((resolve) => {
-          const timer = setTimeout(() => {
-            if (!ngrokProcess.killed) {
-              console.log("Force killing ngrok process...");
-              ngrokProcess.kill("SIGKILL");
-            }
-            resolve();
-          }, 1000);
-          
-          ngrokProcess.on("exit", () => {
-            clearTimeout(timer);
-            resolve();
-          });
-        });
+        await gracefulProcessShutdown(ngrokProcess, "ngrok", 1000);
       }
       ngrokProcess = await runLocalSslProxy(runProxy, serverPort, baseUrl);
     });

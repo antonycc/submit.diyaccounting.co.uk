@@ -3,6 +3,13 @@
 import { expect, test } from "@playwright/test";
 import { loggedClick, loggedFill, timestamp } from "../helpers/behaviour-helpers.js";
 
+// Helper function to construct fallback URL
+function constructFallbackUrl(testUrl, serverPort) {
+  return testUrl 
+    ? `${testUrl.replace(/\/$/, '')}/activities/submitVat.html`
+    : `http://127.0.0.1:${serverPort}/activities/submitVat.html`;
+}
+
 export async function initSubmitVat(page) {
   await test.step("The user begins a VAT return and sees the VAT submission form", async () => {
     // Click "VAT Return Submission" on activities page
@@ -103,18 +110,12 @@ export async function completeVat(page, checkServersAreRunning, testUrl, serverP
         console.log("DOM elements missing, checking if we need to reload the page...");
         const currentUrl = page.url();
         if (!currentUrl.includes("submitVat.html") && !currentUrl.includes("chrome-error://")) {
-          // Use testUrl if available, otherwise fall back to localhost with port
-          const fallbackUrl = testUrl 
-            ? `${testUrl.replace(/\/$/, '')}/activities/submitVat.html`
-            : `http://127.0.0.1:${serverPort}/activities/submitVat.html`;
+          const fallbackUrl = constructFallbackUrl(testUrl, serverPort);
           console.log(`Navigating back to submitVat.html from ${currentUrl} to ${fallbackUrl}`);
           await page.goto(fallbackUrl);
           await page.waitForLoadState("networkidle");
         } else if (currentUrl.includes("chrome-error://")) {
-          // Use testUrl if available, otherwise fall back to localhost with port
-          const fallbackUrl = testUrl 
-            ? `${testUrl.replace(/\/$/, '')}/activities/submitVat.html`
-            : `http://127.0.0.1:${serverPort}/activities/submitVat.html`;
+          const fallbackUrl = constructFallbackUrl(testUrl, serverPort);
           console.log(`Chrome error page detected, navigating directly to ${fallbackUrl}`);
           await page.goto(fallbackUrl);
           await page.waitForLoadState("networkidle");
