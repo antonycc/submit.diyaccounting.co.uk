@@ -43,6 +43,24 @@ export async function runLocalHttpServer(runTestServer, s3Endpoint, httpServerPo
       },
       stdio: ["pipe", "pipe", "pipe"],
     });
+
+    // Add error handling and output logging for the server process
+    serverProcess.stdout?.on("data", (data) => {
+      console.log(`[HTTP Server stdout]: ${data.toString().trim()}`);
+    });
+
+    serverProcess.stderr?.on("data", (data) => {
+      console.error(`[HTTP Server stderr]: ${data.toString().trim()}`);
+    });
+
+    serverProcess.on("error", (error) => {
+      console.error(`[HTTP Server process error]: ${error.message}`);
+    });
+
+    serverProcess.on("exit", (code, signal) => {
+      console.log(`[HTTP Server process exited]: code=${code}, signal=${signal}`);
+    });
+
     await checkIfServerIsRunning(`http://127.0.0.1:${httpServerPort}`, 1000);
   } else {
     console.log("Skipping server process as runTestServer is not set to 'run'");
@@ -61,6 +79,24 @@ export async function runLocalSslProxy(runProxy, httpServerPort, baseUrl) {
       },
       stdio: ["pipe", "pipe", "pipe"],
     });
+
+    // Add error handling and output logging for the ngrok process
+    ngrokProcess.stdout?.on("data", (data) => {
+      console.log(`[Ngrok stdout]: ${data.toString().trim()}`);
+    });
+
+    ngrokProcess.stderr?.on("data", (data) => {
+      console.error(`[Ngrok stderr]: ${data.toString().trim()}`);
+    });
+
+    ngrokProcess.on("error", (error) => {
+      console.error(`[Ngrok process error]: ${error.message}`);
+    });
+
+    ngrokProcess.on("exit", (code, signal) => {
+      console.log(`[Ngrok process exited]: code=${code}, signal=${signal}`);
+    });
+
     await checkIfServerIsRunning(baseUrl, 1000);
   } else {
     console.log("Skipping ngrok process as runProxy is not set to 'run'");
@@ -79,6 +115,24 @@ export async function runLocalOAuth2Server(runMockOAuth2) {
       },
       stdio: ["pipe", "pipe", "pipe"],
     });
+
+    // Add error handling and output logging for the OAuth2 server process
+    serverProcess.stdout?.on("data", (data) => {
+      console.log(`[OAuth2 Server stdout]: ${data.toString().trim()}`);
+    });
+
+    serverProcess.stderr?.on("data", (data) => {
+      console.error(`[OAuth2 Server stderr]: ${data.toString().trim()}`);
+    });
+
+    serverProcess.on("error", (error) => {
+      console.error(`[OAuth2 Server process error]: ${error.message}`);
+    });
+
+    serverProcess.on("exit", (code, signal) => {
+      console.log(`[OAuth2 Server process exited]: code=${code}, signal=${signal}`);
+    });
+
     await checkIfServerIsRunning("http://localhost:8080/default/debugger", 2000);
   } else {
     console.log("Skipping mock-oauth2-server process as runMockOAuth2 is not set to 'run'");

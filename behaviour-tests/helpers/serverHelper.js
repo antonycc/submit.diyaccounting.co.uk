@@ -7,21 +7,25 @@ export async function checkIfServerIsRunning(url, delay = 500, runServer = undef
   let serverReady = false;
   let attempts = 0;
   logger.info(`Checking server readiness for... ${url}`, url);
+  
+  // First, check if server is already running
   try {
     const response = await fetch(url);
     if (response.ok) {
-      logger.info(`Server is ready! at ${url}`, url);
-      serverReady = true;
-    } else if (runServer) {
-      logger.info(`Starting server at ${url}`, url);
-      runServer();
+      logger.info(`Server is already ready! at ${url}`, url);
+      return;
     }
   } catch (error) {
-    logger.info(`Starting server at ${url} after error ${error}`, url, error);
-    if (runServer) {
-      runServer();
-    }
+    logger.info(`Server check failed initially at ${url}, will start server`, url, error);
   }
+
+  // If server is not ready and we have a function to start it, call it
+  if (runServer) {
+    logger.info(`Starting server at ${url}`, url);
+    await runServer();
+  }
+
+  // Now wait for the server to become ready
   while (!serverReady && attempts < 15) {
     try {
       const response = await fetch(url);

@@ -185,6 +185,13 @@ async function checkServersAreRunning() {
 
   if (runTestServer) {
     await checkIfServerIsRunning(`http://127.0.0.1:${serverPort}`, 1000, async function () {
+      // Kill the existing server process if it exists but is not responding
+      if (serverProcess && !serverProcess.killed) {
+        console.log("Killing existing HTTP server process before restart...");
+        serverProcess.kill();
+        // Wait a moment for the process to properly terminate
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+      }
       serverProcess = await runLocalHttpServer(runTestServer, s3Endpoint, serverPort);
     });
   } else {
@@ -193,6 +200,13 @@ async function checkServersAreRunning() {
 
   if (runProxy) {
     await checkIfServerIsRunning(baseUrl, 1000, async function () {
+      // Kill the existing ngrok process if it exists but is not responding
+      if (ngrokProcess && !ngrokProcess.killed) {
+        console.log("Killing existing ngrok process before restart...");
+        ngrokProcess.kill();
+        // Wait a moment for the process to properly terminate
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+      }
       ngrokProcess = await runLocalSslProxy(runProxy, serverPort, baseUrl);
     });
   } else {
