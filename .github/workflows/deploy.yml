@@ -360,7 +360,7 @@ jobs:
 
       - name: Run behaviour tests
         run: |
-          npm run test:webBehaviour || exit_code=$? \
+          npm run test:originBehaviour || exit_code=$? \
           ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
           ; exit ${exit_code:-0} \
           ;

@@ -36,7 +36,7 @@ dotenvConfigIfNotBlank({ path: ".env" }); // Not checked in, HMRC API credential
 
 const originalEnv = { ...process.env };
 
-const serverPort = getEnvVarAndLog("serverPort", "TEST_SERVER_HTTP_PORT", 3500);
+const serverPort = getEnvVarAndLog("serverPort", "TEST_SERVER_HTTP_PORT", 3000);
 const optionalTestS3AccessKey = getEnvVarAndLog("optionalTestS3AccessKey", "TEST_S3_ACCESS_KEY", null);
 const optionalTestS3SecretKey = getEnvVarAndLog("optionalTestS3Secret_KEY", "TEST_S3_SECRET_KEY", null);
 const runTestServer = getEnvVarAndLog("runTestServer", "TEST_SERVER_HTTP", null);
@@ -99,7 +99,7 @@ test("Log in, add test bundle, submit VAT return, log out", async ({ page }) => 
 
   await runLocalOAuth2ServerPromise;
 
-  const testUrl = runTestServer === "run" && runProxy !== "run" ? `http://127.0.0.1:${serverPort}` : baseUrl;
+  const testUrl = runTestServer === "run" && runProxy !== "run" ? `http://127.0.0.1:${serverPort}/` : baseUrl;
 
   // Add console logging to capture browser messages
   addOnPageLogging(page);
