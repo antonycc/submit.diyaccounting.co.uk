@@ -319,7 +319,10 @@ public class EdgeStack extends Stack {
         this.distribution = Distribution.Builder.create(this, props.resourceNamePrefix() + "-WebDist")
                 .defaultBehavior(localBehaviorOptions) // props.webBehaviorOptions)
                 .additionalBehaviors(additionalBehaviors)
-                .domainNames(List.of(props.sharedNames().domainName))
+                .domainNames(List.of(
+                    props.sharedNames().domainName,
+                    props.sharedNames().envDomainName
+                ))
                 .certificate(cert)
                 .defaultRootObject("index.html")
                 .enableLogging(true)

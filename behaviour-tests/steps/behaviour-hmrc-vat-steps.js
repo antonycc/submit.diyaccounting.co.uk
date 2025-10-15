@@ -114,11 +114,11 @@ export async function completeVat(page, baseUrl, checkServersAreRunning) {
         }
       }
 
-      await page.waitForSelector("#receiptDisplay", { state: "visible", timeout: 120000 });
+      await page.waitForSelector("#receiptDisplay", { state: "visible", timeout: 30000 });
       await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/170-receipt-${timestamp()}.png` });
       await page.waitForTimeout(500);
     },
-    { timeout: 180000 },
+    { timeout: 40000 },
   );
 }
 

@@ -189,7 +189,10 @@ public class ApexStack extends Stack {
         // CloudFront distribution for the web origin and all the URL Lambdas.
         this.distribution = Distribution.Builder.create(this, props.resourceNamePrefix() + "-WebDist")
             .defaultBehavior(localBehaviorOptions)
-            .domainNames(List.of(props.sharedNames().holdingDomainName))
+            .domainNames(List.of(
+                props.sharedNames().domainName,
+                props.sharedNames().holdingDomainName
+            ))
             .certificate(cert)
             .defaultRootObject("index.html")
             .enableLogging(false)
