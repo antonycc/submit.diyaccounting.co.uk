@@ -7,7 +7,7 @@ export async function checkIfServerIsRunning(url, delay = 500, runServer = undef
   let serverReady = false;
   let attempts = 0;
   logger.info(`Checking server readiness for... ${url}`, url);
-  
+
   // First, check if server is already running
   try {
     const response = await fetch(url);

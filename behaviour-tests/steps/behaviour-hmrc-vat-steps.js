@@ -50,7 +50,7 @@ export async function submitFormVat(page) {
   });
 }
 
-export async function completeVat(page, checkServersAreRunning) {
+export async function completeVat(page, checkServersAreRunning, testUrl, serverPort) {
   await test.step(
     "The user waits for the VAT submission to complete and for the receipt to appear",
     async () => {
@@ -103,12 +103,14 @@ export async function completeVat(page, checkServersAreRunning) {
         console.log("DOM elements missing, checking if we need to reload the page...");
         const currentUrl = page.url();
         if (!currentUrl.includes("submitVat.html") && !currentUrl.includes("chrome-error://")) {
-          console.log(`Navigating back to submitVat.html from ${currentUrl}`);
-          await page.goto(`http://127.0.0.1:3000/activities/submitVat.html`);
+          const fallbackUrl = `http://127.0.0.1:${serverPort}/activities/submitVat.html`;
+          console.log(`Navigating back to submitVat.html from ${currentUrl} to ${fallbackUrl}`);
+          await page.goto(fallbackUrl);
           await page.waitForLoadState("networkidle");
         } else if (currentUrl.includes("chrome-error://")) {
-          console.log("Chrome error page detected, navigating directly to submitVat.html");
-          await page.goto(`http://127.0.0.1:3000/activities/submitVat.html`);
+          const fallbackUrl = `http://127.0.0.1:${serverPort}/activities/submitVat.html`;
+          console.log(`Chrome error page detected, navigating directly to ${fallbackUrl}`);
+          await page.goto(fallbackUrl);
           await page.waitForLoadState("networkidle");
         }
       }

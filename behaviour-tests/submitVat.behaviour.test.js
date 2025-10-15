@@ -144,7 +144,7 @@ test("Log in, add test bundle, submit VAT return, log out", async ({ page }) => 
   await submitHmrcAuth(page);
   await grantPermissionHmrcAuth(page);
 
-  await completeVat(page, checkServersAreRunning);
+  await completeVat(page, checkServersAreRunning, testUrl, serverPort);
   await verifyVatSubmission(page);
 
   /* ********** */
@@ -164,10 +164,26 @@ test("Log in, add test bundle, submit VAT return, log out", async ({ page }) => 
   await logOutAndExpectToBeLoggedOut(page);
 
   if (serverProcess) {
-    serverProcess.kill();
+    console.log("Gracefully shutting down HTTP server process...");
+    serverProcess.kill("SIGTERM");
+    // Give it a moment to shut down gracefully, then force kill if needed
+    setTimeout(() => {
+      if (!serverProcess.killed) {
+        console.log("Force killing HTTP server process...");
+        serverProcess.kill("SIGKILL");
+      }
+    }, 2000);
   }
   if (ngrokProcess) {
-    ngrokProcess.kill();
+    console.log("Gracefully shutting down ngrok process...");
+    ngrokProcess.kill("SIGTERM");
+    // Give it a moment to shut down gracefully, then force kill if needed
+    setTimeout(() => {
+      if (!ngrokProcess.killed) {
+        console.log("Force killing ngrok process...");
+        ngrokProcess.kill("SIGKILL");
+      }
+    }, 2000);
   }
 });
 
@@ -187,10 +203,16 @@ async function checkServersAreRunning() {
     await checkIfServerIsRunning(`http://127.0.0.1:${serverPort}`, 1000, async function () {
       // Kill the existing server process if it exists but is not responding
       if (serverProcess && !serverProcess.killed) {
-        console.log("Killing existing HTTP server process before restart...");
-        serverProcess.kill();
+        console.log("Gracefully terminating existing HTTP server process before restart...");
+        serverProcess.kill("SIGTERM");
         // Wait a moment for the process to properly terminate
         await new Promise((resolve) => setTimeout(resolve, 1000));
+        // Force kill if it didn't terminate gracefully
+        if (!serverProcess.killed) {
+          console.log("Force killing HTTP server process...");
+          serverProcess.kill("SIGKILL");
+          await new Promise((resolve) => setTimeout(resolve, 500));
+        }
       }
       serverProcess = await runLocalHttpServer(runTestServer, s3Endpoint, serverPort);
     });
@@ -202,10 +224,16 @@ async function checkServersAreRunning() {
     await checkIfServerIsRunning(baseUrl, 1000, async function () {
       // Kill the existing ngrok process if it exists but is not responding
       if (ngrokProcess && !ngrokProcess.killed) {
-        console.log("Killing existing ngrok process before restart...");
-        ngrokProcess.kill();
+        console.log("Gracefully terminating existing ngrok process before restart...");
+        ngrokProcess.kill("SIGTERM");
         // Wait a moment for the process to properly terminate
         await new Promise((resolve) => setTimeout(resolve, 1000));
+        // Force kill if it didn't terminate gracefully
+        if (!ngrokProcess.killed) {
+          console.log("Force killing ngrok process...");
+          ngrokProcess.kill("SIGKILL");
+          await new Promise((resolve) => setTimeout(resolve, 500));
+        }
       }
       ngrokProcess = await runLocalSslProxy(runProxy, serverPort, baseUrl);
     });
