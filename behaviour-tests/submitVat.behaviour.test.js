@@ -63,24 +63,24 @@ test.beforeAll(async () => {
     ...originalEnv,
   };
 
-  const runLocalOAuth2ServerPromise = runLocalOAuth2Server(runMockOAuth2);
-
-  s3Endpoint = await runLocalS3(runMinioS3, receiptsBucketName, optionalTestS3AccessKey, optionalTestS3SecretKey);
-  serverProcess = await runLocalHttpServer(runTestServer, s3Endpoint, serverPort);
-  ngrokProcess = await runLocalSslProxy(runProxy, serverPort, baseUrl);
-
-  await runLocalOAuth2ServerPromise;
+  // const runLocalOAuth2ServerPromise = runLocalOAuth2Server(runMockOAuth2);
+  //
+  // s3Endpoint = await runLocalS3(runMinioS3, receiptsBucketName, optionalTestS3AccessKey, optionalTestS3SecretKey);
+  // serverProcess = await runLocalHttpServer(runTestServer, s3Endpoint, serverPort);
+  // ngrokProcess = await runLocalSslProxy(runProxy, serverPort, baseUrl);
+  //
+  // await runLocalOAuth2ServerPromise;
 
   console.log("beforeAll hook completed successfully");
 });
 
 test.afterAll(async () => {
-  if (serverProcess) {
-    serverProcess.kill();
-  }
-  if (ngrokProcess) {
-    ngrokProcess.kill();
-  }
+  // if (serverProcess) {
+  //   serverProcess.kill();
+  // }
+  // if (ngrokProcess) {
+  //   ngrokProcess.kill();
+  // }
 });
 
 test.use({
@@ -91,6 +91,14 @@ test.use({
 });
 
 test("Log in, add test bundle, submit VAT return, log out", async ({ page }) => {
+  const runLocalOAuth2ServerPromise = runLocalOAuth2Server(runMockOAuth2);
+
+  s3Endpoint = await runLocalS3(runMinioS3, receiptsBucketName, optionalTestS3AccessKey, optionalTestS3SecretKey);
+  serverProcess = await runLocalHttpServer(runTestServer, s3Endpoint, serverPort);
+  ngrokProcess = await runLocalSslProxy(runProxy, serverPort, baseUrl);
+
+  await runLocalOAuth2ServerPromise;
+
   const testUrl = runTestServer === "run" && runProxy !== "run" ? `http://127.0.0.1:${serverPort}` : baseUrl;
 
   // Add console logging to capture browser messages
@@ -154,6 +162,13 @@ test("Log in, add test bundle, submit VAT return, log out", async ({ page }) => 
   /* ********* */
 
   await logOutAndExpectToBeLoggedOut(page);
+
+  if (serverProcess) {
+    serverProcess.kill();
+  }
+  if (ngrokProcess) {
+    ngrokProcess.kill();
+  }
 });
 
 async function checkServersAreRunning() {
