@@ -26,15 +26,15 @@ dotenvConfigIfNotBlank({ path: ".env" }); // Not checked in, HMRC API credential
 const originalEnv = { ...process.env };
 
 const serverPort = getEnvVarAndLog("serverPort", "TEST_SERVER_HTTP_PORT", 3500);
-const optionalTestS3AccessKey = getEnvVarAndLog("optionalTestS3AccessKey", "TEST_S3_ACCESS_KEY", null);
-const optionalTestS3SecretKey = getEnvVarAndLog("optionalTestS3Secret_KEY", "TEST_S3_SECRET_KEY", null);
+// const optionalTestS3AccessKey = getEnvVarAndLog("optionalTestS3AccessKey", "TEST_S3_ACCESS_KEY", null);
+// const optionalTestS3SecretKey = getEnvVarAndLog("optionalTestS3Secret_KEY", "TEST_S3_SECRET_KEY", null);
 const runTestServer = getEnvVarAndLog("runTestServer", "TEST_SERVER_HTTP", null);
 const runProxy = getEnvVarAndLog("runProxy", "TEST_PROXY", null);
 const runMockOAuth2 = getEnvVarAndLog("runMockOAuth2", "TEST_MOCK_OAUTH2", null);
-const runMinioS3 = getEnvVarAndLog("runMinioS3", "TEST_MINIO_S3", null);
+// const runMinioS3 = getEnvVarAndLog("runMinioS3", "TEST_MINIO_S3", null);
 const testAuthProvider = getEnvVarAndLog("testAuthProvider", "TEST_AUTH_PROVIDER", null);
 const testAuthUsername = getEnvVarAndLog("testAuthUsername", "TEST_AUTH_USERNAME", null);
-const receiptsBucketName = getEnvVarAndLog("receiptsBucketName", "DIY_SUBMIT_RECEIPTS_BUCKET_NAME", null);
+// const receiptsBucketName = getEnvVarAndLog("receiptsBucketName", "DIY_SUBMIT_RECEIPTS_BUCKET_NAME", null);
 const baseUrl = getEnvVarAndLog("baseUrl", "DIY_SUBMIT_BASE_URL", null);
 
 let serverProcess;
@@ -50,8 +50,8 @@ test.beforeAll(async () => {
 
   const runLocalOAuth2ServerPromise = runLocalOAuth2Server(runMockOAuth2);
 
-  const endpoint = await runLocalS3(runMinioS3, receiptsBucketName, optionalTestS3AccessKey, optionalTestS3SecretKey);
-  serverProcess = await runLocalHttpServer(runTestServer, endpoint, serverPort);
+  // const endpoint = await runLocalS3(runMinioS3, receiptsBucketName, optionalTestS3AccessKey, optionalTestS3SecretKey);
+  serverProcess = await runLocalHttpServer(runTestServer, null, serverPort);
   ngrokProcess = await runLocalSslProxy(runProxy, serverPort, baseUrl);
 
   await runLocalOAuth2ServerPromise;

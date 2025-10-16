@@ -4,8 +4,12 @@ import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Aspects;
+import software.amazon.awscdk.AssetHashType;
+import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
+import software.amazon.awscdk.Expiration;
 import software.amazon.awscdk.RemovalPolicy;
+import software.amazon.awscdk.Size;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.Tags;
@@ -26,6 +30,8 @@ import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.iam.ServicePrincipal;
 import software.amazon.awscdk.services.lambda.FunctionUrlAuthType;
 import software.amazon.awscdk.services.lambda.Permission;
+import software.amazon.awscdk.services.logs.ILogGroup;
+import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.amazon.awscdk.services.route53.ARecord;
 import software.amazon.awscdk.services.route53.ARecordProps;
@@ -39,10 +45,15 @@ import software.amazon.awscdk.services.route53.targets.CloudFrontTarget;
 import software.amazon.awscdk.services.s3.BlockPublicAccess;
 import software.amazon.awscdk.services.s3.Bucket;
 import software.amazon.awscdk.services.s3.BucketEncryption;
+import software.amazon.awscdk.services.s3.assets.AssetOptions;
+import software.amazon.awscdk.services.s3.deployment.BucketDeployment;
+import software.amazon.awscdk.services.s3.deployment.Source;
 import software.constructs.Construct;
 
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
@@ -54,6 +65,7 @@ public class ApexStack extends Stack {
     public final Permission distributionInvokeFnUrl;
     public final ARecord aliasRecord;
     public final AaaaRecord aliasRecordV6;
+    public final BucketDeployment webDeployment;
 
     @Value.Immutable
     public interface ApexStackProps extends StackProps, SubmitStackProps {
@@ -89,6 +101,8 @@ public class ApexStack extends Stack {
         String hostedZoneId();
 
         String certificateArn();
+
+        String holdingDocRootPath();
 
         /** Logging TTL in days */
         int accessLogGroupRetentionPeriodDays();
@@ -229,6 +243,37 @@ public class ApexStack extends Stack {
                 .target(RecordTarget.fromAlias(new CloudFrontTarget(this.distribution)))
                 .deleteExisting(true)
                 .build());
+
+        // Lookup Log Group for web deployment
+        ILogGroup webDeploymentLogGroup = LogGroup.fromLogGroupArn(
+            this,
+            props.resourceNamePrefix() + "-ImportedWebDeploymentLogGroup",
+            "arn:aws:logs:%s:%s:log-group:%s"
+                .formatted(
+                    Objects.requireNonNull(props.getEnv()).getRegion(),
+                    props.getEnv().getAccount(),
+                    props.sharedNames().webDeploymentLogGroupName));
+
+        // Deploy the web website files to the web website bucket and invalidate distribution
+        // Resolve the document root path from props to avoid path mismatches between generation and deployment
+        var publicDir = Paths.get(props.holdingDocRootPath()).toAbsolutePath().normalize();
+        infof("Using public doc root: %s".formatted(publicDir));
+        var webDocRootSource = Source.asset(
+            publicDir.toString(),
+            AssetOptions.builder().assetHashType(AssetHashType.SOURCE).build());
+        this.webDeployment = BucketDeployment.Builder.create(
+                this, props.resourceNamePrefix() + "-DocRootToWebOriginDeployment")
+            .sources(List.of(webDocRootSource))
+            .destinationBucket(this.holdingBucket)
+            .distribution(distribution)
+            .distributionPaths(List.of("/index.html"))
+            .retainOnDelete(true)
+            .logGroup(webDeploymentLogGroup)
+            .expires(Expiration.after(Duration.minutes(5)))
+            .prune(false)
+            .memoryLimit(1024)
+            .ephemeralStorageSize(Size.gibibytes(2))
+            .build();
 
         Aspects.of(this).add(new SetAutoDeleteJobLogRetentionAspect(props.deploymentName(), RetentionDays.THREE_DAYS));
 
