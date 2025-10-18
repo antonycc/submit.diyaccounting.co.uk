@@ -68,13 +68,13 @@ runs:
           if [ "$ORIGIN_FOR_TAG_VALUE" != "None" ] && [ -n "$ORIGIN_FOR_TAG_VALUE" ] && ["$ORIGIN_FOR_TAG_VALUE" != "$SET_ORIGINS_APEX_DOMAIN" ]; then
             echo "Preserving aliases for OriginFor tag value: ${ORIGIN_FOR_TAG_VALUE?}"
             jq --arg origin "$ORIGIN_FOR_TAG_VALUE" '.Aliases = {Quantity: 1, Items: [$origin]}' /tmp/existing-cf-config.json > /tmp/existing-cf-config.updated.json
-          fi
+          else
             jq '.Aliases = {Quantity: 0, Items: []}' /tmp/existing-cf-config.json > /tmp/existing-cf-config.updated.json
           fi
-          echo "Updating CloudFront distribution ${EXISTING_DISTRIBUTION_ID?} to remove aliases of ${SET_ORIGINS_APEX_DOMAIN?}"
+          echo "Updating CloudFront distribution ${EXISTING_DISTRIBUTION_ID?} matching etag ${EXISTING_ETAG?} to remove aliases of ${SET_ORIGINS_APEX_DOMAIN?}"
           aws cloudfront update-distribution \
             --id "${EXISTING_DISTRIBUTION_ID?}" \
-            --if-match "${EXISTING_ETAG}" \
+            --if-match "${EXISTING_ETAG?}" \
             --distribution-config file:///tmp/existing-cf-config.updated.json
           echo "Waiting for CloudFront distribution ${EXISTING_DISTRIBUTION_ID?} to deploy updated aliases..."
           aws cloudfront wait distribution-deployed --id "${EXISTING_DISTRIBUTION_ID?}"
