@@ -55,7 +55,8 @@ on:
       - 'package-lock.json'
       - 'pom.xml'
       - 'product-catalogue.toml'
-      - '.github/workflows/set-origins.yml'
+      - '.github/actions/get-names'
+      - '.github/actions/set-origins'
       - '.github/workflows/deploy.yml'
   schedule:
     - cron: '23 4 * * *'

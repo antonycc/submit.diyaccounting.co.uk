@@ -109,9 +109,9 @@ jobs:
             if [ -z "$CLOUDFRONT_DISTRIBUTION_ID" ] || [ "$CLOUDFRONT_DISTRIBUTION_ID" == "None" ]; then
               aws cloudfront list-distributions \
                 --query "${CLOUDFRONT_DISTRIBUTION_QUERY?}" \
-                --output text
+                --output json
               aws cloudfront list-distributions \
-                --output text
+                --output json
               echo "Error: Could not find CloudFront Distribution with OriginFor tag ${ORIGIN_DOMAIN?}."
               exit 1
             fi

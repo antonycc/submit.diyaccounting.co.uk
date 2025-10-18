@@ -23,6 +23,8 @@ on:
       - '.env.ci'
       - '.env.prod'
       - 'cdk-environment/cdk.json'
+      - '.github/actions/get-names'
+      - '.github/actions/set-origins'
       - '.github/workflows/deploy-environment.yml'
   schedule:
     - cron: '43 3 * * *'
