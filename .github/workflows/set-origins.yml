@@ -101,20 +101,16 @@ jobs:
           CLOUDFRONT_DISTRIBUTION_ID="${INPUT_CLOUDFRONT_DISTRIBUTION_ID}"
           if [ -z "$CLOUDFRONT_DISTRIBUTION_ID" ]; then
             echo "CloudFront Distribution ID not provided, looking up based on the ORIGIN_DOMAIN ${ORIGIN_DOMAIN?} matching the tag named OriginFor"
-            CLOUDFRONT_DISTRIBUTION_QUERY="DistributionList.Items[?Tags.Items[?Key=='OriginFor'&&Value=='""${ORIGIN_DOMAIN?}""']].Id | [0]"
-            echo "Using query: ${CLOUDFRONT_DISTRIBUTION_QUERY?}"
-            CLOUDFRONT_DISTRIBUTION_ID=$(aws cloudfront list-distributions \
-              --query "${CLOUDFRONT_DISTRIBUTION_QUERY?}" \
+            CLOUDFRONT_DISTRIBUTION_ARN=$(aws resourcegroupstaggingapi get-resources \
+              --resource-type-filters cloudfront:distribution \
+              --tag-filters Key=OriginFor,Values="${ORIGIN_DOMAIN}" \
+              --query 'ResourceTagMappingList[0].ResourceARN' \
               --output text)
-            if [ -z "$CLOUDFRONT_DISTRIBUTION_ID" ] || [ "$CLOUDFRONT_DISTRIBUTION_ID" == "None" ]; then
-              aws cloudfront list-distributions \
-                --query "${CLOUDFRONT_DISTRIBUTION_QUERY?}" \
-                --output json
-              aws cloudfront list-distributions \
-                --output json
-              echo "Error: Could not find CloudFront Distribution with OriginFor tag ${ORIGIN_DOMAIN?}."
+            if [ -z "$CLOUDFRONT_DISTRIBUTION_ARN" ] || [ "$CLOUDFRONT_DISTRIBUTION_ARN" = "None" ]; then
+              echo "Error: No CloudFront distribution found with tag OriginFor=${ORIGIN_DOMAIN}" >&2
               exit 1
             fi
+            CLOUDFRONT_DISTRIBUTION_ID="${CF_ARN##*/}"
             echo "Found CloudFront Distribution ID: ${CLOUDFRONT_DISTRIBUTION_ID?}"
           else
             echo "Using provided CloudFront Distribution ID: ${CLOUDFRONT_DISTRIBUTION_ID?}"
