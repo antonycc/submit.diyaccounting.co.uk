@@ -344,11 +344,11 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
+      #   npm install
+      #   npx playwright install chromium --with-deps
+      # TODO: Part 2: Reinstate this because it could have just been the missing NGROK_AUTH_TOKEN that held up the tests
       - name: Install dependencies
         run: |
-       #   npm install
-       #   npx playwright install chromium --with-deps
-       # TODO: Part 2: Reinstate this because it could have just been the missing NGROK_AUTH_TOKEN that held up the tests
           npm ci --ignore-scripts
         env:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
