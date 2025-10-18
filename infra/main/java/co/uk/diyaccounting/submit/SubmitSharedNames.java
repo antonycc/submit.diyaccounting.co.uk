@@ -130,10 +130,10 @@ public class SubmitSharedNames {
                 props.envName, props.cognitoDomainPrefix, props.subDomainName, props.hostedZoneName);
         this.holdingDomainName = buildDomainName("%s-holding".formatted(props.envName), props.subDomainName, props.hostedZoneName);
         this.baseUrl = "https://%s/".formatted(this.domainName);
-        this.envBaseUrl = "https://%s/".formatted(this.envDomainName);
         this.dashedDomainName = buildDashedDomainName(this.domainName);
 
         this.envDomainName = buildDomainName(props.envName, props.subDomainName, props.hostedZoneName);
+        this.envBaseUrl = "https://%s/".formatted(this.envDomainName);
         this.envDashedDomainName = buildDashedDomainName(this.envDomainName);
         this.envResourceNamePrefix = "env-%s".formatted(generateResourceNamePrefix(this.envDomainName));
         this.envCompressedResourceNamePrefix =
