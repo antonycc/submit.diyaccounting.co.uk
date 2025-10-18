@@ -48,6 +48,10 @@ jobs:
     outputs:
       environment-name: ${{ steps.deployment-config.outputs.ENVIRONMENT_NAME }}
       deployment-name: ${{ steps.deployment-config.outputs.ENVIRONMENT_NAME }}
+      apex-domain: ${{ steps.deployment-config.outputs.DIY_SUBMIT_APEX_DOMAIN }}
+      apex-url: ${{ steps.deployment-config.outputs.DIY_SUBMIT_APEX_URL }}
+      holding-domain: ${{ steps.deployment-config.outputs.DIY_SUBMIT_HOLDING_DOMAIN }}
+      holding-url: ${{ steps.deployment-config.outputs.DIY_SUBMIT_HOLDING_URL }}
 
   create-secrets:
     name: create secrets

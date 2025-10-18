@@ -42,7 +42,9 @@ export async function startMinio(receiptsBucketName, optionalTestS3AccessKey, op
 
 // Start or connect to MinIO S3 server or any S3 compatible server
 export async function ensureMinioBucketExists(receiptsBucketName, endpoint, optionalTestS3AccessKey, optionalTestS3SecretKey) {
-  logger.info(`Ensuring bucket: '${receiptsBucketName}' exists on endpoint '${endpoint}' for access key '${optionalTestS3AccessKey}'`);
+  logger.info(
+    `[minio]: Ensuring bucket: '${receiptsBucketName}' exists on endpoint '${endpoint}' for access key '${optionalTestS3AccessKey}'`,
+  );
   const clientConfig = {
     endpoint,
     forcePathStyle: true,
@@ -56,15 +58,15 @@ export async function ensureMinioBucketExists(receiptsBucketName, endpoint, opti
 
   try {
     await s3.send(new HeadBucketCommand({ Bucket: receiptsBucketName }));
-    logger.info(`✅ Bucket '${receiptsBucketName}' already exists on endpoint '${endpoint}'`);
+    logger.info(`[minio]: ✅ Bucket '${receiptsBucketName}' already exists on endpoint '${endpoint}'`);
   } catch (err) {
     if (err.name === "NotFound") {
-      logger.info(`ℹ️ Bucket '${receiptsBucketName}' not found on endpoint '${endpoint}', creating...`);
+      logger.info(`[minio]: ℹ️ Bucket '${receiptsBucketName}' not found on endpoint '${endpoint}', creating...`);
       await s3.send(new CreateBucketCommand({ Bucket: receiptsBucketName }));
-      logger.info(`✅ Created bucket '${receiptsBucketName}' on endpoint '${endpoint}'`);
+      logger.info(`[minio]: ✅ Created bucket '${receiptsBucketName}' on endpoint '${endpoint}'`);
     } else {
       throw new Error(
-        `Failed to check/create bucket: ${err.message} on endpoint '${endpoint}' for access key '${optionalTestS3AccessKey}'`,
+        `[minio]: Failed to check/create bucket: ${err.message} on endpoint '${endpoint}' for access key '${optionalTestS3AccessKey}'`,
       );
     }
   }

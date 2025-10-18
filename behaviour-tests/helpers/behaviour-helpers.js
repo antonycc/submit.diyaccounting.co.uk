@@ -19,13 +19,13 @@ export function getEnvVarAndLog(name, envKey, defaultValue) {
 export async function runLocalS3(runMinioS3, receiptsBucketName, optionalTestS3AccessKey, optionalTestS3SecretKey) {
   let endpoint;
   if (runMinioS3 === "run") {
-    console.log("Starting minio process...");
+    console.log("[minio]: Starting minio process...");
     endpoint = await startMinio(receiptsBucketName, optionalTestS3AccessKey, optionalTestS3SecretKey);
-    console.log("Waiting for server to initialize...");
+    console.log("[minio]: Waiting for server to initialize...");
     await new Promise((resolve) => setTimeout(resolve, 2000));
     await ensureMinioBucketExists(receiptsBucketName, endpoint, optionalTestS3AccessKey, optionalTestS3SecretKey);
   } else {
-    console.log("Skipping Minio container creation because TEST_MINIO_S3 is not set to 'run'");
+    console.log("[minio]: Skipping Minio container creation because TEST_MINIO_S3 is not set to 'run'");
   }
   return endpoint;
 }
@@ -33,7 +33,7 @@ export async function runLocalS3(runMinioS3, receiptsBucketName, optionalTestS3A
 export async function runLocalHttpServer(runTestServer, s3Endpoint, httpServerPort) {
   let serverProcess;
   if (runTestServer === "run") {
-    console.log("Starting server process...");
+    console.log("[http]: Starting server process...");
     // eslint-disable-next-line sonarjs/no-os-command-from-path
     serverProcess = spawn("npm", ["run", "start"], {
       env: {
@@ -45,7 +45,7 @@ export async function runLocalHttpServer(runTestServer, s3Endpoint, httpServerPo
     });
     await checkIfServerIsRunning(`http://127.0.0.1:${httpServerPort}`, 1000, undefined, "http");
   } else {
-    console.log("Skipping server process as runTestServer is not set to 'run'");
+    console.log("[http]: Skipping server process as runTestServer is not set to 'run'");
   }
   return serverProcess;
 }
@@ -53,7 +53,7 @@ export async function runLocalHttpServer(runTestServer, s3Endpoint, httpServerPo
 export async function runLocalSslProxy(runProxy, httpServerPort, baseUrl) {
   let ngrokProcess;
   if (runProxy === "run") {
-    console.log("Starting ngrok process...");
+    console.log("[proxy]: Starting ngrok process...");
     // eslint-disable-next-line sonarjs/no-os-command-from-path
     ngrokProcess = spawn("npm", ["run", "proxy", httpServerPort.toString()], {
       env: {
@@ -63,7 +63,7 @@ export async function runLocalSslProxy(runProxy, httpServerPort, baseUrl) {
     });
     await checkIfServerIsRunning(baseUrl, 1000, undefined, "proxy");
   } else {
-    console.log("Skipping ngrok process as runProxy is not set to 'run'");
+    console.log("[proxy]: Skipping ngrok process as runProxy is not set to 'run'");
   }
   return ngrokProcess;
 }
@@ -71,7 +71,7 @@ export async function runLocalSslProxy(runProxy, httpServerPort, baseUrl) {
 export async function runLocalOAuth2Server(runMockOAuth2) {
   let serverProcess;
   if (runMockOAuth2 === "run") {
-    console.log("Starting mock-oauth2-server process...");
+    console.log("[auth]: Starting mock-oauth2-server process...");
     // eslint-disable-next-line sonarjs/no-os-command-from-path
     serverProcess = spawn("npm", ["run", "auth"], {
       env: {
@@ -81,7 +81,7 @@ export async function runLocalOAuth2Server(runMockOAuth2) {
     });
     await checkIfServerIsRunning("http://localhost:8080/default/debugger", 2000, undefined, "auth");
   } else {
-    console.log("Skipping mock-oauth2-server process as runMockOAuth2 is not set to 'run'");
+    console.log("[auth]: Skipping mock-oauth2-server process as runMockOAuth2 is not set to 'run'");
   }
   return serverProcess;
 }

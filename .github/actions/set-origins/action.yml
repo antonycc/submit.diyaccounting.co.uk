@@ -18,8 +18,8 @@ runs:
       run: |
         set -euo pipefail
 
-        if [ -z "${DIY_SUBMIT_APEX_DOMAIN:-}" ] || [ -z "${DIY_SUBMIT_BASE_DOMAIN:-}" ] || [ -z "${AWS_HOSTED_ZONE_ID:-}" ]; then
-          echo "Required env vars DIY_SUBMIT_APEX_DOMAIN, DIY_SUBMIT_BASE_DOMAIN, and AWS_HOSTED_ZONE_ID must be set."
+        if [ -z "${DIY_SUBMIT_APEX_DOMAIN:-}" ] || [ -z "${DIY_SUBMIT_ORIGIN_DOMAIN:-}" ] || [ -z "${AWS_HOSTED_ZONE_ID:-}" ]; then
+          echo "Required env vars DIY_SUBMIT_APEX_DOMAIN, DIY_SUBMIT_ORIGIN_DOMAIN, and AWS_HOSTED_ZONE_ID must be set."
           exit 1
         fi
 
@@ -34,7 +34,7 @@ runs:
                 "Type": "A",
                 "AliasTarget": {
                   "HostedZoneId": "${AWS_HOSTED_ZONE_ID}",
-                  "DNSName": "${DIY_SUBMIT_BASE_DOMAIN}.",
+                  "DNSName": "${DIY_SUBMIT_ORIGIN_DOMAIN}.",
                   "EvaluateTargetHealth": false
                 }
               }
@@ -46,7 +46,7 @@ runs:
                 "Type": "AAAA",
                 "AliasTarget": {
                   "HostedZoneId": "${AWS_HOSTED_ZONE_ID}",
-                  "DNSName": "${DIY_SUBMIT_BASE_DOMAIN}.",
+                  "DNSName": "${DIY_SUBMIT_ORIGIN_DOMAIN}.",
                   "EvaluateTargetHealth": false
                 }
               }
@@ -55,5 +55,5 @@ runs:
         }
         JSON
 
-        echo "Upserting alias records: ${DIY_SUBMIT_APEX_DOMAIN} -> ${DIY_SUBMIT_BASE_DOMAIN} in hosted zone ${AWS_HOSTED_ZONE_ID}"
+        echo "Upserting alias records: ${DIY_SUBMIT_APEX_DOMAIN} -> ${DIY_SUBMIT_ORIGIN_DOMAIN} in hosted zone ${AWS_HOSTED_ZONE_ID}"
         aws route53 change-resource-record-sets --hosted-zone-id "$AWS_HOSTED_ZONE_ID" --change-batch file:///tmp/alias.json
