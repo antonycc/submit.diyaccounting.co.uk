@@ -320,8 +320,8 @@ public class EdgeStack extends Stack {
                 .defaultBehavior(localBehaviorOptions) // props.webBehaviorOptions)
                 .additionalBehaviors(additionalBehaviors)
                 .domainNames(List.of(
-                    // props.sharedNames().domainName,
-                    props.sharedNames().envDomainName
+                    props.sharedNames().domainName
+                    // props.sharedNames().envDomainName
                 ))
                 .certificate(cert)
                 .defaultRootObject("index.html")
@@ -333,7 +333,7 @@ public class EdgeStack extends Stack {
                 .sslSupportMethod(SSLMethod.SNI)
                 .webAclId(webAcl.getAttrArn())
                 .build();
-        Tags.of(this.distribution).add("OriginFor", props.sharedNames().envDomainName);
+        Tags.of(this.distribution).add("OriginFor", props.sharedNames().domainName);
 
         // Grant CloudFront access to the origin lambdas with compressed names
         this.distributionInvokeFnUrl = Permission.builder()
@@ -343,23 +343,12 @@ public class EdgeStack extends Stack {
                 .sourceArn(this.distribution.getDistributionArn())
                 .build();
 
-        // Build the record name for envDomainName relative to the hosted zone
-        String envRecordName =
-            props.hostedZoneName().equals(props.sharedNames().envDomainName)
-                ? null
-                : (props.sharedNames().envDomainName.endsWith("." + props.hostedZoneName())
-                ? props.sharedNames().envDomainName.substring(
-                0,
-                props.sharedNames().envDomainName.length()
-                    - (props.hostedZoneName().length() + 1))
-                : props.sharedNames().envDomainName);
-
         // A record
         this.aliasRecord = new ARecord(
                 this,
                 props.resourceNamePrefix() + "-AliasRecord",
                 ARecordProps.builder()
-                        .recordName(envRecordName)
+                        .recordName(recordName)
                         .zone(zone)
                         .target(RecordTarget.fromAlias(new CloudFrontTarget(this.distribution)))
                         .deleteExisting(true)
@@ -369,7 +358,7 @@ public class EdgeStack extends Stack {
                 this,
                 props.resourceNamePrefix() + "-AliasRecordV6",
                     AaaaRecordProps.builder()
-                        .recordName(envRecordName)
+                        .recordName(recordName)
                         .zone(zone)
                         .target(RecordTarget.fromAlias(new CloudFrontTarget(this.distribution)))
                         .deleteExisting(true)
