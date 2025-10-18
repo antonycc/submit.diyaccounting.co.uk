@@ -342,12 +342,23 @@ public class EdgeStack extends Stack {
                 .sourceArn(this.distribution.getDistributionArn())
                 .build();
 
+        // Build the record name for envDomainName relative to the hosted zone
+        String envRecordName =
+            props.hostedZoneName().equals(props.sharedNames().envDomainName)
+                ? null
+                : (props.sharedNames().envDomainName.endsWith("." + props.hostedZoneName())
+                ? props.sharedNames().envDomainName.substring(
+                0,
+                props.sharedNames().envDomainName.length()
+                    - (props.hostedZoneName().length() + 1))
+                : props.sharedNames().envDomainName);
+
         // A record
         this.aliasRecord = new ARecord(
                 this,
                 props.resourceNamePrefix() + "-AliasRecord",
                 ARecordProps.builder()
-                        .recordName(recordName)
+                        .recordName(envRecordName)
                         .zone(zone)
                         .target(RecordTarget.fromAlias(new CloudFrontTarget(this.distribution)))
                         .deleteExisting(true)
@@ -357,7 +368,7 @@ public class EdgeStack extends Stack {
                 this,
                 props.resourceNamePrefix() + "-AliasRecordV6",
                     AaaaRecordProps.builder()
-                        .recordName(recordName)
+                        .recordName(envRecordName)
                         .zone(zone)
                         .target(RecordTarget.fromAlias(new CloudFrontTarget(this.distribution)))
                         .deleteExisting(true)
