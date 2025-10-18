@@ -107,6 +107,11 @@ jobs:
               --query "${CLOUDFRONT_DISTRIBUTION_QUERY?}" \
               --output text)
             if [ -z "$CLOUDFRONT_DISTRIBUTION_ID" ] || [ "$CLOUDFRONT_DISTRIBUTION_ID" == "None" ]; then
+              aws cloudfront list-distributions \
+                --query "${CLOUDFRONT_DISTRIBUTION_QUERY?}" \
+                --output text
+              aws cloudfront list-distributions \
+                --output text
               echo "Error: Could not find CloudFront Distribution with OriginFor tag ${ORIGIN_DOMAIN?}."
               exit 1
             fi
@@ -114,7 +119,6 @@ jobs:
           else
             echo "Using provided CloudFront Distribution ID: ${CLOUDFRONT_DISTRIBUTION_ID?}"
           fi
-          echo "CLOUDFRONT_DISTRIBUTION_ID=$CLOUDFRONT_DISTRIBUTION_ID" | tee -a "$GITHUB_OUTPUT"
           echo "CLOUDFRONT_DISTRIBUTION_ID=$CLOUDFRONT_DISTRIBUTION_ID" | tee -a "$GITHUB_OUTPUT"
 
       - name: Alias apex domain to holding or base domain
