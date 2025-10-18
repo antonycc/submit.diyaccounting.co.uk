@@ -6,7 +6,22 @@ export default defineConfig({
     {
       name: "behaviour-tests",
       testDir: "behaviour-tests",
-      workers: 1, // throttle concurrency to 1
+      testMatch: ["**/*.behaviour.test.js"],
+      workers: 1,
+      outputDir: "./target/behaviour-test-results/",
+    },
+    {
+      name: "origin-behaviour-tests",
+      testDir: "behaviour-tests",
+      testMatch: ["**/bundles.behaviour.test.js"],
+      workers: 1,
+      outputDir: "./target/behaviour-test-results/",
+    },
+    {
+      name: "web-behaviour-tests",
+      testDir: "behaviour-tests",
+      testMatch: ["**/submitVat.behaviour.test.js"],
+      workers: 1,
       outputDir: "./target/behaviour-test-results/",
     },
     {

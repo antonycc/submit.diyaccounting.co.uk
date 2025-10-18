@@ -39,6 +39,7 @@ public class SubmitEnvironment {
         public String cloudTrailEnabled;
         public String cloudTrailLogGroupPrefix;
         public String cloudTrailLogGroupRetentionPeriodDays;
+        public String holdingDocRootPath;
         public String authCertificateArn;
         public String googleClientId;
         public String googleClientSecretArn;
@@ -114,6 +115,7 @@ public class SubmitEnvironment {
                 "S3_RETAIN_RECEIPTS_BUCKET",
                 appProps.s3RetainReceiptsBucket,
                 "(from s3RetainReceiptsBucket in cdk.json)");
+        var holdingDocRootPath = envOr("HOLDING_DOC_ROOT_PATH", appProps.holdingDocRootPath, "(from holdingDocRootPath in cdk.json)");
 
         // Create ObservabilityStack with resources used in monitoring the application
         infof(
@@ -215,7 +217,7 @@ public class SubmitEnvironment {
                         .hostedZoneId(appProps.hostedZoneId)
                         .certificateArn(appProps.certificateArn)
                         .accessLogGroupRetentionPeriodDays(accessLogGroupRetentionPeriodDays)
-                        .holdingDocRootPath("../web/holding")
+                        .holdingDocRootPath(holdingDocRootPath)
                         .build());
     }
 
