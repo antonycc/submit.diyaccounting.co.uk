@@ -16,6 +16,7 @@ public class SubmitSharedNames {
     public String cognitoDomainName;
     public String holdingDomainName;
     public String baseUrl;
+    public String envBaseUrl;
     public String dashedDomainName;
 
     public String receiptsBucketName;
@@ -129,6 +130,7 @@ public class SubmitSharedNames {
                 props.envName, props.cognitoDomainPrefix, props.subDomainName, props.hostedZoneName);
         this.holdingDomainName = buildDomainName("%s-holding".formatted(props.envName), props.subDomainName, props.hostedZoneName);
         this.baseUrl = "https://%s/".formatted(this.domainName);
+        this.envBaseUrl = "https://%s/".formatted(this.envDomainName);
         this.dashedDomainName = buildDashedDomainName(this.domainName);
 
         this.envDomainName = buildDomainName(props.envName, props.subDomainName, props.hostedZoneName);

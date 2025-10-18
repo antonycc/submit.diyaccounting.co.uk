@@ -1,16 +1,10 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildFunctionName;
-
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
 import co.uk.diyaccounting.submit.constructs.LambdaUrlOrigin;
 import co.uk.diyaccounting.submit.constructs.LambdaUrlOriginProps;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
-import java.util.List;
-import java.util.Optional;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Aspects;
 import software.amazon.awscdk.Duration;
@@ -31,6 +25,13 @@ import software.amazon.awscdk.services.s3.IBucket;
 import software.amazon.awscdk.services.secretsmanager.Secret;
 import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
+
+import java.util.List;
+import java.util.Optional;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildFunctionName;
 
 public class HmrcStack extends Stack {
 
@@ -118,7 +119,7 @@ public class HmrcStack extends Stack {
 
         // authUrl - HMRC
         var authUrlHmrcLambdaEnv = new PopulatedMap<String, String>()
-                .with("DIY_SUBMIT_BASE_URL", props.sharedNames().baseUrl)
+                .with("DIY_SUBMIT_BASE_URL", props.sharedNames().envBaseUrl)
                 .with("HMRC_BASE_URI", props.hmrcBaseUri())
                 .with("HMRC_CLIENT_ID", props.hmrcClientId());
         var authUrlHmrcLambdaUrlOriginFunctionHandler = "authUrl.httpGetHmrc";
@@ -146,7 +147,7 @@ public class HmrcStack extends Stack {
 
         // exchangeToken - HMRC
         var exchangeHmrcEnvBase = new PopulatedMap<String, String>()
-                .with("DIY_SUBMIT_BASE_URL", props.sharedNames().baseUrl)
+                .with("DIY_SUBMIT_BASE_URL", props.sharedNames().envBaseUrl)
                 .with("HMRC_BASE_URI", props.hmrcBaseUri())
                 .with("HMRC_CLIENT_ID", props.hmrcClientId());
         if (StringUtils.isNotBlank(props.hmrcClientSecretArn())) {
@@ -201,7 +202,7 @@ public class HmrcStack extends Stack {
 
         // submitVat
         var submitVatLambdaEnv = new PopulatedMap<String, String>()
-                .with("DIY_SUBMIT_BASE_URL", props.sharedNames().baseUrl)
+                .with("DIY_SUBMIT_BASE_URL", props.sharedNames().envBaseUrl)
                 .with("HMRC_BASE_URI", props.hmrcBaseUri());
         var submitVatLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
@@ -224,7 +225,7 @@ public class HmrcStack extends Stack {
                 props.lambdaEntry() + props.sharedNames().submitVatLambdaHandler);
 
         var logReceiptLambdaEnv = new PopulatedMap<String, String>()
-                .with("DIY_SUBMIT_BASE_URL", props.sharedNames().baseUrl)
+                .with("DIY_SUBMIT_BASE_URL", props.sharedNames().envBaseUrl)
                 .with("DIY_SUBMIT_RECEIPTS_BUCKET_NAME", props.sharedNames().receiptsBucketName);
         if (props.optionalTestS3Endpoint().isPresent()
                 && StringUtils.isNotBlank(props.optionalTestS3Endpoint().get())
@@ -260,7 +261,7 @@ public class HmrcStack extends Stack {
 
         // myReceipts Lambda
         var myReceiptsLambdaEnv = new PopulatedMap<String, String>()
-                .with("DIY_SUBMIT_BASE_URL", props.sharedNames().baseUrl)
+                .with("DIY_SUBMIT_BASE_URL", props.sharedNames().envBaseUrl)
                 .with("DIY_SUBMIT_RECEIPTS_BUCKET_NAME", props.sharedNames().receiptsBucketName);
         var myReceiptsLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
