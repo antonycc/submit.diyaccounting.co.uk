@@ -7,11 +7,10 @@ concurrency:
 on:
   workflow_dispatch:
     inputs:
-      deploymentName:
+      deployment-name:
         description: 'The name of the deployment to destroy (omit for branch-based deployments, "ci" for CI environment, "prod" for production)'
         required: false
         default: ''
-  delete:
 
 permissions:
   id-token: write
@@ -25,9 +24,6 @@ env:
   AWS_REGION: 'eu-west-2'
   AWS_ACCOUNT_ID: '887764105431'
   BASE_IMAGE_TAG_PREFIX: 'submit-base'
-  skipDeploy: ${{ inputs.skipDeploy || 'false' }}
-  deploymentName: ${{ inputs.deploymentName || '' }}
-  loadTestDuration: ${{ inputs.loadTestDuration || '30s' }}
   GITHUB_ACTOR: ${{ github.actor }}
   SELF_DESTRUCT_DELAY_HOURS: ${{ inputs.selfDestructDelayHours || '1' }}
   BASE_IMAGE_TAG: ${{ github.sha }}
@@ -36,7 +32,28 @@ env:
   BUILD_NUMBER: ${{ github.run_number }}
 
 jobs:
+  names:
+    runs-on: ubuntu-24.04
+    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+      - name: Compute deployment name and environment
+        id: deployment-config
+        uses: ./.github/actions/get-names
+    outputs:
+      environment-name: ${{ steps.deployment-config.outputs.environment-name }}
+      deployment-name: ${{ inputs.deployment-name || steps.deployment-config.outputs.deployment-name }}
+      base-domain: ${{ steps.deployment-config.outputs.base-domain }}
+      base-url: ${{ steps.deployment-config.outputs.base-url }}
+      apex-domain: ${{ steps.deployment-config.outputs.apex-domain }}
+      apex-url: ${{ steps.deployment-config.outputs.apex-url }}
+      holding-domain: ${{ steps.deployment-config.outputs.holding-domain }}
+      holding-url: ${{ steps.deployment-config.outputs.holding-url }}
+
   destroy:
+    needs:
+      - names
     if: ${{ github.event_name != 'delete' || github.event.ref_type == 'branch' }} # skip non-branch deletions
     runs-on: ubuntu-latest
     environment: ${{ (github.event_name == 'delete' && github.event.ref == 'refs/heads/main') || (github.event_name != 'delete' && github.ref == 'refs/heads/main') && 'prod' || 'ci' }}
@@ -54,49 +71,6 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v5
-
-      - name: Compute deployment name and environment
-        id: names
-        run: |
-          # For delete events, use the deleted ref; otherwise use current ref
-          if [ "${{ github.event_name }}" = "delete" ]; then
-              # Extract branch name from refs/heads/branch-name
-              REF_NAME=$(echo "${{ github.event.ref }}" | sed 's|^refs/heads/||')
-              echo "Delete event detected, using deleted ref: $REF_NAME"
-          else
-              REF_NAME="${{ github.ref_name }}"
-              echo "Workflow dispatch event, using current ref: $REF_NAME"
-          fi
-
-          INPUT_DEPLOYMENT_NAME="${{ inputs.deploymentName }}"
-
-          # Clean branch name: lowercase, replace non-alphanumeric with hyphens, collapse consecutive hyphens
-          CLEANED=$(echo "$REF_NAME" | tr '[:upper:]' '[:lower:]' | sed -e 's/[^a-z0-9]/-/g' -e 's/-\{2,\}/-/g' -e 's/^-//' -e 's/-$//')
-
-          if [ "$REF_NAME" = "main" ]; then
-              ENVIRONMENT_NAME="prod"
-              DEPLOYMENT_NAME="prod"
-          elif [ "$INPUT_DEPLOYMENT_NAME" = "ci" ]; then
-              ENVIRONMENT_NAME="ci"
-              DEPLOYMENT_NAME="ci"
-          elif [ -n "$INPUT_DEPLOYMENT_NAME" ]; then
-              ENVIRONMENT_NAME="ci"
-              DEPLOYMENT_NAME="$INPUT_DEPLOYMENT_NAME"
-          else
-              ENVIRONMENT_NAME="ci"
-              # Truncate to 16 chars for branch-based deployments
-              DEPLOYMENT_NAME="ci-${CLEANED:0:8}"
-          fi
-
-          echo "Computed ENVIRONMENT_NAME: $ENVIRONMENT_NAME"
-          echo "Computed DEPLOYMENT_NAME: $DEPLOYMENT_NAME"
-          #DEPLOYMENT_NAME=$ENVIRONMENT_NAME
-
-          echo "ENVIRONMENT_NAME=$environmentment-name" >> "$GITHUB_OUTPUT"
-          echo "DEPLOYMENT_NAME=$deployment-name" >> "$GITHUB_OUTPUT"
-
-          echo "Actual ENVIRONMENT_NAME: $ENVIRONMENT_NAME"
-          echo "Actual DEPLOYMENT_NAME: $DEPLOYMENT_NAME"
 
       - name: Setup Node
         uses: actions/setup-node@v6
@@ -144,12 +118,12 @@ jobs:
         run: ./mvnw --errors clean package -DskipTests
 
       - name: Destroy PublishStack
-        if: ${{ steps.names.outputs.deployment-name != 'prod' }}
+        if: ${{ needs.names.outputs.deployment-name != 'prod' }}
         run: |
           cd cdk-delivery && \
-            npx dotenv -e ../.env.${{ steps.names.outputs.environment-name }} -- \
+            npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
               npx cdk destroy \
-              del-${{ steps.names.outputs.deployment-name }}-PublishStack \
+              del-${{ needs.names.outputs.deployment-name }}-PublishStack \
               --exclusively --force \
           && cd .. \
           ;
@@ -160,12 +134,12 @@ jobs:
           WEBSITE_HASH: 'placeholder'
 
       - name: Destroy EdgeStack
-        if: ${{ steps.names.outputs.deployment-name != 'prod' }}
+        if: ${{ needs.names.outputs.deployment-name != 'prod' }}
         run: |
           cd cdk-delivery && \
-            npx dotenv -e ../.env.${{ steps.names.outputs.environment-name }} -- \
+            npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
               npx cdk destroy \
-              del-${{ steps.names.outputs.deployment-name }}-EdgeStack \
+              del-${{ needs.names.outputs.deployment-name }}-EdgeStack \
               --exclusively --force \
           && cd .. \
           ;
@@ -176,12 +150,12 @@ jobs:
           WEBSITE_HASH: 'placeholder'
 
       - name: Destroy OpsStack
-        if: ${{ steps.names.outputs.deployment-name != 'prod' }}
+        if: ${{ needs.names.outputs.deployment-name != 'prod' }}
         run: |
           cd cdk-application && \
-            npx dotenv -e ../.env.${{ steps.names.outputs.environment-name }} -- \
+            npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
               npx cdk destroy \
-              app-${{ steps.names.outputs.deployment-name }}-OpsStack \
+              app-${{ needs.names.outputs.deployment-name }}-OpsStack \
               --exclusively --force \
           && cd .. \
           ;
@@ -195,12 +169,12 @@ jobs:
           COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
 
       - name: Destroy AccountStack
-        if: ${{ steps.names.outputs.deployment-name != 'prod' }}
+        if: ${{ needs.names.outputs.deployment-name != 'prod' }}
         run: |
           cd cdk-application && \
-            npx dotenv -e ../.env.${{ steps.names.outputs.environment-name }} -- \
+            npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
               npx cdk destroy \
-              app-${{ steps.names.outputs.deployment-name }}-AccountStack \
+              app-${{ needs.names.outputs.deployment-name }}-AccountStack \
               --exclusively --force \
           && cd .. \
           ;
@@ -214,12 +188,12 @@ jobs:
           COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
 
       - name: Destroy HmrcStack
-        if: ${{ steps.names.outputs.deployment-name != 'prod' }}
+        if: ${{ needs.names.outputs.deployment-name != 'prod' }}
         run: |
           cd cdk-application && \
-            npx dotenv -e ../.env.${{ steps.names.outputs.environment-name }} -- \
+            npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
               npx cdk destroy \
-              app-${{ steps.names.outputs.deployment-name }}-HmrcStack \
+              app-${{ needs.names.outputs.deployment-name }}-HmrcStack \
               --exclusively --force \
           && cd .. \
           ;
@@ -233,12 +207,12 @@ jobs:
           COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
 
       - name: Destroy AuthStack
-        if: ${{ steps.names.outputs.deployment-name != 'prod' }}
+        if: ${{ needs.names.outputs.deployment-name != 'prod' }}
         run: |
           cd cdk-application && \
-            npx dotenv -e ../.env.${{ steps.names.outputs.environment-name }} -- \
+            npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
               npx cdk destroy \
-              app-${{ steps.names.outputs.deployment-name }}-AuthStack \
+              app-${{ needs.names.outputs.deployment-name }}-AuthStack \
               --exclusively --force \
           && cd .. \
           ;
@@ -252,12 +226,12 @@ jobs:
           COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
 
       - name: Destroy DevStack
-        if: ${{ steps.names.outputs.deployment-name != 'prod' }}
+        if: ${{ needs.names.outputs.deployment-name != 'prod' }}
         run: |
           cd cdk-application && \
-            npx dotenv -e ../.env.${{ steps.names.outputs.environment-name }} -- \
+            npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
               npx cdk destroy \
-              app-${{ steps.names.outputs.deployment-name }}-DevStack \
+              app-${{ needs.names.outputs.deployment-name }}-DevStack \
               --exclusively --force \
           && cd .. \
           ;
@@ -271,12 +245,12 @@ jobs:
           COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
 
       - name: Destroy SelfDestructStack (Delivery)
-        if: ${{ steps.names.outputs.deployment-name != 'prod' }}
+        if: ${{ needs.names.outputs.deployment-name != 'prod' }}
         run: |
           cd cdk-delivery && \
-            npx dotenv -e ../.env.${{ steps.names.outputs.environment-name }} -- \
+            npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
               npx cdk destroy \
-              del-${{ steps.names.outputs.deployment-name }}-SelfDestructStack \
+              del-${{ needs.names.outputs.deployment-name }}-SelfDestructStack \
               --exclusively --force \
           && cd .. \
           ;
@@ -287,12 +261,12 @@ jobs:
           WEBSITE_HASH: "placeholder"
 
       - name: Destroy SelfDestructStack (Application)
-        if: ${{ steps.names.outputs.deployment-name != 'prod' }}
+        if: ${{ needs.names.outputs.deployment-name != 'prod' }}
         run: |
           cd cdk-application && \
-            npx dotenv -e ../.env.${{ steps.names.outputs.environment-name }} -- \
+            npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
               npx cdk destroy \
-              app-${{ steps.names.outputs.deployment-name }}-SelfDestructStack \
+              app-${{ needs.names.outputs.deployment-name }}-SelfDestructStack \
               --exclusively --force \
           && cd .. \
           ;

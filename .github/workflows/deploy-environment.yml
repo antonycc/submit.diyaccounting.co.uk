@@ -37,21 +37,25 @@ env:
   GITHUB_ACTOR: ${{ github.actor }}
 
 jobs:
+
   names:
-    name: names
-    environment: ${{ inputs.environment || 'ci' }}
     runs-on: ubuntu-24.04
+    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
     steps:
-      - id: deployment-config
-        run: |
-          echo "ENVIRONMENT_NAME=${{ inputs.environment || 'ci' }}" >> "$GITHUB_OUTPUT"
+      - name: Checkout
+        uses: actions/checkout@v5
+      - name: Compute deployment name and environment
+        id: deployment-config
+        uses: ./.github/actions/get-names
     outputs:
-      environment-name: ${{ steps.deployment-config.outputs.ENVIRONMENT_NAME }}
-      deployment-name: ${{ steps.deployment-config.outputs.ENVIRONMENT_NAME }}
-      apex-domain: ${{ steps.deployment-config.outputs.DIY_SUBMIT_APEX_DOMAIN }}
-      apex-url: ${{ steps.deployment-config.outputs.DIY_SUBMIT_APEX_URL }}
-      holding-domain: ${{ steps.deployment-config.outputs.DIY_SUBMIT_HOLDING_DOMAIN }}
-      holding-url: ${{ steps.deployment-config.outputs.DIY_SUBMIT_HOLDING_URL }}
+      environment-name: ${{ steps.deployment-config.outputs.environment-name }}
+      deployment-name: ${{ steps.deployment-config.outputs.deployment-name }}
+      base-domain: ${{ steps.deployment-config.outputs.base-domain }}
+      base-url:      ${{ steps.deployment-config.outputs.base-url }}
+      apex-domain: ${{ steps.deployment-config.outputs.apex-domain }}
+      apex-url: ${{ steps.deployment-config.outputs.apex-url }}
+      holding-domain: ${{ steps.deployment-config.outputs.holding-domain }}
+      holding-url: ${{ steps.deployment-config.outputs.holding-url }}
 
   create-secrets:
     name: create secrets
@@ -185,7 +189,7 @@ jobs:
           ;
         env:
           ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
-          DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
+          DEPLOYMENT_NAME: ${{ needs.names.outputs.environment-name }}
 
   deploy-observability-us-east-1:
     name: 'deploy observability us-east-1'
@@ -263,7 +267,7 @@ jobs:
           ;
         env:
           ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
-          DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
+          DEPLOYMENT_NAME: ${{ needs.names.outputs.environment-name }}
 
   deploy-data:
     name: 'deploy data'
@@ -334,7 +338,7 @@ jobs:
           ;
         env:
           ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
-          DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
+          DEPLOYMENT_NAME: ${{ needs.names.outputs.environment-name }}
 
   deploy-apex:
     name: deploy apex
@@ -406,7 +410,7 @@ jobs:
             ;
         env:
           ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
-          DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
+          DEPLOYMENT_NAME: ${{ needs.names.outputs.environment-name }}
 
   deploy-identity:
     name: 'deploy identity'
@@ -479,7 +483,7 @@ jobs:
             ;
         env:
           ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
-          DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
+          DEPLOYMENT_NAME: ${{ needs.names.outputs.environment-name }}
 
       - name: Resolve stack outputs
         id: identity-outputs

@@ -1,39 +1,28 @@
-name: "Deployment Config"
-description: "Compute ENVIRONMENT_NAME, DEPLOYMENT_NAME and DIY_SUBMIT_BASE_URL consistently from branch name and optional input."
-
-inputs:
-  deploymentName:
-    description: "Explicit deployment name (e.g. ci or custom). Leave empty to derive from branch."
-    required: false
-    default: ""
-  prodBranchName:
-    description: "Branch name that maps to prod."
-    required: false
-    default: "main"
+name: "Get environment and domain names"
 
 outputs:
-  ENVIRONMENT_NAME:
+  environment-name:
     description: "Computed environment name"
     value: ${{ steps.compute.outputs.ENVIRONMENT_NAME }}
-  DEPLOYMENT_NAME:
+  deployment-name:
     description: "Computed deployment name"
     value: ${{ steps.compute.outputs.DEPLOYMENT_NAME }}
-  DIY_SUBMIT_BASE_DOMAIN:
+  base-domain:
     description: "Base hostname for the deployment"
     value: ${{ steps.compute.outputs.DIY_SUBMIT_BASE_DOMAIN }}
-  DIY_SUBMIT_BASE_URL:
+  base-url:
     description: "Base URL for the deployment"
     value: ${{ steps.compute.outputs.DIY_SUBMIT_BASE_URL }}
-  DIY_SUBMIT_APEX_DOMAIN:
+  apex-domain:
     description: "Apex hostname for the environment"
     value: ${{ steps.compute.outputs.DIY_SUBMIT_APEX_DOMAIN }}
-  DIY_SUBMIT_APEX_URL:
+  apex-url:
     description: "Apex URL for the environment"
     value: ${{ steps.compute.outputs.DIY_SUBMIT_APEX_URL }}
-  DIY_SUBMIT_HOLDING_DOMAIN:
+  holding-domain:
     description: "Holding page hostname for the environment"
     value: ${{ steps.compute.outputs.DIY_SUBMIT_HOLDING_DOMAIN }}
-  DIY_SUBMIT_HOLDING_URL:
+  holding-url:
     description: "Holding page URL for the environment"
     value: ${{ steps.compute.outputs.DIY_SUBMIT_HOLDING_URL }}
 
@@ -43,25 +32,22 @@ runs:
     - id: compute
       name: Compute deployment config
       shell: bash
+      env:
+        GET_NAMES_GITHUB_REF: ${{ github.ref }}
+        GET_NAMES_GITHUB_REF_NAME: ${{ github.ref_name }}
+        GET_NAMES_GITHUB_HEAD_REF: ${{ github.head_ref }}
+        GET_NAMES_GITHUB_SHA: ${{ github.sha }}
+        GET_NAMES_PROD_BRANCH_NAME: 'main'
       run: |
         set -euo pipefail
-        REF_NAME="${GITHUB_REF_NAME:-${GITHUB_HEAD_REF:-${GITHUB_REF##*/}}}"
-        INPUT_DEPLOYMENT_NAME="${{ inputs.deploymentName }}"
-        PROD_BRANCH="${{ inputs.prodBranchName }}"
-        COMMIT_SHA="${{ github.sha }}"
+        REF_NAME="${GET_NAMES_GITHUB_REF_NAME:-${GET_NAMES_GITHUB_HEAD_REF:-${GET_NAMES_GITHUB_REF##*/}}}"
 
         # Clean branch name: lowercase, replace non-alphanumeric with hyphens, collapse consecutive hyphens
         CLEANED=$(echo "$REF_NAME" | tr '[:upper:]' '[:lower:]' | sed -e 's/[^a-z0-9]/-/g' -e 's/-\{2,\}/-/g' -e 's/^-//' -e 's/-$//')
 
-        if [ "${GITHUB_REF:-}" = "refs/heads/${PROD_BRANCH}" ] || [ "$REF_NAME" = "$PROD_BRANCH" ]; then
+        if [ "${GITHUB_REF:-}" = "refs/heads/${GET_NAMES_PROD_BRANCH_NAME?}" ] || [ "${REF_NAME?}" = "${GET_NAMES_PROD_BRANCH_NAME?}" ]; then
           ENVIRONMENT_NAME="prod"
           DEPLOYMENT_NAME="prod"
-        elif [ "$INPUT_DEPLOYMENT_NAME" = "ci" ]; then
-          ENVIRONMENT_NAME="ci"
-          DEPLOYMENT_NAME="ci"
-        elif [ -n "$INPUT_DEPLOYMENT_NAME" ]; then
-          ENVIRONMENT_NAME="ci"
-          DEPLOYMENT_NAME="$INPUT_DEPLOYMENT_NAME"
         else
           ENVIRONMENT_NAME="ci"
           # Truncate to 8 chars for branch-based deployments to match prior logic (ci-xxxxxxxx)
@@ -69,11 +55,11 @@ runs:
         fi
 
         if [ "$DEPLOYMENT_NAME" = "prod" ]; then
-          DIY_SUBMIT_BASE_DOMAIN="prod-${COMMIT_SHA?}.submit.diyaccounting.co.uk"
+          DIY_SUBMIT_BASE_DOMAIN="prod-${GET_NAMES_GITHUB_SHA?}.submit.diyaccounting.co.uk"
         else
           DIY_SUBMIT_BASE_DOMAIN="${DEPLOYMENT_NAME?}.submit.diyaccounting.co.uk"
         fi
-        DIY_SUBMIT_BASE_URL="https://${DIY_SUBMIT_BASE_DOMAIN}/"
+        DIY_SUBMIT_BASE_URL="https://${DIY_SUBMIT_BASE_DOMAIN?}/"
 
         if [ "$DEPLOYMENT_NAME" = "prod" ]; then
           DIY_SUBMIT_APEX_DOMAIN="submit.diyaccounting.co.uk"

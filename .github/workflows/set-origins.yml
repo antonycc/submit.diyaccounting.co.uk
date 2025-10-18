@@ -3,7 +3,7 @@ name: set origins
 on:
   workflow_dispatch:
     inputs:
-      domainSource:
+      domain-source:
         type: choice
         description: 'Source of domain to set origins for e.g. branch-based or the holding page'
         required: false
@@ -35,23 +35,18 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
-
       - name: Compute deployment name and environment
         id: deployment-config
-        uses: ./.github/actions/deployment-config
-        with:
-          deploymentName: ''
-          prodBranchName: main
-
+        uses: ./.github/actions/get-names
     outputs:
-      environment-name: ${{ steps.deployment-config.outputs.ENVIRONMENT_NAME }}
-      deployment-name: ${{ steps.deployment-config.outputs.DEPLOYMENT_NAME }}
-      base-domain: ${{ steps.deployment-config.outputs.DIY_SUBMIT_BASE_DOMAIN }}
-      base-url:      ${{ steps.deployment-config.outputs.DIY_SUBMIT_BASE_URL }}
-      apex-domain: ${{ steps.deployment-config.outputs.DIY_SUBMIT_APEX_DOMAIN }}
-      apex-url: ${{ steps.deployment-config.outputs.DIY_SUBMIT_APEX_URL }}
-      holding-domain: ${{ steps.deployment-config.outputs.DIY_SUBMIT_HOLDING_DOMAIN }}
-      holding-url: ${{ steps.deployment-config.outputs.DIY_SUBMIT_HOLDING_URL }}
+      environment-name: ${{ steps.deployment-config.outputs.environment-name }}
+      deployment-name: ${{ steps.deployment-config.outputs.deployment-name }}
+      base-domain: ${{ steps.deployment-config.outputs.base-domain }}
+      base-url:      ${{ steps.deployment-config.outputs.base-url }}
+      apex-domain: ${{ steps.deployment-config.outputs.apex-domain }}
+      apex-url: ${{ steps.deployment-config.outputs.apex-url }}
+      holding-domain: ${{ steps.deployment-config.outputs.holding-domain }}
+      holding-url: ${{ steps.deployment-config.outputs.holding-url }}
 
   set-origins:
     name: 'set origins'
@@ -89,12 +84,8 @@ jobs:
           retry-max-attempts: 3
 
       - name: Alias apex domain to holding or base domain
-        env:
-          ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
-          DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
-          AWS_REGION: 'eu-west-2'
-          AWS_HOSTED_ZONE_ID: "Z0315522208PWZSSBI9AL"
-          AWS_HOSTED_ZONE_NAME: "diyaccounting.co.uk"
-          DIY_SUBMIT_ORIGIN_DOMAIN: ${{ inputs.domainSource == 'holding' && needs.names.outputs.holding-domain || needs.names.outputs.base-domain }}
-          DIY_SUBMIT_APEX_DOMAIN: ${{ needs.names.outputs.apex-domain }}
         uses: ./.github/actions/set-origins
+        with:
+          origin-domain: ${{ inputs.domain-source == 'holding' && needs.names.outputs.holding-domain || needs.names.outputs.base-domain }}
+          apex-domain: ${{ needs.names.outputs.apex-domain }}
+          hosted-zone-id: "Z0315522208PWZSSBI9AL"
