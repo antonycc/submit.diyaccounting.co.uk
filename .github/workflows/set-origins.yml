@@ -111,7 +111,7 @@ jobs:
               echo "Error: No CloudFront distribution found with tag OriginFor=${ORIGIN_DOMAIN}" >&2
               exit 1
             fi
-            CLOUDFRONT_DISTRIBUTION_ID="${CF_ARN##*/}"
+            CLOUDFRONT_DISTRIBUTION_ID="${CLOUDFRONT_DISTRIBUTION_ARN##*/}"
             echo "Found CloudFront Distribution ID: ${CLOUDFRONT_DISTRIBUTION_ID?}"
           else
             echo "Using provided CloudFront Distribution ID: ${CLOUDFRONT_DISTRIBUTION_ID?}"
