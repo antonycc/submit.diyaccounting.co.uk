@@ -42,7 +42,7 @@ runs:
         # Query for a distribution with alias matching SET_ORIGINS_APEX_DOMAIN and remove all the aliases from that distribution of there are any.
         echo "Checking for existing CloudFront distribution with alias: ${SET_ORIGINS_APEX_DOMAIN?}"
         EXISTING_DISTRIBUTION_ID=$(aws cloudfront list-distributions \
-            --query "DistributionList.Items[?contains(Aliases.Items, '${SET_ORIGINS_APEX_DOMAIN?}')].Id | [0]" \
+            --query "DistributionList.Items[?Aliases.Items!=null && contains(Aliases.Items, '${SET_ORIGINS_APEX_DOMAIN?}')].Id | [0]" \
             --output text)
         if [ -n "$EXISTING_DISTRIBUTION_ID" ] && [ "$EXISTING_DISTRIBUTION_ID" != "None" ] && [ "$EXISTING_DISTRIBUTION_ID" != "${SET_ORIGINS_CLOUDFRONT_DISTRIBUTION_ID?}" ]; then
           echo "Found existing CloudFront distribution ${EXISTING_DISTRIBUTION_ID?} with alias ${SET_ORIGINS_APEX_DOMAIN?}, removing aliases from that distribution."
