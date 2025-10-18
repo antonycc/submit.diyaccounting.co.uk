@@ -22,7 +22,7 @@ on:
     paths:
       - '.env.ci'
       - '.env.prod'
-      - './cdk-environment/cdk.json'
+      - 'cdk-environment/cdk.json'
       - '.github/workflows/deploy-environment.yml'
   schedule:
     - cron: '43 3 * * *'
