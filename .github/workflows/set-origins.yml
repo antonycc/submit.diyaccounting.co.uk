@@ -103,6 +103,7 @@ jobs:
             echo "CloudFront Distribution ID not provided, looking up based on the ORIGIN_DOMAIN ${ORIGIN_DOMAIN?} matching the tag named OriginFor"
             CLOUDFRONT_DISTRIBUTION_ARN=$(aws resourcegroupstaggingapi get-resources \
               --resource-type-filters cloudfront:distribution \
+              --region us-east-1
               --tag-filters Key=OriginFor,Values="${ORIGIN_DOMAIN}" \
               --query 'ResourceTagMappingList[0].ResourceARN' \
               --output text)
