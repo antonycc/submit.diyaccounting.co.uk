@@ -35,6 +35,10 @@ runs:
 
         echo "Replacing CloudFront aliases on distribution ${SET_ORIGINS_CLOUDFRONT_DISTRIBUTION_ID?} with: ${SET_ORIGINS_ORIGIN_DOMAIN?}"
 
+        aws cloudfront associate-alias \
+          --target-distribution-id "${SET_ORIGINS_CLOUDFRONT_DISTRIBUTION_ID?}" \
+          --alias "${SET_ORIGINS_APEX_DOMAIN?}" || true
+
         ETAG=$(aws cloudfront get-distribution-config \
           --id "${SET_ORIGINS_CLOUDFRONT_DISTRIBUTION_ID?}" \
           --query 'ETag' \
