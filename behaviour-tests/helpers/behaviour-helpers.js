@@ -43,7 +43,7 @@ export async function runLocalHttpServer(runTestServer, s3Endpoint, httpServerPo
       },
       stdio: ["pipe", "pipe", "pipe"],
     });
-    await checkIfServerIsRunning(`http://127.0.0.1:${httpServerPort}`, 1000);
+    await checkIfServerIsRunning(`http://127.0.0.1:${httpServerPort}`, 1000, undefined, "http");
   } else {
     console.log("Skipping server process as runTestServer is not set to 'run'");
   }
@@ -61,7 +61,7 @@ export async function runLocalSslProxy(runProxy, httpServerPort, baseUrl) {
       },
       stdio: ["pipe", "pipe", "pipe"],
     });
-    await checkIfServerIsRunning(baseUrl, 1000);
+    await checkIfServerIsRunning(baseUrl, 1000, undefined, "proxy");
   } else {
     console.log("Skipping ngrok process as runProxy is not set to 'run'");
   }
@@ -79,7 +79,7 @@ export async function runLocalOAuth2Server(runMockOAuth2) {
       },
       stdio: ["pipe", "pipe", "pipe"],
     });
-    await checkIfServerIsRunning("http://localhost:8080/default/debugger", 2000);
+    await checkIfServerIsRunning("http://localhost:8080/default/debugger", 2000, undefined, "auth");
   } else {
     console.log("Skipping mock-oauth2-server process as runMockOAuth2 is not set to 'run'");
   }

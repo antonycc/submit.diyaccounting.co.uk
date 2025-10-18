@@ -25,11 +25,17 @@ outputs:
     description: "Base URL for the deployment"
     value: ${{ steps.compute.outputs.DIY_SUBMIT_BASE_URL }}
   DIY_SUBMIT_APEX_DOMAIN:
-    description: "Apex hostname for the deployment"
+    description: "Apex hostname for the environment"
     value: ${{ steps.compute.outputs.DIY_SUBMIT_APEX_DOMAIN }}
   DIY_SUBMIT_APEX_URL:
-    description: "Apex URL for the deployment"
+    description: "Apex URL for the environment"
     value: ${{ steps.compute.outputs.DIY_SUBMIT_APEX_URL }}
+  DIY_SUBMIT_HOLDING_DOMAIN:
+    description: "Holding page hostname for the environment"
+    value: ${{ steps.compute.outputs.DIY_SUBMIT_HOLDING_DOMAIN }}
+  DIY_SUBMIT_HOLDING_URL:
+    description: "Holding page URL for the environment"
+    value: ${{ steps.compute.outputs.DIY_SUBMIT_HOLDING_URL }}
 
 runs:
   using: "composite"
@@ -76,9 +82,17 @@ runs:
         fi
         DIY_SUBMIT_APEX_URL="https://${DIY_SUBMIT_APEX_DOMAIN?}/"
 
+        DIY_SUBMIT_HOLDING_DOMAIN="${ENVIRONMENT_NAME?}-holding.submit.diyaccounting.co.uk"
+        DIY_SUBMIT_HOLDING_URL="https://${DIY_SUBMIT_HOLDING_DOMAIN?}/"
+
         echo "ENVIRONMENT_NAME=$ENVIRONMENT_NAME" | tee -a "$GITHUB_OUTPUT"
         echo "DEPLOYMENT_NAME=$DEPLOYMENT_NAME" | tee -a "$GITHUB_OUTPUT"
+
         echo "DIY_SUBMIT_BASE_DOMAIN=$DIY_SUBMIT_BASE_DOMAIN" | tee -a "$GITHUB_OUTPUT"
         echo "DIY_SUBMIT_BASE_URL=$DIY_SUBMIT_BASE_URL" | tee -a "$GITHUB_OUTPUT"
+
         echo "DIY_SUBMIT_APEX_DOMAIN=$DIY_SUBMIT_APEX_DOMAIN" | tee -a "$GITHUB_OUTPUT"
         echo "DIY_SUBMIT_APEX_URL=$DIY_SUBMIT_APEX_URL" | tee -a "$GITHUB_OUTPUT"
+
+        echo "DIY_SUBMIT_HOLDING_DOMAIN=$DIY_SUBMIT_HOLDING_DOMAIN" | tee -a "$GITHUB_OUTPUT"
+        echo "DIY_SUBMIT_HOLDING_URL=$DIY_SUBMIT_HOLDING_URL" | tee -a "$GITHUB_OUTPUT"

@@ -188,17 +188,27 @@ async function checkServersAreRunning() {
   }
 
   if (runTestServer) {
-    await checkIfServerIsRunning(`http://127.0.0.1:${serverPort}`, 1000, async function () {
-      serverProcess = await runLocalHttpServer(runTestServer, s3Endpoint, serverPort);
-    });
+    await checkIfServerIsRunning(
+      `http://127.0.0.1:${serverPort}`,
+      1000,
+      async function () {
+        serverProcess = await runLocalHttpServer(runTestServer, s3Endpoint, serverPort);
+      },
+      "http",
+    );
   } else {
     console.log("Skipping server process as runTestServer is not set to 'run'");
   }
 
   if (runProxy) {
-    await checkIfServerIsRunning(baseUrl, 1000, async function () {
-      ngrokProcess = await runLocalSslProxy(runProxy, serverPort, baseUrl);
-    });
+    await checkIfServerIsRunning(
+      baseUrl,
+      1000,
+      async function () {
+        ngrokProcess = await runLocalSslProxy(runProxy, serverPort, baseUrl);
+      },
+      "proxy",
+    );
   } else {
     console.log("Skipping ngrok process as runProxy is not set to 'run'");
   }
