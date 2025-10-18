@@ -1640,7 +1640,7 @@ jobs:
       - deploy-hmrc
       - deploy-account
       - deploy-edge
-      - deploy-publish
+      #- deploy-publish
     runs-on: ubuntu-24.04
     environment: ${{ needs.names.outputs.environment-name }}
     permissions:

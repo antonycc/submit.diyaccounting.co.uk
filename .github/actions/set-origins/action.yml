@@ -45,7 +45,7 @@ runs:
           --query 'DistributionConfig' \
           --output json > /tmp/cf-config.json
 
-        jq --arg alias "${SET_ORIGINS_ORIGIN_DOMAIN?}" '
+        jq --arg alias "${SET_ORIGINS_APEX_DOMAIN?}" '
           .Aliases = {Quantity: 1, Items: [$alias]}
         ' /tmp/cf-config.json > /tmp/cf-config.updated.json
 
