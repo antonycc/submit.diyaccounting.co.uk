@@ -120,5 +120,5 @@ jobs:
         with:
           origin-domain: ${{ inputs.domain-source == 'holding' && needs.names.outputs.holding-domain || needs.names.outputs.base-domain }}
           apex-domain: ${{ needs.names.outputs.apex-domain }}
-          hosted-zone-id: "Z0315522208PWZSSBI9AL"
+          hosted-zone-id: ${{ github.event.inputs.hosted-zone-id }}
           cloudfront-distribution-id: ${{ steps.lookup-cf.outputs.CLOUDFRONT_DISTRIBUTION_ID }}
