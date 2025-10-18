@@ -354,6 +354,7 @@ jobs:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
 
       - name: Authenticate ngrok
+        shell: bash
         env:
           NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
         run: |
@@ -1258,13 +1259,13 @@ jobs:
           java-version: ${{ env.JAVA_VERSION }}
           cache: 'maven'
 
-      - name: Alias apex domain to holding
-        # TODO: Change this to the latest known good origin and update the latest after passing the web test.
-        uses: ./.github/actions/set-origins
-        with:
-          origin-domain: ${{ needs.names.outputs.holding-domain }}
-          apex-domain: ${{ needs.names.outputs.apex-domain }}
-          hosted-zone-id:   "Z0315522208PWZSSBI9AL"
+      #- name: Alias apex domain to holding
+      #  # TODO: Change this to the latest known good origin and update the latest after passing the web test.
+      #  uses: ./.github/actions/set-origins
+      #  with:
+      #    origin-domain: ${{ needs.names.outputs.holding-domain }}
+      #    apex-domain: ${{ needs.names.outputs.apex-domain }}
+      #    hosted-zone-id: "Z0315522208PWZSSBI9AL"
 
       - name: Build CDK and synthesize and deploy the EdgeStack in the Delivery Application
         if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
@@ -1305,11 +1306,15 @@ jobs:
         id: edge-outputs
         run: |
           DIY_SUBMIT_BASE_URL=$(jq -r '.["del-${{ needs.names.outputs.deployment-name }}-EdgeStack"].BaseUrl' cdk-submit-delivery.out/cdk-outputs-edge.json)
+          DISTRIBUTION_ID=$(jq -r '.["del-${{ needs.names.outputs.deployment-name }}-EdgeStack"].DistributionId' cdk-submit-delivery.out/cdk-outputs-edge.json)
           echo "DIY_SUBMIT_BASE_URL=$DIY_SUBMIT_BASE_URL"
           echo "DIY_SUBMIT_BASE_URL=$DIY_SUBMIT_BASE_URL" >> $GITHUB_OUTPUT
+          echo "DISTRIBUTION_ID=$DISTRIBUTION_ID"
+          echo "DISTRIBUTION_ID=$DISTRIBUTION_ID" >> $GITHUB_OUTPUT
         shell: bash
     outputs:
       base-url: ${{ steps.edge-outputs.outputs.DIY_SUBMIT_BASE_URL }}
+      cloudfront-distribution-id: ${{ steps.edge-outputs.outputs.DISTRIBUTION_ID }}
 
   deploy-publish:
     name: 'deploy publish'
@@ -1672,6 +1677,7 @@ jobs:
           origin-domain: ${{ needs.names.outputs.environment-name }}
           apex-domain: ${{ needs.names.outputs.apex-domain }}
           hosted-zone-id: "Z0315522208PWZSSBI9AL"
+          cloudfront-distribution-id: ${{ needs.deploy-edge.outputs.cloudfront-distribution-id }}
 
 #        run: |
 #          set -euo pipefail

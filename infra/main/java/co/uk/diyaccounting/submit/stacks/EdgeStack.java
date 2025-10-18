@@ -320,7 +320,7 @@ public class EdgeStack extends Stack {
                 .defaultBehavior(localBehaviorOptions) // props.webBehaviorOptions)
                 .additionalBehaviors(additionalBehaviors)
                 .domainNames(List.of(
-                    props.sharedNames().domainName,
+                    // props.sharedNames().domainName,
                     props.sharedNames().envDomainName
                 ))
                 .certificate(cert)

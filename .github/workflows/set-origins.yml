@@ -11,6 +11,15 @@ on:
           - 'branch'
           - 'holding'
         default: 'branch'
+      hosted-zone-id:
+        type: string
+        description: 'AWS Route 53 Hosted Zone ID for the apex domain'
+        required: false
+        default: 'Z0315522208PWZSSBI9AL'
+      cloudfront-distribution-id:
+        type: string
+        description: 'CloudFront Distribution ID to update aliases on'
+        required: false
 
 permissions:
   id-token: write
@@ -83,9 +92,33 @@ jobs:
           output-credentials: true
           retry-max-attempts: 3
 
+      - name: Look up the CloudFront distribution ID if not provided based on the ORIGIN_DOMAIN
+        id: lookup-cf
+        env:
+          ORIGIN_DOMAIN: ${{ inputs.domain-source == 'holding' && needs.names.outputs.holding-domain || needs.names.outputs.base-domain }}
+          INPUT_CLOUDFRONT_DISTRIBUTION_ID: ${{ github.event.inputs.cloudfront-distribution-id || '' }}
+        run: |
+          CLOUDFRONT_DISTRIBUTION_ID="${INPUT_CLOUDFRONT_DISTRIBUTION_ID}"
+          if [ -z "$CLOUDFRONT_DISTRIBUTION_ID" ]; then
+            echo "CloudFront Distribution ID not provided, looking up by ORIGIN_DOMAIN..."
+            CLOUDFRONT_DISTRIBUTION_ID=$(aws cloudfront list-distributions \
+              --query "DistributionList.Items[?contains(Aliases.Items, \`${ORIGIN_DOMAIN?}\`)].Id | [0]" \
+              --output text)
+            if [ -z "$CLOUDFRONT_DISTRIBUTION_ID" ] || [ "$CLOUDFRONT_DISTRIBUTION_ID" == "None" ]; then
+              echo "Error: Could not find CloudFront Distribution with Deployment tag '${{ needs.names.outputs.deployment-name }}'."
+              exit 1
+            fi
+            echo "Found CloudFront Distribution ID: ${CLOUDFRONT_DISTRIBUTION_ID?}"
+          else
+            echo "Using provided CloudFront Distribution ID: ${CLOUDFRONT_DISTRIBUTION_ID?}"
+          fi
+          echo "CLOUDFRONT_DISTRIBUTION_ID=$CLOUDFRONT_DISTRIBUTION_ID" | tee -a "$GITHUB_OUTPUT"
+          echo "CLOUDFRONT_DISTRIBUTION_ID=$CLOUDFRONT_DISTRIBUTION_ID" | tee -a "$GITHUB_OUTPUT"
+
       - name: Alias apex domain to holding or base domain
         uses: ./.github/actions/set-origins
         with:
           origin-domain: ${{ inputs.domain-source == 'holding' && needs.names.outputs.holding-domain || needs.names.outputs.base-domain }}
           apex-domain: ${{ needs.names.outputs.apex-domain }}
           hosted-zone-id: "Z0315522208PWZSSBI9AL"
+          cloudfront-distribution-id: ${{ steps.lookup-cf.outputs.CLOUDFRONT_DISTRIBUTION_ID }}
