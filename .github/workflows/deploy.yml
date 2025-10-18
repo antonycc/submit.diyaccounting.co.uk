@@ -1658,7 +1658,6 @@ jobs:
           retry-max-attempts: 3
 
       - name: Alias apex domain to base domain
-        shell: bash
         env:
           ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
@@ -1667,48 +1666,49 @@ jobs:
           AWS_HOSTED_ZONE_NAME: "diyaccounting.co.uk"
           DIY_SUBMIT_BASE_DOMAIN: ${{ needs.names.outputs.base-domain }}
           DIY_SUBMIT_APEX_DOMAIN: ${{ needs.names.outputs.apex-domain }}
-        run: |
-          set -euo pipefail
-
-          if [ -z "${DIY_SUBMIT_APEX_DOMAIN:-}" ] || [ -z "${DIY_SUBMIT_BASE_DOMAIN:-}" ] || [ -z "${AWS_HOSTED_ZONE_ID:-}" ]; then
-            echo "Required env vars DIY_SUBMIT_APEX_DOMAIN, DIY_SUBMIT_BASE_DOMAIN, and AWS_HOSTED_ZONE_ID must be set."
-            exit 1
-          fi
-
-          cat > /tmp/alias.json <<JSON
-          {
-            "Comment": "Alias apex domain to base domain",
-            "Changes": [
-              {
-                "Action": "UPSERT",
-                "ResourceRecordSet": {
-                  "Name": "${DIY_SUBMIT_APEX_DOMAIN}.",
-                  "Type": "A",
-                  "AliasTarget": {
-                    "HostedZoneId": "${AWS_HOSTED_ZONE_ID}",
-                    "DNSName": "${DIY_SUBMIT_BASE_DOMAIN}.",
-                    "EvaluateTargetHealth": false
-                  }
-                }
-              },
-              {
-                "Action": "UPSERT",
-                "ResourceRecordSet": {
-                  "Name": "${DIY_SUBMIT_APEX_DOMAIN}.",
-                  "Type": "AAAA",
-                  "AliasTarget": {
-                    "HostedZoneId": "${AWS_HOSTED_ZONE_ID}",
-                    "DNSName": "${DIY_SUBMIT_BASE_DOMAIN}.",
-                    "EvaluateTargetHealth": false
-                  }
-                }
-              }
-            ]
-          }
-          JSON
-
-          echo "Upserting alias records: ${DIY_SUBMIT_APEX_DOMAIN} -> ${DIY_SUBMIT_BASE_DOMAIN} in hosted zone ${AWS_HOSTED_ZONE_ID}"
-          aws route53 change-resource-record-sets --hosted-zone-id "$AWS_HOSTED_ZONE_ID" --change-batch file:///tmp/alias.json
+        uses: ./.github/actions/set-origins
+#        run: |
+#          set -euo pipefail
+#
+#          if [ -z "${DIY_SUBMIT_APEX_DOMAIN:-}" ] || [ -z "${DIY_SUBMIT_BASE_DOMAIN:-}" ] || [ -z "${AWS_HOSTED_ZONE_ID:-}" ]; then
+#            echo "Required env vars DIY_SUBMIT_APEX_DOMAIN, DIY_SUBMIT_BASE_DOMAIN, and AWS_HOSTED_ZONE_ID must be set."
+#            exit 1
+#          fi
+#
+#          cat > /tmp/alias.json <<JSON
+#          {
+#            "Comment": "Alias apex domain to base domain",
+#            "Changes": [
+#              {
+#                "Action": "UPSERT",
+#                "ResourceRecordSet": {
+#                  "Name": "${DIY_SUBMIT_APEX_DOMAIN}.",
+#                  "Type": "A",
+#                  "AliasTarget": {
+#                    "HostedZoneId": "${AWS_HOSTED_ZONE_ID}",
+#                    "DNSName": "${DIY_SUBMIT_BASE_DOMAIN}.",
+#                    "EvaluateTargetHealth": false
+#                  }
+#                }
+#              },
+#              {
+#                "Action": "UPSERT",
+#                "ResourceRecordSet": {
+#                  "Name": "${DIY_SUBMIT_APEX_DOMAIN}.",
+#                  "Type": "AAAA",
+#                  "AliasTarget": {
+#                    "HostedZoneId": "${AWS_HOSTED_ZONE_ID}",
+#                    "DNSName": "${DIY_SUBMIT_BASE_DOMAIN}.",
+#                    "EvaluateTargetHealth": false
+#                  }
+#                }
+#              }
+#            ]
+#          }
+#          JSON
+#
+#          echo "Upserting alias records: ${DIY_SUBMIT_APEX_DOMAIN} -> ${DIY_SUBMIT_BASE_DOMAIN} in hosted zone ${AWS_HOSTED_ZONE_ID}"
+#          aws route53 change-resource-record-sets --hosted-zone-id "$AWS_HOSTED_ZONE_ID" --change-batch file:///tmp/alias.json
 
   # TODO: Configure or copy and convert the system test API test to test against deployed environment
 #  api-test:

@@ -7,7 +7,6 @@ import {
   getEnvVarAndLog,
   runLocalHttpServer,
   runLocalOAuth2Server,
-  runLocalS3,
   runLocalSslProxy,
 } from "./helpers/behaviour-helpers.js";
 import { goToHomePage, goToHomePageExpectNotLoggedIn, goToHomePageUsingHamburgerMenu } from "./steps/behaviour-steps.js";
@@ -40,7 +39,7 @@ const baseUrl = getEnvVarAndLog("baseUrl", "DIY_SUBMIT_BASE_URL", null);
 let serverProcess;
 let ngrokProcess;
 
-test.setTimeout(360000);
+test.setTimeout(120_000);
 
 test.beforeAll(async () => {
   console.log("Starting beforeAll hook...");
@@ -48,25 +47,10 @@ test.beforeAll(async () => {
     ...originalEnv,
   };
 
-  const runLocalOAuth2ServerPromise = runLocalOAuth2Server(runMockOAuth2);
-
-  // const endpoint = await runLocalS3(runMinioS3, receiptsBucketName, optionalTestS3AccessKey, optionalTestS3SecretKey);
-  serverProcess = await runLocalHttpServer(runTestServer, null, serverPort);
-  ngrokProcess = await runLocalSslProxy(runProxy, serverPort, baseUrl);
-
-  await runLocalOAuth2ServerPromise;
-
   console.log("beforeAll hook completed successfully");
 });
 
-test.afterAll(async () => {
-  if (serverProcess) {
-    serverProcess.kill();
-  }
-  if (ngrokProcess) {
-    ngrokProcess.kill();
-  }
-});
+test.afterAll(async () => {});
 
 test.use({
   video: {
@@ -76,7 +60,17 @@ test.use({
 });
 
 test("Log in, add bundles and Log out", async ({ page }) => {
-  const testUrl = runTestServer === "run" && runProxy !== "run" ? `http://127.0.0.1:${serverPort}` : baseUrl;
+  // Run local servers as needed for the tests
+  const runLocalOAuth2ServerPromise = runLocalOAuth2Server(runMockOAuth2);
+  serverProcess = await runLocalHttpServer(runTestServer, null, serverPort);
+  ngrokProcess = await runLocalSslProxy(runProxy, serverPort, baseUrl);
+  await runLocalOAuth2ServerPromise;
+
+  // Compute test URL based on which servers are running§
+  const testUrl =
+    (runTestServer === "run" || runTestServer === "useExisting") && runProxy !== "run" && runProxy !== "useExisting"
+      ? `http://127.0.0.1:${serverPort}/`
+      : baseUrl;
 
   // Add console logging to capture browser messages
   addOnPageLogging(page);
@@ -119,4 +113,12 @@ test("Log in, add bundles and Log out", async ({ page }) => {
   /* ********* */
 
   await logOutAndExpectToBeLoggedOut(page);
+
+  // Shutdown local servers at end of test
+  if (serverProcess) {
+    serverProcess.kill();
+  }
+  if (ngrokProcess) {
+    ngrokProcess.kill();
+  }
 });

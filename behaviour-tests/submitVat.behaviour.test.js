@@ -55,7 +55,7 @@ let s3Endpoint;
 let serverProcess;
 let ngrokProcess;
 
-test.setTimeout(360000);
+test.setTimeout(300_000);
 
 test.beforeAll(async () => {
   console.log("Starting beforeAll hook...");
@@ -91,15 +91,18 @@ test.use({
 });
 
 test("Log in, add test bundle, submit VAT return, log out", async ({ page }) => {
+  // Run servers needed for the test
   const runLocalOAuth2ServerPromise = runLocalOAuth2Server(runMockOAuth2);
-
   s3Endpoint = await runLocalS3(runMinioS3, receiptsBucketName, optionalTestS3AccessKey, optionalTestS3SecretKey);
   serverProcess = await runLocalHttpServer(runTestServer, s3Endpoint, serverPort);
   ngrokProcess = await runLocalSslProxy(runProxy, serverPort, baseUrl);
-
   await runLocalOAuth2ServerPromise;
 
-  const testUrl = runTestServer === "run" && runProxy !== "run" ? `http://127.0.0.1:${serverPort}/` : baseUrl;
+  // Compute test URL based on which servers are running§
+  const testUrl =
+    (runTestServer === "run" || runTestServer === "useExisting") && runProxy !== "run" && runProxy !== "useExisting"
+      ? `http://127.0.0.1:${serverPort}/`
+      : baseUrl;
 
   // Add console logging to capture browser messages
   addOnPageLogging(page);
@@ -163,6 +166,7 @@ test("Log in, add test bundle, submit VAT return, log out", async ({ page }) => 
 
   await logOutAndExpectToBeLoggedOut(page);
 
+  // Shutdown local servers at end of test
   if (serverProcess) {
     serverProcess.kill();
   }

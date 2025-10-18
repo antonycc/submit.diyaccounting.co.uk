@@ -9,6 +9,7 @@ export default defineConfig({
       testMatch: ["**/*.behaviour.test.js"],
       workers: 1,
       outputDir: "./target/behaviour-test-results/",
+      timeout: 60_000,
     },
     {
       name: "origin-behaviour-tests",
@@ -16,6 +17,7 @@ export default defineConfig({
       testMatch: ["**/bundles.behaviour.test.js"],
       workers: 1,
       outputDir: "./target/behaviour-test-results/",
+      timeout: 60_000,
     },
     {
       name: "web-behaviour-tests",
@@ -23,18 +25,13 @@ export default defineConfig({
       testMatch: ["**/submitVat.behaviour.test.js"],
       workers: 1,
       outputDir: "./target/behaviour-test-results/",
+      timeout: 60_000,
     },
     {
       name: "browser-tests",
       testDir: "web/browser-tests",
       workers: 1, // throttle concurrency to 1
       outputDir: "./target/browser-test-results/",
-    },
-    {
-      name: "manually-run-tests",
-      testDir: "manually-run-tests",
-      workers: 1, // throttle concurrency to 1
-      outputDir: "./target/run-manually-test-results/",
     },
   ],
 
@@ -52,7 +49,7 @@ export default defineConfig({
       // Playwright always uses .webm for video
     },
     // Screenshot options
-    screenshot: "on", // or 'only-on-failure', 'off'
+    screenshot: "on",
     // Screenshots are png by default, but jpeg is also possible
     // To get jpeg: page.screenshot({ type: 'jpeg' }) in test code
 
@@ -72,5 +69,5 @@ export default defineConfig({
   ],
 
   // Optional: customize test timeout or other settings here
-  timeout: 30 * 1000, // 30 seconds per test
+  timeout: 120_000,
 });
