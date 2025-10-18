@@ -100,12 +100,14 @@ jobs:
         run: |
           CLOUDFRONT_DISTRIBUTION_ID="${INPUT_CLOUDFRONT_DISTRIBUTION_ID}"
           if [ -z "$CLOUDFRONT_DISTRIBUTION_ID" ]; then
-            echo "CloudFront Distribution ID not provided, looking up based on the ORIGIN_DOMAIN matching the tag named OriginFor"
+            echo "CloudFront Distribution ID not provided, looking up based on the ORIGIN_DOMAIN ${ORIGIN_DOMAIN?} matching the tag named OriginFor"
+            CLOUDFRONT_DISTRIBUTION_QUERY="DistributionList.Items[?Tags.Items[?Key=='OriginFor'&&Value=='""${ORIGIN_DOMAIN?}""']].Id | [0]"
+            echo "Using query: ${CLOUDFRONT_DISTRIBUTION_QUERY?}"
             CLOUDFRONT_DISTRIBUTION_ID=$(aws cloudfront list-distributions \
-              --query "DistributionList.Items[?Tags.Items[?Key=='OriginFor'&&Value=='${ORIGIN_DOMAIN?}']].Id | [0]" \
+              --query "${CLOUDFRONT_DISTRIBUTION_QUERY?}" \
               --output text)
             if [ -z "$CLOUDFRONT_DISTRIBUTION_ID" ] || [ "$CLOUDFRONT_DISTRIBUTION_ID" == "None" ]; then
-              echo "Error: Could not find CloudFront Distribution with OriginFor tag ${ORIGIN_DOMAIN}."
+              echo "Error: Could not find CloudFront Distribution with OriginFor tag ${ORIGIN_DOMAIN?}."
               exit 1
             fi
             echo "Found CloudFront Distribution ID: ${CLOUDFRONT_DISTRIBUTION_ID?}"
