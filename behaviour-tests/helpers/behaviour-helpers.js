@@ -17,6 +17,9 @@ export function getEnvVarAndLog(name, envKey, defaultValue) {
 }
 
 export async function runLocalS3(runMinioS3, receiptsBucketName, optionalTestS3AccessKey, optionalTestS3SecretKey) {
+  console.log(
+    `[minio]: runMinioS3=${runMinioS3}, receiptsBucketName=${receiptsBucketName}, optionalTestS3AccessKey=${optionalTestS3AccessKey}`,
+  );
   let endpoint;
   if (runMinioS3 === "run") {
     console.log("[minio]: Starting minio process...");
@@ -31,6 +34,7 @@ export async function runLocalS3(runMinioS3, receiptsBucketName, optionalTestS3A
 }
 
 export async function runLocalHttpServer(runTestServer, s3Endpoint, httpServerPort) {
+  console.log(`[minio]: runTestServer=${runTestServer}, s3Endpoint=${s3Endpoint}, httpServerPort=${httpServerPort}`);
   let serverProcess;
   if (runTestServer === "run") {
     console.log("[http]: Starting server process...");
@@ -51,6 +55,7 @@ export async function runLocalHttpServer(runTestServer, s3Endpoint, httpServerPo
 }
 
 export async function runLocalSslProxy(runProxy, httpServerPort, baseUrl) {
+  console.log(`[proxy]: runProxy=${runProxy}, httpServerPort=${httpServerPort}, baseUrl=${baseUrl}`);
   let ngrokProcess;
   if (runProxy === "run") {
     console.log("[proxy]: Starting ngrok process...");
@@ -69,6 +74,7 @@ export async function runLocalSslProxy(runProxy, httpServerPort, baseUrl) {
 }
 
 export async function runLocalOAuth2Server(runMockOAuth2) {
+  console.log(`[auth]: runMockOAuth2=${runMockOAuth2}`);
   let serverProcess;
   if (runMockOAuth2 === "run") {
     console.log("[auth]: Starting mock-oauth2-server process...");

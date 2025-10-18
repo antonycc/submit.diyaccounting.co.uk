@@ -92,11 +92,10 @@ test.use({
 
 test("Log in, add test bundle, submit VAT return, log out", async ({ page }) => {
   // Run servers needed for the test
-  const runLocalOAuth2ServerPromise = runLocalOAuth2Server(runMockOAuth2);
+  await runLocalOAuth2Server(runMockOAuth2);
   s3Endpoint = await runLocalS3(runMinioS3, receiptsBucketName, optionalTestS3AccessKey, optionalTestS3SecretKey);
   serverProcess = await runLocalHttpServer(runTestServer, s3Endpoint, serverPort);
   ngrokProcess = await runLocalSslProxy(runProxy, serverPort, baseUrl);
-  await runLocalOAuth2ServerPromise;
 
   // Compute test URL based on which servers are running§
   const testUrl =

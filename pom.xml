@@ -325,87 +325,17 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
                 <version>3.6.0</version>
-
                 <executions>
-
                     <execution>
+                        <id>shade-base</id>
+                        <phase>package</phase>
                         <goals>
                             <goal>shade</goal>
                         </goals>
-                        <phase>package</phase>
                         <configuration>
-                            <finalName>self-destruct-lambda</finalName>
-                            <transformers>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>co.uk.diyaccounting.submit.functions.SelfDestructHandler</mainClass>
-                                </transformer>
-                            </transformers>
-                            <filters>
-                                <filter>
-                                    <artifact>*:*</artifact>
-                                    <excludes>
-                                        <!-- Exclude signature files -->
-                                        <exclude>META-INF/*.SF</exclude>
-                                        <exclude>META-INF/*.DSA</exclude>
-                                        <exclude>META-INF/*.RSA</exclude>
-                                        <exclude>META-INF/DEPENDENCIES</exclude>
-                                        <exclude>META-INF/MANIFEST.MF</exclude>
-
-                                        <!-- Exclude duplicate Maven metadata -->
-                                        <exclude>META-INF/maven/**</exclude>
-
-                                        <!-- Exclude module info -->
-                                        <exclude>**/module-info.class</exclude>
-
-                                        <!-- Exclude version properties -->
-                                        <exclude>META-INF/io.netty.versions.properties</exclude>
-                                        <exclude>META-INF/*.properties</exclude>
-
-                                        <!-- Exclude native image configurations that may conflict -->
-                                        <exclude>META-INF/native-image/**</exclude>
-
-                                        <!-- Exclude duplicate license and notice files -->
-                                        <exclude>META-INF/LICENSE*</exclude>
-                                        <exclude>META-INF/NOTICE*</exclude>
-                                        <exclude>META-INF/*LICENSE*</exclude>
-                                        <exclude>META-INF/*NOTICE*</exclude>
-                                        <exclude>META-INF/FastDoubleParser-LICENSE</exclude>
-                                        <exclude>META-INF/FastDoubleParser-NOTICE</exclude>
-                                        <exclude>META-INF/bigint-LICENSE</exclude>
-
-                                        <!-- Exclude version-specific directories -->
-                                        <exclude>META-INF.versions.*/**</exclude>
-
-                                        <!-- Exclude duplicate resource files -->
-                                        <exclude>Log4j-*.dtd</exclude>
-                                        <exclude>Log4j-*.xsd</exclude>
-                                        <exclude>Log4j-*.properties</exclude>
-                                        <exclude>mime.types</exclude>
-                                        <exclude>VersionInfo.java</exclude>
-                                        <exclude>mozilla/public-suffix-list.txt</exclude>
-                                    </excludes>
-                                </filter>
-                            </filters>
-                            <minimizeJar>false</minimizeJar>
-                            <createSourcesJar>false</createSourcesJar>
-                        </configuration>
-                    </execution>
-
-                    <execution>
-                        <id>shade-submit-application</id>
-                        <goals>
-                            <goal>shade</goal>
-                        </goals>
-                        <phase>package</phase>
-                        <configuration>
-                            <finalName>submit-application</finalName>
+                            <!-- Attach instead of replacing the main artifact -->
                             <shadedArtifactAttached>true</shadedArtifactAttached>
-                            <createDependencyReducedPom>false</createDependencyReducedPom>
-                            <transformers>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>co.uk.diyaccounting.submit.SubmitApplication</mainClass>
-                                </transformer>
-                            </transformers>
+                            <shadedClassifierName>dist</shadedClassifierName>
                             <filters>
                                 <filter>
                                     <artifact>*:*</artifact>
@@ -456,139 +386,92 @@
                             <createSourcesJar>false</createSourcesJar>
                         </configuration>
                     </execution>
-
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>3.1.0</version>
+                <executions>
                     <execution>
-                        <id>shade-submit-delivery</id>
-                        <goals>
-                            <goal>shade</goal>
-                        </goals>
+                        <id>replicate-and-retag-manifests</id>
                         <phase>package</phase>
                         <configuration>
-                            <finalName>submit-delivery</finalName>
-                            <shadedArtifactAttached>true</shadedArtifactAttached>
-                            <createDependencyReducedPom>false</createDependencyReducedPom>
-                            <transformers>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>co.uk.diyaccounting.submit.SubmitDelivery</mainClass>
-                                </transformer>
-                            </transformers>
-                            <filters>
-                                <filter>
-                                    <artifact>*:*</artifact>
-                                    <excludes>
-                                        <!-- Exclude signature files -->
-                                        <exclude>META-INF/*.SF</exclude>
-                                        <exclude>META-INF/*.DSA</exclude>
-                                        <exclude>META-INF/*.RSA</exclude>
-                                        <exclude>META-INF/DEPENDENCIES</exclude>
-                                        <exclude>META-INF/MANIFEST.MF</exclude>
+                            <target>
+                                <!-- Create copies with desired names from the base shaded jar -->
+                                <copy file="${project.build.directory}/${project.build.finalName}-dist.jar" tofile="${project.build.directory}/self-destruct-lambda.jar"/>
+                                <copy file="${project.build.directory}/${project.build.finalName}-dist.jar" tofile="${project.build.directory}/submit-application.jar"/>
+                                <copy file="${project.build.directory}/${project.build.finalName}-dist.jar" tofile="${project.build.directory}/submit-delivery.jar"/>
+                                <copy file="${project.build.directory}/${project.build.finalName}-dist.jar" tofile="${project.build.directory}/submit-environment.jar"/>
 
-                                        <!-- Exclude duplicate Maven metadata -->
-                                        <exclude>META-INF/maven/**</exclude>
+                                <!-- Update manifests in-place for each variant -->
+                                <jar update="true" jarfile="${project.build.directory}/self-destruct-lambda.jar">
+                                    <manifest>
+                                        <attribute name="Main-Class" value="co.uk.diyaccounting.submit.functions.SelfDestructHandler"/>
+                                    </manifest>
+                                </jar>
 
-                                        <!-- Exclude module info -->
-                                        <exclude>**/module-info.class</exclude>
+                                <jar update="true" jarfile="${project.build.directory}/submit-application.jar">
+                                    <manifest>
+                                        <attribute name="Main-Class" value="co.uk.diyaccounting.submit.SubmitApplication"/>
+                                    </manifest>
+                                </jar>
 
-                                        <!-- Exclude version properties -->
-                                        <exclude>META-INF/io.netty.versions.properties</exclude>
-                                        <exclude>META-INF/*.properties</exclude>
+                                <jar update="true" jarfile="${project.build.directory}/submit-delivery.jar">
+                                    <manifest>
+                                        <attribute name="Main-Class" value="co.uk.diyaccounting.submit.SubmitDelivery"/>
+                                    </manifest>
+                                </jar>
 
-                                        <!-- Exclude native image configurations that may conflict -->
-                                        <exclude>META-INF/native-image/**</exclude>
-
-                                        <!-- Exclude duplicate license and notice files -->
-                                        <exclude>META-INF/LICENSE*</exclude>
-                                        <exclude>META-INF/NOTICE*</exclude>
-                                        <exclude>META-INF/*LICENSE*</exclude>
-                                        <exclude>META-INF/*NOTICE*</exclude>
-                                        <exclude>META-INF/FastDoubleParser-LICENSE</exclude>
-                                        <exclude>META-INF/FastDoubleParser-NOTICE</exclude>
-                                        <exclude>META-INF/bigint-LICENSE</exclude>
-
-                                        <!-- Exclude version-specific directories -->
-                                        <exclude>META-INF.versions.*/**</exclude>
-
-                                        <!-- Exclude duplicate resource files -->
-                                        <exclude>Log4j-*.dtd</exclude>
-                                        <exclude>Log4j-*.xsd</exclude>
-                                        <exclude>Log4j-*.properties</exclude>
-                                        <exclude>mime.types</exclude>
-                                        <exclude>VersionInfo.java</exclude>
-                                        <exclude>mozilla/public-suffix-list.txt</exclude>
-                                    </excludes>
-                                </filter>
-                            </filters>
-                            <minimizeJar>false</minimizeJar>
-                            <createSourcesJar>false</createSourcesJar>
+                                <jar update="true" jarfile="${project.build.directory}/submit-environment.jar">
+                                    <manifest>
+                                        <attribute name="Main-Class" value="co.uk.diyaccounting.submit.SubmitEnvironment"/>
+                                    </manifest>
+                                </jar>
+                            </target>
                         </configuration>
-                    </execution>
-
-                    <execution>
-                        <id>shade-submit-environment</id>
                         <goals>
-                            <goal>shade</goal>
+                            <goal>run</goal>
                         </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>3.5.0</version>
+                <executions>
+                    <execution>
+                        <id>attach-variants</id>
                         <phase>package</phase>
+                        <goals>
+                            <goal>attach-artifact</goal>
+                        </goals>
                         <configuration>
-                            <finalName>submit-environment</finalName>
-                            <shadedArtifactAttached>true</shadedArtifactAttached>
-                            <createDependencyReducedPom>false</createDependencyReducedPom>
-                            <transformers>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>co.uk.diyaccounting.submit.SubmitEnvironment</mainClass>
-                                </transformer>
-                            </transformers>
-                            <filters>
-                                <filter>
-                                    <artifact>*:*</artifact>
-                                    <excludes>
-                                        <!-- Exclude signature files -->
-                                        <exclude>META-INF/*.SF</exclude>
-                                        <exclude>META-INF/*.DSA</exclude>
-                                        <exclude>META-INF/*.RSA</exclude>
-                                        <exclude>META-INF/DEPENDENCIES</exclude>
-                                        <exclude>META-INF/MANIFEST.MF</exclude>
-
-                                        <!-- Exclude duplicate Maven metadata -->
-                                        <exclude>META-INF/maven/**</exclude>
-
-                                        <!-- Exclude module info -->
-                                        <exclude>**/module-info.class</exclude>
-
-                                        <!-- Exclude version properties -->
-                                        <exclude>META-INF/io.netty.versions.properties</exclude>
-                                        <exclude>META-INF/*.properties</exclude>
-
-                                        <!-- Exclude native image configurations that may conflict -->
-                                        <exclude>META-INF/native-image/**</exclude>
-
-                                        <!-- Exclude duplicate license and notice files -->
-                                        <exclude>META-INF/LICENSE*</exclude>
-                                        <exclude>META-INF/NOTICE*</exclude>
-                                        <exclude>META-INF/*LICENSE*</exclude>
-                                        <exclude>META-INF/*NOTICE*</exclude>
-                                        <exclude>META-INF/FastDoubleParser-LICENSE</exclude>
-                                        <exclude>META-INF/FastDoubleParser-NOTICE</exclude>
-                                        <exclude>META-INF/bigint-LICENSE</exclude>
-
-                                        <!-- Exclude version-specific directories -->
-                                        <exclude>META-INF.versions.*/**</exclude>
-
-                                        <!-- Exclude duplicate resource files -->
-                                        <exclude>Log4j-*.dtd</exclude>
-                                        <exclude>Log4j-*.xsd</exclude>
-                                        <exclude>Log4j-*.properties</exclude>
-                                        <exclude>mime.types</exclude>
-                                        <exclude>VersionInfo.java</exclude>
-                                        <exclude>mozilla/public-suffix-list.txt</exclude>
-                                    </excludes>
-                                </filter>
-                            </filters>
-                            <minimizeJar>false</minimizeJar>
-                            <createSourcesJar>false</createSourcesJar>
+                            <artifacts>
+                                <artifact>
+                                    <file>${project.build.directory}/self-destruct-lambda.jar</file>
+                                    <type>jar</type>
+                                    <classifier>self-destruct-lambda</classifier>
+                                </artifact>
+                                <artifact>
+                                    <file>${project.build.directory}/submit-application.jar</file>
+                                    <type>jar</type>
+                                    <classifier>submit-application</classifier>
+                                </artifact>
+                                <artifact>
+                                    <file>${project.build.directory}/submit-delivery.jar</file>
+                                    <type>jar</type>
+                                    <classifier>submit-delivery</classifier>
+                                </artifact>
+                                <artifact>
+                                    <file>${project.build.directory}/submit-environment.jar</file>
+                                    <type>jar</type>
+                                    <classifier>submit-environment</classifier>
+                                </artifact>
+                            </artifacts>
                         </configuration>
                     </execution>
-
                 </executions>
             </plugin>
             <plugin>

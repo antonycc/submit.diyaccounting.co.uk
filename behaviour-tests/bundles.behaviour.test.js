@@ -61,10 +61,9 @@ test.use({
 
 test("Log in, add bundles and Log out", async ({ page }) => {
   // Run local servers as needed for the tests
-  const runLocalOAuth2ServerPromise = runLocalOAuth2Server(runMockOAuth2);
+  await runLocalOAuth2Server(runMockOAuth2);
   serverProcess = await runLocalHttpServer(runTestServer, null, serverPort);
   ngrokProcess = await runLocalSslProxy(runProxy, serverPort, baseUrl);
-  await runLocalOAuth2ServerPromise;
 
   // Compute test URL based on which servers are running§
   const testUrl =
