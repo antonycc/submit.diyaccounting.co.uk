@@ -213,6 +213,7 @@ public class ApexStack extends Stack {
             .enableIpv6(true)
             .sslSupportMethod(SSLMethod.SNI)
             .build();
+        Tags.of(this.distribution).add("OriginFor", props.sharedNames().holdingDomainName);
 
         // Grant CloudFront access to the origin lambdas with compressed names
         this.distributionInvokeFnUrl = Permission.builder()

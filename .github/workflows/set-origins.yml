@@ -92,7 +92,7 @@ jobs:
           output-credentials: true
           retry-max-attempts: 3
 
-      - name: Look up the CloudFront distribution ID if not provided based on the ORIGIN_DOMAIN
+      - name: Look up the CloudFront distribution ID if not provided based on the ORIGIN_DOMAIN matching the tag named "OriginFor"
         id: lookup-cf
         env:
           ORIGIN_DOMAIN: ${{ inputs.domain-source == 'holding' && needs.names.outputs.holding-domain || needs.names.outputs.base-domain }}
@@ -100,12 +100,12 @@ jobs:
         run: |
           CLOUDFRONT_DISTRIBUTION_ID="${INPUT_CLOUDFRONT_DISTRIBUTION_ID}"
           if [ -z "$CLOUDFRONT_DISTRIBUTION_ID" ]; then
-            echo "CloudFront Distribution ID not provided, looking up by ORIGIN_DOMAIN..."
+            echo "CloudFront Distribution ID not provided, looking up based on the ORIGIN_DOMAIN matching the tag named OriginFor"
             CLOUDFRONT_DISTRIBUTION_ID=$(aws cloudfront list-distributions \
-              --query "DistributionList.Items[?contains(Aliases.Items, \`${ORIGIN_DOMAIN?}\`)].Id | [0]" \
+              --query "DistributionList.Items[?Tags.Items[?Key=='OriginFor'&&Value=='${ORIGIN_DOMAIN?}']].Id | [0]" \
               --output text)
             if [ -z "$CLOUDFRONT_DISTRIBUTION_ID" ] || [ "$CLOUDFRONT_DISTRIBUTION_ID" == "None" ]; then
-              echo "Error: Could not find CloudFront Distribution with Deployment tag '${{ needs.names.outputs.deployment-name }}'."
+              echo "Error: Could not find CloudFront Distribution with OriginFor tag ${ORIGIN_DOMAIN}."
               exit 1
             fi
             echo "Found CloudFront Distribution ID: ${CLOUDFRONT_DISTRIBUTION_ID?}"

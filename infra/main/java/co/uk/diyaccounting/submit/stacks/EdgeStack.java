@@ -333,6 +333,7 @@ public class EdgeStack extends Stack {
                 .sslSupportMethod(SSLMethod.SNI)
                 .webAclId(webAcl.getAttrArn())
                 .build();
+        Tags.of(this.distribution).add("OriginFor", props.sharedNames().envDomainName);
 
         // Grant CloudFront access to the origin lambdas with compressed names
         this.distributionInvokeFnUrl = Permission.builder()
