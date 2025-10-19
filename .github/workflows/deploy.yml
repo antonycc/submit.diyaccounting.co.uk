@@ -466,7 +466,8 @@ jobs:
 
   skip-deploy-check:
     name: 'skip deploy check'
-    if: ${{ (inputs.skipDeploy != 'true') && (github.event_name != 'push' || !contains(github.event.head_commit.message, 'skip:')) }}
+    #if: ${{ (inputs.skipDeploy != 'true') && (github.event_name != 'push' || !contains(github.event.head_commit.message, 'skip:')) }}
+    if: ${{ inputs.skipDeploy != 'true' }}
     runs-on: ubuntu-24.04
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
     steps:
