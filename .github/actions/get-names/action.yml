@@ -55,7 +55,7 @@ runs:
         fi
 
         if [ "$DEPLOYMENT_NAME" = "prod" ]; then
-          DIY_SUBMIT_BASE_DOMAIN="prod-${GET_NAMES_GITHUB_SHA?}.submit.diyaccounting.co.uk"
+          DIY_SUBMIT_BASE_DOMAIN="prod-${GET_NAMES_GITHUB_SHA::7}.submit.diyaccounting.co.uk"
         else
           DIY_SUBMIT_BASE_DOMAIN="${DEPLOYMENT_NAME?}.submit.diyaccounting.co.uk"
         fi

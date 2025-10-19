@@ -281,8 +281,8 @@ jobs:
         run: |
           ./mvnw clean package
 
-  npm-test-cdk:
-    name: 'npm test cdk'
+  npm-test-cdk-ci:
+    name: 'npm test cdk-ci'
     needs:
       - names
       - mvn-package
@@ -313,10 +313,52 @@ jobs:
       - name: test cdk
         id: test-cdk
         shell: bash
-        run: npm run cdk${{ github.ref == 'refs/heads/main' && '' || '-ci' }}
+        run: npm run cdk-ci
         env:
-          ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
-          DEPLOYMENT_NAME: ${{ needs.names.outputs.environment-name }}
+          ENVIRONMENT_NAME: 'ci'
+          DEPLOYMENT_NAME: 'ci'
+          SELF_DESTRUCT_HANDLER_SOURCE: "../${{ needs.mvn-package.outputs.self-destruct-handler-source }}"
+          SELF_DESTRUCT_START_DATETIME: ${{ needs.mvn-package.outputs.self-destruct-start-datetime }}
+          # Set by deploy-environment.yml after the environment's AuthStack is deployed
+          COGNITO_USER_POOL_ARN: ${{ vars.COGNITO_USER_POOL_ARN }}
+          COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
+
+  npm-test-cdk-prod:
+    name: 'npm test cdk prod'
+    needs:
+      - names
+      - mvn-package
+    runs-on: ubuntu-24.04
+    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Node dependencies
+        run: npm ci
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: 'maven'
+
+      - name: test cdk
+        id: test-cdk
+        shell: bash
+        run: npm run cdk
+        env:
+          ENVIRONMENT_NAME: 'prod'
+          DEPLOYMENT_NAME: 'prod'
           SELF_DESTRUCT_HANDLER_SOURCE: "../${{ needs.mvn-package.outputs.self-destruct-handler-source }}"
           SELF_DESTRUCT_START_DATETIME: ${{ needs.mvn-package.outputs.self-destruct-start-datetime }}
           # Set by deploy-environment.yml after the environment's AuthStack is deployed
