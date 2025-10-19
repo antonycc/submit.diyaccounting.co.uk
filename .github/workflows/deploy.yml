@@ -2145,9 +2145,9 @@ jobs:
       github-pages-url: ${{ steps.deployment.outputs.page_url }}
       artifacts-url: ${{ steps.deployment.outputs.page_url }}artifacts/
 
-  # Run workflow: .github/workflows/destroy.yml to destroy previous deployment if any and if it doesn't match the holding page (`-holding`)
+  # Run workflow: .github/workflows/destroy.yml to destroy previous prod deployments but not the holding page (`-holding`)
   destroy-previous:
-    if: ${{ needs.set-origins.outputs.existing-deployment-name != '' && !contains(needs.set-origins.outputs.existing-deployment-name, '-holding') }}
+    if: ${{ needs.names.outputs.environment-name == 'prod' && needs.set-origins.outputs.existing-deployment-name != '' && !contains(needs.set-origins.outputs.existing-deployment-name, '-holding') }}
     name: 'destroy-previous'
     needs:
       - names
