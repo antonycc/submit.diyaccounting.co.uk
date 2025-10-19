@@ -83,6 +83,8 @@ env:
   FORCE_ALL_STACK_DEPLOYMENT: ${{ inputs.forceAllStackDeployment || 'false' }}
   COMMIT_HASH: ${{ github.sha }}
   BUILD_NUMBER: ${{ github.run_number }}
+  GITHUB_REF: ${{ github.ref }}
+  GITHUB_REF_TO_ENV: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
 
 jobs:
 
@@ -569,6 +571,7 @@ jobs:
 
   deploy-application-self-destruct:
     name: 'deploy application self-destruct'
+    if: ${{ inputs.skipDeploy != 'true' && github.ref == 'refs/heads/main' && needs.names.outputs.environment-name != 'prod' }}
     needs:
       - names
       - skip-deploy-check
@@ -1139,6 +1142,7 @@ jobs:
 
   deploy-delivery-self-destruct:
     name: 'deploy delivery self-destruct'
+    if: ${{ inputs.skipDeploy != 'true' && github.ref == 'refs/heads/main' && needs.names.outputs.environment-name != 'prod' }}
     needs:
       - names
       - skip-deploy-check
