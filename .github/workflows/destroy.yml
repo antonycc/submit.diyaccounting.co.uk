@@ -1,7 +1,7 @@
 name: destroy
-run-name: "destroy ${{ github.event_name == 'delete' && github.event.ref || github.ref_name }}"
+run-name: "destroy from ${{ github.ref_name }}"
 concurrency:
-  group: deploy-${{ github.event_name == 'delete' && github.event.ref || github.ref_name }}
+  group: destroy-${{ github.ref_name }}
   cancel-in-progress: false
 
 on:
@@ -14,6 +14,18 @@ on:
       deployment-name:
         description: 'The name of the deployment to destroy (omit for branch-based deployment name or, "ci-lambdas4" for CI environment, "prod-44f0305" for production)'
         required: false
+        default: ''
+  workflow_call:
+    inputs:
+      environment-name:
+        description: 'The name of the environment to destroy (omit for branch-based environment name or, "ci" for CI environment, "prod" for production)'
+        required: false
+        type: string
+        default: ''
+      deployment-name:
+        description: 'The name of the deployment to destroy (omit for branch-based deployment name or, "ci-lambdas4" for CI environment, "prod-44f0305" for production)'
+        required: false
+        type: string
         default: ''
 
 permissions:
