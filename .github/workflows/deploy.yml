@@ -571,7 +571,7 @@ jobs:
 
   deploy-application-self-destruct:
     name: 'deploy application self-destruct'
-    if: ${{ inputs.skipDeploy != 'true' && github.ref == 'refs/heads/main' && names.outputs.environment-name != 'prod' }}
+    if: ${{ inputs.skipDeploy != 'true' && github.ref == 'refs/heads/main' && needs.names.outputs.environment-name != 'prod' }}
     needs:
       - names
       - skip-deploy-check
@@ -1142,7 +1142,7 @@ jobs:
 
   deploy-delivery-self-destruct:
     name: 'deploy delivery self-destruct'
-    if: ${{ inputs.skipDeploy != 'true' && github.ref == 'refs/heads/main' && names.outputs.environment-name != 'prod' }}
+    if: ${{ inputs.skipDeploy != 'true' && github.ref == 'refs/heads/main' && needs.names.outputs.environment-name != 'prod' }}
     needs:
       - names
       - skip-deploy-check
