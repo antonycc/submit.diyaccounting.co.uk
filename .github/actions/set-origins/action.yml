@@ -123,7 +123,9 @@ runs:
         aws cloudfront get-distribution --id "${SET_ORIGINS_CLOUDFRONT_DISTRIBUTION_ID?}" \
           --query 'Distribution.DistributionConfig.Aliases.Items' --output json
 
-        echo "EXISTING_DEPLOYMENT_NAME=$EXISTING_DEPLOYMENT_NAME" | tee -a "$GITHUB_OUTPUT"
+        if [ -n "$EXISTING_DEPLOYMENT_NAME" ]; then
+          echo "EXISTING_DEPLOYMENT_NAME=$EXISTING_DEPLOYMENT_NAME" | tee -a "$GITHUB_OUTPUT"
+        fi
 
     - name: Alias apex domain to base domain
       shell: bash

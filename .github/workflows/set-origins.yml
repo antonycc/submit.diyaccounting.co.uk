@@ -20,6 +20,20 @@ on:
         type: string
         description: 'CloudFront Distribution ID to update aliases on'
         required: false
+      environment-name:
+        type: choice
+        description: 'Environment name to use instead of computing from branch, e.g. ci or prod'
+        required: false
+        options:
+          - ''
+          - 'ci'
+          - 'prod'
+        default: ''
+      deployment-name:
+        type: string
+        description: 'Deployment name to use instead of computing from branch, e.g. ci-lambdas6 or prod-ea373de'
+        required: false
+        default: ''
 
 permissions:
   id-token: write
@@ -47,6 +61,9 @@ jobs:
       - name: Compute deployment name and environment
         id: deployment-config
         uses: ./.github/actions/get-names
+        with:
+          environment-name: ${{ github.event.inputs.environment-name || '' }}
+          deployment-name: ${{ github.event.inputs.deployment-name || '' }}
     outputs:
       environment-name: ${{ steps.deployment-config.outputs.environment-name }}
       deployment-name: ${{ steps.deployment-config.outputs.deployment-name }}

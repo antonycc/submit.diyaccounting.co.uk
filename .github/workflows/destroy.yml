@@ -8,24 +8,30 @@ on:
   workflow_dispatch:
     inputs:
       environment-name:
-        description: 'The name of the environment to destroy (omit for branch-based environment name or, "ci" for CI environment, "prod" for production)'
+        type: choice
+        description: 'Environment name to use instead of computing from branch, e.g. ci or prod'
         required: false
+        options:
+          - ''
+          - 'ci'
+          - 'prod'
         default: ''
       deployment-name:
-        description: 'The name of the deployment to destroy (omit for branch-based deployment name or, "ci-lambdas4" for CI environment, "prod-44f0305" for production)'
+        type: string
+        description: 'Deployment name to use instead of computing from branch, e.g. ci-lambdas6 or prod-ea373de'
         required: false
         default: ''
   workflow_call:
     inputs:
       environment-name:
-        description: 'The name of the environment to destroy (omit for branch-based environment name or, "ci" for CI environment, "prod" for production)'
-        required: false
         type: string
+        description: 'Environment name to use instead of computing from branch, e.g. ci or prod'
+        required: false
         default: ''
       deployment-name:
-        description: 'The name of the deployment to destroy (omit for branch-based deployment name or, "ci-lambdas4" for CI environment, "prod-44f0305" for production)'
-        required: false
         type: string
+        description: 'Deployment name to use instead of computing from branch, e.g. ci-lambdas6 or prod-ea373de'
+        required: false
         default: ''
 
 permissions:
@@ -61,8 +67,8 @@ jobs:
           environment-name: ${{ inputs.environment-name }}
           deployment-name: ${{ inputs.deployment-name }}
     outputs:
-      environment-name: ${{ inputs.environment-name || steps.deployment-config.outputs.environment-name }}
-      deployment-name: ${{ inputs.deployment-name || steps.deployment-config.outputs.deployment-name }}
+      environment-name: ${{ steps.deployment-config.outputs.environment-name }}
+      deployment-name: ${{ steps.deployment-config.outputs.deployment-name }}
       base-domain: ${{ steps.deployment-config.outputs.base-domain }}
       base-url: ${{ steps.deployment-config.outputs.base-url }}
       apex-domain: ${{ steps.deployment-config.outputs.apex-domain }}

@@ -7,14 +7,16 @@ concurrency:
 on:
   workflow_dispatch:
     inputs:
-      environment:
-        description: 'Target environment'
-        required: false
+      environment-name:
         type: choice
+        description: 'Environment name to use instead of computing from branch, e.g. ci or prod'
+        required: false
         options:
-          - prod
-          - ci
+          - ''
+          - 'ci'
+          - 'prod'
         default: ''
+
   push:
     branches:
       - '**'
