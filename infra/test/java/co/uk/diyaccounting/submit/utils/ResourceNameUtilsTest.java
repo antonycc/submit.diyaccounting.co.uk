@@ -75,6 +75,6 @@ class ResourceNameUtilsTest {
 
         assertEquals(
                 "dev.auth.app.example.com", ResourceNameUtils.buildCognitoDomainName("dev", "auth", "app","example.com"));
-        assertEquals("auth.app.example.com", ResourceNameUtils.buildCognitoDomainName("prod", "auth", "app","example.com"));
+        assertEquals("auth.app.example.com", ResourceNameUtils.buildCognitoDomainName("prod", "auth", "app", "example.com"));
     }
 }
