@@ -1982,7 +1982,7 @@ jobs:
     runs-on: ubuntu-24.04
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}artifacts
+      url: ${{ steps.deployment.outputs.page_url }}
     permissions:
       contents: read
       pages: write
@@ -2134,8 +2134,6 @@ jobs:
       - name: Output deployment URLs
         run: |
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "🚀 **Tested service base URL**: ${{ needs.names.outputs.base-url }}" >> $GITHUB_STEP_SUMMARY
-          #echo "📊 **Test Reports**: ${{ steps.deployment.outputs.page_url }}artifacts" >> $GITHUB_STEP_SUMMARY
           echo "📁 **GitHub Pages**: ${{ steps.deployment.outputs.page_url }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 

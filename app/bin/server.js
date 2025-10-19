@@ -58,7 +58,7 @@ const exchangeCognitoTokenPath = context.exchangeCognitoTokenLambdaUrlPath || "/
 const submitVatPath = context.submitVatLambdaUrlPath || "/api/submit-vat";
 const logReceiptPath = context.logReceiptLambdaUrlPath || "/api/log-receipt";
 const requestBundlePath = context.bundleLambdaUrlPath || "/api/request-bundle";
-const catalogPath = context.catalogLambdaUrlPath || "/api/catalog";
+const catalogPath = context.catalogLambdaUrlPath || "/api/catalog-get";
 const myBundlesPath = context.myBundlesLambdaUrlPath || "/api/my-bundles";
 const myReceiptsPath = context.myReceiptsLambdaUrlPath || "/api/my-receipts";
 
