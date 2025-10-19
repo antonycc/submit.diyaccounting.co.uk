@@ -79,6 +79,9 @@ runs:
           echo "Waiting for CloudFront distribution ${EXISTING_DISTRIBUTION_ID?} to deploy updated aliases..."
           aws cloudfront wait distribution-deployed --id "${EXISTING_DISTRIBUTION_ID?}"
           echo "Removed aliases from existing CloudFront distribution ${EXISTING_DISTRIBUTION_ID?}."
+        elif [ -n "$EXISTING_DISTRIBUTION_ID" ] && [ "$EXISTING_DISTRIBUTION_ID" != "None" ] && [ "$EXISTING_DISTRIBUTION_ID" == "${SET_ORIGINS_CLOUDFRONT_DISTRIBUTION_ID?}" ]; then
+          echo "Found existing CloudFront distribution ${EXISTING_DISTRIBUTION_ID?} with alias ${SET_ORIGINS_APEX_DOMAIN?}, and it is already target for distribution ${SET_ORIGINS_CLOUDFRONT_DISTRIBUTION_ID?}."
+          exit 0
         else
           echo "No existing CloudFront distribution found with alias ${SET_ORIGINS_APEX_DOMAIN?}."
         fi
