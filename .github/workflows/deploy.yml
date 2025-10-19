@@ -23,8 +23,18 @@ on:
             - 'false'
         required: false
         default: 'false'
-      deploymentName:
-        description: 'Deployment name (ci for shared CI, or custom name)'
+      environment-name:
+        type: choice
+        description: 'Environment name to use instead of computing from branch, e.g. ci or prod'
+        required: false
+        options:
+          - ''
+          - 'ci'
+          - 'prod'
+        default: ''
+      deployment-name:
+        type: string
+        description: 'Deployment name to use instead of computing from branch, e.g. ci-lambdas6 or prod-ea373de'
         required: false
         default: ''
       loadTestDuration:
@@ -75,7 +85,6 @@ env:
   AWS_ACCOUNT_ID: '887764105431'
   AWS_HOSTED_ZONE_ID: 'Z0315522208PWZSSBI9AL'
   BASE_IMAGE_TAG_PREFIX: 'submit-base'
-  deploymentName: ${{ inputs.deploymentName || '' }}
   loadTestDuration: ${{ inputs.loadTestDuration || '30s' }}
   GITHUB_ACTOR: ${{ github.actor }}
   SELF_DESTRUCT_DELAY_HOURS: ${{ inputs.selfDestructDelayHours || '1' }}
@@ -97,6 +106,9 @@ jobs:
       - name: Compute deployment name and environment
         id: deployment-config
         uses: ./.github/actions/get-names
+        with:
+          environment-name: ${{ github.event.inputs.environment-name || '' }}
+          deployment-name: ${{ github.event.inputs.deployment-name || '' }}
     outputs:
       environment-name: ${{ steps.deployment-config.outputs.environment-name }}
       deployment-name: ${{ steps.deployment-config.outputs.deployment-name }}
