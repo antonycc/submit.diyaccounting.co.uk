@@ -1725,6 +1725,7 @@ jobs:
           retry-max-attempts: 3
 
       - name: Alias apex domain to base domain
+        id: set-origins
         uses: ./.github/actions/set-origins
         with:
           origin-domain: ${{ needs.names.outputs.base-domain }}
@@ -1732,6 +1733,8 @@ jobs:
           aws-account-id: ${{ env.AWS_ACCOUNT_ID }}
           hosted-zone-id: ${{ env.AWS_HOSTED_ZONE_ID }}
           cloudfront-distribution-id: ${{ needs.deploy-edge.outputs.cloudfront-distribution-id }}
+    outputs:
+      existing-deployment-name: ${{ steps.set-origins.outputs.existing-deployment-name }}
 
 #        run: |
 #          set -euo pipefail
@@ -1952,6 +1955,7 @@ jobs:
 #            load-test-report.html
 #            load-test-events.json
 
+  # TODO: If all the tests pass, set the last known-good deployment for this environment to this one.
 
   # TODO: Get the Playwright report and load test report into the GitHub pages site and navigable from the front page
   publish-artifacts:
@@ -2128,3 +2132,19 @@ jobs:
       service-base-url: ${{ needs.names.outputs.base-url }}
       github-pages-url: ${{ steps.deployment.outputs.page_url }}
       artifacts-url: ${{ steps.deployment.outputs.page_url }}artifacts/
+
+  # Run workflow: .github/workflows/destroy.yml to destroy previous deployment if any and if it doesn't match the holding page (`-holding`)
+  destroy-previous:
+    if: ${{ needs.set-origins.outputs.existing-deployment-name != '' && !contains(needs.set-origins.outputs.existing-deployment-name, '-holding') }}
+    name: 'web test'
+    needs:
+      - names
+      - skip-deploy-check
+      - set-origins
+      - web-test
+    uses: ./.github/workflows/destroy.yml
+    with:
+      environment-name: ${{ needs.names.outputs.environment-name }}
+      deployment-name: ${{ needs.set-origins.outputs.existing-deployment-name }}
+
+ # TODO: If set-origins passed but web-test failed, look up the last deployment from a parameter store and set-origin back to that deployment
