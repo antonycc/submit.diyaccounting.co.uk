@@ -79,7 +79,7 @@ runs:
         DIY_SUBMIT_BASE_DOMAIN="${DEPLOYMENT_NAME?}.submit.diyaccounting.co.uk"
         DIY_SUBMIT_BASE_URL="https://${DIY_SUBMIT_BASE_DOMAIN?}/"
 
-        if [ "$DEPLOYMENT_NAME" = "prod" ]; then
+        if [ "${ENVIRONMENT_NAME?}" = "prod" ]; then
           DIY_SUBMIT_APEX_DOMAIN="submit.diyaccounting.co.uk"
         else
           DIY_SUBMIT_APEX_DOMAIN="${ENVIRONMENT_NAME?}.submit.diyaccounting.co.uk"
