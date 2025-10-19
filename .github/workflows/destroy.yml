@@ -33,6 +33,18 @@ on:
         description: 'Deployment name to use instead of computing from branch, e.g. ci-lambdas6 or prod-ea373de'
         required: false
         default: ''
+  workflow_call:
+    inputs:
+      environment-name:
+        description: 'The name of the environment to destroy (omit for branch-based environment name or, "ci" for CI environment, "prod" for production)'
+        required: false
+        type: string
+        default: ''
+      deployment-name:
+        description: 'The name of the deployment to destroy (omit for branch-based deployment name or, "ci-lambdas4" for CI environment, "prod-44f0305" for production)'
+        required: false
+        type: string
+        default: ''
 
 permissions:
   id-token: write
