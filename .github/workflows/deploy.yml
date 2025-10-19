@@ -1222,40 +1222,40 @@ jobs:
           output-credentials: true
           retry-max-attempts: 3
 
-      - name: Check if EdgeStack exists
-        id: static-skip
-        shell: bash
-        run: |
-          STACK_NAME="del-${{ needs.names.outputs.deployment-name }}-EdgeStack"
-          echo "Checking for existing COMPLETE stack: $STACK_NAME"
-          COUNT=$(aws cloudformation list-stacks \
-            --region "us-east-1" \
-            --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE \
-            --query "length(StackSummaries[?StackName=='${STACK_NAME}'])" \
-            --output text)
-          if [ "$COUNT" -ge 1 ]; then
-            echo "skipStaticStackDeployment=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "skipStaticStackDeployment=false" >> "$GITHUB_OUTPUT"
-          fi
+#      - name: Check if EdgeStack exists
+#        id: static-skip
+#        shell: bash
+#        run: |
+#          STACK_NAME="del-${{ needs.names.outputs.deployment-name }}-EdgeStack"
+#          echo "Checking for existing COMPLETE stack: $STACK_NAME"
+#          COUNT=$(aws cloudformation list-stacks \
+#            --region "us-east-1" \
+#            --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE \
+#            --query "length(StackSummaries[?StackName=='${STACK_NAME}'])" \
+#            --output text)
+#          if [ "$COUNT" -ge 1 ]; then
+#            echo "skipStaticStackDeployment=true" >> "$GITHUB_OUTPUT"
+#          else
+#            echo "skipStaticStackDeployment=false" >> "$GITHUB_OUTPUT"
+#          fi
 
       - name: Checkout
-        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
+        #if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
         uses: actions/checkout@v5
 
       - name: Setup Node
-        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
+        #if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
         uses: actions/setup-node@v6
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
       - name: Node dependencies
-        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
+        #if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
         run: npm ci
 
       - uses: actions/setup-java@v5
-        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
+        #if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
         with:
           distribution: 'temurin'
           java-version: ${{ env.JAVA_VERSION }}
@@ -1270,7 +1270,7 @@ jobs:
       #    hosted-zone-id: "Z0315522208PWZSSBI9AL"
 
       - name: Build CDK and synthesize and deploy the EdgeStack in the Delivery Application
-        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
+        #if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
         run: |
           ./mvnw --errors clean package -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
             && cd cdk-delivery \
