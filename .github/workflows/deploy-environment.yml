@@ -1,5 +1,5 @@
 name: deploy environment
-run-name: "deploy environment ${{ inputs.environment || 'ci' }}"
+run-name: "deploy environment from ${{ github.ref_name }}"
 concurrency:
   group: deploy-${{ github.ref_name }}
   cancel-in-progress: false
