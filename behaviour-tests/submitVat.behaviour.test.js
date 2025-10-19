@@ -31,10 +31,10 @@ import {
 import { checkIfServerIsRunning } from "./helpers/serverHelper.js";
 import { ensureMinioBucketExists } from "@app/bin/minio.js";
 
-if (!process.env.DIY_SUBMIT_ENV_FILEPATH) {
-  dotenvConfigIfNotBlank({ path: ".env.test" });
+if (process.env.DIY_SUBMIT_ENV_FILEPATH) {
+  dotenvConfigIfNotBlank({ path: process.env.DIY_SUBMIT_ENV_FILEPATH });
 } else {
-  console.log(`Already loaded environment from custom path: ${process.env.DIY_SUBMIT_ENV_FILEPATH}`);
+  dotenvConfigIfNotBlank({ path: ".env.test" });
 }
 dotenvConfigIfNotBlank({ path: ".env" }); // Not checked in, HMRC API credentials
 
@@ -79,12 +79,12 @@ test.beforeAll(async () => {
 });
 
 test.afterAll(async () => {
-  // if (serverProcess) {
-  //   serverProcess.kill();
-  // }
-  // if (ngrokProcess) {
-  //   ngrokProcess.kill();
-  // }
+  if (serverProcess) {
+    serverProcess.kill();
+  }
+  if (ngrokProcess) {
+    ngrokProcess.kill();
+  }
 });
 
 // test.use({
@@ -171,12 +171,12 @@ test("Log in, add test bundle, submit VAT return, log out", async ({ page }) => 
   await logOutAndExpectToBeLoggedOut(page);
 
   // Shutdown local servers at end of test
-  if (serverProcess) {
-    serverProcess.kill();
-  }
-  if (ngrokProcess) {
-    ngrokProcess.kill();
-  }
+  // if (serverProcess) {
+  //   serverProcess.kill();
+  // }
+  // if (ngrokProcess) {
+  //   ngrokProcess.kill();
+  // }
 });
 
 async function checkServersAreRunning() {

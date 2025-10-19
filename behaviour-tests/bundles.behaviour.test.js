@@ -19,10 +19,10 @@ import {
 import { clearBundles, goToBundlesPage, requestTestBundle } from "./steps/behaviour-bundle-steps.js";
 import { goToReceiptsPageUsingHamburgerMenu } from "./steps/behaviour-hmrc-receipts-steps.js";
 
-if (!process.env.DIY_SUBMIT_ENV_FILEPATH) {
-  dotenvConfigIfNotBlank({ path: ".env.test" });
+if (process.env.DIY_SUBMIT_ENV_FILEPATH) {
+  dotenvConfigIfNotBlank({ path: process.env.DIY_SUBMIT_ENV_FILEPATH });
 } else {
-  console.log(`Already loaded environment from custom path: ${process.env.DIY_SUBMIT_ENV_FILEPATH}`);
+  dotenvConfigIfNotBlank({ path: ".env.test" });
 }
 dotenvConfigIfNotBlank({ path: ".env" }); // Not checked in, HMRC API credentials
 
@@ -54,7 +54,14 @@ test.beforeAll(async () => {
   console.log("beforeAll hook completed successfully");
 });
 
-test.afterAll(async () => {});
+test.afterAll(async () => {
+  if (serverProcess) {
+    serverProcess.kill();
+  }
+  if (ngrokProcess) {
+    ngrokProcess.kill();
+  }
+});
 
 // test.use({
 //   video: {
@@ -118,10 +125,10 @@ test("Log in, add bundles and Log out", async ({ page }) => {
   await logOutAndExpectToBeLoggedOut(page);
 
   // Shutdown local servers at end of test
-  if (serverProcess) {
-    serverProcess.kill();
-  }
-  if (ngrokProcess) {
-    ngrokProcess.kill();
-  }
+  // if (serverProcess) {
+  //   serverProcess.kill();
+  // }
+  // if (ngrokProcess) {
+  //   ngrokProcess.kill();
+  // }
 });

@@ -1,12 +1,11 @@
 package co.uk.diyaccounting.submit.utils;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.List;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.List;
+import org.junit.jupiter.api.Test;
 
 class ResourceNameUtilsTest {
 
@@ -67,14 +66,19 @@ class ResourceNameUtilsTest {
 
     @Test
     void cognitoDomains() {
-        assertEquals("cog.auth.app.example.com", ResourceNameUtils.buildCognitoDomainName("cog", "auth", "app", "example.com"));
         assertEquals(
-                "dev.auth.app.example.com", ResourceNameUtils.buildCognitoDomainName("dev", "auth", "app","example.com"));
+                "cog.auth.app.example.com",
+                ResourceNameUtils.buildCognitoDomainName("cog", "auth", "app", "example.com"));
+        assertEquals(
+                "dev.auth.app.example.com",
+                ResourceNameUtils.buildCognitoDomainName("dev", "auth", "app", "example.com"));
         assertEquals("https://login.example.com", ResourceNameUtils.buildCognitoBaseUri("login.example.com"));
         assertEquals("cog-app-example-com", ResourceNameUtils.buildDashedCognitoDomainName("cog.app.example.com"));
 
         assertEquals(
-                "dev.auth.app.example.com", ResourceNameUtils.buildCognitoDomainName("dev", "auth", "app","example.com"));
-        assertEquals("auth.app.example.com", ResourceNameUtils.buildCognitoDomainName("prod", "auth", "app", "example.com"));
+                "dev.auth.app.example.com",
+                ResourceNameUtils.buildCognitoDomainName("dev", "auth", "app", "example.com"));
+        assertEquals(
+                "auth.app.example.com", ResourceNameUtils.buildCognitoDomainName("prod", "auth", "app", "example.com"));
     }
 }
