@@ -86,6 +86,8 @@ public class HmrcStack extends Stack {
 
         String hmrcClientSecretArn();
 
+        String cognitoUserPoolId();
+
         @Override
         SubmitSharedNames sharedNames();
 
@@ -203,6 +205,7 @@ public class HmrcStack extends Stack {
         // submitVat
         var submitVatLambdaEnv = new PopulatedMap<String, String>()
                 .with("DIY_SUBMIT_BASE_URL", props.sharedNames().envBaseUrl)
+                .with("COGNITO_USER_POOL_ID", props.cognitoUserPoolId())
                 .with("HMRC_BASE_URI", props.hmrcBaseUri());
         var submitVatLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
