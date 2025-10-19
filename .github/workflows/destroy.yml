@@ -61,9 +61,8 @@ jobs:
   destroy:
     needs:
       - names
-    if: ${{ github.event_name != 'delete' || github.event.ref_type == 'branch' }} # skip non-branch deletions
     runs-on: ubuntu-latest
-    environment: ${{ (github.event_name == 'delete' && github.event.ref == 'refs/heads/main') || (github.event_name != 'delete' && github.ref == 'refs/heads/main') && 'prod' || 'ci' }}
+    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
     steps:
       - name: Checkout default branch
         uses: actions/checkout@v5
@@ -125,7 +124,6 @@ jobs:
         run: ./mvnw --errors clean package -DskipTests
 
       - name: Destroy PublishStack
-        if: ${{ needs.names.outputs.deployment-name != 'prod' }}
         run: |
           cd cdk-delivery && \
             npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
@@ -141,7 +139,6 @@ jobs:
           WEBSITE_HASH: 'placeholder'
 
       - name: Destroy EdgeStack
-        if: ${{ needs.names.outputs.deployment-name != 'prod' }}
         run: |
           cd cdk-delivery && \
             npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
@@ -157,7 +154,6 @@ jobs:
           WEBSITE_HASH: 'placeholder'
 
       - name: Destroy OpsStack
-        if: ${{ needs.names.outputs.deployment-name != 'prod' }}
         run: |
           cd cdk-application && \
             npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
@@ -176,7 +172,6 @@ jobs:
           COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
 
       - name: Destroy AccountStack
-        if: ${{ needs.names.outputs.deployment-name != 'prod' }}
         run: |
           cd cdk-application && \
             npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
@@ -195,7 +190,6 @@ jobs:
           COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
 
       - name: Destroy HmrcStack
-        if: ${{ needs.names.outputs.deployment-name != 'prod' }}
         run: |
           cd cdk-application && \
             npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
@@ -214,7 +208,6 @@ jobs:
           COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
 
       - name: Destroy AuthStack
-        if: ${{ needs.names.outputs.deployment-name != 'prod' }}
         run: |
           cd cdk-application && \
             npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
@@ -233,7 +226,6 @@ jobs:
           COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
 
       - name: Destroy DevStack
-        if: ${{ needs.names.outputs.deployment-name != 'prod' }}
         run: |
           cd cdk-application && \
             npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
@@ -252,7 +244,6 @@ jobs:
           COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
 
       - name: Destroy SelfDestructStack (Delivery)
-        if: ${{ needs.names.outputs.deployment-name != 'prod' }}
         run: |
           cd cdk-delivery && \
             npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
@@ -268,7 +259,6 @@ jobs:
           WEBSITE_HASH: "placeholder"
 
       - name: Destroy SelfDestructStack (Application)
-        if: ${{ needs.names.outputs.deployment-name != 'prod' }}
         run: |
           cd cdk-application && \
             npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
