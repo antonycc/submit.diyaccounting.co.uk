@@ -4,45 +4,6 @@ This project allows UK businesses to submit tax returns to HMRC under the Making
 
 ---
 
-## 🚧 Beta 1 (User Accounts & Persistent Auth)
-
-### Added Features:
-
-* Google Sign-In
-* Persistent HMRC OAuth tokens per user
-
-### Additional Stack:
-
-* **Auth:** Cognito (Google OAuth)
-
----
-
-## 🚀 Beta 2 (Workbook Integration)
-
-### Added Features:
-
-* Upload DIY accounting CSV/XLS files
-* Pre-populated VAT submission forms
-
-### Additional Stack:
-
-* SheetJS for parsing CSV/XLS
-
----
-
-## 🎉 Version 1.0 (Monetization)
-
-### Added Features:
-
-* Payment integration for donations/subscriptions
-* Submission restriction based on active subscriptions/donations
-
-### Additional Stack:
-
-* Stripe API for payments
-
----
-
 ## 🛂 HMRC Approval & Onboarding
 
 ### HMRC Approval Checklist:
@@ -59,55 +20,6 @@ This project allows UK businesses to submit tax returns to HMRC under the Making
 * User redirected to HMRC consent
 * HMRC returns authorization code
 * Exchange authorization code for access token
-
----
-
-## 🔖 Code Samples Reference:
-
-### OAuth Token Exchange (JavaScript):
-
-```javascript
-const getToken = async (code) => {
-  return axios.post('https://test-api.service.hmrc.gov.uk/oauth/token', {
-    client_id: CLIENT_ID,
-    client_secret: CLIENT_SECRET,
-    redirect_uri: REDIRECT_URI,
-    grant_type: 'authorization_code',
-    code: code
-  });
-};
-```
-
-### Frontend Form Submission (JavaScript):
-
-```javascript
-document.querySelector('form').onsubmit = async (e) => {
-  e.preventDefault();
-  const formData = new FormData(e.target);
-  await fetch('/submit', {
-    method: 'POST',
-    body: JSON.stringify(Object.fromEntries(formData)),
-    headers: { 'Content-Type': 'application/json' }
-  });
-};
-```
-
----
-
-## 📅 Project Roadmap
-
-| Release     | Features                           | Timeframe |
-| ----------- | ---------------------------------- | --------- |
-| MVP         | Basic submission via HTML form     | 6 Weeks   |
-| Beta 1      | Google Login, persistent HMRC auth | +4 Weeks  |
-| Beta 2      | CSV/XLS Integration                | +3 Weeks  |
-| Version 1.0 | Monetization via Stripe            | +4 Weeks  |
-
----
-
-# Delivery
-
-Here’s how HMRC handles onboarding developers (and users) for its Making Tax Digital (MTD) APIs—step by step:
 
 ---
 
