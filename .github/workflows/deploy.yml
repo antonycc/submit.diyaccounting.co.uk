@@ -2145,10 +2145,53 @@ jobs:
       github-pages-url: ${{ steps.deployment.outputs.page_url }}
       artifacts-url: ${{ steps.deployment.outputs.page_url }}artifacts/
 
+  # Set the deployment name as the last known good deployment for this environment in a parameter store parameter
+  set-last-known-good-deployment:
+    name: 'set last known good deployment'
+    needs:
+      - names
+      - skip-deploy-check
+      - set-origins
+      - web-test
+    runs-on: ubuntu-24.04
+    environment: ${{ needs.names.outputs.environment-name }}
+    steps:
+      - name: Configure AWS role via GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Set last known good deployment in SSM Parameter Store
+        run: |
+          PARAMETER_NAME="/submit/${{ needs.names.outputs.environment-name }}/last-known-good-deployment"
+          echo "Setting SSM Parameter Store parameter $PARAMETER_NAME to value '${{ needs.names.outputs.deployment-name }}'"
+          aws ssm put-parameter \
+            --name "$PARAMETER_NAME" \
+            --type String \
+            --value "${{ needs.names.outputs.deployment-name }}" \
+            --overwrite
+
   # Run workflow: .github/workflows/destroy.yml to destroy previous prod deployments but not the holding page (`-holding`)
   destroy-previous:
     if: ${{ needs.names.outputs.environment-name == 'prod' && needs.set-origins.outputs.existing-deployment-name != '' && !contains(needs.set-origins.outputs.existing-deployment-name, '-holding') }}
-    name: 'destroy-previous'
+    name: 'destroy previous'
     needs:
       - names
       - skip-deploy-check
