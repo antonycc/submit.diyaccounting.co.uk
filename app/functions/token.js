@@ -195,7 +195,7 @@ async function performTokenExchange(providerUrl, body) {
 }
 
 export async function httpPostWithUrl(request, url, body) {
-  const { accessToken, response, responseBody } = await exchangeToken(url, body);
+  const { accessToken, response, responseBody } = await performTokenExchange(url, body);
 
   if (!response.ok) {
     return httpServerErrorResponse({
