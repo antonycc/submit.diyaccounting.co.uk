@@ -2094,12 +2094,12 @@ jobs:
           fi
 
           # Create index page for artifacts
-          cat > gh-pages/artifacts/index.html << 'EOF'
+          cat > gh-pages/index.html << 'EOF'
           <!DOCTYPE html>
           <html>
           <head>
-              <title>Test Artifacts - OIDC Provider</title>
-              <link rel="stylesheet" href="../oidc.css">
+              <title>Test Artifacts - DIY Accounting Submit</title>
+              <link rel="stylesheet" href="public/submit.css">
           </head>
           <body>
               <div class="container">
@@ -2110,10 +2110,9 @@ jobs:
 
                   <h2>Available Test output</h2>
                   <ul>
-                      <li><a href="behaviour-test-reports/html-report/index.html">Behaviour Test Reports</a></li>
-                      <li><a href="origin-test-reports/html-report/index.html">Origin Test Reports</a></li>
-                      <li><a href="web-test-reports/html-report/index.html">Web Test Reports</a></li>
-                      <li><a href="test-reports-browser/html-report/index.html">Browser Test Reports</a></li>
+                      <li><a href="artifacts/behaviour-test-reports/html-report/index.html">Behaviour Test Reports (proxy)</a></li>
+                      <li><a href="artifacts/web-test-reports/html-report/index.html">Behaviour Test Reports (web)</a></li>
+                      <li><a href="artifacts/test-reports-browser/html-report/index.html">Browser Test Reports</a></li>
                   </ul>
               </div>
           </body>
