@@ -7,6 +7,10 @@ concurrency:
 on:
   workflow_dispatch:
     inputs:
+      environment-name:
+        description: 'The name of the environment to destroy (omit for branch-based environment name or, "ci" for CI environment, "prod" for production)'
+        required: false
+        default: ''
       deployment-name:
         description: 'The name of the deployment to destroy (omit for branch-based deployment name or, "ci-lambdas4" for CI environment, "prod-44f0305" for production)'
         required: false
@@ -41,8 +45,11 @@ jobs:
       - name: Compute deployment name and environment
         id: deployment-config
         uses: ./.github/actions/get-names
+        with:
+          environment-name: ${{ inputs.environment-name }}
+          deployment-name: ${{ inputs.deployment-name }}
     outputs:
-      environment-name: ${{ steps.deployment-config.outputs.environment-name }}
+      environment-name: ${{ inputs.environment-name || steps.deployment-config.outputs.environment-name }}
       deployment-name: ${{ inputs.deployment-name || steps.deployment-config.outputs.deployment-name }}
       base-domain: ${{ steps.deployment-config.outputs.base-domain }}
       base-url: ${{ steps.deployment-config.outputs.base-url }}

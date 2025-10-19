@@ -1,12 +1,22 @@
 name: "Get environment and domain names"
 
+inputs:
+  environment-name:
+    description: "Origin domain to point to."
+    required: false
+    default: ""
+  deployment-name:
+    description: "Computed deployment name"
+    required: false
+    default: ""
+
 outputs:
   environment-name:
     description: "Computed environment name"
-    value: ${{ steps.compute.outputs.ENVIRONMENT_NAME }}
+    value: ${{ inputs.environment-name || steps.compute.outputs.ENVIRONMENT_NAME }}
   deployment-name:
     description: "Computed deployment name"
-    value: ${{ steps.compute.outputs.DEPLOYMENT_NAME }}
+    value: ${{ inputs.deployment-name || steps.compute.outputs.DEPLOYMENT_NAME }}
   base-domain:
     description: "Base hostname for the deployment"
     value: ${{ steps.compute.outputs.DIY_SUBMIT_BASE_DOMAIN }}
@@ -33,6 +43,8 @@ runs:
       name: Compute deployment config
       shell: bash
       env:
+        GET_NAMES_ENVIRONMENT_NAME: ${{ inputs.environment-name }}
+        GET_NAMES_DEPLOYMENT_NAME: ${{ inputs.deployment-name }}
         GET_NAMES_GITHUB_REF: ${{ github.ref }}
         GET_NAMES_GITHUB_REF_NAME: ${{ github.ref_name }}
         GET_NAMES_GITHUB_HEAD_REF: ${{ github.head_ref }}
@@ -47,11 +59,21 @@ runs:
 
         if [ "${GITHUB_REF:-}" = "refs/heads/${GET_NAMES_PROD_BRANCH_NAME?}" ] || [ "${REF_NAME?}" = "${GET_NAMES_PROD_BRANCH_NAME?}" ]; then
           ENVIRONMENT_NAME="prod"
-          DEPLOYMENT_NAME="prod-${GET_NAMES_GITHUB_SHA::7}"
         else
           ENVIRONMENT_NAME="ci"
-          # Truncate to 9 chars for branch-based deployments to match prior logic (ci-xxxxxxxx)
+        fi
+        if [ -n "${GET_NAMES_ENVIRONMENT_NAME:-}" ]; then
+          ENVIRONMENT_NAME="${GET_NAMES_ENVIRONMENT_NAME?}"
+        fi
+
+        if [ "${ENVIRONMENT_NAME?}" = "prod" ]; then
+          DEPLOYMENT_NAME="prod-${GET_NAMES_GITHUB_SHA::7}"
+        else
+          # Truncate to 9 chars for branch-based deployments to match prior logic (ci-xxxxxxxxx)
           DEPLOYMENT_NAME="ci-${CLEANED:0:9}"
+        fi
+        if [ -n "${GET_NAMES_DEPLOYMENT_NAME:-}" ]; then
+          DEPLOYMENT_NAME="${GET_NAMES_DEPLOYMENT_NAME?}"
         fi
 
         DIY_SUBMIT_BASE_DOMAIN="${DEPLOYMENT_NAME?}.submit.diyaccounting.co.uk"

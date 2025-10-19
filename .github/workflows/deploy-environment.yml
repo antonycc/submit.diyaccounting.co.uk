@@ -49,6 +49,8 @@ jobs:
       - name: Compute deployment name and environment
         id: deployment-config
         uses: ./.github/actions/get-names
+        with:
+          environment-name: ${{ github.event.inputs.environment || '' }}
     outputs:
       environment-name: ${{ steps.deployment-config.outputs.environment-name }}
       deployment-name: ${{ steps.deployment-config.outputs.deployment-name }}
