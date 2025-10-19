@@ -20,12 +20,13 @@ inputs:
 outputs:
   existing-deployment-name:
     description: "Existing deployment name used by any previous CloudFront distribution with the same apex domain."
-    value: ${{ steps.compute.outputs.EXISTING_DEPLOYMENT_NAME }}
+    value: ${{ steps.cloudfront.outputs.EXISTING_DEPLOYMENT_NAME }}
 
 runs:
   using: "composite"
   steps:
     - name: Replace CloudFront aliases with origin-domain
+      id: cloudfront
       shell: bash
       env:
         SET_ORIGINS_ORIGIN_DOMAIN: ${{ inputs.origin-domain }}
@@ -128,6 +129,7 @@ runs:
         fi
 
     - name: Alias apex domain to base domain
+      id: route53
       shell: bash
       env:
         SET_ORIGINS_ORIGIN_DOMAIN: ${{ inputs.origin-domain }}
