@@ -30,7 +30,7 @@ function buildBucketAndClient() {
     envPrefix = "prod.";
   }
   const dashedDomain = `${envPrefix}${hostname}`.split(".").join("-");
-  const receiptsBucketFullName = `${dashedDomain}-receipts`;
+  const receiptsBucketName = `${dashedDomain}-receipts`;
 
   let s3Config = {};
   if (process.env.NODE_ENV !== "stubbed" && process.env.TEST_S3_ENDPOINT && process.env.TEST_S3_ENDPOINT !== "off") {
@@ -45,7 +45,7 @@ function buildBucketAndClient() {
     };
   }
   const s3Client = new S3Client(s3Config);
-  return { Bucket: receiptsBucketFullName, s3Client };
+  return { Bucket: receiptsBucketName, s3Client };
 }
 
 export async function httpGet(event) {

@@ -1,34 +1,31 @@
-Several components in the web/public pages can be abstracted into standalone JS modules, similar to how
-localstorage-viewer.js is used. This improves maintainability and reusability. Here are the main candidates and the
-pages they appear on:
+Several components in the web/public pages can be abstracted into standalone JS modules, similar to how localstorage-viewer.js is used. This
+improves maintainability and reusability. Here are the main candidates and the pages they appear on:
 
 <hr />
-1. Hamburger Menu Toggle & Outside Click Handler Pages: login.html receipts.html (partially in other pages) Component:
-Hamburger menu toggle logic (toggleMenu function) Window click handler to close menu Suggestion: Abstract into
-hamburger-menu.js and include on all pages with a menu.
+1. Hamburger Menu Toggle & Outside Click Handler Pages: login.html receipts.html (partially in other pages) Component: Hamburger menu toggle
+logic (toggleMenu function) Window click handler to close menu Suggestion: Abstract into hamburger-menu.js and include on all pages with a
+menu.
 
 <hr />
-2. View Source Link Loader Pages: login.html receipts.html submitVat.html submitVatCallback.html Component:
-loadViewSourceLink function (fetches commit hash and updates link) Suggestion: Abstract into view-source-link.js and
-include on all pages with a source link.
+2. View Source Link Loader Pages: login.html receipts.html submitVat.html submitVatCallback.html Component: loadViewSourceLink function
+(fetches commit hash and updates link) Suggestion: Abstract into view-source-link.js and include on all pages with a source link.
 
 <hr />
-3. Login Status Display & Logout Logic Pages: login.html receipts.html Component: updateLoginStatus function logout
-function Suggestion: Abstract into auth-status.js for consistent login/logout UI across pages.
+3. Login Status Display & Logout Logic Pages: login.html receipts.html Component: updateLoginStatus function logout function Suggestion:
+Abstract into auth-status.js for consistent login/logout UI across pages.
 
 <hr />
-4. Status Message Display Pages: submitVat.html submitVatCallback.html Component: showStatus, hideStatus,
-removeStatusMessage functions Suggestion: Already in submit.js, but could be split into status-messages.js for use in
-other pages.
+4. Status Message Display Pages: submitVat.html submitVatCallback.html Component: showStatus, hideStatus, removeStatusMessage functions
+Suggestion: Already in submit.js, but could be split into status-messages.js for use in other pages.
 
 <hr />
-5. Loading Spinner Management Pages: submitVat.html submitVatCallback.html Component: showLoading, hideLoading functions
-Suggestion: Abstract into loading-spinner.js for use wherever loading indicators are needed.
+5. Loading Spinner Management Pages: submitVat.html submitVatCallback.html Component: showLoading, hideLoading functions Suggestion:
+Abstract into loading-spinner.js for use wherever loading indicators are needed.
 
 <hr />
-Summary Table Component Suggested JS Module Pages Used On Hamburger menu hamburger-menu.js login.html, receipts.html
-View source link loader view-source-link.js login.html, receipts.html, submitVat.html, submitVatCallback.html Auth
-status/logout auth-status.js login.html, receipts.html Status messages status-messages.js submitVat.html,
-submitVatCallback.html Loading spinner loading-spinner.js submitVat.html, submitVatCallback.html
+Summary Table Component Suggested JS Module Pages Used On Hamburger menu hamburger-menu.js login.html, receipts.html View source link loader
+view-source-link.js login.html, receipts.html, submitVat.html, submitVatCallback.html Auth status/logout auth-status.js login.html,
+receipts.html Status messages status-messages.js submitVat.html, submitVatCallback.html Loading spinner loading-spinner.js submitVat.html,
+submitVatCallback.html
 <hr />
 Abstracting these components will reduce code duplication and make future changes easier.

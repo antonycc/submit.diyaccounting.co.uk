@@ -1,15 +1,5 @@
 package co.uk.diyaccounting.submit;
 
-import static co.uk.diyaccounting.submit.utils.Kind.envOr;
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.Kind.warnf;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildCognitoDomainName;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDashedDomainName;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDomainName;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildEcrRepositoryName;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateCompressedResourceNamePrefix;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateResourceNamePrefix;
-
 import co.uk.diyaccounting.submit.stacks.AccountStack;
 import co.uk.diyaccounting.submit.stacks.AuthStack;
 import co.uk.diyaccounting.submit.stacks.DevStack;
@@ -17,11 +7,18 @@ import co.uk.diyaccounting.submit.stacks.HmrcStack;
 import co.uk.diyaccounting.submit.stacks.OpsStack;
 import co.uk.diyaccounting.submit.stacks.SelfDestructStack;
 import co.uk.diyaccounting.submit.utils.KindCdk;
-import java.lang.reflect.Field;
-import java.nio.file.Paths;
 import software.amazon.awscdk.App;
 import software.amazon.awscdk.Environment;
 import software.constructs.Construct;
+
+import java.lang.reflect.Field;
+import java.nio.file.Paths;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+
+import static co.uk.diyaccounting.submit.utils.Kind.envOr;
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.Kind.warnf;
 
 public class SubmitApplication {
 
@@ -97,42 +94,44 @@ public class SubmitApplication {
     public SubmitApplication(App app, SubmitApplicationProps appProps) {
 
         // Determine environment and deployment name from env or appProps
-        String envName = envOr("ENV_NAME", appProps.envName);
+        String envName = envOr("ENVIRONMENT_NAME", appProps.envName);
         String deploymentName = envOr("DEPLOYMENT_NAME", appProps.deploymentName);
 
         // Determine primary environment (account/region) from CDK env
-        String cdkDefaultAccount = System.getenv("CDK_DEFAULT_ACCOUNT");
-        String cdkDefaultRegion = System.getenv("CDK_DEFAULT_REGION");
-        software.amazon.awscdk.Environment primaryEnv = null;
-        if (cdkDefaultAccount != null
-                && !cdkDefaultAccount.isBlank()
-                && cdkDefaultRegion != null
-                && !cdkDefaultRegion.isBlank()) {
-            primaryEnv = Environment.builder()
-                    .account(cdkDefaultAccount)
-                    .region(cdkDefaultRegion)
-                    .build();
-            infof("Using primary environment account %s region %s", cdkDefaultAccount, cdkDefaultRegion);
-        } else {
-            primaryEnv = Environment.builder().build();
-            warnf(
-                    "CDK_DEFAULT_ACCOUNT or CDK_DEFAULT_REGION environment variables are not set, using environment agnostic stacks");
-        }
-        var regionName = primaryEnv.getRegion() != null ? primaryEnv.getRegion() : null;
-        var awsAccount = primaryEnv.getAccount() != null ? primaryEnv.getAccount() : null;
+        Environment primaryEnv = KindCdk.buildPrimaryEnvironment();
+
+        var nameProps = new SubmitSharedNames.SubmitSharedNamesProps();
+        nameProps.envName = envName;
+        nameProps.deploymentName = deploymentName;
+        nameProps.hostedZoneName = appProps.hostedZoneName;
+        nameProps.subDomainName = appProps.subDomainName;
+        nameProps.cognitoDomainPrefix = appProps.cognitoDomainPrefix;
+        nameProps.regionName = primaryEnv.getRegion();
+        nameProps.awsAccount = primaryEnv.getAccount();
+        var sharedNames = new SubmitSharedNames(nameProps);
 
         // Allow environment variables to override some appProps values
         var cognitoUserPoolArn =
                 envOr("COGNITO_USER_POOL_ARN", appProps.userPoolArn, "(from cognitoDomainPrefix in cdk.json)");
         var cognitoUserPoolClientId =
                 envOr("COGNITO_CLIENT_ID", appProps.userPoolClientId, "(from cognitoDomainPrefix in cdk.json)");
+        var cognitoUserPoolId = cognitoUserPoolArn != null
+            ? cognitoUserPoolArn.split("/")[1]
+            : "(unknown cognitoUserPoolId because no cognitoUserPoolArn)";
         var hmrcClientSecretArn =
                 envOr("HMRC_CLIENT_SECRET_ARN", appProps.hmrcClientSecretArn, "(from hmrcClientSecretArn in cdk.json)");
         var baseImageTag = envOr("BASE_IMAGE_TAG", appProps.baseImageTag, "(from baseImageTag in cdk.json)");
-        var selfDestructDelayHours = envOr(
+        var selfDestructDelayHoursString = envOr(
                 "SELF_DESTRUCT_DELAY_HOURS",
                 appProps.selfDestructDelayHours,
                 "(from selfDestructDelayHours in cdk.json)");
+        int selfDestructDelayHours = Integer.parseInt(selfDestructDelayHoursString);
+        var selfDestructStartDatetimeIso = envOr(
+                "SELF_DESTRUCT_START_DATETIME",
+                ZonedDateTime.now().plusHours(selfDestructDelayHours).format(DateTimeFormatter.ISO_DATE_TIME),
+                "(from current time plus delay hours)");
+        ZonedDateTime selfDestructStartDatetime = ZonedDateTime.parse(selfDestructStartDatetimeIso);
+        infof("Self-destruct start datetime: %s", selfDestructStartDatetime);
         var selfDestructHandlerSource = envOr(
                 "SELF_DESTRUCT_HANDLER_SOURCE",
                 appProps.selfDestructHandlerSource,
@@ -140,183 +139,131 @@ public class SubmitApplication {
         var cloudTrailEnabled =
                 envOr("CLOUD_TRAIL_ENABLED", appProps.cloudTrailEnabled, "(from cloudTrailEnabled in cdk.json)");
 
-        // Generate predictable resource name prefix based on domain and environment
-        var domainName = buildDomainName(deploymentName, appProps.subDomainName, appProps.hostedZoneName);
-        var cognitoDomainName = buildCognitoDomainName(
-                deploymentName, appProps.cognitoDomainPrefix, appProps.subDomainName, appProps.hostedZoneName);
-
-        // Generate predictable resource names
-        var baseUrl = "https://%s/".formatted(domainName);
-        var dashedDomainName = buildDashedDomainName(domainName);
-        var resourceNamePrefix = "app-%s".formatted(generateResourceNamePrefix(domainName));
-        var compressedResourceNamePrefix = "a-%s".formatted(generateCompressedResourceNamePrefix(domainName));
-        var selfDestructLogGroupName = "/aws/lambda/%s-self-destruct".formatted(resourceNamePrefix);
-        String receiptsBucketFullName = "%s-receipts".formatted(dashedDomainName);
-
-        var ecrRepositoryArn =
-                "arn:aws:ecr:%s:%s:repository/%s-ecr".formatted(regionName, awsAccount, resourceNamePrefix);
-        var ecrRepositoryName = buildEcrRepositoryName(resourceNamePrefix);
-
         // Create DevStack with resources only used during development or deployment (e.g. ECR)
-        String devStackId = "%s-DevStack".formatted(deploymentName);
-        infof("Synthesizing stack %s for deployment %s to environment %s", devStackId, deploymentName, envName);
+        infof(
+                "Synthesizing stack %s for deployment %s to environment %s",
+                sharedNames.devStackId, deploymentName, envName);
         this.devStack = new DevStack(
                 app,
-                devStackId,
+                sharedNames.devStackId,
                 DevStack.DevStackProps.builder()
                         .env(primaryEnv)
                         .crossRegionReferences(false)
                         .envName(envName)
                         .deploymentName(deploymentName)
-                        .resourceNamePrefix(resourceNamePrefix)
-                        .compressedResourceNamePrefix(compressedResourceNamePrefix)
-                        .domainName(domainName)
-                        .dashedDomainName(dashedDomainName)
-                        .baseUrl(baseUrl)
+                        .resourceNamePrefix(sharedNames.appResourceNamePrefix)
+                        .compressedResourceNamePrefix(sharedNames.appCompressedResourceNamePrefix)
                         .cloudTrailEnabled(cloudTrailEnabled)
-                        .ecrRepositoryName(ecrRepositoryName)
+                        .sharedNames(sharedNames)
                         .build());
 
         // Create the AuthStack with resources used in authentication and authorisation
-        String authStackId = "%s-AuthStack".formatted(deploymentName);
-        infof("Synthesizing stack %s for deployment %s to environment %s", authStackId, deploymentName, envName);
+        infof(
+                "Synthesizing stack %s for deployment %s to environment %s",
+                sharedNames.authStackId, deploymentName, envName);
         this.authStack = new AuthStack(
                 app,
-                authStackId,
+                sharedNames.authStackId,
                 AuthStack.AuthStackProps.builder()
                         .env(primaryEnv)
                         .crossRegionReferences(false)
                         .envName(envName)
                         .deploymentName(deploymentName)
-                        .resourceNamePrefix(resourceNamePrefix)
-                        .compressedResourceNamePrefix(compressedResourceNamePrefix)
-                        .domainName(domainName)
-                        .dashedDomainName(dashedDomainName)
-                        .baseUrl(baseUrl)
+                        .resourceNamePrefix(sharedNames.appResourceNamePrefix)
+                        .compressedResourceNamePrefix(sharedNames.appCompressedResourceNamePrefix)
                         .cloudTrailEnabled(cloudTrailEnabled)
+                        .sharedNames(sharedNames)
                         .baseImageTag(baseImageTag)
-                        .ecrRepositoryArn(ecrRepositoryArn)
-                        .ecrRepositoryName(ecrRepositoryName)
                         .lambdaEntry(appProps.lambdaEntry)
                         .lambdaUrlAuthType(appProps.lambdaUrlAuthType)
                         .cognitoClientId(cognitoUserPoolClientId)
-                        .cognitoBaseUri("https://%s".formatted(cognitoDomainName))
+                        .cognitoBaseUri("https://%s".formatted(sharedNames.cognitoDomainName))
                         .build());
         this.authStack.addDependency(devStack);
 
         // Create the HmrcStack
-        String hmrcStackId = "%s-HmrcStack".formatted(deploymentName);
-        infof("Synthesizing stack %s for deployment %s to environment %s", hmrcStackId, deploymentName, envName);
+        infof(
+                "Synthesizing stack %s for deployment %s to environment %s",
+                sharedNames.hmrcStackId, deploymentName, envName);
         this.hmrcStack = new HmrcStack(
                 app,
-                hmrcStackId,
+                sharedNames.hmrcStackId,
                 HmrcStack.HmrcStackProps.builder()
                         .env(primaryEnv)
                         .crossRegionReferences(false)
                         .envName(envName)
                         .deploymentName(deploymentName)
-                        .resourceNamePrefix(resourceNamePrefix)
-                        .compressedResourceNamePrefix(compressedResourceNamePrefix)
-                        .domainName(domainName)
-                        .dashedDomainName(dashedDomainName)
-                        .baseUrl(baseUrl)
+                        .resourceNamePrefix(sharedNames.appResourceNamePrefix)
+                        .compressedResourceNamePrefix(sharedNames.appCompressedResourceNamePrefix)
                         .cloudTrailEnabled(cloudTrailEnabled)
+                        .sharedNames(sharedNames)
                         .baseImageTag(baseImageTag)
-                        .ecrRepositoryArn(ecrRepositoryArn)
-                        .ecrRepositoryName(ecrRepositoryName)
                         .hmrcBaseUri(appProps.hmrcBaseUri)
                         .hmrcClientId(appProps.hmrcClientId)
                         .lambdaUrlAuthType(appProps.lambdaUrlAuthType)
                         .lambdaEntry(appProps.lambdaEntry)
                         .hmrcClientSecretArn(hmrcClientSecretArn)
-                        .receiptsBucketFullName(receiptsBucketFullName)
+                        .cognitoUserPoolId(cognitoUserPoolId)
                         .build());
         this.hmrcStack.addDependency(devStack);
 
+        // TODO: None of these Lambdas got added to the origin (just 3 which I think are auth stack)
+
         // Create the AccountStack
-        String accountStackId = "%s-AccountStack".formatted(deploymentName);
-        infof("Synthesizing stack %s for deployment %s to environment %s", accountStackId, deploymentName, envName);
+        infof(
+                "Synthesizing stack %s for deployment %s to environment %s",
+                sharedNames.accountStackId, deploymentName, envName);
         this.accountStack = new AccountStack(
                 app,
-                accountStackId,
+                sharedNames.accountStackId,
                 AccountStack.AccountStackProps.builder()
                         .env(primaryEnv)
                         .crossRegionReferences(false)
                         .envName(envName)
                         .deploymentName(deploymentName)
-                        .resourceNamePrefix(resourceNamePrefix)
-                        .compressedResourceNamePrefix(compressedResourceNamePrefix)
-                        .domainName(domainName)
-                        .dashedDomainName(dashedDomainName)
-                        .baseUrl(baseUrl)
+                        .resourceNamePrefix(sharedNames.appResourceNamePrefix)
+                        .compressedResourceNamePrefix(sharedNames.appCompressedResourceNamePrefix)
                         .cloudTrailEnabled(cloudTrailEnabled)
+                        .sharedNames(sharedNames)
                         .baseImageTag(baseImageTag)
-                        .ecrRepositoryArn(ecrRepositoryArn)
-                        .ecrRepositoryName(ecrRepositoryName)
                         .cognitoUserPoolArn(cognitoUserPoolArn)
                         .lambdaUrlAuthType(appProps.lambdaUrlAuthType)
                         .lambdaEntry(appProps.lambdaEntry)
                         .build());
         this.accountStack.addDependency(devStack);
 
-        // Create the Ops stack (Alarms, etc.)
-        // Build list of Lambda function ARNs for OpsStack
-        // TODO: Compute ARNs internally in OpsStack from predictable names
-        java.util.List<String> lambdaArns = new java.util.ArrayList<>();
-        if (this.hmrcStack.authUrlHmrcLambda != null) lambdaArns.add(this.hmrcStack.authUrlHmrcLambda.getFunctionArn());
-        if (this.hmrcStack.exchangeHmrcTokenLambda != null)
-            lambdaArns.add(this.hmrcStack.exchangeHmrcTokenLambda.getFunctionArn());
-        if (this.hmrcStack.submitVatLambda != null) lambdaArns.add(this.hmrcStack.submitVatLambda.getFunctionArn());
-        if (this.hmrcStack.logReceiptLambda != null) lambdaArns.add(this.hmrcStack.logReceiptLambda.getFunctionArn());
-        if (this.hmrcStack.myReceiptsLambda != null) lambdaArns.add(this.hmrcStack.myReceiptsLambda.getFunctionArn());
-        if (this.accountStack.catalogLambda != null) lambdaArns.add(this.accountStack.catalogLambda.getFunctionArn());
-        if (this.accountStack.requestBundlesLambda != null)
-            lambdaArns.add(this.accountStack.requestBundlesLambda.getFunctionArn());
-        if (this.accountStack.myBundlesLambda != null)
-            lambdaArns.add(this.accountStack.myBundlesLambda.getFunctionArn());
-
-        String opsStackId = "%s-OpsStack".formatted(deploymentName);
         this.opsStack = new OpsStack(
                 app,
-                opsStackId,
+                sharedNames.opsStackId,
                 OpsStack.OpsStackProps.builder()
                         .env(primaryEnv)
                         .crossRegionReferences(false)
                         .envName(envName)
                         .deploymentName(deploymentName)
-                        .resourceNamePrefix(resourceNamePrefix)
-                        .compressedResourceNamePrefix(compressedResourceNamePrefix)
-                        .domainName(domainName)
-                        .dashedDomainName(dashedDomainName)
-                        .baseUrl(baseUrl)
+                        .resourceNamePrefix(sharedNames.appResourceNamePrefix)
+                        .compressedResourceNamePrefix(sharedNames.appCompressedResourceNamePrefix)
                         .cloudTrailEnabled(cloudTrailEnabled)
-                        .lambdaFunctionArns(lambdaArns)
+                        .sharedNames(sharedNames)
+                        .lambdaFunctionArns(sharedNames.lambdaArns)
                         .build());
         this.opsStack.addDependency(hmrcStack);
 
         // Create the SelfDestruct stack only for non-prod deployments and when JAR exists
         if (!"prod".equals(deploymentName)) {
-            String selfDestructStackId = "%s-SelfDestructStack".formatted(deploymentName);
             this.selfDestructStack = new SelfDestructStack(
                     app,
-                    selfDestructStackId,
+                    sharedNames.appSelfDestructStackId,
                     SelfDestructStack.SelfDestructStackProps.builder()
                             .env(primaryEnv)
                             .crossRegionReferences(false)
                             .envName(envName)
                             .deploymentName(deploymentName)
-                            .resourceNamePrefix(resourceNamePrefix)
-                            .compressedResourceNamePrefix(compressedResourceNamePrefix)
-                            .domainName(domainName)
-                            .dashedDomainName(dashedDomainName)
-                            .baseUrl(baseUrl)
+                            .resourceNamePrefix(sharedNames.appResourceNamePrefix)
+                            .compressedResourceNamePrefix(sharedNames.appCompressedResourceNamePrefix)
                             .cloudTrailEnabled(cloudTrailEnabled)
-                            .selfDestructLogGroupName(selfDestructLogGroupName)
-                            .devStackName(devStack.getStackName())
-                            .authStackName(hmrcStack.getStackName())
-                            .hmrcStackName(hmrcStack.getStackName())
-                            .accountStackName(accountStack.getStackName())
-                            .opsStackName(opsStack.getStackName())
+                            .sharedNames(sharedNames)
+                            .selfDestructLogGroupName(sharedNames.ew2SelfDestructLogGroupName)
+                            .selfDestructStartDatetime(selfDestructStartDatetime)
                             .selfDestructDelayHours(selfDestructDelayHours)
                             .selfDestructHandlerSource(selfDestructHandlerSource)
                             .build());

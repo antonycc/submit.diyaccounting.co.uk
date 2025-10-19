@@ -76,12 +76,7 @@ export async function httpGet(event) {
       });
     } else {
       // Call HMRC API
-      const hmrcResult = await hmrcVatGet(
-        `/organisations/vat/${vrn}/penalties`,
-        accessToken,
-        govClientHeaders,
-        testScenario,
-      );
+      const hmrcResult = await hmrcVatGet(`/organisations/vat/${vrn}/penalties`, accessToken, govClientHeaders, testScenario);
 
       if (!hmrcResult.ok) {
         return httpServerErrorResponse({

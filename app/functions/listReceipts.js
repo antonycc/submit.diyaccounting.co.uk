@@ -24,7 +24,7 @@ function parseItemFromKey(key) {
 
 // GET /api/receipts
 export async function httpGet(event) {
-  validateEnv(["DIY_SUBMIT_RECEIPTS_BUCKET_FULL_NAME"]);
+  validateEnv(["DIY_SUBMIT_RECEIPTS_BUCKET_NAME"]);
 
   const request = extractRequest(event);
   logger.info({ message: "listReceipts entry", route: "/api/receipts" });

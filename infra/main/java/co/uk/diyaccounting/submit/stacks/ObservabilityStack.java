@@ -4,6 +4,7 @@ import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildTrailName;
 
+import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
 import co.uk.diyaccounting.submit.utils.RetentionDaysConverter;
 import java.util.List;
@@ -20,9 +21,7 @@ import software.amazon.awscdk.services.logs.RetentionDays;
 import software.amazon.awscdk.services.s3.BlockPublicAccess;
 import software.amazon.awscdk.services.s3.Bucket;
 import software.amazon.awscdk.services.s3.BucketEncryption;
-import software.amazon.awscdk.services.s3.IBucket;
 import software.amazon.awscdk.services.s3.LifecycleRule;
-import software.amazon.awscdk.services.s3.ObjectOwnership;
 import software.constructs.Construct;
 
 public class ObservabilityStack extends Stack {
@@ -31,9 +30,6 @@ public class ObservabilityStack extends Stack {
     public Trail trail;
     public LogGroup cloudTrailLogGroup;
     public LogGroup selfDestructLogGroup;
-    public IBucket originAccessLogBucket;
-    public IBucket distributionLogsBucket;
-    public final LogGroup webDeploymentLogGroup;
 
     @Value.Immutable
     public interface ObservabilityStackProps extends StackProps, SubmitStackProps {
@@ -60,24 +56,16 @@ public class ObservabilityStack extends Stack {
         String compressedResourceNamePrefix();
 
         @Override
-        String dashedDomainName();
-
-        @Override
-        String domainName();
-
-        @Override
-        String baseUrl();
-
-        @Override
         String cloudTrailEnabled();
+
+        @Override
+        SubmitSharedNames sharedNames();
 
         String cloudTrailLogGroupPrefix();
 
         String cloudTrailLogGroupRetentionPeriodDays();
 
         int accessLogGroupRetentionPeriodDays();
-
-        String selfDestructLogGroupName();
 
         static ImmutableObservabilityStackProps.Builder builder() {
             return ImmutableObservabilityStackProps.builder();
@@ -91,7 +79,7 @@ public class ObservabilityStack extends Stack {
     public ObservabilityStack(Construct scope, String id, StackProps stackProps, ObservabilityStackProps props) {
         super(scope, id, stackProps);
 
-        String trailName = buildTrailName(props.dashedDomainName());
+        String trailName = buildTrailName(props.resourceNamePrefix());
         boolean cloudTrailEnabled = Boolean.parseBoolean(props.cloudTrailEnabled());
         int cloudTrailLogGroupRetentionPeriodDays = Integer.parseInt(props.cloudTrailLogGroupRetentionPeriodDays());
 
@@ -101,7 +89,7 @@ public class ObservabilityStack extends Stack {
         if (cloudTrailEnabled) {
             this.cloudTrailLogGroup = LogGroup.Builder.create(this, props.resourceNamePrefix() + "-CloudTrailGroup")
                     .logGroupName(
-                            "%s%s-cloud-trail".formatted(props.cloudTrailLogGroupPrefix(), props.dashedDomainName()))
+                            "%s%s-cloud-trail".formatted(props.cloudTrailLogGroupPrefix(), props.resourceNamePrefix()))
                     .retention(cloudTrailLogGroupRetentionPeriod)
                     .removalPolicy(RemovalPolicy.DESTROY)
                     .build();
@@ -129,72 +117,19 @@ public class ObservabilityStack extends Stack {
             cfnOutput(this, "TrailArn", this.trail.getTrailArn());
         }
 
-        // Log group for web deployment operations with 1-day retention
-        var webDeploymentLogGroupName = "/deployment/%s-web-deployment".formatted(props.resourceNamePrefix());
-        this.webDeploymentLogGroup = LogGroup.Builder.create(
-                        this, props.resourceNamePrefix() + "-WebDeploymentLogGroup")
-                .logGroupName(webDeploymentLogGroupName)
-                .retention(RetentionDays.ONE_DAY)
-                .removalPolicy(RemovalPolicy.DESTROY)
-                .build();
-
-        // TODO: Re-instate log shipping to CloudWatch Logs for origin access and add xray tracing
-        // S3 bucket for origin access logs with specified retention
-        String originBucketName = "origin-%s".formatted(props.dashedDomainName());
-        var originAccessLogBucket = originBucketName + "-logs";
-        infof(
-                "Setting expiration period to %d days for %s",
-                props.accessLogGroupRetentionPeriodDays(), props.resourceNamePrefix());
-        this.originAccessLogBucket = Bucket.Builder.create(this, props.resourceNamePrefix() + "-LogBucket")
-                .bucketName(originAccessLogBucket)
-                .objectOwnership(ObjectOwnership.OBJECT_WRITER)
-                .versioned(false)
-                .blockPublicAccess(BlockPublicAccess.BLOCK_ALL)
-                .encryption(BucketEncryption.S3_MANAGED)
-                .removalPolicy(RemovalPolicy.DESTROY)
-                .autoDeleteObjects(true)
-                .lifecycleRules(List.of(LifecycleRule.builder()
-                        .id("%sLogsLifecycleRule".formatted(props.compressedResourceNamePrefix()))
-                        .enabled(true)
-                        .expiration(Duration.days(props.accessLogGroupRetentionPeriodDays()))
-                        .build()))
-                .build();
-        infof(
-                "Created log bucket %s with name",
-                this.originAccessLogBucket.getNode().getId(), originAccessLogBucket);
-
-        // TODO: Re-instate log shipping to CloudWatch Logs for distribution access and add xray tracing
-        // S3 bucket for CloudFront distribution logs with specified retention
-        String distributionLogsBucketName = "distribution-%s-logs".formatted(props.dashedDomainName());
-        this.distributionLogsBucket = Bucket.Builder.create(this, props.resourceNamePrefix() + "-LogsBucket")
-                .bucketName(distributionLogsBucketName)
-                .objectOwnership(ObjectOwnership.OBJECT_WRITER)
-                .versioned(false)
-                .blockPublicAccess(BlockPublicAccess.BLOCK_ALL)
-                .encryption(BucketEncryption.S3_MANAGED)
-                .removalPolicy(RemovalPolicy.DESTROY)
-                .autoDeleteObjects(true)
-                .lifecycleRules(List.of(LifecycleRule.builder()
-                        .id(props.resourceNamePrefix() + "-LogsLifecycleRule")
-                        .enabled(true)
-                        .expiration(Duration.days(props.accessLogGroupRetentionPeriodDays()))
-                        .build()))
-                .build();
-
         // Log group for self-destruct operations with 1-week retention
         this.selfDestructLogGroup = LogGroup.Builder.create(this, props.resourceNamePrefix() + "-SelfDestructLogGroup")
-                .logGroupName(props.selfDestructLogGroupName())
+                .logGroupName(props.sharedNames().ew2SelfDestructLogGroupName)
                 .retention(RetentionDays.ONE_WEEK) // Longer retention for operations
                 .removalPolicy(RemovalPolicy.DESTROY)
                 .build();
         infof(
                 "ObservabilityStack %s created successfully for %s",
-                this.getNode().getId(), props.dashedDomainName());
+                this.getNode().getId(), props.sharedNames().dashedDomainName);
 
         Aspects.of(this).add(new SetAutoDeleteJobLogRetentionAspect(props.deploymentName(), RetentionDays.THREE_DAYS));
 
         // Outputs for Observability resources
-        cfnOutput(this, "WebDeploymentLogGroupArn", this.webDeploymentLogGroup.getLogGroupArn());
         cfnOutput(this, "SelfDestructLogGroupArn", this.selfDestructLogGroup.getLogGroupArn());
     }
 }

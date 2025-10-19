@@ -7,7 +7,8 @@ import { validateEnv } from "../lib/env.js";
 export async function httpGetHmrc(event) {
   validateEnv(["HMRC_BASE_URI", "HMRC_CLIENT_ID", "DIY_SUBMIT_BASE_URL"]);
   const clientId = process.env.HMRC_CLIENT_ID;
-  const redirectUri = process.env.DIY_SUBMIT_BASE_URL + "activities/submitVatCallback.html";
+  const maybeSlash = process.env.DIY_SUBMIT_BASE_URL?.endsWith("/") ? "" : "/";
+  const redirectUri = `${process.env.DIY_SUBMIT_BASE_URL}${maybeSlash}activities/submitVatCallback.html`;
   const hmrcBase = process.env.HMRC_BASE_URI;
 
   const state = event.queryStringParameters?.state;
@@ -26,7 +27,8 @@ export async function httpGetHmrc(event) {
 // GET /api/mock/auth-url?state={state}
 export async function httpGetMock(event) {
   validateEnv(["DIY_SUBMIT_BASE_URL"]);
-  const redirectUri = process.env.DIY_SUBMIT_BASE_URL + "auth/loginWithMockCallback.html";
+  const maybeSlash = process.env.DIY_SUBMIT_BASE_URL?.endsWith("/") ? "" : "/";
+  const redirectUri = `${process.env.DIY_SUBMIT_BASE_URL}${maybeSlash}auth/loginWithMockCallback.html`;
 
   const state = event.queryStringParameters?.state;
 
@@ -46,7 +48,8 @@ export async function httpGetMock(event) {
 // GET /api/cognito/auth-url?state={state}
 export async function httpGetCognito(event) {
   validateEnv(["COGNITO_CLIENT_ID", "COGNITO_BASE_URI", "DIY_SUBMIT_BASE_URL"]);
-  const redirectUri = process.env.DIY_SUBMIT_BASE_URL + "auth/loginWithCognitoCallback.html";
+  const maybeSlash = process.env.DIY_SUBMIT_BASE_URL?.endsWith("/") ? "" : "/";
+  const redirectUri = `${process.env.DIY_SUBMIT_BASE_URL}${maybeSlash}auth/loginWithCognitoCallback.html`;
   const cognitoClientId = process.env.COGNITO_CLIENT_ID;
   const cognitoBaseUri = process.env.COGNITO_BASE_URI;
 

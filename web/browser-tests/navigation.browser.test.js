@@ -23,9 +23,7 @@ test.describe("Navigation Browser Tests", () => {
   });
 
   test.describe("Home Page to Activities Navigation", () => {
-    test("should show activities/features on home page after clicking 'View available activities'", async ({
-      page,
-    }) => {
+    test("should show activities/features on home page after clicking 'View available activities'", async ({ page }) => {
       // Set the home page content
       await page.setContent(indexHtmlContent, {
         baseURL: "http://localhost:3000",

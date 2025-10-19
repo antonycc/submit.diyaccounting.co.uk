@@ -1,9 +1,14 @@
 package co.uk.diyaccounting.submit.stacks;
 
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+
+import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
 import co.uk.diyaccounting.submit.constructs.LambdaUrlOrigin;
 import co.uk.diyaccounting.submit.constructs.LambdaUrlOriginProps;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
+import java.util.List;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Aspects;
 import software.amazon.awscdk.Duration;
@@ -22,12 +27,6 @@ import software.amazon.awscdk.services.lambda.InvokeMode;
 import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.constructs.Construct;
-
-import java.util.List;
-
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildFunctionName;
 
 public class AccountStack extends Stack {
 
@@ -64,22 +63,12 @@ public class AccountStack extends Stack {
         String compressedResourceNamePrefix();
 
         @Override
-        String dashedDomainName();
-
-        @Override
-        String domainName();
-
-        @Override
-        String baseUrl();
-
-        @Override
         String cloudTrailEnabled();
 
+        @Override
+        SubmitSharedNames sharedNames();
+
         String baseImageTag();
-
-        String ecrRepositoryArn();
-
-        String ecrRepositoryName();
 
         String lambdaUrlAuthType();
 
@@ -111,21 +100,19 @@ public class AccountStack extends Stack {
                 : FunctionUrlAuthType.NONE;
 
         // Catalog Lambda
-        // var catalogLambdaEnv = new HashMap<>(Map.of("DIY_SUBMIT_BASE_URL", props.baseUrl()));
-        var catalogLambdaEnv = new PopulatedMap<String, String>().with("DIY_SUBMIT_BASE_URL", props.baseUrl());
-        var catalogLambdaUrlOriginFunctionHandler = "catalogGet.handle";
-        var catalogLambdaUrlOriginFunctionName =
-                buildFunctionName(props.resourceNamePrefix(), catalogLambdaUrlOriginFunctionHandler);
+        // var catalogLambdaEnv = new HashMap<>(Map.of("DIY_SUBMIT_BASE_URL", props.sharedNames().baseUrl));
+        var catalogLambdaEnv =
+                new PopulatedMap<String, String>().with("DIY_SUBMIT_BASE_URL", props.sharedNames().baseUrl);
         var catalogLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
                 LambdaUrlOriginProps.builder()
-                        .idPrefix(catalogLambdaUrlOriginFunctionName)
+                        .idPrefix(props.sharedNames().catalogLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryName(props.ecrRepositoryName())
-                        .ecrRepositoryArn(props.ecrRepositoryArn())
-                        .functionName(catalogLambdaUrlOriginFunctionName)
+                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                        .functionName(props.sharedNames().catalogLambdaFunctionName)
                         .cloudFrontAllowedMethods(AllowedMethods.ALLOW_ALL)
-                        .handler(props.lambdaEntry() + catalogLambdaUrlOriginFunctionHandler)
+                        .handler(props.lambdaEntry() + props.sharedNames().catalogLambdaHandler)
                         .environment(catalogLambdaEnv)
                         .timeout(Duration.millis(Long.parseLong("30000")))
                         .build());
@@ -133,26 +120,23 @@ public class AccountStack extends Stack {
         this.catalogLambdaLogGroup = catalogLambdaUrlOrigin.logGroup;
         infof(
                 "Created Lambda %s for catalog retrieval with handler %s",
-                this.catalogLambda.getNode().getId(), props.lambdaEntry() + catalogLambdaUrlOriginFunctionHandler);
+                this.catalogLambda.getNode().getId(), props.lambdaEntry() + props.sharedNames().catalogLambdaHandler);
 
         // Request Bundles Lambda
         var requestBundlesLambdaEnv = new PopulatedMap<String, String>()
                 .with("COGNITO_USER_POOL_ID", userPool.getUserPoolId())
                 .with("TEST_BUNDLE_EXPIRY_DATE", "2025-12-31")
                 .with("TEST_BUNDLE_USER_LIMIT", "10");
-        var requestBundlesLambdaUrlOriginFunctionHandler = "bundle.httpPost";
-        var requestBundlesLambdaUrlOriginFunctionName =
-                buildFunctionName(props.resourceNamePrefix(), requestBundlesLambdaUrlOriginFunctionHandler);
         var requestBundlesLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
                 LambdaUrlOriginProps.builder()
-                        .idPrefix(requestBundlesLambdaUrlOriginFunctionName)
+                        .idPrefix(props.sharedNames().requestBundlesLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryName(props.ecrRepositoryName())
-                        .ecrRepositoryArn(props.ecrRepositoryArn())
-                        .functionName(requestBundlesLambdaUrlOriginFunctionName)
+                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                        .functionName(props.sharedNames().requestBundlesLambdaFunctionName)
                         .cloudFrontAllowedMethods(AllowedMethods.ALLOW_ALL)
-                        .handler(props.lambdaEntry() + requestBundlesLambdaUrlOriginFunctionHandler)
+                        .handler(props.lambdaEntry() + props.sharedNames().requestBundlesLambdaHandler)
                         .environment(requestBundlesLambdaEnv)
                         .timeout(Duration.millis(Long.parseLong("30000")))
                         .build());
@@ -161,7 +145,7 @@ public class AccountStack extends Stack {
         infof(
                 "Created Lambda %s for request bundles with handler %s",
                 this.requestBundlesLambda.getNode().getId(),
-                props.lambdaEntry() + requestBundlesLambdaUrlOriginFunctionHandler);
+                props.lambdaEntry() + props.sharedNames().requestBundlesLambdaHandler);
 
         // Grant the RequestBundlesLambda permission to access Cognito User Pool
         var region = props.getEnv() != null ? props.getEnv().getRegion() : "us-east-1";
@@ -186,20 +170,18 @@ public class AccountStack extends Stack {
                 this.requestBundlesLambda.getFunctionName(), userPool.getUserPoolId());
 
         // My Bundles Lambda
-        var myBundlesLambdaEnv = new PopulatedMap<String, String>().with("DIY_SUBMIT_BASE_URL", props.baseUrl());
-        var myBundlesLambdaUrlOriginFunctionHandler = "myBundles.httpGet";
-        var myBundlesLambdaUrlOriginFunctionName =
-                buildFunctionName(props.resourceNamePrefix(), myBundlesLambdaUrlOriginFunctionHandler);
+        var myBundlesLambdaEnv =
+                new PopulatedMap<String, String>().with("DIY_SUBMIT_BASE_URL", props.sharedNames().baseUrl);
         var myBundlesLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
                 LambdaUrlOriginProps.builder()
-                        .idPrefix(myBundlesLambdaUrlOriginFunctionName)
+                        .idPrefix(props.sharedNames().myBundlesLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryName(props.ecrRepositoryName())
-                        .ecrRepositoryArn(props.ecrRepositoryArn())
-                        .functionName(myBundlesLambdaUrlOriginFunctionName)
+                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                        .functionName(props.sharedNames().myBundlesLambdaFunctionName)
                         .cloudFrontAllowedMethods(AllowedMethods.ALLOW_ALL)
-                        .handler(props.lambdaEntry() + myBundlesLambdaUrlOriginFunctionHandler)
+                        .handler(props.lambdaEntry() + props.sharedNames().myBundlesLambdaHandler)
                         .environment(myBundlesLambdaEnv)
                         .timeout(Duration.millis(Long.parseLong("30000")))
                         .build());
@@ -213,7 +195,8 @@ public class AccountStack extends Stack {
                 "cognito-idp:ListUsers");
         infof(
                 "Created Lambda %s for my bundles retrieval with handler %s",
-                this.myBundlesLambda.getNode().getId(), props.lambdaEntry() + myBundlesLambdaUrlOriginFunctionHandler);
+                this.myBundlesLambda.getNode().getId(),
+                props.lambdaEntry() + props.sharedNames().myBundlesLambdaHandler);
 
         var catalogUrl = this.catalogLambda.addFunctionUrl(FunctionUrlOptions.builder()
                 .authType(functionUrlAuthType)
@@ -239,6 +222,8 @@ public class AccountStack extends Stack {
         cfnOutput(this, "RequestBundlesLambdaUrl", requestBundlesUrl.getUrl());
         cfnOutput(this, "MyBundlesLambdaUrl", myBundlesUrl.getUrl());
 
-        infof("AccountStack %s created successfully for %s", this.getNode().getId(), props.dashedDomainName());
+        infof(
+                "AccountStack %s created successfully for %s",
+                this.getNode().getId(), props.sharedNames().dashedDomainName);
     }
 }

@@ -1,55 +1,64 @@
 name: set origins
 
 on:
-  workflow_call:
-    inputs:
-      environment:
-        description: 'Target environment (binds to GitHub Environment)'
-        required: true
-        type: string
-      originsCsv:
-        description: 'Comma-separated list of app origins to serve from apex (e.g. ci-123.example.com,ci-124.example.com). Leave blank to display maintenance page.'
-        required: false
-        type: string
-        default: ''
   workflow_dispatch:
     inputs:
-      environment:
-        description: 'Target environment (binds to GitHub Environment)'
-        required: true
+      domain-source:
         type: choice
-        options:
-          - prod
-          - ci
-        default: ci
-      originsCsv:
-        description: 'Comma-separated list of app origins to serve from apex (e.g. ci-123.example.com,ci-124.example.com). Leave blank to display maintenance page.'
+        description: 'Source of domain to set origins for e.g. branch-based or the holding page'
         required: false
-        default: ''
+        options:
+          - 'branch'
+          - 'holding'
+        default: 'branch'
+      hosted-zone-id:
+        type: string
+        description: 'AWS Route 53 Hosted Zone ID for the apex domain'
+        required: false
+        default: 'Z0315522208PWZSSBI9AL'
+      cloudfront-distribution-id:
+        type: string
+        description: 'CloudFront Distribution ID to update aliases on'
+        required: false
 
 permissions:
   id-token: write
   contents: read
+  pages: write
 
 env:
+  JAVA_VERSION: '21'
+  NODE_VERSION: '22'
   ACTIONS_ROLE_ARN: 'arn:aws:iam::887764105431:role/submit-github-actions-role'
   DEPLOY_ROLE_ARN:  'arn:aws:iam::887764105431:role/submit-deployment-role'
   AWS_REGION: 'eu-west-2'
+  AWS_ACCOUNT_ID: '887764105431'
+  GITHUB_ACTOR: ${{ github.actor }}
+  COMMIT_HASH: ${{ github.sha }}
 
 jobs:
-  names:
-    name: names
-    env: ${{ github.event.inputs.environment }}
-    runs-on: ubuntu-24.04
-    outputs:
-      environment-name: ${{ steps.out.outputs.environment_name }}
-    steps:
-      - id: out
-        run: |
-          echo "environment_name=${{ github.event.inputs.environment }}" >> "$GITHUB_OUTPUT"
 
-  update-apex-origins:
-    name: update apex origins
+  names:
+    runs-on: ubuntu-24.04
+    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+      - name: Compute deployment name and environment
+        id: deployment-config
+        uses: ./.github/actions/get-names
+    outputs:
+      environment-name: ${{ steps.deployment-config.outputs.environment-name }}
+      deployment-name: ${{ steps.deployment-config.outputs.deployment-name }}
+      base-domain: ${{ steps.deployment-config.outputs.base-domain }}
+      base-url:      ${{ steps.deployment-config.outputs.base-url }}
+      apex-domain: ${{ steps.deployment-config.outputs.apex-domain }}
+      apex-url: ${{ steps.deployment-config.outputs.apex-url }}
+      holding-domain: ${{ steps.deployment-config.outputs.holding-domain }}
+      holding-url: ${{ steps.deployment-config.outputs.holding-url }}
+
+  set-origins:
+    name: 'set origins'
     needs:
       - names
     runs-on: ubuntu-24.04
@@ -58,6 +67,9 @@ jobs:
       id-token: write
       contents: read
     steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
       - name: Configure AWS role via GitHub OIDC
         uses: aws-actions/configure-aws-credentials@v5
         with:
@@ -80,102 +92,37 @@ jobs:
           output-credentials: true
           retry-max-attempts: 3
 
-      - name: Resolve ApexStack distribution id
-        id: resolve
-        run: |
-          set -euo pipefail
-          STACK_NAME="${{ needs.names.outputs.environment-name }}-ApexStack"
-          DIST_ID=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" --query "Stacks[0].Outputs[?OutputKey=='ApexDistributionId'].OutputValue" --output text)
-          if [ -z "$DIST_ID" ] || [ "$DIST_ID" = "None" ]; then
-            echo "Failed to resolve distribution id from stack outputs for $STACK_NAME" >&2
-            exit 1
-          fi
-          echo "DIST_ID=$DIST_ID" | tee -a "$GITHUB_ENV"
-
-      - name: Fetch current distribution config
-        run: |
-          set -euo pipefail
-          aws cloudfront get-distribution-config --id "$DIST_ID" > /tmp/cfg.json
-          ETAG=$(jq -r '.ETag' /tmp/cfg.json)
-          jq '.DistributionConfig' /tmp/cfg.json > /tmp/dist.json
-          echo "ETAG=$ETAG" >> "$GITHUB_ENV"
-
-      - name: Update origins and default behavior via AWS CLI
+      - name: Look up the CloudFront distribution ID if not provided based on the ORIGIN_DOMAIN matching the tag named "OriginFor"
+        id: lookup-cf
         env:
-          ORIGINS_CSV: ${{ inputs.originsCsv }}
+          ORIGIN_DOMAIN: ${{ inputs.domain-source == 'holding' && needs.names.outputs.holding-domain || needs.names.outputs.base-domain }}
+          INPUT_CLOUDFRONT_DISTRIBUTION_ID: ${{ github.event.inputs.cloudfront-distribution-id || '' }}
         run: |
-          set -euo pipefail
-          # Determine maintenance origin id from the /maintenance/* behavior, else use current default
-          MAINT_ORIGIN_ID=$(jq -r '(.CacheBehaviors.Items // [] | map(select(.PathPattern=="/maintenance/*")) | .[0].TargetOriginId) // .DefaultCacheBehavior.TargetOriginId' /tmp/dist.json)
-          echo "Maintenance origin id: $MAINT_ORIGIN_ID"
-
-          # First, remove any previously added app-* origins and the app-failover group
-          jq '.
-            | .Origins.Items = (.Origins.Items | map(select((.Id|startswith("app-"))|not)))
-            | .Origins.Quantity = (.Origins.Items|length)
-            | (if .OriginGroups? then (.OriginGroups.Items = (.OriginGroups.Items | map(select(.Id != "app-failover")))) | .OriginGroups.Quantity = (.OriginGroups.Items|length) else . end)
-          ' /tmp/dist.json > /tmp/clean.json
-
-          if [ -z "${ORIGINS_CSV// }" ]; then
-            echo "No origins provided. Switching default to maintenance and removing app origins."
-            jq --arg maint "$MAINT_ORIGIN_ID" '.DefaultCacheBehavior.TargetOriginId = $maint' /tmp/clean.json > /tmp/updated.json
-          else
-            echo "Configuring app origins from CSV: $ORIGINS_CSV"
-            jq -n --arg csv "$ORIGINS_CSV" '
-              def sanitize(s): s|gsub("[^A-Za-z0-9_-]"; "-");
-              ($csv | split(",") | map(.|gsub("^\\s+|\\s+$";"")) | map(select(. != ""))) as $hosts
-              | {hosts: $hosts[:2]}
-            ' > /tmp/hosts.json
-
-            COUNT=$(jq '.hosts|length' /tmp/hosts.json)
-            if [ "$COUNT" -eq 0 ]; then
-              echo "Parsed no hosts, falling back to maintenance."
-              jq --arg maint "$MAINT_ORIGIN_ID" '.DefaultCacheBehavior.TargetOriginId = $maint' /tmp/clean.json > /tmp/updated.json
-            else
-              jq -s '
-                def sanitize(s): s|gsub("[^A-Za-z0-9_-]"; "-");
-                def mkorigin(h): {
-                  Id: ("app-" + sanitize(h)),
-                  DomainName: h,
-                  OriginPath: "",
-                  CustomOriginConfig: {
-                    HTTPPort: 80,
-                    HTTPSPort: 443,
-                    OriginProtocolPolicy: "https-only",
-                    OriginSSLProtocols: { Quantity: 1, Items: ["TLSv1.2"] }
-                  }
-                };
-                (.[0]) as $cfg | (.[1].hosts) as $H
-                | $cfg
-                | .Origins.Items += ($H | map(mkorigin(.)))
-                | .Origins.Quantity = (.Origins.Items|length)
-                | if ($H|length) > 1 then
-                    .OriginGroups = (.OriginGroups // {Quantity:0, Items:[]})
-                    | .OriginGroups.Items = ([{
-                        Id: "app-failover",
-                        FailoverCriteria: { StatusCodes: { Quantity: 4, Items: [500,502,503,504]}},
-                        Members: { Quantity: 2, Items: [
-                          {OriginId: ("app-" + sanitize($H[0]))},
-                          {OriginId: ("app-" + sanitize($H[1]))}
-                        ]}
-                      }] + ((.OriginGroups.Items // []) | map(select(.Id != "app-failover"))))
-                    | .OriginGroups.Quantity = (.OriginGroups.Items|length)
-                    | .DefaultCacheBehavior.TargetOriginId = "app-failover"
-                  else
-                    .DefaultCacheBehavior.TargetOriginId = ("app-" + sanitize($H[0]))
-                  end
-              ' /tmp/clean.json /tmp/hosts.json > /tmp/updated.json
+          CLOUDFRONT_DISTRIBUTION_ID="${INPUT_CLOUDFRONT_DISTRIBUTION_ID}"
+          if [ -z "$CLOUDFRONT_DISTRIBUTION_ID" ]; then
+            echo "CloudFront Distribution ID not provided, looking up based on the ORIGIN_DOMAIN ${ORIGIN_DOMAIN?} matching the tag named OriginFor"
+            CLOUDFRONT_DISTRIBUTION_ARN=$(aws resourcegroupstaggingapi get-resources \
+              --resource-type-filters cloudfront:distribution \
+              --region us-east-1 \
+              --tag-filters Key=OriginFor,Values="${ORIGIN_DOMAIN}" \
+              --query 'ResourceTagMappingList[0].ResourceARN' \
+              --output text)
+            if [ -z "$CLOUDFRONT_DISTRIBUTION_ARN" ] || [ "$CLOUDFRONT_DISTRIBUTION_ARN" = "None" ]; then
+              echo "Error: No CloudFront distribution found with tag OriginFor=${ORIGIN_DOMAIN}" >&2
+              exit 1
             fi
+            CLOUDFRONT_DISTRIBUTION_ID="${CLOUDFRONT_DISTRIBUTION_ARN##*/}"
+            echo "Found CloudFront Distribution ID: ${CLOUDFRONT_DISTRIBUTION_ID?}"
+          else
+            echo "Using provided CloudFront Distribution ID: ${CLOUDFRONT_DISTRIBUTION_ID?}"
           fi
+          echo "CLOUDFRONT_DISTRIBUTION_ID=$CLOUDFRONT_DISTRIBUTION_ID" | tee -a "$GITHUB_OUTPUT"
 
-          mv /tmp/updated.json /tmp/dist.json
-
-      - name: Apply distribution update
-        run: |
-          set -euo pipefail
-          aws cloudfront update-distribution --id "$DIST_ID" --if-match "$ETAG" --distribution-config file:///tmp/dist.json
-          # Invalidate the root object for quicker cutover
-          aws cloudfront create-invalidation --distribution-id "$DIST_ID" --paths "/index.html"
-
-      - name: Done
-        run: echo "Updated distribution $DIST_ID successfully."
+      - name: Alias apex domain to holding or base domain
+        uses: ./.github/actions/set-origins
+        with:
+          origin-domain: ${{ inputs.domain-source == 'holding' && needs.names.outputs.holding-domain || needs.names.outputs.base-domain }}
+          apex-domain: ${{ needs.names.outputs.apex-domain }}
+          aws-account-id: ${{ env.AWS_ACCOUNT_ID }}
+          hosted-zone-id: ${{ github.event.inputs.hosted-zone-id }}
+          cloudfront-distribution-id: ${{ steps.lookup-cf.outputs.CLOUDFRONT_DISTRIBUTION_ID }}

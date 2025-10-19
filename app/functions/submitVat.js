@@ -226,8 +226,7 @@ export async function httpPost(event) {
   // Optional bundle entitlement enforcement (disabled by default)
   try {
     const enforceBundles =
-      String(process.env.DIY_SUBMIT_ENFORCE_BUNDLES || "").toLowerCase() === "true" ||
-      process.env.DIY_SUBMIT_ENFORCE_BUNDLES === "1";
+      String(process.env.DIY_SUBMIT_ENFORCE_BUNDLES || "").toLowerCase() === "true" || process.env.DIY_SUBMIT_ENFORCE_BUNDLES === "1";
     const userPoolId = process.env.COGNITO_USER_POOL_ID;
     if (enforceBundles && userPoolId) {
       const authHeader = event.headers?.authorization || event.headers?.Authorization;
@@ -243,10 +242,7 @@ export async function httpPost(event) {
       const hmrcBase = process.env.HMRC_BASE_URI;
       const sandbox = isSandboxBase(hmrcBase);
       if (sandbox) {
-        if (
-          !bundles ||
-          !bundles.some((b) => typeof b === "string" && (b === "HMRC_TEST_API" || b.startsWith("HMRC_TEST_API|")))
-        ) {
+        if (!bundles || !bundles.some((b) => typeof b === "string" && (b === "HMRC_TEST_API" || b.startsWith("HMRC_TEST_API|")))) {
           return httpServerErrorResponse({
             request,
             message: "Forbidden: HMRC Sandbox submission requires HMRC_TEST_API bundle",
@@ -280,13 +276,7 @@ export async function httpPost(event) {
   }
 
   // Processing
-  const { receipt, hmrcResponse, hmrcResponseBody } = await submitVat(
-    periodKey,
-    vatDue,
-    vatNumber,
-    token,
-    govClientHeaders,
-  );
+  const { receipt, hmrcResponse, hmrcResponseBody } = await submitVat(periodKey, vatDue, vatNumber, token, govClientHeaders);
 
   if (!hmrcResponse.ok) {
     return httpServerErrorResponse({

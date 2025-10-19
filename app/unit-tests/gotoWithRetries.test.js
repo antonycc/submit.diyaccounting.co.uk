@@ -1,6 +1,6 @@
 // app/unit-tests/gotoWithRetries.test.js
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import * as nav from "../lib/gotoWithRetries.js";
+import * as nav from "../../behaviour-tests/helpers/gotoWithRetries.js";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
@@ -45,9 +45,7 @@ describe("gotoWithRetries", () => {
     const fatal = new Error("HTTP 401 Unauthorized");
     page.goto.mockRejectedValueOnce(fatal);
 
-    await expect(nav.gotoWithRetries(page, "https://example.com", { maxRetries: 4 })).rejects.toThrowError(
-      /Unauthorized/,
-    );
+    await expect(nav.gotoWithRetries(page, "https://example.com", { maxRetries: 4 })).rejects.toThrowError(/Unauthorized/);
 
     expect(page.goto).toHaveBeenCalledTimes(1);
   });

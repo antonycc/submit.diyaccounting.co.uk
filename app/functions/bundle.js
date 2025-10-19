@@ -587,9 +587,7 @@ export async function httpDelete(event) {
       };
     } else {
       // Remove specific bundle
-      const bundlesAfterRemoval = currentBundles.filter(
-        (bundle) => !bundle.startsWith(bundleToRemove + "|") && bundle !== bundleToRemove,
-      );
+      const bundlesAfterRemoval = currentBundles.filter((bundle) => !bundle.startsWith(bundleToRemove + "|") && bundle !== bundleToRemove);
 
       if (bundlesAfterRemoval.length === currentBundles.length) {
         return {

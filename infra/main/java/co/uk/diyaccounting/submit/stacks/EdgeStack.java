@@ -1,5 +1,6 @@
 package co.uk.diyaccounting.submit.stacks;
 
+import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Aspects;
@@ -31,6 +32,8 @@ import software.amazon.awscdk.services.lambda.Permission;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.amazon.awscdk.services.route53.ARecord;
 import software.amazon.awscdk.services.route53.ARecordProps;
+import software.amazon.awscdk.services.route53.AaaaRecord;
+import software.amazon.awscdk.services.route53.AaaaRecordProps;
 import software.amazon.awscdk.services.route53.HostedZone;
 import software.amazon.awscdk.services.route53.HostedZoneAttributes;
 import software.amazon.awscdk.services.route53.IHostedZone;
@@ -49,14 +52,15 @@ import java.util.Map;
 
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.convertDotSeparatedToDashSeparated;
 
 public class EdgeStack extends Stack {
 
     public Bucket originBucket;
+    public IBucket originAccessLogBucket;
     public final Distribution distribution;
     public final Permission distributionInvokeFnUrl;
     public final ARecord aliasRecord;
+    public final AaaaRecord aliasRecordV6;
 
     @Value.Immutable
     public interface EdgeStackProps extends StackProps, SubmitStackProps {
@@ -83,16 +87,10 @@ public class EdgeStack extends Stack {
         String compressedResourceNamePrefix();
 
         @Override
-        String dashedDomainName();
-
-        @Override
-        String domainName();
-
-        @Override
-        String baseUrl();
-
-        @Override
         String cloudTrailEnabled();
+
+        @Override
+        SubmitSharedNames sharedNames();
 
         String hostedZoneName();
 
@@ -100,11 +98,9 @@ public class EdgeStack extends Stack {
 
         String certificateArn();
 
-        String originAccessLogBucketArn();
-
-        String distributionAccessLogBucketArn();
-
         Map<String, String> pathsToOriginLambdaFunctionUrls();
+
+        int logGroupRetentionPeriodDays();
 
         static ImmutableEdgeStackProps.Builder builder() {
             return ImmutableEdgeStackProps.builder();
@@ -140,23 +136,20 @@ public class EdgeStack extends Stack {
                         .hostedZoneId(props.hostedZoneId())
                         .zoneName(props.hostedZoneName())
                         .build());
-        String recordName = props.hostedZoneName().equals(props.domainName())
+        String recordName = props.hostedZoneName().equals(props.sharedNames().domainName)
                 ? null
-                : (props.domainName().endsWith("." + props.hostedZoneName())
-                        ? props.domainName()
+                : (props.sharedNames().domainName.endsWith("." + props.hostedZoneName())
+                        ? props.sharedNames()
+                                .domainName
                                 .substring(
                                         0,
-                                        props.domainName().length()
+                                        props.sharedNames().domainName.length()
                                                 - (props.hostedZoneName().length() + 1))
-                        : props.domainName());
+                        : props.sharedNames().domainName);
 
         // TLS certificate from existing ACM (must be in us-east-1 for CloudFront)
         var cert =
                 Certificate.fromCertificateArn(this, props.resourceNamePrefix() + "-WebCert", props.certificateArn());
-
-        // Buckets
-
-        String originBucketName = convertDotSeparatedToDashSeparated("origin-" + props.domainName());
 
         // AWS WAF WebACL for CloudFront protection against common attacks and rate limiting
         CfnWebACL webAcl = CfnWebACL.Builder.create(this, props.resourceNamePrefix() + "-WebAcl")
@@ -237,39 +230,54 @@ public class EdgeStack extends Stack {
                         .build())
                 .build();
 
-        // Lookup log buckets
-        IBucket originAccessLogBucket = Bucket.fromBucketArn(
-                this, props.resourceNamePrefix() + "-ImportedOriginAccessLogBucket", props.originAccessLogBucketArn());
-        IBucket distributionLogsBucket = Bucket.fromBucketArn(
-                this,
-                props.resourceNamePrefix() + "-ImportedDistributionLogBucket",
-                props.distributionAccessLogBucketArn());
+        // TODO: Find alternative to log buckets for CloudFront distribution logs
+        // S3 bucket for origin access logs with specified retention
+        //        infof(
+        //                "Setting expiration period to %d days for %s",
+        //                props.logGroupRetentionPeriodDays(), props.resourceNamePrefix());
+        //        this.originAccessLogBucket = Bucket.Builder.create(this, props.resourceNamePrefix() + "-LogBucket")
+        //                .bucketName(props.sharedNames().originAccessLogBucketName)
+        //                .objectOwnership(ObjectOwnership.OBJECT_WRITER)
+        //                .versioned(false)
+        //                .blockPublicAccess(BlockPublicAccess.BLOCK_ALL)
+        //                .encryption(BucketEncryption.S3_MANAGED)
+        //                .removalPolicy(RemovalPolicy.DESTROY)
+        //                .autoDeleteObjects(true)
+        //                .lifecycleRules(List.of(LifecycleRule.builder()
+        //                        .id("%sLogsLifecycleRule".formatted(props.compressedResourceNamePrefix()))
+        //                        .enabled(true)
+        //                        .expiration(Duration.days(props.logGroupRetentionPeriodDays()))
+        //                        .build()))
+        //                .build();
+        //        infof(
+        //                "Created log bucket %s with name",
+        //                this.originAccessLogBucket.getNode().getId(), originAccessLogBucket);
 
         // Create the origin bucket
         this.originBucket = Bucket.Builder.create(this, props.resourceNamePrefix() + "-OriginBucket")
-                .bucketName(originBucketName)
+                .bucketName(props.sharedNames().originBucketName)
                 .versioned(false)
                 .blockPublicAccess(BlockPublicAccess.BLOCK_ALL)
                 .encryption(BucketEncryption.S3_MANAGED)
                 .removalPolicy(RemovalPolicy.DESTROY)
                 .autoDeleteObjects(true)
-                // TODO: Re-instate or find an alternative way to reference an existing bucket for access logs
+                // TODO: Find an alternative for access logs
                 // .serverAccessLogsBucket(originAccessLogBucket)
                 .build();
         infof(
                 "Created origin bucket %s with name %s",
-                this.originBucket.getNode().getId(), originBucketName);
+                this.originBucket.getNode().getId(), props.sharedNames().originBucketName);
 
         this.originBucket.addToResourcePolicy(PolicyStatement.Builder.create()
                 .sid("AllowCloudFrontReadViaOAC")
-                .principals(java.util.List.of(new ServicePrincipal("cloudfront.amazonaws.com")))
-                .actions(java.util.List.of("s3:GetObject"))
-                .resources(java.util.List.of(this.originBucket.getBucketArn() + "/*"))
-                .conditions(java.util.Map.of(
+                .principals(List.of(new ServicePrincipal("cloudfront.amazonaws.com")))
+                .actions(List.of("s3:GetObject"))
+                .resources(List.of(this.originBucket.getBucketArn() + "/*"))
+                .conditions(Map.of(
                         // Limit to distributions in your account (no distribution ARN token needed)
-                        "StringEquals", java.util.Map.of("AWS:SourceAccount", this.getAccount()),
+                        "StringEquals", Map.of("AWS:SourceAccount", this.getAccount()),
                         "ArnLike",
-                                java.util.Map.of(
+                                Map.of(
                                         "AWS:SourceArn",
                                         "arn:aws:cloudfront::" + this.getAccount() + ":distribution/*")))
                 .build());
@@ -301,20 +309,31 @@ public class EdgeStack extends Stack {
                                         map.put(entry.getKey(), createBehaviorOptionsForLambdaUrl(entry.getValue())),
                                 HashMap::putAll);
 
+        // Lookup log bucket
+        IBucket distributionLogsBucket = Bucket.fromBucketName(
+                this,
+                props.resourceNamePrefix() + "-ImportedDistributionLogBucket",
+                props.sharedNames().distributionAccessLogBucketName);
+
         // CloudFront distribution for the web origin and all the URL Lambdas.
         this.distribution = Distribution.Builder.create(this, props.resourceNamePrefix() + "-WebDist")
                 .defaultBehavior(localBehaviorOptions) // props.webBehaviorOptions)
                 .additionalBehaviors(additionalBehaviors)
-                .domainNames(List.of(props.domainName()))
+                .domainNames(List.of(
+                    props.sharedNames().domainName
+                    // props.sharedNames().envDomainName
+                ))
                 .certificate(cert)
                 .defaultRootObject("index.html")
                 .enableLogging(true)
+                // TODO: Find an alternative for access logs
                 .logBucket(distributionLogsBucket)
                 .logFilePrefix("cloudfront/")
                 .enableIpv6(true)
                 .sslSupportMethod(SSLMethod.SNI)
                 .webAclId(webAcl.getAttrArn())
                 .build();
+        Tags.of(this.distribution).add("OriginFor", props.sharedNames().domainName);
 
         // Grant CloudFront access to the origin lambdas with compressed names
         this.distributionInvokeFnUrl = Permission.builder()
@@ -334,18 +353,29 @@ public class EdgeStack extends Stack {
                         .target(RecordTarget.fromAlias(new CloudFrontTarget(this.distribution)))
                         .deleteExisting(true)
                         .build());
+        // AAAA record
+        this.aliasRecordV6 = new AaaaRecord(
+                this,
+                props.resourceNamePrefix() + "-AliasRecordV6",
+                    AaaaRecordProps.builder()
+                        .recordName(recordName)
+                        .zone(zone)
+                        .target(RecordTarget.fromAlias(new CloudFrontTarget(this.distribution)))
+                        .deleteExisting(true)
+                        .build());
 
         Aspects.of(this).add(new SetAutoDeleteJobLogRetentionAspect(props.deploymentName(), RetentionDays.THREE_DAYS));
 
         // Outputs
-        cfnOutput(this, "BaseUrl", props.baseUrl());
+        cfnOutput(this, "BaseUrl", props.sharedNames().baseUrl);
         cfnOutput(this, "CertificateArn", cert.getCertificateArn());
         cfnOutput(this, "WebAclId", webAcl.getAttrArn());
         cfnOutput(this, "WebDistributionDomainName", this.distribution.getDomainName());
         cfnOutput(this, "DistributionId", this.distribution.getDistributionId());
         cfnOutput(this, "AliasRecord", this.aliasRecord.getDomainName());
+        cfnOutput(this, "AliasRecordV6", this.aliasRecordV6.getDomainName());
 
-        infof("EdgeStack %s created successfully for %s", this.getNode().getId(), props.baseUrl());
+        infof("EdgeStack %s created successfully for %s", this.getNode().getId(), props.sharedNames().baseUrl);
     }
 
     public BehaviorOptions createBehaviorOptionsForLambdaUrl(String lambdaFunctionUrl) {

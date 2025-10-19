@@ -16,16 +16,15 @@ import { httpGet as listReceipts, httpGetByName as getReceipt } from "@app/funct
 function makeJwt(sub = "test-user-sub") {
   const header = { alg: "none", typ: "JWT" };
   const payload = { sub };
-  const b64 = (obj) =>
-    Buffer.from(JSON.stringify(obj)).toString("base64").replace(/=+$/g, "").replace(/\+/g, "-").replace(/\//g, "_");
+  const b64 = (obj) => Buffer.from(JSON.stringify(obj)).toString("base64").replace(/=+$/g, "").replace(/\+/g, "-").replace(/\//g, "_");
   return `${b64(header)}.${b64(payload)}.`;
 }
 
 describe("myReceipts functions", () => {
   beforeEach(() => {
     s3Mock.reset();
-    process.env.DIY_SUBMIT_BASE_URL = "https://hmrc-test-redirect"; // matches unit test expectation style
-    process.env.DIY_SUBMIT_RECEIPTS_BUCKET_FULL_NAME = "test-receipts-bucket";
+    process.env.DIY_SUBMIT_BASE_URL = "https://hmrc-test-redirect/"; // matches unit test expectation style
+    process.env.DIY_SUBMIT_RECEIPTS_BUCKET_NAME = "test-receipts-bucket";
     process.env.TEST_S3_ENDPOINT = "http://localhost:9000"; // enable S3 client config
   });
 

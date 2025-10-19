@@ -29,14 +29,7 @@ export function convertVideo(inputPath, outputPath) {
       ffmpeg(inputPath)
         .videoCodec("libx264")
         .audioCodec("aac")
-        .outputOptions([
-          "-pix_fmt yuv420p",
-          "-profile:v baseline",
-          "-level 3.1",
-          "-movflags +faststart",
-          "-crf 22",
-          "-preset slow",
-        ])
+        .outputOptions(["-pix_fmt yuv420p", "-profile:v baseline", "-level 3.1", "-movflags +faststart", "-crf 22", "-preset slow"])
         .on("end", () => resolve())
         .on("error", () => resolve())
         .save(outputPath);

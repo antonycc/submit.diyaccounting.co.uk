@@ -51,10 +51,7 @@ describe("Integration – /api/request-bundle route (MOCK)", () => {
 
   test("should grant HMRC_TEST_API bundle", async () => {
     const token = makeIdToken("integration-bundle-user");
-    const res = await request(app)
-      .post("/api/request-bundle")
-      .set("Authorization", `Bearer ${token}`)
-      .send({ bundleId: "HMRC_TEST_API" });
+    const res = await request(app).post("/api/request-bundle").set("Authorization", `Bearer ${token}`).send({ bundleId: "HMRC_TEST_API" });
 
     expect(res.status).toBe(200);
     const body = JSON.parse(res.text || "{}");

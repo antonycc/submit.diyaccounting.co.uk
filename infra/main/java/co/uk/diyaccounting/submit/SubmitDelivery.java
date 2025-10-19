@@ -5,15 +5,15 @@ import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.Kind.putIfNotNull;
 import static co.uk.diyaccounting.submit.utils.Kind.warnf;
 import static co.uk.diyaccounting.submit.utils.KindCdk.getContextValueString;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDashedDomainName;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateCompressedResourceNamePrefix;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateResourceNamePrefix;
 
 import co.uk.diyaccounting.submit.stacks.EdgeStack;
 import co.uk.diyaccounting.submit.stacks.PublishStack;
 import co.uk.diyaccounting.submit.stacks.SelfDestructStack;
+import co.uk.diyaccounting.submit.utils.KindCdk;
 import java.lang.reflect.Field;
 import java.nio.file.Paths;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import software.amazon.awscdk.App;
 import software.amazon.awscdk.Environment;
@@ -31,14 +31,14 @@ public class SubmitDelivery {
         public String deploymentName;
         public String hostedZoneName;
         public String hostedZoneId;
+        public String subDomainName;
+        public String cognitoDomainPrefix;
         public String certificateArn;
-        public String originAccessLogBucketArn;
-        public String distributionAccessLogBucketArn;
-        public String webDeploymentLogGroupArn;
         public String docRootPath;
         public String domainName;
         public String cloudTrailEnabled;
         public String baseUrl;
+        public String accessLogGroupRetentionPeriodDays;
         public String authUrlMockLambdaFunctionUrl;
         public String authUrlCognitoLambdaFunctionUrl;
         public String exchangeCognitoTokenLambdaFunctionUrl;
@@ -94,16 +94,52 @@ public class SubmitDelivery {
     }
 
     public SubmitDelivery(App app, SubmitDeliveryProps appProps) {
+
         // Environment e.g. ci, prod, and deployment name e.g. ci-branchname, prod
-        var envName = envOr("ENV_NAME", appProps.envName);
+        var envName = envOr("ENVIRONMENT_NAME", appProps.envName);
         var deploymentName = envOr("DEPLOYMENT_NAME", appProps.deploymentName);
         var commitHash = envOr("COMMIT_HASH", "local");
         var websiteHash = envOr("WEBSITE_HASH", "local");
         var buildNumber = envOr("BUILD_NUMBER", "local");
 
-        // Resource name prefixes
-        var domainName = envOr("DIY_SUBMIT_DOMAIN_NAME", appProps.domainName, "(from domainName in cdk.json)");
-        var baseUrl = envOr("DIY_SUBMIT_BASE_URL", appProps.baseUrl, "(from baseUrl in cdk.json)");
+        // Determine primary environment (account/region) from CDK env
+        Environment primaryEnv = KindCdk.buildPrimaryEnvironment();
+        Environment usEast1Env = Environment.builder()
+                .region("us-east-1")
+                .account(primaryEnv.getAccount())
+                .build();
+
+        var nameProps = new SubmitSharedNames.SubmitSharedNamesProps();
+        nameProps.envName = envName;
+        nameProps.deploymentName = deploymentName;
+        nameProps.hostedZoneName = appProps.hostedZoneName;
+        nameProps.subDomainName = appProps.subDomainName;
+        nameProps.cognitoDomainPrefix = appProps.cognitoDomainPrefix;
+        nameProps.regionName = primaryEnv.getRegion();
+        nameProps.awsAccount = primaryEnv.getAccount();
+        var sharedNames = new SubmitSharedNames(nameProps);
+
+        // Support environment specific overrides of some cdk.json values
+        var cloudTrailEnabled =
+                envOr("CLOUD_TRAIL_ENABLED", appProps.cloudTrailEnabled, "(from cloudTrailEnabled in cdk.json)");
+        var accessLogGroupRetentionPeriodDays = Integer.parseInt(
+                envOr("ACCESS_LOG_GROUP_RETENTION_PERIOD_DAYS", appProps.accessLogGroupRetentionPeriodDays, "30"));
+        var selfDestructHandlerSource = envOr(
+                "SELF_DESTRUCT_HANDLER_SOURCE",
+                appProps.selfDestructHandlerSource,
+                "(from selfDestructHandlerSource in cdk.json)");
+        var selfDestructDelayHoursString = envOr(
+                "SELF_DESTRUCT_DELAY_HOURS",
+                appProps.selfDestructDelayHours,
+                "(from selfDestructDelayHours in cdk.json)");
+        int selfDestructDelayHours = Integer.parseInt(selfDestructDelayHoursString);
+        var selfDestructStartDatetimeIso = envOr(
+                "SELF_DESTRUCT_START_DATETIME",
+                ZonedDateTime.now().plusHours(selfDestructDelayHours).format(DateTimeFormatter.ISO_DATE_TIME),
+                "(from current time plus delay hours)");
+        ZonedDateTime selfDestructStartDatetime = ZonedDateTime.parse(selfDestructStartDatetimeIso);
+        infof("Self-destruct start datetime: %s", selfDestructStartDatetime);
+        var docRootPath = envOr("DOC_ROOT_PATH", appProps.docRootPath, "(from docRootPath in cdk.json)");
 
         // Function URL environment variables for EdgeStack
         var authUrlMockLambdaFunctionUrl = envOr(
@@ -148,99 +184,66 @@ public class SubmitDelivery {
                 "MY_RECEIPTS_LAMBDA_URL",
                 appProps.myReceiptsLambdaFunctionUrl,
                 "(from myReceiptsLambdaFunctionUrl in cdk.json)");
-        var selfDestructHandlerSource = envOr(
-                "SELF_DESTRUCT_HANDLER_SOURCE",
-                appProps.selfDestructHandlerSource,
-                "(from selfDestructHandlerSource in cdk.json)");
-        var selfDestructDelayHours = envOr(
-                "SELF_DESTRUCT_DELAY_HOURS",
-                appProps.selfDestructDelayHours,
-                "(from selfDestructDelayHours in cdk.json)");
-        var originAccessLogBucketArn = envOr(
-                "ORIGIN_ACCESS_LOG_BUCKET_ARN",
-                appProps.originAccessLogBucketArn,
-                "(from originAccessLogBucketArn in cdk.json)");
-        var distributionAccessLogBucketArn = envOr(
-                "DISTRIBUTION_ACCESS_LOG_BUCKET_ARN",
-                appProps.distributionAccessLogBucketArn,
-                "(from distributionAccessLogBucketArn in cdk.json)");
-        var webDeploymentLogGroupArn = envOr(
-                "WEB_DEPLOYMENT_LOG_GROUP_ARN",
-                appProps.webDeploymentLogGroupArn,
-                "(from webDeploymentLogGroupArn in cdk.json)");
-        var cloudTrailEnabled =
-                envOr("CLOUD_TRAIL_ENABLED", appProps.cloudTrailEnabled, "(from cloudTrailEnabled in cdk.json)");
-        var docRootPath = envOr("DOC_ROOT_PATH", appProps.docRootPath, "(from docRootPath in cdk.json)");
-
-        // Derived values from domain and deployment name
-        String resourceNamePrefix = "del-%s".formatted(generateResourceNamePrefix(domainName));
-        String compressedResourceNamePrefix = "d-%s".formatted(generateCompressedResourceNamePrefix(domainName));
-        String selfDestructLogGroupName = "/aws/lambda/%s-self-destruct".formatted(resourceNamePrefix);
-        String dashedDomainName = buildDashedDomainName(domainName);
 
         // Create Function URLs map for EdgeStack (cross-region compatible)
-        Map<String, String> pathsToOriginLambdaFunctionUrls = new java.util.HashMap<>();
-        putIfNotNull(pathsToOriginLambdaFunctionUrls, "/api/mock/auth-url" + "*", authUrlMockLambdaFunctionUrl);
-        putIfNotNull(pathsToOriginLambdaFunctionUrls, "/api/cognito/auth-url" + "*", authUrlCognitoLambdaFunctionUrl);
+        Map<String, String> pathsToFns = new java.util.HashMap<>();
+        putIfNotNull(pathsToFns, "%s*".formatted(sharedNames.authUrlMockLambdaUrlPath), authUrlMockLambdaFunctionUrl);
         putIfNotNull(
-                pathsToOriginLambdaFunctionUrls,
-                "/api/cognito/exchange-token" + "*",
+                pathsToFns, "%s*".formatted(sharedNames.authUrlCognitoLambdaUrlPath), authUrlCognitoLambdaFunctionUrl);
+        putIfNotNull(
+                pathsToFns,
+                "%s*".formatted(sharedNames.exchangeCognitoTokenLambdaUrlPath),
                 exchangeCognitoTokenLambdaFunctionUrl);
-        putIfNotNull(pathsToOriginLambdaFunctionUrls, "/api/hmrc/auth-url" + "*", authUrlHmrcLambdaFunctionUrl);
+        putIfNotNull(pathsToFns, "%s*".formatted(sharedNames.authUrlHmrcLambdaUrlPath), authUrlHmrcLambdaFunctionUrl);
         putIfNotNull(
-                pathsToOriginLambdaFunctionUrls, "/api/hmrc/exchange-token" + "*", exchangeHmrcTokenLambdaFunctionUrl);
-        putIfNotNull(pathsToOriginLambdaFunctionUrls, "/api/submit-vat" + "*", submitVatLambdaFunctionUrl);
-        putIfNotNull(pathsToOriginLambdaFunctionUrls, "/api/log-receipt" + "*", logReceiptLambdaFunctionUrl);
-        putIfNotNull(pathsToOriginLambdaFunctionUrls, "/api/catalog" + "*", catalogLambdaFunctionUrl);
-        putIfNotNull(pathsToOriginLambdaFunctionUrls, "/api/request-bundle" + "*", requestBundlesLambdaFunctionUrl);
-        putIfNotNull(pathsToOriginLambdaFunctionUrls, "/api/my-bundles" + "*", myBundlesLambdaFunctionUrl);
-        putIfNotNull(pathsToOriginLambdaFunctionUrls, "/api/my-receipts" + "*", myReceiptsLambdaFunctionUrl);
+                pathsToFns,
+                "%s*".formatted(sharedNames.exchangeHmrcTokenLambdaUrlPath),
+                exchangeHmrcTokenLambdaFunctionUrl);
+        putIfNotNull(pathsToFns, "%s*".formatted(sharedNames.submitVatLambdaUrlPath), submitVatLambdaFunctionUrl);
+        putIfNotNull(pathsToFns, "%s*".formatted(sharedNames.logReceiptLambdaUrlPath), logReceiptLambdaFunctionUrl);
+        putIfNotNull(pathsToFns, "%s*".formatted(sharedNames.myReceiptsLambdaUrlPath), myReceiptsLambdaFunctionUrl);
+        putIfNotNull(pathsToFns, "%s*".formatted(sharedNames.catalogLambdaUrlPath), catalogLambdaFunctionUrl);
+        putIfNotNull(
+                pathsToFns, "%s*".formatted(sharedNames.requestBundlesLambdaUrlPath), requestBundlesLambdaFunctionUrl);
+        putIfNotNull(pathsToFns, "%s*".formatted(sharedNames.myBundlesLambdaUrlPath), myBundlesLambdaFunctionUrl);
 
         // Create the Edge stack (CloudFront, Route53)
-        String edgeStackId = "%s-EdgeStack".formatted(deploymentName);
         this.edgeStack = new EdgeStack(
                 app,
-                edgeStackId,
+                sharedNames.edgeStackId,
                 EdgeStack.EdgeStackProps.builder()
-                        .env(Environment.builder().region("us-east-1").build())
+                        .env(usEast1Env)
                         .crossRegionReferences(true)
                         .envName(envName)
                         .deploymentName(deploymentName)
-                        .resourceNamePrefix(resourceNamePrefix)
-                        .compressedResourceNamePrefix(compressedResourceNamePrefix)
-                        .domainName(domainName)
-                        .dashedDomainName(dashedDomainName)
-                        .baseUrl(baseUrl)
+                        .resourceNamePrefix(sharedNames.delResourceNamePrefix)
+                        .compressedResourceNamePrefix(sharedNames.delCompressedResourceNamePrefix)
                         .cloudTrailEnabled(cloudTrailEnabled)
+                        .sharedNames(sharedNames)
                         .hostedZoneName(appProps.hostedZoneName)
                         .hostedZoneId(appProps.hostedZoneId)
                         .certificateArn(appProps.certificateArn)
-                        .pathsToOriginLambdaFunctionUrls(pathsToOriginLambdaFunctionUrls)
-                        .originAccessLogBucketArn(originAccessLogBucketArn)
-                        .distributionAccessLogBucketArn(distributionAccessLogBucketArn)
+                        .pathsToOriginLambdaFunctionUrls(pathsToFns)
+                        .logGroupRetentionPeriodDays(accessLogGroupRetentionPeriodDays)
                         .build());
 
         // Create the Publish stack (Bucket Deployments to CloudFront)
         String distributionId = this.edgeStack.distribution.getDistributionId();
-        String publishStackId = "%s-PublishStack".formatted(deploymentName);
         this.publishStack = new PublishStack(
                 app,
-                publishStackId,
+                sharedNames.publishStackId,
                 PublishStack.PublishStackProps.builder()
-                        .env(Environment.builder().region("us-east-1").build())
+                        .env(usEast1Env)
                         .crossRegionReferences(false)
                         .envName(envName)
                         .deploymentName(deploymentName)
-                        .resourceNamePrefix(resourceNamePrefix)
-                        .compressedResourceNamePrefix(compressedResourceNamePrefix)
-                        .domainName(domainName)
-                        .dashedDomainName(dashedDomainName)
-                        .baseUrl(baseUrl)
+                        .resourceNamePrefix(sharedNames.delResourceNamePrefix)
+                        .compressedResourceNamePrefix(sharedNames.delCompressedResourceNamePrefix)
                         .cloudTrailEnabled(cloudTrailEnabled)
+                        .sharedNames(sharedNames)
                         .distributionId(distributionId)
                         .commitHash(commitHash)
                         .websiteHash(websiteHash)
-                        .webDeploymentLogGroupArn(webDeploymentLogGroupArn)
                         .buildNumber(buildNumber)
                         .docRootPath(docRootPath)
                         .build());
@@ -248,24 +251,20 @@ public class SubmitDelivery {
 
         // Create the SelfDestruct stack only for non-prod deployments
         if (!"prod".equals(deploymentName)) {
-            String selfDestructStackId = "%s-SelfDestructStack".formatted(deploymentName);
             this.selfDestructStack = new SelfDestructStack(
                     app,
-                    selfDestructStackId,
+                    sharedNames.delSelfDestructStackId,
                     SelfDestructStack.SelfDestructStackProps.builder()
-                            .env(Environment.builder().region("us-east-1").build())
+                            .env(usEast1Env)
                             .crossRegionReferences(false)
                             .envName(envName)
                             .deploymentName(deploymentName)
-                            .resourceNamePrefix(resourceNamePrefix)
-                            .compressedResourceNamePrefix(compressedResourceNamePrefix)
-                            .domainName(domainName)
-                            .dashedDomainName(dashedDomainName)
-                            .baseUrl(baseUrl)
+                            .resourceNamePrefix(sharedNames.delResourceNamePrefix)
+                            .compressedResourceNamePrefix(sharedNames.delCompressedResourceNamePrefix)
                             .cloudTrailEnabled(cloudTrailEnabled)
-                            .selfDestructLogGroupName(selfDestructLogGroupName)
-                            .edgeStackName(this.edgeStack.getStackName())
-                            .publishStackName(this.publishStack.getStackName())
+                            .sharedNames(sharedNames)
+                            .selfDestructLogGroupName(sharedNames.ue1SelfDestructLogGroupName)
+                            .selfDestructStartDatetime(selfDestructStartDatetime)
                             .selfDestructDelayHours(selfDestructDelayHours)
                             .selfDestructHandlerSource(selfDestructHandlerSource)
                             .build());

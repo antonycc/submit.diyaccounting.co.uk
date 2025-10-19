@@ -89,7 +89,7 @@ describe("Integration – Server Express App", () => {
       GOOGLE_CLIENT_SECRET: "integration-test-google-secret",
       DIY_SUBMIT_BASE_URL: "https://test.submit.diyaccounting.co.uk/",
       HMRC_BASE_URI: "https://test-api.service.hmrc.gov.uk",
-      DIY_SUBMIT_RECEIPTS_BUCKET_FULL_NAME: "integration-test-bucket",
+      DIY_SUBMIT_RECEIPTS_BUCKET_NAME: "integration-test-bucket",
       TEST_SERVER_HTTP_PORT: "3001",
       TEST_S3_ENDPOINT: "http://localhost:9000", // Enable S3 operations for tests
     };
@@ -139,10 +139,7 @@ describe("Integration – Server Express App", () => {
 
   describe("Auth Flow Integration", () => {
     it("should generate auth URL through Express endpoint", async () => {
-      const response = await request(app)
-        .get("/api/hmrc/auth-url")
-        .query({ state: "integration-test-state" })
-        .expect(200);
+      const response = await request(app).get("/api/hmrc/auth-url").query({ state: "integration-test-state" }).expect(200);
 
       console.log("Auth URL response:", response.body);
 
@@ -154,10 +151,7 @@ describe("Integration – Server Express App", () => {
     });
 
     it("should exchange token through Express endpoint", async () => {
-      const response = await request(app)
-        .post("/api/exchange-token")
-        .send({ code: "integration-test-code" })
-        .expect(200);
+      const response = await request(app).post("/api/exchange-token").send({ code: "integration-test-code" }).expect(200);
 
       console.log("Token exchange response:", response.body);
 

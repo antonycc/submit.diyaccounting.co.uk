@@ -1,4 +1,8 @@
 name: deploy environment
+run-name: "deploy environment ${{ inputs.environment || 'ci' }}"
+concurrency:
+  group: deploy-${{ github.ref_name }}
+  cancel-in-progress: false
 
 on:
   workflow_dispatch:
@@ -11,6 +15,19 @@ on:
           - prod
           - ci
         default: ci
+  push:
+    branches:
+      - '**'
+      - '!gh_pages'
+    paths:
+      - '.env.ci'
+      - '.env.prod'
+      - 'cdk-environment/cdk.json'
+      - '.github/actions/get-names'
+      - '.github/actions/set-origins'
+      - '.github/workflows/deploy-environment.yml'
+  schedule:
+    - cron: '43 3 * * *'
 
 env:
   JAVA_VERSION: '21'
@@ -22,17 +39,25 @@ env:
   GITHUB_ACTOR: ${{ github.actor }}
 
 jobs:
+
   names:
-    name: names
-    environment: ${{ github.event.inputs.environment }}
     runs-on: ubuntu-24.04
+    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
     steps:
-      - id: deployment-config
-        run: |
-          echo "ENV_NAME=${{ github.event.inputs.environment }}" >> "$GITHUB_OUTPUT"
+      - name: Checkout
+        uses: actions/checkout@v5
+      - name: Compute deployment name and environment
+        id: deployment-config
+        uses: ./.github/actions/get-names
     outputs:
-      environment-name: ${{ steps.deployment-config.outputs.ENV_NAME }}
-      deployment-name: ${{ steps.deployment-config.outputs.ENV_NAME }}
+      environment-name: ${{ steps.deployment-config.outputs.environment-name }}
+      deployment-name: ${{ steps.deployment-config.outputs.deployment-name }}
+      base-domain: ${{ steps.deployment-config.outputs.base-domain }}
+      base-url:      ${{ steps.deployment-config.outputs.base-url }}
+      apex-domain: ${{ steps.deployment-config.outputs.apex-domain }}
+      apex-url: ${{ steps.deployment-config.outputs.apex-url }}
+      holding-domain: ${{ steps.deployment-config.outputs.holding-domain }}
+      holding-url: ${{ steps.deployment-config.outputs.holding-url }}
 
   create-secrets:
     name: create secrets
@@ -125,7 +150,7 @@ jobs:
           output-credentials: true
           retry-max-attempts: 3
 
-      # Once only per account
+      # Once only per region per account
       #- name: Bootstrap CDK
       #  run: npx cdk bootstrap
       #  env:
@@ -135,7 +160,7 @@ jobs:
         uses: actions/checkout@v5
 
       - name: Setup Node
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v6
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
@@ -156,17 +181,166 @@ jobs:
             && cat ../.env.${{ needs.names.outputs.environment-name }} \
             && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
               npx cdk deploy \
-                ${{ needs.names.outputs.environment-name }}-ObservabilityStack \
+                env-${{ needs.names.outputs.environment-name }}-ObservabilityStack \
                 --require-approval never \
                 --ci true \
                 --concurrency 4 \
                 --asset-parallelism \
                 --outputs-file ../cdk-submit-environment.out/cdk-outputs-observability.json \
-          ; cd .. \
+          && cd .. \
           ;
         env:
-          ENV_NAME: ${{ needs.names.outputs.environment-name }}
-          DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
+          ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
+          DEPLOYMENT_NAME: ${{ needs.names.outputs.environment-name }}
+
+  deploy-observability-us-east-1:
+    name: 'deploy observability us-east-1'
+    needs:
+      - names
+      - create-secrets
+    runs-on: ubuntu-24.04
+    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+
+      - name: Configure AWS role via GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      # Once only per region per account
+      #- name: Bootstrap CDK
+      #  run: npx cdk bootstrap
+      #  env:
+      #    CDK_NEW_BOOTSTRAP: '1'
+      #    AWS_REGION: us-east-1
+
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Node dependencies
+        run: npm ci
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: 'maven'
+
+      - name: Deploy Observability us-east-1 Stack (CDK)
+        run: |
+          ./mvnw --errors clean package -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
+            && cd cdk-environment \
+            && cat ../.env.${{ needs.names.outputs.environment-name }} \
+            && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
+              npx cdk deploy \
+                env-${{ needs.names.outputs.environment-name }}-ObservabilityUE1Stack \
+                --require-approval never \
+                --ci true \
+                --concurrency 4 \
+                --asset-parallelism \
+                --outputs-file ../cdk-submit-environment.out/cdk-outputs-observability-ue1.json \
+          && cd .. \
+          ;
+        env:
+          ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
+          DEPLOYMENT_NAME: ${{ needs.names.outputs.environment-name }}
+
+  deploy-data:
+    name: 'deploy data'
+    needs:
+      - names
+      - create-secrets
+    runs-on: ubuntu-24.04
+    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+
+      - name: Configure AWS role via GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Node dependencies
+        run: npm ci
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: 'maven'
+
+      - name: Deploy Data Stack (CDK)
+        run: |
+          ./mvnw --errors clean package -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
+            && cd cdk-environment \
+            && cat ../.env.${{ needs.names.outputs.environment-name }} \
+            && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
+              npx cdk deploy \
+                env-${{ needs.names.outputs.environment-name }}-DataStack \
+                --require-approval never \
+                --ci true \
+                --concurrency 4 \
+                --asset-parallelism \
+                --outputs-file ../cdk-submit-environment.out/cdk-outputs-data.json \
+          && cd .. \
+          ;
+        env:
+          ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
+          DEPLOYMENT_NAME: ${{ needs.names.outputs.environment-name }}
 
   deploy-apex:
     name: deploy apex
@@ -206,7 +380,7 @@ jobs:
         uses: actions/checkout@v5
 
       - name: Setup Node
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v6
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
@@ -227,18 +401,18 @@ jobs:
             && cat ../.env.${{ needs.names.outputs.environment-name }} \
             && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
               npx cdk deploy \
-                ${{ needs.names.outputs.environment-name }}-ApexStack \
+                env-${{ needs.names.outputs.environment-name }}-ApexStack \
                 --exclusively \
                 --require-approval never \
                 --ci true \
                 --concurrency 4 \
                 --asset-parallelism \
                 --outputs-file ../cdk-submit-environment.out/cdk-outputs-apex.json \
-              ; cd .. \
+              && cd .. \
             ;
         env:
-          ENV_NAME: ${{ needs.names.outputs.environment-name }}
-          DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
+          ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
+          DEPLOYMENT_NAME: ${{ needs.names.outputs.environment-name }}
 
   deploy-identity:
     name: 'deploy identity'
@@ -279,7 +453,7 @@ jobs:
         uses: actions/checkout@v5
 
       - name: Setup Node
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v6
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
@@ -300,31 +474,35 @@ jobs:
             && cat ../.env.${{ needs.names.outputs.environment-name }} \
             && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
               npx cdk deploy \
-                ${{ needs.names.outputs.environment-name }}-IdentityStack \
+                env-${{ needs.names.outputs.environment-name }}-IdentityStack \
                 --exclusively \
                 --require-approval never \
                 --ci true \
                 --concurrency 4 \
                 --asset-parallelism \
                 --outputs-file ../cdk-submit-environment.out/cdk-outputs-identity.json \
-              ; cd .. \
+              && cd .. \
             ;
         env:
-          ENV_NAME: ${{ needs.names.outputs.environment-name }}
-          DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
+          ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
+          DEPLOYMENT_NAME: ${{ needs.names.outputs.environment-name }}
 
       - name: Resolve stack outputs
         id: identity-outputs
         run: |
-          COGNITO_USER_POOL_ARN=$(jq -r '.["${{ needs.names.outputs.environment-name }}-IdentityStack"].UserPoolArn' cdk-submit-environment.out/cdk-outputs-identity.json)
-          COGNITO_CLIENT_ID=$(jq -r '.["${{ needs.names.outputs.environment-name }}-IdentityStack"].UserPoolClientId' cdk-submit-environment.out/cdk-outputs-identity.json)
+          COGNITO_USER_POOL_ARN=$(jq -r '.["env-${{ needs.names.outputs.environment-name }}-IdentityStack"].UserPoolArn' cdk-submit-environment.out/cdk-outputs-identity.json)
+          COGNITO_USER_POOL_ID=$(jq -r '.["env-${{ needs.names.outputs.environment-name }}-IdentityStack"].UserPoolId' cdk-submit-environment.out/cdk-outputs-identity.json)
+          COGNITO_CLIENT_ID=$(jq -r '.["env-${{ needs.names.outputs.environment-name }}-IdentityStack"].UserPoolClientId' cdk-submit-environment.out/cdk-outputs-identity.json)
           echo "COGNITO_USER_POOL_ARN=$COGNITO_USER_POOL_ARN"
+          echo "COGNITO_USER_POOL_ID=$COGNITO_USER_POOL_ID"
           echo "COGNITO_CLIENT_ID=$COGNITO_CLIENT_ID"
           echo "COGNITO_USER_POOL_ARN=$COGNITO_USER_POOL_ARN" >> $GITHUB_OUTPUT
+          echo "COGNITO_USER_POOL_ID=$COGNITO_USER_POOL_ID" >> $GITHUB_OUTPUT
           echo "COGNITO_CLIENT_ID=$COGNITO_CLIENT_ID" >> $GITHUB_OUTPUT
         shell: bash
     outputs:
       COGNITO_USER_POOL_ARN: ${{ steps.identity-outputs.outputs.COGNITO_USER_POOL_ARN }}
+      COGNITO_USER_POOL_ID: ${{ steps.identity-outputs.outputs.COGNITO_USER_POOL_ID }}
       COGNITO_CLIENT_ID: ${{ steps.identity-outputs.outputs.COGNITO_CLIENT_ID }}
 
   set-repository-environment-variables:
@@ -359,15 +537,75 @@ jobs:
               environment_name: envName,
             });
 
-            // create or update the variable
-            await github.rest.actions.createEnvironmentVariable({
-              repository_id: repositoryId,
+            // create or update the variable (handle 409 Already exists)
+            try {
+              await github.rest.actions.createEnvironmentVariable({
+                repository_id: repositoryId,
+                environment_name: envName,
+                name: varName,
+                value: varValue,
+              });
+              core.info(`Created env var ${varName} in ${envName}`);
+            } catch (error) {
+              const status = error?.status || error?.response?.status || error?.data?.status;
+              if (String(status) === '409') {
+                core.info(`Variable ${varName} already exists in ${envName}, updating it.`);
+                await github.rest.actions.updateEnvironmentVariable({
+                  repository_id: repositoryId,
+                  environment_name: envName,
+                  name: varName,
+                  value: varValue,
+                });
+                core.info(`Updated env var ${varName} to value ${varValue} in ${envName}`);
+              } else {
+                core.setFailed(`Failed to set ${varName} in ${envName}: ${error.message || error}`);
+                throw error;
+              }
+            }
+
+      - name: Create a GitHub environment variable for COGNITO_USER_POOL_ID in the current environment
+        uses: actions/github-script@v8
+        with:
+          github-token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          script: |
+            const repositoryId = context.payload.repository.id;
+            console.log(`Repository: ${repositoryId}`);
+            const envName = '${{ needs.names.outputs.environment-name }}';
+            const varName = 'COGNITO_USER_POOL_ID';
+            const varValue = '${{ needs.deploy-identity.outputs.COGNITO_USER_POOL_ID }}';
+
+            // ensure the environment exists
+            await github.rest.repos.createOrUpdateEnvironment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
               environment_name: envName,
-              name: varName,
-              value: varValue,
             });
 
-            core.info(`Set env var ${varName} to value ${varValue} in ${envName}`);
+            // create or update the variable (handle 409 Already exists)
+            try {
+              await github.rest.actions.createEnvironmentVariable({
+                repository_id: repositoryId,
+                environment_name: envName,
+                name: varName,
+                value: varValue,
+              });
+              core.info(`Created env var ${varName} in ${envName}`);
+            } catch (error) {
+              const status = error?.status || error?.response?.status || error?.data?.status;
+              if (String(status) === '409') {
+                core.info(`Variable ${varName} already exists in ${envName}, updating it.`);
+                await github.rest.actions.updateEnvironmentVariable({
+                  repository_id: repositoryId,
+                  environment_name: envName,
+                  name: varName,
+                  value: varValue,
+                });
+                core.info(`Updated env var ${varName} to value ${varValue} in ${envName}`);
+              } else {
+                core.setFailed(`Failed to set ${varName} in ${envName}: ${error.message || error}`);
+                throw error;
+              }
+            }
 
       - name: Create a GitHub environment variable for COGNITO_CLIENT_ID in the current environment
         uses: actions/github-script@v8
@@ -387,12 +625,28 @@ jobs:
               environment_name: envName,
             });
 
-            // create or update the variable
-            await github.rest.actions.createEnvironmentVariable({
-              repository_id: repositoryId,
-              environment_name: envName,
-              name: varName,
-              value: varValue,
-            });
-
-            core.info(`Set env var ${varName} to value ${varValue} in ${envName}`);
+            // create or update the variable (handle 409 Already exists)
+            try {
+              await github.rest.actions.createEnvironmentVariable({
+                repository_id: repositoryId,
+                environment_name: envName,
+                name: varName,
+                value: varValue,
+              });
+              core.info(`Created env var ${varName} in ${envName}`);
+            } catch (error) {
+              const status = error?.status || error?.response?.status || error?.data?.status;
+              if (String(status) === '409') {
+                core.info(`Variable ${varName} already exists in ${envName}, updating it.`);
+                await github.rest.actions.updateEnvironmentVariable({
+                  repository_id: repositoryId,
+                  environment_name: envName,
+                  name: varName,
+                  value: varValue,
+                });
+                core.info(`Updated env var ${varName} to value ${varValue} in ${envName}`);
+              } else {
+                core.setFailed(`Failed to set ${varName} in ${envName}: ${error.message || error}`);
+                throw error;
+              }
+            }

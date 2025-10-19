@@ -2,7 +2,7 @@
 import { S3Client } from "@aws-sdk/client-s3";
 
 export function makeReceiptsS3(env = process.env) {
-  const Bucket = env.DIY_SUBMIT_RECEIPTS_BUCKET_FULL_NAME;
+  const Bucket = env.DIY_SUBMIT_RECEIPTS_BUCKET_NAME;
 
   let config = {};
   if (env.NODE_ENV !== "stubbed" && env.TEST_S3_ENDPOINT && env.TEST_S3_ENDPOINT !== "off") {

@@ -5,11 +5,11 @@ import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildCognitoBaseUri;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDashedCognitoDomainName;
 
+import co.uk.diyaccounting.submit.SubmitSharedNames;
+import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Aspects;
 import software.amazon.awscdk.Environment;
@@ -87,18 +87,10 @@ public class IdentityStack extends Stack {
         String compressedResourceNamePrefix();
 
         @Override
-        String dashedDomainName();
-
-        @Override
-        String domainName();
-
-        @Override
-        String baseUrl();
-
-        @Override
         String cloudTrailEnabled();
 
-        String cognitoDomainName();
+        @Override
+        SubmitSharedNames sharedNames();
 
         String hostedZoneName();
 
@@ -136,9 +128,9 @@ public class IdentityStack extends Stack {
                         .hostedZoneId(props.hostedZoneId())
                         .build());
 
-        this.cognitoBaseUri = buildCognitoBaseUri(props.cognitoDomainName());
+        this.cognitoBaseUri = buildCognitoBaseUri(props.sharedNames().cognitoDomainName);
 
-        this.dashedCognitoDomainName = buildDashedCognitoDomainName(props.cognitoDomainName());
+        this.dashedCognitoDomainName = buildDashedCognitoDomainName(props.sharedNames().cognitoDomainName);
         this.authCertificate = Certificate.fromCertificateArn(
                 this, props.resourceNamePrefix() + "-AuthCertificate", props.authCertificateArn());
 
@@ -167,7 +159,7 @@ public class IdentityStack extends Stack {
                         .build())
                 .build();
         this.userPool = UserPool.Builder.create(this, props.resourceNamePrefix() + "-UserPool")
-                .userPoolName(props.dashedDomainName() + "-user-pool")
+                .userPoolName(props.resourceNamePrefix() + "-user-pool")
                 .selfSignUpEnabled(true)
                 .signInAliases(SignInAliases.builder().email(true).build())
                 .standardAttributes(standardAttributes)
@@ -222,16 +214,15 @@ public class IdentityStack extends Stack {
         // User Pool Client
         this.userPoolClient = UserPoolClient.Builder.create(this, props.resourceNamePrefix() + "-UserPoolClient")
                 .userPool(userPool)
-                .userPoolClientName(props.dashedDomainName() + "-client")
+                .userPoolClientName(props.resourceNamePrefix() + "-client")
                 .generateSecret(false)
                 .oAuth(OAuthSettings.builder()
                         .flows(OAuthFlows.builder().authorizationCodeGrant(true).build())
                         .scopes(List.of(OAuthScope.EMAIL, OAuthScope.OPENID, OAuthScope.PROFILE))
                         .callbackUrls(List.of(
-                                "https://" + props.domainName() + "/",
-                                "https://" + props.domainName() + "/auth/loginWithMockCallback.html",
-                                "https://" + props.domainName() + "/auth/loginWithCognitoCallback.html"))
-                        .logoutUrls(List.of("https://" + props.domainName() + "/"))
+                                "https://" + props.sharedNames().domainName + "/",
+                                "https://" + props.sharedNames().domainName + "/auth/loginWithCognitoCallback.html"))
+                        .logoutUrls(List.of("https://" + props.sharedNames().domainName + "/"))
                         .build())
                 .supportedIdentityProviders(
                         this.identityProviders.keySet().stream().toList())
@@ -244,7 +235,7 @@ public class IdentityStack extends Stack {
         this.userPoolDomain = UserPoolDomain.Builder.create(this, props.resourceNamePrefix() + "-UserPoolDomain")
                 .userPool(userPool)
                 .customDomain(software.amazon.awscdk.services.cognito.CustomDomainOptions.builder()
-                        .domainName(props.cognitoDomainName())
+                        .domainName(props.sharedNames().cognitoDomainName)
                         .certificate(this.authCertificate)
                         .build())
                 .build();
@@ -252,7 +243,7 @@ public class IdentityStack extends Stack {
         // Create Route53 records for the Cognito UserPoolDomain as subdomains from the web domain.
         this.userPoolDomainARecord = ARecord.Builder.create(this, props.resourceNamePrefix() + "-UserPoolDomainARecord")
                 .zone(hostedZone)
-                .recordName(props.cognitoDomainName())
+                .recordName(props.sharedNames().cognitoDomainName)
                 .deleteExisting(true)
                 .target(RecordTarget.fromAlias(new IAliasRecordTarget() {
                     @Override
@@ -276,7 +267,7 @@ public class IdentityStack extends Stack {
         this.userPoolDomainAaaaRecord = AaaaRecord.Builder.create(
                         this, props.resourceNamePrefix() + "-UserPoolDomainAaaaRecord")
                 .zone(hostedZone)
-                .recordName(props.cognitoDomainName())
+                .recordName(props.sharedNames().cognitoDomainName)
                 .deleteExisting(true)
                 .target(RecordTarget.fromAlias(new IAliasRecordTarget() {
                     @Override
@@ -318,6 +309,8 @@ public class IdentityStack extends Stack {
             cfnOutput(this, "CognitoAntonyccIdpId", this.antonyccIdentityProvider.getProviderName());
         }
 
-        infof("IdentityStack %s created successfully for %s", this.getNode().getId(), props.dashedDomainName());
+        infof(
+                "IdentityStack %s created successfully for %s",
+                this.getNode().getId(), props.sharedNames().dashedDomainName);
     }
 }

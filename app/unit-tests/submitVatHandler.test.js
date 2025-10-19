@@ -68,8 +68,7 @@ describe("httpPostMock", () => {
         "Accept": "application/vnd.hmrc.1.0+json",
         "Gov-Client-Connection-Method": "WEB_APP_VIA_SERVER",
         "Gov-Vendor-Forwarded": "by=203.0.113.6&for=198.51.100.0",
-        "Gov-Vendor-License-IDs":
-          "my-licensed-software=8D7963490527D33716835EE7C195516D5E562E03B224E9B359836466EE40CDE1",
+        "Gov-Vendor-License-IDs": "my-licensed-software=8D7963490527D33716835EE7C195516D5E562E03B224E9B359836466EE40CDE1",
         "Gov-Vendor-Product-Name": "DIY Accounting Submit",
         "Gov-Vendor-Version": "web-submit-diyaccounting-co-uk-0.0.2-4",
       },

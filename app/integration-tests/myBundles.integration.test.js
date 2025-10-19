@@ -67,10 +67,7 @@ describe("Integration – /api/my-bundles (MOCK)", () => {
     expect(bodyAnon.bundles).not.toContain("guest");
 
     const token = makeIdToken("mb-user-guest");
-    const resGrant = await request(app)
-      .post("/api/request-bundle")
-      .set("Authorization", `Bearer ${token}`)
-      .send({ bundleId: "guest" });
+    const resGrant = await request(app).post("/api/request-bundle").set("Authorization", `Bearer ${token}`).send({ bundleId: "guest" });
     expect(resGrant.status).toBe(200);
 
     const resUser = await request(app).get("/api/my-bundles").set("Authorization", `Bearer ${token}`);

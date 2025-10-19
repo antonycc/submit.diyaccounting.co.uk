@@ -73,10 +73,7 @@ describe("VAT Flow Frontend JavaScript", () => {
     document.head.appendChild(submitScript);
 
     // Load and execute loading-spinner.js
-    const loadingSpinnerJsContent = fs.readFileSync(
-      path.join(process.cwd(), "web/public/widgets/loading-spinner.js"),
-      "utf-8",
-    );
+    const loadingSpinnerJsContent = fs.readFileSync(path.join(process.cwd(), "web/public/widgets/loading-spinner.js"), "utf-8");
     const loadingSpinnerScript = document.createElement("script");
     loadingSpinnerScript.textContent = loadingSpinnerJsContent;
     document.head.appendChild(loadingSpinnerScript);
@@ -191,9 +188,7 @@ describe("VAT Flow Frontend JavaScript", () => {
       expect(statusMessages.length).toBe(2);
 
       // Verify the correct message was removed (second one)
-      const messageContents = Array.from(statusMessages).map(
-        (msg) => msg.querySelector(".status-message-content").textContent,
-      );
+      const messageContents = Array.from(statusMessages).map((msg) => msg.querySelector(".status-message-content").textContent);
       expect(messageContents).toEqual(["Message 1", "Message 3"]);
     });
 
