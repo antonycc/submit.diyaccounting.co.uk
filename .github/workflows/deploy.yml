@@ -2148,7 +2148,7 @@ jobs:
   # Run workflow: .github/workflows/destroy.yml to destroy previous deployment if any and if it doesn't match the holding page (`-holding`)
   destroy-previous:
     if: ${{ needs.set-origins.outputs.existing-deployment-name != '' && !contains(needs.set-origins.outputs.existing-deployment-name, '-holding') }}
-    name: 'web test'
+    name: 'destroy-previous'
     needs:
       - names
       - skip-deploy-check
