@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       deployment-name:
-        description: 'The name of the deployment to destroy (omit for branch-based deployments, "ci" for CI environment, "prod" for production)'
+        description: 'The name of the deployment to destroy (omit for branch-based deployment name or, "ci-lambdas4" for CI environment, "prod-44f0305" for production)'
         required: false
         default: ''
 

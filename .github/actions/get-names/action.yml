@@ -47,18 +47,14 @@ runs:
 
         if [ "${GITHUB_REF:-}" = "refs/heads/${GET_NAMES_PROD_BRANCH_NAME?}" ] || [ "${REF_NAME?}" = "${GET_NAMES_PROD_BRANCH_NAME?}" ]; then
           ENVIRONMENT_NAME="prod"
-          DEPLOYMENT_NAME="prod"
+          DEPLOYMENT_NAME="prod-${GET_NAMES_GITHUB_SHA::7}"
         else
           ENVIRONMENT_NAME="ci"
-          # Truncate to 8 chars for branch-based deployments to match prior logic (ci-xxxxxxxx)
-          DEPLOYMENT_NAME="ci-${CLEANED:0:8}"
+          # Truncate to 9 chars for branch-based deployments to match prior logic (ci-xxxxxxxx)
+          DEPLOYMENT_NAME="ci-${CLEANED:0:9}"
         fi
 
-        if [ "$DEPLOYMENT_NAME" = "prod" ]; then
-          DIY_SUBMIT_BASE_DOMAIN="prod-${GET_NAMES_GITHUB_SHA::7}.submit.diyaccounting.co.uk"
-        else
-          DIY_SUBMIT_BASE_DOMAIN="${DEPLOYMENT_NAME?}.submit.diyaccounting.co.uk"
-        fi
+        DIY_SUBMIT_BASE_DOMAIN="${DEPLOYMENT_NAME?}.submit.diyaccounting.co.uk"
         DIY_SUBMIT_BASE_URL="https://${DIY_SUBMIT_BASE_DOMAIN?}/"
 
         if [ "$DEPLOYMENT_NAME" = "prod" ]; then
