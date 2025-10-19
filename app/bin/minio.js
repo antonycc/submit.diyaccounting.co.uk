@@ -9,7 +9,6 @@ import { CreateBucketCommand, HeadBucketCommand, S3Client } from "@aws-sdk/clien
 import { GenericContainer } from "testcontainers";
 
 dotenvConfigIfNotBlank({ path: ".env" });
-dotenvConfigIfNotBlank({ path: ".env.test" });
 
 import logger from "../lib/logger.js";
 

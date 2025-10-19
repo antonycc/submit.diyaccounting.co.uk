@@ -50,7 +50,7 @@ export async function submitFormVat(page) {
   });
 }
 
-export async function completeVat(page, baseUrl, checkServersAreRunning) {
+export async function completeVat(page, baseUrl, checkServersAreRunning = undefined) {
   await test.step(
     "The user waits for the VAT submission to complete and for the receipt to appear",
     async () => {
@@ -96,7 +96,9 @@ export async function completeVat(page, baseUrl, checkServersAreRunning) {
         path: `target/behaviour-test-results/submitVat-screenshots/160-waiting-for-receipt-${timestamp()}.png`,
       });
 
-      await checkServersAreRunning();
+      if (checkServersAreRunning) {
+        await checkServersAreRunning();
+      }
 
       // If elements don't exist, try to navigate back to the correct page
       if (receiptExists === 0 && formExists === 0) {

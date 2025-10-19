@@ -31,7 +31,11 @@ import {
 import { checkIfServerIsRunning } from "./helpers/serverHelper.js";
 import { ensureMinioBucketExists } from "@app/bin/minio.js";
 
-dotenvConfigIfNotBlank({ path: ".env.test" });
+if (!process.env.DIY_SUBMIT_ENV_FILEPATH) {
+  dotenvConfigIfNotBlank({ path: ".env.test" });
+} else {
+  console.log(`Already loaded environment from custom path: ${process.env.DIY_SUBMIT_ENV_FILEPATH}`);
+}
 dotenvConfigIfNotBlank({ path: ".env" }); // Not checked in, HMRC API credentials
 
 const originalEnv = { ...process.env };
@@ -83,12 +87,12 @@ test.afterAll(async () => {
   // }
 });
 
-test.use({
-  video: {
-    mode: "on",
-    size: { width: 1280, height: 720 },
-  },
-});
+// test.use({
+//   video: {
+//     mode: "on",
+//     size: { width: 1280, height: 720 },
+//   },
+// });
 
 test("Log in, add test bundle, submit VAT return, log out", async ({ page }) => {
   // Run servers needed for the test
@@ -146,7 +150,8 @@ test("Log in, add test bundle, submit VAT return, log out", async ({ page }) => 
   await submitHmrcAuth(page);
   await grantPermissionHmrcAuth(page);
 
-  await completeVat(page, baseUrl, checkServersAreRunning);
+  await completeVat(page, baseUrl);
+  // await completeVat(page, baseUrl, checkServersAreRunning);
   await verifyVatSubmission(page);
 
   /* ********** */

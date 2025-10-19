@@ -41,6 +41,8 @@
     "test:behaviour":          "npx dotenv -e .env.proxy -- playwright test --project=behaviour-tests",
     "test:originBehaviour":    "npx dotenv -e .env.proxy -- playwright test --project=origin-behaviour-tests",
     "test:webBehaviour":       "npx dotenv -e .env.proxy -- playwright test --project=web-behaviour-tests",
+    "test:webBehaviour-ci":    "npx dotenv -e .env.ci    -- playwright test --project=web-behaviour-tests",
+    "test:webBehaviour-prod":  "npx dotenv -e .env.prod  -- playwright test --project=web-behaviour-tests",
     "test:submitVatBehaviour": "playwright test behaviour-tests/submitVat.behaviour.test.js",
     "test:submitVatBehaviourProxyRunning": "npx dotenv -e .env.proxyRunning -- playwright test behaviour-tests/submitVat.behaviour.test.js",
     "clean": "./scripts/clean-tests.sh",

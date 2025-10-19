@@ -19,7 +19,11 @@ import {
 import { clearBundles, goToBundlesPage, requestTestBundle } from "./steps/behaviour-bundle-steps.js";
 import { goToReceiptsPageUsingHamburgerMenu } from "./steps/behaviour-hmrc-receipts-steps.js";
 
-dotenvConfigIfNotBlank({ path: ".env.test" });
+if (!process.env.DIY_SUBMIT_ENV_FILEPATH) {
+  dotenvConfigIfNotBlank({ path: ".env.test" });
+} else {
+  console.log(`Already loaded environment from custom path: ${process.env.DIY_SUBMIT_ENV_FILEPATH}`);
+}
 dotenvConfigIfNotBlank({ path: ".env" }); // Not checked in, HMRC API credentials
 
 const originalEnv = { ...process.env };
@@ -52,12 +56,12 @@ test.beforeAll(async () => {
 
 test.afterAll(async () => {});
 
-test.use({
-  video: {
-    mode: "on",
-    size: { width: 1280, height: 720 },
-  },
-});
+// test.use({
+//   video: {
+//     mode: "on",
+//     size: { width: 1280, height: 720 },
+//   },
+// });
 
 test("Log in, add bundles and Log out", async ({ page }) => {
   // Run local servers as needed for the tests
