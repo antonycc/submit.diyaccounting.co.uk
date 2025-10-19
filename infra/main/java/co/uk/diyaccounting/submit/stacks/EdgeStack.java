@@ -1,7 +1,13 @@
 package co.uk.diyaccounting.submit.stacks;
 
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Aspects;
 import software.amazon.awscdk.Environment;
@@ -45,13 +51,6 @@ import software.amazon.awscdk.services.s3.BucketEncryption;
 import software.amazon.awscdk.services.s3.IBucket;
 import software.amazon.awscdk.services.wafv2.CfnWebACL;
 import software.constructs.Construct;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 public class EdgeStack extends Stack {
 
@@ -320,9 +319,9 @@ public class EdgeStack extends Stack {
                 .defaultBehavior(localBehaviorOptions) // props.webBehaviorOptions)
                 .additionalBehaviors(additionalBehaviors)
                 .domainNames(List.of(
-                    props.sharedNames().domainName
-                    // props.sharedNames().envDomainName
-                ))
+                        props.sharedNames().domainName
+                        // props.sharedNames().envDomainName
+                        ))
                 .certificate(cert)
                 .defaultRootObject("index.html")
                 .enableLogging(true)
@@ -357,7 +356,7 @@ public class EdgeStack extends Stack {
         this.aliasRecordV6 = new AaaaRecord(
                 this,
                 props.resourceNamePrefix() + "-AliasRecordV6",
-                    AaaaRecordProps.builder()
+                AaaaRecordProps.builder()
                         .recordName(recordName)
                         .zone(zone)
                         .target(RecordTarget.fromAlias(new CloudFrontTarget(this.distribution)))

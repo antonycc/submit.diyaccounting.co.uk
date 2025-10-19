@@ -463,6 +463,11 @@ jobs:
           output-credentials: true
           retry-max-attempts: 3
 
+      - name: CDK stacks in eu-west-2 and us-east-1
+        run: |
+          aws cloudformation describe-stacks --region eu-west-2 --query "Stacks[].StackName" --output text | tr '\t' '\n' | sort
+          aws cloudformation describe-stacks --region us-east-1 --query "Stacks[].StackName" --output text | tr '\t' '\n' | sort
+
   mvn-package:
     name: 'maven package'
     runs-on: ubuntu-latest
@@ -571,7 +576,7 @@ jobs:
 
   deploy-application-self-destruct:
     name: 'deploy application self-destruct'
-    if: ${{ inputs.skipDeploy != 'true' && github.ref == 'refs/heads/main' && needs.names.outputs.environment-name != 'prod' }}
+    if: ${{ inputs.skipDeploy != 'true' && github.ref != 'refs/heads/main' && needs.names.outputs.environment-name != 'prod' }}
     needs:
       - names
       - skip-deploy-check
@@ -1142,7 +1147,7 @@ jobs:
 
   deploy-delivery-self-destruct:
     name: 'deploy delivery self-destruct'
-    if: ${{ inputs.skipDeploy != 'true' && github.ref == 'refs/heads/main' && needs.names.outputs.environment-name != 'prod' }}
+    if: ${{ inputs.skipDeploy != 'true' && github.ref != 'refs/heads/main' && needs.names.outputs.environment-name != 'prod' }}
     needs:
       - names
       - skip-deploy-check

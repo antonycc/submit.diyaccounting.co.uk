@@ -2,9 +2,10 @@ package co.uk.diyaccounting.submit;
 
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildCognitoDomainName;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDashedDomainName;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDomainName;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildEcrRepositoryName;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildEnvironmentDomainName;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildFunctionName;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildVersionedDomainName;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.convertDotSeparatedToDashSeparated;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateCompressedResourceNamePrefix;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateResourceNamePrefix;
@@ -125,14 +126,14 @@ public class SubmitSharedNames {
 
     public SubmitSharedNames(SubmitSharedNamesProps props) {
         this();
-        this.domainName = buildDomainName(props.deploymentName, props.subDomainName, props.hostedZoneName);
-        this.cognitoDomainName = buildCognitoDomainName(
-                props.envName, props.cognitoDomainPrefix, props.subDomainName, props.hostedZoneName);
-        this.holdingDomainName = buildDomainName("%s-holding".formatted(props.envName), props.subDomainName, props.hostedZoneName);
+        this.domainName = buildVersionedDomainName(props.deploymentName, props.subDomainName, props.hostedZoneName);
+        this.cognitoDomainName = buildCognitoDomainName(props.envName, props.cognitoDomainPrefix, props.subDomainName, props.hostedZoneName);
+        this.holdingDomainName = buildVersionedDomainName(
+                "%s-holding".formatted(props.envName), props.subDomainName, props.hostedZoneName);
         this.baseUrl = "https://%s/".formatted(this.domainName);
         this.dashedDomainName = buildDashedDomainName(this.domainName);
 
-        this.envDomainName = buildDomainName(props.envName, props.subDomainName, props.hostedZoneName);
+        this.envDomainName = buildEnvironmentDomainName(props.envName, props.subDomainName, props.hostedZoneName);
         this.envBaseUrl = "https://%s/".formatted(this.envDomainName);
         this.envDashedDomainName = buildDashedDomainName(this.envDomainName);
         this.envResourceNamePrefix = "env-%s".formatted(generateResourceNamePrefix(this.envDomainName));
