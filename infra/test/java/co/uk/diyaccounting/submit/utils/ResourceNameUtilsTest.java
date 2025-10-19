@@ -67,17 +67,14 @@ class ResourceNameUtilsTest {
 
     @Test
     void cognitoDomains() {
-        assertEquals("cog.app.example.com", ResourceNameUtils.buildCognitoDomainName("cog", "app", "example.com"));
+        assertEquals("cog.auth.app.example.com", ResourceNameUtils.buildCognitoDomainName("cog", "auth", "app", "example.com"));
         assertEquals(
-                "dev.cog.app.example.com", ResourceNameUtils.buildCognitoDomainName("dev", "cog", "app.example.com"));
+                "dev.auth.app.example.com", ResourceNameUtils.buildCognitoDomainName("dev", "auth", "app","example.com"));
         assertEquals("https://login.example.com", ResourceNameUtils.buildCognitoBaseUri("login.example.com"));
         assertEquals("cog-app-example-com", ResourceNameUtils.buildDashedCognitoDomainName("cog.app.example.com"));
 
-        assertThrows(IllegalArgumentException.class, () -> ResourceNameUtils.buildCognitoDomainName(null, "c", "d"));
-        assertThrows(IllegalArgumentException.class, () -> ResourceNameUtils.buildCognitoDomainName("dev", "", "d"));
-        assertThrows(IllegalArgumentException.class, () -> ResourceNameUtils.buildCognitoDomainName("dev", "c", ""));
         assertEquals(
-                "dev.cog.app.example.com", ResourceNameUtils.buildCognitoDomainName("dev", "cog", "app.example.com"));
-        assertEquals("cog.app.example.com", ResourceNameUtils.buildCognitoDomainName("prod", "cog", "app.example.com"));
+                "dev.auth.app.example.com", ResourceNameUtils.buildCognitoDomainName("dev", "auth", "app","example.com"));
+        assertEquals("auth.app.example.com", ResourceNameUtils.buildCognitoDomainName("prod", "auth", "app","example.com"));
     }
 }

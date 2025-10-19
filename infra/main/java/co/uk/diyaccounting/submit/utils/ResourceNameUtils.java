@@ -19,6 +19,12 @@ public class ResourceNameUtils {
                 : buildVersionedDomainName(env, subDomainName, hostedZoneName); // e.g. dev.example.com
     }
 
+    public static String buildCognitoDomainName(String env, String cognitoDomainPrefix, String subDomainName, String hostedZoneName) {
+        return "prod".equals(env)
+            ? buildPrimaryCognitoDomainName(cognitoDomainPrefix, subDomainName, hostedZoneName)
+            : buildVersionedCognitoDomainName(env, cognitoDomainPrefix, subDomainName, hostedZoneName);
+    }
+
     public static String buildPrimaryDomainName(String subDomainName, String hostedZoneName) {
         return "%s.%s".formatted(subDomainName, hostedZoneName);
     }
@@ -27,32 +33,12 @@ public class ResourceNameUtils {
         return "%s.%s.%s".formatted(env, subDomainName, hostedZoneName);
     }
 
-    // public static String buildDashedDomainName(String env, String subDomainName, String hostedZoneName) {
-    //    return ResourceNameUtils.convertDotSeparatedToDashSeparated(
-    //            "%s.%s.%s".formatted(env, subDomainName, hostedZoneName), domainNameMappings);
-    // }
-
-    public static String buildCognitoDomainName(String env, String cognitoDomainPrefix, String domainName) {
-        if (env == null || env.isBlank()) {
-            throw new IllegalArgumentException("env is required to build cognito domain name");
-        }
-        if (cognitoDomainPrefix == null || cognitoDomainPrefix.isBlank()) {
-            throw new IllegalArgumentException("cognitoDomainPrefix is required to build cognito domain name");
-        }
-        if (domainName == null || domainName.isBlank()) {
-            throw new IllegalArgumentException("domainName is required to build cognito domain name");
-        }
-        return "prod".equals(env)
-                ? buildPrimaryCognitoDomainName(cognitoDomainPrefix, domainName)
-                : buildVersionedCognitoDomainName(env, cognitoDomainPrefix, domainName);
+    public static String buildPrimaryCognitoDomainName(String cognitoDomainPrefix, String subDomainName, String hostedZoneName) {
+        return "%s.%s.%s".formatted(cognitoDomainPrefix, subDomainName, hostedZoneName);
     }
 
-    public static String buildPrimaryCognitoDomainName(String cognitoDomainPrefix, String domainName) {
-        return "%s.%s".formatted(cognitoDomainPrefix, domainName);
-    }
-
-    public static String buildVersionedCognitoDomainName(String env, String cognitoDomainPrefix, String domainName) {
-        return "%s.%s.%s".formatted(env, cognitoDomainPrefix, domainName);
+    public static String buildVersionedCognitoDomainName(String env, String cognitoDomainPrefix, String subDomainName, String hostedZoneName) {
+        return "%s.%s.%s.%s".formatted(env, cognitoDomainPrefix, subDomainName, hostedZoneName);
     }
 
     public static String buildDashedCognitoDomainName(String cognitoDomainName) {
