@@ -13,24 +13,54 @@ public class ResourceNameUtils {
 
     public static final List<AbstractMap.SimpleEntry<Pattern, String>> domainNameMappings = List.of();
 
-    // Naming utility methods following WebStack patterns
-    public static String buildDomainName(String env, String subDomainName, String hostedZoneName) {
+    public static String buildEnvironmentDomainName(String env, String subDomainName, String hostedZoneName) {
         return env.equals("prod")
-                ? buildProdDomainName(subDomainName, hostedZoneName)
-                : buildNonProdDomainName(env, subDomainName, hostedZoneName);
+                ? buildPrimaryDomainName(subDomainName, hostedZoneName) // e.g. example.com
+                : buildVersionedDomainName(env, subDomainName, hostedZoneName); // e.g. dev.example.com
     }
 
-    public static String buildProdDomainName(String subDomainName, String hostedZoneName) {
+    public static String buildPrimaryDomainName(String subDomainName, String hostedZoneName) {
         return "%s.%s".formatted(subDomainName, hostedZoneName);
     }
 
-    public static String buildNonProdDomainName(String env, String subDomainName, String hostedZoneName) {
+    public static String buildVersionedDomainName(String env, String subDomainName, String hostedZoneName) {
         return "%s.%s.%s".formatted(env, subDomainName, hostedZoneName);
     }
 
-    public static String buildDashedDomainName(String env, String subDomainName, String hostedZoneName) {
-        return ResourceNameUtils.convertDotSeparatedToDashSeparated(
-                "%s.%s.%s".formatted(env, subDomainName, hostedZoneName), domainNameMappings);
+    // public static String buildDashedDomainName(String env, String subDomainName, String hostedZoneName) {
+    //    return ResourceNameUtils.convertDotSeparatedToDashSeparated(
+    //            "%s.%s.%s".formatted(env, subDomainName, hostedZoneName), domainNameMappings);
+    // }
+
+    public static String buildCognitoDomainName(String env, String cognitoDomainPrefix, String domainName) {
+        if (env == null || env.isBlank()) {
+            throw new IllegalArgumentException("env is required to build cognito domain name");
+        }
+        if (cognitoDomainPrefix == null || cognitoDomainPrefix.isBlank()) {
+            throw new IllegalArgumentException("cognitoDomainPrefix is required to build cognito domain name");
+        }
+        if (domainName == null || domainName.isBlank()) {
+            throw new IllegalArgumentException("domainName is required to build cognito domain name");
+        }
+        return "prod".equals(env)
+                ? buildPrimaryCognitoDomainName(cognitoDomainPrefix, domainName)
+                : buildVersionedCognitoDomainName(env, cognitoDomainPrefix, domainName);
+    }
+
+    public static String buildPrimaryCognitoDomainName(String cognitoDomainPrefix, String domainName) {
+        return "%s.%s".formatted(cognitoDomainPrefix, domainName);
+    }
+
+    public static String buildVersionedCognitoDomainName(String env, String cognitoDomainPrefix, String domainName) {
+        return "%s.%s.%s".formatted(env, cognitoDomainPrefix, domainName);
+    }
+
+    public static String buildDashedCognitoDomainName(String cognitoDomainName) {
+        return ResourceNameUtils.convertDotSeparatedToDashSeparated(cognitoDomainName, domainNameMappings);
+    }
+
+    public static String buildCognitoBaseUri(String cognitoDomain) {
+        return "https://%s".formatted(cognitoDomain);
     }
 
     public static String buildDashedDomainName(String domainName) {
@@ -228,57 +258,6 @@ public class ResourceNameUtils {
 
     public static String buildEcrPublishRoleName(String dashedDomainName) {
         return "%s-ecr-publish-role".formatted(dashedDomainName);
-    }
-
-    public static String buildCognitoDomainName(
-            String env, String cognitoDomainPrefix, String subDomainName, String hostedZoneName) {
-        if (env == null || env.isBlank()) {
-            throw new IllegalArgumentException("env is required to build cognito domain name");
-        }
-        if (subDomainName == null || subDomainName.isBlank()) {
-            throw new IllegalArgumentException("subDomainName is required to build cognito domain name");
-        }
-        if (hostedZoneName == null || hostedZoneName.isBlank()) {
-            throw new IllegalArgumentException("hostedZoneName is required to build cognito domain name");
-        }
-        return "prod".equals(env)
-                ? buildProdCognitoDomainName(cognitoDomainPrefix, subDomainName, hostedZoneName)
-                : buildNonProdCognitoDomainName(env, cognitoDomainPrefix, subDomainName, hostedZoneName);
-    }
-
-    public static String buildCognitoDomainName(String env, String cognitoDomainPrefix, String domainName) {
-        if (env == null || env.isBlank()) {
-            throw new IllegalArgumentException("env is required to build cognito domain name");
-        }
-        return "prod".equals(env)
-                ? buildProdCognitoDomainName(cognitoDomainPrefix, domainName)
-                : buildNonProdCognitoDomainName(env, cognitoDomainPrefix, domainName);
-    }
-
-    public static String buildProdCognitoDomainName(String cognitoDomainPrefix, String domainName) {
-        return "%s.%s".formatted(cognitoDomainPrefix, domainName);
-    }
-
-    public static String buildProdCognitoDomainName(
-            String cognitoDomainPrefix, String subDomainName, String hostedZoneName) {
-        return "%s.%s.%s".formatted(cognitoDomainPrefix, subDomainName, hostedZoneName);
-    }
-
-    public static String buildNonProdCognitoDomainName(String env, String cognitoDomainPrefix, String domainName) {
-        return "%s.%s.%s".formatted(env, cognitoDomainPrefix, domainName);
-    }
-
-    public static String buildNonProdCognitoDomainName(
-            String env, String cognitoDomainPrefix, String subDomainName, String hostedZoneName) {
-        return "%s.%s.%s.%s".formatted(env, cognitoDomainPrefix, subDomainName, hostedZoneName);
-    }
-
-    public static String buildDashedCognitoDomainName(String cognitoDomainName) {
-        return ResourceNameUtils.convertDotSeparatedToDashSeparated(cognitoDomainName, domainNameMappings);
-    }
-
-    public static String buildCognitoBaseUri(String cognitoDomain) {
-        return "https://%s".formatted(cognitoDomain);
     }
 
     public static String applyMappings(String input, List<AbstractMap.SimpleEntry<Pattern, String>> mappings) {

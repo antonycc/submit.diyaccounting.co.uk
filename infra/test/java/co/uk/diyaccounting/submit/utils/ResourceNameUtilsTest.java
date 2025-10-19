@@ -1,19 +1,25 @@
 package co.uk.diyaccounting.submit.utils;
 
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
-import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ResourceNameUtilsTest {
 
     @Test
     void buildDomainNames() {
-        assertEquals("app.example.com", ResourceNameUtils.buildProdDomainName("app", "example.com"));
-        assertEquals("dev.app.example.com", ResourceNameUtils.buildNonProdDomainName("dev", "app", "example.com"));
-        assertEquals("dev-app-example-com", ResourceNameUtils.buildDashedDomainName("dev", "app", "example.com"));
-        assertEquals("app.example.com", ResourceNameUtils.buildDomainName("prod", "app", "example.com"));
-        assertEquals("dev.app.example.com", ResourceNameUtils.buildDomainName("dev", "app", "example.com"));
+        assertEquals("app.example.com", ResourceNameUtils.buildPrimaryDomainName("app", "example.com"));
+        assertEquals("dev.app.example.com", ResourceNameUtils.buildVersionedDomainName("dev", "app", "example.com"));
+        assertEquals(
+                "dev-app-example-com",
+                ResourceNameUtils.buildDashedDomainName(
+                        ResourceNameUtils.buildVersionedDomainName("dev", "app", "example.com")));
+        assertEquals("app.example.com", ResourceNameUtils.buildEnvironmentDomainName("prod", "app", "example.com"));
+        assertEquals("dev.app.example.com", ResourceNameUtils.buildVersionedDomainName("dev", "app", "example.com"));
     }
 
     @Test
@@ -61,23 +67,17 @@ class ResourceNameUtilsTest {
 
     @Test
     void cognitoDomains() {
-        assertEquals("cog.app.example.com", ResourceNameUtils.buildProdCognitoDomainName("cog", "app", "example.com"));
+        assertEquals("cog.app.example.com", ResourceNameUtils.buildCognitoDomainName("cog", "app", "example.com"));
         assertEquals(
-                "dev.cog.app.example.com",
-                ResourceNameUtils.buildNonProdCognitoDomainName("dev", "cog", "app", "example.com"));
+                "dev.cog.app.example.com", ResourceNameUtils.buildCognitoDomainName("dev", "cog", "app.example.com"));
         assertEquals("https://login.example.com", ResourceNameUtils.buildCognitoBaseUri("login.example.com"));
         assertEquals("cog-app-example-com", ResourceNameUtils.buildDashedCognitoDomainName("cog.app.example.com"));
 
-        assertThrows(
-                IllegalArgumentException.class, () -> ResourceNameUtils.buildCognitoDomainName(null, "c", "s", "hz"));
-        assertThrows(
-                IllegalArgumentException.class, () -> ResourceNameUtils.buildCognitoDomainName("dev", "c", "", "hz"));
-        assertThrows(
-                IllegalArgumentException.class, () -> ResourceNameUtils.buildCognitoDomainName("dev", "c", "s", " "));
+        assertThrows(IllegalArgumentException.class, () -> ResourceNameUtils.buildCognitoDomainName(null, "c", "d"));
+        assertThrows(IllegalArgumentException.class, () -> ResourceNameUtils.buildCognitoDomainName("dev", "", "d"));
+        assertThrows(IllegalArgumentException.class, () -> ResourceNameUtils.buildCognitoDomainName("dev", "c", ""));
         assertEquals(
-                "dev.cog.app.example.com",
-                ResourceNameUtils.buildCognitoDomainName("dev", "cog", "app", "example.com"));
-        assertEquals(
-                "cog.app.example.com", ResourceNameUtils.buildCognitoDomainName("prod", "cog", "app", "example.com"));
+                "dev.cog.app.example.com", ResourceNameUtils.buildCognitoDomainName("dev", "cog", "app.example.com"));
+        assertEquals("cog.app.example.com", ResourceNameUtils.buildCognitoDomainName("prod", "cog", "app.example.com"));
     }
 }
