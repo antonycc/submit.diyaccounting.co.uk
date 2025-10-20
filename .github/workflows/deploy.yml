@@ -130,30 +130,8 @@ jobs:
       environment-name: ${{ needs.names.outputs.environment-name }}
       deployment-name: ${{ needs.names.outputs.deployment-name }}
 
-  npm-test:
-    name: 'npm test'
-    runs-on: ubuntu-24.04
-    needs:
-      - names
-    permissions:
-      contents: read
-      packages: read
-      id-token: write
-    steps:
-      - uses: actions/checkout@v5
-
-      - name: Setup Node
-        uses: actions/setup-node@v6
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - run: npm ci || npm install
-
-      - run: npm test
-
-  npm-unit-test:
-    name: 'npm unit test'
+  npm-unit-test-coverage:
+    name: 'npm unit test with coverage'
     runs-on: ubuntu-latest
     needs:
       - names
@@ -180,131 +158,6 @@ jobs:
           name: coverage-reports
           path: coverage/
           retention-days: 30
-
-  npm-integration-test:
-    name: 'npm integration test'
-    runs-on: ubuntu-latest
-    needs:
-      - names
-    permissions:
-      contents: read
-      id-token: write
-    steps:
-      - uses: actions/checkout@v5
-
-      - name: Setup Node
-        uses: actions/setup-node@v6
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - run: npm ci || npm install
-
-      - run: npm run test:integration
-
-  npm-system-test:
-    name: 'npm system test'
-    runs-on: ubuntu-latest
-    needs:
-      - names
-    permissions:
-      contents: read
-      id-token: write
-    steps:
-      - uses: actions/checkout@v5
-
-      - name: Setup Node
-        uses: actions/setup-node@v6
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - run: npm ci || npm install
-
-      - run: npm run test:system
-
-  npm-test-web-unit:
-    name: 'npm unit test with coverage'
-    runs-on: ubuntu-latest
-    needs:
-      - names
-    permissions:
-      contents: read
-      id-token: write
-    steps:
-      - uses: actions/checkout@v5
-
-      - name: Setup Node
-        uses: actions/setup-node@v6
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - run: npm ci || npm install
-
-      - run: npm run test:web-unit
-
-  npm-browser-test:
-    name: 'npm browser test'
-    runs-on: ubuntu-latest
-    needs:
-      - names
-    permissions:
-      contents: read
-      id-token: write
-    steps:
-      - uses: actions/checkout@v5
-
-      - name: Setup Node
-        uses: actions/setup-node@v6
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - run: npm ci
-
-      - run: npx playwright install chromium --with-deps
-
-      - run: npm run test:browser
-
-      - name: Upload test results
-        uses: actions/upload-artifact@v4
-        if: ${{ !cancelled() }}
-        with:
-          name: test-results-browser
-          path: target/browser-test-results/
-          retention-days: 30
-
-      - name: Upload test reports
-        uses: actions/upload-artifact@v4
-        if: ${{ !cancelled() }}
-        with:
-          name: test-reports-browser
-          path: target/test-reports/
-          retention-days: 30
-
-  mvn-test:
-    name: 'maven test'
-    runs-on: ubuntu-latest
-    needs:
-      - names
-    permissions:
-      contents: read
-      id-token: write
-    steps:
-      - uses: actions/checkout@v5
-
-      - uses: actions/setup-java@v5
-        with:
-          distribution: 'temurin'
-          java-version: ${{ env.JAVA_VERSION }}
-          cache: 'maven'
-
-      - name: package
-        id: package
-        shell: bash
-        run: |
-          ./mvnw clean package
 
   mvn-package:
     name: 'maven package'
@@ -350,111 +203,6 @@ jobs:
     outputs:
       self-destruct-handler-source: ${{ steps.package.outputs.SELF_DESTRUCT_HANDLER_SOURCE }}
       self-destruct-start-datetime: ${{ steps.self-destruct-start.outputs.SELF_DESTRUCT_START_DATETIME }}
-
-  skip-deploy-check:
-    name: 'skip deploy check'
-    #if: ${{ (inputs.skipDeploy != 'true') && (github.event_name != 'push' || !contains(github.event.head_commit.message, 'skip:')) }}
-    if: ${{ inputs.skipDeploy != 'true' }}
-    runs-on: ubuntu-24.04
-    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
-    steps:
-      - name: Check if skipDeploy is set
-        id: check
-        run: |
-          inputsSkipDeploy="${{ inputs.skipDeploy }}"
-          skipDeploy="${{ (inputs.skipDeploy != 'true') && (github.event_name != 'push' || !contains(github.event.head_commit.message, 'skip:')) }}"
-          echo "inputsSkipDeploy=$inputsSkipDeploy"
-          echo "inputsSkipDeploy=$inputsSkipDeploy" >> "$GITHUB_OUTPUT"
-          echo "skipDeploy=$skipDeploy"
-          echo "skipDeploy=$skipDeploy" >> "$GITHUB_OUTPUT"
-
-    outputs:
-      inputsSkipDeploy: ${{ steps.check.outputs.inputsSkipDeploy }}
-      skipDeploy: ${{ steps.check.outputs.skipDeploy }}
-
-  npm-test-cdk-ci:
-    name: 'npm test cdk-ci'
-    needs:
-      - names
-      - mvn-package
-    runs-on: ubuntu-24.04
-    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
-    permissions:
-      contents: read
-      id-token: write
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v5
-
-      - name: Setup Node
-        uses: actions/setup-node@v6
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Node dependencies
-        run: npm ci
-
-      - uses: actions/setup-java@v5
-        with:
-          distribution: 'temurin'
-          java-version: ${{ env.JAVA_VERSION }}
-          cache: 'maven'
-
-      - name: test cdk
-        id: test-cdk
-        shell: bash
-        run: npm run cdk-ci
-        env:
-          ENVIRONMENT_NAME: 'ci'
-          DEPLOYMENT_NAME: 'ci'
-          SELF_DESTRUCT_HANDLER_SOURCE: "../${{ needs.mvn-package.outputs.self-destruct-handler-source }}"
-          SELF_DESTRUCT_START_DATETIME: ${{ needs.mvn-package.outputs.self-destruct-start-datetime }}
-          # Set by deploy-environment.yml after the environment's AuthStack is deployed
-          COGNITO_USER_POOL_ARN: ${{ vars.COGNITO_USER_POOL_ARN }}
-          COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
-
-  npm-test-cdk-prod:
-    name: 'npm test cdk prod'
-    needs:
-      - names
-      - mvn-package
-    runs-on: ubuntu-24.04
-    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
-    permissions:
-      contents: read
-      id-token: write
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v5
-
-      - name: Setup Node
-        uses: actions/setup-node@v6
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Node dependencies
-        run: npm ci
-
-      - uses: actions/setup-java@v5
-        with:
-          distribution: 'temurin'
-          java-version: ${{ env.JAVA_VERSION }}
-          cache: 'maven'
-
-      - name: test cdk
-        id: test-cdk
-        shell: bash
-        run: npm run cdk
-        env:
-          ENVIRONMENT_NAME: 'prod'
-          DEPLOYMENT_NAME: 'prod'
-          SELF_DESTRUCT_HANDLER_SOURCE: "../${{ needs.mvn-package.outputs.self-destruct-handler-source }}"
-          SELF_DESTRUCT_START_DATETIME: ${{ needs.mvn-package.outputs.self-destruct-start-datetime }}
-          # Set by deploy-environment.yml after the environment's AuthStack is deployed
-          COGNITO_USER_POOL_ARN: ${{ vars.COGNITO_USER_POOL_ARN }}
-          COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
 
   behaviour-test:
     name: 'behaviour test (proxy)'
@@ -556,6 +304,27 @@ jobs:
         run: |
           aws cloudformation describe-stacks --region eu-west-2 --query "Stacks[].StackName" --output text | tr '\t' '\n' | sort
           aws cloudformation describe-stacks --region us-east-1 --query "Stacks[].StackName" --output text | tr '\t' '\n' | sort
+
+  skip-deploy-check:
+    name: 'skip deploy check'
+    #if: ${{ (inputs.skipDeploy != 'true') && (github.event_name != 'push' || !contains(github.event.head_commit.message, 'skip:')) }}
+    if: ${{ inputs.skipDeploy != 'true' }}
+    runs-on: ubuntu-24.04
+    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    steps:
+      - name: Check if skipDeploy is set
+        id: check
+        run: |
+          inputsSkipDeploy="${{ inputs.skipDeploy }}"
+          skipDeploy="${{ (inputs.skipDeploy != 'true') && (github.event_name != 'push' || !contains(github.event.head_commit.message, 'skip:')) }}"
+          echo "inputsSkipDeploy=$inputsSkipDeploy"
+          echo "inputsSkipDeploy=$inputsSkipDeploy" >> "$GITHUB_OUTPUT"
+          echo "skipDeploy=$skipDeploy"
+          echo "skipDeploy=$skipDeploy" >> "$GITHUB_OUTPUT"
+
+    outputs:
+      inputsSkipDeploy: ${{ steps.check.outputs.inputsSkipDeploy }}
+      skipDeploy: ${{ steps.check.outputs.skipDeploy }}
 
   docker-build:
     name: 'docker build'
@@ -2195,6 +1964,11 @@ jobs:
             --type String \
             --value "${{ needs.names.outputs.deployment-name }}" \
             --overwrite
+
+      - name: CDK stacks in eu-west-2 and us-east-1
+        run: |
+          aws cloudformation describe-stacks --region eu-west-2 --query "Stacks[].StackName" --output text | tr '\t' '\n' | sort
+          aws cloudformation describe-stacks --region us-east-1 --query "Stacks[].StackName" --output text | tr '\t' '\n' | sort
 
   # Run workflow: .github/workflows/destroy.yml to destroy previous prod deployments but not the holding page (`-holding`)
   destroy-previous:
