@@ -1842,16 +1842,6 @@ jobs:
             cp -vr artifacts/behaviour-test-reports gh-pages/artifacts/.
           fi
 
-          # Copy origin test artifacts
-          if [ -d "artifacts/origin-test-artifacts" ]; then
-            cp -vr artifacts/origin-test-artifacts gh-pages/artifacts/.
-          fi
-
-          # Copy origin test reports
-          if [ -d "artifacts/origin-test-reports" ]; then
-            cp -vr artifacts/origin-test-reports gh-pages/artifacts/.
-          fi
-
           # Copy web test artifacts
           if [ -d "artifacts/web-test-artifacts" ]; then
             cp -vr artifacts/web-test-artifacts gh-pages/artifacts/.
@@ -1860,16 +1850,6 @@ jobs:
           # Copy web test reports
           if [ -d "artifacts/web-test-reports" ]; then
             cp -vr artifacts/web-test-reports gh-pages/artifacts/.
-          fi
-
-          # Copy browser test artifacts
-          if [ -d "artifacts/test-results-browser" ]; then
-            cp -vr artifacts/test-results-browser gh-pages/artifacts/.
-          fi
-
-          # Copy browser test reports
-          if [ -d "artifacts/test-reports-browser" ]; then
-            cp -vr artifacts/test-reports-browser gh-pages/artifacts/.
           fi
 
           # Create index page for artifacts
@@ -1891,7 +1871,6 @@ jobs:
                   <ul>
                       <li><a href="artifacts/behaviour-test-reports/html-report/index.html">Behaviour Test Reports (proxy)</a></li>
                       <li><a href="artifacts/web-test-reports/html-report/index.html">Behaviour Test Reports (web)</a></li>
-                      <li><a href="artifacts/test-reports-browser/html-report/index.html">Browser Test Reports</a></li>
                   </ul>
               </div>
           </body>
