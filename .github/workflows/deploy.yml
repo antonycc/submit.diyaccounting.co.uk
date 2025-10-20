@@ -122,6 +122,10 @@ jobs:
     needs:
       - names
     uses: ./.github/workflows/test.yml
+    permissions:
+      contents: read
+      packages: read
+      id-token: write
     with:
       environment-name: ${{ needs.names.outputs.environment-name }}
       deployment-name: ${{ needs.names.outputs.deployment-name }}
