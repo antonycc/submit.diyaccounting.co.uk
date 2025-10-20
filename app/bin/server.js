@@ -10,7 +10,7 @@ import { httpPostMock, httpPostHmrc, httpPostCognito } from "../functions/token.
 import { httpPost as submitVatHttpPost } from "../functions/submitVat.js";
 import { httpPost as logReceiptHttpPost } from "../functions/logReceipt.js";
 import { httpPost as requestBundleHttpPost, httpDelete as removeBundleHttpDelete } from "../functions/bundle.js";
-import { handle as getCatalogHttpGet } from "../functions/catalogGet.js";
+import { handler as getCatalogHttpGet } from "../functions/catalogGet.js";
 import { httpGet as myBundlesHttpGet } from "../functions/myBundles.js";
 import { httpGet as myReceiptsHttpGet, httpGetByName as myReceiptHttpGetByName } from "../functions/myReceipts.js";
 import { httpGet as getVatObligationsHttpGet } from "../functions/getVatObligations.js";
@@ -49,7 +49,7 @@ app.use((req, res, next) => {
 
 app.use(express.static(path.join(__dirname, "../../web/public")));
 
-const authUrlPath = context.authUrlLambdaUrlPath || "/api/hmrc/auth-url";
+const authUrlPath = context.authUrlLambdaUrlPath || "/api/hmrc/authUrl-get";
 const mockAuthUrlPath = "/api/mock/auth-url";
 const cognitoAuthUrlPath = context.cognitoAuthUrlLambdaUrlPath || "/api/cognito/auth-url";
 const exchangeMockTokenPath = context.exchangeTokenLambdaUrlPath || "/api/exchange-token";

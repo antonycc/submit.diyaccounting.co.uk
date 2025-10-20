@@ -24,7 +24,7 @@ async function ensureLoaded() {
 }
 
 // GET /api/catalog-get
-export async function handle(event) {
+export async function handler(event) {
   const request = extractRequest(event);
   logger.info({ message: "getCatalog entry", route: "/api/catalog-get", request });
   try {

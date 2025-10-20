@@ -213,7 +213,7 @@ describe("VAT Flow Frontend JavaScript", () => {
 
       const result = await window.getAuthUrl("test-state");
 
-      expect(fetchMock).toHaveBeenCalledWith("/api/hmrc/auth-url?state=test-state");
+      expect(fetchMock).toHaveBeenCalledWith("/api/hmrc/authUrl-get?state=test-state");
       expect(result).toEqual(mockResponse);
     });
 
@@ -226,7 +226,7 @@ describe("VAT Flow Frontend JavaScript", () => {
       });
 
       await expect(window.getAuthUrl("test-state")).rejects.toThrow(
-        'Failed to get auth URL. Remote call failed: GET /api/hmrc/auth-url?state=test-state - Status: undefined Bad Request - Body: {"statusText":"Bad Request"}',
+        'Failed to get auth URL. Remote call failed: GET /api/hmrc/authUrl-get?state=test-state - Status: undefined Bad Request - Body: {"statusText":"Bad Request"}',
       );
     });
 

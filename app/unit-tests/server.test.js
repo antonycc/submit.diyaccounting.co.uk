@@ -48,7 +48,7 @@ describe("Server Unit Tests", () => {
     app.use(express.static(path.join(__dirname, "../../web/public")));
 
     // Wire the API routes (same as server.js) with error handling
-    app.get("/api/hmrc/auth-url", async (req, res) => {
+    app.get("/api/hmrc/authUrl-get", async (req, res) => {
       try {
         const event = { queryStringParameters: { state: req.query.state } };
         const { statusCode, body } = await authUrlHandler(event);
@@ -118,7 +118,7 @@ describe("Server Unit Tests", () => {
     });
   });
 
-  describe("GET /api/hmrc/auth-url", () => {
+  describe("GET /api/hmrc/authUrl-get", () => {
     test("should call httpGetHmrc with correct event format", async () => {
       const mockResponse = {
         statusCode: 200,
@@ -126,7 +126,7 @@ describe("Server Unit Tests", () => {
       };
       authUrlHandler.mockResolvedValue(mockResponse);
 
-      const response = await request(app).get("/api/hmrc/auth-url").query({ state: "test-state" }).expect(200);
+      const response = await request(app).get("/api/hmrc/authUrl-get").query({ state: "test-state" }).expect(200);
 
       expect(authUrlHandler).toHaveBeenCalledWith({
         queryStringParameters: { state: "test-state" },
@@ -141,7 +141,7 @@ describe("Server Unit Tests", () => {
       };
       authUrlHandler.mockResolvedValue(mockResponse);
 
-      const response = await request(app).get("/api/hmrc/auth-url").expect(400);
+      const response = await request(app).get("/api/hmrc/authUrl-get").expect(400);
 
       expect(response.body).toEqual({ error: "Missing state" });
     });
@@ -153,7 +153,7 @@ describe("Server Unit Tests", () => {
       };
       authUrlHandler.mockResolvedValue(mockResponse);
 
-      await request(app).get("/api/hmrc/auth-url").expect(400);
+      await request(app).get("/api/hmrc/authUrl-get").expect(400);
 
       expect(authUrlHandler).toHaveBeenCalledWith({
         queryStringParameters: { state: undefined },
@@ -275,7 +275,7 @@ describe("Server Unit Tests", () => {
     test("should handle handler exceptions gracefully", async () => {
       authUrlHandler.mockRejectedValue(new Error("Handler crashed"));
 
-      const response = await request(app).get("/api/hmrc/auth-url").query({ state: "test" });
+      const response = await request(app).get("/api/hmrc/authUrl-get").query({ state: "test" });
 
       // Express should catch the error and return 500
       expect(response.status).toBe(500);
@@ -287,7 +287,7 @@ describe("Server Unit Tests", () => {
         body: "invalid-json",
       });
 
-      const response = await request(app).get("/api/hmrc/auth-url").query({ state: "test" });
+      const response = await request(app).get("/api/hmrc/authUrl-get").query({ state: "test" });
 
       // Should return 500 due to JSON.parse error
       expect(response.status).toBe(500);
