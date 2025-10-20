@@ -63,9 +63,9 @@ on:
     - cron: '23 4 * * *'
 
 permissions:
-  id-token: write
   contents: read
-  pages: write
+  packages: read
+  id-token: write
 
 env:
   JAVA_VERSION: '21'
