@@ -85,7 +85,7 @@ env:
   BASE_IMAGE_TAG_PREFIX: 'submit-base'
   loadTestDuration: ${{ inputs.loadTestDuration || '30s' }}
   GITHUB_ACTOR: ${{ github.actor }}
-  SELF_DESTRUCT_DELAY_HOURS: ${{ inputs.selfDestructDelayHours || '1' }}
+  SELF_DESTRUCT_DELAY_HOURS: ${{ inputs.selfDestructDelayHours || '8' }}
   BASE_IMAGE_TAG: ${{ github.sha }}
   FORCE_ALL_STACK_DEPLOYMENT: ${{ inputs.forceAllStackDeployment || 'false' }}
   COMMIT_HASH: ${{ github.sha }}

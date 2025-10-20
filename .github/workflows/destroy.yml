@@ -21,6 +21,10 @@ on:
         description: 'Deployment name to use instead of computing from branch, e.g. ci-lambdas6 or prod-ea373de'
         required: false
         default: ''
+      sweep-for-stacks:
+        type: boolean
+        description: 'Whether to sweep for leftover stacks (true) or select by branch/environment/deployment name (false)'
+        required: false
   workflow_call:
     inputs:
       environment-name:
@@ -33,6 +37,11 @@ on:
         description: 'Deployment name to use instead of computing from branch, e.g. ci-lambdas6 or prod-ea373de'
         required: false
         default: ''
+      sweep-for-stacks:
+        type: boolean
+        description: 'Whether to sweep for leftover stacks (true) or select by branch/environment/deployment name (false)'
+        required: false
+        default: false
 
 permissions:
   id-token: write
@@ -47,14 +56,142 @@ env:
   AWS_ACCOUNT_ID: '887764105431'
   BASE_IMAGE_TAG_PREFIX: 'submit-base'
   GITHUB_ACTOR: ${{ github.actor }}
-  SELF_DESTRUCT_DELAY_HOURS: ${{ inputs.selfDestructDelayHours || '1' }}
+  SELF_DESTRUCT_DELAY_HOURS: '8'
   BASE_IMAGE_TAG: ${{ github.sha }}
-  FORCE_ALL_STACK_DEPLOYMENT: ${{ inputs.forceAllStackDeployment || 'false' }}
+  FORCE_ALL_STACK_DEPLOYMENT: 'false'
   COMMIT_HASH: ${{ github.sha }}
   BUILD_NUMBER: ${{ github.run_number }}
 
 jobs:
+
+  sweep-for-stacks:
+    if: ${{ inputs.sweep-for-stacks || github.event.inputs.sweep-for-stacks == true || github.event_name == 'schedule' }}
+    name: 'sweep for stacks'
+    runs-on: ubuntu-24.04
+    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    steps:
+
+      - name: Configure AWS role via GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: CDK stacks in eu-west-2 and us-east-1
+        run: |
+          aws cloudformation describe-stacks --region eu-west-2 --query "Stacks[].StackName" --output text | tr '\t' '\n' | sort
+          aws cloudformation describe-stacks --region us-east-1 --query "Stacks[].StackName" --output text | tr '\t' '\n' | sort
+
+      - name: Get last known good deployment names from SSM Parameter Store that match the ci- or prod- pattern
+        id: last-known-good-deployment-names
+        run: |
+          LAST_KNOWN_GOOD_DEPLOYMENT_NAME_CI="/submit/ci/last-known-good-deployment"
+          LAST_KNOWN_GOOD_DEPLOYMENT_NAME_PROD="/submit/prod/last-known-good-deployment"
+          echo "Getting SSM Parameter Store parameter $LAST_KNOWN_GOOD_DEPLOYMENT_NAME_CI and $LAST_KNOWN_GOOD_DEPLOYMENT_NAME_PROD"
+          aws ssm get-parameter \
+            --name "$LAST_KNOWN_GOOD_DEPLOYMENT_NAME_CI" \
+            --query "Parameter.Value" \
+            --output text \
+            > /tmp/last-known-good-deployment-ci.txt \
+            || echo "Parameter $LAST_KNOWN_GOOD_DEPLOYMENT_NAME_CI not found"
+          aws ssm get-parameter \
+            --name "$LAST_KNOWN_GOOD_DEPLOYMENT_NAME_PROD" \
+            --query "Parameter.Value" \
+            --output text \
+            > /tmp/last-known-good-deployment-prod.txt \
+            || echo "Parameter $LAST_KNOWN_GOOD_DEPLOYMENT_NAME_PROD not found"
+          LAST_KNOWN_GOOD_DEPLOYMENT_NAME_CI_VALUE=$(cat /tmp/last-known-good-deployment-ci.txt || echo "")
+          LAST_KNOWN_GOOD_DEPLOYMENT_NAME_PROD_VALUE=$(cat /tmp/last-known-good-deployment-prod.txt || echo "")
+          echo "last-known-good-deployment-name-ci=$LAST_KNOWN_GOOD_DEPLOYMENT_NAME_CI_VALUE" >> $GITHUB_OUTPUT
+          echo "last-known-good-deployment-name-prod=$LAST_KNOWN_GOOD_DEPLOYMENT_NAME_PROD_VALUE" >> $GITHUB_OUTPUT
+
+      - name: Get the record names of aliases in any cloudfront distributions that match the ci- or prod- pattern in the first part of the domain name
+        id: public-deployment-names
+        run: |
+          echo "Getting CloudFront distributions"
+          DISTRIBUTION_IDS=$(aws cloudfront list-distributions --query "DistributionList.Items[].Id" --output text)
+          PUBLIC_DEPLOYMENT_NAMES=""
+          for DISTRIBUTION_ID in $DISTRIBUTION_IDS; do
+            ALIASES=$(aws cloudfront get-distribution --id "$DISTRIBUTION_ID" --query "Distribution.DistributionConfig.Aliases.Items[]" --output text)
+            for ALIAS in $ALIASES; do
+              RECORD_NAME=$(echo "$ALIAS" | cut -d'.' -f1)
+              if [[ "$RECORD_NAME" =~ ^(ci|prod)-.* ]]; then
+                PUBLIC_DEPLOYMENT_NAMES="$PUBLIC_DEPLOYMENT_NAMES $RECORD_NAME"
+              fi
+            done
+          done
+          # Remove duplicates
+          PUBLIC_DEPLOYMENT_NAMES=$(echo $PUBLIC_DEPLOYMENT_NAMES | tr ' ' '\n' | sort -u | tr '\n' ' ')
+          echo "public-deployment-names=$PUBLIC_DEPLOYMENT_NAMES" >> $GITHUB_OUTPUT
+
+      - name: Select environment and deployment names of stacks to destroy matching .*-[ci|prod]-.* pattern but not the public deployment names or last known good deployment names
+        id: select-stack
+        run: |
+          LAST_KNOWN_GOOD_DEPLOYMENT_NAME_CI="${{ steps.last-known-good-deployment-names.outputs.last-known-good-deployment-name-ci }}"
+          LAST_KNOWN_GOOD_DEPLOYMENT_NAME_PROD="${{ steps.last-known-good-deployment-names.outputs.last-known-good-deployment-name-prod }}"
+          PUBLIC_DEPLOYMENT_NAMES="${{ steps.public-deployment-names.outputs.public-deployment-names }}"
+
+          echo "Last known good deployment names: CI='$LAST_KNOWN_GOOD_DEPLOYMENT_NAME_CI', PROD='$LAST_KNOWN_GOOD_DEPLOYMENT_NAME_PROD'"
+          echo "Public deployment names: $PUBLIC_DEPLOYMENT_NAMES"
+
+          STACK_DEPLOYMENT_NAMES_TO_KEEP=()
+
+          for DEPLOYMENT_NAME in $(echo "$PUBLIC_DEPLOYMENT_NAMES $LAST_KNOWN_GOOD_DEPLOYMENT_NAME_CI $LAST_KNOWN_GOOD_DEPLOYMENT_NAME_PROD" | tr ' ' '\n'); do
+            if [ -n "$DEPLOYMENT_NAME" ]; then
+              STACK_DEPLOYMENT_NAMES_TO_KEEP+=("$DEPLOYMENT_NAME")
+            fi
+          done
+
+          echo "Stacks to skip destruction: ${STACK_DEPLOYMENT_NAMES_TO_KEEP[*]}"
+
+          # List all stacks and filter out those matching STACK_DEPLOYMENT_NAMES_TO_KEEP
+          # e.g.
+          # SELECTED_ENVIRONMENT_NAME="ci"
+          # SELECTED_DEPLOYMENT_NAME="ci-oldstack123"
+          SELECTED_ENVIRONMENT_NAME=""
+          SELECTED_DEPLOYMENT_NAME=""
+          for DEPLOYMENT_NAME in $(aws cloudformation describe-stacks --region eu-west-2 --query "Stacks[].StackName" --output text | tr '\t' '\n' | grep -E '^(app|del)-((ci|prod)-[a-zA-Z0-9-]+)-'); do
+              # Extract deployment name from stack name
+              DEPLOYMENT_NAME_EXTRACTED=$(echo "$DEPLOYMENT_NAME" | sed -E 's/^(app|del)-((ci|prod)-[a-zA-Z0-9-]+)-.*/\2/')
+              if [[ ! " ${STACK_DEPLOYMENT_NAMES_TO_KEEP[@]} " =~ " ${DEPLOYMENT_NAME_EXTRACTED} " ]]; then
+                SELECTED_DEPLOYMENT_NAME="$DEPLOYMENT_NAME_EXTRACTED"
+                if [[ "$SELECTED_DEPLOYMENT_NAME" == ci-* ]]; then
+                    SELECTED_ENVIRONMENT_NAME="ci"
+                elif [[ "$SELECTED_DEPLOYMENT_NAME" == prod-* ]]; then
+                    SELECTED_ENVIRONMENT_NAME="prod"
+                fi
+                echo "Selected stack for destruction: Environment='$SELECTED_ENVIRONMENT_NAME', Deployment='$SELECTED_DEPLOYMENT_NAME'"
+                break
+              fi
+          done
+
+          echo "SELECTED_ENVIRONMENT_NAME=$SELECTED_ENVIRONMENT_NAME" >> $GITHUB_OUTPUT
+          echo "SELECTED_DEPLOYMENT_NAME=$SELECTED_DEPLOYMENT_NAME" >> $GITHUB_OUTPUT
+
+    outputs:
+      environment-name: ${{ steps.select-stack.outputs.SELECTED_ENVIRONMENT_NAME }}
+      deployment-name: ${{ steps.select-stack.outputs.SELECTED_DEPLOYMENT_NAME }}
+
   names:
+    if: ${{ !cancelled() && ( github.event.inputs.sweep-for-stacks != true || github.event_name != 'schedule' || needs.sweep-for-stacks.outputs.environment-name != '' ) }}
+    needs:
+      - sweep-for-stacks
     runs-on: ubuntu-24.04
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
     steps:
@@ -64,8 +201,8 @@ jobs:
         id: deployment-config
         uses: ./.github/actions/get-names
         with:
-          environment-name: ${{ inputs.environment-name }}
-          deployment-name: ${{ inputs.deployment-name }}
+          environment-name: ${{ needs.sweep-for-stacks.outputs.environment-name || inputs.environment-name || '' }}
+          deployment-name: ${{ needs.sweep-for-stacks.outputs.deployment-name || inputs.deployment-name || '' }}
     outputs:
       environment-name: ${{ steps.deployment-config.outputs.environment-name }}
       deployment-name: ${{ steps.deployment-config.outputs.deployment-name }}
@@ -77,8 +214,10 @@ jobs:
       holding-url: ${{ steps.deployment-config.outputs.holding-url }}
 
   destroy:
+    if: ${{ !cancelled() && ( github.event.inputs.sweep-for-stacks != true || github.event_name != 'schedule' || needs.sweep-for-stacks.outputs.environment-name != '' ) }}
     needs:
       - names
+      - sweep-for-stacks
     runs-on: ubuntu-latest
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
     steps:
