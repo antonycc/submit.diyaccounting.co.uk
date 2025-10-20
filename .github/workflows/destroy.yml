@@ -144,9 +144,11 @@ jobs:
               fi
             done
           done
-          echo "Collected public deployment names before deduplication: $PUBLIC_DEPLOYMENT_NAMES"
+
           # Remove duplicates
+          echo "Collected public deployment names before deduplication: $PUBLIC_DEPLOYMENT_NAMES"
           PUBLIC_DEPLOYMENT_NAMES=$(echo $PUBLIC_DEPLOYMENT_NAMES | tr ' ' '\n' | sort -u | tr '\n' ' ')
+
           echo "Public deployment names: $PUBLIC_DEPLOYMENT_NAMES"
           echo "public-deployment-names=$PUBLIC_DEPLOYMENT_NAMES" >> $GITHUB_OUTPUT
 
@@ -170,6 +172,7 @@ jobs:
           done
 
           # Remove duplicates from STACK_DEPLOYMENT_NAMES_TO_KEEP in a simple way
+          echo "Removing duplicates from stacks to keep from: ${STACK_DEPLOYMENT_NAMES_TO_KEEP[*]}"
           STACK_DEPLOYMENT_NAMES_TO_KEEP=($(echo "${STACK_DEPLOYMENT_NAMES_TO_KEEP[@]}" | tr ' ' '\n' | sort -u | tr '\n' ' '))
 
           echo "Stacks to skip destruction: ${STACK_DEPLOYMENT_NAMES_TO_KEEP[*]}"
@@ -206,10 +209,10 @@ jobs:
 
           if [ -z "$SELECTED_DEPLOYMENT_NAME" ]; then
             echo "No stacks found for destruction"
-            SWEEPER_HIT=false
+            SWEEPER_HIT="false"
           else
             echo "Stacks found for destruction ${SELECTED_ENVIRONMENT_NAME}/${SELECTED_DEPLOYMENT_NAME}"
-            SWEEPER_HIT=true
+            SWEEPER_HIT="true"
           fi
 
           echo "SWEEPER_HIT=$SWEEPER_HIT"
@@ -224,7 +227,7 @@ jobs:
       deployment-name: ${{ steps.select-stack.outputs.SELECTED_DEPLOYMENT_NAME }}
 
   names:
-    if: ${{ !cancelled() && ( needs.sweep-for-stacks.outputs.SWEEPER_HIT == 'true' || ( github.event.inputs.sweep-for-stacks != true && github.event_name != 'schedule' ) ) }}
+    if: ${{ !cancelled() && needs.sweep-for-stacks.outputs.SWEEPER_HIT != 'false' }}
     needs:
       - sweep-for-stacks
     runs-on: ubuntu-24.04
@@ -249,7 +252,7 @@ jobs:
       holding-url: ${{ steps.deployment-config.outputs.holding-url }}
 
   destroy:
-    if: ${{ !cancelled() && ( needs.sweep-for-stacks.outputs.SWEEPER_HIT == 'true' || ( github.event.inputs.sweep-for-stacks != true && github.event_name != 'schedule' ) ) }}
+    if: ${{ !cancelled() && needs.sweep-for-stacks.outputs.SWEEPER_HIT != 'false' }}
     needs:
       - names
       - sweep-for-stacks
