@@ -118,7 +118,7 @@ jobs:
       holding-url: ${{ steps.deployment-config.outputs.holding-url }}
 
   test:
-    name: 'test'
+    name: 'delegate to test workflow'
     needs:
       - names
     uses: ./.github/workflows/test.yml
