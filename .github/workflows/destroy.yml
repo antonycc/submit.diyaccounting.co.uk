@@ -223,8 +223,8 @@ jobs:
       environment-name: ${{ steps.select-stack.outputs.SELECTED_ENVIRONMENT_NAME }}
       deployment-name: ${{ steps.select-stack.outputs.SELECTED_DEPLOYMENT_NAME }}
 
-  names: # needs.sweep-for-stacks.outputs.deployment-name begins with ci- or prod- !!! this do this
-    if: ${{ !cancelled() && ( github.event.inputs.sweep-for-stacks != true || github.event_name != 'schedule' ||
+  names:
+    if: ${{ !cancelled() && ( needs.sweep-for-stacks.outputs.SWEEPER_HIT == 'true' || ( github.event.inputs.sweep-for-stacks != true && github.event_name != 'schedule' ) ) }}
     needs:
       - sweep-for-stacks
     runs-on: ubuntu-24.04
@@ -249,7 +249,7 @@ jobs:
       holding-url: ${{ steps.deployment-config.outputs.holding-url }}
 
   destroy:
-    if: ${{ !cancelled() && ( github.event.inputs.sweep-for-stacks != true || github.event_name != 'schedule' || needs.sweep-for-stacks.outputs.environment-name != '' ) }}
+    if: ${{ !cancelled() && ( needs.sweep-for-stacks.outputs.SWEEPER_HIT == 'true' || ( github.event.inputs.sweep-for-stacks != true && github.event_name != 'schedule' ) ) }}
     needs:
       - names
       - sweep-for-stacks
