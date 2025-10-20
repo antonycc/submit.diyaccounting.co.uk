@@ -98,7 +98,8 @@ jobs:
           aws cloudformation describe-stacks --region eu-west-2 --query "Stacks[].StackName" --output text | tr '\t' '\n' | sort
           aws cloudformation describe-stacks --region us-east-1 --query "Stacks[].StackName" --output text | tr '\t' '\n' | sort
 
-      - name: Get last known good deployment names from SSM Parameter Store that match the ci- or prod- pattern
+      # Get last known good deployment names from SSM Parameter Store that match the ci- or prod- pattern
+      - name: Get last known good deployment names
         id: last-known-good-deployment-names
         run: |
           LAST_KNOWN_GOOD_DEPLOYMENT_NAME_CI="/submit/ci/last-known-good-deployment"
@@ -121,7 +122,8 @@ jobs:
           echo "last-known-good-deployment-name-ci=$LAST_KNOWN_GOOD_DEPLOYMENT_NAME_CI_VALUE" >> $GITHUB_OUTPUT
           echo "last-known-good-deployment-name-prod=$LAST_KNOWN_GOOD_DEPLOYMENT_NAME_PROD_VALUE" >> $GITHUB_OUTPUT
 
-      - name: Get the record names of aliases in any cloudfront distributions that match the ci- or prod- pattern in the first part of the domain name
+      # Get the record names of aliases in any cloudfront distributions that match the ci- or prod- pattern in the first part of the domain name
+      - name: Get the public record names
         id: public-deployment-names
         run: |
           echo "Getting CloudFront distributions"
@@ -140,7 +142,9 @@ jobs:
           PUBLIC_DEPLOYMENT_NAMES=$(echo $PUBLIC_DEPLOYMENT_NAMES | tr ' ' '\n' | sort -u | tr '\n' ' ')
           echo "public-deployment-names=$PUBLIC_DEPLOYMENT_NAMES" >> $GITHUB_OUTPUT
 
-      - name: Select environment and deployment names of stacks to destroy matching .*-[ci|prod]-.* pattern but not the public deployment names or last known good deployment names
+
+      # Select environment and deployment names of stacks to destroy matching .*-[ci|prod]-.* pattern but not the public deployment names or last known good deployment names
+      - name: Select environment and deployment names
         id: select-stack
         run: |
           LAST_KNOWN_GOOD_DEPLOYMENT_NAME_CI="${{ steps.last-known-good-deployment-names.outputs.last-known-good-deployment-name-ci }}"
@@ -166,14 +170,23 @@ jobs:
           # SELECTED_DEPLOYMENT_NAME="ci-oldstack123"
           SELECTED_ENVIRONMENT_NAME=""
           SELECTED_DEPLOYMENT_NAME=""
-          for DEPLOYMENT_NAME in $(aws cloudformation describe-stacks --region eu-west-2 --query "Stacks[].StackName" --output text | tr '\t' '\n' | grep -E '^(app|del)-((ci|prod)-[a-zA-Z0-9-]+)-'); do
-              # Extract deployment name from stack name
+          for DEPLOYMENT_NAME in $(aws cloudformation describe-stacks \
+            --region eu-west-2 \
+            --query "Stacks[].StackName" \
+            --output text \
+            | tr '\t' '\n' \
+            | grep -E '^(app|del)-((ci|prod)-[a-zA-Z0-9-]+)-') \
+          ; do
+              echo "Extract deployment name from stack name: $DEPLOYMENT_NAME"
               DEPLOYMENT_NAME_EXTRACTED=$(echo "$DEPLOYMENT_NAME" | sed -E 's/^(app|del)-((ci|prod)-[a-zA-Z0-9-]+)-.*/\2/')
               if [[ ! " ${STACK_DEPLOYMENT_NAMES_TO_KEEP[@]} " =~ " ${DEPLOYMENT_NAME_EXTRACTED} " ]]; then
                 SELECTED_DEPLOYMENT_NAME="$DEPLOYMENT_NAME_EXTRACTED"
+                echo "Found stack for potential destruction: $DEPLOYMENT_NAME (deployment name: $SELECTED_DEPLOYMENT_NAME)"
                 if [[ "$SELECTED_DEPLOYMENT_NAME" == ci-* ]]; then
+                    echo "Matched ci stack for destruction"
                     SELECTED_ENVIRONMENT_NAME="ci"
                 elif [[ "$SELECTED_DEPLOYMENT_NAME" == prod-* ]]; then
+                    echo "Matched prod stack for destruction"
                     SELECTED_ENVIRONMENT_NAME="prod"
                 fi
                 echo "Selected stack for destruction: Environment='$SELECTED_ENVIRONMENT_NAME', Deployment='$SELECTED_DEPLOYMENT_NAME'"
@@ -181,6 +194,8 @@ jobs:
               fi
           done
 
+          echo "SELECTED_ENVIRONMENT_NAME=$SELECTED_ENVIRONMENT_NAME"
+          echo "SELECTED_DEPLOYMENT_NAME=$SELECTED_DEPLOYMENT_NAME"
           echo "SELECTED_ENVIRONMENT_NAME=$SELECTED_ENVIRONMENT_NAME" >> $GITHUB_OUTPUT
           echo "SELECTED_DEPLOYMENT_NAME=$SELECTED_DEPLOYMENT_NAME" >> $GITHUB_OUTPUT
 
