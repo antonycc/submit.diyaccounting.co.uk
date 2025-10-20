@@ -21,6 +21,8 @@ on:
     branches:
       - '**'
       - '!gh_pages'
+      - '!dependabot/**'
+      - '!copilot/**'
     paths:
       - '.env.ci'
       - '.env.prod'
