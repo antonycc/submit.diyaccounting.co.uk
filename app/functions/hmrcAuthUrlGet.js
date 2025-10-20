@@ -6,26 +6,21 @@ import { validateEnv } from "../lib/env.js";
 // GET /api/hmrc/authUrl-get?state={state}
 export async function handler(event) {
   validateEnv(["HMRC_BASE_URI", "HMRC_CLIENT_ID", "DIY_SUBMIT_BASE_URL"]);
+
   const clientId = process.env.HMRC_CLIENT_ID;
   const maybeSlash = process.env.DIY_SUBMIT_BASE_URL?.endsWith("/") ? "" : "/";
   const redirectUri = `${process.env.DIY_SUBMIT_BASE_URL}${maybeSlash}activities/submitVatCallback.html`;
   const hmrcBase = process.env.HMRC_BASE_URI;
-
   const state = event.queryStringParameters?.state;
-
   const scope = "write:vat read:vat";
-
   const authUrl =
     `${hmrcBase}/oauth/authorize?response_type=code` +
     `&client_id=${encodeURIComponent(clientId)}` +
     `&redirect_uri=${encodeURIComponent(redirectUri)}` +
     `&scope=${encodeURIComponent(scope)}` +
     `&state=${encodeURIComponent(state)}`;
-  return httpGet(event, authUrl);
-}
 
-export async function httpGet(event, authUrl) {
-  let request;
+  let request = "Not created";
   try {
     request = extractRequest(event);
 

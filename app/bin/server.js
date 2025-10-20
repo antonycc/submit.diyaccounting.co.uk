@@ -5,7 +5,7 @@ import path from "path";
 import express from "express";
 import { fileURLToPath } from "url";
 import { readFileSync } from "fs";
-import { httpGetCognito, httpGetHmrc, httpGetMock } from "../functions/authUrl.js";
+import { httpGetCognito, httpGetMock } from "../functions/authUrl.js";
 import { httpPostMock, httpPostHmrc, httpPostCognito } from "../functions/token.js";
 import { httpPost as submitVatHttpPost } from "../functions/submitVat.js";
 import { httpPost as logReceiptHttpPost } from "../functions/logReceipt.js";
@@ -21,6 +21,7 @@ import { httpGet as getVatPenaltiesHttpGet } from "../functions/getVatPenalties.
 import logger from "../lib/logger.js";
 import { requireActivity } from "../lib/entitlementsService.js";
 import { dotenvConfigIfNotBlank, validateEnv } from "../lib/env.js";
+import { handler } from "../functions/hmrcAuthUrlGet.js";
 
 dotenvConfigIfNotBlank({ path: ".env" });
 dotenvConfigIfNotBlank({ path: ".env.test" });
@@ -68,7 +69,7 @@ app.get(authUrlPath, async (req, res) => {
     headers: { host: req.get("host") || "localhost:3000" },
     queryStringParameters: req.query || {},
   };
-  const { statusCode, body } = await httpGetHmrc(event);
+  const { statusCode, body } = await handler(event);
   res["status"](statusCode).json(JSON.parse(body));
 });
 

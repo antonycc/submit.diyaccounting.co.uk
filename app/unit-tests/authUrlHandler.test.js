@@ -1,8 +1,8 @@
 // app/unit-tests/authUrlHandler.test.js
 
 import { describe, test, expect, beforeEach, afterEach } from "vitest";
-import { httpGetHmrc as authUrlHandler } from "@app/functions/authUrl.js";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
+import { handler as authUrlHandler } from "@app/functions/hmrcAuthUrlGet.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
