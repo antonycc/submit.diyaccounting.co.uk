@@ -205,7 +205,7 @@ describe("VAT Flow Frontend JavaScript", () => {
 
   describe("API Functions", () => {
     test("getAuthUrl should make correct API call", async () => {
-      const mockResponse = { authUrl: "https://test-auth-url.com" };
+      const mockResponse = { authUrl: "https://test.com/authUrl-get" };
       fetchMock.mockResolvedValueOnce({
         ok: true,
         json: () => Promise.resolve(mockResponse),

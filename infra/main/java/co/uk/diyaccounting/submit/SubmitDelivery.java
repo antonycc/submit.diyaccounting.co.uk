@@ -1,23 +1,24 @@
 package co.uk.diyaccounting.submit;
 
-import static co.uk.diyaccounting.submit.utils.Kind.envOr;
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.Kind.putIfNotNull;
-import static co.uk.diyaccounting.submit.utils.Kind.warnf;
-import static co.uk.diyaccounting.submit.utils.KindCdk.getContextValueString;
-
 import co.uk.diyaccounting.submit.stacks.EdgeStack;
 import co.uk.diyaccounting.submit.stacks.PublishStack;
 import co.uk.diyaccounting.submit.stacks.SelfDestructStack;
 import co.uk.diyaccounting.submit.utils.KindCdk;
+import software.amazon.awscdk.App;
+import software.amazon.awscdk.Environment;
+import software.constructs.Construct;
+
 import java.lang.reflect.Field;
 import java.nio.file.Paths;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
-import software.amazon.awscdk.App;
-import software.amazon.awscdk.Environment;
-import software.constructs.Construct;
+
+import static co.uk.diyaccounting.submit.utils.Kind.envOr;
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.Kind.putIfNotNull;
+import static co.uk.diyaccounting.submit.utils.Kind.warnf;
+import static co.uk.diyaccounting.submit.utils.KindCdk.getContextValueString;
 
 public class SubmitDelivery {
 
@@ -39,7 +40,7 @@ public class SubmitDelivery {
         public String cloudTrailEnabled;
         public String baseUrl;
         public String accessLogGroupRetentionPeriodDays;
-        public String authUrlMockLambdaFunctionUrl;
+        //public String authUrlMockLambdaFunctionUrl;
         public String authUrlCognitoLambdaFunctionUrl;
         public String exchangeCognitoTokenLambdaFunctionUrl;
         public String authUrlHmrcLambdaFunctionUrl;
@@ -142,10 +143,10 @@ public class SubmitDelivery {
         var docRootPath = envOr("DOC_ROOT_PATH", appProps.docRootPath, "(from docRootPath in cdk.json)");
 
         // Function URL environment variables for EdgeStack
-        var authUrlMockLambdaFunctionUrl = envOr(
-                "AUTH_URL_MOCK_LAMBDA_URL",
-                appProps.authUrlMockLambdaFunctionUrl,
-                "(from authUrlMockLambdaFunctionUrl in cdk.json)");
+//        var authUrlMockLambdaFunctionUrl = envOr(
+//                "AUTH_URL_MOCK_LAMBDA_URL",
+//                appProps.authUrlMockLambdaFunctionUrl,
+//                "(from authUrlMockLambdaFunctionUrl in cdk.json)");
         var authUrlCognitoLambdaFunctionUrl = envOr(
                 "AUTH_URL_COGNITO_LAMBDA_URL",
                 appProps.authUrlCognitoLambdaFunctionUrl,
@@ -187,7 +188,7 @@ public class SubmitDelivery {
 
         // Create Function URLs map for EdgeStack (cross-region compatible)
         Map<String, String> pathsToFns = new java.util.HashMap<>();
-        putIfNotNull(pathsToFns, "%s*".formatted(sharedNames.authUrlMockLambdaUrlPath), authUrlMockLambdaFunctionUrl);
+        //putIfNotNull(pathsToFns, "%s*".formatted(sharedNames.authUrlMockLambdaUrlPath), authUrlMockLambdaFunctionUrl);
         putIfNotNull(
                 pathsToFns, "%s*".formatted(sharedNames.authUrlCognitoLambdaUrlPath), authUrlCognitoLambdaFunctionUrl);
         putIfNotNull(

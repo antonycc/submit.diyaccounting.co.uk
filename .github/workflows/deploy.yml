@@ -721,18 +721,18 @@ jobs:
       - name: Resolve stack outputs
         id: auth-outputs
         run: |
-          AUTH_URL_MOCK_LAMBDA_URL=$(jq -r '.["app-${{ needs.names.outputs.deployment-name }}-AuthStack"].AuthUrlMockLambdaUrl' cdk-submit-application.out/cdk-outputs-auth.json)
+          #AUTH_URL_MOCK_LAMBDA_URL=$(jq -r '.["app-${{ needs.names.outputs.deployment-name }}-AuthStack"].AuthUrlMockLambdaUrl' cdk-submit-application.out/cdk-outputs-auth.json)
           AUTH_URL_COGNITO_LAMBDA_URL=$(jq -r '.["app-${{ needs.names.outputs.deployment-name }}-AuthStack"].AuthUrlCognitoLambdaUrl' cdk-submit-application.out/cdk-outputs-auth.json)
           COGNITO_EXCHANGE_TOKEN_LAMBDA_URL=$(jq -r '.["app-${{ needs.names.outputs.deployment-name }}-AuthStack"].ExchangeCognitoTokenLambdaUrl' cdk-submit-application.out/cdk-outputs-auth.json)
-          echo "AUTH_URL_MOCK_LAMBDA_URL=$AUTH_URL_MOCK_LAMBDA_URL"
+          #echo "AUTH_URL_MOCK_LAMBDA_URL=$AUTH_URL_MOCK_LAMBDA_URL"
           echo "AUTH_URL_COGNITO_LAMBDA_URL=$AUTH_URL_COGNITO_LAMBDA_URL"
           echo "COGNITO_EXCHANGE_TOKEN_LAMBDA_URL=$COGNITO_EXCHANGE_TOKEN_LAMBDA_URL"
-          echo "AUTH_URL_MOCK_LAMBDA_URL=$AUTH_URL_MOCK_LAMBDA_URL" >> $GITHUB_OUTPUT
+          #echo "AUTH_URL_MOCK_LAMBDA_URL=$AUTH_URL_MOCK_LAMBDA_URL" >> $GITHUB_OUTPUT
           echo "AUTH_URL_COGNITO_LAMBDA_URL=$AUTH_URL_COGNITO_LAMBDA_URL" >> $GITHUB_OUTPUT
           echo "COGNITO_EXCHANGE_TOKEN_LAMBDA_URL=$COGNITO_EXCHANGE_TOKEN_LAMBDA_URL" >> $GITHUB_OUTPUT
         shell: bash
     outputs:
-      authUrlMockLambdaUrl: ${{ steps.auth-outputs.outputs.AUTH_URL_MOCK_LAMBDA_URL }}
+      #authUrlMockLambdaUrl: ${{ steps.auth-outputs.outputs.AUTH_URL_MOCK_LAMBDA_URL }}
       authUrlCognitoLambdaUrl: ${{ steps.auth-outputs.outputs.AUTH_URL_COGNITO_LAMBDA_URL }}
       exchangeCognitoTokenLambdaUrl: ${{ steps.auth-outputs.outputs.COGNITO_EXCHANGE_TOKEN_LAMBDA_URL }}
 
@@ -1018,7 +1018,7 @@ jobs:
           SELF_DESTRUCT_HANDLER_SOURCE: "../${{ needs.mvn-package.outputs.self-destruct-handler-source }}"
           SELF_DESTRUCT_START_DATETIME: ${{ needs.mvn-package.outputs.self-destruct-start-datetime }}
           WEBSITE_HASH: "placeholder"
-          AUTH_URL_MOCK_LAMBDA_URL: ${{ needs.deploy-auth.outputs.authUrlMockLambdaUrl }}
+          #AUTH_URL_MOCK_LAMBDA_URL: ${{ needs.deploy-auth.outputs.authUrlMockLambdaUrl }}
           AUTH_URL_COGNITO_LAMBDA_URL: ${{ needs.deploy-auth.outputs.authUrlCognitoLambdaUrl }}
           COGNITO_EXCHANGE_TOKEN_LAMBDA_URL: ${{ needs.deploy-auth.outputs.exchangeCognitoTokenLambdaUrl }}
           AUTH_URL_HMRC_LAMBDA_URL: ${{ needs.deploy-hmrc.outputs.authUrlHmrcLambdaUrl }}
@@ -1127,7 +1127,7 @@ jobs:
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
           SELF_DESTRUCT_HANDLER_SOURCE: "../infra/test/resources/fake-self-destruct-lambda.jar"
           WEBSITE_HASH: "placeholder"
-          AUTH_URL_MOCK_LAMBDA_URL: ${{ needs.deploy-auth.outputs.authUrlMockLambdaUrl }}
+          #AUTH_URL_MOCK_LAMBDA_URL: ${{ needs.deploy-auth.outputs.authUrlMockLambdaUrl }}
           AUTH_URL_COGNITO_LAMBDA_URL: ${{ needs.deploy-auth.outputs.authUrlCognitoLambdaUrl }}
           COGNITO_EXCHANGE_TOKEN_LAMBDA_URL: ${{ needs.deploy-auth.outputs.exchangeCognitoTokenLambdaUrl }}
           AUTH_URL_HMRC_LAMBDA_URL: ${{ needs.deploy-hmrc.outputs.authUrlHmrcLambdaUrl }}
@@ -1238,7 +1238,7 @@ jobs:
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
           SELF_DESTRUCT_HANDLER_SOURCE: "../infra/test/resources/fake-self-destruct-lambda.jar"
           WEBSITE_HASH: ${{ steps.publish-hash.outputs.WEBSITE_HASH }}
-          AUTH_URL_MOCK_LAMBDA_URL: ${{ needs.deploy-auth.outputs.authUrlMockLambdaUrl }}
+          #AUTH_URL_MOCK_LAMBDA_URL: ${{ needs.deploy-auth.outputs.authUrlMockLambdaUrl }}
           AUTH_URL_COGNITO_LAMBDA_URL: ${{ needs.deploy-auth.outputs.authUrlCognitoLambdaUrl }}
           COGNITO_EXCHANGE_TOKEN_LAMBDA_URL: ${{ needs.deploy-auth.outputs.exchangeCognitoTokenLambdaUrl }}
           AUTH_URL_HMRC_LAMBDA_URL: ${{ needs.deploy-hmrc.outputs.authUrlHmrcLambdaUrl }}

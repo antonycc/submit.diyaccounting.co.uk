@@ -1,24 +1,24 @@
-// app/functions/hmrcAuthUrlGet.js
+// app/functions/mockAuthUrlGet.js
 
 import { extractRequest, httpBadRequestResponse, httpOkResponse, httpServerErrorResponse } from "../lib/responses.js";
 import { validateEnv } from "../lib/env.js";
 
-// GET /api/hmrc/authUrl-get?state={state}
+// GET /api/mock/authUrl-get?state={state}
 export async function handler(event) {
-  validateEnv(["HMRC_BASE_URI", "HMRC_CLIENT_ID", "DIY_SUBMIT_BASE_URL"]);
-
-  const clientId = process.env.HMRC_CLIENT_ID;
+  validateEnv(["DIY_SUBMIT_BASE_URL"]);
   const maybeSlash = process.env.DIY_SUBMIT_BASE_URL?.endsWith("/") ? "" : "/";
-  const redirectUri = `${process.env.DIY_SUBMIT_BASE_URL}${maybeSlash}activities/submitVatCallback.html`;
-  const hmrcBase = process.env.HMRC_BASE_URI;
+  const redirectUri = `${process.env.DIY_SUBMIT_BASE_URL}${maybeSlash}auth/loginWithMockCallback.html`;
   const state = event.queryStringParameters?.state;
-  const scope = "write:vat read:vat";
+  const mockBase = "http://localhost:8080";
+  const scope = "openid somescope";
   const authUrl =
-    `${hmrcBase}/oauth/authorize?response_type=code` +
-    `&client_id=${encodeURIComponent(clientId)}` +
+    `${mockBase}/oauth/authorize?` +
+    "response_type=code" +
+    "&client_id=debugger" +
     `&redirect_uri=${encodeURIComponent(redirectUri)}` +
     `&scope=${encodeURIComponent(scope)}` +
-    `&state=${encodeURIComponent(state)}`;
+    `&state=${encodeURIComponent(state)}` +
+    "&identity_provider=MockOAuth2Server";
 
   let request = "Not created";
   try {

@@ -49,10 +49,10 @@ public class SubmitSharedNames {
     public String ecrRepositoryArn;
     public String ecrRepositoryName;
 
-    public String authUrlMockLambdaHandler;
-    public String authUrlMockLambdaFunctionName;
-    public String authUrlMockLambdaArn;
-    public String authUrlMockLambdaUrlPath;
+    //public String authUrlMockLambdaHandler;
+    //public String authUrlMockLambdaFunctionName;
+    //public String authUrlMockLambdaArn;
+    //public String authUrlMockLambdaUrlPath;
 
     public String authUrlCognitoLambdaHandler;
     public String authUrlCognitoLambdaFunctionName;
@@ -169,18 +169,19 @@ public class SubmitSharedNames {
         var appLambdaArnPrefix = "arn:aws:lambda:%s:%s:function:%s-"
                 .formatted(props.regionName, props.awsAccount, this.appResourceNamePrefix);
 
-        this.authUrlMockLambdaHandler = "authUrl.httpGetMock";
-        this.authUrlMockLambdaFunctionName =
-                buildFunctionName(this.appResourceNamePrefix, this.authUrlMockLambdaHandler);
-        this.authUrlMockLambdaArn = "%s-auth-url-mock".formatted(appLambdaArnPrefix);
-        this.authUrlMockLambdaUrlPath = "/api/mock/auth-url";
+//        this.authUrlMockLambdaHandler = "authUrl.httpGetMock";
+//        this.authUrlMockLambdaFunctionName =
+//                buildFunctionName(this.appResourceNamePrefix, this.authUrlMockLambdaHandler);
+//        this.authUrlMockLambdaArn = "%s-auth-url-mock".formatted(appLambdaArnPrefix);
+//        this.authUrlMockLambdaUrlPath = "/api/mock/auth-url";
 
-        this.authUrlCognitoLambdaHandler = "authUrl.httpGetCognito";
+        this.authUrlCognitoLambdaHandler = "cognitoAuthUrlGet.handler";
         this.authUrlCognitoLambdaFunctionName =
                 buildFunctionName(this.appResourceNamePrefix, this.authUrlCognitoLambdaHandler);
-        this.authUrlCognitoLambdaArn = "%s-auth-url-cognito".formatted(appLambdaArnPrefix);
-        this.authUrlCognitoLambdaUrlPath = "/api/cognito/auth-url";
+        this.authUrlCognitoLambdaArn = "%s-cognito-auth-url-get".formatted(appLambdaArnPrefix);
+        this.authUrlCognitoLambdaUrlPath = "/api/cognito/authUrl-get";
 
+        // TODO: YOU ARE HERE: Next update the URLs for the token exchange and split into new files -> /api/cognito/token-post
         this.exchangeCognitoTokenLambdaHandler = "token.httpPostCognito";
         this.exchangeCognitoTokenLambdaFunctionName =
                 buildFunctionName(this.appResourceNamePrefix, this.exchangeCognitoTokenLambdaHandler);
@@ -193,6 +194,7 @@ public class SubmitSharedNames {
         this.authUrlHmrcLambdaArn = "%s-hmrc-auth-url-get".formatted(appLambdaArnPrefix);
         this.authUrlHmrcLambdaUrlPath = "/api/hmrc/authUrl-get";
 
+        // TODO: YOU ARE HERE: Next update the URLs for the token exchange and split into new files -> /api/hmrc/token-post
         this.exchangeHmrcTokenLambdaHandler = "token.httpPostHmrc";
         this.exchangeHmrcTokenLambdaFunctionName =
                 buildFunctionName(this.appResourceNamePrefix, this.exchangeHmrcTokenLambdaHandler);
@@ -231,7 +233,7 @@ public class SubmitSharedNames {
         this.myBundlesLambdaUrlPath = "/api/my-bundles";
 
         this.lambdaArns = new java.util.ArrayList<>();
-        this.lambdaArns.add(this.authUrlMockLambdaArn);
+        //this.lambdaArns.add(this.authUrlMockLambdaArn);
         this.lambdaArns.add(this.authUrlCognitoLambdaArn);
         this.lambdaArns.add(this.exchangeCognitoTokenLambdaArn);
         this.lambdaArns.add(this.authUrlHmrcLambdaArn);

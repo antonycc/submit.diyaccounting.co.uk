@@ -5,7 +5,6 @@ import path from "path";
 import express from "express";
 import { fileURLToPath } from "url";
 import { readFileSync } from "fs";
-import { httpGetCognito, httpGetMock } from "../functions/authUrl.js";
 import { httpPostMock, httpPostHmrc, httpPostCognito } from "../functions/token.js";
 import { httpPost as submitVatHttpPost } from "../functions/submitVat.js";
 import { httpPost as logReceiptHttpPost } from "../functions/logReceipt.js";
@@ -21,7 +20,9 @@ import { httpGet as getVatPenaltiesHttpGet } from "../functions/getVatPenalties.
 import logger from "../lib/logger.js";
 import { requireActivity } from "../lib/entitlementsService.js";
 import { dotenvConfigIfNotBlank, validateEnv } from "../lib/env.js";
-import { handler } from "../functions/hmrcAuthUrlGet.js";
+import { handler as mockAuthUrlGet } from "../functions/mockAuthUrlGet.js";
+import { handler as hmrcAuthUrlGet } from "../functions/hmrcAuthUrlGet.js";
+import { handler as cognitoAuthUrlGet } from "../functions/cognitoAuthUrlGet.js";
 
 dotenvConfigIfNotBlank({ path: ".env" });
 dotenvConfigIfNotBlank({ path: ".env.test" });
@@ -51,8 +52,8 @@ app.use((req, res, next) => {
 app.use(express.static(path.join(__dirname, "../../web/public")));
 
 const authUrlPath = context.authUrlLambdaUrlPath || "/api/hmrc/authUrl-get";
-const mockAuthUrlPath = "/api/mock/auth-url";
-const cognitoAuthUrlPath = context.cognitoAuthUrlLambdaUrlPath || "/api/cognito/auth-url";
+const mockAuthUrlPath = "/api/mock/authUrl-get";
+const cognitoAuthUrlPath = context.cognitoAuthUrlLambdaUrlPath || "/api/cognito/authUrl-get";
 const exchangeMockTokenPath = context.exchangeTokenLambdaUrlPath || "/api/exchange-token";
 const exchangeHmrcTokenPath = context.exchangeHmrcTokenLambdaUrlPath || "/api/hmrc/exchange-token";
 const exchangeCognitoTokenPath = context.exchangeCognitoTokenLambdaUrlPath || "/api/cognito/exchange-token";
@@ -69,7 +70,7 @@ app.get(authUrlPath, async (req, res) => {
     headers: { host: req.get("host") || "localhost:3000" },
     queryStringParameters: req.query || {},
   };
-  const { statusCode, body } = await handler(event);
+  const { statusCode, body } = await hmrcAuthUrlGet(event);
   res["status"](statusCode).json(JSON.parse(body));
 });
 
@@ -79,7 +80,7 @@ app.get(mockAuthUrlPath, async (req, res) => {
     headers: { host: req.get("host") || "localhost:3000" },
     queryStringParameters: req.query || {},
   };
-  const { statusCode, body } = await httpGetMock(event);
+  const { statusCode, body } = await mockAuthUrlGet(event);
   res["status"](statusCode).json(JSON.parse(body));
 });
 
@@ -89,7 +90,7 @@ app.get(cognitoAuthUrlPath, async (req, res) => {
     headers: { host: req.get("host") || "localhost:3000" },
     queryStringParameters: req.query || {},
   };
-  const { statusCode, body } = await httpGetCognito(event);
+  const { statusCode, body } = await cognitoAuthUrlGet(event);
   res.status(statusCode).json(JSON.parse(body));
 });
 
@@ -173,6 +174,7 @@ app.post(requestBundlePath, async (req, res) => {
   const { statusCode, body } = await requestBundleHttpPost(event);
   try {
     res.status(statusCode).json(body ? JSON.parse(body) : {});
+    // eslint-disable-next-line sonarjs/no-ignored-exceptions
   } catch (_e) {
     res.status(statusCode).send(body || "");
   }
@@ -197,6 +199,7 @@ app.delete(requestBundlePath, async (req, res) => {
   const { statusCode, body } = await removeBundleHttpDelete(event);
   try {
     res.status(statusCode).json(body ? JSON.parse(body) : {});
+    // eslint-disable-next-line sonarjs/no-ignored-exceptions
   } catch (_e) {
     res.status(statusCode).send(body || "");
   }

@@ -29,7 +29,7 @@ Only `submitVat.js` exists for submitting returns.  There are no endpoints or pa
 2. **viewVatReturn.html** – Accept query parameters `vrn` and `periodKey`.  Fetch `/api/vat/returns/{periodKey}` and render fields like `vatDueSales`, `totalVatDue`.  Provide a back link to obligations.
 3. **vatLiability.html**, **vatPayment.html**, **vatPenalties.html** – Each page should accept relevant parameters, call the corresponding API and display results.  Include notes when no data is returned.
 4. **Entitlements integration** – Only show VAT pages when the user has the correct bundle.  Use `isActivityAllowed` at page load and redirect unauthorized users to the bundles page.
-5. **Dynamic scopes** – Extend `authUrl.js` so that the HMRC OAuth URL can accept custom scopes (`write:vat`, `read:vat`), enabling read‑only operations for obligations and return viewing.
+5. **Dynamic scopes** – Extend `hmrcAuthUrlGet.js` so that the HMRC OAuth URL can accept custom scopes (`write:vat`, `read:vat`), enabling read‑only operations for obligations and return viewing.
 
 ### Libraries and tooling
 
