@@ -223,11 +223,12 @@ jobs:
           echo "SELECTED_DEPLOYMENT_NAME=$SELECTED_DEPLOYMENT_NAME" >> $GITHUB_OUTPUT
 
     outputs:
+      sweeper-hit: ${{ steps.select-stack.outputs.SWEEPER_HIT }}
       environment-name: ${{ steps.select-stack.outputs.SELECTED_ENVIRONMENT_NAME }}
       deployment-name: ${{ steps.select-stack.outputs.SELECTED_DEPLOYMENT_NAME }}
 
   names:
-    if: ${{ !cancelled() && needs.sweep-for-stacks.outputs.SWEEPER_HIT != 'false' }}
+    if: ${{ !cancelled() && needs.sweep-for-stacks.outputs.sweeper-hit != 'false' }}
     needs:
       - sweep-for-stacks
     runs-on: ubuntu-24.04
@@ -252,7 +253,7 @@ jobs:
       holding-url: ${{ steps.deployment-config.outputs.holding-url }}
 
   destroy:
-    if: ${{ !cancelled() && needs.sweep-for-stacks.outputs.SWEEPER_HIT != 'false' }}
+    if: ${{ !cancelled() && needs.sweep-for-stacks.outputs.sweeper-hit != 'false' }}
     needs:
       - names
       - sweep-for-stacks
