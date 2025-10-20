@@ -1315,7 +1315,6 @@ jobs:
     needs:
       - names
       - skip-deploy-check
-      - npm-test
       - deploy-edge
     runs-on: ubuntu-24.04
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
