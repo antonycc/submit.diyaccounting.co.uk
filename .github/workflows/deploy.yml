@@ -54,16 +54,13 @@ on:
       - 'app/functions/**'
       - 'app/lib/**'
       - 'infra/main/**'
-      - 'tests/**'
       - 'web/public/**'
       - '.env.ci'
       - '.env.prod'
-      - 'cdk-application/cdk.json'
-      - 'cdk-delivery/cdk.json'
+      - '**/cdk.json'
       - 'Dockerfile'
       - 'LICENSE'
       - 'package.json'
-      - 'package-lock.json'
       - 'pom.xml'
       - 'product-catalogue.toml'
       - '.github/actions/get-names'
@@ -119,6 +116,15 @@ jobs:
       apex-url: ${{ steps.deployment-config.outputs.apex-url }}
       holding-domain: ${{ steps.deployment-config.outputs.holding-domain }}
       holding-url: ${{ steps.deployment-config.outputs.holding-url }}
+
+  test:
+    name: 'test'
+    needs:
+      - names
+    uses: ./.github/workflows/test.yml
+    with:
+      environment-name: ${{ needs.names.outputs.environment-name }}
+      deployment-name: ${{ needs.names.outputs.deployment-name }}
 
   npm-test:
     name: 'npm test'

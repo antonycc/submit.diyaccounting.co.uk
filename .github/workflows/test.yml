@@ -21,9 +21,44 @@ on:
         description: 'Deployment name to use instead of computing from branch, e.g. ci-lambdas6 or prod-ea373de'
         required: false
         default: ''
+  workflow_call:
+    inputs:
+      environment-name:
+        type: string
+        description: 'Environment name to use instead of computing from branch, e.g. ci or prod'
+        required: true
+      deployment-name:
+        type: string
+        description: 'Deployment name to use instead of computing from branch, e.g. ci-lambdas6 or prod-ea373de'
+        required: true
+
   push:
     branches:
-      - 'dependabot/**'
+      - '**'
+      - '!gh_pages'
+    paths:
+      - 'app/**'
+      - 'infra/**'
+      - 'tests/**'
+      - 'web/**'
+      - '.env.ci'
+      - '.env.prod'
+      - '**/cdk.json'
+      - 'Dockerfile'
+      - 'LICENSE'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'pom.xml'
+      - 'product-catalogue.toml'
+      - '.github/actions/get-names'
+      - '.github/workflows/test.yml'
+      - '.prettierignore'
+      - '.prettierrc'
+      - 'eslint.config.js'
+      - 'jsconfig.json'
+      - 'mock-oauth2-config.json'
+      - 'playwright.config.js'
+      - 'vitest.config.js'
   schedule:
     - cron: '23 4 * * *'
 
@@ -118,14 +153,6 @@ jobs:
 
       - run: npm run test:coverage
 
-      - name: Upload coverage reports
-        uses: actions/upload-artifact@v4
-        if: ${{ !cancelled() }}
-        with:
-          name: coverage-reports
-          path: coverage/
-          retention-days: 30
-
   npm-integration-test:
     name: 'npm integration test'
     runs-on: ubuntu-latest
@@ -212,22 +239,6 @@ jobs:
 
       - run: npm run test:browser
 
-      - name: Upload test results
-        uses: actions/upload-artifact@v4
-        if: ${{ !cancelled() }}
-        with:
-          name: test-results-browser
-          path: target/browser-test-results/
-          retention-days: 30
-
-      - name: Upload test reports
-        uses: actions/upload-artifact@v4
-        if: ${{ !cancelled() }}
-        with:
-          name: test-reports-browser
-          path: target/test-reports/
-          retention-days: 30
-
   mvn-test:
     name: 'maven test'
     runs-on: ubuntu-latest
@@ -251,16 +262,27 @@ jobs:
         run: |
           ./mvnw clean package
 
-  mvn-package:
-    name: 'maven package'
-    runs-on: ubuntu-latest
+  npm-test-cdk-ci:
+    name: 'npm test cdk-ci'
     needs:
       - names
+    runs-on: ubuntu-24.04
+    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
     permissions:
       contents: read
       id-token: write
     steps:
-      - uses: actions/checkout@v5
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Node dependencies
+        run: npm ci
 
       - uses: actions/setup-java@v5
         with:
@@ -269,7 +291,7 @@ jobs:
           cache: 'maven'
 
       - name: package
-        id: package
+        id: mvn-package
         shell: bash
         run: |
           ./mvnw clean package -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }}
@@ -285,46 +307,6 @@ jobs:
           echo "SELF_DESTRUCT_START_DATETIME=$SELF_DESTRUCT_START_DATETIME"
           echo "SELF_DESTRUCT_START_DATETIME=$SELF_DESTRUCT_START_DATETIME" >> $GITHUB_OUTPUT
 
-      - name: Upload self-destruct handler JAR
-        uses: actions/upload-artifact@v4
-        with:
-          name: self-destruct-handler-${{ github.sha }}
-          path: target/self-destruct-lambda.jar
-          retention-days: 1
-
-    outputs:
-      self-destruct-handler-source: ${{ steps.package.outputs.SELF_DESTRUCT_HANDLER_SOURCE }}
-      self-destruct-start-datetime: ${{ steps.self-destruct-start.outputs.SELF_DESTRUCT_START_DATETIME }}
-
-  npm-test-cdk-ci:
-    name: 'npm test cdk-ci'
-    needs:
-      - names
-      - mvn-package
-    runs-on: ubuntu-24.04
-    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
-    permissions:
-      contents: read
-      id-token: write
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v5
-
-      - name: Setup Node
-        uses: actions/setup-node@v6
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Node dependencies
-        run: npm ci
-
-      - uses: actions/setup-java@v5
-        with:
-          distribution: 'temurin'
-          java-version: ${{ env.JAVA_VERSION }}
-          cache: 'maven'
-
       - name: test cdk
         id: test-cdk
         shell: bash
@@ -332,8 +314,8 @@ jobs:
         env:
           ENVIRONMENT_NAME: 'ci'
           DEPLOYMENT_NAME: 'ci'
-          SELF_DESTRUCT_HANDLER_SOURCE: "../${{ needs.mvn-package.outputs.self-destruct-handler-source }}"
-          SELF_DESTRUCT_START_DATETIME: ${{ needs.mvn-package.outputs.self-destruct-start-datetime }}
+          SELF_DESTRUCT_HANDLER_SOURCE: "../${{ steps.mvn-package.outputs.SELF_DESTRUCT_HANDLER_SOURCE }}"
+          SELF_DESTRUCT_START_DATETIME: ${{ steps.self-destruct-start.outputs.SELF_DESTRUCT_START_DATETIME }}
           # Set by deploy-environment.yml after the environment's AuthStack is deployed
           COGNITO_USER_POOL_ARN: ${{ vars.COGNITO_USER_POOL_ARN }}
           COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
@@ -342,7 +324,6 @@ jobs:
     name: 'npm test cdk prod'
     needs:
       - names
-      - mvn-package
     runs-on: ubuntu-24.04
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
     permissions:
@@ -367,6 +348,23 @@ jobs:
           java-version: ${{ env.JAVA_VERSION }}
           cache: 'maven'
 
+      - name: package
+        id: mvn-package
+        shell: bash
+        run: |
+          ./mvnw clean package -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }}
+          echo "SELF_DESTRUCT_HANDLER_SOURCE=target/self-destruct-lambda.jar"
+          echo "SELF_DESTRUCT_HANDLER_SOURCE=target/self-destruct-lambda.jar" >> $GITHUB_OUTPUT
+          ls -l target/self-destruct-lambda.jar
+
+      - name: Self Destruct Start Datetime (ISO 8601) now plus SELF_DESTRUCT_DELAY_HOURS
+        id: self-destruct-start
+        shell: bash
+        run: |
+          SELF_DESTRUCT_START_DATETIME=$(date -u -d "+${{ env.SELF_DESTRUCT_DELAY_HOURS }} hours" +"%Y-%m-%dT%H:%M:%SZ")
+          echo "SELF_DESTRUCT_START_DATETIME=$SELF_DESTRUCT_START_DATETIME"
+          echo "SELF_DESTRUCT_START_DATETIME=$SELF_DESTRUCT_START_DATETIME" >> $GITHUB_OUTPUT
+
       - name: test cdk
         id: test-cdk
         shell: bash
@@ -374,8 +372,8 @@ jobs:
         env:
           ENVIRONMENT_NAME: 'prod'
           DEPLOYMENT_NAME: 'prod'
-          SELF_DESTRUCT_HANDLER_SOURCE: "../${{ needs.mvn-package.outputs.self-destruct-handler-source }}"
-          SELF_DESTRUCT_START_DATETIME: ${{ needs.mvn-package.outputs.self-destruct-start-datetime }}
+          SELF_DESTRUCT_HANDLER_SOURCE: "../${{ steps.mvn-package.outputs.SELF_DESTRUCT_HANDLER_SOURCE }}"
+          SELF_DESTRUCT_START_DATETIME: ${{ steps.self-destruct-start.outputs.SELF_DESTRUCT_START_DATETIME }}
           # Set by deploy-environment.yml after the environment's AuthStack is deployed
           COGNITO_USER_POOL_ARN: ${{ vars.COGNITO_USER_POOL_ARN }}
           COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
