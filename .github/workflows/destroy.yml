@@ -204,6 +204,8 @@ jobs:
                 fi
                 echo "Selected stack for destruction: Environment='$SELECTED_ENVIRONMENT_NAME', Deployment='$SELECTED_DEPLOYMENT_NAME'"
                 break
+              else
+                echo "Skipping stack $DEPLOYMENT_NAME as it is in the keep list"
               fi
           done
 
