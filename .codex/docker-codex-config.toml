@@ -1,4 +1,0 @@
-# See: https://github.com/openai/codex/blob/main/codex-rs/config.md
-
-approval = "never"
-sandbox = "danger-full-access"

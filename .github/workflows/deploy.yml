@@ -1066,55 +1066,47 @@ jobs:
           output-credentials: true
           retry-max-attempts: 3
 
-#      - name: Check if EdgeStack exists
-#        id: static-skip
-#        shell: bash
-#        run: |
-#          STACK_NAME="del-${{ needs.names.outputs.deployment-name }}-EdgeStack"
-#          echo "Checking for existing COMPLETE stack: $STACK_NAME"
-#          COUNT=$(aws cloudformation list-stacks \
-#            --region "us-east-1" \
-#            --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE \
-#            --query "length(StackSummaries[?StackName=='${STACK_NAME}'])" \
-#            --output text)
-#          if [ "$COUNT" -ge 1 ]; then
-#            echo "skipStaticStackDeployment=true" >> "$GITHUB_OUTPUT"
-#          else
-#            echo "skipStaticStackDeployment=false" >> "$GITHUB_OUTPUT"
-#          fi
+      - name: Check if EdgeStack exists
+        id: static-skip
+        shell: bash
+        run: |
+          STACK_NAME="del-${{ needs.names.outputs.deployment-name }}-EdgeStack"
+          echo "Checking for existing COMPLETE stack: $STACK_NAME"
+          COUNT=$(aws cloudformation list-stacks \
+            --region "us-east-1" \
+            --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE \
+            --query "length(StackSummaries[?StackName=='${STACK_NAME}'])" \
+            --output text)
+          if [ "$COUNT" -ge 1 ]; then
+            echo "skipStaticStackDeployment=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skipStaticStackDeployment=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Checkout
-        #if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
+        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
         uses: actions/checkout@v5
 
       - name: Setup Node
-        #if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
+        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
         uses: actions/setup-node@v6
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
       - name: Node dependencies
-        #if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
+        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
         run: npm ci
 
       - uses: actions/setup-java@v5
-        #if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
+        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
         with:
           distribution: 'temurin'
           java-version: ${{ env.JAVA_VERSION }}
           cache: 'maven'
 
-      #- name: Alias apex domain to holding
-      #  # TODO: Change this to the latest known good origin and update the latest after passing the web test.
-      #  uses: ./.github/actions/set-origins
-      #  with:
-      #    origin-domain: ${{ needs.names.outputs.holding-domain }}
-      #    apex-domain: ${{ needs.names.outputs.apex-domain }}
-      #    hosted-zone-id: "Z0315522208PWZSSBI9AL"
-
       - name: Build CDK and synthesize and deploy the EdgeStack in the Delivery Application
-        #if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
+        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
         run: |
           ./mvnw --errors clean package -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
             && cd cdk-delivery \
@@ -1147,21 +1139,6 @@ jobs:
           REQUEST_BUNDLES_LAMBDA_URL: ${{ needs.deploy-account.outputs.requestBundlesLambdaUrl }}
           MY_BUNDLES_LAMBDA_URL: ${{ needs.deploy-account.outputs.myBundlesLambdaUrl }}
 
-      - name: Resolve stack outputs
-        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
-        id: edge-outputs
-        run: |
-          DIY_SUBMIT_BASE_URL=$(jq -r '.["del-${{ needs.names.outputs.deployment-name }}-EdgeStack"].BaseUrl' cdk-submit-delivery.out/cdk-outputs-edge.json)
-          DISTRIBUTION_ID=$(jq -r '.["del-${{ needs.names.outputs.deployment-name }}-EdgeStack"].DistributionId' cdk-submit-delivery.out/cdk-outputs-edge.json)
-          echo "DIY_SUBMIT_BASE_URL=$DIY_SUBMIT_BASE_URL"
-          echo "DIY_SUBMIT_BASE_URL=$DIY_SUBMIT_BASE_URL" >> $GITHUB_OUTPUT
-          echo "DISTRIBUTION_ID=$DISTRIBUTION_ID"
-          echo "DISTRIBUTION_ID=$DISTRIBUTION_ID" >> $GITHUB_OUTPUT
-        shell: bash
-    outputs:
-      base-url: ${{ steps.edge-outputs.outputs.DIY_SUBMIT_BASE_URL }}
-      cloudfront-distribution-id: ${{ steps.edge-outputs.outputs.DISTRIBUTION_ID }}
-
   deploy-publish:
     name: 'deploy publish'
     needs:
@@ -1186,7 +1163,7 @@ jobs:
         id: publish-compare
         shell: bash
         run: |
-          EDGE_HASH_URL="${{ needs.deploy-edge.outputs.base-url }}/submit.hash"
+          EDGE_HASH_URL="${{ needs.names.outputs.base-url }}/submit.hash"
           echo "Fetching existing hash from $EDGE_HASH_URL"
           EXISTING_HASH=$(curl --fail --silent --show-error --location "$EDGE_HASH_URL" || echo "")
           echo "EXISTING_HASH=$EXISTING_HASH"
@@ -1274,13 +1251,13 @@ jobs:
           MY_BUNDLES_LAMBDA_URL: ${{ needs.deploy-account.outputs.myBundlesLambdaUrl }}
 
 #      - name: Upsert Cognito callback/logout URLs
-#        if: ${{ contains(needs.deploy-edge.outputs.base-url, 'submit') }}
+#        if: ${{ contains(needs.names.outputs.base-url, 'submit') }}
 #        uses: actions/github-script@v8
 #        env:
 #          USER_POOL_ID: ${{ vars.COGNITO_USER_POOL_ID }}
 #          CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
 #          REGION: ${{ env.AWS_REGION }}
-#          BASE_URL: ${{ needs.deploy-edge.outputs.base-url }}
+#          BASE_URL: ${{ needs.names.outputs.base-url }}
 #        with:
 #          script: |
 #            const {execSync} = require('child_process')
@@ -1438,7 +1415,7 @@ jobs:
 #      #
 #      - run: cp '.env.${{ needs.names.outputs.environment-name }}' '.env.test' ; npx dotenv -e '.env.${{ needs.names.outputs.environment-name }}' -- npm run test:originBehaviour
 #        env:
-#          DIY_SUBMIT_BASE_URL: ${{ needs.deploy-edge.outputs.base-url }}
+#          DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.base-url }}
 #          TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
 #          TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
 #          TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
@@ -1515,6 +1492,18 @@ jobs:
           output-credentials: true
           retry-max-attempts: 3
 
+      - name: Get CloudFront distribution ID
+        id: get-distribution-id
+        run: |
+          DISTRIBUTION_ID=$(aws cloudformation describe-stacks \
+            --stack-name "del-${{ needs.names.outputs.deployment-name }}-EdgeStack" \
+            --region "us-east-1" \
+            --query "Stacks[0].Outputs[?OutputKey=='DistributionId'].OutputValue" \
+            --output text)
+          echo "DISTRIBUTION_ID=$DISTRIBUTION_ID"
+          echo "DISTRIBUTION_ID=$DISTRIBUTION_ID" >> $GITHUB_OUTPUT
+        shell: bash
+
       - name: Alias apex domain to base domain
         id: set-origins
         uses: ./.github/actions/set-origins
@@ -1523,7 +1512,7 @@ jobs:
           apex-domain: ${{ needs.names.outputs.apex-domain }}
           aws-account-id: ${{ env.AWS_ACCOUNT_ID }}
           hosted-zone-id: ${{ env.AWS_HOSTED_ZONE_ID }}
-          cloudfront-distribution-id: ${{ needs.deploy-edge.outputs.cloudfront-distribution-id }}
+          cloudfront-distribution-id: ${{ steps.get-distribution-id.outputs.DISTRIBUTION_ID }}
     outputs:
       existing-deployment-name: ${{ steps.set-origins.outputs.existing-deployment-name }}
 
