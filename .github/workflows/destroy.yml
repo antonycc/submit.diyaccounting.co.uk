@@ -42,6 +42,8 @@ on:
         description: 'Whether to sweep for leftover stacks (true) or select by branch/environment/deployment name (false)'
         required: false
         default: false
+  schedule:
+    - cron: '0 8,10,12 * * *'
 
 permissions:
   id-token: write
@@ -119,6 +121,8 @@ jobs:
             || echo "Parameter $LAST_KNOWN_GOOD_DEPLOYMENT_NAME_PROD not found"
           LAST_KNOWN_GOOD_DEPLOYMENT_NAME_CI_VALUE=$(cat /tmp/last-known-good-deployment-ci.txt || echo "")
           LAST_KNOWN_GOOD_DEPLOYMENT_NAME_PROD_VALUE=$(cat /tmp/last-known-good-deployment-prod.txt || echo "")
+          echo "Last known good deployment name CI: $LAST_KNOWN_GOOD_DEPLOYMENT_NAME_CI_VALUE"
+          echo "Last known good deployment name PROD: $LAST_KNOWN_GOOD_DEPLOYMENT_NAME_PROD_VALUE"
           echo "last-known-good-deployment-name-ci=$LAST_KNOWN_GOOD_DEPLOYMENT_NAME_CI_VALUE" >> $GITHUB_OUTPUT
           echo "last-known-good-deployment-name-prod=$LAST_KNOWN_GOOD_DEPLOYMENT_NAME_PROD_VALUE" >> $GITHUB_OUTPUT
 
@@ -129,8 +133,10 @@ jobs:
           echo "Getting CloudFront distributions"
           DISTRIBUTION_IDS=$(aws cloudfront list-distributions --query "DistributionList.Items[].Id" --output text)
           PUBLIC_DEPLOYMENT_NAMES=""
+          echo "Found CloudFront Distribution IDs: $DISTRIBUTION_IDS"
           for DISTRIBUTION_ID in $DISTRIBUTION_IDS; do
             ALIASES=$(aws cloudfront get-distribution --id "$DISTRIBUTION_ID" --query "Distribution.DistributionConfig.Aliases.Items[]" --output text)
+            echo "Found aliases for Distribution ID $DISTRIBUTION_ID: $ALIASES"
             for ALIAS in $ALIASES; do
               RECORD_NAME=$(echo "$ALIAS" | cut -d'.' -f1)
               if [[ "$RECORD_NAME" =~ ^(ci|prod)-.* ]]; then
@@ -138,10 +144,11 @@ jobs:
               fi
             done
           done
+          echo "Collected public deployment names before deduplication: $PUBLIC_DEPLOYMENT_NAMES"
           # Remove duplicates
           PUBLIC_DEPLOYMENT_NAMES=$(echo $PUBLIC_DEPLOYMENT_NAMES | tr ' ' '\n' | sort -u | tr '\n' ' ')
+          echo "Public deployment names: $PUBLIC_DEPLOYMENT_NAMES"
           echo "public-deployment-names=$PUBLIC_DEPLOYMENT_NAMES" >> $GITHUB_OUTPUT
-
 
       # Select environment and deployment names of stacks to destroy matching .*-[ci|prod]-.* pattern but not the public deployment names or last known good deployment names
       - name: Select environment and deployment names
@@ -161,6 +168,9 @@ jobs:
               STACK_DEPLOYMENT_NAMES_TO_KEEP+=("$DEPLOYMENT_NAME")
             fi
           done
+
+          # Remove duplicates from STACK_DEPLOYMENT_NAMES_TO_KEEP in a simple way
+          STACK_DEPLOYMENT_NAMES_TO_KEEP=($(echo "${STACK_DEPLOYMENT_NAMES_TO_KEEP[@]}" | tr ' ' '\n' | sort -u | tr '\n' ' '))
 
           echo "Stacks to skip destruction: ${STACK_DEPLOYMENT_NAMES_TO_KEEP[*]}"
 
@@ -194,8 +204,18 @@ jobs:
               fi
           done
 
+          if [ -z "$SELECTED_DEPLOYMENT_NAME" ]; then
+            echo "No stacks found for destruction"
+            SWEEPER_HIT=false
+          else
+            echo "Stacks found for destruction ${SELECTED_ENVIRONMENT_NAME}/${SELECTED_DEPLOYMENT_NAME}"
+            SWEEPER_HIT=true
+          fi
+
+          echo "SWEEPER_HIT=$SWEEPER_HIT"
           echo "SELECTED_ENVIRONMENT_NAME=$SELECTED_ENVIRONMENT_NAME"
           echo "SELECTED_DEPLOYMENT_NAME=$SELECTED_DEPLOYMENT_NAME"
+          echo "SWEEPER_HIT=true" >> $GITHUB_OUTPUT
           echo "SELECTED_ENVIRONMENT_NAME=$SELECTED_ENVIRONMENT_NAME" >> $GITHUB_OUTPUT
           echo "SELECTED_DEPLOYMENT_NAME=$SELECTED_DEPLOYMENT_NAME" >> $GITHUB_OUTPUT
 
@@ -203,8 +223,8 @@ jobs:
       environment-name: ${{ steps.select-stack.outputs.SELECTED_ENVIRONMENT_NAME }}
       deployment-name: ${{ steps.select-stack.outputs.SELECTED_DEPLOYMENT_NAME }}
 
-  names:
-    if: ${{ !cancelled() && ( github.event.inputs.sweep-for-stacks != true || github.event_name != 'schedule' || needs.sweep-for-stacks.outputs.environment-name != '' ) }}
+  names: # needs.sweep-for-stacks.outputs.deployment-name begins with ci- or prod- !!! this do this
+    if: ${{ !cancelled() && ( github.event.inputs.sweep-for-stacks != true || github.event_name != 'schedule' ||
     needs:
       - sweep-for-stacks
     runs-on: ubuntu-24.04
