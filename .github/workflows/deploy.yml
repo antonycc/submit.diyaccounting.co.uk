@@ -1754,7 +1754,7 @@ jobs:
     if: ${{ !cancelled() && needs.names.outputs.environment-name == 'prod' }}
     needs:
       - names
-      - deploy-edge
+      #- deploy-edge
       #- api-test
       - web-test
       #- load-test
@@ -1905,8 +1905,6 @@ jobs:
     name: 'set last known good deployment'
     needs:
       - names
-      - skip-deploy-check
-      - set-origins
       - web-test
     runs-on: ubuntu-24.04
     environment: ${{ needs.names.outputs.environment-name }}
