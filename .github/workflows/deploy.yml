@@ -67,7 +67,7 @@ on:
       - '.github/actions/set-origins'
       - '.github/workflows/deploy.yml'
   schedule:
-    - cron: '23 4 * * *'
+    - cron: '11 4 * * *'
 
 permissions:
   id-token: write

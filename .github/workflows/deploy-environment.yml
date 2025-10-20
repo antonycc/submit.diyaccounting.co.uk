@@ -29,7 +29,7 @@ on:
       - '.github/actions/set-origins'
       - '.github/workflows/deploy-environment.yml'
   schedule:
-    - cron: '43 3 * * *'
+    - cron: '51 3 * * *'
 
 env:
   JAVA_VERSION: '21'
