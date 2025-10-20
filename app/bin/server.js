@@ -5,6 +5,7 @@ import path from "path";
 import express from "express";
 import { fileURLToPath } from "url";
 import { readFileSync } from "fs";
+import fetch from "node-fetch";
 import { httpPostMock, httpPostHmrc, httpPostCognito } from "../functions/token.js";
 import { httpPost as submitVatHttpPost } from "../functions/submitVat.js";
 import { httpPost as logReceiptHttpPost } from "../functions/logReceipt.js";
@@ -49,10 +50,30 @@ app.use((req, res, next) => {
   next();
 });
 
+// Basic CORS middleware (mostly for local tools and OPTIONS where needed)
+app.use((req, res, next) => {
+  // Allow same-origin (ngrok forwards host), and also enable generic CORS for dev tools
+  const origin = req.headers.origin;
+  if (origin) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Vary", "Origin");
+  }
+  res.setHeader("Access-Control-Allow-Credentials", "true");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type,Authorization");
+  res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
+  // Private Network Access preflight response header if requested by Chromium
+  if (req.headers["access-control-request-private-network"] === "true") {
+    res.setHeader("Access-Control-Allow-Private-Network", "true");
+  }
+  if (req.method === "OPTIONS") return res.status(200).end();
+  next();
+});
+
 app.use(express.static(path.join(__dirname, "../../web/public")));
 
 const authUrlPath = context.authUrlLambdaUrlPath || "/api/hmrc/authUrl-get";
 const mockAuthUrlPath = "/api/mock/authUrl-get";
+const mockTokenProxyPath = "/api/mock/token";
 const cognitoAuthUrlPath = context.cognitoAuthUrlLambdaUrlPath || "/api/cognito/authUrl-get";
 const exchangeMockTokenPath = context.exchangeTokenLambdaUrlPath || "/api/exchange-token";
 const exchangeHmrcTokenPath = context.exchangeHmrcTokenLambdaUrlPath || "/api/hmrc/exchange-token";
@@ -92,6 +113,33 @@ app.get(cognitoAuthUrlPath, async (req, res) => {
   };
   const { statusCode, body } = await cognitoAuthUrlGet(event);
   res.status(statusCode).json(JSON.parse(body));
+});
+
+// Proxy to local mock OAuth2 server token endpoint to avoid browser PNA/CORS
+app.post(mockTokenProxyPath, async (req, res) => {
+  try {
+    const params = new URLSearchParams();
+    for (const [key, value] of Object.entries(req.body || {})) {
+      if (Array.isArray(value)) {
+        for (const v of value) params.append(key, v);
+      } else if (value !== undefined && value !== null) {
+        params.append(key, String(value));
+      }
+    }
+
+    const resp = await fetch("http://localhost:8080/default/token", {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: params.toString(),
+    });
+
+    const contentType = resp.headers.get("content-type") || "application/json";
+    const text = await resp.text();
+    res.status(resp.status).set("content-type", contentType).send(text);
+  } catch (e) {
+    logger.error(`Mock token proxy error: ${e?.stack || e}`);
+    res.status(500).json({ message: "Mock token proxy failed", error: String(e) });
+  }
 });
 
 app.post(exchangeMockTokenPath, async (req, res) => {
