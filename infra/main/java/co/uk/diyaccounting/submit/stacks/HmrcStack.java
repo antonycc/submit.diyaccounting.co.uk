@@ -1,16 +1,10 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildFunctionName;
-
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
 import co.uk.diyaccounting.submit.constructs.LambdaUrlOrigin;
 import co.uk.diyaccounting.submit.constructs.LambdaUrlOriginProps;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
-import java.util.List;
-import java.util.Optional;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Aspects;
 import software.amazon.awscdk.Duration;
@@ -28,9 +22,14 @@ import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.amazon.awscdk.services.s3.Bucket;
 import software.amazon.awscdk.services.s3.IBucket;
-import software.amazon.awscdk.services.secretsmanager.Secret;
 import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
+
+import java.util.List;
+import java.util.Optional;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 public class HmrcStack extends Stack {
 
@@ -123,19 +122,16 @@ public class HmrcStack extends Stack {
                 .with("DIY_SUBMIT_BASE_URL", props.sharedNames().envBaseUrl)
                 .with("HMRC_BASE_URI", props.hmrcBaseUri())
                 .with("HMRC_CLIENT_ID", props.hmrcClientId());
-        var authUrlHmrcLambdaUrlOriginFunctionHandler = "authUrl.httpGetHmrc";
-        var authUrlHmrcLambdaUrlOriginFunctionName =
-                buildFunctionName(props.resourceNamePrefix(), authUrlHmrcLambdaUrlOriginFunctionHandler);
         var authUrlHmrcLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
                 LambdaUrlOriginProps.builder()
-                        .idPrefix(authUrlHmrcLambdaUrlOriginFunctionName)
+                        .idPrefix(props.sharedNames().authUrlHmrcLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .functionName(authUrlHmrcLambdaUrlOriginFunctionName)
+                        .functionName(props.sharedNames().authUrlHmrcLambdaFunctionName)
                         .cloudFrontAllowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
-                        .handler(props.lambdaEntry() + authUrlHmrcLambdaUrlOriginFunctionHandler)
+                        .handler(props.lambdaEntry() + props.sharedNames().authUrlHmrcLambdaHandler)
                         .environment(authUrlHmrcLambdaEnv)
                         .timeout(Duration.millis(Long.parseLong("30000")))
                         .build());
@@ -144,7 +140,7 @@ public class HmrcStack extends Stack {
         infof(
                 "Created Lambda %s for HMRC auth URL with handler %s",
                 this.authUrlHmrcLambda.getNode().getId(),
-                props.lambdaEntry() + authUrlHmrcLambdaUrlOriginFunctionHandler);
+            props.lambdaEntry() + props.sharedNames().authUrlHmrcLambdaHandler);
 
         // exchangeToken - HMRC
         var exchangeHmrcEnvBase = new PopulatedMap<String, String>()
@@ -159,19 +155,17 @@ public class HmrcStack extends Stack {
             exchangeHmrcEnvBase.with(
                     "TEST_ACCESS_TOKEN", props.optionalTestAccessToken().get());
         }
-        var exchangeHmrcTokenLambdaUrlOriginFunctionHandler = "token.httpPostHmrc";
-        var exchangeHmrcTokenLambdaUrlOriginFunctionName =
-                buildFunctionName(props.resourceNamePrefix(), exchangeHmrcTokenLambdaUrlOriginFunctionHandler);
+
         var exchangeHmrcTokenLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
                 LambdaUrlOriginProps.builder()
-                        .idPrefix(exchangeHmrcTokenLambdaUrlOriginFunctionName)
+                        .idPrefix(props.sharedNames().exchangeHmrcTokenLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .functionName(exchangeHmrcTokenLambdaUrlOriginFunctionName)
+                        .functionName(props.sharedNames().exchangeHmrcTokenLambdaFunctionName)
                         .cloudFrontAllowedMethods(AllowedMethods.ALLOW_ALL)
-                        .handler(props.lambdaEntry() + exchangeHmrcTokenLambdaUrlOriginFunctionHandler)
+                        .handler(props.lambdaEntry() + props.sharedNames().exchangeHmrcTokenLambdaHandler)
                         .environment(exchangeHmrcEnvBase)
                         .timeout(Duration.millis(Long.parseLong("30000")))
                         .build());
@@ -180,8 +174,6 @@ public class HmrcStack extends Stack {
 
         // Grant access to HMRC client secret in Secrets Manager
         if (StringUtils.isNotBlank(props.hmrcClientSecretArn())) {
-            var hmrcSecret = Secret.fromSecretPartialArn(
-                    this, props.resourceNamePrefix() + "-HmrcClientSecret", props.hmrcClientSecretArn());
             // Use the provided ARN with wildcard suffix to handle AWS Secrets Manager's automatic suffix
             String secretArnWithWildcard = props.hmrcClientSecretArn().endsWith("-*")
                     ? props.hmrcClientSecretArn()
@@ -199,7 +191,7 @@ public class HmrcStack extends Stack {
         infof(
                 "Created Lambda %s for HMRC exchange token with handler %s",
                 this.exchangeHmrcTokenLambda.getNode().getId(),
-                props.lambdaEntry() + exchangeHmrcTokenLambdaUrlOriginFunctionHandler);
+                props.lambdaEntry() + props.sharedNames().exchangeHmrcTokenLambdaHandler);
 
         // submitVat
         var submitVatLambdaEnv = new PopulatedMap<String, String>()

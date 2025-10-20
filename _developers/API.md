@@ -6,7 +6,7 @@
 
 All endpoints expect and return JSON.
 
-### **`GET /api/hmrc/auth-url?state={state}`**
+### **`GET /api/hmrc/authUrl-get?state={state}`**
 
 Returns a URL to redirect users to the HMRC OAuth consent page.
 

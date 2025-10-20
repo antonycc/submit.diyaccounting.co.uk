@@ -211,7 +211,7 @@
         try {
           const idToken = getIdToken();
           const headers = idToken ? { Authorization: `Bearer ${idToken}` } : {};
-          const res = await fetch("/api/catalog", { headers });
+          const res = await fetch("/api/catalog-get", { headers });
           if (!res.ok) {
             container.innerHTML = '<p class="service-description">Catalog unavailable.</p>';
             return;

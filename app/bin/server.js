@@ -5,12 +5,12 @@ import path from "path";
 import express from "express";
 import { fileURLToPath } from "url";
 import { readFileSync } from "fs";
-import { httpGetCognito, httpGetHmrc, httpGetMock } from "../functions/authUrl.js";
+import { httpGetCognito, httpGetMock } from "../functions/authUrl.js";
 import { httpPostMock, httpPostHmrc, httpPostCognito } from "../functions/token.js";
 import { httpPost as submitVatHttpPost } from "../functions/submitVat.js";
 import { httpPost as logReceiptHttpPost } from "../functions/logReceipt.js";
 import { httpPost as requestBundleHttpPost, httpDelete as removeBundleHttpDelete } from "../functions/bundle.js";
-import { handle as getCatalogHttpGet } from "../functions/catalogGet.js";
+import { handler as getCatalogHttpGet } from "../functions/catalogGet.js";
 import { httpGet as myBundlesHttpGet } from "../functions/myBundles.js";
 import { httpGet as myReceiptsHttpGet, httpGetByName as myReceiptHttpGetByName } from "../functions/myReceipts.js";
 import { httpGet as getVatObligationsHttpGet } from "../functions/getVatObligations.js";
@@ -21,6 +21,7 @@ import { httpGet as getVatPenaltiesHttpGet } from "../functions/getVatPenalties.
 import logger from "../lib/logger.js";
 import { requireActivity } from "../lib/entitlementsService.js";
 import { dotenvConfigIfNotBlank, validateEnv } from "../lib/env.js";
+import { handler } from "../functions/hmrcAuthUrlGet.js";
 
 dotenvConfigIfNotBlank({ path: ".env" });
 dotenvConfigIfNotBlank({ path: ".env.test" });
@@ -49,7 +50,7 @@ app.use((req, res, next) => {
 
 app.use(express.static(path.join(__dirname, "../../web/public")));
 
-const authUrlPath = context.authUrlLambdaUrlPath || "/api/hmrc/auth-url";
+const authUrlPath = context.authUrlLambdaUrlPath || "/api/hmrc/authUrl-get";
 const mockAuthUrlPath = "/api/mock/auth-url";
 const cognitoAuthUrlPath = context.cognitoAuthUrlLambdaUrlPath || "/api/cognito/auth-url";
 const exchangeMockTokenPath = context.exchangeTokenLambdaUrlPath || "/api/exchange-token";
@@ -58,7 +59,7 @@ const exchangeCognitoTokenPath = context.exchangeCognitoTokenLambdaUrlPath || "/
 const submitVatPath = context.submitVatLambdaUrlPath || "/api/submit-vat";
 const logReceiptPath = context.logReceiptLambdaUrlPath || "/api/log-receipt";
 const requestBundlePath = context.bundleLambdaUrlPath || "/api/request-bundle";
-const catalogPath = context.catalogLambdaUrlPath || "/api/catalog";
+const catalogPath = context.catalogLambdaUrlPath || "/api/catalog-get";
 const myBundlesPath = context.myBundlesLambdaUrlPath || "/api/my-bundles";
 const myReceiptsPath = context.myReceiptsLambdaUrlPath || "/api/my-receipts";
 
@@ -68,7 +69,7 @@ app.get(authUrlPath, async (req, res) => {
     headers: { host: req.get("host") || "localhost:3000" },
     queryStringParameters: req.query || {},
   };
-  const { statusCode, body } = await httpGetHmrc(event);
+  const { statusCode, body } = await handler(event);
   res["status"](statusCode).json(JSON.parse(body));
 });
 

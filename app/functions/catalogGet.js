@@ -23,10 +23,10 @@ async function ensureLoaded() {
   if (!cached) await load();
 }
 
-// GET /api/catalog
-export async function handle(event) {
+// GET /api/catalog-get
+export async function handler(event) {
   const request = extractRequest(event);
-  logger.info({ message: "getCatalog entry", route: "/api/catalog", request });
+  logger.info({ message: "getCatalog entry", route: "/api/catalog-get", request });
   try {
     await ensureLoaded();
     const ifNoneMatch = event.headers?.["if-none-match"] || event.headers?.["If-None-Match"];
@@ -35,7 +35,7 @@ export async function handle(event) {
     if (ifNoneMatch && ifNoneMatch === cached.etag) {
       logger.info({
         message: "getCatalog exit",
-        route: "/api/catalog",
+        route: "/api/catalog-get",
         status: 304,
         etag: cached.etag,
         request,
@@ -54,7 +54,7 @@ export async function handle(event) {
     if (ifModifiedSince && ifModifiedSince === cached.lastModified) {
       logger.info({
         message: "getCatalog exit",
-        route: "/api/catalog",
+        route: "/api/catalog-get",
         status: 304,
         lastModified: cached.lastModified,
         request,
@@ -73,7 +73,7 @@ export async function handle(event) {
 
     logger.info({
       message: "getCatalog exit",
-      route: "/api/catalog",
+      route: "/api/catalog-get",
       status: 200,
       size: cached.json.length,
       etag: cached.etag,

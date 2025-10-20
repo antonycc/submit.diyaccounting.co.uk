@@ -187,11 +187,11 @@ public class SubmitSharedNames {
         this.exchangeCognitoTokenLambdaArn = "%s-exchange-cognito-token".formatted(appLambdaArnPrefix);
         this.exchangeCognitoTokenLambdaUrlPath = "/api/cognito/exchange-token";
 
-        this.authUrlHmrcLambdaHandler = "authUrl.httpGetHmrc";
+        this.authUrlHmrcLambdaHandler = "hmrcAuthUrlGet.handler";
         this.authUrlHmrcLambdaFunctionName =
                 buildFunctionName(this.appResourceNamePrefix, this.authUrlHmrcLambdaHandler);
-        this.authUrlHmrcLambdaArn = "%s-auth-url-hmrc".formatted(appLambdaArnPrefix);
-        this.authUrlHmrcLambdaUrlPath = "/api/hmrc/auth-url";
+        this.authUrlHmrcLambdaArn = "%s-hmrc-auth-url-get".formatted(appLambdaArnPrefix);
+        this.authUrlHmrcLambdaUrlPath = "/api/hmrc/authUrl-get";
 
         this.exchangeHmrcTokenLambdaHandler = "token.httpPostHmrc";
         this.exchangeHmrcTokenLambdaFunctionName =
@@ -214,10 +214,10 @@ public class SubmitSharedNames {
         this.myReceiptsLambdaArn = "%s-my-receipts".formatted(appLambdaArnPrefix);
         this.myReceiptsLambdaUrlPath = "/api/my-receipts";
 
-        this.catalogLambdaHandler = "catalogGet.handle";
+        this.catalogLambdaHandler = "catalogGet.handler";
         this.catalogLambdaFunctionName = buildFunctionName(this.appResourceNamePrefix, this.catalogLambdaHandler);
-        this.catalogLambdaArn = "%s-catalog".formatted(appLambdaArnPrefix);
-        this.catalogLambdaUrlPath = "/api/catalog"; // TODO change to /api/catalog-get to support verbs.
+        this.catalogLambdaArn = "%s-catalog-get".formatted(appLambdaArnPrefix);
+        this.catalogLambdaUrlPath = "/api/catalog-get";
 
         this.requestBundlesLambdaHandler = "bundle.httpPost";
         this.requestBundlesLambdaFunctionName =

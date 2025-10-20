@@ -49,27 +49,25 @@ on:
     branches:
       - '**'
       - '!gh_pages'
+      - '!dependabot/**'
     paths:
       - 'app/functions/**'
       - 'app/lib/**'
       - 'infra/main/**'
-      - 'tests/**'
       - 'web/public/**'
       - '.env.ci'
       - '.env.prod'
-      - 'cdk-application/cdk.json'
-      - 'cdk-delivery/cdk.json'
+      - '**/cdk.json'
       - 'Dockerfile'
       - 'LICENSE'
       - 'package.json'
-      - 'package-lock.json'
       - 'pom.xml'
       - 'product-catalogue.toml'
       - '.github/actions/get-names'
       - '.github/actions/set-origins'
       - '.github/workflows/deploy.yml'
   schedule:
-    - cron: '23 4 * * *'
+    - cron: '11 4 * * *'
 
 permissions:
   id-token: write
@@ -87,7 +85,7 @@ env:
   BASE_IMAGE_TAG_PREFIX: 'submit-base'
   loadTestDuration: ${{ inputs.loadTestDuration || '30s' }}
   GITHUB_ACTOR: ${{ github.actor }}
-  SELF_DESTRUCT_DELAY_HOURS: ${{ inputs.selfDestructDelayHours || '1' }}
+  SELF_DESTRUCT_DELAY_HOURS: ${{ inputs.selfDestructDelayHours || '8' }}
   BASE_IMAGE_TAG: ${{ github.sha }}
   FORCE_ALL_STACK_DEPLOYMENT: ${{ inputs.forceAllStackDeployment || 'false' }}
   COMMIT_HASH: ${{ github.sha }}
@@ -119,30 +117,21 @@ jobs:
       holding-domain: ${{ steps.deployment-config.outputs.holding-domain }}
       holding-url: ${{ steps.deployment-config.outputs.holding-url }}
 
-  npm-test:
-    name: 'npm test'
-    runs-on: ubuntu-24.04
+  test:
+    name: 'delegate to test workflow'
     needs:
       - names
+    uses: ./.github/workflows/test.yml
     permissions:
       contents: read
       packages: read
       id-token: write
-    steps:
-      - uses: actions/checkout@v5
+    with:
+      environment-name: ${{ needs.names.outputs.environment-name }}
+      deployment-name: ${{ needs.names.outputs.deployment-name }}
 
-      - name: Setup Node
-        uses: actions/setup-node@v6
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - run: npm ci || npm install
-
-      - run: npm test
-
-  npm-unit-test:
-    name: 'npm unit test'
+  npm-unit-test-coverage:
+    name: 'npm unit test with coverage'
     runs-on: ubuntu-latest
     needs:
       - names
@@ -170,110 +159,8 @@ jobs:
           path: coverage/
           retention-days: 30
 
-  npm-integration-test:
-    name: 'npm integration test'
-    runs-on: ubuntu-latest
-    needs:
-      - names
-    permissions:
-      contents: read
-      id-token: write
-    steps:
-      - uses: actions/checkout@v5
-
-      - name: Setup Node
-        uses: actions/setup-node@v6
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - run: npm ci || npm install
-
-      - run: npm run test:integration
-
-  npm-system-test:
-    name: 'npm system test'
-    runs-on: ubuntu-latest
-    needs:
-      - names
-    permissions:
-      contents: read
-      id-token: write
-    steps:
-      - uses: actions/checkout@v5
-
-      - name: Setup Node
-        uses: actions/setup-node@v6
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - run: npm ci || npm install
-
-      - run: npm run test:system
-
-  npm-test-web-unit:
-    name: 'npm unit test with coverage'
-    runs-on: ubuntu-latest
-    needs:
-      - names
-    permissions:
-      contents: read
-      id-token: write
-    steps:
-      - uses: actions/checkout@v5
-
-      - name: Setup Node
-        uses: actions/setup-node@v6
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - run: npm ci || npm install
-
-      - run: npm run test:web-unit
-
-  npm-browser-test:
-    name: 'npm browser test'
-    runs-on: ubuntu-latest
-    needs:
-      - names
-    permissions:
-      contents: read
-      id-token: write
-    steps:
-      - uses: actions/checkout@v5
-
-      - name: Setup Node
-        uses: actions/setup-node@v6
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - run: npm ci
-
-      - run: npx playwright install chromium --with-deps
-
-      - run: npm run test:browser
-
-      - name: Upload test results
-        uses: actions/upload-artifact@v4
-        if: ${{ !cancelled() }}
-        with:
-          name: test-results-browser
-          path: target/browser-test-results/
-          retention-days: 30
-
-      - name: Upload test reports
-        uses: actions/upload-artifact@v4
-        if: ${{ !cancelled() }}
-        with:
-          name: test-reports-browser
-          path: target/test-reports/
-          retention-days: 30
-
-  mvn-test:
-    name: 'maven test'
+  mvn-package:
+    name: 'maven package'
     runs-on: ubuntu-latest
     needs:
       - names
@@ -293,91 +180,29 @@ jobs:
         id: package
         shell: bash
         run: |
-          ./mvnw clean package
+          ./mvnw clean package -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }}
+          echo "SELF_DESTRUCT_HANDLER_SOURCE=target/self-destruct-lambda.jar"
+          echo "SELF_DESTRUCT_HANDLER_SOURCE=target/self-destruct-lambda.jar" >> $GITHUB_OUTPUT
+          ls -l target/self-destruct-lambda.jar
 
-  npm-test-cdk-ci:
-    name: 'npm test cdk-ci'
-    needs:
-      - names
-      - mvn-package
-    runs-on: ubuntu-24.04
-    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
-    permissions:
-      contents: read
-      id-token: write
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v5
-
-      - name: Setup Node
-        uses: actions/setup-node@v6
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Node dependencies
-        run: npm ci
-
-      - uses: actions/setup-java@v5
-        with:
-          distribution: 'temurin'
-          java-version: ${{ env.JAVA_VERSION }}
-          cache: 'maven'
-
-      - name: test cdk
-        id: test-cdk
+      - name: Self Destruct Start Datetime (ISO 8601) now plus SELF_DESTRUCT_DELAY_HOURS
+        id: self-destruct-start
         shell: bash
-        run: npm run cdk-ci
-        env:
-          ENVIRONMENT_NAME: 'ci'
-          DEPLOYMENT_NAME: 'ci'
-          SELF_DESTRUCT_HANDLER_SOURCE: "../${{ needs.mvn-package.outputs.self-destruct-handler-source }}"
-          SELF_DESTRUCT_START_DATETIME: ${{ needs.mvn-package.outputs.self-destruct-start-datetime }}
-          # Set by deploy-environment.yml after the environment's AuthStack is deployed
-          COGNITO_USER_POOL_ARN: ${{ vars.COGNITO_USER_POOL_ARN }}
-          COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
+        run: |
+          SELF_DESTRUCT_START_DATETIME=$(date -u -d "+${{ env.SELF_DESTRUCT_DELAY_HOURS }} hours" +"%Y-%m-%dT%H:%M:%SZ")
+          echo "SELF_DESTRUCT_START_DATETIME=$SELF_DESTRUCT_START_DATETIME"
+          echo "SELF_DESTRUCT_START_DATETIME=$SELF_DESTRUCT_START_DATETIME" >> $GITHUB_OUTPUT
 
-  npm-test-cdk-prod:
-    name: 'npm test cdk prod'
-    needs:
-      - names
-      - mvn-package
-    runs-on: ubuntu-24.04
-    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
-    permissions:
-      contents: read
-      id-token: write
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v5
-
-      - name: Setup Node
-        uses: actions/setup-node@v6
+      - name: Upload self-destruct handler JAR
+        uses: actions/upload-artifact@v4
         with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          name: self-destruct-handler-${{ github.sha }}
+          path: target/self-destruct-lambda.jar
+          retention-days: 1
 
-      - name: Node dependencies
-        run: npm ci
-
-      - uses: actions/setup-java@v5
-        with:
-          distribution: 'temurin'
-          java-version: ${{ env.JAVA_VERSION }}
-          cache: 'maven'
-
-      - name: test cdk
-        id: test-cdk
-        shell: bash
-        run: npm run cdk
-        env:
-          ENVIRONMENT_NAME: 'prod'
-          DEPLOYMENT_NAME: 'prod'
-          SELF_DESTRUCT_HANDLER_SOURCE: "../${{ needs.mvn-package.outputs.self-destruct-handler-source }}"
-          SELF_DESTRUCT_START_DATETIME: ${{ needs.mvn-package.outputs.self-destruct-start-datetime }}
-          # Set by deploy-environment.yml after the environment's AuthStack is deployed
-          COGNITO_USER_POOL_ARN: ${{ vars.COGNITO_USER_POOL_ARN }}
-          COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
+    outputs:
+      self-destruct-handler-source: ${{ steps.package.outputs.SELF_DESTRUCT_HANDLER_SOURCE }}
+      self-destruct-start-datetime: ${{ steps.self-destruct-start.outputs.SELF_DESTRUCT_START_DATETIME }}
 
   behaviour-test:
     name: 'behaviour test (proxy)'
@@ -479,51 +304,6 @@ jobs:
         run: |
           aws cloudformation describe-stacks --region eu-west-2 --query "Stacks[].StackName" --output text | tr '\t' '\n' | sort
           aws cloudformation describe-stacks --region us-east-1 --query "Stacks[].StackName" --output text | tr '\t' '\n' | sort
-
-  mvn-package:
-    name: 'maven package'
-    runs-on: ubuntu-latest
-    needs:
-      - names
-    permissions:
-      contents: read
-      id-token: write
-    steps:
-      - uses: actions/checkout@v5
-
-      - uses: actions/setup-java@v5
-        with:
-          distribution: 'temurin'
-          java-version: ${{ env.JAVA_VERSION }}
-          cache: 'maven'
-
-      - name: package
-        id: package
-        shell: bash
-        run: |
-          ./mvnw clean package -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }}
-          echo "SELF_DESTRUCT_HANDLER_SOURCE=target/self-destruct-lambda.jar"
-          echo "SELF_DESTRUCT_HANDLER_SOURCE=target/self-destruct-lambda.jar" >> $GITHUB_OUTPUT
-          ls -l target/self-destruct-lambda.jar
-
-      - name: Self Destruct Start Datetime (ISO 8601) now plus SELF_DESTRUCT_DELAY_HOURS
-        id: self-destruct-start
-        shell: bash
-        run: |
-          SELF_DESTRUCT_START_DATETIME=$(date -u -d "+${{ env.SELF_DESTRUCT_DELAY_HOURS }} hours" +"%Y-%m-%dT%H:%M:%SZ")
-          echo "SELF_DESTRUCT_START_DATETIME=$SELF_DESTRUCT_START_DATETIME"
-          echo "SELF_DESTRUCT_START_DATETIME=$SELF_DESTRUCT_START_DATETIME" >> $GITHUB_OUTPUT
-
-      - name: Upload self-destruct handler JAR
-        uses: actions/upload-artifact@v4
-        with:
-          name: self-destruct-handler-${{ github.sha }}
-          path: target/self-destruct-lambda.jar
-          retention-days: 1
-
-    outputs:
-      self-destruct-handler-source: ${{ steps.package.outputs.SELF_DESTRUCT_HANDLER_SOURCE }}
-      self-destruct-start-datetime: ${{ steps.self-destruct-start.outputs.SELF_DESTRUCT_START_DATETIME }}
 
   skip-deploy-check:
     name: 'skip deploy check'
@@ -1535,7 +1315,6 @@ jobs:
     needs:
       - names
       - skip-deploy-check
-      - npm-test
       - deploy-edge
     runs-on: ubuntu-24.04
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
@@ -1975,14 +1754,14 @@ jobs:
     if: ${{ !cancelled() && needs.names.outputs.environment-name == 'prod' }}
     needs:
       - names
-      - deploy-edge
+      #- deploy-edge
       #- api-test
       - web-test
       #- load-test
     runs-on: ubuntu-24.04
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}artifacts
+      url: ${{ steps.deployment.outputs.page_url }}
     permissions:
       contents: read
       pages: write
@@ -2063,16 +1842,6 @@ jobs:
             cp -vr artifacts/behaviour-test-reports gh-pages/artifacts/.
           fi
 
-          # Copy origin test artifacts
-          if [ -d "artifacts/origin-test-artifacts" ]; then
-            cp -vr artifacts/origin-test-artifacts gh-pages/artifacts/.
-          fi
-
-          # Copy origin test reports
-          if [ -d "artifacts/origin-test-reports" ]; then
-            cp -vr artifacts/origin-test-reports gh-pages/artifacts/.
-          fi
-
           # Copy web test artifacts
           if [ -d "artifacts/web-test-artifacts" ]; then
             cp -vr artifacts/web-test-artifacts gh-pages/artifacts/.
@@ -2081,16 +1850,6 @@ jobs:
           # Copy web test reports
           if [ -d "artifacts/web-test-reports" ]; then
             cp -vr artifacts/web-test-reports gh-pages/artifacts/.
-          fi
-
-          # Copy browser test artifacts
-          if [ -d "artifacts/test-results-browser" ]; then
-            cp -vr artifacts/test-results-browser gh-pages/artifacts/.
-          fi
-
-          # Copy browser test reports
-          if [ -d "artifacts/test-reports-browser" ]; then
-            cp -vr artifacts/test-reports-browser gh-pages/artifacts/.
           fi
 
           # Create index page for artifacts
@@ -2112,7 +1871,6 @@ jobs:
                   <ul>
                       <li><a href="artifacts/behaviour-test-reports/html-report/index.html">Behaviour Test Reports (proxy)</a></li>
                       <li><a href="artifacts/web-test-reports/html-report/index.html">Behaviour Test Reports (web)</a></li>
-                      <li><a href="artifacts/test-reports-browser/html-report/index.html">Browser Test Reports</a></li>
                   </ul>
               </div>
           </body>
@@ -2134,8 +1892,6 @@ jobs:
       - name: Output deployment URLs
         run: |
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "🚀 **Tested service base URL**: ${{ needs.names.outputs.base-url }}" >> $GITHUB_STEP_SUMMARY
-          #echo "📊 **Test Reports**: ${{ steps.deployment.outputs.page_url }}artifacts" >> $GITHUB_STEP_SUMMARY
           echo "📁 **GitHub Pages**: ${{ steps.deployment.outputs.page_url }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
@@ -2149,8 +1905,6 @@ jobs:
     name: 'set last known good deployment'
     needs:
       - names
-      - skip-deploy-check
-      - set-origins
       - web-test
     runs-on: ubuntu-24.04
     environment: ${{ needs.names.outputs.environment-name }}
@@ -2186,6 +1940,11 @@ jobs:
             --type String \
             --value "${{ needs.names.outputs.deployment-name }}" \
             --overwrite
+
+      - name: CDK stacks in eu-west-2 and us-east-1
+        run: |
+          aws cloudformation describe-stacks --region eu-west-2 --query "Stacks[].StackName" --output text | tr '\t' '\n' | sort
+          aws cloudformation describe-stacks --region us-east-1 --query "Stacks[].StackName" --output text | tr '\t' '\n' | sort
 
   # Run workflow: .github/workflows/destroy.yml to destroy previous prod deployments but not the holding page (`-holding`)
   destroy-previous:

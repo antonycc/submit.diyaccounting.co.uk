@@ -14,10 +14,10 @@ import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
 // Import the actual handlers (not mocked for integration test)
-import { httpGetHmrc as authUrlHandler } from "@app/functions/authUrl.js";
 import { httpPostMock as exchangeTokenHandler } from "@app/functions/token.js";
 import { httpPost as submitVatHandler } from "@app/functions/submitVat.js";
 import { httpPost as logReceiptHandler } from "@app/functions/logReceipt.js";
+import { handler as authUrlHandler } from "@app/functions/hmrcAuthUrlGet.js";
 
 const HMRC = "https://test-api.service.hmrc.gov.uk";
 const s3Mock = mockClient(S3Client);
@@ -103,7 +103,7 @@ describe("Integration – Server Express App", () => {
     app.use(express.static(path.join(__dirname, "../../web/public")));
 
     // Wire the API routes exactly like server.js
-    app.get("/api/hmrc/auth-url", async (req, res) => {
+    app.get("/api/hmrc/authUrl-get", async (req, res) => {
       const event = { queryStringParameters: { state: req.query.state } };
       const { statusCode, body } = await authUrlHandler(event);
       res.status(statusCode).json(JSON.parse(body));
@@ -139,7 +139,7 @@ describe("Integration – Server Express App", () => {
 
   describe("Auth Flow Integration", () => {
     it("should generate auth URL through Express endpoint", async () => {
-      const response = await request(app).get("/api/hmrc/auth-url").query({ state: "integration-test-state" }).expect(200);
+      const response = await request(app).get("/api/hmrc/authUrl-get").query({ state: "integration-test-state" }).expect(200);
 
       console.log("Auth URL response:", response.body);
 
@@ -160,7 +160,7 @@ describe("Integration – Server Express App", () => {
     });
 
     it("should handle missing state in auth URL", async () => {
-      const response = await request(app).get("/api/hmrc/auth-url").expect(400);
+      const response = await request(app).get("/api/hmrc/authUrl-get").expect(400);
 
       expect(response.body).toHaveProperty("message");
       expect(response.body.message).toBe("Missing state query parameter from URL");
@@ -274,7 +274,7 @@ describe("Integration – Server Express App", () => {
   describe("Full Flow Integration", () => {
     it("should handle complete auth and VAT submission flow", async () => {
       // Step 1: Get auth URL
-      const authResponse = await request(app).get("/api/hmrc/auth-url").query({ state: "flow-test-state" }).expect(200);
+      const authResponse = await request(app).get("/api/hmrc/authUrl-get").query({ state: "flow-test-state" }).expect(200);
 
       expect(authResponse.body).toHaveProperty("authUrl");
 
