@@ -1,8 +1,5 @@
 name: test
 run-name: "test from ${{ github.ref_name }}"
-concurrency:
-  group: test-${{ github.ref_name }}
-  cancel-in-progress: true
 
 on:
   workflow_dispatch:
