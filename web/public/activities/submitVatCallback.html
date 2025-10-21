@@ -120,7 +120,7 @@
       }
 
       async function exchangeToken(code) {
-        const url = `/api/hmrc/exchange-token`;
+        const url = `/api/hmrc/token-post`;
         const body = JSON.stringify({ code });
         console.log(`Exchanging token. Remote call initiated: POST ${url} ++ Body: ${body}`);
 

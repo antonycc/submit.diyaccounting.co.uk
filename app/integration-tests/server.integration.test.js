@@ -14,7 +14,7 @@ import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
 // Import the actual handlers (not mocked for integration test)
-import { httpPostMock as exchangeTokenHandler } from "@app/functions/token.js";
+import { handler as exchangeTokenHandler } from "@app/functions/mockTokenPost.js";
 import { httpPost as submitVatHandler } from "@app/functions/submitVat.js";
 import { httpPost as logReceiptHandler } from "@app/functions/logReceipt.js";
 import { handler as authUrlHandler } from "@app/functions/hmrcAuthUrlGet.js";
@@ -109,7 +109,7 @@ describe("Integration – Server Express App", () => {
       res.status(statusCode).json(JSON.parse(body));
     });
 
-    app.post("/api/exchange-token", async (req, res) => {
+    app.post("/api/mock/token-post", async (req, res) => {
       const event = { body: JSON.stringify(req.body) };
       const { statusCode, body } = await exchangeTokenHandler(event);
       res.status(statusCode).json(JSON.parse(body));
@@ -151,7 +151,7 @@ describe("Integration – Server Express App", () => {
     });
 
     it("should exchange token through Express endpoint", async () => {
-      const response = await request(app).post("/api/exchange-token").send({ code: "integration-test-code" }).expect(200);
+      const response = await request(app).post("/api/mock/token-post").send({ code: "integration-test-code" }).expect(200);
 
       console.log("Token exchange response:", response.body);
 
@@ -167,7 +167,7 @@ describe("Integration – Server Express App", () => {
     });
 
     it("should handle missing code in token exchange", async () => {
-      const response = await request(app).post("/api/exchange-token").send({}).expect(400);
+      const response = await request(app).post("/api/mock/token-post").send({}).expect(400);
 
       expect(response.error).toHaveProperty("message");
       expect(response.body.message).toBe("Missing code from event body");
@@ -279,7 +279,7 @@ describe("Integration – Server Express App", () => {
       expect(authResponse.body).toHaveProperty("authUrl");
 
       // Step 2: Exchange code for token
-      const tokenResponse = await request(app).post("/api/exchange-token").send({ code: "flow-test-code" }).expect(200);
+      const tokenResponse = await request(app).post("/api/mock/token-post").send({ code: "flow-test-code" }).expect(200);
 
       expect(tokenResponse.body).toHaveProperty("hmrcAccessToken");
       const hmrcAccessToken = tokenResponse.body.accessToken;
@@ -313,7 +313,7 @@ describe("Integration – Server Express App", () => {
   describe("Error Handling", () => {
     it("should handle malformed JSON in request body", async () => {
       const response = await request(app)
-        .post("/api/exchange-token")
+        .post("/api/mock/token-post")
         .set("Content-Type", "application/json")
         .send("invalid-json")
         .expect(400);
@@ -327,7 +327,7 @@ describe("Integration – Server Express App", () => {
         extra: "y".repeat(10000),
       };
 
-      const response = await request(app).post("/api/exchange-token").send(largeData);
+      const response = await request(app).post("/api/mock/token-post").send(largeData);
 
       // Should either process or reject based on Express limits
       expect([200, 400, 413]).toContain(response.status);

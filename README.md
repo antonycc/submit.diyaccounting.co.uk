@@ -117,7 +117,7 @@ Response
 ```
 
 Token exchange endpoints
-- POST /api/hmrc/exchange-token
+- POST /api/hmrc/token-post
 - POST /api/google/exchange-token
 Request
 ```json

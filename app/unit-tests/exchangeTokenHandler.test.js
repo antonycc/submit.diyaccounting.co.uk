@@ -3,7 +3,7 @@
 import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 
-import { httpPostMock as exchangeTokenHandler } from "@app/functions/token.js";
+import { handler as exchangeTokenHandler } from "@app/functions/mockTokenPost.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 

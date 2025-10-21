@@ -181,12 +181,11 @@ public class SubmitSharedNames {
         this.authUrlCognitoLambdaArn = "%s-cognito-auth-url-get".formatted(appLambdaArnPrefix);
         this.authUrlCognitoLambdaUrlPath = "/api/cognito/authUrl-get";
 
-        // TODO: YOU ARE HERE: Next update the URLs for the token exchange and split into new files -> /api/cognito/token-post
-        this.exchangeCognitoTokenLambdaHandler = "token.httpPostCognito";
+        this.exchangeCognitoTokenLambdaHandler = "cognitoTokenPost.handler";
         this.exchangeCognitoTokenLambdaFunctionName =
                 buildFunctionName(this.appResourceNamePrefix, this.exchangeCognitoTokenLambdaHandler);
-        this.exchangeCognitoTokenLambdaArn = "%s-exchange-cognito-token".formatted(appLambdaArnPrefix);
-        this.exchangeCognitoTokenLambdaUrlPath = "/api/cognito/exchange-token";
+        this.exchangeCognitoTokenLambdaArn = "%s-cognito-token-post".formatted(appLambdaArnPrefix);
+        this.exchangeCognitoTokenLambdaUrlPath = "/api/cognito/token-post";
 
         this.authUrlHmrcLambdaHandler = "hmrcAuthUrlGet.handler";
         this.authUrlHmrcLambdaFunctionName =
@@ -194,23 +193,25 @@ public class SubmitSharedNames {
         this.authUrlHmrcLambdaArn = "%s-hmrc-auth-url-get".formatted(appLambdaArnPrefix);
         this.authUrlHmrcLambdaUrlPath = "/api/hmrc/authUrl-get";
 
-        // TODO: YOU ARE HERE: Next update the URLs for the token exchange and split into new files -> /api/hmrc/token-post
-        this.exchangeHmrcTokenLambdaHandler = "token.httpPostHmrc";
+        this.exchangeHmrcTokenLambdaHandler = "hmrcTokenPost.handler";
         this.exchangeHmrcTokenLambdaFunctionName =
                 buildFunctionName(this.appResourceNamePrefix, this.exchangeHmrcTokenLambdaHandler);
-        this.exchangeHmrcTokenLambdaArn = "%s-exchange-hmrc-token".formatted(appLambdaArnPrefix);
-        this.exchangeHmrcTokenLambdaUrlPath = "/api/hmrc/exchange-token";
+        this.exchangeHmrcTokenLambdaArn = "%s-hmrc-token-post".formatted(appLambdaArnPrefix);
+        this.exchangeHmrcTokenLambdaUrlPath = "/api/hmrc/token-post";
 
+        // TODO: YOU ARE HERE: NEXT: /api/submit-vat -> /api/hmrc/vat/return-post
         this.submitVatLambdaHandler = "submitVat.httpPost";
         this.submitVatLambdaFunctionName = buildFunctionName(this.appResourceNamePrefix, this.submitVatLambdaHandler);
         this.submitVatLambdaArn = "%s-submit-vat".formatted(appLambdaArnPrefix);
         this.submitVatLambdaUrlPath = "/api/submit-vat";
 
+        // TODO: /api/log-receipt -> /api/hmrc/receipt-post
         this.logReceiptLambdaHandler = "logReceipt.httpPost";
         this.logReceiptLambdaFunctionName = buildFunctionName(this.appResourceNamePrefix, this.logReceiptLambdaHandler);
         this.logReceiptLambdaArn = "%s-log-receipt".formatted(appLambdaArnPrefix);
         this.logReceiptLambdaUrlPath = "/api/log-receipt";
 
+        // TODO: /api/my-receipts -> /api/hmrc/receipt-get
         this.myReceiptsLambdaHandler = "myReceipts.httpGet";
         this.myReceiptsLambdaFunctionName = buildFunctionName(this.appResourceNamePrefix, this.myReceiptsLambdaHandler);
         this.myReceiptsLambdaArn = "%s-my-receipts".formatted(appLambdaArnPrefix);
@@ -221,12 +222,14 @@ public class SubmitSharedNames {
         this.catalogLambdaArn = "%s-catalog-get".formatted(appLambdaArnPrefix);
         this.catalogLambdaUrlPath = "/api/catalog-get";
 
+        // TODO: /api/request-bundle -> /api/hmrc/bundle-post + /api/hmrc/bundle-delete
         this.requestBundlesLambdaHandler = "bundle.httpPost";
         this.requestBundlesLambdaFunctionName =
                 buildFunctionName(this.appResourceNamePrefix, this.requestBundlesLambdaHandler);
         this.requestBundlesLambdaArn = "%s-request-bundles".formatted(appLambdaArnPrefix);
         this.requestBundlesLambdaUrlPath = "/api/request-bundle";
 
+        // TODO: /api/my-bundles -> /api/hmrc/bundle-get
         this.myBundlesLambdaHandler = "myBundles.httpGet";
         this.myBundlesLambdaFunctionName = buildFunctionName(this.appResourceNamePrefix, this.myBundlesLambdaHandler);
         this.myBundlesLambdaArn = "%s-my-bundles".formatted(appLambdaArnPrefix);

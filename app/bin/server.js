@@ -6,7 +6,6 @@ import express from "express";
 import { fileURLToPath } from "url";
 import { readFileSync } from "fs";
 import fetch from "node-fetch";
-import { httpPostMock, httpPostHmrc, httpPostCognito } from "../functions/token.js";
 import { httpPost as submitVatHttpPost } from "../functions/submitVat.js";
 import { httpPost as logReceiptHttpPost } from "../functions/logReceipt.js";
 import { httpPost as requestBundleHttpPost, httpDelete as removeBundleHttpDelete } from "../functions/bundle.js";
@@ -21,9 +20,13 @@ import { httpGet as getVatPenaltiesHttpGet } from "../functions/getVatPenalties.
 import logger from "../lib/logger.js";
 import { requireActivity } from "../lib/entitlementsService.js";
 import { dotenvConfigIfNotBlank, validateEnv } from "../lib/env.js";
+
 import { handler as mockAuthUrlGet } from "../functions/mockAuthUrlGet.js";
 import { handler as hmrcAuthUrlGet } from "../functions/hmrcAuthUrlGet.js";
 import { handler as cognitoAuthUrlGet } from "../functions/cognitoAuthUrlGet.js";
+import { handler as mockTokenPost } from "../functions/mockTokenPost.js";
+import { handler as hmrcTokenPost } from "../functions/hmrcTokenPost.js";
+import { handler as cognitoTokenPost } from "../functions/cognitoTokenPost.js";
 
 dotenvConfigIfNotBlank({ path: ".env" });
 dotenvConfigIfNotBlank({ path: ".env.test" });
@@ -76,8 +79,8 @@ const mockAuthUrlPath = "/api/mock/authUrl-get";
 const mockTokenProxyPath = "/api/mock/token";
 const cognitoAuthUrlPath = context.cognitoAuthUrlLambdaUrlPath || "/api/cognito/authUrl-get";
 const exchangeMockTokenPath = context.exchangeTokenLambdaUrlPath || "/api/exchange-token";
-const exchangeHmrcTokenPath = context.exchangeHmrcTokenLambdaUrlPath || "/api/hmrc/exchange-token";
-const exchangeCognitoTokenPath = context.exchangeCognitoTokenLambdaUrlPath || "/api/cognito/exchange-token";
+const exchangeHmrcTokenPath = context.exchangeHmrcTokenLambdaUrlPath || "/api/hmrc/token-post";
+const exchangeCognitoTokenPath = context.exchangeCognitoTokenLambdaUrlPath || "/api/cognito/token-post";
 const submitVatPath = context.submitVatLambdaUrlPath || "/api/submit-vat";
 const logReceiptPath = context.logReceiptLambdaUrlPath || "/api/log-receipt";
 const requestBundlePath = context.bundleLambdaUrlPath || "/api/request-bundle";
@@ -149,7 +152,7 @@ app.post(exchangeMockTokenPath, async (req, res) => {
     queryStringParameters: req.query || {},
     body: JSON.stringify(req.body),
   };
-  const { statusCode, body } = await httpPostMock(event);
+  const { statusCode, body } = await mockTokenPost(event);
   res.status(statusCode).json(JSON.parse(body));
 });
 
@@ -160,7 +163,7 @@ app.post(exchangeHmrcTokenPath, async (req, res) => {
     queryStringParameters: req.query || {},
     body: JSON.stringify(req.body),
   };
-  const { statusCode, body } = await httpPostHmrc(event);
+  const { statusCode, body } = await hmrcTokenPost(event);
   res.status(statusCode).json(JSON.parse(body));
 });
 
@@ -171,7 +174,7 @@ app.post(exchangeCognitoTokenPath, async (req, res) => {
     queryStringParameters: req.query || {},
     body: JSON.stringify(req.body),
   };
-  const { statusCode, body } = await httpPostCognito(event);
+  const { statusCode, body } = await cognitoTokenPost(event);
   res.status(statusCode).json(JSON.parse(body));
 });
 
@@ -354,6 +357,7 @@ app.get(vatObligationsPath, requireActivity("vat-obligations"), async (req, res)
   if (headers) res.set(headers);
   try {
     res.status(statusCode).json(body ? JSON.parse(body) : {});
+    // eslint-disable-next-line sonarjs/no-ignored-exceptions
   } catch (_e) {
     res.status(statusCode).send(body || "");
   }
@@ -435,6 +439,7 @@ app.get(vatPenaltiesPath, requireActivity("vat-obligations"), async (req, res) =
   if (headers) res.set(headers);
   try {
     res.status(statusCode).json(body ? JSON.parse(body) : {});
+    // eslint-disable-next-line sonarjs/no-ignored-exceptions
   } catch (_e) {
     res.status(statusCode).send(body || "");
   }
