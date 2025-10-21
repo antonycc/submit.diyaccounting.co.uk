@@ -147,7 +147,7 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
-      - run: npm ci || npm install
+      - run: npm ci
 
       - run: npm run test:coverage
 
@@ -1621,7 +1621,7 @@ jobs:
       - deploy-publish
       - set-origins
     runs-on: ubuntu-24.04
-    container: mcr.microsoft.com/playwright:v1.55.1-jammy
+    container: mcr.microsoft.com/playwright:v1.56.1-jammy
     # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags
     # and extension with ubuntu distribution e.g. https://releases.ubuntu.com/jammy/
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
