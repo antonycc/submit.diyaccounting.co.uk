@@ -141,7 +141,7 @@ Error response (example)
 ```
 
 VAT submission
-- POST /api/submit-vat
+- POST /api/hmrc/vat/return-post
 Headers: Authorization: Bearer <accessToken>
 Request (example)
 ```json

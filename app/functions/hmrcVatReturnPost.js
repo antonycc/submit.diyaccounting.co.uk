@@ -30,6 +30,115 @@ async function getCognitoClient() {
   return __cognitoClient;
 }
 
+// POST /api/hmrc/vat/return-post
+export async function handler(event) {
+  validateEnv(["HMRC_BASE_URI", "COGNITO_USER_POOL_ID"]);
+
+  const request = extractRequest(event);
+
+  const detectedIP = extractClientIPFromHeaders(event);
+
+  // Validation
+  let errorMessages = [];
+  const { vatNumber, periodKey, vatDue, accessToken, hmrcAccessToken } = JSON.parse(event.body || "{}");
+  const token = accessToken || hmrcAccessToken;
+  if (!vatNumber) {
+    errorMessages.push("Missing vatNumber parameter from body");
+  }
+  if (!periodKey) {
+    errorMessages.push("Missing periodKey parameter from body");
+  }
+  if (!vatDue) {
+    errorMessages.push("Missing vatDue parameter from body");
+  }
+  if (!token) {
+    errorMessages.push("Missing accessToken parameter from body");
+  }
+  const { govClientHeaders, govClientErrorMessages } = eventToGovClientHeaders(event, detectedIP);
+  errorMessages = errorMessages.concat(govClientErrorMessages || []);
+  if (errorMessages.length > 0) {
+    return httpBadRequestResponse({
+      request,
+      headers: { ...govClientHeaders },
+      message: errorMessages.join(", "),
+    });
+  }
+
+  // Optional bundle entitlement enforcement (disabled by default)
+  try {
+    const enforceBundles =
+      String(process.env.DIY_SUBMIT_ENFORCE_BUNDLES || "").toLowerCase() === "true" || process.env.DIY_SUBMIT_ENFORCE_BUNDLES === "1";
+    const userPoolId = process.env.COGNITO_USER_POOL_ID;
+    if (enforceBundles && userPoolId) {
+      const authHeader = event.headers?.authorization || event.headers?.Authorization;
+      if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return httpBadRequestResponse({ request, message: "Missing Authorization Bearer token" });
+      }
+      const idToken = authHeader.split(" ")[1];
+      const decoded = decodeJwtNoVerify(idToken);
+      if (!decoded?.sub) {
+        return httpBadRequestResponse({ request, message: "Invalid Authorization token" });
+      }
+      const bundles = await getUserBundlesFromCognito(userPoolId, decoded.sub);
+      const hmrcBase = process.env.HMRC_BASE_URI;
+      const sandbox = isSandboxBase(hmrcBase);
+      if (sandbox) {
+        if (!bundles || !bundles.some((b) => typeof b === "string" && (b === "HMRC_TEST_API" || b.startsWith("HMRC_TEST_API|")))) {
+          return httpServerErrorResponse({
+            request,
+            message: "Forbidden: HMRC Sandbox submission requires HMRC_TEST_API bundle",
+            error: { code: "BUNDLE_FORBIDDEN", requiredBundle: "HMRC_TEST_API" },
+          });
+        }
+      } else {
+        const allowed = (bundles || []).some(
+          (b) =>
+            typeof b === "string" &&
+            (b === "HMRC_PROD_SUBMIT" ||
+              b.startsWith("HMRC_PROD_SUBMIT|") ||
+              b === "LEGACY_ENTITLEMENT" ||
+              b.startsWith("LEGACY_ENTITLEMENT|")),
+        );
+        if (!allowed) {
+          return httpServerErrorResponse({
+            request,
+            message: "Forbidden: Production submission requires HMRC_PROD_SUBMIT or LEGACY_ENTITLEMENT bundle",
+            error: { code: "BUNDLE_FORBIDDEN", requiredBundle: ["HMRC_PROD_SUBMIT", "LEGACY_ENTITLEMENT"] },
+          });
+        }
+      }
+    }
+  } catch (authError) {
+    return httpServerErrorResponse({
+      request,
+      message: "Authorization failure while checking entitlements",
+      error: authError?.message || String(authError),
+    });
+  }
+
+  // Processing
+  const { receipt, hmrcResponse, hmrcResponseBody } = await submitVat(periodKey, vatDue, vatNumber, token, govClientHeaders);
+
+  if (!hmrcResponse.ok) {
+    return httpServerErrorResponse({
+      request,
+      message: "HMRC VAT submission failed",
+      error: {
+        hmrcResponseCode: hmrcResponse.status,
+        responseBody: hmrcResponseBody,
+      },
+    });
+  }
+
+  // Generate a success response
+  return httpOkResponse({
+    request,
+    data: {
+      receipt,
+    },
+  });
+}
+
 // Lightweight JWT decode (no signature verification)
 function decodeJwtNoVerify(token) {
   try {
@@ -187,113 +296,4 @@ export async function submitVat(periodKey, vatDue, vatNumber, hmrcAccessToken, g
   logger.info(responseLogData);
 
   return { hmrcRequestBody, receipt: hmrcResponseBody, hmrcResponse, hmrcResponseBody, hmrcRequestUrl };
-}
-
-// POST /api/submit-vat
-export async function httpPost(event) {
-  validateEnv(["HMRC_BASE_URI", "COGNITO_USER_POOL_ID"]);
-
-  const request = extractRequest(event);
-
-  const detectedIP = extractClientIPFromHeaders(event);
-
-  // Validation
-  let errorMessages = [];
-  const { vatNumber, periodKey, vatDue, accessToken, hmrcAccessToken } = JSON.parse(event.body || "{}");
-  const token = accessToken || hmrcAccessToken;
-  if (!vatNumber) {
-    errorMessages.push("Missing vatNumber parameter from body");
-  }
-  if (!periodKey) {
-    errorMessages.push("Missing periodKey parameter from body");
-  }
-  if (!vatDue) {
-    errorMessages.push("Missing vatDue parameter from body");
-  }
-  if (!token) {
-    errorMessages.push("Missing accessToken parameter from body");
-  }
-  const { govClientHeaders, govClientErrorMessages } = eventToGovClientHeaders(event, detectedIP);
-  errorMessages = errorMessages.concat(govClientErrorMessages || []);
-  if (errorMessages.length > 0) {
-    return httpBadRequestResponse({
-      request,
-      headers: { ...govClientHeaders },
-      message: errorMessages.join(", "),
-    });
-  }
-
-  // Optional bundle entitlement enforcement (disabled by default)
-  try {
-    const enforceBundles =
-      String(process.env.DIY_SUBMIT_ENFORCE_BUNDLES || "").toLowerCase() === "true" || process.env.DIY_SUBMIT_ENFORCE_BUNDLES === "1";
-    const userPoolId = process.env.COGNITO_USER_POOL_ID;
-    if (enforceBundles && userPoolId) {
-      const authHeader = event.headers?.authorization || event.headers?.Authorization;
-      if (!authHeader || !authHeader.startsWith("Bearer ")) {
-        return httpBadRequestResponse({ request, message: "Missing Authorization Bearer token" });
-      }
-      const idToken = authHeader.split(" ")[1];
-      const decoded = decodeJwtNoVerify(idToken);
-      if (!decoded?.sub) {
-        return httpBadRequestResponse({ request, message: "Invalid Authorization token" });
-      }
-      const bundles = await getUserBundlesFromCognito(userPoolId, decoded.sub);
-      const hmrcBase = process.env.HMRC_BASE_URI;
-      const sandbox = isSandboxBase(hmrcBase);
-      if (sandbox) {
-        if (!bundles || !bundles.some((b) => typeof b === "string" && (b === "HMRC_TEST_API" || b.startsWith("HMRC_TEST_API|")))) {
-          return httpServerErrorResponse({
-            request,
-            message: "Forbidden: HMRC Sandbox submission requires HMRC_TEST_API bundle",
-            error: { code: "BUNDLE_FORBIDDEN", requiredBundle: "HMRC_TEST_API" },
-          });
-        }
-      } else {
-        const allowed = (bundles || []).some(
-          (b) =>
-            typeof b === "string" &&
-            (b === "HMRC_PROD_SUBMIT" ||
-              b.startsWith("HMRC_PROD_SUBMIT|") ||
-              b === "LEGACY_ENTITLEMENT" ||
-              b.startsWith("LEGACY_ENTITLEMENT|")),
-        );
-        if (!allowed) {
-          return httpServerErrorResponse({
-            request,
-            message: "Forbidden: Production submission requires HMRC_PROD_SUBMIT or LEGACY_ENTITLEMENT bundle",
-            error: { code: "BUNDLE_FORBIDDEN", requiredBundle: ["HMRC_PROD_SUBMIT", "LEGACY_ENTITLEMENT"] },
-          });
-        }
-      }
-    }
-  } catch (authError) {
-    return httpServerErrorResponse({
-      request,
-      message: "Authorization failure while checking entitlements",
-      error: authError?.message || String(authError),
-    });
-  }
-
-  // Processing
-  const { receipt, hmrcResponse, hmrcResponseBody } = await submitVat(periodKey, vatDue, vatNumber, token, govClientHeaders);
-
-  if (!hmrcResponse.ok) {
-    return httpServerErrorResponse({
-      request,
-      message: "HMRC VAT submission failed",
-      error: {
-        hmrcResponseCode: hmrcResponse.status,
-        responseBody: hmrcResponseBody,
-      },
-    });
-  }
-
-  // Generate a success response
-  return httpOkResponse({
-    request,
-    data: {
-      receipt,
-    },
-  });
 }

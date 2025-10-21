@@ -283,7 +283,7 @@
       }
 
       async function submitVat(vatNumber, periodKey, vatDue, accessToken, headers) {
-        const url = "/api/submit-vat";
+        const url = "/api/hmrc/vat/return-post";
         const body = JSON.stringify({
           vatNumber,
           periodKey,

@@ -199,13 +199,12 @@ public class SubmitSharedNames {
         this.exchangeHmrcTokenLambdaArn = "%s-hmrc-token-post".formatted(appLambdaArnPrefix);
         this.exchangeHmrcTokenLambdaUrlPath = "/api/hmrc/token-post";
 
-        // TODO: YOU ARE HERE: NEXT: /api/submit-vat -> /api/hmrc/vat/return-post
-        this.submitVatLambdaHandler = "submitVat.httpPost";
+        this.submitVatLambdaHandler = "hmrcVatReturnPost.handler";
         this.submitVatLambdaFunctionName = buildFunctionName(this.appResourceNamePrefix, this.submitVatLambdaHandler);
-        this.submitVatLambdaArn = "%s-submit-vat".formatted(appLambdaArnPrefix);
-        this.submitVatLambdaUrlPath = "/api/submit-vat";
+        this.submitVatLambdaArn = "%s-hmrc-vat-return".formatted(appLambdaArnPrefix);
+        this.submitVatLambdaUrlPath = "/api/hmrc/vat/return-post";
 
-        // TODO: /api/log-receipt -> /api/hmrc/receipt-post
+        // TODO: YOU ARE HERE: NEXT: /api/log-receipt -> /api/hmrc/receipt-post
         this.logReceiptLambdaHandler = "logReceipt.httpPost";
         this.logReceiptLambdaFunctionName = buildFunctionName(this.appResourceNamePrefix, this.logReceiptLambdaHandler);
         this.logReceiptLambdaArn = "%s-log-receipt".formatted(appLambdaArnPrefix);

@@ -245,7 +245,7 @@ describe("VAT Flow Frontend JavaScript", () => {
 
       const result = await window.submitVat("111222333", "24A1", "1000.00", "test-token", headers);
 
-      expect(fetchMock).toHaveBeenCalledWith("/api/submit-vat", {
+      expect(fetchMock).toHaveBeenCalledWith("/api/hmrc/vat/return-post", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

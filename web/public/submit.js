@@ -89,7 +89,7 @@ async function getAuthUrl(state, provider = "hmrc") {
 
 // VAT submission API function
 async function submitVat(vatNumber, periodKey, vatDue, accessToken, govClientHeaders = {}) {
-  const url = "/api/submit-vat";
+  const url = "/api/hmrc/vat/return-post";
   const response = await fetch(url, {
     method: "POST",
     headers: {

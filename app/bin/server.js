@@ -6,7 +6,7 @@ import express from "express";
 import { fileURLToPath } from "url";
 import { readFileSync } from "fs";
 import fetch from "node-fetch";
-import { httpPost as submitVatHttpPost } from "../functions/submitVat.js";
+import { handler as submitVatHttpPost } from "../functions/hmrcVatReturnPost.js";
 import { httpPost as logReceiptHttpPost } from "../functions/logReceipt.js";
 import { httpPost as requestBundleHttpPost, httpDelete as removeBundleHttpDelete } from "../functions/bundle.js";
 import { handler as getCatalogHttpGet } from "../functions/catalogGet.js";
@@ -81,7 +81,7 @@ const cognitoAuthUrlPath = context.cognitoAuthUrlLambdaUrlPath || "/api/cognito/
 const exchangeMockTokenPath = context.exchangeTokenLambdaUrlPath || "/api/exchange-token";
 const exchangeHmrcTokenPath = context.exchangeHmrcTokenLambdaUrlPath || "/api/hmrc/token-post";
 const exchangeCognitoTokenPath = context.exchangeCognitoTokenLambdaUrlPath || "/api/cognito/token-post";
-const submitVatPath = context.submitVatLambdaUrlPath || "/api/submit-vat";
+const submitVatPath = context.submitVatLambdaUrlPath || "/api/hmrc/vat/return-post";
 const logReceiptPath = context.logReceiptLambdaUrlPath || "/api/log-receipt";
 const requestBundlePath = context.bundleLambdaUrlPath || "/api/request-bundle";
 const catalogPath = context.catalogLambdaUrlPath || "/api/catalog-get";

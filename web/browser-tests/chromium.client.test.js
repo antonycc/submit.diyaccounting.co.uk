@@ -64,7 +64,7 @@ test.describe("Client System Test - VAT Flow in Browser", () => {
       }
     });
 
-    await page.route("/api/submit-vat", async (route) => {
+    await page.route("/api/hmrc/vat/return-post", async (route) => {
       const request = route.request();
       const body = JSON.parse(request.postData() || "{}");
 
