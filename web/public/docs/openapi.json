@@ -108,7 +108,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "HMRC token exchanged successfully"
+            "description" : "Receipt logged successfully"
           }
         }
       },
