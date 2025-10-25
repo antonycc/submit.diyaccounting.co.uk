@@ -79,7 +79,7 @@ public class ApiStack extends Stack {
         String path();
         HttpMethod httpMethod();
         String lambdaKey();
-        
+
         static ImmutableEndpointConfig.Builder builder() {
             return ImmutableEndpointConfig.builder();
         }
@@ -120,39 +120,39 @@ public class ApiStack extends Stack {
         List<Metric> lambdaErrors = new java.util.ArrayList<>();
         List<Metric> lambdaDurationsP95 = new java.util.ArrayList<>();
         List<Metric> lambdaThrottles = new java.util.ArrayList<>();
-        
+
         for (int i = 0; i < endpointConfigurations.size(); i++) {
             EndpointConfig endpointConfig = endpointConfigurations.get(i);
             IFunction fn = props.lambdaFunctions().get(endpointConfig.lambdaKey());
-            
+
             if (fn == null) {
-                infof("Skipping endpoint %s %s - Lambda function %s not found", 
+                infof("Skipping endpoint %s %s - Lambda function %s not found",
                     endpointConfig.httpMethod(), endpointConfig.path(), endpointConfig.lambdaKey());
                 continue;
             }
-            
+
             // Create HTTP Lambda integration
             HttpLambdaIntegration integration = HttpLambdaIntegration.Builder.create(
                     props.resourceNamePrefix() + "-Integration-" + i, fn)
                     .build();
-            
+
             // Create HTTP route
             HttpRoute.Builder.create(this, props.resourceNamePrefix() + "-Route-" + i)
                     .httpApi(this.httpApi)
                     .routeKey(HttpRouteKey.with(endpointConfig.path(), endpointConfig.httpMethod()))
                     .integration(integration)
                     .build();
-            
-            infof("Created route %s %s for function %s", 
+
+            infof("Created route %s %s for function %s",
                 endpointConfig.httpMethod().toString(), endpointConfig.path(), fn.getFunctionName());
-            
+
             // Collect metrics for monitoring
             lambdaInvocations.add(fn.metricInvocations());
             lambdaErrors.add(fn.metricErrors());
             lambdaDurationsP95.add(fn.metricDuration()
                     .with(MetricOptions.builder().statistic("p95").build()));
             lambdaThrottles.add(fn.metricThrottles());
-            
+
             // Per-function error alarm (>=1 error in 5 minutes)
             Alarm.Builder.create(this, props.resourceNamePrefix() + "-LambdaErrors-" + i)
                     .alarmName(props.resourceNamePrefix() + "-lambda-errors-" + i)
@@ -165,18 +165,10 @@ public class ApiStack extends Stack {
                     .build();
         }
 
-        // Add API Gateway metrics to monitoring
-        List<Metric> apiGatewayMetrics = List.of(
-            this.httpApi.metricCount(),
-            this.httpApi.metricClientError(),
-            this.httpApi.metricServerError(),
-            this.httpApi.metricLatency().with(MetricOptions.builder().statistic("p95").build())
-        );
-
         // Dashboard
         List<List<software.amazon.awscdk.services.cloudwatch.IWidget>> rows =
                 new java.util.ArrayList<>();
-        
+
         // Row 1: API Gateway metrics
         rows.add(List.of(
                 GraphWidget.Builder.create()
@@ -191,7 +183,7 @@ public class ApiStack extends Stack {
                         .width(12)
                         .height(6)
                         .build()));
-        
+
         // Row 2: API Gateway latency
         rows.add(List.of(
                 GraphWidget.Builder.create()
@@ -200,7 +192,7 @@ public class ApiStack extends Stack {
                         .width(24)
                         .height(6)
                         .build()));
-        
+
         // Row 3: Lambda invocations and errors (if we have any lambdas)
         if (!lambdaInvocations.isEmpty()) {
             rows.add(List.of(
@@ -230,9 +222,9 @@ public class ApiStack extends Stack {
                             .height(6)
                             .build()));
         }
-        
-        this.operationalDashboard = Dashboard.Builder.create(this, props.resourceNamePrefix() + "-OperationalDashboard")
-                .dashboardName(props.resourceNamePrefix() + "-operations")
+
+        this.operationalDashboard = Dashboard.Builder.create(this, props.resourceNamePrefix() + "-RestApiDashboard")
+                .dashboardName(props.resourceNamePrefix() + "-api")
                 .widgets(rows)
                 .build();
 
@@ -240,7 +232,7 @@ public class ApiStack extends Stack {
 
         // Outputs
         cfnOutput(this, "HttpApiId", this.httpApi.getHttpApiId());
-        
+
         // Export the API Gateway URL for cross-stack reference
         CfnOutput.Builder.create(this, "HttpApiUrlExport")
                 .value(this.httpApi.getUrl())
@@ -253,80 +245,80 @@ public class ApiStack extends Stack {
                 "https://" + this.getRegion() + ".console.aws.amazon.com/cloudwatch/home?region=" + this.getRegion()
                         + "#dashboards:name=" + this.operationalDashboard.getDashboardName());
 
-        infof("ApiStack %s created successfully for %s with API Gateway URL: %s", 
+        infof("ApiStack %s created successfully for %s with API Gateway URL: %s",
             this.getNode().getId(), props.resourceNamePrefix(), this.httpApi.getUrl());
     }
 
     private static List<EndpointConfig> createEndpointConfigurations() {
         List<EndpointConfig> configs = new java.util.ArrayList<>();
-        
+
         // Map each Lambda key to its endpoint configuration
         configs.add(EndpointConfig.builder()
                 .path("/cognito/authUrl")
                 .httpMethod(HttpMethod.GET)
                 .lambdaKey("authUrlCognito")
                 .build());
-                
+
         configs.add(EndpointConfig.builder()
                 .path("/cognito/token")
                 .httpMethod(HttpMethod.POST)
                 .lambdaKey("exchangeCognitoToken")
                 .build());
-                
+
         configs.add(EndpointConfig.builder()
                 .path("/hmrc/authUrl")
                 .httpMethod(HttpMethod.GET)
                 .lambdaKey("authUrlHmrc")
                 .build());
-                
+
         configs.add(EndpointConfig.builder()
                 .path("/hmrc/token")
                 .httpMethod(HttpMethod.POST)
                 .lambdaKey("exchangeHmrcToken")
                 .build());
-                
+
         configs.add(EndpointConfig.builder()
                 .path("/hmrc/vat/return")
                 .httpMethod(HttpMethod.POST)
                 .lambdaKey("submitVat")
                 .build());
-                
+
         configs.add(EndpointConfig.builder()
                 .path("/hmrc/receipt")
                 .httpMethod(HttpMethod.POST)
                 .lambdaKey("logReceipt")
                 .build());
-                
+
         configs.add(EndpointConfig.builder()
                 .path("/hmrc/receipt")
                 .httpMethod(HttpMethod.GET)
                 .lambdaKey("myReceipts")
                 .build());
-                
+
         configs.add(EndpointConfig.builder()
                 .path("/catalog")
                 .httpMethod(HttpMethod.GET)
                 .lambdaKey("catalog")
                 .build());
-                
+
         configs.add(EndpointConfig.builder()
                 .path("/bundle")
                 .httpMethod(HttpMethod.POST)
                 .lambdaKey("requestBundles")
                 .build());
-                
+
         configs.add(EndpointConfig.builder()
                 .path("/bundle")
                 .httpMethod(HttpMethod.DELETE)
                 .lambdaKey("bundleDelete")
                 .build());
-                
+
         configs.add(EndpointConfig.builder()
                 .path("/bundle")
                 .httpMethod(HttpMethod.GET)
                 .lambdaKey("myBundles")
                 .build());
-        
+
         return configs;
     }
 }

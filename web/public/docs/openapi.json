@@ -165,7 +165,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "Bundles retrieved successfully"
+            "description" : "Catalog retrieved successfully"
           }
         }
       },
@@ -179,7 +179,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "Bundle deleted successfully"
+            "description" : "Bundle created successfully"
           }
         }
       }
