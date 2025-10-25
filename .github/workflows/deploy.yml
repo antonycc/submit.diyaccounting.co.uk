@@ -1235,8 +1235,10 @@ jobs:
           MY_BUNDLES_LAMBDA_URL: ${{ needs.deploy-account.outputs.myBundlesLambdaUrl }}
 
       - run: cat cdk-submit-delivery.out/cdk-outputs-edge.json | jq '.'
+        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
 
       - name: Resolve stack outputs
+        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
         id: edge-outputs
         run: |
           ORIGIN_BUCKET_NAME=$(jq -r '.["del-${{ needs.names.outputs.deployment-name }}-EdgeStack"].OriginBucketName' cdk-submit-delivery.out/cdk-outputs-edge.json)
