@@ -13,11 +13,11 @@ import { handler as removeBundleHttpDelete } from "../functions/bundleDelete.js"
 import { handler as getCatalogHttpGet } from "../functions/catalogGet.js";
 import { handler as myBundlesHttpGet } from "../functions/bundleGet.js";
 import { handler as myReceiptsHttpGet, httpGetByName as myReceiptHttpGetByName } from "../functions/hmrcReceiptGet.js";
-import { httpGet as getVatObligationsHttpGet } from "../functions/getVatObligations.js";
-import { httpGet as getVatReturnHttpGet } from "../functions/getVatReturn.js";
-import { httpGet as getVatLiabilitiesHttpGet } from "../functions/getVatLiabilities.js";
-import { httpGet as getVatPaymentsHttpGet } from "../functions/getVatPayments.js";
-import { httpGet as getVatPenaltiesHttpGet } from "../functions/getVatPenalties.js";
+import { httpGet as getVatObligationsHttpGet } from "../functions/hmrcVatObligationGet.js";
+import { httpGet as getVatReturnHttpGet } from "../functions/hmrcVatReturnGet.js";
+import { httpGet as getVatLiabilitiesHttpGet } from "../functions/hmrcVatLiabilityGet.js";
+import { httpGet as getVatPaymentsHttpGet } from "../functions/hmrcVatPaymentGet.js";
+import { httpGet as getVatPenaltiesHttpGet } from "../functions/hmrcVatPenaltyGet.js";
 import logger from "../lib/logger.js";
 import { requireActivity } from "../lib/entitlementsService.js";
 import { dotenvConfigIfNotBlank, validateEnv } from "../lib/env.js";
@@ -338,11 +338,11 @@ app.get(`${myReceiptsPath}/:name`, async (req, res) => {
 });
 
 // VAT API endpoints
-const vatObligationsPath = "/api/vat/obligations";
-const vatReturnPath = "/api/vat/returns";
-const vatLiabilitiesPath = "/api/vat/liabilities";
-const vatPaymentsPath = "/api/vat/payments";
-const vatPenaltiesPath = "/api/vat/penalties";
+const vatObligationsPath = "/api/hmrc/vat/obligation";
+const vatReturnPath = "/api/hmrc/vat/return";
+const vatLiabilitiesPath = "/api/hmrc/vat/liability";
+const vatPaymentsPath = "/api/hmrc/vat/payments";
+const vatPenaltiesPath = "/api/hmrc/vat/penalty";
 
 // VAT Obligations endpoint
 app.get(vatObligationsPath, requireActivity("vat-obligations"), async (req, res) => {

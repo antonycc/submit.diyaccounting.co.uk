@@ -3,9 +3,9 @@
 import { describe, beforeAll, afterAll, beforeEach, it, expect, vi } from "vitest";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 
-import { httpGet as getVatObligationsHandler } from "@app/functions/getVatObligations.js";
-import { httpGet as getVatReturnHandler } from "@app/functions/getVatReturn.js";
-import { httpGet as getVatLiabilitiesHandler } from "@app/functions/getVatLiabilities.js";
+import { httpGet as getVatObligationsHandler } from "@app/functions/hmrcVatObligationGet.js";
+import { httpGet as getVatReturnHandler } from "@app/functions/hmrcVatReturnGet.js";
+import { httpGet as getVatLiabilitiesHandler } from "@app/functions/hmrcVatLiabilityGet.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 

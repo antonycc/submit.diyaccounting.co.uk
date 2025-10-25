@@ -3,7 +3,7 @@
 import { describe, test, expect, beforeEach, vi } from "vitest";
 import fetch from "node-fetch";
 
-import { httpGet } from "../functions/getVatPenalties.js";
+import { httpGet } from "../functions/hmrcVatPenaltyGet.js";
 import { buildGovClientTestHeaders } from "./govClientTestHeader.js";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 
