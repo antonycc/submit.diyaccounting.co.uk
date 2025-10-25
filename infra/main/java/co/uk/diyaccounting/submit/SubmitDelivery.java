@@ -10,6 +10,11 @@ import co.uk.diyaccounting.submit.stacks.EdgeStack;
 import co.uk.diyaccounting.submit.stacks.PublishStack;
 import co.uk.diyaccounting.submit.stacks.SelfDestructStack;
 import co.uk.diyaccounting.submit.utils.KindCdk;
+import software.amazon.awscdk.App;
+import software.amazon.awscdk.Environment;
+import software.amazon.awscdk.Fn;
+import software.constructs.Construct;
+
 import java.lang.reflect.Field;
 import java.nio.file.Paths;
 import java.time.ZonedDateTime;
@@ -206,6 +211,16 @@ public class SubmitDelivery {
                 pathsToFns, "%s*".formatted(sharedNames.requestBundlesLambdaUrlPath), requestBundlesLambdaFunctionUrl);
         putIfNotNull(pathsToFns, "%s*".formatted(sharedNames.bundleDeleteLambdaUrlPath), bundleDeleteLambdaFunctionUrl);
         putIfNotNull(pathsToFns, "%s*".formatted(sharedNames.myBundlesLambdaUrlPath), myBundlesLambdaFunctionUrl);
+        
+        // Import API Gateway URL from application stack via CloudFormation export
+        String apiGatewayExportName = sharedNames.appResourceNamePrefix + "-HttpApiUrl";
+        String apiGatewayUrl = null;
+        try {
+            apiGatewayUrl = Fn.importValue(apiGatewayExportName);
+            infof("Imported API Gateway URL from export %s", apiGatewayExportName);
+        } catch (RuntimeException e) {
+            warnf("Failed to import API Gateway URL from CloudFormation export %s. This may indicate the ApiStack has not been deployed yet. Exception: %s", apiGatewayExportName, e.getMessage());
+        }
 
         // Create the Edge stack (CloudFront, Route53)
         this.edgeStack = new EdgeStack(
@@ -224,6 +239,7 @@ public class SubmitDelivery {
                         .hostedZoneId(appProps.hostedZoneId)
                         .certificateArn(appProps.certificateArn)
                         .pathsToOriginLambdaFunctionUrls(pathsToFns)
+                        .apiGatewayUrl(apiGatewayUrl)
                         .logGroupRetentionPeriodDays(accessLogGroupRetentionPeriodDays)
                         .build());
 

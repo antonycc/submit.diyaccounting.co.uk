@@ -62,6 +62,12 @@ class SubmitApplicationCdkResourceTest {
         infof("Created stack:", submitApplication.accountStack.getStackName());
         Template.fromStack(submitApplication.accountStack).resourceCountIs("AWS::Lambda::Function", 4);
 
+        infof("Created stack:", submitApplication.apiStack.getStackName());
+        Template apiStackTemplate = Template.fromStack(submitApplication.apiStack);
+        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Api", 1);
+        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 11); // 11 lambda endpoints
+        apiStackTemplate.resourceCountIs("AWS::CloudWatch::Dashboard", 1);
+
         infof("Created stack:", submitApplication.opsStack.getStackName());
         Template.fromStack(submitApplication.opsStack).resourceCountIs("AWS::CloudWatch::Dashboard", 1);
 

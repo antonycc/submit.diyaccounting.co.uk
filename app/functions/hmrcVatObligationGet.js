@@ -1,4 +1,4 @@
-// app/functions/getVatReturn.js
+// app/functions/getVatObligations.js
 
 import logger from "../lib/logger.js";
 import {
@@ -11,24 +11,19 @@ import {
 import eventToGovClientHeaders from "../lib/eventToGovClientHeaders.js";
 import { hmrcVatGet, shouldUseStub, getStubData } from "../lib/hmrcVatApi.js";
 
-// GET /api/vat/returns/:periodKey
+// GET /api/hmrc/vat/obligation
 export async function httpGet(event) {
   const request = extractRequest(event);
   const detectedIP = extractClientIPFromHeaders(event);
 
-  // Extract path parameters and query parameters
-  const pathParams = event.pathParameters || {};
+  // Extract query parameters
   const queryParams = event.queryStringParameters || {};
-  const { vrn, periodKey } = { ...pathParams, ...queryParams };
-  const { "Gov-Test-Scenario": testScenario } = queryParams;
+  const { vrn, from, to, status, "Gov-Test-Scenario": testScenario } = queryParams;
 
   // Validation
   let errorMessages = [];
   if (!vrn) {
     errorMessages.push("Missing vrn parameter");
-  }
-  if (!periodKey) {
-    errorMessages.push("Missing periodKey parameter");
   }
 
   // Validate VRN format (9 digits)
@@ -36,9 +31,17 @@ export async function httpGet(event) {
     errorMessages.push("Invalid vrn format - must be 9 digits");
   }
 
-  // Validate periodKey format
-  if (periodKey && !/^[A-Z0-9#]{3,5}$/i.test(periodKey)) {
-    errorMessages.push("Invalid periodKey format");
+  // Validate date formats if provided
+  if (from && !/^\d{4}-\d{2}-\d{2}$/.test(from)) {
+    errorMessages.push("Invalid from date format - must be YYYY-MM-DD");
+  }
+  if (to && !/^\d{4}-\d{2}-\d{2}$/.test(to)) {
+    errorMessages.push("Invalid to date format - must be YYYY-MM-DD");
+  }
+
+  // Validate status if provided
+  if (status && !["O", "F"].includes(status)) {
+    errorMessages.push("Invalid status - must be O (Open) or F (Fulfilled)");
   }
 
   const { govClientHeaders, govClientErrorMessages } = eventToGovClientHeaders(event, detectedIP);
@@ -64,46 +67,51 @@ export async function httpGet(event) {
   const accessToken = authHeader.split(" ")[1];
 
   try {
-    let vatReturn;
+    let obligations;
 
     // Check if we should use stubbed data
-    if (shouldUseStub("TEST_VAT_RETURN")) {
-      logger.info({ message: "Using stubbed VAT return data", vrn, periodKey, testScenario });
-      vatReturn = getStubData("TEST_VAT_RETURN", {
-        periodKey: periodKey,
-        vatDueSales: 1000.5,
-        vatDueAcquisitions: 0.0,
-        totalVatDue: 1000.5,
-        vatReclaimedCurrPeriod: 0.0,
-        netVatDue: 1000.5,
-        totalValueSalesExVAT: 4000.0,
-        totalValuePurchasesExVAT: 1000.0,
-        totalValueGoodsSuppliedExVAT: 0.0,
-        totalAcquisitionsExVAT: 0.0,
-        finalised: true,
+    if (shouldUseStub("TEST_VAT_OBLIGATIONS")) {
+      logger.info({ message: "Using stubbed VAT obligations data", testScenario });
+      obligations = getStubData("TEST_VAT_OBLIGATIONS", {
+        obligations: [
+          {
+            start: "2024-01-01",
+            end: "2024-03-31",
+            due: "2024-05-07",
+            status: "F",
+            periodKey: "24A1",
+            received: "2024-05-06",
+          },
+          {
+            start: "2024-04-01",
+            end: "2024-06-30",
+            due: "2024-08-07",
+            status: "O",
+            periodKey: "24A2",
+          },
+        ],
       });
     } else {
+      // Build query parameters for HMRC API
+      const hmrcQueryParams = {};
+      if (from) hmrcQueryParams.from = from;
+      if (to) hmrcQueryParams.to = to;
+      if (status) hmrcQueryParams.status = status;
+
       // Call HMRC API
-      const hmrcResult = await hmrcVatGet(`/organisations/vat/${vrn}/returns/${periodKey}`, accessToken, govClientHeaders, testScenario);
+      const hmrcResult = await hmrcVatGet(
+        `/organisations/vat/${vrn}/obligations`,
+        accessToken,
+        govClientHeaders,
+        testScenario,
+        hmrcQueryParams,
+      );
 
       if (!hmrcResult.ok) {
-        // Handle 404 specifically for not found returns
-        if (hmrcResult.status === 404) {
-          return httpBadRequestResponse({
-            request,
-            headers: { ...govClientHeaders },
-            message: "VAT return not found for the specified period",
-            error: {
-              hmrcResponseCode: hmrcResult.status,
-              responseBody: hmrcResult.data,
-            },
-          });
-        }
-
         return httpServerErrorResponse({
           request,
           headers: { ...govClientHeaders },
-          message: "HMRC VAT return retrieval failed",
+          message: "HMRC VAT obligations retrieval failed",
           error: {
             hmrcResponseCode: hmrcResult.status,
             responseBody: hmrcResult.data,
@@ -111,27 +119,25 @@ export async function httpGet(event) {
         });
       }
 
-      vatReturn = hmrcResult.data;
+      obligations = hmrcResult.data;
     }
 
     // Return successful response
     return httpOkResponse({
       request,
-      data: vatReturn,
+      data: obligations,
     });
   } catch (error) {
     logger.error({
-      message: "Error retrieving VAT return",
+      message: "Error retrieving VAT obligations",
       error: error.message,
       stack: error.stack,
-      vrn,
-      periodKey,
     });
 
     return httpServerErrorResponse({
       request,
       headers: { ...govClientHeaders },
-      message: "Internal server error retrieving VAT return",
+      message: "Internal server error retrieving VAT obligations",
       error: error.message,
     });
   }

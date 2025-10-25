@@ -500,6 +500,51 @@
                 </executions>
             </plugin>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.5.3</version>
+                <configuration>
+                    <!-- Enable forking to allow console logging -->
+                    <forkCount>1</forkCount>
+                    <reuseForks>true</reuseForks>
+                    <!-- Ensure console output is visible -->
+                    <useSystemClassLoader>true</useSystemClassLoader>
+                    <!-- JVM arguments to suppress Java agent warnings -->
+                    <argLine>-XX:+EnableDynamicAgentLoading
+                        -Xshare:off
+                        --add-opens java.base/java.lang=ALL-UNNAMED
+                        --add-opens java.base/java.util=ALL-UNNAMED</argLine>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-wrapper-plugin</artifactId>
+                <version>3.3.2</version>
+                <configuration>
+                    <mavenVersion>3.9.10</mavenVersion>
+                </configuration>
+            </plugin>
+            <!-- Generate OpenAPI/Swagger documentation -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.5.0</version>
+                <executions>
+                    <execution>
+                        <id>generate-swagger-docs</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>java</goal>
+                        </goals>
+                        <configuration>
+                            <mainClass>co.uk.diyaccounting.submit.swagger.OpenApiGenerator</mainClass>
+                            <classpathScope>compile</classpathScope>
+                            <commandlineArgs>${project.basedir}/web/public/docs</commandlineArgs>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>versions-maven-plugin</artifactId>
                 <version>2.18.0</version>

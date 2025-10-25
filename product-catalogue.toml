@@ -96,11 +96,27 @@ bundles = ["test"]
 path = "activities/viewVatReturn.html"
 # tags = ["sandbox"]
 
+# TODO: Create an authorizer that extracts the bundles from the JWT, and the related paths from the catalogue, then checks one of the paths matches the request
+[[activities]]
+id = "test"
+name = "View and edit your bundles"
+bundles = ["test"]
+path = "^/api/hmrc/vat.*"
+type = "api"
+
 [[activities]]
 id = "my-receipts"
 name = "View previously submitted receipts"
 bundles = ["default"]
 path = "account/receipts.html"
+
+# TODO: Create an authorizer that extracts the bundles from the JWT, and the related paths from the catalogue, then checks one of the paths matches the request
+[[activities]]
+id = "bundle"
+name = "View and edit your bundles"
+bundles = ["default"]
+path = "^/api/bundle.*"
+type = "api"
 
 [[activities]]
 id = "submit-vat"

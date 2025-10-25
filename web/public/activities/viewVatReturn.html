@@ -150,7 +150,7 @@
             throw new Error("No access token found. Please authorize with HMRC first.");
           }
 
-          const response = await fetch(`/api/vat/returns/${periodKey}?${params}`, {
+          const response = await fetch(`/api/hmrc/vat/return/${periodKey}?${params}`, {
             method: "GET",
             headers: {
               "Authorization": `Bearer ${accessToken}`,
