@@ -165,7 +165,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "Catalog retrieved successfully"
+            "description" : "Bundles retrieved successfully"
           }
         }
       },
