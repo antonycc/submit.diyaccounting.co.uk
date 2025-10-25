@@ -179,7 +179,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "Bundle created successfully"
+            "description" : "Bundle deleted successfully"
           }
         }
       }
