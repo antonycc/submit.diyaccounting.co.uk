@@ -215,7 +215,7 @@ public class SubmitDelivery {
         try {
             apiGatewayUrl = Fn.importValue(apiGatewayExportName);
             infof("Imported API Gateway URL from export %s", apiGatewayExportName);
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             warnf("Could not import API Gateway URL from export %s: %s", apiGatewayExportName, e.getMessage());
         }
 

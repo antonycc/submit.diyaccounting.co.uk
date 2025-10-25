@@ -389,7 +389,7 @@ public class EdgeStack extends Stack {
     public BehaviorOptions createBehaviorOptionsForLambdaUrl(String lambdaFunctionUrl) {
         // Extract the host from the Function URL (e.g., "https://abc123.lambda-url.us-east-1.on.aws/" ->
         // "abc123.lambda-url.us-east-1.on.aws")
-        var lambdaUrlHost = getLambdaUrlHostFromUrl(lambdaFunctionUrl);
+        var lambdaUrlHost = getHostFromUrl(lambdaFunctionUrl);
         var origin = HttpOrigin.Builder.create(lambdaUrlHost)
                 .protocolPolicy(OriginProtocolPolicy.HTTPS_ONLY)
                 .build();
@@ -420,10 +420,6 @@ public class EdgeStack extends Stack {
                 .build();
     }
 
-    private String getLambdaUrlHostFromUrl(String functionUrl) {
-        return getHostFromUrl(functionUrl);
-    }
-    
     private String getHostFromUrl(String url) {
         // Extract host from URL (e.g., "https://example.com/path" -> "example.com")
         if (url.startsWith("https://")) {

@@ -258,8 +258,6 @@ public class ApiStack extends Stack {
                 .exportName(props.resourceNamePrefix() + "-HttpApiUrl")
                 .description("API Gateway v2 URL for " + props.resourceNamePrefix())
                 .build();
-                
-        cfnOutput(this, "HttpApiUrl", this.httpApi.getUrl());
         cfnOutput(
                 this,
                 "OperationalDashboard",
