@@ -331,7 +331,11 @@ public class OpenApiGenerator {
         deleteBundle.put("operationId", "deleteBundle");
         deleteBundle.set("tags", accountTags);
         deleteBundle.set("security", security);
-        deleteBundle.set("responses", postResponses);
+        ObjectNode deleteResponses = mapper.createObjectNode();
+        ObjectNode delete200 = mapper.createObjectNode();
+        delete200.put("description", "Bundle deleted successfully");
+        deleteResponses.set("200", delete200);
+        deleteBundle.set("responses", deleteResponses);
         
         bundle.set("post", postBundle);
         bundle.set("get", getBundle);
