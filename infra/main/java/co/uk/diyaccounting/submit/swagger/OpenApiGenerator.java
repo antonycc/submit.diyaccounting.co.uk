@@ -232,7 +232,12 @@ public class OpenApiGenerator {
         hmrcSecurity.add(hmrcSecurityItem);
         postVatReturn.set("security", hmrcSecurity);
         
-        postVatReturn.set("responses", postResponses);
+        // Create a new response object for VAT return
+        ObjectNode vatReturnResponses = mapper.createObjectNode();
+        ObjectNode vatReturn200 = mapper.createObjectNode();
+        vatReturn200.put("description", "VAT return submitted successfully");
+        vatReturnResponses.set("200", vatReturn200);
+        postVatReturn.set("responses", vatReturnResponses);
         
         vatReturn.set("post", postVatReturn);
         paths.set("/hmrc/vat/return", vatReturn);
