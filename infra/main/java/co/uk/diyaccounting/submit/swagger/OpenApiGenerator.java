@@ -250,7 +250,12 @@ public class OpenApiGenerator {
         postReceipt.put("operationId", "logReceipt");
         postReceipt.set("tags", postTags);
         postReceipt.set("security", security);
-        postReceipt.set("responses", postResponses);
+        // Create a new response object for receipt logging
+        ObjectNode postReceiptResponses = mapper.createObjectNode();
+        ObjectNode postReceipt200 = mapper.createObjectNode();
+        postReceipt200.put("description", "Receipt logged successfully");
+        postReceiptResponses.set("200", postReceipt200);
+        postReceipt.set("responses", postReceiptResponses);
         
         // GET /hmrc/receipt
         ObjectNode getReceipt = mapper.createObjectNode();
