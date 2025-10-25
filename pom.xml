@@ -499,6 +499,26 @@
                     <mavenVersion>3.9.10</mavenVersion>
                 </configuration>
             </plugin>
+            <!-- Generate OpenAPI/Swagger documentation -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.5.0</version>
+                <executions>
+                    <execution>
+                        <id>generate-swagger-docs</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>java</goal>
+                        </goals>
+                        <configuration>
+                            <mainClass>co.uk.diyaccounting.submit.swagger.OpenApiGenerator</mainClass>
+                            <classpathScope>compile</classpathScope>
+                            <commandlineArgs>${project.basedir}/web/public/docs</commandlineArgs>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>versions-maven-plugin</artifactId>

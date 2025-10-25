@@ -1,9 +1,9 @@
-<!-- account/bundles.html -->
+<!-- account/bundles2.html -->
 <!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>DIY Accounting Submit - Bundles</title>
+    <title>DIY Accounting Submit - Bundles (API v2)</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" href="../submit.css" />
   </head>
@@ -14,7 +14,7 @@
           <button class="hamburger-btn" onclick="toggleMenu()">☰</button>
           <div class="menu-dropdown" id="menuDropdown">
             <a href="../index.html">Home</a>
-            <a href="../account/bundles.html">Bundles</a>
+            <a href="../account/bundles.html">Bundles (v1)</a>
             <a href="../account/bundles2.html">Bundles (v2)</a>
             <a href="../account/receipts.html">Receipts</a>
             <a href="../docs/index.html">API Docs</a>
@@ -35,7 +35,10 @@
       <div id="loadingSpinner" class="spinner" style="display: none"></div>
 
       <div class="form-container" style="text-align: center">
-        <h2>Bundles</h2>
+        <h2>Bundles (API Gateway v2)</h2>
+        <p style="color: #6c757d; font-style: italic; margin-bottom: 2em;">
+          This page uses the new API Gateway v2 endpoints at <code>/api/v1/*</code>
+        </p>
 
         <div class="bundles-list" id="catalogBundles"></div>
 
@@ -64,6 +67,14 @@
           >
             Remove All Bundles
           </button>
+        </div>
+
+        <div style="margin-top: 2em; padding-top: 1em; border-top: 1px solid #eee">
+          <h4>API Gateway v2 Info</h4>
+          <p style="font-size: 0.9em; color: #666;">
+            Base URL: <code id="apiBaseUrl">Loading...</code><br>
+            Endpoints: <code>/api/v1/catalog</code>, <code>/api/v1/bundle</code>
+          </p>
         </div>
       </div>
     </div>
@@ -97,6 +108,12 @@
     <script src="../widgets/localstorage-viewer.js"></script>
 
     <script>
+      // --- API Gateway v2 Configuration
+      const API_BASE_V2 = '/api/v1';
+      
+      // Update the API base URL display
+      document.getElementById('apiBaseUrl').textContent = window.location.origin + API_BASE_V2;
+
       // --- helpers
       const getIdToken = () => localStorage.getItem("cognitoIdToken");
 
@@ -158,9 +175,13 @@
         btn.disabled = true;
 
         try {
-          const r = await fetch("/api/bundle-post", {
+          // Use API Gateway v2 endpoint
+          const r = await fetch(`${API_BASE_V2}/bundle`, {
             method: "POST",
-            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${idToken}` },
+            headers: { 
+              "Content-Type": "application/json", 
+              "Authorization": `Bearer ${idToken}` 
+            },
             body: JSON.stringify({ bundleId, qualifiers }),
           });
           const body = await r.json().catch(() => ({}));
@@ -169,7 +190,7 @@
             if (Array.isArray(body.bundles)) localStorage.setItem("userBundles", JSON.stringify(body.bundles));
             if (body.status === "granted" || body.status === "already_granted") {
               markGranted(btn, "Added ✓");
-              showStatus(`Bundle "${bundleId}" added successfully.`, "success");
+              showStatus(`Bundle "${bundleId}" added successfully (via API v2).`, "success");
             } else {
               btn.textContent = original;
               btn.disabled = false;
@@ -213,9 +234,11 @@
         try {
           const idToken = getIdToken();
           const headers = idToken ? { Authorization: `Bearer ${idToken}` } : {};
-          const res = await fetch("/api/catalog-get", { headers });
+          
+          // Use API Gateway v2 endpoint
+          const res = await fetch(`${API_BASE_V2}/catalog`, { headers });
           if (!res.ok) {
-            container.innerHTML = '<p class="service-description">Catalog unavailable.</p>';
+            container.innerHTML = '<p class="service-description">Catalog unavailable via API v2.</p>';
             return;
           }
           const catalog = await res.json();
@@ -225,8 +248,11 @@
             .join("\n");
           container.innerHTML = cards || '<p class="service-description">No bundles available.</p>';
           updateBundleStatus();
-        } catch {
-          container.innerHTML = '<p class="service-description">Failed to load catalog.</p>';
+          
+          showStatus("Catalog loaded successfully via API Gateway v2.", "success");
+        } catch (err) {
+          container.innerHTML = '<p class="service-description">Failed to load catalog via API v2.</p>';
+          showStatus(`Failed to load catalog: ${err.message}`, "error");
         }
       })();
 
@@ -284,7 +310,8 @@
         }
 
         try {
-          const response = await fetch("/api/bundle-delete", {
+          // Use API Gateway v2 endpoint
+          const response = await fetch(`${API_BASE_V2}/bundle`, {
             method: "DELETE",
             headers: {
               "Content-Type": "application/json",
@@ -301,12 +328,12 @@
             }
             renderCurrentBundles();
             updateBundleStatus(); // Update the request buttons
-            showStatus(`Bundle "${bundleId}" removed successfully.`, "success");
+            showStatus(`Bundle "${bundleId}" removed successfully (via API v2).`, "success");
           } else {
             showStatus(`Failed to remove bundle: ${result.error || "Unknown error"}`, "error");
           }
         } catch (error) {
-          showStatus("Failed to remove bundle. Please try again.", "error");
+          showStatus("Failed to remove bundle via API v2. Please try again.", "error");
           console.error("Remove bundle error:", error);
         }
       }
@@ -321,7 +348,8 @@
         }
 
         try {
-          const response = await fetch("/api/bundle-delete", {
+          // Use API Gateway v2 endpoint
+          const response = await fetch(`${API_BASE_V2}/bundle`, {
             method: "DELETE",
             headers: {
               "Content-Type": "application/json",
@@ -336,12 +364,12 @@
             localStorage.setItem("userBundles", JSON.stringify([]));
             renderCurrentBundles();
             updateBundleStatus(); // Update the request buttons
-            showStatus("All bundles removed successfully.", "success");
+            showStatus("All bundles removed successfully (via API v2).", "success");
           } else {
             showStatus(`Failed to remove all bundles: ${result.error || "Unknown error"}`, "error");
           }
         } catch (error) {
-          showStatus("Failed to remove all bundles. Please try again.", "error");
+          showStatus("Failed to remove all bundles via API v2. Please try again.", "error");
           console.error("Remove all bundles error:", error);
         }
       }

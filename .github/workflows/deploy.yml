@@ -939,6 +939,94 @@ jobs:
       bundleDeleteLambdaUrl: ${{ steps.account-outputs.outputs.BUNDLE_DELETE_LAMBDA_URL }}
       myBundlesLambdaUrl: ${{ steps.account-outputs.outputs.MY_BUNDLES_LAMBDA_URL }}
 
+  deploy-api:
+    name: 'deploy api'
+    needs:
+      - names
+      - skip-deploy-check
+      - deploy-auth
+      - deploy-hmrc
+      - deploy-account
+    runs-on: ubuntu-24.04
+    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Node dependencies
+        run: npm ci
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: 'maven'
+
+      - name: Configure AWS role via GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Deploy API stack (CDK)
+        run: |
+          ./mvnw --errors clean package -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
+            && cd cdk-application \
+            && cat ../.env.${{ needs.names.outputs.environment-name }} \
+            && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
+              npx cdk deploy \
+                app-${{ needs.names.outputs.deployment-name }}-ApiStack \
+                --exclusively \
+                --require-approval never \
+                --ci true \
+                --concurrency 4 \
+                --asset-parallelism \
+                --outputs-file ../cdk-submit-application.out/cdk-outputs-api.json \
+            && cd .. \
+            ;
+        env:
+          ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
+          DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
+          SELF_DESTRUCT_HANDLER_SOURCE: "../infra/test/resources/fake-self-destruct-lambda.jar"
+          BASE_IMAGE_TAG: ${{ needs.push-images.outputs.base-image-tag }}
+          # Set by deploy-environment.yml after the environment's AuthStack is deployed
+          COGNITO_USER_POOL_ARN: ${{ vars.COGNITO_USER_POOL_ARN }}
+          COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
+
+      - run: cat cdk-submit-application.out/cdk-outputs-api.json | jq '.'
+
+      - name: Resolve stack outputs
+        id: api-outputs
+        run: |
+          HTTP_API_URL=$(jq -r '.["app-${{ needs.names.outputs.deployment-name }}-ApiStack"].HttpApiUrlExport' cdk-submit-application.out/cdk-outputs-api.json)
+          echo "HTTP_API_URL=$HTTP_API_URL"
+          echo "HTTP_API_URL=$HTTP_API_URL" >> $GITHUB_OUTPUT
+        shell: bash
+    outputs:
+      httpApiUrl: ${{ steps.api-outputs.outputs.HTTP_API_URL }}
+
   deploy-delivery-self-destruct:
     name: 'deploy delivery self-destruct'
     if: ${{ inputs.skipDeploy != 'true' && github.ref != 'refs/heads/main' && needs.names.outputs.environment-name != 'prod' }}
@@ -949,6 +1037,7 @@ jobs:
       - deploy-auth
       - deploy-hmrc
       - deploy-account
+      - deploy-api
     runs-on: ubuntu-24.04
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
     steps:
@@ -1040,6 +1129,7 @@ jobs:
       - deploy-auth
       - deploy-hmrc
       - deploy-account
+      - deploy-api
     runs-on: ubuntu-24.04
     environment:
       name: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
@@ -1293,6 +1383,7 @@ jobs:
     needs:
       - names
       - skip-deploy-check
+      - deploy-api
       - deploy-edge
     runs-on: ubuntu-24.04
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
