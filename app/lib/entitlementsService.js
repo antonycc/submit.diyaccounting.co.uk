@@ -1,6 +1,6 @@
 // app/lib/entitlementsService.js
 import { loadCatalogFromRoot, bundlesForActivity } from "./productCatalogHelper.js";
-import { __getInMemoryBundlesStore } from "../functions/bundle.js";
+import { __getInMemoryBundlesStore } from "../functions/bundlePost.js";
 
 // Very light JWT decode (no signature verification) – same approach as bundle.js
 function decodeJwtNoVerify(token) {

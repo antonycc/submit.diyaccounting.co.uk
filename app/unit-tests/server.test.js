@@ -19,14 +19,14 @@ vi.mock("@app/functions/mockTokenPost.js", () => ({
 vi.mock("@app/functions/hmrcVatReturnPost.js", () => ({
   handler: vi.fn(),
 }));
-vi.mock("@app/functions/logReceipt.js", () => ({
-  httpPost: vi.fn(),
+vi.mock("@app/functions/hmrcReceiptPost.js", () => ({
+  handler: vi.fn(),
 }));
 
 // Import the mocked handlers
 import { handler as exchangeTokenHandler } from "@app/functions/mockTokenPost.js";
 import { handler as submitVatHandler } from "@app/functions/hmrcVatReturnPost.js";
-import { httpPost as logReceiptHandler } from "@app/functions/logReceipt.js";
+import { handler as logReceiptHandler } from "@app/functions/hmrcReceiptPost.js";
 import { handler as authUrlHandler } from "@app/functions/hmrcAuthUrlGet.js";
 
 describe("Server Unit Tests", () => {
@@ -78,7 +78,7 @@ describe("Server Unit Tests", () => {
       }
     });
 
-    app.post("/api/log-receipt", async (req, res) => {
+    app.post("/api/hmrc/receipt-post", async (req, res) => {
       try {
         const event = { body: JSON.stringify(req.body) };
         const { statusCode, body } = await logReceiptHandler(event);
@@ -226,7 +226,7 @@ describe("Server Unit Tests", () => {
     });
   });
 
-  describe("POST /api/log-receipt", () => {
+  describe("POST /api/hmrc/receipt-post", () => {
     test("should call httpPostMock with correct event format", async () => {
       const mockResponse = {
         statusCode: 200,
@@ -235,7 +235,7 @@ describe("Server Unit Tests", () => {
       logReceiptHandler.mockResolvedValue(mockResponse);
 
       const requestBody = { formBundleNumber: "12345", receipt: "data" };
-      const response = await request(app).post("/api/log-receipt").send(requestBody).expect(200);
+      const response = await request(app).post("/api/hmrc/receipt-post").send(requestBody).expect(200);
 
       expect(logReceiptHandler).toHaveBeenCalledWith({
         body: JSON.stringify(requestBody),
@@ -250,7 +250,7 @@ describe("Server Unit Tests", () => {
       };
       logReceiptHandler.mockResolvedValue(mockResponse);
 
-      const response = await request(app).post("/api/log-receipt").send({ invalid: "data" }).expect(500);
+      const response = await request(app).post("/api/hmrc/receipt-post").send({ invalid: "data" }).expect(500);
 
       expect(response.body).toEqual({ error: "Failed to log receipt" });
     });

@@ -156,7 +156,7 @@
         btn.disabled = true;
 
         try {
-          const r = await fetch("/api/request-bundle", {
+          const r = await fetch("/api/bundle-post", {
             method: "POST",
             headers: { "Content-Type": "application/json", "Authorization": `Bearer ${idToken}` },
             body: JSON.stringify({ bundleId, qualifiers }),
@@ -282,7 +282,7 @@
         }
 
         try {
-          const response = await fetch("/api/request-bundle", {
+          const response = await fetch("/api/bundle-delete", {
             method: "DELETE",
             headers: {
               "Content-Type": "application/json",
@@ -319,7 +319,7 @@
         }
 
         try {
-          const response = await fetch("/api/request-bundle", {
+          const response = await fetch("/api/bundle-delete", {
             method: "DELETE",
             headers: {
               "Content-Type": "application/json",

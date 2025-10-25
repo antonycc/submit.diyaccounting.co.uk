@@ -1,6 +1,6 @@
 // app/unit-tests/bundle.catalog.test.js
 import { describe, test, beforeEach, expect } from "vitest";
-import { httpPost as requestBundle, __getInMemoryBundlesStore } from "@app/functions/bundle.js";
+import { handler as requestBundle, __getInMemoryBundlesStore } from "@app/functions/bundlePost.js";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });

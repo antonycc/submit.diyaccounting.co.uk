@@ -15,8 +15,21 @@ describe("User Journeys Frontend Tests", () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
-    // Create a new DOM window for each test
-    window = new Window();
+    // Create a new DOM window for each test (v20+ requires enabling JS evaluation)
+    try {
+      window = new Window({
+        settings: {
+          enableJavaScriptEvaluation: true,
+          suppressInsecureJavaScriptEnvironmentWarning: true,
+        },
+      });
+    } catch (err) {
+      if (String(err?.message || err).includes("Unknown browser setting")) {
+        window = new Window();
+      } else {
+        throw err;
+      }
+    }
     document = window.document;
 
     // Set up global objects
@@ -37,8 +50,12 @@ describe("User Journeys Frontend Tests", () => {
     });
   });
 
-  afterEach(() => {
-    window.close();
+  afterEach(async () => {
+    if (window?.happyDOM?.close) {
+      await window.happyDOM.close();
+    } else if (typeof window?.close === "function") {
+      window.close();
+    }
   });
 
   describe("Login Journey", () => {

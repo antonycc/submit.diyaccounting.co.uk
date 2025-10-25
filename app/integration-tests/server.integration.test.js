@@ -16,7 +16,7 @@ dotenvConfigIfNotBlank({ path: ".env.test" });
 // Import the actual handlers (not mocked for integration test)
 import { handler as exchangeTokenHandler } from "@app/functions/mockTokenPost.js";
 import { handler as submitVatHandler } from "@app/functions/hmrcVatReturnPost.js";
-import { httpPost as logReceiptHandler } from "@app/functions/logReceipt.js";
+import { handler as logReceiptHandler } from "@app/functions/hmrcReceiptPost.js";
 import { handler as authUrlHandler } from "@app/functions/hmrcAuthUrlGet.js";
 
 const HMRC = "https://test-api.service.hmrc.gov.uk";
@@ -121,7 +121,7 @@ describe("Integration – Server Express App", () => {
       res.status(statusCode).json(JSON.parse(body));
     });
 
-    app.post("/api/log-receipt", async (req, res) => {
+    app.post("/api/hmrc/receipt-post", async (req, res) => {
       const event = { body: JSON.stringify(req.body) };
       const { statusCode, body } = await logReceiptHandler(event);
       res.status(statusCode).json(JSON.parse(body));
@@ -215,7 +215,7 @@ describe("Integration – Server Express App", () => {
         processingDate: "2025-07-15T23:40:00Z",
       };
 
-      const response = await request(app).post("/api/log-receipt").send(receiptData).expect(200);
+      const response = await request(app).post("/api/hmrc/receipt-post").send(receiptData).expect(200);
 
       console.log("Receipt logging response:", response.body);
 
@@ -241,7 +241,7 @@ describe("Integration – Server Express App", () => {
         formBundleNumber: "test-bundle-456",
       };
 
-      const response = await request(app).post("/api/log-receipt").send(receiptData).expect(500);
+      const response = await request(app).post("/api/hmrc/receipt-post").send(receiptData).expect(500);
 
       expect(response.body).toHaveProperty("message");
       expect(response.body.message).toContain("Failed to log receipt");
@@ -301,7 +301,7 @@ describe("Integration – Server Express App", () => {
       // Step 4: Log receipt
       s3Mock.on(PutObjectCommand).resolves({});
 
-      const receiptResponse = await request(app).post("/api/log-receipt").send(vatResponse.body.receipt).expect(200);
+      const receiptResponse = await request(app).post("/api/hmrc/receipt-post").send(vatResponse.body.receipt).expect(200);
 
       expect(receiptResponse.body).toHaveProperty("receipt");
       expect(receiptResponse.body).toHaveProperty("key");

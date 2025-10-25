@@ -1,6 +1,8 @@
 // app/functions/getReceipt.js
 import { GetObjectCommand, S3Client } from "@aws-sdk/client-s3";
-import logger from "../lib/logger.js";
+import logger from "@app/lib/logger.js";
+
+// TODO: possible duplicate, remove.
 
 function decodeJwtNoVerify(token) {
   try {

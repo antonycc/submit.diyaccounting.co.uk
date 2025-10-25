@@ -7,11 +7,12 @@ import { fileURLToPath } from "url";
 import { readFileSync } from "fs";
 import fetch from "node-fetch";
 import { handler as submitVatHttpPost } from "../functions/hmrcVatReturnPost.js";
-import { httpPost as logReceiptHttpPost } from "../functions/logReceipt.js";
-import { httpPost as requestBundleHttpPost, httpDelete as removeBundleHttpDelete } from "../functions/bundle.js";
+import { handler as logReceiptHttpPost } from "../functions/hmrcReceiptPost.js";
+import { handler as requestBundleHttpPost } from "../functions/bundlePost.js";
+import { handler as removeBundleHttpDelete } from "../functions/bundleDelete.js";
 import { handler as getCatalogHttpGet } from "../functions/catalogGet.js";
-import { httpGet as myBundlesHttpGet } from "../functions/myBundles.js";
-import { httpGet as myReceiptsHttpGet, httpGetByName as myReceiptHttpGetByName } from "../functions/myReceipts.js";
+import { handler as myBundlesHttpGet } from "../functions/bundleGet.js";
+import { handler as myReceiptsHttpGet, httpGetByName as myReceiptHttpGetByName } from "../functions/hmrcReceiptGet.js";
 import { httpGet as getVatObligationsHttpGet } from "../functions/getVatObligations.js";
 import { httpGet as getVatReturnHttpGet } from "../functions/getVatReturn.js";
 import { httpGet as getVatLiabilitiesHttpGet } from "../functions/getVatLiabilities.js";
@@ -82,11 +83,12 @@ const exchangeMockTokenPath = context.exchangeTokenLambdaUrlPath || "/api/exchan
 const exchangeHmrcTokenPath = context.exchangeHmrcTokenLambdaUrlPath || "/api/hmrc/token-post";
 const exchangeCognitoTokenPath = context.exchangeCognitoTokenLambdaUrlPath || "/api/cognito/token-post";
 const submitVatPath = context.submitVatLambdaUrlPath || "/api/hmrc/vat/return-post";
-const logReceiptPath = context.logReceiptLambdaUrlPath || "/api/log-receipt";
-const requestBundlePath = context.bundleLambdaUrlPath || "/api/request-bundle";
+const logReceiptPath = context.logReceiptLambdaUrlPath || "/api/hmrc/receipt-post";
+const requestBundlePath = context.bundleLambdaUrlPath || "/api/bundle-post";
+const bundleDeletePath = context.bundleLambdaUrlPath || "/api/bundle-delete";
 const catalogPath = context.catalogLambdaUrlPath || "/api/catalog-get";
-const myBundlesPath = context.myBundlesLambdaUrlPath || "/api/my-bundles";
-const myReceiptsPath = context.myReceiptsLambdaUrlPath || "/api/my-receipts";
+const myBundlesPath = context.myBundlesLambdaUrlPath || "/api/bundle-get";
+const myReceiptsPath = context.myReceiptsLambdaUrlPath || "/api/hmrc/receipt-get";
 
 app.get(authUrlPath, async (req, res) => {
   const event = {
@@ -240,7 +242,7 @@ app.options(requestBundlePath, async (_req, res) => {
 });
 
 // Bundle removal route
-app.delete(requestBundlePath, async (req, res) => {
+app.delete(bundleDeletePath, async (req, res) => {
   const event = {
     path: req.path,
     headers: { host: req.get("host") || "localhost:3000", authorization: req.headers.authorization },

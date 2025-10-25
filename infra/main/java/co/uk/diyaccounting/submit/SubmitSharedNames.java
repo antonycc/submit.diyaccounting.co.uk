@@ -49,11 +49,6 @@ public class SubmitSharedNames {
     public String ecrRepositoryArn;
     public String ecrRepositoryName;
 
-    //public String authUrlMockLambdaHandler;
-    //public String authUrlMockLambdaFunctionName;
-    //public String authUrlMockLambdaArn;
-    //public String authUrlMockLambdaUrlPath;
-
     public String authUrlCognitoLambdaHandler;
     public String authUrlCognitoLambdaFunctionName;
     public String authUrlCognitoLambdaArn;
@@ -98,6 +93,11 @@ public class SubmitSharedNames {
     public String requestBundlesLambdaFunctionName;
     public String requestBundlesLambdaArn;
     public String requestBundlesLambdaUrlPath;
+
+    public String bundleDeleteLambdaHandler;
+    public String bundleDeleteLambdaFunctionName;
+    public String bundleDeleteLambdaArn;
+    public String bundleDeleteLambdaUrlPath;
 
     public String myBundlesLambdaHandler;
     public String myBundlesLambdaFunctionName;
@@ -169,12 +169,6 @@ public class SubmitSharedNames {
         var appLambdaArnPrefix = "arn:aws:lambda:%s:%s:function:%s-"
                 .formatted(props.regionName, props.awsAccount, this.appResourceNamePrefix);
 
-//        this.authUrlMockLambdaHandler = "authUrl.httpGetMock";
-//        this.authUrlMockLambdaFunctionName =
-//                buildFunctionName(this.appResourceNamePrefix, this.authUrlMockLambdaHandler);
-//        this.authUrlMockLambdaArn = "%s-auth-url-mock".formatted(appLambdaArnPrefix);
-//        this.authUrlMockLambdaUrlPath = "/api/mock/auth-url";
-
         this.authUrlCognitoLambdaHandler = "cognitoAuthUrlGet.handler";
         this.authUrlCognitoLambdaFunctionName =
                 buildFunctionName(this.appResourceNamePrefix, this.authUrlCognitoLambdaHandler);
@@ -204,38 +198,40 @@ public class SubmitSharedNames {
         this.submitVatLambdaArn = "%s-hmrc-vat-return".formatted(appLambdaArnPrefix);
         this.submitVatLambdaUrlPath = "/api/hmrc/vat/return-post";
 
-        // TODO: YOU ARE HERE: NEXT: /api/log-receipt -> /api/hmrc/receipt-post
-        this.logReceiptLambdaHandler = "logReceipt.httpPost";
+        this.logReceiptLambdaHandler = "hmrcReceiptPost.handler";
         this.logReceiptLambdaFunctionName = buildFunctionName(this.appResourceNamePrefix, this.logReceiptLambdaHandler);
-        this.logReceiptLambdaArn = "%s-log-receipt".formatted(appLambdaArnPrefix);
-        this.logReceiptLambdaUrlPath = "/api/log-receipt";
+        this.logReceiptLambdaArn = "%s-hmrc-receipt-post".formatted(appLambdaArnPrefix);
+        this.logReceiptLambdaUrlPath = "/api/hmrc/receipt-post";
 
-        // TODO: /api/my-receipts -> /api/hmrc/receipt-get
-        this.myReceiptsLambdaHandler = "myReceipts.httpGet";
+        this.myReceiptsLambdaHandler = "hmrcReceiptGet.handler";
         this.myReceiptsLambdaFunctionName = buildFunctionName(this.appResourceNamePrefix, this.myReceiptsLambdaHandler);
-        this.myReceiptsLambdaArn = "%s-my-receipts".formatted(appLambdaArnPrefix);
-        this.myReceiptsLambdaUrlPath = "/api/my-receipts";
+        this.myReceiptsLambdaArn = "%s-hmrc-receipt-get".formatted(appLambdaArnPrefix);
+        this.myReceiptsLambdaUrlPath = "/api/hmrc/receipt-get";
 
         this.catalogLambdaHandler = "catalogGet.handler";
         this.catalogLambdaFunctionName = buildFunctionName(this.appResourceNamePrefix, this.catalogLambdaHandler);
         this.catalogLambdaArn = "%s-catalog-get".formatted(appLambdaArnPrefix);
         this.catalogLambdaUrlPath = "/api/catalog-get";
 
-        // TODO: /api/request-bundle -> /api/hmrc/bundle-post + /api/hmrc/bundle-delete
-        this.requestBundlesLambdaHandler = "bundle.httpPost";
+        // TODO: YOU ARE HERE /api/bundle-post -> /api/bundle-post + /api/bundle-delete
+        this.requestBundlesLambdaHandler = "bundlePost.handler";
         this.requestBundlesLambdaFunctionName =
                 buildFunctionName(this.appResourceNamePrefix, this.requestBundlesLambdaHandler);
-        this.requestBundlesLambdaArn = "%s-request-bundles".formatted(appLambdaArnPrefix);
-        this.requestBundlesLambdaUrlPath = "/api/request-bundle";
+        this.requestBundlesLambdaArn = "%s-bundle-post".formatted(appLambdaArnPrefix);
+        this.requestBundlesLambdaUrlPath = "/api/bundle-post";
 
-        // TODO: /api/my-bundles -> /api/hmrc/bundle-get
-        this.myBundlesLambdaHandler = "myBundles.httpGet";
+        this.bundleDeleteLambdaHandler = "bundleDelete.handler";
+        this.bundleDeleteLambdaFunctionName =
+            buildFunctionName(this.appResourceNamePrefix, this.bundleDeleteLambdaHandler);
+        this.bundleDeleteLambdaArn = "%s-bundle-delete".formatted(appLambdaArnPrefix);
+        this.bundleDeleteLambdaUrlPath = "/api/bundle-delete";
+
+        this.myBundlesLambdaHandler = "bundleGet.handler";
         this.myBundlesLambdaFunctionName = buildFunctionName(this.appResourceNamePrefix, this.myBundlesLambdaHandler);
-        this.myBundlesLambdaArn = "%s-my-bundles".formatted(appLambdaArnPrefix);
-        this.myBundlesLambdaUrlPath = "/api/my-bundles";
+        this.myBundlesLambdaArn = "%s-bundle-get".formatted(appLambdaArnPrefix);
+        this.myBundlesLambdaUrlPath = "/api/bundle-get";
 
         this.lambdaArns = new java.util.ArrayList<>();
-        //this.lambdaArns.add(this.authUrlMockLambdaArn);
         this.lambdaArns.add(this.authUrlCognitoLambdaArn);
         this.lambdaArns.add(this.exchangeCognitoTokenLambdaArn);
         this.lambdaArns.add(this.authUrlHmrcLambdaArn);
@@ -245,6 +241,7 @@ public class SubmitSharedNames {
         this.lambdaArns.add(this.myReceiptsLambdaArn);
         this.lambdaArns.add(this.catalogLambdaArn);
         this.lambdaArns.add(this.requestBundlesLambdaArn);
+        this.lambdaArns.add(this.bundleDeleteLambdaArn);
         this.lambdaArns.add(this.myBundlesLambdaArn);
 
         this.delResourceNamePrefix = "del-%s".formatted(generateResourceNamePrefix(this.domainName));

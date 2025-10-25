@@ -44,7 +44,7 @@ loop VAT Submission Flow
   HMRCApi -> SubmitVat: { processingDate, formBundleNumber, chargeRefNumber } →→ [async]
   SubmitVat -> App: receipt → [sync]
 
-  App -> LogReceipt: POST /api/log-receipt { receipt } → [sync]
+  App -> LogReceipt: POST /api/hmrc/receipt-post { receipt } → [sync]
   LogReceipt -> S3: PutObject(receipts/{formBundleNumber}.json) →→ [async]
   S3 -> LogReceipt: success →→ [async]
   LogReceipt -> App: { status } → [sync]

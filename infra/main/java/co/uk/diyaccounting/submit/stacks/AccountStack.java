@@ -1,14 +1,10 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
 import co.uk.diyaccounting.submit.constructs.LambdaUrlOrigin;
 import co.uk.diyaccounting.submit.constructs.LambdaUrlOriginProps;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
-import java.util.List;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Aspects;
 import software.amazon.awscdk.Duration;
@@ -28,6 +24,11 @@ import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.constructs.Construct;
 
+import java.util.List;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+
 public class AccountStack extends Stack {
 
     // CDK resources here
@@ -35,6 +36,8 @@ public class AccountStack extends Stack {
     public LogGroup catalogLambdaLogGroup;
     public Function requestBundlesLambda;
     public LogGroup requestBundlesLambdaLogGroup;
+    public Function bundleDeleteLambda;
+    public LogGroup bundleDeleteLambdaLogGroup;
     public Function myBundlesLambda;
     public LogGroup myBundlesLambdaLogGroup;
 
@@ -169,6 +172,49 @@ public class AccountStack extends Stack {
                 "Granted Cognito permissions to %s for User Pool %s",
                 this.requestBundlesLambda.getFunctionName(), userPool.getUserPoolId());
 
+        // Delete Bundles Lambda
+        var bundleDeleteLambdaEnv = new PopulatedMap<String, String>()
+            .with("COGNITO_USER_POOL_ID", userPool.getUserPoolId())
+            .with("TEST_BUNDLE_EXPIRY_DATE", "2025-12-31")
+            .with("TEST_BUNDLE_USER_LIMIT", "10");
+        var bundleDeleteLambdaUrlOrigin = new LambdaUrlOrigin(
+            this,
+            LambdaUrlOriginProps.builder()
+                .idPrefix(props.sharedNames().bundleDeleteLambdaFunctionName)
+                .baseImageTag(props.baseImageTag())
+                .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                .functionName(props.sharedNames().bundleDeleteLambdaFunctionName)
+                .cloudFrontAllowedMethods(AllowedMethods.ALLOW_ALL)
+                .handler(props.lambdaEntry() + props.sharedNames().bundleDeleteLambdaHandler)
+                .environment(bundleDeleteLambdaEnv)
+                .timeout(Duration.millis(Long.parseLong("30000")))
+                .build());
+        this.bundleDeleteLambda = bundleDeleteLambdaUrlOrigin.lambda;
+        this.bundleDeleteLambdaLogGroup = bundleDeleteLambdaUrlOrigin.logGroup;
+        infof(
+            "Created Lambda %s for delete bundles with handler %s",
+            this.bundleDeleteLambda.getNode().getId(),
+            props.lambdaEntry() + props.sharedNames().bundleDeleteLambdaHandler);
+
+        // Grant the RequestBundlesLambda permission to access Cognito User Pool
+        var bundleDeleteLambdaGrantPrincipal = this.bundleDeleteLambda.getGrantPrincipal();
+        userPool.grant(
+            bundleDeleteLambdaGrantPrincipal,
+            "cognito-idp:AdminGetUser",
+            "cognito-idp:AdminUpdateUserAttributes",
+            "cognito-idp:ListUsers");
+        this.bundleDeleteLambda.addToRolePolicy(PolicyStatement.Builder.create()
+            .effect(Effect.ALLOW)
+            .actions(List.of(
+                "cognito-idp:AdminGetUser", "cognito-idp:AdminUpdateUserAttributes", "cognito-idp:ListUsers"))
+            .resources(List.of(cognitoUserPoolArn))
+            .build());
+
+        infof(
+            "Granted Cognito permissions to %s for User Pool %s",
+            this.bundleDeleteLambda.getFunctionName(), userPool.getUserPoolId());
+
         // My Bundles Lambda
         var myBundlesLambdaEnv =
                 new PopulatedMap<String, String>().with("DIY_SUBMIT_BASE_URL", props.sharedNames().baseUrl);
@@ -206,6 +252,10 @@ public class AccountStack extends Stack {
                 .authType(functionUrlAuthType)
                 .invokeMode(InvokeMode.BUFFERED)
                 .build());
+        var bundleDeleteUrl = this.bundleDeleteLambda.addFunctionUrl(FunctionUrlOptions.builder()
+            .authType(functionUrlAuthType)
+            .invokeMode(InvokeMode.BUFFERED)
+            .build());
         var myBundlesUrl = this.myBundlesLambda.addFunctionUrl(FunctionUrlOptions.builder()
                 .authType(functionUrlAuthType)
                 .invokeMode(InvokeMode.BUFFERED)
@@ -215,11 +265,13 @@ public class AccountStack extends Stack {
 
         cfnOutput(this, "CatalogLambdaArn", this.catalogLambda.getFunctionArn());
         cfnOutput(this, "RequestBundlesLambdaArn", this.requestBundlesLambda.getFunctionArn());
+        cfnOutput(this, "BundleDeleteLambdaArn", this.bundleDeleteLambda.getFunctionArn());
         cfnOutput(this, "MyBundlesLambdaArn", this.myBundlesLambda.getFunctionArn());
 
         // Output Function URLs for EdgeStack to use as HTTP origins
         cfnOutput(this, "CatalogLambdaUrl", catalogUrl.getUrl());
         cfnOutput(this, "RequestBundlesLambdaUrl", requestBundlesUrl.getUrl());
+        cfnOutput(this, "BundleDeleteLambdaUrl", bundleDeleteUrl.getUrl());
         cfnOutput(this, "MyBundlesLambdaUrl", myBundlesUrl.getUrl());
 
         infof(

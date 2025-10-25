@@ -8,7 +8,7 @@ import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3
 
 import { handler as exchangeTokenHandler } from "@app/functions/mockTokenPost.js";
 import { handler as submitVatHandler } from "@app/functions/hmrcVatReturnPost.js";
-import { httpPost as logReceiptHandler } from "@app/functions/logReceipt.js";
+import { handler as logReceiptHandler } from "@app/functions/hmrcReceiptPost.js";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });

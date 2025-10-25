@@ -1,11 +1,13 @@
 // app/functions/listReceipts.js
 import { ListObjectsV2Command, GetObjectCommand } from "@aws-sdk/client-s3";
-import logger from "../lib/logger.js";
-import { extractRequest, httpOkResponse, httpServerErrorResponse } from "../lib/responses.js";
-import { getUserSub } from "../lib/auth.js";
-import { makeReceiptsS3 } from "../lib/s3Env.js";
-import { streamToString } from "../lib/streams.js";
-import { validateEnv } from "../lib/env.js";
+import logger from "@app/lib/logger.js";
+import { extractRequest, httpOkResponse, httpServerErrorResponse } from "@app/lib/responses.js";
+import { getUserSub } from "@app/lib/auth.js";
+import { makeReceiptsS3 } from "@app/lib/s3Env.js";
+import { streamToString } from "@app/lib/streams.js";
+import { validateEnv } from "@app/lib/env.js";
+
+// TODO: possible duplicate, remove.
 
 function parseItemFromKey(key) {
   // receipts/{sub}/{timestamp}-{bundleId}.json

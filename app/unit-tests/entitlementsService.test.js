@@ -1,7 +1,7 @@
 // app/unit-tests/entitlementsService.test.js
 import { describe, it, beforeEach, expect } from "vitest";
 import { getActiveBundles, isActivityAllowed } from "@app/lib/entitlementsService.js";
-import { __getInMemoryBundlesStore } from "@app/functions/bundle.js";
+import { __getInMemoryBundlesStore } from "@app/functions/bundlePost.js";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });

@@ -27,8 +27,23 @@ describe("VAT Flow Frontend JavaScript", () => {
       ...originalEnv,
     };
 
-    // Create a new DOM window for each test
-    window = new Window();
+    // Create a new DOM window for each test (v20+ requires enabling JS evaluation)
+    try {
+      window = new Window({
+        settings: {
+          enableJavaScriptEvaluation: true,
+          // Avoid noisy console warning in CI about insecure JS env during tests
+          suppressInsecureJavaScriptEnvironmentWarning: true,
+        },
+      });
+    } catch (err) {
+      // Fallback for Happy DOM v19 which doesn't support the setting
+      if (String(err?.message || err).includes("Unknown browser setting")) {
+        window = new Window();
+      } else {
+        throw err;
+      }
+    }
     document = window.document;
 
     // Set up global objects
@@ -89,8 +104,13 @@ describe("VAT Flow Frontend JavaScript", () => {
     }
   });
 
-  afterEach(() => {
-    window.close();
+  afterEach(async () => {
+    if (window?.happyDOM?.close) {
+      await window.happyDOM.close();
+    } else if (typeof window?.close === "function") {
+      // Fallback for older Happy DOM versions
+      window.close();
+    }
   });
 
   describe("Utility Functions", () => {
@@ -270,7 +290,7 @@ describe("VAT Flow Frontend JavaScript", () => {
 
       const result = await window.logReceipt("2023-01-01T12:00:00.000Z", "123456789012", "XM002610011594");
 
-      expect(fetchMock).toHaveBeenCalledWith("/api/log-receipt", {
+      expect(fetchMock).toHaveBeenCalledWith("/api/hmrc/receipt-post", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

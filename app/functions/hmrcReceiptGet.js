@@ -22,8 +22,8 @@ function parseReceiptKey(key) {
   return { ok: true, name, sub, timestamp, formBundleNumber };
 }
 
-// GET /api/my/receipts
-export async function httpGet(event) {
+// GET /api/hmrc/receipt-get
+export async function handler(event) {
   validateEnv(["DIY_SUBMIT_RECEIPTS_BUCKET_NAME"]);
 
   const request = extractRequest(event);

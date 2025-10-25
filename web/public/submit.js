@@ -109,7 +109,7 @@ async function submitVat(vatNumber, periodKey, vatDue, accessToken, govClientHea
 
 // Receipt logging API function
 async function logReceipt(processingDate, formBundleNumber, chargeRefNumber) {
-  const url = "/api/log-receipt";
+  const url = "/api/hmrc/receipt-post";
   const response = await fetch(url, {
     method: "POST",
     headers: {
