@@ -4,6 +4,7 @@ import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Aspects;
+import software.amazon.awscdk.CfnOutput;
 import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
@@ -250,6 +251,14 @@ public class ApiStack extends Stack {
 
         // Outputs
         cfnOutput(this, "HttpApiId", this.httpApi.getHttpApiId());
+        
+        // Export the API Gateway URL for cross-stack reference
+        CfnOutput.Builder.create(this, "HttpApiUrlExport")
+                .value(this.httpApi.getUrl())
+                .exportName(props.resourceNamePrefix() + "-HttpApiUrl")
+                .description("API Gateway v2 URL for " + props.resourceNamePrefix())
+                .build();
+                
         cfnOutput(this, "HttpApiUrl", this.httpApi.getUrl());
         cfnOutput(
                 this,

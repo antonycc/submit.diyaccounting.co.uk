@@ -100,6 +100,8 @@ public class EdgeStack extends Stack {
         Map<String, String> pathsToOriginLambdaFunctionUrls();
 
         int logGroupRetentionPeriodDays();
+        
+        String apiGatewayUrl();
 
         static ImmutableEdgeStackProps.Builder builder() {
             return ImmutableEdgeStackProps.builder();
@@ -307,6 +309,13 @@ public class EdgeStack extends Stack {
                                 (map, entry) ->
                                         map.put(entry.getKey(), createBehaviorOptionsForLambdaUrl(entry.getValue())),
                                 HashMap::putAll);
+                                
+        // Add API Gateway v2 behavior if URL is provided
+        if (props.apiGatewayUrl() != null && !props.apiGatewayUrl().isBlank()) {
+            BehaviorOptions apiGatewayBehavior = createBehaviorOptionsForApiGateway(props.apiGatewayUrl());
+            additionalBehaviors.put("/api/v1/*", apiGatewayBehavior);
+            infof("Added API Gateway behavior for /api/v1/* pointing to %s", props.apiGatewayUrl());
+        }
 
         // Lookup log bucket
         IBucket distributionLogsBucket = Bucket.fromBucketName(
@@ -394,17 +403,37 @@ public class EdgeStack extends Stack {
                 .build();
     }
 
+    public BehaviorOptions createBehaviorOptionsForApiGateway(String apiGatewayUrl) {
+        // Extract the host from the API Gateway URL (e.g., "https://abc123.execute-api.us-east-1.amazonaws.com/" ->
+        // "abc123.execute-api.us-east-1.amazonaws.com")
+        var apiGatewayHost = getHostFromUrl(apiGatewayUrl);
+        var origin = HttpOrigin.Builder.create(apiGatewayHost)
+                .protocolPolicy(OriginProtocolPolicy.HTTPS_ONLY)
+                .build();
+        return BehaviorOptions.builder()
+                .origin(origin)
+                .allowedMethods(AllowedMethods.ALLOW_ALL)
+                .cachePolicy(CachePolicy.CACHING_DISABLED)
+                .originRequestPolicy(OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER)
+                .viewerProtocolPolicy(ViewerProtocolPolicy.REDIRECT_TO_HTTPS)
+                .responseHeadersPolicy(ResponseHeadersPolicy.CORS_ALLOW_ALL_ORIGINS_WITH_PREFLIGHT_AND_SECURITY_HEADERS)
+                .build();
+    }
+
     private String getLambdaUrlHostFromUrl(String functionUrl) {
-        // Extract host from Function URL (e.g., "https://abc123.lambda-url.us-east-1.on.aws/" ->
-        // "abc123.lambda-url.us-east-1.on.aws")
-        if (functionUrl.startsWith("https://")) {
-            String withoutProtocol = functionUrl.substring(8);
+        return getHostFromUrl(functionUrl);
+    }
+    
+    private String getHostFromUrl(String url) {
+        // Extract host from URL (e.g., "https://example.com/path" -> "example.com")
+        if (url.startsWith("https://")) {
+            String withoutProtocol = url.substring(8);
             int slashIndex = withoutProtocol.indexOf('/');
             if (slashIndex > 0) {
                 return withoutProtocol.substring(0, slashIndex);
             }
             return withoutProtocol;
         }
-        return functionUrl; // fallback if format unexpected
+        return url; // fallback if format unexpected
     }
 }
