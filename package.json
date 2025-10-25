@@ -23,7 +23,7 @@
     "cdk:synth-delivery":    "cd cdk-delivery    && npx dotenv -e ../.env -- npx dotenv -e ../.env.${ENVIRONMENT_NAME:-prod} -- npx cdk synth --require-approval never --ci true --strict --validation --exclusively del-${ENVIRONMENT_NAME:-prod}-EdgeStack del-${ENVIRONMENT_NAME:-prod}-PublishStack del-${ENVIRONMENT_NAME:-prod}-SelfDestructStack && cd ..",
     "cdk":    "./mvnw clean verify -DskipTests && ENVIRONMENT_NAME=prod npm run cdk:synth-environment && ENVIRONMENT_NAME=prod npm run cdk:synth-application && ENVIRONMENT_NAME=prod npm run cdk:synth-delivery && npm run clean && ./mvnw clean compile -DskipTests",
     "cdk-ci": "./mvnw clean verify -DskipTests && ENVIRONMENT_NAME=ci   npm run cdk:synth-environment && ENVIRONMENT_NAME=ci   npm run cdk:synth-application && ENVIRONMENT_NAME=ci   npm run cdk:synth-delivery && npm run clean && ./mvnw clean compile -DskipTests",
-    "update-to-minor": "npx npm-check-updates --upgrade --enginesNode --target minor --verbose --install always",
+    "update-to-minor":    "npx npm-check-updates --upgrade --enginesNode --target minor    --verbose --install always",
     "update-to-greatest": "npx npm-check-updates --upgrade --enginesNode --target greatest --verbose --install always --reject 'alpha'",
     "convert:video": "node app/bin/convert.js",
     "convert:video:default": "node app/bin/convert.js --in target/behaviour-test-results/video.webm --out target/behaviour-test-results/video.mp4",
