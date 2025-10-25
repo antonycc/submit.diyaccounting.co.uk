@@ -238,7 +238,7 @@ public class ApiStack extends Stack {
         cfnOutput(this, "HttpApiId", this.httpApi.getHttpApiId());
 
         // Export the API Gateway URL for cross-stack reference
-        CfnOutput.Builder.create(this, "HttpApiUrlExport")
+        CfnOutput.Builder.create(this, "HttpApiUrl")
                 .value(this.httpApi.getUrl())
                 .exportName(props.resourceNamePrefix() + "-HttpApiUrl")
                 .description("API Gateway v2 URL for " + props.resourceNamePrefix())

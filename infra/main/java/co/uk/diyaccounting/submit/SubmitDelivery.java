@@ -17,7 +17,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import software.amazon.awscdk.App;
 import software.amazon.awscdk.Environment;
-import software.amazon.awscdk.Fn;
 import software.constructs.Construct;
 
 public class SubmitDelivery {
@@ -40,6 +39,7 @@ public class SubmitDelivery {
         public String cloudTrailEnabled;
         public String baseUrl;
         public String accessLogGroupRetentionPeriodDays;
+        public String httpApiUrl;
         public String authUrlCognitoLambdaFunctionUrl;
         public String exchangeCognitoTokenLambdaFunctionUrl;
         public String authUrlHmrcLambdaFunctionUrl;
@@ -143,6 +143,7 @@ public class SubmitDelivery {
         var docRootPath = envOr("DOC_ROOT_PATH", appProps.docRootPath, "(from docRootPath in cdk.json)");
 
         // Function URL environment variables for EdgeStack
+        String httpApiUrl = envOr("HTTP_API_URL", appProps.httpApiUrl, "(from httpApiUrl in cdk.json)");
         var authUrlCognitoLambdaFunctionUrl = envOr(
                 "AUTH_URL_COGNITO_LAMBDA_URL",
                 appProps.authUrlCognitoLambdaFunctionUrl,
@@ -208,18 +209,6 @@ public class SubmitDelivery {
         putIfNotNull(pathsToFns, "%s*".formatted(sharedNames.bundleDeleteLambdaUrlPath), bundleDeleteLambdaFunctionUrl);
         putIfNotNull(pathsToFns, "%s*".formatted(sharedNames.myBundlesLambdaUrlPath), myBundlesLambdaFunctionUrl);
 
-        // Import API Gateway URL from application stack via CloudFormation export
-        String apiGatewayExportName = sharedNames.appResourceNamePrefix + "-HttpApiUrl";
-        String apiGatewayUrl = null;
-        try {
-            apiGatewayUrl = Fn.importValue(apiGatewayExportName);
-            infof("Imported API Gateway URL from export %s", apiGatewayExportName);
-        } catch (RuntimeException e) {
-            warnf(
-                    "Failed to import API Gateway URL from CloudFormation export %s. This may indicate the ApiStack has not been deployed yet. Exception: %s",
-                    apiGatewayExportName, e.getMessage());
-        }
-
         // Create the Edge stack (CloudFront, Route53)
         this.edgeStack = new EdgeStack(
                 app,
@@ -237,7 +226,7 @@ public class SubmitDelivery {
                         .hostedZoneId(appProps.hostedZoneId)
                         .certificateArn(appProps.certificateArn)
                         .pathsToOriginLambdaFunctionUrls(pathsToFns)
-                        .apiGatewayUrl(apiGatewayUrl)
+                        .apiGatewayUrl(httpApiUrl)
                         .logGroupRetentionPeriodDays(accessLogGroupRetentionPeriodDays)
                         .build());
 

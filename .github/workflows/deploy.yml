@@ -1021,7 +1021,7 @@ jobs:
       - name: Resolve stack outputs
         id: api-outputs
         run: |
-          HTTP_API_URL=$(jq -r '.["app-${{ needs.names.outputs.deployment-name }}-ApiStack"].HttpApiUrlExport' cdk-submit-application.out/cdk-outputs-api.json)
+          HTTP_API_URL=$(jq -r '.["app-${{ needs.names.outputs.deployment-name }}-ApiStack"].HttpApiUrl' cdk-submit-application.out/cdk-outputs-api.json)
           echo "HTTP_API_URL=$HTTP_API_URL"
           echo "HTTP_API_URL=$HTTP_API_URL" >> $GITHUB_OUTPUT
         shell: bash
@@ -1110,6 +1110,7 @@ jobs:
           SELF_DESTRUCT_HANDLER_SOURCE: "../${{ needs.mvn-package.outputs.self-destruct-handler-source }}"
           SELF_DESTRUCT_START_DATETIME: ${{ needs.mvn-package.outputs.self-destruct-start-datetime }}
           WEBSITE_HASH: "placeholder"
+          HTTP_API_URL: ${{ needs.deploy-api.outputs.httpApiUrl }}
           AUTH_URL_COGNITO_LAMBDA_URL: ${{ needs.deploy-auth.outputs.authUrlCognitoLambdaUrl }}
           COGNITO_EXCHANGE_TOKEN_LAMBDA_URL: ${{ needs.deploy-auth.outputs.exchangeCognitoTokenLambdaUrl }}
           AUTH_URL_HMRC_LAMBDA_URL: ${{ needs.deploy-hmrc.outputs.authUrlHmrcLambdaUrl }}
@@ -1220,6 +1221,7 @@ jobs:
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
           SELF_DESTRUCT_HANDLER_SOURCE: "../infra/test/resources/fake-self-destruct-lambda.jar"
           WEBSITE_HASH: "placeholder"
+          HTTP_API_URL: ${{ needs.deploy-api.outputs.httpApiUrl }}
           AUTH_URL_COGNITO_LAMBDA_URL: ${{ needs.deploy-auth.outputs.authUrlCognitoLambdaUrl }}
           COGNITO_EXCHANGE_TOKEN_LAMBDA_URL: ${{ needs.deploy-auth.outputs.exchangeCognitoTokenLambdaUrl }}
           AUTH_URL_HMRC_LAMBDA_URL: ${{ needs.deploy-hmrc.outputs.authUrlHmrcLambdaUrl }}
@@ -1250,6 +1252,7 @@ jobs:
       - names
       - skip-deploy-check
       - deploy-edge
+      - deploy-api
     runs-on: ubuntu-24.04
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
     steps:
@@ -1343,6 +1346,7 @@ jobs:
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
           SELF_DESTRUCT_HANDLER_SOURCE: "../infra/test/resources/fake-self-destruct-lambda.jar"
           WEBSITE_HASH: ${{ steps.publish-hash.outputs.WEBSITE_HASH }}
+          HTTP_API_URL: ${{ needs.deploy-api.outputs.httpApiUrl }}
           AUTH_URL_COGNITO_LAMBDA_URL: ${{ needs.deploy-auth.outputs.authUrlCognitoLambdaUrl }}
           COGNITO_EXCHANGE_TOKEN_LAMBDA_URL: ${{ needs.deploy-auth.outputs.exchangeCognitoTokenLambdaUrl }}
           AUTH_URL_HMRC_LAMBDA_URL: ${{ needs.deploy-hmrc.outputs.authUrlHmrcLambdaUrl }}
