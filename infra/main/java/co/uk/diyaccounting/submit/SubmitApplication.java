@@ -7,7 +7,6 @@ import static co.uk.diyaccounting.submit.utils.Kind.warnf;
 import co.uk.diyaccounting.submit.stacks.AccountStack;
 import co.uk.diyaccounting.submit.stacks.ApiStack;
 import co.uk.diyaccounting.submit.stacks.AuthStack;
-import co.uk.diyaccounting.submit.stacks.AuthStack;
 import co.uk.diyaccounting.submit.stacks.DevStack;
 import co.uk.diyaccounting.submit.stacks.HmrcStack;
 import co.uk.diyaccounting.submit.stacks.OpsStack;
