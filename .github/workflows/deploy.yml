@@ -1806,9 +1806,11 @@ jobs:
 
       - name: Copy test reports to S3 origin bucket
         if: ${{ !cancelled() }}
+        env:
+          BUCKET_NAME: origin-del-${{ needs.names.outputs.deploymentName }}-submit-diyaccounting-co-uk
         run: |
-          echo "Uploading test reports to S3 bucket: ${{ needs.deploy-edge.outputs.originBucketName }}"
-          aws s3 cp target/test-reports/ s3://${{ needs.deploy-edge.outputs.originBucketName }}/tests/ --recursive
+          echo "Uploading test reports to S3 bucket: ${BUCKET_NAME?}"
+          aws s3 cp target/test-reports/ s3://${BUCKET_NAME?}/tests/ --recursive
         shell: bash
 
 # TODO: Reinstate load test
