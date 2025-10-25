@@ -13,7 +13,7 @@ import co.uk.diyaccounting.submit.stacks.HmrcStack;
 import co.uk.diyaccounting.submit.stacks.OpsStack;
 import co.uk.diyaccounting.submit.stacks.SelfDestructStack;
 import co.uk.diyaccounting.submit.utils.KindCdk;
-import software.amazon.awscdk.services.apigatewayv2.HttpMethod;
+import software.amazon.awscdk.services.lambda.IFunction;
 import java.lang.reflect.Field;
 import java.nio.file.Paths;
 import java.time.ZonedDateTime;
@@ -242,8 +242,19 @@ public class SubmitApplication {
                 "Synthesizing stack %s for deployment %s to environment %s",
                 sharedNames.apiStackId, deploymentName, envName);
 
-        // Create endpoint configuration map
-        Map<String, ApiStack.EndpointConfig> endpointConfigurations = createEndpointConfigurations(sharedNames);
+        // Create a map of Lambda function references from other stacks
+        Map<String, IFunction> lambdaFunctions = new java.util.HashMap<>();
+        lambdaFunctions.put("authUrlCognito", this.authStack.authUrlCognitoLambda);
+        lambdaFunctions.put("exchangeCognitoToken", this.authStack.exchangeCognitoTokenLambda);
+        lambdaFunctions.put("authUrlHmrc", this.hmrcStack.authUrlHmrcLambda);
+        lambdaFunctions.put("exchangeHmrcToken", this.hmrcStack.exchangeHmrcTokenLambda);
+        lambdaFunctions.put("submitVat", this.hmrcStack.submitVatLambda);
+        lambdaFunctions.put("logReceipt", this.hmrcStack.logReceiptLambda);
+        lambdaFunctions.put("myReceipts", this.hmrcStack.myReceiptsLambda);
+        lambdaFunctions.put("catalog", this.accountStack.catalogLambda);
+        lambdaFunctions.put("requestBundles", this.accountStack.requestBundlesLambda);
+        lambdaFunctions.put("bundleDelete", this.accountStack.bundleDeleteLambda);
+        lambdaFunctions.put("myBundles", this.accountStack.myBundlesLambda);
 
         this.apiStack = new ApiStack(
                 app,
@@ -257,8 +268,7 @@ public class SubmitApplication {
                         .compressedResourceNamePrefix(sharedNames.appCompressedResourceNamePrefix)
                         .cloudTrailEnabled(cloudTrailEnabled)
                         .sharedNames(sharedNames)
-                        .lambdaFunctionArns(sharedNames.lambdaArns)
-                        .endpointConfigurations(endpointConfigurations)
+                        .lambdaFunctions(lambdaFunctions)
                         .build());
         this.apiStack.addDependency(accountStack);
         this.apiStack.addDependency(hmrcStack);
@@ -336,84 +346,5 @@ public class SubmitApplication {
         // default env to dev if not set
         if (props.envName == null || props.envName.isBlank()) props.envName = "dev";
         return props;
-    }
-
-    /**
-     * Creates endpoint configuration map for API Gateway v2 routes
-     * Maps Lambda ARNs to their corresponding API paths and HTTP methods
-     */
-    private static Map<String, ApiStack.EndpointConfig> createEndpointConfigurations(SubmitSharedNames sharedNames) {
-        Map<String, ApiStack.EndpointConfig> configs = new java.util.HashMap<>();
-        
-        // Map each Lambda ARN to its endpoint configuration
-        // Order matches the lambdaArns list in SubmitSharedNames
-        
-        configs.put(sharedNames.authUrlCognitoLambdaArn, 
-            ApiStack.EndpointConfig.builder()
-                .path("/cognito/authUrl")
-                .httpMethod(HttpMethod.GET)
-                .build());
-                
-        configs.put(sharedNames.exchangeCognitoTokenLambdaArn,
-            ApiStack.EndpointConfig.builder()
-                .path("/cognito/token")
-                .httpMethod(HttpMethod.POST)
-                .build());
-                
-        configs.put(sharedNames.authUrlHmrcLambdaArn,
-            ApiStack.EndpointConfig.builder()
-                .path("/hmrc/authUrl")
-                .httpMethod(HttpMethod.GET)
-                .build());
-                
-        configs.put(sharedNames.exchangeHmrcTokenLambdaArn,
-            ApiStack.EndpointConfig.builder()
-                .path("/hmrc/token")
-                .httpMethod(HttpMethod.POST)
-                .build());
-                
-        configs.put(sharedNames.submitVatLambdaArn,
-            ApiStack.EndpointConfig.builder()
-                .path("/hmrc/vat/return")
-                .httpMethod(HttpMethod.POST)
-                .build());
-                
-        configs.put(sharedNames.logReceiptLambdaArn,
-            ApiStack.EndpointConfig.builder()
-                .path("/hmrc/receipt")
-                .httpMethod(HttpMethod.POST)
-                .build());
-                
-        configs.put(sharedNames.myReceiptsLambdaArn,
-            ApiStack.EndpointConfig.builder()
-                .path("/hmrc/receipt")
-                .httpMethod(HttpMethod.GET)
-                .build());
-                
-        configs.put(sharedNames.catalogLambdaArn,
-            ApiStack.EndpointConfig.builder()
-                .path("/catalog")
-                .httpMethod(HttpMethod.GET)
-                .build());
-                
-        configs.put(sharedNames.requestBundlesLambdaArn,
-            ApiStack.EndpointConfig.builder()
-                .path("/bundle")
-                .httpMethod(HttpMethod.POST)
-                .build());
-                
-        configs.put(sharedNames.bundleDeleteLambdaArn,
-            ApiStack.EndpointConfig.builder()
-                .path("/bundle")
-                .httpMethod(HttpMethod.DELETE)
-                .build());
-                
-        configs.put(sharedNames.myBundlesLambdaArn,
-            ApiStack.EndpointConfig.builder()
-                .path("/bundle")
-                .httpMethod(HttpMethod.GET)
-                .build());
-        
-        return configs;
     }
 }
