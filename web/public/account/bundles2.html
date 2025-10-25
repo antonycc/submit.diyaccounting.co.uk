@@ -91,6 +91,14 @@
           >
             tests
           </a>
+          <a
+            id="apiDocsLink"
+            style="display: inline"
+            target="_blank"
+            href="../docs/index.html"
+          >
+            api
+          </a>
         </div>
         <div class="footer-center">
           <p>&copy; 2025 DIY Accounting Limited</p>
@@ -110,7 +118,7 @@
     <script>
       // --- API Gateway v2 Configuration
       const API_BASE_V2 = '/api/v1';
-      
+
       // Update the API base URL display
       document.getElementById('apiBaseUrl').textContent = window.location.origin + API_BASE_V2;
 
@@ -178,9 +186,9 @@
           // Use API Gateway v2 endpoint
           const r = await fetch(`${API_BASE_V2}/bundle`, {
             method: "POST",
-            headers: { 
-              "Content-Type": "application/json", 
-              "Authorization": `Bearer ${idToken}` 
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${idToken}`
             },
             body: JSON.stringify({ bundleId, qualifiers }),
           });
@@ -234,7 +242,7 @@
         try {
           const idToken = getIdToken();
           const headers = idToken ? { Authorization: `Bearer ${idToken}` } : {};
-          
+
           // Use API Gateway v2 endpoint
           const res = await fetch(`${API_BASE_V2}/catalog`, { headers });
           if (!res.ok) {
@@ -248,7 +256,7 @@
             .join("\n");
           container.innerHTML = cards || '<p class="service-description">No bundles available.</p>';
           updateBundleStatus();
-          
+
           showStatus("Catalog loaded successfully via API Gateway v2.", "success");
         } catch (err) {
           container.innerHTML = '<p class="service-description">Failed to load catalog via API v2.</p>';
