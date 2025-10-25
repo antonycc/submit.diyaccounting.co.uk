@@ -1,10 +1,15 @@
 package co.uk.diyaccounting.submit.stacks;
 
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
 import co.uk.diyaccounting.submit.constructs.LambdaUrlOrigin;
 import co.uk.diyaccounting.submit.constructs.LambdaUrlOriginProps;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
+import java.util.List;
+import java.util.Optional;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Aspects;
 import software.amazon.awscdk.Duration;
@@ -24,12 +29,6 @@ import software.amazon.awscdk.services.s3.Bucket;
 import software.amazon.awscdk.services.s3.IBucket;
 import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
-
-import java.util.List;
-import java.util.Optional;
-
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 public class HmrcStack extends Stack {
 
@@ -140,7 +139,7 @@ public class HmrcStack extends Stack {
         infof(
                 "Created Lambda %s for HMRC auth URL with handler %s",
                 this.authUrlHmrcLambda.getNode().getId(),
-            props.lambdaEntry() + props.sharedNames().authUrlHmrcLambdaHandler);
+                props.lambdaEntry() + props.sharedNames().authUrlHmrcLambdaHandler);
 
         // exchangeToken - HMRC
         var exchangeHmrcEnvBase = new PopulatedMap<String, String>()

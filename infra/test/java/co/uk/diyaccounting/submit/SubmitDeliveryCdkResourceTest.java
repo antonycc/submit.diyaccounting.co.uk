@@ -23,7 +23,7 @@ import software.amazon.awscdk.assertions.Template;
     @SetEnvironmentVariable(key = "COMMIT_HASH", value = "local"),
     @SetEnvironmentVariable(key = "WEBSITE_HASH", value = "local"),
     @SetEnvironmentVariable(key = "BUILD_NUMBER", value = "local"),
-    //@SetEnvironmentVariable(key = "AUTH_URL_MOCK_LAMBDA_URL", value = "https://tt-witheight.lambda.mock/auth"),
+    // @SetEnvironmentVariable(key = "AUTH_URL_MOCK_LAMBDA_URL", value = "https://tt-witheight.lambda.mock/auth"),
     @SetEnvironmentVariable(key = "AUTH_URL_COGNITO_LAMBDA_URL", value = "https://tt-witheight.lambda.cognito/auth"),
     @SetEnvironmentVariable(
             key = "COGNITO_EXCHANGE_TOKEN_LAMBDA_URL",

@@ -19,10 +19,11 @@ public class ResourceNameUtils {
                 : buildVersionedDomainName(env, subDomainName, hostedZoneName); // e.g. dev.example.com
     }
 
-    public static String buildCognitoDomainName(String env, String cognitoDomainPrefix, String subDomainName, String hostedZoneName) {
+    public static String buildCognitoDomainName(
+            String env, String cognitoDomainPrefix, String subDomainName, String hostedZoneName) {
         return "prod".equals(env)
-            ? buildPrimaryCognitoDomainName(cognitoDomainPrefix, subDomainName, hostedZoneName)
-            : buildVersionedCognitoDomainName(env, cognitoDomainPrefix, subDomainName, hostedZoneName);
+                ? buildPrimaryCognitoDomainName(cognitoDomainPrefix, subDomainName, hostedZoneName)
+                : buildVersionedCognitoDomainName(env, cognitoDomainPrefix, subDomainName, hostedZoneName);
     }
 
     public static String buildPrimaryDomainName(String subDomainName, String hostedZoneName) {
@@ -33,11 +34,13 @@ public class ResourceNameUtils {
         return "%s.%s.%s".formatted(env, subDomainName, hostedZoneName);
     }
 
-    public static String buildPrimaryCognitoDomainName(String cognitoDomainPrefix, String subDomainName, String hostedZoneName) {
+    public static String buildPrimaryCognitoDomainName(
+            String cognitoDomainPrefix, String subDomainName, String hostedZoneName) {
         return "%s.%s.%s".formatted(cognitoDomainPrefix, subDomainName, hostedZoneName);
     }
 
-    public static String buildVersionedCognitoDomainName(String env, String cognitoDomainPrefix, String subDomainName, String hostedZoneName) {
+    public static String buildVersionedCognitoDomainName(
+            String env, String cognitoDomainPrefix, String subDomainName, String hostedZoneName) {
         return "%s.%s.%s.%s".formatted(env, cognitoDomainPrefix, subDomainName, hostedZoneName);
     }
 
