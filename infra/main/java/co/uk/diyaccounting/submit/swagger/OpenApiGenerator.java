@@ -50,7 +50,7 @@ public class OpenApiGenerator {
         // Servers section - will be populated with actual API Gateway URL
         ArrayNode servers = mapper.createArrayNode();
         ObjectNode server = mapper.createObjectNode();
-        server.put("url", "https://%sapi/v1/".formatted(baseUrl));
+        server.put("url", "%sapi/v1/".formatted(baseUrl));
         server.put("description", "DIY Accounting Submit API documentation");
         //ObjectNode serverVariables = mapper.createObjectNode();
         //ObjectNode apiIdVar = mapper.createObjectNode();
