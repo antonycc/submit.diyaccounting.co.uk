@@ -12,8 +12,8 @@ export async function goToBundlesPage(page) {
     await page.screenshot({
       path: `target/behaviour-test-results/bundles-screenshots/071-hamburger-menu-${timestamp()}.png`,
     });
-    await expect(page.getByRole("link", { name: "Bundles" })).toBeVisible();
-    await loggedClick(page, "a:has-text('Bundles')", "Clicking Bundles in hamburger menu");
+    await expect(page.getByRole("link", { name: "Bundles", exact: true })).toBeVisible();
+    await loggedClick(page, "a[href*='bundles.html']:not([href*='bundles2.html'])", "Clicking Bundles in hamburger menu");
     await page.waitForLoadState("networkidle");
     await page.waitForTimeout(500);
     await page.screenshot({

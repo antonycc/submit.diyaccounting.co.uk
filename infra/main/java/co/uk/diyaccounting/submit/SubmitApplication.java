@@ -5,16 +5,19 @@ import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.Kind.warnf;
 
 import co.uk.diyaccounting.submit.stacks.AccountStack;
+import co.uk.diyaccounting.submit.stacks.ApiStack;
 import co.uk.diyaccounting.submit.stacks.AuthStack;
 import co.uk.diyaccounting.submit.stacks.DevStack;
 import co.uk.diyaccounting.submit.stacks.HmrcStack;
 import co.uk.diyaccounting.submit.stacks.OpsStack;
 import co.uk.diyaccounting.submit.stacks.SelfDestructStack;
 import co.uk.diyaccounting.submit.utils.KindCdk;
+import software.amazon.awscdk.services.lambda.IFunction;
 import java.lang.reflect.Field;
 import java.nio.file.Paths;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Map;
 import software.amazon.awscdk.App;
 import software.amazon.awscdk.Environment;
 import software.constructs.Construct;
@@ -25,6 +28,7 @@ public class SubmitApplication {
     public final AuthStack authStack;
     public final HmrcStack hmrcStack;
     public final AccountStack accountStack;
+    public final ApiStack apiStack;
     public final OpsStack opsStack;
     public final SelfDestructStack selfDestructStack;
 
@@ -82,6 +86,7 @@ public class SubmitApplication {
         infof("Created stack: %s", submitApplication.authStack.getStackName());
         infof("Created stack: %s", submitApplication.hmrcStack.getStackName());
         infof("Created stack: %s", submitApplication.accountStack.getStackName());
+        infof("Created stack: %s", submitApplication.apiStack.getStackName());
         infof("Created stack: %s", submitApplication.opsStack.getStackName());
         if (submitApplication.selfDestructStack != null) {
             infof("Created stack: %s", submitApplication.selfDestructStack.getStackName());
@@ -231,6 +236,43 @@ public class SubmitApplication {
                         .build());
         this.accountStack.addDependency(devStack);
 
+        // Create the ApiStack with API Gateway v2 for all Lambda endpoints
+        infof(
+                "Synthesizing stack %s for deployment %s to environment %s",
+                sharedNames.apiStackId, deploymentName, envName);
+
+        // Create a map of Lambda function references from other stacks
+        Map<String, IFunction> lambdaFunctions = new java.util.HashMap<>();
+        lambdaFunctions.put("authUrlCognito", this.authStack.authUrlCognitoLambda);
+        lambdaFunctions.put("exchangeCognitoToken", this.authStack.exchangeCognitoTokenLambda);
+        lambdaFunctions.put("authUrlHmrc", this.hmrcStack.authUrlHmrcLambda);
+        lambdaFunctions.put("exchangeHmrcToken", this.hmrcStack.exchangeHmrcTokenLambda);
+        lambdaFunctions.put("submitVat", this.hmrcStack.submitVatLambda);
+        lambdaFunctions.put("logReceipt", this.hmrcStack.logReceiptLambda);
+        lambdaFunctions.put("myReceipts", this.hmrcStack.myReceiptsLambda);
+        lambdaFunctions.put("catalog", this.accountStack.catalogLambda);
+        lambdaFunctions.put("requestBundles", this.accountStack.requestBundlesLambda);
+        lambdaFunctions.put("bundleDelete", this.accountStack.bundleDeleteLambda);
+        lambdaFunctions.put("myBundles", this.accountStack.myBundlesLambda);
+
+        this.apiStack = new ApiStack(
+                app,
+                sharedNames.apiStackId,
+                ApiStack.ApiStackProps.builder()
+                        .env(primaryEnv)
+                        .crossRegionReferences(false)
+                        .envName(envName)
+                        .deploymentName(deploymentName)
+                        .resourceNamePrefix(sharedNames.appResourceNamePrefix)
+                        .compressedResourceNamePrefix(sharedNames.appCompressedResourceNamePrefix)
+                        .cloudTrailEnabled(cloudTrailEnabled)
+                        .sharedNames(sharedNames)
+                        .lambdaFunctions(lambdaFunctions)
+                        .build());
+        this.apiStack.addDependency(accountStack);
+        this.apiStack.addDependency(hmrcStack);
+        this.apiStack.addDependency(authStack);
+
         this.opsStack = new OpsStack(
                 app,
                 sharedNames.opsStackId,
@@ -246,6 +288,7 @@ public class SubmitApplication {
                         .lambdaFunctionArns(sharedNames.lambdaArns)
                         .build());
         this.opsStack.addDependency(hmrcStack);
+        this.opsStack.addDependency(apiStack);
 
         // Create the SelfDestruct stack only for non-prod deployments and when JAR exists
         if (!"prod".equals(deploymentName)) {
