@@ -13,19 +13,19 @@ dotenvConfigIfNotBlank({ path: ".env.test" });
 vi.mock("@app/functions/hmrcAuthUrlGet.js", () => ({
   handler: vi.fn(),
 }));
-vi.mock("@app/functions/token.js", () => ({
-  httpPostMock: vi.fn(),
+vi.mock("@app/functions/mockTokenPost.js", () => ({
+  handler: vi.fn(),
 }));
-vi.mock("@app/functions/submitVat.js", () => ({
-  httpPost: vi.fn(),
+vi.mock("@app/functions/hmrcVatReturnPost.js", () => ({
+  handler: vi.fn(),
 }));
 vi.mock("@app/functions/logReceipt.js", () => ({
   httpPost: vi.fn(),
 }));
 
 // Import the mocked handlers
-import { httpPostMock as exchangeTokenHandler } from "@app/functions/token.js";
-import { httpPost as submitVatHandler } from "@app/functions/submitVat.js";
+import { handler as exchangeTokenHandler } from "@app/functions/mockTokenPost.js";
+import { handler as submitVatHandler } from "@app/functions/hmrcVatReturnPost.js";
 import { httpPost as logReceiptHandler } from "@app/functions/logReceipt.js";
 import { handler as authUrlHandler } from "@app/functions/hmrcAuthUrlGet.js";
 
@@ -58,7 +58,7 @@ describe("Server Unit Tests", () => {
       }
     });
 
-    app.post("/api/exchange-token", async (req, res) => {
+    app.post("/api/mock/token-post", async (req, res) => {
       try {
         const event = { body: JSON.stringify(req.body) };
         const { statusCode, body } = await exchangeTokenHandler(event);
@@ -68,7 +68,7 @@ describe("Server Unit Tests", () => {
       }
     });
 
-    app.post("/api/submit-vat", async (req, res) => {
+    app.post("/api/hmrc/vat/return-post", async (req, res) => {
       try {
         const event = { body: JSON.stringify(req.body) };
         const { statusCode, body } = await submitVatHandler(event);
@@ -102,7 +102,7 @@ describe("Server Unit Tests", () => {
       });
       exchangeTokenHandler.mockImplementation(mockHandler);
 
-      await request(app).post("/api/exchange-token").send({ code: "test-code" }).expect(200);
+      await request(app).post("/api/mock/token-post").send({ code: "test-code" }).expect(200);
 
       expect(mockHandler).toHaveBeenCalledWith({
         body: JSON.stringify({ code: "test-code" }),
@@ -161,7 +161,7 @@ describe("Server Unit Tests", () => {
     });
   });
 
-  describe("POST /api/exchange-token", () => {
+  describe("POST /api/mock/token-post", () => {
     test("should call httpPostMock with correct event format", async () => {
       const mockResponse = {
         statusCode: 200,
@@ -170,7 +170,7 @@ describe("Server Unit Tests", () => {
       exchangeTokenHandler.mockResolvedValue(mockResponse);
 
       const requestBody = { code: "auth-code" };
-      const response = await request(app).post("/api/exchange-token").send(requestBody).expect(200);
+      const response = await request(app).post("/api/mock/token-post").send(requestBody).expect(200);
 
       expect(exchangeTokenHandler).toHaveBeenCalledWith({
         body: JSON.stringify(requestBody),
@@ -185,13 +185,13 @@ describe("Server Unit Tests", () => {
       };
       exchangeTokenHandler.mockResolvedValue(mockResponse);
 
-      const response = await request(app).post("/api/exchange-token").send({}).expect(400);
+      const response = await request(app).post("/api/mock/token-post").send({}).expect(400);
 
       expect(response.body).toEqual({ error: "Missing code" });
     });
   });
 
-  describe("POST /api/submit-vat", () => {
+  describe("POST /api/hmrc/vat/return-post", () => {
     test("should call httpPostMock with correct event format", async () => {
       const mockResponse = {
         statusCode: 200,
@@ -205,7 +205,7 @@ describe("Server Unit Tests", () => {
         vatDue: "100.00",
         accessToken: "test-token",
       };
-      const response = await request(app).post("/api/submit-vat").send(requestBody).expect(200);
+      const response = await request(app).post("/api/hmrc/vat/return-post").send(requestBody).expect(200);
 
       expect(submitVatHandler).toHaveBeenCalledWith({
         body: JSON.stringify(requestBody),
@@ -220,7 +220,7 @@ describe("Server Unit Tests", () => {
       };
       submitVatHandler.mockResolvedValue(mockResponse);
 
-      const response = await request(app).post("/api/submit-vat").send({ vatNumber: "123" }).expect(400);
+      const response = await request(app).post("/api/hmrc/vat/return-post").send({ vatNumber: "123" }).expect(400);
 
       expect(response.body).toEqual({ error: "Missing parameters" });
     });

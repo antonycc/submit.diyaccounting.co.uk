@@ -3,7 +3,7 @@
 import { describe, test, expect, vi, beforeEach } from "vitest";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 
-import { httpPost as submitVatHandler } from "@app/functions/submitVat.js";
+import { handler as submitVatHandler } from "@app/functions/hmrcVatReturnPost.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 

@@ -1,41 +1,18 @@
-// app/functions/authUrl.js
+// app/functions/cognitoAuthUrl.js
 
 import { extractRequest, httpBadRequestResponse, httpOkResponse, httpServerErrorResponse } from "../lib/responses.js";
 import { validateEnv } from "../lib/env.js";
 
-// GET /api/mock/auth-url?state={state}
-export async function httpGetMock(event) {
-  validateEnv(["DIY_SUBMIT_BASE_URL"]);
-  const maybeSlash = process.env.DIY_SUBMIT_BASE_URL?.endsWith("/") ? "" : "/";
-  const redirectUri = `${process.env.DIY_SUBMIT_BASE_URL}${maybeSlash}auth/loginWithMockCallback.html`;
-
-  const state = event.queryStringParameters?.state;
-
-  const mockBase = "http://localhost:8080";
-  const scope = "openid somescope";
-  const authUrl =
-    `${mockBase}/oauth/authorize?` +
-    "response_type=code" +
-    "&client_id=debugger" +
-    `&redirect_uri=${encodeURIComponent(redirectUri)}` +
-    `&scope=${encodeURIComponent(scope)}` +
-    `&state=${encodeURIComponent(state)}` +
-    "&identity_provider=MockOAuth2Server";
-  return httpGet(event, authUrl);
-}
-
-// GET /api/cognito/auth-url?state={state}
-export async function httpGetCognito(event) {
+// GET /api/cognito/authUrl-get?state={state}
+export async function handler(event) {
   validateEnv(["COGNITO_CLIENT_ID", "COGNITO_BASE_URI", "DIY_SUBMIT_BASE_URL"]);
+
   const maybeSlash = process.env.DIY_SUBMIT_BASE_URL?.endsWith("/") ? "" : "/";
   const redirectUri = `${process.env.DIY_SUBMIT_BASE_URL}${maybeSlash}auth/loginWithCognitoCallback.html`;
   const cognitoClientId = process.env.COGNITO_CLIENT_ID;
   const cognitoBaseUri = process.env.COGNITO_BASE_URI;
-
   const state = event.queryStringParameters?.state;
-
   const scope = "openid profile email";
-
   const authUrl =
     `${cognitoBaseUri}/oauth2/authorize?response_type=code` +
     `&client_id=${encodeURIComponent(cognitoClientId)}` +
@@ -43,11 +20,7 @@ export async function httpGetCognito(event) {
     `&scope=${encodeURIComponent(scope)}` +
     `&state=${encodeURIComponent(state)}`;
 
-  return httpGet(event, authUrl);
-}
-
-export async function httpGet(event, authUrl) {
-  let request;
+  let request = "Not created";
   try {
     request = extractRequest(event);
 
@@ -60,9 +33,6 @@ export async function httpGet(event, authUrl) {
       });
     }
 
-    // Processing - occurs in the caller to allow different authUrl construction
-
-    // Generate a success response
     return httpOkResponse({
       request,
       data: {
@@ -70,7 +40,6 @@ export async function httpGet(event, authUrl) {
       },
     });
   } catch (error) {
-    // Generate a failure response
     return httpServerErrorResponse({
       request: request,
       data: { error, message: "Internal Server Error in httpGetHmrc" },

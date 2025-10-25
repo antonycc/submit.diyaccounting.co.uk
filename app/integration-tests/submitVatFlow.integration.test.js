@@ -6,8 +6,8 @@ import { http, HttpResponse } from "msw";
 import { mockClient } from "aws-sdk-client-mock";
 import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
 
-import { httpPostMock as exchangeTokenHandler } from "@app/functions/token.js";
-import { httpPost as submitVatHandler } from "@app/functions/submitVat.js";
+import { handler as exchangeTokenHandler } from "@app/functions/mockTokenPost.js";
+import { handler as submitVatHandler } from "@app/functions/hmrcVatReturnPost.js";
 import { httpPost as logReceiptHandler } from "@app/functions/logReceipt.js";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 

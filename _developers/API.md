@@ -48,7 +48,7 @@ Exchanges the OAuth authorization code for an HMRC access token.
 
 ---
 
-### **`POST /api/submit-vat`**
+### **`POST /api/hmrc/vat/return-post`**
 
 Submits the VAT return details to HMRC.
 

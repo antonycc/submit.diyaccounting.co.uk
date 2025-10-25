@@ -205,7 +205,7 @@ describe("VAT Flow Frontend JavaScript", () => {
 
   describe("API Functions", () => {
     test("getAuthUrl should make correct API call", async () => {
-      const mockResponse = { authUrl: "https://test-auth-url.com" };
+      const mockResponse = { authUrl: "https://test.com/authUrl-get" };
       fetchMock.mockResolvedValueOnce({
         ok: true,
         json: () => Promise.resolve(mockResponse),
@@ -245,7 +245,7 @@ describe("VAT Flow Frontend JavaScript", () => {
 
       const result = await window.submitVat("111222333", "24A1", "1000.00", "test-token", headers);
 
-      expect(fetchMock).toHaveBeenCalledWith("/api/submit-vat", {
+      expect(fetchMock).toHaveBeenCalledWith("/api/hmrc/vat/return-post", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

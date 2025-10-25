@@ -5,9 +5,8 @@ import path from "path";
 import express from "express";
 import { fileURLToPath } from "url";
 import { readFileSync } from "fs";
-import { httpGetCognito, httpGetMock } from "../functions/authUrl.js";
-import { httpPostMock, httpPostHmrc, httpPostCognito } from "../functions/token.js";
-import { httpPost as submitVatHttpPost } from "../functions/submitVat.js";
+import fetch from "node-fetch";
+import { handler as submitVatHttpPost } from "../functions/hmrcVatReturnPost.js";
 import { httpPost as logReceiptHttpPost } from "../functions/logReceipt.js";
 import { httpPost as requestBundleHttpPost, httpDelete as removeBundleHttpDelete } from "../functions/bundle.js";
 import { handler as getCatalogHttpGet } from "../functions/catalogGet.js";
@@ -21,7 +20,13 @@ import { httpGet as getVatPenaltiesHttpGet } from "../functions/getVatPenalties.
 import logger from "../lib/logger.js";
 import { requireActivity } from "../lib/entitlementsService.js";
 import { dotenvConfigIfNotBlank, validateEnv } from "../lib/env.js";
-import { handler } from "../functions/hmrcAuthUrlGet.js";
+
+import { handler as mockAuthUrlGet } from "../functions/mockAuthUrlGet.js";
+import { handler as hmrcAuthUrlGet } from "../functions/hmrcAuthUrlGet.js";
+import { handler as cognitoAuthUrlGet } from "../functions/cognitoAuthUrlGet.js";
+import { handler as mockTokenPost } from "../functions/mockTokenPost.js";
+import { handler as hmrcTokenPost } from "../functions/hmrcTokenPost.js";
+import { handler as cognitoTokenPost } from "../functions/cognitoTokenPost.js";
 
 dotenvConfigIfNotBlank({ path: ".env" });
 dotenvConfigIfNotBlank({ path: ".env.test" });
@@ -48,15 +53,35 @@ app.use((req, res, next) => {
   next();
 });
 
+// Basic CORS middleware (mostly for local tools and OPTIONS where needed)
+app.use((req, res, next) => {
+  // Allow same-origin (ngrok forwards host), and also enable generic CORS for dev tools
+  const origin = req.headers.origin;
+  if (origin) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Vary", "Origin");
+  }
+  res.setHeader("Access-Control-Allow-Credentials", "true");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type,Authorization");
+  res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
+  // Private Network Access preflight response header if requested by Chromium
+  if (req.headers["access-control-request-private-network"] === "true") {
+    res.setHeader("Access-Control-Allow-Private-Network", "true");
+  }
+  if (req.method === "OPTIONS") return res.status(200).end();
+  next();
+});
+
 app.use(express.static(path.join(__dirname, "../../web/public")));
 
 const authUrlPath = context.authUrlLambdaUrlPath || "/api/hmrc/authUrl-get";
-const mockAuthUrlPath = "/api/mock/auth-url";
-const cognitoAuthUrlPath = context.cognitoAuthUrlLambdaUrlPath || "/api/cognito/auth-url";
+const mockAuthUrlPath = "/api/mock/authUrl-get";
+const mockTokenProxyPath = "/api/mock/token";
+const cognitoAuthUrlPath = context.cognitoAuthUrlLambdaUrlPath || "/api/cognito/authUrl-get";
 const exchangeMockTokenPath = context.exchangeTokenLambdaUrlPath || "/api/exchange-token";
-const exchangeHmrcTokenPath = context.exchangeHmrcTokenLambdaUrlPath || "/api/hmrc/exchange-token";
-const exchangeCognitoTokenPath = context.exchangeCognitoTokenLambdaUrlPath || "/api/cognito/exchange-token";
-const submitVatPath = context.submitVatLambdaUrlPath || "/api/submit-vat";
+const exchangeHmrcTokenPath = context.exchangeHmrcTokenLambdaUrlPath || "/api/hmrc/token-post";
+const exchangeCognitoTokenPath = context.exchangeCognitoTokenLambdaUrlPath || "/api/cognito/token-post";
+const submitVatPath = context.submitVatLambdaUrlPath || "/api/hmrc/vat/return-post";
 const logReceiptPath = context.logReceiptLambdaUrlPath || "/api/log-receipt";
 const requestBundlePath = context.bundleLambdaUrlPath || "/api/request-bundle";
 const catalogPath = context.catalogLambdaUrlPath || "/api/catalog-get";
@@ -69,7 +94,7 @@ app.get(authUrlPath, async (req, res) => {
     headers: { host: req.get("host") || "localhost:3000" },
     queryStringParameters: req.query || {},
   };
-  const { statusCode, body } = await handler(event);
+  const { statusCode, body } = await hmrcAuthUrlGet(event);
   res["status"](statusCode).json(JSON.parse(body));
 });
 
@@ -79,7 +104,7 @@ app.get(mockAuthUrlPath, async (req, res) => {
     headers: { host: req.get("host") || "localhost:3000" },
     queryStringParameters: req.query || {},
   };
-  const { statusCode, body } = await httpGetMock(event);
+  const { statusCode, body } = await mockAuthUrlGet(event);
   res["status"](statusCode).json(JSON.parse(body));
 });
 
@@ -89,8 +114,35 @@ app.get(cognitoAuthUrlPath, async (req, res) => {
     headers: { host: req.get("host") || "localhost:3000" },
     queryStringParameters: req.query || {},
   };
-  const { statusCode, body } = await httpGetCognito(event);
+  const { statusCode, body } = await cognitoAuthUrlGet(event);
   res.status(statusCode).json(JSON.parse(body));
+});
+
+// Proxy to local mock OAuth2 server token endpoint to avoid browser PNA/CORS
+app.post(mockTokenProxyPath, async (req, res) => {
+  try {
+    const params = new URLSearchParams();
+    for (const [key, value] of Object.entries(req.body || {})) {
+      if (Array.isArray(value)) {
+        for (const v of value) params.append(key, v);
+      } else if (value !== undefined && value !== null) {
+        params.append(key, String(value));
+      }
+    }
+
+    const resp = await fetch("http://localhost:8080/default/token", {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: params.toString(),
+    });
+
+    const contentType = resp.headers.get("content-type") || "application/json";
+    const text = await resp.text();
+    res.status(resp.status).set("content-type", contentType).send(text);
+  } catch (e) {
+    logger.error(`Mock token proxy error: ${e?.stack || e}`);
+    res.status(500).json({ message: "Mock token proxy failed", error: String(e) });
+  }
 });
 
 app.post(exchangeMockTokenPath, async (req, res) => {
@@ -100,7 +152,7 @@ app.post(exchangeMockTokenPath, async (req, res) => {
     queryStringParameters: req.query || {},
     body: JSON.stringify(req.body),
   };
-  const { statusCode, body } = await httpPostMock(event);
+  const { statusCode, body } = await mockTokenPost(event);
   res.status(statusCode).json(JSON.parse(body));
 });
 
@@ -111,7 +163,7 @@ app.post(exchangeHmrcTokenPath, async (req, res) => {
     queryStringParameters: req.query || {},
     body: JSON.stringify(req.body),
   };
-  const { statusCode, body } = await httpPostHmrc(event);
+  const { statusCode, body } = await hmrcTokenPost(event);
   res.status(statusCode).json(JSON.parse(body));
 });
 
@@ -122,7 +174,7 @@ app.post(exchangeCognitoTokenPath, async (req, res) => {
     queryStringParameters: req.query || {},
     body: JSON.stringify(req.body),
   };
-  const { statusCode, body } = await httpPostCognito(event);
+  const { statusCode, body } = await cognitoTokenPost(event);
   res.status(statusCode).json(JSON.parse(body));
 });
 
@@ -173,6 +225,7 @@ app.post(requestBundlePath, async (req, res) => {
   const { statusCode, body } = await requestBundleHttpPost(event);
   try {
     res.status(statusCode).json(body ? JSON.parse(body) : {});
+    // eslint-disable-next-line sonarjs/no-ignored-exceptions
   } catch (_e) {
     res.status(statusCode).send(body || "");
   }
@@ -197,6 +250,7 @@ app.delete(requestBundlePath, async (req, res) => {
   const { statusCode, body } = await removeBundleHttpDelete(event);
   try {
     res.status(statusCode).json(body ? JSON.parse(body) : {});
+    // eslint-disable-next-line sonarjs/no-ignored-exceptions
   } catch (_e) {
     res.status(statusCode).send(body || "");
   }
@@ -303,6 +357,7 @@ app.get(vatObligationsPath, requireActivity("vat-obligations"), async (req, res)
   if (headers) res.set(headers);
   try {
     res.status(statusCode).json(body ? JSON.parse(body) : {});
+    // eslint-disable-next-line sonarjs/no-ignored-exceptions
   } catch (_e) {
     res.status(statusCode).send(body || "");
   }
@@ -384,6 +439,7 @@ app.get(vatPenaltiesPath, requireActivity("vat-obligations"), async (req, res) =
   if (headers) res.set(headers);
   try {
     res.status(statusCode).json(body ? JSON.parse(body) : {});
+    // eslint-disable-next-line sonarjs/no-ignored-exceptions
   } catch (_e) {
     res.status(statusCode).send(body || "");
   }

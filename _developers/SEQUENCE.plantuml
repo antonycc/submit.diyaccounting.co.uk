@@ -33,13 +33,13 @@ loop VAT Submission Flow
   ExchangeToken -> App: { accessToken } → [sync]
 
   alt Optional: retrieve obligations
-    App -> SubmitVat: GET /api/submit-vat/obligations { accessToken } → [sync]
+    App -> SubmitVat: GET /api/hmrc/vat/return-post/obligations { accessToken } → [sync]
     SubmitVat -> HMRCApi: GET /organisations/vat/{vrn}/obligations →→ [async]
     HMRCApi -> SubmitVat: { obligations list } →→ [async]
     SubmitVat -> App: obligations list → [sync]
   end
 
-  App -> SubmitVat: POST /api/submit-vat { payload, accessToken } → [sync]
+  App -> SubmitVat: POST /api/hmrc/vat/return-post { payload, accessToken } → [sync]
   SubmitVat -> HMRCApi: POST /organisations/vat/{vrn}/returns →→ [async]
   HMRCApi -> SubmitVat: { processingDate, formBundleNumber, chargeRefNumber } →→ [async]
   SubmitVat -> App: receipt → [sync]

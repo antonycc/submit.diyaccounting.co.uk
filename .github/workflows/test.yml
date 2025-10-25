@@ -1,8 +1,5 @@
 name: test
 run-name: "test from ${{ github.ref_name }}"
-concurrency:
-  group: test-${{ github.ref_name }}
-  cancel-in-progress: true
 
 on:
   workflow_dispatch:
@@ -128,7 +125,7 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
-      - run: npm ci || npm install
+      - run: npm ci
 
       - run: npm test
 
@@ -149,7 +146,7 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
-      - run: npm ci || npm install
+      - run: npm ci
 
       - run: npm run test:coverage
 
@@ -170,7 +167,7 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
-      - run: npm ci || npm install
+      - run: npm ci
 
       - run: npm run test:integration
 
@@ -191,7 +188,7 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
-      - run: npm ci || npm install
+      - run: npm ci
 
       - run: npm run test:system
 

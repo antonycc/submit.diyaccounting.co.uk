@@ -75,7 +75,7 @@ npm run storage
 Architecture Overview
 High-level
 - CloudFront + S3: Static site, OAI-restricted S3 origin.
-- Lambda URL backends: auth-url (hmrc/mock/google), exchange-token (hmrc/google), submit-vat, log-receipt, request-bundle.
+- Lambda URL backends: authUrl-get (hmrc/mock/cognito), exchange-token (hmrc/google), submit-vat, log-receipt, request-bundle.
 - Cognito + Google IdP: Hosted UI domain; User Pool and User Pool Client for Google identity provider.
 - Route53 + ACM: DNS and certificates; optional useExisting certificate/hosted zone.
 - Secrets Manager: HMRC and Google client secrets, loaded by Lambdas when not provided via env.
@@ -88,7 +88,7 @@ ASCII diagram
 [CloudFront] -> [S3 static site]
    |            \
    |             -> [Lambda URL: /api/*]
-   |                    - auth-url (hmrc/mock/google)
+   |                    - authUrl-get (hmrc/mock/cognito)
    |                    - exchange-token (hmrc/google)
    |                    - submit-vat
    |                    - log-receipt
@@ -107,8 +107,8 @@ See infra/main/java/co/uk/diyaccounting/submit/SubmitApplication.java for the fu
 API Reference
 Auth URL endpoints
 - GET /api/hmrc/authUrl-get?state=...
-- GET /api/mock/auth-url?state=...
-- GET /api/google/auth-url?state=...
+- GET /api/mock/authUrl-get?state=...
+- GET /api/cognito/authUrl-get?state=...
 Response
 ```json
 {
@@ -117,7 +117,7 @@ Response
 ```
 
 Token exchange endpoints
-- POST /api/hmrc/exchange-token
+- POST /api/hmrc/token-post
 - POST /api/google/exchange-token
 Request
 ```json
@@ -141,7 +141,7 @@ Error response (example)
 ```
 
 VAT submission
-- POST /api/submit-vat
+- POST /api/hmrc/vat/return-post
 Headers: Authorization: Bearer <accessToken>
 Request (example)
 ```json
@@ -209,7 +209,7 @@ npx cdk deploy WebStack-dev
 ```
 Useful outputs (CfnOutput)
 - DistributionId, ARecord, UserPoolId, UserPoolClientId, UserPoolDomainName
-- Lambda URLs: AuthUrlHmrc, AuthUrlMock, ExchangeHmrcToken, ExchangeGoogleToken, SubmitVat, LogReceipt, Bundle
+- Lambda URLs: AuthUrlHmrc, ExchangeHmrcToken, ExchangeGoogleToken, SubmitVat, LogReceipt, Bundle
 - Secrets ARNs: HmrcClientSecretsManagerSecretArn, GoogleClientSecretsManagerSecretArn
 
 Observability & Security

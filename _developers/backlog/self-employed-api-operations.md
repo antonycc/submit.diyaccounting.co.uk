@@ -34,7 +34,7 @@ There is no self‑employment code in the repository.  The product catalogue inc
 3. **selfEmploymentPeriods.html** – list all periods with columns for `periodId`, `startDate`, `endDate`, `totalIncome`, `totalExpenses`.  Provide **Create** and **Edit/Delete** actions.
 4. **selfEmploymentPeriodForm.html** – form for creating or editing a period.  Validate that the end date is after the start date and that numeric fields are positive.
 5. **selfEmploymentCumulative.html** – view and edit cumulative summaries.
-6. **Scope and entitlements** – modify `authUrl.js` to accept dynamic scopes; ensure pages only render for users with the appropriate bundle.
+6. **Scope and entitlements** – modify `hmrcAuthUrlGet.js` to accept dynamic scopes; ensure pages only render for users with the appropriate bundle.
 
 ### Libraries and tools
 

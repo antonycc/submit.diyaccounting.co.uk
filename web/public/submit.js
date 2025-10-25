@@ -72,12 +72,7 @@ function generateRandomState() {
 
 // Auth API functions
 async function getAuthUrl(state, provider = "hmrc") {
-  let url;
-  if (provider === "hmrc") {
-    url = `/api/${provider}/authUrl-get?state=${encodeURIComponent(state)}`;
-  } else {
-    url = `/api/${provider}/auth-url?state=${encodeURIComponent(state)}`;
-  }
+  const url = `/api/${provider}/authUrl-get?state=${encodeURIComponent(state)}`;
   console.log(`Getting auth URL. Remote call initiated: GET ${url}`);
 
   const response = await fetch(url);
@@ -94,7 +89,7 @@ async function getAuthUrl(state, provider = "hmrc") {
 
 // VAT submission API function
 async function submitVat(vatNumber, periodKey, vatDue, accessToken, govClientHeaders = {}) {
-  const url = "/api/submit-vat";
+  const url = "/api/hmrc/vat/return-post";
   const response = await fetch(url, {
     method: "POST",
     headers: {
