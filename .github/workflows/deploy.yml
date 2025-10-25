@@ -1827,18 +1827,11 @@ jobs:
 #            load-test-report.html
 #            load-test-events.json
 
-  # TODO: If all the tests pass, set the last known-good deployment for this environment to this one.
-
-  # TODO: Get the Playwright report and load test report into the GitHub pages site and navigable from the front page
-  publish-artifacts:
-    name: 'publish artifacts to github pages'
-    if: ${{ !cancelled() && needs.names.outputs.environment-name == 'prod' }}
+  convert-video:
+    name: 'convert web test video to mp4'
     needs:
       - names
-      #- deploy-edge
-      #- api-test
       - web-test
-      #- load-test
     runs-on: ubuntu-24.04
     environment:
       name: github-pages
@@ -1902,84 +1895,6 @@ jobs:
           retention-days: 30
           path: |
             artifacts/web-test-artifacts
-
-      - name: Create GitHub Pages content
-        run: |
-          mkdir -p gh-pages
-
-          # Copy web assets to root
-          cp -vr web/* gh-pages/
-
-          # Create artifacts directory structure
-          mkdir -p gh-pages/artifacts
-
-          # Copy behaviour test artifacts
-          if [ -d "artifacts/behaviour-test-artifacts" ]; then
-            cp -vr artifacts/behaviour-test-artifacts gh-pages/artifacts/.
-          fi
-
-          # Copy behaviour test reports
-          if [ -d "artifacts/behaviour-test-reports" ]; then
-            cp -vr artifacts/behaviour-test-reports gh-pages/artifacts/.
-          fi
-
-          # Copy web test artifacts
-          if [ -d "artifacts/web-test-artifacts" ]; then
-            cp -vr artifacts/web-test-artifacts gh-pages/artifacts/.
-          fi
-
-          # Copy web test reports
-          if [ -d "artifacts/web-test-reports" ]; then
-            cp -vr artifacts/web-test-reports gh-pages/artifacts/.
-          fi
-
-          # Create index page for artifacts
-          cat > gh-pages/index.html << 'EOF'
-          <!DOCTYPE html>
-          <html>
-          <head>
-              <title>Test Artifacts - DIY Accounting Submit</title>
-              <link rel="stylesheet" href="public/submit.css">
-          </head>
-          <body>
-              <div class="container">
-                  <h1>Test Artifacts</h1>
-                  <p>Generated from to deployment: <strong>${{ needs.names.outputs.deployment-name }}</strong></p>
-                  <p>GitHub Actions run: <a href="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" target="_blank">${{ github.run_id }}</a></p>
-                  <p>Tested service base URL: <a href="${{ needs.names.outputs.base-url }}" target="_blank">${{ needs.names.outputs.base-url }}</a></p>
-
-                  <h2>Available Test output</h2>
-                  <ul>
-                      <li><a href="artifacts/behaviour-test-reports/html-report/index.html">Behaviour Test Reports (proxy)</a></li>
-                      <li><a href="artifacts/web-test-reports/html-report/index.html">Behaviour Test Reports (web)</a></li>
-                  </ul>
-              </div>
-          </body>
-          </html>
-          EOF
-
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
-
-      - name: Upload to GitHub Pages
-        uses: actions/upload-pages-artifact@v4
-        with:
-          path: gh-pages
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
-
-      - name: Output deployment URLs
-        run: |
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "📁 **GitHub Pages**: ${{ steps.deployment.outputs.page_url }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-
-    outputs:
-      service-base-url: ${{ needs.names.outputs.base-url }}
-      github-pages-url: ${{ steps.deployment.outputs.page_url }}
-      artifacts-url: ${{ steps.deployment.outputs.page_url }}artifacts/
 
   # Set the deployment name as the last known good deployment for this environment in a parameter store parameter
   set-last-known-good-deployment:
