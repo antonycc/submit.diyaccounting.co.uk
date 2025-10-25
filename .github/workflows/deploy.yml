@@ -721,7 +721,6 @@ jobs:
       - name: Resolve stack outputs
         id: auth-outputs
         run: |
-          #AUTH_URL_MOCK_LAMBDA_URL=$(jq -r '.["app-${{ needs.names.outputs.deployment-name }}-AuthStack"].AuthUrlMockLambdaUrl' cdk-submit-application.out/cdk-outputs-auth.json)
           AUTH_URL_COGNITO_LAMBDA_URL=$(jq -r '.["app-${{ needs.names.outputs.deployment-name }}-AuthStack"].AuthUrlCognitoLambdaUrl' cdk-submit-application.out/cdk-outputs-auth.json)
           COGNITO_EXCHANGE_TOKEN_LAMBDA_URL=$(jq -r '.["app-${{ needs.names.outputs.deployment-name }}-AuthStack"].ExchangeCognitoTokenLambdaUrl' cdk-submit-application.out/cdk-outputs-auth.json)
           #echo "AUTH_URL_MOCK_LAMBDA_URL=$AUTH_URL_MOCK_LAMBDA_URL"
@@ -732,7 +731,6 @@ jobs:
           echo "COGNITO_EXCHANGE_TOKEN_LAMBDA_URL=$COGNITO_EXCHANGE_TOKEN_LAMBDA_URL" >> $GITHUB_OUTPUT
         shell: bash
     outputs:
-      #authUrlMockLambdaUrl: ${{ steps.auth-outputs.outputs.AUTH_URL_MOCK_LAMBDA_URL }}
       authUrlCognitoLambdaUrl: ${{ steps.auth-outputs.outputs.AUTH_URL_COGNITO_LAMBDA_URL }}
       exchangeCognitoTokenLambdaUrl: ${{ steps.auth-outputs.outputs.COGNITO_EXCHANGE_TOKEN_LAMBDA_URL }}
 
@@ -924,17 +922,21 @@ jobs:
         run: |
           CATALOG_LAMBDA_URL=$(jq -r '.["app-${{ needs.names.outputs.deployment-name }}-AccountStack"].CatalogLambdaUrl' cdk-submit-application.out/cdk-outputs-account.json)
           REQUEST_BUNDLES_LAMBDA_URL=$(jq -r '.["app-${{ needs.names.outputs.deployment-name }}-AccountStack"].RequestBundlesLambdaUrl' cdk-submit-application.out/cdk-outputs-account.json)
+          BUNDLE_DELETE_LAMBDA_URL=$(jq -r '.["app-${{ needs.names.outputs.deployment-name }}-AccountStack"].BundleDeleteLambdaUrl' cdk-submit-application.out/cdk-outputs-account.json)
           MY_BUNDLES_LAMBDA_URL=$(jq -r '.["app-${{ needs.names.outputs.deployment-name }}-AccountStack"].MyBundlesLambdaUrl' cdk-submit-application.out/cdk-outputs-account.json)
           echo "CATALOG_LAMBDA_URL=$CATALOG_LAMBDA_URL"
           echo "CATALOG_LAMBDA_URL=$CATALOG_LAMBDA_URL" >> $GITHUB_OUTPUT
           echo "REQUEST_BUNDLES_LAMBDA_URL=$REQUEST_BUNDLES_LAMBDA_URL"
           echo "REQUEST_BUNDLES_LAMBDA_URL=$REQUEST_BUNDLES_LAMBDA_URL" >> $GITHUB_OUTPUT
+          echo "BUNDLE_DELETE_LAMBDA_URL=$BUNDLE_DELETE_LAMBDA_URL"
+          echo "BUNDLE_DELETE_LAMBDA_URL=$BUNDLE_DELETE_LAMBDA_URL" >> $GITHUB_OUTPUT
           echo "MY_BUNDLES_LAMBDA_URL=$MY_BUNDLES_LAMBDA_URL"
           echo "MY_BUNDLES_LAMBDA_URL=$MY_BUNDLES_LAMBDA_URL" >> $GITHUB_OUTPUT
         shell: bash
     outputs:
       catalogLambdaUrl: ${{ steps.account-outputs.outputs.CATALOG_LAMBDA_URL }}
       requestBundlesLambdaUrl: ${{ steps.account-outputs.outputs.REQUEST_BUNDLES_LAMBDA_URL }}
+      bundleDeleteLambdaUrl: ${{ steps.account-outputs.outputs.BUNDLE_DELETE_LAMBDA_URL }}
       myBundlesLambdaUrl: ${{ steps.account-outputs.outputs.MY_BUNDLES_LAMBDA_URL }}
 
   deploy-delivery-self-destruct:
@@ -1018,7 +1020,6 @@ jobs:
           SELF_DESTRUCT_HANDLER_SOURCE: "../${{ needs.mvn-package.outputs.self-destruct-handler-source }}"
           SELF_DESTRUCT_START_DATETIME: ${{ needs.mvn-package.outputs.self-destruct-start-datetime }}
           WEBSITE_HASH: "placeholder"
-          #AUTH_URL_MOCK_LAMBDA_URL: ${{ needs.deploy-auth.outputs.authUrlMockLambdaUrl }}
           AUTH_URL_COGNITO_LAMBDA_URL: ${{ needs.deploy-auth.outputs.authUrlCognitoLambdaUrl }}
           COGNITO_EXCHANGE_TOKEN_LAMBDA_URL: ${{ needs.deploy-auth.outputs.exchangeCognitoTokenLambdaUrl }}
           AUTH_URL_HMRC_LAMBDA_URL: ${{ needs.deploy-hmrc.outputs.authUrlHmrcLambdaUrl }}
@@ -1028,6 +1029,7 @@ jobs:
           MY_RECEIPTS_LAMBDA_URL: ${{ needs.deploy-hmrc.outputs.myReceiptsLambdaUrl }}
           CATALOG_LAMBDA_URL: ${{ needs.deploy-account.outputs.catalogLambdaUrl }}
           REQUEST_BUNDLES_LAMBDA_URL: ${{ needs.deploy-account.outputs.requestBundlesLambdaUrl }}
+          BUNDLE_DELETE_LAMBDA_URL: ${{ needs.deploy-account.outputs.bundleDeleteLambdaUrl }}
           MY_BUNDLES_LAMBDA_URL: ${{ needs.deploy-account.outputs.myBundlesLambdaUrl }}
 
   deploy-edge:
@@ -1127,7 +1129,6 @@ jobs:
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
           SELF_DESTRUCT_HANDLER_SOURCE: "../infra/test/resources/fake-self-destruct-lambda.jar"
           WEBSITE_HASH: "placeholder"
-          #AUTH_URL_MOCK_LAMBDA_URL: ${{ needs.deploy-auth.outputs.authUrlMockLambdaUrl }}
           AUTH_URL_COGNITO_LAMBDA_URL: ${{ needs.deploy-auth.outputs.authUrlCognitoLambdaUrl }}
           COGNITO_EXCHANGE_TOKEN_LAMBDA_URL: ${{ needs.deploy-auth.outputs.exchangeCognitoTokenLambdaUrl }}
           AUTH_URL_HMRC_LAMBDA_URL: ${{ needs.deploy-hmrc.outputs.authUrlHmrcLambdaUrl }}
@@ -1137,6 +1138,7 @@ jobs:
           MY_RECEIPTS_LAMBDA_URL: ${{ needs.deploy-hmrc.outputs.myReceiptsLambdaUrl }}
           CATALOG_LAMBDA_URL: ${{ needs.deploy-account.outputs.catalogLambdaUrl }}
           REQUEST_BUNDLES_LAMBDA_URL: ${{ needs.deploy-account.outputs.requestBundlesLambdaUrl }}
+          BUNDLE_DELETE_LAMBDA_URL: ${{ needs.deploy-account.outputs.bundleDeleteLambdaUrl }}
           MY_BUNDLES_LAMBDA_URL: ${{ needs.deploy-account.outputs.myBundlesLambdaUrl }}
 
   deploy-publish:
@@ -1238,7 +1240,6 @@ jobs:
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
           SELF_DESTRUCT_HANDLER_SOURCE: "../infra/test/resources/fake-self-destruct-lambda.jar"
           WEBSITE_HASH: ${{ steps.publish-hash.outputs.WEBSITE_HASH }}
-          #AUTH_URL_MOCK_LAMBDA_URL: ${{ needs.deploy-auth.outputs.authUrlMockLambdaUrl }}
           AUTH_URL_COGNITO_LAMBDA_URL: ${{ needs.deploy-auth.outputs.authUrlCognitoLambdaUrl }}
           COGNITO_EXCHANGE_TOKEN_LAMBDA_URL: ${{ needs.deploy-auth.outputs.exchangeCognitoTokenLambdaUrl }}
           AUTH_URL_HMRC_LAMBDA_URL: ${{ needs.deploy-hmrc.outputs.authUrlHmrcLambdaUrl }}

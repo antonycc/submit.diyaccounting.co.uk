@@ -27,8 +27,6 @@ import software.constructs.Construct;
 
 public class AuthStack extends Stack {
 
-    //public Function authUrlMockLambda;
-    //public LogGroup authUrlMockLambdaLogGroup;
     public Function authUrlCognitoLambda;
     public LogGroup authUrlCognitoLambdaLogGroup;
     public Function exchangeCognitoTokenLambda;
@@ -96,29 +94,6 @@ public class AuthStack extends Stack {
                 ? FunctionUrlAuthType.AWS_IAM
                 : FunctionUrlAuthType.NONE;
 
-//        // authUrl - mock
-//        var authUrlMockLambdaEnv =
-//                new PopulatedMap<String, String>().with("DIY_SUBMIT_BASE_URL", props.sharedNames().envBaseUrl);
-//        var authUrlMockLambdaUrlOrigin = new LambdaUrlOrigin(
-//                this,
-//                LambdaUrlOriginProps.builder()
-//                        .idPrefix(props.sharedNames().authUrlMockLambdaFunctionName)
-//                        .baseImageTag(props.baseImageTag())
-//                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
-//                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-//                        .functionName(props.sharedNames().authUrlMockLambdaFunctionName)
-//                        .cloudFrontAllowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
-//                        .handler(props.lambdaEntry() + props.sharedNames().authUrlMockLambdaHandler)
-//                        .environment(authUrlMockLambdaEnv)
-//                        .timeout(Duration.millis(Long.parseLong("30000")))
-//                        .build());
-//        this.authUrlMockLambda = authUrlMockLambdaUrlOrigin.lambda;
-//        this.authUrlMockLambdaLogGroup = authUrlMockLambdaUrlOrigin.logGroup;
-//        infof(
-//                "Created Lambda %s for mock auth URL with handler %s",
-//                this.authUrlMockLambda.getNode().getId(),
-//                props.lambdaEntry() + props.sharedNames().authUrlMockLambdaHandler);
-
         // authUrl - Google or Antonycc via Cognito
         var authUrlCognitoLambdaEnv = new PopulatedMap<String, String>()
                 .with("DIY_SUBMIT_BASE_URL", props.sharedNames().envBaseUrl)
@@ -176,10 +151,6 @@ public class AuthStack extends Stack {
                 props.lambdaEntry() + props.sharedNames().exchangeCognitoTokenLambdaHandler);
 
         // Create Function URLs for cross-region access
-//        var authUrlMockUrl = this.authUrlMockLambda.addFunctionUrl(FunctionUrlOptions.builder()
-//                .authType(functionUrlAuthType)
-//                .invokeMode(InvokeMode.BUFFERED)
-//                .build());
         var authUrlCognitoUrl = this.authUrlCognitoLambda.addFunctionUrl(FunctionUrlOptions.builder()
                 .authType(functionUrlAuthType)
                 .invokeMode(InvokeMode.BUFFERED)
@@ -191,12 +162,10 @@ public class AuthStack extends Stack {
 
         Aspects.of(this).add(new SetAutoDeleteJobLogRetentionAspect(props.deploymentName(), RetentionDays.THREE_DAYS));
 
-        //cfnOutput(this, "AuthUrlMockLambdaArn", this.authUrlMockLambda.getFunctionArn());
         cfnOutput(this, "AuthUrlCognitoLambdaArn", this.authUrlCognitoLambda.getFunctionArn());
         cfnOutput(this, "ExchangeCognitoTokenLambdaArn", this.exchangeCognitoTokenLambda.getFunctionArn());
 
         // Output Function URLs for EdgeStack to use as HTTP origins
-        //cfnOutput(this, "AuthUrlMockLambdaUrl", authUrlMockUrl.getUrl());
         cfnOutput(this, "AuthUrlCognitoLambdaUrl", authUrlCognitoUrl.getUrl());
         cfnOutput(this, "ExchangeCognitoTokenLambdaUrl", exchangeCognitoTokenUrl.getUrl());
 

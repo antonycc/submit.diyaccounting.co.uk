@@ -40,7 +40,6 @@ public class SubmitDelivery {
         public String cloudTrailEnabled;
         public String baseUrl;
         public String accessLogGroupRetentionPeriodDays;
-        //public String authUrlMockLambdaFunctionUrl;
         public String authUrlCognitoLambdaFunctionUrl;
         public String exchangeCognitoTokenLambdaFunctionUrl;
         public String authUrlHmrcLambdaFunctionUrl;
@@ -49,6 +48,7 @@ public class SubmitDelivery {
         public String logReceiptLambdaFunctionUrl;
         public String catalogLambdaFunctionUrl;
         public String requestBundlesLambdaFunctionUrl;
+        public String bundleDeleteLambdaFunctionUrl;
         public String myBundlesLambdaFunctionUrl;
         public String myReceiptsLambdaFunctionUrl;
         public String selfDestructHandlerSource;
@@ -143,10 +143,6 @@ public class SubmitDelivery {
         var docRootPath = envOr("DOC_ROOT_PATH", appProps.docRootPath, "(from docRootPath in cdk.json)");
 
         // Function URL environment variables for EdgeStack
-//        var authUrlMockLambdaFunctionUrl = envOr(
-//                "AUTH_URL_MOCK_LAMBDA_URL",
-//                appProps.authUrlMockLambdaFunctionUrl,
-//                "(from authUrlMockLambdaFunctionUrl in cdk.json)");
         var authUrlCognitoLambdaFunctionUrl = envOr(
                 "AUTH_URL_COGNITO_LAMBDA_URL",
                 appProps.authUrlCognitoLambdaFunctionUrl,
@@ -177,6 +173,10 @@ public class SubmitDelivery {
                 "REQUEST_BUNDLES_LAMBDA_URL",
                 appProps.requestBundlesLambdaFunctionUrl,
                 "(from requestBundlesLambdaFunctionUrl in cdk.json)");
+        var bundleDeleteLambdaFunctionUrl = envOr(
+                "BUNDLE_DELETE_LAMBDA_URL",
+                appProps.bundleDeleteLambdaFunctionUrl,
+                "(from bundleDeleteLambdaFunctionUrl in cdk.json)");
         var myBundlesLambdaFunctionUrl = envOr(
                 "MY_BUNDLES_LAMBDA_URL",
                 appProps.myBundlesLambdaFunctionUrl,
@@ -188,7 +188,6 @@ public class SubmitDelivery {
 
         // Create Function URLs map for EdgeStack (cross-region compatible)
         Map<String, String> pathsToFns = new java.util.HashMap<>();
-        //putIfNotNull(pathsToFns, "%s*".formatted(sharedNames.authUrlMockLambdaUrlPath), authUrlMockLambdaFunctionUrl);
         putIfNotNull(
                 pathsToFns, "%s*".formatted(sharedNames.authUrlCognitoLambdaUrlPath), authUrlCognitoLambdaFunctionUrl);
         putIfNotNull(
@@ -206,6 +205,7 @@ public class SubmitDelivery {
         putIfNotNull(pathsToFns, "%s*".formatted(sharedNames.catalogLambdaUrlPath), catalogLambdaFunctionUrl);
         putIfNotNull(
                 pathsToFns, "%s*".formatted(sharedNames.requestBundlesLambdaUrlPath), requestBundlesLambdaFunctionUrl);
+        putIfNotNull(pathsToFns, "%s*".formatted(sharedNames.bundleDeleteLambdaUrlPath), bundleDeleteLambdaFunctionUrl);
         putIfNotNull(pathsToFns, "%s*".formatted(sharedNames.myBundlesLambdaUrlPath), myBundlesLambdaFunctionUrl);
 
         // Create the Edge stack (CloudFront, Route53)

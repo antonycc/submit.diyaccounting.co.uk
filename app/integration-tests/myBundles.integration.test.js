@@ -5,8 +5,8 @@ import request from "supertest";
 import path from "path";
 import { fileURLToPath } from "url";
 
-import { httpGet as myBundles } from "@app/functions/myBundles.js";
-import { httpPost as requestBundle } from "@app/functions/bundle.js";
+import { handler as myBundles } from "@app/functions/bundleGet.js";
+import { handler as requestBundle } from "@app/functions/bundlePost.js";
 
 function base64UrlEncode(obj) {
   const json = JSON.stringify(obj);
@@ -25,7 +25,7 @@ function makeIdToken(sub = "mb-user-1", extra = {}) {
   return `${base64UrlEncode(header)}.${base64UrlEncode(payload)}.`;
 }
 
-describe("Integration – /api/my-bundles (MOCK)", () => {
+describe("Integration – /api/bundle-get (MOCK)", () => {
   let app;
   const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -36,7 +36,7 @@ describe("Integration – /api/my-bundles (MOCK)", () => {
     app.use(express.json());
     app.use(express.static(path.join(__dirname, "../../web/public")));
 
-    app.get("/api/my-bundles", async (req, res) => {
+    app.get("/api/bundle-get", async (req, res) => {
       const event = {
         path: req.path,
         headers: { host: req.get("host") || "localhost:3000", authorization: req.headers.authorization },
@@ -46,7 +46,7 @@ describe("Integration – /api/my-bundles (MOCK)", () => {
       res.status(statusCode).send(body || "{}");
     });
 
-    app.post("/api/request-bundle", async (req, res) => {
+    app.post("/api/bundle-post", async (req, res) => {
       const event = {
         path: req.path,
         headers: { host: req.get("host") || "localhost:3000", authorization: req.headers.authorization },
@@ -59,7 +59,7 @@ describe("Integration – /api/my-bundles (MOCK)", () => {
   });
 
   test("anonymous sees default only; after guest grant user sees guest", async () => {
-    const resAnon = await request(app).get("/api/my-bundles");
+    const resAnon = await request(app).get("/api/bundle-get");
     expect(resAnon.status).toBe(200);
     const bodyAnon = JSON.parse(resAnon.text || "{}");
     expect(Array.isArray(bodyAnon.bundles)).toBe(true);
@@ -67,10 +67,10 @@ describe("Integration – /api/my-bundles (MOCK)", () => {
     expect(bodyAnon.bundles).not.toContain("guest");
 
     const token = makeIdToken("mb-user-guest");
-    const resGrant = await request(app).post("/api/request-bundle").set("Authorization", `Bearer ${token}`).send({ bundleId: "guest" });
+    const resGrant = await request(app).post("/api/bundle-post").set("Authorization", `Bearer ${token}`).send({ bundleId: "guest" });
     expect(resGrant.status).toBe(200);
 
-    const resUser = await request(app).get("/api/my-bundles").set("Authorization", `Bearer ${token}`);
+    const resUser = await request(app).get("/api/bundle-get").set("Authorization", `Bearer ${token}`);
     expect(resUser.status).toBe(200);
     const bodyUser = JSON.parse(resUser.text || "{}");
     expect(bodyUser.bundles).toContain("default");

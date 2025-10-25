@@ -1,4 +1,4 @@
-// app/functions/myBundles.js
+// app/functions/bundleGet.js
 import { getActiveBundles } from "../lib/entitlementsService.js";
 
 function decodeJwtNoVerify(token) {
@@ -21,7 +21,7 @@ function userCtxFromEvent(event) {
   return { sub: claims.sub || null, claims };
 }
 
-export async function httpGet(event) {
+export async function handler(event) {
   try {
     const userCtx = userCtxFromEvent(event || {});
     const bundles = getActiveBundles(userCtx);

@@ -61,7 +61,7 @@ class SubmitApplicationCdkResourceTest {
         Template.fromStack(submitApplication.hmrcStack).resourceCountIs("AWS::Lambda::Function", 5);
 
         infof("Created stack:", submitApplication.accountStack.getStackName());
-        Template.fromStack(submitApplication.accountStack).resourceCountIs("AWS::Lambda::Function", 3);
+        Template.fromStack(submitApplication.accountStack).resourceCountIs("AWS::Lambda::Function", 4);
 
         infof("Created stack:", submitApplication.opsStack.getStackName());
         Template.fromStack(submitApplication.opsStack).resourceCountIs("AWS::CloudWatch::Dashboard", 1);

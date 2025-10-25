@@ -313,7 +313,7 @@
       }
 
       async function logReceipt(processingDate, formBundleNumber, chargeRefNumber) {
-        const url = "/api/log-receipt";
+        const url = "/api/hmrc/receipt-post";
         const body = JSON.stringify({
           processingDate,
           formBundleNumber,

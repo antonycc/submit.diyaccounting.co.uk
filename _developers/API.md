@@ -75,7 +75,7 @@ Submits the VAT return details to HMRC.
 
 ---
 
-### **`POST /api/log-receipt`**
+### **`POST /api/hmrc/receipt-post`**
 
 Logs/stores submission receipts securely (e.g., in AWS S3).
 

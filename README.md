@@ -161,8 +161,8 @@ Response (example)
 ```
 
 Receipts and bundles
-- POST /api/log-receipt
-- POST /api/request-bundle
+- POST /api/hmrc/receipt-post
+- POST /api/bundle-post
   - Headers: Authorization: Bearer <idToken>
   - Body: { "bundleId": "test", "qualifiers": { /* optional */ } }
   - Response: { "granted": true, "expiry": "2025-09-01T00:00:00Z" }

@@ -7,7 +7,7 @@ import { fileURLToPath } from "url";
 import { mockClient } from "aws-sdk-client-mock";
 import { S3Client, ListObjectsV2Command, GetObjectCommand } from "@aws-sdk/client-s3";
 
-import { httpGet as listFn, httpGetByName as getFn } from "@app/functions/myReceipts.js";
+import { handler as listFn, httpGetByName as getFn } from "@app/functions/hmrcReceiptGet.js";
 
 function base64UrlEncode(obj) {
   const json = JSON.stringify(obj);
@@ -20,7 +20,7 @@ function makeIdToken(sub = "mr-user-1", extra = {}) {
   return `${base64UrlEncode(header)}.${base64UrlEncode(payload)}.`;
 }
 
-describe("Integration – /api/my-receipts", () => {
+describe("Integration – /api/hmrc/receipt-get", () => {
   let app;
   const s3Mock = mockClient(S3Client);
   const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -35,7 +35,7 @@ describe("Integration – /api/my-receipts", () => {
     app.use(express.json());
     app.use(express.static(path.join(__dirname, "../../web/public")));
 
-    app.get("/api/my-receipts", async (req, res) => {
+    app.get("/api/hmrc/receipt-get", async (req, res) => {
       const event = {
         path: req.path,
         headers: { host: req.get("host") || "localhost:3000", authorization: req.headers.authorization },
@@ -45,7 +45,7 @@ describe("Integration – /api/my-receipts", () => {
       res.status(statusCode).send(body || "{}");
     });
 
-    app.get("/api/my-receipts/:name", async (req, res) => {
+    app.get("/api/hmrc/receipt-get/:name", async (req, res) => {
       const event = {
         path: req.path,
         headers: { host: req.get("host") || "localhost:3000", authorization: req.headers.authorization },
@@ -69,21 +69,23 @@ describe("Integration – /api/my-receipts", () => {
       Body: new ReadableStreamMock(bodyText),
     });
 
-    const resList = await request(app).get("/api/my-receipts").set("Authorization", `Bearer ${token}`);
+    const resList = await request(app).get("/api/hmrc/receipt-get").set("Authorization", `Bearer ${token}`);
     expect(resList.status).toBe(200);
     const list = JSON.parse(resList.text || "{}");
     expect(Array.isArray(list.receipts)).toBe(true);
     expect(list.receipts.length).toBe(1);
     expect(list.receipts[0].formBundleNumber).toBe("XYZ");
 
-    const resGet = await request(app).get("/api/my-receipts/2025-08-01T10:00:00.000Z-XYZ.json").set("Authorization", `Bearer ${token}`);
+    const resGet = await request(app)
+      .get("/api/hmrc/receipt-get/2025-08-01T10:00:00.000Z-XYZ.json")
+      .set("Authorization", `Bearer ${token}`);
     expect(resGet.status).toBe(200);
     const rec = JSON.parse(resGet.text || "{}");
     expect(rec.formBundleNumber).toBe("XYZ");
   });
 
   test("unauthorized returns 401", async () => {
-    const res = await request(app).get("/api/my-receipts");
+    const res = await request(app).get("/api/hmrc/receipt-get");
     expect(res.status).toBe(401);
   });
 });
