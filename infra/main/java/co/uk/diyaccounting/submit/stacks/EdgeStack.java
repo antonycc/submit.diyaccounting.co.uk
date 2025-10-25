@@ -100,7 +100,7 @@ public class EdgeStack extends Stack {
         Map<String, String> pathsToOriginLambdaFunctionUrls();
 
         int logGroupRetentionPeriodDays();
-        
+
         String apiGatewayUrl();
 
         static ImmutableEdgeStackProps.Builder builder() {
@@ -309,7 +309,7 @@ public class EdgeStack extends Stack {
                                 (map, entry) ->
                                         map.put(entry.getKey(), createBehaviorOptionsForLambdaUrl(entry.getValue())),
                                 HashMap::putAll);
-                                
+
         // Add API Gateway v2 behavior if URL is provided
         if (props.apiGatewayUrl() != null && !props.apiGatewayUrl().isBlank()) {
             BehaviorOptions apiGatewayBehavior = createBehaviorOptionsForApiGateway(props.apiGatewayUrl());

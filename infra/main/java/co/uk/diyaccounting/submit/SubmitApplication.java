@@ -12,7 +12,6 @@ import co.uk.diyaccounting.submit.stacks.HmrcStack;
 import co.uk.diyaccounting.submit.stacks.OpsStack;
 import co.uk.diyaccounting.submit.stacks.SelfDestructStack;
 import co.uk.diyaccounting.submit.utils.KindCdk;
-import software.amazon.awscdk.services.lambda.IFunction;
 import java.lang.reflect.Field;
 import java.nio.file.Paths;
 import java.time.ZonedDateTime;
@@ -20,6 +19,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import software.amazon.awscdk.App;
 import software.amazon.awscdk.Environment;
+import software.amazon.awscdk.services.lambda.IFunction;
 import software.constructs.Construct;
 
 public class SubmitApplication {

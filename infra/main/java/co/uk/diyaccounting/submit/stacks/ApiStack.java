@@ -6,6 +6,7 @@ import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
 import java.util.List;
+import java.util.Map;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Aspects;
 import software.amazon.awscdk.CfnOutput;
@@ -13,11 +14,11 @@ import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.Tags;
+import software.amazon.awscdk.aws_apigatewayv2_integrations.HttpLambdaIntegration;
 import software.amazon.awscdk.services.apigatewayv2.HttpApi;
 import software.amazon.awscdk.services.apigatewayv2.HttpMethod;
 import software.amazon.awscdk.services.apigatewayv2.HttpRoute;
 import software.amazon.awscdk.services.apigatewayv2.HttpRouteKey;
-import software.amazon.awscdk.aws_apigatewayv2_integrations.HttpLambdaIntegration;
 import software.amazon.awscdk.services.cloudwatch.Alarm;
 import software.amazon.awscdk.services.cloudwatch.ComparisonOperator;
 import software.amazon.awscdk.services.cloudwatch.Dashboard;
@@ -28,12 +29,6 @@ import software.amazon.awscdk.services.cloudwatch.TreatMissingData;
 import software.amazon.awscdk.services.lambda.IFunction;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.constructs.Construct;
-
-import java.util.List;
-import java.util.Map;
-
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 public class ApiStack extends Stack {
 
@@ -81,7 +76,9 @@ public class ApiStack extends Stack {
     @Value.Immutable
     public interface EndpointConfig {
         String path();
+
         HttpMethod httpMethod();
+
         String lambdaKey();
 
         static ImmutableEndpointConfig.Builder builder() {
@@ -130,14 +127,15 @@ public class ApiStack extends Stack {
             IFunction fn = props.lambdaFunctions().get(endpointConfig.lambdaKey());
 
             if (fn == null) {
-                infof("Skipping endpoint %s %s - Lambda function %s not found",
-                    endpointConfig.httpMethod(), endpointConfig.path(), endpointConfig.lambdaKey());
+                infof(
+                        "Skipping endpoint %s %s - Lambda function %s not found",
+                        endpointConfig.httpMethod(), endpointConfig.path(), endpointConfig.lambdaKey());
                 continue;
             }
 
             // Create HTTP Lambda integration
             HttpLambdaIntegration integration = HttpLambdaIntegration.Builder.create(
-                    props.resourceNamePrefix() + "-Integration-" + i, fn)
+                            props.resourceNamePrefix() + "-Integration-" + i, fn)
                     .build();
 
             // Create HTTP route
@@ -147,8 +145,9 @@ public class ApiStack extends Stack {
                     .integration(integration)
                     .build();
 
-            infof("Created route %s %s for function %s",
-                endpointConfig.httpMethod().toString(), endpointConfig.path(), fn.getFunctionName());
+            infof(
+                    "Created route %s %s for function %s",
+                    endpointConfig.httpMethod().toString(), endpointConfig.path(), fn.getFunctionName());
 
             // Collect metrics for monitoring
             lambdaInvocations.add(fn.metricInvocations());
@@ -165,13 +164,13 @@ public class ApiStack extends Stack {
                     .evaluationPeriods(1)
                     .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
                     .treatMissingData(TreatMissingData.NOT_BREACHING)
-                    .alarmDescription("Lambda errors >= 1 for " + endpointConfig.path() + " " + endpointConfig.httpMethod())
+                    .alarmDescription(
+                            "Lambda errors >= 1 for " + endpointConfig.path() + " " + endpointConfig.httpMethod())
                     .build();
         }
 
         // Dashboard
-        List<List<software.amazon.awscdk.services.cloudwatch.IWidget>> rows =
-                new java.util.ArrayList<>();
+        List<List<software.amazon.awscdk.services.cloudwatch.IWidget>> rows = new java.util.ArrayList<>();
 
         // Row 1: API Gateway metrics
         rows.add(List.of(
@@ -189,13 +188,14 @@ public class ApiStack extends Stack {
                         .build()));
 
         // Row 2: API Gateway latency
-        rows.add(List.of(
-                GraphWidget.Builder.create()
-                        .title("API Gateway p95 Latency")
-                        .left(List.of(this.httpApi.metricLatency().with(MetricOptions.builder().statistic("p95").build())))
-                        .width(24)
-                        .height(6)
-                        .build()));
+        rows.add(List.of(GraphWidget.Builder.create()
+                .title("API Gateway p95 Latency")
+                .left(List.of(this.httpApi
+                        .metricLatency()
+                        .with(MetricOptions.builder().statistic("p95").build())))
+                .width(24)
+                .height(6)
+                .build()));
 
         // Row 3: Lambda invocations and errors (if we have any lambdas)
         if (!lambdaInvocations.isEmpty()) {
@@ -249,8 +249,9 @@ public class ApiStack extends Stack {
                 "https://" + this.getRegion() + ".console.aws.amazon.com/cloudwatch/home?region=" + this.getRegion()
                         + "#dashboards:name=" + this.operationalDashboard.getDashboardName());
 
-        infof("ApiStack %s created successfully for %s with API Gateway URL: %s",
-            this.getNode().getId(), props.resourceNamePrefix(), this.httpApi.getUrl());
+        infof(
+                "ApiStack %s created successfully for %s with API Gateway URL: %s",
+                this.getNode().getId(), props.resourceNamePrefix(), this.httpApi.getUrl());
     }
 
     private static List<EndpointConfig> createEndpointConfigurations() {

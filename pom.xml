@@ -507,10 +507,10 @@
                 <executions>
                     <execution>
                         <id>generate-swagger-docs</id>
-                        <phase>package</phase>
                         <goals>
                             <goal>java</goal>
                         </goals>
+                        <phase>package</phase>
                         <configuration>
                             <mainClass>co.uk.diyaccounting.submit.swagger.OpenApiGenerator</mainClass>
                             <classpathScope>compile</classpathScope>
