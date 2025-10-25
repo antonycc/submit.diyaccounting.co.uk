@@ -15,14 +15,16 @@ import java.nio.file.Paths;
 public class OpenApiGenerator {
 
     public static void main(String[] args) {
-        if (args.length != 1) {
-            System.err.println("Usage: OpenApiGenerator <output-directory>");
+        if (args.length != 3) {
+            System.err.println("Usage: OpenApiGenerator <baseUrl> <version> <outputDir>");
             System.exit(1);
         }
 
-        String outputDir = args[0];
+        String baseUrl = args[0];
+        String version = args[1];
+        String outputDir = args[2];
         try {
-            generateOpenApiSpec(outputDir);
+            generateOpenApiSpec(baseUrl, version, outputDir);
             System.out.println("OpenAPI specification generated successfully in: " + outputDir);
         } catch (Exception e) {
             System.err.println("Failed to generate OpenAPI specification: " + e.getMessage());
@@ -31,7 +33,7 @@ public class OpenApiGenerator {
         }
     }
 
-    private static void generateOpenApiSpec(String outputDir) throws IOException {
+    private static void generateOpenApiSpec(String baseUrl, String version, String outputDir) throws IOException {
         ObjectMapper mapper = new ObjectMapper();
 
         // Create OpenAPI 3.0 specification
@@ -41,25 +43,25 @@ public class OpenApiGenerator {
         // Info section
         ObjectNode info = mapper.createObjectNode();
         info.put("title", "DIY Accounting Submit API");
-        info.put("description", "API Gateway v2 endpoints for DIY Accounting Submit application");
-        info.put("version", "1.0.0");
+        info.put("description", "DIY Accounting Submit API documentation");
+        info.put("version", version);
         openApi.set("info", info);
 
         // Servers section - will be populated with actual API Gateway URL
         ArrayNode servers = mapper.createArrayNode();
         ObjectNode server = mapper.createObjectNode();
-        server.put("url", "https://{apiId}.execute-api.{region}.amazonaws.com/");
-        server.put("description", "API Gateway v2 endpoint");
-        ObjectNode serverVariables = mapper.createObjectNode();
-        ObjectNode apiIdVar = mapper.createObjectNode();
-        apiIdVar.put("description", "API Gateway ID");
-        apiIdVar.put("default", "your-api-id");
-        ObjectNode regionVar = mapper.createObjectNode();
-        regionVar.put("description", "AWS Region");
-        regionVar.put("default", "eu-west-2");
-        serverVariables.set("apiId", apiIdVar);
-        serverVariables.set("region", regionVar);
-        server.set("variables", serverVariables);
+        server.put("url", "https://%sapi/v1/".formatted(baseUrl));
+        server.put("description", "DIY Accounting Submit API documentation");
+        //ObjectNode serverVariables = mapper.createObjectNode();
+        //ObjectNode apiIdVar = mapper.createObjectNode();
+        //apiIdVar.put("description", "API Gateway ID");
+        //apiIdVar.put("default", "your-api-id");
+        //ObjectNode regionVar = mapper.createObjectNode();
+        //regionVar.put("description", "AWS Region");
+        //regionVar.put("default", "eu-west-2");
+        //serverVariables.set("apiId", apiIdVar);
+        //serverVariables.set("region", regionVar);
+        //server.set("variables", serverVariables);
         servers.add(server);
         openApi.set("servers", servers);
 

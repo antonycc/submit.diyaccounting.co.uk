@@ -19,6 +19,7 @@
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <baseUrl>${env.DIY_SUBMIT_APEX_URL}</baseUrl>
     </properties>
 
     <dependencyManagement>
@@ -515,7 +516,7 @@
                         <configuration>
                             <mainClass>co.uk.diyaccounting.submit.swagger.OpenApiGenerator</mainClass>
                             <classpathScope>compile</classpathScope>
-                            <commandlineArgs>${project.basedir}/web/public/docs</commandlineArgs>
+                            <commandlineArgs>${baseUrl} ${project.version} ${project.basedir}/web/public/docs</commandlineArgs>
                         </configuration>
                     </execution>
                 </executions>

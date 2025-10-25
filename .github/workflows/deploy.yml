@@ -1349,6 +1349,7 @@ jobs:
           SELF_DESTRUCT_HANDLER_SOURCE: "../infra/test/resources/fake-self-destruct-lambda.jar"
           WEBSITE_HASH: ${{ steps.publish-hash.outputs.WEBSITE_HASH }}
           HTTP_API_URL: ${{ needs.deploy-api.outputs.httpApiUrl }}
+          DIY_SUBMIT_APEX_URL: ${{ needs.names.outputs.apex-url }}
           AUTH_URL_COGNITO_LAMBDA_URL: ${{ needs.deploy-auth.outputs.authUrlCognitoLambdaUrl }}
           COGNITO_EXCHANGE_TOKEN_LAMBDA_URL: ${{ needs.deploy-auth.outputs.exchangeCognitoTokenLambdaUrl }}
           AUTH_URL_HMRC_LAMBDA_URL: ${{ needs.deploy-hmrc.outputs.authUrlHmrcLambdaUrl }}

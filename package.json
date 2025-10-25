@@ -8,7 +8,7 @@
     "submit": "app/bin/main.js"
   },
   "scripts": {
-    "build": "./mvnw clean package",
+    "build": "DIY_SUBMIT_APEX_URL=http://localhost:3000 ./mvnw clean verify",
     "formatting": "prettier --check . && ./mvnw spotless:check",
     "formatting-fix": "prettier --write . && ./mvnw spotless:apply",
     "formatting:js": "prettier --check .",
