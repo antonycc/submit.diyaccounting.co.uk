@@ -382,6 +382,7 @@ public class EdgeStack extends Stack {
         cfnOutput(this, "DistributionId", this.distribution.getDistributionId());
         cfnOutput(this, "AliasRecord", this.aliasRecord.getDomainName());
         cfnOutput(this, "AliasRecordV6", this.aliasRecordV6.getDomainName());
+        cfnOutput(this, "OriginBucketName", this.originBucket.getBucketName());
 
         infof("EdgeStack %s created successfully for %s", this.getNode().getId(), props.sharedNames().baseUrl);
     }

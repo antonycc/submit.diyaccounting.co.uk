@@ -1231,6 +1231,18 @@ jobs:
           BUNDLE_DELETE_LAMBDA_URL: ${{ needs.deploy-account.outputs.bundleDeleteLambdaUrl }}
           MY_BUNDLES_LAMBDA_URL: ${{ needs.deploy-account.outputs.myBundlesLambdaUrl }}
 
+      - run: cat cdk-submit-delivery.out/cdk-outputs-edge.json | jq '.'
+
+      - name: Resolve stack outputs
+        id: edge-outputs
+        run: |
+          ORIGIN_BUCKET_NAME=$(jq -r '.["del-${{ needs.names.outputs.deployment-name }}-EdgeStack"].OriginBucketName' cdk-submit-delivery.out/cdk-outputs-edge.json)
+          echo "ORIGIN_BUCKET_NAME=$ORIGIN_BUCKET_NAME"
+          echo "ORIGIN_BUCKET_NAME=$ORIGIN_BUCKET_NAME" >> $GITHUB_OUTPUT
+        shell: bash
+    outputs:
+      originBucketName: ${{ steps.edge-outputs.outputs.ORIGIN_BUCKET_NAME }}
+
   deploy-publish:
     name: 'deploy publish'
     needs:
@@ -1713,9 +1725,6 @@ jobs:
       - deploy-publish
       - set-origins
     runs-on: ubuntu-24.04
-    container: mcr.microsoft.com/playwright:v1.56.1-jammy
-    # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags
-    # and extension with ubuntu distribution e.g. https://releases.ubuntu.com/jammy/
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
     steps:
       - name: Checkout
@@ -1729,9 +1738,8 @@ jobs:
 
       - name: Install dependencies
         run: |
-          npm ci --ignore-scripts
-        env:
-          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+          npm install
+          npx playwright install chromium --with-deps
 
       - name: Run behaviour tests
         run: |
@@ -1764,6 +1772,37 @@ jobs:
           retention-days: 30
           path: |
             target/test-reports/
+
+      - name: Configure AWS role via GitHub OIDC
+        if: ${{ !cancelled() }}
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        if: ${{ !cancelled() }}
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Copy test reports to S3 origin bucket
+        if: ${{ !cancelled() }}
+        run: |
+          echo "Uploading test reports to S3 bucket: ${{ needs.deploy-edge.outputs.originBucketName }}"
+          aws s3 cp target/test-reports/ s3://${{ needs.deploy-edge.outputs.originBucketName }}/tests/ --recursive
+        shell: bash
 
 # TODO: Reinstate load test
 #  load-test:
