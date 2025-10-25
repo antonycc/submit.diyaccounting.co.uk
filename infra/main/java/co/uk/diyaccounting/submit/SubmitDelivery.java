@@ -216,7 +216,7 @@ public class SubmitDelivery {
             apiGatewayUrl = Fn.importValue(apiGatewayExportName);
             infof("Imported API Gateway URL from export %s", apiGatewayExportName);
         } catch (RuntimeException e) {
-            warnf("Could not import API Gateway URL from export %s: %s", apiGatewayExportName, e.getMessage());
+            warnf("Failed to import API Gateway URL from CloudFormation export %s. This may indicate the ApiStack has not been deployed yet. Exception: %s", apiGatewayExportName, e.getMessage());
         }
 
         // Create the Edge stack (CloudFront, Route53)
