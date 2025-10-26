@@ -9,6 +9,7 @@
     "originAccessLogBucketArn": "",
     "distributionAccessLogBucketArn": "",
     "webDeploymentLogGroupArn": "",
+    "httpApiUrl": "",
     "authUrlCognitoLambdaFunctionUrl": "",
     "exchangeCognitoTokenLambdaFunctionUrl": "",
     "authUrlHmrcLambdaFunctionUrl": "",

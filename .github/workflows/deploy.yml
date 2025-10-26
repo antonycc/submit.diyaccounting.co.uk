@@ -72,6 +72,7 @@ on:
 permissions:
   id-token: write
   contents: read
+  pull-requests: read
   pages: write
 
 env:
@@ -180,7 +181,7 @@ jobs:
         id: package
         shell: bash
         run: |
-          ./mvnw clean package -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }}
+          ./mvnw clean verify -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }}
           echo "SELF_DESTRUCT_HANDLER_SOURCE=target/self-destruct-lambda.jar"
           echo "SELF_DESTRUCT_HANDLER_SOURCE=target/self-destruct-lambda.jar" >> $GITHUB_OUTPUT
           ls -l target/self-destruct-lambda.jar
@@ -425,7 +426,7 @@ jobs:
 
       - name: Deploy SelfDestruct Stack (CDK)
         run: |
-          ./mvnw --errors clean package -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
+          ./mvnw --errors clean verify -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
             && cd cdk-application \
             && cat ../.env.${{ needs.names.outputs.environment-name }} \
             && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
@@ -519,7 +520,7 @@ jobs:
       - name: Deploy Dev Stack (CDK)
         if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
         run: |
-          ./mvnw --errors clean package -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
+          ./mvnw --errors clean verify -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
             && cd cdk-application \
             && cat ../.env.${{ needs.names.outputs.environment-name }} \
             && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
@@ -693,7 +694,7 @@ jobs:
 
       - name: Deploy Auth stack (CDK)
         run: |
-          ./mvnw --errors clean package -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
+          ./mvnw --errors clean verify -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
             && cd cdk-application \
             && cat ../.env.${{ needs.names.outputs.environment-name }} \
             && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
@@ -787,7 +788,7 @@ jobs:
 
       - name: Deploy HMRC stack (CDK)
         run: |
-          ./mvnw --errors clean package -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
+          ./mvnw --errors clean verify -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
             && cd cdk-application \
             && cat ../.env.${{ needs.names.outputs.environment-name }} \
             && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
@@ -891,7 +892,7 @@ jobs:
 
       - name: Deploy Account stack (CDK)
         run: |
-          ./mvnw --errors clean package -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
+          ./mvnw --errors clean verify -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
             && cd cdk-application \
             && cat ../.env.${{ needs.names.outputs.environment-name }} \
             && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
@@ -992,7 +993,7 @@ jobs:
 
       - name: Deploy API stack (CDK)
         run: |
-          ./mvnw --errors clean package -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
+          ./mvnw --errors clean verify -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
             && cd cdk-application \
             && cat ../.env.${{ needs.names.outputs.environment-name }} \
             && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
@@ -1020,7 +1021,7 @@ jobs:
       - name: Resolve stack outputs
         id: api-outputs
         run: |
-          HTTP_API_URL=$(jq -r '.["app-${{ needs.names.outputs.deployment-name }}-ApiStack"].HttpApiUrlExport' cdk-submit-application.out/cdk-outputs-api.json)
+          HTTP_API_URL=$(jq -r '.["app-${{ needs.names.outputs.deployment-name }}-ApiStack"].HttpApiUrl' cdk-submit-application.out/cdk-outputs-api.json)
           echo "HTTP_API_URL=$HTTP_API_URL"
           echo "HTTP_API_URL=$HTTP_API_URL" >> $GITHUB_OUTPUT
         shell: bash
@@ -1090,7 +1091,7 @@ jobs:
 
       - name: Deploy SelfDestruct Stack (CDK)
         run: |
-          ./mvnw --errors clean package -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
+          ./mvnw --errors clean verify -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
             && cd cdk-delivery \
             && cat ../.env.${{ needs.names.outputs.environment-name }} \
             && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
@@ -1109,6 +1110,7 @@ jobs:
           SELF_DESTRUCT_HANDLER_SOURCE: "../${{ needs.mvn-package.outputs.self-destruct-handler-source }}"
           SELF_DESTRUCT_START_DATETIME: ${{ needs.mvn-package.outputs.self-destruct-start-datetime }}
           WEBSITE_HASH: "placeholder"
+          HTTP_API_URL: ${{ needs.deploy-api.outputs.httpApiUrl }}
           AUTH_URL_COGNITO_LAMBDA_URL: ${{ needs.deploy-auth.outputs.authUrlCognitoLambdaUrl }}
           COGNITO_EXCHANGE_TOKEN_LAMBDA_URL: ${{ needs.deploy-auth.outputs.exchangeCognitoTokenLambdaUrl }}
           AUTH_URL_HMRC_LAMBDA_URL: ${{ needs.deploy-hmrc.outputs.authUrlHmrcLambdaUrl }}
@@ -1200,7 +1202,7 @@ jobs:
       - name: Build CDK and synthesize and deploy the EdgeStack in the Delivery Application
         if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
         run: |
-          ./mvnw --errors clean package -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
+          ./mvnw --errors clean verify -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
             && cd cdk-delivery \
             && cat ../.env.${{ needs.names.outputs.environment-name }} \
             && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
@@ -1219,6 +1221,7 @@ jobs:
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
           SELF_DESTRUCT_HANDLER_SOURCE: "../infra/test/resources/fake-self-destruct-lambda.jar"
           WEBSITE_HASH: "placeholder"
+          HTTP_API_URL: ${{ needs.deploy-api.outputs.httpApiUrl }}
           AUTH_URL_COGNITO_LAMBDA_URL: ${{ needs.deploy-auth.outputs.authUrlCognitoLambdaUrl }}
           COGNITO_EXCHANGE_TOKEN_LAMBDA_URL: ${{ needs.deploy-auth.outputs.exchangeCognitoTokenLambdaUrl }}
           AUTH_URL_HMRC_LAMBDA_URL: ${{ needs.deploy-hmrc.outputs.authUrlHmrcLambdaUrl }}
@@ -1231,12 +1234,27 @@ jobs:
           BUNDLE_DELETE_LAMBDA_URL: ${{ needs.deploy-account.outputs.bundleDeleteLambdaUrl }}
           MY_BUNDLES_LAMBDA_URL: ${{ needs.deploy-account.outputs.myBundlesLambdaUrl }}
 
+      - run: cat cdk-submit-delivery.out/cdk-outputs-edge.json | jq '.'
+        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
+
+      - name: Resolve stack outputs
+        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
+        id: edge-outputs
+        run: |
+          ORIGIN_BUCKET_NAME=$(jq -r '.["del-${{ needs.names.outputs.deployment-name }}-EdgeStack"].OriginBucketName' cdk-submit-delivery.out/cdk-outputs-edge.json)
+          echo "ORIGIN_BUCKET_NAME=$ORIGIN_BUCKET_NAME"
+          echo "ORIGIN_BUCKET_NAME=$ORIGIN_BUCKET_NAME" >> $GITHUB_OUTPUT
+        shell: bash
+    outputs:
+      originBucketName: ${{ steps.edge-outputs.outputs.ORIGIN_BUCKET_NAME }}
+
   deploy-publish:
     name: 'deploy publish'
     needs:
       - names
       - skip-deploy-check
       - deploy-edge
+      - deploy-api
     runs-on: ubuntu-24.04
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
     steps:
@@ -1311,7 +1329,7 @@ jobs:
       - name: Build CDK and synthesize and deploy the PublishStack in the Delivery Application
         if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.publish-compare.outputs.skipPublishStackDeployment != 'true' }}
         run: |
-          ./mvnw --errors clean package -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
+          ./mvnw --errors clean verify -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
             && cd cdk-delivery \
             && cat ../.env.${{ needs.names.outputs.environment-name }} \
             && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
@@ -1330,6 +1348,8 @@ jobs:
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
           SELF_DESTRUCT_HANDLER_SOURCE: "../infra/test/resources/fake-self-destruct-lambda.jar"
           WEBSITE_HASH: ${{ steps.publish-hash.outputs.WEBSITE_HASH }}
+          HTTP_API_URL: ${{ needs.deploy-api.outputs.httpApiUrl }}
+          DIY_SUBMIT_APEX_URL: ${{ needs.names.outputs.apex-url }}
           AUTH_URL_COGNITO_LAMBDA_URL: ${{ needs.deploy-auth.outputs.authUrlCognitoLambdaUrl }}
           COGNITO_EXCHANGE_TOKEN_LAMBDA_URL: ${{ needs.deploy-auth.outputs.exchangeCognitoTokenLambdaUrl }}
           AUTH_URL_HMRC_LAMBDA_URL: ${{ needs.deploy-hmrc.outputs.authUrlHmrcLambdaUrl }}
@@ -1448,7 +1468,7 @@ jobs:
       - name: Deploy Ops Stack (CDK)
         if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.publish-compare.outputs.skipPublishStackDeployment != 'true' }}
         run: |
-          ./mvnw --errors clean package -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
+          ./mvnw --errors clean verify -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
             && cd cdk-application \
             && cat ../.env.${{ needs.names.outputs.environment-name }} \
             && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
@@ -1713,9 +1733,6 @@ jobs:
       - deploy-publish
       - set-origins
     runs-on: ubuntu-24.04
-    container: mcr.microsoft.com/playwright:v1.56.1-jammy
-    # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags
-    # and extension with ubuntu distribution e.g. https://releases.ubuntu.com/jammy/
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
     steps:
       - name: Checkout
@@ -1729,9 +1746,8 @@ jobs:
 
       - name: Install dependencies
         run: |
-          npm ci --ignore-scripts
-        env:
-          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+          npm install
+          npx playwright install chromium --with-deps
 
       - name: Run behaviour tests
         run: |
@@ -1764,6 +1780,39 @@ jobs:
           retention-days: 30
           path: |
             target/test-reports/
+
+      - name: Configure AWS role via GitHub OIDC
+        if: ${{ !cancelled() }}
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        if: ${{ !cancelled() }}
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Copy test reports to S3 origin bucket
+        if: ${{ !cancelled() }}
+        env:
+          BUCKET_NAME: origin-del-${{ needs.names.outputs.deployment-name }}-submit-diyaccounting-co-uk
+        run: |
+          echo "Uploading test reports to S3 bucket: ${BUCKET_NAME?}"
+          aws s3 cp target/test-reports/ s3://${BUCKET_NAME?}/tests/ --recursive
+        shell: bash
 
 # TODO: Reinstate load test
 #  load-test:

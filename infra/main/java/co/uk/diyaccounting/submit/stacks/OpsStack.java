@@ -158,7 +158,8 @@ public class OpsStack extends Stack {
                             .height(6)
                             .build()));
         }
-        this.operationalDashboard = Dashboard.Builder.create(this, props.resourceNamePrefix() + "-LambdaFunctionsDashboard")
+        this.operationalDashboard = Dashboard.Builder.create(
+                        this, props.resourceNamePrefix() + "-LambdaFunctionsDashboard")
                 .dashboardName(props.resourceNamePrefix() + "-lambdas")
                 .widgets(rows)
                 .build();

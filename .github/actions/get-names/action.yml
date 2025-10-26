@@ -50,6 +50,8 @@ runs:
         GET_NAMES_GITHUB_HEAD_REF: ${{ github.head_ref }}
         GET_NAMES_GITHUB_SHA: ${{ github.sha }}
         GET_NAMES_PROD_BRANCH_NAME: 'main'
+        GET_NAMES_GITHUB_TOKEN: ${{ github.token }}
+        GET_NAMES_GITHUB_EVENT_NAME: ${{ github.event_name }}
       run: |
         set -euo pipefail
         REF_NAME="${GET_NAMES_GITHUB_REF_NAME:-${GET_NAMES_GITHUB_HEAD_REF:-${GET_NAMES_GITHUB_REF##*/}}}"
@@ -67,7 +69,33 @@ runs:
         fi
 
         if [ "${ENVIRONMENT_NAME?}" = "prod" ]; then
+          # Default fallback for prod
           DEPLOYMENT_NAME="prod-${GET_NAMES_GITHUB_SHA::7}"
+
+          # Try to detect if this prod commit came from a merged PR, and use env-<branch>
+          if [ "${GITHUB_REF:-}" = "refs/heads/${GET_NAMES_PROD_BRANCH_NAME?}" ] && [ "${GET_NAMES_GITHUB_EVENT_NAME:-}" = "push" ]; then
+            API_URL="${GITHUB_API_URL:-https://api.github.com}"
+            REPO="${GITHUB_REPOSITORY?}"
+            AUTH_HEADER="authorization: Bearer ${GET_NAMES_GITHUB_TOKEN:-}"
+            ACCEPT_HEADER="accept: application/vnd.github+json"
+
+            PRS_JSON=$(curl -sS -H "$AUTH_HEADER" -H "$ACCEPT_HEADER" \
+              "$API_URL/repos/$REPO/commits/${GET_NAMES_GITHUB_SHA}/pulls?per_page=1") || PRS_JSON='[]'
+
+            # Extract the PR head branch name (if jq is available). Fallback to a simple grep if jq is missing
+            if command -v jq >/dev/null 2>&1; then
+              MERGED_BRANCH=$(echo "$PRS_JSON" | jq -r '.[0].head.ref // empty')
+            else
+              MERGED_BRANCH=$(echo "$PRS_JSON" | sed -n 's/.*"head"\s*:\s*{[^}]*"ref"\s*:\s*"\([^"]*\)".*/\1/p' | head -n1)
+            fi
+
+            if [ -n "${MERGED_BRANCH:-}" ]; then
+              CLEANED_MERGED=$(echo "$MERGED_BRANCH" | tr '[:upper:]' '[:lower:]' | sed -e 's/[^a-z0-9]/-/g' -e 's/-\{2,\}/-/g' -e 's/^-//' -e 's/-$//')
+              if [ -n "$CLEANED_MERGED" ]; then
+                DEPLOYMENT_NAME="env-$CLEANED_MERGED"
+              fi
+            fi
+          fi
         else
           # Truncate to 9 chars for branch-based deployments to match prior logic (ci-xxxxxxxxx)
           DEPLOYMENT_NAME="ci-${CLEANED:0:9}"

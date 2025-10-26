@@ -128,7 +128,8 @@ public class SubmitSharedNames {
     public SubmitSharedNames(SubmitSharedNamesProps props) {
         this();
         this.domainName = buildVersionedDomainName(props.deploymentName, props.subDomainName, props.hostedZoneName);
-        this.cognitoDomainName = buildCognitoDomainName(props.envName, props.cognitoDomainPrefix, props.subDomainName, props.hostedZoneName);
+        this.cognitoDomainName = buildCognitoDomainName(
+                props.envName, props.cognitoDomainPrefix, props.subDomainName, props.hostedZoneName);
         this.holdingDomainName = buildVersionedDomainName(
                 "%s-holding".formatted(props.envName), props.subDomainName, props.hostedZoneName);
         this.baseUrl = "https://%s/".formatted(this.domainName);
@@ -224,7 +225,7 @@ public class SubmitSharedNames {
 
         this.bundleDeleteLambdaHandler = "bundleDelete.handler";
         this.bundleDeleteLambdaFunctionName =
-            buildFunctionName(this.appResourceNamePrefix, this.bundleDeleteLambdaHandler);
+                buildFunctionName(this.appResourceNamePrefix, this.bundleDeleteLambdaHandler);
         this.bundleDeleteLambdaArn = "%s-bundle-delete".formatted(appLambdaArnPrefix);
         this.bundleDeleteLambdaUrlPath = "/api/bundle-delete";
 

@@ -19,6 +19,7 @@
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <baseUrl>${env.DIY_SUBMIT_APEX_URL}</baseUrl>
     </properties>
 
     <dependencyManagement>
@@ -262,9 +263,58 @@
                 </configuration>
                 <executions>
                     <execution>
+                        <phase>install</phase>
                         <goals>
                             <goal>check</goal>
                         </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>3.1.0</version>
+                <executions>
+                    <execution>
+                        <id>replicate-and-retag-manifests</id>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <phase>verify</phase>
+                        <configuration>
+                            <target>
+                                <!-- Create copies with desired names from the base shaded jar -->
+                                <copy file="${project.build.directory}/${project.build.finalName}-dist.jar" tofile="${project.build.directory}/self-destruct-lambda.jar"></copy>
+                                <copy file="${project.build.directory}/${project.build.finalName}-dist.jar" tofile="${project.build.directory}/submit-application.jar"></copy>
+                                <copy file="${project.build.directory}/${project.build.finalName}-dist.jar" tofile="${project.build.directory}/submit-delivery.jar"></copy>
+                                <copy file="${project.build.directory}/${project.build.finalName}-dist.jar" tofile="${project.build.directory}/submit-environment.jar"></copy>
+
+                                <!-- Update manifests in-place for each variant -->
+                                <jar jarfile="${project.build.directory}/self-destruct-lambda.jar" update="true">
+                                    <manifest>
+                                        <attribute name="Main-Class" value="co.uk.diyaccounting.submit.functions.SelfDestructHandler"></attribute>
+                                    </manifest>
+                                </jar>
+
+                                <jar jarfile="${project.build.directory}/submit-application.jar" update="true">
+                                    <manifest>
+                                        <attribute name="Main-Class" value="co.uk.diyaccounting.submit.SubmitApplication"></attribute>
+                                    </manifest>
+                                </jar>
+
+                                <jar jarfile="${project.build.directory}/submit-delivery.jar" update="true">
+                                    <manifest>
+                                        <attribute name="Main-Class" value="co.uk.diyaccounting.submit.SubmitDelivery"></attribute>
+                                    </manifest>
+                                </jar>
+
+                                <jar jarfile="${project.build.directory}/submit-environment.jar" update="true">
+                                    <manifest>
+                                        <attribute name="Main-Class" value="co.uk.diyaccounting.submit.SubmitEnvironment"></attribute>
+                                    </manifest>
+                                </jar>
+                            </target>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
@@ -328,10 +378,10 @@
                 <executions>
                     <execution>
                         <id>shade-base</id>
-                        <phase>package</phase>
                         <goals>
                             <goal>shade</goal>
                         </goals>
+                        <phase>package</phase>
                         <configuration>
                             <!-- Attach instead of replacing the main artifact -->
                             <shadedArtifactAttached>true</shadedArtifactAttached>
@@ -390,51 +440,28 @@
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-antrun-plugin</artifactId>
-                <version>3.1.0</version>
-                <executions>
-                    <execution>
-                        <id>replicate-and-retag-manifests</id>
-                        <phase>package</phase>
-                        <configuration>
-                            <target>
-                                <!-- Create copies with desired names from the base shaded jar -->
-                                <copy file="${project.build.directory}/${project.build.finalName}-dist.jar" tofile="${project.build.directory}/self-destruct-lambda.jar"/>
-                                <copy file="${project.build.directory}/${project.build.finalName}-dist.jar" tofile="${project.build.directory}/submit-application.jar"/>
-                                <copy file="${project.build.directory}/${project.build.finalName}-dist.jar" tofile="${project.build.directory}/submit-delivery.jar"/>
-                                <copy file="${project.build.directory}/${project.build.finalName}-dist.jar" tofile="${project.build.directory}/submit-environment.jar"/>
-
-                                <!-- Update manifests in-place for each variant -->
-                                <jar update="true" jarfile="${project.build.directory}/self-destruct-lambda.jar">
-                                    <manifest>
-                                        <attribute name="Main-Class" value="co.uk.diyaccounting.submit.functions.SelfDestructHandler"/>
-                                    </manifest>
-                                </jar>
-
-                                <jar update="true" jarfile="${project.build.directory}/submit-application.jar">
-                                    <manifest>
-                                        <attribute name="Main-Class" value="co.uk.diyaccounting.submit.SubmitApplication"/>
-                                    </manifest>
-                                </jar>
-
-                                <jar update="true" jarfile="${project.build.directory}/submit-delivery.jar">
-                                    <manifest>
-                                        <attribute name="Main-Class" value="co.uk.diyaccounting.submit.SubmitDelivery"/>
-                                    </manifest>
-                                </jar>
-
-                                <jar update="true" jarfile="${project.build.directory}/submit-environment.jar">
-                                    <manifest>
-                                        <attribute name="Main-Class" value="co.uk.diyaccounting.submit.SubmitEnvironment"/>
-                                    </manifest>
-                                </jar>
-                            </target>
-                        </configuration>
-                        <goals>
-                            <goal>run</goal>
-                        </goals>
-                    </execution>
-                </executions>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.5.3</version>
+                <configuration>
+                    <!-- Enable forking to allow console logging -->
+                    <forkCount>1</forkCount>
+                    <reuseForks>true</reuseForks>
+                    <!-- Ensure console output is visible -->
+                    <useSystemClassLoader>true</useSystemClassLoader>
+                    <!-- JVM arguments to suppress Java agent warnings -->
+                    <argLine>-XX:+EnableDynamicAgentLoading
+                        -Xshare:off
+                        --add-opens java.base/java.lang=ALL-UNNAMED
+                        --add-opens java.base/java.util=ALL-UNNAMED</argLine>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-wrapper-plugin</artifactId>
+                <version>3.3.2</version>
+                <configuration>
+                    <mavenVersion>3.9.10</mavenVersion>
+                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
@@ -443,10 +470,10 @@
                 <executions>
                     <execution>
                         <id>attach-variants</id>
-                        <phase>package</phase>
                         <goals>
                             <goal>attach-artifact</goal>
                         </goals>
+                        <phase>verify</phase>
                         <configuration>
                             <artifacts>
                                 <artifact>
@@ -474,30 +501,25 @@
                     </execution>
                 </executions>
             </plugin>
+            <!-- Generate OpenAPI/Swagger documentation -->
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.5.3</version>
-                <configuration>
-                    <!-- Enable forking to allow console logging -->
-                    <forkCount>1</forkCount>
-                    <reuseForks>true</reuseForks>
-                    <!-- Ensure console output is visible -->
-                    <useSystemClassLoader>true</useSystemClassLoader>
-                    <!-- JVM arguments to suppress Java agent warnings -->
-                    <argLine>-XX:+EnableDynamicAgentLoading
-                        -Xshare:off
-                        --add-opens java.base/java.lang=ALL-UNNAMED
-                        --add-opens java.base/java.util=ALL-UNNAMED</argLine>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-wrapper-plugin</artifactId>
-                <version>3.3.2</version>
-                <configuration>
-                    <mavenVersion>3.9.10</mavenVersion>
-                </configuration>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.5.0</version>
+                <executions>
+                    <execution>
+                        <id>generate-swagger-docs</id>
+                        <goals>
+                            <goal>java</goal>
+                        </goals>
+                        <phase>package</phase>
+                        <configuration>
+                            <mainClass>co.uk.diyaccounting.submit.swagger.OpenApiGenerator</mainClass>
+                            <classpathScope>compile</classpathScope>
+                            <commandlineArgs>${baseUrl} ${project.version} ${project.basedir}/web/public/docs</commandlineArgs>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
             <!-- Generate OpenAPI/Swagger documentation -->
             <plugin>

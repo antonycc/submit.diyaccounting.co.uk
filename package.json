@@ -8,7 +8,7 @@
     "submit": "app/bin/main.js"
   },
   "scripts": {
-    "build": "./mvnw clean package",
+    "build": "DIY_SUBMIT_APEX_URL=http://localhost:3000 ./mvnw clean verify",
     "formatting": "prettier --check . && ./mvnw spotless:check",
     "formatting-fix": "prettier --write . && ./mvnw spotless:apply",
     "formatting:js": "prettier --check .",
@@ -20,10 +20,10 @@
     "docker:build": "docker build -t submit-base:latest -f Dockerfile .",
     "cdk:synth-environment": "cd cdk-environment && npx dotenv -e ../.env -- npx dotenv -e ../.env.${ENVIRONMENT_NAME:-prod} -- npx cdk synth --require-approval never --ci true --strict --validation --exclusively env-${ENVIRONMENT_NAME:-prod}-ObservabilityStack env-${ENVIRONMENT_NAME:-prod}-DataStack env-${ENVIRONMENT_NAME:-prod}-IdentityStack env-${ENVIRONMENT_NAME:-prod}-ApexStack && cd ..",
     "cdk:synth-application": "cd cdk-application && npx dotenv -e ../.env -- npx dotenv -e ../.env.${ENVIRONMENT_NAME:-prod} -- npx cdk synth --require-approval never --ci true --strict --validation --exclusively app-${ENVIRONMENT_NAME:-prod}-DevStack app-${ENVIRONMENT_NAME:-prod}-AuthStack app-${ENVIRONMENT_NAME:-prod}-HmrcStack app-${ENVIRONMENT_NAME:-prod}-AccountStack app-${ENVIRONMENT_NAME:-prod}-ApiStack app-${ENVIRONMENT_NAME:-prod}-OpsStack app-${ENVIRONMENT_NAME:-prod}-SelfDestructStack && cd ..",
-    "cdk:synth-delivery": "cd cdk-delivery    && npx dotenv -e ../.env -- npx dotenv -e ../.env.${ENVIRONMENT_NAME:-prod} -- npx cdk synth --require-approval never --ci true --strict --validation --exclusively del-${ENVIRONMENT_NAME:-prod}-EdgeStack del-${ENVIRONMENT_NAME:-prod}-PublishStack del-${ENVIRONMENT_NAME:-prod}-SelfDestructStack && cd ..",
-    "cdk": "./mvnw clean package -DskipTests && ENVIRONMENT_NAME=prod npm run cdk:synth-environment && ENVIRONMENT_NAME=prod npm run cdk:synth-application && ENVIRONMENT_NAME=prod npm run cdk:synth-delivery && npm run clean && ./mvnw clean compile -DskipTests",
-    "cdk-ci": "./mvnw clean package -DskipTests && ENVIRONMENT_NAME=ci   npm run cdk:synth-environment && ENVIRONMENT_NAME=ci   npm run cdk:synth-application && ENVIRONMENT_NAME=ci   npm run cdk:synth-delivery && npm run clean && ./mvnw clean compile -DskipTests",
-    "update-to-minor": "npx npm-check-updates --upgrade --enginesNode --target minor --verbose --install always",
+    "cdk:synth-delivery":    "cd cdk-delivery    && npx dotenv -e ../.env -- npx dotenv -e ../.env.${ENVIRONMENT_NAME:-prod} -- npx cdk synth --require-approval never --ci true --strict --validation --exclusively del-${ENVIRONMENT_NAME:-prod}-EdgeStack del-${ENVIRONMENT_NAME:-prod}-PublishStack del-${ENVIRONMENT_NAME:-prod}-SelfDestructStack && cd ..",
+    "cdk":    "./mvnw clean verify -DskipTests && ENVIRONMENT_NAME=prod npm run cdk:synth-environment && ENVIRONMENT_NAME=prod npm run cdk:synth-application && ENVIRONMENT_NAME=prod HTTP_API_URL=https://package.json/script/ npm run cdk:synth-delivery && npm run clean && ./mvnw clean compile -DskipTests",
+    "cdk-ci": "./mvnw clean verify -DskipTests && ENVIRONMENT_NAME=ci   npm run cdk:synth-environment && ENVIRONMENT_NAME=ci   npm run cdk:synth-application && ENVIRONMENT_NAME=ci   HTTP_API_URL=https://package.json/script/ npm run cdk:synth-delivery && npm run clean && ./mvnw clean compile -DskipTests",
+    "update-to-minor":    "npx npm-check-updates --upgrade --enginesNode --target minor    --verbose --install always",
     "update-to-greatest": "npx npm-check-updates --upgrade --enginesNode --target greatest --verbose --install always --reject 'alpha'",
     "convert:video": "node app/bin/convert.js",
     "convert:video:default": "node app/bin/convert.js --in target/behaviour-test-results/video.webm --out target/behaviour-test-results/video.mp4",

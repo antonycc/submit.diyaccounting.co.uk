@@ -257,7 +257,7 @@ jobs:
         id: package
         shell: bash
         run: |
-          ./mvnw clean package
+          ./mvnw clean verify
 
   npm-test-cdk-ci:
     name: 'npm test cdk-ci'
@@ -291,7 +291,7 @@ jobs:
         id: mvn-package
         shell: bash
         run: |
-          ./mvnw clean package -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }}
+          ./mvnw clean verify -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }}
           echo "SELF_DESTRUCT_HANDLER_SOURCE=target/self-destruct-lambda.jar"
           echo "SELF_DESTRUCT_HANDLER_SOURCE=target/self-destruct-lambda.jar" >> $GITHUB_OUTPUT
           ls -l target/self-destruct-lambda.jar
@@ -349,7 +349,7 @@ jobs:
         id: mvn-package
         shell: bash
         run: |
-          ./mvnw clean package -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }}
+          ./mvnw clean verify -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }}
           echo "SELF_DESTRUCT_HANDLER_SOURCE=target/self-destruct-lambda.jar"
           echo "SELF_DESTRUCT_HANDLER_SOURCE=target/self-destruct-lambda.jar" >> $GITHUB_OUTPUT
           ls -l target/self-destruct-lambda.jar

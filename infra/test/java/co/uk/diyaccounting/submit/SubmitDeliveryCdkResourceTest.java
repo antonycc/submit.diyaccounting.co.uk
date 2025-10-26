@@ -1,15 +1,7 @@
 package co.uk.diyaccounting.submit;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 import org.junitpioneer.jupiter.SetEnvironmentVariable;
@@ -17,13 +9,22 @@ import software.amazon.awscdk.App;
 import software.amazon.awscdk.AppProps;
 import software.amazon.awscdk.assertions.Template;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+
 @SetEnvironmentVariable.SetEnvironmentVariables({
     @SetEnvironmentVariable(key = "ENVIRONMENT_NAME", value = "test"),
     @SetEnvironmentVariable(key = "DEPLOYMENT_NAME", value = "tt-witheight"),
     @SetEnvironmentVariable(key = "COMMIT_HASH", value = "local"),
     @SetEnvironmentVariable(key = "WEBSITE_HASH", value = "local"),
     @SetEnvironmentVariable(key = "BUILD_NUMBER", value = "local"),
-    //@SetEnvironmentVariable(key = "AUTH_URL_MOCK_LAMBDA_URL", value = "https://tt-witheight.lambda.mock/auth"),
+    @SetEnvironmentVariable(key = "HTTP_API_URL", value = "https://api/"),
     @SetEnvironmentVariable(key = "AUTH_URL_COGNITO_LAMBDA_URL", value = "https://tt-witheight.lambda.cognito/auth"),
     @SetEnvironmentVariable(
             key = "COGNITO_EXCHANGE_TOKEN_LAMBDA_URL",
