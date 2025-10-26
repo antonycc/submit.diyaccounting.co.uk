@@ -15,12 +15,12 @@
     </distributionManagement>
 
     <properties>
+        <baseUrl>${env.DIY_SUBMIT_APEX_URL}</baseUrl>
         <cdk.version>2.204.0</cdk.version>
+        <immutables.version>2.11.4</immutables.version>
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <immutables.version>2.11.4</immutables.version>
-        <baseUrl>${env.DIY_SUBMIT_APEX_URL}</baseUrl>
     </properties>
 
     <dependencyManagement>
@@ -264,10 +264,10 @@
                 </configuration>
                 <executions>
                     <execution>
-                        <phase>install</phase>
                         <goals>
                             <goal>check</goal>
                         </goals>
+                        <phase>install</phase>
                     </execution>
                 </executions>
             </plugin>

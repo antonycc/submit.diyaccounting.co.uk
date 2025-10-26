@@ -1,5 +1,9 @@
 package co.uk.diyaccounting.submit;
 
+import static co.uk.diyaccounting.submit.utils.Kind.envOr;
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.Kind.warnf;
+
 import co.uk.diyaccounting.submit.stacks.AccountStack;
 import co.uk.diyaccounting.submit.stacks.ApiStack;
 import co.uk.diyaccounting.submit.stacks.AuthStack;
@@ -8,20 +12,15 @@ import co.uk.diyaccounting.submit.stacks.HmrcStack;
 import co.uk.diyaccounting.submit.stacks.OpsStack;
 import co.uk.diyaccounting.submit.stacks.SelfDestructStack;
 import co.uk.diyaccounting.submit.utils.KindCdk;
-import software.amazon.awscdk.App;
-import software.amazon.awscdk.Environment;
-import software.amazon.awscdk.services.lambda.IFunction;
-import software.constructs.Construct;
-
 import java.lang.reflect.Field;
 import java.nio.file.Paths;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
-
-import static co.uk.diyaccounting.submit.utils.Kind.envOr;
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.Kind.warnf;
+import software.amazon.awscdk.App;
+import software.amazon.awscdk.Environment;
+import software.amazon.awscdk.services.lambda.IFunction;
+import software.constructs.Construct;
 
 public class SubmitApplication {
 
@@ -251,7 +250,7 @@ public class SubmitApplication {
         lambdaFunctions.put("submitVat", this.hmrcStack.submitVatLambda);
         lambdaFunctions.put("logReceipt", this.hmrcStack.logReceiptLambda);
         lambdaFunctions.put("myReceipts", this.hmrcStack.myReceiptsLambda);
-        lambdaFunctions.put(sharedNames.catalogGetLambdaFunctionName, this.accountStack.catalogLambda);
+        lambdaFunctions.put("catalog", this.accountStack.catalogLambda);
         lambdaFunctions.put("requestBundles", this.accountStack.requestBundlesLambda);
         lambdaFunctions.put("bundleDelete", this.accountStack.bundleDeleteLambda);
         lambdaFunctions.put("myBundles", this.accountStack.myBundlesLambda);

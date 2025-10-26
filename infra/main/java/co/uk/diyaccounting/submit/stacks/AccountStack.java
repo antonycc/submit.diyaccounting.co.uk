@@ -122,7 +122,8 @@ public class AccountStack extends Stack {
         this.catalogLambdaLogGroup = catalogLambdaUrlOrigin.logGroup;
         infof(
                 "Created Lambda %s for catalog retrieval with handler %s",
-                this.catalogLambda.getNode().getId(), props.lambdaEntry() + props.sharedNames().catalogGetLambdaHandler);
+                this.catalogLambda.getNode().getId(),
+                props.lambdaEntry() + props.sharedNames().catalogGetLambdaHandler);
 
         // Request Bundles Lambda
         var requestBundlesLambdaEnv = new PopulatedMap<String, String>()

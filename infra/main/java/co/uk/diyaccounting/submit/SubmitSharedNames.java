@@ -1,7 +1,5 @@
 package co.uk.diyaccounting.submit;
 
-import software.amazon.awscdk.services.apigatewayv2.HttpMethod;
-
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildCognitoDomainName;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDashedDomainName;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildEcrRepositoryName;
@@ -11,6 +9,8 @@ import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildVersionedD
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.convertDotSeparatedToDashSeparated;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateCompressedResourceNamePrefix;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateResourceNamePrefix;
+
+import software.amazon.awscdk.services.apigatewayv2.HttpMethod;
 
 public class SubmitSharedNames {
 
@@ -186,37 +186,43 @@ public class SubmitSharedNames {
                 .formatted(props.regionName, props.awsAccount, this.appResourceNamePrefix);
 
         this.cognitoAuthUrlGetLambdaHandler = "cognitoAuthUrlGet.handler";
-        this.cognitoAuthUrlGetLambdaFunctionName = buildFunctionName(this.appResourceNamePrefix, this.cognitoAuthUrlGetLambdaHandler);
+        this.cognitoAuthUrlGetLambdaFunctionName =
+                buildFunctionName(this.appResourceNamePrefix, this.cognitoAuthUrlGetLambdaHandler);
         this.cognitoAuthUrlGetLambdaArn = "%s-cognito-auth-url-get".formatted(appLambdaArnPrefix);
         this.cognitoAuthUrlGetLambdaHttpMethod = HttpMethod.GET;
         this.cognitoAuthUrlGetLambdaUrlPath = "/api/cognito/authUrl-get";
 
         this.cognitoTokenPostLambdaHandler = "cognitoTokenPost.handler";
-        this.cognitoTokenPostLambdaFunctionName = buildFunctionName(this.appResourceNamePrefix, this.cognitoTokenPostLambdaHandler);
+        this.cognitoTokenPostLambdaFunctionName =
+                buildFunctionName(this.appResourceNamePrefix, this.cognitoTokenPostLambdaHandler);
         this.cognitoTokenPostLambdaArn = "%s-cognito-token-post".formatted(appLambdaArnPrefix);
         this.cognitoTokenPostLambdaHttpMethod = HttpMethod.POST;
         this.cognitoTokenPostLambdaUrlPath = "/api/cognito/token-post";
 
         this.hmrcAuthUrlGetLambdaHandler = "hmrcAuthUrlGet.handler";
-        this.hmrcAuthUrlGetLambdaFunctionName = buildFunctionName(this.appResourceNamePrefix, this.hmrcAuthUrlGetLambdaHandler);
+        this.hmrcAuthUrlGetLambdaFunctionName =
+                buildFunctionName(this.appResourceNamePrefix, this.hmrcAuthUrlGetLambdaHandler);
         this.hmrcAuthUrlGetLambdaArn = "%s-hmrc-auth-url-get".formatted(appLambdaArnPrefix);
         this.hmrcAuthUrlGetLambdaHttpMethod = HttpMethod.GET;
         this.hmrcAuthUrlGetLambdaUrlPath = "/api/hmrc/authUrl-get";
 
         this.hmrcTokenPostLambdaHandler = "hmrcTokenPost.handler";
-        this.hmrcTokenPostLambdaFunctionName = buildFunctionName(this.appResourceNamePrefix, this.hmrcTokenPostLambdaHandler);
+        this.hmrcTokenPostLambdaFunctionName =
+                buildFunctionName(this.appResourceNamePrefix, this.hmrcTokenPostLambdaHandler);
         this.hmrcTokenPostLambdaArn = "%s-hmrc-token-post".formatted(appLambdaArnPrefix);
         this.hmrcTokenPostLambdaHttpMethod = HttpMethod.POST;
         this.hmrcTokenPostLambdaUrlPath = "/api/hmrc/token-post";
 
         this.hmrcVatReturnPostLambdaHandler = "hmrcVatReturnPost.handler";
-        this.hmrcVatReturnPostLambdaFunctionName = buildFunctionName(this.appResourceNamePrefix, this.hmrcVatReturnPostLambdaHandler);
+        this.hmrcVatReturnPostLambdaFunctionName =
+                buildFunctionName(this.appResourceNamePrefix, this.hmrcVatReturnPostLambdaHandler);
         this.hmrcVatReturnPostLambdaArn = "%s-hmrc-vat-return".formatted(appLambdaArnPrefix);
         this.hmrcVatReturnPostLambdaHttpMethod = HttpMethod.POST;
         this.hmrcVatReturnPostLambdaUrlPath = "/api/hmrc/vat/return-post";
 
         this.receiptPostLambdaHandler = "hmrcReceiptPost.handler";
-        this.receiptPostLambdaFunctionName = buildFunctionName(this.appResourceNamePrefix, this.receiptPostLambdaHandler);
+        this.receiptPostLambdaFunctionName =
+                buildFunctionName(this.appResourceNamePrefix, this.receiptPostLambdaHandler);
         this.receiptPostLambdaArn = "%s-hmrc-receipt-post".formatted(appLambdaArnPrefix);
         this.receiptPostLambdaHttpMethod = HttpMethod.POST;
         this.receiptPostLambdaUrlPath = "/api/hmrc/receipt-post";
@@ -246,7 +252,8 @@ public class SubmitSharedNames {
         this.bundlePostLambdaUrlPath = "/api/v1/bundle";
 
         this.bundleDeleteLambdaHandler = "bundleDelete.handler";
-        this.bundleDeleteLambdaFunctionName = buildFunctionName(this.appResourceNamePrefix, this.bundleDeleteLambdaHandler);
+        this.bundleDeleteLambdaFunctionName =
+                buildFunctionName(this.appResourceNamePrefix, this.bundleDeleteLambdaHandler);
         this.bundleDeleteLambdaArn = "%s-bundle-delete".formatted(appLambdaArnPrefix);
         this.bundleDeleteLambdaHttpMethod = HttpMethod.DELETE;
         this.bundleDeleteLambdaUrlPath = "/api/v1/bundle";

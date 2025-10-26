@@ -1,7 +1,12 @@
 package co.uk.diyaccounting.submit.stacks;
 
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
+import java.util.List;
+import java.util.Map;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Aspects;
 import software.amazon.awscdk.CfnOutput;
@@ -24,12 +29,6 @@ import software.amazon.awscdk.services.cloudwatch.TreatMissingData;
 import software.amazon.awscdk.services.lambda.IFunction;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.constructs.Construct;
-
-import java.util.List;
-import java.util.Map;
-
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 public class ApiStack extends Stack {
 
@@ -115,7 +114,7 @@ public class ApiStack extends Stack {
                 .build();
 
         // Create endpoint configurations
-        List<EndpointConfig> endpointConfigurations = createEndpointConfigurations(props);
+        List<EndpointConfig> endpointConfigurations = createEndpointConfigurations();
 
         // Create integrations using Lambda function references
         List<Metric> lambdaInvocations = new java.util.ArrayList<>();
@@ -255,74 +254,74 @@ public class ApiStack extends Stack {
                 this.getNode().getId(), props.resourceNamePrefix(), this.httpApi.getUrl());
     }
 
-    private static List<EndpointConfig> createEndpointConfigurations(final ApiStackProps props) {
+    private static List<EndpointConfig> createEndpointConfigurations() {
         List<EndpointConfig> configs = new java.util.ArrayList<>();
 
         // Map each Lambda key to its endpoint configuration
         configs.add(EndpointConfig.builder()
-                .path("/cognito/authUrl")
+                .path("/v1/cognito/authUrl")
                 .httpMethod(HttpMethod.GET)
                 .lambdaKey("authUrlCognito")
                 .build());
 
         configs.add(EndpointConfig.builder()
-                .path("/cognito/token")
+                .path("/v1/cognito/token")
                 .httpMethod(HttpMethod.POST)
                 .lambdaKey("exchangeCognitoToken")
                 .build());
 
         configs.add(EndpointConfig.builder()
-                .path("/hmrc/authUrl")
+                .path("/v1/hmrc/authUrl")
                 .httpMethod(HttpMethod.GET)
                 .lambdaKey("authUrlHmrc")
                 .build());
 
         configs.add(EndpointConfig.builder()
-                .path("/hmrc/token")
+                .path("/v1/hmrc/token")
                 .httpMethod(HttpMethod.POST)
                 .lambdaKey("exchangeHmrcToken")
                 .build());
 
         configs.add(EndpointConfig.builder()
-                .path("/hmrc/vat/return")
+                .path("/v1/hmrc/vat/return")
                 .httpMethod(HttpMethod.POST)
                 .lambdaKey("submitVat")
                 .build());
 
         configs.add(EndpointConfig.builder()
-                .path("/hmrc/receipt")
+                .path("/v1/hmrc/receipt")
                 .httpMethod(HttpMethod.POST)
                 .lambdaKey("logReceipt")
                 .build());
 
         configs.add(EndpointConfig.builder()
-                .path("/hmrc/receipt")
+                .path("/v1/hmrc/receipt")
                 .httpMethod(HttpMethod.GET)
                 .lambdaKey("myReceipts")
                 .build());
 
         configs.add(EndpointConfig.builder()
-                .path(props.sharedNames().catalogGetLambdaUrlPath)
-                .httpMethod(props.sharedNames().catalogGetLambdaHttpMethod)
-                .lambdaKey(props.sharedNames().catalogGetLambdaFunctionName)
+                .path("/v1/catalog")
+                .httpMethod(HttpMethod.GET)
+                .lambdaKey("catalog")
                 .build());
 
         configs.add(EndpointConfig.builder()
-            .path(props.sharedNames().bundleGetLambdaUrlPath)
-            .httpMethod(props.sharedNames().bundleGetLambdaHttpMethod)
-            .lambdaKey(props.sharedNames().bundleGetLambdaFunctionName)
-            .build());
-
-        configs.add(EndpointConfig.builder()
-                .path(props.sharedNames().bundlePostLambdaUrlPath)
-                .httpMethod(props.sharedNames().bundlePostLambdaHttpMethod)
-                .lambdaKey(props.sharedNames().bundlePostLambdaFunctionName)
+                .path("/v1/bundle")
+                .httpMethod(HttpMethod.GET)
+                .lambdaKey("myBundles")
                 .build());
 
         configs.add(EndpointConfig.builder()
-                .path(props.sharedNames().bundleDeleteLambdaUrlPath)
-                .httpMethod(props.sharedNames().bundleDeleteLambdaHttpMethod)
-                .lambdaKey(props.sharedNames().bundleDeleteLambdaFunctionName)
+                .path("/v1/bundle")
+                .httpMethod(HttpMethod.POST)
+                .lambdaKey("requestBundles")
+                .build());
+
+        configs.add(EndpointConfig.builder()
+                .path("/v1/bundle")
+                .httpMethod(HttpMethod.DELETE)
+                .lambdaKey("bundleDelete")
                 .build());
 
         return configs;
