@@ -53,7 +53,7 @@ public class SelfDestructStack extends Stack {
         @Override
         @Value.Default
         default Boolean getCrossRegionReferences() {
-            return null;
+            return false;
         }
 
         @Override
