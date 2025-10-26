@@ -260,45 +260,45 @@ public class ApiStack extends Stack {
 
         // Map each Lambda key to its endpoint configuration
         configs.add(EndpointConfig.builder()
-                .path("/cognito/authUrl")
-                .httpMethod(HttpMethod.GET)
-                .lambdaKey("authUrlCognito")
+                .path(props.sharedNames().cognitoAuthUrlGetLambdaUrlPath)
+                .httpMethod(props.sharedNames().cognitoAuthUrlGetLambdaHttpMethod)
+                .lambdaKey(props.sharedNames().cognitoAuthUrlGetLambdaFunctionName)
                 .build());
 
         configs.add(EndpointConfig.builder()
-                .path("/cognito/token")
-                .httpMethod(HttpMethod.POST)
-                .lambdaKey("exchangeCognitoToken")
+                .path(props.sharedNames().cognitoTokenPostLambdaUrlPath)
+                .httpMethod(props.sharedNames().cognitoTokenPostLambdaHttpMethod)
+                .lambdaKey(props.sharedNames().cognitoTokenPostLambdaFunctionName)
                 .build());
 
         configs.add(EndpointConfig.builder()
-                .path("/hmrc/authUrl")
-                .httpMethod(HttpMethod.GET)
-                .lambdaKey("authUrlHmrc")
+                .path(props.sharedNames().hmrcAuthUrlGetLambdaUrlPath)
+                .httpMethod(props.sharedNames().hmrcAuthUrlGetLambdaHttpMethod)
+                .lambdaKey(props.sharedNames().hmrcAuthUrlGetLambdaFunctionName)
                 .build());
 
         configs.add(EndpointConfig.builder()
-                .path("/hmrc/token")
-                .httpMethod(HttpMethod.POST)
-                .lambdaKey("exchangeHmrcToken")
+                .path(props.sharedNames().hmrcTokenPostLambdaUrlPath)
+                .httpMethod(props.sharedNames().hmrcTokenPostLambdaHttpMethod)
+                .lambdaKey(props.sharedNames().hmrcTokenPostLambdaFunctionName)
                 .build());
 
         configs.add(EndpointConfig.builder()
-                .path("/hmrc/vat/return")
-                .httpMethod(HttpMethod.POST)
-                .lambdaKey("submitVat")
+                .path(props.sharedNames().hmrcVatReturnPostLambdaUrlPath)
+                .httpMethod(props.sharedNames().hmrcVatReturnPostLambdaHttpMethod)
+                .lambdaKey(props.sharedNames().hmrcVatReturnPostLambdaFunctionName)
                 .build());
 
         configs.add(EndpointConfig.builder()
-                .path("/hmrc/receipt")
-                .httpMethod(HttpMethod.POST)
-                .lambdaKey("logReceipt")
+                .path(props.sharedNames().receiptPostLambdaUrlPath)
+                .httpMethod(props.sharedNames().receiptPostLambdaHttpMethod)
+                .lambdaKey(props.sharedNames().receiptPostLambdaFunctionName)
                 .build());
 
         configs.add(EndpointConfig.builder()
-                .path("/hmrc/receipt")
-                .httpMethod(HttpMethod.GET)
-                .lambdaKey("myReceipts")
+                .path(props.sharedNames().receiptGetLambdaUrlPath)
+                .httpMethod(props.sharedNames().receiptGetLambdaHttpMethod)
+                .lambdaKey(props.sharedNames().receiptGetLambdaFunctionName)
                 .build());
 
         configs.add(EndpointConfig.builder()
