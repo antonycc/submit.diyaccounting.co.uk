@@ -335,6 +335,7 @@ jobs:
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
           SELF_DESTRUCT_HANDLER_SOURCE: "../infra/test/resources/fake-self-destruct-lambda.jar"
           WEBSITE_HASH: 'placeholder'
+          HTTP_API_URL: 'https://placeholder'
 
 #      - name: Destroy PublishStack
 #        run: |
