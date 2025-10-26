@@ -15,6 +15,9 @@ import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.lambda.Tracing;
 import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.LogGroupProps;
+import software.amazon.awscdk.services.logs.MetricFilter;
+import software.amazon.awscdk.services.logs.FilterPattern;
+import software.amazon.awscdk.services.cloudwatch.Metric;
 import software.constructs.Construct;
 
 import java.util.List;
@@ -111,6 +114,43 @@ public class LambdaUrlOrigin {
                 .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
                 .treatMissingData(TreatMissingData.NOT_BREACHING)
                 .alarmDescription("Lambda p95 duration >= 80% of timeout for function " + this.lambda.getFunctionName())
+                .build();
+
+        // 4) Log-based error detection using a CloudWatch Logs Metric Filter
+        // This avoids external scanners: we scan for common error terms in logs and emit a custom metric.
+        String logErrorMetricNamespace = "Submit/LambdaLogs";
+        String logErrorMetricName = this.lambda.getFunctionName() + "-log-errors";
+        MetricFilter.Builder.create(scope, props.idPrefix() + "-LogErrorsMetricFilter")
+                .logGroup(this.logGroup)
+                .filterPattern(FilterPattern.anyTerm(
+                        "ERROR",
+                        "Error",
+                        "Exception",
+                        "Unhandled",
+                        "Task timed out",
+                        "SEVERE",
+                        "FATAL"))
+                .metricNamespace(logErrorMetricNamespace)
+                .metricName(logErrorMetricName)
+                .metricValue("1")
+                .defaultValue(0)
+                .build();
+
+        Metric logErrorMetric = Metric.Builder.create()
+                .namespace(logErrorMetricNamespace)
+                .metricName(logErrorMetricName)
+                .statistic("Sum")
+                .period(Duration.minutes(5))
+                .build();
+
+        Alarm.Builder.create(scope, props.idPrefix() + "-LogErrorsAlarm")
+                .alarmName(this.lambda.getFunctionName() + "-log-errors")
+                .metric(logErrorMetric)
+                .threshold(1)
+                .evaluationPeriods(1)
+                .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
+                .treatMissingData(TreatMissingData.NOT_BREACHING)
+                .alarmDescription("Detected >= 1 error-like log line in the last 5 minutes for function " + this.lambda.getFunctionName())
                 .build();
     }
 }

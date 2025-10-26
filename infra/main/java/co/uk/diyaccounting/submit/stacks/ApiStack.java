@@ -6,6 +6,7 @@ import org.immutables.value.Value;
 import software.amazon.awscdk.Aspects;
 import software.amazon.awscdk.CfnOutput;
 import software.amazon.awscdk.Environment;
+import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.Tags;
@@ -161,6 +162,19 @@ public class ApiStack extends Stack {
                 .loggingLevel("INFO")
                 .detailedMetricsEnabled(true)
                 .build());
+
+        // Alarm: API Gateway HTTP 5xx errors >= 1 in a 5-minute period
+        Alarm.Builder.create(this, props.resourceNamePrefix() + "-Api5xxAlarm")
+                .alarmName(props.resourceNamePrefix() + "-api-5xx")
+                .metric(this.httpApi.metricServerError().with(MetricOptions.builder()
+                        .period(Duration.minutes(5))
+                        .build()))
+                .threshold(1)
+                .evaluationPeriods(1)
+                .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
+                .treatMissingData(TreatMissingData.NOT_BREACHING)
+                .alarmDescription("API Gateway 5xx errors >= 1 for API " + this.httpApi.getApiId())
+                .build();
 
         // Create endpoint configurations
         List<EndpointConfig> endpointConfigurations = createEndpointConfigurations(props);
