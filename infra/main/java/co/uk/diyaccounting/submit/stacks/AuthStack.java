@@ -103,13 +103,13 @@ public class AuthStack extends Stack {
         var authUrlCognitoLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
                 LambdaUrlOriginProps.builder()
-                        .idPrefix(props.sharedNames().authUrlCognitoLambdaFunctionName)
+                        .idPrefix(props.sharedNames().cognitoAuthUrlGetLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .functionName(props.sharedNames().authUrlCognitoLambdaFunctionName)
+                        .functionName(props.sharedNames().cognitoAuthUrlGetLambdaFunctionName)
                         .cloudFrontAllowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
-                        .handler(props.lambdaEntry() + props.sharedNames().authUrlCognitoLambdaHandler)
+                        .handler(props.lambdaEntry() + props.sharedNames().cognitoAuthUrlGetLambdaHandler)
                         .environment(authUrlCognitoLambdaEnv)
                         .timeout(Duration.millis(Long.parseLong("30000")))
                         .build());
@@ -118,7 +118,7 @@ public class AuthStack extends Stack {
         infof(
                 "Created Lambda %s for Cognito auth URL with handler %s",
                 this.authUrlCognitoLambda.getNode().getId(),
-                props.lambdaEntry() + props.sharedNames().authUrlCognitoLambdaHandler);
+                props.lambdaEntry() + props.sharedNames().cognitoAuthUrlGetLambdaHandler);
 
         // exchangeToken - Google or Antonycc via Cognito
         var exchangeCognitoTokenLambdaEnv = new PopulatedMap<String, String>()
@@ -133,13 +133,13 @@ public class AuthStack extends Stack {
         var exchangeCognitoTokenLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
                 LambdaUrlOriginProps.builder()
-                        .idPrefix(props.sharedNames().exchangeCognitoTokenLambdaFunctionName)
+                        .idPrefix(props.sharedNames().cognitoTokenPostLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .functionName(props.sharedNames().exchangeCognitoTokenLambdaFunctionName)
+                        .functionName(props.sharedNames().cognitoTokenPostLambdaFunctionName)
                         .cloudFrontAllowedMethods(AllowedMethods.ALLOW_ALL)
-                        .handler(props.lambdaEntry() + props.sharedNames().exchangeCognitoTokenLambdaHandler)
+                        .handler(props.lambdaEntry() + props.sharedNames().cognitoTokenPostLambdaHandler)
                         .environment(exchangeCognitoTokenLambdaEnv)
                         .timeout(Duration.millis(Long.parseLong("30000")))
                         .build());
@@ -148,7 +148,7 @@ public class AuthStack extends Stack {
         infof(
                 "Created Lambda %s for Cognito exchange token with handler %s",
                 this.exchangeCognitoTokenLambda.getNode().getId(),
-                props.lambdaEntry() + props.sharedNames().exchangeCognitoTokenLambdaHandler);
+                props.lambdaEntry() + props.sharedNames().cognitoTokenPostLambdaHandler);
 
         // Create Function URLs for cross-region access
         var authUrlCognitoUrl = this.authUrlCognitoLambda.addFunctionUrl(FunctionUrlOptions.builder()

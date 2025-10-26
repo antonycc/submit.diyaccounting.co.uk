@@ -124,13 +124,13 @@ public class HmrcStack extends Stack {
         var authUrlHmrcLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
                 LambdaUrlOriginProps.builder()
-                        .idPrefix(props.sharedNames().authUrlHmrcLambdaFunctionName)
+                        .idPrefix(props.sharedNames().hmrcAuthUrlGetLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .functionName(props.sharedNames().authUrlHmrcLambdaFunctionName)
+                        .functionName(props.sharedNames().hmrcAuthUrlGetLambdaFunctionName)
                         .cloudFrontAllowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
-                        .handler(props.lambdaEntry() + props.sharedNames().authUrlHmrcLambdaHandler)
+                        .handler(props.lambdaEntry() + props.sharedNames().hmrcAuthUrlGetLambdaHandler)
                         .environment(authUrlHmrcLambdaEnv)
                         .timeout(Duration.millis(Long.parseLong("30000")))
                         .build());
@@ -139,7 +139,7 @@ public class HmrcStack extends Stack {
         infof(
                 "Created Lambda %s for HMRC auth URL with handler %s",
                 this.authUrlHmrcLambda.getNode().getId(),
-                props.lambdaEntry() + props.sharedNames().authUrlHmrcLambdaHandler);
+                props.lambdaEntry() + props.sharedNames().hmrcAuthUrlGetLambdaHandler);
 
         // exchangeToken - HMRC
         var exchangeHmrcEnvBase = new PopulatedMap<String, String>()
@@ -158,13 +158,13 @@ public class HmrcStack extends Stack {
         var exchangeHmrcTokenLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
                 LambdaUrlOriginProps.builder()
-                        .idPrefix(props.sharedNames().exchangeHmrcTokenLambdaFunctionName)
+                        .idPrefix(props.sharedNames().hmrcTokenPostLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .functionName(props.sharedNames().exchangeHmrcTokenLambdaFunctionName)
+                        .functionName(props.sharedNames().hmrcTokenPostLambdaFunctionName)
                         .cloudFrontAllowedMethods(AllowedMethods.ALLOW_ALL)
-                        .handler(props.lambdaEntry() + props.sharedNames().exchangeHmrcTokenLambdaHandler)
+                        .handler(props.lambdaEntry() + props.sharedNames().hmrcTokenPostLambdaHandler)
                         .environment(exchangeHmrcEnvBase)
                         .timeout(Duration.millis(Long.parseLong("30000")))
                         .build());
@@ -190,7 +190,7 @@ public class HmrcStack extends Stack {
         infof(
                 "Created Lambda %s for HMRC exchange token with handler %s",
                 this.exchangeHmrcTokenLambda.getNode().getId(),
-                props.lambdaEntry() + props.sharedNames().exchangeHmrcTokenLambdaHandler);
+                props.lambdaEntry() + props.sharedNames().hmrcTokenPostLambdaHandler);
 
         // submitVat
         var submitVatLambdaEnv = new PopulatedMap<String, String>()
@@ -200,13 +200,13 @@ public class HmrcStack extends Stack {
         var submitVatLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
                 LambdaUrlOriginProps.builder()
-                        .idPrefix(props.sharedNames().submitVatLambdaFunctionName)
+                        .idPrefix(props.sharedNames().hmrcVatReturnPostLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .functionName(props.sharedNames().submitVatLambdaFunctionName)
+                        .functionName(props.sharedNames().hmrcVatReturnPostLambdaFunctionName)
                         .cloudFrontAllowedMethods(AllowedMethods.ALLOW_ALL)
-                        .handler(props.lambdaEntry() + props.sharedNames().submitVatLambdaHandler)
+                        .handler(props.lambdaEntry() + props.sharedNames().hmrcVatReturnPostLambdaHandler)
                         .environment(submitVatLambdaEnv)
                         .timeout(Duration.millis(Long.parseLong("60000")))
                         .build());
@@ -215,7 +215,7 @@ public class HmrcStack extends Stack {
         infof(
                 "Created Lambda %s for VAT submission with handler %s",
                 this.submitVatLambda.getNode().getId(),
-                props.lambdaEntry() + props.sharedNames().submitVatLambdaHandler);
+                props.lambdaEntry() + props.sharedNames().hmrcVatReturnPostLambdaHandler);
 
         var logReceiptLambdaEnv = new PopulatedMap<String, String>()
                 .with("DIY_SUBMIT_BASE_URL", props.sharedNames().envBaseUrl)
@@ -235,13 +235,13 @@ public class HmrcStack extends Stack {
         var logReceiptLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
                 LambdaUrlOriginProps.builder()
-                        .idPrefix(props.sharedNames().logReceiptLambdaFunctionName)
+                        .idPrefix(props.sharedNames().receiptPostLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .functionName(props.sharedNames().logReceiptLambdaFunctionName)
+                        .functionName(props.sharedNames().receiptPostLambdaFunctionName)
                         .cloudFrontAllowedMethods(AllowedMethods.ALLOW_ALL)
-                        .handler(props.lambdaEntry() + props.sharedNames().logReceiptLambdaHandler)
+                        .handler(props.lambdaEntry() + props.sharedNames().receiptPostLambdaHandler)
                         .environment(logReceiptLambdaEnv)
                         .timeout(Duration.millis(Long.parseLong("30000")))
                         .build());
@@ -250,7 +250,7 @@ public class HmrcStack extends Stack {
         infof(
                 "Created Lambda %s for logging receipts with handler %s",
                 this.logReceiptLambda.getNode().getId(),
-                props.lambdaEntry() + props.sharedNames().logReceiptLambdaHandler);
+                props.lambdaEntry() + props.sharedNames().receiptPostLambdaHandler);
 
         // myReceipts Lambda
         var myReceiptsLambdaEnv = new PopulatedMap<String, String>()
@@ -259,13 +259,13 @@ public class HmrcStack extends Stack {
         var myReceiptsLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
                 LambdaUrlOriginProps.builder()
-                        .idPrefix(props.sharedNames().myReceiptsLambdaFunctionName)
+                        .idPrefix(props.sharedNames().receiptGetLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .functionName(props.sharedNames().myReceiptsLambdaFunctionName)
+                        .functionName(props.sharedNames().receiptGetLambdaFunctionName)
                         .cloudFrontAllowedMethods(AllowedMethods.ALLOW_ALL)
-                        .handler(props.lambdaEntry() + props.sharedNames().myReceiptsLambdaHandler)
+                        .handler(props.lambdaEntry() + props.sharedNames().receiptGetLambdaHandler)
                         .environment(myReceiptsLambdaEnv)
                         .timeout(Duration.millis(Long.parseLong("30000")))
                         .build());
@@ -274,7 +274,7 @@ public class HmrcStack extends Stack {
         infof(
                 "Created Lambda %s for my receipts retrieval with handler %s",
                 this.myReceiptsLambda.getNode().getId(),
-                props.lambdaEntry() + props.sharedNames().myReceiptsLambdaHandler);
+                props.lambdaEntry() + props.sharedNames().receiptGetLambdaHandler);
 
         // Grant the LogReceiptLambda and MyReceiptsLambda write and read access respectively to the receipts S3 bucket
         IBucket receiptsBucket = Bucket.fromBucketName(

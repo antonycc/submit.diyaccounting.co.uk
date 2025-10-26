@@ -192,19 +192,19 @@ public class SubmitDelivery {
         // Create Function URLs map for EdgeStack (cross-region compatible)
         Map<String, String> pathsToFns = new java.util.HashMap<>();
         putIfNotNull(
-                pathsToFns, "%s*".formatted(sharedNames.authUrlCognitoLambdaUrlPath), authUrlCognitoLambdaFunctionUrl);
+                pathsToFns, "%s*".formatted(sharedNames.cognitoAuthUrlGetLambdaUrlPath), authUrlCognitoLambdaFunctionUrl);
         putIfNotNull(
                 pathsToFns,
-                "%s*".formatted(sharedNames.exchangeCognitoTokenLambdaUrlPath),
+                "%s*".formatted(sharedNames.cognitoTokenPostLambdaUrlPath),
                 exchangeCognitoTokenLambdaFunctionUrl);
-        putIfNotNull(pathsToFns, "%s*".formatted(sharedNames.authUrlHmrcLambdaUrlPath), authUrlHmrcLambdaFunctionUrl);
+        putIfNotNull(pathsToFns, "%s*".formatted(sharedNames.hmrcAuthUrlGetLambdaUrlPath), authUrlHmrcLambdaFunctionUrl);
         putIfNotNull(
                 pathsToFns,
-                "%s*".formatted(sharedNames.exchangeHmrcTokenLambdaUrlPath),
+                "%s*".formatted(sharedNames.hmrcTokenPostLambdaUrlPath),
                 exchangeHmrcTokenLambdaFunctionUrl);
-        putIfNotNull(pathsToFns, "%s*".formatted(sharedNames.submitVatLambdaUrlPath), submitVatLambdaFunctionUrl);
-        putIfNotNull(pathsToFns, "%s*".formatted(sharedNames.logReceiptLambdaUrlPath), logReceiptLambdaFunctionUrl);
-        putIfNotNull(pathsToFns, "%s*".formatted(sharedNames.myReceiptsLambdaUrlPath), myReceiptsLambdaFunctionUrl);
+        putIfNotNull(pathsToFns, "%s*".formatted(sharedNames.hmrcVatReturnPostLambdaUrlPath), submitVatLambdaFunctionUrl);
+        putIfNotNull(pathsToFns, "%s*".formatted(sharedNames.receiptPostLambdaUrlPath), logReceiptLambdaFunctionUrl);
+        putIfNotNull(pathsToFns, "%s*".formatted(sharedNames.receiptGetLambdaUrlPath), myReceiptsLambdaFunctionUrl);
 //        putIfNotNull(pathsToFns, "%s*".formatted(sharedNames.catalogGetLambdaUrlPath), catalogLambdaFunctionUrl);
 //        putIfNotNull(
 //                pathsToFns, "%s*".formatted(sharedNames.bundlePostLambdaUrlPath), requestBundlesLambdaFunctionUrl);
