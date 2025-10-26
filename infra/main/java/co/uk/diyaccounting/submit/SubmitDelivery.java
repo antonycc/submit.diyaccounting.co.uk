@@ -48,10 +48,10 @@ public class SubmitDelivery {
         public String exchangeHmrcTokenLambdaFunctionUrl;
         public String submitVatLambdaFunctionUrl;
         public String logReceiptLambdaFunctionUrl;
-        public String catalogLambdaFunctionUrl;
-        public String requestBundlesLambdaFunctionUrl;
-        public String bundleDeleteLambdaFunctionUrl;
-        public String myBundlesLambdaFunctionUrl;
+        //public String catalogLambdaFunctionUrl;
+        //public String requestBundlesLambdaFunctionUrl;
+        //public String bundleDeleteLambdaFunctionUrl;
+        //public String myBundlesLambdaFunctionUrl;
         public String myReceiptsLambdaFunctionUrl;
         public String selfDestructHandlerSource;
         public String selfDestructDelayHours;

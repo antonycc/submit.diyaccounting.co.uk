@@ -30,6 +30,7 @@ public class SubmitSharedNames {
     public String ew2SelfDestructLogGroupName;
     public String ue1SelfDestructLogGroupName;
     public String webDeploymentLogGroupName;
+    public String apiAccessLogGroupName;
 
     public String envDashedDomainName;
     public String envResourceNamePrefix;
@@ -168,6 +169,7 @@ public class SubmitSharedNames {
         this.ue1SelfDestructLogGroupName =
                 "/aws/lambda/%s-self-destruct-us-east-1".formatted(this.envResourceNamePrefix);
         this.webDeploymentLogGroupName = "/deployment/%s-web-deployment".formatted(this.envResourceNamePrefix);
+        this.apiAccessLogGroupName = "/aws/apigw/%s/access".formatted(this.envResourceNamePrefix);
 
         this.appResourceNamePrefix = "app-%s".formatted(generateResourceNamePrefix(this.domainName));
         this.appCompressedResourceNamePrefix = "a-%s".formatted(generateCompressedResourceNamePrefix(this.domainName));
