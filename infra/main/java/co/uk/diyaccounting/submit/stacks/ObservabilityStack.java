@@ -30,6 +30,7 @@ public class ObservabilityStack extends Stack {
     public Trail trail;
     public LogGroup cloudTrailLogGroup;
     public LogGroup selfDestructLogGroup;
+    public LogGroup apiAccessLogGroup;
 
     @Value.Immutable
     public interface ObservabilityStackProps extends StackProps, SubmitStackProps {
@@ -123,6 +124,14 @@ public class ObservabilityStack extends Stack {
                 .retention(RetentionDays.ONE_WEEK) // Longer retention for operations
                 .removalPolicy(RemovalPolicy.DESTROY)
                 .build();
+
+        // API Gateway access log group with env-stable name and configurable retention
+        this.apiAccessLogGroup = LogGroup.Builder.create(this, props.resourceNamePrefix() + "-ApiAccessLogGroup")
+                .logGroupName(props.sharedNames().apiAccessLogGroupName)
+                .retention(RetentionDaysConverter.daysToRetentionDays(props.accessLogGroupRetentionPeriodDays()))
+                .removalPolicy(RemovalPolicy.DESTROY)
+                .build();
+
         infof(
                 "ObservabilityStack %s created successfully for %s",
                 this.getNode().getId(), props.sharedNames().dashedDomainName);
@@ -131,5 +140,6 @@ public class ObservabilityStack extends Stack {
 
         // Outputs for Observability resources
         cfnOutput(this, "SelfDestructLogGroupArn", this.selfDestructLogGroup.getLogGroupArn());
+        cfnOutput(this, "ApiAccessLogGroupArn", this.apiAccessLogGroup.getLogGroupArn());
     }
 }

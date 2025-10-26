@@ -14,6 +14,7 @@ import software.amazon.awscdk.services.apigatewayv2.HttpApi;
 import software.amazon.awscdk.services.apigatewayv2.HttpMethod;
 import software.amazon.awscdk.services.apigatewayv2.HttpRoute;
 import software.amazon.awscdk.services.apigatewayv2.HttpRouteKey;
+import software.amazon.awscdk.services.apigatewayv2.CfnStage;
 import software.amazon.awscdk.services.cloudwatch.Alarm;
 import software.amazon.awscdk.services.cloudwatch.ComparisonOperator;
 import software.amazon.awscdk.services.cloudwatch.Dashboard;
@@ -22,7 +23,11 @@ import software.amazon.awscdk.services.cloudwatch.Metric;
 import software.amazon.awscdk.services.cloudwatch.MetricOptions;
 import software.amazon.awscdk.services.cloudwatch.TreatMissingData;
 import software.amazon.awscdk.services.lambda.IFunction;
+import software.amazon.awscdk.services.logs.ILogGroup;
+import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
+import software.amazon.awscdk.services.iam.PolicyStatement;
+import software.amazon.awscdk.services.iam.ServicePrincipal;
 import software.constructs.Construct;
 
 import java.util.List;
@@ -113,6 +118,49 @@ public class ApiStack extends Stack {
                 .apiName(props.resourceNamePrefix() + "-api")
                 .description("API Gateway v2 for " + props.resourceNamePrefix())
                 .build();
+
+        // Enable access logging for the default stage to a pre-created CloudWatch Log Group
+        ILogGroup apiAccessLogs = LogGroup.fromLogGroupName(
+                this,
+                props.resourceNamePrefix() + "-ImportedApiAccessLogs",
+                props.sharedNames().apiAccessLogGroupName);
+
+        // Allow API Gateway service to write logs to this log group for this API's default stage
+        apiAccessLogs.addToResourcePolicy(PolicyStatement.Builder.create()
+                .sid("ApiGatewayAccessLogs")
+                .principals(java.util.List.of(new ServicePrincipal("apigateway.amazonaws.com")))
+                .actions(java.util.List.of("logs:CreateLogStream", "logs:PutLogEvents"))
+                .resources(java.util.List.of(apiAccessLogs.getLogGroupArn()))
+                .conditions(java.util.Map.of(
+                        "StringEquals", java.util.Map.of("aws:SourceAccount", this.getAccount()),
+                        "ArnLike", java.util.Map.of(
+                                "aws:SourceArn",
+                                "arn:aws:apigateway:" + this.getRegion() + "::/apis/" + this.httpApi.getApiId() + "/stages/$default"
+                        )
+                ))
+                .build());
+
+        // Configure default stage access logs and logging level/metrics
+        var defaultStage = (CfnStage) this.httpApi.getDefaultStage().getNode().getDefaultChild();
+        defaultStage.setAccessLogSettings(CfnStage.AccessLogSettingsProperty.builder()
+                .destinationArn(apiAccessLogs.getLogGroupArn())
+                .format("{" +
+                        "\"requestId\":\"$context.requestId\"," +
+                        "\"ip\":\"$context.http.sourceIp\"," +
+                        "\"httpMethod\":\"$context.http.method\"," +
+                        "\"path\":\"$context.path\"," +
+                        "\"routeKey\":\"$context.routeKey\"," +
+                        "\"protocol\":\"$context.protocol\"," +
+                        "\"status\":\"$context.status\"," +
+                        "\"responseLength\":\"$context.responseLength\"," +
+                        "\"requestTime\":\"$context.requestTime\"," +
+                        "\"integrationError\":\"$context.integrationErrorMessage\"" +
+                        "}")
+                .build());
+        defaultStage.setDefaultRouteSettings(CfnStage.RouteSettingsProperty.builder()
+                .loggingLevel("INFO")
+                .detailedMetricsEnabled(true)
+                .build());
 
         // Create endpoint configurations
         List<EndpointConfig> endpointConfigurations = createEndpointConfigurations(props);
