@@ -73,22 +73,8 @@
         <div class="footer-left">
           <a href="#" id="viewSourceLink" style="display: none">view source</a>
           <a id="latestTestsLink" style="display: inline" target="_blank" href="tests/html-report/index.html">tests</a>
-          <a
-            id="apiDocsLink"
-            style="display: inline"
-            target="_blank"
-            href="../docs/index.html"
-          >
-            api
-          </a>
-          <a
-            id="apiDocsLink"
-            style="display: inline"
-            target="_blank"
-            href="../docs/index.html"
-          >
-            api
-          </a>
+          <a id="apiDocsLink" style="display: inline" target="_blank" href="../docs/index.html"> api </a>
+          <a id="apiDocsLink" style="display: inline" target="_blank" href="../docs/index.html"> api </a>
         </div>
         <div class="footer-center">
           <p>&copy; 2025 DIY Accounting Limited</p>
@@ -222,7 +208,7 @@
         try {
           const idToken = getIdToken();
           const headers = idToken ? { Authorization: `Bearer ${idToken}` } : {};
-          const res = await fetch("/api/catalog-get", { headers });
+          const res = await fetch("/api/v1/catalog", { headers });
           if (!res.ok) {
             container.innerHTML = '<p class="service-description">Catalog unavailable.</p>';
             return;

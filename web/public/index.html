@@ -63,22 +63,8 @@
         <div class="footer-left">
           <a href="#" id="viewSourceLink" style="display: none">view source</a>
           <a id="latestTestsLink" style="display: inline" target="_blank" href="tests/html-report/index.html">tests</a>
-          <a
-            id="apiDocsLink"
-            style="display: inline"
-            target="_blank"
-            href="./docs/index.html"
-          >
-            api
-          </a>
-          <a
-            id="apiDocsLink"
-            style="display: inline"
-            target="_blank"
-            href="./docs/index.html"
-          >
-            api
-          </a>
+          <a id="apiDocsLink" style="display: inline" target="_blank" href="./docs/index.html"> api </a>
+          <a id="apiDocsLink" style="display: inline" target="_blank" href="./docs/index.html"> api </a>
         </div>
         <div class="footer-center">
           <p>&copy; 2025 DIY Accounting Limited</p>
@@ -194,7 +180,7 @@
 
         try {
           // Fetch catalog
-          const response = await fetch("/api/catalog-get");
+          const response = await fetch("/api/v1/catalog");
           if (!response.ok) {
             dynamicContainer.innerHTML = '<p style="color: #b00020;">Unable to load activities. Please try again later.</p>';
             return;

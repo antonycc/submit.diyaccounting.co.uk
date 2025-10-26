@@ -279,6 +279,27 @@ app.get(catalogPath, async (req, res) => {
   }
 });
 
+// Catalog endpoint (v1 API compatible with AWS)
+app.get("/api/v1/catalog", async (req, res) => {
+  const event = {
+    path: req.path,
+    headers: {
+      "host": req.get("host") || "localhost:3000",
+      "if-none-match": req.headers["if-none-match"],
+      "if-modified-since": req.headers["if-modified-since"],
+    },
+    queryStringParameters: req.query || {},
+  };
+  const { statusCode, body, headers } = await getCatalogHttpGet(event);
+  if (headers) res.set(headers);
+  if (statusCode === 304) return res.status(304).end();
+  try {
+    res.status(statusCode).json(body ? JSON.parse(body) : {});
+  } catch (_e) {
+    res.status(statusCode).send(body || "");
+  }
+});
+
 // My bundles endpoint
 app.get(myBundlesPath, async (req, res) => {
   const event = {

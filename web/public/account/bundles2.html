@@ -36,7 +36,7 @@
 
       <div class="form-container" style="text-align: center">
         <h2>Bundles (API Gateway v2)</h2>
-        <p style="color: #6c757d; font-style: italic; margin-bottom: 2em;">
+        <p style="color: #6c757d; font-style: italic; margin-bottom: 2em">
           This page uses the new API Gateway v2 endpoints at <code>/api/v1/*</code>
         </p>
 
@@ -71,8 +71,8 @@
 
         <div style="margin-top: 2em; padding-top: 1em; border-top: 1px solid #eee">
           <h4>API Gateway v2 Info</h4>
-          <p style="font-size: 0.9em; color: #666;">
-            Base URL: <code id="apiBaseUrl">Loading...</code><br>
+          <p style="font-size: 0.9em; color: #666">
+            Base URL: <code id="apiBaseUrl">Loading...</code><br />
             Endpoints: <code>/api/v1/catalog</code>, <code>/api/v1/bundle</code>
           </p>
         </div>
@@ -91,14 +91,7 @@
           >
             tests
           </a>
-          <a
-            id="apiDocsLink"
-            style="display: inline"
-            target="_blank"
-            href="../docs/index.html"
-          >
-            api
-          </a>
+          <a id="apiDocsLink" style="display: inline" target="_blank" href="../docs/index.html"> api </a>
         </div>
         <div class="footer-center">
           <p>&copy; 2025 DIY Accounting Limited</p>
@@ -117,10 +110,10 @@
 
     <script>
       // --- API Gateway v2 Configuration
-      const API_BASE_V2 = '/api/v1';
+      const API_BASE_V2 = "/api/v1";
 
       // Update the API base URL display
-      document.getElementById('apiBaseUrl').textContent = window.location.origin + API_BASE_V2;
+      document.getElementById("apiBaseUrl").textContent = window.location.origin + API_BASE_V2;
 
       // --- helpers
       const getIdToken = () => localStorage.getItem("cognitoIdToken");
@@ -188,7 +181,7 @@
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              "Authorization": `Bearer ${idToken}`
+              "Authorization": `Bearer ${idToken}`,
             },
             body: JSON.stringify({ bundleId, qualifiers }),
           });
