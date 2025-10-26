@@ -19,6 +19,7 @@
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <immutables.version>2.11.4</immutables.version>
         <baseUrl>${env.DIY_SUBMIT_APEX_URL}</baseUrl>
     </properties>
 
@@ -71,7 +72,7 @@
             <dependency>
                 <groupId>org.immutables</groupId>
                 <artifactId>value</artifactId>
-                <version>2.11.4</version>
+                <version>${immutables.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.mockito</groupId>
@@ -331,7 +332,7 @@
                         <path>
                             <groupId>org.immutables</groupId>
                             <artifactId>value</artifactId>
-                            <version>2.10.1</version>
+                            <version>${immutables.version}</version>
                         </path>
                     </annotationProcessorPaths>
                     <!-- JVM arguments to suppress class sharing warnings during compilation -->
@@ -517,26 +518,6 @@
                             <mainClass>co.uk.diyaccounting.submit.swagger.OpenApiGenerator</mainClass>
                             <classpathScope>compile</classpathScope>
                             <commandlineArgs>${baseUrl} ${project.version} ${project.basedir}/web/public/docs</commandlineArgs>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            <!-- Generate OpenAPI/Swagger documentation -->
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>exec-maven-plugin</artifactId>
-                <version>3.5.0</version>
-                <executions>
-                    <execution>
-                        <id>generate-swagger-docs</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>java</goal>
-                        </goals>
-                        <configuration>
-                            <mainClass>co.uk.diyaccounting.submit.swagger.OpenApiGenerator</mainClass>
-                            <classpathScope>compile</classpathScope>
-                            <commandlineArgs>${project.basedir}/web/public/docs</commandlineArgs>
                         </configuration>
                     </execution>
                 </executions>
