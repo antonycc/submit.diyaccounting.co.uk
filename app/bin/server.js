@@ -86,7 +86,7 @@ const submitVatPath = context.submitVatLambdaUrlPath || "/api/hmrc/vat/return-po
 const logReceiptPath = context.logReceiptLambdaUrlPath || "/api/hmrc/receipt-post";
 const requestBundlePath = context.bundleLambdaUrlPath || "/api/bundle-post";
 const bundleDeletePath = context.bundleLambdaUrlPath || "/api/bundle-delete";
-const catalogPath = context.catalogLambdaUrlPath || "/api/catalog-get";
+const catalogPath = context.catalogLambdaUrlPath || "/api/v1/catalog";
 const myBundlesPath = context.myBundlesLambdaUrlPath || "/api/bundle-get";
 const myReceiptsPath = context.myReceiptsLambdaUrlPath || "/api/hmrc/receipt-get";
 

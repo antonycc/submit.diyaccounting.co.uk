@@ -319,7 +319,7 @@ jobs:
         run: npm ci
 
       - name: Build CDK
-        run: ./mvnw --errors clean package -DskipTests
+        run: ./mvnw --errors clean verify -DskipTests
 
       - name: Destroy Submit Delivery
         run: |

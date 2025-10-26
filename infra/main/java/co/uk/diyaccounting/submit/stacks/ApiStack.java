@@ -1,12 +1,7 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
-import java.util.List;
-import java.util.Map;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Aspects;
 import software.amazon.awscdk.CfnOutput;
@@ -19,7 +14,6 @@ import software.amazon.awscdk.services.apigatewayv2.HttpApi;
 import software.amazon.awscdk.services.apigatewayv2.HttpMethod;
 import software.amazon.awscdk.services.apigatewayv2.HttpRoute;
 import software.amazon.awscdk.services.apigatewayv2.HttpRouteKey;
-import software.amazon.awscdk.aws_apigatewayv2_integrations.HttpLambdaIntegration;
 import software.amazon.awscdk.services.cloudwatch.Alarm;
 import software.amazon.awscdk.services.cloudwatch.ComparisonOperator;
 import software.amazon.awscdk.services.cloudwatch.Dashboard;
@@ -121,7 +115,7 @@ public class ApiStack extends Stack {
                 .build();
 
         // Create endpoint configurations
-        List<EndpointConfig> endpointConfigurations = createEndpointConfigurations();
+        List<EndpointConfig> endpointConfigurations = createEndpointConfigurations(props);
 
         // Create integrations using Lambda function references
         List<Metric> lambdaInvocations = new java.util.ArrayList<>();
@@ -261,7 +255,7 @@ public class ApiStack extends Stack {
                 this.getNode().getId(), props.resourceNamePrefix(), this.httpApi.getUrl());
     }
 
-    private static List<EndpointConfig> createEndpointConfigurations() {
+    private static List<EndpointConfig> createEndpointConfigurations(final ApiStackProps props) {
         List<EndpointConfig> configs = new java.util.ArrayList<>();
 
         // Map each Lambda key to its endpoint configuration
@@ -307,10 +301,11 @@ public class ApiStack extends Stack {
                 .lambdaKey("myReceipts")
                 .build());
 
+        // TODO: YOU ARE HERE switching to REST
         configs.add(EndpointConfig.builder()
-                .path("/catalog")
-                .httpMethod(HttpMethod.GET)
-                .lambdaKey("catalog")
+                .path(props.sharedNames().catalogLambdaUrlPath)
+                .httpMethod(props.sharedNames().catalogLambdaHttpMethod)
+                .lambdaKey(props.sharedNames().catalogLambdaFunctionName)
                 .build());
 
         configs.add(EndpointConfig.builder()

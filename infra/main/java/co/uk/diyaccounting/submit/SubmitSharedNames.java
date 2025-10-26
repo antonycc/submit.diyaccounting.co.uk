@@ -1,5 +1,7 @@
 package co.uk.diyaccounting.submit;
 
+import software.amazon.awscdk.services.apigatewayv2.HttpMethod;
+
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildCognitoDomainName;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDashedDomainName;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildEcrRepositoryName;
@@ -88,6 +90,7 @@ public class SubmitSharedNames {
     public String catalogLambdaHandler;
     public String catalogLambdaFunctionName;
     public String catalogLambdaArn;
+    public HttpMethod catalogLambdaHttpMethod;
     public String catalogLambdaUrlPath;
 
     public String requestBundlesLambdaHandler;
@@ -214,9 +217,9 @@ public class SubmitSharedNames {
         this.catalogLambdaHandler = "catalogGet.handler";
         this.catalogLambdaFunctionName = buildFunctionName(this.appResourceNamePrefix, this.catalogLambdaHandler);
         this.catalogLambdaArn = "%s-catalog-get".formatted(appLambdaArnPrefix);
-        this.catalogLambdaUrlPath = "/api/catalog-get";
+        this.catalogLambdaHttpMethod = HttpMethod.GET;
+        this.catalogLambdaUrlPath = "/catalog";
 
-        // TODO: YOU ARE HERE /api/bundle-post -> /api/bundle-post + /api/bundle-delete
         this.requestBundlesLambdaHandler = "bundlePost.handler";
         this.requestBundlesLambdaFunctionName =
                 buildFunctionName(this.appResourceNamePrefix, this.requestBundlesLambdaHandler);

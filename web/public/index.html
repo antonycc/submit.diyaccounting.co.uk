@@ -194,7 +194,7 @@
 
         try {
           // Fetch catalog
-          const response = await fetch("/api/catalog-get");
+          const response = await fetch("/api/v1/catalog");
           if (!response.ok) {
             dynamicContainer.innerHTML = '<p style="color: #b00020;">Unable to load activities. Please try again later.</p>';
             return;
