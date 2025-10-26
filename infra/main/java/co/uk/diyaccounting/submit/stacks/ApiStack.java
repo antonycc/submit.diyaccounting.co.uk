@@ -156,10 +156,8 @@ public class ApiStack extends Stack {
                         "\"integrationError\":\"$context.integrationErrorMessage\"" +
                         "}")
                 .build());
-        defaultStage.setDefaultRouteSettings(CfnStage.RouteSettingsProperty.builder()
-                .loggingLevel("INFO")
-                .detailedMetricsEnabled(true)
-                .build());
+        // Note: Execution logs (loggingLevel) and detailed route metrics are not supported for HTTP APIs.
+        // Avoid setting defaultRouteSettings to prevent BadRequestException during deployment.
 
         // Alarm: API Gateway HTTP 5xx errors >= 1 in a 5-minute period
         Alarm.Builder.create(this, props.resourceNamePrefix() + "-Api5xxAlarm")
