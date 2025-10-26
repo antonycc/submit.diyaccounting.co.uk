@@ -1,11 +1,5 @@
 package co.uk.diyaccounting.submit;
 
-import static co.uk.diyaccounting.submit.utils.Kind.envOr;
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.Kind.putIfNotNull;
-import static co.uk.diyaccounting.submit.utils.Kind.warnf;
-import static co.uk.diyaccounting.submit.utils.KindCdk.getContextValueString;
-
 import co.uk.diyaccounting.submit.stacks.EdgeStack;
 import co.uk.diyaccounting.submit.stacks.PublishStack;
 import co.uk.diyaccounting.submit.stacks.SelfDestructStack;
@@ -20,6 +14,12 @@ import java.nio.file.Paths;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
+
+import static co.uk.diyaccounting.submit.utils.Kind.envOr;
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.Kind.putIfNotNull;
+import static co.uk.diyaccounting.submit.utils.Kind.warnf;
+import static co.uk.diyaccounting.submit.utils.KindCdk.getContextValueString;
 
 public class SubmitDelivery {
 
@@ -170,20 +170,20 @@ public class SubmitDelivery {
                 "LOG_RECEIPT_LAMBDA_URL",
                 appProps.logReceiptLambdaFunctionUrl,
                 "(from logReceiptLambdaFunctionUrl in cdk.json)");
-        var catalogLambdaFunctionUrl = envOr(
-                "CATALOG_LAMBDA_URL", appProps.catalogLambdaFunctionUrl, "(from catalogLambdaFunctionUrl in cdk.json)");
-        var requestBundlesLambdaFunctionUrl = envOr(
-                "REQUEST_BUNDLES_LAMBDA_URL",
-                appProps.requestBundlesLambdaFunctionUrl,
-                "(from requestBundlesLambdaFunctionUrl in cdk.json)");
-        var bundleDeleteLambdaFunctionUrl = envOr(
-                "BUNDLE_DELETE_LAMBDA_URL",
-                appProps.bundleDeleteLambdaFunctionUrl,
-                "(from bundleDeleteLambdaFunctionUrl in cdk.json)");
-        var myBundlesLambdaFunctionUrl = envOr(
-                "MY_BUNDLES_LAMBDA_URL",
-                appProps.myBundlesLambdaFunctionUrl,
-                "(from myBundlesLambdaFunctionUrl in cdk.json)");
+//        var catalogLambdaFunctionUrl = envOr(
+//                "CATALOG_LAMBDA_URL", appProps.catalogLambdaFunctionUrl, "(from catalogLambdaFunctionUrl in cdk.json)");
+//        var requestBundlesLambdaFunctionUrl = envOr(
+//                "REQUEST_BUNDLES_LAMBDA_URL",
+//                appProps.requestBundlesLambdaFunctionUrl,
+//                "(from requestBundlesLambdaFunctionUrl in cdk.json)");
+//        var bundleDeleteLambdaFunctionUrl = envOr(
+//                "BUNDLE_DELETE_LAMBDA_URL",
+//                appProps.bundleDeleteLambdaFunctionUrl,
+//                "(from bundleDeleteLambdaFunctionUrl in cdk.json)");
+//        var myBundlesLambdaFunctionUrl = envOr(
+//                "MY_BUNDLES_LAMBDA_URL",
+//                appProps.myBundlesLambdaFunctionUrl,
+//                "(from myBundlesLambdaFunctionUrl in cdk.json)");
         var myReceiptsLambdaFunctionUrl = envOr(
                 "MY_RECEIPTS_LAMBDA_URL",
                 appProps.myReceiptsLambdaFunctionUrl,
@@ -205,11 +205,11 @@ public class SubmitDelivery {
         putIfNotNull(pathsToFns, "%s*".formatted(sharedNames.submitVatLambdaUrlPath), submitVatLambdaFunctionUrl);
         putIfNotNull(pathsToFns, "%s*".formatted(sharedNames.logReceiptLambdaUrlPath), logReceiptLambdaFunctionUrl);
         putIfNotNull(pathsToFns, "%s*".formatted(sharedNames.myReceiptsLambdaUrlPath), myReceiptsLambdaFunctionUrl);
-        putIfNotNull(pathsToFns, "%s*".formatted(sharedNames.catalogGetLambdaUrlPath), catalogLambdaFunctionUrl);
-        putIfNotNull(
-                pathsToFns, "%s*".formatted(sharedNames.bundlePostLambdaUrlPath), requestBundlesLambdaFunctionUrl);
-        putIfNotNull(pathsToFns, "%s*".formatted(sharedNames.bundleDeleteLambdaUrlPath), bundleDeleteLambdaFunctionUrl);
-        putIfNotNull(pathsToFns, "%s*".formatted(sharedNames.bundleGetLambdaUrlPath), myBundlesLambdaFunctionUrl);
+//        putIfNotNull(pathsToFns, "%s*".formatted(sharedNames.catalogGetLambdaUrlPath), catalogLambdaFunctionUrl);
+//        putIfNotNull(
+//                pathsToFns, "%s*".formatted(sharedNames.bundlePostLambdaUrlPath), requestBundlesLambdaFunctionUrl);
+//        putIfNotNull(pathsToFns, "%s*".formatted(sharedNames.bundleDeleteLambdaUrlPath), bundleDeleteLambdaFunctionUrl);
+//        putIfNotNull(pathsToFns, "%s*".formatted(sharedNames.bundleGetLambdaUrlPath), myBundlesLambdaFunctionUrl);
 
         // Import API Gateway URL from application stack via CloudFormation export
         String apiGatewayExportName = sharedNames.appResourceNamePrefix + "-HttpApiUrl";

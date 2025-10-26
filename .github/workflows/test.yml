@@ -253,11 +253,11 @@ jobs:
           java-version: ${{ env.JAVA_VERSION }}
           cache: 'maven'
 
-      - name: package
-        id: package
+      - name: test
+        id: test
         shell: bash
         run: |
-          ./mvnw clean verify
+          ./mvnw clean test
 
   npm-test-cdk-ci:
     name: 'npm test cdk-ci'
@@ -287,8 +287,8 @@ jobs:
           java-version: ${{ env.JAVA_VERSION }}
           cache: 'maven'
 
-      - name: package
-        id: mvn-package
+      - name: verify
+        id: mvn-verify
         shell: bash
         run: |
           ./mvnw clean verify -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }}
@@ -311,7 +311,7 @@ jobs:
         env:
           ENVIRONMENT_NAME: 'ci'
           DEPLOYMENT_NAME: 'ci'
-          SELF_DESTRUCT_HANDLER_SOURCE: "../${{ steps.mvn-package.outputs.SELF_DESTRUCT_HANDLER_SOURCE }}"
+          SELF_DESTRUCT_HANDLER_SOURCE: "../${{ steps.mvn-verify.outputs.SELF_DESTRUCT_HANDLER_SOURCE }}"
           SELF_DESTRUCT_START_DATETIME: ${{ steps.self-destruct-start.outputs.SELF_DESTRUCT_START_DATETIME }}
           # Set by deploy-environment.yml after the environment's AuthStack is deployed
           COGNITO_USER_POOL_ARN: ${{ vars.COGNITO_USER_POOL_ARN }}
@@ -345,8 +345,8 @@ jobs:
           java-version: ${{ env.JAVA_VERSION }}
           cache: 'maven'
 
-      - name: package
-        id: mvn-package
+      - name: verify
+        id: mvn-verify
         shell: bash
         run: |
           ./mvnw clean verify -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }}
@@ -369,7 +369,7 @@ jobs:
         env:
           ENVIRONMENT_NAME: 'prod'
           DEPLOYMENT_NAME: 'prod'
-          SELF_DESTRUCT_HANDLER_SOURCE: "../${{ steps.mvn-package.outputs.SELF_DESTRUCT_HANDLER_SOURCE }}"
+          SELF_DESTRUCT_HANDLER_SOURCE: "../${{ steps.mvn-verify.outputs.SELF_DESTRUCT_HANDLER_SOURCE }}"
           SELF_DESTRUCT_START_DATETIME: ${{ steps.self-destruct-start.outputs.SELF_DESTRUCT_START_DATETIME }}
           # Set by deploy-environment.yml after the environment's AuthStack is deployed
           COGNITO_USER_POOL_ARN: ${{ vars.COGNITO_USER_POOL_ARN }}
