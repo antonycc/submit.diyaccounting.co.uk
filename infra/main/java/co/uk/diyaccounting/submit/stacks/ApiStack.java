@@ -147,8 +147,6 @@ public class ApiStack extends Stack {
                 .destinationArn(apiAccessLogs.getLogGroupArn())
                 .format("{" +
                         "\"requestId\":\"$context.requestId\"," +
-                        "\"ip\":\"$context.http.sourceIp\"," +
-                        "\"httpMethod\":\"$context.http.method\"," +
                         "\"path\":\"$context.path\"," +
                         "\"routeKey\":\"$context.routeKey\"," +
                         "\"protocol\":\"$context.protocol\"," +
