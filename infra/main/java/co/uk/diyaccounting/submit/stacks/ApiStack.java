@@ -309,6 +309,12 @@ public class ApiStack extends Stack {
                 .build());
 
         configs.add(EndpointConfig.builder()
+                .path(props.sharedNames().catalogLambdaUrlPath)
+                .httpMethod(props.sharedNames().catalogLambdaHttpMethod)
+                .lambdaKey(props.sharedNames().catalogLambdaFunctionName)
+                .build());
+
+        configs.add(EndpointConfig.builder()
                 .path("/bundle")
                 .httpMethod(HttpMethod.POST)
                 .lambdaKey("requestBundles")
