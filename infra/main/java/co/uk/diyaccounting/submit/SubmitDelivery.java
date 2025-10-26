@@ -20,9 +20,6 @@ import java.nio.file.Paths;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
-import software.amazon.awscdk.App;
-import software.amazon.awscdk.Environment;
-import software.constructs.Construct;
 
 public class SubmitDelivery {
 
@@ -208,12 +205,12 @@ public class SubmitDelivery {
         putIfNotNull(pathsToFns, "%s*".formatted(sharedNames.submitVatLambdaUrlPath), submitVatLambdaFunctionUrl);
         putIfNotNull(pathsToFns, "%s*".formatted(sharedNames.logReceiptLambdaUrlPath), logReceiptLambdaFunctionUrl);
         putIfNotNull(pathsToFns, "%s*".formatted(sharedNames.myReceiptsLambdaUrlPath), myReceiptsLambdaFunctionUrl);
-        putIfNotNull(pathsToFns, "%s*".formatted(sharedNames.catalogLambdaUrlPath), catalogLambdaFunctionUrl);
+        putIfNotNull(pathsToFns, "%s*".formatted(sharedNames.catalogGetLambdaUrlPath), catalogLambdaFunctionUrl);
         putIfNotNull(
-                pathsToFns, "%s*".formatted(sharedNames.requestBundlesLambdaUrlPath), requestBundlesLambdaFunctionUrl);
+                pathsToFns, "%s*".formatted(sharedNames.bundlePostLambdaUrlPath), requestBundlesLambdaFunctionUrl);
         putIfNotNull(pathsToFns, "%s*".formatted(sharedNames.bundleDeleteLambdaUrlPath), bundleDeleteLambdaFunctionUrl);
-        putIfNotNull(pathsToFns, "%s*".formatted(sharedNames.myBundlesLambdaUrlPath), myBundlesLambdaFunctionUrl);
-        
+        putIfNotNull(pathsToFns, "%s*".formatted(sharedNames.bundleGetLambdaUrlPath), myBundlesLambdaFunctionUrl);
+
         // Import API Gateway URL from application stack via CloudFormation export
         String apiGatewayExportName = sharedNames.appResourceNamePrefix + "-HttpApiUrl";
         String apiGatewayUrl = null;

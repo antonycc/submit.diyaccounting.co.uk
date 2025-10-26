@@ -108,13 +108,13 @@ public class AccountStack extends Stack {
         var catalogLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
                 LambdaUrlOriginProps.builder()
-                        .idPrefix(props.sharedNames().catalogLambdaFunctionName)
+                        .idPrefix(props.sharedNames().catalogGetLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .functionName(props.sharedNames().catalogLambdaFunctionName)
+                        .functionName(props.sharedNames().catalogGetLambdaFunctionName)
                         .cloudFrontAllowedMethods(AllowedMethods.ALLOW_ALL)
-                        .handler(props.lambdaEntry() + props.sharedNames().catalogLambdaHandler)
+                        .handler(props.lambdaEntry() + props.sharedNames().catalogGetLambdaHandler)
                         .environment(catalogLambdaEnv)
                         .timeout(Duration.millis(Long.parseLong("30000")))
                         .build());
@@ -122,7 +122,7 @@ public class AccountStack extends Stack {
         this.catalogLambdaLogGroup = catalogLambdaUrlOrigin.logGroup;
         infof(
                 "Created Lambda %s for catalog retrieval with handler %s",
-                this.catalogLambda.getNode().getId(), props.lambdaEntry() + props.sharedNames().catalogLambdaHandler);
+                this.catalogLambda.getNode().getId(), props.lambdaEntry() + props.sharedNames().catalogGetLambdaHandler);
 
         // Request Bundles Lambda
         var requestBundlesLambdaEnv = new PopulatedMap<String, String>()
@@ -132,13 +132,13 @@ public class AccountStack extends Stack {
         var requestBundlesLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
                 LambdaUrlOriginProps.builder()
-                        .idPrefix(props.sharedNames().requestBundlesLambdaFunctionName)
+                        .idPrefix(props.sharedNames().bundlePostLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .functionName(props.sharedNames().requestBundlesLambdaFunctionName)
+                        .functionName(props.sharedNames().bundlePostLambdaFunctionName)
                         .cloudFrontAllowedMethods(AllowedMethods.ALLOW_ALL)
-                        .handler(props.lambdaEntry() + props.sharedNames().requestBundlesLambdaHandler)
+                        .handler(props.lambdaEntry() + props.sharedNames().bundlePostLambdaHandler)
                         .environment(requestBundlesLambdaEnv)
                         .timeout(Duration.millis(Long.parseLong("30000")))
                         .build());
@@ -147,7 +147,7 @@ public class AccountStack extends Stack {
         infof(
                 "Created Lambda %s for request bundles with handler %s",
                 this.requestBundlesLambda.getNode().getId(),
-                props.lambdaEntry() + props.sharedNames().requestBundlesLambdaHandler);
+                props.lambdaEntry() + props.sharedNames().bundlePostLambdaHandler);
 
         // Grant the RequestBundlesLambda permission to access Cognito User Pool
         var region = props.getEnv() != null ? props.getEnv().getRegion() : "us-east-1";
@@ -220,13 +220,13 @@ public class AccountStack extends Stack {
         var myBundlesLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
                 LambdaUrlOriginProps.builder()
-                        .idPrefix(props.sharedNames().myBundlesLambdaFunctionName)
+                        .idPrefix(props.sharedNames().bundleGetLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .functionName(props.sharedNames().myBundlesLambdaFunctionName)
+                        .functionName(props.sharedNames().bundleGetLambdaFunctionName)
                         .cloudFrontAllowedMethods(AllowedMethods.ALLOW_ALL)
-                        .handler(props.lambdaEntry() + props.sharedNames().myBundlesLambdaHandler)
+                        .handler(props.lambdaEntry() + props.sharedNames().bundleGetLambdaHandler)
                         .environment(myBundlesLambdaEnv)
                         .timeout(Duration.millis(Long.parseLong("30000")))
                         .build());
@@ -241,7 +241,7 @@ public class AccountStack extends Stack {
         infof(
                 "Created Lambda %s for my bundles retrieval with handler %s",
                 this.myBundlesLambda.getNode().getId(),
-                props.lambdaEntry() + props.sharedNames().myBundlesLambdaHandler);
+                props.lambdaEntry() + props.sharedNames().bundleGetLambdaHandler);
 
         var catalogUrl = this.catalogLambda.addFunctionUrl(FunctionUrlOptions.builder()
                 .authType(functionUrlAuthType)

@@ -162,7 +162,7 @@ Response (example)
 
 Receipts and bundles
 - POST /api/hmrc/receipt-post
-- POST /api/bundle-post
+- POST /api/v1/bundle
   - Headers: Authorization: Bearer <idToken>
   - Body: { "bundleId": "test", "qualifiers": { /* optional */ } }
   - Response: { "granted": true, "expiry": "2025-09-01T00:00:00Z" }

@@ -301,35 +301,28 @@ public class ApiStack extends Stack {
                 .lambdaKey("myReceipts")
                 .build());
 
-        // TODO: YOU ARE HERE switching to REST
         configs.add(EndpointConfig.builder()
-                .path(props.sharedNames().catalogLambdaUrlPath)
-                .httpMethod(props.sharedNames().catalogLambdaHttpMethod)
-                .lambdaKey(props.sharedNames().catalogLambdaFunctionName)
+                .path(props.sharedNames().catalogGetLambdaUrlPath)
+                .httpMethod(props.sharedNames().catalogGetLambdaHttpMethod)
+                .lambdaKey(props.sharedNames().catalogGetLambdaFunctionName)
                 .build());
 
         configs.add(EndpointConfig.builder()
-                .path(props.sharedNames().catalogLambdaUrlPath)
-                .httpMethod(props.sharedNames().catalogLambdaHttpMethod)
-                .lambdaKey(props.sharedNames().catalogLambdaFunctionName)
+            .path(props.sharedNames().bundleGetLambdaUrlPath)
+            .httpMethod(props.sharedNames().bundleGetLambdaHttpMethod)
+            .lambdaKey(props.sharedNames().bundleGetLambdaFunctionName)
+            .build());
+
+        configs.add(EndpointConfig.builder()
+                .path(props.sharedNames().bundlePostLambdaUrlPath)
+                .httpMethod(props.sharedNames().bundlePostLambdaHttpMethod)
+                .lambdaKey(props.sharedNames().bundlePostLambdaFunctionName)
                 .build());
 
         configs.add(EndpointConfig.builder()
-                .path("/bundle")
-                .httpMethod(HttpMethod.POST)
-                .lambdaKey("requestBundles")
-                .build());
-
-        configs.add(EndpointConfig.builder()
-                .path("/bundle")
-                .httpMethod(HttpMethod.DELETE)
-                .lambdaKey("bundleDelete")
-                .build());
-
-        configs.add(EndpointConfig.builder()
-                .path("/bundle")
-                .httpMethod(HttpMethod.GET)
-                .lambdaKey("myBundles")
+                .path(props.sharedNames().bundleDeleteLambdaUrlPath)
+                .httpMethod(props.sharedNames().bundleDeleteLambdaHttpMethod)
+                .lambdaKey(props.sharedNames().bundleDeleteLambdaFunctionName)
                 .build());
 
         return configs;

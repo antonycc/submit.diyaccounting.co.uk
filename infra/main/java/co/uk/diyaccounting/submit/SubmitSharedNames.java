@@ -87,26 +87,29 @@ public class SubmitSharedNames {
     public String myReceiptsLambdaArn;
     public String myReceiptsLambdaUrlPath;
 
-    public String catalogLambdaHandler;
-    public String catalogLambdaFunctionName;
-    public String catalogLambdaArn;
-    public HttpMethod catalogLambdaHttpMethod;
-    public String catalogLambdaUrlPath;
+    public String catalogGetLambdaHandler;
+    public String catalogGetLambdaFunctionName;
+    public String catalogGetLambdaArn;
+    public HttpMethod catalogGetLambdaHttpMethod;
+    public String catalogGetLambdaUrlPath;
 
-    public String requestBundlesLambdaHandler;
-    public String requestBundlesLambdaFunctionName;
-    public String requestBundlesLambdaArn;
-    public String requestBundlesLambdaUrlPath;
+    public String bundleGetLambdaHandler;
+    public String bundleGetLambdaFunctionName;
+    public String bundleGetLambdaArn;
+    public HttpMethod bundleGetLambdaHttpMethod;
+    public String bundleGetLambdaUrlPath;
+
+    public String bundlePostLambdaHandler;
+    public String bundlePostLambdaFunctionName;
+    public String bundlePostLambdaArn;
+    public HttpMethod bundlePostLambdaHttpMethod;
+    public String bundlePostLambdaUrlPath;
 
     public String bundleDeleteLambdaHandler;
     public String bundleDeleteLambdaFunctionName;
     public String bundleDeleteLambdaArn;
+    public HttpMethod bundleDeleteLambdaHttpMethod;
     public String bundleDeleteLambdaUrlPath;
-
-    public String myBundlesLambdaHandler;
-    public String myBundlesLambdaFunctionName;
-    public String myBundlesLambdaArn;
-    public String myBundlesLambdaUrlPath;
 
     java.util.List<String> lambdaArns;
 
@@ -214,28 +217,29 @@ public class SubmitSharedNames {
         this.myReceiptsLambdaArn = "%s-hmrc-receipt-get".formatted(appLambdaArnPrefix);
         this.myReceiptsLambdaUrlPath = "/api/hmrc/receipt-get";
 
-        this.catalogLambdaHandler = "catalogGet.handler";
-        this.catalogLambdaFunctionName = buildFunctionName(this.appResourceNamePrefix, this.catalogLambdaHandler);
-        this.catalogLambdaArn = "%s-catalog-get".formatted(appLambdaArnPrefix);
-        this.catalogLambdaHttpMethod = HttpMethod.GET;
-        this.catalogLambdaUrlPath = "/api/v1/catalog";
+        this.catalogGetLambdaHandler = "catalogGet.handler";
+        this.catalogGetLambdaFunctionName = buildFunctionName(this.appResourceNamePrefix, this.catalogGetLambdaHandler);
+        this.catalogGetLambdaArn = "%s-catalog-get".formatted(appLambdaArnPrefix);
+        this.catalogGetLambdaHttpMethod = HttpMethod.GET;
+        this.catalogGetLambdaUrlPath = "/api/v1/catalog";
 
-        this.requestBundlesLambdaHandler = "bundlePost.handler";
-        this.requestBundlesLambdaFunctionName =
-                buildFunctionName(this.appResourceNamePrefix, this.requestBundlesLambdaHandler);
-        this.requestBundlesLambdaArn = "%s-bundle-post".formatted(appLambdaArnPrefix);
-        this.requestBundlesLambdaUrlPath = "/api/bundle-post";
+        this.bundleGetLambdaHandler = "bundleGet.handler";
+        this.bundleGetLambdaFunctionName = buildFunctionName(this.appResourceNamePrefix, this.bundleGetLambdaHandler);
+        this.bundleGetLambdaArn = "%s-bundle-get".formatted(appLambdaArnPrefix);
+        this.bundleGetLambdaHttpMethod = HttpMethod.GET;
+        this.bundleGetLambdaUrlPath = "/api/v1/bundle";
+
+        this.bundlePostLambdaHandler = "bundlePost.handler";
+        this.bundlePostLambdaFunctionName = buildFunctionName(this.appResourceNamePrefix, this.bundlePostLambdaHandler);
+        this.bundlePostLambdaArn = "%s-bundle-post".formatted(appLambdaArnPrefix);
+        this.bundlePostLambdaHttpMethod = HttpMethod.POST;
+        this.bundlePostLambdaUrlPath = "/api/v1/bundle";
 
         this.bundleDeleteLambdaHandler = "bundleDelete.handler";
-        this.bundleDeleteLambdaFunctionName =
-                buildFunctionName(this.appResourceNamePrefix, this.bundleDeleteLambdaHandler);
+        this.bundleDeleteLambdaFunctionName = buildFunctionName(this.appResourceNamePrefix, this.bundleDeleteLambdaHandler);
         this.bundleDeleteLambdaArn = "%s-bundle-delete".formatted(appLambdaArnPrefix);
-        this.bundleDeleteLambdaUrlPath = "/api/bundle-delete";
-
-        this.myBundlesLambdaHandler = "bundleGet.handler";
-        this.myBundlesLambdaFunctionName = buildFunctionName(this.appResourceNamePrefix, this.myBundlesLambdaHandler);
-        this.myBundlesLambdaArn = "%s-bundle-get".formatted(appLambdaArnPrefix);
-        this.myBundlesLambdaUrlPath = "/api/bundle-get";
+        this.bundleDeleteLambdaHttpMethod = HttpMethod.DELETE;
+        this.bundleDeleteLambdaUrlPath = "/api/v1/bundle";
 
         this.lambdaArns = new java.util.ArrayList<>();
         this.lambdaArns.add(this.authUrlCognitoLambdaArn);
@@ -245,10 +249,10 @@ public class SubmitSharedNames {
         this.lambdaArns.add(this.submitVatLambdaArn);
         this.lambdaArns.add(this.logReceiptLambdaArn);
         this.lambdaArns.add(this.myReceiptsLambdaArn);
-        this.lambdaArns.add(this.catalogLambdaArn);
-        this.lambdaArns.add(this.requestBundlesLambdaArn);
+        this.lambdaArns.add(this.catalogGetLambdaArn);
+        this.lambdaArns.add(this.bundlePostLambdaArn);
         this.lambdaArns.add(this.bundleDeleteLambdaArn);
-        this.lambdaArns.add(this.myBundlesLambdaArn);
+        this.lambdaArns.add(this.bundleGetLambdaArn);
 
         this.delResourceNamePrefix = "del-%s".formatted(generateResourceNamePrefix(this.domainName));
         this.delCompressedResourceNamePrefix = "d-%s".formatted(generateCompressedResourceNamePrefix(this.domainName));

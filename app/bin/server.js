@@ -84,11 +84,11 @@ const exchangeHmrcTokenPath = context.exchangeHmrcTokenLambdaUrlPath || "/api/hm
 const exchangeCognitoTokenPath = context.exchangeCognitoTokenLambdaUrlPath || "/api/cognito/token-post";
 const submitVatPath = context.submitVatLambdaUrlPath || "/api/hmrc/vat/return-post";
 const logReceiptPath = context.logReceiptLambdaUrlPath || "/api/hmrc/receipt-post";
-const requestBundlePath = context.bundleLambdaUrlPath || "/api/bundle-post";
-const bundleDeletePath = context.bundleLambdaUrlPath || "/api/bundle-delete";
-const catalogPath = context.catalogLambdaUrlPath || "/api/v1/catalog";
-const myBundlesPath = context.myBundlesLambdaUrlPath || "/api/bundle-get";
 const myReceiptsPath = context.myReceiptsLambdaUrlPath || "/api/hmrc/receipt-get";
+const catalogPath = "/api/v1/catalog"; // context.catalogLambdaUrlPath || "/api/v1/catalog";
+const bundleGetPath = "/api/v1/bundle"; // context.myBundlesLambdaUrlPath || "/api/v1/bundle";
+const bundlePostPath = "/api/v1/bundle"; // context.bundleLambdaUrlPath || "/api/v1/bundle";
+const bundleDeletePath = "/api/v1/bundle"; // context.bundleLambdaUrlPath || "/api/v1/bundle";
 
 app.get(authUrlPath, async (req, res) => {
   const event = {
@@ -217,7 +217,7 @@ app.post(logReceiptPath, async (req, res) => {
 });
 
 // Bundle management route
-app.post(requestBundlePath, async (req, res) => {
+app.post(bundlePostPath, async (req, res) => {
   const event = {
     path: req.path,
     headers: { host: req.get("host") || "localhost:3000", authorization: req.headers.authorization },
@@ -232,7 +232,7 @@ app.post(requestBundlePath, async (req, res) => {
     res.status(statusCode).send(body || "");
   }
 });
-app.options(requestBundlePath, async (_req, res) => {
+app.options(bundlePostPath, async (_req, res) => {
   res.set({
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Headers": "Content-Type,Authorization",
@@ -280,7 +280,7 @@ app.get(catalogPath, async (req, res) => {
 });
 
 // My bundles endpoint
-app.get(myBundlesPath, async (req, res) => {
+app.get(bundleGetPath, async (req, res) => {
   const event = {
     path: req.path,
     headers: {

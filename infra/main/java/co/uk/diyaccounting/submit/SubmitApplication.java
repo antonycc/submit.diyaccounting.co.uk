@@ -251,7 +251,7 @@ public class SubmitApplication {
         lambdaFunctions.put("submitVat", this.hmrcStack.submitVatLambda);
         lambdaFunctions.put("logReceipt", this.hmrcStack.logReceiptLambda);
         lambdaFunctions.put("myReceipts", this.hmrcStack.myReceiptsLambda);
-        lambdaFunctions.put(sharedNames.catalogLambdaFunctionName, this.accountStack.catalogLambda);
+        lambdaFunctions.put(sharedNames.catalogGetLambdaFunctionName, this.accountStack.catalogLambda);
         lambdaFunctions.put("requestBundles", this.accountStack.requestBundlesLambda);
         lambdaFunctions.put("bundleDelete", this.accountStack.bundleDeleteLambda);
         lambdaFunctions.put("myBundles", this.accountStack.myBundlesLambda);
