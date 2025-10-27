@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Privacy Policy – DIY Accounting Submit</title>
+  <link rel="stylesheet" href="./submit.css" />
+  <style>
+    main { max-width: 900px; margin: 2rem auto; padding: 0 1rem; }
+    h1 { margin-bottom: .25rem; }
+    .muted { color:#666; font-size:.95em; }
+    section { margin: 1.25rem 0; }
+    li { margin: .5rem 0; }
+    code { background: #f5f5f5; padding: 0 .25rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1 style="text-align:center">Privacy Policy</h1>
+    <p class="muted" style="text-align:center">Last updated: 27 Oct 2025</p>
+  </header>
+
+  <main>
+    <section>
+      <p>
+        DIY Accounting Submit is a lightweight web application that helps you submit UK VAT returns.
+        We aim to collect the minimum data necessary to operate the service and monitor performance.
+      </p>
+    </section>
+
+    <section>
+      <h2>What we collect</h2>
+      <ul>
+        <li>
+          Real User Monitoring (RUM) performance data (only after you consent): page load timing, Core Web Vitals
+          (LCP, INP, CLS), JavaScript errors, and HTTP request timings from your browser to our API. This is provided by
+          Amazon CloudWatch RUM.
+        </li>
+        <li>
+          A pseudonymous user identifier for correlation. When you are logged in, we hash your user identifier in the
+          browser and send only the hash to RUM. We do not send your raw identifier to RUM.
+        </li>
+        <li>
+          Operational logs from our infrastructure (e.g., CloudFront/WAF request logs, API Gateway access logs), which
+          contain request metadata such as timestamps, paths, response codes, and IP addresses as seen by our edge or
+          origin services.
+        </li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>How and when we collect it</h2>
+      <ul>
+        <li>
+          RUM only starts after you click “Accept” in the consent banner. Until then, no RUM data is sent.
+        </li>
+        <li>
+          Infrastructure logs are collected automatically by AWS services when you use the site, for security and
+          operational reasons.
+        </li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>What we use it for</h2>
+      <ul>
+        <li>To monitor and improve site performance and reliability.</li>
+        <li>To detect errors and troubleshoot issues.</li>
+        <li>To protect the service and our users from abuse and attacks.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Data retention</h2>
+      <ul>
+        <li>CloudWatch RUM retains events for 30 days by default. Aggregated dashboards may reflect anonymized trends.</li>
+        <li>Other AWS logs (e.g., CloudFront, API access logs) have retention policies configured in our account and are
+            generally kept for short operational periods unless required for security investigations.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Cookies and storage</h2>
+      <ul>
+        <li>RUM may use cookies/local storage to establish session information when you have consented.</li>
+        <li>We store access tokens and minimal user info in your browser storage to enable login and API access.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Your choices</h2>
+      <ul>
+        <li>You can decline analytics in the consent banner. You can later change your choice by clearing site data in your browser and revisiting.</li>
+        <li>If you revoke consent, RUM will not be initialized on future visits unless you consent again.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Data processors</h2>
+      <p>We use Amazon Web Services (AWS) to host and operate the website, API, and monitoring services.</p>
+    </section>
+
+    <section>
+      <h2>Contact</h2>
+      <p>
+        For privacy questions, contact DIY Accounting Limited. Please include your browser, approximate time,
+        and the page you were on if reporting an issue.
+      </p>
+    </section>
+  </main>
+
+  <footer>
+    <div class="footer-content">
+      <div class="footer-left">
+        <a href="/">home</a>
+      </div>
+      <div class="footer-center">
+        <p>&copy; 2025 DIY Accounting Limited</p>
+      </div>
+      <div class="footer-right"></div>
+    </div>
+  </footer>
+
+  <script src="./submit.js"></script>
+</body>
+</html>
