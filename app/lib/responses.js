@@ -8,7 +8,7 @@ export function httpOkResponse({ request, headers, data }) {
     request,
     headers,
     data,
-    levelledLogger: (msg) => logger.info(msg),
+    levelledLogger: logger.info.bind(logger),
   });
 }
 
@@ -18,7 +18,7 @@ export function httpBadRequestResponse({ request, headers, message, error }) {
     request,
     headers,
     data: { message, ...error },
-    levelledLogger: (msg) => logger.error(msg),
+    levelledLogger: logger.error.bind(logger),
   });
 }
 
@@ -28,7 +28,7 @@ export function httpServerErrorResponse({ request, headers, message, error }) {
     request,
     headers,
     data: { message, ...error },
-    levelledLogger: (msg) => logger.error(msg),
+    levelledLogger: logger.error.bind(logger),
   });
 }
 
