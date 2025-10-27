@@ -6,6 +6,11 @@
     <title>DIY Accounting Submit - Bundles</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" href="../submit.css" />
+    <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
+    <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
+    <meta name="rum:region" content="${AWS_REGION}" />
+    <meta name="rum:identityPoolId" content="${RUM_IDENTITY_POOL_ID}" />
+    <meta name="rum:guestRoleArn" content="${RUM_GUEST_ROLE_ARN}" />
   </head>
   <body>
     <header>
@@ -15,7 +20,6 @@
           <div class="menu-dropdown" id="menuDropdown">
             <a href="../index.html">Home</a>
             <a href="../account/bundles.html">Bundles</a>
-            <a href="../account/bundles2.html">Bundles (v2)</a>
             <a href="../account/receipts.html">Receipts</a>
             <a href="../docs/index.html">API Docs</a>
           </div>
@@ -73,14 +77,6 @@
         <div class="footer-left">
           <a href="#" id="viewSourceLink" style="display: none">view source</a>
           <a id="latestTestsLink" style="display: inline" target="_blank" href="tests/html-report/index.html">tests</a>
-          <a
-            id="apiDocsLink"
-            style="display: inline"
-            target="_blank"
-            href="../docs/index.html"
-          >
-            api
-          </a>
           <a
             id="apiDocsLink"
             style="display: inline"
@@ -167,7 +163,7 @@
         btn.disabled = true;
 
         try {
-          const r = await fetch("/api/bundle-post", {
+          const r = await fetch("/api/v1/bundle", {
             method: "POST",
             headers: { "Content-Type": "application/json", "Authorization": `Bearer ${idToken}` },
             body: JSON.stringify({ bundleId, qualifiers }),
@@ -222,7 +218,7 @@
         try {
           const idToken = getIdToken();
           const headers = idToken ? { Authorization: `Bearer ${idToken}` } : {};
-          const res = await fetch("/api/catalog-get", { headers });
+          const res = await fetch("/api/v1/catalog", { headers });
           if (!res.ok) {
             container.innerHTML = '<p class="service-description">Catalog unavailable.</p>';
             return;
@@ -293,7 +289,7 @@
         }
 
         try {
-          const response = await fetch("/api/bundle-delete", {
+          const response = await fetch("/api/v1/bundle", {
             method: "DELETE",
             headers: {
               "Content-Type": "application/json",
@@ -330,7 +326,7 @@
         }
 
         try {
-          const response = await fetch("/api/bundle-delete", {
+          const response = await fetch("/api/v1/bundle", {
             method: "DELETE",
             headers: {
               "Content-Type": "application/json",

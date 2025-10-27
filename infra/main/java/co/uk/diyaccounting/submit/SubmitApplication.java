@@ -1,9 +1,5 @@
 package co.uk.diyaccounting.submit;
 
-import static co.uk.diyaccounting.submit.utils.Kind.envOr;
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.Kind.warnf;
-
 import co.uk.diyaccounting.submit.stacks.AccountStack;
 import co.uk.diyaccounting.submit.stacks.ApiStack;
 import co.uk.diyaccounting.submit.stacks.AuthStack;
@@ -12,16 +8,20 @@ import co.uk.diyaccounting.submit.stacks.HmrcStack;
 import co.uk.diyaccounting.submit.stacks.OpsStack;
 import co.uk.diyaccounting.submit.stacks.SelfDestructStack;
 import co.uk.diyaccounting.submit.utils.KindCdk;
+import software.amazon.awscdk.App;
+import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.services.lambda.IFunction;
+import software.constructs.Construct;
+
 import java.lang.reflect.Field;
 import java.nio.file.Paths;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
-import software.amazon.awscdk.App;
-import software.amazon.awscdk.Environment;
-import software.amazon.awscdk.services.lambda.IFunction;
-import software.constructs.Construct;
+
+import static co.uk.diyaccounting.submit.utils.Kind.envOr;
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.Kind.warnf;
 
 public class SubmitApplication {
 
@@ -212,8 +212,6 @@ public class SubmitApplication {
                         .build());
         this.hmrcStack.addDependency(devStack);
 
-        // TODO: None of these Lambdas got added to the origin (just 3 which I think are auth stack)
-
         // Create the AccountStack
         infof(
                 "Synthesizing stack %s for deployment %s to environment %s",
@@ -244,17 +242,17 @@ public class SubmitApplication {
 
         // Create a map of Lambda function references from other stacks
         Map<String, IFunction> lambdaFunctions = new java.util.HashMap<>();
-        lambdaFunctions.put("authUrlCognito", this.authStack.authUrlCognitoLambda);
-        lambdaFunctions.put("exchangeCognitoToken", this.authStack.exchangeCognitoTokenLambda);
-        lambdaFunctions.put("authUrlHmrc", this.hmrcStack.authUrlHmrcLambda);
-        lambdaFunctions.put("exchangeHmrcToken", this.hmrcStack.exchangeHmrcTokenLambda);
-        lambdaFunctions.put("submitVat", this.hmrcStack.submitVatLambda);
-        lambdaFunctions.put("logReceipt", this.hmrcStack.logReceiptLambda);
-        lambdaFunctions.put("myReceipts", this.hmrcStack.myReceiptsLambda);
-        lambdaFunctions.put("catalog", this.accountStack.catalogLambda);
-        lambdaFunctions.put("requestBundles", this.accountStack.requestBundlesLambda);
-        lambdaFunctions.put("bundleDelete", this.accountStack.bundleDeleteLambda);
-        lambdaFunctions.put("myBundles", this.accountStack.myBundlesLambda);
+        lambdaFunctions.put(sharedNames.cognitoAuthUrlGetLambdaFunctionName, this.authStack.cognitoAuthUrlGetLambda);
+        lambdaFunctions.put(sharedNames.cognitoTokenPostLambdaFunctionName, this.authStack.cognitoTokenPostLambda);
+        lambdaFunctions.put(sharedNames.hmrcAuthUrlGetLambdaFunctionName, this.hmrcStack.hmrcAuthUrlGetLambda);
+        lambdaFunctions.put(sharedNames.hmrcTokenPostLambdaFunctionName, this.hmrcStack.hmrcTokenPostLambda);
+        lambdaFunctions.put(sharedNames.hmrcVatReturnPostLambdaFunctionName, this.hmrcStack.hmrcVatReturnPostLambda);
+        lambdaFunctions.put(sharedNames.receiptPostLambdaFunctionName, this.hmrcStack.receiptPostLambda);
+        lambdaFunctions.put(sharedNames.receiptGetLambdaFunctionName, this.hmrcStack.receiptGetLambda);
+        lambdaFunctions.put(sharedNames.catalogGetLambdaFunctionName, this.accountStack.catalogLambda);
+        lambdaFunctions.put(sharedNames.bundleGetLambdaFunctionName, this.accountStack.bundleGetLambda);
+        lambdaFunctions.put(sharedNames.bundlePostLambdaFunctionName, this.accountStack.bundlePostLambda);
+        lambdaFunctions.put(sharedNames.bundleDeleteLambdaFunctionName, this.accountStack.bundleDeleteLambda);
 
         this.apiStack = new ApiStack(
                 app,

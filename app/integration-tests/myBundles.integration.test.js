@@ -25,7 +25,7 @@ function makeIdToken(sub = "mb-user-1", extra = {}) {
   return `${base64UrlEncode(header)}.${base64UrlEncode(payload)}.`;
 }
 
-describe("Integration – /api/bundle-get (MOCK)", () => {
+describe("Integration – /api/v1/bundle (MOCK)", () => {
   let app;
   const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -36,7 +36,7 @@ describe("Integration – /api/bundle-get (MOCK)", () => {
     app.use(express.json());
     app.use(express.static(path.join(__dirname, "../../web/public")));
 
-    app.get("/api/bundle-get", async (req, res) => {
+    app.get("/api/v1/bundle", async (req, res) => {
       const event = {
         path: req.path,
         headers: { host: req.get("host") || "localhost:3000", authorization: req.headers.authorization },
@@ -46,7 +46,7 @@ describe("Integration – /api/bundle-get (MOCK)", () => {
       res.status(statusCode).send(body || "{}");
     });
 
-    app.post("/api/bundle-post", async (req, res) => {
+    app.post("/api/v1/bundle", async (req, res) => {
       const event = {
         path: req.path,
         headers: { host: req.get("host") || "localhost:3000", authorization: req.headers.authorization },
@@ -59,7 +59,7 @@ describe("Integration – /api/bundle-get (MOCK)", () => {
   });
 
   test("anonymous sees default only; after guest grant user sees guest", async () => {
-    const resAnon = await request(app).get("/api/bundle-get");
+    const resAnon = await request(app).get("/api/v1/bundle");
     expect(resAnon.status).toBe(200);
     const bodyAnon = JSON.parse(resAnon.text || "{}");
     expect(Array.isArray(bodyAnon.bundles)).toBe(true);
@@ -67,10 +67,10 @@ describe("Integration – /api/bundle-get (MOCK)", () => {
     expect(bodyAnon.bundles).not.toContain("guest");
 
     const token = makeIdToken("mb-user-guest");
-    const resGrant = await request(app).post("/api/bundle-post").set("Authorization", `Bearer ${token}`).send({ bundleId: "guest" });
+    const resGrant = await request(app).post("/api/v1/bundle").set("Authorization", `Bearer ${token}`).send({ bundleId: "guest" });
     expect(resGrant.status).toBe(200);
 
-    const resUser = await request(app).get("/api/bundle-get").set("Authorization", `Bearer ${token}`);
+    const resUser = await request(app).get("/api/v1/bundle").set("Authorization", `Bearer ${token}`);
     expect(resUser.status).toBe(200);
     const bodyUser = JSON.parse(resUser.text || "{}");
     expect(bodyUser.bundles).toContain("default");

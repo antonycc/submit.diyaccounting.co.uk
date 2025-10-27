@@ -48,7 +48,64 @@ timeout = "P1D"
 #[bundles.qualifiers]
 #subscriptionTier = "Advanced"
 
-# Demo/placeholder activities
+# TODO: Add a widget to each page that extracts the bundles from the JWT, and the related paths from the catalogue, then checks one of the paths matches the page
+# and shows a lock icon or an unlock icon accordingly with a tooltip showing which bundles grant the activity (so the bundles should be claims)
+[[activities]]
+id = "my-receipts"
+name = "View previously submitted receipts"
+bundles = ["default"]
+path = "account/receipts.html"
+
+# TODO: Create an authorizer that extracts the bundles from the JWT, and the related paths from the catalogue, then checks one of the paths matches the request
+# and an HTTP error 403 is returned accordingly with a payload showing which bundles grant the matching activity (so the bundles should be claims)
+[[activities]]
+id = "catalogue"
+name = "View the product catalogue"
+bundles = ["default"]
+paths = ["^/api/v1/catalogue.*"]
+
+[[activities]]
+id = "bundle"
+name = "View and edit your bundles"
+bundles = ["default"]
+paths = ["account/bundles.html", "^/api/v1/bundle.*"]
+
+# VAT activities
+[[activities]]
+id = "submit-vat-sandbox"
+name = "Submit VAT (Sandbox API)"
+bundles = ["test"]
+path = "activities/submitVat.html"
+# tags = ["sandbox"]
+
+[[activities]]
+id = "vat-obligations-sandbox"
+name = "VAT Obligations (Sandbox API)"
+bundles = ["test"]
+path = "activities/vatObligations.html"
+# tags = ["sandbox"]
+
+[[activities]]
+id = "view-vat-return-sandbox"
+name = "View VAT Return (Sandbox API)"
+bundles = ["test"]
+path = "activities/viewVatReturn.html"
+# tags = ["sandbox"]
+
+[[activities]]
+id = "test"
+name = "View and edit your bundles"
+bundles = ["test"]
+path = "^/api/hmrc/vat.*"
+type = "api"
+
+[[activities]]
+id = "submit-vat"
+name = "Submit VAT"
+bundles = ["guest", "basic", "legacy"]
+path = "activities/submitVat.html"
+
+# Placeholder activities
 #[[activities]]
 #id = "learn-free-anon"
 #name = "Learn about free anonymous activities"
@@ -73,56 +130,6 @@ timeout = "P1D"
 #id = "learn-advanced"
 #name = "Learn about advanced activities"
 #bundles = ["advanced"]
-
-# VAT activities
-[[activities]]
-id = "submit-vat-sandbox"
-name = "Submit VAT (Sandbox API)"
-bundles = ["test"]
-path = "activities/submitVat.html"
-# tags = ["sandbox"]
-
-[[activities]]
-id = "vat-obligations-sandbox"
-name = "VAT Obligations (Sandbox API)"
-bundles = ["test"]
-path = "activities/vatObligations.html"
-# tags = ["sandbox"]
-
-[[activities]]
-id = "view-vat-return-sandbox"
-name = "View VAT Return (Sandbox API)"
-bundles = ["test"]
-path = "activities/viewVatReturn.html"
-# tags = ["sandbox"]
-
-# TODO: Create an authorizer that extracts the bundles from the JWT, and the related paths from the catalogue, then checks one of the paths matches the request
-[[activities]]
-id = "test"
-name = "View and edit your bundles"
-bundles = ["test"]
-path = "^/api/hmrc/vat.*"
-type = "api"
-
-[[activities]]
-id = "my-receipts"
-name = "View previously submitted receipts"
-bundles = ["default"]
-path = "account/receipts.html"
-
-# TODO: Create an authorizer that extracts the bundles from the JWT, and the related paths from the catalogue, then checks one of the paths matches the request
-[[activities]]
-id = "bundle"
-name = "View and edit your bundles"
-bundles = ["default"]
-path = "^/api/bundle.*"
-type = "api"
-
-[[activities]]
-id = "submit-vat"
-name = "Submit VAT"
-bundles = ["guest", "basic", "legacy"]
-path = "activities/submitVat.html"
 
 #[[activities]]
 #id = "vat-obligations"

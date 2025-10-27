@@ -918,27 +918,27 @@ jobs:
 
       - run: cat cdk-submit-application.out/cdk-outputs-account.json | jq '.'
 
-      - name: Resolve stack outputs
-        id: account-outputs
-        run: |
-          CATALOG_LAMBDA_URL=$(jq -r '.["app-${{ needs.names.outputs.deployment-name }}-AccountStack"].CatalogLambdaUrl' cdk-submit-application.out/cdk-outputs-account.json)
-          REQUEST_BUNDLES_LAMBDA_URL=$(jq -r '.["app-${{ needs.names.outputs.deployment-name }}-AccountStack"].RequestBundlesLambdaUrl' cdk-submit-application.out/cdk-outputs-account.json)
-          BUNDLE_DELETE_LAMBDA_URL=$(jq -r '.["app-${{ needs.names.outputs.deployment-name }}-AccountStack"].BundleDeleteLambdaUrl' cdk-submit-application.out/cdk-outputs-account.json)
-          MY_BUNDLES_LAMBDA_URL=$(jq -r '.["app-${{ needs.names.outputs.deployment-name }}-AccountStack"].MyBundlesLambdaUrl' cdk-submit-application.out/cdk-outputs-account.json)
-          echo "CATALOG_LAMBDA_URL=$CATALOG_LAMBDA_URL"
-          echo "CATALOG_LAMBDA_URL=$CATALOG_LAMBDA_URL" >> $GITHUB_OUTPUT
-          echo "REQUEST_BUNDLES_LAMBDA_URL=$REQUEST_BUNDLES_LAMBDA_URL"
-          echo "REQUEST_BUNDLES_LAMBDA_URL=$REQUEST_BUNDLES_LAMBDA_URL" >> $GITHUB_OUTPUT
-          echo "BUNDLE_DELETE_LAMBDA_URL=$BUNDLE_DELETE_LAMBDA_URL"
-          echo "BUNDLE_DELETE_LAMBDA_URL=$BUNDLE_DELETE_LAMBDA_URL" >> $GITHUB_OUTPUT
-          echo "MY_BUNDLES_LAMBDA_URL=$MY_BUNDLES_LAMBDA_URL"
-          echo "MY_BUNDLES_LAMBDA_URL=$MY_BUNDLES_LAMBDA_URL" >> $GITHUB_OUTPUT
-        shell: bash
-    outputs:
-      catalogLambdaUrl: ${{ steps.account-outputs.outputs.CATALOG_LAMBDA_URL }}
-      requestBundlesLambdaUrl: ${{ steps.account-outputs.outputs.REQUEST_BUNDLES_LAMBDA_URL }}
-      bundleDeleteLambdaUrl: ${{ steps.account-outputs.outputs.BUNDLE_DELETE_LAMBDA_URL }}
-      myBundlesLambdaUrl: ${{ steps.account-outputs.outputs.MY_BUNDLES_LAMBDA_URL }}
+#      - name: Resolve stack outputs
+#        id: account-outputs
+#        run: |
+#          CATALOG_LAMBDA_URL=$(jq -r '.["app-${{ needs.names.outputs.deployment-name }}-AccountStack"].CatalogLambdaUrl' cdk-submit-application.out/cdk-outputs-account.json)
+#          REQUEST_BUNDLES_LAMBDA_URL=$(jq -r '.["app-${{ needs.names.outputs.deployment-name }}-AccountStack"].RequestBundlesLambdaUrl' cdk-submit-application.out/cdk-outputs-account.json)
+#          BUNDLE_DELETE_LAMBDA_URL=$(jq -r '.["app-${{ needs.names.outputs.deployment-name }}-AccountStack"].BundleDeleteLambdaUrl' cdk-submit-application.out/cdk-outputs-account.json)
+#          MY_BUNDLES_LAMBDA_URL=$(jq -r '.["app-${{ needs.names.outputs.deployment-name }}-AccountStack"].MyBundlesLambdaUrl' cdk-submit-application.out/cdk-outputs-account.json)
+#          echo "CATALOG_LAMBDA_URL=$CATALOG_LAMBDA_URL"
+#          echo "CATALOG_LAMBDA_URL=$CATALOG_LAMBDA_URL" >> $GITHUB_OUTPUT
+#          echo "REQUEST_BUNDLES_LAMBDA_URL=$REQUEST_BUNDLES_LAMBDA_URL"
+#          echo "REQUEST_BUNDLES_LAMBDA_URL=$REQUEST_BUNDLES_LAMBDA_URL" >> $GITHUB_OUTPUT
+#          echo "BUNDLE_DELETE_LAMBDA_URL=$BUNDLE_DELETE_LAMBDA_URL"
+#          echo "BUNDLE_DELETE_LAMBDA_URL=$BUNDLE_DELETE_LAMBDA_URL" >> $GITHUB_OUTPUT
+#          echo "MY_BUNDLES_LAMBDA_URL=$MY_BUNDLES_LAMBDA_URL"
+#          echo "MY_BUNDLES_LAMBDA_URL=$MY_BUNDLES_LAMBDA_URL" >> $GITHUB_OUTPUT
+#        shell: bash
+#    outputs:
+#      catalogLambdaUrl: ${{ steps.account-outputs.outputs.CATALOG_LAMBDA_URL }}
+#      requestBundlesLambdaUrl: ${{ steps.account-outputs.outputs.REQUEST_BUNDLES_LAMBDA_URL }}
+#      bundleDeleteLambdaUrl: ${{ steps.account-outputs.outputs.BUNDLE_DELETE_LAMBDA_URL }}
+#      myBundlesLambdaUrl: ${{ steps.account-outputs.outputs.MY_BUNDLES_LAMBDA_URL }}
 
   deploy-api:
     name: 'deploy api'
@@ -1118,10 +1118,10 @@ jobs:
           SUBMIT_VAT_LAMBDA_URL: ${{ needs.deploy-hmrc.outputs.submitVatLambdaUrl }}
           LOG_RECEIPT_LAMBDA_URL: ${{ needs.deploy-hmrc.outputs.logReceiptLambdaUrl }}
           MY_RECEIPTS_LAMBDA_URL: ${{ needs.deploy-hmrc.outputs.myReceiptsLambdaUrl }}
-          CATALOG_LAMBDA_URL: ${{ needs.deploy-account.outputs.catalogLambdaUrl }}
-          REQUEST_BUNDLES_LAMBDA_URL: ${{ needs.deploy-account.outputs.requestBundlesLambdaUrl }}
-          BUNDLE_DELETE_LAMBDA_URL: ${{ needs.deploy-account.outputs.bundleDeleteLambdaUrl }}
-          MY_BUNDLES_LAMBDA_URL: ${{ needs.deploy-account.outputs.myBundlesLambdaUrl }}
+#          CATALOG_LAMBDA_URL: ${{ needs.deploy-account.outputs.catalogLambdaUrl }}
+#          REQUEST_BUNDLES_LAMBDA_URL: ${{ needs.deploy-account.outputs.requestBundlesLambdaUrl }}
+#          BUNDLE_DELETE_LAMBDA_URL: ${{ needs.deploy-account.outputs.bundleDeleteLambdaUrl }}
+#          MY_BUNDLES_LAMBDA_URL: ${{ needs.deploy-account.outputs.myBundlesLambdaUrl }}
 
   deploy-edge:
     name: 'deploy edge'
@@ -1229,10 +1229,10 @@ jobs:
           SUBMIT_VAT_LAMBDA_URL: ${{ needs.deploy-hmrc.outputs.submitVatLambdaUrl }}
           LOG_RECEIPT_LAMBDA_URL: ${{ needs.deploy-hmrc.outputs.logReceiptLambdaUrl }}
           MY_RECEIPTS_LAMBDA_URL: ${{ needs.deploy-hmrc.outputs.myReceiptsLambdaUrl }}
-          CATALOG_LAMBDA_URL: ${{ needs.deploy-account.outputs.catalogLambdaUrl }}
-          REQUEST_BUNDLES_LAMBDA_URL: ${{ needs.deploy-account.outputs.requestBundlesLambdaUrl }}
-          BUNDLE_DELETE_LAMBDA_URL: ${{ needs.deploy-account.outputs.bundleDeleteLambdaUrl }}
-          MY_BUNDLES_LAMBDA_URL: ${{ needs.deploy-account.outputs.myBundlesLambdaUrl }}
+#          CATALOG_LAMBDA_URL: ${{ needs.deploy-account.outputs.catalogLambdaUrl }}
+#          REQUEST_BUNDLES_LAMBDA_URL: ${{ needs.deploy-account.outputs.requestBundlesLambdaUrl }}
+#          BUNDLE_DELETE_LAMBDA_URL: ${{ needs.deploy-account.outputs.bundleDeleteLambdaUrl }}
+#          MY_BUNDLES_LAMBDA_URL: ${{ needs.deploy-account.outputs.myBundlesLambdaUrl }}
 
       - run: cat cdk-submit-delivery.out/cdk-outputs-edge.json | jq '.'
         if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
@@ -1260,6 +1260,62 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+
+      - name: Configure AWS role via GitHub OIDC (for RUM outputs)
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role (for RUM outputs)
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Resolve RUM config from ObservabilityStack
+        id: rum-config
+        shell: bash
+        run: |
+          set -euo pipefail
+          STACK_NAME="env-${{ needs.names.outputs.environment-name }}-ObservabilityStack"
+          echo "Resolving RUM outputs from $STACK_NAME in region ${{ env.AWS_REGION }}"
+          JSON=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" --region "${{ env.AWS_REGION }}")
+          RUM_APP_MONITOR_ID=$(echo "$JSON" | jq -r '.Stacks[0].Outputs[] | select(.OutputKey=="RumAppMonitorId") | .OutputValue')
+          RUM_IDENTITY_POOL_ID=$(echo "$JSON" | jq -r '.Stacks[0].Outputs[] | select(.OutputKey=="RumIdentityPoolId") | .OutputValue')
+          RUM_GUEST_ROLE_ARN=$(echo "$JSON" | jq -r '.Stacks[0].Outputs[] | select(.OutputKey=="RumGuestRoleArn") | .OutputValue')
+          RUM_REGION=$(echo "$JSON" | jq -r '.Stacks[0].Outputs[] | select(.OutputKey=="RumRegion") | .OutputValue' 2>/dev/null || echo "${{ env.AWS_REGION }}")
+          echo "RUM_APP_MONITOR_ID=$RUM_APP_MONITOR_ID"
+          echo "RUM_IDENTITY_POOL_ID=$RUM_IDENTITY_POOL_ID"
+          echo "RUM_GUEST_ROLE_ARN=$RUM_GUEST_ROLE_ARN"
+          echo "RUM_REGION=$RUM_REGION"
+          echo "RUM_APP_MONITOR_ID=$RUM_APP_MONITOR_ID" >> $GITHUB_OUTPUT
+          echo "RUM_IDENTITY_POOL_ID=$RUM_IDENTITY_POOL_ID" >> $GITHUB_OUTPUT
+          echo "RUM_GUEST_ROLE_ARN=$RUM_GUEST_ROLE_ARN" >> $GITHUB_OUTPUT
+          echo "RUM_REGION=$RUM_REGION" >> $GITHUB_OUTPUT
+
+      - name: Inject RUM placeholders into HTML files
+        shell: bash
+        env:
+          RUM_APP_MONITOR_ID: ${{ steps.rum-config.outputs.RUM_APP_MONITOR_ID }}
+          RUM_IDENTITY_POOL_ID: ${{ steps.rum-config.outputs.RUM_IDENTITY_POOL_ID }}
+          RUM_GUEST_ROLE_ARN: ${{ steps.rum-config.outputs.RUM_GUEST_ROLE_ARN }}
+          AWS_REGION: ${{ steps.rum-config.outputs.RUM_REGION || env.AWS_REGION }}
+        run: |
+          set -euo pipefail
+          echo "Injecting RUM config into HTML files under web/public"
+          find web/public -type f -name "*.html" -print0 | xargs -0 -I{} bash -lc '
+            perl -0777 -pe "s/\\$\\{RUM_APP_MONITOR_ID\\}/$ENV{RUM_APP_MONITOR_ID}/g; s/\\$\\{AWS_REGION\\}/$ENV{AWS_REGION}/g; s/\\$\\{RUM_IDENTITY_POOL_ID\\}/$ENV{RUM_IDENTITY_POOL_ID}/g; s/\\$\\{RUM_GUEST_ROLE_ARN\\}/$ENV{RUM_GUEST_ROLE_ARN}/g" -i "{}"'
 
       - name: Compute hash of static website content
         id: publish-hash
@@ -1357,9 +1413,9 @@ jobs:
           SUBMIT_VAT_LAMBDA_URL: ${{ needs.deploy-hmrc.outputs.submitVatLambdaUrl }}
           LOG_RECEIPT_LAMBDA_URL: ${{ needs.deploy-hmrc.outputs.logReceiptLambdaUrl }}
           MY_RECEIPTS_LAMBDA_URL: ${{ needs.deploy-hmrc.outputs.myReceiptsLambdaUrl }}
-          CATALOG_LAMBDA_URL: ${{ needs.deploy-account.outputs.catalogLambdaUrl }}
-          REQUEST_BUNDLES_LAMBDA_URL: ${{ needs.deploy-account.outputs.requestBundlesLambdaUrl }}
-          MY_BUNDLES_LAMBDA_URL: ${{ needs.deploy-account.outputs.myBundlesLambdaUrl }}
+#          CATALOG_LAMBDA_URL: ${{ needs.deploy-account.outputs.catalogLambdaUrl }}
+#          REQUEST_BUNDLES_LAMBDA_URL: ${{ needs.deploy-account.outputs.requestBundlesLambdaUrl }}
+#          MY_BUNDLES_LAMBDA_URL: ${{ needs.deploy-account.outputs.myBundlesLambdaUrl }}
 
 #      - name: Upsert Cognito callback/logout URLs
 #        if: ${{ contains(needs.names.outputs.base-url, 'submit') }}

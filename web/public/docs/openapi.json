@@ -9,7 +9,7 @@
     }
   },
   "servers" : [ {
-    "url" : "http://localhost/api/v1/",
+    "url" : "${env.DIY_SUBMIT_APEX_URL}api/v1/",
     "description" : "DIY Accounting Submit API documentation"
   } ],
   "paths" : {

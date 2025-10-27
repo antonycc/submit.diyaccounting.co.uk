@@ -23,7 +23,7 @@ function makeIdToken(sub = "route-user-1") {
   return `${base64UrlEncode(header)}.${base64UrlEncode(payload)}.`;
 }
 
-describe("Integration – /api/bundle-post route (MOCK)", () => {
+describe("Integration – /api/v1/bundle route (MOCK)", () => {
   let app;
   const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -36,7 +36,7 @@ describe("Integration – /api/bundle-post route (MOCK)", () => {
     app.use(express.json());
     app.use(express.static(path.join(__dirname, "../../web/public")));
 
-    const routePath = "/api/bundle-post";
+    const routePath = "/api/v1/bundle";
     app.post(routePath, async (req, res) => {
       const event = {
         path: req.path,
@@ -51,7 +51,7 @@ describe("Integration – /api/bundle-post route (MOCK)", () => {
 
   test("should grant HMRC_TEST_API bundle", async () => {
     const token = makeIdToken("integration-bundle-user");
-    const res = await request(app).post("/api/bundle-post").set("Authorization", `Bearer ${token}`).send({ bundleId: "HMRC_TEST_API" });
+    const res = await request(app).post("/api/v1/bundle").set("Authorization", `Bearer ${token}`).send({ bundleId: "HMRC_TEST_API" });
 
     expect(res.status).toBe(200);
     const body = JSON.parse(res.text || "{}");

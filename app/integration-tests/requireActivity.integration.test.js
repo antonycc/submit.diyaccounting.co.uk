@@ -34,7 +34,7 @@ describe("Integration – requireActivity middleware", () => {
       res.status(200).json({ ok: true });
     });
 
-    app.post("/api/bundle-post", async (req, res) => {
+    app.post("/api/v1/bundle", async (req, res) => {
       const event = {
         path: req.path,
         headers: { authorization: req.headers.authorization },
@@ -54,7 +54,7 @@ describe("Integration – requireActivity middleware", () => {
     expect(bodyForbidden.error).toBe("not_allowed");
     expect(Array.isArray(bodyForbidden.bundles)).toBe(true);
 
-    const resGrant = await request(app).post("/api/bundle-post").set("Authorization", `Bearer ${token}`).send({ bundleId: "test" });
+    const resGrant = await request(app).post("/api/v1/bundle").set("Authorization", `Bearer ${token}`).send({ bundleId: "test" });
     expect(resGrant.status).toBe(200);
 
     const resAllowed = await request(app).post("/protected").set("Authorization", `Bearer ${token}`).send({});

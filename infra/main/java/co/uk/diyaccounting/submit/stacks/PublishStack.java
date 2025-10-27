@@ -155,6 +155,19 @@ public class PublishStack extends Stack {
             infof("No environment name provided, skipping submit.env generation");
         }
 
+        // Generate a file containing the deployment name for runtime use
+        if (props.envName() != null && !props.envName().isBlank()) {
+            try {
+                Path envFilepath = Paths.get(props.docRootPath(), "submit.deployment");
+                Files.writeString(envFilepath, props.deploymentName().trim());
+                infof("Created submit.deployment file with deployment name: %s".formatted(props.deploymentName()));
+            } catch (Exception e) {
+                warnf("Failed to create submit.deployment file: %s".formatted(e.getMessage()));
+            }
+        } else {
+            infof("No environment name provided, skipping submit.deployment generation");
+        }
+
         // Generate a file containing the build number for runtime use
         if (props.buildNumber() != null && !props.buildNumber().isBlank()) {
             try {
@@ -194,6 +207,7 @@ public class PublishStack extends Stack {
                         "/account/*",
                         "/activities/*",
                         "/auth/*",
+                        "/docs/*",
                         "/errors/*",
                         "/images/*",
                         "/widgets/*",
@@ -204,7 +218,8 @@ public class PublishStack extends Stack {
                         "/submit.version",
                         "/submit.hash",
                         "/submit.build",
-                        "/submit.env"))
+                        "/submit.env",
+                        "/submit.deployment"))
                 .retainOnDelete(true)
                 .logGroup(webDeploymentLogGroup)
                 .expires(Expiration.after(Duration.minutes(5)))

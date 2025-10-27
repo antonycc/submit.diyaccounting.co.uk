@@ -70,12 +70,22 @@ function generateRandomState() {
   return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 }
 
+// Client request correlation helper
+function fetchWithId(url, opts = {}) {
+  const headers = new Headers(opts.headers || {});
+  try {
+    const rid = (crypto && crypto.randomUUID) ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    headers.set("X-Client-Request-Id", rid);
+  } catch (_) {}
+  return fetch(url, { ...opts, headers });
+}
+
 // Auth API functions
 async function getAuthUrl(state, provider = "hmrc") {
   const url = `/api/${provider}/authUrl-get?state=${encodeURIComponent(state)}`;
   console.log(`Getting auth URL. Remote call initiated: GET ${url}`);
 
-  const response = await fetch(url);
+  const response = await fetchWithId(url);
   const responseJson = await response.json();
   if (!response.ok) {
     const message = `Failed to get auth URL. Remote call failed: GET ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`;
@@ -90,7 +100,7 @@ async function getAuthUrl(state, provider = "hmrc") {
 // VAT submission API function
 async function submitVat(vatNumber, periodKey, vatDue, accessToken, govClientHeaders = {}) {
   const url = "/api/hmrc/vat/return-post";
-  const response = await fetch(url, {
+  const response = await fetchWithId(url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -110,7 +120,7 @@ async function submitVat(vatNumber, periodKey, vatDue, accessToken, govClientHea
 // Receipt logging API function
 async function logReceipt(processingDate, formBundleNumber, chargeRefNumber) {
   const url = "/api/hmrc/receipt-post";
-  const response = await fetch(url, {
+  const response = await fetchWithId(url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -226,6 +236,170 @@ async function fetchCatalogText(url = "/product-catalogue.toml") {
   return res.text();
 }
 
+// RUM consent + init
+function hasRumConsent() {
+  try {
+    return localStorage.getItem("consent.rum") === "granted" || localStorage.getItem("consent.analytics") === "granted";
+  } catch (_) { return false; }
+}
+
+function showConsentBannerIfNeeded() {
+  if (hasRumConsent()) return;
+  // Banner is shown regardless of whether RUM is fully configured yet
+  if (document.getElementById("consent-banner")) return;
+  const banner = document.createElement("div");
+  banner.id = "consent-banner";
+  banner.style.cssText = "position:fixed;bottom:0;left:0;right:0;background:#111;color:#fff;padding:12px 16px;z-index:9999;display:flex;gap:12px;flex-wrap:wrap;align-items:center;justify-content:center;font-size:14px";
+  banner.innerHTML = `
+    <span>We use minimal analytics to improve performance (CloudWatch RUM). We’ll only start after you consent. See our <a href="/privacy.html" style="color:#9cf">privacy policy</a>.</span>
+    <div style="display:flex;gap:8px">
+      <button id="consent-accept" class="btn" style="padding:6px 10px">Accept</button>
+      <button id="consent-decline" class="btn" style="padding:6px 10px;background:#555;border-color:#555">Decline</button>
+    </div>`;
+  document.body.appendChild(banner);
+  document.getElementById("consent-accept").onclick = () => {
+    try { localStorage.setItem("consent.rum", "granted"); } catch(_){}
+    document.body.removeChild(banner);
+    document.dispatchEvent(new CustomEvent("consent-granted", { detail: { type: "rum" } }));
+    maybeInitRum();
+  };
+  document.getElementById("consent-decline").onclick = () => {
+    try { localStorage.setItem("consent.rum", "declined"); } catch(_){}
+    document.body.removeChild(banner);
+  };
+}
+
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    const s = document.createElement("script");
+    s.async = true;
+    s.src = src;
+    s.onload = resolve;
+    s.onerror = reject;
+    document.head.appendChild(s);
+  });
+}
+
+function rumReady() {
+  document.dispatchEvent(new CustomEvent("rum-ready"));
+}
+
+async function maybeInitRum() {
+  if (!window.__RUM_CONFIG__) return;
+  if (!hasRumConsent()) { showConsentBannerIfNeeded(); return; }
+  if (window.__RUM_INIT_DONE__) return;
+  const c = window.__RUM_CONFIG__;
+  if (!c.appMonitorId || !c.region || !c.identityPoolId || !c.guestRoleArn) return;
+  const version = "1.16.0";
+  const clientUrl = `https://client.rum.${c.region}.amazonaws.com/${version}/cwr.js`;
+  try {
+    await loadScript(clientUrl);
+    if (typeof window.cwr === "function") {
+      window.cwr('config', {
+        sessionSampleRate: c.sessionSampleRate ?? 1,
+        guestRoleArn: c.guestRoleArn,
+        identityPoolId: c.identityPoolId,
+        endpoint: `https://dataplane.rum.${c.region}.amazonaws.com`,
+        telemetries: ['performance','errors','http'],
+        allowCookies: true,
+        enableXRay: true,
+        appMonitorId: c.appMonitorId,
+        region: c.region
+      });
+      window.__RUM_INIT_DONE__ = true;
+      rumReady();
+      setRumUserIdIfAvailable();
+    }
+  } catch (e) {
+    console.warn("Failed to init RUM:", e);
+  }
+}
+
+async function sha256Hex(text) {
+  const enc = new TextEncoder();
+  const data = enc.encode(text);
+  const digest = await crypto.subtle.digest('SHA-256', data);
+  const bytes = Array.from(new Uint8Array(digest));
+  return bytes.map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+async function setRumUserIdIfAvailable() {
+  try {
+    const userInfo = localStorage.getItem('userInfo');
+    if (!userInfo) return;
+    const user = JSON.parse(userInfo);
+    const rawId = user.sub || user.username || user.email;
+    if (!rawId) return;
+    const hashed = await sha256Hex(String(rawId));
+    if (window.cwr) {
+      window.cwr('setUserId', hashed);
+    } else {
+      document.addEventListener('rum-ready', () => window.cwr && window.cwr('setUserId', hashed), { once: true });
+    }
+  } catch (_) {}
+}
+
+function ensurePrivacyLink() {
+  const anchors = Array.from(document.querySelectorAll('footer a[href$="privacy.html"]'));
+  if (anchors.length) return;
+  const footer = document.querySelector('footer .footer-left') || document.querySelector('footer');
+  if (!footer) return;
+  const link = document.createElement('a');
+  link.href = '/privacy.html';
+  link.textContent = 'privacy';
+  link.style.marginLeft = '8px';
+  footer.appendChild(link);
+}
+
+function readMeta(name) {
+  const el = document.querySelector(`meta[name="${name}"]`);
+  return el && el.content ? el.content.trim() : '';
+}
+function bootstrapRumConfigFromMeta() {
+  if (window.__RUM_CONFIG__) return;
+  const appMonitorId = readMeta('rum:appMonitorId');
+  const region = readMeta('rum:region');
+  const identityPoolId = readMeta('rum:identityPoolId');
+  const guestRoleArn = readMeta('rum:guestRoleArn');
+  if (appMonitorId && region && identityPoolId && guestRoleArn) {
+    window.__RUM_CONFIG__ = { appMonitorId, region, identityPoolId, guestRoleArn, sessionSampleRate: 1 };
+    try { localStorage.setItem('rum.config', JSON.stringify(window.__RUM_CONFIG__)); } catch(_){}
+  }
+}
+function bootstrapRumConfigFromStorage() {
+  if (window.__RUM_CONFIG__) return;
+  try {
+    const raw = localStorage.getItem('rum.config');
+    if (!raw) return;
+    const cfg = JSON.parse(raw);
+    if (cfg && cfg.appMonitorId && cfg.region && cfg.identityPoolId && cfg.guestRoleArn) {
+      window.__RUM_CONFIG__ = cfg;
+    }
+  } catch(_){}
+}
+
+// Wire up on load
+// Ensure we have a real DOM before touching document in test environments
+if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      ensurePrivacyLink();
+      bootstrapRumConfigFromMeta();
+      showConsentBannerIfNeeded();
+      maybeInitRum();
+      setRumUserIdIfAvailable();
+    });
+  } else {
+    ensurePrivacyLink();
+    bootstrapRumConfigFromMeta();
+    showConsentBannerIfNeeded();
+    maybeInitRum();
+    setRumUserIdIfAvailable();
+  }
+  // Update user id on cross-tab login changes
+  window.addEventListener('storage', (e) => { if (e.key === 'userInfo') setRumUserIdIfAvailable(); });
+}
+
 // Expose functions to window for use by other scripts and testing
 if (typeof window !== "undefined") {
   window.showStatus = showStatus;
@@ -243,4 +417,5 @@ if (typeof window !== "undefined") {
   window.activitiesForBundle = activitiesForBundle;
   window.isActivityAvailable = isActivityAvailable;
   window.fetchCatalogText = fetchCatalogText;
+  window.fetchWithId = fetchWithId;
 }

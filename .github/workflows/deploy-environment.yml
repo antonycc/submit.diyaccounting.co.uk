@@ -182,7 +182,7 @@ jobs:
 
       - name: Deploy Observability Stack (CDK)
         run: |
-          ./mvnw --errors clean package -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
+          ./mvnw --errors clean verify -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
             && cd cdk-environment \
             && cat ../.env.${{ needs.names.outputs.environment-name }} \
             && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
@@ -260,7 +260,7 @@ jobs:
 
       - name: Deploy Observability us-east-1 Stack (CDK)
         run: |
-          ./mvnw --errors clean package -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
+          ./mvnw --errors clean verify -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
             && cd cdk-environment \
             && cat ../.env.${{ needs.names.outputs.environment-name }} \
             && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
@@ -331,7 +331,7 @@ jobs:
 
       - name: Deploy Data Stack (CDK)
         run: |
-          ./mvnw --errors clean package -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
+          ./mvnw --errors clean verify -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
             && cd cdk-environment \
             && cat ../.env.${{ needs.names.outputs.environment-name }} \
             && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
@@ -402,7 +402,7 @@ jobs:
 
       - name: Deploy Apex stack (CDK)
         run: |
-          ./mvnw --errors clean package -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
+          ./mvnw --errors clean verify -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
             && cd cdk-environment \
             && cat ../.env.${{ needs.names.outputs.environment-name }} \
             && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
@@ -475,7 +475,7 @@ jobs:
 
       - name: Deploy Identity stack (CDK)
         run: |
-          ./mvnw --errors clean package -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
+          ./mvnw --errors clean verify -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
             && cd cdk-environment \
             && cat ../.env.${{ needs.names.outputs.environment-name }} \
             && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \

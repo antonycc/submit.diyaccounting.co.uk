@@ -1,5 +1,7 @@
 package co.uk.diyaccounting.submit;
 
+import software.amazon.awscdk.services.apigatewayv2.HttpMethod;
+
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildCognitoDomainName;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDashedDomainName;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildEcrRepositoryName;
@@ -28,6 +30,7 @@ public class SubmitSharedNames {
     public String ew2SelfDestructLogGroupName;
     public String ue1SelfDestructLogGroupName;
     public String webDeploymentLogGroupName;
+    public String apiAccessLogGroupName;
 
     public String envDashedDomainName;
     public String envResourceNamePrefix;
@@ -50,60 +53,71 @@ public class SubmitSharedNames {
     public String ecrRepositoryArn;
     public String ecrRepositoryName;
 
-    public String authUrlCognitoLambdaHandler;
-    public String authUrlCognitoLambdaFunctionName;
-    public String authUrlCognitoLambdaArn;
-    public String authUrlCognitoLambdaUrlPath;
+    public String cognitoAuthUrlGetLambdaHandler;
+    public String cognitoAuthUrlGetLambdaFunctionName;
+    public String cognitoAuthUrlGetLambdaArn;
+    public HttpMethod cognitoAuthUrlGetLambdaHttpMethod;
+    public String cognitoAuthUrlGetLambdaUrlPath;
 
-    public String exchangeCognitoTokenLambdaHandler;
-    public String exchangeCognitoTokenLambdaFunctionName;
-    public String exchangeCognitoTokenLambdaArn;
-    public String exchangeCognitoTokenLambdaUrlPath;
+    public String cognitoTokenPostLambdaHandler;
+    public String cognitoTokenPostLambdaFunctionName;
+    public String cognitoTokenPostLambdaArn;
+    public HttpMethod cognitoTokenPostLambdaHttpMethod;
+    public String cognitoTokenPostLambdaUrlPath;
 
-    public String authUrlHmrcLambdaHandler;
-    public String authUrlHmrcLambdaFunctionName;
-    public String authUrlHmrcLambdaArn;
-    public String authUrlHmrcLambdaUrlPath;
+    public String hmrcAuthUrlGetLambdaHandler;
+    public String hmrcAuthUrlGetLambdaFunctionName;
+    public String hmrcAuthUrlGetLambdaArn;
+    public HttpMethod hmrcAuthUrlGetLambdaHttpMethod;
+    public String hmrcAuthUrlGetLambdaUrlPath;
 
-    public String exchangeHmrcTokenLambdaHandler;
-    public String exchangeHmrcTokenLambdaFunctionName;
-    public String exchangeHmrcTokenLambdaArn;
-    public String exchangeHmrcTokenLambdaUrlPath;
+    public String hmrcTokenPostLambdaHandler;
+    public String hmrcTokenPostLambdaFunctionName;
+    public String hmrcTokenPostLambdaArn;
+    public HttpMethod hmrcTokenPostLambdaHttpMethod;
+    public String hmrcTokenPostLambdaUrlPath;
 
-    public String submitVatLambdaHandler;
-    public String submitVatLambdaFunctionName;
-    public String submitVatLambdaArn;
-    public String submitVatLambdaUrlPath;
+    public String hmrcVatReturnPostLambdaHandler;
+    public String hmrcVatReturnPostLambdaFunctionName;
+    public String hmrcVatReturnPostLambdaArn;
+    public HttpMethod hmrcVatReturnPostLambdaHttpMethod;
+    public String hmrcVatReturnPostLambdaUrlPath;
 
-    public String logReceiptLambdaHandler;
-    public String logReceiptLambdaFunctionName;
-    public String logReceiptLambdaArn;
-    public String logReceiptLambdaUrlPath;
+    public String receiptPostLambdaHandler;
+    public String receiptPostLambdaFunctionName;
+    public String receiptPostLambdaArn;
+    public HttpMethod receiptPostLambdaHttpMethod;
+    public String receiptPostLambdaUrlPath;
 
-    public String myReceiptsLambdaHandler;
-    public String myReceiptsLambdaFunctionName;
-    public String myReceiptsLambdaArn;
-    public String myReceiptsLambdaUrlPath;
+    public String receiptGetLambdaHandler;
+    public String receiptGetLambdaFunctionName;
+    public String receiptGetLambdaArn;
+    public HttpMethod receiptGetLambdaHttpMethod;
+    public String receiptGetLambdaUrlPath;
 
-    public String catalogLambdaHandler;
-    public String catalogLambdaFunctionName;
-    public String catalogLambdaArn;
-    public String catalogLambdaUrlPath;
+    public String catalogGetLambdaHandler;
+    public String catalogGetLambdaFunctionName;
+    public String catalogGetLambdaArn;
+    public HttpMethod catalogGetLambdaHttpMethod;
+    public String catalogGetLambdaUrlPath;
 
-    public String requestBundlesLambdaHandler;
-    public String requestBundlesLambdaFunctionName;
-    public String requestBundlesLambdaArn;
-    public String requestBundlesLambdaUrlPath;
+    public String bundleGetLambdaHandler;
+    public String bundleGetLambdaFunctionName;
+    public String bundleGetLambdaArn;
+    public HttpMethod bundleGetLambdaHttpMethod;
+    public String bundleGetLambdaUrlPath;
+
+    public String bundlePostLambdaHandler;
+    public String bundlePostLambdaFunctionName;
+    public String bundlePostLambdaArn;
+    public HttpMethod bundlePostLambdaHttpMethod;
+    public String bundlePostLambdaUrlPath;
 
     public String bundleDeleteLambdaHandler;
     public String bundleDeleteLambdaFunctionName;
     public String bundleDeleteLambdaArn;
+    public HttpMethod bundleDeleteLambdaHttpMethod;
     public String bundleDeleteLambdaUrlPath;
-
-    public String myBundlesLambdaHandler;
-    public String myBundlesLambdaFunctionName;
-    public String myBundlesLambdaArn;
-    public String myBundlesLambdaUrlPath;
 
     java.util.List<String> lambdaArns;
 
@@ -155,6 +169,7 @@ public class SubmitSharedNames {
         this.ue1SelfDestructLogGroupName =
                 "/aws/lambda/%s-self-destruct-us-east-1".formatted(this.envResourceNamePrefix);
         this.webDeploymentLogGroupName = "/deployment/%s-web-deployment".formatted(this.envResourceNamePrefix);
+        this.apiAccessLogGroupName = "/aws/apigw/%s/access".formatted(this.envResourceNamePrefix);
 
         this.appResourceNamePrefix = "app-%s".formatted(generateResourceNamePrefix(this.domainName));
         this.appCompressedResourceNamePrefix = "a-%s".formatted(generateCompressedResourceNamePrefix(this.domainName));
@@ -172,80 +187,84 @@ public class SubmitSharedNames {
         var appLambdaArnPrefix = "arn:aws:lambda:%s:%s:function:%s-"
                 .formatted(props.regionName, props.awsAccount, this.appResourceNamePrefix);
 
-        this.authUrlCognitoLambdaHandler = "cognitoAuthUrlGet.handler";
-        this.authUrlCognitoLambdaFunctionName =
-                buildFunctionName(this.appResourceNamePrefix, this.authUrlCognitoLambdaHandler);
-        this.authUrlCognitoLambdaArn = "%s-cognito-auth-url-get".formatted(appLambdaArnPrefix);
-        this.authUrlCognitoLambdaUrlPath = "/api/cognito/authUrl-get";
+        this.cognitoAuthUrlGetLambdaHandler = "cognitoAuthUrlGet.handler";
+        this.cognitoAuthUrlGetLambdaFunctionName = buildFunctionName(this.appResourceNamePrefix, this.cognitoAuthUrlGetLambdaHandler);
+        this.cognitoAuthUrlGetLambdaArn = "%s-cognito-auth-url-get".formatted(appLambdaArnPrefix);
+        this.cognitoAuthUrlGetLambdaHttpMethod = HttpMethod.GET;
+        this.cognitoAuthUrlGetLambdaUrlPath = "/api/cognito/authUrl-get";
 
-        this.exchangeCognitoTokenLambdaHandler = "cognitoTokenPost.handler";
-        this.exchangeCognitoTokenLambdaFunctionName =
-                buildFunctionName(this.appResourceNamePrefix, this.exchangeCognitoTokenLambdaHandler);
-        this.exchangeCognitoTokenLambdaArn = "%s-cognito-token-post".formatted(appLambdaArnPrefix);
-        this.exchangeCognitoTokenLambdaUrlPath = "/api/cognito/token-post";
+        this.cognitoTokenPostLambdaHandler = "cognitoTokenPost.handler";
+        this.cognitoTokenPostLambdaFunctionName = buildFunctionName(this.appResourceNamePrefix, this.cognitoTokenPostLambdaHandler);
+        this.cognitoTokenPostLambdaArn = "%s-cognito-token-post".formatted(appLambdaArnPrefix);
+        this.cognitoTokenPostLambdaHttpMethod = HttpMethod.POST;
+        this.cognitoTokenPostLambdaUrlPath = "/api/cognito/token-post";
 
-        this.authUrlHmrcLambdaHandler = "hmrcAuthUrlGet.handler";
-        this.authUrlHmrcLambdaFunctionName =
-                buildFunctionName(this.appResourceNamePrefix, this.authUrlHmrcLambdaHandler);
-        this.authUrlHmrcLambdaArn = "%s-hmrc-auth-url-get".formatted(appLambdaArnPrefix);
-        this.authUrlHmrcLambdaUrlPath = "/api/hmrc/authUrl-get";
+        this.hmrcAuthUrlGetLambdaHandler = "hmrcAuthUrlGet.handler";
+        this.hmrcAuthUrlGetLambdaFunctionName = buildFunctionName(this.appResourceNamePrefix, this.hmrcAuthUrlGetLambdaHandler);
+        this.hmrcAuthUrlGetLambdaArn = "%s-hmrc-auth-url-get".formatted(appLambdaArnPrefix);
+        this.hmrcAuthUrlGetLambdaHttpMethod = HttpMethod.GET;
+        this.hmrcAuthUrlGetLambdaUrlPath = "/api/hmrc/authUrl-get";
 
-        this.exchangeHmrcTokenLambdaHandler = "hmrcTokenPost.handler";
-        this.exchangeHmrcTokenLambdaFunctionName =
-                buildFunctionName(this.appResourceNamePrefix, this.exchangeHmrcTokenLambdaHandler);
-        this.exchangeHmrcTokenLambdaArn = "%s-hmrc-token-post".formatted(appLambdaArnPrefix);
-        this.exchangeHmrcTokenLambdaUrlPath = "/api/hmrc/token-post";
+        this.hmrcTokenPostLambdaHandler = "hmrcTokenPost.handler";
+        this.hmrcTokenPostLambdaFunctionName = buildFunctionName(this.appResourceNamePrefix, this.hmrcTokenPostLambdaHandler);
+        this.hmrcTokenPostLambdaArn = "%s-hmrc-token-post".formatted(appLambdaArnPrefix);
+        this.hmrcTokenPostLambdaHttpMethod = HttpMethod.POST;
+        this.hmrcTokenPostLambdaUrlPath = "/api/hmrc/token-post";
 
-        this.submitVatLambdaHandler = "hmrcVatReturnPost.handler";
-        this.submitVatLambdaFunctionName = buildFunctionName(this.appResourceNamePrefix, this.submitVatLambdaHandler);
-        this.submitVatLambdaArn = "%s-hmrc-vat-return".formatted(appLambdaArnPrefix);
-        this.submitVatLambdaUrlPath = "/api/hmrc/vat/return-post";
+        this.hmrcVatReturnPostLambdaHandler = "hmrcVatReturnPost.handler";
+        this.hmrcVatReturnPostLambdaFunctionName = buildFunctionName(this.appResourceNamePrefix, this.hmrcVatReturnPostLambdaHandler);
+        this.hmrcVatReturnPostLambdaArn = "%s-hmrc-vat-return".formatted(appLambdaArnPrefix);
+        this.hmrcVatReturnPostLambdaHttpMethod = HttpMethod.POST;
+        this.hmrcVatReturnPostLambdaUrlPath = "/api/hmrc/vat/return-post";
 
-        this.logReceiptLambdaHandler = "hmrcReceiptPost.handler";
-        this.logReceiptLambdaFunctionName = buildFunctionName(this.appResourceNamePrefix, this.logReceiptLambdaHandler);
-        this.logReceiptLambdaArn = "%s-hmrc-receipt-post".formatted(appLambdaArnPrefix);
-        this.logReceiptLambdaUrlPath = "/api/hmrc/receipt-post";
+        this.receiptPostLambdaHandler = "hmrcReceiptPost.handler";
+        this.receiptPostLambdaFunctionName = buildFunctionName(this.appResourceNamePrefix, this.receiptPostLambdaHandler);
+        this.receiptPostLambdaArn = "%s-hmrc-receipt-post".formatted(appLambdaArnPrefix);
+        this.receiptPostLambdaHttpMethod = HttpMethod.POST;
+        this.receiptPostLambdaUrlPath = "/api/hmrc/receipt-post";
 
-        this.myReceiptsLambdaHandler = "hmrcReceiptGet.handler";
-        this.myReceiptsLambdaFunctionName = buildFunctionName(this.appResourceNamePrefix, this.myReceiptsLambdaHandler);
-        this.myReceiptsLambdaArn = "%s-hmrc-receipt-get".formatted(appLambdaArnPrefix);
-        this.myReceiptsLambdaUrlPath = "/api/hmrc/receipt-get";
+        this.receiptGetLambdaHandler = "hmrcReceiptGet.handler";
+        this.receiptGetLambdaFunctionName = buildFunctionName(this.appResourceNamePrefix, this.receiptGetLambdaHandler);
+        this.receiptGetLambdaArn = "%s-hmrc-receipt-get".formatted(appLambdaArnPrefix);
+        this.receiptGetLambdaHttpMethod = HttpMethod.GET;
+        this.receiptGetLambdaUrlPath = "/api/hmrc/receipt-get";
 
-        this.catalogLambdaHandler = "catalogGet.handler";
-        this.catalogLambdaFunctionName = buildFunctionName(this.appResourceNamePrefix, this.catalogLambdaHandler);
-        this.catalogLambdaArn = "%s-catalog-get".formatted(appLambdaArnPrefix);
-        this.catalogLambdaUrlPath = "/api/catalog-get";
+        this.catalogGetLambdaHandler = "catalogGet.handler";
+        this.catalogGetLambdaFunctionName = buildFunctionName(this.appResourceNamePrefix, this.catalogGetLambdaHandler);
+        this.catalogGetLambdaArn = "%s-catalog-get".formatted(appLambdaArnPrefix);
+        this.catalogGetLambdaHttpMethod = HttpMethod.GET;
+        this.catalogGetLambdaUrlPath = "/api/v1/catalog";
 
-        // TODO: YOU ARE HERE /api/bundle-post -> /api/bundle-post + /api/bundle-delete
-        this.requestBundlesLambdaHandler = "bundlePost.handler";
-        this.requestBundlesLambdaFunctionName =
-                buildFunctionName(this.appResourceNamePrefix, this.requestBundlesLambdaHandler);
-        this.requestBundlesLambdaArn = "%s-bundle-post".formatted(appLambdaArnPrefix);
-        this.requestBundlesLambdaUrlPath = "/api/bundle-post";
+        this.bundleGetLambdaHandler = "bundleGet.handler";
+        this.bundleGetLambdaFunctionName = buildFunctionName(this.appResourceNamePrefix, this.bundleGetLambdaHandler);
+        this.bundleGetLambdaArn = "%s-bundle-get".formatted(appLambdaArnPrefix);
+        this.bundleGetLambdaHttpMethod = HttpMethod.GET;
+        this.bundleGetLambdaUrlPath = "/api/v1/bundle";
+
+        this.bundlePostLambdaHandler = "bundlePost.handler";
+        this.bundlePostLambdaFunctionName = buildFunctionName(this.appResourceNamePrefix, this.bundlePostLambdaHandler);
+        this.bundlePostLambdaArn = "%s-bundle-post".formatted(appLambdaArnPrefix);
+        this.bundlePostLambdaHttpMethod = HttpMethod.POST;
+        this.bundlePostLambdaUrlPath = "/api/v1/bundle";
 
         this.bundleDeleteLambdaHandler = "bundleDelete.handler";
-        this.bundleDeleteLambdaFunctionName =
-                buildFunctionName(this.appResourceNamePrefix, this.bundleDeleteLambdaHandler);
+        this.bundleDeleteLambdaFunctionName = buildFunctionName(this.appResourceNamePrefix, this.bundleDeleteLambdaHandler);
         this.bundleDeleteLambdaArn = "%s-bundle-delete".formatted(appLambdaArnPrefix);
-        this.bundleDeleteLambdaUrlPath = "/api/bundle-delete";
-
-        this.myBundlesLambdaHandler = "bundleGet.handler";
-        this.myBundlesLambdaFunctionName = buildFunctionName(this.appResourceNamePrefix, this.myBundlesLambdaHandler);
-        this.myBundlesLambdaArn = "%s-bundle-get".formatted(appLambdaArnPrefix);
-        this.myBundlesLambdaUrlPath = "/api/bundle-get";
+        this.bundleDeleteLambdaHttpMethod = HttpMethod.DELETE;
+        this.bundleDeleteLambdaUrlPath = "/api/v1/bundle";
 
         this.lambdaArns = new java.util.ArrayList<>();
-        this.lambdaArns.add(this.authUrlCognitoLambdaArn);
-        this.lambdaArns.add(this.exchangeCognitoTokenLambdaArn);
-        this.lambdaArns.add(this.authUrlHmrcLambdaArn);
-        this.lambdaArns.add(this.exchangeHmrcTokenLambdaArn);
-        this.lambdaArns.add(this.submitVatLambdaArn);
-        this.lambdaArns.add(this.logReceiptLambdaArn);
-        this.lambdaArns.add(this.myReceiptsLambdaArn);
-        this.lambdaArns.add(this.catalogLambdaArn);
-        this.lambdaArns.add(this.requestBundlesLambdaArn);
+        this.lambdaArns.add(this.cognitoAuthUrlGetLambdaArn);
+        this.lambdaArns.add(this.cognitoTokenPostLambdaArn);
+        this.lambdaArns.add(this.hmrcAuthUrlGetLambdaArn);
+        this.lambdaArns.add(this.hmrcTokenPostLambdaArn);
+        this.lambdaArns.add(this.hmrcVatReturnPostLambdaArn);
+        this.lambdaArns.add(this.receiptPostLambdaArn);
+        this.lambdaArns.add(this.receiptGetLambdaArn);
+        this.lambdaArns.add(this.catalogGetLambdaArn);
+        this.lambdaArns.add(this.bundlePostLambdaArn);
         this.lambdaArns.add(this.bundleDeleteLambdaArn);
-        this.lambdaArns.add(this.myBundlesLambdaArn);
+        this.lambdaArns.add(this.bundleGetLambdaArn);
 
         this.delResourceNamePrefix = "del-%s".formatted(generateResourceNamePrefix(this.domainName));
         this.delCompressedResourceNamePrefix = "d-%s".formatted(generateCompressedResourceNamePrefix(this.domainName));
