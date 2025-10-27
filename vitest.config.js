@@ -1,10 +1,16 @@
 import { defineConfig } from "vitest/config";
-import { loadEnv } from "vite";
+import dotenv from "dotenv";
 import path from "path";
 
 export default defineConfig(({ mode }) => {
-  // Load env file for tests
-  const env = loadEnv(mode, process.cwd(), "");
+  // Load env files for tests without requiring Vite
+  // 1) Base .env
+  dotenv.config({ path: path.resolve(process.cwd(), ".env") });
+  // 2) Mode-specific .env (e.g., .env.test, .env.ci, .env.prod) if present
+  if (mode) {
+    dotenv.config({ path: path.resolve(process.cwd(), `.env.${mode}`) });
+  }
+  const env = process.env;
 
   return {
     test: {
