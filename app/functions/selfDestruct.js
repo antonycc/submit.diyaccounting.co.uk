@@ -6,7 +6,11 @@ import { extractRequest, httpOkResponse, httpServerErrorResponse } from "../lib/
 export async function handler(event, context) {
   const client = new CloudFormationClient({ region: process.env.AWS_REGION || "eu-west-2" });
   
-  context.getRemainingTimeInMillis = context.getRemainingTimeInMillis || (() => 900000); // 15 minutes default
+  // Ensure context has a fallback for getRemainingTimeInMillis
+  const safeContext = {
+    ...context,
+    getRemainingTimeInMillis: context.getRemainingTimeInMillis || (() => 900000) // 15 minutes default
+  };
   
   console.log("Starting self-destruct sequence...");
   
@@ -34,8 +38,12 @@ export async function handler(event, context) {
     for (const stackName of stacksToDelete) {
       try {
         console.log(`Checking if stack ${stackName} exists...`);
-        await deleteStackIfExistsAndWait(client, context, stackName);
-        results.push({ stackName, status: "deleted", error: null });
+        const deleted = await deleteStackIfExistsAndWait(client, safeContext, stackName);
+        results.push({ 
+          stackName, 
+          status: deleted ? "deleted" : "skipped", 
+          error: null 
+        });
       } catch (error) {
         console.log(`Error deleting stack ${stackName}: ${error.message}`);
         results.push({ stackName, status: "error", error: error.message });
@@ -46,8 +54,12 @@ export async function handler(event, context) {
     if (selfDestructStackName && results.every(r => r.status !== "error")) {
       try {
         console.log(`Checking if stack ${selfDestructStackName} exists...`);
-        await deleteStackIfExistsAndWait(client, context, selfDestructStackName, true);
-        results.push({ stackName: selfDestructStackName, status: "deleted", error: null });
+        const deleted = await deleteStackIfExistsAndWait(client, safeContext, selfDestructStackName, true);
+        results.push({ 
+          stackName: selfDestructStackName, 
+          status: deleted ? "deleted" : "skipped", 
+          error: null 
+        });
       } catch (error) {
         console.log(`Error deleting stack ${selfDestructStackName}: ${error.message}`);
         results.push({ stackName: selfDestructStackName, status: "error", error: error.message });
@@ -58,36 +70,29 @@ export async function handler(event, context) {
     
     if (hasErrors) {
       console.log("One or more stacks failed to delete.");
+      return httpServerErrorResponse({
+        request,
+        message: "Self-destruct sequence completed with errors",
+        data: { results, timestamp: new Date().toISOString() }
+      });
     } else {
       console.log("Self-destruct sequence completed");
+      return httpOkResponse({
+        request,
+        data: {
+          message: "Self-destruct sequence completed",
+          results,
+          timestamp: new Date().toISOString()
+        }
+      });
     }
-    
-    const response = {
-      statusCode: hasErrors ? 500 : 200,
-      body: JSON.stringify({
-        message: "Self-destruct sequence completed",
-        results,
-        timestamp: new Date().toISOString()
-      })
-    };
-    
-    return httpOkResponse({
-      request,
-      data: {
-        message: "Self-destruct sequence completed",
-        results,
-        timestamp: new Date().toISOString()
-      }
-    });
     
   } catch (error) {
     console.error("Error in self-destruct handler:", error);
     return httpServerErrorResponse({
       request,
-      data: { 
-        error: error.message, 
-        message: "Internal Server Error in self-destruct handler" 
-      }
+      message: "Internal Server Error in self-destruct handler",
+      data: { error: error.message }
     });
   }
 }
@@ -97,9 +102,9 @@ async function deleteStackIfExistsAndWait(client, context, stackName, isSelfDest
   try {
     await client.send(new DescribeStacksCommand({ StackName: stackName }));
   } catch (error) {
-    if (error.name === "ValidationError" || error.message?.includes("does not exist")) {
+    if (error.name === "ValidationError") {
       console.log(`Stack ${stackName} does not exist, skipping`);
-      return;
+      return false; // Stack doesn't exist
     }
     throw error;
   }
@@ -114,7 +119,10 @@ async function deleteStackIfExistsAndWait(client, context, stackName, isSelfDest
     if (!deleted) {
       console.log(`Stack ${stackName} did not delete in time.`);
     }
+    return deleted;
   }
+  
+  return true; // Self-destruct stack deletion was initiated
 }
 
 function addStackNameIfPresent(stackList, stackName) {
@@ -138,7 +146,7 @@ async function waitForStackDeletion(client, context, stackName, maxWaitSeconds) 
       await client.send(new DescribeStacksCommand({ StackName: stackName }));
       console.log(`Stack ${stackName} still exists, waiting...`);
     } catch (error) {
-      if (error.name === "ValidationError" || error.message?.includes("does not exist")) {
+      if (error.name === "ValidationError") {
         console.log(`Stack ${stackName} deleted.`);
         return true;
       }
