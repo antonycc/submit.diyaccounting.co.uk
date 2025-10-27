@@ -1,21 +1,26 @@
 package co.uk.diyaccounting.submit.stacks;
 
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
+import java.util.List;
+import java.util.Map;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Aspects;
 import software.amazon.awscdk.CfnOutput;
-import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.Duration;
+import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.Tags;
 import software.amazon.awscdk.aws_apigatewayv2_integrations.HttpLambdaIntegration;
+import software.amazon.awscdk.services.apigatewayv2.CfnStage;
 import software.amazon.awscdk.services.apigatewayv2.HttpApi;
 import software.amazon.awscdk.services.apigatewayv2.HttpMethod;
 import software.amazon.awscdk.services.apigatewayv2.HttpRoute;
 import software.amazon.awscdk.services.apigatewayv2.HttpRouteKey;
-import software.amazon.awscdk.services.apigatewayv2.CfnStage;
 import software.amazon.awscdk.services.cloudwatch.Alarm;
 import software.amazon.awscdk.services.cloudwatch.ComparisonOperator;
 import software.amazon.awscdk.services.cloudwatch.Dashboard;
@@ -23,19 +28,13 @@ import software.amazon.awscdk.services.cloudwatch.GraphWidget;
 import software.amazon.awscdk.services.cloudwatch.Metric;
 import software.amazon.awscdk.services.cloudwatch.MetricOptions;
 import software.amazon.awscdk.services.cloudwatch.TreatMissingData;
+import software.amazon.awscdk.services.iam.PolicyStatement;
+import software.amazon.awscdk.services.iam.ServicePrincipal;
 import software.amazon.awscdk.services.lambda.IFunction;
 import software.amazon.awscdk.services.logs.ILogGroup;
 import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
-import software.amazon.awscdk.services.iam.PolicyStatement;
-import software.amazon.awscdk.services.iam.ServicePrincipal;
 import software.constructs.Construct;
-
-import java.util.List;
-import java.util.Map;
-
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 public class ApiStack extends Stack {
 
@@ -122,9 +121,7 @@ public class ApiStack extends Stack {
 
         // Enable access logging for the default stage to a pre-created CloudWatch Log Group
         ILogGroup apiAccessLogs = LogGroup.fromLogGroupName(
-                this,
-                props.resourceNamePrefix() + "-ImportedApiAccessLogs",
-                props.sharedNames().apiAccessLogGroupName);
+                this, props.resourceNamePrefix() + "-ImportedApiAccessLogs", props.sharedNames().apiAccessLogGroupName);
 
         // Allow API Gateway service to write logs to this log group for this API's default stage
         apiAccessLogs.addToResourcePolicy(PolicyStatement.Builder.create()
@@ -134,40 +131,41 @@ public class ApiStack extends Stack {
                 .resources(java.util.List.of(apiAccessLogs.getLogGroupArn()))
                 .conditions(java.util.Map.of(
                         "StringEquals", java.util.Map.of("aws:SourceAccount", this.getAccount()),
-                        "ArnLike", java.util.Map.of(
-                                "aws:SourceArn",
-                                "arn:aws:apigateway:" + this.getRegion() + "::/apis/" + this.httpApi.getApiId() + "/stages/$default"
-                        )
-                ))
+                        "ArnLike",
+                                java.util.Map.of(
+                                        "aws:SourceArn",
+                                        "arn:aws:apigateway:" + this.getRegion() + "::/apis/" + this.httpApi.getApiId()
+                                                + "/stages/$default")))
                 .build());
 
         // Configure default stage access logs and logging level/metrics
         var defaultStage = (CfnStage) this.httpApi.getDefaultStage().getNode().getDefaultChild();
         defaultStage.setAccessLogSettings(CfnStage.AccessLogSettingsProperty.builder()
                 .destinationArn(apiAccessLogs.getLogGroupArn())
-                .format("{" +
-                        "\"requestId\":\"$context.requestId\"," +
-                        "\"path\":\"$context.path\"," +
-                        "\"routeKey\":\"$context.routeKey\"," +
-                        "\"protocol\":\"$context.protocol\"," +
-                        "\"status\":\"$context.status\"," +
-                        "\"responseLength\":\"$context.responseLength\"," +
-                        "\"requestTime\":\"$context.requestTime\"," +
-                        "\"integrationError\":\"$context.integrationErrorMessage\"" +
-                        "}")
+                .format("{" + "\"requestId\":\"$context.requestId\","
+                        + "\"path\":\"$context.path\","
+                        + "\"routeKey\":\"$context.routeKey\","
+                        + "\"protocol\":\"$context.protocol\","
+                        + "\"status\":\"$context.status\","
+                        + "\"responseLength\":\"$context.responseLength\","
+                        + "\"requestTime\":\"$context.requestTime\","
+                        + "\"integrationError\":\"$context.integrationErrorMessage\""
+                        + "}")
                 .build());
         // Enable AWS X-Ray tracing for the default stage via property override.
         // Some CDK versions don't expose 'tracingEnabled' on CfnStage for HTTP APIs yet.
-        //defaultStage.addPropertyOverride("TracingEnabled", true);
+        // defaultStage.addPropertyOverride("TracingEnabled", true);
         // Note: Execution logs (loggingLevel) and detailed route metrics are not supported for HTTP APIs.
         // Avoid setting defaultRouteSettings to prevent BadRequestException during deployment.
 
         // Alarm: API Gateway HTTP 5xx errors >= 1 in a 5-minute period
         Alarm.Builder.create(this, props.resourceNamePrefix() + "-Api5xxAlarm")
                 .alarmName(props.resourceNamePrefix() + "-api-5xx")
-                .metric(this.httpApi.metricServerError().with(MetricOptions.builder()
-                        .period(Duration.minutes(5))
-                        .build()))
+                .metric(this.httpApi
+                        .metricServerError()
+                        .with(MetricOptions.builder()
+                                .period(Duration.minutes(5))
+                                .build()))
                 .threshold(1)
                 .evaluationPeriods(1)
                 .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
@@ -319,7 +317,8 @@ public class ApiStack extends Stack {
     private static List<EndpointConfig> createEndpointConfigurations(final ApiStackProps props) {
         List<EndpointConfig> configs = new java.util.ArrayList<>();
 
-        // TODO: Move these to properties of the LambdaUrlOrigin construct and rename that LambdaApiOrigin and use instead of EndpointConfig
+        // TODO: Move these to properties of the LambdaUrlOrigin construct and rename that LambdaApiOrigin and use
+        // instead of EndpointConfig
 
         // Map each Lambda key to its endpoint configuration
         configs.add(EndpointConfig.builder()
@@ -371,10 +370,10 @@ public class ApiStack extends Stack {
                 .build());
 
         configs.add(EndpointConfig.builder()
-            .path(props.sharedNames().bundleGetLambdaUrlPath)
-            .httpMethod(props.sharedNames().bundleGetLambdaHttpMethod)
-            .lambdaKey(props.sharedNames().bundleGetLambdaFunctionName)
-            .build());
+                .path(props.sharedNames().bundleGetLambdaUrlPath)
+                .httpMethod(props.sharedNames().bundleGetLambdaHttpMethod)
+                .lambdaKey(props.sharedNames().bundleGetLambdaFunctionName)
+                .build());
 
         configs.add(EndpointConfig.builder()
                 .path(props.sharedNames().bundlePostLambdaUrlPath)

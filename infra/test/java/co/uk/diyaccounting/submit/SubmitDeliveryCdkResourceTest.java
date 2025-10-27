@@ -1,22 +1,21 @@
 package co.uk.diyaccounting.submit;
 
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.jetbrains.annotations.NotNull;
-import org.junit.jupiter.api.Test;
-import org.junitpioneer.jupiter.SetEnvironmentVariable;
-import software.amazon.awscdk.App;
-import software.amazon.awscdk.AppProps;
-import software.amazon.awscdk.assertions.Template;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import org.jetbrains.annotations.NotNull;
+import org.junit.jupiter.api.Test;
+import org.junitpioneer.jupiter.SetEnvironmentVariable;
+import software.amazon.awscdk.App;
+import software.amazon.awscdk.AppProps;
+import software.amazon.awscdk.assertions.Template;
 
 @SetEnvironmentVariable.SetEnvironmentVariables({
     @SetEnvironmentVariable(key = "ENVIRONMENT_NAME", value = "test"),
@@ -35,10 +34,11 @@ import static co.uk.diyaccounting.submit.utils.Kind.infof;
             value = "https://tt-witheight.lambda.hmrc/exchange"),
     @SetEnvironmentVariable(key = "SUBMIT_VAT_LAMBDA_URL", value = "https://tt-witheight.lambda.hmrc/submit"),
     @SetEnvironmentVariable(key = "LOG_RECEIPT_LAMBDA_URL", value = "https://tt-witheight.lambda.hmrc/log"),
-//    @SetEnvironmentVariable(key = "CATALOG_LAMBDA_URL", value = "https://tt-witheight.lambda.catalogue/get"),
-//    @SetEnvironmentVariable(key = "REQUEST_BUNDLES_LAMBDA_URL", value = "https://tt-witheight.lambda.bundles/request"),
-//    @SetEnvironmentVariable(key = "MY_BUNDLES_LAMBDA_URL", value = "https://tt-witheight.lambda.bundles/my"),
-//    @SetEnvironmentVariable(key = "MY_RECEIPTS_LAMBDA_URL", value = "https://tt-witheight.lambda.receipts/my"),
+    //    @SetEnvironmentVariable(key = "CATALOG_LAMBDA_URL", value = "https://tt-witheight.lambda.catalogue/get"),
+    //    @SetEnvironmentVariable(key = "REQUEST_BUNDLES_LAMBDA_URL", value =
+    // "https://tt-witheight.lambda.bundles/request"),
+    //    @SetEnvironmentVariable(key = "MY_BUNDLES_LAMBDA_URL", value = "https://tt-witheight.lambda.bundles/my"),
+    //    @SetEnvironmentVariable(key = "MY_RECEIPTS_LAMBDA_URL", value = "https://tt-witheight.lambda.receipts/my"),
     @SetEnvironmentVariable(key = "CLOUD_TRAIL_ENABLED", value = "true"),
     @SetEnvironmentVariable(key = "SELF_DESTRUCT_DELAY_HOURS", value = "1"),
     @SetEnvironmentVariable(
