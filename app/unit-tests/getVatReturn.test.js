@@ -1,7 +1,7 @@
 // app/unit-tests/getVatReturn.test.js
 
 import { describe, test, expect, beforeEach, vi } from "vitest";
-import fetch from "node-fetch";
+
 
 import { httpGet } from "../functions/hmrcVatReturnGet.js";
 import { buildGovClientTestHeaders } from "./govClientTestHeader.js";
@@ -9,7 +9,9 @@ import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
-vi.mock("node-fetch");
+// Mock global fetch
+const mockFetch = vi.fn();
+vi.stubGlobal('fetch', mockFetch);
 
 describe("getVatReturn handler", () => {
   beforeEach(() => {
@@ -188,7 +190,7 @@ describe("getVatReturn handler", () => {
       finalised: true,
     };
 
-    fetch.mockResolvedValueOnce({
+    mockFetch.mockResolvedValueOnce({
       ok: true,
       json: () => Promise.resolve(mockResponse),
     });
@@ -211,7 +213,7 @@ describe("getVatReturn handler", () => {
 
     expect(result.statusCode).toBe(200);
     expect(body.periodKey).toBe("24A1");
-    expect(fetch).toHaveBeenCalledWith(
+    expect(mockFetch).toHaveBeenCalledWith(
       expect.stringContaining("/organisations/vat/111222333/returns/24A1"),
       expect.objectContaining({
         method: "GET",
@@ -227,7 +229,7 @@ describe("getVatReturn handler", () => {
     // Remove stubbed mode
     delete process.env.TEST_VAT_RETURN;
 
-    fetch.mockResolvedValueOnce({
+    mockFetch.mockResolvedValueOnce({
       ok: false,
       status: 404,
       json: () => Promise.resolve({ code: "NOT_FOUND", message: "The requested resource could not be found" }),
@@ -259,7 +261,7 @@ describe("getVatReturn handler", () => {
 
     const errorMessage = "INVALID_VRN";
 
-    fetch.mockResolvedValueOnce({
+    mockFetch.mockResolvedValueOnce({
       ok: false,
       status: 400,
       json: () => Promise.resolve({ error: errorMessage }),

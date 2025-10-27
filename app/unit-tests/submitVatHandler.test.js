@@ -7,12 +7,10 @@ import { handler as submitVatHandler } from "@app/functions/hmrcVatReturnPost.js
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
-// Mock node-fetch
-vi.mock("node-fetch", () => ({
-  default: vi.fn(),
-}));
+// Mock global fetch
+const mockFetch = vi.fn();
+vi.stubGlobal('fetch', mockFetch);
 
-import fetch from "node-fetch";
 import { buildGovClientTestHeaders } from "@app/unit-tests/govClientTestHeader.js";
 
 describe("httpPostMock", () => {
@@ -35,7 +33,7 @@ describe("httpPostMock", () => {
       processingDate: "2023-01-01T12:00:00.000Z",
     };
 
-    fetch.mockResolvedValueOnce({
+    mockFetch.mockResolvedValueOnce({
       ok: true,
       json: () => Promise.resolve(mockReceipt),
     });
@@ -59,7 +57,7 @@ describe("httpPostMock", () => {
     expect(body.receipt).toEqual(mockReceipt);
 
     // Verify fetch was called with correct parameters
-    expect(fetch).toHaveBeenCalledWith("https://test/organisations/vat/111222333/returns", {
+    expect(mockFetch).toHaveBeenCalledWith("https://test/organisations/vat/111222333/returns", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -102,7 +100,7 @@ describe("httpPostMock", () => {
 
     expect(result.statusCode).toBe(400);
     expect(body.message).toBe("Missing vatNumber parameter from body");
-    expect(fetch).not.toHaveBeenCalled();
+    expect(mockFetch).not.toHaveBeenCalled();
   });
 
   test("should return 400 when periodKey is missing", async () => {
@@ -119,7 +117,7 @@ describe("httpPostMock", () => {
 
     expect(result.statusCode).toBe(400);
     expect(body.message).toBe("Missing periodKey parameter from body");
-    expect(fetch).not.toHaveBeenCalled();
+    expect(mockFetch).not.toHaveBeenCalled();
   });
 
   test("should return 400 when vatDue is missing", async () => {
@@ -136,7 +134,7 @@ describe("httpPostMock", () => {
 
     expect(result.statusCode).toBe(400);
     expect(body.message).toBe("Missing vatDue parameter from body");
-    expect(fetch).not.toHaveBeenCalled();
+    expect(mockFetch).not.toHaveBeenCalled();
   });
 
   test("should return 400 when accessToken is missing", async () => {
@@ -153,7 +151,7 @@ describe("httpPostMock", () => {
 
     expect(result.statusCode).toBe(400);
     expect(body.message).toBe("Missing accessToken parameter from body");
-    expect(fetch).not.toHaveBeenCalled();
+    expect(mockFetch).not.toHaveBeenCalled();
   });
 
   test("should return 400 when all parameters are missing", async () => {
@@ -168,7 +166,7 @@ describe("httpPostMock", () => {
     expect(body.message).toBe(
       "Missing vatNumber parameter from body, Missing periodKey parameter from body, Missing vatDue parameter from body, Missing accessToken parameter from body",
     );
-    expect(fetch).not.toHaveBeenCalled();
+    expect(mockFetch).not.toHaveBeenCalled();
   });
 
   test("should return 400 when body is empty", async () => {
@@ -183,7 +181,7 @@ describe("httpPostMock", () => {
     expect(body.message).toBe(
       "Missing vatNumber parameter from body, Missing periodKey parameter from body, Missing vatDue parameter from body, Missing accessToken parameter from body",
     );
-    expect(fetch).not.toHaveBeenCalled();
+    expect(mockFetch).not.toHaveBeenCalled();
   });
 
   test("should return 400 when body is null", async () => {
@@ -198,7 +196,7 @@ describe("httpPostMock", () => {
     expect(body.message).toBe(
       "Missing vatNumber parameter from body, Missing periodKey parameter from body, Missing vatDue parameter from body, Missing accessToken parameter from body",
     );
-    expect(fetch).not.toHaveBeenCalled();
+    expect(mockFetch).not.toHaveBeenCalled();
   });
 
   test("should handle empty string parameters", async () => {
@@ -218,13 +216,13 @@ describe("httpPostMock", () => {
     expect(body.message).toBe(
       "Missing vatNumber parameter from body, Missing periodKey parameter from body, Missing vatDue parameter from body, Missing accessToken parameter from body",
     );
-    expect(fetch).not.toHaveBeenCalled();
+    expect(mockFetch).not.toHaveBeenCalled();
   });
 
   test("should handle HMRC API error response", async () => {
     const errorMessage = "INVALID_VAT_NUMBER";
 
-    fetch.mockResolvedValueOnce({
+    mockFetch.mockResolvedValueOnce({
       ok: false,
       status: 400,
       json: () => Promise.resolve({ error: errorMessage }),
@@ -250,7 +248,7 @@ describe("httpPostMock", () => {
   test("should handle HMRC API 401 unauthorized", async () => {
     const errorMessage = "INVALID_CREDENTIALS";
 
-    fetch.mockResolvedValueOnce({
+    mockFetch.mockResolvedValueOnce({
       ok: false,
       status: 401,
       json: () => Promise.resolve({ error: errorMessage }),
@@ -276,7 +274,7 @@ describe("httpPostMock", () => {
   test("should handle numeric vatDue as string", async () => {
     const mockReceipt = { formBundleNumber: "123456789012" };
 
-    fetch.mockResolvedValueOnce({
+    mockFetch.mockResolvedValueOnce({
       ok: true,
       json: () => Promise.resolve(mockReceipt),
     });
@@ -295,7 +293,7 @@ describe("httpPostMock", () => {
     expect(result.statusCode).toBe(200);
 
     // Verify the payload was constructed with correct numeric values
-    const fetchCall = fetch.mock.calls[0];
+    const fetchCall = mockFetch.mock.calls[0];
     const payload = JSON.parse(fetchCall[1].body);
     expect(payload.vatDueSales).toBe(1500.75);
     expect(payload.totalVatDue).toBe(1500.75);
@@ -305,7 +303,7 @@ describe("httpPostMock", () => {
   test("should handle numeric vatDue as number", async () => {
     const mockReceipt = { formBundleNumber: "123456789012" };
 
-    fetch.mockResolvedValueOnce({
+    mockFetch.mockResolvedValueOnce({
       ok: true,
       json: () => Promise.resolve(mockReceipt),
     });
@@ -324,7 +322,7 @@ describe("httpPostMock", () => {
     expect(result.statusCode).toBe(200);
 
     // Verify the payload was constructed with correct numeric values
-    const fetchCall = fetch.mock.calls[0];
+    const fetchCall = mockFetch.mock.calls[0];
     const payload = JSON.parse(fetchCall[1].body);
     expect(payload.vatDueSales).toBe(2000.25);
     expect(payload.totalVatDue).toBe(2000.25);
@@ -340,7 +338,7 @@ describe("httpPostMock", () => {
   });
 
   test("should handle network errors", async () => {
-    fetch.mockRejectedValueOnce(new Error("Network error"));
+    mockFetch.mockRejectedValueOnce(new Error("Network error"));
 
     const event = {
       body: JSON.stringify({
@@ -364,6 +362,6 @@ describe("httpPostMock", () => {
     expect(body.message).toBe(
       "Missing vatNumber parameter from body, Missing periodKey parameter from body, Missing vatDue parameter from body, Missing accessToken parameter from body",
     );
-    expect(fetch).not.toHaveBeenCalled();
+    expect(mockFetch).not.toHaveBeenCalled();
   });
 });

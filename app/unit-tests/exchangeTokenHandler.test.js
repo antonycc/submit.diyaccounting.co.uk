@@ -12,7 +12,7 @@ vi.mock("node-fetch", () => ({
   default: vi.fn(),
 }));
 
-import fetch from "node-fetch";
+
 
 describe("httpPostMock", () => {
   const originalEnv = process.env;

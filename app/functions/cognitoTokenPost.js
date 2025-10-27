@@ -1,7 +1,5 @@
 // app/functions/cognitoTokenPost.js
 
-import fetch from "node-fetch";
-
 import logger from "../lib/logger.js";
 import { extractRequest, httpBadRequestResponse, httpOkResponse, httpServerErrorResponse } from "../lib/responses.js";
 import { validateEnv } from "../lib/env.js";
