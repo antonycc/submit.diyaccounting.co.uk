@@ -8,10 +8,13 @@ dotenvConfigIfNotBlank({ path: ".env.test" });
 // Mock AWS S3 client - must be done before importing main.js
 const mockSend = vi.fn();
 vi.mock("@aws-sdk/client-s3", () => ({
-  S3Client: vi.fn(() => ({
-    send: mockSend,
-  })),
-  PutObjectCommand: vi.fn((params) => params),
+  S3Client: vi.fn().mockImplementation(function MockS3Client() {
+    this.send = mockSend;
+    return this;
+  }),
+  PutObjectCommand: vi.fn().mockImplementation(function MockPutObjectCommand(params) {
+    return params;
+  }),
 }));
 
 import { handler as logReceiptHandler } from "@app/functions/hmrcReceiptPost.js";
