@@ -250,8 +250,8 @@ public class SubmitApplication {
         lambdaFunctions.put(sharedNames.receiptPostLambdaFunctionName, this.hmrcStack.logReceiptLambda);
         lambdaFunctions.put(sharedNames.receiptGetLambdaFunctionName, this.hmrcStack.myReceiptsLambda);
         lambdaFunctions.put(sharedNames.catalogGetLambdaFunctionName, this.accountStack.catalogLambda);
-        lambdaFunctions.put(sharedNames.bundleGetLambdaFunctionName, this.accountStack.requestBundlesLambda);
-        lambdaFunctions.put(sharedNames.bundlePostLambdaFunctionName, this.accountStack.myBundlesLambda);
+        lambdaFunctions.put(sharedNames.bundleGetLambdaFunctionName, this.accountStack.myBundlesLambda);
+        lambdaFunctions.put(sharedNames.bundlePostLambdaFunctionName, this.accountStack.requestBundlesLambda);
         lambdaFunctions.put(sharedNames.bundleDeleteLambdaFunctionName, this.accountStack.bundleDeleteLambda);
 
         this.apiStack = new ApiStack(
