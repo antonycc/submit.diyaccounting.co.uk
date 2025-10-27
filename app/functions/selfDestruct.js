@@ -102,7 +102,7 @@ async function deleteStackIfExistsAndWait(client, context, stackName, isSelfDest
   try {
     await client.send(new DescribeStacksCommand({ StackName: stackName }));
   } catch (error) {
-    if (error.name === "ValidationError") {
+    if (error.message?.includes('does not exist')) {
       console.log(`Stack ${stackName} does not exist, skipping`);
       return false; // Stack doesn't exist
     }
@@ -146,7 +146,7 @@ async function waitForStackDeletion(client, context, stackName, maxWaitSeconds) 
       await client.send(new DescribeStacksCommand({ StackName: stackName }));
       console.log(`Stack ${stackName} still exists, waiting...`);
     } catch (error) {
-      if (error.name === "ValidationError") {
+      if (error.message?.includes('does not exist')) {
         console.log(`Stack ${stackName} deleted.`);
         return true;
       }
