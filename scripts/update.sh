@@ -7,11 +7,11 @@
 #
 
 rm -f package-lock.json
-rm -f node-modules
+rm -rf node-modules
 rm -rf cdk-submit-application.out
 rm -rf cdk-submit-delivery.out
 npm install
-npm run update-to-minor
+npm run update-to-greatest
 npm update
 npm upgrade
 npm install

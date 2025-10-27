@@ -236,7 +236,7 @@ describe("VAT Flow Frontend JavaScript", () => {
       // New implementation adds a correlation header via fetchWithId
       expect(fetchMock).toHaveBeenCalledWith(
         "/api/hmrc/authUrl-get?state=test-state",
-        expect.objectContaining({ headers: expect.anything() })
+        expect.objectContaining({ headers: expect.anything() }),
       );
       expect(result).toEqual(mockResponse);
     });

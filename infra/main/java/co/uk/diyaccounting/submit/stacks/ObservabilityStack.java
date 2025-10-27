@@ -1,8 +1,14 @@
 package co.uk.diyaccounting.submit.stacks;
 
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildTrailName;
+
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
 import co.uk.diyaccounting.submit.utils.RetentionDaysConverter;
+import java.util.List;
+import java.util.Map;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Aspects;
 import software.amazon.awscdk.Duration;
@@ -16,29 +22,20 @@ import software.amazon.awscdk.services.cloudwatch.ComparisonOperator;
 import software.amazon.awscdk.services.cloudwatch.Dashboard;
 import software.amazon.awscdk.services.cloudwatch.GraphWidget;
 import software.amazon.awscdk.services.cloudwatch.Metric;
-import software.amazon.awscdk.services.cloudwatch.MetricOptions;
 import software.amazon.awscdk.services.cloudwatch.TreatMissingData;
+import software.amazon.awscdk.services.cognito.CfnIdentityPool;
+import software.amazon.awscdk.services.cognito.CfnIdentityPoolRoleAttachment;
+import software.amazon.awscdk.services.iam.FederatedPrincipal;
+import software.amazon.awscdk.services.iam.PolicyStatement;
+import software.amazon.awscdk.services.iam.Role;
 import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
+import software.amazon.awscdk.services.rum.CfnAppMonitor;
 import software.amazon.awscdk.services.s3.BlockPublicAccess;
 import software.amazon.awscdk.services.s3.Bucket;
 import software.amazon.awscdk.services.s3.BucketEncryption;
 import software.amazon.awscdk.services.s3.LifecycleRule;
-import software.amazon.awscdk.services.rum.CfnAppMonitor;
-import software.amazon.awscdk.services.cognito.CfnIdentityPool;
-import software.amazon.awscdk.services.cognito.CfnIdentityPoolRoleAttachment;
-import software.amazon.awscdk.services.iam.FederatedPrincipal;
-import software.amazon.awscdk.services.iam.PolicyDocument;
-import software.amazon.awscdk.services.iam.PolicyStatement;
-import software.amazon.awscdk.services.iam.Role;
 import software.constructs.Construct;
-
-import java.util.List;
-import java.util.Map;
-
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildTrailName;
 
 public class ObservabilityStack extends Stack {
 
@@ -160,8 +157,8 @@ public class ObservabilityStack extends Stack {
 
         // ------------------ CloudWatch RUM (Real User Monitoring) ------------------
         // Create Cognito Identity Pool for unauthenticated identities used by RUM web client
-        CfnIdentityPool rumIdentityPool = CfnIdentityPool.Builder
-                .create(this, props.resourceNamePrefix() + "-RumIdentityPool")
+        CfnIdentityPool rumIdentityPool = CfnIdentityPool.Builder.create(
+                        this, props.resourceNamePrefix() + "-RumIdentityPool")
                 .allowUnauthenticatedIdentities(true)
                 .build();
 
@@ -171,8 +168,8 @@ public class ObservabilityStack extends Stack {
                         "cognito-identity.amazonaws.com",
                         Map.of(
                                 "StringEquals", Map.of("cognito-identity.amazonaws.com:aud", rumIdentityPool.getRef()),
-                                "ForAnyValue:StringLike", Map.of("cognito-identity.amazonaws.com:amr", "unauthenticated")
-                        ),
+                                "ForAnyValue:StringLike",
+                                        Map.of("cognito-identity.amazonaws.com:amr", "unauthenticated")),
                         "sts:AssumeRoleWithWebIdentity"))
                 .build();
         rumGuestRole.addToPolicy(PolicyStatement.Builder.create()
@@ -239,20 +236,31 @@ public class ObservabilityStack extends Stack {
                 .build();
 
         // Frontend Performance Dashboard
-        var frontendRows = List.<List<software.amazon.awscdk.services.cloudwatch.IWidget>>of(
-                List.of(
-                        GraphWidget.Builder.create().title("RUM p75 LCP (ms)").left(List.of(lcpP75)).width(8).height(6).build(),
-                        GraphWidget.Builder.create().title("RUM p75 INP (ms)").left(List.of(Metric.Builder.create()
-                                        .namespace("AWS/RUM")
-                                        .metricName("WebVitalsInteractionToNextPaint")
-                                        .dimensionsMap(Map.of("application_name", rumAppName))
-                                        .statistic("p75")
-                                        .period(Duration.minutes(5))
-                                        .build()))
-                                .width(8).height(6).build(),
-                        GraphWidget.Builder.create().title("RUM JS Errors (5m sum)").left(List.of(jsErrors)).width(8).height(6).build()
-                )
-        );
+        var frontendRows = List.<List<software.amazon.awscdk.services.cloudwatch.IWidget>>of(List.of(
+                GraphWidget.Builder.create()
+                        .title("RUM p75 LCP (ms)")
+                        .left(List.of(lcpP75))
+                        .width(8)
+                        .height(6)
+                        .build(),
+                GraphWidget.Builder.create()
+                        .title("RUM p75 INP (ms)")
+                        .left(List.of(Metric.Builder.create()
+                                .namespace("AWS/RUM")
+                                .metricName("WebVitalsInteractionToNextPaint")
+                                .dimensionsMap(Map.of("application_name", rumAppName))
+                                .statistic("p75")
+                                .period(Duration.minutes(5))
+                                .build()))
+                        .width(8)
+                        .height(6)
+                        .build(),
+                GraphWidget.Builder.create()
+                        .title("RUM JS Errors (5m sum)")
+                        .left(List.of(jsErrors))
+                        .width(8)
+                        .height(6)
+                        .build()));
         Dashboard frontendDashboard = Dashboard.Builder.create(this, props.resourceNamePrefix() + "-FrontendDashboard")
                 .dashboardName(props.resourceNamePrefix() + "-frontend")
                 .widgets(frontendRows)
@@ -263,6 +271,10 @@ public class ObservabilityStack extends Stack {
         cfnOutput(this, "RumIdentityPoolId", rumIdentityPool.getRef());
         cfnOutput(this, "RumGuestRoleArn", rumGuestRole.getRoleArn());
         cfnOutput(this, "RumRegion", this.getRegion());
-        cfnOutput(this, "FrontendDashboard", "https://" + this.getRegion() + ".console.aws.amazon.com/cloudwatch/home?region=" + this.getRegion() + "#dashboards:name=" + frontendDashboard.getDashboardName());
+        cfnOutput(
+                this,
+                "FrontendDashboard",
+                "https://" + this.getRegion() + ".console.aws.amazon.com/cloudwatch/home?region=" + this.getRegion()
+                        + "#dashboards:name=" + frontendDashboard.getDashboardName());
     }
 }

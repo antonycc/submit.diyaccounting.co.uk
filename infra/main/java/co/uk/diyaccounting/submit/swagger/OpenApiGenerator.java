@@ -52,16 +52,16 @@ public class OpenApiGenerator {
         ObjectNode server = mapper.createObjectNode();
         server.put("url", "%sapi/v1/".formatted(baseUrl));
         server.put("description", "DIY Accounting Submit API documentation");
-        //ObjectNode serverVariables = mapper.createObjectNode();
-        //ObjectNode apiIdVar = mapper.createObjectNode();
-        //apiIdVar.put("description", "API Gateway ID");
-        //apiIdVar.put("default", "your-api-id");
-        //ObjectNode regionVar = mapper.createObjectNode();
-        //regionVar.put("description", "AWS Region");
-        //regionVar.put("default", "eu-west-2");
-        //serverVariables.set("apiId", apiIdVar);
-        //serverVariables.set("region", regionVar);
-        //server.set("variables", serverVariables);
+        // ObjectNode serverVariables = mapper.createObjectNode();
+        // ObjectNode apiIdVar = mapper.createObjectNode();
+        // apiIdVar.put("description", "API Gateway ID");
+        // apiIdVar.put("default", "your-api-id");
+        // ObjectNode regionVar = mapper.createObjectNode();
+        // regionVar.put("description", "AWS Region");
+        // regionVar.put("default", "eu-west-2");
+        // serverVariables.set("apiId", apiIdVar);
+        // serverVariables.set("region", regionVar);
+        // server.set("variables", serverVariables);
         servers.add(server);
         openApi.set("servers", servers);
 

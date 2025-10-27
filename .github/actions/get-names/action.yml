@@ -92,7 +92,7 @@ runs:
             if [ -n "${MERGED_BRANCH:-}" ]; then
               CLEANED_MERGED=$(echo "$MERGED_BRANCH" | tr '[:upper:]' '[:lower:]' | sed -e 's/[^a-z0-9]/-/g' -e 's/-\{2,\}/-/g' -e 's/^-//' -e 's/-$//')
               if [ -n "$CLEANED_MERGED" ]; then
-                DEPLOYMENT_NAME="env-$CLEANED_MERGED"
+                DEPLOYMENT_NAME="prod-${CLEANED_MERGED:0:7}"
               fi
             fi
           fi

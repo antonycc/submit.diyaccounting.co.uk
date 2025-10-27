@@ -1,8 +1,12 @@
 package co.uk.diyaccounting.submit.constructs;
 
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+
+import java.util.List;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.services.cloudwatch.Alarm;
 import software.amazon.awscdk.services.cloudwatch.ComparisonOperator;
+import software.amazon.awscdk.services.cloudwatch.Metric;
 import software.amazon.awscdk.services.cloudwatch.MetricOptions;
 import software.amazon.awscdk.services.cloudwatch.TreatMissingData;
 import software.amazon.awscdk.services.ecr.IRepository;
@@ -13,16 +17,11 @@ import software.amazon.awscdk.services.lambda.DockerImageFunction;
 import software.amazon.awscdk.services.lambda.EcrImageCodeProps;
 import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.lambda.Tracing;
+import software.amazon.awscdk.services.logs.FilterPattern;
 import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.LogGroupProps;
 import software.amazon.awscdk.services.logs.MetricFilter;
-import software.amazon.awscdk.services.logs.FilterPattern;
-import software.amazon.awscdk.services.cloudwatch.Metric;
 import software.constructs.Construct;
-
-import java.util.List;
-
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
 
 public class LambdaUrlOrigin {
 
@@ -76,9 +75,11 @@ public class LambdaUrlOrigin {
         // 1) Errors >= 1 in a 5-minute period
         Alarm.Builder.create(scope, props.idPrefix() + "-ErrorsAlarm")
                 .alarmName(props.functionName() + "-errors")
-                .metric(this.lambda.metricErrors().with(MetricOptions.builder()
-                        .period(Duration.minutes(5))
-                        .build()))
+                .metric(this.lambda
+                        .metricErrors()
+                        .with(MetricOptions.builder()
+                                .period(Duration.minutes(5))
+                                .build()))
                 .threshold(1)
                 .evaluationPeriods(1)
                 .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
@@ -89,9 +90,11 @@ public class LambdaUrlOrigin {
         // 2) Throttles >= 1 in a 5-minute period
         Alarm.Builder.create(scope, props.idPrefix() + "-ThrottlesAlarm")
                 .alarmName(props.functionName() + "-throttles")
-                .metric(this.lambda.metricThrottles().with(MetricOptions.builder()
-                        .period(Duration.minutes(5))
-                        .build()))
+                .metric(this.lambda
+                        .metricThrottles()
+                        .with(MetricOptions.builder()
+                                .period(Duration.minutes(5))
+                                .build()))
                 .threshold(1)
                 .evaluationPeriods(1)
                 .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
@@ -105,10 +108,12 @@ public class LambdaUrlOrigin {
         double highDurationThresholdMs = timeoutMs * 0.8;
         Alarm.Builder.create(scope, props.idPrefix() + "-HighDurationP95Alarm")
                 .alarmName(props.functionName() + "-high-duration-p95")
-                .metric(this.lambda.metricDuration().with(MetricOptions.builder()
-                        .statistic("p95")
-                        .period(Duration.minutes(5))
-                        .build()))
+                .metric(this.lambda
+                        .metricDuration()
+                        .with(MetricOptions.builder()
+                                .statistic("p95")
+                                .period(Duration.minutes(5))
+                                .build()))
                 .threshold(highDurationThresholdMs)
                 .evaluationPeriods(1)
                 .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
@@ -123,13 +128,7 @@ public class LambdaUrlOrigin {
         MetricFilter.Builder.create(scope, props.idPrefix() + "-LogErrorsMetricFilter")
                 .logGroup(this.logGroup)
                 .filterPattern(FilterPattern.anyTerm(
-                        "ERROR",
-                        "Error",
-                        "Exception",
-                        "Unhandled",
-                        "Task timed out",
-                        "SEVERE",
-                        "FATAL"))
+                        "ERROR", "Error", "Exception", "Unhandled", "Task timed out", "SEVERE", "FATAL"))
                 .metricNamespace(logErrorMetricNamespace)
                 .metricName(logErrorMetricName)
                 .metricValue("1")
@@ -150,7 +149,8 @@ public class LambdaUrlOrigin {
                 .evaluationPeriods(1)
                 .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
                 .treatMissingData(TreatMissingData.NOT_BREACHING)
-                .alarmDescription("Detected >= 1 error-like log line in the last 5 minutes for function " + this.lambda.getFunctionName())
+                .alarmDescription("Detected >= 1 error-like log line in the last 5 minutes for function "
+                        + this.lambda.getFunctionName())
                 .build();
     }
 }
