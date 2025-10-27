@@ -1,64 +1,53 @@
 // app/unit-tests/convertVideo.integration.test.js
 
 import { describe, test, expect, vi } from "vitest";
+import { spawn } from "child_process";
 
-// Mock fluent-ffmpeg
-vi.mock("fluent-ffmpeg", () => {
-  // Create a mock chain object returned by ffmpeg() calls
-  const chain = {
-    videoCodec: vi.fn().mockReturnThis(),
-    audioCodec: vi.fn().mockReturnThis(),
-    outputOptions: vi.fn().mockReturnThis(),
-    on: vi.fn().mockImplementation(function (event, cb) {
-      if (event === "end") {
-        // Immediately call end handler to simulate success
-        cb();
-      }
-      return this;
-    }),
-    save: vi.fn().mockReturnThis(),
-  };
-
-  // The default export is a function that returns the chain
-  const ffmpegFn = vi.fn(() => chain);
-  // Add the static methods used by the converter
-  ffmpegFn.setFfmpegPath = vi.fn();
-  ffmpegFn.setFfprobePath = vi.fn();
-
-  return { default: ffmpegFn };
-});
-
-// Mock ffmpeg-static to return a default export (any string is fine)
-vi.mock("ffmpeg-static", () => ({
-  default: "/usr/bin/ffmpeg",
+// Mock child_process spawn
+vi.mock("child_process", () => ({
+  spawn: vi.fn(),
 }));
 
-// Mock ffprobe installer to provide a default export with a path property
-vi.mock("@ffprobe-installer/ffprobe", () => ({
-  default: { path: "/usr/bin/ffprobe" },
+// Mock fs/promises access
+vi.mock("fs/promises", () => ({
+  access: vi.fn().mockResolvedValue(undefined),
+  constants: { F_OK: 0 },
 }));
 
-// Import the function under test from your renamed file
-import { convertVideo } from "@app/bin/convert.js";
+// Import the function under test from the new wrapper script
+import { convertVideo } from "../../scripts/convert-video.js";
 
 describe("convertVideo", () => {
-  test("invokes fluent-ffmpeg with correct options", async () => {
-    const ffmpeg = (await import("fluent-ffmpeg")).default;
+  test("invokes system ffmpeg with correct options", async () => {
+    const mockProcess = {
+      stderr: { on: vi.fn() },
+      on: vi.fn((event, callback) => {
+        if (event === "close") {
+          // Simulate successful completion
+          callback(0);
+        }
+      }),
+    };
 
-    await convertVideo("app/unit-tests/input.webm", "target/output.mp4");
+    spawn.mockReturnValue(mockProcess);
 
-    // Verify that ffmpeg() was called with the input file
-    expect(ffmpeg).toHaveBeenCalledWith("app/unit-tests/input.webm");
+    await convertVideo("input.webm", "output.mp4");
 
-    // Inspect the chain methods
-    const chain = ffmpeg.mock.results[0].value;
-    expect(chain.videoCodec).toHaveBeenCalledWith("libx264");
-    expect(chain.audioCodec).toHaveBeenCalledWith("aac");
-    expect(chain.outputOptions).toHaveBeenCalledWith(expect.arrayContaining(["-pix_fmt yuv420p"]));
-    expect(chain.save).toHaveBeenCalledWith("target/output.mp4");
-
-    // Ensure the static methods were invoked at least once
-    expect(ffmpeg.setFfmpegPath).toHaveBeenCalled();
-    expect(ffmpeg.setFfprobePath).toHaveBeenCalled();
+    // Verify that spawn was called with ffmpeg and correct arguments
+    expect(spawn).toHaveBeenCalledWith("ffmpeg", [
+      "-i", "input.webm",
+      "-c:v", "libx264",
+      "-c:a", "aac",
+      "-pix_fmt", "yuv420p",
+      "-profile:v", "baseline",
+      "-level", "3.1",
+      "-movflags", "+faststart",
+      "-crf", "22",
+      "-preset", "slow",
+      "-y",
+      "output.mp4"
+    ], {
+      stdio: ["ignore", "pipe", "pipe"]
+    });
   });
 });
