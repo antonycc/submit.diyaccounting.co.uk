@@ -1245,6 +1245,14 @@ jobs:
           echo "ORIGIN_BUCKET_NAME=$ORIGIN_BUCKET_NAME"
           echo "ORIGIN_BUCKET_NAME=$ORIGIN_BUCKET_NAME" >> $GITHUB_OUTPUT
         shell: bash
+
+      - name: Update CloudFront API Gateway origin configuration
+        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
+        run: npm run set-apex-origins
+        env:
+          ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
+          DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
+          AWS_REGION: ${{ env.AWS_REGION }}
     outputs:
       originBucketName: ${{ steps.edge-outputs.outputs.ORIGIN_BUCKET_NAME }}
 

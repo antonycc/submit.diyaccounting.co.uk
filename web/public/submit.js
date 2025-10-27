@@ -74,7 +74,7 @@ function generateRandomState() {
 function fetchWithId(url, opts = {}) {
   const headers = new Headers(opts.headers || {});
   try {
-    const rid = (crypto && crypto.randomUUID) ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    const rid = crypto && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
     headers.set("X-Client-Request-Id", rid);
   } catch (_) {}
   return fetch(url, { ...opts, headers });
@@ -240,7 +240,9 @@ async function fetchCatalogText(url = "/product-catalogue.toml") {
 function hasRumConsent() {
   try {
     return localStorage.getItem("consent.rum") === "granted" || localStorage.getItem("consent.analytics") === "granted";
-  } catch (_) { return false; }
+  } catch (_) {
+    return false;
+  }
 }
 
 function showConsentBannerIfNeeded() {
@@ -249,7 +251,8 @@ function showConsentBannerIfNeeded() {
   if (document.getElementById("consent-banner")) return;
   const banner = document.createElement("div");
   banner.id = "consent-banner";
-  banner.style.cssText = "position:fixed;bottom:0;left:0;right:0;background:#111;color:#fff;padding:12px 16px;z-index:9999;display:flex;gap:12px;flex-wrap:wrap;align-items:center;justify-content:center;font-size:14px";
+  banner.style.cssText =
+    "position:fixed;bottom:0;left:0;right:0;background:#111;color:#fff;padding:12px 16px;z-index:9999;display:flex;gap:12px;flex-wrap:wrap;align-items:center;justify-content:center;font-size:14px";
   banner.innerHTML = `
     <span>We use minimal analytics to improve performance (CloudWatch RUM). We’ll only start after you consent. See our <a href="/privacy.html" style="color:#9cf">privacy policy</a>.</span>
     <div style="display:flex;gap:8px">
@@ -258,13 +261,17 @@ function showConsentBannerIfNeeded() {
     </div>`;
   document.body.appendChild(banner);
   document.getElementById("consent-accept").onclick = () => {
-    try { localStorage.setItem("consent.rum", "granted"); } catch(_){}
+    try {
+      localStorage.setItem("consent.rum", "granted");
+    } catch (_) {}
     document.body.removeChild(banner);
     document.dispatchEvent(new CustomEvent("consent-granted", { detail: { type: "rum" } }));
     maybeInitRum();
   };
   document.getElementById("consent-decline").onclick = () => {
-    try { localStorage.setItem("consent.rum", "declined"); } catch(_){}
+    try {
+      localStorage.setItem("consent.rum", "declined");
+    } catch (_) {}
     document.body.removeChild(banner);
   };
 }
@@ -286,7 +293,10 @@ function rumReady() {
 
 async function maybeInitRum() {
   if (!window.__RUM_CONFIG__) return;
-  if (!hasRumConsent()) { showConsentBannerIfNeeded(); return; }
+  if (!hasRumConsent()) {
+    showConsentBannerIfNeeded();
+    return;
+  }
   if (window.__RUM_INIT_DONE__) return;
   const c = window.__RUM_CONFIG__;
   if (!c.appMonitorId || !c.region || !c.identityPoolId || !c.guestRoleArn) return;
@@ -295,16 +305,16 @@ async function maybeInitRum() {
   try {
     await loadScript(clientUrl);
     if (typeof window.cwr === "function") {
-      window.cwr('config', {
+      window.cwr("config", {
         sessionSampleRate: c.sessionSampleRate ?? 1,
         guestRoleArn: c.guestRoleArn,
         identityPoolId: c.identityPoolId,
         endpoint: `https://dataplane.rum.${c.region}.amazonaws.com`,
-        telemetries: ['performance','errors','http'],
+        telemetries: ["performance", "errors", "http"],
         allowCookies: true,
         enableXRay: true,
         appMonitorId: c.appMonitorId,
-        region: c.region
+        region: c.region,
       });
       window.__RUM_INIT_DONE__ = true;
       rumReady();
@@ -318,23 +328,23 @@ async function maybeInitRum() {
 async function sha256Hex(text) {
   const enc = new TextEncoder();
   const data = enc.encode(text);
-  const digest = await crypto.subtle.digest('SHA-256', data);
+  const digest = await crypto.subtle.digest("SHA-256", data);
   const bytes = Array.from(new Uint8Array(digest));
-  return bytes.map(b => b.toString(16).padStart(2,'0')).join('');
+  return bytes.map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
 async function setRumUserIdIfAvailable() {
   try {
-    const userInfo = localStorage.getItem('userInfo');
+    const userInfo = localStorage.getItem("userInfo");
     if (!userInfo) return;
     const user = JSON.parse(userInfo);
     const rawId = user.sub || user.username || user.email;
     if (!rawId) return;
     const hashed = await sha256Hex(String(rawId));
     if (window.cwr) {
-      window.cwr('setUserId', hashed);
+      window.cwr("setUserId", hashed);
     } else {
-      document.addEventListener('rum-ready', () => window.cwr && window.cwr('setUserId', hashed), { once: true });
+      document.addEventListener("rum-ready", () => window.cwr && window.cwr("setUserId", hashed), { once: true });
     }
   } catch (_) {}
 }
@@ -342,46 +352,48 @@ async function setRumUserIdIfAvailable() {
 function ensurePrivacyLink() {
   const anchors = Array.from(document.querySelectorAll('footer a[href$="privacy.html"]'));
   if (anchors.length) return;
-  const footer = document.querySelector('footer .footer-left') || document.querySelector('footer');
+  const footer = document.querySelector("footer .footer-left") || document.querySelector("footer");
   if (!footer) return;
-  const link = document.createElement('a');
-  link.href = '/privacy.html';
-  link.textContent = 'privacy';
-  link.style.marginLeft = '8px';
+  const link = document.createElement("a");
+  link.href = "/privacy.html";
+  link.textContent = "privacy";
+  link.style.marginLeft = "8px";
   footer.appendChild(link);
 }
 
 function readMeta(name) {
   const el = document.querySelector(`meta[name="${name}"]`);
-  return el && el.content ? el.content.trim() : '';
+  return el && el.content ? el.content.trim() : "";
 }
 function bootstrapRumConfigFromMeta() {
   if (window.__RUM_CONFIG__) return;
-  const appMonitorId = readMeta('rum:appMonitorId');
-  const region = readMeta('rum:region');
-  const identityPoolId = readMeta('rum:identityPoolId');
-  const guestRoleArn = readMeta('rum:guestRoleArn');
+  const appMonitorId = readMeta("rum:appMonitorId");
+  const region = readMeta("rum:region");
+  const identityPoolId = readMeta("rum:identityPoolId");
+  const guestRoleArn = readMeta("rum:guestRoleArn");
   if (appMonitorId && region && identityPoolId && guestRoleArn) {
     window.__RUM_CONFIG__ = { appMonitorId, region, identityPoolId, guestRoleArn, sessionSampleRate: 1 };
-    try { localStorage.setItem('rum.config', JSON.stringify(window.__RUM_CONFIG__)); } catch(_){}
+    try {
+      localStorage.setItem("rum.config", JSON.stringify(window.__RUM_CONFIG__));
+    } catch (_) {}
   }
 }
 function bootstrapRumConfigFromStorage() {
   if (window.__RUM_CONFIG__) return;
   try {
-    const raw = localStorage.getItem('rum.config');
+    const raw = localStorage.getItem("rum.config");
     if (!raw) return;
     const cfg = JSON.parse(raw);
     if (cfg && cfg.appMonitorId && cfg.region && cfg.identityPoolId && cfg.guestRoleArn) {
       window.__RUM_CONFIG__ = cfg;
     }
-  } catch(_){}
+  } catch (_) {}
 }
 
 // Wire up on load
-if (typeof window !== 'undefined') {
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
+if (typeof window !== "undefined") {
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", () => {
       ensurePrivacyLink();
       bootstrapRumConfigFromMeta();
       showConsentBannerIfNeeded();
@@ -396,7 +408,9 @@ if (typeof window !== 'undefined') {
     setRumUserIdIfAvailable();
   }
   // Update user id on cross-tab login changes
-  window.addEventListener('storage', (e) => { if (e.key === 'userInfo') setRumUserIdIfAvailable(); });
+  window.addEventListener("storage", (e) => {
+    if (e.key === "userInfo") setRumUserIdIfAvailable();
+  });
 }
 
 // Expose functions to window for use by other scripts and testing
