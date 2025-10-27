@@ -244,7 +244,7 @@ public class IdentityStack extends Stack {
         this.userPoolDomainARecord = ARecord.Builder.create(this, props.resourceNamePrefix() + "-UserPoolDomainARecord")
                 .zone(hostedZone)
                 .recordName(props.sharedNames().cognitoDomainName)
-                .deleteExisting(true)
+                //.deleteExisting(true)
                 .target(RecordTarget.fromAlias(new IAliasRecordTarget() {
                     @Override
                     public AliasRecordTargetConfig bind(
@@ -268,7 +268,7 @@ public class IdentityStack extends Stack {
                         this, props.resourceNamePrefix() + "-UserPoolDomainAaaaRecord")
                 .zone(hostedZone)
                 .recordName(props.sharedNames().cognitoDomainName)
-                .deleteExisting(true)
+                //.deleteExisting(true)
                 .target(RecordTarget.fromAlias(new IAliasRecordTarget() {
                     @Override
                     public AliasRecordTargetConfig bind(
