@@ -379,7 +379,8 @@ function bootstrapRumConfigFromStorage() {
 }
 
 // Wire up on load
-if (typeof window !== 'undefined') {
+// Ensure we have a real DOM before touching document in test environments
+if (typeof window !== 'undefined' && typeof document !== 'undefined') {
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
       ensurePrivacyLink();
