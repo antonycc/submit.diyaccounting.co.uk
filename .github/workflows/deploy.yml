@@ -419,7 +419,7 @@ jobs:
           cache: 'maven'
 
       - name: Download self-destruct handler JAR
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           name: self-destruct-handler-${{ github.sha }}
           path: cdk-submit-application.out/
@@ -619,7 +619,7 @@ jobs:
 
       - name: Download image artifact
         if: ${{ steps.image-exists.outputs.exists != 'true' }}
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           name: docker-image
           path: docker-image/
@@ -1084,7 +1084,7 @@ jobs:
           cache: 'maven'
 
       - name: Download self-destruct handler JAR
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           name: self-destruct-handler-${{ github.sha }}
           path: cdk-submit-application.out/
@@ -1959,7 +1959,7 @@ jobs:
         run: npm ci
 
       - name: Download all test artifacts
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           path: artifacts/
         continue-on-error: true

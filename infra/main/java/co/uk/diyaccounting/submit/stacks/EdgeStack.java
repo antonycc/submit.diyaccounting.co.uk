@@ -353,7 +353,7 @@ public class EdgeStack extends Stack {
                         .recordName(recordName)
                         .zone(zone)
                         .target(RecordTarget.fromAlias(new CloudFrontTarget(this.distribution)))
-                        .deleteExisting(true)
+                        //.deleteExisting(true)
                         .build());
         // AAAA record
         this.aliasRecordV6 = new AaaaRecord(
@@ -363,7 +363,7 @@ public class EdgeStack extends Stack {
                         .recordName(recordName)
                         .zone(zone)
                         .target(RecordTarget.fromAlias(new CloudFrontTarget(this.distribution)))
-                        .deleteExisting(true)
+                        //.deleteExisting(true)
                         .build());
 
         Aspects.of(this).add(new SetAutoDeleteJobLogRetentionAspect(props.deploymentName(), RetentionDays.THREE_DAYS));
