@@ -326,8 +326,8 @@ public class EdgeStack extends Stack {
                 .defaultBehavior(localBehaviorOptions) // props.webBehaviorOptions)
                 .additionalBehaviors(additionalBehaviors)
                 .domainNames(List.of(
-                        props.sharedNames().domainName
-                        // props.sharedNames().envDomainName
+                        props.sharedNames().domainName,
+                        props.sharedNames().envDomainName
                         ))
                 .certificate(cert)
                 .defaultRootObject("index.html")
