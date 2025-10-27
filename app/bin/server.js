@@ -448,7 +448,7 @@ app.get(vatPenaltiesPath, requireActivity("vat-obligations"), async (req, res) =
 });
 
 // fallback to index.html for SPA routing (if needed)
-app.get("*", (req, res) => {
+app.get(/.*/, (req, res) => {
   res.sendFile(path.join(__dirname, "../../web/public/index.html"));
 });
 
