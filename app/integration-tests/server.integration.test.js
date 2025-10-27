@@ -128,8 +128,8 @@ describe("Integration – Server Express App", () => {
     });
 
     // Fallback to index.html for SPA routing
-    app.get("*", (req, res) => {
-      res.sendFile(path.join(__dirname, "../../app/lib/public/index.html"));
+    app.get(/.*/, (req, res) => {
+      res.sendFile(path.join(__dirname, "../../web/public/index.html"));
     });
   });
 
