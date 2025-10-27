@@ -1,14 +1,10 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
 import co.uk.diyaccounting.submit.constructs.LambdaUrlOrigin;
 import co.uk.diyaccounting.submit.constructs.LambdaUrlOriginProps;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
-import java.util.Optional;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Aspects;
 import software.amazon.awscdk.Duration;
@@ -25,12 +21,17 @@ import software.amazon.awscdk.services.logs.RetentionDays;
 import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
 
+import java.util.Optional;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+
 public class AuthStack extends Stack {
 
-    public Function authUrlCognitoLambda;
-    public LogGroup authUrlCognitoLambdaLogGroup;
-    public Function exchangeCognitoTokenLambda;
-    public LogGroup exchangeCognitoTokenLambdaLogGroup;
+    public Function cognitoAuthUrlGetLambda;
+    public LogGroup cognitoAuthUrlGetLambdaLogGroup;
+    public Function cognitoTokenPostLambda;
+    public LogGroup cognitoTokenPostLambdaLogGroup;
 
     @Value.Immutable
     public interface AuthStackProps extends StackProps, SubmitStackProps {
@@ -113,11 +114,11 @@ public class AuthStack extends Stack {
                         .environment(authUrlCognitoLambdaEnv)
                         .timeout(Duration.millis(Long.parseLong("30000")))
                         .build());
-        this.authUrlCognitoLambda = authUrlCognitoLambdaUrlOrigin.lambda;
-        this.authUrlCognitoLambdaLogGroup = authUrlCognitoLambdaUrlOrigin.logGroup;
+        this.cognitoAuthUrlGetLambda = authUrlCognitoLambdaUrlOrigin.lambda;
+        this.cognitoAuthUrlGetLambdaLogGroup = authUrlCognitoLambdaUrlOrigin.logGroup;
         infof(
                 "Created Lambda %s for Cognito auth URL with handler %s",
-                this.authUrlCognitoLambda.getNode().getId(),
+                this.cognitoAuthUrlGetLambda.getNode().getId(),
                 props.lambdaEntry() + props.sharedNames().cognitoAuthUrlGetLambdaHandler);
 
         // exchangeToken - Google or Antonycc via Cognito
@@ -143,27 +144,27 @@ public class AuthStack extends Stack {
                         .environment(exchangeCognitoTokenLambdaEnv)
                         .timeout(Duration.millis(Long.parseLong("30000")))
                         .build());
-        this.exchangeCognitoTokenLambda = exchangeCognitoTokenLambdaUrlOrigin.lambda;
-        this.exchangeCognitoTokenLambdaLogGroup = exchangeCognitoTokenLambdaUrlOrigin.logGroup;
+        this.cognitoTokenPostLambda = exchangeCognitoTokenLambdaUrlOrigin.lambda;
+        this.cognitoTokenPostLambdaLogGroup = exchangeCognitoTokenLambdaUrlOrigin.logGroup;
         infof(
                 "Created Lambda %s for Cognito exchange token with handler %s",
-                this.exchangeCognitoTokenLambda.getNode().getId(),
+                this.cognitoTokenPostLambda.getNode().getId(),
                 props.lambdaEntry() + props.sharedNames().cognitoTokenPostLambdaHandler);
 
         // Create Function URLs for cross-region access
-        var authUrlCognitoUrl = this.authUrlCognitoLambda.addFunctionUrl(FunctionUrlOptions.builder()
+        var authUrlCognitoUrl = this.cognitoAuthUrlGetLambda.addFunctionUrl(FunctionUrlOptions.builder()
                 .authType(functionUrlAuthType)
                 .invokeMode(InvokeMode.BUFFERED)
                 .build());
-        var exchangeCognitoTokenUrl = this.exchangeCognitoTokenLambda.addFunctionUrl(FunctionUrlOptions.builder()
+        var exchangeCognitoTokenUrl = this.cognitoTokenPostLambda.addFunctionUrl(FunctionUrlOptions.builder()
                 .authType(functionUrlAuthType)
                 .invokeMode(InvokeMode.BUFFERED)
                 .build());
 
         Aspects.of(this).add(new SetAutoDeleteJobLogRetentionAspect(props.deploymentName(), RetentionDays.THREE_DAYS));
 
-        cfnOutput(this, "AuthUrlCognitoLambdaArn", this.authUrlCognitoLambda.getFunctionArn());
-        cfnOutput(this, "ExchangeCognitoTokenLambdaArn", this.exchangeCognitoTokenLambda.getFunctionArn());
+        cfnOutput(this, "AuthUrlCognitoLambdaArn", this.cognitoAuthUrlGetLambda.getFunctionArn());
+        cfnOutput(this, "ExchangeCognitoTokenLambdaArn", this.cognitoTokenPostLambda.getFunctionArn());
 
         // Output Function URLs for EdgeStack to use as HTTP origins
         cfnOutput(this, "AuthUrlCognitoLambdaUrl", authUrlCognitoUrl.getUrl());

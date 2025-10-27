@@ -319,6 +319,8 @@ public class ApiStack extends Stack {
     private static List<EndpointConfig> createEndpointConfigurations(final ApiStackProps props) {
         List<EndpointConfig> configs = new java.util.ArrayList<>();
 
+        // TODO: Move these to properties of the LambdaUrlOrigin construct and rename that LambdaApiOrigin and use instead of EndpointConfig
+
         // Map each Lambda key to its endpoint configuration
         configs.add(EndpointConfig.builder()
                 .path(props.sharedNames().cognitoAuthUrlGetLambdaUrlPath)

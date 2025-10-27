@@ -242,16 +242,16 @@ public class SubmitApplication {
 
         // Create a map of Lambda function references from other stacks
         Map<String, IFunction> lambdaFunctions = new java.util.HashMap<>();
-        lambdaFunctions.put(sharedNames.cognitoAuthUrlGetLambdaFunctionName, this.authStack.authUrlCognitoLambda);
-        lambdaFunctions.put(sharedNames.cognitoTokenPostLambdaFunctionName, this.authStack.exchangeCognitoTokenLambda);
-        lambdaFunctions.put(sharedNames.hmrcAuthUrlGetLambdaFunctionName, this.hmrcStack.authUrlHmrcLambda);
-        lambdaFunctions.put(sharedNames.hmrcTokenPostLambdaFunctionName, this.hmrcStack.exchangeHmrcTokenLambda);
-        lambdaFunctions.put(sharedNames.hmrcVatReturnPostLambdaFunctionName, this.hmrcStack.submitVatLambda);
-        lambdaFunctions.put(sharedNames.receiptPostLambdaFunctionName, this.hmrcStack.logReceiptLambda);
-        lambdaFunctions.put(sharedNames.receiptGetLambdaFunctionName, this.hmrcStack.myReceiptsLambda);
+        lambdaFunctions.put(sharedNames.cognitoAuthUrlGetLambdaFunctionName, this.authStack.cognitoAuthUrlGetLambda);
+        lambdaFunctions.put(sharedNames.cognitoTokenPostLambdaFunctionName, this.authStack.cognitoTokenPostLambda);
+        lambdaFunctions.put(sharedNames.hmrcAuthUrlGetLambdaFunctionName, this.hmrcStack.hmrcAuthUrlGetLambda);
+        lambdaFunctions.put(sharedNames.hmrcTokenPostLambdaFunctionName, this.hmrcStack.hmrcTokenPostLambda);
+        lambdaFunctions.put(sharedNames.hmrcVatReturnPostLambdaFunctionName, this.hmrcStack.hmrcVatReturnPostLambda);
+        lambdaFunctions.put(sharedNames.receiptPostLambdaFunctionName, this.hmrcStack.receiptPostLambda);
+        lambdaFunctions.put(sharedNames.receiptGetLambdaFunctionName, this.hmrcStack.receiptGetLambda);
         lambdaFunctions.put(sharedNames.catalogGetLambdaFunctionName, this.accountStack.catalogLambda);
-        lambdaFunctions.put(sharedNames.bundleGetLambdaFunctionName, this.accountStack.myBundlesLambda);
-        lambdaFunctions.put(sharedNames.bundlePostLambdaFunctionName, this.accountStack.requestBundlesLambda);
+        lambdaFunctions.put(sharedNames.bundleGetLambdaFunctionName, this.accountStack.bundleGetLambda);
+        lambdaFunctions.put(sharedNames.bundlePostLambdaFunctionName, this.accountStack.bundlePostLambda);
         lambdaFunctions.put(sharedNames.bundleDeleteLambdaFunctionName, this.accountStack.bundleDeleteLambda);
 
         this.apiStack = new ApiStack(
