@@ -228,7 +228,6 @@ public class ApexStack extends Stack {
                         .recordName(recordName)
                         .zone(zone)
                         .target(RecordTarget.fromAlias(new CloudFrontTarget(this.distribution)))
-                        .deleteExisting(true)
                         .build());
 
         // AAAA record
@@ -239,7 +238,6 @@ public class ApexStack extends Stack {
                         .recordName(recordName)
                         .zone(zone)
                         .target(RecordTarget.fromAlias(new CloudFrontTarget(this.distribution)))
-                        .deleteExisting(true)
                         .build());
 
         // Lookup Log Group for web deployment
