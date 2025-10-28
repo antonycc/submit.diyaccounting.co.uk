@@ -1,6 +1,5 @@
 // app/functions/token.js
 
-import fetch from "node-fetch";
 import { SecretsManagerClient, GetSecretValueCommand } from "@aws-sdk/client-secrets-manager";
 
 import logger from "../lib/logger.js";

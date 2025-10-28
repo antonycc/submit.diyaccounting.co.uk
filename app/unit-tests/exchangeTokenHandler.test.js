@@ -7,12 +7,11 @@ import { handler as exchangeTokenHandler } from "@app/functions/mockTokenPost.js
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
-// Mock node-fetch
-vi.mock("node-fetch", () => ({
-  default: vi.fn(),
-}));
+// Mock global fetch
+const mockFetch = vi.fn();
+vi.stubGlobal('fetch', mockFetch);
 
-import fetch from "node-fetch";
+
 
 describe("httpPostMock", () => {
   const originalEnv = process.env;
@@ -56,7 +55,7 @@ describe("httpPostMock", () => {
     expect(body.accessToken).toBe("test access token");
 
     // Verify fetch was called with correct parameters
-    expect(fetch).toHaveBeenCalledWith("https://test/oauth/token", {
+    expect(mockFetch).toHaveBeenCalledWith("https://test/oauth/token", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: expect.any(URLSearchParams),
@@ -82,7 +81,7 @@ describe("httpPostMock", () => {
 
     expect(result.statusCode).toBe(400);
     expect(body.message).toBe("Missing code from event body");
-    expect(fetch).not.toHaveBeenCalled();
+    expect(mockFetch).not.toHaveBeenCalled();
   });
 
   test("should return 400 when body is empty", async () => {
@@ -95,7 +94,7 @@ describe("httpPostMock", () => {
 
     expect(result.statusCode).toBe(400);
     expect(body.message).toBe("Missing code from event body");
-    expect(fetch).not.toHaveBeenCalled();
+    expect(mockFetch).not.toHaveBeenCalled();
   });
 
   test("should return 400 when body is null", async () => {
@@ -108,7 +107,7 @@ describe("httpPostMock", () => {
 
     expect(result.statusCode).toBe(400);
     expect(body.message).toBe("Missing code from event body");
-    expect(fetch).not.toHaveBeenCalled();
+    expect(mockFetch).not.toHaveBeenCalled();
   });
 
   test("should return 400 when code is empty string", async () => {
@@ -121,7 +120,7 @@ describe("httpPostMock", () => {
 
     expect(result.statusCode).toBe(400);
     expect(body.message).toBe("Missing code from event body");
-    expect(fetch).not.toHaveBeenCalled();
+    expect(mockFetch).not.toHaveBeenCalled();
   });
 
   test("should handle HMRC API error response", async () => {
@@ -176,7 +175,7 @@ describe("httpPostMock", () => {
   });
 
   test("should handle network errors", async () => {
-    fetch.mockRejectedValueOnce(new Error("Network error"));
+    mockFetch.mockRejectedValueOnce(new Error("Network error"));
 
     const event = {
       body: JSON.stringify({ code: "test-code" }),
@@ -193,6 +192,6 @@ describe("httpPostMock", () => {
 
     expect(result.statusCode).toBe(400);
     expect(body.message).toBe("Missing code from event body");
-    expect(fetch).not.toHaveBeenCalled();
+    expect(mockFetch).not.toHaveBeenCalled();
   });
 });

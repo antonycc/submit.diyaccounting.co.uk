@@ -1,7 +1,7 @@
 // app/unit-tests/getVatObligations.test.js
 
 import { describe, test, expect, beforeEach, vi } from "vitest";
-import fetch from "node-fetch";
+
 
 import { httpGet } from "../functions/hmrcVatObligationGet.js";
 import { buildGovClientTestHeaders } from "./govClientTestHeader.js";
@@ -9,7 +9,9 @@ import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
-vi.mock("node-fetch");
+// Mock global fetch
+const mockFetch = vi.fn();
+vi.stubGlobal('fetch', mockFetch);
 
 describe("getVatObligations handler", () => {
   beforeEach(() => {
@@ -205,7 +207,7 @@ describe("getVatObligations handler", () => {
       ],
     };
 
-    fetch.mockResolvedValueOnce({
+    mockFetch.mockResolvedValueOnce({
       ok: true,
       json: () => Promise.resolve(mockResponse),
     });
@@ -225,7 +227,7 @@ describe("getVatObligations handler", () => {
 
     expect(result.statusCode).toBe(200);
     expect(body.obligations).toBeDefined();
-    expect(fetch).toHaveBeenCalledWith(
+    expect(mockFetch).toHaveBeenCalledWith(
       expect.stringContaining("/organisations/vat/111222333/obligations"),
       expect.objectContaining({
         method: "GET",
@@ -243,7 +245,7 @@ describe("getVatObligations handler", () => {
 
     const errorMessage = "INVALID_VRN";
 
-    fetch.mockResolvedValueOnce({
+    mockFetch.mockResolvedValueOnce({
       ok: false,
       status: 400,
       json: () => Promise.resolve({ error: errorMessage }),

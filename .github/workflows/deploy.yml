@@ -1937,6 +1937,11 @@ jobs:
       - name: Node dependencies
         run: npm ci
 
+      - name: Install ffmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+
       - name: Download all test artifacts
         uses: actions/download-artifact@v6
         with:

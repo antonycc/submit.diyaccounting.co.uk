@@ -9,10 +9,9 @@ import { exchangeToken, resetCachedSecret } from "@app/functions/mockTokenPost.j
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
-// Mock node-fetch
-vi.mock("node-fetch", () => ({
-  default: vi.fn(),
-}));
+// Mock global fetch
+const mockFetch = vi.fn();
+vi.stubGlobal('fetch', mockFetch);
 
 // Mock logger
 vi.mock("@app/lib/logger.js", () => ({
@@ -56,8 +55,7 @@ describe("exchangeClientSecretForAccessToken", () => {
       const testSecret = "test-client-secret-from-env";
       process.env.HMRC_CLIENT_SECRET = testSecret;
 
-      const fetch = await import("node-fetch");
-      fetch.default.mockResolvedValue({
+      mockFetch.mockResolvedValue({
         ok: true,
         status: 200,
         json: async () => ({ access_token: "test-access-token" }),
@@ -71,7 +69,7 @@ describe("exchangeClientSecretForAccessToken", () => {
       expect(secretsManagerMock.calls()).toHaveLength(0); // Should not call Secrets Manager
 
       // Verify the fetch was called with correct parameters
-      const fetchCall = fetch.default.mock.calls[0];
+      const fetchCall = mockFetch.mock.calls[0];
       expect(fetchCall[1].body.toString()).toContain(`client_secret=${testSecret}`);
     });
 
@@ -88,8 +86,7 @@ describe("exchangeClientSecretForAccessToken", () => {
         SecretString: testSecretValue,
       });
 
-      const fetch = await import("node-fetch");
-      fetch.default.mockResolvedValue({
+      mockFetch.mockResolvedValue({
         ok: true,
         status: 200,
         json: async () => ({ access_token: "test-access-token" }),
@@ -109,7 +106,7 @@ describe("exchangeClientSecretForAccessToken", () => {
       });
 
       // Verify the fetch was called with the secret from Secrets Manager
-      const fetchCall = fetch.default.mock.calls[0];
+      const fetchCall = mockFetch.mock.calls[0];
       expect(fetchCall[1].body.toString()).toContain(`client_secret=${testSecretValue}`);
     });
 
@@ -126,8 +123,7 @@ describe("exchangeClientSecretForAccessToken", () => {
         SecretString: testSecretValue,
       });
 
-      const fetch = await import("node-fetch");
-      fetch.default.mockResolvedValue({
+      mockFetch.mockResolvedValue({
         ok: true,
         status: 200,
         json: async () => ({ access_token: "test-access-token" }),
@@ -143,9 +139,9 @@ describe("exchangeClientSecretForAccessToken", () => {
       expect(secretsManagerCalls).toHaveLength(1);
 
       // Both fetch calls should use the same cached secret
-      expect(fetch.default).toHaveBeenCalledTimes(2);
-      const firstFetchCall = fetch.default.mock.calls[0];
-      const secondFetchCall = fetch.default.mock.calls[1];
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+      const firstFetchCall = mockFetch.mock.calls[0];
+      const secondFetchCall = mockFetch.mock.calls[1];
       expect(firstFetchCall[1].body.toString()).toContain(`client_secret=${testSecretValue}`);
       expect(secondFetchCall[1].body.toString()).toContain(`client_secret=${testSecretValue}`);
     });
@@ -166,8 +162,7 @@ describe("exchangeClientSecretForAccessToken", () => {
         CreatedDate: new Date(),
       });
 
-      const fetch = await import("node-fetch");
-      fetch.default.mockResolvedValue({
+      mockFetch.mockResolvedValue({
         ok: true,
         status: 200,
         json: async () => ({ access_token: "test-access-token" }),
@@ -180,7 +175,7 @@ describe("exchangeClientSecretForAccessToken", () => {
       expect(result.accessToken).toBe("test-access-token");
 
       // Verify the secret was extracted correctly from the response
-      const fetchCall = fetch.default.mock.calls[0];
+      const fetchCall = mockFetch.mock.calls[0];
       const bodyString = fetchCall[1].body.toString();
       // URLSearchParams encodes special characters, so we need to check for the encoded version
       expect(bodyString).toContain(`client_secret=secret-with-special-chars%21%40%23%24%25`);
@@ -200,8 +195,7 @@ describe("exchangeClientSecretForAccessToken", () => {
         SecretString: secretsManagerSecret,
       });
 
-      const fetch = await import("node-fetch");
-      fetch.default.mockResolvedValue({
+      mockFetch.mockResolvedValue({
         ok: true,
         status: 200,
         json: async () => ({ access_token: "test-access-token" }),
@@ -218,7 +212,7 @@ describe("exchangeClientSecretForAccessToken", () => {
       expect(secretsManagerMock.calls()).toHaveLength(0); // Should not call Secrets Manager
 
       // Verify the fetch was called with the environment variable secret
-      const fetchCall = fetch.default.mock.calls[0];
+      const fetchCall = mockFetch.mock.calls[0];
       expect(fetchCall[1].body.toString()).toContain(`client_secret=${envSecret}`);
       expect(fetchCall[1].body.toString()).not.toContain(secretsManagerSecret);
     });
@@ -243,8 +237,7 @@ describe("exchangeClientSecretForAccessToken", () => {
       expect(result.response.status).toBe(200);
 
       // Should not make actual HTTP calls in stubbed mode
-      const fetch = await import("node-fetch");
-      expect(fetch.default).not.toHaveBeenCalled();
+      expect(mockFetch).not.toHaveBeenCalled();
     });
   });
 });

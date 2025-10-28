@@ -1,7 +1,5 @@
 // app/functions/submitVat.js
 
-import fetch from "node-fetch";
-
 import logger from "../lib/logger.js";
 import {
   extractRequest,

@@ -5,7 +5,6 @@ import path from "path";
 import express from "express";
 import { fileURLToPath } from "url";
 import { readFileSync } from "fs";
-import fetch from "node-fetch";
 import { handler as submitVatHttpPost } from "../functions/hmrcVatReturnPost.js";
 import { handler as logReceiptHttpPost } from "../functions/hmrcReceiptPost.js";
 import { handler as requestBundleHttpPost } from "../functions/bundlePost.js";
