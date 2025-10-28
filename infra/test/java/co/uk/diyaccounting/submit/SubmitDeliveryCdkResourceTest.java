@@ -41,9 +41,6 @@ import software.amazon.awscdk.assertions.Template;
     //    @SetEnvironmentVariable(key = "MY_RECEIPTS_LAMBDA_URL", value = "https://tt-witheight.lambda.receipts/my"),
     @SetEnvironmentVariable(key = "CLOUD_TRAIL_ENABLED", value = "true"),
     @SetEnvironmentVariable(key = "SELF_DESTRUCT_DELAY_HOURS", value = "1"),
-    @SetEnvironmentVariable(
-            key = "SELF_DESTRUCT_HANDLER_SOURCE",
-            value = "./infra/test/resources/fake-self-destruct-lambda.jar"),
     @SetEnvironmentVariable(key = "DOC_ROOT_PATH", value = "./web/public"),
     @SetEnvironmentVariable(key = "CDK_DEFAULT_ACCOUNT", value = "111111111111"),
     @SetEnvironmentVariable(key = "CDK_DEFAULT_REGION", value = "eu-west-2"),

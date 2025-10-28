@@ -407,12 +407,6 @@ jobs:
           java-version: ${{ env.JAVA_VERSION }}
           cache: 'maven'
 
-      - name: Download self-destruct handler JAR
-        uses: actions/download-artifact@v6
-        with:
-          name: self-destruct-handler-${{ github.sha }}
-          path: cdk-submit-application.out/
-
       - name: Deploy SelfDestruct Stack (CDK)
         run: |
           ./mvnw --errors clean verify -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
@@ -1065,12 +1059,6 @@ jobs:
           distribution: 'temurin'
           java-version: ${{ env.JAVA_VERSION }}
           cache: 'maven'
-
-      - name: Download self-destruct handler JAR
-        uses: actions/download-artifact@v6
-        with:
-          name: self-destruct-handler-${{ github.sha }}
-          path: cdk-submit-application.out/
 
       - name: Deploy SelfDestruct Stack (CDK)
         run: |

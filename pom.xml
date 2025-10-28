@@ -258,18 +258,11 @@
                         <configuration>
                             <target>
                                 <!-- Create copies with desired names from the base shaded jar -->
-                                <copy file="${project.build.directory}/${project.build.finalName}-dist.jar" tofile="${project.build.directory}/self-destruct-lambda.jar"></copy>
                                 <copy file="${project.build.directory}/${project.build.finalName}-dist.jar" tofile="${project.build.directory}/submit-application.jar"></copy>
                                 <copy file="${project.build.directory}/${project.build.finalName}-dist.jar" tofile="${project.build.directory}/submit-delivery.jar"></copy>
                                 <copy file="${project.build.directory}/${project.build.finalName}-dist.jar" tofile="${project.build.directory}/submit-environment.jar"></copy>
 
                                 <!-- Update manifests in-place for each variant -->
-                                <jar jarfile="${project.build.directory}/self-destruct-lambda.jar" update="true" zip64Mode="as-needed">
-                                    <manifest>
-                                        <attribute name="Main-Class" value="co.uk.diyaccounting.submit.functions.SelfDestructHandler"></attribute>
-                                    </manifest>
-                                </jar>
-
                                 <jar jarfile="${project.build.directory}/submit-application.jar" update="true" zip64Mode="as-needed">
                                     <manifest>
                                         <attribute name="Main-Class" value="co.uk.diyaccounting.submit.SubmitApplication"></attribute>
@@ -460,11 +453,6 @@
                         <phase>verify</phase>
                         <configuration>
                             <artifacts>
-                                <artifact>
-                                    <file>${project.build.directory}/self-destruct-lambda.jar</file>
-                                    <type>jar</type>
-                                    <classifier>self-destruct-lambda</classifier>
-                                </artifact>
                                 <artifact>
                                     <file>${project.build.directory}/submit-application.jar</file>
                                     <type>jar</type>
