@@ -58,8 +58,8 @@ public class EdgeStack extends Stack {
     public IBucket originAccessLogBucket;
     public final Distribution distribution;
     public final Permission distributionInvokeFnUrl;
-    public final ARecord aliasRecord;
-    public final AaaaRecord aliasRecordV6;
+    public final String aliasRecordDomainName;
+    public final String aliasRecordV6DomainName;
 
     @Value.Immutable
     public interface EdgeStackProps extends StackProps, SubmitStackProps {
@@ -324,7 +324,8 @@ public class EdgeStack extends Stack {
         this.distribution = Distribution.Builder.create(this, props.resourceNamePrefix() + "-WebDist")
                 .defaultBehavior(localBehaviorOptions) // props.webBehaviorOptions)
                 .additionalBehaviors(additionalBehaviors)
-                .domainNames(List.of(props.sharedNames().domainName, props.sharedNames().envDomainName))
+                // Use only the deployment-scoped domain to avoid alias conflicts with existing distributions
+                .domainNames(List.of(props.sharedNames().domainName))
                 .certificate(cert)
                 .defaultRootObject("index.html")
                 .enableLogging(true)
@@ -345,26 +346,16 @@ public class EdgeStack extends Stack {
                 .sourceArn(this.distribution.getDistributionArn())
                 .build();
 
-        // A record
-        this.aliasRecord = new ARecord(
+        // Idempotent UPSERT of Route53 A/AAAA alias to CloudFront (replaces deprecated deleteExisting)
+        co.uk.diyaccounting.submit.utils.Route53AliasUpsert.upsertAliasToCloudFront(
                 this,
                 props.resourceNamePrefix() + "-AliasRecord",
-                ARecordProps.builder()
-                        .recordName(recordName)
-                        .zone(zone)
-                        .target(RecordTarget.fromAlias(new CloudFrontTarget(this.distribution)))
-                        //.deleteExisting(true)
-                        .build());
-        // AAAA record
-        this.aliasRecordV6 = new AaaaRecord(
-                this,
-                props.resourceNamePrefix() + "-AliasRecordV6",
-                AaaaRecordProps.builder()
-                        .recordName(recordName)
-                        .zone(zone)
-                        .target(RecordTarget.fromAlias(new CloudFrontTarget(this.distribution)))
-                        //.deleteExisting(true)
-                        .build());
+                zone,
+                recordName,
+                this.distribution.getDomainName());
+        // Capture the FQDN for outputs
+        this.aliasRecordDomainName = (recordName == null || recordName.isBlank()) ? zone.getZoneName() : (recordName + "." + zone.getZoneName());
+        this.aliasRecordV6DomainName = this.aliasRecordDomainName;
 
         Aspects.of(this).add(new SetAutoDeleteJobLogRetentionAspect(props.deploymentName(), RetentionDays.THREE_DAYS));
 
@@ -374,8 +365,8 @@ public class EdgeStack extends Stack {
         cfnOutput(this, "WebAclId", webAcl.getAttrArn());
         cfnOutput(this, "WebDistributionDomainName", this.distribution.getDomainName());
         cfnOutput(this, "DistributionId", this.distribution.getDistributionId());
-        cfnOutput(this, "AliasRecord", this.aliasRecord.getDomainName());
-        cfnOutput(this, "AliasRecordV6", this.aliasRecordV6.getDomainName());
+        cfnOutput(this, "AliasRecord", this.aliasRecordDomainName);
+        cfnOutput(this, "AliasRecordV6", this.aliasRecordV6DomainName);
         cfnOutput(this, "OriginBucketName", this.originBucket.getBucketName());
 
         infof("EdgeStack %s created successfully for %s", this.getNode().getId(), props.sharedNames().baseUrl);

@@ -2,6 +2,7 @@
   "app": "java -jar ../target/submit-application.jar",
   "output": "../cdk-submit-application.out",
   "context": {
+    "@aws-cdk/customresources:installLatestAwsSdkDefault": false,
     "envName": "",
     "deploymentName": "",
     "hmrcClientSecretArn": "",
