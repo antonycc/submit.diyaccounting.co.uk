@@ -29,7 +29,6 @@
     "cloudTrailEnabled": "true",
     "docRootPath": "../web/public",
     "accessLogGroupRetentionPeriodDays": "30",
-    "selfDestructHandlerSource": "../target/self-destruct-lambda.jar",
     "selfDestructDelayHours": "1"
   }
 }

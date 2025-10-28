@@ -30,9 +30,6 @@ import software.amazon.awscdk.assertions.Template;
     @SetEnvironmentVariable(key = "BASE_IMAGE_TAG", value = "test"),
     @SetEnvironmentVariable(key = "CLOUD_TRAIL_ENABLED", value = "true"),
     @SetEnvironmentVariable(key = "SELF_DESTRUCT_DELAY_HOURS", value = "1"),
-    @SetEnvironmentVariable(
-            key = "SELF_DESTRUCT_HANDLER_SOURCE",
-            value = "./infra/test/resources/fake-self-destruct-lambda.jar"),
     @SetEnvironmentVariable(key = "CDK_DEFAULT_ACCOUNT", value = "111111111111"),
     @SetEnvironmentVariable(key = "CDK_DEFAULT_REGION", value = "eu-west-2"),
 })

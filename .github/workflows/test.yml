@@ -297,9 +297,6 @@ jobs:
         shell: bash
         run: |
           ./mvnw clean verify -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }}
-          echo "SELF_DESTRUCT_HANDLER_SOURCE=target/self-destruct-lambda.jar"
-          echo "SELF_DESTRUCT_HANDLER_SOURCE=target/self-destruct-lambda.jar" >> $GITHUB_OUTPUT
-          ls -l target/self-destruct-lambda.jar
 
       - name: Self Destruct Start Datetime (ISO 8601) now plus SELF_DESTRUCT_DELAY_HOURS
         id: self-destruct-start
@@ -355,9 +352,6 @@ jobs:
         shell: bash
         run: |
           ./mvnw clean verify -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }}
-          echo "SELF_DESTRUCT_HANDLER_SOURCE=target/self-destruct-lambda.jar"
-          echo "SELF_DESTRUCT_HANDLER_SOURCE=target/self-destruct-lambda.jar" >> $GITHUB_OUTPUT
-          ls -l target/self-destruct-lambda.jar
 
       - name: Self Destruct Start Datetime (ISO 8601) now plus SELF_DESTRUCT_DELAY_HOURS
         id: self-destruct-start
@@ -374,7 +368,6 @@ jobs:
         env:
           ENVIRONMENT_NAME: 'prod'
           DEPLOYMENT_NAME: 'prod'
-          SELF_DESTRUCT_HANDLER_SOURCE: "../${{ steps.mvn-verify.outputs.SELF_DESTRUCT_HANDLER_SOURCE }}"
           SELF_DESTRUCT_START_DATETIME: ${{ steps.self-destruct-start.outputs.SELF_DESTRUCT_START_DATETIME }}
           # Set by deploy-environment.yml after the environment's AuthStack is deployed
           COGNITO_USER_POOL_ARN: ${{ vars.COGNITO_USER_POOL_ARN }}

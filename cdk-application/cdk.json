@@ -20,7 +20,6 @@
     "googleClientId": "670010122633-j177nir959n1tdnd891uqsgj6fkrj6b1.apps.googleusercontent.com",
     "antonyccClientId": "submit-diyaccounting-co-uk",
     "antonyccBaseUri": "https://oidc.antonycc.com/",
-    "selfDestructHandlerSource": "../target/self-destruct-lambda.jar",
     "selfDestructDelayHours": "1",
     "lambdaEntry": "app/functions/",
     "lambdaUrlAuthType": "none"
