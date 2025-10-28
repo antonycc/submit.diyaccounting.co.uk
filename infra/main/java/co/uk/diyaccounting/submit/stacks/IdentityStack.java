@@ -56,8 +56,8 @@ public class IdentityStack extends Stack {
     public CfnUserPoolIdentityProvider antonyccIdentityProvider;
     public final HashMap<UserPoolClientIdentityProvider, IDependable> identityProviders = new HashMap<>();
     public final UserPoolDomain userPoolDomain;
-    public final ARecord userPoolDomainARecord;
-    public final AaaaRecord userPoolDomainAaaaRecord;
+    public final String userPoolDomainARecordName;
+    public final String userPoolDomainAaaaRecordName;
     public final String dashedCognitoDomainName;
     public final ICertificate authCertificate;
     public final String cognitoBaseUri;
@@ -241,53 +241,15 @@ public class IdentityStack extends Stack {
                 .build();
 
         // Create Route53 records for the Cognito UserPoolDomain as subdomains from the web domain.
-        this.userPoolDomainARecord = ARecord.Builder.create(this, props.resourceNamePrefix() + "-UserPoolDomainARecord")
-                .zone(hostedZone)
-                .recordName(props.sharedNames().cognitoDomainName)
-                //.deleteExisting(true)
-                .target(RecordTarget.fromAlias(new IAliasRecordTarget() {
-                    @Override
-                    public AliasRecordTargetConfig bind(
-                            software.amazon.awscdk.services.route53.IRecordSet record,
-                            software.amazon.awscdk.services.route53.IHostedZone zone) {
-                        return AliasRecordTargetConfig.builder()
-                                .dnsName(userPoolDomain.getCloudFrontEndpoint())
-                                // CloudFront hosted zone ID is a well-known constant
-                                .hostedZoneId("Z2FDTNDATAQYW2")
-                                .build();
-                    }
-
-                    @Override
-                    public AliasRecordTargetConfig bind(software.amazon.awscdk.services.route53.IRecordSet record) {
-                        return bind(record, null);
-                    }
-                }))
-                .build();
-
-        this.userPoolDomainAaaaRecord = AaaaRecord.Builder.create(
-                        this, props.resourceNamePrefix() + "-UserPoolDomainAaaaRecord")
-                .zone(hostedZone)
-                .recordName(props.sharedNames().cognitoDomainName)
-                //.deleteExisting(true)
-                .target(RecordTarget.fromAlias(new IAliasRecordTarget() {
-                    @Override
-                    public AliasRecordTargetConfig bind(
-                            software.amazon.awscdk.services.route53.IRecordSet record,
-                            software.amazon.awscdk.services.route53.IHostedZone zone) {
-                        return AliasRecordTargetConfig.builder()
-                                .dnsName(userPoolDomain.getCloudFrontEndpoint())
-                                // CloudFront hosted zone ID is a well-known constant
-                                .hostedZoneId("Z2FDTNDATAQYW2")
-                                .build();
-                    }
-
-                    @Override
-                    public AliasRecordTargetConfig bind(software.amazon.awscdk.services.route53.IRecordSet record) {
-                        return bind(record, null);
-                    }
-                }))
-                .build();
-        // this.userPoolDomainAaaaRecord.getNode().addDependency(this.aaaaRecord);
+        // Idempotent UPSERT of Route53 A/AAAA alias to Cognito User Pool Domain CloudFront endpoint
+        co.uk.diyaccounting.submit.utils.Route53AliasUpsert.upsertAliasToCloudFront(
+                this,
+                props.resourceNamePrefix() + "-UserPoolDomainAlias",
+                hostedZone,
+                props.sharedNames().cognitoDomainName,
+                this.userPoolDomain.getCloudFrontEndpoint());
+        this.userPoolDomainARecordName = props.sharedNames().cognitoDomainName;
+        this.userPoolDomainAaaaRecordName = props.sharedNames().cognitoDomainName;
 
         Aspects.of(this).add(new SetAutoDeleteJobLogRetentionAspect(props.deploymentName(), RetentionDays.THREE_DAYS));
 
@@ -300,8 +262,8 @@ public class IdentityStack extends Stack {
             cfnOutput(this, "UserPoolClientId", this.userPoolClient.getUserPoolClientId());
         }
         cfnOutput(this, "UserPoolDomainName", this.userPoolDomain.getDomainName());
-        cfnOutput(this, "UserPoolDomainARecord", this.userPoolDomainARecord.getDomainName());
-        cfnOutput(this, "UserPoolDomainAaaaRecord", this.userPoolDomainAaaaRecord.getDomainName());
+        cfnOutput(this, "UserPoolDomainARecord", this.userPoolDomainARecordName);
+        cfnOutput(this, "UserPoolDomainAaaaRecord", this.userPoolDomainAaaaRecordName);
         if (this.googleIdentityProvider != null) {
             cfnOutput(this, "CognitoGoogleIdpId", this.googleIdentityProvider.getProviderName());
         }
