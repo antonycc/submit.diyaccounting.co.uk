@@ -360,6 +360,15 @@
                             <!-- Attach instead of replacing the main artifact -->
                             <shadedArtifactAttached>true</shadedArtifactAttached>
                             <shadedClassifierName>dist</shadedClassifierName>
+
+                            <!-- merge service providers like META-INF/services/... instead of treating them as dupes -->
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>co.uk.diyaccounting.submit.swagger.OpenApiGenerator</mainClass>
+                                </transformer>
+                            </transformers>
+
                             <filters>
                                 <filter>
                                     <artifact>*:*</artifact>
@@ -408,6 +417,7 @@
                             </filters>
                             <minimizeJar>false</minimizeJar>
                             <createSourcesJar>false</createSourcesJar>
+                            <createDependencyReducedPom>false</createDependencyReducedPom>
                         </configuration>
                     </execution>
                 </executions>

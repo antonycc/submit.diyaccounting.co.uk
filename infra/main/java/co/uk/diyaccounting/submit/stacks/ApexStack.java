@@ -62,8 +62,8 @@ public class ApexStack extends Stack {
     public Bucket holdingBucket;
     public final Distribution distribution;
     public final Permission distributionInvokeFnUrl;
-    public final ARecord aliasRecord;
-    public final AaaaRecord aliasRecordV6;
+    public final String aliasRecordDomainName;
+    public final String aliasRecordV6DomainName;
     public final BucketDeployment webDeployment;
 
     @Value.Immutable
@@ -220,27 +220,15 @@ public class ApexStack extends Stack {
                 .sourceArn(this.distribution.getDistributionArn())
                 .build();
 
-        // A record
-        this.aliasRecord = new ARecord(
+        // Idempotent UPSERT of Route53 A/AAAA alias to CloudFront (replaces deprecated deleteExisting)
+        co.uk.diyaccounting.submit.utils.Route53AliasUpsert.upsertAliasToCloudFront(
                 this,
                 props.resourceNamePrefix() + "-AliasRecord",
-                ARecordProps.builder()
-                        .recordName(recordName)
-                        .zone(zone)
-                        .target(RecordTarget.fromAlias(new CloudFrontTarget(this.distribution)))
-                        //.deleteExisting(true)
-                        .build());
-
-        // AAAA record
-        this.aliasRecordV6 = new AaaaRecord(
-                this,
-                props.resourceNamePrefix() + "-AliasRecordV6",
-                AaaaRecordProps.builder()
-                        .recordName(recordName)
-                        .zone(zone)
-                        .target(RecordTarget.fromAlias(new CloudFrontTarget(this.distribution)))
-                        //.deleteExisting(true)
-                        .build());
+                zone,
+                recordName,
+                this.distribution.getDomainName());
+        this.aliasRecordDomainName = (recordName == null || recordName.isBlank()) ? zone.getZoneName() : (recordName + "." + zone.getZoneName());
+        this.aliasRecordV6DomainName = this.aliasRecordDomainName;
 
         // Lookup Log Group for web deployment
         ILogGroup webDeploymentLogGroup = LogGroup.fromLogGroupArn(
@@ -280,8 +268,8 @@ public class ApexStack extends Stack {
         cfnOutput(this, "CertificateArn", cert.getCertificateArn());
         cfnOutput(this, "WebDistributionDomainName", this.distribution.getDomainName());
         cfnOutput(this, "DistributionId", this.distribution.getDistributionId());
-        cfnOutput(this, "AliasRecord", this.aliasRecord.getDomainName());
-        cfnOutput(this, "AliasRecordV6", this.aliasRecordV6.getDomainName());
+        cfnOutput(this, "AliasRecord", this.aliasRecordDomainName);
+        cfnOutput(this, "AliasRecordV6", this.aliasRecordV6DomainName);
 
         infof("ApexStack %s created successfully for %s", this.getNode().getId(), props.sharedNames().baseUrl);
     }
