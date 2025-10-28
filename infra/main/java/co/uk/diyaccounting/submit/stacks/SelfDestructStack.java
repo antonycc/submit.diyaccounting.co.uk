@@ -80,8 +80,6 @@ public class SelfDestructStack extends Stack {
 
         ZonedDateTime selfDestructStartDatetime();
 
-        String selfDestructHandlerSource();
-
         static ImmutableSelfDestructStackProps.Builder builder() {
             return ImmutableSelfDestructStackProps.builder();
         }
@@ -178,11 +176,11 @@ public class SelfDestructStack extends Stack {
         // Lambda function for self-destruction
         this.selfDestructFunction = Function.Builder.create(this, props.resourceNamePrefix() + "-SelfDestructFunction")
                 .functionName(functionName)
-                .runtime(Runtime.JAVA_21)
-                .handler("co.uk.diyaccounting.submit.functions.SelfDestructHandler::handleRequest")
-                .code(Code.fromAsset(props.selfDestructHandlerSource()))
+                .runtime(Runtime.NODEJS_20_X)
+                .handler("app/functions/selfDestruct.handler")
+                .code(Code.fromAsset("./"))
                 .timeout(Duration.minutes(15)) // Allow time for stack deletions
-                .memorySize(512) // Increased memory for Java runtime
+                .memorySize(256) // Reduced memory for Node.js runtime
                 .role(this.functionRole)
                 .environment(environment)
                 .tracing(Tracing.ACTIVE)

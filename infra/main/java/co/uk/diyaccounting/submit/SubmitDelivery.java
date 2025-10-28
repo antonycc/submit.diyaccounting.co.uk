@@ -52,7 +52,6 @@ public class SubmitDelivery {
         // public String bundleDeleteLambdaFunctionUrl;
         // public String myBundlesLambdaFunctionUrl;
         public String myReceiptsLambdaFunctionUrl;
-        public String selfDestructHandlerSource;
         public String selfDestructDelayHours;
 
         public static class Builder {
@@ -126,10 +125,6 @@ public class SubmitDelivery {
                 envOr("CLOUD_TRAIL_ENABLED", appProps.cloudTrailEnabled, "(from cloudTrailEnabled in cdk.json)");
         var accessLogGroupRetentionPeriodDays = Integer.parseInt(
                 envOr("ACCESS_LOG_GROUP_RETENTION_PERIOD_DAYS", appProps.accessLogGroupRetentionPeriodDays, "30"));
-        var selfDestructHandlerSource = envOr(
-                "SELF_DESTRUCT_HANDLER_SOURCE",
-                appProps.selfDestructHandlerSource,
-                "(from selfDestructHandlerSource in cdk.json)");
         var selfDestructDelayHoursString = envOr(
                 "SELF_DESTRUCT_DELAY_HOURS",
                 appProps.selfDestructDelayHours,
@@ -291,7 +286,6 @@ public class SubmitDelivery {
                             .selfDestructLogGroupName(sharedNames.ue1SelfDestructLogGroupName)
                             .selfDestructStartDatetime(selfDestructStartDatetime)
                             .selfDestructDelayHours(selfDestructDelayHours)
-                            .selfDestructHandlerSource(selfDestructHandlerSource)
                             .build());
         } else {
             this.selfDestructStack = null;

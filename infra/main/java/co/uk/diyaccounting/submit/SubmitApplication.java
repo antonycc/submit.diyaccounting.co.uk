@@ -44,7 +44,6 @@ public class SubmitApplication {
         public String cognitoDomainPrefix;
         public String hmrcBaseUri;
         public String baseImageTag;
-        public String selfDestructHandlerSource;
         public String selfDestructDelayHours;
         public String lambdaEntry;
         public String lambdaUrlAuthType;
@@ -136,10 +135,6 @@ public class SubmitApplication {
                 "(from current time plus delay hours)");
         ZonedDateTime selfDestructStartDatetime = ZonedDateTime.parse(selfDestructStartDatetimeIso);
         infof("Self-destruct start datetime: %s", selfDestructStartDatetime);
-        var selfDestructHandlerSource = envOr(
-                "SELF_DESTRUCT_HANDLER_SOURCE",
-                appProps.selfDestructHandlerSource,
-                "(from selfDestructHandlerSource in cdk.json)");
         var cloudTrailEnabled =
                 envOr("CLOUD_TRAIL_ENABLED", appProps.cloudTrailEnabled, "(from cloudTrailEnabled in cdk.json)");
 
@@ -305,7 +300,6 @@ public class SubmitApplication {
                             .selfDestructLogGroupName(sharedNames.ew2SelfDestructLogGroupName)
                             .selfDestructStartDatetime(selfDestructStartDatetime)
                             .selfDestructDelayHours(selfDestructDelayHours)
-                            .selfDestructHandlerSource(selfDestructHandlerSource)
                             .build());
         } else {
             this.selfDestructStack = null;
