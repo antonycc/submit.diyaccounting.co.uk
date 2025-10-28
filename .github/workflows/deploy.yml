@@ -182,9 +182,6 @@ jobs:
         shell: bash
         run: |
           ./mvnw clean verify -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }}
-          echo "SELF_DESTRUCT_HANDLER_SOURCE=target/self-destruct-lambda.jar"
-          echo "SELF_DESTRUCT_HANDLER_SOURCE=target/self-destruct-lambda.jar" >> $GITHUB_OUTPUT
-          ls -l target/self-destruct-lambda.jar
 
       - name: Self Destruct Start Datetime (ISO 8601) now plus SELF_DESTRUCT_DELAY_HOURS
         id: self-destruct-start
@@ -194,15 +191,7 @@ jobs:
           echo "SELF_DESTRUCT_START_DATETIME=$SELF_DESTRUCT_START_DATETIME"
           echo "SELF_DESTRUCT_START_DATETIME=$SELF_DESTRUCT_START_DATETIME" >> $GITHUB_OUTPUT
 
-      - name: Upload self-destruct handler JAR
-        uses: actions/upload-artifact@v4
-        with:
-          name: self-destruct-handler-${{ github.sha }}
-          path: target/self-destruct-lambda.jar
-          retention-days: 1
-
     outputs:
-      self-destruct-handler-source: ${{ steps.package.outputs.SELF_DESTRUCT_HANDLER_SOURCE }}
       self-destruct-start-datetime: ${{ steps.self-destruct-start.outputs.SELF_DESTRUCT_START_DATETIME }}
 
   behaviour-test:
@@ -442,7 +431,6 @@ jobs:
         env:
           ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
-          SELF_DESTRUCT_HANDLER_SOURCE: "../${{ needs.mvn-package.outputs.self-destruct-handler-source }}"
           SELF_DESTRUCT_START_DATETIME: ${{ needs.mvn-package.outputs.self-destruct-start-datetime }}
           # Set by deploy-environment.yml after the environment's AuthStack is deployed
           COGNITO_USER_POOL_ARN: ${{ vars.COGNITO_USER_POOL_ARN }}
@@ -536,7 +524,6 @@ jobs:
         env:
           ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
-          SELF_DESTRUCT_HANDLER_SOURCE: "../infra/test/resources/fake-self-destruct-lambda.jar"
           # Set by deploy-environment.yml after the environment's AuthStack is deployed
           COGNITO_USER_POOL_ARN: ${{ vars.COGNITO_USER_POOL_ARN }}
           COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
@@ -711,7 +698,6 @@ jobs:
         env:
           ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
-          SELF_DESTRUCT_HANDLER_SOURCE: "../infra/test/resources/fake-self-destruct-lambda.jar"
           BASE_IMAGE_TAG: ${{ needs.push-images.outputs.base-image-tag }}
           # Set by deploy-environment.yml after the environment's AuthStack is deployed
           COGNITO_USER_POOL_ARN: ${{ vars.COGNITO_USER_POOL_ARN }}
@@ -805,7 +791,6 @@ jobs:
         env:
           ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
-          SELF_DESTRUCT_HANDLER_SOURCE: "../infra/test/resources/fake-self-destruct-lambda.jar"
           BASE_IMAGE_TAG: ${{ needs.push-images.outputs.base-image-tag }}
           # Set by deploy-environment.yml after the environment's AuthStack is deployed
           COGNITO_USER_POOL_ARN: ${{ vars.COGNITO_USER_POOL_ARN }}
@@ -909,7 +894,6 @@ jobs:
         env:
           ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
-          SELF_DESTRUCT_HANDLER_SOURCE: "../infra/test/resources/fake-self-destruct-lambda.jar"
           HMRC_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:${{ needs.names.outputs.environment-name }}/submit/hmrc/client_secret"
           BASE_IMAGE_TAG: ${{ needs.push-images.outputs.base-image-tag }}
           # Set by deploy-environment.yml after the environment's AuthStack is deployed
@@ -1010,7 +994,6 @@ jobs:
         env:
           ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
-          SELF_DESTRUCT_HANDLER_SOURCE: "../infra/test/resources/fake-self-destruct-lambda.jar"
           BASE_IMAGE_TAG: ${{ needs.push-images.outputs.base-image-tag }}
           # Set by deploy-environment.yml after the environment's AuthStack is deployed
           COGNITO_USER_POOL_ARN: ${{ vars.COGNITO_USER_POOL_ARN }}
@@ -1107,7 +1090,6 @@ jobs:
         env:
           ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
-          SELF_DESTRUCT_HANDLER_SOURCE: "../${{ needs.mvn-package.outputs.self-destruct-handler-source }}"
           SELF_DESTRUCT_START_DATETIME: ${{ needs.mvn-package.outputs.self-destruct-start-datetime }}
           WEBSITE_HASH: "placeholder"
           HTTP_API_URL: ${{ needs.deploy-api.outputs.httpApiUrl }}
@@ -1219,7 +1201,6 @@ jobs:
         env:
           ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
-          SELF_DESTRUCT_HANDLER_SOURCE: "../infra/test/resources/fake-self-destruct-lambda.jar"
           WEBSITE_HASH: "placeholder"
           HTTP_API_URL: ${{ needs.deploy-api.outputs.httpApiUrl }}
           AUTH_URL_COGNITO_LAMBDA_URL: ${{ needs.deploy-auth.outputs.authUrlCognitoLambdaUrl }}
@@ -1402,7 +1383,6 @@ jobs:
         env:
           ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
-          SELF_DESTRUCT_HANDLER_SOURCE: "../infra/test/resources/fake-self-destruct-lambda.jar"
           WEBSITE_HASH: ${{ steps.publish-hash.outputs.WEBSITE_HASH }}
           HTTP_API_URL: ${{ needs.deploy-api.outputs.httpApiUrl }}
           DIY_SUBMIT_APEX_URL: ${{ needs.names.outputs.apex-url }}
@@ -1541,7 +1521,6 @@ jobs:
         env:
           ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
-          SELF_DESTRUCT_HANDLER_SOURCE: "../infra/test/resources/fake-self-destruct-lambda.jar"
           BASE_IMAGE_TAG: ${{ needs.push-images.outputs.base-image-tag }}
           # Set by deploy-environment.yml after the environment's AuthStack is deployed
           COGNITO_USER_POOL_ARN: ${{ vars.COGNITO_USER_POOL_ARN }}
