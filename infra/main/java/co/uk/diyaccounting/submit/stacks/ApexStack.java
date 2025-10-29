@@ -202,7 +202,7 @@ public class ApexStack extends Stack {
         this.distribution = Distribution.Builder.create(this, props.resourceNamePrefix() + "-WebDist")
                 .defaultBehavior(localBehaviorOptions)
                 .domainNames(List.of(
-                        // props.sharedNames().domainName,
+                        // props.sharedNames().deploymentDomainName,
                         props.sharedNames().holdingDomainName))
                 .certificate(cert)
                 .defaultRootObject("index.html")

@@ -51,7 +51,7 @@ export async function logReceipt(key, receipt) {
   }
 }
 
-// POST /api/hmrc/receipt-post
+// POST /api/v1/hmrc/receipt
 export async function handler(event) {
   validateEnv(["DIY_SUBMIT_RECEIPTS_BUCKET_NAME"]);
 

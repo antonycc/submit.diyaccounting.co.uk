@@ -11,7 +11,7 @@ const secretsClient = new SecretsManagerClient();
 // caching via module-level variables
 let cachedHmrcClientSecret;
 
-// POST /api/hmrc/token-post
+// POST /api/v1/hmrc/token
 export async function handler(event) {
   validateEnv(["HMRC_BASE_URI", "HMRC_CLIENT_ID", "DIY_SUBMIT_BASE_URL", "HMRC_CLIENT_SECRET_ARN"]);
   const secretArn = process.env.HMRC_CLIENT_SECRET_ARN;

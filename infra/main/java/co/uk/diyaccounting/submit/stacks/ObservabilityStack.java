@@ -1,14 +1,8 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildTrailName;
-
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
 import co.uk.diyaccounting.submit.utils.RetentionDaysConverter;
-import java.util.List;
-import java.util.Map;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Aspects;
 import software.amazon.awscdk.Duration;
@@ -36,6 +30,12 @@ import software.amazon.awscdk.services.s3.Bucket;
 import software.amazon.awscdk.services.s3.BucketEncryption;
 import software.amazon.awscdk.services.s3.LifecycleRule;
 import software.constructs.Construct;
+
+import java.util.List;
+import java.util.Map;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 public class ObservabilityStack extends Stack {
 
@@ -93,7 +93,6 @@ public class ObservabilityStack extends Stack {
     public ObservabilityStack(Construct scope, String id, StackProps stackProps, ObservabilityStackProps props) {
         super(scope, id, stackProps);
 
-        String trailName = buildTrailName(props.resourceNamePrefix());
         boolean cloudTrailEnabled = Boolean.parseBoolean(props.cloudTrailEnabled());
         int cloudTrailLogGroupRetentionPeriodDays = Integer.parseInt(props.cloudTrailLogGroupRetentionPeriodDays());
 
@@ -118,7 +117,7 @@ public class ObservabilityStack extends Stack {
                             .build()))
                     .build();
             this.trail = Trail.Builder.create(this, props.resourceNamePrefix() + "-Trail")
-                    .trailName(trailName)
+                    .trailName(props.sharedNames().trailName)
                     .cloudWatchLogGroup(this.cloudTrailLogGroup)
                     .sendToCloudWatchLogs(true)
                     .cloudWatchLogsRetention(cloudTrailLogGroupRetentionPeriod)
@@ -147,7 +146,7 @@ public class ObservabilityStack extends Stack {
 
         infof(
                 "ObservabilityStack %s created successfully for %s",
-                this.getNode().getId(), props.sharedNames().dashedDomainName);
+                this.getNode().getId(), props.sharedNames().dashedDeploymentDomainName);
 
         Aspects.of(this).add(new SetAutoDeleteJobLogRetentionAspect(props.deploymentName(), RetentionDays.THREE_DAYS));
 
@@ -187,7 +186,7 @@ public class ObservabilityStack extends Stack {
         String rumAppName = props.resourceNamePrefix() + "-rum";
         CfnAppMonitor rumMonitor = CfnAppMonitor.Builder.create(this, props.resourceNamePrefix() + "-RumAppMonitor")
                 .name(rumAppName)
-                .domainList(List.of(props.sharedNames().domainName))
+                .domainList(List.of(props.sharedNames().deploymentDomainName))
                 .appMonitorConfiguration(CfnAppMonitor.AppMonitorConfigurationProperty.builder()
                         .sessionSampleRate(1.0)
                         .allowCookies(true)

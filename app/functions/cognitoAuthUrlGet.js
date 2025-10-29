@@ -3,7 +3,7 @@
 import { extractRequest, httpBadRequestResponse, httpOkResponse, httpServerErrorResponse } from "../lib/responses.js";
 import { validateEnv } from "../lib/env.js";
 
-// GET /api/cognito/authUrl-get?state={state}
+// GET /api/v1/cognito/authUrl?state={state}
 export async function handler(event) {
   validateEnv(["COGNITO_CLIENT_ID", "COGNITO_BASE_URI", "DIY_SUBMIT_BASE_URL"]);
 

@@ -103,7 +103,7 @@ describe("Integration – Server Express App", () => {
     app.use(express.static(path.join(__dirname, "../../web/public")));
 
     // Wire the API routes exactly like server.js
-    app.get("/api/hmrc/authUrl-get", async (req, res) => {
+    app.get("/api/v1/hmrc/authUrl", async (req, res) => {
       const event = { queryStringParameters: { state: req.query.state } };
       const { statusCode, body } = await authUrlHandler(event);
       res.status(statusCode).json(JSON.parse(body));
@@ -115,13 +115,13 @@ describe("Integration – Server Express App", () => {
       res.status(statusCode).json(JSON.parse(body));
     });
 
-    app.post("/api/hmrc/vat/return-post", async (req, res) => {
+    app.post("/api/v1/hmrc/vat/return", async (req, res) => {
       const event = { body: JSON.stringify(req.body) };
       const { statusCode, body } = await submitVatHandler(event);
       res.status(statusCode).json(JSON.parse(body));
     });
 
-    app.post("/api/hmrc/receipt-post", async (req, res) => {
+    app.post("/api/v1/hmrc/receipt", async (req, res) => {
       const event = { body: JSON.stringify(req.body) };
       const { statusCode, body } = await logReceiptHandler(event);
       res.status(statusCode).json(JSON.parse(body));
@@ -139,7 +139,7 @@ describe("Integration – Server Express App", () => {
 
   describe("Auth Flow Integration", () => {
     it("should generate auth URL through Express endpoint", async () => {
-      const response = await request(app).get("/api/hmrc/authUrl-get").query({ state: "integration-test-state" }).expect(200);
+      const response = await request(app).get("/api/v1/hmrc/authUrl").query({ state: "integration-test-state" }).expect(200);
 
       console.log("Auth URL response:", response.body);
 
@@ -160,7 +160,7 @@ describe("Integration – Server Express App", () => {
     });
 
     it("should handle missing state in auth URL", async () => {
-      const response = await request(app).get("/api/hmrc/authUrl-get").expect(400);
+      const response = await request(app).get("/api/v1/hmrc/authUrl").expect(400);
 
       expect(response.body).toHaveProperty("message");
       expect(response.body.message).toBe("Missing state query parameter from URL");
@@ -183,7 +183,7 @@ describe("Integration – Server Express App", () => {
         accessToken: "mocked-access-token",
       };
 
-      const response = await request(app).post("/api/hmrc/vat/return-post").send(vatData).expect(200);
+      const response = await request(app).post("/api/v1/hmrc/vat/return").send(vatData).expect(200);
 
       console.log("VAT submission response:", response.body);
 
@@ -195,7 +195,7 @@ describe("Integration – Server Express App", () => {
     });
 
     it("should handle missing VAT parameters", async () => {
-      const response = await request(app).post("/api/hmrc/vat/return-post").send({ vatNumber: "123456789" }).expect(400);
+      const response = await request(app).post("/api/v1/hmrc/vat/return").send({ vatNumber: "123456789" }).expect(400);
 
       expect(response.body).toHaveProperty("message");
       expect(response.body.message).toBe(
@@ -215,7 +215,7 @@ describe("Integration – Server Express App", () => {
         processingDate: "2025-07-15T23:40:00Z",
       };
 
-      const response = await request(app).post("/api/hmrc/receipt-post").send(receiptData).expect(200);
+      const response = await request(app).post("/api/v1/hmrc/receipt").send(receiptData).expect(200);
 
       console.log("Receipt logging response:", response.body);
 
@@ -241,7 +241,7 @@ describe("Integration – Server Express App", () => {
         formBundleNumber: "test-bundle-456",
       };
 
-      const response = await request(app).post("/api/hmrc/receipt-post").send(receiptData).expect(500);
+      const response = await request(app).post("/api/v1/hmrc/receipt").send(receiptData).expect(500);
 
       expect(response.body).toHaveProperty("message");
       expect(response.body.message).toContain("Failed to log receipt");
@@ -274,7 +274,7 @@ describe("Integration – Server Express App", () => {
   describe("Full Flow Integration", () => {
     it("should handle complete auth and VAT submission flow", async () => {
       // Step 1: Get auth URL
-      const authResponse = await request(app).get("/api/hmrc/authUrl-get").query({ state: "flow-test-state" }).expect(200);
+      const authResponse = await request(app).get("/api/v1/hmrc/authUrl").query({ state: "flow-test-state" }).expect(200);
 
       expect(authResponse.body).toHaveProperty("authUrl");
 
@@ -286,7 +286,7 @@ describe("Integration – Server Express App", () => {
 
       // Step 3: Submit VAT return
       const vatResponse = await request(app)
-        .post("/api/hmrc/vat/return-post")
+        .post("/api/v1/hmrc/vat/return")
         .send({
           vatNumber: "987654321",
           periodKey: "18A2",
@@ -301,7 +301,7 @@ describe("Integration – Server Express App", () => {
       // Step 4: Log receipt
       s3Mock.on(PutObjectCommand).resolves({});
 
-      const receiptResponse = await request(app).post("/api/hmrc/receipt-post").send(vatResponse.body.receipt).expect(200);
+      const receiptResponse = await request(app).post("/api/v1/hmrc/receipt").send(vatResponse.body.receipt).expect(200);
 
       expect(receiptResponse.body).toHaveProperty("receipt");
       expect(receiptResponse.body).toHaveProperty("key");

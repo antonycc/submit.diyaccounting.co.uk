@@ -1,20 +1,21 @@
 package co.uk.diyaccounting.submit;
 
-import static co.uk.diyaccounting.submit.utils.Kind.envOr;
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.Kind.warnf;
-
 import co.uk.diyaccounting.submit.stacks.ApexStack;
 import co.uk.diyaccounting.submit.stacks.DataStack;
 import co.uk.diyaccounting.submit.stacks.IdentityStack;
 import co.uk.diyaccounting.submit.stacks.ObservabilityStack;
 import co.uk.diyaccounting.submit.stacks.ObservabilityUE1Stack;
 import co.uk.diyaccounting.submit.utils.KindCdk;
-import java.lang.reflect.Field;
-import java.nio.file.Paths;
 import software.amazon.awscdk.App;
 import software.amazon.awscdk.Environment;
 import software.constructs.Construct;
+
+import java.lang.reflect.Field;
+import java.nio.file.Paths;
+
+import static co.uk.diyaccounting.submit.utils.Kind.envOr;
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.Kind.warnf;
 
 public class SubmitEnvironment {
 
@@ -30,16 +31,14 @@ public class SubmitEnvironment {
         public String hostedZoneName;
         public String hostedZoneId;
         public String certificateArn;
-        public String domainName;
+        public String deploymentDomainName;
         public String baseUrl;
         public String subDomainName;
-        public String cognitoDomainPrefix;
         public String accessLogGroupRetentionPeriodDays;
         public String cloudTrailEnabled;
         public String cloudTrailLogGroupPrefix;
         public String cloudTrailLogGroupRetentionPeriodDays;
         public String holdingDocRootPath;
-        public String authCertificateArn;
         public String googleClientId;
         public String googleClientSecretArn;
         public String antonyccClientId;
@@ -98,7 +97,6 @@ public class SubmitEnvironment {
         nameProps.deploymentName = deploymentName;
         nameProps.hostedZoneName = appProps.hostedZoneName;
         nameProps.subDomainName = appProps.subDomainName;
-        nameProps.cognitoDomainPrefix = appProps.cognitoDomainPrefix;
         nameProps.regionName = primaryEnv.getRegion();
         nameProps.awsAccount = primaryEnv.getAccount();
         var sharedNames = new SubmitSharedNames(nameProps);
@@ -194,7 +192,7 @@ public class SubmitEnvironment {
                         .sharedNames(sharedNames)
                         .hostedZoneName(appProps.hostedZoneName)
                         .hostedZoneId(appProps.hostedZoneId)
-                        .authCertificateArn(appProps.authCertificateArn)
+                        .certificateArn(appProps.certificateArn)
                         .googleClientId(appProps.googleClientId)
                         .googleClientSecretArn(googleClientSecretArn)
                         .antonyccClientId(appProps.antonyccClientId)

@@ -48,7 +48,7 @@ describe("Server Unit Tests", () => {
     app.use(express.static(path.join(__dirname, "../../web/public")));
 
     // Wire the API routes (same as server.js) with error handling
-    app.get("/api/hmrc/authUrl-get", async (req, res) => {
+    app.get("/api/v1/hmrc/authUrl", async (req, res) => {
       try {
         const event = { queryStringParameters: { state: req.query.state } };
         const { statusCode, body } = await authUrlHandler(event);
@@ -68,7 +68,7 @@ describe("Server Unit Tests", () => {
       }
     });
 
-    app.post("/api/hmrc/vat/return-post", async (req, res) => {
+    app.post("/api/v1/hmrc/vat/return", async (req, res) => {
       try {
         const event = { body: JSON.stringify(req.body) };
         const { statusCode, body } = await submitVatHandler(event);
@@ -78,7 +78,7 @@ describe("Server Unit Tests", () => {
       }
     });
 
-    app.post("/api/hmrc/receipt-post", async (req, res) => {
+    app.post("/api/v1/hmrc/receipt", async (req, res) => {
       try {
         const event = { body: JSON.stringify(req.body) };
         const { statusCode, body } = await logReceiptHandler(event);
@@ -118,7 +118,7 @@ describe("Server Unit Tests", () => {
     });
   });
 
-  describe("GET /api/hmrc/authUrl-get", () => {
+  describe("GET /api/v1/hmrc/authUrl", () => {
     test("should call httpGetHmrc with correct event format", async () => {
       const mockResponse = {
         statusCode: 200,
@@ -126,7 +126,7 @@ describe("Server Unit Tests", () => {
       };
       authUrlHandler.mockResolvedValue(mockResponse);
 
-      const response = await request(app).get("/api/hmrc/authUrl-get").query({ state: "test-state" }).expect(200);
+      const response = await request(app).get("/api/v1/hmrc/authUrl").query({ state: "test-state" }).expect(200);
 
       expect(authUrlHandler).toHaveBeenCalledWith({
         queryStringParameters: { state: "test-state" },
@@ -141,7 +141,7 @@ describe("Server Unit Tests", () => {
       };
       authUrlHandler.mockResolvedValue(mockResponse);
 
-      const response = await request(app).get("/api/hmrc/authUrl-get").expect(400);
+      const response = await request(app).get("/api/v1/hmrc/authUrl").expect(400);
 
       expect(response.body).toEqual({ error: "Missing state" });
     });
@@ -153,7 +153,7 @@ describe("Server Unit Tests", () => {
       };
       authUrlHandler.mockResolvedValue(mockResponse);
 
-      await request(app).get("/api/hmrc/authUrl-get").expect(400);
+      await request(app).get("/api/v1/hmrc/authUrl").expect(400);
 
       expect(authUrlHandler).toHaveBeenCalledWith({
         queryStringParameters: { state: undefined },
@@ -191,7 +191,7 @@ describe("Server Unit Tests", () => {
     });
   });
 
-  describe("POST /api/hmrc/vat/return-post", () => {
+  describe("POST /api/v1/hmrc/vat/return", () => {
     test("should call httpPostMock with correct event format", async () => {
       const mockResponse = {
         statusCode: 200,
@@ -205,7 +205,7 @@ describe("Server Unit Tests", () => {
         vatDue: "100.00",
         accessToken: "test-token",
       };
-      const response = await request(app).post("/api/hmrc/vat/return-post").send(requestBody).expect(200);
+      const response = await request(app).post("/api/v1/hmrc/vat/return").send(requestBody).expect(200);
 
       expect(submitVatHandler).toHaveBeenCalledWith({
         body: JSON.stringify(requestBody),
@@ -220,13 +220,13 @@ describe("Server Unit Tests", () => {
       };
       submitVatHandler.mockResolvedValue(mockResponse);
 
-      const response = await request(app).post("/api/hmrc/vat/return-post").send({ vatNumber: "123" }).expect(400);
+      const response = await request(app).post("/api/v1/hmrc/vat/return").send({ vatNumber: "123" }).expect(400);
 
       expect(response.body).toEqual({ error: "Missing parameters" });
     });
   });
 
-  describe("POST /api/hmrc/receipt-post", () => {
+  describe("POST /api/v1/hmrc/receipt", () => {
     test("should call httpPostMock with correct event format", async () => {
       const mockResponse = {
         statusCode: 200,
@@ -235,7 +235,7 @@ describe("Server Unit Tests", () => {
       logReceiptHandler.mockResolvedValue(mockResponse);
 
       const requestBody = { formBundleNumber: "12345", receipt: "data" };
-      const response = await request(app).post("/api/hmrc/receipt-post").send(requestBody).expect(200);
+      const response = await request(app).post("/api/v1/hmrc/receipt").send(requestBody).expect(200);
 
       expect(logReceiptHandler).toHaveBeenCalledWith({
         body: JSON.stringify(requestBody),
@@ -250,7 +250,7 @@ describe("Server Unit Tests", () => {
       };
       logReceiptHandler.mockResolvedValue(mockResponse);
 
-      const response = await request(app).post("/api/hmrc/receipt-post").send({ invalid: "data" }).expect(500);
+      const response = await request(app).post("/api/v1/hmrc/receipt").send({ invalid: "data" }).expect(500);
 
       expect(response.body).toEqual({ error: "Failed to log receipt" });
     });
@@ -275,7 +275,7 @@ describe("Server Unit Tests", () => {
     test("should handle handler exceptions gracefully", async () => {
       authUrlHandler.mockRejectedValue(new Error("Handler crashed"));
 
-      const response = await request(app).get("/api/hmrc/authUrl-get").query({ state: "test" });
+      const response = await request(app).get("/api/v1/hmrc/authUrl").query({ state: "test" });
 
       // Express should catch the error and return 500
       expect(response.status).toBe(500);
@@ -287,7 +287,7 @@ describe("Server Unit Tests", () => {
         body: "invalid-json",
       });
 
-      const response = await request(app).get("/api/hmrc/authUrl-get").query({ state: "test" });
+      const response = await request(app).get("/api/v1/hmrc/authUrl").query({ state: "test" });
 
       // Should return 500 due to JSON.parse error
       expect(response.status).toBe(500);

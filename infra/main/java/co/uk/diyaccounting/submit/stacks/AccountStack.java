@@ -276,6 +276,6 @@ public class AccountStack extends Stack {
 
         infof(
                 "AccountStack %s created successfully for %s",
-                this.getNode().getId(), props.sharedNames().dashedDomainName);
+                this.getNode().getId(), props.sharedNames().dashedDeploymentDomainName);
     }
 }

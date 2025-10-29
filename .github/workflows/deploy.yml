@@ -153,7 +153,7 @@ jobs:
       - run: npm run test:coverage
 
       - name: Upload coverage reports
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         if: ${{ !cancelled() }}
         with:
           name: coverage-reports
@@ -247,7 +247,7 @@ jobs:
 
       - name: Upload artifacts (results)
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: behaviour-test-artifacts
           retention-days: 30
@@ -256,7 +256,7 @@ jobs:
 
       - name: Upload artifacts (reports)
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: behaviour-test-reports
           retention-days: 30
@@ -350,7 +350,7 @@ jobs:
           docker save -o docker-image/image.tar "${{ env.BASE_IMAGE_TAG_PREFIX }}:${{ github.sha }}"
 
       - name: Upload image artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: docker-image
           path: docker-image/image.tar
@@ -414,7 +414,7 @@ jobs:
             && cat ../.env.${{ needs.names.outputs.environment-name }} \
             && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
               npx cdk deploy \
-                app-${{ needs.names.outputs.deployment-name }}-SelfDestructStack \
+                ${{ needs.names.outputs.deployment-name }}-app-SelfDestructStack \
                 --require-approval never \
                 --ci true \
                 --concurrency 4 \
@@ -465,7 +465,7 @@ jobs:
         id: static-skip
         shell: bash
         run: |
-          STACK_NAME="app-${{ needs.names.outputs.deployment-name }}-DevStack"
+          STACK_NAME="${{ needs.names.outputs.deployment-name }}-app-DevStack"
           echo "Checking for existing COMPLETE stack: $STACK_NAME"
           COUNT=$(aws cloudformation list-stacks \
             --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE \
@@ -507,7 +507,7 @@ jobs:
             && cat ../.env.${{ needs.names.outputs.environment-name }} \
             && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
               npx cdk deploy \
-                app-${{ needs.names.outputs.deployment-name }}-DevStack \
+                ${{ needs.names.outputs.deployment-name }}-app-DevStack \
                 --require-approval never \
                 --ci true \
                 --concurrency 4 \
@@ -565,7 +565,7 @@ jobs:
             ;
         env:
           ECR_REPOSITORY_BASE_URL: ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com
-          ECR_REPOSITORY_NAME: app-${{ needs.names.outputs.deployment-name }}-submit-diyaccounting-co-uk-ecr
+          ECR_REPOSITORY_NAME: ${{ needs.names.outputs.deployment-name }}-submit-diyaccounting-co-uk-app-ecr
 
       - name: Check if image already exists in ECR
         id: image-exists
@@ -581,7 +581,7 @@ jobs:
           fi
         env:
           ECR_REPOSITORY_BASE_URL: ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com
-          ECR_REPOSITORY_NAME: app-${{ needs.names.outputs.deployment-name }}-submit-diyaccounting-co-uk-ecr
+          ECR_REPOSITORY_NAME: ${{ needs.names.outputs.deployment-name }}-submit-diyaccounting-co-uk-app-ecr
 
       - name: Checkout
         if: ${{ steps.image-exists.outputs.exists != 'true' }}
@@ -619,7 +619,7 @@ jobs:
           docker push "${ECR_REPOSITORY_BASE_URL?}/${ECR_REPOSITORY_NAME?}:latest"
         env:
           ECR_REPOSITORY_BASE_URL: ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com
-          ECR_REPOSITORY_NAME: app-${{ needs.names.outputs.deployment-name }}-submit-diyaccounting-co-uk-ecr
+          ECR_REPOSITORY_NAME: ${{ needs.names.outputs.deployment-name }}-submit-diyaccounting-co-uk-app-ecr
     outputs:
       base-image-tag: ${{ github.sha }}
 
@@ -680,7 +680,7 @@ jobs:
             && cat ../.env.${{ needs.names.outputs.environment-name }} \
             && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
               npx cdk deploy \
-                app-${{ needs.names.outputs.deployment-name }}-AuthStack \
+                ${{ needs.names.outputs.deployment-name }}-app-AuthStack \
                 --exclusively \
                 --require-approval never \
                 --ci true \
@@ -698,22 +698,6 @@ jobs:
           COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
 
       - run: cat cdk-submit-application.out/cdk-outputs-auth.json | jq '.'
-
-      - name: Resolve stack outputs
-        id: auth-outputs
-        run: |
-          AUTH_URL_COGNITO_LAMBDA_URL=$(jq -r '.["app-${{ needs.names.outputs.deployment-name }}-AuthStack"].AuthUrlCognitoLambdaUrl' cdk-submit-application.out/cdk-outputs-auth.json)
-          COGNITO_EXCHANGE_TOKEN_LAMBDA_URL=$(jq -r '.["app-${{ needs.names.outputs.deployment-name }}-AuthStack"].ExchangeCognitoTokenLambdaUrl' cdk-submit-application.out/cdk-outputs-auth.json)
-          #echo "AUTH_URL_MOCK_LAMBDA_URL=$AUTH_URL_MOCK_LAMBDA_URL"
-          echo "AUTH_URL_COGNITO_LAMBDA_URL=$AUTH_URL_COGNITO_LAMBDA_URL"
-          echo "COGNITO_EXCHANGE_TOKEN_LAMBDA_URL=$COGNITO_EXCHANGE_TOKEN_LAMBDA_URL"
-          #echo "AUTH_URL_MOCK_LAMBDA_URL=$AUTH_URL_MOCK_LAMBDA_URL" >> $GITHUB_OUTPUT
-          echo "AUTH_URL_COGNITO_LAMBDA_URL=$AUTH_URL_COGNITO_LAMBDA_URL" >> $GITHUB_OUTPUT
-          echo "COGNITO_EXCHANGE_TOKEN_LAMBDA_URL=$COGNITO_EXCHANGE_TOKEN_LAMBDA_URL" >> $GITHUB_OUTPUT
-        shell: bash
-    outputs:
-      authUrlCognitoLambdaUrl: ${{ steps.auth-outputs.outputs.AUTH_URL_COGNITO_LAMBDA_URL }}
-      exchangeCognitoTokenLambdaUrl: ${{ steps.auth-outputs.outputs.COGNITO_EXCHANGE_TOKEN_LAMBDA_URL }}
 
   deploy-hmrc:
     name: 'deploy hmrc'
@@ -773,7 +757,7 @@ jobs:
             && cat ../.env.${{ needs.names.outputs.environment-name }} \
             && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
               npx cdk deploy \
-                app-${{ needs.names.outputs.deployment-name }}-HmrcStack \
+                ${{ needs.names.outputs.deployment-name }}-app-HmrcStack \
                 --exclusively \
                 --require-approval never \
                 --ci true \
@@ -791,32 +775,6 @@ jobs:
           COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
 
       - run: cat cdk-submit-application.out/cdk-outputs-hmrc.json | jq '.'
-
-      - name: Resolve stack outputs
-        id: hmrc-outputs
-        run: |
-          AUTH_URL_HMRC_LAMBDA_URL=$(jq -r '.["app-${{ needs.names.outputs.deployment-name }}-HmrcStack"].AuthUrlHmrcLambdaUrl' cdk-submit-application.out/cdk-outputs-hmrc.json)
-          EXCHANGE_HMRC_TOKEN_LAMBDA_URL=$(jq -r '.["app-${{ needs.names.outputs.deployment-name }}-HmrcStack"].ExchangeHmrcTokenLambdaUrl' cdk-submit-application.out/cdk-outputs-hmrc.json)
-          SUBMIT_VAT_LAMBDA_URL=$(jq -r '.["app-${{ needs.names.outputs.deployment-name }}-HmrcStack"].SubmitVatLambdaUrl' cdk-submit-application.out/cdk-outputs-hmrc.json)
-          LOG_RECEIPT_LAMBDA_URL=$(jq -r '.["app-${{ needs.names.outputs.deployment-name }}-HmrcStack"].LogReceiptLambdaUrl' cdk-submit-application.out/cdk-outputs-hmrc.json)
-          MY_RECEIPTS_LAMBDA_URL=$(jq -r '.["app-${{ needs.names.outputs.deployment-name }}-HmrcStack"].MyReceiptsLambdaUrl' cdk-submit-application.out/cdk-outputs-hmrc.json)
-          echo "AUTH_URL_HMRC_LAMBDA_URL=$AUTH_URL_HMRC_LAMBDA_URL"
-          echo "AUTH_URL_HMRC_LAMBDA_URL=$AUTH_URL_HMRC_LAMBDA_URL" >> $GITHUB_OUTPUT
-          echo "EXCHANGE_HMRC_TOKEN_LAMBDA_URL=$EXCHANGE_HMRC_TOKEN_LAMBDA_URL"
-          echo "EXCHANGE_HMRC_TOKEN_LAMBDA_URL=$EXCHANGE_HMRC_TOKEN_LAMBDA_URL" >> $GITHUB_OUTPUT
-          echo "SUBMIT_VAT_LAMBDA_URL=$SUBMIT_VAT_LAMBDA_URL"
-          echo "SUBMIT_VAT_LAMBDA_URL=$SUBMIT_VAT_LAMBDA_URL" >> $GITHUB_OUTPUT
-          echo "LOG_RECEIPT_LAMBDA_URL=$LOG_RECEIPT_LAMBDA_URL"
-          echo "LOG_RECEIPT_LAMBDA_URL=$LOG_RECEIPT_LAMBDA_URL" >> $GITHUB_OUTPUT
-          echo "MY_RECEIPTS_LAMBDA_URL=$MY_RECEIPTS_LAMBDA_URL"
-          echo "MY_RECEIPTS_LAMBDA_URL=$MY_RECEIPTS_LAMBDA_URL" >> $GITHUB_OUTPUT
-        shell: bash
-    outputs:
-      authUrlHmrcLambdaUrl: ${{ steps.hmrc-outputs.outputs.AUTH_URL_HMRC_LAMBDA_URL }}
-      exchangeHmrcTokenLambdaUrl: ${{ steps.hmrc-outputs.outputs.EXCHANGE_HMRC_TOKEN_LAMBDA_URL }}
-      submitVatLambdaUrl: ${{ steps.hmrc-outputs.outputs.SUBMIT_VAT_LAMBDA_URL }}
-      logReceiptLambdaUrl: ${{ steps.hmrc-outputs.outputs.LOG_RECEIPT_LAMBDA_URL }}
-      myReceiptsLambdaUrl: ${{ steps.hmrc-outputs.outputs.MY_RECEIPTS_LAMBDA_URL }}
 
   deploy-account:
     name: 'deploy account'
@@ -876,7 +834,7 @@ jobs:
             && cat ../.env.${{ needs.names.outputs.environment-name }} \
             && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
               npx cdk deploy \
-                app-${{ needs.names.outputs.deployment-name }}-AccountStack \
+                ${{ needs.names.outputs.deployment-name }}-app-AccountStack \
                 --exclusively \
                 --require-approval never \
                 --ci true \
@@ -895,28 +853,6 @@ jobs:
           COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
 
       - run: cat cdk-submit-application.out/cdk-outputs-account.json | jq '.'
-
-#      - name: Resolve stack outputs
-#        id: account-outputs
-#        run: |
-#          CATALOG_LAMBDA_URL=$(jq -r '.["app-${{ needs.names.outputs.deployment-name }}-AccountStack"].CatalogLambdaUrl' cdk-submit-application.out/cdk-outputs-account.json)
-#          REQUEST_BUNDLES_LAMBDA_URL=$(jq -r '.["app-${{ needs.names.outputs.deployment-name }}-AccountStack"].RequestBundlesLambdaUrl' cdk-submit-application.out/cdk-outputs-account.json)
-#          BUNDLE_DELETE_LAMBDA_URL=$(jq -r '.["app-${{ needs.names.outputs.deployment-name }}-AccountStack"].BundleDeleteLambdaUrl' cdk-submit-application.out/cdk-outputs-account.json)
-#          MY_BUNDLES_LAMBDA_URL=$(jq -r '.["app-${{ needs.names.outputs.deployment-name }}-AccountStack"].MyBundlesLambdaUrl' cdk-submit-application.out/cdk-outputs-account.json)
-#          echo "CATALOG_LAMBDA_URL=$CATALOG_LAMBDA_URL"
-#          echo "CATALOG_LAMBDA_URL=$CATALOG_LAMBDA_URL" >> $GITHUB_OUTPUT
-#          echo "REQUEST_BUNDLES_LAMBDA_URL=$REQUEST_BUNDLES_LAMBDA_URL"
-#          echo "REQUEST_BUNDLES_LAMBDA_URL=$REQUEST_BUNDLES_LAMBDA_URL" >> $GITHUB_OUTPUT
-#          echo "BUNDLE_DELETE_LAMBDA_URL=$BUNDLE_DELETE_LAMBDA_URL"
-#          echo "BUNDLE_DELETE_LAMBDA_URL=$BUNDLE_DELETE_LAMBDA_URL" >> $GITHUB_OUTPUT
-#          echo "MY_BUNDLES_LAMBDA_URL=$MY_BUNDLES_LAMBDA_URL"
-#          echo "MY_BUNDLES_LAMBDA_URL=$MY_BUNDLES_LAMBDA_URL" >> $GITHUB_OUTPUT
-#        shell: bash
-#    outputs:
-#      catalogLambdaUrl: ${{ steps.account-outputs.outputs.CATALOG_LAMBDA_URL }}
-#      requestBundlesLambdaUrl: ${{ steps.account-outputs.outputs.REQUEST_BUNDLES_LAMBDA_URL }}
-#      bundleDeleteLambdaUrl: ${{ steps.account-outputs.outputs.BUNDLE_DELETE_LAMBDA_URL }}
-#      myBundlesLambdaUrl: ${{ steps.account-outputs.outputs.MY_BUNDLES_LAMBDA_URL }}
 
   deploy-api:
     name: 'deploy api'
@@ -976,7 +912,7 @@ jobs:
             && cat ../.env.${{ needs.names.outputs.environment-name }} \
             && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
               npx cdk deploy \
-                app-${{ needs.names.outputs.deployment-name }}-ApiStack \
+                ${{ needs.names.outputs.deployment-name }}-app-ApiStack \
                 --exclusively \
                 --require-approval never \
                 --ci true \
@@ -998,7 +934,7 @@ jobs:
       - name: Resolve stack outputs
         id: api-outputs
         run: |
-          HTTP_API_URL=$(jq -r '.["app-${{ needs.names.outputs.deployment-name }}-ApiStack"].HttpApiUrl' cdk-submit-application.out/cdk-outputs-api.json)
+          HTTP_API_URL=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-app-ApiStack"].HttpApiUrl' cdk-submit-application.out/cdk-outputs-api.json)
           echo "HTTP_API_URL=$HTTP_API_URL"
           echo "HTTP_API_URL=$HTTP_API_URL" >> $GITHUB_OUTPUT
         shell: bash
@@ -1067,7 +1003,7 @@ jobs:
             && cat ../.env.${{ needs.names.outputs.environment-name }} \
             && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
               npx cdk deploy \
-                del-${{ needs.names.outputs.deployment-name }}-SelfDestructStack \
+                ${{ needs.names.outputs.deployment-name }}-del-SelfDestructStack \
                 --require-approval never \
                 --ci true \
                 --concurrency 4 \
@@ -1081,17 +1017,7 @@ jobs:
           SELF_DESTRUCT_START_DATETIME: ${{ needs.mvn-package.outputs.self-destruct-start-datetime }}
           WEBSITE_HASH: "placeholder"
           HTTP_API_URL: ${{ needs.deploy-api.outputs.httpApiUrl }}
-          AUTH_URL_COGNITO_LAMBDA_URL: ${{ needs.deploy-auth.outputs.authUrlCognitoLambdaUrl }}
-          COGNITO_EXCHANGE_TOKEN_LAMBDA_URL: ${{ needs.deploy-auth.outputs.exchangeCognitoTokenLambdaUrl }}
-          AUTH_URL_HMRC_LAMBDA_URL: ${{ needs.deploy-hmrc.outputs.authUrlHmrcLambdaUrl }}
-          EXCHANGE_HMRC_TOKEN_LAMBDA_URL: ${{ needs.deploy-hmrc.outputs.exchangeHmrcTokenLambdaUrl }}
-          SUBMIT_VAT_LAMBDA_URL: ${{ needs.deploy-hmrc.outputs.submitVatLambdaUrl }}
-          LOG_RECEIPT_LAMBDA_URL: ${{ needs.deploy-hmrc.outputs.logReceiptLambdaUrl }}
-          MY_RECEIPTS_LAMBDA_URL: ${{ needs.deploy-hmrc.outputs.myReceiptsLambdaUrl }}
-#          CATALOG_LAMBDA_URL: ${{ needs.deploy-account.outputs.catalogLambdaUrl }}
-#          REQUEST_BUNDLES_LAMBDA_URL: ${{ needs.deploy-account.outputs.requestBundlesLambdaUrl }}
-#          BUNDLE_DELETE_LAMBDA_URL: ${{ needs.deploy-account.outputs.bundleDeleteLambdaUrl }}
-#          MY_BUNDLES_LAMBDA_URL: ${{ needs.deploy-account.outputs.myBundlesLambdaUrl }}
+          DIY_SUBMIT_APEX_URL: ${{ needs.names.outputs.apex-url }}
 
   deploy-edge:
     name: 'deploy edge'
@@ -1134,7 +1060,7 @@ jobs:
         id: static-skip
         shell: bash
         run: |
-          STACK_NAME="del-${{ needs.names.outputs.deployment-name }}-EdgeStack"
+          STACK_NAME="${{ needs.names.outputs.deployment-name }}-del-EdgeStack"
           echo "Checking for existing COMPLETE stack: $STACK_NAME"
           COUNT=$(aws cloudformation list-stacks \
             --region "us-east-1" \
@@ -1177,7 +1103,7 @@ jobs:
             && cat ../.env.${{ needs.names.outputs.environment-name }} \
             && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
               npx cdk deploy \
-                del-${{ needs.names.outputs.deployment-name }}-EdgeStack \
+                ${{ needs.names.outputs.deployment-name }}-del-EdgeStack \
                 --exclusively \
                 --require-approval never \
                 --ci true \
@@ -1191,17 +1117,7 @@ jobs:
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
           WEBSITE_HASH: "placeholder"
           HTTP_API_URL: ${{ needs.deploy-api.outputs.httpApiUrl }}
-          AUTH_URL_COGNITO_LAMBDA_URL: ${{ needs.deploy-auth.outputs.authUrlCognitoLambdaUrl }}
-          COGNITO_EXCHANGE_TOKEN_LAMBDA_URL: ${{ needs.deploy-auth.outputs.exchangeCognitoTokenLambdaUrl }}
-          AUTH_URL_HMRC_LAMBDA_URL: ${{ needs.deploy-hmrc.outputs.authUrlHmrcLambdaUrl }}
-          EXCHANGE_HMRC_TOKEN_LAMBDA_URL: ${{ needs.deploy-hmrc.outputs.exchangeHmrcTokenLambdaUrl }}
-          SUBMIT_VAT_LAMBDA_URL: ${{ needs.deploy-hmrc.outputs.submitVatLambdaUrl }}
-          LOG_RECEIPT_LAMBDA_URL: ${{ needs.deploy-hmrc.outputs.logReceiptLambdaUrl }}
-          MY_RECEIPTS_LAMBDA_URL: ${{ needs.deploy-hmrc.outputs.myReceiptsLambdaUrl }}
-#          CATALOG_LAMBDA_URL: ${{ needs.deploy-account.outputs.catalogLambdaUrl }}
-#          REQUEST_BUNDLES_LAMBDA_URL: ${{ needs.deploy-account.outputs.requestBundlesLambdaUrl }}
-#          BUNDLE_DELETE_LAMBDA_URL: ${{ needs.deploy-account.outputs.bundleDeleteLambdaUrl }}
-#          MY_BUNDLES_LAMBDA_URL: ${{ needs.deploy-account.outputs.myBundlesLambdaUrl }}
+          DIY_SUBMIT_APEX_URL: ${{ needs.names.outputs.apex-url }}
 
       - run: cat cdk-submit-delivery.out/cdk-outputs-edge.json | jq '.'
         if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
@@ -1210,7 +1126,7 @@ jobs:
         if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
         id: edge-outputs
         run: |
-          ORIGIN_BUCKET_NAME=$(jq -r '.["del-${{ needs.names.outputs.deployment-name }}-EdgeStack"].OriginBucketName' cdk-submit-delivery.out/cdk-outputs-edge.json)
+          ORIGIN_BUCKET_NAME=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-del-EdgeStack"].OriginBucketName' cdk-submit-delivery.out/cdk-outputs-edge.json)
           echo "ORIGIN_BUCKET_NAME=$ORIGIN_BUCKET_NAME"
           echo "ORIGIN_BUCKET_NAME=$ORIGIN_BUCKET_NAME" >> $GITHUB_OUTPUT
         shell: bash
@@ -1257,7 +1173,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          STACK_NAME="env-${{ needs.names.outputs.environment-name }}-ObservabilityStack"
+          STACK_NAME="${{ needs.names.outputs.environment-name }}-env-ObservabilityStack"
           echo "Resolving RUM outputs from $STACK_NAME in region ${{ env.AWS_REGION }}"
           JSON=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" --region "${{ env.AWS_REGION }}")
           RUM_APP_MONITOR_ID=$(echo "$JSON" | jq -r '.Stacks[0].Outputs[] | select(.OutputKey=="RumAppMonitorId") | .OutputValue')
@@ -1359,7 +1275,7 @@ jobs:
             && cat ../.env.${{ needs.names.outputs.environment-name }} \
             && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
               npx cdk deploy \
-                del-${{ needs.names.outputs.deployment-name }}-PublishStack \
+                ${{ needs.names.outputs.deployment-name }}-del-PublishStack \
                 --exclusively \
                 --require-approval never \
                 --ci true \
@@ -1374,16 +1290,6 @@ jobs:
           WEBSITE_HASH: ${{ steps.publish-hash.outputs.WEBSITE_HASH }}
           HTTP_API_URL: ${{ needs.deploy-api.outputs.httpApiUrl }}
           DIY_SUBMIT_APEX_URL: ${{ needs.names.outputs.apex-url }}
-          AUTH_URL_COGNITO_LAMBDA_URL: ${{ needs.deploy-auth.outputs.authUrlCognitoLambdaUrl }}
-          COGNITO_EXCHANGE_TOKEN_LAMBDA_URL: ${{ needs.deploy-auth.outputs.exchangeCognitoTokenLambdaUrl }}
-          AUTH_URL_HMRC_LAMBDA_URL: ${{ needs.deploy-hmrc.outputs.authUrlHmrcLambdaUrl }}
-          EXCHANGE_HMRC_TOKEN_LAMBDA_URL: ${{ needs.deploy-hmrc.outputs.exchangeHmrcTokenLambdaUrl }}
-          SUBMIT_VAT_LAMBDA_URL: ${{ needs.deploy-hmrc.outputs.submitVatLambdaUrl }}
-          LOG_RECEIPT_LAMBDA_URL: ${{ needs.deploy-hmrc.outputs.logReceiptLambdaUrl }}
-          MY_RECEIPTS_LAMBDA_URL: ${{ needs.deploy-hmrc.outputs.myReceiptsLambdaUrl }}
-#          CATALOG_LAMBDA_URL: ${{ needs.deploy-account.outputs.catalogLambdaUrl }}
-#          REQUEST_BUNDLES_LAMBDA_URL: ${{ needs.deploy-account.outputs.requestBundlesLambdaUrl }}
-#          MY_BUNDLES_LAMBDA_URL: ${{ needs.deploy-account.outputs.myBundlesLambdaUrl }}
 
 #      - name: Upsert Cognito callback/logout URLs
 #        if: ${{ contains(needs.names.outputs.base-url, 'submit') }}
@@ -1459,7 +1365,7 @@ jobs:
         id: static-skip
         shell: bash
         run: |
-          STACK_NAME="app-${{ needs.names.outputs.deployment-name }}-OpsStack"
+          STACK_NAME="${{ needs.names.outputs.deployment-name }}-app-OpsStack"
           echo "Checking existence of $STACK_NAME"
           if aws cloudformation describe-stacks --stack-name "$STACK_NAME" >/dev/null 2>&1; then
             echo "skipStaticStackDeployment=true" >> "$GITHUB_OUTPUT"
@@ -1497,7 +1403,7 @@ jobs:
             && cat ../.env.${{ needs.names.outputs.environment-name }} \
             && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
               npx cdk deploy \
-                app-${{ needs.names.outputs.deployment-name }}-OpsStack \
+                ${{ needs.names.outputs.deployment-name }}-app-OpsStack \
                 --exclusively \
                 --require-approval never \
                 --ci true \
@@ -1557,7 +1463,7 @@ jobs:
 #
 #      - name: Upload artifacts (results)
 #        if: ${{ !cancelled() }}
-#        uses: actions/upload-artifact@v4
+#        uses: actions/upload-artifact@v5
 #        with:
 #          name: origin-test-artifacts
 #          retention-days: 30
@@ -1566,7 +1472,7 @@ jobs:
 #
 #      - name: Upload artifacts (reports)
 #        if: ${{ !cancelled() }}
-#        uses: actions/upload-artifact@v4
+#        uses: actions/upload-artifact@v5
 #        with:
 #          name: origin-test-reports
 #          retention-days: 30
@@ -1631,7 +1537,7 @@ jobs:
         id: get-distribution-id
         run: |
           DISTRIBUTION_ID=$(aws cloudformation describe-stacks \
-            --stack-name "del-${{ needs.names.outputs.deployment-name }}-EdgeStack" \
+            --stack-name "${{ needs.names.outputs.deployment-name }}-del-EdgeStack" \
             --region "us-east-1" \
             --query "Stacks[0].Outputs[?OutputKey=='DistributionId'].OutputValue" \
             --output text)
@@ -1736,7 +1642,7 @@ jobs:
 #
 #      - name: Upload artifacts
 #        if: ${{ !cancelled() }}
-#        uses: actions/upload-artifact@v4
+#        uses: actions/upload-artifact@v5
 #        with:
 #          name: api-test-artifacts
 #          path: |
@@ -1777,9 +1683,11 @@ jobs:
           cp '.env.${{ needs.names.outputs.environment-name }}' '.env.test' \
           ; npx dotenv -e '.env.${{ needs.names.outputs.environment-name }}' -- \
             npm run test:webBehaviour || exit_code=$? \
-          ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
           ; exit ${exit_code:-0} \
           ;
+        # TODO: reinstate copy of logs
+        # ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
+
         env:
           DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.apex-url }}
           TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
@@ -1788,7 +1696,7 @@ jobs:
 
       - name: Upload artifacts (results)
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: web-test-artifacts
           retention-days: 30
@@ -1797,7 +1705,7 @@ jobs:
 
       - name: Upload artifacts (reports)
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: web-test-reports
           retention-days: 30
@@ -1831,7 +1739,7 @@ jobs:
       - name: Copy test reports to S3 origin bucket
         if: ${{ !cancelled() }}
         env:
-          BUCKET_NAME: origin-del-${{ needs.names.outputs.deployment-name }}-submit-diyaccounting-co-uk
+          BUCKET_NAME: origin-${{ needs.names.outputs.deployment-name }}-submit-diyaccounting-co-uk-del
         run: |
           echo "Uploading test reports to S3 bucket: ${BUCKET_NAME?}"
           aws s3 cp target/test-reports/ s3://${BUCKET_NAME?}/tests/ --recursive
@@ -1891,7 +1799,7 @@ jobs:
 #
 #      - name: Upload artifacts
 #        if: ${{ !cancelled() }}
-#        uses: actions/upload-artifact@v4
+#        uses: actions/upload-artifact@v5
 #        with:
 #          name: load-test-artifacts
 #          path: |
@@ -1966,7 +1874,7 @@ jobs:
 
       - name: Upload artifacts (converted videos)
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: web-test-artifacts-converted
           retention-days: 30

@@ -1,15 +1,7 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildCognitoBaseUri;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDashedCognitoDomainName;
-
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Aspects;
 import software.amazon.awscdk.Environment;
@@ -34,17 +26,19 @@ import software.amazon.awscdk.services.cognito.UserPoolClientIdentityProvider;
 import software.amazon.awscdk.services.cognito.UserPoolDomain;
 import software.amazon.awscdk.services.cognito.UserPoolIdentityProviderGoogle;
 import software.amazon.awscdk.services.logs.RetentionDays;
-import software.amazon.awscdk.services.route53.ARecord;
-import software.amazon.awscdk.services.route53.AaaaRecord;
-import software.amazon.awscdk.services.route53.AliasRecordTargetConfig;
 import software.amazon.awscdk.services.route53.HostedZone;
 import software.amazon.awscdk.services.route53.HostedZoneAttributes;
-import software.amazon.awscdk.services.route53.IAliasRecordTarget;
-import software.amazon.awscdk.services.route53.RecordTarget;
 import software.amazon.awscdk.services.secretsmanager.ISecret;
 import software.amazon.awscdk.services.secretsmanager.Secret;
 import software.constructs.Construct;
 import software.constructs.IDependable;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 public class IdentityStack extends Stack {
 
@@ -58,9 +52,7 @@ public class IdentityStack extends Stack {
     public final UserPoolDomain userPoolDomain;
     public final String userPoolDomainARecordName;
     public final String userPoolDomainAaaaRecordName;
-    public final String dashedCognitoDomainName;
     public final ICertificate authCertificate;
-    public final String cognitoBaseUri;
 
     @Value.Immutable
     public interface IdentityStackProps extends StackProps, SubmitStackProps {
@@ -96,7 +88,7 @@ public class IdentityStack extends Stack {
 
         String hostedZoneId();
 
-        String authCertificateArn();
+        String certificateArn();
 
         String antonyccClientId();
 
@@ -128,11 +120,8 @@ public class IdentityStack extends Stack {
                         .hostedZoneId(props.hostedZoneId())
                         .build());
 
-        this.cognitoBaseUri = buildCognitoBaseUri(props.sharedNames().cognitoDomainName);
-
-        this.dashedCognitoDomainName = buildDashedCognitoDomainName(props.sharedNames().cognitoDomainName);
         this.authCertificate = Certificate.fromCertificateArn(
-                this, props.resourceNamePrefix() + "-AuthCertificate", props.authCertificateArn());
+                this, props.resourceNamePrefix() + "-AuthCertificate", props.certificateArn());
 
         // Create a secret for the Google client secret and set the ARN to be used in the Lambda
 
@@ -273,6 +262,6 @@ public class IdentityStack extends Stack {
 
         infof(
                 "IdentityStack %s created successfully for %s",
-                this.getNode().getId(), props.sharedNames().dashedDomainName);
+                this.getNode().getId(), props.sharedNames().dashedDeploymentDomainName);
     }
 }

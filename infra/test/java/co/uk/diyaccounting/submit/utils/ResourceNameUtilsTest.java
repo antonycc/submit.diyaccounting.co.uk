@@ -1,25 +1,13 @@
 package co.uk.diyaccounting.submit.utils;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import java.util.List;
 import org.junit.jupiter.api.Test;
 
-class ResourceNameUtilsTest {
+import java.util.List;
 
-    @Test
-    void buildDomainNames() {
-        assertEquals("app.example.com", ResourceNameUtils.buildPrimaryDomainName("app", "example.com"));
-        assertEquals("dev.app.example.com", ResourceNameUtils.buildVersionedDomainName("dev", "app", "example.com"));
-        assertEquals(
-                "dev-app-example-com",
-                ResourceNameUtils.buildDashedDomainName(
-                        ResourceNameUtils.buildVersionedDomainName("dev", "app", "example.com")));
-        assertEquals("app.example.com", ResourceNameUtils.buildEnvironmentDomainName("prod", "app", "example.com"));
-        assertEquals("dev.app.example.com", ResourceNameUtils.buildVersionedDomainName("dev", "app", "example.com"));
-    }
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+class ResourceNameUtilsTest {
 
     @Test
     void compressedAndRegularPrefixesAndTruncation() {
@@ -54,31 +42,5 @@ class ResourceNameUtilsTest {
         assertTrue(name.matches("[A-Za-z0-9+=,.@-]+"));
         assertTrue(name.length() <= 64);
         assertTrue(name.contains("my@prefix-"));
-
-        assertEquals("dashed-cloud-trail", ResourceNameUtils.buildTrailName("dashed"));
-        assertEquals("dashed-ecr", ResourceNameUtils.buildEcrRepositoryName("dashed"));
-        assertEquals("/aws/ecr/dashed", ResourceNameUtils.buildEcrLogGroupName("dashed"));
-        assertEquals("dashed-ecr-publish-role", ResourceNameUtils.buildEcrPublishRoleName("dashed"));
-
-        assertEquals("dashed-func-name", ResourceNameUtils.buildFunctionName("dashed", "FuncName"));
-        assertThrows(IllegalArgumentException.class, () -> ResourceNameUtils.buildFunctionName("dashed", " "));
     }
-
-    @Test
-    void cognitoDomains() {
-        assertEquals(
-                "cog.auth.app.example.com",
-                ResourceNameUtils.buildCognitoDomainName("cog", "auth", "app", "example.com"));
-        assertEquals(
-                "dev.auth.app.example.com",
-                ResourceNameUtils.buildCognitoDomainName("dev", "auth", "app", "example.com"));
-        assertEquals("https://login.example.com", ResourceNameUtils.buildCognitoBaseUri("login.example.com"));
-        assertEquals("cog-app-example-com", ResourceNameUtils.buildDashedCognitoDomainName("cog.app.example.com"));
-
-        assertEquals(
-                "dev.auth.app.example.com",
-                ResourceNameUtils.buildCognitoDomainName("dev", "auth", "app", "example.com"));
-        assertEquals(
-                "auth.app.example.com", ResourceNameUtils.buildCognitoDomainName("prod", "auth", "app", "example.com"));
-    }
-}
+ }

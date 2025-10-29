@@ -319,6 +319,6 @@ public class HmrcStack extends Stack {
         cfnOutput(this, "LogReceiptLambdaUrl", logReceiptUrl.getUrl());
         cfnOutput(this, "MyReceiptsLambdaUrl", myReceiptsUrl.getUrl());
 
-        infof("HmrcStack %s created successfully for %s", this.getNode().getId(), props.sharedNames().dashedDomainName);
+        infof("HmrcStack %s created successfully for %s", this.getNode().getId(), props.sharedNames().dashedDeploymentDomainName);
     }
 }

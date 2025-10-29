@@ -1,14 +1,10 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
 import co.uk.diyaccounting.submit.constructs.LambdaUrlOrigin;
 import co.uk.diyaccounting.submit.constructs.LambdaUrlOriginProps;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
-import java.util.Optional;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Aspects;
 import software.amazon.awscdk.Duration;
@@ -24,6 +20,11 @@ import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
+
+import java.util.Optional;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 public class AuthStack extends Stack {
 
@@ -70,8 +71,6 @@ public class AuthStack extends Stack {
 
         String cognitoClientId();
 
-        String cognitoBaseUri();
-
         // Optional test access token for local/dev testing without real Cognito interaction
         Optional<String> optionalTestAccessToken(); //
 
@@ -98,7 +97,7 @@ public class AuthStack extends Stack {
         var authUrlCognitoLambdaEnv = new PopulatedMap<String, String>()
                 .with("DIY_SUBMIT_BASE_URL", props.sharedNames().envBaseUrl)
                 .with("COGNITO_CLIENT_ID", props.cognitoClientId())
-                .with("COGNITO_BASE_URI", props.cognitoBaseUri());
+                .with("COGNITO_BASE_URI", props.sharedNames().cognitoBaseUri);
 
         var authUrlCognitoLambdaUrlOrigin = new LambdaUrlOrigin(
                 this,
@@ -123,7 +122,7 @@ public class AuthStack extends Stack {
         // exchangeToken - Google or Antonycc via Cognito
         var exchangeCognitoTokenLambdaEnv = new PopulatedMap<String, String>()
                 .with("DIY_SUBMIT_BASE_URL", props.sharedNames().envBaseUrl)
-                .with("COGNITO_BASE_URI", props.cognitoBaseUri())
+                .with("COGNITO_BASE_URI", props.sharedNames().cognitoBaseUri)
                 .with("COGNITO_CLIENT_ID", props.cognitoClientId());
         if (props.optionalTestAccessToken().isPresent()
                 && StringUtils.isNotBlank(props.optionalTestAccessToken().get())) {

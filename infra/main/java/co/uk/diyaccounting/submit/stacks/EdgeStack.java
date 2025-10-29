@@ -1,13 +1,7 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Aspects;
 import software.amazon.awscdk.Environment;
@@ -36,21 +30,22 @@ import software.amazon.awscdk.services.iam.ServicePrincipal;
 import software.amazon.awscdk.services.lambda.FunctionUrlAuthType;
 import software.amazon.awscdk.services.lambda.Permission;
 import software.amazon.awscdk.services.logs.RetentionDays;
-import software.amazon.awscdk.services.route53.ARecord;
-import software.amazon.awscdk.services.route53.ARecordProps;
-import software.amazon.awscdk.services.route53.AaaaRecord;
-import software.amazon.awscdk.services.route53.AaaaRecordProps;
 import software.amazon.awscdk.services.route53.HostedZone;
 import software.amazon.awscdk.services.route53.HostedZoneAttributes;
 import software.amazon.awscdk.services.route53.IHostedZone;
-import software.amazon.awscdk.services.route53.RecordTarget;
-import software.amazon.awscdk.services.route53.targets.CloudFrontTarget;
 import software.amazon.awscdk.services.s3.BlockPublicAccess;
 import software.amazon.awscdk.services.s3.Bucket;
 import software.amazon.awscdk.services.s3.BucketEncryption;
 import software.amazon.awscdk.services.s3.IBucket;
 import software.amazon.awscdk.services.wafv2.CfnWebACL;
 import software.constructs.Construct;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 public class EdgeStack extends Stack {
 
@@ -97,8 +92,6 @@ public class EdgeStack extends Stack {
 
         String certificateArn();
 
-        Map<String, String> pathsToOriginLambdaFunctionUrls();
-
         int logGroupRetentionPeriodDays();
 
         String apiGatewayUrl();
@@ -137,16 +130,16 @@ public class EdgeStack extends Stack {
                         .hostedZoneId(props.hostedZoneId())
                         .zoneName(props.hostedZoneName())
                         .build());
-        String recordName = props.hostedZoneName().equals(props.sharedNames().domainName)
+        String recordName = props.hostedZoneName().equals(props.sharedNames().deploymentDomainName)
                 ? null
-                : (props.sharedNames().domainName.endsWith("." + props.hostedZoneName())
+                : (props.sharedNames().deploymentDomainName.endsWith("." + props.hostedZoneName())
                         ? props.sharedNames()
-                                .domainName
+                                .deploymentDomainName
                                 .substring(
                                         0,
-                                        props.sharedNames().domainName.length()
+                                        props.sharedNames().deploymentDomainName.length()
                                                 - (props.hostedZoneName().length() + 1))
-                        : props.sharedNames().domainName);
+                        : props.sharedNames().deploymentDomainName);
 
         // TLS certificate from existing ACM (must be in us-east-1 for CloudFront)
         var cert =
@@ -300,16 +293,8 @@ public class EdgeStack extends Stack {
                 .compress(true)
                 .build();
 
-        // Create additional behaviours for the URL origins using the Function URL mappings provided in props
-        // Use function createBehaviorOptionsForLambdaUrl to transform the Function URL into BehaviorOptions
-        HashMap<String, BehaviorOptions> additionalBehaviors = // new HashMap<String, BehaviorOptions>();
-                props.pathsToOriginLambdaFunctionUrls().entrySet().stream()
-                        .collect(
-                                HashMap::new,
-                                (map, entry) ->
-                                        map.put(entry.getKey(), createBehaviorOptionsForLambdaUrl(entry.getValue())),
-                                HashMap::putAll);
-
+        // Create additional behaviours for the API Gateway Lambda origins
+        HashMap<String, BehaviorOptions> additionalBehaviors = new HashMap<String, BehaviorOptions>();
         BehaviorOptions apiGatewayBehavior = createBehaviorOptionsForApiGateway(props.apiGatewayUrl());
         additionalBehaviors.put("/api/v1/*", apiGatewayBehavior);
         infof("Added API Gateway behavior for /api/v1/* pointing to %s", props.apiGatewayUrl());
@@ -325,7 +310,7 @@ public class EdgeStack extends Stack {
                 .defaultBehavior(localBehaviorOptions) // props.webBehaviorOptions)
                 .additionalBehaviors(additionalBehaviors)
                 // Use only the deployment-scoped domain to avoid alias conflicts with existing distributions
-                .domainNames(List.of(props.sharedNames().domainName))
+                .domainNames(List.of(props.sharedNames().deploymentDomainName))
                 .certificate(cert)
                 .defaultRootObject("index.html")
                 .enableLogging(true)
@@ -336,7 +321,7 @@ public class EdgeStack extends Stack {
                 .sslSupportMethod(SSLMethod.SNI)
                 .webAclId(webAcl.getAttrArn())
                 .build();
-        Tags.of(this.distribution).add("OriginFor", props.sharedNames().domainName);
+        Tags.of(this.distribution).add("OriginFor", props.sharedNames().deploymentDomainName);
 
         // Grant CloudFront access to the origin lambdas with compressed names
         this.distributionInvokeFnUrl = Permission.builder()

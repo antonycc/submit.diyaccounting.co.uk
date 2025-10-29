@@ -22,7 +22,7 @@ function parseReceiptKey(key) {
   return { ok: true, name, sub, timestamp, formBundleNumber };
 }
 
-// GET /api/hmrc/receipt-get
+// GET /api/v1/hmrc/receipt
 export async function handler(event) {
   validateEnv(["DIY_SUBMIT_RECEIPTS_BUCKET_NAME"]);
 

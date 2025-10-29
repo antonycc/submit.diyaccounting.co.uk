@@ -225,7 +225,7 @@ describe("VAT Flow Frontend JavaScript", () => {
 
   describe("API Functions", () => {
     test("getAuthUrl should make correct API call", async () => {
-      const mockResponse = { authUrl: "https://test.com/authUrl-get" };
+      const mockResponse = { authUrl: "https://test.com/authUrl" };
       fetchMock.mockResolvedValueOnce({
         ok: true,
         json: () => Promise.resolve(mockResponse),
@@ -235,7 +235,7 @@ describe("VAT Flow Frontend JavaScript", () => {
 
       // New implementation adds a correlation header via fetchWithId
       expect(fetchMock).toHaveBeenCalledWith(
-        "/api/hmrc/authUrl-get?state=test-state",
+        "/api/v1/hmrc/authUrl?state=test-state",
         expect.objectContaining({ headers: expect.anything() }),
       );
       expect(result).toEqual(mockResponse);
@@ -250,7 +250,7 @@ describe("VAT Flow Frontend JavaScript", () => {
       });
 
       await expect(window.getAuthUrl("test-state")).rejects.toThrow(
-        'Failed to get auth URL. Remote call failed: GET /api/hmrc/authUrl-get?state=test-state - Status: undefined Bad Request - Body: {"statusText":"Bad Request"}',
+        'Failed to get auth URL. Remote call failed: GET /api/v1/hmrc/authUrl?state=test-state - Status: undefined Bad Request - Body: {"statusText":"Bad Request"}',
       );
     });
 
@@ -269,7 +269,7 @@ describe("VAT Flow Frontend JavaScript", () => {
 
       const result = await window.submitVat("111222333", "24A1", "1000.00", "test-token", headers);
 
-      expect(fetchMock).toHaveBeenCalledWith("/api/hmrc/vat/return-post", {
+      expect(fetchMock).toHaveBeenCalledWith("/api/v1/hmrc/vat/return", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -294,7 +294,7 @@ describe("VAT Flow Frontend JavaScript", () => {
 
       const result = await window.logReceipt("2023-01-01T12:00:00.000Z", "123456789012", "XM002610011594");
 
-      expect(fetchMock).toHaveBeenCalledWith("/api/hmrc/receipt-post", {
+      expect(fetchMock).toHaveBeenCalledWith("/api/v1/hmrc/receipt", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
