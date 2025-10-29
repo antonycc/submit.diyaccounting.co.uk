@@ -6,9 +6,9 @@ import { http, HttpResponse } from "msw";
 import { mockClient } from "aws-sdk-client-mock";
 import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
 
-import { handler as exchangeTokenHandler } from "@app/functions/mockTokenPost.js";
-import { handler as submitVatHandler } from "@app/functions/hmrcVatReturnPost.js";
-import { handler as logReceiptHandler } from "@app/functions/hmrcReceiptPost.js";
+import { handler as exchangeTokenHandler } from "@app/functions/non-lambda-mocks/mockTokenPost.js";
+import { handler as submitVatHandler } from "@app/functions/hmrc/hmrcVatReturnPost.js";
+import { handler as logReceiptHandler } from "@app/functions/hmrc/hmrcReceiptPost.js";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });

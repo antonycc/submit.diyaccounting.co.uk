@@ -6,7 +6,7 @@ import { mockClient } from "aws-sdk-client-mock";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 
-import { handler as logReceiptHandler } from "@app/functions/hmrcReceiptPost.js";
+import { handler as logReceiptHandler } from "@app/functions/hmrc/hmrcReceiptPost.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 

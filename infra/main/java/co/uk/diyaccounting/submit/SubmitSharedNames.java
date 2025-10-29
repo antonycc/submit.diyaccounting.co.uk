@@ -194,12 +194,13 @@ public class SubmitSharedNames {
         this.originBucketName = convertDotSeparatedToDashSeparated("origin-" + this.delResourceNamePrefix);
         this.originAccessLogBucketName = "%s-origin-access-logs".formatted(this.delResourceNamePrefix);
 
-
+        var appLambdaHandlerPrefix = "app/functions";
         var appLambdaArnPrefix = "arn:aws:lambda:%s:%s:function:%s".formatted(props.regionName, props.awsAccount, this.appResourceNamePrefix);
 
-        this.cognitoAuthUrlGetLambdaHandler = "cognitoAuthUrlGet.handler";
+        var cognitoAuthUrlGetLambdaHandlerName = "cognitoAuthUrlGet.handler";
         this.cognitoAuthUrlGetLambdaFunctionName = "%s-%s".formatted(this.appResourceNamePrefix,
-            ResourceNameUtils.convertCamelCaseToDashSeparated(this.cognitoAuthUrlGetLambdaHandler));
+            ResourceNameUtils.convertCamelCaseToDashSeparated(cognitoAuthUrlGetLambdaHandlerName));
+        this.cognitoAuthUrlGetLambdaHandler = "%s/auth/%s".formatted(appLambdaHandlerPrefix, cognitoAuthUrlGetLambdaHandlerName);
         this.cognitoAuthUrlGetLambdaArn = "%s-cognito-auth-url-get".formatted(appLambdaArnPrefix);
         this.cognitoAuthUrlGetLambdaHttpMethod = HttpMethod.GET;
         this.cognitoAuthUrlGetLambdaUrlPath = "/api/v1/cognito/authUrl";
@@ -228,7 +229,7 @@ public class SubmitSharedNames {
         this.hmrcVatReturnPostLambdaHandler = "hmrcVatReturnPost.handler";
         this.hmrcVatReturnPostLambdaFunctionName = "%s-%s".formatted(this.appResourceNamePrefix,
             ResourceNameUtils.convertCamelCaseToDashSeparated(this.hmrcVatReturnPostLambdaHandler));
-        this.hmrcVatReturnPostLambdaArn = "%s-hmrc-vat-return".formatted(appLambdaArnPrefix);
+        this.hmrcVatReturnPostLambdaArn = "%s-hmrc-vat-return-post".formatted(appLambdaArnPrefix);
         this.hmrcVatReturnPostLambdaHttpMethod = HttpMethod.POST;
         this.hmrcVatReturnPostLambdaUrlPath = "/api/v1/hmrc/vat/return";
 

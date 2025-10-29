@@ -2,7 +2,7 @@
 
 import { describe, test, expect, beforeEach, afterEach } from "vitest";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
-import { handler as authUrlHandler } from "@app/functions/hmrcAuthUrlGet.js";
+import { handler as authUrlHandler } from "@app/functions/hmrc/hmrcAuthUrlGet.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 

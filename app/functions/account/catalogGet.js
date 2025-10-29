@@ -2,10 +2,10 @@
 import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
-import { loadCatalogFromRoot } from "../lib/productCatalogHelper.js";
-import { extractRequest } from "../lib/responses.js";
+import { loadCatalogFromRoot } from "../../lib/productCatalogHelper.js";
+import { extractRequest } from "../../lib/responses.js";
 
-import logger from "../lib/logger.js";
+import logger from "../../lib/logger.js";
 
 let cached = null; // { json, etag, lastModified, object, validated }
 

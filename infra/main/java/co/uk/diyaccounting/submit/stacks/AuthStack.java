@@ -113,7 +113,7 @@ public class AuthStack extends Stack {
                         .lambdaArn(props.sharedNames().cognitoAuthUrlGetLambdaArn)
                         .httpMethod(props.sharedNames().cognitoAuthUrlGetLambdaHttpMethod)
                         .urlPath(props.sharedNames().cognitoAuthUrlGetLambdaUrlPath)
-                        .handler(props.lambdaEntry() + props.sharedNames().cognitoAuthUrlGetLambdaHandler)
+                        .handler(props.sharedNames().cognitoAuthUrlGetLambdaHandler)
                         //.cloudFrontAllowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
                         .environment(authUrlCognitoLambdaEnv)
                         .timeout(Duration.millis(Long.parseLong("30000")))
@@ -125,7 +125,7 @@ public class AuthStack extends Stack {
         infof(
                 "Created Lambda %s for Cognito auth URL with handler %s",
                 this.cognitoAuthUrlGetLambda.getNode().getId(),
-                props.lambdaEntry() + props.sharedNames().cognitoAuthUrlGetLambdaHandler);
+                props.sharedNames().cognitoAuthUrlGetLambdaHandler);
 
         // exchangeToken - Google or Antonycc via Cognito
         var exchangeCognitoTokenLambdaEnv = new PopulatedMap<String, String>()

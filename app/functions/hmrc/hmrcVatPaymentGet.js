@@ -1,15 +1,15 @@
 // app/functions/getVatPayments.js
 
-import logger from "../lib/logger.js";
+import logger from "../../lib/logger.js";
 import {
   extractRequest,
   httpBadRequestResponse,
   httpOkResponse,
   httpServerErrorResponse,
   extractClientIPFromHeaders,
-} from "../lib/responses.js";
-import eventToGovClientHeaders from "../lib/eventToGovClientHeaders.js";
-import { hmrcVatGet, shouldUseStub, getStubData } from "../lib/hmrcVatApi.js";
+} from "../../lib/responses.js";
+import eventToGovClientHeaders from "../../lib/eventToGovClientHeaders.js";
+import { hmrcVatGet, shouldUseStub, getStubData } from "../../lib/hmrcVatApi.js";
 
 // GET /api/v1/hmrc/vat/payments
 export async function httpGet(event) {

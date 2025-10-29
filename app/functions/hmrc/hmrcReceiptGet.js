@@ -1,11 +1,11 @@
 // app/functions/myReceipts.js
 import { ListObjectsV2Command, GetObjectCommand } from "@aws-sdk/client-s3";
-import logger from "../lib/logger.js";
-import { extractRequest, httpOkResponse, httpBadRequestResponse, httpServerErrorResponse } from "../lib/responses.js";
-import { getUserSub } from "../lib/auth.js";
-import { makeReceiptsS3 } from "../lib/s3Env.js";
-import { streamToString } from "../lib/streams.js";
-import { validateEnv } from "../lib/env.js";
+import logger from "../../lib/logger.js";
+import { extractRequest, httpOkResponse, httpBadRequestResponse, httpServerErrorResponse } from "../../lib/responses.js";
+import { getUserSub } from "../../lib/auth.js";
+import { makeReceiptsS3 } from "../../lib/s3Env.js";
+import { streamToString } from "../../lib/streams.js";
+import { validateEnv } from "../../lib/env.js";
 
 function parseReceiptKey(key) {
   // receipts/{sub}/{timestamp}-{bundle}.json

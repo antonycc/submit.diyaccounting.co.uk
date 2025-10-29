@@ -5,7 +5,7 @@ import request from "supertest";
 import path from "path";
 import { fileURLToPath } from "url";
 
-import { handler as requestBundle } from "@app/functions/bundlePost.js";
+import { handler as requestBundle } from "@app/functions/account/bundlePost.js";
 
 function base64UrlEncode(obj) {
   const json = JSON.stringify(obj);

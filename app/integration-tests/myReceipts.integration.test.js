@@ -7,7 +7,7 @@ import { fileURLToPath } from "url";
 import { mockClient } from "aws-sdk-client-mock";
 import { S3Client, ListObjectsV2Command, GetObjectCommand } from "@aws-sdk/client-s3";
 
-import { handler as listFn, httpGetByName as getFn } from "@app/functions/hmrcReceiptGet.js";
+import { handler as listFn, httpGetByName as getFn } from "@app/functions/hmrc/hmrcReceiptGet.js";
 
 function base64UrlEncode(obj) {
   const json = JSON.stringify(obj);

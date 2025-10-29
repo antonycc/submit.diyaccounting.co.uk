@@ -1,29 +1,36 @@
-// app/functions/token.js
+// app/functions/hmrcTokenPost.js
 
 import { SecretsManagerClient, GetSecretValueCommand } from "@aws-sdk/client-secrets-manager";
 
-import logger from "../lib/logger.js";
-import { extractRequest, httpBadRequestResponse, httpOkResponse, httpServerErrorResponse } from "../lib/responses.js";
-import { validateEnv } from "../lib/env.js";
+import logger from "../../lib/logger.js";
+import { extractRequest, httpBadRequestResponse, httpOkResponse, httpServerErrorResponse } from "../../lib/responses.js";
+import { validateEnv } from "../../lib/env.js";
 
 const secretsClient = new SecretsManagerClient();
 
 // caching via module-level variables
 let cachedHmrcClientSecret;
 
+// POST /api/v1/hmrc/token
 export async function handler(event) {
   validateEnv(["HMRC_BASE_URI", "HMRC_CLIENT_ID", "DIY_SUBMIT_BASE_URL", "HMRC_CLIENT_SECRET_ARN"]);
   const secretArn = process.env.HMRC_CLIENT_SECRET_ARN;
   const overrideSecret = process.env.HMRC_CLIENT_SECRET;
 
   const request = extractRequest(event);
+
+  // Validation
   const { code } = JSON.parse(event.body || "{}");
   if (!code) {
-    return httpBadRequestResponse({ request, message: "Missing code from event body" });
+    return httpBadRequestResponse({
+      request,
+      message: "Missing code from event body",
+    });
   }
+
+  // OAuth exchange token post-body
   const clientSecret = await retrieveHmrcClientSecret(overrideSecret, secretArn);
-  const maybeHmrcSlash = process.env.HMRC_BASE_URI?.endsWith("/") ? "" : "/";
-  const url = `${process.env.HMRC_BASE_URI}${maybeHmrcSlash}oauth/token`;
+  const url = `${process.env.HMRC_BASE_URI}/oauth/token`;
   const maybeSlash = process.env.DIY_SUBMIT_BASE_URL?.endsWith("/") ? "" : "/";
   const body = {
     grant_type: "authorization_code",
@@ -33,33 +40,6 @@ export async function handler(event) {
     code,
   };
   return httpPostWithUrl(request, url, body);
-}
-
-export async function exchangeToken(providerUrlOrCode, maybeBody) {
-  validateEnv(["HMRC_BASE_URI", "HMRC_CLIENT_ID", "DIY_SUBMIT_BASE_URL", "HMRC_CLIENT_SECRET_ARN"]);
-  const secretArn = process.env.HMRC_CLIENT_SECRET_ARN;
-  const overrideSecret = process.env.HMRC_CLIENT_SECRET;
-
-  // Overloaded signature for tests/backward-compat:
-  // - exchangeToken(code)
-  // - exchangeToken(providerUrl, body)
-  if (typeof providerUrlOrCode === "string" && (!maybeBody || typeof maybeBody !== "object")) {
-    // TODO: Remove this when tests are otherwise stable.
-    logger.warn({ message: "exchangeToken called with code and no body, defaulting to HMRC" });
-    const clientSecret = await retrieveHmrcClientSecret(overrideSecret, secretArn);
-    const maybeHmrcSlash = process.env.HMRC_BASE_URI?.endsWith("/") ? "" : "/";
-    const url = `${process.env.HMRC_BASE_URI}${maybeHmrcSlash}oauth/token`;
-    const maybeSlash = process.env.DIY_SUBMIT_BASE_URL?.endsWith("/") ? "" : "/";
-    const body = {
-      grant_type: "authorization_code",
-      client_id: process.env.HMRC_CLIENT_ID,
-      client_secret: clientSecret,
-      redirect_uri: `${process.env.DIY_SUBMIT_BASE_URL}${maybeSlash}activities/submitVatCallback.html`,
-      code: providerUrlOrCode,
-    };
-    return performTokenExchange(url, body);
-  }
-  return performTokenExchange(providerUrlOrCode, maybeBody);
 }
 
 async function performTokenExchange(providerUrl, body) {
@@ -179,9 +159,4 @@ async function retrieveHmrcClientSecret(overrideSecret, secretArn) {
 // Export function to reset cached secret for testing
 export function resetCachedSecrets() {
   cachedHmrcClientSecret = undefined;
-}
-
-// Backwards-compatible alias expected by tests
-export function resetCachedSecret() {
-  return resetCachedSecrets();
 }

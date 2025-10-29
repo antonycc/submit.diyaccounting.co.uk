@@ -5,13 +5,13 @@ import { mockClient } from "aws-sdk-client-mock";
 import { SecretsManagerClient, GetSecretValueCommand } from "@aws-sdk/client-secrets-manager";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 
-import { exchangeToken, resetCachedSecret } from "@app/functions/mockTokenPost.js";
+import { exchangeToken, resetCachedSecret } from "@app/functions/non-lambda-mocks/mockTokenPost.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
 // Mock global fetch
 const mockFetch = vi.fn();
-vi.stubGlobal('fetch', mockFetch);
+vi.stubGlobal("fetch", mockFetch);
 
 // Mock logger
 vi.mock("@app/lib/logger.js", () => ({
@@ -202,7 +202,7 @@ describe("exchangeClientSecretForAccessToken", () => {
       });
 
       // Re-import the module to get fresh instance
-      const { exchangeToken } = await import("@app/functions/mockTokenPost.js");
+      const { exchangeToken } = await import("@app/functions/non-lambda-mocks/mockTokenPost.js");
 
       // Act
       const result = await exchangeToken("test-auth-code");
@@ -227,7 +227,7 @@ describe("exchangeClientSecretForAccessToken", () => {
       process.env.HMRC_CLIENT_SECRET = "any-secret";
 
       // Re-import the module to get fresh instance
-      const { exchangeToken } = await import("@app/functions/mockTokenPost.js");
+      const { exchangeToken } = await import("@app/functions/non-lambda-mocks/mockTokenPost.js");
 
       // Act
       const result = await exchangeToken("test-auth-code");

@@ -3,7 +3,7 @@ import { describe, test, beforeEach, expect } from "vitest";
 import express from "express";
 import request from "supertest";
 import { requireActivity } from "@app/lib/entitlementsService.js";
-import { handler as requestBundle } from "@app/functions/bundlePost.js";
+import { handler as requestBundle } from "@app/functions/account/bundlePost.js";
 
 function base64UrlEncode(obj) {
   const json = JSON.stringify(obj);

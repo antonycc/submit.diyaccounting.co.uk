@@ -1,15 +1,15 @@
 // app/functions/submitVat.js
 
-import logger from "../lib/logger.js";
+import logger from "../../lib/logger.js";
 import {
   extractRequest,
   httpBadRequestResponse,
   httpOkResponse,
   httpServerErrorResponse,
   extractClientIPFromHeaders,
-} from "../lib/responses.js";
-import eventToGovClientHeaders from "../lib/eventToGovClientHeaders.js";
-import { validateEnv } from "../lib/env.js";
+} from "../../lib/responses.js";
+import eventToGovClientHeaders from "../../lib/eventToGovClientHeaders.js";
+import { validateEnv } from "../../lib/env.js";
 
 // Lazy load AWS Cognito SDK only if bundle enforcement is on
 let __cognitoModule;
