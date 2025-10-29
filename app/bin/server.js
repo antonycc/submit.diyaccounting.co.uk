@@ -74,20 +74,20 @@ app.use((req, res, next) => {
 
 app.use(express.static(path.join(__dirname, "../../web/public")));
 
-const authUrlPath = context.authUrlLambdaUrlPath || "/api/v1/hmrc/authUrl";
+const authUrlPath = "/api/v1/hmrc/authUrl";
 const mockAuthUrlPath = "/api/v1/mock/authUrl";
 const mockTokenProxyPath = "/api/mock/token";
-const cognitoAuthUrlPath = context.cognitoAuthUrlLambdaUrlPath || "/api/v1/cognito/authUrl";
-const exchangeMockTokenPath = context.exchangeTokenLambdaUrlPath || "/api/exchange-token";
-const exchangeHmrcTokenPath = context.exchangeHmrcTokenLambdaUrlPath || "/api/v1/hmrc/token";
-const exchangeCognitoTokenPath = context.exchangeCognitoTokenLambdaUrlPath || "/api/v1/cognito/token";
-const submitVatPath = context.submitVatLambdaUrlPath || "/api/v1/hmrc/vat/return";
-const logReceiptPath = context.logReceiptLambdaUrlPath || "/api/v1/hmrc/receipt";
-const myReceiptsPath = context.myReceiptsLambdaUrlPath || "/api/v1/hmrc/receipt";
-const catalogPath = "/api/v1/catalog"; // context.catalogLambdaUrlPath || "/api/v1/catalog";
-const bundleGetPath = "/api/v1/bundle"; // context.myBundlesLambdaUrlPath || "/api/v1/bundle";
-const bundlePostPath = "/api/v1/bundle"; // context.bundleLambdaUrlPath || "/api/v1/bundle";
-const bundleDeletePath = "/api/v1/bundle"; // context.bundleLambdaUrlPath || "/api/v1/bundle";
+const cognitoAuthUrlPath = "/api/v1/cognito/authUrl";
+const exchangeMockTokenPath = "/api/exchange-token";
+const exchangeHmrcTokenPath = "/api/v1/hmrc/token";
+const exchangeCognitoTokenPath = "/api/v1/cognito/token";
+const submitVatPath = "/api/v1/hmrc/vat/return";
+const logReceiptPath = "/api/v1/hmrc/receipt";
+const myReceiptsPath = "/api/v1/hmrc/receipt";
+const catalogPath = "/api/v1/catalog";
+const bundleGetPath = "/api/v1/bundle";
+const bundlePostPath = "/api/v1/bundle";
+const bundleDeletePath = "/api/v1/bundle";
 
 app.get(authUrlPath, async (req, res) => {
   const event = {

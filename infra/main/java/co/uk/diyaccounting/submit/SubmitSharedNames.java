@@ -83,6 +83,36 @@ public class SubmitSharedNames {
     public HttpMethod hmrcVatReturnPostLambdaHttpMethod;
     public String hmrcVatReturnPostLambdaUrlPath;
 
+    public String hmrcVatObligationGetLambdaHandler;
+    public String hmrcVatObligationGetLambdaFunctionName;
+    public String hmrcVatObligationGetLambdaArn;
+    public HttpMethod hmrcVatObligationGetLambdaHttpMethod;
+    public String hmrcVatObligationGetLambdaUrlPath;
+
+    public String hmrcVatLiabilityGetLambdaHandler;
+    public String hmrcVatLiabilityGetLambdaFunctionName;
+    public String hmrcVatLiabilityGetLambdaArn;
+    public HttpMethod hmrcVatLiabilityGetLambdaHttpMethod;
+    public String hmrcVatLiabilityGetLambdaUrlPath;
+
+    public String hmrcVatPaymentGetLambdaHandler;
+    public String hmrcVatPaymentGetLambdaFunctionName;
+    public String hmrcVatPaymentGetLambdaArn;
+    public HttpMethod hmrcVatPaymentGetLambdaHttpMethod;
+    public String hmrcVatPaymentGetLambdaUrlPath;
+
+    public String hmrcVatPenaltyGetLambdaHandler;
+    public String hmrcVatPenaltyGetLambdaFunctionName;
+    public String hmrcVatPenaltyGetLambdaArn;
+    public HttpMethod hmrcVatPenaltyGetLambdaHttpMethod;
+    public String hmrcVatPenaltyGetLambdaUrlPath;
+
+    public String hmrcVatReturnGetLambdaHandler;
+    public String hmrcVatReturnGetLambdaFunctionName;
+    public String hmrcVatReturnGetLambdaArn;
+    public HttpMethod hmrcVatReturnGetLambdaHttpMethod;
+    public String hmrcVatReturnGetLambdaUrlPath;
+
     public String receiptPostLambdaHandler;
     public String receiptPostLambdaFunctionName;
     public String receiptPostLambdaArn;
@@ -231,7 +261,7 @@ public class SubmitSharedNames {
         var hmrcVatReturnPostLambdaHandlerDashed = ResourceNameUtils.convertCamelCaseToDashSeparated(hmrcVatReturnPostLambdaHandlerName);
         this.hmrcVatReturnPostLambdaFunctionName = "%s-%s".formatted(this.appResourceNamePrefix, hmrcVatReturnPostLambdaHandlerDashed);
         this.hmrcVatReturnPostLambdaHandler = "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcVatReturnPostLambdaHandlerName);
-        this.hmrcVatReturnPostLambdaArn = "%s-hmrc-vat-return".formatted(appLambdaArnPrefix);
+        this.hmrcVatReturnPostLambdaArn = "%s-hmrc-vat-return-post".formatted(appLambdaArnPrefix);
         this.hmrcVatReturnPostLambdaHttpMethod = HttpMethod.POST;
         this.hmrcVatReturnPostLambdaUrlPath = "/api/v1/hmrc/vat/return";
 
