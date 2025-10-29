@@ -189,6 +189,11 @@ public class HmrcStack extends Stack {
         this.hmrcTokenPostLambdaProps = exchangeHmrcTokenLambdaUrlOrigin.props;
         this.hmrcTokenPostLambda = exchangeHmrcTokenLambdaUrlOrigin.lambda;
         this.hmrcTokenPostLambdaLogGroup = exchangeHmrcTokenLambdaUrlOrigin.logGroup;
+        this.lambdaFunctionProps.add(this.hmrcTokenPostLambdaProps);
+        infof(
+                "Created Lambda %s for HMRC exchange token with handler %s",
+                this.hmrcTokenPostLambda.getNode().getId(),
+                props.lambdaEntry() + props.sharedNames().hmrcTokenPostLambdaHandler);
 
         // Grant access to HMRC client secret in Secrets Manager
         if (StringUtils.isNotBlank(props.hmrcClientSecretArn())) {

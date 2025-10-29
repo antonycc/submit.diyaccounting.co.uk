@@ -260,6 +260,11 @@ public class AccountStack extends Stack {
         this.bundleGetLambdaProps = myBundlesLambdaUrlOrigin.props;
         this.bundleGetLambda = myBundlesLambdaUrlOrigin.lambda;
         this.bundleGetLambdaLogGroup = myBundlesLambdaUrlOrigin.logGroup;
+        this.lambdaFunctionProps.add(this.bundleGetLambdaProps);
+        infof(
+                "Created Lambda %s for my bundles retrieval with handler %s",
+                this.bundleGetLambda.getNode().getId(),
+                props.lambdaEntry() + props.sharedNames().bundleGetLambdaHandler);
         var myBundlesLambdaGrantPrincipal = this.bundleGetLambda.getGrantPrincipal();
         userPool.grant(
                 myBundlesLambdaGrantPrincipal,
