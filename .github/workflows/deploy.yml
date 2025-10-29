@@ -153,7 +153,7 @@ jobs:
       - run: npm run test:coverage
 
       - name: Upload coverage reports
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         if: ${{ !cancelled() }}
         with:
           name: coverage-reports
@@ -247,7 +247,7 @@ jobs:
 
       - name: Upload artifacts (results)
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: behaviour-test-artifacts
           retention-days: 30
@@ -256,7 +256,7 @@ jobs:
 
       - name: Upload artifacts (reports)
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: behaviour-test-reports
           retention-days: 30
@@ -350,7 +350,7 @@ jobs:
           docker save -o docker-image/image.tar "${{ env.BASE_IMAGE_TAG_PREFIX }}:${{ github.sha }}"
 
       - name: Upload image artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: docker-image
           path: docker-image/image.tar
@@ -1463,7 +1463,7 @@ jobs:
 #
 #      - name: Upload artifacts (results)
 #        if: ${{ !cancelled() }}
-#        uses: actions/upload-artifact@v4
+#        uses: actions/upload-artifact@v5
 #        with:
 #          name: origin-test-artifacts
 #          retention-days: 30
@@ -1472,7 +1472,7 @@ jobs:
 #
 #      - name: Upload artifacts (reports)
 #        if: ${{ !cancelled() }}
-#        uses: actions/upload-artifact@v4
+#        uses: actions/upload-artifact@v5
 #        with:
 #          name: origin-test-reports
 #          retention-days: 30
@@ -1642,7 +1642,7 @@ jobs:
 #
 #      - name: Upload artifacts
 #        if: ${{ !cancelled() }}
-#        uses: actions/upload-artifact@v4
+#        uses: actions/upload-artifact@v5
 #        with:
 #          name: api-test-artifacts
 #          path: |
@@ -1683,9 +1683,11 @@ jobs:
           cp '.env.${{ needs.names.outputs.environment-name }}' '.env.test' \
           ; npx dotenv -e '.env.${{ needs.names.outputs.environment-name }}' -- \
             npm run test:webBehaviour || exit_code=$? \
-          ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
           ; exit ${exit_code:-0} \
           ;
+        # TODO: reinstate copy of logs
+        # ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
+
         env:
           DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.apex-url }}
           TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
@@ -1694,7 +1696,7 @@ jobs:
 
       - name: Upload artifacts (results)
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: web-test-artifacts
           retention-days: 30
@@ -1703,7 +1705,7 @@ jobs:
 
       - name: Upload artifacts (reports)
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: web-test-reports
           retention-days: 30
@@ -1737,7 +1739,7 @@ jobs:
       - name: Copy test reports to S3 origin bucket
         if: ${{ !cancelled() }}
         env:
-          BUCKET_NAME: origin-${{ needs.names.outputs.deployment-name }}-del-submit-diyaccounting-co-uk
+          BUCKET_NAME: origin-${{ needs.names.outputs.deployment-name }}-submit-diyaccounting-co-uk-del
         run: |
           echo "Uploading test reports to S3 bucket: ${BUCKET_NAME?}"
           aws s3 cp target/test-reports/ s3://${BUCKET_NAME?}/tests/ --recursive
@@ -1797,7 +1799,7 @@ jobs:
 #
 #      - name: Upload artifacts
 #        if: ${{ !cancelled() }}
-#        uses: actions/upload-artifact@v4
+#        uses: actions/upload-artifact@v5
 #        with:
 #          name: load-test-artifacts
 #          path: |
@@ -1872,7 +1874,7 @@ jobs:
 
       - name: Upload artifacts (converted videos)
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: web-test-artifacts-converted
           retention-days: 30
