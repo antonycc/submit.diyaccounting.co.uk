@@ -195,7 +195,7 @@ public class SubmitSharedNames {
         this.originAccessLogBucketName = "%s-origin-access-logs".formatted(this.delResourceNamePrefix);
 
 
-        var appLambdaArnPrefix = "arn:aws:lambda:%s:%s:function:%s-".formatted(props.regionName, props.awsAccount, this.appResourceNamePrefix);
+        var appLambdaArnPrefix = "arn:aws:lambda:%s:%s:function:%s".formatted(props.regionName, props.awsAccount, this.appResourceNamePrefix);
 
         this.cognitoAuthUrlGetLambdaHandler = "cognitoAuthUrlGet.handler";
         this.cognitoAuthUrlGetLambdaFunctionName = "%s-%s".formatted(this.appResourceNamePrefix,
