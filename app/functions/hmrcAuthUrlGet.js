@@ -3,7 +3,7 @@
 import { extractRequest, httpBadRequestResponse, httpOkResponse, httpServerErrorResponse } from "../lib/responses.js";
 import { validateEnv } from "../lib/env.js";
 
-// GET /api/hmrc/authUrl-get?state={state}
+// GET /api/v1/hmrc/authUrl?state={state}
 export async function handler(event) {
   validateEnv(["HMRC_BASE_URI", "HMRC_CLIENT_ID", "DIY_SUBMIT_BASE_URL"]);
 

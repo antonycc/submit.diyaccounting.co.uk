@@ -20,7 +20,7 @@ function makeIdToken(sub = "mr-user-1", extra = {}) {
   return `${base64UrlEncode(header)}.${base64UrlEncode(payload)}.`;
 }
 
-describe("Integration – /api/hmrc/receipt-get", () => {
+describe("Integration – /api/v1/hmrc/receipt", () => {
   let app;
   const s3Mock = mockClient(S3Client);
   const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -35,7 +35,7 @@ describe("Integration – /api/hmrc/receipt-get", () => {
     app.use(express.json());
     app.use(express.static(path.join(__dirname, "../../web/public")));
 
-    app.get("/api/hmrc/receipt-get", async (req, res) => {
+    app.get("/api/v1/hmrc/receipt", async (req, res) => {
       const event = {
         path: req.path,
         headers: { host: req.get("host") || "localhost:3000", authorization: req.headers.authorization },
@@ -45,7 +45,7 @@ describe("Integration – /api/hmrc/receipt-get", () => {
       res.status(statusCode).send(body || "{}");
     });
 
-    app.get("/api/hmrc/receipt-get/:name", async (req, res) => {
+    app.get("/api/v1/hmrc/receipt/:name", async (req, res) => {
       const event = {
         path: req.path,
         headers: { host: req.get("host") || "localhost:3000", authorization: req.headers.authorization },
@@ -69,23 +69,21 @@ describe("Integration – /api/hmrc/receipt-get", () => {
       Body: new ReadableStreamMock(bodyText),
     });
 
-    const resList = await request(app).get("/api/hmrc/receipt-get").set("Authorization", `Bearer ${token}`);
+    const resList = await request(app).get("/api/v1/hmrc/receipt").set("Authorization", `Bearer ${token}`);
     expect(resList.status).toBe(200);
     const list = JSON.parse(resList.text || "{}");
     expect(Array.isArray(list.receipts)).toBe(true);
     expect(list.receipts.length).toBe(1);
     expect(list.receipts[0].formBundleNumber).toBe("XYZ");
 
-    const resGet = await request(app)
-      .get("/api/hmrc/receipt-get/2025-08-01T10:00:00.000Z-XYZ.json")
-      .set("Authorization", `Bearer ${token}`);
+    const resGet = await request(app).get("/api/v1/hmrc/receipt/2025-08-01T10:00:00.000Z-XYZ.json").set("Authorization", `Bearer ${token}`);
     expect(resGet.status).toBe(200);
     const rec = JSON.parse(resGet.text || "{}");
     expect(rec.formBundleNumber).toBe("XYZ");
   });
 
   test("unauthorized returns 401", async () => {
-    const res = await request(app).get("/api/hmrc/receipt-get");
+    const res = await request(app).get("/api/v1/hmrc/receipt");
     expect(res.status).toBe(401);
   });
 });

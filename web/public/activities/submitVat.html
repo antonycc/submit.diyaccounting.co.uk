@@ -289,7 +289,7 @@
       }
 
       async function submitVat(vatNumber, periodKey, vatDue, accessToken, headers) {
-        const url = "/api/hmrc/vat/return-post";
+        const url = "/api/v1/hmrc/vat/return";
         const body = JSON.stringify({
           vatNumber,
           periodKey,
@@ -319,7 +319,7 @@
       }
 
       async function logReceipt(processingDate, formBundleNumber, chargeRefNumber) {
-        const url = "/api/hmrc/receipt-post";
+        const url = "/api/v1/hmrc/receipt";
         const body = JSON.stringify({
           processingDate,
           formBundleNumber,

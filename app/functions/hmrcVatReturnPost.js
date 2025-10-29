@@ -28,7 +28,7 @@ async function getCognitoClient() {
   return __cognitoClient;
 }
 
-// POST /api/hmrc/vat/return-post
+// POST /api/v1/hmrc/vat/return
 export async function handler(event) {
   validateEnv(["HMRC_BASE_URI", "COGNITO_USER_POOL_ID"]);
 

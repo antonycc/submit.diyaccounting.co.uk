@@ -93,7 +93,7 @@
           showLoading();
           showStatus("Exchanging authorization code for access token...", "info");
 
-          const url = `/api/cognito/token-post`;
+          const url = `/api/v1/cognito/token`;
           const body = {
             grant_type: "authorization_code",
             code: code,

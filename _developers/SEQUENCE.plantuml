@@ -14,13 +14,13 @@ participant "AWS S3" as S3
 
 User -> Browser: Open submission page
 Browser -> App: Load frontend assets
-App -> AuthUrl: GET /api/hmrc/authUrl-get?state=<state> → [sync]
+App -> AuthUrl: GET /api/v1/hmrc/authUrl?state=<state> → [sync]
 AuthUrl -> App: 200 { authUrl } → [sync]
 App -> Browser: Render form with authUrl
 
 loop VAT Submission Flow
   Browser -> App: Submit form(vrn, periodKey, vatDue)
-  App -> AuthUrl: GET /api/hmrc/authUrl-get?state → [sync]
+  App -> AuthUrl: GET /api/v1/hmrc/authUrl?state → [sync]
   AuthUrl -> App: { authUrl } → [sync]
   App -> Browser: Redirect to HMRC consent → [sync]
   Browser -> HMRCAuth: GET /oauth/authorize?...&state →→ [async]
@@ -33,18 +33,18 @@ loop VAT Submission Flow
   ExchangeToken -> App: { accessToken } → [sync]
 
   alt Optional: retrieve obligations
-    App -> SubmitVat: GET /api/hmrc/vat/return-post/obligations { accessToken } → [sync]
+    App -> SubmitVat: GET /api/v1/hmrc/vat/return/obligations { accessToken } → [sync]
     SubmitVat -> HMRCApi: GET /organisations/vat/{vrn}/obligations →→ [async]
     HMRCApi -> SubmitVat: { obligations list } →→ [async]
     SubmitVat -> App: obligations list → [sync]
   end
 
-  App -> SubmitVat: POST /api/hmrc/vat/return-post { payload, accessToken } → [sync]
+  App -> SubmitVat: POST /api/v1/hmrc/vat/return { payload, accessToken } → [sync]
   SubmitVat -> HMRCApi: POST /organisations/vat/{vrn}/returns →→ [async]
   HMRCApi -> SubmitVat: { processingDate, formBundleNumber, chargeRefNumber } →→ [async]
   SubmitVat -> App: receipt → [sync]
 
-  App -> LogReceipt: POST /api/hmrc/receipt-post { receipt } → [sync]
+  App -> LogReceipt: POST /api/v1/hmrc/receipt { receipt } → [sync]
   LogReceipt -> S3: PutObject(receipts/{formBundleNumber}.json) →→ [async]
   S3 -> LogReceipt: success →→ [async]
   LogReceipt -> App: { status } → [sync]

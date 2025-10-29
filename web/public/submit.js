@@ -82,7 +82,7 @@ function fetchWithId(url, opts = {}) {
 
 // Auth API functions
 async function getAuthUrl(state, provider = "hmrc") {
-  const url = `/api/${provider}/authUrl-get?state=${encodeURIComponent(state)}`;
+  const url = `/api/v1/${provider}/authUrl?state=${encodeURIComponent(state)}`;
   console.log(`Getting auth URL. Remote call initiated: GET ${url}`);
 
   const response = await fetchWithId(url);
@@ -99,7 +99,7 @@ async function getAuthUrl(state, provider = "hmrc") {
 
 // VAT submission API function
 async function submitVat(vatNumber, periodKey, vatDue, accessToken, govClientHeaders = {}) {
-  const url = "/api/hmrc/vat/return-post";
+  const url = "/api/v1/hmrc/vat/return";
   const response = await fetchWithId(url, {
     method: "POST",
     headers: {
@@ -119,7 +119,7 @@ async function submitVat(vatNumber, periodKey, vatDue, accessToken, govClientHea
 
 // Receipt logging API function
 async function logReceipt(processingDate, formBundleNumber, chargeRefNumber) {
-  const url = "/api/hmrc/receipt-post";
+  const url = "/api/v1/hmrc/receipt";
   const response = await fetchWithId(url, {
     method: "POST",
     headers: {

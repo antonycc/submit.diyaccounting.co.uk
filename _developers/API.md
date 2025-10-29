@@ -6,7 +6,7 @@
 
 All endpoints expect and return JSON.
 
-### **`GET /api/hmrc/authUrl-get?state={state}`**
+### **`GET /api/v1/hmrc/authUrl?state={state}`**
 
 Returns a URL to redirect users to the HMRC OAuth consent page.
 
@@ -48,7 +48,7 @@ Exchanges the OAuth authorization code for an HMRC access token.
 
 ---
 
-### **`POST /api/hmrc/vat/return-post`**
+### **`POST /api/v1/hmrc/vat/return`**
 
 Submits the VAT return details to HMRC.
 
@@ -75,7 +75,7 @@ Submits the VAT return details to HMRC.
 
 ---
 
-### **`POST /api/hmrc/receipt-post`**
+### **`POST /api/v1/hmrc/receipt`**
 
 Logs/stores submission receipts securely (e.g., in AWS S3).
 

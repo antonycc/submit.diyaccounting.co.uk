@@ -96,7 +96,7 @@ path = "activities/viewVatReturn.html"
 id = "test"
 name = "View and edit your bundles"
 bundles = ["test"]
-path = "^/api/hmrc/vat.*"
+path = "^/api/v1/hmrc/vat.*"
 type = "api"
 
 [[activities]]

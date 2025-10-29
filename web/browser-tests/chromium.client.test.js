@@ -32,7 +32,7 @@ test.describe("Client System Test - VAT Flow in Browser", () => {
 
   test.beforeEach(async ({ page }) => {
     // Mock API endpoints directly with Playwright
-    await page.route("/api/hmrc/authUrl-get", async (route) => {
+    await page.route("/api/v1/hmrc/authUrl", async (route) => {
       const request = route.request();
       const url = new URL(request.url());
       const state = url.searchParams.get("state");
@@ -64,7 +64,7 @@ test.describe("Client System Test - VAT Flow in Browser", () => {
       }
     });
 
-    await page.route("/api/hmrc/vat/return-post", async (route) => {
+    await page.route("/api/v1/hmrc/vat/return", async (route) => {
       const request = route.request();
       const body = JSON.parse(request.postData() || "{}");
 

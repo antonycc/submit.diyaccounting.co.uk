@@ -92,8 +92,6 @@ public class EdgeStack extends Stack {
 
         String certificateArn();
 
-        Map<String, String> pathsToOriginLambdaFunctionUrls();
-
         int logGroupRetentionPeriodDays();
 
         String apiGatewayUrl();
@@ -295,16 +293,8 @@ public class EdgeStack extends Stack {
                 .compress(true)
                 .build();
 
-        // Create additional behaviours for the URL origins using the Function URL mappings provided in props
-        // Use function createBehaviorOptionsForLambdaUrl to transform the Function URL into BehaviorOptions
-        HashMap<String, BehaviorOptions> additionalBehaviors = // new HashMap<String, BehaviorOptions>();
-                props.pathsToOriginLambdaFunctionUrls().entrySet().stream()
-                        .collect(
-                                HashMap::new,
-                                (map, entry) ->
-                                        map.put(entry.getKey(), createBehaviorOptionsForLambdaUrl(entry.getValue())),
-                                HashMap::putAll);
-
+        // Create additional behaviours for the API Gateway Lambda origins
+        HashMap<String, BehaviorOptions> additionalBehaviors = new HashMap<String, BehaviorOptions>();
         BehaviorOptions apiGatewayBehavior = createBehaviorOptionsForApiGateway(props.apiGatewayUrl());
         additionalBehaviors.put("/api/v1/*", apiGatewayBehavior);
         infof("Added API Gateway behavior for /api/v1/* pointing to %s", props.apiGatewayUrl());

@@ -106,9 +106,9 @@ See infra/main/java/co/uk/diyaccounting/submit/SubmitApplication.java for the fu
 
 API Reference
 Auth URL endpoints
-- GET /api/hmrc/authUrl-get?state=...
-- GET /api/mock/authUrl-get?state=...
-- GET /api/cognito/authUrl-get?state=...
+- GET /api/v1/hmrc/authUrl?state=...
+- GET /api/v1/mock/authUrl?state=...
+- GET /api/v1/cognito/authUrl?state=...
 Response
 ```json
 {
@@ -117,7 +117,7 @@ Response
 ```
 
 Token exchange endpoints
-- POST /api/hmrc/token-post
+- POST /api/v1/hmrc/token
 - POST /api/google/exchange-token
 Request
 ```json
@@ -141,7 +141,7 @@ Error response (example)
 ```
 
 VAT submission
-- POST /api/hmrc/vat/return-post
+- POST /api/v1/hmrc/vat/return
 Headers: Authorization: Bearer <accessToken>
 Request (example)
 ```json
@@ -161,7 +161,7 @@ Response (example)
 ```
 
 Receipts and bundles
-- POST /api/hmrc/receipt-post
+- POST /api/v1/hmrc/receipt
 - POST /api/v1/bundle
   - Headers: Authorization: Bearer <idToken>
   - Body: { "bundleId": "test", "qualifiers": { /* optional */ } }

@@ -4,7 +4,7 @@ import logger from "../lib/logger.js";
 import { extractRequest, httpBadRequestResponse, httpOkResponse, httpServerErrorResponse } from "../lib/responses.js";
 import { validateEnv } from "../lib/env.js";
 
-// POST /api/cognito/token-post
+// POST /api/v1/cognito/token
 export async function handler(event) {
   validateEnv(["DIY_SUBMIT_BASE_URL", "COGNITO_CLIENT_ID", "COGNITO_BASE_URI"]);
   const maybeSlash = process.env.DIY_SUBMIT_BASE_URL?.endsWith("/") ? "" : "/";

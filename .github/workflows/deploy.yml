@@ -699,22 +699,6 @@ jobs:
 
       - run: cat cdk-submit-application.out/cdk-outputs-auth.json | jq '.'
 
-      - name: Resolve stack outputs
-        id: auth-outputs
-        run: |
-          AUTH_URL_COGNITO_LAMBDA_URL=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-app-AuthStack"].AuthUrlCognitoLambdaUrl' cdk-submit-application.out/cdk-outputs-auth.json)
-          COGNITO_EXCHANGE_TOKEN_LAMBDA_URL=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-app-AuthStack"].ExchangeCognitoTokenLambdaUrl' cdk-submit-application.out/cdk-outputs-auth.json)
-          #echo "AUTH_URL_MOCK_LAMBDA_URL=$AUTH_URL_MOCK_LAMBDA_URL"
-          echo "AUTH_URL_COGNITO_LAMBDA_URL=$AUTH_URL_COGNITO_LAMBDA_URL"
-          echo "COGNITO_EXCHANGE_TOKEN_LAMBDA_URL=$COGNITO_EXCHANGE_TOKEN_LAMBDA_URL"
-          #echo "AUTH_URL_MOCK_LAMBDA_URL=$AUTH_URL_MOCK_LAMBDA_URL" >> $GITHUB_OUTPUT
-          echo "AUTH_URL_COGNITO_LAMBDA_URL=$AUTH_URL_COGNITO_LAMBDA_URL" >> $GITHUB_OUTPUT
-          echo "COGNITO_EXCHANGE_TOKEN_LAMBDA_URL=$COGNITO_EXCHANGE_TOKEN_LAMBDA_URL" >> $GITHUB_OUTPUT
-        shell: bash
-    outputs:
-      authUrlCognitoLambdaUrl: ${{ steps.auth-outputs.outputs.AUTH_URL_COGNITO_LAMBDA_URL }}
-      exchangeCognitoTokenLambdaUrl: ${{ steps.auth-outputs.outputs.COGNITO_EXCHANGE_TOKEN_LAMBDA_URL }}
-
   deploy-hmrc:
     name: 'deploy hmrc'
     needs:
@@ -791,32 +775,6 @@ jobs:
           COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
 
       - run: cat cdk-submit-application.out/cdk-outputs-hmrc.json | jq '.'
-
-      - name: Resolve stack outputs
-        id: hmrc-outputs
-        run: |
-          AUTH_URL_HMRC_LAMBDA_URL=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-app-HmrcStack"].AuthUrlHmrcLambdaUrl' cdk-submit-application.out/cdk-outputs-hmrc.json)
-          EXCHANGE_HMRC_TOKEN_LAMBDA_URL=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-app-HmrcStack"].ExchangeHmrcTokenLambdaUrl' cdk-submit-application.out/cdk-outputs-hmrc.json)
-          SUBMIT_VAT_LAMBDA_URL=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-app-HmrcStack"].SubmitVatLambdaUrl' cdk-submit-application.out/cdk-outputs-hmrc.json)
-          LOG_RECEIPT_LAMBDA_URL=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-app-HmrcStack"].LogReceiptLambdaUrl' cdk-submit-application.out/cdk-outputs-hmrc.json)
-          MY_RECEIPTS_LAMBDA_URL=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-app-HmrcStack"].MyReceiptsLambdaUrl' cdk-submit-application.out/cdk-outputs-hmrc.json)
-          echo "AUTH_URL_HMRC_LAMBDA_URL=$AUTH_URL_HMRC_LAMBDA_URL"
-          echo "AUTH_URL_HMRC_LAMBDA_URL=$AUTH_URL_HMRC_LAMBDA_URL" >> $GITHUB_OUTPUT
-          echo "EXCHANGE_HMRC_TOKEN_LAMBDA_URL=$EXCHANGE_HMRC_TOKEN_LAMBDA_URL"
-          echo "EXCHANGE_HMRC_TOKEN_LAMBDA_URL=$EXCHANGE_HMRC_TOKEN_LAMBDA_URL" >> $GITHUB_OUTPUT
-          echo "SUBMIT_VAT_LAMBDA_URL=$SUBMIT_VAT_LAMBDA_URL"
-          echo "SUBMIT_VAT_LAMBDA_URL=$SUBMIT_VAT_LAMBDA_URL" >> $GITHUB_OUTPUT
-          echo "LOG_RECEIPT_LAMBDA_URL=$LOG_RECEIPT_LAMBDA_URL"
-          echo "LOG_RECEIPT_LAMBDA_URL=$LOG_RECEIPT_LAMBDA_URL" >> $GITHUB_OUTPUT
-          echo "MY_RECEIPTS_LAMBDA_URL=$MY_RECEIPTS_LAMBDA_URL"
-          echo "MY_RECEIPTS_LAMBDA_URL=$MY_RECEIPTS_LAMBDA_URL" >> $GITHUB_OUTPUT
-        shell: bash
-    outputs:
-      authUrlHmrcLambdaUrl: ${{ steps.hmrc-outputs.outputs.AUTH_URL_HMRC_LAMBDA_URL }}
-      exchangeHmrcTokenLambdaUrl: ${{ steps.hmrc-outputs.outputs.EXCHANGE_HMRC_TOKEN_LAMBDA_URL }}
-      submitVatLambdaUrl: ${{ steps.hmrc-outputs.outputs.SUBMIT_VAT_LAMBDA_URL }}
-      logReceiptLambdaUrl: ${{ steps.hmrc-outputs.outputs.LOG_RECEIPT_LAMBDA_URL }}
-      myReceiptsLambdaUrl: ${{ steps.hmrc-outputs.outputs.MY_RECEIPTS_LAMBDA_URL }}
 
   deploy-account:
     name: 'deploy account'
@@ -895,28 +853,6 @@ jobs:
           COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
 
       - run: cat cdk-submit-application.out/cdk-outputs-account.json | jq '.'
-
-#      - name: Resolve stack outputs
-#        id: account-outputs
-#        run: |
-#          CATALOG_LAMBDA_URL=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-app-AccountStack"].CatalogLambdaUrl' cdk-submit-application.out/cdk-outputs-account.json)
-#          REQUEST_BUNDLES_LAMBDA_URL=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-app-AccountStack"].RequestBundlesLambdaUrl' cdk-submit-application.out/cdk-outputs-account.json)
-#          BUNDLE_DELETE_LAMBDA_URL=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-app-AccountStack"].BundleDeleteLambdaUrl' cdk-submit-application.out/cdk-outputs-account.json)
-#          MY_BUNDLES_LAMBDA_URL=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-app-AccountStack"].MyBundlesLambdaUrl' cdk-submit-application.out/cdk-outputs-account.json)
-#          echo "CATALOG_LAMBDA_URL=$CATALOG_LAMBDA_URL"
-#          echo "CATALOG_LAMBDA_URL=$CATALOG_LAMBDA_URL" >> $GITHUB_OUTPUT
-#          echo "REQUEST_BUNDLES_LAMBDA_URL=$REQUEST_BUNDLES_LAMBDA_URL"
-#          echo "REQUEST_BUNDLES_LAMBDA_URL=$REQUEST_BUNDLES_LAMBDA_URL" >> $GITHUB_OUTPUT
-#          echo "BUNDLE_DELETE_LAMBDA_URL=$BUNDLE_DELETE_LAMBDA_URL"
-#          echo "BUNDLE_DELETE_LAMBDA_URL=$BUNDLE_DELETE_LAMBDA_URL" >> $GITHUB_OUTPUT
-#          echo "MY_BUNDLES_LAMBDA_URL=$MY_BUNDLES_LAMBDA_URL"
-#          echo "MY_BUNDLES_LAMBDA_URL=$MY_BUNDLES_LAMBDA_URL" >> $GITHUB_OUTPUT
-#        shell: bash
-#    outputs:
-#      catalogLambdaUrl: ${{ steps.account-outputs.outputs.CATALOG_LAMBDA_URL }}
-#      requestBundlesLambdaUrl: ${{ steps.account-outputs.outputs.REQUEST_BUNDLES_LAMBDA_URL }}
-#      bundleDeleteLambdaUrl: ${{ steps.account-outputs.outputs.BUNDLE_DELETE_LAMBDA_URL }}
-#      myBundlesLambdaUrl: ${{ steps.account-outputs.outputs.MY_BUNDLES_LAMBDA_URL }}
 
   deploy-api:
     name: 'deploy api'
@@ -1081,17 +1017,7 @@ jobs:
           SELF_DESTRUCT_START_DATETIME: ${{ needs.mvn-package.outputs.self-destruct-start-datetime }}
           WEBSITE_HASH: "placeholder"
           HTTP_API_URL: ${{ needs.deploy-api.outputs.httpApiUrl }}
-          AUTH_URL_COGNITO_LAMBDA_URL: ${{ needs.deploy-auth.outputs.authUrlCognitoLambdaUrl }}
-          COGNITO_EXCHANGE_TOKEN_LAMBDA_URL: ${{ needs.deploy-auth.outputs.exchangeCognitoTokenLambdaUrl }}
-          AUTH_URL_HMRC_LAMBDA_URL: ${{ needs.deploy-hmrc.outputs.authUrlHmrcLambdaUrl }}
-          EXCHANGE_HMRC_TOKEN_LAMBDA_URL: ${{ needs.deploy-hmrc.outputs.exchangeHmrcTokenLambdaUrl }}
-          SUBMIT_VAT_LAMBDA_URL: ${{ needs.deploy-hmrc.outputs.submitVatLambdaUrl }}
-          LOG_RECEIPT_LAMBDA_URL: ${{ needs.deploy-hmrc.outputs.logReceiptLambdaUrl }}
-          MY_RECEIPTS_LAMBDA_URL: ${{ needs.deploy-hmrc.outputs.myReceiptsLambdaUrl }}
-#          CATALOG_LAMBDA_URL: ${{ needs.deploy-account.outputs.catalogLambdaUrl }}
-#          REQUEST_BUNDLES_LAMBDA_URL: ${{ needs.deploy-account.outputs.requestBundlesLambdaUrl }}
-#          BUNDLE_DELETE_LAMBDA_URL: ${{ needs.deploy-account.outputs.bundleDeleteLambdaUrl }}
-#          MY_BUNDLES_LAMBDA_URL: ${{ needs.deploy-account.outputs.myBundlesLambdaUrl }}
+          DIY_SUBMIT_APEX_URL: ${{ needs.names.outputs.apex-url }}
 
   deploy-edge:
     name: 'deploy edge'
@@ -1191,17 +1117,7 @@ jobs:
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
           WEBSITE_HASH: "placeholder"
           HTTP_API_URL: ${{ needs.deploy-api.outputs.httpApiUrl }}
-          AUTH_URL_COGNITO_LAMBDA_URL: ${{ needs.deploy-auth.outputs.authUrlCognitoLambdaUrl }}
-          COGNITO_EXCHANGE_TOKEN_LAMBDA_URL: ${{ needs.deploy-auth.outputs.exchangeCognitoTokenLambdaUrl }}
-          AUTH_URL_HMRC_LAMBDA_URL: ${{ needs.deploy-hmrc.outputs.authUrlHmrcLambdaUrl }}
-          EXCHANGE_HMRC_TOKEN_LAMBDA_URL: ${{ needs.deploy-hmrc.outputs.exchangeHmrcTokenLambdaUrl }}
-          SUBMIT_VAT_LAMBDA_URL: ${{ needs.deploy-hmrc.outputs.submitVatLambdaUrl }}
-          LOG_RECEIPT_LAMBDA_URL: ${{ needs.deploy-hmrc.outputs.logReceiptLambdaUrl }}
-          MY_RECEIPTS_LAMBDA_URL: ${{ needs.deploy-hmrc.outputs.myReceiptsLambdaUrl }}
-#          CATALOG_LAMBDA_URL: ${{ needs.deploy-account.outputs.catalogLambdaUrl }}
-#          REQUEST_BUNDLES_LAMBDA_URL: ${{ needs.deploy-account.outputs.requestBundlesLambdaUrl }}
-#          BUNDLE_DELETE_LAMBDA_URL: ${{ needs.deploy-account.outputs.bundleDeleteLambdaUrl }}
-#          MY_BUNDLES_LAMBDA_URL: ${{ needs.deploy-account.outputs.myBundlesLambdaUrl }}
+          DIY_SUBMIT_APEX_URL: ${{ needs.names.outputs.apex-url }}
 
       - run: cat cdk-submit-delivery.out/cdk-outputs-edge.json | jq '.'
         if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
@@ -1374,16 +1290,6 @@ jobs:
           WEBSITE_HASH: ${{ steps.publish-hash.outputs.WEBSITE_HASH }}
           HTTP_API_URL: ${{ needs.deploy-api.outputs.httpApiUrl }}
           DIY_SUBMIT_APEX_URL: ${{ needs.names.outputs.apex-url }}
-          AUTH_URL_COGNITO_LAMBDA_URL: ${{ needs.deploy-auth.outputs.authUrlCognitoLambdaUrl }}
-          COGNITO_EXCHANGE_TOKEN_LAMBDA_URL: ${{ needs.deploy-auth.outputs.exchangeCognitoTokenLambdaUrl }}
-          AUTH_URL_HMRC_LAMBDA_URL: ${{ needs.deploy-hmrc.outputs.authUrlHmrcLambdaUrl }}
-          EXCHANGE_HMRC_TOKEN_LAMBDA_URL: ${{ needs.deploy-hmrc.outputs.exchangeHmrcTokenLambdaUrl }}
-          SUBMIT_VAT_LAMBDA_URL: ${{ needs.deploy-hmrc.outputs.submitVatLambdaUrl }}
-          LOG_RECEIPT_LAMBDA_URL: ${{ needs.deploy-hmrc.outputs.logReceiptLambdaUrl }}
-          MY_RECEIPTS_LAMBDA_URL: ${{ needs.deploy-hmrc.outputs.myReceiptsLambdaUrl }}
-#          CATALOG_LAMBDA_URL: ${{ needs.deploy-account.outputs.catalogLambdaUrl }}
-#          REQUEST_BUNDLES_LAMBDA_URL: ${{ needs.deploy-account.outputs.requestBundlesLambdaUrl }}
-#          MY_BUNDLES_LAMBDA_URL: ${{ needs.deploy-account.outputs.myBundlesLambdaUrl }}
 
 #      - name: Upsert Cognito callback/logout URLs
 #        if: ${{ contains(needs.names.outputs.base-url, 'submit') }}

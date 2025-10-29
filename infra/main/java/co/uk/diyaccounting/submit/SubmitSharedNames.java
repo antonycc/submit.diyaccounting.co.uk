@@ -202,49 +202,49 @@ public class SubmitSharedNames {
             ResourceNameUtils.convertCamelCaseToDashSeparated(this.cognitoAuthUrlGetLambdaHandler));
         this.cognitoAuthUrlGetLambdaArn = "%s-cognito-auth-url-get".formatted(appLambdaArnPrefix);
         this.cognitoAuthUrlGetLambdaHttpMethod = HttpMethod.GET;
-        this.cognitoAuthUrlGetLambdaUrlPath = "/api/cognito/authUrl-get";
+        this.cognitoAuthUrlGetLambdaUrlPath = "/api/v1/cognito/authUrl";
 
         this.cognitoTokenPostLambdaHandler = "cognitoTokenPost.handler";
         this.cognitoTokenPostLambdaFunctionName = "%s-%s".formatted(this.appResourceNamePrefix,
             ResourceNameUtils.convertCamelCaseToDashSeparated(this.cognitoTokenPostLambdaHandler));
         this.cognitoTokenPostLambdaArn = "%s-cognito-token-post".formatted(appLambdaArnPrefix);
         this.cognitoTokenPostLambdaHttpMethod = HttpMethod.POST;
-        this.cognitoTokenPostLambdaUrlPath = "/api/cognito/token-post";
+        this.cognitoTokenPostLambdaUrlPath = "/api/v1/cognito/token";
 
         this.hmrcAuthUrlGetLambdaHandler = "hmrcAuthUrlGet.handler";
         this.hmrcAuthUrlGetLambdaFunctionName = "%s-%s".formatted(this.appResourceNamePrefix,
             ResourceNameUtils.convertCamelCaseToDashSeparated(this.hmrcAuthUrlGetLambdaHandler));
         this.hmrcAuthUrlGetLambdaArn = "%s-hmrc-auth-url-get".formatted(appLambdaArnPrefix);
         this.hmrcAuthUrlGetLambdaHttpMethod = HttpMethod.GET;
-        this.hmrcAuthUrlGetLambdaUrlPath = "/api/hmrc/authUrl-get";
+        this.hmrcAuthUrlGetLambdaUrlPath = "/api/v1/hmrc/authUrl";
 
         this.hmrcTokenPostLambdaHandler = "hmrcTokenPost.handler";
         this.hmrcTokenPostLambdaFunctionName = "%s-%s".formatted(this.appResourceNamePrefix,
             ResourceNameUtils.convertCamelCaseToDashSeparated(this.hmrcTokenPostLambdaHandler));
         this.hmrcTokenPostLambdaArn = "%s-hmrc-token-post".formatted(appLambdaArnPrefix);
         this.hmrcTokenPostLambdaHttpMethod = HttpMethod.POST;
-        this.hmrcTokenPostLambdaUrlPath = "/api/hmrc/token-post";
+        this.hmrcTokenPostLambdaUrlPath = "/api/v1/hmrc/token";
 
         this.hmrcVatReturnPostLambdaHandler = "hmrcVatReturnPost.handler";
         this.hmrcVatReturnPostLambdaFunctionName = "%s-%s".formatted(this.appResourceNamePrefix,
             ResourceNameUtils.convertCamelCaseToDashSeparated(this.hmrcVatReturnPostLambdaHandler));
         this.hmrcVatReturnPostLambdaArn = "%s-hmrc-vat-return".formatted(appLambdaArnPrefix);
         this.hmrcVatReturnPostLambdaHttpMethod = HttpMethod.POST;
-        this.hmrcVatReturnPostLambdaUrlPath = "/api/hmrc/vat/return-post";
+        this.hmrcVatReturnPostLambdaUrlPath = "/api/v1/hmrc/vat/return";
 
         this.receiptPostLambdaHandler = "hmrcReceiptPost.handler";
         this.receiptPostLambdaFunctionName = "%s-%s".formatted(this.appResourceNamePrefix,
             ResourceNameUtils.convertCamelCaseToDashSeparated(this.receiptPostLambdaHandler));
         this.receiptPostLambdaArn = "%s-hmrc-receipt-post".formatted(appLambdaArnPrefix);
         this.receiptPostLambdaHttpMethod = HttpMethod.POST;
-        this.receiptPostLambdaUrlPath = "/api/hmrc/receipt-post";
+        this.receiptPostLambdaUrlPath = "/api/v1/hmrc/receipt";
 
         this.receiptGetLambdaHandler = "hmrcReceiptGet.handler";
         this.receiptGetLambdaFunctionName = "%s-%s".formatted(this.appResourceNamePrefix,
             ResourceNameUtils.convertCamelCaseToDashSeparated(this.receiptGetLambdaHandler));
         this.receiptGetLambdaArn = "%s-hmrc-receipt-get".formatted(appLambdaArnPrefix);
         this.receiptGetLambdaHttpMethod = HttpMethod.GET;
-        this.receiptGetLambdaUrlPath = "/api/hmrc/receipt-get";
+        this.receiptGetLambdaUrlPath = "/api/v1/hmrc/receipt";
 
         this.catalogGetLambdaHandler = "catalogGet.handler";
         this.catalogGetLambdaFunctionName = "%s-%s".formatted(this.appResourceNamePrefix,

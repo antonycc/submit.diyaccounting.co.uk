@@ -74,16 +74,16 @@ app.use((req, res, next) => {
 
 app.use(express.static(path.join(__dirname, "../../web/public")));
 
-const authUrlPath = context.authUrlLambdaUrlPath || "/api/hmrc/authUrl-get";
-const mockAuthUrlPath = "/api/mock/authUrl-get";
+const authUrlPath = context.authUrlLambdaUrlPath || "/api/v1/hmrc/authUrl";
+const mockAuthUrlPath = "/api/v1/mock/authUrl";
 const mockTokenProxyPath = "/api/mock/token";
-const cognitoAuthUrlPath = context.cognitoAuthUrlLambdaUrlPath || "/api/cognito/authUrl-get";
+const cognitoAuthUrlPath = context.cognitoAuthUrlLambdaUrlPath || "/api/v1/cognito/authUrl";
 const exchangeMockTokenPath = context.exchangeTokenLambdaUrlPath || "/api/exchange-token";
-const exchangeHmrcTokenPath = context.exchangeHmrcTokenLambdaUrlPath || "/api/hmrc/token-post";
-const exchangeCognitoTokenPath = context.exchangeCognitoTokenLambdaUrlPath || "/api/cognito/token-post";
-const submitVatPath = context.submitVatLambdaUrlPath || "/api/hmrc/vat/return-post";
-const logReceiptPath = context.logReceiptLambdaUrlPath || "/api/hmrc/receipt-post";
-const myReceiptsPath = context.myReceiptsLambdaUrlPath || "/api/hmrc/receipt-get";
+const exchangeHmrcTokenPath = context.exchangeHmrcTokenLambdaUrlPath || "/api/v1/hmrc/token";
+const exchangeCognitoTokenPath = context.exchangeCognitoTokenLambdaUrlPath || "/api/v1/cognito/token";
+const submitVatPath = context.submitVatLambdaUrlPath || "/api/v1/hmrc/vat/return";
+const logReceiptPath = context.logReceiptLambdaUrlPath || "/api/v1/hmrc/receipt";
+const myReceiptsPath = context.myReceiptsLambdaUrlPath || "/api/v1/hmrc/receipt";
 const catalogPath = "/api/v1/catalog"; // context.catalogLambdaUrlPath || "/api/v1/catalog";
 const bundleGetPath = "/api/v1/bundle"; // context.myBundlesLambdaUrlPath || "/api/v1/bundle";
 const bundlePostPath = "/api/v1/bundle"; // context.bundleLambdaUrlPath || "/api/v1/bundle";
@@ -337,11 +337,11 @@ app.get(`${myReceiptsPath}/:name`, async (req, res) => {
 });
 
 // VAT API endpoints
-const vatObligationsPath = "/api/hmrc/vat/obligation";
-const vatReturnPath = "/api/hmrc/vat/return";
-const vatLiabilitiesPath = "/api/hmrc/vat/liability";
-const vatPaymentsPath = "/api/hmrc/vat/payments";
-const vatPenaltiesPath = "/api/hmrc/vat/penalty";
+const vatObligationsPath = "/api/v1/hmrc/vat/obligation";
+const vatReturnPath = "/api/v1/hmrc/vat/return";
+const vatLiabilitiesPath = "/api/v1/hmrc/vat/liability";
+const vatPaymentsPath = "/api/v1/hmrc/vat/payments";
+const vatPenaltiesPath = "/api/v1/hmrc/vat/penalty";
 
 // VAT Obligations endpoint
 app.get(vatObligationsPath, requireActivity("vat-obligations"), async (req, res) => {
