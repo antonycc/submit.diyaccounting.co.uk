@@ -28,6 +28,7 @@ import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.iam.ServicePrincipal;
 import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.lambda.IFunction;
+import software.amazon.awscdk.services.lambda.FunctionAttributes;
 import software.amazon.awscdk.services.logs.ILogGroup;
 import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
@@ -184,7 +185,11 @@ public class ApiStack extends Stack {
 
         for (int i = 0; i < props.lambdaFunctions().size(); i++) {
             ApiLambdaProps apiLambdaProps = props.lambdaFunctions().get(i);
-            IFunction fn = Function.fromFunctionArn(this, apiLambdaProps.functionName() + "-imported", apiLambdaProps.lambdaArn());
+            IFunction fn = Function.fromFunctionAttributes(this, apiLambdaProps.functionName() + "-imported",
+                    FunctionAttributes.builder()
+                            .functionArn(apiLambdaProps.lambdaArn())
+                            .sameEnvironment(true)
+                            .build());
 
             // Create HTTP Lambda integration
             HttpLambdaIntegration integration = HttpLambdaIntegration.Builder.create(
