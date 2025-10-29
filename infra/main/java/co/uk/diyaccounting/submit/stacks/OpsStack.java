@@ -1,29 +1,27 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
-import java.util.List;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Aspects;
 import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.Tags;
-import software.amazon.awscdk.services.cloudwatch.Alarm;
-import software.amazon.awscdk.services.cloudwatch.ComparisonOperator;
 import software.amazon.awscdk.services.cloudwatch.Dashboard;
 import software.amazon.awscdk.services.cloudwatch.GraphWidget;
 import software.amazon.awscdk.services.cloudwatch.Metric;
 import software.amazon.awscdk.services.cloudwatch.MetricOptions;
-import software.amazon.awscdk.services.cloudwatch.TreatMissingData;
 import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.lambda.FunctionAttributes;
 import software.amazon.awscdk.services.lambda.IFunction;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.constructs.Construct;
+
+import java.util.List;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 public class OpsStack extends Stack {
 
@@ -110,16 +108,6 @@ public class OpsStack extends Stack {
                 lambdaDurationsP95.add(fn.metricDuration()
                         .with(MetricOptions.builder().statistic("p95").build()));
                 lambdaThrottles.add(fn.metricThrottles());
-                // Per-function error alarm (>=1 error in 5 minutes)
-                Alarm.Builder.create(this, props.resourceNamePrefix() + "-LambdaErrors-" + i)
-                        .alarmName(fn.getFunctionName() + "-errors")
-                        .metric(fn.metricErrors())
-                        .threshold(1.0)
-                        .evaluationPeriods(1)
-                        .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
-                        .treatMissingData(TreatMissingData.NOT_BREACHING)
-                        .alarmDescription("Lambda errors >= 1 for function " + fn.getFunctionName())
-                        .build();
             }
         }
 
