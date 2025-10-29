@@ -12,7 +12,6 @@ import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.services.lambda.Function;
-import software.amazon.awscdk.services.lambda.FunctionUrlAuthType;
 import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.amazon.awssdk.utils.StringUtils;
@@ -66,10 +65,6 @@ public class AuthStack extends Stack {
 
         String baseImageTag();
 
-        String lambdaEntry();
-
-        String lambdaUrlAuthType();
-
         String cognitoClientId();
 
         // Optional test access token for local/dev testing without real Cognito interaction
@@ -90,11 +85,6 @@ public class AuthStack extends Stack {
         // Lambdas
 
         this.lambdaFunctionProps = new java.util.ArrayList<>();
-
-        // Determine Lambda URL authentication type
-        FunctionUrlAuthType functionUrlAuthType = "AWS_IAM".equalsIgnoreCase(props.lambdaUrlAuthType())
-                ? FunctionUrlAuthType.AWS_IAM
-                : FunctionUrlAuthType.NONE;
 
         // authUrl - Google or Antonycc via Cognito
         var authUrlCognitoLambdaEnv = new PopulatedMap<String, String>()
@@ -145,7 +135,7 @@ public class AuthStack extends Stack {
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .functionName(props.sharedNames().cognitoTokenPostLambdaFunctionName)
-                        .handler(props.lambdaEntry() + props.sharedNames().cognitoTokenPostLambdaHandler)
+                        .handler(props.sharedNames().cognitoTokenPostLambdaHandler)
                         .lambdaArn(props.sharedNames().cognitoTokenPostLambdaArn)
                         .httpMethod(props.sharedNames().cognitoTokenPostLambdaHttpMethod)
                         .urlPath(props.sharedNames().cognitoTokenPostLambdaUrlPath)
@@ -160,7 +150,7 @@ public class AuthStack extends Stack {
         infof(
                 "Created Lambda %s for Cognito exchange token with handler %s",
                 this.cognitoTokenPostLambda.getNode().getId(),
-                props.lambdaEntry() + props.sharedNames().cognitoTokenPostLambdaHandler);
+                props.sharedNames().cognitoTokenPostLambdaHandler);
 
         Aspects.of(this).add(new SetAutoDeleteJobLogRetentionAspect(props.deploymentName(), RetentionDays.THREE_DAYS));
 

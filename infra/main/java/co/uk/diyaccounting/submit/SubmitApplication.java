@@ -45,8 +45,6 @@ public class SubmitApplication {
         public String hmrcBaseUri;
         public String baseImageTag;
         public String selfDestructDelayHours;
-        public String lambdaEntry;
-        public String lambdaUrlAuthType;
         public String userPoolArn;
         public String userPoolClientId;
 
@@ -164,8 +162,6 @@ public class SubmitApplication {
                         .cloudTrailEnabled(cloudTrailEnabled)
                         .sharedNames(sharedNames)
                         .baseImageTag(baseImageTag)
-                        .lambdaEntry(appProps.lambdaEntry)
-                        .lambdaUrlAuthType(appProps.lambdaUrlAuthType)
                         .cognitoClientId(cognitoUserPoolClientId)
                         .build());
         this.authStack.addDependency(devStack);
@@ -189,8 +185,6 @@ public class SubmitApplication {
                         .baseImageTag(baseImageTag)
                         .hmrcBaseUri(appProps.hmrcBaseUri)
                         .hmrcClientId(appProps.hmrcClientId)
-                        .lambdaUrlAuthType(appProps.lambdaUrlAuthType)
-                        .lambdaEntry(appProps.lambdaEntry)
                         .hmrcClientSecretArn(hmrcClientSecretArn)
                         .cognitoUserPoolId(cognitoUserPoolId)
                         .build());
@@ -214,8 +208,6 @@ public class SubmitApplication {
                         .sharedNames(sharedNames)
                         .baseImageTag(baseImageTag)
                         .cognitoUserPoolArn(cognitoUserPoolArn)
-                        .lambdaUrlAuthType(appProps.lambdaUrlAuthType)
-                        .lambdaEntry(appProps.lambdaEntry)
                         .build());
         this.accountStack.addDependency(devStack);
 
@@ -248,6 +240,10 @@ public class SubmitApplication {
         this.apiStack.addDependency(hmrcStack);
         this.apiStack.addDependency(authStack);
 
+        // ExtractLambda ARNs from lambdaFunctions
+        var lambdaArns = lambdaFunctions.stream()
+                .map(ApiLambdaProps::lambdaArn)
+                .toList();
         this.opsStack = new OpsStack(
                 app,
                 sharedNames.opsStackId,
@@ -260,7 +256,7 @@ public class SubmitApplication {
                         .compressedResourceNamePrefix(sharedNames.appCompressedResourceNamePrefix)
                         .cloudTrailEnabled(cloudTrailEnabled)
                         .sharedNames(sharedNames)
-                        .lambdaFunctionArns(sharedNames.lambdaArns)
+                        .lambdaFunctionArns(lambdaArns)
                         .build());
         this.opsStack.addDependency(hmrcStack);
         this.opsStack.addDependency(apiStack);

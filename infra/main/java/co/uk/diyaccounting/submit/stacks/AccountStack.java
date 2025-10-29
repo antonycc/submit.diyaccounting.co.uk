@@ -78,10 +78,6 @@ public class AccountStack extends Stack {
 
         String baseImageTag();
 
-        String lambdaUrlAuthType();
-
-        String lambdaEntry();
-
         String cognitoUserPoolArn();
 
         static ImmutableAccountStackProps.Builder builder() {
@@ -104,11 +100,6 @@ public class AccountStack extends Stack {
 
         this.lambdaFunctionProps = new java.util.ArrayList<>();
 
-        // Determine Lambda URL authentication type
-        FunctionUrlAuthType functionUrlAuthType = "AWS_IAM".equalsIgnoreCase(props.lambdaUrlAuthType())
-                ? FunctionUrlAuthType.AWS_IAM
-                : FunctionUrlAuthType.NONE;
-
         // Catalog Lambda
         // var catalogLambdaEnv = new HashMap<>(Map.of("DIY_SUBMIT_BASE_URL", props.sharedNames().baseUrl));
         var catalogLambdaEnv =
@@ -121,7 +112,7 @@ public class AccountStack extends Stack {
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .functionName(props.sharedNames().catalogGetLambdaFunctionName)
-                        .handler(props.lambdaEntry() + props.sharedNames().catalogGetLambdaHandler)
+                        .handler(props.sharedNames().catalogGetLambdaHandler)
                         .lambdaArn(props.sharedNames().catalogGetLambdaArn)
                         .httpMethod(props.sharedNames().catalogGetLambdaHttpMethod)
                         .urlPath(props.sharedNames().catalogGetLambdaUrlPath)
@@ -136,7 +127,7 @@ public class AccountStack extends Stack {
         infof(
                 "Created Lambda %s for catalog retrieval with handler %s",
                 this.catalogLambda.getNode().getId(),
-                props.lambdaEntry() + props.sharedNames().catalogGetLambdaHandler);
+                props.sharedNames().catalogGetLambdaHandler);
 
         // Request Bundles Lambda
         var requestBundlesLambdaEnv = new PopulatedMap<String, String>()
@@ -151,7 +142,7 @@ public class AccountStack extends Stack {
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .functionName(props.sharedNames().bundlePostLambdaFunctionName)
-                        .handler(props.lambdaEntry() + props.sharedNames().bundlePostLambdaHandler)
+                        .handler(props.sharedNames().bundlePostLambdaHandler)
                         .lambdaArn(props.sharedNames().bundlePostLambdaArn)
                         .httpMethod(props.sharedNames().bundlePostLambdaHttpMethod)
                         .urlPath(props.sharedNames().bundlePostLambdaUrlPath)
@@ -166,7 +157,7 @@ public class AccountStack extends Stack {
         infof(
                 "Created Lambda %s for request bundles with handler %s",
                 this.bundlePostLambda.getNode().getId(),
-                props.lambdaEntry() + props.sharedNames().bundlePostLambdaHandler);
+                props.sharedNames().bundlePostLambdaHandler);
 
         // Grant the RequestBundlesLambda permission to access Cognito User Pool
         var region = props.getEnv() != null ? props.getEnv().getRegion() : "us-east-1";
@@ -203,7 +194,7 @@ public class AccountStack extends Stack {
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .functionName(props.sharedNames().bundleDeleteLambdaFunctionName)
-                        .handler(props.lambdaEntry() + props.sharedNames().bundleDeleteLambdaHandler)
+                        .handler(props.sharedNames().bundleDeleteLambdaHandler)
                         .lambdaArn(props.sharedNames().bundleDeleteLambdaArn)
                         .httpMethod(props.sharedNames().bundleDeleteLambdaHttpMethod)
                         .urlPath(props.sharedNames().bundleDeleteLambdaUrlPath)
@@ -218,7 +209,7 @@ public class AccountStack extends Stack {
         infof(
                 "Created Lambda %s for delete bundles with handler %s",
                 this.bundleDeleteLambda.getNode().getId(),
-                props.lambdaEntry() + props.sharedNames().bundleDeleteLambdaHandler);
+                props.sharedNames().bundleDeleteLambdaHandler);
 
         // Grant the RequestBundlesLambda permission to access Cognito User Pool
         var bundleDeleteLambdaGrantPrincipal = this.bundleDeleteLambda.getGrantPrincipal();
@@ -249,7 +240,7 @@ public class AccountStack extends Stack {
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .functionName(props.sharedNames().bundleGetLambdaFunctionName)
-                        .handler(props.lambdaEntry() + props.sharedNames().bundleGetLambdaHandler)
+                        .handler(props.sharedNames().bundleGetLambdaHandler)
                         .lambdaArn(props.sharedNames().bundleGetLambdaArn)
                         .httpMethod(props.sharedNames().bundleGetLambdaHttpMethod)
                         .urlPath(props.sharedNames().bundleGetLambdaUrlPath)
@@ -264,7 +255,7 @@ public class AccountStack extends Stack {
         infof(
                 "Created Lambda %s for my bundles retrieval with handler %s",
                 this.bundleGetLambda.getNode().getId(),
-                props.lambdaEntry() + props.sharedNames().bundleGetLambdaHandler);
+                props.sharedNames().bundleGetLambdaHandler);
         var myBundlesLambdaGrantPrincipal = this.bundleGetLambda.getGrantPrincipal();
         userPool.grant(
                 myBundlesLambdaGrantPrincipal,
@@ -274,7 +265,7 @@ public class AccountStack extends Stack {
         infof(
                 "Created Lambda %s for my bundles retrieval with handler %s",
                 this.bundleGetLambda.getNode().getId(),
-                props.lambdaEntry() + props.sharedNames().bundleGetLambdaHandler);
+                props.sharedNames().bundleGetLambdaHandler);
 
         Aspects.of(this).add(new SetAutoDeleteJobLogRetentionAspect(props.deploymentName(), RetentionDays.THREE_DAYS));
 
