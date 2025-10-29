@@ -1683,10 +1683,9 @@ jobs:
           cp '.env.${{ needs.names.outputs.environment-name }}' '.env.test' \
           ; npx dotenv -e '.env.${{ needs.names.outputs.environment-name }}' -- \
             npm run test:webBehaviour || exit_code=$? \
+          ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
           ; exit ${exit_code:-0} \
           ;
-        # TODO: reinstate copy of logs
-        # ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
 
         env:
           DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.apex-url }}
