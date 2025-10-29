@@ -1,12 +1,8 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
-import java.util.List;
-import java.util.Map;
+import co.uk.diyaccounting.submit.constructs.ApiLambdaProps;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Aspects;
 import software.amazon.awscdk.CfnOutput;
@@ -30,11 +26,17 @@ import software.amazon.awscdk.services.cloudwatch.MetricOptions;
 import software.amazon.awscdk.services.cloudwatch.TreatMissingData;
 import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.iam.ServicePrincipal;
+import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.lambda.IFunction;
 import software.amazon.awscdk.services.logs.ILogGroup;
 import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.constructs.Construct;
+
+import java.util.List;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 public class ApiStack extends Stack {
 
@@ -71,8 +73,7 @@ public class ApiStack extends Stack {
         @Override
         SubmitSharedNames sharedNames();
 
-        // Lambda function references from other stacks
-        Map<String, IFunction> lambdaFunctions();
+        List<ApiLambdaProps> lambdaFunctions();
 
         static ImmutableApiStackProps.Builder builder() {
             return ImmutableApiStackProps.builder();
@@ -139,7 +140,9 @@ public class ApiStack extends Stack {
                 .build());
 
         // Configure default stage access logs and logging level/metrics
+        assert this.httpApi.getDefaultStage() != null;
         var defaultStage = (CfnStage) this.httpApi.getDefaultStage().getNode().getDefaultChild();
+        assert defaultStage != null;
         defaultStage.setAccessLogSettings(CfnStage.AccessLogSettingsProperty.builder()
                 .destinationArn(apiAccessLogs.getLogGroupArn())
                 .format("{" + "\"requestId\":\"$context.requestId\","
@@ -173,41 +176,31 @@ public class ApiStack extends Stack {
                 .alarmDescription("API Gateway 5xx errors >= 1 for API " + this.httpApi.getApiId())
                 .build();
 
-        // Create endpoint configurations
-        List<EndpointConfig> endpointConfigurations = createEndpointConfigurations(props);
-
         // Create integrations using Lambda function references
         List<Metric> lambdaInvocations = new java.util.ArrayList<>();
         List<Metric> lambdaErrors = new java.util.ArrayList<>();
         List<Metric> lambdaDurationsP95 = new java.util.ArrayList<>();
         List<Metric> lambdaThrottles = new java.util.ArrayList<>();
 
-        for (int i = 0; i < endpointConfigurations.size(); i++) {
-            EndpointConfig endpointConfig = endpointConfigurations.get(i);
-            IFunction fn = props.lambdaFunctions().get(endpointConfig.lambdaKey());
-
-            if (fn == null) {
-                infof(
-                        "Skipping endpoint %s %s - Lambda function %s not found",
-                        endpointConfig.httpMethod(), endpointConfig.path(), endpointConfig.lambdaKey());
-                continue;
-            }
+        for (int i = 0; i < props.lambdaFunctions().size(); i++) {
+            ApiLambdaProps apiLambdaProps = props.lambdaFunctions().get(i);
+            IFunction fn = Function.fromFunctionArn(this, apiLambdaProps.functionName() + "-imported", apiLambdaProps.lambdaArn());
 
             // Create HTTP Lambda integration
             HttpLambdaIntegration integration = HttpLambdaIntegration.Builder.create(
-                            props.resourceNamePrefix() + "-Integration-" + i, fn)
+                    apiLambdaProps.functionName() + "-Integration", fn)
                     .build();
 
             // Create HTTP route
-            HttpRoute.Builder.create(this, props.resourceNamePrefix() + "-Route-" + i)
+            HttpRoute.Builder.create(this, apiLambdaProps.functionName() + "-Route" )
                     .httpApi(this.httpApi)
-                    .routeKey(HttpRouteKey.with(endpointConfig.path(), endpointConfig.httpMethod()))
+                    .routeKey(HttpRouteKey.with(apiLambdaProps.urlPath(), apiLambdaProps.httpMethod()))
                     .integration(integration)
                     .build();
 
             infof(
                     "Created route %s %s for function %s",
-                    endpointConfig.httpMethod().toString(), endpointConfig.path(), fn.getFunctionName());
+                apiLambdaProps.httpMethod().toString(), apiLambdaProps.urlPath(), fn.getFunctionName());
 
             // Collect metrics for monitoring
             lambdaInvocations.add(fn.metricInvocations());
@@ -217,15 +210,15 @@ public class ApiStack extends Stack {
             lambdaThrottles.add(fn.metricThrottles());
 
             // Per-function error alarm (>=1 error in 5 minutes)
-            Alarm.Builder.create(this, props.resourceNamePrefix() + "-LambdaErrors-" + i)
-                    .alarmName(props.resourceNamePrefix() + "-lambda-errors-" + i)
+            Alarm.Builder.create(this, apiLambdaProps.functionName() + "-LambdaErrors-")
+                    .alarmName(apiLambdaProps.functionName() + "-lambda-errors")
                     .metric(fn.metricErrors())
                     .threshold(1.0)
                     .evaluationPeriods(1)
                     .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
                     .treatMissingData(TreatMissingData.NOT_BREACHING)
                     .alarmDescription(
-                            "Lambda errors >= 1 for " + endpointConfig.path() + " " + endpointConfig.httpMethod())
+                            "Lambda errors >= 1 for " + apiLambdaProps.urlPath() + " " + apiLambdaProps.httpMethod())
                     .build();
         }
 
@@ -312,81 +305,5 @@ public class ApiStack extends Stack {
         infof(
                 "ApiStack %s created successfully for %s with API Gateway URL: %s",
                 this.getNode().getId(), props.resourceNamePrefix(), this.httpApi.getUrl());
-    }
-
-    private static List<EndpointConfig> createEndpointConfigurations(final ApiStackProps props) {
-        List<EndpointConfig> configs = new java.util.ArrayList<>();
-
-        // TODO: Move these to properties of the LambdaUrlOrigin construct and rename that LambdaApiOrigin and use
-        // instead of EndpointConfig
-
-        // Map each Lambda key to its endpoint configuration
-        configs.add(EndpointConfig.builder()
-                .path(props.sharedNames().cognitoAuthUrlGetLambdaUrlPath)
-                .httpMethod(props.sharedNames().cognitoAuthUrlGetLambdaHttpMethod)
-                .lambdaKey(props.sharedNames().cognitoAuthUrlGetLambdaFunctionName)
-                .build());
-
-        configs.add(EndpointConfig.builder()
-                .path(props.sharedNames().cognitoTokenPostLambdaUrlPath)
-                .httpMethod(props.sharedNames().cognitoTokenPostLambdaHttpMethod)
-                .lambdaKey(props.sharedNames().cognitoTokenPostLambdaFunctionName)
-                .build());
-
-        configs.add(EndpointConfig.builder()
-                .path(props.sharedNames().hmrcAuthUrlGetLambdaUrlPath)
-                .httpMethod(props.sharedNames().hmrcAuthUrlGetLambdaHttpMethod)
-                .lambdaKey(props.sharedNames().hmrcAuthUrlGetLambdaFunctionName)
-                .build());
-
-        configs.add(EndpointConfig.builder()
-                .path(props.sharedNames().hmrcTokenPostLambdaUrlPath)
-                .httpMethod(props.sharedNames().hmrcTokenPostLambdaHttpMethod)
-                .lambdaKey(props.sharedNames().hmrcTokenPostLambdaFunctionName)
-                .build());
-
-        configs.add(EndpointConfig.builder()
-                .path(props.sharedNames().hmrcVatReturnPostLambdaUrlPath)
-                .httpMethod(props.sharedNames().hmrcVatReturnPostLambdaHttpMethod)
-                .lambdaKey(props.sharedNames().hmrcVatReturnPostLambdaFunctionName)
-                .build());
-
-        configs.add(EndpointConfig.builder()
-                .path(props.sharedNames().receiptPostLambdaUrlPath)
-                .httpMethod(props.sharedNames().receiptPostLambdaHttpMethod)
-                .lambdaKey(props.sharedNames().receiptPostLambdaFunctionName)
-                .build());
-
-        configs.add(EndpointConfig.builder()
-                .path(props.sharedNames().receiptGetLambdaUrlPath)
-                .httpMethod(props.sharedNames().receiptGetLambdaHttpMethod)
-                .lambdaKey(props.sharedNames().receiptGetLambdaFunctionName)
-                .build());
-
-        configs.add(EndpointConfig.builder()
-                .path(props.sharedNames().catalogGetLambdaUrlPath)
-                .httpMethod(props.sharedNames().catalogGetLambdaHttpMethod)
-                .lambdaKey(props.sharedNames().catalogGetLambdaFunctionName)
-                .build());
-
-        configs.add(EndpointConfig.builder()
-                .path(props.sharedNames().bundleGetLambdaUrlPath)
-                .httpMethod(props.sharedNames().bundleGetLambdaHttpMethod)
-                .lambdaKey(props.sharedNames().bundleGetLambdaFunctionName)
-                .build());
-
-        configs.add(EndpointConfig.builder()
-                .path(props.sharedNames().bundlePostLambdaUrlPath)
-                .httpMethod(props.sharedNames().bundlePostLambdaHttpMethod)
-                .lambdaKey(props.sharedNames().bundlePostLambdaFunctionName)
-                .build());
-
-        configs.add(EndpointConfig.builder()
-                .path(props.sharedNames().bundleDeleteLambdaUrlPath)
-                .httpMethod(props.sharedNames().bundleDeleteLambdaHttpMethod)
-                .lambdaKey(props.sharedNames().bundleDeleteLambdaFunctionName)
-                .build());
-
-        return configs;
     }
 }

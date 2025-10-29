@@ -24,18 +24,15 @@ import java.util.List;
 
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 
-public class LambdaUrlOrigin {
-
-    // private static final Pattern LAMBDA_URL_HOST_PATTERN = Pattern.compile("https://([^/]+)/");
+public class ApiLambda {
 
     public final DockerImageCode dockerImage;
     public final Function lambda;
     public final LogGroup logGroup;
+    public final ApiLambdaProps props;
 
-    // TODO: Rename to ApiLambda
-    // Copy props to the top level
-
-    public LambdaUrlOrigin(final Construct scope, LambdaUrlOriginProps props) {
+    public ApiLambda(final Construct scope, ApiLambdaProps props) {
+        this.props = props;
 
         // Create the lambda function
         var imageCodeProps = EcrImageCodeProps.builder()

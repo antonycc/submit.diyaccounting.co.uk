@@ -82,9 +82,6 @@ public class SubmitDelivery {
         var submitDelivery = new SubmitDelivery(app, appProps);
         app.synth();
         infof("CDK synth complete");
-
-        infof("Created stack: %s", submitDelivery.edgeStack.getStackName());
-        infof("Created stack: %s", submitDelivery.publishStack.getStackName());
         if (submitDelivery.selfDestructStack != null) {
             infof("Created stack: %s", submitDelivery.selfDestructStack.getStackName());
         } else {
