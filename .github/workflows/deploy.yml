@@ -1173,7 +1173,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          STACK_NAME="env-${{ needs.names.outputs.environment-name }}-ObservabilityStack"
+          STACK_NAME="${{ needs.names.outputs.environment-name }}-env-ObservabilityStack"
           echo "Resolving RUM outputs from $STACK_NAME in region ${{ env.AWS_REGION }}"
           JSON=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" --region "${{ env.AWS_REGION }}")
           RUM_APP_MONITOR_ID=$(echo "$JSON" | jq -r '.Stacks[0].Outputs[] | select(.OutputKey=="RumAppMonitorId") | .OutputValue')

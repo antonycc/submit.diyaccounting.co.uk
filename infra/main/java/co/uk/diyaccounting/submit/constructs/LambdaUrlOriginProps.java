@@ -1,6 +1,5 @@
 package co.uk.diyaccounting.submit.constructs;
 
-import java.util.Map;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.RemovalPolicy;
@@ -17,6 +16,8 @@ import software.amazon.awscdk.services.lambda.FunctionUrlAuthType;
 import software.amazon.awscdk.services.lambda.InvokeMode;
 import software.amazon.awscdk.services.lambda.Runtime;
 import software.amazon.awscdk.services.logs.RetentionDays;
+
+import java.util.Map;
 
 /**
  * Props container for LambdaUrlOrigin construct. Mirrors the previous Builder fields
@@ -121,3 +122,7 @@ public interface LambdaUrlOriginProps {
         return ImmutableLambdaUrlOriginProps.builder();
     }
 }
+// TODO: Add properties
+// public final lambdaArn = "%s-cognito-auth-url-get".formatted(appLambdaArnPrefix);
+// public final method = HttpMethod.GET;
+// public final path = "/api/v1/cognito/authUrl";

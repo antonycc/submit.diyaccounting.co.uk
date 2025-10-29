@@ -1,8 +1,5 @@
 package co.uk.diyaccounting.submit.constructs;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-
-import java.util.List;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.services.cloudwatch.Alarm;
 import software.amazon.awscdk.services.cloudwatch.ComparisonOperator;
@@ -23,6 +20,10 @@ import software.amazon.awscdk.services.logs.LogGroupProps;
 import software.amazon.awscdk.services.logs.MetricFilter;
 import software.constructs.Construct;
 
+import java.util.List;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+
 public class LambdaUrlOrigin {
 
     // private static final Pattern LAMBDA_URL_HOST_PATTERN = Pattern.compile("https://([^/]+)/");
@@ -30,6 +31,9 @@ public class LambdaUrlOrigin {
     public final DockerImageCode dockerImage;
     public final Function lambda;
     public final LogGroup logGroup;
+
+    // TODO: Rename to ApiLambda
+    // Copy props to the top level
 
     public LambdaUrlOrigin(final Construct scope, LambdaUrlOriginProps props) {
 
