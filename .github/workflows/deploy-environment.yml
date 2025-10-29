@@ -187,7 +187,7 @@ jobs:
             && cat ../.env.${{ needs.names.outputs.environment-name }} \
             && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
               npx cdk deploy \
-                env-${{ needs.names.outputs.environment-name }}-ObservabilityStack \
+                ${{ needs.names.outputs.environment-name }}-env-ObservabilityStack \
                 --require-approval never \
                 --ci true \
                 --concurrency 4 \
@@ -265,7 +265,7 @@ jobs:
             && cat ../.env.${{ needs.names.outputs.environment-name }} \
             && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
               npx cdk deploy \
-                env-${{ needs.names.outputs.environment-name }}-ObservabilityUE1Stack \
+                ${{ needs.names.outputs.environment-name }}-env-ObservabilityUE1Stack \
                 --require-approval never \
                 --ci true \
                 --concurrency 4 \
@@ -336,7 +336,7 @@ jobs:
             && cat ../.env.${{ needs.names.outputs.environment-name }} \
             && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
               npx cdk deploy \
-                env-${{ needs.names.outputs.environment-name }}-DataStack \
+                ${{ needs.names.outputs.environment-name }}-env-DataStack \
                 --require-approval never \
                 --ci true \
                 --concurrency 4 \
@@ -407,7 +407,7 @@ jobs:
             && cat ../.env.${{ needs.names.outputs.environment-name }} \
             && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
               npx cdk deploy \
-                env-${{ needs.names.outputs.environment-name }}-ApexStack \
+                ${{ needs.names.outputs.environment-name }}-env-ApexStack \
                 --exclusively \
                 --require-approval never \
                 --ci true \
@@ -480,7 +480,7 @@ jobs:
             && cat ../.env.${{ needs.names.outputs.environment-name }} \
             && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
               npx cdk deploy \
-                env-${{ needs.names.outputs.environment-name }}-IdentityStack \
+                ${{ needs.names.outputs.environment-name }}-env-IdentityStack \
                 --exclusively \
                 --require-approval never \
                 --ci true \
@@ -496,9 +496,9 @@ jobs:
       - name: Resolve stack outputs
         id: identity-outputs
         run: |
-          COGNITO_USER_POOL_ARN=$(jq -r '.["env-${{ needs.names.outputs.environment-name }}-IdentityStack"].UserPoolArn' cdk-submit-environment.out/cdk-outputs-identity.json)
-          COGNITO_USER_POOL_ID=$(jq -r '.["env-${{ needs.names.outputs.environment-name }}-IdentityStack"].UserPoolId' cdk-submit-environment.out/cdk-outputs-identity.json)
-          COGNITO_CLIENT_ID=$(jq -r '.["env-${{ needs.names.outputs.environment-name }}-IdentityStack"].UserPoolClientId' cdk-submit-environment.out/cdk-outputs-identity.json)
+          COGNITO_USER_POOL_ARN=$(jq -r '.["${{ needs.names.outputs.environment-name }}-env-IdentityStack"].UserPoolArn' cdk-submit-environment.out/cdk-outputs-identity.json)
+          COGNITO_USER_POOL_ID=$(jq -r '.["${{ needs.names.outputs.environment-name }}-env-IdentityStack"].UserPoolId' cdk-submit-environment.out/cdk-outputs-identity.json)
+          COGNITO_CLIENT_ID=$(jq -r '.["${{ needs.names.outputs.environment-name }}-env-IdentityStack"].UserPoolClientId' cdk-submit-environment.out/cdk-outputs-identity.json)
           echo "COGNITO_USER_POOL_ARN=$COGNITO_USER_POOL_ARN"
           echo "COGNITO_USER_POOL_ID=$COGNITO_USER_POOL_ID"
           echo "COGNITO_CLIENT_ID=$COGNITO_CLIENT_ID"

@@ -1,24 +1,25 @@
 package co.uk.diyaccounting.submit;
 
-import static co.uk.diyaccounting.submit.utils.Kind.envOr;
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.Kind.putIfNotNull;
-import static co.uk.diyaccounting.submit.utils.Kind.warnf;
-import static co.uk.diyaccounting.submit.utils.KindCdk.getContextValueString;
-
 import co.uk.diyaccounting.submit.stacks.EdgeStack;
 import co.uk.diyaccounting.submit.stacks.PublishStack;
 import co.uk.diyaccounting.submit.stacks.SelfDestructStack;
 import co.uk.diyaccounting.submit.utils.KindCdk;
+import software.amazon.awscdk.App;
+import software.amazon.awscdk.Environment;
+import software.amazon.awscdk.Fn;
+import software.constructs.Construct;
+
 import java.lang.reflect.Field;
 import java.nio.file.Paths;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
-import software.amazon.awscdk.App;
-import software.amazon.awscdk.Environment;
-import software.amazon.awscdk.Fn;
-import software.constructs.Construct;
+
+import static co.uk.diyaccounting.submit.utils.Kind.envOr;
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.Kind.putIfNotNull;
+import static co.uk.diyaccounting.submit.utils.Kind.warnf;
+import static co.uk.diyaccounting.submit.utils.KindCdk.getContextValueString;
 
 public class SubmitDelivery {
 
@@ -33,10 +34,9 @@ public class SubmitDelivery {
         public String hostedZoneName;
         public String hostedZoneId;
         public String subDomainName;
-        public String cognitoDomainPrefix;
         public String certificateArn;
         public String docRootPath;
-        public String domainName;
+        public String deploymentDomainName;
         public String cloudTrailEnabled;
         public String baseUrl;
         public String accessLogGroupRetentionPeriodDays;
@@ -115,7 +115,6 @@ public class SubmitDelivery {
         nameProps.deploymentName = deploymentName;
         nameProps.hostedZoneName = appProps.hostedZoneName;
         nameProps.subDomainName = appProps.subDomainName;
-        nameProps.cognitoDomainPrefix = appProps.cognitoDomainPrefix;
         nameProps.regionName = primaryEnv.getRegion();
         nameProps.awsAccount = primaryEnv.getAccount();
         var sharedNames = new SubmitSharedNames(nameProps);

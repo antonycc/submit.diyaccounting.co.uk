@@ -13,45 +13,6 @@ public class ResourceNameUtils {
 
     public static final List<AbstractMap.SimpleEntry<Pattern, String>> domainNameMappings = List.of();
 
-    public static String buildEnvironmentDomainName(String env, String subDomainName, String hostedZoneName) {
-        return env.equals("prod")
-                ? buildPrimaryDomainName(subDomainName, hostedZoneName) // e.g. example.com
-                : buildVersionedDomainName(env, subDomainName, hostedZoneName); // e.g. dev.example.com
-    }
-
-    public static String buildCognitoDomainName(
-            String env, String cognitoDomainPrefix, String subDomainName, String hostedZoneName) {
-        return "prod".equals(env)
-                ? buildPrimaryCognitoDomainName(cognitoDomainPrefix, subDomainName, hostedZoneName)
-                : buildVersionedCognitoDomainName(env, cognitoDomainPrefix, subDomainName, hostedZoneName);
-    }
-
-    public static String buildPrimaryDomainName(String subDomainName, String hostedZoneName) {
-        return "%s.%s".formatted(subDomainName, hostedZoneName);
-    }
-
-    public static String buildVersionedDomainName(String env, String subDomainName, String hostedZoneName) {
-        return "%s.%s.%s".formatted(env, subDomainName, hostedZoneName);
-    }
-
-    public static String buildPrimaryCognitoDomainName(
-            String cognitoDomainPrefix, String subDomainName, String hostedZoneName) {
-        return "%s.%s.%s".formatted(cognitoDomainPrefix, subDomainName, hostedZoneName);
-    }
-
-    public static String buildVersionedCognitoDomainName(
-            String env, String cognitoDomainPrefix, String subDomainName, String hostedZoneName) {
-        return "%s.%s.%s.%s".formatted(env, cognitoDomainPrefix, subDomainName, hostedZoneName);
-    }
-
-    public static String buildDashedCognitoDomainName(String cognitoDomainName) {
-        return ResourceNameUtils.convertDotSeparatedToDashSeparated(cognitoDomainName, domainNameMappings);
-    }
-
-    public static String buildCognitoBaseUri(String cognitoDomain) {
-        return "https://%s".formatted(cognitoDomain);
-    }
-
     public static String buildDashedDomainName(String domainName) {
         return ResourceNameUtils.convertDotSeparatedToDashSeparated(domainName, domainNameMappings);
     }
@@ -224,29 +185,6 @@ public class ResourceNameUtils {
         }
 
         return fullName;
-    }
-
-    public static String buildTrailName(String dashedDomainName) {
-        return "%s-cloud-trail".formatted(dashedDomainName);
-    }
-
-    public static String buildFunctionName(String dashedDomainName, String functionName) {
-        if (functionName == null || functionName.isBlank()) {
-            throw new IllegalArgumentException("Function name cannot be null or blank");
-        }
-        return "%s-%s".formatted(dashedDomainName, ResourceNameUtils.convertCamelCaseToDashSeparated(functionName));
-    }
-
-    public static String buildEcrRepositoryName(String dashedDomainName) {
-        return "%s-ecr".formatted(dashedDomainName);
-    }
-
-    public static String buildEcrLogGroupName(String dashedDomainName) {
-        return "/aws/ecr/%s".formatted(dashedDomainName);
-    }
-
-    public static String buildEcrPublishRoleName(String dashedDomainName) {
-        return "%s-ecr-publish-role".formatted(dashedDomainName);
     }
 
     public static String applyMappings(String input, List<AbstractMap.SimpleEntry<Pattern, String>> mappings) {

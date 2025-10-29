@@ -1,9 +1,5 @@
 package co.uk.diyaccounting.submit;
 
-import static co.uk.diyaccounting.submit.utils.Kind.envOr;
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.Kind.warnf;
-
 import co.uk.diyaccounting.submit.stacks.AccountStack;
 import co.uk.diyaccounting.submit.stacks.ApiStack;
 import co.uk.diyaccounting.submit.stacks.AuthStack;
@@ -12,15 +8,20 @@ import co.uk.diyaccounting.submit.stacks.HmrcStack;
 import co.uk.diyaccounting.submit.stacks.OpsStack;
 import co.uk.diyaccounting.submit.stacks.SelfDestructStack;
 import co.uk.diyaccounting.submit.utils.KindCdk;
+import software.amazon.awscdk.App;
+import software.amazon.awscdk.Environment;
+import software.amazon.awscdk.services.lambda.IFunction;
+import software.constructs.Construct;
+
 import java.lang.reflect.Field;
 import java.nio.file.Paths;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
-import software.amazon.awscdk.App;
-import software.amazon.awscdk.Environment;
-import software.amazon.awscdk.services.lambda.IFunction;
-import software.constructs.Construct;
+
+import static co.uk.diyaccounting.submit.utils.Kind.envOr;
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.Kind.warnf;
 
 public class SubmitApplication {
 
@@ -41,7 +42,6 @@ public class SubmitApplication {
         public String cloudTrailEnabled;
         public String hmrcClientId;
         public String hmrcClientSecretArn;
-        public String cognitoDomainPrefix;
         public String hmrcBaseUri;
         public String baseImageTag;
         public String selfDestructDelayHours;
@@ -108,16 +108,15 @@ public class SubmitApplication {
         nameProps.deploymentName = deploymentName;
         nameProps.hostedZoneName = appProps.hostedZoneName;
         nameProps.subDomainName = appProps.subDomainName;
-        nameProps.cognitoDomainPrefix = appProps.cognitoDomainPrefix;
         nameProps.regionName = primaryEnv.getRegion();
         nameProps.awsAccount = primaryEnv.getAccount();
         var sharedNames = new SubmitSharedNames(nameProps);
 
         // Allow environment variables to override some appProps values
         var cognitoUserPoolArn =
-                envOr("COGNITO_USER_POOL_ARN", appProps.userPoolArn, "(from cognitoDomainPrefix in cdk.json)");
+                envOr("COGNITO_USER_POOL_ARN", appProps.userPoolArn, "(from userPoolArn in cdk.json)");
         var cognitoUserPoolClientId =
-                envOr("COGNITO_CLIENT_ID", appProps.userPoolClientId, "(from cognitoDomainPrefix in cdk.json)");
+                envOr("COGNITO_CLIENT_ID", appProps.userPoolClientId, "(from userPoolClientId in cdk.json)");
         var cognitoUserPoolId = cognitoUserPoolArn != null
                 ? cognitoUserPoolArn.split("/")[1]
                 : "(unknown cognitoUserPoolId because no cognitoUserPoolArn)";
@@ -176,7 +175,6 @@ public class SubmitApplication {
                         .lambdaEntry(appProps.lambdaEntry)
                         .lambdaUrlAuthType(appProps.lambdaUrlAuthType)
                         .cognitoClientId(cognitoUserPoolClientId)
-                        .cognitoBaseUri("https://%s".formatted(sharedNames.cognitoDomainName))
                         .build());
         this.authStack.addDependency(devStack);
 

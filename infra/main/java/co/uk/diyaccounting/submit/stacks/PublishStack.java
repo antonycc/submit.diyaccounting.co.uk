@@ -107,7 +107,7 @@ public class PublishStack extends Stack {
         // Use Resources from the passed props
 
         DistributionAttributes distributionAttributes = DistributionAttributes.builder()
-                .domainName(props.sharedNames().domainName)
+                .domainName(props.sharedNames().deploymentDomainName)
                 .distributionId(props.distributionId())
                 .build();
         IDistribution distribution = Distribution.fromDistributionAttributes(

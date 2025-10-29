@@ -106,7 +106,7 @@ public class ObservabilityUE1Stack extends Stack {
                 .build();
         infof(
                 "ObservabilityStack %s created successfully for %s",
-                this.getNode().getId(), props.sharedNames().dashedDomainName);
+                this.getNode().getId(), props.sharedNames().dashedDeploymentDomainName);
 
         Aspects.of(this).add(new SetAutoDeleteJobLogRetentionAspect(props.deploymentName(), RetentionDays.THREE_DAYS));
 
