@@ -13,80 +13,6 @@
     "description" : "DIY Accounting Submit API documentation"
   } ],
   "paths" : {
-    "/cognito/authUrl" : {
-      "get" : {
-        "summary" : "Get Cognito authentication URL",
-        "description" : "Returns the Cognito OAuth2 authorization URL for user login",
-        "operationId" : "getCognitoAuthUrl",
-        "tags" : [ "Authentication" ],
-        "responses" : {
-          "200" : {
-            "description" : "Authentication URL returned successfully"
-          }
-        }
-      }
-    },
-    "/cognito/token" : {
-      "post" : {
-        "summary" : "Exchange Cognito authorization code for access token",
-        "description" : "Exchanges an authorization code for a Cognito access token",
-        "operationId" : "exchangeCognitoToken",
-        "tags" : [ "Authentication" ],
-        "responses" : {
-          "200" : {
-            "description" : "Token exchanged successfully"
-          }
-        }
-      }
-    },
-    "/hmrc/authUrl" : {
-      "get" : {
-        "summary" : "Get HMRC authentication URL",
-        "description" : "Returns the HMRC OAuth2 authorization URL for accessing HMRC APIs",
-        "operationId" : "getHmrcAuthUrl",
-        "tags" : [ "HMRC" ],
-        "security" : [ {
-          "CognitoAuth" : [ ]
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "HMRC authentication URL returned successfully"
-          }
-        }
-      }
-    },
-    "/hmrc/token" : {
-      "post" : {
-        "summary" : "Exchange HMRC authorization code for access token",
-        "description" : "Exchanges an HMRC authorization code for an access token",
-        "operationId" : "exchangeHmrcToken",
-        "tags" : [ "HMRC" ],
-        "security" : [ {
-          "CognitoAuth" : [ ]
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "HMRC token exchanged successfully"
-          }
-        }
-      }
-    },
-    "/hmrc/vat/return" : {
-      "post" : {
-        "summary" : "Submit VAT return to HMRC",
-        "description" : "Submits a VAT return to HMRC on behalf of the authenticated user",
-        "operationId" : "submitVatReturn",
-        "tags" : [ "HMRC" ],
-        "security" : [ {
-          "HmrcAuth" : [ ]
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "VAT return submitted successfully"
-          }
-        }
-      }
-    },
     "/hmrc/receipt" : {
       "post" : {
         "summary" : "Log receipt to storage",
@@ -112,20 +38,23 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "HMRC authentication URL returned successfully"
+            "description" : "Receipts retrieved successfully"
           }
         }
       }
     },
-    "/catalog" : {
-      "get" : {
-        "summary" : "Get product catalog",
-        "description" : "Retrieves the available product catalog",
-        "operationId" : "getCatalog",
-        "tags" : [ "Account" ],
+    "/hmrc/token" : {
+      "post" : {
+        "summary" : "Exchange HMRC authorization code for access token",
+        "description" : "Exchanges an HMRC authorization code for an access token",
+        "operationId" : "exchangeHmrcToken",
+        "tags" : [ "HMRC" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
         "responses" : {
           "200" : {
-            "description" : "Catalog retrieved successfully"
+            "description" : "HMRC token exchanged successfully"
           }
         }
       }
@@ -155,7 +84,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "Catalog retrieved successfully"
+            "description" : "Bundles retrieved successfully"
           }
         }
       },
@@ -170,6 +99,77 @@
         "responses" : {
           "200" : {
             "description" : "Bundle deleted successfully"
+          }
+        }
+      }
+    },
+    "/hmrc/vat/return" : {
+      "post" : {
+        "summary" : "Submit VAT return to HMRC",
+        "description" : "Submits a VAT return to HMRC on behalf of the authenticated user",
+        "operationId" : "submitVatReturn",
+        "tags" : [ "HMRC" ],
+        "security" : [ {
+          "HmrcAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "VAT return submitted successfully"
+          }
+        }
+      }
+    },
+    "/cognito/token" : {
+      "post" : {
+        "summary" : "Exchange Cognito authorization code for access token",
+        "description" : "Exchanges an authorization code for a Cognito access token",
+        "operationId" : "exchangeCognitoToken",
+        "tags" : [ "Authentication" ],
+        "responses" : {
+          "200" : {
+            "description" : "Token exchanged successfully"
+          }
+        }
+      }
+    },
+    "/catalog" : {
+      "get" : {
+        "summary" : "Get product catalog",
+        "description" : "Retrieves the available product catalog",
+        "operationId" : "getCatalog",
+        "tags" : [ "Account" ],
+        "responses" : {
+          "200" : {
+            "description" : "Catalog retrieved successfully"
+          }
+        }
+      }
+    },
+    "/cognito/authUrl" : {
+      "get" : {
+        "summary" : "Get Cognito authentication URL",
+        "description" : "Returns the Cognito OAuth2 authorization URL for user login",
+        "operationId" : "getCognitoAuthUrl",
+        "tags" : [ "Authentication" ],
+        "responses" : {
+          "200" : {
+            "description" : "Authentication URL returned successfully"
+          }
+        }
+      }
+    },
+    "/hmrc/authUrl" : {
+      "get" : {
+        "summary" : "Get HMRC authentication URL",
+        "description" : "Returns the HMRC OAuth2 authorization URL for accessing HMRC APIs",
+        "operationId" : "getHmrcAuthUrl",
+        "tags" : [ "HMRC" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "HMRC authentication URL returned successfully"
           }
         }
       }
