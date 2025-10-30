@@ -1,20 +1,21 @@
 package co.uk.diyaccounting.submit;
 
-import static co.uk.diyaccounting.submit.utils.Kind.envOr;
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.Kind.warnf;
-
 import co.uk.diyaccounting.submit.stacks.ApexStack;
 import co.uk.diyaccounting.submit.stacks.DataStack;
 import co.uk.diyaccounting.submit.stacks.IdentityStack;
 import co.uk.diyaccounting.submit.stacks.ObservabilityStack;
 import co.uk.diyaccounting.submit.stacks.ObservabilityUE1Stack;
 import co.uk.diyaccounting.submit.utils.KindCdk;
-import java.lang.reflect.Field;
-import java.nio.file.Paths;
 import software.amazon.awscdk.App;
 import software.amazon.awscdk.Environment;
 import software.constructs.Construct;
+
+import java.lang.reflect.Field;
+import java.nio.file.Paths;
+
+import static co.uk.diyaccounting.submit.utils.Kind.envOr;
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.Kind.warnf;
 
 public class SubmitEnvironment {
 
@@ -124,7 +125,7 @@ public class SubmitEnvironment {
                         .envName(envName)
                         .deploymentName(deploymentName)
                         .resourceNamePrefix(sharedNames.envResourceNamePrefix)
-                        .compressedResourceNamePrefix(sharedNames.envCompressedResourceNamePrefix)
+                        //.compressedResourceNamePrefix(sharedNames.envCompressedResourceNamePrefix)
                         .cloudTrailEnabled(cloudTrailEnabled)
                         .sharedNames(sharedNames)
                         .cloudTrailLogGroupPrefix(appProps.cloudTrailLogGroupPrefix)
@@ -145,7 +146,7 @@ public class SubmitEnvironment {
                         .envName(envName)
                         .deploymentName(deploymentName)
                         .resourceNamePrefix(sharedNames.envResourceNamePrefix)
-                        .compressedResourceNamePrefix(sharedNames.envCompressedResourceNamePrefix)
+                        //.compressedResourceNamePrefix(sharedNames.envCompressedResourceNamePrefix)
                         .cloudTrailEnabled(cloudTrailEnabled)
                         .sharedNames(sharedNames)
                         .logGroupRetentionPeriodDays(accessLogGroupRetentionPeriodDays)
@@ -164,7 +165,7 @@ public class SubmitEnvironment {
                         .envName(envName)
                         .deploymentName(deploymentName)
                         .resourceNamePrefix(sharedNames.envResourceNamePrefix)
-                        .compressedResourceNamePrefix(sharedNames.envCompressedResourceNamePrefix)
+                        //.compressedResourceNamePrefix(sharedNames.envCompressedResourceNamePrefix)
                         .cloudTrailEnabled(cloudTrailEnabled)
                         .sharedNames(sharedNames)
                         .s3RetainReceiptsBucket(s3RetainReceiptsBucket)
@@ -183,7 +184,7 @@ public class SubmitEnvironment {
                         .envName(envName)
                         .deploymentName(deploymentName)
                         .resourceNamePrefix(sharedNames.envResourceNamePrefix)
-                        .compressedResourceNamePrefix(sharedNames.envCompressedResourceNamePrefix)
+                        //.compressedResourceNamePrefix(sharedNames.envCompressedResourceNamePrefix)
                         .cloudTrailEnabled(cloudTrailEnabled)
                         .sharedNames(sharedNames)
                         .hostedZoneName(appProps.hostedZoneName)
@@ -204,7 +205,7 @@ public class SubmitEnvironment {
                         .envName(envName)
                         .deploymentName(envName)
                         .resourceNamePrefix(sharedNames.envResourceNamePrefix)
-                        .compressedResourceNamePrefix(sharedNames.envCompressedResourceNamePrefix)
+                        //.compressedResourceNamePrefix(sharedNames.envCompressedResourceNamePrefix)
                         .cloudTrailEnabled(cloudTrailEnabled)
                         .sharedNames(sharedNames)
                         .hostedZoneName(appProps.hostedZoneName)

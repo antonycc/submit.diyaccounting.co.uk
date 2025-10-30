@@ -92,8 +92,8 @@ public class HmrcStack extends Stack {
         @Override
         String resourceNamePrefix();
 
-        @Override
-        String compressedResourceNamePrefix();
+        //@Override
+        //String compressedResourceNamePrefix();
 
         @Override
         String cloudTrailEnabled();

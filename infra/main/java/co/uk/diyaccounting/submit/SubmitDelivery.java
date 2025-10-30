@@ -1,22 +1,23 @@
 package co.uk.diyaccounting.submit;
 
-import static co.uk.diyaccounting.submit.utils.Kind.envOr;
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.Kind.warnf;
-import static co.uk.diyaccounting.submit.utils.KindCdk.getContextValueString;
-
 import co.uk.diyaccounting.submit.stacks.EdgeStack;
 import co.uk.diyaccounting.submit.stacks.PublishStack;
 import co.uk.diyaccounting.submit.stacks.SelfDestructStack;
 import co.uk.diyaccounting.submit.utils.KindCdk;
-import java.lang.reflect.Field;
-import java.nio.file.Paths;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 import software.amazon.awscdk.App;
 import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.Fn;
 import software.constructs.Construct;
+
+import java.lang.reflect.Field;
+import java.nio.file.Paths;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+
+import static co.uk.diyaccounting.submit.utils.Kind.envOr;
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.Kind.warnf;
+import static co.uk.diyaccounting.submit.utils.KindCdk.getContextValueString;
 
 public class SubmitDelivery {
 
@@ -156,7 +157,7 @@ public class SubmitDelivery {
                         .envName(envName)
                         .deploymentName(deploymentName)
                         .resourceNamePrefix(sharedNames.delResourceNamePrefix)
-                        .compressedResourceNamePrefix(sharedNames.delCompressedResourceNamePrefix)
+                        //.compressedResourceNamePrefix(sharedNames.delCompressedResourceNamePrefix)
                         .cloudTrailEnabled(cloudTrailEnabled)
                         .sharedNames(sharedNames)
                         .hostedZoneName(appProps.hostedZoneName)
@@ -177,7 +178,7 @@ public class SubmitDelivery {
                         .envName(envName)
                         .deploymentName(deploymentName)
                         .resourceNamePrefix(sharedNames.delResourceNamePrefix)
-                        .compressedResourceNamePrefix(sharedNames.delCompressedResourceNamePrefix)
+                        //.compressedResourceNamePrefix(sharedNames.delCompressedResourceNamePrefix)
                         .cloudTrailEnabled(cloudTrailEnabled)
                         .sharedNames(sharedNames)
                         .distributionId(distributionId)
@@ -199,7 +200,7 @@ public class SubmitDelivery {
                             .envName(envName)
                             .deploymentName(deploymentName)
                             .resourceNamePrefix(sharedNames.delResourceNamePrefix)
-                            .compressedResourceNamePrefix(sharedNames.delCompressedResourceNamePrefix)
+                            //.compressedResourceNamePrefix(sharedNames.delCompressedResourceNamePrefix)
                             .cloudTrailEnabled(cloudTrailEnabled)
                             .sharedNames(sharedNames)
                             .selfDestructLogGroupName(sharedNames.ue1SelfDestructLogGroupName)

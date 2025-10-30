@@ -50,36 +50,36 @@ public class ResourceNameUtils {
      * @param deploymentName deployment name (e.g. "dev", "ci", "ci-branchname")
      * @return compressed resource name prefix
      */
-    public static String generateCompressedResourceNamePrefix(String domainName, String deploymentName) {
-        if (domainName == null || domainName.isBlank()) {
-            throw new IllegalArgumentException("domainName must be non-empty");
-        }
-        if (deploymentName == null || deploymentName.isBlank()) {
-            throw new IllegalArgumentException("deploymentName must be non-empty");
-        }
-
-        String dashed = domainName.replace('.', '-').toLowerCase();
-        String[] parts = dashed.split("-+");
-        StringBuilder sb = new StringBuilder();
-        for (String part : parts) {
-            if (part.isEmpty()) {
-                continue;
-            }
-            if (sb.length() > 0) {
-                sb.append('-');
-            }
-            if ("oidc".equals(part)) {
-                sb.append("oidc");
-            } else {
-                sb.append(part.charAt(0));
-            }
-        }
-        var derivedResourceName = sb.append('-').append(deploymentName).toString();
-        var truncatedResourceName =
-                derivedResourceName.length() > 16 ? derivedResourceName.substring(0, 16) : derivedResourceName;
-
-        return truncatedResourceName;
-    }
+//    public static String generateCompressedResourceNamePrefix(String domainName, String deploymentName) {
+//        if (domainName == null || domainName.isBlank()) {
+//            throw new IllegalArgumentException("domainName must be non-empty");
+//        }
+//        if (deploymentName == null || deploymentName.isBlank()) {
+//            throw new IllegalArgumentException("deploymentName must be non-empty");
+//        }
+//
+//        String dashed = domainName.replace('.', '-').toLowerCase();
+//        String[] parts = dashed.split("-+");
+//        StringBuilder sb = new StringBuilder();
+//        for (String part : parts) {
+//            if (part.isEmpty()) {
+//                continue;
+//            }
+//            if (sb.length() > 0) {
+//                sb.append('-');
+//            }
+//            if ("oidc".equals(part)) {
+//                sb.append("oidc");
+//            } else {
+//                sb.append(part.charAt(0));
+//            }
+//        }
+//        var derivedResourceName = sb.append('-').append(deploymentName).toString();
+//        var truncatedResourceName =
+//                derivedResourceName.length() > 16 ? derivedResourceName.substring(0, 16) : derivedResourceName;
+//
+//        return truncatedResourceName;
+//    }
 
     /**
      * Generate a shortened predictable resource name prefix based on domain.
@@ -95,33 +95,33 @@ public class ResourceNameUtils {
      * @param domainName fully qualified domain name (e.g. "oidc.example.com")
      * @return compressed resource name prefix
      */
-    public static String generateCompressedResourceNamePrefix(String domainName) {
-        if (domainName == null || domainName.isBlank()) {
-            throw new IllegalArgumentException("domainName must be non-empty");
-        }
-
-        String dashed = domainName.replace('.', '-').toLowerCase();
-        String[] parts = dashed.split("-+");
-        StringBuilder sb = new StringBuilder();
-        for (String part : parts) {
-            if (part.isEmpty()) {
-                continue;
-            }
-            if (sb.length() > 0) {
-                sb.append('-');
-            }
-            if ("oidc".equals(part)) {
-                sb.append("oidc");
-            } else {
-                sb.append(part.charAt(0));
-            }
-        }
-        var derivedResourceName = sb.toString();
-        var truncatedResourceName =
-                derivedResourceName.length() > 16 ? derivedResourceName.substring(0, 16) : derivedResourceName;
-
-        return truncatedResourceName;
-    }
+//    public static String generateCompressedResourceNamePrefix(String domainName) {
+//        if (domainName == null || domainName.isBlank()) {
+//            throw new IllegalArgumentException("domainName must be non-empty");
+//        }
+//
+//        String dashed = domainName.replace('.', '-').toLowerCase();
+//        String[] parts = dashed.split("-+");
+//        StringBuilder sb = new StringBuilder();
+//        for (String part : parts) {
+//            if (part.isEmpty()) {
+//                continue;
+//            }
+//            if (sb.length() > 0) {
+//                sb.append('-');
+//            }
+//            if ("oidc".equals(part)) {
+//                sb.append("oidc");
+//            } else {
+//                sb.append(part.charAt(0));
+//            }
+//        }
+//        var derivedResourceName = sb.toString();
+//        var truncatedResourceName =
+//                derivedResourceName.length() > 16 ? derivedResourceName.substring(0, 16) : derivedResourceName;
+//
+//        return truncatedResourceName;
+//    }
 
     public static String convertCamelCaseToDashSeparated(String input) {
         if (input == null || input.isEmpty()) {

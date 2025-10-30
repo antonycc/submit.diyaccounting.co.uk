@@ -1,9 +1,5 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-import static co.uk.diyaccounting.submit.utils.S3.createLifecycleRules;
-
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
 import org.immutables.value.Value;
@@ -19,6 +15,10 @@ import software.amazon.awscdk.services.s3.BucketEncryption;
 import software.amazon.awscdk.services.s3.IBucket;
 import software.amazon.awscdk.services.s3.ObjectOwnership;
 import software.constructs.Construct;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+import static co.uk.diyaccounting.submit.utils.S3.createLifecycleRules;
 
 public class DataStack extends Stack {
 
@@ -45,8 +45,8 @@ public class DataStack extends Stack {
         @Override
         String resourceNamePrefix();
 
-        @Override
-        String compressedResourceNamePrefix();
+        //@Override
+        //String compressedResourceNamePrefix();
 
         @Override
         String cloudTrailEnabled();

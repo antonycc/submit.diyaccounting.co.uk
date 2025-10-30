@@ -74,8 +74,8 @@ public class IdentityStack extends Stack {
         @Override
         String resourceNamePrefix();
 
-        @Override
-        String compressedResourceNamePrefix();
+        //@Override
+        //String compressedResourceNamePrefix();
 
         @Override
         String cloudTrailEnabled();
