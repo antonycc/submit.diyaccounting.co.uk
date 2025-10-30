@@ -224,6 +224,7 @@ public class SubmitSharedNames {
 
         var appLambdaHandlerPrefix = "app/functions";
         var appLambdaArnPrefix = "arn:aws:lambda:%s:%s:function:%s".formatted(props.regionName, props.awsAccount, this.appResourceNamePrefix);
+        var appCompressedLambdaArnPrefix = "arn:aws:lambda:%s:%s:function:%s".formatted(props.regionName, props.awsAccount, this.appCompressedResourceNamePrefix);
 
         this.cognitoAuthUrlGetLambdaHttpMethod = HttpMethod.GET;
         this.cognitoAuthUrlGetLambdaUrlPath = "/api/v1/cognito/authUrl";
@@ -267,41 +268,41 @@ public class SubmitSharedNames {
 
         var hmrcVatObligationGetLambdaHandlerName = "hmrcVatObligationGet.handler";
         var hmrcVatObligationGetLambdaHandlerDashed = ResourceNameUtils.convertCamelCaseToDashSeparated(hmrcVatObligationGetLambdaHandlerName);
-        this.hmrcVatObligationGetLambdaFunctionName = "%s-%s".formatted(this.appResourceNamePrefix, hmrcVatObligationGetLambdaHandlerDashed);
+        this.hmrcVatObligationGetLambdaFunctionName = "%s-%s".formatted(this.appCompressedResourceNamePrefix, hmrcVatObligationGetLambdaHandlerDashed);
         this.hmrcVatObligationGetLambdaHandler = "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcVatObligationGetLambdaHandlerName);
-        this.hmrcVatObligationGetLambdaArn = "%s-hmrc-vat-obligation-get".formatted(appLambdaArnPrefix);
+        this.hmrcVatObligationGetLambdaArn = "%s-hmrc-vat-obligation-get".formatted(appCompressedLambdaArnPrefix);
         this.hmrcVatObligationGetLambdaHttpMethod = HttpMethod.GET;
         this.hmrcVatObligationGetLambdaUrlPath = "/api/v1/hmrc/vat/obligation";
 
         var hmrcVatLiabilityGetLambdaHandlerName = "hmrcVatLiabilityGet.handler";
         var hmrcVatLiabilityGetLambdaHandlerDashed = ResourceNameUtils.convertCamelCaseToDashSeparated(hmrcVatLiabilityGetLambdaHandlerName);
-        this.hmrcVatLiabilityGetLambdaFunctionName = "%s-%s".formatted(this.appResourceNamePrefix, hmrcVatLiabilityGetLambdaHandlerDashed);
+        this.hmrcVatLiabilityGetLambdaFunctionName = "%s-%s".formatted(this.appCompressedResourceNamePrefix, hmrcVatLiabilityGetLambdaHandlerDashed);
         this.hmrcVatLiabilityGetLambdaHandler = "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcVatLiabilityGetLambdaHandlerName);
-        this.hmrcVatLiabilityGetLambdaArn = "%s-hmrc-vat-liability-get".formatted(appLambdaArnPrefix);
+        this.hmrcVatLiabilityGetLambdaArn = "%s-hmrc-vat-liability-get".formatted(appCompressedLambdaArnPrefix);
         this.hmrcVatLiabilityGetLambdaHttpMethod = HttpMethod.GET;
         this.hmrcVatLiabilityGetLambdaUrlPath = "/api/v1/hmrc/vat/liability";
 
         var hmrcVatPaymentGetLambdaHandlerName = "hmrcVatPaymentGet.handler";
         var hmrcVatPaymentGetLambdaHandlerDashed = ResourceNameUtils.convertCamelCaseToDashSeparated(hmrcVatPaymentGetLambdaHandlerName);
-        this.hmrcVatPaymentGetLambdaFunctionName = "%s-%s".formatted(this.appResourceNamePrefix, hmrcVatPaymentGetLambdaHandlerDashed);
+        this.hmrcVatPaymentGetLambdaFunctionName = "%s-%s".formatted(this.appCompressedResourceNamePrefix, hmrcVatPaymentGetLambdaHandlerDashed);
         this.hmrcVatPaymentGetLambdaHandler = "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcVatPaymentGetLambdaHandlerName);
-        this.hmrcVatPaymentGetLambdaArn = "%s-hmrc-vat-payments-get".formatted(appLambdaArnPrefix);
+        this.hmrcVatPaymentGetLambdaArn = "%s-hmrc-vat-payments-get".formatted(appCompressedLambdaArnPrefix);
         this.hmrcVatPaymentGetLambdaHttpMethod = HttpMethod.GET;
         this.hmrcVatPaymentGetLambdaUrlPath = "/api/v1/hmrc/vat/payments";
 
         var hmrcVatPenaltyGetLambdaHandlerName = "hmrcVatPenaltyGet.handler";
         var hmrcVatPenaltyGetLambdaHandlerDashed = ResourceNameUtils.convertCamelCaseToDashSeparated(hmrcVatPenaltyGetLambdaHandlerName);
-        this.hmrcVatPenaltyGetLambdaFunctionName = "%s-%s".formatted(this.appResourceNamePrefix, hmrcVatPenaltyGetLambdaHandlerDashed);
+        this.hmrcVatPenaltyGetLambdaFunctionName = "%s-%s".formatted(this.appCompressedResourceNamePrefix, hmrcVatPenaltyGetLambdaHandlerDashed);
         this.hmrcVatPenaltyGetLambdaHandler = "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcVatPenaltyGetLambdaHandlerName);
-        this.hmrcVatPenaltyGetLambdaArn = "%s-hmrc-vat-penalty-get".formatted(appLambdaArnPrefix);
+        this.hmrcVatPenaltyGetLambdaArn = "%s-hmrc-vat-penalty-get".formatted(appCompressedLambdaArnPrefix);
         this.hmrcVatPenaltyGetLambdaHttpMethod = HttpMethod.GET;
         this.hmrcVatPenaltyGetLambdaUrlPath = "/api/v1/hmrc/vat/penalty";
 
         var hmrcVatReturnGetLambdaHandlerName = "hmrcVatReturnGet.handler";
         var hmrcVatReturnGetLambdaHandlerDashed = ResourceNameUtils.convertCamelCaseToDashSeparated(hmrcVatReturnGetLambdaHandlerName);
-        this.hmrcVatReturnGetLambdaFunctionName = "%s-%s".formatted(this.appResourceNamePrefix, hmrcVatReturnGetLambdaHandlerDashed);
+        this.hmrcVatReturnGetLambdaFunctionName = "%s-%s".formatted(this.appCompressedResourceNamePrefix, hmrcVatReturnGetLambdaHandlerDashed);
         this.hmrcVatReturnGetLambdaHandler = "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcVatReturnGetLambdaHandlerName);
-        this.hmrcVatReturnGetLambdaArn = "%s-hmrc-vat-return-get".formatted(appLambdaArnPrefix);
+        this.hmrcVatReturnGetLambdaArn = "%s-hmrc-vat-return-get".formatted(appCompressedLambdaArnPrefix);
         this.hmrcVatReturnGetLambdaHttpMethod = HttpMethod.GET;
         this.hmrcVatReturnGetLambdaUrlPath = "/api/v1/hmrc/vat/return";
 

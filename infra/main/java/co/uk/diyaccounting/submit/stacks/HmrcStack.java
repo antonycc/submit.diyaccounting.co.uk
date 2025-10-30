@@ -14,7 +14,6 @@ import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.services.iam.Effect;
 import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.lambda.Function;
-import software.amazon.awscdk.services.lambda.FunctionUrlAuthType;
 import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.amazon.awscdk.services.s3.Bucket;
@@ -41,6 +40,27 @@ public class HmrcStack extends Stack {
     public ApiLambdaProps hmrcVatReturnPostLambdaProps;
     public Function hmrcVatReturnPostLambda;
     public LogGroup hmrcVatReturnPostLambdaLogGroup;
+
+    // New HMRC VAT GET Lambdas
+    public ApiLambdaProps hmrcVatObligationGetLambdaProps;
+    public Function hmrcVatObligationGetLambda;
+    public LogGroup hmrcVatObligationGetLambdaLogGroup;
+
+    public ApiLambdaProps hmrcVatLiabilityGetLambdaProps;
+    public Function hmrcVatLiabilityGetLambda;
+    public LogGroup hmrcVatLiabilityGetLambdaLogGroup;
+
+    public ApiLambdaProps hmrcVatPaymentGetLambdaProps;
+    public Function hmrcVatPaymentGetLambda;
+    public LogGroup hmrcVatPaymentGetLambdaLogGroup;
+
+    public ApiLambdaProps hmrcVatPenaltyGetLambdaProps;
+    public Function hmrcVatPenaltyGetLambda;
+    public LogGroup hmrcVatPenaltyGetLambdaLogGroup;
+
+    public ApiLambdaProps hmrcVatReturnGetLambdaProps;
+    public Function hmrcVatReturnGetLambda;
+    public LogGroup hmrcVatReturnGetLambdaLogGroup;
 
     public ApiLambdaProps receiptPostLambdaProps;
     public Function receiptPostLambda;
@@ -236,6 +256,146 @@ public class HmrcStack extends Stack {
                 "Created Lambda %s for VAT submission with handler %s",
                 this.hmrcVatReturnPostLambda.getNode().getId(),
                 props.sharedNames().hmrcVatReturnPostLambdaHandler);
+
+        // VAT obligations GET
+        var vatObligationLambdaEnv = new PopulatedMap<String, String>()
+                .with("DIY_SUBMIT_BASE_URL", props.sharedNames().envBaseUrl)
+                .with("HMRC_BASE_URI", props.hmrcBaseUri());
+        var hmrcVatObligationGetLambdaUrlOrigin = new ApiLambda(
+                this,
+                ApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().hmrcVatObligationGetLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                        .functionName(props.sharedNames().hmrcVatObligationGetLambdaFunctionName)
+                        .handler(props.sharedNames().hmrcVatObligationGetLambdaHandler)
+                        .lambdaArn(props.sharedNames().hmrcVatObligationGetLambdaArn)
+                        .httpMethod(props.sharedNames().hmrcVatObligationGetLambdaHttpMethod)
+                        .urlPath(props.sharedNames().hmrcVatObligationGetLambdaUrlPath)
+                        .environment(vatObligationLambdaEnv)
+                        .timeout(Duration.millis(Long.parseLong("30000")))
+                        .build());
+        this.hmrcVatObligationGetLambdaProps = hmrcVatObligationGetLambdaUrlOrigin.props;
+        this.hmrcVatObligationGetLambda = hmrcVatObligationGetLambdaUrlOrigin.lambda;
+        this.hmrcVatObligationGetLambdaLogGroup = hmrcVatObligationGetLambdaUrlOrigin.logGroup;
+        this.lambdaFunctionProps.add(this.hmrcVatObligationGetLambdaProps);
+        infof(
+                "Created Lambda %s for VAT obligations with handler %s",
+                this.hmrcVatObligationGetLambda.getNode().getId(),
+                props.sharedNames().hmrcVatObligationGetLambdaHandler);
+
+        // VAT liability GET
+        var vatLiabilityLambdaEnv = new PopulatedMap<String, String>()
+                .with("DIY_SUBMIT_BASE_URL", props.sharedNames().envBaseUrl)
+                .with("HMRC_BASE_URI", props.hmrcBaseUri());
+        var hmrcVatLiabilityGetLambdaUrlOrigin = new ApiLambda(
+                this,
+                ApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().hmrcVatLiabilityGetLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                        .functionName(props.sharedNames().hmrcVatLiabilityGetLambdaFunctionName)
+                        .handler(props.sharedNames().hmrcVatLiabilityGetLambdaHandler)
+                        .lambdaArn(props.sharedNames().hmrcVatLiabilityGetLambdaArn)
+                        .httpMethod(props.sharedNames().hmrcVatLiabilityGetLambdaHttpMethod)
+                        .urlPath(props.sharedNames().hmrcVatLiabilityGetLambdaUrlPath)
+                        .environment(vatLiabilityLambdaEnv)
+                        .timeout(Duration.millis(Long.parseLong("30000")))
+                        .build());
+        this.hmrcVatLiabilityGetLambdaProps = hmrcVatLiabilityGetLambdaUrlOrigin.props;
+        this.hmrcVatLiabilityGetLambda = hmrcVatLiabilityGetLambdaUrlOrigin.lambda;
+        this.hmrcVatLiabilityGetLambdaLogGroup = hmrcVatLiabilityGetLambdaUrlOrigin.logGroup;
+        this.lambdaFunctionProps.add(this.hmrcVatLiabilityGetLambdaProps);
+        infof(
+                "Created Lambda %s for VAT liabilities with handler %s",
+                this.hmrcVatLiabilityGetLambda.getNode().getId(),
+                props.sharedNames().hmrcVatLiabilityGetLambdaHandler);
+
+        // VAT payments GET
+        var vatPaymentLambdaEnv = new PopulatedMap<String, String>()
+                .with("DIY_SUBMIT_BASE_URL", props.sharedNames().envBaseUrl)
+                .with("HMRC_BASE_URI", props.hmrcBaseUri());
+        var hmrcVatPaymentGetLambdaUrlOrigin = new ApiLambda(
+                this,
+                ApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().hmrcVatPaymentGetLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                        .functionName(props.sharedNames().hmrcVatPaymentGetLambdaFunctionName)
+                        .handler(props.sharedNames().hmrcVatPaymentGetLambdaHandler)
+                        .lambdaArn(props.sharedNames().hmrcVatPaymentGetLambdaArn)
+                        .httpMethod(props.sharedNames().hmrcVatPaymentGetLambdaHttpMethod)
+                        .urlPath(props.sharedNames().hmrcVatPaymentGetLambdaUrlPath)
+                        .environment(vatPaymentLambdaEnv)
+                        .timeout(Duration.millis(Long.parseLong("30000")))
+                        .build());
+        this.hmrcVatPaymentGetLambdaProps = hmrcVatPaymentGetLambdaUrlOrigin.props;
+        this.hmrcVatPaymentGetLambda = hmrcVatPaymentGetLambdaUrlOrigin.lambda;
+        this.hmrcVatPaymentGetLambdaLogGroup = hmrcVatPaymentGetLambdaUrlOrigin.logGroup;
+        this.lambdaFunctionProps.add(this.hmrcVatPaymentGetLambdaProps);
+        infof(
+                "Created Lambda %s for VAT payments with handler %s",
+                this.hmrcVatPaymentGetLambda.getNode().getId(),
+                props.sharedNames().hmrcVatPaymentGetLambdaHandler);
+
+        // VAT penalties GET
+        var vatPenaltyLambdaEnv = new PopulatedMap<String, String>()
+                .with("DIY_SUBMIT_BASE_URL", props.sharedNames().envBaseUrl)
+                .with("HMRC_BASE_URI", props.hmrcBaseUri());
+        var hmrcVatPenaltyGetLambdaUrlOrigin = new ApiLambda(
+                this,
+                ApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().hmrcVatPenaltyGetLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                        .functionName(props.sharedNames().hmrcVatPenaltyGetLambdaFunctionName)
+                        .handler(props.sharedNames().hmrcVatPenaltyGetLambdaHandler)
+                        .lambdaArn(props.sharedNames().hmrcVatPenaltyGetLambdaArn)
+                        .httpMethod(props.sharedNames().hmrcVatPenaltyGetLambdaHttpMethod)
+                        .urlPath(props.sharedNames().hmrcVatPenaltyGetLambdaUrlPath)
+                        .environment(vatPenaltyLambdaEnv)
+                        .timeout(Duration.millis(Long.parseLong("30000")))
+                        .build());
+        this.hmrcVatPenaltyGetLambdaProps = hmrcVatPenaltyGetLambdaUrlOrigin.props;
+        this.hmrcVatPenaltyGetLambda = hmrcVatPenaltyGetLambdaUrlOrigin.lambda;
+        this.hmrcVatPenaltyGetLambdaLogGroup = hmrcVatPenaltyGetLambdaUrlOrigin.logGroup;
+        this.lambdaFunctionProps.add(this.hmrcVatPenaltyGetLambdaProps);
+        infof(
+                "Created Lambda %s for VAT penalties with handler %s",
+                this.hmrcVatPenaltyGetLambda.getNode().getId(),
+                props.sharedNames().hmrcVatPenaltyGetLambdaHandler);
+
+        // VAT return GET
+        var vatReturnGetLambdaEnv = new PopulatedMap<String, String>()
+                .with("DIY_SUBMIT_BASE_URL", props.sharedNames().envBaseUrl)
+                .with("HMRC_BASE_URI", props.hmrcBaseUri());
+        var hmrcVatReturnGetLambdaUrlOrigin = new ApiLambda(
+                this,
+                ApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().hmrcVatReturnGetLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                        .functionName(props.sharedNames().hmrcVatReturnGetLambdaFunctionName)
+                        .handler(props.sharedNames().hmrcVatReturnGetLambdaHandler)
+                        .lambdaArn(props.sharedNames().hmrcVatReturnGetLambdaArn)
+                        .httpMethod(props.sharedNames().hmrcVatReturnGetLambdaHttpMethod)
+                        .urlPath(props.sharedNames().hmrcVatReturnGetLambdaUrlPath)
+                        .environment(vatReturnGetLambdaEnv)
+                        .timeout(Duration.millis(Long.parseLong("30000")))
+                        .build());
+        this.hmrcVatReturnGetLambdaProps = hmrcVatReturnGetLambdaUrlOrigin.props;
+        this.hmrcVatReturnGetLambda = hmrcVatReturnGetLambdaUrlOrigin.lambda;
+        this.hmrcVatReturnGetLambdaLogGroup = hmrcVatReturnGetLambdaUrlOrigin.logGroup;
+        this.lambdaFunctionProps.add(this.hmrcVatReturnGetLambdaProps);
+        infof(
+                "Created Lambda %s for VAT return retrieval with handler %s",
+                this.hmrcVatReturnGetLambda.getNode().getId(),
+                props.sharedNames().hmrcVatReturnGetLambdaHandler);
 
         var logReceiptLambdaEnv = new PopulatedMap<String, String>()
                 .with("DIY_SUBMIT_BASE_URL", props.sharedNames().envBaseUrl)
