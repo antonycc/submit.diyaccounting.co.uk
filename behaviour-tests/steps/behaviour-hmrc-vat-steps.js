@@ -213,7 +213,10 @@ export async function initViewVatReturn(page) {
   });
 }
 
-export async function fillInViewVatReturn(page, hmrcTestVatNumber, periodKey = "24A1") {
+// Default period key for Q1 2024 (Jan-Mar)
+const DEFAULT_PERIOD_KEY = "24A1";
+
+export async function fillInViewVatReturn(page, hmrcTestVatNumber, periodKey = DEFAULT_PERIOD_KEY) {
   await test.step("The user fills in the view VAT return form with VRN and period key", async () => {
     await page.waitForTimeout(100);
     await loggedFill(page, "#vrn", hmrcTestVatNumber, "Entering VAT registration number");

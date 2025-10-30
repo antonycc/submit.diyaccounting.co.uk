@@ -105,8 +105,8 @@ test("Log in, retrieve VAT obligations, log out", async ({ page }) => {
   await fillInVatObligations(page, hmrcTestVatNumber);
   await submitVatObligationsForm(page);
 
-  // Note: In a real test, we might need to handle HMRC auth here if not already authenticated
-  // For now, we assume the test API returns stubbed data without requiring full OAuth flow
+  // Note: This test uses stubbed data from the test API and does not require HMRC OAuth flow.
+  // The test bundle provides access to sandbox APIs which return test data without real authentication.
 
   await verifyVatObligationsResults(page);
 
