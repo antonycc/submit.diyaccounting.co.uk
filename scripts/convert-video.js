@@ -22,22 +22,31 @@ export async function convertVideo(inputPath, outputPath) {
   }
 
   const ffmpegArgs = [
-    "-i", inputPath,
-    "-c:v", "libx264",
-    "-c:a", "aac",
-    "-pix_fmt", "yuv420p",
-    "-profile:v", "baseline",
-    "-level", "3.1",
-    "-movflags", "+faststart",
-    "-crf", "22",
-    "-preset", "slow",
+    "-i",
+    inputPath,
+    "-c:v",
+    "libx264",
+    "-c:a",
+    "aac",
+    "-pix_fmt",
+    "yuv420p",
+    "-profile:v",
+    "baseline",
+    "-level",
+    "3.1",
+    "-movflags",
+    "+faststart",
+    "-crf",
+    "22",
+    "-preset",
+    "slow",
     "-y", // Overwrite output file if it exists
-    outputPath
+    outputPath,
   ];
 
   return new Promise((resolve, reject) => {
     const ffmpeg = spawn("ffmpeg", ffmpegArgs, {
-      stdio: ["ignore", "pipe", "pipe"]
+      stdio: ["ignore", "pipe", "pipe"],
     });
 
     let stderr = "";

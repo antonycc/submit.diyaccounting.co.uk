@@ -40,15 +40,9 @@ import software.amazon.awscdk.services.lambda.Permission;
 import software.amazon.awscdk.services.logs.ILogGroup;
 import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
-import software.amazon.awscdk.services.route53.ARecord;
-import software.amazon.awscdk.services.route53.ARecordProps;
-import software.amazon.awscdk.services.route53.AaaaRecord;
-import software.amazon.awscdk.services.route53.AaaaRecordProps;
 import software.amazon.awscdk.services.route53.HostedZone;
 import software.amazon.awscdk.services.route53.HostedZoneAttributes;
 import software.amazon.awscdk.services.route53.IHostedZone;
-import software.amazon.awscdk.services.route53.RecordTarget;
-import software.amazon.awscdk.services.route53.targets.CloudFrontTarget;
 import software.amazon.awscdk.services.s3.BlockPublicAccess;
 import software.amazon.awscdk.services.s3.Bucket;
 import software.amazon.awscdk.services.s3.BucketEncryption;
@@ -222,12 +216,10 @@ public class ApexStack extends Stack {
 
         // Idempotent UPSERT of Route53 A/AAAA alias to CloudFront (replaces deprecated deleteExisting)
         co.uk.diyaccounting.submit.utils.Route53AliasUpsert.upsertAliasToCloudFront(
-                this,
-                props.resourceNamePrefix() + "-AliasRecord",
-                zone,
-                recordName,
-                this.distribution.getDomainName());
-        this.aliasRecordDomainName = (recordName == null || recordName.isBlank()) ? zone.getZoneName() : (recordName + "." + zone.getZoneName());
+                this, props.resourceNamePrefix() + "-AliasRecord", zone, recordName, this.distribution.getDomainName());
+        this.aliasRecordDomainName = (recordName == null || recordName.isBlank())
+                ? zone.getZoneName()
+                : (recordName + "." + zone.getZoneName());
         this.aliasRecordV6DomainName = this.aliasRecordDomainName;
 
         // Lookup Log Group for web deployment

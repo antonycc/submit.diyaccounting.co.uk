@@ -154,7 +154,7 @@ public class HmrcStack extends Stack {
                         .lambdaArn(props.sharedNames().hmrcAuthUrlGetLambdaArn)
                         .httpMethod(props.sharedNames().hmrcAuthUrlGetLambdaHttpMethod)
                         .urlPath(props.sharedNames().hmrcAuthUrlGetLambdaUrlPath)
-                        //.cloudFrontAllowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
+                        // .cloudFrontAllowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
                         .environment(authUrlHmrcLambdaEnv)
                         .timeout(Duration.millis(Long.parseLong("30000")))
                         .build());
@@ -164,8 +164,7 @@ public class HmrcStack extends Stack {
         this.lambdaFunctionProps.add(this.hmrcAuthUrlGetLambdaProps);
         infof(
                 "Created Lambda %s for HMRC auth URL with handler %s",
-                this.hmrcAuthUrlGetLambda.getNode().getId(),
-                props.sharedNames().hmrcAuthUrlGetLambdaHandler);
+                this.hmrcAuthUrlGetLambda.getNode().getId(), props.sharedNames().hmrcAuthUrlGetLambdaHandler);
 
         // exchangeToken - HMRC
         var exchangeHmrcEnvBase = new PopulatedMap<String, String>()
@@ -193,7 +192,7 @@ public class HmrcStack extends Stack {
                         .lambdaArn(props.sharedNames().hmrcTokenPostLambdaArn)
                         .httpMethod(props.sharedNames().hmrcTokenPostLambdaHttpMethod)
                         .urlPath(props.sharedNames().hmrcTokenPostLambdaUrlPath)
-                        //.cloudFrontAllowedMethods(AllowedMethods.ALLOW_ALL)
+                        // .cloudFrontAllowedMethods(AllowedMethods.ALLOW_ALL)
                         .environment(exchangeHmrcEnvBase)
                         .timeout(Duration.millis(Long.parseLong("30000")))
                         .build());
@@ -203,8 +202,7 @@ public class HmrcStack extends Stack {
         this.lambdaFunctionProps.add(this.hmrcTokenPostLambdaProps);
         infof(
                 "Created Lambda %s for HMRC exchange token with handler %s",
-                this.hmrcTokenPostLambda.getNode().getId(),
-                props.sharedNames().hmrcTokenPostLambdaHandler);
+                this.hmrcTokenPostLambda.getNode().getId(), props.sharedNames().hmrcTokenPostLambdaHandler);
 
         // Grant access to HMRC client secret in Secrets Manager
         if (StringUtils.isNotBlank(props.hmrcClientSecretArn())) {
@@ -224,8 +222,7 @@ public class HmrcStack extends Stack {
 
         infof(
                 "Created Lambda %s for HMRC exchange token with handler %s",
-                this.hmrcTokenPostLambda.getNode().getId(),
-                props.sharedNames().hmrcTokenPostLambdaHandler);
+                this.hmrcTokenPostLambda.getNode().getId(), props.sharedNames().hmrcTokenPostLambdaHandler);
 
         // submitVat
         var submitVatLambdaEnv = new PopulatedMap<String, String>()
@@ -244,7 +241,7 @@ public class HmrcStack extends Stack {
                         .lambdaArn(props.sharedNames().hmrcVatReturnPostLambdaArn)
                         .httpMethod(props.sharedNames().hmrcVatReturnPostLambdaHttpMethod)
                         .urlPath(props.sharedNames().hmrcVatReturnPostLambdaUrlPath)
-                        //.cloudFrontAllowedMethods(AllowedMethods.ALLOW_ALL)
+                        // .cloudFrontAllowedMethods(AllowedMethods.ALLOW_ALL)
                         .environment(submitVatLambdaEnv)
                         .timeout(Duration.millis(Long.parseLong("60000")))
                         .build());
@@ -254,8 +251,7 @@ public class HmrcStack extends Stack {
         this.lambdaFunctionProps.add(this.hmrcVatReturnPostLambdaProps);
         infof(
                 "Created Lambda %s for VAT submission with handler %s",
-                this.hmrcVatReturnPostLambda.getNode().getId(),
-                props.sharedNames().hmrcVatReturnPostLambdaHandler);
+                this.hmrcVatReturnPostLambda.getNode().getId(), props.sharedNames().hmrcVatReturnPostLambdaHandler);
 
         // VAT obligations GET
         var vatObligationLambdaEnv = new PopulatedMap<String, String>()
@@ -310,8 +306,7 @@ public class HmrcStack extends Stack {
         this.lambdaFunctionProps.add(this.hmrcVatLiabilityGetLambdaProps);
         infof(
                 "Created Lambda %s for VAT liabilities with handler %s",
-                this.hmrcVatLiabilityGetLambda.getNode().getId(),
-                props.sharedNames().hmrcVatLiabilityGetLambdaHandler);
+                this.hmrcVatLiabilityGetLambda.getNode().getId(), props.sharedNames().hmrcVatLiabilityGetLambdaHandler);
 
         // VAT payments GET
         var vatPaymentLambdaEnv = new PopulatedMap<String, String>()
@@ -338,8 +333,7 @@ public class HmrcStack extends Stack {
         this.lambdaFunctionProps.add(this.hmrcVatPaymentGetLambdaProps);
         infof(
                 "Created Lambda %s for VAT payments with handler %s",
-                this.hmrcVatPaymentGetLambda.getNode().getId(),
-                props.sharedNames().hmrcVatPaymentGetLambdaHandler);
+                this.hmrcVatPaymentGetLambda.getNode().getId(), props.sharedNames().hmrcVatPaymentGetLambdaHandler);
 
         // VAT penalties GET
         var vatPenaltyLambdaEnv = new PopulatedMap<String, String>()
@@ -366,8 +360,7 @@ public class HmrcStack extends Stack {
         this.lambdaFunctionProps.add(this.hmrcVatPenaltyGetLambdaProps);
         infof(
                 "Created Lambda %s for VAT penalties with handler %s",
-                this.hmrcVatPenaltyGetLambda.getNode().getId(),
-                props.sharedNames().hmrcVatPenaltyGetLambdaHandler);
+                this.hmrcVatPenaltyGetLambda.getNode().getId(), props.sharedNames().hmrcVatPenaltyGetLambdaHandler);
 
         // VAT return GET
         var vatReturnGetLambdaEnv = new PopulatedMap<String, String>()
@@ -394,8 +387,7 @@ public class HmrcStack extends Stack {
         this.lambdaFunctionProps.add(this.hmrcVatReturnGetLambdaProps);
         infof(
                 "Created Lambda %s for VAT return retrieval with handler %s",
-                this.hmrcVatReturnGetLambda.getNode().getId(),
-                props.sharedNames().hmrcVatReturnGetLambdaHandler);
+                this.hmrcVatReturnGetLambda.getNode().getId(), props.sharedNames().hmrcVatReturnGetLambdaHandler);
 
         var logReceiptLambdaEnv = new PopulatedMap<String, String>()
                 .with("DIY_SUBMIT_BASE_URL", props.sharedNames().envBaseUrl)
@@ -424,7 +416,7 @@ public class HmrcStack extends Stack {
                         .lambdaArn(props.sharedNames().receiptPostLambdaArn)
                         .httpMethod(props.sharedNames().receiptPostLambdaHttpMethod)
                         .urlPath(props.sharedNames().receiptPostLambdaUrlPath)
-                        //.cloudFrontAllowedMethods(AllowedMethods.ALLOW_ALL)
+                        // .cloudFrontAllowedMethods(AllowedMethods.ALLOW_ALL)
                         .environment(logReceiptLambdaEnv)
                         .timeout(Duration.millis(Long.parseLong("30000")))
                         .build());
@@ -434,8 +426,7 @@ public class HmrcStack extends Stack {
         this.lambdaFunctionProps.add(this.receiptPostLambdaProps);
         infof(
                 "Created Lambda %s for logging receipts with handler %s",
-                this.receiptPostLambda.getNode().getId(),
-                props.sharedNames().receiptPostLambdaHandler);
+                this.receiptPostLambda.getNode().getId(), props.sharedNames().receiptPostLambdaHandler);
 
         // myReceipts Lambda
         var myReceiptsLambdaEnv = new PopulatedMap<String, String>()
@@ -453,7 +444,7 @@ public class HmrcStack extends Stack {
                         .httpMethod(props.sharedNames().receiptGetLambdaHttpMethod)
                         .urlPath(props.sharedNames().receiptGetLambdaUrlPath)
                         .handler(props.sharedNames().receiptGetLambdaHandler)
-                        //.cloudFrontAllowedMethods(AllowedMethods.ALLOW_ALL)
+                        // .cloudFrontAllowedMethods(AllowedMethods.ALLOW_ALL)
                         .environment(myReceiptsLambdaEnv)
                         .timeout(Duration.millis(Long.parseLong("30000")))
                         .build());
@@ -463,8 +454,7 @@ public class HmrcStack extends Stack {
         this.lambdaFunctionProps.add(this.receiptGetLambdaProps);
         infof(
                 "Created Lambda %s for my receipts retrieval with handler %s",
-                this.receiptGetLambda.getNode().getId(),
-                props.sharedNames().receiptGetLambdaHandler);
+                this.receiptGetLambda.getNode().getId(), props.sharedNames().receiptGetLambdaHandler);
 
         // Grant the LogReceiptLambda and MyReceiptsLambda write and read access respectively to the receipts S3 bucket
         IBucket receiptsBucket = Bucket.fromBucketName(
@@ -480,6 +470,8 @@ public class HmrcStack extends Stack {
         cfnOutput(this, "LogReceiptLambdaArn", this.receiptPostLambda.getFunctionArn());
         cfnOutput(this, "MyReceiptsLambdaArn", this.receiptGetLambda.getFunctionArn());
 
-        infof("HmrcStack %s created successfully for %s", this.getNode().getId(), props.sharedNames().dashedDeploymentDomainName);
+        infof(
+                "HmrcStack %s created successfully for %s",
+                this.getNode().getId(), props.sharedNames().dashedDeploymentDomainName);
     }
 }

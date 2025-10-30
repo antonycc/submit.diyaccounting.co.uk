@@ -31,10 +31,7 @@ if (logToConsole && logToFile) {
     // ignore mkdir errors; pino will throw on write if truly unusable
   }
 
-  const streams = [
-    { stream: process.stdout },
-    { stream: pino.destination({ dest: logFilePath, sync: false }) },
-  ];
+  const streams = [{ stream: process.stdout }, { stream: pino.destination({ dest: logFilePath, sync: false }) }];
   destinationStream = pino.multistream(streams);
 } else if (logToConsole) {
   // Console only (default)
@@ -60,7 +57,7 @@ const pinoLogger = pino(
     timestamp: pino.stdTimeFunctions.isoTime,
     enabled: Boolean(destinationStream),
   },
-  destinationStream
+  destinationStream,
 );
 
 export default pinoLogger;

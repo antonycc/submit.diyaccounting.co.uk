@@ -91,6 +91,8 @@ public class DataStack extends Stack {
         cfnOutput(this, "ReceiptsBucketName", this.receiptsBucket.getBucketName());
         cfnOutput(this, "ReceiptsBucketArn", this.receiptsBucket.getBucketArn());
 
-        infof("DataStack %s created successfully for %s", this.getNode().getId(), props.sharedNames().dashedDeploymentDomainName);
+        infof(
+                "DataStack %s created successfully for %s",
+                this.getNode().getId(), props.sharedNames().dashedDeploymentDomainName);
     }
 }

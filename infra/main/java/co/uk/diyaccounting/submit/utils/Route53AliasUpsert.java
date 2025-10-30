@@ -29,11 +29,7 @@ public final class Route53AliasUpsert {
      * @param cloudFrontDnsName CloudFront distribution domain name (e.g. d111111abcdef8.cloudfront.net)
      */
     public static void upsertAliasToCloudFront(
-            Construct scope,
-            String idPrefix,
-            IHostedZone zone,
-            String relativeRecordName,
-            String cloudFrontDnsName) {
+            Construct scope, String idPrefix, IHostedZone zone, String relativeRecordName, String cloudFrontDnsName) {
         String fqdn = buildFqdn(zone, relativeRecordName);
 
         // Build the common ChangeResourceRecordSets payload for A or AAAA
@@ -61,8 +57,8 @@ public final class Route53AliasUpsert {
             return params;
         };
 
-        var policy = AwsCustomResourcePolicy.fromStatements(List.of(
-                software.amazon.awscdk.services.iam.PolicyStatement.Builder.create()
+        var policy = AwsCustomResourcePolicy.fromStatements(
+                List.of(software.amazon.awscdk.services.iam.PolicyStatement.Builder.create()
                         .actions(List.of("route53:ChangeResourceRecordSets"))
                         .resources(List.of("arn:aws:route53:::hostedzone/" + zone.getHostedZoneId()))
                         .build()));

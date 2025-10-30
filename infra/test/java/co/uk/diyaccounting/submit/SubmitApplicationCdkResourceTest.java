@@ -1,22 +1,21 @@
 package co.uk.diyaccounting.submit;
 
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.jetbrains.annotations.NotNull;
-import org.junit.jupiter.api.Test;
-import org.junitpioneer.jupiter.SetEnvironmentVariable;
-import software.amazon.awscdk.App;
-import software.amazon.awscdk.AppProps;
-import software.amazon.awscdk.assertions.Template;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import org.jetbrains.annotations.NotNull;
+import org.junit.jupiter.api.Test;
+import org.junitpioneer.jupiter.SetEnvironmentVariable;
+import software.amazon.awscdk.App;
+import software.amazon.awscdk.AppProps;
+import software.amazon.awscdk.assertions.Template;
 
 @SetEnvironmentVariable.SetEnvironmentVariables({
     @SetEnvironmentVariable(key = "ENVIRONMENT_NAME", value = "test"),
@@ -78,7 +77,9 @@ class SubmitApplicationCdkResourceTest {
                         Map<String, Object> props = (Map<String, Object>) res.get("Properties");
                         Object routeKey = props != null ? props.get("RouteKey") : null;
                         Object target = props != null ? props.get("Target") : null;
-                        infof("API route: id=%s routeKey=%s target=%s", e.getKey(), String.valueOf(routeKey), String.valueOf(target));
+                        infof(
+                                "API route: id=%s routeKey=%s target=%s",
+                                e.getKey(), String.valueOf(routeKey), String.valueOf(target));
                         routeCount++;
                     }
                 }

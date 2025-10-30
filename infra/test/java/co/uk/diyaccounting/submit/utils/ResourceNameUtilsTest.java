@@ -1,11 +1,10 @@
 package co.uk.diyaccounting.submit.utils;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.List;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.List;
+import org.junit.jupiter.api.Test;
 
 class ResourceNameUtilsTest {
 
@@ -43,4 +42,4 @@ class ResourceNameUtilsTest {
         assertTrue(name.length() <= 64);
         assertTrue(name.contains("my@prefix-"));
     }
- }
+}
