@@ -31,7 +31,7 @@ public class ResourceNameUtils {
      * Converts domain like "oidc.example.com" to "oidc-example-com".
      */
     public static String generateResourceNamePrefix(String domainName) {
-        return domainName.replace('.', '-');
+        return domainName.replace(".diyaccounting.co.uk", "").replace(".", "-");
     }
 
     /**

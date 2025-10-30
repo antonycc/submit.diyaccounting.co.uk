@@ -1,5 +1,6 @@
 package co.uk.diyaccounting.submit.swagger;
 
+import co.uk.diyaccounting.submit.SubmitSharedNames;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -82,8 +83,22 @@ public class OpenApiGenerator {
         // Paths section
         ObjectNode paths = mapper.createObjectNode();
 
-        // Get the shared names to access path definitions
-        // We'll use placeholder values since we can't instantiate SubmitSharedNames without props
+        // Build base operations from published lambdas (summary/description/operationId)
+        SubmitSharedNames sharedNames = SubmitSharedNames.forDocs();
+        for (SubmitSharedNames.PublishedLambda pl : sharedNames.publishedApiLambdas) {
+            String openApiPath = pl.urlPath.replaceFirst("^/api/v1", "");
+            ObjectNode pathItem =
+                    paths.has(openApiPath) ? (ObjectNode) paths.get(openApiPath) : mapper.createObjectNode();
+            ObjectNode op = mapper.createObjectNode();
+            op.put("summary", pl.summary);
+            op.put("description", pl.description);
+            op.put("operationId", pl.operationId);
+            String method = pl.method.name().toLowerCase();
+            pathItem.set(method, op);
+            paths.set(openApiPath, pathItem);
+        }
+
+        // Apply endpoint-specific colouring (tags, security, responses)
         addCognitoEndpoints(paths, mapper);
         addHmrcEndpoints(paths, mapper);
         addAccountEndpoints(paths, mapper);
@@ -129,11 +144,10 @@ public class OpenApiGenerator {
 
     private static void addCognitoEndpoints(ObjectNode paths, ObjectMapper mapper) {
         // GET /cognito/authUrl
-        ObjectNode cognitoAuthUrl = mapper.createObjectNode();
-        ObjectNode getAuthUrl = mapper.createObjectNode();
-        getAuthUrl.put("summary", "Get Cognito authentication URL");
-        getAuthUrl.put("description", "Returns the Cognito OAuth2 authorization URL for user login");
-        getAuthUrl.put("operationId", "getCognitoAuthUrl");
+        ObjectNode cognitoAuthUrl =
+                paths.has("/cognito/authUrl") ? (ObjectNode) paths.get("/cognito/authUrl") : mapper.createObjectNode();
+        ObjectNode getAuthUrl =
+                cognitoAuthUrl.has("get") ? (ObjectNode) cognitoAuthUrl.get("get") : mapper.createObjectNode();
 
         ArrayNode getTags = mapper.createArrayNode();
         getTags.add("Authentication");
@@ -149,11 +163,10 @@ public class OpenApiGenerator {
         paths.set("/cognito/authUrl", cognitoAuthUrl);
 
         // POST /cognito/token
-        ObjectNode cognitoToken = mapper.createObjectNode();
-        ObjectNode postToken = mapper.createObjectNode();
-        postToken.put("summary", "Exchange Cognito authorization code for access token");
-        postToken.put("description", "Exchanges an authorization code for a Cognito access token");
-        postToken.put("operationId", "exchangeCognitoToken");
+        ObjectNode cognitoToken =
+                paths.has("/cognito/token") ? (ObjectNode) paths.get("/cognito/token") : mapper.createObjectNode();
+        ObjectNode postToken =
+                cognitoToken.has("post") ? (ObjectNode) cognitoToken.get("post") : mapper.createObjectNode();
 
         ArrayNode postTags = mapper.createArrayNode();
         postTags.add("Authentication");
@@ -170,106 +183,87 @@ public class OpenApiGenerator {
     }
 
     private static void addHmrcEndpoints(ObjectNode paths, ObjectMapper mapper) {
+        ArrayNode hmrcTags = mapper.createArrayNode();
+        hmrcTags.add("HMRC");
+
+        // Security helpers
+        ArrayNode cognitoSecurityArr = mapper.createArrayNode();
+        ObjectNode cognitoSecObj = mapper.createObjectNode();
+        cognitoSecObj.set("CognitoAuth", mapper.createArrayNode());
+        cognitoSecurityArr.add(cognitoSecObj);
+
+        ArrayNode hmrcSecurityArr = mapper.createArrayNode();
+        ObjectNode hmrcSecObj = mapper.createObjectNode();
+        hmrcSecObj.set("HmrcAuth", mapper.createArrayNode());
+        hmrcSecurityArr.add(hmrcSecObj);
+
         // GET /hmrc/authUrl
-        ObjectNode hmrcAuthUrl = mapper.createObjectNode();
-        ObjectNode getHmrcAuthUrl = mapper.createObjectNode();
-        getHmrcAuthUrl.put("summary", "Get HMRC authentication URL");
-        getHmrcAuthUrl.put("description", "Returns the HMRC OAuth2 authorization URL for accessing HMRC APIs");
-        getHmrcAuthUrl.put("operationId", "getHmrcAuthUrl");
-
-        ArrayNode getTags = mapper.createArrayNode();
-        getTags.add("HMRC");
-        getHmrcAuthUrl.set("tags", getTags);
-
-        ArrayNode security = mapper.createArrayNode();
-        ObjectNode cognitoSecurity = mapper.createObjectNode();
-        ArrayNode cognitoScopes = mapper.createArrayNode();
-        cognitoSecurity.set("CognitoAuth", cognitoScopes);
-        security.add(cognitoSecurity);
-        getHmrcAuthUrl.set("security", security);
-
+        ObjectNode hmrcAuthUrl =
+                paths.has("/hmrc/authUrl") ? (ObjectNode) paths.get("/hmrc/authUrl") : mapper.createObjectNode();
+        ObjectNode getHmrcAuthUrl =
+                hmrcAuthUrl.has("get") ? (ObjectNode) hmrcAuthUrl.get("get") : mapper.createObjectNode();
+        getHmrcAuthUrl.set("tags", hmrcTags);
+        getHmrcAuthUrl.set("security", cognitoSecurityArr);
         ObjectNode getResponses = mapper.createObjectNode();
         ObjectNode get200 = mapper.createObjectNode();
         get200.put("description", "HMRC authentication URL returned successfully");
         getResponses.set("200", get200);
         getHmrcAuthUrl.set("responses", getResponses);
-
         hmrcAuthUrl.set("get", getHmrcAuthUrl);
         paths.set("/hmrc/authUrl", hmrcAuthUrl);
 
         // POST /hmrc/token
-        ObjectNode hmrcToken = mapper.createObjectNode();
-        ObjectNode postHmrcToken = mapper.createObjectNode();
-        postHmrcToken.put("summary", "Exchange HMRC authorization code for access token");
-        postHmrcToken.put("description", "Exchanges an HMRC authorization code for an access token");
-        postHmrcToken.put("operationId", "exchangeHmrcToken");
-
-        ArrayNode postTags = mapper.createArrayNode();
-        postTags.add("HMRC");
-        postHmrcToken.set("tags", postTags);
-        postHmrcToken.set("security", security);
-
+        ObjectNode hmrcToken =
+                paths.has("/hmrc/token") ? (ObjectNode) paths.get("/hmrc/token") : mapper.createObjectNode();
+        ObjectNode postHmrcToken =
+                hmrcToken.has("post") ? (ObjectNode) hmrcToken.get("post") : mapper.createObjectNode();
+        postHmrcToken.set("tags", hmrcTags);
+        postHmrcToken.set("security", cognitoSecurityArr);
         ObjectNode postResponses = mapper.createObjectNode();
         ObjectNode post200 = mapper.createObjectNode();
         post200.put("description", "HMRC token exchanged successfully");
         postResponses.set("200", post200);
         postHmrcToken.set("responses", postResponses);
-
         hmrcToken.set("post", postHmrcToken);
         paths.set("/hmrc/token", hmrcToken);
 
         // POST /hmrc/vat/return
-        ObjectNode vatReturn = mapper.createObjectNode();
-        ObjectNode postVatReturn = mapper.createObjectNode();
-        postVatReturn.put("summary", "Submit VAT return to HMRC");
-        postVatReturn.put("description", "Submits a VAT return to HMRC on behalf of the authenticated user");
-        postVatReturn.put("operationId", "submitVatReturn");
-
-        postVatReturn.set("tags", postTags);
-
-        ArrayNode hmrcSecurity = mapper.createArrayNode();
-        ObjectNode hmrcSecurityItem = mapper.createObjectNode();
-        ArrayNode hmrcScopes = mapper.createArrayNode();
-        hmrcSecurityItem.set("HmrcAuth", hmrcScopes);
-        hmrcSecurity.add(hmrcSecurityItem);
-        postVatReturn.set("security", hmrcSecurity);
-
-        // Create a new response object for VAT return
+        ObjectNode vatReturn =
+                paths.has("/hmrc/vat/return") ? (ObjectNode) paths.get("/hmrc/vat/return") : mapper.createObjectNode();
+        ObjectNode postVatReturn =
+                vatReturn.has("post") ? (ObjectNode) vatReturn.get("post") : mapper.createObjectNode();
+        postVatReturn.set("tags", hmrcTags);
+        postVatReturn.set("security", hmrcSecurityArr);
         ObjectNode vatReturnResponses = mapper.createObjectNode();
         ObjectNode vatReturn200 = mapper.createObjectNode();
         vatReturn200.put("description", "VAT return submitted successfully");
         vatReturnResponses.set("200", vatReturn200);
         postVatReturn.set("responses", vatReturnResponses);
-
         vatReturn.set("post", postVatReturn);
         paths.set("/hmrc/vat/return", vatReturn);
 
-        // POST /hmrc/receipt
-        ObjectNode hmrcReceipt = mapper.createObjectNode();
-        ObjectNode postReceipt = mapper.createObjectNode();
-        postReceipt.put("summary", "Log receipt to storage");
-        postReceipt.put("description", "Logs a transaction receipt to secure storage");
-        postReceipt.put("operationId", "logReceipt");
-        postReceipt.set("tags", postTags);
-        postReceipt.set("security", security);
-        // Create a new response object for receipt logging
+        // POST and GET /hmrc/receipt
+        ObjectNode hmrcReceipt =
+                paths.has("/hmrc/receipt") ? (ObjectNode) paths.get("/hmrc/receipt") : mapper.createObjectNode();
+
+        ObjectNode postReceipt =
+                hmrcReceipt.has("post") ? (ObjectNode) hmrcReceipt.get("post") : mapper.createObjectNode();
+        postReceipt.set("tags", hmrcTags);
+        postReceipt.set("security", cognitoSecurityArr);
         ObjectNode postReceiptResponses = mapper.createObjectNode();
         ObjectNode postReceipt200 = mapper.createObjectNode();
         postReceipt200.put("description", "Receipt logged successfully");
         postReceiptResponses.set("200", postReceipt200);
         postReceipt.set("responses", postReceiptResponses);
-
-        // GET /hmrc/receipt
-        ObjectNode getReceipt = mapper.createObjectNode();
-        getReceipt.put("summary", "Retrieve stored receipts");
-        getReceipt.put("description", "Retrieves previously stored receipts for the authenticated user");
-        getReceipt.put("operationId", "getReceipts");
-        getReceipt.set("tags", postTags);
-        getReceipt.set("security", security);
-        getReceipt.set("responses", getResponses);
-
         hmrcReceipt.set("post", postReceipt);
+
+        ObjectNode getReceipt =
+                hmrcReceipt.has("get") ? (ObjectNode) hmrcReceipt.get("get") : mapper.createObjectNode();
+        getReceipt.set("tags", hmrcTags);
+        getReceipt.set("security", cognitoSecurityArr);
+        getReceipt.set("responses", getResponses);
         hmrcReceipt.set("get", getReceipt);
+
         paths.set("/hmrc/receipt", hmrcReceipt);
     }
 
@@ -277,40 +271,30 @@ public class OpenApiGenerator {
         ArrayNode accountTags = mapper.createArrayNode();
         accountTags.add("Account");
 
-        ArrayNode security = mapper.createArrayNode();
-        ObjectNode cognitoSecurity = mapper.createObjectNode();
-        ArrayNode cognitoScopes = mapper.createArrayNode();
-        cognitoSecurity.set("CognitoAuth", cognitoScopes);
-        security.add(cognitoSecurity);
+        ArrayNode cognitoSecurity = mapper.createArrayNode();
+        ObjectNode cognitoSecurityObj = mapper.createObjectNode();
+        cognitoSecurityObj.set("CognitoAuth", mapper.createArrayNode());
+        cognitoSecurity.add(cognitoSecurityObj);
 
         // GET /catalog
-        ObjectNode catalog = mapper.createObjectNode();
-        ObjectNode getCatalog = mapper.createObjectNode();
-        getCatalog.put("summary", "Get product catalog");
-        getCatalog.put("description", "Retrieves the available product catalog");
-        getCatalog.put("operationId", "getCatalog");
+        ObjectNode catalog = paths.has("/catalog") ? (ObjectNode) paths.get("/catalog") : mapper.createObjectNode();
+        ObjectNode getCatalog = catalog.has("get") ? (ObjectNode) catalog.get("get") : mapper.createObjectNode();
         getCatalog.set("tags", accountTags);
-
         ObjectNode getResponses = mapper.createObjectNode();
         ObjectNode get200 = mapper.createObjectNode();
         get200.put("description", "Catalog retrieved successfully");
         getResponses.set("200", get200);
         getCatalog.set("responses", getResponses);
-
         catalog.set("get", getCatalog);
         paths.set("/catalog", catalog);
 
         // Bundle endpoints
-        ObjectNode bundle = mapper.createObjectNode();
+        ObjectNode bundle = paths.has("/bundle") ? (ObjectNode) paths.get("/bundle") : mapper.createObjectNode();
 
         // POST /bundle
-        ObjectNode postBundle = mapper.createObjectNode();
-        postBundle.put("summary", "Request new bundle");
-        postBundle.put("description", "Creates a new bundle request for the authenticated user");
-        postBundle.put("operationId", "requestBundle");
+        ObjectNode postBundle = bundle.has("post") ? (ObjectNode) bundle.get("post") : mapper.createObjectNode();
         postBundle.set("tags", accountTags);
-        postBundle.set("security", security);
-
+        postBundle.set("security", cognitoSecurity);
         ObjectNode postResponses = mapper.createObjectNode();
         ObjectNode post200 = mapper.createObjectNode();
         post200.put("description", "Bundle created successfully");
@@ -318,21 +302,15 @@ public class OpenApiGenerator {
         postBundle.set("responses", postResponses);
 
         // GET /bundle
-        ObjectNode getBundle = mapper.createObjectNode();
-        getBundle.put("summary", "Get user bundles");
-        getBundle.put("description", "Retrieves bundles for the authenticated user");
-        getBundle.put("operationId", "getBundles");
+        ObjectNode getBundle = bundle.has("get") ? (ObjectNode) bundle.get("get") : mapper.createObjectNode();
         getBundle.set("tags", accountTags);
-        getBundle.set("security", security);
+        getBundle.set("security", cognitoSecurity);
         getBundle.set("responses", getResponses);
 
         // DELETE /bundle
-        ObjectNode deleteBundle = mapper.createObjectNode();
-        deleteBundle.put("summary", "Delete bundle");
-        deleteBundle.put("description", "Deletes a bundle for the authenticated user");
-        deleteBundle.put("operationId", "deleteBundle");
+        ObjectNode deleteBundle = bundle.has("delete") ? (ObjectNode) bundle.get("delete") : mapper.createObjectNode();
         deleteBundle.set("tags", accountTags);
-        deleteBundle.set("security", security);
+        deleteBundle.set("security", cognitoSecurity);
         ObjectNode deleteResponses = mapper.createObjectNode();
         ObjectNode delete200 = mapper.createObjectNode();
         delete200.put("description", "Bundle deleted successfully");

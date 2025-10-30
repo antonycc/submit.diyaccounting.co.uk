@@ -6,9 +6,30 @@ import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateCompres
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateResourceNamePrefix;
 
 import co.uk.diyaccounting.submit.utils.ResourceNameUtils;
+import java.util.ArrayList;
+import java.util.List;
 import software.amazon.awscdk.services.apigatewayv2.HttpMethod;
 
 public class SubmitSharedNames {
+
+    public static class PublishedLambda {
+        public final HttpMethod method;
+        public final String urlPath;
+        public final String summary;
+        public final String description;
+        public final String operationId;
+
+        public PublishedLambda(
+                HttpMethod method, String urlPath, String summary, String description, String operationId) {
+            this.method = method;
+            this.urlPath = urlPath;
+            this.summary = summary;
+            this.description = description;
+            this.operationId = operationId;
+        }
+    }
+
+    public final List<PublishedLambda> publishedApiLambdas = new ArrayList<>();
 
     public String deploymentDomainName;
     public String envDomainName;
@@ -166,6 +187,17 @@ public class SubmitSharedNames {
 
     private SubmitSharedNames() {}
 
+    public static SubmitSharedNames forDocs() {
+        SubmitSharedNamesProps p = new SubmitSharedNamesProps();
+        p.hostedZoneName = "example.com";
+        p.envName = "docs";
+        p.subDomainName = "submit";
+        p.deploymentName = "docs";
+        p.regionName = "eu-west-2";
+        p.awsAccount = "111111111111";
+        return new SubmitSharedNames(p);
+    }
+
     public SubmitSharedNames(SubmitSharedNamesProps props) {
         this();
         this.envDomainName = props.envName.equals("prod")
@@ -249,6 +281,8 @@ public class SubmitSharedNames {
                 "%s/auth/%s".formatted(appLambdaHandlerPrefix, cognitoAuthUrlGetLambdaHandlerName);
         this.cognitoAuthUrlGetLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, cognitoAuthUrlGetLambdaHandlerDashed);
 
+        this.cognitoTokenPostLambdaHttpMethod = HttpMethod.POST;
+        this.cognitoTokenPostLambdaUrlPath = "/api/v1/cognito/token";
         var cognitoTokenPostLambdaHandlerName = "cognitoTokenPost.handler";
         var cognitoTokenPostLambdaHandlerDashed =
                 ResourceNameUtils.convertCamelCaseToDashSeparated(cognitoTokenPostLambdaHandlerName);
@@ -256,10 +290,10 @@ public class SubmitSharedNames {
                 "%s-%s".formatted(this.appResourceNamePrefix, cognitoTokenPostLambdaHandlerDashed);
         this.cognitoTokenPostLambdaHandler =
                 "%s/auth/%s".formatted(appLambdaHandlerPrefix, cognitoTokenPostLambdaHandlerName);
-        this.cognitoTokenPostLambdaArn = "%s-cognito-token-post".formatted(appLambdaArnPrefix);
-        this.cognitoTokenPostLambdaHttpMethod = HttpMethod.POST;
-        this.cognitoTokenPostLambdaUrlPath = "/api/v1/cognito/token";
+        this.cognitoTokenPostLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, cognitoTokenPostLambdaHandlerDashed);
 
+        this.hmrcAuthUrlGetLambdaHttpMethod = HttpMethod.GET;
+        this.hmrcAuthUrlGetLambdaUrlPath = "/api/v1/hmrc/authUrl";
         var hmrcAuthUrlGetLambdaHandlerName = "hmrcAuthUrlGet.handler";
         var hmrcAuthUrlGetLambdaHandlerDashed =
                 ResourceNameUtils.convertCamelCaseToDashSeparated(hmrcAuthUrlGetLambdaHandlerName);
@@ -267,10 +301,10 @@ public class SubmitSharedNames {
                 "%s-%s".formatted(this.appResourceNamePrefix, hmrcAuthUrlGetLambdaHandlerDashed);
         this.hmrcAuthUrlGetLambdaHandler =
                 "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcAuthUrlGetLambdaHandlerName);
-        this.hmrcAuthUrlGetLambdaArn = "%s-hmrc-auth-url-get".formatted(appLambdaArnPrefix);
-        this.hmrcAuthUrlGetLambdaHttpMethod = HttpMethod.GET;
-        this.hmrcAuthUrlGetLambdaUrlPath = "/api/v1/hmrc/authUrl";
+        this.hmrcAuthUrlGetLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, hmrcAuthUrlGetLambdaHandlerDashed);
 
+        this.hmrcTokenPostLambdaHttpMethod = HttpMethod.POST;
+        this.hmrcTokenPostLambdaUrlPath = "/api/v1/hmrc/token";
         var hmrcTokenPostLambdaHandlerName = "hmrcTokenPost.handler";
         var hmrcTokenPostLambdaHandlerDashed =
                 ResourceNameUtils.convertCamelCaseToDashSeparated(hmrcTokenPostLambdaHandlerName);
@@ -278,10 +312,10 @@ public class SubmitSharedNames {
                 "%s-%s".formatted(this.appResourceNamePrefix, hmrcTokenPostLambdaHandlerDashed);
         this.hmrcTokenPostLambdaHandler =
                 "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcTokenPostLambdaHandlerName);
-        this.hmrcTokenPostLambdaArn = "%s-hmrc-token-post".formatted(appLambdaArnPrefix);
-        this.hmrcTokenPostLambdaHttpMethod = HttpMethod.POST;
-        this.hmrcTokenPostLambdaUrlPath = "/api/v1/hmrc/token";
+        this.hmrcTokenPostLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, hmrcTokenPostLambdaHandlerDashed);
 
+        this.hmrcVatReturnPostLambdaHttpMethod = HttpMethod.POST;
+        this.hmrcVatReturnPostLambdaUrlPath = "/api/v1/hmrc/vat/return";
         var hmrcVatReturnPostLambdaHandlerName = "hmrcVatReturnPost.handler";
         var hmrcVatReturnPostLambdaHandlerDashed =
                 ResourceNameUtils.convertCamelCaseToDashSeparated(hmrcVatReturnPostLambdaHandlerName);
@@ -289,114 +323,188 @@ public class SubmitSharedNames {
                 "%s-%s".formatted(this.appResourceNamePrefix, hmrcVatReturnPostLambdaHandlerDashed);
         this.hmrcVatReturnPostLambdaHandler =
                 "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcVatReturnPostLambdaHandlerName);
-        this.hmrcVatReturnPostLambdaArn = "%s-hmrc-vat-return".formatted(appLambdaArnPrefix);
-        this.hmrcVatReturnPostLambdaHttpMethod = HttpMethod.POST;
-        this.hmrcVatReturnPostLambdaUrlPath = "/api/v1/hmrc/vat/return";
+        this.hmrcVatReturnPostLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, hmrcVatReturnPostLambdaHandlerDashed);
 
+        this.hmrcVatObligationGetLambdaHttpMethod = HttpMethod.GET;
+        this.hmrcVatObligationGetLambdaUrlPath = "/api/v1/hmrc/vat/obligation";
         var hmrcVatObligationGetLambdaHandlerName = "hmrcVatObligationGet.handler";
         var hmrcVatObligationGetLambdaHandlerDashed =
                 ResourceNameUtils.convertCamelCaseToDashSeparated(hmrcVatObligationGetLambdaHandlerName);
         this.hmrcVatObligationGetLambdaFunctionName =
-                "%s-%s".formatted(this.appCompressedResourceNamePrefix, hmrcVatObligationGetLambdaHandlerDashed);
+                "%s-%s".formatted(this.appResourceNamePrefix, hmrcVatObligationGetLambdaHandlerDashed);
         this.hmrcVatObligationGetLambdaHandler =
                 "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcVatObligationGetLambdaHandlerName);
-        this.hmrcVatObligationGetLambdaArn = "%s-hmrc-vat-obligation-get".formatted(appCompressedLambdaArnPrefix);
-        this.hmrcVatObligationGetLambdaHttpMethod = HttpMethod.GET;
-        this.hmrcVatObligationGetLambdaUrlPath = "/api/v1/hmrc/vat/obligation";
+        this.hmrcVatObligationGetLambdaArn =
+                "%s-%s".formatted(appCompressedLambdaArnPrefix, hmrcVatObligationGetLambdaHandlerDashed);
 
+        this.hmrcVatLiabilityGetLambdaHttpMethod = HttpMethod.GET;
+        this.hmrcVatLiabilityGetLambdaUrlPath = "/api/v1/hmrc/vat/liability";
         var hmrcVatLiabilityGetLambdaHandlerName = "hmrcVatLiabilityGet.handler";
         var hmrcVatLiabilityGetLambdaHandlerDashed =
                 ResourceNameUtils.convertCamelCaseToDashSeparated(hmrcVatLiabilityGetLambdaHandlerName);
         this.hmrcVatLiabilityGetLambdaFunctionName =
-                "%s-%s".formatted(this.appCompressedResourceNamePrefix, hmrcVatLiabilityGetLambdaHandlerDashed);
+                "%s-%s".formatted(this.appResourceNamePrefix, hmrcVatLiabilityGetLambdaHandlerDashed);
         this.hmrcVatLiabilityGetLambdaHandler =
                 "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcVatLiabilityGetLambdaHandlerName);
-        this.hmrcVatLiabilityGetLambdaArn = "%s-hmrc-vat-liability-get".formatted(appCompressedLambdaArnPrefix);
-        this.hmrcVatLiabilityGetLambdaHttpMethod = HttpMethod.GET;
-        this.hmrcVatLiabilityGetLambdaUrlPath = "/api/v1/hmrc/vat/liability";
+        this.hmrcVatLiabilityGetLambdaArn =
+                "%s-%s".formatted(appCompressedLambdaArnPrefix, hmrcVatLiabilityGetLambdaHandlerDashed);
 
+        this.hmrcVatPaymentGetLambdaHttpMethod = HttpMethod.GET;
+        this.hmrcVatPaymentGetLambdaUrlPath = "/api/v1/hmrc/vat/payments";
         var hmrcVatPaymentGetLambdaHandlerName = "hmrcVatPaymentGet.handler";
         var hmrcVatPaymentGetLambdaHandlerDashed =
                 ResourceNameUtils.convertCamelCaseToDashSeparated(hmrcVatPaymentGetLambdaHandlerName);
         this.hmrcVatPaymentGetLambdaFunctionName =
-                "%s-%s".formatted(this.appCompressedResourceNamePrefix, hmrcVatPaymentGetLambdaHandlerDashed);
+                "%s-%s".formatted(this.appResourceNamePrefix, hmrcVatPaymentGetLambdaHandlerDashed);
         this.hmrcVatPaymentGetLambdaHandler =
                 "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcVatPaymentGetLambdaHandlerName);
-        this.hmrcVatPaymentGetLambdaArn = "%s-hmrc-vat-payments-get".formatted(appCompressedLambdaArnPrefix);
-        this.hmrcVatPaymentGetLambdaHttpMethod = HttpMethod.GET;
-        this.hmrcVatPaymentGetLambdaUrlPath = "/api/v1/hmrc/vat/payments";
+        this.hmrcVatPaymentGetLambdaArn =
+                "%s-%s".formatted(appCompressedLambdaArnPrefix, hmrcVatPaymentGetLambdaHandlerDashed);
 
+        this.hmrcVatPenaltyGetLambdaHttpMethod = HttpMethod.GET;
+        this.hmrcVatPenaltyGetLambdaUrlPath = "/api/v1/hmrc/vat/penalty";
         var hmrcVatPenaltyGetLambdaHandlerName = "hmrcVatPenaltyGet.handler";
         var hmrcVatPenaltyGetLambdaHandlerDashed =
                 ResourceNameUtils.convertCamelCaseToDashSeparated(hmrcVatPenaltyGetLambdaHandlerName);
         this.hmrcVatPenaltyGetLambdaFunctionName =
-                "%s-%s".formatted(this.appCompressedResourceNamePrefix, hmrcVatPenaltyGetLambdaHandlerDashed);
+                "%s-%s".formatted(this.appResourceNamePrefix, hmrcVatPenaltyGetLambdaHandlerDashed);
         this.hmrcVatPenaltyGetLambdaHandler =
                 "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcVatPenaltyGetLambdaHandlerName);
-        this.hmrcVatPenaltyGetLambdaArn = "%s-hmrc-vat-penalty-get".formatted(appCompressedLambdaArnPrefix);
-        this.hmrcVatPenaltyGetLambdaHttpMethod = HttpMethod.GET;
-        this.hmrcVatPenaltyGetLambdaUrlPath = "/api/v1/hmrc/vat/penalty";
+        this.hmrcVatPenaltyGetLambdaArn =
+                "%s-%s".formatted(appCompressedLambdaArnPrefix, hmrcVatPenaltyGetLambdaHandlerDashed);
 
+        this.hmrcVatReturnGetLambdaHttpMethod = HttpMethod.GET;
+        this.hmrcVatReturnGetLambdaUrlPath = "/api/v1/hmrc/vat/return";
         var hmrcVatReturnGetLambdaHandlerName = "hmrcVatReturnGet.handler";
         var hmrcVatReturnGetLambdaHandlerDashed =
                 ResourceNameUtils.convertCamelCaseToDashSeparated(hmrcVatReturnGetLambdaHandlerName);
         this.hmrcVatReturnGetLambdaFunctionName =
-                "%s-%s".formatted(this.appCompressedResourceNamePrefix, hmrcVatReturnGetLambdaHandlerDashed);
+                "%s-%s".formatted(this.appResourceNamePrefix, hmrcVatReturnGetLambdaHandlerDashed);
         this.hmrcVatReturnGetLambdaHandler =
                 "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcVatReturnGetLambdaHandlerName);
-        this.hmrcVatReturnGetLambdaArn = "%s-hmrc-vat-return-get".formatted(appCompressedLambdaArnPrefix);
-        this.hmrcVatReturnGetLambdaHttpMethod = HttpMethod.GET;
-        this.hmrcVatReturnGetLambdaUrlPath = "/api/v1/hmrc/vat/return";
+        this.hmrcVatReturnGetLambdaArn =
+                "%s-%s".formatted(appCompressedLambdaArnPrefix, hmrcVatReturnGetLambdaHandlerDashed);
 
+        this.receiptPostLambdaHttpMethod = HttpMethod.POST;
+        this.receiptPostLambdaUrlPath = "/api/v1/hmrc/receipt";
         var receiptPostLambdaHandlerName = "hmrcReceiptPost.handler";
         var receiptPostLambdaHandlerDashed =
                 ResourceNameUtils.convertCamelCaseToDashSeparated(receiptPostLambdaHandlerName);
         this.receiptPostLambdaFunctionName =
                 "%s-%s".formatted(this.appResourceNamePrefix, receiptPostLambdaHandlerDashed);
         this.receiptPostLambdaHandler = "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, receiptPostLambdaHandlerName);
-        this.receiptPostLambdaArn = "%s-hmrc-receipt-post".formatted(appLambdaArnPrefix);
-        this.receiptPostLambdaHttpMethod = HttpMethod.POST;
-        this.receiptPostLambdaUrlPath = "/api/v1/hmrc/receipt";
+        this.receiptPostLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, receiptPostLambdaHandlerDashed);
 
+        this.receiptGetLambdaHttpMethod = HttpMethod.GET;
+        this.receiptGetLambdaUrlPath = "/api/v1/hmrc/receipt";
         var receiptGetLambdaHandlerName = "hmrcReceiptGet.handler";
         var receiptGetLambdaHandlerDashed =
                 ResourceNameUtils.convertCamelCaseToDashSeparated(receiptGetLambdaHandlerName);
         this.receiptGetLambdaFunctionName =
                 "%s-%s".formatted(this.appResourceNamePrefix, receiptGetLambdaHandlerDashed);
         this.receiptGetLambdaHandler = "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, receiptGetLambdaHandlerName);
-        this.receiptGetLambdaArn = "%s-hmrc-receipt-get".formatted(appLambdaArnPrefix);
-        this.receiptGetLambdaHttpMethod = HttpMethod.GET;
-        this.receiptGetLambdaUrlPath = "/api/v1/hmrc/receipt";
+        this.receiptGetLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, receiptGetLambdaHandlerDashed);
 
+        this.catalogGetLambdaHttpMethod = HttpMethod.GET;
+        this.catalogGetLambdaUrlPath = "/api/v1/catalog";
         var catalogGetLambdaHandlerName = "catalogGet.handler";
         var catalogGetLambdaHandlerDashed =
                 ResourceNameUtils.convertCamelCaseToDashSeparated(catalogGetLambdaHandlerName);
         this.catalogGetLambdaFunctionName =
                 "%s-%s".formatted(this.appResourceNamePrefix, catalogGetLambdaHandlerDashed);
         this.catalogGetLambdaHandler = "%s/account/%s".formatted(appLambdaHandlerPrefix, catalogGetLambdaHandlerName);
-        this.catalogGetLambdaArn = "%s-catalog-get".formatted(appLambdaArnPrefix);
-        this.catalogGetLambdaHttpMethod = HttpMethod.GET;
-        this.catalogGetLambdaUrlPath = "/api/v1/catalog";
+        this.catalogGetLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, catalogGetLambdaHandlerDashed);
 
+        this.bundleGetLambdaHttpMethod = HttpMethod.GET;
+        this.bundleGetLambdaUrlPath = "/api/v1/bundle";
         var bundleGetLambdaHandlerName = "bundleGet.handler";
         var bundleGetLambdaHandlerDashed =
                 ResourceNameUtils.convertCamelCaseToDashSeparated(bundleGetLambdaHandlerName);
         this.bundleGetLambdaFunctionName = "%s-%s".formatted(this.appResourceNamePrefix, bundleGetLambdaHandlerDashed);
         this.bundleGetLambdaHandler = "%s/account/%s".formatted(appLambdaHandlerPrefix, bundleGetLambdaHandlerName);
-        this.bundleGetLambdaArn = "%s-bundle-get".formatted(appLambdaArnPrefix);
-        this.bundleGetLambdaHttpMethod = HttpMethod.GET;
-        this.bundleGetLambdaUrlPath = "/api/v1/bundle";
+        this.bundleGetLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, bundleGetLambdaHandlerDashed);
 
+        this.bundlePostLambdaHttpMethod = HttpMethod.POST;
+        this.bundlePostLambdaUrlPath = "/api/v1/bundle";
         var bundlePostLambdaHandlerName = "bundlePost.handler";
         var bundlePostLambdaHandlerDashed =
                 ResourceNameUtils.convertCamelCaseToDashSeparated(bundlePostLambdaHandlerName);
         this.bundlePostLambdaFunctionName =
                 "%s-%s".formatted(this.appResourceNamePrefix, bundlePostLambdaHandlerDashed);
         this.bundlePostLambdaHandler = "%s/account/%s".formatted(appLambdaHandlerPrefix, bundlePostLambdaHandlerName);
-        this.bundlePostLambdaArn = "%s-bundle-post".formatted(appLambdaArnPrefix);
-        this.bundlePostLambdaHttpMethod = HttpMethod.POST;
-        this.bundlePostLambdaUrlPath = "/api/v1/bundle";
+        this.bundlePostLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, bundlePostLambdaHandlerDashed);
 
+        this.bundleDeleteLambdaHttpMethod = HttpMethod.DELETE;
+        this.bundleDeleteLambdaUrlPath = "/api/v1/bundle";
+
+        // Published API Lambdas used by OpenAPI generator (only published to end users)
+        // Note: Paths include /api/v1 prefix; OpenApiGenerator strips it because server.url already ends with /api/v1/
+        publishedApiLambdas.add(new PublishedLambda(
+                this.cognitoAuthUrlGetLambdaHttpMethod,
+                this.cognitoAuthUrlGetLambdaUrlPath,
+                "Get Cognito authentication URL",
+                "Returns the Cognito OAuth2 authorization URL for user login",
+                "getCognitoAuthUrl"));
+        publishedApiLambdas.add(new PublishedLambda(
+                this.cognitoTokenPostLambdaHttpMethod,
+                this.cognitoTokenPostLambdaUrlPath,
+                "Exchange Cognito authorization code for access token",
+                "Exchanges an authorization code for a Cognito access token",
+                "exchangeCognitoToken"));
+        publishedApiLambdas.add(new PublishedLambda(
+                this.hmrcAuthUrlGetLambdaHttpMethod,
+                this.hmrcAuthUrlGetLambdaUrlPath,
+                "Get HMRC authentication URL",
+                "Returns the HMRC OAuth2 authorization URL for accessing HMRC APIs",
+                "getHmrcAuthUrl"));
+        publishedApiLambdas.add(new PublishedLambda(
+                this.hmrcTokenPostLambdaHttpMethod,
+                this.hmrcTokenPostLambdaUrlPath,
+                "Exchange HMRC authorization code for access token",
+                "Exchanges an HMRC authorization code for an access token",
+                "exchangeHmrcToken"));
+        publishedApiLambdas.add(new PublishedLambda(
+                this.hmrcVatReturnPostLambdaHttpMethod,
+                this.hmrcVatReturnPostLambdaUrlPath,
+                "Submit VAT return to HMRC",
+                "Submits a VAT return to HMRC on behalf of the authenticated user",
+                "submitVatReturn"));
+        publishedApiLambdas.add(new PublishedLambda(
+                this.receiptPostLambdaHttpMethod,
+                this.receiptPostLambdaUrlPath,
+                "Log receipt to storage",
+                "Logs a transaction receipt to secure storage",
+                "logReceipt"));
+        publishedApiLambdas.add(new PublishedLambda(
+                this.receiptGetLambdaHttpMethod,
+                this.receiptGetLambdaUrlPath,
+                "Retrieve stored receipts",
+                "Retrieves previously stored receipts for the authenticated user",
+                "getReceipts"));
+        publishedApiLambdas.add(new PublishedLambda(
+                this.catalogGetLambdaHttpMethod,
+                this.catalogGetLambdaUrlPath,
+                "Get product catalog",
+                "Retrieves the available product catalog",
+                "getCatalog"));
+        publishedApiLambdas.add(new PublishedLambda(
+                this.bundlePostLambdaHttpMethod,
+                this.bundlePostLambdaUrlPath,
+                "Request new bundle",
+                "Creates a new bundle request for the authenticated user",
+                "requestBundle"));
+        publishedApiLambdas.add(new PublishedLambda(
+                this.bundleGetLambdaHttpMethod,
+                this.bundleGetLambdaUrlPath,
+                "Get user bundles",
+                "Retrieves bundles for the authenticated user",
+                "getBundles"));
+        publishedApiLambdas.add(new PublishedLambda(
+                this.bundleDeleteLambdaHttpMethod,
+                this.bundleDeleteLambdaUrlPath,
+                "Delete bundle",
+                "Deletes a bundle for the authenticated user",
+                "deleteBundle"));
         var bundleDeleteLambdaHandlerName = "bundleDelete.handler";
         var bundleDeleteLambdaHandlerDashed =
                 ResourceNameUtils.convertCamelCaseToDashSeparated(bundleDeleteLambdaHandlerName);
@@ -404,8 +512,6 @@ public class SubmitSharedNames {
                 "%s-%s".formatted(this.appResourceNamePrefix, bundleDeleteLambdaHandlerDashed);
         this.bundleDeleteLambdaHandler =
                 "%s/account/%s".formatted(appLambdaHandlerPrefix, bundleDeleteLambdaHandlerName);
-        this.bundleDeleteLambdaArn = "%s-bundle-delete".formatted(appLambdaArnPrefix);
-        this.bundleDeleteLambdaHttpMethod = HttpMethod.DELETE;
-        this.bundleDeleteLambdaUrlPath = "/api/v1/bundle";
+        this.bundleDeleteLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, bundleDeleteLambdaHandlerDashed);
     }
 }
