@@ -4,8 +4,6 @@ import co.uk.diyaccounting.submit.SubmitSharedNames;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import software.amazon.awscdk.services.apigatewayv2.HttpMethod;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -64,7 +62,7 @@ public class OpenApiGenerator {
 
         // Introspect CDK code to discover API routes
         SubmitSharedNames sharedNames = SubmitSharedNames.forDocs();
-        
+
         // Build paths from published Lambda definitions discovered in CDK code
         ObjectNode paths = buildPathsFromCdkCode(mapper, sharedNames);
         openApi.set("paths", paths);
@@ -138,7 +136,7 @@ public class OpenApiGenerator {
                 operation.put("summary", pl.summary);
                 operation.put("description", pl.description);
                 operation.put("operationId", pl.operationId);
-                
+
                 String method = pl.method.name().toLowerCase();
                 pathItem.set(method, operation);
             }
@@ -159,7 +157,7 @@ public class OpenApiGenerator {
         // Categorize and enrich endpoints based on their path
         paths.fieldNames().forEachRemaining(path -> {
             ObjectNode pathItem = (ObjectNode) paths.get(path);
-            
+
             if (path.startsWith("/cognito/")) {
                 enrichCognitoEndpoints(pathItem, path, mapper);
             } else if (path.startsWith("/hmrc/")) {
@@ -183,13 +181,13 @@ public class OpenApiGenerator {
 
             ObjectNode responses = mapper.createObjectNode();
             ObjectNode response200 = mapper.createObjectNode();
-            
+
             if (path.equals("/cognito/authUrl")) {
                 response200.put("description", "Authentication URL returned successfully");
             } else if (path.equals("/cognito/token")) {
                 response200.put("description", "Token exchanged successfully");
             }
-            
+
             responses.set("200", response200);
             operation.set("responses", responses);
         });
@@ -271,9 +269,9 @@ public class OpenApiGenerator {
             case "/hmrc/authUrl" -> "HMRC authentication URL returned successfully";
             case "/hmrc/token" -> "HMRC token exchanged successfully";
             case "/hmrc/vat/return" -> "VAT return submitted successfully";
-            case "/hmrc/receipt" -> method.equals("post") 
-                ? "Receipt logged successfully" 
-                : "Receipts retrieved successfully";
+            case "/hmrc/receipt" -> method.equals("post")
+                    ? "Receipt logged successfully"
+                    : "Receipts retrieved successfully";
             default -> "Request completed successfully";
         };
     }
@@ -339,7 +337,6 @@ public class OpenApiGenerator {
     /**
      * Converts OpenAPI JSON to a simplified YAML format
      */
-
     private static String convertToYaml(ObjectNode openApi) {
         StringBuilder yaml = new StringBuilder();
         yaml.append("openapi: ").append(openApi.get("openapi").asText()).append("\n");
