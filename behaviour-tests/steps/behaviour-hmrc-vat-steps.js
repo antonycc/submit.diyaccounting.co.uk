@@ -145,3 +145,114 @@ export async function verifyVatSubmission(page) {
     console.log("VAT submission flow completed successfully");
   });
 }
+
+/* VAT Obligations Journey Steps */
+
+export async function initVatObligations(page) {
+  await test.step("The user navigates to VAT Obligations and sees the obligations form", async () => {
+    await loggedClick(page, "button:has-text('VAT Obligations (Sandbox API)')", "Starting VAT Obligations");
+    await page.waitForLoadState("networkidle");
+    await page.waitForTimeout(500);
+    await page.screenshot({
+      path: `target/behaviour-test-results/vatObligations-screenshots/010-obligations-page-${timestamp()}.png`,
+    });
+    await expect(page.locator("#vatObligationsForm")).toBeVisible();
+  });
+}
+
+export async function fillInVatObligations(page, hmrcTestVatNumber) {
+  await test.step("The user fills in the VAT obligations form with VRN", async () => {
+    await page.waitForTimeout(100);
+    await loggedFill(page, "#vrn", hmrcTestVatNumber, "Entering VAT registration number");
+    await page.waitForTimeout(500);
+    await page.screenshot({
+      path: `target/behaviour-test-results/vatObligations-screenshots/020-form-filled-${timestamp()}.png`,
+    });
+    await expect(page.locator("#retrieveBtn")).toBeVisible();
+  });
+}
+
+export async function submitVatObligationsForm(page) {
+  await test.step("The user submits the VAT obligations form", async () => {
+    await loggedClick(page, "#retrieveBtn", "Submitting VAT obligations form");
+    await page.waitForTimeout(1000);
+    await page.screenshot({
+      path: `target/behaviour-test-results/vatObligations-screenshots/030-after-submit-${timestamp()}.png`,
+    });
+  });
+}
+
+export async function verifyVatObligationsResults(page) {
+  await test.step("The user sees VAT obligations results displayed", async () => {
+    await page.waitForSelector("#obligationsResults", { state: "visible", timeout: 10000 });
+    await page.screenshot({
+      path: `target/behaviour-test-results/vatObligations-screenshots/040-results-displayed-${timestamp()}.png`,
+    });
+    const resultsContainer = page.locator("#obligationsResults");
+    await expect(resultsContainer).toBeVisible();
+
+    // Verify the table is displayed
+    const obligationsTable = page.locator("#obligationsTable");
+    await expect(obligationsTable).toBeVisible();
+
+    console.log("VAT obligations retrieval completed successfully");
+  });
+}
+
+/* View VAT Return Journey Steps */
+
+export async function initViewVatReturn(page) {
+  await test.step("The user navigates to View VAT Return and sees the return form", async () => {
+    await loggedClick(page, "button:has-text('View VAT Return (Sandbox API)')", "Starting View VAT Return");
+    await page.waitForLoadState("networkidle");
+    await page.waitForTimeout(500);
+    await page.screenshot({
+      path: `target/behaviour-test-results/viewVatReturn-screenshots/010-view-return-page-${timestamp()}.png`,
+    });
+    await expect(page.locator("#vatReturnForm")).toBeVisible();
+  });
+}
+
+// Default period key for Q1 2024 (Jan-Mar)
+const DEFAULT_PERIOD_KEY = "24A1";
+
+export async function fillInViewVatReturn(page, hmrcTestVatNumber, periodKey = DEFAULT_PERIOD_KEY) {
+  await test.step("The user fills in the view VAT return form with VRN and period key", async () => {
+    await page.waitForTimeout(100);
+    await loggedFill(page, "#vrn", hmrcTestVatNumber, "Entering VAT registration number");
+    await page.waitForTimeout(100);
+    await loggedFill(page, "#periodKey", periodKey, "Entering period key");
+    await page.waitForTimeout(500);
+    await page.screenshot({
+      path: `target/behaviour-test-results/viewVatReturn-screenshots/020-form-filled-${timestamp()}.png`,
+    });
+    await expect(page.locator("#retrieveBtn")).toBeVisible();
+  });
+}
+
+export async function submitViewVatReturnForm(page) {
+  await test.step("The user submits the view VAT return form", async () => {
+    await loggedClick(page, "#retrieveBtn", "Submitting view VAT return form");
+    await page.waitForTimeout(1000);
+    await page.screenshot({
+      path: `target/behaviour-test-results/viewVatReturn-screenshots/030-after-submit-${timestamp()}.png`,
+    });
+  });
+}
+
+export async function verifyViewVatReturnResults(page) {
+  await test.step("The user sees VAT return details displayed", async () => {
+    await page.waitForSelector("#returnResults", { state: "visible", timeout: 10000 });
+    await page.screenshot({
+      path: `target/behaviour-test-results/viewVatReturn-screenshots/040-results-displayed-${timestamp()}.png`,
+    });
+    const resultsContainer = page.locator("#returnResults");
+    await expect(resultsContainer).toBeVisible();
+
+    // Verify the details are displayed
+    const returnDetails = page.locator("#returnDetails");
+    await expect(returnDetails).toBeVisible();
+
+    console.log("View VAT return completed successfully");
+  });
+}
