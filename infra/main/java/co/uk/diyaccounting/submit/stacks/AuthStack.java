@@ -53,8 +53,8 @@ public class AuthStack extends Stack {
         @Override
         String resourceNamePrefix();
 
-        //@Override
-        //String compressedResourceNamePrefix();
+        // @Override
+        // String compressedResourceNamePrefix();
 
         @Override
         String cloudTrailEnabled();
