@@ -1,14 +1,13 @@
 package co.uk.diyaccounting.submit;
 
-import co.uk.diyaccounting.submit.utils.ResourceNameUtils;
-import software.amazon.awscdk.services.apigatewayv2.HttpMethod;
-
-import java.util.ArrayList;
-import java.util.List;
-
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDashedDomainName;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.convertDotSeparatedToDashSeparated;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateResourceNamePrefix;
+
+import co.uk.diyaccounting.submit.utils.ResourceNameUtils;
+import java.util.ArrayList;
+import java.util.List;
+import software.amazon.awscdk.services.apigatewayv2.HttpMethod;
 
 public class SubmitSharedNames {
 
@@ -53,7 +52,7 @@ public class SubmitSharedNames {
 
     public String envDashedDomainName;
     public String envResourceNamePrefix;
-    //public String envCompressedResourceNamePrefix;
+    // public String envCompressedResourceNamePrefix;
     public String observabilityStackId;
     public String observabilityUE1StackId;
     public String dataStackId;
@@ -61,7 +60,7 @@ public class SubmitSharedNames {
     public String apexStackId;
 
     public String appResourceNamePrefix;
-    //public String appCompressedResourceNamePrefix;
+    // public String appCompressedResourceNamePrefix;
     public String devStackId;
     public String authStackId;
     public String hmrcStackId;
@@ -171,7 +170,7 @@ public class SubmitSharedNames {
     public String bundleDeleteLambdaUrlPath;
 
     public String delResourceNamePrefix;
-    //public String delCompressedResourceNamePrefix;
+    // public String delCompressedResourceNamePrefix;
     public String edgeStackId;
     public String publishStackId;
     public String delSelfDestructStackId;
@@ -217,7 +216,7 @@ public class SubmitSharedNames {
         this.envBaseUrl = "https://%s/".formatted(this.envDomainName);
         this.envDashedDomainName = buildDashedDomainName(this.envDomainName);
         this.envResourceNamePrefix = "%s-env".formatted(generateResourceNamePrefix(this.envDomainName));
-        //this.envCompressedResourceNamePrefix =
+        // this.envCompressedResourceNamePrefix =
         //        "%s-e".formatted(generateCompressedResourceNamePrefix(this.envDomainName));
         this.observabilityStackId = "%s-env-ObservabilityStack".formatted(props.envName);
         this.observabilityUE1StackId = "%s-env-ObservabilityUE1Stack".formatted(props.envName);
@@ -237,7 +236,7 @@ public class SubmitSharedNames {
         this.apiAccessLogGroupName = "/aws/apigw/%s/access".formatted(this.envResourceNamePrefix);
 
         this.appResourceNamePrefix = "%s-app".formatted(generateResourceNamePrefix(this.deploymentDomainName));
-        //this.appCompressedResourceNamePrefix =
+        // this.appCompressedResourceNamePrefix =
         //        "%s-a".formatted(generateCompressedResourceNamePrefix(this.deploymentDomainName));
         this.devStackId = "%s-app-DevStack".formatted(props.deploymentName);
         this.authStackId = "%s-app-AuthStack".formatted(props.deploymentName);
@@ -253,7 +252,7 @@ public class SubmitSharedNames {
         this.ecrPublishRoleName = "%s-ecr-publish-role".formatted(appResourceNamePrefix);
 
         this.delResourceNamePrefix = "%s-del".formatted(generateResourceNamePrefix(this.deploymentDomainName));
-        //this.delCompressedResourceNamePrefix =
+        // this.delCompressedResourceNamePrefix =
         //        "%s-d".formatted(generateCompressedResourceNamePrefix(this.deploymentDomainName));
         this.edgeStackId = "%s-del-EdgeStack".formatted(props.deploymentName);
         this.publishStackId = "%s-del-PublishStack".formatted(props.deploymentName);
@@ -267,7 +266,7 @@ public class SubmitSharedNames {
         var appLambdaHandlerPrefix = "app/functions";
         var appLambdaArnPrefix = "arn:aws:lambda:%s:%s:function:%s"
                 .formatted(props.regionName, props.awsAccount, this.appResourceNamePrefix);
-        //var appCompressedLambdaArnPrefix = "arn:aws:lambda:%s:%s:function:%s"
+        // var appCompressedLambdaArnPrefix = "arn:aws:lambda:%s:%s:function:%s"
         //        .formatted(props.regionName, props.awsAccount, this.appCompressedResourceNamePrefix);
 
         this.cognitoAuthUrlGetLambdaHttpMethod = HttpMethod.GET;
@@ -358,8 +357,7 @@ public class SubmitSharedNames {
                 "%s-%s".formatted(this.appResourceNamePrefix, hmrcVatPaymentGetLambdaHandlerDashed);
         this.hmrcVatPaymentGetLambdaHandler =
                 "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcVatPaymentGetLambdaHandlerName);
-        this.hmrcVatPaymentGetLambdaArn =
-                "%s-%s".formatted(appLambdaArnPrefix, hmrcVatPaymentGetLambdaHandlerDashed);
+        this.hmrcVatPaymentGetLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, hmrcVatPaymentGetLambdaHandlerDashed);
 
         this.hmrcVatPenaltyGetLambdaHttpMethod = HttpMethod.GET;
         this.hmrcVatPenaltyGetLambdaUrlPath = "/api/v1/hmrc/vat/penalty";
@@ -370,8 +368,7 @@ public class SubmitSharedNames {
                 "%s-%s".formatted(this.appResourceNamePrefix, hmrcVatPenaltyGetLambdaHandlerDashed);
         this.hmrcVatPenaltyGetLambdaHandler =
                 "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcVatPenaltyGetLambdaHandlerName);
-        this.hmrcVatPenaltyGetLambdaArn =
-                "%s-%s".formatted(appLambdaArnPrefix, hmrcVatPenaltyGetLambdaHandlerDashed);
+        this.hmrcVatPenaltyGetLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, hmrcVatPenaltyGetLambdaHandlerDashed);
 
         this.hmrcVatReturnGetLambdaHttpMethod = HttpMethod.GET;
         this.hmrcVatReturnGetLambdaUrlPath = "/api/v1/hmrc/vat/return";
@@ -382,8 +379,7 @@ public class SubmitSharedNames {
                 "%s-%s".formatted(this.appResourceNamePrefix, hmrcVatReturnGetLambdaHandlerDashed);
         this.hmrcVatReturnGetLambdaHandler =
                 "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcVatReturnGetLambdaHandlerName);
-        this.hmrcVatReturnGetLambdaArn =
-                "%s-%s".formatted(appLambdaArnPrefix, hmrcVatReturnGetLambdaHandlerDashed);
+        this.hmrcVatReturnGetLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, hmrcVatReturnGetLambdaHandlerDashed);
 
         this.receiptPostLambdaHttpMethod = HttpMethod.POST;
         this.receiptPostLambdaUrlPath = "/api/v1/hmrc/receipt";

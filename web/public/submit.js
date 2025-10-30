@@ -81,8 +81,11 @@ function fetchWithId(url, opts = {}) {
 }
 
 // Auth API functions
-async function getAuthUrl(state, provider = "hmrc") {
-  const url = `/api/v1/${provider}/authUrl?state=${encodeURIComponent(state)}`;
+async function getAuthUrl(state, provider = "hmrc", scope = null) {
+  let url = `/api/v1/${provider}/authUrl?state=${encodeURIComponent(state)}`;
+  if (scope) {
+    url += `&scope=${encodeURIComponent(scope)}`;
+  }
   console.log(`Getting auth URL. Remote call initiated: GET ${url}`);
 
   const response = await fetchWithId(url);
@@ -212,6 +215,114 @@ function getIPViaWebRTC() {
       reject(error);
     }
   });
+}
+
+// Build Gov-Client fraud prevention headers from browser environment
+async function getGovClientHeaders() {
+  const headers = {};
+
+  try {
+    // Browser JS User Agent
+    if (navigator.userAgent) {
+      headers["Gov-Client-Browser-JS-User-Agent"] = navigator.userAgent;
+    }
+
+    // Device ID (random UUID for this session)
+    if (crypto && crypto.randomUUID) {
+      headers["Gov-Client-Device-ID"] = crypto.randomUUID();
+    }
+
+    // Multi-Factor (always OTHER for web clients)
+    headers["Gov-Client-Multi-Factor"] = "type=OTHER";
+
+    // Public IP with enhanced detection
+    const detectedIP = await getClientIP();
+    if (detectedIP) {
+      headers["Gov-Client-Public-IP"] = detectedIP;
+      headers["Gov-Vendor-Public-IP"] = detectedIP;
+      headers["Gov-Client-Public-IP-Timestamp"] = new Date().toISOString();
+    }
+
+    // Public Port
+    const port = window.location.port || (window.location.protocol === "https:" ? "443" : "80");
+    headers["Gov-Client-Public-Port"] = port;
+
+    // Screen dimensions
+    if (window.screen) {
+      headers["Gov-Client-Screens"] = JSON.stringify({
+        width: window.screen.width,
+        height: window.screen.height,
+        colorDepth: window.screen.colorDepth,
+        pixelDepth: window.screen.pixelDepth,
+      });
+    }
+
+    // Timezone
+    try {
+      headers["Gov-Client-Timezone"] = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    } catch (_) {}
+
+    // Window size
+    headers["Gov-Client-Window-Size"] = JSON.stringify({
+      width: window.innerWidth,
+      height: window.innerHeight,
+    });
+
+    // User IDs (placeholder for now)
+    headers["Gov-Client-User-IDs"] = "test=1";
+
+    // Vendor Forwarded (placeholder)
+    headers["Gov-Vendor-Forwarded"] = "test=1";
+  } catch (error) {
+    console.warn("Error building Gov-Client headers:", error);
+  }
+
+  return headers;
+}
+
+// Initiate HMRC OAuth flow with state management
+async function initiateHmrcAuth(currentPath, pendingData, scope = "read:vat") {
+  try {
+    // Generate random state for OAuth
+    const state = generateRandomState();
+
+    // Store OAuth state and current activity
+    sessionStorage.setItem("oauth_state", state);
+    localStorage.setItem("currentActivity", currentPath);
+
+    // Store pending data for restoration after OAuth
+    if (pendingData) {
+      localStorage.setItem("pendingOAuthData", JSON.stringify(pendingData));
+    }
+
+    console.log("Initiating HMRC OAuth with scope:", scope);
+    showStatus("Initiating HMRC authentication...", "info");
+
+    // Get auth URL with specified scope
+    const authResponse = await getAuthUrl(state, "hmrc", scope);
+
+    // Redirect to HMRC
+    window.location.href = authResponse.authUrl;
+  } catch (error) {
+    console.error("Error initiating HMRC auth:", error);
+    showStatus(`Authentication initiation failed: ${error.message}`, "error");
+    throw error;
+  }
+}
+
+// Generic OAuth callback handler
+function handleOAuthCallback(onSuccess) {
+  const accessToken = sessionStorage.getItem("hmrcAccessToken");
+  if (accessToken) {
+    console.log("OAuth callback handler: access token found");
+    if (onSuccess && typeof onSuccess === "function") {
+      onSuccess(accessToken);
+    }
+    return true;
+  } else {
+    console.log("OAuth callback handler: no access token found");
+    return false;
+  }
 }
 
 // Catalog helpers (browser-safe; no TOML parsing here to avoid bundling dependencies)
@@ -426,6 +537,10 @@ if (typeof window !== "undefined") {
   window.logReceipt = logReceipt;
   window.getClientIP = getClientIP;
   window.getIPViaWebRTC = getIPViaWebRTC;
+  // OAuth and Gov-Client helpers
+  window.getGovClientHeaders = getGovClientHeaders;
+  window.initiateHmrcAuth = initiateHmrcAuth;
+  window.handleOAuthCallback = handleOAuthCallback;
   // new helpers
   window.bundlesForActivity = bundlesForActivity;
   window.activitiesForBundle = activitiesForBundle;

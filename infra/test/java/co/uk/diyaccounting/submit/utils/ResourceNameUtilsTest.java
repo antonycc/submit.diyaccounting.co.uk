@@ -1,28 +1,29 @@
 package co.uk.diyaccounting.submit.utils;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.List;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.List;
+import org.junit.jupiter.api.Test;
+
 class ResourceNameUtilsTest {
 
-//    @Test
-//    void compressedAndRegularPrefixesAndTruncation() {
-//        assertEquals("oidc-e-c-dev", ResourceNameUtils.generateCompressedResourceNamePrefix("oidc.example.com", "dev"));
-//        assertEquals(
-//                "l-a-s-e-c-prod",
-//                ResourceNameUtils.generateCompressedResourceNamePrefix("login.auth.service.example.com", "prod"));
-//
-//        // Truncation to 16 chars (including '-')
-//        String longDomain = "really.long.domain.name.example.com";
-//        String pref = ResourceNameUtils.generateCompressedResourceNamePrefix(longDomain, "ci-build-123");
-//        assertTrue(pref.length() <= 16);
-//
-//        assertEquals("oidc-example-com-dev", ResourceNameUtils.generateResourceNamePrefix("oidc.example.com", "dev"));
-//    }
+    //    @Test
+    //    void compressedAndRegularPrefixesAndTruncation() {
+    //        assertEquals("oidc-e-c-dev", ResourceNameUtils.generateCompressedResourceNamePrefix("oidc.example.com",
+    // "dev"));
+    //        assertEquals(
+    //                "l-a-s-e-c-prod",
+    //                ResourceNameUtils.generateCompressedResourceNamePrefix("login.auth.service.example.com", "prod"));
+    //
+    //        // Truncation to 16 chars (including '-')
+    //        String longDomain = "really.long.domain.name.example.com";
+    //        String pref = ResourceNameUtils.generateCompressedResourceNamePrefix(longDomain, "ci-build-123");
+    //        assertTrue(pref.length() <= 16);
+    //
+    //        assertEquals("oidc-example-com-dev", ResourceNameUtils.generateResourceNamePrefix("oidc.example.com",
+    // "dev"));
+    //    }
 
     @Test
     void camelCaseAndDotConversions() {

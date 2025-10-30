@@ -15,7 +15,19 @@
   <body>
     <header>
       <div class="header-nav">
-        <a href="../index.html">← Back to Home</a>
+        <div class="hamburger-menu">
+          <button class="hamburger-btn" onclick="toggleMenu()">☰</button>
+          <div class="menu-dropdown" id="menuDropdown">
+            <a href="../index.html">Home</a>
+            <a href="../account/bundles.html">Bundles</a>
+            <a href="../account/receipts.html">Receipts</a>
+            <a href="../docs/index.html">API Docs</a>
+          </div>
+        </div>
+        <div class="auth-section">
+          <span class="login-status">Not logged in</span>
+          <a href="../auth/login.html" class="login-link">Log in</a>
+        </div>
       </div>
       <h1>VAT Obligations</h1>
       <p class="subtitle">Retrieve VAT obligations from HMRC</p>
@@ -115,6 +127,10 @@
     </div>
 
     <script src="../submit.js"></script>
+    <script src="../widgets/hamburger-menu.js"></script>
+    <script src="../widgets/auth-status.js"></script>
+    <script src="../widgets/status-messages.js"></script>
+    <script src="../widgets/loading-spinner.js"></script>
     <script>
       // Check if we're in sandbox/test mode to show developer options
       function initializePage() {
@@ -142,6 +158,76 @@
             devSection.style.display = isVisible ? "none" : "block";
             toggleBtn.textContent = isVisible ? "Show Developer Options" : "Hide Developer Options";
           });
+        }
+
+        // Check if we returned from OAuth
+        checkOAuthCallback();
+      }
+
+      // Check if we returned from OAuth and retrieve pending obligations
+      async function checkOAuthCallback() {
+        const accessToken = sessionStorage.getItem("hmrcAccessToken");
+        const pendingData = localStorage.getItem("pendingOAuthData");
+
+        if (accessToken && pendingData) {
+          try {
+            const data = JSON.parse(pendingData);
+            if (data.activity === "obligations") {
+              showStatus("Retrieving VAT obligations...", "info");
+              await retrieveObligations(data.vrn, data.fromDate, data.toDate, data.status, data.testScenario, accessToken);
+
+              // Clean up
+              localStorage.removeItem("pendingOAuthData");
+              localStorage.removeItem("currentActivity");
+              sessionStorage.removeItem("oauth_state");
+            }
+          } catch (error) {
+            console.error("Error processing OAuth callback:", error);
+            showStatus(`Failed to retrieve obligations: ${error.message}`, "error");
+            localStorage.removeItem("pendingOAuthData");
+          }
+        }
+      }
+
+      // Retrieve obligations from API
+      async function retrieveObligations(vrn, fromDate, toDate, status, testScenario, accessToken) {
+        try {
+          showLoading();
+
+          // Build query parameters
+          const params = new URLSearchParams({ vrn });
+          if (fromDate) params.append("from", fromDate);
+          if (toDate) params.append("to", toDate);
+          if (status) params.append("status", status);
+          if (testScenario) params.append("Gov-Test-Scenario", testScenario);
+
+          // Get Gov-Client headers
+          const govClientHeaders = await getGovClientHeaders();
+
+          const response = await fetchWithId(`/api/v1/hmrc/vat/obligation?${params}`, {
+            method: "GET",
+            headers: {
+              "Authorization": `Bearer ${accessToken}`,
+              "Content-Type": "application/json",
+              ...govClientHeaders,
+            },
+          });
+
+          const result = await response.json();
+
+          if (!response.ok) {
+            throw new Error(result.message || "Failed to retrieve obligations");
+          }
+
+          // Display results
+          displayObligations(result.obligations || []);
+          document.getElementById("obligationsResults").style.display = "block";
+          hideStatus();
+        } catch (error) {
+          console.error("Error retrieving obligations:", error);
+          showStatus(`Failed to retrieve obligations: ${error.message}`, "error");
+        } finally {
+          hideLoading();
         }
       }
 
@@ -171,39 +257,32 @@
           const status = formData.get("status");
           const testScenario = formData.get("testScenario");
 
-          // Build query parameters
-          const params = new URLSearchParams({ vrn });
-          if (fromDate) params.append("from", fromDate);
-          if (toDate) params.append("to", toDate);
-          if (status) params.append("status", status);
-          if (testScenario) params.append("Gov-Test-Scenario", testScenario);
+          // Check for access token
+          let accessToken = sessionStorage.getItem("hmrcAccessToken");
 
-          // Get access token (assuming it's stored from previous auth)
-          const accessToken = localStorage.getItem("hmrcAccessToken");
           if (!accessToken) {
-            throw new Error("No access token found. Please authorize with HMRC first.");
+            // No access token, initiate OAuth flow
+            showStatus("Initiating HMRC authentication...", "info");
+
+            // Store search parameters for restoration after OAuth
+            const pendingData = {
+              activity: "obligations",
+              vrn,
+              fromDate,
+              toDate,
+              status,
+              testScenario,
+            };
+
+            await initiateHmrcAuth(location.pathname, pendingData, "read:vat");
+            return; // Will redirect to HMRC
           }
 
-          const response = await fetch(`/api/v1/hmrc/vat/obligation?${params}`, {
-            method: "GET",
-            headers: {
-              "Authorization": `Bearer ${accessToken}`,
-              "Content-Type": "application/json",
-            },
-          });
-
-          const result = await response.json();
-
-          if (!response.ok) {
-            throw new Error(result.message || "Failed to retrieve obligations");
-          }
-
-          // Display results
-          displayObligations(result.obligations || []);
-          resultsContainer.style.display = "block";
+          // Have access token, proceed with retrieval
+          await retrieveObligations(vrn, fromDate, toDate, status, testScenario, accessToken);
         } catch (error) {
           console.error("Error retrieving obligations:", error);
-          showStatusMessage(error.message, "error");
+          showStatus(error.message, "error");
         } finally {
           // Hide loading
           loadingSpinner.style.display = "none";
@@ -274,18 +353,7 @@
       }
 
       function showStatusMessage(message, type = "info") {
-        const container = document.getElementById("statusMessagesContainer");
-        const messageDiv = document.createElement("div");
-        messageDiv.className = `status-message ${type}`;
-        messageDiv.textContent = message;
-        container.appendChild(messageDiv);
-
-        // Auto-remove after 5 seconds
-        setTimeout(() => {
-          if (messageDiv.parentNode) {
-            messageDiv.parentNode.removeChild(messageDiv);
-          }
-        }, 5000);
+        showStatus(message, type);
       }
 
       // New search button handler
@@ -294,7 +362,7 @@
         const resultsContainer = document.getElementById("obligationsResults");
         form.reset();
         resultsContainer.style.display = "none";
-        document.getElementById("statusMessagesContainer").innerHTML = "";
+        hideStatus();
       });
 
       // Initialize page when DOM is loaded
