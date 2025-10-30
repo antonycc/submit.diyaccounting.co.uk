@@ -3,13 +3,13 @@
 import { describe, test, expect, vi, beforeEach } from "vitest";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 
-import { handler as submitVatHandler } from "@app/functions/hmrcVatReturnPost.js";
+import { handler as submitVatHandler } from "@app/functions/hmrc/hmrcVatReturnPost.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
 // Mock global fetch
 const mockFetch = vi.fn();
-vi.stubGlobal('fetch', mockFetch);
+vi.stubGlobal("fetch", mockFetch);
 
 import { buildGovClientTestHeaders } from "@app/unit-tests/govClientTestHeader.js";
 

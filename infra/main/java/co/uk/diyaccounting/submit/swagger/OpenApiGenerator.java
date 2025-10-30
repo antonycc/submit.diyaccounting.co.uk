@@ -1,5 +1,6 @@
 package co.uk.diyaccounting.submit.swagger;
 
+import co.uk.diyaccounting.submit.SubmitSharedNames;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -8,11 +9,22 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
- * Generates OpenAPI/Swagger documentation for the API Gateway endpoints
+ * Generates OpenAPI/Swagger documentation for the API Gateway endpoints by examining
+ * the CDK infrastructure code and extracting route definitions from SubmitSharedNames.
+ * <p>
+ * This generator introspects the available CDK code structure to automatically discover
+ * API routes, their methods, paths, and metadata, eliminating the need for manual
+ * hardcoding of endpoint definitions.
  */
 public class OpenApiGenerator {
+
+    private static final String OPENAPI_VERSION = "3.0.3";
+    private static final String API_TITLE = "DIY Accounting Submit API";
+    private static final String API_DESCRIPTION = "DIY Accounting Submit API documentation";
 
     public static void main(String[] args) {
         if (args.length != 3) {
@@ -38,34 +50,43 @@ public class OpenApiGenerator {
 
         // Create OpenAPI 3.0 specification
         ObjectNode openApi = mapper.createObjectNode();
-        openApi.put("openapi", "3.0.3");
+        openApi.put("openapi", OPENAPI_VERSION);
 
         // Info section
-        ObjectNode info = mapper.createObjectNode();
-        info.put("title", "DIY Accounting Submit API");
-        info.put("description", "DIY Accounting Submit API documentation");
-        info.put("version", version);
+        ObjectNode info = createInfoSection(mapper, version);
         openApi.set("info", info);
 
-        // Servers section - will be populated with actual API Gateway URL
-        ArrayNode servers = mapper.createArrayNode();
-        ObjectNode server = mapper.createObjectNode();
-        server.put("url", "%sapi/v1/".formatted(baseUrl));
-        server.put("description", "DIY Accounting Submit API documentation");
-        // ObjectNode serverVariables = mapper.createObjectNode();
-        // ObjectNode apiIdVar = mapper.createObjectNode();
-        // apiIdVar.put("description", "API Gateway ID");
-        // apiIdVar.put("default", "your-api-id");
-        // ObjectNode regionVar = mapper.createObjectNode();
-        // regionVar.put("description", "AWS Region");
-        // regionVar.put("default", "eu-west-2");
-        // serverVariables.set("apiId", apiIdVar);
-        // serverVariables.set("region", regionVar);
-        // server.set("variables", serverVariables);
-        servers.add(server);
+        // Servers section - parameterized base URL
+        ArrayNode servers = createServersSection(mapper, baseUrl);
         openApi.set("servers", servers);
 
-        // Add authentication info
+        // Introspect CDK code to discover API routes
+        SubmitSharedNames sharedNames = SubmitSharedNames.forDocs();
+
+        // Build paths from published Lambda definitions discovered in CDK code
+        ObjectNode paths = buildPathsFromCdkCode(mapper, sharedNames);
+        openApi.set("paths", paths);
+
+        // Components section for security schemes
+        ObjectNode components = createComponentsSection(mapper);
+        openApi.set("components", components);
+
+        // Write the OpenAPI spec to files
+        writeSpecificationFiles(mapper, openApi, outputDir);
+
+        // Generate Swagger UI HTML
+        generateSwaggerUiHtml(Paths.get(outputDir));
+    }
+
+    /**
+     * Creates the info section with authentication guide
+     */
+    private static ObjectNode createInfoSection(ObjectMapper mapper, String version) {
+        ObjectNode info = mapper.createObjectNode();
+        info.put("title", API_TITLE);
+        info.put("description", API_DESCRIPTION);
+        info.put("version", version);
+
         ObjectNode authInfo = mapper.createObjectNode();
         authInfo.put(
                 "description",
@@ -79,18 +100,202 @@ public class OpenApiGenerator {
                         + "**Note**: All endpoints require proper CORS headers and are accessible from the same domain as the main application.");
         info.set("x-authentication-guide", authInfo);
 
-        // Paths section
+        return info;
+    }
+
+    /**
+     * Creates the servers section with parameterized base URL
+     */
+    private static ArrayNode createServersSection(ObjectMapper mapper, String baseUrl) {
+        ArrayNode servers = mapper.createArrayNode();
+        ObjectNode server = mapper.createObjectNode();
+        server.put("url", "%sapi/v1/".formatted(baseUrl));
+        server.put("description", API_DESCRIPTION);
+        servers.add(server);
+        return servers;
+    }
+
+    /**
+     * Builds paths by introspecting the CDK code structure through SubmitSharedNames.
+     * This method examines the publishedApiLambdas which are discovered from the CDK stacks.
+     */
+    private static ObjectNode buildPathsFromCdkCode(ObjectMapper mapper, SubmitSharedNames sharedNames) {
         ObjectNode paths = mapper.createObjectNode();
 
-        // Get the shared names to access path definitions
-        // We'll use placeholder values since we can't instantiate SubmitSharedNames without props
-        addCognitoEndpoints(paths, mapper);
-        addHmrcEndpoints(paths, mapper);
-        addAccountEndpoints(paths, mapper);
+        // Group lambdas by path for easier processing
+        Map<String, List<SubmitSharedNames.PublishedLambda>> pathToLambdas = sharedNames.publishedApiLambdas.stream()
+                .collect(Collectors.groupingBy(pl -> pl.urlPath.replaceFirst("^/api/v1", "")));
 
-        openApi.set("paths", paths);
+        // Build base operations from discovered lambdas in CDK code
+        for (Map.Entry<String, List<SubmitSharedNames.PublishedLambda>> entry : pathToLambdas.entrySet()) {
+            String openApiPath = entry.getKey();
+            ObjectNode pathItem = mapper.createObjectNode();
 
-        // Components section for security schemes
+            for (SubmitSharedNames.PublishedLambda pl : entry.getValue()) {
+                ObjectNode operation = mapper.createObjectNode();
+                operation.put("summary", pl.summary);
+                operation.put("description", pl.description);
+                operation.put("operationId", pl.operationId);
+
+                String method = pl.method.name().toLowerCase();
+                pathItem.set(method, operation);
+            }
+
+            paths.set(openApiPath, pathItem);
+        }
+
+        // Apply endpoint-specific enrichments (tags, security, responses)
+        enrichEndpoints(paths, mapper);
+
+        return paths;
+    }
+
+    /**
+     * Enriches endpoints with tags, security, and response definitions based on path patterns
+     */
+    private static void enrichEndpoints(ObjectNode paths, ObjectMapper mapper) {
+        // Categorize and enrich endpoints based on their path
+        paths.fieldNames().forEachRemaining(path -> {
+            ObjectNode pathItem = (ObjectNode) paths.get(path);
+
+            if (path.startsWith("/cognito/")) {
+                enrichCognitoEndpoints(pathItem, path, mapper);
+            } else if (path.startsWith("/hmrc/")) {
+                enrichHmrcEndpoints(pathItem, path, mapper);
+            } else if (path.matches("/(catalog|bundle).*")) {
+                enrichAccountEndpoints(pathItem, path, mapper);
+            }
+        });
+    }
+
+    /**
+     * Enriches Cognito authentication endpoints
+     */
+    private static void enrichCognitoEndpoints(ObjectNode pathItem, String path, ObjectMapper mapper) {
+        ArrayNode tags = mapper.createArrayNode();
+        tags.add("Authentication");
+
+        pathItem.fieldNames().forEachRemaining(method -> {
+            ObjectNode operation = (ObjectNode) pathItem.get(method);
+            operation.set("tags", tags);
+
+            ObjectNode responses = mapper.createObjectNode();
+            ObjectNode response200 = mapper.createObjectNode();
+
+            if (path.equals("/cognito/authUrl")) {
+                response200.put("description", "Authentication URL returned successfully");
+            } else if (path.equals("/cognito/token")) {
+                response200.put("description", "Token exchanged successfully");
+            }
+
+            responses.set("200", response200);
+            operation.set("responses", responses);
+        });
+    }
+
+    /**
+     * Enriches HMRC endpoints with appropriate security and tags
+     */
+    private static void enrichHmrcEndpoints(ObjectNode pathItem, String path, ObjectMapper mapper) {
+        ArrayNode hmrcTags = mapper.createArrayNode();
+        hmrcTags.add("HMRC");
+
+        // Security requirement arrays
+        ArrayNode cognitoSecurityArr = createSecurityRequirement(mapper, "CognitoAuth");
+        ArrayNode hmrcSecurityArr = createSecurityRequirement(mapper, "HmrcAuth");
+
+        pathItem.fieldNames().forEachRemaining(method -> {
+            ObjectNode operation = (ObjectNode) pathItem.get(method);
+            operation.set("tags", hmrcTags);
+
+            // Determine appropriate security based on path
+            if (path.equals("/hmrc/vat/return") && method.equals("post")) {
+                operation.set("security", hmrcSecurityArr);
+            } else if (!path.equals("/hmrc/vat/return")) {
+                operation.set("security", cognitoSecurityArr);
+            }
+
+            // Add appropriate response
+            ObjectNode responses = mapper.createObjectNode();
+            ObjectNode response200 = mapper.createObjectNode();
+            response200.put("description", getHmrcResponseDescription(path, method));
+            responses.set("200", response200);
+            operation.set("responses", responses);
+        });
+    }
+
+    /**
+     * Enriches Account endpoints (catalog, bundle)
+     */
+    private static void enrichAccountEndpoints(ObjectNode pathItem, String path, ObjectMapper mapper) {
+        ArrayNode accountTags = mapper.createArrayNode();
+        accountTags.add("Account");
+
+        ArrayNode cognitoSecurity = createSecurityRequirement(mapper, "CognitoAuth");
+
+        pathItem.fieldNames().forEachRemaining(method -> {
+            ObjectNode operation = (ObjectNode) pathItem.get(method);
+            operation.set("tags", accountTags);
+
+            // Catalog doesn't require auth, but bundle operations do
+            if (path.equals("/bundle")) {
+                operation.set("security", cognitoSecurity);
+            }
+
+            ObjectNode responses = mapper.createObjectNode();
+            ObjectNode response200 = mapper.createObjectNode();
+            response200.put("description", getAccountResponseDescription(path, method));
+            responses.set("200", response200);
+            operation.set("responses", responses);
+        });
+    }
+
+    /**
+     * Creates a security requirement array for the given scheme
+     */
+    private static ArrayNode createSecurityRequirement(ObjectMapper mapper, String schemeName) {
+        ArrayNode securityArr = mapper.createArrayNode();
+        ObjectNode securityObj = mapper.createObjectNode();
+        securityObj.set(schemeName, mapper.createArrayNode());
+        securityArr.add(securityObj);
+        return securityArr;
+    }
+
+    /**
+     * Gets appropriate response description for HMRC endpoints
+     */
+    private static String getHmrcResponseDescription(String path, String method) {
+        return switch (path) {
+            case "/hmrc/authUrl" -> "HMRC authentication URL returned successfully";
+            case "/hmrc/token" -> "HMRC token exchanged successfully";
+            case "/hmrc/vat/return" -> "VAT return submitted successfully";
+            case "/hmrc/receipt" -> method.equals("post")
+                    ? "Receipt logged successfully"
+                    : "Receipts retrieved successfully";
+            default -> "Request completed successfully";
+        };
+    }
+
+    /**
+     * Gets appropriate response description for Account endpoints
+     */
+    private static String getAccountResponseDescription(String path, String method) {
+        return switch (path) {
+            case "/catalog" -> "Catalog retrieved successfully";
+            case "/bundle" -> switch (method) {
+                case "post" -> "Bundle created successfully";
+                case "get" -> "Bundles retrieved successfully";
+                case "delete" -> "Bundle deleted successfully";
+                default -> "Request completed successfully";
+            };
+            default -> "Request completed successfully";
+        };
+    }
+
+    /**
+     * Creates the components section with security schemes
+     */
+    private static ObjectNode createComponentsSection(ObjectMapper mapper) {
         ObjectNode components = mapper.createObjectNode();
         ObjectNode securitySchemes = mapper.createObjectNode();
 
@@ -108,9 +313,14 @@ public class OpenApiGenerator {
         securitySchemes.set("HmrcAuth", hmrcAuth);
 
         components.set("securitySchemes", securitySchemes);
-        openApi.set("components", components);
+        return components;
+    }
 
-        // Write the OpenAPI spec to files
+    /**
+     * Writes the OpenAPI specification to JSON and YAML files
+     */
+    private static void writeSpecificationFiles(ObjectMapper mapper, ObjectNode openApi, String outputDir)
+            throws IOException {
         Path outputPath = Paths.get(outputDir);
         Files.createDirectories(outputPath);
 
@@ -122,231 +332,12 @@ public class OpenApiGenerator {
         File yamlFile = outputPath.resolve("openapi.yaml").toFile();
         String yamlContent = convertToYaml(openApi);
         Files.writeString(yamlFile.toPath(), yamlContent);
-
-        // Generate Swagger UI HTML
-        generateSwaggerUiHtml(outputPath);
     }
 
-    private static void addCognitoEndpoints(ObjectNode paths, ObjectMapper mapper) {
-        // GET /cognito/authUrl
-        ObjectNode cognitoAuthUrl = mapper.createObjectNode();
-        ObjectNode getAuthUrl = mapper.createObjectNode();
-        getAuthUrl.put("summary", "Get Cognito authentication URL");
-        getAuthUrl.put("description", "Returns the Cognito OAuth2 authorization URL for user login");
-        getAuthUrl.put("operationId", "getCognitoAuthUrl");
-
-        ArrayNode getTags = mapper.createArrayNode();
-        getTags.add("Authentication");
-        getAuthUrl.set("tags", getTags);
-
-        ObjectNode getResponses = mapper.createObjectNode();
-        ObjectNode get200 = mapper.createObjectNode();
-        get200.put("description", "Authentication URL returned successfully");
-        getResponses.set("200", get200);
-        getAuthUrl.set("responses", getResponses);
-
-        cognitoAuthUrl.set("get", getAuthUrl);
-        paths.set("/cognito/authUrl", cognitoAuthUrl);
-
-        // POST /cognito/token
-        ObjectNode cognitoToken = mapper.createObjectNode();
-        ObjectNode postToken = mapper.createObjectNode();
-        postToken.put("summary", "Exchange Cognito authorization code for access token");
-        postToken.put("description", "Exchanges an authorization code for a Cognito access token");
-        postToken.put("operationId", "exchangeCognitoToken");
-
-        ArrayNode postTags = mapper.createArrayNode();
-        postTags.add("Authentication");
-        postToken.set("tags", postTags);
-
-        ObjectNode postResponses = mapper.createObjectNode();
-        ObjectNode post200 = mapper.createObjectNode();
-        post200.put("description", "Token exchanged successfully");
-        postResponses.set("200", post200);
-        postToken.set("responses", postResponses);
-
-        cognitoToken.set("post", postToken);
-        paths.set("/cognito/token", cognitoToken);
-    }
-
-    private static void addHmrcEndpoints(ObjectNode paths, ObjectMapper mapper) {
-        // GET /hmrc/authUrl
-        ObjectNode hmrcAuthUrl = mapper.createObjectNode();
-        ObjectNode getHmrcAuthUrl = mapper.createObjectNode();
-        getHmrcAuthUrl.put("summary", "Get HMRC authentication URL");
-        getHmrcAuthUrl.put("description", "Returns the HMRC OAuth2 authorization URL for accessing HMRC APIs");
-        getHmrcAuthUrl.put("operationId", "getHmrcAuthUrl");
-
-        ArrayNode getTags = mapper.createArrayNode();
-        getTags.add("HMRC");
-        getHmrcAuthUrl.set("tags", getTags);
-
-        ArrayNode security = mapper.createArrayNode();
-        ObjectNode cognitoSecurity = mapper.createObjectNode();
-        ArrayNode cognitoScopes = mapper.createArrayNode();
-        cognitoSecurity.set("CognitoAuth", cognitoScopes);
-        security.add(cognitoSecurity);
-        getHmrcAuthUrl.set("security", security);
-
-        ObjectNode getResponses = mapper.createObjectNode();
-        ObjectNode get200 = mapper.createObjectNode();
-        get200.put("description", "HMRC authentication URL returned successfully");
-        getResponses.set("200", get200);
-        getHmrcAuthUrl.set("responses", getResponses);
-
-        hmrcAuthUrl.set("get", getHmrcAuthUrl);
-        paths.set("/hmrc/authUrl", hmrcAuthUrl);
-
-        // POST /hmrc/token
-        ObjectNode hmrcToken = mapper.createObjectNode();
-        ObjectNode postHmrcToken = mapper.createObjectNode();
-        postHmrcToken.put("summary", "Exchange HMRC authorization code for access token");
-        postHmrcToken.put("description", "Exchanges an HMRC authorization code for an access token");
-        postHmrcToken.put("operationId", "exchangeHmrcToken");
-
-        ArrayNode postTags = mapper.createArrayNode();
-        postTags.add("HMRC");
-        postHmrcToken.set("tags", postTags);
-        postHmrcToken.set("security", security);
-
-        ObjectNode postResponses = mapper.createObjectNode();
-        ObjectNode post200 = mapper.createObjectNode();
-        post200.put("description", "HMRC token exchanged successfully");
-        postResponses.set("200", post200);
-        postHmrcToken.set("responses", postResponses);
-
-        hmrcToken.set("post", postHmrcToken);
-        paths.set("/hmrc/token", hmrcToken);
-
-        // POST /hmrc/vat/return
-        ObjectNode vatReturn = mapper.createObjectNode();
-        ObjectNode postVatReturn = mapper.createObjectNode();
-        postVatReturn.put("summary", "Submit VAT return to HMRC");
-        postVatReturn.put("description", "Submits a VAT return to HMRC on behalf of the authenticated user");
-        postVatReturn.put("operationId", "submitVatReturn");
-
-        postVatReturn.set("tags", postTags);
-
-        ArrayNode hmrcSecurity = mapper.createArrayNode();
-        ObjectNode hmrcSecurityItem = mapper.createObjectNode();
-        ArrayNode hmrcScopes = mapper.createArrayNode();
-        hmrcSecurityItem.set("HmrcAuth", hmrcScopes);
-        hmrcSecurity.add(hmrcSecurityItem);
-        postVatReturn.set("security", hmrcSecurity);
-
-        // Create a new response object for VAT return
-        ObjectNode vatReturnResponses = mapper.createObjectNode();
-        ObjectNode vatReturn200 = mapper.createObjectNode();
-        vatReturn200.put("description", "VAT return submitted successfully");
-        vatReturnResponses.set("200", vatReturn200);
-        postVatReturn.set("responses", vatReturnResponses);
-
-        vatReturn.set("post", postVatReturn);
-        paths.set("/hmrc/vat/return", vatReturn);
-
-        // POST /hmrc/receipt
-        ObjectNode hmrcReceipt = mapper.createObjectNode();
-        ObjectNode postReceipt = mapper.createObjectNode();
-        postReceipt.put("summary", "Log receipt to storage");
-        postReceipt.put("description", "Logs a transaction receipt to secure storage");
-        postReceipt.put("operationId", "logReceipt");
-        postReceipt.set("tags", postTags);
-        postReceipt.set("security", security);
-        // Create a new response object for receipt logging
-        ObjectNode postReceiptResponses = mapper.createObjectNode();
-        ObjectNode postReceipt200 = mapper.createObjectNode();
-        postReceipt200.put("description", "Receipt logged successfully");
-        postReceiptResponses.set("200", postReceipt200);
-        postReceipt.set("responses", postReceiptResponses);
-
-        // GET /hmrc/receipt
-        ObjectNode getReceipt = mapper.createObjectNode();
-        getReceipt.put("summary", "Retrieve stored receipts");
-        getReceipt.put("description", "Retrieves previously stored receipts for the authenticated user");
-        getReceipt.put("operationId", "getReceipts");
-        getReceipt.set("tags", postTags);
-        getReceipt.set("security", security);
-        getReceipt.set("responses", getResponses);
-
-        hmrcReceipt.set("post", postReceipt);
-        hmrcReceipt.set("get", getReceipt);
-        paths.set("/hmrc/receipt", hmrcReceipt);
-    }
-
-    private static void addAccountEndpoints(ObjectNode paths, ObjectMapper mapper) {
-        ArrayNode accountTags = mapper.createArrayNode();
-        accountTags.add("Account");
-
-        ArrayNode security = mapper.createArrayNode();
-        ObjectNode cognitoSecurity = mapper.createObjectNode();
-        ArrayNode cognitoScopes = mapper.createArrayNode();
-        cognitoSecurity.set("CognitoAuth", cognitoScopes);
-        security.add(cognitoSecurity);
-
-        // GET /catalog
-        ObjectNode catalog = mapper.createObjectNode();
-        ObjectNode getCatalog = mapper.createObjectNode();
-        getCatalog.put("summary", "Get product catalog");
-        getCatalog.put("description", "Retrieves the available product catalog");
-        getCatalog.put("operationId", "getCatalog");
-        getCatalog.set("tags", accountTags);
-
-        ObjectNode getResponses = mapper.createObjectNode();
-        ObjectNode get200 = mapper.createObjectNode();
-        get200.put("description", "Catalog retrieved successfully");
-        getResponses.set("200", get200);
-        getCatalog.set("responses", getResponses);
-
-        catalog.set("get", getCatalog);
-        paths.set("/catalog", catalog);
-
-        // Bundle endpoints
-        ObjectNode bundle = mapper.createObjectNode();
-
-        // POST /bundle
-        ObjectNode postBundle = mapper.createObjectNode();
-        postBundle.put("summary", "Request new bundle");
-        postBundle.put("description", "Creates a new bundle request for the authenticated user");
-        postBundle.put("operationId", "requestBundle");
-        postBundle.set("tags", accountTags);
-        postBundle.set("security", security);
-
-        ObjectNode postResponses = mapper.createObjectNode();
-        ObjectNode post200 = mapper.createObjectNode();
-        post200.put("description", "Bundle created successfully");
-        postResponses.set("200", post200);
-        postBundle.set("responses", postResponses);
-
-        // GET /bundle
-        ObjectNode getBundle = mapper.createObjectNode();
-        getBundle.put("summary", "Get user bundles");
-        getBundle.put("description", "Retrieves bundles for the authenticated user");
-        getBundle.put("operationId", "getBundles");
-        getBundle.set("tags", accountTags);
-        getBundle.set("security", security);
-        getBundle.set("responses", getResponses);
-
-        // DELETE /bundle
-        ObjectNode deleteBundle = mapper.createObjectNode();
-        deleteBundle.put("summary", "Delete bundle");
-        deleteBundle.put("description", "Deletes a bundle for the authenticated user");
-        deleteBundle.put("operationId", "deleteBundle");
-        deleteBundle.set("tags", accountTags);
-        deleteBundle.set("security", security);
-        ObjectNode deleteResponses = mapper.createObjectNode();
-        ObjectNode delete200 = mapper.createObjectNode();
-        delete200.put("description", "Bundle deleted successfully");
-        deleteResponses.set("200", delete200);
-        deleteBundle.set("responses", deleteResponses);
-
-        bundle.set("post", postBundle);
-        bundle.set("get", getBundle);
-        bundle.set("delete", deleteBundle);
-        paths.set("/bundle", bundle);
-    }
-
+    /**
+     * Converts OpenAPI JSON to a simplified YAML format
+     */
     private static String convertToYaml(ObjectNode openApi) {
-        // Simple JSON to YAML conversion for basic structure
         StringBuilder yaml = new StringBuilder();
         yaml.append("openapi: ").append(openApi.get("openapi").asText()).append("\n");
         yaml.append("info:\n");
@@ -363,6 +354,9 @@ public class OpenApiGenerator {
         return yaml.toString();
     }
 
+    /**
+     * Generates the Swagger UI HTML file
+     */
     private static void generateSwaggerUiHtml(Path outputPath) throws IOException {
         String swaggerUiHtml =
                 """

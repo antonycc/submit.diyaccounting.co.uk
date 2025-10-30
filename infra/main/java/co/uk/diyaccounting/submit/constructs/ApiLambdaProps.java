@@ -1,9 +1,10 @@
 package co.uk.diyaccounting.submit.constructs;
 
+import java.util.Map;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.RemovalPolicy;
-import software.amazon.awscdk.services.cloudfront.AllowedMethods;
+import software.amazon.awscdk.services.apigatewayv2.HttpMethod;
 import software.amazon.awscdk.services.cloudfront.CachePolicy;
 import software.amazon.awscdk.services.cloudfront.ICachePolicy;
 import software.amazon.awscdk.services.cloudfront.IOriginRequestPolicy;
@@ -17,20 +18,24 @@ import software.amazon.awscdk.services.lambda.InvokeMode;
 import software.amazon.awscdk.services.lambda.Runtime;
 import software.amazon.awscdk.services.logs.RetentionDays;
 
-import java.util.Map;
-
 /**
- * Props container for LambdaUrlOrigin construct. Mirrors the previous Builder fields
+ * Props container for ApiLambda construct. Mirrors the previous Builder fields
  * so callers can migrate to props-style configuration.
  */
 @Value.Immutable
-public interface LambdaUrlOriginProps {
+public interface ApiLambdaProps {
+
+    String idPrefix();
 
     String functionName();
 
     String handler();
 
-    String idPrefix();
+    String lambdaArn();
+
+    HttpMethod httpMethod();
+
+    String urlPath();
 
     @Value.Default
     default Duration timeout() {
@@ -42,10 +47,10 @@ public interface LambdaUrlOriginProps {
         return Map.of();
     }
 
-    @Value.Default
-    default AllowedMethods cloudFrontAllowedMethods() {
-        return AllowedMethods.ALLOW_GET_HEAD_OPTIONS;
-    }
+    // @Value.Default
+    // default AllowedMethods cloudFrontAllowedMethods() {
+    //    return AllowedMethods.ALLOW_GET_HEAD_OPTIONS;
+    // }
 
     @Value.Default
     default boolean skipBehaviorOptions() {
@@ -118,11 +123,7 @@ public interface LambdaUrlOriginProps {
 
     String ecrRepositoryName();
 
-    static ImmutableLambdaUrlOriginProps.Builder builder() {
-        return ImmutableLambdaUrlOriginProps.builder();
+    static ImmutableApiLambdaProps.Builder builder() {
+        return ImmutableApiLambdaProps.builder();
     }
 }
-// TODO: Add properties
-// public final lambdaArn = "%s-cognito-auth-url-get".formatted(appLambdaArnPrefix);
-// public final method = HttpMethod.GET;
-// public final path = "/api/v1/cognito/authUrl";

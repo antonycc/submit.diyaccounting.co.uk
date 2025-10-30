@@ -2,7 +2,7 @@
 import { describe, test, beforeEach, expect } from "vitest";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 
-import { handler as requestBundle } from "@app/functions/bundlePost.js";
+import { handler as requestBundle } from "@app/functions/account/bundlePost.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 

@@ -1,6 +1,6 @@
 // app/unit-tests/getCatalog.test.js
 import { describe, it, expect } from "vitest";
-import { handler as getCatalog } from "@app/functions/catalogGet.js";
+import { handler as getCatalog } from "@app/functions/account/catalogGet.js";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });

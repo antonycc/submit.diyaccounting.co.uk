@@ -14,10 +14,10 @@ import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
 // Import the actual handlers (not mocked for integration test)
-import { handler as exchangeTokenHandler } from "@app/functions/mockTokenPost.js";
-import { handler as submitVatHandler } from "@app/functions/hmrcVatReturnPost.js";
-import { handler as logReceiptHandler } from "@app/functions/hmrcReceiptPost.js";
-import { handler as authUrlHandler } from "@app/functions/hmrcAuthUrlGet.js";
+import { handler as exchangeTokenHandler } from "@app/functions/non-lambda-mocks/mockTokenPost.js";
+import { handler as submitVatHandler } from "@app/functions/hmrc/hmrcVatReturnPost.js";
+import { handler as logReceiptHandler } from "@app/functions/hmrc/hmrcReceiptPost.js";
+import { handler as authUrlHandler } from "@app/functions/hmrc/hmrcAuthUrlGet.js";
 
 const HMRC = "https://test-api.service.hmrc.gov.uk";
 const s3Mock = mockClient(S3Client);

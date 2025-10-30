@@ -1,8 +1,8 @@
 // app/functions/cognitoTokenPost.js
 
-import logger from "../lib/logger.js";
-import { extractRequest, httpBadRequestResponse, httpOkResponse, httpServerErrorResponse } from "../lib/responses.js";
-import { validateEnv } from "../lib/env.js";
+import logger from "../../lib/logger.js";
+import { extractRequest, httpBadRequestResponse, httpOkResponse, httpServerErrorResponse } from "../../lib/responses.js";
+import { validateEnv } from "../../lib/env.js";
 
 // POST /api/v1/cognito/token
 export async function handler(event) {

@@ -70,13 +70,10 @@ public class SubmitEnvironment {
 
     public static void main(final String[] args) {
         App app = new App();
-        SubmitEnvironmentProps appProps = loadAppProps(app);
+        SubmitEnvironment.SubmitEnvironmentProps appProps = loadAppProps(app);
         var submitEnvironment = new SubmitEnvironment(app, appProps);
         app.synth();
-        infof("CDK synth complete. Created stack: %s", submitEnvironment.apexStack.getStackName());
-        infof("Created stack: %s", submitEnvironment.observabilityStack.getStackName());
-        infof("Created stack: %s", submitEnvironment.identityStack.getStackName());
-        infof("Created stack: %s", submitEnvironment.apexStack.getStackName());
+        infof("CDK synth complete");
     }
 
     public SubmitEnvironment(App app, SubmitEnvironmentProps appProps) {
@@ -128,7 +125,7 @@ public class SubmitEnvironment {
                         .envName(envName)
                         .deploymentName(deploymentName)
                         .resourceNamePrefix(sharedNames.envResourceNamePrefix)
-                        .compressedResourceNamePrefix(sharedNames.envCompressedResourceNamePrefix)
+                        //.compressedResourceNamePrefix(sharedNames.envCompressedResourceNamePrefix)
                         .cloudTrailEnabled(cloudTrailEnabled)
                         .sharedNames(sharedNames)
                         .cloudTrailLogGroupPrefix(appProps.cloudTrailLogGroupPrefix)
@@ -149,7 +146,7 @@ public class SubmitEnvironment {
                         .envName(envName)
                         .deploymentName(deploymentName)
                         .resourceNamePrefix(sharedNames.envResourceNamePrefix)
-                        .compressedResourceNamePrefix(sharedNames.envCompressedResourceNamePrefix)
+                        //.compressedResourceNamePrefix(sharedNames.envCompressedResourceNamePrefix)
                         .cloudTrailEnabled(cloudTrailEnabled)
                         .sharedNames(sharedNames)
                         .logGroupRetentionPeriodDays(accessLogGroupRetentionPeriodDays)
@@ -168,7 +165,7 @@ public class SubmitEnvironment {
                         .envName(envName)
                         .deploymentName(deploymentName)
                         .resourceNamePrefix(sharedNames.envResourceNamePrefix)
-                        .compressedResourceNamePrefix(sharedNames.envCompressedResourceNamePrefix)
+                        //.compressedResourceNamePrefix(sharedNames.envCompressedResourceNamePrefix)
                         .cloudTrailEnabled(cloudTrailEnabled)
                         .sharedNames(sharedNames)
                         .s3RetainReceiptsBucket(s3RetainReceiptsBucket)
@@ -187,7 +184,7 @@ public class SubmitEnvironment {
                         .envName(envName)
                         .deploymentName(deploymentName)
                         .resourceNamePrefix(sharedNames.envResourceNamePrefix)
-                        .compressedResourceNamePrefix(sharedNames.envCompressedResourceNamePrefix)
+                        //.compressedResourceNamePrefix(sharedNames.envCompressedResourceNamePrefix)
                         .cloudTrailEnabled(cloudTrailEnabled)
                         .sharedNames(sharedNames)
                         .hostedZoneName(appProps.hostedZoneName)
@@ -208,7 +205,7 @@ public class SubmitEnvironment {
                         .envName(envName)
                         .deploymentName(envName)
                         .resourceNamePrefix(sharedNames.envResourceNamePrefix)
-                        .compressedResourceNamePrefix(sharedNames.envCompressedResourceNamePrefix)
+                        //.compressedResourceNamePrefix(sharedNames.envCompressedResourceNamePrefix)
                         .cloudTrailEnabled(cloudTrailEnabled)
                         .sharedNames(sharedNames)
                         .hostedZoneName(appProps.hostedZoneName)

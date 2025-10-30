@@ -82,9 +82,6 @@ public class SubmitDelivery {
         var submitDelivery = new SubmitDelivery(app, appProps);
         app.synth();
         infof("CDK synth complete");
-
-        infof("Created stack: %s", submitDelivery.edgeStack.getStackName());
-        infof("Created stack: %s", submitDelivery.publishStack.getStackName());
         if (submitDelivery.selfDestructStack != null) {
             infof("Created stack: %s", submitDelivery.selfDestructStack.getStackName());
         } else {
@@ -160,7 +157,7 @@ public class SubmitDelivery {
                         .envName(envName)
                         .deploymentName(deploymentName)
                         .resourceNamePrefix(sharedNames.delResourceNamePrefix)
-                        .compressedResourceNamePrefix(sharedNames.delCompressedResourceNamePrefix)
+                        //.compressedResourceNamePrefix(sharedNames.delCompressedResourceNamePrefix)
                         .cloudTrailEnabled(cloudTrailEnabled)
                         .sharedNames(sharedNames)
                         .hostedZoneName(appProps.hostedZoneName)
@@ -181,7 +178,7 @@ public class SubmitDelivery {
                         .envName(envName)
                         .deploymentName(deploymentName)
                         .resourceNamePrefix(sharedNames.delResourceNamePrefix)
-                        .compressedResourceNamePrefix(sharedNames.delCompressedResourceNamePrefix)
+                        //.compressedResourceNamePrefix(sharedNames.delCompressedResourceNamePrefix)
                         .cloudTrailEnabled(cloudTrailEnabled)
                         .sharedNames(sharedNames)
                         .distributionId(distributionId)
@@ -203,7 +200,7 @@ public class SubmitDelivery {
                             .envName(envName)
                             .deploymentName(deploymentName)
                             .resourceNamePrefix(sharedNames.delResourceNamePrefix)
-                            .compressedResourceNamePrefix(sharedNames.delCompressedResourceNamePrefix)
+                            //.compressedResourceNamePrefix(sharedNames.delCompressedResourceNamePrefix)
                             .cloudTrailEnabled(cloudTrailEnabled)
                             .sharedNames(sharedNames)
                             .selfDestructLogGroupName(sharedNames.ue1SelfDestructLogGroupName)

@@ -10,24 +10,24 @@ import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
 // Mock the handlers from their respective function files
-vi.mock("@app/functions/hmrcAuthUrlGet.js", () => ({
+vi.mock("@app/functions/hmrc/hmrcAuthUrlGet.js", () => ({
   handler: vi.fn(),
 }));
-vi.mock("@app/functions/mockTokenPost.js", () => ({
+vi.mock("@app/functions/non-lambda-mocks/mockTokenPost.js", () => ({
   handler: vi.fn(),
 }));
-vi.mock("@app/functions/hmrcVatReturnPost.js", () => ({
+vi.mock("@app/functions/hmrc/hmrcVatReturnPost.js", () => ({
   handler: vi.fn(),
 }));
-vi.mock("@app/functions/hmrcReceiptPost.js", () => ({
+vi.mock("@app/functions/hmrc/hmrcReceiptPost.js", () => ({
   handler: vi.fn(),
 }));
 
 // Import the mocked handlers
-import { handler as exchangeTokenHandler } from "@app/functions/mockTokenPost.js";
-import { handler as submitVatHandler } from "@app/functions/hmrcVatReturnPost.js";
-import { handler as logReceiptHandler } from "@app/functions/hmrcReceiptPost.js";
-import { handler as authUrlHandler } from "@app/functions/hmrcAuthUrlGet.js";
+import { handler as exchangeTokenHandler } from "@app/functions/non-lambda-mocks/mockTokenPost.js";
+import { handler as submitVatHandler } from "@app/functions/hmrc/hmrcVatReturnPost.js";
+import { handler as logReceiptHandler } from "@app/functions/hmrc/hmrcReceiptPost.js";
+import { handler as authUrlHandler } from "@app/functions/hmrc/hmrcAuthUrlGet.js";
 
 describe("Server Unit Tests", () => {
   const originalEnv = process.env;

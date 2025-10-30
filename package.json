@@ -47,7 +47,7 @@
     "test:submitVatBehaviourProxyRunning": "npx dotenv -e .env.proxyRunning -- playwright test behaviour-tests/submitVat.behaviour.test.js",
     "clean": "./scripts/clean-tests.sh",
     "start": "npx dotenv -e .env.proxy -- node app/bin/server.js",
-    "proxy": "npx dotenv -e .env.proxy -- npx ngrok http --hostname wanted-finally-anteater.ngrok-free.app",
+    "proxy": "npx dotenv -e .env.proxy -- npx ngrok http --pooling-enabled --url wanted-finally-anteater.ngrok-free.app",
     "auth": "npx dotenv -e .env.proxy -- docker run -p 8080:8080 -e JSON_CONFIG_PATH=/config/mock-oauth2-config.json -e LOG_LEVEL=DEBUG -v $(pwd)/mock-oauth2-config.json:/config/mock-oauth2-config.json:ro ghcr.io/navikt/mock-oauth2-server:2.2.1",
     "storage": "npx dotenv -e .env.proxy -- node app/bin/minio.js",
     "cloudfront:set-origins": "node ./app/actions/set-apex-origins.mjs",

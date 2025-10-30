@@ -565,7 +565,7 @@ jobs:
             ;
         env:
           ECR_REPOSITORY_BASE_URL: ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com
-          ECR_REPOSITORY_NAME: ${{ needs.names.outputs.deployment-name }}-submit-diyaccounting-co-uk-app-ecr
+          ECR_REPOSITORY_NAME: ${{ needs.names.outputs.deployment-name }}-submit-app-ecr
 
       - name: Check if image already exists in ECR
         id: image-exists
@@ -581,7 +581,7 @@ jobs:
           fi
         env:
           ECR_REPOSITORY_BASE_URL: ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com
-          ECR_REPOSITORY_NAME: ${{ needs.names.outputs.deployment-name }}-submit-diyaccounting-co-uk-app-ecr
+          ECR_REPOSITORY_NAME: ${{ needs.names.outputs.deployment-name }}-submit-app-ecr
 
       - name: Checkout
         if: ${{ steps.image-exists.outputs.exists != 'true' }}
@@ -619,7 +619,7 @@ jobs:
           docker push "${ECR_REPOSITORY_BASE_URL?}/${ECR_REPOSITORY_NAME?}:latest"
         env:
           ECR_REPOSITORY_BASE_URL: ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com
-          ECR_REPOSITORY_NAME: ${{ needs.names.outputs.deployment-name }}-submit-diyaccounting-co-uk-app-ecr
+          ECR_REPOSITORY_NAME: ${{ needs.names.outputs.deployment-name }}-submit-app-ecr
     outputs:
       base-image-tag: ${{ github.sha }}
 
@@ -1683,10 +1683,9 @@ jobs:
           cp '.env.${{ needs.names.outputs.environment-name }}' '.env.test' \
           ; npx dotenv -e '.env.${{ needs.names.outputs.environment-name }}' -- \
             npm run test:webBehaviour || exit_code=$? \
+          ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
           ; exit ${exit_code:-0} \
           ;
-        # TODO: reinstate copy of logs
-        # ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
 
         env:
           DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.apex-url }}
@@ -1739,7 +1738,7 @@ jobs:
       - name: Copy test reports to S3 origin bucket
         if: ${{ !cancelled() }}
         env:
-          BUCKET_NAME: origin-${{ needs.names.outputs.deployment-name }}-submit-diyaccounting-co-uk-del
+          BUCKET_NAME: origin-${{ needs.names.outputs.deployment-name }}-submit-del
         run: |
           echo "Uploading test reports to S3 bucket: ${BUCKET_NAME?}"
           aws s3 cp target/test-reports/ s3://${BUCKET_NAME?}/tests/ --recursive

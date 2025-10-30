@@ -3,15 +3,13 @@
 import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 
-import { handler as exchangeTokenHandler } from "@app/functions/mockTokenPost.js";
+import { handler as exchangeTokenHandler } from "@app/functions/non-lambda-mocks/mockTokenPost.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
 // Mock global fetch
 const mockFetch = vi.fn();
-vi.stubGlobal('fetch', mockFetch);
-
-
+vi.stubGlobal("fetch", mockFetch);
 
 describe("httpPostMock", () => {
   const originalEnv = process.env;

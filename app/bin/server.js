@@ -5,28 +5,28 @@ import path from "path";
 import express from "express";
 import { fileURLToPath } from "url";
 import { readFileSync } from "fs";
-import { handler as submitVatHttpPost } from "../functions/hmrcVatReturnPost.js";
-import { handler as logReceiptHttpPost } from "../functions/hmrcReceiptPost.js";
-import { handler as requestBundleHttpPost } from "../functions/bundlePost.js";
-import { handler as removeBundleHttpDelete } from "../functions/bundleDelete.js";
-import { handler as getCatalogHttpGet } from "../functions/catalogGet.js";
-import { handler as myBundlesHttpGet } from "../functions/bundleGet.js";
-import { handler as myReceiptsHttpGet, httpGetByName as myReceiptHttpGetByName } from "../functions/hmrcReceiptGet.js";
-import { httpGet as getVatObligationsHttpGet } from "../functions/hmrcVatObligationGet.js";
-import { httpGet as getVatReturnHttpGet } from "../functions/hmrcVatReturnGet.js";
-import { httpGet as getVatLiabilitiesHttpGet } from "../functions/hmrcVatLiabilityGet.js";
-import { httpGet as getVatPaymentsHttpGet } from "../functions/hmrcVatPaymentGet.js";
-import { httpGet as getVatPenaltiesHttpGet } from "../functions/hmrcVatPenaltyGet.js";
+import { handler as submitVatHttpPost } from "../functions/hmrc/hmrcVatReturnPost.js";
+import { handler as logReceiptHttpPost } from "../functions/hmrc/hmrcReceiptPost.js";
+import { handler as requestBundleHttpPost } from "../functions/account/bundlePost.js";
+import { handler as removeBundleHttpDelete } from "../functions/account/bundleDelete.js";
+import { handler as getCatalogHttpGet } from "../functions/account/catalogGet.js";
+import { handler as myBundlesHttpGet } from "../functions/account/bundleGet.js";
+import { handler as myReceiptsHttpGet, httpGetByName as myReceiptHttpGetByName } from "../functions/hmrc/hmrcReceiptGet.js";
+import { httpGet as getVatObligationsHttpGet } from "../functions/hmrc/hmrcVatObligationGet.js";
+import { httpGet as getVatReturnHttpGet } from "../functions/hmrc/hmrcVatReturnGet.js";
+import { httpGet as getVatLiabilitiesHttpGet } from "../functions/hmrc/hmrcVatLiabilityGet.js";
+import { httpGet as getVatPaymentsHttpGet } from "../functions/hmrc/hmrcVatPaymentGet.js";
+import { httpGet as getVatPenaltiesHttpGet } from "../functions/hmrc/hmrcVatPenaltyGet.js";
 import logger from "../lib/logger.js";
 import { requireActivity } from "../lib/entitlementsService.js";
 import { dotenvConfigIfNotBlank, validateEnv } from "../lib/env.js";
 
-import { handler as mockAuthUrlGet } from "../functions/mockAuthUrlGet.js";
-import { handler as hmrcAuthUrlGet } from "../functions/hmrcAuthUrlGet.js";
-import { handler as cognitoAuthUrlGet } from "../functions/cognitoAuthUrlGet.js";
-import { handler as mockTokenPost } from "../functions/mockTokenPost.js";
-import { handler as hmrcTokenPost } from "../functions/hmrcTokenPost.js";
-import { handler as cognitoTokenPost } from "../functions/cognitoTokenPost.js";
+import { handler as mockAuthUrlGet } from "../functions/non-lambda-mocks/mockAuthUrlGet.js";
+import { handler as hmrcAuthUrlGet } from "../functions/hmrc/hmrcAuthUrlGet.js";
+import { handler as cognitoAuthUrlGet } from "../functions/auth/cognitoAuthUrlGet.js";
+import { handler as mockTokenPost } from "../functions/non-lambda-mocks/mockTokenPost.js";
+import { handler as hmrcTokenPost } from "../functions/hmrc/hmrcTokenPost.js";
+import { handler as cognitoTokenPost } from "../functions/auth/cognitoTokenPost.js";
 
 dotenvConfigIfNotBlank({ path: ".env" });
 dotenvConfigIfNotBlank({ path: ".env.test" });
@@ -74,20 +74,20 @@ app.use((req, res, next) => {
 
 app.use(express.static(path.join(__dirname, "../../web/public")));
 
-const authUrlPath = context.authUrlLambdaUrlPath || "/api/v1/hmrc/authUrl";
+const authUrlPath = "/api/v1/hmrc/authUrl";
 const mockAuthUrlPath = "/api/v1/mock/authUrl";
 const mockTokenProxyPath = "/api/mock/token";
-const cognitoAuthUrlPath = context.cognitoAuthUrlLambdaUrlPath || "/api/v1/cognito/authUrl";
-const exchangeMockTokenPath = context.exchangeTokenLambdaUrlPath || "/api/exchange-token";
-const exchangeHmrcTokenPath = context.exchangeHmrcTokenLambdaUrlPath || "/api/v1/hmrc/token";
-const exchangeCognitoTokenPath = context.exchangeCognitoTokenLambdaUrlPath || "/api/v1/cognito/token";
-const submitVatPath = context.submitVatLambdaUrlPath || "/api/v1/hmrc/vat/return";
-const logReceiptPath = context.logReceiptLambdaUrlPath || "/api/v1/hmrc/receipt";
-const myReceiptsPath = context.myReceiptsLambdaUrlPath || "/api/v1/hmrc/receipt";
-const catalogPath = "/api/v1/catalog"; // context.catalogLambdaUrlPath || "/api/v1/catalog";
-const bundleGetPath = "/api/v1/bundle"; // context.myBundlesLambdaUrlPath || "/api/v1/bundle";
-const bundlePostPath = "/api/v1/bundle"; // context.bundleLambdaUrlPath || "/api/v1/bundle";
-const bundleDeletePath = "/api/v1/bundle"; // context.bundleLambdaUrlPath || "/api/v1/bundle";
+const cognitoAuthUrlPath = "/api/v1/cognito/authUrl";
+const exchangeMockTokenPath = "/api/exchange-token";
+const exchangeHmrcTokenPath = "/api/v1/hmrc/token";
+const exchangeCognitoTokenPath = "/api/v1/cognito/token";
+const submitVatPath = "/api/v1/hmrc/vat/return";
+const logReceiptPath = "/api/v1/hmrc/receipt";
+const myReceiptsPath = "/api/v1/hmrc/receipt";
+const catalogPath = "/api/v1/catalog";
+const bundleGetPath = "/api/v1/bundle";
+const bundlePostPath = "/api/v1/bundle";
+const bundleDeletePath = "/api/v1/bundle";
 
 app.get(authUrlPath, async (req, res) => {
   const event = {

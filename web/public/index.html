@@ -205,7 +205,13 @@
           // Generate buttons for accessible activities
           const buttons = accessibleActivities
             .map((activity) => {
-              const path = activity.path || "#";
+              let path;
+              if (activity.paths) {
+                // Get the first path which ends with .html
+                path = activity.paths.find((p) => p.endsWith(".html")) || "#";
+              } else {
+                path = activity.path || "#";
+              }
               return `
               <div style="margin: 1em 0">
                 <button type="button" class="btn" onclick="window.location.href='${path}'">

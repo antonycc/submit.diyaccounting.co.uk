@@ -1,5 +1,6 @@
 package co.uk.diyaccounting.submit;
 
+import co.uk.diyaccounting.submit.constructs.ApiLambdaProps;
 import co.uk.diyaccounting.submit.stacks.AccountStack;
 import co.uk.diyaccounting.submit.stacks.ApiStack;
 import co.uk.diyaccounting.submit.stacks.AuthStack;
@@ -10,14 +11,13 @@ import co.uk.diyaccounting.submit.stacks.SelfDestructStack;
 import co.uk.diyaccounting.submit.utils.KindCdk;
 import software.amazon.awscdk.App;
 import software.amazon.awscdk.Environment;
-import software.amazon.awscdk.services.lambda.IFunction;
 import software.constructs.Construct;
 
 import java.lang.reflect.Field;
 import java.nio.file.Paths;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Map;
+import java.util.List;
 
 import static co.uk.diyaccounting.submit.utils.Kind.envOr;
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
@@ -45,8 +45,6 @@ public class SubmitApplication {
         public String hmrcBaseUri;
         public String baseImageTag;
         public String selfDestructDelayHours;
-        public String lambdaEntry;
-        public String lambdaUrlAuthType;
         public String userPoolArn;
         public String userPoolClientId;
 
@@ -74,19 +72,11 @@ public class SubmitApplication {
     }
 
     public static void main(final String[] args) {
-
         App app = new App();
         SubmitApplicationProps appProps = loadAppProps(app);
         var submitApplication = new SubmitApplication(app, appProps);
         app.synth();
         infof("CDK synth complete");
-
-        infof("Created stack: %s", submitApplication.devStack.getStackName());
-        infof("Created stack: %s", submitApplication.authStack.getStackName());
-        infof("Created stack: %s", submitApplication.hmrcStack.getStackName());
-        infof("Created stack: %s", submitApplication.accountStack.getStackName());
-        infof("Created stack: %s", submitApplication.apiStack.getStackName());
-        infof("Created stack: %s", submitApplication.opsStack.getStackName());
         if (submitApplication.selfDestructStack != null) {
             infof("Created stack: %s", submitApplication.selfDestructStack.getStackName());
         } else {
@@ -113,8 +103,7 @@ public class SubmitApplication {
         var sharedNames = new SubmitSharedNames(nameProps);
 
         // Allow environment variables to override some appProps values
-        var cognitoUserPoolArn =
-                envOr("COGNITO_USER_POOL_ARN", appProps.userPoolArn, "(from userPoolArn in cdk.json)");
+        var cognitoUserPoolArn = envOr("COGNITO_USER_POOL_ARN", appProps.userPoolArn, "(from userPoolArn in cdk.json)");
         var cognitoUserPoolClientId =
                 envOr("COGNITO_CLIENT_ID", appProps.userPoolClientId, "(from userPoolClientId in cdk.json)");
         var cognitoUserPoolId = cognitoUserPoolArn != null
@@ -150,7 +139,7 @@ public class SubmitApplication {
                         .envName(envName)
                         .deploymentName(deploymentName)
                         .resourceNamePrefix(sharedNames.appResourceNamePrefix)
-                        .compressedResourceNamePrefix(sharedNames.appCompressedResourceNamePrefix)
+                        //.compressedResourceNamePrefix(sharedNames.appCompressedResourceNamePrefix)
                         .cloudTrailEnabled(cloudTrailEnabled)
                         .sharedNames(sharedNames)
                         .build());
@@ -168,12 +157,10 @@ public class SubmitApplication {
                         .envName(envName)
                         .deploymentName(deploymentName)
                         .resourceNamePrefix(sharedNames.appResourceNamePrefix)
-                        .compressedResourceNamePrefix(sharedNames.appCompressedResourceNamePrefix)
+                        //.compressedResourceNamePrefix(sharedNames.appCompressedResourceNamePrefix)
                         .cloudTrailEnabled(cloudTrailEnabled)
                         .sharedNames(sharedNames)
                         .baseImageTag(baseImageTag)
-                        .lambdaEntry(appProps.lambdaEntry)
-                        .lambdaUrlAuthType(appProps.lambdaUrlAuthType)
                         .cognitoClientId(cognitoUserPoolClientId)
                         .build());
         this.authStack.addDependency(devStack);
@@ -191,14 +178,12 @@ public class SubmitApplication {
                         .envName(envName)
                         .deploymentName(deploymentName)
                         .resourceNamePrefix(sharedNames.appResourceNamePrefix)
-                        .compressedResourceNamePrefix(sharedNames.appCompressedResourceNamePrefix)
+                        //.compressedResourceNamePrefix(sharedNames.appCompressedResourceNamePrefix)
                         .cloudTrailEnabled(cloudTrailEnabled)
                         .sharedNames(sharedNames)
                         .baseImageTag(baseImageTag)
                         .hmrcBaseUri(appProps.hmrcBaseUri)
                         .hmrcClientId(appProps.hmrcClientId)
-                        .lambdaUrlAuthType(appProps.lambdaUrlAuthType)
-                        .lambdaEntry(appProps.lambdaEntry)
                         .hmrcClientSecretArn(hmrcClientSecretArn)
                         .cognitoUserPoolId(cognitoUserPoolId)
                         .build());
@@ -217,13 +202,11 @@ public class SubmitApplication {
                         .envName(envName)
                         .deploymentName(deploymentName)
                         .resourceNamePrefix(sharedNames.appResourceNamePrefix)
-                        .compressedResourceNamePrefix(sharedNames.appCompressedResourceNamePrefix)
+                        //.compressedResourceNamePrefix(sharedNames.appCompressedResourceNamePrefix)
                         .cloudTrailEnabled(cloudTrailEnabled)
                         .sharedNames(sharedNames)
                         .baseImageTag(baseImageTag)
                         .cognitoUserPoolArn(cognitoUserPoolArn)
-                        .lambdaUrlAuthType(appProps.lambdaUrlAuthType)
-                        .lambdaEntry(appProps.lambdaEntry)
                         .build());
         this.accountStack.addDependency(devStack);
 
@@ -233,18 +216,10 @@ public class SubmitApplication {
                 sharedNames.apiStackId, deploymentName, envName);
 
         // Create a map of Lambda function references from other stacks
-        Map<String, IFunction> lambdaFunctions = new java.util.HashMap<>();
-        lambdaFunctions.put(sharedNames.cognitoAuthUrlGetLambdaFunctionName, this.authStack.cognitoAuthUrlGetLambda);
-        lambdaFunctions.put(sharedNames.cognitoTokenPostLambdaFunctionName, this.authStack.cognitoTokenPostLambda);
-        lambdaFunctions.put(sharedNames.hmrcAuthUrlGetLambdaFunctionName, this.hmrcStack.hmrcAuthUrlGetLambda);
-        lambdaFunctions.put(sharedNames.hmrcTokenPostLambdaFunctionName, this.hmrcStack.hmrcTokenPostLambda);
-        lambdaFunctions.put(sharedNames.hmrcVatReturnPostLambdaFunctionName, this.hmrcStack.hmrcVatReturnPostLambda);
-        lambdaFunctions.put(sharedNames.receiptPostLambdaFunctionName, this.hmrcStack.receiptPostLambda);
-        lambdaFunctions.put(sharedNames.receiptGetLambdaFunctionName, this.hmrcStack.receiptGetLambda);
-        lambdaFunctions.put(sharedNames.catalogGetLambdaFunctionName, this.accountStack.catalogLambda);
-        lambdaFunctions.put(sharedNames.bundleGetLambdaFunctionName, this.accountStack.bundleGetLambda);
-        lambdaFunctions.put(sharedNames.bundlePostLambdaFunctionName, this.accountStack.bundlePostLambda);
-        lambdaFunctions.put(sharedNames.bundleDeleteLambdaFunctionName, this.accountStack.bundleDeleteLambda);
+        List<ApiLambdaProps> lambdaFunctions = new java.util.ArrayList<>();
+        lambdaFunctions.addAll(this.authStack.lambdaFunctionProps);
+        lambdaFunctions.addAll(this.hmrcStack.lambdaFunctionProps);
+        lambdaFunctions.addAll(this.accountStack.lambdaFunctionProps);
 
         this.apiStack = new ApiStack(
                 app,
@@ -255,7 +230,7 @@ public class SubmitApplication {
                         .envName(envName)
                         .deploymentName(deploymentName)
                         .resourceNamePrefix(sharedNames.appResourceNamePrefix)
-                        .compressedResourceNamePrefix(sharedNames.appCompressedResourceNamePrefix)
+                        //.compressedResourceNamePrefix(sharedNames.appCompressedResourceNamePrefix)
                         .cloudTrailEnabled(cloudTrailEnabled)
                         .sharedNames(sharedNames)
                         .lambdaFunctions(lambdaFunctions)
@@ -264,6 +239,8 @@ public class SubmitApplication {
         this.apiStack.addDependency(hmrcStack);
         this.apiStack.addDependency(authStack);
 
+        // ExtractLambda ARNs from lambdaFunctions
+        var lambdaArns = lambdaFunctions.stream().map(ApiLambdaProps::lambdaArn).toList();
         this.opsStack = new OpsStack(
                 app,
                 sharedNames.opsStackId,
@@ -273,10 +250,10 @@ public class SubmitApplication {
                         .envName(envName)
                         .deploymentName(deploymentName)
                         .resourceNamePrefix(sharedNames.appResourceNamePrefix)
-                        .compressedResourceNamePrefix(sharedNames.appCompressedResourceNamePrefix)
+                        //.compressedResourceNamePrefix(sharedNames.appCompressedResourceNamePrefix)
                         .cloudTrailEnabled(cloudTrailEnabled)
                         .sharedNames(sharedNames)
-                        .lambdaFunctionArns(sharedNames.lambdaArns)
+                        .lambdaFunctionArns(lambdaArns)
                         .build());
         this.opsStack.addDependency(hmrcStack);
         this.opsStack.addDependency(apiStack);
@@ -292,7 +269,7 @@ public class SubmitApplication {
                             .envName(envName)
                             .deploymentName(deploymentName)
                             .resourceNamePrefix(sharedNames.appResourceNamePrefix)
-                            .compressedResourceNamePrefix(sharedNames.appCompressedResourceNamePrefix)
+                            //.compressedResourceNamePrefix(sharedNames.appCompressedResourceNamePrefix)
                             .cloudTrailEnabled(cloudTrailEnabled)
                             .sharedNames(sharedNames)
                             .selfDestructLogGroupName(sharedNames.ew2SelfDestructLogGroupName)

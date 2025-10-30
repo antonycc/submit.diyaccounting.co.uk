@@ -11,7 +11,7 @@ import { S3Client, ListObjectsV2Command, GetObjectCommand } from "@aws-sdk/clien
 const s3Mock = mockClient(S3Client);
 
 // Import after mocks
-import { handler as listReceipts, httpGetByName as getReceipt } from "@app/functions/hmrcReceiptGet.js";
+import { handler as listReceipts, httpGetByName as getReceipt } from "@app/functions/hmrc/hmrcReceiptGet.js";
 
 function makeJwt(sub = "test-user-sub") {
   const header = { alg: "none", typ: "JWT" };

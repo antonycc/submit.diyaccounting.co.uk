@@ -1,7 +1,7 @@
 // app/functions/mockAuthUrlGet.js
 
-import { extractRequest, httpBadRequestResponse, httpOkResponse, httpServerErrorResponse } from "../lib/responses.js";
-import { validateEnv } from "../lib/env.js";
+import { extractRequest, httpBadRequestResponse, httpOkResponse, httpServerErrorResponse } from "../../lib/responses.js";
+import { validateEnv } from "../../lib/env.js";
 
 // GET /api/v1/mock/authUrl?state={state}
 export async function handler(event) {

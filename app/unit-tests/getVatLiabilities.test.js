@@ -2,7 +2,7 @@
 
 import { describe, test, expect, beforeEach, vi } from "vitest";
 
-import { httpGet } from "../functions/hmrcVatLiabilityGet.js";
+import { httpGet } from "../functions/hmrc/hmrcVatLiabilityGet.js";
 import { buildGovClientTestHeaders } from "./govClientTestHeader.js";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 
@@ -10,7 +10,7 @@ dotenvConfigIfNotBlank({ path: ".env.test" });
 
 // Mock global fetch
 const mockFetch = vi.fn();
-vi.stubGlobal('fetch', mockFetch);
+vi.stubGlobal("fetch", mockFetch);
 
 describe("getVatLiabilities handler", () => {
   beforeEach(() => {

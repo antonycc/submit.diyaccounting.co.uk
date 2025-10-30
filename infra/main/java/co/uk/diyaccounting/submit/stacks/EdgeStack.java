@@ -1,7 +1,13 @@
 package co.uk.diyaccounting.submit.stacks;
 
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Aspects;
 import software.amazon.awscdk.Environment;
@@ -40,13 +46,6 @@ import software.amazon.awscdk.services.s3.IBucket;
 import software.amazon.awscdk.services.wafv2.CfnWebACL;
 import software.constructs.Construct;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-
 public class EdgeStack extends Stack {
 
     public Bucket originBucket;
@@ -77,8 +76,8 @@ public class EdgeStack extends Stack {
         @Override
         String resourceNamePrefix();
 
-        @Override
-        String compressedResourceNamePrefix();
+        //@Override
+        //String compressedResourceNamePrefix();
 
         @Override
         String cloudTrailEnabled();
@@ -333,13 +332,11 @@ public class EdgeStack extends Stack {
 
         // Idempotent UPSERT of Route53 A/AAAA alias to CloudFront (replaces deprecated deleteExisting)
         co.uk.diyaccounting.submit.utils.Route53AliasUpsert.upsertAliasToCloudFront(
-                this,
-                props.resourceNamePrefix() + "-AliasRecord",
-                zone,
-                recordName,
-                this.distribution.getDomainName());
+                this, props.resourceNamePrefix() + "-AliasRecord", zone, recordName, this.distribution.getDomainName());
         // Capture the FQDN for outputs
-        this.aliasRecordDomainName = (recordName == null || recordName.isBlank()) ? zone.getZoneName() : (recordName + "." + zone.getZoneName());
+        this.aliasRecordDomainName = (recordName == null || recordName.isBlank())
+                ? zone.getZoneName()
+                : (recordName + "." + zone.getZoneName());
         this.aliasRecordV6DomainName = this.aliasRecordDomainName;
 
         Aspects.of(this).add(new SetAutoDeleteJobLogRetentionAspect(props.deploymentName(), RetentionDays.THREE_DAYS));

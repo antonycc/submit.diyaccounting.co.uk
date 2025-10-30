@@ -34,20 +34,33 @@ describe("convertVideo", () => {
     await convertVideo("input.webm", "output.mp4");
 
     // Verify that spawn was called with ffmpeg and correct arguments
-    expect(spawn).toHaveBeenCalledWith("ffmpeg", [
-      "-i", "input.webm",
-      "-c:v", "libx264",
-      "-c:a", "aac",
-      "-pix_fmt", "yuv420p",
-      "-profile:v", "baseline",
-      "-level", "3.1",
-      "-movflags", "+faststart",
-      "-crf", "22",
-      "-preset", "slow",
-      "-y",
-      "output.mp4"
-    ], {
-      stdio: ["ignore", "pipe", "pipe"]
-    });
+    expect(spawn).toHaveBeenCalledWith(
+      "ffmpeg",
+      [
+        "-i",
+        "input.webm",
+        "-c:v",
+        "libx264",
+        "-c:a",
+        "aac",
+        "-pix_fmt",
+        "yuv420p",
+        "-profile:v",
+        "baseline",
+        "-level",
+        "3.1",
+        "-movflags",
+        "+faststart",
+        "-crf",
+        "22",
+        "-preset",
+        "slow",
+        "-y",
+        "output.mp4",
+      ],
+      {
+        stdio: ["ignore", "pipe", "pipe"],
+      },
+    );
   });
 });

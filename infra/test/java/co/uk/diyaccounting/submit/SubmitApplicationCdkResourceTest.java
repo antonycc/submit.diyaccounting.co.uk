@@ -54,15 +54,41 @@ class SubmitApplicationCdkResourceTest {
         Template.fromStack(submitApplication.authStack).resourceCountIs("AWS::Lambda::Function", 2);
 
         infof("Created stack:", submitApplication.hmrcStack.getStackName());
-        Template.fromStack(submitApplication.hmrcStack).resourceCountIs("AWS::Lambda::Function", 5);
+        Template.fromStack(submitApplication.hmrcStack).resourceCountIs("AWS::Lambda::Function", 10);
 
         infof("Created stack:", submitApplication.accountStack.getStackName());
         Template.fromStack(submitApplication.accountStack).resourceCountIs("AWS::Lambda::Function", 4);
 
         infof("Created stack:", submitApplication.apiStack.getStackName());
         Template apiStackTemplate = Template.fromStack(submitApplication.apiStack);
+        // Log all API Gateway routes present in the synthesized template
+        @SuppressWarnings("unchecked")
+        Map<String, Object> apiTemplateJson = (Map<String, Object>) apiStackTemplate.toJSON();
+        Object resourcesObj = apiTemplateJson.get("Resources");
+        if (resourcesObj instanceof Map) {
+            Map<String, Object> resources = (Map<String, Object>) resourcesObj;
+            int routeCount = 0;
+            for (Map.Entry<String, Object> e : resources.entrySet()) {
+                Object v = e.getValue();
+                if (v instanceof Map) {
+                    Map<String, Object> res = (Map<String, Object>) v;
+                    Object type = res.get("Type");
+                    if ("AWS::ApiGatewayV2::Route".equals(type)) {
+                        Map<String, Object> props = (Map<String, Object>) res.get("Properties");
+                        Object routeKey = props != null ? props.get("RouteKey") : null;
+                        Object target = props != null ? props.get("Target") : null;
+                        infof(
+                                "API route: id=%s routeKey=%s target=%s",
+                                e.getKey(), String.valueOf(routeKey), String.valueOf(target));
+                        routeCount++;
+                    }
+                }
+            }
+            infof("Total API routes found: %d", routeCount);
+        }
+
         apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Api", 1);
-        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 11);
+        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 16);
         apiStackTemplate.resourceCountIs("AWS::CloudWatch::Dashboard", 1);
 
         infof("Created stack:", submitApplication.opsStack.getStackName());
