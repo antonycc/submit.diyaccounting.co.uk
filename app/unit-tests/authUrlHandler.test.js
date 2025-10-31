@@ -112,4 +112,79 @@ describe("httpGetHmrc", () => {
     expect(result.statusCode).toBe(400);
     expect(body.message).toBe("Missing state query parameter from URL");
   });
+
+  test("should accept custom scope parameter", async () => {
+    const event = {
+      queryStringParameters: {
+        state: "test-state-123",
+        scope: "read:vat",
+      },
+    };
+
+    const result = await authUrlHandler(event);
+    const body = JSON.parse(result.body);
+
+    expect(result.statusCode).toBe(200);
+    expect(body.authUrl).toContain("scope=read%3Avat");
+    expect(body.authUrl).not.toContain("write%3Avat");
+  });
+
+  test("should use default scope when no scope parameter provided", async () => {
+    const event = {
+      queryStringParameters: {
+        state: "test-state-123",
+      },
+    };
+
+    const result = await authUrlHandler(event);
+    const body = JSON.parse(result.body);
+
+    expect(result.statusCode).toBe(200);
+    expect(body.authUrl).toContain("scope=write%3Avat%20read%3Avat");
+  });
+
+  test("should reject invalid scope parameter", async () => {
+    const event = {
+      queryStringParameters: {
+        state: "test-state-123",
+        scope: "invalid:scope",
+      },
+    };
+
+    const result = await authUrlHandler(event);
+    const body = JSON.parse(result.body);
+
+    expect(result.statusCode).toBe(400);
+    expect(body.message).toContain("Invalid scope parameter");
+  });
+
+  test("should accept write:vat scope", async () => {
+    const event = {
+      queryStringParameters: {
+        state: "test-state-123",
+        scope: "write:vat",
+      },
+    };
+
+    const result = await authUrlHandler(event);
+    const body = JSON.parse(result.body);
+
+    expect(result.statusCode).toBe(200);
+    expect(body.authUrl).toContain("scope=write%3Avat");
+  });
+
+  test("should accept read:vat write:vat scope", async () => {
+    const event = {
+      queryStringParameters: {
+        state: "test-state-123",
+        scope: "read:vat write:vat",
+      },
+    };
+
+    const result = await authUrlHandler(event);
+    const body = JSON.parse(result.body);
+
+    expect(result.statusCode).toBe(200);
+    expect(body.authUrl).toContain("scope=read%3Avat%20write%3Avat");
+  });
 });
