@@ -349,6 +349,14 @@
       function displayReturn(returnData) {
         const detailsContainer = document.getElementById("returnDetails");
 
+        // Helper function to escape HTML and prevent XSS
+        const escapeHtml = (text) => {
+          if (!text) return '';
+          const div = document.createElement('div');
+          div.textContent = text;
+          return div.innerHTML;
+        };
+
         const formatCurrency = (value) => {
           const num = parseFloat(value);
           return isNaN(num) ? "£0.00" : `£${num.toFixed(2)}`;
@@ -365,7 +373,7 @@
               <div class="detail-grid">
                 <div class="detail-item">
                   <label>Period Key:</label>
-                  <span><strong>${returnData.periodKey || "-"}</strong></span>
+                  <span><strong>${escapeHtml(returnData.periodKey) || "-"}</strong></span>
                 </div>
                 <div class="detail-item">
                   <label>Finalised:</label>

@@ -392,6 +392,9 @@
           return;
         }
 
+        // Get VRN safely
+        const vrn = document.getElementById("vrn").value;
+
         let tableHtml = `
           <table class="results-table">
             <thead>
@@ -411,20 +414,24 @@
         obligations.forEach((obligation) => {
           const statusClass = obligation.status === "O" ? "status-open" : "status-fulfilled";
           const statusText = obligation.status === "O" ? "Open" : "Fulfilled";
+          
+          // Escape values to prevent XSS
+          const escapedVrn = escapeHtml(vrn);
+          const escapedPeriodKey = escapeHtml(obligation.periodKey);
 
           tableHtml += `
             <tr>
-              <td><strong>${obligation.periodKey}</strong></td>
-              <td>${obligation.start || "-"}</td>
-              <td>${obligation.end || "-"}</td>
-              <td>${obligation.due || "-"}</td>
+              <td><strong>${escapeHtml(obligation.periodKey)}</strong></td>
+              <td>${escapeHtml(obligation.start) || "-"}</td>
+              <td>${escapeHtml(obligation.end) || "-"}</td>
+              <td>${escapeHtml(obligation.due) || "-"}</td>
               <td><span class="${statusClass}">${statusText}</span></td>
-              <td>${obligation.received || "-"}</td>
+              <td>${escapeHtml(obligation.received) || "-"}</td>
               <td>
                 ${
                   obligation.status === "F"
-                    ? `<button class="action-button btn" onclick="viewReturn('${document.getElementById("vrn").value}', '${obligation.periodKey}')">View Return</button>`
-                    : `<button class="action-button btn" onclick="submitReturn('${document.getElementById("vrn").value}', '${obligation.periodKey}')">Submit Return</button>`
+                    ? `<button class="action-button btn" onclick="viewReturn('${escapedVrn}', '${escapedPeriodKey}')">View Return</button>`
+                    : `<button class="action-button btn" onclick="submitReturn('${escapedVrn}', '${escapedPeriodKey}')">Submit Return</button>`
                 }
               </td>
             </tr>
@@ -433,6 +440,14 @@
 
         tableHtml += "</tbody></table>";
         tableContainer.innerHTML = tableHtml;
+      }
+
+      // Helper function to escape HTML and prevent XSS
+      function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
       }
 
       function viewReturn(vrn, periodKey) {
