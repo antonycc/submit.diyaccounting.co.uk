@@ -463,12 +463,44 @@ public class SubmitSharedNames {
                 "Exchange HMRC authorization code for access token",
                 "Exchanges an HMRC authorization code for an access token",
                 "exchangeHmrcToken"));
+        // HMRC VAT endpoints
+        publishedApiLambdas.add(new PublishedLambda(
+                this.hmrcVatObligationGetLambdaHttpMethod,
+                this.hmrcVatObligationGetLambdaUrlPath,
+                "Get VAT obligations",
+                "Retrieves VAT obligations for a VRN with optional date range and status filters",
+                "getVatObligations"));
+        publishedApiLambdas.add(new PublishedLambda(
+                this.hmrcVatReturnGetLambdaHttpMethod,
+                this.hmrcVatReturnGetLambdaUrlPath,
+                "Get VAT return",
+                "Retrieves a VAT return for the specified VRN and period",
+                "getVatReturn"));
         publishedApiLambdas.add(new PublishedLambda(
                 this.hmrcVatReturnPostLambdaHttpMethod,
                 this.hmrcVatReturnPostLambdaUrlPath,
                 "Submit VAT return to HMRC",
                 "Submits a VAT return to HMRC on behalf of the authenticated user",
                 "submitVatReturn"));
+        publishedApiLambdas.add(new PublishedLambda(
+                this.hmrcVatLiabilityGetLambdaHttpMethod,
+                this.hmrcVatLiabilityGetLambdaUrlPath,
+                "Get VAT liabilities",
+                "Retrieves VAT liabilities for a VRN",
+                "getVatLiabilities"));
+        publishedApiLambdas.add(new PublishedLambda(
+                this.hmrcVatPaymentGetLambdaHttpMethod,
+                this.hmrcVatPaymentGetLambdaUrlPath,
+                "Get VAT payments",
+                "Retrieves VAT payments for a VRN",
+                "getVatPayments"));
+        publishedApiLambdas.add(new PublishedLambda(
+                this.hmrcVatPenaltyGetLambdaHttpMethod,
+                this.hmrcVatPenaltyGetLambdaUrlPath,
+                "Get VAT penalties",
+                "Retrieves VAT penalties for a VRN",
+                "getVatPenalties"));
+        // Receipts and account endpoints
         publishedApiLambdas.add(new PublishedLambda(
                 this.receiptPostLambdaHttpMethod,
                 this.receiptPostLambdaUrlPath,

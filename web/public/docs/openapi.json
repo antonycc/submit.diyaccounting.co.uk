@@ -104,6 +104,37 @@
       }
     },
     "/hmrc/vat/return" : {
+      "get" : {
+        "summary" : "Get VAT return",
+        "description" : "Retrieves a VAT return for the specified VRN and period",
+        "operationId" : "getVatReturn",
+        "tags" : [ "HMRC" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "parameters" : [ {
+          "name" : "periodKey",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          },
+          "description" : "The VAT return period key, e.g. 24A1 or may include '#'"
+        }, {
+          "name" : "vrn",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          },
+          "description" : "The 9-digit VAT Registration Number"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "VAT return retrieved successfully"
+          }
+        }
+      },
       "post" : {
         "summary" : "Submit VAT return to HMRC",
         "description" : "Submits a VAT return to HMRC on behalf of the authenticated user",
@@ -119,6 +150,38 @@
         }
       }
     },
+    "/hmrc/vat/payments" : {
+      "get" : {
+        "summary" : "Get VAT payments",
+        "description" : "Retrieves VAT payments for a VRN",
+        "operationId" : "getVatPayments",
+        "tags" : [ "HMRC" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Request completed successfully"
+          }
+        }
+      }
+    },
+    "/hmrc/vat/penalty" : {
+      "get" : {
+        "summary" : "Get VAT penalties",
+        "description" : "Retrieves VAT penalties for a VRN",
+        "operationId" : "getVatPenalties",
+        "tags" : [ "HMRC" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Request completed successfully"
+          }
+        }
+      }
+    },
     "/cognito/token" : {
       "post" : {
         "summary" : "Exchange Cognito authorization code for access token",
@@ -128,6 +191,22 @@
         "responses" : {
           "200" : {
             "description" : "Token exchanged successfully"
+          }
+        }
+      }
+    },
+    "/hmrc/vat/obligation" : {
+      "get" : {
+        "summary" : "Get VAT obligations",
+        "description" : "Retrieves VAT obligations for a VRN with optional date range and status filters",
+        "operationId" : "getVatObligations",
+        "tags" : [ "HMRC" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Request completed successfully"
           }
         }
       }
@@ -154,6 +233,22 @@
         "responses" : {
           "200" : {
             "description" : "Authentication URL returned successfully"
+          }
+        }
+      }
+    },
+    "/hmrc/vat/liability" : {
+      "get" : {
+        "summary" : "Get VAT liabilities",
+        "description" : "Retrieves VAT liabilities for a VRN",
+        "operationId" : "getVatLiabilities",
+        "tags" : [ "HMRC" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Request completed successfully"
           }
         }
       }

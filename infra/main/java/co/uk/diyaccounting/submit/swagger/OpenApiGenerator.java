@@ -209,10 +209,42 @@ public class OpenApiGenerator {
             operation.set("tags", hmrcTags);
 
             // Determine appropriate security based on path
-            if (path.equals("/hmrc/vat/return") && method.equals("post")) {
-                operation.set("security", hmrcSecurityArr);
-            } else if (!path.equals("/hmrc/vat/return")) {
+            if (path.equals("/hmrc/vat/return")) {
+                if (method.equals("post")) {
+                    operation.set("security", hmrcSecurityArr);
+                } else {
+                    // GET and other methods on VAT return use Cognito session
+                    operation.set("security", cognitoSecurityArr);
+                }
+            } else {
                 operation.set("security", cognitoSecurityArr);
+            }
+
+            // Add parameters for specific endpoints
+            if (path.equals("/hmrc/vat/return") && method.equals("get")) {
+                ArrayNode parameters = mapper.createArrayNode();
+
+                ObjectNode periodKeyParam = mapper.createObjectNode();
+                periodKeyParam.put("name", "periodKey");
+                periodKeyParam.put("in", "query");
+                periodKeyParam.put("required", true);
+                ObjectNode periodKeySchema = mapper.createObjectNode();
+                periodKeySchema.put("type", "string");
+                periodKeyParam.set("schema", periodKeySchema);
+                periodKeyParam.put("description", "The VAT return period key, e.g. 24A1 or may include '#'");
+                parameters.add(periodKeyParam);
+
+                ObjectNode vrnParam = mapper.createObjectNode();
+                vrnParam.put("name", "vrn");
+                vrnParam.put("in", "query");
+                vrnParam.put("required", true);
+                ObjectNode vrnSchema = mapper.createObjectNode();
+                vrnSchema.put("type", "string");
+                vrnParam.set("schema", vrnSchema);
+                vrnParam.put("description", "The 9-digit VAT Registration Number");
+                parameters.add(vrnParam);
+
+                operation.set("parameters", parameters);
             }
 
             // Add appropriate response
@@ -268,7 +300,7 @@ public class OpenApiGenerator {
         return switch (path) {
             case "/hmrc/authUrl" -> "HMRC authentication URL returned successfully";
             case "/hmrc/token" -> "HMRC token exchanged successfully";
-            case "/hmrc/vat/return" -> "VAT return submitted successfully";
+            case "/hmrc/vat/return" -> method.equals("post") ? "VAT return submitted successfully" : "VAT return retrieved successfully";
             case "/hmrc/receipt" -> method.equals("post")
                     ? "Receipt logged successfully"
                     : "Receipts retrieved successfully";
