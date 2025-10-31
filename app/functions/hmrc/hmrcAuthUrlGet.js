@@ -22,7 +22,7 @@ export async function handler(event) {
 
     // Extract requested scope from query params, default to write:vat read:vat for backward compatibility
     const requestedScope = event.queryStringParameters?.scope || "write:vat read:vat";
-    
+
     // Validate scope - only allow known HMRC scopes
     const validScopes = ["write:vat", "read:vat", "write:vat read:vat", "read:vat write:vat"];
     if (!validScopes.includes(requestedScope)) {
@@ -36,7 +36,7 @@ export async function handler(event) {
     const maybeSlash = process.env.DIY_SUBMIT_BASE_URL?.endsWith("/") ? "" : "/";
     const redirectUri = `${process.env.DIY_SUBMIT_BASE_URL}${maybeSlash}activities/submitVatCallback.html`;
     const hmrcBase = process.env.HMRC_BASE_URI;
-    
+
     const authUrl =
       `${hmrcBase}/oauth/authorize?response_type=code` +
       `&client_id=${encodeURIComponent(clientId)}` +

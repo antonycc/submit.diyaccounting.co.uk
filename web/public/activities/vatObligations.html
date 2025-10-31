@@ -126,9 +126,7 @@
 
       <!-- Navigation Button -->
       <div class="navigation-container" style="text-align: center; margin-top: 2em">
-        <button type="button" class="btn" id="homePageBtn" onclick="window.location.href='../index.html'">
-          Return to Home
-        </button>
+        <button type="button" class="btn" id="homePageBtn" onclick="window.location.href='../index.html'">Return to Home</button>
         <button type="button" class="btn" id="receiptsPageBtn" onclick="window.location.href='../account/receipts.html'">
           My Receipts
         </button>
@@ -197,7 +195,7 @@
         try {
           const accessToken = sessionStorage.getItem("hmrcAccessToken");
           const pendingRequest = JSON.parse(localStorage.getItem("pendingObligationsRequest") || "null");
-          
+
           if (!pendingRequest) {
             console.log("No pending obligations request found");
             return;
@@ -287,7 +285,7 @@
 
         // Check if we have an access token
         const accessToken = sessionStorage.getItem("hmrcAccessToken");
-        
+
         if (!accessToken) {
           try {
             showLoading();
