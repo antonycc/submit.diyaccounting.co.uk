@@ -148,11 +148,6 @@
         const accessToken = sessionStorage.getItem("hmrcAccessToken");
         const pendingData = localStorage.getItem("pendingOAuthData");
 
-      // Check if we returned from OAuth and retrieve pending return
-      async function checkOAuthCallback() {
-        const accessToken = sessionStorage.getItem("hmrcAccessToken");
-        const pendingData = localStorage.getItem("pendingOAuthData");
-
         // Only proceed if we have an access token (which is only set after successful OAuth state validation)
         if (accessToken && pendingData) {
           try {
