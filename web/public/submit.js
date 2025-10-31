@@ -227,9 +227,14 @@ async function getGovClientHeaders() {
       headers["Gov-Client-Browser-JS-User-Agent"] = navigator.userAgent;
     }
 
-    // Device ID (random UUID for this session)
+    // Device ID (persistent across sessions for proper device identification)
     if (crypto && crypto.randomUUID) {
-      headers["Gov-Client-Device-ID"] = crypto.randomUUID();
+      let deviceId = localStorage.getItem("govClientDeviceId");
+      if (!deviceId) {
+        deviceId = crypto.randomUUID();
+        localStorage.setItem("govClientDeviceId", deviceId);
+      }
+      headers["Gov-Client-Device-ID"] = deviceId;
     }
 
     // Multi-Factor (always OTHER for web clients)
@@ -268,11 +273,18 @@ async function getGovClientHeaders() {
       height: window.innerHeight,
     });
 
-    // User IDs (placeholder for now)
-    headers["Gov-Client-User-IDs"] = "test=1";
+    // User IDs - in production, this would be populated with actual user data
+    // For now, omit in production to avoid sending placeholder data
+    const isSandbox =
+      window.location.hostname === "localhost" ||
+      window.location.hostname === "127.0.0.1" ||
+      window.location.origin.includes("test") ||
+      window.location.origin.includes("sandbox");
 
-    // Vendor Forwarded (placeholder)
-    headers["Gov-Vendor-Forwarded"] = "test=1";
+    if (isSandbox) {
+      headers["Gov-Client-User-IDs"] = "test=1";
+      headers["Gov-Vendor-Forwarded"] = "test=1";
+    }
   } catch (error) {
     console.warn("Error building Gov-Client headers:", error);
   }

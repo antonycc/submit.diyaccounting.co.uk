@@ -148,6 +148,12 @@
         const accessToken = sessionStorage.getItem("hmrcAccessToken");
         const pendingData = localStorage.getItem("pendingOAuthData");
 
+      // Check if we returned from OAuth and retrieve pending return
+      async function checkOAuthCallback() {
+        const accessToken = sessionStorage.getItem("hmrcAccessToken");
+        const pendingData = localStorage.getItem("pendingOAuthData");
+
+        // Only proceed if we have an access token (which is only set after successful OAuth state validation)
         if (accessToken && pendingData) {
           try {
             const data = JSON.parse(pendingData);
@@ -162,17 +168,19 @@
               showStatus("Retrieving VAT return...", "info");
               await retrieveReturn(data.vrn, data.periodKey, data.testScenario, accessToken);
 
-              // Clean up
+              // Clean up after successful retrieval
+              // Note: oauth_state was already validated and removed by submitVatCallback.html
               localStorage.removeItem("pendingOAuthData");
               localStorage.removeItem("currentActivity");
-              sessionStorage.removeItem("oauth_state");
             }
           } catch (error) {
             console.error("Error processing OAuth callback:", error);
             showStatus(`Failed to retrieve return: ${error.message}`, "error");
             localStorage.removeItem("pendingOAuthData");
+            localStorage.removeItem("currentActivity");
           }
         }
+      }
       }
 
       // Retrieve VAT return from API

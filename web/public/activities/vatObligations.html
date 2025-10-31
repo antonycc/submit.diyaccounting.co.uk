@@ -169,6 +169,7 @@
         const accessToken = sessionStorage.getItem("hmrcAccessToken");
         const pendingData = localStorage.getItem("pendingOAuthData");
 
+        // Only proceed if we have an access token (which is only set after successful OAuth state validation)
         if (accessToken && pendingData) {
           try {
             const data = JSON.parse(pendingData);
@@ -176,15 +177,16 @@
               showStatus("Retrieving VAT obligations...", "info");
               await retrieveObligations(data.vrn, data.fromDate, data.toDate, data.status, data.testScenario, accessToken);
 
-              // Clean up
+              // Clean up after successful retrieval
+              // Note: oauth_state was already validated and removed by submitVatCallback.html
               localStorage.removeItem("pendingOAuthData");
               localStorage.removeItem("currentActivity");
-              sessionStorage.removeItem("oauth_state");
             }
           } catch (error) {
             console.error("Error processing OAuth callback:", error);
             showStatus(`Failed to retrieve obligations: ${error.message}`, "error");
             localStorage.removeItem("pendingOAuthData");
+            localStorage.removeItem("currentActivity");
           }
         }
       }
