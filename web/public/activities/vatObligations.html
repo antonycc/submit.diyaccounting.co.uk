@@ -260,22 +260,36 @@
           // Check for access token
           let accessToken = sessionStorage.getItem("hmrcAccessToken");
 
+          // In sandbox/test mode, use a dummy token if no real token exists
+          const baseUrl = window.location.origin;
+          const isSandbox =
+            baseUrl.includes("test") ||
+            baseUrl.includes("sandbox") ||
+            window.location.hostname === "localhost" ||
+            window.location.hostname === "127.0.0.1";
+
           if (!accessToken) {
-            // No access token, initiate OAuth flow
-            showStatus("Initiating HMRC authentication...", "info");
+            if (isSandbox) {
+              // Use dummy token for sandbox/test mode
+              accessToken = "test-token-stub-mode";
+              console.log("Using dummy token in sandbox mode");
+            } else {
+              // No access token, initiate OAuth flow
+              showStatus("Initiating HMRC authentication...", "info");
 
-            // Store search parameters for restoration after OAuth
-            const pendingData = {
-              activity: "obligations",
-              vrn,
-              fromDate,
-              toDate,
-              status,
-              testScenario,
-            };
+              // Store search parameters for restoration after OAuth
+              const pendingData = {
+                activity: "obligations",
+                vrn,
+                fromDate,
+                toDate,
+                status,
+                testScenario,
+              };
 
-            await initiateHmrcAuth(location.pathname, pendingData, "read:vat");
-            return; // Will redirect to HMRC
+              await initiateHmrcAuth(location.pathname, pendingData, "read:vat");
+              return; // Will redirect to HMRC
+            }
           }
 
           // Have access token, proceed with retrieval
