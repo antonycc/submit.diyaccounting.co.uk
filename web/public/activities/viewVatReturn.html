@@ -15,8 +15,20 @@
   <body>
     <header>
       <div class="header-nav">
-        <a href="./vatObligations.html">← Back to Obligations</a>
-        <a href="../index.html">Home</a>
+        <div class="hamburger-menu">
+          <button class="hamburger-btn" onclick="toggleMenu()">☰</button>
+          <div class="menu-dropdown" id="menuDropdown">
+            <a href="../index.html">Home</a>
+            <a href="./vatObligations.html">VAT Obligations</a>
+            <a href="../account/bundles.html">Bundles</a>
+            <a href="../account/receipts.html">Receipts</a>
+            <a href="../docs/index.html">API Docs</a>
+          </div>
+        </div>
+        <div class="auth-section">
+          <span class="login-status">Not logged in</span>
+          <a href="../auth/login.html" class="login-link">Log in</a>
+        </div>
       </div>
       <h1>View VAT Return</h1>
       <p class="subtitle">View submitted VAT return details</p>
@@ -75,6 +87,10 @@
     </div>
 
     <script src="../submit.js"></script>
+    <script src="../widgets/hamburger-menu.js"></script>
+    <script src="../widgets/auth-status.js"></script>
+    <script src="../widgets/status-messages.js"></script>
+    <script src="../widgets/loading-spinner.js"></script>
     <script>
       // Check if we're in sandbox/test mode to show developer options
       function initializePage() {
@@ -115,9 +131,86 @@
           });
         }
 
-        // Auto-submit if we have URL parameters
+        // Check if we returned from OAuth
+        checkOAuthCallback();
+
+        // Auto-submit if we have URL parameters and access token
         if (vrn && periodKey) {
-          document.getElementById("vatReturnForm").requestSubmit();
+          const accessToken = sessionStorage.getItem("hmrcAccessToken");
+          if (accessToken) {
+            document.getElementById("vatReturnForm").requestSubmit();
+          }
+        }
+      }
+
+      // Check if we returned from OAuth and retrieve pending return
+      async function checkOAuthCallback() {
+        const accessToken = sessionStorage.getItem("hmrcAccessToken");
+        const pendingData = localStorage.getItem("pendingOAuthData");
+
+        if (accessToken && pendingData) {
+          try {
+            const data = JSON.parse(pendingData);
+            if (data.activity === "viewReturn") {
+              // Populate form fields
+              document.getElementById("vrn").value = data.vrn;
+              document.getElementById("periodKey").value = data.periodKey;
+              if (data.testScenario) {
+                document.getElementById("testScenario").value = data.testScenario;
+              }
+
+              showStatus("Retrieving VAT return...", "info");
+              await retrieveReturn(data.vrn, data.periodKey, data.testScenario, accessToken);
+
+              // Clean up
+              localStorage.removeItem("pendingOAuthData");
+              localStorage.removeItem("currentActivity");
+              sessionStorage.removeItem("oauth_state");
+            }
+          } catch (error) {
+            console.error("Error processing OAuth callback:", error);
+            showStatus(`Failed to retrieve return: ${error.message}`, "error");
+            localStorage.removeItem("pendingOAuthData");
+          }
+        }
+      }
+
+      // Retrieve VAT return from API
+      async function retrieveReturn(vrn, periodKey, testScenario, accessToken) {
+        try {
+          showLoading();
+
+          // Build query parameters
+          const params = new URLSearchParams({ vrn });
+          if (testScenario) params.append("Gov-Test-Scenario", testScenario);
+
+          // Get Gov-Client headers
+          const govClientHeaders = await getGovClientHeaders();
+
+          const response = await fetchWithId(`/api/v1/hmrc/vat/return/${periodKey}?${params}`, {
+            method: "GET",
+            headers: {
+              "Authorization": `Bearer ${accessToken}`,
+              "Content-Type": "application/json",
+              ...govClientHeaders,
+            },
+          });
+
+          const result = await response.json();
+
+          if (!response.ok) {
+            throw new Error(result.message || "Failed to retrieve VAT return");
+          }
+
+          // Display results
+          displayReturn(result);
+          document.getElementById("returnResults").style.display = "block";
+          hideStatus();
+        } catch (error) {
+          console.error("Error retrieving VAT return:", error);
+          showStatus(`Failed to retrieve return: ${error.message}`, "error");
+        } finally {
+          hideLoading();
         }
       }
 
@@ -145,36 +238,44 @@
           const periodKey = formData.get("periodKey");
           const testScenario = formData.get("testScenario");
 
-          // Build query parameters
-          const params = new URLSearchParams({ vrn });
-          if (testScenario) params.append("Gov-Test-Scenario", testScenario);
+          // Check for access token
+          let accessToken = sessionStorage.getItem("hmrcAccessToken");
 
-          // Get access token (assuming it's stored from previous auth)
-          const accessToken = localStorage.getItem("hmrcAccessToken");
+          // In sandbox/test mode, use a dummy token if no real token exists
+          const baseUrl = window.location.origin;
+          const isSandbox =
+            baseUrl.includes("test") ||
+            baseUrl.includes("sandbox") ||
+            window.location.hostname === "localhost" ||
+            window.location.hostname === "127.0.0.1";
+
           if (!accessToken) {
-            throw new Error("No access token found. Please authorize with HMRC first.");
+            if (isSandbox) {
+              // Use dummy token for sandbox/test mode
+              accessToken = "test-token-stub-mode";
+              console.log("Using dummy token in sandbox mode");
+            } else {
+              // No access token, initiate OAuth flow
+              showStatus("Initiating HMRC authentication...", "info");
+
+              // Store parameters for restoration after OAuth
+              const pendingData = {
+                activity: "viewReturn",
+                vrn,
+                periodKey,
+                testScenario,
+              };
+
+              await initiateHmrcAuth(location.pathname, pendingData, "read:vat");
+              return; // Will redirect to HMRC
+            }
           }
 
-          const response = await fetch(`/api/v1/hmrc/vat/return/${periodKey}?${params}`, {
-            method: "GET",
-            headers: {
-              "Authorization": `Bearer ${accessToken}`,
-              "Content-Type": "application/json",
-            },
-          });
-
-          const result = await response.json();
-
-          if (!response.ok) {
-            throw new Error(result.message || "Failed to retrieve VAT return");
-          }
-
-          // Display results
-          displayReturn(result);
-          resultsContainer.style.display = "block";
+          // Have access token, proceed with retrieval
+          await retrieveReturn(vrn, periodKey, testScenario, accessToken);
         } catch (error) {
           console.error("Error retrieving VAT return:", error);
-          showStatusMessage(error.message, "error");
+          showStatus(error.message, "error");
         } finally {
           // Hide loading
           loadingSpinner.style.display = "none";
@@ -267,18 +368,7 @@
       }
 
       function showStatusMessage(message, type = "info") {
-        const container = document.getElementById("statusMessagesContainer");
-        const messageDiv = document.createElement("div");
-        messageDiv.className = `status-message ${type}`;
-        messageDiv.textContent = message;
-        container.appendChild(messageDiv);
-
-        // Auto-remove after 5 seconds
-        setTimeout(() => {
-          if (messageDiv.parentNode) {
-            messageDiv.parentNode.removeChild(messageDiv);
-          }
-        }, 5000);
+        showStatus(message, type);
       }
 
       // Button handlers
@@ -287,7 +377,7 @@
         const resultsContainer = document.getElementById("returnResults");
         form.reset();
         resultsContainer.style.display = "none";
-        document.getElementById("statusMessagesContainer").innerHTML = "";
+        hideStatus();
       });
 
       document.getElementById("backToObligationsBtn")?.addEventListener("click", () => {

@@ -64,8 +64,8 @@ public class ApiStack extends Stack {
         @Override
         String resourceNamePrefix();
 
-        //@Override
-        //String compressedResourceNamePrefix();
+        // @Override
+        // String compressedResourceNamePrefix();
 
         @Override
         String cloudTrailEnabled();

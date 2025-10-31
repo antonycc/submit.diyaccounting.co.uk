@@ -112,4 +112,34 @@ describe("httpGetHmrc", () => {
     expect(result.statusCode).toBe(400);
     expect(body.message).toBe("Missing state query parameter from URL");
   });
+
+  test("should support custom scope parameter", async () => {
+    const event = {
+      queryStringParameters: {
+        state: "test-state-123",
+        scope: "read:vat",
+      },
+    };
+
+    const result = await authUrlHandler(event);
+    const body = JSON.parse(result.body);
+
+    expect(result.statusCode).toBe(200);
+    expect(body.authUrl).toContain("scope=read%3Avat");
+    expect(body.authUrl).not.toContain("write%3Avat");
+  });
+
+  test("should use default scope when scope parameter not provided", async () => {
+    const event = {
+      queryStringParameters: {
+        state: "test-state-123",
+      },
+    };
+
+    const result = await authUrlHandler(event);
+    const body = JSON.parse(result.body);
+
+    expect(result.statusCode).toBe(200);
+    expect(body.authUrl).toContain("scope=write%3Avat%20read%3Avat");
+  });
 });
