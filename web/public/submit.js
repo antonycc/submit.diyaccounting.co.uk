@@ -214,6 +214,48 @@ function getIPViaWebRTC() {
   });
 }
 
+// Helper to build Gov-Client headers for HMRC API calls
+async function getGovClientHeaders() {
+  // Enhanced IP detection with fallbacks
+  const detectedIP = await getClientIP();
+  const govClientPublicIPHeader = detectedIP;
+  const govVendorPublicIPHeader = detectedIP;
+
+  const govClientBrowserJSUserAgentHeader = navigator.userAgent;
+  const govClientDeviceIDHeader = crypto.randomUUID();
+  const govClientMultiFactorHeader = "type=OTHER";
+  const govClientPublicIPTimestampHeader = new Date().toISOString();
+  const govClientPublicPortHeader = "" + (window.location.port || (window.location.protocol === "https:" ? "443" : "80"));
+  const govClientScreensHeader = JSON.stringify({
+    width: window.screen.width,
+    height: window.screen.height,
+    colorDepth: window.screen.colorDepth,
+    pixelDepth: window.screen.pixelDepth,
+  });
+  const govClientTimezoneHeader = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const govClientUserIDsHeader = "test=1";
+  const govClientWindowSizeHeader = JSON.stringify({
+    width: window.innerWidth,
+    height: window.innerHeight,
+  });
+  const govVendorForwardedHeader = "test=1";
+
+  return {
+    "Gov-Client-Browser-JS-User-Agent": govClientBrowserJSUserAgentHeader,
+    "Gov-Client-Device-ID": govClientDeviceIDHeader,
+    "Gov-Client-Multi-Factor": govClientMultiFactorHeader,
+    "Gov-Client-Public-IP": govClientPublicIPHeader,
+    "Gov-Client-Public-IP-Timestamp": govClientPublicIPTimestampHeader,
+    "Gov-Client-Public-Port": govClientPublicPortHeader,
+    "Gov-Client-Screens": govClientScreensHeader,
+    "Gov-Client-Timezone": govClientTimezoneHeader,
+    "Gov-Client-User-IDs": govClientUserIDsHeader,
+    "Gov-Client-Window-Size": govClientWindowSizeHeader,
+    "Gov-Vendor-Forwarded": govVendorForwardedHeader,
+    "Gov-Vendor-Public-IP": govVendorPublicIPHeader,
+  };
+}
+
 // Catalog helpers (browser-safe; no TOML parsing here to avoid bundling dependencies)
 function bundlesForActivity(catalog, activityId) {
   const activity = catalog?.activities?.find((a) => a.id === activityId);
