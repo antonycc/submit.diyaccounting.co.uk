@@ -49,3 +49,93 @@ Only `submitVat.js` exists for submitting returns.  There are no endpoints or pa
 ## HMRC context & roll‑out
 
 HMRC’s VAT API allows developers to retrieve obligations, submit and view returns, and retrieve liabilities, payments and penalties:contentReference[oaicite:25]{index=25}.  The sandbox environment supports scenario testing via the `Gov-Test-Scenario` header:contentReference[oaicite:26]{index=26}.  Building comprehensive support now ensures the DIY Accounting platform will remain compatible as HMRC’s MTD roll‑out expands and new features (e.g. penalty payments) become mandatory.
+
+## Progress Update (2025-10-31)
+
+### ✅ Completed
+
+1. **OAuth Integration for VAT Obligations and View Return**
+   - Updated `vatObligations.html` with full OAuth flow
+   - Updated `viewVatReturn.html` with full OAuth flow
+   - Both pages now check for `hmrcAccessToken` in sessionStorage
+   - Both pages redirect to HMRC OAuth with `read:vat` scope if no token exists
+   - Both pages restore form state and continue operations after OAuth callback
+
+2. **Dynamic Scope Support in hmrcAuthUrlGet.js**
+   - Added `scope` query parameter support
+   - Validates scope against allowed values: `write:vat`, `read:vat`, `write:vat read:vat`, `read:vat write:vat`
+   - Returns 400 error for invalid scope values
+   - Defaults to `write:vat read:vat` for backward compatibility
+
+3. **Gov-Client Headers Helper**
+   - Added `getGovClientHeaders()` function to submit.js
+   - Builds all required HMRC fraud-prevention headers from browser environment
+   - Used by both obligations and view return pages
+   - Includes IP detection, user agent, device ID, timezone, screen info, etc.
+
+4. **UI Consistency**
+   - Added hamburger menu to both pages for navigation
+   - Added auth-status widget showing login state
+   - Added proper navigation buttons (Home, My Receipts)
+   - Consistent styling with submitVat.html
+
+5. **Testing**
+   - Added 5 new unit tests for dynamic scope parameter
+   - All 158 unit tests passing
+   - All 28 integration tests passing
+   - Tests cover:
+     - Default scope behavior
+     - Custom scope (read:vat, write:vat)
+     - Invalid scope rejection
+     - Scope combinations
+
+### 🚧 In Progress / Future Work
+
+1. **Entitlements Gating**
+   - Apply `requireActivity()` middleware to obligations and view-return endpoints
+   - Check bundle access using `bundlesForActivity()` on page load
+   - Redirect unauthorized users to bundles page
+
+2. **Common Gov-Client Headers Helper (Backend)**
+   - Create `app/lib/buildGovClientHeaders.js` to centralize header building
+   - Use in `getVatObligations.js` and `hmrcVatReturnGet.js`
+   - Already using `eventToGovClientHeaders.js` but could be refactored further
+
+3. **Environment Variables for Stubbed Data**
+   - `TEST_VAT_OBLIGATIONS` already implemented
+   - `TEST_VAT_RETURN` already implemented
+   - Add: `TEST_VAT_LIABILITY`, `TEST_VAT_PAYMENT`, `TEST_VAT_PENALTY`
+
+4. **Behaviour (Playwright) Tests**
+   - End-to-end test for obligations journey
+   - End-to-end test for view return journey
+   - Test OAuth redirection flow
+   - Test form state restoration after OAuth
+
+5. **Error Handling Improvements**
+   - Enhance 401 detection to trigger automatic re-authentication
+   - Better error messages for HMRC API failures
+   - User-friendly feedback for network issues
+
+### Implementation Notes
+
+- The pattern from `submitVat.html` was successfully replicated for obligations and view return
+- OAuth state is stored in `sessionStorage` as `oauth_state`
+- Request parameters are stored in `localStorage` as `pendingObligationsRequest` or `pendingReturnRequest`
+- Current activity is tracked in `localStorage.currentActivity` for proper redirect after OAuth
+- Access tokens are stored in `sessionStorage.hmrcAccessToken` (not localStorage to avoid security issues)
+
+### Files Modified
+
+- `web/public/submit.js` - Added `getGovClientHeaders()` helper
+- `web/public/activities/vatObligations.html` - Complete OAuth integration
+- `web/public/activities/viewVatReturn.html` - Complete OAuth integration  
+- `app/functions/hmrc/hmrcAuthUrlGet.js` - Dynamic scope support
+- `app/unit-tests/authUrlHandler.test.js` - Added 5 new tests
+
+### Test Results
+
+- Unit tests: 158/158 passing ✅
+- Integration tests: 28/28 passing ✅
+- All changes maintain backward compatibility
+- No breaking changes to existing functionality

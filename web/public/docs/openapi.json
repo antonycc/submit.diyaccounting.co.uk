@@ -74,20 +74,6 @@
           }
         }
       },
-      "get" : {
-        "summary" : "Get user bundles",
-        "description" : "Retrieves bundles for the authenticated user",
-        "operationId" : "getBundles",
-        "tags" : [ "Account" ],
-        "security" : [ {
-          "CognitoAuth" : [ ]
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "Bundles retrieved successfully"
-          }
-        }
-      },
       "delete" : {
         "summary" : "Delete bundle",
         "description" : "Deletes a bundle for the authenticated user",

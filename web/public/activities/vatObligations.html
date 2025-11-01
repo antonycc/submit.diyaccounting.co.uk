@@ -1,4 +1,3 @@
-<!-- vatObligations.html -->
 <!doctype html>
 <html lang="en">
   <head>
@@ -15,7 +14,19 @@
   <body>
     <header>
       <div class="header-nav">
-        <a href="../index.html">← Back to Home</a>
+        <div class="hamburger-menu">
+          <button class="hamburger-btn" onclick="toggleMenu()">☰</button>
+          <div class="menu-dropdown" id="menuDropdown">
+            <a href="../index.html">Home</a>
+            <a href="../account/bundles.html">Bundles</a>
+            <a href="../account/receipts.html">Receipts</a>
+            <a href="../docs/index.html">API Docs</a>
+          </div>
+        </div>
+        <div class="auth-section">
+          <span class="login-status">Not logged in</span>
+          <a href="../auth/login.html" class="login-link">Log in</a>
+        </div>
       </div>
       <h1>VAT Obligations</h1>
       <p class="subtitle">Retrieve VAT obligations from HMRC</p>
@@ -96,7 +107,7 @@
             <div class="help-text">Test different HMRC sandbox scenarios</div>
           </div>
 
-          <button type="submit" id="retrieveBtn" class="submit-button">Retrieve Obligations</button>
+          <button type="submit" id="retrieveBtn" class="btn">Retrieve Obligations</button>
         </form>
 
         <div class="developer-controls">
@@ -112,10 +123,33 @@
           <button type="button" id="newSearchBtn" class="secondary-button">New Search</button>
         </div>
       </div>
+
+      <!-- Navigation Button -->
+      <div class="navigation-container" style="text-align: center; margin-top: 2em">
+        <button type="button" class="btn" id="homePageBtn" onclick="window.location.href='../index.html'">Return to Home</button>
+        <button type="button" class="btn" id="receiptsPageBtn" onclick="window.location.href='../account/receipts.html'">
+          My Receipts
+        </button>
+      </div>
     </div>
 
+    <footer>
+      <div class="footer-content">
+        <div class="footer-center">
+          <p>&copy; 2025 DIY Accounting Limited</p>
+        </div>
+      </div>
+    </footer>
+
     <script src="../submit.js"></script>
+    <script src="../widgets/hamburger-menu.js"></script>
+    <script src="../widgets/auth-status.js"></script>
+    <script src="../widgets/status-messages.js"></script>
+    <script src="../widgets/loading-spinner.js"></script>
     <script>
+      // Global variables
+      let obligationsData = null;
+
       // Check if we're in sandbox/test mode to show developer options
       function initializePage() {
         const baseUrl = window.location.origin;
@@ -145,72 +179,210 @@
         }
       }
 
-      // Handle form submission
-      document.getElementById("vatObligationsForm").addEventListener("submit", async (e) => {
-        e.preventDefault();
+      // OAuth callback handling
+      function handleOAuthCallback() {
+        const accessToken = sessionStorage.getItem("hmrcAccessToken");
+        if (accessToken) {
+          console.log("OAuth callback handler (accessToken found)");
+          // If we have an access token, retrieve stored parameters and execute the call
+          continueObligationsRetrieval();
+        } else {
+          console.log("OAuth callback handler (no accessToken found)");
+        }
+      }
 
-        const loadingSpinner = document.getElementById("loadingSpinner");
-        const submitBtn = document.getElementById("retrieveBtn");
-        const statusContainer = document.getElementById("statusMessagesContainer");
-        const resultsContainer = document.getElementById("obligationsResults");
-
-        // Clear previous results and status
-        statusContainer.innerHTML = "";
-        resultsContainer.style.display = "none";
-
-        // Show loading
-        loadingSpinner.style.display = "block";
-        submitBtn.disabled = true;
-        submitBtn.textContent = "Retrieving...";
-
+      async function continueObligationsRetrieval() {
         try {
-          const formData = new FormData(e.target);
-          const vrn = formData.get("vrn");
-          const fromDate = formData.get("fromDate");
-          const toDate = formData.get("toDate");
-          const status = formData.get("status");
-          const testScenario = formData.get("testScenario");
+          const accessToken = sessionStorage.getItem("hmrcAccessToken");
+          const pendingRequest = JSON.parse(localStorage.getItem("pendingObligationsRequest") || "null");
+
+          if (!pendingRequest) {
+            console.log("No pending obligations request found");
+            return;
+          }
+
+          console.log("Retrieved pending request:", pendingRequest);
+          showLoading();
+          showStatus("Retrieving VAT obligations...", "info");
+
+          // Restore form values
+          if (pendingRequest.vrn) document.getElementById("vrn").value = pendingRequest.vrn;
+          if (pendingRequest.from) document.getElementById("fromDate").value = pendingRequest.from;
+          if (pendingRequest.to) document.getElementById("toDate").value = pendingRequest.to;
+          if (pendingRequest.status) document.getElementById("status").value = pendingRequest.status;
+          if (pendingRequest.testScenario) document.getElementById("testScenario").value = pendingRequest.testScenario;
 
           // Build query parameters
-          const params = new URLSearchParams({ vrn });
-          if (fromDate) params.append("from", fromDate);
-          if (toDate) params.append("to", toDate);
-          if (status) params.append("status", status);
-          if (testScenario) params.append("Gov-Test-Scenario", testScenario);
+          const params = new URLSearchParams({ vrn: pendingRequest.vrn });
+          if (pendingRequest.from) params.append("from", pendingRequest.from);
+          if (pendingRequest.to) params.append("to", pendingRequest.to);
+          if (pendingRequest.status) params.append("status", pendingRequest.status);
+          if (pendingRequest.testScenario) params.append("Gov-Test-Scenario", pendingRequest.testScenario);
 
-          // Get access token (assuming it's stored from previous auth)
-          const accessToken = localStorage.getItem("hmrcAccessToken");
-          if (!accessToken) {
-            throw new Error("No access token found. Please authorize with HMRC first.");
-          }
+          // Get Gov-Client headers
+          const govClientHeaders = await getGovClientHeaders();
 
           const response = await fetch(`/api/v1/hmrc/vat/obligation?${params}`, {
             method: "GET",
             headers: {
               "Authorization": `Bearer ${accessToken}`,
               "Content-Type": "application/json",
+              ...govClientHeaders,
             },
           });
 
           const result = await response.json();
 
           if (!response.ok) {
+            // Handle 401 specifically to trigger re-authentication
+            if (response.status === 401) {
+              sessionStorage.removeItem("hmrcAccessToken");
+              showStatus("Access token expired. Please re-authenticate.", "error");
+              // Could trigger re-auth here if desired
+              return;
+            }
             throw new Error(result.message || "Failed to retrieve obligations");
           }
 
           // Display results
           displayObligations(result.obligations || []);
-          resultsContainer.style.display = "block";
+          document.getElementById("obligationsResults").style.display = "block";
+          hideStatus();
+
+          // Clean up
+          localStorage.removeItem("currentActivity");
+          localStorage.removeItem("pendingObligationsRequest");
+          console.log("Obligations retrieval completed successfully");
         } catch (error) {
           console.error("Error retrieving obligations:", error);
-          showStatusMessage(error.message, "error");
+          showStatus(`Failed to retrieve obligations: ${error.message}`, "error");
         } finally {
-          // Hide loading
-          loadingSpinner.style.display = "none";
-          submitBtn.disabled = false;
-          submitBtn.textContent = "Retrieve Obligations";
+          hideLoading();
         }
-      });
+      }
+
+      // Handle form submission
+      async function handleFormSubmission(event) {
+        event.preventDefault();
+
+        const formData = new FormData(event.target);
+        const vrn = formData.get("vrn").trim();
+        const from = formData.get("fromDate");
+        const to = formData.get("toDate");
+        const status = formData.get("status");
+        const testScenario = formData.get("testScenario");
+
+        // Basic validation
+        if (!vrn) {
+          showStatus("Please enter a VAT registration number.", "error");
+          return;
+        }
+
+        if (!/^\d{9}$/.test(vrn)) {
+          showStatus("VAT number must be exactly 9 digits.", "error");
+          return;
+        }
+
+        // Check if we have an access token
+        const accessToken = sessionStorage.getItem("hmrcAccessToken");
+
+        if (!accessToken) {
+          try {
+            showLoading();
+            showStatus("Initiating HMRC authentication...", "info");
+
+            // Store request parameters and generate state
+            const state = generateRandomState();
+            const requestData = { vrn, from, to, status, testScenario };
+
+            sessionStorage.setItem("oauth_state", state);
+            localStorage.setItem("pendingObligationsRequest", JSON.stringify(requestData));
+            localStorage.setItem("currentActivity", location.pathname);
+            console.log("Stored pending request and current activity:", requestData, location.pathname);
+
+            // Get OAuth URL with read-only scope
+            const authResponse = await getAuthUrl(state, "hmrc", "read:vat");
+            const authResponseUrl = authResponse.authUrl;
+
+            showStatus(`Redirecting to HMRC for authentication at ${authResponseUrl}...`, "info");
+
+            // Redirect to HMRC OAuth
+            console.log(`Page transition initiated: Redirecting to HMRC OAuth URL ${authResponseUrl}`);
+            window.location.href = authResponseUrl;
+          } catch (error) {
+            console.error("Authentication error:", error);
+            showStatus(`Authentication failed: ${error.message}`, "error");
+            hideLoading();
+          }
+        } else {
+          // We have an access token, proceed directly
+          try {
+            showLoading();
+            showStatus("Retrieving VAT obligations...", "info");
+
+            // Build query parameters
+            const params = new URLSearchParams({ vrn });
+            if (from) params.append("from", from);
+            if (to) params.append("to", to);
+            if (status) params.append("status", status);
+            if (testScenario) params.append("Gov-Test-Scenario", testScenario);
+
+            // Get Gov-Client headers
+            const govClientHeaders = await getGovClientHeaders();
+
+            const response = await fetch(`/api/v1/hmrc/vat/obligation?${params}`, {
+              method: "GET",
+              headers: {
+                "Authorization": `Bearer ${accessToken}`,
+                "Content-Type": "application/json",
+                ...govClientHeaders,
+              },
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+              // Handle 401 specifically to trigger re-authentication
+              if (response.status === 401) {
+                sessionStorage.removeItem("hmrcAccessToken");
+                showStatus("Access token expired. Please try again.", "error");
+                return;
+              }
+              throw new Error(result.message || "Failed to retrieve obligations");
+            }
+
+            // Display results
+            displayObligations(result.obligations || []);
+            document.getElementById("obligationsResults").style.display = "block";
+            hideStatus();
+          } catch (error) {
+            console.error("Error retrieving obligations:", error);
+            showStatus(`Failed to retrieve obligations: ${error.message}`, "error");
+          } finally {
+            hideLoading();
+          }
+        }
+      }
+
+      // Update getAuthUrl to accept scope parameter
+      async function getAuthUrl(state, provider = "hmrc", scope = null) {
+        let url = `/api/v1/${provider}/authUrl?state=${encodeURIComponent(state)}`;
+        if (scope) {
+          url += `&scope=${encodeURIComponent(scope)}`;
+        }
+        console.log(`Getting auth URL. Remote call initiated: GET ${url}`);
+
+        const response = await fetch(url);
+        const responseJson = await response.json();
+        if (!response.ok) {
+          const message = `Failed to get auth URL. Remote call failed: GET ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`;
+          console.error(message);
+          throw new Error(message);
+        }
+
+        console.log(`Got auth URL. Remote call completed successfully: GET ${url}`, responseJson);
+        return responseJson;
+      }
 
       function displayObligations(obligations) {
         const tableContainer = document.getElementById("obligationsTable");
@@ -219,6 +391,9 @@
           tableContainer.innerHTML = '<p class="no-data">No obligations found for the specified criteria.</p>';
           return;
         }
+
+        // Get VRN safely
+        const vrn = document.getElementById("vrn").value;
 
         let tableHtml = `
           <table class="results-table">
@@ -239,20 +414,24 @@
         obligations.forEach((obligation) => {
           const statusClass = obligation.status === "O" ? "status-open" : "status-fulfilled";
           const statusText = obligation.status === "O" ? "Open" : "Fulfilled";
+          
+          // Escape values to prevent XSS
+          const escapedVrn = escapeHtml(vrn);
+          const escapedPeriodKey = escapeHtml(obligation.periodKey);
 
           tableHtml += `
             <tr>
-              <td><strong>${obligation.periodKey}</strong></td>
-              <td>${obligation.start || "-"}</td>
-              <td>${obligation.end || "-"}</td>
-              <td>${obligation.due || "-"}</td>
+              <td><strong>${escapeHtml(obligation.periodKey)}</strong></td>
+              <td>${escapeHtml(obligation.start) || "-"}</td>
+              <td>${escapeHtml(obligation.end) || "-"}</td>
+              <td>${escapeHtml(obligation.due) || "-"}</td>
               <td><span class="${statusClass}">${statusText}</span></td>
-              <td>${obligation.received || "-"}</td>
+              <td>${escapeHtml(obligation.received) || "-"}</td>
               <td>
                 ${
                   obligation.status === "F"
-                    ? `<button class="action-button" onclick="viewReturn('${document.getElementById("vrn").value}', '${obligation.periodKey}')">View Return</button>`
-                    : `<button class="action-button" onclick="submitReturn('${document.getElementById("vrn").value}', '${obligation.periodKey}')">Submit Return</button>`
+                    ? `<button class="action-button btn" onclick="viewReturn('${escapedVrn}', '${escapedPeriodKey}')">View Return</button>`
+                    : `<button class="action-button btn" onclick="submitReturn('${escapedVrn}', '${escapedPeriodKey}')">Submit Return</button>`
                 }
               </td>
             </tr>
@@ -261,6 +440,14 @@
 
         tableHtml += "</tbody></table>";
         tableContainer.innerHTML = tableHtml;
+      }
+
+      // Helper function to escape HTML and prevent XSS
+      function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
       }
 
       function viewReturn(vrn, periodKey) {
@@ -273,32 +460,34 @@
         window.location.href = `submitVat.html?vrn=${vrn}&periodKey=${periodKey}`;
       }
 
-      function showStatusMessage(message, type = "info") {
-        const container = document.getElementById("statusMessagesContainer");
-        const messageDiv = document.createElement("div");
-        messageDiv.className = `status-message ${type}`;
-        messageDiv.textContent = message;
-        container.appendChild(messageDiv);
-
-        // Auto-remove after 5 seconds
-        setTimeout(() => {
-          if (messageDiv.parentNode) {
-            messageDiv.parentNode.removeChild(messageDiv);
-          }
-        }, 5000);
-      }
-
       // New search button handler
       document.getElementById("newSearchBtn")?.addEventListener("click", () => {
         const form = document.getElementById("vatObligationsForm");
         const resultsContainer = document.getElementById("obligationsResults");
         form.reset();
         resultsContainer.style.display = "none";
-        document.getElementById("statusMessagesContainer").innerHTML = "";
+        hideStatus();
       });
 
+      // Input validation
+      document.getElementById("vrn").addEventListener("input", function (e) {
+        // Only allow digits
+        e.target.value = e.target.value.replace(/\D/g, "");
+      });
+
+      // Event listeners
+      document.getElementById("vatObligationsForm").addEventListener("submit", handleFormSubmission);
+
       // Initialize page when DOM is loaded
-      document.addEventListener("DOMContentLoaded", initializePage);
+      document.addEventListener("DOMContentLoaded", function () {
+        console.log("JS block started loading: DOMContentLoaded event handler");
+        initializePage();
+        // Check if we're returning from OAuth
+        handleOAuthCallback();
+        console.log("JS block finished loading: DOMContentLoaded event handler");
+      });
+
+      console.log("JS block finished loading.");
     </script>
   </body>
 </html>

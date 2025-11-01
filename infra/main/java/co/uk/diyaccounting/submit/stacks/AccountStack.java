@@ -39,10 +39,6 @@ public class AccountStack extends Stack {
     public Function bundleDeleteLambda;
     public LogGroup bundleDeleteLambdaLogGroup;
 
-    public ApiLambdaProps bundleGetLambdaProps;
-    public Function bundleGetLambda;
-    public LogGroup bundleGetLambdaLogGroup;
-
     public List<ApiLambdaProps> lambdaFunctionProps;
 
     @Value.Immutable
@@ -225,48 +221,11 @@ public class AccountStack extends Stack {
                 "Granted Cognito permissions to %s for User Pool %s",
                 this.bundleDeleteLambda.getFunctionName(), userPool.getUserPoolId());
 
-        // My Bundles Lambda
-        var myBundlesLambdaEnv =
-                new PopulatedMap<String, String>().with("DIY_SUBMIT_BASE_URL", props.sharedNames().baseUrl);
-        var myBundlesLambdaUrlOrigin = new ApiLambda(
-                this,
-                ApiLambdaProps.builder()
-                        .idPrefix(props.sharedNames().bundleGetLambdaFunctionName)
-                        .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
-                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .functionName(props.sharedNames().bundleGetLambdaFunctionName)
-                        .handler(props.sharedNames().bundleGetLambdaHandler)
-                        .lambdaArn(props.sharedNames().bundleGetLambdaArn)
-                        .httpMethod(props.sharedNames().bundleGetLambdaHttpMethod)
-                        .urlPath(props.sharedNames().bundleGetLambdaUrlPath)
-                        // .cloudFrontAllowedMethods(AllowedMethods.ALLOW_ALL)
-                        .environment(myBundlesLambdaEnv)
-                        .timeout(Duration.millis(Long.parseLong("30000")))
-                        .build());
-        this.bundleGetLambdaProps = myBundlesLambdaUrlOrigin.props;
-        this.bundleGetLambda = myBundlesLambdaUrlOrigin.lambda;
-        this.bundleGetLambdaLogGroup = myBundlesLambdaUrlOrigin.logGroup;
-        this.lambdaFunctionProps.add(this.bundleGetLambdaProps);
-        infof(
-                "Created Lambda %s for my bundles retrieval with handler %s",
-                this.bundleGetLambda.getNode().getId(), props.sharedNames().bundleGetLambdaHandler);
-        var myBundlesLambdaGrantPrincipal = this.bundleGetLambda.getGrantPrincipal();
-        userPool.grant(
-                myBundlesLambdaGrantPrincipal,
-                "cognito-idp:AdminGetUser",
-                "cognito-idp:AdminUpdateUserAttributes",
-                "cognito-idp:ListUsers");
-        infof(
-                "Created Lambda %s for my bundles retrieval with handler %s",
-                this.bundleGetLambda.getNode().getId(), props.sharedNames().bundleGetLambdaHandler);
-
         Aspects.of(this).add(new SetAutoDeleteJobLogRetentionAspect(props.deploymentName(), RetentionDays.THREE_DAYS));
 
         cfnOutput(this, "CatalogLambdaArn", this.catalogLambda.getFunctionArn());
         cfnOutput(this, "RequestBundlesLambdaArn", this.bundlePostLambda.getFunctionArn());
         cfnOutput(this, "BundleDeleteLambdaArn", this.bundleDeleteLambda.getFunctionArn());
-        cfnOutput(this, "MyBundlesLambdaArn", this.bundleGetLambda.getFunctionArn());
 
         infof(
                 "AccountStack %s created successfully for %s",

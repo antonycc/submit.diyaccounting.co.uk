@@ -1,7 +1,8 @@
 // app/unit-tests/bundle.catalog.test.js
 import { describe, test, beforeEach, expect } from "vitest";
-import { handler as requestBundle, __getInMemoryBundlesStore } from "@app/functions/account/bundlePost.js";
+import { handler as requestBundle } from "@app/functions/account/bundlePost.js";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
+import { getBundlesStore } from "@app/functions/non-lambda-mocks/mockBundleStore.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -33,7 +34,7 @@ describe("bundle.js – catalog qualifiers and expiry (MOCK)", () => {
   beforeEach(() => {
     process.env.TEST_BUNDLE_MOCK = "true";
     // Clear the in-memory store before each test
-    const store = __getInMemoryBundlesStore();
+    const store = getBundlesStore();
     store.clear();
   });
 

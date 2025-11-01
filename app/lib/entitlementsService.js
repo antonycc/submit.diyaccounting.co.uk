@@ -1,6 +1,8 @@
 // app/lib/entitlementsService.js
 import { loadCatalogFromRoot, bundlesForActivity } from "./productCatalogHelper.js";
-import { __getInMemoryBundlesStore } from "../functions/account/bundlePost.js";
+import { getBundlesStore } from "../functions/non-lambda-mocks/mockBundleStore.js";
+
+const mockBundleStore = getBundlesStore();
 
 // Very light JWT decode (no signature verification) – same approach as bundle.js
 function decodeJwtNoVerify(token) {
@@ -44,7 +46,7 @@ export function getCatalog() {
 
 export function getGrantedBundles(userCtx) {
   // MOCK: in-memory grants map
-  const store = __getInMemoryBundlesStore();
+  const store = mockBundleStore();
   const list = store.get(userCtx?.sub) || [];
   // parse entries of form "bundleId|EXPIRY=YYYY-MM-DD" → filter out expired
   const now = new Date();

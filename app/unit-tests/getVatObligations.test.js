@@ -2,7 +2,7 @@
 
 import { describe, test, expect, beforeEach, vi } from "vitest";
 
-import { httpGet } from "../functions/hmrc/hmrcVatObligationGet.js";
+import { handler } from "../functions/hmrc/hmrcVatObligationGet.js";
 import { buildGovClientTestHeaders } from "./govClientTestHeader.js";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 
@@ -48,7 +48,7 @@ describe("getVatObligations handler", () => {
       },
     };
 
-    const result = await httpGet(event);
+    const result = await handler(event);
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(200);
@@ -74,7 +74,7 @@ describe("getVatObligations handler", () => {
       },
     };
 
-    const result = await httpGet(event);
+    const result = await handler(event);
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(200);
@@ -93,7 +93,7 @@ describe("getVatObligations handler", () => {
       },
     };
 
-    const result = await httpGet(event);
+    const result = await handler(event);
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(200);
@@ -109,7 +109,7 @@ describe("getVatObligations handler", () => {
       },
     };
 
-    const result = await httpGet(event);
+    const result = await handler(event);
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(400);
@@ -127,7 +127,7 @@ describe("getVatObligations handler", () => {
       },
     };
 
-    const result = await httpGet(event);
+    const result = await handler(event);
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(400);
@@ -146,7 +146,7 @@ describe("getVatObligations handler", () => {
       },
     };
 
-    const result = await httpGet(event);
+    const result = await handler(event);
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(400);
@@ -165,7 +165,7 @@ describe("getVatObligations handler", () => {
       },
     };
 
-    const result = await httpGet(event);
+    const result = await handler(event);
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(400);
@@ -182,7 +182,7 @@ describe("getVatObligations handler", () => {
       },
     };
 
-    const result = await httpGet(event);
+    const result = await handler(event);
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(400);
@@ -221,7 +221,7 @@ describe("getVatObligations handler", () => {
       },
     };
 
-    const result = await httpGet(event);
+    const result = await handler(event);
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(200);
@@ -260,7 +260,7 @@ describe("getVatObligations handler", () => {
       },
     };
 
-    const result = await httpGet(event);
+    const result = await handler(event);
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(500);
