@@ -2,6 +2,13 @@
 
 import { loadCatalogFromRoot } from "../../lib/productCatalogHelper.js";
 import { validateEnv } from "../../lib/env.js";
+import logger from "../../lib/logger.js";
+import { extractRequest } from "../../lib/responses.js";
+import { decodeJwtToken } from "../../lib/jwtHelper.js";
+import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
+import { getBundlesStore } from "../non-lambda-mocks/mockBundleStore.js";
+
+const mockBundleStore = getBundlesStore();
 
 // AWS Cognito SDK is loaded lazily only when not in MOCK mode to avoid requiring it during tests
 let __cognitoModule;
@@ -18,25 +25,6 @@ async function getCognitoClient() {
     __cognitoClient = new mod.CognitoIdentityProviderClient({ region: process.env.AWS_REGION || "eu-west-2" });
   }
   return __cognitoClient;
-}
-// Lightweight JWT decode (no signature verification)
-function decodeJwtNoVerify(token) {
-  try {
-    const parts = String(token || "").split(".");
-    if (parts.length < 2) return null;
-    const payload = parts[1].replace(/-/g, "+").replace(/_/g, "/");
-    const json = Buffer.from(payload, "base64").toString("utf8");
-    return JSON.parse(json);
-  } catch (_err) {
-    return null;
-  }
-}
-
-// In-memory store for MOCK mode (no AWS required). Map<userSub, string[]>
-const __inMemoryBundles = new Map();
-
-export function __getInMemoryBundlesStore() {
-  return __inMemoryBundles;
 }
 
 function isMockMode() {
@@ -86,68 +74,44 @@ function qualifiersSatisfied(bundle, claims, requestQualifiers = {}) {
   return { ok: true };
 }
 
-/**
- * Request a bundle for a user
- * @param {Object} event - Lambda event object
- * @returns {Object} Response object
- */
+export function apiEndpoint(app) {
+  app.post("/api/v1/bundle", async (httpRequest, httpResponse) => {
+    const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
+    const lambdaResult = await handler(lambdaEvent);
+    return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
+  });
+}
+
 export async function handler(event) {
+  const request = extractRequest(event);
+  logger.info({ message: "bundlePost entry", route: "/api/v1/bundle", request });
+
   validateEnv(["COGNITO_USER_POOL_ID"]);
 
   try {
-    console.log("[DEBUG_LOG] Bundle request received:", JSON.stringify(event, null, 2));
-
-    // Extract Cognito JWT from Authorization header
-    const authHeader = event.headers?.authorization || event.headers?.Authorization;
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    logger.info({ message: "Bundle request received:", event: JSON.stringify(event, null, 2) });
+    let decodedToken;
+    try {
+      decodedToken = decodeJwtToken(event.headers);
+    } catch (error) {
       return {
         statusCode: 401,
         headers: {
           "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*",
-          "Access-Control-Allow-Headers": "Content-Type,Authorization",
-          "Access-Control-Allow-Methods": "POST,OPTIONS",
         },
-        body: JSON.stringify({ error: "Unauthorized - Missing or invalid authorization header" }),
+        body: JSON.stringify(error),
       };
     }
-
-    const token = authHeader.split(" ")[1];
-
-    // Decode JWT to get user's Cognito ID (sub)
-    const decodedToken = decodeJwtNoVerify(token);
-    if (!decodedToken || !decodedToken.sub) {
-      console.log("[DEBUG_LOG] JWT decode failed or missing sub");
-      return {
-        statusCode: 401,
-        headers: {
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*",
-        },
-        body: JSON.stringify({ error: "Unauthorized - Invalid token" }),
-      };
-    }
-
     const userId = decodedToken.sub;
-    const userPoolId = process.env.COGNITO_USER_POOL_ID;
 
-    if (!userPoolId && !isMockMode()) {
-      console.log("[DEBUG_LOG] Missing USER_POOL_ID environment variable (non-mock mode)");
-      return {
-        statusCode: 500,
-        headers: {
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*",
-        },
-        body: JSON.stringify({ error: "Server configuration error" }),
-      };
-    }
+    const userPoolId = process.env.COGNITO_USER_POOL_ID;
 
     // Parse request body
     let requestBody;
     try {
       requestBody = JSON.parse(event.body || "{}");
     } catch (error) {
+      logger.error({ message: "Failed to parse request body as JSON:", error: error.message });
       return {
         statusCode: 400,
         headers: {
@@ -171,13 +135,13 @@ export async function handler(event) {
       };
     }
 
-    console.log("[DEBUG_LOG] Processing bundle request for user:", userId, "bundle:", requestedBundle);
+    logger.info({ message: "Processing bundle request for user:", userId, requestedBundle });
 
     // Fetch current bundles from Cognito custom attribute or MOCK store
     let currentBundles = [];
     if (isMockMode()) {
-      currentBundles = __inMemoryBundles.get(userId) || [];
-      console.log("[DEBUG_LOG] [MOCK] Current user bundles:", currentBundles);
+      currentBundles = mockBundleStore.get(userId) || [];
+      logger.info({ message: "[MOCK] Current user bundles:", currentBundles });
     } else {
       try {
         const mod = await getCognitoModule();
@@ -191,9 +155,9 @@ export async function handler(event) {
         if (bundlesAttribute && bundlesAttribute.Value) {
           currentBundles = bundlesAttribute.Value.split("|").filter((bundle) => bundle.length > 0);
         }
-        console.log("[DEBUG_LOG] Current user bundles:", currentBundles);
+        logger.info({ message: "Current user bundles:", currentBundles });
       } catch (error) {
-        console.log("[DEBUG_LOG] Error fetching user:", error.message);
+        logger.error({ message: "Error fetching user:", error: error.message });
         return {
           statusCode: 404,
           headers: {
@@ -208,6 +172,7 @@ export async function handler(event) {
     // Check if user already has this bundle
     const hasBundle = currentBundles.some((bundle) => bundle.startsWith(requestedBundle + "|"));
     if (hasBundle) {
+      logger.info({ message: "User already has requested bundle:", requestedBundle });
       return {
         statusCode: 200,
         headers: {
@@ -226,97 +191,110 @@ export async function handler(event) {
     // Two paths: legacy HMRC_TEST_API path via env expiry & user limit OR catalog-driven bundles
     const catalogBundle = getCatalogBundle(requestedBundle);
 
-    if (!catalogBundle) {
-      // Legacy behavior preserved (HMRC_TEST_API or other external bundles using envs)
-      const expiryDate = process.env.TEST_BUNDLE_EXPIRY_DATE || "2025-12-31";
-      if (new Date() > new Date(expiryDate)) {
-        return {
-          statusCode: 403,
-          headers: {
-            "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": "*",
-          },
-          body: JSON.stringify({ error: "This bundle has expired." }),
-        };
-      }
-
-      // Check user limit for this bundle
-      const userLimit = parseInt(process.env.TEST_BUNDLE_USER_LIMIT || "1000");
-      let currentCount;
-      if (isMockMode()) {
-        currentCount = 0;
-        for (const bundles of __inMemoryBundles.values()) {
-          if ((bundles || []).some((b) => typeof b === "string" && b.startsWith(requestedBundle + "|"))) {
-            currentCount++;
-          }
-        }
-      } else {
-        currentCount = await getCurrentUserCountForBundle(requestedBundle, userPoolId);
-      }
-
-      if (currentCount >= userLimit) {
-        return {
-          statusCode: 403,
-          headers: {
-            "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": "*",
-          },
-          body: JSON.stringify({ error: "User limit reached for this bundle." }),
-        };
-      }
-
-      const newBundle = `${requestedBundle}|EXPIRY=${expiryDate}`;
-      currentBundles.push(newBundle);
-      if (isMockMode()) {
-        __inMemoryBundles.set(userId, currentBundles);
-        return {
-          statusCode: 200,
-          headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
-          body: JSON.stringify({
-            status: "granted",
-            granted: true,
-            expiryDate,
-            expiry: expiryDate,
-            bundle: requestedBundle,
-            bundles: currentBundles,
-          }),
-        };
-      }
-      try {
-        const mod = await getCognitoModule();
-        const client = await getCognitoClient();
-        const updateCommand = new mod.AdminUpdateUserAttributesCommand({
-          UserPoolId: userPoolId,
-          Username: userId,
-          UserAttributes: [{ Name: "custom:bundles", Value: currentBundles.join("|") }],
-        });
-        await client.send(updateCommand);
-        return {
-          statusCode: 200,
-          headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
-          body: JSON.stringify({
-            status: "granted",
-            granted: true,
-            expiryDate,
-            expiry: expiryDate,
-            bundle: requestedBundle,
-            bundles: currentBundles,
-          }),
-        };
-      } catch (error) {
-        return {
-          statusCode: 500,
-          headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
-          body: JSON.stringify({ error: "Failed to grant bundle" }),
-        };
-      }
-    }
+    // if (!catalogBundle) {
+    //   // Legacy behavior preserved (HMRC_TEST_API or other external bundles using envs)
+    //   const expiryDate = process.env.TEST_BUNDLE_EXPIRY_DATE || "2025-12-31";
+    //   if (new Date() > new Date(expiryDate)) {
+    //     logger.info({ message: "[Non-catalog bundle] Requested bundle has expired:", requestedBundle, expiryDate });
+    //     return {
+    //       statusCode: 403,
+    //       headers: {
+    //         "Content-Type": "application/json",
+    //         "Access-Control-Allow-Origin": "*",
+    //       },
+    //       body: JSON.stringify({ error: "This bundle has expired." }),
+    //     };
+    //   }
+    //
+    //   // Check user limit for this bundle
+    //   const userLimit = parseInt(process.env.TEST_BUNDLE_USER_LIMIT || "1000");
+    //   let currentCount;
+    //   if (isMockMode()) {
+    //     currentCount = 0;
+    //     for (const bundles of mockBundleStore.values()) {
+    //       if ((bundles || []).some((b) => typeof b === "string" && b.startsWith(requestedBundle + "|"))) {
+    //         currentCount++;
+    //       }
+    //     }
+    //     logger.info({
+    //       message: "[MOCK] [Non-catalog bundle] Current user count for bundle",
+    //       bundleId: requestedBundle,
+    //       count: currentCount,
+    //     });
+    //   } else {
+    //     currentCount = await getCurrentUserCountForBundle(requestedBundle, userPoolId);
+    //     logger.info({ message: "[Non-catalog bundle] Current user count for bundle", bundleId: requestedBundle, count: currentCount });
+    //   }
+    //
+    //   if (currentCount >= userLimit) {
+    //     logger.info({ message: "[Non-catalog bundle] User limit reached for bundle:", requestedBundle, userLimit });
+    //     return {
+    //       statusCode: 403,
+    //       headers: {
+    //         "Content-Type": "application/json",
+    //         "Access-Control-Allow-Origin": "*",
+    //       },
+    //       body: JSON.stringify({ error: "User limit reached for this bundle." }),
+    //     };
+    //   }
+    //
+    //   const newBundle = `${requestedBundle}|EXPIRY=${expiryDate}`;
+    //   currentBundles.push(newBundle);
+    //   if (isMockMode()) {
+    //     mockBundleStore.set(userId, currentBundles);
+    //     logger.info({ message: "[MOCK] [Non-catalog bundle] Bundle granted to user:", userId, newBundle });
+    //     return {
+    //       statusCode: 200,
+    //       headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+    //       body: JSON.stringify({
+    //         status: "granted",
+    //         granted: true,
+    //         expiryDate,
+    //         expiry: expiryDate,
+    //         bundle: requestedBundle,
+    //         bundles: currentBundles,
+    //       }),
+    //     };
+    //   }
+    //   try {
+    //     const mod = await getCognitoModule();
+    //     const client = await getCognitoClient();
+    //     logger.info({ message: "[Non-catalog bundle] Granting bundle to user in Cognito:", userId, newBundle });
+    //     const updateCommand = new mod.AdminUpdateUserAttributesCommand({
+    //       UserPoolId: userPoolId,
+    //       Username: userId,
+    //       UserAttributes: [{ Name: "custom:bundles", Value: currentBundles.join("|") }],
+    //     });
+    //     await client.send(updateCommand);
+    //     logger.info({ message: "[Non-catalog bundle] Bundle granted to user:", userId, newBundle });
+    //     return {
+    //       statusCode: 200,
+    //       headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+    //       body: JSON.stringify({
+    //         status: "granted",
+    //         granted: true,
+    //         expiryDate,
+    //         expiry: expiryDate,
+    //         bundle: requestedBundle,
+    //         bundles: currentBundles,
+    //       }),
+    //     };
+    //   } catch (error) {
+    //     logger.error({ message: "[Non-catalog bundle] Error granting bundle to user:", error: error.message });
+    //     return {
+    //       statusCode: 500,
+    //       headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+    //       body: JSON.stringify({ error: "Failed to grant bundle" }),
+    //     };
+    //   }
+    // }
 
     // Catalog-driven bundles
     // If bundle requires auth, we already have auth (Bearer)
     // Validate qualifiers
     const check = qualifiersSatisfied(catalogBundle, decodedToken, qualifiers);
     if (check?.unknown) {
+      logger.warn({ message: "[Catalog bundle] Unknown qualifier in bundle request:", qualifier: check.unknown });
       return {
         statusCode: 400,
         headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
@@ -324,6 +302,7 @@ export async function handler(event) {
       };
     }
     if (check?.ok === false) {
+      logger.warn({ message: "[Catalog bundle] Qualifier mismatch for bundle request:", reason: check.reason });
       return {
         statusCode: 400,
         headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
@@ -332,6 +311,7 @@ export async function handler(event) {
     }
 
     if (catalogBundle.allocation === "automatic") {
+      logger.info({ message: "[Catalog bundle] Bundle is automatic allocation, no action needed:", requestedBundle });
       // nothing to persist
       return {
         statusCode: 200,
@@ -350,10 +330,11 @@ export async function handler(event) {
     const cap = Number.isFinite(catalogBundle.cap) ? Number(catalogBundle.cap) : undefined;
     if (typeof cap === "number") {
       let currentCount = 0;
-      for (const bundles of __inMemoryBundles.values()) {
+      for (const bundles of mockBundleStore.values()) {
         if ((bundles || []).some((b) => typeof b === "string" && b.startsWith(requestedBundle + "|"))) currentCount++;
       }
       if (currentCount >= cap) {
+        logger.info({ message: "[Catalog bundle] Bundle cap reached:", requestedBundle, cap });
         return {
           statusCode: 403,
           headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
@@ -367,8 +348,9 @@ export async function handler(event) {
 
     const newBundle = `${requestedBundle}|EXPIRY=${expiryStr || ""}`;
     currentBundles.push(newBundle);
-    __inMemoryBundles.set(userId, currentBundles);
+    mockBundleStore.set(userId, currentBundles);
 
+    logger.info({ message: "Bundle granted to user:", userId, newBundle });
     return {
       statusCode: 200,
       headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
@@ -381,7 +363,7 @@ export async function handler(event) {
       }),
     };
   } catch (error) {
-    console.log("[DEBUG_LOG] Unexpected error:", error?.message || error);
+    logger.info({ message: "Unexpected error:", error });
     return {
       statusCode: 500,
       headers: {
@@ -424,10 +406,10 @@ async function getCurrentUserCountForBundle(bundleId, userPoolId) {
       }
     }
 
-    console.log("[DEBUG_LOG] Current user count for bundle", bundleId, ":", count);
+    logger.info({ message: "Current user count for bundle", bundleId, count });
     return count;
   } catch (error) {
-    console.log("[DEBUG_LOG] Error counting users for bundle:", error?.message || error);
+    logger.info({ message: "Error counting users for bundle:", error });
     return 0; // Return 0 on error to allow bundle granting
   }
 }

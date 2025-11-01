@@ -12,7 +12,7 @@ import eventToGovClientHeaders from "../../lib/eventToGovClientHeaders.js";
 import { hmrcVatGet, shouldUseStub, getStubData } from "../../lib/hmrcVatApi.js";
 
 // GET /api/v1/hmrc/vat/penalty
-export async function httpGet(event) {
+export async function handler(event) {
   const request = extractRequest(event);
   const detectedIP = extractClientIPFromHeaders(event);
 

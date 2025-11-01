@@ -54,8 +54,19 @@ if (logToConsole && logToFile) {
 const pinoLogger = pino(
   {
     level: "info",
-    timestamp: pino.stdTimeFunctions.isoTime,
+    // timestamp: pino.stdTimeFunctions.isoTime,
     enabled: Boolean(destinationStream),
+    base: null, // removes pid and hostname
+    timestamp: false, // Avoid Pino’s comma-prefixed timestamp chunk
+    // Add an ISO time field as a normal JSON property
+    mixin() {
+      return { time: new Date().toISOString() };
+    },
+    // formatters: {
+    // remove the level key entirely
+    //  level: () => ({}),
+    // },
+    // transport: { target: "pino-pretty", options: { translateTime: "SYS:standard" } },
   },
   destinationStream,
 );

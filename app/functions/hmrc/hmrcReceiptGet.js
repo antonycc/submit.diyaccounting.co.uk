@@ -82,6 +82,7 @@ export async function handler(event) {
   }
 }
 
+// TODO: Unify with handler above or remove
 // GET /api/my/receipts/{name} or ?name= or ?key=
 export async function httpGetByName(event) {
   validateEnv(["DIY_SUBMIT_RECEIPTS_BUCKET_NAME"]);

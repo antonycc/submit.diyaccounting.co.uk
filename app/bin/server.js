@@ -4,44 +4,56 @@
 import path from "path";
 import express from "express";
 import { fileURLToPath } from "url";
-import { readFileSync } from "fs";
-import { handler as submitVatHttpPost } from "../functions/hmrc/hmrcVatReturnPost.js";
-import { handler as logReceiptHttpPost } from "../functions/hmrc/hmrcReceiptPost.js";
-import { handler as requestBundleHttpPost } from "../functions/account/bundlePost.js";
-import { handler as removeBundleHttpDelete } from "../functions/account/bundleDelete.js";
-import { handler as getCatalogHttpGet } from "../functions/account/catalogGet.js";
-import { handler as myBundlesHttpGet } from "../functions/account/bundleGet.js";
+// TODO: No local cognitoAuthUrlGet
+import { handler as cognitoAuthUrlGet } from "../functions/auth/cognitoAuthUrlGet.js";
+// TODO: local cognitoTokenPost
+import { handler as cognitoTokenPost } from "../functions/auth/cognitoTokenPost.js";
+import { apiEndpoint as catalogGetApiEndpoint } from "../functions/account/catalogGet.js";
+import { apiEndpoint as bundlePostApiEndpoint } from "../functions/account/bundlePost.js";
+import { apiEndpoint as bundleDeleteApiEndpoint } from "../functions/account/bundleDelete.js";
+import { handler as hmrcAuthUrlGet } from "../functions/hmrc/hmrcAuthUrlGet.js";
+import { handler as hmrcTokenPost } from "../functions/hmrc/hmrcTokenPost.js";
+import { handler as hmrcVatReturnPost } from "../functions/hmrc/hmrcVatReturnPost.js";
+import { handler as hmrcVatObligationGet } from "../functions/hmrc/hmrcVatObligationGet.js";
+import { handler as hmrcVatLiabilityGet } from "../functions/hmrc/hmrcVatLiabilityGet.js";
+import { handler as hmrcVatReturnGet } from "../functions/hmrc/hmrcVatReturnGet.js";
+import { handler as hmrcVatPaymentGet } from "../functions/hmrc/hmrcVatPaymentGet.js";
+import { handler as hmrcVatPenaltyGet } from "../functions/hmrc/hmrcVatPenaltyGet.js";
+import { handler as hmrcReceiptPost } from "../functions/hmrc/hmrcReceiptPost.js";
 import { handler as myReceiptsHttpGet, httpGetByName as myReceiptHttpGetByName } from "../functions/hmrc/hmrcReceiptGet.js";
-import { httpGet as getVatObligationsHttpGet } from "../functions/hmrc/hmrcVatObligationGet.js";
-import { httpGet as getVatReturnHttpGet } from "../functions/hmrc/hmrcVatReturnGet.js";
-import { httpGet as getVatLiabilitiesHttpGet } from "../functions/hmrc/hmrcVatLiabilityGet.js";
-import { httpGet as getVatPaymentsHttpGet } from "../functions/hmrc/hmrcVatPaymentGet.js";
-import { httpGet as getVatPenaltiesHttpGet } from "../functions/hmrc/hmrcVatPenaltyGet.js";
+import { handler as mockAuthUrlGet } from "../functions/non-lambda-mocks/mockAuthUrlGet.js";
+import { handler as mockTokenPost } from "../functions/non-lambda-mocks/mockTokenPost.js";
+
 import logger from "../lib/logger.js";
 import { requireActivity } from "../lib/entitlementsService.js";
 import { dotenvConfigIfNotBlank, validateEnv } from "../lib/env.js";
-
-import { handler as mockAuthUrlGet } from "../functions/non-lambda-mocks/mockAuthUrlGet.js";
-import { handler as hmrcAuthUrlGet } from "../functions/hmrc/hmrcAuthUrlGet.js";
-import { handler as cognitoAuthUrlGet } from "../functions/auth/cognitoAuthUrlGet.js";
-import { handler as mockTokenPost } from "../functions/non-lambda-mocks/mockTokenPost.js";
-import { handler as hmrcTokenPost } from "../functions/hmrc/hmrcTokenPost.js";
-import { handler as cognitoTokenPost } from "../functions/auth/cognitoTokenPost.js";
+import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../lib/httpHelper.js";
 
 dotenvConfigIfNotBlank({ path: ".env" });
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-// eslint-disable-next-line sonarjs/x-powered-by
-const app = express();
+// TODO: No local cognitoAuthUrlGet
+const cognitoAuthUrlGetPath = "/api/v1/cognito/authUrl";
+// TODO: local cognitoTokenPost
+const exchangeCognitoTokenPath = "/api/v1/cognito/token";
+const hmrcAuthUrlGetUrlPath = "/api/v1/hmrc/authUrl";
+const hmrcTokenPostUrlPath = "/api/v1/hmrc/token";
+const hmrcVatReturnPostUrlPath = "/api/v1/hmrc/vat/return";
+const hmrcVatObligationGetUrlPath = "/api/v1/hmrc/vat/obligation";
+const hmrcVatReturnGetUrlPath = "/api/v1/hmrc/vat/return";
+const hmrcVatLiabilityGetUrlPath = "/api/v1/hmrc/vat/liability";
+const hmrcVatPaymentGetUrlPath = "/api/v1/hmrc/vat/payments";
+const hmrcVatPenaltyGetUrlPath = "/api/v1/hmrc/vat/penalty";
+const hmrcReceiptPostUrlPath = "/api/v1/hmrc/receipt";
+const myReceiptsHttpGetUrlPath = "/api/v1/hmrc/receipt";
+const mockAuthUrlPath = "/api/v1/mock/authUrl";
+// TODO: Seems duplicated
+const exchangeMockTokenPath = "/api/exchange-token";
+const mockTokenProxyPath = "/api/mock/token";
 
-// Read configuration from cdk.json
-const cdkJsonPath = path.join(__dirname, "../../cdk-application/cdk.json");
-logger.info(`Reading CDK configuration from ${cdkJsonPath}`);
-const cdkConfig = JSON.parse(readFileSync(cdkJsonPath, "utf8"));
-// logger.info(`CDK configuration: ${JSON.stringify(cdkConfig, null, 2)}`);
-const context = cdkConfig.context || {};
-logger.info("CDK context:", context);
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+const app = express();
 
 // parse bodies
 app.use(express.urlencoded({ extended: true }));
@@ -74,49 +86,27 @@ app.use((req, res, next) => {
 
 app.use(express.static(path.join(__dirname, "../../web/public")));
 
-const authUrlPath = "/api/v1/hmrc/authUrl";
-const mockAuthUrlPath = "/api/v1/mock/authUrl";
-const mockTokenProxyPath = "/api/mock/token";
-const cognitoAuthUrlPath = "/api/v1/cognito/authUrl";
-const exchangeMockTokenPath = "/api/exchange-token";
-const exchangeHmrcTokenPath = "/api/v1/hmrc/token";
-const exchangeCognitoTokenPath = "/api/v1/cognito/token";
-const submitVatPath = "/api/v1/hmrc/vat/return";
-const logReceiptPath = "/api/v1/hmrc/receipt";
-const myReceiptsPath = "/api/v1/hmrc/receipt";
-const catalogPath = "/api/v1/catalog";
-const bundleGetPath = "/api/v1/bundle";
-const bundlePostPath = "/api/v1/bundle";
-const bundleDeletePath = "/api/v1/bundle";
+catalogGetApiEndpoint(app);
+bundlePostApiEndpoint(app);
+bundleDeleteApiEndpoint(app);
 
-app.get(authUrlPath, async (req, res) => {
-  const event = {
-    path: req.path,
-    headers: { host: req.get("host") || "localhost:3000" },
-    queryStringParameters: req.query || {},
-  };
-  const { statusCode, body } = await hmrcAuthUrlGet(event);
-  res["status"](statusCode).json(JSON.parse(body));
+app.get(hmrcAuthUrlGetUrlPath, async (httpRequest, httpResponse) => {
+  const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
+  const lambdaResult = await hmrcAuthUrlGet(lambdaEvent);
+  return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
 });
 
-app.get(mockAuthUrlPath, async (req, res) => {
-  const event = {
-    path: req.path,
-    headers: { host: req.get("host") || "localhost:3000" },
-    queryStringParameters: req.query || {},
-  };
-  const { statusCode, body } = await mockAuthUrlGet(event);
-  res["status"](statusCode).json(JSON.parse(body));
+app.get(mockAuthUrlPath, async (httpRequest, httpResponse) => {
+  const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
+  const lambdaResult = await mockAuthUrlGet(lambdaEvent);
+  return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
 });
 
-app.get(cognitoAuthUrlPath, async (req, res) => {
-  const event = {
-    path: req.path,
-    headers: { host: req.get("host") || "localhost:3000" },
-    queryStringParameters: req.query || {},
-  };
-  const { statusCode, body } = await cognitoAuthUrlGet(event);
-  res.status(statusCode).json(JSON.parse(body));
+// TODO: No local cognitoAuthUrlGet
+app.get(cognitoAuthUrlGetPath, async (httpRequest, httpResponse) => {
+  const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
+  const lambdaResult = await cognitoAuthUrlGet(lambdaEvent);
+  return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
 });
 
 // Proxy to local mock OAuth2 server token endpoint to avoid browser PNA/CORS
@@ -146,159 +136,62 @@ app.post(mockTokenProxyPath, async (req, res) => {
   }
 });
 
-app.post(exchangeMockTokenPath, async (req, res) => {
-  const event = {
-    path: req.path,
-    headers: { host: req.get("host") || "localhost:3000" },
-    queryStringParameters: req.query || {},
-    body: JSON.stringify(req.body),
-  };
-  const { statusCode, body } = await mockTokenPost(event);
-  res.status(statusCode).json(JSON.parse(body));
+app.post(exchangeMockTokenPath, async (httpRequest, httpResponse) => {
+  const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
+  const lambdaResult = await mockTokenPost(lambdaEvent);
+  return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
 });
 
-app.post(exchangeHmrcTokenPath, async (req, res) => {
-  const event = {
-    path: req.path,
-    headers: { host: req.get("host") || "localhost:3000" },
-    queryStringParameters: req.query || {},
-    body: JSON.stringify(req.body),
-  };
-  const { statusCode, body } = await hmrcTokenPost(event);
-  res.status(statusCode).json(JSON.parse(body));
+app.post(hmrcTokenPostUrlPath, async (httpRequest, httpResponse) => {
+  const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
+  const lambdaResult = await hmrcTokenPost(lambdaEvent);
+  return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
 });
 
-app.post(exchangeCognitoTokenPath, async (req, res) => {
-  const event = {
-    path: req.path,
-    headers: { host: req.get("host") || "localhost:3000" },
-    queryStringParameters: req.query || {},
-    body: JSON.stringify(req.body),
-  };
-  const { statusCode, body } = await cognitoTokenPost(event);
-  res.status(statusCode).json(JSON.parse(body));
+app.post(exchangeCognitoTokenPath, async (httpRequest, httpResponse) => {
+  const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
+  const lambdaResult = await cognitoTokenPost(lambdaEvent);
+  return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
 });
 
 // Submit VAT route (optionally guarded)
 if (String(process.env.DIY_SUBMIT_ENABLE_CATALOG_GUARDS || "").toLowerCase() === "true") {
-  app.post(submitVatPath, requireActivity("submit-vat"), async (req, res) => {
+  app.post(hmrcVatReturnPostUrlPath, requireActivity("submit-vat"), async (req, res) => {
     const event = {
       path: req.path,
       headers: { host: req.get("host") || "localhost:3000" },
       queryStringParameters: req.query || {},
       body: JSON.stringify(req.body),
     };
-    const { statusCode, body } = await submitVatHttpPost(event);
+    const { statusCode, body } = await hmrcVatReturnPost(event);
     res.status(statusCode).json(JSON.parse(body));
   });
 } else {
-  app.post(submitVatPath, async (req, res) => {
+  app.post(hmrcVatReturnPostUrlPath, async (req, res) => {
     const event = {
       path: req.path,
       headers: { host: req.get("host") || "localhost:3000" },
       queryStringParameters: req.query || {},
       body: JSON.stringify(req.body),
     };
-    const { statusCode, body } = await submitVatHttpPost(event);
+    const { statusCode, body } = await hmrcVatReturnPost(event);
     res.status(statusCode).json(JSON.parse(body));
   });
 }
 
-app.post(logReceiptPath, async (req, res) => {
+app.post(hmrcReceiptPostUrlPath, async (req, res) => {
   const event = {
     path: req.path,
     headers: { host: req.get("host") || "localhost:3000", authorization: req.headers.authorization },
     queryStringParameters: req.query || {},
     body: JSON.stringify(req.body),
   };
-  const { statusCode, body } = await logReceiptHttpPost(event);
+  const { statusCode, body } = await hmrcReceiptPost(event);
   res.status(statusCode).json(JSON.parse(body));
 });
 
-// Bundle management route
-app.post(bundlePostPath, async (req, res) => {
-  const event = {
-    path: req.path,
-    headers: { host: req.get("host") || "localhost:3000", authorization: req.headers.authorization },
-    queryStringParameters: req.query || {},
-    body: JSON.stringify(req.body),
-  };
-  const { statusCode, body } = await requestBundleHttpPost(event);
-  try {
-    res.status(statusCode).json(body ? JSON.parse(body) : {});
-    // eslint-disable-next-line sonarjs/no-ignored-exceptions
-  } catch (_e) {
-    res.status(statusCode).send(body || "");
-  }
-});
-app.options(bundlePostPath, async (_req, res) => {
-  res.set({
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Headers": "Content-Type,Authorization",
-    "Access-Control-Allow-Methods": "POST,DELETE,OPTIONS",
-  });
-  res.status(200).send();
-});
-
-// Bundle removal route
-app.delete(bundleDeletePath, async (req, res) => {
-  const event = {
-    path: req.path,
-    headers: { host: req.get("host") || "localhost:3000", authorization: req.headers.authorization },
-    queryStringParameters: req.query || {},
-    body: JSON.stringify(req.body),
-  };
-  const { statusCode, body } = await removeBundleHttpDelete(event);
-  try {
-    res.status(statusCode).json(body ? JSON.parse(body) : {});
-    // eslint-disable-next-line sonarjs/no-ignored-exceptions
-  } catch (_e) {
-    res.status(statusCode).send(body || "");
-  }
-});
-
-// Catalog endpoint
-app.get(catalogPath, async (req, res) => {
-  const event = {
-    path: req.path,
-    headers: {
-      "host": req.get("host") || "localhost:3000",
-      "if-none-match": req.headers["if-none-match"],
-      "if-modified-since": req.headers["if-modified-since"],
-    },
-    queryStringParameters: req.query || {},
-  };
-  const { statusCode, body, headers } = await getCatalogHttpGet(event);
-  if (headers) res.set(headers);
-  if (statusCode === 304) return res.status(304).end();
-  try {
-    res.status(statusCode).json(body ? JSON.parse(body) : {});
-  } catch (_e) {
-    res.status(statusCode).send(body || "");
-  }
-});
-
-// My bundles endpoint
-app.get(bundleGetPath, async (req, res) => {
-  const event = {
-    path: req.path,
-    headers: {
-      host: req.get("host") || "localhost:3000",
-      authorization: req.headers.authorization,
-    },
-    queryStringParameters: req.query || {},
-  };
-  const { statusCode, body, headers } = await myBundlesHttpGet(event);
-  if (headers) res.set(headers);
-  try {
-    res.status(statusCode).json(body ? JSON.parse(body) : {});
-  } catch (_e) {
-    res.status(statusCode).send(body || "");
-  }
-});
-
 // My receipts endpoints
-app.get(myReceiptsPath, async (req, res) => {
+app.get(myReceiptsHttpGetUrlPath, async (req, res) => {
   const event = {
     path: req.path,
     headers: {
@@ -316,7 +209,7 @@ app.get(myReceiptsPath, async (req, res) => {
   }
 });
 
-app.get(`${myReceiptsPath}/:name`, async (req, res) => {
+app.get(`${myReceiptsHttpGetUrlPath}/:name`, async (req, res) => {
   const event = {
     path: req.path,
     headers: {
@@ -336,15 +229,8 @@ app.get(`${myReceiptsPath}/:name`, async (req, res) => {
   }
 });
 
-// VAT API endpoints
-const vatObligationsPath = "/api/v1/hmrc/vat/obligation";
-const vatReturnPath = "/api/v1/hmrc/vat/return";
-const vatLiabilitiesPath = "/api/v1/hmrc/vat/liability";
-const vatPaymentsPath = "/api/v1/hmrc/vat/payments";
-const vatPenaltiesPath = "/api/v1/hmrc/vat/penalty";
-
 // VAT Obligations endpoint
-app.get(vatObligationsPath, requireActivity("vat-obligations"), async (req, res) => {
+app.get(hmrcVatObligationGetUrlPath, requireActivity("vat-obligations"), async (req, res) => {
   const event = {
     path: req.path,
     headers: {
@@ -354,7 +240,7 @@ app.get(vatObligationsPath, requireActivity("vat-obligations"), async (req, res)
     },
     queryStringParameters: req.query || {},
   };
-  const { statusCode, body, headers } = await getVatObligationsHttpGet(event);
+  const { statusCode, body, headers } = await hmrcVatObligationGet(event);
   if (headers) res.set(headers);
   try {
     res.status(statusCode).json(body ? JSON.parse(body) : {});
@@ -365,7 +251,7 @@ app.get(vatObligationsPath, requireActivity("vat-obligations"), async (req, res)
 });
 
 // VAT Return endpoint (view submitted return)
-app.get(`${vatReturnPath}/:periodKey`, requireActivity("vat-obligations"), async (req, res) => {
+app.get(`${hmrcVatReturnGetUrlPath}/:periodKey`, requireActivity("vat-obligations"), async (req, res) => {
   const event = {
     path: req.path,
     headers: {
@@ -376,7 +262,7 @@ app.get(`${vatReturnPath}/:periodKey`, requireActivity("vat-obligations"), async
     pathParameters: { periodKey: req.params.periodKey },
     queryStringParameters: req.query || {},
   };
-  const { statusCode, body, headers } = await getVatReturnHttpGet(event);
+  const { statusCode, body, headers } = await hmrcVatReturnGet(event);
   if (headers) res.set(headers);
   try {
     res.status(statusCode).json(body ? JSON.parse(body) : {});
@@ -386,7 +272,7 @@ app.get(`${vatReturnPath}/:periodKey`, requireActivity("vat-obligations"), async
 });
 
 // VAT Liabilities endpoint
-app.get(vatLiabilitiesPath, requireActivity("vat-obligations"), async (req, res) => {
+app.get(hmrcVatLiabilityGetUrlPath, requireActivity("vat-obligations"), async (req, res) => {
   const event = {
     path: req.path,
     headers: {
@@ -396,7 +282,7 @@ app.get(vatLiabilitiesPath, requireActivity("vat-obligations"), async (req, res)
     },
     queryStringParameters: req.query || {},
   };
-  const { statusCode, body, headers } = await getVatLiabilitiesHttpGet(event);
+  const { statusCode, body, headers } = await hmrcVatLiabilityGet(event);
   if (headers) res.set(headers);
   try {
     res.status(statusCode).json(body ? JSON.parse(body) : {});
@@ -406,7 +292,7 @@ app.get(vatLiabilitiesPath, requireActivity("vat-obligations"), async (req, res)
 });
 
 // VAT Payments endpoint
-app.get(vatPaymentsPath, requireActivity("vat-obligations"), async (req, res) => {
+app.get(hmrcVatPaymentGetUrlPath, requireActivity("vat-obligations"), async (req, res) => {
   const event = {
     path: req.path,
     headers: {
@@ -416,7 +302,7 @@ app.get(vatPaymentsPath, requireActivity("vat-obligations"), async (req, res) =>
     },
     queryStringParameters: req.query || {},
   };
-  const { statusCode, body, headers } = await getVatPaymentsHttpGet(event);
+  const { statusCode, body, headers } = await hmrcVatPaymentGet(event);
   if (headers) res.set(headers);
   try {
     res.status(statusCode).json(body ? JSON.parse(body) : {});
@@ -426,7 +312,7 @@ app.get(vatPaymentsPath, requireActivity("vat-obligations"), async (req, res) =>
 });
 
 // VAT Penalties endpoint
-app.get(vatPenaltiesPath, requireActivity("vat-obligations"), async (req, res) => {
+app.get(hmrcVatPenaltyGetUrlPath, requireActivity("vat-obligations"), async (req, res) => {
   const event = {
     path: req.path,
     headers: {
@@ -436,7 +322,7 @@ app.get(vatPenaltiesPath, requireActivity("vat-obligations"), async (req, res) =
     },
     queryStringParameters: req.query || {},
   };
-  const { statusCode, body, headers } = await getVatPenaltiesHttpGet(event);
+  const { statusCode, body, headers } = await hmrcVatPenaltyGet(event);
   if (headers) res.set(headers);
   try {
     res.status(statusCode).json(body ? JSON.parse(body) : {});
