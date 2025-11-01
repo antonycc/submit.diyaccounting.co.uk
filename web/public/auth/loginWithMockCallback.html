@@ -88,7 +88,7 @@
           showLoading();
           showStatus("Exchanging authorization code for access token...", "info");
           // Exchange authorization code for tokens via same-origin proxy to avoid PNA/CORS
-          const tokenResponse = await fetch(`/api/mock/token`, {
+          const tokenResponse = await fetch(`/api/v1/mock/token`, {
             method: "POST",
             headers: {
               "Content-Type": "application/x-www-form-urlencoded",

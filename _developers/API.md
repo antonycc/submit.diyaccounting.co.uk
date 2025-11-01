@@ -23,29 +23,6 @@ Returns a URL to redirect users to the HMRC OAuth consent page.
   "authUrl": "https://api.service.hmrc.gov.uk/oauth/authorize?response_type=code&client_id=CLIENT_ID&redirect_uri=https://yourapp.com&scope=write:vat+read:vat&state=providedState"
 }
 ```
-
----
-
-### **`POST /api/exchange-token`**
-
-Exchanges the OAuth authorization code for an HMRC access token.
-
-#### Request
-
-```json
-{
-  "code": "authorization_code_from_hmrc"
-}
-```
-
-#### Response
-
-```json
-{
-  "access_token": "hmrc_access_token"
-}
-```
-
 ---
 
 ### **`POST /api/v1/hmrc/vat/return`**

@@ -45,7 +45,7 @@ test.describe("Client System Test - VAT Flow in Browser", () => {
       });
     });
 
-    await page.route("/api/mock/token-post", async (route) => {
+    await page.route("/api/v1/mock/token", async (route) => {
       const request = route.request();
       const body = JSON.parse(request.postData() || "{}");
 

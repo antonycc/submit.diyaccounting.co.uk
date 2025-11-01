@@ -58,7 +58,7 @@ describe("Server Unit Tests", () => {
       }
     });
 
-    app.post("/api/mock/token-post", async (req, res) => {
+    app.post("/api/v1/mock/token", async (req, res) => {
       try {
         const event = { body: JSON.stringify(req.body) };
         const { statusCode, body } = await exchangeTokenHandler(event);
@@ -102,7 +102,7 @@ describe("Server Unit Tests", () => {
       });
       exchangeTokenHandler.mockImplementation(mockHandler);
 
-      await request(app).post("/api/mock/token-post").send({ code: "test-code" }).expect(200);
+      await request(app).post("/api/v1/mock/token").send({ code: "test-code" }).expect(200);
 
       expect(mockHandler).toHaveBeenCalledWith({
         body: JSON.stringify({ code: "test-code" }),
@@ -161,7 +161,7 @@ describe("Server Unit Tests", () => {
     });
   });
 
-  describe("POST /api/mock/token-post", () => {
+  describe("POST /api/v1/mock/token", () => {
     test("should call httpPostMock with correct event format", async () => {
       const mockResponse = {
         statusCode: 200,
@@ -170,7 +170,7 @@ describe("Server Unit Tests", () => {
       exchangeTokenHandler.mockResolvedValue(mockResponse);
 
       const requestBody = { code: "auth-code" };
-      const response = await request(app).post("/api/mock/token-post").send(requestBody).expect(200);
+      const response = await request(app).post("/api/v1/mock/token").send(requestBody).expect(200);
 
       expect(exchangeTokenHandler).toHaveBeenCalledWith({
         body: JSON.stringify(requestBody),
@@ -185,7 +185,7 @@ describe("Server Unit Tests", () => {
       };
       exchangeTokenHandler.mockResolvedValue(mockResponse);
 
-      const response = await request(app).post("/api/mock/token-post").send({}).expect(400);
+      const response = await request(app).post("/api/v1/mock/token").send({}).expect(400);
 
       expect(response.body).toEqual({ error: "Missing code" });
     });
