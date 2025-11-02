@@ -45,6 +45,14 @@ on:
         description: 'Hours before self-destruct triggers for non-prod environments'
         required: false
         default: '8'
+      convertTestVideo:
+        description: 'Convert test video to mp4 format'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+        required: false
+        default: 'false'
   push:
     branches:
       - '**'
@@ -1864,6 +1872,7 @@ jobs:
 
   convert-video:
     name: 'convert web test video to mp4'
+    if: ${{ inputs.convertWebTestVideo == 'true' }}
     needs:
       - names
       - web-test
