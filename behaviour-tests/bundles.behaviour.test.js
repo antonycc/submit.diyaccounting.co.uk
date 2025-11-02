@@ -1,6 +1,6 @@
 // behaviour-tests/bundles.behaviour.test.js
 
-import { test } from "@playwright/test";
+import { test } from "./helpers/playwrightTestWithout.js";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import {
   addOnPageLogging,
@@ -79,7 +79,7 @@ test.afterAll(async () => {
 //   },
 // });
 
-test("Log in, add bundles and Log out", async ({ page }) => {
+test("Click through: Adding and removing bundles", async ({ page }) => {
   // // Run local servers as needed for the tests
   // await runLocalOAuth2Server(runMockOAuth2);
   // serverProcess = await runLocalHttpServer(runTestServer, null, serverPort);

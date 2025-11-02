@@ -1,6 +1,6 @@
 // behaviour-tests/submitVat.behaviour.test.js
 
-import { test } from "@playwright/test";
+import { test } from "./helpers/playwrightTestWithout.js";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import {
   addOnPageLogging,
@@ -112,7 +112,7 @@ test.afterAll(async () => {
 //   },
 // });
 
-test("Log in, add test bundle, submit VAT return, log out", async ({ page }) => {
+test("Click through: Submit a VAT return to HMRC", async ({ page }) => {
   // // Run servers needed for the test
   // await runLocalOAuth2Server(runMockOAuth2);
   // s3Endpoint = await runLocalS3(runMinioS3, receiptsBucketName, optionalTestS3AccessKey, optionalTestS3SecretKey);

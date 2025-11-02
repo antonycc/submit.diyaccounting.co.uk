@@ -1,6 +1,6 @@
 // behaviour-tests/vatObligations.behaviour.test.js
 
-import { test } from "@playwright/test";
+import { test } from "./helpers/playwrightTestWithout.js";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import {
   addOnPageLogging,

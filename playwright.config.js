@@ -7,6 +7,7 @@ export default defineConfig({
       name: "behaviour-tests",
       testDir: "behaviour-tests",
       testMatch: ["**/submitVat.behaviour.test.js", "**/bundles.behaviour.test.js"],
+      // testMatch: ["**/vatObligations.behaviour.test.js", "**/submitVat.behaviour.test.js", "**/bundles.behaviour.test.js"],
       workers: 1,
       outputDir: "./target/behaviour-test-results/",
       timeout: 120_000,

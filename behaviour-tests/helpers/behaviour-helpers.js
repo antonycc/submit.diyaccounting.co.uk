@@ -1,4 +1,4 @@
-// behaviour-tests/behaviour-helpers.js
+// behaviour-tests/helpers/behaviour-helpers.js
 import { ensureMinioBucketExists, startMinio } from "@app/bin/minio.js";
 import { spawn } from "child_process";
 import { checkIfServerIsRunning } from "./serverHelper.js";

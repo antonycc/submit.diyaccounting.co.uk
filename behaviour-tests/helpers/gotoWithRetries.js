@@ -1,4 +1,4 @@
-// lib/gotoWithRetries.js
+// behaviour-tests/helpers/gotoWithRetries.js
 // ESM module providing a resilient navigation helper for Playwright pages.
 // Designed to be framework-agnostic and easy to unit test with mocked Page-like objects.
 
