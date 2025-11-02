@@ -1,12 +1,19 @@
 /* eslint-env browser */
 // web/public/hmrc-test-bundle-helper.js
 // Helper functions for test bundle support in HMRC API pages
+// This file is loaded as a script tag and makes functions globally available
 
 /**
  * Check if user has test bundle and provide a mock HMRC token for stubbed mode.
  * This allows test bundle users to use VAT API pages without going through HMRC OAuth.
  * The backend will use stubbed data when TEST_VAT_OBLIGATIONS or similar env vars are set.
+ * 
+ * @function checkForTestBundleAndSetMockToken
+ * @global
+ * @async
+ * @returns {Promise<void>}
  */
+// eslint-disable-next-line no-unused-vars
 async function checkForTestBundleAndSetMockToken() {
   try {
     // Check if we already have an HMRC access token

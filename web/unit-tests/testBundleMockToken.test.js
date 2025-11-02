@@ -41,7 +41,10 @@ describe("Test Bundle Mock Token Logic", () => {
     localStorage.clear();
   });
 
-  // Shared function implementation to test
+  // Duplicate of the function from hmrc-test-bundle-helper.js for testing
+  // Note: We can't import the browser script directly in Node tests,
+  // so we replicate the logic here to verify it works correctly.
+  // This serves as both a test and documentation of the expected behavior.
   async function checkForTestBundleAndSetMockToken() {
     try {
       const existingToken = sessionStorage.getItem("hmrcAccessToken");
