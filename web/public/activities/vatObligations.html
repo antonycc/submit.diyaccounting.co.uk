@@ -151,7 +151,7 @@
       let obligationsData = null;
 
       // Check if we're in sandbox/test mode to show developer options
-      function initializePage() {
+      async function initializePage() {
         const baseUrl = window.location.origin;
         const isSandbox =
           baseUrl.includes("test") ||
@@ -176,6 +176,45 @@
             devSection.style.display = isVisible ? "none" : "block";
             toggleBtn.textContent = isVisible ? "Show Developer Options" : "Hide Developer Options";
           });
+        }
+
+        // Check if user has test bundle and set dummy HMRC token for stubbed API mode
+        await checkForTestBundleAndSetMockToken();
+      }
+
+      // Check if user has test bundle and provide a mock HMRC token for stubbed mode
+      async function checkForTestBundleAndSetMockToken() {
+        try {
+          // Check if we already have an HMRC access token
+          const existingToken = sessionStorage.getItem("hmrcAccessToken");
+          if (existingToken) {
+            console.log("HMRC access token already exists, skipping mock token setup");
+            return;
+          }
+
+          // Check if user has Cognito access token (for bundle authorization)
+          const cognitoToken = localStorage.getItem("cognitoAccessToken");
+          if (!cognitoToken) {
+            console.log("No Cognito token found, skipping mock token setup");
+            return;
+          }
+
+          // Get user's bundles from JWT
+          const userInfo = JSON.parse(localStorage.getItem("userInfo") || "{}");
+          const bundles = userInfo.bundles || [];
+          
+          // Check if user has test bundle
+          const hasTestBundle = bundles.includes("test");
+          
+          if (hasTestBundle) {
+            console.log("Test bundle detected, setting mock HMRC access token for stubbed API mode");
+            // Set a dummy token that the backend will ignore in stubbed mode
+            sessionStorage.setItem("hmrcAccessToken", "test-mock-token-for-stubbed-api");
+          } else {
+            console.log("No test bundle found, HMRC OAuth will be required");
+          }
+        } catch (error) {
+          console.error("Error checking for test bundle:", error);
         }
       }
 
@@ -479,9 +518,9 @@
       document.getElementById("vatObligationsForm").addEventListener("submit", handleFormSubmission);
 
       // Initialize page when DOM is loaded
-      document.addEventListener("DOMContentLoaded", function () {
+      document.addEventListener("DOMContentLoaded", async function () {
         console.log("JS block started loading: DOMContentLoaded event handler");
-        initializePage();
+        await initializePage();
         // Check if we're returning from OAuth
         handleOAuthCallback();
         console.log("JS block finished loading: DOMContentLoaded event handler");
