@@ -88,6 +88,7 @@ export default defineConfig({
       },
     ],
     ["list"],
+    ["./scripts/playwright-video-reporter.js", { verbose: false }],
   ],
 
   // Optional: customize test timeout or other settings here
