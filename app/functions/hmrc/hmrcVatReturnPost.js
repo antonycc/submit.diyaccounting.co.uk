@@ -7,29 +7,21 @@ import {
   httpOkResponse,
   httpServerErrorResponse,
   extractClientIPFromHeaders,
+  extractAuthToken,
+  parseRequestBody,
+  buildValidationError,
 } from "../../lib/responses.js";
 import eventToGovClientHeaders from "../../lib/eventToGovClientHeaders.js";
 import { validateEnv } from "../../lib/env.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
-// import { requireActivity } from "../../lib/entitlementsService.js";
 import { decodeJwtNoVerify } from "../../lib/jwtHelper.js";
 
 export function apiEndpoint(app) {
-  // Submit VAT route (optionally guarded)
-  // if (String(process.env.DIY_SUBMIT_ENABLE_CATALOG_GUARDS || "").toLowerCase() === "true") {
-  // requireActivity("submit-vat-sandbox"),
   app.post("/api/v1/hmrc/vat/return", async (httpRequest, httpResponse) => {
     const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
     const lambdaResult = await handler(lambdaEvent);
     return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
   });
-  // } else {
-  //   app.post("/api/v1/hmrc/vat/return", async (httpRequest, httpResponse) => {
-  //     const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
-  //     const lambdaResult = await handler(lambdaEvent);
-  //     return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
-  //   });
-  // }
 }
 
 // Lazy load AWS Cognito SDK only if bundle enforcement is on
@@ -54,25 +46,17 @@ export async function handler(event) {
   validateEnv(["HMRC_BASE_URI", "COGNITO_USER_POOL_ID"]);
 
   const request = extractRequest(event);
-
   const detectedIP = extractClientIPFromHeaders(event);
 
-  // Validation
-  let errorMessages = [];
-  const { vatNumber, periodKey, vatDue, accessToken, hmrcAccessToken } = JSON.parse(event.body || "{}");
+  const { vatNumber, periodKey, vatDue, accessToken, hmrcAccessToken } = parseRequestBody(event);
   const token = accessToken || hmrcAccessToken;
-  if (!vatNumber) {
-    errorMessages.push("Missing vatNumber parameter from body");
-  }
-  if (!periodKey) {
-    errorMessages.push("Missing periodKey parameter from body");
-  }
-  if (!vatDue) {
-    errorMessages.push("Missing vatDue parameter from body");
-  }
-  if (!token) {
-    errorMessages.push("Missing accessToken parameter from body");
-  }
+
+  let errorMessages = [];
+  if (!vatNumber) errorMessages.push("Missing vatNumber parameter from body");
+  if (!periodKey) errorMessages.push("Missing periodKey parameter from body");
+  if (!vatDue) errorMessages.push("Missing vatDue parameter from body");
+  if (!token) errorMessages.push("Missing accessToken parameter from body");
+
   const { govClientHeaders, govClientErrorMessages } = eventToGovClientHeaders(event, detectedIP);
   // Forward Gov-Test-Scenario header from client when present (sandbox only)
   const govTestScenarioHeader = event.headers?.["Gov-Test-Scenario"] || event.headers?.["gov-test-scenario"];
@@ -80,25 +64,22 @@ export async function handler(event) {
     govClientHeaders["Gov-Test-Scenario"] = govTestScenarioHeader;
   }
   errorMessages = errorMessages.concat(govClientErrorMessages || []);
+
   if (errorMessages.length > 0) {
-    return httpBadRequestResponse({
-      request,
-      headers: { ...govClientHeaders },
-      message: errorMessages.join(", "),
-    });
+    return buildValidationError(request, errorMessages, govClientHeaders);
   }
 
-  // Optional bundle entitlement enforcement (disabled by default)
   try {
     const enforceBundles =
       String(process.env.DIY_SUBMIT_ENFORCE_BUNDLES || "").toLowerCase() === "true" || process.env.DIY_SUBMIT_ENFORCE_BUNDLES === "1";
     const userPoolId = process.env.COGNITO_USER_POOL_ID;
+
     if (enforceBundles && userPoolId) {
-      const authHeader = event.headers?.authorization || event.headers?.Authorization;
-      if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      const idToken = extractAuthToken(event);
+      if (!idToken) {
         return httpBadRequestResponse({ request, message: "Missing Authorization Bearer token" });
       }
-      const idToken = authHeader.split(" ")[1];
+
       const decoded = decodeJwtNoVerify(idToken);
       if (!decoded?.sub) {
         return httpBadRequestResponse({ request, message: "Invalid Authorization token" });
