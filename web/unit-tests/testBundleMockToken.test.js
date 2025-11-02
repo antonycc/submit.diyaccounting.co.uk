@@ -56,9 +56,9 @@ describe("Test Bundle Mock Token Logic", () => {
 
       const userInfo = JSON.parse(localStorage.getItem("userInfo") || "{}");
       const bundles = userInfo.bundles || [];
-      
+
       const hasTestBundle = bundles.includes("test");
-      
+
       if (hasTestBundle) {
         sessionStorage.setItem("hmrcAccessToken", "test-mock-token-for-stubbed-api");
       }
