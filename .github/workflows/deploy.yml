@@ -1701,6 +1701,7 @@ jobs:
     needs:
       - names
       - set-origins
+      - deploy-publish
     runs-on: ubuntu-24.04
     container: mcr.microsoft.com/playwright:v1.56.1-jammy
     # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags
@@ -1760,6 +1761,7 @@ jobs:
     needs:
       - names
       - set-origins
+      - deploy-publish
     runs-on: ubuntu-24.04
     container: mcr.microsoft.com/playwright:v1.56.1-jammy
     # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags
@@ -1820,6 +1822,7 @@ jobs:
     needs:
       - names
       - set-origins
+      - deploy-publish
     runs-on: ubuntu-24.04
     container: mcr.microsoft.com/playwright:v1.56.1-jammy
     # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags
@@ -1880,6 +1883,7 @@ jobs:
 #    needs:
 #      - names
 #      - set-origins
+#      - deploy-publish
 #    runs-on: ubuntu-24.04
 #    container: mcr.microsoft.com/playwright:v1.56.1-jammy
 #    # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags
@@ -1939,6 +1943,7 @@ jobs:
     name: 'upload web test results'
     needs:
       - names
+      - deploy-publish
       - web-test-bundle
       - web-test-obligation
       - web-test-submit-vat
