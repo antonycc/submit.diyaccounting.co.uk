@@ -143,7 +143,6 @@ export function shouldUseStub(stubEnvVar) {
     });
     return false;
   }
-  // return process.env[stubEnvVar] !== undefined && process.env[stubEnvVar]["source"] === "stub";
 }
 
 /**
