@@ -10,8 +10,8 @@
 // - Does nothing for other projects (e.g., browser-tests), keeping their output intact.
 // - Safe to run across all projects; it quietly skips when no video is present.
 
-import fs from 'node:fs';
-import path from 'node:path';
+import fs from "node:fs";
+import path from "node:path";
 
 /** @implements {import('@playwright/test/reporter').Reporter} */
 class StableVideoReporter {
@@ -33,8 +33,8 @@ class StableVideoReporter {
       const isBehaviour = attPath.includes(`${path.sep}target${path.sep}behaviour-test-results${path.sep}`);
       if (!isBehaviour) return false;
       try {
-        const stableDir = path.resolve('target/behaviour-test-results');
-        const stablePath = path.join(stableDir, 'video.webm');
+        const stableDir = path.resolve("target/behaviour-test-results");
+        const stablePath = path.join(stableDir, "video.webm");
         fs.mkdirSync(stableDir, { recursive: true });
         fs.copyFileSync(attPath, stablePath);
         this.hasCopiedBehaviourVideo = true;
@@ -45,15 +45,13 @@ class StableVideoReporter {
         return true;
       } catch (e) {
         // eslint-disable-next-line no-console
-        console.warn('[playwright-video-reporter] Failed to copy behaviour video:', e?.message || e);
+        console.warn("[playwright-video-reporter] Failed to copy behaviour video:", e?.message || e);
         return false;
       }
     };
 
     // Prefer standard video attachment if present
-    const videoAtt = (result.attachments || []).find(
-      (a) => a && a.path && (a.name === 'video' || a.contentType === 'video/webm')
-    );
+    const videoAtt = (result.attachments || []).find((a) => a && a.path && (a.name === "video" || a.contentType === "video/webm"));
     if (videoAtt && videoAtt.path) {
       if (tryCopy(videoAtt.path)) return;
     }
@@ -63,7 +61,7 @@ class StableVideoReporter {
     if (anyAtt && anyAtt.path) {
       const dir = path.dirname(path.resolve(anyAtt.path));
       try {
-        const files = fs.readdirSync(dir).filter((f) => f.toLowerCase().endsWith('.webm'));
+        const files = fs.readdirSync(dir).filter((f) => f.toLowerCase().endsWith(".webm"));
         if (files.length > 0) {
           tryCopy(path.join(dir, files[0]));
         }

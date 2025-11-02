@@ -109,3 +109,141 @@ export function extractClientIPFromHeaders(event) {
   // Fallback to source IP from event context
   return event.requestContext?.identity?.sourceIp || "unknown";
 }
+
+export function extractAuthToken(event) {
+  const authHeader = event.headers?.authorization || event.headers?.Authorization;
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return null;
+  }
+  return authHeader.split(" ")[1];
+}
+
+export function parseRequestBody(event) {
+  try {
+    return JSON.parse(event.body || "{}");
+  } catch (error) {
+    return null;
+  }
+}
+
+export function buildValidationError(request, errorMessages, govClientHeaders = {}) {
+  return httpBadRequestResponse({
+    request,
+    headers: { ...govClientHeaders },
+    message: errorMessages.join(", "),
+  });
+}
+
+export async function withErrorHandling(request, govClientHeaders, asyncFn) {
+  try {
+    return await asyncFn();
+  } catch (error) {
+    logger.error({
+      message: "Error in handler",
+      error: error.message,
+      stack: error.stack,
+    });
+    return httpServerErrorResponse({
+      request,
+      headers: { ...govClientHeaders },
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+}
+
+export async function performTokenExchange(providerUrl, body) {
+  const requestHeaders = {
+    "Content-Type": "application/x-www-form-urlencoded",
+  };
+  const requestBody = new URLSearchParams(body);
+
+  let response;
+  logger.info({
+    message: `Request to POST ${providerUrl}`,
+    url: providerUrl,
+    headers: { ...requestHeaders },
+    body: requestBody.toString(),
+  });
+
+  if (process.env.NODE_ENV === "stubbed") {
+    logger.warn({ message: "httpPostMock called in stubbed mode, using test access token" });
+    const testAccessToken = process.env.TEST_ACCESS_TOKEN;
+    response = {
+      ok: true,
+      status: 200,
+      json: async () => ({ access_token: testAccessToken }),
+      text: async () => JSON.stringify({ access_token: testAccessToken }),
+    };
+  } else {
+    response = await fetch(providerUrl, {
+      method: "POST",
+      headers: { ...requestHeaders },
+      body: requestBody,
+    });
+  }
+
+  let responseTokens;
+  try {
+    responseTokens = await response.json();
+  } catch (err) {
+    try {
+      const text = await response.text();
+      responseTokens = JSON.parse(text);
+    } catch {
+      responseTokens = {};
+    }
+  }
+
+  logger.info({
+    message: "exchangeClientSecretForAccessToken response",
+    responseStatus: response.status,
+    responseTokens,
+    tokenValidation: {
+      hasAccessToken: !!responseTokens.access_token,
+      accessTokenLength: responseTokens.access_token ? responseTokens.access_token.length : 0,
+      tokenType: responseTokens.token_type,
+      scope: responseTokens.scope,
+      expiresIn: responseTokens.expires_in,
+      hasRefreshToken: !!responseTokens.refresh_token,
+    },
+  });
+
+  const accessToken = responseTokens.access_token;
+  const responseBody = { ...responseTokens };
+  delete responseBody.access_token;
+
+  return { accessToken, response, responseBody };
+}
+
+export async function buildTokenExchangeResponse(request, url, body) {
+  const { accessToken, response, responseBody } = await performTokenExchange(url, body);
+
+  if (!response.ok) {
+    return httpServerErrorResponse({
+      request,
+      message: "Token exchange failed",
+      error: {
+        responseCode: response.status,
+        responseBody,
+      },
+    });
+  }
+
+  const idToken = responseBody.id_token;
+  const refreshToken = responseBody.refresh_token;
+  const expiresIn = responseBody.expires_in;
+  const tokenType = responseBody.token_type;
+
+  return httpOkResponse({
+    request,
+    data: {
+      accessToken,
+      hmrcAccessToken: accessToken,
+      idToken,
+      refreshToken,
+      expiresIn,
+      tokenType,
+    },
+  });
+}
