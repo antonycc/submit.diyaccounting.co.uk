@@ -52,16 +52,30 @@ test.beforeAll(async () => {
   process.env = {
     ...originalEnv,
   };
-  console.log("beforeAll hook completed successfully");
-});
 
-test.afterAll(async () => {});
-
-test("Log in, view VAT return, log out", async ({ page }) => {
   // Run servers needed for the test
   await runLocalOAuth2Server(runMockOAuth2);
   serverProcess = await runLocalHttpServer(runTestServer, null, serverPort);
   ngrokProcess = await runLocalSslProxy(runProxy, serverPort, baseUrl);
+
+  console.log("beforeAll hook completed successfully");
+});
+
+test.afterAll(async () => {
+  // Shutdown local servers at end of test
+  if (serverProcess) {
+    serverProcess.kill();
+  }
+  if (ngrokProcess) {
+    ngrokProcess.kill();
+  }
+});
+
+test("Log in, view VAT return, log out", async ({ page }) => {
+  // // Run servers needed for the test
+  // await runLocalOAuth2Server(runMockOAuth2);
+  // serverProcess = await runLocalHttpServer(runTestServer, null, serverPort);
+  // ngrokProcess = await runLocalSslProxy(runProxy, serverPort, baseUrl);
 
   // Compute test URL based on which servers are running
   const testUrl =
@@ -118,11 +132,11 @@ test("Log in, view VAT return, log out", async ({ page }) => {
 
   await logOutAndExpectToBeLoggedOut(page);
 
-  // Shutdown local servers at end of test
-  if (serverProcess) {
-    serverProcess.kill();
-  }
-  if (ngrokProcess) {
-    ngrokProcess.kill();
-  }
+  // // Shutdown local servers at end of test
+  // if (serverProcess) {
+  //   serverProcess.kill();
+  // }
+  // if (ngrokProcess) {
+  //   ngrokProcess.kill();
+  // }
 });

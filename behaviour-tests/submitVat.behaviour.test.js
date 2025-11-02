@@ -67,6 +67,12 @@ test.beforeAll(async () => {
     ...originalEnv,
   };
 
+  // Run servers needed for the test
+  await runLocalOAuth2Server(runMockOAuth2);
+  s3Endpoint = await runLocalS3(runMinioS3, receiptsBucketName, optionalTestS3AccessKey, optionalTestS3SecretKey);
+  serverProcess = await runLocalHttpServer(runTestServer, s3Endpoint, serverPort);
+  ngrokProcess = await runLocalSslProxy(runProxy, serverPort, baseUrl);
+
   // const runLocalOAuth2ServerPromise = runLocalOAuth2Server(runMockOAuth2);
   //
   // s3Endpoint = await runLocalS3(runMinioS3, receiptsBucketName, optionalTestS3AccessKey, optionalTestS3SecretKey);
@@ -79,6 +85,14 @@ test.beforeAll(async () => {
 });
 
 test.afterAll(async () => {
+  // Shutdown local servers at end of test
+  if (serverProcess) {
+    serverProcess.kill();
+  }
+  if (ngrokProcess) {
+    ngrokProcess.kill();
+  }
+
   // if (serverProcess) {
   //   serverProcess.kill();
   // }
@@ -95,11 +109,11 @@ test.afterAll(async () => {
 // });
 
 test("Log in, add test bundle, submit VAT return, log out", async ({ page }) => {
-  // Run servers needed for the test
-  await runLocalOAuth2Server(runMockOAuth2);
-  s3Endpoint = await runLocalS3(runMinioS3, receiptsBucketName, optionalTestS3AccessKey, optionalTestS3SecretKey);
-  serverProcess = await runLocalHttpServer(runTestServer, s3Endpoint, serverPort);
-  ngrokProcess = await runLocalSslProxy(runProxy, serverPort, baseUrl);
+  // // Run servers needed for the test
+  // await runLocalOAuth2Server(runMockOAuth2);
+  // s3Endpoint = await runLocalS3(runMinioS3, receiptsBucketName, optionalTestS3AccessKey, optionalTestS3SecretKey);
+  // serverProcess = await runLocalHttpServer(runTestServer, s3Endpoint, serverPort);
+  // ngrokProcess = await runLocalSslProxy(runProxy, serverPort, baseUrl);
 
   // Compute test URL based on which servers are running§
   const testUrl =
@@ -170,13 +184,13 @@ test("Log in, add test bundle, submit VAT return, log out", async ({ page }) => 
 
   await logOutAndExpectToBeLoggedOut(page);
 
-  // Shutdown local servers at end of test
-  if (serverProcess) {
-    serverProcess.kill();
-  }
-  if (ngrokProcess) {
-    ngrokProcess.kill();
-  }
+  // // Shutdown local servers at end of test
+  // if (serverProcess) {
+  //   serverProcess.kill();
+  // }
+  // if (ngrokProcess) {
+  //   ngrokProcess.kill();
+  // }
 });
 
 async function checkServersAreRunning() {
