@@ -46,7 +46,7 @@ export function getCatalog() {
 
 export function getGrantedBundles(userCtx) {
   // MOCK: in-memory grants map
-  const store = mockBundleStore();
+  const store = mockBundleStore;
   const list = store.get(userCtx?.sub) || [];
   // parse entries of form "bundleId|EXPIRY=YYYY-MM-DD" → filter out expired
   const now = new Date();
