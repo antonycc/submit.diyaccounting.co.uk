@@ -82,8 +82,10 @@ export async function handler(event) {
     let obligations;
 
     // Check if we should use stubbed data
+    logger.info({ message: "Checking for stubbed VAT obligations data", testScenario });
     if (shouldUseStub("TEST_VAT_OBLIGATIONS")) {
       logger.info({ message: "Using stubbed VAT obligations data", testScenario });
+      // TODO: remove default, it's either stubbed test data or it isn't.
       obligations = getStubData("TEST_VAT_OBLIGATIONS", {
         obligations: [
           {
@@ -104,6 +106,7 @@ export async function handler(event) {
         ],
       });
     } else {
+      logger.info({ message: "Retrieving VAT obligations from HMRC API", vrn, testScenario });
       // Build query parameters for HMRC API
       const hmrcQueryParams = {};
       if (from) hmrcQueryParams.from = from;

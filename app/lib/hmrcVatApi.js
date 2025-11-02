@@ -128,7 +128,7 @@ export async function hmrcVatPost(endpoint, body, accessToken, govClientHeaders 
  * Check if we should use stubbed data based on environment variables
  */
 export function shouldUseStub(stubEnvVar) {
-  return process.env[stubEnvVar] !== undefined;
+  return process.env[stubEnvVar] !== undefined && process.env[stubEnvVar]["source"] === "stub";
 }
 
 /**

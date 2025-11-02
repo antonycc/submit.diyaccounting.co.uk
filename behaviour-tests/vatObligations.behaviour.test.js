@@ -130,10 +130,8 @@ test("Click through: View VAT obligations from HMRC", async ({ page }) => {
   /* ******************* */
 
   await initVatObligations(page);
-  // Choose a wide date range to maximise likelihood of hits
-  const fromDate = "2018-01-01";
-  const now = new Date();
-  const toDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  const fromDate = "2025-01-07";
+  const toDate = "2025-11-01";
   await fillInVatObligations(page, hmrcTestVatNumber, { fromDate, toDate });
   await submitVatObligationsForm(page);
 
