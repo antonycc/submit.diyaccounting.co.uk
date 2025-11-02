@@ -1740,6 +1740,7 @@ jobs:
           TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
 
       - name: Run behaviour tests - obligationBehaviour
+        if: ${{ !cancelled() }}
         run: |
           cp '.env.${{ needs.names.outputs.environment-name }}' '.env.test' \
           ; npx dotenv -e '.env.${{ needs.names.outputs.environment-name }}' -- \
@@ -1754,6 +1755,7 @@ jobs:
           TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
 
       - name: Run behaviour tests - submitVatBehaviour
+        if: ${{ !cancelled() }}
         run: |
           cp '.env.${{ needs.names.outputs.environment-name }}' '.env.test' \
           ; npx dotenv -e '.env.${{ needs.names.outputs.environment-name }}' -- \
@@ -1768,6 +1770,7 @@ jobs:
           TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
 
       - name: Run behaviour tests - viewVatBehaviour
+        if: ${{ !cancelled() }}
         run: |
           cp '.env.${{ needs.names.outputs.environment-name }}' '.env.test' \
           ; npx dotenv -e '.env.${{ needs.names.outputs.environment-name }}' -- \
