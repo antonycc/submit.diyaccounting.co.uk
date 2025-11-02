@@ -126,12 +126,16 @@ test("Click through: View VAT obligations from HMRC", async ({ page }) => {
   await goToHomePageUsingHamburgerMenu(page);
 
   /* ******************* */
-  /*  VAT OBLIGATIONS    */
+  /*  GET OBLIGATIONS    */
   /* ******************* */
 
   await initVatObligations(page);
   await fillInVatObligations(page, hmrcTestVatNumber);
   await submitVatObligationsForm(page);
+
+  /* ************ */
+  /* `HMRC AUTH   */
+  /* ************ */
 
   await acceptCookiesHmrc(page);
   await goToHmrcAuth(page);
@@ -139,6 +143,10 @@ test("Click through: View VAT obligations from HMRC", async ({ page }) => {
   await fillInHmrcAuth(page, hmrcTestUsername, hmrcTestPassword);
   await submitHmrcAuth(page);
   await grantPermissionHmrcAuth(page);
+
+  /* ******************** */
+  /*  VIEW OBLIGATIONS    */
+  /* ******************** */
 
   await verifyVatObligationsResults(page);
 
