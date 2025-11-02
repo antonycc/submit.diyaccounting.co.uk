@@ -1695,9 +1695,9 @@ jobs:
 #            playwright-report
 #            test-results
 
-  web-test:
+  web-test-bundle:
     if: ${{ !cancelled() }}
-    name: 'web test'
+    name: 'web test bundle'
     needs:
       - names
       - set-origins
@@ -1721,9 +1721,6 @@ jobs:
           npm ci --ignore-scripts
         env:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
-        #run: |
-        #  npm install
-        #  npx playwright install chromium --with-deps
 
       - name: Run behaviour tests - bundleBehaviour
         run: |
@@ -1738,6 +1735,51 @@ jobs:
           TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
           TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
           TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
+
+      - name: Upload artifacts (results)
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v5
+        with:
+          name: web-test-artifacts-bundle
+          retention-days: 30
+          path: |
+            target/behaviour-test-results/
+
+      - name: Upload artifacts (reports)
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v5
+        with:
+          name: web-test-reports-bundle
+          retention-days: 30
+          path: |
+            target/test-reports/
+
+  web-test-obligation:
+    if: ${{ !cancelled() }}
+    name: 'web test obligation'
+    needs:
+      - names
+      - set-origins
+    runs-on: ubuntu-24.04
+    container: mcr.microsoft.com/playwright:v1.56.1-jammy
+    # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags
+    # and extension with ubuntu distribution e.g. https://releases.ubuntu.com/jammy/
+    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          npm ci --ignore-scripts
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
 
       - name: Run behaviour tests - obligationBehaviour
         if: ${{ !cancelled() }}
@@ -1754,6 +1796,51 @@ jobs:
           TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
           TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
 
+      - name: Upload artifacts (results)
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v5
+        with:
+          name: web-test-artifacts-obligation
+          retention-days: 30
+          path: |
+            target/behaviour-test-results/
+
+      - name: Upload artifacts (reports)
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v5
+        with:
+          name: web-test-reports-obligation
+          retention-days: 30
+          path: |
+            target/test-reports/
+
+  web-test-submit-vat:
+    if: ${{ !cancelled() }}
+    name: 'web test submit vat'
+    needs:
+      - names
+      - set-origins
+    runs-on: ubuntu-24.04
+    container: mcr.microsoft.com/playwright:v1.56.1-jammy
+    # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags
+    # and extension with ubuntu distribution e.g. https://releases.ubuntu.com/jammy/
+    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          npm ci --ignore-scripts
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+
       - name: Run behaviour tests - submitVatBehaviour
         if: ${{ !cancelled() }}
         run: |
@@ -1769,26 +1856,11 @@ jobs:
           TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
           TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
 
-      - name: Run behaviour tests - viewVatBehaviour
-        if: ${{ !cancelled() }}
-        run: |
-          cp '.env.${{ needs.names.outputs.environment-name }}' '.env.test' \
-          ; npx dotenv -e '.env.${{ needs.names.outputs.environment-name }}' -- \
-            npm run test:viewVatBehaviour || exit_code=$? \
-          ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
-          ; exit ${exit_code:-0} \
-          ;
-        env:
-          DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.apex-url }}
-          TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
-          TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
-          TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
-
       - name: Upload artifacts (results)
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v5
         with:
-          name: web-test-artifacts
+          name: web-test-artifacts-submit-vat
           retention-days: 30
           path: |
             target/behaviour-test-results/
@@ -1797,27 +1869,114 @@ jobs:
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v5
         with:
-          name: web-test-reports
+          name: web-test-reports-submit-vat
           retention-days: 30
           path: |
             target/test-reports/
+
+#  web-test-view-vat:
+#    if: ${{ !cancelled() }}
+#    name: 'web test view vat'
+#    needs:
+#      - names
+#      - set-origins
+#    runs-on: ubuntu-24.04
+#    container: mcr.microsoft.com/playwright:v1.56.1-jammy
+#    # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags
+#    # and extension with ubuntu distribution e.g. https://releases.ubuntu.com/jammy/
+#    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+#    steps:
+#      - name: Checkout
+#        uses: actions/checkout@v5
+#
+#      - name: Setup Node
+#        uses: actions/setup-node@v6
+#        with:
+#          node-version: ${{ env.NODE_VERSION }}
+#          cache: 'npm'
+#
+#      - name: Install dependencies
+#        run: |
+#          npm ci --ignore-scripts
+#        env:
+#          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+#
+#      - name: Run behaviour tests - viewVatBehaviour
+#        if: ${{ !cancelled() }}
+#        run: |
+#          cp '.env.${{ needs.names.outputs.environment-name }}' '.env.test' \
+#          ; npx dotenv -e '.env.${{ needs.names.outputs.environment-name }}' -- \
+#            npm run test:viewVatBehaviour || exit_code=$? \
+#          ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
+#          ; exit ${exit_code:-0} \
+#          ;
+#        env:
+#          DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.apex-url }}
+#          TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
+#          TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
+#          TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
+#
+#      - name: Upload artifacts (results)
+#        if: ${{ !cancelled() }}
+#        uses: actions/upload-artifact@v5
+#        with:
+#          name: web-test-artifacts-view-vat
+#          retention-days: 30
+#          path: |
+#            target/behaviour-test-results/
+#
+#      - name: Upload artifacts (reports)
+#        if: ${{ !cancelled() }}
+#        uses: actions/upload-artifact@v5
+#        with:
+#          name: web-test-reports-view-vat
+#          retention-days: 30
+#          path: |
+#            target/test-reports/
 
   upload-web-test-results:
     if: ${{ !cancelled() }}
     name: 'upload web test results'
     needs:
       - names
-      - web-test
+      - web-test-bundle
+      - web-test-obligation
+      - web-test-submit-vat
+      #- web-test-view-vat
     runs-on: ubuntu-24.04
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
     steps:
-      - name: Download artifacts (reports)
+      - name: Download artifacts (reports) - bundle
         if: ${{ !cancelled() }}
         uses: actions/download-artifact@v6
         with:
-          name: web-test-reports
+          name: web-test-reports-bundle
           path: |
             target/test-reports/
+
+      - name: Download artifacts (reports) - obligation
+        if: ${{ !cancelled() }}
+        uses: actions/download-artifact@v6
+        with:
+          name: web-test-reports-obligation
+          path: |
+            target/test-reports/
+
+      - name: Download artifacts (reports) - submit vat
+        if: ${{ !cancelled() }}
+        uses: actions/download-artifact@v6
+        with:
+          name: web-test-reports-submit-vat
+          path: |
+            target/test-reports/
+
+#      - name: Download artifacts (reports) - view vat
+#        if: ${{ !cancelled() }}
+#        uses: actions/download-artifact@v6
+#        with:
+#          name: web-test-reports-view-vat
+#          path: |
+#            target/test-reports/
 
       - name: Configure AWS role via GitHub OIDC
         if: ${{ !cancelled() }}
@@ -1919,7 +2078,7 @@ jobs:
     if: ${{ inputs.convertTestVideo == 'true' }}
     needs:
       - names
-      - web-test
+      - upload-web-test-results
     runs-on: ubuntu-24.04
     environment:
       name: github-pages
@@ -1994,7 +2153,7 @@ jobs:
     name: 'set last known good deployment'
     needs:
       - names
-      - web-test
+      - upload-web-test-results
     runs-on: ubuntu-24.04
     environment: ${{ needs.names.outputs.environment-name }}
     steps:
@@ -2043,7 +2202,8 @@ jobs:
       - names
       - skip-deploy-check
       - set-origins
-      - web-test
+      - upload-web-test-results
+      - set-last-known-good-deployment
     uses: ./.github/workflows/destroy.yml
     with:
       environment-name: ${{ needs.names.outputs.environment-name }}
