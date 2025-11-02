@@ -199,8 +199,8 @@ jobs:
     needs:
       - names
     runs-on: ubuntu-24.04
-    # TODO: Reinstate this because it could have just been the missing NGROK_AUTH_TOKEN that held up the tests
-    #container: mcr.microsoft.com/playwright:v1.55.1-jammy
+    # TODO: Reinstate this if we can find a way to run the auth server via Docker in the Playwright container
+    #container: mcr.microsoft.com/playwright:v1.56.1-jammy
     # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags
     # and extension with ubuntu distribution e.g. https://releases.ubuntu.com/jammy/
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
@@ -218,10 +218,12 @@ jobs:
           cache: 'npm'
 
       # TODO: Part 2: Reinstate this because it could have just been the missing NGROK_AUTH_TOKEN that held up the tests
-      #  npm ci --ignore-scripts
+      # npm ci --ignore-scripts
+      - name: Install dependencies
+      #  run: |
+      #    npm install
       #  env:
       #    PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
-      - name: Install dependencies
         run: |
            npm install
            npx playwright install chromium --with-deps
@@ -235,7 +237,7 @@ jobs:
 
       - name: Run behaviour tests
         run: |
-          npm run test:originBehaviour || exit_code=$? \
+          npm run test:bundleBehaviour || exit_code=$? \
           ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
           ; exit ${exit_code:-0} \
           ;
@@ -1454,7 +1456,7 @@ jobs:
 #
 #      #cp '.env.${{ needs.names.outputs.environment-name }}' '.env.test' ; npx dotenv -e '.env.${{ needs.names.outputs.environment-name }}' -- npm run test:behaviour
 #      #
-#      - run: cp '.env.${{ needs.names.outputs.environment-name }}' '.env.test' ; npx dotenv -e '.env.${{ needs.names.outputs.environment-name }}' -- npm run test:originBehaviour
+#      - run: cp '.env.${{ needs.names.outputs.environment-name }}' '.env.test' ; npx dotenv -e '.env.${{ needs.names.outputs.environment-name }}' -- npm run test:bundleBehaviour
 #        env:
 #          DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.base-url }}
 #          TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
@@ -1654,14 +1656,11 @@ jobs:
     name: 'web test'
     needs:
       - names
-      - skip-deploy-check
-      - deploy-auth
-      - deploy-hmrc
-      - deploy-account
-      - deploy-edge
-      - deploy-publish
       - set-origins
     runs-on: ubuntu-24.04
+    container: mcr.microsoft.com/playwright:v1.56.1-jammy
+    # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags
+    # and extension with ubuntu distribution e.g. https://releases.ubuntu.com/jammy/
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
     steps:
       - name: Checkout
@@ -1675,14 +1674,18 @@ jobs:
 
       - name: Install dependencies
         run: |
-          npm install
-          npx playwright install chromium --with-deps
+          npm ci --ignore-scripts
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+        #run: |
+        #  npm install
+        #  npx playwright install chromium --with-deps
 
       - name: Run behaviour tests
         run: |
           cp '.env.${{ needs.names.outputs.environment-name }}' '.env.test' \
           ; npx dotenv -e '.env.${{ needs.names.outputs.environment-name }}' -- \
-            npm run test:webBehaviour || exit_code=$? \
+            npm run test:behaviour || exit_code=$? \
           ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
           ; exit ${exit_code:-0} \
           ;
@@ -1708,6 +1711,23 @@ jobs:
         with:
           name: web-test-reports
           retention-days: 30
+          path: |
+            target/test-reports/
+
+  upload-web-test-results:
+    if: ${{ !cancelled() }}
+    name: 'upload web test results'
+    needs:
+      - names
+      - web-test
+    runs-on: ubuntu-24.04
+    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    steps:
+      - name: Download artifacts (reports)
+        if: ${{ !cancelled() }}
+        uses: actions/download-artifact@v6
+        with:
+          name: web-test-reports
           path: |
             target/test-reports/
 

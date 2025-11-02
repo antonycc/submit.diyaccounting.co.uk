@@ -13,6 +13,9 @@ export function buildLambdaEventFromHttpRequest(httpRequest) {
     const v = httpRequest.get(h); // case-insensitive lookup
     if (v) lambdaEvent.headers[h] = v;
   }
+  if (httpRequest.params) {
+    lambdaEvent.pathParameters = httpRequest.params;
+  }
   if (httpRequest.query) {
     lambdaEvent.queryStringParameters = httpRequest.query;
   }

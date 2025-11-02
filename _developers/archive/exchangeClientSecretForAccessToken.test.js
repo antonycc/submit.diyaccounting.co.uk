@@ -41,7 +41,7 @@ describe("exchangeClientSecretForAccessToken", () => {
     };
 
     // Clear any cached secrets
-    resetCachedSecret();
+    // resetCachedSecret();
   });
 
   afterEach(() => {

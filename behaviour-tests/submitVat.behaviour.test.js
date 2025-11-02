@@ -1,6 +1,6 @@
 // behaviour-tests/submitVat.behaviour.test.js
 
-import { test } from "@playwright/test";
+import { test } from "./helpers/playwrightTestWithout.js";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import {
   addOnPageLogging,
@@ -55,6 +55,7 @@ const hmrcTestUsername = getEnvVarAndLog("hmrcTestUsername", "TEST_HMRC_USERNAME
 const hmrcTestPassword = getEnvVarAndLog("hmrcTestPassword", "TEST_HMRC_PASSWORD", null);
 const hmrcTestVatNumber = getEnvVarAndLog("hmrcTestVatNumber", "TEST_HMRC_VAT_NUMBER", null);
 
+let mockOAuth2Process;
 let s3Endpoint;
 let serverProcess;
 let ngrokProcess;
@@ -66,6 +67,12 @@ test.beforeAll(async () => {
   process.env = {
     ...originalEnv,
   };
+
+  // Run servers needed for the test
+  mockOAuth2Process = await runLocalOAuth2Server(runMockOAuth2);
+  s3Endpoint = await runLocalS3(runMinioS3, receiptsBucketName, optionalTestS3AccessKey, optionalTestS3SecretKey);
+  serverProcess = await runLocalHttpServer(runTestServer, s3Endpoint, serverPort);
+  ngrokProcess = await runLocalSslProxy(runProxy, serverPort, baseUrl);
 
   // const runLocalOAuth2ServerPromise = runLocalOAuth2Server(runMockOAuth2);
   //
@@ -79,6 +86,17 @@ test.beforeAll(async () => {
 });
 
 test.afterAll(async () => {
+  // Shutdown local servers at end of test
+  if (ngrokProcess) {
+    ngrokProcess.kill();
+  }
+  if (serverProcess) {
+    serverProcess.kill();
+  }
+  if (mockOAuth2Process) {
+    mockOAuth2Process.kill();
+  }
+
   // if (serverProcess) {
   //   serverProcess.kill();
   // }
@@ -94,12 +112,12 @@ test.afterAll(async () => {
 //   },
 // });
 
-test("Log in, add test bundle, submit VAT return, log out", async ({ page }) => {
-  // Run servers needed for the test
-  await runLocalOAuth2Server(runMockOAuth2);
-  s3Endpoint = await runLocalS3(runMinioS3, receiptsBucketName, optionalTestS3AccessKey, optionalTestS3SecretKey);
-  serverProcess = await runLocalHttpServer(runTestServer, s3Endpoint, serverPort);
-  ngrokProcess = await runLocalSslProxy(runProxy, serverPort, baseUrl);
+test("Click through: Submit a VAT return to HMRC", async ({ page }) => {
+  // // Run servers needed for the test
+  // await runLocalOAuth2Server(runMockOAuth2);
+  // s3Endpoint = await runLocalS3(runMinioS3, receiptsBucketName, optionalTestS3AccessKey, optionalTestS3SecretKey);
+  // serverProcess = await runLocalHttpServer(runTestServer, s3Endpoint, serverPort);
+  // ngrokProcess = await runLocalSslProxy(runProxy, serverPort, baseUrl);
 
   // Compute test URL based on which servers are running§
   const testUrl =
@@ -170,13 +188,13 @@ test("Log in, add test bundle, submit VAT return, log out", async ({ page }) => 
 
   await logOutAndExpectToBeLoggedOut(page);
 
-  // Shutdown local servers at end of test
-  if (serverProcess) {
-    serverProcess.kill();
-  }
-  if (ngrokProcess) {
-    ngrokProcess.kill();
-  }
+  // // Shutdown local servers at end of test
+  // if (serverProcess) {
+  //   serverProcess.kill();
+  // }
+  // if (ngrokProcess) {
+  //   ngrokProcess.kill();
+  // }
 });
 
 async function checkServersAreRunning() {

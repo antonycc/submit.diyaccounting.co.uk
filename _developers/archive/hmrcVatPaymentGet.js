@@ -1,35 +1,35 @@
-// app/functions/getVatObligations.js
+// app/functions/getVatPayments.js
 
-import logger from "../../lib/logger.js";
+import logger from "@app/lib/logger.js";
 import {
   extractRequest,
   httpBadRequestResponse,
   httpOkResponse,
   httpServerErrorResponse,
   extractClientIPFromHeaders,
-} from "../../lib/responses.js";
-import eventToGovClientHeaders from "../../lib/eventToGovClientHeaders.js";
-import { hmrcVatGet, shouldUseStub, getStubData } from "../../lib/hmrcVatApi.js";
-import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
-import { requireActivity } from "../../lib/entitlementsService.js";
+} from "@app/lib/responses.js";
+import eventToGovClientHeaders from "@app/lib/eventToGovClientHeaders.js";
+import { hmrcVatGet, shouldUseStub, getStubData } from "@app/lib/hmrcVatApi.js";
+import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "@app/lib/httpHelper.js";
+import { requireActivity } from "@app/lib/entitlementsService.js";
 
 export function apiEndpoint(app) {
-  // VAT Obligations endpoint
-  app.get("/api/v1/hmrc/vat/obligation", requireActivity("vat-obligations"), async (httpRequest, httpResponse) => {
+  // VAT Payments endpoint
+  app.get("/api/v1/hmrc/vat/payment", requireActivity("vat-obligations"), async (httpRequest, httpResponse) => {
     const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
     const lambdaResult = await handler(lambdaEvent);
     return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
   });
 }
 
-// GET /api/v1/hmrc/vat/obligation
+// GET /api/v1/hmrc/vat/payment
 export async function handler(event) {
   const request = extractRequest(event);
   const detectedIP = extractClientIPFromHeaders(event);
 
   // Extract query parameters
   const queryParams = event.queryStringParameters || {};
-  const { vrn, from, to, status, "Gov-Test-Scenario": testScenario } = queryParams;
+  const { vrn, from, to, "Gov-Test-Scenario": testScenario } = queryParams;
 
   // Validation
   let errorMessages = [];
@@ -48,11 +48,6 @@ export async function handler(event) {
   }
   if (to && !/^\d{4}-\d{2}-\d{2}$/.test(to)) {
     errorMessages.push("Invalid to date format - must be YYYY-MM-DD");
-  }
-
-  // Validate status if provided
-  if (status && !["O", "F"].includes(status)) {
-    errorMessages.push("Invalid status - must be O (Open) or F (Fulfilled)");
   }
 
   const { govClientHeaders, govClientErrorMessages } = eventToGovClientHeaders(event, detectedIP);
@@ -78,27 +73,22 @@ export async function handler(event) {
   const accessToken = authHeader.split(" ")[1];
 
   try {
-    let obligations;
+    let payments;
 
     // Check if we should use stubbed data
-    if (shouldUseStub("TEST_VAT_OBLIGATIONS")) {
-      logger.info({ message: "Using stubbed VAT obligations data", testScenario });
-      obligations = getStubData("TEST_VAT_OBLIGATIONS", {
-        obligations: [
+    if (shouldUseStub("TEST_VAT_PAYMENTS")) {
+      logger.info({ message: "Using stubbed VAT payments data", testScenario });
+      payments = getStubData("TEST_VAT_PAYMENTS", {
+        payments: [
           {
-            start: "2024-01-01",
-            end: "2024-03-31",
-            due: "2024-05-07",
-            status: "F",
-            periodKey: "24A1",
+            amount: 1000.5,
             received: "2024-05-06",
+            allocatedToLiability: "2024-05-07",
           },
           {
-            start: "2024-04-01",
-            end: "2024-06-30",
-            due: "2024-08-07",
-            status: "O",
-            periodKey: "24A2",
+            amount: 250.0,
+            received: "2024-08-06",
+            allocatedToLiability: "2024-08-07",
           },
         ],
       });
@@ -107,11 +97,10 @@ export async function handler(event) {
       const hmrcQueryParams = {};
       if (from) hmrcQueryParams.from = from;
       if (to) hmrcQueryParams.to = to;
-      if (status) hmrcQueryParams.status = status;
 
       // Call HMRC API
       const hmrcResult = await hmrcVatGet(
-        `/organisations/vat/${vrn}/obligations`,
+        `/organisations/vat/${vrn}/payments`,
         accessToken,
         govClientHeaders,
         testScenario,
@@ -122,7 +111,7 @@ export async function handler(event) {
         return httpServerErrorResponse({
           request,
           headers: { ...govClientHeaders },
-          message: "HMRC VAT obligations retrieval failed",
+          message: "HMRC VAT payments retrieval failed",
           error: {
             hmrcResponseCode: hmrcResult.status,
             responseBody: hmrcResult.data,
@@ -130,17 +119,17 @@ export async function handler(event) {
         });
       }
 
-      obligations = hmrcResult.data;
+      payments = hmrcResult.data;
     }
 
     // Return successful response
     return httpOkResponse({
       request,
-      data: obligations,
+      data: payments,
     });
   } catch (error) {
     logger.error({
-      message: "Error retrieving VAT obligations",
+      message: "Error retrieving VAT payments",
       error: error.message,
       stack: error.stack,
     });
@@ -148,7 +137,7 @@ export async function handler(event) {
     return httpServerErrorResponse({
       request,
       headers: { ...govClientHeaders },
-      message: "Internal server error retrieving VAT obligations",
+      message: "Internal server error retrieving VAT payments",
       error: error.message,
     });
   }

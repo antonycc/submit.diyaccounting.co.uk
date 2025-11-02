@@ -2,8 +2,8 @@
 
 import { describe, test, expect, beforeEach, vi } from "vitest";
 
-import { handler } from "../functions/hmrc/hmrcVatPaymentGet.js";
-import { buildGovClientTestHeaders } from "./govClientTestHeader.js";
+import { handler } from "./hmrcVatPaymentGet.js";
+import { buildGovClientTestHeaders } from "@app/unit-tests/govClientTestHeader.js";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });

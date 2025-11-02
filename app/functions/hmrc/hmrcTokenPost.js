@@ -5,13 +5,23 @@ import { SecretsManagerClient, GetSecretValueCommand } from "@aws-sdk/client-sec
 import logger from "../../lib/logger.js";
 import { extractRequest, httpBadRequestResponse, httpOkResponse, httpServerErrorResponse } from "../../lib/responses.js";
 import { validateEnv } from "../../lib/env.js";
+import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
 
 const secretsClient = new SecretsManagerClient();
 
 // caching via module-level variables
 let cachedHmrcClientSecret;
 
+export function apiEndpoint(app) {
+  app.post("/api/v1/hmrc/token", async (httpRequest, httpResponse) => {
+    const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
+    const lambdaResult = await handler(lambdaEvent);
+    return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
+  });
+}
+
 // POST /api/v1/hmrc/token
+// TODO: Handle the additional name variation list the test endpoint uses
 export async function handler(event) {
   validateEnv(["HMRC_BASE_URI", "HMRC_CLIENT_ID", "DIY_SUBMIT_BASE_URL", "HMRC_CLIENT_SECRET_ARN"]);
   const secretArn = process.env.HMRC_CLIENT_SECRET_ARN;

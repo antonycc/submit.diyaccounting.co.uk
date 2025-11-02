@@ -1,6 +1,6 @@
 // behaviour-tests/bundles.behaviour.test.js
 
-import { test } from "@playwright/test";
+import { test } from "./helpers/playwrightTestWithout.js";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import {
   addOnPageLogging,
@@ -40,6 +40,7 @@ const testAuthUsername = getEnvVarAndLog("testAuthUsername", "TEST_AUTH_USERNAME
 // const receiptsBucketName = getEnvVarAndLog("receiptsBucketName", "DIY_SUBMIT_RECEIPTS_BUCKET_NAME", null);
 const baseUrl = getEnvVarAndLog("baseUrl", "DIY_SUBMIT_BASE_URL", null);
 
+let mockOAuth2Process;
 let serverProcess;
 let ngrokProcess;
 
@@ -50,11 +51,26 @@ test.beforeAll(async () => {
   process.env = {
     ...originalEnv,
   };
+  // Run local servers as needed for the tests
+  mockOAuth2Process = await runLocalOAuth2Server(runMockOAuth2);
+  serverProcess = await runLocalHttpServer(runTestServer, null, serverPort);
+  ngrokProcess = await runLocalSslProxy(runProxy, serverPort, baseUrl);
 
   console.log("beforeAll hook completed successfully");
 });
 
-test.afterAll(async () => {});
+test.afterAll(async () => {
+  // Shutdown local servers at end of test
+  if (ngrokProcess) {
+    ngrokProcess.kill();
+  }
+  if (serverProcess) {
+    serverProcess.kill();
+  }
+  if (mockOAuth2Process) {
+    mockOAuth2Process.kill();
+  }
+});
 
 // test.use({
 //   video: {
@@ -63,11 +79,11 @@ test.afterAll(async () => {});
 //   },
 // });
 
-test("Log in, add bundles and Log out", async ({ page }) => {
-  // Run local servers as needed for the tests
-  await runLocalOAuth2Server(runMockOAuth2);
-  serverProcess = await runLocalHttpServer(runTestServer, null, serverPort);
-  ngrokProcess = await runLocalSslProxy(runProxy, serverPort, baseUrl);
+test("Click through: Adding and removing bundles", async ({ page }) => {
+  // // Run local servers as needed for the tests
+  // await runLocalOAuth2Server(runMockOAuth2);
+  // serverProcess = await runLocalHttpServer(runTestServer, null, serverPort);
+  // ngrokProcess = await runLocalSslProxy(runProxy, serverPort, baseUrl);
 
   // Compute test URL based on which servers are running§
   const testUrl =
@@ -117,11 +133,11 @@ test("Log in, add bundles and Log out", async ({ page }) => {
 
   await logOutAndExpectToBeLoggedOut(page);
 
-  // Shutdown local servers at end of test
-  if (serverProcess) {
-    serverProcess.kill();
-  }
-  if (ngrokProcess) {
-    ngrokProcess.kill();
-  }
+  // // Shutdown local servers at end of test
+  // if (serverProcess) {
+  //   serverProcess.kill();
+  // }
+  // if (ngrokProcess) {
+  //   ngrokProcess.kill();
+  // }
 });

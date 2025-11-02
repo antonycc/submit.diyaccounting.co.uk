@@ -27,10 +27,6 @@ loop VAT Submission Flow
   HMRCAuth -> Browser: 302 Redirect to /callback?code&state →→ [async]
   Browser -> App: GET /callback?code&state → [sync]
 
-  App -> ExchangeToken: POST /api/exchange-token { code } → [sync]
-  ExchangeToken -> HMRCAuth: POST /oauth/token →→ [async]
-  HMRCAuth -> ExchangeToken: { access_token } →→ [async]
-  ExchangeToken -> App: { accessToken } → [sync]
 
   alt Optional: retrieve obligations
     App -> SubmitVat: GET /api/v1/hmrc/vat/return/obligations { accessToken } → [sync]

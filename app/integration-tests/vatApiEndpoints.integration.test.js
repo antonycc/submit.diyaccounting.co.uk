@@ -1,11 +1,10 @@
 // app/integration-tests/vatApiEndpoints.integration.test.js
 
-import { describe, beforeAll, afterAll, beforeEach, it, expect, vi } from "vitest";
+import { describe, afterAll, beforeEach, it, expect, vi } from "vitest";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 
 import { handler as getVatObligationsHandler } from "@app/functions/hmrc/hmrcVatObligationGet.js";
 import { handler as getVatReturnHandler } from "@app/functions/hmrc/hmrcVatReturnGet.js";
-import { handler as getVatLiabilitiesHandler } from "@app/functions/hmrc/hmrcVatLiabilityGet.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -86,21 +85,6 @@ describe("Integration – VAT API Endpoints (Direct Handler Testing)", () => {
     expect(body.finalised).toBe(true);
   });
 
-  it("should retrieve VAT liabilities in stubbed mode", async () => {
-    const event = {
-      queryStringParameters: { vrn: "111222333" },
-      headers: { authorization: "Bearer test-access-token" },
-    };
-
-    const result = await getVatLiabilitiesHandler(event);
-    const body = JSON.parse(result.body);
-
-    expect(result.statusCode).toBe(200);
-    expect(body.liabilities).toBeDefined();
-    expect(body.liabilities).toHaveLength(1);
-    expect(body.liabilities[0].type).toBe("VAT Return Debit Charge");
-  });
-
   it("should validate VRN format consistently", async () => {
     const invalidEvent = {
       queryStringParameters: { vrn: "invalid-vrn" },
@@ -112,12 +96,6 @@ describe("Integration – VAT API Endpoints (Direct Handler Testing)", () => {
     const obligationsBody = JSON.parse(obligationsResult.body);
     expect(obligationsResult.statusCode).toBe(400);
     expect(obligationsBody.message).toContain("Invalid vrn format - must be 9 digits");
-
-    // Test liabilities endpoint
-    const liabilitiesResult = await getVatLiabilitiesHandler(invalidEvent);
-    const liabilitiesBody = JSON.parse(liabilitiesResult.body);
-    expect(liabilitiesResult.statusCode).toBe(400);
-    expect(liabilitiesBody.message).toContain("Invalid vrn format - must be 9 digits");
   });
 
   it("should require authorization for all endpoints", async () => {

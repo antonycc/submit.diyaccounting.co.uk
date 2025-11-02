@@ -1,15 +1,26 @@
 // app/functions/getVatLiabilities.js
 
-import logger from "../../lib/logger.js";
+import logger from "@app/lib/logger.js";
 import {
   extractRequest,
   httpBadRequestResponse,
   httpOkResponse,
   httpServerErrorResponse,
   extractClientIPFromHeaders,
-} from "../../lib/responses.js";
-import eventToGovClientHeaders from "../../lib/eventToGovClientHeaders.js";
-import { hmrcVatGet, shouldUseStub, getStubData } from "../../lib/hmrcVatApi.js";
+} from "@app/lib/responses.js";
+import eventToGovClientHeaders from "@app/lib/eventToGovClientHeaders.js";
+import { hmrcVatGet, shouldUseStub, getStubData } from "@app/lib/hmrcVatApi.js";
+import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "@app/lib/httpHelper.js";
+import { requireActivity } from "@app/lib/entitlementsService.js";
+
+export function apiEndpoint(app) {
+  // VAT Liabilities endpoint
+  app.get("/api/v1/hmrc/vat/liability", requireActivity("vat-obligations"), async (httpRequest, httpResponse) => {
+    const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
+    const lambdaResult = await handler(lambdaEvent);
+    return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
+  });
+}
 
 // GET /api/v1/hmrc/vat/liability
 export async function handler(event) {
