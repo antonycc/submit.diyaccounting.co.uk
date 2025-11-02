@@ -1656,11 +1656,6 @@ jobs:
     name: 'web test'
     needs:
       - names
-      - deploy-auth
-      - deploy-hmrc
-      - deploy-account
-      - deploy-edge
-      - deploy-publish
       - set-origins
     runs-on: ubuntu-24.04
     container: mcr.microsoft.com/playwright:v1.56.1-jammy
@@ -1721,7 +1716,7 @@ jobs:
 
   upload-web-test-results:
     if: ${{ !cancelled() }}
-    name: 'web test'
+    name: 'upload web test results'
     needs:
       - names
       - web-test
