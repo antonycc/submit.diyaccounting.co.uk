@@ -9,7 +9,7 @@ public interface SubmitStackProps {
 
     String resourceNamePrefix();
 
-    //String compressedResourceNamePrefix();
+    // String compressedResourceNamePrefix();
 
     String cloudTrailEnabled();
 
