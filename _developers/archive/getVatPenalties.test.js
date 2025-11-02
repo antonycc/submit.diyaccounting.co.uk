@@ -1,9 +1,9 @@
-// app/unit-tests/getVatLiabilities.test.js
+// app/unit-tests/getVatPenalties.test.js
 
 import { describe, test, expect, beforeEach, vi } from "vitest";
 
-import { handler } from "../functions/hmrc/hmrcVatLiabilityGet.js";
-import { buildGovClientTestHeaders } from "./govClientTestHeader.js";
+import { handler } from "./hmrcVatPenaltyGet.js";
+import { buildGovClientTestHeaders } from "@app/unit-tests/govClientTestHeader.js";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
@@ -12,27 +12,28 @@ dotenvConfigIfNotBlank({ path: ".env.test" });
 const mockFetch = vi.fn();
 vi.stubGlobal("fetch", mockFetch);
 
-describe("getVatLiabilities handler", () => {
+describe("getVatPenalties handler", () => {
   beforeEach(() => {
     vi.resetAllMocks();
     // Set stubbed mode
-    process.env.TEST_VAT_LIABILITIES = JSON.stringify({
-      liabilities: [
+    process.env.TEST_VAT_PENALTIES = JSON.stringify({
+      penalties: [
         {
-          taxPeriod: {
+          penaltyCategory: "LPP1",
+          penaltyChargeReference: "CHARGEREF123456789",
+          penaltyAmount: 200.0,
+          period: {
             from: "2024-01-01",
             to: "2024-03-31",
           },
-          type: "VAT Return Debit Charge",
-          originalAmount: 1000.5,
-          outstandingAmount: 500.25,
-          due: "2024-05-07",
+          triggerDate: "2024-05-08",
+          vatOutstandingAmount: 1000.5,
         },
       ],
     });
   });
 
-  test("should retrieve VAT liabilities successfully", async () => {
+  test("should retrieve VAT penalties successfully", async () => {
     const event = {
       queryStringParameters: {
         vrn: "111222333",
@@ -47,18 +48,17 @@ describe("getVatLiabilities handler", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(200);
-    expect(body.liabilities).toBeDefined();
-    expect(body.liabilities).toHaveLength(1);
-    expect(body.liabilities[0].type).toBe("VAT Return Debit Charge");
-    expect(body.liabilities[0].originalAmount).toBe(1000.5);
+    expect(body.penalties).toBeDefined();
+    expect(body.penalties).toHaveLength(1);
+    expect(body.penalties[0].penaltyCategory).toBe("LPP1");
+    expect(body.penalties[0].penaltyAmount).toBe(200.0);
   });
 
-  test("should retrieve VAT liabilities with date filters", async () => {
+  test("should retrieve VAT penalties with Gov-Test-Scenario", async () => {
     const event = {
       queryStringParameters: {
-        vrn: "111222333",
-        from: "2024-01-01",
-        to: "2024-06-30",
+        "vrn": "111222333",
+        "Gov-Test-Scenario": "PENALTY_POINTS",
       },
       headers: {
         ...buildGovClientTestHeaders(),
@@ -70,7 +70,7 @@ describe("getVatLiabilities handler", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(200);
-    expect(body.liabilities).toBeDefined();
+    expect(body.penalties).toBeDefined();
   });
 
   test("should return 400 when vrn is missing", async () => {
@@ -126,19 +126,20 @@ describe("getVatLiabilities handler", () => {
 
   test("should call HMRC API when not in stubbed mode", async () => {
     // Remove stubbed mode
-    delete process.env.TEST_VAT_LIABILITIES;
+    delete process.env.TEST_VAT_PENALTIES;
 
     const mockResponse = {
-      liabilities: [
+      penalties: [
         {
-          taxPeriod: {
+          penaltyCategory: "LPP1",
+          penaltyChargeReference: "CHARGEREF123456789",
+          penaltyAmount: 200.0,
+          period: {
             from: "2024-01-01",
             to: "2024-03-31",
           },
-          type: "VAT Return Debit Charge",
-          originalAmount: 1000.5,
-          outstandingAmount: 500.25,
-          due: "2024-05-07",
+          triggerDate: "2024-05-08",
+          vatOutstandingAmount: 1000.5,
         },
       ],
     };
@@ -162,9 +163,9 @@ describe("getVatLiabilities handler", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(200);
-    expect(body.liabilities).toBeDefined();
+    expect(body.penalties).toBeDefined();
     expect(mockFetch).toHaveBeenCalledWith(
-      expect.stringContaining("/organisations/vat/111222333/liabilities"),
+      expect.stringContaining("/organisations/vat/111222333/penalties"),
       expect.objectContaining({
         method: "GET",
         headers: expect.objectContaining({
@@ -177,7 +178,7 @@ describe("getVatLiabilities handler", () => {
 
   test("should handle HMRC API error", async () => {
     // Remove stubbed mode
-    delete process.env.TEST_VAT_LIABILITIES;
+    delete process.env.TEST_VAT_PENALTIES;
 
     const errorMessage = "INVALID_VRN";
 
@@ -201,6 +202,6 @@ describe("getVatLiabilities handler", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(500);
-    expect(body.message).toBe("HMRC VAT liabilities retrieval failed");
+    expect(body.message).toBe("HMRC VAT penalties retrieval failed");
   });
 });

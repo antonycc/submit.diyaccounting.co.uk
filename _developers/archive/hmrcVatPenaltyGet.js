@@ -1,17 +1,17 @@
 // app/functions/getVatPenalties.js
 
-import logger from "../../lib/logger.js";
+import logger from "@app/lib/logger.js";
 import {
   extractRequest,
   httpBadRequestResponse,
   httpOkResponse,
   httpServerErrorResponse,
   extractClientIPFromHeaders,
-} from "../../lib/responses.js";
-import eventToGovClientHeaders from "../../lib/eventToGovClientHeaders.js";
-import { hmrcVatGet, shouldUseStub, getStubData } from "../../lib/hmrcVatApi.js";
-import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
-import { requireActivity } from "../../lib/entitlementsService.js";
+} from "@app/lib/responses.js";
+import eventToGovClientHeaders from "@app/lib/eventToGovClientHeaders.js";
+import { hmrcVatGet, shouldUseStub, getStubData } from "@app/lib/hmrcVatApi.js";
+import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "@app/lib/httpHelper.js";
+import { requireActivity } from "@app/lib/entitlementsService.js";
 
 export function apiEndpoint(app) {
   // VAT Penalties endpoint

@@ -1,28 +1,28 @@
-// app/functions/getVatLiabilities.js
+// app/functions/getVatPayments.js
 
-import logger from "../../lib/logger.js";
+import logger from "@app/lib/logger.js";
 import {
   extractRequest,
   httpBadRequestResponse,
   httpOkResponse,
   httpServerErrorResponse,
   extractClientIPFromHeaders,
-} from "../../lib/responses.js";
-import eventToGovClientHeaders from "../../lib/eventToGovClientHeaders.js";
-import { hmrcVatGet, shouldUseStub, getStubData } from "../../lib/hmrcVatApi.js";
-import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
-import { requireActivity } from "../../lib/entitlementsService.js";
+} from "@app/lib/responses.js";
+import eventToGovClientHeaders from "@app/lib/eventToGovClientHeaders.js";
+import { hmrcVatGet, shouldUseStub, getStubData } from "@app/lib/hmrcVatApi.js";
+import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "@app/lib/httpHelper.js";
+import { requireActivity } from "@app/lib/entitlementsService.js";
 
 export function apiEndpoint(app) {
-  // VAT Liabilities endpoint
-  app.get("/api/v1/hmrc/vat/liability", requireActivity("vat-obligations"), async (httpRequest, httpResponse) => {
+  // VAT Payments endpoint
+  app.get("/api/v1/hmrc/vat/payment", requireActivity("vat-obligations"), async (httpRequest, httpResponse) => {
     const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
     const lambdaResult = await handler(lambdaEvent);
     return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
   });
 }
 
-// GET /api/v1/hmrc/vat/liability
+// GET /api/v1/hmrc/vat/payment
 export async function handler(event) {
   const request = extractRequest(event);
   const detectedIP = extractClientIPFromHeaders(event);
@@ -73,22 +73,22 @@ export async function handler(event) {
   const accessToken = authHeader.split(" ")[1];
 
   try {
-    let liabilities;
+    let payments;
 
     // Check if we should use stubbed data
-    if (shouldUseStub("TEST_VAT_LIABILITIES")) {
-      logger.info({ message: "Using stubbed VAT liabilities data", testScenario });
-      liabilities = getStubData("TEST_VAT_LIABILITIES", {
-        liabilities: [
+    if (shouldUseStub("TEST_VAT_PAYMENTS")) {
+      logger.info({ message: "Using stubbed VAT payments data", testScenario });
+      payments = getStubData("TEST_VAT_PAYMENTS", {
+        payments: [
           {
-            taxPeriod: {
-              from: "2024-01-01",
-              to: "2024-03-31",
-            },
-            type: "VAT Return Debit Charge",
-            originalAmount: 1000.5,
-            outstandingAmount: 500.25,
-            due: "2024-05-07",
+            amount: 1000.5,
+            received: "2024-05-06",
+            allocatedToLiability: "2024-05-07",
+          },
+          {
+            amount: 250.0,
+            received: "2024-08-06",
+            allocatedToLiability: "2024-08-07",
           },
         ],
       });
@@ -100,7 +100,7 @@ export async function handler(event) {
 
       // Call HMRC API
       const hmrcResult = await hmrcVatGet(
-        `/organisations/vat/${vrn}/liabilities`,
+        `/organisations/vat/${vrn}/payments`,
         accessToken,
         govClientHeaders,
         testScenario,
@@ -111,7 +111,7 @@ export async function handler(event) {
         return httpServerErrorResponse({
           request,
           headers: { ...govClientHeaders },
-          message: "HMRC VAT liabilities retrieval failed",
+          message: "HMRC VAT payments retrieval failed",
           error: {
             hmrcResponseCode: hmrcResult.status,
             responseBody: hmrcResult.data,
@@ -119,17 +119,17 @@ export async function handler(event) {
         });
       }
 
-      liabilities = hmrcResult.data;
+      payments = hmrcResult.data;
     }
 
     // Return successful response
     return httpOkResponse({
       request,
-      data: liabilities,
+      data: payments,
     });
   } catch (error) {
     logger.error({
-      message: "Error retrieving VAT liabilities",
+      message: "Error retrieving VAT payments",
       error: error.message,
       stack: error.stack,
     });
@@ -137,7 +137,7 @@ export async function handler(event) {
     return httpServerErrorResponse({
       request,
       headers: { ...govClientHeaders },
-      message: "Internal server error retrieving VAT liabilities",
+      message: "Internal server error retrieving VAT payments",
       error: error.message,
     });
   }

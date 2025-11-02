@@ -110,23 +110,23 @@ public class SubmitSharedNames {
     public HttpMethod hmrcVatObligationGetLambdaHttpMethod;
     public String hmrcVatObligationGetLambdaUrlPath;
 
-    public String hmrcVatLiabilityGetLambdaHandler;
-    public String hmrcVatLiabilityGetLambdaFunctionName;
-    public String hmrcVatLiabilityGetLambdaArn;
-    public HttpMethod hmrcVatLiabilityGetLambdaHttpMethod;
-    public String hmrcVatLiabilityGetLambdaUrlPath;
-
-    public String hmrcVatPaymentGetLambdaHandler;
-    public String hmrcVatPaymentGetLambdaFunctionName;
-    public String hmrcVatPaymentGetLambdaArn;
-    public HttpMethod hmrcVatPaymentGetLambdaHttpMethod;
-    public String hmrcVatPaymentGetLambdaUrlPath;
-
-    public String hmrcVatPenaltyGetLambdaHandler;
-    public String hmrcVatPenaltyGetLambdaFunctionName;
-    public String hmrcVatPenaltyGetLambdaArn;
-    public HttpMethod hmrcVatPenaltyGetLambdaHttpMethod;
-    public String hmrcVatPenaltyGetLambdaUrlPath;
+//    public String hmrcVatLiabilityGetLambdaHandler;
+//    public String hmrcVatLiabilityGetLambdaFunctionName;
+//    public String hmrcVatLiabilityGetLambdaArn;
+//    public HttpMethod hmrcVatLiabilityGetLambdaHttpMethod;
+//    public String hmrcVatLiabilityGetLambdaUrlPath;
+//
+//    public String hmrcVatPaymentGetLambdaHandler;
+//    public String hmrcVatPaymentGetLambdaFunctionName;
+//    public String hmrcVatPaymentGetLambdaArn;
+//    public HttpMethod hmrcVatPaymentGetLambdaHttpMethod;
+//    public String hmrcVatPaymentGetLambdaUrlPath;
+//
+//    public String hmrcVatPenaltyGetLambdaHandler;
+//    public String hmrcVatPenaltyGetLambdaFunctionName;
+//    public String hmrcVatPenaltyGetLambdaArn;
+//    public HttpMethod hmrcVatPenaltyGetLambdaHttpMethod;
+//    public String hmrcVatPenaltyGetLambdaUrlPath;
 
     public String hmrcVatReturnGetLambdaHandler;
     public String hmrcVatReturnGetLambdaFunctionName;
@@ -360,42 +360,48 @@ public class SubmitSharedNames {
                 "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcVatObligationGetLambdaHandlerName);
         this.hmrcVatObligationGetLambdaArn =
                 "%s-%s".formatted(appLambdaArnPrefix, hmrcVatObligationGetLambdaHandlerDashed);
+        publishedApiLambdas.add(new PublishedLambda(
+            this.hmrcVatObligationGetLambdaHttpMethod,
+            this.hmrcVatObligationGetLambdaUrlPath,
+            "Get VAT obligations from HMRC",
+            "Retrieves VAT obligations from HMRC for the authenticated user",
+            "getVatObligations"));
 
-        this.hmrcVatLiabilityGetLambdaHttpMethod = HttpMethod.GET;
-        this.hmrcVatLiabilityGetLambdaUrlPath = "/api/v1/hmrc/vat/liability";
-        var hmrcVatLiabilityGetLambdaHandlerName = "hmrcVatLiabilityGet.handler";
-        var hmrcVatLiabilityGetLambdaHandlerDashed =
-                ResourceNameUtils.convertCamelCaseToDashSeparated(hmrcVatLiabilityGetLambdaHandlerName);
-        this.hmrcVatLiabilityGetLambdaFunctionName =
-                "%s-%s".formatted(this.appResourceNamePrefix, hmrcVatLiabilityGetLambdaHandlerDashed);
-        this.hmrcVatLiabilityGetLambdaHandler =
-                "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcVatLiabilityGetLambdaHandlerName);
-        this.hmrcVatLiabilityGetLambdaArn =
-                "%s-%s".formatted(appLambdaArnPrefix, hmrcVatLiabilityGetLambdaHandlerDashed);
-
-        this.hmrcVatPaymentGetLambdaHttpMethod = HttpMethod.GET;
-        this.hmrcVatPaymentGetLambdaUrlPath = "/api/v1/hmrc/vat/payment";
-        var hmrcVatPaymentGetLambdaHandlerName = "hmrcVatPaymentGet.handler";
-        var hmrcVatPaymentGetLambdaHandlerDashed =
-                ResourceNameUtils.convertCamelCaseToDashSeparated(hmrcVatPaymentGetLambdaHandlerName);
-        this.hmrcVatPaymentGetLambdaFunctionName =
-                "%s-%s".formatted(this.appResourceNamePrefix, hmrcVatPaymentGetLambdaHandlerDashed);
-        this.hmrcVatPaymentGetLambdaHandler =
-                "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcVatPaymentGetLambdaHandlerName);
-        this.hmrcVatPaymentGetLambdaArn =
-                "%s-%s".formatted(appLambdaArnPrefix, hmrcVatPaymentGetLambdaHandlerDashed);
-
-        this.hmrcVatPenaltyGetLambdaHttpMethod = HttpMethod.GET;
-        this.hmrcVatPenaltyGetLambdaUrlPath = "/api/v1/hmrc/vat/penalty";
-        var hmrcVatPenaltyGetLambdaHandlerName = "hmrcVatPenaltyGet.handler";
-        var hmrcVatPenaltyGetLambdaHandlerDashed =
-                ResourceNameUtils.convertCamelCaseToDashSeparated(hmrcVatPenaltyGetLambdaHandlerName);
-        this.hmrcVatPenaltyGetLambdaFunctionName =
-                "%s-%s".formatted(this.appResourceNamePrefix, hmrcVatPenaltyGetLambdaHandlerDashed);
-        this.hmrcVatPenaltyGetLambdaHandler =
-                "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcVatPenaltyGetLambdaHandlerName);
-        this.hmrcVatPenaltyGetLambdaArn =
-                "%s-%s".formatted(appLambdaArnPrefix, hmrcVatPenaltyGetLambdaHandlerDashed);
+//        this.hmrcVatLiabilityGetLambdaHttpMethod = HttpMethod.GET;
+//        this.hmrcVatLiabilityGetLambdaUrlPath = "/api/v1/hmrc/vat/liability";
+//        var hmrcVatLiabilityGetLambdaHandlerName = "hmrcVatLiabilityGet.handler";
+//        var hmrcVatLiabilityGetLambdaHandlerDashed =
+//                ResourceNameUtils.convertCamelCaseToDashSeparated(hmrcVatLiabilityGetLambdaHandlerName);
+//        this.hmrcVatLiabilityGetLambdaFunctionName =
+//                "%s-%s".formatted(this.appResourceNamePrefix, hmrcVatLiabilityGetLambdaHandlerDashed);
+//        this.hmrcVatLiabilityGetLambdaHandler =
+//                "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcVatLiabilityGetLambdaHandlerName);
+//        this.hmrcVatLiabilityGetLambdaArn =
+//                "%s-%s".formatted(appLambdaArnPrefix, hmrcVatLiabilityGetLambdaHandlerDashed);
+//
+//        this.hmrcVatPaymentGetLambdaHttpMethod = HttpMethod.GET;
+//        this.hmrcVatPaymentGetLambdaUrlPath = "/api/v1/hmrc/vat/payment";
+//        var hmrcVatPaymentGetLambdaHandlerName = "hmrcVatPaymentGet.handler";
+//        var hmrcVatPaymentGetLambdaHandlerDashed =
+//                ResourceNameUtils.convertCamelCaseToDashSeparated(hmrcVatPaymentGetLambdaHandlerName);
+//        this.hmrcVatPaymentGetLambdaFunctionName =
+//                "%s-%s".formatted(this.appResourceNamePrefix, hmrcVatPaymentGetLambdaHandlerDashed);
+//        this.hmrcVatPaymentGetLambdaHandler =
+//                "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcVatPaymentGetLambdaHandlerName);
+//        this.hmrcVatPaymentGetLambdaArn =
+//                "%s-%s".formatted(appLambdaArnPrefix, hmrcVatPaymentGetLambdaHandlerDashed);
+//
+//        this.hmrcVatPenaltyGetLambdaHttpMethod = HttpMethod.GET;
+//        this.hmrcVatPenaltyGetLambdaUrlPath = "/api/v1/hmrc/vat/penalty";
+//        var hmrcVatPenaltyGetLambdaHandlerName = "hmrcVatPenaltyGet.handler";
+//        var hmrcVatPenaltyGetLambdaHandlerDashed =
+//                ResourceNameUtils.convertCamelCaseToDashSeparated(hmrcVatPenaltyGetLambdaHandlerName);
+//        this.hmrcVatPenaltyGetLambdaFunctionName =
+//                "%s-%s".formatted(this.appResourceNamePrefix, hmrcVatPenaltyGetLambdaHandlerDashed);
+//        this.hmrcVatPenaltyGetLambdaHandler =
+//                "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcVatPenaltyGetLambdaHandlerName);
+//        this.hmrcVatPenaltyGetLambdaArn =
+//                "%s-%s".formatted(appLambdaArnPrefix, hmrcVatPenaltyGetLambdaHandlerDashed);
 
         this.hmrcVatReturnGetLambdaHttpMethod = HttpMethod.GET;
         this.hmrcVatReturnGetLambdaUrlPath = "/api/v1/hmrc/vat/return";
@@ -408,6 +414,12 @@ public class SubmitSharedNames {
                 "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcVatReturnGetLambdaHandlerName);
         this.hmrcVatReturnGetLambdaArn =
                 "%s-%s".formatted(appLambdaArnPrefix, hmrcVatReturnGetLambdaHandlerDashed);
+        publishedApiLambdas.add(new PublishedLambda(
+            this.hmrcVatReturnGetLambdaHttpMethod,
+            this.hmrcVatReturnGetLambdaUrlPath,
+            "Get submitted VAT returns from HMRC",
+            "Retrieves previously submitted VAT returns from HMRC for the authenticated user",
+            "getVatReturns"));
 
         this.receiptPostLambdaHttpMethod = HttpMethod.POST;
         this.receiptPostLambdaUrlPath = "/api/v1/hmrc/receipt";

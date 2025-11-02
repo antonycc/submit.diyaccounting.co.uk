@@ -55,7 +55,7 @@ class SubmitApplicationCdkResourceTest {
         Template.fromStack(submitApplication.authStack).resourceCountIs("AWS::Lambda::Function", 2);
 
         infof("Created stack:", submitApplication.hmrcStack.getStackName());
-        Template.fromStack(submitApplication.hmrcStack).resourceCountIs("AWS::Lambda::Function", 10);
+        Template.fromStack(submitApplication.hmrcStack).resourceCountIs("AWS::Lambda::Function", 7);
 
         infof("Created stack:", submitApplication.accountStack.getStackName());
         Template.fromStack(submitApplication.accountStack).resourceCountIs("AWS::Lambda::Function", 3);
@@ -89,7 +89,7 @@ class SubmitApplicationCdkResourceTest {
         }
 
         apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Api", 1);
-        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 15);
+        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 12);
         apiStackTemplate.resourceCountIs("AWS::CloudWatch::Dashboard", 1);
 
         infof("Created stack:", submitApplication.opsStack.getStackName());

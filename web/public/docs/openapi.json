@@ -103,6 +103,17 @@
             "description" : "VAT return submitted successfully"
           }
         }
+      },
+      "get" : {
+        "summary" : "Get submitted VAT returns from HMRC",
+        "description" : "Retrieves previously submitted VAT returns from HMRC for the authenticated user",
+        "operationId" : "getVatReturns",
+        "tags" : [ "HMRC" ],
+        "responses" : {
+          "200" : {
+            "description" : "VAT return submitted successfully"
+          }
+        }
       }
     },
     "/cognito/token" : {
@@ -114,6 +125,22 @@
         "responses" : {
           "200" : {
             "description" : "Token exchanged successfully"
+          }
+        }
+      }
+    },
+    "/hmrc/vat/obligation" : {
+      "get" : {
+        "summary" : "Get VAT obligations from HMRC",
+        "description" : "Retrieves VAT obligations from HMRC for the authenticated user",
+        "operationId" : "getVatObligations",
+        "tags" : [ "HMRC" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Request completed successfully"
           }
         }
       }

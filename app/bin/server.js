@@ -11,10 +11,7 @@ import { apiEndpoint as hmrcAuthUrlGetApiEndpoint } from "../functions/hmrc/hmrc
 import { apiEndpoint as hmrcTokenPostApiEndpoint } from "../functions/hmrc/hmrcTokenPost.js";
 import { apiEndpoint as hmrcVatReturnPostApiEndpoint } from "../functions/hmrc/hmrcVatReturnPost.js";
 import { apiEndpoint as hmrcVatObligationGetApiEndpoint } from "../functions/hmrc/hmrcVatObligationGet.js";
-import { apiEndpoint as hmrcVatLiabilityGetApiEndpoint } from "../functions/hmrc/hmrcVatLiabilityGet.js";
 import { apiEndpoint as hmrcVatReturnGetApiEndpoint } from "../functions/hmrc/hmrcVatReturnGet.js";
-import { apiEndpoint as hmrcVatPaymentGetApiEndpoint } from "../functions/hmrc/hmrcVatPaymentGet.js";
-import { apiEndpoint as hmrcVatPenaltyGetApiEndpoint } from "../functions/hmrc/hmrcVatPenaltyGet.js";
 import { apiEndpoint as hmrcReceiptPostApiEndpoint } from "../functions/hmrc/hmrcReceiptPost.js";
 import { apiEndpoint as hmrcReceiptGetApiEndpoint } from "../functions/hmrc/hmrcReceiptGet.js";
 import { apiEndpoint as mockAuthUrlGetApiEndpoint } from "../functions/non-lambda-mocks/mockAuthUrlGet.js";
@@ -69,10 +66,7 @@ hmrcAuthUrlGetApiEndpoint(app);
 hmrcTokenPostApiEndpoint(app);
 hmrcVatReturnPostApiEndpoint(app);
 hmrcVatObligationGetApiEndpoint(app);
-hmrcVatLiabilityGetApiEndpoint(app);
 hmrcVatReturnGetApiEndpoint(app);
-hmrcVatPaymentGetApiEndpoint(app);
-hmrcVatPenaltyGetApiEndpoint(app);
 hmrcReceiptPostApiEndpoint(app);
 hmrcReceiptGetApiEndpoint(app);
 
