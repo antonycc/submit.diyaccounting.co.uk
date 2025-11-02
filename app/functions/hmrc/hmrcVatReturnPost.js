@@ -216,7 +216,7 @@ export async function submitVat(periodKey, vatDue, vatNumber, hmrcAccessToken, g
 
   // Add Gov-Test-Scenario header if provided and in sandbox mode
   const hmrcBase = process.env.HMRC_BASE_URI;
-  const isSandbox = /\b(test|sandbox)\b/i.test(hmrcBase || "");
+  const isSandbox = isSandboxBase(hmrcBase);
   if (testScenario && isSandbox) {
     hmrcRequestHeaders["Gov-Test-Scenario"] = testScenario;
   }
