@@ -161,9 +161,14 @@ export async function initVatObligations(page) {
 }
 
 export async function fillInVatObligations(page, hmrcTestVatNumber) {
-  await test.step("The user fills in the VAT obligations form with VRN", async () => {
+  await test.step("The user fills in the VAT obligations form with VRN and date range", async () => {
     await page.waitForTimeout(100);
     await loggedFill(page, "#vrn", hmrcTestVatNumber, "Entering VAT registration number");
+    await page.waitForTimeout(100);
+    // Use a wide date range likely to have hits - full 2024 year
+    await loggedFill(page, "#fromDate", "2024-01-01", "Entering from date");
+    await page.waitForTimeout(100);
+    await loggedFill(page, "#toDate", "2024-12-31", "Entering to date");
     await page.waitForTimeout(500);
     await page.screenshot({
       path: `target/behaviour-test-results/vatObligations-screenshots/020-form-filled-${timestamp()}.png`,

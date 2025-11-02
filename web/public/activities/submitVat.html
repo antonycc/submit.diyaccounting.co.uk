@@ -144,6 +144,7 @@
         const vatNumber = formData.get("vatNumber").trim();
         const periodKey = formData.get("periodKey").trim();
         const vatDue = formData.get("vatDue");
+        const testScenario = formData.get("testScenario");
 
         // Basic validation
         if (!vatNumber || !periodKey || !vatDue) {
@@ -167,7 +168,7 @@
 
           // Store submission data and generate state
           const state = generateRandomState();
-          submissionData = { vatNumber, periodKey, vatDue };
+          submissionData = { vatNumber, periodKey, vatDue, testScenario };
 
           sessionStorage.setItem("oauth_state", state);
           localStorage.setItem("submission_data", JSON.stringify(submissionData));
@@ -217,6 +218,7 @@
             submissionData.periodKey,
             submissionData.vatDue,
             accessToken,
+            submissionData.testScenario,
           );
 
           showStatus("Logging submission receipt...", "info");
@@ -244,7 +246,7 @@
         }
       }
 
-      async function submitVatWithCalculatedHeaders(vatNumber, periodKey, vatDue, accessToken) {
+      async function submitVatWithCalculatedHeaders(vatNumber, periodKey, vatDue, accessToken, testScenario) {
         // Populate headers with required values using what is available in the browser environment
         const govClientBrowserJSUserAgentHeader = navigator.userAgent;
         const govClientDeviceIDHeader = crypto.randomUUID();
@@ -285,16 +287,17 @@
           "Gov-Vendor-Forwarded": govVendorForwardedHeader,
           "Gov-Vendor-Public-IP": govVendorPublicIPHeader,
         };
-        return await submitVat(vatNumber, periodKey, vatDue, accessToken, headers);
+        return await submitVat(vatNumber, periodKey, vatDue, accessToken, headers, testScenario);
       }
 
-      async function submitVat(vatNumber, periodKey, vatDue, accessToken, headers) {
+      async function submitVat(vatNumber, periodKey, vatDue, accessToken, headers, testScenario) {
         const url = "/api/v1/hmrc/vat/return";
         const body = JSON.stringify({
           vatNumber,
           periodKey,
           vatDue,
           accessToken,
+          testScenario,
         });
         console.log(`Submitting VAT. Remote call initiated: POST ${url} ++ Body: ${body}`);
 

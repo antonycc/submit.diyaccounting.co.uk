@@ -4,7 +4,7 @@ import { test as base } from "@playwright/test";
 export const test = base.extend({
   // Respect project/test use: options by applying contextOptions and explicitly enabling recordVideo
   context: async ({ browser, contextOptions }, use, testInfo) => {
-    const recordVideo = { dir: testInfo.outputPath(''), size: { width: 1280, height: 1024 } };
+    const recordVideo = { dir: testInfo.outputPath(""), size: { width: 1280, height: 1024 } };
     const context = await browser.newContext({ ...contextOptions, recordVideo });
     await context.route("**/*", (route) => {
       const url = route.request().url();

@@ -59,7 +59,7 @@ export async function handler(event) {
 
   // Validation
   let errorMessages = [];
-  const { vatNumber, periodKey, vatDue, accessToken, hmrcAccessToken } = JSON.parse(event.body || "{}");
+  const { vatNumber, periodKey, vatDue, accessToken, hmrcAccessToken, testScenario } = JSON.parse(event.body || "{}");
   const token = accessToken || hmrcAccessToken;
   if (!vatNumber) {
     errorMessages.push("Missing vatNumber parameter from body");
@@ -136,7 +136,7 @@ export async function handler(event) {
   }
 
   // Processing
-  const { receipt, hmrcResponse, hmrcResponseBody } = await submitVat(periodKey, vatDue, vatNumber, token, govClientHeaders);
+  const { receipt, hmrcResponse, hmrcResponseBody } = await submitVat(periodKey, vatDue, vatNumber, token, govClientHeaders, testScenario);
 
   if (!hmrcResponse.ok) {
     return httpServerErrorResponse({
@@ -175,7 +175,7 @@ async function getUserBundlesFromCognito(userPoolId, sub) {
   return attr.split("|").filter(Boolean);
 }
 
-export async function submitVat(periodKey, vatDue, vatNumber, hmrcAccessToken, govClientHeaders) {
+export async function submitVat(periodKey, vatDue, vatNumber, hmrcAccessToken, govClientHeaders, testScenario) {
   const submissionStartTime = new Date().toISOString();
 
   // Validate access token format
@@ -213,6 +213,14 @@ export async function submitVat(periodKey, vatDue, vatNumber, hmrcAccessToken, g
     "Accept": "application/vnd.hmrc.1.0+json",
     "Authorization": `Bearer ${hmrcAccessToken}`,
   };
+
+  // Add Gov-Test-Scenario header if provided and in sandbox mode
+  const hmrcBase = process.env.HMRC_BASE_URI;
+  const isSandbox = /\b(test|sandbox)\b/i.test(hmrcBase || "");
+  if (testScenario && isSandbox) {
+    hmrcRequestHeaders["Gov-Test-Scenario"] = testScenario;
+  }
+
   const hmrcRequestBody = {
     periodKey,
     vatDueSales: parseFloat(vatDue),
@@ -229,7 +237,6 @@ export async function submitVat(periodKey, vatDue, vatNumber, hmrcAccessToken, g
 
   let hmrcResponseBody;
   let hmrcResponse;
-  const hmrcBase = process.env.HMRC_BASE_URI;
   const hmrcRequestUrl = `${hmrcBase}/organisations/vat/${vatNumber}/returns`;
   logger.info({
     message: `Request to POST ${hmrcRequestUrl}`,
@@ -239,6 +246,7 @@ export async function submitVat(periodKey, vatDue, vatNumber, hmrcAccessToken, g
       ...govClientHeaders,
     },
     body: hmrcRequestBody,
+    testScenario,
     environment: {
       hmrcBase,
       nodeEnv: process.env.NODE_ENV,
