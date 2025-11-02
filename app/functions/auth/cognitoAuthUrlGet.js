@@ -5,7 +5,6 @@ import {
   httpBadRequestResponse,
   httpOkResponse,
   httpServerErrorResponse,
-  buildValidationError,
 } from "../../lib/responses.js";
 import { validateEnv } from "../../lib/env.js";
 
