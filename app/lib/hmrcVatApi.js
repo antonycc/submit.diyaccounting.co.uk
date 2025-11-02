@@ -128,7 +128,22 @@ export async function hmrcVatPost(endpoint, body, accessToken, govClientHeaders 
  * Check if we should use stubbed data based on environment variables
  */
 export function shouldUseStub(stubEnvVar) {
-  return process.env[stubEnvVar] !== undefined && process.env[stubEnvVar]["source"] === "stub";
+  const stubData = process.env[stubEnvVar];
+  if (!stubData) {
+    return false;
+  }
+  try {
+    const parsedData = JSON.parse(stubData);
+    return parsedData["source"] === "stub";
+  } catch (e) {
+    // If parsing fails, assume it's not stub data
+    logger.warn({
+      message: `Failed to parse stub data from ${stubEnvVar} when checking for stub usage`,
+      error: e.message,
+    });
+    return false;
+  }
+  // return process.env[stubEnvVar] !== undefined && process.env[stubEnvVar]["source"] === "stub";
 }
 
 /**

@@ -84,27 +84,8 @@ export async function handler(event) {
     // Check if we should use stubbed data
     logger.info({ message: "Checking for stubbed VAT obligations data", testScenario });
     if (shouldUseStub("TEST_VAT_OBLIGATIONS")) {
-      logger.info({ message: "Using stubbed VAT obligations data", testScenario });
-      // TODO: remove default, it's either stubbed test data or it isn't.
-      obligations = getStubData("TEST_VAT_OBLIGATIONS", {
-        obligations: [
-          {
-            start: "2024-01-01",
-            end: "2024-03-31",
-            due: "2024-05-07",
-            status: "F",
-            periodKey: "24A1",
-            received: "2024-05-06",
-          },
-          {
-            start: "2024-04-01",
-            end: "2024-06-30",
-            due: "2024-08-07",
-            status: "O",
-            periodKey: "24A2",
-          },
-        ],
-      });
+      logger.info({ message: "[MOCK] Using stubbed VAT obligations data", testScenario });
+      obligations = getStubData("TEST_VAT_OBLIGATIONS");
     } else {
       logger.info({ message: "Retrieving VAT obligations from HMRC API", vrn, testScenario });
       // Build query parameters for HMRC API

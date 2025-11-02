@@ -79,28 +79,25 @@ export async function handler(event) {
     let vatReturn;
 
     // Check if we should use stubbed data
+    logger.info({ message: "Checking for stubbed VAT return data", vrn, periodKey, testScenario });
     if (shouldUseStub("TEST_VAT_RETURN")) {
-      logger.info({ message: "Using stubbed VAT return data", vrn, periodKey, testScenario });
-      vatReturn = getStubData("TEST_VAT_RETURN", {
-        periodKey: periodKey,
-        vatDueSales: 1000.5,
-        vatDueAcquisitions: 0.0,
-        totalVatDue: 1000.5,
-        vatReclaimedCurrPeriod: 0.0,
-        netVatDue: 1000.5,
-        totalValueSalesExVAT: 4000.0,
-        totalValuePurchasesExVAT: 1000.0,
-        totalValueGoodsSuppliedExVAT: 0.0,
-        totalAcquisitionsExVAT: 0.0,
-        finalised: true,
-      });
+      logger.warn({ message: "[MOCK] Using stubbed VAT return data", vrn, periodKey, testScenario });
+      vatReturn = getStubData("TEST_VAT_RETURN");
     } else {
       // Call HMRC API
+      logger.info({ message: "Retrieving VAT return from HMRC", vrn, periodKey, testScenario });
       const hmrcResult = await hmrcVatGet(`/organisations/vat/${vrn}/returns/${periodKey}`, accessToken, govClientHeaders, testScenario);
 
       if (!hmrcResult.ok) {
         // Handle 404 specifically for not found returns
         if (hmrcResult.status === 404) {
+          logger.warn({
+            message: "VAT return not found for specified period",
+            vrn,
+            periodKey,
+            hmrcResponseCode: hmrcResult.status,
+            responseBody: hmrcResult.data,
+          });
           return httpBadRequestResponse({
             request,
             headers: { ...govClientHeaders },
@@ -112,6 +109,13 @@ export async function handler(event) {
           });
         }
 
+        logger.error({
+          message: "HMRC VAT return retrieval failed",
+          vrn,
+          periodKey,
+          hmrcResponseCode: hmrcResult.status,
+          responseBody: hmrcResult.data,
+        });
         return httpServerErrorResponse({
           request,
           headers: { ...govClientHeaders },
@@ -127,6 +131,7 @@ export async function handler(event) {
     }
 
     // Return successful response
+    logger.info({ message: "Successfully retrieved VAT return", vrn, periodKey });
     return httpOkResponse({
       request,
       data: vatReturn,
@@ -140,6 +145,11 @@ export async function handler(event) {
       periodKey,
     });
 
+    logger.error({
+      message: "Error retrieving VAT return",
+      error: error.message,
+      stack: error.stack,
+    });
     return httpServerErrorResponse({
       request,
       headers: { ...govClientHeaders },

@@ -167,10 +167,6 @@ function isSandboxBase(base) {
   return /test|sandbox/i.test(base || "");
 }
 
-function hasBundle(bundles, id) {
-  return (bundles || []).some((b) => typeof b === "string" && (b === id || b.startsWith(id + "|")));
-}
-
 async function getUserBundlesFromCognito(userPoolId, sub) {
   const mod = await getCognitoModule();
   const client = await getCognitoClient();
