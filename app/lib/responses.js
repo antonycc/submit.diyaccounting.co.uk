@@ -122,6 +122,11 @@ export function parseRequestBody(event) {
   try {
     return JSON.parse(event.body || "{}");
   } catch (error) {
+    logger.error({
+      message: "Failed to parse request body as JSON",
+      error: error.message,
+      body: event.body,
+    });
     return null;
   }
 }
