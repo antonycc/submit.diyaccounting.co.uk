@@ -1,6 +1,12 @@
 // app/functions/hmrcAuthUrlGet.js
 
-import { extractRequest, httpBadRequestResponse, httpOkResponse, httpServerErrorResponse } from "../../lib/responses.js";
+import {
+  extractRequest,
+  httpBadRequestResponse,
+  httpOkResponse,
+  httpServerErrorResponse,
+  buildValidationError,
+} from "../../lib/responses.js";
 import { validateEnv } from "../../lib/env.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
 
@@ -16,24 +22,20 @@ export function apiEndpoint(app) {
 export async function handler(event) {
   validateEnv(["HMRC_BASE_URI", "HMRC_CLIENT_ID", "DIY_SUBMIT_BASE_URL"]);
 
-  let request = "Not created";
+  const request = extractRequest(event);
+  const state = event.queryStringParameters?.state;
+
+  if (!state) {
+    return httpBadRequestResponse({
+      request,
+      message: "Missing state query parameter from URL",
+    });
+  }
+
   try {
-    request = extractRequest(event);
-
-    // Validation
-    const state = event.queryStringParameters?.state;
-    if (!state) {
-      return httpBadRequestResponse({
-        request,
-        message: "Missing state query parameter from URL",
-      });
-    }
-
-    // Extract requested scope from query params, default to write:vat read:vat for backward compatibility
     const requestedScope = event.queryStringParameters?.scope || "write:vat read:vat";
-
-    // Validate scope - only allow known HMRC scopes
     const validScopes = ["write:vat", "read:vat", "write:vat read:vat", "read:vat write:vat"];
+
     if (!validScopes.includes(requestedScope)) {
       return httpBadRequestResponse({
         request,
@@ -55,13 +57,11 @@ export async function handler(event) {
 
     return httpOkResponse({
       request,
-      data: {
-        authUrl,
-      },
+      data: { authUrl },
     });
   } catch (error) {
     return httpServerErrorResponse({
-      request: request,
+      request,
       data: { error, message: "Internal Server Error in httpGetHmrc" },
     });
   }

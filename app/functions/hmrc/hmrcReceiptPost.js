@@ -65,12 +65,9 @@ export async function handler(event) {
   validateEnv(["DIY_SUBMIT_RECEIPTS_BUCKET_NAME"]);
 
   const request = extractRequest(event);
-
-  // Parse body – allow either {receipt: {...}} or direct receipt fields
   const parsed = JSON.parse(event.body || "{}");
   const receipt = parsed && parsed.receipt ? parsed.receipt : parsed;
 
-  // Extract user sub (if available) from Authorization header without verification
   const auth = event.headers?.authorization || event.headers?.Authorization;
   let userSub = null;
   if (auth && auth.startsWith("Bearer ")) {
@@ -88,23 +85,16 @@ export async function handler(event) {
     }
   }
 
-  // Build S3 key
   const formBundle = receipt?.formBundleNumber;
   const timestamp = new Date().toISOString();
   const key =
     userSub && formBundle ? `receipts/${userSub}/${timestamp}-${formBundle}.json` : formBundle ? `receipts/${formBundle}.json` : null;
 
-  // Validation
   const errorMessages = [];
-  if (!receipt || Object.keys(receipt).length === 0) {
-    errorMessages.push("Missing receipt parameter from body");
-  }
-  if (!formBundle) {
-    errorMessages.push("Missing formBundleNumber in receipt body");
-  }
-  if (!key) {
-    errorMessages.push("Missing key parameter derived from body");
-  }
+  if (!receipt || Object.keys(receipt).length === 0) errorMessages.push("Missing receipt parameter from body");
+  if (!formBundle) errorMessages.push("Missing formBundleNumber in receipt body");
+  if (!key) errorMessages.push("Missing key parameter derived from body");
+
   if (errorMessages.length > 0) {
     return httpBadRequestResponse({
       request,
@@ -113,26 +103,19 @@ export async function handler(event) {
     });
   }
 
-  // Processing
   try {
     await logReceipt(key, receipt);
+    return httpOkResponse({
+      request,
+      data: { receipt, key },
+    });
   } catch (error) {
-    // Generate a failure response
     return httpServerErrorResponse({
-      request: request,
+      request,
       message: `Failed to log receipt ${key}.`,
       error: { details: error.message },
     });
   }
-
-  // Generate a success response
-  return httpOkResponse({
-    request,
-    data: {
-      receipt,
-      key,
-    },
-  });
 }
 
 function buildTestS3Config() {

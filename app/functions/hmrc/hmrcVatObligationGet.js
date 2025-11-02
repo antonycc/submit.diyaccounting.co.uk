@@ -7,6 +7,9 @@ import {
   httpOkResponse,
   httpServerErrorResponse,
   extractClientIPFromHeaders,
+  extractAuthToken,
+  buildValidationError,
+  withErrorHandling,
 } from "../../lib/responses.js";
 import eventToGovClientHeaders from "../../lib/eventToGovClientHeaders.js";
 import { hmrcVatGet, shouldUseStub, getStubData } from "../../lib/hmrcVatApi.js";
@@ -28,60 +31,35 @@ export async function handler(event) {
   const request = extractRequest(event);
   const detectedIP = extractClientIPFromHeaders(event);
 
-  // Extract query parameters
   const queryParams = event.queryStringParameters || {};
   const { vrn, from, to, status, "Gov-Test-Scenario": testScenario } = queryParams;
 
-  // Validation
   let errorMessages = [];
-  if (!vrn) {
-    errorMessages.push("Missing vrn parameter");
-  }
-
-  // Validate VRN format (9 digits)
-  if (vrn && !/^\d{9}$/.test(vrn)) {
-    errorMessages.push("Invalid vrn format - must be 9 digits");
-  }
-
-  // Validate date formats if provided
-  if (from && !/^\d{4}-\d{2}-\d{2}$/.test(from)) {
-    errorMessages.push("Invalid from date format - must be YYYY-MM-DD");
-  }
-  if (to && !/^\d{4}-\d{2}-\d{2}$/.test(to)) {
-    errorMessages.push("Invalid to date format - must be YYYY-MM-DD");
-  }
-
-  // Validate status if provided
-  if (status && !["O", "F"].includes(status)) {
-    errorMessages.push("Invalid status - must be O (Open) or F (Fulfilled)");
-  }
+  if (!vrn) errorMessages.push("Missing vrn parameter");
+  if (vrn && !/^\d{9}$/.test(vrn)) errorMessages.push("Invalid vrn format - must be 9 digits");
+  if (from && !/^\d{4}-\d{2}-\d{2}$/.test(from)) errorMessages.push("Invalid from date format - must be YYYY-MM-DD");
+  if (to && !/^\d{4}-\d{2}-\d{2}$/.test(to)) errorMessages.push("Invalid to date format - must be YYYY-MM-DD");
+  if (status && !["O", "F"].includes(status)) errorMessages.push("Invalid status - must be O (Open) or F (Fulfilled)");
 
   const { govClientHeaders, govClientErrorMessages } = eventToGovClientHeaders(event, detectedIP);
   errorMessages = errorMessages.concat(govClientErrorMessages || []);
 
   if (errorMessages.length > 0) {
-    return httpBadRequestResponse({
-      request,
-      headers: { ...govClientHeaders },
-      message: errorMessages.join(", "),
-    });
+    return buildValidationError(request, errorMessages, govClientHeaders);
   }
 
-  // Extract access token from headers
-  const authHeader = event.headers?.authorization || event.headers?.Authorization;
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+  const accessToken = extractAuthToken(event);
+  if (!accessToken) {
     return httpBadRequestResponse({
       request,
       headers: { ...govClientHeaders },
       message: "Missing Authorization Bearer token",
     });
   }
-  const accessToken = authHeader.split(" ")[1];
 
-  try {
+  return withErrorHandling(request, govClientHeaders, async () => {
     let obligations;
 
-    // Check if we should use stubbed data
     if (shouldUseStub("TEST_VAT_OBLIGATIONS")) {
       logger.info({ message: "Using stubbed VAT obligations data", testScenario });
       obligations = getStubData("TEST_VAT_OBLIGATIONS", {
@@ -104,13 +82,11 @@ export async function handler(event) {
         ],
       });
     } else {
-      // Build query parameters for HMRC API
       const hmrcQueryParams = {};
       if (from) hmrcQueryParams.from = from;
       if (to) hmrcQueryParams.to = to;
       if (status) hmrcQueryParams.status = status;
 
-      // Call HMRC API
       const hmrcResult = await hmrcVatGet(
         `/organisations/vat/${vrn}/obligations`,
         accessToken,
@@ -134,23 +110,9 @@ export async function handler(event) {
       obligations = hmrcResult.data;
     }
 
-    // Return successful response
     return httpOkResponse({
       request,
       data: obligations,
     });
-  } catch (error) {
-    logger.error({
-      message: "Error retrieving VAT obligations",
-      error: error.message,
-      stack: error.stack,
-    });
-
-    return httpServerErrorResponse({
-      request,
-      headers: { ...govClientHeaders },
-      message: "Internal server error retrieving VAT obligations",
-      error: error.message,
-    });
-  }
+  });
 }
