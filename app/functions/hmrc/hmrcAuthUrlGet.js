@@ -2,6 +2,15 @@
 
 import { extractRequest, httpBadRequestResponse, httpOkResponse, httpServerErrorResponse } from "../../lib/responses.js";
 import { validateEnv } from "../../lib/env.js";
+import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
+
+export function apiEndpoint(app) {
+  app.get("/api/v1/hmrc/authUrl", async (httpRequest, httpResponse) => {
+    const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
+    const lambdaResult = await handler(lambdaEvent);
+    return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
+  });
+}
 
 // GET /api/v1/hmrc/authUrl?state={state}&scope={scope}
 export async function handler(event) {

@@ -6,6 +6,7 @@ import { getUserSub } from "../../lib/auth.js";
 import { makeReceiptsS3 } from "../../lib/s3Env.js";
 import { streamToString } from "../../lib/streams.js";
 import { validateEnv } from "../../lib/env.js";
+import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
 
 function parseReceiptKey(key) {
   // receipts/{sub}/{timestamp}-{bundle}.json
@@ -20,6 +21,20 @@ function parseReceiptKey(key) {
   const timestamp = base.substring(0, dashIdx);
   const formBundleNumber = base.substring(dashIdx + 1);
   return { ok: true, name, sub, timestamp, formBundleNumber };
+}
+
+export function apiEndpoint(app) {
+  // My receipts endpoints
+  app.get("/api/v1/hmrc/receipt", async (httpRequest, httpResponse) => {
+    const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
+    const lambdaResult = await handler(lambdaEvent);
+    return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
+  });
+  app.get(`/api/v1/hmrc/receipt/:name`, async (httpRequest, httpResponse) => {
+    const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
+    const lambdaResult = await handler(lambdaEvent);
+    return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
+  });
 }
 
 // GET /api/v1/hmrc/receipt

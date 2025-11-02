@@ -4,6 +4,7 @@ import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import logger from "../../lib/logger.js";
 import { extractRequest, httpBadRequestResponse, httpOkResponse, httpServerErrorResponse } from "../../lib/responses.js";
 import { validateEnv } from "../../lib/env.js";
+import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
 
 export async function logReceipt(key, receipt) {
   const receiptsBucketName = process.env.DIY_SUBMIT_RECEIPTS_BUCKET_NAME;
@@ -49,6 +50,14 @@ export async function logReceipt(key, receipt) {
       throw new Error(`Failed to log receipt: ${error.message}`);
     }
   }
+}
+
+export function apiEndpoint(app) {
+  app.post("/api/v1/hmrc/receipt", async (httpRequest, httpResponse) => {
+    const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
+    const lambdaResult = await handler(lambdaEvent);
+    return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
+  });
 }
 
 // POST /api/v1/hmrc/receipt

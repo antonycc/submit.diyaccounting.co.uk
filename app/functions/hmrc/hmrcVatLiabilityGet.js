@@ -10,6 +10,17 @@ import {
 } from "../../lib/responses.js";
 import eventToGovClientHeaders from "../../lib/eventToGovClientHeaders.js";
 import { hmrcVatGet, shouldUseStub, getStubData } from "../../lib/hmrcVatApi.js";
+import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
+import { requireActivity } from "../../lib/entitlementsService.js";
+
+export function apiEndpoint(app) {
+  // VAT Liabilities endpoint
+  app.get("/api/v1/hmrc/vat/liability", requireActivity("vat-obligations"), async (httpRequest, httpResponse) => {
+    const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
+    const lambdaResult = await handler(lambdaEvent);
+    return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
+  });
+}
 
 // GET /api/v1/hmrc/vat/liability
 export async function handler(event) {
