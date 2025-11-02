@@ -374,7 +374,7 @@ public class SubmitSharedNames {
                 "%s-%s".formatted(appLambdaArnPrefix, hmrcVatLiabilityGetLambdaHandlerDashed);
 
         this.hmrcVatPaymentGetLambdaHttpMethod = HttpMethod.GET;
-        this.hmrcVatPaymentGetLambdaUrlPath = "/api/v1/hmrc/vat/payments";
+        this.hmrcVatPaymentGetLambdaUrlPath = "/api/v1/hmrc/vat/payment";
         var hmrcVatPaymentGetLambdaHandlerName = "hmrcVatPaymentGet.handler";
         var hmrcVatPaymentGetLambdaHandlerDashed =
                 ResourceNameUtils.convertCamelCaseToDashSeparated(hmrcVatPaymentGetLambdaHandlerName);

@@ -15,14 +15,14 @@ import { requireActivity } from "../../lib/entitlementsService.js";
 
 export function apiEndpoint(app) {
   // VAT Payments endpoint
-  app.get("/api/v1/hmrc/vat/payments", requireActivity("vat-obligations"), async (httpRequest, httpResponse) => {
+  app.get("/api/v1/hmrc/vat/payment", requireActivity("vat-obligations"), async (httpRequest, httpResponse) => {
     const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
     const lambdaResult = await handler(lambdaEvent);
     return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
   });
 }
 
-// GET /api/v1/hmrc/vat/payments
+// GET /api/v1/hmrc/vat/payment
 export async function handler(event) {
   const request = extractRequest(event);
   const detectedIP = extractClientIPFromHeaders(event);
