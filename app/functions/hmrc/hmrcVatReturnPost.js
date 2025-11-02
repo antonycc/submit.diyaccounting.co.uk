@@ -74,6 +74,11 @@ export async function handler(event) {
     errorMessages.push("Missing accessToken parameter from body");
   }
   const { govClientHeaders, govClientErrorMessages } = eventToGovClientHeaders(event, detectedIP);
+  // Forward Gov-Test-Scenario header from client when present (sandbox only)
+  const govTestScenarioHeader = event.headers?.["Gov-Test-Scenario"] || event.headers?.["gov-test-scenario"];
+  if (govTestScenarioHeader) {
+    govClientHeaders["Gov-Test-Scenario"] = govTestScenarioHeader;
+  }
   errorMessages = errorMessages.concat(govClientErrorMessages || []);
   if (errorMessages.length > 0) {
     return httpBadRequestResponse({

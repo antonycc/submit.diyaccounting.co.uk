@@ -3,16 +3,20 @@
 import logger from "./logger.js";
 
 export function buildLambdaEventFromHttpRequest(httpRequest) {
+  // Start with a copy of all incoming headers (Express normalizes to lowercase keys)
+  const incomingHeaders = { ...(httpRequest.headers || {}) };
+  // Ensure host header is present
+  incomingHeaders.host = httpRequest.get("host") || incomingHeaders.host || "localhost:3000";
+  // Pass through referer if available via accessor (helps construct full URL in logs)
+  const referer = httpRequest.get("referer");
+  if (referer) incomingHeaders.referer = referer;
+
   const lambdaEvent = {
     path: httpRequest.path,
-    headers: { host: httpRequest.get("host") || "localhost:3000" },
+    headers: incomingHeaders,
     queryStringParameters: httpRequest.query || {},
   };
-  const passThroughHeaders = ["if-none-match", "if-modified-since", "authorization"];
-  for (const h of passThroughHeaders) {
-    const v = httpRequest.get(h); // case-insensitive lookup
-    if (v) lambdaEvent.headers[h] = v;
-  }
+
   if (httpRequest.params) {
     lambdaEvent.pathParameters = httpRequest.params;
   }

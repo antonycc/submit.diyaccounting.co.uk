@@ -160,11 +160,34 @@ export async function initVatObligations(page) {
   });
 }
 
-export async function fillInVatObligations(page, hmrcTestVatNumber) {
-  await test.step("The user fills in the VAT obligations form with VRN", async () => {
+export async function fillInVatObligations(page, hmrcTestVatNumber, options = {}) {
+  await test.step("The user fills in the VAT obligations form with VRN and date range", async () => {
+    const { fromDate, toDate, status, testScenario } = options || {};
+
+    // Compute a wide date range with likely hits if not provided
+    const from = fromDate || "2018-01-01";
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, "0");
+    const dd = String(today.getDate()).padStart(2, "0");
+    const to = toDate || `${yyyy}-${mm}-${dd}`;
+
     await page.waitForTimeout(100);
     await loggedFill(page, "#vrn", hmrcTestVatNumber, "Entering VAT registration number");
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(50);
+    // Fill optional filters (map to actual form field IDs)
+    await loggedFill(page, "#fromDate", from, "Entering from date");
+    await page.waitForTimeout(50);
+    await loggedFill(page, "#toDate", to, "Entering to date");
+    await page.waitForTimeout(50);
+    if (status) {
+      await page.selectOption("#status", String(status));
+    }
+    if (testScenario) {
+      await page.selectOption("#testScenario", String(testScenario));
+    }
+
+    await page.waitForTimeout(300);
     await page.screenshot({
       path: `target/behaviour-test-results/vatObligations-screenshots/020-form-filled-${timestamp()}.png`,
     });

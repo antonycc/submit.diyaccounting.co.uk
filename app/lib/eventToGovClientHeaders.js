@@ -3,13 +3,17 @@
 import logger from "./logger.js";
 
 export default function eventToGovClientHeaders(event, detectedIP) {
-  const govClientBrowserJSUserAgentHeader = (event.headers || {})["Gov-Client-Browser-JS-User-Agent"];
-  const govClientDeviceIDHeader = (event.headers || {})["Gov-Client-Device-ID"];
-  const govClientMultiFactorHeader = (event.headers || {})["Gov-Client-Multi-Factor"];
+  const headers = event.headers || {};
+  // Case-insensitive header getter
+  const h = (name) => headers[name] ?? headers[String(name).toLowerCase()] ?? headers[String(name).toUpperCase()];
+
+  const govClientBrowserJSUserAgentHeader = h("Gov-Client-Browser-JS-User-Agent");
+  const govClientDeviceIDHeader = h("Gov-Client-Device-ID");
+  const govClientMultiFactorHeader = h("Gov-Client-Multi-Factor");
 
   // Handle IP detection - if browser sent "SERVER_DETECT", extract IP from request headers
-  let govClientPublicIPHeader = (event.headers || {})["Gov-Client-Public-IP"];
-  const govVendorPublicIPHeader = (event.headers || {})["Gov-Vendor-Public-IP"];
+  let govClientPublicIPHeader = h("Gov-Client-Public-IP");
+  const govVendorPublicIPHeader = h("Gov-Vendor-Public-IP");
 
   if (govClientPublicIPHeader === "SERVER_DETECT" || !govClientPublicIPHeader) {
     logger.info({
