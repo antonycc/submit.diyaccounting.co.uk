@@ -1872,7 +1872,7 @@ jobs:
 
   convert-video:
     name: 'convert web test video to mp4'
-    if: ${{ inputs.convertWebTestVideo == 'true' }}
+    if: ${{ inputs.convertTestVideo == 'true' }}
     needs:
       - names
       - web-test
