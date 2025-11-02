@@ -237,7 +237,7 @@ jobs:
 
       - name: Run behaviour tests
         run: |
-          npm run test:originBehaviour || exit_code=$? \
+          npm run test:bundleBehaviour || exit_code=$? \
           ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
           ; exit ${exit_code:-0} \
           ;
@@ -1456,7 +1456,7 @@ jobs:
 #
 #      #cp '.env.${{ needs.names.outputs.environment-name }}' '.env.test' ; npx dotenv -e '.env.${{ needs.names.outputs.environment-name }}' -- npm run test:behaviour
 #      #
-#      - run: cp '.env.${{ needs.names.outputs.environment-name }}' '.env.test' ; npx dotenv -e '.env.${{ needs.names.outputs.environment-name }}' -- npm run test:originBehaviour
+#      - run: cp '.env.${{ needs.names.outputs.environment-name }}' '.env.test' ; npx dotenv -e '.env.${{ needs.names.outputs.environment-name }}' -- npm run test:bundleBehaviour
 #        env:
 #          DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.base-url }}
 #          TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
@@ -1656,7 +1656,6 @@ jobs:
     name: 'web test'
     needs:
       - names
-      - skip-deploy-check
       - deploy-auth
       - deploy-hmrc
       - deploy-account
@@ -1717,6 +1716,23 @@ jobs:
         with:
           name: web-test-reports
           retention-days: 30
+          path: |
+            target/test-reports/
+
+  upload-web-test-results:
+    if: ${{ !cancelled() }}
+    name: 'web test'
+    needs:
+      - names
+      - web-test
+    runs-on: ubuntu-24.04
+    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    steps:
+      - name: Download artifacts (reports)
+        if: ${{ !cancelled() }}
+        uses: actions/download-artifact@v6
+        with:
+          name: web-test-reports
           path: |
             target/test-reports/
 

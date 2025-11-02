@@ -40,6 +40,7 @@ const testAuthUsername = getEnvVarAndLog("testAuthUsername", "TEST_AUTH_USERNAME
 // const receiptsBucketName = getEnvVarAndLog("receiptsBucketName", "DIY_SUBMIT_RECEIPTS_BUCKET_NAME", null);
 const baseUrl = getEnvVarAndLog("baseUrl", "DIY_SUBMIT_BASE_URL", null);
 
+let mockOAuth2Process;
 let serverProcess;
 let ngrokProcess;
 
@@ -51,7 +52,7 @@ test.beforeAll(async () => {
     ...originalEnv,
   };
   // Run local servers as needed for the tests
-  await runLocalOAuth2Server(runMockOAuth2);
+  mockOAuth2Process = await runLocalOAuth2Server(runMockOAuth2);
   serverProcess = await runLocalHttpServer(runTestServer, null, serverPort);
   ngrokProcess = await runLocalSslProxy(runProxy, serverPort, baseUrl);
 
@@ -60,11 +61,14 @@ test.beforeAll(async () => {
 
 test.afterAll(async () => {
   // Shutdown local servers at end of test
+  if (ngrokProcess) {
+    ngrokProcess.kill();
+  }
   if (serverProcess) {
     serverProcess.kill();
   }
-  if (ngrokProcess) {
-    ngrokProcess.kill();
+  if (mockOAuth2Process) {
+    mockOAuth2Process.kill();
   }
 });
 

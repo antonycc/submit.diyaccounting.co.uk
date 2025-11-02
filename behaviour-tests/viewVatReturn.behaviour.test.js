@@ -42,6 +42,7 @@ const testAuthUsername = getEnvVarAndLog("testAuthUsername", "TEST_AUTH_USERNAME
 const baseUrl = getEnvVarAndLog("baseUrl", "DIY_SUBMIT_BASE_URL", null);
 const hmrcTestVatNumber = getEnvVarAndLog("hmrcTestVatNumber", "TEST_HMRC_VAT_NUMBER", null);
 
+let mockOAuth2Process;
 let serverProcess;
 let ngrokProcess;
 
@@ -54,7 +55,7 @@ test.beforeAll(async () => {
   };
 
   // Run servers needed for the test
-  await runLocalOAuth2Server(runMockOAuth2);
+  mockOAuth2Process = await runLocalOAuth2Server(runMockOAuth2);
   serverProcess = await runLocalHttpServer(runTestServer, null, serverPort);
   ngrokProcess = await runLocalSslProxy(runProxy, serverPort, baseUrl);
 
@@ -63,11 +64,14 @@ test.beforeAll(async () => {
 
 test.afterAll(async () => {
   // Shutdown local servers at end of test
+  if (ngrokProcess) {
+    ngrokProcess.kill();
+  }
   if (serverProcess) {
     serverProcess.kill();
   }
-  if (ngrokProcess) {
-    ngrokProcess.kill();
+  if (mockOAuth2Process) {
+    mockOAuth2Process.kill();
   }
 });
 

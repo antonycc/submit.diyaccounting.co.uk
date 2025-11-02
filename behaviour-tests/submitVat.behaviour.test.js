@@ -55,6 +55,7 @@ const hmrcTestUsername = getEnvVarAndLog("hmrcTestUsername", "TEST_HMRC_USERNAME
 const hmrcTestPassword = getEnvVarAndLog("hmrcTestPassword", "TEST_HMRC_PASSWORD", null);
 const hmrcTestVatNumber = getEnvVarAndLog("hmrcTestVatNumber", "TEST_HMRC_VAT_NUMBER", null);
 
+let mockOAuth2Process;
 let s3Endpoint;
 let serverProcess;
 let ngrokProcess;
@@ -68,7 +69,7 @@ test.beforeAll(async () => {
   };
 
   // Run servers needed for the test
-  await runLocalOAuth2Server(runMockOAuth2);
+  mockOAuth2Process = await runLocalOAuth2Server(runMockOAuth2);
   s3Endpoint = await runLocalS3(runMinioS3, receiptsBucketName, optionalTestS3AccessKey, optionalTestS3SecretKey);
   serverProcess = await runLocalHttpServer(runTestServer, s3Endpoint, serverPort);
   ngrokProcess = await runLocalSslProxy(runProxy, serverPort, baseUrl);
@@ -86,11 +87,14 @@ test.beforeAll(async () => {
 
 test.afterAll(async () => {
   // Shutdown local servers at end of test
+  if (ngrokProcess) {
+    ngrokProcess.kill();
+  }
   if (serverProcess) {
     serverProcess.kill();
   }
-  if (ngrokProcess) {
-    ngrokProcess.kill();
+  if (mockOAuth2Process) {
+    mockOAuth2Process.kill();
   }
 
   // if (serverProcess) {
