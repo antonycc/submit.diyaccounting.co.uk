@@ -1,21 +1,10 @@
 // app/lib/entitlementsService.js
-import { loadCatalogFromRoot, bundlesForActivity } from "./productCatalogHelper.js";
-import { getBundlesStore } from "../functions/non-lambda-mocks/mockBundleStore.js";
+import { loadCatalogFromRoot, bundlesForActivity } from "@app/lib/productCatalogHelper.js";
+import { getBundlesStore } from "@app/functions/non-lambda-mocks/mockBundleStore.js";
+import logger from "@app/lib/logger.js";
+import { decodeJwtNoVerify } from "@app/lib/jwtHelper.js";
 
 const mockBundleStore = getBundlesStore();
-
-// Very light JWT decode (no signature verification) – same approach as bundle.js
-function decodeJwtNoVerify(token) {
-  try {
-    const parts = String(token || "").split(".");
-    if (parts.length < 2) return null;
-    const payload = parts[1].replace(/-/g, "+").replace(/_/g, "/");
-    const json = Buffer.from(payload, "base64").toString("utf8");
-    return JSON.parse(json);
-  } catch (_err) {
-    return null;
-  }
-}
 
 function getUserContextFromAuthHeader(authorization) {
   if (!authorization || !authorization.startsWith("Bearer ")) return { sub: null, claims: {} };
@@ -30,13 +19,26 @@ function qualifiersMatch(bundle, userCtx) {
   const claims = userCtx?.claims || {};
   // requiresTransactionId means caller must present a transactionId claim
   if (q.requiresTransactionId) {
-    if (!claims.transactionId && !claims["custom:transactionId"]) return false;
+    if (!claims.transactionId && !claims["custom:transactionId"]) {
+      logger.info({ message: "qualifiersMatch: missing required transactionId claim", bundleId: bundle.id, userSub: userCtx?.sub });
+      return false;
+    }
   }
   // subscriptionTier must match exactly (supports either subscriptionTier or custom:subscriptionTier)
   if (q.subscriptionTier) {
     const tier = claims.subscriptionTier || claims["custom:subscriptionTier"];
-    if (tier !== q.subscriptionTier) return false;
+    if (tier !== q.subscriptionTier) {
+      logger.info({
+        message: "qualifiersMatch: subscriptionTier mismatch",
+        bundleId: bundle.id,
+        required: q.subscriptionTier,
+        actual: tier,
+        userSub: userCtx?.sub,
+      });
+      return false;
+    }
   }
+  logger.info({ message: "qualifiersMatch: all qualifiers matched", bundleId: bundle.id, userSub: userCtx?.sub });
   return true;
 }
 
@@ -64,6 +66,7 @@ export function getGrantedBundles(userCtx) {
     }
     if (ok) granted.push({ subject: userCtx?.sub, bundleId: id, expiry: null, qualifiers: {} });
   }
+  logger.info({ message: "getGrantedBundles", userSub: userCtx?.sub, granted });
   return granted;
 }
 
@@ -89,27 +92,45 @@ export function getActiveBundles(userCtx) {
 }
 
 export function isActivityAllowed(activityId, userCtx) {
+  logger.info({ message: "Checking activity allowed", activityId, userSub: userCtx?.sub });
   const catalog = getCatalog();
   const actBundles = bundlesForActivity(catalog, activityId);
-  if (!Array.isArray(actBundles) || actBundles.length === 0) return false;
+  if (!Array.isArray(actBundles) || actBundles.length === 0) {
+    logger.info({ message: "No bundles found for activity", activityId });
+    return false;
+  }
   const active = new Set(getActiveBundles(userCtx));
-  return actBundles.some((id) => active.has(id));
+  const activityAllowed = actBundles.some((id) => active.has(id));
+  logger.info({ message: "Activity allowed result", activityId, activityAllowed, userSub: userCtx?.sub });
+  return activityAllowed;
 }
 
-// Express middleware factory
 export function requireActivity(activityId) {
   return function (req, res, next) {
     try {
       const auth = req.headers.authorization || req.headers.Authorization;
       const userCtx = getUserContextFromAuthHeader(auth);
       const allowed = isActivityAllowed(activityId, userCtx);
-      if (allowed) return next();
+      if (allowed) {
+        logger.info({ message: "Activity allowed proceeding to next check", activityId, userSub: userCtx?.sub });
+        return next();
+      }
       const active = getActiveBundles(userCtx);
-      return res.status(403).json({ error: "not_allowed", activityId, bundles: active });
+      const responseBody = { error: "not_allowed", activityId, bundles: active };
+      logger.warn({
+        message: "Activity not allowed responding with HTTP 403",
+        activityId,
+        userSub: userCtx?.sub,
+        activeBundles: active,
+        responseBody,
+      });
+      return res.status(403).json(responseBody);
     } catch (e) {
-      return res.status(500).json({ error: "entitlements_error", message: e?.message || String(e) });
+      const responseBody = { error: "entitlements_error", message: e?.message || String(e) };
+      logger.error({ message: "Error in requireActivity  responding with HTTP 500", error: e, responseBody });
+      return res.status(500).json(responseBody);
     }
   };
 }
 
-export const __testing = { decodeJwtNoVerify, getUserContextFromAuthHeader, qualifiersMatch };
+// export const __testing = { getUserContextFromAuthHeader, qualifiersMatch };

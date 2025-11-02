@@ -11,23 +11,25 @@ import {
 import eventToGovClientHeaders from "../../lib/eventToGovClientHeaders.js";
 import { validateEnv } from "../../lib/env.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
-import { requireActivity } from "../../lib/entitlementsService.js";
+// import { requireActivity } from "../../lib/entitlementsService.js";
+import { decodeJwtNoVerify } from "../../lib/jwtHelper.js";
 
 export function apiEndpoint(app) {
   // Submit VAT route (optionally guarded)
-  if (String(process.env.DIY_SUBMIT_ENABLE_CATALOG_GUARDS || "").toLowerCase() === "true") {
-    app.post("/api/v1/hmrc/vat/return", requireActivity("submit-vat"), async (httpRequest, httpResponse) => {
-      const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
-      const lambdaResult = await handler(lambdaEvent);
-      return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
-    });
-  } else {
-    app.post("/api/v1/hmrc/vat/return", async (httpRequest, httpResponse) => {
-      const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
-      const lambdaResult = await handler(lambdaEvent);
-      return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
-    });
-  }
+  // if (String(process.env.DIY_SUBMIT_ENABLE_CATALOG_GUARDS || "").toLowerCase() === "true") {
+  // requireActivity("submit-vat-sandbox"),
+  app.post("/api/v1/hmrc/vat/return", async (httpRequest, httpResponse) => {
+    const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
+    const lambdaResult = await handler(lambdaEvent);
+    return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
+  });
+  // } else {
+  //   app.post("/api/v1/hmrc/vat/return", async (httpRequest, httpResponse) => {
+  //     const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
+  //     const lambdaResult = await handler(lambdaEvent);
+  //     return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
+  //   });
+  // }
 }
 
 // Lazy load AWS Cognito SDK only if bundle enforcement is on
@@ -154,19 +156,6 @@ export async function handler(event) {
       receipt,
     },
   });
-}
-
-// Lightweight JWT decode (no signature verification)
-function decodeJwtNoVerify(token) {
-  try {
-    const parts = String(token || "").split(".");
-    if (parts.length < 2) return null;
-    const payload = parts[1].replace(/-/g, "+").replace(/_/g, "/");
-    const json = Buffer.from(payload, "base64").toString("utf8");
-    return JSON.parse(json);
-  } catch (_e) {
-    return null;
-  }
 }
 
 function isSandboxBase(base) {

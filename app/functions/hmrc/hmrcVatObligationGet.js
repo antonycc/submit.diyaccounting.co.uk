@@ -11,11 +11,12 @@ import {
 import eventToGovClientHeaders from "../../lib/eventToGovClientHeaders.js";
 import { hmrcVatGet, shouldUseStub, getStubData } from "../../lib/hmrcVatApi.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
-import { requireActivity } from "../../lib/entitlementsService.js";
+// import { requireActivity } from "../../lib/entitlementsService.js";
 
 export function apiEndpoint(app) {
   // VAT Obligations endpoint
-  app.get("/api/v1/hmrc/vat/obligation", requireActivity("vat-obligations"), async (httpRequest, httpResponse) => {
+  // requireActivity("vat-obligations-sandbox"),
+  app.get("/api/v1/hmrc/vat/obligation", async (httpRequest, httpResponse) => {
     const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
     const lambdaResult = await handler(lambdaEvent);
     return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
