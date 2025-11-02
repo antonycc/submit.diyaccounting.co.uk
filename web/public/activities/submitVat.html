@@ -144,6 +144,7 @@
         const vatNumber = formData.get("vatNumber").trim();
         const periodKey = formData.get("periodKey").trim();
         const vatDue = formData.get("vatDue");
+        const testScenario = (document.getElementById("testScenario")?.value || "").trim();
 
         // Basic validation
         if (!vatNumber || !periodKey || !vatDue) {
@@ -167,7 +168,7 @@
 
           // Store submission data and generate state
           const state = generateRandomState();
-          submissionData = { vatNumber, periodKey, vatDue };
+          submissionData = { vatNumber, periodKey, vatDue, testScenario };
 
           sessionStorage.setItem("oauth_state", state);
           localStorage.setItem("submission_data", JSON.stringify(submissionData));
@@ -249,6 +250,7 @@
         const govClientBrowserJSUserAgentHeader = navigator.userAgent;
         const govClientDeviceIDHeader = crypto.randomUUID();
         const govClientMultiFactorHeader = "type=OTHER";
+        const testScenario = (document.getElementById("testScenario")?.value || (JSON.parse(localStorage.getItem("submission_data")||"null")?.testScenario || "")).trim();
 
         // Enhanced IP detection with fallbacks
         const detectedIP = await getClientIP();
@@ -285,6 +287,9 @@
           "Gov-Vendor-Forwarded": govVendorForwardedHeader,
           "Gov-Vendor-Public-IP": govVendorPublicIPHeader,
         };
+        if (testScenario) {
+          headers["Gov-Test-Scenario"] = testScenario;
+        }
         return await submitVat(vatNumber, periodKey, vatDue, accessToken, headers);
       }
 

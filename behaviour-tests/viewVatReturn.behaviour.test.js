@@ -23,6 +23,14 @@ import {
   submitViewVatReturnForm,
   verifyViewVatReturnResults,
 } from "./steps/behaviour-hmrc-vat-steps.js";
+import {
+  acceptCookiesHmrc,
+  fillInHmrcAuth,
+  goToHmrcAuth,
+  grantPermissionHmrcAuth,
+  initHmrcAuth,
+  submitHmrcAuth,
+} from "./steps/behaviour-hmrc-steps.js";
 
 if (!process.env.DIY_SUBMIT_ENV_FILEPATH) {
   dotenvConfigIfNotBlank({ path: ".env.test" });
@@ -41,6 +49,8 @@ const testAuthProvider = getEnvVarAndLog("testAuthProvider", "TEST_AUTH_PROVIDER
 const testAuthUsername = getEnvVarAndLog("testAuthUsername", "TEST_AUTH_USERNAME", null);
 const baseUrl = getEnvVarAndLog("baseUrl", "DIY_SUBMIT_BASE_URL", null);
 const hmrcTestVatNumber = getEnvVarAndLog("hmrcTestVatNumber", "TEST_HMRC_VAT_NUMBER", null);
+const hmrcTestUsername = getEnvVarAndLog("hmrcTestUsername", "TEST_HMRC_USERNAME", null);
+const hmrcTestPassword = getEnvVarAndLog("hmrcTestPassword", "TEST_HMRC_PASSWORD", null);
 
 let mockOAuth2Process;
 let serverProcess;
@@ -116,15 +126,27 @@ test("Log in, view VAT return, log out", async ({ page }) => {
   await goToHomePageUsingHamburgerMenu(page);
 
   /* ******************* */
-  /*  VIEW VAT RETURN    */
+  /*  GET VAT RETURN     */
   /* ******************* */
 
   await initViewVatReturn(page);
   await fillInViewVatReturn(page, hmrcTestVatNumber);
   await submitViewVatReturnForm(page);
 
-  // Note: This test uses stubbed data from the test API and does not require HMRC OAuth flow.
-  // The test bundle provides access to sandbox APIs which return test data without real authentication.
+  /* ************ */
+  /* `HMRC AUTH   */
+  /* ************ */
+
+  await acceptCookiesHmrc(page);
+  await goToHmrcAuth(page);
+  await initHmrcAuth(page);
+  await fillInHmrcAuth(page, hmrcTestUsername, hmrcTestPassword);
+  await submitHmrcAuth(page);
+  await grantPermissionHmrcAuth(page);
+
+  /* ******************* */
+  /*  VIEW VAT RETURN    */
+  /* ******************* */
 
   await verifyViewVatReturnResults(page);
 

@@ -161,12 +161,20 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }) => {
   await fillInVat(page, hmrcTestVatNumber);
   await submitFormVat(page);
 
+  /* ************ */
+  /* `HMRC AUTH   */
+  /* ************ */
+
   await acceptCookiesHmrc(page);
   await goToHmrcAuth(page);
   await initHmrcAuth(page);
   await fillInHmrcAuth(page, hmrcTestUsername, hmrcTestPassword);
   await submitHmrcAuth(page);
   await grantPermissionHmrcAuth(page);
+
+  /* ************** */
+  /* `COMPLETE VAT  */
+  /* ************** */
 
   await completeVat(page, baseUrl);
   // await completeVat(page, baseUrl, checkServersAreRunning);

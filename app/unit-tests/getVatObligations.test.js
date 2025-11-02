@@ -17,6 +17,7 @@ describe("getVatObligations handler", () => {
     vi.resetAllMocks();
     // Set stubbed mode
     process.env.TEST_VAT_OBLIGATIONS = JSON.stringify({
+      source: "stub",
       obligations: [
         {
           start: "2024-01-01",
@@ -194,6 +195,7 @@ describe("getVatObligations handler", () => {
     delete process.env.TEST_VAT_OBLIGATIONS;
 
     const mockResponse = {
+      source: "stub",
       obligations: [
         {
           start: "2024-01-01",

@@ -1,20 +1,7 @@
 // app/functions/getReceipt.js
 import { GetObjectCommand, S3Client } from "@aws-sdk/client-s3";
-import logger from "@app/lib/logger.js";
-
-// TODO: possible duplicate, remove.
-
-function decodeJwtNoVerify(token) {
-  try {
-    const parts = String(token || "").split(".");
-    if (parts.length < 2) return null;
-    const payload = parts[1].replace(/-/g, "+").replace(/_/g, "/");
-    const json = Buffer.from(payload, "base64").toString("utf8");
-    return JSON.parse(json);
-  } catch (_err) {
-    return null;
-  }
-}
+import logger from "../../lib/logger.js";
+import { decodeJwtNoVerify } from "../../lib/jwtHelper.js";
 
 function userCtxFromEvent(event) {
   const auth = event.headers?.authorization || event.headers?.Authorization;

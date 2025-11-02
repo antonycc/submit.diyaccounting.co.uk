@@ -7,15 +7,19 @@ import {
   httpOkResponse,
   httpServerErrorResponse,
   extractClientIPFromHeaders,
+  extractAuthToken,
+  buildValidationError,
+  withErrorHandling,
 } from "../../lib/responses.js";
 import eventToGovClientHeaders from "../../lib/eventToGovClientHeaders.js";
 import { hmrcVatGet, shouldUseStub, getStubData } from "../../lib/hmrcVatApi.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
-import { requireActivity } from "../../lib/entitlementsService.js";
+// import { requireActivity } from "../../lib/entitlementsService.js";
 
 export function apiEndpoint(app) {
   // VAT Return endpoint (view submitted return)
-  app.get(`/api/v1/hmrc/vat/return/:periodKey`, requireActivity("vat-obligations"), async (httpRequest, httpResponse) => {
+  // requireActivity("view-vat-return-sandbox"),
+  app.get(`/api/v1/hmrc/vat/return/:periodKey`, async (httpRequest, httpResponse) => {
     const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
     const lambdaResult = await handler(lambdaEvent);
     return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
@@ -27,79 +31,55 @@ export async function handler(event) {
   const request = extractRequest(event);
   const detectedIP = extractClientIPFromHeaders(event);
 
-  // Extract path parameters and query parameters
   const pathParams = event.pathParameters || {};
   const queryParams = event.queryStringParameters || {};
   const { vrn, periodKey } = { ...pathParams, ...queryParams };
   const { "Gov-Test-Scenario": testScenario } = queryParams;
 
-  // Validation
   let errorMessages = [];
-  if (!vrn) {
-    errorMessages.push("Missing vrn parameter");
-  }
-  if (!periodKey) {
-    errorMessages.push("Missing periodKey parameter");
-  }
-
-  // Validate VRN format (9 digits)
-  if (vrn && !/^\d{9}$/.test(vrn)) {
-    errorMessages.push("Invalid vrn format - must be 9 digits");
-  }
-
-  // Validate periodKey format
-  if (periodKey && !/^[A-Z0-9#]{3,5}$/i.test(periodKey)) {
-    errorMessages.push("Invalid periodKey format");
-  }
+  if (!vrn) errorMessages.push("Missing vrn parameter");
+  if (!periodKey) errorMessages.push("Missing periodKey parameter");
+  if (vrn && !/^\d{9}$/.test(vrn)) errorMessages.push("Invalid vrn format - must be 9 digits");
+  if (periodKey && !/^[A-Z0-9#]{3,5}$/i.test(periodKey)) errorMessages.push("Invalid periodKey format");
 
   const { govClientHeaders, govClientErrorMessages } = eventToGovClientHeaders(event, detectedIP);
   errorMessages = errorMessages.concat(govClientErrorMessages || []);
 
   if (errorMessages.length > 0) {
-    return httpBadRequestResponse({
-      request,
-      headers: { ...govClientHeaders },
-      message: errorMessages.join(", "),
-    });
+    return buildValidationError(request, errorMessages, govClientHeaders);
   }
 
-  // Extract access token from headers
-  const authHeader = event.headers?.authorization || event.headers?.Authorization;
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+  const accessToken = extractAuthToken(event);
+  if (!accessToken) {
     return httpBadRequestResponse({
       request,
       headers: { ...govClientHeaders },
       message: "Missing Authorization Bearer token",
     });
   }
-  const accessToken = authHeader.split(" ")[1];
 
-  try {
+  return withErrorHandling(request, govClientHeaders, async () => {
     let vatReturn;
 
     // Check if we should use stubbed data
+    logger.info({ message: "Checking for stubbed VAT return data", vrn, periodKey, testScenario });
     if (shouldUseStub("TEST_VAT_RETURN")) {
-      logger.info({ message: "Using stubbed VAT return data", vrn, periodKey, testScenario });
-      vatReturn = getStubData("TEST_VAT_RETURN", {
-        periodKey: periodKey,
-        vatDueSales: 1000.5,
-        vatDueAcquisitions: 0.0,
-        totalVatDue: 1000.5,
-        vatReclaimedCurrPeriod: 0.0,
-        netVatDue: 1000.5,
-        totalValueSalesExVAT: 4000.0,
-        totalValuePurchasesExVAT: 1000.0,
-        totalValueGoodsSuppliedExVAT: 0.0,
-        totalAcquisitionsExVAT: 0.0,
-        finalised: true,
-      });
+      logger.warn({ message: "[MOCK] Using stubbed VAT return data", vrn, periodKey, testScenario });
+      vatReturn = getStubData("TEST_VAT_RETURN");
     } else {
       // Call HMRC API
+      logger.info({ message: "Retrieving VAT return from HMRC", vrn, periodKey, testScenario });
       const hmrcResult = await hmrcVatGet(`/organisations/vat/${vrn}/returns/${periodKey}`, accessToken, govClientHeaders, testScenario);
 
       if (!hmrcResult.ok) {
-        // Handle 404 specifically for not found returns
         if (hmrcResult.status === 404) {
+          logger.warn({
+            message: "VAT return not found for specified period",
+            vrn,
+            periodKey,
+            hmrcResponseCode: hmrcResult.status,
+            responseBody: hmrcResult.data,
+          });
           return httpBadRequestResponse({
             request,
             headers: { ...govClientHeaders },
@@ -111,6 +91,13 @@ export async function handler(event) {
           });
         }
 
+        logger.error({
+          message: "HMRC VAT return retrieval failed",
+          vrn,
+          periodKey,
+          hmrcResponseCode: hmrcResult.status,
+          responseBody: hmrcResult.data,
+        });
         return httpServerErrorResponse({
           request,
           headers: { ...govClientHeaders },
@@ -126,24 +113,10 @@ export async function handler(event) {
     }
 
     // Return successful response
+    logger.info({ message: "Successfully retrieved VAT return", vrn, periodKey });
     return httpOkResponse({
       request,
       data: vatReturn,
     });
-  } catch (error) {
-    logger.error({
-      message: "Error retrieving VAT return",
-      error: error.message,
-      stack: error.stack,
-      vrn,
-      periodKey,
-    });
-
-    return httpServerErrorResponse({
-      request,
-      headers: { ...govClientHeaders },
-      message: "Internal server error retrieving VAT return",
-      error: error.message,
-    });
-  }
+  });
 }

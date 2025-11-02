@@ -17,6 +17,7 @@ describe("getVatReturn handler", () => {
     vi.resetAllMocks();
     // Set stubbed mode
     process.env.TEST_VAT_RETURN = JSON.stringify({
+      source: "stub",
       periodKey: "24A1",
       vatDueSales: 1000.5,
       vatDueAcquisitions: 0.0,
@@ -183,6 +184,7 @@ describe("getVatReturn handler", () => {
     delete process.env.TEST_VAT_RETURN;
 
     const mockResponse = {
+      source: "stub",
       periodKey: "24A1",
       vatDueSales: 1000.5,
       totalVatDue: 1000.5,

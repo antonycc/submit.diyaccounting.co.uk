@@ -23,6 +23,14 @@ import {
   submitVatObligationsForm,
   verifyVatObligationsResults,
 } from "./steps/behaviour-hmrc-vat-steps.js";
+import {
+  acceptCookiesHmrc,
+  fillInHmrcAuth,
+  goToHmrcAuth,
+  grantPermissionHmrcAuth,
+  initHmrcAuth,
+  submitHmrcAuth,
+} from "./steps/behaviour-hmrc-steps.js";
 
 if (!process.env.DIY_SUBMIT_ENV_FILEPATH) {
   dotenvConfigIfNotBlank({ path: ".env.test" });
@@ -41,6 +49,8 @@ const testAuthProvider = getEnvVarAndLog("testAuthProvider", "TEST_AUTH_PROVIDER
 const testAuthUsername = getEnvVarAndLog("testAuthUsername", "TEST_AUTH_USERNAME", null);
 const baseUrl = getEnvVarAndLog("baseUrl", "DIY_SUBMIT_BASE_URL", null);
 const hmrcTestVatNumber = getEnvVarAndLog("hmrcTestVatNumber", "TEST_HMRC_VAT_NUMBER", null);
+const hmrcTestUsername = getEnvVarAndLog("hmrcTestUsername", "TEST_HMRC_USERNAME", null);
+const hmrcTestPassword = getEnvVarAndLog("hmrcTestPassword", "TEST_HMRC_PASSWORD", null);
 
 let mockOAuth2Process;
 let serverProcess;
@@ -75,7 +85,7 @@ test.afterAll(async () => {
   }
 });
 
-test("Log in, retrieve VAT obligations, log out", async ({ page }) => {
+test("Click through: View VAT obligations from HMRC", async ({ page }) => {
   // // Run servers needed for the test
   // await runLocalOAuth2Server(runMockOAuth2);
   // serverProcess = await runLocalHttpServer(runTestServer, null, serverPort);
@@ -116,15 +126,29 @@ test("Log in, retrieve VAT obligations, log out", async ({ page }) => {
   await goToHomePageUsingHamburgerMenu(page);
 
   /* ******************* */
-  /*  VAT OBLIGATIONS    */
+  /*  GET OBLIGATIONS    */
   /* ******************* */
 
   await initVatObligations(page);
-  await fillInVatObligations(page, hmrcTestVatNumber);
+  const fromDate = "2025-01-07";
+  const toDate = "2025-11-01";
+  await fillInVatObligations(page, hmrcTestVatNumber, { fromDate, toDate });
   await submitVatObligationsForm(page);
 
-  // Note: This test uses stubbed data from the test API and does not require HMRC OAuth flow.
-  // The test bundle provides access to sandbox APIs which return test data without real authentication.
+  /* ************ */
+  /* `HMRC AUTH   */
+  /* ************ */
+
+  await acceptCookiesHmrc(page);
+  await goToHmrcAuth(page);
+  await initHmrcAuth(page);
+  await fillInHmrcAuth(page, hmrcTestUsername, hmrcTestPassword);
+  await submitHmrcAuth(page);
+  await grantPermissionHmrcAuth(page);
+
+  /* ******************** */
+  /*  VIEW OBLIGATIONS    */
+  /* ******************** */
 
   await verifyVatObligationsResults(page);
 

@@ -19,6 +19,7 @@ describe("Integration – VAT API Endpoints (Direct Handler Testing)", () => {
       TEST_BUNDLE_MOCK: "true",
       // Enable stubbed mode for predictable responses
       TEST_VAT_OBLIGATIONS: JSON.stringify({
+        source: "stub",
         obligations: [
           {
             start: "2024-01-01",
@@ -31,58 +32,17 @@ describe("Integration – VAT API Endpoints (Direct Handler Testing)", () => {
         ],
       }),
       TEST_VAT_RETURN: JSON.stringify({
+        source: "stub",
         periodKey: "24A1",
         vatDueSales: 1000.5,
         totalVatDue: 1000.5,
         finalised: true,
-      }),
-      TEST_VAT_LIABILITIES: JSON.stringify({
-        liabilities: [
-          {
-            taxPeriod: { from: "2024-01-01", to: "2024-03-31" },
-            type: "VAT Return Debit Charge",
-            originalAmount: 1000.5,
-            outstandingAmount: 500.25,
-            due: "2024-05-07",
-          },
-        ],
       }),
     };
   });
 
   afterAll(() => {
     process.env = originalEnv;
-  });
-
-  it("should retrieve VAT obligations in stubbed mode", async () => {
-    const event = {
-      queryStringParameters: { vrn: "111222333" },
-      headers: { authorization: "Bearer test-access-token" },
-    };
-
-    const result = await getVatObligationsHandler(event);
-    const body = JSON.parse(result.body);
-
-    expect(result.statusCode).toBe(200);
-    expect(body.obligations).toBeDefined();
-    expect(body.obligations).toHaveLength(1);
-    expect(body.obligations[0].periodKey).toBe("24A1");
-  });
-
-  it("should retrieve VAT return in stubbed mode", async () => {
-    const event = {
-      queryStringParameters: { vrn: "111222333" },
-      pathParameters: { periodKey: "24A1" },
-      headers: { authorization: "Bearer test-access-token" },
-    };
-
-    const result = await getVatReturnHandler(event);
-    const body = JSON.parse(result.body);
-
-    expect(result.statusCode).toBe(200);
-    expect(body.periodKey).toBe("24A1");
-    expect(body.vatDueSales).toBe(1000.5);
-    expect(body.finalised).toBe(true);
   });
 
   it("should validate VRN format consistently", async () => {

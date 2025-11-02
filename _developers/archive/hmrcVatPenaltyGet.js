@@ -11,7 +11,7 @@ import {
 import eventToGovClientHeaders from "@app/lib/eventToGovClientHeaders.js";
 import { hmrcVatGet, shouldUseStub, getStubData } from "@app/lib/hmrcVatApi.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "@app/lib/httpHelper.js";
-import { requireActivity } from "@app/lib/entitlementsService.js";
+import { requireActivity } from "./entitlementsService.js";
 
 export function apiEndpoint(app) {
   // VAT Penalties endpoint

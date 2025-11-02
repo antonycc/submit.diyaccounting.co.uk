@@ -6,8 +6,37 @@ export default defineConfig({
     {
       name: "behaviour-tests",
       testDir: "behaviour-tests",
-      testMatch: ["**/submitVat.behaviour.test.js", "**/bundles.behaviour.test.js"],
-      // testMatch: ["**/vatObligations.behaviour.test.js", "**/submitVat.behaviour.test.js", "**/bundles.behaviour.test.js"],
+      // testMatch: ["**/submitVat.behaviour.test.js", "**/bundles.behaviour.test.js"],
+      testMatch: [
+        "**/vatObligations.behaviour.test.js",
+        "**/viewVatReturn.behaviour.test.js",
+        "**/submitVat.behaviour.test.js",
+        "**/bundles.behaviour.test.js",
+      ],
+      workers: 1,
+      outputDir: "./target/behaviour-test-results/",
+      timeout: 120_000,
+    },
+    {
+      name: "submit-vat-behaviour-tests",
+      testDir: "behaviour-tests",
+      testMatch: ["**/submitVat.behaviour.test.js"],
+      workers: 1,
+      outputDir: "./target/behaviour-test-results/",
+      timeout: 120_000,
+    },
+    {
+      name: "obligation-behaviour-tests",
+      testDir: "behaviour-tests",
+      testMatch: ["**/vatObligations.behaviour.test.js"],
+      workers: 1,
+      outputDir: "./target/behaviour-test-results/",
+      timeout: 120_000,
+    },
+    {
+      name: "view-vat-behaviour-tests",
+      testDir: "behaviour-tests",
+      testMatch: ["**/viewVatReturn.behaviour.test.js"],
       workers: 1,
       outputDir: "./target/behaviour-test-results/",
       timeout: 120_000,
@@ -59,6 +88,7 @@ export default defineConfig({
       },
     ],
     ["list"],
+    ["./scripts/playwright-video-reporter.js", { verbose: false }],
   ],
 
   // Optional: customize test timeout or other settings here
