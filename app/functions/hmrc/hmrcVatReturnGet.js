@@ -118,25 +118,5 @@ export async function handler(event) {
       request,
       data: vatReturn,
     });
-  } catch (error) {
-    logger.error({
-      message: "Error retrieving VAT return",
-      error: error.message,
-      stack: error.stack,
-      vrn,
-      periodKey,
-    });
-
-    logger.error({
-      message: "Error retrieving VAT return",
-      error: error.message,
-      stack: error.stack,
-    });
-    return httpServerErrorResponse({
-      request,
-      headers: { ...govClientHeaders },
-      message: "Internal server error retrieving VAT return",
-      error: error.message,
-    });
-  }
+  });
 }
