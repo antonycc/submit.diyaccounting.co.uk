@@ -168,6 +168,11 @@ test("Log in, view VAT return, log out", async ({ page }) => {
   await page.screenshot({ path: `target/behaviour-test-results/viewVatReturn-screenshots/038-hmrc-permission-${timestamp()}.png` });
   await page.waitForTimeout(5000);
   await page.screenshot({ path: `target/behaviour-test-results/viewVatReturn-screenshots/039-hmrc-permission-later-${timestamp()}.png` });
+  await page.keyboard.press("PageDown");
+  await page.waitForTimeout(200);
+  await page.screenshot({
+    path: `target/behaviour-test-results/viewVatReturn-screenshots/039-1-hmrc-permission-pagedown-${timestamp()}.png`,
+  });
 
   /* ******************* */
   /*  VIEW VAT RETURN    */

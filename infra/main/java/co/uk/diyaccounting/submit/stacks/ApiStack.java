@@ -1,12 +1,8 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
 import co.uk.diyaccounting.submit.constructs.ApiLambdaProps;
-import java.util.List;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Aspects;
 import software.amazon.awscdk.CfnOutput;
@@ -37,6 +33,11 @@ import software.amazon.awscdk.services.logs.ILogGroup;
 import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.constructs.Construct;
+
+import java.util.List;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 public class ApiStack extends Stack {
 
@@ -184,9 +185,11 @@ public class ApiStack extends Stack {
 
         for (int i = 0; i < props.lambdaFunctions().size(); i++) {
             ApiLambdaProps apiLambdaProps = props.lambdaFunctions().get(i);
+            // 4 random hex digits to ensure unique logical IDs in case of multiple similar functions
+            var rndHex = Integer.toHexString((int) (Math.random() * 0x10000)).toUpperCase();
             IFunction fn = Function.fromFunctionAttributes(
                     this,
-                    apiLambdaProps.functionName() + "-imported",
+                    apiLambdaProps.functionName() + "-imported-" + rndHex,
                     FunctionAttributes.builder()
                             .functionArn(apiLambdaProps.lambdaArn())
                             .sameEnvironment(true)
@@ -194,11 +197,11 @@ public class ApiStack extends Stack {
 
             // Create HTTP Lambda integration
             HttpLambdaIntegration integration = HttpLambdaIntegration.Builder.create(
-                            apiLambdaProps.functionName() + "-Integration", fn)
+                            apiLambdaProps.functionName() + "-Integration-" + rndHex, fn)
                     .build();
 
             // Create HTTP route
-            HttpRoute.Builder.create(this, apiLambdaProps.functionName() + "-Route")
+            HttpRoute.Builder.create(this, apiLambdaProps.functionName() + "-Route-" + rndHex)
                     .httpApi(this.httpApi)
                     .routeKey(HttpRouteKey.with(apiLambdaProps.urlPath(), apiLambdaProps.httpMethod()))
                     .integration(integration)
@@ -216,8 +219,8 @@ public class ApiStack extends Stack {
             lambdaThrottles.add(fn.metricThrottles());
 
             // Per-function error alarm (>=1 error in 5 minutes)
-            Alarm.Builder.create(this, apiLambdaProps.functionName() + "-LambdaErrors-")
-                    .alarmName(apiLambdaProps.functionName() + "-lambda-errors")
+            Alarm.Builder.create(this, apiLambdaProps.functionName() + "-LambdaErrors-" + rndHex)
+                    .alarmName(apiLambdaProps.functionName() + "-lambda-errors-" + rndHex)
                     .metric(fn.metricErrors())
                     .threshold(1.0)
                     .evaluationPeriods(1)

@@ -169,6 +169,11 @@ test("Click through: View VAT obligations from HMRC", async ({ page }) => {
   await page.screenshot({ path: `target/behaviour-test-results/vatObligations-screenshots/038-hmrc-permission-${timestamp()}.png` });
   await page.waitForTimeout(5000);
   await page.screenshot({ path: `target/behaviour-test-results/vatObligations-screenshots/039-hmrc-permission-later-${timestamp()}.png` });
+  await page.keyboard.press("PageDown");
+  await page.waitForTimeout(200);
+  await page.screenshot({
+    path: `target/behaviour-test-results/vatObligationsReturn-screenshots/039-1-hmrc-permission-pagedown-${timestamp()}.png`,
+  });
 
   /* ******************** */
   /*  VIEW OBLIGATIONS    */

@@ -181,6 +181,7 @@ export async function performTokenExchange(providerUrl, body) {
       text: async () => JSON.stringify({ access_token: testAccessToken }),
     };
   } else {
+    logger.info({ message: "Performing real HTTP POST for token exchange", providerUrl });
     response = await fetch(providerUrl, {
       method: "POST",
       headers: { ...requestHeaders },
@@ -192,10 +193,13 @@ export async function performTokenExchange(providerUrl, body) {
   try {
     responseTokens = await response.json();
   } catch (err) {
+    logger.warn({ message: "Failed to parse response as JSON, attempting text parse", error: err.message });
     try {
       const text = await response.text();
+      logger.info({ message: "Response text received", text });
       responseTokens = JSON.parse(text);
     } catch {
+      loogger.error({ message: "Failed to parse response as text, returning empty tokens" });
       responseTokens = {};
     }
   }
@@ -225,6 +229,11 @@ export async function buildTokenExchangeResponse(request, url, body) {
   const { accessToken, response, responseBody } = await performTokenExchange(url, body);
 
   if (!response.ok) {
+    logger.error({
+      message: "Token exchange failed",
+      responseCode: response.status,
+      responseBody,
+    });
     return httpServerErrorResponse({
       request,
       message: "Token exchange failed",
@@ -240,6 +249,14 @@ export async function buildTokenExchangeResponse(request, url, body) {
   const expiresIn = responseBody.expires_in;
   const tokenType = responseBody.token_type;
 
+  logger.info({
+    message: "Token exchange succeeded",
+    accessTokenLength: accessToken.length,
+    hasIdToken: !!idToken,
+    hasRefreshToken: !!refreshToken,
+    expiresIn,
+    tokenType,
+  });
   return httpOkResponse({
     request,
     data: {

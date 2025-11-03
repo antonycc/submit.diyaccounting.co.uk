@@ -540,5 +540,13 @@ public class SubmitSharedNames {
                 "Delete bundle",
                 "Deletes a bundle for the authenticated user",
                 "deleteBundle"));
+        // Also support deletion by path parameter for consistency with deployed API Gateway routing
+        publishedApiLambdas.add(new PublishedLambda(
+                this.bundleDeleteLambdaHttpMethod,
+                "/api/v1/bundle/{id}",
+                "Delete bundle by id",
+                "Deletes a bundle for the authenticated user using a path parameter",
+                "deleteBundleById",
+                List.of(new ApiParameter("id", "path", true, "The bundle id (or name) to delete"))));
     }
 }

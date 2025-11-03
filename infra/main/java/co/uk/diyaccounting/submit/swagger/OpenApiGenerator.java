@@ -255,7 +255,7 @@ public class OpenApiGenerator {
             operation.set("tags", accountTags);
 
             // Catalog doesn't require auth, but bundle operations do
-            if (path.equals("/bundle")) {
+            if (path.startsWith("/bundle")) {
                 operation.set("security", cognitoSecurity);
             }
 
@@ -297,16 +297,18 @@ public class OpenApiGenerator {
      * Gets appropriate response description for Account endpoints
      */
     private static String getAccountResponseDescription(String path, String method) {
-        return switch (path) {
-            case "/catalog" -> "Catalog retrieved successfully";
-            case "/bundle" -> switch (method) {
+        if ("/catalog".equals(path)) {
+            return "Catalog retrieved successfully";
+        }
+        if (path.startsWith("/bundle")) {
+            return switch (method) {
                 case "post" -> "Bundle created successfully";
                 case "get" -> "Bundles retrieved successfully";
                 case "delete" -> "Bundle deleted successfully";
                 default -> "Request completed successfully";
             };
-            default -> "Request completed successfully";
-        };
+        }
+        return "Request completed successfully";
     }
 
     /**

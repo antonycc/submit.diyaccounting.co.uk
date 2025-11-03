@@ -59,6 +59,31 @@
         }
       }
     },
+    "/bundle/{id}" : {
+      "delete" : {
+        "summary" : "Delete bundle by id",
+        "description" : "Deletes a bundle for the authenticated user using a path parameter",
+        "operationId" : "deleteBundleById",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "description" : "The bundle id (or name) to delete",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "tags" : [ "Account" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Bundle deleted successfully"
+          }
+        }
+      }
+    },
     "/bundle" : {
       "post" : {
         "summary" : "Request new bundle",

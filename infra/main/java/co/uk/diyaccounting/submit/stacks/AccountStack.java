@@ -198,6 +198,19 @@ public class AccountStack extends Stack {
         this.bundleDeleteLambda = bundleDeleteLambdaUrlOrigin.lambda;
         this.bundleDeleteLambdaLogGroup = bundleDeleteLambdaUrlOrigin.logGroup;
         this.lambdaFunctionProps.add(this.bundleDeleteLambdaProps);
+        // Also expose a second route for deleting a bundle by path parameter {id}
+        this.lambdaFunctionProps.add(ApiLambdaProps.builder()
+                .idPrefix(props.sharedNames().bundleDeleteLambdaFunctionName + "-ByIdRoute")
+                .baseImageTag(props.baseImageTag())
+                .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                .functionName(props.sharedNames().bundleDeleteLambdaFunctionName)
+                .handler(props.sharedNames().bundleDeleteLambdaHandler)
+                .lambdaArn(props.sharedNames().bundleDeleteLambdaArn)
+                .httpMethod(props.sharedNames().bundleDeleteLambdaHttpMethod)
+                .urlPath("/api/v1/bundle/{id}")
+                .timeout(Duration.millis(Long.parseLong("30000")))
+                .build());
         infof(
                 "Created Lambda %s for delete bundles with handler %s",
                 this.bundleDeleteLambda.getNode().getId(), props.sharedNames().bundleDeleteLambdaHandler);
