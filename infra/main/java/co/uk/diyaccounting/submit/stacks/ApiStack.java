@@ -183,13 +183,29 @@ public class ApiStack extends Stack {
         List<Metric> lambdaDurationsP95 = new java.util.ArrayList<>();
         List<Metric> lambdaThrottles = new java.util.ArrayList<>();
 
+        java.util.Set<String> createdRouteKeys = new java.util.HashSet<>();
         for (int i = 0; i < props.lambdaFunctions().size(); i++) {
             ApiLambdaProps apiLambdaProps = props.lambdaFunctions().get(i);
-            // 4 random hex digits to ensure unique logical IDs in case of multiple similar functions
-            var rndHex = Integer.toHexString((int) (Math.random() * 0x10000)).toUpperCase();
+
+            String routeKeyStr = apiLambdaProps.httpMethod().toString() + " " + apiLambdaProps.urlPath();
+            if (createdRouteKeys.contains(routeKeyStr)) {
+                infof("Skipping duplicate route %s", routeKeyStr);
+                continue;
+            }
+            createdRouteKeys.add(routeKeyStr);
+
+            // Build stable, unique construct IDs per route using method+path signature
+            String keySuffix = (apiLambdaProps.httpMethod().toString() + "-" + apiLambdaProps.urlPath())
+                    .replaceAll("[^A-Za-z0-9]+", "-")
+                    .replaceAll("^-+|-+$", "");
+
+            String importedFnId = apiLambdaProps.functionName() + "-imported-" + keySuffix;
+            String integrationId = apiLambdaProps.functionName() + "-Integration-" + keySuffix;
+            String routeId = apiLambdaProps.functionName() + "-Route-" + keySuffix;
+
             IFunction fn = Function.fromFunctionAttributes(
                     this,
-                    apiLambdaProps.functionName() + "-imported-" + rndHex,
+                    importedFnId,
                     FunctionAttributes.builder()
                             .functionArn(apiLambdaProps.lambdaArn())
                             .sameEnvironment(true)
@@ -197,11 +213,11 @@ public class ApiStack extends Stack {
 
             // Create HTTP Lambda integration
             HttpLambdaIntegration integration = HttpLambdaIntegration.Builder.create(
-                            apiLambdaProps.functionName() + "-Integration-" + rndHex, fn)
+                            integrationId, fn)
                     .build();
 
             // Create HTTP route
-            HttpRoute.Builder.create(this, apiLambdaProps.functionName() + "-Route-" + rndHex)
+            HttpRoute.Builder.create(this, routeId)
                     .httpApi(this.httpApi)
                     .routeKey(HttpRouteKey.with(apiLambdaProps.urlPath(), apiLambdaProps.httpMethod()))
                     .integration(integration)
@@ -219,8 +235,8 @@ public class ApiStack extends Stack {
             lambdaThrottles.add(fn.metricThrottles());
 
             // Per-function error alarm (>=1 error in 5 minutes)
-            Alarm.Builder.create(this, apiLambdaProps.functionName() + "-LambdaErrors-" + rndHex)
-                    .alarmName(apiLambdaProps.functionName() + "-lambda-errors-" + rndHex)
+            Alarm.Builder.create(this, apiLambdaProps.functionName() + "-LambdaErrors")
+                    .alarmName(apiLambdaProps.functionName() + "-lambda-errors")
                     .metric(fn.metricErrors())
                     .threshold(1.0)
                     .evaluationPeriods(1)

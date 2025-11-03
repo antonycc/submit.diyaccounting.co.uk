@@ -207,10 +207,6 @@ jobs:
     needs:
       - names
     runs-on: ubuntu-24.04
-    # TODO: Reinstate this if we can find a way to run the auth server via Docker in the Playwright container
-    #container: mcr.microsoft.com/playwright:v1.56.1-jammy
-    # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags
-    # and extension with ubuntu distribution e.g. https://releases.ubuntu.com/jammy/
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
     steps:
       - name: Set up Docker
@@ -225,13 +221,7 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
-      # TODO: Part 2: Reinstate this because it could have just been the missing NGROK_AUTH_TOKEN that held up the tests
-      # npm ci --ignore-scripts
       - name: Install dependencies
-      #  run: |
-      #    npm install
-      #  env:
-      #    PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
         run: |
            npm install
            npx playwright install chromium --with-deps
@@ -250,7 +240,6 @@ jobs:
           ; exit ${exit_code:-0} \
           ;
         env:
-          #DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.base-url }}
           TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
           TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
           TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
@@ -262,7 +251,6 @@ jobs:
           ; exit ${exit_code:-0} \
           ;
         env:
-          #DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.base-url }}
           TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
           TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
           TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
@@ -275,23 +263,34 @@ jobs:
           ; exit ${exit_code:-0} \
           ;
         env:
-          #DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.base-url }}
           TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
           TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
           TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
           HMRC_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
-#
-#      - name: Run behaviour tests - submit vat
-#        run: |
-#          npm run test:submitVatBehaviour || exit_code=$? \
-#          ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
-#          ; exit ${exit_code:-0} \
-#          ;
-#        env:
-#          #DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.base-url }}
-#          TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
-#          TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
-#          TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
+
+      - name: Run behaviour tests - submit vat
+        run: |
+          npm run test:submitVatBehaviour || exit_code=$? \
+          ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
+          ; exit ${exit_code:-0} \
+          ;
+        env:
+          TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
+          TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
+          TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
+          HMRC_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
+
+      - name: Run behaviour tests - all
+        run: |
+          npm run test:behaviour || exit_code=$? \
+          ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
+          ; exit ${exit_code:-0} \
+          ;
+        env:
+          TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
+          TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
+          TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
+          HMRC_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
 
       - name: Upload artifacts (results)
         if: ${{ !cancelled() }}
