@@ -199,7 +199,7 @@ export async function performTokenExchange(providerUrl, body) {
       logger.info({ message: "Response text received", text });
       responseTokens = JSON.parse(text);
     } catch {
-      loogger.error({ message: "Failed to parse response as text, returning empty tokens" });
+      logger.error({ message: "Failed to parse response as text, returning empty tokens" });
       responseTokens = {};
     }
   }
