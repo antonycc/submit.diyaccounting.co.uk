@@ -74,7 +74,7 @@
     "aws-cdk": "^2.1031.0",
     "aws-sdk-client-mock": "^4.1.0",
     "bcryptjs": "^3.0.2",
-    "dotenv-cli": "^10.0.0",
+    "dotenv-cli": "^11.0.0",
     "eslint": "^9.38.0",
     "eslint-config-google": "^0.14.0",
     "eslint-config-prettier": "^10.1.8",
