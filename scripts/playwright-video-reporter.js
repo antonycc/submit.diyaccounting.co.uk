@@ -39,12 +39,10 @@ class StableVideoReporter {
         fs.copyFileSync(attPath, stablePath);
         this.hasCopiedBehaviourVideo = true;
         if (this.verbose) {
-          // eslint-disable-next-line no-console
           console.log(`[playwright-video-reporter] Copied behaviour video to ${stablePath}`);
         }
         return true;
       } catch (e) {
-        // eslint-disable-next-line no-console
         console.warn("[playwright-video-reporter] Failed to copy behaviour video:", e?.message || e);
         return false;
       }

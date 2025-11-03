@@ -923,3 +923,78 @@ a.external-link:hover::after {
     padding: 0.5em;
   }
 }
+
+/* Visibility Indicator */
+#visibilityIndicator {
+  text-align: center;
+  margin-top: 1em;
+  padding: 0.75em 1em;
+  border-radius: 4px;
+  font-size: 0.9em;
+  background-color: #f8f9fa;
+  border: 1px solid #dee2e6;
+}
+
+.visibility-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+}
+
+.visibility-icon {
+  font-size: 1.1em;
+}
+
+.visibility-text {
+  color: #666;
+  font-weight: 500;
+}
+
+.visibility-link {
+  color: #2c5aa0;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.3s;
+}
+
+.visibility-link:hover {
+  color: #1a3d6b;
+  text-decoration: underline;
+}
+
+/* Status-specific colors */
+.visibility-public {
+  color: #666;
+}
+
+.visibility-needs-login {
+  color: #856404;
+}
+
+.visibility-needs-login .visibility-link {
+  color: #856404;
+}
+
+.visibility-needs-login .visibility-link:hover {
+  color: #533f03;
+}
+
+.visibility-needs-activity {
+  color: #721c24;
+}
+
+.visibility-needs-activity .visibility-link {
+  color: #721c24;
+}
+
+.visibility-needs-activity .visibility-link:hover {
+  color: #491217;
+}
+
+.visibility-available {
+  color: #155724;
+}
+
+.visibility-error {
+  color: #b00020;
+}
