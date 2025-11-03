@@ -8,6 +8,7 @@ import {
   runLocalHttpServer,
   runLocalOAuth2Server,
   runLocalSslProxy,
+  timestamp,
 } from "./helpers/behaviour-helpers.js";
 import { goToHomePageExpectNotLoggedIn, goToHomePageUsingHamburgerMenu } from "./steps/behaviour-steps.js";
 import {
@@ -105,14 +106,20 @@ test("Click through: View VAT obligations from HMRC", async ({ page }) => {
   /* ****** */
 
   await goToHomePageExpectNotLoggedIn(page, testUrl);
+  await page.waitForTimeout(200);
+  await page.screenshot({ path: `target/behaviour-test-results/vatObligations-screenshots/005-start-${timestamp()}.png` });
 
   /* ******* */
   /*  LOGIN  */
   /* ******* */
 
   await clickLogIn(page);
+  await page.waitForTimeout(100);
+  await page.screenshot({ path: `target/behaviour-test-results/vatObligations-screenshots/012-login-clicked-${timestamp()}.png` });
 
   await loginWithCognitoOrMockAuth(page, testAuthProvider, testAuthUsername);
+  await page.waitForTimeout(200);
+  await page.screenshot({ path: `target/behaviour-test-results/vatObligations-screenshots/015-logged-in-${timestamp()}.png` });
 
   await verifyLoggedInStatus(page);
 
@@ -121,8 +128,12 @@ test("Click through: View VAT obligations from HMRC", async ({ page }) => {
   /* ********* */
 
   await goToBundlesPage(page);
+  await page.waitForTimeout(200);
+  await page.screenshot({ path: `target/behaviour-test-results/vatObligations-screenshots/018-bundles-page-${timestamp()}.png` });
   await ensureTestBundlePresent(page);
   await goToHomePageUsingHamburgerMenu(page);
+  await page.waitForTimeout(200);
+  await page.screenshot({ path: `target/behaviour-test-results/vatObligations-screenshots/019-back-home-${timestamp()}.png` });
 
   /* ******************* */
   /*  GET OBLIGATIONS    */
@@ -132,6 +143,10 @@ test("Click through: View VAT obligations from HMRC", async ({ page }) => {
   const fromDate = "2025-01-07";
   const toDate = "2025-11-01";
   await fillInVatObligations(page, hmrcTestVatNumber, { fromDate, toDate });
+  // Take a focus change screenshot between last cell entry and submit
+  await page.focus('#retrieveBtn');
+  await page.waitForTimeout(150);
+  await page.screenshot({ path: `target/behaviour-test-results/vatObligations-screenshots/025-ready-to-submit-${timestamp()}.png` });
   await submitVatObligationsForm(page);
 
   /* ************ */
@@ -139,25 +154,41 @@ test("Click through: View VAT obligations from HMRC", async ({ page }) => {
   /* ************ */
 
   await acceptCookiesHmrc(page);
+  await page.waitForTimeout(150);
+  await page.screenshot({ path: `target/behaviour-test-results/vatObligations-screenshots/032-accepted-cookies-${timestamp()}.png` });
   await goToHmrcAuth(page);
+  await page.waitForTimeout(150);
+  await page.screenshot({ path: `target/behaviour-test-results/vatObligations-screenshots/034-hmrc-auth-${timestamp()}.png` });
   await initHmrcAuth(page);
   await fillInHmrcAuth(page, hmrcTestUsername, hmrcTestPassword);
+  await page.waitForTimeout(150);
+  await page.screenshot({ path: `target/behaviour-test-results/vatObligations-screenshots/036-hmrc-credentials-${timestamp()}.png` });
   await submitHmrcAuth(page);
   await grantPermissionHmrcAuth(page);
+  await page.waitForTimeout(200);
+  await page.screenshot({ path: `target/behaviour-test-results/vatObligations-screenshots/038-hmrc-permission-${timestamp()}.png` });
 
   /* ******************** */
   /*  VIEW OBLIGATIONS    */
   /* ******************** */
 
   await verifyVatObligationsResults(page);
+  // If results likely scroll, capture a pagedown
+  await page.keyboard.press('PageDown');
+  await page.waitForTimeout(200);
+  await page.screenshot({ path: `target/behaviour-test-results/vatObligations-screenshots/045-results-pagedown-${timestamp()}.png` });
 
   await goToHomePageUsingHamburgerMenu(page);
+  await page.waitForTimeout(150);
+  await page.screenshot({ path: `target/behaviour-test-results/vatObligations-screenshots/090-back-home-${timestamp()}.png` });
 
   /* ********* */
   /*  LOG OUT  */
   /* ********* */
 
   await logOutAndExpectToBeLoggedOut(page);
+  await page.waitForTimeout(150);
+  await page.screenshot({ path: `target/behaviour-test-results/vatObligations-screenshots/095-logged-out-${timestamp()}.png` });
 
   // // Shutdown local servers at end of test
   // if (serverProcess) {
