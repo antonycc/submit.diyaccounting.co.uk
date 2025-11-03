@@ -97,8 +97,14 @@ permissions:
 env:
   JAVA_VERSION: '21'
   NODE_VERSION: '22'
-  # AWS configuration can be overridden by GitHub Environment variables (AWS_ACCOUNT_ID, AWS_REGION, AWS_HOSTED_ZONE_ID)
-  # Defaults to root account for backwards compatibility
+  # Multi-Account Configuration Notes:
+  # - AWS_ACCOUNT_ID, AWS_REGION, and AWS_HOSTED_ZONE_ID can be overridden via GitHub Environment variables
+  # - Role ARNs (ACTIONS_ROLE_ARN, DEPLOY_ROLE_ARN) use hardcoded account ID for simplicity
+  # - For multi-account setups, create roles with same names in each target account:
+  #   * submit-github-actions-role (for GitHub Actions OIDC)
+  #   * submit-deployment-role (for CDK deployments)
+  # - This design ensures role ARNs remain predictable and consistent
+  # - Alternative: Use AWS SSO/Identity Center for dynamic role assumption
   AWS_ACCOUNT_ID: '887764105431'
   AWS_REGION: 'eu-west-2'
   AWS_HOSTED_ZONE_ID: 'Z0315522208PWZSSBI9AL'
