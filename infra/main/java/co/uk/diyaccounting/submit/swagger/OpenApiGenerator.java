@@ -137,6 +137,23 @@ public class OpenApiGenerator {
                 operation.put("description", pl.description);
                 operation.put("operationId", pl.operationId);
 
+                // Parameters from SubmitSharedNames (path/query)
+                if (pl.parameters != null && !pl.parameters.isEmpty()) {
+                    ArrayNode paramsArr = mapper.createArrayNode();
+                    for (SubmitSharedNames.ApiParameter p : pl.parameters) {
+                        ObjectNode pObj = mapper.createObjectNode();
+                        pObj.put("name", p.name);
+                        pObj.put("in", p.in);
+                        pObj.put("required", p.required);
+                        if (p.description != null) pObj.put("description", p.description);
+                        ObjectNode schema = mapper.createObjectNode();
+                        schema.put("type", "string");
+                        pObj.set("schema", schema);
+                        paramsArr.add(pObj);
+                    }
+                    operation.set("parameters", paramsArr);
+                }
+
                 String method = pl.method.name().toLowerCase();
                 pathItem.set(method, operation);
             }
@@ -238,7 +255,7 @@ public class OpenApiGenerator {
             operation.set("tags", accountTags);
 
             // Catalog doesn't require auth, but bundle operations do
-            if (path.equals("/bundle")) {
+            if (path.startsWith("/bundle")) {
                 operation.set("security", cognitoSecurity);
             }
 
@@ -280,16 +297,18 @@ public class OpenApiGenerator {
      * Gets appropriate response description for Account endpoints
      */
     private static String getAccountResponseDescription(String path, String method) {
-        return switch (path) {
-            case "/catalog" -> "Catalog retrieved successfully";
-            case "/bundle" -> switch (method) {
+        if ("/catalog".equals(path)) {
+            return "Catalog retrieved successfully";
+        }
+        if (path.startsWith("/bundle")) {
+            return switch (method) {
                 case "post" -> "Bundle created successfully";
                 case "get" -> "Bundles retrieved successfully";
                 case "delete" -> "Bundle deleted successfully";
                 default -> "Request completed successfully";
             };
-            default -> "Request completed successfully";
-        };
+        }
+        return "Request completed successfully";
     }
 
     /**

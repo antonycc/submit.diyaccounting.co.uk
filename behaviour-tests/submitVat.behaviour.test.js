@@ -9,6 +9,7 @@ import {
   runLocalOAuth2Server,
   runLocalS3,
   runLocalSslProxy,
+  timestamp,
 } from "./helpers/behaviour-helpers.js";
 import { goToHomePage, goToHomePageExpectNotLoggedIn, goToHomePageUsingHamburgerMenu } from "./steps/behaviour-steps.js";
 import {
@@ -17,7 +18,7 @@ import {
   logOutAndExpectToBeLoggedOut,
   verifyLoggedInStatus,
 } from "./steps/behaviour-login-steps.js";
-import { clearBundles, goToBundlesPage, requestTestBundle } from "./steps/behaviour-bundle-steps.js";
+import { ensureTestBundlePresent, goToBundlesPage } from "./steps/behaviour-bundle-steps.js";
 import { goToReceiptsPageUsingHamburgerMenu, verifyAtLeastOneClickableReceipt } from "./steps/behaviour-hmrc-receipts-steps.js";
 import { completeVat, fillInVat, initSubmitVat, submitFormVat, verifyVatSubmission } from "./steps/behaviour-hmrc-vat-steps.js";
 import {
@@ -133,14 +134,20 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }) => {
   /* ****** */
 
   await goToHomePageExpectNotLoggedIn(page, testUrl);
+  await page.waitForTimeout(200);
+  await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/005-start-${timestamp()}.png` });
 
   /* ******* */
   /*  LOGIN  */
   /* ******* */
 
   await clickLogIn(page);
+  await page.waitForTimeout(100);
+  await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/012-login-clicked-${timestamp()}.png` });
 
   await loginWithCognitoOrMockAuth(page, testAuthProvider, testAuthUsername);
+  await page.waitForTimeout(200);
+  await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/015-logged-in-${timestamp()}.png` });
 
   await verifyLoggedInStatus(page);
 
@@ -149,9 +156,12 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }) => {
   /* ********* */
 
   await goToBundlesPage(page);
-  await clearBundles(page);
-  await requestTestBundle(page);
+  await page.waitForTimeout(200);
+  await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/018-bundles-page-${timestamp()}.png` });
+  await ensureTestBundlePresent(page);
   await goToHomePage(page);
+  await page.waitForTimeout(200);
+  await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/019-back-home-${timestamp()}.png` });
 
   /* ************ */
   /* `SUBMIT VAT  */
@@ -159,6 +169,10 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }) => {
 
   await initSubmitVat(page);
   await fillInVat(page, hmrcTestVatNumber);
+  // Focus change before submit
+  await page.focus("#submitBtn");
+  await page.waitForTimeout(150);
+  await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/025-ready-to-submit-${timestamp()}.png` });
   await submitFormVat(page);
 
   /* ************ */
@@ -166,11 +180,26 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }) => {
   /* ************ */
 
   await acceptCookiesHmrc(page);
+  await page.waitForTimeout(150);
+  await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/032-accepted-cookies-${timestamp()}.png` });
   await goToHmrcAuth(page);
+  await page.waitForTimeout(150);
+  await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/034-hmrc-auth-${timestamp()}.png` });
   await initHmrcAuth(page);
   await fillInHmrcAuth(page, hmrcTestUsername, hmrcTestPassword);
+  await page.waitForTimeout(150);
+  await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/036-hmrc-credentials-${timestamp()}.png` });
   await submitHmrcAuth(page);
   await grantPermissionHmrcAuth(page);
+  await page.waitForTimeout(200);
+  await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/038-hmrc-permission-${timestamp()}.png` });
+  await page.waitForTimeout(5000);
+  await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/039-hmrc-permission-later-${timestamp()}.png` });
+  await page.keyboard.press("PageDown");
+  await page.waitForTimeout(200);
+  await page.screenshot({
+    path: `target/behaviour-test-results/submitVatReturn-screenshots/039-1-hmrc-permission-pagedown-${timestamp()}.png`,
+  });
 
   /* ************** */
   /* `COMPLETE VAT  */
@@ -185,6 +214,11 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }) => {
   /* ********** */
 
   await goToReceiptsPageUsingHamburgerMenu(page);
+  await page.keyboard.press("PageDown");
+  await page.waitForTimeout(200);
+  await page.screenshot({
+    path: `target/behaviour-test-results/viewVatReturn-screenshots/178-receipts-pagedown-${timestamp()}.png`,
+  });
 
   await verifyAtLeastOneClickableReceipt(page);
 

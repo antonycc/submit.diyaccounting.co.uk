@@ -48,3 +48,16 @@ export async function requestTestBundle(page) {
     await expect(page.getByText("Added ✓")).toBeVisible({ timeout: 16000 });
   });
 }
+
+export async function ensureTestBundlePresent(page) {
+  await test.step("Ensure test bundle is present (idempotent)", async () => {
+    // If the confirmation text for an added bundle is already visible, do nothing.
+    const isAddedVisible = await page.getByText("Added ✓").isVisible();
+    if (isAddedVisible) {
+      console.log("Test bundle already present, skipping request.");
+      return;
+    }
+    // Otherwise request the test bundle once.
+    await requestTestBundle(page);
+  });
+}

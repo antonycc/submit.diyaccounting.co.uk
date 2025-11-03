@@ -12,6 +12,12 @@ export function apiEndpoint(app) {
     const lambdaResult = await handler(lambdaEvent);
     return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
   });
+  // Also support deletion via path parameter for parity with API Gateway
+  app.delete("/api/v1/bundle/:id", async (httpRequest, httpResponse) => {
+    const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
+    const lambdaResult = await handler(lambdaEvent);
+    return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
+  });
 }
 
 export async function handler(event) {
@@ -34,8 +40,12 @@ export async function handler(event) {
     }
     const userId = decodedToken.sub;
     const body = parseRequestBody(event);
-    const bundleToRemove = body.bundleId;
-    const removeAll = body.removeAll;
+    // Accept bundle id via body.bundleId, path parameter {id}, or query parameter bundleId
+    const pathId = event?.pathParameters?.id;
+    const queryId = event?.queryStringParameters?.bundleId;
+    const bundleToRemove = body?.bundleId || pathId || queryId;
+    // Accept removeAll via body.removeAll or query removeAll=true
+    const removeAll = Boolean(body?.removeAll || (String(event?.queryStringParameters?.removeAll || "").toLowerCase() === "true"));
 
     if (!bundleToRemove && !removeAll) {
       logger.error({ message: "Missing bundle Id in request" });

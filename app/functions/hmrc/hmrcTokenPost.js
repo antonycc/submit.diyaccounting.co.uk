@@ -29,6 +29,7 @@ export async function handler(event) {
   const { code } = parseRequestBody(event);
 
   if (!code) {
+    logger.warn("Missing code from event body");
     return httpBadRequestResponse({
       request,
       message: "Missing code from event body",
@@ -45,10 +46,13 @@ export async function handler(event) {
     redirect_uri: `${process.env.DIY_SUBMIT_BASE_URL}${maybeSlash}activities/submitVatCallback.html`,
     code,
   };
+
+  logger.info("Exchanging code for token at HMRC with url " + url);
   return buildTokenExchangeResponse(request, url, body);
 }
 
 async function retrieveHmrcClientSecret(overrideSecret, secretArn) {
+  logger.info("Retrieving HMRC client secret from arn " + secretArn);
   if (overrideSecret) {
     cachedHmrcClientSecret = overrideSecret;
     logger.info(`Secret retrieved from override and cached`);

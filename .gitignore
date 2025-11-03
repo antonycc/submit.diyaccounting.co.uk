@@ -347,3 +347,4 @@ fabric.properties
 /cdk-submit-application.out/
 /cdk-submit-delivery.out/
 /cdk-submit-environment.out/
+/.output.txt

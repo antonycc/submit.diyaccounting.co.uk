@@ -1,12 +1,8 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
 import co.uk.diyaccounting.submit.constructs.ApiLambdaProps;
-import java.util.List;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Aspects;
 import software.amazon.awscdk.CfnOutput;
@@ -37,6 +33,11 @@ import software.amazon.awscdk.services.logs.ILogGroup;
 import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.constructs.Construct;
+
+import java.util.List;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 public class ApiStack extends Stack {
 
@@ -182,11 +183,32 @@ public class ApiStack extends Stack {
         List<Metric> lambdaDurationsP95 = new java.util.ArrayList<>();
         List<Metric> lambdaThrottles = new java.util.ArrayList<>();
 
+        java.util.Set<String> createdRouteKeys = new java.util.HashSet<>();
+        java.util.Map<String, String> firstCreatorByRoute = new java.util.HashMap<>();
         for (int i = 0; i < props.lambdaFunctions().size(); i++) {
             ApiLambdaProps apiLambdaProps = props.lambdaFunctions().get(i);
+
+            String routeKeyStr = apiLambdaProps.httpMethod().toString() + " " + apiLambdaProps.urlPath();
+            if (createdRouteKeys.contains(routeKeyStr)) {
+                String firstCreator = firstCreatorByRoute.getOrDefault(routeKeyStr, "<unknown>");
+                infof("Skipping duplicate route %s (attempted by %s, first created by %s)", routeKeyStr, apiLambdaProps.functionName(), firstCreator);
+                continue;
+            }
+            createdRouteKeys.add(routeKeyStr);
+            firstCreatorByRoute.put(routeKeyStr, apiLambdaProps.functionName());
+
+            // Build stable, unique construct IDs per route using method+path signature
+            String keySuffix = (apiLambdaProps.httpMethod().toString() + "-" + apiLambdaProps.urlPath())
+                    .replaceAll("[^A-Za-z0-9]+", "-")
+                    .replaceAll("^-+|-+$", "");
+
+            String importedFnId = apiLambdaProps.functionName() + "-imported-" + keySuffix;
+            String integrationId = apiLambdaProps.functionName() + "-Integration-" + keySuffix;
+            String routeId = apiLambdaProps.functionName() + "-Route-" + keySuffix;
+
             IFunction fn = Function.fromFunctionAttributes(
                     this,
-                    apiLambdaProps.functionName() + "-imported",
+                    importedFnId,
                     FunctionAttributes.builder()
                             .functionArn(apiLambdaProps.lambdaArn())
                             .sameEnvironment(true)
@@ -194,11 +216,11 @@ public class ApiStack extends Stack {
 
             // Create HTTP Lambda integration
             HttpLambdaIntegration integration = HttpLambdaIntegration.Builder.create(
-                            apiLambdaProps.functionName() + "-Integration", fn)
+                            integrationId, fn)
                     .build();
 
             // Create HTTP route
-            HttpRoute.Builder.create(this, apiLambdaProps.functionName() + "-Route")
+            HttpRoute.Builder.create(this, routeId)
                     .httpApi(this.httpApi)
                     .routeKey(HttpRouteKey.with(apiLambdaProps.urlPath(), apiLambdaProps.httpMethod()))
                     .integration(integration)
@@ -216,8 +238,8 @@ public class ApiStack extends Stack {
             lambdaThrottles.add(fn.metricThrottles());
 
             // Per-function error alarm (>=1 error in 5 minutes)
-            Alarm.Builder.create(this, apiLambdaProps.functionName() + "-LambdaErrors-")
-                    .alarmName(apiLambdaProps.functionName() + "-lambda-errors")
+            Alarm.Builder.create(this, apiLambdaProps.functionName() + "-LambdaErrors-" + keySuffix)
+                    .alarmName(apiLambdaProps.functionName() + "-lambda-errors-" + keySuffix)
                     .metric(fn.metricErrors())
                     .threshold(1.0)
                     .evaluationPeriods(1)
@@ -226,6 +248,19 @@ public class ApiStack extends Stack {
                     .alarmDescription(
                             "Lambda errors >= 1 for " + apiLambdaProps.urlPath() + " " + apiLambdaProps.httpMethod())
                     .build();
+        }
+
+        // Synthesis-time diagnostics: list all created routes
+        if (!createdRouteKeys.isEmpty()) {
+            var sorted = new java.util.ArrayList<>(createdRouteKeys);
+            java.util.Collections.sort(sorted);
+            infof("Total unique API routes synthesized: %d", sorted.size());
+            for (String rk : sorted) {
+                String creator = firstCreatorByRoute.getOrDefault(rk, "<unknown>");
+                infof(" - %s (by %s)", rk, creator);
+            }
+        } else {
+            infof("No API routes synthesized");
         }
 
         // Dashboard

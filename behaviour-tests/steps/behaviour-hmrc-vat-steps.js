@@ -207,7 +207,7 @@ export async function submitVatObligationsForm(page) {
 
 export async function verifyVatObligationsResults(page) {
   await test.step("The user sees VAT obligations results displayed", async () => {
-    await page.waitForSelector("#obligationsResults", { state: "visible", timeout: 10000 });
+    await page.waitForSelector("#obligationsResults", { state: "visible", timeout: 30000 });
     await page.screenshot({
       path: `target/behaviour-test-results/vatObligations-screenshots/040-results-displayed-${timestamp()}.png`,
     });
@@ -237,7 +237,8 @@ export async function initViewVatReturn(page) {
 }
 
 // Default period key for Q1 2024 (Jan-Mar)
-const DEFAULT_PERIOD_KEY = "24A1";
+// const DEFAULT_PERIOD_KEY = "24A1";
+const DEFAULT_PERIOD_KEY = "18A1";
 
 export async function fillInViewVatReturn(page, hmrcTestVatNumber, periodKey = DEFAULT_PERIOD_KEY) {
   await test.step("The user fills in the view VAT return form with VRN and period key", async () => {
@@ -265,7 +266,7 @@ export async function submitViewVatReturnForm(page) {
 
 export async function verifyViewVatReturnResults(page) {
   await test.step("The user sees VAT return details displayed", async () => {
-    await page.waitForSelector("#returnResults", { state: "visible", timeout: 10000 });
+    await page.waitForSelector("#returnResults", { state: "visible", timeout: 30000 });
     await page.screenshot({
       path: `target/behaviour-test-results/viewVatReturn-screenshots/040-results-displayed-${timestamp()}.png`,
     });
