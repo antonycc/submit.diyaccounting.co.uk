@@ -87,7 +87,7 @@ test.afterAll(async () => {
   }
 });
 
-test("Log in, view VAT return, log out", async ({ page }) => {
+test("Click through: Get VAT return from HMRC", async ({ page }) => {
   // // Run servers needed for the test
   // await runLocalOAuth2Server(runMockOAuth2);
   // serverProcess = await runLocalHttpServer(runTestServer, null, serverPort);

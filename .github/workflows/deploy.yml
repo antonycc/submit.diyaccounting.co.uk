@@ -1999,10 +1999,10 @@ jobs:
           for d in bundle obligation submit-vat view-vat; do
             if [ -f "target/test-reports/$d/html-report/index.html" ]; then
               case "$d" in
-                bundle) label="Bundle behaviour tests" ;;
-                obligation) label="Obligation behaviour tests" ;;
-                submit-vat) label="Submit VAT behaviour tests" ;;
-                view-vat) label="View VAT behaviour tests" ;;
+                bundle) label="Click through test: Adding and removing bundles" ;;
+                obligation) label="Click through test: View VAT obligations from HMRC" ;;
+                submit-vat) label="Click through test: Submit a VAT return to HMRC" ;;
+                view-vat) label="Click through test: Get VAT return from HMRC" ;;
                 *) label="$d" ;;
               esac
               echo "  <li><a href=\"../$d/html-report/index.html\">$label</a></li>" >> "$INDEX_FILE"
