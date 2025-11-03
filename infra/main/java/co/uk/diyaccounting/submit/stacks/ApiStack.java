@@ -235,8 +235,8 @@ public class ApiStack extends Stack {
             lambdaThrottles.add(fn.metricThrottles());
 
             // Per-function error alarm (>=1 error in 5 minutes)
-            Alarm.Builder.create(this, apiLambdaProps.functionName() + "-LambdaErrors")
-                    .alarmName(apiLambdaProps.functionName() + "-lambda-errors")
+            Alarm.Builder.create(this, apiLambdaProps.functionName() + "-LambdaErrors-" + keySuffix)
+                    .alarmName(apiLambdaProps.functionName() + "-lambda-errors-" + keySuffix)
                     .metric(fn.metricErrors())
                     .threshold(1.0)
                     .evaluationPeriods(1)
