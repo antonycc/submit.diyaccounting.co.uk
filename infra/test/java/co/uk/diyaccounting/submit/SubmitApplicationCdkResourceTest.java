@@ -89,6 +89,17 @@ class SubmitApplicationCdkResourceTest {
         }
 
         apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Api", 1);
+        // Confirm key routes exist, including multiple HTTP methods on the same path
+        apiStackTemplate.hasResourceProperties(
+                "AWS::ApiGatewayV2::Route",
+                Map.of("RouteKey", "POST /api/v1/bundle"));
+        apiStackTemplate.hasResourceProperties(
+                "AWS::ApiGatewayV2::Route",
+                Map.of("RouteKey", "DELETE /api/v1/bundle"));
+        apiStackTemplate.hasResourceProperties(
+                "AWS::ApiGatewayV2::Route",
+                Map.of("RouteKey", "DELETE /api/v1/bundle/{id}"));
+        // Keep overall counts stable
         apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 14);
         apiStackTemplate.resourceCountIs("AWS::CloudWatch::Dashboard", 1);
 
