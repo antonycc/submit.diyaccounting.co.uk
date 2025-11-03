@@ -67,6 +67,7 @@ permissions:
 env:
   JAVA_VERSION: '21'
   NODE_VERSION: '22'
+  # AWS configuration can be overridden by GitHub Environment variables
   ACTIONS_ROLE_ARN: 'arn:aws:iam::887764105431:role/submit-github-actions-role'
   DEPLOY_ROLE_ARN:  'arn:aws:iam::887764105431:role/submit-deployment-role'
   AWS_REGION: 'eu-west-2'
