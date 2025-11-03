@@ -78,7 +78,12 @@ if aws iam get-open-id-connect-provider --open-id-connect-provider-arn "$OIDC_AR
 else
   echo "Creating OIDC provider..."
   
-  # Get GitHub's thumbprint
+  # GitHub's OIDC thumbprint (verified as of 2024)
+  # This is GitHub's SSL certificate thumbprint for token.actions.githubusercontent.com
+  # To verify/update: openssl s_client -servername token.actions.githubusercontent.com \
+  #   -showcerts -connect token.actions.githubusercontent.com:443 2>/dev/null \
+  #   | openssl x509 -fingerprint -sha1 -noout | cut -d'=' -f2 | tr -d ':'
+  # Official thumbprint documented at: https://github.blog/changelog/2023-06-27-github-actions-update-on-oidc-integration-with-aws/
   THUMBPRINT="6938fd4d98bab03faadb97b34396831e3780aea1"
   
   aws iam create-open-id-connect-provider \
@@ -210,6 +215,16 @@ else
 fi
 
 # Create comprehensive deployment policy
+# NOTE: This policy grants broad permissions for CDK deployments
+# While it uses wildcards for simplicity, in production you may want to:
+# 1. Scope resources to specific naming patterns (e.g., ci-* or prod-*)
+# 2. Use AWS Organizations Service Control Policies (SCPs) for account-wide limits
+# 3. Add Condition clauses to restrict actions to specific VPCs or regions
+# 4. Consider AWS Deployment Framework or AWS Control Tower for enterprise governance
+#
+# The broad permissions are necessary because CDK creates many resources dynamically
+# and predicting exact ARNs is difficult. AWS recommends this approach for CDK:
+# https://docs.aws.amazon.com/cdk/latest/guide/bootstrapping.html
 cat > /tmp/deployment-policy.json << 'EOF'
 {
   "Version": "2012-10-17",

@@ -80,6 +80,12 @@ variable "transition_to_deep_archive_days" {
   default     = 60
 }
 
+variable "backup_writer_role_name" {
+  description = "Name of the IAM role that source accounts must create to write backups"
+  type        = string
+  default     = "submit-backup-writer-role"
+}
+
 # KMS key for backup encryption
 resource "aws_kms_key" "backup_encryption" {
   description             = "KMS key for DIY Submit backup encryption"
@@ -237,7 +243,7 @@ resource "aws_s3_bucket_policy" "backups" {
         Sid    = "AllowSourceAccountsToWriteBackups"
         Effect = "Allow"
         Principal = {
-          AWS = [for account_id in var.source_account_ids : "arn:aws:iam::${account_id}:role/submit-backup-writer-role"]
+          AWS = [for account_id in var.source_account_ids : "arn:aws:iam::${account_id}:role/${var.backup_writer_role_name}"]
         }
         Action = [
           "s3:PutObject",
@@ -354,5 +360,5 @@ output "sns_topic_arn" {
 
 output "required_source_role_name" {
   description = "Name of the IAM role that source accounts must create"
-  value       = "submit-backup-writer-role"
+  value       = var.backup_writer_role_name
 }

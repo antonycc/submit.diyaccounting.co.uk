@@ -260,8 +260,23 @@ EOF
             npm install
           }
           
-          echo "Account provisioning infrastructure would be deployed here"
-          echo "Due to permissions complexity, manual steps are recommended:"
+          # NOTE: This step intentionally provides manual instructions rather than automated deployment
+          # Reason: IAM role creation requires elevated permissions that may not be available in CI/CD
+          # For fully automated provisioning, use AWS Organizations API or CloudFormation StackSets
+          # For manual provisioning, use the provided script: ./scripts/provision-account.sh
+          
+          echo "========================================="
+          echo "MANUAL PROVISIONING STEPS REQUIRED"
+          echo "========================================="
+          echo ""
+          echo "This workflow provides guidance for account provisioning."
+          echo "Due to the sensitive nature of IAM role creation, manual steps are recommended."
+          echo ""
+          echo "OPTION 1: Use the automated script (recommended)"
+          echo "Run from your local machine with appropriate AWS credentials:"
+          echo "  ./scripts/provision-account.sh ${{ inputs.aws-account-id }} ${{ inputs.environment }} ${{ inputs.aws-region }}"
+          echo ""
+          echo "OPTION 2: Manual setup via AWS Console"
           echo ""
           echo "1. Create GitHub Actions OIDC role in account ${{ inputs.aws-account-id }}:"
           echo "   Role name: submit-github-actions-role"
@@ -273,8 +288,8 @@ EOF
           echo "   Trust policy: submit-github-actions-role"
           echo "   Permissions: Full CloudFormation, S3, Lambda, Route53, etc."
           echo ""
-          echo "3. Run the manual setup script:"
-          echo "   ./scripts/provision-account.sh ${{ inputs.aws-account-id }} ${{ inputs.environment }} ${{ inputs.aws-region }}"
+          echo "See docs/MULTI_ACCOUNT_DEPLOYMENT.md for detailed instructions"
+          echo "========================================="
 
   provision-dns:
     name: 'Provision DNS hosted zone'
