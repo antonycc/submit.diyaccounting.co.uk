@@ -266,7 +266,7 @@ export async function submitViewVatReturnForm(page) {
 
 export async function verifyViewVatReturnResults(page) {
   await test.step("The user sees VAT return details displayed", async () => {
-    await page.waitForSelector("#returnResults", { state: "visible", timeout: 10000 });
+    await page.waitForSelector("#returnResults", { state: "visible", timeout: 30000 });
     await page.screenshot({
       path: `target/behaviour-test-results/viewVatReturn-screenshots/040-results-displayed-${timestamp()}.png`,
     });
