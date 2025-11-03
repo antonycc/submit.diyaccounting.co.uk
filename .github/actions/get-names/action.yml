@@ -57,7 +57,7 @@ runs:
         REF_NAME="${GET_NAMES_GITHUB_REF_NAME:-${GET_NAMES_GITHUB_HEAD_REF:-${GET_NAMES_GITHUB_REF##*/}}}"
 
         # Clean branch name: lowercase, replace non-alphanumeric with hyphens, collapse consecutive hyphens
-        CLEANED=$(echo "$REF_NAME" | tr '[:upper:]' '[:lower:]' | sed -e 's/[^a-z0-9]/-/g' -e 's/-\{2,\}/-/g' -e 's/^-//' -e 's/-$//')
+        CLEANED=$(echo "$REF_NAME" | tr '[:upper:]' '[:lower:]' | sed -e 's/[^a-z0-9]/-/g' -e 's/dependabot/-/g' -e 's/feature/-/g' -e 's/copilot/-/g' -e 's/-\{2,\}/-/g' -e 's/^-//' -e 's/-$//')
 
         if [ "${GITHUB_REF:-}" = "refs/heads/${GET_NAMES_PROD_BRANCH_NAME?}" ] || [ "${REF_NAME?}" = "${GET_NAMES_PROD_BRANCH_NAME?}" ]; then
           ENVIRONMENT_NAME="prod"
