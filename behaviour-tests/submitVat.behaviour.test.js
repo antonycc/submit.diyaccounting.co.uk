@@ -17,7 +17,7 @@ import {
   logOutAndExpectToBeLoggedOut,
   verifyLoggedInStatus,
 } from "./steps/behaviour-login-steps.js";
-import { clearBundles, goToBundlesPage, requestTestBundle } from "./steps/behaviour-bundle-steps.js";
+import { ensureTestBundlePresent, goToBundlesPage } from "./steps/behaviour-bundle-steps.js";
 import { goToReceiptsPageUsingHamburgerMenu, verifyAtLeastOneClickableReceipt } from "./steps/behaviour-hmrc-receipts-steps.js";
 import { completeVat, fillInVat, initSubmitVat, submitFormVat, verifyVatSubmission } from "./steps/behaviour-hmrc-vat-steps.js";
 import {
@@ -149,8 +149,7 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }) => {
   /* ********* */
 
   await goToBundlesPage(page);
-  await clearBundles(page);
-  await requestTestBundle(page);
+  await ensureTestBundlePresent(page);
   await goToHomePage(page);
 
   /* ************ */

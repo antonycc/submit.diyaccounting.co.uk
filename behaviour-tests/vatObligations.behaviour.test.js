@@ -16,7 +16,7 @@ import {
   logOutAndExpectToBeLoggedOut,
   verifyLoggedInStatus,
 } from "./steps/behaviour-login-steps.js";
-import { clearBundles, goToBundlesPage, requestTestBundle } from "./steps/behaviour-bundle-steps.js";
+import { ensureTestBundlePresent, goToBundlesPage } from "./steps/behaviour-bundle-steps.js";
 import {
   fillInVatObligations,
   initVatObligations,
@@ -121,8 +121,7 @@ test("Click through: View VAT obligations from HMRC", async ({ page }) => {
   /* ********* */
 
   await goToBundlesPage(page);
-  await clearBundles(page);
-  await requestTestBundle(page);
+  await ensureTestBundlePresent(page);
   await goToHomePageUsingHamburgerMenu(page);
 
   /* ******************* */

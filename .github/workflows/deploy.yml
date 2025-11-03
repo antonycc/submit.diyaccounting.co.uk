@@ -243,21 +243,9 @@ jobs:
         run: |
           npx ngrok config add-authtoken "${NGROK_AUTH_TOKEN?}"
 
-      - name: Run behaviour tests - bundle
-        run: |
-          npm run test:bundleBehaviour || exit_code=$? \
-          ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
-          ; exit ${exit_code:-0} \
-          ;
-        env:
-          #DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.base-url }}
-          TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
-          TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
-          TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
-
-#      - name: Run behaviour tests - obligation
+#      - name: Run behaviour tests - bundle
 #        run: |
-#          npm run test:obligationBehaviour || exit_code=$? \
+#          npm run test:bundleBehaviour || exit_code=$? \
 #          ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
 #          ; exit ${exit_code:-0} \
 #          ;
@@ -266,6 +254,18 @@ jobs:
 #          TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
 #          TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
 #          TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
+
+      - name: Run behaviour tests - obligation
+        run: |
+          npm run test:obligationBehaviour || exit_code=$? \
+          ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
+          ; exit ${exit_code:-0} \
+          ;
+        env:
+          #DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.base-url }}
+          TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
+          TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
+          TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
 #
 #      - name: Run behaviour tests - view vat
 #        run: |
@@ -1947,7 +1947,7 @@ jobs:
       - web-test-bundle
       - web-test-obligation
       - web-test-submit-vat
-      #- web-test-view-vat
+      - web-test-view-vat
     runs-on: ubuntu-24.04
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
     steps:
