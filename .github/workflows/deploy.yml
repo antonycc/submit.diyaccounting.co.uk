@@ -1976,13 +1976,13 @@ jobs:
           path: |
             target/test-reports/submit-vat/
 
-#      - name: Download artifacts (reports) - view vat
-#        if: ${{ !cancelled() }}
-#        uses: actions/download-artifact@v6
-#        with:
-#          name: web-test-reports-view-vat
-#          path: |
-#            target/test-reports/
+      - name: Download artifacts (reports) - view vat
+        if: ${{ !cancelled() }}
+        uses: actions/download-artifact@v6
+        with:
+          name: web-test-reports-view-vat
+          path: |
+            target/test-reports/
 
       - name: Generate combined test report index
         if: ${{ !cancelled() }}
