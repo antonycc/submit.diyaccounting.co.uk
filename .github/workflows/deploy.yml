@@ -2004,7 +2004,7 @@ jobs:
                 view-vat) label="View VAT behaviour tests" ;;
                 *) label="$d" ;;
               esac
-              echo "  <li><a href=\"$d/html-report/index.html\">$label</a></li>" >> "$INDEX_FILE"
+              echo "  <li><a href=\"../$d/html-report/index.html\">$label</a></li>" >> "$INDEX_FILE"
             fi
           done
           echo "</ul>" >> "$INDEX_FILE"
