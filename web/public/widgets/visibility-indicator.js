@@ -20,11 +20,6 @@
     }
   }
 
-  // Check if user has a specific bundle
-  function hasBundle(bundles, id) {
-    return bundles.some((b) => typeof b === "string" && (b === id || b.startsWith(id + "|")));
-  }
-
   // Get active bundles (automatic + granted)
   function getActiveBundles(catalog, userBundles) {
     const active = new Set();
@@ -71,7 +66,7 @@
   function getBasePath() {
     const pathname = window.location.pathname;
     const parts = pathname.split("/").filter((p) => p);
-    
+
     // Determine depth: count parent directories needed
     // e.g., "/index.html" -> "./"
     // e.g., "/account/bundles.html" -> "../"
