@@ -1,14 +1,13 @@
 package co.uk.diyaccounting.submit;
 
-import co.uk.diyaccounting.submit.utils.ResourceNameUtils;
-import software.amazon.awscdk.services.apigatewayv2.HttpMethod;
-
-import java.util.ArrayList;
-import java.util.List;
-
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDashedDomainName;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.convertDotSeparatedToDashSeparated;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateResourceNamePrefix;
+
+import co.uk.diyaccounting.submit.utils.ResourceNameUtils;
+import java.util.ArrayList;
+import java.util.List;
+import software.amazon.awscdk.services.apigatewayv2.HttpMethod;
 
 public class SubmitSharedNames {
 
@@ -449,8 +448,7 @@ public class SubmitSharedNames {
                 List.of(
                         new ApiParameter("periodKey", "path", true, "The VAT period key to retrieve"),
                         new ApiParameter("vrn", "query", true, "VAT Registration Number (9 digits)"),
-                        new ApiParameter("Gov-Test-Scenario", "query", false, "HMRC sandbox test scenario")
-                )));
+                        new ApiParameter("Gov-Test-Scenario", "query", false, "HMRC sandbox test scenario"))));
 
         this.receiptPostLambdaHttpMethod = HttpMethod.POST;
         this.receiptPostLambdaUrlPath = "/api/v1/hmrc/receipt";

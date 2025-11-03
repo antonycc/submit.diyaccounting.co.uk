@@ -250,7 +250,11 @@
         const govClientBrowserJSUserAgentHeader = navigator.userAgent;
         const govClientDeviceIDHeader = crypto.randomUUID();
         const govClientMultiFactorHeader = "type=OTHER";
-        const testScenario = (document.getElementById("testScenario")?.value || (JSON.parse(localStorage.getItem("submission_data")||"null")?.testScenario || "")).trim();
+        const testScenario = (
+          document.getElementById("testScenario")?.value ||
+          JSON.parse(localStorage.getItem("submission_data") || "null")?.testScenario ||
+          ""
+        ).trim();
 
         // Enhanced IP detection with fallbacks
         const detectedIP = await getClientIP();

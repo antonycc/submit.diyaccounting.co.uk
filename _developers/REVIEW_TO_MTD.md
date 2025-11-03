@@ -5,7 +5,6 @@
 * **Purpose** – The repository aims to provide an open-source, developer-friendly system for UK businesses to submit VAT returns via HMRC’s *Making Tax Digital* (MTD) APIs.  It includes a static front-end (HTML/JS/ESM) and a serverless back-end (Node-based Lambdas) that can run locally with mock OAuth2 and MinIO or deploy to AWS (S3 + CloudFront + Lambda + Cognito).
 * **Core capability** – VAT return submission via the `/organisations/vat/{vrn}/returns` endpoint.  The OAuth flow uses HMRC’s sandbox for token acquisition and submission.
 * **Secondary features (in progress)** – viewing VAT obligations, liabilities, payments and penalties; entitlements management (bundle model) and front-end activity routing; dynamic fraud-prevention headers; observability and CI/CD integration.
-* **Branch focus** – `copilot/reduce-code-verbosity-responses` streamlines code responses and logging, simplifies handler verbosity, and improves consistency in API results while preserving traceability for HMRC logs.
 
 ---
 
@@ -27,7 +26,6 @@ HMRC specifies minimum functionality for MTD VAT software before production cred
 |------|---------------|------------|
 | VAT submission | Working in sandbox; logs all requests and responses | Needs validation of numeric formats and period-key logic |
 | Fraud prevention headers | Partially implemented (`eventToGovClientHeaders.js`, `submit.js`) | Uses static IPs and placeholder licence IDs; missing cross-validation |
-| Obligations, liabilities, payments, penalties | Stubs exist but not exposed | Required for HMRC approval |
 | OAuth / security | Basic PKCE flow, static secrets | Must enforce nonce/state, rotate secrets, and add CSRF protection |
 | Entitlements / bundles | In-memory, catalogue not persisted | Requires DynamoDB or similar persistence for user entitlements |
 | Logging and monitoring | Console and simple JSON logs | Needs CloudWatch structure, X-Ray, correlation IDs |
@@ -47,30 +45,23 @@ HMRC specifies minimum functionality for MTD VAT software before production cred
 6. Refresh documentation for local and AWS deployment and sandbox testing.
 
 ### Phase 2 – Complete MTD VAT functionality
-1. Implement and test:
-    * `GET /obligations`
-    * `GET /returns`
-    * `GET /liabilities`
-    * `GET /payments`
-    * `GET /penalties`
-2. Add front-end pages (`vatObligations.html`, `viewVatReturn.html`) and link them to the product catalogue.
-3. Integrate catalogue bundles and entitlement guards for all new routes.
-4. Auto-generate API clients from HMRC OpenAPI specs to improve type-safety.
-5. Extend Playwright/Vitest coverage for all flows.
+- [ ] Entitlement indicators on all pages ("Needs login"->login, "Needs activity"->bundles, "Activity available").
+- [ ] Entitlement guards for all routes.
+- [ ] Hide developer features in prod unless user has test bundle .
+- [ ] Make test bundle require an approval link to be clicked by admin@diyaccounting.co.uk
+- [ ] Make test bundle a discrete link (not a big button).
+- [ ] Back and recovery (new backup aws account and recovery to other accounts)
+- [ ] Separate AWS accounts for ci and prod.
+- [ ] Dashboards not deployed to CI by default.
+- [ ] Versioned release process for AWS deployment (Git tags, changelog).
 
-### Phase 3 – Persistent entitlements and receipt storage
-1. Replace in-memory entitlements with DynamoDB keyed on `userId + bundle`.
-2. Store VAT receipts in S3 (encrypted, versioned) with signed-URL retrieval.
-3. Add admin API to grant/revoke bundles (`guest`, `test`, `prod`).
-4. Drive UI menus purely from `product-catalogue.toml`.
-
-### Phase 4 – Compliance, monitoring and security maturity
+### Phase 3 – Compliance, monitoring and security maturity
 1. Audit against full FPH specification and HMRC self-certification forms.
 2. Implement privacy policy, consent tracking and data retention.
-3. Enable CloudTrail, GuardDuty, Security Hub, and X-Ray tracing.
+3. Enable GuardDuty, Security Hub.
 4. Conduct OWASP ASVS / penetration test before submission for approval.
 
-### Phase 5 – HMRC approval and public release
+### Phase 4 – HMRC approval and public release
 1. Perform official sandbox test (obligations + return).
 2. Send logs and fraud-prevention questionnaire to HMRC SDS team.
 3. Obtain production credentials, make one live return for verification.
@@ -85,7 +76,6 @@ HMRC specifies minimum functionality for MTD VAT software before production cred
 ## 5 Immediate priorities
 
 * Complete and verify `Gov-Client-*` header accuracy.
-* Implement `/obligations` endpoint with validation.
 * Replace static vendor info with build-time metadata (`package.json` version, licence ID hash).
 * Finalise end-to-end sandbox workflow logs for HMRC review.
 
