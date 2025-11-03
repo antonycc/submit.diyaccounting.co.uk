@@ -90,7 +90,7 @@ runs:
             fi
 
             if [ -n "${MERGED_BRANCH:-}" ]; then
-              CLEANED_MERGED=$(echo "$MERGED_BRANCH" | tr '[:upper:]' '[:lower:]' | sed -e 's/[^a-z0-9]/-/g' -e 's/-\{2,\}/-/g' -e 's/^-//' -e 's/-$//')
+              CLEANED_MERGED=$(echo "$MERGED_BRANCH" | tr '[:upper:]' '[:lower:]' | sed -e 's/[^a-z0-9]/-/g' -e 's/dependabot/-/g' -e 's/feature/-/g' -e 's/copilot/-/g' -e 's/-\{2,\}/-/g' -e 's/^-//' -e 's/-$//')
               if [ -n "$CLEANED_MERGED" ]; then
                 DEPLOYMENT_NAME="prod-${CLEANED_MERGED:0:7}"
               fi
