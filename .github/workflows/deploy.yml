@@ -1761,7 +1761,7 @@ jobs:
     needs:
       - names
       - set-origins
-      - deploy-publish
+      - web-test-bundle
     runs-on: ubuntu-24.04
     container: mcr.microsoft.com/playwright:v1.56.1-jammy
     # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags
@@ -1822,7 +1822,7 @@ jobs:
     needs:
       - names
       - set-origins
-      - deploy-publish
+      - web-test-bundle
     runs-on: ubuntu-24.04
     container: mcr.microsoft.com/playwright:v1.56.1-jammy
     # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags
@@ -1877,66 +1877,66 @@ jobs:
           path: |
             target/test-reports/
 
-#  web-test-view-vat:
-#    if: ${{ !cancelled() }}
-#    name: 'web test view vat'
-#    needs:
-#      - names
-#      - set-origins
-#      - deploy-publish
-#    runs-on: ubuntu-24.04
-#    container: mcr.microsoft.com/playwright:v1.56.1-jammy
-#    # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags
-#    # and extension with ubuntu distribution e.g. https://releases.ubuntu.com/jammy/
-#    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
-#    steps:
-#      - name: Checkout
-#        uses: actions/checkout@v5
-#
-#      - name: Setup Node
-#        uses: actions/setup-node@v6
-#        with:
-#          node-version: ${{ env.NODE_VERSION }}
-#          cache: 'npm'
-#
-#      - name: Install dependencies
-#        run: |
-#          npm ci --ignore-scripts
-#        env:
-#          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
-#
-#      - name: Run behaviour tests - viewVatBehaviour
-#        if: ${{ !cancelled() }}
-#        run: |
-#          cp '.env.${{ needs.names.outputs.environment-name }}' '.env.test' \
-#          ; npx dotenv -e '.env.${{ needs.names.outputs.environment-name }}' -- \
-#            npm run test:viewVatBehaviour || exit_code=$? \
-#          ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
-#          ; exit ${exit_code:-0} \
-#          ;
-#        env:
-#          DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.apex-url }}
-#          TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
-#          TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
-#          TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
-#
-#      - name: Upload artifacts (results)
-#        if: ${{ !cancelled() }}
-#        uses: actions/upload-artifact@v5
-#        with:
-#          name: web-test-artifacts-view-vat
-#          retention-days: 30
-#          path: |
-#            target/behaviour-test-results/
-#
-#      - name: Upload artifacts (reports)
-#        if: ${{ !cancelled() }}
-#        uses: actions/upload-artifact@v5
-#        with:
-#          name: web-test-reports-view-vat
-#          retention-days: 30
-#          path: |
-#            target/test-reports/
+  web-test-view-vat:
+    if: ${{ !cancelled() }}
+    name: 'web test view vat'
+    needs:
+      - names
+      - set-origins
+      - web-test-bundle
+    runs-on: ubuntu-24.04
+    container: mcr.microsoft.com/playwright:v1.56.1-jammy
+    # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags
+    # and extension with ubuntu distribution e.g. https://releases.ubuntu.com/jammy/
+    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          npm ci --ignore-scripts
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+
+      - name: Run behaviour tests - viewVatBehaviour
+        if: ${{ !cancelled() }}
+        run: |
+          cp '.env.${{ needs.names.outputs.environment-name }}' '.env.test' \
+          ; npx dotenv -e '.env.${{ needs.names.outputs.environment-name }}' -- \
+            npm run test:viewVatBehaviour || exit_code=$? \
+          ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
+          ; exit ${exit_code:-0} \
+          ;
+        env:
+          DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.apex-url }}
+          TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
+          TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
+          TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
+
+      - name: Upload artifacts (results)
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v5
+        with:
+          name: web-test-artifacts-view-vat
+          retention-days: 30
+          path: |
+            target/behaviour-test-results/
+
+      - name: Upload artifacts (reports)
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v5
+        with:
+          name: web-test-reports-view-vat
+          retention-days: 30
+          path: |
+            target/test-reports/
 
   upload-web-test-results:
     if: ${{ !cancelled() }}
