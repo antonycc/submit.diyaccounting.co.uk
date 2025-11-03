@@ -9,6 +9,7 @@ import {
   runLocalOAuth2Server,
   runLocalS3,
   runLocalSslProxy,
+  timestamp,
 } from "./helpers/behaviour-helpers.js";
 import { goToHomePage, goToHomePageExpectNotLoggedIn, goToHomePageUsingHamburgerMenu } from "./steps/behaviour-steps.js";
 import {
@@ -170,6 +171,10 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }) => {
   await fillInHmrcAuth(page, hmrcTestUsername, hmrcTestPassword);
   await submitHmrcAuth(page);
   await grantPermissionHmrcAuth(page);
+  await page.waitForTimeout(200);
+  await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/038-hmrc-permission-${timestamp()}.png` });
+  await page.waitForTimeout(5000);
+  await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/039-hmrc-permission-later-${timestamp()}.png` });
 
   /* ************** */
   /* `COMPLETE VAT  */

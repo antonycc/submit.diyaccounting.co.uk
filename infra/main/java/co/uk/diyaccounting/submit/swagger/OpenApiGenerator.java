@@ -137,6 +137,23 @@ public class OpenApiGenerator {
                 operation.put("description", pl.description);
                 operation.put("operationId", pl.operationId);
 
+                // Parameters from SubmitSharedNames (path/query)
+                if (pl.parameters != null && !pl.parameters.isEmpty()) {
+                    ArrayNode paramsArr = mapper.createArrayNode();
+                    for (SubmitSharedNames.ApiParameter p : pl.parameters) {
+                        ObjectNode pObj = mapper.createObjectNode();
+                        pObj.put("name", p.name);
+                        pObj.put("in", p.in);
+                        pObj.put("required", p.required);
+                        if (p.description != null) pObj.put("description", p.description);
+                        ObjectNode schema = mapper.createObjectNode();
+                        schema.put("type", "string");
+                        pObj.set("schema", schema);
+                        paramsArr.add(pObj);
+                    }
+                    operation.set("parameters", paramsArr);
+                }
+
                 String method = pl.method.name().toLowerCase();
                 pathItem.set(method, operation);
             }

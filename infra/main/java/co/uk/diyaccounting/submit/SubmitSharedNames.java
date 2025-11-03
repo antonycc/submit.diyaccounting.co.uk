@@ -1,13 +1,14 @@
 package co.uk.diyaccounting.submit;
 
+import co.uk.diyaccounting.submit.utils.ResourceNameUtils;
+import software.amazon.awscdk.services.apigatewayv2.HttpMethod;
+
+import java.util.ArrayList;
+import java.util.List;
+
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDashedDomainName;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.convertDotSeparatedToDashSeparated;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateResourceNamePrefix;
-
-import co.uk.diyaccounting.submit.utils.ResourceNameUtils;
-import java.util.ArrayList;
-import java.util.List;
-import software.amazon.awscdk.services.apigatewayv2.HttpMethod;
 
 public class SubmitSharedNames {
 
@@ -17,14 +18,40 @@ public class SubmitSharedNames {
         public final String summary;
         public final String description;
         public final String operationId;
+        public final List<ApiParameter> parameters;
 
         public PublishedLambda(
                 HttpMethod method, String urlPath, String summary, String description, String operationId) {
+            this(method, urlPath, summary, description, operationId, List.of());
+        }
+
+        public PublishedLambda(
+                HttpMethod method,
+                String urlPath,
+                String summary,
+                String description,
+                String operationId,
+                List<ApiParameter> parameters) {
             this.method = method;
             this.urlPath = urlPath;
             this.summary = summary;
             this.description = description;
             this.operationId = operationId;
+            this.parameters = parameters != null ? parameters : List.of();
+        }
+    }
+
+    public static class ApiParameter {
+        public final String name;
+        public final String in;
+        public final boolean required;
+        public final String description;
+
+        public ApiParameter(String name, String in, boolean required, String description) {
+            this.name = name;
+            this.in = in;
+            this.required = required;
+            this.description = description;
         }
     }
 
@@ -144,6 +171,7 @@ public class SubmitSharedNames {
     public String receiptGetLambdaArn;
     public HttpMethod receiptGetLambdaHttpMethod;
     public String receiptGetLambdaUrlPath;
+    public String receiptGetByNameLambdaUrlPath;
 
     public String catalogGetLambdaHandler;
     public String catalogGetLambdaFunctionName;
@@ -403,7 +431,7 @@ public class SubmitSharedNames {
         //                "%s-%s".formatted(appLambdaArnPrefix, hmrcVatPenaltyGetLambdaHandlerDashed);
 
         this.hmrcVatReturnGetLambdaHttpMethod = HttpMethod.GET;
-        this.hmrcVatReturnGetLambdaUrlPath = "/api/v1/hmrc/vat/return";
+        this.hmrcVatReturnGetLambdaUrlPath = "/api/v1/hmrc/vat/return/{periodKey}";
         var hmrcVatReturnGetLambdaHandlerName = "hmrcVatReturnGet.handler";
         var hmrcVatReturnGetLambdaHandlerDashed =
                 ResourceNameUtils.convertCamelCaseToDashSeparated(hmrcVatReturnGetLambdaHandlerName);
@@ -417,7 +445,12 @@ public class SubmitSharedNames {
                 this.hmrcVatReturnGetLambdaUrlPath,
                 "Get submitted VAT returns from HMRC",
                 "Retrieves previously submitted VAT returns from HMRC for the authenticated user",
-                "getVatReturns"));
+                "getVatReturns",
+                List.of(
+                        new ApiParameter("periodKey", "path", true, "The VAT period key to retrieve"),
+                        new ApiParameter("vrn", "query", true, "VAT Registration Number (9 digits)"),
+                        new ApiParameter("Gov-Test-Scenario", "query", false, "HMRC sandbox test scenario")
+                )));
 
         this.receiptPostLambdaHttpMethod = HttpMethod.POST;
         this.receiptPostLambdaUrlPath = "/api/v1/hmrc/receipt";
@@ -437,6 +470,7 @@ public class SubmitSharedNames {
 
         this.receiptGetLambdaHttpMethod = HttpMethod.GET;
         this.receiptGetLambdaUrlPath = "/api/v1/hmrc/receipt";
+        this.receiptGetByNameLambdaUrlPath = "/api/v1/hmrc/receipt/{name}";
         var receiptGetLambdaHandlerName = "hmrcReceiptGet.handler";
         var receiptGetLambdaHandlerDashed =
                 ResourceNameUtils.convertCamelCaseToDashSeparated(receiptGetLambdaHandlerName);
@@ -450,6 +484,13 @@ public class SubmitSharedNames {
                 "Retrieve stored receipts",
                 "Retrieves previously stored receipts for the authenticated user",
                 "getReceipts"));
+        publishedApiLambdas.add(new PublishedLambda(
+                this.receiptGetLambdaHttpMethod,
+                this.receiptGetByNameLambdaUrlPath,
+                "Retrieve a stored receipt by name",
+                "Retrieves a specific stored receipt for the authenticated user by file name",
+                "getReceiptByName",
+                List.of(new ApiParameter("name", "path", true, "The receipt file name including .json"))));
 
         this.catalogGetLambdaHttpMethod = HttpMethod.GET;
         this.catalogGetLambdaUrlPath = "/api/v1/catalog";

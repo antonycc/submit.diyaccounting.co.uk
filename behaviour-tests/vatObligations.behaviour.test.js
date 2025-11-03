@@ -144,7 +144,7 @@ test("Click through: View VAT obligations from HMRC", async ({ page }) => {
   const toDate = "2025-11-01";
   await fillInVatObligations(page, hmrcTestVatNumber, { fromDate, toDate });
   // Take a focus change screenshot between last cell entry and submit
-  await page.focus('#retrieveBtn');
+  await page.focus("#retrieveBtn");
   await page.waitForTimeout(150);
   await page.screenshot({ path: `target/behaviour-test-results/vatObligations-screenshots/025-ready-to-submit-${timestamp()}.png` });
   await submitVatObligationsForm(page);
@@ -167,6 +167,8 @@ test("Click through: View VAT obligations from HMRC", async ({ page }) => {
   await grantPermissionHmrcAuth(page);
   await page.waitForTimeout(200);
   await page.screenshot({ path: `target/behaviour-test-results/vatObligations-screenshots/038-hmrc-permission-${timestamp()}.png` });
+  await page.waitForTimeout(5000);
+  await page.screenshot({ path: `target/behaviour-test-results/vatObligations-screenshots/039-hmrc-permission-later-${timestamp()}.png` });
 
   /* ******************** */
   /*  VIEW OBLIGATIONS    */
@@ -174,7 +176,7 @@ test("Click through: View VAT obligations from HMRC", async ({ page }) => {
 
   await verifyVatObligationsResults(page);
   // If results likely scroll, capture a pagedown
-  await page.keyboard.press('PageDown');
+  await page.keyboard.press("PageDown");
   await page.waitForTimeout(200);
   await page.screenshot({ path: `target/behaviour-test-results/vatObligations-screenshots/045-results-pagedown-${timestamp()}.png` });
 

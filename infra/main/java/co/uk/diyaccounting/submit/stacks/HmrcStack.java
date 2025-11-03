@@ -1,15 +1,10 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
 import co.uk.diyaccounting.submit.constructs.ApiLambda;
 import co.uk.diyaccounting.submit.constructs.ApiLambdaProps;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
-import java.util.List;
-import java.util.Optional;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Aspects;
 import software.amazon.awscdk.Duration;
@@ -25,6 +20,12 @@ import software.amazon.awscdk.services.s3.Bucket;
 import software.amazon.awscdk.services.s3.IBucket;
 import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
+
+import java.util.List;
+import java.util.Optional;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 public class HmrcStack extends Stack {
 
@@ -454,6 +455,19 @@ public class HmrcStack extends Stack {
         this.receiptGetLambda = myReceiptsLambdaUrlOrigin.lambda;
         this.receiptGetLambdaLogGroup = myReceiptsLambdaUrlOrigin.logGroup;
         this.lambdaFunctionProps.add(this.receiptGetLambdaProps);
+        // Also expose a second route for retrieving a single receipt by name using the same Lambda
+        this.lambdaFunctionProps.add(ApiLambdaProps.builder()
+                .idPrefix(props.sharedNames().receiptGetLambdaFunctionName + "-ByNameRoute")
+                .baseImageTag(props.baseImageTag())
+                .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                .functionName(props.sharedNames().receiptGetLambdaFunctionName)
+                .handler(props.sharedNames().receiptGetLambdaHandler)
+                .lambdaArn(props.sharedNames().receiptGetLambdaArn)
+                .httpMethod(props.sharedNames().receiptGetLambdaHttpMethod)
+                .urlPath(props.sharedNames().receiptGetByNameLambdaUrlPath)
+                .timeout(Duration.millis(Long.parseLong("30000")))
+                .build());
         infof(
                 "Created Lambda %s for my receipts retrieval with handler %s",
                 this.receiptGetLambda.getNode().getId(), props.sharedNames().receiptGetLambdaHandler);
