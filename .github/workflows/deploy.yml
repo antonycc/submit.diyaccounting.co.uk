@@ -1,5 +1,16 @@
 name: deploy
 run-name: "deploy from ${{ github.ref_name }}"
+# Multi-Account Support:
+# To deploy to different AWS accounts for ci/prod environments:
+# 1. Set GitHub Environment variables (Settings -> Environments -> ci/prod):
+#    - AWS_ACCOUNT_ID: Target AWS account ID
+#    - AWS_REGION: AWS region (default: eu-west-2)
+#    - AWS_HOSTED_ZONE_ID: Route53 hosted zone ID for the environment
+#    - BACKUP_AWS_ACCOUNT_ID: (Optional) Separate AWS account for backups
+# 2. Ensure IAM roles exist in target account:
+#    - submit-github-actions-role (OIDC trust with GitHub Actions)
+#    - submit-deployment-role (assumed by actions role for deployments)
+# 3. Run provision-aws-account workflow to set up a new account
 concurrency:
   group: deploy-${{ github.ref_name }}
   cancel-in-progress: false
@@ -86,11 +97,13 @@ permissions:
 env:
   JAVA_VERSION: '21'
   NODE_VERSION: '22'
+  # AWS configuration can be overridden by GitHub Environment variables (AWS_ACCOUNT_ID, AWS_REGION, AWS_HOSTED_ZONE_ID)
+  # Defaults to root account for backwards compatibility
+  AWS_ACCOUNT_ID: '887764105431'
+  AWS_REGION: 'eu-west-2'
+  AWS_HOSTED_ZONE_ID: 'Z0315522208PWZSSBI9AL'
   ACTIONS_ROLE_ARN: 'arn:aws:iam::887764105431:role/submit-github-actions-role'
   DEPLOY_ROLE_ARN:  'arn:aws:iam::887764105431:role/submit-deployment-role'
-  AWS_REGION: 'eu-west-2'
-  AWS_ACCOUNT_ID: '887764105431'
-  AWS_HOSTED_ZONE_ID: 'Z0315522208PWZSSBI9AL'
   BASE_IMAGE_TAG_PREFIX: 'submit-base'
   loadTestDuration: ${{ inputs.loadTestDuration || '30s' }}
   GITHUB_ACTOR: ${{ github.actor }}

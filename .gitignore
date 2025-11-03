@@ -348,3 +348,12 @@ fabric.properties
 /cdk-submit-delivery.out/
 /cdk-submit-environment.out/
 /.output.txt
+
+# Terraform
+**/.terraform/
+**/.terraform.lock.hcl
+**/terraform.tfstate
+**/terraform.tfstate.*
+**/terraform.tfvars
+**/.terraformrc
+**/terraform.rc

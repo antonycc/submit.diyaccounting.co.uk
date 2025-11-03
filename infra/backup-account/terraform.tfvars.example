@@ -1,0 +1,17 @@
+# Example terraform.tfvars for backup account
+# Copy this file to terraform.tfvars and update with your values
+
+# Backup account configuration
+backup_account_id = "999999999999"  # Replace with your backup account ID
+aws_region        = "eu-west-2"
+
+# Source accounts that can push backups
+source_account_ids = [
+  "111111111111",  # CI account
+  "222222222222"   # Prod account
+]
+
+# Backup retention settings
+backup_retention_days          = 90   # Keep backups for 90 days
+transition_to_glacier_days     = 30   # Move to Glacier after 30 days
+transition_to_deep_archive_days = 60  # Move to Deep Archive after 60 days

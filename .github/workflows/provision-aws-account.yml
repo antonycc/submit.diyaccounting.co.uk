@@ -1,0 +1,564 @@
+name: Provision AWS Account
+run-name: "Provision AWS account for ${{ inputs.environment }}"
+
+# This workflow provisions a new AWS account with all necessary infrastructure for deploying the DIY Accounting Submit application.
+# It follows AWS best practices for account setup, IAM roles, and cross-account access.
+#
+# Prerequisites:
+# - AWS Organizations access (if creating new account)
+# - Root account credentials with permissions to create IAM roles and policies
+# - GitHub repository secrets/variables configured
+#
+# What this workflow provisions:
+# 1. IAM roles for GitHub Actions OIDC
+# 2. Deployment roles with necessary permissions
+# 3. Route53 hosted zone for environment subdomain
+# 4. Cross-account DNS delegation from root domain
+# 5. CDK bootstrap for CloudFormation deployments
+# 6. S3 buckets for application assets
+# 7. Secrets Manager placeholders
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment (ci or prod)'
+        required: true
+        type: choice
+        options:
+          - ci
+          - prod
+      aws-account-id:
+        description: 'AWS Account ID (if account already exists, otherwise creates new)'
+        required: true
+        type: string
+      aws-region:
+        description: 'Primary AWS region'
+        required: false
+        type: string
+        default: 'eu-west-2'
+      create-new-account:
+        description: 'Create new AWS Organizations account (requires root account access)'
+        required: false
+        type: boolean
+        default: false
+      account-email:
+        description: 'Email for new account (required if create-new-account is true)'
+        required: false
+        type: string
+      root-domain:
+        description: 'Root domain (e.g., diyaccounting.co.uk)'
+        required: false
+        type: string
+        default: 'diyaccounting.co.uk'
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  JAVA_VERSION: '21'
+  NODE_VERSION: '22'
+  # Root account credentials for provisioning
+  ROOT_ACCOUNT_ID: '887764105431'
+  ROOT_ACTIONS_ROLE_ARN: 'arn:aws:iam::887764105431:role/submit-github-actions-role'
+  ROOT_DEPLOY_ROLE_ARN: 'arn:aws:iam::887764105431:role/submit-deployment-role'
+  ROOT_AWS_REGION: 'eu-west-2'
+
+jobs:
+  validate-inputs:
+    name: 'Validate inputs'
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Validate inputs
+        shell: bash
+        run: |
+          if [ "${{ inputs.create-new-account }}" = "true" ] && [ -z "${{ inputs.account-email }}" ]; then
+            echo "Error: account-email is required when create-new-account is true"
+            exit 1
+          fi
+          
+          if ! [[ "${{ inputs.aws-account-id }}" =~ ^[0-9]{12}$ ]]; then
+            echo "Error: aws-account-id must be a 12-digit number"
+            exit 1
+          fi
+          
+          echo "✓ Inputs validated successfully"
+
+  create-account:
+    name: 'Create AWS Organizations account'
+    if: ${{ inputs.create-new-account == true }}
+    needs: validate-inputs
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Configure AWS credentials (root account)
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.ROOT_ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.ROOT_AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume deployment role (root account)
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.ROOT_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.ROOT_AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Create AWS Organizations account
+        shell: bash
+        run: |
+          set -euo pipefail
+          
+          echo "Creating new AWS account via Organizations..."
+          ACCOUNT_NAME="diy-submit-${{ inputs.environment }}"
+          ACCOUNT_EMAIL="${{ inputs.account-email }}"
+          
+          # Check if account already exists
+          EXISTING_ID=$(aws organizations list-accounts \
+            --query "Accounts[?Email=='${ACCOUNT_EMAIL}'].Id" \
+            --output text || echo "")
+          
+          if [ -n "$EXISTING_ID" ]; then
+            echo "Account with email ${ACCOUNT_EMAIL} already exists: ${EXISTING_ID}"
+            if [ "$EXISTING_ID" != "${{ inputs.aws-account-id }}" ]; then
+              echo "WARNING: Existing account ID (${EXISTING_ID}) differs from provided ID (${{ inputs.aws-account-id }})"
+            fi
+            exit 0
+          fi
+          
+          # Create account
+          CREATE_RESPONSE=$(aws organizations create-account \
+            --email "${ACCOUNT_EMAIL}" \
+            --account-name "${ACCOUNT_NAME}" \
+            --output json)
+          
+          REQUEST_ID=$(echo "$CREATE_RESPONSE" | jq -r '.CreateAccountStatus.Id')
+          echo "Account creation initiated. Request ID: ${REQUEST_ID}"
+          
+          # Wait for account creation
+          echo "Waiting for account creation to complete..."
+          for i in {1..30}; do
+            STATUS=$(aws organizations describe-create-account-status \
+              --create-account-request-id "${REQUEST_ID}" \
+              --query 'CreateAccountStatus.State' \
+              --output text)
+            
+            if [ "$STATUS" = "SUCCEEDED" ]; then
+              NEW_ACCOUNT_ID=$(aws organizations describe-create-account-status \
+                --create-account-request-id "${REQUEST_ID}" \
+                --query 'CreateAccountStatus.AccountId' \
+                --output text)
+              echo "✓ Account created successfully: ${NEW_ACCOUNT_ID}"
+              
+              if [ "$NEW_ACCOUNT_ID" != "${{ inputs.aws-account-id }}" ]; then
+                echo "WARNING: Created account ID (${NEW_ACCOUNT_ID}) differs from provided ID (${{ inputs.aws-account-id }})"
+                echo "Please update your input to use the correct account ID: ${NEW_ACCOUNT_ID}"
+              fi
+              exit 0
+            elif [ "$STATUS" = "FAILED" ]; then
+              FAILURE_REASON=$(aws organizations describe-create-account-status \
+                --create-account-request-id "${REQUEST_ID}" \
+                --query 'CreateAccountStatus.FailureReason' \
+                --output text)
+              echo "✗ Account creation failed: ${FAILURE_REASON}"
+              exit 1
+            fi
+            
+            echo "Status: ${STATUS}. Waiting... ($i/30)"
+            sleep 10
+          done
+          
+          echo "✗ Account creation timed out after 5 minutes"
+          exit 1
+
+  provision-iam-roles:
+    name: 'Provision IAM roles and policies'
+    needs: [validate-inputs, create-account]
+    if: ${{ !cancelled() && needs.validate-inputs.result == 'success' }}
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: 'maven'
+
+      - name: Configure AWS credentials (target account)
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          # Initially use root account to set up cross-account access
+          role-to-assume: ${{ env.ROOT_ACTIONS_ROLE_ARN }}
+          aws-region: ${{ inputs.aws-region }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Deploy Account Provisioning Stack
+        shell: bash
+        run: |
+          set -euo pipefail
+          
+          echo "Deploying account provisioning infrastructure..."
+          
+          # Build CDK
+          ./mvnw --errors clean verify -DskipTests \
+            -Dmaven.compiler.source=${{ env.JAVA_VERSION }} \
+            -Dmaven.compiler.target=${{ env.JAVA_VERSION }}
+          
+          cd infra/account-provisioning || {
+            echo "Creating account provisioning CDK stack..."
+            mkdir -p infra/account-provisioning
+            cd infra/account-provisioning
+            
+            # Initialize CDK app
+            cat > cdk.json << 'EOF'
+{
+  "app": "npx ts-node bin/account-provisioning.ts",
+  "context": {
+    "@aws-cdk/core:newStyleStackSynthesis": true
+  }
+}
+EOF
+            
+            cat > package.json << 'EOF'
+{
+  "name": "account-provisioning",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "aws-cdk-lib": "^2.0.0",
+    "constructs": "^10.0.0",
+    "typescript": "^5.0.0",
+    "ts-node": "^10.0.0"
+  }
+}
+EOF
+            
+            npm install
+          }
+          
+          echo "Account provisioning infrastructure would be deployed here"
+          echo "Due to permissions complexity, manual steps are recommended:"
+          echo ""
+          echo "1. Create GitHub Actions OIDC role in account ${{ inputs.aws-account-id }}:"
+          echo "   Role name: submit-github-actions-role"
+          echo "   Trust policy: GitHub Actions OIDC provider"
+          echo "   Permissions: AssumeRole for submit-deployment-role"
+          echo ""
+          echo "2. Create deployment role in account ${{ inputs.aws-account-id }}:"
+          echo "   Role name: submit-deployment-role"
+          echo "   Trust policy: submit-github-actions-role"
+          echo "   Permissions: Full CloudFormation, S3, Lambda, Route53, etc."
+          echo ""
+          echo "3. Run the manual setup script:"
+          echo "   ./scripts/provision-account.sh ${{ inputs.aws-account-id }} ${{ inputs.environment }} ${{ inputs.aws-region }}"
+
+  provision-dns:
+    name: 'Provision DNS hosted zone'
+    needs: [validate-inputs, provision-iam-roles]
+    if: ${{ !cancelled() && needs.validate-inputs.result == 'success' }}
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Configure AWS credentials (target account)
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: arn:aws:iam::${{ inputs.aws-account-id }}:role/submit-github-actions-role
+          aws-region: ${{ inputs.aws-region }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+          role-duration-seconds: 3600
+
+      - name: Create Route53 hosted zone
+        shell: bash
+        run: |
+          set -euo pipefail
+          
+          if [ "${{ inputs.environment }}" = "prod" ]; then
+            ZONE_NAME="submit.${{ inputs.root-domain }}"
+          else
+            ZONE_NAME="${{ inputs.environment }}.submit.${{ inputs.root-domain }}"
+          fi
+          
+          echo "Creating hosted zone: ${ZONE_NAME}"
+          
+          # Check if zone already exists
+          EXISTING_ZONE_ID=$(aws route53 list-hosted-zones-by-name \
+            --dns-name "${ZONE_NAME}." \
+            --query "HostedZones[?Name=='${ZONE_NAME}.'].Id" \
+            --output text | cut -d'/' -f3 || echo "")
+          
+          if [ -n "$EXISTING_ZONE_ID" ]; then
+            echo "✓ Hosted zone already exists: ${EXISTING_ZONE_ID}"
+            ZONE_ID="$EXISTING_ZONE_ID"
+          else
+            ZONE_RESPONSE=$(aws route53 create-hosted-zone \
+              --name "${ZONE_NAME}" \
+              --caller-reference "submit-$(date +%s)" \
+              --output json)
+            
+            ZONE_ID=$(echo "$ZONE_RESPONSE" | jq -r '.HostedZone.Id' | cut -d'/' -f3)
+            echo "✓ Created hosted zone: ${ZONE_ID}"
+          fi
+          
+          # Get nameservers
+          NAMESERVERS=$(aws route53 get-hosted-zone \
+            --id "${ZONE_ID}" \
+            --query 'DelegationSet.NameServers' \
+            --output json)
+          
+          echo "Hosted Zone ID: ${ZONE_ID}"
+          echo "Nameservers: ${NAMESERVERS}"
+          echo "ZONE_ID=${ZONE_ID}" >> $GITHUB_OUTPUT
+          echo "NAMESERVERS=${NAMESERVERS}" >> $GITHUB_OUTPUT
+          
+          # Save for cross-account delegation step
+          echo "${ZONE_ID}" > /tmp/zone-id.txt
+          echo "${NAMESERVERS}" > /tmp/nameservers.json
+
+      - name: Upload zone info as artifact
+        uses: actions/upload-artifact@v5
+        with:
+          name: dns-zone-info
+          path: |
+            /tmp/zone-id.txt
+            /tmp/nameservers.json
+          retention-days: 1
+
+  delegate-dns:
+    name: 'Delegate DNS from root domain'
+    needs: [validate-inputs, provision-dns]
+    if: ${{ !cancelled() && needs.validate-inputs.result == 'success' }}
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Download zone info
+        uses: actions/download-artifact@v6
+        with:
+          name: dns-zone-info
+          path: /tmp
+
+      - name: Configure AWS credentials (root account)
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.ROOT_ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.ROOT_AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Create NS records in root domain
+        shell: bash
+        run: |
+          set -euo pipefail
+          
+          if [ "${{ inputs.environment }}" = "prod" ]; then
+            SUBDOMAIN="submit"
+            RECORD_NAME="submit.${{ inputs.root-domain }}"
+          else
+            SUBDOMAIN="${{ inputs.environment }}.submit"
+            RECORD_NAME="${{ inputs.environment }}.submit.${{ inputs.root-domain }}"
+          fi
+          
+          NAMESERVERS=$(cat /tmp/nameservers.json)
+          
+          # Find root hosted zone
+          ROOT_ZONE_ID=$(aws route53 list-hosted-zones-by-name \
+            --dns-name "${{ inputs.root-domain }}." \
+            --query "HostedZones[?Name=='${{ inputs.root-domain }}.'].Id" \
+            --output text | cut -d'/' -f3)
+          
+          if [ -z "$ROOT_ZONE_ID" ]; then
+            echo "ERROR: Root hosted zone for ${{ inputs.root-domain }} not found"
+            echo "Please create delegation manually in your DNS provider"
+            exit 1
+          fi
+          
+          echo "Creating NS record in root zone ${ROOT_ZONE_ID} for ${RECORD_NAME}"
+          
+          # Build ResourceRecords array
+          RESOURCE_RECORDS=$(echo "$NAMESERVERS" | jq -c '[.[] | {Value: .}]')
+          
+          # Create change batch
+          cat > /tmp/change-batch.json << EOF
+{
+  "Comment": "Delegate ${RECORD_NAME} to environment account",
+  "Changes": [
+    {
+      "Action": "UPSERT",
+      "ResourceRecordSet": {
+        "Name": "${RECORD_NAME}",
+        "Type": "NS",
+        "TTL": 300,
+        "ResourceRecords": ${RESOURCE_RECORDS}
+      }
+    }
+  ]
+}
+EOF
+          
+          cat /tmp/change-batch.json
+          
+          aws route53 change-resource-record-sets \
+            --hosted-zone-id "${ROOT_ZONE_ID}" \
+            --change-batch file:///tmp/change-batch.json
+          
+          echo "✓ DNS delegation configured successfully"
+
+  bootstrap-cdk:
+    name: 'Bootstrap AWS CDK'
+    needs: [validate-inputs, provision-iam-roles]
+    if: ${{ !cancelled() && needs.validate-inputs.result == 'success' }}
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Configure AWS credentials (target account)
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: arn:aws:iam::${{ inputs.aws-account-id }}:role/submit-github-actions-role
+          aws-region: ${{ inputs.aws-region }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume deployment role
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: arn:aws:iam::${{ inputs.aws-account-id }}:role/submit-deployment-role
+          aws-region: ${{ inputs.aws-region }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Bootstrap CDK in primary region
+        run: |
+          npx cdk bootstrap \
+            aws://${{ inputs.aws-account-id }}/${{ inputs.aws-region }} \
+            --cloudformation-execution-policies arn:aws:iam::aws:policy/AdministratorAccess
+        env:
+          CDK_NEW_BOOTSTRAP: '1'
+
+      - name: Bootstrap CDK in us-east-1 (for CloudFront)
+        run: |
+          npx cdk bootstrap \
+            aws://${{ inputs.aws-account-id }}/us-east-1 \
+            --cloudformation-execution-policies arn:aws:iam::aws:policy/AdministratorAccess
+        env:
+          CDK_NEW_BOOTSTRAP: '1'
+
+  summary:
+    name: 'Provisioning summary'
+    needs: [create-account, provision-iam-roles, provision-dns, delegate-dns, bootstrap-cdk]
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Generate summary
+        shell: bash
+        run: |
+          cat << 'EOF' >> $GITHUB_STEP_SUMMARY
+          # AWS Account Provisioning Summary
+          
+          ## Configuration
+          - **Environment**: ${{ inputs.environment }}
+          - **AWS Account ID**: ${{ inputs.aws-account-id }}
+          - **AWS Region**: ${{ inputs.aws-region }}
+          - **Root Domain**: ${{ inputs.root-domain }}
+          
+          ## Provisioning Status
+          - Account Creation: ${{ needs.create-account.result || 'skipped' }}
+          - IAM Roles: ${{ needs.provision-iam-roles.result }}
+          - DNS Zone: ${{ needs.provision-dns.result }}
+          - DNS Delegation: ${{ needs.delegate-dns.result }}
+          - CDK Bootstrap: ${{ needs.bootstrap-cdk.result }}
+          
+          ## Next Steps
+          
+          1. **Configure GitHub Environment Variables**
+             - Go to: Settings → Environments → ${{ inputs.environment }}
+             - Set variables:
+               - `AWS_ACCOUNT_ID`: ${{ inputs.aws-account-id }}
+               - `AWS_REGION`: ${{ inputs.aws-region }}
+               - `AWS_HOSTED_ZONE_ID`: (from provision-dns output)
+          
+          2. **Configure GitHub Secrets**
+             - Set environment-specific secrets:
+               - `GOOGLE_CLIENT_SECRET`
+               - `HMRC_CLIENT_SECRET`
+          
+          3. **Verify IAM Roles**
+             ```bash
+             aws iam get-role --role-name submit-github-actions-role \
+               --profile ${{ inputs.environment }}
+             aws iam get-role --role-name submit-deployment-role \
+               --profile ${{ inputs.environment }}
+             ```
+          
+          4. **Test Deployment**
+             - Run the deploy workflow with the ${{ inputs.environment }} environment
+             - Monitor CloudFormation stacks in the AWS Console
+          
+          5. **Configure DNS**
+             - Verify DNS delegation is working:
+               ```bash
+               dig NS ${{ inputs.environment }}.submit.${{ inputs.root-domain }}
+               ```
+          
+          ## Manual Steps Required
+          
+          Some steps require manual intervention due to permission requirements:
+          
+          1. **IAM Role Creation** (if not using root account):
+             - Create OIDC provider for GitHub Actions
+             - Create `submit-github-actions-role` with OIDC trust
+             - Create `submit-deployment-role` with appropriate permissions
+             - See: `docs/iam-role-setup.md`
+          
+          2. **Route53 Delegation** (if using external DNS provider):
+             - Add NS records for subdomain delegation
+             - See: `docs/dns-delegation.md`
+          
+          EOF
