@@ -166,7 +166,11 @@
           const body = await r.json().catch(() => ({}));
 
           if (r.ok) {
-            if (Array.isArray(body.bundles)) localStorage.setItem("userBundles", JSON.stringify(body.bundles));
+            if (Array.isArray(body.bundles)) {
+              localStorage.setItem("userBundles", JSON.stringify(body.bundles));
+              // Dispatch event to notify other widgets
+              window.dispatchEvent(new Event("bundles-changed"));
+            }
             if (body.status === "granted" || body.status === "already_granted") {
               markGranted(btn, "Added ✓");
               showStatus(`Bundle "${bundleId}" added successfully.`, "success");
@@ -298,6 +302,7 @@
           if (response.ok) {
             if (Array.isArray(result.bundles)) {
               localStorage.setItem("userBundles", JSON.stringify(result.bundles));
+              window.dispatchEvent(new Event("bundles-changed"));
             }
             renderCurrentBundles();
             updateBundleStatus(); // Update the request buttons
@@ -334,6 +339,7 @@
 
           if (response.ok) {
             localStorage.setItem("userBundles", JSON.stringify([]));
+            window.dispatchEvent(new Event("bundles-changed"));
             renderCurrentBundles();
             updateBundleStatus(); // Update the request buttons
             showStatus("All bundles removed successfully.", "success");

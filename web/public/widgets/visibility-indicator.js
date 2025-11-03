@@ -67,6 +67,21 @@
     return parts[parts.length - 1];
   }
 
+  // Get base path for links (to handle different directory levels)
+  function getBasePath() {
+    const pathname = window.location.pathname;
+    const parts = pathname.split("/").filter((p) => p);
+    
+    // Determine depth: count parent directories needed
+    // e.g., "/index.html" -> "./"
+    // e.g., "/account/bundles.html" -> "../"
+    // e.g., "/activities/submitVat.html" -> "../"
+    if (parts.length <= 1) {
+      return "./";
+    }
+    return "../";
+  }
+
   // Find activity matching current page
   function findActivityForPage(catalog, currentPath) {
     if (!catalog?.activities) return null;
@@ -107,6 +122,7 @@
       const catalog = await response.json();
       const currentPath = getCurrentPagePath();
       const activity = findActivityForPage(catalog, currentPath);
+      const basePath = getBasePath();
 
       // If no activity found, page is public
       if (!activity) {
@@ -119,7 +135,7 @@
         return {
           status: "needs-login",
           message: "Needs login",
-          link: "../auth/login.html",
+          link: `${basePath}auth/login.html`,
           linkText: "Log in",
         };
       }
@@ -139,7 +155,7 @@
         return {
           status: "needs-activity",
           message: "Needs activity",
-          link: "../account/bundles.html",
+          link: `${basePath}account/bundles.html`,
           linkText: "Request bundles",
         };
       }

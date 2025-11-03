@@ -155,6 +155,9 @@
             }),
           );
 
+          // Dispatch event to notify other widgets
+          window.dispatchEvent(new Event("auth-status-changed"));
+
           console.log("User authenticated successfully using Cognito:", userEmail || "no email provided");
           showStatus("Authenticated successfully. Redirecting...", "info");
 

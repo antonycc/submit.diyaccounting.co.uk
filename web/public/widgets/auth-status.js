@@ -53,6 +53,9 @@
     localStorage.removeItem("userInfo");
     localStorage.removeItem("authState");
 
+    // Dispatch event to notify other widgets
+    window.dispatchEvent(new Event("auth-status-changed"));
+
     // Update login status
     updateLoginStatus();
 
