@@ -42,7 +42,9 @@ export async function handler(event) {
   validateEnv(["DIY_SUBMIT_RECEIPTS_BUCKET_NAME"]);
 
   // If a specific receipt name/key is provided, delegate to single-item handler
-  const hasNameOrKey = Boolean(event?.pathParameters?.name || event?.queryStringParameters?.name || event?.pathParameters?.key || event?.queryStringParameters?.key);
+  const hasNameOrKey = Boolean(
+    event?.pathParameters?.name || event?.queryStringParameters?.name || event?.pathParameters?.key || event?.queryStringParameters?.key,
+  );
   if (hasNameOrKey) {
     return httpGetByName(event);
   }
