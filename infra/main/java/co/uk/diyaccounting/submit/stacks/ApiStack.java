@@ -184,15 +184,18 @@ public class ApiStack extends Stack {
         List<Metric> lambdaThrottles = new java.util.ArrayList<>();
 
         java.util.Set<String> createdRouteKeys = new java.util.HashSet<>();
+        java.util.Map<String, String> firstCreatorByRoute = new java.util.HashMap<>();
         for (int i = 0; i < props.lambdaFunctions().size(); i++) {
             ApiLambdaProps apiLambdaProps = props.lambdaFunctions().get(i);
 
             String routeKeyStr = apiLambdaProps.httpMethod().toString() + " " + apiLambdaProps.urlPath();
             if (createdRouteKeys.contains(routeKeyStr)) {
-                infof("Skipping duplicate route %s", routeKeyStr);
+                String firstCreator = firstCreatorByRoute.getOrDefault(routeKeyStr, "<unknown>");
+                infof("Skipping duplicate route %s (attempted by %s, first created by %s)", routeKeyStr, apiLambdaProps.functionName(), firstCreator);
                 continue;
             }
             createdRouteKeys.add(routeKeyStr);
+            firstCreatorByRoute.put(routeKeyStr, apiLambdaProps.functionName());
 
             // Build stable, unique construct IDs per route using method+path signature
             String keySuffix = (apiLambdaProps.httpMethod().toString() + "-" + apiLambdaProps.urlPath())
@@ -245,6 +248,19 @@ public class ApiStack extends Stack {
                     .alarmDescription(
                             "Lambda errors >= 1 for " + apiLambdaProps.urlPath() + " " + apiLambdaProps.httpMethod())
                     .build();
+        }
+
+        // Synthesis-time diagnostics: list all created routes
+        if (!createdRouteKeys.isEmpty()) {
+            var sorted = new java.util.ArrayList<>(createdRouteKeys);
+            java.util.Collections.sort(sorted);
+            infof("Total unique API routes synthesized: %d", sorted.size());
+            for (String rk : sorted) {
+                String creator = firstCreatorByRoute.getOrDefault(rk, "<unknown>");
+                infof(" - %s (by %s)", rk, creator);
+            }
+        } else {
+            infof("No API routes synthesized");
         }
 
         // Dashboard
