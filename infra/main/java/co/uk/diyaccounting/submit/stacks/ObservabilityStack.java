@@ -72,6 +72,9 @@ public class ObservabilityStack extends Stack {
         String cloudTrailEnabled();
 
         @Override
+        String alwaysDeployOps();
+
+        @Override
         SubmitSharedNames sharedNames();
 
         String cloudTrailLogGroupPrefix();
@@ -153,12 +156,17 @@ public class ObservabilityStack extends Stack {
         cfnOutput(this, "SelfDestructLogGroupArn", this.selfDestructLogGroup.getLogGroupArn());
         cfnOutput(this, "ApiAccessLogGroupArn", this.apiAccessLogGroup.getLogGroupArn());
 
+        // Determine if we should deploy observability resources
+        boolean shouldDeployOps = "prod".equals(props.envName()) || Boolean.parseBoolean(props.alwaysDeployOps());
+
         // ------------------ CloudWatch RUM (Real User Monitoring) ------------------
-        // Create Cognito Identity Pool for unauthenticated identities used by RUM web client
-        CfnIdentityPool rumIdentityPool = CfnIdentityPool.Builder.create(
-                        this, props.resourceNamePrefix() + "-RumIdentityPool")
-                .allowUnauthenticatedIdentities(true)
-                .build();
+        // Only create RUM resources if we should deploy ops resources
+        if (shouldDeployOps) {
+            // Create Cognito Identity Pool for unauthenticated identities used by RUM web client
+            CfnIdentityPool rumIdentityPool = CfnIdentityPool.Builder.create(
+                            this, props.resourceNamePrefix() + "-RumIdentityPool")
+                    .allowUnauthenticatedIdentities(true)
+                    .build();
 
         // Role for unauthenticated identities allowing PutRumEvents
         Role rumGuestRole = Role.Builder.create(this, props.resourceNamePrefix() + "-RumGuestRole")
@@ -264,15 +272,16 @@ public class ObservabilityStack extends Stack {
                 .widgets(frontendRows)
                 .build();
 
-        // Outputs for RUM configuration and dashboard
-        cfnOutput(this, "RumAppMonitorId", rumMonitor.getAttrId());
-        cfnOutput(this, "RumIdentityPoolId", rumIdentityPool.getRef());
-        cfnOutput(this, "RumGuestRoleArn", rumGuestRole.getRoleArn());
-        cfnOutput(this, "RumRegion", this.getRegion());
-        cfnOutput(
-                this,
-                "FrontendDashboard",
-                "https://" + this.getRegion() + ".console.aws.amazon.com/cloudwatch/home?region=" + this.getRegion()
-                        + "#dashboards:name=" + frontendDashboard.getDashboardName());
+            // Outputs for RUM configuration and dashboard
+            cfnOutput(this, "RumAppMonitorId", rumMonitor.getAttrId());
+            cfnOutput(this, "RumIdentityPoolId", rumIdentityPool.getRef());
+            cfnOutput(this, "RumGuestRoleArn", rumGuestRole.getRoleArn());
+            cfnOutput(this, "RumRegion", this.getRegion());
+            cfnOutput(
+                    this,
+                    "FrontendDashboard",
+                    "https://" + this.getRegion() + ".console.aws.amazon.com/cloudwatch/home?region=" + this.getRegion()
+                            + "#dashboards:name=" + frontendDashboard.getDashboardName());
+        }
     }
 }

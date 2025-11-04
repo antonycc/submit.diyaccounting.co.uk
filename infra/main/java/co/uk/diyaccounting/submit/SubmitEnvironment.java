@@ -126,6 +126,7 @@ public class SubmitEnvironment {
                         .resourceNamePrefix(sharedNames.envResourceNamePrefix)
                         // .compressedResourceNamePrefix(sharedNames.envCompressedResourceNamePrefix)
                         .cloudTrailEnabled(cloudTrailEnabled)
+                        .alwaysDeployOps("true") // Environment stacks always deploy observability
                         .sharedNames(sharedNames)
                         .cloudTrailLogGroupPrefix(appProps.cloudTrailLogGroupPrefix)
                         .cloudTrailLogGroupRetentionPeriodDays(appProps.cloudTrailLogGroupRetentionPeriodDays)

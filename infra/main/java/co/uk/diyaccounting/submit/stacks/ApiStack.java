@@ -71,6 +71,9 @@ public class ApiStack extends Stack {
         String cloudTrailEnabled();
 
         @Override
+        String alwaysDeployOps();
+
+        @Override
         SubmitSharedNames sharedNames();
 
         List<ApiLambdaProps> lambdaFunctions();
@@ -113,6 +116,9 @@ public class ApiStack extends Stack {
         Tags.of(this).add("DataClassification", "public");
         Tags.of(this).add("BackupRequired", "false");
         Tags.of(this).add("MonitoringEnabled", "true");
+
+        // Determine if we should deploy observability resources
+        boolean shouldDeployOps = "prod".equals(props.envName()) || Boolean.parseBoolean(props.alwaysDeployOps());
 
         // Create HTTP API Gateway v2
         this.httpApi = HttpApi.Builder.create(this, props.resourceNamePrefix() + "-HttpApi")
@@ -161,20 +167,22 @@ public class ApiStack extends Stack {
         // Note: Execution logs (loggingLevel) and detailed route metrics are not supported for HTTP APIs.
         // Avoid setting defaultRouteSettings to prevent BadRequestException during deployment.
 
-        // Alarm: API Gateway HTTP 5xx errors >= 1 in a 5-minute period
-        Alarm.Builder.create(this, props.resourceNamePrefix() + "-Api5xxAlarm")
-                .alarmName(props.resourceNamePrefix() + "-api-5xx")
-                .metric(this.httpApi
-                        .metricServerError()
-                        .with(MetricOptions.builder()
-                                .period(Duration.minutes(5))
-                                .build()))
-                .threshold(1)
-                .evaluationPeriods(1)
-                .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
-                .treatMissingData(TreatMissingData.NOT_BREACHING)
-                .alarmDescription("API Gateway 5xx errors >= 1 for API " + this.httpApi.getApiId())
-                .build();
+        // Alarm: API Gateway HTTP 5xx errors >= 1 in a 5-minute period (only in prod or if alwaysDeployOps)
+        if (shouldDeployOps) {
+            Alarm.Builder.create(this, props.resourceNamePrefix() + "-Api5xxAlarm")
+                    .alarmName(props.resourceNamePrefix() + "-api-5xx")
+                    .metric(this.httpApi
+                            .metricServerError()
+                            .with(MetricOptions.builder()
+                                    .period(Duration.minutes(5))
+                                    .build()))
+                    .threshold(1)
+                    .evaluationPeriods(1)
+                    .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
+                    .treatMissingData(TreatMissingData.NOT_BREACHING)
+                    .alarmDescription("API Gateway 5xx errors >= 1 for API " + this.httpApi.getApiId())
+                    .build();
+        }
 
         // Create integrations using Lambda function references
         List<Metric> lambdaInvocations = new java.util.ArrayList<>();
@@ -230,24 +238,26 @@ public class ApiStack extends Stack {
                     "Created route %s %s for function %s",
                     apiLambdaProps.httpMethod().toString(), apiLambdaProps.urlPath(), fn.getFunctionName());
 
-            // Collect metrics for monitoring
-            lambdaInvocations.add(fn.metricInvocations());
-            lambdaErrors.add(fn.metricErrors());
-            lambdaDurationsP95.add(fn.metricDuration()
-                    .with(MetricOptions.builder().statistic("p95").build()));
-            lambdaThrottles.add(fn.metricThrottles());
+            // Collect metrics for monitoring (only if we should deploy ops resources)
+            if (shouldDeployOps) {
+                lambdaInvocations.add(fn.metricInvocations());
+                lambdaErrors.add(fn.metricErrors());
+                lambdaDurationsP95.add(fn.metricDuration()
+                        .with(MetricOptions.builder().statistic("p95").build()));
+                lambdaThrottles.add(fn.metricThrottles());
 
-            // Per-function error alarm (>=1 error in 5 minutes)
-            Alarm.Builder.create(this, apiLambdaProps.functionName() + "-LambdaErrors-" + keySuffix)
-                    .alarmName(apiLambdaProps.functionName() + "-lambda-errors-" + keySuffix)
-                    .metric(fn.metricErrors())
-                    .threshold(1.0)
-                    .evaluationPeriods(1)
-                    .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
-                    .treatMissingData(TreatMissingData.NOT_BREACHING)
-                    .alarmDescription(
-                            "Lambda errors >= 1 for " + apiLambdaProps.urlPath() + " " + apiLambdaProps.httpMethod())
-                    .build();
+                // Per-function error alarm (>=1 error in 5 minutes)
+                Alarm.Builder.create(this, apiLambdaProps.functionName() + "-LambdaErrors-" + keySuffix)
+                        .alarmName(apiLambdaProps.functionName() + "-lambda-errors-" + keySuffix)
+                        .metric(fn.metricErrors())
+                        .threshold(1.0)
+                        .evaluationPeriods(1)
+                        .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
+                        .treatMissingData(TreatMissingData.NOT_BREACHING)
+                        .alarmDescription(
+                                "Lambda errors >= 1 for " + apiLambdaProps.urlPath() + " " + apiLambdaProps.httpMethod())
+                        .build();
+            }
         }
 
         // Synthesis-time diagnostics: list all created routes
@@ -263,68 +273,79 @@ public class ApiStack extends Stack {
             infof("No API routes synthesized");
         }
 
-        // Dashboard
-        List<List<software.amazon.awscdk.services.cloudwatch.IWidget>> rows = new java.util.ArrayList<>();
+        // Dashboard (only create if we should deploy ops resources)
+        if (shouldDeployOps) {
+            List<List<software.amazon.awscdk.services.cloudwatch.IWidget>> rows = new java.util.ArrayList<>();
 
-        // Row 1: API Gateway metrics
-        rows.add(List.of(
-                GraphWidget.Builder.create()
-                        .title("API Gateway Requests")
-                        .left(List.of(this.httpApi.metricCount()))
-                        .width(12)
-                        .height(6)
-                        .build(),
-                GraphWidget.Builder.create()
-                        .title("API Gateway Errors")
-                        .left(List.of(this.httpApi.metricClientError(), this.httpApi.metricServerError()))
-                        .width(12)
-                        .height(6)
-                        .build()));
-
-        // Row 2: API Gateway latency
-        rows.add(List.of(GraphWidget.Builder.create()
-                .title("API Gateway p95 Latency")
-                .left(List.of(this.httpApi
-                        .metricLatency()
-                        .with(MetricOptions.builder().statistic("p95").build())))
-                .width(24)
-                .height(6)
-                .build()));
-
-        // Row 3: Lambda invocations and errors (if we have any lambdas)
-        if (!lambdaInvocations.isEmpty()) {
+            // Row 1: API Gateway metrics
             rows.add(List.of(
                     GraphWidget.Builder.create()
-                            .title("Lambda Invocations by Function")
-                            .left(lambdaInvocations)
+                            .title("API Gateway Requests")
+                            .left(List.of(this.httpApi.metricCount()))
                             .width(12)
                             .height(6)
                             .build(),
                     GraphWidget.Builder.create()
-                            .title("Lambda Errors by Function")
-                            .left(lambdaErrors)
+                            .title("API Gateway Errors")
+                            .left(List.of(this.httpApi.metricClientError(), this.httpApi.metricServerError()))
                             .width(12)
                             .height(6)
                             .build()));
-            rows.add(List.of(
-                    GraphWidget.Builder.create()
-                            .title("Lambda p95 Duration by Function")
-                            .left(lambdaDurationsP95)
-                            .width(12)
-                            .height(6)
-                            .build(),
-                    GraphWidget.Builder.create()
-                            .title("Lambda Throttles by Function")
-                            .left(lambdaThrottles)
-                            .width(12)
-                            .height(6)
-                            .build()));
+
+            // Row 2: API Gateway latency
+            rows.add(List.of(GraphWidget.Builder.create()
+                    .title("API Gateway p95 Latency")
+                    .left(List.of(this.httpApi
+                            .metricLatency()
+                            .with(MetricOptions.builder().statistic("p95").build())))
+                    .width(24)
+                    .height(6)
+                    .build()));
+
+            // Row 3: Lambda invocations and errors (if we have any lambdas)
+            if (!lambdaInvocations.isEmpty()) {
+                rows.add(List.of(
+                        GraphWidget.Builder.create()
+                                .title("Lambda Invocations by Function")
+                                .left(lambdaInvocations)
+                                .width(12)
+                                .height(6)
+                                .build(),
+                        GraphWidget.Builder.create()
+                                .title("Lambda Errors by Function")
+                                .left(lambdaErrors)
+                                .width(12)
+                                .height(6)
+                                .build()));
+                rows.add(List.of(
+                        GraphWidget.Builder.create()
+                                .title("Lambda p95 Duration by Function")
+                                .left(lambdaDurationsP95)
+                                .width(12)
+                                .height(6)
+                                .build(),
+                        GraphWidget.Builder.create()
+                                .title("Lambda Throttles by Function")
+                                .left(lambdaThrottles)
+                                .width(12)
+                                .height(6)
+                                .build()));
+            }
+
+            this.operationalDashboard = Dashboard.Builder.create(this, props.resourceNamePrefix() + "-RestApiDashboard")
+                    .dashboardName(props.resourceNamePrefix() + "-api")
+                    .widgets(rows)
+                    .build();
+
+            // Dashboard output
+            cfnOutput(
+                    this,
+                    "OperationalDashboard",
+                    "https://" + this.getRegion() + ".console.aws.amazon.com/cloudwatch/home?region=" + this.getRegion()
+                            + "#dashboards:name=" + this.operationalDashboard.getDashboardName());
+        } else {
+            this.operationalDashboard = null;
         }
-
-        this.operationalDashboard = Dashboard.Builder.create(this, props.resourceNamePrefix() + "-RestApiDashboard")
-                .dashboardName(props.resourceNamePrefix() + "-api")
-                .widgets(rows)
-                .build();
 
         Aspects.of(this).add(new SetAutoDeleteJobLogRetentionAspect(props.deploymentName(), RetentionDays.THREE_DAYS));
 
@@ -337,11 +358,6 @@ public class ApiStack extends Stack {
                 .exportName(props.resourceNamePrefix() + "-HttpApiUrl")
                 .description("API Gateway v2 URL for " + props.resourceNamePrefix())
                 .build();
-        cfnOutput(
-                this,
-                "OperationalDashboard",
-                "https://" + this.getRegion() + ".console.aws.amazon.com/cloudwatch/home?region=" + this.getRegion()
-                        + "#dashboards:name=" + this.operationalDashboard.getDashboardName());
 
         infof(
                 "ApiStack %s created successfully for %s with API Gateway URL: %s",

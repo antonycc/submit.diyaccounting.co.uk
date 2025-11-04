@@ -54,6 +54,9 @@ public class OpsStack extends Stack {
         String cloudTrailEnabled();
 
         @Override
+        String alwaysDeployOps();
+
+        @Override
         SubmitSharedNames sharedNames();
 
         List<String> lambdaFunctionArns();
@@ -84,6 +87,9 @@ public class OpsStack extends Stack {
         Tags.of(this).add("BackupRequired", "false");
         Tags.of(this).add("MonitoringEnabled", "true");
 
+        // Determine if we should deploy observability resources
+        boolean shouldDeployOps = "prod".equals(props.envName()) || Boolean.parseBoolean(props.alwaysDeployOps());
+
         // Import resources from props
         // Lambda functions
         // java.util.List<IFunction> lambdaFunctions = new java.util.ArrayList<>();
@@ -91,7 +97,7 @@ public class OpsStack extends Stack {
         java.util.List<Metric> lambdaErrors = new java.util.ArrayList<>();
         java.util.List<Metric> lambdaDurationsP95 = new java.util.ArrayList<>();
         java.util.List<Metric> lambdaThrottles = new java.util.ArrayList<>();
-        if (props.lambdaFunctionArns() != null) {
+        if (shouldDeployOps && props.lambdaFunctionArns() != null) {
             for (int i = 0; i < props.lambdaFunctionArns().size(); i++) {
                 String arn = props.lambdaFunctionArns().get(i);
                 IFunction fn = Function.fromFunctionAttributes(
@@ -110,54 +116,58 @@ public class OpsStack extends Stack {
             }
         }
 
-        // Dashboard
-        java.util.List<java.util.List<software.amazon.awscdk.services.cloudwatch.IWidget>> rows =
-                new java.util.ArrayList<>();
-        // Row 1: CloudFront requests and error rates
-        // Moved to DeliveryStack
-        // Row 2: Lambda invocations and errors
-        if (!lambdaInvocations.isEmpty()) {
-            rows.add(java.util.List.of(
-                    GraphWidget.Builder.create()
-                            .title("Lambda Invocations by Function")
-                            .left(lambdaInvocations)
-                            .width(12)
-                            .height(6)
-                            .build(),
-                    GraphWidget.Builder.create()
-                            .title("Lambda Errors by Function")
-                            .left(lambdaErrors)
-                            .width(12)
-                            .height(6)
-                            .build()));
-            rows.add(java.util.List.of(
-                    GraphWidget.Builder.create()
-                            .title("Lambda p95 Duration by Function")
-                            .left(lambdaDurationsP95)
-                            .width(12)
-                            .height(6)
-                            .build(),
-                    GraphWidget.Builder.create()
-                            .title("Lambda Throttles by Function")
-                            .left(lambdaThrottles)
-                            .width(12)
-                            .height(6)
-                            .build()));
+        // Dashboard - only create if we should deploy ops resources
+        if (shouldDeployOps) {
+            java.util.List<java.util.List<software.amazon.awscdk.services.cloudwatch.IWidget>> rows =
+                    new java.util.ArrayList<>();
+            // Row 1: CloudFront requests and error rates
+            // Moved to DeliveryStack
+            // Row 2: Lambda invocations and errors
+            if (!lambdaInvocations.isEmpty()) {
+                rows.add(java.util.List.of(
+                        GraphWidget.Builder.create()
+                                .title("Lambda Invocations by Function")
+                                .left(lambdaInvocations)
+                                .width(12)
+                                .height(6)
+                                .build(),
+                        GraphWidget.Builder.create()
+                                .title("Lambda Errors by Function")
+                                .left(lambdaErrors)
+                                .width(12)
+                                .height(6)
+                                .build()));
+                rows.add(java.util.List.of(
+                        GraphWidget.Builder.create()
+                                .title("Lambda p95 Duration by Function")
+                                .left(lambdaDurationsP95)
+                                .width(12)
+                                .height(6)
+                                .build(),
+                        GraphWidget.Builder.create()
+                                .title("Lambda Throttles by Function")
+                                .left(lambdaThrottles)
+                                .width(12)
+                                .height(6)
+                                .build()));
+            }
+            this.operationalDashboard = Dashboard.Builder.create(
+                            this, props.resourceNamePrefix() + "-LambdaFunctionsDashboard")
+                    .dashboardName(props.resourceNamePrefix() + "-lambdas")
+                    .widgets(rows)
+                    .build();
+
+            // Outputs
+            cfnOutput(
+                    this,
+                    "OperationalDashboard",
+                    "https://" + this.getRegion() + ".console.aws.amazon.com/cloudwatch/home?region=" + this.getRegion()
+                            + "#dashboards:name=" + this.operationalDashboard.getDashboardName());
+        } else {
+            this.operationalDashboard = null;
         }
-        this.operationalDashboard = Dashboard.Builder.create(
-                        this, props.resourceNamePrefix() + "-LambdaFunctionsDashboard")
-                .dashboardName(props.resourceNamePrefix() + "-lambdas")
-                .widgets(rows)
-                .build();
 
         Aspects.of(this).add(new SetAutoDeleteJobLogRetentionAspect(props.deploymentName(), RetentionDays.THREE_DAYS));
-
-        // Outputs
-        cfnOutput(
-                this,
-                "OperationalDashboard",
-                "https://" + this.getRegion() + ".console.aws.amazon.com/cloudwatch/home?region=" + this.getRegion()
-                        + "#dashboards:name=" + this.operationalDashboard.getDashboardName());
 
         infof("OpsStack %s created successfully for %s", this.getNode().getId(), props.resourceNamePrefix());
     }

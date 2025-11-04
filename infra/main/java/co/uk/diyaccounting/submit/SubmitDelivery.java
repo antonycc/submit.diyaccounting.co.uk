@@ -35,6 +35,7 @@ public class SubmitDelivery {
         public String docRootPath;
         public String deploymentDomainName;
         public String cloudTrailEnabled;
+        public String alwaysDeployOps;
         public String baseUrl;
         public String accessLogGroupRetentionPeriodDays;
         public String httpApiUrl;
@@ -116,6 +117,8 @@ public class SubmitDelivery {
         // Support environment specific overrides of some cdk.json values
         var cloudTrailEnabled =
                 envOr("CLOUD_TRAIL_ENABLED", appProps.cloudTrailEnabled, "(from cloudTrailEnabled in cdk.json)");
+        var alwaysDeployOps =
+                envOr("ALWAYS_DEPLOY_OPS", appProps.alwaysDeployOps, "false");
         var accessLogGroupRetentionPeriodDays = Integer.parseInt(
                 envOr("ACCESS_LOG_GROUP_RETENTION_PERIOD_DAYS", appProps.accessLogGroupRetentionPeriodDays, "30"));
         var selfDestructDelayHoursString = envOr(
@@ -158,6 +161,7 @@ public class SubmitDelivery {
                         .resourceNamePrefix(sharedNames.delResourceNamePrefix)
                         // .compressedResourceNamePrefix(sharedNames.delCompressedResourceNamePrefix)
                         .cloudTrailEnabled(cloudTrailEnabled)
+                        .alwaysDeployOps(alwaysDeployOps)
                         .sharedNames(sharedNames)
                         .hostedZoneName(appProps.hostedZoneName)
                         .hostedZoneId(appProps.hostedZoneId)
@@ -179,6 +183,7 @@ public class SubmitDelivery {
                         .resourceNamePrefix(sharedNames.delResourceNamePrefix)
                         // .compressedResourceNamePrefix(sharedNames.delCompressedResourceNamePrefix)
                         .cloudTrailEnabled(cloudTrailEnabled)
+                        .alwaysDeployOps(alwaysDeployOps)
                         .sharedNames(sharedNames)
                         .distributionId(distributionId)
                         .commitHash(commitHash)
@@ -201,6 +206,7 @@ public class SubmitDelivery {
                             .resourceNamePrefix(sharedNames.delResourceNamePrefix)
                             // .compressedResourceNamePrefix(sharedNames.delCompressedResourceNamePrefix)
                             .cloudTrailEnabled(cloudTrailEnabled)
+                            .alwaysDeployOps(alwaysDeployOps)
                             .sharedNames(sharedNames)
                             .selfDestructLogGroupName(sharedNames.ue1SelfDestructLogGroupName)
                             .selfDestructStartDatetime(selfDestructStartDatetime)

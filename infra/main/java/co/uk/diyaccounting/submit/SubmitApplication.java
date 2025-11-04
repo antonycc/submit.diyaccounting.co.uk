@@ -39,6 +39,7 @@ public class SubmitApplication {
         public String hostedZoneName;
         public String subDomainName;
         public String cloudTrailEnabled;
+        public String alwaysDeployOps;
         public String hmrcClientId;
         public String hmrcClientSecretArn;
         public String hmrcBaseUri;
@@ -124,6 +125,8 @@ public class SubmitApplication {
         infof("Self-destruct start datetime: %s", selfDestructStartDatetime);
         var cloudTrailEnabled =
                 envOr("CLOUD_TRAIL_ENABLED", appProps.cloudTrailEnabled, "(from cloudTrailEnabled in cdk.json)");
+        var alwaysDeployOps =
+                envOr("ALWAYS_DEPLOY_OPS", appProps.alwaysDeployOps, "false");
 
         // Create DevStack with resources only used during development or deployment (e.g. ECR)
         infof(
@@ -140,6 +143,7 @@ public class SubmitApplication {
                         .resourceNamePrefix(sharedNames.appResourceNamePrefix)
                         // .compressedResourceNamePrefix(sharedNames.appCompressedResourceNamePrefix)
                         .cloudTrailEnabled(cloudTrailEnabled)
+                        .alwaysDeployOps(alwaysDeployOps)
                         .sharedNames(sharedNames)
                         .build());
 
@@ -158,6 +162,7 @@ public class SubmitApplication {
                         .resourceNamePrefix(sharedNames.appResourceNamePrefix)
                         // .compressedResourceNamePrefix(sharedNames.appCompressedResourceNamePrefix)
                         .cloudTrailEnabled(cloudTrailEnabled)
+                        .alwaysDeployOps(alwaysDeployOps)
                         .sharedNames(sharedNames)
                         .baseImageTag(baseImageTag)
                         .cognitoClientId(cognitoUserPoolClientId)
@@ -179,6 +184,7 @@ public class SubmitApplication {
                         .resourceNamePrefix(sharedNames.appResourceNamePrefix)
                         // .compressedResourceNamePrefix(sharedNames.appCompressedResourceNamePrefix)
                         .cloudTrailEnabled(cloudTrailEnabled)
+                        .alwaysDeployOps(alwaysDeployOps)
                         .sharedNames(sharedNames)
                         .baseImageTag(baseImageTag)
                         .hmrcBaseUri(appProps.hmrcBaseUri)
@@ -203,6 +209,7 @@ public class SubmitApplication {
                         .resourceNamePrefix(sharedNames.appResourceNamePrefix)
                         // .compressedResourceNamePrefix(sharedNames.appCompressedResourceNamePrefix)
                         .cloudTrailEnabled(cloudTrailEnabled)
+                        .alwaysDeployOps(alwaysDeployOps)
                         .sharedNames(sharedNames)
                         .baseImageTag(baseImageTag)
                         .cognitoUserPoolArn(cognitoUserPoolArn)
@@ -231,6 +238,7 @@ public class SubmitApplication {
                         .resourceNamePrefix(sharedNames.appResourceNamePrefix)
                         // .compressedResourceNamePrefix(sharedNames.appCompressedResourceNamePrefix)
                         .cloudTrailEnabled(cloudTrailEnabled)
+                        .alwaysDeployOps(alwaysDeployOps)
                         .sharedNames(sharedNames)
                         .lambdaFunctions(lambdaFunctions)
                         .build());
@@ -251,6 +259,7 @@ public class SubmitApplication {
                         .resourceNamePrefix(sharedNames.appResourceNamePrefix)
                         // .compressedResourceNamePrefix(sharedNames.appCompressedResourceNamePrefix)
                         .cloudTrailEnabled(cloudTrailEnabled)
+                        .alwaysDeployOps(alwaysDeployOps)
                         .sharedNames(sharedNames)
                         .lambdaFunctionArns(lambdaArns)
                         .build());
@@ -270,6 +279,7 @@ public class SubmitApplication {
                             .resourceNamePrefix(sharedNames.appResourceNamePrefix)
                             // .compressedResourceNamePrefix(sharedNames.appCompressedResourceNamePrefix)
                             .cloudTrailEnabled(cloudTrailEnabled)
+                            .alwaysDeployOps(alwaysDeployOps)
                             .sharedNames(sharedNames)
                             .selfDestructLogGroupName(sharedNames.ew2SelfDestructLogGroupName)
                             .selfDestructStartDatetime(selfDestructStartDatetime)

@@ -53,6 +53,14 @@ on:
           - 'false'
         required: false
         default: 'false'
+      alwaysDeployOps:
+        description: 'Always deploy observability resources (metrics, dashboards, alarms) regardless of environment'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+        required: false
+        default: 'false'
   push:
     branches:
       - '**'
@@ -101,6 +109,7 @@ env:
   BUILD_NUMBER: ${{ github.run_number }}
   GITHUB_REF: ${{ github.ref }}
   GITHUB_REF_TO_ENV: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+  ALWAYS_DEPLOY_OPS: ${{ inputs.alwaysDeployOps || 'false' }}
 
 jobs:
 
@@ -473,6 +482,7 @@ jobs:
           ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
           SELF_DESTRUCT_START_DATETIME: ${{ needs.mvn-package.outputs.self-destruct-start-datetime }}
+          ALWAYS_DEPLOY_OPS: ${{ env.ALWAYS_DEPLOY_OPS }}
           # Set by deploy-environment.yml after the environment's AuthStack is deployed
           COGNITO_USER_POOL_ARN: ${{ vars.COGNITO_USER_POOL_ARN }}
           COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
@@ -565,6 +575,7 @@ jobs:
         env:
           ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
+          ALWAYS_DEPLOY_OPS: ${{ env.ALWAYS_DEPLOY_OPS }}
           # Set by deploy-environment.yml after the environment's AuthStack is deployed
           COGNITO_USER_POOL_ARN: ${{ vars.COGNITO_USER_POOL_ARN }}
           COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
@@ -740,6 +751,7 @@ jobs:
           ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
           BASE_IMAGE_TAG: ${{ needs.push-images.outputs.base-image-tag }}
+          ALWAYS_DEPLOY_OPS: ${{ env.ALWAYS_DEPLOY_OPS }}
           # Set by deploy-environment.yml after the environment's AuthStack is deployed
           COGNITO_USER_POOL_ARN: ${{ vars.COGNITO_USER_POOL_ARN }}
           COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
@@ -817,6 +829,7 @@ jobs:
           ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
           BASE_IMAGE_TAG: ${{ needs.push-images.outputs.base-image-tag }}
+          ALWAYS_DEPLOY_OPS: ${{ env.ALWAYS_DEPLOY_OPS }}
           # Set by deploy-environment.yml after the environment's AuthStack is deployed
           COGNITO_USER_POOL_ARN: ${{ vars.COGNITO_USER_POOL_ARN }}
           COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
@@ -895,6 +908,7 @@ jobs:
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
           HMRC_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:${{ needs.names.outputs.environment-name }}/submit/hmrc/client_secret"
           BASE_IMAGE_TAG: ${{ needs.push-images.outputs.base-image-tag }}
+          ALWAYS_DEPLOY_OPS: ${{ env.ALWAYS_DEPLOY_OPS }}
           # Set by deploy-environment.yml after the environment's AuthStack is deployed
           COGNITO_USER_POOL_ARN: ${{ vars.COGNITO_USER_POOL_ARN }}
           COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
@@ -972,6 +986,7 @@ jobs:
           ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
           BASE_IMAGE_TAG: ${{ needs.push-images.outputs.base-image-tag }}
+          ALWAYS_DEPLOY_OPS: ${{ env.ALWAYS_DEPLOY_OPS }}
           # Set by deploy-environment.yml after the environment's AuthStack is deployed
           COGNITO_USER_POOL_ARN: ${{ vars.COGNITO_USER_POOL_ARN }}
           COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
@@ -1065,6 +1080,7 @@ jobs:
           WEBSITE_HASH: "placeholder"
           HTTP_API_URL: ${{ needs.deploy-api.outputs.httpApiUrl }}
           DIY_SUBMIT_APEX_URL: ${{ needs.names.outputs.apex-url }}
+          ALWAYS_DEPLOY_OPS: ${{ env.ALWAYS_DEPLOY_OPS }}
 
   deploy-edge:
     name: 'deploy edge'
@@ -1165,6 +1181,7 @@ jobs:
           WEBSITE_HASH: "placeholder"
           HTTP_API_URL: ${{ needs.deploy-api.outputs.httpApiUrl }}
           DIY_SUBMIT_APEX_URL: ${{ needs.names.outputs.apex-url }}
+          ALWAYS_DEPLOY_OPS: ${{ env.ALWAYS_DEPLOY_OPS }}
 
       - run: cat cdk-submit-delivery.out/cdk-outputs-edge.json | jq '.'
         if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
@@ -1337,6 +1354,7 @@ jobs:
           WEBSITE_HASH: ${{ steps.publish-hash.outputs.WEBSITE_HASH }}
           HTTP_API_URL: ${{ needs.deploy-api.outputs.httpApiUrl }}
           DIY_SUBMIT_APEX_URL: ${{ needs.names.outputs.apex-url }}
+          ALWAYS_DEPLOY_OPS: ${{ env.ALWAYS_DEPLOY_OPS }}
 
 #      - name: Upsert Cognito callback/logout URLs
 #        if: ${{ contains(needs.names.outputs.base-url, 'submit') }}
@@ -1463,6 +1481,7 @@ jobs:
           ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
           BASE_IMAGE_TAG: ${{ needs.push-images.outputs.base-image-tag }}
+          ALWAYS_DEPLOY_OPS: ${{ env.ALWAYS_DEPLOY_OPS }}
           # Set by deploy-environment.yml after the environment's AuthStack is deployed
           COGNITO_USER_POOL_ARN: ${{ vars.COGNITO_USER_POOL_ARN }}
           COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}

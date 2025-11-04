@@ -12,6 +12,8 @@ public interface SubmitStackProps {
     // String compressedResourceNamePrefix();
 
     String cloudTrailEnabled();
+    
+    String alwaysDeployOps();
 
     SubmitSharedNames sharedNames();
 }
