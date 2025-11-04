@@ -1,14 +1,10 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
 import co.uk.diyaccounting.submit.constructs.ApiLambda;
 import co.uk.diyaccounting.submit.constructs.ApiLambdaProps;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
-import java.util.List;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Aspects;
 import software.amazon.awscdk.Duration;
@@ -23,6 +19,11 @@ import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.constructs.Construct;
+
+import java.util.List;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 public class AccountStack extends Stack {
 
@@ -61,9 +62,6 @@ public class AccountStack extends Stack {
         @Override
         String resourceNamePrefix();
 
-        // @Override
-        // String compressedResourceNamePrefix();
-
         @Override
         String cloudTrailEnabled();
 
@@ -95,7 +93,6 @@ public class AccountStack extends Stack {
         this.lambdaFunctionProps = new java.util.ArrayList<>();
 
         // Catalog Lambda
-        // var catalogLambdaEnv = new HashMap<>(Map.of("DIY_SUBMIT_BASE_URL", props.sharedNames().baseUrl));
         var catalogLambdaEnv =
                 new PopulatedMap<String, String>().with("DIY_SUBMIT_BASE_URL", props.sharedNames().baseUrl);
         var catalogLambdaUrlOrigin = new ApiLambda(
@@ -110,7 +107,7 @@ public class AccountStack extends Stack {
                         .lambdaArn(props.sharedNames().catalogGetLambdaArn)
                         .httpMethod(props.sharedNames().catalogGetLambdaHttpMethod)
                         .urlPath(props.sharedNames().catalogGetLambdaUrlPath)
-                        // .cloudFrontAllowedMethods(AllowedMethods.ALLOW_ALL)
+                        .jwtAuthorizer(props.sharedNames().catalogGetLambdaJwtAuthorizer)
                         .environment(catalogLambdaEnv)
                         .timeout(Duration.millis(Long.parseLong("30000")))
                         .build());
@@ -139,7 +136,7 @@ public class AccountStack extends Stack {
                         .lambdaArn(props.sharedNames().bundlePostLambdaArn)
                         .httpMethod(props.sharedNames().bundlePostLambdaHttpMethod)
                         .urlPath(props.sharedNames().bundlePostLambdaUrlPath)
-                        // .cloudFrontAllowedMethods(AllowedMethods.ALLOW_ALL)
+                        .jwtAuthorizer(props.sharedNames().bundlePostLambdaJwtAuthorizer)
                         .environment(requestBundlesLambdaEnv)
                         .timeout(Duration.millis(Long.parseLong("30000")))
                         .build());
@@ -190,7 +187,7 @@ public class AccountStack extends Stack {
                         .lambdaArn(props.sharedNames().bundleDeleteLambdaArn)
                         .httpMethod(props.sharedNames().bundleDeleteLambdaHttpMethod)
                         .urlPath(props.sharedNames().bundleDeleteLambdaUrlPath)
-                        // .cloudFrontAllowedMethods(AllowedMethods.ALLOW_ALL)
+                        .jwtAuthorizer(props.sharedNames().bundleDeleteLambdaJwtAuthorizer)
                         .environment(bundleDeleteLambdaEnv)
                         .timeout(Duration.millis(Long.parseLong("30000")))
                         .build());
@@ -198,6 +195,7 @@ public class AccountStack extends Stack {
         this.bundleDeleteLambda = bundleDeleteLambdaUrlOrigin.lambda;
         this.bundleDeleteLambdaLogGroup = bundleDeleteLambdaUrlOrigin.logGroup;
         this.lambdaFunctionProps.add(this.bundleDeleteLambdaProps);
+
         // Also expose a second route for deleting a bundle by path parameter {id}
         this.lambdaFunctionProps.add(ApiLambdaProps.builder()
                 .idPrefix(props.sharedNames().bundleDeleteLambdaFunctionName + "-ByIdRoute")
@@ -209,6 +207,7 @@ public class AccountStack extends Stack {
                 .lambdaArn(props.sharedNames().bundleDeleteLambdaArn)
                 .httpMethod(props.sharedNames().bundleDeleteLambdaHttpMethod)
                 .urlPath("/api/v1/bundle/{id}")
+                .jwtAuthorizer(props.sharedNames().bundleDeleteLambdaJwtAuthorizer)
                 .timeout(Duration.millis(Long.parseLong("30000")))
                 .build());
         infof(

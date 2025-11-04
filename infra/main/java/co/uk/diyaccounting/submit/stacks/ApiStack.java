@@ -1,12 +1,8 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
 import co.uk.diyaccounting.submit.constructs.ApiLambdaProps;
-import java.util.List;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Aspects;
 import software.amazon.awscdk.CfnOutput;
@@ -15,6 +11,7 @@ import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.Tags;
+import software.amazon.awscdk.aws_apigatewayv2_authorizers.HttpJwtAuthorizer;
 import software.amazon.awscdk.aws_apigatewayv2_integrations.HttpLambdaIntegration;
 import software.amazon.awscdk.services.apigatewayv2.CfnStage;
 import software.amazon.awscdk.services.apigatewayv2.HttpApi;
@@ -37,6 +34,11 @@ import software.amazon.awscdk.services.logs.ILogGroup;
 import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.constructs.Construct;
+
+import java.util.List;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 public class ApiStack extends Stack {
 
@@ -64,9 +66,6 @@ public class ApiStack extends Stack {
         @Override
         String resourceNamePrefix();
 
-        // @Override
-        // String compressedResourceNamePrefix();
-
         @Override
         String cloudTrailEnabled();
 
@@ -78,6 +77,10 @@ public class ApiStack extends Stack {
         static ImmutableApiStackProps.Builder builder() {
             return ImmutableApiStackProps.builder();
         }
+
+        String userPoolId();
+
+        String userPoolClientId();
     }
 
     @Value.Immutable
@@ -91,6 +94,13 @@ public class ApiStack extends Stack {
         static ImmutableEndpointConfig.Builder builder() {
             return ImmutableEndpointConfig.builder();
         }
+    }
+
+    public static class LambdaIntegrations {
+        public final List<Metric> lambdaInvocations = new java.util.ArrayList<>();
+        public final List<Metric> lambdaErrors = new java.util.ArrayList<>();
+        public final List<Metric> lambdaDurationsP95 = new java.util.ArrayList<>();
+        public final List<Metric> lambdaThrottles = new java.util.ArrayList<>();
     }
 
     public ApiStack(final Construct scope, final String id, final ApiStackProps props) {
@@ -177,16 +187,19 @@ public class ApiStack extends Stack {
                 .build();
 
         // Create integrations using Lambda function references
-        List<Metric> lambdaInvocations = new java.util.ArrayList<>();
-        List<Metric> lambdaErrors = new java.util.ArrayList<>();
-        List<Metric> lambdaDurationsP95 = new java.util.ArrayList<>();
-        List<Metric> lambdaThrottles = new java.util.ArrayList<>();
+        var lambdaIntegrations = new LambdaIntegrations();
+
+        // Create authorizer to selectively apply to routes
+        String issuer = "https://cognito-idp.%s.amazonaws.com/%s".formatted(getRegion(), props.userPoolId());
+        HttpJwtAuthorizer jwtAuthorizer = HttpJwtAuthorizer.Builder
+            .create( props.resourceNamePrefix() + "-CognitoAuthorizer", issuer)
+            .jwtAudience(List.of(props.userPoolClientId()))
+            .build();
 
         java.util.Set<String> createdRouteKeys = new java.util.HashSet<>();
         java.util.Map<String, String> firstCreatorByRoute = new java.util.HashMap<>();
         for (int i = 0; i < props.lambdaFunctions().size(); i++) {
             ApiLambdaProps apiLambdaProps = props.lambdaFunctions().get(i);
-
             String routeKeyStr = apiLambdaProps.httpMethod().toString() + " " + apiLambdaProps.urlPath();
             if (createdRouteKeys.contains(routeKeyStr)) {
                 String firstCreator = firstCreatorByRoute.getOrDefault(routeKeyStr, "<unknown>");
@@ -197,57 +210,7 @@ public class ApiStack extends Stack {
             }
             createdRouteKeys.add(routeKeyStr);
             firstCreatorByRoute.put(routeKeyStr, apiLambdaProps.functionName());
-
-            // Build stable, unique construct IDs per route using method+path signature
-            String keySuffix = (apiLambdaProps.httpMethod().toString() + "-" + apiLambdaProps.urlPath())
-                    .replaceAll("[^A-Za-z0-9]+", "-")
-                    .replaceAll("^-+|-+$", "");
-
-            String importedFnId = apiLambdaProps.functionName() + "-imported-" + keySuffix;
-            String integrationId = apiLambdaProps.functionName() + "-Integration-" + keySuffix;
-            String routeId = apiLambdaProps.functionName() + "-Route-" + keySuffix;
-
-            IFunction fn = Function.fromFunctionAttributes(
-                    this,
-                    importedFnId,
-                    FunctionAttributes.builder()
-                            .functionArn(apiLambdaProps.lambdaArn())
-                            .sameEnvironment(true)
-                            .build());
-
-            // Create HTTP Lambda integration
-            HttpLambdaIntegration integration =
-                    HttpLambdaIntegration.Builder.create(integrationId, fn).build();
-
-            // Create HTTP route
-            HttpRoute.Builder.create(this, routeId)
-                    .httpApi(this.httpApi)
-                    .routeKey(HttpRouteKey.with(apiLambdaProps.urlPath(), apiLambdaProps.httpMethod()))
-                    .integration(integration)
-                    .build();
-
-            infof(
-                    "Created route %s %s for function %s",
-                    apiLambdaProps.httpMethod().toString(), apiLambdaProps.urlPath(), fn.getFunctionName());
-
-            // Collect metrics for monitoring
-            lambdaInvocations.add(fn.metricInvocations());
-            lambdaErrors.add(fn.metricErrors());
-            lambdaDurationsP95.add(fn.metricDuration()
-                    .with(MetricOptions.builder().statistic("p95").build()));
-            lambdaThrottles.add(fn.metricThrottles());
-
-            // Per-function error alarm (>=1 error in 5 minutes)
-            Alarm.Builder.create(this, apiLambdaProps.functionName() + "-LambdaErrors-" + keySuffix)
-                    .alarmName(apiLambdaProps.functionName() + "-lambda-errors-" + keySuffix)
-                    .metric(fn.metricErrors())
-                    .threshold(1.0)
-                    .evaluationPeriods(1)
-                    .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
-                    .treatMissingData(TreatMissingData.NOT_BREACHING)
-                    .alarmDescription(
-                            "Lambda errors >= 1 for " + apiLambdaProps.urlPath() + " " + apiLambdaProps.httpMethod())
-                    .build();
+            createRouteForLambda(apiLambdaProps, jwtAuthorizer, lambdaIntegrations);
         }
 
         // Synthesis-time diagnostics: list all created routes
@@ -292,30 +255,30 @@ public class ApiStack extends Stack {
                 .build()));
 
         // Row 3: Lambda invocations and errors (if we have any lambdas)
-        if (!lambdaInvocations.isEmpty()) {
+        if (!lambdaIntegrations.lambdaInvocations.isEmpty()) {
             rows.add(List.of(
                     GraphWidget.Builder.create()
                             .title("Lambda Invocations by Function")
-                            .left(lambdaInvocations)
+                            .left(lambdaIntegrations.lambdaInvocations)
                             .width(12)
                             .height(6)
                             .build(),
                     GraphWidget.Builder.create()
                             .title("Lambda Errors by Function")
-                            .left(lambdaErrors)
+                            .left(lambdaIntegrations.lambdaErrors)
                             .width(12)
                             .height(6)
                             .build()));
             rows.add(List.of(
                     GraphWidget.Builder.create()
                             .title("Lambda p95 Duration by Function")
-                            .left(lambdaDurationsP95)
+                            .left(lambdaIntegrations.lambdaDurationsP95)
                             .width(12)
                             .height(6)
                             .build(),
                     GraphWidget.Builder.create()
                             .title("Lambda Throttles by Function")
-                            .left(lambdaThrottles)
+                            .left(lambdaIntegrations.lambdaThrottles)
                             .width(12)
                             .height(6)
                             .build()));
@@ -346,5 +309,69 @@ public class ApiStack extends Stack {
         infof(
                 "ApiStack %s created successfully for %s with API Gateway URL: %s",
                 this.getNode().getId(), props.resourceNamePrefix(), this.httpApi.getUrl());
+    }
+
+    private void createRouteForLambda(ApiLambdaProps apiLambdaProps, HttpJwtAuthorizer jwtAuthorizer, LambdaIntegrations lambdaIntegrations) {
+
+        // Build stable, unique construct IDs per route using method+path signature
+        String keySuffix = (apiLambdaProps.httpMethod().toString() + "-" + apiLambdaProps.urlPath())
+                .replaceAll("[^A-Za-z0-9]+", "-")
+                .replaceAll("^-+|-+$", "");
+
+        String importedFnId = apiLambdaProps.functionName() + "-imported-" + keySuffix;
+        String integrationId = apiLambdaProps.functionName() + "-Integration-" + keySuffix;
+        String routeId = apiLambdaProps.functionName() + "-Route-" + keySuffix;
+
+        IFunction fn = Function.fromFunctionAttributes(
+                this,
+                importedFnId,
+                FunctionAttributes.builder()
+                        .functionArn(apiLambdaProps.lambdaArn())
+                        .sameEnvironment(true)
+                        .build());
+
+        // Create HTTP Lambda integration
+        HttpLambdaIntegration integration =
+                HttpLambdaIntegration.Builder.create(integrationId, fn).build();
+
+        // Create HTTP route
+        var routeKey = HttpRouteKey.with(apiLambdaProps.urlPath(), apiLambdaProps.httpMethod());
+        if(apiLambdaProps.jwtAuthorizer()) {
+            HttpRoute.Builder.create(this, routeId)
+                    .httpApi(this.httpApi)
+                    .routeKey(routeKey)
+                    .integration(integration)
+                    .authorizer(jwtAuthorizer)
+                    .build();
+        } else {
+            HttpRoute.Builder.create(this, routeId)
+                .httpApi(this.httpApi)
+                .routeKey(routeKey)
+                .integration(integration)
+                .build();
+        }
+
+        infof(
+                "Created route %s %s for function %s",
+                apiLambdaProps.httpMethod().toString(), apiLambdaProps.urlPath(), fn.getFunctionName());
+
+        // Collect metrics for monitoring
+        lambdaIntegrations.lambdaInvocations.add(fn.metricInvocations());
+        lambdaIntegrations.lambdaErrors.add(fn.metricErrors());
+        lambdaIntegrations.lambdaDurationsP95.add(fn.metricDuration()
+                .with(MetricOptions.builder().statistic("p95").build()));
+        lambdaIntegrations.lambdaThrottles.add(fn.metricThrottles());
+
+        // Per-function error alarm (>=1 error in 5 minutes)
+        Alarm.Builder.create(this, apiLambdaProps.functionName() + "-LambdaErrors-" + keySuffix)
+                .alarmName(apiLambdaProps.functionName() + "-lambda-errors-" + keySuffix)
+                .metric(fn.metricErrors())
+                .threshold(1.0)
+                .evaluationPeriods(1)
+                .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
+                .treatMissingData(TreatMissingData.NOT_BREACHING)
+                .alarmDescription(
+                        "Lambda errors >= 1 for " + apiLambdaProps.urlPath() + " " + apiLambdaProps.httpMethod())
+                .build();
     }
 }

@@ -1,15 +1,10 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
 import co.uk.diyaccounting.submit.constructs.ApiLambda;
 import co.uk.diyaccounting.submit.constructs.ApiLambdaProps;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
-import java.util.List;
-import java.util.Optional;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Aspects;
 import software.amazon.awscdk.Duration;
@@ -21,6 +16,12 @@ import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
+
+import java.util.List;
+import java.util.Optional;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 public class AuthStack extends Stack {
 
@@ -52,9 +53,6 @@ public class AuthStack extends Stack {
 
         @Override
         String resourceNamePrefix();
-
-        // @Override
-        // String compressedResourceNamePrefix();
 
         @Override
         String cloudTrailEnabled();
@@ -103,7 +101,7 @@ public class AuthStack extends Stack {
                         .httpMethod(props.sharedNames().cognitoAuthUrlGetLambdaHttpMethod)
                         .urlPath(props.sharedNames().cognitoAuthUrlGetLambdaUrlPath)
                         .handler(props.sharedNames().cognitoAuthUrlGetLambdaHandler)
-                        // .cloudFrontAllowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
+                        .jwtAuthorizer(props.sharedNames().cognitoAuthUrlGetLambdaJwtAuthorizer)
                         .environment(authUrlCognitoLambdaEnv)
                         .timeout(Duration.millis(Long.parseLong("30000")))
                         .build());
@@ -137,7 +135,7 @@ public class AuthStack extends Stack {
                         .lambdaArn(props.sharedNames().cognitoTokenPostLambdaArn)
                         .httpMethod(props.sharedNames().cognitoTokenPostLambdaHttpMethod)
                         .urlPath(props.sharedNames().cognitoTokenPostLambdaUrlPath)
-                        // .cloudFrontAllowedMethods(AllowedMethods.ALLOW_ALL) // Is this used?
+                        .jwtAuthorizer(props.sharedNames().cognitoTokenPostLambdaJwtAuthorizer)
                         .environment(exchangeCognitoTokenLambdaEnv)
                         .timeout(Duration.millis(Long.parseLong("30000")))
                         .build());
