@@ -104,6 +104,7 @@ public class SubmitSharedNames {
     public HttpMethod cognitoAuthUrlGetLambdaHttpMethod;
     public String cognitoAuthUrlGetLambdaUrlPath;
     public boolean cognitoAuthUrlGetLambdaJwtAuthorizer;
+    public boolean cognitoAuthUrlGetLambdaCustomAuthorizer;
 
     public String cognitoTokenPostLambdaHandler;
     public String cognitoTokenPostLambdaFunctionName;
@@ -111,6 +112,7 @@ public class SubmitSharedNames {
     public HttpMethod cognitoTokenPostLambdaHttpMethod;
     public String cognitoTokenPostLambdaUrlPath;
     public boolean cognitoTokenPostLambdaJwtAuthorizer;
+    public boolean cognitoTokenPostLambdaCustomAuthorizer;
 
     public String customAuthorizerLambdaHandler;
     public String customAuthorizerLambdaFunctionName;
@@ -122,6 +124,7 @@ public class SubmitSharedNames {
     public HttpMethod hmrcAuthUrlGetLambdaHttpMethod;
     public String hmrcAuthUrlGetLambdaUrlPath;
     public boolean hmrcAuthUrlGetLambdaJwtAuthorizer;
+    public boolean hmrcAuthUrlGetLambdaCustomAuthorizer;
 
     public String hmrcTokenPostLambdaHandler;
     public String hmrcTokenPostLambdaFunctionName;
@@ -129,6 +132,7 @@ public class SubmitSharedNames {
     public HttpMethod hmrcTokenPostLambdaHttpMethod;
     public String hmrcTokenPostLambdaUrlPath;
     public boolean hmrcTokenPostLambdaJwtAuthorizer;
+    public boolean hmrcTokenPostLambdaCustomAuthorizer;
 
     public String hmrcVatReturnPostLambdaHandler;
     public String hmrcVatReturnPostLambdaFunctionName;
@@ -160,6 +164,7 @@ public class SubmitSharedNames {
     public HttpMethod receiptPostLambdaHttpMethod;
     public String receiptPostLambdaUrlPath;
     public boolean receiptPostLambdaJwtAuthorizer;
+    public boolean receiptPostLambdaCustomAuthorizer;
 
     public String receiptGetLambdaHandler;
     public String receiptGetLambdaFunctionName;
@@ -168,6 +173,7 @@ public class SubmitSharedNames {
     public String receiptGetLambdaUrlPath;
     public String receiptGetByNameLambdaUrlPath;
     public boolean receiptGetLambdaJwtAuthorizer;
+    public boolean receiptGetLambdaCustomAuthorizer;
 
     public String catalogGetLambdaHandler;
     public String catalogGetLambdaFunctionName;
@@ -175,6 +181,7 @@ public class SubmitSharedNames {
     public HttpMethod catalogGetLambdaHttpMethod;
     public String catalogGetLambdaUrlPath;
     public boolean catalogGetLambdaJwtAuthorizer;
+    public boolean catalogGetLambdaCustomAuthorizer;
 
     public String bundlePostLambdaHandler;
     public String bundlePostLambdaFunctionName;
@@ -182,6 +189,7 @@ public class SubmitSharedNames {
     public HttpMethod bundlePostLambdaHttpMethod;
     public String bundlePostLambdaUrlPath;
     public boolean bundlePostLambdaJwtAuthorizer;
+    public boolean bundlePostLambdaCustomAuthorizer;
 
     public String bundleDeleteLambdaHandler;
     public String bundleDeleteLambdaFunctionName;
@@ -189,6 +197,7 @@ public class SubmitSharedNames {
     public HttpMethod bundleDeleteLambdaHttpMethod;
     public String bundleDeleteLambdaUrlPath;
     public boolean bundleDeleteLambdaJwtAuthorizer;
+    public boolean bundleDeleteLambdaCustomAuthorizer;
 
     public String delResourceNamePrefix;
     public String edgeStackId;
@@ -284,6 +293,7 @@ public class SubmitSharedNames {
         this.cognitoAuthUrlGetLambdaHttpMethod = HttpMethod.GET;
         this.cognitoAuthUrlGetLambdaUrlPath = "/api/v1/cognito/authUrl";
         this.cognitoAuthUrlGetLambdaJwtAuthorizer = false;
+        this.cognitoAuthUrlGetLambdaCustomAuthorizer = false;
         var cognitoAuthUrlGetLambdaHandlerName = "cognitoAuthUrlGet.handler";
         var cognitoAuthUrlGetLambdaHandlerDashed =
                 ResourceNameUtils.convertCamelCaseToDashSeparated(cognitoAuthUrlGetLambdaHandlerName);
@@ -302,6 +312,7 @@ public class SubmitSharedNames {
         this.cognitoTokenPostLambdaHttpMethod = HttpMethod.POST;
         this.cognitoTokenPostLambdaUrlPath = "/api/v1/cognito/token";
         this.cognitoTokenPostLambdaJwtAuthorizer = false;
+        this.cognitoTokenPostLambdaCustomAuthorizer = false;
         var cognitoTokenPostLambdaHandlerName = "cognitoTokenPost.handler";
         var cognitoTokenPostLambdaHandlerDashed =
                 ResourceNameUtils.convertCamelCaseToDashSeparated(cognitoTokenPostLambdaHandlerName);
@@ -330,6 +341,7 @@ public class SubmitSharedNames {
         this.hmrcAuthUrlGetLambdaHttpMethod = HttpMethod.GET;
         this.hmrcAuthUrlGetLambdaUrlPath = "/api/v1/hmrc/authUrl";
         this.hmrcAuthUrlGetLambdaJwtAuthorizer = false;
+        this.hmrcAuthUrlGetLambdaCustomAuthorizer = false;
         var hmrcAuthUrlGetLambdaHandlerName = "hmrcAuthUrlGet.handler";
         var hmrcAuthUrlGetLambdaHandlerDashed =
                 ResourceNameUtils.convertCamelCaseToDashSeparated(hmrcAuthUrlGetLambdaHandlerName);
@@ -348,6 +360,7 @@ public class SubmitSharedNames {
         this.hmrcTokenPostLambdaHttpMethod = HttpMethod.POST;
         this.hmrcTokenPostLambdaUrlPath = "/api/v1/hmrc/token";
         this.hmrcTokenPostLambdaJwtAuthorizer = false;
+        this.hmrcTokenPostLambdaCustomAuthorizer = false;
         var hmrcTokenPostLambdaHandlerName = "hmrcTokenPost.handler";
         var hmrcTokenPostLambdaHandlerDashed =
                 ResourceNameUtils.convertCamelCaseToDashSeparated(hmrcTokenPostLambdaHandlerName);
@@ -428,6 +441,7 @@ public class SubmitSharedNames {
         this.receiptPostLambdaHttpMethod = HttpMethod.POST;
         this.receiptPostLambdaUrlPath = "/api/v1/hmrc/receipt";
         this.receiptPostLambdaJwtAuthorizer = true;
+        this.receiptPostLambdaCustomAuthorizer = false;
         var receiptPostLambdaHandlerName = "hmrcReceiptPost.handler";
         var receiptPostLambdaHandlerDashed =
                 ResourceNameUtils.convertCamelCaseToDashSeparated(receiptPostLambdaHandlerName);
@@ -445,6 +459,7 @@ public class SubmitSharedNames {
         this.receiptGetLambdaHttpMethod = HttpMethod.GET;
         this.receiptGetLambdaUrlPath = "/api/v1/hmrc/receipt";
         this.receiptGetLambdaJwtAuthorizer = true;
+        this.receiptGetLambdaCustomAuthorizer = false;
         this.receiptGetByNameLambdaUrlPath = "/api/v1/hmrc/receipt/{name}";
         var receiptGetLambdaHandlerName = "hmrcReceiptGet.handler";
         var receiptGetLambdaHandlerDashed =
@@ -470,6 +485,7 @@ public class SubmitSharedNames {
         this.catalogGetLambdaHttpMethod = HttpMethod.GET;
         this.catalogGetLambdaUrlPath = "/api/v1/catalog";
         this.catalogGetLambdaJwtAuthorizer = false;
+        this.catalogGetLambdaCustomAuthorizer = false;
         var catalogGetLambdaHandlerName = "catalogGet.handler";
         var catalogGetLambdaHandlerDashed =
                 ResourceNameUtils.convertCamelCaseToDashSeparated(catalogGetLambdaHandlerName);
@@ -487,6 +503,7 @@ public class SubmitSharedNames {
         this.bundlePostLambdaHttpMethod = HttpMethod.POST;
         this.bundlePostLambdaUrlPath = "/api/v1/bundle";
         this.bundlePostLambdaJwtAuthorizer = true;
+        this.bundlePostLambdaCustomAuthorizer = false;
         var bundlePostLambdaHandlerName = "bundlePost.handler";
         var bundlePostLambdaHandlerDashed =
                 ResourceNameUtils.convertCamelCaseToDashSeparated(bundlePostLambdaHandlerName);
@@ -504,6 +521,7 @@ public class SubmitSharedNames {
         this.bundleDeleteLambdaHttpMethod = HttpMethod.DELETE;
         this.bundleDeleteLambdaUrlPath = "/api/v1/bundle";
         this.bundleDeleteLambdaJwtAuthorizer = true;
+        this.bundleDeleteLambdaCustomAuthorizer = false;
         var bundleDeleteLambdaHandlerName = "bundleDelete.handler";
         var bundleDeleteLambdaHandlerDashed =
                 ResourceNameUtils.convertCamelCaseToDashSeparated(bundleDeleteLambdaHandlerName);

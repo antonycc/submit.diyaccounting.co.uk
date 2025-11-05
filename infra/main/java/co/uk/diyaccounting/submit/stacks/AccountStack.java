@@ -108,6 +108,7 @@ public class AccountStack extends Stack {
                         .httpMethod(props.sharedNames().catalogGetLambdaHttpMethod)
                         .urlPath(props.sharedNames().catalogGetLambdaUrlPath)
                         .jwtAuthorizer(props.sharedNames().catalogGetLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().catalogGetLambdaCustomAuthorizer)
                         .environment(catalogLambdaEnv)
                         .timeout(Duration.millis(Long.parseLong("30000")))
                         .build());
@@ -137,6 +138,7 @@ public class AccountStack extends Stack {
                         .httpMethod(props.sharedNames().bundlePostLambdaHttpMethod)
                         .urlPath(props.sharedNames().bundlePostLambdaUrlPath)
                         .jwtAuthorizer(props.sharedNames().bundlePostLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().bundlePostLambdaCustomAuthorizer)
                         .environment(requestBundlesLambdaEnv)
                         .timeout(Duration.millis(Long.parseLong("30000")))
                         .build());
@@ -188,6 +190,7 @@ public class AccountStack extends Stack {
                         .httpMethod(props.sharedNames().bundleDeleteLambdaHttpMethod)
                         .urlPath(props.sharedNames().bundleDeleteLambdaUrlPath)
                         .jwtAuthorizer(props.sharedNames().bundleDeleteLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().bundleDeleteLambdaCustomAuthorizer)
                         .environment(bundleDeleteLambdaEnv)
                         .timeout(Duration.millis(Long.parseLong("30000")))
                         .build());
@@ -208,6 +211,7 @@ public class AccountStack extends Stack {
                 .httpMethod(props.sharedNames().bundleDeleteLambdaHttpMethod)
                 .urlPath("/api/v1/bundle/{id}")
                 .jwtAuthorizer(props.sharedNames().bundleDeleteLambdaJwtAuthorizer)
+                .customAuthorizer(props.sharedNames().bundleDeleteLambdaCustomAuthorizer)
                 .timeout(Duration.millis(Long.parseLong("30000")))
                 .build());
         infof(

@@ -109,6 +109,7 @@ public class AuthStack extends Stack {
                         .urlPath(props.sharedNames().cognitoAuthUrlGetLambdaUrlPath)
                         .handler(props.sharedNames().cognitoAuthUrlGetLambdaHandler)
                         .jwtAuthorizer(props.sharedNames().cognitoAuthUrlGetLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().cognitoAuthUrlGetLambdaCustomAuthorizer)
                         .environment(authUrlCognitoLambdaEnv)
                         .timeout(Duration.millis(Long.parseLong("30000")))
                         .build());
@@ -143,6 +144,7 @@ public class AuthStack extends Stack {
                         .httpMethod(props.sharedNames().cognitoTokenPostLambdaHttpMethod)
                         .urlPath(props.sharedNames().cognitoTokenPostLambdaUrlPath)
                         .jwtAuthorizer(props.sharedNames().cognitoTokenPostLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().cognitoTokenPostLambdaCustomAuthorizer)
                         .environment(exchangeCognitoTokenLambdaEnv)
                         .timeout(Duration.millis(Long.parseLong("30000")))
                         .build());
@@ -172,6 +174,7 @@ public class AuthStack extends Stack {
                         .httpMethod(HttpMethod.GET) // Not used for authorizers but required by props
                         .urlPath("/") // Not used for authorizers but required by props
                         .jwtAuthorizer(false)
+                        .customAuthorizer(false)
                         .environment(customAuthorizerLambdaEnv)
                         .timeout(Duration.millis(Long.parseLong("5000")))
                         .build());
