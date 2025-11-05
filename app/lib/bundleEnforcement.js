@@ -6,6 +6,8 @@ import { decodeJwtNoVerify } from "./jwtHelper.js";
 import { extractAuthToken, extractAuthTokenFromXAuthorization, extractUserFromAuthorizerContext } from "./responses.js";
 import { getUserBundles, updateUserBundles } from "./bundleHelpers.js";
 
+const DEFAULT_AWS_REGION = "eu-west-2";
+
 // Lazy load AWS Cognito SDK only if bundle enforcement is on
 let __cognitoModule;
 let __cognitoClient;
@@ -20,7 +22,7 @@ async function getCognitoModule() {
 async function getCognitoClient() {
   if (!__cognitoClient) {
     const mod = await getCognitoModule();
-    __cognitoClient = new mod.CognitoIdentityProviderClient({ region: process.env.AWS_REGION || "eu-west-2" });
+    __cognitoClient = new mod.CognitoIdentityProviderClient({ region: process.env.AWS_REGION || DEFAULT_AWS_REGION });
   }
   return __cognitoClient;
 }
@@ -80,16 +82,16 @@ export function extractUserInfo(event) {
 }
 
 /**
- * Get user's bundles from Cognito
+ * Get user's bundles from Cognito (or mock store in test mode)
  * @param {string} userPoolId - Cognito User Pool ID
  * @param {string} sub - User's sub (Cognito username)
  * @returns {Promise<Array<string>>} - Array of bundle strings
  */
 async function getUserBundlesFromCognito(userPoolId, sub) {
-  // Check if we're in mock mode
-  const isMock = String(process.env.TEST_BUNDLE_MOCK || "").toLowerCase() === "true" || process.env.TEST_BUNDLE_MOCK === "1";
+  // Use bundleHelpers isMockMode which centralizes this check
+  const { isMockMode } = await import("./bundleHelpers.js");
 
-  if (isMock) {
+  if (isMockMode()) {
     // Use mock bundle store in test mode
     const { getBundlesStore } = await import("../functions/non-lambda-mocks/mockBundleStore.js");
     const mockBundleStore = getBundlesStore();

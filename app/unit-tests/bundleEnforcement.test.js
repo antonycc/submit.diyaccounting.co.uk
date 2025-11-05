@@ -9,6 +9,7 @@ dotenvConfigIfNotBlank({ path: ".env.test" });
 vi.mock("@app/lib/bundleHelpers.js", () => ({
   getUserBundles: vi.fn(),
   updateUserBundles: vi.fn(),
+  isMockMode: vi.fn(() => true), // Always return true for tests
 }));
 
 // Import after mocking
