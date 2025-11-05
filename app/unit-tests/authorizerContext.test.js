@@ -10,10 +10,10 @@ describe("extractUserFromAuthorizerContext", () => {
           lambda: {
             jwt: {
               claims: {
-                "sub": "abc-123",
+                sub: "abc-123",
                 "cognito:username": "user-1",
-                "email": "user@example.com",
-                "scope": "openid profile",
+                email: "user@example.com",
+                scope: "openid profile",
               },
               scopes: null,
             },
