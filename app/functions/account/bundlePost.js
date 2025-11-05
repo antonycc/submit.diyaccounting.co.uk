@@ -185,6 +185,7 @@ export async function handler(event) {
     if (isMockMode()) {
       mockBundleStore.set(userId, currentBundles);
     } else {
+      // TODO: Put this on a queue for processing by a separate worker to improve latency
       await updateUserBundles(userId, userPoolId, currentBundles);
     }
 

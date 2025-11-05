@@ -348,7 +348,7 @@ public class SubmitSharedNames {
 
         this.hmrcVatReturnPostLambdaHttpMethod = HttpMethod.POST;
         this.hmrcVatReturnPostLambdaUrlPath = "/api/v1/hmrc/vat/return";
-        this.hmrcVatReturnPostLambdaJwtAuthorizer = true;
+        this.hmrcVatReturnPostLambdaJwtAuthorizer = false;
         var hmrcVatReturnPostLambdaHandlerName = "hmrcVatReturnPost.handler";
         var hmrcVatReturnPostLambdaHandlerDashed =
                 ResourceNameUtils.convertCamelCaseToDashSeparated(hmrcVatReturnPostLambdaHandlerName);
@@ -366,7 +366,7 @@ public class SubmitSharedNames {
 
         this.hmrcVatObligationGetLambdaHttpMethod = HttpMethod.GET;
         this.hmrcVatObligationGetLambdaUrlPath = "/api/v1/hmrc/vat/obligation";
-        this.hmrcVatObligationGetLambdaJwtAuthorizer = true;
+        this.hmrcVatObligationGetLambdaJwtAuthorizer = false;
         var hmrcVatObligationGetLambdaHandlerName = "hmrcVatObligationGet.handler";
         var hmrcVatObligationGetLambdaHandlerDashed =
                 ResourceNameUtils.convertCamelCaseToDashSeparated(hmrcVatObligationGetLambdaHandlerName);
@@ -385,7 +385,7 @@ public class SubmitSharedNames {
 
         this.hmrcVatReturnGetLambdaHttpMethod = HttpMethod.GET;
         this.hmrcVatReturnGetLambdaUrlPath = "/api/v1/hmrc/vat/return/{periodKey}";
-        this.hmrcVatReturnGetLambdaJwtAuthorizer = true;
+        this.hmrcVatReturnGetLambdaJwtAuthorizer = false;
         var hmrcVatReturnGetLambdaHandlerName = "hmrcVatReturnGet.handler";
         var hmrcVatReturnGetLambdaHandlerDashed =
                 ResourceNameUtils.convertCamelCaseToDashSeparated(hmrcVatReturnGetLambdaHandlerName);
