@@ -4,6 +4,7 @@
 
 import logger from "../../lib/logger.js";
 import { CognitoJwtVerifier } from "aws-jwt-verify";
+import { decodeJwtNoVerify } from "../../lib/jwtHelper.js";
 
 // Cache the verifier instance across Lambda invocations
 let verifier = null;
@@ -34,10 +35,15 @@ function getVerifier() {
 
 // Lambda authorizer handler
 export async function handler(event) {
+  // HTTP API v2 uses routeArn or methodArn
+  const routeArn = event.routeArn || event.methodArn;
+
   logger.info({
     message: "Custom authorizer invoked",
-    routeArn: event.routeArn,
+    routeArn: routeArn,
+    requestContext: event.requestContext,
     headers: Object.keys(event.headers || {}),
+    identitySource: event.identitySource,
   });
 
   try {
@@ -54,32 +60,57 @@ export async function handler(event) {
     }
 
     if (!xAuthHeader) {
-      logger.warn({ message: "Missing X-Authorization header" });
-      return generateDenyPolicy(event.routeArn);
+      logger.warn({ message: "Missing X-Authorization header", headers: Object.keys(headers) });
+      return generateDenyPolicy(routeArn);
     }
 
     // Extract Bearer token
     const tokenMatch = xAuthHeader.match(/^Bearer (.+)$/i);
     if (!tokenMatch) {
-      logger.warn({ message: "Invalid X-Authorization header format, expected 'Bearer <token>'" });
-      return generateDenyPolicy(event.routeArn);
+      logger.warn({
+        message: "Invalid X-Authorization header format, expected 'Bearer <token>'",
+        headerValue: xAuthHeader.substring(0, 20),
+      });
+      return generateDenyPolicy(routeArn);
     }
 
     const token = tokenMatch[1].trim();
 
-    // Verify the JWT token with Cognito
-    const jwtVerifier = getVerifier();
-    const payload = await jwtVerifier.verify(token);
+    // Check if we're in test/mock mode (NODE_ENV === 'stubbed' or TEST_ACCESS_TOKEN is set)
+    const isMockMode = process.env.NODE_ENV === "stubbed" || process.env.TEST_ACCESS_TOKEN;
 
-    logger.info({
-      message: "JWT token verified successfully",
-      sub: payload.sub,
-      username: payload.username,
-      scopes: payload.scope,
-    });
+    let payload;
+
+    if (isMockMode) {
+      // In mock mode, just decode the JWT without verification
+      logger.info({ message: "Running in mock mode, skipping JWT verification" });
+      payload = decodeJwtNoVerify(token);
+
+      if (!payload || !payload.sub) {
+        logger.warn({ message: "Invalid JWT structure in mock mode" });
+        return generateDenyPolicy(routeArn);
+      }
+
+      logger.info({
+        message: "Mock JWT decoded successfully",
+        sub: payload.sub,
+        username: payload.username,
+      });
+    } else {
+      // Production mode - verify the JWT token with Cognito
+      const jwtVerifier = getVerifier();
+      payload = await jwtVerifier.verify(token);
+
+      logger.info({
+        message: "JWT token verified successfully",
+        sub: payload.sub,
+        username: payload.username,
+        scopes: payload.scope,
+      });
+    }
 
     // Generate allow policy with JWT claims in context
-    return generateAllowPolicy(event.routeArn, payload);
+    return generateAllowPolicy(routeArn, payload);
   } catch (error) {
     logger.error({
       message: "Authorization failed",
@@ -87,12 +118,24 @@ export async function handler(event) {
       errorType: error.name,
       stack: error.stack,
     });
-    return generateDenyPolicy(event.routeArn);
+    return generateDenyPolicy(routeArn);
   }
 }
 
 // Generate IAM policy to allow access
 function generateAllowPolicy(routeArn, jwtPayload) {
+  // Extract API Gateway ARN components and create a wildcard policy
+  // routeArn format: arn:aws:execute-api:region:account-id:api-id/stage/method/resource
+  // We need to allow access to the specific route
+  let policyResource = routeArn;
+
+  // If routeArn contains specific route details, we might need to adjust it
+  // For HTTP API v2, we typically allow the specific route
+  if (routeArn && routeArn.includes("execute-api")) {
+    // Keep the specific routeArn as is for HTTP API v2
+    policyResource = routeArn;
+  }
+
   return {
     principalId: jwtPayload.sub,
     policyDocument: {
@@ -101,7 +144,7 @@ function generateAllowPolicy(routeArn, jwtPayload) {
         {
           Action: "execute-api:Invoke",
           Effect: "Allow",
-          Resource: routeArn,
+          Resource: policyResource,
         },
       ],
     },
