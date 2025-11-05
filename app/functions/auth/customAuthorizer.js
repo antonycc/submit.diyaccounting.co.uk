@@ -43,7 +43,15 @@ export async function handler(event) {
   try {
     // Extract token from X-Authorization header (case-insensitive)
     const headers = event.headers || {};
-    const xAuthHeader = headers["x-authorization"] || headers["X-Authorization"];
+    let xAuthHeader = null;
+
+    // Case-insensitive header lookup
+    for (const [key, value] of Object.entries(headers)) {
+      if (key.toLowerCase() === "x-authorization") {
+        xAuthHeader = value;
+        break;
+      }
+    }
 
     if (!xAuthHeader) {
       logger.warn({ message: "Missing X-Authorization header" });
@@ -57,7 +65,7 @@ export async function handler(event) {
       return generateDenyPolicy(event.routeArn);
     }
 
-    const token = tokenMatch[1];
+    const token = tokenMatch[1].trim();
 
     // Verify the JWT token with Cognito
     const jwtVerifier = getVerifier();

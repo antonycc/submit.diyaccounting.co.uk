@@ -119,7 +119,17 @@ export function extractAuthToken(event) {
 }
 
 export function extractAuthTokenFromXAuthorization(event) {
-  const xAuthHeader = event.headers?.["x-authorization"] || event.headers?.["X-Authorization"];
+  const headers = event.headers || {};
+  let xAuthHeader = null;
+
+  // Case-insensitive header lookup
+  for (const [key, value] of Object.entries(headers)) {
+    if (key.toLowerCase() === "x-authorization") {
+      xAuthHeader = value;
+      break;
+    }
+  }
+
   if (!xAuthHeader || !xAuthHeader.startsWith("Bearer ")) {
     return null;
   }
