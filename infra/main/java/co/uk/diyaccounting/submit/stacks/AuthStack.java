@@ -176,7 +176,7 @@ public class AuthStack extends Stack {
                         .jwtAuthorizer(false)
                         .customAuthorizer(false)
                         .environment(customAuthorizerLambdaEnv)
-                        .timeout(Duration.millis(Long.parseLong("5000")))
+                        .timeout(Duration.millis(5000L))
                         .build());
         this.customAuthorizerLambda = customAuthorizerLambda.lambda;
         this.customAuthorizerLambdaLogGroup = customAuthorizerLambda.logGroup;
