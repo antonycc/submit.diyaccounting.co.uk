@@ -160,6 +160,8 @@ public class SubmitApplication {
                         .sharedNames(sharedNames)
                         .baseImageTag(baseImageTag)
                         .cognitoClientId(cognitoUserPoolClientId)
+                        .cognitoUserPoolId(cognitoUserPoolId)
+                        .cognitoUserPoolClientId(cognitoUserPoolClientId)
                         .build());
         this.authStack.addDependency(devStack);
 
@@ -231,6 +233,7 @@ public class SubmitApplication {
                         .lambdaFunctions(lambdaFunctions)
                         .userPoolId(cognitoUserPoolId)
                         .userPoolClientId(cognitoUserPoolClientId)
+                        .customAuthorizerLambdaArn(authStack.customAuthorizerLambda.getFunctionArn())
                         .build());
         this.apiStack.addDependency(accountStack);
         this.apiStack.addDependency(hmrcStack);

@@ -239,6 +239,7 @@ public class HmrcStack extends Stack {
                         .httpMethod(props.sharedNames().hmrcVatReturnPostLambdaHttpMethod)
                         .urlPath(props.sharedNames().hmrcVatReturnPostLambdaUrlPath)
                         .jwtAuthorizer(props.sharedNames().hmrcVatReturnPostLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().hmrcVatReturnPostLambdaCustomAuthorizer)
                         .environment(submitVatLambdaEnv)
                         .timeout(Duration.millis(Long.parseLong("60000")))
                         .build());
@@ -267,6 +268,7 @@ public class HmrcStack extends Stack {
                         .httpMethod(props.sharedNames().hmrcVatObligationGetLambdaHttpMethod)
                         .urlPath(props.sharedNames().hmrcVatObligationGetLambdaUrlPath)
                         .jwtAuthorizer(props.sharedNames().hmrcVatObligationGetLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().hmrcVatObligationGetLambdaCustomAuthorizer)
                         .environment(vatObligationLambdaEnv)
                         .timeout(Duration.millis(Long.parseLong("30000")))
                         .build());
@@ -380,6 +382,7 @@ public class HmrcStack extends Stack {
                         .httpMethod(props.sharedNames().hmrcVatReturnGetLambdaHttpMethod)
                         .urlPath(props.sharedNames().hmrcVatReturnGetLambdaUrlPath)
                         .jwtAuthorizer(props.sharedNames().hmrcVatReturnGetLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().hmrcVatReturnGetLambdaCustomAuthorizer)
                         .environment(vatReturnGetLambdaEnv)
                         .timeout(Duration.millis(Long.parseLong("30000")))
                         .build());

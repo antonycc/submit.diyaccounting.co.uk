@@ -112,6 +112,10 @@ public class SubmitSharedNames {
     public String cognitoTokenPostLambdaUrlPath;
     public boolean cognitoTokenPostLambdaJwtAuthorizer;
 
+    public String customAuthorizerLambdaHandler;
+    public String customAuthorizerLambdaFunctionName;
+    public String customAuthorizerLambdaArn;
+
     public String hmrcAuthUrlGetLambdaHandler;
     public String hmrcAuthUrlGetLambdaFunctionName;
     public String hmrcAuthUrlGetLambdaArn;
@@ -132,6 +136,7 @@ public class SubmitSharedNames {
     public HttpMethod hmrcVatReturnPostLambdaHttpMethod;
     public String hmrcVatReturnPostLambdaUrlPath;
     public boolean hmrcVatReturnPostLambdaJwtAuthorizer;
+    public boolean hmrcVatReturnPostLambdaCustomAuthorizer;
 
     public String hmrcVatObligationGetLambdaHandler;
     public String hmrcVatObligationGetLambdaFunctionName;
@@ -139,6 +144,7 @@ public class SubmitSharedNames {
     public HttpMethod hmrcVatObligationGetLambdaHttpMethod;
     public String hmrcVatObligationGetLambdaUrlPath;
     public boolean hmrcVatObligationGetLambdaJwtAuthorizer;
+    public boolean hmrcVatObligationGetLambdaCustomAuthorizer;
 
     public String hmrcVatReturnGetLambdaHandler;
     public String hmrcVatReturnGetLambdaFunctionName;
@@ -146,6 +152,7 @@ public class SubmitSharedNames {
     public HttpMethod hmrcVatReturnGetLambdaHttpMethod;
     public String hmrcVatReturnGetLambdaUrlPath;
     public boolean hmrcVatReturnGetLambdaJwtAuthorizer;
+    public boolean hmrcVatReturnGetLambdaCustomAuthorizer;
 
     public String receiptPostLambdaHandler;
     public String receiptPostLambdaFunctionName;
@@ -310,6 +317,16 @@ public class SubmitSharedNames {
                 "Exchanges an authorization code for a Cognito access token",
                 "exchangeCognitoToken"));
 
+        // Custom authorizer for HMRC VAT endpoints
+        var customAuthorizerHandlerName = "customAuthorizer.handler";
+        var customAuthorizerHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(customAuthorizerHandlerName);
+        this.customAuthorizerLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, customAuthorizerHandlerDashed);
+        this.customAuthorizerLambdaHandler =
+                "%s/auth/%s".formatted(appLambdaHandlerPrefix, customAuthorizerHandlerName);
+        this.customAuthorizerLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, customAuthorizerHandlerDashed);
+
         this.hmrcAuthUrlGetLambdaHttpMethod = HttpMethod.GET;
         this.hmrcAuthUrlGetLambdaUrlPath = "/api/v1/hmrc/authUrl";
         this.hmrcAuthUrlGetLambdaJwtAuthorizer = false;
@@ -349,6 +366,7 @@ public class SubmitSharedNames {
         this.hmrcVatReturnPostLambdaHttpMethod = HttpMethod.POST;
         this.hmrcVatReturnPostLambdaUrlPath = "/api/v1/hmrc/vat/return";
         this.hmrcVatReturnPostLambdaJwtAuthorizer = false;
+        this.hmrcVatReturnPostLambdaCustomAuthorizer = true;
         var hmrcVatReturnPostLambdaHandlerName = "hmrcVatReturnPost.handler";
         var hmrcVatReturnPostLambdaHandlerDashed =
                 ResourceNameUtils.convertCamelCaseToDashSeparated(hmrcVatReturnPostLambdaHandlerName);
@@ -367,6 +385,7 @@ public class SubmitSharedNames {
         this.hmrcVatObligationGetLambdaHttpMethod = HttpMethod.GET;
         this.hmrcVatObligationGetLambdaUrlPath = "/api/v1/hmrc/vat/obligation";
         this.hmrcVatObligationGetLambdaJwtAuthorizer = false;
+        this.hmrcVatObligationGetLambdaCustomAuthorizer = true;
         var hmrcVatObligationGetLambdaHandlerName = "hmrcVatObligationGet.handler";
         var hmrcVatObligationGetLambdaHandlerDashed =
                 ResourceNameUtils.convertCamelCaseToDashSeparated(hmrcVatObligationGetLambdaHandlerName);
@@ -386,6 +405,7 @@ public class SubmitSharedNames {
         this.hmrcVatReturnGetLambdaHttpMethod = HttpMethod.GET;
         this.hmrcVatReturnGetLambdaUrlPath = "/api/v1/hmrc/vat/return/{periodKey}";
         this.hmrcVatReturnGetLambdaJwtAuthorizer = false;
+        this.hmrcVatReturnGetLambdaCustomAuthorizer = true;
         var hmrcVatReturnGetLambdaHandlerName = "hmrcVatReturnGet.handler";
         var hmrcVatReturnGetLambdaHandlerDashed =
                 ResourceNameUtils.convertCamelCaseToDashSeparated(hmrcVatReturnGetLambdaHandlerName);

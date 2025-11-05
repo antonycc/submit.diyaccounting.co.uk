@@ -41,6 +41,11 @@ public interface ApiLambdaProps {
     boolean jwtAuthorizer();
 
     @Value.Default
+    default boolean customAuthorizer() {
+        return false;
+    }
+
+    @Value.Default
     default Duration timeout() {
         return Duration.seconds(30);
     }
