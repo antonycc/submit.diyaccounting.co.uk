@@ -39,7 +39,7 @@ function isSandboxBase(base) {
  * @param {Object} event - Lambda event object
  * @returns {Object|null} - User information with sub, claims, and token
  */
-function extractUserInfo(event) {
+export function extractUserInfo(event) {
   // Try to get user from custom authorizer context first (X-Authorization header)
   const userInfo = extractUserFromAuthorizerContext(event);
   let userSub = userInfo?.sub;
