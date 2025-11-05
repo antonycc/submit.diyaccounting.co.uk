@@ -203,7 +203,7 @@ jobs:
       self-destruct-start-datetime: ${{ steps.self-destruct-start.outputs.SELF_DESTRUCT_START_DATETIME }}
 
   behaviour-test-bundle:
-    name: 'behaviour test (proxy) bundle'
+    name: 'behaviour test - bundle'
     needs:
       - names
     runs-on: ubuntu-24.04
@@ -263,7 +263,7 @@ jobs:
             target/test-reports/
 
   behaviour-test-obligation:
-    name: 'behaviour test (proxy) obligation'
+    name: 'behaviour test - obligation'
     needs:
       - names
       - behaviour-test-bundle
@@ -325,7 +325,7 @@ jobs:
             target/test-reports/
 
   behaviour-test-view-vat:
-    name: 'behaviour test (proxy) view vat'
+    name: 'behaviour test - view vat'
     needs:
       - names
       - behaviour-test-obligation
@@ -387,7 +387,7 @@ jobs:
             target/test-reports/
 
   behaviour-test-submit-vat:
-    name: 'behaviour test (proxy) submit vat'
+    name: 'behaviour test - submit vat'
     needs:
       - names
       - behaviour-test-view-vat
