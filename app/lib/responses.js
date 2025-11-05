@@ -118,6 +118,38 @@ export function extractAuthToken(event) {
   return authHeader.split(" ")[1];
 }
 
+export function extractAuthTokenFromXAuthorization(event) {
+  const headers = event.headers || {};
+  let xAuthHeader = null;
+
+  // Case-insensitive header lookup
+  for (const [key, value] of Object.entries(headers)) {
+    if (key.toLowerCase() === "x-authorization") {
+      xAuthHeader = value;
+      break;
+    }
+  }
+
+  if (!xAuthHeader || !xAuthHeader.startsWith("Bearer ")) {
+    return null;
+  }
+  return xAuthHeader.split(" ")[1];
+}
+
+export function extractUserFromAuthorizerContext(event) {
+  // Extract user info passed by custom Lambda authorizer
+  const authorizerContext = event.requestContext?.authorizer;
+  if (authorizerContext && authorizerContext.sub) {
+    return {
+      sub: authorizerContext.sub,
+      username: authorizerContext.username,
+      email: authorizerContext.email,
+      scope: authorizerContext.scope,
+    };
+  }
+  return null;
+}
+
 export function parseRequestBody(event) {
   try {
     return JSON.parse(event.body || "{}");

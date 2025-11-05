@@ -11,6 +11,7 @@ import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
+import software.amazon.awscdk.services.apigatewayv2.HttpMethod;
 import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
@@ -31,6 +32,8 @@ public class AuthStack extends Stack {
     public ApiLambdaProps cognitoTokenPostLambdaProps;
     public Function cognitoTokenPostLambda;
     public LogGroup cognitoTokenPostLambdaLogGroup;
+    public Function customAuthorizerLambda;
+    public LogGroup customAuthorizerLambdaLogGroup;
     public List<ApiLambdaProps> lambdaFunctionProps;
 
     @Value.Immutable
@@ -63,6 +66,10 @@ public class AuthStack extends Stack {
         String baseImageTag();
 
         String cognitoClientId();
+
+        String cognitoUserPoolId();
+
+        String cognitoUserPoolClientId();
 
         // Optional test access token for local/dev testing without real Cognito interaction
         Optional<String> optionalTestAccessToken(); //
@@ -102,6 +109,7 @@ public class AuthStack extends Stack {
                         .urlPath(props.sharedNames().cognitoAuthUrlGetLambdaUrlPath)
                         .handler(props.sharedNames().cognitoAuthUrlGetLambdaHandler)
                         .jwtAuthorizer(props.sharedNames().cognitoAuthUrlGetLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().cognitoAuthUrlGetLambdaCustomAuthorizer)
                         .environment(authUrlCognitoLambdaEnv)
                         .timeout(Duration.millis(Long.parseLong("30000")))
                         .build());
@@ -136,6 +144,7 @@ public class AuthStack extends Stack {
                         .httpMethod(props.sharedNames().cognitoTokenPostLambdaHttpMethod)
                         .urlPath(props.sharedNames().cognitoTokenPostLambdaUrlPath)
                         .jwtAuthorizer(props.sharedNames().cognitoTokenPostLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().cognitoTokenPostLambdaCustomAuthorizer)
                         .environment(exchangeCognitoTokenLambdaEnv)
                         .timeout(Duration.millis(Long.parseLong("30000")))
                         .build());
@@ -147,10 +156,39 @@ public class AuthStack extends Stack {
                 "Created Lambda %s for Cognito exchange token with handler %s",
                 this.cognitoTokenPostLambda.getNode().getId(), props.sharedNames().cognitoTokenPostLambdaHandler);
 
+        // Custom authorizer Lambda for X-Authorization header
+        var customAuthorizerLambdaEnv = new PopulatedMap<String, String>()
+                .with("COGNITO_USER_POOL_ID", props.cognitoUserPoolId())
+                .with("COGNITO_USER_POOL_CLIENT_ID", props.cognitoUserPoolClientId());
+        
+        var customAuthorizerLambda = new ApiLambda(
+                this,
+                ApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().customAuthorizerLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                        .functionName(props.sharedNames().customAuthorizerLambdaFunctionName)
+                        .handler(props.sharedNames().customAuthorizerLambdaHandler)
+                        .lambdaArn(props.sharedNames().customAuthorizerLambdaArn)
+                        .httpMethod(HttpMethod.GET) // Not used for authorizers but required by props
+                        .urlPath("/") // Not used for authorizers but required by props
+                        .jwtAuthorizer(false)
+                        .customAuthorizer(false)
+                        .environment(customAuthorizerLambdaEnv)
+                        .timeout(Duration.millis(5000L))
+                        .build());
+        this.customAuthorizerLambda = customAuthorizerLambda.lambda;
+        this.customAuthorizerLambdaLogGroup = customAuthorizerLambda.logGroup;
+        infof(
+                "Created Custom Authorizer Lambda %s with handler %s",
+                this.customAuthorizerLambda.getNode().getId(), props.sharedNames().customAuthorizerLambdaHandler);
+
         Aspects.of(this).add(new SetAutoDeleteJobLogRetentionAspect(props.deploymentName(), RetentionDays.THREE_DAYS));
 
         cfnOutput(this, "AuthUrlCognitoLambdaArn", this.cognitoAuthUrlGetLambda.getFunctionArn());
         cfnOutput(this, "ExchangeCognitoTokenLambdaArn", this.cognitoTokenPostLambda.getFunctionArn());
+        cfnOutput(this, "CustomAuthorizerLambdaArn", this.customAuthorizerLambda.getFunctionArn());
 
         infof("AuthStack %s created successfully for %s", this.getNode().getId(), props.resourceNamePrefix());
     }

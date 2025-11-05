@@ -12,6 +12,8 @@ import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.Tags;
 import software.amazon.awscdk.aws_apigatewayv2_authorizers.HttpJwtAuthorizer;
+import software.amazon.awscdk.aws_apigatewayv2_authorizers.HttpLambdaAuthorizer;
+import software.amazon.awscdk.aws_apigatewayv2_authorizers.HttpLambdaResponseType;
 import software.amazon.awscdk.aws_apigatewayv2_integrations.HttpLambdaIntegration;
 import software.amazon.awscdk.services.apigatewayv2.CfnStage;
 import software.amazon.awscdk.services.apigatewayv2.HttpApi;
@@ -81,6 +83,8 @@ public class ApiStack extends Stack {
         String userPoolId();
 
         String userPoolClientId();
+
+        String customAuthorizerLambdaArn();
     }
 
     @Value.Immutable
@@ -189,11 +193,27 @@ public class ApiStack extends Stack {
         // Create integrations using Lambda function references
         var lambdaIntegrations = new LambdaIntegrations();
 
-        // Create authorizer to selectively apply to routes
+        // Create authorizers to selectively apply to routes
         String issuer = "https://cognito-idp.%s.amazonaws.com/%s".formatted(getRegion(), props.userPoolId());
         HttpJwtAuthorizer jwtAuthorizer = HttpJwtAuthorizer.Builder
             .create( props.resourceNamePrefix() + "-CognitoAuthorizer", issuer)
             .jwtAudience(List.of(props.userPoolClientId()))
+            .build();
+
+        // Create custom Lambda authorizer for X-Authorization header
+        IFunction customAuthorizerLambda = Function.fromFunctionAttributes(
+                this,
+                props.resourceNamePrefix() + "-CustomAuthorizerLambda",
+                FunctionAttributes.builder()
+                        .functionArn(props.customAuthorizerLambdaArn())
+                        .sameEnvironment(true)
+                        .build());
+        
+        HttpLambdaAuthorizer customAuthorizer = HttpLambdaAuthorizer.Builder
+            .create(props.resourceNamePrefix() + "-CustomAuthorizer", customAuthorizerLambda)
+            .responseTypes(List.of(HttpLambdaResponseType.IAM))
+            .identitySource(List.of("$request.header.X-Authorization"))
+            .resultsCacheTtl(Duration.minutes(5))
             .build();
 
         java.util.Set<String> createdRouteKeys = new java.util.HashSet<>();
@@ -210,7 +230,7 @@ public class ApiStack extends Stack {
             }
             createdRouteKeys.add(routeKeyStr);
             firstCreatorByRoute.put(routeKeyStr, apiLambdaProps.functionName());
-            createRouteForLambda(apiLambdaProps, jwtAuthorizer, lambdaIntegrations);
+            createRouteForLambda(apiLambdaProps, jwtAuthorizer, customAuthorizer, lambdaIntegrations);
         }
 
         // Synthesis-time diagnostics: list all created routes
@@ -311,7 +331,7 @@ public class ApiStack extends Stack {
                 this.getNode().getId(), props.resourceNamePrefix(), this.httpApi.getUrl());
     }
 
-    private void createRouteForLambda(ApiLambdaProps apiLambdaProps, HttpJwtAuthorizer jwtAuthorizer, LambdaIntegrations lambdaIntegrations) {
+    private void createRouteForLambda(ApiLambdaProps apiLambdaProps, HttpJwtAuthorizer jwtAuthorizer, HttpLambdaAuthorizer customAuthorizer, LambdaIntegrations lambdaIntegrations) {
 
         // Build stable, unique construct IDs per route using method+path signature
         String keySuffix = (apiLambdaProps.httpMethod().toString() + "-" + apiLambdaProps.urlPath())
@@ -334,9 +354,16 @@ public class ApiStack extends Stack {
         HttpLambdaIntegration integration =
                 HttpLambdaIntegration.Builder.create(integrationId, fn).build();
 
-        // Create HTTP route
+        // Create HTTP route with appropriate authorizer
         var routeKey = HttpRouteKey.with(apiLambdaProps.urlPath(), apiLambdaProps.httpMethod());
-        if(apiLambdaProps.jwtAuthorizer()) {
+        if(apiLambdaProps.customAuthorizer()) {
+            HttpRoute.Builder.create(this, routeId)
+                    .httpApi(this.httpApi)
+                    .routeKey(routeKey)
+                    .integration(integration)
+                    .authorizer(customAuthorizer)
+                    .build();
+        } else if(apiLambdaProps.jwtAuthorizer()) {
             HttpRoute.Builder.create(this, routeId)
                     .httpApi(this.httpApi)
                     .routeKey(routeKey)
