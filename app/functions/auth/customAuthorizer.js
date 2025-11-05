@@ -136,6 +136,14 @@ function generateAllowPolicy(routeArn, jwtPayload) {
     policyResource = routeArn;
   }
 
+  // Build claims object similar to API Gateway native JWT authorizer
+  const claims = {
+    ...jwtPayload,
+    auth_time: String(jwtPayload.auth_time || ""),
+    iat: String(jwtPayload.iat || ""),
+    exp: String(jwtPayload.exp || ""),
+  };
+
   return {
     principalId: jwtPayload.sub,
     policyDocument: {
@@ -149,12 +157,16 @@ function generateAllowPolicy(routeArn, jwtPayload) {
       ],
     },
     context: {
-      // Pass JWT claims to the Lambda function via context
+      // Preferred structure to mimic API Gateway JWT authorizer
+      jwt: {
+        claims,
+        scopes: null,
+      },
+      // Backward-compatible flat fields (existing consumers may still rely on these)
       sub: jwtPayload.sub,
       username: jwtPayload.username || jwtPayload.sub,
       email: jwtPayload.email || "",
       scope: jwtPayload.scope || "",
-      // Store the entire token for downstream use if needed
       token_use: jwtPayload.token_use || "access",
       auth_time: String(jwtPayload.auth_time || ""),
       iat: String(jwtPayload.iat || ""),

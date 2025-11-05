@@ -26,6 +26,7 @@ export function apiEndpoint(app) {
   });
 }
 
+// TODO: Get rid of this and always load the resources, it doesn't help to optimise the standalone server
 // Lazy load AWS Cognito SDK only if bundle enforcement is on
 let __cognitoModule;
 let __cognitoClient;
