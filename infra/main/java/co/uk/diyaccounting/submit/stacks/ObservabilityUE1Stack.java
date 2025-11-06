@@ -50,9 +50,6 @@ public class ObservabilityUE1Stack extends Stack {
         @Override
         String resourceNamePrefix();
 
-        // @Override
-        // String compressedResourceNamePrefix();
-
         @Override
         String cloudTrailEnabled();
 

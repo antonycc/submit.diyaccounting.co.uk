@@ -8,6 +8,8 @@ import {
   httpServerErrorResponse,
   extractClientIPFromHeaders,
   extractAuthToken,
+  extractAuthTokenFromXAuthorization,
+  extractUserFromAuthorizerContext,
   parseRequestBody,
   buildValidationError,
 } from "../../lib/responses.js";
@@ -24,6 +26,7 @@ export function apiEndpoint(app) {
   });
 }
 
+// TODO: Get rid of this and always load the resources, it doesn't help to optimise the standalone server
 // Lazy load AWS Cognito SDK only if bundle enforcement is on
 let __cognitoModule;
 let __cognitoClient;
@@ -75,16 +78,25 @@ export async function handler(event) {
     const userPoolId = process.env.COGNITO_USER_POOL_ID;
 
     if (enforceBundles && userPoolId) {
-      const idToken = extractAuthToken(event);
-      if (!idToken) {
-        return httpBadRequestResponse({ request, message: "Missing Authorization Bearer token" });
+      // Try to get user from custom authorizer context first (X-Authorization header)
+      const userInfo = extractUserFromAuthorizerContext(event);
+      let userSub = userInfo?.sub;
+
+      // Fallback to extracting JWT from Authorization or X-Authorization header
+      if (!userSub) {
+        const idToken = extractAuthTokenFromXAuthorization(event) || extractAuthToken(event);
+        if (!idToken) {
+          return httpBadRequestResponse({ request, message: "Missing Authorization Bearer token" });
+        }
+
+        const decoded = decodeJwtNoVerify(idToken);
+        if (!decoded?.sub) {
+          return httpBadRequestResponse({ request, message: "Invalid Authorization token" });
+        }
+        userSub = decoded.sub;
       }
 
-      const decoded = decodeJwtNoVerify(idToken);
-      if (!decoded?.sub) {
-        return httpBadRequestResponse({ request, message: "Invalid Authorization token" });
-      }
-      const bundles = await getUserBundlesFromCognito(userPoolId, decoded.sub);
+      const bundles = await getUserBundlesFromCognito(userPoolId, userSub);
       const hmrcBase = process.env.HMRC_BASE_URI;
       const sandbox = isSandboxBase(hmrcBase);
       if (sandbox) {
