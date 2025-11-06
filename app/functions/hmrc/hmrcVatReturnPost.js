@@ -3,7 +3,6 @@
 import logger from "../../lib/logger.js";
 import {
   extractRequest,
-  httpBadRequestResponse,
   httpOkResponse,
   httpServerErrorResponse,
   extractClientIPFromHeaders,
@@ -31,43 +30,13 @@ export async function handler(event) {
   const detectedIP = extractClientIPFromHeaders(event);
 
   // Enforce bundle requirements early in the handler
-  try {
-    const hmrcBaseUri = process.env.HMRC_BASE_URI;
-    const userPoolId = process.env.COGNITO_USER_POOL_ID;
-
-    await enforceBundles(event, {
-      hmrcBaseUri,
-      userPoolId,
-      sandboxBundles: ["HMRC_TEST_API"],
-      productionBundles: ["HMRC_PROD_SUBMIT", "LEGACY_ENTITLEMENT"],
-    });
-  } catch (bundleError) {
-    // Handle bundle enforcement errors with diagnostic information
-    if (bundleError.code === "MISSING_AUTHORIZATION") {
-      return httpBadRequestResponse({
-        request,
-        message: bundleError.message,
-      });
-    }
-
-    if (bundleError.code === "BUNDLE_FORBIDDEN") {
-      return httpServerErrorResponse({
-        request,
-        message: bundleError.message,
-        error: {
-          code: bundleError.code,
-          ...bundleError.details,
-        },
-      });
-    }
-
-    // Generic authorization failure
-    return httpServerErrorResponse({
-      request,
-      message: "Authorization failure while checking entitlements",
-      error: bundleError?.message || String(bundleError),
-    });
-  }
+  const { errorResponse } = await enforceBundles(event, request, {
+    hmrcBaseUri: process.env.HMRC_BASE_URI,
+    userPoolId: process.env.COGNITO_USER_POOL_ID,
+    sandboxBundles: ["HMRC_TEST_API"],
+    productionBundles: ["HMRC_PROD_SUBMIT", "LEGACY_ENTITLEMENT"],
+  });
+  if (errorResponse) return errorResponse;
 
   const { vatNumber, periodKey, vatDue, accessToken, hmrcAccessToken } = parseRequestBody(event);
   const token = accessToken || hmrcAccessToken;

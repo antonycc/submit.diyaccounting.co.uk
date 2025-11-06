@@ -3,7 +3,13 @@
 
 import logger from "./logger.js";
 import { decodeJwtNoVerify } from "./jwtHelper.js";
-import { extractAuthToken, extractAuthTokenFromXAuthorization, extractUserFromAuthorizerContext } from "./responses.js";
+import {
+  extractAuthToken,
+  extractAuthTokenFromXAuthorization,
+  extractUserFromAuthorizerContext,
+  httpBadRequestResponse,
+  httpServerErrorResponse,
+} from "./responses.js";
 import { getUserBundles, updateUserBundles } from "./bundleHelpers.js";
 
 const DEFAULT_AWS_REGION = "eu-west-2";
@@ -141,104 +147,130 @@ function hasRequiredBundle(bundles, requiredBundles) {
 
 /**
  * Enforce bundle requirements for an API endpoint
- * Throws an error if the user doesn't have the required entitlement
+ * Returns error response if user doesn't have required entitlement
  *
  * @param {Object} event - Lambda event object
+ * @param {Object} request - Request object for error responses
  * @param {Object} options - Configuration options
  * @param {string} options.hmrcBaseUri - HMRC API base URI (to determine sandbox vs production)
  * @param {string} options.userPoolId - Cognito User Pool ID
  * @param {Array<string>} options.sandboxBundles - Required bundles for sandbox environment
  * @param {Array<string>} options.productionBundles - Required bundles for production environment
- * @throws {Error} - Throws error with details if entitlement check fails
- * @returns {Promise<Object>} - Returns user info and bundles if successful
+ * @returns {Promise<Object>} - Returns {currentBundles, errorResponse: null} on success or {currentBundles: null, errorResponse} on failure
  */
-export async function enforceBundles(event, options = {}) {
+export async function enforceBundles(event, request, options = {}) {
   const { hmrcBaseUri, userPoolId, sandboxBundles = [], productionBundles = [] } = options;
 
-  // Check if bundle enforcement is enabled
-  const enforceBundlesEnabled =
-    String(process.env.DIY_SUBMIT_ENFORCE_BUNDLES || "").toLowerCase() === "true" || process.env.DIY_SUBMIT_ENFORCE_BUNDLES === "1";
+  try {
+    // Check if bundle enforcement is enabled
+    const enforceBundlesEnabled =
+      String(process.env.DIY_SUBMIT_ENFORCE_BUNDLES || "").toLowerCase() === "true" || process.env.DIY_SUBMIT_ENFORCE_BUNDLES === "1";
 
-  logger.info({
-    message: "Bundle enforcement check started",
-    enforceBundlesEnabled,
-    userPoolId,
-    hmrcBaseUri,
-    sandboxBundles,
-    productionBundles,
-  });
+    logger.info({
+      message: "Bundle enforcement check started",
+      enforceBundlesEnabled,
+      userPoolId,
+      hmrcBaseUri,
+      sandboxBundles,
+      productionBundles,
+    });
 
-  if (!enforceBundlesEnabled || !userPoolId) {
-    logger.info({ message: "Bundle enforcement disabled or no user pool configured" });
-    return { enforced: false };
-  }
+    if (!enforceBundlesEnabled || !userPoolId) {
+      logger.info({ message: "Bundle enforcement disabled or no user pool configured" });
+      return { currentBundles: null, errorResponse: null };
+    }
 
-  // Extract user information from event
-  const userExtraction = extractUserInfo(event);
-  if (!userExtraction || !userExtraction.sub) {
-    const error = new Error("Missing Authorization Bearer token");
-    error.code = "MISSING_AUTHORIZATION";
-    throw error;
-  }
+    // Extract user information from event
+    const userExtraction = extractUserInfo(event);
+    if (!userExtraction || !userExtraction.sub) {
+      return {
+        currentBundles: null,
+        errorResponse: httpBadRequestResponse({
+          request,
+          message: "Missing Authorization Bearer token",
+        }),
+      };
+    }
 
-  const { sub: userSub, claims } = userExtraction;
+    const { sub: userSub, claims } = userExtraction;
 
-  // Get user's bundles from Cognito
-  const bundles = await getUserBundlesFromCognito(userPoolId, userSub);
+    // Get user's bundles from Cognito
+    const bundles = await getUserBundlesFromCognito(userPoolId, userSub);
 
-  // Determine environment and required bundles
-  const isSandbox = isSandboxBase(hmrcBaseUri);
-  const requiredBundles = isSandbox ? sandboxBundles : productionBundles;
-  const environment = isSandbox ? "sandbox" : "production";
+    // Determine environment and required bundles
+    const isSandbox = isSandboxBase(hmrcBaseUri);
+    const requiredBundles = isSandbox ? sandboxBundles : productionBundles;
+    const environment = isSandbox ? "sandbox" : "production";
 
-  logger.info({
-    message: "Checking bundle entitlements",
-    environment,
-    isSandbox,
-    requiredBundles,
-    currentBundles: bundles,
-    userSub,
-    claims: claims ? Object.keys(claims) : null,
-  });
-
-  // Check if user has required bundle
-  const allowed = hasRequiredBundle(bundles, requiredBundles);
-
-  if (!allowed) {
-    const error = new Error(`Forbidden: ${environment} submission requires one of the following bundles: ${requiredBundles.join(", ")}`);
-    error.code = "BUNDLE_FORBIDDEN";
-    error.details = {
+    logger.info({
+      message: "Checking bundle entitlements",
       environment,
+      isSandbox,
       requiredBundles,
       currentBundles: bundles,
       userSub,
-      claims,
-      customBundlesAttribute: bundles.join("|"),
-    };
-
-    logger.error({
-      message: "Bundle entitlement check failed",
-      error: error.message,
-      ...error.details,
+      claims: claims ? Object.keys(claims) : null,
     });
 
-    throw error;
+    // Check if user has required bundle
+    const allowed = hasRequiredBundle(bundles, requiredBundles);
+
+    if (!allowed) {
+      logger.error({
+        message: "Bundle entitlement check failed",
+        environment,
+        requiredBundles,
+        currentBundles: bundles,
+        userSub,
+        claims,
+        customBundlesAttribute: bundles.join("|"),
+      });
+
+      return {
+        currentBundles: null,
+        errorResponse: httpServerErrorResponse({
+          request,
+          message: `Forbidden: ${environment} submission requires one of the following bundles: ${requiredBundles.join(", ")}`,
+          error: {
+            code: "BUNDLE_FORBIDDEN",
+            environment,
+            requiredBundles,
+            currentBundles: bundles,
+            userSub,
+            claims,
+            customBundlesAttribute: bundles.join("|"),
+          },
+        }),
+      };
+    }
+
+    logger.info({
+      message: "Bundle entitlement check passed",
+      environment,
+      userSub,
+      matchedBundles: bundles.filter((b) => hasRequiredBundle([b], requiredBundles)),
+    });
+
+    return {
+      currentBundles: bundles,
+      errorResponse: null,
+    };
+  } catch (error) {
+    logger.error({
+      message: "Unexpected error during bundle enforcement",
+      error: error.message,
+      stack: error.stack,
+    });
+
+    return {
+      currentBundles: null,
+      errorResponse: httpServerErrorResponse({
+        request,
+        message: "Authorization failure while checking entitlements",
+        error: error?.message || String(error),
+      }),
+    };
   }
-
-  logger.info({
-    message: "Bundle entitlement check passed",
-    environment,
-    userSub,
-    matchedBundles: bundles.filter((b) => hasRequiredBundle([b], requiredBundles)),
-  });
-
-  return {
-    enforced: true,
-    userSub,
-    bundles,
-    environment,
-    claims,
-  };
 }
 
 /**

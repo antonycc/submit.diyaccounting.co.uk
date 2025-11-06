@@ -43,6 +43,10 @@ function buildEvent(token, headers = {}) {
   };
 }
 
+function buildRequest() {
+  return "https://test-host/api/test";
+}
+
 describe("bundleEnforcement.js - enforceBundles", () => {
   const originalEnv = process.env;
 
@@ -61,69 +65,77 @@ describe("bundleEnforcement.js - enforceBundles", () => {
   test("should pass when user has required sandbox bundle", async () => {
     const token = makeIdToken("user-with-test-api");
     const event = buildEvent(token);
+    const request = buildRequest();
 
     // Set up mock bundles for this user
     mockBundleStore.set("user-with-test-api", ["HMRC_TEST_API|EXPIRY=2025-12-31"]);
 
-    const result = await enforceBundles(event, {
+    const { currentBundles, errorResponse } = await enforceBundles(event, request, {
       hmrcBaseUri: "https://test-api.service.hmrc.gov.uk",
       userPoolId: "test-pool-id",
       sandboxBundles: ["HMRC_TEST_API"],
       productionBundles: ["HMRC_PROD_SUBMIT"],
     });
 
-    expect(result.enforced).toBe(true);
-    expect(result.userSub).toBe("user-with-test-api");
-    expect(result.environment).toBe("sandbox");
+    expect(errorResponse).toBe(null);
+    expect(currentBundles).toEqual(["HMRC_TEST_API|EXPIRY=2025-12-31"]);
   });
 
-  test("should throw when user missing required sandbox bundle", async () => {
+  test("should return error when user missing required sandbox bundle", async () => {
     const token = makeIdToken("user-without-bundle");
     const event = buildEvent(token);
+    const request = buildRequest();
 
     // User has no bundles
     mockBundleStore.set("user-without-bundle", []);
 
-    await expect(
-      enforceBundles(event, {
-        hmrcBaseUri: "https://test-api.service.hmrc.gov.uk",
-        userPoolId: "test-pool-id",
-        sandboxBundles: ["HMRC_TEST_API"],
-        productionBundles: ["HMRC_PROD_SUBMIT"],
-      }),
-    ).rejects.toThrow(/Forbidden.*sandbox.*HMRC_TEST_API/);
+    const { currentBundles, errorResponse } = await enforceBundles(event, request, {
+      hmrcBaseUri: "https://test-api.service.hmrc.gov.uk",
+      userPoolId: "test-pool-id",
+      sandboxBundles: ["HMRC_TEST_API"],
+      productionBundles: ["HMRC_PROD_SUBMIT"],
+    });
+
+    expect(currentBundles).toBe(null);
+    expect(errorResponse).toBeDefined();
+    expect(errorResponse.statusCode).toBe(500);
+    expect(JSON.parse(errorResponse.body).message).toContain("Forbidden");
+    expect(JSON.parse(errorResponse.body).message).toContain("sandbox");
+    expect(JSON.parse(errorResponse.body).message).toContain("HMRC_TEST_API");
   });
 
-  test("should throw MISSING_AUTHORIZATION when no token present", async () => {
+  test("should return error when no token present", async () => {
     const event = buildEvent(null);
+    const request = buildRequest();
 
-    try {
-      await enforceBundles(event, {
-        hmrcBaseUri: "https://api.service.hmrc.gov.uk",
-        userPoolId: "test-pool-id",
-        sandboxBundles: ["HMRC_TEST_API"],
-        productionBundles: ["HMRC_PROD_SUBMIT"],
-      });
-      expect.fail("Should have thrown");
-    } catch (error) {
-      expect(error.code).toBe("MISSING_AUTHORIZATION");
-      expect(error.message).toContain("Missing Authorization Bearer token");
-    }
-  });
-
-  test("should skip enforcement when DIY_SUBMIT_ENFORCE_BUNDLES is false", async () => {
-    process.env.DIY_SUBMIT_ENFORCE_BUNDLES = "false";
-    const token = makeIdToken("any-user");
-    const event = buildEvent(token);
-
-    const result = await enforceBundles(event, {
+    const { currentBundles, errorResponse } = await enforceBundles(event, request, {
       hmrcBaseUri: "https://api.service.hmrc.gov.uk",
       userPoolId: "test-pool-id",
       sandboxBundles: ["HMRC_TEST_API"],
       productionBundles: ["HMRC_PROD_SUBMIT"],
     });
 
-    expect(result.enforced).toBe(false);
+    expect(currentBundles).toBe(null);
+    expect(errorResponse).toBeDefined();
+    expect(errorResponse.statusCode).toBe(400);
+    expect(JSON.parse(errorResponse.body).message).toContain("Missing Authorization Bearer token");
+  });
+
+  test("should skip enforcement when DIY_SUBMIT_ENFORCE_BUNDLES is false", async () => {
+    process.env.DIY_SUBMIT_ENFORCE_BUNDLES = "false";
+    const token = makeIdToken("any-user");
+    const event = buildEvent(token);
+    const request = buildRequest();
+
+    const { currentBundles, errorResponse } = await enforceBundles(event, request, {
+      hmrcBaseUri: "https://api.service.hmrc.gov.uk",
+      userPoolId: "test-pool-id",
+      sandboxBundles: ["HMRC_TEST_API"],
+      productionBundles: ["HMRC_PROD_SUBMIT"],
+    });
+
+    expect(errorResponse).toBe(null);
+    expect(currentBundles).toBe(null);
   });
 
   test("should extract user from authorizer context", async () => {
@@ -142,77 +154,83 @@ describe("bundleEnforcement.js - enforceBundles", () => {
         },
       },
     };
+    const request = buildRequest();
 
     // Set up mock bundles
     mockBundleStore.set("user-from-authorizer", ["HMRC_TEST_API"]);
 
-    const result = await enforceBundles(event, {
+    const { currentBundles, errorResponse } = await enforceBundles(event, request, {
       hmrcBaseUri: "https://test-api.service.hmrc.gov.uk",
       userPoolId: "test-pool-id",
       sandboxBundles: ["HMRC_TEST_API"],
       productionBundles: ["HMRC_PROD_SUBMIT"],
     });
 
-    expect(result.userSub).toBe("user-from-authorizer");
+    expect(errorResponse).toBe(null);
+    expect(currentBundles).toEqual(["HMRC_TEST_API"]);
   });
 
   test("should distinguish between sandbox and production environments", async () => {
     const token = makeIdToken("prod-user");
     const event = buildEvent(token);
+    const request = buildRequest();
 
     // Set up production bundle
     mockBundleStore.set("prod-user", ["HMRC_PROD_SUBMIT|EXPIRY="]);
 
-    const result = await enforceBundles(event, {
+    const { currentBundles, errorResponse } = await enforceBundles(event, request, {
       hmrcBaseUri: "https://api.service.hmrc.gov.uk", // production URL
       userPoolId: "test-pool-id",
       sandboxBundles: ["HMRC_TEST_API"],
       productionBundles: ["HMRC_PROD_SUBMIT", "LEGACY_ENTITLEMENT"],
     });
 
-    expect(result.environment).toBe("production");
+    expect(errorResponse).toBe(null);
+    expect(currentBundles).toEqual(["HMRC_PROD_SUBMIT|EXPIRY="]);
   });
 
   test("should include diagnostic details in BUNDLE_FORBIDDEN error", async () => {
     const token = makeIdToken("user-without-prod");
     const event = buildEvent(token);
+    const request = buildRequest();
 
     // User has only test bundle
     mockBundleStore.set("user-without-prod", ["HMRC_TEST_API"]);
 
-    try {
-      await enforceBundles(event, {
-        hmrcBaseUri: "https://api.service.hmrc.gov.uk",
-        userPoolId: "test-pool-id",
-        sandboxBundles: ["HMRC_TEST_API"],
-        productionBundles: ["HMRC_PROD_SUBMIT"],
-      });
-      expect.fail("Should have thrown");
-    } catch (error) {
-      expect(error.code).toBe("BUNDLE_FORBIDDEN");
-      expect(error.details).toBeDefined();
-      expect(error.details.environment).toBe("production");
-      expect(error.details.requiredBundles).toEqual(["HMRC_PROD_SUBMIT"]);
-      expect(error.details.currentBundles).toEqual(["HMRC_TEST_API"]);
-      expect(error.details.userSub).toBe("user-without-prod");
-    }
+    const { currentBundles, errorResponse } = await enforceBundles(event, request, {
+      hmrcBaseUri: "https://api.service.hmrc.gov.uk",
+      userPoolId: "test-pool-id",
+      sandboxBundles: ["HMRC_TEST_API"],
+      productionBundles: ["HMRC_PROD_SUBMIT"],
+    });
+
+    expect(currentBundles).toBe(null);
+    expect(errorResponse).toBeDefined();
+    expect(errorResponse.statusCode).toBe(500);
+    const body = JSON.parse(errorResponse.body);
+    expect(body.code).toBe("BUNDLE_FORBIDDEN");
+    expect(body.environment).toBe("production");
+    expect(body.requiredBundles).toEqual(["HMRC_PROD_SUBMIT"]);
+    expect(body.currentBundles).toEqual(["HMRC_TEST_API"]);
+    expect(body.userSub).toBe("user-without-prod");
   });
 
   test("should accept LEGACY_ENTITLEMENT for production", async () => {
     const token = makeIdToken("legacy-user");
     const event = buildEvent(token);
+    const request = buildRequest();
 
     mockBundleStore.set("legacy-user", ["LEGACY_ENTITLEMENT|EXPIRY=2025-12-31"]);
 
-    const result = await enforceBundles(event, {
+    const { currentBundles, errorResponse } = await enforceBundles(event, request, {
       hmrcBaseUri: "https://api.service.hmrc.gov.uk",
       userPoolId: "test-pool-id",
       sandboxBundles: ["HMRC_TEST_API"],
       productionBundles: ["HMRC_PROD_SUBMIT", "LEGACY_ENTITLEMENT"],
     });
 
-    expect(result.enforced).toBe(true);
-    expect(result.environment).toBe("production");
+    expect(errorResponse).toBe(null);
+    expect(currentBundles).toEqual(["LEGACY_ENTITLEMENT|EXPIRY=2025-12-31"]);
   });
 
   test("should extract token from X-Authorization header", async () => {
@@ -222,17 +240,19 @@ describe("bundleEnforcement.js - enforceBundles", () => {
         "X-Authorization": `Bearer ${token}`,
       },
     };
+    const request = buildRequest();
 
     mockBundleStore.set("x-auth-user", ["HMRC_TEST_API"]);
 
-    const result = await enforceBundles(event, {
+    const { currentBundles, errorResponse } = await enforceBundles(event, request, {
       hmrcBaseUri: "https://test-api.service.hmrc.gov.uk",
       userPoolId: "test-pool-id",
       sandboxBundles: ["HMRC_TEST_API"],
       productionBundles: ["HMRC_PROD_SUBMIT"],
     });
 
-    expect(result.userSub).toBe("x-auth-user");
+    expect(errorResponse).toBe(null);
+    expect(currentBundles).toEqual(["HMRC_TEST_API"]);
   });
 });
 
