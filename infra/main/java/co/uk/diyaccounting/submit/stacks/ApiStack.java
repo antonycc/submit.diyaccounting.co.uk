@@ -135,23 +135,10 @@ public class ApiStack extends Stack {
                 .build();
 
         // Enable access logging for the default stage to a pre-created CloudWatch Log Group
+        // The resource policy for API Gateway to write to this log group is managed centrally
+        // in the ObservabilityStack to avoid hitting the 10 resource policy limit per account
         ILogGroup apiAccessLogs = LogGroup.fromLogGroupName(
                 this, props.resourceNamePrefix() + "-ImportedApiAccessLogs", props.sharedNames().apiAccessLogGroupName);
-
-        // Allow API Gateway service to write logs to this log group for this API's default stage
-        apiAccessLogs.addToResourcePolicy(PolicyStatement.Builder.create()
-                .sid("ApiGatewayAccessLogs")
-                .principals(java.util.List.of(new ServicePrincipal("apigateway.amazonaws.com")))
-                .actions(java.util.List.of("logs:CreateLogStream", "logs:PutLogEvents"))
-                .resources(java.util.List.of(apiAccessLogs.getLogGroupArn()))
-                .conditions(java.util.Map.of(
-                        "StringEquals", java.util.Map.of("aws:SourceAccount", this.getAccount()),
-                        "ArnLike",
-                                java.util.Map.of(
-                                        "aws:SourceArn",
-                                        "arn:aws:apigateway:" + this.getRegion() + "::/apis/" + this.httpApi.getApiId()
-                                                + "/stages/$default")))
-                .build());
 
         // Configure default stage access logs and logging level/metrics
         assert this.httpApi.getDefaultStage() != null;

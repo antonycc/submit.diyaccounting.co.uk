@@ -140,6 +140,20 @@ public class ObservabilityStack extends Stack {
                 .removalPolicy(RemovalPolicy.DESTROY)
                 .build();
 
+        // Add a single shared resource policy to allow all API Gateway APIs in this environment to write logs
+        // This prevents hitting the 10 resource policy limit when multiple ApiStacks try to add their own policies
+        this.apiAccessLogGroup.addToResourcePolicy(PolicyStatement.Builder.create()
+                .sid("AllowApiGatewayAccessLogs")
+                .principals(List.of(new software.amazon.awscdk.services.iam.ServicePrincipal("apigateway.amazonaws.com")))
+                .actions(List.of("logs:CreateLogStream", "logs:PutLogEvents"))
+                .resources(List.of(this.apiAccessLogGroup.getLogGroupArn()))
+                .conditions(java.util.Map.of(
+                        "StringEquals", java.util.Map.of("aws:SourceAccount", this.getAccount()),
+                        "ArnLike", java.util.Map.of(
+                                "aws:SourceArn",
+                                "arn:aws:apigateway:" + this.getRegion() + "::/apis/*/stages/*")))
+                .build());
+
         infof(
                 "ObservabilityStack %s created successfully for %s",
                 this.getNode().getId(), props.sharedNames().dashedDeploymentDomainName);
