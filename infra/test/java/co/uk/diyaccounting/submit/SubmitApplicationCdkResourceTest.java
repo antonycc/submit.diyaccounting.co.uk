@@ -106,6 +106,77 @@ class SubmitApplicationCdkResourceTest {
         }
     }
 
+    @Test
+    @SetEnvironmentVariable.SetEnvironmentVariables({
+        @SetEnvironmentVariable(key = "ENVIRONMENT_NAME", value = "prod"),
+        @SetEnvironmentVariable(key = "DEPLOYMENT_NAME", value = "prod-ea373de"),
+        @SetEnvironmentVariable(
+                key = "COGNITO_USER_POOL_ARN",
+                value = "arn:aws:cognito-idp:eu-west-2:111111111111:userpool/eu-west-2_123456789"),
+        @SetEnvironmentVariable(key = "COGNITO_CLIENT_ID", value = "prod-cognito-client-id"),
+        @SetEnvironmentVariable(
+                key = "HMRC_CLIENT_SECRET_ARN",
+                value = "arn:aws:secretsmanager:eu-west-2:111111111111:secret:prod-hmrc-secret"),
+        @SetEnvironmentVariable(key = "BASE_IMAGE_TAG", value = "test"),
+        @SetEnvironmentVariable(key = "CLOUD_TRAIL_ENABLED", value = "true"),
+        @SetEnvironmentVariable(key = "SELF_DESTRUCT_DELAY_HOURS", value = "1"),
+        @SetEnvironmentVariable(key = "CDK_DEFAULT_ACCOUNT", value = "111111111111"),
+        @SetEnvironmentVariable(key = "CDK_DEFAULT_REGION", value = "eu-west-2"),
+    })
+    void shouldNotCreateSelfDestructStackForProdDeployment() throws IOException {
+
+        Path cdkJsonPath = Path.of("cdk-application/cdk.json").toAbsolutePath();
+        Map<String, Object> ctx = buildContextPropertyMapFromCdkJsonPath(cdkJsonPath);
+        App app = new App(AppProps.builder().context(ctx).build());
+
+        SubmitApplication.SubmitApplicationProps appProps = SubmitApplication.loadAppProps(app, "cdk-application/");
+        var submitApplication = new SubmitApplication(app, appProps);
+        app.synth();
+        infof("CDK synth complete for prod deployment");
+
+        // Assert that self-destruct stack is NOT created for prod deployments
+        org.junit.jupiter.api.Assertions.assertNull(
+                submitApplication.selfDestructStack,
+                "Self-destruct stack should NOT be created for prod deployments (deployment name: prod-ea373de)");
+        infof("Verified: Self-destruct stack was NOT created for prod deployment");
+    }
+
+    @Test
+    @SetEnvironmentVariable.SetEnvironmentVariables({
+        @SetEnvironmentVariable(key = "ENVIRONMENT_NAME", value = "ci"),
+        @SetEnvironmentVariable(key = "DEPLOYMENT_NAME", value = "ci-lambdas6"),
+        @SetEnvironmentVariable(
+                key = "COGNITO_USER_POOL_ARN",
+                value = "arn:aws:cognito-idp:eu-west-2:111111111111:userpool/eu-west-2_123456789"),
+        @SetEnvironmentVariable(key = "COGNITO_CLIENT_ID", value = "ci-cognito-client-id"),
+        @SetEnvironmentVariable(
+                key = "HMRC_CLIENT_SECRET_ARN",
+                value = "arn:aws:secretsmanager:eu-west-2:111111111111:secret:ci-hmrc-secret"),
+        @SetEnvironmentVariable(key = "BASE_IMAGE_TAG", value = "test"),
+        @SetEnvironmentVariable(key = "CLOUD_TRAIL_ENABLED", value = "true"),
+        @SetEnvironmentVariable(key = "SELF_DESTRUCT_DELAY_HOURS", value = "1"),
+        @SetEnvironmentVariable(key = "CDK_DEFAULT_ACCOUNT", value = "111111111111"),
+        @SetEnvironmentVariable(key = "CDK_DEFAULT_REGION", value = "eu-west-2"),
+    })
+    void shouldCreateSelfDestructStackForCiDeployment() throws IOException {
+
+        Path cdkJsonPath = Path.of("cdk-application/cdk.json").toAbsolutePath();
+        Map<String, Object> ctx = buildContextPropertyMapFromCdkJsonPath(cdkJsonPath);
+        App app = new App(AppProps.builder().context(ctx).build());
+
+        SubmitApplication.SubmitApplicationProps appProps = SubmitApplication.loadAppProps(app, "cdk-application/");
+        var submitApplication = new SubmitApplication(app, appProps);
+        app.synth();
+        infof("CDK synth complete for CI deployment");
+
+        // Assert that self-destruct stack IS created for CI deployments
+        org.junit.jupiter.api.Assertions.assertNotNull(
+                submitApplication.selfDestructStack,
+                "Self-destruct stack SHOULD be created for CI deployments (deployment name: ci-lambdas6)");
+        infof("Verified: Self-destruct stack was created for CI deployment");
+        Template.fromStack(submitApplication.selfDestructStack).resourceCountIs("AWS::Lambda::Function", 1);
+    }
+
     private static @NotNull Map<String, Object> buildContextPropertyMapFromCdkJsonPath(Path cdkJsonPath)
             throws IOException {
         String json = Files.readString(cdkJsonPath);
