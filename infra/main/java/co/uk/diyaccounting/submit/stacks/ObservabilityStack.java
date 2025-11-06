@@ -27,6 +27,7 @@ import software.amazon.awscdk.services.cognito.CfnIdentityPoolRoleAttachment;
 import software.amazon.awscdk.services.iam.FederatedPrincipal;
 import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.iam.Role;
+import software.amazon.awscdk.services.iam.ServicePrincipal;
 import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.amazon.awscdk.services.rum.CfnAppMonitor;
@@ -144,9 +145,9 @@ public class ObservabilityStack extends Stack {
         // This prevents hitting the 10 resource policy limit when multiple ApiStacks try to add their own policies
         this.apiAccessLogGroup.addToResourcePolicy(PolicyStatement.Builder.create()
                 .sid("AllowApiGatewayAccessLogs")
-                .principals(List.of(new software.amazon.awscdk.services.iam.ServicePrincipal("apigateway.amazonaws.com")))
+                .principals(List.of(new ServicePrincipal("apigateway.amazonaws.com")))
                 .actions(List.of("logs:CreateLogStream", "logs:PutLogEvents"))
-                .resources(List.of(this.apiAccessLogGroup.getLogGroupArn()))
+                .resources(List.of(this.apiAccessLogGroup.getLogGroupArn() + ":*"))
                 .conditions(java.util.Map.of(
                         "StringEquals", java.util.Map.of("aws:SourceAccount", this.getAccount()),
                         "ArnLike", java.util.Map.of(
