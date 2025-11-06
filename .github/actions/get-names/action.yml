@@ -92,13 +92,16 @@ runs:
             if [ -n "${MERGED_BRANCH:-}" ]; then
               CLEANED_MERGED=$(echo "$MERGED_BRANCH" | tr '[:upper:]' '[:lower:]' | sed -e 's/[^a-z0-9]/-/g' -e 's/dependabot/-/g' -e 's/feature/-/g' -e 's/copilot/-/g' -e 's/-\{2,\}/-/g' -e 's/^-//' -e 's/-$//')
               if [ -n "$CLEANED_MERGED" ]; then
-                DEPLOYMENT_NAME="prod-${CLEANED_MERGED:0:7}"
+                # Truncate and remove trailing hyphens
+                TRUNCATED="${CLEANED_MERGED:0:7}"
+                DEPLOYMENT_NAME="prod-$(echo "$TRUNCATED" | sed -e 's/-$//')"
               fi
             fi
           fi
         else
-          # Truncate to 9 chars for branch-based deployments to match prior logic (ci-xxxxxxxxx)
-          DEPLOYMENT_NAME="ci-${CLEANED:0:9}"
+          # Truncate to 9 chars for branch-based deployments and remove trailing hyphens
+          TRUNCATED="${CLEANED:0:9}"
+          DEPLOYMENT_NAME="ci-$(echo "$TRUNCATED" | sed -e 's/-$//')"
         fi
         if [ -n "${GET_NAMES_DEPLOYMENT_NAME:-}" ]; then
           DEPLOYMENT_NAME="${GET_NAMES_DEPLOYMENT_NAME?}"
