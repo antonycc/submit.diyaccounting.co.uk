@@ -1,8 +1,12 @@
 package co.uk.diyaccounting.submit.stacks;
 
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
 import co.uk.diyaccounting.submit.constructs.ApiLambdaProps;
+import java.util.List;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Aspects;
 import software.amazon.awscdk.CfnOutput;
@@ -36,11 +40,6 @@ import software.amazon.awscdk.services.logs.ILogGroup;
 import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.constructs.Construct;
-
-import java.util.List;
-
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 public class ApiStack extends Stack {
 
@@ -195,10 +194,10 @@ public class ApiStack extends Stack {
 
         // Create authorizers to selectively apply to routes
         String issuer = "https://cognito-idp.%s.amazonaws.com/%s".formatted(getRegion(), props.userPoolId());
-        HttpJwtAuthorizer jwtAuthorizer = HttpJwtAuthorizer.Builder
-            .create( props.resourceNamePrefix() + "-CognitoAuthorizer", issuer)
-            .jwtAudience(List.of(props.userPoolClientId()))
-            .build();
+        HttpJwtAuthorizer jwtAuthorizer = HttpJwtAuthorizer.Builder.create(
+                        props.resourceNamePrefix() + "-CognitoAuthorizer", issuer)
+                .jwtAudience(List.of(props.userPoolClientId()))
+                .build();
 
         // Create custom Lambda authorizer for X-Authorization header
         IFunction customAuthorizerLambda = Function.fromFunctionAttributes(
@@ -208,13 +207,13 @@ public class ApiStack extends Stack {
                         .functionArn(props.customAuthorizerLambdaArn())
                         .sameEnvironment(true)
                         .build());
-        
-        HttpLambdaAuthorizer customAuthorizer = HttpLambdaAuthorizer.Builder
-            .create(props.resourceNamePrefix() + "-CustomAuthorizer", customAuthorizerLambda)
-            .responseTypes(List.of(HttpLambdaResponseType.IAM))
-            .identitySource(List.of("$request.header.X-Authorization"))
-            .resultsCacheTtl(Duration.minutes(5))
-            .build();
+
+        HttpLambdaAuthorizer customAuthorizer = HttpLambdaAuthorizer.Builder.create(
+                        props.resourceNamePrefix() + "-CustomAuthorizer", customAuthorizerLambda)
+                .responseTypes(List.of(HttpLambdaResponseType.IAM))
+                .identitySource(List.of("$request.header.X-Authorization"))
+                .resultsCacheTtl(Duration.minutes(5))
+                .build();
 
         java.util.Set<String> createdRouteKeys = new java.util.HashSet<>();
         java.util.Map<String, String> firstCreatorByRoute = new java.util.HashMap<>();
@@ -331,7 +330,11 @@ public class ApiStack extends Stack {
                 this.getNode().getId(), props.resourceNamePrefix(), this.httpApi.getUrl());
     }
 
-    private void createRouteForLambda(ApiLambdaProps apiLambdaProps, HttpJwtAuthorizer jwtAuthorizer, HttpLambdaAuthorizer customAuthorizer, LambdaIntegrations lambdaIntegrations) {
+    private void createRouteForLambda(
+            ApiLambdaProps apiLambdaProps,
+            HttpJwtAuthorizer jwtAuthorizer,
+            HttpLambdaAuthorizer customAuthorizer,
+            LambdaIntegrations lambdaIntegrations) {
 
         // Build stable, unique construct IDs per route using method+path signature
         String keySuffix = (apiLambdaProps.httpMethod().toString() + "-" + apiLambdaProps.urlPath())
@@ -356,14 +359,14 @@ public class ApiStack extends Stack {
 
         // Create HTTP route with appropriate authorizer
         var routeKey = HttpRouteKey.with(apiLambdaProps.urlPath(), apiLambdaProps.httpMethod());
-        if(apiLambdaProps.customAuthorizer()) {
+        if (apiLambdaProps.customAuthorizer()) {
             HttpRoute.Builder.create(this, routeId)
                     .httpApi(this.httpApi)
                     .routeKey(routeKey)
                     .integration(integration)
                     .authorizer(customAuthorizer)
                     .build();
-        } else if(apiLambdaProps.jwtAuthorizer()) {
+        } else if (apiLambdaProps.jwtAuthorizer()) {
             HttpRoute.Builder.create(this, routeId)
                     .httpApi(this.httpApi)
                     .routeKey(routeKey)
@@ -372,10 +375,10 @@ public class ApiStack extends Stack {
                     .build();
         } else {
             HttpRoute.Builder.create(this, routeId)
-                .httpApi(this.httpApi)
-                .routeKey(routeKey)
-                .integration(integration)
-                .build();
+                    .httpApi(this.httpApi)
+                    .routeKey(routeKey)
+                    .integration(integration)
+                    .build();
         }
 
         infof(
