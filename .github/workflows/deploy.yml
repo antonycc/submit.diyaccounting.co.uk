@@ -77,6 +77,8 @@ on:
   schedule:
     - cron: '11 4 * * *'
 
+# bump
+
 permissions:
   id-token: write
   contents: read
