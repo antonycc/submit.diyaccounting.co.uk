@@ -10,7 +10,7 @@ import {
   httpBadRequestResponse,
   httpServerErrorResponse,
 } from "./responses.js";
-import { getUserBundles, updateUserBundles } from "./bundleHelpers.js";
+import { getUserBundles, updateUserBundles, isMockMode } from "./bundleHelpers.js";
 
 const DEFAULT_AWS_REGION = "eu-west-2";
 
@@ -94,9 +94,6 @@ export function extractUserInfo(event) {
  * @returns {Promise<Array<string>>} - Array of bundle strings
  */
 async function getUserBundlesFromCognito(userPoolId, sub) {
-  // Use bundleHelpers isMockMode which centralizes this check
-  const { isMockMode } = await import("./bundleHelpers.js");
-
   if (isMockMode()) {
     // Use mock bundle store in test mode
     const { getBundlesStore } = await import("../functions/non-lambda-mocks/mockBundleStore.js");
