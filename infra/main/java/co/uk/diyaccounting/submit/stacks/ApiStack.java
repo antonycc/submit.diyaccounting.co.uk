@@ -1,12 +1,8 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
 import co.uk.diyaccounting.submit.constructs.ApiLambdaProps;
-import java.util.List;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Aspects;
 import software.amazon.awscdk.CfnOutput;
@@ -31,8 +27,6 @@ import software.amazon.awscdk.services.cloudwatch.GraphWidget;
 import software.amazon.awscdk.services.cloudwatch.Metric;
 import software.amazon.awscdk.services.cloudwatch.MetricOptions;
 import software.amazon.awscdk.services.cloudwatch.TreatMissingData;
-import software.amazon.awscdk.services.iam.PolicyStatement;
-import software.amazon.awscdk.services.iam.ServicePrincipal;
 import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.lambda.FunctionAttributes;
 import software.amazon.awscdk.services.lambda.IFunction;
@@ -40,6 +34,11 @@ import software.amazon.awscdk.services.logs.ILogGroup;
 import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.constructs.Construct;
+
+import java.util.List;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 public class ApiStack extends Stack {
 
@@ -134,23 +133,10 @@ public class ApiStack extends Stack {
                 .build();
 
         // Enable access logging for the default stage to a pre-created CloudWatch Log Group
+        // The resource policy for API Gateway to write to this log group is managed centrally
+        // in the ObservabilityStack to avoid hitting the 10 resource policy limit per account
         ILogGroup apiAccessLogs = LogGroup.fromLogGroupName(
                 this, props.resourceNamePrefix() + "-ImportedApiAccessLogs", props.sharedNames().apiAccessLogGroupName);
-
-        // Allow API Gateway service to write logs to this log group for this API's default stage
-        apiAccessLogs.addToResourcePolicy(PolicyStatement.Builder.create()
-                .sid("ApiGatewayAccessLogs")
-                .principals(java.util.List.of(new ServicePrincipal("apigateway.amazonaws.com")))
-                .actions(java.util.List.of("logs:CreateLogStream", "logs:PutLogEvents"))
-                .resources(java.util.List.of(apiAccessLogs.getLogGroupArn()))
-                .conditions(java.util.Map.of(
-                        "StringEquals", java.util.Map.of("aws:SourceAccount", this.getAccount()),
-                        "ArnLike",
-                                java.util.Map.of(
-                                        "aws:SourceArn",
-                                        "arn:aws:apigateway:" + this.getRegion() + "::/apis/" + this.httpApi.getApiId()
-                                                + "/stages/$default")))
-                .build());
 
         // Configure default stage access logs and logging level/metrics
         assert this.httpApi.getDefaultStage() != null;

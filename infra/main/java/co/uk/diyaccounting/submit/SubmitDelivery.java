@@ -156,6 +156,7 @@ public class SubmitDelivery {
                         .envName(envName)
                         .deploymentName(deploymentName)
                         .resourceNamePrefix(sharedNames.delResourceNamePrefix)
+
                         .cloudTrailEnabled(cloudTrailEnabled)
                         .sharedNames(sharedNames)
                         .hostedZoneName(appProps.hostedZoneName)
@@ -176,6 +177,7 @@ public class SubmitDelivery {
                         .envName(envName)
                         .deploymentName(deploymentName)
                         .resourceNamePrefix(sharedNames.delResourceNamePrefix)
+
                         .cloudTrailEnabled(cloudTrailEnabled)
                         .sharedNames(sharedNames)
                         .distributionId(distributionId)
@@ -197,6 +199,7 @@ public class SubmitDelivery {
                             .envName(envName)
                             .deploymentName(deploymentName)
                             .resourceNamePrefix(sharedNames.delResourceNamePrefix)
+
                             .cloudTrailEnabled(cloudTrailEnabled)
                             .sharedNames(sharedNames)
                             .selfDestructLogGroupName(sharedNames.ue1SelfDestructLogGroupName)
