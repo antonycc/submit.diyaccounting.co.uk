@@ -136,13 +136,31 @@ function generateAllowPolicy(routeArn, jwtPayload) {
     policyResource = routeArn;
   }
 
-  // Build claims object similar to API Gateway native JWT authorizer
-  const claims = {
-    ...jwtPayload,
-    auth_time: String(jwtPayload.auth_time || ""),
-    iat: String(jwtPayload.iat || ""),
-    exp: String(jwtPayload.exp || ""),
-  };
+
+  // Flatten all JWT claims into simple string values for context
+  const flatContext = {};
+  for (const [k, v] of Object.entries(jwtPayload || {})) {
+    if (v === undefined || v === null) continue;
+    switch (typeof v) {
+      case "string":
+      case "number":
+      case "boolean":
+        flatContext[k] = String(v);
+        break;
+      default:
+        try {
+          flatContext[k] = JSON.stringify(v);
+        } catch (_e) {
+          flatContext[k] = String(v);
+        }
+    }
+  }
+  // Ensure common time claims are strings (overwrite if necessary)
+  if (jwtPayload) {
+    flatContext.auth_time = String(jwtPayload.auth_time || flatContext.auth_time || "");
+    flatContext.iat = String(jwtPayload.iat || flatContext.iat || "");
+    flatContext.exp = String(jwtPayload.exp || flatContext.exp || "");
+  }
 
   return {
     principalId: jwtPayload.sub,
@@ -159,8 +177,9 @@ function generateAllowPolicy(routeArn, jwtPayload) {
     context: {
       // Context values for HTTP API Lambda authorizer (IAM response type) must be simple types.
       // Avoid nested objects to prevent API Gateway 500 errors.
+      ...flatContext,
       sub: jwtPayload.sub,
-      username: jwtPayload.username || jwtPayload.sub,
+      username: jwtPayload["cognito:username"] || jwtPayload.username || jwtPayload.sub,
       email: jwtPayload.email || "",
       scope: jwtPayload.scope || "",
       token_use: jwtPayload.token_use || "access",
