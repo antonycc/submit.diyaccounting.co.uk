@@ -157,12 +157,8 @@ function generateAllowPolicy(routeArn, jwtPayload) {
       ],
     },
     context: {
-      // Preferred structure to mimic API Gateway JWT authorizer
-      jwt: {
-        claims,
-        scopes: null,
-      },
-      // Backward-compatible flat fields (existing consumers may still rely on these)
+      // Context values for HTTP API Lambda authorizer (IAM response type) must be simple types.
+      // Avoid nested objects to prevent API Gateway 500 errors.
       sub: jwtPayload.sub,
       username: jwtPayload.username || jwtPayload.sub,
       email: jwtPayload.email || "",
