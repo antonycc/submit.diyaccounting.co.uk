@@ -24,7 +24,7 @@ on:
       - '**'
       - '!gh_pages'
       - '!dependabot/**'
-      - '!copilot/**'
+      #- '!copilot/**'
     paths:
       - '.env.ci'
       - '.env.prod'
