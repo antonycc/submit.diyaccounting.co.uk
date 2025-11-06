@@ -77,3 +77,29 @@ describe("extractUserFromAuthorizerContext", () => {
     });
   });
 });
+
+// New test: flat context with colon-keyed claims should prefer cognito:username
+describe("extractUserFromAuthorizerContext with flat colon-keyed claims", () => {
+  test("prefers cognito:username and handles scope/email", () => {
+    const event = {
+      requestContext: {
+        authorizer: {
+          sub: "1652b254-c021-70a8-39e8-2e2b620f92cc",
+          "cognito:username": "cognito_2e90b081-973b-4716-a4c9-4a6be57c2a7c",
+          "cognito:groups": "[eu-west-2_a4eKeQ4dz_cognito]",
+          "custom:bundles": "test|EXPIRY=2025-11-06",
+          email: "",
+          scope: "openid profile email",
+        },
+      },
+    };
+
+    const user = extractUserFromAuthorizerContext(event);
+    expect(user).toEqual({
+      sub: "1652b254-c021-70a8-39e8-2e2b620f92cc",
+      username: "cognito_2e90b081-973b-4716-a4c9-4a6be57c2a7c",
+      email: "",
+      scope: "openid profile email",
+    });
+  });
+});

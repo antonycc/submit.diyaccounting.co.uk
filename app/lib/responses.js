@@ -161,9 +161,9 @@ export function extractUserFromAuthorizerContext(event) {
   if (ctx && ctx.sub) {
     return {
       sub: ctx.sub,
-      username: ctx.username || ctx.sub,
+      username: ctx["cognito:username"] || ctx.username || ctx.sub,
       email: ctx.email || "",
-      scope: ctx.scope || "",
+      scope: ctx.scope || ctx.scopes || "",
     };
   }
   return null;
