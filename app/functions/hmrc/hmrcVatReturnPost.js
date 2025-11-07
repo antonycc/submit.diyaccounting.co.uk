@@ -36,32 +36,46 @@ export async function handler(event) {
   }
 
   // Extract and validate parameters
-  const { vatNumber, periodKey, vatDue, accessToken, hmrcAccessToken: hmrcAccessTokenInBody } = parseRequestBody(event);
+  const parsedBody = parseRequestBody(event);
+  const { vatNumber, periodKey, vatDue, accessToken, hmrcAccessToken: hmrcAccessTokenInBody } = parsedBody || {};
   const hmrcAccessToken = accessToken || hmrcAccessTokenInBody;
+
+  // Collect validation errors for required fields
   if (!vatNumber) errorMessages.push("Missing vatNumber parameter from body");
   if (!periodKey) errorMessages.push("Missing periodKey parameter from body");
   if (!vatDue) errorMessages.push("Missing vatDue parameter from body");
-  if (!hmrcAccessToken) errorMessages.push("Missing accessToken parameter from body");
 
-  // Generate and validate Gov-Client headers
+  // Generate Gov-Client headers and collect any header-related validation errors
   const detectedIP = extractClientIPFromHeaders(event);
   const { govClientHeaders, govClientErrorMessages } = eventToGovClientHeaders(event, detectedIP);
   errorMessages = errorMessages.concat(govClientErrorMessages || []);
 
-  validateHmrcAccessToken(hmrcAccessToken); // TODO: Generate validation errors instead of throwing
-
-  // Fail if any validation errors are present
+  // Access token handling:
+  // - If other validation errors exist, include missing access token (if missing) and return.
+  // - If no other errors, perform strict validation that can produce a specific error message.
   if (errorMessages.length > 0) {
+    if (!hmrcAccessToken) errorMessages.push("Missing accessToken parameter from body");
+    return buildValidationError(request, errorMessages, govClientHeaders);
+  }
+
+  // Only validate token format when all other parameters are present
+  try {
+    validateHmrcAccessToken(hmrcAccessToken);
+  } catch (err) {
+    // Convert thrown error into a validation error message for HTTP 400
+    errorMessages.push(err.toString());
     return buildValidationError(request, errorMessages, govClientHeaders);
   }
 
   // Processing
-  const { receipt, hmrcResponse } = await submitVat(periodKey, vatDue, vatNumber, hmrcAccessToken, govClientHeaders);
+  const { receipt, hmrcResponse, hmrcResponseBody } = await submitVat(periodKey, vatDue, vatNumber, hmrcAccessToken, govClientHeaders);
 
   // Generate error responses based on HMRC response
   if (!hmrcResponse.ok) {
+    // Attach parsed body for downstream error helpers
+    hmrcResponse.data = hmrcResponseBody;
     if (hmrcResponse.status === 403) {
-      httpForbiddenFromHmrcResponse(hmrcAccessToken, hmrcResponse, govClientHeaders);
+      return httpForbiddenFromHmrcResponse(hmrcAccessToken, hmrcResponse, govClientHeaders);
     } else if (hmrcResponse.status === 404) {
       return httpNotFoundFromHmrcResponse(request, hmrcResponse, govClientHeaders);
     } else {

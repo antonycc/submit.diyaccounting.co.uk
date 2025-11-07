@@ -334,7 +334,12 @@ describe("httpPostMock", () => {
       body: "invalid-json",
     };
 
-    await expect(submitVatHandler(event)).rejects.toThrow();
+    const result = await submitVatHandler(event);
+    const body = JSON.parse(result.body);
+    expect(result.statusCode).toBe(400);
+    expect(body.message).toBe(
+      "Missing vatNumber parameter from body, Missing periodKey parameter from body, Missing vatDue parameter from body, Missing accessToken parameter from body",
+    );
   });
 
   test("should handle network errors", async () => {
