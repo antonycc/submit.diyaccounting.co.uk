@@ -110,7 +110,7 @@ export function extractClientIPFromHeaders(event) {
   return event.requestContext?.identity?.sourceIp || "unknown";
 }
 
-export function extractAuthToken(event) {
+export function extractBearerTokenFromAuthHeaderInLambdaEvent(event) {
   const authHeader = event.headers?.authorization || event.headers?.Authorization;
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return null;

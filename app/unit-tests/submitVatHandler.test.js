@@ -150,7 +150,7 @@ describe("httpPostMock", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(400);
-    expect(body.message).toBe("Missing accessToken parameter from body");
+    expect(body.message).toBe("Error: Invalid access token provided");
     expect(mockFetch).not.toHaveBeenCalled();
   });
 

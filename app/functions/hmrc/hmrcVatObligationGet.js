@@ -5,20 +5,22 @@ import {
   extractRequest,
   httpBadRequestResponse,
   httpOkResponse,
-  httpServerErrorResponse,
   extractClientIPFromHeaders,
-  extractAuthToken,
   buildValidationError,
   withErrorHandling,
 } from "../../lib/responses.js";
 import eventToGovClientHeaders from "../../lib/eventToGovClientHeaders.js";
 import { hmrcVatGet, shouldUseStub, getStubData } from "../../lib/hmrcVatApi.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
-// import { requireActivity } from "../../lib/entitlementsService.js";
+import {
+  extractHmrcAccessTokenFromLambdaEvent,
+  httpForbiddenFromHmrcResponse,
+  httpNotFoundFromHmrcResponse,
+  httpServerErrorFromHmrcResponse,
+  validateHmrcAccessToken,
+} from "../../lib/hmrcHelper.js";
 
 export function apiEndpoint(app) {
-  // VAT Obligations endpoint
-  // requireActivity("vat-obligations-sandbox"),
   app.get("/api/v1/hmrc/vat/obligation", async (httpRequest, httpResponse) => {
     const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
     const lambdaResult = await handler(lambdaEvent);
@@ -26,7 +28,6 @@ export function apiEndpoint(app) {
   });
 }
 
-// GET /api/v1/hmrc/vat/obligation
 export async function handler(event) {
   const request = extractRequest(event);
   const detectedIP = extractClientIPFromHeaders(event);
@@ -48,14 +49,15 @@ export async function handler(event) {
     return buildValidationError(request, errorMessages, govClientHeaders);
   }
 
-  const accessToken = extractAuthToken(event);
-  if (!accessToken) {
+  const hmrcAccessToken = extractHmrcAccessTokenFromLambdaEvent(event);
+  if (!hmrcAccessToken) {
     return httpBadRequestResponse({
       request,
       headers: { ...govClientHeaders },
       message: "Missing Authorization Bearer token",
     });
   }
+  validateHmrcAccessToken(hmrcAccessToken);
 
   return withErrorHandling(request, govClientHeaders, async () => {
     let obligations;
@@ -73,27 +75,21 @@ export async function handler(event) {
       if (to) hmrcQueryParams.to = to;
       if (status) hmrcQueryParams.status = status;
 
-      const hmrcResult = await hmrcVatGet(
-        `/organisations/vat/${vrn}/obligations`,
-        accessToken,
-        govClientHeaders,
-        testScenario,
-        hmrcQueryParams,
-      );
+      const hmrcRequestUrl = `/organisations/vat/${vrn}/obligations`;
+      const hmrcResponse = await hmrcVatGet(hmrcRequestUrl, hmrcAccessToken, govClientHeaders, testScenario, hmrcQueryParams);
 
-      if (!hmrcResult.ok) {
-        return httpServerErrorResponse({
-          request,
-          headers: { ...govClientHeaders },
-          message: "HMRC VAT obligations retrieval failed",
-          error: {
-            hmrcResponseCode: hmrcResult.status,
-            responseBody: hmrcResult.data,
-          },
-        });
+      // Generate error responses based on HMRC response
+      if (!hmrcResponse.ok) {
+        if (hmrcResponse.status === 403) {
+          httpForbiddenFromHmrcResponse(hmrcAccessToken, hmrcResponse, govClientHeaders);
+        } else if (hmrcResponse.status === 404) {
+          return httpNotFoundFromHmrcResponse(request, hmrcResponse, govClientHeaders);
+        } else {
+          return httpServerErrorFromHmrcResponse(request, hmrcResponse, govClientHeaders);
+        }
       }
 
-      obligations = hmrcResult.data;
+      obligations = hmrcResponse.data;
     }
 
     return httpOkResponse({

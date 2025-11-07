@@ -253,7 +253,7 @@ describe("getVatReturn handler", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(400);
-    expect(body.message).toBe("VAT return not found for the specified period");
+    expect(body.message).toBe("Not found for the specified query");
   });
 
   test("should handle HMRC API error", async () => {
@@ -285,6 +285,6 @@ describe("getVatReturn handler", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(500);
-    expect(body.message).toBe("HMRC VAT return retrieval failed");
+    expect(body.message).toBe("HMRC request failed");
   });
 });

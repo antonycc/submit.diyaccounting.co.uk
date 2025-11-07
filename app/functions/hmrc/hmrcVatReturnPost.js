@@ -1,19 +1,18 @@
 // app/functions/submitVat.js
 
 import logger from "../../lib/logger.js";
-import {
-  extractRequest,
-  httpBadRequestResponse,
-  httpOkResponse,
-  httpServerErrorResponse,
-  extractClientIPFromHeaders,
-  parseRequestBody,
-  buildValidationError,
-} from "../../lib/responses.js";
+import { extractRequest, httpOkResponse, extractClientIPFromHeaders, parseRequestBody, buildValidationError } from "../../lib/responses.js";
 import eventToGovClientHeaders from "../../lib/eventToGovClientHeaders.js";
 import { validateEnv } from "../../lib/env.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
-import { enforceBundles, BundleEntitlementError } from "../../lib/bundleEnforcement.js";
+import { enforceBundles } from "../../lib/bundleEnforcement.js";
+import {
+  httpForbiddenFromHmrcResponse,
+  httpNotFoundFromHmrcResponse,
+  httpServerErrorFromBundleEnforcement,
+  httpServerErrorFromHmrcResponse,
+  validateHmrcAccessToken,
+} from "../../lib/hmrcHelper.js";
 
 export function apiEndpoint(app) {
   app.post("/api/v1/hmrc/vat/return", async (httpRequest, httpResponse) => {
@@ -23,75 +22,51 @@ export function apiEndpoint(app) {
   });
 }
 
-// POST /api/v1/hmrc/vat/return
 export async function handler(event) {
   validateEnv(["HMRC_BASE_URI", "COGNITO_USER_POOL_ID"]);
 
   const request = extractRequest(event);
-  const detectedIP = extractClientIPFromHeaders(event);
+  let errorMessages = [];
 
-  // Enforce bundle entitlements early in the request lifecycle
+  // Bundle enforcement
   try {
     await enforceBundles(event);
   } catch (error) {
-    if (error instanceof BundleEntitlementError) {
-      logger.error({
-        message: "Bundle enforcement failed",
-        error: error.message,
-        details: error.details,
-      });
-      return httpServerErrorResponse({
-        request,
-        message: error.message,
-        error: error.details,
-      });
-    }
-    // Re-throw unexpected errors
-    logger.error({
-      message: "Unexpected error during bundle enforcement",
-      error: error.message,
-      stack: error.stack,
-    });
-    return httpServerErrorResponse({
-      request,
-      message: "Authorization failure while checking entitlements",
-      error: { message: error.message || String(error) },
-    });
+    return httpServerErrorFromBundleEnforcement(error, request);
   }
 
-  const { vatNumber, periodKey, vatDue, accessToken, hmrcAccessToken } = parseRequestBody(event);
-  const token = accessToken || hmrcAccessToken;
-
-  let errorMessages = [];
+  // Extract and validate parameters
+  const { vatNumber, periodKey, vatDue, accessToken, hmrcAccessToken: hmrcAccessTokenInBody } = parseRequestBody(event);
+  const hmrcAccessToken = accessToken || hmrcAccessTokenInBody;
   if (!vatNumber) errorMessages.push("Missing vatNumber parameter from body");
   if (!periodKey) errorMessages.push("Missing periodKey parameter from body");
   if (!vatDue) errorMessages.push("Missing vatDue parameter from body");
-  if (!token) errorMessages.push("Missing accessToken parameter from body");
+  if (!hmrcAccessToken) errorMessages.push("Missing accessToken parameter from body");
 
+  // Generate and validate Gov-Client headers
+  const detectedIP = extractClientIPFromHeaders(event);
   const { govClientHeaders, govClientErrorMessages } = eventToGovClientHeaders(event, detectedIP);
-  // Forward Gov-Test-Scenario header from client when present (sandbox only)
-  const govTestScenarioHeader = event.headers?.["Gov-Test-Scenario"] || event.headers?.["gov-test-scenario"];
-  if (govTestScenarioHeader) {
-    govClientHeaders["Gov-Test-Scenario"] = govTestScenarioHeader;
-  }
   errorMessages = errorMessages.concat(govClientErrorMessages || []);
 
+  validateHmrcAccessToken(hmrcAccessToken); // TODO: Generate validation errors instead of throwing
+
+  // Fail if any validation errors are present
   if (errorMessages.length > 0) {
     return buildValidationError(request, errorMessages, govClientHeaders);
   }
 
   // Processing
-  const { receipt, hmrcResponse, hmrcResponseBody } = await submitVat(periodKey, vatDue, vatNumber, token, govClientHeaders);
+  const { receipt, hmrcResponse } = await submitVat(periodKey, vatDue, vatNumber, hmrcAccessToken, govClientHeaders);
 
+  // Generate error responses based on HMRC response
   if (!hmrcResponse.ok) {
-    return httpServerErrorResponse({
-      request,
-      message: "HMRC VAT submission failed",
-      error: {
-        hmrcResponseCode: hmrcResponse.status,
-        responseBody: hmrcResponseBody,
-      },
-    });
+    if (hmrcResponse.status === 403) {
+      httpForbiddenFromHmrcResponse(hmrcAccessToken, hmrcResponse, govClientHeaders);
+    } else if (hmrcResponse.status === 404) {
+      return httpNotFoundFromHmrcResponse(request, hmrcResponse, govClientHeaders);
+    } else {
+      return httpServerErrorFromHmrcResponse(request, hmrcResponse, govClientHeaders);
+    }
   }
 
   // Generate a success response
@@ -104,38 +79,6 @@ export async function handler(event) {
 }
 
 export async function submitVat(periodKey, vatDue, vatNumber, hmrcAccessToken, govClientHeaders) {
-  const submissionStartTime = new Date().toISOString();
-
-  // Validate access token format
-  const tokenValidation = {
-    hasAccessToken: !!hmrcAccessToken,
-    accessTokenLength: hmrcAccessToken ? hmrcAccessToken.length : 0,
-    accessTokenPrefix: hmrcAccessToken ? hmrcAccessToken.substring(0, 8) + "..." : "none",
-    isValidFormat: hmrcAccessToken && typeof hmrcAccessToken === "string" && hmrcAccessToken.length > 10,
-    vatNumber,
-    periodKey,
-    vatDue,
-  };
-
-  // Enhanced debug logging for access token validation
-  logger.info({
-    message: "submitVat function called with access token",
-    submissionStartTime,
-    tokenValidation,
-    govClientHeaders: Object.keys(govClientHeaders || {}),
-  });
-
-  // Early validation - reject if token is clearly invalid
-  if (!hmrcAccessToken || typeof hmrcAccessToken !== "string" || hmrcAccessToken.length < 2) {
-    logger.error({
-      message: "Invalid access token provided to submitVat",
-      tokenValidation,
-      error: "Access token is missing, not a string, or too short",
-    });
-    throw new Error("Invalid access token provided");
-  }
-
-  // Request processing
   const hmrcRequestHeaders = {
     "Content-Type": "application/json",
     "Accept": "application/vnd.hmrc.1.0+json",
@@ -193,41 +136,6 @@ export async function submitVat(periodKey, vatDue, vatNumber, hmrcAccessToken, g
     });
     hmrcResponseBody = await hmrcResponse.json();
   }
-  // const responseBody = await response.json();
-
-  // Enhanced logging for response analysis
-  const responseLogData = {
-    message: `Response from POST ${hmrcRequestUrl}`,
-    url: hmrcRequestUrl,
-    hmrcResponseStatus: hmrcResponse.status,
-    hmrcResponseBody,
-  };
-
-  // Add detailed error logging for 403 responses
-  if (hmrcResponse.status === 403) {
-    responseLogData.error403Analysis = {
-      message: "403 Forbidden - Access token may be invalid, expired, or lack required permissions",
-      possibleCauses: [
-        "Invalid or expired access token",
-        "Token lacks required scopes (write:vat read:vat)",
-        "Client credentials mismatch",
-        "Missing or incorrect Gov-Client headers",
-        "HMRC API rate limiting",
-      ],
-      tokenInfo: {
-        hasAccessToken: !!hmrcAccessToken,
-        accessTokenLength: hmrcAccessToken ? hmrcAccessToken.length : 0,
-        accessTokenPrefix: hmrcAccessToken ? hmrcAccessToken.substring(0, 8) + "..." : "none",
-      },
-      requestHeaders: {
-        authorization: hmrcAccessToken ? `Bearer ${hmrcAccessToken.substring(0, 8)}...` : "missing",
-        govClientHeadersCount: Object.keys(govClientHeaders || {}).length,
-        govClientHeaderKeys: Object.keys(govClientHeaders || {}),
-      },
-    };
-  }
-
-  logger.info(responseLogData);
 
   return { hmrcRequestBody, receipt: hmrcResponseBody, hmrcResponse, hmrcResponseBody, hmrcRequestUrl };
 }

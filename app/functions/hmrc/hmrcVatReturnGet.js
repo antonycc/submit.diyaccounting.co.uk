@@ -5,20 +5,22 @@ import {
   extractRequest,
   httpBadRequestResponse,
   httpOkResponse,
-  httpServerErrorResponse,
   extractClientIPFromHeaders,
-  extractAuthToken,
   buildValidationError,
   withErrorHandling,
 } from "../../lib/responses.js";
 import eventToGovClientHeaders from "../../lib/eventToGovClientHeaders.js";
 import { hmrcVatGet, shouldUseStub, getStubData } from "../../lib/hmrcVatApi.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
-// import { requireActivity } from "../../lib/entitlementsService.js";
+import {
+  extractHmrcAccessTokenFromLambdaEvent,
+  httpForbiddenFromHmrcResponse,
+  httpNotFoundFromHmrcResponse,
+  httpServerErrorFromHmrcResponse,
+  validateHmrcAccessToken,
+} from "../../lib/hmrcHelper.js";
 
 export function apiEndpoint(app) {
-  // VAT Return endpoint (view submitted return)
-  // requireActivity("view-vat-return-sandbox"),
   app.get(`/api/v1/hmrc/vat/return/:periodKey`, async (httpRequest, httpResponse) => {
     const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
     const lambdaResult = await handler(lambdaEvent);
@@ -26,7 +28,6 @@ export function apiEndpoint(app) {
   });
 }
 
-// GET /api/v1/hmrc/vat/return/:periodKey
 export async function handler(event) {
   const request = extractRequest(event);
   const detectedIP = extractClientIPFromHeaders(event);
@@ -49,67 +50,40 @@ export async function handler(event) {
     return buildValidationError(request, errorMessages, govClientHeaders);
   }
 
-  const accessToken = extractAuthToken(event);
-  if (!accessToken) {
+  const hmrcAccessToken = extractHmrcAccessTokenFromLambdaEvent(event);
+  if (!hmrcAccessToken) {
     return httpBadRequestResponse({
       request,
       headers: { ...govClientHeaders },
       message: "Missing Authorization Bearer token",
     });
   }
+  validateHmrcAccessToken(hmrcAccessToken);
 
   return withErrorHandling(request, govClientHeaders, async () => {
     let vatReturn;
 
-    // Check if we should use stubbed data
     logger.info({ message: "Checking for stubbed VAT return data", vrn, periodKey, testScenario });
     if (shouldUseStub("TEST_VAT_RETURN")) {
       logger.warn({ message: "[MOCK] Using stubbed VAT return data", vrn, periodKey, testScenario });
       vatReturn = getStubData("TEST_VAT_RETURN");
     } else {
-      // Call HMRC API
       logger.info({ message: "Retrieving VAT return from HMRC", vrn, periodKey, testScenario });
-      const hmrcResult = await hmrcVatGet(`/organisations/vat/${vrn}/returns/${periodKey}`, accessToken, govClientHeaders, testScenario);
+      const hmrcRequestUrl = `/organisations/vat/${vrn}/returns/${periodKey}`;
+      const hmrcResponse = await hmrcVatGet(hmrcRequestUrl, hmrcAccessToken, govClientHeaders, testScenario);
 
-      if (!hmrcResult.ok) {
-        if (hmrcResult.status === 404) {
-          logger.warn({
-            message: "VAT return not found for specified period",
-            vrn,
-            periodKey,
-            hmrcResponseCode: hmrcResult.status,
-            responseBody: hmrcResult.data,
-          });
-          return httpBadRequestResponse({
-            request,
-            headers: { ...govClientHeaders },
-            message: "VAT return not found for the specified period",
-            error: {
-              hmrcResponseCode: hmrcResult.status,
-              responseBody: hmrcResult.data,
-            },
-          });
+      // Generate error responses based on HMRC response
+      if (!hmrcResponse.ok) {
+        if (hmrcResponse.status === 403) {
+          httpForbiddenFromHmrcResponse(hmrcAccessToken, hmrcResponse, govClientHeaders);
+        } else if (hmrcResponse.status === 404) {
+          return httpNotFoundFromHmrcResponse(request, hmrcResponse, govClientHeaders);
+        } else {
+          return httpServerErrorFromHmrcResponse(request, hmrcResponse, govClientHeaders);
         }
-
-        logger.error({
-          message: "HMRC VAT return retrieval failed",
-          vrn,
-          periodKey,
-          hmrcResponseCode: hmrcResult.status,
-          responseBody: hmrcResult.data,
-        });
-        return httpServerErrorResponse({
-          request,
-          headers: { ...govClientHeaders },
-          message: "HMRC VAT return retrieval failed",
-          error: {
-            hmrcResponseCode: hmrcResult.status,
-            responseBody: hmrcResult.data,
-          },
-        });
       }
 
-      vatReturn = hmrcResult.data;
+      vatReturn = hmrcResponse.data;
     }
 
     // Return successful response

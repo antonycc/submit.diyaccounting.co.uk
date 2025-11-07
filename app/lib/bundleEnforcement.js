@@ -2,7 +2,11 @@
 
 import logger from "./logger.js";
 import { decodeJwtNoVerify } from "./jwtHelper.js";
-import { extractAuthToken, extractAuthTokenFromXAuthorization, extractUserFromAuthorizerContext } from "./responses.js";
+import {
+  extractAuthTokenFromXAuthorization,
+  extractBearerTokenFromAuthHeaderInLambdaEvent,
+  extractUserFromAuthorizerContext,
+} from "./responses.js";
 import { getUserBundles, updateUserBundles } from "./bundleHelpers.js";
 
 /**
@@ -40,7 +44,7 @@ function extractUserInfo(event) {
   }
 
   // Fallback to extracting JWT from Authorization or X-Authorization header
-  const idToken = extractAuthTokenFromXAuthorization(event) || extractAuthToken(event);
+  const idToken = extractAuthTokenFromXAuthorization(event) || extractBearerTokenFromAuthHeaderInLambdaEvent(event);
   if (!idToken) {
     logger.warn({ message: "No authorization token found in event" });
     throw new BundleEntitlementError("Missing Authorization Bearer token", {
