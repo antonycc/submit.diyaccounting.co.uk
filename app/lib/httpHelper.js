@@ -41,3 +41,18 @@ export function buildHttpResponseFromLambdaResult({ headers, statusCode, body },
     return httpResponse.status(statusCode).send(body || "");
   }
 }
+
+export function logHmrcRequestDetails(hmrcRequestUrl, hmrcRequestHeaders, govClientHeaders, hmrcRequestBody, hmrcBase) {
+  logger.info({
+    message: `Request to POST ${hmrcRequestUrl}`,
+    url: hmrcRequestUrl,
+    headers: {
+      ...hmrcRequestHeaders,
+      ...govClientHeaders,
+    },
+    body: hmrcRequestBody,
+    environment: {
+      nodeEnv: process.env.NODE_ENV,
+    },
+  });
+}

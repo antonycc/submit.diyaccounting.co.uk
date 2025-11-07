@@ -4,7 +4,7 @@ import logger from "../../lib/logger.js";
 import { extractRequest, httpOkResponse, extractClientIPFromHeaders, parseRequestBody, buildValidationError } from "../../lib/responses.js";
 import eventToGovClientHeaders from "../../lib/eventToGovClientHeaders.js";
 import { validateEnv } from "../../lib/env.js";
-import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
+import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest, logHmrcRequestDetails } from "../../lib/httpHelper.js";
 import { enforceBundles } from "../../lib/bundleEnforcement.js";
 import {
   httpForbiddenFromHmrcResponse,
@@ -102,19 +102,7 @@ export async function submitVat(periodKey, vatDue, vatNumber, hmrcAccessToken, g
   let hmrcResponse;
   const hmrcBase = process.env.HMRC_BASE_URI;
   const hmrcRequestUrl = `${hmrcBase}/organisations/vat/${vatNumber}/returns`;
-  logger.info({
-    message: `Request to POST ${hmrcRequestUrl}`,
-    url: hmrcRequestUrl,
-    headers: {
-      ...hmrcRequestHeaders,
-      ...govClientHeaders,
-    },
-    body: hmrcRequestBody,
-    environment: {
-      hmrcBase,
-      nodeEnv: process.env.NODE_ENV,
-    },
-  });
+  logHmrcRequestDetails(hmrcRequestUrl, hmrcRequestHeaders, govClientHeaders, hmrcRequestBody);
   if (process.env.NODE_ENV === "stubbed") {
     hmrcResponse = {
       ok: true,
