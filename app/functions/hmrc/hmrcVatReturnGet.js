@@ -75,7 +75,7 @@ export async function handler(event) {
       // Generate error responses based on HMRC response
       if (!hmrcResponse.ok) {
         if (hmrcResponse.status === 403) {
-          httpForbiddenFromHmrcResponse(hmrcAccessToken, hmrcResponse, govClientHeaders);
+          return httpForbiddenFromHmrcResponse(hmrcAccessToken, hmrcResponse, govClientHeaders);
         } else if (hmrcResponse.status === 404) {
           return httpNotFoundFromHmrcResponse(request, hmrcResponse, govClientHeaders);
         } else {
