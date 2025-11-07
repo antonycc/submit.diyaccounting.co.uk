@@ -30,14 +30,11 @@ export function isDynamoDbEnabled() {
 /**
  * Get the configured DynamoDB table name
  * @returns {string} Table name
- * @throws {Error} If table name is not configured
  */
 function getTableName() {
   const tableName = process.env.BUNDLE_DYNAMODB_TABLE_NAME;
-  if (!tableName) {
-    throw new Error("BUNDLE_DYNAMODB_TABLE_NAME environment variable not configured");
-  }
-  return tableName;
+  // This should always be checked by isDynamoDbEnabled() first, but return empty string as fallback
+  return tableName || "";
 }
 
 /**
@@ -98,7 +95,12 @@ export async function putBundle(userId, bundleStr) {
     if (expiry) {
       item.expiry = expiry;
       const expiryDate = new Date(expiry);
-      item.ttl = Math.floor(expiryDate.getTime() / 1000);
+      // Validate the date is valid before calculating TTL
+      if (!isNaN(expiryDate.getTime())) {
+        item.ttl = Math.floor(expiryDate.getTime() / 1000);
+      } else {
+        logger.warn({ message: "Invalid expiry date format, skipping TTL", expiry });
+      }
     }
 
     await docClient.send(
@@ -181,13 +183,15 @@ export async function deleteAllBundles(userId) {
     const hashedSub = hashSub(userId);
     const bundles = await getUserBundles(userId);
 
-    // Delete each bundle individually
-    for (const bundleStr of bundles) {
-      const { bundleId } = parseBundleString(bundleStr);
-      if (bundleId) {
-        await deleteBundle(userId, bundleId);
-      }
-    }
+    // Delete bundles concurrently for better performance
+    await Promise.all(
+      bundles.map(async (bundleStr) => {
+        const { bundleId } = parseBundleString(bundleStr);
+        if (bundleId) {
+          await deleteBundle(userId, bundleId);
+        }
+      })
+    );
 
     logger.info({
       message: "All bundles deleted from DynamoDB",
