@@ -216,49 +216,10 @@ jobs:
           output-credentials: true
           retry-max-attempts: 3
 
-      - name: Deploy Account Provisioning Stack
+      - name: Provide Account Provisioning Instructions
         shell: bash
         run: |
           set -euo pipefail
-          
-          echo "Deploying account provisioning infrastructure..."
-          
-          # Build CDK
-          ./mvnw --errors clean verify -DskipTests \
-            -Dmaven.compiler.source=${{ env.JAVA_VERSION }} \
-            -Dmaven.compiler.target=${{ env.JAVA_VERSION }}
-          
-          cd infra/account-provisioning || {
-            echo "Creating account provisioning CDK stack..."
-            mkdir -p infra/account-provisioning
-            cd infra/account-provisioning
-            
-            # Initialize CDK app
-            cat > cdk.json << 'EOF'
-{
-  "app": "npx ts-node bin/account-provisioning.ts",
-  "context": {
-    "@aws-cdk/core:newStyleStackSynthesis": true
-  }
-}
-EOF
-            
-            cat > package.json << 'EOF'
-{
-  "name": "account-provisioning",
-  "version": "1.0.0",
-  "private": true,
-  "dependencies": {
-    "aws-cdk-lib": "^2.0.0",
-    "constructs": "^10.0.0",
-    "typescript": "^5.0.0",
-    "ts-node": "^10.0.0"
-  }
-}
-EOF
-            
-            npm install
-          }
           
           # NOTE: This step intentionally provides manual instructions rather than automated deployment
           # Reason: IAM role creation requires elevated permissions that may not be available in CI/CD
@@ -423,23 +384,23 @@ EOF
           # Build ResourceRecords array
           RESOURCE_RECORDS=$(echo "$NAMESERVERS" | jq -c '[.[] | {Value: .}]')
           
-          # Create change batch
-          cat > /tmp/change-batch.json << EOF
-{
-  "Comment": "Delegate ${RECORD_NAME} to environment account",
-  "Changes": [
-    {
-      "Action": "UPSERT",
-      "ResourceRecordSet": {
-        "Name": "${RECORD_NAME}",
-        "Type": "NS",
-        "TTL": 300,
-        "ResourceRecords": ${RESOURCE_RECORDS}
-      }
-    }
-  ]
-}
-EOF
+          # Create change batch using jq to avoid YAML heredoc issues
+          jq -n \
+            --arg comment "Delegate ${RECORD_NAME} to environment account" \
+            --arg name "${RECORD_NAME}" \
+            --argjson records "${RESOURCE_RECORDS}" \
+            '{
+              Comment: $comment,
+              Changes: [{
+                Action: "UPSERT",
+                ResourceRecordSet: {
+                  Name: $name,
+                  Type: "NS",
+                  TTL: 300,
+                  ResourceRecords: $records
+                }
+              }]
+            }' > /tmp/change-batch.json
           
           cat /tmp/change-batch.json
           
