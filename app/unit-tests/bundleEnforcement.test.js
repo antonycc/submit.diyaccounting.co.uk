@@ -132,7 +132,7 @@ describe("bundleEnforcement.js", () => {
       bundleHelpers.getUserBundles.mockResolvedValue([]);
 
       await expect(enforceBundles(event)).rejects.toThrow(BundleEntitlementError);
-      await expect(enforceBundles(event)).rejects.toThrow("HMRC Sandbox submission requires HMRC_TEST_API bundle");
+      await expect(enforceBundles(event)).rejects.toThrow("Forbidden: HMRC Sandbox submission requires HMRC_TEST_API bundle");
     });
 
     test("should allow production access with HMRC_PROD_SUBMIT bundle", async () => {
