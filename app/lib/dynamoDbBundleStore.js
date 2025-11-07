@@ -184,7 +184,7 @@ export async function deleteAllBundles(userId) {
     const bundles = await getUserBundles(userId);
 
     // Delete bundles concurrently for better performance
-    await Promise.all(
+    const deleteResults = await Promise.allSettled(
       bundles.map(async (bundleStr) => {
         const { bundleId } = parseBundleString(bundleStr);
         if (bundleId) {
@@ -193,10 +193,22 @@ export async function deleteAllBundles(userId) {
       })
     );
 
+    // Log any failures from individual deletions
+    const failures = deleteResults.filter((r) => r.status === "rejected");
+    if (failures.length > 0) {
+      logger.warn({
+        message: "Some bundle deletions failed",
+        hashedSub,
+        failureCount: failures.length,
+        totalCount: bundles.length,
+      });
+    }
+
     logger.info({
       message: "All bundles deleted from DynamoDB",
       hashedSub,
       count: bundles.length,
+      successCount: bundles.length - failures.length,
     });
   } catch (error) {
     logger.error({
