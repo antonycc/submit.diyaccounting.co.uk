@@ -1,11 +1,6 @@
 // app/functions/hmrcAuthUrlGet.js
 
-import {
-  extractRequest,
-  httpBadRequestResponse,
-  httpOkResponse,
-  httpServerErrorResponse,
-} from "../../lib/responses.js";
+import { extractRequest, httpBadRequestResponse, httpOkResponse, httpServerErrorResponse } from "../../lib/responses.js";
 import { validateEnv } from "../../lib/env.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
 

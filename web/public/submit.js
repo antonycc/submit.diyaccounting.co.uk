@@ -100,12 +100,20 @@ async function getAuthUrl(state, provider = "hmrc") {
 // VAT submission API function
 async function submitVat(vatNumber, periodKey, vatDue, accessToken, govClientHeaders = {}) {
   const url = "/api/v1/hmrc/vat/return";
+
+  // Get Cognito JWT token for custom authorizer
+  const cognitoAccessToken = localStorage.getItem("cognitoAccessToken");
+  const headers = {
+    "Content-Type": "application/json",
+    ...govClientHeaders,
+  };
+  if (cognitoAccessToken) {
+    headers["X-Authorization"] = `Bearer ${cognitoAccessToken}`;
+  }
+
   const response = await fetchWithId(url, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...govClientHeaders,
-    },
+    headers,
     body: JSON.stringify({ vatNumber, periodKey, vatDue, accessToken }),
   });
   const responseJson = await response.json();

@@ -74,9 +74,6 @@ public class IdentityStack extends Stack {
         @Override
         String resourceNamePrefix();
 
-        // @Override
-        // String compressedResourceNamePrefix();
-
         @Override
         String cloudTrailEnabled();
 
@@ -242,22 +239,14 @@ public class IdentityStack extends Stack {
         Aspects.of(this).add(new SetAutoDeleteJobLogRetentionAspect(props.deploymentName(), RetentionDays.THREE_DAYS));
 
         // Stack Outputs for Identity resources
-        if (this.userPool != null) {
-            cfnOutput(this, "UserPoolId", this.userPool.getUserPoolId());
-            cfnOutput(this, "UserPoolArn", this.userPool.getUserPoolArn());
-        }
-        if (this.userPoolClient != null) {
-            cfnOutput(this, "UserPoolClientId", this.userPoolClient.getUserPoolClientId());
-        }
+        cfnOutput(this, "UserPoolId", this.userPool.getUserPoolId());
+        cfnOutput(this, "UserPoolArn", this.userPool.getUserPoolArn());
+        cfnOutput(this, "UserPoolClientId", this.userPoolClient.getUserPoolClientId());
         cfnOutput(this, "UserPoolDomainName", this.userPoolDomain.getDomainName());
         cfnOutput(this, "UserPoolDomainARecord", this.userPoolDomainARecordName);
         cfnOutput(this, "UserPoolDomainAaaaRecord", this.userPoolDomainAaaaRecordName);
-        if (this.googleIdentityProvider != null) {
-            cfnOutput(this, "CognitoGoogleIdpId", this.googleIdentityProvider.getProviderName());
-        }
-        if (this.antonyccIdentityProvider != null) {
-            cfnOutput(this, "CognitoAntonyccIdpId", this.antonyccIdentityProvider.getProviderName());
-        }
+        cfnOutput(this, "CognitoGoogleIdpId", this.googleIdentityProvider.getProviderName());
+        cfnOutput(this, "CognitoAntonyccIdpId", this.antonyccIdentityProvider.getProviderName());
 
         infof(
                 "IdentityStack %s created successfully for %s",

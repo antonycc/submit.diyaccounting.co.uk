@@ -70,6 +70,7 @@ export async function handler(event) {
 
   try {
     logger.info({ message: "Bundle request received:", event: JSON.stringify(event, null, 2) });
+    // TODO: Move into endpoint and emulate the API Gateway authorizer behavior
     let decodedToken;
     try {
       decodedToken = decodeJwtToken(event.headers);
@@ -184,6 +185,7 @@ export async function handler(event) {
     if (isMockMode()) {
       mockBundleStore.set(userId, currentBundles);
     } else {
+      // TODO: Put this on a queue for processing by a separate worker to improve latency
       await updateUserBundles(userId, userPoolId, currentBundles);
     }
 

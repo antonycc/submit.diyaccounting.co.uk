@@ -45,9 +45,6 @@ public class DataStack extends Stack {
         @Override
         String resourceNamePrefix();
 
-        // @Override
-        // String compressedResourceNamePrefix();
-
         @Override
         String cloudTrailEnabled();
 

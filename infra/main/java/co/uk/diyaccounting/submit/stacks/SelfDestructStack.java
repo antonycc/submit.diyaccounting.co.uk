@@ -1,17 +1,7 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.Kind.putIfNotNull;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateIamCompatibleName;
-
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
-import java.time.ZonedDateTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Aspects;
 import software.amazon.awscdk.Duration;
@@ -37,6 +27,17 @@ import software.amazon.awscdk.services.logs.ILogGroup;
 import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.constructs.Construct;
+
+import java.time.ZonedDateTime;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.Kind.putIfNotNull;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateIamCompatibleName;
 
 public class SelfDestructStack extends Stack {
 
@@ -64,9 +65,6 @@ public class SelfDestructStack extends Stack {
 
         @Override
         String resourceNamePrefix();
-
-        // @Override
-        // String compressedResourceNamePrefix();
 
         @Override
         String cloudTrailEnabled();
@@ -177,7 +175,7 @@ public class SelfDestructStack extends Stack {
         this.selfDestructFunction = Function.Builder.create(this, props.resourceNamePrefix() + "-SelfDestructFunction")
                 .functionName(functionName)
                 .runtime(Runtime.NODEJS_20_X)
-                .handler("app/functions/selfDestruct.handler")
+                .handler("app/functions/infra/selfDestruct.handler")
                 .code(Code.fromAsset("./"))
                 .timeout(Duration.minutes(15)) // Allow time for stack deletions
                 .memorySize(256) // Reduced memory for Node.js runtime

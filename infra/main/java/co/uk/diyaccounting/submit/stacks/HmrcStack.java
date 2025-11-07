@@ -1,10 +1,15 @@
 package co.uk.diyaccounting.submit.stacks;
 
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
 import co.uk.diyaccounting.submit.constructs.ApiLambda;
 import co.uk.diyaccounting.submit.constructs.ApiLambdaProps;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
+import java.util.List;
+import java.util.Optional;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Aspects;
 import software.amazon.awscdk.Duration;
@@ -20,12 +25,6 @@ import software.amazon.awscdk.services.s3.Bucket;
 import software.amazon.awscdk.services.s3.IBucket;
 import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
-
-import java.util.List;
-import java.util.Optional;
-
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 public class HmrcStack extends Stack {
 
@@ -93,9 +92,6 @@ public class HmrcStack extends Stack {
         @Override
         String resourceNamePrefix();
 
-        // @Override
-        // String compressedResourceNamePrefix();
-
         @Override
         String cloudTrailEnabled();
 
@@ -154,7 +150,8 @@ public class HmrcStack extends Stack {
                         .lambdaArn(props.sharedNames().hmrcAuthUrlGetLambdaArn)
                         .httpMethod(props.sharedNames().hmrcAuthUrlGetLambdaHttpMethod)
                         .urlPath(props.sharedNames().hmrcAuthUrlGetLambdaUrlPath)
-                        // .cloudFrontAllowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
+                        .jwtAuthorizer(props.sharedNames().hmrcAuthUrlGetLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().hmrcAuthUrlGetLambdaCustomAuthorizer)
                         .environment(authUrlHmrcLambdaEnv)
                         .timeout(Duration.millis(Long.parseLong("30000")))
                         .build());
@@ -192,7 +189,8 @@ public class HmrcStack extends Stack {
                         .lambdaArn(props.sharedNames().hmrcTokenPostLambdaArn)
                         .httpMethod(props.sharedNames().hmrcTokenPostLambdaHttpMethod)
                         .urlPath(props.sharedNames().hmrcTokenPostLambdaUrlPath)
-                        // .cloudFrontAllowedMethods(AllowedMethods.ALLOW_ALL)
+                        .jwtAuthorizer(props.sharedNames().hmrcTokenPostLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().hmrcTokenPostLambdaCustomAuthorizer)
                         .environment(exchangeHmrcEnvBase)
                         .timeout(Duration.millis(Long.parseLong("30000")))
                         .build());
@@ -241,7 +239,8 @@ public class HmrcStack extends Stack {
                         .lambdaArn(props.sharedNames().hmrcVatReturnPostLambdaArn)
                         .httpMethod(props.sharedNames().hmrcVatReturnPostLambdaHttpMethod)
                         .urlPath(props.sharedNames().hmrcVatReturnPostLambdaUrlPath)
-                        // .cloudFrontAllowedMethods(AllowedMethods.ALLOW_ALL)
+                        .jwtAuthorizer(props.sharedNames().hmrcVatReturnPostLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().hmrcVatReturnPostLambdaCustomAuthorizer)
                         .environment(submitVatLambdaEnv)
                         .timeout(Duration.millis(Long.parseLong("60000")))
                         .build());
@@ -269,6 +268,8 @@ public class HmrcStack extends Stack {
                         .lambdaArn(props.sharedNames().hmrcVatObligationGetLambdaArn)
                         .httpMethod(props.sharedNames().hmrcVatObligationGetLambdaHttpMethod)
                         .urlPath(props.sharedNames().hmrcVatObligationGetLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().hmrcVatObligationGetLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().hmrcVatObligationGetLambdaCustomAuthorizer)
                         .environment(vatObligationLambdaEnv)
                         .timeout(Duration.millis(Long.parseLong("30000")))
                         .build());
@@ -381,6 +382,8 @@ public class HmrcStack extends Stack {
                         .lambdaArn(props.sharedNames().hmrcVatReturnGetLambdaArn)
                         .httpMethod(props.sharedNames().hmrcVatReturnGetLambdaHttpMethod)
                         .urlPath(props.sharedNames().hmrcVatReturnGetLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().hmrcVatReturnGetLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().hmrcVatReturnGetLambdaCustomAuthorizer)
                         .environment(vatReturnGetLambdaEnv)
                         .timeout(Duration.millis(Long.parseLong("30000")))
                         .build());
@@ -419,7 +422,8 @@ public class HmrcStack extends Stack {
                         .lambdaArn(props.sharedNames().receiptPostLambdaArn)
                         .httpMethod(props.sharedNames().receiptPostLambdaHttpMethod)
                         .urlPath(props.sharedNames().receiptPostLambdaUrlPath)
-                        // .cloudFrontAllowedMethods(AllowedMethods.ALLOW_ALL)
+                        .jwtAuthorizer(props.sharedNames().receiptPostLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().receiptPostLambdaCustomAuthorizer)
                         .environment(logReceiptLambdaEnv)
                         .timeout(Duration.millis(Long.parseLong("30000")))
                         .build());
@@ -447,7 +451,8 @@ public class HmrcStack extends Stack {
                         .httpMethod(props.sharedNames().receiptGetLambdaHttpMethod)
                         .urlPath(props.sharedNames().receiptGetLambdaUrlPath)
                         .handler(props.sharedNames().receiptGetLambdaHandler)
-                        // .cloudFrontAllowedMethods(AllowedMethods.ALLOW_ALL)
+                        .jwtAuthorizer(props.sharedNames().receiptGetLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().receiptGetLambdaCustomAuthorizer)
                         .environment(myReceiptsLambdaEnv)
                         .timeout(Duration.millis(Long.parseLong("30000")))
                         .build());
@@ -466,6 +471,8 @@ public class HmrcStack extends Stack {
                 .lambdaArn(props.sharedNames().receiptGetLambdaArn)
                 .httpMethod(props.sharedNames().receiptGetLambdaHttpMethod)
                 .urlPath(props.sharedNames().receiptGetByNameLambdaUrlPath)
+                .jwtAuthorizer(props.sharedNames().receiptGetLambdaJwtAuthorizer)
+                .customAuthorizer(props.sharedNames().receiptGetLambdaCustomAuthorizer)
                 .timeout(Duration.millis(Long.parseLong("30000")))
                 .build());
         infof(

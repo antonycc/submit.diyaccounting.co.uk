@@ -1,11 +1,6 @@
 // app/functions/cognitoAuthUrl.js
 
-import {
-  extractRequest,
-  httpBadRequestResponse,
-  httpOkResponse,
-  httpServerErrorResponse,
-} from "../../lib/responses.js";
+import { extractRequest, httpBadRequestResponse, httpOkResponse, httpServerErrorResponse } from "../../lib/responses.js";
 import { validateEnv } from "../../lib/env.js";
 
 // GET /api/v1/cognito/authUrl?state={state}

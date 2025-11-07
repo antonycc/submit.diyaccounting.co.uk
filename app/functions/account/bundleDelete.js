@@ -45,7 +45,7 @@ export async function handler(event) {
     const queryId = event?.queryStringParameters?.bundleId;
     const bundleToRemove = body?.bundleId || pathId || queryId;
     // Accept removeAll via body.removeAll or query removeAll=true
-    const removeAll = Boolean(body?.removeAll || (String(event?.queryStringParameters?.removeAll || "").toLowerCase() === "true"));
+    const removeAll = Boolean(body?.removeAll || String(event?.queryStringParameters?.removeAll || "").toLowerCase() === "true");
 
     if (!bundleToRemove && !removeAll) {
       logger.error({ message: "Missing bundle Id in request" });

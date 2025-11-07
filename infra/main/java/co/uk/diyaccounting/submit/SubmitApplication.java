@@ -138,7 +138,6 @@ public class SubmitApplication {
                         .envName(envName)
                         .deploymentName(deploymentName)
                         .resourceNamePrefix(sharedNames.appResourceNamePrefix)
-                        // .compressedResourceNamePrefix(sharedNames.appCompressedResourceNamePrefix)
                         .cloudTrailEnabled(cloudTrailEnabled)
                         .sharedNames(sharedNames)
                         .build());
@@ -156,11 +155,12 @@ public class SubmitApplication {
                         .envName(envName)
                         .deploymentName(deploymentName)
                         .resourceNamePrefix(sharedNames.appResourceNamePrefix)
-                        // .compressedResourceNamePrefix(sharedNames.appCompressedResourceNamePrefix)
                         .cloudTrailEnabled(cloudTrailEnabled)
                         .sharedNames(sharedNames)
                         .baseImageTag(baseImageTag)
                         .cognitoClientId(cognitoUserPoolClientId)
+                        .cognitoUserPoolId(cognitoUserPoolId)
+                        .cognitoUserPoolClientId(cognitoUserPoolClientId)
                         .build());
         this.authStack.addDependency(devStack);
 
@@ -177,7 +177,6 @@ public class SubmitApplication {
                         .envName(envName)
                         .deploymentName(deploymentName)
                         .resourceNamePrefix(sharedNames.appResourceNamePrefix)
-                        // .compressedResourceNamePrefix(sharedNames.appCompressedResourceNamePrefix)
                         .cloudTrailEnabled(cloudTrailEnabled)
                         .sharedNames(sharedNames)
                         .baseImageTag(baseImageTag)
@@ -201,7 +200,6 @@ public class SubmitApplication {
                         .envName(envName)
                         .deploymentName(deploymentName)
                         .resourceNamePrefix(sharedNames.appResourceNamePrefix)
-                        // .compressedResourceNamePrefix(sharedNames.appCompressedResourceNamePrefix)
                         .cloudTrailEnabled(cloudTrailEnabled)
                         .sharedNames(sharedNames)
                         .baseImageTag(baseImageTag)
@@ -229,10 +227,12 @@ public class SubmitApplication {
                         .envName(envName)
                         .deploymentName(deploymentName)
                         .resourceNamePrefix(sharedNames.appResourceNamePrefix)
-                        // .compressedResourceNamePrefix(sharedNames.appCompressedResourceNamePrefix)
                         .cloudTrailEnabled(cloudTrailEnabled)
                         .sharedNames(sharedNames)
                         .lambdaFunctions(lambdaFunctions)
+                        .userPoolId(cognitoUserPoolId)
+                        .userPoolClientId(cognitoUserPoolClientId)
+                        .customAuthorizerLambdaArn(authStack.customAuthorizerLambda.getFunctionArn())
                         .build());
         this.apiStack.addDependency(accountStack);
         this.apiStack.addDependency(hmrcStack);
@@ -249,7 +249,6 @@ public class SubmitApplication {
                         .envName(envName)
                         .deploymentName(deploymentName)
                         .resourceNamePrefix(sharedNames.appResourceNamePrefix)
-                        // .compressedResourceNamePrefix(sharedNames.appCompressedResourceNamePrefix)
                         .cloudTrailEnabled(cloudTrailEnabled)
                         .sharedNames(sharedNames)
                         .lambdaFunctionArns(lambdaArns)
@@ -268,7 +267,6 @@ public class SubmitApplication {
                             .envName(envName)
                             .deploymentName(deploymentName)
                             .resourceNamePrefix(sharedNames.appResourceNamePrefix)
-                            // .compressedResourceNamePrefix(sharedNames.appCompressedResourceNamePrefix)
                             .cloudTrailEnabled(cloudTrailEnabled)
                             .sharedNames(sharedNames)
                             .selfDestructLogGroupName(sharedNames.ew2SelfDestructLogGroupName)

@@ -80,9 +80,6 @@ public class ApexStack extends Stack {
         @Override
         String resourceNamePrefix();
 
-        // @Override
-        // String compressedResourceNamePrefix();
-
         @Override
         String cloudTrailEnabled();
 
@@ -206,7 +203,7 @@ public class ApexStack extends Stack {
                 .build();
         Tags.of(this.distribution).add("OriginFor", props.sharedNames().holdingDomainName);
 
-        // Grant CloudFront access to the origin lambdas with compressed names
+        // Grant CloudFront access to the origin lambdas
         this.distributionInvokeFnUrl = Permission.builder()
                 .principal(new ServicePrincipal("cloudfront.amazonaws.com"))
                 .action("lambda:InvokeFunctionUrl")
