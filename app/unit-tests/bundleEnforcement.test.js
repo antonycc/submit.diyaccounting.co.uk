@@ -182,7 +182,9 @@ describe("bundleEnforcement.js", () => {
       bundleHelpers.getUserBundles.mockResolvedValue(["SOME_OTHER_BUNDLE"]);
 
       await expect(enforceBundles(event)).rejects.toThrow(BundleEntitlementError);
-      await expect(enforceBundles(event)).rejects.toThrow("Forbidden: Production submission requires HMRC_PROD_SUBMIT or LEGACY_ENTITLEMENT bundle");
+      await expect(enforceBundles(event)).rejects.toThrow(
+        "Forbidden: Production submission requires HMRC_PROD_SUBMIT or LEGACY_ENTITLEMENT bundle",
+      );
     });
 
     test("should extract user info from authorizer context", async () => {

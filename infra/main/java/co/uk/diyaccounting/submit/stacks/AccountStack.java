@@ -17,6 +17,8 @@ import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.services.cognito.IUserPool;
 import software.amazon.awscdk.services.cognito.UserPool;
+import software.amazon.awscdk.services.dynamodb.ITable;
+import software.amazon.awscdk.services.dynamodb.Table;
 import software.amazon.awscdk.services.iam.Effect;
 import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.lambda.Function;
@@ -71,6 +73,8 @@ public class AccountStack extends Stack {
 
         String cognitoUserPoolArn();
 
+        String bundlesTableArn();
+
         static ImmutableAccountStackProps.Builder builder() {
             return ImmutableAccountStackProps.builder();
         }
@@ -86,6 +90,10 @@ public class AccountStack extends Stack {
         // Lookup existing Cognito UserPool
         IUserPool userPool = UserPool.fromUserPoolArn(
                 this, "ImportedUserPool-%s".formatted(props.deploymentName()), props.cognitoUserPoolArn());
+
+        // Lookup existing DynamoDB Bundles Table
+        ITable bundlesTable = Table.fromTableArn(
+                this, "ImportedBundlesTable-%s".formatted(props.deploymentName()), props.bundlesTableArn());
 
         // Lambdas
 
@@ -122,6 +130,7 @@ public class AccountStack extends Stack {
         // Request Bundles Lambda
         var requestBundlesLambdaEnv = new PopulatedMap<String, String>()
                 .with("COGNITO_USER_POOL_ID", userPool.getUserPoolId())
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName())
                 .with("TEST_BUNDLE_EXPIRY_DATE", "2025-12-31")
                 .with("TEST_BUNDLE_USER_LIMIT", "10");
         var requestBundlesLambdaUrlOrigin = new ApiLambda(
@@ -171,9 +180,16 @@ public class AccountStack extends Stack {
                 "Granted Cognito permissions to %s for User Pool %s",
                 this.bundlePostLambda.getFunctionName(), userPool.getUserPoolId());
 
+        // Grant the RequestBundlesLambda permission to access DynamoDB Bundles Table
+        bundlesTable.grantReadWriteData(this.bundlePostLambda);
+        infof(
+                "Granted DynamoDB permissions to %s for Bundles Table %s",
+                this.bundlePostLambda.getFunctionName(), bundlesTable.getTableName());
+
         // Delete Bundles Lambda
         var bundleDeleteLambdaEnv = new PopulatedMap<String, String>()
                 .with("COGNITO_USER_POOL_ID", userPool.getUserPoolId())
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName())
                 .with("TEST_BUNDLE_EXPIRY_DATE", "2025-12-31")
                 .with("TEST_BUNDLE_USER_LIMIT", "10");
         var bundleDeleteLambdaUrlOrigin = new ApiLambda(
@@ -234,6 +250,12 @@ public class AccountStack extends Stack {
         infof(
                 "Granted Cognito permissions to %s for User Pool %s",
                 this.bundleDeleteLambda.getFunctionName(), userPool.getUserPoolId());
+
+        // Grant the DeleteBundlesLambda permission to access DynamoDB Bundles Table
+        bundlesTable.grantReadWriteData(this.bundleDeleteLambda);
+        infof(
+                "Granted DynamoDB permissions to %s for Bundles Table %s",
+                this.bundleDeleteLambda.getFunctionName(), bundlesTable.getTableName());
 
         Aspects.of(this).add(new SetAutoDeleteJobLogRetentionAspect(props.deploymentName(), RetentionDays.THREE_DAYS));
 

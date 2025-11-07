@@ -67,6 +67,7 @@ public class SubmitSharedNames {
     public String trailName;
 
     public String receiptsBucketName;
+    public String bundlesTableName;
     public String holdingBucketName;
     public String originBucketName;
     public String originAccessLogBucketName;
@@ -252,6 +253,7 @@ public class SubmitSharedNames {
         this.cognitoBaseUri = "https://%s".formatted(this.cognitoDomainName);
 
         this.receiptsBucketName = "%s-receipts".formatted(this.envDashedDomainName);
+        this.bundlesTableName = "%s-bundles".formatted(this.envDashedDomainName);
         this.distributionAccessLogBucketName = "distribution-%s-logs".formatted(this.envDashedDomainName);
 
         this.ew2SelfDestructLogGroupName =

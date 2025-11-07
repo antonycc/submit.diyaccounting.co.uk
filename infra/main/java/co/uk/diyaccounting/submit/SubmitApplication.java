@@ -46,6 +46,7 @@ public class SubmitApplication {
         public String selfDestructDelayHours;
         public String userPoolArn;
         public String userPoolClientId;
+        public String bundlesTableArn;
 
         public static class Builder {
             private final SubmitApplicationProps p = new SubmitApplicationProps();
@@ -108,6 +109,8 @@ public class SubmitApplication {
         var cognitoUserPoolId = cognitoUserPoolArn != null
                 ? cognitoUserPoolArn.split("/")[1]
                 : "(unknown cognitoUserPoolId because no cognitoUserPoolArn)";
+        var bundlesTableArn =
+                envOr("BUNDLES_TABLE_ARN", appProps.bundlesTableArn, "(from bundlesTableArn in cdk.json)");
         var hmrcClientSecretArn =
                 envOr("HMRC_CLIENT_SECRET_ARN", appProps.hmrcClientSecretArn, "(from hmrcClientSecretArn in cdk.json)");
         var baseImageTag = envOr("BASE_IMAGE_TAG", appProps.baseImageTag, "(from baseImageTag in cdk.json)");
@@ -204,6 +207,7 @@ public class SubmitApplication {
                         .sharedNames(sharedNames)
                         .baseImageTag(baseImageTag)
                         .cognitoUserPoolArn(cognitoUserPoolArn)
+                        .bundlesTableArn(bundlesTableArn)
                         .build());
         this.accountStack.addDependency(devStack);
 
