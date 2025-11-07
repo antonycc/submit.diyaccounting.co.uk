@@ -150,9 +150,10 @@ public class ObservabilityStack extends Stack {
                 .resources(List.of(this.apiAccessLogGroup.getLogGroupArn() + ":*"))
                 .conditions(java.util.Map.of(
                         "StringEquals", java.util.Map.of("aws:SourceAccount", this.getAccount()),
-                        "ArnLike", java.util.Map.of(
-                                "aws:SourceArn",
-                                "arn:aws:apigateway:" + this.getRegion() + "::/apis/*/stages/*")))
+                        "ArnLike",
+                                java.util.Map.of(
+                                        "aws:SourceArn",
+                                        "arn:aws:apigateway:" + this.getRegion() + "::/apis/*/stages/*")))
                 .build());
 
         infof(

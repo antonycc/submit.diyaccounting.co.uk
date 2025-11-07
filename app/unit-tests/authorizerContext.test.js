@@ -10,10 +10,10 @@ describe("extractUserFromAuthorizerContext", () => {
           lambda: {
             jwt: {
               claims: {
-                sub: "abc-123",
+                "sub": "abc-123",
                 "cognito:username": "user-1",
-                email: "user@example.com",
-                scope: "openid profile",
+                "email": "user@example.com",
+                "scope": "openid profile",
               },
               scopes: null,
             },
@@ -84,12 +84,12 @@ describe("extractUserFromAuthorizerContext with flat colon-keyed claims", () => 
     const event = {
       requestContext: {
         authorizer: {
-          sub: "1652b254-c021-70a8-39e8-2e2b620f92cc",
+          "sub": "1652b254-c021-70a8-39e8-2e2b620f92cc",
           "cognito:username": "cognito_2e90b081-973b-4716-a4c9-4a6be57c2a7c",
           "cognito:groups": "[eu-west-2_a4eKeQ4dz_cognito]",
           "custom:bundles": "test|EXPIRY=2025-11-06",
-          email: "",
-          scope: "openid profile email",
+          "email": "",
+          "scope": "openid profile email",
         },
       },
     };

@@ -136,7 +136,6 @@ function generateAllowPolicy(routeArn, jwtPayload) {
     policyResource = routeArn;
   }
 
-
   // Flatten all JWT claims into simple string values for context
   const flatContext = {};
   for (const [k, v] of Object.entries(jwtPayload || {})) {
