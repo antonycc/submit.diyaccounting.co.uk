@@ -1,8 +1,8 @@
 // app/lib/hmrHelper.js
 
 import logger from "./logger.js";
-import { BundleEntitlementError } from "@app/lib/bundleEnforcement.js";
-import { httpBadRequestResponse, httpServerErrorResponse } from "@app/lib/responses.js";
+import { BundleEntitlementError } from "./bundleEnforcement.js";
+import { httpBadRequestResponse, httpServerErrorResponse } from "./responses.js";
 
 export function extractHmrcAccessTokenFromLambdaEvent(event) {
   const authHeader = event.headers?.authorization || event.headers?.Authorization;
