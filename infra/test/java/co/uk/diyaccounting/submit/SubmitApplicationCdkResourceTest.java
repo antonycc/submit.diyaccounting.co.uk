@@ -1,21 +1,22 @@
 package co.uk.diyaccounting.submit;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 import org.junitpioneer.jupiter.SetEnvironmentVariable;
 import software.amazon.awscdk.App;
 import software.amazon.awscdk.AppProps;
 import software.amazon.awscdk.assertions.Template;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
 
 @SetEnvironmentVariable.SetEnvironmentVariables({
     @SetEnvironmentVariable(key = "ENVIRONMENT_NAME", value = "test"),
@@ -57,7 +58,7 @@ class SubmitApplicationCdkResourceTest {
         Template.fromStack(submitApplication.hmrcStack).resourceCountIs("AWS::Lambda::Function", 7);
 
         infof("Created stack:", submitApplication.accountStack.getStackName());
-        Template.fromStack(submitApplication.accountStack).resourceCountIs("AWS::Lambda::Function", 3);
+        Template.fromStack(submitApplication.accountStack).resourceCountIs("AWS::Lambda::Function", 4);
 
         infof("Created stack:", submitApplication.apiStack.getStackName());
         Template apiStackTemplate = Template.fromStack(submitApplication.apiStack);
@@ -94,7 +95,7 @@ class SubmitApplicationCdkResourceTest {
         apiStackTemplate.hasResourceProperties(
                 "AWS::ApiGatewayV2::Route", Map.of("RouteKey", "DELETE /api/v1/bundle/{id}"));
         // Keep overall counts stable
-        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 14);
+        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 15);
         apiStackTemplate.resourceCountIs("AWS::CloudWatch::Dashboard", 1);
 
         infof("Created stack:", submitApplication.opsStack.getStackName());

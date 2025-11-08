@@ -183,6 +183,14 @@ public class SubmitSharedNames {
     public boolean catalogGetLambdaJwtAuthorizer;
     public boolean catalogGetLambdaCustomAuthorizer;
 
+    public String bundleGetLambdaHandler;
+    public String bundleGetLambdaFunctionName;
+    public String bundleGetLambdaArn;
+    public HttpMethod bundleGetLambdaHttpMethod;
+    public String bundleGetLambdaUrlPath;
+    public boolean bundleGetLambdaJwtAuthorizer;
+    public boolean bundleGetLambdaCustomAuthorizer;
+
     public String bundlePostLambdaHandler;
     public String bundlePostLambdaFunctionName;
     public String bundlePostLambdaArn;
@@ -500,6 +508,23 @@ public class SubmitSharedNames {
                 "Get product catalog",
                 "Retrieves the available product catalog",
                 "getCatalog"));
+
+        this.bundleGetLambdaHttpMethod = HttpMethod.GET;
+        this.bundleGetLambdaUrlPath = "/api/v1/bundle";
+        this.bundleGetLambdaJwtAuthorizer = true;
+        this.bundleGetLambdaCustomAuthorizer = false;
+        var bundleGetLambdaHandlerName = "bundleGet.handler";
+        var bundleGetLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(bundleGetLambdaHandlerName);
+        this.bundleGetLambdaFunctionName = "%s-%s".formatted(this.appResourceNamePrefix, bundleGetLambdaHandlerDashed);
+        this.bundleGetLambdaHandler = "%s/account/%s".formatted(appLambdaHandlerPrefix, bundleGetLambdaHandlerName);
+        this.bundleGetLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, bundleGetLambdaHandlerDashed);
+        publishedApiLambdas.add(new PublishedLambda(
+                this.bundleGetLambdaHttpMethod,
+                this.bundleGetLambdaUrlPath,
+                "Get user bundles",
+                "Retrieves all bundles for the authenticated user",
+                "getBundles"));
 
         this.bundlePostLambdaHttpMethod = HttpMethod.POST;
         this.bundlePostLambdaUrlPath = "/api/v1/bundle";

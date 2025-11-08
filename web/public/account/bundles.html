@@ -108,6 +108,37 @@
         }
       };
 
+      // Fetch bundles from API endpoint
+      const fetchUserBundles = async () => {
+        const idToken = getIdToken();
+        if (!idToken) {
+          return;
+        }
+
+        try {
+          const response = await fetch("/api/v1/bundle", {
+            headers: {
+              Authorization: `Bearer ${idToken}`,
+            },
+          });
+
+          if (response.ok) {
+            const bundlesData = await response.json();
+            if (bundlesData.bundles && Array.isArray(bundlesData.bundles)) {
+              // Store bundles in old format for compatibility
+              const bundleStrings = bundlesData.bundles.map((b) => {
+                return b.expiry ? `${b.bundleId}|EXPIRY=${b.expiry}` : b.bundleId;
+              });
+              localStorage.setItem("userBundles", JSON.stringify(bundleStrings));
+              return bundleStrings;
+            }
+          }
+        } catch (err) {
+          console.warn("Failed to fetch bundles:", err);
+        }
+        return parseUserBundles();
+      };
+
       const hasBundle = (bundles, id) => (bundles || []).some((b) => typeof b === "string" && (b === id || b.startsWith(id + "|")));
 
       const markToRequest = (btn, message = "Request bundle") => {
@@ -173,6 +204,8 @@
               btn.disabled = false;
               showStatus(`Bundle ${bundleId} request failed: unexpected response`, "error");
             }
+            // Refresh bundles from endpoint
+            await fetchUserBundles();
             // Refresh bundles lists
             try {
               renderCurrentBundles();
@@ -209,6 +242,9 @@
       (async function () {
         const container = document.getElementById("catalogBundles");
         try {
+          // Fetch user bundles first
+          await fetchUserBundles();
+
           const idToken = getIdToken();
           const headers = idToken ? { Authorization: `Bearer ${idToken}` } : {};
           const res = await fetch("/api/v1/catalog", { headers });
@@ -297,6 +333,8 @@
             if (Array.isArray(result.bundles)) {
               localStorage.setItem("userBundles", JSON.stringify(result.bundles));
             }
+            // Refresh bundles from endpoint
+            await fetchUserBundles();
             renderCurrentBundles();
             updateBundleStatus(); // Update the request buttons
             showStatus(`Bundle "${bundleId}" removed successfully.`, "success");
@@ -332,6 +370,8 @@
 
           if (response.ok) {
             localStorage.setItem("userBundles", JSON.stringify([]));
+            // Refresh bundles from endpoint
+            await fetchUserBundles();
             renderCurrentBundles();
             updateBundleStatus(); // Update the request buttons
             showStatus("All bundles removed successfully.", "success");

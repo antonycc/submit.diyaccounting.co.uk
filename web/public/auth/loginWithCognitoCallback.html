@@ -154,6 +154,30 @@
           );
 
           console.log("User authenticated successfully using Cognito:", userEmail || "no email provided");
+          showStatus("Authenticated successfully. Fetching bundles...", "info");
+
+          // Fetch user bundles
+          try {
+            const bundlesResponse = await fetch("/api/v1/bundle", {
+              headers: {
+                Authorization: `Bearer ${idToken}`,
+              },
+            });
+
+            if (bundlesResponse.ok) {
+              const bundlesData = await bundlesResponse.json();
+              if (bundlesData.bundles && Array.isArray(bundlesData.bundles)) {
+                // Store bundles in old format for compatibility
+                const bundleStrings = bundlesData.bundles.map((b) => {
+                  return b.expiry ? `${b.bundleId}|EXPIRY=${b.expiry}` : b.bundleId;
+                });
+                localStorage.setItem("userBundles", JSON.stringify(bundleStrings));
+              }
+            }
+          } catch (err) {
+            console.warn("Failed to fetch bundles:", err);
+          }
+
           showStatus("Authenticated successfully. Redirecting...", "info");
 
           // Clear URL parameters
