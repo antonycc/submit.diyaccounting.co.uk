@@ -29,10 +29,12 @@ import software.amazon.awscdk.services.iam.ManagedPolicy;
 import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.iam.Role;
 import software.amazon.awscdk.services.iam.ServicePrincipal;
+import software.amazon.awscdk.AssetHashType;
 import software.amazon.awscdk.services.lambda.Code;
 import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.lambda.Runtime;
 import software.amazon.awscdk.services.lambda.Tracing;
+import software.amazon.awscdk.services.s3.assets.AssetOptions;
 import software.amazon.awscdk.services.logs.ILogGroup;
 import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
@@ -175,7 +177,20 @@ public class SelfDestructStack extends Stack {
                 .functionName(functionName)
                 .runtime(Runtime.NODEJS_20_X)
                 .handler("app/functions/infra/selfDestruct.handler")
-                .code(Code.fromAsset("../"))
+                .code(Code.fromAsset(
+                        "./",
+                        AssetOptions.builder()
+                                .assetHashType(AssetHashType.SOURCE)
+                                .exclude(List.of(
+                                        ".git",
+                                        "cdk.out",
+                                        "cdk-*.out",
+                                        "cdk-submit-application.out",
+                                        "cdk-submit-environment.out",
+                                        "cdk-submit-delivery.out"
+                                ))
+                                .build()
+                ))
                 .timeout(Duration.minutes(15)) // Allow time for stack deletions
                 .memorySize(256) // Reduced memory for Node.js runtime
                 .role(this.functionRole)
