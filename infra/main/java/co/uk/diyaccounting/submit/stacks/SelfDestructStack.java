@@ -30,6 +30,7 @@ import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.iam.Role;
 import software.amazon.awscdk.services.iam.ServicePrincipal;
 import software.amazon.awscdk.AssetHashType;
+import software.amazon.awscdk.IgnoreMode;
 import software.amazon.awscdk.services.lambda.Code;
 import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.lambda.Runtime;
@@ -181,13 +182,15 @@ public class SelfDestructStack extends Stack {
                         "./",
                         AssetOptions.builder()
                                 .assetHashType(AssetHashType.SOURCE)
+                                .ignoreMode(IgnoreMode.GLOB)
                                 .exclude(List.of(
-                                        ".git",
-                                        "cdk.out",
-                                        "cdk-*.out",
-                                        "cdk-submit-application.out",
-                                        "cdk-submit-environment.out",
-                                        "cdk-submit-delivery.out"
+                                        ".git/**",
+                                        "cdk.out/**",
+                                        "cdk-submit-application.out/**",
+                                        "cdk-submit-environment.out/**",
+                                        "cdk-submit-delivery.out/**",
+                                        "target/**",
+                                        ".idea/**"
                                 ))
                                 .build()
                 ))
