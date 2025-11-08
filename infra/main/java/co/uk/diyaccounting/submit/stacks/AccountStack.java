@@ -131,6 +131,12 @@ public class AccountStack extends Stack {
                 "Created Lambda %s for catalog retrieval with handler %s",
                 this.catalogLambda.getNode().getId(), props.sharedNames().catalogGetLambdaHandler);
 
+        // Construct Cognito User Pool ARN for IAM policies
+        var region = props.getEnv() != null ? props.getEnv().getRegion() : "us-east-1";
+        var account = props.getEnv() != null ? props.getEnv().getAccount() : "";
+        var cognitoUserPoolArn =
+                String.format("arn:aws:cognito-idp:%s:%s:userpool/%s", region, account, userPool.getUserPoolId());
+
         // Get Bundles Lambda
         var getBundlesLambdaEnv = new PopulatedMap<String, String>()
                 .with("COGNITO_USER_POOL_ID", userPool.getUserPoolId())
@@ -211,10 +217,6 @@ public class AccountStack extends Stack {
                 this.bundlePostLambda.getNode().getId(), props.sharedNames().bundlePostLambdaHandler);
 
         // Grant the RequestBundlesLambda permission to access Cognito User Pool
-        var region = props.getEnv() != null ? props.getEnv().getRegion() : "us-east-1";
-        var account = props.getEnv() != null ? props.getEnv().getAccount() : "";
-        var cognitoUserPoolArn =
-                String.format("arn:aws:cognito-idp:%s:%s:userpool/%s", region, account, userPool.getUserPoolId());
         var requestBundlesLambdaGrantPrincipal = this.bundlePostLambda.getGrantPrincipal();
         userPool.grant(
                 requestBundlesLambdaGrantPrincipal,
