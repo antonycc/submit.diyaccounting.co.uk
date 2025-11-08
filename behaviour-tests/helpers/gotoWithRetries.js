@@ -84,7 +84,7 @@ export async function gotoWithRetries(page, url, options = {}, screenshotPath = 
       return; // success
     } catch (err) {
       lastErr = err;
-      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-goto-error.png` });
+      // await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-goto-error.png` });
       const isTransient = transientNavigationError(err);
       console.log(`[NAVIGATION] attempt ${attempt} failed${isTransient ? " (transient)" : ""}: ${err}`);
 
@@ -94,7 +94,7 @@ export async function gotoWithRetries(page, url, options = {}, screenshotPath = 
 
       const backoff = Math.min(baseDelayMs * Math.pow(2, attempt - 1), maxDelayMs);
       console.log(`[NAVIGATION] retrying in ${backoff}ms...`);
-      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-goto-backing-off.png` });
+      // await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-goto-backing-off.png` });
       await sleepFn(backoff);
     }
   }
