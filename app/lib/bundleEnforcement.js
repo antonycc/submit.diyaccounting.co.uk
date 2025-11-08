@@ -4,7 +4,6 @@ import logger from "./logger.js";
 import { decodeJwtNoVerify } from "./jwtHelper.js";
 import { extractAuthToken, extractAuthTokenFromXAuthorization, extractUserFromAuthorizerContext } from "./responses.js";
 import { getUserBundles, updateUserBundles } from "./bundleHelpers.js";
-import * as dynamoDbBundleStore from "./dynamoDbBundleStore.js";
 
 /**
  * Exception class for bundle enforcement failures
@@ -79,13 +78,13 @@ function isSandboxBase(base) {
 }
 
 /**
- * Get user bundles from Cognito
- * @param {string} userPoolId - Cognito User Pool ID
+ * Get user bundles from DynamoDB (via bundleHelpers which abstracts the storage)
+ * @param {string} userPoolId - User Pool ID (kept for backwards compatibility, may be unused)
  * @param {string} userSub - User's sub claim
  * @returns {Promise<Array<string>>} Array of bundle strings
  */
-async function getUserBundlesFromCognito(userPoolId, userSub) {
-  logger.info({ message: "Fetching user bundles from Cognito", userSub, userPoolId });
+async function getUserBundlesFromStorage(userPoolId, userSub) {
+  logger.info({ message: "Fetching user bundles from storage", userSub, userPoolId });
   const bundles = await getUserBundles(userSub, userPoolId);
   logger.info({ message: "User bundles retrieved", userSub, bundles, bundleCount: bundles.length });
   return bundles;
@@ -154,20 +153,8 @@ export async function enforceBundles(event, options = {}) {
   // Extract user information
   const { userSub, claims } = extractUserInfo(event);
 
-  // Get user bundles from Cognito
-  const bundles = await getUserBundlesFromCognito(userPoolId, userSub);
-
-  // Also get bundles from DynamoDB for comparison (shadow read)
-  const dynamoBundles = await dynamoDbBundleStore.getUserBundles(userSub);
-  logger.info({
-    message: "DynamoDB shadow read - comparing bundle sources",
-    userSub,
-    cognitoBundles: bundles,
-    dynamoBundles,
-    cognitoCount: bundles.length,
-    dynamoCount: dynamoBundles.length,
-    bundlesMatch: JSON.stringify(bundles.sort()) === JSON.stringify(dynamoBundles.sort()),
-  });
+  // Get user bundles from storage (DynamoDB or mock store)
+  const bundles = await getUserBundlesFromStorage(userPoolId, userSub);
 
   // Determine environment (sandbox vs production)
   const sandbox = isSandboxBase(hmrcBase);

@@ -5,8 +5,7 @@ import logger from "../../lib/logger.js";
 import { extractRequest } from "../../lib/responses.js";
 import { decodeJwtToken } from "../../lib/jwtHelper.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
-import { getUserBundles, isMockMode } from "../../lib/bundleHelpers.js";
-import * as dynamoDbBundleStore from "../../lib/dynamoDbBundleStore.js";
+import { getUserBundles } from "../../lib/bundleHelpers.js";
 
 /**
  * Parse bundle string to extract bundleId and expiry
@@ -89,20 +88,8 @@ export async function handler(event) {
 
     logger.info({ message: "Retrieving bundles for user:", userId });
 
-    let allBundles = [];
-
-    if (isMockMode()) {
-      // In mock mode, use in-memory store as sole source
-      allBundles = await getUserBundles(userId, userPoolId);
-    } else {
-      // For deployed version, return de-duped union of Cognito and DynamoDB bundles
-      const cognitoBundles = await getUserBundles(userId, userPoolId);
-      const dynamoBundles = await dynamoDbBundleStore.getUserBundles(userId);
-
-      // Combine and deduplicate bundles
-      const bundleSet = new Set([...cognitoBundles, ...dynamoBundles]);
-      allBundles = Array.from(bundleSet);
-    }
+    // Use DynamoDB as primary storage (via getUserBundles which abstracts the storage)
+    const allBundles = await getUserBundles(userId, userPoolId);
 
     // Format bundles with expiry information
     const formattedBundles = formatBundles(allBundles);

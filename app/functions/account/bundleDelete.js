@@ -5,7 +5,6 @@ import { extractRequest, parseRequestBody } from "../../lib/responses.js";
 import { decodeJwtToken } from "../../lib/jwtHelper.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
 import { getUserBundles, updateUserBundles } from "../../lib/bundleHelpers.js";
-import * as dynamoDbBundleStore from "../../lib/dynamoDbBundleStore.js";
 
 export function apiEndpoint(app) {
   app.delete("/api/v1/bundle", async (httpRequest, httpResponse) => {
@@ -61,9 +60,8 @@ export async function handler(event) {
     const currentBundles = await getUserBundles(userId, userPoolId);
 
     if (removeAll) {
+      // Use DynamoDB as primary storage via updateUserBundles
       await updateUserBundles(userId, userPoolId, []);
-      // Shadow write to DynamoDB for future migration
-      await dynamoDbBundleStore.deleteAllBundles(userId);
       logger.info({ message: `All bundles removed for user ${userId}` });
       return {
         statusCode: 200,
@@ -88,9 +86,8 @@ export async function handler(event) {
       };
     }
 
+    // Use DynamoDB as primary storage via updateUserBundles
     await updateUserBundles(userId, userPoolId, bundlesAfterRemoval);
-    // Shadow write to DynamoDB for future migration
-    await dynamoDbBundleStore.deleteBundle(userId, bundleToRemove);
     logger.info({ message: `Bundle ${bundleToRemove} removed for user ${userId}` });
     return {
       statusCode: 200,
