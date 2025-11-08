@@ -13,15 +13,20 @@ function isSandboxBase(base) {
 
 /**
  * Build the base URL for HMRC API calls
+ * @param {boolean} useSandbox - Whether to use sandbox credentials
  */
-export function getHmrcBaseUrl() {
+export function getHmrcBaseUrl(useSandbox = false) {
+  if (useSandbox && process.env.HMRC_SANDBOX_BASE_URI) {
+    return process.env.HMRC_SANDBOX_BASE_URI;
+  }
   return process.env.HMRC_BASE_URI || "https://test-api.service.hmrc.gov.uk";
 }
 
 /**
  * Build common HMRC headers including fraud prevention headers
+ * @param {boolean} useSandbox - Whether to use sandbox credentials
  */
-export function buildHmrcHeaders(accessToken, govClientHeaders = {}, testScenario = null) {
+export function buildHmrcHeaders(accessToken, govClientHeaders = {}, testScenario = null, useSandbox = false) {
   const headers = {
     "Content-Type": "application/json",
     "Accept": "application/vnd.hmrc.1.0+json",
@@ -30,7 +35,7 @@ export function buildHmrcHeaders(accessToken, govClientHeaders = {}, testScenari
   };
 
   // Add Gov-Test-Scenario header if provided and we're in sandbox
-  if (testScenario && isSandboxBase(getHmrcBaseUrl())) {
+  if (testScenario && isSandboxBase(getHmrcBaseUrl(useSandbox))) {
     headers["Gov-Test-Scenario"] = testScenario;
   }
 
@@ -39,13 +44,14 @@ export function buildHmrcHeaders(accessToken, govClientHeaders = {}, testScenari
 
 /**
  * Make a GET request to HMRC VAT API
+ * @param {boolean} useSandbox - Whether to use sandbox credentials
  */
-export async function hmrcVatGet(endpoint, accessToken, govClientHeaders = {}, testScenario = null, queryParams = {}) {
-  const baseUrl = getHmrcBaseUrl();
+export async function hmrcVatGet(endpoint, accessToken, govClientHeaders = {}, testScenario = null, queryParams = {}, useSandbox = false) {
+  const baseUrl = getHmrcBaseUrl(useSandbox);
   const queryString = new URLSearchParams(queryParams).toString();
   const url = `${baseUrl}${endpoint}${queryString ? `?${queryString}` : ""}`;
 
-  const headers = buildHmrcHeaders(accessToken, govClientHeaders, testScenario);
+  const headers = buildHmrcHeaders(accessToken, govClientHeaders, testScenario, useSandbox);
 
   logger.info({
     message: `Request to GET ${url}`,
@@ -82,12 +88,13 @@ export async function hmrcVatGet(endpoint, accessToken, govClientHeaders = {}, t
 
 /**
  * Make a POST request to HMRC VAT API
+ * @param {boolean} useSandbox - Whether to use sandbox credentials
  */
-export async function hmrcVatPost(endpoint, body, accessToken, govClientHeaders = {}, testScenario = null) {
-  const baseUrl = getHmrcBaseUrl();
+export async function hmrcVatPost(endpoint, body, accessToken, govClientHeaders = {}, testScenario = null, useSandbox = false) {
+  const baseUrl = getHmrcBaseUrl(useSandbox);
   const url = `${baseUrl}${endpoint}`;
 
-  const headers = buildHmrcHeaders(accessToken, govClientHeaders, testScenario);
+  const headers = buildHmrcHeaders(accessToken, govClientHeaders, testScenario, useSandbox);
 
   logger.info({
     message: `Request to POST ${url}`,

@@ -23,12 +23,13 @@ export function apiEndpoint(app) {
   });
 }
 
-// POST /api/v1/hmrc/vat/return
+// POST /api/v1/hmrc/vat/return?sandbox={true|false}
 export async function handler(event) {
   validateEnv(["HMRC_BASE_URI", "COGNITO_USER_POOL_ID"]);
 
   const request = extractRequest(event);
   const detectedIP = extractClientIPFromHeaders(event);
+  const useSandbox = event.queryStringParameters?.sandbox === "true";
 
   // Enforce bundle entitlements early in the request lifecycle
   try {
@@ -81,7 +82,7 @@ export async function handler(event) {
   }
 
   // Processing
-  const { receipt, hmrcResponse, hmrcResponseBody } = await submitVat(periodKey, vatDue, vatNumber, token, govClientHeaders);
+  const { receipt, hmrcResponse, hmrcResponseBody } = await submitVat(periodKey, vatDue, vatNumber, token, govClientHeaders, useSandbox);
 
   if (!hmrcResponse.ok) {
     return httpServerErrorResponse({
@@ -103,7 +104,7 @@ export async function handler(event) {
   });
 }
 
-export async function submitVat(periodKey, vatDue, vatNumber, hmrcAccessToken, govClientHeaders) {
+export async function submitVat(periodKey, vatDue, vatNumber, hmrcAccessToken, govClientHeaders, useSandbox = false) {
   const submissionStartTime = new Date().toISOString();
 
   // Validate access token format
@@ -157,7 +158,9 @@ export async function submitVat(periodKey, vatDue, vatNumber, hmrcAccessToken, g
 
   let hmrcResponseBody;
   let hmrcResponse;
-  const hmrcBase = process.env.HMRC_BASE_URI;
+  const hmrcBase = useSandbox && process.env.HMRC_SANDBOX_BASE_URI
+    ? process.env.HMRC_SANDBOX_BASE_URI
+    : process.env.HMRC_BASE_URI;
   const hmrcRequestUrl = `${hmrcBase}/organisations/vat/${vatNumber}/returns`;
   logger.info({
     message: `Request to POST ${hmrcRequestUrl}`,

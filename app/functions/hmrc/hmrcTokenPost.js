@@ -10,6 +10,7 @@ import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } fr
 const secretsClient = new SecretsManagerClient();
 
 let cachedHmrcClientSecret;
+let cachedHmrcSandboxClientSecret;
 
 export function apiEndpoint(app) {
   app.post("/api/v1/hmrc/token", async (httpRequest, httpResponse) => {
@@ -19,12 +20,10 @@ export function apiEndpoint(app) {
   });
 }
 
-// POST /api/v1/hmrc/token
+// POST /api/v1/hmrc/token?sandbox={true|false}
 export async function handler(event) {
   validateEnv(["HMRC_BASE_URI", "HMRC_CLIENT_ID", "DIY_SUBMIT_BASE_URL", "HMRC_CLIENT_SECRET_ARN"]);
-  const secretArn = process.env.HMRC_CLIENT_SECRET_ARN;
-  const overrideSecret = process.env.HMRC_CLIENT_SECRET;
-
+  
   const request = extractRequest(event);
   const { code } = parseRequestBody(event);
 
@@ -36,12 +35,26 @@ export async function handler(event) {
     });
   }
 
-  const clientSecret = await retrieveHmrcClientSecret(overrideSecret, secretArn);
-  const url = `${process.env.HMRC_BASE_URI}/oauth/token`;
+  const useSandbox = event.queryStringParameters?.sandbox === "true";
+  const secretArn = useSandbox && process.env.HMRC_SANDBOX_CLIENT_SECRET_ARN
+    ? process.env.HMRC_SANDBOX_CLIENT_SECRET_ARN
+    : process.env.HMRC_CLIENT_SECRET_ARN;
+  const overrideSecret = useSandbox && process.env.HMRC_SANDBOX_CLIENT_SECRET
+    ? process.env.HMRC_SANDBOX_CLIENT_SECRET
+    : process.env.HMRC_CLIENT_SECRET;
+  const clientId = useSandbox && process.env.HMRC_SANDBOX_CLIENT_ID
+    ? process.env.HMRC_SANDBOX_CLIENT_ID
+    : process.env.HMRC_CLIENT_ID;
+  const hmrcBase = useSandbox && process.env.HMRC_SANDBOX_BASE_URI
+    ? process.env.HMRC_SANDBOX_BASE_URI
+    : process.env.HMRC_BASE_URI;
+
+  const clientSecret = await retrieveHmrcClientSecret(overrideSecret, secretArn, useSandbox);
+  const url = `${hmrcBase}/oauth/token`;
   const maybeSlash = process.env.DIY_SUBMIT_BASE_URL?.endsWith("/") ? "" : "/";
   const body = {
     grant_type: "authorization_code",
-    client_id: process.env.HMRC_CLIENT_ID,
+    client_id: clientId,
     client_secret: clientSecret,
     redirect_uri: `${process.env.DIY_SUBMIT_BASE_URL}${maybeSlash}activities/submitVatCallback.html`,
     code,
@@ -51,19 +64,33 @@ export async function handler(event) {
   return buildTokenExchangeResponse(request, url, body);
 }
 
-async function retrieveHmrcClientSecret(overrideSecret, secretArn) {
+async function retrieveHmrcClientSecret(overrideSecret, secretArn, useSandbox = false) {
   logger.info("Retrieving HMRC client secret from arn " + secretArn);
+  const cache = useSandbox ? cachedHmrcSandboxClientSecret : cachedHmrcClientSecret;
+  
   if (overrideSecret) {
-    cachedHmrcClientSecret = overrideSecret;
+    if (useSandbox) {
+      cachedHmrcSandboxClientSecret = overrideSecret;
+    } else {
+      cachedHmrcClientSecret = overrideSecret;
+    }
     logger.info(`Secret retrieved from override and cached`);
-  } else if (!cachedHmrcClientSecret) {
+    return overrideSecret;
+  } else if (!cache) {
     const data = await secretsClient.send(new GetSecretValueCommand({ SecretId: secretArn }));
-    cachedHmrcClientSecret = data.SecretString;
+    const secretValue = data.SecretString;
+    if (useSandbox) {
+      cachedHmrcSandboxClientSecret = secretValue;
+    } else {
+      cachedHmrcClientSecret = secretValue;
+    }
     logger.info(`Secret retrieved from Secrets Manager with Arn ${secretArn} and cached`);
+    return secretValue;
   }
-  return cachedHmrcClientSecret;
+  return cache;
 }
 
 export function resetCachedSecrets() {
   cachedHmrcClientSecret = undefined;
+  cachedHmrcSandboxClientSecret = undefined;
 }

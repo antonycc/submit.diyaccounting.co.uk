@@ -26,15 +26,16 @@ export function apiEndpoint(app) {
   });
 }
 
-// GET /api/v1/hmrc/vat/return/:periodKey
+// GET /api/v1/hmrc/vat/return/:periodKey?sandbox={true|false}
 export async function handler(event) {
   const request = extractRequest(event);
   const detectedIP = extractClientIPFromHeaders(event);
 
   const pathParams = event.pathParameters || {};
   const queryParams = event.queryStringParameters || {};
-  const { vrn, periodKey } = { ...pathParams, ...queryParams };
+  const { vrn, periodKey, sandbox } = { ...pathParams, ...queryParams };
   const { "Gov-Test-Scenario": testScenario } = queryParams;
+  const useSandbox = sandbox === "true";
 
   let errorMessages = [];
   if (!vrn) errorMessages.push("Missing vrn parameter");
@@ -68,8 +69,8 @@ export async function handler(event) {
       vatReturn = getStubData("TEST_VAT_RETURN");
     } else {
       // Call HMRC API
-      logger.info({ message: "Retrieving VAT return from HMRC", vrn, periodKey, testScenario });
-      const hmrcResult = await hmrcVatGet(`/organisations/vat/${vrn}/returns/${periodKey}`, accessToken, govClientHeaders, testScenario);
+      logger.info({ message: "Retrieving VAT return from HMRC", vrn, periodKey, testScenario, useSandbox });
+      const hmrcResult = await hmrcVatGet(`/organisations/vat/${vrn}/returns/${periodKey}`, accessToken, govClientHeaders, testScenario, {}, useSandbox);
 
       if (!hmrcResult.ok) {
         if (hmrcResult.status === 404) {

@@ -26,13 +26,14 @@ export function apiEndpoint(app) {
   });
 }
 
-// GET /api/v1/hmrc/vat/obligation
+// GET /api/v1/hmrc/vat/obligation?sandbox={true|false}
 export async function handler(event) {
   const request = extractRequest(event);
   const detectedIP = extractClientIPFromHeaders(event);
 
   const queryParams = event.queryStringParameters || {};
-  const { vrn, from, to, status, "Gov-Test-Scenario": testScenario } = queryParams;
+  const { vrn, from, to, status, sandbox, "Gov-Test-Scenario": testScenario } = queryParams;
+  const useSandbox = sandbox === "true";
 
   let errorMessages = [];
   if (!vrn) errorMessages.push("Missing vrn parameter");
@@ -79,6 +80,7 @@ export async function handler(event) {
         govClientHeaders,
         testScenario,
         hmrcQueryParams,
+        useSandbox,
       );
 
       if (!hmrcResult.ok) {
