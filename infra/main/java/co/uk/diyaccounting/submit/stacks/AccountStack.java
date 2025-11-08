@@ -1,14 +1,10 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
 import co.uk.diyaccounting.submit.constructs.ApiLambda;
 import co.uk.diyaccounting.submit.constructs.ApiLambdaProps;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
-import java.util.List;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Aspects;
 import software.amazon.awscdk.Duration;
@@ -17,12 +13,19 @@ import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.services.cognito.IUserPool;
 import software.amazon.awscdk.services.cognito.UserPool;
+import software.amazon.awscdk.services.dynamodb.ITable;
+import software.amazon.awscdk.services.dynamodb.Table;
 import software.amazon.awscdk.services.iam.Effect;
 import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.constructs.Construct;
+
+import java.util.List;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 public class AccountStack extends Stack {
 
@@ -87,6 +90,10 @@ public class AccountStack extends Stack {
         IUserPool userPool = UserPool.fromUserPoolArn(
                 this, "ImportedUserPool-%s".formatted(props.deploymentName()), props.cognitoUserPoolArn());
 
+        // Lookup existing DynamoDB Bundles Table
+        ITable bundlesTable = Table.fromTableName(
+                this, "ImportedBundlesTable-%s".formatted(props.deploymentName()), props.sharedNames().bundlesTableName);
+
         // Lambdas
 
         this.lambdaFunctionProps = new java.util.ArrayList<>();
@@ -122,6 +129,7 @@ public class AccountStack extends Stack {
         // Request Bundles Lambda
         var requestBundlesLambdaEnv = new PopulatedMap<String, String>()
                 .with("COGNITO_USER_POOL_ID", userPool.getUserPoolId())
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName())
                 .with("TEST_BUNDLE_EXPIRY_DATE", "2025-12-31")
                 .with("TEST_BUNDLE_USER_LIMIT", "10");
         var requestBundlesLambdaUrlOrigin = new ApiLambda(
@@ -171,9 +179,16 @@ public class AccountStack extends Stack {
                 "Granted Cognito permissions to %s for User Pool %s",
                 this.bundlePostLambda.getFunctionName(), userPool.getUserPoolId());
 
+        // Grant the RequestBundlesLambda permission to access DynamoDB Bundles Table
+        bundlesTable.grantReadWriteData(this.bundlePostLambda);
+        infof(
+                "Granted DynamoDB permissions to %s for Bundles Table %s",
+                this.bundlePostLambda.getFunctionName(), bundlesTable.getTableName());
+
         // Delete Bundles Lambda
         var bundleDeleteLambdaEnv = new PopulatedMap<String, String>()
                 .with("COGNITO_USER_POOL_ID", userPool.getUserPoolId())
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName())
                 .with("TEST_BUNDLE_EXPIRY_DATE", "2025-12-31")
                 .with("TEST_BUNDLE_USER_LIMIT", "10");
         var bundleDeleteLambdaUrlOrigin = new ApiLambda(
@@ -234,6 +249,12 @@ public class AccountStack extends Stack {
         infof(
                 "Granted Cognito permissions to %s for User Pool %s",
                 this.bundleDeleteLambda.getFunctionName(), userPool.getUserPoolId());
+
+        // Grant the DeleteBundlesLambda permission to access DynamoDB Bundles Table
+        bundlesTable.grantReadWriteData(this.bundleDeleteLambda);
+        infof(
+                "Granted DynamoDB permissions to %s for Bundles Table %s",
+                this.bundleDeleteLambda.getFunctionName(), bundlesTable.getTableName());
 
         Aspects.of(this).add(new SetAutoDeleteJobLogRetentionAspect(props.deploymentName(), RetentionDays.THREE_DAYS));
 
