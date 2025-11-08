@@ -25,9 +25,6 @@ import software.amazon.awscdk.assertions.Template;
             value = "arn:aws:cognito-idp:eu-west-2:111111111111:userpool/eu-west-2_123456789"),
     @SetEnvironmentVariable(key = "COGNITO_CLIENT_ID", value = "tt-witheight-cognito-client-id"),
     @SetEnvironmentVariable(
-            key = "BUNDLES_TABLE_ARN",
-            value = "arn:aws:dynamodb:eu-west-2:111111111111:table/tt-witheight-bundles"),
-    @SetEnvironmentVariable(
             key = "HMRC_CLIENT_SECRET_ARN",
             value = "arn:aws:secretsmanager:eu-west-2:111111111111:secret:tt-witheight-hmrc-secret"),
     @SetEnvironmentVariable(key = "BASE_IMAGE_TAG", value = "test"),
