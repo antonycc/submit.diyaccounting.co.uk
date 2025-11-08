@@ -190,7 +190,7 @@ export async function deleteAllBundles(userId) {
         if (bundleId) {
           await deleteBundle(userId, bundleId);
         }
-      })
+      }),
     );
 
     // Log any failures from individual deletions

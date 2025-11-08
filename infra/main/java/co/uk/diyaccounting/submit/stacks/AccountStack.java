@@ -1,10 +1,14 @@
 package co.uk.diyaccounting.submit.stacks;
 
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
 import co.uk.diyaccounting.submit.constructs.ApiLambda;
 import co.uk.diyaccounting.submit.constructs.ApiLambdaProps;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
+import java.util.List;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Aspects;
 import software.amazon.awscdk.Duration;
@@ -22,16 +26,15 @@ import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.constructs.Construct;
 
-import java.util.List;
-
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-
 public class AccountStack extends Stack {
 
     public ApiLambdaProps catalogLambdaProps;
     public Function catalogLambda;
     public LogGroup catalogLambdaLogGroup;
+
+    public ApiLambdaProps bundleGetLambdaProps;
+    public Function bundleGetLambda;
+    public LogGroup bundleGetLambdaLogGroup;
 
     public ApiLambdaProps bundlePostLambdaProps;
     public Function bundlePostLambda;
@@ -92,7 +95,9 @@ public class AccountStack extends Stack {
 
         // Lookup existing DynamoDB Bundles Table
         ITable bundlesTable = Table.fromTableName(
-                this, "ImportedBundlesTable-%s".formatted(props.deploymentName()), props.sharedNames().bundlesTableName);
+                this,
+                "ImportedBundlesTable-%s".formatted(props.deploymentName()),
+                props.sharedNames().bundlesTableName);
 
         // Lambdas
 
@@ -125,6 +130,54 @@ public class AccountStack extends Stack {
         infof(
                 "Created Lambda %s for catalog retrieval with handler %s",
                 this.catalogLambda.getNode().getId(), props.sharedNames().catalogGetLambdaHandler);
+
+        // Get Bundles Lambda
+        var getBundlesLambdaEnv = new PopulatedMap<String, String>()
+                .with("COGNITO_USER_POOL_ID", userPool.getUserPoolId())
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName());
+        var getBundlesLambdaUrlOrigin = new ApiLambda(
+                this,
+                ApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().bundleGetLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                        .functionName(props.sharedNames().bundleGetLambdaFunctionName)
+                        .handler(props.sharedNames().bundleGetLambdaHandler)
+                        .lambdaArn(props.sharedNames().bundleGetLambdaArn)
+                        .httpMethod(props.sharedNames().bundleGetLambdaHttpMethod)
+                        .urlPath(props.sharedNames().bundleGetLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().bundleGetLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().bundleGetLambdaCustomAuthorizer)
+                        .environment(getBundlesLambdaEnv)
+                        .timeout(Duration.millis(Long.parseLong("30000")))
+                        .build());
+        this.bundleGetLambdaProps = getBundlesLambdaUrlOrigin.props;
+        this.bundleGetLambda = getBundlesLambdaUrlOrigin.lambda;
+        this.bundleGetLambdaLogGroup = getBundlesLambdaUrlOrigin.logGroup;
+        this.lambdaFunctionProps.add(this.bundleGetLambdaProps);
+        infof(
+                "Created Lambda %s for get bundles with handler %s",
+                this.bundleGetLambda.getNode().getId(), props.sharedNames().bundleGetLambdaHandler);
+
+        // Grant the GetBundlesLambda permission to access Cognito User Pool
+        var getBundlesLambdaGrantPrincipal = this.bundleGetLambda.getGrantPrincipal();
+        userPool.grant(getBundlesLambdaGrantPrincipal, "cognito-idp:AdminGetUser");
+        this.bundleGetLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .actions(List.of("cognito-idp:AdminGetUser"))
+                .resources(List.of(cognitoUserPoolArn))
+                .build());
+
+        infof(
+                "Granted Cognito permissions to %s for User Pool %s",
+                this.bundleGetLambda.getFunctionName(), userPool.getUserPoolId());
+
+        // Grant the GetBundlesLambda permission to access DynamoDB Bundles Table
+        bundlesTable.grantReadData(this.bundleGetLambda);
+        infof(
+                "Granted DynamoDB permissions to %s for Bundles Table %s",
+                this.bundleGetLambda.getFunctionName(), bundlesTable.getTableName());
 
         // Request Bundles Lambda
         var requestBundlesLambdaEnv = new PopulatedMap<String, String>()
@@ -259,6 +312,7 @@ public class AccountStack extends Stack {
         Aspects.of(this).add(new SetAutoDeleteJobLogRetentionAspect(props.deploymentName(), RetentionDays.THREE_DAYS));
 
         cfnOutput(this, "CatalogLambdaArn", this.catalogLambda.getFunctionArn());
+        cfnOutput(this, "GetBundlesLambdaArn", this.bundleGetLambda.getFunctionArn());
         cfnOutput(this, "RequestBundlesLambdaArn", this.bundlePostLambda.getFunctionArn());
         cfnOutput(this, "BundleDeleteLambdaArn", this.bundleDeleteLambda.getFunctionArn());
 

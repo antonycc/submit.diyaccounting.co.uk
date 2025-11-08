@@ -5,6 +5,7 @@ import path from "path";
 import express from "express";
 import { fileURLToPath } from "url";
 import { apiEndpoint as catalogGetApiEndpoint } from "../functions/account/catalogGet.js";
+import { apiEndpoint as bundleGetApiEndpoint } from "../functions/account/bundleGet.js";
 import { apiEndpoint as bundlePostApiEndpoint } from "../functions/account/bundlePost.js";
 import { apiEndpoint as bundleDeleteApiEndpoint } from "../functions/account/bundleDelete.js";
 import { apiEndpoint as hmrcAuthUrlGetApiEndpoint } from "../functions/hmrc/hmrcAuthUrlGet.js";
@@ -58,6 +59,7 @@ app.use((req, res, next) => {
 app.use(express.static(path.join(__dirname, "../../web/public")));
 
 catalogGetApiEndpoint(app);
+bundleGetApiEndpoint(app);
 bundlePostApiEndpoint(app);
 bundleDeleteApiEndpoint(app);
 mockAuthUrlGetApiEndpoint(app);
