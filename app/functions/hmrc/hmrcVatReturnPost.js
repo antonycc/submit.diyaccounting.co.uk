@@ -158,9 +158,7 @@ export async function submitVat(periodKey, vatDue, vatNumber, hmrcAccessToken, g
 
   let hmrcResponseBody;
   let hmrcResponse;
-  const hmrcBase = useSandbox && process.env.HMRC_SANDBOX_BASE_URI
-    ? process.env.HMRC_SANDBOX_BASE_URI
-    : process.env.HMRC_BASE_URI;
+  const hmrcBase = useSandbox && process.env.HMRC_SANDBOX_BASE_URI ? process.env.HMRC_SANDBOX_BASE_URI : process.env.HMRC_BASE_URI;
   const hmrcRequestUrl = `${hmrcBase}/organisations/vat/${vatNumber}/returns`;
   logger.info({
     message: `Request to POST ${hmrcRequestUrl}`,

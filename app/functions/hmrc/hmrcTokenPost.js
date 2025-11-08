@@ -23,7 +23,7 @@ export function apiEndpoint(app) {
 // POST /api/v1/hmrc/token?sandbox={true|false}
 export async function handler(event) {
   validateEnv(["HMRC_BASE_URI", "HMRC_CLIENT_ID", "DIY_SUBMIT_BASE_URL", "HMRC_CLIENT_SECRET_ARN"]);
-  
+
   const request = extractRequest(event);
   const { code } = parseRequestBody(event);
 
@@ -36,18 +36,14 @@ export async function handler(event) {
   }
 
   const useSandbox = event.queryStringParameters?.sandbox === "true";
-  const secretArn = useSandbox && process.env.HMRC_SANDBOX_CLIENT_SECRET_ARN
-    ? process.env.HMRC_SANDBOX_CLIENT_SECRET_ARN
-    : process.env.HMRC_CLIENT_SECRET_ARN;
-  const overrideSecret = useSandbox && process.env.HMRC_SANDBOX_CLIENT_SECRET
-    ? process.env.HMRC_SANDBOX_CLIENT_SECRET
-    : process.env.HMRC_CLIENT_SECRET;
-  const clientId = useSandbox && process.env.HMRC_SANDBOX_CLIENT_ID
-    ? process.env.HMRC_SANDBOX_CLIENT_ID
-    : process.env.HMRC_CLIENT_ID;
-  const hmrcBase = useSandbox && process.env.HMRC_SANDBOX_BASE_URI
-    ? process.env.HMRC_SANDBOX_BASE_URI
-    : process.env.HMRC_BASE_URI;
+  const secretArn =
+    useSandbox && process.env.HMRC_SANDBOX_CLIENT_SECRET_ARN
+      ? process.env.HMRC_SANDBOX_CLIENT_SECRET_ARN
+      : process.env.HMRC_CLIENT_SECRET_ARN;
+  const overrideSecret =
+    useSandbox && process.env.HMRC_SANDBOX_CLIENT_SECRET ? process.env.HMRC_SANDBOX_CLIENT_SECRET : process.env.HMRC_CLIENT_SECRET;
+  const clientId = useSandbox && process.env.HMRC_SANDBOX_CLIENT_ID ? process.env.HMRC_SANDBOX_CLIENT_ID : process.env.HMRC_CLIENT_ID;
+  const hmrcBase = useSandbox && process.env.HMRC_SANDBOX_BASE_URI ? process.env.HMRC_SANDBOX_BASE_URI : process.env.HMRC_BASE_URI;
 
   const clientSecret = await retrieveHmrcClientSecret(overrideSecret, secretArn, useSandbox);
   const url = `${hmrcBase}/oauth/token`;
@@ -67,7 +63,7 @@ export async function handler(event) {
 async function retrieveHmrcClientSecret(overrideSecret, secretArn, useSandbox = false) {
   logger.info("Retrieving HMRC client secret from arn " + secretArn);
   const cache = useSandbox ? cachedHmrcSandboxClientSecret : cachedHmrcClientSecret;
-  
+
   if (overrideSecret) {
     if (useSandbox) {
       cachedHmrcSandboxClientSecret = overrideSecret;

@@ -70,7 +70,14 @@ export async function handler(event) {
     } else {
       // Call HMRC API
       logger.info({ message: "Retrieving VAT return from HMRC", vrn, periodKey, testScenario, useSandbox });
-      const hmrcResult = await hmrcVatGet(`/organisations/vat/${vrn}/returns/${periodKey}`, accessToken, govClientHeaders, testScenario, {}, useSandbox);
+      const hmrcResult = await hmrcVatGet(
+        `/organisations/vat/${vrn}/returns/${periodKey}`,
+        accessToken,
+        govClientHeaders,
+        testScenario,
+        {},
+        useSandbox,
+      );
 
       if (!hmrcResult.ok) {
         if (hmrcResult.status === 404) {

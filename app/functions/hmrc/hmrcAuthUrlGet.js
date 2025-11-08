@@ -38,14 +38,10 @@ export async function handler(event) {
     }
 
     const useSandbox = event.queryStringParameters?.sandbox === "true";
-    const clientId = useSandbox && process.env.HMRC_SANDBOX_CLIENT_ID 
-      ? process.env.HMRC_SANDBOX_CLIENT_ID 
-      : process.env.HMRC_CLIENT_ID;
+    const clientId = useSandbox && process.env.HMRC_SANDBOX_CLIENT_ID ? process.env.HMRC_SANDBOX_CLIENT_ID : process.env.HMRC_CLIENT_ID;
     const maybeSlash = process.env.DIY_SUBMIT_BASE_URL?.endsWith("/") ? "" : "/";
     const redirectUri = `${process.env.DIY_SUBMIT_BASE_URL}${maybeSlash}activities/submitVatCallback.html`;
-    const hmrcBase = useSandbox && process.env.HMRC_SANDBOX_BASE_URI
-      ? process.env.HMRC_SANDBOX_BASE_URI
-      : process.env.HMRC_BASE_URI;
+    const hmrcBase = useSandbox && process.env.HMRC_SANDBOX_BASE_URI ? process.env.HMRC_SANDBOX_BASE_URI : process.env.HMRC_BASE_URI;
 
     const authUrl =
       `${hmrcBase}/oauth/authorize?response_type=code` +

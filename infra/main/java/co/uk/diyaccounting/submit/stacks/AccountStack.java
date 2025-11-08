@@ -1,10 +1,14 @@
 package co.uk.diyaccounting.submit.stacks;
 
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
 import co.uk.diyaccounting.submit.constructs.ApiLambda;
 import co.uk.diyaccounting.submit.constructs.ApiLambdaProps;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
+import java.util.List;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Aspects;
 import software.amazon.awscdk.Duration;
@@ -21,11 +25,6 @@ import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.constructs.Construct;
-
-import java.util.List;
-
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 public class AccountStack extends Stack {
 
@@ -92,7 +91,9 @@ public class AccountStack extends Stack {
 
         // Lookup existing DynamoDB Bundles Table
         ITable bundlesTable = Table.fromTableName(
-                this, "ImportedBundlesTable-%s".formatted(props.deploymentName()), props.sharedNames().bundlesTableName);
+                this,
+                "ImportedBundlesTable-%s".formatted(props.deploymentName()),
+                props.sharedNames().bundlesTableName);
 
         // Lambdas
 
