@@ -8,7 +8,6 @@ import {
   runLocalHttpServer,
   runLocalOAuth2Server,
   runLocalSslProxy,
-  timestamp,
 } from "./helpers/behaviour-helpers.js";
 import { goToHomePageExpectNotLoggedIn, goToHomePageUsingHamburgerMenu } from "./steps/behaviour-steps.js";
 import {
@@ -39,6 +38,8 @@ if (!process.env.DIY_SUBMIT_ENV_FILEPATH) {
   console.log(`Already loaded environment from custom path: ${process.env.DIY_SUBMIT_ENV_FILEPATH}`);
 }
 dotenvConfigIfNotBlank({ path: ".env" }); // Not checked in, HMRC API credentials
+
+const screenshotPath = "target/behaviour-test-results/screenshots/view-vat-return-behaviour-test";
 
 const originalEnv = { ...process.env };
 
@@ -100,100 +101,61 @@ test("Click through: Get VAT return from HMRC", async ({ page }) => {
       : baseUrl;
 
   // Add console logging to capture browser messages
-  addOnPageLogging(page);
+  addOnPageLogging(page, screenshotPath);
 
   /* ****** */
   /*  HOME  */
   /* ****** */
 
-  await goToHomePageExpectNotLoggedIn(page, testUrl);
-  await page.waitForTimeout(200);
-  await page.screenshot({ path: `target/behaviour-test-results/viewVatReturn-screenshots/005-start-${timestamp()}.png` });
+  await goToHomePageExpectNotLoggedIn(page, testUrl, screenshotPath);
 
   /* ******* */
   /*  LOGIN  */
   /* ******* */
 
-  await clickLogIn(page);
-  await page.waitForTimeout(100);
-  await page.screenshot({ path: `target/behaviour-test-results/viewVatReturn-screenshots/012-login-clicked-${timestamp()}.png` });
-
-  await loginWithCognitoOrMockAuth(page, testAuthProvider, testAuthUsername);
-  await page.waitForTimeout(200);
-  await page.screenshot({ path: `target/behaviour-test-results/viewVatReturn-screenshots/015-logged-in-${timestamp()}.png` });
-
-  await verifyLoggedInStatus(page);
+  await clickLogIn(page, screenshotPath);
+  await loginWithCognitoOrMockAuth(page, testAuthProvider, testAuthUsername, screenshotPath);
+  await verifyLoggedInStatus(page, screenshotPath);
 
   /* ********* */
   /*  BUNDLES  */
   /* ********* */
 
-  await goToBundlesPage(page);
-  await page.waitForTimeout(200);
-  await page.screenshot({ path: `target/behaviour-test-results/viewVatReturn-screenshots/018-bundles-page-${timestamp()}.png` });
-  await ensureTestBundlePresent(page);
-  await goToHomePageUsingHamburgerMenu(page);
-  await page.waitForTimeout(200);
-  await page.screenshot({ path: `target/behaviour-test-results/viewVatReturn-screenshots/019-back-home-${timestamp()}.png` });
+  await goToBundlesPage(page, screenshotPath);
+  await ensureTestBundlePresent(page, screenshotPath);
+  await goToHomePageUsingHamburgerMenu(page, screenshotPath);
 
   /* ******************* */
   /*  GET VAT RETURN     */
   /* ******************* */
 
-  await initViewVatReturn(page);
-  await fillInViewVatReturn(page, hmrcTestVatNumber, periodKey);
-  // Focus change before submit
-  await page.focus("#retrieveBtn");
-  await page.waitForTimeout(150);
-  await page.screenshot({ path: `target/behaviour-test-results/viewVatReturn-screenshots/025-ready-to-submit-${timestamp()}.png` });
-  await submitViewVatReturnForm(page);
+  await initViewVatReturn(page, screenshotPath);
+  await fillInViewVatReturn(page, hmrcTestVatNumber, periodKey, screenshotPath);
+  await submitViewVatReturnForm(page, screenshotPath);
 
   /* ************ */
   /* `HMRC AUTH   */
   /* ************ */
 
-  await acceptCookiesHmrc(page);
-  await page.waitForTimeout(150);
-  await page.screenshot({ path: `target/behaviour-test-results/viewVatReturn-screenshots/032-accepted-cookies-${timestamp()}.png` });
-  await goToHmrcAuth(page);
-  await page.waitForTimeout(150);
-  await page.screenshot({ path: `target/behaviour-test-results/viewVatReturn-screenshots/034-hmrc-auth-${timestamp()}.png` });
-  await initHmrcAuth(page);
-  await fillInHmrcAuth(page, hmrcTestUsername, hmrcTestPassword);
-  await page.waitForTimeout(150);
-  await page.screenshot({ path: `target/behaviour-test-results/viewVatReturn-screenshots/036-hmrc-credentials-${timestamp()}.png` });
-  await submitHmrcAuth(page);
-  await grantPermissionHmrcAuth(page);
-  await page.waitForTimeout(200);
-  await page.screenshot({ path: `target/behaviour-test-results/viewVatReturn-screenshots/038-hmrc-permission-${timestamp()}.png` });
-  await page.waitForTimeout(5000);
-  await page.screenshot({ path: `target/behaviour-test-results/viewVatReturn-screenshots/039-hmrc-permission-later-${timestamp()}.png` });
-  await page.keyboard.press("PageDown");
-  await page.waitForTimeout(200);
-  await page.screenshot({
-    path: `target/behaviour-test-results/viewVatReturn-screenshots/039-1-hmrc-permission-pagedown-${timestamp()}.png`,
-  });
+  await acceptCookiesHmrc(page, screenshotPath);
+  await goToHmrcAuth(page, screenshotPath);
+  await initHmrcAuth(page, screenshotPath);
+  await fillInHmrcAuth(page, hmrcTestUsername, hmrcTestPassword, screenshotPath);
+  await submitHmrcAuth(page, screenshotPath);
+  await grantPermissionHmrcAuth(page, screenshotPath);
 
   /* ******************* */
   /*  VIEW VAT RETURN    */
   /* ******************* */
 
-  await verifyViewVatReturnResults(page);
-  await page.keyboard.press("PageDown");
-  await page.waitForTimeout(200);
-  await page.screenshot({ path: `target/behaviour-test-results/viewVatReturn-screenshots/045-results-pagedown-${timestamp()}.png` });
-
-  await goToHomePageUsingHamburgerMenu(page);
-  await page.waitForTimeout(150);
-  await page.screenshot({ path: `target/behaviour-test-results/viewVatReturn-screenshots/090-back-home-${timestamp()}.png` });
+  await verifyViewVatReturnResults(page, screenshotPath);
+  await goToHomePageUsingHamburgerMenu(page, screenshotPath);
 
   /* ********* */
   /*  LOG OUT  */
   /* ********* */
 
-  await logOutAndExpectToBeLoggedOut(page);
-  await page.waitForTimeout(150);
-  await page.screenshot({ path: `target/behaviour-test-results/viewVatReturn-screenshots/095-logged-out-${timestamp()}.png` });
+  await logOutAndExpectToBeLoggedOut(page, screenshotPath);
 
   // // Shutdown local servers at end of test
   // if (serverProcess) {

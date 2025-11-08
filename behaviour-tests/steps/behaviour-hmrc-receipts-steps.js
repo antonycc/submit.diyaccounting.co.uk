@@ -3,28 +3,33 @@
 import { expect, test } from "@playwright/test";
 import { loggedClick, timestamp } from "../helpers/behaviour-helpers.js";
 
-export async function goToReceiptsPageUsingHamburgerMenu(page) {
+const defaultScreenshotPath = "target/behaviour-test-results/screenshots/behaviour-hmrc-receipts-steps";
+
+export async function goToReceiptsPageUsingHamburgerMenu(page, screenshotPath = defaultScreenshotPath) {
   await test.step("The user opens the menu to view receipts and navigates to the Receipts page", async () => {
     console.log("Opening hamburger menu to go to receipts...");
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-hamburger.png` });
     await loggedClick(page, "button.hamburger-btn", "Opening hamburger menu for receipts");
     await page.waitForTimeout(500);
     await page.screenshot({
-      path: `target/behaviour-test-results/bundles-screenshots/176-hamburger-menu-receipts-${timestamp()}.png`,
+      path: `${screenshotPath}/${timestamp()}-02-hamburger-menu-receipts.png`,
     });
     await expect(page.getByRole("link", { name: "Receipts" })).toBeVisible({ timeout: 16000 });
     await loggedClick(page, "a:has-text('Receipts')", "Clicking Receipts in hamburger menu");
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-hamburger-clicked.png` });
     await page.waitForLoadState("networkidle");
     await page.waitForTimeout(500);
     await page.screenshot({
-      path: `target/behaviour-test-results/bundles-screenshots/177-receipts-page-${timestamp()}.png`,
+      path: `${screenshotPath}/${timestamp()}-04-receipts-page.png`,
     });
   });
 }
 
-export async function verifyAtLeastOneClickableReceipt(page) {
+export async function verifyAtLeastOneClickableReceipt(page, screenshotPath = defaultScreenshotPath) {
   await test.step("The user reviews the receipts list and opens the first receipt when available", async () => {
     // Check if we have receipts in the table
     console.log("Checking receipts page...");
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-receipts-page.png` });
     const receiptsTable = page.locator("#receiptsTable");
     await expect(receiptsTable).toBeVisible({ timeout: 10000 });
 
@@ -34,11 +39,13 @@ export async function verifyAtLeastOneClickableReceipt(page) {
 
     if (hasReceipts) {
       console.log("Found receipts, clicking on first receipt...");
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-receipts-page-found.png` });
       await firstReceiptLink.click();
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-receipts-page-clicked.png` });
       await page.waitForLoadState("networkidle");
       await page.waitForTimeout(500);
       await page.screenshot({
-        path: `target/behaviour-test-results/submitVat-screenshots/178-receipt-detail-${timestamp()}.png`,
+        path: `${screenshotPath}/${timestamp()}-04-receipt-detail.png`,
       });
     } else {
       console.log("No receipts found in table");

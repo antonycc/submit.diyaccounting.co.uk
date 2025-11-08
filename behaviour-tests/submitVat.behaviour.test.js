@@ -9,7 +9,6 @@ import {
   runLocalOAuth2Server,
   runLocalS3,
   runLocalSslProxy,
-  timestamp,
 } from "./helpers/behaviour-helpers.js";
 import { goToHomePage, goToHomePageExpectNotLoggedIn, goToHomePageUsingHamburgerMenu } from "./steps/behaviour-steps.js";
 import {
@@ -38,6 +37,8 @@ if (!process.env.DIY_SUBMIT_ENV_FILEPATH) {
   console.log(`Already loaded environment from custom path: ${process.env.DIY_SUBMIT_ENV_FILEPATH}`);
 }
 dotenvConfigIfNotBlank({ path: ".env" }); // Not checked in, HMRC API credentials
+
+const screenshotPath = "target/behaviour-test-results/screenshots/submitVat-behaviour-test";
 
 const originalEnv = { ...process.env };
 
@@ -127,108 +128,72 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }) => {
       : baseUrl;
 
   // Add console logging to capture browser messages
-  addOnPageLogging(page);
+  addOnPageLogging(page, screenshotPath);
 
   /* ****** */
   /*  HOME  */
   /* ****** */
 
-  await goToHomePageExpectNotLoggedIn(page, testUrl);
-  await page.waitForTimeout(200);
-  await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/005-start-${timestamp()}.png` });
+  await goToHomePageExpectNotLoggedIn(page, testUrl, screenshotPath);
 
   /* ******* */
   /*  LOGIN  */
   /* ******* */
 
-  await clickLogIn(page);
-  await page.waitForTimeout(100);
-  await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/012-login-clicked-${timestamp()}.png` });
+  await clickLogIn(page, screenshotPath);
 
-  await loginWithCognitoOrMockAuth(page, testAuthProvider, testAuthUsername);
-  await page.waitForTimeout(200);
-  await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/015-logged-in-${timestamp()}.png` });
+  await loginWithCognitoOrMockAuth(page, testAuthProvider, testAuthUsername, screenshotPath);
 
-  await verifyLoggedInStatus(page);
+  await verifyLoggedInStatus(page, screenshotPath);
 
   /* ********* */
   /*  BUNDLES  */
   /* ********* */
 
-  await goToBundlesPage(page);
-  await page.waitForTimeout(200);
-  await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/018-bundles-page-${timestamp()}.png` });
-  await ensureTestBundlePresent(page);
-  await goToHomePage(page);
-  await page.waitForTimeout(200);
-  await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/019-back-home-${timestamp()}.png` });
+  await goToBundlesPage(page, screenshotPath);
+  await ensureTestBundlePresent(page, screenshotPath);
+  await goToHomePage(page, screenshotPath);
 
   /* ************ */
   /* `SUBMIT VAT  */
   /* ************ */
 
-  await initSubmitVat(page);
-  await fillInVat(page, hmrcTestVatNumber);
-  // Focus change before submit
-  await page.focus("#submitBtn");
-  await page.waitForTimeout(150);
-  await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/025-ready-to-submit-${timestamp()}.png` });
-  await submitFormVat(page);
+  await initSubmitVat(page, screenshotPath);
+  await fillInVat(page, hmrcTestVatNumber, screenshotPath);
+  await submitFormVat(page, screenshotPath);
 
   /* ************ */
   /* `HMRC AUTH   */
   /* ************ */
 
-  await acceptCookiesHmrc(page);
-  await page.waitForTimeout(150);
-  await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/032-accepted-cookies-${timestamp()}.png` });
-  await goToHmrcAuth(page);
-  await page.waitForTimeout(150);
-  await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/034-hmrc-auth-${timestamp()}.png` });
-  await initHmrcAuth(page);
-  await fillInHmrcAuth(page, hmrcTestUsername, hmrcTestPassword);
-  await page.waitForTimeout(150);
-  await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/036-hmrc-credentials-${timestamp()}.png` });
-  await submitHmrcAuth(page);
-  await grantPermissionHmrcAuth(page);
-  await page.waitForTimeout(200);
-  await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/038-hmrc-permission-${timestamp()}.png` });
-  await page.waitForTimeout(5000);
-  await page.screenshot({ path: `target/behaviour-test-results/submitVat-screenshots/039-hmrc-permission-later-${timestamp()}.png` });
-  await page.keyboard.press("PageDown");
-  await page.waitForTimeout(200);
-  await page.screenshot({
-    path: `target/behaviour-test-results/submitVatReturn-screenshots/039-1-hmrc-permission-pagedown-${timestamp()}.png`,
-  });
+  await acceptCookiesHmrc(page, screenshotPath);
+  await goToHmrcAuth(page, screenshotPath);
+  await initHmrcAuth(page, screenshotPath);
+  await fillInHmrcAuth(page, hmrcTestUsername, hmrcTestPassword, screenshotPath);
+  await submitHmrcAuth(page, screenshotPath);
+  await grantPermissionHmrcAuth(page, screenshotPath);
 
   /* ************** */
   /* `COMPLETE VAT  */
   /* ************** */
 
-  await completeVat(page, baseUrl);
+  await completeVat(page, baseUrl, screenshotPath);
   // await completeVat(page, baseUrl, checkServersAreRunning);
-  await verifyVatSubmission(page);
+  await verifyVatSubmission(page, screenshotPath);
 
   /* ********** */
   /*  RECEIPTS  */
   /* ********** */
 
-  await goToReceiptsPageUsingHamburgerMenu(page);
-  await page.keyboard.press("PageDown");
-  await page.waitForTimeout(200);
-  await page.screenshot({
-    path: `target/behaviour-test-results/viewVatReturn-screenshots/178-receipts-pagedown-${timestamp()}.png`,
-  });
-
-  await verifyAtLeastOneClickableReceipt(page);
-
-  await goToHomePageUsingHamburgerMenu(page);
+  await goToReceiptsPageUsingHamburgerMenu(page, screenshotPath);
+  await verifyAtLeastOneClickableReceipt(page, screenshotPath);
+  await goToHomePageUsingHamburgerMenu(page, screenshotPath);
 
   /* ********* */
   /*  LOG OUT  */
   /* ********* */
 
-  await logOutAndExpectToBeLoggedOut(page);
+  await logOutAndExpectToBeLoggedOut(page, screenshotPath);
 
   // // Shutdown local servers at end of test
   // if (serverProcess) {
@@ -239,41 +204,41 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }) => {
   // }
 });
 
-async function checkServersAreRunning() {
-  if (runMinioS3) {
-    try {
-      await ensureMinioBucketExists(receiptsBucketName, s3Endpoint, optionalTestS3AccessKey, optionalTestS3SecretKey);
-    } catch (error) {
-      console.log("S3 endpoint not responding, restarting local S3 server...", error);
-      s3Endpoint = await runLocalS3(runMinioS3, receiptsBucketName, optionalTestS3AccessKey, optionalTestS3SecretKey);
-    }
-  } else {
-    console.log("Skipping local-s3-server process as runMinioS3 is not set to 'run'");
-  }
-
-  if (runTestServer) {
-    await checkIfServerIsRunning(
-      `http://127.0.0.1:${serverPort}`,
-      1000,
-      async function () {
-        serverProcess = await runLocalHttpServer(runTestServer, s3Endpoint, serverPort);
-      },
-      "http",
-    );
-  } else {
-    console.log("Skipping server process as runTestServer is not set to 'run'");
-  }
-
-  if (runProxy) {
-    await checkIfServerIsRunning(
-      baseUrl,
-      1000,
-      async function () {
-        ngrokProcess = await runLocalSslProxy(runProxy, serverPort, baseUrl);
-      },
-      "proxy",
-    );
-  } else {
-    console.log("Skipping ngrok process as runProxy is not set to 'run'");
-  }
-}
+// async function checkServersAreRunning() {
+//   if (runMinioS3) {
+//     try {
+//       await ensureMinioBucketExists(receiptsBucketName, s3Endpoint, optionalTestS3AccessKey, optionalTestS3SecretKey);
+//     } catch (error) {
+//       console.log("S3 endpoint not responding, restarting local S3 server...", error);
+//       s3Endpoint = await runLocalS3(runMinioS3, receiptsBucketName, optionalTestS3AccessKey, optionalTestS3SecretKey);
+//     }
+//   } else {
+//     console.log("Skipping local-s3-server process as runMinioS3 is not set to 'run'");
+//   }
+//
+//   if (runTestServer) {
+//     await checkIfServerIsRunning(
+//       `http://127.0.0.1:${serverPort}`,
+//       1000,
+//       async function () {
+//         serverProcess = await runLocalHttpServer(runTestServer, s3Endpoint, serverPort);
+//       },
+//       "http",
+//     );
+//   } else {
+//     console.log("Skipping server process as runTestServer is not set to 'run'");
+//   }
+//
+//   if (runProxy) {
+//     await checkIfServerIsRunning(
+//       baseUrl,
+//       1000,
+//       async function () {
+//         ngrokProcess = await runLocalSslProxy(runProxy, serverPort, baseUrl);
+//       },
+//       "proxy",
+//     );
+//   } else {
+//     console.log("Skipping ngrok process as runProxy is not set to 'run'");
+//   }
+// }

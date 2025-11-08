@@ -2,6 +2,10 @@
 // ESM module providing a resilient navigation helper for Playwright pages.
 // Designed to be framework-agnostic and easy to unit test with mocked Page-like objects.
 
+import { timestamp } from "./behaviour-helpers.js";
+
+const defaultScreenshotPath = "target/behaviour-test-results/screenshots/gotoWithRetries";
+
 /**
  * Determine if a navigation error is likely transient and worth retrying.
  * @param {unknown} err
@@ -47,8 +51,9 @@ export function delay(ms) {
  * @param {"load"|"domcontentloaded"|"networkidle"} [options.waitUntil="domcontentloaded"]
  * @param {string} [options.readySelector]
  * @param {number} [options.readySelectorTimeout=15000]
+ * @param {screenshotPath} [screenshotPath]
  */
-export async function gotoWithRetries(page, url, options = {}) {
+export async function gotoWithRetries(page, url, options = {}, screenshotPath = defaultScreenshotPath) {
   const {
     description = "",
     maxRetries = 4,
@@ -64,18 +69,22 @@ export async function gotoWithRetries(page, url, options = {}) {
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       console.log(`[NAVIGATION] (${attempt}/${maxRetries}) Going to: ${url} ${description ? "- " + description : ""}`);
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-goto-before-go.png` });
       await page.goto(url, { waitUntil });
 
       if (readySelector) {
         // Wait until a reliable element is visible to confirm readiness
+        await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-goto-waiting.png` });
         if (typeof page.waitForSelector === "function") {
           await page.waitForSelector(readySelector, { state: "visible", timeout: readySelectorTimeout });
         }
+        await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-goto-waited.png` });
       }
 
       return; // success
     } catch (err) {
       lastErr = err;
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-goto-error.png` });
       const isTransient = transientNavigationError(err);
       console.log(`[NAVIGATION] attempt ${attempt} failed${isTransient ? " (transient)" : ""}: ${err}`);
 
@@ -85,6 +94,7 @@ export async function gotoWithRetries(page, url, options = {}) {
 
       const backoff = Math.min(baseDelayMs * Math.pow(2, attempt - 1), maxDelayMs);
       console.log(`[NAVIGATION] retrying in ${backoff}ms...`);
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-goto-backing-off.png` });
       await sleepFn(backoff);
     }
   }
@@ -100,10 +110,11 @@ export async function gotoWithRetries(page, url, options = {}) {
  * @param {string} description
  * @param {object} [options]
  */
-export async function loggedGotoWithRetries(page, url, description = "", options = {}) {
+export async function loggedGotoWithRetries(page, url, description = "", options = {}, screenshotPath = defaultScreenshotPath) {
   return gotoWithRetries(page, url, {
     description,
     waitUntil: "domcontentloaded",
     ...options,
+    screenshotPath,
   });
 }

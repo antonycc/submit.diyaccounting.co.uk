@@ -26,6 +26,8 @@ if (!process.env.DIY_SUBMIT_ENV_FILEPATH) {
 }
 dotenvConfigIfNotBlank({ path: ".env" }); // Not checked in, HMRC API credentials
 
+const screenshotPath = "target/behaviour-test-results/screenshots/bundles-behaviour-test";
+
 const originalEnv = { ...process.env };
 
 const serverPort = getEnvVarAndLog("serverPort", "TEST_SERVER_HTTP_PORT", 3500);
@@ -92,46 +94,46 @@ test("Click through: Adding and removing bundles", async ({ page }) => {
       : baseUrl;
 
   // Add console logging to capture browser messages
-  addOnPageLogging(page);
+  addOnPageLogging(page, screenshotPath);
 
   /* ****** */
   /*  HOME  */
   /* ****** */
 
-  await goToHomePageExpectNotLoggedIn(page, testUrl);
+  await goToHomePageExpectNotLoggedIn(page, testUrl, screenshotPath);
 
   /* ******* */
   /*  LOGIN  */
   /* ******* */
 
-  await clickLogIn(page);
+  await clickLogIn(page, screenshotPath);
 
-  await loginWithCognitoOrMockAuth(page, testAuthProvider, testAuthUsername);
+  await loginWithCognitoOrMockAuth(page, testAuthProvider, testAuthUsername, screenshotPath);
 
-  await verifyLoggedInStatus(page);
+  await verifyLoggedInStatus(page, screenshotPath);
 
   /* ********* */
   /*  BUNDLES  */
   /* ********* */
 
-  await goToBundlesPage(page);
-  await clearBundles(page);
-  await requestTestBundle(page);
-  await goToHomePage(page);
+  await goToBundlesPage(page, screenshotPath);
+  await clearBundles(page, screenshotPath);
+  await requestTestBundle(page, screenshotPath);
+  await goToHomePage(page, screenshotPath);
 
   /* ********** */
   /*  RECEIPTS  */
   /* ********** */
 
-  await goToReceiptsPageUsingHamburgerMenu(page);
+  await goToReceiptsPageUsingHamburgerMenu(page, screenshotPath);
 
-  await goToHomePageUsingHamburgerMenu(page);
+  await goToHomePageUsingHamburgerMenu(page, screenshotPath);
 
   /* ********* */
   /*  LOG OUT  */
   /* ********* */
 
-  await logOutAndExpectToBeLoggedOut(page);
+  await logOutAndExpectToBeLoggedOut(page, screenshotPath);
 
   // // Shutdown local servers at end of test
   // if (serverProcess) {
