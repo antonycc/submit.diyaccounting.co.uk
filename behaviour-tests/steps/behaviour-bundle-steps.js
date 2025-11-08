@@ -46,7 +46,8 @@ export async function clearBundles(page, screenshotPath = defaultScreenshotPath)
     await page.screenshot({
       path: `${screenshotPath}/${timestamp()}-05-removed-all-bundles.png`,
     });
-    await expect(page.getByText("Request test")).toBeVisible();
+    // await expect(page.getByText("Request test")).toBeVisible();
+    await expect(page.getByText("No bundles added")).toBeVisible();
   });
 }
 
