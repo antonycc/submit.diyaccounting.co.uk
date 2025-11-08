@@ -118,6 +118,57 @@ export function extractAuthToken(event) {
   return authHeader.split(" ")[1];
 }
 
+export function extractAuthTokenFromXAuthorization(event) {
+  const headers = event.headers || {};
+  let xAuthHeader = null;
+
+  // Case-insensitive header lookup
+  for (const [key, value] of Object.entries(headers)) {
+    if (key.toLowerCase() === "x-authorization") {
+      xAuthHeader = value;
+      break;
+    }
+  }
+
+  if (!xAuthHeader || !xAuthHeader.startsWith("Bearer ")) {
+    return null;
+  }
+  return xAuthHeader.split(" ")[1];
+}
+
+export function extractUserFromAuthorizerContext(event) {
+  // Support multiple shapes:
+  // - HTTP API v2 Lambda authorizer: event.requestContext.authorizer.lambda.jwt.claims
+  // - REST API custom authorizer: event.requestContext.authorizer.jwt.claims or flat fields
+  // - Backward compatibility: flat fields directly under authorizer or authorizer.lambda
+  const authz = event.requestContext?.authorizer;
+  if (!authz) return null;
+
+  const ctx = authz.lambda ?? authz;
+
+  // Prefer JWT-style claims if present
+  const claims = ctx?.jwt?.claims ?? ctx?.claims;
+  if (claims && claims.sub) {
+    return {
+      sub: claims.sub,
+      username: claims["cognito:username"] || claims.username || claims.sub,
+      email: claims.email || "",
+      scope: claims.scope || claims.scopes || "",
+    };
+  }
+
+  // Fallback to flat fields (legacy)
+  if (ctx && ctx.sub) {
+    return {
+      sub: ctx.sub,
+      username: ctx["cognito:username"] || ctx.username || ctx.sub,
+      email: ctx.email || "",
+      scope: ctx.scope || ctx.scopes || "",
+    };
+  }
+  return null;
+}
+
 export function parseRequestBody(event) {
   try {
     return JSON.parse(event.body || "{}");

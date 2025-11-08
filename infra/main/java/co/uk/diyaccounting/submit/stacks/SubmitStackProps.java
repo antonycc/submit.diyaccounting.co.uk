@@ -9,8 +9,6 @@ public interface SubmitStackProps {
 
     String resourceNamePrefix();
 
-    // String compressedResourceNamePrefix();
-
     String cloudTrailEnabled();
 
     SubmitSharedNames sharedNames();

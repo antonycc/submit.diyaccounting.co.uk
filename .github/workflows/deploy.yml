@@ -4,6 +4,8 @@ concurrency:
   group: deploy-${{ github.ref_name }}
   cancel-in-progress: false
 
+# Bump4
+
 on:
   workflow_dispatch:
     inputs:
@@ -202,8 +204,8 @@ jobs:
     outputs:
       self-destruct-start-datetime: ${{ steps.self-destruct-start.outputs.SELF_DESTRUCT_START_DATETIME }}
 
-  behaviour-test:
-    name: 'behaviour test (proxy)'
+  behaviour-test-bundle:
+    name: 'behaviour test - bundle'
     needs:
       - names
     runs-on: ubuntu-24.04
@@ -244,6 +246,56 @@ jobs:
           TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
           TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
 
+      - name: Upload artifacts (results)
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v5
+        with:
+          name: behaviour-test-artifacts-bundle
+          retention-days: 30
+          path: |
+            target/behaviour-test-results/
+
+      - name: Upload artifacts (reports)
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v5
+        with:
+          name: behaviour-test-reports-bundle
+          retention-days: 30
+          path: |
+            target/test-reports/
+
+  behaviour-test-obligation:
+    name: 'behaviour test - obligation'
+    needs:
+      - names
+      - behaviour-test-bundle
+    runs-on: ubuntu-24.04
+    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    steps:
+      - name: Set up Docker
+        uses: docker/setup-buildx-action@v3
+
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          npm install
+          npx playwright install chromium --with-deps
+
+      - name: Authenticate ngrok
+        shell: bash
+        env:
+          NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
+        run: |
+          npx ngrok config add-authtoken "${NGROK_AUTH_TOKEN?}"
+
       - name: Run behaviour tests - obligation
         run: |
           npm run test:obligationBehaviour || exit_code=$? \
@@ -255,6 +307,56 @@ jobs:
           TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
           TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
           HMRC_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
+
+      - name: Upload artifacts (results)
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v5
+        with:
+          name: behaviour-test-artifacts-obligation
+          retention-days: 30
+          path: |
+            target/behaviour-test-results/
+
+      - name: Upload artifacts (reports)
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v5
+        with:
+          name: behaviour-test-reports-obligation
+          retention-days: 30
+          path: |
+            target/test-reports/
+
+  behaviour-test-view-vat:
+    name: 'behaviour test - view vat'
+    needs:
+      - names
+      - behaviour-test-obligation
+    runs-on: ubuntu-24.04
+    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    steps:
+      - name: Set up Docker
+        uses: docker/setup-buildx-action@v3
+
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          npm install
+          npx playwright install chromium --with-deps
+
+      - name: Authenticate ngrok
+        shell: bash
+        env:
+          NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
+        run: |
+          npx ngrok config add-authtoken "${NGROK_AUTH_TOKEN?}"
 
       - name: Run behaviour tests - view vat
         run: |
@@ -268,6 +370,56 @@ jobs:
           TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
           HMRC_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
 
+      - name: Upload artifacts (results)
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v5
+        with:
+          name: behaviour-test-artifacts-view-vat
+          retention-days: 30
+          path: |
+            target/behaviour-test-results/
+
+      - name: Upload artifacts (reports)
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v5
+        with:
+          name: behaviour-test-reports-view-vat
+          retention-days: 30
+          path: |
+            target/test-reports/
+
+  behaviour-test-submit-vat:
+    name: 'behaviour test - submit vat'
+    needs:
+      - names
+      - behaviour-test-view-vat
+    runs-on: ubuntu-24.04
+    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    steps:
+      - name: Set up Docker
+        uses: docker/setup-buildx-action@v3
+
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          npm install
+          npx playwright install chromium --with-deps
+
+      - name: Authenticate ngrok
+        shell: bash
+        env:
+          NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
+        run: |
+          npx ngrok config add-authtoken "${NGROK_AUTH_TOKEN?}"
+
       - name: Run behaviour tests - submit vat
         run: |
           npm run test:submitVatBehaviour || exit_code=$? \
@@ -280,23 +432,11 @@ jobs:
           TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
           HMRC_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
 
-#      - name: Run behaviour tests - all
-#        run: |
-#          npm run test:behaviour || exit_code=$? \
-#          ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
-#          ; exit ${exit_code:-0} \
-#          ;
-#        env:
-#          TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
-#          TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
-#          TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
-#          HMRC_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
-
       - name: Upload artifacts (results)
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v5
         with:
-          name: behaviour-test-artifacts
+          name: behaviour-test-artifacts-submit-vat
           retention-days: 30
           path: |
             target/behaviour-test-results/
@@ -305,7 +445,7 @@ jobs:
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v5
         with:
-          name: behaviour-test-reports
+          name: behaviour-test-reports-submit-vat
           retention-days: 30
           path: |
             target/test-reports/
@@ -1982,7 +2122,7 @@ jobs:
         with:
           name: web-test-reports-view-vat
           path: |
-            target/test-reports/
+            target/test-reports/view-vat/
 
       - name: Generate combined test report index
         if: ${{ !cancelled() }}

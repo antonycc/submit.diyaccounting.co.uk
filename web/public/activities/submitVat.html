@@ -309,12 +309,19 @@
         });
         console.log(`Submitting VAT. Remote call initiated: POST ${url} ++ Body: ${body}`);
 
+        // Get Cognito JWT token for custom authorizer
+        const cognitoAccessToken = localStorage.getItem("cognitoAccessToken");
+        const requestHeaders = {
+          "Content-Type": "application/json",
+          ...headers,
+        };
+        if (cognitoAccessToken) {
+          requestHeaders["X-Authorization"] = `Bearer ${cognitoAccessToken}`;
+        }
+
         const response = await fetch(url, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            ...headers,
-          },
+          headers: requestHeaders,
           body,
         });
         const responseJson = await response.json();

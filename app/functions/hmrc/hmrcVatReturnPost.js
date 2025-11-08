@@ -7,14 +7,13 @@ import {
   httpOkResponse,
   httpServerErrorResponse,
   extractClientIPFromHeaders,
-  extractAuthToken,
   parseRequestBody,
   buildValidationError,
 } from "../../lib/responses.js";
 import eventToGovClientHeaders from "../../lib/eventToGovClientHeaders.js";
 import { validateEnv } from "../../lib/env.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
-import { decodeJwtNoVerify } from "../../lib/jwtHelper.js";
+import { enforceBundles, BundleEntitlementError } from "../../lib/bundleEnforcement.js";
 
 export function apiEndpoint(app) {
   app.post("/api/v1/hmrc/vat/return", async (httpRequest, httpResponse) => {
@@ -24,29 +23,41 @@ export function apiEndpoint(app) {
   });
 }
 
-// Lazy load AWS Cognito SDK only if bundle enforcement is on
-let __cognitoModule;
-let __cognitoClient;
-async function getCognitoModule() {
-  if (!__cognitoModule) {
-    __cognitoModule = await import("@aws-sdk/client-cognito-identity-provider");
-  }
-  return __cognitoModule;
-}
-async function getCognitoClient() {
-  if (!__cognitoClient) {
-    const mod = await getCognitoModule();
-    __cognitoClient = new mod.CognitoIdentityProviderClient({ region: process.env.AWS_REGION || "eu-west-2" });
-  }
-  return __cognitoClient;
-}
-
 // POST /api/v1/hmrc/vat/return
 export async function handler(event) {
   validateEnv(["HMRC_BASE_URI", "COGNITO_USER_POOL_ID"]);
 
   const request = extractRequest(event);
   const detectedIP = extractClientIPFromHeaders(event);
+
+  // Enforce bundle entitlements early in the request lifecycle
+  try {
+    await enforceBundles(event);
+  } catch (error) {
+    if (error instanceof BundleEntitlementError) {
+      logger.error({
+        message: "Bundle enforcement failed",
+        error: error.message,
+        details: error.details,
+      });
+      return httpServerErrorResponse({
+        request,
+        message: error.message,
+        error: error.details,
+      });
+    }
+    // Re-throw unexpected errors
+    logger.error({
+      message: "Unexpected error during bundle enforcement",
+      error: error.message,
+      stack: error.stack,
+    });
+    return httpServerErrorResponse({
+      request,
+      message: "Authorization failure while checking entitlements",
+      error: { message: error.message || String(error) },
+    });
+  }
 
   const { vatNumber, periodKey, vatDue, accessToken, hmrcAccessToken } = parseRequestBody(event);
   const token = accessToken || hmrcAccessToken;
@@ -67,58 +78,6 @@ export async function handler(event) {
 
   if (errorMessages.length > 0) {
     return buildValidationError(request, errorMessages, govClientHeaders);
-  }
-
-  try {
-    const enforceBundles =
-      String(process.env.DIY_SUBMIT_ENFORCE_BUNDLES || "").toLowerCase() === "true" || process.env.DIY_SUBMIT_ENFORCE_BUNDLES === "1";
-    const userPoolId = process.env.COGNITO_USER_POOL_ID;
-
-    if (enforceBundles && userPoolId) {
-      const idToken = extractAuthToken(event);
-      if (!idToken) {
-        return httpBadRequestResponse({ request, message: "Missing Authorization Bearer token" });
-      }
-
-      const decoded = decodeJwtNoVerify(idToken);
-      if (!decoded?.sub) {
-        return httpBadRequestResponse({ request, message: "Invalid Authorization token" });
-      }
-      const bundles = await getUserBundlesFromCognito(userPoolId, decoded.sub);
-      const hmrcBase = process.env.HMRC_BASE_URI;
-      const sandbox = isSandboxBase(hmrcBase);
-      if (sandbox) {
-        if (!bundles || !bundles.some((b) => typeof b === "string" && (b === "HMRC_TEST_API" || b.startsWith("HMRC_TEST_API|")))) {
-          return httpServerErrorResponse({
-            request,
-            message: "Forbidden: HMRC Sandbox submission requires HMRC_TEST_API bundle",
-            error: { code: "BUNDLE_FORBIDDEN", requiredBundle: "HMRC_TEST_API" },
-          });
-        }
-      } else {
-        const allowed = (bundles || []).some(
-          (b) =>
-            typeof b === "string" &&
-            (b === "HMRC_PROD_SUBMIT" ||
-              b.startsWith("HMRC_PROD_SUBMIT|") ||
-              b === "LEGACY_ENTITLEMENT" ||
-              b.startsWith("LEGACY_ENTITLEMENT|")),
-        );
-        if (!allowed) {
-          return httpServerErrorResponse({
-            request,
-            message: "Forbidden: Production submission requires HMRC_PROD_SUBMIT or LEGACY_ENTITLEMENT bundle",
-            error: { code: "BUNDLE_FORBIDDEN", requiredBundle: ["HMRC_PROD_SUBMIT", "LEGACY_ENTITLEMENT"] },
-          });
-        }
-      }
-    }
-  } catch (authError) {
-    return httpServerErrorResponse({
-      request,
-      message: "Authorization failure while checking entitlements",
-      error: authError?.message || String(authError),
-    });
   }
 
   // Processing
@@ -142,19 +101,6 @@ export async function handler(event) {
       receipt,
     },
   });
-}
-
-function isSandboxBase(base) {
-  return /test|sandbox/i.test(base || "");
-}
-
-async function getUserBundlesFromCognito(userPoolId, sub) {
-  const mod = await getCognitoModule();
-  const client = await getCognitoClient();
-  const cmd = new mod.AdminGetUserCommand({ UserPoolId: userPoolId, Username: sub });
-  const user = await client.send(cmd);
-  const attr = user.UserAttributes?.find((a) => a.Name === "custom:bundles")?.Value || "";
-  return attr.split("|").filter(Boolean);
 }
 
 export async function submitVat(periodKey, vatDue, vatNumber, hmrcAccessToken, govClientHeaders) {

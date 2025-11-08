@@ -51,7 +51,7 @@ class SubmitApplicationCdkResourceTest {
         Template.fromStack(submitApplication.devStack).resourceCountIs("AWS::ECR::Repository", 1);
 
         infof("Created stack:", submitApplication.authStack.getStackName());
-        Template.fromStack(submitApplication.authStack).resourceCountIs("AWS::Lambda::Function", 2);
+        Template.fromStack(submitApplication.authStack).resourceCountIs("AWS::Lambda::Function", 3);
 
         infof("Created stack:", submitApplication.hmrcStack.getStackName());
         Template.fromStack(submitApplication.hmrcStack).resourceCountIs("AWS::Lambda::Function", 7);

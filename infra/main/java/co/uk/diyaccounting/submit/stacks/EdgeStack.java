@@ -76,9 +76,6 @@ public class EdgeStack extends Stack {
         @Override
         String resourceNamePrefix();
 
-        // @Override
-        // String compressedResourceNamePrefix();
-
         @Override
         String cloudTrailEnabled();
 
@@ -223,29 +220,6 @@ public class EdgeStack extends Stack {
                         .build())
                 .build();
 
-        // TODO: Find alternative to log buckets for CloudFront distribution logs
-        // S3 bucket for origin access logs with specified retention
-        //        infof(
-        //                "Setting expiration period to %d days for %s",
-        //                props.logGroupRetentionPeriodDays(), props.resourceNamePrefix());
-        //        this.originAccessLogBucket = Bucket.Builder.create(this, props.resourceNamePrefix() + "-LogBucket")
-        //                .bucketName(props.sharedNames().originAccessLogBucketName)
-        //                .objectOwnership(ObjectOwnership.OBJECT_WRITER)
-        //                .versioned(false)
-        //                .blockPublicAccess(BlockPublicAccess.BLOCK_ALL)
-        //                .encryption(BucketEncryption.S3_MANAGED)
-        //                .removalPolicy(RemovalPolicy.DESTROY)
-        //                .autoDeleteObjects(true)
-        //                .lifecycleRules(List.of(LifecycleRule.builder()
-        //                        .id("%sLogsLifecycleRule".formatted(props.compressedResourceNamePrefix()))
-        //                        .enabled(true)
-        //                        .expiration(Duration.days(props.logGroupRetentionPeriodDays()))
-        //                        .build()))
-        //                .build();
-        //        infof(
-        //                "Created log bucket %s with name",
-        //                this.originAccessLogBucket.getNode().getId(), originAccessLogBucket);
-
         // Create the origin bucket
         this.originBucket = Bucket.Builder.create(this, props.resourceNamePrefix() + "-OriginBucket")
                 .bucketName(props.sharedNames().originBucketName)
@@ -322,7 +296,7 @@ public class EdgeStack extends Stack {
                 .build();
         Tags.of(this.distribution).add("OriginFor", props.sharedNames().deploymentDomainName);
 
-        // Grant CloudFront access to the origin lambdas with compressed names
+        // Grant CloudFront access to the origin lambdas
         this.distributionInvokeFnUrl = Permission.builder()
                 .principal(new ServicePrincipal("cloudfront.amazonaws.com"))
                 .action("lambda:InvokeFunctionUrl")

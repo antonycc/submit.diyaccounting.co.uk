@@ -4,6 +4,8 @@ concurrency:
   group: deploy-${{ github.ref_name }}
   cancel-in-progress: false
 
+# bump
+
 on:
   workflow_dispatch:
     inputs:
@@ -22,7 +24,7 @@ on:
       - '**'
       - '!gh_pages'
       - '!dependabot/**'
-      - '!copilot/**'
+      #- '!copilot/**'
     paths:
       - '.env.ci'
       - '.env.prod'
@@ -32,6 +34,8 @@ on:
       - '.github/workflows/deploy-environment.yml'
   schedule:
     - cron: '51 3 * * *'
+
+# bump
 
 env:
   JAVA_VERSION: '21'

@@ -190,13 +190,20 @@
           // Get Gov-Client headers
           const govClientHeaders = await getGovClientHeaders();
 
+          // Get Cognito JWT token for custom authorizer
+          const cognitoAccessToken = localStorage.getItem("cognitoAccessToken");
+          const requestHeaders = {
+            "Authorization": `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+            ...govClientHeaders,
+          };
+          if (cognitoAccessToken) {
+            requestHeaders["X-Authorization"] = `Bearer ${cognitoAccessToken}`;
+          }
+
           const response = await fetch(`/api/v1/hmrc/vat/return/${pendingRequest.periodKey}?${params}`, {
             method: "GET",
-            headers: {
-              "Authorization": `Bearer ${accessToken}`,
-              "Content-Type": "application/json",
-              ...govClientHeaders,
-            },
+            headers: requestHeaders,
           });
 
           const result = await response.json();
@@ -293,13 +300,20 @@
             // Get Gov-Client headers
             const govClientHeaders = await getGovClientHeaders();
 
+            // Get Cognito JWT token for custom authorizer
+            const cognitoAccessToken = localStorage.getItem("cognitoAccessToken");
+            const requestHeaders = {
+              "Authorization": `Bearer ${accessToken}`,
+              "Content-Type": "application/json",
+              ...govClientHeaders,
+            };
+            if (cognitoAccessToken) {
+              requestHeaders["X-Authorization"] = `Bearer ${cognitoAccessToken}`;
+            }
+
             const response = await fetch(`/api/v1/hmrc/vat/return/${periodKey}?${params}`, {
               method: "GET",
-              headers: {
-                "Authorization": `Bearer ${accessToken}`,
-                "Content-Type": "application/json",
-                ...govClientHeaders,
-              },
+              headers: requestHeaders,
             });
 
             const result = await response.json();
