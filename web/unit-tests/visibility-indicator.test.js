@@ -65,7 +65,7 @@ describe("Visibility Indicator Widget Logic", () => {
     // Test that the logic correctly identifies a public page
     const activity = null;
     const status = "public";
-    
+
     expect(status).toBe("public");
     expect(activity).toBeNull();
   });
@@ -82,7 +82,7 @@ describe("Visibility Indicator Widget Logic", () => {
       ],
     };
     const currentPath = "activities/test.html";
-    
+
     // Find matching activity
     const activity = catalog.activities.find((a) => a.path === currentPath);
     expect(activity).toBeTruthy();
@@ -92,7 +92,7 @@ describe("Visibility Indicator Widget Logic", () => {
   it("should determine needs-login status when not authenticated", () => {
     const isLoggedIn = false;
     const hasAccess = false;
-    
+
     let status;
     if (hasAccess) {
       status = "activity-available";
@@ -101,14 +101,14 @@ describe("Visibility Indicator Widget Logic", () => {
     } else {
       status = "needs-login";
     }
-    
+
     expect(status).toBe("needs-login");
   });
 
   it("should determine needs-activity status when logged in without bundle", () => {
     const isLoggedIn = true;
     const hasAccess = false;
-    
+
     let status;
     if (hasAccess) {
       status = "activity-available";
@@ -117,7 +117,7 @@ describe("Visibility Indicator Widget Logic", () => {
     } else {
       status = "needs-login";
     }
-    
+
     expect(status).toBe("needs-activity");
   });
 
@@ -125,7 +125,7 @@ describe("Visibility Indicator Widget Logic", () => {
     const requiredBundles = ["test"];
     const activeBundles = ["default", "test"];
     const hasAccess = requiredBundles.some((bundleId) => activeBundles.includes(bundleId));
-    
+
     const status = hasAccess ? "activity-available" : "needs-activity";
     expect(status).toBe("activity-available");
   });
@@ -138,7 +138,7 @@ describe("Visibility Indicator Widget Logic", () => {
       ],
     };
     const userBundles = [];
-    
+
     // Get active bundles (automatic + granted)
     const active = new Set();
     for (const bundle of catalog.bundles) {
@@ -150,7 +150,7 @@ describe("Visibility Indicator Widget Logic", () => {
       const bundleId = bundleEntry.split("|")[0];
       active.add(bundleId);
     }
-    
+
     const activeBundles = Array.from(active);
     expect(activeBundles).toContain("default");
     expect(activeBundles).not.toContain("test");
