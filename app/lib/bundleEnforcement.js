@@ -8,6 +8,7 @@ import {
   extractUserFromAuthorizerContext,
 } from "./responses.js";
 import { getUserBundles, updateUserBundles } from "./bundleHelpers.js";
+import * as dynamoDbBundleStore from "./dynamoDbBundleStore.js";
 
 /**
  * Exception class for bundle enforcement failures
@@ -159,6 +160,18 @@ export async function enforceBundles(event, options = {}) {
 
   // Get user bundles from Cognito
   const bundles = await getUserBundlesFromCognito(userPoolId, userSub);
+
+  // Also get bundles from DynamoDB for comparison (shadow read)
+  const dynamoBundles = await dynamoDbBundleStore.getUserBundles(userSub);
+  logger.info({
+    message: "DynamoDB shadow read - comparing bundle sources",
+    userSub,
+    cognitoBundles: bundles,
+    dynamoBundles,
+    cognitoCount: bundles.length,
+    dynamoCount: dynamoBundles.length,
+    bundlesMatch: JSON.stringify(bundles.sort()) === JSON.stringify(dynamoBundles.sort()),
+  });
 
   // Determine environment (sandbox vs production)
   const sandbox = isSandboxBase(hmrcBase);

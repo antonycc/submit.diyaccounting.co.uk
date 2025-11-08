@@ -46,6 +46,7 @@ public class SubmitApplication {
         public String selfDestructDelayHours;
         public String userPoolArn;
         public String userPoolClientId;
+        public String bundlesTableArn;
 
         public static class Builder {
             private final SubmitApplicationProps p = new SubmitApplicationProps();
