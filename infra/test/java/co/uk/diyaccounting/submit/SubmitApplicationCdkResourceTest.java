@@ -95,7 +95,7 @@ class SubmitApplicationCdkResourceTest {
         apiStackTemplate.hasResourceProperties(
                 "AWS::ApiGatewayV2::Route", Map.of("RouteKey", "DELETE /api/v1/bundle/{id}"));
         // Keep overall counts stable
-        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 14);
+        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 15);
         apiStackTemplate.resourceCountIs("AWS::CloudWatch::Dashboard", 1);
 
         infof("Created stack:", submitApplication.opsStack.getStackName());
