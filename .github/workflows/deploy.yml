@@ -46,7 +46,7 @@ on:
       selfDestructDelayHours:
         description: 'Hours before self-destruct triggers for non-prod environments'
         required: false
-        default: '8'
+        default: '1'
       convertTestVideo:
         description: 'Convert test video to mp4 format'
         type: choice

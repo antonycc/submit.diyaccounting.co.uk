@@ -175,7 +175,7 @@ public class SelfDestructStack extends Stack {
                 .functionName(functionName)
                 .runtime(Runtime.NODEJS_20_X)
                 .handler("app/functions/infra/selfDestruct.handler")
-                .code(Code.fromAsset("./"))
+                .code(Code.fromAsset("../"))
                 .timeout(Duration.minutes(15)) // Allow time for stack deletions
                 .memorySize(256) // Reduced memory for Node.js runtime
                 .role(this.functionRole)
