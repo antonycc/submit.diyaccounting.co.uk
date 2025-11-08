@@ -43,6 +43,9 @@ public class SubmitApplication {
         public String hmrcClientId;
         public String hmrcClientSecretArn;
         public String hmrcBaseUri;
+        public String hmrcSandboxClientId;
+        public String hmrcSandboxClientSecretArn;
+        public String hmrcSandboxBaseUri;
         public String baseImageTag;
         public String selfDestructDelayHours;
         public String userPoolArn;
@@ -112,6 +115,8 @@ public class SubmitApplication {
                 : "(unknown cognitoUserPoolId because no cognitoUserPoolArn)";
         var hmrcClientSecretArn =
                 envOr("HMRC_CLIENT_SECRET_ARN", appProps.hmrcClientSecretArn, "(from hmrcClientSecretArn in cdk.json)");
+        var hmrcSandboxClientSecretArn =
+                envOr("HMRC_SANDBOX_CLIENT_SECRET_ARN", appProps.hmrcSandboxClientSecretArn, "(from hmrcSandboxClientSecretArn in cdk.json)");
         var baseImageTag = envOr("BASE_IMAGE_TAG", appProps.baseImageTag, "(from baseImageTag in cdk.json)");
         var selfDestructDelayHoursString = envOr(
                 "SELF_DESTRUCT_DELAY_HOURS",
@@ -185,6 +190,9 @@ public class SubmitApplication {
                         .hmrcBaseUri(appProps.hmrcBaseUri)
                         .hmrcClientId(appProps.hmrcClientId)
                         .hmrcClientSecretArn(hmrcClientSecretArn)
+                        .hmrcSandboxBaseUri(appProps.hmrcSandboxBaseUri)
+                        .hmrcSandboxClientId(appProps.hmrcSandboxClientId)
+                        .hmrcSandboxClientSecretArn(hmrcSandboxClientSecretArn)
                         .cognitoUserPoolId(cognitoUserPoolId)
                         .build());
         this.hmrcStack.addDependency(devStack);
