@@ -32,6 +32,10 @@ public class AccountStack extends Stack {
     public Function catalogLambda;
     public LogGroup catalogLambdaLogGroup;
 
+    public ApiLambdaProps bundleGetLambdaProps;
+    public Function bundleGetLambda;
+    public LogGroup bundleGetLambdaLogGroup;
+
     public ApiLambdaProps bundlePostLambdaProps;
     public Function bundlePostLambda;
     public LogGroup bundlePostLambdaLogGroup;
@@ -127,6 +131,60 @@ public class AccountStack extends Stack {
                 "Created Lambda %s for catalog retrieval with handler %s",
                 this.catalogLambda.getNode().getId(), props.sharedNames().catalogGetLambdaHandler);
 
+        // Construct Cognito User Pool ARN for IAM policies
+        var region = props.getEnv() != null ? props.getEnv().getRegion() : "us-east-1";
+        var account = props.getEnv() != null ? props.getEnv().getAccount() : "";
+        var cognitoUserPoolArn =
+                String.format("arn:aws:cognito-idp:%s:%s:userpool/%s", region, account, userPool.getUserPoolId());
+
+        // Get Bundles Lambda
+        var getBundlesLambdaEnv = new PopulatedMap<String, String>()
+                .with("COGNITO_USER_POOL_ID", userPool.getUserPoolId())
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName());
+        var getBundlesLambdaUrlOrigin = new ApiLambda(
+                this,
+                ApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().bundleGetLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                        .functionName(props.sharedNames().bundleGetLambdaFunctionName)
+                        .handler(props.sharedNames().bundleGetLambdaHandler)
+                        .lambdaArn(props.sharedNames().bundleGetLambdaArn)
+                        .httpMethod(props.sharedNames().bundleGetLambdaHttpMethod)
+                        .urlPath(props.sharedNames().bundleGetLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().bundleGetLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().bundleGetLambdaCustomAuthorizer)
+                        .environment(getBundlesLambdaEnv)
+                        .timeout(Duration.millis(Long.parseLong("30000")))
+                        .build());
+        this.bundleGetLambdaProps = getBundlesLambdaUrlOrigin.props;
+        this.bundleGetLambda = getBundlesLambdaUrlOrigin.lambda;
+        this.bundleGetLambdaLogGroup = getBundlesLambdaUrlOrigin.logGroup;
+        this.lambdaFunctionProps.add(this.bundleGetLambdaProps);
+        infof(
+                "Created Lambda %s for get bundles with handler %s",
+                this.bundleGetLambda.getNode().getId(), props.sharedNames().bundleGetLambdaHandler);
+
+        // Grant the GetBundlesLambda permission to access Cognito User Pool
+        var getBundlesLambdaGrantPrincipal = this.bundleGetLambda.getGrantPrincipal();
+        userPool.grant(getBundlesLambdaGrantPrincipal, "cognito-idp:AdminGetUser");
+        this.bundleGetLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .actions(List.of("cognito-idp:AdminGetUser"))
+                .resources(List.of(cognitoUserPoolArn))
+                .build());
+
+        infof(
+                "Granted Cognito permissions to %s for User Pool %s",
+                this.bundleGetLambda.getFunctionName(), userPool.getUserPoolId());
+
+        // Grant the GetBundlesLambda permission to access DynamoDB Bundles Table
+        bundlesTable.grantReadData(this.bundleGetLambda);
+        infof(
+                "Granted DynamoDB permissions to %s for Bundles Table %s",
+                this.bundleGetLambda.getFunctionName(), bundlesTable.getTableName());
+
         // Request Bundles Lambda
         var requestBundlesLambdaEnv = new PopulatedMap<String, String>()
                 .with("COGNITO_USER_POOL_ID", userPool.getUserPoolId())
@@ -159,10 +217,6 @@ public class AccountStack extends Stack {
                 this.bundlePostLambda.getNode().getId(), props.sharedNames().bundlePostLambdaHandler);
 
         // Grant the RequestBundlesLambda permission to access Cognito User Pool
-        var region = props.getEnv() != null ? props.getEnv().getRegion() : "us-east-1";
-        var account = props.getEnv() != null ? props.getEnv().getAccount() : "";
-        var cognitoUserPoolArn =
-                String.format("arn:aws:cognito-idp:%s:%s:userpool/%s", region, account, userPool.getUserPoolId());
         var requestBundlesLambdaGrantPrincipal = this.bundlePostLambda.getGrantPrincipal();
         userPool.grant(
                 requestBundlesLambdaGrantPrincipal,
@@ -260,6 +314,7 @@ public class AccountStack extends Stack {
         Aspects.of(this).add(new SetAutoDeleteJobLogRetentionAspect(props.deploymentName(), RetentionDays.THREE_DAYS));
 
         cfnOutput(this, "CatalogLambdaArn", this.catalogLambda.getFunctionArn());
+        cfnOutput(this, "GetBundlesLambdaArn", this.bundleGetLambda.getFunctionArn());
         cfnOutput(this, "RequestBundlesLambdaArn", this.bundlePostLambda.getFunctionArn());
         cfnOutput(this, "BundleDeleteLambdaArn", this.bundleDeleteLambda.getFunctionArn());
 
