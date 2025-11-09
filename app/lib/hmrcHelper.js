@@ -1,4 +1,4 @@
-// app/lib/hmrHelper.js
+// app/lib/hmrcHelper.js
 
 import logger from "./logger.js";
 import { BundleEntitlementError } from "./bundleEnforcement.js";
