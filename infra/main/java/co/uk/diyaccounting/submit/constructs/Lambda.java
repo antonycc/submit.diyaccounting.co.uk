@@ -48,42 +48,41 @@ public class Lambda {
                 Repository.fromRepositoryAttributes(scope, props.idPrefix() + "-EcrRepo", repositoryAttributes);
         this.dockerImage = DockerImageCode.fromEcr(repository, imageCodeProps);
 
-        // Add X-Ray environment variables if enabled
-        var environment = new java.util.HashMap<>(props.environment());
-        environment.put("AWS_XRAY_TRACING_NAME", props.functionName());
-
-        var dockerFunctionBuilder = DockerImageFunction.Builder.create(scope, props.idPrefix() + "-fn")
-                .code(this.dockerImage)
-                .environment(environment)
-                .functionName(props.functionName())
-                .timeout(props.timeout())
-                .tracing(Tracing.ACTIVE);
-        //dockerFunctionBuilder.tracing(Tracing.ACTIVE);
-        if (props.role().isPresent()) {
-            dockerFunctionBuilder.role(props.role().get());
-        }
-
-        this.lambda = dockerFunctionBuilder.build();
-        infof("Created Lambda %s with function %s", this.lambda.getNode().getId(), this.lambda.toString());
-
         // Create log group for the lambda
-        if( props.logGroupName().isPresent() ) {
-            this.logGroup = LogGroup.fromLogGroupName(
-                scope,
-                props.idPrefix() + "LogGroup",
-                props.logGroupName().get());
-            infof("Using custom log group name %s for Lambda %s", props.logGroupName(), this.lambda.getFunctionName());
+        if( props.logGroup().isPresent() ) {
+            this.logGroup = props.logGroup().get();
+            infof("Using custom log group name %s for Lambda %s", this.logGroup.getNode().getId(), props.functionName());
         } else {
             this.logGroup = new LogGroup(
                 scope,
                 props.idPrefix() + "LogGroup",
                 LogGroupProps.builder()
-                    .logGroupName("/aws/lambda/" + this.lambda.getFunctionName())
+                    .logGroupName("/aws/lambda/" + props.functionName())
                     .retention(props.logGroupRetention())
                     .removalPolicy(props.logGroupRemovalPolicy())
                     .build());
-            infof("Created log group %s with retention %s", this.logGroup.getNode().getId(), props.logGroupRetention());
+            infof("Created log group %s with retention %s for Lambda %s",
+                this.logGroup.getNode().getId(),
+                props.logGroupRetention(),
+                props.functionName());
         }
+
+        // Add X-Ray environment variables if enabled
+        var environment = new java.util.HashMap<>(props.environment());
+        environment.put("AWS_XRAY_TRACING_NAME", props.functionName());
+        var dockerFunctionBuilder = DockerImageFunction.Builder.create(scope, props.idPrefix() + "-fn")
+                .code(this.dockerImage)
+                .environment(environment)
+                .functionName(props.functionName())
+                .timeout(props.timeout())
+                .logGroup(this.logGroup)
+                .tracing(Tracing.ACTIVE);
+        //dockerFunctionBuilder.tracing(Tracing.ACTIVE);
+        if (props.role().isPresent()) {
+            dockerFunctionBuilder.role(props.role().get());
+        }
+        this.lambda = dockerFunctionBuilder.build();
+        infof("Created Lambda %s with function %s", this.lambda.getNode().getId(), this.lambda.toString());
 
         // Alarms: a small set of useful, actionable Lambda alarms
         // 1) Errors >= 1 in a 5-minute period

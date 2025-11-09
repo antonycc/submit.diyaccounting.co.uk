@@ -208,7 +208,7 @@ public class SelfDestructStack extends Stack {
                 .handler(handler)
                 .lambdaArn(lambdaArn)
                 .environment(selfDestructLambdaEnv)
-                .logGroupName(props.selfDestructLogGroupName())
+                .logGroup(logGroup)
                 .role(this.functionRole)
                 .timeout(Duration.millis(Long.parseLong("900000"))) // 15 minutes
                 .build());

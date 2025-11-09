@@ -4,6 +4,7 @@ import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.services.iam.Role;
+import software.amazon.awscdk.services.logs.ILogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
 
 import java.util.Map;
@@ -52,7 +53,7 @@ public interface LambdaProps {
     String ecrRepositoryName();
 
     @Value.Default
-    default Optional<String> logGroupName() { return Optional.empty(); }
+    default Optional<ILogGroup> logGroup() { return Optional.empty(); }
 
     @Value.Default
     default Optional<Role> role() { return Optional.empty(); }
