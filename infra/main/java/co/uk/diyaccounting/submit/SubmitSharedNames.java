@@ -431,7 +431,12 @@ public class SubmitSharedNames {
                 this.hmrcVatObligationGetLambdaUrlPath,
                 "Get VAT obligations from HMRC",
                 "Retrieves VAT obligations from HMRC for the authenticated user",
-                "getVatObligations"));
+                "getVatObligations",
+            List.of(
+                new ApiParameter("vrn", "query", true, "VAT Registration Number (9 digits)"),
+                new ApiParameter("from", "query", true, "The VAT period key at the start of te search range"),
+                new ApiParameter("to", "query", true, "The VAT period key at the end of the search range"),
+                new ApiParameter("Gov-Test-Scenario", "query", false, "HMRC sandbox test scenario"))));
 
         this.hmrcVatReturnGetLambdaHttpMethod = HttpMethod.GET;
         this.hmrcVatReturnGetLambdaUrlPath = "/api/v1/hmrc/vat/return/{periodKey}";
