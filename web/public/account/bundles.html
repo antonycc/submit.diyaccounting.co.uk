@@ -93,6 +93,7 @@
     <script src="../widgets/loading-spinner.js"></script>
     <script type="module" src="../widgets/view-source-link.js"></script>
     <script src="../widgets/localstorage-viewer.js"></script>
+    <script src="../widgets/visibility-indicator.js"></script>
 
     <script>
       // --- helpers
@@ -101,7 +102,7 @@
       // In-memory bundles state for this page
       let __userBundles = [];
 
-      const parseUserBundles = () => Array.isArray(__userBundles) ? __userBundles : [];
+      const parseUserBundles = () => (Array.isArray(__userBundles) ? __userBundles : []);
 
       // Fetch bundles from API endpoint (single source of truth)
       const fetchUserBundles = async () => {
