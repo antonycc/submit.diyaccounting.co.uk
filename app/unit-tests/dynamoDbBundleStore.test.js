@@ -1,6 +1,6 @@
 // app/unit-tests/dynamoDbBundleStore.test.js
 
-import { describe, test, expect, beforeEach, vi } from "vitest";
+import { describe, test, expect, beforeEach } from "vitest";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import * as dynamoDbBundleStore from "@app/lib/dynamoDbBundleStore.js";
 
