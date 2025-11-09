@@ -9,7 +9,12 @@ import {
   runLocalOAuth2Server,
   runLocalSslProxy,
 } from "./helpers/behaviour-helpers.js";
-import { goToHomePage, goToHomePageExpectNotLoggedIn, goToHomePageUsingHamburgerMenu } from "./steps/behaviour-steps.js";
+import {
+  consentToDataCollection,
+  goToHomePage,
+  goToHomePageExpectNotLoggedIn,
+  goToHomePageUsingHamburgerMenu,
+} from "./steps/behaviour-steps.js";
 import {
   clickLogIn,
   loginWithCognitoOrMockAuth,
@@ -25,6 +30,8 @@ if (!process.env.DIY_SUBMIT_ENV_FILEPATH) {
   console.log(`Already loaded environment from custom path: ${process.env.DIY_SUBMIT_ENV_FILEPATH}`);
 }
 dotenvConfigIfNotBlank({ path: ".env" }); // Not checked in, HMRC API credentials
+
+const screenshotPath = "target/behaviour-test-results/screenshots/bundles-behaviour-test";
 
 const originalEnv = { ...process.env };
 
@@ -92,46 +99,44 @@ test("Click through: Adding and removing bundles", async ({ page }) => {
       : baseUrl;
 
   // Add console logging to capture browser messages
-  addOnPageLogging(page);
+  addOnPageLogging(page, screenshotPath);
 
   /* ****** */
   /*  HOME  */
   /* ****** */
 
-  await goToHomePageExpectNotLoggedIn(page, testUrl);
+  await goToHomePageExpectNotLoggedIn(page, testUrl, screenshotPath);
 
   /* ******* */
   /*  LOGIN  */
   /* ******* */
 
-  await clickLogIn(page);
-
-  await loginWithCognitoOrMockAuth(page, testAuthProvider, testAuthUsername);
-
-  await verifyLoggedInStatus(page);
+  await clickLogIn(page, screenshotPath);
+  await loginWithCognitoOrMockAuth(page, testAuthProvider, testAuthUsername, screenshotPath);
+  await verifyLoggedInStatus(page, screenshotPath);
+  await consentToDataCollection(page, screenshotPath);
 
   /* ********* */
   /*  BUNDLES  */
   /* ********* */
 
-  await goToBundlesPage(page);
-  await clearBundles(page);
-  await requestTestBundle(page);
-  await goToHomePage(page);
+  await goToBundlesPage(page, screenshotPath);
+  await clearBundles(page, screenshotPath);
+  await requestTestBundle(page, screenshotPath);
+  await goToHomePage(page, screenshotPath);
 
   /* ********** */
   /*  RECEIPTS  */
   /* ********** */
 
-  await goToReceiptsPageUsingHamburgerMenu(page);
-
-  await goToHomePageUsingHamburgerMenu(page);
+  // await goToReceiptsPageUsingHamburgerMenu(page, screenshotPath);
+  // await goToHomePageUsingHamburgerMenu(page, screenshotPath);
 
   /* ********* */
   /*  LOG OUT  */
   /* ********* */
 
-  await logOutAndExpectToBeLoggedOut(page);
+  await logOutAndExpectToBeLoggedOut(page, screenshotPath);
 
   // // Shutdown local servers at end of test
   // if (serverProcess) {

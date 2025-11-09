@@ -98,21 +98,17 @@
       // --- helpers
       const getIdToken = () => localStorage.getItem("cognitoIdToken");
 
-      const parseUserBundles = () => {
-        try {
-          const raw = localStorage.getItem("userBundles");
-          const arr = raw ? JSON.parse(raw) : [];
-          return Array.isArray(arr) ? arr : [];
-        } catch {
-          return [];
-        }
-      };
+      // In-memory bundles state for this page
+      let __userBundles = [];
 
-      // Fetch bundles from API endpoint
+      const parseUserBundles = () => Array.isArray(__userBundles) ? __userBundles : [];
+
+      // Fetch bundles from API endpoint (single source of truth)
       const fetchUserBundles = async () => {
         const idToken = getIdToken();
         if (!idToken) {
-          return;
+          __userBundles = [];
+          return __userBundles;
         }
 
         try {
@@ -125,18 +121,15 @@
           if (response.ok) {
             const bundlesData = await response.json();
             if (bundlesData.bundles && Array.isArray(bundlesData.bundles)) {
-              // Store bundles in old format for compatibility
-              const bundleStrings = bundlesData.bundles.map((b) => {
-                return b.expiry ? `${b.bundleId}|EXPIRY=${b.expiry}` : b.bundleId;
-              });
-              localStorage.setItem("userBundles", JSON.stringify(bundleStrings));
-              return bundleStrings;
+              __userBundles = bundlesData.bundles.map((b) => (b?.expiry ? `${b.bundleId}|EXPIRY=${b.expiry}` : b.bundleId));
+              return __userBundles;
             }
           }
         } catch (err) {
           console.warn("Failed to fetch bundles:", err);
         }
-        return parseUserBundles();
+        __userBundles = [];
+        return __userBundles;
       };
 
       const hasBundle = (bundles, id) => (bundles || []).some((b) => typeof b === "string" && (b === id || b.startsWith(id + "|")));
@@ -195,7 +188,7 @@
           const body = await r.json().catch(() => ({}));
 
           if (r.ok) {
-            if (Array.isArray(body.bundles)) localStorage.setItem("userBundles", JSON.stringify(body.bundles));
+            // Do not persist bundles to localStorage; rely on a fresh GET after mutation
             if (body.status === "granted" || body.status === "already_granted") {
               markGranted(btn, "Added ✓");
               showStatus(`Bundle "${bundleId}" added successfully.`, "success");
@@ -269,10 +262,10 @@
         const container = document.getElementById("currentBundles");
         const bundles = parseUserBundles();
 
-        if (bundles.length === 0) {
-          container.innerHTML = '<p style="color: #666; font-style: italic;">No bundles added yet.</p>';
-          return;
-        }
+        //if (bundles.length === 0) {
+        //  container.innerHTML = '<p style="color: #666; font-style: italic;">No bundles added yet.</p>';
+        //  return;
+        //}
 
         const bundleCards = bundles
           .map((bundleEntry) => {
@@ -330,9 +323,7 @@
           const result = await response.json().catch(() => ({}));
 
           if (response.ok) {
-            if (Array.isArray(result.bundles)) {
-              localStorage.setItem("userBundles", JSON.stringify(result.bundles));
-            }
+            // Do not persist bundles to localStorage; rely on a fresh GET
             // Refresh bundles from endpoint
             await fetchUserBundles();
             renderCurrentBundles();

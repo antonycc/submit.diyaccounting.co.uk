@@ -25,6 +25,7 @@ describe("gotoWithRetries", () => {
     const transient = new Error("net::ERR_NETWORK_CHANGED");
 
     page.goto.mockRejectedValueOnce(transient).mockRejectedValueOnce(transient).mockResolvedValueOnce(undefined);
+    page.screenshot = vi.fn().mockResolvedValue();
 
     const sleepFn = vi.fn().mockResolvedValue();
 
@@ -44,6 +45,7 @@ describe("gotoWithRetries", () => {
     const page = makeMockPage();
     const fatal = new Error("HTTP 401 Unauthorized");
     page.goto.mockRejectedValueOnce(fatal);
+    page.screenshot = vi.fn().mockResolvedValue();
 
     await expect(nav.gotoWithRetries(page, "https://example.com", { maxRetries: 4 })).rejects.toThrowError(/Unauthorized/);
 
@@ -54,6 +56,7 @@ describe("gotoWithRetries", () => {
     const page = makeMockPage();
     const transient = new Error("net::ERR_NAME_NOT_RESOLVED");
     page.goto.mockRejectedValue(transient);
+    page.screenshot = vi.fn().mockResolvedValue();
 
     const sleepFn = vi.fn().mockResolvedValue();
 
@@ -72,6 +75,7 @@ describe("gotoWithRetries", () => {
     const page = makeMockPage();
     page.goto.mockResolvedValue();
     page.waitForSelector.mockResolvedValue();
+    page.screenshot = vi.fn().mockResolvedValue();
 
     await nav.gotoWithRetries(page, "https://example.com", {
       readySelector: "#welcomeHeading",

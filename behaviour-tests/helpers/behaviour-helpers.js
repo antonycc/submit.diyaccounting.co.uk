@@ -7,6 +7,8 @@ import { gotoWithRetries } from "./gotoWithRetries.js";
 
 import logger from "@app/lib/logger.js";
 
+const defaultScreenshotPath = "target/behaviour-test-results/screenshots/behaviour-helpers";
+
 export function getEnvVarAndLog(name, envKey, defaultValue) {
   let value;
   if (process.env[envKey] && process.env[envKey].trim() !== "") {
@@ -139,17 +141,27 @@ export const loggedFill = async (page, selector, value, description = "") =>
     },
   );
 
-export const loggedGoto = async (page, url, description = "") =>
+export const loggedGoto = async (page, url, description = "", screenshotPath = defaultScreenshotPath) =>
   await test.step(description ? `The user navigates to ${description}` : `The user navigates to ${url}`, async () => {
-    await gotoWithRetries(page, url, {
-      description,
-      waitUntil: "domcontentloaded",
-      readySelector: "#dynamicActivities",
-    });
+    await gotoWithRetries(
+      page,
+      url,
+      {
+        description,
+        waitUntil: "domcontentloaded",
+        readySelector: "#dynamicActivities",
+      },
+      screenshotPath,
+    );
   });
 
 // Generate timestamp for file naming
 export function timestamp() {
   const now = new Date();
-  return now.toISOString().replace(/[:.]/g, "-").replace("T", "_").slice(0, -5);
+  const iso = now.toISOString(); // e.g. 2025-11-08T12:34:56.789Z
+  const datePart = iso.slice(0, 10); // YYYY-MM-DD
+  const timePart = iso.slice(11, 19); // HH:MM:SS
+  const [hour, minute, second] = timePart.split(":");
+  const nanos = (process.hrtime.bigint() % 1000000000n).toString().padStart(9, "0");
+  return `${datePart}_${hour}-${minute}-${second}-${nanos}`;
 }

@@ -140,28 +140,7 @@
           console.log("User authenticated successfully using mock:", idTokenPayload.email);
           showStatus("Authenticated successfully. Fetching bundles...", "info");
 
-          // Fetch user bundles
-          try {
-            const bundlesResponse = await fetch("/api/v1/bundle", {
-              headers: {
-                Authorization: `Bearer ${tokens.id_token}`,
-              },
-            });
-
-            if (bundlesResponse.ok) {
-              const bundlesData = await bundlesResponse.json();
-              if (bundlesData.bundles && Array.isArray(bundlesData.bundles)) {
-                // Store bundles in old format for compatibility
-                const bundleStrings = bundlesData.bundles.map((b) => {
-                  return b.expiry ? `${b.bundleId}|EXPIRY=${b.expiry}` : b.bundleId;
-                });
-                localStorage.setItem("userBundles", JSON.stringify(bundleStrings));
-              }
-            }
-          } catch (err) {
-            console.warn("Failed to fetch bundles:", err);
-          }
-
+          // No longer store bundles in localStorage; bundles will be fetched by pages as needed from /api/v1/bundle
           showStatus("Authenticated successfully. Redirecting...", "info");
 
           // Clear URL parameters
