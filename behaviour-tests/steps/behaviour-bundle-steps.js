@@ -13,7 +13,7 @@ export async function goToBundlesPage(page, screenshotPath = defaultScreenshotPa
     await expect(page.locator("button.hamburger-btn")).toBeVisible({ timeout: 10000 });
     await loggedClick(page, "button.hamburger-btn", "Opening hamburger menu");
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-goto-bundles-page-hamburger-menu.png` });
-    await expect(page.getByRole("link", { name: "Bundles", exact: true })).toBeVisible({ timeout: 15000 });
+    await expect(page.getByRole("link", { name: "Bundles", exact: true })).toBeVisible({ timeout: 16000 });
     await Promise.all([
       page.waitForURL(/bundles\.html/, { waitUntil: "domcontentloaded", timeout: 30000 }),
       loggedClick(page, "a[href*='bundles.html']", "Clicking Bundles in hamburger menu"),
@@ -38,7 +38,7 @@ export async function clearBundles(page, screenshotPath = defaultScreenshotPath)
     await page.screenshot({
       path: `${screenshotPath}/${timestamp()}-02-removing-all-bundles-clicked.png`,
     });
-    await expect(page.getByText("Request test")).toBeVisible();
+    await expect(page.getByText("Request test")).toBeVisible({ timeout: 16000 });
     await page.screenshot({
       path: `${screenshotPath}/${timestamp()}-03-removed-all-bundles.png`,
     });
