@@ -39,79 +39,84 @@
 
       <!-- VAT Obligations Form -->
       <div id="obligationsForm" class="form-container">
-        <h2>Retrieve VAT Obligations</h2>
-        <form id="vatObligationsForm">
-          <div class="form-group">
-            <label for="vrn">VAT Registration Number (VRN)</label>
-            <input type="text" id="vrn" name="vrn" required value="" placeholder="e.g., 176540158" maxlength="9" pattern="[0-9]{9}" />
-            <div class="help-text">Enter your 9-digit VAT registration number</div>
+        <button type="button" id="toggleSearchCriteriaBtn" class="secondary-button" style="display: none">
+          Show Obligation Search Criteria
+        </button>
+        <div id="searchCriteriaContainer">
+          <h2>Retrieve VAT Obligations</h2>
+          <form id="vatObligationsForm">
+            <div class="form-group">
+              <label for="vrn">VAT Registration Number (VRN)</label>
+              <input type="text" id="vrn" name="vrn" required value="" placeholder="e.g., 176540158" maxlength="9" pattern="[0-9]{9}" />
+              <div class="help-text">Enter your 9-digit VAT registration number</div>
+            </div>
+
+            <div class="form-group">
+              <label for="fromDate">From Date (optional)</label>
+              <input type="date" id="fromDate" name="fromDate" value="" />
+              <div class="help-text">Start date for obligation period filter</div>
+            </div>
+
+            <div class="form-group">
+              <label for="toDate">To Date (optional)</label>
+              <input type="date" id="toDate" name="toDate" value="" />
+              <div class="help-text">End date for obligation period filter</div>
+            </div>
+
+            <div class="form-group">
+              <label for="status">Status (optional)</label>
+              <select id="status" name="status">
+                <option value="">All statuses</option>
+                <option value="O">Open</option>
+                <option value="F">Fulfilled</option>
+              </select>
+              <div class="help-text">Filter by obligation status</div>
+            </div>
+
+            <!-- Developer Test Scenario Section -->
+            <div id="developerSection" class="form-group" style="display: none">
+              <label for="testScenario">Test Scenario (Developer/Sandbox Only)</label>
+              <select id="testScenario" name="testScenario">
+                <option value="">Default (One Quarterly Met)</option>
+                <option value="QUARTERLY_NONE_MET">Quarterly - None Met</option>
+                <option value="QUARTERLY_ONE_MET">Quarterly - One Met</option>
+                <option value="QUARTERLY_TWO_MET">Quarterly - Two Met</option>
+                <option value="QUARTERLY_THREE_MET">Quarterly - Three Met</option>
+                <option value="QUARTERLY_FOUR_MET">Quarterly - Four Met</option>
+                <option value="MONTHLY_NONE_MET">Monthly - None Met</option>
+                <option value="MONTHLY_ONE_MET">Monthly - One Met</option>
+                <option value="MONTHLY_TWO_MET">Monthly - Two Met</option>
+                <option value="MONTHLY_THREE_MET">Monthly - Three Met</option>
+                <option value="MONTHLY_OBS_01_OPEN">Monthly - Jan Open</option>
+                <option value="MONTHLY_OBS_02_OPEN">Monthly - Feb Open</option>
+                <option value="MONTHLY_OBS_03_OPEN">Monthly - Mar Open</option>
+                <option value="MONTHLY_OBS_04_OPEN">Monthly - Apr Open</option>
+                <option value="MONTHLY_OBS_05_OPEN">Monthly - May Open</option>
+                <option value="MONTHLY_OBS_06_OPEN">Monthly - Jun Open</option>
+                <option value="MONTHLY_OBS_07_OPEN">Monthly - Jul Open</option>
+                <option value="MONTHLY_OBS_08_OPEN">Monthly - Aug Open</option>
+                <option value="MONTHLY_OBS_09_OPEN">Monthly - Sep Open</option>
+                <option value="MONTHLY_OBS_10_OPEN">Monthly - Oct Open</option>
+                <option value="MONTHLY_OBS_11_OPEN">Monthly - Nov Open</option>
+                <option value="MONTHLY_OBS_12_OPEN">Monthly - Dec Open</option>
+                <option value="MONTHLY_OBS_12_FULFILLED">Monthly - All Fulfilled</option>
+                <option value="QUARTERLY_OBS_01_OPEN">Quarterly - Q1 Open</option>
+                <option value="QUARTERLY_OBS_02_OPEN">Quarterly - Q2 Open</option>
+                <option value="QUARTERLY_OBS_03_OPEN">Quarterly - Q3 Open</option>
+                <option value="QUARTERLY_OBS_04_OPEN">Quarterly - Q4 Open</option>
+                <option value="QUARTERLY_OBS_04_FULFILLED">Quarterly - All Fulfilled</option>
+                <option value="MULTIPLE_OPEN_MONTHLY">Multiple Open Monthly</option>
+                <option value="MULTIPLE_OPEN_QUARTERLY">Multiple Open Quarterly</option>
+              </select>
+              <div class="help-text">Test different HMRC sandbox scenarios</div>
+            </div>
+
+            <button type="submit" id="retrieveBtn" class="btn">Retrieve Obligations</button>
+          </form>
+
+          <div class="developer-controls">
+            <button type="button" id="toggleDeveloperMode" class="developer-button">Show Developer Options</button>
           </div>
-
-          <div class="form-group">
-            <label for="fromDate">From Date (optional)</label>
-            <input type="date" id="fromDate" name="fromDate" value="" />
-            <div class="help-text">Start date for obligation period filter</div>
-          </div>
-
-          <div class="form-group">
-            <label for="toDate">To Date (optional)</label>
-            <input type="date" id="toDate" name="toDate" value="" />
-            <div class="help-text">End date for obligation period filter</div>
-          </div>
-
-          <div class="form-group">
-            <label for="status">Status (optional)</label>
-            <select id="status" name="status">
-              <option value="">All statuses</option>
-              <option value="O">Open</option>
-              <option value="F">Fulfilled</option>
-            </select>
-            <div class="help-text">Filter by obligation status</div>
-          </div>
-
-          <!-- Developer Test Scenario Section -->
-          <div id="developerSection" class="form-group" style="display: none">
-            <label for="testScenario">Test Scenario (Developer/Sandbox Only)</label>
-            <select id="testScenario" name="testScenario">
-              <option value="">Default (One Quarterly Met)</option>
-              <option value="QUARTERLY_NONE_MET">Quarterly - None Met</option>
-              <option value="QUARTERLY_ONE_MET">Quarterly - One Met</option>
-              <option value="QUARTERLY_TWO_MET">Quarterly - Two Met</option>
-              <option value="QUARTERLY_THREE_MET">Quarterly - Three Met</option>
-              <option value="QUARTERLY_FOUR_MET">Quarterly - Four Met</option>
-              <option value="MONTHLY_NONE_MET">Monthly - None Met</option>
-              <option value="MONTHLY_ONE_MET">Monthly - One Met</option>
-              <option value="MONTHLY_TWO_MET">Monthly - Two Met</option>
-              <option value="MONTHLY_THREE_MET">Monthly - Three Met</option>
-              <option value="MONTHLY_OBS_01_OPEN">Monthly - Jan Open</option>
-              <option value="MONTHLY_OBS_02_OPEN">Monthly - Feb Open</option>
-              <option value="MONTHLY_OBS_03_OPEN">Monthly - Mar Open</option>
-              <option value="MONTHLY_OBS_04_OPEN">Monthly - Apr Open</option>
-              <option value="MONTHLY_OBS_05_OPEN">Monthly - May Open</option>
-              <option value="MONTHLY_OBS_06_OPEN">Monthly - Jun Open</option>
-              <option value="MONTHLY_OBS_07_OPEN">Monthly - Jul Open</option>
-              <option value="MONTHLY_OBS_08_OPEN">Monthly - Aug Open</option>
-              <option value="MONTHLY_OBS_09_OPEN">Monthly - Sep Open</option>
-              <option value="MONTHLY_OBS_10_OPEN">Monthly - Oct Open</option>
-              <option value="MONTHLY_OBS_11_OPEN">Monthly - Nov Open</option>
-              <option value="MONTHLY_OBS_12_OPEN">Monthly - Dec Open</option>
-              <option value="MONTHLY_OBS_12_FULFILLED">Monthly - All Fulfilled</option>
-              <option value="QUARTERLY_OBS_01_OPEN">Quarterly - Q1 Open</option>
-              <option value="QUARTERLY_OBS_02_OPEN">Quarterly - Q2 Open</option>
-              <option value="QUARTERLY_OBS_03_OPEN">Quarterly - Q3 Open</option>
-              <option value="QUARTERLY_OBS_04_OPEN">Quarterly - Q4 Open</option>
-              <option value="QUARTERLY_OBS_04_FULFILLED">Quarterly - All Fulfilled</option>
-              <option value="MULTIPLE_OPEN_MONTHLY">Multiple Open Monthly</option>
-              <option value="MULTIPLE_OPEN_QUARTERLY">Multiple Open Quarterly</option>
-            </select>
-            <div class="help-text">Test different HMRC sandbox scenarios</div>
-          </div>
-
-          <button type="submit" id="retrieveBtn" class="btn">Retrieve Obligations</button>
-        </form>
-
-        <div class="developer-controls">
-          <button type="button" id="toggleDeveloperMode" class="developer-button">Show Developer Options</button>
         </div>
       </div>
 
@@ -149,6 +154,28 @@
     <script>
       // Global variables
       let obligationsData = null;
+      let searchCriteriaHidden = false;
+
+      // Functions to manage search criteria visibility
+      function hideSearchCriteria() {
+        const container = document.getElementById("searchCriteriaContainer");
+        const toggleBtn = document.getElementById("toggleSearchCriteriaBtn");
+        if (container && toggleBtn) {
+          container.style.display = "none";
+          toggleBtn.style.display = "block";
+          searchCriteriaHidden = true;
+        }
+      }
+
+      function showSearchCriteria() {
+        const container = document.getElementById("searchCriteriaContainer");
+        const toggleBtn = document.getElementById("toggleSearchCriteriaBtn");
+        if (container && toggleBtn) {
+          container.style.display = "block";
+          toggleBtn.style.display = "none";
+          searchCriteriaHidden = false;
+        }
+      }
 
       // Check if we're in sandbox/test mode to show developer options
       function initializePage() {
@@ -202,6 +229,7 @@
           }
 
           console.log("Retrieved pending request:", pendingRequest);
+          hideSearchCriteria(); // Hide the form when retrieving obligations after auth
           showLoading();
           showStatus("Retrieving VAT obligations...", "info");
 
@@ -245,6 +273,7 @@
             if (response.status === 401) {
               sessionStorage.removeItem("hmrcAccessToken");
               showStatus("Access token expired. Please re-authenticate.", "error");
+              showSearchCriteria(); // Show form on error
               // Could trigger re-auth here if desired
               return;
             }
@@ -263,6 +292,7 @@
         } catch (error) {
           console.error("Error retrieving obligations:", error);
           showStatus(`Failed to retrieve obligations: ${error.message}`, "error");
+          showSearchCriteria(); // Show form on error
         } finally {
           hideLoading();
         }
@@ -474,12 +504,18 @@
         window.location.href = `submitVat.html?vrn=${vrn}&periodKey=${periodKey}`;
       }
 
+      // Toggle search criteria button handler
+      document.getElementById("toggleSearchCriteriaBtn")?.addEventListener("click", () => {
+        showSearchCriteria();
+      });
+
       // New search button handler
       document.getElementById("newSearchBtn")?.addEventListener("click", () => {
         const form = document.getElementById("vatObligationsForm");
         const resultsContainer = document.getElementById("obligationsResults");
         form.reset();
         resultsContainer.style.display = "none";
+        showSearchCriteria(); // Show the form again when doing a new search
         hideStatus();
       });
 
