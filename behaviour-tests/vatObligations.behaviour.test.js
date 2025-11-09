@@ -9,7 +9,7 @@ import {
   runLocalOAuth2Server,
   runLocalSslProxy,
 } from "./helpers/behaviour-helpers.js";
-import { goToHomePageExpectNotLoggedIn, goToHomePageUsingHamburgerMenu } from "./steps/behaviour-steps.js";
+import { consentToDataCollection, goToHomePageExpectNotLoggedIn, goToHomePageUsingHamburgerMenu } from "./steps/behaviour-steps.js";
 import {
   clickLogIn,
   loginWithCognitoOrMockAuth,
@@ -115,6 +115,7 @@ test("Click through: View VAT obligations from HMRC", async ({ page }) => {
   await clickLogIn(page, screenshotPath);
   await loginWithCognitoOrMockAuth(page, testAuthProvider, testAuthUsername, screenshotPath);
   await verifyLoggedInStatus(page, screenshotPath);
+  await consentToDataCollection(page, screenshotPath);
 
   /* ********* */
   /*  BUNDLES  */

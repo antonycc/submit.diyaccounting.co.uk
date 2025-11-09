@@ -19,10 +19,8 @@ export async function goToHomePageExpectNotLoggedIn(page, testUrl, screenshotPat
 
     // Home page has a welcome message and clickable login link
     console.log("Checking home page...");
-    await page.waitForLoadState("networkidle");
-    await page.waitForTimeout(500);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-home-page.png` });
-    await expect(page.getByText("Log in")).toBeVisible();
+    await expect(page.getByText("Log in")).toBeVisible({ timeout: 15000 });
   });
 }
 
@@ -31,10 +29,10 @@ export async function goToHomePage(page, screenshotPath = defaultScreenshotPath)
     // Return to home
     await expect(page.getByText("Back to Home")).toBeVisible();
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-goto-home-page.png` });
-    await loggedClick(page, "button:has-text('Back to Home')", "Back to Home");
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-goto-home-page.png` });
-    await page.waitForLoadState("networkidle");
-    await page.waitForTimeout(500);
+    await Promise.all([
+      page.waitForURL(/index\.html$/, { waitUntil: "domcontentloaded", timeout: 30000 }).catch(() => {}),
+      loggedClick(page, "button:has-text('Back to Home')", "Back to Home"),
+    ]);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-goto-home.png` });
   });
 }
@@ -46,11 +44,31 @@ export async function goToHomePageUsingHamburgerMenu(page, screenshotPath = defa
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-goto-home-hamburger.png` });
     await loggedClick(page, "button.hamburger-btn", "Opening hamburger menu to go home");
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-goto-home-hamburger-clicked-menu.png` });
-    await page.waitForTimeout(500);
-    await loggedClick(page, "a:has-text('Home')", "Clicking Home in hamburger menu");
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-goto-home-hamburger-clicked-home.png` });
-    await page.waitForLoadState("networkidle");
-    await page.waitForTimeout(500);
+    await expect(page.getByRole("link", { name: "Home" })).toBeVisible({ timeout: 10000 });
+    await Promise.all([
+      page.waitForURL(/index\.html$/, { waitUntil: "domcontentloaded", timeout: 30000 }).catch(() => {}),
+      loggedClick(page, "a:has-text('Home')", "Clicking Home in hamburger menu"),
+    ]);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-goto-home.png` });
+  });
+}
+
+export async function consentToDataCollection(page, screenshotPath = defaultScreenshotPath) {
+  // If there is a "CloudWatch RUM" analytics consent dialog, accept it
+  await test.step("Accept CloudWatch RUM analytics consent if shown", async () => {
+    const consentSelector = 'button:has-text("Accept")';
+    const isConsentVisible = await page
+      .locator(consentSelector)
+      .isVisible()
+      .catch(() => false);
+    if (isConsentVisible) {
+      console.log("CloudWatch RUM analytics consent dialog is visible, accepting...");
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-consent-dialog.png` });
+      await page.click(consentSelector);
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-consent-accepted.png` });
+    } else {
+      console.log("CloudWatch RUM analytics consent dialog not shown, continuing...");
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-no-consent-dialog.png` });
+    }
   });
 }

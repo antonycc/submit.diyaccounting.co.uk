@@ -14,7 +14,6 @@ export async function acceptCookiesHmrc(page, screenshotPath = defaultScreenshot
       console.log("[USER INTERACTION] Clicking: Accept additional cookies button - Accepting cookies");
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-accepting-cookies.png` });
       await acceptCookiesButton.click();
-      await page.waitForTimeout(500);
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-accepted-cookies.png` });
     }
     // Hide the cookies message if it's still visible
@@ -24,7 +23,6 @@ export async function acceptCookiesHmrc(page, screenshotPath = defaultScreenshot
       console.log("[USER INTERACTION] Clicking: Hide cookies message button - Hiding cookies message");
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-accept-cookies-hide-clicking.png` });
       await hideCookiesButton.click();
-      await page.waitForTimeout(500);
       await page.screenshot({
         path: `${screenshotPath}/${timestamp()}-06-hid-cookies-message.png`,
       });

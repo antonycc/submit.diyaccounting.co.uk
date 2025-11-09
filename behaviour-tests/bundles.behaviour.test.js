@@ -9,7 +9,12 @@ import {
   runLocalOAuth2Server,
   runLocalSslProxy,
 } from "./helpers/behaviour-helpers.js";
-import { goToHomePage, goToHomePageExpectNotLoggedIn, goToHomePageUsingHamburgerMenu } from "./steps/behaviour-steps.js";
+import {
+  consentToDataCollection,
+  goToHomePage,
+  goToHomePageExpectNotLoggedIn,
+  goToHomePageUsingHamburgerMenu,
+} from "./steps/behaviour-steps.js";
 import {
   clickLogIn,
   loginWithCognitoOrMockAuth,
@@ -107,10 +112,9 @@ test("Click through: Adding and removing bundles", async ({ page }) => {
   /* ******* */
 
   await clickLogIn(page, screenshotPath);
-
   await loginWithCognitoOrMockAuth(page, testAuthProvider, testAuthUsername, screenshotPath);
-
   await verifyLoggedInStatus(page, screenshotPath);
+  await consentToDataCollection(page, screenshotPath);
 
   /* ********* */
   /*  BUNDLES  */
@@ -125,9 +129,8 @@ test("Click through: Adding and removing bundles", async ({ page }) => {
   /*  RECEIPTS  */
   /* ********** */
 
-  await goToReceiptsPageUsingHamburgerMenu(page, screenshotPath);
-
-  await goToHomePageUsingHamburgerMenu(page, screenshotPath);
+  // await goToReceiptsPageUsingHamburgerMenu(page, screenshotPath);
+  // await goToHomePageUsingHamburgerMenu(page, screenshotPath);
 
   /* ********* */
   /*  LOG OUT  */

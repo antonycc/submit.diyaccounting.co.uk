@@ -13,10 +13,13 @@ export async function clickLogIn(page, screenshotPath = defaultScreenshotPath) {
 
     // Login
     console.log("Logging in...");
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-login-loggining-in.png` });
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-login-logging-in.png` });
 
-    await page.waitForLoadState("networkidle");
-    await page.waitForTimeout(500);
+    // await Promise.all([
+    //  page.waitForURL(/auth\/login\.html$/, { waitUntil: "domcontentloaded", timeout: 30000 }).catch(() => {}),
+    //  // the click already happened above; we still wait for the URL change
+    // ]);
+    await expect(page.getByText("Continue with Google")).toBeVisible({ timeout: 15000 });
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-login.png` });
   });
 }
@@ -46,11 +49,9 @@ export async function loginWithCognitoOrMockAuth(page, testAuthProvider, testAut
       } catch (err) {
         retries++;
         if (retries === maxRetries) throw err;
-        await page.waitForTimeout(500);
         await page.screenshot({ path: `${screenshotPath}/${timestamp()}-08-login-with-cognito-or-mock-auth-failed-attempt.png` });
       }
     }
-    await page.waitForTimeout(100);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-09-login-with-cognito-or-mock-auth.png` });
     await fillInCognitoAuth(page, screenshotPath);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-10-login-with-cognito-or-mock-auth-filled-in.png` });
@@ -62,8 +63,6 @@ export async function loginWithCognitoOrMockAuth(page, testAuthProvider, testAut
 export async function verifyLoggedInStatus(page, screenshotPath = defaultScreenshotPath) {
   await test.step("The user returns to the home page and sees their logged-in status", async () => {
     console.log("Checking home page...");
-    await page.waitForLoadState("networkidle");
-    await page.waitForTimeout(500);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-home.png` });
     await expect(page.getByText("Logged in as")).toBeVisible({ timeout: 16000 });
   });
@@ -73,16 +72,15 @@ export async function logOutAndExpectToBeLoggedOut(page, screenshotPath = defaul
   await test.step("The user logs out and sees the public home page with the log in link", async () => {
     console.log("Logging out from home page");
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-home-before-waiting.png` });
-    await page.waitForLoadState("networkidle");
-    await page.waitForTimeout(500);
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-home-before-logout.png` });
-    await expect(page.locator("a:has-text('Logout')")).toBeVisible();
+    await expect(page.locator("a:has-text('Logout')")).toBeVisible({ timeout: 15000 });
 
-    await page.click("a:has-text('Logout')");
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-home-before-logout-clicked.png` });
-    await page.waitForLoadState("networkidle");
-    await page.waitForTimeout(500);
+    await Promise.all([
+      // some implementations may redirect; we tolerate no URL change by catching
+      page.waitForURL(/index\.html$|\/$/, { waitUntil: "domcontentloaded", timeout: 15000 }).catch(() => {}),
+      page.click("a:has-text('Logout')"),
+    ]);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-home.png` });
+    await expect(page.getByText("Not logged in")).toBeVisible({ timeout: 15000 });
   });
 }
 

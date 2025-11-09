@@ -10,7 +10,12 @@ import {
   runLocalS3,
   runLocalSslProxy,
 } from "./helpers/behaviour-helpers.js";
-import { goToHomePage, goToHomePageExpectNotLoggedIn, goToHomePageUsingHamburgerMenu } from "./steps/behaviour-steps.js";
+import {
+  consentToDataCollection,
+  goToHomePage,
+  goToHomePageExpectNotLoggedIn,
+  goToHomePageUsingHamburgerMenu,
+} from "./steps/behaviour-steps.js";
 import {
   clickLogIn,
   loginWithCognitoOrMockAuth,
@@ -141,10 +146,9 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }) => {
   /* ******* */
 
   await clickLogIn(page, screenshotPath);
-
   await loginWithCognitoOrMockAuth(page, testAuthProvider, testAuthUsername, screenshotPath);
-
   await verifyLoggedInStatus(page, screenshotPath);
+  await consentToDataCollection(page, screenshotPath);
 
   /* ********* */
   /*  BUNDLES  */
@@ -178,7 +182,6 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }) => {
   /* ************** */
 
   await completeVat(page, baseUrl, screenshotPath);
-  // await completeVat(page, baseUrl, checkServersAreRunning);
   await verifyVatSubmission(page, screenshotPath);
 
   /* ********** */
