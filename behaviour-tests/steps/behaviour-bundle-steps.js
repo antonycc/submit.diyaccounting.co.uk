@@ -61,8 +61,9 @@ export async function ensureTestBundlePresent(page, screenshotPath = defaultScre
   await test.step("Ensure test bundle is present (idempotent)", async () => {
     // If the confirmation text for an added bundle is already visible, do nothing.
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-ensure-test-bundle.png` });
-    const isAddedVisible = await page.getByText("Added ✓").isVisible();
-    if (isAddedVisible) {
+    const locator = page.getByRole("text", { name: "Added ✓", timeout: 16000 });
+    // const isAddedVisible = await page.getByText("Added ✓").isVisible({ timeout: 16000 });
+    if (locator.isVisible({ timeout: 16000 })) {
       console.log("Test bundle already present, skipping request.");
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-ensure-test-bundle-skipping.png` });
       return;
