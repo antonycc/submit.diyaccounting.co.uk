@@ -579,22 +579,22 @@ public class SubmitSharedNames {
                 "deleteBundleById",
                 List.of(new ApiParameter("id", "path", true, "The bundle id (or name) to delete"))));
 
-        var delSelfDestructLambdaHandlerName = "selfDestruct.handler";
-        var delSelfDestructLambdaHandlerDashed =
-            ResourceNameUtils.convertCamelCaseToDashSeparated(delSelfDestructLambdaHandlerName);
-        this.delSelfDestructLambdaFunctionName =
-            "%s-%s".formatted(this.appResourceNamePrefix, delSelfDestructLambdaHandlerDashed);
-        this.delSelfDestructLambdaHandler =
-            "%s/infra/%s".formatted(appLambdaHandlerPrefix, delSelfDestructLambdaHandlerName);
-        this.delSelfDestructLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, delSelfDestructLambdaHandlerDashed);
-
         var appSelfDestructLambdaHandlerName = "selfDestruct.handler";
         var appSelfDestructLambdaHandlerDashed =
             ResourceNameUtils.convertCamelCaseToDashSeparated(appSelfDestructLambdaHandlerName);
         this.appSelfDestructLambdaFunctionName =
-            "%s-%s".formatted(this.appResourceNamePrefix, appSelfDestructLambdaHandlerDashed);
+            "%s-app-%s".formatted(this.appResourceNamePrefix, appSelfDestructLambdaHandlerDashed);
         this.appSelfDestructLambdaHandler =
             "%s/infra/%s".formatted(appLambdaHandlerPrefix, appSelfDestructLambdaHandlerName);
         this.appSelfDestructLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, appSelfDestructLambdaHandlerDashed);
+
+        var delSelfDestructLambdaHandlerName = "selfDestruct.handler";
+        var delSelfDestructLambdaHandlerDashed =
+            ResourceNameUtils.convertCamelCaseToDashSeparated(delSelfDestructLambdaHandlerName);
+        this.delSelfDestructLambdaFunctionName =
+            "%s-del-%s".formatted(this.appResourceNamePrefix, delSelfDestructLambdaHandlerDashed);
+        this.delSelfDestructLambdaHandler =
+            "%s/infra/%s".formatted(appLambdaHandlerPrefix, delSelfDestructLambdaHandlerName);
+        this.delSelfDestructLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, delSelfDestructLambdaHandlerDashed);
     }
 }
