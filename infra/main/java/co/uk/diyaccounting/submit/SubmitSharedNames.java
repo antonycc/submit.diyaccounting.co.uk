@@ -1,13 +1,14 @@
 package co.uk.diyaccounting.submit;
 
+import co.uk.diyaccounting.submit.utils.ResourceNameUtils;
+import software.amazon.awscdk.services.apigatewayv2.HttpMethod;
+
+import java.util.ArrayList;
+import java.util.List;
+
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDashedDomainName;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.convertDotSeparatedToDashSeparated;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateResourceNamePrefix;
-
-import co.uk.diyaccounting.submit.utils.ResourceNameUtils;
-import java.util.ArrayList;
-import java.util.List;
-import software.amazon.awscdk.services.apigatewayv2.HttpMethod;
 
 public class SubmitSharedNames {
 
@@ -73,7 +74,7 @@ public class SubmitSharedNames {
     public String originAccessLogBucketName;
     public String distributionAccessLogBucketName;
     public String ew2SelfDestructLogGroupName;
-    public String ue1SelfDestructLogGroupName;
+    //public String ue1SelfDestructLogGroupName;
     public String webDeploymentLogGroupName;
     public String apiAccessLogGroupName;
 
@@ -207,6 +208,14 @@ public class SubmitSharedNames {
     public boolean bundleDeleteLambdaJwtAuthorizer;
     public boolean bundleDeleteLambdaCustomAuthorizer;
 
+    public String delSelfDestructLambdaHandler;
+    public String delSelfDestructLambdaFunctionName;
+    public String delSelfDestructLambdaArn;
+
+    public String appSelfDestructLambdaHandler;
+    public String appSelfDestructLambdaFunctionName;
+    public String appSelfDestructLambdaArn;
+
     public String delResourceNamePrefix;
     public String edgeStackId;
     public String publishStackId;
@@ -266,8 +275,8 @@ public class SubmitSharedNames {
 
         this.ew2SelfDestructLogGroupName =
                 "/aws/lambda/%s-self-destruct-eu-west-2".formatted(this.envResourceNamePrefix);
-        this.ue1SelfDestructLogGroupName =
-                "/aws/lambda/%s-self-destruct-us-east-1".formatted(this.envResourceNamePrefix);
+        //this.ue1SelfDestructLogGroupName =
+        //        "/aws/lambda/%s-self-destruct-us-east-1".formatted(this.envResourceNamePrefix);
         this.webDeploymentLogGroupName = "/deployment/%s-web-deployment".formatted(this.envResourceNamePrefix);
         this.apiAccessLogGroupName = "/aws/apigw/%s/access".formatted(this.envResourceNamePrefix);
 
@@ -569,5 +578,23 @@ public class SubmitSharedNames {
                 "Deletes a bundle for the authenticated user using a path parameter",
                 "deleteBundleById",
                 List.of(new ApiParameter("id", "path", true, "The bundle id (or name) to delete"))));
+
+        var delSelfDestructLambdaHandlerName = "selfDestruct.handler";
+        var delSelfDestructLambdaHandlerDashed =
+            ResourceNameUtils.convertCamelCaseToDashSeparated(delSelfDestructLambdaHandlerName);
+        this.delSelfDestructLambdaFunctionName =
+            "%s-%s".formatted(this.appResourceNamePrefix, delSelfDestructLambdaHandlerDashed);
+        this.delSelfDestructLambdaHandler =
+            "%s/infra/%s".formatted(appLambdaHandlerPrefix, delSelfDestructLambdaHandlerName);
+        this.delSelfDestructLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, delSelfDestructLambdaHandlerDashed);
+
+        var appSelfDestructLambdaHandlerName = "selfDestruct.handler";
+        var appSelfDestructLambdaHandlerDashed =
+            ResourceNameUtils.convertCamelCaseToDashSeparated(appSelfDestructLambdaHandlerName);
+        this.appSelfDestructLambdaFunctionName =
+            "%s-%s".formatted(this.appResourceNamePrefix, appSelfDestructLambdaHandlerDashed);
+        this.appSelfDestructLambdaHandler =
+            "%s/infra/%s".formatted(appLambdaHandlerPrefix, appSelfDestructLambdaHandlerName);
+        this.appSelfDestructLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, appSelfDestructLambdaHandlerDashed);
     }
 }

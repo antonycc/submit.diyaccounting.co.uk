@@ -543,80 +543,6 @@ jobs:
           path: docker-image/image.tar
           if-no-files-found: error
 
-  deploy-application-self-destruct:
-    name: 'deploy application self-destruct'
-    if: ${{ inputs.skipDeploy != 'true' && github.ref != 'refs/heads/main' && needs.names.outputs.environment-name != 'prod' }}
-    needs:
-      - names
-      - skip-deploy-check
-      - mvn-package
-    runs-on: ubuntu-24.04
-    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
-    steps:
-
-      - name: Configure AWS role via GitHub OIDC
-        uses: aws-actions/configure-aws-credentials@v5
-        with:
-          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-          role-chaining: false
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - name: Assume AWS deployment role
-        uses: aws-actions/configure-aws-credentials@v5
-        with:
-          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-          role-chaining: true
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - name: Checkout
-        uses: actions/checkout@v5
-
-      - name: Setup Node
-        uses: actions/setup-node@v6
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Node dependencies
-        run: npm ci
-
-      - uses: actions/setup-java@v5
-        with:
-          distribution: 'temurin'
-          java-version: ${{ env.JAVA_VERSION }}
-          cache: 'maven'
-
-      - name: Deploy SelfDestruct Stack (CDK)
-        run: |
-          ./mvnw --errors clean verify -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
-            && cd cdk-application \
-            && cat ../.env.${{ needs.names.outputs.environment-name }} \
-            && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
-              npx cdk deploy \
-                ${{ needs.names.outputs.deployment-name }}-app-SelfDestructStack \
-                --require-approval never \
-                --ci true \
-                --concurrency 4 \
-                --asset-parallelism \
-                --outputs-file ../cdk-submit-application.out/cdk-outputs-self-destruct.json \
-          && cd .. \
-          ;
-        env:
-          ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
-          DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
-          SELF_DESTRUCT_START_DATETIME: ${{ needs.mvn-package.outputs.self-destruct-start-datetime }}
-          # Set by deploy-environment.yml after the environment's AuthStack is deployed
-          COGNITO_USER_POOL_ARN: ${{ vars.COGNITO_USER_POOL_ARN }}
-          COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
-
   deploy-dev:
     name: 'deploy dev'
     needs:
@@ -809,6 +735,82 @@ jobs:
           ECR_REPOSITORY_NAME: ${{ needs.names.outputs.deployment-name }}-submit-app-ecr
     outputs:
       base-image-tag: ${{ github.sha }}
+
+  deploy-application-self-destruct:
+    name: 'deploy application self-destruct'
+    if: ${{ inputs.skipDeploy != 'true' && github.ref != 'refs/heads/main' && needs.names.outputs.environment-name != 'prod' }}
+    needs:
+      - names
+      - skip-deploy-check
+      - mvn-package
+      - push-images
+    runs-on: ubuntu-24.04
+    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    steps:
+
+      - name: Configure AWS role via GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Node dependencies
+        run: npm ci
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: 'maven'
+
+      - name: Deploy SelfDestruct Stack (CDK)
+        run: |
+          ./mvnw --errors clean verify -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
+            && cd cdk-application \
+            && cat ../.env.${{ needs.names.outputs.environment-name }} \
+            && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
+              npx cdk deploy \
+                ${{ needs.names.outputs.deployment-name }}-app-SelfDestructStack \
+                --require-approval never \
+                --ci true \
+                --concurrency 4 \
+                --asset-parallelism \
+                --outputs-file ../cdk-submit-application.out/cdk-outputs-self-destruct.json \
+          && cd .. \
+          ;
+        env:
+          ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
+          DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
+          BASE_IMAGE_TAG: ${{ needs.push-images.outputs.base-image-tag }}
+          SELF_DESTRUCT_START_DATETIME: ${{ needs.mvn-package.outputs.self-destruct-start-datetime }}
+          # Set by deploy-environment.yml after the environment's AuthStack is deployed
+          COGNITO_USER_POOL_ARN: ${{ vars.COGNITO_USER_POOL_ARN }}
+          COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
 
   deploy-auth:
     name: 'deploy auth'
@@ -1135,6 +1137,7 @@ jobs:
       - names
       - skip-deploy-check
       - mvn-package
+      - push-images
       - deploy-auth
       - deploy-hmrc
       - deploy-account
@@ -1201,6 +1204,7 @@ jobs:
         env:
           ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
+          BASE_IMAGE_TAG: ${{ needs.push-images.outputs.base-image-tag }}
           SELF_DESTRUCT_START_DATETIME: ${{ needs.mvn-package.outputs.self-destruct-start-datetime }}
           WEBSITE_HASH: "placeholder"
           HTTP_API_URL: ${{ needs.deploy-api.outputs.httpApiUrl }}
@@ -1211,6 +1215,8 @@ jobs:
     needs:
       - names
       - skip-deploy-check
+      - mvn-package
+      - push-images
       - deploy-auth
       - deploy-hmrc
       - deploy-account
@@ -1302,6 +1308,7 @@ jobs:
         env:
           ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
+          BASE_IMAGE_TAG: ${{ needs.push-images.outputs.base-image-tag }}
           WEBSITE_HASH: "placeholder"
           HTTP_API_URL: ${{ needs.deploy-api.outputs.httpApiUrl }}
           DIY_SUBMIT_APEX_URL: ${{ needs.names.outputs.apex-url }}
@@ -1325,6 +1332,8 @@ jobs:
     needs:
       - names
       - skip-deploy-check
+      - mvn-package
+      - push-images
       - deploy-edge
       - deploy-api
     runs-on: ubuntu-24.04
@@ -1474,6 +1483,7 @@ jobs:
         env:
           ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
+          BASE_IMAGE_TAG: ${{ needs.push-images.outputs.base-image-tag }}
           WEBSITE_HASH: ${{ steps.publish-hash.outputs.WEBSITE_HASH }}
           HTTP_API_URL: ${{ needs.deploy-api.outputs.httpApiUrl }}
           DIY_SUBMIT_APEX_URL: ${{ needs.names.outputs.apex-url }}
@@ -1520,6 +1530,8 @@ jobs:
     needs:
       - names
       - skip-deploy-check
+      - mvn-package
+      - push-images
       - deploy-api
       - deploy-edge
     runs-on: ubuntu-24.04

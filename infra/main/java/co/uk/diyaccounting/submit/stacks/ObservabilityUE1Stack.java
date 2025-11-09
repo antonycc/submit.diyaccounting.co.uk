@@ -1,11 +1,7 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
-import java.util.List;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Aspects;
 import software.amazon.awscdk.Duration;
@@ -23,9 +19,14 @@ import software.amazon.awscdk.services.s3.LifecycleRule;
 import software.amazon.awscdk.services.s3.ObjectOwnership;
 import software.constructs.Construct;
 
+import java.util.List;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+
 public class ObservabilityUE1Stack extends Stack {
 
-    public LogGroup selfDestructLogGroup;
+    //public LogGroup selfDestructLogGroup;
     public final LogGroup webDeploymentLogGroup;
     public IBucket distributionLogsBucket;
 
@@ -96,11 +97,11 @@ public class ObservabilityUE1Stack extends Stack {
                 .build();
 
         // Log group for self-destruct operations with 1-week retention
-        this.selfDestructLogGroup = LogGroup.Builder.create(this, props.resourceNamePrefix() + "-SelfDestructLogGroup")
-                .logGroupName(props.sharedNames().ue1SelfDestructLogGroupName)
-                .retention(RetentionDays.ONE_WEEK) // Longer retention for operations
-                .removalPolicy(RemovalPolicy.DESTROY)
-                .build();
+        // this.selfDestructLogGroup = LogGroup.Builder.create(this, props.resourceNamePrefix() + "-SelfDestructLogGroup")
+        //        .logGroupName(props.sharedNames().ue1SelfDestructLogGroupName)
+        //        .retention(RetentionDays.ONE_WEEK) // Longer retention for operations
+        //        .removalPolicy(RemovalPolicy.DESTROY)
+        //        .build();
         infof(
                 "ObservabilityStack %s created successfully for %s",
                 this.getNode().getId(), props.sharedNames().dashedDeploymentDomainName);
@@ -109,6 +110,6 @@ public class ObservabilityUE1Stack extends Stack {
 
         // Outputs for Observability resources
         cfnOutput(this, "WebDeploymentLogGroupArn", this.webDeploymentLogGroup.getLogGroupArn());
-        cfnOutput(this, "SelfDestructLogGroupArn", this.selfDestructLogGroup.getLogGroupArn());
+        // cfnOutput(this, "SelfDestructLogGroupArn", this.selfDestructLogGroup.getLogGroupArn());
     }
 }

@@ -41,6 +41,7 @@
     "test:behaviour": "npx dotenv -e .env.proxy -- playwright test --project=behaviour-tests",
     "test:submitVatBehaviour": "npx dotenv -e .env.proxy -- playwright test --project=submit-vat-behaviour-tests",
     "test:obligationBehaviour": "npx dotenv -e .env.proxy -- playwright test --project=obligation-behaviour-tests",
+    "test:obligationBehaviour-ci":   "npx dotenv -e .env.ci   -- playwright test --project=obligation-behaviour-tests",
     "test:obligationBehaviour-prod": "npx dotenv -e .env.prod -- playwright test --project=obligation-behaviour-tests",
     "test:viewVatBehaviour": "npx dotenv -e .env.proxy -- playwright test --project=view-vat-behaviour-tests",
     "test:bundleBehaviour": "npx dotenv -e .env.proxy -- playwright test --project=bundle-behaviour-tests",

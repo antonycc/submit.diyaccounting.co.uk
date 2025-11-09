@@ -1,22 +1,23 @@
 package co.uk.diyaccounting.submit;
 
-import static co.uk.diyaccounting.submit.utils.Kind.envOr;
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.Kind.warnf;
-import static co.uk.diyaccounting.submit.utils.KindCdk.getContextValueString;
-
 import co.uk.diyaccounting.submit.stacks.EdgeStack;
 import co.uk.diyaccounting.submit.stacks.PublishStack;
 import co.uk.diyaccounting.submit.stacks.SelfDestructStack;
 import co.uk.diyaccounting.submit.utils.KindCdk;
-import java.lang.reflect.Field;
-import java.nio.file.Paths;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 import software.amazon.awscdk.App;
 import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.Fn;
 import software.constructs.Construct;
+
+import java.lang.reflect.Field;
+import java.nio.file.Paths;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+
+import static co.uk.diyaccounting.submit.utils.Kind.envOr;
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.Kind.warnf;
+import static co.uk.diyaccounting.submit.utils.KindCdk.getContextValueString;
 
 public class SubmitDelivery {
 
@@ -36,6 +37,7 @@ public class SubmitDelivery {
         public String deploymentDomainName;
         public String cloudTrailEnabled;
         public String baseUrl;
+        public String baseImageTag;
         public String accessLogGroupRetentionPeriodDays;
         public String httpApiUrl;
         public String authUrlCognitoLambdaFunctionUrl;
@@ -118,6 +120,7 @@ public class SubmitDelivery {
                 envOr("CLOUD_TRAIL_ENABLED", appProps.cloudTrailEnabled, "(from cloudTrailEnabled in cdk.json)");
         var accessLogGroupRetentionPeriodDays = Integer.parseInt(
                 envOr("ACCESS_LOG_GROUP_RETENTION_PERIOD_DAYS", appProps.accessLogGroupRetentionPeriodDays, "30"));
+        var baseImageTag = envOr("BASE_IMAGE_TAG", appProps.baseImageTag, "(from baseImageTag in cdk.json)");
         var selfDestructDelayHoursString = envOr(
                 "SELF_DESTRUCT_DELAY_HOURS",
                 appProps.selfDestructDelayHours,
@@ -199,9 +202,11 @@ public class SubmitDelivery {
                             .resourceNamePrefix(sharedNames.delResourceNamePrefix)
                             .cloudTrailEnabled(cloudTrailEnabled)
                             .sharedNames(sharedNames)
-                            .selfDestructLogGroupName(sharedNames.ue1SelfDestructLogGroupName)
+                            .baseImageTag(baseImageTag)
+                            .selfDestructLogGroupName(sharedNames.ew2SelfDestructLogGroupName)
                             .selfDestructStartDatetime(selfDestructStartDatetime)
                             .selfDestructDelayHours(selfDestructDelayHours)
+                            .isDeliveryStack(true)
                             .build());
         } else {
             this.selfDestructStack = null;

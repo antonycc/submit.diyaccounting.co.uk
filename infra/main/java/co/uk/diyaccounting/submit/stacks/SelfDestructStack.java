@@ -1,17 +1,9 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.Kind.putIfNotNull;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateIamCompatibleName;
-
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
-import java.time.ZonedDateTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import co.uk.diyaccounting.submit.constructs.Lambda;
+import co.uk.diyaccounting.submit.constructs.LambdaProps;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Aspects;
 import software.amazon.awscdk.Duration;
@@ -29,17 +21,22 @@ import software.amazon.awscdk.services.iam.ManagedPolicy;
 import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.iam.Role;
 import software.amazon.awscdk.services.iam.ServicePrincipal;
-import software.amazon.awscdk.AssetHashType;
-import software.amazon.awscdk.IgnoreMode;
-import software.amazon.awscdk.services.lambda.Code;
 import software.amazon.awscdk.services.lambda.Function;
-import software.amazon.awscdk.services.lambda.Runtime;
-import software.amazon.awscdk.services.lambda.Tracing;
-import software.amazon.awscdk.services.s3.assets.AssetOptions;
 import software.amazon.awscdk.services.logs.ILogGroup;
 import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.constructs.Construct;
+
+import java.time.ZonedDateTime;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.Kind.putIfNotNull;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateIamCompatibleName;
 
 public class SelfDestructStack extends Stack {
 
@@ -74,11 +71,23 @@ public class SelfDestructStack extends Stack {
         @Override
         SubmitSharedNames sharedNames();
 
+        String baseImageTag();
+
         String selfDestructLogGroupName();
 
         int selfDestructDelayHours();
 
         ZonedDateTime selfDestructStartDatetime();
+
+        @Value.Default
+        default Boolean isDeliveryStack() {
+            return false;
+        }
+
+        @Value.Default
+        default Boolean isApplicationStack() {
+            return false;
+        }
 
         static ImmutableSelfDestructStackProps.Builder builder() {
             return ImmutableSelfDestructStackProps.builder();
@@ -106,7 +115,21 @@ public class SelfDestructStack extends Stack {
         Tags.of(this).add("BackupRequired", "false");
         Tags.of(this).add("MonitoringEnabled", "true");
 
-        String functionName = props.resourceNamePrefix() + "-self-destruct";
+        var functionName = props.isDeliveryStack() ?
+            props.sharedNames().delSelfDestructLambdaFunctionName :
+            props.isApplicationStack() ?
+                props.sharedNames().appSelfDestructLambdaFunctionName :
+                null;
+        var handler = props.isDeliveryStack() ?
+            props.sharedNames().delSelfDestructLambdaHandler :
+            props.isApplicationStack() ?
+                props.sharedNames().appSelfDestructLambdaHandler :
+                null;
+        var lambdaArn = props.isDeliveryStack() ?
+            props.sharedNames().delSelfDestructLambdaArn :
+            props.isApplicationStack() ?
+                props.sharedNames().appSelfDestructLambdaArn :
+                null;
 
         // Log group for self-destruct function
         ILogGroup logGroup = LogGroup.fromLogGroupArn(
@@ -161,46 +184,63 @@ public class SelfDestructStack extends Stack {
                 .build();
 
         // Environment variables for the function
-        Map<String, String> environment = new HashMap<>();
-        putIfNotNull(environment, "AWS_XRAY_TRACING_NAME", functionName);
-        putIfNotNull(environment, "DEV_STACK_NAME", props.sharedNames().devStackId);
-        putIfNotNull(environment, "AUTH_STACK_NAME", props.sharedNames().authStackId);
-        putIfNotNull(environment, "HMRC_STACK_NAME", props.sharedNames().hmrcStackId);
-        putIfNotNull(environment, "ACCOUNT_STACK_NAME", props.sharedNames().accountStackId);
-        putIfNotNull(environment, "API_STACK_NAME", props.sharedNames().apiStackId);
-        putIfNotNull(environment, "EDGE_STACK_NAME", props.sharedNames().edgeStackId);
-        putIfNotNull(environment, "PUBLISH_STACK_NAME", props.sharedNames().publishStackId);
-        putIfNotNull(environment, "OPS_STACK_NAME", props.sharedNames().opsStackId);
-        putIfNotNull(environment, "SELF_DESTRUCT_STACK_NAME", this.getStackName());
+        Map<String, String> selfDestructLambdaEnv = new HashMap<>();
+        putIfNotNull(selfDestructLambdaEnv, "AWS_XRAY_TRACING_NAME", functionName);
+        putIfNotNull(selfDestructLambdaEnv, "DEV_STACK_NAME", props.sharedNames().devStackId);
+        putIfNotNull(selfDestructLambdaEnv, "AUTH_STACK_NAME", props.sharedNames().authStackId);
+        putIfNotNull(selfDestructLambdaEnv, "HMRC_STACK_NAME", props.sharedNames().hmrcStackId);
+        putIfNotNull(selfDestructLambdaEnv, "ACCOUNT_STACK_NAME", props.sharedNames().accountStackId);
+        putIfNotNull(selfDestructLambdaEnv, "API_STACK_NAME", props.sharedNames().apiStackId);
+        putIfNotNull(selfDestructLambdaEnv, "EDGE_STACK_NAME", props.sharedNames().edgeStackId);
+        putIfNotNull(selfDestructLambdaEnv, "PUBLISH_STACK_NAME", props.sharedNames().publishStackId);
+        putIfNotNull(selfDestructLambdaEnv, "OPS_STACK_NAME", props.sharedNames().opsStackId);
+        putIfNotNull(selfDestructLambdaEnv, "SELF_DESTRUCT_STACK_NAME", this.getStackName());
 
         // Lambda function for self-destruction
-        this.selfDestructFunction = Function.Builder.create(this, props.resourceNamePrefix() + "-SelfDestructFunction")
+        var bundleDeleteLambda = new Lambda(
+            this,
+            LambdaProps.builder()
+                .idPrefix(props.sharedNames().bundleDeleteLambdaFunctionName)
+                .baseImageTag(props.baseImageTag())
+                .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                 .functionName(functionName)
-                .runtime(Runtime.NODEJS_20_X)
-                .handler("app/functions/infra/selfDestruct.handler")
-                .code(Code.fromAsset(
-                        "./",
-                        AssetOptions.builder()
-                                .assetHashType(AssetHashType.SOURCE)
-                                .ignoreMode(IgnoreMode.GLOB)
-                                .exclude(List.of(
-                                        ".git/**",
-                                        "cdk.out/**",
-                                        "cdk-submit-application.out/**",
-                                        "cdk-submit-environment.out/**",
-                                        "cdk-submit-delivery.out/**",
-                                        "target/**",
-                                        ".idea/**"
-                                ))
-                                .build()
-                ))
-                .timeout(Duration.minutes(15)) // Allow time for stack deletions
-                .memorySize(256) // Reduced memory for Node.js runtime
+                .handler(handler)
+                .lambdaArn(lambdaArn)
+                .environment(selfDestructLambdaEnv)
+                .logGroupName(props.selfDestructLogGroupName())
                 .role(this.functionRole)
-                .environment(environment)
-                .tracing(Tracing.ACTIVE)
-                .logGroup(logGroup)
-                .build();
+                .timeout(Duration.millis(Long.parseLong("900000"))) // 15 minutes
+                .build());
+        this.selfDestructFunction = bundleDeleteLambda.lambda;
+
+//        this.selfDestructFunction = Function.Builder.create(this, props.resourceNamePrefix() + "-SelfDestructFunction")
+//                .functionName(functionName)
+//                .runtime(Runtime.NODEJS_20_X)
+//                .handler("app/functions/infra/selfDestruct.handler")
+//                .code(Code.fromAsset(
+//                        "./",
+//                        AssetOptions.builder()
+//                                .assetHashType(AssetHashType.SOURCE)
+//                                .ignoreMode(IgnoreMode.GLOB)
+//                                .exclude(List.of(
+//                                        ".git/**",
+//                                        "cdk.out/**",
+//                                        "cdk-submit-application.out/**",
+//                                        "cdk-submit-environment.out/**",
+//                                        "cdk-submit-delivery.out/**",
+//                                        "target/**",
+//                                        ".idea/**"
+//                                ))
+//                                .build()
+//                ))
+//                .timeout(Duration.minutes(15)) // Allow time for stack deletions
+//                .memorySize(256) // Reduced memory for Node.js runtime
+//                .role(this.functionRole)
+//                .environment(environment)
+//                .tracing(Tracing.ACTIVE)
+//                .logGroup(logGroup)
+//                .build();
 
         // Create EventBridge rule to trigger self-destruct every delayHours starting at a specific instant.
         // Suggested type for selfDestructStartDatetime: java.time.ZonedDateTime (ensure it is defined earlier).

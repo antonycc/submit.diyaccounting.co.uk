@@ -1,15 +1,10 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
 import co.uk.diyaccounting.submit.constructs.ApiLambda;
 import co.uk.diyaccounting.submit.constructs.ApiLambdaProps;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
-import java.util.List;
-import java.util.Optional;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Aspects;
 import software.amazon.awscdk.Duration;
@@ -19,31 +14,37 @@ import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.services.iam.Effect;
 import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.lambda.Function;
-import software.amazon.awscdk.services.logs.LogGroup;
+import software.amazon.awscdk.services.logs.ILogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.amazon.awscdk.services.s3.Bucket;
 import software.amazon.awscdk.services.s3.IBucket;
 import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
 
+import java.util.List;
+import java.util.Optional;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+
 public class HmrcStack extends Stack {
 
     public ApiLambdaProps hmrcAuthUrlGetLambdaProps;
     public Function hmrcAuthUrlGetLambda;
-    public LogGroup hmrcAuthUrlGetLambdaLogGroup;
+    public ILogGroup hmrcAuthUrlGetLambdaLogGroup;
 
     public ApiLambdaProps hmrcTokenPostLambdaProps;
     public Function hmrcTokenPostLambda;
-    public LogGroup hmrcTokenPostLambdaLogGroup;
+    public ILogGroup hmrcTokenPostLambdaLogGroup;
 
     public ApiLambdaProps hmrcVatReturnPostLambdaProps;
     public Function hmrcVatReturnPostLambda;
-    public LogGroup hmrcVatReturnPostLambdaLogGroup;
+    public ILogGroup hmrcVatReturnPostLambdaLogGroup;
 
     // New HMRC VAT GET Lambdas
     public ApiLambdaProps hmrcVatObligationGetLambdaProps;
     public Function hmrcVatObligationGetLambda;
-    public LogGroup hmrcVatObligationGetLambdaLogGroup;
+    public ILogGroup hmrcVatObligationGetLambdaLogGroup;
 
     //    public ApiLambdaProps hmrcVatLiabilityGetLambdaProps;
     //    public Function hmrcVatLiabilityGetLambda;
@@ -59,15 +60,15 @@ public class HmrcStack extends Stack {
 
     public ApiLambdaProps hmrcVatReturnGetLambdaProps;
     public Function hmrcVatReturnGetLambda;
-    public LogGroup hmrcVatReturnGetLambdaLogGroup;
+    public ILogGroup hmrcVatReturnGetLambdaLogGroup;
 
     public ApiLambdaProps receiptPostLambdaProps;
     public Function receiptPostLambda;
-    public LogGroup receiptPostLambdaLogGroup;
+    public ILogGroup receiptPostLambdaLogGroup;
 
     public ApiLambdaProps receiptGetLambdaProps;
     public Function receiptGetLambda;
-    public LogGroup receiptGetLambdaLogGroup;
+    public ILogGroup receiptGetLambdaLogGroup;
 
     public List<ApiLambdaProps> lambdaFunctionProps;
 
@@ -155,7 +156,7 @@ public class HmrcStack extends Stack {
                         .environment(authUrlHmrcLambdaEnv)
                         .timeout(Duration.millis(Long.parseLong("30000")))
                         .build());
-        this.hmrcAuthUrlGetLambdaProps = authUrlHmrcLambdaUrlOrigin.props;
+        this.hmrcAuthUrlGetLambdaProps = authUrlHmrcLambdaUrlOrigin.apiProps;
         this.hmrcAuthUrlGetLambda = authUrlHmrcLambdaUrlOrigin.lambda;
         this.hmrcAuthUrlGetLambdaLogGroup = authUrlHmrcLambdaUrlOrigin.logGroup;
         this.lambdaFunctionProps.add(this.hmrcAuthUrlGetLambdaProps);
@@ -194,7 +195,7 @@ public class HmrcStack extends Stack {
                         .environment(exchangeHmrcEnvBase)
                         .timeout(Duration.millis(Long.parseLong("30000")))
                         .build());
-        this.hmrcTokenPostLambdaProps = exchangeHmrcTokenLambdaUrlOrigin.props;
+        this.hmrcTokenPostLambdaProps = exchangeHmrcTokenLambdaUrlOrigin.apiProps;
         this.hmrcTokenPostLambda = exchangeHmrcTokenLambdaUrlOrigin.lambda;
         this.hmrcTokenPostLambdaLogGroup = exchangeHmrcTokenLambdaUrlOrigin.logGroup;
         this.lambdaFunctionProps.add(this.hmrcTokenPostLambdaProps);
@@ -244,7 +245,7 @@ public class HmrcStack extends Stack {
                         .environment(submitVatLambdaEnv)
                         .timeout(Duration.millis(Long.parseLong("60000")))
                         .build());
-        this.hmrcVatReturnPostLambdaProps = submitVatLambdaUrlOrigin.props;
+        this.hmrcVatReturnPostLambdaProps = submitVatLambdaUrlOrigin.apiProps;
         this.hmrcVatReturnPostLambda = submitVatLambdaUrlOrigin.lambda;
         this.hmrcVatReturnPostLambdaLogGroup = submitVatLambdaUrlOrigin.logGroup;
         this.lambdaFunctionProps.add(this.hmrcVatReturnPostLambdaProps);
@@ -273,7 +274,7 @@ public class HmrcStack extends Stack {
                         .environment(vatObligationLambdaEnv)
                         .timeout(Duration.millis(Long.parseLong("30000")))
                         .build());
-        this.hmrcVatObligationGetLambdaProps = hmrcVatObligationGetLambdaUrlOrigin.props;
+        this.hmrcVatObligationGetLambdaProps = hmrcVatObligationGetLambdaUrlOrigin.apiProps;
         this.hmrcVatObligationGetLambda = hmrcVatObligationGetLambdaUrlOrigin.lambda;
         this.hmrcVatObligationGetLambdaLogGroup = hmrcVatObligationGetLambdaUrlOrigin.logGroup;
         this.lambdaFunctionProps.add(this.hmrcVatObligationGetLambdaProps);
@@ -387,7 +388,7 @@ public class HmrcStack extends Stack {
                         .environment(vatReturnGetLambdaEnv)
                         .timeout(Duration.millis(Long.parseLong("30000")))
                         .build());
-        this.hmrcVatReturnGetLambdaProps = hmrcVatReturnGetLambdaUrlOrigin.props;
+        this.hmrcVatReturnGetLambdaProps = hmrcVatReturnGetLambdaUrlOrigin.apiProps;
         this.hmrcVatReturnGetLambda = hmrcVatReturnGetLambdaUrlOrigin.lambda;
         this.hmrcVatReturnGetLambdaLogGroup = hmrcVatReturnGetLambdaUrlOrigin.logGroup;
         this.lambdaFunctionProps.add(this.hmrcVatReturnGetLambdaProps);
@@ -427,7 +428,7 @@ public class HmrcStack extends Stack {
                         .environment(logReceiptLambdaEnv)
                         .timeout(Duration.millis(Long.parseLong("30000")))
                         .build());
-        this.receiptPostLambdaProps = logReceiptLambdaUrlOrigin.props;
+        this.receiptPostLambdaProps = logReceiptLambdaUrlOrigin.apiProps;
         this.receiptPostLambda = logReceiptLambdaUrlOrigin.lambda;
         this.receiptPostLambdaLogGroup = logReceiptLambdaUrlOrigin.logGroup;
         this.lambdaFunctionProps.add(this.receiptPostLambdaProps);
@@ -456,7 +457,7 @@ public class HmrcStack extends Stack {
                         .environment(myReceiptsLambdaEnv)
                         .timeout(Duration.millis(Long.parseLong("30000")))
                         .build());
-        this.receiptGetLambdaProps = myReceiptsLambdaUrlOrigin.props;
+        this.receiptGetLambdaProps = myReceiptsLambdaUrlOrigin.apiProps;
         this.receiptGetLambda = myReceiptsLambdaUrlOrigin.lambda;
         this.receiptGetLambdaLogGroup = myReceiptsLambdaUrlOrigin.logGroup;
         this.lambdaFunctionProps.add(this.receiptGetLambdaProps);
