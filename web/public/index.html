@@ -82,12 +82,15 @@
     <script type="module" src="widgets/view-source-link.js"></script>
     <script src="widgets/localstorage-viewer.js"></script>
     <script>
+      // In-memory user bundles state (list of bundleId[|EXPIRY=...] strings for compatibility with existing logic)
+      let __userBundles = [];
+
       async function initializeBundles() {
         const idToken = localStorage.getItem("cognitoIdToken");
         const userInfo = localStorage.getItem("userInfo");
         if (idToken && userInfo) {
           console.log("User is authenticated");
-          // Fetch user bundles from endpoint
+          // Fetch user bundles from endpoint (single source of truth)
           try {
             const response = await fetch("/api/v1/bundle", {
               headers: {
@@ -98,36 +101,29 @@
             if (response.ok) {
               const bundlesData = await response.json();
               if (bundlesData.bundles && Array.isArray(bundlesData.bundles)) {
-                // Store bundles in old format for compatibility
-                const bundleStrings = bundlesData.bundles.map((b) => {
-                  return b.expiry ? `${b.bundleId}|EXPIRY=${b.expiry}` : b.bundleId;
-                });
-                localStorage.setItem("userBundles", JSON.stringify(bundleStrings));
+                __userBundles = bundlesData.bundles.map((b) => (b?.expiry ? `${b.bundleId}|EXPIRY=${b.expiry}` : b.bundleId));
+              } else {
+                __userBundles = [];
               }
+            } else {
+              __userBundles = [];
             }
           } catch (err) {
             console.warn("Failed to fetch bundles:", err);
+            __userBundles = [];
           }
           renderDynamicActivities();
-          //renderActivitiesByBundle();
         } else {
           console.log("User is not authenticated");
+          __userBundles = [];
           renderDynamicActivities();
-          //renderActivitiesByBundle();
         }
       }
 
       // Activities rendering based on bundles
       function parseUserBundles() {
-        try {
-          const raw = localStorage.getItem("userBundles");
-          if (!raw) return [];
-          const arr = JSON.parse(raw);
-          if (!Array.isArray(arr)) return [];
-          return arr;
-        } catch (_e) {
-          return [];
-        }
+        // Return in-memory state; do not use localStorage for bundles
+        return Array.isArray(__userBundles) ? __userBundles : [];
       }
 
       function hasBundle(bundles, id) {

@@ -2,76 +2,69 @@
 
 import logger from "./logger.js";
 import { getBundlesStore } from "../functions/non-lambda-mocks/mockBundleStore.js";
+import * as dynamoDbBundleStore from "./dynamoDbBundleStore.js";
 
 const mockBundleStore = getBundlesStore();
-
-let __cognitoModule;
-let __cognitoClient;
-
-async function getCognitoModule() {
-  if (!__cognitoModule) {
-    __cognitoModule = await import("@aws-sdk/client-cognito-identity-provider");
-  }
-  return __cognitoModule;
-}
-
-async function getCognitoClient() {
-  if (!__cognitoClient) {
-    const mod = await getCognitoModule();
-    __cognitoClient = new mod.CognitoIdentityProviderClient({ region: process.env.AWS_REGION || "eu-west-2" });
-  }
-  return __cognitoClient;
-}
 
 export function isMockMode() {
   return String(process.env.TEST_BUNDLE_MOCK || "").toLowerCase() === "true" || process.env.TEST_BUNDLE_MOCK === "1";
 }
 
-export async function getUserBundles(userId, userPoolId) {
+/**
+ * Get user bundles from DynamoDB (or mock store in test mode)
+ * @param {string} userId - User ID (sub claim)
+ * @param {string} _userPoolId - (Deprecated, kept for backwards compatibility)
+ * @returns {Promise<Array<string>>} Array of bundle strings
+ */
+export async function getUserBundles(userId, _userPoolId) {
   if (isMockMode()) {
     const bundles = mockBundleStore.get(userId) || [];
     logger.info({ message: "[MOCK] Current user bundles:", bundles });
     return bundles;
   }
 
-  try {
-    const mod = await getCognitoModule();
-    const client = await getCognitoClient();
-    const getUserCommand = new mod.AdminGetUserCommand({
-      UserPoolId: userPoolId,
-      Username: userId,
-    });
-    const userResponse = await client.send(getUserCommand);
-    const bundlesAttribute = userResponse.UserAttributes?.find((attr) => attr.Name === "custom:bundles");
-    const bundles =
-      bundlesAttribute && bundlesAttribute.Value ? bundlesAttribute.Value.split("|").filter((bundle) => bundle.length > 0) : [];
-    logger.info({ message: "Current user bundles:", bundles });
-    return bundles;
-  } catch (error) {
-    logger.error({ message: "Error fetching user:", error: error.message });
-    throw error;
-  }
+  // Use DynamoDB as primary source
+  const bundles = await dynamoDbBundleStore.getUserBundles(userId);
+  logger.info({ message: "Current user bundles from DynamoDB:", bundles });
+  return bundles;
 }
 
-export async function updateUserBundles(userId, userPoolId, bundles) {
+/**
+ * Update user bundles in DynamoDB (or mock store in test mode)
+ * @param {string} userId - User ID (sub claim)
+ * @param {string} _userPoolId - (Deprecated, kept for backwards compatibility)
+ * @param {Array<string>} bundles - Array of bundle strings
+ */
+export async function updateUserBundles(userId, _userPoolId, bundles) {
   if (isMockMode()) {
     mockBundleStore.set(userId, bundles);
     logger.info({ message: `[MOCK] Updated bundles for user ${userId}`, bundles });
     return;
   }
 
-  try {
-    const mod = await getCognitoModule();
-    const client = await getCognitoClient();
-    const updateCommand = new mod.AdminUpdateUserAttributesCommand({
-      UserPoolId: userPoolId,
-      Username: userId,
-      UserAttributes: [{ Name: "custom:bundles", Value: bundles.join("|") }],
-    });
-    await client.send(updateCommand);
-    logger.info({ message: `Updated bundles for user ${userId}`, bundles });
-  } catch (error) {
-    logger.error({ message: "Error updating bundles for user:", error: error.message });
-    throw error;
+  // Update DynamoDB - this requires removing old bundles and adding new ones
+  // Get current bundles to determine what to remove
+  const currentBundles = await dynamoDbBundleStore.getUserBundles(userId);
+
+  // Parse bundle IDs from current bundles
+  const currentBundleIds = new Set(currentBundles.map((b) => b.split("|")[0]).filter((id) => id.length > 0));
+
+  // Parse bundle IDs from new bundles
+  const newBundleIds = new Set(bundles.map((b) => b.split("|")[0]).filter((id) => id.length > 0));
+
+  // Remove bundles that are no longer in the new list
+  const bundlesToRemove = [...currentBundleIds].filter((id) => !newBundleIds.has(id));
+  for (const bundleId of bundlesToRemove) {
+    await dynamoDbBundleStore.deleteBundle(userId, bundleId);
   }
+
+  // Add new bundles
+  for (const bundleStr of bundles) {
+    const bundleId = bundleStr.split("|")[0];
+    if (bundleId && !currentBundleIds.has(bundleId)) {
+      await dynamoDbBundleStore.putBundle(userId, bundleStr);
+    }
+  }
+
+  logger.info({ message: `Updated bundles for user ${userId} in DynamoDB`, bundles });
 }

@@ -8,7 +8,6 @@ import { decodeJwtToken } from "../../lib/jwtHelper.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
 import { getUserBundles, updateUserBundles, isMockMode } from "../../lib/bundleHelpers.js";
 import { getBundlesStore } from "../non-lambda-mocks/mockBundleStore.js";
-import * as dynamoDbBundleStore from "../../lib/dynamoDbBundleStore.js";
 
 const mockBundleStore = getBundlesStore();
 
@@ -186,10 +185,8 @@ export async function handler(event) {
     if (isMockMode()) {
       mockBundleStore.set(userId, currentBundles);
     } else {
-      // TODO: Put this on a queue for processing by a separate worker to improve latency
+      // Use DynamoDB as primary storage via updateUserBundles
       await updateUserBundles(userId, userPoolId, currentBundles);
-      // Shadow write to DynamoDB for future migration
-      await dynamoDbBundleStore.putBundle(userId, newBundle);
     }
 
     logger.info({ message: "Bundle granted to user:", userId, newBundle });
