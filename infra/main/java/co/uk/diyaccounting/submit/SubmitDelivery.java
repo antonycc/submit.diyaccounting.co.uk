@@ -182,7 +182,7 @@ public class SubmitDelivery {
                     app,
                     sharedNames.delSelfDestructStackId,
                     SelfDestructStack.SelfDestructStackProps.builder()
-                            .env(primaryEnv)
+                            .env(usEast1Env)
                             .crossRegionReferences(false)
                             .envName(envName)
                             .deploymentName(deploymentName)

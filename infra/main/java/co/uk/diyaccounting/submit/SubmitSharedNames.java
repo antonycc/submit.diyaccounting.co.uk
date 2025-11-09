@@ -325,7 +325,9 @@ public class SubmitSharedNames {
                 this.cognitoAuthUrlGetLambdaUrlPath,
                 "Get Cognito authentication URL",
                 "Returns the Cognito OAuth2 authorization URL for user login",
-                "getCognitoAuthUrl"));
+                "getCognitoAuthUrl",
+                List.of(
+                    new ApiParameter("state", "query", true, "Opaque state value to mitigate CSRF attacks"))));
 
         this.cognitoTokenPostLambdaHttpMethod = HttpMethod.POST;
         this.cognitoTokenPostLambdaUrlPath = "/api/v1/cognito/token";
@@ -373,7 +375,10 @@ public class SubmitSharedNames {
                 this.hmrcAuthUrlGetLambdaUrlPath,
                 "Get HMRC authentication URL",
                 "Returns the HMRC OAuth2 authorization URL for accessing HMRC APIs",
-                "getHmrcAuthUrl"));
+                "getHmrcAuthUrl",
+                List.of(
+                    new ApiParameter("state", "query", true, "Opaque state value to mitigate CSRF attacks"),
+                    new ApiParameter("scope", "query", false, "OAuth scopes: write:vat, read:vat or both"))));
 
         this.hmrcTokenPostLambdaHttpMethod = HttpMethod.POST;
         this.hmrcTokenPostLambdaUrlPath = "/api/v1/hmrc/token";
@@ -411,7 +416,9 @@ public class SubmitSharedNames {
                 this.hmrcVatReturnPostLambdaUrlPath,
                 "Submit VAT return to HMRC",
                 "Submits a VAT return to HMRC on behalf of the authenticated user",
-                "submitVatReturn"));
+                "submitVatReturn",
+                List.of(
+                    new ApiParameter("Gov-Test-Scenario", "header", false, "HMRC sandbox test scenario"))));
 
         this.hmrcVatObligationGetLambdaHttpMethod = HttpMethod.GET;
         this.hmrcVatObligationGetLambdaUrlPath = "/api/v1/hmrc/vat/obligation";
@@ -434,8 +441,9 @@ public class SubmitSharedNames {
                 "getVatObligations",
             List.of(
                 new ApiParameter("vrn", "query", true, "VAT Registration Number (9 digits)"),
-                new ApiParameter("from", "query", true, "The VAT period key at the start of te search range"),
-                new ApiParameter("to", "query", true, "The VAT period key at the end of the search range"),
+                new ApiParameter("from", "query", false, "From date in YYYY-MM-DD format"),
+                new ApiParameter("to", "query", false, "To date in YYYY-MM-DD format"),
+                new ApiParameter("status", "query", false, "Obligation status: O (Open) or F (Fulfilled)"),
                 new ApiParameter("Gov-Test-Scenario", "query", false, "HMRC sandbox test scenario"))));
 
         this.hmrcVatReturnGetLambdaHttpMethod = HttpMethod.GET;
@@ -496,7 +504,10 @@ public class SubmitSharedNames {
                 this.receiptGetLambdaUrlPath,
                 "Retrieve stored receipts",
                 "Retrieves previously stored receipts for the authenticated user",
-                "getReceipts"));
+                "getReceipts",
+                List.of(
+                    new ApiParameter("name", "query", false, "Receipt file name including .json"),
+                    new ApiParameter("key", "query", false, "Full S3 object key under receipts/{sub}/"))));
         publishedApiLambdas.add(new PublishedLambda(
                 this.receiptGetLambdaHttpMethod,
                 this.receiptGetByNameLambdaUrlPath,
@@ -575,7 +586,10 @@ public class SubmitSharedNames {
                 this.bundleDeleteLambdaUrlPath,
                 "Delete bundle",
                 "Deletes a bundle for the authenticated user",
-                "deleteBundle"));
+                "deleteBundle",
+                List.of(
+                    new ApiParameter("bundleId", "query", false, "The bundle id (or name) to delete"),
+                    new ApiParameter("removeAll", "query", false, "When true, removes all bundles"))));
         publishedApiLambdas.add(new PublishedLambda(
                 this.bundleDeleteLambdaHttpMethod,
                 "/api/v1/bundle/{id}",
