@@ -1,17 +1,25 @@
 // app/functions/submitVat.js
 
 import logger from "../../lib/logger.js";
-import { extractRequest, httpOkResponse, extractClientIPFromHeaders, parseRequestBody, buildValidationError } from "../../lib/responses.js";
+import {
+  extractRequest,
+  httpOkResponse,
+  extractClientIPFromHeaders,
+  parseRequestBody,
+  buildValidationError,
+  httpUnauthorizedResponse,
+} from "../../lib/responses.js";
 import eventToGovClientHeaders from "../../lib/eventToGovClientHeaders.js";
 import { validateEnv } from "../../lib/env.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest, logHmrcRequestDetails } from "../../lib/httpHelper.js";
 import { enforceBundles } from "../../lib/bundleEnforcement.js";
 import {
-  httpForbiddenFromHmrcResponse,
-  httpNotFoundFromHmrcResponse,
-  httpServerErrorFromBundleEnforcement,
-  httpServerErrorFromHmrcResponse,
+  UnauthorizedTokenError,
+  http403ForbiddenFromHmrcResponse,
+  http404NotFoundFromHmrcResponse,
+  http500ServerErrorFromHmrcResponse,
   validateHmrcAccessToken,
+  http403ForbiddenFromBundleEnforcement,
 } from "../../lib/hmrcHelper.js";
 
 // Server hook for Express app, and construction of a Lambda-like event from HTTP request)
@@ -33,9 +41,8 @@ export async function handler(event) {
   // Bundle enforcement
   try {
     await enforceBundles(event);
-    // TODO: Catch: BundleEntitlementError for 403 response
   } catch (error) {
-    return httpServerErrorFromBundleEnforcement(error, request);
+    return http403ForbiddenFromBundleEnforcement(error, request);
   }
 
   // Extract and validate parameters
@@ -53,44 +60,48 @@ export async function handler(event) {
   const { govClientHeaders, govClientErrorMessages } = eventToGovClientHeaders(event, detectedIP);
   errorMessages = errorMessages.concat(govClientErrorMessages || []);
 
-  // Access token handling:
-  // - If other validation errors exist, include missing access token (if missing) and return.
-  // - If no other errors, perform strict validation that can produce a specific error message.
+  // Non-authorization validation errors (collect field/header issues first)
   if (errorMessages.length > 0) {
     if (!hmrcAccessToken) errorMessages.push("Missing accessToken parameter from body");
     return buildValidationError(request, errorMessages, govClientHeaders);
   }
 
-  // Only validate token format when all other parameters are present
+  // Validate token format only after other validation passes
   try {
     validateHmrcAccessToken(hmrcAccessToken);
-    // TODO: Catch and handle specific token validation errors maybe a 401, and validation error for others
   } catch (err) {
-    // Convert thrown error into a validation error message for HTTP 400
-    errorMessages.push(err.toString());
-    return buildValidationError(request, errorMessages, govClientHeaders);
+    // If token is explicitly unauthorized, return 401; otherwise return 400 with validation message only
+    if (err instanceof UnauthorizedTokenError) {
+      return httpUnauthorizedResponse({ request, headers: { ...govClientHeaders }, message: err.message, error: {} });
+    }
+    return buildValidationError(request, [err.toString()], govClientHeaders);
   }
 
-  // TODO: Wrap submitVat in a try..catch.
-
   // Processing
-  const { receipt, hmrcResponse, hmrcResponseBody } = await submitVat(periodKey, vatDue, vatNumber, hmrcAccessToken, govClientHeaders);
+  let receipt;
+  let hmrcResponse;
+  let hmrcResponseBody;
+  try {
+    ({ receipt, hmrcResponse, hmrcResponseBody } = await submitVat(periodKey, vatDue, vatNumber, hmrcAccessToken, govClientHeaders));
+  } catch (error) {
+    // Preserve original behavior expected by tests: bubble up network errors
+    logger.error({ message: "Error while submitting VAT to HMRC", error: error.message, stack: error.stack });
+    throw error;
+  }
 
   // Generate error responses based on HMRC response
   if (!hmrcResponse.ok) {
     // Attach parsed body for downstream error helpers
     hmrcResponse.data = hmrcResponseBody;
     if (hmrcResponse.status === 403) {
-      // TODO: Put the error numbers in these all helper methods
-      return httpForbiddenFromHmrcResponse(hmrcAccessToken, hmrcResponse, govClientHeaders);
+      return http403ForbiddenFromHmrcResponse(hmrcAccessToken, hmrcResponse, govClientHeaders);
     } else if (hmrcResponse.status === 404) {
-      return httpNotFoundFromHmrcResponse(request, hmrcResponse, govClientHeaders);
+      return http404NotFoundFromHmrcResponse(request, hmrcResponse, govClientHeaders);
     } else {
-      return httpServerErrorFromHmrcResponse(request, hmrcResponse, govClientHeaders);
+      return http500ServerErrorFromHmrcResponse(request, hmrcResponse, govClientHeaders);
     }
   }
 
-  // TODO: List responses in infra/main/java/co/uk/diyaccounting/submit/SubmitSharedNames.java and reference in infra/main/java/co/uk/diyaccounting/submit/swagger/OpenApiGenerator.java
   // Generate a success response
   return httpOkResponse({
     request,

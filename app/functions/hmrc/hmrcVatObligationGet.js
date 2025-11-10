@@ -14,9 +14,9 @@ import { hmrcVatGet, shouldUseStub, getStubData } from "../../lib/hmrcVatApi.js"
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
 import {
   extractHmrcAccessTokenFromLambdaEvent,
-  httpForbiddenFromHmrcResponse,
-  httpNotFoundFromHmrcResponse,
-  httpServerErrorFromHmrcResponse,
+  http403ForbiddenFromHmrcResponse,
+  http404NotFoundFromHmrcResponse,
+  http500ServerErrorFromHmrcResponse,
   validateHmrcAccessToken,
 } from "../../lib/hmrcHelper.js";
 
@@ -94,11 +94,11 @@ export async function handler(event) {
       // Generate error responses based on HMRC response
       if (!hmrcResponse.ok) {
         if (hmrcResponse.status === 403) {
-          return httpForbiddenFromHmrcResponse(hmrcAccessToken, hmrcResponse, govClientHeaders);
+          return http403ForbiddenFromHmrcResponse(hmrcAccessToken, hmrcResponse, govClientHeaders);
         } else if (hmrcResponse.status === 404) {
-          return httpNotFoundFromHmrcResponse(request, hmrcResponse, govClientHeaders);
+          return http404NotFoundFromHmrcResponse(request, hmrcResponse, govClientHeaders);
         } else {
-          return httpServerErrorFromHmrcResponse(request, hmrcResponse, govClientHeaders);
+          return http500ServerErrorFromHmrcResponse(request, hmrcResponse, govClientHeaders);
         }
       }
 

@@ -32,6 +32,26 @@ export function httpServerErrorResponse({ request, headers, message, error }) {
   });
 }
 
+export function httpForbiddenResponse({ request, headers, message, error }) {
+  return httpResponse({
+    statusCode: 403,
+    request,
+    headers,
+    data: { message, ...error },
+    levelledLogger: logger.warn.bind(logger),
+  });
+}
+
+export function httpUnauthorizedResponse({ request, headers, message, error }) {
+  return httpResponse({
+    statusCode: 401,
+    request,
+    headers,
+    data: { message, ...error },
+    levelledLogger: logger.warn.bind(logger),
+  });
+}
+
 function httpResponse({ statusCode, headers, data, request, levelledLogger }) {
   const response = {
     statusCode: statusCode,
