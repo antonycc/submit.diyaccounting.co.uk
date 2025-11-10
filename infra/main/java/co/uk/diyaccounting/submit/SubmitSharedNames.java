@@ -301,7 +301,7 @@ public class SubmitSharedNames {
         this.ecrPublishRoleName = "%s-ecr-publish-role".formatted(appResourceNamePrefix);
         this.ue1EcrRepositoryArn = "arn:aws:ecr:us-east-1:%s:repository/%s-ecr"
                 .formatted(props.awsAccount, this.appResourceNamePrefix);
-        this.ue1EcrRepositoryName = "%s-ecr".formatted(this.appResourceNamePrefix);
+        this.ue1EcrRepositoryName = "%s-ecr-us-east-1".formatted(this.appResourceNamePrefix);
         this.ue1EcrLogGroupName = "/aws/ecr/%s-us-east-1".formatted(this.appResourceNamePrefix);
         this.ue1EcrPublishRoleName = "%s-ecr-publish-role-us-east-1".formatted(appResourceNamePrefix);
 
