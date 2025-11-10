@@ -843,7 +843,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
+          aws-region: us-east-1
           role-chaining: false
           audience: sts.amazonaws.com
           role-skip-session-tagging: true
@@ -854,17 +854,17 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
+          aws-region: us-east-1
           role-chaining: true
           audience: sts.amazonaws.com
           role-skip-session-tagging: true
           output-credentials: true
           retry-max-attempts: 3
 
-      - name: Login to Amazon ECR
+      - name: Login to Amazon ECR in us-east-1
         shell: bash
         run: |
-          aws ecr get-login-password --region ${{ env.AWS_REGION }} \
+          aws ecr get-login-password --region us-east-1 \
             | docker login \
                 --username AWS \
                 --password-stdin "${ECR_REPOSITORY_BASE_URL?}/${ECR_REPOSITORY_NAME?}" \
@@ -880,7 +880,7 @@ jobs:
           REPO_URI="${ECR_REPOSITORY_BASE_URL?}/${ECR_REPOSITORY_NAME?}"
           REPO_NAME="${REPO_URI##*/}"
           echo "Checking if image with tag ${{ github.sha }} exists in $REPO_NAME"
-          if aws ecr describe-images --repository-name "$REPO_NAME" --image-ids imageTag="${{ github.sha }}" >/dev/null 2>&1; then
+          if aws ecr describe-images --region us-east-1 --repository-name "$REPO_NAME" --image-ids imageTag="${{ github.sha }}" >/dev/null 2>&1; then
             echo "exists=true" >> "$GITHUB_OUTPUT"
           else
             echo "exists=false" >> "$GITHUB_OUTPUT"

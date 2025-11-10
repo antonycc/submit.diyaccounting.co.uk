@@ -152,7 +152,7 @@ public class OpenApiGenerator {
                         switch (p.name) {
                             case "vrn" -> {
                                 schema.put("example", "176540158");
-                                schema.put("pattern", "^\\\\d{9}$");
+                                schema.put("pattern", "^\\d{9}$");
                             }
                             case "from" -> schema.put("example", "2025-01-01");
                             case "to" -> schema.put("example", "2025-03-31");
