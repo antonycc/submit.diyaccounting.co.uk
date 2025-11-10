@@ -82,7 +82,19 @@ public class PublishStack extends Stack {
     }
 
     public PublishStack(final Construct scope, final String id, final PublishStackProps props) {
-        super(scope, id, props);
+        this(scope, id, null, props);
+    }
+
+    public PublishStack(final Construct scope, final String id, final StackProps stackProps, final PublishStackProps props) {
+        super(scope, id, StackProps.builder()
+            .env(props.getEnv()) // enforce region from props
+            .description(stackProps != null ? stackProps.getDescription() : null)
+            .stackName(stackProps != null ? stackProps.getStackName() : null)
+            .terminationProtection(stackProps != null ? stackProps.getTerminationProtection() : null)
+            .analyticsReporting(stackProps != null ? stackProps.getAnalyticsReporting() : null)
+            .synthesizer(stackProps != null ? stackProps.getSynthesizer() : null)
+            .crossRegionReferences(stackProps != null ? stackProps.getCrossRegionReferences() : null)
+            .build());
 
         // Apply cost allocation tags for all resources in this stack
         Tags.of(this).add("Environment", props.envName());
