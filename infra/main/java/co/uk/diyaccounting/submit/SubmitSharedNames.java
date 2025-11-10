@@ -76,7 +76,7 @@ public class SubmitSharedNames {
     public String distributionAccessLogGroupName;
     public String ew2SelfDestructLogGroupName;
     public String ue1SelfDestructLogGroupName;
-    public String webDeploymentLogGroupName;
+    //public String webDeploymentLogGroupName;
     public String apiAccessLogGroupName;
 
     public String envDashedDomainName;
@@ -284,7 +284,7 @@ public class SubmitSharedNames {
                 "/aws/lambda/%s-self-destruct-eu-west-2".formatted(this.envResourceNamePrefix);
         this.ue1SelfDestructLogGroupName =
                 "/aws/lambda/%s-self-destruct-us-east-1".formatted(this.envResourceNamePrefix);
-        this.webDeploymentLogGroupName = "/deployment/%s-web-deployment".formatted(this.envResourceNamePrefix);
+        //this.webDeploymentLogGroupName = "/deployment/%s-web-deployment".formatted(this.envResourceNamePrefix);
         this.apiAccessLogGroupName = "/aws/apigw/%s/access".formatted(this.envResourceNamePrefix);
 
         this.appResourceNamePrefix = "%s-app".formatted(generateResourceNamePrefix(this.deploymentDomainName));

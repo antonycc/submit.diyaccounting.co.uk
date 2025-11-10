@@ -15,8 +15,6 @@ import software.amazon.awscdk.Tags;
 import software.amazon.awscdk.services.cloudfront.Distribution;
 import software.amazon.awscdk.services.cloudfront.DistributionAttributes;
 import software.amazon.awscdk.services.cloudfront.IDistribution;
-import software.amazon.awscdk.services.logs.ILogGroup;
-import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.amazon.awscdk.services.s3.Bucket;
 import software.amazon.awscdk.services.s3.IBucket;
@@ -29,7 +27,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
-import java.util.Objects;
 
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.Kind.warnf;
@@ -192,14 +189,14 @@ public class PublishStack extends Stack {
         }
 
         // Lookup Log Group for web deployment
-        ILogGroup webDeploymentLogGroup = LogGroup.fromLogGroupArn(
-                this,
-                props.resourceNamePrefix() + "-ImportedWebDeploymentLogGroup",
-                "arn:aws:logs:%s:%s:log-group:%s"
-                        .formatted(
-                                Objects.requireNonNull(props.getEnv()).getRegion(),
-                                props.getEnv().getAccount(),
-                                props.sharedNames().webDeploymentLogGroupName));
+        //ILogGroup webDeploymentLogGroup = LogGroup.fromLogGroupArn(
+        //        this,
+        //        props.resourceNamePrefix() + "-ImportedWebDeploymentLogGroup",
+        //        "arn:aws:logs:%s:%s:log-group:%s"
+        //                .formatted(
+        //                        Objects.requireNonNull(props.getEnv()).getRegion(),
+        //                        props.getEnv().getAccount(),
+        //                        props.sharedNames().webDeploymentLogGroupName));
 
         // Deploy the web website files to the web website bucket and invalidate distribution
         // Resolve the document root path from props to avoid path mismatches between generation and deployment
@@ -232,7 +229,8 @@ public class PublishStack extends Stack {
                         "/submit.env",
                         "/submit.deployment"))
                 .retainOnDelete(true)
-                .logGroup(webDeploymentLogGroup)
+                //.logGroup(webDeploymentLogGroup)
+                .logRetention(RetentionDays.ONE_DAY)
                 .expires(Expiration.after(Duration.minutes(5)))
                 .prune(false)
                 .memoryLimit(1024)

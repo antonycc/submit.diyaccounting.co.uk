@@ -18,7 +18,7 @@ import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 public class ObservabilityUE1Stack extends Stack {
 
     public final LogGroup selfDestructLogGroup;
-    public final LogGroup webDeploymentLogGroup;
+    //public final LogGroup webDeploymentLogGroup;
     //public final IBucket distributionLogsBucket;
     public final LogGroup distributionAccessLogGroup;
 
@@ -72,12 +72,12 @@ public class ObservabilityUE1Stack extends Stack {
             .build());
 
         // Log group for web deployment operations with 1-day retention
-        this.webDeploymentLogGroup = LogGroup.Builder.create(
-                        this, props.resourceNamePrefix() + "-WebDeploymentLogGroup")
-                .logGroupName(props.sharedNames().webDeploymentLogGroupName)
-                .retention(RetentionDays.ONE_DAY)
-                .removalPolicy(RemovalPolicy.DESTROY)
-                .build();
+        //this.webDeploymentLogGroup = LogGroup.Builder.create(
+        //                this, props.resourceNamePrefix() + "-WebDeploymentLogGroup")
+        //        .logGroupName(props.sharedNames().webDeploymentLogGroupName)
+        //        .retention(RetentionDays.ONE_DAY)
+        //        .removalPolicy(RemovalPolicy.DESTROY)
+        //        .build();
 
         // Log Group for CloudFront access logs
         this.distributionAccessLogGroup = LogGroup.Builder.create(
@@ -115,7 +115,7 @@ public class ObservabilityUE1Stack extends Stack {
         Aspects.of(this).add(new SetAutoDeleteJobLogRetentionAspect(props.deploymentName(), RetentionDays.THREE_DAYS));
 
         // Outputs for Observability resources
-        cfnOutput(this, "WebDeploymentLogGroupArn", this.webDeploymentLogGroup.getLogGroupArn());
+        //cfnOutput(this, "WebDeploymentLogGroupArn", this.webDeploymentLogGroup.getLogGroupArn());
         cfnOutput(this, "SelfDestructLogGroupArn", this.selfDestructLogGroup.getLogGroupArn());
     }
 }

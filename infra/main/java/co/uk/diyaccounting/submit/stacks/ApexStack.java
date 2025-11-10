@@ -1,14 +1,7 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
-import java.nio.file.Paths;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Aspects;
 import software.amazon.awscdk.AssetHashType;
@@ -37,8 +30,6 @@ import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.iam.ServicePrincipal;
 import software.amazon.awscdk.services.lambda.FunctionUrlAuthType;
 import software.amazon.awscdk.services.lambda.Permission;
-import software.amazon.awscdk.services.logs.ILogGroup;
-import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.amazon.awscdk.services.route53.HostedZone;
 import software.amazon.awscdk.services.route53.HostedZoneAttributes;
@@ -50,6 +41,13 @@ import software.amazon.awscdk.services.s3.assets.AssetOptions;
 import software.amazon.awscdk.services.s3.deployment.BucketDeployment;
 import software.amazon.awscdk.services.s3.deployment.Source;
 import software.constructs.Construct;
+
+import java.nio.file.Paths;
+import java.util.List;
+import java.util.Map;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 public class ApexStack extends Stack {
 
@@ -220,14 +218,14 @@ public class ApexStack extends Stack {
         this.aliasRecordV6DomainName = this.aliasRecordDomainName;
 
         // Lookup Log Group for web deployment
-        ILogGroup webDeploymentLogGroup = LogGroup.fromLogGroupArn(
-                this,
-                props.resourceNamePrefix() + "-ImportedWebDeploymentLogGroup",
-                "arn:aws:logs:%s:%s:log-group:%s"
-                        .formatted(
-                                Objects.requireNonNull(props.getEnv()).getRegion(),
-                                props.getEnv().getAccount(),
-                                props.sharedNames().webDeploymentLogGroupName));
+//        ILogGroup webDeploymentLogGroup = LogGroup.fromLogGroupArn(
+//                this,
+//                props.resourceNamePrefix() + "-ImportedWebDeploymentLogGroup",
+//                "arn:aws:logs:%s:%s:log-group:%s"
+//                        .formatted(
+//                                Objects.requireNonNull(props.getEnv()).getRegion(),
+//                                props.getEnv().getAccount(),
+//                                props.sharedNames().webDeploymentLogGroupName));
 
         // Deploy the web website files to the web website bucket and invalidate distribution
         // Resolve the document root path from props to avoid path mismatches between generation and deployment
@@ -243,7 +241,8 @@ public class ApexStack extends Stack {
                 .distribution(distribution)
                 .distributionPaths(List.of("/index.html"))
                 .retainOnDelete(true)
-                .logGroup(webDeploymentLogGroup)
+                //.logGroup(webDeploymentLogGroup)
+                .logRetention(RetentionDays.ONE_DAY)
                 .expires(Expiration.after(Duration.minutes(5)))
                 .prune(false)
                 .memoryLimit(1024)
