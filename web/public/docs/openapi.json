@@ -374,7 +374,7 @@
           "schema" : {
             "type" : "string",
             "example" : "176540158",
-            "pattern" : "^\\\\d{9}$"
+            "pattern" : "^\\d{9}$"
           }
         }, {
           "name" : "from",
@@ -483,7 +483,7 @@
           "schema" : {
             "type" : "string",
             "example" : "176540158",
-            "pattern" : "^\\\\d{9}$"
+            "pattern" : "^\\d{9}$"
           }
         }, {
           "name" : "Gov-Test-Scenario",
