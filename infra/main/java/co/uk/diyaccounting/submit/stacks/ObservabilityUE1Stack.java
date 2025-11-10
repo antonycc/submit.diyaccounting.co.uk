@@ -69,7 +69,15 @@ public class ObservabilityUE1Stack extends Stack {
     }
 
     public ObservabilityUE1Stack(Construct scope, String id, StackProps stackProps, ObservabilityUE1StackProps props) {
-        super(scope, id, stackProps);
+        super(scope, id, StackProps.builder()
+            .env(props.getEnv()) // enforce region from props
+            .description(stackProps != null ? stackProps.getDescription() : null)
+            .stackName(stackProps != null ? stackProps.getStackName() : null)
+            .terminationProtection(stackProps != null ? stackProps.getTerminationProtection() : null)
+            .analyticsReporting(stackProps != null ? stackProps.getAnalyticsReporting() : null)
+            .synthesizer(stackProps != null ? stackProps.getSynthesizer() : null)
+            .crossRegionReferences(stackProps != null ? stackProps.getCrossRegionReferences() : null)
+            .build());
 
         // Log group for web deployment operations with 1-day retention
         this.webDeploymentLogGroup = LogGroup.Builder.create(

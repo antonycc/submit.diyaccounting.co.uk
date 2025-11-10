@@ -188,6 +188,7 @@ public class SelfDestructStack extends Stack {
         putIfNotNull(selfDestructLambdaEnv, "AWS_XRAY_TRACING_NAME", functionName);
         if (props.isApplicationStack()) {
             putIfNotNull(selfDestructLambdaEnv, "DEV_STACK_NAME", props.sharedNames().devStackId);
+            putIfNotNull(selfDestructLambdaEnv, "DEV_UE1_STACK_NAME", props.sharedNames().ue1DevStackId);
             putIfNotNull(selfDestructLambdaEnv, "AUTH_STACK_NAME", props.sharedNames().authStackId);
             putIfNotNull(selfDestructLambdaEnv, "HMRC_STACK_NAME", props.sharedNames().hmrcStackId);
             putIfNotNull(selfDestructLambdaEnv, "ACCOUNT_STACK_NAME", props.sharedNames().accountStackId);
