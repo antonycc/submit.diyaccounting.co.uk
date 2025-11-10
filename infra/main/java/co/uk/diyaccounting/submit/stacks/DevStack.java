@@ -72,7 +72,15 @@ public class DevStack extends Stack {
     }
 
     public DevStack(Construct scope, String id, StackProps stackProps, DevStackProps props) {
-        super(scope, id, stackProps);
+        super(scope, id, StackProps.builder()
+            .env(props.getEnv()) // enforce region from props
+            .description(stackProps != null ? stackProps.getDescription() : null)
+            .stackName(stackProps != null ? stackProps.getStackName() : null)
+            .terminationProtection(stackProps != null ? stackProps.getTerminationProtection() : null)
+            .analyticsReporting(stackProps != null ? stackProps.getAnalyticsReporting() : null)
+            .synthesizer(stackProps != null ? stackProps.getSynthesizer() : null)
+            .crossRegionReferences(stackProps != null ? stackProps.getCrossRegionReferences() : null)
+            .build());
 
         infof(
                 "Creating DevStack for domain: %s (dashed: %s) in region: %s",
