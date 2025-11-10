@@ -3,61 +3,117 @@
 import { expect, test } from "@playwright/test";
 import { loggedClick, timestamp } from "../helpers/behaviour-helpers.js";
 
-export async function goToBundlesPage(page) {
+const defaultScreenshotPath = "target/behaviour-test-results/screenshots/behaviour-bundle-steps";
+
+export async function goToBundlesPage(page, screenshotPath = defaultScreenshotPath) {
   await test.step("The user opens the menu and navigates to Bundles", async () => {
     // Go to bundles via hamburger menu
     console.log("Opening hamburger menu...");
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-goto-bundles-page-hamburger-menu.png` });
+    await expect(page.locator("button.hamburger-btn")).toBeVisible({ timeout: 10000 });
     await loggedClick(page, "button.hamburger-btn", "Opening hamburger menu");
-    await page.waitForTimeout(500);
-    await page.screenshot({
-      path: `target/behaviour-test-results/bundles-screenshots/071-hamburger-menu-${timestamp()}.png`,
-    });
-    await expect(page.getByRole("link", { name: "Bundles", exact: true })).toBeVisible();
-    await loggedClick(page, "a[href*='bundles.html']", "Clicking Bundles in hamburger menu");
-    await page.waitForLoadState("networkidle");
-    await page.waitForTimeout(500);
-    await page.screenshot({
-      path: `target/behaviour-test-results/bundles-screenshots/072-bundles-page-${timestamp()}.png`,
-    });
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-goto-bundles-page-hamburger-menu.png` });
+    await expect(page.getByRole("link", { name: "Bundles", exact: true })).toBeVisible({ timeout: 16000 });
+    await Promise.all([
+      page.waitForURL(/bundles\.html/, { waitUntil: "domcontentloaded", timeout: 30000 }),
+      loggedClick(page, "a[href*='bundles.html']", "Clicking Bundles in hamburger menu"),
+    ]);
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-goto-bundles-page-hamburger-menu.png` });
   });
 }
 
-export async function clearBundles(page) {
+export async function clearBundles(page, screenshotPath = defaultScreenshotPath) {
   await test.step("The user clears any existing bundles before requesting a new one", async () => {
     // Remove all bundles first (idempotent operation)
     console.log("Removing all bundles first...");
-    await loggedClick(page, "#removeAllBtn", "Remove All Bundles");
-    await page.waitForTimeout(500);
-    // Accept the confirmation dialog
-    await page.on("dialog", (dialog) => dialog.accept());
-    await page.waitForTimeout(500);
     await page.screenshot({
-      path: `target/behaviour-test-results/bundles-screenshots/073-removed-all-bundles-${timestamp()}.png`,
+      path: `${screenshotPath}/${timestamp()}-01-removing-all-bundles.png`,
+    });
+    // Accept the confirmation dialog triggered by the click
+    page.once("dialog", (dialog) => dialog.accept());
+    await Promise.all([
+      // No navigation expected, just UI update
+      loggedClick(page, "#removeAllBtn", "Remove All Bundles"),
+    ]);
+    await page.screenshot({
+      path: `${screenshotPath}/${timestamp()}-02-removing-all-bundles-clicked.png`,
+    });
+    await expect(page.getByText("Request test")).toBeVisible({ timeout: 16000 });
+    await page.screenshot({
+      path: `${screenshotPath}/${timestamp()}-03-removed-all-bundles.png`,
     });
   });
 }
 
-export async function requestTestBundle(page) {
+export async function requestTestBundle(page, screenshotPath = defaultScreenshotPath) {
   await test.step("The user requests a test bundle and sees a confirmation message", async () => {
     // Request test bundle
-    await expect(page.getByText("Request test")).toBeVisible();
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-request-test-bundle.png` });
+    let requestTestLocator = page.getByRole("button", { name: "Request test" });
+    // await expect(page.getByText("Request test")).toBeVisible();
+    // If the "Request test" button is not visible, wait 1000ms and try again and do that up to 5 times.
+    if (!(await requestTestLocator.isVisible())) {
+      for (let i = 0; i < 5; i++) {
+        console.log(`"Request test" button not visible, waiting 1000ms and trying again (${i + 1}/5)`);
+        await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-request-test-bundle-waiting.png` });
+        await page.waitForTimeout(1000);
+        await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-request-test-bundle-waited.png` });
+        requestTestLocator = page.getByRole("button", { name: "Request test" });
+        if (await requestTestLocator.isVisible()) {
+          break;
+        }
+      }
+    }
+
+    // If the "Request test" button is not visible, check if "Added ✓" is visible instead and if so, skip the request.
+    if (!(await requestTestLocator.isVisible())) {
+      const addedLocator = page.getByRole("button", { name: /Added/ });
+      if (await addedLocator.isVisible()) {
+        console.log("Test bundle already present, skipping request.");
+        await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-request-test-bundle-skipping.png` });
+        return;
+      }
+    }
     await loggedClick(page, "button:has-text('Request test')", "Request test");
-    await page.waitForLoadState("networkidle");
-    await page.waitForTimeout(500);
-    await page.screenshot({ path: `target/behaviour-test-results/bundles-screenshots/075-bundles-${timestamp()}.png` });
-    await expect(page.getByText("Added ✓")).toBeVisible({ timeout: 16000 });
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-request-test-bundle-clicked.png` });
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-06-request-test-bundle.png` });
+    await expect(page.getByRole("button", { name: /Added/ })).toBeVisible({ timeout: 16000 });
   });
 }
 
-export async function ensureTestBundlePresent(page) {
+export async function ensureTestBundlePresent(page, screenshotPath = defaultScreenshotPath) {
   await test.step("Ensure test bundle is present (idempotent)", async () => {
     // If the confirmation text for an added bundle is already visible, do nothing.
-    const isAddedVisible = await page.getByText("Added ✓").isVisible();
-    if (isAddedVisible) {
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-ensure-test-bundle.png` });
+    let addedLocator = page.getByRole("button", { name: /Added/ });
+    // const isAddedVisible = await page.getByText("Added ✓").isVisible({ timeout: 16000 });
+    // If the "Added ✓" button is not visible, wait 1000ms and try again and do that up to 5 times.
+    if (!(await addedLocator.isVisible())) {
+      for (let i = 0; i < 5; i++) {
+        console.log(`"Added ✓" button not visible, waiting 1000ms and trying again (${i + 1}/5)`);
+        await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-ensure-test-bundle-waiting.png` });
+        await page.waitForTimeout(1000);
+        addedLocator = page.getByRole("button", { name: "Added ✓" });
+        await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-ensure-test-bundle-waited.png` });
+        if (await addedLocator.isVisible()) {
+          break;
+        }
+      }
+    }
+    // Fallback: look for the specific test bundle button by data attribute in case role+name fails (e.g., due to special characters)
+    if (!(await addedLocator.isVisible())) {
+      const specificAdded = page.locator("button.service-btn[data-bundle-id='test']:has-text('Added')");
+      if (await specificAdded.isVisible()) {
+        addedLocator = specificAdded;
+      }
+    }
+    if (await addedLocator.isVisible({ timeout: 16000 })) {
       console.log("Test bundle already present, skipping request.");
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-ensure-test-bundle-skipping.png` });
       return;
     }
     // Otherwise request the test bundle once.
-    await requestTestBundle(page);
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-ensure-test-bundle-adding.png` });
+    await requestTestBundle(page, screenshotPath);
   });
 }

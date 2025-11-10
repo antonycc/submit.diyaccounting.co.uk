@@ -22,7 +22,7 @@ import software.amazon.awscdk.services.dynamodb.Table;
 import software.amazon.awscdk.services.iam.Effect;
 import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.lambda.Function;
-import software.amazon.awscdk.services.logs.LogGroup;
+import software.amazon.awscdk.services.logs.ILogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.constructs.Construct;
 
@@ -30,7 +30,11 @@ public class AccountStack extends Stack {
 
     public ApiLambdaProps catalogLambdaProps;
     public Function catalogLambda;
-    public LogGroup catalogLambdaLogGroup;
+    public ILogGroup catalogLambdaLogGroup;
+
+    public ApiLambdaProps bundleGetLambdaProps;
+    public Function bundleGetLambda;
+    public ILogGroup bundleGetLambdaLogGroup;
 
     public ApiLambdaProps bundleGetLambdaProps;
     public Function bundleGetLambda;
@@ -38,11 +42,11 @@ public class AccountStack extends Stack {
 
     public ApiLambdaProps bundlePostLambdaProps;
     public Function bundlePostLambda;
-    public LogGroup bundlePostLambdaLogGroup;
+    public ILogGroup bundlePostLambdaLogGroup;
 
     public ApiLambdaProps bundleDeleteLambdaProps;
     public Function bundleDeleteLambda;
-    public LogGroup bundleDeleteLambdaLogGroup;
+    public ILogGroup bundleDeleteLambdaLogGroup;
 
     public List<ApiLambdaProps> lambdaFunctionProps;
 
@@ -123,7 +127,7 @@ public class AccountStack extends Stack {
                         .environment(catalogLambdaEnv)
                         .timeout(Duration.millis(Long.parseLong("30000")))
                         .build());
-        this.catalogLambdaProps = catalogLambdaUrlOrigin.props;
+        this.catalogLambdaProps = catalogLambdaUrlOrigin.apiProps;
         this.catalogLambda = catalogLambdaUrlOrigin.lambda;
         this.catalogLambdaLogGroup = catalogLambdaUrlOrigin.logGroup;
         this.lambdaFunctionProps.add(this.catalogLambdaProps);
@@ -158,7 +162,7 @@ public class AccountStack extends Stack {
                         .environment(getBundlesLambdaEnv)
                         .timeout(Duration.millis(Long.parseLong("30000")))
                         .build());
-        this.bundleGetLambdaProps = getBundlesLambdaUrlOrigin.props;
+        this.bundleGetLambdaProps = getBundlesLambdaUrlOrigin.apiProps;
         this.bundleGetLambda = getBundlesLambdaUrlOrigin.lambda;
         this.bundleGetLambdaLogGroup = getBundlesLambdaUrlOrigin.logGroup;
         this.lambdaFunctionProps.add(this.bundleGetLambdaProps);
@@ -208,7 +212,7 @@ public class AccountStack extends Stack {
                         .environment(requestBundlesLambdaEnv)
                         .timeout(Duration.millis(Long.parseLong("30000")))
                         .build());
-        this.bundlePostLambdaProps = requestBundlesLambdaUrlOrigin.props;
+        this.bundlePostLambdaProps = requestBundlesLambdaUrlOrigin.apiProps;
         this.bundlePostLambda = requestBundlesLambdaUrlOrigin.lambda;
         this.bundlePostLambdaLogGroup = requestBundlesLambdaUrlOrigin.logGroup;
         this.lambdaFunctionProps.add(this.bundlePostLambdaProps);
@@ -263,7 +267,7 @@ public class AccountStack extends Stack {
                         .environment(bundleDeleteLambdaEnv)
                         .timeout(Duration.millis(Long.parseLong("30000")))
                         .build());
-        this.bundleDeleteLambdaProps = bundleDeleteLambdaUrlOrigin.props;
+        this.bundleDeleteLambdaProps = bundleDeleteLambdaUrlOrigin.apiProps;
         this.bundleDeleteLambda = bundleDeleteLambdaUrlOrigin.lambda;
         this.bundleDeleteLambdaLogGroup = bundleDeleteLambdaUrlOrigin.logGroup;
         this.lambdaFunctionProps.add(this.bundleDeleteLambdaProps);

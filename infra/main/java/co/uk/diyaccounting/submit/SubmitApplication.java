@@ -25,6 +25,7 @@ import software.constructs.Construct;
 public class SubmitApplication {
 
     public final DevStack devStack;
+    public final DevStack ue1DevStack;
     public final AuthStack authStack;
     public final HmrcStack hmrcStack;
     public final AccountStack accountStack;
@@ -95,6 +96,10 @@ public class SubmitApplication {
 
         // Determine primary environment (account/region) from CDK env
         Environment primaryEnv = KindCdk.buildPrimaryEnvironment();
+        Environment usEast1Env = Environment.builder()
+            .region("us-east-1")
+            .account(primaryEnv.getAccount())
+            .build();
 
         var nameProps = new SubmitSharedNames.SubmitSharedNamesProps();
         nameProps.envName = envName;
@@ -135,13 +140,35 @@ public class SubmitApplication {
 
         // Create DevStack with resources only used during development or deployment (e.g. ECR)
         infof(
-                "Synthesizing stack %s for deployment %s to environment %s",
-                sharedNames.devStackId, deploymentName, envName);
+                "Synthesizing stack %s for deployment %s to environment %s for region %s",
+                primaryEnv.getRegion(),
+                sharedNames.devStackId,
+                deploymentName,
+                envName);
         this.devStack = new DevStack(
                 app,
                 sharedNames.devStackId,
                 DevStack.DevStackProps.builder()
                         .env(primaryEnv)
+                        .crossRegionReferences(false)
+                        .envName(envName)
+                        .deploymentName(deploymentName)
+                        .resourceNamePrefix(sharedNames.appResourceNamePrefix)
+                        .cloudTrailEnabled(cloudTrailEnabled)
+                        .sharedNames(sharedNames)
+                        .build());
+
+        // Create DevStack for us-east-1 region (for the edge services like CloudFront)
+        infof(
+                "Synthesizing stack %s for deployment %s to environment %s for region us-east-1",
+                sharedNames.ue1DevStackId,
+                deploymentName,
+                envName);
+        this.ue1DevStack = new DevStack(
+                app,
+                sharedNames.ue1DevStackId,
+                DevStack.DevStackProps.builder()
+                        .env(usEast1Env)
                         .crossRegionReferences(false)
                         .envName(envName)
                         .deploymentName(deploymentName)
@@ -280,9 +307,11 @@ public class SubmitApplication {
                             .resourceNamePrefix(sharedNames.appResourceNamePrefix)
                             .cloudTrailEnabled(cloudTrailEnabled)
                             .sharedNames(sharedNames)
+                            .baseImageTag(baseImageTag)
                             .selfDestructLogGroupName(sharedNames.ew2SelfDestructLogGroupName)
                             .selfDestructStartDatetime(selfDestructStartDatetime)
                             .selfDestructDelayHours(selfDestructDelayHours)
+                            .isApplicationStack(true)
                             .build());
         } else {
             this.selfDestructStack = null;

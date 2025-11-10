@@ -1,11 +1,7 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
-import java.util.List;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Aspects;
 import software.amazon.awscdk.Duration;
@@ -22,6 +18,11 @@ import software.amazon.awscdk.services.s3.IBucket;
 import software.amazon.awscdk.services.s3.LifecycleRule;
 import software.amazon.awscdk.services.s3.ObjectOwnership;
 import software.constructs.Construct;
+
+import java.util.List;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 public class ObservabilityUE1Stack extends Stack {
 
@@ -68,7 +69,15 @@ public class ObservabilityUE1Stack extends Stack {
     }
 
     public ObservabilityUE1Stack(Construct scope, String id, StackProps stackProps, ObservabilityUE1StackProps props) {
-        super(scope, id, stackProps);
+        super(scope, id, StackProps.builder()
+            .env(props.getEnv()) // enforce region from props
+            .description(stackProps != null ? stackProps.getDescription() : null)
+            .stackName(stackProps != null ? stackProps.getStackName() : null)
+            .terminationProtection(stackProps != null ? stackProps.getTerminationProtection() : null)
+            .analyticsReporting(stackProps != null ? stackProps.getAnalyticsReporting() : null)
+            .synthesizer(stackProps != null ? stackProps.getSynthesizer() : null)
+            .crossRegionReferences(stackProps != null ? stackProps.getCrossRegionReferences() : null)
+            .build());
 
         // Log group for web deployment operations with 1-day retention
         this.webDeploymentLogGroup = LogGroup.Builder.create(
@@ -97,10 +106,10 @@ public class ObservabilityUE1Stack extends Stack {
 
         // Log group for self-destruct operations with 1-week retention
         this.selfDestructLogGroup = LogGroup.Builder.create(this, props.resourceNamePrefix() + "-SelfDestructLogGroup")
-                .logGroupName(props.sharedNames().ue1SelfDestructLogGroupName)
-                .retention(RetentionDays.ONE_WEEK) // Longer retention for operations
-                .removalPolicy(RemovalPolicy.DESTROY)
-                .build();
+             .logGroupName(props.sharedNames().ue1SelfDestructLogGroupName)
+             .retention(RetentionDays.ONE_WEEK) // Longer retention for operations
+             .removalPolicy(RemovalPolicy.DESTROY)
+             .build();
         infof(
                 "ObservabilityStack %s created successfully for %s",
                 this.getNode().getId(), props.sharedNames().dashedDeploymentDomainName);
