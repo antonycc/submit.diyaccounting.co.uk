@@ -13,6 +13,7 @@ import software.amazon.awscdk.services.certificatemanager.Certificate;
 import software.amazon.awscdk.services.cloudfront.AllowedMethods;
 import software.amazon.awscdk.services.cloudfront.BehaviorOptions;
 import software.amazon.awscdk.services.cloudfront.CachePolicy;
+import software.amazon.awscdk.services.cloudfront.CfnDistribution;
 import software.amazon.awscdk.services.cloudfront.Distribution;
 import software.amazon.awscdk.services.cloudfront.IOrigin;
 import software.amazon.awscdk.services.cloudfront.OriginProtocolPolicy;
@@ -29,6 +30,8 @@ import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.iam.ServicePrincipal;
 import software.amazon.awscdk.services.lambda.FunctionUrlAuthType;
 import software.amazon.awscdk.services.lambda.Permission;
+import software.amazon.awscdk.services.logs.ILogGroup;
+import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.amazon.awscdk.services.route53.HostedZone;
 import software.amazon.awscdk.services.route53.HostedZoneAttributes;
@@ -88,8 +91,6 @@ public class EdgeStack extends Stack {
         String hostedZoneId();
 
         String certificateArn();
-
-        int logGroupRetentionPeriodDays();
 
         String apiGatewayUrl();
 
@@ -285,11 +286,15 @@ public class EdgeStack extends Stack {
         additionalBehaviors.put("/api/v1/*", apiGatewayBehavior);
         infof("Added API Gateway behavior for /api/v1/* pointing to %s", props.apiGatewayUrl());
 
-        // Lookup log bucket
-        IBucket distributionLogsBucket = Bucket.fromBucketName(
+        // Lookup log group
+        ILogGroup distributionAccessLogGroup = LogGroup.fromLogGroupName(
                 this,
-                props.resourceNamePrefix() + "-ImportedDistributionLogBucket",
-                props.sharedNames().distributionAccessLogBucketName);
+                props.resourceNamePrefix() + "-ImportedDistributionLogGroup",
+                props.sharedNames().distributionAccessLogGroupName);
+//        IBucket distributionLogsBucket = Bucket.fromBucketName(
+//                this,
+//                props.resourceNamePrefix() + "-ImportedDistributionLogBucket",
+//                props.sharedNames().distributionAccessLogBucketName);
 
         // CloudFront distribution for the web origin and all the URL Lambdas.
         this.distribution = Distribution.Builder.create(this, props.resourceNamePrefix() + "-WebDist")
@@ -299,15 +304,22 @@ public class EdgeStack extends Stack {
                 .domainNames(List.of(props.sharedNames().deploymentDomainName))
                 .certificate(cert)
                 .defaultRootObject("index.html")
-                .enableLogging(true)
+                .enableLogging(false)
                 // TODO: Find an alternative for access logs
-                .logBucket(distributionLogsBucket)
-                .logFilePrefix("cloudfront/")
+                //.logBucket(distributionLogsBucket)
+                //.logFilePrefix("cloudfront/")
                 .enableIpv6(true)
                 .sslSupportMethod(SSLMethod.SNI)
                 .webAclId(webAcl.getAttrArn())
                 .build();
         Tags.of(this.distribution).add("OriginFor", props.sharedNames().deploymentDomainName);
+        // Configure CloudFront standard access logging to CloudWatch Logs (pending CDK high-level support).
+        CfnDistribution cfnDist = (CfnDistribution) this.distribution.getNode().getDefaultChild();
+        assert cfnDist != null;
+        cfnDist.addPropertyOverride("DistributionConfig.Logging.Enabled", true);
+        // Property names subject to change; adjust to official CloudFormation docs when released.
+        cfnDist.addPropertyOverride("DistributionConfig.Logging.LogGroup", distributionAccessLogGroup.getLogGroupName());
+        cfnDist.addPropertyOverride("DistributionConfig.Logging.LogGroupArn", distributionAccessLogGroup.getLogGroupArn());
 
         // Grant CloudFront access to the origin lambdas
         this.distributionInvokeFnUrl = Permission.builder()
