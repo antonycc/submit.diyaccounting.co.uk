@@ -1,15 +1,10 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
 import co.uk.diyaccounting.submit.constructs.ApiLambda;
 import co.uk.diyaccounting.submit.constructs.ApiLambdaProps;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
-import java.util.List;
-import java.util.Optional;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Aspects;
 import software.amazon.awscdk.Duration;
@@ -18,21 +13,27 @@ import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.services.apigatewayv2.HttpMethod;
 import software.amazon.awscdk.services.lambda.Function;
-import software.amazon.awscdk.services.logs.LogGroup;
+import software.amazon.awscdk.services.logs.ILogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
+
+import java.util.List;
+import java.util.Optional;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 public class AuthStack extends Stack {
 
     public ApiLambdaProps cognitoAuthUrlGetLambdaProps;
     public Function cognitoAuthUrlGetLambda;
-    public LogGroup cognitoAuthUrlGetLambdaLogGroup;
+    public ILogGroup cognitoAuthUrlGetLambdaLogGroup;
     public ApiLambdaProps cognitoTokenPostLambdaProps;
     public Function cognitoTokenPostLambda;
-    public LogGroup cognitoTokenPostLambdaLogGroup;
+    public ILogGroup cognitoTokenPostLambdaLogGroup;
     public Function customAuthorizerLambda;
-    public LogGroup customAuthorizerLambdaLogGroup;
+    public ILogGroup customAuthorizerLambdaLogGroup;
     public List<ApiLambdaProps> lambdaFunctionProps;
 
     @Value.Immutable
@@ -112,7 +113,7 @@ public class AuthStack extends Stack {
                         .environment(authUrlCognitoLambdaEnv)
                         .timeout(Duration.millis(Long.parseLong("30000")))
                         .build());
-        this.cognitoAuthUrlGetLambdaProps = authUrlCognitoLambdaUrlOrigin.props;
+        this.cognitoAuthUrlGetLambdaProps = authUrlCognitoLambdaUrlOrigin.apiProps;
         this.cognitoAuthUrlGetLambda = authUrlCognitoLambdaUrlOrigin.lambda;
         this.cognitoAuthUrlGetLambdaLogGroup = authUrlCognitoLambdaUrlOrigin.logGroup;
         this.lambdaFunctionProps.add(this.cognitoAuthUrlGetLambdaProps);
@@ -147,7 +148,7 @@ public class AuthStack extends Stack {
                         .environment(exchangeCognitoTokenLambdaEnv)
                         .timeout(Duration.millis(Long.parseLong("30000")))
                         .build());
-        this.cognitoTokenPostLambdaProps = exchangeCognitoTokenLambdaUrlOrigin.props;
+        this.cognitoTokenPostLambdaProps = exchangeCognitoTokenLambdaUrlOrigin.apiProps;
         this.cognitoTokenPostLambda = exchangeCognitoTokenLambdaUrlOrigin.lambda;
         this.cognitoTokenPostLambdaLogGroup = exchangeCognitoTokenLambdaUrlOrigin.logGroup;
         this.lambdaFunctionProps.add(this.cognitoTokenPostLambdaProps);

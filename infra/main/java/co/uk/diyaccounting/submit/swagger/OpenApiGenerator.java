@@ -137,7 +137,7 @@ public class OpenApiGenerator {
                 operation.put("description", pl.description);
                 operation.put("operationId", pl.operationId);
 
-                // Parameters from SubmitSharedNames (path/query)
+                // Parameters from SubmitSharedNames (path/query/header)
                 if (pl.parameters != null && !pl.parameters.isEmpty()) {
                     ArrayNode paramsArr = mapper.createArrayNode();
                     for (SubmitSharedNames.ApiParameter p : pl.parameters) {
@@ -148,6 +148,27 @@ public class OpenApiGenerator {
                         if (p.description != null) pObj.put("description", p.description);
                         ObjectNode schema = mapper.createObjectNode();
                         schema.put("type", "string");
+                        // Add sensible defaults/examples for known params
+                        switch (p.name) {
+                            case "vrn" -> {
+                                schema.put("example", "176540158");
+                                schema.put("pattern", "^\\d{9}$");
+                            }
+                            case "from" -> schema.put("example", "2025-01-01");
+                            case "to" -> schema.put("example", "2025-03-31");
+                            case "status" -> {
+                                schema.put("enum", "O,F");
+                                schema.put("example", "O");
+                            }
+                            case "periodKey" -> schema.put("example", "24A1");
+                            case "Gov-Test-Scenario" -> schema.put("example", "QUARTERLY_ONE_MET");
+                            case "state" -> schema.put("example", "csrf-1234");
+                            case "scope" -> schema.put("example", "write:vat read:vat");
+                            case "name" -> schema.put("example", "2025-03-31-123456789012.json");
+                            case "key" -> schema.put("example", "receipts/00000000-0000-0000-0000-000000000000/2025-03-31-123456789012.json");
+                            case "bundleId" -> schema.put("example", "test");
+                            case "removeAll" -> schema.put("example", "false");
+                        }
                         pObj.set("schema", schema);
                         paramsArr.add(pObj);
                     }
@@ -155,6 +176,132 @@ public class OpenApiGenerator {
                 }
 
                 String method = pl.method.name().toLowerCase();
+
+                // Add requestBody definitions for POST endpoints
+                if ("post".equals(method)) {
+                    ObjectNode requestBody = mapper.createObjectNode();
+                    requestBody.put("required", true);
+                    ObjectNode content = mapper.createObjectNode();
+
+                    if (pl.urlPath.endsWith("/cognito/token")) {
+                        // form-urlencoded with code
+                        ObjectNode media = mapper.createObjectNode();
+                        ObjectNode schema = mapper.createObjectNode();
+                        schema.put("type", "object");
+                        ObjectNode props = mapper.createObjectNode();
+                        ObjectNode code = mapper.createObjectNode();
+                        code.put("type", "string");
+                        code.put("example", "abc123");
+                        props.set("code", code);
+                        schema.set("properties", props);
+                        media.set("schema", schema);
+                        ObjectNode exam = mapper.createObjectNode();
+                        exam.put("code", "abc123");
+                        media.set("example", exam);
+                        content.set("application/x-www-form-urlencoded", media);
+                    } else if (pl.urlPath.endsWith("/hmrc/token")) {
+                        ObjectNode media = mapper.createObjectNode();
+                        ObjectNode schema = mapper.createObjectNode();
+                        schema.put("type", "object");
+                        ObjectNode props = mapper.createObjectNode();
+                        ObjectNode code = mapper.createObjectNode();
+                        code.put("type", "string");
+                        code.put("example", "abc123");
+                        props.set("code", code);
+                        schema.set("properties", props);
+                        media.set("schema", schema);
+                        ObjectNode exam = mapper.createObjectNode();
+                        exam.put("code", "abc123");
+                        media.set("example", exam);
+                        content.set("application/json", media);
+                    } else if (pl.urlPath.endsWith("/hmrc/vat/return")) {
+                        ObjectNode media = mapper.createObjectNode();
+                        ObjectNode schema = mapper.createObjectNode();
+                        schema.put("type", "object");
+                        ObjectNode props = mapper.createObjectNode();
+                        ObjectNode vatNumber = mapper.createObjectNode();
+                        vatNumber.put("type", "string");
+                        vatNumber.put("example", "176540158");
+                        ObjectNode periodKey = mapper.createObjectNode();
+                        periodKey.put("type", "string");
+                        periodKey.put("example", "24A1");
+                        ObjectNode vatDue = mapper.createObjectNode();
+                        vatDue.put("type", "number");
+                        vatDue.put("format", "float");
+                        vatDue.put("example", 2400.00);
+                        ObjectNode accessToken = mapper.createObjectNode();
+                        accessToken.put("type", "string");
+                        accessToken.put("example", "HMRC_ACCESS_TOKEN");
+                        props.set("vatNumber", vatNumber);
+                        props.set("periodKey", periodKey);
+                        props.set("vatDue", vatDue);
+                        props.set("accessToken", accessToken);
+                        schema.set("properties", props);
+                        media.set("schema", schema);
+                        ObjectNode exam = mapper.createObjectNode();
+                        exam.put("vatNumber", "176540158");
+                        exam.put("periodKey", "24A1");
+                        exam.put("vatDue", 2400.00);
+                        exam.put("accessToken", "HMRC_ACCESS_TOKEN");
+                        media.set("example", exam);
+                        content.set("application/json", media);
+                    } else if (pl.urlPath.endsWith("/hmrc/receipt")) {
+                        ObjectNode media = mapper.createObjectNode();
+                        ObjectNode schema = mapper.createObjectNode();
+                        schema.put("type", "object");
+                        ObjectNode props = mapper.createObjectNode();
+                        ObjectNode receipt = mapper.createObjectNode();
+                        receipt.put("type", "object");
+                        ObjectNode receiptProps = mapper.createObjectNode();
+                        ObjectNode formBundleNumber = mapper.createObjectNode();
+                        formBundleNumber.put("type", "string");
+                        formBundleNumber.put("example", "123456789012");
+                        receiptProps.set("formBundleNumber", formBundleNumber);
+                        receipt.set("properties", receiptProps);
+                        props.set("receipt", receipt);
+                        schema.set("properties", props);
+                        media.set("schema", schema);
+                        ObjectNode exam = mapper.createObjectNode();
+                        ObjectNode recExam = mapper.createObjectNode();
+                        recExam.put("formBundleNumber", "123456789012");
+                        exam.set("receipt", recExam);
+                        media.set("example", exam);
+                        content.set("application/json", media);
+                    } else if (pl.urlPath.endsWith("/bundle")) {
+                        ObjectNode media = mapper.createObjectNode();
+                        ObjectNode schema = mapper.createObjectNode();
+                        schema.put("type", "object");
+                        ObjectNode props = mapper.createObjectNode();
+                        ObjectNode bundleId = mapper.createObjectNode();
+                        bundleId.put("type", "string");
+                        bundleId.put("example", "test");
+                        ObjectNode qualifiers = mapper.createObjectNode();
+                        qualifiers.put("type", "object");
+                        ObjectNode qualProps = mapper.createObjectNode();
+                        ObjectNode transactionId = mapper.createObjectNode();
+                        transactionId.put("type", "string");
+                        transactionId.put("example", "TX-12345");
+                        qualProps.set("transactionId", transactionId);
+                        qualifiers.set("properties", qualProps);
+                        props.set("bundleId", bundleId);
+                        props.set("qualifiers", qualifiers);
+                        schema.set("properties", props);
+                        media.set("schema", schema);
+                        ObjectNode exam = mapper.createObjectNode();
+                        exam.put("bundleId", "test");
+                        ObjectNode qualExam = mapper.createObjectNode();
+                        qualExam.put("transactionId", "TX-12345");
+                        exam.set("qualifiers", qualExam);
+                        content.set("application/json", media);
+                        media.set("example", exam);
+                    }
+
+                    if (content.size() > 0) {
+                        requestBody.set("content", content);
+                        operation.set("requestBody", requestBody);
+                    }
+                }
+
                 pathItem.set(method, operation);
             }
 

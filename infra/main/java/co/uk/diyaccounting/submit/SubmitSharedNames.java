@@ -1,13 +1,14 @@
 package co.uk.diyaccounting.submit;
 
+import co.uk.diyaccounting.submit.utils.ResourceNameUtils;
+import software.amazon.awscdk.services.apigatewayv2.HttpMethod;
+
+import java.util.ArrayList;
+import java.util.List;
+
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDashedDomainName;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.convertDotSeparatedToDashSeparated;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateResourceNamePrefix;
-
-import co.uk.diyaccounting.submit.utils.ResourceNameUtils;
-import java.util.ArrayList;
-import java.util.List;
-import software.amazon.awscdk.services.apigatewayv2.HttpMethod;
 
 public class SubmitSharedNames {
 
@@ -87,6 +88,7 @@ public class SubmitSharedNames {
 
     public String appResourceNamePrefix;
     public String devStackId;
+    public String ue1DevStackId;
     public String authStackId;
     public String hmrcStackId;
     public String accountStackId;
@@ -97,6 +99,10 @@ public class SubmitSharedNames {
     public String ecrRepositoryName;
     public String ecrLogGroupName;
     public String ecrPublishRoleName;
+    public String ue1EcrRepositoryArn;
+    public String ue1EcrRepositoryName;
+    public String ue1EcrLogGroupName;
+    public String ue1EcrPublishRoleName;
 
     public String cognitoAuthUrlGetLambdaHandler;
     public String cognitoAuthUrlGetLambdaFunctionName;
@@ -207,6 +213,14 @@ public class SubmitSharedNames {
     public boolean bundleDeleteLambdaJwtAuthorizer;
     public boolean bundleDeleteLambdaCustomAuthorizer;
 
+    public String delSelfDestructLambdaHandler;
+    public String delSelfDestructLambdaFunctionName;
+    public String delSelfDestructLambdaArn;
+
+    public String appSelfDestructLambdaHandler;
+    public String appSelfDestructLambdaFunctionName;
+    public String appSelfDestructLambdaArn;
+
     public String delResourceNamePrefix;
     public String edgeStackId;
     public String publishStackId;
@@ -273,6 +287,7 @@ public class SubmitSharedNames {
 
         this.appResourceNamePrefix = "%s-app".formatted(generateResourceNamePrefix(this.deploymentDomainName));
         this.devStackId = "%s-app-DevStack".formatted(props.deploymentName);
+        this.ue1DevStackId = "%s-app-DevUE1Stack".formatted(props.deploymentName);
         this.authStackId = "%s-app-AuthStack".formatted(props.deploymentName);
         this.hmrcStackId = "%s-app-HmrcStack".formatted(props.deploymentName);
         this.accountStackId = "%s-app-AccountStack".formatted(props.deploymentName);
@@ -284,6 +299,11 @@ public class SubmitSharedNames {
         this.ecrRepositoryName = "%s-ecr".formatted(this.appResourceNamePrefix);
         this.ecrLogGroupName = "/aws/ecr/%s".formatted(this.appResourceNamePrefix);
         this.ecrPublishRoleName = "%s-ecr-publish-role".formatted(appResourceNamePrefix);
+        this.ue1EcrRepositoryArn = "arn:aws:ecr:us-east-1:%s:repository/%s-ecr"
+                .formatted(props.awsAccount, this.appResourceNamePrefix);
+        this.ue1EcrRepositoryName = "%s-ecr-us-east-1".formatted(this.appResourceNamePrefix);
+        this.ue1EcrLogGroupName = "/aws/ecr/%s-us-east-1".formatted(this.appResourceNamePrefix);
+        this.ue1EcrPublishRoleName = "%s-ecr-publish-role-us-east-1".formatted(appResourceNamePrefix);
 
         this.delResourceNamePrefix = "%s-del".formatted(generateResourceNamePrefix(this.deploymentDomainName));
         this.edgeStackId = "%s-del-EdgeStack".formatted(props.deploymentName);
@@ -316,7 +336,9 @@ public class SubmitSharedNames {
                 this.cognitoAuthUrlGetLambdaUrlPath,
                 "Get Cognito authentication URL",
                 "Returns the Cognito OAuth2 authorization URL for user login",
-                "getCognitoAuthUrl"));
+                "getCognitoAuthUrl",
+                List.of(
+                    new ApiParameter("state", "query", true, "Opaque state value to mitigate CSRF attacks"))));
 
         this.cognitoTokenPostLambdaHttpMethod = HttpMethod.POST;
         this.cognitoTokenPostLambdaUrlPath = "/api/v1/cognito/token";
@@ -364,7 +386,10 @@ public class SubmitSharedNames {
                 this.hmrcAuthUrlGetLambdaUrlPath,
                 "Get HMRC authentication URL",
                 "Returns the HMRC OAuth2 authorization URL for accessing HMRC APIs",
-                "getHmrcAuthUrl"));
+                "getHmrcAuthUrl",
+                List.of(
+                    new ApiParameter("state", "query", true, "Opaque state value to mitigate CSRF attacks"),
+                    new ApiParameter("scope", "query", false, "OAuth scopes: write:vat, read:vat or both"))));
 
         this.hmrcTokenPostLambdaHttpMethod = HttpMethod.POST;
         this.hmrcTokenPostLambdaUrlPath = "/api/v1/hmrc/token";
@@ -402,7 +427,9 @@ public class SubmitSharedNames {
                 this.hmrcVatReturnPostLambdaUrlPath,
                 "Submit VAT return to HMRC",
                 "Submits a VAT return to HMRC on behalf of the authenticated user",
-                "submitVatReturn"));
+                "submitVatReturn",
+                List.of(
+                    new ApiParameter("Gov-Test-Scenario", "header", false, "HMRC sandbox test scenario"))));
 
         this.hmrcVatObligationGetLambdaHttpMethod = HttpMethod.GET;
         this.hmrcVatObligationGetLambdaUrlPath = "/api/v1/hmrc/vat/obligation";
@@ -422,7 +449,13 @@ public class SubmitSharedNames {
                 this.hmrcVatObligationGetLambdaUrlPath,
                 "Get VAT obligations from HMRC",
                 "Retrieves VAT obligations from HMRC for the authenticated user",
-                "getVatObligations"));
+                "getVatObligations",
+            List.of(
+                new ApiParameter("vrn", "query", true, "VAT Registration Number (9 digits)"),
+                new ApiParameter("from", "query", false, "From date in YYYY-MM-DD format"),
+                new ApiParameter("to", "query", false, "To date in YYYY-MM-DD format"),
+                new ApiParameter("status", "query", false, "Obligation status: O (Open) or F (Fulfilled)"),
+                new ApiParameter("Gov-Test-Scenario", "query", false, "HMRC sandbox test scenario"))));
 
         this.hmrcVatReturnGetLambdaHttpMethod = HttpMethod.GET;
         this.hmrcVatReturnGetLambdaUrlPath = "/api/v1/hmrc/vat/return/{periodKey}";
@@ -482,7 +515,10 @@ public class SubmitSharedNames {
                 this.receiptGetLambdaUrlPath,
                 "Retrieve stored receipts",
                 "Retrieves previously stored receipts for the authenticated user",
-                "getReceipts"));
+                "getReceipts",
+                List.of(
+                    new ApiParameter("name", "query", false, "Receipt file name including .json"),
+                    new ApiParameter("key", "query", false, "Full S3 object key under receipts/{sub}/"))));
         publishedApiLambdas.add(new PublishedLambda(
                 this.receiptGetLambdaHttpMethod,
                 this.receiptGetByNameLambdaUrlPath,
@@ -561,7 +597,10 @@ public class SubmitSharedNames {
                 this.bundleDeleteLambdaUrlPath,
                 "Delete bundle",
                 "Deletes a bundle for the authenticated user",
-                "deleteBundle"));
+                "deleteBundle",
+                List.of(
+                    new ApiParameter("bundleId", "query", false, "The bundle id (or name) to delete"),
+                    new ApiParameter("removeAll", "query", false, "When true, removes all bundles"))));
         publishedApiLambdas.add(new PublishedLambda(
                 this.bundleDeleteLambdaHttpMethod,
                 "/api/v1/bundle/{id}",
@@ -569,5 +608,23 @@ public class SubmitSharedNames {
                 "Deletes a bundle for the authenticated user using a path parameter",
                 "deleteBundleById",
                 List.of(new ApiParameter("id", "path", true, "The bundle id (or name) to delete"))));
+
+        var appSelfDestructLambdaHandlerName = "selfDestruct.handler";
+        var appSelfDestructLambdaHandlerDashed =
+            ResourceNameUtils.convertCamelCaseToDashSeparated(appSelfDestructLambdaHandlerName);
+        this.appSelfDestructLambdaFunctionName =
+            "%s-app-%s".formatted(this.appResourceNamePrefix, appSelfDestructLambdaHandlerDashed);
+        this.appSelfDestructLambdaHandler =
+            "%s/infra/%s".formatted(appLambdaHandlerPrefix, appSelfDestructLambdaHandlerName);
+        this.appSelfDestructLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, appSelfDestructLambdaHandlerDashed);
+
+        var delSelfDestructLambdaHandlerName = "selfDestruct.handler";
+        var delSelfDestructLambdaHandlerDashed =
+            ResourceNameUtils.convertCamelCaseToDashSeparated(delSelfDestructLambdaHandlerName);
+        this.delSelfDestructLambdaFunctionName =
+            "%s-del-%s".formatted(this.appResourceNamePrefix, delSelfDestructLambdaHandlerDashed);
+        this.delSelfDestructLambdaHandler =
+            "%s/infra/%s".formatted(appLambdaHandlerPrefix, delSelfDestructLambdaHandlerName);
+        this.delSelfDestructLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, delSelfDestructLambdaHandlerDashed);
     }
 }

@@ -4,7 +4,7 @@ concurrency:
   group: deploy-${{ github.ref_name }}
   cancel-in-progress: false
 
-# Bump10
+# Bump12
 
 on:
   workflow_dispatch:
@@ -543,80 +543,6 @@ jobs:
           path: docker-image/image.tar
           if-no-files-found: error
 
-  deploy-application-self-destruct:
-    name: 'deploy application self-destruct'
-    if: ${{ inputs.skipDeploy != 'true' && github.ref != 'refs/heads/main' && needs.names.outputs.environment-name != 'prod' }}
-    needs:
-      - names
-      - skip-deploy-check
-      - mvn-package
-    runs-on: ubuntu-24.04
-    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
-    steps:
-
-      - name: Configure AWS role via GitHub OIDC
-        uses: aws-actions/configure-aws-credentials@v5
-        with:
-          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-          role-chaining: false
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - name: Assume AWS deployment role
-        uses: aws-actions/configure-aws-credentials@v5
-        with:
-          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-          role-chaining: true
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - name: Checkout
-        uses: actions/checkout@v5
-
-      - name: Setup Node
-        uses: actions/setup-node@v6
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Node dependencies
-        run: npm ci
-
-      - uses: actions/setup-java@v5
-        with:
-          distribution: 'temurin'
-          java-version: ${{ env.JAVA_VERSION }}
-          cache: 'maven'
-
-      - name: Deploy SelfDestruct Stack (CDK)
-        run: |
-          ./mvnw --errors clean verify -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
-            && cd cdk-application \
-            && cat ../.env.${{ needs.names.outputs.environment-name }} \
-            && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
-              npx cdk deploy \
-                ${{ needs.names.outputs.deployment-name }}-app-SelfDestructStack \
-                --require-approval never \
-                --ci true \
-                --concurrency 4 \
-                --asset-parallelism \
-                --outputs-file ../cdk-submit-application.out/cdk-outputs-self-destruct.json \
-          && cd .. \
-          ;
-        env:
-          ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
-          DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
-          SELF_DESTRUCT_START_DATETIME: ${{ needs.mvn-package.outputs.self-destruct-start-datetime }}
-          # Set by deploy-environment.yml after the environment's AuthStack is deployed
-          COGNITO_USER_POOL_ARN: ${{ vars.COGNITO_USER_POOL_ARN }}
-          COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
-
   deploy-dev:
     name: 'deploy dev'
     needs:
@@ -700,6 +626,98 @@ jobs:
                 --concurrency 4 \
                 --asset-parallelism \
                 --outputs-file ../cdk-submit-application.out/cdk-outputs-dev.json \
+            && cd .. \
+          ;
+        env:
+          ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
+          DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
+          # Set by deploy-environment.yml after the environment's AuthStack is deployed
+          COGNITO_USER_POOL_ARN: ${{ vars.COGNITO_USER_POOL_ARN }}
+          COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
+
+  deploy-dev-us-east-1:
+    name: 'deploy dev us-east-1'
+    needs:
+      - names
+      - skip-deploy-check
+    runs-on: ubuntu-24.04
+    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    steps:
+
+      - name: Configure AWS role via GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Check if DevStack exists
+        id: static-skip
+        shell: bash
+        run: |
+          STACK_NAME="${{ needs.names.outputs.deployment-name }}-app-DevStack"
+          echo "Checking for existing COMPLETE stack: $STACK_NAME"
+          COUNT=$(aws cloudformation list-stacks \
+            --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE \
+            --query "length(StackSummaries[?StackName=='${STACK_NAME}'])" \
+            --output text)
+          if [ "$COUNT" -ge 1 ]; then
+            echo "skipStaticStackDeployment=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skipStaticStackDeployment=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout
+        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Node dependencies
+        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
+        run: npm ci
+
+      - uses: actions/setup-java@v5
+        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: 'maven'
+
+      - name: Deploy Dev us-east-1 Stack (CDK)
+        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
+        run: |
+          ./mvnw --errors clean verify -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
+            && cd cdk-application \
+            && cat ../.env.${{ needs.names.outputs.environment-name }} \
+            && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
+              npx cdk deploy \
+                ${{ needs.names.outputs.deployment-name }}-app-DevUE1Stack \
+                --require-approval never \
+                --ci true \
+                --concurrency 4 \
+                --asset-parallelism \
+                --outputs-file ../cdk-submit-application.out/cdk-outputs-dev-ue1.json \
             && cd .. \
           ;
         env:
@@ -809,6 +827,183 @@ jobs:
           ECR_REPOSITORY_NAME: ${{ needs.names.outputs.deployment-name }}-submit-app-ecr
     outputs:
       base-image-tag: ${{ github.sha }}
+
+  push-images-us-east-1:
+    name: 'push images us-east-1'
+    needs:
+      - names
+      - skip-deploy-check
+      - deploy-dev-us-east-1
+      - docker-build
+    runs-on: ubuntu-24.04
+    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    steps:
+
+      - name: Configure AWS role via GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          aws-region: us-east-1
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          aws-region: us-east-1
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Login to Amazon ECR in us-east-1
+        shell: bash
+        run: |
+          aws ecr get-login-password --region us-east-1 \
+            | docker login \
+                --username AWS \
+                --password-stdin "${ECR_REPOSITORY_BASE_URL?}/${ECR_REPOSITORY_NAME?}" \
+            ;
+        env:
+          ECR_REPOSITORY_BASE_URL: ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+          ECR_REPOSITORY_NAME: ${{ needs.names.outputs.deployment-name }}-submit-app-ecr-us-east-1
+
+      - name: Check if image already exists in ECR
+        id: image-exists
+        shell: bash
+        run: |
+          REPO_URI="${ECR_REPOSITORY_BASE_URL?}/${ECR_REPOSITORY_NAME?}"
+          REPO_NAME="${REPO_URI##*/}"
+          echo "Checking if image with tag ${{ github.sha }} exists in $REPO_NAME"
+          if aws ecr describe-images --region us-east-1 --repository-name "$REPO_NAME" --image-ids imageTag="${{ github.sha }}" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          ECR_REPOSITORY_BASE_URL: ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+          ECR_REPOSITORY_NAME: ${{ needs.names.outputs.deployment-name }}-submit-app-ecr-us-east-1
+
+      - name: Checkout
+        if: ${{ steps.image-exists.outputs.exists != 'true' }}
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        if: ${{ steps.image-exists.outputs.exists != 'true' }}
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Node dependencies
+        if: ${{ steps.image-exists.outputs.exists != 'true' }}
+        run: npm ci
+
+      - name: Download image artifact
+        if: ${{ steps.image-exists.outputs.exists != 'true' }}
+        uses: actions/download-artifact@v6
+        with:
+          name: docker-image
+          path: docker-image/
+
+      - name: Load Docker image
+        if: ${{ steps.image-exists.outputs.exists != 'true' }}
+        run: docker load -i docker-image/image.tar
+
+      - name: Tag and push Docker image to ECR
+        if: ${{ steps.image-exists.outputs.exists != 'true' }}
+        shell: bash
+        run: |
+          docker tag "${{ env.BASE_IMAGE_TAG_PREFIX }}:${{ github.sha }}" "${ECR_REPOSITORY_BASE_URL?}/${ECR_REPOSITORY_NAME?}:${{ github.sha }}"
+          docker tag "${{ env.BASE_IMAGE_TAG_PREFIX }}:${{ github.sha }}" "${ECR_REPOSITORY_BASE_URL?}/${ECR_REPOSITORY_NAME?}:latest"
+          docker push "${ECR_REPOSITORY_BASE_URL?}/${ECR_REPOSITORY_NAME?}:${{ github.sha }}"
+          docker push "${ECR_REPOSITORY_BASE_URL?}/${ECR_REPOSITORY_NAME?}:latest"
+        env:
+          ECR_REPOSITORY_BASE_URL: ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+          ECR_REPOSITORY_NAME: ${{ needs.names.outputs.deployment-name }}-submit-app-ecr-us-east-1
+    outputs:
+      base-image-tag: ${{ github.sha }}
+
+  deploy-application-self-destruct:
+    name: 'deploy application self-destruct'
+    if: ${{ inputs.skipDeploy != 'true' && github.ref != 'refs/heads/main' && needs.names.outputs.environment-name != 'prod' }}
+    needs:
+      - names
+      - skip-deploy-check
+      - mvn-package
+      - push-images
+    runs-on: ubuntu-24.04
+    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    steps:
+
+      - name: Configure AWS role via GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Node dependencies
+        run: npm ci
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: 'maven'
+
+      - name: Deploy SelfDestruct Stack (CDK)
+        run: |
+          ./mvnw --errors clean verify -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
+            && cd cdk-application \
+            && cat ../.env.${{ needs.names.outputs.environment-name }} \
+            && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
+              npx cdk deploy \
+                ${{ needs.names.outputs.deployment-name }}-app-SelfDestructStack \
+                --require-approval never \
+                --ci true \
+                --concurrency 4 \
+                --asset-parallelism \
+                --outputs-file ../cdk-submit-application.out/cdk-outputs-self-destruct.json \
+          && cd .. \
+          ;
+        env:
+          ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
+          DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
+          BASE_IMAGE_TAG: ${{ needs.push-images.outputs.base-image-tag }}
+          SELF_DESTRUCT_START_DATETIME: ${{ needs.mvn-package.outputs.self-destruct-start-datetime }}
+          # Set by deploy-environment.yml after the environment's AuthStack is deployed
+          COGNITO_USER_POOL_ARN: ${{ vars.COGNITO_USER_POOL_ARN }}
+          COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
 
   deploy-auth:
     name: 'deploy auth'
@@ -1135,9 +1330,7 @@ jobs:
       - names
       - skip-deploy-check
       - mvn-package
-      - deploy-auth
-      - deploy-hmrc
-      - deploy-account
+      - push-images-us-east-1
       - deploy-api
     runs-on: ubuntu-24.04
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
@@ -1195,12 +1388,13 @@ jobs:
                 --ci true \
                 --concurrency 4 \
                 --asset-parallelism \
-                --outputs-file ../cdk-submit-application.out/cdk-outputs-self-destruct.json \
+                --outputs-file ../cdk-submit-delivery.out/cdk-outputs-self-destruct.json \
           && cd .. \
           ;
         env:
           ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
+          BASE_IMAGE_TAG: ${{ needs.push-images-us-east-1.outputs.base-image-tag }}
           SELF_DESTRUCT_START_DATETIME: ${{ needs.mvn-package.outputs.self-destruct-start-datetime }}
           WEBSITE_HASH: "placeholder"
           HTTP_API_URL: ${{ needs.deploy-api.outputs.httpApiUrl }}
@@ -1211,6 +1405,8 @@ jobs:
     needs:
       - names
       - skip-deploy-check
+      - mvn-package
+      - push-images
       - deploy-auth
       - deploy-hmrc
       - deploy-account
@@ -1302,6 +1498,7 @@ jobs:
         env:
           ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
+          BASE_IMAGE_TAG: ${{ needs.push-images.outputs.base-image-tag }}
           WEBSITE_HASH: "placeholder"
           HTTP_API_URL: ${{ needs.deploy-api.outputs.httpApiUrl }}
           DIY_SUBMIT_APEX_URL: ${{ needs.names.outputs.apex-url }}
@@ -1325,6 +1522,8 @@ jobs:
     needs:
       - names
       - skip-deploy-check
+      - mvn-package
+      - push-images
       - deploy-edge
       - deploy-api
     runs-on: ubuntu-24.04
@@ -1474,6 +1673,7 @@ jobs:
         env:
           ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
+          BASE_IMAGE_TAG: ${{ needs.push-images.outputs.base-image-tag }}
           WEBSITE_HASH: ${{ steps.publish-hash.outputs.WEBSITE_HASH }}
           HTTP_API_URL: ${{ needs.deploy-api.outputs.httpApiUrl }}
           DIY_SUBMIT_APEX_URL: ${{ needs.names.outputs.apex-url }}
@@ -1520,6 +1720,8 @@ jobs:
     needs:
       - names
       - skip-deploy-check
+      - mvn-package
+      - push-images
       - deploy-api
       - deploy-edge
     runs-on: ubuntu-24.04
@@ -2385,3 +2587,56 @@ jobs:
       deployment-name: ${{ needs.set-origins.outputs.existing-deployment-name }}
 
  # TODO: If set-origins passed but web-test failed, look up the last deployment from a parameter store and set-origin back to that deployment
+
+
+  invalidate-cloudfront:
+    name: 'invalidate CloudFront paths (test/** and docs/**)'
+    if: ${{ !cancelled() }}
+    needs:
+      - names
+      - upload-web-test-results
+    runs-on: ubuntu-24.04
+    environment: ${{ needs.names.outputs.environment-name }}
+    steps:
+      - name: Configure AWS role via GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Invalidate CloudFront paths
+        env:
+          STACK_NAME: ${{ needs.names.outputs.deployment-name }}-del-EdgeStack
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Looking up CloudFront DistributionId from stack: ${STACK_NAME?} (us-east-1)"
+          DIST_ID=$(aws cloudformation describe-stacks --region us-east-1 --stack-name "${STACK_NAME?}" \
+            --query "Stacks[0].Outputs[?OutputKey==\`DistributionId\`].OutputValue" --output text)
+          if [ -z "${DIST_ID}" ] || [ "${DIST_ID}" = "None" ]; then
+            echo "ERROR: Could not resolve DistributionId output from stack ${STACK_NAME}" >&2
+            exit 1
+          fi
+          echo "Found DistributionId: ${DIST_ID}"
+          CALLER_REF="${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-$(date -u +%s)"
+          echo "Creating invalidation for paths: /tests/*, /docs/* with caller-ref ${CALLER_REF}"
+          aws cloudfront create-invalidation --region us-east-1 \
+            --distribution-id "${DIST_ID}" \
+            --paths "/tests/*" "/docs/*" \
+          ;
