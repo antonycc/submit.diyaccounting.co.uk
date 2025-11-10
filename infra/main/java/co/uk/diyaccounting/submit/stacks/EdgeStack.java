@@ -249,8 +249,6 @@ public class EdgeStack extends Stack {
                 .encryption(BucketEncryption.S3_MANAGED)
                 .removalPolicy(RemovalPolicy.DESTROY)
                 .autoDeleteObjects(true)
-                // TODO: Find an alternative for access logs
-                // .serverAccessLogsBucket(originAccessLogBucket)
                 .build();
         infof(
                 "Created origin bucket %s with name %s",
@@ -298,10 +296,6 @@ public class EdgeStack extends Stack {
                 this,
                 props.resourceNamePrefix() + "-ImportedDistributionLogGroup",
                 props.sharedNames().distributionAccessLogGroupName);
-//        IBucket distributionLogsBucket = Bucket.fromBucketName(
-//                this,
-//                props.resourceNamePrefix() + "-ImportedDistributionLogBucket",
-//                props.sharedNames().distributionAccessLogBucketName);
 
         // CloudFront distribution for the web origin and all the URL Lambdas.
         this.distribution = Distribution.Builder.create(this, props.resourceNamePrefix() + "-WebDist")
@@ -312,9 +306,6 @@ public class EdgeStack extends Stack {
                 .certificate(cert)
                 .defaultRootObject("index.html")
                 .enableLogging(false)
-                // TODO: Find an alternative for access logs
-                //.logBucket(distributionLogsBucket)
-                //.logFilePrefix("cloudfront/")
                 .enableIpv6(true)
                 .sslSupportMethod(SSLMethod.SNI)
                 .webAclId(webAcl.getAttrArn())
@@ -324,10 +315,6 @@ public class EdgeStack extends Stack {
         // Configure CloudFront standard access logging to CloudWatch Logs (pending CDK high-level support).
         CfnDistribution cfnDist = (CfnDistribution) this.distribution.getNode().getDefaultChild();
         assert cfnDist != null;
-        //cfnDist.addPropertyOverride("DistributionConfig.Logging.Enabled", true);
-        // Property names subject to change; adjust to official CloudFormation docs when released.
-        //cfnDist.addPropertyOverride("DistributionConfig.Logging.LogGroup", distributionAccessLogGroup.getLogGroupName());
-        //cfnDist.addPropertyOverride("DistributionConfig.Logging.LogGroupArn", distributionAccessLogGroup.getLogGroupArn());
 
         // 2. Compute the CloudFront distribution ARN for the delivery source
         String distributionArn = Stack.of(this).formatArn(ArnComponents.builder()
@@ -342,11 +329,10 @@ public class EdgeStack extends Stack {
             this,
             props.resourceNamePrefix() + "-CfAccessLogsDestination",
             CfnDeliveryDestinationProps.builder()
-                .name(distributionAccessLogGroup.getLogGroupName())
-                // This is the actual log group you already created
+                // Name is arbitrary; keep it stable but does not need to be the log group name
+                .name(props.sharedNames().distributionAccessLogDeliveryDestinationName)
                 .destinationResourceArn(distributionAccessLogGroup.getLogGroupArn())
-                // "json", "w3c", or "parquet" per docs
-                .outputFormat("json")
+                .outputFormat("json") // or "w3c"/"parquet" if you prefer
                 .build()
         );
 
@@ -355,18 +341,19 @@ public class EdgeStack extends Stack {
             this,
             props.resourceNamePrefix() + "-CfAccessLogsSource",
             CfnDeliverySourceProps.builder()
-                .name(props.resourceNamePrefix() + "-cf-access-logs-src")
-                .logType("ACCESS_LOGS")           // required for CloudFront
-                .resourceArn(distributionArn)     // ARN of the distribution
+                .name(props.sharedNames().distributionAccessLogDeliverySourceName)     // <-- use the shared variable
+                .logType("ACCESS_LOGS")       // required for CloudFront
+                .resourceArn(distributionArn) // ARN of the distribution
                 .build()
         );
 
         // 5. Delivery that connects source to destination
-        new CfnDelivery(
+        CfnDelivery cfLogsDelivery = new CfnDelivery(
             this,
             props.resourceNamePrefix() + "-CfAccessLogsDelivery",
             CfnDeliveryProps.builder()
-                .deliverySourceName(cfLogsSource.getName())
+                // *** IMPORTANT: must exactly match the Name above ***
+                .deliverySourceName(props.sharedNames().distributionAccessLogDeliverySourceName)
                 .deliveryDestinationArn(cfLogsDestination.getAttrArn())
                 // optional: customise fields and delimiter
                 // .fieldDelimiter("\t")
@@ -374,6 +361,9 @@ public class EdgeStack extends Stack {
                 //                       "cs-method", "cs-host", "cs-uri-stem", "sc-status"))
                 .build()
         );
+
+        // *** CRITICAL: enforce creation order so source exists before delivery ***
+        cfLogsDelivery.addDependency(cfLogsSource);
 
         // Grant CloudFront access to the origin lambdas
         this.distributionInvokeFnUrl = Permission.builder()

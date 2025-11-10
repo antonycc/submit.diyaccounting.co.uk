@@ -74,6 +74,8 @@ public class SubmitSharedNames {
     public String originAccessLogBucketName;
     public String distributionAccessLogBucketName;
     public String distributionAccessLogGroupName;
+    public String distributionAccessLogDeliverySourceName;
+    public String distributionAccessLogDeliveryDestinationName;
     public String ew2SelfDestructLogGroupName;
     public String ue1SelfDestructLogGroupName;
     //public String webDeploymentLogGroupName;
@@ -238,6 +240,15 @@ public class SubmitSharedNames {
 
     private SubmitSharedNames() {}
 
+    // Common HTTP response codes to be referenced across infra generators and stacks
+    public static class Responses {
+        public static final String OK = "200";
+        public static final String UNAUTHORIZED = "401";
+        public static final String FORBIDDEN = "403";
+        public static final String NOT_FOUND = "404";
+        public static final String SERVER_ERROR = "500";
+    }
+
     public static SubmitSharedNames forDocs() {
         SubmitSharedNamesProps p = new SubmitSharedNamesProps();
         p.hostedZoneName = "example.com";
@@ -279,6 +290,8 @@ public class SubmitSharedNames {
         this.bundlesTableName = "%s-bundles".formatted(this.envDashedDomainName);
         this.distributionAccessLogBucketName = "distribution-%s-logs".formatted(this.envDashedDomainName);
         this.distributionAccessLogGroupName = "distribution-%s-logs".formatted(this.envDashedDomainName);
+        this.distributionAccessLogDeliverySourceName = "distribution-%s-cf-access-logs-src".formatted(this.envDashedDomainName);
+        this.distributionAccessLogDeliveryDestinationName = "distribution-%s-cf-access-logs-dest".formatted(this.envDashedDomainName);
 
         this.ew2SelfDestructLogGroupName =
                 "/aws/lambda/%s-self-destruct-eu-west-2".formatted(this.envResourceNamePrefix);
