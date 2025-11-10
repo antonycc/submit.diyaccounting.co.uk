@@ -2639,4 +2639,4 @@ jobs:
           aws cloudfront create-invalidation --region us-east-1 \
             --distribution-id "${DIST_ID}" \
             --paths "/tests/*" "/docs/*" \
-            --caller-reference "${CALLER_REF}"
+          ;
