@@ -3,6 +3,7 @@ package co.uk.diyaccounting.submit.stacks;
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
 import org.immutables.value.Value;
+import software.amazon.awscdk.ArnComponents;
 import software.amazon.awscdk.Aspects;
 import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.RemovalPolicy;
@@ -30,6 +31,12 @@ import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.iam.ServicePrincipal;
 import software.amazon.awscdk.services.lambda.FunctionUrlAuthType;
 import software.amazon.awscdk.services.lambda.Permission;
+import software.amazon.awscdk.services.logs.CfnDelivery;
+import software.amazon.awscdk.services.logs.CfnDeliveryDestination;
+import software.amazon.awscdk.services.logs.CfnDeliveryDestinationProps;
+import software.amazon.awscdk.services.logs.CfnDeliveryProps;
+import software.amazon.awscdk.services.logs.CfnDeliverySource;
+import software.amazon.awscdk.services.logs.CfnDeliverySourceProps;
 import software.amazon.awscdk.services.logs.ILogGroup;
 import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
@@ -313,13 +320,60 @@ public class EdgeStack extends Stack {
                 .webAclId(webAcl.getAttrArn())
                 .build();
         Tags.of(this.distribution).add("OriginFor", props.sharedNames().deploymentDomainName);
+
         // Configure CloudFront standard access logging to CloudWatch Logs (pending CDK high-level support).
         CfnDistribution cfnDist = (CfnDistribution) this.distribution.getNode().getDefaultChild();
         assert cfnDist != null;
-        cfnDist.addPropertyOverride("DistributionConfig.Logging.Enabled", true);
+        //cfnDist.addPropertyOverride("DistributionConfig.Logging.Enabled", true);
         // Property names subject to change; adjust to official CloudFormation docs when released.
-        cfnDist.addPropertyOverride("DistributionConfig.Logging.LogGroup", distributionAccessLogGroup.getLogGroupName());
-        cfnDist.addPropertyOverride("DistributionConfig.Logging.LogGroupArn", distributionAccessLogGroup.getLogGroupArn());
+        //cfnDist.addPropertyOverride("DistributionConfig.Logging.LogGroup", distributionAccessLogGroup.getLogGroupName());
+        //cfnDist.addPropertyOverride("DistributionConfig.Logging.LogGroupArn", distributionAccessLogGroup.getLogGroupArn());
+
+        // 2. Compute the CloudFront distribution ARN for the delivery source
+        String distributionArn = Stack.of(this).formatArn(ArnComponents.builder()
+            .service("cloudfront")
+            .region("")                         // CloudFront is global
+            .resource("distribution")
+            .resourceName(this.distribution.getDistributionId())
+            .build());
+
+        // 3. CloudWatch Logs destination that points at your log group
+        CfnDeliveryDestination cfLogsDestination = new CfnDeliveryDestination(
+            this,
+            props.resourceNamePrefix() + "-CfAccessLogsDestination",
+            CfnDeliveryDestinationProps.builder()
+                .name(props.resourceNamePrefix() + "-cf-access-logs-dest")
+                // This is the actual log group you already created
+                .destinationResourceArn(distributionAccessLogGroup.getLogGroupArn())
+                // "json", "w3c", or "parquet" per docs
+                .outputFormat("json")
+                .build()
+        );
+
+        // 4. Delivery source that represents the CloudFront distribution
+        CfnDeliverySource cfLogsSource = new CfnDeliverySource(
+            this,
+            props.resourceNamePrefix() + "-CfAccessLogsSource",
+            CfnDeliverySourceProps.builder()
+                .name(props.resourceNamePrefix() + "-cf-access-logs-src")
+                .logType("ACCESS_LOGS")           // required for CloudFront
+                .resourceArn(distributionArn)     // ARN of the distribution
+                .build()
+        );
+
+        // 5. Delivery that connects source to destination
+        new CfnDelivery(
+            this,
+            props.resourceNamePrefix() + "-CfAccessLogsDelivery",
+            CfnDeliveryProps.builder()
+                .deliverySourceName(cfLogsSource.getName())
+                .deliveryDestinationArn(cfLogsDestination.getAttrArn())
+                // optional: customise fields and delimiter
+                // .fieldDelimiter("\t")
+                // .recordFields(List.of("date", "time", "x-edge-location", "c-ip",
+                //                       "cs-method", "cs-host", "cs-uri-stem", "sc-status"))
+                .build()
+        );
 
         // Grant CloudFront access to the origin lambdas
         this.distributionInvokeFnUrl = Permission.builder()

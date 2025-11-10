@@ -3,6 +3,7 @@ package co.uk.diyaccounting.submit.stacks;
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
 import org.immutables.value.Value;
+import software.amazon.awscdk.ArnComponents;
 import software.amazon.awscdk.Aspects;
 import software.amazon.awscdk.AssetHashType;
 import software.amazon.awscdk.Duration;
@@ -16,6 +17,7 @@ import software.amazon.awscdk.Tags;
 import software.amazon.awscdk.services.certificatemanager.Certificate;
 import software.amazon.awscdk.services.cloudfront.AllowedMethods;
 import software.amazon.awscdk.services.cloudfront.BehaviorOptions;
+import software.amazon.awscdk.services.cloudfront.CfnDistribution;
 import software.amazon.awscdk.services.cloudfront.Distribution;
 import software.amazon.awscdk.services.cloudfront.IOrigin;
 import software.amazon.awscdk.services.cloudfront.OriginRequestPolicy;
@@ -30,6 +32,14 @@ import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.iam.ServicePrincipal;
 import software.amazon.awscdk.services.lambda.FunctionUrlAuthType;
 import software.amazon.awscdk.services.lambda.Permission;
+import software.amazon.awscdk.services.logs.CfnDelivery;
+import software.amazon.awscdk.services.logs.CfnDeliveryDestination;
+import software.amazon.awscdk.services.logs.CfnDeliveryDestinationProps;
+import software.amazon.awscdk.services.logs.CfnDeliveryProps;
+import software.amazon.awscdk.services.logs.CfnDeliverySource;
+import software.amazon.awscdk.services.logs.CfnDeliverySourceProps;
+import software.amazon.awscdk.services.logs.ILogGroup;
+import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.amazon.awscdk.services.route53.HostedZone;
 import software.amazon.awscdk.services.route53.HostedZoneAttributes;
@@ -101,7 +111,19 @@ public class ApexStack extends Stack {
     }
 
     public ApexStack(final Construct scope, final String id, final ApexStackProps props) {
-        super(scope, id, props);
+        this(scope, id, null, props);
+    }
+
+    public ApexStack(final Construct scope, final String id, final StackProps stackProps, final ApexStackProps props) {
+        super(scope, id, StackProps.builder()
+            .env(props.getEnv()) // enforce region from props
+            .description(stackProps != null ? stackProps.getDescription() : null)
+            .stackName(stackProps != null ? stackProps.getStackName() : null)
+            .terminationProtection(stackProps != null ? stackProps.getTerminationProtection() : null)
+            .analyticsReporting(stackProps != null ? stackProps.getAnalyticsReporting() : null)
+            .synthesizer(stackProps != null ? stackProps.getSynthesizer() : null)
+            .crossRegionReferences(stackProps != null ? stackProps.getCrossRegionReferences() : null)
+            .build());
 
         // Apply cost allocation tags for all resources in this stack
         Tags.of(this).add("Environment", props.envName());
@@ -187,8 +209,14 @@ public class ApexStack extends Stack {
                 .compress(true)
                 .build();
 
+        // Lookup log group
+        ILogGroup distributionAccessLogGroup = LogGroup.fromLogGroupName(
+            this,
+            props.resourceNamePrefix() + "-ImportedDistributionLogGroup",
+            props.sharedNames().distributionAccessLogGroupName);
+
         // CloudFront distribution for the web origin and all the URL Lambdas.
-        this.distribution = Distribution.Builder.create(this, props.resourceNamePrefix() + "-WebDist")
+        this.distribution = Distribution.Builder.create(this, props.resourceNamePrefix() + "-ApexWebDist")
                 .defaultBehavior(localBehaviorOptions)
                 .domainNames(List.of(
                         // props.sharedNames().deploymentDomainName,
@@ -200,6 +228,60 @@ public class ApexStack extends Stack {
                 .sslSupportMethod(SSLMethod.SNI)
                 .build();
         Tags.of(this.distribution).add("OriginFor", props.sharedNames().holdingDomainName);
+
+        // Configure CloudFront standard access logging to CloudWatch Logs (pending CDK high-level support).
+        CfnDistribution cfnDist = (CfnDistribution) this.distribution.getNode().getDefaultChild();
+        assert cfnDist != null;
+        //cfnDist.addPropertyOverride("DistributionConfig.Logging.Enabled", true);
+        // Property names subject to change; adjust to official CloudFormation docs when released.
+        //cfnDist.addPropertyOverride("DistributionConfig.Logging.LogGroup", distributionAccessLogGroup.getLogGroupName());
+        //cfnDist.addPropertyOverride("DistributionConfig.Logging.LogGroupArn", distributionAccessLogGroup.getLogGroupArn());
+
+        // 2. Compute the CloudFront distribution ARN for the delivery source
+        String distributionArn = Stack.of(this).formatArn(ArnComponents.builder()
+            .service("cloudfront")
+            .region("")                         // CloudFront is global
+            .resource("distribution")
+            .resourceName(this.distribution.getDistributionId())
+            .build());
+
+        // 3. CloudWatch Logs destination that points at your log group
+        CfnDeliveryDestination cfLogsDestination = new CfnDeliveryDestination(
+            this,
+            props.resourceNamePrefix() + "-CfAccessLogsDestination",
+            CfnDeliveryDestinationProps.builder()
+                .name(props.resourceNamePrefix() + "-cf-access-logs-dest")
+                // This is the actual log group you already created
+                .destinationResourceArn(distributionAccessLogGroup.getLogGroupArn())
+                // "json", "w3c", or "parquet" per docs
+                .outputFormat("json")
+                .build()
+        );
+
+        // 4. Delivery source that represents the CloudFront distribution
+        CfnDeliverySource cfLogsSource = new CfnDeliverySource(
+            this,
+            props.resourceNamePrefix() + "-CfAccessLogsSource",
+            CfnDeliverySourceProps.builder()
+                .name(props.resourceNamePrefix() + "-cf-access-logs-src")
+                .logType("ACCESS_LOGS")           // required for CloudFront
+                .resourceArn(distributionArn)     // ARN of the distribution
+                .build()
+        );
+
+        // 5. Delivery that connects source to destination
+        new CfnDelivery(
+            this,
+            props.resourceNamePrefix() + "-CfAccessLogsDelivery",
+            CfnDeliveryProps.builder()
+                .deliverySourceName(cfLogsSource.getName())
+                .deliveryDestinationArn(cfLogsDestination.getAttrArn())
+                // optional: customise fields and delimiter
+                // .fieldDelimiter("\t")
+                // .recordFields(List.of("date", "time", "x-edge-location", "c-ip",
+                //                       "cs-method", "cs-host", "cs-uri-stem", "sc-status"))
+                .build()
+        );
 
         // Grant CloudFront access to the origin lambdas
         this.distributionInvokeFnUrl = Permission.builder()
@@ -254,7 +336,7 @@ public class ApexStack extends Stack {
         // Outputs
         cfnOutput(this, "BaseUrl", props.sharedNames().baseUrl);
         cfnOutput(this, "CertificateArn", cert.getCertificateArn());
-        cfnOutput(this, "WebDistributionDomainName", this.distribution.getDomainName());
+        cfnOutput(this, "ApexWebDistributionDomainName", this.distribution.getDomainName());
         cfnOutput(this, "DistributionId", this.distribution.getDistributionId());
         cfnOutput(this, "AliasRecord", this.aliasRecordDomainName);
         cfnOutput(this, "AliasRecordV6", this.aliasRecordV6DomainName);

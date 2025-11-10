@@ -14,6 +14,7 @@ import {
   validateHmrcAccessToken,
 } from "../../lib/hmrcHelper.js";
 
+// Hook for Express app, and construction of a Lambda-like event from HTTP request)
 export function apiEndpoint(app) {
   app.post("/api/v1/hmrc/vat/return", async (httpRequest, httpResponse) => {
     const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
@@ -22,6 +23,7 @@ export function apiEndpoint(app) {
   });
 }
 
+// HTTP request/response, aware Lambda handler function
 export async function handler(event) {
   validateEnv(["HMRC_BASE_URI", "COGNITO_USER_POOL_ID"]);
 
@@ -31,6 +33,7 @@ export async function handler(event) {
   // Bundle enforcement
   try {
     await enforceBundles(event);
+    // TODO: Catch: BundleEntitlementError for 403 response
   } catch (error) {
     return httpServerErrorFromBundleEnforcement(error, request);
   }
@@ -61,11 +64,14 @@ export async function handler(event) {
   // Only validate token format when all other parameters are present
   try {
     validateHmrcAccessToken(hmrcAccessToken);
+    // TODO: Catch and handle specific token validation errors maybe a 401, and validation error for others
   } catch (err) {
     // Convert thrown error into a validation error message for HTTP 400
     errorMessages.push(err.toString());
     return buildValidationError(request, errorMessages, govClientHeaders);
   }
+
+  // TODO: Wrap submitVat in a try..catch.
 
   // Processing
   const { receipt, hmrcResponse, hmrcResponseBody } = await submitVat(periodKey, vatDue, vatNumber, hmrcAccessToken, govClientHeaders);
@@ -75,6 +81,7 @@ export async function handler(event) {
     // Attach parsed body for downstream error helpers
     hmrcResponse.data = hmrcResponseBody;
     if (hmrcResponse.status === 403) {
+      // TODO: Put the error numbers in these all helper methods
       return httpForbiddenFromHmrcResponse(hmrcAccessToken, hmrcResponse, govClientHeaders);
     } else if (hmrcResponse.status === 404) {
       return httpNotFoundFromHmrcResponse(request, hmrcResponse, govClientHeaders);
@@ -83,6 +90,7 @@ export async function handler(event) {
     }
   }
 
+  // TODO: List responses in infra/main/java/co/uk/diyaccounting/submit/SubmitSharedNames.java and reference in infra/main/java/co/uk/diyaccounting/submit/swagger/OpenApiGenerator.java
   // Generate a success response
   return httpOkResponse({
     request,
@@ -92,6 +100,7 @@ export async function handler(event) {
   });
 }
 
+// Service wrapper for aware of the downstream service but not the consuming Lambda's incoming/outgoing HTTP request/response
 export async function submitVat(periodKey, vatDue, vatNumber, hmrcAccessToken, govClientHeaders) {
   const hmrcRequestHeaders = {
     "Content-Type": "application/json",
