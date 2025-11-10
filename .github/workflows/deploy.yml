@@ -1331,6 +1331,7 @@ jobs:
       - skip-deploy-check
       - mvn-package
       - push-images-us-east-1
+      - deploy-api
     runs-on: ubuntu-24.04
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
     steps:
@@ -2586,3 +2587,56 @@ jobs:
       deployment-name: ${{ needs.set-origins.outputs.existing-deployment-name }}
 
  # TODO: If set-origins passed but web-test failed, look up the last deployment from a parameter store and set-origin back to that deployment
+
+
+  invalidate-cloudfront:
+    name: 'invalidate CloudFront paths (test/** and docs/**)'
+    if: ${{ !cancelled() }}
+    needs:
+      - names
+      - upload-web-test-results
+    runs-on: ubuntu-24.04
+    environment: ${{ needs.names.outputs.environment-name }}
+    steps:
+      - name: Configure AWS role via GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Invalidate CloudFront paths
+        env:
+          STACK_NAME: ${{ needs.names.outputs.deployment-name }}-del-EdgeStack
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Looking up CloudFront DistributionId from stack: ${STACK_NAME?} (us-east-1)"
+          DIST_ID=$(aws cloudformation describe-stacks --region us-east-1 --stack-name "${STACK_NAME?}" \
+            --query "Stacks[0].Outputs[?OutputKey==\`DistributionId\`].OutputValue" --output text)
+          if [ -z "${DIST_ID}" ] || [ "${DIST_ID}" = "None" ]; then
+            echo "ERROR: Could not resolve DistributionId output from stack ${STACK_NAME}" >&2
+            exit 1
+          fi
+          echo "Found DistributionId: ${DIST_ID}"
+          CALLER_REF="${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-$(date -u +%s)"
+          echo "Creating invalidation for paths: /tests/*, /docs/* with caller-ref ${CALLER_REF}"
+          aws cloudfront create-invalidation --region us-east-1 \
+            --distribution-id "${DIST_ID}" \
+            --paths "/tests/*" "/docs/*" \
+            --caller-reference "${CALLER_REF}"
