@@ -250,7 +250,7 @@ public class ApexStack extends Stack {
             this,
             props.resourceNamePrefix() + "-CfAccessLogsDestination",
             CfnDeliveryDestinationProps.builder()
-                .name(props.resourceNamePrefix() + "-cf-access-logs-dest")
+                .name(distributionAccessLogGroup.getLogGroupName())
                 // This is the actual log group you already created
                 .destinationResourceArn(distributionAccessLogGroup.getLogGroupArn())
                 // "json", "w3c", or "parquet" per docs
