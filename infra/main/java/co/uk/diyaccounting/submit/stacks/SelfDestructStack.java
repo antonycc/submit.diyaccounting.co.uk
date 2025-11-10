@@ -201,14 +201,28 @@ public class SelfDestructStack extends Stack {
         }
         putIfNotNull(selfDestructLambdaEnv, "SELF_DESTRUCT_STACK_NAME", this.getStackName());
 
+        infof(
+            "Creating SelfDestructStack for domain: %s (dashed: %s) in region: %s",
+            Objects.requireNonNull(props.getEnv()).getRegion(),
+            props.sharedNames().deploymentDomainName, props.sharedNames().dashedDeploymentDomainName);
+        String ecrRepositoryName;
+        String ecrRepositoryArn;
+        if (Objects.equals(props.getEnv().getRegion(), "us-east-1")) {
+            ecrRepositoryName = props.sharedNames().ue1EcrRepositoryName;
+            ecrRepositoryArn = props.sharedNames().ue1EcrRepositoryArn;
+        } else {
+            ecrRepositoryName = props.sharedNames().ecrRepositoryName;
+            ecrRepositoryArn = props.sharedNames().ecrRepositoryArn;
+        }
+
         // Lambda function for self-destruction
         var bundleDeleteLambda = new Lambda(
             this,
             LambdaProps.builder()
                 .idPrefix(props.sharedNames().bundleDeleteLambdaFunctionName)
                 .baseImageTag(props.baseImageTag())
-                .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
-                .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                .ecrRepositoryName(ecrRepositoryName)
+                .ecrRepositoryArn(ecrRepositoryArn)
                 .functionName(functionName)
                 .handler(handler)
                 .lambdaArn(lambdaArn)

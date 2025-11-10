@@ -190,7 +190,7 @@ public class SubmitDelivery {
                             .cloudTrailEnabled(cloudTrailEnabled)
                             .sharedNames(sharedNames)
                             .baseImageTag(baseImageTag)
-                            .selfDestructLogGroupName(sharedNames.ew2SelfDestructLogGroupName)
+                            .selfDestructLogGroupName(sharedNames.ue1SelfDestructLogGroupName)
                             .selfDestructStartDatetime(selfDestructStartDatetime)
                             .selfDestructDelayHours(selfDestructDelayHours)
                             .isDeliveryStack(true)

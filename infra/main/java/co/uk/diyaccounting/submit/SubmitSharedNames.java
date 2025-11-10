@@ -74,7 +74,7 @@ public class SubmitSharedNames {
     public String originAccessLogBucketName;
     public String distributionAccessLogBucketName;
     public String ew2SelfDestructLogGroupName;
-    //public String ue1SelfDestructLogGroupName;
+    public String ue1SelfDestructLogGroupName;
     public String webDeploymentLogGroupName;
     public String apiAccessLogGroupName;
 
@@ -88,6 +88,7 @@ public class SubmitSharedNames {
 
     public String appResourceNamePrefix;
     public String devStackId;
+    public String ue1DevStackId;
     public String authStackId;
     public String hmrcStackId;
     public String accountStackId;
@@ -98,6 +99,10 @@ public class SubmitSharedNames {
     public String ecrRepositoryName;
     public String ecrLogGroupName;
     public String ecrPublishRoleName;
+    public String ue1EcrRepositoryArn;
+    public String ue1EcrRepositoryName;
+    public String ue1EcrLogGroupName;
+    public String ue1EcrPublishRoleName;
 
     public String cognitoAuthUrlGetLambdaHandler;
     public String cognitoAuthUrlGetLambdaFunctionName;
@@ -275,13 +280,14 @@ public class SubmitSharedNames {
 
         this.ew2SelfDestructLogGroupName =
                 "/aws/lambda/%s-self-destruct-eu-west-2".formatted(this.envResourceNamePrefix);
-        //this.ue1SelfDestructLogGroupName =
-        //        "/aws/lambda/%s-self-destruct-us-east-1".formatted(this.envResourceNamePrefix);
+        this.ue1SelfDestructLogGroupName =
+                "/aws/lambda/%s-self-destruct-us-east-1".formatted(this.envResourceNamePrefix);
         this.webDeploymentLogGroupName = "/deployment/%s-web-deployment".formatted(this.envResourceNamePrefix);
         this.apiAccessLogGroupName = "/aws/apigw/%s/access".formatted(this.envResourceNamePrefix);
 
         this.appResourceNamePrefix = "%s-app".formatted(generateResourceNamePrefix(this.deploymentDomainName));
         this.devStackId = "%s-app-DevStack".formatted(props.deploymentName);
+        this.ue1DevStackId = "%s-app-DevUE1Stack".formatted(props.deploymentName);
         this.authStackId = "%s-app-AuthStack".formatted(props.deploymentName);
         this.hmrcStackId = "%s-app-HmrcStack".formatted(props.deploymentName);
         this.accountStackId = "%s-app-AccountStack".formatted(props.deploymentName);
@@ -293,6 +299,11 @@ public class SubmitSharedNames {
         this.ecrRepositoryName = "%s-ecr".formatted(this.appResourceNamePrefix);
         this.ecrLogGroupName = "/aws/ecr/%s".formatted(this.appResourceNamePrefix);
         this.ecrPublishRoleName = "%s-ecr-publish-role".formatted(appResourceNamePrefix);
+        this.ue1EcrRepositoryArn = "arn:aws:ecr:us-east-1:%s:repository/%s-ecr"
+                .formatted(props.awsAccount, this.appResourceNamePrefix);
+        this.ue1EcrRepositoryName = "%s-ecr".formatted(this.appResourceNamePrefix);
+        this.ue1EcrLogGroupName = "/aws/ecr/%s-us-east-1".formatted(this.appResourceNamePrefix);
+        this.ue1EcrPublishRoleName = "%s-ecr-publish-role-us-east-1".formatted(appResourceNamePrefix);
 
         this.delResourceNamePrefix = "%s-del".formatted(generateResourceNamePrefix(this.deploymentDomainName));
         this.edgeStackId = "%s-del-EdgeStack".formatted(props.deploymentName);
