@@ -1,13 +1,7 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Aspects;
 import software.amazon.awscdk.Environment;
@@ -45,6 +39,13 @@ import software.amazon.awscdk.services.s3.BucketEncryption;
 import software.amazon.awscdk.services.s3.IBucket;
 import software.amazon.awscdk.services.wafv2.CfnWebACL;
 import software.constructs.Construct;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 public class EdgeStack extends Stack {
 
@@ -326,23 +327,6 @@ public class EdgeStack extends Stack {
         cfnOutput(this, "OriginBucketName", this.originBucket.getBucketName());
 
         infof("EdgeStack %s created successfully for %s", this.getNode().getId(), props.sharedNames().baseUrl);
-    }
-
-    public BehaviorOptions createBehaviorOptionsForLambdaUrl(String lambdaFunctionUrl) {
-        // Extract the host from the Function URL (e.g., "https://abc123.lambda-url.us-east-1.on.aws/" ->
-        // "abc123.lambda-url.us-east-1.on.aws")
-        var lambdaUrlHost = getHostFromUrl(lambdaFunctionUrl);
-        var origin = HttpOrigin.Builder.create(lambdaUrlHost)
-                .protocolPolicy(OriginProtocolPolicy.HTTPS_ONLY)
-                .build();
-        return BehaviorOptions.builder()
-                .origin(origin)
-                .allowedMethods(AllowedMethods.ALLOW_ALL)
-                .cachePolicy(CachePolicy.CACHING_DISABLED)
-                .originRequestPolicy(OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER)
-                .viewerProtocolPolicy(ViewerProtocolPolicy.REDIRECT_TO_HTTPS)
-                .responseHeadersPolicy(ResponseHeadersPolicy.CORS_ALLOW_ALL_ORIGINS_WITH_PREFLIGHT_AND_SECURITY_HEADERS)
-                .build();
     }
 
     public BehaviorOptions createBehaviorOptionsForApiGateway(String apiGatewayUrl) {
