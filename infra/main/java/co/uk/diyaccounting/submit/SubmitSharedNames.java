@@ -326,8 +326,8 @@ public class SubmitSharedNames {
         this.delSelfDestructStackId = "%s-del-SelfDestructStack".formatted(props.deploymentName);
 
         this.trailName = "%s-trail".formatted(this.envResourceNamePrefix);
-        this.holdingBucketName = convertDotSeparatedToDashSeparated("holding-" + this.envResourceNamePrefix);
-        this.originBucketName = convertDotSeparatedToDashSeparated("origin-" + this.delResourceNamePrefix);
+        this.holdingBucketName = convertDotSeparatedToDashSeparated("%s-holding-us-east-1".formatted(this.envResourceNamePrefix));
+        this.originBucketName = convertDotSeparatedToDashSeparated("%s-origin-us-east-1".formatted(this.delResourceNamePrefix));
         this.originAccessLogBucketName = "%s-origin-access-logs".formatted(this.delResourceNamePrefix);
 
         var appLambdaHandlerPrefix = "app/functions";
