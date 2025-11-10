@@ -14,7 +14,7 @@ import {
   validateHmrcAccessToken,
 } from "../../lib/hmrcHelper.js";
 
-// Hook for Express app, and construction of a Lambda-like event from HTTP request)
+// Server hook for Express app, and construction of a Lambda-like event from HTTP request)
 export function apiEndpoint(app) {
   app.post("/api/v1/hmrc/vat/return", async (httpRequest, httpResponse) => {
     const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
@@ -100,7 +100,7 @@ export async function handler(event) {
   });
 }
 
-// Service wrapper for aware of the downstream service but not the consuming Lambda's incoming/outgoing HTTP request/response
+// Service adaptor for aware of the downstream service but not the consuming Lambda's incoming/outgoing HTTP request/response
 export async function submitVat(periodKey, vatDue, vatNumber, hmrcAccessToken, govClientHeaders) {
   const hmrcRequestHeaders = {
     "Content-Type": "application/json",
