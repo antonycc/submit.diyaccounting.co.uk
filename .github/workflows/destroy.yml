@@ -333,6 +333,7 @@ jobs:
         env:
           ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
+          BASE_IMAGE_TAG: "${{ env.BASE_IMAGE_TAG }}:latest"
           WEBSITE_HASH: 'placeholder'
           HTTP_API_URL: 'https://placeholder'
 

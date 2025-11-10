@@ -131,9 +131,24 @@ function generateAllowPolicy(routeArn, jwtPayload) {
 
   // If routeArn contains specific route details, we might need to adjust it
   // For HTTP API v2, we typically allow the specific route
-  if (routeArn && routeArn.includes("execute-api")) {
-    // Keep the specific routeArn as is for HTTP API v2
-    policyResource = routeArn;
+  // if (routeArn && routeArn.includes("execute-api")) {
+  //  // Keep the specific routeArn as is for HTTP API v2
+  //  policyResource = routeArn;
+  // }
+  try {
+    if (routeArn && routeArn.includes(":execute-api:")) {
+      const arnParts = routeArn.split(":");
+      const region = arnParts[3];
+      const accountId = arnParts[4];
+      const apiAndMore = arnParts[5]; // api-id/stage/method/resource
+      const apiId = apiAndMore.split("/")[0];
+
+      // Wildcard stage, method, and resource to avoid brittle exact matching on HTTP API
+      policyResource = `arn:aws:execute-api:${region}:${accountId}:${apiId}/*/*/*`;
+    }
+  } catch (error) {
+    // Fallback to original routeArn if parsing fails
+    logger.warn({ message: "Failed to parse routeArn for policy resource, using original", routeArn, error: error.message });
   }
 
   // Flatten all JWT claims into simple string values for context
