@@ -1,22 +1,22 @@
 package co.uk.diyaccounting.submit;
 
-import static co.uk.diyaccounting.submit.utils.Kind.envOr;
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.Kind.warnf;
-import static co.uk.diyaccounting.submit.utils.KindCdk.getContextValueString;
-
 import co.uk.diyaccounting.submit.stacks.EdgeStack;
 import co.uk.diyaccounting.submit.stacks.PublishStack;
 import co.uk.diyaccounting.submit.stacks.SelfDestructStack;
 import co.uk.diyaccounting.submit.utils.KindCdk;
+import software.amazon.awscdk.App;
+import software.amazon.awscdk.Environment;
+import software.constructs.Construct;
+
 import java.lang.reflect.Field;
 import java.nio.file.Paths;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import software.amazon.awscdk.App;
-import software.amazon.awscdk.Environment;
-import software.amazon.awscdk.Fn;
-import software.constructs.Construct;
+
+import static co.uk.diyaccounting.submit.utils.Kind.envOr;
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.Kind.warnf;
+import static co.uk.diyaccounting.submit.utils.KindCdk.getContextValueString;
 
 public class SubmitDelivery {
 
@@ -36,6 +36,7 @@ public class SubmitDelivery {
         public String deploymentDomainName;
         public String cloudTrailEnabled;
         public String baseUrl;
+        public String baseImageTag;
         public String accessLogGroupRetentionPeriodDays;
         public String httpApiUrl;
         public String authUrlCognitoLambdaFunctionUrl;
@@ -118,6 +119,7 @@ public class SubmitDelivery {
                 envOr("CLOUD_TRAIL_ENABLED", appProps.cloudTrailEnabled, "(from cloudTrailEnabled in cdk.json)");
         var accessLogGroupRetentionPeriodDays = Integer.parseInt(
                 envOr("ACCESS_LOG_GROUP_RETENTION_PERIOD_DAYS", appProps.accessLogGroupRetentionPeriodDays, "30"));
+        var baseImageTag = envOr("BASE_IMAGE_TAG", appProps.baseImageTag, "(from baseImageTag in cdk.json)");
         var selfDestructDelayHoursString = envOr(
                 "SELF_DESTRUCT_DELAY_HOURS",
                 appProps.selfDestructDelayHours,
@@ -133,18 +135,6 @@ public class SubmitDelivery {
 
         // Function URL environment variables for EdgeStack
         String httpApiUrl = envOr("HTTP_API_URL", appProps.httpApiUrl, "(from httpApiUrl in cdk.json)");
-
-        // Import API Gateway URL from application stack via CloudFormation export
-        String apiGatewayExportName = sharedNames.appResourceNamePrefix + "-HttpApiUrl";
-        String apiGatewayUrl = null;
-        try {
-            apiGatewayUrl = Fn.importValue(apiGatewayExportName);
-            infof("Imported API Gateway URL from export %s", apiGatewayExportName);
-        } catch (RuntimeException e) {
-            warnf(
-                    "Failed to import API Gateway URL from CloudFormation export %s. This may indicate the ApiStack has not been deployed yet. Exception: %s",
-                    apiGatewayExportName, e.getMessage());
-        }
 
         // Create the Edge stack (CloudFront, Route53)
         this.edgeStack = new EdgeStack(
@@ -199,9 +189,11 @@ public class SubmitDelivery {
                             .resourceNamePrefix(sharedNames.delResourceNamePrefix)
                             .cloudTrailEnabled(cloudTrailEnabled)
                             .sharedNames(sharedNames)
+                            .baseImageTag(baseImageTag)
                             .selfDestructLogGroupName(sharedNames.ue1SelfDestructLogGroupName)
                             .selfDestructStartDatetime(selfDestructStartDatetime)
                             .selfDestructDelayHours(selfDestructDelayHours)
+                            .isDeliveryStack(true)
                             .build());
         } else {
             this.selfDestructStack = null;

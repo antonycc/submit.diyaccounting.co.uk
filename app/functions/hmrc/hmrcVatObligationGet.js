@@ -41,6 +41,19 @@ export async function handler(event) {
   if (to && !/^\d{4}-\d{2}-\d{2}$/.test(to)) errorMessages.push("Invalid to date format - must be YYYY-MM-DD");
   if (status && !["O", "F"].includes(status)) errorMessages.push("Invalid status - must be O (Open) or F (Fulfilled)");
 
+  // If from or to are not set, set them to the begining of the current calendar year to today
+  const currentDate = new Date();
+  const currentYear = currentDate.getFullYear();
+  const defaultFromDate = `${currentYear}-01-01`;
+  const defaultToDate = currentDate.toISOString().split("T")[0]; // YYYY-MM-DD
+  const finalFrom = from || defaultFromDate;
+  const finalTo = to || defaultToDate;
+
+  // Additional validation: from date should not be after to date
+  if (new Date(finalFrom) > new Date(finalTo)) {
+    errorMessages.push("Invalid date range - from date cannot be after to date");
+  }
+
   const { govClientHeaders, govClientErrorMessages } = eventToGovClientHeaders(event, detectedIP);
   errorMessages = errorMessages.concat(govClientErrorMessages || []);
 

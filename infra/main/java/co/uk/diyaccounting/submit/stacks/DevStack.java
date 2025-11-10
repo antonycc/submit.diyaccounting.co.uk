@@ -1,11 +1,7 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
-import java.util.List;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Aspects;
 import software.amazon.awscdk.Duration;
@@ -26,6 +22,12 @@ import software.amazon.awscdk.services.iam.ServicePrincipal;
 import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.constructs.Construct;
+
+import java.util.List;
+import java.util.Objects;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 public class DevStack extends Stack {
 
@@ -70,15 +72,36 @@ public class DevStack extends Stack {
     }
 
     public DevStack(Construct scope, String id, StackProps stackProps, DevStackProps props) {
-        super(scope, id, stackProps);
+        super(scope, id, StackProps.builder()
+            .env(props.getEnv()) // enforce region from props
+            .description(stackProps != null ? stackProps.getDescription() : null)
+            .stackName(stackProps != null ? stackProps.getStackName() : null)
+            .terminationProtection(stackProps != null ? stackProps.getTerminationProtection() : null)
+            .analyticsReporting(stackProps != null ? stackProps.getAnalyticsReporting() : null)
+            .synthesizer(stackProps != null ? stackProps.getSynthesizer() : null)
+            .crossRegionReferences(stackProps != null ? stackProps.getCrossRegionReferences() : null)
+            .build());
 
         infof(
-                "Creating DevStack for domain: %s (dashed: %s)",
+                "Creating DevStack for domain: %s (dashed: %s) in region: %s",
+                Objects.requireNonNull(props.getEnv()).getRegion(),
                 props.sharedNames().deploymentDomainName, props.sharedNames().dashedDeploymentDomainName);
+        String ecrRepositoryName;
+        String ecrLogGroupName;
+        String ecrPublishRoleName;
+        if (Objects.equals(props.getEnv().getRegion(), "us-east-1")) {
+            ecrRepositoryName = props.sharedNames().ue1EcrRepositoryName;
+            ecrLogGroupName = props.sharedNames().ue1EcrLogGroupName;
+            ecrPublishRoleName = props.sharedNames().ue1EcrPublishRoleName;
+        } else {
+            ecrRepositoryName = props.sharedNames().ecrRepositoryName;
+            ecrLogGroupName = props.sharedNames().ecrLogGroupName ;
+            ecrPublishRoleName = props.sharedNames().ecrPublishRoleName;
+        }
 
         // ECR Repository with lifecycle rules
         this.ecrRepository = Repository.Builder.create(this, props.resourceNamePrefix() + "-EcrRepository")
-                .repositoryName(props.sharedNames().ecrRepositoryName)
+                .repositoryName(ecrRepositoryName)
                 .imageScanOnPush(true) // Enable vulnerability scanning
                 .imageTagMutability(TagMutability.MUTABLE)
                 .lifecycleRules(List.of(
@@ -94,14 +117,14 @@ public class DevStack extends Stack {
 
         // CloudWatch Log Group for ECR operations with 7-day retention
         this.ecrLogGroup = LogGroup.Builder.create(this, props.resourceNamePrefix() + "-EcrLogGroup")
-                .logGroupName(props.sharedNames().ecrLogGroupName)
+                .logGroupName(ecrLogGroupName)
                 .retention(RetentionDays.ONE_WEEK) // 7-day retention as requested
                 .removalPolicy(RemovalPolicy.DESTROY)
                 .build();
 
         // IAM Role for ECR publishing with comprehensive permissions
         this.ecrPublishRole = Role.Builder.create(this, props.resourceNamePrefix() + "-EcrPublishRole")
-                .roleName(props.sharedNames().ecrPublishRoleName)
+                .roleName(ecrPublishRoleName)
                 .assumedBy(new ServicePrincipal("lambda.amazonaws.com"))
                 .inlinePolicies(java.util.Map.of(
                         "EcrPublishPolicy",
