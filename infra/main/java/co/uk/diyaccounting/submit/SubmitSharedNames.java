@@ -72,7 +72,7 @@ public class SubmitSharedNames {
     public String holdingBucketName;
     public String originBucketName;
     public String originAccessLogBucketName;
-    public String distributionAccessLogBucketName;
+    //public String distributionAccessLogBucketName;
     public String distributionAccessLogGroupName;
     public String distributionAccessLogDeliverySourceName;
     public String distributionAccessLogDeliveryDestinationName;
@@ -288,10 +288,10 @@ public class SubmitSharedNames {
 
         this.receiptsBucketName = "%s-receipts".formatted(this.envDashedDomainName);
         this.bundlesTableName = "%s-bundles".formatted(this.envDashedDomainName);
-        this.distributionAccessLogBucketName = "distribution-%s-logs".formatted(this.envDashedDomainName);
+        //this.distributionAccessLogBucketName = "distribution-%s-logs".formatted(this.envDashedDomainName);
         this.distributionAccessLogGroupName = "distribution-%s-logs".formatted(this.envDashedDomainName);
-        this.distributionAccessLogDeliverySourceName = "distribution-%s-cf-access-logs-src".formatted(this.envDashedDomainName);
-        this.distributionAccessLogDeliveryDestinationName = "distribution-%s-cf-access-logs-dest".formatted(this.envDashedDomainName);
+        this.distributionAccessLogDeliverySourceName = "distribution-%s-logs-src".formatted(this.envDashedDomainName);
+        this.distributionAccessLogDeliveryDestinationName = "distribution-%s-logs-dest".formatted(this.envDashedDomainName);
 
         this.ew2SelfDestructLogGroupName =
                 "/aws/lambda/%s-self-destruct-eu-west-2".formatted(this.envResourceNamePrefix);
