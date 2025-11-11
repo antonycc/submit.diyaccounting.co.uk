@@ -64,14 +64,11 @@ export async function handler(event) {
   if (vatDue !== undefined && vatDue !== null && Number.isNaN(numVatDue)) {
     errorMessages.push("Invalid vatDue - must be a number");
   }
-  // TODO: Remove this environment variable HMRC_STRICT_VALIDATION and update unit, web-unit, system, and behaviour, tests to match the strict format
-  if (process.env.HMRC_STRICT_VALIDATION === "true") {
-    if (vatNumber && !/^\d{9}$/.test(String(vatNumber))) {
-      errorMessages.push("Invalid vatNumber format - must be 9 digits");
-    }
-    if (periodKey && !/^[A-Z0-9#]{3,5}$/i.test(String(periodKey))) {
-      errorMessages.push("Invalid periodKey format");
-    }
+  if (vatNumber && !/^\d{9}$/.test(String(vatNumber))) {
+    errorMessages.push("Invalid vatNumber format - must be 9 digits");
+  }
+  if (periodKey && !/^[A-Z0-9#]{3,5}$/i.test(String(periodKey))) {
+    errorMessages.push("Invalid periodKey format");
   }
 
   // Generate Gov-Client headers and collect any header-related validation errors

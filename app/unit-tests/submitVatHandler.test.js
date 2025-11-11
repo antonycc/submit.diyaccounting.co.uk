@@ -231,7 +231,7 @@ describe("httpPostMock", () => {
 
     const event = {
       body: JSON.stringify({
-        vatNumber: "invalid",
+        vatNumber: "111222333",
         periodKey: "23A1",
         vatDue: "1000.50",
         accessToken: "test access token",
