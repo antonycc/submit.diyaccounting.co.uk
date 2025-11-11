@@ -2382,7 +2382,7 @@ jobs:
       - name: Copy test reports to S3 origin bucket
         if: ${{ !cancelled() }}
         env:
-          BUCKET_NAME: origin-${{ needs.names.outputs.deployment-name }}-submit-del
+          BUCKET_NAME: ${{ needs.names.outputs.deployment-name }}-submit-del-origin-us-east-1
         run: |
           echo "Uploading test reports to S3 bucket: ${BUCKET_NAME?}"
           aws s3 cp target/test-reports/ s3://${BUCKET_NAME?}/tests/ --recursive
