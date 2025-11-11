@@ -17,3 +17,4 @@ npm upgrade
 npm install
 npm run build
 npm link
+git restore web/public/submit.deployment web/public/submit.env || true

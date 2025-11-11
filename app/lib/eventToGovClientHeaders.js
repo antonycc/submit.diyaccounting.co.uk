@@ -30,28 +30,34 @@ export default function eventToGovClientHeaders(event, detectedIP) {
   const govClientTimezoneHeader = (event.headers || {})["Gov-Client-Timezone"];
   const govClientUserIDsHeader = (event.headers || {})["Gov-Client-User-IDs"];
   const govClientWindowSizeHeader = (event.headers || {})["Gov-Client-Window-Size"];
+  const govTestScenarioHeader = event.headers?.["Gov-Test-Scenario"] || event.headers?.["gov-test-scenario"];
 
-  // TODO: Also gather system defined values here and validate, failing the request if they are not present.
+  const govClientHeaders = {
+    "Gov-Client-Connection-Method": "WEB_APP_VIA_SERVER",
+    "Gov-Client-Browser-JS-User-Agent": govClientBrowserJSUserAgentHeader,
+    "Gov-Client-Device-ID": govClientDeviceIDHeader,
+    "Gov-Client-Multi-Factor": govClientMultiFactorHeader,
+    "Gov-Client-Public-IP": govClientPublicIPHeader,
+    "Gov-Client-Public-IP-Timestamp": govClientPublicIPTimestampHeader,
+    "Gov-Client-Public-Port": govClientPublicPortHeader,
+    "Gov-Client-Screens": govClientScreensHeader,
+    "Gov-Client-Timezone": govClientTimezoneHeader,
+    "Gov-Client-User-IDs": govClientUserIDsHeader,
+    "Gov-Client-Window-Size": govClientWindowSizeHeader,
+    "Gov-Vendor-Forwarded": "by=203.0.113.6&for=198.51.100.0",
+    "Gov-Vendor-License-IDs": "my-licensed-software=8D7963490527D33716835EE7C195516D5E562E03B224E9B359836466EE40CDE1",
+    "Gov-Vendor-Product-Name": "DIY Accounting Submit",
+    "Gov-Vendor-Public-IP": govVendorPublicIPHeader,
+    "Gov-Vendor-Version": "web-submit-diyaccounting-co-uk-0.0.2-4",
+  };
+
+  // Forward Gov-Test-Scenario header from client when present (sandbox only)
+  if (govTestScenarioHeader) {
+    govClientHeaders["Gov-Test-Scenario"] = govTestScenarioHeader;
+  }
 
   return {
-    govClientHeaders: {
-      "Gov-Client-Connection-Method": "WEB_APP_VIA_SERVER",
-      "Gov-Client-Browser-JS-User-Agent": govClientBrowserJSUserAgentHeader,
-      "Gov-Client-Device-ID": govClientDeviceIDHeader,
-      "Gov-Client-Multi-Factor": govClientMultiFactorHeader,
-      "Gov-Client-Public-IP": govClientPublicIPHeader,
-      "Gov-Client-Public-IP-Timestamp": govClientPublicIPTimestampHeader,
-      "Gov-Client-Public-Port": govClientPublicPortHeader,
-      "Gov-Client-Screens": govClientScreensHeader,
-      "Gov-Client-Timezone": govClientTimezoneHeader,
-      "Gov-Client-User-IDs": govClientUserIDsHeader,
-      "Gov-Client-Window-Size": govClientWindowSizeHeader,
-      "Gov-Vendor-Forwarded": "by=203.0.113.6&for=198.51.100.0",
-      "Gov-Vendor-License-IDs": "my-licensed-software=8D7963490527D33716835EE7C195516D5E562E03B224E9B359836466EE40CDE1",
-      "Gov-Vendor-Product-Name": "DIY Accounting Submit",
-      "Gov-Vendor-Public-IP": govVendorPublicIPHeader,
-      "Gov-Vendor-Version": "web-submit-diyaccounting-co-uk-0.0.2-4",
-    },
+    govClientHeaders,
     govClientErrorMessages: [],
   };
 }

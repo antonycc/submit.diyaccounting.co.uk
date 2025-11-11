@@ -4,31 +4,23 @@ import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Aspects;
-import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
-import software.amazon.awscdk.services.s3.BlockPublicAccess;
-import software.amazon.awscdk.services.s3.Bucket;
-import software.amazon.awscdk.services.s3.BucketEncryption;
-import software.amazon.awscdk.services.s3.IBucket;
-import software.amazon.awscdk.services.s3.LifecycleRule;
-import software.amazon.awscdk.services.s3.ObjectOwnership;
 import software.constructs.Construct;
-
-import java.util.List;
 
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 public class ObservabilityUE1Stack extends Stack {
 
-    public LogGroup selfDestructLogGroup;
-    public final LogGroup webDeploymentLogGroup;
-    public IBucket distributionLogsBucket;
+    public final LogGroup selfDestructLogGroup;
+    //public final LogGroup webDeploymentLogGroup;
+    //public final IBucket distributionLogsBucket;
+    public final LogGroup distributionAccessLogGroup;
 
     @Value.Immutable
     public interface ObservabilityUE1StackProps extends StackProps, SubmitStackProps {
@@ -80,29 +72,35 @@ public class ObservabilityUE1Stack extends Stack {
             .build());
 
         // Log group for web deployment operations with 1-day retention
-        this.webDeploymentLogGroup = LogGroup.Builder.create(
-                        this, props.resourceNamePrefix() + "-WebDeploymentLogGroup")
-                .logGroupName(props.sharedNames().webDeploymentLogGroupName)
-                .retention(RetentionDays.ONE_DAY)
-                .removalPolicy(RemovalPolicy.DESTROY)
-                .build();
+        //this.webDeploymentLogGroup = LogGroup.Builder.create(
+        //                this, props.resourceNamePrefix() + "-WebDeploymentLogGroup")
+        //        .logGroupName(props.sharedNames().webDeploymentLogGroupName)
+        //        .retention(RetentionDays.ONE_DAY)
+        //        .removalPolicy(RemovalPolicy.DESTROY)
+        //        .build();
 
-        // TODO: Find alternative to log buckets for CloudFront distribution logs
-        this.distributionLogsBucket = Bucket.Builder.create(this, props.resourceNamePrefix() + "-LogsBucket")
-                .bucketName(props.sharedNames().distributionAccessLogBucketName)
-                .objectOwnership(ObjectOwnership.OBJECT_WRITER)
-                .versioned(false)
-                .blockPublicAccess(BlockPublicAccess.BLOCK_ALL)
-                .blockPublicAccess(BlockPublicAccess.BLOCK_ALL)
-                .encryption(BucketEncryption.S3_MANAGED)
-                .removalPolicy(RemovalPolicy.DESTROY)
-                .autoDeleteObjects(true)
-                .lifecycleRules(List.of(LifecycleRule.builder()
-                        .id(props.resourceNamePrefix() + "-LogsLifecycleRule")
-                        .enabled(true)
-                        .expiration(Duration.days(props.logGroupRetentionPeriodDays()))
-                        .build()))
-                .build();
+        // Log Group for CloudFront access logs
+        this.distributionAccessLogGroup = LogGroup.Builder.create(
+                this, props.resourceNamePrefix() + "-DistributionAccessLogGroup")
+            .logGroupName(props.sharedNames().distributionAccessLogGroupName)
+            .retention(RetentionDays.ONE_MONTH)
+            .removalPolicy(RemovalPolicy.DESTROY)
+            .build();
+//        this.distributionLogsBucket = Bucket.Builder.create(this, props.resourceNamePrefix() + "-LogsBucket")
+//                .bucketName(props.sharedNames().distributionAccessLogBucketName)
+//                .objectOwnership(ObjectOwnership.OBJECT_WRITER)
+//                .versioned(false)
+//                .blockPublicAccess(BlockPublicAccess.BLOCK_ALL)
+//                .blockPublicAccess(BlockPublicAccess.BLOCK_ALL)
+//                .encryption(BucketEncryption.S3_MANAGED)
+//                .removalPolicy(RemovalPolicy.DESTROY)
+//                .autoDeleteObjects(true)
+//                .lifecycleRules(List.of(LifecycleRule.builder()
+//                        .id(props.resourceNamePrefix() + "-LogsLifecycleRule")
+//                        .enabled(true)
+//                        .expiration(Duration.days(props.logGroupRetentionPeriodDays()))
+//                        .build()))
+//                .build();
 
         // Log group for self-destruct operations with 1-week retention
         this.selfDestructLogGroup = LogGroup.Builder.create(this, props.resourceNamePrefix() + "-SelfDestructLogGroup")
@@ -117,7 +115,7 @@ public class ObservabilityUE1Stack extends Stack {
         Aspects.of(this).add(new SetAutoDeleteJobLogRetentionAspect(props.deploymentName(), RetentionDays.THREE_DAYS));
 
         // Outputs for Observability resources
-        cfnOutput(this, "WebDeploymentLogGroupArn", this.webDeploymentLogGroup.getLogGroupArn());
+        //cfnOutput(this, "WebDeploymentLogGroupArn", this.webDeploymentLogGroup.getLogGroupArn());
         cfnOutput(this, "SelfDestructLogGroupArn", this.selfDestructLogGroup.getLogGroupArn());
     }
 }
