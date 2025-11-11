@@ -124,7 +124,7 @@ export async function handler(event) {
 
   // Generate error responses based on HMRC response
   if (!hmrcResponse.ok) {
-    return generateErrorResponse(request, requestId, hmrcResponse, hmrcResponseBody, hmrcAccessToken, responseHeaders);
+    return generateHmrcErrorResponseWithRetryAdvice(request, requestId, hmrcResponse, hmrcResponseBody, hmrcAccessToken, responseHeaders);
   }
 
   // Generate a success response
@@ -176,25 +176,20 @@ export async function submitVat(requestId, periodKey, vatDue, vatNumber, hmrcAcc
     hmrcResponseBody = JSON.parse(process.env.TEST_RECEIPT || "{}");
     logger.warn({ requestId, message: "httpPostMock called in stubbed mode, using test receipt", receipt: hmrcResponseBody });
   } else {
-    const timeoutEnv = 20000;
-    if (timeoutEnv && Number(timeoutEnv) > 0) {
-      const controller = new AbortController();
-      const timeoutMs = Number(timeoutEnv);
-      const timeout = setTimeout(() => controller.abort(), timeoutMs);
-      try {
-        hmrcResponse = await fetch(hmrcRequestUrl, {
-          method: "POST",
-          headers: {
-            ...hmrcRequestHeaders,
-            ...govClientHeaders,
-          },
-          body: JSON.stringify(hmrcRequestBody),
-          signal: controller.signal,
-        });
-      } finally {
-        clearTimeout(timeout);
-      }
-    } else {
+    hmrcResponseBody = hmrcHttpPost(hmrcRequestUrl, hmrcRequestHeaders, govClientHeaders, hmrcRequestBody);
+  }
+
+  return { hmrcRequestBody, receipt: hmrcResponseBody, hmrcResponse, hmrcResponseBody, hmrcRequestUrl };
+}
+
+async function hmrcHttpPost(hmrcRequestUrl, hmrcRequestHeaders, govClientHeaders, hmrcRequestBody) {
+  let hmrcResponse;
+  const timeoutEnv = 20000;
+  if (timeoutEnv && Number(timeoutEnv) > 0) {
+    const controller = new AbortController();
+    const timeoutMs = Number(timeoutEnv);
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+    try {
       hmrcResponse = await fetch(hmrcRequestUrl, {
         method: "POST",
         headers: {
@@ -202,15 +197,26 @@ export async function submitVat(requestId, periodKey, vatDue, vatNumber, hmrcAcc
           ...govClientHeaders,
         },
         body: JSON.stringify(hmrcRequestBody),
+        signal: controller.signal,
       });
+    } finally {
+      clearTimeout(timeout);
     }
-    hmrcResponseBody = await hmrcResponse.json();
+  } else {
+    hmrcResponse = await fetch(hmrcRequestUrl, {
+      method: "POST",
+      headers: {
+        ...hmrcRequestHeaders,
+        ...govClientHeaders,
+      },
+      body: JSON.stringify(hmrcRequestBody),
+    });
   }
-
-  return { hmrcRequestBody, receipt: hmrcResponseBody, hmrcResponse, hmrcResponseBody, hmrcRequestUrl };
+  const hmrcResponseBody = await hmrcResponse.json();
+  return hmrcResponseBody;
 }
 
-function generateErrorResponse(request, requestId, hmrcResponse, hmrcResponseBody, hmrcAccessToken, responseHeaders) {
+function generateHmrcErrorResponseWithRetryAdvice(request, requestId, hmrcResponse, hmrcResponseBody, hmrcAccessToken, responseHeaders) {
   // Attach parsed body for downstream error helpers
   hmrcResponse.data = hmrcResponseBody;
   if (hmrcResponse.status === 403) {
