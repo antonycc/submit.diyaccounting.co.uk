@@ -8,7 +8,6 @@ import {
   parseRequestBody,
   buildValidationError,
   http401UnauthorizedResponse,
-  http500ServerErrorResponse,
 } from "../../lib/responses.js";
 import eventToGovClientHeaders from "../../lib/eventToGovClientHeaders.js";
 import { validateEnv } from "../../lib/env.js";
@@ -16,11 +15,10 @@ import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest, log
 import { enforceBundles } from "../../lib/bundleEnforcement.js";
 import {
   UnauthorizedTokenError,
-  http403ForbiddenFromHmrcResponse,
-  http404NotFoundFromHmrcResponse,
-  http500ServerErrorFromHmrcResponse,
   validateHmrcAccessToken,
   http403ForbiddenFromBundleEnforcement,
+  generateHmrcErrorResponseWithRetryAdvice,
+  hmrcHttpPost,
 } from "../../lib/hmrcHelper.js";
 
 // Server hook for Express app, and construction of a Lambda-like event from HTTP request)
@@ -177,71 +175,8 @@ export async function submitVat(requestId, periodKey, vatDue, vatNumber, hmrcAcc
     logger.warn({ requestId, message: "httpPostMock called in stubbed mode, using test receipt", receipt: hmrcResponseBody });
   } else {
     // Perform real HTTP call
-    ({ hmrcResponse, hmrcResponseBody } = await hmrcHttpPost(
-      hmrcRequestUrl,
-      hmrcRequestHeaders,
-      govClientHeaders,
-      hmrcRequestBody,
-    ));
+    ({ hmrcResponse, hmrcResponseBody } = await hmrcHttpPost(hmrcRequestUrl, hmrcRequestHeaders, govClientHeaders, hmrcRequestBody));
   }
 
   return { hmrcRequestBody, receipt: hmrcResponseBody, hmrcResponse, hmrcResponseBody, hmrcRequestUrl };
-}
-
-async function hmrcHttpPost(hmrcRequestUrl, hmrcRequestHeaders, govClientHeaders, hmrcRequestBody) {
-  let hmrcResponse;
-  const timeoutEnv = 20000;
-  if (timeoutEnv && Number(timeoutEnv) > 0) {
-    const controller = new AbortController();
-    const timeoutMs = Number(timeoutEnv);
-    const timeout = setTimeout(() => controller.abort(), timeoutMs);
-    try {
-      hmrcResponse = await fetch(hmrcRequestUrl, {
-        method: "POST",
-        headers: {
-          ...hmrcRequestHeaders,
-          ...govClientHeaders,
-        },
-        body: JSON.stringify(hmrcRequestBody),
-        signal: controller.signal,
-      });
-    } finally {
-      clearTimeout(timeout);
-    }
-  } else {
-    hmrcResponse = await fetch(hmrcRequestUrl, {
-      method: "POST",
-      headers: {
-        ...hmrcRequestHeaders,
-        ...govClientHeaders,
-      },
-      body: JSON.stringify(hmrcRequestBody),
-    });
-  }
-  const hmrcResponseBody = await hmrcResponse.json();
-  return { hmrcResponse, hmrcResponseBody };
-}
-
-function generateHmrcErrorResponseWithRetryAdvice(request, requestId, hmrcResponse, hmrcResponseBody, hmrcAccessToken, responseHeaders) {
-  // Attach parsed body for downstream error helpers
-  hmrcResponse.data = hmrcResponseBody;
-  if (hmrcResponse.status === 403) {
-    return http403ForbiddenFromHmrcResponse(hmrcAccessToken, requestId, hmrcResponse, responseHeaders);
-  } else if (hmrcResponse.status === 404) {
-    return http404NotFoundFromHmrcResponse(request, requestId, hmrcResponse, responseHeaders);
-  } else if (hmrcResponse.status === 429) {
-    const retryAfter =
-      (hmrcResponse.headers &&
-        (hmrcResponse.headers.get ? hmrcResponse.headers.get("Retry-After") : hmrcResponse.headers["retry-after"])) ||
-      undefined;
-    return http500ServerErrorResponse({
-      request,
-      requestId,
-      headers: { ...responseHeaders },
-      message: "Upstream rate limited. Please retry later.",
-      error: { hmrcResponseCode: hmrcResponse.status, responseBody: hmrcResponse.data, retryAfter },
-    });
-  } else {
-    return http500ServerErrorFromHmrcResponse(request, requestId, hmrcResponse, responseHeaders);
-  }
 }

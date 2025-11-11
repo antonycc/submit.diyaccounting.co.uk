@@ -10,7 +10,7 @@ import {
   http500ServerErrorResponse,
 } from "../../lib/responses.js";
 import eventToGovClientHeaders from "../../lib/eventToGovClientHeaders.js";
-import { hmrcVatGet, shouldUseStub, getStubData } from "../../lib/hmrcVatApi.js";
+import { hmrcHttpGet, shouldUseStub, getStubData } from "../../lib/hmrcVatApi.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
 import {
   extractHmrcAccessTokenFromLambdaEvent,
@@ -69,7 +69,7 @@ export async function handler(event) {
     } else {
       logger.info({ requestId, message: "Retrieving VAT return from HMRC", vrn, periodKey, testScenario });
       const hmrcRequestUrl = `/organisations/vat/${vrn}/returns/${periodKey}`;
-      const hmrcResponse = await hmrcVatGet(requestId, hmrcRequestUrl, hmrcAccessToken, govClientHeaders, testScenario);
+      const hmrcResponse = await hmrcHttpGet(requestId, hmrcRequestUrl, hmrcAccessToken, govClientHeaders, testScenario);
 
       // Generate error responses based on HMRC response
       if (!hmrcResponse.ok) {
