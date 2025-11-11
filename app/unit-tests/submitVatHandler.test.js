@@ -39,6 +39,9 @@ describe("httpPostMock", () => {
     });
 
     const event = {
+      requestContext: {
+        requestId: "test-request-id",
+      },
       body: JSON.stringify({
         vatNumber: "111222333",
         periodKey: "23A1",
@@ -69,6 +72,7 @@ describe("httpPostMock", () => {
         "Gov-Vendor-License-IDs": "my-licensed-software=8D7963490527D33716835EE7C195516D5E562E03B224E9B359836466EE40CDE1",
         "Gov-Vendor-Product-Name": "DIY Accounting Submit",
         "Gov-Vendor-Version": "web-submit-diyaccounting-co-uk-0.0.2-4",
+        "x-request-id": "test-request-id",
       },
       body: JSON.stringify({
         periodKey: "23A1",

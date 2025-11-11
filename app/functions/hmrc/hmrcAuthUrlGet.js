@@ -1,6 +1,6 @@
 // app/functions/hmrcAuthUrlGet.js
 
-import { extractRequest, httpBadRequestResponse, httpOkResponse, httpServerErrorResponse } from "../../lib/responses.js";
+import { extractRequest, http400BadRequestResponse, http200OkResponse, http500ServerErrorResponse } from "../../lib/responses.js";
 import { validateEnv } from "../../lib/env.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
 
@@ -16,11 +16,11 @@ export function apiEndpoint(app) {
 export async function handler(event) {
   validateEnv(["HMRC_BASE_URI", "HMRC_CLIENT_ID", "DIY_SUBMIT_BASE_URL"]);
 
-  const request = extractRequest(event);
+  const { request, requestId } = extractRequest(event);
   const state = event.queryStringParameters?.state;
 
   if (!state) {
-    return httpBadRequestResponse({
+    return http400BadRequestResponse({
       request,
       message: "Missing state query parameter from URL",
     });
@@ -31,7 +31,7 @@ export async function handler(event) {
     const validScopes = ["write:vat", "read:vat", "write:vat read:vat", "read:vat write:vat"];
 
     if (!validScopes.includes(requestedScope)) {
-      return httpBadRequestResponse({
+      return http400BadRequestResponse({
         request,
         message: "Invalid scope parameter. Must be one of: write:vat, read:vat, or write:vat read:vat",
       });
@@ -49,13 +49,14 @@ export async function handler(event) {
       `&scope=${encodeURIComponent(requestedScope)}` +
       `&state=${encodeURIComponent(state)}`;
 
-    return httpOkResponse({
+    return http200OkResponse({
       request,
       data: { authUrl },
     });
   } catch (error) {
-    return httpServerErrorResponse({
+    return http500ServerErrorResponse({
       request,
+      requestId,
       data: { error, message: "Internal Server Error in httpGetHmrc" },
     });
   }

@@ -46,7 +46,7 @@ export function apiEndpoint(app) {
 //   // const secretArn = process.env.HMRC_CLIENT_SECRET_ARN;
 //   // const overrideSecret = process.env.HMRC_CLIENT_SECRET;
 //
-//   const request = extractRequest(event);
+//   const { request, requestId } = extractRequest(event);
 //   const { code } = JSON.parse(event.body || "{}");
 //   if (!code) {
 //     return httpBadRequestResponse({ request, message: "Missing code from event body" });

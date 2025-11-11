@@ -55,7 +55,7 @@
 - Add 429 mapping in `hmrcHelper` (if HMRC returns it):
   ```js
   if (hmrcResponse.status === 429) {
-    return httpServerErrorResponse({ request, headers: { ...govClientHeaders }, message: "Upstream rate limited. Please retry later.", error: { hmrcResponseCode: hmrcResponse.status, responseBody: hmrcResponse.data } });
+    return http500ServerErrorResponse({ request, headers: { ...govClientHeaders }, message: "Upstream rate limited. Please retry later.", error: { hmrcResponseCode: hmrcResponse.status, responseBody: hmrcResponse.data } });
   }
   ```
 - Expand OpenAPI responses using `SubmitSharedNames.Responses` for HMRC endpoints: add `401`, `403`, `404`, `500` with short descriptions.

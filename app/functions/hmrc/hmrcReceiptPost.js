@@ -2,7 +2,7 @@
 
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import logger from "../../lib/logger.js";
-import { extractRequest, httpBadRequestResponse, httpOkResponse, httpServerErrorResponse } from "../../lib/responses.js";
+import { extractRequest, http400BadRequestResponse, http200OkResponse, http500ServerErrorResponse } from "../../lib/responses.js";
 import { validateEnv } from "../../lib/env.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
 
@@ -64,7 +64,7 @@ export function apiEndpoint(app) {
 export async function handler(event) {
   validateEnv(["DIY_SUBMIT_RECEIPTS_BUCKET_NAME"]);
 
-  const request = extractRequest(event);
+  const { request, requestId } = extractRequest(event);
   const parsed = JSON.parse(event.body || "{}");
   const receipt = parsed && parsed.receipt ? parsed.receipt : parsed;
 
@@ -96,7 +96,7 @@ export async function handler(event) {
   if (!key) errorMessages.push("Missing key parameter derived from body");
 
   if (errorMessages.length > 0) {
-    return httpBadRequestResponse({
+    return http400BadRequestResponse({
       request,
       message: `There are ${errorMessages.length} validation errors for ${formBundle || "unknown"}.`,
       error: { error: errorMessages.join(", ") },
@@ -105,13 +105,14 @@ export async function handler(event) {
 
   try {
     await logReceipt(key, receipt);
-    return httpOkResponse({
+    return http200OkResponse({
       request,
       data: { receipt, key },
     });
   } catch (error) {
-    return httpServerErrorResponse({
+    return http500ServerErrorResponse({
       request,
+      requestId,
       message: `Failed to log receipt ${key}.`,
       error: { details: error.message },
     });
