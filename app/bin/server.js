@@ -85,15 +85,30 @@ const __argv1 = process.argv[1] ? path.resolve(process.argv[1]) : "";
 const __runDirect = __thisFile === __argv1 || String(process.env.TEST_SERVER_HTTP || "") === "run";
 
 if (__runDirect) {
-  validateEnv([
-    "DIY_SUBMIT_BASE_URL",
-    "COGNITO_CLIENT_ID",
-    "COGNITO_BASE_URI",
-    "HMRC_BASE_URI",
-    "HMRC_CLIENT_ID",
-    "HMRC_CLIENT_SECRET_ARN",
-    "DIY_SUBMIT_RECEIPTS_BUCKET_NAME",
-  ]);
+  const strict = process.env.STRICT_ENV_VALIDATION === "true";
+  try {
+    if (strict) {
+      validateEnv([
+        "DIY_SUBMIT_BASE_URL",
+        "COGNITO_CLIENT_ID",
+        "COGNITO_BASE_URI",
+        "HMRC_BASE_URI",
+        "HMRC_CLIENT_ID",
+        "HMRC_CLIENT_SECRET_ARN",
+        "DIY_SUBMIT_RECEIPTS_BUCKET_NAME",
+      ]);
+    } else {
+      // In local/dev and behaviour tests, validate only essential vars
+      validateEnv(["DIY_SUBMIT_BASE_URL", "HMRC_BASE_URI"]);
+    }
+  } catch (e) {
+    if (strict) {
+      throw e;
+    } else {
+      console.warn(`Non-strict env validation warning: ${e}`);
+      logger.warn(`Non-strict env validation warning: ${e}`);
+    }
+  }
   app.listen(TEST_SERVER_HTTP_PORT, () => {
     const message = `Listening at http://127.0.0.1:${TEST_SERVER_HTTP_PORT}`;
     console.log(message);

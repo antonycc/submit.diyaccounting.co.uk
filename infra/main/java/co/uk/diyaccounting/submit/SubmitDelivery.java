@@ -37,7 +37,6 @@ public class SubmitDelivery {
         public String cloudTrailEnabled;
         public String baseUrl;
         public String baseImageTag;
-        public String accessLogGroupRetentionPeriodDays;
         public String httpApiUrl;
         public String authUrlCognitoLambdaFunctionUrl;
         public String exchangeCognitoTokenLambdaFunctionUrl;
@@ -117,8 +116,6 @@ public class SubmitDelivery {
         // Support environment specific overrides of some cdk.json values
         var cloudTrailEnabled =
                 envOr("CLOUD_TRAIL_ENABLED", appProps.cloudTrailEnabled, "(from cloudTrailEnabled in cdk.json)");
-        var accessLogGroupRetentionPeriodDays = Integer.parseInt(
-                envOr("ACCESS_LOG_GROUP_RETENTION_PERIOD_DAYS", appProps.accessLogGroupRetentionPeriodDays, "30"));
         var baseImageTag = envOr("BASE_IMAGE_TAG", appProps.baseImageTag, "(from baseImageTag in cdk.json)");
         var selfDestructDelayHoursString = envOr(
                 "SELF_DESTRUCT_DELAY_HOURS",
@@ -152,7 +149,6 @@ public class SubmitDelivery {
                         .hostedZoneId(appProps.hostedZoneId)
                         .certificateArn(appProps.certificateArn)
                         .apiGatewayUrl(httpApiUrl)
-                        .logGroupRetentionPeriodDays(accessLogGroupRetentionPeriodDays)
                         .build());
 
         // Create the Publish stack (Bucket Deployments to CloudFront)

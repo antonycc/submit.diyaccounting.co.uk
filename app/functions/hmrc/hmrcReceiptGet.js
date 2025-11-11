@@ -1,7 +1,7 @@
 // app/functions/myReceipts.js
 import { ListObjectsV2Command, GetObjectCommand } from "@aws-sdk/client-s3";
 import logger from "../../lib/logger.js";
-import { extractRequest, httpOkResponse, httpBadRequestResponse, httpServerErrorResponse } from "../../lib/responses.js";
+import { extractRequest, http200OkResponse, http400BadRequestResponse, http500ServerErrorResponse } from "../../lib/responses.js";
 import { makeReceiptsS3 } from "../../lib/s3Env.js";
 import { streamToString } from "../../lib/streams.js";
 import { validateEnv } from "../../lib/env.js";
@@ -49,7 +49,7 @@ export async function handler(event) {
     return httpGetByName(event);
   }
 
-  const request = extractRequest(event);
+  const { request, requestId } = extractRequest(event);
   logger.info({ message: "myReceipts list entry", route: "/api/my/receipts" });
 
   const userSub = getUserSub(event || {});
@@ -89,15 +89,16 @@ export async function handler(event) {
 
     logger.info({ message: "myReceipts list exit", route: "/api/my/receipts", count: items.length });
 
-    return httpOkResponse({
+    return http200OkResponse({
       request,
       headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
       data: { receipts: items },
     });
   } catch (e) {
     logger.error({ message: "Failed to list receipts", error: e?.message || String(e) });
-    return httpServerErrorResponse({
+    return http500ServerErrorResponse({
       request,
+      requestId,
       headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
       message: "list_failed",
       error: { detail: e?.message || String(e) },
@@ -110,7 +111,7 @@ export async function handler(event) {
 export async function httpGetByName(event) {
   validateEnv(["DIY_SUBMIT_RECEIPTS_BUCKET_NAME"]);
 
-  const request = extractRequest(event);
+  const { request, requestId } = extractRequest(event);
   logger.info({ message: "myReceipts get entry", route: "/api/my/receipts/{name}" });
 
   const userSub = getUserSub(event || {});
@@ -136,7 +137,7 @@ export async function httpGetByName(event) {
     Key = providedKey;
   } else if (name) {
     if (!/^[^/]+\.json$/.test(name)) {
-      return httpBadRequestResponse({
+      return http400BadRequestResponse({
         request,
         headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
         message: "bad_request",
@@ -144,7 +145,7 @@ export async function httpGetByName(event) {
     }
     Key = `receipts/${userSub}/${name}`;
   } else {
-    return httpBadRequestResponse({
+    return http400BadRequestResponse({
       request,
       headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
       message: "Missing name or key",
@@ -167,15 +168,16 @@ export async function httpGetByName(event) {
   } catch (e) {
     const statusCode = e?.$metadata?.httpStatusCode || 500;
     if (statusCode === 404) {
-      return httpBadRequestResponse({
+      return http400BadRequestResponse({
         request,
         headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
         message: "not_found",
       });
     }
     logger.error({ message: "Failed to get receipt", error: e?.message || String(e) });
-    return httpServerErrorResponse({
+    return http500ServerErrorResponse({
       request,
+      requestId,
       headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
       message: "get_failed",
       error: { detail: e?.message || String(e) },

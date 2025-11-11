@@ -3,7 +3,7 @@
 import { SecretsManagerClient, GetSecretValueCommand } from "@aws-sdk/client-secrets-manager";
 
 import logger from "../../lib/logger.js";
-import { extractRequest, httpBadRequestResponse, parseRequestBody, buildTokenExchangeResponse } from "../../lib/responses.js";
+import { extractRequest, http400BadRequestResponse, parseRequestBody, buildTokenExchangeResponse } from "../../lib/responses.js";
 import { validateEnv } from "../../lib/env.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
 
@@ -24,12 +24,12 @@ export function apiEndpoint(app) {
 export async function handler(event) {
   validateEnv(["HMRC_BASE_URI", "HMRC_CLIENT_ID", "DIY_SUBMIT_BASE_URL", "HMRC_CLIENT_SECRET_ARN"]);
 
-  const request = extractRequest(event);
+  const { request, requestId } = extractRequest(event);
   const { code } = parseRequestBody(event);
 
   if (!code) {
     logger.warn("Missing code from event body");
-    return httpBadRequestResponse({
+    return http400BadRequestResponse({
       request,
       message: "Missing code from event body",
     });

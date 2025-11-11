@@ -34,9 +34,11 @@ import software.amazon.awscdk.services.cloudwatch.TreatMissingData;
 import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.lambda.FunctionAttributes;
 import software.amazon.awscdk.services.lambda.IFunction;
+import software.amazon.awscdk.services.lambda.Permission;
 import software.amazon.awscdk.services.logs.ILogGroup;
 import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
+import software.amazon.awscdk.services.iam.ServicePrincipal;
 import software.constructs.Construct;
 
 public class ApiStack extends Stack {
@@ -199,6 +201,15 @@ public class ApiStack extends Stack {
                 .identitySource(List.of("$request.header.X-Authorization"))
                 .resultsCacheTtl(Duration.minutes(5))
                 .build();
+
+        // Ensure API Gateway can invoke the custom authorizer Lambda explicitly (robust across regions)
+        customAuthorizerLambda.addPermission(
+                props.resourceNamePrefix() + "-AllowInvokeAuthorizerFromHttpApi",
+                Permission.builder()
+                        .action("lambda:InvokeFunction")
+                        .principal(new ServicePrincipal("apigateway.amazonaws.com"))
+                        .sourceArn("arn:aws:execute-api:" + this.getRegion() + ":" + this.getAccount() + ":" + this.httpApi.getApiId() + "/*")
+                        .build());
 
         java.util.Set<String> createdRouteKeys = new java.util.HashSet<>();
         java.util.Map<String, String> firstCreatorByRoute = new java.util.HashMap<>();
@@ -369,6 +380,15 @@ public class ApiStack extends Stack {
         infof(
                 "Created route %s %s for function %s",
                 apiLambdaProps.httpMethod().toString(), apiLambdaProps.urlPath(), fn.getFunctionName());
+
+        // Explicitly allow API Gateway to invoke this Lambda (defensive against region/env mismatches)
+        fn.addPermission(
+                apiLambdaProps.functionName() + "-AllowInvokeFromHttpApi-" + keySuffix,
+                Permission.builder()
+                        .action("lambda:InvokeFunction")
+                        .principal(new ServicePrincipal("apigateway.amazonaws.com"))
+                        .sourceArn("arn:aws:execute-api:" + this.getRegion() + ":" + this.getAccount() + ":" + this.httpApi.getApiId() + "/*")
+                        .build());
 
         // Collect metrics for monitoring
         lambdaIntegrations.lambdaInvocations.add(fn.metricInvocations());

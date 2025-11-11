@@ -15,7 +15,6 @@
     "baseUrl": "",
     "originAccessLogBucketArn": "",
     "distributionAccessLogBucketArn": "",
-    "webDeploymentLogGroupArn": "",
     "httpApiUrl": "",
     "authUrlCognitoLambdaFunctionUrl": "",
     "exchangeCognitoTokenLambdaFunctionUrl": "",
@@ -34,7 +33,6 @@
     "certificateArn": "arn:aws:acm:us-east-1:887764105431:certificate/b23cd904-8e3b-4cd0-84f1-57ca11d7fe2b",
     "cloudTrailEnabled": "true",
     "docRootPath": "../web/public",
-    "accessLogGroupRetentionPeriodDays": "30",
     "selfDestructDelayHours": "1"
   }
 }

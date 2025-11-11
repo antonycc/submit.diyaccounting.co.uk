@@ -3,22 +3,24 @@
 import logger from "../../lib/logger.js";
 import {
   extractRequest,
-  httpBadRequestResponse,
-  httpOkResponse,
-  httpServerErrorResponse,
+  http400BadRequestResponse,
+  http200OkResponse,
   extractClientIPFromHeaders,
-  extractAuthToken,
   buildValidationError,
-  withErrorHandling,
+  http500ServerErrorResponse,
 } from "../../lib/responses.js";
 import eventToGovClientHeaders from "../../lib/eventToGovClientHeaders.js";
 import { hmrcVatGet, shouldUseStub, getStubData } from "../../lib/hmrcVatApi.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
-// import { requireActivity } from "../../lib/entitlementsService.js";
+import {
+  extractHmrcAccessTokenFromLambdaEvent,
+  http403ForbiddenFromHmrcResponse,
+  http404NotFoundFromHmrcResponse,
+  http500ServerErrorFromHmrcResponse,
+  validateHmrcAccessToken,
+} from "../../lib/hmrcHelper.js";
 
 export function apiEndpoint(app) {
-  // VAT Obligations endpoint
-  // requireActivity("vat-obligations-sandbox"),
   app.get("/api/v1/hmrc/vat/obligation", async (httpRequest, httpResponse) => {
     const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
     const lambdaResult = await handler(lambdaEvent);
@@ -28,7 +30,7 @@ export function apiEndpoint(app) {
 
 // GET /api/v1/hmrc/vat/obligation?sandbox={true|false}
 export async function handler(event) {
-  const request = extractRequest(event);
+  const { request, requestId } = extractRequest(event);
   const detectedIP = extractClientIPFromHeaders(event);
 
   const queryParams = event.queryStringParameters || {};
@@ -59,61 +61,70 @@ export async function handler(event) {
   errorMessages = errorMessages.concat(govClientErrorMessages || []);
 
   if (errorMessages.length > 0) {
-    return buildValidationError(request, errorMessages, govClientHeaders);
+    return buildValidationError(request, requestId, errorMessages, govClientHeaders);
   }
 
-  const accessToken = extractAuthToken(event);
-  if (!accessToken) {
-    return httpBadRequestResponse({
+  const hmrcAccessToken = extractHmrcAccessTokenFromLambdaEvent(event);
+  if (!hmrcAccessToken) {
+    return http400BadRequestResponse({
       request,
       headers: { ...govClientHeaders },
       message: "Missing Authorization Bearer token",
     });
   }
 
-  return withErrorHandling(request, govClientHeaders, async () => {
-    let obligations;
+  validateHmrcAccessToken(hmrcAccessToken, requestId);
 
+  let obligations;
+  try {
     // Check if we should use stubbed data
-    logger.info({ message: "Checking for stubbed VAT obligations data", testScenario });
+    logger.info({ requestId, message: "Checking for stubbed VAT obligations data", testScenario });
     if (shouldUseStub("TEST_VAT_OBLIGATIONS")) {
-      logger.info({ message: "[MOCK] Using stubbed VAT obligations data", testScenario });
+      logger.info({ requestId, message: "[MOCK] Using stubbed VAT obligations data", testScenario });
       obligations = getStubData("TEST_VAT_OBLIGATIONS");
     } else {
-      logger.info({ message: "Retrieving VAT obligations from HMRC API", vrn, testScenario });
+      logger.info({ requestId, message: "Retrieving VAT obligations from HMRC API", vrn, testScenario });
+
       // Build query parameters for HMRC API
       const hmrcQueryParams = {};
       if (from) hmrcQueryParams.from = from;
       if (to) hmrcQueryParams.to = to;
       if (status) hmrcQueryParams.status = status;
 
-      const hmrcResult = await hmrcVatGet(
-        `/organisations/vat/${vrn}/obligations`,
-        accessToken,
-        govClientHeaders,
-        testScenario,
-        hmrcQueryParams,
-        useSandbox,
-      );
+      const hmrcRequestUrl = `/organisations/vat/${vrn}/obligations`;
+      const hmrcResponse = await hmrcVatGet(requestId, hmrcRequestUrl, hmrcAccessToken, govClientHeaders, testScenario, hmrcQueryParams, useSandbox);
 
-      if (!hmrcResult.ok) {
-        return httpServerErrorResponse({
-          request,
-          headers: { ...govClientHeaders },
-          message: "HMRC VAT obligations retrieval failed",
-          error: {
-            hmrcResponseCode: hmrcResult.status,
-            responseBody: hmrcResult.data,
-          },
-        });
+      // Generate error responses based on HMRC response
+      if (!hmrcResponse.ok) {
+        if (hmrcResponse.status === 403) {
+          return http403ForbiddenFromHmrcResponse(hmrcAccessToken, requestId, hmrcResponse, govClientHeaders);
+        } else if (hmrcResponse.status === 404) {
+          return http404NotFoundFromHmrcResponse(request, requestId, hmrcResponse, govClientHeaders);
+        } else {
+          return http500ServerErrorFromHmrcResponse(request, requestId, hmrcResponse, govClientHeaders);
+        }
       }
-
-      obligations = hmrcResult.data;
+      obligations = hmrcResponse.data;
     }
-
-    return httpOkResponse({
-      request,
-      data: obligations,
+  } catch (error) {
+    logger.error({
+      requestId,
+      message: "Error in handler",
+      error: error.message,
+      stack: error.stack,
     });
+    return http500ServerErrorResponse({
+      request,
+      requestId,
+      headers: { ...govClientHeaders },
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+
+  return http200OkResponse({
+    request,
+    requestId,
+    data: obligations,
   });
 }

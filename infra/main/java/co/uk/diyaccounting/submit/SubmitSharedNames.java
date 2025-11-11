@@ -72,10 +72,13 @@ public class SubmitSharedNames {
     public String holdingBucketName;
     public String originBucketName;
     public String originAccessLogBucketName;
-    public String distributionAccessLogBucketName;
+    public String distributionAccessLogGroupName;
+    public String distributionAccessLogDeliveryHoldingSourceName;
+    public String distributionAccessLogDeliveryOriginSourceName;
+    public String distributionAccessLogDeliveryHoldingDestinationName;
+    public String distributionAccessLogDeliveryOriginDestinationName;
     public String ew2SelfDestructLogGroupName;
     public String ue1SelfDestructLogGroupName;
-    public String webDeploymentLogGroupName;
     public String apiAccessLogGroupName;
 
     public String envDashedDomainName;
@@ -237,6 +240,15 @@ public class SubmitSharedNames {
 
     private SubmitSharedNames() {}
 
+    // Common HTTP response codes to be referenced across infra generators and stacks
+    public static class Responses {
+        public static final String OK = "200";
+        public static final String UNAUTHORIZED = "401";
+        public static final String FORBIDDEN = "403";
+        public static final String NOT_FOUND = "404";
+        public static final String SERVER_ERROR = "500";
+    }
+
     public static SubmitSharedNames forDocs() {
         SubmitSharedNamesProps p = new SubmitSharedNamesProps();
         p.hostedZoneName = "example.com";
@@ -276,13 +288,16 @@ public class SubmitSharedNames {
 
         this.receiptsBucketName = "%s-receipts".formatted(this.envDashedDomainName);
         this.bundlesTableName = "%s-bundles".formatted(this.envDashedDomainName);
-        this.distributionAccessLogBucketName = "distribution-%s-logs".formatted(this.envDashedDomainName);
+        this.distributionAccessLogGroupName = "distribution-%s-logs".formatted(this.envDashedDomainName);
+        this.distributionAccessLogDeliveryHoldingSourceName = "%s-holding-dist-logs-src".formatted(this.envDashedDomainName);
+        this.distributionAccessLogDeliveryOriginSourceName = "%s-origin-dist-logs-src".formatted(props.deploymentName);
+        this.distributionAccessLogDeliveryHoldingDestinationName = "%s-holding-logs-dest".formatted(this.envDashedDomainName);
+        this.distributionAccessLogDeliveryOriginDestinationName = "%s-origin-logs-dest".formatted(props.deploymentName);
 
         this.ew2SelfDestructLogGroupName =
                 "/aws/lambda/%s-self-destruct-eu-west-2".formatted(this.envResourceNamePrefix);
         this.ue1SelfDestructLogGroupName =
                 "/aws/lambda/%s-self-destruct-us-east-1".formatted(this.envResourceNamePrefix);
-        this.webDeploymentLogGroupName = "/deployment/%s-web-deployment".formatted(this.envResourceNamePrefix);
         this.apiAccessLogGroupName = "/aws/apigw/%s/access".formatted(this.envResourceNamePrefix);
 
         this.appResourceNamePrefix = "%s-app".formatted(generateResourceNamePrefix(this.deploymentDomainName));
@@ -311,8 +326,8 @@ public class SubmitSharedNames {
         this.delSelfDestructStackId = "%s-del-SelfDestructStack".formatted(props.deploymentName);
 
         this.trailName = "%s-trail".formatted(this.envResourceNamePrefix);
-        this.holdingBucketName = convertDotSeparatedToDashSeparated("holding-" + this.envResourceNamePrefix);
-        this.originBucketName = convertDotSeparatedToDashSeparated("origin-" + this.delResourceNamePrefix);
+        this.holdingBucketName = convertDotSeparatedToDashSeparated("%s-holding-us-east-1".formatted(this.envResourceNamePrefix));
+        this.originBucketName = convertDotSeparatedToDashSeparated("%s-origin-us-east-1".formatted(this.delResourceNamePrefix));
         this.originAccessLogBucketName = "%s-origin-access-logs".formatted(this.delResourceNamePrefix);
 
         var appLambdaHandlerPrefix = "app/functions";

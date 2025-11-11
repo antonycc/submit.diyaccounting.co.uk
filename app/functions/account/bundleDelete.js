@@ -21,7 +21,7 @@ export function apiEndpoint(app) {
 }
 
 export async function handler(event) {
-  const request = extractRequest(event);
+  const { request, requestId } = extractRequest(event);
   logger.info({ message: "bundleDelete entry", route: "/api/v1/bundle", request });
 
   validateEnv(["COGNITO_USER_POOL_ID"]);

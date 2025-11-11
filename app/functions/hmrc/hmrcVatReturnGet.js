@@ -3,22 +3,24 @@
 import logger from "../../lib/logger.js";
 import {
   extractRequest,
-  httpBadRequestResponse,
-  httpOkResponse,
-  httpServerErrorResponse,
+  http400BadRequestResponse,
+  http200OkResponse,
   extractClientIPFromHeaders,
-  extractAuthToken,
   buildValidationError,
-  withErrorHandling,
+  http500ServerErrorResponse,
 } from "../../lib/responses.js";
 import eventToGovClientHeaders from "../../lib/eventToGovClientHeaders.js";
 import { hmrcVatGet, shouldUseStub, getStubData } from "../../lib/hmrcVatApi.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
-// import { requireActivity } from "../../lib/entitlementsService.js";
+import {
+  extractHmrcAccessTokenFromLambdaEvent,
+  http403ForbiddenFromHmrcResponse,
+  http404NotFoundFromHmrcResponse,
+  http500ServerErrorFromHmrcResponse,
+  validateHmrcAccessToken,
+} from "../../lib/hmrcHelper.js";
 
 export function apiEndpoint(app) {
-  // VAT Return endpoint (view submitted return)
-  // requireActivity("view-vat-return-sandbox"),
   app.get(`/api/v1/hmrc/vat/return/:periodKey`, async (httpRequest, httpResponse) => {
     const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
     const lambdaResult = await handler(lambdaEvent);
@@ -28,7 +30,7 @@ export function apiEndpoint(app) {
 
 // GET /api/v1/hmrc/vat/return/:periodKey?sandbox={true|false}
 export async function handler(event) {
-  const request = extractRequest(event);
+  const { request, requestId } = extractRequest(event);
   const detectedIP = extractClientIPFromHeaders(event);
 
   const pathParams = event.pathParameters || {};
@@ -47,84 +49,63 @@ export async function handler(event) {
   errorMessages = errorMessages.concat(govClientErrorMessages || []);
 
   if (errorMessages.length > 0) {
-    return buildValidationError(request, errorMessages, govClientHeaders);
+    return buildValidationError(request, requestId, errorMessages, govClientHeaders);
   }
 
-  const accessToken = extractAuthToken(event);
-  if (!accessToken) {
-    return httpBadRequestResponse({
+  const hmrcAccessToken = extractHmrcAccessTokenFromLambdaEvent(event);
+  if (!hmrcAccessToken) {
+    return http400BadRequestResponse({
       request,
       headers: { ...govClientHeaders },
       message: "Missing Authorization Bearer token",
     });
   }
+  validateHmrcAccessToken(hmrcAccessToken, requestId);
 
-  return withErrorHandling(request, govClientHeaders, async () => {
-    let vatReturn;
-
-    // Check if we should use stubbed data
-    logger.info({ message: "Checking for stubbed VAT return data", vrn, periodKey, testScenario });
+  let vatReturn;
+  try {
+    logger.info({ requestId, message: "Checking for stubbed VAT return data", vrn, periodKey, testScenario });
     if (shouldUseStub("TEST_VAT_RETURN")) {
-      logger.warn({ message: "[MOCK] Using stubbed VAT return data", vrn, periodKey, testScenario });
+      logger.warn({ requestId, message: "[MOCK] Using stubbed VAT return data", vrn, periodKey, testScenario });
       vatReturn = getStubData("TEST_VAT_RETURN");
     } else {
-      // Call HMRC API
-      logger.info({ message: "Retrieving VAT return from HMRC", vrn, periodKey, testScenario, useSandbox });
-      const hmrcResult = await hmrcVatGet(
-        `/organisations/vat/${vrn}/returns/${periodKey}`,
-        accessToken,
-        govClientHeaders,
-        testScenario,
-        {},
-        useSandbox,
-      );
+      logger.info({ requestId, message: "Retrieving VAT return from HMRC", vrn, periodKey, testScenario });
+      const hmrcRequestUrl = `/organisations/vat/${vrn}/returns/${periodKey}`;
+      const hmrcResponse = await hmrcVatGet(requestId, hmrcRequestUrl, hmrcAccessToken, govClientHeaders, testScenario, useSandbox);
 
-      if (!hmrcResult.ok) {
-        if (hmrcResult.status === 404) {
-          logger.warn({
-            message: "VAT return not found for specified period",
-            vrn,
-            periodKey,
-            hmrcResponseCode: hmrcResult.status,
-            responseBody: hmrcResult.data,
-          });
-          return httpBadRequestResponse({
-            request,
-            headers: { ...govClientHeaders },
-            message: "VAT return not found for the specified period",
-            error: {
-              hmrcResponseCode: hmrcResult.status,
-              responseBody: hmrcResult.data,
-            },
-          });
+      // Generate error responses based on HMRC response
+      if (!hmrcResponse.ok) {
+        if (hmrcResponse.status === 403) {
+          return http403ForbiddenFromHmrcResponse(hmrcAccessToken, requestId, hmrcResponse, govClientHeaders);
+        } else if (hmrcResponse.status === 404) {
+          return http404NotFoundFromHmrcResponse(request, requestId, hmrcResponse, govClientHeaders);
+        } else {
+          return http500ServerErrorFromHmrcResponse(request, requestId, hmrcResponse, govClientHeaders);
         }
-
-        logger.error({
-          message: "HMRC VAT return retrieval failed",
-          vrn,
-          periodKey,
-          hmrcResponseCode: hmrcResult.status,
-          responseBody: hmrcResult.data,
-        });
-        return httpServerErrorResponse({
-          request,
-          headers: { ...govClientHeaders },
-          message: "HMRC VAT return retrieval failed",
-          error: {
-            hmrcResponseCode: hmrcResult.status,
-            responseBody: hmrcResult.data,
-          },
-        });
       }
-
-      vatReturn = hmrcResult.data;
+      vatReturn = hmrcResponse.data;
     }
-
-    // Return successful response
-    logger.info({ message: "Successfully retrieved VAT return", vrn, periodKey });
-    return httpOkResponse({
-      request,
-      data: vatReturn,
+  } catch (error) {
+    logger.error({
+      requestId,
+      message: "Error in handler",
+      error: error.message,
+      stack: error.stack,
     });
+    return http500ServerErrorResponse({
+      request,
+      requestId,
+      headers: { ...govClientHeaders },
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+
+  // Return successful response
+  logger.info({ message: "Successfully retrieved VAT return", vrn, periodKey });
+  return http200OkResponse({
+    request,
+    requestId,
+    data: vatReturn,
   });
 }

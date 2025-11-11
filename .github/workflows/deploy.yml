@@ -2383,7 +2383,7 @@ jobs:
       - name: Copy test reports to S3 origin bucket
         if: ${{ !cancelled() }}
         env:
-          BUCKET_NAME: origin-${{ needs.names.outputs.deployment-name }}-submit-del
+          BUCKET_NAME: ${{ needs.names.outputs.deployment-name }}-submit-del-origin-us-east-1
         run: |
           echo "Uploading test reports to S3 bucket: ${BUCKET_NAME?}"
           aws s3 cp target/test-reports/ s3://${BUCKET_NAME?}/tests/ --recursive
@@ -2531,7 +2531,10 @@ jobs:
     name: 'set last known good deployment'
     needs:
       - names
-      - upload-web-test-results
+      - web-test-bundle
+      - web-test-obligation
+      - web-test-submit-vat
+      - web-test-view-vat
     runs-on: ubuntu-24.04
     environment: ${{ needs.names.outputs.environment-name }}
     steps:
