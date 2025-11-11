@@ -102,10 +102,11 @@ export async function handler(event) {
   let hmrcResponse;
   let hmrcResponseBody;
   try {
-    ({ receipt, hmrcResponse, hmrcResponseBody } = await submitVat(periodKey, vatDue, vatNumber, hmrcAccessToken, govClientHeaders));
+    logger.info({ message: "Submitting VAT return to HMRC", requestId, vatNumber, periodKey: normalizedPeriodKey });
+    ({ receipt, hmrcResponse, hmrcResponseBody } = await submitVat(normalizedPeriodKey, numVatDue, vatNumber, hmrcAccessToken, govClientHeaders));
   } catch (error) {
     // Preserve original behavior expected by tests: bubble up network errors
-    logger.error({ message: "Error while submitting VAT to HMRC", error: error.message, stack: error.stack });
+    logger.error({ message: "Error while submitting VAT to HMRC", requestId, error: error.message, stack: error.stack });
     throw error;
   }
 
@@ -114,17 +115,26 @@ export async function handler(event) {
     // Attach parsed body for downstream error helpers
     hmrcResponse.data = hmrcResponseBody;
     if (hmrcResponse.status === 403) {
-      return http403ForbiddenFromHmrcResponse(hmrcAccessToken, hmrcResponse, govClientHeaders);
+      return http403ForbiddenFromHmrcResponse(hmrcAccessToken, hmrcResponse, responseHeaders);
     } else if (hmrcResponse.status === 404) {
-      return http404NotFoundFromHmrcResponse(request, hmrcResponse, govClientHeaders);
+      return http404NotFoundFromHmrcResponse(request, hmrcResponse, responseHeaders);
+    } else if (hmrcResponse.status === 429) {
+      const retryAfter = (hmrcResponse.headers && (hmrcResponse.headers.get ? hmrcResponse.headers.get("Retry-After") : hmrcResponse.headers["retry-after"])) || undefined;
+      return httpServerErrorResponse({
+        request,
+        headers: { ...responseHeaders },
+        message: "Upstream rate limited. Please retry later.",
+        error: { hmrcResponseCode: hmrcResponse.status, responseBody: hmrcResponse.data, retryAfter },
+      });
     } else {
-      return http500ServerErrorFromHmrcResponse(request, hmrcResponse, govClientHeaders);
+      return http500ServerErrorFromHmrcResponse(request, hmrcResponse, responseHeaders);
     }
   }
 
   // Generate a success response
   return httpOkResponse({
     request,
+    headers: { ...responseHeaders },
     data: {
       receipt,
     },

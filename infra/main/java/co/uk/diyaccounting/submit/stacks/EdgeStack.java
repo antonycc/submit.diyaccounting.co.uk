@@ -294,7 +294,7 @@ public class EdgeStack extends Stack {
         // Lookup log group
         ILogGroup distributionAccessLogGroup = LogGroup.fromLogGroupName(
                 this,
-                props.resourceNamePrefix() + "-ImportedDistributionLogGroup",
+                props.resourceNamePrefix() + "-ImportedOriginDistributionLogGroup",
                 props.sharedNames().distributionAccessLogGroupName);
 
         // CloudFront distribution for the web origin and all the URL Lambdas.
@@ -327,7 +327,7 @@ public class EdgeStack extends Stack {
         // 3. CloudWatch Logs destination that points at your log group
         CfnDeliveryDestination cfLogsDestination = new CfnDeliveryDestination(
             this,
-            props.resourceNamePrefix() + "-CfAccessLogsDestination",
+            props.resourceNamePrefix() + "-CfAccessLogsOriginDestination",
             CfnDeliveryDestinationProps.builder()
                 // Name is arbitrary; keep it stable but does not need to be the log group name
                 .name(props.sharedNames().distributionAccessLogDeliveryOriginDestinationName)
@@ -339,9 +339,9 @@ public class EdgeStack extends Stack {
         // 4. Delivery source that represents the CloudFront distribution
         CfnDeliverySource cfLogsSource = new CfnDeliverySource(
             this,
-            props.resourceNamePrefix() + "-CfAccessLogsSource",
+            props.resourceNamePrefix() + "-CfAccessLogsOriginSource",
             CfnDeliverySourceProps.builder()
-                .name(props.sharedNames().distributionAccessLogDeliverySourceName)     // <-- use the shared variable
+                .name(props.sharedNames().distributionAccessLogDeliveryOriginSourceName)     // <-- use the shared variable
                 .logType("ACCESS_LOGS")       // required for CloudFront
                 .resourceArn(distributionArn) // ARN of the distribution
                 .build()
@@ -350,10 +350,10 @@ public class EdgeStack extends Stack {
         // 5. Delivery that connects source to destination
         CfnDelivery cfLogsDelivery = new CfnDelivery(
             this,
-            props.resourceNamePrefix() + "-CfAccessLogsDelivery",
+            props.resourceNamePrefix() + "-CfAccessLogsOriginDelivery",
             CfnDeliveryProps.builder()
                 // *** IMPORTANT: must exactly match the Name above ***
-                .deliverySourceName(props.sharedNames().distributionAccessLogDeliverySourceName)
+                .deliverySourceName(props.sharedNames().distributionAccessLogDeliveryOriginSourceName)
                 .deliveryDestinationArn(cfLogsDestination.getAttrArn())
                 // optional: customise fields and delimiter
                 // .fieldDelimiter("\t")

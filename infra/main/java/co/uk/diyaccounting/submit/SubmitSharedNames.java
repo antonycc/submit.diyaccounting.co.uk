@@ -75,6 +75,7 @@ public class SubmitSharedNames {
     //public String distributionAccessLogBucketName;
     public String distributionAccessLogGroupName;
     public String distributionAccessLogDeliverySourceName;
+    public String distributionAccessLogDeliveryOriginSourceName;
     public String distributionAccessLogDeliveryDestinationName;
     public String distributionAccessLogDeliveryOriginDestinationName;
     public String ew2SelfDestructLogGroupName;
@@ -291,7 +292,9 @@ public class SubmitSharedNames {
         this.bundlesTableName = "%s-bundles".formatted(this.envDashedDomainName);
         //this.distributionAccessLogBucketName = "distribution-%s-logs".formatted(this.envDashedDomainName);
         this.distributionAccessLogGroupName = "distribution-%s-logs".formatted(this.envDashedDomainName);
+        // TODO: Rename both: this.distributionAccessLogHoldingDeliverySourceName = "dist-%s-logs-src".formatted(this.envDashedDomainName);
         this.distributionAccessLogDeliverySourceName = "distribution-%s-logs-src".formatted(this.envDashedDomainName);
+        this.distributionAccessLogDeliveryOriginSourceName = "dist-%s-logs-src-origin".formatted(this.envDashedDomainName);
         // TODO: Rename both: this.distributionAccessLogDeliveryHoldingDestinationName = "dist-%s-logs-dest-holding".formatted(this.envDashedDomainName);
         this.distributionAccessLogDeliveryDestinationName = "distribution-%s-logs-dest".formatted(this.envDashedDomainName);
         this.distributionAccessLogDeliveryOriginDestinationName = "dist-%s-logs-dest-origin".formatted(this.envDashedDomainName);
