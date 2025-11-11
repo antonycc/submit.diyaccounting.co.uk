@@ -76,6 +76,7 @@ public class SubmitSharedNames {
     public String distributionAccessLogGroupName;
     public String distributionAccessLogDeliverySourceName;
     public String distributionAccessLogDeliveryDestinationName;
+    public String distributionAccessLogDeliveryOriginDestinationName;
     public String ew2SelfDestructLogGroupName;
     public String ue1SelfDestructLogGroupName;
     //public String webDeploymentLogGroupName;
@@ -291,7 +292,9 @@ public class SubmitSharedNames {
         //this.distributionAccessLogBucketName = "distribution-%s-logs".formatted(this.envDashedDomainName);
         this.distributionAccessLogGroupName = "distribution-%s-logs".formatted(this.envDashedDomainName);
         this.distributionAccessLogDeliverySourceName = "distribution-%s-logs-src".formatted(this.envDashedDomainName);
+        // TODO: Rename both: this.distributionAccessLogDeliveryHoldingDestinationName = "dist-%s-logs-dest-holding".formatted(this.envDashedDomainName);
         this.distributionAccessLogDeliveryDestinationName = "distribution-%s-logs-dest".formatted(this.envDashedDomainName);
+        this.distributionAccessLogDeliveryOriginDestinationName = "dist-%s-logs-dest-origin".formatted(this.envDashedDomainName);
 
         this.ew2SelfDestructLogGroupName =
                 "/aws/lambda/%s-self-destruct-eu-west-2".formatted(this.envResourceNamePrefix);

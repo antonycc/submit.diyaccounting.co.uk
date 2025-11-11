@@ -330,7 +330,7 @@ public class EdgeStack extends Stack {
             props.resourceNamePrefix() + "-CfAccessLogsDestination",
             CfnDeliveryDestinationProps.builder()
                 // Name is arbitrary; keep it stable but does not need to be the log group name
-                .name(props.sharedNames().distributionAccessLogDeliveryDestinationName)
+                .name(props.sharedNames().distributionAccessLogDeliveryOriginDestinationName)
                 .destinationResourceArn(distributionAccessLogGroup.getLogGroupArn())
                 .outputFormat("json") // or "w3c"/"parquet" if you prefer
                 .build()
