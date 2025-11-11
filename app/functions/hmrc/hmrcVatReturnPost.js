@@ -30,7 +30,7 @@ export function apiEndpoint(app) {
   });
 }
 
-function extractAndValidateParameters(event, errorMessages) {
+export function extractAndValidateParameters(event, errorMessages) {
   const parsedBody = parseRequestBody(event);
   const { vatNumber, periodKey, vatDue, accessToken, hmrcAccessToken: hmrcAccessTokenInBody } = parsedBody || {};
   // TODO: Remove the alternate paths at source, then remove this compatibility code
