@@ -176,7 +176,13 @@ export async function submitVat(requestId, periodKey, vatDue, vatNumber, hmrcAcc
     hmrcResponseBody = JSON.parse(process.env.TEST_RECEIPT || "{}");
     logger.warn({ requestId, message: "httpPostMock called in stubbed mode, using test receipt", receipt: hmrcResponseBody });
   } else {
-    hmrcResponseBody = hmrcHttpPost(hmrcRequestUrl, hmrcRequestHeaders, govClientHeaders, hmrcRequestBody);
+    // Perform real HTTP call
+    ({ hmrcResponse, hmrcResponseBody } = await hmrcHttpPost(
+      hmrcRequestUrl,
+      hmrcRequestHeaders,
+      govClientHeaders,
+      hmrcRequestBody,
+    ));
   }
 
   return { hmrcRequestBody, receipt: hmrcResponseBody, hmrcResponse, hmrcResponseBody, hmrcRequestUrl };
@@ -213,7 +219,7 @@ async function hmrcHttpPost(hmrcRequestUrl, hmrcRequestHeaders, govClientHeaders
     });
   }
   const hmrcResponseBody = await hmrcResponse.json();
-  return hmrcResponseBody;
+  return { hmrcResponse, hmrcResponseBody };
 }
 
 function generateHmrcErrorResponseWithRetryAdvice(request, requestId, hmrcResponse, hmrcResponseBody, hmrcAccessToken, responseHeaders) {
