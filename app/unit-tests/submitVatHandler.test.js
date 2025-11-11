@@ -59,35 +59,38 @@ describe("httpPostMock", () => {
     expect(result.statusCode).toBe(200);
     expect(body.receipt).toEqual(mockReceipt);
 
-    // Verify fetch was called with correct parameters
-    expect(mockFetch).toHaveBeenCalledWith("https://test/organisations/vat/111222333/returns", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer test access token",
-        ...headers,
-        "Accept": "application/vnd.hmrc.1.0+json",
-        "Gov-Client-Connection-Method": "WEB_APP_VIA_SERVER",
-        "Gov-Vendor-Forwarded": "by=203.0.113.6&for=198.51.100.0",
-        "Gov-Vendor-License-IDs": "my-licensed-software=8D7963490527D33716835EE7C195516D5E562E03B224E9B359836466EE40CDE1",
-        "Gov-Vendor-Product-Name": "DIY Accounting Submit",
-        "Gov-Vendor-Version": "web-submit-diyaccounting-co-uk-0.0.2-4",
-        "x-request-id": "test-request-id",
-      },
-      body: JSON.stringify({
-        periodKey: "23A1",
-        vatDueSales: 1000.5,
-        vatDueAcquisitions: 0,
-        totalVatDue: 1000.5,
-        vatReclaimedCurrPeriod: 0,
-        netVatDue: 1000.5,
-        totalValueSalesExVAT: 0,
-        totalValuePurchasesExVAT: 0,
-        totalValueGoodsSuppliedExVAT: 0,
-        totalAcquisitionsExVAT: 0,
-        finalised: true,
+    // Verify fetch was called with correct parameters (allowing additional properties like AbortSignal)
+    expect(mockFetch).toHaveBeenCalledWith(
+      "https://test/organisations/vat/111222333/returns",
+      expect.objectContaining({
+        method: "POST",
+        headers: expect.objectContaining({
+          "Content-Type": "application/json",
+          "Authorization": "Bearer test access token",
+          ...headers,
+          "Accept": "application/vnd.hmrc.1.0+json",
+          "Gov-Client-Connection-Method": "WEB_APP_VIA_SERVER",
+          "Gov-Vendor-Forwarded": "by=203.0.113.6&for=198.51.100.0",
+          "Gov-Vendor-License-IDs": "my-licensed-software=8D7963490527D33716835EE7C195516D5E562E03B224E9B359836466EE40CDE1",
+          "Gov-Vendor-Product-Name": "DIY Accounting Submit",
+          "Gov-Vendor-Version": "web-submit-diyaccounting-co-uk-0.0.2-4",
+          "x-request-id": "test-request-id",
+        }),
+        body: JSON.stringify({
+          periodKey: "23A1",
+          vatDueSales: 1000.5,
+          vatDueAcquisitions: 0,
+          totalVatDue: 1000.5,
+          vatReclaimedCurrPeriod: 0,
+          netVatDue: 1000.5,
+          totalValueSalesExVAT: 0,
+          totalValuePurchasesExVAT: 0,
+          totalValueGoodsSuppliedExVAT: 0,
+          totalAcquisitionsExVAT: 0,
+          finalised: true,
+        }),
       }),
-    });
+    );
   });
 
   test("should return 400 when vatNumber is missing", async () => {
