@@ -8,6 +8,7 @@ import {
   parseRequestBody,
   buildValidationError,
   httpUnauthorizedResponse,
+  httpServerErrorResponse,
 } from "../../lib/responses.js";
 import eventToGovClientHeaders from "../../lib/eventToGovClientHeaders.js";
 import { validateEnv } from "../../lib/env.js";
@@ -36,6 +37,7 @@ export async function handler(event) {
   validateEnv(["HMRC_BASE_URI", "COGNITO_USER_POOL_ID"]);
 
   const request = extractRequest(event);
+  const requestId = event?.requestContext?.requestId || event?.headers?.["x-request-id"] || event?.headers?.["X-Request-Id"] || String(Date.now());
   let errorMessages = [];
 
   // Bundle enforcement
@@ -48,22 +50,40 @@ export async function handler(event) {
   // Extract and validate parameters
   const parsedBody = parseRequestBody(event);
   const { vatNumber, periodKey, vatDue, accessToken, hmrcAccessToken: hmrcAccessTokenInBody } = parsedBody || {};
+  // accessToken takes precedence over hmrcAccessToken for backward compatibility and ergonomics
   const hmrcAccessToken = accessToken || hmrcAccessTokenInBody;
 
   // Collect validation errors for required fields
   if (!vatNumber) errorMessages.push("Missing vatNumber parameter from body");
   if (!periodKey) errorMessages.push("Missing periodKey parameter from body");
-  if (!vatDue) errorMessages.push("Missing vatDue parameter from body");
+  if (vatDue !== 0 && !vatDue) errorMessages.push("Missing vatDue parameter from body");
+
+  // Additional numeric/format validations
+  const numVatDue = typeof vatDue === "number" ? vatDue : Number(vatDue);
+  if (vatDue !== undefined && vatDue !== null && Number.isNaN(numVatDue)) {
+    errorMessages.push("Invalid vatDue - must be a number");
+  }
+  if (vatNumber && !/^\d{9}$/.test(String(vatNumber))) {
+    errorMessages.push("Invalid vatNumber format - must be 9 digits");
+  }
+  if (periodKey && !/^[A-Z0-9#]{3,5}$/i.test(String(periodKey))) {
+    errorMessages.push("Invalid periodKey format");
+  }
 
   // Generate Gov-Client headers and collect any header-related validation errors
   const detectedIP = extractClientIPFromHeaders(event);
   const { govClientHeaders, govClientErrorMessages } = eventToGovClientHeaders(event, detectedIP);
   errorMessages = errorMessages.concat(govClientErrorMessages || []);
 
+  // Normalise periodKey to uppercase for HMRC if provided as string
+  const normalizedPeriodKey = typeof periodKey === "string" ? periodKey.toUpperCase() : periodKey;
+  // Correlation/Request ID header for tracing
+  const responseHeaders = { ...govClientHeaders, "x-request-id": requestId };
+
   // Non-authorization validation errors (collect field/header issues first)
   if (errorMessages.length > 0) {
     if (!hmrcAccessToken) errorMessages.push("Missing accessToken parameter from body");
-    return buildValidationError(request, errorMessages, govClientHeaders);
+    return buildValidationError(request, errorMessages, responseHeaders);
   }
 
   // Validate token format only after other validation passes
@@ -72,9 +92,9 @@ export async function handler(event) {
   } catch (err) {
     // If token is explicitly unauthorized, return 401; otherwise return 400 with validation message only
     if (err instanceof UnauthorizedTokenError) {
-      return httpUnauthorizedResponse({ request, headers: { ...govClientHeaders }, message: err.message, error: {} });
+      return httpUnauthorizedResponse({ request, headers: { ...responseHeaders }, message: err.message, error: {} });
     }
-    return buildValidationError(request, [err.toString()], govClientHeaders);
+    return buildValidationError(request, [err.toString()], responseHeaders);
   }
 
   // Processing
