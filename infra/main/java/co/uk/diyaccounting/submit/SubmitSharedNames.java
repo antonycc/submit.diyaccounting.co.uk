@@ -72,15 +72,13 @@ public class SubmitSharedNames {
     public String holdingBucketName;
     public String originBucketName;
     public String originAccessLogBucketName;
-    //public String distributionAccessLogBucketName;
     public String distributionAccessLogGroupName;
-    public String distributionAccessLogDeliverySourceName;
+    public String distributionAccessLogDeliveryHoldingSourceName;
     public String distributionAccessLogDeliveryOriginSourceName;
-    public String distributionAccessLogDeliveryDestinationName;
+    public String distributionAccessLogDeliveryHoldingDestinationName;
     public String distributionAccessLogDeliveryOriginDestinationName;
     public String ew2SelfDestructLogGroupName;
     public String ue1SelfDestructLogGroupName;
-    //public String webDeploymentLogGroupName;
     public String apiAccessLogGroupName;
 
     public String envDashedDomainName;
@@ -290,20 +288,16 @@ public class SubmitSharedNames {
 
         this.receiptsBucketName = "%s-receipts".formatted(this.envDashedDomainName);
         this.bundlesTableName = "%s-bundles".formatted(this.envDashedDomainName);
-        //this.distributionAccessLogBucketName = "distribution-%s-logs".formatted(this.envDashedDomainName);
         this.distributionAccessLogGroupName = "distribution-%s-logs".formatted(this.envDashedDomainName);
-        // TODO: Rename both: this.distributionAccessLogHoldingDeliverySourceName = "dist-%s-logs-src".formatted(this.envDashedDomainName);
-        this.distributionAccessLogDeliverySourceName = "distribution-%s-logs-src".formatted(this.envDashedDomainName);
-        this.distributionAccessLogDeliveryOriginSourceName = "dist-%s-logs-src-origin".formatted(this.envDashedDomainName);
-        // TODO: Rename both: this.distributionAccessLogDeliveryHoldingDestinationName = "dist-%s-logs-dest-holding".formatted(this.envDashedDomainName);
-        this.distributionAccessLogDeliveryDestinationName = "distribution-%s-logs-dest".formatted(this.envDashedDomainName);
-        this.distributionAccessLogDeliveryOriginDestinationName = "dist-%s-logs-dest-origin".formatted(this.envDashedDomainName);
+        this.distributionAccessLogDeliveryHoldingSourceName = "%s-holding-dist-logs-src".formatted(this.envDashedDomainName);
+        this.distributionAccessLogDeliveryOriginSourceName = "%s-origin-dist-logs-src".formatted(props.deploymentName);
+        this.distributionAccessLogDeliveryHoldingDestinationName = "%s-holding-logs-dest".formatted(this.envDashedDomainName);
+        this.distributionAccessLogDeliveryOriginDestinationName = "%s-origin-logs-dest".formatted(props.deploymentName);
 
         this.ew2SelfDestructLogGroupName =
                 "/aws/lambda/%s-self-destruct-eu-west-2".formatted(this.envResourceNamePrefix);
         this.ue1SelfDestructLogGroupName =
                 "/aws/lambda/%s-self-destruct-us-east-1".formatted(this.envResourceNamePrefix);
-        //this.webDeploymentLogGroupName = "/deployment/%s-web-deployment".formatted(this.envResourceNamePrefix);
         this.apiAccessLogGroupName = "/aws/apigw/%s/access".formatted(this.envResourceNamePrefix);
 
         this.appResourceNamePrefix = "%s-app".formatted(generateResourceNamePrefix(this.deploymentDomainName));

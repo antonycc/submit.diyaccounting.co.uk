@@ -42,8 +42,9 @@ export function buildHttpResponseFromLambdaResult({ headers, statusCode, body },
   }
 }
 
-export function logHmrcRequestDetails(hmrcRequestUrl, hmrcRequestHeaders, govClientHeaders, hmrcRequestBody, hmrcBase) {
+export function logHmrcRequestDetails(requestId, hmrcRequestUrl, hmrcRequestHeaders, govClientHeaders, hmrcRequestBody, hmrcBase) {
   logger.info({
+    requestId,
     message: `Request to POST ${hmrcRequestUrl}`,
     url: hmrcRequestUrl,
     headers: {

@@ -1,17 +1,17 @@
 // app/functions/cognitoAuthUrl.js
 
-import { extractRequest, httpBadRequestResponse, httpOkResponse, httpServerErrorResponse } from "../../lib/responses.js";
+import { extractRequest, http400BadRequestResponse, http200OkResponse, http500ServerErrorResponse } from "../../lib/responses.js";
 import { validateEnv } from "../../lib/env.js";
 
 // GET /api/v1/cognito/authUrl?state={state}
 export async function handler(event) {
   validateEnv(["COGNITO_CLIENT_ID", "COGNITO_BASE_URI", "DIY_SUBMIT_BASE_URL"]);
 
-  const request = extractRequest(event);
+  const { request, requestId } = extractRequest(event);
   const state = event.queryStringParameters?.state;
 
   if (!state) {
-    return httpBadRequestResponse({
+    return http400BadRequestResponse({
       request,
       message: "Missing state query parameter from URL",
     });
@@ -30,12 +30,13 @@ export async function handler(event) {
       `&scope=${encodeURIComponent(scope)}` +
       `&state=${encodeURIComponent(state)}`;
 
-    return httpOkResponse({
+    return http200OkResponse({
       request,
       data: { authUrl },
     });
   } catch (error) {
-    return httpServerErrorResponse({
+    return http500ServerErrorResponse({
+      requestId,
       request,
       data: { error, message: "Internal Server Error in httpGetHmrc" },
     });
