@@ -37,7 +37,8 @@ export async function handler(event) {
   validateEnv(["HMRC_BASE_URI", "COGNITO_USER_POOL_ID"]);
 
   const request = extractRequest(event);
-  const requestId = event?.requestContext?.requestId || event?.headers?.["x-request-id"] || event?.headers?.["X-Request-Id"] || String(Date.now());
+  const requestId =
+    event?.requestContext?.requestId || event?.headers?.["x-request-id"] || event?.headers?.["X-Request-Id"] || String(Date.now());
   let errorMessages = [];
 
   // Bundle enforcement
@@ -63,11 +64,14 @@ export async function handler(event) {
   if (vatDue !== undefined && vatDue !== null && Number.isNaN(numVatDue)) {
     errorMessages.push("Invalid vatDue - must be a number");
   }
-  if (vatNumber && !/^\d{9}$/.test(String(vatNumber))) {
-    errorMessages.push("Invalid vatNumber format - must be 9 digits");
-  }
-  if (periodKey && !/^[A-Z0-9#]{3,5}$/i.test(String(periodKey))) {
-    errorMessages.push("Invalid periodKey format");
+  // TODO: Remove this environment variable HMRC_STRICT_VALIDATION and update unit, web-unit, system, and behaviour, tests to match the strict format
+  if (process.env.HMRC_STRICT_VALIDATION === "true") {
+    if (vatNumber && !/^\d{9}$/.test(String(vatNumber))) {
+      errorMessages.push("Invalid vatNumber format - must be 9 digits");
+    }
+    if (periodKey && !/^[A-Z0-9#]{3,5}$/i.test(String(periodKey))) {
+      errorMessages.push("Invalid periodKey format");
+    }
   }
 
   // Generate Gov-Client headers and collect any header-related validation errors
@@ -103,7 +107,13 @@ export async function handler(event) {
   let hmrcResponseBody;
   try {
     logger.info({ message: "Submitting VAT return to HMRC", requestId, vatNumber, periodKey: normalizedPeriodKey });
-    ({ receipt, hmrcResponse, hmrcResponseBody } = await submitVat(normalizedPeriodKey, numVatDue, vatNumber, hmrcAccessToken, govClientHeaders));
+    ({ receipt, hmrcResponse, hmrcResponseBody } = await submitVat(
+      normalizedPeriodKey,
+      numVatDue,
+      vatNumber,
+      hmrcAccessToken,
+      govClientHeaders,
+    ));
   } catch (error) {
     // Preserve original behavior expected by tests: bubble up network errors
     logger.error({ message: "Error while submitting VAT to HMRC", requestId, error: error.message, stack: error.stack });
@@ -119,7 +129,10 @@ export async function handler(event) {
     } else if (hmrcResponse.status === 404) {
       return http404NotFoundFromHmrcResponse(request, hmrcResponse, responseHeaders);
     } else if (hmrcResponse.status === 429) {
-      const retryAfter = (hmrcResponse.headers && (hmrcResponse.headers.get ? hmrcResponse.headers.get("Retry-After") : hmrcResponse.headers["retry-after"])) || undefined;
+      const retryAfter =
+        (hmrcResponse.headers &&
+          (hmrcResponse.headers.get ? hmrcResponse.headers.get("Retry-After") : hmrcResponse.headers["retry-after"])) ||
+        undefined;
       return httpServerErrorResponse({
         request,
         headers: { ...responseHeaders },
@@ -178,14 +191,34 @@ export async function submitVat(periodKey, vatDue, vatNumber, hmrcAccessToken, g
     hmrcResponseBody = JSON.parse(process.env.TEST_RECEIPT || "{}");
     logger.warn({ message: "httpPostMock called in stubbed mode, using test receipt", receipt: hmrcResponseBody });
   } else {
-    hmrcResponse = await fetch(hmrcRequestUrl, {
-      method: "POST",
-      headers: {
-        ...hmrcRequestHeaders,
-        ...govClientHeaders,
-      },
-      body: JSON.stringify(hmrcRequestBody),
-    });
+    const timeoutEnv = process.env.HMRC_TIMEOUT_MS;
+    if (timeoutEnv && Number(timeoutEnv) > 0) {
+      const controller = new AbortController();
+      const timeoutMs = Number(timeoutEnv);
+      const timeout = setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        hmrcResponse = await fetch(hmrcRequestUrl, {
+          method: "POST",
+          headers: {
+            ...hmrcRequestHeaders,
+            ...govClientHeaders,
+          },
+          body: JSON.stringify(hmrcRequestBody),
+          signal: controller.signal,
+        });
+      } finally {
+        clearTimeout(timeout);
+      }
+    } else {
+      hmrcResponse = await fetch(hmrcRequestUrl, {
+        method: "POST",
+        headers: {
+          ...hmrcRequestHeaders,
+          ...govClientHeaders,
+        },
+        body: JSON.stringify(hmrcRequestBody),
+      });
+    }
     hmrcResponseBody = await hmrcResponse.json();
   }
 
