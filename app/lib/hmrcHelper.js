@@ -2,7 +2,7 @@
 
 import logger from "./logger.js";
 import { BundleEntitlementError } from "./bundleEnforcement.js";
-import { httpBadRequestResponse, httpServerErrorResponse, httpForbiddenResponse } from "./responses.js";
+import { http400BadRequestResponse, http500ServerErrorResponse, http403ForbiddenResponse } from "./responses.js";
 
 export class UnauthorizedTokenError extends Error {
   constructor(message = "Unauthorized - invalid or expired HMRC access token") {
@@ -19,7 +19,7 @@ export function extractHmrcAccessTokenFromLambdaEvent(event) {
   return authHeader.split(" ")[1];
 }
 
-export function validateHmrcAccessToken(hmrcAccessToken) {
+export function validateHmrcAccessToken(hmrcAccessToken, requestId) {
   // Test hook to force Unauthorized for coverage
   if (process.env.TEST_FORCE_UNAUTHORIZED_TOKEN === "true") {
     throw new UnauthorizedTokenError();
@@ -32,11 +32,13 @@ export function validateHmrcAccessToken(hmrcAccessToken) {
     isValidFormat: hmrcAccessToken && typeof hmrcAccessToken === "string" && hmrcAccessToken.length > 10,
   };
   logger.info({
+    requestId,
     message: "Validating access token",
     tokenValidation,
   });
   if (!hmrcAccessToken || typeof hmrcAccessToken !== "string" || hmrcAccessToken.length < 2) {
     logger.error({
+      requestId,
       message: "Invalid access token provided",
       tokenValidation,
       error: "Access token is missing, not a string, or too short",
@@ -46,50 +48,56 @@ export function validateHmrcAccessToken(hmrcAccessToken) {
   }
 }
 
-export function http500ServerErrorFromBundleEnforcement(error, request) {
+export function http500ServerErrorFromBundleEnforcement(requestId, error, request) {
   if (error instanceof BundleEntitlementError) {
     logger.error({
+      requestId,
       message: "Bundle enforcement failed",
       error: error.message,
       details: error.details,
     });
-    return httpServerErrorResponse({
+    return http500ServerErrorResponse({
       request,
+      requestId,
       message: error.message,
       error: error.details,
     });
   }
   // Re-throw unexpected errors
   logger.error({
+    requestId,
     message: "Unexpected error during bundle enforcement",
     error: error.message,
     stack: error.stack,
   });
-  return httpServerErrorResponse({
+  return http500ServerErrorResponse({
     request,
+    requestId,
     message: "Authorization failure while checking entitlements",
     error: { message: error.message || String(error) },
   });
 }
 
-export function http403ForbiddenFromBundleEnforcement(error, request) {
+export function http403ForbiddenFromBundleEnforcement(requestId, error, request) {
   // Only intended for BundleEntitlementError, fall back to 500 otherwise
   if (!(error instanceof BundleEntitlementError)) {
-    return http500ServerErrorFromBundleEnforcement(error, request);
+    return http500ServerErrorFromBundleEnforcement(requestId, error, request);
   }
   logger.warn({
+    requestId,
     message: "Forbidden - bundle entitlement missing or insufficient",
     error: error.message,
     details: error.details,
   });
-  return httpForbiddenResponse({
+  return http403ForbiddenResponse({
     request,
+    requestId,
     message: "Forbidden - missing or insufficient bundle entitlement",
     error: { code: error.details?.code || "BUNDLE_ENTITLEMENT_REQUIRED", ...error.details },
   });
 }
 
-export function http403ForbiddenFromHmrcResponse(hmrcAccessToken, hmrcResponse, govClientHeaders) {
+export function http403ForbiddenFromHmrcResponse(hmrcAccessToken, requestId, hmrcResponse, govClientHeaders) {
   const hmrcAccessTokenData = {
     tokenInfo: {
       hasAccessToken: !!hmrcAccessToken,
@@ -103,14 +111,16 @@ export function http403ForbiddenFromHmrcResponse(hmrcAccessToken, hmrcResponse, 
     },
   };
   logger.warn({
+    requestId,
     message: "Forbidden - Access token may be invalid, expired, or lack required permissions",
     hmrcAccessTokenData,
     hmrcResponseCode: hmrcResponse.status,
     responseBody: hmrcResponse.data,
   });
-  return httpBadRequestResponse({
+  return http400BadRequestResponse({
+    requestId,
     hmrcAccessTokenData,
-    headers: { ...govClientHeaders },
+    headers: { ...govClientHeaders, "x-request-id": requestId },
     message: "Forbidden - Access token may be invalid, expired, or lack required permissions",
     error: {
       hmrcResponseCode: hmrcResponse.status,
@@ -119,16 +129,18 @@ export function http403ForbiddenFromHmrcResponse(hmrcAccessToken, hmrcResponse, 
   });
 }
 
-export function http404NotFoundFromHmrcResponse(request, hmrcResponse, govClientHeaders) {
+export function http404NotFoundFromHmrcResponse(request, requestId, hmrcResponse, govClientHeaders) {
   logger.warn({
+    requestId,
     message: "Not found for request",
     request,
     hmrcResponseCode: hmrcResponse.status,
     responseBody: hmrcResponse.data,
   });
-  return httpBadRequestResponse({
+  return http400BadRequestResponse({
     request,
-    headers: { ...govClientHeaders },
+    requestId,
+    headers: { ...govClientHeaders, "x-request-id": requestId },
     message: "Not found for the specified query",
     error: {
       hmrcResponseCode: hmrcResponse.status,
@@ -137,16 +149,17 @@ export function http404NotFoundFromHmrcResponse(request, hmrcResponse, govClient
   });
 }
 
-export function http500ServerErrorFromHmrcResponse(request, hmrcResponse, govClientHeaders) {
+export function http500ServerErrorFromHmrcResponse(request, requestId, hmrcResponse, govClientHeaders) {
   logger.error({
+    requestId,
     message: "HMRC request failed for request",
     request,
     hmrcResponseCode: hmrcResponse.status,
     responseBody: hmrcResponse.data,
   });
-  return httpServerErrorResponse({
+  return http500ServerErrorResponse({
     request,
-    headers: { ...govClientHeaders },
+    headers: { ...govClientHeaders, "x-request-id": requestId },
     message: "HMRC request failed",
     error: {
       hmrcResponseCode: hmrcResponse.status,

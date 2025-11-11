@@ -1,7 +1,7 @@
 // app/functions/selfDestruct.js
 
 import { CloudFormationClient, DeleteStackCommand, DescribeStacksCommand } from "@aws-sdk/client-cloudformation";
-import { extractRequest, httpOkResponse, httpServerErrorResponse } from "../../lib/responses.js";
+import { extractRequest, http200OkResponse, http500ServerErrorResponse } from "../../lib/responses.js";
 
 export async function handler(event, context) {
   const client = new CloudFormationClient({ region: process.env.AWS_REGION || "eu-west-2" });
@@ -70,14 +70,14 @@ export async function handler(event, context) {
 
     if (hasErrors) {
       console.log("One or more stacks failed to delete.");
-      return httpServerErrorResponse({
+      return http500ServerErrorResponse({
         request,
         message: "Self-destruct sequence completed with errors",
         data: { results, timestamp: new Date().toISOString() },
       });
     } else {
       console.log("Self-destruct sequence completed");
-      return httpOkResponse({
+      return http200OkResponse({
         request,
         data: {
           message: "Self-destruct sequence completed",
@@ -88,7 +88,7 @@ export async function handler(event, context) {
     }
   } catch (error) {
     console.error("Error in self-destruct handler:", error);
-    return httpServerErrorResponse({
+    return http500ServerErrorResponse({
       request,
       message: "Internal Server Error in self-destruct handler",
       data: { error: error.message },

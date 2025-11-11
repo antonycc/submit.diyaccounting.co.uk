@@ -2,51 +2,51 @@
 
 import logger from "./logger.js";
 
-export function httpOkResponse({ request, headers, data }) {
+export function http200OkResponse({ request, requestId, headers, data }) {
   return httpResponse({
     statusCode: 200,
     request,
-    headers,
+    headers: { ...headers, "x-request-id": requestId },
     data,
     levelledLogger: logger.info.bind(logger),
   });
 }
 
-export function httpBadRequestResponse({ request, headers, message, error }) {
+export function http400BadRequestResponse({ request, requestId, headers, message, error }) {
   return httpResponse({
     statusCode: 400,
     request,
-    headers,
+    headers: { ...headers, "x-request-id": requestId },
     data: { message, ...error },
     levelledLogger: logger.error.bind(logger),
   });
 }
 
-export function httpServerErrorResponse({ request, headers, message, error }) {
+export function http500ServerErrorResponse({ request, requestId, headers, message, error }) {
   return httpResponse({
     statusCode: 500,
     request,
-    headers,
+    headers: { ...headers, "x-request-id": requestId },
     data: { message, ...error },
     levelledLogger: logger.error.bind(logger),
   });
 }
 
-export function httpForbiddenResponse({ request, headers, message, error }) {
+export function http403ForbiddenResponse({ request, requestId, headers, message, error }) {
   return httpResponse({
     statusCode: 403,
     request,
-    headers,
+    headers: { ...headers, "x-request-id": requestId },
     data: { message, ...error },
     levelledLogger: logger.warn.bind(logger),
   });
 }
 
-export function httpUnauthorizedResponse({ request, headers, message, error }) {
+export function http401UnauthorizedResponse({ request, requestId, headers, message, error }) {
   return httpResponse({
     statusCode: 401,
     request,
-    headers,
+    headers: { ...headers, "x-request-id": requestId },
     data: { message, ...error },
     levelledLogger: logger.warn.bind(logger),
   });
@@ -72,6 +72,8 @@ function httpResponse({ statusCode, headers, data, request, levelledLogger }) {
 
 export function extractRequest(event) {
   let request;
+  const requestId =
+    event?.requestContext?.requestId || event?.headers?.["x-request-id"] || event?.headers?.["X-Request-Id"] || String(Date.now());
   if (event.headers) {
     try {
       let baseRequestUrl;
@@ -98,7 +100,7 @@ export function extractRequest(event) {
     logger.warn({ message: "Event has missing URL path or host header", event });
     request = "https://unknown";
   }
-  return request;
+  return { request, requestId };
 }
 
 // Helper function to extract client IP from request headers
@@ -202,30 +204,13 @@ export function parseRequestBody(event) {
   }
 }
 
-export function buildValidationError(request, errorMessages, govClientHeaders = {}) {
-  return httpBadRequestResponse({
+export function buildValidationError(request, requestId, errorMessages, govClientHeaders = {}) {
+  return http400BadRequestResponse({
     request,
+    requestId,
     headers: { ...govClientHeaders },
     message: errorMessages.join(", "),
   });
-}
-
-export async function withErrorHandling(request, govClientHeaders, asyncFn) {
-  try {
-    return await asyncFn();
-  } catch (error) {
-    logger.error({
-      message: "Error in handler",
-      error: error.message,
-      stack: error.stack,
-    });
-    return httpServerErrorResponse({
-      request,
-      headers: { ...govClientHeaders },
-      message: "Internal server error",
-      error: error.message,
-    });
-  }
 }
 
 export async function performTokenExchange(providerUrl, body) {
@@ -305,7 +290,7 @@ export async function buildTokenExchangeResponse(request, url, body) {
       responseCode: response.status,
       responseBody,
     });
-    return httpServerErrorResponse({
+    return http500ServerErrorResponse({
       request,
       message: "Token exchange failed",
       error: {
@@ -328,7 +313,7 @@ export async function buildTokenExchangeResponse(request, url, body) {
     expiresIn,
     tokenType,
   });
-  return httpOkResponse({
+  return http200OkResponse({
     request,
     data: {
       accessToken,

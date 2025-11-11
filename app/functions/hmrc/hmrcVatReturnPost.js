@@ -3,12 +3,12 @@
 import logger from "../../lib/logger.js";
 import {
   extractRequest,
-  httpOkResponse,
+  http200OkResponse,
   extractClientIPFromHeaders,
   parseRequestBody,
   buildValidationError,
-  httpUnauthorizedResponse,
-  httpServerErrorResponse,
+  http401UnauthorizedResponse,
+  http500ServerErrorResponse,
 } from "../../lib/responses.js";
 import eventToGovClientHeaders from "../../lib/eventToGovClientHeaders.js";
 import { validateEnv } from "../../lib/env.js";
@@ -32,25 +32,10 @@ export function apiEndpoint(app) {
   });
 }
 
-// HTTP request/response, aware Lambda handler function
-export async function handler(event) {
-  validateEnv(["HMRC_BASE_URI", "COGNITO_USER_POOL_ID"]);
-
-  const request = extractRequest(event);
-  const requestId =
-    event?.requestContext?.requestId || event?.headers?.["x-request-id"] || event?.headers?.["X-Request-Id"] || String(Date.now());
-  let errorMessages = [];
-
-  // Bundle enforcement
-  try {
-    await enforceBundles(event);
-  } catch (error) {
-    return http403ForbiddenFromBundleEnforcement(error, request);
-  }
-
-  // Extract and validate parameters
+function extractAndValidateParameters(event, errorMessages) {
   const parsedBody = parseRequestBody(event);
   const { vatNumber, periodKey, vatDue, accessToken, hmrcAccessToken: hmrcAccessTokenInBody } = parsedBody || {};
+  // TODO: Remove the alternate paths at source, then remove this compatibility code
   // accessToken takes precedence over hmrcAccessToken for backward compatibility and ergonomics
   const hmrcAccessToken = accessToken || hmrcAccessTokenInBody;
 
@@ -70,6 +55,25 @@ export async function handler(event) {
   if (periodKey && !/^[A-Z0-9#]{3,5}$/i.test(String(periodKey))) {
     errorMessages.push("Invalid periodKey format");
   }
+  return { vatNumber, periodKey, hmrcAccessToken, numVatDue };
+}
+
+// HTTP request/response, aware Lambda handler function
+export async function handler(event) {
+  validateEnv(["HMRC_BASE_URI", "COGNITO_USER_POOL_ID"]);
+
+  const { request, requestId } = extractRequest(event);
+  let errorMessages = [];
+
+  // Bundle enforcement
+  try {
+    await enforceBundles(event);
+  } catch (error) {
+    return http403ForbiddenFromBundleEnforcement(requestId, error, request);
+  }
+
+  // Extract and validate parameters
+  const { vatNumber, periodKey, hmrcAccessToken, numVatDue } = extractAndValidateParameters(event, errorMessages);
 
   // Generate Gov-Client headers and collect any header-related validation errors
   const detectedIP = extractClientIPFromHeaders(event);
@@ -84,18 +88,18 @@ export async function handler(event) {
   // Non-authorization validation errors (collect field/header issues first)
   if (errorMessages.length > 0) {
     if (!hmrcAccessToken) errorMessages.push("Missing accessToken parameter from body");
-    return buildValidationError(request, errorMessages, responseHeaders);
+    return buildValidationError(request, requestId, errorMessages, responseHeaders);
   }
 
   // Validate token format only after other validation passes
   try {
-    validateHmrcAccessToken(hmrcAccessToken);
+    validateHmrcAccessToken(hmrcAccessToken, requestId);
   } catch (err) {
     // If token is explicitly unauthorized, return 401; otherwise return 400 with validation message only
     if (err instanceof UnauthorizedTokenError) {
-      return httpUnauthorizedResponse({ request, headers: { ...responseHeaders }, message: err.message, error: {} });
+      return http401UnauthorizedResponse({ request, requestId, headers: { ...responseHeaders }, message: err.message, error: {} });
     }
-    return buildValidationError(request, [err.toString()], responseHeaders);
+    return buildValidationError(request, requestId, [err.toString()], responseHeaders);
   }
 
   // Processing
@@ -103,8 +107,9 @@ export async function handler(event) {
   let hmrcResponse;
   let hmrcResponseBody;
   try {
-    logger.info({ message: "Submitting VAT return to HMRC", requestId, vatNumber, periodKey: normalizedPeriodKey });
+    logger.info({ requestId, message: "Submitting VAT return to HMRC", vatNumber, periodKey: normalizedPeriodKey });
     ({ receipt, hmrcResponse, hmrcResponseBody } = await submitVat(
+      requestId,
       normalizedPeriodKey,
       numVatDue,
       vatNumber,
@@ -113,37 +118,19 @@ export async function handler(event) {
     ));
   } catch (error) {
     // Preserve original behavior expected by tests: bubble up network errors
-    logger.error({ message: "Error while submitting VAT to HMRC", requestId, error: error.message, stack: error.stack });
+    logger.error({ requestId, message: "Error while submitting VAT to HMRC", error: error.message, stack: error.stack });
     throw error;
   }
 
   // Generate error responses based on HMRC response
   if (!hmrcResponse.ok) {
-    // Attach parsed body for downstream error helpers
-    hmrcResponse.data = hmrcResponseBody;
-    if (hmrcResponse.status === 403) {
-      return http403ForbiddenFromHmrcResponse(hmrcAccessToken, hmrcResponse, responseHeaders);
-    } else if (hmrcResponse.status === 404) {
-      return http404NotFoundFromHmrcResponse(request, hmrcResponse, responseHeaders);
-    } else if (hmrcResponse.status === 429) {
-      const retryAfter =
-        (hmrcResponse.headers &&
-          (hmrcResponse.headers.get ? hmrcResponse.headers.get("Retry-After") : hmrcResponse.headers["retry-after"])) ||
-        undefined;
-      return httpServerErrorResponse({
-        request,
-        headers: { ...responseHeaders },
-        message: "Upstream rate limited. Please retry later.",
-        error: { hmrcResponseCode: hmrcResponse.status, responseBody: hmrcResponse.data, retryAfter },
-      });
-    } else {
-      return http500ServerErrorFromHmrcResponse(request, hmrcResponse, responseHeaders);
-    }
+    return generateErrorResponse(request, requestId, hmrcResponse, hmrcResponseBody, hmrcAccessToken, responseHeaders);
   }
 
   // Generate a success response
-  return httpOkResponse({
+  return http200OkResponse({
     request,
+    requestId,
     headers: { ...responseHeaders },
     data: {
       receipt,
@@ -152,11 +139,12 @@ export async function handler(event) {
 }
 
 // Service adaptor for aware of the downstream service but not the consuming Lambda's incoming/outgoing HTTP request/response
-export async function submitVat(periodKey, vatDue, vatNumber, hmrcAccessToken, govClientHeaders) {
+export async function submitVat(requestId, periodKey, vatDue, vatNumber, hmrcAccessToken, govClientHeaders) {
   const hmrcRequestHeaders = {
     "Content-Type": "application/json",
     "Accept": "application/vnd.hmrc.1.0+json",
     "Authorization": `Bearer ${hmrcAccessToken}`,
+    "x-request-id": requestId,
   };
   const hmrcRequestBody = {
     periodKey,
@@ -176,7 +164,7 @@ export async function submitVat(periodKey, vatDue, vatNumber, hmrcAccessToken, g
   let hmrcResponse;
   const hmrcBase = process.env.HMRC_BASE_URI;
   const hmrcRequestUrl = `${hmrcBase}/organisations/vat/${vatNumber}/returns`;
-  logHmrcRequestDetails(hmrcRequestUrl, hmrcRequestHeaders, govClientHeaders, hmrcRequestBody);
+  logHmrcRequestDetails(requestId, hmrcRequestUrl, hmrcRequestHeaders, govClientHeaders, hmrcRequestBody);
   if (process.env.NODE_ENV === "stubbed") {
     hmrcResponse = {
       ok: true,
@@ -186,9 +174,9 @@ export async function submitVat(periodKey, vatDue, vatNumber, hmrcAccessToken, g
     };
     // TEST_RECEIPT is already a JSON string, so parse it first
     hmrcResponseBody = JSON.parse(process.env.TEST_RECEIPT || "{}");
-    logger.warn({ message: "httpPostMock called in stubbed mode, using test receipt", receipt: hmrcResponseBody });
+    logger.warn({ requestId, message: "httpPostMock called in stubbed mode, using test receipt", receipt: hmrcResponseBody });
   } else {
-    const timeoutEnv = process.env.HMRC_TIMEOUT_MS;
+    const timeoutEnv = 20000;
     if (timeoutEnv && Number(timeoutEnv) > 0) {
       const controller = new AbortController();
       const timeoutMs = Number(timeoutEnv);
@@ -220,4 +208,28 @@ export async function submitVat(periodKey, vatDue, vatNumber, hmrcAccessToken, g
   }
 
   return { hmrcRequestBody, receipt: hmrcResponseBody, hmrcResponse, hmrcResponseBody, hmrcRequestUrl };
+}
+
+function generateErrorResponse(request, requestId, hmrcResponse, hmrcResponseBody, hmrcAccessToken, responseHeaders) {
+  // Attach parsed body for downstream error helpers
+  hmrcResponse.data = hmrcResponseBody;
+  if (hmrcResponse.status === 403) {
+    return http403ForbiddenFromHmrcResponse(hmrcAccessToken, requestId, hmrcResponse, responseHeaders);
+  } else if (hmrcResponse.status === 404) {
+    return http404NotFoundFromHmrcResponse(request, requestId, hmrcResponse, responseHeaders);
+  } else if (hmrcResponse.status === 429) {
+    const retryAfter =
+      (hmrcResponse.headers &&
+        (hmrcResponse.headers.get ? hmrcResponse.headers.get("Retry-After") : hmrcResponse.headers["retry-after"])) ||
+      undefined;
+    return http500ServerErrorResponse({
+      request,
+      requestId,
+      headers: { ...responseHeaders },
+      message: "Upstream rate limited. Please retry later.",
+      error: { hmrcResponseCode: hmrcResponse.status, responseBody: hmrcResponse.data, retryAfter },
+    });
+  } else {
+    return http500ServerErrorFromHmrcResponse(request, requestId, hmrcResponse, responseHeaders);
+  }
 }

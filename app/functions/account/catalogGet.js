@@ -25,7 +25,7 @@ export function apiEndpoint(app) {
 }
 
 export async function handler(event) {
-  const request = extractRequest(event);
+  const { request, requestId } = extractRequest(event);
   logger.info({ message: "getCatalog entry", route: "/api/v1/catalog", request });
   try {
     await ensureLoaded();

@@ -1,6 +1,6 @@
 // app/functions/mockAuthUrlGet.js
 
-import { extractRequest, httpBadRequestResponse, httpOkResponse, httpServerErrorResponse } from "../../lib/responses.js";
+import { extractRequest, http400BadRequestResponse, http200OkResponse, http500ServerErrorResponse } from "../../lib/responses.js";
 import { validateEnv } from "../../lib/env.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
 
@@ -35,20 +35,20 @@ export async function handler(event) {
     // Validation
     const state = event.queryStringParameters?.state;
     if (!state) {
-      return httpBadRequestResponse({
+      return http400BadRequestResponse({
         request,
         message: "Missing state query parameter from URL",
       });
     }
 
-    return httpOkResponse({
+    return http200OkResponse({
       request,
       data: {
         authUrl,
       },
     });
   } catch (error) {
-    return httpServerErrorResponse({
+    return http500ServerErrorResponse({
       request: request,
       data: { error, message: "Internal Server Error in httpGetHmrc" },
     });

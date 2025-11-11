@@ -1,7 +1,7 @@
 // app/functions/cognitoTokenPost.js
 
 import logger from "../../lib/logger.js";
-import { extractRequest, httpBadRequestResponse, buildTokenExchangeResponse } from "../../lib/responses.js";
+import { extractRequest, http400BadRequestResponse, buildTokenExchangeResponse } from "../../lib/responses.js";
 import { validateEnv } from "../../lib/env.js";
 
 // POST /api/v1/cognito/token
@@ -12,14 +12,14 @@ export async function handler(event) {
   const cognitoClientId = process.env.COGNITO_CLIENT_ID;
   const CognitoBaseUri = process.env.COGNITO_BASE_URI;
 
-  const request = extractRequest(event);
+  const { request, requestId } = extractRequest(event);
 
   const decoded = Buffer.from(event.body, "base64").toString("utf-8");
   const searchParams = new URLSearchParams(decoded);
   const code = searchParams.get("code");
 
   if (!code) {
-    return httpBadRequestResponse({
+    return http400BadRequestResponse({
       request,
       message: "Missing code from event body",
     });

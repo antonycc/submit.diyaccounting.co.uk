@@ -246,7 +246,7 @@ public class ApexStack extends Stack {
             props.resourceNamePrefix() + "-CfAccessLogsDestination",
             CfnDeliveryDestinationProps.builder()
                 // Name is arbitrary; keep it stable but does not need to be the log group name
-                .name(props.sharedNames().distributionAccessLogDeliveryDestinationName)
+                .name(props.sharedNames().distributionAccessLogDeliveryHoldingDestinationName)
                 .destinationResourceArn(distributionAccessLogGroup.getLogGroupArn())
                 .outputFormat("json") // or "w3c"/"parquet" if you prefer
                 .build()
@@ -257,7 +257,7 @@ public class ApexStack extends Stack {
             this,
             props.resourceNamePrefix() + "-CfAccessLogsSource",
             CfnDeliverySourceProps.builder()
-                .name(props.sharedNames().distributionAccessLogDeliverySourceName)     // <-- use the shared variable
+                .name(props.sharedNames().distributionAccessLogDeliveryHoldingSourceName)     // <-- use the shared variable
                 .logType("ACCESS_LOGS")       // required for CloudFront
                 .resourceArn(distributionArn) // ARN of the distribution
                 .build()
@@ -269,7 +269,7 @@ public class ApexStack extends Stack {
             props.resourceNamePrefix() + "-CfAccessLogsDelivery",
             CfnDeliveryProps.builder()
                 // *** IMPORTANT: must exactly match the Name above ***
-                .deliverySourceName(props.sharedNames().distributionAccessLogDeliverySourceName)
+                .deliverySourceName(props.sharedNames().distributionAccessLogDeliveryHoldingSourceName)
                 .deliveryDestinationArn(cfLogsDestination.getAttrArn())
                 // optional: customise fields and delimiter
                 // .fieldDelimiter("\t")
