@@ -80,7 +80,7 @@ export async function handler(event) {
 
   // Normalise periodKey to uppercase for HMRC if provided as string
   const normalizedPeriodKey = typeof periodKey === "string" ? periodKey.toUpperCase() : periodKey;
-  // Correlation/Request ID header for tracing
+
   const responseHeaders = { ...govClientHeaders, "x-request-id": requestId };
 
   // Non-authorization validation errors (collect field/header issues first)

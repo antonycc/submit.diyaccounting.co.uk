@@ -10,7 +10,9 @@ import {
   http500ServerErrorResponse,
 } from "../../lib/responses.js";
 import eventToGovClientHeaders from "../../lib/eventToGovClientHeaders.js";
-import { hmrcHttpGet, shouldUseStub, getStubData } from "../../lib/hmrcVatApi.js";
+// Stub controls remain in hmrcVatApi; HTTP client moved to hmrcHelper during refactor
+import { shouldUseStub, getStubData } from "../../lib/hmrcVatApi.js";
+import { hmrcHttpGet } from "../../lib/hmrcHelper.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
 import {
   extractHmrcAccessTokenFromLambdaEvent,
