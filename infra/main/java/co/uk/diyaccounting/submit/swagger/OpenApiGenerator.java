@@ -352,7 +352,7 @@ public class OpenApiGenerator {
                 response200.put("description", "Token exchanged successfully");
             }
 
-            responses.set("200", response200);
+            responses.set(SubmitSharedNames.Responses.OK, response200);
             operation.set("responses", responses);
         });
     }
@@ -383,7 +383,7 @@ public class OpenApiGenerator {
             ObjectNode responses = mapper.createObjectNode();
             ObjectNode response200 = mapper.createObjectNode();
             response200.put("description", getHmrcResponseDescription(path, method));
-            responses.set("200", response200);
+            responses.set(SubmitSharedNames.Responses.OK, response200);
             operation.set("responses", responses);
         });
     }
@@ -409,7 +409,7 @@ public class OpenApiGenerator {
             ObjectNode responses = mapper.createObjectNode();
             ObjectNode response200 = mapper.createObjectNode();
             response200.put("description", getAccountResponseDescription(path, method));
-            responses.set("200", response200);
+            responses.set(SubmitSharedNames.Responses.OK, response200);
             operation.set("responses", responses);
         });
     }

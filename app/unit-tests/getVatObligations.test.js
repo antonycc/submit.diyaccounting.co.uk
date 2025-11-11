@@ -266,6 +266,6 @@ describe("getVatObligations handler", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(500);
-    expect(body.message).toBe("HMRC VAT obligations retrieval failed");
+    expect(body.message).toBe("HMRC request failed");
   });
 });

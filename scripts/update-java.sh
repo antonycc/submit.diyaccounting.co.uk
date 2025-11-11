@@ -27,3 +27,5 @@ mvn install
 
 # display any remaining updates
 mvn versions:display-dependency-updates -DincludeSnapshots=false | grep -Ev 'alpha|beta|rc|cr|M[0-9]+' || true
+
+git restore web/public/submit.deployment web/public/submit.env || true

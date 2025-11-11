@@ -1,13 +1,8 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
 import co.uk.diyaccounting.submit.utils.RetentionDaysConverter;
-import java.util.List;
-import java.util.Map;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Aspects;
 import software.amazon.awscdk.Duration;
@@ -31,15 +26,17 @@ import software.amazon.awscdk.services.iam.ServicePrincipal;
 import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.amazon.awscdk.services.rum.CfnAppMonitor;
-import software.amazon.awscdk.services.s3.BlockPublicAccess;
-import software.amazon.awscdk.services.s3.Bucket;
-import software.amazon.awscdk.services.s3.BucketEncryption;
-import software.amazon.awscdk.services.s3.LifecycleRule;
 import software.constructs.Construct;
+
+import java.util.List;
+import java.util.Map;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 public class ObservabilityStack extends Stack {
 
-    public Bucket trailBucket;
+    //public Bucket trailBucket;
     public Trail trail;
     public LogGroup cloudTrailLogGroup;
     public LogGroup selfDestructLogGroup;
@@ -103,16 +100,16 @@ public class ObservabilityStack extends Stack {
                     .retention(cloudTrailLogGroupRetentionPeriod)
                     .removalPolicy(RemovalPolicy.DESTROY)
                     .build();
-            this.trailBucket = Bucket.Builder.create(this, props.resourceNamePrefix() + "-CloudTrailBucket")
-                    .encryption(BucketEncryption.S3_MANAGED)
-                    .blockPublicAccess(BlockPublicAccess.BLOCK_ALL)
-                    .versioned(false)
-                    .autoDeleteObjects(true)
-                    .removalPolicy(RemovalPolicy.DESTROY)
-                    .lifecycleRules(List.of(LifecycleRule.builder()
-                            .expiration(Duration.days(cloudTrailLogGroupRetentionPeriodDays))
-                            .build()))
-                    .build();
+//            this.trailBucket = Bucket.Builder.create(this, props.resourceNamePrefix() + "-CloudTrailBucket")
+//                    .encryption(BucketEncryption.S3_MANAGED)
+//                    .blockPublicAccess(BlockPublicAccess.BLOCK_ALL)
+//                    .versioned(false)
+//                    .autoDeleteObjects(true)
+//                    .removalPolicy(RemovalPolicy.DESTROY)
+//                    .lifecycleRules(List.of(LifecycleRule.builder()
+//                            .expiration(Duration.days(cloudTrailLogGroupRetentionPeriodDays))
+//                            .build()))
+//                    .build();
             this.trail = Trail.Builder.create(this, props.resourceNamePrefix() + "-Trail")
                     .trailName(props.sharedNames().trailName)
                     .cloudWatchLogGroup(this.cloudTrailLogGroup)
@@ -123,7 +120,7 @@ public class ObservabilityStack extends Stack {
                     .build();
 
             // Outputs for Observability resources
-            cfnOutput(this, "TrailBucketArn", this.trailBucket.getBucketArn());
+            //cfnOutput(this, "TrailBucketArn", this.trailBucket.getBucketArn());
             cfnOutput(this, "TrailArn", this.trail.getTrailArn());
         }
 

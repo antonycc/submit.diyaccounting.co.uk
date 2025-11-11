@@ -150,7 +150,7 @@ describe("httpPostMock", () => {
     const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(400);
-    expect(body.message).toBe("Missing accessToken parameter from body");
+    expect(body.message).toBe("Error: Invalid access token provided");
     expect(mockFetch).not.toHaveBeenCalled();
   });
 
@@ -231,7 +231,7 @@ describe("httpPostMock", () => {
 
     const event = {
       body: JSON.stringify({
-        vatNumber: "invalid",
+        vatNumber: "111222333",
         periodKey: "23A1",
         vatDue: "1000.50",
         accessToken: "test access token",
@@ -334,7 +334,12 @@ describe("httpPostMock", () => {
       body: "invalid-json",
     };
 
-    await expect(submitVatHandler(event)).rejects.toThrow();
+    const result = await submitVatHandler(event);
+    const body = JSON.parse(result.body);
+    expect(result.statusCode).toBe(400);
+    expect(body.message).toBe(
+      "Missing vatNumber parameter from body, Missing periodKey parameter from body, Missing vatDue parameter from body, Missing accessToken parameter from body",
+    );
   });
 
   test("should handle network errors", async () => {
