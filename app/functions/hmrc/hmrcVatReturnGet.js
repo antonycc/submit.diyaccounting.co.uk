@@ -37,7 +37,7 @@ export function apiEndpoint(app) {
 export function extractAndValidateParameters(event, errorMessages) {
   const pathParams = event.pathParameters || {};
   const queryParams = event.queryStringParameters || {};
-  const { vrn, periodKey } = { ...pathParams, ...queryParams };
+  const { vrn, periodKey, sandbox } = { ...pathParams, ...queryParams };
   const { "Gov-Test-Scenario": testScenario } = queryParams;
 
   // Collect validation errors for required fields and formats
@@ -48,7 +48,7 @@ export function extractAndValidateParameters(event, errorMessages) {
 
   // Normalize periodKey to uppercase if provided as string
   const normalizedPeriodKey = typeof periodKey === "string" ? periodKey.toUpperCase() : periodKey;
-  return { vrn, periodKey: normalizedPeriodKey, testScenario };
+  return { vrn, periodKey: normalizedPeriodKey, sandbox, testScenario };
 }
 
 // HTTP request/response, aware Lambda handler function
@@ -63,7 +63,7 @@ export async function handler(event) {
   errorMessages = errorMessages.concat(govClientErrorMessages || []);
 
   // Extract and validate parameters
-  const { vrn, periodKey, testScenario } = extractAndValidateParameters(event, errorMessages);
+  const { vrn, periodKey, sandbox, testScenario } = extractAndValidateParameters(event, errorMessages);
 
   const responseHeaders = { ...govClientHeaders, "x-request-id": requestId };
 

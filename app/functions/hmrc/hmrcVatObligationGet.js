@@ -36,7 +36,7 @@ export function apiEndpoint(app) {
 
 export function extractAndValidateParameters(event, errorMessages) {
   const queryParams = event.queryStringParameters || {};
-  const { vrn, from, to, status, "Gov-Test-Scenario": testScenario } = queryParams;
+  const { vrn, from, to, status, sandbox, "Gov-Test-Scenario": testScenario } = queryParams;
 
   if (!vrn) errorMessages.push("Missing vrn parameter");
   if (vrn && !/^\d{9}$/.test(String(vrn))) errorMessages.push("Invalid vrn format - must be 9 digits");
@@ -57,7 +57,7 @@ export function extractAndValidateParameters(event, errorMessages) {
     errorMessages.push("Invalid date range - from date cannot be after to date");
   }
 
-  return { vrn, from: finalFrom, to: finalTo, status, testScenario };
+  return { vrn, from: finalFrom, to: finalTo, status, sandbox, testScenario };
 }
 
 // HTTP request/response, aware Lambda handler function
