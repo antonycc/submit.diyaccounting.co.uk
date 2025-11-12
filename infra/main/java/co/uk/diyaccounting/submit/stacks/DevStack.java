@@ -1,7 +1,12 @@
 package co.uk.diyaccounting.submit.stacks;
 
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
+import java.util.List;
+import java.util.Objects;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Aspects;
 import software.amazon.awscdk.Duration;
@@ -22,12 +27,6 @@ import software.amazon.awscdk.services.iam.ServicePrincipal;
 import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.constructs.Construct;
-
-import java.util.List;
-import java.util.Objects;
-
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 public class DevStack extends Stack {
 
@@ -72,20 +71,24 @@ public class DevStack extends Stack {
     }
 
     public DevStack(Construct scope, String id, StackProps stackProps, DevStackProps props) {
-        super(scope, id, StackProps.builder()
-            .env(props.getEnv()) // enforce region from props
-            .description(stackProps != null ? stackProps.getDescription() : null)
-            .stackName(stackProps != null ? stackProps.getStackName() : null)
-            .terminationProtection(stackProps != null ? stackProps.getTerminationProtection() : null)
-            .analyticsReporting(stackProps != null ? stackProps.getAnalyticsReporting() : null)
-            .synthesizer(stackProps != null ? stackProps.getSynthesizer() : null)
-            .crossRegionReferences(stackProps != null ? stackProps.getCrossRegionReferences() : null)
-            .build());
+        super(
+                scope,
+                id,
+                StackProps.builder()
+                        .env(props.getEnv()) // enforce region from props
+                        .description(stackProps != null ? stackProps.getDescription() : null)
+                        .stackName(stackProps != null ? stackProps.getStackName() : null)
+                        .terminationProtection(stackProps != null ? stackProps.getTerminationProtection() : null)
+                        .analyticsReporting(stackProps != null ? stackProps.getAnalyticsReporting() : null)
+                        .synthesizer(stackProps != null ? stackProps.getSynthesizer() : null)
+                        .crossRegionReferences(stackProps != null ? stackProps.getCrossRegionReferences() : null)
+                        .build());
 
         infof(
                 "Creating DevStack for domain: %s (dashed: %s) in region: %s",
                 Objects.requireNonNull(props.getEnv()).getRegion(),
-                props.sharedNames().deploymentDomainName, props.sharedNames().dashedDeploymentDomainName);
+                props.sharedNames().deploymentDomainName,
+                props.sharedNames().dashedDeploymentDomainName);
         String ecrRepositoryName;
         String ecrLogGroupName;
         String ecrPublishRoleName;
@@ -95,7 +98,7 @@ public class DevStack extends Stack {
             ecrPublishRoleName = props.sharedNames().ue1EcrPublishRoleName;
         } else {
             ecrRepositoryName = props.sharedNames().ecrRepositoryName;
-            ecrLogGroupName = props.sharedNames().ecrLogGroupName ;
+            ecrLogGroupName = props.sharedNames().ecrLogGroupName;
             ecrPublishRoleName = props.sharedNames().ecrPublishRoleName;
         }
 

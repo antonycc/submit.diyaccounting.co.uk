@@ -31,6 +31,7 @@ import software.amazon.awscdk.services.cloudwatch.GraphWidget;
 import software.amazon.awscdk.services.cloudwatch.Metric;
 import software.amazon.awscdk.services.cloudwatch.MetricOptions;
 import software.amazon.awscdk.services.cloudwatch.TreatMissingData;
+import software.amazon.awscdk.services.iam.ServicePrincipal;
 import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.lambda.FunctionAttributes;
 import software.amazon.awscdk.services.lambda.IFunction;
@@ -38,7 +39,6 @@ import software.amazon.awscdk.services.lambda.Permission;
 import software.amazon.awscdk.services.logs.ILogGroup;
 import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
-import software.amazon.awscdk.services.iam.ServicePrincipal;
 import software.constructs.Construct;
 
 public class ApiStack extends Stack {
@@ -208,7 +208,8 @@ public class ApiStack extends Stack {
                 Permission.builder()
                         .action("lambda:InvokeFunction")
                         .principal(new ServicePrincipal("apigateway.amazonaws.com"))
-                        .sourceArn("arn:aws:execute-api:" + this.getRegion() + ":" + this.getAccount() + ":" + this.httpApi.getApiId() + "/*")
+                        .sourceArn("arn:aws:execute-api:" + this.getRegion() + ":" + this.getAccount() + ":"
+                                + this.httpApi.getApiId() + "/*")
                         .build());
 
         java.util.Set<String> createdRouteKeys = new java.util.HashSet<>();
@@ -387,7 +388,8 @@ public class ApiStack extends Stack {
                 Permission.builder()
                         .action("lambda:InvokeFunction")
                         .principal(new ServicePrincipal("apigateway.amazonaws.com"))
-                        .sourceArn("arn:aws:execute-api:" + this.getRegion() + ":" + this.getAccount() + ":" + this.httpApi.getApiId() + "/*")
+                        .sourceArn("arn:aws:execute-api:" + this.getRegion() + ":" + this.getAccount() + ":"
+                                + this.httpApi.getApiId() + "/*")
                         .build());
 
         // Collect metrics for monitoring

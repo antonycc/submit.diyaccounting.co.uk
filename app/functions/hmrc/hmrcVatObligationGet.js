@@ -85,7 +85,12 @@ export async function handler(event) {
 
   const hmrcAccessToken = extractHmrcAccessTokenFromLambdaEvent(event);
   if (!hmrcAccessToken) {
-    return http400BadRequestResponse({ request, requestId, headers: { ...responseHeaders }, message: "Missing Authorization Bearer token" });
+    return http400BadRequestResponse({
+      request,
+      requestId,
+      headers: { ...responseHeaders },
+      message: "Missing Authorization Bearer token",
+    });
   }
   try {
     validateHmrcAccessToken(hmrcAccessToken, requestId);
@@ -106,7 +111,11 @@ export async function handler(event) {
       logger.info({ requestId, message: "[MOCK] Using stubbed VAT obligations data", testScenario });
       obligations = getStubData("TEST_VAT_OBLIGATIONS");
     } else {
-      ({ obligations, hmrcResponse } = await getVatObligations(requestId, vrn, hmrcAccessToken, govClientHeaders, testScenario, { from, to, status }));
+      ({ obligations, hmrcResponse } = await getVatObligations(requestId, vrn, hmrcAccessToken, govClientHeaders, testScenario, {
+        from,
+        to,
+        status,
+      }));
 
       // Generate error responses based on HMRC response
       if (hmrcResponse && !hmrcResponse.ok) {

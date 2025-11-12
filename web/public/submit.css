@@ -111,6 +111,19 @@ header {
   gap: 1em;
 }
 
+.entitlement-status {
+  color: #666;
+  font-size: 0.9em;
+}
+
+.entitlement-status.status-granted {
+  color: #28a745;
+}
+
+.entitlement-status.status-requires {
+  color: #dc3545;
+}
+
 .login-status {
   color: #666;
   font-size: 0.9em;

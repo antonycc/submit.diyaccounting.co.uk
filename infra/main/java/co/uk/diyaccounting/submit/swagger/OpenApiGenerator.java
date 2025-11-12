@@ -165,7 +165,9 @@ public class OpenApiGenerator {
                             case "state" -> schema.put("example", "csrf-1234");
                             case "scope" -> schema.put("example", "write:vat read:vat");
                             case "name" -> schema.put("example", "2025-03-31-123456789012.json");
-                            case "key" -> schema.put("example", "receipts/00000000-0000-0000-0000-000000000000/2025-03-31-123456789012.json");
+                            case "key" -> schema.put(
+                                    "example",
+                                    "receipts/00000000-0000-0000-0000-000000000000/2025-03-31-123456789012.json");
                             case "bundleId" -> schema.put("example", "test");
                             case "removeAll" -> schema.put("example", "false");
                         }
