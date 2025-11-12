@@ -83,15 +83,21 @@ export function validateHmrcAccessToken(hmrcAccessToken, requestId) {
  */
 export async function hmrcHttpGet(requestId, endpoint, accessToken, govClientHeaders = {}, testScenario = null, queryParams = {}) {
   const baseUrl = getHmrcBaseUrl();
-  const queryString = new URLSearchParams(queryParams).toString();
+  // Sanitize query params: drop undefined, null, and blank strings
+  const cleanParams = Object.fromEntries(
+    Object.entries(queryParams || {}).filter(([, value]) => value !== undefined && value !== null && String(value).trim() !== ""),
+  );
+  const queryString = new URLSearchParams(cleanParams).toString();
   const url = `${baseUrl}${endpoint}${queryString ? `?${queryString}` : ""}`;
 
   const headers = buildHmrcHeaders(accessToken, govClientHeaders, testScenario);
+  // Provide request correlation header to HMRC
+  if (requestId) headers["x-request-id"] = requestId;
 
   logger.info({
     message: `Request to GET ${url}`,
     url,
-    headers: { ...Object.keys(headers), "x-request-id": requestId },
+    headers: Object.keys(headers),
     testScenario,
     environment: {
       hmrcBase: baseUrl,
@@ -99,10 +105,27 @@ export async function hmrcHttpGet(requestId, endpoint, accessToken, govClientHea
     },
   });
 
-  const hmrcResponse = await fetch(url, {
-    method: "GET",
-    headers,
-  });
+  // Add a conservative timeout to avoid hung connections
+  const timeoutMs = 20000;
+  let hmrcResponse;
+  if (timeoutMs && Number(timeoutMs) > 0) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), Number(timeoutMs));
+    try {
+      hmrcResponse = await fetch(url, {
+        method: "GET",
+        headers,
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timeout);
+    }
+  } else {
+    hmrcResponse = await fetch(url, {
+      method: "GET",
+      headers,
+    });
+  }
 
   const hmrcResponseBody = await hmrcResponse.json().catch(() => ({}));
 

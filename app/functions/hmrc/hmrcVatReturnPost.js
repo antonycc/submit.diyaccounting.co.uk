@@ -58,7 +58,7 @@ export function extractAndValidateParameters(event, errorMessages) {
 
 // HTTP request/response, aware Lambda handler function
 export async function handler(event) {
-  validateEnv(["HMRC_BASE_URI", "COGNITO_USER_POOL_ID"]);
+  validateEnv(["HMRC_BASE_URI"]); // "COGNITO_USER_POOL_ID"
 
   const { request, requestId } = extractRequest(event);
   let errorMessages = [];
