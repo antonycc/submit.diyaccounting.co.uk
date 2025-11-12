@@ -28,6 +28,9 @@ import static co.uk.diyaccounting.submit.utils.Kind.infof;
     @SetEnvironmentVariable(
             key = "HMRC_CLIENT_SECRET_ARN",
             value = "arn:aws:secretsmanager:eu-west-2:111111111111:secret:tt-witheight-hmrc-secret"),
+    @SetEnvironmentVariable(
+            key = "HMRC_SANDBOX_CLIENT_SECRET_ARN",
+            value = "arn:aws:secretsmanager:eu-west-2:111111111111:secret:tt-witheight-hmrc-sandbox-secret"),
     @SetEnvironmentVariable(key = "BASE_IMAGE_TAG", value = "test"),
     @SetEnvironmentVariable(key = "CLOUD_TRAIL_ENABLED", value = "true"),
     @SetEnvironmentVariable(key = "SELF_DESTRUCT_DELAY_HOURS", value = "1"),
