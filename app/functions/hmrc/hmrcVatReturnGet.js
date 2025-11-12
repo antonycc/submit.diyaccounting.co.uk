@@ -77,7 +77,12 @@ export async function handler(event) {
   // Validate token after validating other inputs
   const hmrcAccessToken = extractHmrcAccessTokenFromLambdaEvent(event);
   if (!hmrcAccessToken) {
-    return http400BadRequestResponse({ request, requestId, headers: { ...responseHeaders }, message: "Missing Authorization Bearer token" });
+    return http400BadRequestResponse({
+      request,
+      requestId,
+      headers: { ...responseHeaders },
+      message: "Missing Authorization Bearer token",
+    });
   }
   try {
     validateHmrcAccessToken(hmrcAccessToken, requestId);

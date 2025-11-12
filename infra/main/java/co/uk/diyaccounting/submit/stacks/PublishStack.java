@@ -1,7 +1,15 @@
 package co.uk.diyaccounting.submit.stacks;
 
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.Kind.warnf;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Aspects;
 import software.amazon.awscdk.AssetHashType;
@@ -22,15 +30,6 @@ import software.amazon.awscdk.services.s3.assets.AssetOptions;
 import software.amazon.awscdk.services.s3.deployment.BucketDeployment;
 import software.amazon.awscdk.services.s3.deployment.Source;
 import software.constructs.Construct;
-
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.List;
-
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.Kind.warnf;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 public class PublishStack extends Stack {
 
@@ -82,16 +81,20 @@ public class PublishStack extends Stack {
         this(scope, id, null, props);
     }
 
-    public PublishStack(final Construct scope, final String id, final StackProps stackProps, final PublishStackProps props) {
-        super(scope, id, StackProps.builder()
-            .env(props.getEnv()) // enforce region from props
-            .description(stackProps != null ? stackProps.getDescription() : null)
-            .stackName(stackProps != null ? stackProps.getStackName() : null)
-            .terminationProtection(stackProps != null ? stackProps.getTerminationProtection() : null)
-            .analyticsReporting(stackProps != null ? stackProps.getAnalyticsReporting() : null)
-            .synthesizer(stackProps != null ? stackProps.getSynthesizer() : null)
-            .crossRegionReferences(stackProps != null ? stackProps.getCrossRegionReferences() : null)
-            .build());
+    public PublishStack(
+            final Construct scope, final String id, final StackProps stackProps, final PublishStackProps props) {
+        super(
+                scope,
+                id,
+                StackProps.builder()
+                        .env(props.getEnv()) // enforce region from props
+                        .description(stackProps != null ? stackProps.getDescription() : null)
+                        .stackName(stackProps != null ? stackProps.getStackName() : null)
+                        .terminationProtection(stackProps != null ? stackProps.getTerminationProtection() : null)
+                        .analyticsReporting(stackProps != null ? stackProps.getAnalyticsReporting() : null)
+                        .synthesizer(stackProps != null ? stackProps.getSynthesizer() : null)
+                        .crossRegionReferences(stackProps != null ? stackProps.getCrossRegionReferences() : null)
+                        .build());
 
         // Apply cost allocation tags for all resources in this stack
         Tags.of(this).add("Environment", props.envName());
@@ -189,7 +192,7 @@ public class PublishStack extends Stack {
         }
 
         // Lookup Log Group for web deployment
-        //ILogGroup webDeploymentLogGroup = LogGroup.fromLogGroupArn(
+        // ILogGroup webDeploymentLogGroup = LogGroup.fromLogGroupArn(
         //        this,
         //        props.resourceNamePrefix() + "-ImportedWebDeploymentLogGroup",
         //        "arn:aws:logs:%s:%s:log-group:%s"
@@ -229,7 +232,7 @@ public class PublishStack extends Stack {
                         "/submit.env",
                         "/submit.deployment"))
                 .retainOnDelete(true)
-                //.logGroup(webDeploymentLogGroup)
+                // .logGroup(webDeploymentLogGroup)
                 .logRetention(RetentionDays.ONE_DAY)
                 .expires(Expiration.after(Duration.minutes(5)))
                 .prune(false)

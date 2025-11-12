@@ -1,5 +1,9 @@
 package co.uk.diyaccounting.submit;
 
+import static co.uk.diyaccounting.submit.utils.Kind.envOr;
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.Kind.warnf;
+
 import co.uk.diyaccounting.submit.constructs.ApiLambdaProps;
 import co.uk.diyaccounting.submit.stacks.AccountStack;
 import co.uk.diyaccounting.submit.stacks.ApiStack;
@@ -9,19 +13,14 @@ import co.uk.diyaccounting.submit.stacks.HmrcStack;
 import co.uk.diyaccounting.submit.stacks.OpsStack;
 import co.uk.diyaccounting.submit.stacks.SelfDestructStack;
 import co.uk.diyaccounting.submit.utils.KindCdk;
-import software.amazon.awscdk.App;
-import software.amazon.awscdk.Environment;
-import software.constructs.Construct;
-
 import java.lang.reflect.Field;
 import java.nio.file.Paths;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-
-import static co.uk.diyaccounting.submit.utils.Kind.envOr;
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.Kind.warnf;
+import software.amazon.awscdk.App;
+import software.amazon.awscdk.Environment;
+import software.constructs.Construct;
 
 public class SubmitApplication {
 
@@ -98,9 +97,9 @@ public class SubmitApplication {
         // Determine primary environment (account/region) from CDK env
         Environment primaryEnv = KindCdk.buildPrimaryEnvironment();
         Environment usEast1Env = Environment.builder()
-            .region("us-east-1")
-            .account(primaryEnv.getAccount())
-            .build();
+                .region("us-east-1")
+                .account(primaryEnv.getAccount())
+                .build();
 
         var nameProps = new SubmitSharedNames.SubmitSharedNamesProps();
         nameProps.envName = envName;
@@ -140,10 +139,7 @@ public class SubmitApplication {
         // Create DevStack with resources only used during development or deployment (e.g. ECR)
         infof(
                 "Synthesizing stack %s for deployment %s to environment %s for region %s",
-                primaryEnv.getRegion(),
-                sharedNames.devStackId,
-                deploymentName,
-                envName);
+                primaryEnv.getRegion(), sharedNames.devStackId, deploymentName, envName);
         this.devStack = new DevStack(
                 app,
                 sharedNames.devStackId,
@@ -160,9 +156,7 @@ public class SubmitApplication {
         // Create DevStack for us-east-1 region (for the edge services like CloudFront)
         infof(
                 "Synthesizing stack %s for deployment %s to environment %s for region us-east-1",
-                sharedNames.ue1DevStackId,
-                deploymentName,
-                envName);
+                sharedNames.ue1DevStackId, deploymentName, envName);
         this.ue1DevStack = new DevStack(
                 app,
                 sharedNames.ue1DevStackId,
