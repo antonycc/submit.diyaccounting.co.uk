@@ -92,7 +92,11 @@ describe("httpPostMock", () => {
       body: "invalid-json",
     };
 
-    await expect(logReceiptHandler(event)).rejects.toThrow();
+    const result = await logReceiptHandler(event);
+    const body = JSON.parse(result.body);
+
+    expect(result.statusCode).toBe(400);
+    expect(body.message).toContain("Missing receipt parameter from body");
   });
 
   test("should handle S3 network timeout error", async () => {
