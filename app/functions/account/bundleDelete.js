@@ -7,12 +7,11 @@ import {
   parseRequestBody,
   http200OkResponse,
   http401UnauthorizedResponse,
-  http404NotFoundResponse,
   http500ServerErrorResponse,
   buildValidationError,
 } from "../../lib/responses.js";
 import { decodeJwtToken } from "../../lib/jwtHelper.js";
-import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
+import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest, http404NotFound } from "../../lib/httpHelper.js";
 import { getUserBundles, updateUserBundles } from "../../lib/bundleHelpers.js";
 
 // Server hook for Express app, and construction of a Lambda-like event from HTTP request)
@@ -95,12 +94,7 @@ export async function handler(event) {
     const result = await deleteUserBundle(userId, bundleToRemove, removeAll);
 
     if (result.status === "not_found") {
-      return http404NotFoundResponse({
-        request,
-        requestId,
-        headers: { ...responseHeaders },
-        message: "Bundle not found",
-      });
+      return http404NotFound(request, requestId, "Bundle not found", responseHeaders);
     }
 
     logger.info({ requestId, message: "Successfully deleted bundle", userId, status: result.status });

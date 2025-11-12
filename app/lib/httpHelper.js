@@ -1,6 +1,7 @@
 // app/lib/httpHelper.js
 
 import logger from "./logger.js";
+import { http400BadRequestResponse } from "./responses.js";
 
 export function buildLambdaEventFromHttpRequest(httpRequest) {
   // Start with a copy of all incoming headers (Express normalizes to lowercase keys)
@@ -54,6 +55,25 @@ export function logHmrcRequestDetails(requestId, hmrcRequestUrl, hmrcRequestHead
     body: hmrcRequestBody,
     environment: {
       nodeEnv: process.env.NODE_ENV,
+    },
+  });
+}
+
+export function http404NotFound(request, requestId, responseHeaders, message) {
+  logger.warn({
+    requestId,
+    message,
+    request,
+    hmrcResponseCode: responseHeaders,
+    responseBody: message,
+  });
+  return http400BadRequestResponse({
+    request,
+    requestId,
+    headers: { ...responseHeaders, "x-request-id": requestId },
+    message,
+    error: {
+      responseBody: message,
     },
   });
 }
