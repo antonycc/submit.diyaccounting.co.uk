@@ -1,5 +1,8 @@
 package co.uk.diyaccounting.submit.constructs;
 
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+
+import java.util.List;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.services.cloudwatch.Alarm;
 import software.amazon.awscdk.services.cloudwatch.ComparisonOperator;
@@ -20,10 +23,6 @@ import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.LogGroupProps;
 import software.amazon.awscdk.services.logs.MetricFilter;
 import software.constructs.Construct;
-
-import java.util.List;
-
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
 
 public class Lambda {
 
@@ -49,22 +48,23 @@ public class Lambda {
         this.dockerImage = DockerImageCode.fromEcr(repository, imageCodeProps);
 
         // Create log group for the lambda
-        if( props.logGroup().isPresent() ) {
+        if (props.logGroup().isPresent()) {
             this.logGroup = props.logGroup().get();
-            infof("Using custom log group name %s for Lambda %s", this.logGroup.getNode().getId(), props.functionName());
+            infof(
+                    "Using custom log group name %s for Lambda %s",
+                    this.logGroup.getNode().getId(), props.functionName());
         } else {
             this.logGroup = new LogGroup(
-                scope,
-                props.idPrefix() + "LogGroup",
-                LogGroupProps.builder()
-                    .logGroupName("/aws/lambda/" + props.functionName())
-                    .retention(props.logGroupRetention())
-                    .removalPolicy(props.logGroupRemovalPolicy())
-                    .build());
-            infof("Created log group %s with retention %s for Lambda %s",
-                this.logGroup.getNode().getId(),
-                props.logGroupRetention(),
-                props.functionName());
+                    scope,
+                    props.idPrefix() + "LogGroup",
+                    LogGroupProps.builder()
+                            .logGroupName("/aws/lambda/" + props.functionName())
+                            .retention(props.logGroupRetention())
+                            .removalPolicy(props.logGroupRemovalPolicy())
+                            .build());
+            infof(
+                    "Created log group %s with retention %s for Lambda %s",
+                    this.logGroup.getNode().getId(), props.logGroupRetention(), props.functionName());
         }
 
         // Add X-Ray environment variables if enabled
@@ -77,7 +77,7 @@ public class Lambda {
                 .timeout(props.timeout())
                 .logGroup(this.logGroup)
                 .tracing(Tracing.ACTIVE);
-        //dockerFunctionBuilder.tracing(Tracing.ACTIVE);
+        // dockerFunctionBuilder.tracing(Tracing.ACTIVE);
         if (props.role().isPresent()) {
             dockerFunctionBuilder.role(props.role().get());
         }

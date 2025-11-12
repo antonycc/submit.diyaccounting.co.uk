@@ -159,6 +159,3 @@ function buildTestS3Config() {
     forcePathStyle: true,
   };
 }
-
-// Legacy export for backward compatibility
-export const logReceipt = saveReceiptToS3;

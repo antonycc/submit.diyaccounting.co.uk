@@ -193,6 +193,3 @@ export async function getReceiptByKey(userSub, Key) {
     throw new Error(`Failed to get receipt: ${e?.message || String(e)}`);
   }
 }
-
-// Legacy export for backward compatibility with tests
-export const httpGetByName = handler;

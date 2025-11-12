@@ -2,7 +2,7 @@
 
 import { validateEnv } from "../../lib/env.js";
 import logger from "../../lib/logger.js";
-import { extractRequest } from "../../lib/responses.js";
+import { extractRequest, http200OkResponse, http401UnauthorizedResponse, http500ServerErrorResponse } from "../../lib/responses.js";
 import { decodeJwtToken } from "../../lib/jwtHelper.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
 import { getUserBundles } from "../../lib/bundleHelpers.js";
@@ -24,6 +24,7 @@ function parseBundleString(bundleStr) {
   if (parts.length > 1) {
     const expiryMatch = parts[1].match(/EXPIRY=(.+)/);
     if (expiryMatch && expiryMatch[1]) {
+      // Keep the entry with the latest expiry date
       expiry = expiryMatch[1]; // ISO date string like "2025-12-31"
     }
   }
@@ -46,8 +47,11 @@ function formatBundles(bundles) {
       const existing = bundleMap.get(bundleId);
       if (!existing) {
         bundleMap.set(bundleId, { bundleId, expiry });
-      } else if (expiry && expiry > (existing.expiry || "")) {
-        bundleMap.set(bundleId, { bundleId, expiry });
+      } else if (expiry) {
+        // Update if new expiry is later than existing
+        if (expiry > (existing.expiry || "")) {
+          bundleMap.set(bundleId, { bundleId, expiry });
+        }
       }
     }
   }
@@ -55,6 +59,7 @@ function formatBundles(bundles) {
   return Array.from(bundleMap.values());
 }
 
+// Server hook for Express app, and construction of a Lambda-like event from HTTP request)
 export function apiEndpoint(app) {
   app.get("/api/v1/bundle", async (httpRequest, httpResponse) => {
     const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
@@ -63,52 +68,79 @@ export function apiEndpoint(app) {
   });
 }
 
-export async function handler(event) {
-  const { request, requestId } = extractRequest(event);
-  logger.info({ message: "bundleGet entry", route: "/api/v1/bundle", request });
+export function extractAndValidateParameters(event, errorMessages) {
+  // Decode JWT token to get user ID
+  let decodedToken;
+  try {
+    decodedToken = decodeJwtToken(event.headers);
+  } catch {
+    // JWT decoding failed - authentication error
+    errorMessages.push("Invalid or missing authentication token");
+    return { userId: null };
+  }
 
+  const userId = decodedToken.sub;
+  return { userId };
+}
+
+// HTTP request/response, aware Lambda handler function
+export async function handler(event) {
   validateEnv(["COGNITO_USER_POOL_ID"]);
 
-  try {
-    logger.info({ message: "Bundle get request received:", event: JSON.stringify(event, null, 2) });
+  const { request, requestId } = extractRequest(event);
+  const errorMessages = [];
 
-    // Decode JWT token to get user ID
-    let decodedToken;
-    try {
-      decodedToken = decodeJwtToken(event.headers);
-    } catch (error) {
-      return {
-        statusCode: 401,
-        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
-        body: JSON.stringify(error),
-      };
-    }
-    const userId = decodedToken.sub;
-    const userPoolId = process.env.COGNITO_USER_POOL_ID;
+  logger.info({ requestId, message: "Retrieving user bundles" });
 
-    logger.info({ message: "Retrieving bundles for user:", userId });
+  // Extract and validate parameters
+  const { userId } = extractAndValidateParameters(event, errorMessages);
 
-    // Use DynamoDB as primary storage (via getUserBundles which abstracts the storage)
-    const allBundles = await getUserBundles(userId, userPoolId);
+  const responseHeaders = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*", "x-request-id": requestId };
 
-    // Format bundles with expiry information
-    const formattedBundles = formatBundles(allBundles);
-
-    logger.info({ message: "Retrieved bundles for user:", userId, count: formattedBundles.length });
-
-    return {
-      statusCode: 200,
-      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
-      body: JSON.stringify({
-        bundles: formattedBundles,
-      }),
-    };
-  } catch (error) {
-    logger.error({ message: "Unexpected error:", error: error?.message || String(error) });
-    return {
-      statusCode: 500,
-      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
-      body: JSON.stringify({ error: "Internal server error" }),
-    };
+  // Authentication errors
+  if (errorMessages.length > 0 || !userId) {
+    return http401UnauthorizedResponse({
+      request,
+      requestId,
+      headers: { ...responseHeaders },
+      message: "Authentication required",
+      error: {},
+    });
   }
+
+  // Processing
+  try {
+    const formattedBundles = await retrieveUserBundles(userId);
+
+    logger.info({ requestId, message: "Successfully retrieved bundles", userId, count: formattedBundles.length });
+
+    return http200OkResponse({
+      request,
+      requestId,
+      headers: { ...responseHeaders },
+      data: { bundles: formattedBundles },
+    });
+  } catch (error) {
+    logger.error({ requestId, message: "Error retrieving bundles", error: error.message, stack: error.stack });
+    return http500ServerErrorResponse({
+      request,
+      requestId,
+      headers: { ...responseHeaders },
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+}
+
+// Service adaptor aware of the downstream service but not the consuming Lambda's incoming/outgoing HTTP request/response
+export async function retrieveUserBundles(userId) {
+  const userPoolId = process.env.COGNITO_USER_POOL_ID;
+
+  // Use DynamoDB as primary storage (via getUserBundles which abstracts the storage)
+  const allBundles = await getUserBundles(userId, userPoolId);
+
+  // Format bundles with expiry information
+  const formattedBundles = formatBundles(allBundles);
+
+  return formattedBundles;
 }

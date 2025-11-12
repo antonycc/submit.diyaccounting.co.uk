@@ -1,14 +1,13 @@
 package co.uk.diyaccounting.submit.constructs;
 
+import java.util.Map;
+import java.util.Optional;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.services.iam.Role;
 import software.amazon.awscdk.services.logs.ILogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
-
-import java.util.Map;
-import java.util.Optional;
 
 @Value.Immutable
 public interface LambdaProps {
@@ -53,10 +52,14 @@ public interface LambdaProps {
     String ecrRepositoryName();
 
     @Value.Default
-    default Optional<ILogGroup> logGroup() { return Optional.empty(); }
+    default Optional<ILogGroup> logGroup() {
+        return Optional.empty();
+    }
 
     @Value.Default
-    default Optional<Role> role() { return Optional.empty(); }
+    default Optional<Role> role() {
+        return Optional.empty();
+    }
 
     static ImmutableLambdaProps.Builder builder() {
         return ImmutableLambdaProps.builder();

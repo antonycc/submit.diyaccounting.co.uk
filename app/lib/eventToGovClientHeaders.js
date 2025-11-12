@@ -24,7 +24,8 @@ export default function eventToGovClientHeaders(event, detectedIP) {
 
   // Handle IP detection - if browser sent "SERVER_DETECT", extract IP from request headers
   let govClientPublicIPHeader = sanitize(h("Gov-Client-Public-IP"));
-  const govVendorPublicIPHeader = sanitize(h("Gov-Vendor-Public-IP")) || sanitize(h("x-forwarded-for"))?.split(",")[0]?.trim() || detectedIP;
+  const govVendorPublicIPHeader =
+    sanitize(h("Gov-Vendor-Public-IP")) || sanitize(h("x-forwarded-for"))?.split(",")[0]?.trim() || detectedIP;
 
   if (govClientPublicIPHeader === "SERVER_DETECT" || !govClientPublicIPHeader) {
     logger.info({
@@ -37,7 +38,8 @@ export default function eventToGovClientHeaders(event, detectedIP) {
 
   const govClientPublicIPTimestampHeader = sanitize(h("Gov-Client-Public-IP-Timestamp")) || new Date().toISOString();
   const govClientPublicPortHeader = sanitize(h("Gov-Client-Public-Port")) || (event.headers?.host?.endsWith(":443") ? "443" : "443");
-  const govClientScreensHeader = sanitize(h("Gov-Client-Screens")) || JSON.stringify({ width: 1280, height: 720, colorDepth: 24, pixelDepth: 24 });
+  const govClientScreensHeader =
+    sanitize(h("Gov-Client-Screens")) || JSON.stringify({ width: 1280, height: 720, colorDepth: 24, pixelDepth: 24 });
   const govClientTimezoneHeader = sanitize(h("Gov-Client-Timezone")) || "UTC";
   const govClientUserIDsHeader = sanitize(h("Gov-Client-User-IDs")) || "server=1";
   const govClientWindowSizeHeader = sanitize(h("Gov-Client-Window-Size")) || JSON.stringify({ width: 1280, height: 720 });
