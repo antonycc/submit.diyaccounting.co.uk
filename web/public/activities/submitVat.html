@@ -298,14 +298,14 @@
       }
 
       async function submitVat(vatNumber, periodKey, vatDue, accessToken, headers) {
-        const url = "/api/v1/hmrc/vat/return";
+        const apiUrl = (typeof addSandboxToUrl === "function") ? addSandboxToUrl("/api/v1/hmrc/vat/return") : "/api/v1/hmrc/vat/return";
         const body = JSON.stringify({
           vatNumber,
           periodKey,
           vatDue,
           accessToken,
         });
-        console.log(`Submitting VAT. Remote call initiated: POST ${url} ++ Body: ${body}`);
+        console.log(`Submitting VAT. Remote call initiated: POST ${apiUrl} ++ Body: ${body}`);
 
         // Get Cognito JWT token for custom authorizer
         const cognitoAccessToken = localStorage.getItem("cognitoAccessToken");
@@ -317,7 +317,7 @@
           requestHeaders["X-Authorization"] = `Bearer ${cognitoAccessToken}`;
         }
 
-        const response = await fetch(url, {
+        const response = await fetch(apiUrl, {
           method: "POST",
           headers: requestHeaders,
           body,
@@ -335,19 +335,19 @@
       }
 
       async function logReceipt(processingDate, formBundleNumber, chargeRefNumber) {
-        const url = "/api/v1/hmrc/receipt";
+        const apiUrl = (typeof addSandboxToUrl === "function") ? addSandboxToUrl("/api/v1/hmrc/receipt") : "/api/v1/hmrc/receipt";
         const body = JSON.stringify({
           processingDate,
           formBundleNumber,
           chargeRefNumber,
         });
-        console.log(`Logging receipt. Remote call initiated: POST ${url} ++ Body: ${body}`);
+        console.log(`Logging receipt. Remote call initiated: POST ${apiUrl} ++ Body: ${body}`);
 
         const idToken = localStorage.getItem("cognitoIdToken");
         const headers = { "Content-Type": "application/json" };
         if (idToken) headers["Authorization"] = `Bearer ${idToken}`;
 
-        const response = await fetch(url, {
+        const response = await fetch(apiUrl, {
           method: "POST",
           headers,
           body,

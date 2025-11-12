@@ -70,6 +70,36 @@ function generateRandomState() {
   return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 }
 
+// Get sandbox parameter from current page URL
+function getSandboxParam() {
+  try {
+    if (typeof window !== "undefined" && window.location && window.location.search) {
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get("sandbox");
+    }
+  } catch (error) {
+    // Silently fail in environments where window.location is not available
+    return null;
+  }
+  return null;
+}
+
+// Add sandbox parameter to URL if present in current page
+function addSandboxToUrl(url) {
+  if (!url) return url;
+  try {
+    const sandbox = getSandboxParam();
+    if (sandbox) {
+      const separator = url.includes("?") ? "&" : "?";
+      return `${url}${separator}sandbox=${encodeURIComponent(sandbox)}`;
+    }
+  } catch (error) {
+    // Silently fail and return original URL
+    return url;
+  }
+  return url;
+}
+
 // Client request correlation helper
 function fetchWithId(url, opts = {}) {
   const headers = new Headers(opts.headers || {});
@@ -82,7 +112,7 @@ function fetchWithId(url, opts = {}) {
 
 // Auth API functions
 async function getAuthUrl(state, provider = "hmrc") {
-  const url = `/api/v1/${provider}/authUrl?state=${encodeURIComponent(state)}`;
+  const url = addSandboxToUrl(`/api/v1/${provider}/authUrl?state=${encodeURIComponent(state)}`);
   console.log(`Getting auth URL. Remote call initiated: GET ${url}`);
 
   const response = await fetchWithId(url);
@@ -99,7 +129,7 @@ async function getAuthUrl(state, provider = "hmrc") {
 
 // VAT submission API function
 async function submitVat(vatNumber, periodKey, vatDue, accessToken, govClientHeaders = {}) {
-  const url = "/api/v1/hmrc/vat/return";
+  const url = addSandboxToUrl("/api/v1/hmrc/vat/return");
 
   // Get Cognito JWT token for custom authorizer
   const cognitoAccessToken = localStorage.getItem("cognitoAccessToken");
@@ -127,7 +157,7 @@ async function submitVat(vatNumber, periodKey, vatDue, accessToken, govClientHea
 
 // Receipt logging API function
 async function logReceipt(processingDate, formBundleNumber, chargeRefNumber) {
-  const url = "/api/v1/hmrc/receipt";
+  const url = addSandboxToUrl("/api/v1/hmrc/receipt");
   const response = await fetchWithId(url, {
     method: "POST",
     headers: {

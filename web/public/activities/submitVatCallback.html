@@ -126,11 +126,11 @@
       }
 
       async function exchangeToken(code) {
-        const url = `/api/v1/hmrc/token`;
+        const apiUrl = addSandboxToUrl(`/api/v1/hmrc/token`);
         const body = JSON.stringify({ code });
-        console.log(`Exchanging token. Remote call initiated: POST ${url} ++ Body: ${body}`);
+        console.log(`Exchanging token. Remote call initiated: POST ${apiUrl} ++ Body: ${body}`);
 
-        const response = await fetch(url, {
+        const response = await fetch(apiUrl, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
