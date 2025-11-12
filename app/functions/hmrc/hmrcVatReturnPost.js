@@ -36,10 +36,6 @@ export function extractAndValidateParameters(event, errorMessages) {
   // TODO: Remove the alternate paths at source, then remove this compatibility code
   // accessToken takes precedence over hmrcAccessToken for backward compatibility and ergonomics
   const hmrcAccessToken = accessToken || hmrcAccessTokenInBody;
-  
-  // Extract sandbox parameter from query string
-  const queryParams = event.queryStringParameters || {};
-  const { sandbox } = queryParams;
 
   // Collect validation errors for required fields
   if (!vatNumber) errorMessages.push("Missing vatNumber parameter from body");
@@ -57,7 +53,7 @@ export function extractAndValidateParameters(event, errorMessages) {
   if (periodKey && !/^[A-Z0-9#]{3,5}$/i.test(String(periodKey))) {
     errorMessages.push("Invalid periodKey format");
   }
-  return { vatNumber, periodKey, hmrcAccessToken, numVatDue, sandbox };
+  return { vatNumber, periodKey, hmrcAccessToken, numVatDue };
 }
 
 // HTTP request/response, aware Lambda handler function
@@ -75,7 +71,7 @@ export async function handler(event) {
   }
 
   // Extract and validate parameters
-  const { vatNumber, periodKey, hmrcAccessToken, numVatDue, sandbox } = extractAndValidateParameters(event, errorMessages);
+  const { vatNumber, periodKey, hmrcAccessToken, numVatDue } = extractAndValidateParameters(event, errorMessages);
 
   // Generate Gov-Client headers and collect any header-related validation errors
   const detectedIP = extractClientIPFromHeaders(event);

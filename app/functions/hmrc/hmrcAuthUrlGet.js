@@ -18,7 +18,6 @@ export async function handler(event) {
 
   const { request, requestId } = extractRequest(event);
   const state = event.queryStringParameters?.state;
-  const sandbox = event.queryStringParameters?.sandbox;
 
   if (!state) {
     return http400BadRequestResponse({

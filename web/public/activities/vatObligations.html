@@ -261,8 +261,7 @@
             requestHeaders["X-Authorization"] = `Bearer ${cognitoAccessToken}`;
           }
 
-          const apiUrl = addSandboxToUrl(`/api/v1/hmrc/vat/obligation?${params}`);
-          const response = await fetch(apiUrl, {
+          const response = await fetch(`/api/v1/hmrc/vat/obligation?${params}`, {
             method: "GET",
             headers: requestHeaders,
           });
@@ -379,8 +378,7 @@
               requestHeaders["X-Authorization"] = `Bearer ${cognitoAccessToken}`;
             }
 
-            const apiUrl = addSandboxToUrl(`/api/v1/hmrc/vat/obligation?${params}`);
-            const response = await fetch(apiUrl, {
+            const response = await fetch(`/api/v1/hmrc/vat/obligation?${params}`, {
               method: "GET",
               headers: requestHeaders,
             });
@@ -497,19 +495,13 @@
       }
 
       function viewReturn(vrn, periodKey) {
-        // Navigate to view VAT return page, preserving sandbox parameter if present
-        let url = `viewVatReturn.html?vrn=${vrn}&periodKey=${periodKey}`;
-        const sandbox = getSandboxParam();
-        if (sandbox) url += `&sandbox=${encodeURIComponent(sandbox)}`;
-        window.location.href = url;
+        // Navigate to view VAT return page
+        window.location.href = `viewVatReturn.html?vrn=${vrn}&periodKey=${periodKey}`;
       }
 
       function submitReturn(vrn, periodKey) {
-        // Navigate to submit VAT return page with pre-filled data, preserving sandbox parameter if present
-        let url = `submitVat.html?vrn=${vrn}&periodKey=${periodKey}`;
-        const sandbox = getSandboxParam();
-        if (sandbox) url += `&sandbox=${encodeURIComponent(sandbox)}`;
-        window.location.href = url;
+        // Navigate to submit VAT return page with pre-filled data
+        window.location.href = `submitVat.html?vrn=${vrn}&periodKey=${periodKey}`;
       }
 
       // Toggle search criteria button handler
