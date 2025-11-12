@@ -2,7 +2,13 @@
 
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import logger from "../../lib/logger.js";
-import { extractRequest, http200OkResponse, http500ServerErrorResponse, parseRequestBody, buildValidationError } from "../../lib/responses.js";
+import {
+  extractRequest,
+  http200OkResponse,
+  http500ServerErrorResponse,
+  parseRequestBody,
+  buildValidationError,
+} from "../../lib/responses.js";
 import { validateEnv } from "../../lib/env.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
 
@@ -32,15 +38,21 @@ export function extractAndValidateParameters(event, errorMessages) {
         const claims = JSON.parse(json);
         userSub = claims.sub || null;
       }
-    } catch (_e) {
+    } catch {
+      // JWT parsing failed - userSub remains null
       userSub = null;
     }
   }
 
   const formBundle = receipt?.formBundleNumber;
   const timestamp = new Date().toISOString();
-  const key =
-    userSub && formBundle ? `receipts/${userSub}/${timestamp}-${formBundle}.json` : formBundle ? `receipts/${formBundle}.json` : null;
+  // Build key: with userSub if available, otherwise just formBundle
+  let key = null;
+  if (userSub && formBundle) {
+    key = `receipts/${userSub}/${timestamp}-${formBundle}.json`;
+  } else if (formBundle) {
+    key = `receipts/${formBundle}.json`;
+  }
 
   // Collect validation errors for required fields
   if (!receipt || Object.keys(receipt).length === 0) errorMessages.push("Missing receipt parameter from body");
@@ -55,7 +67,7 @@ export async function handler(event) {
   validateEnv(["DIY_SUBMIT_RECEIPTS_BUCKET_NAME"]);
 
   const { request, requestId } = extractRequest(event);
-  let errorMessages = [];
+  const errorMessages = [];
 
   // Extract and validate parameters
   const { receipt, key, formBundle } = extractAndValidateParameters(event, errorMessages);

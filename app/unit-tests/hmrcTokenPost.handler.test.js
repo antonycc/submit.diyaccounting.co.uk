@@ -51,10 +51,7 @@ describe("hmrcTokenPost handler (new tests)", () => {
     expect(body.accessToken).toBe("test-access-token");
 
     // Verify fetch was called with correct URL
-    expect(mockFetch).toHaveBeenCalledWith(
-      expect.stringContaining("/oauth/token"),
-      expect.objectContaining({ method: "POST" }),
-    );
+    expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining("/oauth/token"), expect.objectContaining({ method: "POST" }));
   });
 
   test("returns 400 when authorization code is missing", async () => {

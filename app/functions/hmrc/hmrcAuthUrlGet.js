@@ -34,7 +34,7 @@ export async function handler(event) {
   validateEnv(["HMRC_BASE_URI", "HMRC_CLIENT_ID", "DIY_SUBMIT_BASE_URL"]);
 
   const { request, requestId } = extractRequest(event);
-  let errorMessages = [];
+  const errorMessages = [];
 
   // Extract and validate parameters
   const { state, requestedScope } = extractAndValidateParameters(event, errorMessages);

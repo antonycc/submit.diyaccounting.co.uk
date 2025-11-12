@@ -2,7 +2,14 @@
 
 import { ListObjectsV2Command, GetObjectCommand } from "@aws-sdk/client-s3";
 import logger from "../../lib/logger.js";
-import { extractRequest, http200OkResponse, http500ServerErrorResponse, buildValidationError, http401UnauthorizedResponse, http403ForbiddenResponse } from "../../lib/responses.js";
+import {
+  extractRequest,
+  http200OkResponse,
+  http500ServerErrorResponse,
+  buildValidationError,
+  http401UnauthorizedResponse,
+  http403ForbiddenResponse,
+} from "../../lib/responses.js";
 import { makeReceiptsS3 } from "../../lib/s3Env.js";
 import { streamToString } from "../../lib/streams.js";
 import { validateEnv } from "../../lib/env.js";
@@ -42,10 +49,10 @@ export function extractAndValidateParameters(event, errorMessages, userSub) {
   const pathParams = event.pathParameters || {};
   const queryParams = event.queryStringParameters || {};
   const { name, key: providedKey } = { ...pathParams, ...queryParams };
-  
+
   // Determine if this is a list or single-item request
   const hasNameOrKey = Boolean(name || providedKey);
-  
+
   if (hasNameOrKey) {
     // Single item validation
     let Key;
@@ -62,7 +69,7 @@ export function extractAndValidateParameters(event, errorMessages, userSub) {
     }
     return { hasNameOrKey, Key };
   }
-  
+
   return { hasNameOrKey: false };
 }
 
@@ -85,7 +92,7 @@ export async function handler(event) {
     });
   }
 
-  let errorMessages = [];
+  const errorMessages = [];
 
   // Extract and validate parameters
   const { hasNameOrKey, Key } = extractAndValidateParameters(event, errorMessages, userSub);
@@ -93,7 +100,7 @@ export async function handler(event) {
   // Validation errors
   if (errorMessages.length > 0) {
     // Check for forbidden error specifically
-    if (errorMessages.some(msg => msg.includes("forbidden"))) {
+    if (errorMessages.some((msg) => msg.includes("forbidden"))) {
       return http403ForbiddenResponse({
         request,
         requestId,
@@ -147,7 +154,7 @@ export async function listUserReceipts(userSub) {
 
   let ContinuationToken = undefined;
   const items = [];
-  
+
   do {
     const resp = await s3.send(new ListObjectsV2Command({ Bucket, Prefix, ContinuationToken, MaxKeys: 1000 }));
     (resp.Contents || []).forEach((o) => {

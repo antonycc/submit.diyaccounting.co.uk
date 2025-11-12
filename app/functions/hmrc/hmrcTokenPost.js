@@ -38,7 +38,7 @@ export async function handler(event) {
   validateEnv(required);
 
   const { request, requestId } = extractRequest(event);
-  let errorMessages = [];
+  const errorMessages = [];
 
   // Extract and validate parameters
   const { code } = extractAndValidateParameters(event, errorMessages);
