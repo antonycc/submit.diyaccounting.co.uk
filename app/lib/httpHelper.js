@@ -59,21 +59,14 @@ export function logHmrcRequestDetails(requestId, hmrcRequestUrl, hmrcRequestHead
   });
 }
 
-export function http404NotFound(request, requestId, responseHeaders, message) {
-  logger.warn({
-    requestId,
-    message,
-    request,
-    hmrcResponseCode: responseHeaders,
-    responseBody: message,
-  });
-  return http400BadRequestResponse({
-    request,
-    requestId,
-    headers: { ...responseHeaders, "x-request-id": requestId },
-    message,
-    error: {
-      responseBody: message,
-    },
-  });
+export function http404NotFound(request, requestId, message, responseHeaders) {
+  // Log with clear semantics and avoid misusing headers as a response code
+  logger.warn({ requestId, message, request });
+  // Return a proper 404 response (was incorrectly returning 400)
+  // We keep using the generic bad request builder style but with correct status
+  return {
+    statusCode: 404,
+    headers: { ...(responseHeaders || {}), "x-request-id": requestId },
+    body: JSON.stringify({ message }),
+  };
 }
