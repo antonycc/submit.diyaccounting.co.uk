@@ -21,7 +21,11 @@ export function apiEndpoint(app) {
 
 // POST /api/v1/hmrc/token
 export async function handler(event) {
-  validateEnv(["HMRC_BASE_URI", "HMRC_CLIENT_ID", "DIY_SUBMIT_BASE_URL", "HMRC_CLIENT_SECRET_ARN"]);
+  // Allow local/dev override via HMRC_CLIENT_SECRET. Only require ARN if override is not supplied.
+  const required = ["HMRC_BASE_URI", "HMRC_CLIENT_ID", "DIY_SUBMIT_BASE_URL"];
+  if (!process.env.HMRC_CLIENT_SECRET) required.push("HMRC_CLIENT_SECRET_ARN");
+  validateEnv(required);
+
   const secretArn = process.env.HMRC_CLIENT_SECRET_ARN;
   const overrideSecret = process.env.HMRC_CLIENT_SECRET;
 
@@ -32,6 +36,7 @@ export async function handler(event) {
     logger.warn("Missing code from event body");
     return http400BadRequestResponse({
       request,
+      requestId,
       message: "Missing code from event body",
     });
   }
