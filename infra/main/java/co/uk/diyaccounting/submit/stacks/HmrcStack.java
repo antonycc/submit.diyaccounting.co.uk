@@ -104,6 +104,12 @@ public class HmrcStack extends Stack {
 
         String hmrcClientSecretArn();
 
+        String hmrcSandboxBaseUri();
+
+        String hmrcSandboxClientId();
+
+        String hmrcSandboxClientSecretArn();
+
         String cognitoUserPoolId();
 
         @Override
@@ -138,7 +144,9 @@ public class HmrcStack extends Stack {
         var authUrlHmrcLambdaEnv = new PopulatedMap<String, String>()
                 .with("DIY_SUBMIT_BASE_URL", props.sharedNames().envBaseUrl)
                 .with("HMRC_BASE_URI", props.hmrcBaseUri())
-                .with("HMRC_CLIENT_ID", props.hmrcClientId());
+                .with("HMRC_CLIENT_ID", props.hmrcClientId())
+                .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
+                .with("HMRC_SANDBOX_CLIENT_ID", props.hmrcSandboxClientId());
         var authUrlHmrcLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
@@ -168,9 +176,14 @@ public class HmrcStack extends Stack {
         var exchangeHmrcEnvBase = new PopulatedMap<String, String>()
                 .with("DIY_SUBMIT_BASE_URL", props.sharedNames().envBaseUrl)
                 .with("HMRC_BASE_URI", props.hmrcBaseUri())
-                .with("HMRC_CLIENT_ID", props.hmrcClientId());
+                .with("HMRC_CLIENT_ID", props.hmrcClientId())
+                .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
+                .with("HMRC_SANDBOX_CLIENT_ID", props.hmrcSandboxClientId());
         if (StringUtils.isNotBlank(props.hmrcClientSecretArn())) {
             exchangeHmrcEnvBase.with("HMRC_CLIENT_SECRET_ARN", props.hmrcClientSecretArn());
+        }
+        if (StringUtils.isNotBlank(props.hmrcSandboxClientSecretArn())) {
+            exchangeHmrcEnvBase.with("HMRC_SANDBOX_CLIENT_SECRET_ARN", props.hmrcSandboxClientSecretArn());
         }
         if (props.optionalTestAccessToken().isPresent()
                 && StringUtils.isNotBlank(props.optionalTestAccessToken().get())) {
@@ -218,6 +231,21 @@ public class HmrcStack extends Stack {
                     "Granted Secrets Manager access to %s for secret %s (with wildcard: %s)",
                     this.hmrcTokenPostLambda.getFunctionName(), props.hmrcClientSecretArn(), secretArnWithWildcard);
         }
+        
+        // Grant access to HMRC sandbox client secret in Secrets Manager
+        if (StringUtils.isNotBlank(props.hmrcSandboxClientSecretArn())) {
+            String sandboxSecretArnWithWildcard = props.hmrcSandboxClientSecretArn().endsWith("-*")
+                    ? props.hmrcSandboxClientSecretArn()
+                    : props.hmrcSandboxClientSecretArn() + "-*";
+            this.hmrcTokenPostLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                    .effect(Effect.ALLOW)
+                    .actions(List.of("secretsmanager:GetSecretValue"))
+                    .resources(List.of(sandboxSecretArnWithWildcard))
+                    .build());
+            infof(
+                    "Granted Secrets Manager access to %s for sandbox secret %s (with wildcard: %s)",
+                    this.hmrcTokenPostLambda.getFunctionName(), props.hmrcSandboxClientSecretArn(), sandboxSecretArnWithWildcard);
+        }
 
         infof(
                 "Created Lambda %s for HMRC exchange token with handler %s",
@@ -227,7 +255,8 @@ public class HmrcStack extends Stack {
         var submitVatLambdaEnv = new PopulatedMap<String, String>()
                 .with("DIY_SUBMIT_BASE_URL", props.sharedNames().envBaseUrl)
                 .with("COGNITO_USER_POOL_ID", props.cognitoUserPoolId())
-                .with("HMRC_BASE_URI", props.hmrcBaseUri());
+                .with("HMRC_BASE_URI", props.hmrcBaseUri())
+                .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri());
         var submitVatLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
@@ -256,7 +285,8 @@ public class HmrcStack extends Stack {
         // VAT obligations GET
         var vatObligationLambdaEnv = new PopulatedMap<String, String>()
                 .with("DIY_SUBMIT_BASE_URL", props.sharedNames().envBaseUrl)
-                .with("HMRC_BASE_URI", props.hmrcBaseUri());
+                .with("HMRC_BASE_URI", props.hmrcBaseUri())
+                .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri());
         var hmrcVatObligationGetLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
@@ -370,7 +400,8 @@ public class HmrcStack extends Stack {
         // VAT return GET
         var vatReturnGetLambdaEnv = new PopulatedMap<String, String>()
                 .with("DIY_SUBMIT_BASE_URL", props.sharedNames().envBaseUrl)
-                .with("HMRC_BASE_URI", props.hmrcBaseUri());
+                .with("HMRC_BASE_URI", props.hmrcBaseUri())
+                .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri());
         var hmrcVatReturnGetLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
