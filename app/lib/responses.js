@@ -3,50 +3,60 @@
 import logger from "./logger.js";
 
 export function http200OkResponse({ request, requestId, headers, data }) {
+  const merged = { ...(headers || {}) };
+  if (requestId) merged["x-request-id"] = requestId;
   return httpResponse({
     statusCode: 200,
     request,
-    headers: { ...headers, "x-request-id": requestId },
+    headers: merged,
     data,
     levelledLogger: logger.info.bind(logger),
   });
 }
 
 export function http400BadRequestResponse({ request, requestId, headers, message, error }) {
+  const merged = { ...(headers || {}) };
+  if (requestId) merged["x-request-id"] = requestId;
   return httpResponse({
     statusCode: 400,
     request,
-    headers: { ...headers, "x-request-id": requestId },
+    headers: merged,
     data: { message, ...error },
     levelledLogger: logger.error.bind(logger),
   });
 }
 
 export function http500ServerErrorResponse({ request, requestId, headers, message, error }) {
+  const merged = { ...(headers || {}) };
+  if (requestId) merged["x-request-id"] = requestId;
   return httpResponse({
     statusCode: 500,
     request,
-    headers: { ...headers, "x-request-id": requestId },
+    headers: merged,
     data: { message, ...error },
     levelledLogger: logger.error.bind(logger),
   });
 }
 
 export function http403ForbiddenResponse({ request, requestId, headers, message, error }) {
+  const merged = { ...(headers || {}) };
+  if (requestId) merged["x-request-id"] = requestId;
   return httpResponse({
     statusCode: 403,
     request,
-    headers: { ...headers, "x-request-id": requestId },
+    headers: merged,
     data: { message, ...error },
     levelledLogger: logger.warn.bind(logger),
   });
 }
 
 export function http401UnauthorizedResponse({ request, requestId, headers, message, error }) {
+  const merged = { ...(headers || {}) };
+  if (requestId) merged["x-request-id"] = requestId;
   return httpResponse({
     statusCode: 401,
     request,
-    headers: { ...headers, "x-request-id": requestId },
+    headers: merged,
     data: { message, ...error },
     levelledLogger: logger.warn.bind(logger),
   });
