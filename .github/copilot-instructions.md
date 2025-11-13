@@ -30,7 +30,6 @@ npm run test:integration
 # System tests with Docker containers (MinIO S3)
 npm run test:system
 # Duration: 6 seconds. NEVER CANCEL: Set timeout to 30+ seconds.
-# Note: convertVideo test may fail due to ffmpeg dependencies
 
 # All core tests (excludes browser/behavior tests)
 npm test
