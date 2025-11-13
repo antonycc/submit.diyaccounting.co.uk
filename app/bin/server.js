@@ -15,6 +15,7 @@ import { apiEndpoint as hmrcVatObligationGetApiEndpoint } from "../functions/hmr
 import { apiEndpoint as hmrcVatReturnGetApiEndpoint } from "../functions/hmrc/hmrcVatReturnGet.js";
 import { apiEndpoint as hmrcReceiptPostApiEndpoint } from "../functions/hmrc/hmrcReceiptPost.js";
 import { apiEndpoint as hmrcReceiptGetApiEndpoint } from "../functions/hmrc/hmrcReceiptGet.js";
+import { apiEndpoint as hmrcTestFraudPreventionHeadersPostApiEndpoint } from "../functions/hmrc/hmrcTestFraudPreventionHeadersPost.js";
 import { apiEndpoint as mockAuthUrlGetApiEndpoint } from "../functions/non-lambda-mocks/mockAuthUrlGet.js";
 import { apiEndpoint as mockTokenPostApiEndpoint } from "../functions/non-lambda-mocks/mockTokenPost.js";
 import { dotenvConfigIfNotBlank, validateEnv } from "../lib/env.js";
@@ -71,6 +72,7 @@ hmrcVatObligationGetApiEndpoint(app);
 hmrcVatReturnGetApiEndpoint(app);
 hmrcReceiptPostApiEndpoint(app);
 hmrcReceiptGetApiEndpoint(app);
+hmrcTestFraudPreventionHeadersPostApiEndpoint(app);
 
 // fallback to index.html for SPA routing (if needed)
 app.get(/.*/, (req, res) => {

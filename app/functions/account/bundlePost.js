@@ -173,7 +173,8 @@ export async function handler(event) {
     if (typeof cap === "number") {
       let currentCount = 0;
       for (const bundles of mockBundleStore.values()) {
-        if ((bundles || []).some((b) => typeof b === "string" && (b === requestedBundle || b.startsWith(requestedBundle + "|")))) currentCount++;
+        if ((bundles || []).some((b) => typeof b === "string" && (b === requestedBundle || b.startsWith(requestedBundle + "|"))))
+          currentCount++;
       }
       if (currentCount >= cap) {
         logger.info({ message: "[Catalog bundle] Bundle cap reached:", requestedBundle, cap });
