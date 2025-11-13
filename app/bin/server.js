@@ -19,6 +19,7 @@ import { apiEndpoint as mockAuthUrlGetApiEndpoint } from "../functions/non-lambd
 import { apiEndpoint as mockTokenPostApiEndpoint } from "../functions/non-lambda-mocks/mockTokenPost.js";
 import { dotenvConfigIfNotBlank, validateEnv } from "../lib/env.js";
 import logger from "../lib/logger.js";
+import { securityHeadersMiddleware } from "../lib/securityHeaders.js";
 
 dotenvConfigIfNotBlank({ path: ".env" });
 dotenvConfigIfNotBlank({ path: ".env.test" });
@@ -30,6 +31,9 @@ const app = express();
 // parse bodies
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+
+// Security headers middleware (applies to all responses)
+app.use(securityHeadersMiddleware);
 
 // HTTP access logging middleware
 app.use((req, res, next) => {
