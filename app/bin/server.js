@@ -28,6 +28,9 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const app = express();
 
+// Disable Express fingerprinting header
+app.disable("x-powered-by");
+
 // parse bodies
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());

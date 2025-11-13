@@ -33,6 +33,8 @@ export function securityHeadersMiddleware(req, res, next) {
     "connect-src 'self' https://*.amazonaws.com https://accounts.google.com https://oauth2.googleapis.com",
     // Only allow frames from OAuth providers (Google, Cognito)
     "frame-src 'self' https://accounts.google.com https://*.auth.eu-west-2.amazoncognito.com",
+    // Restrict who can embed this site in frames (same as X-Frame-Options)
+    "frame-ancestors 'self'",
     // Prevent all object/embed/applet elements
     "object-src 'none'",
     // Require forms to submit to same origin
