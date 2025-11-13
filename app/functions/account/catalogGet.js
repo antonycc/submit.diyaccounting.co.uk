@@ -25,6 +25,8 @@ export async function handler(event) {
 
   try {
     const catalogData = await loadCatalog();
+    // loadCatalog currently returns a JSON string; convert to object for http200OkResponse
+    const catalogObject = typeof catalogData === "string" ? JSON.parse(catalogData) : catalogData;
 
     logger.info({ requestId, message: "Successfully retrieved catalog", size: catalogData.length });
 
@@ -32,7 +34,7 @@ export async function handler(event) {
       request,
       requestId,
       headers: { ...responseHeaders },
-      body: catalogData,
+      data: catalogObject,
     });
   } catch (error) {
     logger.error({ requestId, message: "Error loading catalog", error: error.message, stack: error.stack });
