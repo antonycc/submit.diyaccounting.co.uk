@@ -2,6 +2,16 @@
 
 import logger from "./logger.js";
 
+/**
+ * Creates a successful HTTP 200 OK response.
+ *
+ * @param {Object} params - Response parameters
+ * @param {string} params.request - Request URL or identifier
+ * @param {string} params.requestId - Unique request identifier
+ * @param {Object} params.headers - HTTP response headers
+ * @param {Object} params.data - Response data to be serialized as JSON
+ * @returns {Object} Lambda response object with statusCode 200
+ */
 export function http200OkResponse({ request, requestId, headers, data }) {
   const merged = { ...(headers || {}) };
   if (requestId) merged["x-request-id"] = requestId;
@@ -14,6 +24,17 @@ export function http200OkResponse({ request, requestId, headers, data }) {
   });
 }
 
+/**
+ * Creates an HTTP 400 Bad Request response for validation errors.
+ *
+ * @param {Object} params - Response parameters
+ * @param {string} params.request - Request URL or identifier
+ * @param {string} params.requestId - Unique request identifier
+ * @param {Object} params.headers - HTTP response headers
+ * @param {string} params.message - Error message describing validation failure
+ * @param {Object} params.error - Additional error details
+ * @returns {Object} Lambda response object with statusCode 400
+ */
 export function http400BadRequestResponse({ request, requestId, headers, message, error }) {
   const merged = { ...(headers || {}) };
   if (requestId) merged["x-request-id"] = requestId;
@@ -26,6 +47,17 @@ export function http400BadRequestResponse({ request, requestId, headers, message
   });
 }
 
+/**
+ * Creates an HTTP 500 Internal Server Error response.
+ *
+ * @param {Object} params - Response parameters
+ * @param {string} params.request - Request URL or identifier
+ * @param {string} params.requestId - Unique request identifier
+ * @param {Object} params.headers - HTTP response headers
+ * @param {string} params.message - Error message
+ * @param {Object} params.error - Error details and stack trace
+ * @returns {Object} Lambda response object with statusCode 500
+ */
 export function http500ServerErrorResponse({ request, requestId, headers, message, error }) {
   const merged = { ...(headers || {}) };
   if (requestId) merged["x-request-id"] = requestId;
@@ -38,6 +70,17 @@ export function http500ServerErrorResponse({ request, requestId, headers, messag
   });
 }
 
+/**
+ * Creates an HTTP 403 Forbidden response for access control violations.
+ *
+ * @param {Object} params - Response parameters
+ * @param {string} params.request - Request URL or identifier
+ * @param {string} params.requestId - Unique request identifier
+ * @param {Object} params.headers - HTTP response headers
+ * @param {string} params.message - Error message (e.g., insufficient bundle access)
+ * @param {Object} params.error - Additional error details
+ * @returns {Object} Lambda response object with statusCode 403
+ */
 export function http403ForbiddenResponse({ request, requestId, headers, message, error }) {
   const merged = { ...(headers || {}) };
   if (requestId) merged["x-request-id"] = requestId;
@@ -50,6 +93,17 @@ export function http403ForbiddenResponse({ request, requestId, headers, message,
   });
 }
 
+/**
+ * Creates an HTTP 401 Unauthorized response for authentication failures.
+ *
+ * @param {Object} params - Response parameters
+ * @param {string} params.request - Request URL or identifier
+ * @param {string} params.requestId - Unique request identifier
+ * @param {Object} params.headers - HTTP response headers
+ * @param {string} params.message - Error message (e.g., invalid token)
+ * @param {Object} params.error - Additional error details
+ * @returns {Object} Lambda response object with statusCode 401
+ */
 export function http401UnauthorizedResponse({ request, requestId, headers, message, error }) {
   const merged = { ...(headers || {}) };
   if (requestId) merged["x-request-id"] = requestId;
