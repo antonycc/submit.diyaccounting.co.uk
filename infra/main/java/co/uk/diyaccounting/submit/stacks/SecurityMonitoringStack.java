@@ -13,12 +13,10 @@ import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.services.cloudwatch.Alarm;
-import software.amazon.awscdk.services.cloudwatch.AlarmProps;
 import software.amazon.awscdk.services.cloudwatch.ComparisonOperator;
 import software.amazon.awscdk.services.cloudwatch.Dashboard;
 import software.amazon.awscdk.services.cloudwatch.GraphWidget;
 import software.amazon.awscdk.services.cloudwatch.Metric;
-import software.amazon.awscdk.services.cloudwatch.MetricOptions;
 import software.amazon.awscdk.services.cloudwatch.SingleValueWidget;
 import software.amazon.awscdk.services.cloudwatch.Statistic;
 import software.amazon.awscdk.services.cloudwatch.TreatMissingData;
@@ -116,8 +114,7 @@ public class SecurityMonitoringStack extends Stack {
         }
     }
 
-    public SecurityMonitoringStack(
-            final Construct scope, final String id, final SecurityMonitoringStackProps props) {
+    public SecurityMonitoringStack(final Construct scope, final String id, final SecurityMonitoringStackProps props) {
         this(scope, id, null, props);
     }
 
@@ -165,8 +162,8 @@ public class SecurityMonitoringStack extends Stack {
                 .actionsEnabled(true)
                 .build();
 
-        this.highWafBlockRateAlarm.addAlarmAction(new software.amazon.awscdk.services.cloudwatch.actions.SnsAction(
-                this.securityAlertsTopic));
+        this.highWafBlockRateAlarm.addAlarmAction(
+                new software.amazon.awscdk.services.cloudwatch.actions.SnsAction(this.securityAlertsTopic));
 
         // Alarm 2: High 401 Error Rate
         // Triggers when more than 50 unauthorized errors occur in 5 minutes
@@ -191,8 +188,8 @@ public class SecurityMonitoringStack extends Stack {
                 .actionsEnabled(true)
                 .build();
 
-        this.high401ErrorRateAlarm.addAlarmAction(new software.amazon.awscdk.services.cloudwatch.actions.SnsAction(
-                this.securityAlertsTopic));
+        this.high401ErrorRateAlarm.addAlarmAction(
+                new software.amazon.awscdk.services.cloudwatch.actions.SnsAction(this.securityAlertsTopic));
 
         // Alarm 3: Lambda Authorizer Failures
         // Triggers when more than 10 Lambda authorizer invocations fail in 1 minute
@@ -206,17 +203,17 @@ public class SecurityMonitoringStack extends Stack {
                 .unit(Unit.COUNT)
                 .build();
 
-        this.lambdaAuthorizerFailureAlarm =
-                Alarm.Builder.create(this, props.resourceNamePrefix() + "-LambdaAuthorizerFailure")
-                        .alarmName(props.resourceNamePrefix() + "-lambda-authorizer-failure")
-                        .alarmDescription("Triggers when more than 10 Lambda authorizer errors occur in 1 minute")
-                        .metric(authorizerErrorMetric)
-                        .threshold(10.0)
-                        .evaluationPeriods(1)
-                        .comparisonOperator(ComparisonOperator.GREATER_THAN_THRESHOLD)
-                        .treatMissingData(TreatMissingData.NOT_BREACHING)
-                        .actionsEnabled(true)
-                        .build();
+        this.lambdaAuthorizerFailureAlarm = Alarm.Builder.create(
+                        this, props.resourceNamePrefix() + "-LambdaAuthorizerFailure")
+                .alarmName(props.resourceNamePrefix() + "-lambda-authorizer-failure")
+                .alarmDescription("Triggers when more than 10 Lambda authorizer errors occur in 1 minute")
+                .metric(authorizerErrorMetric)
+                .threshold(10.0)
+                .evaluationPeriods(1)
+                .comparisonOperator(ComparisonOperator.GREATER_THAN_THRESHOLD)
+                .treatMissingData(TreatMissingData.NOT_BREACHING)
+                .actionsEnabled(true)
+                .build();
 
         this.lambdaAuthorizerFailureAlarm.addAlarmAction(
                 new software.amazon.awscdk.services.cloudwatch.actions.SnsAction(this.securityAlertsTopic));
@@ -233,17 +230,17 @@ public class SecurityMonitoringStack extends Stack {
                 .unit(Unit.COUNT)
                 .build();
 
-        this.unusualApiRequestVolumeAlarm =
-                Alarm.Builder.create(this, props.resourceNamePrefix() + "-UnusualApiRequestVolume")
-                        .alarmName(props.resourceNamePrefix() + "-unusual-api-request-volume")
-                        .alarmDescription("Triggers when more than 10,000 API requests occur in 1 minute")
-                        .metric(apiRequestCountMetric)
-                        .threshold(10000.0)
-                        .evaluationPeriods(1)
-                        .comparisonOperator(ComparisonOperator.GREATER_THAN_THRESHOLD)
-                        .treatMissingData(TreatMissingData.NOT_BREACHING)
-                        .actionsEnabled(true)
-                        .build();
+        this.unusualApiRequestVolumeAlarm = Alarm.Builder.create(
+                        this, props.resourceNamePrefix() + "-UnusualApiRequestVolume")
+                .alarmName(props.resourceNamePrefix() + "-unusual-api-request-volume")
+                .alarmDescription("Triggers when more than 10,000 API requests occur in 1 minute")
+                .metric(apiRequestCountMetric)
+                .threshold(10000.0)
+                .evaluationPeriods(1)
+                .comparisonOperator(ComparisonOperator.GREATER_THAN_THRESHOLD)
+                .treatMissingData(TreatMissingData.NOT_BREACHING)
+                .actionsEnabled(true)
+                .build();
 
         this.unusualApiRequestVolumeAlarm.addAlarmAction(
                 new software.amazon.awscdk.services.cloudwatch.actions.SnsAction(this.securityAlertsTopic));
@@ -260,18 +257,17 @@ public class SecurityMonitoringStack extends Stack {
                 .unit(Unit.COUNT)
                 .build();
 
-        this.secretsManagerAccessAnomalyAlarm =
-                Alarm.Builder.create(this, props.resourceNamePrefix() + "-SecretsManagerAccessAnomaly")
-                        .alarmName(props.resourceNamePrefix() + "-secrets-manager-access-anomaly")
-                        .alarmDescription(
-                                "Triggers when more than 100 Secrets Manager GetSecretValue calls occur in 5 minutes")
-                        .metric(secretsManagerAccessMetric)
-                        .threshold(100.0)
-                        .evaluationPeriods(1)
-                        .comparisonOperator(ComparisonOperator.GREATER_THAN_THRESHOLD)
-                        .treatMissingData(TreatMissingData.NOT_BREACHING)
-                        .actionsEnabled(true)
-                        .build();
+        this.secretsManagerAccessAnomalyAlarm = Alarm.Builder.create(
+                        this, props.resourceNamePrefix() + "-SecretsManagerAccessAnomaly")
+                .alarmName(props.resourceNamePrefix() + "-secrets-manager-access-anomaly")
+                .alarmDescription("Triggers when more than 100 Secrets Manager GetSecretValue calls occur in 5 minutes")
+                .metric(secretsManagerAccessMetric)
+                .threshold(100.0)
+                .evaluationPeriods(1)
+                .comparisonOperator(ComparisonOperator.GREATER_THAN_THRESHOLD)
+                .treatMissingData(TreatMissingData.NOT_BREACHING)
+                .actionsEnabled(true)
+                .build();
 
         this.secretsManagerAccessAnomalyAlarm.addAlarmAction(
                 new software.amazon.awscdk.services.cloudwatch.actions.SnsAction(this.securityAlertsTopic));
