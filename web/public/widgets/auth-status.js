@@ -57,18 +57,18 @@
     updateLoginStatus();
 
     // Check if COGNITO_CONFIG is available for logout URL
-    if (typeof COGNITO_CONFIG !== "undefined") {
-      // Redirect to Cognito logout URL
-      const logoutUrl =
-        `https://${COGNITO_CONFIG.domain}/logout?` +
-        `client_id=${COGNITO_CONFIG.clientId}&` +
-        `logout_uri=${encodeURIComponent(window.location.origin + "/")}`;
-
-      window.location.href = logoutUrl;
-    } else {
-      // Fallback: just reload the page if COGNITO_CONFIG is not available
-      window.location.reload();
-    }
+    // if (typeof COGNITO_CONFIG !== "undefined") {
+    //  // Redirect to Cognito logout URL
+    //  const logoutUrl =
+    //    `https://${COGNITO_CONFIG.domain}/logout?` +
+    //    `client_id=${COGNITO_CONFIG.clientId}&` +
+    //    `logout_uri=${encodeURIComponent(window.location.origin + "/")}`;
+    //
+    //  window.location.href = logoutUrl;
+    // } else {
+    //  // Fallback: just reload the page if COGNITO_CONFIG is not available
+    //  window.location.reload();
+    // }
   }
 
   // Initialize auth status

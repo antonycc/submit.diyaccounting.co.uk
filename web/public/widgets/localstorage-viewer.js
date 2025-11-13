@@ -11,7 +11,8 @@
     try {
       const parsed = JSON.parse(value);
       return JSON.stringify(parsed, null, 2);
-    } catch (_) {
+    } catch (error) {
+      console.warn("prettyValue: JSON.parse failed", error);
       return value;
     }
   }

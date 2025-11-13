@@ -76,7 +76,10 @@ function fetchWithId(url, opts = {}) {
   try {
     const rid = crypto && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
     headers.set("X-Client-Request-Id", rid);
-  } catch (_) {}
+  } catch (error) {
+    console.warn("Failed to generate X-Client-Request-Id:", error);
+  }
+
   return fetch(url, { ...opts, headers });
 }
 
@@ -290,7 +293,8 @@ async function fetchCatalogText(url = "/product-catalogue.toml") {
 function hasRumConsent() {
   try {
     return localStorage.getItem("consent.rum") === "granted" || localStorage.getItem("consent.analytics") === "granted";
-  } catch (_) {
+  } catch (error) {
+    console.warn("Failed to read RUM consent from localStorage:", error);
     return false;
   }
 }
@@ -313,7 +317,9 @@ function showConsentBannerIfNeeded() {
   document.getElementById("consent-accept").onclick = () => {
     try {
       localStorage.setItem("consent.rum", "granted");
-    } catch (_) {}
+    } catch (error) {
+      console.warn("Failed to store RUM consent in localStorage:", error);
+    }
     document.body.removeChild(banner);
     document.dispatchEvent(new CustomEvent("consent-granted", { detail: { type: "rum" } }));
     maybeInitRum();
@@ -321,7 +327,9 @@ function showConsentBannerIfNeeded() {
   document.getElementById("consent-decline").onclick = () => {
     try {
       localStorage.setItem("consent.rum", "declined");
-    } catch (_) {}
+    } catch (error) {
+      console.warn("Failed to store RUM consent in localStorage:", error);
+    }
     document.body.removeChild(banner);
   };
 }
@@ -396,7 +404,9 @@ async function setRumUserIdIfAvailable() {
     } else {
       document.addEventListener("rum-ready", () => window.cwr && window.cwr("setUserId", hashed), { once: true });
     }
-  } catch (_) {}
+  } catch (error) {
+    console.warn("Failed to set RUM user id:", error);
+  }
 }
 
 function ensurePrivacyLink() {
@@ -425,9 +435,14 @@ function bootstrapRumConfigFromMeta() {
     window.__RUM_CONFIG__ = { appMonitorId, region, identityPoolId, guestRoleArn, sessionSampleRate: 1 };
     try {
       localStorage.setItem("rum.config", JSON.stringify(window.__RUM_CONFIG__));
-    } catch (_) {}
+    } catch (error) {
+      console.warn("Failed to store RUM config in localStorage:", error);
+    }
   }
 }
+
+// TODO: re-integrate this to get the RUM stuff working
+// eslint-disable-next-line no-unused-vars
 function bootstrapRumConfigFromStorage() {
   if (window.__RUM_CONFIG__) return;
   try {
@@ -437,7 +452,9 @@ function bootstrapRumConfigFromStorage() {
     if (cfg && cfg.appMonitorId && cfg.region && cfg.identityPoolId && cfg.guestRoleArn) {
       window.__RUM_CONFIG__ = cfg;
     }
-  } catch (_) {}
+  } catch (error) {
+    console.warn("Failed to read RUM config from localStorage:", error);
+  }
 }
 
 // Wire up on load

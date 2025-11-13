@@ -45,7 +45,9 @@ if (logToConsole && logToFile) {
   const dir = path.dirname(logFilePath);
   try {
     fs.mkdirSync(dir, { recursive: true });
-  } catch {}
+  } catch (error) {
+    console.error(`Failed to create log directory ${dir}:`, error);
+  }
 
   destinationStream = pino.destination({ dest: logFilePath, sync: false });
 }

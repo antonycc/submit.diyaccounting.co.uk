@@ -11,6 +11,7 @@ import { handler as listFn, handler as getFn } from "@app/functions/hmrc/hmrcRec
 
 function base64UrlEncode(obj) {
   const json = JSON.stringify(obj);
+  // eslint-disable-next-line sonarjs/slow-regex
   return Buffer.from(json).toString("base64").replace(/=+$/g, "").replace(/\+/g, "-").replace(/\//g, "_");
 }
 

@@ -30,6 +30,7 @@ describe("Integration – log receipt flow", () => {
       TEST_SERVER_HTTP_PORT: "3000",
       HMRC_BASE_URI: "https://test.test.test.uk",
       HMRC_CLIENT_ID: "test client id",
+      // eslint-disable-next-line sonarjs/no-clear-text-protocols
       DIY_SUBMIT_BASE_URL: "http://hmrc.redirect:3000/",
       HMRC_CLIENT_SECRET: "test hmrc client secret",
       DIY_SUBMIT_RECEIPTS_BUCKET_NAME: "test-receipts-bucket",

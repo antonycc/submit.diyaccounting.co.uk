@@ -37,8 +37,7 @@ const server = setupServer(
   }),
 
   // Mock HMRC VAT submission
-  http.post(`${HMRC}/organisations/vat/:vatNumber/returns`, async ({ params, request }) => {
-    const vatNumber = params.vatNumber;
+  http.post(`${HMRC}/organisations/vat/:vatNumber/returns`, async ({ _params, request }) => {
     const body = await request.json();
     const authHeader = request.headers.get("authorization");
 

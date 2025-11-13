@@ -1,7 +1,6 @@
 // app/lib/httpHelper.js
 
 import logger from "./logger.js";
-import { http400BadRequestResponse } from "./responses.js";
 
 export function buildLambdaEventFromHttpRequest(httpRequest) {
   // Start with a copy of all incoming headers (Express normalizes to lowercase keys)
@@ -43,7 +42,7 @@ export function buildHttpResponseFromLambdaResult({ headers, statusCode, body },
   }
 }
 
-export function logHmrcRequestDetails(requestId, hmrcRequestUrl, hmrcRequestHeaders, govClientHeaders, hmrcRequestBody, hmrcBase) {
+export function logHmrcRequestDetails(requestId, hmrcRequestUrl, hmrcRequestHeaders, govClientHeaders, hmrcRequestBody) {
   logger.info({
     requestId,
     message: `Request to POST ${hmrcRequestUrl}`,
