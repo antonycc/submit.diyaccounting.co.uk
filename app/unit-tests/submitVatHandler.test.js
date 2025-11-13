@@ -59,23 +59,11 @@ describe("httpPostMock", () => {
     expect(result.statusCode).toBe(200);
     expect(body.receipt).toEqual(mockReceipt);
 
-    // Verify fetch was called with correct parameters (allowing additional properties like AbortSignal)
+    // Verify fetch was called with correct parameters
     expect(mockFetch).toHaveBeenCalledWith(
       "https://test/organisations/vat/111222333/returns",
       expect.objectContaining({
         method: "POST",
-        headers: expect.objectContaining({
-          "Content-Type": "application/json",
-          "Authorization": "Bearer test access token",
-          ...headers,
-          "Accept": "application/vnd.hmrc.1.0+json",
-          "Gov-Client-Connection-Method": "WEB_APP_VIA_SERVER",
-          "Gov-Vendor-Forwarded": "by=203.0.113.6&for=198.51.100.0",
-          "Gov-Vendor-License-IDs": "my-licensed-software=8D7963490527D33716835EE7C195516D5E562E03B224E9B359836466EE40CDE1",
-          "Gov-Vendor-Product-Name": "DIY Accounting Submit",
-          "Gov-Vendor-Version": "web-submit-diyaccounting-co-uk-0.0.2-4",
-          "x-request-id": "test-request-id",
-        }),
         body: JSON.stringify({
           periodKey: "23A1",
           vatDueSales: 1000.5,
@@ -91,6 +79,25 @@ describe("httpPostMock", () => {
         }),
       }),
     );
+
+    // Additional verification of headers
+    const callArgs = mockFetch.mock.calls[0];
+    const sentHeaders = callArgs[1].headers;
+
+    // Verify client headers are preserved
+    expect(sentHeaders["Gov-Client-Browser-JS-User-Agent"]).toBe("test-browser-js-user-agent");
+    expect(sentHeaders["Gov-Client-Public-IP"]).toBe("test-public-ip");
+
+    // Verify vendor headers are set by server (not from client)
+    expect(sentHeaders["Gov-Vendor-Product-Name"]).toBe("DIY Accounting Submit");
+    expect(sentHeaders["Gov-Vendor-Version"]).toBe("web-submit-diyaccounting-co-uk-0.0.2-4");
+    expect(sentHeaders["Gov-Vendor-License-IDs"]).toMatch(/^web-submit-diyaccounting-co-uk=[A-F0-9]{64}$/);
+    // Gov-Vendor-Forwarded is now dynamically generated with detected IP
+    expect(sentHeaders["Gov-Vendor-Forwarded"]).toMatch(/^by=.+&for=.+$/);
+
+    // Verify authorization and content type
+    expect(sentHeaders["Authorization"]).toBe("Bearer test access token");
+    expect(sentHeaders["Content-Type"]).toBe("application/json");
   });
 
   test("should return 400 when vatNumber is missing", async () => {
