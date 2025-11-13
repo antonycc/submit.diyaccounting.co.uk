@@ -157,7 +157,7 @@ public class ApiStack extends Stack {
                 .build());
         // Enable AWS X-Ray tracing for the default stage via property override.
         // Some CDK versions don't expose 'tracingEnabled' on CfnStage for HTTP APIs yet.
-        // defaultStage.addPropertyOverride("TracingEnabled", true);
+        defaultStage.addPropertyOverride("TracingEnabled", true);
         // Note: Execution logs (loggingLevel) and detailed route metrics are not supported for HTTP APIs.
         // Avoid setting defaultRouteSettings to prevent BadRequestException during deployment.
 

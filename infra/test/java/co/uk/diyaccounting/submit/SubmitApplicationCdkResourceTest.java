@@ -99,6 +99,8 @@ class SubmitApplicationCdkResourceTest {
         // Keep overall counts stable
         apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 15);
         apiStackTemplate.resourceCountIs("AWS::CloudWatch::Dashboard", 1);
+        // Verify X-Ray tracing is enabled on the API Gateway stage
+        apiStackTemplate.hasResourceProperties("AWS::ApiGatewayV2::Stage", Map.of("TracingEnabled", true));
 
         infof("Created stack:", submitApplication.opsStack.getStackName());
         Template.fromStack(submitApplication.opsStack).resourceCountIs("AWS::CloudWatch::Dashboard", 1);

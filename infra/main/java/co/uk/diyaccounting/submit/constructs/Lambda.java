@@ -77,7 +77,6 @@ public class Lambda {
                 .timeout(props.timeout())
                 .logGroup(this.logGroup)
                 .tracing(Tracing.ACTIVE);
-        // dockerFunctionBuilder.tracing(Tracing.ACTIVE);
         if (props.role().isPresent()) {
             dockerFunctionBuilder.role(props.role().get());
         }
