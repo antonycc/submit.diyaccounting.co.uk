@@ -2047,7 +2047,7 @@ jobs:
       - set-origins
       - deploy-publish
     runs-on: ubuntu-24.04
-    container: mcr.microsoft.com/playwright:v1.56.1-jammy
+    container: mcr.microsoft.com/playwright:v1.57.0-alpha-2025-11-13-jammy
     # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags
     # and extension with ubuntu distribution e.g. https://releases.ubuntu.com/jammy/
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
@@ -2107,7 +2107,7 @@ jobs:
       - set-origins
       - web-test-bundle
     runs-on: ubuntu-24.04
-    container: mcr.microsoft.com/playwright:v1.56.1-jammy
+    container: mcr.microsoft.com/playwright:v1.57.0-alpha-2025-11-13-jammy
     # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags
     # and extension with ubuntu distribution e.g. https://releases.ubuntu.com/jammy/
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
@@ -2168,7 +2168,7 @@ jobs:
       - set-origins
       - web-test-bundle
     runs-on: ubuntu-24.04
-    container: mcr.microsoft.com/playwright:v1.56.1-jammy
+    container: mcr.microsoft.com/playwright:v1.57.0-alpha-2025-11-13-jammy
     # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags
     # and extension with ubuntu distribution e.g. https://releases.ubuntu.com/jammy/
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
@@ -2229,7 +2229,7 @@ jobs:
       - set-origins
       - web-test-bundle
     runs-on: ubuntu-24.04
-    container: mcr.microsoft.com/playwright:v1.56.1-jammy
+    container: mcr.microsoft.com/playwright:v1.57.0-alpha-2025-11-13-jammy
     # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags
     # and extension with ubuntu distribution e.g. https://releases.ubuntu.com/jammy/
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
