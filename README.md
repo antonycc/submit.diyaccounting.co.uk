@@ -313,6 +313,105 @@ IDE quick setup (respect, enforce, and auto-correct)
 Defer to configs
 - For any questions about rules, rely on eslint.config.js, pom.xml Spotless config, and Prettier defaults: https://prettier.io/docs/en/options.html
 
+Troubleshooting and Error Messages
+
+Common validation errors
+- **"Invalid vatNumber format - must be 9 digits"**
+  - Cause: VAT number is not exactly 9 digits
+  - Fix: Use format 176540158 (no spaces, hyphens, or GB prefix)
+
+- **"Invalid periodKey format"**
+  - Cause: Period key doesn't match expected pattern
+  - Fix: Use 3-5 character format like "24A1" or "#001"
+
+- **"Missing accessToken parameter from body"**
+  - Cause: HMRC access token not provided or expired
+  - Fix: Re-authorize with HMRC using /api/v1/hmrc/authUrl
+
+- **"Unauthorized - invalid or expired HMRC access token"**
+  - Cause: HMRC token validation failed
+  - Fix: Complete HMRC OAuth flow again; check token hasn't expired
+
+- **"Bundle not found in catalog"**
+  - Cause: Requested bundle ID doesn't exist in product-catalogue.toml
+  - Fix: Verify bundle ID spelling; check catalog for available bundles
+
+- **"Bundle cap reached"**
+  - Cause: Maximum users for bundle exceeded
+  - Fix: Wait for slots to free up or request a different bundle
+
+Common runtime issues
+- **Build failures with mvnw**
+  - Ensure Java 17+ is installed: `java -version`
+  - Clean build: `./mvnw clean package -U`
+  - Check for Maven repository issues; try clearing ~/.m2/repository
+
+- **npm install fails with Playwright**
+  - Run with --ignore-engines flag: `npm install --ignore-engines`
+  - Separately install browsers: `npx playwright install chromium --with-deps`
+
+- **Test failures with MinIO**
+  - Check MinIO is running: `npm run storage`
+  - Verify TEST_S3_ENDPOINT matches MinIO URL
+  - Ensure bucket exists or create it via MinIO console
+
+- **CDK synth failures**
+  - Verify environment variables are set correctly
+  - Check cdk.json context values
+  - Run `./mvnw clean package` first to compile Java CDK code
+
+- **Lambda function timeout**
+  - Check CloudWatch logs: `/aws/lambda/{function-name}`
+  - Verify HMRC API is responsive (check status page)
+  - Increase Lambda timeout in CDK stack if needed
+
+Debugging tips
+- Enable verbose logging: Set LOG_LEVEL=debug in environment
+- Check request IDs in error responses to correlate with CloudWatch logs
+- Use X-Ray tracing (if enabled) to diagnose API call chains
+- Review CloudFront distribution settings for origin configuration issues
+- Test with HMRC sandbox before production to isolate API vs app issues
+
+API error responses
+All API endpoints return consistent error format:
+```json
+{
+  "message": "Human-readable error description",
+  "error": {
+    "responseCode": 400,
+    "responseBody": {
+      "detail": "Additional error context"
+    }
+  }
+}
+```
+
+HTTP status codes:
+- 200: Success
+- 400: Validation error (check message for specific field issues)
+- 401: Unauthorized (missing or invalid authentication token)
+- 403: Forbidden (insufficient bundle access or permissions)
+- 404: Resource not found
+- 429: Rate limited (retry with exponential backoff)
+- 500: Internal server error (check CloudWatch logs with request ID)
+
+HMRC-specific errors
+- Check HMRC API status: https://api.service.hmrc.gov.uk/api-status
+- Review HMRC developer forum for known issues
+- Verify Gov-Client headers are correctly formatted
+- Ensure correct scope (read:vat, write:vat) in authorization
+- Test scenario headers (Gov-Test-Scenario) only work in sandbox
+
+Performance optimization
+- Lambda cold starts: Consider provisioned concurrency for high-traffic endpoints
+- CloudFront caching: Static assets cached; API responses not cached
+- Bundle lookups: Cached in Lambda execution context between invocations
+- DynamoDB queries: Use sparse indexes for efficient bundle filtering
+- S3 receipts: Consider S3 Select for querying large receipt sets
+
+For deployment-specific issues, see [SETUP.md](_developers/SETUP.md).
+For end-user troubleshooting, see [USERGUIDE.md](USERGUIDE.md).
+
 Roadmap
 - Production HMRC VAT flow and additional MTD APIs.
 - Expand activities across full product catalog; subscription tiers (basic/advanced).

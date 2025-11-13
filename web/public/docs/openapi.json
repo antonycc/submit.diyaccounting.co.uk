@@ -601,12 +601,192 @@
         "type": "http",
         "scheme": "bearer",
         "bearerFormat": "JWT",
-        "description": "Cognito JWT token"
+        "description": "Cognito JWT token obtained from OAuth flow"
       },
       "HmrcAuth": {
         "type": "http",
         "scheme": "bearer",
-        "description": "HMRC OAuth2 token"
+        "description": "HMRC OAuth2 access token"
+      }
+    },
+    "schemas": {
+      "VatReturnSubmission": {
+        "type": "object",
+        "required": ["vatNumber", "periodKey", "vatDue", "accessToken"],
+        "properties": {
+          "vatNumber": {
+            "type": "string",
+            "pattern": "^\\d{9}$",
+            "description": "9-digit VAT registration number",
+            "example": "176540158"
+          },
+          "periodKey": {
+            "type": "string",
+            "pattern": "^[A-Z0-9#]{3,5}$",
+            "description": "VAT period key (3-5 characters)",
+            "example": "24A1"
+          },
+          "vatDue": {
+            "type": "number",
+            "format": "float",
+            "minimum": 0,
+            "description": "VAT amount due in pounds",
+            "example": 2400.0
+          },
+          "accessToken": {
+            "type": "string",
+            "description": "HMRC OAuth2 access token",
+            "example": "HMRC_ACCESS_TOKEN"
+          }
+        }
+      },
+      "VatReturnResponse": {
+        "type": "object",
+        "properties": {
+          "processingDate": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When HMRC processed the submission",
+            "example": "2025-07-14T20:20:20Z"
+          },
+          "formBundleNumber": {
+            "type": "string",
+            "description": "HMRC internal reference number",
+            "example": "123456789012"
+          },
+          "chargeRefNumber": {
+            "type": "string",
+            "description": "Payment tracking reference",
+            "example": "XZ1234567890"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "description": "Human-readable error message",
+            "example": "Invalid vatNumber format - must be 9 digits"
+          },
+          "error": {
+            "type": "object",
+            "description": "Additional error details",
+            "properties": {
+              "responseCode": {
+                "type": "integer",
+                "example": 400
+              },
+              "responseBody": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      },
+      "BundleRequest": {
+        "type": "object",
+        "required": ["bundleId"],
+        "properties": {
+          "bundleId": {
+            "type": "string",
+            "description": "Bundle identifier from catalog",
+            "example": "test"
+          },
+          "qualifiers": {
+            "type": "object",
+            "description": "Optional bundle qualifiers",
+            "properties": {
+              "transactionId": {
+                "type": "string",
+                "description": "Transaction ID if required by bundle",
+                "example": "TX-12345"
+              },
+              "subscriptionTier": {
+                "type": "string",
+                "description": "Subscription tier if required",
+                "example": "basic"
+              }
+            }
+          }
+        }
+      },
+      "BundleResponse": {
+        "type": "object",
+        "properties": {
+          "granted": {
+            "type": "boolean",
+            "description": "Whether bundle access was granted",
+            "example": true
+          },
+          "expiry": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the bundle expires",
+            "example": "2025-09-01T00:00:00Z"
+          },
+          "bundleId": {
+            "type": "string",
+            "example": "test"
+          }
+        }
+      },
+      "Receipt": {
+        "type": "object",
+        "properties": {
+          "formBundleNumber": {
+            "type": "string",
+            "description": "HMRC form bundle number",
+            "example": "123456789012"
+          },
+          "chargeRefNumber": {
+            "type": "string",
+            "description": "HMRC charge reference",
+            "example": "XZ1234567890"
+          },
+          "processingDate": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2025-01-01T00:00:00Z"
+          }
+        }
+      },
+      "AuthUrlResponse": {
+        "type": "object",
+        "properties": {
+          "authUrl": {
+            "type": "string",
+            "format": "uri",
+            "description": "OAuth2 authorization URL to redirect user to",
+            "example": "https://auth.service.hmrc.gov.uk/oauth/authorize?client_id=..."
+          }
+        }
+      },
+      "TokenResponse": {
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string",
+            "description": "OAuth2 access token"
+          },
+          "hmrcAccessToken": {
+            "type": "string",
+            "description": "HMRC-specific access token"
+          },
+          "idToken": {
+            "type": "string",
+            "description": "JWT ID token (Cognito only)"
+          },
+          "refreshToken": {
+            "type": "string",
+            "description": "Refresh token for obtaining new access tokens"
+          },
+          "expiresIn": {
+            "type": "integer",
+            "description": "Token expiry time in seconds",
+            "example": 3600
+          }
+        }
       }
     }
   }

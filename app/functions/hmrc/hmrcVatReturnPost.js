@@ -21,7 +21,12 @@ import {
   hmrcHttpPost,
 } from "../../lib/hmrcHelper.js";
 
-// Server hook for Express app, and construction of a Lambda-like event from HTTP request)
+/**
+ * Registers the VAT return submission endpoint with the Express application.
+ * Converts HTTP requests to Lambda event format and handles responses.
+ *
+ * @param {Express} app - Express application instance
+ */
 export function apiEndpoint(app) {
   app.post("/api/v1/hmrc/vat/return", async (httpRequest, httpResponse) => {
     const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
@@ -30,6 +35,17 @@ export function apiEndpoint(app) {
   });
 }
 
+/**
+ * Extracts and validates VAT return parameters from the Lambda event.
+ *
+ * @param {Object} event - Lambda event containing request data
+ * @param {Array<string>} errorMessages - Array to collect validation error messages
+ * @returns {Object} Extracted and validated parameters:
+ *   - vatNumber: 9-digit VAT registration number
+ *   - periodKey: VAT period identifier (3-5 characters)
+ *   - hmrcAccessToken: HMRC OAuth2 access token
+ *   - numVatDue: Numeric VAT amount due
+ */
 export function extractAndValidateParameters(event, errorMessages) {
   const parsedBody = parseRequestBody(event);
   const { vatNumber, periodKey, vatDue, accessToken, hmrcAccessToken: hmrcAccessTokenInBody } = parsedBody || {};
@@ -56,7 +72,37 @@ export function extractAndValidateParameters(event, errorMessages) {
   return { vatNumber, periodKey, hmrcAccessToken, numVatDue };
 }
 
-// HTTP request/response, aware Lambda handler function
+/**
+ * Lambda handler for VAT return submission to HMRC.
+ *
+ * Validates user input, enforces bundle access, constructs HMRC API request,
+ * and submits VAT return to HMRC MTD API.
+ *
+ * @param {Object} event - Lambda event object containing:
+ *   - body: JSON string with vatNumber, periodKey, vatDue, accessToken
+ *   - headers: HTTP headers including Gov-Client headers
+ *   - requestContext: Request metadata
+ * @returns {Promise<Object>} Lambda response object with:
+ *   - statusCode: HTTP status code (200 for success, 400/401/403/500 for errors)
+ *   - headers: Response headers including Gov-Client headers
+ *   - body: JSON string with submission result or error message
+ *
+ * @throws {UnauthorizedTokenError} When HMRC access token is invalid or expired
+ *
+ * @example
+ * // Successful submission
+ * {
+ *   statusCode: 200,
+ *   body: '{"processingDate":"2025-07-14T20:20:20Z","formBundleNumber":"123456789012","chargeRefNumber":"XZ1234567890"}'
+ * }
+ *
+ * @example
+ * // Validation error
+ * {
+ *   statusCode: 400,
+ *   body: '{"message":"Invalid vatNumber format - must be 9 digits"}'
+ * }
+ */
 export async function handler(event) {
   validateEnv(["HMRC_BASE_URI"]); // "COGNITO_USER_POOL_ID"
 

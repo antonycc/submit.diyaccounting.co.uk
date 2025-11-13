@@ -11,6 +11,18 @@ import { getBundlesStore } from "../non-lambda-mocks/mockBundleStore.js";
 
 const mockBundleStore = getBundlesStore();
 
+/**
+ * Parses an ISO 8601 duration string and adds it to a given date.
+ * Supports formats: PnD (days), PnM (months), PnY (years).
+ *
+ * @param {Date} fromDate - Starting date
+ * @param {string} iso - ISO duration string (e.g., "P1D", "P1M", "P1Y")
+ * @returns {Date} New date with duration added
+ *
+ * @example
+ * parseIsoDurationToDate(new Date('2025-01-01'), 'P1D') // 2025-01-02
+ * parseIsoDurationToDate(new Date('2025-01-01'), 'P1M') // 2025-02-01
+ */
 function parseIsoDurationToDate(fromDate, iso) {
   // Minimal support for PnD, PnM, PnY
   const d = new Date(fromDate.getTime());
@@ -25,6 +37,12 @@ function parseIsoDurationToDate(fromDate, iso) {
   return d;
 }
 
+/**
+ * Retrieves a bundle definition from the product catalog.
+ *
+ * @param {string} bundleId - Bundle identifier to lookup
+ * @returns {Object|null} Bundle definition or null if not found
+ */
 function getCatalogBundle(bundleId) {
   try {
     const catalog = loadCatalogFromRoot();
@@ -34,6 +52,18 @@ function getCatalogBundle(bundleId) {
   }
 }
 
+/**
+ * Checks if bundle qualifiers are satisfied by the user's claims and request.
+ *
+ * @param {Object} bundle - Bundle definition with optional qualifiers
+ * @param {Object} claims - User JWT claims
+ * @param {Object} requestQualifiers - Qualifiers provided in the request
+ * @returns {Object} Result with ok (boolean) and reason/unknown (string) if failed
+ *
+ * @example
+ * qualifiersSatisfied(bundle, claims, {transactionId: 'TX-123'})
+ * // Returns: {ok: true} or {ok: false, reason: 'missing_transactionId'}
+ */
 function qualifiersSatisfied(bundle, claims, requestQualifiers = {}) {
   const q = bundle?.qualifiers || {};
   if (q.requiresTransactionId) {
@@ -54,6 +84,11 @@ function qualifiersSatisfied(bundle, claims, requestQualifiers = {}) {
   return { ok: true };
 }
 
+/**
+ * Registers the bundle request endpoint with the Express application.
+ *
+ * @param {Express} app - Express application instance
+ */
 export function apiEndpoint(app) {
   app.post("/api/v1/bundle", async (httpRequest, httpResponse) => {
     const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
@@ -62,6 +97,27 @@ export function apiEndpoint(app) {
   });
 }
 
+/**
+ * Lambda handler for bundle access requests.
+ *
+ * Processes user bundle requests, validates qualifiers, checks caps and limits,
+ * and grants or denies access based on the product catalog configuration.
+ *
+ * @param {Object} event - Lambda event containing:
+ *   - body: JSON with bundleId and optional qualifiers
+ *   - headers: Authorization header with Cognito JWT
+ * @returns {Promise<Object>} Lambda response with:
+ *   - statusCode: 200 (success), 400 (validation error), 401 (unauthorized), 403 (cap reached)
+ *   - body: JSON with granted (boolean), expiry (ISO date), and bundleId
+ *
+ * @example
+ * // Request body
+ * { "bundleId": "test", "qualifiers": { "transactionId": "TX-123" } }
+ *
+ * @example
+ * // Success response
+ * { "granted": true, "expiry": "2025-09-01T00:00:00Z", "bundleId": "test" }
+ */
 export async function handler(event) {
   const { request, requestId } = extractRequest(event);
   logger.info({ message: "bundlePost entry", route: "/api/v1/bundle", request });
@@ -173,7 +229,8 @@ export async function handler(event) {
     if (typeof cap === "number") {
       let currentCount = 0;
       for (const bundles of mockBundleStore.values()) {
-        if ((bundles || []).some((b) => typeof b === "string" && (b === requestedBundle || b.startsWith(requestedBundle + "|")))) currentCount++;
+        if ((bundles || []).some((b) => typeof b === "string" && (b === requestedBundle || b.startsWith(requestedBundle + "|"))))
+          currentCount++;
       }
       if (currentCount >= cap) {
         logger.info({ message: "[Catalog bundle] Bundle cap reached:", requestedBundle, cap });
