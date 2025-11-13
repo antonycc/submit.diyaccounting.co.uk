@@ -108,7 +108,7 @@ export async function handler(event) {
 
     const currentBundles = await getUserBundles(userId, userPoolId);
 
-    const hasBundle = currentBundles.some((bundle) => bundle.startsWith(requestedBundle + "|"));
+    const hasBundle = currentBundles.some((bundle) => bundle === requestedBundle || bundle.startsWith(requestedBundle + "|"));
     if (hasBundle) {
       logger.info({ message: "User already has requested bundle:", requestedBundle });
       return {
@@ -124,6 +124,15 @@ export async function handler(event) {
     }
 
     const catalogBundle = getCatalogBundle(requestedBundle);
+
+    if (!catalogBundle) {
+      logger.error({ message: "[Catalog bundle] Bundle not found in catalog:", requestedBundle });
+      return {
+        statusCode: 404,
+        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+        body: JSON.stringify({ error: "bundle_not_found", message: `Bundle '${requestedBundle}' not found in catalog` }),
+      };
+    }
 
     const check = qualifiersSatisfied(catalogBundle, decodedToken, qualifiers);
     if (check?.unknown) {
@@ -164,7 +173,7 @@ export async function handler(event) {
     if (typeof cap === "number") {
       let currentCount = 0;
       for (const bundles of mockBundleStore.values()) {
-        if ((bundles || []).some((b) => typeof b === "string" && b.startsWith(requestedBundle + "|"))) currentCount++;
+        if ((bundles || []).some((b) => typeof b === "string" && (b === requestedBundle || b.startsWith(requestedBundle + "|")))) currentCount++;
       }
       if (currentCount >= cap) {
         logger.info({ message: "[Catalog bundle] Bundle cap reached:", requestedBundle, cap });

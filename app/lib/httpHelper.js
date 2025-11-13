@@ -1,6 +1,7 @@
 // app/lib/httpHelper.js
 
 import logger from "./logger.js";
+import { http400BadRequestResponse } from "./responses.js";
 
 export function buildLambdaEventFromHttpRequest(httpRequest) {
   // Start with a copy of all incoming headers (Express normalizes to lowercase keys)
@@ -56,4 +57,16 @@ export function logHmrcRequestDetails(requestId, hmrcRequestUrl, hmrcRequestHead
       nodeEnv: process.env.NODE_ENV,
     },
   });
+}
+
+export function http404NotFound(request, requestId, message, responseHeaders) {
+  // Log with clear semantics and avoid misusing headers as a response code
+  logger.warn({ requestId, message, request });
+  // Return a proper 404 response (was incorrectly returning 400)
+  // We keep using the generic bad request builder style but with correct status
+  return {
+    statusCode: 404,
+    headers: { ...(responseHeaders || {}), "x-request-id": requestId },
+    body: JSON.stringify({ message }),
+  };
 }

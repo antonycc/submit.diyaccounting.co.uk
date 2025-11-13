@@ -1,11 +1,20 @@
-// app/functions/bundleDelete.js
+// app/functions/account/bundleDelete.js
+
 import { validateEnv } from "../../lib/env.js";
 import logger from "../../lib/logger.js";
-import { extractRequest, parseRequestBody } from "../../lib/responses.js";
+import {
+  extractRequest,
+  parseRequestBody,
+  http200OkResponse,
+  http401UnauthorizedResponse,
+  http500ServerErrorResponse,
+  buildValidationError,
+} from "../../lib/responses.js";
 import { decodeJwtToken } from "../../lib/jwtHelper.js";
-import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
+import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest, http404NotFound } from "../../lib/httpHelper.js";
 import { getUserBundles, updateUserBundles } from "../../lib/bundleHelpers.js";
 
+// Server hook for Express app, and construction of a Lambda-like event from HTTP request)
 export function apiEndpoint(app) {
   app.delete("/api/v1/bundle", async (httpRequest, httpResponse) => {
     const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
@@ -20,91 +29,127 @@ export function apiEndpoint(app) {
   });
 }
 
-export async function handler(event) {
-  const { request, requestId } = extractRequest(event);
-  logger.info({ message: "bundleDelete entry", route: "/api/v1/bundle", request });
+export function extractAndValidateParameters(event, errorMessages) {
+  // Decode JWT token to get user ID
+  let decodedToken;
+  try {
+    decodedToken = decodeJwtToken(event.headers);
+  } catch {
+    // JWT decoding failed - authentication error
+    errorMessages.push("Invalid or missing authentication token");
+    return { userId: null, bundleToRemove: null, removeAll: false };
+  }
 
+  const userId = decodedToken.sub;
+  const body = parseRequestBody(event);
+
+  // Accept bundle id via body.bundleId, path parameter {id}, or query parameter bundleId
+  const pathId = event?.pathParameters?.id;
+  const queryId = event?.queryStringParameters?.bundleId;
+  const bundleToRemove = body?.bundleId || pathId || queryId;
+
+  // Accept removeAll via body.removeAll or query removeAll=true
+  const removeAll = Boolean(body?.removeAll || String(event?.queryStringParameters?.removeAll || "").toLowerCase() === "true");
+
+  // Collect validation errors
+  if (!bundleToRemove && !removeAll) {
+    errorMessages.push("Missing bundle Id in request");
+  }
+
+  return { userId, bundleToRemove, removeAll };
+}
+
+// HTTP request/response, aware Lambda handler function
+export async function handler(event) {
   validateEnv(["COGNITO_USER_POOL_ID"]);
 
+  const { request, requestId } = extractRequest(event);
+  const errorMessages = [];
+
+  logger.info({ requestId, message: "Deleting user bundle" });
+
+  // Extract and validate parameters
+  const { userId, bundleToRemove, removeAll } = extractAndValidateParameters(event, errorMessages);
+
+  const responseHeaders = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*", "x-request-id": requestId };
+
+  // Authentication errors
+  if (!userId) {
+    return http401UnauthorizedResponse({
+      request,
+      requestId,
+      headers: { ...responseHeaders },
+      message: "Authentication required",
+      error: {},
+    });
+  }
+
+  // Validation errors
+  if (errorMessages.length > 0) {
+    return buildValidationError(request, requestId, errorMessages, responseHeaders);
+  }
+
+  // Processing
   try {
-    logger.info({ message: "Bundle delete request received:", event });
-    let decodedToken;
-    try {
-      decodedToken = decodeJwtToken(event.headers);
-    } catch (error) {
-      return {
-        statusCode: 401,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(error),
-      };
-    }
-    const userId = decodedToken.sub;
-    const body = parseRequestBody(event);
-    // Accept bundle id via body.bundleId, path parameter {id}, or query parameter bundleId
-    const pathId = event?.pathParameters?.id;
-    const queryId = event?.queryStringParameters?.bundleId;
-    const bundleToRemove = body?.bundleId || pathId || queryId;
-    // Accept removeAll via body.removeAll or query removeAll=true
-    const removeAll = Boolean(body?.removeAll || String(event?.queryStringParameters?.removeAll || "").toLowerCase() === "true");
+    const result = await deleteUserBundle(userId, bundleToRemove, removeAll);
 
-    if (!bundleToRemove && !removeAll) {
-      logger.error({ message: "Missing bundle Id in request" });
-      return {
-        statusCode: 400,
-        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
-        body: JSON.stringify({ error: "Missing bundle Id in request" }),
-      };
+    if (result.status === "not_found") {
+      return http404NotFound(request, requestId, "Bundle not found", responseHeaders);
     }
 
-    const userPoolId = process.env.COGNITO_USER_POOL_ID;
-    const currentBundles = await getUserBundles(userId, userPoolId);
+    logger.info({ requestId, message: "Successfully deleted bundle", userId, status: result.status });
 
-    if (removeAll) {
-      // Use DynamoDB as primary storage via updateUserBundles
-      await updateUserBundles(userId, userPoolId, []);
-      logger.info({ message: `All bundles removed for user ${userId}` });
-      return {
-        statusCode: 200,
-        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
-        body: JSON.stringify({
-          status: "removed_all",
-          message: "All bundles removed",
-          bundles: [],
-        }),
-      };
-    }
-
-    logger.info({ message: `Removing bundle ${bundleToRemove} for user ${userId}` });
-    const bundlesAfterRemoval = currentBundles.filter((bundle) => !bundle.startsWith(bundleToRemove + "|") && bundle !== bundleToRemove);
-
-    if (bundlesAfterRemoval.length === currentBundles.length) {
-      logger.error({ message: `Bundle ${bundleToRemove} not found for user ${userId}` });
-      return {
-        statusCode: 404,
-        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
-        body: JSON.stringify({ error: "Bundle not found" }),
-      };
-    }
-
-    // Use DynamoDB as primary storage via updateUserBundles
-    await updateUserBundles(userId, userPoolId, bundlesAfterRemoval);
-    logger.info({ message: `Bundle ${bundleToRemove} removed for user ${userId}` });
-    return {
-      statusCode: 200,
-      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
-      body: JSON.stringify({
-        status: "removed",
-        message: "Bundle removed",
-        bundle: bundleToRemove,
-        bundles: bundlesAfterRemoval,
-      }),
-    };
+    return http200OkResponse({
+      request,
+      requestId,
+      headers: { ...responseHeaders },
+      data: result,
+    });
   } catch (error) {
-    logger.error({ message: "Unexpected error in bundleDelete:", error: error?.message || String(error) });
+    logger.error({ requestId, message: "Error deleting bundle", error: error.message, stack: error.stack });
+    return http500ServerErrorResponse({
+      request,
+      requestId,
+      headers: { ...responseHeaders },
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+}
+
+// Service adaptor aware of the downstream service but not the consuming Lambda's incoming/outgoing HTTP request/response
+export async function deleteUserBundle(userId, bundleToRemove, removeAll) {
+  const userPoolId = process.env.COGNITO_USER_POOL_ID;
+  const currentBundles = await getUserBundles(userId, userPoolId);
+
+  if (removeAll) {
+    // Use DynamoDB as primary storage via updateUserBundles
+    await updateUserBundles(userId, userPoolId, []);
+    logger.info({ message: `All bundles removed for user ${userId}` });
     return {
-      statusCode: 500,
-      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
-      body: JSON.stringify({ error: "Internal server error" }),
+      status: "removed_all",
+      message: "All bundles removed",
+      bundles: [],
     };
   }
+
+  logger.info({ message: `Removing bundle ${bundleToRemove} for user ${userId}` });
+  const bundlesAfterRemoval = currentBundles.filter((bundle) => !bundle.startsWith(bundleToRemove + "|") && bundle !== bundleToRemove);
+
+  if (bundlesAfterRemoval.length === currentBundles.length) {
+    logger.error({ message: `Bundle ${bundleToRemove} not found for user ${userId}` });
+    return {
+      status: "not_found",
+    };
+  }
+
+  // Use DynamoDB as primary storage via updateUserBundles
+  await updateUserBundles(userId, userPoolId, bundlesAfterRemoval);
+  logger.info({ message: `Bundle ${bundleToRemove} removed for user ${userId}` });
+  return {
+    status: "removed",
+    message: "Bundle removed",
+    bundle: bundleToRemove,
+    bundles: bundlesAfterRemoval,
+  };
 }

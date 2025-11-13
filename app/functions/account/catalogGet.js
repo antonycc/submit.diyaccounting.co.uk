@@ -1,21 +1,13 @@
-// app/functions/catalogGet.js
+// app/functions/account/catalogGet.js
+
 import { loadCatalogFromRoot } from "../../lib/productCatalogHelper.js";
-import { extractRequest } from "../../lib/responses.js";
+import { extractRequest, http200OkResponse, http500ServerErrorResponse } from "../../lib/responses.js";
 import logger from "../../lib/logger.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
 
 let cached = null; // { json, etag, lastModified, object, validated }
 
-async function load() {
-  const object = loadCatalogFromRoot();
-  const json = JSON.stringify(object);
-  cached = { json, object, validated: true };
-}
-
-async function ensureLoaded() {
-  if (!cached) await load();
-}
-
+// Server hook for Express app, and construction of a Lambda-like event from HTTP request)
 export function apiEndpoint(app) {
   app.get("/api/v1/catalog", async (httpRequest, httpResponse) => {
     const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
@@ -24,34 +16,45 @@ export function apiEndpoint(app) {
   });
 }
 
+// HTTP request/response, aware Lambda handler function
 export async function handler(event) {
   const { request, requestId } = extractRequest(event);
-  logger.info({ message: "getCatalog entry", route: "/api/v1/catalog", request });
+  const responseHeaders = { "Content-Type": "application/json", "x-request-id": requestId };
+
+  logger.info({ requestId, message: "Retrieving product catalog" });
+
   try {
-    await ensureLoaded();
+    const catalogData = await loadCatalog();
+    // loadCatalog currently returns a JSON string; convert to object for http200OkResponse
+    const catalogObject = typeof catalogData === "string" ? JSON.parse(catalogData) : catalogData;
 
-    logger.info({
-      message: "getCatalog exit",
-      route: "/api/v1/catalog",
-      status: 200,
-      size: cached.json.length,
-      etag: cached.etag,
-      lastModified: cached.lastModified,
+    logger.info({ requestId, message: "Successfully retrieved catalog", size: catalogData.length });
+
+    return http200OkResponse({
       request,
+      requestId,
+      headers: { ...responseHeaders },
+      data: catalogObject,
     });
-
-    return {
-      statusCode: 200,
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: cached.json,
-    };
-  } catch (err) {
-    return {
-      statusCode: 500,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ error: "failed_to_load_catalog", message: err?.message || String(err) }),
-    };
+  } catch (error) {
+    logger.error({ requestId, message: "Error loading catalog", error: error.message, stack: error.stack });
+    return http500ServerErrorResponse({
+      request,
+      requestId,
+      headers: { ...responseHeaders },
+      message: "Failed to load catalog",
+      error: error.message,
+    });
   }
+}
+
+// Service adaptor aware of the downstream service but not the consuming Lambda's incoming/outgoing HTTP request/response
+export async function loadCatalog() {
+  if (!cached) {
+    const object = loadCatalogFromRoot();
+    const json = JSON.stringify(object);
+    cached = { json, object, validated: true };
+  }
+
+  return cached.json;
 }

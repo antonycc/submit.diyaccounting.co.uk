@@ -1,44 +1,83 @@
-// app/functions/cognitoAuthUrl.js
+// app/functions/auth/cognitoAuthUrlGet.js
 
-import { extractRequest, http400BadRequestResponse, http200OkResponse, http500ServerErrorResponse } from "../../lib/responses.js";
+import logger from "../../lib/logger.js";
+import { extractRequest, http200OkResponse, http500ServerErrorResponse, buildValidationError } from "../../lib/responses.js";
 import { validateEnv } from "../../lib/env.js";
+import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
 
-// GET /api/v1/cognito/authUrl?state={state}
+// Server hook for Express app, and construction of a Lambda-like event from HTTP request)
+export function apiEndpoint(app) {
+  app.get("/api/v1/cognito/authUrl", async (httpRequest, httpResponse) => {
+    const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
+    const lambdaResult = await handler(lambdaEvent);
+    return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
+  });
+}
+
+export function extractAndValidateParameters(event, errorMessages) {
+  const queryParams = event.queryStringParameters || {};
+  const { state } = queryParams;
+
+  // Collect validation errors for required fields
+  if (!state) errorMessages.push("Missing state query parameter from URL");
+
+  return { state };
+}
+
+// HTTP request/response, aware Lambda handler function
 export async function handler(event) {
   validateEnv(["COGNITO_CLIENT_ID", "COGNITO_BASE_URI", "DIY_SUBMIT_BASE_URL"]);
 
   const { request, requestId } = extractRequest(event);
-  const state = event.queryStringParameters?.state;
+  const errorMessages = [];
 
-  if (!state) {
-    return http400BadRequestResponse({
-      request,
-      message: "Missing state query parameter from URL",
-    });
+  // Extract and validate parameters
+  const { state } = extractAndValidateParameters(event, errorMessages);
+
+  const responseHeaders = { "x-request-id": requestId };
+
+  // Validation errors
+  if (errorMessages.length > 0) {
+    return buildValidationError(request, requestId, errorMessages, responseHeaders);
   }
 
+  // Processing
   try {
-    const maybeSlash = process.env.DIY_SUBMIT_BASE_URL?.endsWith("/") ? "" : "/";
-    const redirectUri = `${process.env.DIY_SUBMIT_BASE_URL}${maybeSlash}auth/loginWithCognitoCallback.html`;
-    const cognitoClientId = process.env.COGNITO_CLIENT_ID;
-    const cognitoBaseUri = process.env.COGNITO_BASE_URI;
-    const scope = "openid profile email";
-    const authUrl =
-      `${cognitoBaseUri}/oauth2/authorize?response_type=code` +
-      `&client_id=${encodeURIComponent(cognitoClientId)}` +
-      `&redirect_uri=${encodeURIComponent(redirectUri)}` +
-      `&scope=${encodeURIComponent(scope)}` +
-      `&state=${encodeURIComponent(state)}`;
+    logger.info({ requestId, message: "Generating Cognito authorization URL", state });
+    const { authUrl } = buildAuthUrl(state);
 
     return http200OkResponse({
       request,
+      requestId,
+      headers: { ...responseHeaders },
       data: { authUrl },
     });
   } catch (error) {
+    logger.error({ requestId, message: "Error generating Cognito authorization URL", error: error.message, stack: error.stack });
     return http500ServerErrorResponse({
-      requestId,
       request,
-      data: { error, message: "Internal Server Error in httpGetHmrc" },
+      requestId,
+      headers: { ...responseHeaders },
+      message: "Internal server error",
+      error: error.message,
     });
   }
+}
+
+// Service adaptor aware of the downstream service but not the consuming Lambda's incoming/outgoing HTTP request/response
+export function buildAuthUrl(state) {
+  const maybeSlash = process.env.DIY_SUBMIT_BASE_URL?.endsWith("/") ? "" : "/";
+  const redirectUri = `${process.env.DIY_SUBMIT_BASE_URL}${maybeSlash}auth/loginWithCognitoCallback.html`;
+  const cognitoClientId = process.env.COGNITO_CLIENT_ID;
+  const cognitoBaseUri = process.env.COGNITO_BASE_URI;
+  const scope = "openid profile email";
+
+  const authUrl =
+    `${cognitoBaseUri}/oauth2/authorize?response_type=code` +
+    `&client_id=${encodeURIComponent(cognitoClientId)}` +
+    `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+    `&scope=${encodeURIComponent(scope)}` +
+    `&state=${encodeURIComponent(state)}`;
+
+  return { authUrl };
 }

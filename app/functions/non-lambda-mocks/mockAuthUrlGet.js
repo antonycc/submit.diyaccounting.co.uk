@@ -1,9 +1,11 @@
-// app/functions/mockAuthUrlGet.js
+// app/functions/non-lambda-mocks/mockAuthUrlGet.js
 
-import { extractRequest, http400BadRequestResponse, http200OkResponse, http500ServerErrorResponse } from "../../lib/responses.js";
+import logger from "../../lib/logger.js";
+import { extractRequest, http200OkResponse, http500ServerErrorResponse, buildValidationError } from "../../lib/responses.js";
 import { validateEnv } from "../../lib/env.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
 
+// Server hook for Express app, and construction of a Lambda-like event from HTTP request)
 export function apiEndpoint(app) {
   app.get("/api/v1/mock/authUrl", async (httpRequest, httpResponse) => {
     const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
@@ -12,13 +14,63 @@ export function apiEndpoint(app) {
   });
 }
 
+export function extractAndValidateParameters(event, errorMessages) {
+  const queryParams = event.queryStringParameters || {};
+  const { state } = queryParams;
+
+  // Collect validation errors for required fields
+  if (!state) errorMessages.push("Missing state query parameter from URL");
+
+  return { state };
+}
+
+// HTTP request/response, aware Lambda handler function
 export async function handler(event) {
   validateEnv(["DIY_SUBMIT_BASE_URL"]);
+
+  const { request, requestId } = extractRequest(event);
+  const errorMessages = [];
+
+  // Extract and validate parameters
+  const { state } = extractAndValidateParameters(event, errorMessages);
+
+  const responseHeaders = { "x-request-id": requestId };
+
+  // Validation errors
+  if (errorMessages.length > 0) {
+    return buildValidationError(request, requestId, errorMessages, responseHeaders);
+  }
+
+  // Processing
+  try {
+    logger.info({ requestId, message: "Generating mock authorization URL", state });
+    const { authUrl } = buildAuthUrl(state);
+
+    return http200OkResponse({
+      request,
+      requestId,
+      headers: { ...responseHeaders },
+      data: { authUrl },
+    });
+  } catch (error) {
+    logger.error({ requestId, message: "Error generating mock authorization URL", error: error.message, stack: error.stack });
+    return http500ServerErrorResponse({
+      request,
+      requestId,
+      headers: { ...responseHeaders },
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+}
+
+// Service adaptor aware of the downstream service but not the consuming Lambda's incoming/outgoing HTTP request/response
+export function buildAuthUrl(state) {
   const maybeSlash = process.env.DIY_SUBMIT_BASE_URL?.endsWith("/") ? "" : "/";
   const redirectUri = `${process.env.DIY_SUBMIT_BASE_URL}${maybeSlash}auth/loginWithMockCallback.html`;
-  const state = event.queryStringParameters?.state;
   const mockBase = "http://localhost:8080";
   const scope = "openid somescope";
+
   const authUrl =
     `${mockBase}/oauth/authorize?` +
     "response_type=code" +
@@ -28,29 +80,5 @@ export async function handler(event) {
     `&state=${encodeURIComponent(state)}` +
     "&identity_provider=MockOAuth2Server";
 
-  let request = "Not created";
-  try {
-    request = extractRequest(event);
-
-    // Validation
-    const state = event.queryStringParameters?.state;
-    if (!state) {
-      return http400BadRequestResponse({
-        request,
-        message: "Missing state query parameter from URL",
-      });
-    }
-
-    return http200OkResponse({
-      request,
-      data: {
-        authUrl,
-      },
-    });
-  } catch (error) {
-    return http500ServerErrorResponse({
-      request: request,
-      data: { error, message: "Internal Server Error in httpGetHmrc" },
-    });
-  }
+  return { authUrl };
 }

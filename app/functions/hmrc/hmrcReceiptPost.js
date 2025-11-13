@@ -1,12 +1,109 @@
-// app/functions/logReceipt.js
+// app/functions/hmrc/hmrcReceiptPost.js
 
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import logger from "../../lib/logger.js";
-import { extractRequest, http400BadRequestResponse, http200OkResponse, http500ServerErrorResponse } from "../../lib/responses.js";
+import {
+  extractRequest,
+  http200OkResponse,
+  http500ServerErrorResponse,
+  parseRequestBody,
+  buildValidationError,
+} from "../../lib/responses.js";
 import { validateEnv } from "../../lib/env.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
 
-export async function logReceipt(key, receipt) {
+// Server hook for Express app, and construction of a Lambda-like event from HTTP request)
+export function apiEndpoint(app) {
+  app.post("/api/v1/hmrc/receipt", async (httpRequest, httpResponse) => {
+    const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
+    const lambdaResult = await handler(lambdaEvent);
+    return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
+  });
+}
+
+export function extractAndValidateParameters(event, errorMessages) {
+  const parsedBody = parseRequestBody(event);
+  const receipt = parsedBody && parsedBody.receipt ? parsedBody.receipt : parsedBody;
+
+  // Extract userSub from Authorization header if present
+  const auth = event.headers?.authorization || event.headers?.Authorization;
+  let userSub = null;
+  if (auth && auth.startsWith("Bearer ")) {
+    try {
+      const token = auth.split(" ")[1];
+      const parts = token.split(".");
+      if (parts.length >= 2) {
+        const payload = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+        const json = Buffer.from(payload, "base64").toString("utf8");
+        const claims = JSON.parse(json);
+        userSub = claims.sub || null;
+      }
+    } catch {
+      // JWT parsing failed - userSub remains null
+      userSub = null;
+    }
+  }
+
+  const formBundle = receipt?.formBundleNumber;
+  const timestamp = new Date().toISOString();
+  // Build key: with userSub if available, otherwise just formBundle
+  let key = null;
+  if (userSub && formBundle) {
+    key = `receipts/${userSub}/${timestamp}-${formBundle}.json`;
+  } else if (formBundle) {
+    key = `receipts/${formBundle}.json`;
+  }
+
+  // Collect validation errors for required fields
+  if (!receipt || Object.keys(receipt).length === 0) errorMessages.push("Missing receipt parameter from body");
+  if (!formBundle) errorMessages.push("Missing formBundleNumber in receipt body");
+  if (!key) errorMessages.push("Missing key parameter derived from body");
+
+  return { receipt, key, formBundle };
+}
+
+// HTTP request/response, aware Lambda handler function
+export async function handler(event) {
+  validateEnv(["DIY_SUBMIT_RECEIPTS_BUCKET_NAME"]);
+
+  const { request, requestId } = extractRequest(event);
+  const errorMessages = [];
+
+  // Extract and validate parameters
+  const { receipt, key, formBundle } = extractAndValidateParameters(event, errorMessages);
+
+  const responseHeaders = { "x-request-id": requestId };
+
+  // Validation errors
+  if (errorMessages.length > 0) {
+    return buildValidationError(request, requestId, errorMessages, responseHeaders);
+  }
+
+  // Processing
+  try {
+    logger.info({ requestId, message: "Logging receipt to S3", key, formBundle });
+    await saveReceiptToS3(key, receipt);
+
+    return http200OkResponse({
+      request,
+      requestId,
+      headers: { ...responseHeaders },
+      data: { receipt, key },
+    });
+  } catch (error) {
+    logger.error({ requestId, message: "Error saving receipt to S3", error: error.message, stack: error.stack });
+    return http500ServerErrorResponse({
+      request,
+      requestId,
+      headers: { ...responseHeaders },
+      message: `Failed to log receipt ${key}.`,
+      error: { details: error.message },
+    });
+  }
+}
+
+// Service adaptor aware of the downstream service but not the consuming Lambda's incoming/outgoing HTTP request/response
+export async function saveReceiptToS3(key, receipt) {
   const receiptsBucketName = process.env.DIY_SUBMIT_RECEIPTS_BUCKET_NAME;
   const testMinioS3 = process.env.TEST_MINIO_S3;
   const testS3Endpoint = process.env.TEST_S3_ENDPOINT;
@@ -21,7 +118,6 @@ export async function logReceipt(key, receipt) {
 
   // Configure S3 client for containerized MinIO if environment variables are set
   let s3Config = {};
-  // if (process.env.NODE_ENV !== "stubbed" && process.env.TEST_S3_ENDPOINT && process.env.TEST_S3_ENDPOINT !== "off") {
   if (testMinioS3 === "run" || testMinioS3 === "useExisting") {
     logger.info({ message: `Using TEST_S3_ENDPOINT ${testS3Endpoint}` });
     s3Config = buildTestS3Config();
@@ -49,73 +145,6 @@ export async function logReceipt(key, receipt) {
       logger.error({ message: "Failed to log receipt to S3", error });
       throw new Error(`Failed to log receipt: ${error.message}`);
     }
-  }
-}
-
-export function apiEndpoint(app) {
-  app.post("/api/v1/hmrc/receipt", async (httpRequest, httpResponse) => {
-    const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
-    const lambdaResult = await handler(lambdaEvent);
-    return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
-  });
-}
-
-// POST /api/v1/hmrc/receipt
-export async function handler(event) {
-  validateEnv(["DIY_SUBMIT_RECEIPTS_BUCKET_NAME"]);
-
-  const { request, requestId } = extractRequest(event);
-  const parsed = JSON.parse(event.body || "{}");
-  const receipt = parsed && parsed.receipt ? parsed.receipt : parsed;
-
-  const auth = event.headers?.authorization || event.headers?.Authorization;
-  let userSub = null;
-  if (auth && auth.startsWith("Bearer ")) {
-    try {
-      const token = auth.split(" ")[1];
-      const parts = token.split(".");
-      if (parts.length >= 2) {
-        const payload = parts[1].replace(/-/g, "+").replace(/_/g, "/");
-        const json = Buffer.from(payload, "base64").toString("utf8");
-        const claims = JSON.parse(json);
-        userSub = claims.sub || null;
-      }
-    } catch (_e) {
-      userSub = null;
-    }
-  }
-
-  const formBundle = receipt?.formBundleNumber;
-  const timestamp = new Date().toISOString();
-  const key =
-    userSub && formBundle ? `receipts/${userSub}/${timestamp}-${formBundle}.json` : formBundle ? `receipts/${formBundle}.json` : null;
-
-  const errorMessages = [];
-  if (!receipt || Object.keys(receipt).length === 0) errorMessages.push("Missing receipt parameter from body");
-  if (!formBundle) errorMessages.push("Missing formBundleNumber in receipt body");
-  if (!key) errorMessages.push("Missing key parameter derived from body");
-
-  if (errorMessages.length > 0) {
-    return http400BadRequestResponse({
-      request,
-      message: `There are ${errorMessages.length} validation errors for ${formBundle || "unknown"}.`,
-      error: { error: errorMessages.join(", ") },
-    });
-  }
-
-  try {
-    await logReceipt(key, receipt);
-    return http200OkResponse({
-      request,
-      data: { receipt, key },
-    });
-  } catch (error) {
-    return http500ServerErrorResponse({
-      request,
-      requestId,
-      message: `Failed to log receipt ${key}.`,
-      error: { details: error.message },
-    });
   }
 }
 

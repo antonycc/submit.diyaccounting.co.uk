@@ -1,9 +1,9 @@
-// app/functions/hmrcTokenPost.js
+// app/functions/hmrc/hmrcTokenPost.js
 
 import { SecretsManagerClient, GetSecretValueCommand } from "@aws-sdk/client-secrets-manager";
 
 import logger from "../../lib/logger.js";
-import { extractRequest, http400BadRequestResponse, parseRequestBody, buildTokenExchangeResponse } from "../../lib/responses.js";
+import { extractRequest, parseRequestBody, buildTokenExchangeResponse, buildValidationError } from "../../lib/responses.js";
 import { validateEnv } from "../../lib/env.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
 
@@ -11,6 +11,7 @@ const secretsClient = new SecretsManagerClient();
 
 let cachedHmrcClientSecret;
 
+// Server hook for Express app, and construction of a Lambda-like event from HTTP request)
 export function apiEndpoint(app) {
   app.post("/api/v1/hmrc/token", async (httpRequest, httpResponse) => {
     const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
@@ -19,29 +20,48 @@ export function apiEndpoint(app) {
   });
 }
 
-// POST /api/v1/hmrc/token
+export function extractAndValidateParameters(event, errorMessages) {
+  const parsedBody = parseRequestBody(event);
+  const { code } = parsedBody || {};
+
+  // Collect validation errors for required fields
+  if (!code) errorMessages.push("Missing code from event body");
+
+  return { code };
+}
+
+// HTTP request/response, aware Lambda handler function
 export async function handler(event) {
   // Allow local/dev override via HMRC_CLIENT_SECRET. Only require ARN if override is not supplied.
   const required = ["HMRC_BASE_URI", "HMRC_CLIENT_ID", "DIY_SUBMIT_BASE_URL"];
   if (!process.env.HMRC_CLIENT_SECRET) required.push("HMRC_CLIENT_SECRET_ARN");
   validateEnv(required);
 
-  const secretArn = process.env.HMRC_CLIENT_SECRET_ARN;
-  const overrideSecret = process.env.HMRC_CLIENT_SECRET;
-
   const { request, requestId } = extractRequest(event);
-  const { code } = parseRequestBody(event);
+  const errorMessages = [];
 
-  if (!code) {
-    logger.warn("Missing code from event body");
-    return http400BadRequestResponse({
-      request,
-      requestId,
-      message: "Missing code from event body",
-    });
+  // Extract and validate parameters
+  const { code } = extractAndValidateParameters(event, errorMessages);
+
+  const responseHeaders = { "x-request-id": requestId };
+
+  // Validation errors
+  if (errorMessages.length > 0) {
+    return buildValidationError(request, requestId, errorMessages, responseHeaders);
   }
 
+  // Processing
+  logger.info({ requestId, message: "Exchanging authorization code for HMRC access token" });
+  const tokenResponse = await exchangeCodeForToken(code);
+  return buildTokenExchangeResponse(request, tokenResponse.url, tokenResponse.body);
+}
+
+// Service adaptor aware of the downstream service but not the consuming Lambda's incoming/outgoing HTTP request/response
+export async function exchangeCodeForToken(code) {
+  const secretArn = process.env.HMRC_CLIENT_SECRET_ARN;
+  const overrideSecret = process.env.HMRC_CLIENT_SECRET;
   const clientSecret = await retrieveHmrcClientSecret(overrideSecret, secretArn);
+
   const url = `${process.env.HMRC_BASE_URI}/oauth/token`;
   const maybeSlash = process.env.DIY_SUBMIT_BASE_URL?.endsWith("/") ? "" : "/";
   const body = {
@@ -52,8 +72,7 @@ export async function handler(event) {
     code,
   };
 
-  logger.info("Exchanging code for token at HMRC with url " + url);
-  return buildTokenExchangeResponse(request, url, body);
+  return { url, body };
 }
 
 async function retrieveHmrcClientSecret(overrideSecret, secretArn) {

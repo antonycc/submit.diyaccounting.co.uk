@@ -1,5 +1,5 @@
 // app/unit-tests/myReceipts.test.js
-import { describe, test, expect, beforeEach, vi } from "vitest";
+import { describe, test, expect, beforeEach } from "vitest";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
@@ -11,7 +11,7 @@ import { S3Client, ListObjectsV2Command, GetObjectCommand } from "@aws-sdk/clien
 const s3Mock = mockClient(S3Client);
 
 // Import after mocks
-import { handler as listReceipts, httpGetByName as getReceipt } from "@app/functions/hmrc/hmrcReceiptGet.js";
+import { handler as listReceipts, handler as getReceipt } from "@app/functions/hmrc/hmrcReceiptGet.js";
 
 function makeJwt(sub = "test-user-sub") {
   const header = { alg: "none", typ: "JWT" };
@@ -64,7 +64,7 @@ describe("myReceipts functions", () => {
     expect(statusCode).toBe(401);
   });
 
-  test("httpGetByName fetches receipt by name and enforces prefix", async () => {
+  test("handler fetches receipt by name and enforces prefix", async () => {
     const userSub = "xyz789";
     const auth = `Bearer ${makeJwt(userSub)}`;
     const receiptObj = { formBundleNumber: "CCC", processingDate: "2025-07-01T12:00:00Z" };
