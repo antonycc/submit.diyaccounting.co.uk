@@ -1,17 +1,21 @@
 /* eslint-env browser */
+// eslint-disable-next-line no-redeclare
 /* global RTCPeerConnection */
 // Generic utility functions for submit application
 
 // Check authentication status on page load
+// eslint-disable-next-line no-unused-vars
 function checkAuthStatus() {
   const accessToken = localStorage.getItem("cognitoAccessToken");
   const userInfo = localStorage.getItem("userInfo");
 
   if (accessToken && userInfo) {
     console.log("User is authenticated");
+    // eslint-disable-next-line no-undef
     updateLoginStatus();
   } else {
     console.log("User is not authenticated");
+    // eslint-disable-next-line no-undef
     updateLoginStatus();
   }
 }
@@ -226,6 +230,7 @@ function getIPViaWebRTC() {
 }
 
 // Helper to build Gov-Client headers for HMRC API calls
+// eslint-disable-next-line no-unused-vars
 async function getGovClientHeaders() {
   // Enhanced IP detection with fallbacks
   const detectedIP = await getClientIP();
@@ -243,6 +248,7 @@ async function getGovClientHeaders() {
     colorDepth: window.screen.colorDepth,
     pixelDepth: window.screen.pixelDepth,
   });
+  // eslint-disable-next-line new-cap
   const govClientTimezoneHeader = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const govClientUserIDsHeader = "test=1";
   const govClientWindowSizeHeader = JSON.stringify({
