@@ -155,9 +155,10 @@ public class ApiStack extends Stack {
                         + "\"integrationError\":\"$context.integrationErrorMessage\""
                         + "}")
                 .build());
-        // Enable AWS X-Ray tracing for the default stage via property override.
-        // Some CDK versions don't expose 'tracingEnabled' on CfnStage for HTTP APIs yet.
-        defaultStage.addPropertyOverride("TracingEnabled", true);
+        // Note: AWS X-Ray tracing is not supported as a stage-level property for HTTP APIs (API Gateway V2).
+        // TracingEnabled property is only available for REST APIs (API Gateway V1).
+        // For HTTP APIs, X-Ray tracing is automatically enabled when Lambda functions have tracing enabled.
+        // Our Lambda functions already have Tracing.ACTIVE set, so traces will flow from API Gateway through Lambda.
         // Note: Execution logs (loggingLevel) and detailed route metrics are not supported for HTTP APIs.
         // Avoid setting defaultRouteSettings to prevent BadRequestException during deployment.
 
