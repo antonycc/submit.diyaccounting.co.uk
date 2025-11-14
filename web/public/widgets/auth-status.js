@@ -67,7 +67,7 @@
     //  window.location.href = logoutUrl;
     // } else {
     //  // Fallback: just reload the page if COGNITO_CONFIG is not available
-    //  window.location.reload();
+    window.location.reload();
     // }
   }
 
