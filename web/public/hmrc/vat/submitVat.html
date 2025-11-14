@@ -5,7 +5,7 @@
     <meta charset="UTF-8" />
     <title>DIY Accounting Submit</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="stylesheet" href="../submit.css" />
+    <link rel="stylesheet" href="../../submit.css" />
     <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
     <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
     <meta name="rum:region" content="${AWS_REGION}" />
@@ -18,16 +18,16 @@
         <div class="hamburger-menu">
           <button class="hamburger-btn" onclick="toggleMenu()">☰</button>
           <div class="menu-dropdown" id="menuDropdown">
-            <a href="../index.html">Home</a>
-            <a href="../account/bundles.html">Bundles</a>
-            <a href="../account/receipts.html">Receipts</a>
-            <a href="../docs/index.html">API Docs</a>
+            <a href="../../index.html">Home</a>
+            <a href="../../account/bundles.html">Bundles</a>
+            <a href="../receipt/receipts.html">Receipts</a>
+            <a href="../../docs/index.html">API Docs</a>
           </div>
         </div>
         <div class="auth-section">
           <span class="entitlement-status">Activity: unrestricted</span>
           <span class="login-status">Not logged in</span>
-          <a href="../auth/login.html" class="login-link">Log in</a>
+          <a href="../../auth/login.html" class="login-link">Log in</a>
         </div>
       </div>
       <h1>DIY Accounting Submit</h1>
@@ -118,7 +118,7 @@
 
       <!-- Navigation Button -->
       <div class="navigation-container" style="text-align: center; margin-top: 2em">
-        <button type="button" class="btn" id="homePageFromMainBtn" onclick="window.location.href='../index.html'">
+        <button type="button" class="btn" id="homePageFromMainBtn" onclick="window.location.href='../../index.html'">
           Return to the home page
         </button>
       </div>
@@ -132,11 +132,11 @@
       </div>
     </footer>
 
-    <script src="../submit.js"></script>
-    <script src="../widgets/hamburger-menu.js"></script>
-    <script src="../widgets/entitlement-status.js"></script>
-    <script src="../widgets/auth-status.js"></script>
-    <script src="../widgets/status-messages.js"></script>
+    <script src="../../submit.js"></script>
+    <script src="../../widgets/hamburger-menu.js"></script>
+    <script src="../../widgets/entitlement-status.js"></script>
+    <script src="../../widgets/auth-status.js"></script>
+    <script src="../../widgets/status-messages.js"></script>
     <script>
       // Form submission handler
       async function handleFormSubmission(event) {

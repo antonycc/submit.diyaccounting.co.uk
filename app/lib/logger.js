@@ -53,7 +53,7 @@ if (logToConsole && logToFile) {
 }
 
 // If neither console nor file are enabled, produce a disabled logger (no output)
-const pinoLogger = pino(
+export const logger = pino(
   {
     level: "info",
     // timestamp: pino.stdTimeFunctions.isoTime,
@@ -73,4 +73,7 @@ const pinoLogger = pino(
   destinationStream,
 );
 
-export default pinoLogger;
+// Store for contextual information such as a request ID
+export const context = new Map();
+
+export default logger;

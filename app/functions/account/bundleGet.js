@@ -6,6 +6,8 @@ import { extractRequest, http200OkResponse, http401UnauthorizedResponse, http500
 import { decodeJwtToken } from "../../lib/jwtHelper.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
 import { getUserBundles } from "../../lib/bundleHelpers.js";
+import { enforceBundles } from "@app/lib/bundleEnforcement.js";
+import { http403ForbiddenFromBundleEnforcement } from "@app/lib/hmrcHelper.js";
 
 /**
  * Parse bundle string to extract bundleId and expiry
@@ -89,6 +91,13 @@ export async function handler(event) {
 
   const { request, requestId } = extractRequest(event);
   const errorMessages = [];
+
+  // Bundle enforcement
+  try {
+    await enforceBundles(event);
+  } catch (error) {
+    return http403ForbiddenFromBundleEnforcement(requestId, error, request);
+  }
 
   logger.info({ requestId, message: "Retrieving user bundles" });
 

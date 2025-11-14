@@ -4,6 +4,8 @@ import { loadCatalogFromRoot } from "../../lib/productCatalogHelper.js";
 import { extractRequest, http200OkResponse, http500ServerErrorResponse } from "../../lib/responses.js";
 import logger from "../../lib/logger.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
+import { enforceBundles } from "@app/lib/bundleEnforcement.js";
+import { http403ForbiddenFromBundleEnforcement } from "@app/lib/hmrcHelper.js";
 
 let cached = null; // { json, etag, lastModified, object, validated }
 
@@ -20,6 +22,13 @@ export function apiEndpoint(app) {
 export async function handler(event) {
   const { request, requestId } = extractRequest(event);
   const responseHeaders = { "Content-Type": "application/json", "x-request-id": requestId };
+
+  // Bundle enforcement
+  try {
+    await enforceBundles(event);
+  } catch (error) {
+    return http403ForbiddenFromBundleEnforcement(requestId, error, request);
+  }
 
   logger.info({ requestId, message: "Retrieving product catalog" });
 

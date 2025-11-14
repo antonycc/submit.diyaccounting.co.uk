@@ -1,6 +1,6 @@
 // app/lib/responses.js
 
-import logger from "./logger.js";
+import { logger, context } from "./logger.js";
 
 export function http200OkResponse({ request, requestId, headers, data }) {
   const merged = { ...(headers || {}) };
@@ -84,6 +84,7 @@ export function extractRequest(event) {
   let request;
   const requestId =
     event?.requestContext?.requestId || event?.headers?.["x-request-id"] || event?.headers?.["X-Request-Id"] || String(Date.now());
+  context.set("requestId", requestId);
   if (event.headers) {
     try {
       let baseRequestUrl;

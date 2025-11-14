@@ -23,7 +23,9 @@ import {
   http403ForbiddenFromHmrcResponse,
   http404NotFoundFromHmrcResponse,
   http500ServerErrorFromHmrcResponse,
+  http403ForbiddenFromBundleEnforcement,
 } from "../../lib/hmrcHelper.js";
+import { enforceBundles } from "@app/lib/bundleEnforcement.js";
 
 // Server hook for Express app, and construction of a Lambda-like event from HTTP request)
 export function apiEndpoint(app) {
@@ -66,6 +68,13 @@ export async function handler(event) {
 
   const { request, requestId } = extractRequest(event);
   let errorMessages = [];
+
+  // Bundle enforcement
+  try {
+    await enforceBundles(event);
+  } catch (error) {
+    return http403ForbiddenFromBundleEnforcement(requestId, error, request);
+  }
 
   const detectedIP = extractClientIPFromHeaders(event);
   const { govClientHeaders, govClientErrorMessages } = eventToGovClientHeaders(event, detectedIP);

@@ -1,6 +1,6 @@
 // app/functions/submitVat.js
 
-import logger from "../../lib/logger.js";
+import { logger, context } from "../../lib/logger.js";
 import {
   extractRequest,
   http200OkResponse,
@@ -60,14 +60,14 @@ export function extractAndValidateParameters(event, errorMessages) {
 export async function handler(event) {
   validateEnv(["HMRC_BASE_URI"]); // "COGNITO_USER_POOL_ID"
 
-  const { request, requestId } = extractRequest(event);
+  const { request } = extractRequest(event);
   let errorMessages = [];
 
   // Bundle enforcement
   try {
     await enforceBundles(event);
   } catch (error) {
-    return http403ForbiddenFromBundleEnforcement(requestId, error, request);
+    return http403ForbiddenFromBundleEnforcement(context.get("requestId"), error, request);
   }
 
   // Extract and validate parameters
@@ -81,23 +81,29 @@ export async function handler(event) {
   // Normalise periodKey to uppercase for HMRC if provided as string
   const normalizedPeriodKey = typeof periodKey === "string" ? periodKey.toUpperCase() : periodKey;
 
-  const responseHeaders = { ...govClientHeaders, "x-request-id": requestId };
+  const responseHeaders = { ...govClientHeaders, "x-request-id": context.get("requestId") };
 
   // Non-authorization validation errors (collect field/header issues first)
   if (errorMessages.length > 0) {
     if (!hmrcAccessToken) errorMessages.push("Missing accessToken parameter from body");
-    return buildValidationError(request, requestId, errorMessages, responseHeaders);
+    return buildValidationError(request, context.get("requestId"), errorMessages, responseHeaders);
   }
 
   // Validate token format only after other validation passes
   try {
-    validateHmrcAccessToken(hmrcAccessToken, requestId);
+    validateHmrcAccessToken(hmrcAccessToken, context.get("requestId"));
   } catch (err) {
     // If token is explicitly unauthorized, return 401; otherwise return 400 with validation message only
     if (err instanceof UnauthorizedTokenError) {
-      return http401UnauthorizedResponse({ request, requestId, headers: { ...responseHeaders }, message: err.message, error: {} });
+      return http401UnauthorizedResponse({
+        request,
+        requestId: context.get("requestId"),
+        headers: { ...responseHeaders },
+        message: err.message,
+        error: {},
+      });
     }
-    return buildValidationError(request, requestId, [err.toString()], responseHeaders);
+    return buildValidationError(request, context.get("requestId"), [err.toString()], responseHeaders);
   }
 
   // Processing
@@ -105,9 +111,14 @@ export async function handler(event) {
   let hmrcResponse;
   let hmrcResponseBody;
   try {
-    logger.info({ requestId, message: "Submitting VAT return to HMRC", vatNumber, periodKey: normalizedPeriodKey });
+    logger.info({
+      requestId: context.get("requestId"),
+      message: "Submitting VAT return to HMRC",
+      vatNumber,
+      periodKey: normalizedPeriodKey,
+    });
     ({ receipt, hmrcResponse, hmrcResponseBody } = await submitVat(
-      requestId,
+      context.get("requestId"),
       normalizedPeriodKey,
       numVatDue,
       vatNumber,
@@ -116,19 +127,31 @@ export async function handler(event) {
     ));
   } catch (error) {
     // Preserve original behavior expected by tests: bubble up network errors
-    logger.error({ requestId, message: "Error while submitting VAT to HMRC", error: error.message, stack: error.stack });
+    logger.error({
+      requestId: context.get("requestId"),
+      message: "Error while submitting VAT to HMRC",
+      error: error.message,
+      stack: error.stack,
+    });
     throw error;
   }
 
   // Generate error responses based on HMRC response
   if (!hmrcResponse.ok) {
-    return generateHmrcErrorResponseWithRetryAdvice(request, requestId, hmrcResponse, hmrcResponseBody, hmrcAccessToken, responseHeaders);
+    return generateHmrcErrorResponseWithRetryAdvice(
+      request,
+      context.get("requestId"),
+      hmrcResponse,
+      hmrcResponseBody,
+      hmrcAccessToken,
+      responseHeaders,
+    );
   }
 
   // Generate a success response
   return http200OkResponse({
     request,
-    requestId,
+    requestId: context.get("requestId"),
     headers: { ...responseHeaders },
     data: {
       receipt,
@@ -142,7 +165,7 @@ export async function submitVat(requestId, periodKey, vatDue, vatNumber, hmrcAcc
     "Content-Type": "application/json",
     "Accept": "application/vnd.hmrc.1.0+json",
     "Authorization": `Bearer ${hmrcAccessToken}`,
-    "x-request-id": requestId,
+    "x-request-id": context.get("requestId"),
   };
   const hmrcRequestBody = {
     periodKey,
@@ -162,7 +185,7 @@ export async function submitVat(requestId, periodKey, vatDue, vatNumber, hmrcAcc
   let hmrcResponse;
   const hmrcBase = process.env.HMRC_BASE_URI;
   const hmrcRequestUrl = `${hmrcBase}/organisations/vat/${vatNumber}/returns`;
-  logHmrcRequestDetails(requestId, hmrcRequestUrl, hmrcRequestHeaders, govClientHeaders, hmrcRequestBody);
+  logHmrcRequestDetails(context.get("requestId"), hmrcRequestUrl, hmrcRequestHeaders, govClientHeaders, hmrcRequestBody);
   if (process.env.NODE_ENV === "stubbed") {
     hmrcResponse = {
       ok: true,
@@ -172,7 +195,11 @@ export async function submitVat(requestId, periodKey, vatDue, vatNumber, hmrcAcc
     };
     // TEST_RECEIPT is already a JSON string, so parse it first
     hmrcResponseBody = JSON.parse(process.env.TEST_RECEIPT || "{}");
-    logger.warn({ requestId, message: "httpPostMock called in stubbed mode, using test receipt", receipt: hmrcResponseBody });
+    logger.warn({
+      requestId: context.get("requestId"),
+      message: "httpPostMock called in stubbed mode, using test receipt",
+      receipt: hmrcResponseBody,
+    });
   } else {
     // Perform real HTTP call
     ({ hmrcResponse, hmrcResponseBody } = await hmrcHttpPost(hmrcRequestUrl, hmrcRequestHeaders, govClientHeaders, hmrcRequestBody));

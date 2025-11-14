@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <title>VAT Obligations - DIY Accounting Submit</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="stylesheet" href="../submit.css" />
+    <link rel="stylesheet" href="../../submit.css" />
     <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
     <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
     <meta name="rum:region" content="${AWS_REGION}" />
@@ -17,16 +17,16 @@
         <div class="hamburger-menu">
           <button class="hamburger-btn" onclick="toggleMenu()">☰</button>
           <div class="menu-dropdown" id="menuDropdown">
-            <a href="../index.html">Home</a>
-            <a href="../account/bundles.html">Bundles</a>
-            <a href="../account/receipts.html">Receipts</a>
-            <a href="../docs/index.html">API Docs</a>
+            <a href="../../index.html">Home</a>
+            <a href="../../account/bundles.html">Bundles</a>
+            <a href="../receipt/receipts.html">Receipts</a>
+            <a href="../../docs/index.html">API Docs</a>
           </div>
         </div>
         <div class="auth-section">
           <span class="entitlement-status">Activity: unrestricted</span>
           <span class="login-status">Not logged in</span>
-          <a href="../auth/login.html" class="login-link">Log in</a>
+          <a href="../../auth/login.html" class="login-link">Log in</a>
         </div>
       </div>
       <h1>VAT Obligations</h1>
@@ -132,8 +132,8 @@
 
       <!-- Navigation Button -->
       <div class="navigation-container" style="text-align: center; margin-top: 2em">
-        <button type="button" class="btn" id="homePageBtn" onclick="window.location.href='../index.html'">Return to Home</button>
-        <button type="button" class="btn" id="receiptsPageBtn" onclick="window.location.href='../account/receipts.html'">
+        <button type="button" class="btn" id="homePageBtn" onclick="window.location.href='../../index.html'">Return to Home</button>
+        <button type="button" class="btn" id="receiptsPageBtn" onclick="window.location.href='../receipt/receipts.html'">
           My Receipts
         </button>
       </div>
@@ -147,12 +147,12 @@
       </div>
     </footer>
 
-    <script src="../submit.js"></script>
-    <script src="../widgets/hamburger-menu.js"></script>
-    <script src="../widgets/entitlement-status.js"></script>
-    <script src="../widgets/auth-status.js"></script>
-    <script src="../widgets/status-messages.js"></script>
-    <script src="../widgets/loading-spinner.js"></script>
+    <script src="../../submit.js"></script>
+    <script src="../../widgets/hamburger-menu.js"></script>
+    <script src="../../widgets/entitlement-status.js"></script>
+    <script src="../../widgets/auth-status.js"></script>
+    <script src="../../widgets/status-messages.js"></script>
+    <script src="../../widgets/loading-spinner.js"></script>
     <script>
       // Global variables
       let obligationsData = null;

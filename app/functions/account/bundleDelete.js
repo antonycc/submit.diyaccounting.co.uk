@@ -13,6 +13,8 @@ import {
 import { decodeJwtToken } from "../../lib/jwtHelper.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest, http404NotFound } from "../../lib/httpHelper.js";
 import { getUserBundles, updateUserBundles } from "../../lib/bundleHelpers.js";
+import { enforceBundles } from "@app/lib/bundleEnforcement.js";
+import { http403ForbiddenFromBundleEnforcement } from "@app/lib/hmrcHelper.js";
 
 // Server hook for Express app, and construction of a Lambda-like event from HTTP request)
 export function apiEndpoint(app) {
@@ -65,6 +67,13 @@ export async function handler(event) {
 
   const { request, requestId } = extractRequest(event);
   const errorMessages = [];
+
+  // Bundle enforcement
+  try {
+    await enforceBundles(event);
+  } catch (error) {
+    return http403ForbiddenFromBundleEnforcement(requestId, error, request);
+  }
 
   logger.info({ requestId, message: "Deleting user bundle" });
 
