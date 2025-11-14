@@ -71,6 +71,12 @@ export async function handler(event) {
   const { govClientHeaders, govClientErrorMessages } = eventToGovClientHeaders(event, detectedIP);
   errorMessages = errorMessages.concat(govClientErrorMessages || []);
 
+  // Extract hmrcAccount header if present
+  const hmrcAccount = event.headers?.hmrcAccount || event.headers?.hmrcaccount;
+  if (hmrcAccount) {
+    govClientHeaders["hmrcAccount"] = hmrcAccount;
+  }
+
   // Extract and validate parameters
   const { vrn, periodKey, testScenario } = extractAndValidateParameters(event, errorMessages);
 
