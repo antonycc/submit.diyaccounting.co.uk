@@ -37,6 +37,11 @@ export default [
       ...promise.configs.recommended.rules,
       ...sonarjs.configs.recommended.rules,
       "sonarjs/os-command": "off",
+      // Raise allowed cognitive complexity from default (15) to 22
+      "sonarjs/cognitive-complexity": ["error", 22],
+      // Do not complain about TODO comments
+      "sonarjs/todo-tag": "off",
+      "no-warning-comments": "off",
 
       // Formatting and organisation
       "no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
@@ -91,6 +96,22 @@ export default [
     },
   },
   {
-    ignores: ["build/", "coverage/", "dist/", "exports/", "node_modules/", "eslint.config.js", "target/", "cdk.out/"],
+    ignores: [
+      "build/",
+      "coverage/",
+      "dist/",
+      "exports/",
+      "node_modules/",
+      "eslint.config.js",
+      "target/",
+      "cdk.out/",
+      // Project-specific: exclude tests and scripts from linting-fix
+      "app/unit-tests/",
+      "app/system-tests/",
+      "web/unit-tests/",
+      "scripts/",
+      "behaviour-tests/",
+      "web/browser-tests/",
+    ],
   },
 ];

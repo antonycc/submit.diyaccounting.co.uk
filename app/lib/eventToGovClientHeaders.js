@@ -37,7 +37,7 @@ export default function eventToGovClientHeaders(event, detectedIP) {
   }
 
   const govClientPublicIPTimestampHeader = sanitize(h("Gov-Client-Public-IP-Timestamp")) || new Date().toISOString();
-  const govClientPublicPortHeader = sanitize(h("Gov-Client-Public-Port")) || (event.headers?.host?.endsWith(":443") ? "443" : "443");
+  const govClientPublicPortHeader = sanitize(h("Gov-Client-Public-Port")) || "443";
   const govClientScreensHeader =
     sanitize(h("Gov-Client-Screens")) || JSON.stringify({ width: 1280, height: 720, colorDepth: 24, pixelDepth: 24 });
   const govClientTimezoneHeader = sanitize(h("Gov-Client-Timezone")) || "UTC";

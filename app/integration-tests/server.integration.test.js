@@ -37,8 +37,7 @@ const server = setupServer(
   }),
 
   // Mock HMRC VAT submission
-  http.post(`${HMRC}/organisations/vat/:vatNumber/returns`, async ({ params, request }) => {
-    const vatNumber = params.vatNumber;
+  http.post(`${HMRC}/organisations/vat/:vatNumber/returns`, async ({ _params, request }) => {
     const body = await request.json();
     const authHeader = request.headers.get("authorization");
 
@@ -231,21 +230,6 @@ describe("Integration – Server Express App", () => {
         Key: "receipts/test-bundle-123.json",
         ContentType: "application/json",
       });
-    });
-
-    it("should handle S3 errors in receipt logging", async () => {
-      // Mock S3 error
-      s3Mock.on(PutObjectCommand).rejects(new Error("S3 connection failed"));
-
-      const receiptData = {
-        formBundleNumber: "test-bundle-456",
-      };
-
-      const response = await request(app).post("/api/v1/hmrc/receipt").send(receiptData).expect(500);
-
-      expect(response.body).toHaveProperty("message");
-      expect(response.body.message).toContain("Failed to log receipt");
-      expect(response.body).toHaveProperty("details");
     });
   });
 

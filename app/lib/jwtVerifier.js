@@ -3,6 +3,7 @@
 // Falls back to decode-only if verification explicitly disabled via env.
 
 import { createRemoteJWKSet, jwtVerify } from "jose";
+import logger from "./logger.js";
 
 function base64UrlDecodePayload(token) {
   try {
@@ -11,7 +12,8 @@ function base64UrlDecodePayload(token) {
     const payload = parts[1].replace(/-/g, "+").replace(/_/g, "/");
     const json = Buffer.from(payload, "base64").toString("utf8");
     return JSON.parse(json);
-  } catch (_e) {
+  } catch (error) {
+    logger.error({ message: "Failed to decode JWT payload", error: error.message });
     return null;
   }
 }

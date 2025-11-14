@@ -164,7 +164,8 @@ function generateAllowPolicy(routeArn, jwtPayload) {
       default:
         try {
           flatContext[k] = JSON.stringify(v);
-        } catch (_e) {
+        } catch (error) {
+          logger.warn({ message: `Failed to stringify claim ${k}, storing as empty string`, error: error.message });
           flatContext[k] = String(v);
         }
     }

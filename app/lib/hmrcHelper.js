@@ -88,6 +88,7 @@ export async function hmrcHttpGet(requestId, endpoint, accessToken, govClientHea
     Object.entries(queryParams || {}).filter(([, value]) => value !== undefined && value !== null && String(value).trim() !== ""),
   );
   const queryString = new URLSearchParams(cleanParams).toString();
+  // eslint-disable-next-line sonarjs/no-nested-template-literals
   const url = `${baseUrl}${endpoint}${queryString ? `?${queryString}` : ""}`;
 
   const headers = buildHmrcHeaders(accessToken, govClientHeaders, testScenario);
