@@ -154,6 +154,8 @@ export function addOnPageLogging(page) {
 export const loggedClick = async (page, selector, description = "") =>
   await test.step(description ? `The user clicks ${description}` : `The user clicks selector ${selector}`, async () => {
     console.log(`[USER INTERACTION] Clicking: ${selector} ${description ? "- " + description : ""}`);
+    // Wait for element to be visible and stable before clicking
+    await page.waitForSelector(selector, { state: "visible", timeout: 30000 });
     await page.click(selector);
   });
 
