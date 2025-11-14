@@ -74,7 +74,7 @@
     "@aws-sdk/lib-dynamodb": "^3.931.0",
     "@microsoft/eslint-formatter-sarif": "^3.1.0",
     "@ngrok/ngrok": "^1.5.2",
-    "@playwright/test": "^1.57.0-alpha-2025-11-13",
+    "@playwright/test": "^1.56.1",
     "@vitest/coverage-v8": "^4.0.8",
     "aws-cdk": "^2.1031.2",
     "aws-sdk-client-mock": "^4.1.0",
