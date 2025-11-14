@@ -15,7 +15,6 @@ npm install
 npm test
 
 # Shut down any running Docker containers then remove any images
-docker compose down --rmi all --volumes
 docker system prune --all --force --volumes
 
 # Java/CDK clean
