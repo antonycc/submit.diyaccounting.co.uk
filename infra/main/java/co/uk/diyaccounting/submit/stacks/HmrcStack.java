@@ -230,13 +230,12 @@ public class HmrcStack extends Stack {
                     "Granted Secrets Manager access to %s for secret %s (with wildcard: %s)",
                     this.hmrcTokenPostLambda.getFunctionName(), props.hmrcClientSecretArn(), secretArnWithWildcard);
         }
-
+        
         // Grant access to HMRC sandbox client secret in Secrets Manager
         if (StringUtils.isNotBlank(props.hmrcSandboxClientSecretArn())) {
-            String sandboxSecretArnWithWildcard =
-                    props.hmrcSandboxClientSecretArn().endsWith("-*")
-                            ? props.hmrcSandboxClientSecretArn()
-                            : props.hmrcSandboxClientSecretArn() + "-*";
+            String sandboxSecretArnWithWildcard = props.hmrcSandboxClientSecretArn().endsWith("-*")
+                    ? props.hmrcSandboxClientSecretArn()
+                    : props.hmrcSandboxClientSecretArn() + "-*";
             this.hmrcTokenPostLambda.addToRolePolicy(PolicyStatement.Builder.create()
                     .effect(Effect.ALLOW)
                     .actions(List.of("secretsmanager:GetSecretValue"))
@@ -244,9 +243,7 @@ public class HmrcStack extends Stack {
                     .build());
             infof(
                     "Granted Secrets Manager access to %s for sandbox secret %s (with wildcard: %s)",
-                    this.hmrcTokenPostLambda.getFunctionName(),
-                    props.hmrcSandboxClientSecretArn(),
-                    sandboxSecretArnWithWildcard);
+                    this.hmrcTokenPostLambda.getFunctionName(), props.hmrcSandboxClientSecretArn(), sandboxSecretArnWithWildcard);
         }
 
         infof(

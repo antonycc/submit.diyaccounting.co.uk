@@ -1,60 +1,6 @@
 openapi: 3.0.3
 info:
   title: DIY Accounting Submit API
-  description: |
-    DIY Accounting Submit API for HMRC Making Tax Digital (MTD) VAT submissions.
-
-    This API provides endpoints for:
-    - OAuth2 authentication with HMRC and Cognito
-    - VAT return submissions
-    - VAT obligations retrieval
-    - Receipt management
-    - Bundle-based access control
-
-    ## Authentication
-
-    Most endpoints require authentication via:
-    1. **Cognito JWT**: For general API access (use `CognitoAuth` security)
-    2. **HMRC OAuth2**: For HMRC-specific operations (obtained via `/hmrc/authUrl` and `/hmrc/token`)
-
-    ## Base URLs
-
-    - Production: `https://submit.diyaccounting.co.uk/api/v1/`
-    - Sandbox: `https://test-submit.diyaccounting.co.uk/api/v1/`
-
-    ## Rate Limits
-
-    HMRC API rate limits apply:
-    - 3 requests per second per application
-    - Retry with exponential backoff on 429 responses
-
-    ## Error Handling
-
-    All errors return a JSON response with:
-    - `message`: Human-readable error description
-    - `error`: Additional error details (optional)
-
-    Common HTTP status codes:
-    - 200: Success
-    - 400: Bad request (validation error)
-    - 401: Unauthorized (missing or invalid token)
-    - 403: Forbidden (insufficient permissions or bundle access)
-    - 404: Not found
-    - 500: Internal server error
-
-    Full specification available in openapi.json
-
+  description: DIY Accounting Submit API documentation
   version: 0.0.2-4
-  contact:
-    name: DIY Accounting Submit Support
-    url: https://github.com/antonycc/submit.diyaccounting.co.uk/issues
-  license:
-    name: GPL-3.0
-    url: https://www.gnu.org/licenses/gpl-3.0.en.html
-
-servers:
-  - url: https://submit.diyaccounting.co.uk/api/v1/
-    description: Production API
-  - url: https://test-submit.diyaccounting.co.uk/api/v1/
-    description: Test/Sandbox API
-# Full specification with all endpoints and schemas available in openapi.json
+# Full specification available in openapi.json

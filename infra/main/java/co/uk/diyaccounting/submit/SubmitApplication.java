@@ -119,10 +119,8 @@ public class SubmitApplication {
                 : "(unknown cognitoUserPoolId because no cognitoUserPoolArn)";
         var hmrcClientSecretArn =
                 envOr("HMRC_CLIENT_SECRET_ARN", appProps.hmrcClientSecretArn, "(from hmrcClientSecretArn in cdk.json)");
-        var hmrcSandboxClientSecretArn = envOr(
-                "HMRC_SANDBOX_CLIENT_SECRET_ARN",
-                appProps.hmrcSandboxClientSecretArn,
-                "(from hmrcSandboxClientSecretArn in cdk.json)");
+        var hmrcSandboxClientSecretArn =
+                envOr("HMRC_SANDBOX_CLIENT_SECRET_ARN", appProps.hmrcSandboxClientSecretArn, "(from hmrcSandboxClientSecretArn in cdk.json)");
         var baseImageTag = envOr("BASE_IMAGE_TAG", appProps.baseImageTag, "(from baseImageTag in cdk.json)");
         var selfDestructDelayHoursString = envOr(
                 "SELF_DESTRUCT_DELAY_HOURS",
