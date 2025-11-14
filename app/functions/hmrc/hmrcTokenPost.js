@@ -6,8 +6,8 @@ import logger from "../../lib/logger.js";
 import { extractRequest, parseRequestBody, buildTokenExchangeResponse, buildValidationError } from "../../lib/responses.js";
 import { validateEnv } from "../../lib/env.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
-import { enforceBundles } from "@app/lib/bundleEnforcement.js";
-import { http403ForbiddenFromBundleEnforcement } from "@app/lib/hmrcHelper.js";
+import { enforceBundles } from "../../lib/bundleEnforcement.js";
+import { http403ForbiddenFromBundleEnforcement } from "../../lib/hmrcHelper.js";
 
 const secretsClient = new SecretsManagerClient();
 

@@ -11,8 +11,8 @@ import {
 } from "../../lib/responses.js";
 import { validateEnv } from "../../lib/env.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
-import { enforceBundles } from "@app/lib/bundleEnforcement.js";
-import { http403ForbiddenFromBundleEnforcement } from "@app/lib/hmrcHelper.js";
+import { enforceBundles } from "../../lib/bundleEnforcement.js";
+import { http403ForbiddenFromBundleEnforcement } from "../../lib/hmrcHelper.js";
 
 // Server hook for Express app, and construction of a Lambda-like event from HTTP request)
 export function apiEndpoint(app) {

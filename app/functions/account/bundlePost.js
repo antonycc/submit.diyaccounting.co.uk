@@ -8,8 +8,8 @@ import { decodeJwtToken } from "../../lib/jwtHelper.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
 import { getUserBundles, updateUserBundles, isMockMode } from "../../lib/bundleHelpers.js";
 import { getBundlesStore } from "../non-lambda-mocks/mockBundleStore.js";
-import { enforceBundles } from "@app/lib/bundleEnforcement.js";
-import { http403ForbiddenFromBundleEnforcement } from "@app/lib/hmrcHelper.js";
+import { enforceBundles } from "../../lib/bundleEnforcement.js";
+import { http403ForbiddenFromBundleEnforcement } from "../../lib/hmrcHelper.js";
 
 const mockBundleStore = getBundlesStore();
 

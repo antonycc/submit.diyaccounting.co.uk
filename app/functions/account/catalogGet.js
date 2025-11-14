@@ -4,8 +4,8 @@ import { loadCatalogFromRoot } from "../../lib/productCatalogHelper.js";
 import { extractRequest, http200OkResponse, http500ServerErrorResponse } from "../../lib/responses.js";
 import logger from "../../lib/logger.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
-import { enforceBundles } from "@app/lib/bundleEnforcement.js";
-import { http403ForbiddenFromBundleEnforcement } from "@app/lib/hmrcHelper.js";
+import { enforceBundles } from "../../lib/bundleEnforcement.js";
+import { http403ForbiddenFromBundleEnforcement } from "../../lib/hmrcHelper.js";
 
 let cached = null; // { json, etag, lastModified, object, validated }
 

@@ -15,8 +15,8 @@ import { streamToString } from "../../lib/streams.js";
 import { validateEnv } from "../../lib/env.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
 import { getUserSub } from "../../lib/jwtHelper.js";
-import { enforceBundles } from "@app/lib/bundleEnforcement.js";
-import { http403ForbiddenFromBundleEnforcement } from "@app/lib/hmrcHelper.js";
+import { enforceBundles } from "../../lib/bundleEnforcement.js";
+import { http403ForbiddenFromBundleEnforcement } from "../../lib/hmrcHelper.js";
 
 function parseReceiptKey(key) {
   // receipts/{sub}/{timestamp}-{bundle}.json
@@ -83,22 +83,21 @@ export async function handler(event) {
   const responseHeaders = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*", "x-request-id": requestId };
 
   // Check authentication
-  // if (!userSub) {
-  //   return http401UnauthorizedResponse({
-  //     request,
-  //     requestId,
-  //     headers: { ...responseHeaders },
-  //     message: "Authentication required",
-  //     error: {},
-  //   });
-  // }
+  const userSub = getUserSub(event || {});
+  if (!userSub) {
+    return http401UnauthorizedResponse({
+      request,
+      requestId,
+      headers: { ...responseHeaders },
+      message: "Authentication required",
+      error: {},
+    });
+  }
 
   const errorMessages = [];
 
   // Bundle enforcement
-  let userSub;
   try {
-    userSub = getUserSub(event || {});
     await enforceBundles(event);
   } catch (error) {
     return http403ForbiddenFromBundleEnforcement(requestId, error, request);
