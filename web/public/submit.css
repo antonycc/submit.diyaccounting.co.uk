@@ -505,6 +505,23 @@ footer {
   cursor: not-allowed;
 }
 
+/* Sandbox mode indicator */
+.sandbox-indicator {
+  background-color: #fff3cd;
+  border: 2px solid #ffc107;
+  color: #856404;
+  padding: 0.75em 1em;
+  border-radius: 4px;
+  margin-bottom: 1em;
+  text-align: center;
+  font-weight: bold;
+  display: none;
+}
+
+.sandbox-indicator.visible {
+  display: block;
+}
+
 /* Status messages */
 .status-message {
   padding: 1em;

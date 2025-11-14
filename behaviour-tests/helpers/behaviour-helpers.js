@@ -20,6 +20,31 @@ export function getEnvVarAndLog(name, envKey, defaultValue) {
   return value;
 }
 
+/**
+ * Determine if we're running against HMRC sandbox or production API
+ * based on the HMRC_BASE_URI environment variable
+ * @returns {boolean} true if using sandbox, false otherwise
+ */
+export function isSandboxMode() {
+  const hmrcBaseUri = process.env.HMRC_BASE_URI || "";
+  // Sandbox indicators: test-api or contains "test" or "sandbox"
+  const isSandbox = hmrcBaseUri.includes("test-api") || hmrcBaseUri.includes("sandbox") || hmrcBaseUri.includes("/test/");
+  logger.info(`Sandbox mode detection: HMRC_BASE_URI=${hmrcBaseUri}, isSandbox=${isSandbox}`);
+  return isSandbox;
+}
+
+/**
+ * Get the appropriate button text for the given activity based on sandbox mode
+ * @param {string} activityBase - Base activity name (e.g., "Submit VAT", "VAT Obligations")
+ * @returns {string} Full button text to use in tests
+ */
+export function getActivityButtonText(activityBase) {
+  const suffix = isSandboxMode() ? " (Sandbox API)" : "";
+  const buttonText = activityBase + suffix;
+  logger.info(`Activity button text: ${activityBase} -> ${buttonText}`);
+  return buttonText;
+}
+
 export async function runLocalS3(runMinioS3, receiptsBucketName, optionalTestS3AccessKey, optionalTestS3SecretKey) {
   logger.info(
     `[minio]: runMinioS3=${runMinioS3}, receiptsBucketName=${receiptsBucketName}, optionalTestS3AccessKey=${optionalTestS3AccessKey}`,
@@ -129,6 +154,8 @@ export function addOnPageLogging(page) {
 export const loggedClick = async (page, selector, description = "") =>
   await test.step(description ? `The user clicks ${description}` : `The user clicks selector ${selector}`, async () => {
     console.log(`[USER INTERACTION] Clicking: ${selector} ${description ? "- " + description : ""}`);
+    // Wait for element to be visible and stable before clicking
+    await page.waitForSelector(selector, { state: "visible", timeout: 30000 });
     await page.click(selector);
   });
 

@@ -1,7 +1,7 @@
 // behaviour-tests/behaviour-bundle-steps.js
 
 import { expect, test } from "@playwright/test";
-import { loggedClick, timestamp } from "../helpers/behaviour-helpers.js";
+import { loggedClick, timestamp, isSandboxMode } from "../helpers/behaviour-helpers.js";
 
 const defaultScreenshotPath = "target/behaviour-test-results/screenshots/behaviour-bundle-steps";
 
@@ -115,5 +115,44 @@ export async function ensureTestBundlePresent(page, screenshotPath = defaultScre
     // Otherwise request the test bundle once.
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-ensure-test-bundle-adding.png` });
     await requestTestBundle(page, screenshotPath);
+  });
+}
+
+/**
+ * Ensure the appropriate bundle is present based on sandbox mode
+ * - Sandbox mode: request "test" bundle
+ * - Production mode: request "guest" bundle
+ */
+export async function ensureAppropriateBundle(page, screenshotPath = defaultScreenshotPath) {
+  const bundleName = isSandboxMode() ? "test" : "guest";
+  const bundleDisplayName = isSandboxMode() ? "Test" : "Guest";
+
+  await test.step(`Ensure ${bundleDisplayName} bundle is present (idempotent)`, async () => {
+    console.log(`Ensuring ${bundleDisplayName} bundle is present for ${isSandboxMode() ? "sandbox" : "production"} mode`);
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-ensure-${bundleName}-bundle.png` });
+
+    // Look for the specific bundle button by data attribute
+    const specificAdded = page.locator(`button.service-btn[data-bundle-id='${bundleName}']:has-text('Added')`);
+
+    // Check if bundle is already added
+    if (await specificAdded.isVisible({ timeout: 5000 })) {
+      console.log(`${bundleDisplayName} bundle already present, skipping request.`);
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-ensure-${bundleName}-bundle-skipping.png` });
+      return;
+    }
+
+    // Request the bundle
+    console.log(`Requesting ${bundleDisplayName} bundle...`);
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-ensure-${bundleName}-bundle-adding.png` });
+
+    const requestButton = page.getByRole("button", { name: `Request ${bundleName}` });
+    await expect(requestButton).toBeVisible({ timeout: 10000 });
+    await loggedClick(page, `button:has-text('Request ${bundleName}')`, `Request ${bundleName}`);
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-ensure-${bundleName}-bundle-clicked.png` });
+
+    // Wait for confirmation
+    await expect(page.locator(`button.service-btn[data-bundle-id='${bundleName}']:has-text('Added')`)).toBeVisible({ timeout: 16000 });
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-ensure-${bundleName}-bundle-added.png` });
+    console.log(`${bundleDisplayName} bundle added successfully`);
   });
 }

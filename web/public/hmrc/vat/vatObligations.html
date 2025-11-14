@@ -34,6 +34,8 @@
     </header>
 
     <div id="mainContent">
+      <div id="sandboxIndicator" class="sandbox-indicator">⚠️ SANDBOX MODE - Using HMRC Test API</div>
+
       <div id="statusMessagesContainer"></div>
 
       <div id="loadingSpinner" class="spinner" style="display: none"></div>
@@ -181,12 +183,24 @@
 
       // Check if we're in sandbox/test mode to show developer options
       function initializePage() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const hmrcAccount = urlParams.get("hmrcAccount");
+
+        // Show sandbox indicator if hmrcAccount=sandbox
+        if (hmrcAccount === "sandbox") {
+          const sandboxIndicator = document.getElementById("sandboxIndicator");
+          if (sandboxIndicator) {
+            sandboxIndicator.classList.add("visible");
+          }
+        }
+
         const baseUrl = window.location.origin;
         const isSandbox =
           baseUrl.includes("test") ||
           baseUrl.includes("sandbox") ||
           window.location.hostname === "localhost" ||
-          window.location.hostname === "127.0.0.1";
+          window.location.hostname === "127.0.0.1" ||
+          hmrcAccount === "sandbox";
 
         if (isSandbox) {
           const devSection = document.getElementById("developerSection");
@@ -261,6 +275,13 @@
           };
           if (cognitoAccessToken) {
             requestHeaders["X-Authorization"] = `Bearer ${cognitoAccessToken}`;
+          }
+
+          // Add hmrcAccount header if present in URL
+          const urlParams = new URLSearchParams(window.location.search);
+          const hmrcAccount = urlParams.get("hmrcAccount");
+          if (hmrcAccount) {
+            requestHeaders["hmrcAccount"] = hmrcAccount;
           }
 
           const response = await fetch(`/api/v1/hmrc/vat/obligation?${params}`, {
@@ -378,6 +399,13 @@
             };
             if (cognitoAccessToken) {
               requestHeaders["X-Authorization"] = `Bearer ${cognitoAccessToken}`;
+            }
+
+            // Add hmrcAccount header if present in URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const hmrcAccount = urlParams.get("hmrcAccount");
+            if (hmrcAccount) {
+              requestHeaders["hmrcAccount"] = hmrcAccount;
             }
 
             const response = await fetch(`/api/v1/hmrc/vat/obligation?${params}`, {

@@ -78,6 +78,12 @@ export async function handler(event) {
   const { govClientHeaders, govClientErrorMessages } = eventToGovClientHeaders(event, detectedIP);
   errorMessages = errorMessages.concat(govClientErrorMessages || []);
 
+  // Extract hmrcAccount header if present
+  const hmrcAccount = event.headers?.hmrcAccount || event.headers?.hmrcaccount;
+  if (hmrcAccount) {
+    govClientHeaders["hmrcAccount"] = hmrcAccount;
+  }
+
   // Normalise periodKey to uppercase for HMRC if provided as string
   const normalizedPeriodKey = typeof periodKey === "string" ? periodKey.toUpperCase() : periodKey;
 
