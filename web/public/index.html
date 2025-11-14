@@ -226,8 +226,8 @@
             .map((activity) => {
               let path;
               if (activity.paths) {
-                // Get the first path which ends with .html
-                path = activity.paths.find((p) => p.endsWith(".html")) || "#";
+                // Get the first path which contains .html (handles query parameters)
+                path = activity.paths.find((p) => p.includes(".html")) || "#";
               } else {
                 path = activity.path || "#";
               }
