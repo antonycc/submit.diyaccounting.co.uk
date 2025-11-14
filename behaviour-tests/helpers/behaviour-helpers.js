@@ -28,8 +28,7 @@ export function getEnvVarAndLog(name, envKey, defaultValue) {
 export function isSandboxMode() {
   const hmrcBaseUri = process.env.HMRC_BASE_URI || "";
   // Sandbox indicators: test-api or contains "test" or "sandbox"
-  const isSandbox =
-    hmrcBaseUri.includes("test-api") || hmrcBaseUri.includes("sandbox") || hmrcBaseUri.includes("/test/");
+  const isSandbox = hmrcBaseUri.includes("test-api") || hmrcBaseUri.includes("sandbox") || hmrcBaseUri.includes("/test/");
   logger.info(`Sandbox mode detection: HMRC_BASE_URI=${hmrcBaseUri}, isSandbox=${isSandbox}`);
   return isSandbox;
 }

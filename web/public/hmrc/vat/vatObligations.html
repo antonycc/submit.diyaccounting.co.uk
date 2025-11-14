@@ -34,10 +34,8 @@
     </header>
 
     <div id="mainContent">
-      <div id="sandboxIndicator" class="sandbox-indicator">
-        ⚠️ SANDBOX MODE - Using HMRC Test API
-      </div>
-      
+      <div id="sandboxIndicator" class="sandbox-indicator">⚠️ SANDBOX MODE - Using HMRC Test API</div>
+
       <div id="statusMessagesContainer"></div>
 
       <div id="loadingSpinner" class="spinner" style="display: none"></div>
@@ -278,7 +276,7 @@
           if (cognitoAccessToken) {
             requestHeaders["X-Authorization"] = `Bearer ${cognitoAccessToken}`;
           }
-          
+
           // Add hmrcAccount header if present in URL
           const urlParams = new URLSearchParams(window.location.search);
           const hmrcAccount = urlParams.get("hmrcAccount");
@@ -402,7 +400,7 @@
             if (cognitoAccessToken) {
               requestHeaders["X-Authorization"] = `Bearer ${cognitoAccessToken}`;
             }
-            
+
             // Add hmrcAccount header if present in URL
             const urlParams = new URLSearchParams(window.location.search);
             const hmrcAccount = urlParams.get("hmrcAccount");
