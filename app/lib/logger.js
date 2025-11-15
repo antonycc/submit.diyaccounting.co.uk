@@ -62,11 +62,15 @@ export const logger = pino(
     timestamp: false, // Avoid Pino’s comma-prefixed timestamp chunk
     // Add an ISO time field as a normal JSON property
     mixin() {
-      // eslint-disable-next-line sonarjs/no-empty-collection
-      const requestId = context.get("requestId");
+      // Pull correlation fields from shared context; ensure we never leak old values
+      const requestId = context.get("requestId") || null;
+      const amznTraceId = context.get("amznTraceId") || null;
+      const traceparent = context.get("traceparent") || null;
       return {
         time: new Date().toISOString(),
         ...(requestId ? { requestId } : {}),
+        ...(amznTraceId ? { amznTraceId } : {}),
+        ...(traceparent ? { traceparent } : {}),
       };
     },
     // formatters: {

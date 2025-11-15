@@ -92,6 +92,8 @@ export async function hmrcHttpGet(endpoint, accessToken, govClientHeaders = {}, 
   const headers = buildHmrcHeaders(accessToken, govClientHeaders, testScenario);
   // Provide request correlation header to HMRC
   if (context.get("requestId")) headers["x-request-id"] = context.get("requestId");
+  if (context.get("amznTraceId")) headers["x-amzn-trace-id"] = context.get("amznTraceId");
+  if (context.get("traceparent")) headers["traceparent"] = context.get("traceparent");
 
   logger.info({
     message: `Request to GET ${url}`,
@@ -156,6 +158,9 @@ export async function hmrcHttpPost(hmrcRequestUrl, hmrcRequestHeaders, govClient
         headers: {
           ...hmrcRequestHeaders,
           ...govClientHeaders,
+          ...(context.get("requestId") ? { "x-request-id": context.get("requestId") } : {}),
+          ...(context.get("amznTraceId") ? { "x-amzn-trace-id": context.get("amznTraceId") } : {}),
+          ...(context.get("traceparent") ? { traceparent: context.get("traceparent") } : {}),
         },
         body: JSON.stringify(hmrcRequestBody),
         signal: controller.signal,
@@ -169,6 +174,9 @@ export async function hmrcHttpPost(hmrcRequestUrl, hmrcRequestHeaders, govClient
       headers: {
         ...hmrcRequestHeaders,
         ...govClientHeaders,
+        ...(context.get("requestId") ? { "x-request-id": context.get("requestId") } : {}),
+        ...(context.get("amznTraceId") ? { "x-amzn-trace-id": context.get("amznTraceId") } : {}),
+        ...(context.get("traceparent") ? { traceparent: context.get("traceparent") } : {}),
       },
       body: JSON.stringify(hmrcRequestBody),
     });
