@@ -1,0 +1,80 @@
+name: "Run web test"
+description: "Run a web test with common setup (Node, Playwright in container)"
+
+inputs:
+  test-command:
+    description: "npm test command to run (e.g., test:bundleBehaviour)"
+    required: true
+  artifact-prefix:
+    description: "Prefix for artifact names (e.g., bundle, obligation)"
+    required: true
+  node-version:
+    description: "Node.js version to use"
+    required: true
+  environment-name:
+    description: "Environment name (ci or prod)"
+    required: true
+  base-url:
+    description: "Base URL to test against"
+    required: true
+  test-hmrc-username:
+    description: "HMRC test username"
+    required: false
+  test-hmrc-password:
+    description: "HMRC test password"
+    required: false
+  test-hmrc-vat-number:
+    description: "HMRC test VAT number"
+    required: false
+
+runs:
+  using: "composite"
+  steps:
+    - name: Checkout
+      uses: actions/checkout@v5
+
+    - name: Setup Node
+      uses: actions/setup-node@v6
+      with:
+        node-version: ${{ inputs.node-version }}
+        cache: 'npm'
+
+    - name: Install dependencies
+      shell: bash
+      run: |
+        npm ci --ignore-scripts
+      env:
+        PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+
+    - name: Run behaviour test
+      shell: bash
+      run: |
+        cp '.env.${{ inputs.environment-name }}' '.env.test' \
+        ; npx dotenv -e '.env.${{ inputs.environment-name }}' -- \
+          npm run ${{ inputs.test-command }} || exit_code=$? \
+        ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
+        ; exit ${exit_code:-0} \
+        ;
+      env:
+        DIY_SUBMIT_BASE_URL: ${{ inputs.base-url }}
+        TEST_HMRC_USERNAME: ${{ inputs.test-hmrc-username }}
+        TEST_HMRC_PASSWORD: ${{ inputs.test-hmrc-password }}
+        TEST_HMRC_VAT_NUMBER: ${{ inputs.test-hmrc-vat-number }}
+
+    - name: Upload artifacts (results)
+      if: ${{ !cancelled() }}
+      uses: actions/upload-artifact@v5
+      with:
+        name: web-test-artifacts-${{ inputs.artifact-prefix }}
+        retention-days: 30
+        path: |
+          target/behaviour-test-results/
+
+    - name: Upload artifacts (reports)
+      if: ${{ !cancelled() }}
+      uses: actions/upload-artifact@v5
+      with:
+        name: web-test-reports-${{ inputs.artifact-prefix }}
+        retention-days: 30
+        path: |
+          target/test-reports/

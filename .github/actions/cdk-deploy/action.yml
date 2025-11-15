@@ -1,0 +1,124 @@
+name: "CDK Deploy Stack"
+description: "Deploy a CDK stack with common AWS setup"
+
+inputs:
+  actions-role-arn:
+    description: "AWS IAM role ARN for GitHub Actions"
+    required: true
+  deploy-role-arn:
+    description: "AWS IAM role ARN for deployment"
+    required: true
+  aws-region:
+    description: "AWS region"
+    required: true
+  node-version:
+    description: "Node.js version to use"
+    required: true
+  java-version:
+    description: "Java version to use"
+    required: true
+  cdk-directory:
+    description: "Directory containing CDK app (e.g., cdk-application, cdk-delivery)"
+    required: true
+  stack-name:
+    description: "CDK stack name to deploy"
+    required: true
+  environment-name:
+    description: "Environment name (ci or prod)"
+    required: true
+  deployment-name:
+    description: "Deployment name"
+    required: true
+  outputs-file:
+    description: "Path to outputs file relative to cdk directory"
+    required: true
+  cdk-args:
+    description: "Additional CDK arguments (e.g., --exclusively)"
+    required: false
+    default: ""
+  skip-condition:
+    description: "Whether to skip deployment (true/false)"
+    required: false
+    default: "false"
+  environment-variables:
+    description: "Additional environment variables as JSON string"
+    required: false
+    default: "{}"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Configure AWS role via GitHub OIDC
+      if: ${{ inputs.skip-condition != 'true' }}
+      uses: aws-actions/configure-aws-credentials@v5
+      with:
+        role-to-assume: ${{ inputs.actions-role-arn }}
+        aws-region: ${{ inputs.aws-region }}
+        role-chaining: false
+        audience: sts.amazonaws.com
+        role-skip-session-tagging: true
+        output-credentials: true
+        retry-max-attempts: 3
+
+    - name: Assume AWS deployment role
+      if: ${{ inputs.skip-condition != 'true' }}
+      uses: aws-actions/configure-aws-credentials@v5
+      with:
+        role-to-assume: ${{ inputs.deploy-role-arn }}
+        aws-region: ${{ inputs.aws-region }}
+        role-chaining: true
+        audience: sts.amazonaws.com
+        role-skip-session-tagging: true
+        output-credentials: true
+        retry-max-attempts: 3
+
+    - name: Checkout
+      if: ${{ inputs.skip-condition != 'true' }}
+      uses: actions/checkout@v5
+
+    - name: Setup Node
+      if: ${{ inputs.skip-condition != 'true' }}
+      uses: actions/setup-node@v6
+      with:
+        node-version: ${{ inputs.node-version }}
+        cache: 'npm'
+
+    - name: Node dependencies
+      if: ${{ inputs.skip-condition != 'true' }}
+      shell: bash
+      run: npm ci
+
+    - name: Setup Java
+      if: ${{ inputs.skip-condition != 'true' }}
+      uses: actions/setup-java@v5
+      with:
+        distribution: 'temurin'
+        java-version: ${{ inputs.java-version }}
+        cache: 'maven'
+
+    - name: Deploy CDK Stack
+      if: ${{ inputs.skip-condition != 'true' }}
+      shell: bash
+      run: |
+        # Parse and export additional environment variables
+        echo '${{ inputs.environment-variables }}' | jq -r 'to_entries | .[] | "\(.key)=\(.value)"' | while IFS= read -r line; do
+          export "$line"
+        done
+        
+        ./mvnw --errors clean verify -DskipTests -Dmaven.compiler.source=${{ inputs.java-version }} -Dmaven.compiler.target=${{ inputs.java-version }} \
+          && cd ${{ inputs.cdk-directory }} \
+          && cat ../.env.${{ inputs.environment-name }} \
+          && npx dotenv -e ../.env.${{ inputs.environment-name }} -- \
+            npx cdk deploy \
+              ${{ inputs.stack-name }} \
+              ${{ inputs.cdk-args }} \
+              --require-approval never \
+              --ci true \
+              --concurrency 4 \
+              --asset-parallelism \
+              --outputs-file ../${{ inputs.outputs-file }} \
+          && cd .. \
+        ;
+      env:
+        ENVIRONMENT_NAME: ${{ inputs.environment-name }}
+        DEPLOYMENT_NAME: ${{ inputs.deployment-name }}
