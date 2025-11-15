@@ -69,12 +69,7 @@ export async function handler(event) {
         const newStatus = stripeStatus.active ? "active" : "inactive";
 
         if (currentStatus !== newStatus || stripeStatus.currentPeriodEnd) {
-          await updateSubscriptionStatus(
-            bundle.hashedSub,
-            bundle.bundleId,
-            newStatus,
-            stripeStatus.currentPeriodEnd || null,
-          );
+          await updateSubscriptionStatus(bundle.hashedSub, bundle.bundleId, newStatus, stripeStatus.currentPeriodEnd || null);
 
           updatedCount++;
 

@@ -194,7 +194,9 @@
 
           // Redirect to HMRC OAuth
           console.log(`Page transition initiated: Redirecting to HMRC OAuth URL ${authResponseUrl}`);
-          try { window.__correlation?.prepareRedirect?.(); } catch {}
+          try {
+            window.__correlation?.prepareRedirect?.();
+          } catch {}
           window.location.href = authResponseUrl;
         } catch (error) {
           console.error("Authentication error:", error);

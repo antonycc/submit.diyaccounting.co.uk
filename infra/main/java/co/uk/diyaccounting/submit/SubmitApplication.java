@@ -51,6 +51,10 @@ public class SubmitApplication {
         public String userPoolArn;
         public String userPoolClientId;
         public String bundlesTableArn;
+        public String stripeSecretKeyArn;
+        public String stripePublishableKey;
+        public String stripeWebhookSecret;
+        public String stripeBusinessPriceId;
 
         public static class Builder {
             private final SubmitApplicationProps p = new SubmitApplicationProps();
@@ -137,6 +141,14 @@ public class SubmitApplication {
         infof("Self-destruct start datetime: %s", selfDestructStartDatetime);
         var cloudTrailEnabled =
                 envOr("CLOUD_TRAIL_ENABLED", appProps.cloudTrailEnabled, "(from cloudTrailEnabled in cdk.json)");
+        var stripeSecretKeyArn =
+                envOr("STRIPE_SECRET_KEY_ARN", appProps.stripeSecretKeyArn, "(from stripeSecretKeyArn in cdk.json)");
+        var stripePublishableKey = envOr(
+                "STRIPE_PUBLISHABLE_KEY", appProps.stripePublishableKey, "(from stripePublishableKey in cdk.json)");
+        var stripeWebhookSecret =
+                envOr("STRIPE_WEBHOOK_SECRET", appProps.stripeWebhookSecret, "(from stripeWebhookSecret in cdk.json)");
+        var stripeBusinessPriceId = envOr(
+                "STRIPE_BUSINESS_PRICE_ID", appProps.stripeBusinessPriceId, "(from stripeBusinessPriceId in cdk.json)");
 
         // Create DevStack with resources only used during development or deployment (e.g. ECR)
         infof(
@@ -237,6 +249,10 @@ public class SubmitApplication {
                         .sharedNames(sharedNames)
                         .baseImageTag(baseImageTag)
                         .cognitoUserPoolArn(cognitoUserPoolArn)
+                        .stripeSecretKeyArn(stripeSecretKeyArn)
+                        .stripePublishableKey(stripePublishableKey)
+                        .stripeWebhookSecret(stripeWebhookSecret)
+                        .stripeBusinessPriceId(stripeBusinessPriceId)
                         .build());
         this.accountStack.addDependency(devStack);
 
@@ -285,6 +301,11 @@ public class SubmitApplication {
                         .cloudTrailEnabled(cloudTrailEnabled)
                         .sharedNames(sharedNames)
                         .lambdaFunctionArns(lambdaArns)
+                        .baseImageTag(baseImageTag)
+                        .stripeSecretKeyArn(stripeSecretKeyArn)
+                        .stripePublishableKey(stripePublishableKey)
+                        .stripeWebhookSecret(stripeWebhookSecret)
+                        .stripeBusinessPriceId(stripeBusinessPriceId)
                         .build());
         this.opsStack.addDependency(hmrcStack);
         this.opsStack.addDependency(apiStack);

@@ -252,7 +252,9 @@ export async function handler(event) {
         // Grant the bundle with subscription expiry
         const expiryStr = subscriptionStatus.currentPeriodEnd
           ? subscriptionStatus.currentPeriodEnd.slice(0, 10)
-          : parseIsoDurationToDate(new Date(), catalogBundle.timeout || "P1M").toISOString().slice(0, 10);
+          : parseIsoDurationToDate(new Date(), catalogBundle.timeout || "P1M")
+              .toISOString()
+              .slice(0, 10);
 
         const newBundle = `${requestedBundle}|EXPIRY=${expiryStr}`;
         currentBundles.push(newBundle);

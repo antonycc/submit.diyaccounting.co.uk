@@ -6,12 +6,38 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" href="./submit.css" />
     <style>
-      .about-hero { text-align: center; margin: 1.5em 0 1em; }
-      .about-grid { display: grid; grid-template-columns: 1fr; gap: 16px; margin: 1em 0; }
-      .about-card { background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 14px; }
-      .about-card img { width: 100%; height: auto; border-radius: 6px; border: 1px solid #eee; }
-      .about-caption { font-size: 0.95em; color: #555; margin-top: 8px; }
-      @media (min-width: 720px) { .about-grid { grid-template-columns: 1fr 1fr; } }
+      .about-hero {
+        text-align: center;
+        margin: 1.5em 0 1em;
+      }
+      .about-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 16px;
+        margin: 1em 0;
+      }
+      .about-card {
+        background: #fff;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 14px;
+      }
+      .about-card img {
+        width: 100%;
+        height: auto;
+        border-radius: 6px;
+        border: 1px solid #eee;
+      }
+      .about-caption {
+        font-size: 0.95em;
+        color: #555;
+        margin-top: 8px;
+      }
+      @media (min-width: 720px) {
+        .about-grid {
+          grid-template-columns: 1fr 1fr;
+        }
+      }
     </style>
   </head>
   <body>
@@ -40,9 +66,9 @@
     <div id="mainContent">
       <div class="form-container about-hero">
         <p style="max-width: 800px; margin: 0 auto; color: #555">
-          DIY Accounting Submit helps you complete HMRC Making Tax Digital (MTD) VAT tasks quickly. Choose what you
-          need from the Bundles page, then run simple guided journeys to View VAT Obligations, Submit VAT Returns, and
-          View previously submitted returns. A receipts area stores confirmations for your records.
+          DIY Accounting Submit helps you complete HMRC Making Tax Digital (MTD) VAT tasks quickly. Choose what you need from the Bundles
+          page, then run simple guided journeys to View VAT Obligations, Submit VAT Returns, and View previously submitted returns. A
+          receipts area stores confirmations for your records.
         </p>
       </div>
 
@@ -72,7 +98,14 @@
         <p style="color: #555">Pick your features, follow the journey, and keep your receipts.</p>
         <div class="button-group" style="margin-top: 0.5em">
           <button type="button" class="btn" onclick="window.location.href='account/bundles.html'">Choose Bundles</button>
-          <button type="button" class="btn" onclick="window.location.href='guide/index.html'" style="background:#6c757d;border-color:#6c757d">Open User Guide</button>
+          <button
+            type="button"
+            class="btn"
+            onclick="window.location.href='guide/index.html'"
+            style="background: #6c757d; border-color: #6c757d"
+          >
+            Open User Guide
+          </button>
         </div>
       </section>
     </div>
@@ -98,4 +131,4 @@
     <script type="module" src="widgets/view-source-link.js"></script>
     <script src="widgets/localstorage-viewer.js"></script>
   </body>
-  </html>
+</html>

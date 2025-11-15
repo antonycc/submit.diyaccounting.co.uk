@@ -6,13 +6,45 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" href="../submit.css" />
     <style>
-      .guide-section { margin: 2em 0; }
-      .guide-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
-      .guide-card { background:#fff; border:1px solid #ddd; border-radius:8px; padding:12px; }
-      .guide-card img { width:100%; height:auto; border-radius:6px; border: 1px solid #eee; }
-      .guide-caption { font-size: 0.95em; color:#555; margin-top: 8px; }
-      .guide-meta { font-size: 0.95em; color:#333; background:#f8f9fa; border:1px solid #e0e0e0; border-radius:6px; padding:10px; margin-top: 10px; }
-      @media (min-width: 700px) { .guide-grid { grid-template-columns: 1fr 1fr; } }
+      .guide-section {
+        margin: 2em 0;
+      }
+      .guide-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+      .guide-card {
+        background: #fff;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 12px;
+      }
+      .guide-card img {
+        width: 100%;
+        height: auto;
+        border-radius: 6px;
+        border: 1px solid #eee;
+      }
+      .guide-caption {
+        font-size: 0.95em;
+        color: #555;
+        margin-top: 8px;
+      }
+      .guide-meta {
+        font-size: 0.95em;
+        color: #333;
+        background: #f8f9fa;
+        border: 1px solid #e0e0e0;
+        border-radius: 6px;
+        padding: 10px;
+        margin-top: 10px;
+      }
+      @media (min-width: 700px) {
+        .guide-grid {
+          grid-template-columns: 1fr 1fr;
+        }
+      }
     </style>
   </head>
   <body>
@@ -40,7 +72,7 @@
 
     <div id="mainContent">
       <div class="form-container">
-        <p style="margin-bottom: 1em; color:#555">
+        <p style="margin-bottom: 1em; color: #555">
           This guide provides step-by-step instructions with screenshots on how to use DIY Accounting Submit.
         </p>
       </div>
@@ -57,9 +89,7 @@
             <div class="guide-caption">Results show due and received dates, period keys and statuses.</div>
           </div>
         </div>
-        <div class="guide-meta">
-          Fields: VRN (9 digits), From/To dates (YYYY-MM-DD), Status (A/O/F), optional test scenario in sandbox.
-        </div>
+        <div class="guide-meta">Fields: VRN (9 digits), From/To dates (YYYY-MM-DD), Status (A/O/F), optional test scenario in sandbox.</div>
       </section>
 
       <section class="guide-section" id="submit">
@@ -82,9 +112,7 @@
             <div class="guide-caption">Optionally verify by retrieving the submitted return.</div>
           </div>
         </div>
-        <div class="guide-meta">
-          Key fields: VRN, periodKey (e.g., 24A1), Boxes 1–9 (decimals to 2dp), finalised (true/false).
-        </div>
+        <div class="guide-meta">Key fields: VRN, periodKey (e.g., 24A1), Boxes 1–9 (decimals to 2dp), finalised (true/false).</div>
       </section>
 
       <section class="guide-section" id="view">
@@ -111,7 +139,6 @@
       </div>
     </div>
 
-
     <section class="guide-section" id="bundles">
       <h2>Bundles (Services you can use)</h2>
       <div class="guide-grid">
@@ -133,8 +160,8 @@
         </div>
       </div>
       <div class="guide-meta">
-        On the Bundles page you can: add/remove bundles; see expiry if applicable. Bundles control access to VAT
-        journeys like Submit, View, and Obligations.
+        On the Bundles page you can: add/remove bundles; see expiry if applicable. Bundles control access to VAT journeys like Submit, View,
+        and Obligations.
       </div>
     </section>
 
@@ -159,4 +186,4 @@
     <script type="module" src="../widgets/view-source-link.js"></script>
     <script src="../widgets/localstorage-viewer.js"></script>
   </body>
-  </html>
+</html>
