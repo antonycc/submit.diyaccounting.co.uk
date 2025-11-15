@@ -115,7 +115,9 @@ function generateRandomState() {
           .join("");
       } catch {
         // Fallback to time-based shards when crypto is unavailable
-        const now = Date.now().toString(16).padStart(bytes * 2, "0");
+        const now = Date.now()
+          .toString(16)
+          .padStart(bytes * 2, "0");
         return now.slice(-bytes * 2);
       }
     }
@@ -152,7 +154,9 @@ function generateRandomState() {
       const ss = typeof window !== "undefined" ? window.sessionStorage : undefined;
       const carried = ss?.getItem?.("redirectXRequestId");
       if (carried) {
-        try { ss?.removeItem?.("redirectXRequestId"); } catch {}
+        try {
+          ss?.removeItem?.("redirectXRequestId");
+        } catch {}
         return carried;
       }
       return null;
@@ -162,7 +166,9 @@ function generateRandomState() {
     let lastXRequestId = (typeof window !== "undefined" && window.sessionStorage?.getItem?.("lastXRequestId")) || "";
     function setLastXRequestId(v) {
       lastXRequestId = v || "";
-      try { if (v) window.sessionStorage?.setItem?.("lastXRequestId", v); } catch {}
+      try {
+        if (v) window.sessionStorage?.setItem?.("lastXRequestId", v);
+      } catch {}
       try {
         window.dispatchEvent(new CustomEvent("correlation:update", { detail: { lastXRequestId: lastXRequestId } }));
       } catch {}
@@ -177,7 +183,9 @@ function generateRandomState() {
     window.__correlation = Object.assign(window.__correlation || {}, {
       prepareRedirect() {
         const id = generateRequestId();
-        try { window.sessionStorage?.setItem?.("redirectXRequestId", id); } catch {}
+        try {
+          window.sessionStorage?.setItem?.("redirectXRequestId", id);
+        } catch {}
         return id;
       },
       getTraceparent,
@@ -290,13 +298,13 @@ function fetchWithId(url, opts = {}) {
       const tpSpan = document.createElement("span");
       tpSpan.title = "traceparent (click to copy)";
       const tpVal = (window.getTraceparent && window.getTraceparent()) || sessionStorage.getItem("traceparent") || "";
-      tpSpan.textContent = `tp:${tpVal}`;
+      tpSpan.textContent = `traceparent: ${tpVal}`;
       tpSpan.style.cursor = "pointer";
       tpSpan.addEventListener("click", () => copy(tpVal));
 
       const ridSpan = document.createElement("span");
       ridSpan.title = "last x-request-id (click to copy)";
-      ridSpan.textContent = `rid:${(window.getLastXRequestId && window.getLastXRequestId()) || "-"}`;
+      ridSpan.textContent = `x-request-id: ${(window.getLastXRequestId && window.getLastXRequestId()) || "-"}`;
       ridSpan.style.cursor = "pointer";
       ridSpan.addEventListener("click", () => {
         const rid = (window.getLastXRequestId && window.getLastXRequestId()) || "";
@@ -312,7 +320,7 @@ function fetchWithId(url, opts = {}) {
       // Update on correlation changes
       window.addEventListener("correlation:update", () => {
         const latest = (window.getLastXRequestId && window.getLastXRequestId()) || "-";
-        ridSpan.textContent = `rid:${latest}`;
+        ridSpan.textContent = `x-request-id: ${latest}`;
       });
     } catch (e) {
       // Non-fatal UI enhancement

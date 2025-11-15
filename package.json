@@ -44,7 +44,7 @@
     "test:obligationBehaviour": "npx dotenv -e .env.proxy -- playwright test --project=obligation-behaviour-tests",
     "test:obligationBehaviour-ci":   "npx dotenv -e .env.ci   -- playwright test --project=obligation-behaviour-tests",
     "test:obligationBehaviour-prod": "npx dotenv -e .env.prod -- playwright test --project=obligation-behaviour-tests",
-    "test:viewVatBehaviour": "npx dotenv -e .env.proxy -- playwright test --project=view-vat-behaviour-tests",
+    "test:viewVatBehaviour": "HMRC_ACCOUNT=sandbox npx dotenv -e .env.proxy -- playwright test --project=view-vat-behaviour-tests",
     "test:bundleBehaviour": "npx dotenv -e .env.proxy -- playwright test --project=bundle-behaviour-tests",
     "test:bundleBehaviour-ci": "npx dotenv -e .env.ci -- playwright test --project=bundle-behaviour-tests",
     "test:submitVatBehaviourProxyRunning": "npx dotenv -e .env.proxyRunning -- playwright test behaviour-tests/submitVat.behaviour.test.js",

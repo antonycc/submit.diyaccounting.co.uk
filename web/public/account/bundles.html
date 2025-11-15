@@ -78,7 +78,7 @@
         <div class="footer-left">
           <a href="#" id="viewSourceLink" style="display: none">view source</a>
           <a id="latestTestsLink" style="display: inline" target="_blank" href="tests/html-report/index.html">tests</a>
-          <a id="apiDocsLink" style="display: inline" target="_blank" href="../docs/index.html"> api </a>
+          <a id="apiDocsLink" style="display: inline" target="_blank" href="./docs/index.html"> api </a>
         </div>
         <div class="footer-center">
           <p>&copy; 2025 DIY Accounting Limited</p>
@@ -150,9 +150,10 @@
 
       // --- render one catalog card
       const cardHtml = (b) => {
+        const name = b.name || b.id;
         return `
           <div class="service-item" style="text-align:left">
-            <button type="button" class="btn service-btn" data-bundle-id="${b.id}">Request ${b.id}</button>
+            <button type="button" class="btn service-btn" data-bundle-id="${b.id}" data-bundle-name="${name.replaceAll("\"","&quot;")}">Request ${name}</button>
           </div>`;
       };
 
@@ -169,6 +170,7 @@
         }
 
         const bundleId = btn.getAttribute("data-bundle-id");
+        const bundleName = btn.getAttribute("data-bundle-name") || bundleId;
         const card = btn.closest(".service-item");
         const original = btn.textContent;
 
@@ -192,8 +194,8 @@
           if (r.ok) {
             // Do not persist bundles to localStorage; rely on a fresh GET after mutation
             if (body.status === "granted" || body.status === "already_granted") {
-              markGranted(btn, "Added ✓");
-              showStatus(`Bundle "${bundleId}" added successfully.`, "success");
+              markGranted(btn, `Added ✓ ${bundleName}`);
+              showStatus(`Bundle "${bundleName}" added successfully.`, "success");
             } else {
               btn.textContent = original;
               btn.disabled = false;
@@ -225,10 +227,11 @@
         const bundles = parseUserBundles();
         document.querySelectorAll("button[data-bundle-id]").forEach((btn) => {
           const id = btn.getAttribute("data-bundle-id");
+          const name = btn.getAttribute("data-bundle-name") || id;
           if (hasBundle(bundles, id)) {
-            markGranted(btn);
+            markGranted(btn, `Added ✓ ${name}`);
           } else {
-            markToRequest(btn, `Request ${id}`);
+            markToRequest(btn, `Request ${name}`);
           }
         });
       }
@@ -239,6 +242,10 @@
         try {
           // Fetch user bundles first
           await fetchUserBundles();
+          // Ensure current bundles (with remove actions) are rendered immediately on page load
+          try {
+            renderCurrentBundles();
+          } catch {}
 
           const idToken = getIdToken();
           const headers = idToken ? { Authorization: `Bearer ${idToken}` } : {};
@@ -248,8 +255,30 @@
             return;
           }
           const catalog = await res.json();
+
+          // Read current environment from submit.env in docroot (next to index.html)
+          async function readEnvironment() {
+            try {
+              const envRes = await fetch("../submit.env", { cache: "no-store" });
+              if (envRes.ok) {
+                const text = (await envRes.text()).trim();
+                return text || null;
+              }
+            } catch {}
+            return null; // Unknown environment
+          }
+
+          const env = await readEnvironment();
+
           const cards = (catalog.bundles || [])
             .filter((b) => b["allocation"] && b["allocation"] !== "automatic")
+            // If the bundle specifies listedInEnvironments, only list it when current env is included
+            .filter((b) => {
+              const listed = b?.listedInEnvironments;
+              if (!Array.isArray(listed) || listed.length === 0) return true; // visible everywhere by default
+              if (!env) return false; // if environment unknown, hide bundles that specify restrictions
+              return listed.includes(env);
+            })
             .map(cardHtml)
             .join("\n");
           container.innerHTML = cards || '<p class="service-description">No bundles available.</p>';

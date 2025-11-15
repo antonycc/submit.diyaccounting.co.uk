@@ -70,7 +70,7 @@ export async function handler(event) {
     // TODO: You are here
     // -> Then the web pages will change to request sandbox mode or not
     // -> And the web pages will have lables about the sandbox mode
-    // -> And there will be a behaviour test against the sandbox and prod (which is sandbox in ci) for the ci build but prod will only test sandbox.
+    // -> And there will be a behaviour test against the sandbox and prod (which is sandbox in ci) using HMRC_ACCOUNT=sandbox  for the ci build but prod will only test sandbox.
     // And the debug utilities will only display when the test bundle is present.
     // And the dynamo db records will have a ttl 1 month after bundle expiry and also have a grace period where the APIs permit traffic
     // And There is a script to add a salted hash of the user sub (email?) to a directory of users for "test" > bundle-grants/hashofsub.txt
