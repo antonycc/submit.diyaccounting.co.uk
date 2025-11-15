@@ -65,8 +65,12 @@ function parseBundleString(bundleStr) {
  * Store a bundle for a user in DynamoDB
  * @param {string} userId - User's sub claim (will be hashed)
  * @param {string} bundleStr - Bundle string in format "BUNDLE_ID|EXPIRY=2025-12-31"
+ * @param {Object} [subscriptionInfo] - Optional subscription information
+ * @param {string} [subscriptionInfo.customerId] - Stripe customer ID
+ * @param {string} [subscriptionInfo.subscriptionId] - Stripe subscription ID
+ * @param {string} [subscriptionInfo.subscriptionStatus] - Subscription status (active, canceled, etc.)
  */
-export async function putBundle(userId, bundleStr) {
+export async function putBundle(userId, bundleStr, subscriptionInfo = null) {
   if (!isDynamoDbEnabled()) {
     logger.debug({ message: "DynamoDB not enabled, skipping putBundle" });
     return;
@@ -90,6 +94,20 @@ export async function putBundle(userId, bundleStr) {
       bundleStr,
       createdAt: new Date().toISOString(),
     };
+
+    // Add subscription information if provided
+    if (subscriptionInfo) {
+      if (subscriptionInfo.customerId) {
+        item.stripeCustomerId = subscriptionInfo.customerId;
+      }
+      if (subscriptionInfo.subscriptionId) {
+        item.stripeSubscriptionId = subscriptionInfo.subscriptionId;
+      }
+      if (subscriptionInfo.subscriptionStatus) {
+        item.subscriptionStatus = subscriptionInfo.subscriptionStatus;
+      }
+      item.lastSubscriptionCheck = new Date().toISOString();
+    }
 
     // Add TTL if expiry is present (convert date to Unix timestamp)
     if (expiry) {
@@ -262,5 +280,113 @@ export async function getUserBundles(userId) {
       userId,
     });
     return [];
+  }
+}
+
+/**
+ * Get all subscription bundles that need status checking
+ * @returns {Promise<Array<{hashedSub: string, bundleId: string, stripeCustomerId: string, stripeSubscriptionId: string, subscriptionStatus: string, lastSubscriptionCheck: string}>>}
+ */
+export async function getSubscriptionBundlesForCheck() {
+  if (!isDynamoDbEnabled()) {
+    logger.debug({ message: "DynamoDB not enabled, returning empty array" });
+    return [];
+  }
+
+  try {
+    const docClient = await getDynamoDbDocClient();
+    const tableName = getTableName();
+
+    // Scan for bundles with subscription information
+    const response = await docClient.send(
+      new __dynamoDbModule.ScanCommand({
+        TableName: tableName,
+        FilterExpression: "attribute_exists(stripeSubscriptionId)",
+      }),
+    );
+
+    const subscriptionBundles = (response.Items || [])
+      .filter((item) => item.stripeSubscriptionId && item.stripeCustomerId)
+      .map((item) => ({
+        hashedSub: item.hashedSub,
+        bundleId: item.bundleId,
+        stripeCustomerId: item.stripeCustomerId,
+        stripeSubscriptionId: item.stripeSubscriptionId,
+        subscriptionStatus: item.subscriptionStatus || "unknown",
+        lastSubscriptionCheck: item.lastSubscriptionCheck || null,
+      }));
+
+    logger.info({
+      message: "Retrieved subscription bundles for checking",
+      count: subscriptionBundles.length,
+    });
+
+    return subscriptionBundles;
+  } catch (error) {
+    logger.error({
+      message: "Error retrieving subscription bundles",
+      error: error.message,
+    });
+    return [];
+  }
+}
+
+/**
+ * Update subscription status for a bundle
+ * @param {string} hashedSub - Hashed user sub
+ * @param {string} bundleId - Bundle ID
+ * @param {string} subscriptionStatus - New subscription status
+ * @param {string} [currentPeriodEnd] - Subscription period end date
+ */
+export async function updateSubscriptionStatus(hashedSub, bundleId, subscriptionStatus, currentPeriodEnd = null) {
+  if (!isDynamoDbEnabled()) {
+    logger.debug({ message: "DynamoDB not enabled, skipping updateSubscriptionStatus" });
+    return;
+  }
+
+  try {
+    const docClient = await getDynamoDbDocClient();
+    const tableName = getTableName();
+
+    const updateExpression = currentPeriodEnd
+      ? "SET subscriptionStatus = :status, lastSubscriptionCheck = :checkTime, expiry = :expiry"
+      : "SET subscriptionStatus = :status, lastSubscriptionCheck = :checkTime";
+
+    const expressionAttributeValues = {
+      ":status": subscriptionStatus,
+      ":checkTime": new Date().toISOString(),
+    };
+
+    if (currentPeriodEnd) {
+      expressionAttributeValues[":expiry"] = currentPeriodEnd;
+    }
+
+    await docClient.send(
+      new __dynamoDbModule.UpdateCommand({
+        TableName: tableName,
+        Key: {
+          hashedSub,
+          bundleId,
+        },
+        UpdateExpression: updateExpression,
+        ExpressionAttributeValues: expressionAttributeValues,
+      }),
+    );
+
+    logger.info({
+      message: "Updated subscription status in DynamoDB",
+      hashedSub,
+      bundleId,
+      subscriptionStatus,
+      currentPeriodEnd,
+    });
+  } catch (error) {
+    logger.error({
+      message: "Error updating subscription status",
+      error: error.message,
+      hashedSub,
+      bundleId,
+    });
+    // Don't throw - this is a background update
   }
 }

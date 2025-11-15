@@ -10,6 +10,8 @@ import { getUserBundles, updateUserBundles, isMockMode } from "../../lib/bundleH
 import { getBundlesStore } from "../non-lambda-mocks/mockBundleStore.js";
 import { enforceBundles } from "../../lib/bundleEnforcement.js";
 import { http403ForbiddenFromBundleEnforcement } from "../../lib/hmrcHelper.js";
+import { checkSubscriptionStatus, getOrCreateCustomer, isStripeEnabled } from "../../lib/stripeHelper.js";
+import { putBundle } from "../../lib/dynamoDbBundleStore.js";
 
 const mockBundleStore = getBundlesStore();
 
@@ -177,6 +179,127 @@ export async function handler(event) {
           bundles: currentBundles,
         }),
       };
+    }
+
+    // subscription: validate via Stripe
+    if (catalogBundle.allocation === "subscription") {
+      logger.info({ message: "[Catalog bundle] Bundle requires subscription validation:", requestedBundle });
+
+      if (!isStripeEnabled()) {
+        logger.warn({ message: "[Stripe] Stripe not enabled, allowing subscription bundle for testing" });
+        // For testing environments without Stripe, allow the bundle with a 1-month expiry
+        const expiry = parseIsoDurationToDate(new Date(), catalogBundle.timeout || "P1M");
+        const expiryStr = expiry ? expiry.toISOString().slice(0, 10) : "";
+        const newBundle = `${requestedBundle}|EXPIRY=${expiryStr || ""}`;
+        currentBundles.push(newBundle);
+
+        if (isMockMode()) {
+          mockBundleStore.set(userId, currentBundles);
+        } else {
+          await updateUserBundles(userId, userPoolId, currentBundles);
+        }
+
+        logger.info({ message: "Subscription bundle granted (test mode, no Stripe)", userId, newBundle });
+        return {
+          statusCode: 200,
+          headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*", "x-request-id": requestId },
+          body: JSON.stringify({
+            status: "granted",
+            granted: true,
+            expiry: expiryStr || null,
+            bundle: requestedBundle,
+            bundles: currentBundles,
+            testMode: true,
+          }),
+        };
+      }
+
+      // Validate subscription via Stripe
+      try {
+        const userEmail = decodedToken.email || decodedToken["cognito:username"];
+        const customerId = await getOrCreateCustomer(userId, userEmail);
+        const businessPriceId = process.env.STRIPE_BUSINESS_PRICE_ID;
+
+        if (!businessPriceId) {
+          logger.error({ message: "[Stripe] STRIPE_BUSINESS_PRICE_ID not configured" });
+          return {
+            statusCode: 500,
+            headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*", "x-request-id": requestId },
+            body: JSON.stringify({ error: "stripe_not_configured" }),
+          };
+        }
+
+        const subscriptionStatus = await checkSubscriptionStatus(customerId, businessPriceId);
+
+        if (!subscriptionStatus.active) {
+          logger.warn({
+            message: "[Stripe] No active subscription found for business bundle",
+            userId,
+            customerId,
+            businessPriceId,
+          });
+          return {
+            statusCode: 403,
+            headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*", "x-request-id": requestId },
+            body: JSON.stringify({
+              error: "subscription_required",
+              message: "Active subscription required for business bundle",
+              customerId,
+            }),
+          };
+        }
+
+        // Grant the bundle with subscription expiry
+        const expiryStr = subscriptionStatus.currentPeriodEnd
+          ? subscriptionStatus.currentPeriodEnd.slice(0, 10)
+          : parseIsoDurationToDate(new Date(), catalogBundle.timeout || "P1M").toISOString().slice(0, 10);
+
+        const newBundle = `${requestedBundle}|EXPIRY=${expiryStr}`;
+        currentBundles.push(newBundle);
+
+        // Store subscription info in DynamoDB
+        const subscriptionInfo = {
+          customerId,
+          subscriptionId: subscriptionStatus.subscriptionId,
+          subscriptionStatus: "active",
+        };
+
+        if (isMockMode()) {
+          mockBundleStore.set(userId, currentBundles);
+        } else {
+          await updateUserBundles(userId, userPoolId, currentBundles);
+          // Also store in DynamoDB with subscription info
+          await putBundle(userId, newBundle, subscriptionInfo);
+        }
+
+        logger.info({
+          message: "Subscription bundle granted via Stripe",
+          userId,
+          newBundle,
+          customerId,
+          subscriptionId: subscriptionStatus.subscriptionId,
+        });
+
+        return {
+          statusCode: 200,
+          headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*", "x-request-id": requestId },
+          body: JSON.stringify({
+            status: "granted",
+            granted: true,
+            expiry: expiryStr,
+            bundle: requestedBundle,
+            bundles: currentBundles,
+            subscriptionId: subscriptionStatus.subscriptionId,
+          }),
+        };
+      } catch (error) {
+        logger.error({ message: "[Stripe] Error validating subscription", error: error.message, userId });
+        return {
+          statusCode: 500,
+          headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*", "x-request-id": requestId },
+          body: JSON.stringify({ error: "subscription_validation_failed", message: error.message }),
+        };
+      }
     }
 
     // on-request: enforce cap and expiry
