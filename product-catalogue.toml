@@ -13,7 +13,7 @@ allocation = "on-request"
 cap = 10
 timeout = "P2H"
 # TODO: Filter so that this bundle only appears in the add bundle page in listed environments
-listedInEnvironments = ["ci"]
+listedInEnvironments = ["local", "test", "proxy", "proxyRunning", "ci"]
 
 # Access to free authenticated activities including VAT submission for a limited time
 [[bundles]]
@@ -31,7 +31,7 @@ id = "business"
 name = "Business"
 allocation = "subscription"
 cap = 100
-listedInEnvironments = ["ci"]
+listedInEnvironments = ["local", "test", "proxy", "proxyRunning", "ci"]
 subscriptionTier = "business"
 
 # TODO: Grant the DIY Legacy bundle upon supply of a PayPal Transaction ID for a payment to one of the email addresses in 2025 or earlier
