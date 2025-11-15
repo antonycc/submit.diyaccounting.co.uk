@@ -154,7 +154,7 @@
         const name = b.name || b.id;
         return `
           <div class="service-item" style="text-align:left">
-            <button type="button" class="btn service-btn" data-bundle-id="${b.id}" data-bundle-name="${name.replaceAll("\"","&quot;")}">Request ${name}</button>
+            <button type="button" class="btn service-btn" data-bundle-id="${b.id}" data-bundle-name="${name.replaceAll('"', "&quot;")}">Request ${name}</button>
           </div>`;
       };
 

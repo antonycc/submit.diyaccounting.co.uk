@@ -212,7 +212,9 @@ export async function ensureAppropriateBundle(page, screenshotPath = defaultScre
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-ensure-${bundleId}-bundle-clicked.png` });
 
     // Wait for confirmation
-    await expect(page.locator(`button.service-btn[data-bundle-id='${bundleId}']:has-text('Added ✓ ${bundleDisplayNameFull}')`)).toBeVisible({ timeout: 16000 });
+    await expect(page.locator(`button.service-btn[data-bundle-id='${bundleId}']:has-text('Added ✓ ${bundleDisplayNameFull}')`)).toBeVisible(
+      { timeout: 16000 },
+    );
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-ensure-${bundleId}-bundle-added.png` });
     console.log(`${bundleDisplayNameFull} bundle added successfully`);
   });

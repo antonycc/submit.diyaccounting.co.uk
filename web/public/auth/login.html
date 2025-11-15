@@ -103,7 +103,9 @@
         const authResponseUrl = authResponse.authUrl;
 
         console.log("Redirecting to Antonycc via Cognito OAuth URL");
-        try { window.__correlation?.prepareRedirect?.(); } catch {}
+        try {
+          window.__correlation?.prepareRedirect?.();
+        } catch {}
         window.location.href = authResponseUrl;
       }
 
@@ -128,7 +130,9 @@
 
         showStatus(`Handing off to ${authUrl}`, "info");
         console.log("Redirecting to navikt/mock-oauth2-server");
-        try { window.__correlation?.prepareRedirect?.(); } catch {}
+        try {
+          window.__correlation?.prepareRedirect?.();
+        } catch {}
         window.location.href = authUrl;
       }
 

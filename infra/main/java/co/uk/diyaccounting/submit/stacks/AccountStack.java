@@ -77,6 +77,14 @@ public class AccountStack extends Stack {
 
         String cognitoUserPoolArn();
 
+        String stripeSecretKeyArn();
+
+        String stripePublishableKey();
+
+        String stripeWebhookSecret();
+
+        String stripeBusinessPriceId();
+
         static ImmutableAccountStackProps.Builder builder() {
             return ImmutableAccountStackProps.builder();
         }
@@ -190,7 +198,11 @@ public class AccountStack extends Stack {
                 .with("COGNITO_USER_POOL_ID", userPool.getUserPoolId())
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName())
                 .with("TEST_BUNDLE_EXPIRY_DATE", "2025-12-31")
-                .with("TEST_BUNDLE_USER_LIMIT", "10");
+                .with("TEST_BUNDLE_USER_LIMIT", "10")
+                .with("STRIPE_SECRET_KEY_ARN", props.stripeSecretKeyArn())
+                .with("STRIPE_PUBLISHABLE_KEY", props.stripePublishableKey())
+                .with("STRIPE_WEBHOOK_SECRET", props.stripeWebhookSecret())
+                .with("STRIPE_BUSINESS_PRICE_ID", props.stripeBusinessPriceId());
         var requestBundlesLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
@@ -239,6 +251,14 @@ public class AccountStack extends Stack {
         infof(
                 "Granted DynamoDB permissions to %s for Bundles Table %s",
                 this.bundlePostLambda.getFunctionName(), bundlesTable.getTableName());
+
+        // Grant the RequestBundlesLambda permission to access Stripe secret from Secrets Manager
+        this.bundlePostLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .actions(List.of("secretsmanager:GetSecretValue"))
+                .resources(List.of(props.stripeSecretKeyArn()))
+                .build());
+        infof("Granted Secrets Manager permissions to %s for Stripe secret", this.bundlePostLambda.getFunctionName());
 
         // Delete Bundles Lambda
         var bundleDeleteLambdaEnv = new PopulatedMap<String, String>()
