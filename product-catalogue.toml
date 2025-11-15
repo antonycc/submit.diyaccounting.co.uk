@@ -52,19 +52,19 @@ paths = ["account/bundles.html", "^/api/v1/catalogue.*", "^/api/v1/bundle.*"]
 
 [[activities]]
 id = "submit-vat-sandbox"
-name = "Submit VAT (Sandbox API)"
+name = "Submit VAT (HMRC Sandbox)"
 bundles = ["test"]
 paths = ["hmrc/vat/submitVat.html?hmrcAccount=sandbox", "^/api/v1/hmrc/vat.*"]
 
 [[activities]]
 id = "vat-obligations-sandbox"
-name = "VAT Obligations (Sandbox API)"
+name = "VAT Obligations (HMRC Sandbox)"
 bundles = ["test"]
 paths = ["hmrc/vat/vatObligations.html?hmrcAccount=sandbox", "^/api/v1/hmrc/vat.*"]
 
 [[activities]]
 id = "view-vat-return-sandbox"
-name = "View VAT Return (Sandbox API)"
+name = "View VAT Return (HMRC Sandbox)"
 bundles = ["test"]
 paths = ["hmrc/vat/viewVatReturn.html?hmrcAccount=sandbox", "^/api/v1/hmrc/vat.*"]
 

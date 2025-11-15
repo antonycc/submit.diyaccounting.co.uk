@@ -26,10 +26,21 @@ export function getEnvVarAndLog(name, envKey, defaultValue) {
  * @returns {boolean} true if using sandbox, false otherwise
  */
 export function isSandboxMode() {
+  // Prefer explicit HMRC_ACCOUNT when provided
+  const hmrcAccount = (process.env.HMRC_ACCOUNT || "").toLowerCase();
+  if (hmrcAccount === "sandbox") {
+    logger.info(`Sandbox mode detection: HMRC_ACCOUNT=${hmrcAccount} => sandbox=true`);
+    return true;
+  }
+  if (hmrcAccount === "live") {
+    logger.info(`Sandbox mode detection: HMRC_ACCOUNT=${hmrcAccount} => sandbox=false`);
+    return false;
+  }
+
+  // Fallback to HMRC_BASE_URI heuristic
   const hmrcBaseUri = process.env.HMRC_BASE_URI || "";
-  // Sandbox indicators: test-api or contains "test" or "sandbox"
   const isSandbox = hmrcBaseUri.includes("test-api") || hmrcBaseUri.includes("sandbox") || hmrcBaseUri.includes("/test/");
-  logger.info(`Sandbox mode detection: HMRC_BASE_URI=${hmrcBaseUri}, isSandbox=${isSandbox}`);
+  logger.info(`Sandbox mode detection (fallback): HMRC_BASE_URI=${hmrcBaseUri}, isSandbox=${isSandbox}`);
   return isSandbox;
 }
 
@@ -39,7 +50,8 @@ export function isSandboxMode() {
  * @returns {string} Full button text to use in tests
  */
 export function getActivityButtonText(activityBase) {
-  const suffix = isSandboxMode() ? " (Sandbox API)" : "";
+  // Match catalogue names: e.g. "Submit VAT (HMRC Sandbox)" when sandbox
+  const suffix = isSandboxMode() ? " (HMRC Sandbox)" : "";
   const buttonText = activityBase + suffix;
   logger.info(`Activity button text: ${activityBase} -> ${buttonText}`);
   return buttonText;

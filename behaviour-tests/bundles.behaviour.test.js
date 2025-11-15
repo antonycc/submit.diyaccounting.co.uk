@@ -21,7 +21,7 @@ import {
   logOutAndExpectToBeLoggedOut,
   verifyLoggedInStatus,
 } from "./steps/behaviour-login-steps.js";
-import { clearBundles, goToBundlesPage, requestTestBundle } from "./steps/behaviour-bundle-steps.js";
+import { clearBundles, goToBundlesPage, ensureBundlesForEnvironment } from "./steps/behaviour-bundle-steps.js";
 import { goToReceiptsPageUsingHamburgerMenu } from "./steps/behaviour-hmrc-receipts-steps.js";
 
 if (!process.env.DIY_SUBMIT_ENV_FILEPATH) {
@@ -122,7 +122,10 @@ test("Click through: Adding and removing bundles", async ({ page }) => {
 
   await goToBundlesPage(page, screenshotPath);
   await clearBundles(page, screenshotPath);
-  await requestTestBundle(page, screenshotPath);
+  // Ensure required bundles for environment:
+  // - Always add Guest bundle
+  // - Add Test bundle only when HMRC_ACCOUNT=sandbox
+  await ensureBundlesForEnvironment(page, screenshotPath);
   await goToHomePage(page, screenshotPath);
 
   /* ********** */

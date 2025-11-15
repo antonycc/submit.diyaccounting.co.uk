@@ -16,7 +16,7 @@ import {
   logOutAndExpectToBeLoggedOut,
   verifyLoggedInStatus,
 } from "./steps/behaviour-login-steps.js";
-import { ensureTestBundlePresent, goToBundlesPage } from "./steps/behaviour-bundle-steps.js";
+import { ensureBundlesForEnvironment, goToBundlesPage } from "./steps/behaviour-bundle-steps.js";
 import {
   fillInViewVatReturn,
   initViewVatReturn,
@@ -123,7 +123,7 @@ test("Click through: Get VAT return from HMRC", async ({ page }) => {
   /* ********* */
 
   await goToBundlesPage(page, screenshotPath);
-  await ensureTestBundlePresent(page, screenshotPath);
+  await ensureBundlesForEnvironment(page, screenshotPath);
   await goToHomePageUsingHamburgerMenu(page, screenshotPath);
 
   /* ******************* */

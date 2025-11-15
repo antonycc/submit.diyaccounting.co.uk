@@ -119,6 +119,67 @@ export async function ensureTestBundlePresent(page, screenshotPath = defaultScre
 }
 
 /**
+ * Request Guest bundle (free authenticated activities for a limited time)
+ */
+export async function requestGuestBundle(page, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user requests a guest bundle and sees a confirmation message", async () => {
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-request-guest-bundle.png` });
+    let requestGuestLocator = page.getByRole("button", { name: "Request Guest (10 minutes)" });
+    if (!(await requestGuestLocator.isVisible())) {
+      for (let i = 0; i < 5; i++) {
+        console.log(`"Request Guest (10 minutes)" button not visible, waiting 1000ms and trying again (${i + 1}/5)`);
+        await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-request-guest-bundle-waiting.png` });
+        await page.waitForTimeout(1000);
+        await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-request-guest-bundle-waited.png` });
+        requestGuestLocator = page.getByRole("button", { name: "Request Guest (10 minutes)" });
+        if (await requestGuestLocator.isVisible()) {
+          break;
+        }
+      }
+    }
+
+    if (!(await requestGuestLocator.isVisible())) {
+      const addedLocator = page.getByRole("button", { name: "Added ✓ Guest (10 minutes)" });
+      if (await addedLocator.isVisible()) {
+        console.log("Guest bundle already present, skipping request.");
+        await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-request-guest-bundle-skipping.png` });
+        return;
+      }
+    }
+    await loggedClick(page, "button:has-text('Request Guest (10 minutes)')", "Request Guest (10 minutes)");
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-request-guest-bundle-clicked.png` });
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-06-request-guest-bundle.png` });
+    await expect(page.getByRole("button", { name: "Added ✓ Guest (10 minutes)" })).toBeVisible({ timeout: 16000 });
+  });
+}
+
+export async function ensureGuestBundlePresent(page, screenshotPath = defaultScreenshotPath) {
+  await test.step("Ensure guest bundle is present (idempotent)", async () => {
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-ensure-guest-bundle.png` });
+    let addedLocator = page.getByRole("button", { name: "Added ✓ Guest (10 minutes)" });
+    if (!(await addedLocator.isVisible())) {
+      for (let i = 0; i < 5; i++) {
+        console.log(`"Added ✓ Guest (10 minutes)" button not visible, waiting 1000ms and trying again (${i + 1}/5)`);
+        await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-ensure-guest-bundle-waiting.png` });
+        await page.waitForTimeout(1000);
+        addedLocator = page.getByRole("button", { name: "Added ✓ Guest (10 minutes)" });
+        await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-ensure-guest-bundle-waited.png` });
+        if (await addedLocator.isVisible()) {
+          break;
+        }
+      }
+    }
+    if (await addedLocator.isVisible({ timeout: 16000 })) {
+      console.log("Guest bundle already present, skipping request.");
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-ensure-guest-bundle-skipping.png` });
+      return;
+    }
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-ensure-guest-bundle-adding.png` });
+    await requestGuestBundle(page, screenshotPath);
+  });
+}
+
+/**
  * Ensure the appropriate bundle is present based on sandbox mode
  * - Sandbox mode: request "test" bundle
  * - Production mode: request "guest" bundle
@@ -155,4 +216,17 @@ export async function ensureAppropriateBundle(page, screenshotPath = defaultScre
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-ensure-${bundleId}-bundle-added.png` });
     console.log(`${bundleDisplayNameFull} bundle added successfully`);
   });
+}
+
+/**
+ * Ensure bundles for environment:
+ * - Always ensure Guest bundle present
+ * - If sandbox, also ensure Test bundle present
+ * - If live, DO NOT add Test bundle
+ */
+export async function ensureBundlesForEnvironment(page, screenshotPath = defaultScreenshotPath) {
+  await ensureGuestBundlePresent(page, screenshotPath);
+  if (isSandboxMode()) {
+    await ensureTestBundlePresent(page, screenshotPath);
+  }
 }
