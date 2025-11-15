@@ -12,7 +12,7 @@ name = "Test (2 hours)"
 allocation = "on-request"
 cap = 10
 timeout = "P2H"
-# TODO: Filter so that this bundle only appears in the listed environments
+# TODO: Filter so that this bundle only appears in the add bundle page in listed environments
 listedInEnvironments = ["ci"]
 
 # Access to free authenticated activities including VAT submission for a limited time
@@ -32,7 +32,7 @@ name = "Business"
 allocation = "subscription"
 cap = 100
 listedInEnvironments = ["ci"]
-grantedWithSubscriptionTiers = ["business"]
+subscriptionTier = "business"
 
 # TODO: Grant the DIY Legacy bundle upon supply of a PayPal Transaction ID for a payment to one of the email addresses in 2025 or earlier
 #[[bundles]]

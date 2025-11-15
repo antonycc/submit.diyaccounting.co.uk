@@ -269,19 +269,25 @@ describe("VAT Flow Frontend JavaScript", () => {
 
       const result = await window.submitVat("111222333", "24A1", "1000.00", "test-token", headers);
 
-      expect(fetchMock).toHaveBeenCalledWith("/api/v1/hmrc/vat/return", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...headers,
-        },
-        body: JSON.stringify({
-          vatNumber: "111222333",
-          periodKey: "24A1",
-          vatDue: "1000.00",
-          accessToken: "test-token",
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/api/v1/hmrc/vat/return",
+        expect.objectContaining({
+          method: "POST",
+          headers: expect.objectContaining({
+            "Content-Type": "application/json",
+            ...headers,
+            // correlation headers injected by interceptor
+            "traceparent": expect.any(String),
+            "x-request-id": expect.any(String),
+          }),
+          body: JSON.stringify({
+            vatNumber: "111222333",
+            periodKey: "24A1",
+            vatDue: "1000.00",
+            accessToken: "test-token",
+          }),
         }),
-      });
+      );
       expect(result).toEqual(mockResponse);
     });
 
@@ -294,17 +300,23 @@ describe("VAT Flow Frontend JavaScript", () => {
 
       const result = await window.logReceipt("2023-01-01T12:00:00.000Z", "123456789012", "XM002610011594");
 
-      expect(fetchMock).toHaveBeenCalledWith("/api/v1/hmrc/receipt", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          processingDate: "2023-01-01T12:00:00.000Z",
-          formBundleNumber: "123456789012",
-          chargeRefNumber: "XM002610011594",
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/api/v1/hmrc/receipt",
+        expect.objectContaining({
+          method: "POST",
+          headers: expect.objectContaining({
+            "Content-Type": "application/json",
+            // correlation headers injected by interceptor
+            "traceparent": expect.any(String),
+            "x-request-id": expect.any(String),
+          }),
+          body: JSON.stringify({
+            processingDate: "2023-01-01T12:00:00.000Z",
+            formBundleNumber: "123456789012",
+            chargeRefNumber: "XM002610011594",
+          }),
         }),
-      });
+      );
       expect(result).toEqual(mockResponse);
     });
   });
