@@ -65,28 +65,27 @@ export function extractAndValidateParameters(event, errorMessages) {
 export async function handler(event) {
   validateEnv(["COGNITO_USER_POOL_ID"]);
 
-  const { request, requestId } = extractRequest(event);
+  const { request } = extractRequest(event);
   const errorMessages = [];
 
   // Bundle enforcement
   try {
     await enforceBundles(event);
   } catch (error) {
-    return http403ForbiddenFromBundleEnforcement(requestId, error, request);
+    return http403ForbiddenFromBundleEnforcement(error, request);
   }
 
-  logger.info({ requestId, message: "Deleting user bundle" });
+  logger.info({ message: "Deleting user bundle" });
 
   // Extract and validate parameters
   const { userId, bundleToRemove, removeAll } = extractAndValidateParameters(event, errorMessages);
 
-  const responseHeaders = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*", "x-request-id": requestId };
+  const responseHeaders = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" };
 
   // Authentication errors
   if (!userId) {
     return http401UnauthorizedResponse({
       request,
-      requestId,
       headers: { ...responseHeaders },
       message: "Authentication required",
       error: {},
@@ -95,7 +94,7 @@ export async function handler(event) {
 
   // Validation errors
   if (errorMessages.length > 0) {
-    return buildValidationError(request, requestId, errorMessages, responseHeaders);
+    return buildValidationError(request, errorMessages, responseHeaders);
   }
 
   // Processing
@@ -103,22 +102,20 @@ export async function handler(event) {
     const result = await deleteUserBundle(userId, bundleToRemove, removeAll);
 
     if (result.status === "not_found") {
-      return http404NotFound(request, requestId, "Bundle not found", responseHeaders);
+      return http404NotFound(request, "Bundle not found", responseHeaders);
     }
 
-    logger.info({ requestId, message: "Successfully deleted bundle", userId, status: result.status });
+    logger.info({ message: "Successfully deleted bundle", userId, status: result.status });
 
     return http200OkResponse({
       request,
-      requestId,
       headers: { ...responseHeaders },
       data: result,
     });
   } catch (error) {
-    logger.error({ requestId, message: "Error deleting bundle", error: error.message, stack: error.stack });
+    logger.error({ message: "Error deleting bundle", error: error.message, stack: error.stack });
     return http500ServerErrorResponse({
       request,
-      requestId,
       headers: { ...responseHeaders },
       message: "Internal server error",
       error: error.message,

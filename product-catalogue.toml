@@ -4,6 +4,7 @@ version = "1.1.0"
 id = "default"
 name = "Default"
 allocation = "automatic"
+# TODO: Remove this, all bundles implicitly require authentication
 auth = "none"
 
 # Access to Sandbox APIs for testing
@@ -14,6 +15,8 @@ allocation = "on-request"
 auth = "required"
 cap = 10
 timeout = "P2H"
+# TODO: Filter so that this bundle only appears in the listed environments
+listedInEnvironments = ["ci"]
 
 # Access to free authenticated activities including VAT submission for a limited time
 [[bundles]]
@@ -23,28 +26,29 @@ allocation = "on-request"
 auth = "required"
 cap = 10
 timeout = "P10M"
+# TODO: 1 day timeout for visiblility, then a grace period for apis of 1 day.
 
 # TODO: Link active subscriptions to a bundle entitlement and continually re-validate.
 # Access to business tier activities including VAT submission for subscribers
-#[[bundles]]
-#id = "business"
-#name = "Business"
-#allocation = "on-request"
-#auth = "required"
-#cap = 10
-#[bundles.qualifiers]
-#subscriptionTier = "business"
+[[bundles]]
+id = "business"
+name = "Business"
+allocation = "subscription"
+auth = "required"
+cap = 100
+listedInEnvironments = ["ci"]
+grantedWithSubscriptionTiers = ["business"]
 
 # TODO: Grant the DIY Legacy bundle upon supply of a PayPal Transaction ID for a payment to one of the email addresses in 2025 or earlier
 #[[bundles]]
 #id = "diylegacy"
 #name = "DIY Legacy (existing 2025 customers)"
-#allocation = "on-request"
+#allocation = "transaction-id"
 #auth = "required"
 #cap = 10
 #timeout = "P1Y"
-#[bundles.qualifiers]
-#requiresTransactionIdFor = ["terrycartwright@hotmail.com", "admin@diyaccounting.co.uk"]
+#listedInEnvironments = ["ci"]
+#grantedWithTransactionIdFor = ["terrycartwright@hotmail.com", "admin@diyaccounting.co.uk"]
 
 [[activities]]
 id = "bundle"

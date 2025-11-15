@@ -67,7 +67,16 @@ export async function handler(event) {
   try {
     await enforceBundles(event);
   } catch (error) {
-    return http403ForbiddenFromBundleEnforcement(context.get("requestId"), error, request);
+    // TODO: You are here
+    // -> Then the web pages will change to request sandbox mode or not
+    // -> And the web pages will have lables about the sandbox mode
+    // -> And there will be a behaviour test against the sandbox and prod (which is sandbox in ci) for the ci build but prod will only test sandbox.
+    // And the debug utilities will only display when the test bundle is present.
+    // And the dynamo db records will have a ttl 1 month after bundle expiry and also have a grace period where the APIs permit traffic
+    // And There is a script to add a salted hash of the user sub (email?) to a directory of users for "test" > bundle-grants/hashofsub.txt
+    // And the bundle grants are allocated during deployment
+    // And sessions can time and and refresh their tokens
+    return http403ForbiddenFromBundleEnforcement(error, request);
   }
 
   // Extract and validate parameters
@@ -87,29 +96,28 @@ export async function handler(event) {
   // Normalise periodKey to uppercase for HMRC if provided as string
   const normalizedPeriodKey = typeof periodKey === "string" ? periodKey.toUpperCase() : periodKey;
 
-  const responseHeaders = { ...govClientHeaders, "x-request-id": context.get("requestId") };
+  const responseHeaders = { ...govClientHeaders };
 
   // Non-authorization validation errors (collect field/header issues first)
   if (errorMessages.length > 0) {
     if (!hmrcAccessToken) errorMessages.push("Missing accessToken parameter from body");
-    return buildValidationError(request, context.get("requestId"), errorMessages, responseHeaders);
+    return buildValidationError(request, errorMessages, responseHeaders);
   }
 
   // Validate token format only after other validation passes
   try {
-    validateHmrcAccessToken(hmrcAccessToken, context.get("requestId"));
+    validateHmrcAccessToken(hmrcAccessToken);
   } catch (err) {
     // If token is explicitly unauthorized, return 401; otherwise return 400 with validation message only
     if (err instanceof UnauthorizedTokenError) {
       return http401UnauthorizedResponse({
         request,
-        requestId: context.get("requestId"),
         headers: { ...responseHeaders },
         message: err.message,
         error: {},
       });
     }
-    return buildValidationError(request, context.get("requestId"), [err.toString()], responseHeaders);
+    return buildValidationError(request, [err.toString()], responseHeaders);
   }
 
   // Processing
@@ -118,13 +126,11 @@ export async function handler(event) {
   let hmrcResponseBody;
   try {
     logger.info({
-      requestId: context.get("requestId"),
       message: "Submitting VAT return to HMRC",
       vatNumber,
       periodKey: normalizedPeriodKey,
     });
     ({ receipt, hmrcResponse, hmrcResponseBody } = await submitVat(
-      context.get("requestId"),
       normalizedPeriodKey,
       numVatDue,
       vatNumber,
@@ -134,7 +140,6 @@ export async function handler(event) {
   } catch (error) {
     // Preserve original behavior expected by tests: bubble up network errors
     logger.error({
-      requestId: context.get("requestId"),
       message: "Error while submitting VAT to HMRC",
       error: error.message,
       stack: error.stack,
@@ -144,20 +149,12 @@ export async function handler(event) {
 
   // Generate error responses based on HMRC response
   if (!hmrcResponse.ok) {
-    return generateHmrcErrorResponseWithRetryAdvice(
-      request,
-      context.get("requestId"),
-      hmrcResponse,
-      hmrcResponseBody,
-      hmrcAccessToken,
-      responseHeaders,
-    );
+    return generateHmrcErrorResponseWithRetryAdvice(request, hmrcResponse, hmrcResponseBody, hmrcAccessToken, responseHeaders);
   }
 
   // Generate a success response
   return http200OkResponse({
     request,
-    requestId: context.get("requestId"),
     headers: { ...responseHeaders },
     data: {
       receipt,
@@ -166,7 +163,7 @@ export async function handler(event) {
 }
 
 // Service adaptor for aware of the downstream service but not the consuming Lambda's incoming/outgoing HTTP request/response
-export async function submitVat(requestId, periodKey, vatDue, vatNumber, hmrcAccessToken, govClientHeaders) {
+export async function submitVat(periodKey, vatDue, vatNumber, hmrcAccessToken, govClientHeaders) {
   const hmrcRequestHeaders = {
     "Content-Type": "application/json",
     "Accept": "application/vnd.hmrc.1.0+json",
@@ -191,7 +188,7 @@ export async function submitVat(requestId, periodKey, vatDue, vatNumber, hmrcAcc
   let hmrcResponse;
   const hmrcBase = process.env.HMRC_BASE_URI;
   const hmrcRequestUrl = `${hmrcBase}/organisations/vat/${vatNumber}/returns`;
-  logHmrcRequestDetails(context.get("requestId"), hmrcRequestUrl, hmrcRequestHeaders, govClientHeaders, hmrcRequestBody);
+  logHmrcRequestDetails(hmrcRequestUrl, hmrcRequestHeaders, govClientHeaders, hmrcRequestBody);
   if (process.env.NODE_ENV === "stubbed") {
     hmrcResponse = {
       ok: true,
@@ -202,7 +199,6 @@ export async function submitVat(requestId, periodKey, vatDue, vatNumber, hmrcAcc
     // TEST_RECEIPT is already a JSON string, so parse it first
     hmrcResponseBody = JSON.parse(process.env.TEST_RECEIPT || "{}");
     logger.warn({
-      requestId: context.get("requestId"),
       message: "httpPostMock called in stubbed mode, using test receipt",
       receipt: hmrcResponseBody,
     });

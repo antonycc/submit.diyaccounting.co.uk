@@ -39,28 +39,28 @@ export async function handler(event) {
   if (!process.env.HMRC_CLIENT_SECRET) required.push("HMRC_CLIENT_SECRET_ARN");
   validateEnv(required);
 
-  const { request, requestId } = extractRequest(event);
+  const { request } = extractRequest(event);
   const errorMessages = [];
 
   // Bundle enforcement
   try {
     await enforceBundles(event);
   } catch (error) {
-    return http403ForbiddenFromBundleEnforcement(requestId, error, request);
+    return http403ForbiddenFromBundleEnforcement(error, request);
   }
 
   // Extract and validate parameters
   const { code } = extractAndValidateParameters(event, errorMessages);
 
-  const responseHeaders = { "x-request-id": requestId };
+  const responseHeaders = {};
 
   // Validation errors
   if (errorMessages.length > 0) {
-    return buildValidationError(request, requestId, errorMessages, responseHeaders);
+    return buildValidationError(request, errorMessages, responseHeaders);
   }
 
   // Processing
-  logger.info({ requestId, message: "Exchanging authorization code for HMRC access token" });
+  logger.info({ message: "Exchanging authorization code for HMRC access token" });
   const tokenResponse = await exchangeCodeForToken(code);
   return buildTokenExchangeResponse(request, tokenResponse.url, tokenResponse.body);
 }

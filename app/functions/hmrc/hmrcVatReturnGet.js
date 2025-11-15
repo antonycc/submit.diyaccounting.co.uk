@@ -57,14 +57,14 @@ export function extractAndValidateParameters(event, errorMessages) {
 export async function handler(event) {
   validateEnv(["HMRC_BASE_URI"]);
 
-  const { request, requestId } = extractRequest(event);
+  const { request } = extractRequest(event);
   let errorMessages = [];
 
   // Bundle enforcement
   try {
     await enforceBundles(event);
   } catch (error) {
-    return http403ForbiddenFromBundleEnforcement(requestId, error, request);
+    return http403ForbiddenFromBundleEnforcement(error, request);
   }
 
   const detectedIP = extractClientIPFromHeaders(event);
@@ -80,13 +80,13 @@ export async function handler(event) {
   // Extract and validate parameters
   const { vrn, periodKey, testScenario } = extractAndValidateParameters(event, errorMessages);
 
-  const responseHeaders = { ...govClientHeaders, "x-request-id": requestId };
+  const responseHeaders = { ...govClientHeaders };
 
   // Non-authorization validation errors
   if (errorMessages.length > 0) {
     const hmrcAccessTokenMaybe = extractHmrcAccessTokenFromLambdaEvent(event);
     if (!hmrcAccessTokenMaybe) errorMessages.push("Missing Authorization Bearer token");
-    return buildValidationError(request, requestId, errorMessages, responseHeaders);
+    return buildValidationError(request, errorMessages, responseHeaders);
   }
 
   // Validate token after validating other inputs
@@ -94,46 +94,44 @@ export async function handler(event) {
   if (!hmrcAccessToken) {
     return http400BadRequestResponse({
       request,
-      requestId,
       headers: { ...responseHeaders },
       message: "Missing Authorization Bearer token",
     });
   }
   try {
-    validateHmrcAccessToken(hmrcAccessToken, requestId);
+    validateHmrcAccessToken(hmrcAccessToken);
   } catch (err) {
     if (err instanceof UnauthorizedTokenError) {
-      return http401UnauthorizedResponse({ request, requestId, headers: { ...responseHeaders }, message: err.message, error: {} });
+      return http401UnauthorizedResponse({ request, headers: { ...responseHeaders }, message: err.message, error: {} });
     }
-    return buildValidationError(request, requestId, [err.toString()], responseHeaders);
+    return buildValidationError(request, [err.toString()], responseHeaders);
   }
 
   // Processing
   let vatReturn;
   let hmrcResponse;
   try {
-    logger.info({ requestId, message: "Checking for stubbed VAT return data", vrn, periodKey, testScenario });
+    logger.info({ message: "Checking for stubbed VAT return data", vrn, periodKey, testScenario });
     if (shouldUseStub("TEST_VAT_RETURN")) {
-      logger.warn({ requestId, message: "[MOCK] Using stubbed VAT return data", vrn, periodKey, testScenario });
+      logger.warn({ message: "[MOCK] Using stubbed VAT return data", vrn, periodKey, testScenario });
       vatReturn = getStubData("TEST_VAT_RETURN");
     } else {
-      ({ vatReturn, hmrcResponse } = await getVatReturn(requestId, vrn, periodKey, hmrcAccessToken, govClientHeaders, testScenario));
+      ({ vatReturn, hmrcResponse } = await getVatReturn(vrn, periodKey, hmrcAccessToken, govClientHeaders, testScenario));
       // Generate error responses based on HMRC response
       if (hmrcResponse && !hmrcResponse.ok) {
         if (hmrcResponse.status === 403) {
-          return http403ForbiddenFromHmrcResponse(hmrcAccessToken, requestId, hmrcResponse, responseHeaders);
+          return http403ForbiddenFromHmrcResponse(hmrcAccessToken, hmrcResponse, responseHeaders);
         } else if (hmrcResponse.status === 404) {
-          return http404NotFoundFromHmrcResponse(request, requestId, hmrcResponse, responseHeaders);
+          return http404NotFoundFromHmrcResponse(request, hmrcResponse, responseHeaders);
         } else {
-          return http500ServerErrorFromHmrcResponse(request, requestId, hmrcResponse, responseHeaders);
+          return http500ServerErrorFromHmrcResponse(request, hmrcResponse, responseHeaders);
         }
       }
     }
   } catch (error) {
-    logger.error({ requestId, message: "Error while retrieving VAT return from HMRC", error: error.message, stack: error.stack });
+    logger.error({ message: "Error while retrieving VAT return from HMRC", error: error.message, stack: error.stack });
     return http500ServerErrorResponse({
       request,
-      requestId,
       headers: { ...responseHeaders },
       message: "Internal server error",
       error: error.message,
@@ -141,19 +139,18 @@ export async function handler(event) {
   }
 
   // Return successful response
-  logger.info({ requestId, message: "Successfully retrieved VAT return", vrn, periodKey });
+  logger.info({ message: "Successfully retrieved VAT return", vrn, periodKey });
   return http200OkResponse({
     request,
-    requestId,
     headers: { ...responseHeaders },
     data: vatReturn,
   });
 }
 
 // Service adaptor aware of the downstream service but not the consuming Lambda's incoming/outgoing HTTP request/response
-export async function getVatReturn(requestId, vrn, periodKey, hmrcAccessToken, govClientHeaders, testScenario) {
+export async function getVatReturn(vrn, periodKey, hmrcAccessToken, govClientHeaders, testScenario) {
   const hmrcRequestUrl = `/organisations/vat/${vrn}/returns/${periodKey}`;
-  const hmrcResponse = await hmrcHttpGet(requestId, hmrcRequestUrl, hmrcAccessToken, govClientHeaders, testScenario);
+  const hmrcResponse = await hmrcHttpGet(hmrcRequestUrl, hmrcAccessToken, govClientHeaders, testScenario);
 
   if (!hmrcResponse.ok) {
     // Consumers of this function may choose to map these to HTTP responses

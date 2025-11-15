@@ -36,10 +36,9 @@ function redactHeaders(headers) {
   return h;
 }
 
-export function logHmrcRequestDetails(requestId, hmrcRequestUrl, hmrcRequestHeaders, govClientHeaders, hmrcRequestBody) {
+export function logHmrcRequestDetails(hmrcRequestUrl, hmrcRequestHeaders, govClientHeaders, hmrcRequestBody) {
   const safeHeaders = { ...redactHeaders(hmrcRequestHeaders), ...redactHeaders(govClientHeaders) };
   logger.info({
-    requestId,
     message: `Request to POST ${hmrcRequestUrl}`,
     url: hmrcRequestUrl,
     headers: safeHeaders,

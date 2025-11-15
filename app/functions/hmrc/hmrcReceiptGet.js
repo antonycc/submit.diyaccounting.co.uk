@@ -79,15 +79,14 @@ export function extractAndValidateParameters(event, errorMessages, userSub) {
 export async function handler(event) {
   validateEnv(["DIY_SUBMIT_RECEIPTS_BUCKET_NAME"]);
 
-  const { request, requestId } = extractRequest(event);
-  const responseHeaders = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*", "x-request-id": requestId };
+  const { request } = extractRequest(event);
+  const responseHeaders = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" };
 
   // Check authentication
   const userSub = getUserSub(event || {});
   if (!userSub) {
     return http401UnauthorizedResponse({
       request,
-      requestId,
       headers: { ...responseHeaders },
       message: "Authentication required",
       error: {},
@@ -100,7 +99,7 @@ export async function handler(event) {
   try {
     await enforceBundles(event);
   } catch (error) {
-    return http403ForbiddenFromBundleEnforcement(requestId, error, request);
+    return http403ForbiddenFromBundleEnforcement(error, request);
   }
 
   // Extract and validate parameters
@@ -112,18 +111,17 @@ export async function handler(event) {
     if (errorMessages.some((msg) => msg.includes("forbidden"))) {
       return http403ForbiddenResponse({
         request,
-        requestId,
         headers: { ...responseHeaders },
         message: "Forbidden",
       });
     }
-    return buildValidationError(request, requestId, errorMessages, responseHeaders);
+    return buildValidationError(request, errorMessages, responseHeaders);
   }
 
   // Processing
   try {
     if (hasNameOrKey) {
-      logger.info({ requestId, message: "Retrieving single receipt", key: Key });
+      logger.info({ message: "Retrieving single receipt", key: Key });
       const receipt = await getReceiptByKey(userSub, Key);
       return {
         statusCode: 200,
@@ -131,24 +129,22 @@ export async function handler(event) {
         body: JSON.stringify(receipt),
       };
     } else {
-      logger.info({ requestId, message: "Listing user receipts", userSub });
+      logger.info({ message: "Listing user receipts", userSub });
       const receipts = await listUserReceipts(userSub);
       return http200OkResponse({
         request,
-        requestId,
         headers: { ...responseHeaders },
         data: { receipts },
       });
     }
   } catch (error) {
-    logger.error({ requestId, message: "Error retrieving receipts", error: error.message, stack: error.stack });
+    logger.error({ message: "Error retrieving receipts", error: error.message, stack: error.stack });
     // Check if this is a not found error
     if (error.message && error.message.includes("not found")) {
-      return buildValidationError(request, requestId, ["Receipt not found"], responseHeaders);
+      return buildValidationError(request, ["Receipt not found"], responseHeaders);
     }
     return http500ServerErrorResponse({
       request,
-      requestId,
       headers: { ...responseHeaders },
       message: "Internal server error",
       error: error.message,

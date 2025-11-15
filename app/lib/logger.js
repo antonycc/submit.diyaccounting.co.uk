@@ -62,7 +62,12 @@ export const logger = pino(
     timestamp: false, // Avoid Pino’s comma-prefixed timestamp chunk
     // Add an ISO time field as a normal JSON property
     mixin() {
-      return { time: new Date().toISOString() };
+      // eslint-disable-next-line sonarjs/no-empty-collection
+      const requestId = context.get("requestId");
+      return {
+        time: new Date().toISOString(),
+        ...(requestId ? { requestId } : {}),
+      };
     },
     // formatters: {
     // remove the level key entirely

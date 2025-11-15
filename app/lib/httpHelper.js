@@ -1,6 +1,6 @@
 // app/lib/httpHelper.js
 
-import logger from "./logger.js";
+import logger, { context } from "./logger.js";
 
 export function buildLambdaEventFromHttpRequest(httpRequest) {
   // Start with a copy of all incoming headers (Express normalizes to lowercase keys)
@@ -42,9 +42,8 @@ export function buildHttpResponseFromLambdaResult({ headers, statusCode, body },
   }
 }
 
-export function logHmrcRequestDetails(requestId, hmrcRequestUrl, hmrcRequestHeaders, govClientHeaders, hmrcRequestBody) {
+export function logHmrcRequestDetails(hmrcRequestUrl, hmrcRequestHeaders, govClientHeaders, hmrcRequestBody) {
   logger.info({
-    requestId,
     message: `Request to POST ${hmrcRequestUrl}`,
     url: hmrcRequestUrl,
     headers: {
@@ -58,14 +57,14 @@ export function logHmrcRequestDetails(requestId, hmrcRequestUrl, hmrcRequestHead
   });
 }
 
-export function http404NotFound(request, requestId, message, responseHeaders) {
+export function http404NotFound(request, message, responseHeaders) {
   // Log with clear semantics and avoid misusing headers as a response code
-  logger.warn({ requestId, message, request });
+  logger.warn({ message, request });
   // Return a proper 404 response (was incorrectly returning 400)
   // We keep using the generic bad request builder style but with correct status
   return {
     statusCode: 404,
-    headers: { ...(responseHeaders || {}), "x-request-id": requestId },
+    headers: { ...(responseHeaders || {}), "x-request-id": context.get("requestId") },
     body: JSON.stringify({ message }),
   };
 }

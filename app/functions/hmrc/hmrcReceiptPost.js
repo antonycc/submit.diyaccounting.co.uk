@@ -68,42 +68,40 @@ export function extractAndValidateParameters(event, errorMessages) {
 export async function handler(event) {
   validateEnv(["DIY_SUBMIT_RECEIPTS_BUCKET_NAME"]);
 
-  const { request, requestId } = extractRequest(event);
+  const { request } = extractRequest(event);
   const errorMessages = [];
 
   // Bundle enforcement
   try {
     await enforceBundles(event);
   } catch (error) {
-    return http403ForbiddenFromBundleEnforcement(requestId, error, request);
+    return http403ForbiddenFromBundleEnforcement(error, request);
   }
 
   // Extract and validate parameters
   const { receipt, key, formBundle } = extractAndValidateParameters(event, errorMessages);
 
-  const responseHeaders = { "x-request-id": requestId };
+  const responseHeaders = {};
 
   // Validation errors
   if (errorMessages.length > 0) {
-    return buildValidationError(request, requestId, errorMessages, responseHeaders);
+    return buildValidationError(request, errorMessages, responseHeaders);
   }
 
   // Processing
   try {
-    logger.info({ requestId, message: "Logging receipt to S3", key, formBundle });
+    logger.info({ message: "Logging receipt to S3", key, formBundle });
     await saveReceiptToS3(key, receipt);
 
     return http200OkResponse({
       request,
-      requestId,
       headers: { ...responseHeaders },
       data: { receipt, key },
     });
   } catch (error) {
-    logger.error({ requestId, message: "Error saving receipt to S3", error: error.message, stack: error.stack });
+    logger.error({ message: "Error saving receipt to S3", error: error.message, stack: error.stack });
     return http500ServerErrorResponse({
       request,
-      requestId,
       headers: { ...responseHeaders },
       message: `Failed to log receipt ${key}.`,
       error: { details: error.message },

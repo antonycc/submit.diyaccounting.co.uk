@@ -33,35 +33,33 @@ export function extractAndValidateParameters(event, errorMessages) {
 export async function handler(event) {
   validateEnv(["HMRC_BASE_URI", "HMRC_CLIENT_ID", "DIY_SUBMIT_BASE_URL"]);
 
-  const { request, requestId } = extractRequest(event);
+  const { request } = extractRequest(event);
   const errorMessages = [];
 
   // Extract and validate parameters
   const { state, requestedScope } = extractAndValidateParameters(event, errorMessages);
 
-  const responseHeaders = { "x-request-id": requestId };
+  const responseHeaders = {};
 
   // Validation errors
   if (errorMessages.length > 0) {
-    return buildValidationError(request, requestId, errorMessages, responseHeaders);
+    return buildValidationError(request, errorMessages, responseHeaders);
   }
 
   // Processing
   try {
-    logger.info({ requestId, message: "Generating HMRC authorization URL", state, scope: requestedScope });
+    logger.info({ message: "Generating HMRC authorization URL", state, scope: requestedScope });
     const { authUrl } = buildAuthUrl(state, requestedScope);
 
     return http200OkResponse({
       request,
-      requestId,
       headers: { ...responseHeaders },
       data: { authUrl },
     });
   } catch (error) {
-    logger.error({ requestId, message: "Error generating HMRC authorization URL", error: error.message, stack: error.stack });
+    logger.error({ message: "Error generating HMRC authorization URL", error: error.message, stack: error.stack });
     return http500ServerErrorResponse({
       request,
-      requestId,
       headers: { ...responseHeaders },
       message: "Internal server error",
       error: error.message,

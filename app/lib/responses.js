@@ -2,9 +2,9 @@
 
 import { logger, context } from "./logger.js";
 
-export function http200OkResponse({ request, requestId, headers, data }) {
+export function http200OkResponse({ request, headers, data }) {
   const merged = { ...(headers || {}) };
-  if (requestId) merged["x-request-id"] = requestId;
+  if (context.get("requestId")) merged["x-request-id"] = context.get("requestId");
   return httpResponse({
     statusCode: 200,
     request,
@@ -14,9 +14,9 @@ export function http200OkResponse({ request, requestId, headers, data }) {
   });
 }
 
-export function http400BadRequestResponse({ request, requestId, headers, message, error }) {
+export function http400BadRequestResponse({ request, headers, message, error }) {
   const merged = { ...(headers || {}) };
-  if (requestId) merged["x-request-id"] = requestId;
+  if (context.get("requestId")) merged["x-request-id"] = context.get("requestId");
   return httpResponse({
     statusCode: 400,
     request,
@@ -26,9 +26,9 @@ export function http400BadRequestResponse({ request, requestId, headers, message
   });
 }
 
-export function http500ServerErrorResponse({ request, requestId, headers, message, error }) {
+export function http500ServerErrorResponse({ request, headers, message, error }) {
   const merged = { ...(headers || {}) };
-  if (requestId) merged["x-request-id"] = requestId;
+  if (context.get("requestId")) merged["x-request-id"] = context.get("requestId");
   return httpResponse({
     statusCode: 500,
     request,
@@ -38,9 +38,9 @@ export function http500ServerErrorResponse({ request, requestId, headers, messag
   });
 }
 
-export function http403ForbiddenResponse({ request, requestId, headers, message, error }) {
+export function http403ForbiddenResponse({ request, headers, message, error }) {
   const merged = { ...(headers || {}) };
-  if (requestId) merged["x-request-id"] = requestId;
+  if (context.get("requestId")) merged["x-request-id"] = context.get("requestId");
   return httpResponse({
     statusCode: 403,
     request,
@@ -50,9 +50,9 @@ export function http403ForbiddenResponse({ request, requestId, headers, message,
   });
 }
 
-export function http401UnauthorizedResponse({ request, requestId, headers, message, error }) {
+export function http401UnauthorizedResponse({ request, headers, message, error }) {
   const merged = { ...(headers || {}) };
-  if (requestId) merged["x-request-id"] = requestId;
+  if (context.get("requestId")) merged["x-request-id"] = context.get("requestId");
   return httpResponse({
     statusCode: 401,
     request,
@@ -63,10 +63,12 @@ export function http401UnauthorizedResponse({ request, requestId, headers, messa
 }
 
 function httpResponse({ statusCode, headers, data, request, levelledLogger }) {
+  const merged = { ...(headers || {}) };
+  if (context.get("requestId")) merged["x-request-id"] = context.get("requestId");
   const response = {
     statusCode: statusCode,
     headers: {
-      ...headers,
+      ...merged,
     },
     body: JSON.stringify({
       ...data,
@@ -215,10 +217,9 @@ export function parseRequestBody(event) {
   }
 }
 
-export function buildValidationError(request, requestId, errorMessages, govClientHeaders = {}) {
+export function buildValidationError(request, errorMessages, govClientHeaders = {}) {
   return http400BadRequestResponse({
     request,
-    requestId,
     headers: { ...govClientHeaders },
     message: errorMessages.join(", "),
   });

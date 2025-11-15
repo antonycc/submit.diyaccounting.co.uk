@@ -68,7 +68,7 @@ export function apiEndpoint(app) {
 
 export async function handler(event) {
   const { request, requestId } = extractRequest(event);
-  logger.info({ requestId, message: "bundlePost entry", route: "/api/v1/bundle", request });
+  logger.info({ message: "bundlePost entry", route: "/api/v1/bundle", request });
 
   validateEnv(["COGNITO_USER_POOL_ID"]);
 
@@ -76,11 +76,11 @@ export async function handler(event) {
   try {
     await enforceBundles(event);
   } catch (error) {
-    return http403ForbiddenFromBundleEnforcement(requestId, error, request);
+    return http403ForbiddenFromBundleEnforcement(error, request);
   }
 
   try {
-    logger.info({ requestId, message: "Bundle request received:", event: JSON.stringify(event, null, 2) });
+    logger.info({ message: "Bundle request received:", event: JSON.stringify(event, null, 2) });
     // TODO: Move into endpoint and emulate the API Gateway authorizer behavior
     let decodedToken;
     try {
@@ -115,13 +115,13 @@ export async function handler(event) {
       };
     }
 
-    logger.info({ requestId, message: "Processing bundle request for user:", userId, requestedBundle });
+    logger.info({ message: "Processing bundle request for user:", userId, requestedBundle });
 
     const currentBundles = await getUserBundles(userId, userPoolId);
 
     const hasBundle = currentBundles.some((bundle) => bundle === requestedBundle || bundle.startsWith(requestedBundle + "|"));
     if (hasBundle) {
-      logger.info({ requestId, message: "User already has requested bundle:", requestedBundle });
+      logger.info({ message: "User already has requested bundle:", requestedBundle });
       return {
         statusCode: 200,
         headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*", "x-request-id": requestId },
@@ -137,7 +137,7 @@ export async function handler(event) {
     const catalogBundle = getCatalogBundle(requestedBundle);
 
     if (!catalogBundle) {
-      logger.error({ requestId, message: "[Catalog bundle] Bundle not found in catalog:", requestedBundle });
+      logger.error({ message: "[Catalog bundle] Bundle not found in catalog:", requestedBundle });
       return {
         statusCode: 404,
         headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*", "x-request-id": requestId },
@@ -147,7 +147,7 @@ export async function handler(event) {
 
     const check = qualifiersSatisfied(catalogBundle, decodedToken, qualifiers);
     if (check?.unknown) {
-      logger.warn({ requestId, message: "[Catalog bundle] Unknown qualifier in bundle request:", qualifier: check.unknown });
+      logger.warn({ message: "[Catalog bundle] Unknown qualifier in bundle request:", qualifier: check.unknown });
       return {
         statusCode: 400,
         headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*", "x-request-id": requestId },
@@ -155,7 +155,7 @@ export async function handler(event) {
       };
     }
     if (check?.ok === false) {
-      logger.warn({ requestId, message: "[Catalog bundle] Qualifier mismatch for bundle request:", reason: check.reason });
+      logger.warn({ message: "[Catalog bundle] Qualifier mismatch for bundle request:", reason: check.reason });
       return {
         statusCode: 400,
         headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*", "x-request-id": requestId },
@@ -164,7 +164,7 @@ export async function handler(event) {
     }
 
     if (catalogBundle.allocation === "automatic") {
-      logger.info({ requestId, message: "[Catalog bundle] Bundle is automatic allocation, no action needed:", requestedBundle });
+      logger.info({ message: "[Catalog bundle] Bundle is automatic allocation, no action needed:", requestedBundle });
       // nothing to persist
       return {
         statusCode: 200,
