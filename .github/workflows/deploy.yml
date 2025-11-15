@@ -283,27 +283,11 @@ jobs:
     runs-on: ubuntu-24.04
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
     steps:
-      - name: Configure AWS role via GitHub OIDC
-        uses: aws-actions/configure-aws-credentials@v5
+      - uses: ./.github/actions/aws-credentials
         with:
-          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          actions-role-arn: ${{ env.ACTIONS_ROLE_ARN }}
+          deploy-role-arn: ${{ env.DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
-          role-chaining: false
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - name: Assume AWS deployment role
-        uses: aws-actions/configure-aws-credentials@v5
-        with:
-          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-          role-chaining: true
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
 
       - name: CDK stacks in eu-west-2 and us-east-1
         run: |
@@ -1729,27 +1713,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Configure AWS role via GitHub OIDC
-        uses: aws-actions/configure-aws-credentials@v5
+      - uses: ./.github/actions/aws-credentials
         with:
-          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          actions-role-arn: ${{ env.ACTIONS_ROLE_ARN }}
+          deploy-role-arn: ${{ env.DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
-          role-chaining: false
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - name: Assume AWS deployment role
-        uses: aws-actions/configure-aws-credentials@v5
-        with:
-          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-          role-chaining: true
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
 
       - name: Get CloudFront distribution ID
         id: get-distribution-id
@@ -2037,29 +2005,12 @@ jobs:
           echo "</body></html>" >> "$INDEX_FILE"
         shell: bash
 
-      - name: Configure AWS role via GitHub OIDC
+      - uses: ./.github/actions/aws-credentials
         if: ${{ !cancelled() }}
-        uses: aws-actions/configure-aws-credentials@v5
         with:
-          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          actions-role-arn: ${{ env.ACTIONS_ROLE_ARN }}
+          deploy-role-arn: ${{ env.DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
-          role-chaining: false
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - name: Assume AWS deployment role
-        if: ${{ !cancelled() }}
-        uses: aws-actions/configure-aws-credentials@v5
-        with:
-          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-          role-chaining: true
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
 
       - name: Copy test reports to S3 origin bucket
         if: ${{ !cancelled() }}
@@ -2219,27 +2170,11 @@ jobs:
     runs-on: ubuntu-24.04
     environment: ${{ needs.names.outputs.environment-name }}
     steps:
-      - name: Configure AWS role via GitHub OIDC
-        uses: aws-actions/configure-aws-credentials@v5
+      - uses: ./.github/actions/aws-credentials
         with:
-          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          actions-role-arn: ${{ env.ACTIONS_ROLE_ARN }}
+          deploy-role-arn: ${{ env.DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
-          role-chaining: false
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - name: Assume AWS deployment role
-        uses: aws-actions/configure-aws-credentials@v5
-        with:
-          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-          role-chaining: true
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
 
       - name: Set last known good deployment in SSM Parameter Store
         run: |
@@ -2283,27 +2218,11 @@ jobs:
     runs-on: ubuntu-24.04
     environment: ${{ needs.names.outputs.environment-name }}
     steps:
-      - name: Configure AWS role via GitHub OIDC
-        uses: aws-actions/configure-aws-credentials@v5
+      - uses: ./.github/actions/aws-credentials
         with:
-          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          actions-role-arn: ${{ env.ACTIONS_ROLE_ARN }}
+          deploy-role-arn: ${{ env.DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
-          role-chaining: false
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - name: Assume AWS deployment role
-        uses: aws-actions/configure-aws-credentials@v5
-        with:
-          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-          role-chaining: true
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
 
       - name: Invalidate CloudFront paths
         env:
