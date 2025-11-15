@@ -44,6 +44,8 @@
     "test:obligationBehaviour": "npx dotenv -e .env.proxy -- playwright test --project=obligation-behaviour-tests",
     "test:obligationBehaviour-ci":   "npx dotenv -e .env.ci   -- playwright test --project=obligation-behaviour-tests",
     "test:obligationBehaviour-prod": "npx dotenv -e .env.prod -- playwright test --project=obligation-behaviour-tests",
+    "aa": "YOU ARE HERE ABOUT TO TEST IF THIS SWITCHING WORKS THEN CREATE NEW TEST JOBS IN DEPLOY.YML",
+    "bb": "THEN THERE WILL BE SANDBOX+LIVE JOBS IN CI PIPELINES AND JUST SANDBOX JOBS IN PROD",
     "test:viewVatBehaviour": "HMRC_ACCOUNT=sandbox npx dotenv -e .env.proxy -- playwright test --project=view-vat-behaviour-tests",
     "test:bundleBehaviour": "npx dotenv -e .env.proxy -- playwright test --project=bundle-behaviour-tests",
     "test:bundleBehaviour-ci": "npx dotenv -e .env.ci -- playwright test --project=bundle-behaviour-tests",
