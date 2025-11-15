@@ -1,0 +1,30 @@
+name: "Setup Node and Java"
+description: "Setup Node.js with npm cache and Java with Maven cache"
+
+inputs:
+  node-version:
+    description: "Node.js version to use"
+    required: true
+  java-version:
+    description: "Java version to use"
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Setup Node
+      uses: actions/setup-node@v6
+      with:
+        node-version: ${{ inputs.node-version }}
+        cache: 'npm'
+
+    - name: Node dependencies
+      shell: bash
+      run: npm ci
+
+    - name: Setup Java
+      uses: actions/setup-java@v5
+      with:
+        distribution: 'temurin'
+        java-version: ${{ inputs.java-version }}
+        cache: 'maven'

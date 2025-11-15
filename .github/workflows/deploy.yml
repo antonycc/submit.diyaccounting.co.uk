@@ -693,20 +693,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Setup Node
-        uses: actions/setup-node@v6
+      - uses: ./.github/actions/setup-node-java
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Node dependencies
-        run: npm ci
-
-      - uses: actions/setup-java@v5
-        with:
-          distribution: 'temurin'
           java-version: ${{ env.JAVA_VERSION }}
-          cache: 'maven'
 
       - name: Deploy SelfDestruct Stack (CDK)
         run: |
@@ -745,20 +735,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Setup Node
-        uses: actions/setup-node@v6
+      - uses: ./.github/actions/setup-node-java
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Node dependencies
-        run: npm ci
-
-      - uses: actions/setup-java@v5
-        with:
-          distribution: 'temurin'
           java-version: ${{ env.JAVA_VERSION }}
-          cache: 'maven'
 
       - uses: ./.github/actions/aws-credentials
         with:
@@ -806,20 +786,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Setup Node
-        uses: actions/setup-node@v6
+      - uses: ./.github/actions/setup-node-java
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Node dependencies
-        run: npm ci
-
-      - uses: actions/setup-java@v5
-        with:
-          distribution: 'temurin'
           java-version: ${{ env.JAVA_VERSION }}
-          cache: 'maven'
 
       - uses: ./.github/actions/aws-credentials
         with:
@@ -867,20 +837,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Setup Node
-        uses: actions/setup-node@v6
+      - uses: ./.github/actions/setup-node-java
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Node dependencies
-        run: npm ci
-
-      - uses: actions/setup-java@v5
-        with:
-          distribution: 'temurin'
           java-version: ${{ env.JAVA_VERSION }}
-          cache: 'maven'
 
       - uses: ./.github/actions/aws-credentials
         with:
@@ -930,20 +890,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Setup Node
-        uses: actions/setup-node@v6
+      - uses: ./.github/actions/setup-node-java
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Node dependencies
-        run: npm ci
-
-      - uses: actions/setup-java@v5
-        with:
-          distribution: 'temurin'
           java-version: ${{ env.JAVA_VERSION }}
-          cache: 'maven'
 
       - uses: ./.github/actions/aws-credentials
         with:
@@ -1008,20 +958,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Setup Node
-        uses: actions/setup-node@v6
+      - uses: ./.github/actions/setup-node-java
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Node dependencies
-        run: npm ci
-
-      - uses: actions/setup-java@v5
-        with:
-          distribution: 'temurin'
           java-version: ${{ env.JAVA_VERSION }}
-          cache: 'maven'
 
       - name: Deploy SelfDestruct Stack (CDK)
         run: |
