@@ -1275,6 +1275,43 @@ jobs:
           HTTP_API_URL: ${{ needs.deploy-api.outputs.httpApiUrl }}
           DIY_SUBMIT_APEX_URL: ${{ needs.names.outputs.apex-url }}
 
+#      - name: Upsert Cognito callback/logout URLs
+#        if: ${{ contains(needs.names.outputs.base-url, 'submit') }}
+#        uses: actions/github-script@v8
+#        env:
+#          USER_POOL_ID: ${{ vars.COGNITO_USER_POOL_ID }}
+#          CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
+#          REGION: ${{ env.AWS_REGION }}
+#          BASE_URL: ${{ needs.names.outputs.base-url }}
+#        with:
+#          script: |
+#            const {execSync} = require('child_process')
+#            const jp = JSON.parse
+#            const sh = (cmd)=>execSync(cmd,{encoding:'utf8'}).trim()
+#
+#            const d = jp(sh(`aws cognito-idp describe-user-pool-client --user-pool-id ${process.env.USER_POOL_ID} --client-id ${process.env.CLIENT_ID} --region ${process.env.REGION}`)).UserPoolClient
+#            const have = new Set([...(d.CallbackURLs||[]), ...(d.LogoutURLs||[])])
+#
+#            const add = (arr)=>Array.from(new Set(arr))
+#            const cbWanted = add([...(d.CallbackURLs||[]), `${process.env.BASE_URL}auth/loginWithCognitoCallback.html`])
+#            const loWanted = add([...(d.LogoutURLs||[]), `${process.env.BASE_URL}`])
+#
+#            const changed = JSON.stringify(cbWanted) !== JSON.stringify(d.CallbackURLs||[]) ||
+#                            JSON.stringify(loWanted) !== JSON.stringify(d.LogoutURLs||[])
+#
+#            core.notice(`Will update: ${changed}`)
+#            if (!changed) return
+#
+#            const payload = {
+#              UserPoolId: process.env.USER_POOL_ID,
+#              ClientId: process.env.CLIENT_ID,
+#              CallbackURLs: cbWanted,
+#              LogoutURLs: loWanted
+#            }
+#            const tmp = 'payload.json'
+#            require('fs').writeFileSync(tmp, JSON.stringify(payload))
+#            sh(`aws cognito-idp update-user-pool-client --cli-input-json file://${tmp} --region ${process.env.REGION}`)
+
   deploy-ops:
     name: 'deploy ops with dashboard'
     needs:
@@ -1352,6 +1389,64 @@ jobs:
           COGNITO_USER_POOL_ARN: ${{ vars.COGNITO_USER_POOL_ARN }}
           COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
 
+#  origin-test:
+#    if: ${{ !cancelled() }}
+#    name: 'origin test'
+#    needs:
+#      - names
+#      - skip-deploy-check
+#      - deploy-auth
+#      - deploy-hmrc
+#      - deploy-account
+#      - deploy-edge
+#      - deploy-publish
+#    runs-on: ubuntu-24.04
+#    container: mcr.microsoft.com/playwright:v1.55.1-jammy
+#    # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags
+#    # and extension with ubuntu distribution e.g. https://releases.ubuntu.com/jammy/
+#    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+#    steps:
+#      - name: Checkout
+#        uses: actions/checkout@v5
+#
+#      - name: Setup Node
+#        uses: actions/setup-node@v6
+#        with:
+#          node-version: ${{ env.NODE_VERSION }}
+#          cache: 'npm'
+#
+#      - name: Install dependencies
+#        run: |
+#          npm ci --ignore-scripts
+#        env:
+#          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+#
+#      #cp '.env.${{ needs.names.outputs.environment-name }}' '.env.test' ; npx dotenv -e '.env.${{ needs.names.outputs.environment-name }}' -- npm run test:behaviour
+#      #
+#      - run: cp '.env.${{ needs.names.outputs.environment-name }}' '.env.test' ; npx dotenv -e '.env.${{ needs.names.outputs.environment-name }}' -- npm run test:bundleBehaviour
+#        env:
+#          DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.base-url }}
+#          TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
+#          TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
+#          TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
+#
+#      - name: Upload artifacts (results)
+#        if: ${{ !cancelled() }}
+#        uses: actions/upload-artifact@v5
+#        with:
+#          name: origin-test-artifacts
+#          retention-days: 30
+#          path: |
+#            target/behaviour-test-results/
+#
+#      - name: Upload artifacts (reports)
+#        if: ${{ !cancelled() }}
+#        uses: actions/upload-artifact@v5
+#        with:
+#          name: origin-test-reports
+#          retention-days: 30
+#          path: |
+#            target/test-reports/
 
   # Invoke .github/workflows/set-origins.yml to set this domain as the apex origin
   #  workflow_call:
@@ -1415,6 +1510,97 @@ jobs:
     outputs:
       existing-deployment-name: ${{ steps.set-origins.outputs.existing-deployment-name }}
 
+#        run: |
+#          set -euo pipefail
+#
+#          if [ -z "${DIY_SUBMIT_APEX_DOMAIN:-}" ] || [ -z "${DIY_SUBMIT_BASE_DOMAIN:-}" ] || [ -z "${AWS_HOSTED_ZONE_ID:-}" ]; then
+#            echo "Required env vars DIY_SUBMIT_APEX_DOMAIN, DIY_SUBMIT_BASE_DOMAIN, and AWS_HOSTED_ZONE_ID must be set."
+#            exit 1
+#          fi
+#
+#          cat > /tmp/alias.json <<JSON
+#          {
+#            "Comment": "Alias apex domain to base domain",
+#            "Changes": [
+#              {
+#                "Action": "UPSERT",
+#                "ResourceRecordSet": {
+#                  "Name": "${DIY_SUBMIT_APEX_DOMAIN}.",
+#                  "Type": "A",
+#                  "AliasTarget": {
+#                    "HostedZoneId": "${AWS_HOSTED_ZONE_ID}",
+#                    "DNSName": "${DIY_SUBMIT_BASE_DOMAIN}.",
+#                    "EvaluateTargetHealth": false
+#                  }
+#                }
+#              },
+#              {
+#                "Action": "UPSERT",
+#                "ResourceRecordSet": {
+#                  "Name": "${DIY_SUBMIT_APEX_DOMAIN}.",
+#                  "Type": "AAAA",
+#                  "AliasTarget": {
+#                    "HostedZoneId": "${AWS_HOSTED_ZONE_ID}",
+#                    "DNSName": "${DIY_SUBMIT_BASE_DOMAIN}.",
+#                    "EvaluateTargetHealth": false
+#                  }
+#                }
+#              }
+#            ]
+#          }
+#          JSON
+#
+#          echo "Upserting alias records: ${DIY_SUBMIT_APEX_DOMAIN} -> ${DIY_SUBMIT_BASE_DOMAIN} in hosted zone ${AWS_HOSTED_ZONE_ID}"
+#          aws route53 change-resource-record-sets --hosted-zone-id "$AWS_HOSTED_ZONE_ID" --change-batch file:///tmp/alias.json
+
+  # TODO: Configure or copy and convert the system test API test to test against deployed environment
+#  api-test:
+#    if: ${{ !cancelled() && inputs.skipDeploy == 'true' || needs.deploy-publish.result == 'success' }}
+#    name: 'api test'
+#    needs:
+#      - names
+#      - build-cdk
+#      - deploy-application
+#      - deploy-edge
+#      - deploy-publish
+#      - set-origins
+  #    - origin-test
+#    runs-on: ubuntu-24.04
+#    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+#    steps:
+#      - name: Checkout
+#        uses: actions/checkout@v5
+#
+#      - name: Setup Node
+#        uses: actions/setup-node@v6
+#        with:
+#          node-version: ${{ env.NODE_VERSION }}
+#          cache: 'npm'
+#
+#      - name: Node dependencies
+#        run: npm ci
+#
+#      - name: Install dependencies and Playwright browsers
+#        run: |
+#          npm -v
+#          npm ci --ignore-scripts
+#          npx playwright install chromium --with-deps
+#
+#      - name: Run Playwright API test
+#        run: |
+#          echo "DIY_SUBMIT_BASE_URL=${DIY_SUBMIT_BASE_URL}"
+#          npm run test:api
+#        env:
+#          DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.base-url }}
+#
+#      - name: Upload artifacts
+#        if: ${{ !cancelled() }}
+#        uses: actions/upload-artifact@v5
+#        with:
+#          name: api-test-artifacts
+#          path: |
+#            playwright-report
+#            test-results
 
   web-test-bundle:
     if: ${{ !cancelled() }}
@@ -1601,6 +1787,68 @@ jobs:
           echo "Uploading test reports to S3 bucket: ${BUCKET_NAME?}"
           aws s3 cp target/test-reports/ s3://${BUCKET_NAME?}/tests/ --recursive
         shell: bash
+
+# TODO: Reinstate load test
+#  load-test:
+#    if: ${{ !cancelled() && inputs.skipDeploy == 'true' || needs.deploy-publish.result == 'success' }}
+#    name: 'load test'
+#    needs:
+#      - names
+#      - build-cdk
+#      - deploy-edge
+#      - deploy-edge
+#      - deploy-publish
+#      - set-origins
+#    runs-on: ubuntu-24.04
+#    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+#    steps:
+#      - name: Checkout
+#        uses: actions/checkout@v5
+#
+#      - name: Setup Node
+#        uses: actions/setup-node@v6
+#        with:
+#          node-version: ${{ env.NODE_VERSION }}
+#          cache: 'npm'
+#
+#      - name: Node dependencies
+#        run: npm ci
+#
+#      - name: Setup k6
+#        uses: grafana/setup-k6-action@v1
+#
+#      - name: Setup k6 with dashboard extension
+#        run: |
+#          # Download pre-built k6 binary with xk6-dashboard extension
+#          curl -L https://github.com/grafana/xk6-dashboard/releases/download/v0.7.12/xk6-dashboard_v0.7.12_linux_amd64.tar.gz -o xk6-dashboard.tar.gz
+#          tar -xzf xk6-dashboard.tar.gz
+#          chmod +x xk6-dashboard_v0.7.12_linux_amd64/k6
+#          # Create a symlink for easy access
+#          ln -s xk6-dashboard_v0.7.12_linux_amd64/k6 k6
+#          ./k6 version
+#
+#      - name: Run k6 load test with dashboard
+#        run: |
+#          # k6 run tests/load.live.test.js --summary-export=load-test-summary.json
+#          # Run k6 with dashboard export, events recording, and summary export for maximum information
+#          ./k6 run tests/load.live.test.js \
+#            --out 'dashboard=export=load-test-report.html&port=-1&record=load-test-events.json&period=1s' \
+#            --summary-export=load-test-summary.json
+#        env:
+#          DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.base-url }}
+#          TEST_USERNAME: ${{ needs.test-parameters.outputs.test-username }}
+#          TEST_PASSWORD: ${{ needs.test-parameters.outputs.test-password }}
+#          DURATION: ${{ inputs.loadTestDuration }}
+#
+#      - name: Upload artifacts
+#        if: ${{ !cancelled() }}
+#        uses: actions/upload-artifact@v5
+#        with:
+#          name: load-test-artifacts
+#          path: |
+#            load-test-summary.json
+#            load-test-report.html
+#            load-test-events.json
 
   convert-video:
     name: 'convert web test video to mp4'
