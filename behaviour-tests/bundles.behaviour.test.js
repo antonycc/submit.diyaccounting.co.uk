@@ -5,6 +5,7 @@ import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import {
   addOnPageLogging,
   getEnvVarAndLog,
+  isSandboxMode,
   runLocalHttpServer,
   runLocalOAuth2Server,
   runLocalSslProxy,
@@ -21,8 +22,7 @@ import {
   logOutAndExpectToBeLoggedOut,
   verifyLoggedInStatus,
 } from "./steps/behaviour-login-steps.js";
-import { clearBundles, goToBundlesPage, ensureBundlesForEnvironment } from "./steps/behaviour-bundle-steps.js";
-import { goToReceiptsPageUsingHamburgerMenu } from "./steps/behaviour-hmrc-receipts-steps.js";
+import { clearBundles, goToBundlesPage, ensureBundlePresent } from "./steps/behaviour-bundle-steps.js";
 
 if (!process.env.DIY_SUBMIT_ENV_FILEPATH) {
   dotenvConfigIfNotBlank({ path: ".env.test" });
@@ -79,19 +79,7 @@ test.afterAll(async () => {
   }
 });
 
-// test.use({
-//   video: {
-//     mode: "on",
-//     size: { width: 1280, height: 720 },
-//   },
-// });
-
 test("Click through: Adding and removing bundles", async ({ page }) => {
-  // // Run local servers as needed for the tests
-  // await runLocalOAuth2Server(runMockOAuth2);
-  // serverProcess = await runLocalHttpServer(runTestServer, null, serverPort);
-  // ngrokProcess = await runLocalSslProxy(runProxy, serverPort, baseUrl);
-
   // Compute test URL based on which servers are running§
   const testUrl =
     (runTestServer === "run" || runTestServer === "useExisting") && runProxy !== "run" && runProxy !== "useExisting"
@@ -122,30 +110,17 @@ test("Click through: Adding and removing bundles", async ({ page }) => {
 
   await goToBundlesPage(page, screenshotPath);
   await clearBundles(page, screenshotPath);
-  // Ensure required bundles for environment:
-  // - Always add Guest bundle
-  // - Add Test bundle only when HMRC_ACCOUNT=sandbox
-  await ensureBundlesForEnvironment(page, screenshotPath);
+  await ensureBundlePresent(page, "Test", screenshotPath);
   await goToHomePage(page, screenshotPath);
-
-  /* ********** */
-  /*  RECEIPTS  */
-  /* ********** */
-
-  // await goToReceiptsPageUsingHamburgerMenu(page, screenshotPath);
-  // await goToHomePageUsingHamburgerMenu(page, screenshotPath);
+  await goToBundlesPage(page, screenshotPath);
+  await ensureBundlePresent(page, "Guest", screenshotPath);
+  await goToHomePage(page, screenshotPath);
+  await goToBundlesPage(page, screenshotPath);
+  await goToHomePage(page, screenshotPath);
 
   /* ********* */
   /*  LOG OUT  */
   /* ********* */
 
   await logOutAndExpectToBeLoggedOut(page, screenshotPath);
-
-  // // Shutdown local servers at end of test
-  // if (serverProcess) {
-  //   serverProcess.kill();
-  // }
-  // if (ngrokProcess) {
-  //   ngrokProcess.kill();
-  // }
 });

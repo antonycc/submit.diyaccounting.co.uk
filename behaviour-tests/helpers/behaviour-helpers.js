@@ -35,12 +35,6 @@ export function isSandboxMode() {
     logger.info(`Sandbox mode detection: HMRC_ACCOUNT=${hmrcAccount} => sandbox=false`);
     return false;
   }
-
-  // Fallback to HMRC_BASE_URI heuristic
-  //const hmrcBaseUri = process.env.HMRC_BASE_URI || "";
-  //const isSandbox = hmrcBaseUri.includes("test-api") || hmrcBaseUri.includes("sandbox") || hmrcBaseUri.includes("/test/");
-  //logger.info(`Sandbox mode detection (fallback): HMRC_BASE_URI=${hmrcBaseUri}, isSandbox=${isSandbox}`);
-  //return isSandbox;
 }
 
 export async function runLocalS3(runMinioS3, receiptsBucketName, optionalTestS3AccessKey, optionalTestS3SecretKey) {

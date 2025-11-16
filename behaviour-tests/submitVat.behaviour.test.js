@@ -5,6 +5,7 @@ import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import {
   addOnPageLogging,
   getEnvVarAndLog,
+  isSandboxMode,
   runLocalHttpServer,
   runLocalOAuth2Server,
   runLocalS3,
@@ -22,7 +23,7 @@ import {
   logOutAndExpectToBeLoggedOut,
   verifyLoggedInStatus,
 } from "./steps/behaviour-login-steps.js";
-import { ensureBundlesForEnvironment, goToBundlesPage } from "./steps/behaviour-bundle-steps.js";
+import { ensureBundlePresent, goToBundlesPage } from "./steps/behaviour-bundle-steps.js";
 import { goToReceiptsPageUsingHamburgerMenu, verifyAtLeastOneClickableReceipt } from "./steps/behaviour-hmrc-receipts-steps.js";
 import { completeVat, fillInVat, initSubmitVat, submitFormVat, verifyVatSubmission } from "./steps/behaviour-hmrc-vat-steps.js";
 import {
@@ -33,8 +34,6 @@ import {
   initHmrcAuth,
   submitHmrcAuth,
 } from "./steps/behaviour-hmrc-steps.js";
-import { checkIfServerIsRunning } from "./helpers/serverHelper.js";
-import { ensureMinioBucketExists } from "@app/bin/minio.js";
 
 if (!process.env.DIY_SUBMIT_ENV_FILEPATH) {
   dotenvConfigIfNotBlank({ path: ".env.test" });
@@ -61,6 +60,9 @@ const baseUrl = getEnvVarAndLog("baseUrl", "DIY_SUBMIT_BASE_URL", null);
 const hmrcTestUsername = getEnvVarAndLog("hmrcTestUsername", "TEST_HMRC_USERNAME", null);
 const hmrcTestPassword = getEnvVarAndLog("hmrcTestPassword", "TEST_HMRC_PASSWORD", null);
 const hmrcTestVatNumber = getEnvVarAndLog("hmrcTestVatNumber", "TEST_HMRC_VAT_NUMBER", null);
+// eslint-disable-next-line sonarjs/pseudo-random
+const hmrcVatPeriodKey = Math.random().toString(36).substring(2, 6);
+const hmrcVatDueAmount = "1000.00";
 
 let mockOAuth2Process;
 let s3Endpoint;
@@ -81,14 +83,6 @@ test.beforeAll(async () => {
   serverProcess = await runLocalHttpServer(runTestServer, s3Endpoint, serverPort);
   ngrokProcess = await runLocalSslProxy(runProxy, serverPort, baseUrl);
 
-  // const runLocalOAuth2ServerPromise = runLocalOAuth2Server(runMockOAuth2);
-  //
-  // s3Endpoint = await runLocalS3(runMinioS3, receiptsBucketName, optionalTestS3AccessKey, optionalTestS3SecretKey);
-  // serverProcess = await runLocalHttpServer(runTestServer, s3Endpoint, serverPort);
-  // ngrokProcess = await runLocalSslProxy(runProxy, serverPort, baseUrl);
-  //
-  // await runLocalOAuth2ServerPromise;
-
   console.log("beforeAll hook completed successfully");
 });
 
@@ -103,29 +97,9 @@ test.afterAll(async () => {
   if (mockOAuth2Process) {
     mockOAuth2Process.kill();
   }
-
-  // if (serverProcess) {
-  //   serverProcess.kill();
-  // }
-  // if (ngrokProcess) {
-  //   ngrokProcess.kill();
-  // }
 });
 
-// test.use({
-//   video: {
-//     mode: "on",
-//     size: { width: 1280, height: 720 },
-//   },
-// });
-
 test("Click through: Submit a VAT return to HMRC", async ({ page }) => {
-  // // Run servers needed for the test
-  // await runLocalOAuth2Server(runMockOAuth2);
-  // s3Endpoint = await runLocalS3(runMinioS3, receiptsBucketName, optionalTestS3AccessKey, optionalTestS3SecretKey);
-  // serverProcess = await runLocalHttpServer(runTestServer, s3Endpoint, serverPort);
-  // ngrokProcess = await runLocalSslProxy(runProxy, serverPort, baseUrl);
-
   // Compute test URL based on which servers are running§
   const testUrl =
     (runTestServer === "run" || runTestServer === "useExisting") && runProxy !== "run" && runProxy !== "useExisting"
@@ -155,7 +129,11 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }) => {
   /* ********* */
 
   await goToBundlesPage(page, screenshotPath);
-  await ensureBundlesForEnvironment(page, screenshotPath);
+  if (isSandboxMode()) {
+    await ensureBundlePresent(page, "Test", screenshotPath);
+  } else {
+    await ensureBundlePresent(page, "Guest", screenshotPath);
+  }
   await goToHomePage(page, screenshotPath);
 
   /* ************ */
@@ -163,7 +141,7 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }) => {
   /* ************ */
 
   await initSubmitVat(page, screenshotPath);
-  await fillInVat(page, hmrcTestVatNumber, screenshotPath);
+  await fillInVat(page, hmrcTestVatNumber, hmrcVatPeriodKey, hmrcVatDueAmount, screenshotPath);
   await submitFormVat(page, screenshotPath);
 
   /* ************ */
@@ -197,51 +175,4 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }) => {
   /* ********* */
 
   await logOutAndExpectToBeLoggedOut(page, screenshotPath);
-
-  // // Shutdown local servers at end of test
-  // if (serverProcess) {
-  //   serverProcess.kill();
-  // }
-  // if (ngrokProcess) {
-  //   ngrokProcess.kill();
-  // }
 });
-
-// async function checkServersAreRunning() {
-//   if (runMinioS3) {
-//     try {
-//       await ensureMinioBucketExists(receiptsBucketName, s3Endpoint, optionalTestS3AccessKey, optionalTestS3SecretKey);
-//     } catch (error) {
-//       console.log("S3 endpoint not responding, restarting local S3 server...", error);
-//       s3Endpoint = await runLocalS3(runMinioS3, receiptsBucketName, optionalTestS3AccessKey, optionalTestS3SecretKey);
-//     }
-//   } else {
-//     console.log("Skipping local-s3-server process as runMinioS3 is not set to 'run'");
-//   }
-//
-//   if (runTestServer) {
-//     await checkIfServerIsRunning(
-//       `http://127.0.0.1:${serverPort}`,
-//       1000,
-//       async function () {
-//         serverProcess = await runLocalHttpServer(runTestServer, s3Endpoint, serverPort);
-//       },
-//       "http",
-//     );
-//   } else {
-//     console.log("Skipping server process as runTestServer is not set to 'run'");
-//   }
-//
-//   if (runProxy) {
-//     await checkIfServerIsRunning(
-//       baseUrl,
-//       1000,
-//       async function () {
-//         ngrokProcess = await runLocalSslProxy(runProxy, serverPort, baseUrl);
-//       },
-//       "proxy",
-//     );
-//   } else {
-//     console.log("Skipping ngrok process as runProxy is not set to 'run'");
-//   }
-// }

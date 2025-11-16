@@ -9,6 +9,7 @@ export async function initSubmitVat(page, screenshotPath = defaultScreenshotPath
   const activityButtonText = isSandboxMode() ? "Submit VAT (HMRC Sandbox)" : "Submit VAT (HMRC)";
   await test.step(`The user begins a VAT return and sees the ${activityButtonText} form`, async () => {
     // Click "VAT Return Submission" on activities page
+    await page.waitForTimeout(500);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-start-submission.png` });
     await loggedClick(page, `button:has-text('${activityButtonText}')`, "Starting VAT return submission");
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-start-submission.png` });
@@ -19,19 +20,17 @@ export async function initSubmitVat(page, screenshotPath = defaultScreenshotPath
   });
 }
 
-export async function fillInVat(page, hmrcTestVatNumber, screenshotPath = defaultScreenshotPath) {
+export async function fillInVat(page, hmrcVatNumber, hmrcVatPeriodKey, hmrcVatDueAmount, screenshotPath = defaultScreenshotPath) {
   await test.step("The user completes the VAT form with valid values and sees the Submit button", async () => {
     // Fill out the VAT form using the correct field IDs from submitVat.html
-    // eslint-disable-next-line sonarjs/pseudo-random
-    const randomFourCharacters = Math.random().toString(36).substring(2, 6);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-fill-in-submission.png` });
     await page.waitForTimeout(100);
-    await loggedFill(page, "#vatNumber", hmrcTestVatNumber, "Entering VAT number");
+    await loggedFill(page, "#vatNumber", hmrcVatNumber, "Entering VAT number");
     await page.waitForTimeout(100);
-    await loggedFill(page, "#periodKey", randomFourCharacters, "Entering period key");
+    await loggedFill(page, "#periodKey", hmrcVatPeriodKey, "Entering period key");
     await page.waitForTimeout(100);
-    await loggedFill(page, "#vatDue", "1000.00", "Entering VAT due amount");
-    await page.waitForTimeout(500);
+    await loggedFill(page, "#vatDue", hmrcVatDueAmount, "Entering VAT due amount");
+    await page.waitForTimeout(100);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-fill-in-submission.png` });
     await expect(page.locator("#submitBtn")).toBeVisible();
   });
@@ -162,6 +161,7 @@ export async function verifyVatSubmission(page, screenshotPath = defaultScreensh
 export async function initVatObligations(page, screenshotPath = defaultScreenshotPath) {
   const activityButtonText = isSandboxMode() ? "VAT Obligations (HMRC Sandbox)" : "VAT Obligations (HMRC)";
   await test.step(`The user navigates to ${activityButtonText} and sees the obligations form`, async () => {
+    await page.waitForTimeout(500);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-obligations.png` });
     await loggedClick(page, `button:has-text('${activityButtonText}')`, "Starting VAT Obligations");
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-obligations.png` });
@@ -174,16 +174,16 @@ export async function initVatObligations(page, screenshotPath = defaultScreensho
 
 export async function fillInVatObligations(page, hmrcTestVatNumber, options = {}, screenshotPath = defaultScreenshotPath) {
   await test.step("The user fills in the VAT obligations form with VRN and date range", async () => {
-    const { fromDate, toDate, status, testScenario } = options || {};
+    const { hmrcVatPeriodFromDate, hmrcVatPeriodToDate, status, testScenario } = options || {};
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-obligations-fill-in.png` });
 
     // Compute a wide date range with likely hits if not provided
-    const from = fromDate || "2018-01-01";
+    const from = hmrcVatPeriodFromDate || "2018-01-01";
     const today = new Date();
     const yyyy = today.getFullYear();
     const mm = String(today.getMonth() + 1).padStart(2, "0");
     const dd = String(today.getDate()).padStart(2, "0");
-    const to = toDate || `${yyyy}-${mm}-${dd}`;
+    const to = hmrcVatPeriodToDate || `${yyyy}-${mm}-${dd}`;
 
     await page.waitForTimeout(100);
     await loggedFill(page, "#vrn", hmrcTestVatNumber, "Entering VAT registration number");
@@ -249,6 +249,7 @@ export async function verifyVatObligationsResults(page, screenshotPath = default
 export async function initViewVatReturn(page, screenshotPath = defaultScreenshotPath, hmrcAccount = null) {
   const activityButtonText = isSandboxMode() ? "View VAT Return (HMRC Sandbox)" : "View VAT Return (HMRC)";
   await test.step(`The user navigates to ${activityButtonText} and sees the return form`, async () => {
+    await page.waitForTimeout(500);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-view-vat-init.png` });
     await loggedClick(page, `button:has-text('${activityButtonText}')`, "Starting View VAT Return");
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-view-vat-init.png` });

@@ -34,6 +34,8 @@ export async function goToHomePage(page, screenshotPath = defaultScreenshotPath)
       loggedClick(page, "button:has-text('Back to Home')", "Back to Home"),
     ]);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-goto-home.png` });
+    await page.waitForTimeout(500);
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-goto-home.png` });
   });
 }
 

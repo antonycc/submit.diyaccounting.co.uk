@@ -5,6 +5,7 @@ import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import {
   addOnPageLogging,
   getEnvVarAndLog,
+  isSandboxMode,
   runLocalHttpServer,
   runLocalOAuth2Server,
   runLocalSslProxy,
@@ -16,7 +17,7 @@ import {
   logOutAndExpectToBeLoggedOut,
   verifyLoggedInStatus,
 } from "./steps/behaviour-login-steps.js";
-import { ensureBundlesForEnvironment, goToBundlesPage } from "./steps/behaviour-bundle-steps.js";
+import { ensureBundlePresent, goToBundlesPage } from "./steps/behaviour-bundle-steps.js";
 import {
   fillInViewVatReturn,
   initViewVatReturn,
@@ -90,11 +91,6 @@ test.afterAll(async () => {
 });
 
 test("Click through: Get VAT return from HMRC", async ({ page }) => {
-  // // Run servers needed for the test
-  // await runLocalOAuth2Server(runMockOAuth2);
-  // serverProcess = await runLocalHttpServer(runTestServer, null, serverPort);
-  // ngrokProcess = await runLocalSslProxy(runProxy, serverPort, baseUrl);
-
   // Compute test URL based on which servers are running
   const testUrl =
     (runTestServer === "run" || runTestServer === "useExisting") && runProxy !== "run" && runProxy !== "useExisting"
@@ -124,7 +120,11 @@ test("Click through: Get VAT return from HMRC", async ({ page }) => {
   /* ********* */
 
   await goToBundlesPage(page, screenshotPath);
-  await ensureBundlesForEnvironment(page, screenshotPath);
+  if (isSandboxMode()) {
+    await ensureBundlePresent(page, "Test", screenshotPath);
+  } else {
+    await ensureBundlePresent(page, "Guest", screenshotPath);
+  }
   await goToHomePageUsingHamburgerMenu(page, screenshotPath);
 
   /* ******************* */
@@ -158,12 +158,4 @@ test("Click through: Get VAT return from HMRC", async ({ page }) => {
   /* ********* */
 
   await logOutAndExpectToBeLoggedOut(page, screenshotPath);
-
-  // // Shutdown local servers at end of test
-  // if (serverProcess) {
-  //   serverProcess.kill();
-  // }
-  // if (ngrokProcess) {
-  //   ngrokProcess.kill();
-  // }
 });

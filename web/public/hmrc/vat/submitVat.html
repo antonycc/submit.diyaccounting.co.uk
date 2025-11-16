@@ -180,8 +180,21 @@
           const state = generateRandomState();
           submissionData = { vatNumber, periodKey, vatDue, testScenario };
 
+          // Add current activity hmrcAccount header if present in URL
+          const urlParams = new URLSearchParams(window.location.search);
+          const hmrcAccount = urlParams.get("hmrcAccount");
+          const currentActivity = `${location.pathname}`
+          const requestData = JSON.stringify(submissionData);
+
           sessionStorage.setItem("oauth_state", state);
-          localStorage.setItem("submission_data", JSON.stringify(submissionData));
+          localStorage.setItem("submission_data", requestData);
+          localStorage.setItem("currentActivity", currentActivity);
+          if(hmrcAccount === "sandbox") {
+            localStorage.setItem("hmrcAccount", hmrcAccount);
+          } else {
+            localStorage.removeItem("hmrcAccount");
+          }
+          console.log("Stored pending request and current activity:", requestData, currentActivity, hmrcAccount);
 
           // Get OAuth URL
           const authResponse = await getAuthUrl(state, "hmrc");
@@ -328,9 +341,8 @@
           requestHeaders["X-Authorization"] = `Bearer ${cognitoAccessToken}`;
         }
 
-        // Add hmrcAccount header if present in URL
-        const urlParams = new URLSearchParams(window.location.search);
-        const hmrcAccount = urlParams.get("hmrcAccount");
+        // Add hmrcAccount header if present
+        const hmrcAccount = localStorage.getItem("hmrcAccount");
         if (hmrcAccount) {
           requestHeaders["hmrcAccount"] = hmrcAccount;
         }
@@ -444,21 +456,6 @@
           const sandboxIndicator = document.getElementById("sandboxIndicator");
           if (sandboxIndicator) {
             sandboxIndicator.classList.add("visible");
-          }
-        }
-
-        const baseUrl = window.location.origin;
-        const isSandbox =
-          baseUrl.includes("test") ||
-          baseUrl.includes("sandbox") ||
-          window.location.hostname === "localhost" ||
-          window.location.hostname === "127.0.0.1" ||
-          hmrcAccount === "sandbox";
-
-        if (isSandbox) {
-          const devSection = document.getElementById("developerSection");
-          if (devSection) {
-            devSection.style.display = "block";
           }
         }
 

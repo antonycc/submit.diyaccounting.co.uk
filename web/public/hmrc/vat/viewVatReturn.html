@@ -18,7 +18,6 @@
           <button class="hamburger-btn" onclick="toggleMenu()">☰</button>
           <div class="menu-dropdown" id="menuDropdown">
             <a href="../../index.html">Home</a>
-            <a href="vatObligations.html">VAT Obligations</a>
             <a href="../../account/bundles.html">Bundles</a>
             <a href="../receipt/receipts.html">Receipts</a>
             <a href="../../guide/index.html">User Guide</a>
@@ -285,7 +284,7 @@
             const state = generateRandomState();
             const requestData = { vrn, periodKey, testScenario };
 
-            // Add hmrcAccount header if present in URL
+            // Add current activity hmrcAccount header if present in URL
             const urlParams = new URLSearchParams(window.location.search);
             const hmrcAccount = urlParams.get("hmrcAccount");
             const currentActivity = `${location.pathname}`
@@ -338,7 +337,7 @@
               requestHeaders["X-Authorization"] = `Bearer ${cognitoAccessToken}`;
             }
 
-            // Add hmrcAccount header if present in localStorage
+            // Add hmrcAccount header if present
             const hmrcAccount = localStorage.getItem("hmrcAccount");
             if (hmrcAccount) {
               requestHeaders["hmrcAccount"] = hmrcAccount;

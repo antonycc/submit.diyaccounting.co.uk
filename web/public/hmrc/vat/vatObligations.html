@@ -200,21 +200,6 @@
           }
         }
 
-        const baseUrl = window.location.origin;
-        const isSandbox =
-          baseUrl.includes("test") ||
-          baseUrl.includes("sandbox") ||
-          window.location.hostname === "localhost" ||
-          window.location.hostname === "127.0.0.1" ||
-          hmrcAccount === "sandbox";
-
-        if (isSandbox) {
-          const devSection = document.getElementById("developerSection");
-          if (devSection) {
-            devSection.style.display = "block";
-          }
-        }
-
         // Toggle developer mode button
         const toggleBtn = document.getElementById("toggleDeveloperMode");
         const devSection = document.getElementById("developerSection");
@@ -361,10 +346,21 @@
             const state = generateRandomState();
             const requestData = { vrn, from, to, status, testScenario };
 
+            // Add current activity hmrcAccount header if present in URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const hmrcAccount = urlParams.get("hmrcAccount");
+            const currentActivity = `${location.pathname}`
+
             sessionStorage.setItem("oauth_state", state);
             localStorage.setItem("pendingObligationsRequest", JSON.stringify(requestData));
-            localStorage.setItem("currentActivity", location.pathname);
-            console.log("Stored pending request and current activity:", requestData, location.pathname);
+            localStorage.setItem("pendingReturnRequest", JSON.stringify(requestData));
+            localStorage.setItem("currentActivity", currentActivity);
+            if(hmrcAccount === "sandbox") {
+              localStorage.setItem("hmrcAccount", hmrcAccount);
+            } else {
+              localStorage.removeItem("hmrcAccount");
+            }
+            console.log("Stored pending request and current activity:", requestData, currentActivity, hmrcAccount);
 
             // Get OAuth URL with read-only scope
             const authResponse = await getAuthUrl(state, "hmrc", "read:vat");
@@ -408,9 +404,8 @@
               requestHeaders["X-Authorization"] = `Bearer ${cognitoAccessToken}`;
             }
 
-            // Add hmrcAccount header if present in URL
-            const urlParams = new URLSearchParams(window.location.search);
-            const hmrcAccount = urlParams.get("hmrcAccount");
+            // Add hmrcAccount header if present
+            const hmrcAccount = localStorage.getItem("hmrcAccount");
             if (hmrcAccount) {
               requestHeaders["hmrcAccount"] = hmrcAccount;
             }
