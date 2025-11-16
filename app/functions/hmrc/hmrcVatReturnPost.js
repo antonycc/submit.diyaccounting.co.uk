@@ -75,16 +75,6 @@ export async function handler(event) {
   try {
     await enforceBundles(event);
   } catch (error) {
-    // TODO: You are here
-    // [x]Then the web pages will change to request sandbox mode or not
-    // [x]And there will be a behaviour test against the sandbox and prod (which is sandbox in ci) using HMRC_ACCOUNT=sandbox  for the ci build but prod will only test sandbox.
-    // [x]And the bundle for sandbox should be Test and the bundle for prod should be Guest (and bundles names should be surfaced as parameters at the top of the test)
-    // [x]And the web pages will have labels about the sandbox mode (missing for submit VAT)
-    // And the debug utilities will only display when the test bundle is present.
-    // And the dynamo db records will have a ttl 1 month after bundle expiry and also have a grace period where the APIs permit traffic
-    // And There is a script to add a salted hash of the user sub (email?) to a directory of users for "test" > bundle-grants/hashofsub.txt
-    // And the bundle grants are allocated during deployment
-    // And sessions can time and and refresh their tokens
     return http403ForbiddenFromBundleEnforcement(error, request);
   }
 

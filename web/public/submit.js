@@ -164,13 +164,22 @@ function generateRandomState() {
 
     // Expose lightweight API on window
     let lastXRequestId = (typeof window !== "undefined" && window.sessionStorage?.getItem?.("lastXRequestId")) || "";
+    let lastXRequestIdSeenAt =
+      (typeof window !== "undefined" && window.sessionStorage?.getItem?.("lastXRequestIdSeenAt")) || "";
     function setLastXRequestId(v) {
       lastXRequestId = v || "";
       try {
         if (v) window.sessionStorage?.setItem?.("lastXRequestId", v);
       } catch {}
+      // Record the time we last saw an x-request-id so the UI can display it
       try {
-        window.dispatchEvent(new CustomEvent("correlation:update", { detail: { lastXRequestId: lastXRequestId } }));
+        lastXRequestIdSeenAt = new Date().toISOString();
+        window.sessionStorage?.setItem?.("lastXRequestIdSeenAt", lastXRequestIdSeenAt);
+      } catch {}
+      try {
+        window.dispatchEvent(
+          new CustomEvent("correlation:update", { detail: { lastXRequestId: lastXRequestId, seenAt: lastXRequestIdSeenAt } })
+        );
       } catch {}
     }
 
@@ -191,6 +200,7 @@ function generateRandomState() {
       // Avoid referencing an undeclared identifier in some test environments
       getTraceparent: () => getOrCreateTraceparent(),
       getLastXRequestId: () => lastXRequestId,
+      getLastXRequestIdSeenAt: () => lastXRequestIdSeenAt,
     });
 
     // Install fetch wrapper
@@ -312,7 +322,11 @@ function fetchWithId(url, opts = {}) {
 
       const ridSpan = document.createElement("span");
       ridSpan.title = "last x-request-id (click to copy)";
-      ridSpan.textContent = `x-request-id: ${(window.getLastXRequestId && window.getLastXRequestId()) || "-"}`;
+      const initialRid = (window.getLastXRequestId && window.getLastXRequestId()) || "-";
+      const initialSeenAtIso = (window.__correlation && window.__correlation.getLastXRequestIdSeenAt?.()) || "";
+      const initialSeenAt = initialSeenAtIso ? new Date(initialSeenAtIso) : null;
+      const initialSeenText = initialSeenAt ? ` (seen ${initialSeenAt.toLocaleString()})` : "";
+      ridSpan.textContent = `x-request-id: ${initialRid}${initialSeenText}`;
       ridSpan.style.cursor = "pointer";
       ridSpan.addEventListener("click", () => {
         const rid = (window.getLastXRequestId && window.getLastXRequestId()) || "";
@@ -326,10 +340,19 @@ function fetchWithId(url, opts = {}) {
       authSection.insertBefore(container, authSection.firstChild);
 
       // Update on correlation changes
-      window.addEventListener("correlation:update", () => {
+      window.addEventListener("correlation:update", (evt) => {
         const latest = (window.getLastXRequestId && window.getLastXRequestId()) || "-";
-        ridSpan.textContent = `x-request-id: ${latest}`;
+        const seenAtIso = evt?.detail?.seenAt || (window.__correlation && window.__correlation.getLastXRequestIdSeenAt?.());
+        const seenAt = seenAtIso ? new Date(seenAtIso) : null;
+        const seenText = seenAt ? ` (seen ${seenAt.toLocaleString()})` : "";
+        ridSpan.textContent = `x-request-id: ${latest}${seenText}`;
       });
+
+      // Respect debug gating – default hidden until enabled
+      try {
+        const enabled = !!window.__debugEnabled__;
+        container.style.display = enabled ? "inline-flex" : "none";
+      } catch {}
     } catch (e) {
       // Non-fatal UI enhancement
       console.warn("Failed to render correlation widget", e);
@@ -341,6 +364,88 @@ function fetchWithId(url, opts = {}) {
   } else {
     document.addEventListener("DOMContentLoaded", render, { once: true });
   }
+})();
+
+// Debug widgets gating – only show on pages when user has the 'test' bundle
+(async function debugWidgetsGating() {
+  if (typeof window === "undefined" || typeof document === "undefined") return;
+
+  async function userHasTestBundle() {
+    try {
+      const idToken = localStorage.getItem("cognitoIdToken");
+      const userInfo = localStorage.getItem("userInfo");
+      if (!idToken || !userInfo) return false;
+      const resp = await fetch("/api/v1/bundle", {
+        headers: { Authorization: `Bearer ${idToken}` },
+      });
+      if (!resp.ok) return false;
+      const data = await resp.json();
+      const bundles = Array.isArray(data?.bundles) ? data.bundles : [];
+      return bundles.some((b) => (b?.bundleId || b) === "test" || String(b).startsWith("test|"));
+    } catch (e) {
+      console.warn("Failed to determine debug entitlement:", e);
+      return false;
+    }
+  }
+
+  function setDisplay(el, value) {
+    if (el) el.style.display = value;
+  }
+
+  function applyVisibility(enabled) {
+    try {
+      // Flag for other scripts
+      window.__debugEnabled__ = !!enabled;
+
+      // entitlement-status span
+      const entitlement = document.querySelector(".entitlement-status");
+      setDisplay(entitlement, enabled ? "inline" : "none");
+
+      // correlation widget container
+      const corr = document.getElementById("correlationWidget");
+      setDisplay(corr, enabled ? "inline-flex" : "none");
+
+      // Footer links: view source, tests, api docs
+      const viewSrc = document.getElementById("viewSourceLink");
+      const tests = document.getElementById("latestTestsLink");
+      const apiDocs = document.getElementById("apiDocsLink");
+
+      // Normalize hrefs to absolute so they work from any page
+      if (viewSrc && !viewSrc.getAttribute("data-href-initialized")) {
+        viewSrc.href = viewSrc.href || "#";
+        viewSrc.setAttribute("data-href-initialized", "true");
+      }
+      if (tests) tests.href = "/tests/html-report/index.html";
+      if (apiDocs) apiDocs.href = "/docs/index.html";
+
+      setDisplay(viewSrc, enabled ? "inline" : "none");
+      setDisplay(tests, enabled ? "inline" : "none");
+      setDisplay(apiDocs, enabled ? "inline" : "none");
+
+      // Local storage viewer container
+      const localStorageContainer = document.getElementById("localstorageContainer");
+      setDisplay(localStorageContainer, enabled ? "block" : "none");
+    } catch (e) {
+      console.warn("Failed to apply debug widget visibility:", e);
+    }
+  }
+
+  function onDomReady(cb) {
+    if (document.readyState === "complete" || document.readyState === "interactive") cb();
+    else document.addEventListener("DOMContentLoaded", cb, { once: true });
+  }
+
+  onDomReady(async () => {
+    const enabled = await userHasTestBundle();
+    applyVisibility(enabled);
+  });
+
+  // If user logs in/out in another tab, try to re-evaluate
+  window.addEventListener("storage", (e) => {
+    if (e.key === "cognitoIdToken" || e.key === "userInfo") {
+      userHasTestBundle().then(applyVisibility);
+    }
+  });
 })();
 
 // Auth API functions

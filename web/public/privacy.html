@@ -37,6 +37,23 @@
   </head>
   <body>
     <header>
+      <div class="header-nav">
+        <div class="hamburger-menu">
+          <button class="hamburger-btn" onclick="toggleMenu()">☰</button>
+          <div class="menu-dropdown" id="menuDropdown">
+            <a href="./index.html">Home</a>
+            <a href="./account/bundles.html">Bundles</a>
+            <a href="./hmrc/receipt/receipts.html">Receipts</a>
+            <a href="./guide/index.html">User Guide</a>
+            <a href="./about.html">About</a>
+          </div>
+        </div>
+        <div class="auth-section">
+          <span class="entitlement-status">Activity: unrestricted</span>
+          <span class="login-status">Not logged in</span>
+          <a href="./auth/login.html" class="login-link">Log in</a>
+        </div>
+      </div>
       <h1 style="text-align: center">Privacy Policy</h1>
       <p class="muted" style="text-align: center">Last updated: 27 Oct 2025</p>
     </header>
@@ -133,15 +150,22 @@
     <footer>
       <div class="footer-content">
         <div class="footer-left">
-          <a href="/">home</a>
+          <a href="#" id="viewSourceLink" style="display: none">view source</a>
+          <a id="latestTestsLink" style="display: inline" target="_blank" href="tests/html-report/index.html">tests</a>
+          <a id="apiDocsLink" style="display: inline" target="_blank" href="./docs/index.html"> api </a>
         </div>
         <div class="footer-center">
           <p>&copy; 2025 DIY Accounting Limited</p>
         </div>
-        <div class="footer-right"></div>
+        <div class="footer-right" id="localstorageContainer"></div>
       </div>
     </footer>
 
     <script src="./submit.js"></script>
+    <script src="./widgets/hamburger-menu.js"></script>
+    <script src="./widgets/entitlement-status.js"></script>
+    <script src="./widgets/auth-status.js"></script>
+    <script type="module" src="./widgets/view-source-link.js"></script>
+    <script src="./widgets/localstorage-viewer.js"></script>
   </body>
 </html>

@@ -42,9 +42,6 @@
     "playwright:install": "npx playwright install chromium --with-deps",
     "users:provision": "node app/bin/provision-user.mjs",
     "test:behaviour": "npx dotenv -e .env.proxy -- playwright test --project=behaviour-tests",
-
-    "next": "YOU ARE ABOUT TO RUN THIS checking that broken production/sandbox credentials correllate to matching failures",
-
     "test:behaviour-sandbox": "HMRC_ACCOUNT=sandbox npm run test:behaviour",
     "test:submitVatBehaviour": "npx dotenv -e .env.proxy -- playwright test --project=submit-vat-behaviour-tests",
     "test:submitVatBehaviour-sandbox": "HMRC_ACCOUNT=sandbox npm run test:submitVatBehaviour",
