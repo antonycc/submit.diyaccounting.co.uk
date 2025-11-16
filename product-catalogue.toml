@@ -12,8 +12,6 @@ name = "Test"
 allocation = "on-request"
 cap = 10
 timeout = "P1D"
-# TODO: Filter so that this bundle only appears in the add bundle page in listed environments
-listedInEnvironments = ["local", "test", "proxy", "proxyRunning", "ci"]
 
 # Access to free authenticated activities including VAT submission for a limited time
 [[bundles]]
@@ -21,8 +19,10 @@ id = "guest"
 name = "Guest"
 allocation = "on-request"
 cap = 10
-timeout = "P1D"
 # TODO: 1x timeout for visiblility, then a grace period for apis of 1 day.
+timeout = "P1D"
+# TODO: Filter so that this bundle only appears in the add bundle page in listed environments
+listedInEnvironments = ["local", "test", "proxy", "proxyRunning", "ci"]
 
 # TODO: Link active subscriptions to a bundle entitlement and continually re-set expiry to now+timeout if there is an active subscription
 # Access to business tier activities including VAT submission for subscribers
