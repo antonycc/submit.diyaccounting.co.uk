@@ -122,9 +122,8 @@ test("Click through: View VAT obligations from HMRC", async ({ page }) => {
   await goToBundlesPage(page, screenshotPath);
   if (isSandboxMode()) {
     await ensureBundlePresent(page, "Test", screenshotPath);
-  } else {
-    await ensureBundlePresent(page, "Guest", screenshotPath);
   }
+  await ensureBundlePresent(page, "Guest", screenshotPath);
   await goToHomePageUsingHamburgerMenu(page, screenshotPath);
 
   /* ******************* */
