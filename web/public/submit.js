@@ -188,7 +188,8 @@ function generateRandomState() {
         } catch {}
         return id;
       },
-      getTraceparent,
+      // Avoid referencing an undeclared identifier in some test environments
+      getTraceparent: () => getOrCreateTraceparent(),
       getLastXRequestId: () => lastXRequestId,
     });
 

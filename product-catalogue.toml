@@ -21,7 +21,6 @@ allocation = "on-request"
 cap = 10
 # TODO: 1x timeout for visiblility, then a grace period for apis of 1 day.
 timeout = "P1D"
-# TODO: Filter so that this bundle only appears in the add bundle page in listed environments
 listedInEnvironments = ["local", "test", "proxy", "proxyRunning", "ci"]
 
 # TODO: Link active subscriptions to a bundle entitlement and continually re-set expiry to now+timeout if there is an active subscription
@@ -49,7 +48,7 @@ subscriptionTier = "business"
 id = "bundle"
 name = "View and edit your bundles"
 bundles = ["default"]
-paths = ["account/bundles.html", "^/api/v1/catalogue.*", "^/api/v1/bundle.*"]
+paths = ["account/bundles.html", "^/api/v1/catalog.*", "^/api/v1/bundle.*"]
 
 [[activities]]
 id = "submit-vat-sandbox"
