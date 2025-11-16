@@ -8,16 +8,11 @@ import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
-// Skipped for CI stability; relies on inline script execution with multiple external assets.
-// The filtering logic itself is covered by unit/integration paths and manual verification.
-test.describe.skip("Bundles page client-side filtering by listedInEnvironments", () => {
+test.describe("Bundles page client-side filtering by listedInEnvironments", () => {
   let bundlesHtmlContent;
 
   test.beforeAll(async () => {
-    bundlesHtmlContent = fs.readFileSync(
-      path.join(process.cwd(), "web/public/account/bundles.html"),
-      "utf-8",
-    );
+    bundlesHtmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/account/bundles.html"), "utf-8");
   });
 
   test("shows only bundles allowed in current environment or with no restriction", async ({ page }) => {
@@ -59,12 +54,6 @@ test.describe.skip("Bundles page client-side filtering by listedInEnvironments",
       await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(body) });
     });
 
-    // Mock the bundles API to avoid network errors in bootstrap
-    await page.route("**/api/v1/bundle", async (route) => {
-      const body = { bundles: [] };
-      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(body) });
-    });
-
     // Mock submit.env to indicate we are in the 'test' environment
     await page.route("**/submit.env", async (route) => {
       await route.fulfill({ status: 200, contentType: "text/plain", body: "test\n" });
@@ -77,12 +66,14 @@ test.describe.skip("Bundles page client-side filtering by listedInEnvironments",
     });
 
     // Wait a moment for the inline script to fetch and render
-    await delay(1200);
+    await delay(400);
 
-    // Debug: capture container HTML
+    // Debug: capture container HTML if nothing rendered
     const container = page.locator("#catalogBundles");
     const debugHtml = await container.evaluate((el) => el?.innerHTML || "");
-    console.log("[DEBUG_LOG] #catalogBundles innerHTML:", debugHtml);
+    if (!debugHtml || debugHtml.trim() === "") {
+      console.log("[DEBUG_LOG] #catalogBundles innerHTML (empty?):", debugHtml);
+    }
 
     // Expect only the allowed buttons to be present: restrictedTest and unrestricted
     const buttons = page.locator("button[data-bundle-id]");
