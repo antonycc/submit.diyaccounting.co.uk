@@ -96,6 +96,7 @@
     <script src="../widgets/loading-spinner.js"></script>
     <script type="module" src="../widgets/view-source-link.js"></script>
     <script src="../widgets/localstorage-viewer.js"></script>
+    <script src="../lib/request-cache.js"></script>
 
     <script>
       // --- helpers
@@ -108,12 +109,31 @@
         }
       };
 
+      // Lightweight wrappers that use page-level cache when available, with safe fallbacks for tests
+      const __rc = (typeof window !== "undefined" && window.requestCache) ? window.requestCache : null;
+      const getJSON = async (url, opts = {}) => {
+        try {
+          if (__rc && typeof __rc.getJSON === "function") return __rc.getJSON(url, opts);
+        } catch {}
+        const res = await fetch(url, opts.init);
+        try {
+          return await res.json();
+        } catch {
+          return null;
+        }
+      };
+      const invalidate = (prefix) => {
+        try {
+          if (__rc && typeof __rc.invalidate === "function") return __rc.invalidate(prefix);
+        } catch {}
+      };
+
       // In-memory bundles state for this page
       let __userBundles = [];
 
       const parseUserBundles = () => (Array.isArray(__userBundles) ? __userBundles : []);
 
-      // Fetch bundles from API endpoint (single source of truth)
+      // Fetch bundles from API endpoint (single source of truth, with lightweight caching)
       const fetchUserBundles = async () => {
         const idToken = getIdToken();
         if (!idToken) {
@@ -122,18 +142,13 @@
         }
 
         try {
-          const response = await fetch("/api/v1/bundle", {
-            headers: {
-              Authorization: `Bearer ${idToken}`,
-            },
+          const bundlesData = await getJSON("/api/v1/bundle", {
+            ttlMs: 5000,
+            init: { headers: { Authorization: `Bearer ${idToken}` } },
           });
-
-          if (response.ok) {
-            const bundlesData = await response.json();
-            if (bundlesData.bundles && Array.isArray(bundlesData.bundles)) {
-              __userBundles = bundlesData.bundles.map((b) => (b?.expiry ? `${b.bundleId}|EXPIRY=${b.expiry}` : b.bundleId));
-              return __userBundles;
-            }
+          if (bundlesData && bundlesData.bundles && Array.isArray(bundlesData.bundles)) {
+            __userBundles = bundlesData.bundles.map((b) => (b?.expiry ? `${b.bundleId}|EXPIRY=${b.expiry}` : b.bundleId));
+            return __userBundles;
           }
         } catch (err) {
           console.warn("Failed to fetch bundles:", err);
@@ -212,6 +227,7 @@
               showStatus(`Bundle ${bundleId} request failed: unexpected response`, "error");
             }
             // Refresh bundles from endpoint
+            invalidate('/api/v1/bundle');
             await fetchUserBundles();
             // Refresh bundles lists
             try {
@@ -258,13 +274,15 @@
           } catch {}
 
           const idToken = getIdToken();
-          const headers = idToken ? { Authorization: `Bearer ${idToken}` } : {};
-          const res = await fetch("/api/v1/catalog", { headers });
-          if (!res.ok) {
+          const headers = idToken ? { Authorization: `Bearer ${idToken}` } : undefined;
+          const catalog = await getJSON("/api/v1/catalog", {
+            ttlMs: 300000,
+            init: headers ? { headers } : undefined,
+          });
+          if (!catalog || !catalog.bundles) {
             container.innerHTML = '<p class="service-description">Catalog unavailable.</p>';
             return;
           }
-          const catalog = await res.json();
 
           // Read current environment from submit.env in docroot (next to index.html)
           async function readEnvironment() {
@@ -367,6 +385,7 @@
           if (response.ok) {
             // Do not persist bundles to localStorage; rely on a fresh GET
             // Refresh bundles from endpoint
+            invalidate('/api/v1/bundle');
             await fetchUserBundles();
             renderCurrentBundles();
             updateBundleStatus(); // Update the request buttons
@@ -404,6 +423,7 @@
           if (response.ok) {
             localStorage.setItem("userBundles", JSON.stringify([]));
             // Refresh bundles from endpoint
+            invalidate('/api/v1/bundle');
             await fetchUserBundles();
             renderCurrentBundles();
             updateBundleStatus(); // Update the request buttons
