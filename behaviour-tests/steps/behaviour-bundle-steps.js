@@ -59,7 +59,7 @@ export async function ensureBundlePresent(page, bundleName = "Test", screenshotP
         console.log(`"Added ✓ ${bundleName}" button not visible, waiting 1000ms and trying again (${i + 1}/5)`);
         await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-ensure-bundle-waiting.png` });
         await page.waitForTimeout(1000);
-        addedLocator = page.getByRole("button", { name: "Added ✓ Test" });
+        addedLocator = page.getByRole("button", { name: `Added ✓ ${bundleName}` });
         await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-ensure-bundle-waited.png` });
         if (await addedLocator.isVisible()) {
           break;
@@ -67,13 +67,13 @@ export async function ensureBundlePresent(page, bundleName = "Test", screenshotP
       }
     }
     // Fallback: look for the specific test bundle button by data attribute in case role+name fails (e.g., due to special characters)
-    const bundleId = bundleName.toLowerCase().replace(/\s+/g, "-");
-    if (!(await addedLocator.isVisible())) {
-      const specificAdded = page.locator(`button.service-btn[data-bundle-id='${bundleId}']:has-text('Added ✓ ${bundleName}')`);
-      if (await specificAdded.isVisible()) {
-        addedLocator = specificAdded;
-      }
-    }
+    //const bundleId = bundleName.toLowerCase().replace(/\s+/g, "-");
+    //if (!(await addedLocator.isVisible())) {
+    //  const specificAdded = page.locator(`button.service-btn[data-bundle-id='${bundleId}']:has-text('Added ✓ ${bundleName}')`);
+    //  if (await specificAdded.isVisible()) {
+    //    addedLocator = specificAdded;
+    //  }
+    //}
     if (await addedLocator.isVisible({ timeout: 16000 })) {
       console.log(`${bundleName} bundle already present, skipping request.`);
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-ensure-bundle-skipping.png` });
