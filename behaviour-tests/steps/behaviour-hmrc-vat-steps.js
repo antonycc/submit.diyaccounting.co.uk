@@ -1,16 +1,16 @@
 // behaviour-tests/behaviour-hmrc-vat-steps.js
 
 import { expect, test } from "@playwright/test";
-import { loggedClick, loggedFill, timestamp, getActivityButtonText } from "../helpers/behaviour-helpers.js";
+import { loggedClick, loggedFill, timestamp, isSandboxMode } from "../helpers/behaviour-helpers.js";
 
 const defaultScreenshotPath = "target/behaviour-test-results/screenshots/behaviour-hmrc-vat-steps";
 
 export async function initSubmitVat(page, screenshotPath = defaultScreenshotPath) {
-  await test.step("The user begins a VAT return and sees the VAT submission form", async () => {
+  const activityButtonText = isSandboxMode() ? "Submit VAT (HMRC Sandbox)" : "Submit VAT (HMRC)";
+  await test.step(`The user begins a VAT return and sees the ${activityButtonText} form`, async () => {
     // Click "VAT Return Submission" on activities page
-    const buttonText = getActivityButtonText("Submit VAT");
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-start-submission.png` });
-    await loggedClick(page, `button:has-text('${buttonText}')`, "Starting VAT return submission");
+    await loggedClick(page, `button:has-text('${activityButtonText}')`, "Starting VAT return submission");
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-start-submission.png` });
     await page.waitForLoadState("networkidle");
     await page.waitForTimeout(500);
@@ -160,10 +160,10 @@ export async function verifyVatSubmission(page, screenshotPath = defaultScreensh
 /* VAT Obligations Journey Steps */
 
 export async function initVatObligations(page, screenshotPath = defaultScreenshotPath) {
-  await test.step("The user navigates to VAT Obligations and sees the obligations form", async () => {
-    const buttonText = getActivityButtonText("VAT Obligations");
+  const activityButtonText = isSandboxMode() ? "VAT Obligations (HMRC Sandbox)" : "VAT Obligations (HMRC)";
+  await test.step(`The user navigates to ${activityButtonText} and sees the obligations form`, async () => {
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-obligations.png` });
-    await loggedClick(page, `button:has-text('${buttonText}')`, "Starting VAT Obligations");
+    await loggedClick(page, `button:has-text('${activityButtonText}')`, "Starting VAT Obligations");
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-obligations.png` });
     await page.waitForLoadState("networkidle");
     await page.waitForTimeout(500);
@@ -246,11 +246,11 @@ export async function verifyVatObligationsResults(page, screenshotPath = default
 
 /* View VAT Return Journey Steps */
 
-export async function initViewVatReturn(page, screenshotPath = defaultScreenshotPath) {
-  await test.step("The user navigates to View VAT Return and sees the return form", async () => {
-    const buttonText = getActivityButtonText("View VAT Return");
+export async function initViewVatReturn(page, screenshotPath = defaultScreenshotPath, hmrcAccount = null) {
+  const activityButtonText = isSandboxMode() ? "View VAT Return (HMRC Sandbox)" : "View VAT Return (HMRC)";
+  await test.step(`The user navigates to ${activityButtonText} and sees the return form`, async () => {
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-view-vat-init.png` });
-    await loggedClick(page, `button:has-text('${buttonText}')`, "Starting View VAT Return");
+    await loggedClick(page, `button:has-text('${activityButtonText}')`, "Starting View VAT Return");
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-view-vat-init.png` });
     await page.waitForLoadState("networkidle");
     await page.waitForTimeout(500);

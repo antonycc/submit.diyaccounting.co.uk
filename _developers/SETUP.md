@@ -70,7 +70,7 @@ npx cdk synth
 ## Run the website locally
 
 ```bash
-npm run start
+npm run server
 ```
 
 Webserver output:

@@ -53,7 +53,15 @@ export function extractAndValidateParameters(event, errorMessages) {
   if (periodKey && !/^[A-Z0-9#]{3,5}$/i.test(String(periodKey))) {
     errorMessages.push("Invalid periodKey format");
   }
-  return { vatNumber, periodKey, hmrcAccessToken, numVatDue };
+
+  // Extract HMRC account (sandbox/live) from header hmrcAccount
+  const hmrcAccountHeader = (event.headers && event.headers.hmrcaccount) || "";
+  const hmrcAccount = hmrcAccountHeader.toLowerCase();
+  if (hmrcAccount && hmrcAccount !== "sandbox" && hmrcAccount !== "live") {
+    errorMessages.push("Invalid hmrcAccount header. Must be either 'sandbox' or 'live' if provided.");
+  }
+
+  return { vatNumber, periodKey, hmrcAccessToken, numVatDue, hmrcAccount };
 }
 
 // HTTP request/response, aware Lambda handler function
@@ -68,9 +76,10 @@ export async function handler(event) {
     await enforceBundles(event);
   } catch (error) {
     // TODO: You are here
-    // -> Then the web pages will change to request sandbox mode or not
-    // -> And the web pages will have lables about the sandbox mode
+    // [x]Then the web pages will change to request sandbox mode or not
+    // -> And the web pages will have labels about the sandbox mode (missing for submit VAT)
     // -> And there will be a behaviour test against the sandbox and prod (which is sandbox in ci) using HMRC_ACCOUNT=sandbox  for the ci build but prod will only test sandbox.
+    // And the bundle for sandbox should be Test and the bundle for prod should be Guest (and bundles names should be surfaced as parameters at the top of the test)
     // And the debug utilities will only display when the test bundle is present.
     // And the dynamo db records will have a ttl 1 month after bundle expiry and also have a grace period where the APIs permit traffic
     // And There is a script to add a salted hash of the user sub (email?) to a directory of users for "test" > bundle-grants/hashofsub.txt
@@ -80,18 +89,12 @@ export async function handler(event) {
   }
 
   // Extract and validate parameters
-  const { vatNumber, periodKey, hmrcAccessToken, numVatDue } = extractAndValidateParameters(event, errorMessages);
+  const { vatNumber, periodKey, hmrcAccessToken, numVatDue, hmrcAccount } = extractAndValidateParameters(event, errorMessages);
 
   // Generate Gov-Client headers and collect any header-related validation errors
   const detectedIP = extractClientIPFromHeaders(event);
   const { govClientHeaders, govClientErrorMessages } = eventToGovClientHeaders(event, detectedIP);
   errorMessages = errorMessages.concat(govClientErrorMessages || []);
-
-  // Extract hmrcAccount header if present
-  const hmrcAccount = event.headers?.hmrcAccount || event.headers?.hmrcaccount;
-  if (hmrcAccount) {
-    govClientHeaders["hmrcAccount"] = hmrcAccount;
-  }
 
   // Normalise periodKey to uppercase for HMRC if provided as string
   const normalizedPeriodKey = typeof periodKey === "string" ? periodKey.toUpperCase() : periodKey;
@@ -134,6 +137,7 @@ export async function handler(event) {
       normalizedPeriodKey,
       numVatDue,
       vatNumber,
+      hmrcAccount,
       hmrcAccessToken,
       govClientHeaders,
     ));
@@ -163,7 +167,7 @@ export async function handler(event) {
 }
 
 // Service adaptor for aware of the downstream service but not the consuming Lambda's incoming/outgoing HTTP request/response
-export async function submitVat(periodKey, vatDue, vatNumber, hmrcAccessToken, govClientHeaders) {
+export async function submitVat(periodKey, vatDue, vatNumber, hmrcAccount, hmrcAccessToken, govClientHeaders) {
   const hmrcRequestHeaders = {
     "Content-Type": "application/json",
     "Accept": "application/vnd.hmrc.1.0+json",
@@ -186,7 +190,7 @@ export async function submitVat(periodKey, vatDue, vatNumber, hmrcAccessToken, g
 
   let hmrcResponseBody;
   let hmrcResponse;
-  const hmrcBase = process.env.HMRC_BASE_URI;
+  const hmrcBase = hmrcAccount === "sandbox" ? process.env.HMRC_SANDBOX_BASE_URI : process.env.HMRC_BASE_URI;
   const hmrcRequestUrl = `${hmrcBase}/organisations/vat/${vatNumber}/returns`;
   logHmrcRequestDetails(hmrcRequestUrl, hmrcRequestHeaders, govClientHeaders, hmrcRequestBody);
   if (process.env.NODE_ENV === "stubbed") {

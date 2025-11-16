@@ -100,7 +100,7 @@ async function getUserBundlesFromStorage(userPoolId, userSub) {
  * @param {string} requiredBundle - Required bundle name
  * @returns {boolean} True if user has the required bundle
  */
-function hasSandboxBundle(bundles, requiredBundle = "HMRC_TEST_API") {
+function hasSandboxBundle(bundles, requiredBundle = "test") {
   return bundles && bundles.some((b) => typeof b === "string" && (b === requiredBundle || b.startsWith(`${requiredBundle}|`)));
 }
 
@@ -110,7 +110,7 @@ function hasSandboxBundle(bundles, requiredBundle = "HMRC_TEST_API") {
  * @param {Array<string>} allowedBundles - Array of allowed bundle names
  * @returns {boolean} True if user has any of the allowed bundles
  */
-function hasProductionBundle(bundles, allowedBundles = ["HMRC_PROD_SUBMIT", "LEGACY_ENTITLEMENT"]) {
+function hasProductionBundle(bundles, allowedBundles = ["guest", "buiness"]) {
   return (
     bundles && bundles.some((b) => typeof b === "string" && allowedBundles.some((allowed) => b === allowed || b.startsWith(`${allowed}|`)))
   );
@@ -126,8 +126,8 @@ function hasProductionBundle(bundles, allowedBundles = ["HMRC_PROD_SUBMIT", "LEG
  * @param {boolean} options.enabled - Whether to enforce bundles (default: reads from DIY_SUBMIT_ENFORCE_BUNDLES env)
  * @param {string} options.userPoolId - Cognito User Pool ID (default: reads from COGNITO_USER_POOL_ID env)
  * @param {string} options.hmrcBase - HMRC base URI (default: reads from HMRC_BASE_URI env)
- * @param {string} options.sandboxBundle - Required bundle for sandbox (default: HMRC_TEST_API)
- * @param {Array<string>} options.productionBundles - Required bundles for production (default: [HMRC_PROD_SUBMIT, LEGACY_ENTITLEMENT])
+ * @param {string} options.sandboxBundle - Required bundle for sandbox (default: "test")
+ * @param {Array<string>} options.productionBundles - Required bundles for production (default: [guest, buiness])
  * @throws {BundleEntitlementError} If bundle requirements are not met
  */
 export async function enforceBundles(event, options = {}) {
@@ -136,8 +136,8 @@ export async function enforceBundles(event, options = {}) {
       process.env.DIY_SUBMIT_ENFORCE_BUNDLES === "1",
     userPoolId = process.env.COGNITO_USER_POOL_ID,
     hmrcBase = process.env.HMRC_BASE_URI,
-    sandboxBundle = "HMRC_TEST_API",
-    productionBundles = ["HMRC_PROD_SUBMIT", "LEGACY_ENTITLEMENT"],
+    sandboxBundle = "test",
+    productionBundles = ["guest", "buiness"],
   } = options;
 
   logger.info({
@@ -173,7 +173,7 @@ export async function enforceBundles(event, options = {}) {
   });
 
   if (sandbox) {
-    // Sandbox environment requires HMRC_TEST_API bundle
+    // Sandbox environment requires test bundle
     if (!hasSandboxBundle(bundles, sandboxBundle)) {
       const errorDetails = {
         code: "BUNDLE_FORBIDDEN",
@@ -193,7 +193,7 @@ export async function enforceBundles(event, options = {}) {
       throw new BundleEntitlementError(`Forbidden: HMRC Sandbox submission requires ${sandboxBundle} bundle`, errorDetails);
     }
   } else {
-    // Production environment requires HMRC_PROD_SUBMIT or LEGACY_ENTITLEMENT bundle
+    // Production environment requires guest or buiness bundle
     if (!hasProductionBundle(bundles, productionBundles)) {
       const errorDetails = {
         code: "BUNDLE_FORBIDDEN",

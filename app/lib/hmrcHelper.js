@@ -4,15 +4,14 @@ import logger, { context } from "./logger.js";
 import { BundleEntitlementError } from "./bundleEnforcement.js";
 import { http400BadRequestResponse, http500ServerErrorResponse, http403ForbiddenResponse } from "./responses.js";
 
-function isSandboxBase(base) {
-  return /\b(test|sandbox)\b/i.test(base || "");
-}
-
 /**
  * Build the base URL for HMRC API calls
  */
-export function getHmrcBaseUrl() {
-  return process.env.HMRC_BASE_URI || "https://test-api.service.hmrc.gov.uk";
+export function getHmrcBaseUrl(hmrcAccount) {
+  // TODO: Ensure we always have these when otherwise stable and remove defaults
+  return hmrcAccount === "sandbox"
+    ? process.env.HMRC_SANDBOX_BASE_URI || "https://test-api.service.hmrc.gov.uk"
+    : process.env.HMRC_BASE_URI || "https://api.service.hmrc.gov.uk";
 }
 
 /**
@@ -26,8 +25,8 @@ export function buildHmrcHeaders(accessToken, govClientHeaders = {}, testScenari
     ...govClientHeaders,
   };
 
-  // Add Gov-Test-Scenario header if provided and we're in sandbox
-  if (testScenario && isSandboxBase(getHmrcBaseUrl())) {
+  // Add Gov-Test-Scenario header // && isSandboxBase(getHmrcBaseUrl()) if provided and we're in sandbox
+  if (testScenario) {
     headers["Gov-Test-Scenario"] = testScenario;
   }
 
@@ -79,8 +78,8 @@ export function validateHmrcAccessToken(hmrcAccessToken) {
 /**
  * Make a GET request to HMRC VAT API
  */
-export async function hmrcHttpGet(endpoint, accessToken, govClientHeaders = {}, testScenario = null, queryParams = {}) {
-  const baseUrl = getHmrcBaseUrl();
+export async function hmrcHttpGet(endpoint, accessToken, govClientHeaders = {}, testScenario = null, hmrcAccount, queryParams = {}) {
+  const baseUrl = getHmrcBaseUrl(hmrcAccount);
   // Sanitize query params: drop undefined, null, and blank strings
   const cleanParams = Object.fromEntries(
     Object.entries(queryParams || {}).filter(([, value]) => value !== undefined && value !== null && String(value).trim() !== ""),

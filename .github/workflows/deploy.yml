@@ -2160,6 +2160,68 @@ jobs:
           path: |
             target/test-reports/
 
+  web-test-view-vat-sandbox:
+    if: ${{ !cancelled() }}
+    name: 'web test view vat'
+    needs:
+      - names
+      - set-origins
+      - web-test-bundle
+      - web-test-view-vat
+    runs-on: ubuntu-24.04
+    container: mcr.microsoft.com/playwright:v1.56.1-jammy
+    # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags
+    # and extension with ubuntu distribution e.g. https://releases.ubuntu.com/jammy/
+    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          npm ci --ignore-scripts
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+
+      - name: Run behaviour tests - viewVatBehaviour
+        if: ${{ !cancelled() }}
+        run: |
+          cp '.env.${{ needs.names.outputs.environment-name }}' '.env.test' \
+          ; HMRC_ACCOUNT=sandbox npx dotenv -e '.env.${{ needs.names.outputs.environment-name }}' -- \
+            npm run test:viewVatBehaviour || exit_code=$? \
+          ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
+          ; exit ${exit_code:-0} \
+          ;
+        env:
+          DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.apex-url }}
+          TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
+          TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
+          TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
+
+      - name: Upload artifacts (results)
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v5
+        with:
+          name: web-test-artifacts-view-vat-sandbox
+          retention-days: 30
+          path: |
+            target/behaviour-test-results/
+
+      - name: Upload artifacts (reports)
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v5
+        with:
+          name: web-test-reports-view-vat-sandbox
+          retention-days: 30
+          path: |
+            target/test-reports/
+
   web-test-submit-vat:
     if: ${{ !cancelled() }}
     name: 'web test submit vat'
@@ -2292,6 +2354,7 @@ jobs:
       - web-test-obligation
       - web-test-submit-vat
       - web-test-view-vat
+      - web-test-view-vat-sandbox
     runs-on: ubuntu-24.04
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
     steps:
@@ -2327,6 +2390,14 @@ jobs:
           path: |
             target/test-reports/view-vat/
 
+      - name: Download artifacts (reports) - view vat sandbox
+        if: ${{ !cancelled() }}
+        uses: actions/download-artifact@v6
+        with:
+          name: web-test-reports-view-vat-sandbox
+          path: |
+            target/test-reports/view-vat-sandbox/
+
       - name: Generate combined test report index
         if: ${{ !cancelled() }}
         run: |
@@ -2346,6 +2417,7 @@ jobs:
                 obligation) label="Click through test: View VAT obligations from HMRC" ;;
                 submit-vat) label="Click through test: Submit a VAT return to HMRC" ;;
                 view-vat) label="Click through test: Get VAT return from HMRC" ;;
+                view-vat-sandbox) label="Click through test: Get VAT return from HMRC (sandbox)" ;;
                 *) label="$d" ;;
               esac
               echo "  <li><a href=\"../$d/html-report/index.html\">$label</a></li>" >> "$INDEX_FILE"

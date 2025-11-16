@@ -50,6 +50,7 @@ const runMockOAuth2 = getEnvVarAndLog("runMockOAuth2", "TEST_MOCK_OAUTH2", null)
 const testAuthProvider = getEnvVarAndLog("testAuthProvider", "TEST_AUTH_PROVIDER", null);
 const testAuthUsername = getEnvVarAndLog("testAuthUsername", "TEST_AUTH_USERNAME", null);
 const baseUrl = getEnvVarAndLog("baseUrl", "DIY_SUBMIT_BASE_URL", null);
+const hmrcAccount = getEnvVarAndLog("hmrcAccount", "HMRC_ACCOUNT", null);
 const hmrcTestVatNumber = getEnvVarAndLog("hmrcTestVatNumber", "TEST_HMRC_VAT_NUMBER", null);
 const hmrcTestUsername = getEnvVarAndLog("hmrcTestUsername", "TEST_HMRC_USERNAME", null);
 const hmrcTestPassword = getEnvVarAndLog("hmrcTestPassword", "TEST_HMRC_PASSWORD", null);
@@ -130,7 +131,7 @@ test("Click through: Get VAT return from HMRC", async ({ page }) => {
   /*  GET VAT RETURN     */
   /* ******************* */
 
-  await initViewVatReturn(page, screenshotPath);
+  await initViewVatReturn(page, screenshotPath, hmrcAccount);
   await fillInViewVatReturn(page, hmrcTestVatNumber, periodKey, screenshotPath);
   await submitViewVatReturnForm(page, screenshotPath);
 

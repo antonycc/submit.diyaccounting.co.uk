@@ -50,12 +50,20 @@ export function extractAndValidateParameters(event, errorMessages) {
 
   // Normalize periodKey to uppercase if provided as string
   const normalizedPeriodKey = typeof periodKey === "string" ? periodKey.toUpperCase() : periodKey;
-  return { vrn, periodKey: normalizedPeriodKey, testScenario };
+
+  // Extract HMRC account (sandbox/live) from header hmrcAccount
+  const hmrcAccountHeader = (event.headers && event.headers.hmrcaccount) || "";
+  const hmrcAccount = hmrcAccountHeader.toLowerCase();
+  if (hmrcAccount && hmrcAccount !== "sandbox" && hmrcAccount !== "live") {
+    errorMessages.push("Invalid hmrcAccount header. Must be either 'sandbox' or 'live' if provided.");
+  }
+
+  return { vrn, periodKey: normalizedPeriodKey, testScenario, hmrcAccount };
 }
 
 // HTTP request/response, aware Lambda handler function
 export async function handler(event) {
-  validateEnv(["HMRC_BASE_URI"]);
+  validateEnv(["HMRC_BASE_URI", "HMRC_SANDBOX_BASE_URI"]);
 
   const { request } = extractRequest(event);
   let errorMessages = [];
@@ -71,14 +79,8 @@ export async function handler(event) {
   const { govClientHeaders, govClientErrorMessages } = eventToGovClientHeaders(event, detectedIP);
   errorMessages = errorMessages.concat(govClientErrorMessages || []);
 
-  // Extract hmrcAccount header if present
-  const hmrcAccount = event.headers?.hmrcAccount || event.headers?.hmrcaccount;
-  if (hmrcAccount) {
-    govClientHeaders["hmrcAccount"] = hmrcAccount;
-  }
-
   // Extract and validate parameters
-  const { vrn, periodKey, testScenario } = extractAndValidateParameters(event, errorMessages);
+  const { vrn, periodKey, testScenario, hmrcAccount } = extractAndValidateParameters(event, errorMessages);
 
   const responseHeaders = { ...govClientHeaders };
 
@@ -116,7 +118,7 @@ export async function handler(event) {
       logger.warn({ message: "[MOCK] Using stubbed VAT return data", vrn, periodKey, testScenario });
       vatReturn = getStubData("TEST_VAT_RETURN");
     } else {
-      ({ vatReturn, hmrcResponse } = await getVatReturn(vrn, periodKey, hmrcAccessToken, govClientHeaders, testScenario));
+      ({ vatReturn, hmrcResponse } = await getVatReturn(vrn, periodKey, hmrcAccessToken, govClientHeaders, testScenario, hmrcAccount));
       // Generate error responses based on HMRC response
       if (hmrcResponse && !hmrcResponse.ok) {
         if (hmrcResponse.status === 403) {
@@ -148,9 +150,9 @@ export async function handler(event) {
 }
 
 // Service adaptor aware of the downstream service but not the consuming Lambda's incoming/outgoing HTTP request/response
-export async function getVatReturn(vrn, periodKey, hmrcAccessToken, govClientHeaders, testScenario) {
+export async function getVatReturn(vrn, periodKey, hmrcAccessToken, govClientHeaders, testScenario, hmrcAccount) {
   const hmrcRequestUrl = `/organisations/vat/${vrn}/returns/${periodKey}`;
-  const hmrcResponse = await hmrcHttpGet(hmrcRequestUrl, hmrcAccessToken, govClientHeaders, testScenario);
+  const hmrcResponse = await hmrcHttpGet(hmrcRequestUrl, hmrcAccessToken, govClientHeaders, testScenario, hmrcAccount);
 
   if (!hmrcResponse.ok) {
     // Consumers of this function may choose to map these to HTTP responses

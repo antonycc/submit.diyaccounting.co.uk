@@ -269,6 +269,13 @@ function fetchWithId(url, opts = {}) {
     console.warn("Failed to generate X-Client-Request-Id:", error);
   }
 
+  // Add hmrcAccount header if present in URL
+  const urlParams = new URLSearchParams(window.location.search);
+  const hmrcAccount = urlParams.get("hmrcAccount");
+  if (hmrcAccount) {
+    headers["hmrcAccount"] = hmrcAccount;
+  }
+
   return fetch(url, { ...opts, headers });
 }
 

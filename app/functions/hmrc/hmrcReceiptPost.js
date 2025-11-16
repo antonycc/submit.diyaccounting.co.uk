@@ -61,7 +61,14 @@ export function extractAndValidateParameters(event, errorMessages) {
   if (!formBundle) errorMessages.push("Missing formBundleNumber in receipt body");
   if (!key) errorMessages.push("Missing key parameter derived from body");
 
-  return { receipt, key, formBundle };
+  // Extract HMRC account (sandbox/live) from header hmrcAccount
+  const hmrcAccountHeader = (event.headers && event.headers.hmrcaccount) || "";
+  const hmrcAccount = hmrcAccountHeader.toLowerCase();
+  if (hmrcAccount && hmrcAccount !== "sandbox" && hmrcAccount !== "live") {
+    errorMessages.push("Invalid hmrcAccount header. Must be either 'sandbox' or 'live' if provided.");
+  }
+
+  return { receipt, key, formBundle, hmrcAccount };
 }
 
 // HTTP request/response, aware Lambda handler function

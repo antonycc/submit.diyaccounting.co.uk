@@ -38,7 +38,7 @@ describe("bundle.js httpPostMock (MOCK mode)", () => {
   });
 
   test("401 when Authorization missing", async () => {
-    const res = await requestBundle(buildEvent(null, { bundleId: "HMRC_TEST_API" }));
+    const res = await requestBundle(buildEvent(null, { bundleId: "test" }));
     expect(res.statusCode).toBe(401);
   });
 
@@ -51,7 +51,7 @@ describe("bundle.js httpPostMock (MOCK mode)", () => {
   // test("403 when bundle expired", async () => {
   //   process.env.TEST_BUNDLE_EXPIRY_DATE = "2000-01-01";
   //   const token = makeIdToken("user-expired");
-  //   const res = await requestBundle(buildEvent(token, { bundleId: "HMRC_TEST_API" }));
+  //   const res = await requestBundle(buildEvent(token, { bundleId: "test" }));
   //   expect(res.statusCode).toBe(403);
   // });
 
@@ -59,7 +59,7 @@ describe("bundle.js httpPostMock (MOCK mode)", () => {
   //   process.env.TEST_BUNDLE_EXPIRY_DATE = "2025-12-31";
   //   process.env.TEST_BUNDLE_USER_LIMIT = "0";
   //   const token = makeIdToken("user-limit");
-  //   const res = await requestBundle(buildEvent(token, { bundleId: "HMRC_TEST_API" }));
+  //   const res = await requestBundle(buildEvent(token, { bundleId: "test" }));
   //   expect(res.statusCode).toBe(403);
   // });
 
@@ -68,13 +68,13 @@ describe("bundle.js httpPostMock (MOCK mode)", () => {
   //   process.env.TEST_BUNDLE_USER_LIMIT = "1000";
   //   const token = makeIdToken("user-success");
   //
-  //   const res1 = await requestBundle(buildEvent(token, { bundleId: "HMRC_TEST_API" }));
+  //   const res1 = await requestBundle(buildEvent(token, { bundleId: "test" }));
   //   expect(res1.statusCode).toBe(200);
   //   const body1 = JSON.parse(res1.body);
   //   expect(body1.status).toBe("granted");
   //   expect(Array.isArray(body1.bundles)).toBe(true);
   //
-  //   const res2 = await requestBundle(buildEvent(token, { bundleId: "HMRC_TEST_API" }));
+  //   const res2 = await requestBundle(buildEvent(token, { bundleId: "test" }));
   //   expect(res2.statusCode).toBe(200);
   //   const body2 = JSON.parse(res2.body);
   //   expect(body2.status).toBe("already_granted");

@@ -31,30 +31,16 @@ export function isSandboxMode() {
   if (hmrcAccount === "sandbox") {
     logger.info(`Sandbox mode detection: HMRC_ACCOUNT=${hmrcAccount} => sandbox=true`);
     return true;
-  }
-  if (hmrcAccount === "live") {
+  } else {
     logger.info(`Sandbox mode detection: HMRC_ACCOUNT=${hmrcAccount} => sandbox=false`);
     return false;
   }
 
   // Fallback to HMRC_BASE_URI heuristic
-  const hmrcBaseUri = process.env.HMRC_BASE_URI || "";
-  const isSandbox = hmrcBaseUri.includes("test-api") || hmrcBaseUri.includes("sandbox") || hmrcBaseUri.includes("/test/");
-  logger.info(`Sandbox mode detection (fallback): HMRC_BASE_URI=${hmrcBaseUri}, isSandbox=${isSandbox}`);
-  return isSandbox;
-}
-
-/**
- * Get the appropriate button text for the given activity based on sandbox mode
- * @param {string} activityBase - Base activity name (e.g., "Submit VAT", "VAT Obligations")
- * @returns {string} Full button text to use in tests
- */
-export function getActivityButtonText(activityBase) {
-  // Match catalogue names: e.g. "Submit VAT (HMRC Sandbox)" when sandbox
-  const suffix = isSandboxMode() ? " (HMRC Sandbox)" : "";
-  const buttonText = activityBase + suffix;
-  logger.info(`Activity button text: ${activityBase} -> ${buttonText}`);
-  return buttonText;
+  //const hmrcBaseUri = process.env.HMRC_BASE_URI || "";
+  //const isSandbox = hmrcBaseUri.includes("test-api") || hmrcBaseUri.includes("sandbox") || hmrcBaseUri.includes("/test/");
+  //logger.info(`Sandbox mode detection (fallback): HMRC_BASE_URI=${hmrcBaseUri}, isSandbox=${isSandbox}`);
+  //return isSandbox;
 }
 
 export async function runLocalS3(runMinioS3, receiptsBucketName, optionalTestS3AccessKey, optionalTestS3SecretKey) {
@@ -80,7 +66,7 @@ export async function runLocalHttpServer(runTestServer, s3Endpoint, httpServerPo
   if (runTestServer === "run") {
     logger.info("[http]: Starting server process...");
     // eslint-disable-next-line sonarjs/no-os-command-from-path
-    serverProcess = spawn("npm", ["run", "start"], {
+    serverProcess = spawn("npm", ["run", "server"], {
       env: {
         ...process.env,
         TEST_S3_ENDPOINT: s3Endpoint,

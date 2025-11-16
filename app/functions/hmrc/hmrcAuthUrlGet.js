@@ -26,18 +26,25 @@ export function extractAndValidateParameters(event, errorMessages) {
     errorMessages.push("Invalid scope parameter. Must be one of: write:vat, read:vat, or write:vat read:vat");
   }
 
-  return { state, requestedScope };
+  // Extract HMRC account (sandbox/live) from header hmrcAccount
+  const hmrcAccountHeader = (event.headers && event.headers.hmrcaccount) || "";
+  const hmrcAccount = hmrcAccountHeader.toLowerCase();
+  if (hmrcAccount && hmrcAccount !== "sandbox" && hmrcAccount !== "live") {
+    errorMessages.push("Invalid hmrcAccount header. Must be either 'sandbox' or 'live' if provided.");
+  }
+
+  return { state, requestedScope, hmrcAccount };
 }
 
 // HTTP request/response, aware Lambda handler function
 export async function handler(event) {
-  validateEnv(["HMRC_BASE_URI", "HMRC_CLIENT_ID", "DIY_SUBMIT_BASE_URL"]);
+  validateEnv(["HMRC_BASE_URI", "HMRC_CLIENT_ID", "HMRC_SANDBOX_BASE_URI", "HMRC_SANDBOX_CLIENT_ID", "DIY_SUBMIT_BASE_URL"]);
 
   const { request } = extractRequest(event);
   const errorMessages = [];
 
   // Extract and validate parameters
-  const { state, requestedScope } = extractAndValidateParameters(event, errorMessages);
+  const { state, requestedScope, hmrcAccount } = extractAndValidateParameters(event, errorMessages);
 
   const responseHeaders = {};
 
@@ -49,7 +56,7 @@ export async function handler(event) {
   // Processing
   try {
     logger.info({ message: "Generating HMRC authorization URL", state, scope: requestedScope });
-    const { authUrl } = buildAuthUrl(state, requestedScope);
+    const { authUrl } = buildAuthUrl(state, requestedScope, hmrcAccount);
 
     return http200OkResponse({
       request,
@@ -68,11 +75,11 @@ export async function handler(event) {
 }
 
 // Service adaptor aware of the downstream service but not the consuming Lambda's incoming/outgoing HTTP request/response
-export function buildAuthUrl(state, scope) {
-  const clientId = process.env.HMRC_CLIENT_ID;
+export function buildAuthUrl(state, scope, hmrcAccount) {
+  const clientId = hmrcAccount === "sandbox" ? process.env.HMRC_SANDBOX_CLIENT_ID : process.env.HMRC_CLIENT_ID;
   const maybeSlash = process.env.DIY_SUBMIT_BASE_URL?.endsWith("/") ? "" : "/";
   const redirectUri = `${process.env.DIY_SUBMIT_BASE_URL}${maybeSlash}activities/submitVatCallback.html`;
-  const hmrcBase = process.env.HMRC_BASE_URI;
+  const hmrcBase = hmrcAccount === "sandbox" ? process.env.HMRC_SANDBOX_BASE_URI : process.env.HMRC_BASE_URI;
 
   const authUrl =
     `${hmrcBase}/oauth/authorize?response_type=code` +

@@ -98,12 +98,12 @@ describe("bundleEnforcement.js", () => {
       await expect(enforceBundles(event)).rejects.toThrow(BundleEntitlementError);
     });
 
-    test("should allow sandbox access with HMRC_TEST_API bundle", async () => {
+    test("should allow sandbox access with test bundle", async () => {
       process.env.HMRC_BASE_URI = "https://test-api.service.hmrc.gov.uk";
       const token = makeJWT("user-with-test-bundle");
       const event = buildEvent(token);
 
-      bundleHelpers.getUserBundles.mockResolvedValue(["HMRC_TEST_API"]);
+      bundleHelpers.getUserBundles.mockResolvedValue(["test"]);
 
       // Should not throw
       await enforceBundles(event);
@@ -111,12 +111,12 @@ describe("bundleEnforcement.js", () => {
       expect(bundleHelpers.getUserBundles).toHaveBeenCalledWith("user-with-test-bundle", "test-pool-id");
     });
 
-    test("should allow sandbox access with HMRC_TEST_API bundle with expiry", async () => {
+    test("should allow sandbox access with test bundle with expiry", async () => {
       process.env.HMRC_BASE_URI = "https://test-api.service.hmrc.gov.uk";
       const token = makeJWT("user-with-test-bundle-expiry");
       const event = buildEvent(token);
 
-      bundleHelpers.getUserBundles.mockResolvedValue(["HMRC_TEST_API|EXPIRY=2025-12-31"]);
+      bundleHelpers.getUserBundles.mockResolvedValue(["test|EXPIRY=2025-12-31"]);
 
       // Should not throw
       await enforceBundles(event);
@@ -124,7 +124,7 @@ describe("bundleEnforcement.js", () => {
       expect(bundleHelpers.getUserBundles).toHaveBeenCalledWith("user-with-test-bundle-expiry", "test-pool-id");
     });
 
-    test("should deny sandbox access without HMRC_TEST_API bundle", async () => {
+    test("should deny sandbox access without test bundle", async () => {
       process.env.HMRC_BASE_URI = "https://test-api.service.hmrc.gov.uk";
       const token = makeJWT("user-without-bundle");
       const event = buildEvent(token);
@@ -132,15 +132,15 @@ describe("bundleEnforcement.js", () => {
       bundleHelpers.getUserBundles.mockResolvedValue([]);
 
       await expect(enforceBundles(event)).rejects.toThrow(BundleEntitlementError);
-      await expect(enforceBundles(event)).rejects.toThrow("Forbidden: HMRC Sandbox submission requires HMRC_TEST_API bundle");
+      await expect(enforceBundles(event)).rejects.toThrow("Forbidden: HMRC Sandbox submission requires test bundle");
     });
 
-    test("should allow production access with HMRC_PROD_SUBMIT bundle", async () => {
+    test("should allow production access with guest bundle", async () => {
       process.env.HMRC_BASE_URI = "https://api.service.hmrc.gov.uk";
       const token = makeJWT("user-with-prod-bundle");
       const event = buildEvent(token);
 
-      bundleHelpers.getUserBundles.mockResolvedValue(["HMRC_PROD_SUBMIT"]);
+      bundleHelpers.getUserBundles.mockResolvedValue(["guest"]);
 
       // Should not throw
       await enforceBundles(event);
@@ -148,12 +148,12 @@ describe("bundleEnforcement.js", () => {
       expect(bundleHelpers.getUserBundles).toHaveBeenCalledWith("user-with-prod-bundle", "test-pool-id");
     });
 
-    test("should allow production access with LEGACY_ENTITLEMENT bundle", async () => {
+    test("should allow production access with buiness bundle", async () => {
       process.env.HMRC_BASE_URI = "https://api.service.hmrc.gov.uk";
       const token = makeJWT("user-with-legacy-bundle");
       const event = buildEvent(token);
 
-      bundleHelpers.getUserBundles.mockResolvedValue(["LEGACY_ENTITLEMENT"]);
+      bundleHelpers.getUserBundles.mockResolvedValue(["buiness"]);
 
       // Should not throw
       await enforceBundles(event);
@@ -161,12 +161,12 @@ describe("bundleEnforcement.js", () => {
       expect(bundleHelpers.getUserBundles).toHaveBeenCalledWith("user-with-legacy-bundle", "test-pool-id");
     });
 
-    test("should allow production access with HMRC_PROD_SUBMIT bundle with expiry", async () => {
+    test("should allow production access with guest bundle with expiry", async () => {
       process.env.HMRC_BASE_URI = "https://api.service.hmrc.gov.uk";
       const token = makeJWT("user-with-prod-bundle-expiry");
       const event = buildEvent(token);
 
-      bundleHelpers.getUserBundles.mockResolvedValue(["HMRC_PROD_SUBMIT|EXPIRY=2025-12-31"]);
+      bundleHelpers.getUserBundles.mockResolvedValue(["guest|EXPIRY=2025-12-31"]);
 
       // Should not throw
       await enforceBundles(event);
@@ -182,9 +182,7 @@ describe("bundleEnforcement.js", () => {
       bundleHelpers.getUserBundles.mockResolvedValue(["SOME_OTHER_BUNDLE"]);
 
       await expect(enforceBundles(event)).rejects.toThrow(BundleEntitlementError);
-      await expect(enforceBundles(event)).rejects.toThrow(
-        "Forbidden: Production submission requires HMRC_PROD_SUBMIT or LEGACY_ENTITLEMENT bundle",
-      );
+      await expect(enforceBundles(event)).rejects.toThrow("Forbidden: Production submission requires guest or buiness bundle");
     });
 
     test("should extract user info from authorizer context", async () => {
@@ -195,7 +193,7 @@ describe("bundleEnforcement.js", () => {
       };
       const event = buildEvent(null, authorizerContext);
 
-      bundleHelpers.getUserBundles.mockResolvedValue(["HMRC_TEST_API"]);
+      bundleHelpers.getUserBundles.mockResolvedValue(["test"]);
 
       // Should not throw
       await enforceBundles(event);
