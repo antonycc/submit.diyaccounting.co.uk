@@ -99,7 +99,14 @@
 
     <script>
       // --- helpers
-      const getIdToken = () => localStorage.getItem("cognitoIdToken");
+      const getIdToken = () => {
+        try {
+          return localStorage.getItem("cognitoIdToken");
+        } catch (e) {
+          // In opaque origins (e.g., setContent in tests), localStorage may be inaccessible
+          return null;
+        }
+      };
 
       // In-memory bundles state for this page
       let __userBundles = [];
@@ -151,10 +158,12 @@
 
       // --- render one catalog card
       const cardHtml = (b) => {
-        const name = b.name || b.id;
+        // Ensure we always work with strings and avoid using String.replaceAll for broader compatibility
+        const rawName = (b && (b.name || b.id)) || "";
+        const safeName = String(rawName).replace(/\"/g, "&quot;");
         return `
           <div class="service-item" style="text-align:left">
-            <button type="button" class="btn service-btn" data-bundle-id="${b.id}" data-bundle-name="${name.replaceAll("\"","&quot;")}">Request ${name}</button>
+            <button type="button" class="btn service-btn" data-bundle-id="${b.id}" data-bundle-name="${safeName}">Request ${rawName}</button>
           </div>`;
       };
 
@@ -284,7 +293,8 @@
             .join("\n");
           container.innerHTML = cards || '<p class="service-description">No bundles available.</p>';
           updateBundleStatus();
-        } catch {
+        } catch (err) {
+          try { console.error("[bundles.html] Catalog bootstrap error:", err && (err.stack || err.message || err)); } catch {}
           container.innerHTML = '<p class="service-description">Failed to load catalog.</p>';
         }
       })();
@@ -413,7 +423,9 @@
       }, 100);
 
       // --- page init
-      localStorage.removeItem("currentActivity");
+      try {
+        localStorage.removeItem("currentActivity");
+      } catch {}
       checkAuthStatus();
     </script>
   </body>

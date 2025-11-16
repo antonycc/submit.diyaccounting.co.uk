@@ -16,6 +16,15 @@ test.describe("Bundles page client-side filtering by listedInEnvironments", () =
   });
 
   test("shows only bundles allowed in current environment or with no restriction", async ({ page }) => {
+    // Capture console and page errors for debugging
+    page.on("console", (msg) => {
+      // eslint-disable-next-line no-console
+      console.log(`[PAGE_CONSOLE:${msg.type()}]`, msg.text());
+    });
+    page.on("pageerror", (err) => {
+      // eslint-disable-next-line no-console
+      console.log("[PAGE_ERROR]", err?.message || String(err));
+    });
     // Stub globals used by inline script to avoid ReferenceErrors
     await page.addInitScript(() => {
       window.showStatus = window.showStatus || (() => {});
@@ -59,9 +68,17 @@ test.describe("Bundles page client-side filtering by listedInEnvironments", () =
       await route.fulfill({ status: 200, contentType: "text/plain", body: "test\n" });
     });
 
-    // Load the bundles page HTML; baseURL ensures relative URLs resolve as in real site
-    await page.setContent(bundlesHtmlContent, {
-      baseURL: "http://localhost:3000/account/",
+    // Prepare HTML with a <base> tag for proper relative URL resolution and inline stubs for globals
+    const modifiedHtml = bundlesHtmlContent
+      .replace("<head>", '<head><base href="http://localhost:3000/account/">')
+      .replace(
+        "<body>",
+        `<body><script>\nwindow.showStatus = window.showStatus || function(){};\nwindow.checkAuthStatus = window.checkAuthStatus || function(){};\nwindow.toggleMenu = window.toggleMenu || function(){};\n</script>`
+      );
+
+    // Load the modified bundles page HTML
+    await page.setContent(modifiedHtml, {
+      url: "http://localhost:3000/account/bundles.html",
       waitUntil: "domcontentloaded",
     });
 
