@@ -449,8 +449,10 @@ function fetchWithId(url, opts = {}) {
 })();
 
 // Auth API functions
-async function getAuthUrl(state, provider = "hmrc") {
-  const url = `/api/v1/${provider}/authUrl?state=${encodeURIComponent(state)}`;
+// Extended to accept optional scope; kept backward compatible with existing callers
+async function getAuthUrl(state, provider = "hmrc", scope = undefined) {
+  let url = `/api/v1/${provider}/authUrl?state=${encodeURIComponent(state)}`;
+  if (scope) url += `&scope=${encodeURIComponent(scope)}`;
   console.log(`Getting auth URL. Remote call initiated: GET ${url}`);
 
   const response = await fetchWithId(url);
@@ -464,6 +466,129 @@ async function getAuthUrl(state, provider = "hmrc") {
   console.log(`Got auth URL. Remote call completed successfully: GET ${url}`, responseJson);
   return responseJson;
 }
+
+// Lightweight JWT helpers for token expiry checks
+function base64UrlDecode(str) {
+  try {
+    str = str.replace(/-/g, "+").replace(/_/g, "/");
+    const pad = str.length % 4;
+    if (pad) str += "=".repeat(4 - pad);
+    return atob(str);
+  } catch {
+    return "";
+  }
+}
+
+function parseJwtClaims(jwt) {
+  try {
+    if (!jwt || typeof jwt !== "string") return null;
+    const parts = jwt.split(".");
+    if (parts.length < 2) return null;
+    return JSON.parse(base64UrlDecode(parts[1]));
+  } catch {
+    return null;
+  }
+}
+
+function getJwtExpiryMs(jwt) {
+  const claims = parseJwtClaims(jwt);
+  const exp = claims && claims.exp ? Number(claims.exp) : 0;
+  return exp ? exp * 1000 : 0;
+}
+
+// Ensure Cognito session freshness (best-effort)
+// Attempts a refresh using refresh_token if available. If backend does not support refresh grant yet,
+// this will safely no-op.
+let __ensureSessionInflight = null;
+async function ensureSession({ minTTLms = 30000, force = false } = {}) {
+  try {
+    const accessToken = localStorage.getItem("cognitoAccessToken");
+    const refreshToken = localStorage.getItem("cognitoRefreshToken");
+    if (!accessToken) return null;
+
+    // If not forced, and token is fresh enough, skip
+    if (!force) {
+      const expMs = getJwtExpiryMs(accessToken);
+      const now = Date.now();
+      if (expMs && expMs - now > minTTLms) return accessToken;
+    }
+
+    // No refresh token or already in-flight
+    if (!refreshToken) return accessToken;
+    if (__ensureSessionInflight) return __ensureSessionInflight;
+
+    // Attempt refresh via backend endpoint
+    const body = new URLSearchParams({ grant_type: "refresh_token", refresh_token: refreshToken });
+
+    __ensureSessionInflight = (async () => {
+      try {
+        const res = await fetchWithId("/api/v1/cognito/token", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body,
+        });
+        if (!res.ok) {
+          // Backend may not support refresh yet; leave tokens as-is
+          return accessToken;
+        }
+        const json = await res.json();
+        const newAccess = json.accessToken || json.access_token || accessToken;
+        const newId = json.idToken || json.id_token || localStorage.getItem("cognitoIdToken");
+        const newRefresh = json.refreshToken || json.refresh_token || refreshToken;
+
+        const prevAccess = localStorage.getItem("cognitoAccessToken");
+        // Persist
+        if (newAccess) localStorage.setItem("cognitoAccessToken", newAccess);
+        if (newId) localStorage.setItem("cognitoIdToken", newId);
+        if (newRefresh) localStorage.setItem("cognitoRefreshToken", newRefresh);
+
+        // If token changed, invalidate request cache
+        if (newAccess && newAccess !== prevAccess) {
+          try { window.requestCache?.invalidate?.("/api/"); } catch {}
+          try { localStorage.setItem("auth:lastUpdate", String(Date.now())); } catch {}
+        }
+        return newAccess;
+      } catch {
+        return accessToken;
+      } finally {
+        __ensureSessionInflight = null;
+      }
+    })();
+
+    return __ensureSessionInflight;
+  } catch {
+    return localStorage.getItem("cognitoAccessToken");
+  }
+}
+
+// Centralized fetch with Cognito header injection and 401 refresh-and-retry
+async function authorizedFetch(input, init = {}) {
+  // Best-effort preflight refresh
+  await ensureSession({ minTTLms: 30000 }).catch(() => {});
+
+  const headers = new Headers(init.headers || {});
+  const accessToken = localStorage.getItem("cognitoAccessToken");
+  if (accessToken) headers.set("X-Authorization", `Bearer ${accessToken}`);
+
+  const first = await fetchWithId(input, { ...init, headers });
+  if (first.status !== 401) return first;
+
+  // One-time retry after forcing refresh
+  await ensureSession({ force: true }).catch(() => {});
+  const headers2 = new Headers(init.headers || {});
+  const at2 = localStorage.getItem("cognitoAccessToken");
+  if (at2) headers2.set("X-Authorization", `Bearer ${at2}`);
+  return fetchWithId(input, { ...init, headers: headers2 });
+}
+
+// Invalidate request cache across tabs when Cognito token changes
+try {
+  window.addEventListener?.("storage", (e) => {
+    if (e.key === "cognitoAccessToken") {
+      try { window.requestCache?.invalidate?.("/api/"); } catch {}
+    }
+  });
+} catch {}
 
 // VAT submission API function
 async function submitVat(vatNumber, periodKey, vatDue, accessToken, govClientHeaders = {}) {
@@ -479,7 +604,7 @@ async function submitVat(vatNumber, periodKey, vatDue, accessToken, govClientHea
     headers["X-Authorization"] = `Bearer ${cognitoAccessToken}`;
   }
 
-  const response = await fetchWithId(url, {
+  const response = await authorizedFetch(url, {
     method: "POST",
     headers,
     body: JSON.stringify({ vatNumber, periodKey, vatDue, accessToken }),
@@ -496,7 +621,7 @@ async function submitVat(vatNumber, periodKey, vatDue, accessToken, govClientHea
 // Receipt logging API function
 async function logReceipt(processingDate, formBundleNumber, chargeRefNumber) {
   const url = "/api/v1/hmrc/receipt";
-  const response = await fetchWithId(url, {
+  const response = await authorizedFetch(url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

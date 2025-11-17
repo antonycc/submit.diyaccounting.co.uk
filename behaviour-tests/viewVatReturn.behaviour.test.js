@@ -10,7 +10,12 @@ import {
   runLocalOAuth2Server,
   runLocalSslProxy,
 } from "./helpers/behaviour-helpers.js";
-import { consentToDataCollection, goToHomePageExpectNotLoggedIn, goToHomePageUsingHamburgerMenu } from "./steps/behaviour-steps.js";
+import {
+  consentToDataCollection,
+  goToHomePage,
+  goToHomePageExpectNotLoggedIn,
+  goToHomePageUsingHamburgerMenu,
+} from "./steps/behaviour-steps.js";
 import {
   clickLogIn,
   loginWithCognitoOrMockAuth,
@@ -44,6 +49,7 @@ const screenshotPath = "target/behaviour-test-results/screenshots/view-vat-retur
 
 const originalEnv = { ...process.env };
 
+const envName = getEnvVarAndLog("envName", "ENVIRONMENT_NAME", "local");
 const serverPort = getEnvVarAndLog("serverPort", "TEST_SERVER_HTTP_PORT", 3000);
 const runTestServer = getEnvVarAndLog("runTestServer", "TEST_SERVER_HTTP", null);
 const runProxy = getEnvVarAndLog("runProxy", "TEST_PROXY", null);
@@ -123,7 +129,12 @@ test("Click through: Get VAT return from HMRC", async ({ page }) => {
   if (isSandboxMode()) {
     await ensureBundlePresent(page, "Test", screenshotPath);
   }
-  await ensureBundlePresent(page, "Guest", screenshotPath);
+  // TODO: Support testing in non-sandbox mode with production credentials
+  if (envName !== "prod") {
+    await ensureBundlePresent(page, "Guest", screenshotPath);
+    await goToHomePage(page, screenshotPath);
+    await goToBundlesPage(page, screenshotPath);
+  }
   await goToHomePageUsingHamburgerMenu(page, screenshotPath);
 
   /* ******************* */

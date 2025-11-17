@@ -275,7 +275,7 @@
             requestHeaders["hmrcAccount"] = hmrcAccount;
           }
 
-          const response = await fetch(`/api/v1/hmrc/vat/obligation?${params}`, {
+          const response = await authorizedFetch(`/api/v1/hmrc/vat/obligation?${params}`, {
             method: "GET",
             headers: requestHeaders,
           });
@@ -410,7 +410,7 @@
               requestHeaders["hmrcAccount"] = hmrcAccount;
             }
 
-            const response = await fetch(`/api/v1/hmrc/vat/obligation?${params}`, {
+            const response = await authorizedFetch(`/api/v1/hmrc/vat/obligation?${params}`, {
               method: "GET",
               headers: requestHeaders,
             });
@@ -440,25 +440,7 @@
         }
       }
 
-      // Update getAuthUrl to accept scope parameter
-      async function getAuthUrl(state, provider = "hmrc", scope = null) {
-        let url = `/api/v1/${provider}/authUrl?state=${encodeURIComponent(state)}`;
-        if (scope) {
-          url += `&scope=${encodeURIComponent(scope)}`;
-        }
-        console.log(`Getting auth URL. Remote call initiated: GET ${url}`);
-
-        const response = await fetch(url);
-        const responseJson = await response.json();
-        if (!response.ok) {
-          const message = `Failed to get auth URL. Remote call failed: GET ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`;
-          console.error(message);
-          throw new Error(message);
-        }
-
-        console.log(`Got auth URL. Remote call completed successfully: GET ${url}`, responseJson);
-        return responseJson;
-      }
+      // getAuthUrl is provided globally by submit.js (now supports optional scope)
 
       function displayObligations(obligations) {
         const tableContainer = document.getElementById("obligationsTable");
