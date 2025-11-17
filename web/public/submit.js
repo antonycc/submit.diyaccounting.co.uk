@@ -283,7 +283,7 @@ function fetchWithId(url, opts = {}) {
   const urlParams = new URLSearchParams(window.location.search);
   const hmrcAccount = urlParams.get("hmrcAccount");
   if (hmrcAccount) {
-    headers["hmrcAccount"] = hmrcAccount;
+    headers.set("hmrcAccount", hmrcAccount);
   }
 
   return fetch(url, { ...opts, headers });
