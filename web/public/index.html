@@ -133,7 +133,28 @@
         return (bundles || []).some((b) => typeof b === "string" && (b === id || b.startsWith(id + "|")));
       }
 
-      // Get user's active bundles (automatic + granted)
+      // Parse bundle expiry date from bundle string
+      function parseBundleExpiry(bundleEntry) {
+        if (!bundleEntry || typeof bundleEntry !== "string") return null;
+        const parts = bundleEntry.split("|");
+        if (parts.length < 2) return null;
+        const expiryMatch = parts[1].match(/EXPIRY=(.+)/);
+        if (expiryMatch && expiryMatch[1]) {
+          return expiryMatch[1]; // ISO date string like "2025-12-31" or full ISO timestamp
+        }
+        return null;
+      }
+
+      // Check if a bundle is expired
+      function isBundleExpired(bundleEntry) {
+        const expiryStr = parseBundleExpiry(bundleEntry);
+        if (!expiryStr) return false; // No expiry means not expired
+        const expiryDate = new Date(expiryStr);
+        if (isNaN(expiryDate.getTime())) return false; // Invalid date
+        return expiryDate < new Date(); // Expired if expiry date is in the past
+      }
+
+      // Get user's active bundles (automatic + granted non-expired)
       function getActiveBundles(catalog, userBundles) {
         const active = new Set();
 
@@ -146,13 +167,27 @@
           }
         }
 
-        // Add granted bundles from localStorage
+        // Add granted non-expired bundles
         for (const bundleEntry of userBundles) {
-          const bundleId = bundleEntry.split("|")[0]; // Remove expiry info if present
-          active.add(bundleId);
+          if (!isBundleExpired(bundleEntry)) {
+            const bundleId = bundleEntry.split("|")[0]; // Remove expiry info if present
+            active.add(bundleId);
+          }
         }
 
         return Array.from(active);
+      }
+
+      // Get user's expired bundles
+      function getExpiredBundles(userBundles) {
+        const expired = new Set();
+        for (const bundleEntry of userBundles) {
+          if (isBundleExpired(bundleEntry)) {
+            const bundleId = bundleEntry.split("|")[0];
+            expired.add(bundleId);
+          }
+        }
+        return Array.from(expired);
       }
 
       // Check if user has access to an activity
@@ -212,18 +247,34 @@
           const catalog = await response.json();
           const userBundles = parseUserBundles();
           const activeBundles = getActiveBundles(catalog, userBundles);
+          const expiredBundles = getExpiredBundles(userBundles);
 
-          // Filter activities user can access
-          const accessibleActivities = (catalog.activities || []).filter((activity) => canAccessActivity(activity, activeBundles));
+          // Categorize activities into accessible, expired, and inaccessible
+          const accessibleActivities = [];
+          const expiredActivities = [];
 
-          if (accessibleActivities.length === 0) {
+          for (const activity of catalog.activities || []) {
+            if (!activity.bundles || !Array.isArray(activity.bundles)) continue;
+
+            const hasNonExpiredAccess = activity.bundles.some((bundleId) => activeBundles.includes(bundleId));
+            const hasExpiredAccess = activity.bundles.some((bundleId) => expiredBundles.includes(bundleId));
+
+            if (hasNonExpiredAccess) {
+              accessibleActivities.push(activity);
+            } else if (hasExpiredAccess) {
+              expiredActivities.push(activity);
+            }
+          }
+
+          // If no activities at all, show message
+          if (accessibleActivities.length === 0 && expiredActivities.length === 0) {
             dynamicContainer.innerHTML =
               '<p style="color: #666;">No activities available. Request additional bundles to access more features.</p>';
             return;
           }
 
           // Generate buttons for accessible activities
-          const buttons = accessibleActivities
+          const activeButtons = accessibleActivities
             .map((activity) => {
               let path;
               if (activity.paths) {
@@ -242,7 +293,20 @@
             })
             .join("");
 
-          dynamicContainer.innerHTML = buttons;
+          // Generate disabled buttons for expired activities
+          const expiredButtons = expiredActivities
+            .map((activity) => {
+              return `
+              <div style="margin: 1em 0">
+                <button type="button" class="btn" disabled style="background-color: #ccc; border-color: #ccc; color: #666; cursor: not-allowed;">
+                  ${activity.name} (expired)
+                </button>
+              </div>
+            `;
+            })
+            .join("");
+
+          dynamicContainer.innerHTML = activeButtons + expiredButtons;
         } catch (error) {
           console.error("Error loading activities:", error);
           dynamicContainer.innerHTML = '<p style="color: #b00020;">Error loading activities. Please refresh the page.</p>';
