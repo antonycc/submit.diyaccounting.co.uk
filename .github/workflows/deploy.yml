@@ -2503,7 +2503,7 @@ jobs:
         with:
           name: web-test-reports-obligation-sandbox
           path: |
-            target/test-reports/obligation=sandbox/
+            target/test-reports/obligation-sandbox/
 
       - name: Download artifacts (reports) - submit vat
         if: ${{ !cancelled() }}
