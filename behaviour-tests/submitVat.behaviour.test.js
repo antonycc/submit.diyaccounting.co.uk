@@ -46,6 +46,7 @@ const screenshotPath = "target/behaviour-test-results/screenshots/submitVat-beha
 
 const originalEnv = { ...process.env };
 
+const envName = getEnvVarAndLog("envName", "ENVIRONMENT_NAME", "local");
 const serverPort = getEnvVarAndLog("serverPort", "TEST_SERVER_HTTP_PORT", 3000);
 const optionalTestS3AccessKey = getEnvVarAndLog("optionalTestS3AccessKey", "TEST_S3_ACCESS_KEY", null);
 const optionalTestS3SecretKey = getEnvVarAndLog("optionalTestS3Secret_KEY", "TEST_S3_SECRET_KEY", null);
@@ -132,7 +133,12 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }) => {
   if (isSandboxMode()) {
     await ensureBundlePresent(page, "Test", screenshotPath);
   }
-  await ensureBundlePresent(page, "Guest", screenshotPath);
+  // TODO: Support testing in non-sandbox mode with production credentials
+  if (envName !== "prod") {
+    await ensureBundlePresent(page, "Guest", screenshotPath);
+    await goToHomePage(page, screenshotPath);
+    await goToBundlesPage(page, screenshotPath);
+  }
   await goToHomePage(page, screenshotPath);
 
   /* ************ */

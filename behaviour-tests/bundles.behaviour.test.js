@@ -115,7 +115,7 @@ test("Click through: Adding and removing bundles", async ({ page }) => {
   await goToHomePage(page, screenshotPath);
   await goToBundlesPage(page, screenshotPath);
   // TODO: Support testing in non-sandbox mode with production credentials
-  if (isSandboxMode() || envName !== "prod") {
+  if (envName !== "prod") {
     await ensureBundlePresent(page, "Guest", screenshotPath);
     await goToHomePage(page, screenshotPath);
     await goToBundlesPage(page, screenshotPath);
