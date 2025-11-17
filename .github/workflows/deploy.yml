@@ -2490,7 +2490,7 @@ jobs:
             target/test-reports/bundle/
 
       - name: Download artifacts (reports) - obligation
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && github.ref != 'refs/heads/main' && needs.names.outputs.environment-name != 'prod' }}
         uses: actions/download-artifact@v6
         with:
           name: web-test-reports-obligation
@@ -2506,7 +2506,7 @@ jobs:
             target/test-reports/obligation-sandbox/
 
       - name: Download artifacts (reports) - submit vat
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && github.ref != 'refs/heads/main' && needs.names.outputs.environment-name != 'prod' }}
         uses: actions/download-artifact@v6
         with:
           name: web-test-reports-submit-vat
@@ -2522,7 +2522,7 @@ jobs:
             target/test-reports/submit-vat-sandbox/
 
       - name: Download artifacts (reports) - view vat
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && github.ref != 'refs/heads/main' && needs.names.outputs.environment-name != 'prod' }}
         uses: actions/download-artifact@v6
         with:
           name: web-test-reports-view-vat

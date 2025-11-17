@@ -38,7 +38,7 @@ function getTableName() {
 }
 
 /**
- * Parse bundle string to extract bundleId and expiry
+ * Parse bundle string to extract bundleId and expiry (for backward compatibility)
  * @param {string} bundleStr - Bundle string in format "BUNDLE_ID" or "BUNDLE_ID|EXPIRY=2025-12-31"
  * @returns {Object} Object with bundleId and expiry (ISO date string or null)
  */
@@ -59,6 +59,25 @@ function parseBundleString(bundleStr) {
   }
 
   return { bundleId, expiry };
+}
+
+/**
+ * Format bundle item to bundle string (for backward compatibility)
+ * @param {Object} item - DynamoDB item with bundleId and expiry
+ * @returns {string} Bundle string in format "BUNDLE_ID|EXPIRY=2025-12-31"
+ */
+function formatBundleString(item) {
+  if (!item || !item.bundleId) {
+    return "";
+  }
+
+  if (item.expiry) {
+    // Extract just the date portion if it's a full ISO timestamp
+    const expiryDate = item.expiry.split("T")[0];
+    return `${item.bundleId}|EXPIRY=${expiryDate}`;
+  }
+
+  return item.bundleId;
 }
 
 /**
@@ -84,20 +103,26 @@ export async function putBundle(userId, bundleStr) {
     const docClient = await getDynamoDbDocClient();
     const tableName = getTableName();
 
+    const now = new Date();
     const item = {
       hashedSub,
       bundleId,
-      bundleStr,
-      createdAt: new Date().toISOString(),
+      createdAt: now.toISOString(),
     };
 
-    // Add TTL if expiry is present (convert date to Unix timestamp)
+    // Add expiry with millisecond precision timestamp (ISO format)
     if (expiry) {
-      item.expiry = expiry;
+      // If expiry is a date-only string (e.g., "2025-12-31"), convert to full ISO timestamp
       const expiryDate = new Date(expiry);
-      // Validate the date is valid before calculating TTL
       if (!isNaN(expiryDate.getTime())) {
-        item.ttl = Math.floor(expiryDate.getTime() / 1000);
+        // Store expiry as millisecond precision timestamp
+        item.expiry = expiryDate.toISOString();
+
+        // Calculate TTL as 1 month after expiry
+        const ttlDate = new Date(expiryDate.getTime());
+        ttlDate.setMonth(ttlDate.getMonth() + 1);
+        item.ttl = Math.floor(ttlDate.getTime() / 1000);
+        item.ttl_datestamp = ttlDate.toISOString();
       } else {
         logger.warn({ message: "Invalid expiry date format, skipping TTL", expiry });
       }
@@ -114,7 +139,9 @@ export async function putBundle(userId, bundleStr) {
       message: "Bundle stored in DynamoDB",
       hashedSub,
       bundleId,
-      expiry,
+      expiry: item.expiry,
+      ttl: item.ttl,
+      ttl_datestamp: item.ttl_datestamp,
     });
   } catch (error) {
     logger.error({
@@ -246,7 +273,8 @@ export async function getUserBundles(userId) {
       }),
     );
 
-    const bundles = (response.Items || []).map((item) => item.bundleStr || "").filter((b) => b.length > 0);
+    // Convert DynamoDB items to bundle strings for backward compatibility
+    const bundles = (response.Items || []).map((item) => formatBundleString(item)).filter((b) => b.length > 0);
 
     logger.info({
       message: "Retrieved bundles from DynamoDB",
