@@ -270,7 +270,7 @@
             requestHeaders["hmrcAccount"] = hmrcAccount;
           }
 
-          const response = await authorizedFetch(`/api/v1/hmrc/vat/obligation?${params}`, {
+          const response = await window.authorizedFetch(`/api/v1/hmrc/vat/obligation?${params}`, {
             method: "GET",
             headers: requestHeaders,
           });
@@ -402,7 +402,7 @@
               requestHeaders["hmrcAccount"] = hmrcAccount;
             }
 
-            const response = await authorizedFetch(`/api/v1/hmrc/vat/obligation?${params}`, {
+            const response = await window.authorizedFetch(`/api/v1/hmrc/vat/obligation?${params}`, {
               method: "GET",
               headers: requestHeaders,
             });
