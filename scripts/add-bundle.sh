@@ -56,13 +56,13 @@ EXPIRY=$(calculate_expiry "$TIMEOUT")
 echo "Calculated expiry: $EXPIRY"
 
 # Calculate TTL (1 month after expiry) in Unix timestamp
-# First get expiry as Unix timestamp, then add 1 month (approximately 2592000 seconds)
+# Use date's ability to add 1 month from the expiry date
 EXPIRY_UNIX=$(date -u -d "$EXPIRY" +%s)
-TTL_UNIX=$((EXPIRY_UNIX + 2592000))  # Add 30 days in seconds
-TTL_DATESTAMP=$(date -u -d "@$TTL_UNIX" +%Y-%m-%dT%H:%M:%S.%3NZ)
+TTL_DATESTAMP_ISO=$(date -u -d "$EXPIRY + 1 month" +%Y-%m-%dT%H:%M:%S.%3NZ)
+TTL_UNIX=$(date -u -d "$TTL_DATESTAMP_ISO" +%s)
 
 echo "TTL Unix timestamp: $TTL_UNIX"
-echo "TTL datestamp: $TTL_DATESTAMP"
+echo "TTL datestamp: $TTL_DATESTAMP_ISO"
 
 # Get the DynamoDB table name
 TABLE_NAME="${ENVIRONMENT}-submit-bundles"
@@ -77,7 +77,7 @@ ITEM_JSON=$(cat <<EOF
   "createdAt": {"S": "$CREATED_AT"},
   "expiry": {"S": "$EXPIRY"},
   "ttl": {"N": "$TTL_UNIX"},
-  "ttl_datestamp": {"S": "$TTL_DATESTAMP"}
+  "ttl_datestamp": {"S": "$TTL_DATESTAMP_ISO"}
 }
 EOF
 )
