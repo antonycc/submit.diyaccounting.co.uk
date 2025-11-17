@@ -1,0 +1,238 @@
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import fs from "node:fs";
+import path from "node:path";
+import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
+
+dotenvConfigIfNotBlank({ path: ".env.test" });
+
+// Load the script content and eval it in this context to populate window.* functions via happy-dom
+const submitJsPath = path.join(process.cwd(), "web/public/submit.js");
+const scriptContent = fs.readFileSync(submitJsPath, "utf-8");
+
+describe("Token refresh on 401 errors", () => {
+  let originalFetch;
+  let fetchMock;
+  let storageMock;
+
+  beforeEach(() => {
+    // Setup global window and localStorage
+    global.window = {
+      sessionStorage: {
+        getItem: vi.fn(),
+        setItem: vi.fn(),
+        removeItem: vi.fn(),
+      },
+      addEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+      crypto: {
+        getRandomValues: (arr) => {
+          for (let i = 0; i < arr.length; i++) {
+            arr[i] = Math.floor(Math.random() * 256);
+          }
+          return arr;
+        },
+        randomUUID: () => "test-uuid-" + Math.random().toString(36).substring(7),
+      },
+    };
+
+    // Mock localStorage
+    storageMock = {
+      cognitoAccessToken: "mock-access-token",
+      cognitoIdToken: "mock-id-token",
+      cognitoRefreshToken: "mock-refresh-token",
+    };
+
+    global.localStorage = {
+      getItem: vi.fn((key) => storageMock[key] || null),
+      setItem: vi.fn((key, value) => {
+        storageMock[key] = value;
+      }),
+      removeItem: vi.fn((key) => {
+        delete storageMock[key];
+      }),
+    };
+
+    // Setup fetch mock
+    fetchMock = vi.fn();
+    originalFetch = global.fetch;
+    global.fetch = fetchMock;
+    global.window.fetch = fetchMock;
+
+    // Mock document for DOM-related code
+    const mockElement = {
+      appendChild: vi.fn(),
+      setAttribute: vi.fn(),
+      getAttribute: vi.fn(),
+      style: {},
+      onclick: null,
+      addEventListener: vi.fn(),
+      innerHTML: "",
+    };
+
+    global.document = {
+      readyState: "complete",
+      querySelector: vi.fn(() => null),
+      querySelectorAll: vi.fn(() => []),
+      getElementById: vi.fn(() => mockElement),
+      createElement: vi.fn(() => ({ ...mockElement })),
+      addEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+      body: {
+        appendChild: vi.fn(),
+        removeChild: vi.fn(),
+      },
+      head: {
+        appendChild: vi.fn(),
+      },
+    };
+
+    // Evaluate the submit.js script
+    eval(scriptContent);
+  });
+
+  afterEach(() => {
+    global.fetch = originalFetch;
+    vi.clearAllMocks();
+  });
+
+  it("fetchWithIdToken should add Authorization header with idToken", async () => {
+    // Mock a valid access token to skip refresh logic
+    const validFutureExp = Math.floor(Date.now() / 1000) + 3600; // 1 hour from now
+    const validToken = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${btoa(JSON.stringify({ exp: validFutureExp }))}.test`;
+    storageMock.cognitoAccessToken = validToken;
+
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({ success: true }),
+    });
+
+    await window.fetchWithIdToken("/api/v1/test", {});
+
+    // Should have called fetch at least once
+    expect(fetchMock.mock.calls.length).toBeGreaterThan(0);
+    const lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length - 1];
+    const [url, init] = lastCall;
+    expect(url).toBe("/api/v1/test");
+
+    // Check that Authorization header is set
+    const headers = init.headers;
+    if (headers instanceof Headers) {
+      expect(headers.get("Authorization")).toBe("Bearer mock-id-token");
+    } else {
+      expect(headers.Authorization).toBe("Bearer mock-id-token");
+    }
+  });
+
+  it("fetchWithIdToken should retry on 401 after token refresh", async () => {
+    // Mock expired access token to trigger refresh
+    const expiredToken = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${btoa(JSON.stringify({ exp: 1 }))}.test`;
+    storageMock.cognitoAccessToken = expiredToken;
+
+    // First call returns 401
+    fetchMock.mockResolvedValueOnce({
+      ok: false,
+      status: 401,
+      json: async () => ({ error: "Unauthorized" }),
+    });
+
+    // Token refresh call returns new tokens
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        accessToken: "new-access-token",
+        idToken: "new-id-token",
+        refreshToken: "new-refresh-token",
+      }),
+    });
+
+    // Retry call returns success
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({ success: true }),
+    });
+
+    const result = await window.fetchWithIdToken("/api/v1/test", {});
+
+    // Should have made multiple calls
+    expect(fetchMock.mock.calls.length).toBeGreaterThan(1);
+
+    // Final result should be successful
+    expect(result.ok).toBe(true);
+  });
+
+  it("fetchWithIdToken should work if no idToken is available", async () => {
+    // Clear the id token
+    storageMock.cognitoIdToken = null;
+
+    // Mock valid access token
+    const validFutureExp = Math.floor(Date.now() / 1000) + 3600;
+    const validToken = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${btoa(JSON.stringify({ exp: validFutureExp }))}.test`;
+    storageMock.cognitoAccessToken = validToken;
+
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({ success: true }),
+    });
+
+    await window.fetchWithIdToken("/api/v1/test", {});
+
+    // Should still make the request, just without Authorization header
+    expect(fetchMock).toHaveBeenCalled();
+  });
+
+  it("fetchWithIdToken should handle non-401 errors gracefully", async () => {
+    // Mock valid access token
+    const validFutureExp = Math.floor(Date.now() / 1000) + 3600;
+    const validToken = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${btoa(JSON.stringify({ exp: validFutureExp }))}.test`;
+    storageMock.cognitoAccessToken = validToken;
+
+    // First call returns 500
+    fetchMock.mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+      json: async () => ({ error: "Server error" }),
+    });
+
+    const result = await window.fetchWithIdToken("/api/v1/test", {});
+
+    // Should not retry on non-401 errors
+    expect(result.status).toBe(500);
+  });
+
+  it("fetchWithIdToken should preserve custom headers", async () => {
+    // Mock valid access token
+    const validFutureExp = Math.floor(Date.now() / 1000) + 3600;
+    const validToken = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${btoa(JSON.stringify({ exp: validFutureExp }))}.test`;
+    storageMock.cognitoAccessToken = validToken;
+
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({ success: true }),
+    });
+
+    await window.fetchWithIdToken("/api/v1/test", {
+      headers: {
+        "Content-Type": "application/json",
+        "X-Custom-Header": "test-value",
+      },
+    });
+
+    // Check that custom headers are preserved
+    const lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length - 1];
+    const [, init] = lastCall;
+    const headers = init.headers;
+
+    if (headers instanceof Headers) {
+      expect(headers.get("Content-Type")).toBe("application/json");
+      expect(headers.get("X-Custom-Header")).toBe("test-value");
+    } else {
+      expect(headers["Content-Type"]).toBe("application/json");
+      expect(headers["X-Custom-Header"]).toBe("test-value");
+    }
+  });
+});

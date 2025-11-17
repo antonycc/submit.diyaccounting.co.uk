@@ -212,7 +212,7 @@
             requestHeaders["hmrcAccount"] = hmrcAccount;
           }
 
-          const response = await authorizedFetch(`/api/v1/hmrc/vat/return/${pendingRequest.periodKey}?${params}`, {
+          const response = await window.authorizedFetch(`/api/v1/hmrc/vat/return/${pendingRequest.periodKey}?${params}`, {
             method: "GET",
             headers: requestHeaders,
           });
@@ -333,7 +333,7 @@
               requestHeaders["hmrcAccount"] = hmrcAccount;
             }
 
-            const response = await authorizedFetch(`/api/v1/hmrc/vat/return/${periodKey}?${params}`, {
+            const response = await window.authorizedFetch(`/api/v1/hmrc/vat/return/${periodKey}?${params}`, {
               method: "GET",
               headers: requestHeaders,
             });

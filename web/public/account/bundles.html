@@ -115,7 +115,18 @@
         try {
           if (__rc && typeof __rc.getJSON === "function") return __rc.getJSON(url, opts);
         } catch {}
-        const res = await fetch(url, opts.init);
+        // Fallback: Use fetchWithIdToken if authorization is needed
+        const init = opts.init || {};
+        const hasAuthHeader = init.headers && (init.headers.Authorization || init.headers.authorization);
+        if (hasAuthHeader && window.fetchWithIdToken) {
+          const res = await window.fetchWithIdToken(url, init);
+          try {
+            return await res.json();
+          } catch {
+            return null;
+          }
+        }
+        const res = await fetch(url, init);
         try {
           return await res.json();
         } catch {
@@ -209,9 +220,9 @@
         btn.disabled = true;
 
         try {
-          const r = await fetch("/api/v1/bundle", {
+          const r = await window.fetchWithIdToken("/api/v1/bundle", {
             method: "POST",
-            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${idToken}` },
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ bundleId, qualifiers }),
           });
           const body = await r.json().catch(() => ({}));
@@ -373,11 +384,10 @@
         }
 
         try {
-          const response = await fetch("/api/v1/bundle", {
+          const response = await window.fetchWithIdToken("/api/v1/bundle", {
             method: "DELETE",
             headers: {
               "Content-Type": "application/json",
-              "Authorization": `Bearer ${idToken}`,
             },
             body: JSON.stringify({ bundleId }),
           });
@@ -411,11 +421,10 @@
         }
 
         try {
-          const response = await fetch("/api/v1/bundle", {
+          const response = await window.fetchWithIdToken("/api/v1/bundle", {
             method: "DELETE",
             headers: {
               "Content-Type": "application/json",
-              "Authorization": `Bearer ${idToken}`,
             },
             body: JSON.stringify({ removeAll: true }),
           });

@@ -283,7 +283,7 @@ function fetchWithId(url, opts = {}) {
   const urlParams = new URLSearchParams(window.location.search);
   const hmrcAccount = urlParams.get("hmrcAccount");
   if (hmrcAccount) {
-    headers["hmrcAccount"] = hmrcAccount;
+    headers.set("hmrcAccount", hmrcAccount);
   }
 
   return fetch(url, { ...opts, headers });
@@ -566,9 +566,6 @@ async function ensureSession({ minTTLms = 30000, force = false } = {}) {
 
 // Centralized fetch with Cognito header injection and 401 refresh-and-retry
 async function authorizedFetch(input, init = {}) {
-  // Best-effort preflight refresh
-  await ensureSession({ minTTLms: 30000 }).catch(() => {});
-
   const headers = new Headers(init.headers || {});
   const accessToken = localStorage.getItem("cognitoAccessToken");
   if (accessToken) headers.set("X-Authorization", `Bearer ${accessToken}`);
@@ -577,6 +574,7 @@ async function authorizedFetch(input, init = {}) {
   if (first.status !== 401) return first;
 
   // One-time retry after forcing refresh
+  // Note: Token refresh only works if backend supports refresh_token grant type
   await ensureSession({ force: true }).catch(() => {});
   const headers2 = new Headers(init.headers || {});
   const at2 = localStorage.getItem("cognitoAccessToken");
@@ -586,6 +584,38 @@ async function authorizedFetch(input, init = {}) {
 
 // Expose authorizedFetch globally for HTML usage
 window.authorizedFetch = authorizedFetch;
+
+// Fetch with ID token and automatic 401 refresh-and-retry
+// This is specifically for endpoints that use the Authorization header with idToken
+async function fetchWithIdToken(input, init = {}) {
+  // Helper to get the current idToken
+  const getIdToken = () => {
+    try {
+      return localStorage.getItem("cognitoIdToken");
+    } catch {
+      return null;
+    }
+  };
+
+  const headers = new Headers(init.headers || {});
+  const idToken = getIdToken();
+  if (idToken) headers.set("Authorization", `Bearer ${idToken}`);
+
+  const first = await fetch(input, { ...init, headers });
+  if (first.status !== 401) return first;
+
+  // One-time retry after forcing refresh
+  // Note: Token refresh only works if backend supports refresh_token grant type
+  await ensureSession({ force: true }).catch(() => {});
+  const headers2 = new Headers(init.headers || {});
+  const idToken2 = getIdToken();
+  if (idToken2) headers2.set("Authorization", `Bearer ${idToken2}`);
+  return fetch(input, { ...init, headers: headers2 });
+}
+
+// Expose fetchWithIdToken globally for HTML usage
+window.fetchWithIdToken = fetchWithIdToken;
+
 // Invalidate request cache across tabs when Cognito token changes
 try {
   window.addEventListener?.("storage", (e) => {

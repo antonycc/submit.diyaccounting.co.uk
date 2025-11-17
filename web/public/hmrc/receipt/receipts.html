@@ -106,9 +106,7 @@
 
         unauthHint.style.display = "none";
 
-        const res = await fetch("/api/v1/hmrc/receipt", {
-          headers: { Authorization: `Bearer ${idToken}` },
-        });
+        const res = await window.fetchWithIdToken("/api/v1/hmrc/receipt", {});
         if (!res.ok) {
           tbody.innerHTML = "";
           table.style.display = "none";
@@ -175,9 +173,7 @@
 
       async function viewReceipt(name) {
         const idToken = getIdToken();
-        const res = await fetch(`/api/v1/hmrc/receipt/${encodeURIComponent(name)}`, {
-          headers: { Authorization: `Bearer ${idToken}` },
-        });
+        const res = await window.fetchWithIdToken(`/api/v1/hmrc/receipt/${encodeURIComponent(name)}`, {});
         if (!res.ok) return alert("Failed to fetch receipt");
         const text = await res.text();
 
@@ -287,9 +283,7 @@
 
       async function downloadReceipt(name) {
         const idToken = getIdToken();
-        const res = await fetch(`/api/v1/hmrc/receipt/${encodeURIComponent(name)}`, {
-          headers: { Authorization: `Bearer ${idToken}` },
-        });
+        const res = await window.fetchWithIdToken(`/api/v1/hmrc/receipt/${encodeURIComponent(name)}`, {});
         if (!res.ok) return alert("Failed to download receipt");
         const blob = new Blob([await res.text()], { type: "application/json" });
         const a = document.createElement("a");
@@ -315,7 +309,7 @@
 
       document.getElementById("exportCsvBtn").addEventListener("click", async () => {
         const idToken = getIdToken();
-        const res = await fetch("/api/v1/hmrc/receipt", { headers: { Authorization: `Bearer ${idToken}` } });
+        const res = await window.fetchWithIdToken("/api/v1/hmrc/receipt", {});
         if (!res.ok) return alert("Failed to export CSV");
         const json = await res.json();
         const items = Array.isArray(json.receipts) ? json.receipts : [];
