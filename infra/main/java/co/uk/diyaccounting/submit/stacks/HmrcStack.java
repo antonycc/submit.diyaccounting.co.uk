@@ -1,21 +1,18 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
 import co.uk.diyaccounting.submit.constructs.ApiLambda;
 import co.uk.diyaccounting.submit.constructs.ApiLambdaProps;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
-import java.util.List;
-import java.util.Optional;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Aspects;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
+import software.amazon.awscdk.services.dynamodb.ITable;
+import software.amazon.awscdk.services.dynamodb.Table;
 import software.amazon.awscdk.services.iam.Effect;
 import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.lambda.Function;
@@ -25,6 +22,12 @@ import software.amazon.awscdk.services.s3.Bucket;
 import software.amazon.awscdk.services.s3.IBucket;
 import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
+
+import java.util.List;
+import java.util.Optional;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 public class HmrcStack extends Stack {
 
@@ -123,6 +126,12 @@ public class HmrcStack extends Stack {
     public HmrcStack(Construct scope, String id, StackProps stackProps, HmrcStackProps props) {
         super(scope, id, stackProps);
 
+        // Lookup existing DynamoDB HMRC API requests Table
+        ITable hmrcApiRequestsTable = Table.fromTableName(
+            this,
+            "ImportedHmrcApiRequestsTable-%s".formatted(props.deploymentName()),
+            props.sharedNames().hmrcApiRequestsTableName);
+
         // Lambdas
 
         this.lambdaFunctionProps = new java.util.ArrayList<>();
@@ -165,7 +174,8 @@ public class HmrcStack extends Stack {
                 .with("HMRC_BASE_URI", props.hmrcBaseUri())
                 .with("HMRC_CLIENT_ID", props.hmrcClientId())
                 .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
-                .with("HMRC_SANDBOX_CLIENT_ID", props.hmrcSandboxClientId());
+                .with("HMRC_SANDBOX_CLIENT_ID", props.hmrcSandboxClientId())
+                .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName());
         if (StringUtils.isNotBlank(props.hmrcClientSecretArn())) {
             exchangeHmrcEnvBase.with("HMRC_CLIENT_SECRET_ARN", props.hmrcClientSecretArn());
         }
@@ -246,7 +256,8 @@ public class HmrcStack extends Stack {
                 .with("DIY_SUBMIT_BASE_URL", props.sharedNames().envBaseUrl)
                 .with("COGNITO_USER_POOL_ID", props.cognitoUserPoolId())
                 .with("HMRC_BASE_URI", props.hmrcBaseUri())
-                .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri());
+                .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
+                .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName());
         var submitVatLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
@@ -276,7 +287,8 @@ public class HmrcStack extends Stack {
         var vatObligationLambdaEnv = new PopulatedMap<String, String>()
                 .with("DIY_SUBMIT_BASE_URL", props.sharedNames().envBaseUrl)
                 .with("HMRC_BASE_URI", props.hmrcBaseUri())
-                .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri());
+                .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
+                .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName());
         var hmrcVatObligationGetLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
@@ -307,7 +319,8 @@ public class HmrcStack extends Stack {
         var vatReturnGetLambdaEnv = new PopulatedMap<String, String>()
                 .with("DIY_SUBMIT_BASE_URL", props.sharedNames().envBaseUrl)
                 .with("HMRC_BASE_URI", props.hmrcBaseUri())
-                .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri());
+                .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
+                .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName());
         var hmrcVatReturnGetLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
