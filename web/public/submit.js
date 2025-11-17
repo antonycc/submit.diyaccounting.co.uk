@@ -566,9 +566,6 @@ async function ensureSession({ minTTLms = 30000, force = false } = {}) {
 
 // Centralized fetch with Cognito header injection and 401 refresh-and-retry
 async function authorizedFetch(input, init = {}) {
-  // Best-effort preflight refresh
-  await ensureSession({ minTTLms: 30000 }).catch(() => {});
-
   const headers = new Headers(init.headers || {});
   const accessToken = localStorage.getItem("cognitoAccessToken");
   if (accessToken) headers.set("X-Authorization", `Bearer ${accessToken}`);
@@ -577,6 +574,7 @@ async function authorizedFetch(input, init = {}) {
   if (first.status !== 401) return first;
 
   // One-time retry after forcing refresh
+  // Note: Token refresh only works if backend supports refresh_token grant type
   await ensureSession({ force: true }).catch(() => {});
   const headers2 = new Headers(init.headers || {});
   const at2 = localStorage.getItem("cognitoAccessToken");
@@ -599,9 +597,6 @@ async function fetchWithIdToken(input, init = {}) {
     }
   };
 
-  // Best-effort preflight refresh to ensure token is fresh
-  await ensureSession({ minTTLms: 30000 }).catch(() => {});
-
   const headers = new Headers(init.headers || {});
   const idToken = getIdToken();
   if (idToken) headers.set("Authorization", `Bearer ${idToken}`);
@@ -610,6 +605,7 @@ async function fetchWithIdToken(input, init = {}) {
   if (first.status !== 401) return first;
 
   // One-time retry after forcing refresh
+  // Note: Token refresh only works if backend supports refresh_token grant type
   await ensureSession({ force: true }).catch(() => {});
   const headers2 = new Headers(init.headers || {});
   const idToken2 = getIdToken();
