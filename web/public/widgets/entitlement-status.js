@@ -60,11 +60,7 @@
 
     fetchPromises.bundles = (async () => {
       try {
-        const response = await fetch("/api/v1/bundle", {
-          headers: {
-            Authorization: `Bearer ${idToken}`,
-          },
-        });
+        const response = await window.fetchWithIdToken("/api/v1/bundle", {});
 
         if (response.ok) {
           const data = await response.json();

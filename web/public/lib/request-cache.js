@@ -18,10 +18,35 @@
     return method + " " + url;
   }
 
+  // Helper to detect if init has Authorization header
+  function hasAuthHeader(init) {
+    if (!init || !init.headers) return false;
+    const headers = init.headers;
+    if (headers instanceof Headers) {
+      return headers.has("Authorization") || headers.has("authorization");
+    }
+    if (Array.isArray(headers)) {
+      return headers.some(([k]) => k.toLowerCase() === "authorization");
+    }
+    if (typeof headers === "object") {
+      return Object.keys(headers).some((k) => k.toLowerCase() === "authorization");
+    }
+    return false;
+  }
+
+  // Helper to choose the right fetch function
+  function chooseFetch(init) {
+    if (hasAuthHeader(init) && typeof window !== "undefined" && typeof window.fetchWithIdToken === "function") {
+      return window.fetchWithIdToken;
+    }
+    return fetch;
+  }
+
   async function fetchWithETag(url, init, prevEtag) {
     const headers = new Headers((init && init.headers) || {});
     if (prevEtag) headers.set("If-None-Match", prevEtag);
-    const res = await fetch(url, { ...init, headers });
+    const fetchFn = chooseFetch(init);
+    const res = await fetchFn(url, { ...init, headers });
     if (res.status === 304) {
       return { status: 304, etag: prevEtag };
     }
@@ -41,7 +66,8 @@
     const k = keyFrom(url, init || { method: "GET" });
     if (!k) {
       // Not a cacheable GET request
-      const res = await fetch(url, init);
+      const fetchFn = chooseFetch(init);
+      const res = await fetchFn(url, init);
       return res.json();
     }
 
@@ -71,7 +97,8 @@
           L1.set(k, { ...fresh });
           return r.data;
         } else {
-          const res = await fetch(url, init);
+          const fetchFn = chooseFetch(init);
+          const res = await fetchFn(url, init);
           const etag = res.headers.get("ETag") || undefined;
           const data = await res.json();
           const fresh = { ts: Date.now(), ttlMs, data, etag, init };
