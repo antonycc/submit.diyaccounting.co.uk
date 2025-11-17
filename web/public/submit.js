@@ -164,8 +164,7 @@ function generateRandomState() {
 
     // Expose lightweight API on window
     let lastXRequestId = (typeof window !== "undefined" && window.sessionStorage?.getItem?.("lastXRequestId")) || "";
-    let lastXRequestIdSeenAt =
-      (typeof window !== "undefined" && window.sessionStorage?.getItem?.("lastXRequestIdSeenAt")) || "";
+    let lastXRequestIdSeenAt = (typeof window !== "undefined" && window.sessionStorage?.getItem?.("lastXRequestIdSeenAt")) || "";
     function setLastXRequestId(v) {
       lastXRequestId = v || "";
       try {
@@ -178,7 +177,7 @@ function generateRandomState() {
       } catch {}
       try {
         window.dispatchEvent(
-          new CustomEvent("correlation:update", { detail: { lastXRequestId: lastXRequestId, seenAt: lastXRequestIdSeenAt } })
+          new CustomEvent("correlation:update", { detail: { lastXRequestId: lastXRequestId, seenAt: lastXRequestIdSeenAt } }),
         );
       } catch {}
     }
@@ -544,8 +543,12 @@ async function ensureSession({ minTTLms = 30000, force = false } = {}) {
 
         // If token changed, invalidate request cache
         if (newAccess && newAccess !== prevAccess) {
-          try { window.requestCache?.invalidate?.("/api/"); } catch {}
-          try { localStorage.setItem("auth:lastUpdate", String(Date.now())); } catch {}
+          try {
+            window.requestCache?.invalidate?.("/api/");
+          } catch {}
+          try {
+            localStorage.setItem("auth:lastUpdate", String(Date.now()));
+          } catch {}
         }
         return newAccess;
       } catch {
@@ -585,7 +588,9 @@ async function authorizedFetch(input, init = {}) {
 try {
   window.addEventListener?.("storage", (e) => {
     if (e.key === "cognitoAccessToken") {
-      try { window.requestCache?.invalidate?.("/api/"); } catch {}
+      try {
+        window.requestCache?.invalidate?.("/api/");
+      } catch {}
     }
   });
 } catch {}
