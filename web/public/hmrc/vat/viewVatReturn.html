@@ -199,16 +199,11 @@
           // Get Gov-Client headers
           const govClientHeaders = await getGovClientHeaders();
 
-          // Get Cognito JWT token for custom authorizer
-          const cognitoAccessToken = localStorage.getItem("cognitoAccessToken");
           const requestHeaders = {
             "Authorization": `Bearer ${accessToken}`,
             "Content-Type": "application/json",
             ...govClientHeaders,
           };
-          if (cognitoAccessToken) {
-            requestHeaders["X-Authorization"] = `Bearer ${cognitoAccessToken}`;
-          }
 
           // Add hmrcAccount header if present in URL
           const urlParams = new URLSearchParams(window.location.search);
@@ -326,16 +321,11 @@
             // Get Gov-Client headers
             const govClientHeaders = await getGovClientHeaders();
 
-            // Get Cognito JWT token for custom authorizer
-            const cognitoAccessToken = localStorage.getItem("cognitoAccessToken");
             const requestHeaders = {
               "Authorization": `Bearer ${accessToken}`,
               "Content-Type": "application/json",
               ...govClientHeaders,
             };
-            if (cognitoAccessToken) {
-              requestHeaders["X-Authorization"] = `Bearer ${cognitoAccessToken}`;
-            }
 
             // Add hmrcAccount header if present
             const hmrcAccount = localStorage.getItem("hmrcAccount");
