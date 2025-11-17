@@ -183,13 +183,13 @@
           // Add current activity hmrcAccount header if present in URL
           const urlParams = new URLSearchParams(window.location.search);
           const hmrcAccount = urlParams.get("hmrcAccount");
-          const currentActivity = `${location.pathname}`
+          const currentActivity = `${location.pathname}`;
           const requestData = JSON.stringify(submissionData);
 
           sessionStorage.setItem("oauth_state", state);
           localStorage.setItem("submission_data", requestData);
           localStorage.setItem("currentActivity", currentActivity);
-          if(hmrcAccount === "sandbox") {
+          if (hmrcAccount === "sandbox") {
             localStorage.setItem("hmrcAccount", hmrcAccount);
           } else {
             localStorage.removeItem("hmrcAccount");
@@ -207,7 +207,9 @@
 
           // Redirect to HMRC OAuth
           console.log(`Page transition initiated: Redirecting to HMRC OAuth URL ${authResponseUrl}`);
-          try { window.__correlation?.prepareRedirect?.(); } catch {}
+          try {
+            window.__correlation?.prepareRedirect?.();
+          } catch {}
           window.location.href = authResponseUrl;
         } catch (error) {
           console.error("Authentication error:", error);

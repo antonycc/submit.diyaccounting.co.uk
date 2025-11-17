@@ -6,26 +6,26 @@
 // - Explicit invalidation by URL substring
 
 (function () {
-  'use strict';
+  "use strict";
 
   // L1 cache: key -> { ts, ttlMs, promise, data, etag, init }
   const L1 = new Map();
 
   function keyFrom(url, init) {
-    const method = (init && init.method ? init.method : 'GET').toUpperCase();
-    if (method !== 'GET') return null; // only cache GET
+    const method = (init && init.method ? init.method : "GET").toUpperCase();
+    if (method !== "GET") return null; // only cache GET
     // Key by method + url only. Headers like Authorization are assumed stable in a page session.
-    return method + ' ' + url;
+    return method + " " + url;
   }
 
   async function fetchWithETag(url, init, prevEtag) {
     const headers = new Headers((init && init.headers) || {});
-    if (prevEtag) headers.set('If-None-Match', prevEtag);
+    if (prevEtag) headers.set("If-None-Match", prevEtag);
     const res = await fetch(url, { ...init, headers });
     if (res.status === 304) {
       return { status: 304, etag: prevEtag };
     }
-    const etag = res.headers.get('ETag') || undefined;
+    const etag = res.headers.get("ETag") || undefined;
     const data = await res.json();
     return { status: res.status, etag, data };
   }
@@ -38,7 +38,7 @@
   }
 
   async function getJSON(url, { ttlMs = 0, force = false, init = undefined } = {}) {
-    const k = keyFrom(url, init || { method: 'GET' });
+    const k = keyFrom(url, init || { method: "GET" });
     if (!k) {
       // Not a cacheable GET request
       const res = await fetch(url, init);
@@ -72,7 +72,7 @@
           return r.data;
         } else {
           const res = await fetch(url, init);
-          const etag = res.headers.get('ETag') || undefined;
+          const etag = res.headers.get("ETag") || undefined;
           const data = await res.json();
           const fresh = { ts: Date.now(), ttlMs, data, etag, init };
           L1.set(k, { ...fresh });

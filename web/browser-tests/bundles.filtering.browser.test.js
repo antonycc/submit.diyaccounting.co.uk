@@ -73,7 +73,7 @@ test.describe("Bundles page client-side filtering by listedInEnvironments", () =
       .replace("<head>", '<head><base href="http://localhost:3000/account/">')
       .replace(
         "<body>",
-        `<body><script>\nwindow.showStatus = window.showStatus || function(){};\nwindow.checkAuthStatus = window.checkAuthStatus || function(){};\nwindow.toggleMenu = window.toggleMenu || function(){};\n</script>`
+        `<body><script>\nwindow.showStatus = window.showStatus || function(){};\nwindow.checkAuthStatus = window.checkAuthStatus || function(){};\nwindow.toggleMenu = window.toggleMenu || function(){};\n</script>`,
       );
 
     // Load the modified bundles page HTML
