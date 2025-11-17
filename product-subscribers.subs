@@ -1,0 +1,3 @@
+# Product Subscribers (hashed subs, one per line)
+# Use scripts/add-subscriber.sh to add new subscribers
+# Example: ./scripts/add-subscriber.sh "google-oauth2|123456789"

@@ -110,7 +110,7 @@
       };
 
       // Lightweight wrappers that use page-level cache when available, with safe fallbacks for tests
-      const __rc = (typeof window !== "undefined" && window.requestCache) ? window.requestCache : null;
+      const __rc = typeof window !== "undefined" && window.requestCache ? window.requestCache : null;
       const getJSON = async (url, opts = {}) => {
         try {
           if (__rc && typeof __rc.getJSON === "function") return __rc.getJSON(url, opts);
@@ -227,7 +227,7 @@
               showStatus(`Bundle ${bundleId} request failed: unexpected response`, "error");
             }
             // Refresh bundles from endpoint
-            invalidate('/api/v1/bundle');
+            invalidate("/api/v1/bundle");
             await fetchUserBundles();
             // Refresh bundles lists
             try {
@@ -312,7 +312,9 @@
           container.innerHTML = cards || '<p class="service-description">No bundles available.</p>';
           updateBundleStatus();
         } catch (err) {
-          try { console.error("[bundles.html] Catalog bootstrap error:", err && (err.stack || err.message || err)); } catch {}
+          try {
+            console.error("[bundles.html] Catalog bootstrap error:", err && (err.stack || err.message || err));
+          } catch {}
           container.innerHTML = '<p class="service-description">Failed to load catalog.</p>';
         }
       })();
@@ -385,7 +387,7 @@
           if (response.ok) {
             // Do not persist bundles to localStorage; rely on a fresh GET
             // Refresh bundles from endpoint
-            invalidate('/api/v1/bundle');
+            invalidate("/api/v1/bundle");
             await fetchUserBundles();
             renderCurrentBundles();
             updateBundleStatus(); // Update the request buttons
@@ -423,7 +425,7 @@
           if (response.ok) {
             localStorage.setItem("userBundles", JSON.stringify([]));
             // Refresh bundles from endpoint
-            invalidate('/api/v1/bundle');
+            invalidate("/api/v1/bundle");
             await fetchUserBundles();
             renderCurrentBundles();
             updateBundleStatus(); // Update the request buttons

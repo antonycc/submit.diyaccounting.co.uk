@@ -164,8 +164,7 @@ function generateRandomState() {
 
     // Expose lightweight API on window
     let lastXRequestId = (typeof window !== "undefined" && window.sessionStorage?.getItem?.("lastXRequestId")) || "";
-    let lastXRequestIdSeenAt =
-      (typeof window !== "undefined" && window.sessionStorage?.getItem?.("lastXRequestIdSeenAt")) || "";
+    let lastXRequestIdSeenAt = (typeof window !== "undefined" && window.sessionStorage?.getItem?.("lastXRequestIdSeenAt")) || "";
     function setLastXRequestId(v) {
       lastXRequestId = v || "";
       try {
@@ -178,7 +177,7 @@ function generateRandomState() {
       } catch {}
       try {
         window.dispatchEvent(
-          new CustomEvent("correlation:update", { detail: { lastXRequestId: lastXRequestId, seenAt: lastXRequestIdSeenAt } })
+          new CustomEvent("correlation:update", { detail: { lastXRequestId: lastXRequestId, seenAt: lastXRequestIdSeenAt } }),
         );
       } catch {}
     }

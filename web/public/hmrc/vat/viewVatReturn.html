@@ -287,12 +287,12 @@
             // Add current activity hmrcAccount header if present in URL
             const urlParams = new URLSearchParams(window.location.search);
             const hmrcAccount = urlParams.get("hmrcAccount");
-            const currentActivity = `${location.pathname}`
+            const currentActivity = `${location.pathname}`;
 
             sessionStorage.setItem("oauth_state", state);
             localStorage.setItem("pendingReturnRequest", JSON.stringify(requestData));
             localStorage.setItem("currentActivity", currentActivity);
-            if(hmrcAccount === "sandbox") {
+            if (hmrcAccount === "sandbox") {
               localStorage.setItem("hmrcAccount", hmrcAccount);
             } else {
               localStorage.removeItem("hmrcAccount");
