@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <title>VAT Obligations - DIY Accounting Submit</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="stylesheet" href="../submit.css" />
+    <link rel="stylesheet" href="../../submit.css" />
     <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
     <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
     <meta name="rum:region" content="${AWS_REGION}" />
@@ -17,16 +17,17 @@
         <div class="hamburger-menu">
           <button class="hamburger-btn" onclick="toggleMenu()">☰</button>
           <div class="menu-dropdown" id="menuDropdown">
-            <a href="../index.html">Home</a>
-            <a href="../account/bundles.html">Bundles</a>
-            <a href="../account/receipts.html">Receipts</a>
-            <a href="../docs/index.html">API Docs</a>
+            <a href="../../index.html">Home</a>
+            <a href="../../account/bundles.html">Bundles</a>
+            <a href="../receipt/receipts.html">Receipts</a>
+            <a href="../../guide/index.html">User Guide</a>
+            <a href="../../about.html">About</a>
           </div>
         </div>
         <div class="auth-section">
           <span class="entitlement-status">Activity: unrestricted</span>
           <span class="login-status">Not logged in</span>
-          <a href="../auth/login.html" class="login-link">Log in</a>
+          <a href="../../auth/login.html" class="login-link">Log in</a>
         </div>
       </div>
       <h1>VAT Obligations</h1>
@@ -34,6 +35,8 @@
     </header>
 
     <div id="mainContent">
+      <div id="sandboxIndicator" class="sandbox-indicator">⚠️ SANDBOX MODE - Using HMRC Test API</div>
+
       <div id="statusMessagesContainer"></div>
 
       <div id="loadingSpinner" class="spinner" style="display: none"></div>
@@ -132,14 +135,19 @@
 
       <!-- Navigation Button -->
       <div class="navigation-container" style="text-align: center; margin-top: 2em">
-        <button type="button" class="btn" id="homePageBtn" onclick="window.location.href='../index.html'">Return to Home</button>
-        <button type="button" class="btn" id="receiptsPageBtn" onclick="window.location.href='../account/receipts.html'">
+        <button type="button" class="btn" id="homePageBtn" onclick="window.location.href='../../index.html'">Return to Home</button>
+        <button type="button" class="btn" id="receiptsPageBtn" onclick="window.location.href='../receipt/receipts.html'">
           My Receipts
         </button>
       </div>
     </div>
 
     <footer>
+      <div class="footer-left">
+        <a href="#" id="viewSourceLink" style="display: none">view source</a>
+        <a id="latestTestsLink" style="display: inline" target="_blank" href="tests/html-report/index.html">tests</a>
+        <a id="apiDocsLink" style="display: inline" target="_blank" href="./docs/index.html"> api </a>
+      </div>
       <div class="footer-content">
         <div class="footer-center">
           <p>&copy; 2025 DIY Accounting Limited</p>
@@ -147,12 +155,12 @@
       </div>
     </footer>
 
-    <script src="../submit.js"></script>
-    <script src="../widgets/hamburger-menu.js"></script>
-    <script src="../widgets/entitlement-status.js"></script>
-    <script src="../widgets/auth-status.js"></script>
-    <script src="../widgets/status-messages.js"></script>
-    <script src="../widgets/loading-spinner.js"></script>
+    <script src="../../submit.js"></script>
+    <script src="../../widgets/hamburger-menu.js"></script>
+    <script src="../../widgets/entitlement-status.js"></script>
+    <script src="../../widgets/auth-status.js"></script>
+    <script src="../../widgets/status-messages.js"></script>
+    <script src="../../widgets/loading-spinner.js"></script>
     <script>
       // Global variables
       let obligationsData = null;
@@ -181,17 +189,14 @@
 
       // Check if we're in sandbox/test mode to show developer options
       function initializePage() {
-        const baseUrl = window.location.origin;
-        const isSandbox =
-          baseUrl.includes("test") ||
-          baseUrl.includes("sandbox") ||
-          window.location.hostname === "localhost" ||
-          window.location.hostname === "127.0.0.1";
+        const urlParams = new URLSearchParams(window.location.search);
+        const hmrcAccount = urlParams.get("hmrcAccount");
 
-        if (isSandbox) {
-          const devSection = document.getElementById("developerSection");
-          if (devSection) {
-            devSection.style.display = "block";
+        // Show sandbox indicator if hmrcAccount=sandbox
+        if (hmrcAccount === "sandbox") {
+          const sandboxIndicator = document.getElementById("sandboxIndicator");
+          if (sandboxIndicator) {
+            sandboxIndicator.classList.add("visible");
           }
         }
 
@@ -261,6 +266,13 @@
           };
           if (cognitoAccessToken) {
             requestHeaders["X-Authorization"] = `Bearer ${cognitoAccessToken}`;
+          }
+
+          // Add hmrcAccount header if present in URL
+          const urlParams = new URLSearchParams(window.location.search);
+          const hmrcAccount = urlParams.get("hmrcAccount");
+          if (hmrcAccount) {
+            requestHeaders["hmrcAccount"] = hmrcAccount;
           }
 
           const response = await fetch(`/api/v1/hmrc/vat/obligation?${params}`, {
@@ -334,10 +346,21 @@
             const state = generateRandomState();
             const requestData = { vrn, from, to, status, testScenario };
 
+            // Add current activity hmrcAccount header if present in URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const hmrcAccount = urlParams.get("hmrcAccount");
+            const currentActivity = `${location.pathname}`
+
             sessionStorage.setItem("oauth_state", state);
             localStorage.setItem("pendingObligationsRequest", JSON.stringify(requestData));
-            localStorage.setItem("currentActivity", location.pathname);
-            console.log("Stored pending request and current activity:", requestData, location.pathname);
+            localStorage.setItem("pendingReturnRequest", JSON.stringify(requestData));
+            localStorage.setItem("currentActivity", currentActivity);
+            if(hmrcAccount === "sandbox") {
+              localStorage.setItem("hmrcAccount", hmrcAccount);
+            } else {
+              localStorage.removeItem("hmrcAccount");
+            }
+            console.log("Stored pending request and current activity:", requestData, currentActivity, hmrcAccount);
 
             // Get OAuth URL with read-only scope
             const authResponse = await getAuthUrl(state, "hmrc", "read:vat");
@@ -347,6 +370,7 @@
 
             // Redirect to HMRC OAuth
             console.log(`Page transition initiated: Redirecting to HMRC OAuth URL ${authResponseUrl}`);
+            try { window.__correlation?.prepareRedirect?.(); } catch {}
             window.location.href = authResponseUrl;
           } catch (error) {
             console.error("Authentication error:", error);
@@ -378,6 +402,12 @@
             };
             if (cognitoAccessToken) {
               requestHeaders["X-Authorization"] = `Bearer ${cognitoAccessToken}`;
+            }
+
+            // Add hmrcAccount header if present
+            const hmrcAccount = localStorage.getItem("hmrcAccount");
+            if (hmrcAccount) {
+              requestHeaders["hmrcAccount"] = hmrcAccount;
             }
 
             const response = await fetch(`/api/v1/hmrc/vat/obligation?${params}`, {

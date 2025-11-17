@@ -17,7 +17,7 @@ test.describe("Client Status Message Stacking", () => {
   let submitJsContent;
 
   test.beforeAll(async () => {
-    htmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/activities/submitVat.html"), "utf-8");
+    htmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/hmrc/vat/submitVat.html"), "utf-8");
     submitJsContent = fs.readFileSync(path.join(process.cwd(), "web/public/submit.js"), "utf-8");
   });
 

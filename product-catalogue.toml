@@ -4,121 +4,90 @@ version = "1.1.0"
 id = "default"
 name = "Default"
 allocation = "automatic"
-auth = "none"
 
 # Access to Sandbox APIs for testing
 [[bundles]]
 id = "test"
 name = "Test"
 allocation = "on-request"
-auth = "required"
 cap = 10
 timeout = "P1D"
 
-# Access to free authenticated activities for a limited time
+# Access to free authenticated activities including VAT submission for a limited time
+[[bundles]]
+id = "guest"
+name = "Guest"
+allocation = "on-request"
+cap = 10
+# TODO: 1x timeout for visiblility, then a grace period for apis of 1 day.
+timeout = "P1D"
+listedInEnvironments = ["local", "test", "proxy", "proxyRunning", "ci"]
+
+# TODO: Link active subscriptions to a bundle entitlement and continually re-set expiry to now+timeout if there is an active subscription
+# Access to business tier activities including VAT submission for subscribers
+[[bundles]]
+id = "business"
+name = "Business"
+allocation = "subscription"
+cap = 100
+timeout = "P1M"
+listedInEnvironments = ["local", "test", "proxy", "proxyRunning", "ci"]
+subscriptionTier = "business"
+
+# TODO: Grant the DIY Legacy bundle upon supply of a PayPal Transaction ID for a payment to one of the email addresses in 2025 or earlier
 #[[bundles]]
-#id = "guest"
-#name = "Guest"
-#allocation = "on-request"
-#auth = "required"
+#id = "diylegacy"
+#name = "DIY Legacy (existing 2025 customers)"
+#allocation = "transaction-id"
 #cap = 10
-#timeout = "P1M"
-
-# Access to DIY legacy entitlements for self-employed and limited companies
-#[[bundles]]
-#id = "legacy"
-#name = "Legacy"
-#allocation = "on-request"
-#auth = "required"
-#cap = 1000
 #timeout = "P1Y"
-#[bundles.qualifiers]
-#requiresTransactionId = true
+#listedInEnvironments = ["ci"]
+#grantedWithTransactionIdFor = ["terrycartwright@hotmail.com", "admin@diyaccounting.co.uk"]
 
-# Access to basic subscription tier activities including VAT submission
-#[[bundles]]
-#id = "basic"
-#name = "Basic"
-#allocation = "on-request"
-#auth = "required"
-#[bundles.qualifiers]
-#subscriptionTier = "Basic"
-
-#[[bundles]]
-#id = "advanced"
-#name = "Advanced"
-#allocation = "on-request"
-#auth = "required"
-#[bundles.qualifiers]
-#subscriptionTier = "Advanced"
-
-# TODO: Add a widget to each page that extracts the bundles from the JWT, and the related paths from the catalogue, then checks one of the paths matches the page
-# and shows a lock icon or an unlock icon accordingly with a tooltip showing which bundles grant the activity (so the bundles should be claims)
-[[activities]]
-id = "my-receipts"
-name = "View previously submitted receipts"
-bundles = ["default"]
-path = "account/receipts.html"
-
-# TODO: Create an authorizer that extracts the bundles from the JWT, and the related paths from the catalogue, then checks one of the paths matches the request
-# and an HTTP error 403 is returned accordingly with a payload showing which bundles grant the matching activity (so the bundles should be claims)
 [[activities]]
 id = "bundle"
 name = "View and edit your bundles"
 bundles = ["default"]
-paths = ["account/bundles.html", "^/api/v1/catalogue.*", "^/api/v1/bundle.*"]
+paths = ["account/bundles.html", "^/api/v1/catalog.*", "^/api/v1/bundle.*"]
 
-# Submit VAT
 [[activities]]
 id = "submit-vat-sandbox"
-name = "Submit VAT (Sandbox API)"
+name = "Submit VAT (HMRC Sandbox)"
 bundles = ["test"]
-paths = ["activities/submitVat.html", "^/api/v1/hmrc/vat.*"]
-#paths = ["activities/submitVat.html\\?sandbox=true", "^/api/v1/hmrc/vat.*\\?sandbox=true"]
-#paths = ["activities/submitVat.html(?!.*sandbox=true)", "^/api/v1/hmrc/vat.*(?!sandbox=true)"]
-# tags = ["sandbox"]
+paths = ["hmrc/vat/submitVat.html?hmrcAccount=sandbox", "^/api/v1/hmrc/vat.*"]
 
 [[activities]]
 id = "vat-obligations-sandbox"
-name = "VAT Obligations (Sandbox API)"
+name = "VAT Obligations (HMRC Sandbox)"
 bundles = ["test"]
-paths = ["activities/vatObligations.html", "^/api/v1/hmrc/vat.*"]
-# tags = ["sandbox"]
+paths = ["hmrc/vat/vatObligations.html?hmrcAccount=sandbox", "^/api/v1/hmrc/vat.*"]
 
 [[activities]]
 id = "view-vat-return-sandbox"
-name = "View VAT Return (Sandbox API)"
+name = "View VAT Return (HMRC Sandbox)"
 bundles = ["test"]
-paths = ["activities/viewVatReturn.html", "^/api/v1/hmrc/vat.*"]
-# tags = ["sandbox"]
+paths = ["hmrc/vat/viewVatReturn.html?hmrcAccount=sandbox", "^/api/v1/hmrc/vat.*"]
 
 [[activities]]
 id = "submit-vat"
-name = "Submit VAT"
-bundles = ["guest", "basic", "legacy"]
-path = ["activities/submitVat.html", "^/api/v1/hmrc/vat.*"]
+name = "Submit VAT (HMRC)"
+bundles = ["guest", "business", "diylegacy"]
+paths = ["hmrc/vat/submitVat.html", "^/api/v1/hmrc/vat.*"]
 
-#[[activities]]
-#id = "self-employed"
-#name = "Self Employed"
-#bundles = ["basic", "legacy"]
+[[activities]]
+id = "vat-obligations"
+name = "VAT Obligations (HMRC)"
+bundles = ["guest", "business", "diylegacy"]
+paths = ["hmrc/vat/vatObligations.html", "^/api/v1/hmrc/vat.*"]
 
-#[[activities]]
-#id = "diy-basic-sole-trader-upload"
-#name = "DIY Basic Sole Trader Upload"
-#bundles = ["legacy"]
+[[activities]]
+id = "view-vat-return"
+name = "View VAT Return (HMRC)"
+bundles = ["guest", "business", "diylegacy"]
+paths = ["hmrc/vat/viewVatReturn.html", "^/api/v1/hmrc/vat.*"]
 
-#[[activities]]
-#id = "diy-taxi-upload"
-#name = "DIY Taxi Upload"
-#bundles = ["legacy"]
-
-#[[activities]]
-#id = "diy-self-employed-upload"
-#name = "DIY Self-Employed Upload"
-#bundles = ["legacy"]
-
-#[[activities]]
-#id = "diy-limited-company-upload"
-#name = "DIY Limited Company Upload"
-#bundles = ["legacy"]
+[[activities]]
+id = "my-receipts"
+name = "View previously submitted receipts"
+bundles = ["default"]
+paths = ["hmrc/receipt/receipts.html", "^/api/v1/hmrc/receipt.*"]

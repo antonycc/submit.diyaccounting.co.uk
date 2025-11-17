@@ -20,6 +20,23 @@ export function getEnvVarAndLog(name, envKey, defaultValue) {
   return value;
 }
 
+/**
+ * Determine if we're running against HMRC sandbox or production API
+ * based on the HMRC_BASE_URI environment variable
+ * @returns {boolean} true if using sandbox, false otherwise
+ */
+export function isSandboxMode() {
+  // Prefer explicit HMRC_ACCOUNT when provided
+  const hmrcAccount = (process.env.HMRC_ACCOUNT || "").toLowerCase();
+  if (hmrcAccount === "sandbox") {
+    logger.info(`Sandbox mode detection: HMRC_ACCOUNT=${hmrcAccount} => sandbox=true`);
+    return true;
+  } else {
+    logger.info(`Sandbox mode detection: HMRC_ACCOUNT=${hmrcAccount} => sandbox=false`);
+    return false;
+  }
+}
+
 export async function runLocalS3(runMinioS3, receiptsBucketName, optionalTestS3AccessKey, optionalTestS3SecretKey) {
   logger.info(
     `[minio]: runMinioS3=${runMinioS3}, receiptsBucketName=${receiptsBucketName}, optionalTestS3AccessKey=${optionalTestS3AccessKey}`,
@@ -43,7 +60,7 @@ export async function runLocalHttpServer(runTestServer, s3Endpoint, httpServerPo
   if (runTestServer === "run") {
     logger.info("[http]: Starting server process...");
     // eslint-disable-next-line sonarjs/no-os-command-from-path
-    serverProcess = spawn("npm", ["run", "start"], {
+    serverProcess = spawn("npm", ["run", "server"], {
       env: {
         ...process.env,
         TEST_S3_ENDPOINT: s3Endpoint,
@@ -129,6 +146,8 @@ export function addOnPageLogging(page) {
 export const loggedClick = async (page, selector, description = "") =>
   await test.step(description ? `The user clicks ${description}` : `The user clicks selector ${selector}`, async () => {
     console.log(`[USER INTERACTION] Clicking: ${selector} ${description ? "- " + description : ""}`);
+    // Wait for element to be visible and stable before clicking
+    await page.waitForSelector(selector, { state: "visible", timeout: 30000 });
     await page.click(selector);
   });
 

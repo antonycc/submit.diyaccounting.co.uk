@@ -1,10 +1,12 @@
 // app/lib/responses.js
 
-import logger from "./logger.js";
+import { logger, context } from "./logger.js";
 
-export function http200OkResponse({ request, requestId, headers, data }) {
+export function http200OkResponse({ request, headers, data }) {
   const merged = { ...(headers || {}) };
-  if (requestId) merged["x-request-id"] = requestId;
+  if (context.get("requestId")) merged["x-request-id"] = context.get("requestId");
+  if (context.get("amznTraceId")) merged["x-amzn-trace-id"] = context.get("amznTraceId");
+  if (context.get("traceparent")) merged["traceparent"] = context.get("traceparent");
   return httpResponse({
     statusCode: 200,
     request,
@@ -14,9 +16,11 @@ export function http200OkResponse({ request, requestId, headers, data }) {
   });
 }
 
-export function http400BadRequestResponse({ request, requestId, headers, message, error }) {
+export function http400BadRequestResponse({ request, headers, message, error }) {
   const merged = { ...(headers || {}) };
-  if (requestId) merged["x-request-id"] = requestId;
+  if (context.get("requestId")) merged["x-request-id"] = context.get("requestId");
+  if (context.get("amznTraceId")) merged["x-amzn-trace-id"] = context.get("amznTraceId");
+  if (context.get("traceparent")) merged["traceparent"] = context.get("traceparent");
   return httpResponse({
     statusCode: 400,
     request,
@@ -26,9 +30,11 @@ export function http400BadRequestResponse({ request, requestId, headers, message
   });
 }
 
-export function http500ServerErrorResponse({ request, requestId, headers, message, error }) {
+export function http500ServerErrorResponse({ request, headers, message, error }) {
   const merged = { ...(headers || {}) };
-  if (requestId) merged["x-request-id"] = requestId;
+  if (context.get("requestId")) merged["x-request-id"] = context.get("requestId");
+  if (context.get("amznTraceId")) merged["x-amzn-trace-id"] = context.get("amznTraceId");
+  if (context.get("traceparent")) merged["traceparent"] = context.get("traceparent");
   return httpResponse({
     statusCode: 500,
     request,
@@ -38,9 +44,11 @@ export function http500ServerErrorResponse({ request, requestId, headers, messag
   });
 }
 
-export function http403ForbiddenResponse({ request, requestId, headers, message, error }) {
+export function http403ForbiddenResponse({ request, headers, message, error }) {
   const merged = { ...(headers || {}) };
-  if (requestId) merged["x-request-id"] = requestId;
+  if (context.get("requestId")) merged["x-request-id"] = context.get("requestId");
+  if (context.get("amznTraceId")) merged["x-amzn-trace-id"] = context.get("amznTraceId");
+  if (context.get("traceparent")) merged["traceparent"] = context.get("traceparent");
   return httpResponse({
     statusCode: 403,
     request,
@@ -50,9 +58,11 @@ export function http403ForbiddenResponse({ request, requestId, headers, message,
   });
 }
 
-export function http401UnauthorizedResponse({ request, requestId, headers, message, error }) {
+export function http401UnauthorizedResponse({ request, headers, message, error }) {
   const merged = { ...(headers || {}) };
-  if (requestId) merged["x-request-id"] = requestId;
+  if (context.get("requestId")) merged["x-request-id"] = context.get("requestId");
+  if (context.get("amznTraceId")) merged["x-amzn-trace-id"] = context.get("amznTraceId");
+  if (context.get("traceparent")) merged["traceparent"] = context.get("traceparent");
   return httpResponse({
     statusCode: 401,
     request,
@@ -63,10 +73,16 @@ export function http401UnauthorizedResponse({ request, requestId, headers, messa
 }
 
 function httpResponse({ statusCode, headers, data, request, levelledLogger }) {
+  const merged = { ...(headers || {}) };
+  // Always provide an x-request-id for client correlation; generate if not supplied
+  const reqId = context.get("requestId") || String(Date.now());
+  merged["x-request-id"] = reqId;
+  if (context.get("amznTraceId")) merged["x-amzn-trace-id"] = context.get("amznTraceId");
+  if (context.get("traceparent")) merged["traceparent"] = context.get("traceparent");
   const response = {
     statusCode: statusCode,
     headers: {
-      ...headers,
+      ...merged,
     },
     body: JSON.stringify({
       ...data,
@@ -82,8 +98,14 @@ function httpResponse({ statusCode, headers, data, request, levelledLogger }) {
 
 export function extractRequest(event) {
   let request;
+  // Extract correlation headers and set context explicitly to avoid leakage across invocations
   const requestId =
-    event?.requestContext?.requestId || event?.headers?.["x-request-id"] || event?.headers?.["X-Request-Id"] || String(Date.now());
+    event?.requestContext?.requestId || event?.headers?.["x-request-id"] || event?.headers?.["X-Request-Id"] || null;
+  const amznTraceId = event?.headers?.["x-amzn-trace-id"] || event?.headers?.["X-Amzn-Trace-Id"] || null;
+  const traceparent = event?.headers?.["traceparent"] || event?.headers?.["Traceparent"] || null;
+  context.set("requestId", requestId || null);
+  context.set("amznTraceId", amznTraceId || null);
+  context.set("traceparent", traceparent || null);
   if (event.headers) {
     try {
       let baseRequestUrl;
@@ -110,7 +132,7 @@ export function extractRequest(event) {
     logger.warn({ message: "Event has missing URL path or host header", event });
     request = "https://unknown";
   }
-  return { request, requestId };
+  return { request, requestId, amznTraceId, traceparent };
 }
 
 // Helper function to extract client IP from request headers
@@ -214,10 +236,9 @@ export function parseRequestBody(event) {
   }
 }
 
-export function buildValidationError(request, requestId, errorMessages, govClientHeaders = {}) {
+export function buildValidationError(request, errorMessages, govClientHeaders = {}) {
   return http400BadRequestResponse({
     request,
-    requestId,
     headers: { ...govClientHeaders },
     message: errorMessages.join(", "),
   });
@@ -226,6 +247,9 @@ export function buildValidationError(request, requestId, errorMessages, govClien
 export async function performTokenExchange(providerUrl, body) {
   const requestHeaders = {
     "Content-Type": "application/x-www-form-urlencoded",
+    ...(context.get("requestId") ? { "x-request-id": context.get("requestId") } : {}),
+    ...(context.get("amznTraceId") ? { "x-amzn-trace-id": context.get("amznTraceId") } : {}),
+    ...(context.get("traceparent") ? { traceparent: context.get("traceparent") } : {}),
   };
   const requestBody = new URLSearchParams(body);
 

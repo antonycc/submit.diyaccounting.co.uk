@@ -20,8 +20,9 @@
           <div class="menu-dropdown" id="menuDropdown">
             <a href="../index.html">Home</a>
             <a href="../account/bundles.html">Bundles</a>
-            <a href="../account/receipts.html">Receipts</a>
-            <a href="../docs/index.html">API Docs</a>
+            <a href="../hmrc/receipt/receipts.html">Receipts</a>
+            <a href="../guide/index.html">User Guide</a>
+            <a href="../about.html">About</a>
           </div>
         </div>
         <div class="auth-section">
@@ -78,7 +79,7 @@
         <div class="footer-left">
           <a href="#" id="viewSourceLink" style="display: none">view source</a>
           <a id="latestTestsLink" style="display: inline" target="_blank" href="tests/html-report/index.html">tests</a>
-          <a id="apiDocsLink" style="display: inline" target="_blank" href="../docs/index.html"> api </a>
+          <a id="apiDocsLink" style="display: inline" target="_blank" href="./docs/index.html"> api </a>
         </div>
         <div class="footer-center">
           <p>&copy; 2025 DIY Accounting Limited</p>
@@ -95,17 +96,44 @@
     <script src="../widgets/loading-spinner.js"></script>
     <script type="module" src="../widgets/view-source-link.js"></script>
     <script src="../widgets/localstorage-viewer.js"></script>
+    <script src="../lib/request-cache.js"></script>
 
     <script>
       // --- helpers
-      const getIdToken = () => localStorage.getItem("cognitoIdToken");
+      const getIdToken = () => {
+        try {
+          return localStorage.getItem("cognitoIdToken");
+        } catch (e) {
+          // In opaque origins (e.g., setContent in tests), localStorage may be inaccessible
+          return null;
+        }
+      };
+
+      // Lightweight wrappers that use page-level cache when available, with safe fallbacks for tests
+      const __rc = (typeof window !== "undefined" && window.requestCache) ? window.requestCache : null;
+      const getJSON = async (url, opts = {}) => {
+        try {
+          if (__rc && typeof __rc.getJSON === "function") return __rc.getJSON(url, opts);
+        } catch {}
+        const res = await fetch(url, opts.init);
+        try {
+          return await res.json();
+        } catch {
+          return null;
+        }
+      };
+      const invalidate = (prefix) => {
+        try {
+          if (__rc && typeof __rc.invalidate === "function") return __rc.invalidate(prefix);
+        } catch {}
+      };
 
       // In-memory bundles state for this page
       let __userBundles = [];
 
       const parseUserBundles = () => (Array.isArray(__userBundles) ? __userBundles : []);
 
-      // Fetch bundles from API endpoint (single source of truth)
+      // Fetch bundles from API endpoint (single source of truth, with lightweight caching)
       const fetchUserBundles = async () => {
         const idToken = getIdToken();
         if (!idToken) {
@@ -114,18 +142,13 @@
         }
 
         try {
-          const response = await fetch("/api/v1/bundle", {
-            headers: {
-              Authorization: `Bearer ${idToken}`,
-            },
+          const bundlesData = await getJSON("/api/v1/bundle", {
+            ttlMs: 5000,
+            init: { headers: { Authorization: `Bearer ${idToken}` } },
           });
-
-          if (response.ok) {
-            const bundlesData = await response.json();
-            if (bundlesData.bundles && Array.isArray(bundlesData.bundles)) {
-              __userBundles = bundlesData.bundles.map((b) => (b?.expiry ? `${b.bundleId}|EXPIRY=${b.expiry}` : b.bundleId));
-              return __userBundles;
-            }
+          if (bundlesData && bundlesData.bundles && Array.isArray(bundlesData.bundles)) {
+            __userBundles = bundlesData.bundles.map((b) => (b?.expiry ? `${b.bundleId}|EXPIRY=${b.expiry}` : b.bundleId));
+            return __userBundles;
           }
         } catch (err) {
           console.warn("Failed to fetch bundles:", err);
@@ -150,9 +173,12 @@
 
       // --- render one catalog card
       const cardHtml = (b) => {
+        // Ensure we always work with strings and avoid using String.replaceAll for broader compatibility
+        const rawName = (b && (b.name || b.id)) || "";
+        const safeName = String(rawName).replace(/\"/g, "&quot;");
         return `
           <div class="service-item" style="text-align:left">
-            <button type="button" class="btn service-btn" data-bundle-id="${b.id}">Request ${b.id}</button>
+            <button type="button" class="btn service-btn" data-bundle-id="${b.id}" data-bundle-name="${safeName}">Request ${rawName}</button>
           </div>`;
       };
 
@@ -169,6 +195,7 @@
         }
 
         const bundleId = btn.getAttribute("data-bundle-id");
+        const bundleName = btn.getAttribute("data-bundle-name") || bundleId;
         const card = btn.closest(".service-item");
         const original = btn.textContent;
 
@@ -192,14 +219,15 @@
           if (r.ok) {
             // Do not persist bundles to localStorage; rely on a fresh GET after mutation
             if (body.status === "granted" || body.status === "already_granted") {
-              markGranted(btn, "Added ✓");
-              showStatus(`Bundle "${bundleId}" added successfully.`, "success");
+              markGranted(btn, `Added ✓ ${bundleName}`);
+              showStatus(`Bundle "${bundleName}" added successfully.`, "success");
             } else {
               btn.textContent = original;
               btn.disabled = false;
               showStatus(`Bundle ${bundleId} request failed: unexpected response`, "error");
             }
             // Refresh bundles from endpoint
+            invalidate('/api/v1/bundle');
             await fetchUserBundles();
             // Refresh bundles lists
             try {
@@ -225,10 +253,11 @@
         const bundles = parseUserBundles();
         document.querySelectorAll("button[data-bundle-id]").forEach((btn) => {
           const id = btn.getAttribute("data-bundle-id");
+          const name = btn.getAttribute("data-bundle-name") || id;
           if (hasBundle(bundles, id)) {
-            markGranted(btn);
+            markGranted(btn, `Added ✓ ${name}`);
           } else {
-            markToRequest(btn, `Request ${id}`);
+            markToRequest(btn, `Request ${name}`);
           }
         });
       }
@@ -239,22 +268,51 @@
         try {
           // Fetch user bundles first
           await fetchUserBundles();
+          // Ensure current bundles (with remove actions) are rendered immediately on page load
+          try {
+            renderCurrentBundles();
+          } catch {}
 
           const idToken = getIdToken();
-          const headers = idToken ? { Authorization: `Bearer ${idToken}` } : {};
-          const res = await fetch("/api/v1/catalog", { headers });
-          if (!res.ok) {
+          const headers = idToken ? { Authorization: `Bearer ${idToken}` } : undefined;
+          const catalog = await getJSON("/api/v1/catalog", {
+            ttlMs: 300000,
+            init: headers ? { headers } : undefined,
+          });
+          if (!catalog || !catalog.bundles) {
             container.innerHTML = '<p class="service-description">Catalog unavailable.</p>';
             return;
           }
-          const catalog = await res.json();
+
+          // Read current environment from submit.env in docroot (next to index.html)
+          async function readEnvironment() {
+            try {
+              const envRes = await fetch("../submit.env", { cache: "no-store" });
+              if (envRes.ok) {
+                const text = (await envRes.text()).trim();
+                return text || null;
+              }
+            } catch {}
+            return null; // Unknown environment
+          }
+
+          const env = await readEnvironment();
+
           const cards = (catalog.bundles || [])
             .filter((b) => b["allocation"] && b["allocation"] !== "automatic")
+            // If the bundle specifies listedInEnvironments, only list it when current env is included
+            .filter((b) => {
+              const listed = b?.listedInEnvironments;
+              if (!Array.isArray(listed) || listed.length === 0) return true; // visible everywhere by default
+              if (!env) return false; // if environment unknown, hide bundles that specify restrictions
+              return listed.includes(env);
+            })
             .map(cardHtml)
             .join("\n");
           container.innerHTML = cards || '<p class="service-description">No bundles available.</p>';
           updateBundleStatus();
-        } catch {
+        } catch (err) {
+          try { console.error("[bundles.html] Catalog bootstrap error:", err && (err.stack || err.message || err)); } catch {}
           container.innerHTML = '<p class="service-description">Failed to load catalog.</p>';
         }
       })();
@@ -327,6 +385,7 @@
           if (response.ok) {
             // Do not persist bundles to localStorage; rely on a fresh GET
             // Refresh bundles from endpoint
+            invalidate('/api/v1/bundle');
             await fetchUserBundles();
             renderCurrentBundles();
             updateBundleStatus(); // Update the request buttons
@@ -364,6 +423,7 @@
           if (response.ok) {
             localStorage.setItem("userBundles", JSON.stringify([]));
             // Refresh bundles from endpoint
+            invalidate('/api/v1/bundle');
             await fetchUserBundles();
             renderCurrentBundles();
             updateBundleStatus(); // Update the request buttons
@@ -383,7 +443,9 @@
       }, 100);
 
       // --- page init
-      localStorage.removeItem("currentActivity");
+      try {
+        localStorage.removeItem("currentActivity");
+      } catch {}
       checkAuthStatus();
     </script>
   </body>

@@ -28,35 +28,33 @@ export function extractAndValidateParameters(event, errorMessages) {
 export async function handler(event) {
   validateEnv(["COGNITO_CLIENT_ID", "COGNITO_BASE_URI", "DIY_SUBMIT_BASE_URL"]);
 
-  const { request, requestId } = extractRequest(event);
+  const { request } = extractRequest(event);
   const errorMessages = [];
 
   // Extract and validate parameters
   const { state } = extractAndValidateParameters(event, errorMessages);
 
-  const responseHeaders = { "x-request-id": requestId };
+  const responseHeaders = {};
 
   // Validation errors
   if (errorMessages.length > 0) {
-    return buildValidationError(request, requestId, errorMessages, responseHeaders);
+    return buildValidationError(request, errorMessages, responseHeaders);
   }
 
   // Processing
   try {
-    logger.info({ requestId, message: "Generating Cognito authorization URL", state });
+    logger.info({ message: "Generating Cognito authorization URL", state });
     const { authUrl } = buildAuthUrl(state);
 
     return http200OkResponse({
       request,
-      requestId,
       headers: { ...responseHeaders },
       data: { authUrl },
     });
   } catch (error) {
-    logger.error({ requestId, message: "Error generating Cognito authorization URL", error: error.message, stack: error.stack });
+    logger.error({ message: "Error generating Cognito authorization URL", error: error.message, stack: error.stack });
     return http500ServerErrorResponse({
       request,
-      requestId,
       headers: { ...responseHeaders },
       message: "Internal server error",
       error: error.message,

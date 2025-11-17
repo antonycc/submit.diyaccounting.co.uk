@@ -29,21 +29,21 @@ export function extractAndValidateParameters(event, errorMessages) {
 export async function handler(event) {
   validateEnv(["DIY_SUBMIT_BASE_URL", "COGNITO_CLIENT_ID", "COGNITO_BASE_URI"]);
 
-  const { request, requestId } = extractRequest(event);
+  const { request } = extractRequest(event);
   const errorMessages = [];
 
   // Extract and validate parameters
   const { code } = extractAndValidateParameters(event, errorMessages);
 
-  const responseHeaders = { "x-request-id": requestId };
+  const responseHeaders = {};
 
   // Validation errors
   if (errorMessages.length > 0) {
-    return buildValidationError(request, requestId, errorMessages, responseHeaders);
+    return buildValidationError(request, errorMessages, responseHeaders);
   }
 
   // Processing
-  logger.info({ requestId, message: "Exchanging authorization code for Cognito access token" });
+  logger.info({ message: "Exchanging authorization code for Cognito access token" });
   const tokenResponse = await exchangeCodeForToken(code);
   return buildTokenExchangeResponse(request, tokenResponse.url, tokenResponse.body);
 }

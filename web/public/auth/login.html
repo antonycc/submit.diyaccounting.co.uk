@@ -20,8 +20,9 @@
           <div class="menu-dropdown" id="menuDropdown">
             <a href="../index.html">Home</a>
             <a href="../account/bundles.html">Bundles</a>
-            <a href="../account/receipts.html">Receipts</a>
-            <a href="../docs/index.html">API Docs</a>
+            <a href="../hmrc/receipt/receipts.html">Receipts</a>
+            <a href="../guide/index.html">User Guide</a>
+            <a href="../about.html">About</a>
           </div>
         </div>
         <div class="auth-section">
@@ -63,7 +64,8 @@
       <div class="footer-content">
         <div class="footer-left">
           <a href="#" id="viewSourceLink" style="display: none">view source</a>
-          <a id="apiDocsLink" style="display: inline" target="_blank" href="../docs/index.html"> api </a>
+          <a id="latestTestsLink" style="display: inline" target="_blank" href="tests/html-report/index.html">tests</a>
+          <a id="apiDocsLink" style="display: inline" target="_blank" href="./docs/index.html"> api </a>
         </div>
         <div class="footer-center">
           <p>&copy; 2025 DIY Accounting Limited</p>
@@ -101,6 +103,7 @@
         const authResponseUrl = authResponse.authUrl;
 
         console.log("Redirecting to Antonycc via Cognito OAuth URL");
+        try { window.__correlation?.prepareRedirect?.(); } catch {}
         window.location.href = authResponseUrl;
       }
 
@@ -125,6 +128,7 @@
 
         showStatus(`Handing off to ${authUrl}`, "info");
         console.log("Redirecting to navikt/mock-oauth2-server");
+        try { window.__correlation?.prepareRedirect?.(); } catch {}
         window.location.href = authUrl;
       }
 

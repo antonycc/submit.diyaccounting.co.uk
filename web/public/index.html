@@ -20,8 +20,9 @@
           <div class="menu-dropdown" id="menuDropdown">
             <a href="index.html">Home</a>
             <a href="account/bundles.html">Bundles</a>
-            <a href="account/receipts.html">Receipts</a>
-            <a href="docs/index.html">API Docs</a>
+            <a href="hmrc/receipt/receipts.html">Receipts</a>
+            <a href="guide/index.html">User Guide</a>
+            <a href="about.html">About</a>
           </div>
         </div>
         <div class="auth-section">
@@ -179,7 +180,7 @@
       //     </section>
       //   `);
       //
-      //   if (hasBundle(bundles, "test") || hasBundle(bundles, "HMRC_TEST_API")) {
+      //   if (hasBundle(bundles, "test") || hasBundle(bundles, "test")) {
       //     sections.push(`
       //       <section style="margin-bottom:1em;">
       //         <h3 style="margin:0 0 .5em 0;">Test API bundle</h3>
@@ -226,8 +227,8 @@
             .map((activity) => {
               let path;
               if (activity.paths) {
-                // Get the first path which ends with .html
-                path = activity.paths.find((p) => p.endsWith(".html")) || "#";
+                // Get the first path which contains .html (handles query parameters)
+                path = activity.paths.find((p) => p.includes(".html")) || "#";
               } else {
                 path = activity.path || "#";
               }

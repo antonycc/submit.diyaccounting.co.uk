@@ -1,21 +1,22 @@
 package co.uk.diyaccounting.submit;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 import org.junitpioneer.jupiter.SetEnvironmentVariable;
 import software.amazon.awscdk.App;
 import software.amazon.awscdk.AppProps;
 import software.amazon.awscdk.assertions.Template;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
 
 @SetEnvironmentVariable.SetEnvironmentVariables({
     @SetEnvironmentVariable(key = "ENVIRONMENT_NAME", value = "test"),
@@ -26,10 +27,10 @@ import software.amazon.awscdk.assertions.Template;
     @SetEnvironmentVariable(key = "COGNITO_CLIENT_ID", value = "tt-witheight-cognito-client-id"),
     @SetEnvironmentVariable(
             key = "HMRC_CLIENT_SECRET_ARN",
-            value = "arn:aws:secretsmanager:eu-west-2:111111111111:secret:tt-witheight-hmrc-secret"),
+            value = "arn:aws:secretsmanager:eu-west-2:111111111111:secret:tt-witheight/submit/hmrc/client_secret"),
     @SetEnvironmentVariable(
             key = "HMRC_SANDBOX_CLIENT_SECRET_ARN",
-            value = "arn:aws:secretsmanager:eu-west-2:111111111111:secret:tt-witheight-hmrc-sandbox-secret"),
+            value = "arn:aws:secretsmanager:eu-west-2:111111111111:secret:tt-witheight/submit/hmrc/sandbox_client_secret"),
     @SetEnvironmentVariable(key = "BASE_IMAGE_TAG", value = "test"),
     @SetEnvironmentVariable(key = "CLOUD_TRAIL_ENABLED", value = "true"),
     @SetEnvironmentVariable(key = "SELF_DESTRUCT_DELAY_HOURS", value = "1"),

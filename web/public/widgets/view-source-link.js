@@ -22,7 +22,15 @@
             viewSourceLink.href = githubUrl;
             viewSourceLink.target = "_blank";
             viewSourceLink.textContent = `${deploymentName}: @${commitHash.substring(0, 7)}`;
-            viewSourceLink.style.display = "inline";
+            // Respect debug gating: only show when debug widgets are enabled
+            try {
+              const enabled = typeof window !== "undefined" && !!window.__debugEnabled__;
+              if (enabled) {
+                viewSourceLink.style.display = "inline";
+              }
+            } catch (e) {
+              // If anything goes wrong, do not force visibility
+            }
           }
         }
       }

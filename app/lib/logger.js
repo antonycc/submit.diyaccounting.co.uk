@@ -53,7 +53,7 @@ if (logToConsole && logToFile) {
 }
 
 // If neither console nor file are enabled, produce a disabled logger (no output)
-const pinoLogger = pino(
+export const logger = pino(
   {
     level: "info",
     // timestamp: pino.stdTimeFunctions.isoTime,
@@ -62,7 +62,16 @@ const pinoLogger = pino(
     timestamp: false, // Avoid Pino’s comma-prefixed timestamp chunk
     // Add an ISO time field as a normal JSON property
     mixin() {
-      return { time: new Date().toISOString() };
+      // Pull correlation fields from shared context; ensure we never leak old values
+      const requestId = context.get("requestId") || null;
+      const amznTraceId = context.get("amznTraceId") || null;
+      const traceparent = context.get("traceparent") || null;
+      return {
+        time: new Date().toISOString(),
+        ...(requestId ? { requestId } : {}),
+        ...(amznTraceId ? { amznTraceId } : {}),
+        ...(traceparent ? { traceparent } : {}),
+      };
     },
     // formatters: {
     // remove the level key entirely
@@ -73,4 +82,7 @@ const pinoLogger = pino(
   destinationStream,
 );
 
-export default pinoLogger;
+// Store for contextual information such as a request ID
+export const context = new Map();
+
+export default logger;

@@ -53,7 +53,7 @@ Run locally (proxy environment)
 - Terminal A: start server
 ```bash
 
-npm run start
+npm run server
 ```
 - Terminal B: expose via ngrok (HTTPS URL seen by the browser)
 ```bash

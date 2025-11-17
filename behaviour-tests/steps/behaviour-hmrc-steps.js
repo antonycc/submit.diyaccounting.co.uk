@@ -35,12 +35,21 @@ export async function goToHmrcAuth(page, screenshotPath = defaultScreenshotPath)
     //  Submit the permission form and expect the sign in option to be visible
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-submit-permission-wait.png` });
     await page.waitForTimeout(100);
+
+    // If the screen has the text "invalid_request" anywhere, then fail the step immediately
+    const pageContent = await page.content();
+    if (pageContent.includes("invalid_request")) {
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-submit-permission-sign-in.png` });
+      throw new Error("HMRC authorization page returned an invalid_request error");
+    }
+
     console.log(`[USER INTERACTION] Clicking: Continue button - Continuing with HMRC permission`);
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-submit-permission.png` });
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-submit-permission.png` });
     await page.getByRole("button", { name: "Continue" }).click();
     await page.waitForLoadState("networkidle");
     await page.waitForTimeout(500);
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-submit-permission-sign-in.png` });
+
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-submit-permission-sign-in.png` });
     await expect(page.getByRole("button", { name: "Sign in to the HMRC online service" })).toContainText(
       "Sign in to the HMRC online service",
     );

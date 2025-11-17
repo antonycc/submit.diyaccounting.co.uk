@@ -1,4 +1,5 @@
 <!-- submitVatCallback.html -->
+<!-- TODO: Move to /hmrc/callback.html -->
 <!doctype html>
 <html lang="en">
   <head>
@@ -20,8 +21,9 @@
           <div class="menu-dropdown" id="menuDropdown">
             <a href="../index.html">Home</a>
             <a href="../account/bundles.html">Bundles</a>
-            <a href="../account/receipts.html">Receipts</a>
-            <a href="../docs/index.html">API Docs</a>
+            <a href="../hmrc/receipt/receipts.html">Receipts</a>
+            <a href="../guide/index.html">User Guide</a>
+            <a href="../about.html">About</a>
           </div>
         </div>
         <div class="auth-section">
@@ -45,6 +47,11 @@
     </div>
 
     <footer>
+      <div class="footer-left">
+        <a href="#" id="viewSourceLink" style="display: none">view source</a>
+        <a id="latestTestsLink" style="display: inline" target="_blank" href="tests/html-report/index.html">tests</a>
+        <a id="apiDocsLink" style="display: inline" target="_blank" href="./docs/index.html"> api </a>
+      </div>
       <div class="footer-content">
         <div class="footer-center">
           <p>&copy; 2025 DIY Accounting Limited</p>
@@ -132,11 +139,19 @@
         const body = JSON.stringify({ code });
         console.log(`Exchanging token. Remote call initiated: POST ${url} ++ Body: ${body}`);
 
+        const requestHeaders = {
+          "Content-Type": "application/json",
+        };
+
+        // Get hmrcAccount from localStorage if available
+        const hmrcAccount = localStorage.getItem("hmrcAccount");
+        if (hmrcAccount) {
+          requestHeaders["hmrcAccount"] = hmrcAccount;
+        }
+
         const response = await fetch(url, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: requestHeaders,
           body,
         });
         if (!response.ok) {
@@ -158,10 +173,13 @@
       }
 
       function checkCurrentActivityAndRedirect() {
+        // Get hmrcAccount from localStorage if available
+        const hmrcAccount = localStorage.getItem("hmrcAccount");
+        const requestQueryParams = hmrcAccount === "sandbox" ? "?hmrcAccount=sandbox" : "";
         const currentActivity = localStorage.getItem("currentActivity");
         if (currentActivity) {
           console.log("Current activity found:", currentActivity);
-          window.location.href = `${currentActivity}`;
+          window.location.href = `${currentActivity}${requestQueryParams}`;
         } else {
           console.log("No current activity found, staying on current page");
         }

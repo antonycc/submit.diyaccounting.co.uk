@@ -4,6 +4,8 @@ import { loadCatalogFromRoot } from "../../lib/productCatalogHelper.js";
 import { extractRequest, http200OkResponse, http500ServerErrorResponse } from "../../lib/responses.js";
 import logger from "../../lib/logger.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
+import { enforceBundles } from "../../lib/bundleEnforcement.js";
+import { http403ForbiddenFromBundleEnforcement } from "../../lib/hmrcHelper.js";
 
 let cached = null; // { json, etag, lastModified, object, validated }
 
@@ -18,29 +20,34 @@ export function apiEndpoint(app) {
 
 // HTTP request/response, aware Lambda handler function
 export async function handler(event) {
-  const { request, requestId } = extractRequest(event);
-  const responseHeaders = { "Content-Type": "application/json", "x-request-id": requestId };
+  const { request } = extractRequest(event);
+  const responseHeaders = { "Content-Type": "application/json" };
 
-  logger.info({ requestId, message: "Retrieving product catalog" });
+  // Bundle enforcement
+  try {
+    await enforceBundles(event);
+  } catch (error) {
+    return http403ForbiddenFromBundleEnforcement(error, request);
+  }
+
+  logger.info({ message: "Retrieving product catalog" });
 
   try {
     const catalogData = await loadCatalog();
     // loadCatalog currently returns a JSON string; convert to object for http200OkResponse
     const catalogObject = typeof catalogData === "string" ? JSON.parse(catalogData) : catalogData;
 
-    logger.info({ requestId, message: "Successfully retrieved catalog", size: catalogData.length });
+    logger.info({ message: "Successfully retrieved catalog", size: catalogData.length });
 
     return http200OkResponse({
       request,
-      requestId,
       headers: { ...responseHeaders },
       data: catalogObject,
     });
   } catch (error) {
-    logger.error({ requestId, message: "Error loading catalog", error: error.message, stack: error.stack });
+    logger.error({ message: "Error loading catalog", error: error.message, stack: error.stack });
     return http500ServerErrorResponse({
       request,
-      requestId,
       headers: { ...responseHeaders },
       message: "Failed to load catalog",
       error: error.message,

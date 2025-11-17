@@ -95,6 +95,9 @@ if (__runDirect) {
         "HMRC_BASE_URI",
         "HMRC_CLIENT_ID",
         "HMRC_CLIENT_SECRET_ARN",
+        "HMRC_SANDBOX_BASE_URI",
+        "HMRC_SANDBOX_CLIENT_ID",
+        "HMRC_SANDBOX_CLIENT_SECRET_ARN",
         "DIY_SUBMIT_RECEIPTS_BUCKET_NAME",
       ]);
     } else {

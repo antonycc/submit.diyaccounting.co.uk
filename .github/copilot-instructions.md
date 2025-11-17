@@ -39,7 +39,7 @@ npm test
 ### Run the Application Locally
 ```bash
 # Start the Express server
-npm run start
+npm run server
 # Starts server on http://127.0.0.1:3000
 # Uses .env.proxy configuration by default
 # ALWAYS verify server starts by checking "Listening at http://127.0.0.1:3000" message
@@ -98,7 +98,7 @@ This is a full-stack AWS serverless application:
 
 2. **Server startup validation**:
    ```bash
-   npm run start
+   npm run server
    # Verify "Listening at http://127.0.0.1:3000" appears
    # Stop with Ctrl+C
    ```
@@ -129,8 +129,8 @@ Manual testing should be performed using the **proxy environment**. This require
 2. **Start the Express server with the MinIO endpoint:**
    - Pass the MinIO endpoint to the server by overriding the environment variable:
      ```bash
-     TEST_S3_ENDPOINT=<minio_endpoint_url> npm run start
-     # Example: TEST_S3_ENDPOINT=http://127.0.0.1:9000 npm run start
+     TEST_S3_ENDPOINT=<minio_endpoint_url> npm run server
+     # Example: TEST_S3_ENDPOINT=http://127.0.0.1:9000 npm run server
      # Verify "Listening at http://127.0.0.1:3000" appears
      ```
 

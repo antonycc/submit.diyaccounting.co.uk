@@ -1,7 +1,7 @@
 // behaviour-tests/behaviour-bundle-steps.js
 
 import { expect, test } from "@playwright/test";
-import { loggedClick, timestamp } from "../helpers/behaviour-helpers.js";
+import { loggedClick, timestamp, isSandboxMode } from "../helpers/behaviour-helpers.js";
 
 const defaultScreenshotPath = "target/behaviour-test-results/screenshots/behaviour-bundle-steps";
 
@@ -19,6 +19,8 @@ export async function goToBundlesPage(page, screenshotPath = defaultScreenshotPa
       loggedClick(page, "a[href*='bundles.html']", "Clicking Bundles in hamburger menu"),
     ]);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-goto-bundles-page-hamburger-menu.png` });
+    await page.waitForTimeout(500);
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-goto-bundles-page-hamburger-menu.png` });
   });
 }
 
@@ -38,27 +40,65 @@ export async function clearBundles(page, screenshotPath = defaultScreenshotPath)
     await page.screenshot({
       path: `${screenshotPath}/${timestamp()}-02-removing-all-bundles-clicked.png`,
     });
-    await expect(page.getByText("Request test")).toBeVisible({ timeout: 16000 });
+    await expect(page.getByRole("button", { name: "Request Test", exact: true })).toBeVisible({ timeout: 16000 });
     await page.screenshot({
       path: `${screenshotPath}/${timestamp()}-03-removed-all-bundles.png`,
     });
   });
 }
 
-export async function requestTestBundle(page, screenshotPath = defaultScreenshotPath) {
-  await test.step("The user requests a test bundle and sees a confirmation message", async () => {
+export async function ensureBundlePresent(page, bundleName = "Test", screenshotPath = defaultScreenshotPath) {
+  await test.step(`Ensure ${bundleName} bundle is present (idempotent)`, async () => {
+    // If the confirmation text for an added bundle is already visible, do nothing.
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-ensure-bundle.png` });
+    let addedLocator = page.getByRole("button", { name: `Added ✓ ${bundleName}` });
+    // const isAddedVisible = await page.getByText("Added ✓").isVisible({ timeout: 16000 });
+    // If the "Added ✓" button is not visible, wait 1000ms and try again and do that up to 5 times.
+    if (!(await addedLocator.isVisible())) {
+      for (let i = 0; i < 5; i++) {
+        console.log(`"Added ✓ ${bundleName}" button not visible, waiting 1000ms and trying again (${i + 1}/5)`);
+        await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-ensure-bundle-waiting.png` });
+        await page.waitForTimeout(1000);
+        addedLocator = page.getByRole("button", { name: `Added ✓ ${bundleName}` });
+        await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-ensure-bundle-waited.png` });
+        if (await addedLocator.isVisible()) {
+          break;
+        }
+      }
+    }
+    // Fallback: look for the specific test bundle button by data attribute in case role+name fails (e.g., due to special characters)
+    //const bundleId = bundleName.toLowerCase().replace(/\s+/g, "-");
+    //if (!(await addedLocator.isVisible())) {
+    //  const specificAdded = page.locator(`button.service-btn[data-bundle-id='${bundleId}']:has-text('Added ✓ ${bundleName}')`);
+    //  if (await specificAdded.isVisible()) {
+    //    addedLocator = specificAdded;
+    //  }
+    //}
+    if (await addedLocator.isVisible({ timeout: 16000 })) {
+      console.log(`${bundleName} bundle already present, skipping request.`);
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-ensure-bundle-skipping.png` });
+      return;
+    }
+    // Otherwise request the bundle once.
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-ensure-bundle-adding.png` });
+    await requestBundle(page, bundleName, screenshotPath);
+  });
+}
+
+export async function requestBundle(page, bundleName = "Test", screenshotPath = defaultScreenshotPath) {
+  await test.step(`The user requests a ${bundleName} bundle and sees a confirmation message`, async () => {
     // Request test bundle
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-request-test-bundle.png` });
-    let requestTestLocator = page.getByRole("button", { name: "Request test" });
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-request-bundle.png` });
+    let requestTestLocator = page.getByRole("button", { name: `Request ${bundleName}` });
     // await expect(page.getByText("Request test")).toBeVisible();
     // If the "Request test" button is not visible, wait 1000ms and try again and do that up to 5 times.
     if (!(await requestTestLocator.isVisible())) {
       for (let i = 0; i < 5; i++) {
-        console.log(`"Request test" button not visible, waiting 1000ms and trying again (${i + 1}/5)`);
-        await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-request-test-bundle-waiting.png` });
+        console.log(`"Request ${bundleName}" button not visible, waiting 1000ms and trying again (${i + 1}/5)`);
+        await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-request-bundle-waiting.png` });
         await page.waitForTimeout(1000);
-        await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-request-test-bundle-waited.png` });
-        requestTestLocator = page.getByRole("button", { name: "Request test" });
+        await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-request-bundle-waited.png` });
+        requestTestLocator = page.getByRole("button", { name: `Request ${bundleName}` });
         if (await requestTestLocator.isVisible()) {
           break;
         }
@@ -67,53 +107,16 @@ export async function requestTestBundle(page, screenshotPath = defaultScreenshot
 
     // If the "Request test" button is not visible, check if "Added ✓" is visible instead and if so, skip the request.
     if (!(await requestTestLocator.isVisible())) {
-      const addedLocator = page.getByRole("button", { name: /Added/ });
+      const addedLocator = page.getByRole("button", { name: `Added ✓ ${bundleName}` });
       if (await addedLocator.isVisible()) {
-        console.log("Test bundle already present, skipping request.");
-        await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-request-test-bundle-skipping.png` });
+        console.log(`${bundleName} bundle already present, skipping request.`);
+        await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-request-bundle-skipping.png` });
         return;
       }
     }
-    await loggedClick(page, "button:has-text('Request test')", "Request test");
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-request-test-bundle-clicked.png` });
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-06-request-test-bundle.png` });
-    await expect(page.getByRole("button", { name: /Added/ })).toBeVisible({ timeout: 16000 });
-  });
-}
-
-export async function ensureTestBundlePresent(page, screenshotPath = defaultScreenshotPath) {
-  await test.step("Ensure test bundle is present (idempotent)", async () => {
-    // If the confirmation text for an added bundle is already visible, do nothing.
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-ensure-test-bundle.png` });
-    let addedLocator = page.getByRole("button", { name: /Added/ });
-    // const isAddedVisible = await page.getByText("Added ✓").isVisible({ timeout: 16000 });
-    // If the "Added ✓" button is not visible, wait 1000ms and try again and do that up to 5 times.
-    if (!(await addedLocator.isVisible())) {
-      for (let i = 0; i < 5; i++) {
-        console.log(`"Added ✓" button not visible, waiting 1000ms and trying again (${i + 1}/5)`);
-        await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-ensure-test-bundle-waiting.png` });
-        await page.waitForTimeout(1000);
-        addedLocator = page.getByRole("button", { name: "Added ✓" });
-        await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-ensure-test-bundle-waited.png` });
-        if (await addedLocator.isVisible()) {
-          break;
-        }
-      }
-    }
-    // Fallback: look for the specific test bundle button by data attribute in case role+name fails (e.g., due to special characters)
-    if (!(await addedLocator.isVisible())) {
-      const specificAdded = page.locator("button.service-btn[data-bundle-id='test']:has-text('Added')");
-      if (await specificAdded.isVisible()) {
-        addedLocator = specificAdded;
-      }
-    }
-    if (await addedLocator.isVisible({ timeout: 16000 })) {
-      console.log("Test bundle already present, skipping request.");
-      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-ensure-test-bundle-skipping.png` });
-      return;
-    }
-    // Otherwise request the test bundle once.
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-ensure-test-bundle-adding.png` });
-    await requestTestBundle(page, screenshotPath);
+    await loggedClick(page, `button:has-text('Request ${bundleName}')`, `Request ${bundleName}`);
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-request-bundle-clicked.png` });
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-06-request-bundle.png` });
+    await expect(page.getByRole("button", { name: `Added ✓ ${bundleName}` })).toBeVisible({ timeout: 16000 });
   });
 }

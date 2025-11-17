@@ -95,6 +95,167 @@ function generateRandomState() {
   return `${now}${perf}`;
 }
 
+// Correlation and tracing: install a fetch interceptor that
+// - Ensures a W3C traceparent header is sent with every backend request
+// - Generates a high-entropy x-request-id per request
+// - Optionally reuses a carried x-request-id across an auth redirect sequence
+// - Captures the last x-request-id from responses for UI display
+(function installCorrelation() {
+  try {
+    if (typeof window === "undefined") return;
+    if (window.__fetchInterceptorInstalled) return;
+
+    // Utilities
+    function randomHex(bytes) {
+      try {
+        const arr = new Uint8Array(bytes);
+        (window.crypto || {}).getRandomValues?.(arr);
+        return Array.from(arr)
+          .map((b) => b.toString(16).padStart(2, "0"))
+          .join("");
+      } catch {
+        // Fallback to time-based shards when crypto is unavailable
+        const now = Date.now()
+          .toString(16)
+          .padStart(bytes * 2, "0");
+        return now.slice(-bytes * 2);
+      }
+    }
+
+    function generateTraceparent() {
+      const version = "00";
+      const traceId = randomHex(16); // 16 bytes = 32 hex
+      const parentId = randomHex(8); // 8 bytes = 16 hex
+      const flags = "01"; // sampled
+      return `${version}-${traceId}-${parentId}-${flags}`;
+    }
+
+    function getOrCreateTraceparent() {
+      const ss = typeof window !== "undefined" ? window.sessionStorage : undefined;
+      let tp = ss?.getItem?.("traceparent");
+      if (!tp) {
+        tp = generateTraceparent();
+        try {
+          ss?.setItem?.("traceparent", tp);
+        } catch {}
+      }
+      return tp;
+    }
+
+    function generateRequestId() {
+      try {
+        if (window.crypto?.randomUUID) return window.crypto.randomUUID();
+      } catch {}
+      // Fallback to 32-hex entropy
+      return randomHex(16) + randomHex(16);
+    }
+
+    function nextRedirectRequestId() {
+      const ss = typeof window !== "undefined" ? window.sessionStorage : undefined;
+      const carried = ss?.getItem?.("redirectXRequestId");
+      if (carried) {
+        try {
+          ss?.removeItem?.("redirectXRequestId");
+        } catch {}
+        return carried;
+      }
+      return null;
+    }
+
+    // Expose lightweight API on window
+    let lastXRequestId = (typeof window !== "undefined" && window.sessionStorage?.getItem?.("lastXRequestId")) || "";
+    let lastXRequestIdSeenAt =
+      (typeof window !== "undefined" && window.sessionStorage?.getItem?.("lastXRequestIdSeenAt")) || "";
+    function setLastXRequestId(v) {
+      lastXRequestId = v || "";
+      try {
+        if (v) window.sessionStorage?.setItem?.("lastXRequestId", v);
+      } catch {}
+      // Record the time we last saw an x-request-id so the UI can display it
+      try {
+        lastXRequestIdSeenAt = new Date().toISOString();
+        window.sessionStorage?.setItem?.("lastXRequestIdSeenAt", lastXRequestIdSeenAt);
+      } catch {}
+      try {
+        window.dispatchEvent(
+          new CustomEvent("correlation:update", { detail: { lastXRequestId: lastXRequestId, seenAt: lastXRequestIdSeenAt } })
+        );
+      } catch {}
+    }
+
+    window.getTraceparent = function () {
+      return getOrCreateTraceparent();
+    };
+    window.getLastXRequestId = function () {
+      return lastXRequestId;
+    };
+    window.__correlation = Object.assign(window.__correlation || {}, {
+      prepareRedirect() {
+        const id = generateRequestId();
+        try {
+          window.sessionStorage?.setItem?.("redirectXRequestId", id);
+        } catch {}
+        return id;
+      },
+      // Avoid referencing an undeclared identifier in some test environments
+      getTraceparent: () => getOrCreateTraceparent(),
+      getLastXRequestId: () => lastXRequestId,
+      getLastXRequestIdSeenAt: () => lastXRequestIdSeenAt,
+    });
+
+    // Install fetch wrapper
+    const originalFetch = window.fetch?.bind(window);
+    if (typeof originalFetch !== "function") return; // Defer if fetch not available
+
+    window.fetch = async function (input, init) {
+      const req = init || {};
+      const url = typeof input === "string" ? input : input?.url || "";
+      const isRelative = typeof url === "string" && (url.startsWith("/") || url.startsWith("./") || url.startsWith("../"));
+      const isSameOrigin = typeof url === "string" && url.startsWith(window.location.origin);
+      const isBackendCall = isRelative || isSameOrigin;
+
+      // Normalize headers
+      const existingHeaders = req.headers || (typeof input !== "string" ? input?.headers : undefined) || {};
+      let headerObject;
+      if (typeof Headers !== "undefined" && existingHeaders instanceof Headers) {
+        headerObject = {};
+        existingHeaders.forEach((value, key) => {
+          headerObject[key] = value;
+        });
+      } else if (Array.isArray(existingHeaders)) {
+        headerObject = Object.fromEntries(existingHeaders);
+      } else {
+        headerObject = { ...existingHeaders };
+      }
+
+      if (isBackendCall) {
+        // Always send traceparent for backend calls
+        headerObject["traceparent"] = getOrCreateTraceparent();
+
+        // Generate a fresh x-request-id, unless a redirect flow ID is present
+        let requestId = nextRedirectRequestId();
+        if (!requestId) requestId = generateRequestId();
+        headerObject["x-request-id"] = requestId;
+      }
+
+      const response = await originalFetch(input, { ...req, headers: headerObject });
+
+      try {
+        const rid = response?.headers?.get?.("x-request-id");
+        if (rid) setLastXRequestId(rid);
+      } catch {
+        // ignore header read issues
+      }
+
+      return response;
+    };
+
+    window.__fetchInterceptorInstalled = true;
+  } catch (e) {
+    console.warn("Failed to install correlation fetch interceptor", e);
+  }
+})();
+
 // Client request correlation helper
 function fetchWithId(url, opts = {}) {
   const headers = new Headers(opts.headers || {});
@@ -119,8 +280,173 @@ function fetchWithId(url, opts = {}) {
     console.warn("Failed to generate X-Client-Request-Id:", error);
   }
 
+  // Add hmrcAccount header if present in URL
+  const urlParams = new URLSearchParams(window.location.search);
+  const hmrcAccount = urlParams.get("hmrcAccount");
+  if (hmrcAccount) {
+    headers["hmrcAccount"] = hmrcAccount;
+  }
+
   return fetch(url, { ...opts, headers });
 }
+
+// Correlation widget - render to the left of the entitlement status in the header
+(function correlationWidget() {
+  if (typeof window === "undefined" || typeof document === "undefined") return;
+
+  function copy(text) {
+    try {
+      navigator.clipboard?.writeText?.(text);
+    } catch {}
+  }
+
+  function render() {
+    try {
+      const authSection = document.querySelector?.(".auth-section");
+      if (!authSection || document.getElementById("correlationWidget")) return;
+
+      const container = document.createElement("span");
+      container.id = "correlationWidget";
+      container.style.marginRight = "12px";
+      container.style.fontSize = "0.8em";
+      container.style.color = "#666";
+      container.style.display = "inline-flex";
+      container.style.gap = "8px";
+
+      const tpSpan = document.createElement("span");
+      tpSpan.title = "traceparent (click to copy)";
+      const tpVal = (window.getTraceparent && window.getTraceparent()) || sessionStorage.getItem("traceparent") || "";
+      tpSpan.textContent = `traceparent: ${tpVal}`;
+      tpSpan.style.cursor = "pointer";
+      tpSpan.addEventListener("click", () => copy(tpVal));
+
+      const ridSpan = document.createElement("span");
+      ridSpan.title = "last x-request-id (click to copy)";
+      const initialRid = (window.getLastXRequestId && window.getLastXRequestId()) || "-";
+      const initialSeenAtIso = (window.__correlation && window.__correlation.getLastXRequestIdSeenAt?.()) || "";
+      const initialSeenAt = initialSeenAtIso ? new Date(initialSeenAtIso) : null;
+      const initialSeenText = initialSeenAt ? ` (seen ${initialSeenAt.toLocaleString()})` : "";
+      ridSpan.textContent = `x-request-id: ${initialRid}${initialSeenText}`;
+      ridSpan.style.cursor = "pointer";
+      ridSpan.addEventListener("click", () => {
+        const rid = (window.getLastXRequestId && window.getLastXRequestId()) || "";
+        if (rid) copy(rid);
+      });
+
+      container.appendChild(tpSpan);
+      container.appendChild(ridSpan);
+
+      // Insert as first element inside auth-section, to the left of entitlement status
+      authSection.insertBefore(container, authSection.firstChild);
+
+      // Update on correlation changes
+      window.addEventListener("correlation:update", (evt) => {
+        const latest = (window.getLastXRequestId && window.getLastXRequestId()) || "-";
+        const seenAtIso = evt?.detail?.seenAt || (window.__correlation && window.__correlation.getLastXRequestIdSeenAt?.());
+        const seenAt = seenAtIso ? new Date(seenAtIso) : null;
+        const seenText = seenAt ? ` (seen ${seenAt.toLocaleString()})` : "";
+        ridSpan.textContent = `x-request-id: ${latest}${seenText}`;
+      });
+
+      // Respect debug gating – default hidden until enabled
+      try {
+        const enabled = !!window.__debugEnabled__;
+        container.style.display = enabled ? "inline-flex" : "none";
+      } catch {}
+    } catch (e) {
+      // Non-fatal UI enhancement
+      console.warn("Failed to render correlation widget", e);
+    }
+  }
+
+  if (document.readyState === "complete" || document.readyState === "interactive") {
+    render();
+  } else {
+    document.addEventListener("DOMContentLoaded", render, { once: true });
+  }
+})();
+
+// Debug widgets gating – only show on pages when user has the 'test' bundle
+(async function debugWidgetsGating() {
+  if (typeof window === "undefined" || typeof document === "undefined") return;
+
+  async function userHasTestBundle() {
+    try {
+      const idToken = localStorage.getItem("cognitoIdToken");
+      const userInfo = localStorage.getItem("userInfo");
+      if (!idToken || !userInfo) return false;
+      const resp = await fetch("/api/v1/bundle", {
+        headers: { Authorization: `Bearer ${idToken}` },
+      });
+      if (!resp.ok) return false;
+      const data = await resp.json();
+      const bundles = Array.isArray(data?.bundles) ? data.bundles : [];
+      return bundles.some((b) => (b?.bundleId || b) === "test" || String(b).startsWith("test|"));
+    } catch (e) {
+      console.warn("Failed to determine debug entitlement:", e);
+      return false;
+    }
+  }
+
+  function setDisplay(el, value) {
+    if (el) el.style.display = value;
+  }
+
+  function applyVisibility(enabled) {
+    try {
+      // Flag for other scripts
+      window.__debugEnabled__ = !!enabled;
+
+      // entitlement-status span
+      const entitlement = document.querySelector(".entitlement-status");
+      setDisplay(entitlement, enabled ? "inline" : "none");
+
+      // correlation widget container
+      const corr = document.getElementById("correlationWidget");
+      setDisplay(corr, enabled ? "inline-flex" : "none");
+
+      // Footer links: view source, tests, api docs
+      const viewSrc = document.getElementById("viewSourceLink");
+      const tests = document.getElementById("latestTestsLink");
+      const apiDocs = document.getElementById("apiDocsLink");
+
+      // Normalize hrefs to absolute so they work from any page
+      if (viewSrc && !viewSrc.getAttribute("data-href-initialized")) {
+        viewSrc.href = viewSrc.href || "#";
+        viewSrc.setAttribute("data-href-initialized", "true");
+      }
+      if (tests) tests.href = "/tests/html-report/index.html";
+      if (apiDocs) apiDocs.href = "/docs/index.html";
+
+      setDisplay(viewSrc, enabled ? "inline" : "none");
+      setDisplay(tests, enabled ? "inline" : "none");
+      setDisplay(apiDocs, enabled ? "inline" : "none");
+
+      // Local storage viewer container
+      const localStorageContainer = document.getElementById("localstorageContainer");
+      setDisplay(localStorageContainer, enabled ? "block" : "none");
+    } catch (e) {
+      console.warn("Failed to apply debug widget visibility:", e);
+    }
+  }
+
+  function onDomReady(cb) {
+    if (document.readyState === "complete" || document.readyState === "interactive") cb();
+    else document.addEventListener("DOMContentLoaded", cb, { once: true });
+  }
+
+  onDomReady(async () => {
+    const enabled = await userHasTestBundle();
+    applyVisibility(enabled);
+  });
+
+  // If user logs in/out in another tab, try to re-evaluate
+  window.addEventListener("storage", (e) => {
+    if (e.key === "cognitoIdToken" || e.key === "userInfo") {
+      userHasTestBundle().then(applyVisibility);
+    }
+  });
+})();
 
 // Auth API functions
 async function getAuthUrl(state, provider = "hmrc") {
