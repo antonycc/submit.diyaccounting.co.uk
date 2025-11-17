@@ -6,37 +6,174 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" href="./submit.css" />
     <style>
-      .about-hero {
-        text-align: center;
-        margin: 1.5em 0 1em;
+      /* Override body styles for full-page design */
+      body {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background-attachment: fixed;
+        padding: 0;
+        margin: 0;
+        max-width: 100%;
+        min-height: 100vh;
+        overflow-x: hidden;
       }
-      .about-grid {
+
+      /* Header styling for about page */
+      header {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        padding: 1em 2em;
+        margin: 0;
+        box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+      }
+
+      header h1 {
+        font-size: 1.8em;
+        margin: 0.3em 0;
+      }
+
+      header .subtitle {
+        display: none;
+      }
+
+      /* Main content styling */
+      #mainContent {
+        padding: 0;
+        margin: 0;
+        max-width: 100%;
+      }
+
+      /* Hero section with modern design */
+      .hero-section {
+        text-align: center;
+        padding: 4em 2em;
+        color: white;
+        position: relative;
+      }
+
+      .hero-section h2 {
+        font-size: 3em;
+        font-weight: 700;
+        margin: 0 0 0.5em 0;
+        color: white;
+        text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        line-height: 1.2;
+      }
+
+      .hero-section p {
+        font-size: 1.4em;
+        font-weight: 300;
+        max-width: 700px;
+        margin: 0 auto 2em;
+        opacity: 0.95;
+        line-height: 1.6;
+      }
+
+      /* Modern card grid - Instagram/LinkedIn style */
+      .concept-grid {
         display: grid;
         grid-template-columns: 1fr;
-        gap: 16px;
-        margin: 1em 0;
+        gap: 2em;
+        max-width: 1200px;
+        margin: 3em auto;
+        padding: 0 2em 4em;
       }
-      .about-card {
-        background: #fff;
-        border: 1px solid #ddd;
-        border-radius: 8px;
-        padding: 14px;
-      }
-      .about-card img {
-        width: 100%;
-        height: auto;
-        border-radius: 6px;
-        border: 1px solid #eee;
-      }
-      .about-caption {
-        font-size: 0.95em;
-        color: #555;
-        margin-top: 8px;
-      }
-      @media (min-width: 720px) {
-        .about-grid {
+
+      @media (min-width: 768px) {
+        .concept-grid {
           grid-template-columns: 1fr 1fr;
         }
+      }
+
+      /* Modern card styling - social media post style */
+      .concept-card {
+        background: white;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+        transition:
+          transform 0.3s ease,
+          box-shadow 0.3s ease;
+        position: relative;
+      }
+
+      .concept-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+      }
+
+      .concept-card img {
+        width: 100%;
+        height: auto;
+        display: block;
+        border: none;
+      }
+
+      .concept-card-overlay {
+        padding: 1.5em;
+        background: linear-gradient(to top, rgba(0, 0, 0, 0.7), transparent);
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        color: white;
+      }
+
+      .concept-card-title {
+        font-size: 1.3em;
+        font-weight: 600;
+        margin: 0;
+        text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+      }
+
+      /* CTA section */
+      .cta-section {
+        background: white;
+        padding: 4em 2em;
+        text-align: center;
+      }
+
+      .cta-section h2 {
+        font-size: 2.5em;
+        margin: 0 0 0.5em 0;
+        color: #2c5aa0;
+      }
+
+      .cta-section p {
+        font-size: 1.2em;
+        color: #666;
+        margin: 0 0 2em 0;
+        max-width: 600px;
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+      .button-group {
+        display: flex;
+        gap: 1em;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+
+      .button-group .btn {
+        font-size: 1.1em;
+        padding: 1em 2.5em;
+        border-radius: 50px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+      }
+
+      .button-group .btn:hover {
+        transform: scale(1.05);
+        box-shadow: 0 10px 30px rgba(44, 90, 160, 0.3);
+      }
+
+      /* Footer styling */
+      footer {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        margin: 0;
+        padding: 2em;
+        border-top: 1px solid rgba(0, 0, 0, 0.05);
       }
     </style>
   </head>
@@ -60,51 +197,44 @@
         </div>
       </div>
       <h1>About DIY Accounting Submit</h1>
-      <p class="subtitle">Fast, image-led VAT journeys for UK businesses</p>
     </header>
 
     <div id="mainContent">
-      <div class="form-container about-hero">
-        <p style="max-width: 800px; margin: 0 auto; color: #555">
-          DIY Accounting Submit helps you complete HMRC Making Tax Digital (MTD) VAT tasks quickly. Choose what you need from the Bundles
-          page, then run simple guided journeys to View VAT Obligations, Submit VAT Returns, and View previously submitted returns. A
-          receipts area stores confirmations for your records.
-        </p>
-      </div>
-
-      <section>
-        <h2 style="margin-top: 1.5em">What you can do</h2>
-        <ul style="text-align: left; max-width: 860px; margin: 0.75em auto">
-          <li>View your VAT obligations by period and status</li>
-          <li>Submit a VAT return with clear box-by-box entry</li>
-          <li>Verify submissions by viewing the return from HMRC</li>
-          <li>Download confirmations from the Receipts page</li>
-        </ul>
-
-        <div class="about-grid" style="max-width: 1000px; margin: 1em auto">
-          <div class="about-card">
-            <img src="images/guide/obligations.png" alt="View VAT Obligations form" />
-            <div class="about-caption">See upcoming and fulfilled VAT periods at a glance.</div>
-          </div>
-          <div class="about-card">
-            <img src="images/guide/submission-submit.png" alt="Submit VAT Return form" />
-            <div class="about-caption">Straightforward VAT boxes with helpful labels and validation.</div>
-          </div>
-        </div>
+      <!-- Hero Section -->
+      <section class="hero-section">
+        <h2>UK VAT Compliance<br />Made Simple</h2>
+        <p>Complete your HMRC Making Tax Digital obligations with confidence</p>
       </section>
 
-      <section style="text-align: center; margin-top: 1em">
-        <h2>Get started</h2>
-        <p style="color: #555">Pick your features, follow the journey, and keep your receipts.</p>
-        <div class="button-group" style="margin-top: 0.5em">
-          <button type="button" class="btn" onclick="window.location.href='account/bundles.html'">Choose Bundles</button>
+      <!-- Concept Cards - Instagram/LinkedIn Post Style -->
+      <div class="concept-grid">
+        <div class="concept-card">
+          <img src="images/guide/obligations.png" alt="VAT Obligations" />
+          <div class="concept-card-overlay">
+            <p class="concept-card-title">Know Your Deadlines</p>
+          </div>
+        </div>
+        <div class="concept-card">
+          <img src="images/guide/submission-submit.png" alt="Submit VAT Return" />
+          <div class="concept-card-overlay">
+            <p class="concept-card-title">Submit with Clarity</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Call to Action Section -->
+      <section class="cta-section">
+        <h2>Ready to Begin?</h2>
+        <p>Choose your features and start managing your VAT returns today</p>
+        <div class="button-group">
+          <button type="button" class="btn" onclick="window.location.href='account/bundles.html'">Get Started</button>
           <button
             type="button"
             class="btn"
             onclick="window.location.href='guide/index.html'"
             style="background: #6c757d; border-color: #6c757d"
           >
-            Open User Guide
+            View Guide
           </button>
         </div>
       </section>
