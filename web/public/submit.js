@@ -581,6 +581,8 @@ async function authorizedFetch(input, init = {}) {
   return fetchWithId(input, { ...init, headers: headers2 });
 }
 
+// Expose authorizedFetch globally for HTML usage
+window.authorizedFetch = authorizedFetch;
 // Invalidate request cache across tabs when Cognito token changes
 try {
   window.addEventListener?.("storage", (e) => {
