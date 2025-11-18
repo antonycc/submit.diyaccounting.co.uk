@@ -213,6 +213,9 @@ public class HmrcStack extends Stack {
                 "Created Lambda %s for HMRC exchange token with handler %s",
                 this.hmrcTokenPostLambda.getNode().getId(), props.sharedNames().hmrcTokenPostLambdaHandler);
 
+        // Allow the token exchange Lambda to write HMRC API request audit records to DynamoDB
+        hmrcApiRequestsTable.grantWriteData(this.hmrcTokenPostLambda);
+
         // Grant access to HMRC client secret in Secrets Manager
         if (StringUtils.isNotBlank(props.hmrcClientSecretArn())) {
             // Use the provided ARN with wildcard suffix to handle AWS Secrets Manager's automatic suffix
@@ -283,6 +286,9 @@ public class HmrcStack extends Stack {
                 "Created Lambda %s for VAT submission with handler %s",
                 this.hmrcVatReturnPostLambda.getNode().getId(), props.sharedNames().hmrcVatReturnPostLambdaHandler);
 
+        // Allow the VAT submission Lambda to write HMRC API request audit records to DynamoDB
+        hmrcApiRequestsTable.grantWriteData(this.hmrcVatReturnPostLambda);
+
         // VAT obligations GET
         var vatObligationLambdaEnv = new PopulatedMap<String, String>()
                 .with("DIY_SUBMIT_BASE_URL", props.sharedNames().envBaseUrl)
@@ -315,6 +321,9 @@ public class HmrcStack extends Stack {
                 this.hmrcVatObligationGetLambda.getNode().getId(),
                 props.sharedNames().hmrcVatObligationGetLambdaHandler);
 
+        // Allow the VAT obligations Lambda to write HMRC API request audit records to DynamoDB
+        hmrcApiRequestsTable.grantWriteData(this.hmrcVatObligationGetLambda);
+
         // VAT return GET
         var vatReturnGetLambdaEnv = new PopulatedMap<String, String>()
                 .with("DIY_SUBMIT_BASE_URL", props.sharedNames().envBaseUrl)
@@ -345,6 +354,9 @@ public class HmrcStack extends Stack {
         infof(
                 "Created Lambda %s for VAT return retrieval with handler %s",
                 this.hmrcVatReturnGetLambda.getNode().getId(), props.sharedNames().hmrcVatReturnGetLambdaHandler);
+
+        // Allow the VAT return retrieval Lambda to write HMRC API request audit records to DynamoDB
+        hmrcApiRequestsTable.grantWriteData(this.hmrcVatReturnGetLambda);
 
         var logReceiptLambdaEnv = new PopulatedMap<String, String>()
                 .with("DIY_SUBMIT_BASE_URL", props.sharedNames().envBaseUrl)
