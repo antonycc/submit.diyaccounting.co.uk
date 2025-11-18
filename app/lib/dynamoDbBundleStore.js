@@ -24,7 +24,7 @@ async function getDynamoDbDocClient() {
  * @returns {boolean} True if DynamoDB table name is configured
  */
 export function isDynamoDbEnabled() {
-  return Boolean(process.env.BUNDLE_DYNAMODB_TABLE_NAME);
+  return Boolean(process.env.BUNDLE_DYNAMODB_TABLE_NAME && process.env.BUNDLE_DYNAMODB_TABLE_NAME !== "test-bundle-table");
 }
 
 /**

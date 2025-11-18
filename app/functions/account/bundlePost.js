@@ -70,7 +70,7 @@ export async function handler(event) {
   const { request, requestId } = extractRequest(event);
   logger.info({ message: "bundlePost entry", route: "/api/v1/bundle", request });
 
-  validateEnv(["COGNITO_USER_POOL_ID"]);
+  validateEnv(["COGNITO_USER_POOL_ID", "BUNDLE_DYNAMODB_TABLE_NAME"]);
 
   // Bundle enforcement
   try {
