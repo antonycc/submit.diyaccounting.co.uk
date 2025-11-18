@@ -150,7 +150,7 @@ export async function putBundle(userId, bundleStr) {
       userId,
       bundleStr,
     });
-    // Don't throw - this is shadow write, should not fail the main operation
+    throw error;
   }
 }
 
@@ -192,7 +192,7 @@ export async function deleteBundle(userId, bundleId) {
       userId,
       bundleId,
     });
-    // Don't throw - this is shadow write, should not fail the main operation
+    throw error;
   }
 }
 
@@ -243,7 +243,7 @@ export async function deleteAllBundles(userId) {
       error: error.message,
       userId,
     });
-    // Don't throw - this is shadow write, should not fail the main operation
+    throw error;
   }
 }
 

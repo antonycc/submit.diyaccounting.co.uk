@@ -22,6 +22,7 @@ describe("httpPostMock", () => {
     process.env = {
       ...originalEnv,
       HMRC_BASE_URI: "https://test",
+      HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME: "test-hmrc-requests-table",
     };
   });
 
