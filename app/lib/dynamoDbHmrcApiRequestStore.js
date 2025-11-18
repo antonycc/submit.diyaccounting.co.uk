@@ -23,8 +23,11 @@ async function getDynamoDbDocClient() {
  * Check if DynamoDB operations are enabled
  * @returns {boolean} True if DynamoDB table name is configured
  */
-export function isDynamoDbEnabled() {
-  return Boolean(process.env.HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME);
+function isDynamoDbEnabled() {
+  return Boolean(
+    process.env.HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME &&
+      process.env.HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME !== "test-hmrc-api-requests-table",
+  );
 }
 
 /**
