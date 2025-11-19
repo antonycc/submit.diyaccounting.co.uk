@@ -20,12 +20,14 @@ export default defineConfig(({ mode }) => {
           name: "default",
           environment: "node",
           // Limit workers without CLI flags
-          pool: "threads",
-          poolOptions: {
-            threads: { minThreads: 1, maxThreads: 1 },
-            forks: { minForks: 1, maxForks: 1 },
-            vmThreads: { minThreads: 1, maxThreads: 1 },
-          },
+          pool: "forks",
+          poolOptions: { forks: { minForks: 1, maxForks: 1 } },
+          // pool: "threads",
+          // poolOptions: {
+          //  threads: { minThreads: 1, maxThreads: 1 },
+          //  forks: { minForks: 1, maxForks: 1 },
+          //  vmThreads: { minThreads: 1, maxThreads: 1 },
+          // },
           resolve: {
             alias: {
               "@dist": path.resolve(process.cwd(), "dist"),

@@ -257,7 +257,7 @@ public class HmrcStack extends Stack {
         // submitVat
         var submitVatLambdaEnv = new PopulatedMap<String, String>()
                 .with("DIY_SUBMIT_BASE_URL", props.sharedNames().envBaseUrl)
-                .with("COGNITO_USER_POOL_ID", props.cognitoUserPoolId())
+                //.with("COGNITO_USER_POOL_ID", props.cognitoUserPoolId())
                 .with("HMRC_BASE_URI", props.hmrcBaseUri())
                 .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
                 .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName());

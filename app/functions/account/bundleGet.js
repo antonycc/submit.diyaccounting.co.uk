@@ -6,7 +6,7 @@ import { extractRequest, http200OkResponse, http401UnauthorizedResponse, http500
 import { decodeJwtToken } from "../../lib/jwtHelper.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
 import { getUserBundles } from "../../lib/bundleHelpers.js";
-import { enforceBundles } from "../../lib/bundleEnforcement.js";
+import { BundleAuthorizationError, BundleEntitlementError, enforceBundles } from "../../lib/bundleEnforcement.js";
 import { http403ForbiddenFromBundleEnforcement } from "../../lib/hmrcHelper.js";
 
 /**
@@ -95,8 +95,20 @@ export async function handler(event) {
   // Bundle enforcement
   try {
     await enforceBundles(event);
+    // Handle BundleAuthorizationError and BundleEntitlementError with different response generators
   } catch (error) {
-    return http403ForbiddenFromBundleEnforcement(error, request);
+    if (error instanceof BundleAuthorizationError) {
+      return http401UnauthorizedResponse({
+        request,
+        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+        message: "Unauthorized access to bundles",
+        error: {},
+      });
+    }
+
+    if (error instanceof BundleEntitlementError) {
+      return http403ForbiddenFromBundleEnforcement(error, request);
+    }
   }
 
   logger.info({ message: "Retrieving user bundles" });

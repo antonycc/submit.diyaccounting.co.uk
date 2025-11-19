@@ -29,6 +29,20 @@ function buildEvent(token, method = "GET") {
   return {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
     httpMethod: method,
+    requestContext: {
+      authorizer: {
+        lambda: {
+          jwt: {
+            claims: {
+              "sub": "abc-123",
+              "cognito:username": "test",
+              "email": "test@test.submit.diyaccunting.co.uk",
+              "scope": "read write",
+            },
+          },
+        },
+      },
+    },
   };
 }
 

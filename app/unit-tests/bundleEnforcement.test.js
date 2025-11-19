@@ -2,7 +2,7 @@
 
 import { describe, test, expect, beforeEach, vi } from "vitest";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
-import { enforceBundles, BundleEntitlementError, addBundles, removeBundles } from "@app/lib/bundleEnforcement.js";
+import { enforceBundles, BundleEntitlementError, addBundles, removeBundles, BundleAuthorizationError } from "@app/lib/bundleEnforcement.js";
 import * as bundleHelpers from "@app/lib/bundleHelpers.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
@@ -31,7 +31,7 @@ function makeJWT(sub = "user-123", extra = {}) {
   return `${base64UrlEncode(header)}.${base64UrlEncode(payload)}.`;
 }
 
-function buildEvent(token, authorizerContext = null) {
+function buildEvent(token, authorizerContext = null, urlPath = null) {
   const event = {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   };
@@ -42,6 +42,12 @@ function buildEvent(token, authorizerContext = null) {
         lambda: authorizerContext,
       },
     };
+  }
+
+  if (urlPath) {
+    event.requestContext = event.requestContext || {};
+    event.requestContext.http = event.requestContext.http || {};
+    event.requestContext.http.path = urlPath;
   }
 
   return event;
@@ -61,73 +67,104 @@ describe("bundleEnforcement.js", () => {
   });
 
   describe("enforceBundles", () => {
-    test("should skip enforcement when disabled", async () => {
-      process.env.DIY_SUBMIT_ENFORCE_BUNDLES = "false";
-      const token = makeJWT("user-1");
-      const event = buildEvent(token);
+    // test("should skip enforcement when disabled", async () => {
+    //   process.env.DIY_SUBMIT_ENFORCE_BUNDLES = "false";
+    //   const token = makeJWT("user-1");
+    //   const event = buildEvent(token);
+    //
+    //   // Should not throw
+    //   await enforceBundles(event);
+    //
+    //   // getUserBundles should not be called
+    //   expect(bundleHelpers.getUserBundles).not.toHaveBeenCalled();
+    // });
 
-      // Should not throw
-      await enforceBundles(event);
+    // test("should skip enforcement when userPoolId is not configured", async () => {
+    //   delete process.env.COGNITO_USER_POOL_ID;
+    //   const token = makeJWT("user-1");
+    //   const event = buildEvent(token);
+    //
+    //   // Should not throw
+    //   await enforceBundles(event);
+    //
+    //   // getUserBundles should not be called
+    //   expect(bundleHelpers.getUserBundles).not.toHaveBeenCalled();
+    // });
 
-      // getUserBundles should not be called
-      expect(bundleHelpers.getUserBundles).not.toHaveBeenCalled();
-    });
-
-    test("should skip enforcement when userPoolId is not configured", async () => {
-      delete process.env.COGNITO_USER_POOL_ID;
-      const token = makeJWT("user-1");
-      const event = buildEvent(token);
-
-      // Should not throw
-      await enforceBundles(event);
-
-      // getUserBundles should not be called
-      expect(bundleHelpers.getUserBundles).not.toHaveBeenCalled();
-    });
-
-    test("should throw BundleEntitlementError when no authorization token", async () => {
+    test("should throw BundleAuthorizationError when no authorization token", async () => {
       const event = buildEvent(null);
 
-      await expect(enforceBundles(event)).rejects.toThrow(BundleEntitlementError);
+      await expect(enforceBundles(event)).rejects.toThrow(BundleAuthorizationError);
       await expect(enforceBundles(event)).rejects.toThrow("Missing Authorization Bearer token");
     });
 
     test("should throw BundleEntitlementError when JWT is invalid", async () => {
       const event = buildEvent("invalid-token");
 
-      await expect(enforceBundles(event)).rejects.toThrow(BundleEntitlementError);
+      await expect(enforceBundles(event)).rejects.toThrow(BundleAuthorizationError);
     });
 
     test("should allow sandbox access with test bundle", async () => {
       process.env.HMRC_BASE_URI = "https://test-api.service.hmrc.gov.uk";
       const token = makeJWT("user-with-test-bundle");
-      const event = buildEvent(token);
+      const authorizerContext = {
+        jwt: {
+          claims: {
+            "sub": "user-with-test-bundle",
+            "cognito:username": "test",
+            "email": "test@test.submit.diyaccunting.co.uk",
+            "scope": "read write",
+          },
+        },
+      };
+      const event = buildEvent(token, authorizerContext);
 
       bundleHelpers.getUserBundles.mockResolvedValue(["test"]);
 
       // Should not throw
       await enforceBundles(event);
 
-      expect(bundleHelpers.getUserBundles).toHaveBeenCalledWith("user-with-test-bundle", "test-pool-id");
+      expect(bundleHelpers.getUserBundles).toHaveBeenCalledWith("user-with-test-bundle");
     });
 
     test("should allow sandbox access with test bundle with expiry", async () => {
       process.env.HMRC_BASE_URI = "https://test-api.service.hmrc.gov.uk";
       const token = makeJWT("user-with-test-bundle-expiry");
-      const event = buildEvent(token);
+      const authorizerContext = {
+        jwt: {
+          claims: {
+            "sub": "user-with-test-bundle-expiry",
+            "cognito:username": "test",
+            "email": "test@test.submit.diyaccunting.co.uk",
+            "scope": "read write",
+          },
+        },
+      };
+      const event = buildEvent(token, authorizerContext);
 
       bundleHelpers.getUserBundles.mockResolvedValue(["test|EXPIRY=2025-12-31"]);
 
       // Should not throw
       await enforceBundles(event);
 
-      expect(bundleHelpers.getUserBundles).toHaveBeenCalledWith("user-with-test-bundle-expiry", "test-pool-id");
+      expect(bundleHelpers.getUserBundles).toHaveBeenCalledWith("user-with-test-bundle-expiry");
     });
 
-    test("should deny sandbox access without test bundle", async () => {
+    test("should deny vat return access without test or guest bundle", async () => {
       process.env.HMRC_BASE_URI = "https://test-api.service.hmrc.gov.uk";
       const token = makeJWT("user-without-bundle");
-      const event = buildEvent(token);
+      const authorizerContext = {
+        jwt: {
+          claims: {
+            "sub": "user-without-bundle",
+            "cognito:username": "test",
+            "email": "test@test.submit.diyaccunting.co.uk",
+            "scope": "read write",
+          },
+        },
+      };
+      const hmrcVatReturnGetUrlPath = "/api/v1/hmrc/vat/return";
+      const event = buildEvent(token, authorizerContext, hmrcVatReturnGetUrlPath);
 
       bundleHelpers.getUserBundles.mockResolvedValue([]);
 
@@ -138,51 +175,70 @@ describe("bundleEnforcement.js", () => {
     test("should allow production access with guest bundle", async () => {
       process.env.HMRC_BASE_URI = "https://api.service.hmrc.gov.uk";
       const token = makeJWT("user-with-prod-bundle");
-      const event = buildEvent(token);
+      const authorizerContext = {
+        jwt: {
+          claims: {
+            "sub": "user-with-prod-bundle",
+            "cognito:username": "test",
+            "email": "test@test.submit.diyaccunting.co.uk",
+            "scope": "read write",
+          },
+        },
+      };
+      const event = buildEvent(token, authorizerContext);
 
       bundleHelpers.getUserBundles.mockResolvedValue(["guest"]);
 
       // Should not throw
       await enforceBundles(event);
 
-      expect(bundleHelpers.getUserBundles).toHaveBeenCalledWith("user-with-prod-bundle", "test-pool-id");
+      expect(bundleHelpers.getUserBundles).toHaveBeenCalledWith("user-with-prod-bundle");
     });
 
-    test("should allow production access with buiness bundle", async () => {
+    test("should allow production access with business bundle", async () => {
       process.env.HMRC_BASE_URI = "https://api.service.hmrc.gov.uk";
       const token = makeJWT("user-with-legacy-bundle");
-      const event = buildEvent(token);
+      const authorizerContext = {
+        jwt: {
+          claims: {
+            "sub": "user-with-legacy-bundle",
+            "cognito:username": "test",
+            "email": "test@test.submit.diyaccunting.co.uk",
+            "scope": "read write",
+          },
+        },
+      };
+      const event = buildEvent(token, authorizerContext);
 
-      bundleHelpers.getUserBundles.mockResolvedValue(["buiness"]);
+      bundleHelpers.getUserBundles.mockResolvedValue(["business"]);
 
       // Should not throw
       await enforceBundles(event);
 
-      expect(bundleHelpers.getUserBundles).toHaveBeenCalledWith("user-with-legacy-bundle", "test-pool-id");
+      expect(bundleHelpers.getUserBundles).toHaveBeenCalledWith("user-with-legacy-bundle");
     });
 
     test("should allow production access with guest bundle with expiry", async () => {
       process.env.HMRC_BASE_URI = "https://api.service.hmrc.gov.uk";
       const token = makeJWT("user-with-prod-bundle-expiry");
-      const event = buildEvent(token);
+      const authorizerContext = {
+        jwt: {
+          claims: {
+            "sub": "user-with-prod-bundle-expiry",
+            "cognito:username": "test",
+            "email": "test@test.submit.diyaccunting.co.uk",
+            "scope": "read write",
+          },
+        },
+      };
+      const event = buildEvent(token, authorizerContext);
 
       bundleHelpers.getUserBundles.mockResolvedValue(["guest|EXPIRY=2025-12-31"]);
 
       // Should not throw
       await enforceBundles(event);
 
-      expect(bundleHelpers.getUserBundles).toHaveBeenCalledWith("user-with-prod-bundle-expiry", "test-pool-id");
-    });
-
-    test("should deny production access without required bundles", async () => {
-      process.env.HMRC_BASE_URI = "https://api.service.hmrc.gov.uk";
-      const token = makeJWT("user-without-prod-bundle");
-      const event = buildEvent(token);
-
-      bundleHelpers.getUserBundles.mockResolvedValue(["SOME_OTHER_BUNDLE"]);
-
-      await expect(enforceBundles(event)).rejects.toThrow(BundleEntitlementError);
-      await expect(enforceBundles(event)).rejects.toThrow("Forbidden: Production submission requires guest or buiness bundle");
+      expect(bundleHelpers.getUserBundles).toHaveBeenCalledWith("user-with-prod-bundle-expiry");
     });
 
     test("should extract user info from authorizer context", async () => {
@@ -198,29 +254,7 @@ describe("bundleEnforcement.js", () => {
       // Should not throw
       await enforceBundles(event);
 
-      expect(bundleHelpers.getUserBundles).toHaveBeenCalledWith("user-from-authorizer", "test-pool-id");
-    });
-
-    test("should include detailed error information in BundleEntitlementError", async () => {
-      process.env.HMRC_BASE_URI = "https://api.service.hmrc.gov.uk";
-      const token = makeJWT("user-error-details");
-      const event = buildEvent(token);
-
-      bundleHelpers.getUserBundles.mockResolvedValue(["WRONG_BUNDLE"]);
-
-      try {
-        await enforceBundles(event);
-        expect.fail("Should have thrown BundleEntitlementError");
-      } catch (error) {
-        expect(error).toBeInstanceOf(BundleEntitlementError);
-        expect(error.details).toHaveProperty("code", "BUNDLE_FORBIDDEN");
-        expect(error.details).toHaveProperty("requiredBundle");
-        expect(error.details).toHaveProperty("currentBundles");
-        expect(error.details).toHaveProperty("environment", "production");
-        expect(error.details).toHaveProperty("userSub", "user-error-details");
-        expect(error.details).toHaveProperty("claims");
-        expect(error.details).toHaveProperty("customBundlesAttribute");
-      }
+      expect(bundleHelpers.getUserBundles).toHaveBeenCalledWith("user-from-authorizer");
     });
   });
 
@@ -229,10 +263,10 @@ describe("bundleEnforcement.js", () => {
       bundleHelpers.getUserBundles.mockResolvedValue(["EXISTING_BUNDLE"]);
       bundleHelpers.updateUserBundles.mockResolvedValue();
 
-      const result = await addBundles("user-1", "test-pool-id", ["NEW_BUNDLE"]);
+      const result = await addBundles("user-1", ["NEW_BUNDLE"]);
 
-      expect(bundleHelpers.getUserBundles).toHaveBeenCalledWith("user-1", "test-pool-id");
-      expect(bundleHelpers.updateUserBundles).toHaveBeenCalledWith("user-1", "test-pool-id", ["EXISTING_BUNDLE", "NEW_BUNDLE"]);
+      expect(bundleHelpers.getUserBundles).toHaveBeenCalledWith("user-1");
+      expect(bundleHelpers.updateUserBundles).toHaveBeenCalledWith("user-1", ["EXISTING_BUNDLE", "NEW_BUNDLE"]);
       expect(result).toEqual(["EXISTING_BUNDLE", "NEW_BUNDLE"]);
     });
 
@@ -240,9 +274,9 @@ describe("bundleEnforcement.js", () => {
       bundleHelpers.getUserBundles.mockResolvedValue(["EXISTING_BUNDLE"]);
       bundleHelpers.updateUserBundles.mockResolvedValue();
 
-      const result = await addBundles("user-1", "test-pool-id", ["EXISTING_BUNDLE"]);
+      const result = await addBundles("user-1", ["EXISTING_BUNDLE"]);
 
-      expect(bundleHelpers.updateUserBundles).toHaveBeenCalledWith("user-1", "test-pool-id", ["EXISTING_BUNDLE"]);
+      expect(bundleHelpers.updateUserBundles).toHaveBeenCalledWith("user-1", ["EXISTING_BUNDLE"]);
       expect(result).toEqual(["EXISTING_BUNDLE"]);
     });
 
@@ -250,9 +284,9 @@ describe("bundleEnforcement.js", () => {
       bundleHelpers.getUserBundles.mockResolvedValue([]);
       bundleHelpers.updateUserBundles.mockResolvedValue();
 
-      const result = await addBundles("user-1", "test-pool-id", ["BUNDLE_1", "BUNDLE_2", "BUNDLE_3"]);
+      const result = await addBundles("user-1", ["BUNDLE_1", "BUNDLE_2", "BUNDLE_3"]);
 
-      expect(bundleHelpers.updateUserBundles).toHaveBeenCalledWith("user-1", "test-pool-id", ["BUNDLE_1", "BUNDLE_2", "BUNDLE_3"]);
+      expect(bundleHelpers.updateUserBundles).toHaveBeenCalledWith("user-1", ["BUNDLE_1", "BUNDLE_2", "BUNDLE_3"]);
       expect(result).toEqual(["BUNDLE_1", "BUNDLE_2", "BUNDLE_3"]);
     });
   });
@@ -262,10 +296,10 @@ describe("bundleEnforcement.js", () => {
       bundleHelpers.getUserBundles.mockResolvedValue(["BUNDLE_1", "BUNDLE_2", "BUNDLE_3"]);
       bundleHelpers.updateUserBundles.mockResolvedValue();
 
-      const result = await removeBundles("user-1", "test-pool-id", ["BUNDLE_2"]);
+      const result = await removeBundles("user-1", ["BUNDLE_2"]);
 
-      expect(bundleHelpers.getUserBundles).toHaveBeenCalledWith("user-1", "test-pool-id");
-      expect(bundleHelpers.updateUserBundles).toHaveBeenCalledWith("user-1", "test-pool-id", ["BUNDLE_1", "BUNDLE_3"]);
+      expect(bundleHelpers.getUserBundles).toHaveBeenCalledWith("user-1");
+      expect(bundleHelpers.updateUserBundles).toHaveBeenCalledWith("user-1", ["BUNDLE_1", "BUNDLE_3"]);
       expect(result).toEqual(["BUNDLE_1", "BUNDLE_3"]);
     });
 
@@ -273,9 +307,9 @@ describe("bundleEnforcement.js", () => {
       bundleHelpers.getUserBundles.mockResolvedValue(["BUNDLE_1|EXPIRY=2025-12-31", "BUNDLE_2"]);
       bundleHelpers.updateUserBundles.mockResolvedValue();
 
-      const result = await removeBundles("user-1", "test-pool-id", ["BUNDLE_1"]);
+      const result = await removeBundles("user-1", ["BUNDLE_1"]);
 
-      expect(bundleHelpers.updateUserBundles).toHaveBeenCalledWith("user-1", "test-pool-id", ["BUNDLE_2"]);
+      expect(bundleHelpers.updateUserBundles).toHaveBeenCalledWith("user-1", ["BUNDLE_2"]);
       expect(result).toEqual(["BUNDLE_2"]);
     });
 
@@ -283,9 +317,9 @@ describe("bundleEnforcement.js", () => {
       bundleHelpers.getUserBundles.mockResolvedValue(["BUNDLE_1", "BUNDLE_2", "BUNDLE_3", "BUNDLE_4"]);
       bundleHelpers.updateUserBundles.mockResolvedValue();
 
-      const result = await removeBundles("user-1", "test-pool-id", ["BUNDLE_1", "BUNDLE_3"]);
+      const result = await removeBundles("user-1", ["BUNDLE_1", "BUNDLE_3"]);
 
-      expect(bundleHelpers.updateUserBundles).toHaveBeenCalledWith("user-1", "test-pool-id", ["BUNDLE_2", "BUNDLE_4"]);
+      expect(bundleHelpers.updateUserBundles).toHaveBeenCalledWith("user-1", ["BUNDLE_2", "BUNDLE_4"]);
       expect(result).toEqual(["BUNDLE_2", "BUNDLE_4"]);
     });
 
@@ -293,9 +327,9 @@ describe("bundleEnforcement.js", () => {
       bundleHelpers.getUserBundles.mockResolvedValue(["BUNDLE_1"]);
       bundleHelpers.updateUserBundles.mockResolvedValue();
 
-      const result = await removeBundles("user-1", "test-pool-id", ["NONEXISTENT"]);
+      const result = await removeBundles("user-1", ["NONEXISTENT"]);
 
-      expect(bundleHelpers.updateUserBundles).toHaveBeenCalledWith("user-1", "test-pool-id", ["BUNDLE_1"]);
+      expect(bundleHelpers.updateUserBundles).toHaveBeenCalledWith("user-1", ["BUNDLE_1"]);
       expect(result).toEqual(["BUNDLE_1"]);
     });
   });

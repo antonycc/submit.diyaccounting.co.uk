@@ -1,5 +1,6 @@
 // app/lib/hmrcHelper.js
 
+import { v4 as uuidv4 } from "uuid";
 import logger, { context } from "./logger.js";
 import { BundleEntitlementError } from "./bundleEnforcement.js";
 import { http400BadRequestResponse, http500ServerErrorResponse, http403ForbiddenResponse } from "./responses.js";
@@ -184,7 +185,8 @@ export async function hmrcHttpPost(hmrcRequestUrl, hmrcRequestHeaders, govClient
     headers: hmrcResponse.headers ?? {},
     body: hmrcResponseBody,
   };
-  if (auditForUserSub) {
+  const userSubOrUuid = auditForUserSub || `unknown-user-${uuidv4()}`;
+  if (userSubOrUuid) {
     try {
       await putHmrcApiRequest(auditForUserSub, { url: hmrcRequestUrl, httpRequest, httpResponse, duration });
     } catch (auditError) {

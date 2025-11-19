@@ -1,5 +1,6 @@
 // app/lib/responses.js
 
+import { v4 as uuidv4 } from "uuid";
 import { logger, context } from "./logger.js";
 import { putHmrcApiRequest } from "./dynamoDbHmrcApiRequestStore.js";
 
@@ -302,9 +303,10 @@ export async function performTokenExchange(providerUrl, body, auditForUserSub) {
     headers: response.headers ?? {},
     body: responseTokens,
   };
-  if (auditForUserSub) {
+  const userSubOrUuid = auditForUserSub || `unknown-user-${uuidv4()}`;
+  if (userSubOrUuid) {
     try {
-      await putHmrcApiRequest(auditForUserSub, { url: providerUrl, httpRequest, httpResponse, duration });
+      await putHmrcApiRequest(userSubOrUuid, { url: providerUrl, httpRequest, httpResponse, duration });
     } catch (auditError) {
       logger.error({
         message: "Error auditing HMRC API request/response to DynamoDB",

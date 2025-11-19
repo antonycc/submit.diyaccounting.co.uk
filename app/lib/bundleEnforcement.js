@@ -10,6 +10,17 @@ import {
 import { getUserBundles, updateUserBundles } from "./bundleHelpers.js";
 
 /**
+ * Exception class for bundle authorization failures
+ */
+export class BundleAuthorizationError extends Error {
+  constructor(message, details) {
+    super(message);
+    this.name = "BundleAuthorizationError";
+    this.details = details;
+  }
+}
+
+/**
  * Exception class for bundle enforcement failures
  */
 export class BundleEntitlementError extends Error {
@@ -28,48 +39,39 @@ export class BundleEntitlementError extends Error {
 function extractUserInfo(event) {
   logger.info({ message: "Extracting user information from event" });
 
-  // Try to get user from custom authorizer context first (X-Authorization header)
+  // Try to get user from authorizer context
   const userInfo = extractUserFromAuthorizerContext(event);
-  if (userInfo?.sub) {
+  if (!userInfo) {
+    logger.warn({ message: "No authorization token found in event" });
+    throw new BundleAuthorizationError("Missing Authorization Bearer token", {
+      code: "MISSING_AUTH_TOKEN",
+    });
+  } else if (!userInfo?.sub) {
+    logger.warn({ message: "Invalid authorization token - missing sub claim" });
+    throw new BundleAuthorizationError("Invalid Authorization token", {
+      code: "INVALID_AUTH_TOKEN",
+    });
+  } else {
+    const userSub = userInfo.sub;
     logger.info({
       message: "User info extracted from authorizer context",
-      sub: userInfo.sub,
+      sub: userSub,
       username: userInfo.username,
       claims: Object.keys(userInfo),
     });
-    return {
-      userSub: userInfo.sub,
-      claims: userInfo,
-    };
+    return userSub;
   }
-
-  // Fallback to extracting JWT from Authorization or X-Authorization header
-  const idToken = extractAuthTokenFromXAuthorization(event) || extractBearerTokenFromAuthHeaderInLambdaEvent(event);
-  if (!idToken) {
-    logger.warn({ message: "No authorization token found in event" });
-    throw new BundleEntitlementError("Missing Authorization Bearer token", {
-      code: "MISSING_AUTH_TOKEN",
-    });
-  }
-
-  const decoded = decodeJwtNoVerify(idToken);
-  if (!decoded?.sub) {
-    logger.warn({ message: "Invalid authorization token - missing sub claim" });
-    throw new BundleEntitlementError("Invalid Authorization token", {
-      code: "INVALID_AUTH_TOKEN",
-    });
-  }
-
-  logger.info({
-    message: "User info extracted from JWT token",
-    sub: decoded.sub,
-    claims: Object.keys(decoded),
-  });
-
-  return {
-    userSub: decoded.sub,
-    claims: decoded,
-  };
+  //
+  // logger.info({
+  //   message: "User info extracted from JWT token",
+  //   sub: decoded.sub,
+  //   claims: Object.keys(decoded),
+  // });
+  //
+  // return {
+  //   userSub: decoded.sub,
+  //   claims: decoded,
+  // };
 }
 
 /**
@@ -83,13 +85,12 @@ function isSandboxBase(base) {
 
 /**
  * Get user bundles from DynamoDB (via bundleHelpers which abstracts the storage)
- * @param {string} userPoolId - User Pool ID (kept for backwards compatibility, may be unused)
  * @param {string} userSub - User's sub claim
  * @returns {Promise<Array<string>>} Array of bundle strings
  */
-async function getUserBundlesFromStorage(userPoolId, userSub) {
-  logger.info({ message: "Fetching user bundles from storage", userSub, userPoolId });
-  const bundles = await getUserBundles(userSub, userPoolId);
+async function getUserBundlesFromStorage(userSub) {
+  logger.info({ message: "Fetching user bundles from storage", userSub });
+  const bundles = await getUserBundles(userSub);
   logger.info({ message: "User bundles retrieved", userSub, bundles, bundleCount: bundles.length });
   return bundles;
 }
@@ -110,7 +111,7 @@ function hasSandboxBundle(bundles, requiredBundle = "test") {
  * @param {Array<string>} allowedBundles - Array of allowed bundle names
  * @returns {boolean} True if user has any of the allowed bundles
  */
-function hasProductionBundle(bundles, allowedBundles = ["guest", "buiness"]) {
+function hasProductionBundle(bundles, allowedBundles = ["guest", "business"]) {
   return (
     bundles && bundles.some((b) => typeof b === "string" && allowedBundles.some((allowed) => b === allowed || b.startsWith(`${allowed}|`)))
   );
@@ -123,96 +124,100 @@ function hasProductionBundle(bundles, allowedBundles = ["guest", "buiness"]) {
  *
  * @param {Object} event - Lambda event object
  * @param {Object} options - Enforcement options
- * @param {boolean} options.enabled - Whether to enforce bundles (default: reads from DIY_SUBMIT_ENFORCE_BUNDLES env)
- * @param {string} options.userPoolId - Cognito User Pool ID (default: reads from COGNITO_USER_POOL_ID env)
  * @param {string} options.hmrcBase - HMRC base URI (default: reads from HMRC_BASE_URI env)
  * @param {string} options.sandboxBundle - Required bundle for sandbox (default: "test")
- * @param {Array<string>} options.productionBundles - Required bundles for production (default: [guest, buiness])
+ * @param {Array<string>} options.productionBundles - Required bundles for production (default: [guest, business])
  * @throws {BundleEntitlementError} If bundle requirements are not met
  */
 export async function enforceBundles(event, options = {}) {
   const {
-    enabled = String(process.env.DIY_SUBMIT_ENFORCE_BUNDLES || "").toLowerCase() === "true" ||
-      process.env.DIY_SUBMIT_ENFORCE_BUNDLES === "1",
-    userPoolId = process.env.COGNITO_USER_POOL_ID,
+    // enabled = String(process.env.DIY_SUBMIT_ENFORCE_BUNDLES || "").toLowerCase() === "true" ||
+    //  process.env.DIY_SUBMIT_ENFORCE_BUNDLES === "1",
+    // userPoolId = process.env.COGNITO_USER_POOL_ID,
     hmrcBase = process.env.HMRC_BASE_URI,
     sandboxBundle = "test",
-    productionBundles = ["guest", "buiness"],
+    productionBundles = ["guest", "business"],
   } = options;
 
   logger.info({
     message: "enforceBundles called",
-    enabled,
+    // enabled,
     hmrcBase,
     sandboxBundle,
     productionBundles,
   });
 
-  // Skip enforcement if disabled
-  if (!enabled || !userPoolId) {
-    logger.info({ message: "Bundle enforcement is disabled or userPoolId not configured", enabled, userPoolId: !!userPoolId });
-    return undefined;
-  }
-
   // Extract user information
-  const { userSub, claims } = extractUserInfo(event);
+  const userSub = extractUserInfo(event);
+
+  // Skip enforcement if disabled
+  // if (!enabled || !userPoolId) {
+  // if (!userPoolId) {
+  //  logger.info({ message: "Bundle enforcement is disabled or userPoolId not configured", enabled, userPoolId: !!userPoolId });
+  //  return userSub;
+  // }
 
   // Get user bundles from storage (DynamoDB or mock store)
-  const bundles = await getUserBundlesFromStorage(userPoolId, userSub);
+  // const bundles = await getUserBundlesFromStorage(userPoolId, userSub);
+  const bundles = await getUserBundlesFromStorage(userSub);
+
+  // Calculate required bundles by seeing which activities in the catalog match this events URL path and require bundles
+  const requiredBundles;
 
   // Determine environment (sandbox vs production)
-  const sandbox = isSandboxBase(hmrcBase);
+  // const sandbox = isSandboxBase(hmrcBase);
 
   logger.info({
     message: "Checking bundle entitlements",
     userSub,
-    sandbox,
-    requiredBundles: sandbox ? [sandboxBundle] : productionBundles,
+    // sandbox,
+    // requiredBundles: sandbox ? [sandboxBundle] : productionBundles,
     currentBundles: bundles,
     bundleCount: bundles.length,
   });
 
-  if (sandbox) {
-    // Sandbox environment requires test bundle
-    if (!hasSandboxBundle(bundles, sandboxBundle)) {
-      const errorDetails = {
-        code: "BUNDLE_FORBIDDEN",
-        requiredBundle: sandboxBundle,
-        currentBundles: bundles,
-        environment: "sandbox",
-        userSub,
-        claims,
-        customBundlesAttribute: bundles.join("|"),
-      };
-
-      logger.error({
-        message: "Bundle entitlement check failed for sandbox",
-        ...errorDetails,
-      });
-
-      throw new BundleEntitlementError(`Forbidden: HMRC Sandbox submission requires ${sandboxBundle} bundle`, errorDetails);
-    }
-  } else {
-    // Production environment requires guest or buiness bundle
-    if (!hasProductionBundle(bundles, productionBundles)) {
-      const errorDetails = {
-        code: "BUNDLE_FORBIDDEN",
-        requiredBundle: productionBundles,
-        currentBundles: bundles,
-        environment: "production",
-        userSub,
-        claims,
-        customBundlesAttribute: bundles.join("|"),
-      };
-
-      logger.error({
-        message: "Bundle entitlement check failed for production",
-        ...errorDetails,
-      });
-
-      throw new BundleEntitlementError(`Forbidden: Production submission requires ${productionBundles.join(" or ")} bundle`, errorDetails);
-    }
-  }
+  // TODO: Change the logic to compare the request URL against the activity paths
+  // if (sandbox) {
+  //   // Sandbox environment requires test bundle
+  //   if (!hasSandboxBundle(bundles, sandboxBundle)) {
+  //     const errorDetails = {
+  //       code: "BUNDLE_FORBIDDEN",
+  //       requiredBundle: sandboxBundle,
+  //       currentBundles: bundles,
+  //       environment: "sandbox",
+  //       userSub,
+  //       claims,
+  //       customBundlesAttribute: bundles.join("|"),
+  //     };
+  //
+  //     logger.error({
+  //       message: "Bundle entitlement check failed for sandbox",
+  //       ...errorDetails,
+  //     });
+  //
+  //     throw new BundleEntitlementError(`Forbidden: HMRC Sandbox submission requires ${sandboxBundle} bundle`, errorDetails);
+  //   }
+  // } else {
+  //   // Production environment requires guest or business bundle
+  //   if (!hasProductionBundle(bundles, productionBundles)) {
+  //     const errorDetails = {
+  //       code: "BUNDLE_FORBIDDEN",
+  //       requiredBundle: productionBundles,
+  //       currentBundles: bundles,
+  //       environment: "production",
+  //       userSub,
+  //       claims,
+  //       customBundlesAttribute: bundles.join("|"),
+  //     };
+  //
+  //     logger.error({
+  //       message: "Bundle entitlement check failed for production",
+  //       ...errorDetails,
+  //     });
+  //
+  //     throw new BundleEntitlementError(`Forbidden: Production submission requires ${productionBundles.join(" or ")} bundle`, errorDetails);
+  //   }
+  // }
 
   logger.info({
     message: "Bundle entitlement check passed",
@@ -263,18 +268,17 @@ export async function addBundles(userId, userPoolId, bundlesToAdd) {
  * Remove bundles from a user's entitlements
  *
  * @param {string} userId - User ID (sub claim)
- * @param {string} userPoolId - Cognito User Pool ID
  * @param {Array<string>} bundlesToRemove - Array of bundle strings to remove
  */
-export async function removeBundles(userId, userPoolId, bundlesToRemove) {
+export async function removeBundles(userId, bundlesToRemove) {
   logger.info({ message: "removeBundles called", userId, bundlesToRemove });
 
-  const currentBundles = await getUserBundles(userId, userPoolId);
+  const currentBundles = await getUserBundles(userId);
   const newBundles = currentBundles.filter((bundle) => {
     return !bundlesToRemove.some((toRemove) => bundle === toRemove || bundle.startsWith(`${toRemove}|`));
   });
 
-  await updateUserBundles(userId, userPoolId, newBundles);
+  await updateUserBundles(userId, newBundles);
 
   logger.info({
     message: "Bundles removed successfully",

@@ -13,10 +13,10 @@ export function isMockMode() {
 /**
  * Get user bundles from DynamoDB (or mock store in test mode)
  * @param {string} userId - User ID (sub claim)
- * @param {string} _userPoolId - (Deprecated, kept for backwards compatibility)
  * @returns {Promise<Array<string>>} Array of bundle strings
  */
-export async function getUserBundles(userId, _userPoolId) {
+export async function getUserBundles(userId) {
+  // TODO: Remove this mock mode stuff and move the mockery into tests
   if (isMockMode()) {
     const bundles = mockBundleStore.get(userId) || [];
     logger.info({ message: "[MOCK] Current user bundles:", bundles });
@@ -32,10 +32,10 @@ export async function getUserBundles(userId, _userPoolId) {
 /**
  * Update user bundles in DynamoDB (or mock store in test mode)
  * @param {string} userId - User ID (sub claim)
- * @param {string} _userPoolId - (Deprecated, kept for backwards compatibility)
  * @param {Array<string>} bundles - Array of bundle strings
  */
-export async function updateUserBundles(userId, _userPoolId, bundles) {
+export async function updateUserBundles(userId, bundles) {
+  // TODO: Remove this mock mode stuff and move the mockery into tests
   if (isMockMode()) {
     mockBundleStore.set(userId, bundles);
     logger.info({ message: `[MOCK] Updated bundles for user ${userId}`, bundles });
