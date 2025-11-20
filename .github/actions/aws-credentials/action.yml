@@ -1,0 +1,39 @@
+name: "Configure AWS Credentials"
+description: "Configure AWS credentials via OIDC and assume deployment role"
+
+inputs:
+  actions-role-arn:
+    description: "AWS IAM role ARN for GitHub Actions"
+    required: true
+  deploy-role-arn:
+    description: "AWS IAM role ARN for deployment"
+    required: true
+  aws-region:
+    description: "AWS region"
+    required: true
+    default: "eu-west-2"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Configure AWS role via GitHub OIDC
+      uses: aws-actions/configure-aws-credentials@v5
+      with:
+        role-to-assume: ${{ inputs.actions-role-arn }}
+        aws-region: ${{ inputs.aws-region }}
+        role-chaining: false
+        audience: sts.amazonaws.com
+        role-skip-session-tagging: true
+        output-credentials: true
+        retry-max-attempts: 3
+
+    - name: Assume AWS deployment role
+      uses: aws-actions/configure-aws-credentials@v5
+      with:
+        role-to-assume: ${{ inputs.deploy-role-arn }}
+        aws-region: ${{ inputs.aws-region }}
+        role-chaining: true
+        audience: sts.amazonaws.com
+        role-skip-session-tagging: true
+        output-credentials: true
+        retry-max-attempts: 3
