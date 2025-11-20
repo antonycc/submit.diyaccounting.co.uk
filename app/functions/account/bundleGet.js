@@ -87,7 +87,7 @@ export function extractAndValidateParameters(event, errorMessages) {
 
 // HTTP request/response, aware Lambda handler function
 export async function handler(event) {
-  validateEnv(["COGNITO_USER_POOL_ID"]);
+  validateEnv(["COGNITO_USER_POOL_ID", "BUNDLE_DYNAMODB_TABLE_NAME"]);
 
   const { request } = extractRequest(event);
   const errorMessages = [];

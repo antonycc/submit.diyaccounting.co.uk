@@ -24,7 +24,7 @@ async function getDynamoDbDocClient() {
  * @returns {boolean} True if DynamoDB table name is configured
  */
 export function isDynamoDbEnabled() {
-  return Boolean(process.env.BUNDLE_DYNAMODB_TABLE_NAME);
+  return Boolean(process.env.BUNDLE_DYNAMODB_TABLE_NAME && process.env.BUNDLE_DYNAMODB_TABLE_NAME !== "test-bundle-table");
 }
 
 /**
@@ -150,7 +150,7 @@ export async function putBundle(userId, bundleStr) {
       userId,
       bundleStr,
     });
-    // Don't throw - this is shadow write, should not fail the main operation
+    throw error;
   }
 }
 
@@ -192,7 +192,7 @@ export async function deleteBundle(userId, bundleId) {
       userId,
       bundleId,
     });
-    // Don't throw - this is shadow write, should not fail the main operation
+    throw error;
   }
 }
 
@@ -243,7 +243,7 @@ export async function deleteAllBundles(userId) {
       error: error.message,
       userId,
     });
-    // Don't throw - this is shadow write, should not fail the main operation
+    throw error;
   }
 }
 

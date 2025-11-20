@@ -22,6 +22,7 @@ describe("hmrcTokenPost handler (new tests)", () => {
       HMRC_CLIENT_ID: "test-client-id",
       HMRC_CLIENT_SECRET: "test-client-secret",
       DIY_SUBMIT_BASE_URL: "https://submit.diyaccounting.co.uk",
+      HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME: "test-hmrc-requests-table",
     };
   });
 

@@ -106,6 +106,6 @@ export async function grantPermissionHmrcAuth(page, screenshotPath = defaultScre
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-give-permission-hmrc-auth.png` });
     await page.keyboard.press("PageDown");
     await page.waitForTimeout(200);
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-0=4-give-permission-hmrc-auth.png` });
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-give-permission-hmrc-auth.png` });
   });
 }

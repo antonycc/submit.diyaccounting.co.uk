@@ -72,8 +72,9 @@ export async function handler(event) {
   let errorMessages = [];
 
   // Bundle enforcement
+  let userSub;
   try {
-    await enforceBundles(event);
+    userSub = await enforceBundles(event);
   } catch (error) {
     return http403ForbiddenFromBundleEnforcement(error, request);
   }
@@ -130,6 +131,7 @@ export async function handler(event) {
       hmrcAccount,
       hmrcAccessToken,
       govClientHeaders,
+      userSub,
     ));
   } catch (error) {
     // Preserve original behavior expected by tests: bubble up network errors
@@ -157,7 +159,7 @@ export async function handler(event) {
 }
 
 // Service adaptor for aware of the downstream service but not the consuming Lambda's incoming/outgoing HTTP request/response
-export async function submitVat(periodKey, vatDue, vatNumber, hmrcAccount, hmrcAccessToken, govClientHeaders) {
+export async function submitVat(periodKey, vatDue, vatNumber, hmrcAccount, hmrcAccessToken, govClientHeaders, auditForUserSub) {
   const hmrcRequestHeaders = {
     "Content-Type": "application/json",
     "Accept": "application/vnd.hmrc.1.0+json",
@@ -198,7 +200,13 @@ export async function submitVat(periodKey, vatDue, vatNumber, hmrcAccount, hmrcA
     });
   } else {
     // Perform real HTTP call
-    ({ hmrcResponse, hmrcResponseBody } = await hmrcHttpPost(hmrcRequestUrl, hmrcRequestHeaders, govClientHeaders, hmrcRequestBody));
+    ({ hmrcResponse, hmrcResponseBody } = await hmrcHttpPost(
+      hmrcRequestUrl,
+      hmrcRequestHeaders,
+      govClientHeaders,
+      hmrcRequestBody,
+      auditForUserSub,
+    ));
   }
 
   return { hmrcRequestBody, receipt: hmrcResponseBody, hmrcResponse, hmrcResponseBody, hmrcRequestUrl };

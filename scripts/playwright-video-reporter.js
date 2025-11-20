@@ -30,7 +30,11 @@ class StableVideoReporter {
 
     const tryCopy = (videoFilePath) => {
       const attPath = path.resolve(videoFilePath);
-      const isBehaviour = attPath.includes(`${path.sep}target${path.sep}behaviour-test-results${path.sep}`);
+      // Determine whether this test belongs to behaviour-tests using either
+      // its file location or the artifact path fallback.
+      const isBehaviourByFile = Boolean(test?.location?.file && test.location.file.includes(`${path.sep}behaviour-tests${path.sep}`));
+      const isBehaviourByPath = attPath.includes(`${path.sep}target${path.sep}behaviour-test-results${path.sep}`);
+      const isBehaviour = isBehaviourByFile || isBehaviourByPath;
       if (!isBehaviour) return false;
       try {
         const stableDir = path.resolve("target/behaviour-test-results");

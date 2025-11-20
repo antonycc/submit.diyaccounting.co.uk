@@ -1,6 +1,7 @@
 // app/lib/responses.js
 
 import { logger, context } from "./logger.js";
+import { putHmrcApiRequest } from "./dynamoDbHmrcApiRequestStore.js";
 
 export function http200OkResponse({ request, headers, data }) {
   const merged = { ...(headers || {}) };
@@ -75,8 +76,7 @@ export function http401UnauthorizedResponse({ request, headers, message, error }
 function httpResponse({ statusCode, headers, data, request, levelledLogger }) {
   const merged = { ...(headers || {}) };
   // Always provide an x-request-id for client correlation; generate if not supplied
-  const reqId = context.get("requestId") || String(Date.now());
-  merged["x-request-id"] = reqId;
+  merged["x-request-id"] = context.get("requestId") || String(Date.now());
   if (context.get("amznTraceId")) merged["x-amzn-trace-id"] = context.get("amznTraceId");
   if (context.get("traceparent")) merged["traceparent"] = context.get("traceparent");
   const response = {
@@ -243,7 +243,7 @@ export function buildValidationError(request, errorMessages, govClientHeaders = 
   });
 }
 
-export async function performTokenExchange(providerUrl, body) {
+export async function performTokenExchange(providerUrl, body, auditForUserSub) {
   const requestHeaders = {
     "Content-Type": "application/x-www-form-urlencoded",
     ...(context.get("requestId") ? { "x-request-id": context.get("requestId") } : {}),
@@ -260,6 +260,12 @@ export async function performTokenExchange(providerUrl, body) {
     body: requestBody.toString(),
   });
 
+  let duration = 0;
+  const httpRequest = {
+    method: "POST",
+    headers: { ...requestHeaders },
+    body: requestBody,
+  };
   if (process.env.NODE_ENV === "stubbed") {
     logger.warn({ message: "httpPostMock called in stubbed mode, using test access token" });
     const testAccessToken = process.env.TEST_ACCESS_TOKEN;
@@ -271,11 +277,9 @@ export async function performTokenExchange(providerUrl, body) {
     };
   } else {
     logger.info({ message: "Performing real HTTP POST for token exchange", providerUrl });
-    response = await fetch(providerUrl, {
-      method: "POST",
-      headers: { ...requestHeaders },
-      body: requestBody,
-    });
+    const startTime = new Date().getTime();
+    response = await fetch(providerUrl, httpRequest);
+    duration = new Date().getTime() - startTime;
   }
 
   let responseTokens;
@@ -290,6 +294,23 @@ export async function performTokenExchange(providerUrl, body) {
     } catch {
       logger.error({ message: "Failed to parse response as text, returning empty tokens" });
       responseTokens = {};
+    }
+  }
+
+  const httpResponse = {
+    statusCode: response.status,
+    headers: response.headers ?? {},
+    body: responseTokens,
+  };
+  if (auditForUserSub) {
+    try {
+      await putHmrcApiRequest(auditForUserSub, { url: providerUrl, httpRequest, httpResponse, duration });
+    } catch (auditError) {
+      logger.error({
+        message: "Error auditing HMRC API request/response to DynamoDB",
+        error: auditError.message,
+        stack: auditError.stack,
+      });
     }
   }
 
@@ -311,11 +332,11 @@ export async function performTokenExchange(providerUrl, body) {
   const responseBody = { ...responseTokens };
   delete responseBody.access_token;
 
-  return { accessToken, response, responseBody };
+  return { accessToken, response: response, responseBody };
 }
 
-export async function buildTokenExchangeResponse(request, url, body) {
-  const { accessToken, response, responseBody } = await performTokenExchange(url, body);
+export async function buildTokenExchangeResponse(request, url, body, auditForUserSub = undefined) {
+  const { accessToken, response, responseBody } = await performTokenExchange(url, body, auditForUserSub);
 
   if (!response.ok) {
     logger.error({

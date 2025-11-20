@@ -151,7 +151,7 @@ export async function enforceBundles(event, options = {}) {
   // Skip enforcement if disabled
   if (!enabled || !userPoolId) {
     logger.info({ message: "Bundle enforcement is disabled or userPoolId not configured", enabled, userPoolId: !!userPoolId });
-    return;
+    return undefined;
   }
 
   // Extract user information
@@ -222,6 +222,8 @@ export async function enforceBundles(event, options = {}) {
       ? bundles.filter((b) => b === sandboxBundle || b.startsWith(`${sandboxBundle}|`))
       : bundles.filter((b) => productionBundles.some((allowed) => b === allowed || b.startsWith(`${allowed}|`))),
   });
+
+  return userSub;
 }
 
 /**

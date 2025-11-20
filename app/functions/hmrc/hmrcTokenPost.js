@@ -42,7 +42,14 @@ export function extractAndValidateParameters(event, errorMessages) {
 // HTTP request/response, aware Lambda handler function
 export async function handler(event) {
   // Allow local/dev override via HMRC_CLIENT_SECRET. Only require ARN if override is not supplied.
-  const required = ["HMRC_BASE_URI", "HMRC_CLIENT_ID", "HMRC_SANDBOX_BASE_URI", "HMRC_SANDBOX_CLIENT_ID", "DIY_SUBMIT_BASE_URL"];
+  const required = [
+    "HMRC_BASE_URI",
+    "HMRC_CLIENT_ID",
+    "HMRC_SANDBOX_BASE_URI",
+    "HMRC_SANDBOX_CLIENT_ID",
+    "DIY_SUBMIT_BASE_URL",
+    "HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME",
+  ];
   if (!process.env.HMRC_CLIENT_SECRET) required.push("HMRC_CLIENT_SECRET_ARN");
   if (!process.env.HMRC_SANDBOX_CLIENT_SECRET) required.push("HMRC_SANDBOX_CLIENT_SECRET_ARN");
   validateEnv(required);
@@ -51,8 +58,9 @@ export async function handler(event) {
   const errorMessages = [];
 
   // Bundle enforcement
+  let userSub;
   try {
-    await enforceBundles(event);
+    userSub = await enforceBundles(event);
   } catch (error) {
     return http403ForbiddenFromBundleEnforcement(error, request);
   }
@@ -69,8 +77,9 @@ export async function handler(event) {
 
   // Processing
   logger.info({ message: "Exchanging authorization code for HMRC access token" });
+  // TODO: Simplify this and/or rename because exchangeCodeForToken does not do the exchange, it just creates the body
   const tokenResponse = await exchangeCodeForToken(code, hmrcAccount);
-  return buildTokenExchangeResponse(request, tokenResponse.url, tokenResponse.body);
+  return buildTokenExchangeResponse(request, tokenResponse.url, tokenResponse.body, userSub);
 }
 
 // Service adaptor aware of the downstream service but not the consuming Lambda's incoming/outgoing HTTP request/response

@@ -1,9 +1,5 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-import static co.uk.diyaccounting.submit.utils.S3.createLifecycleRules;
-
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
 import org.immutables.value.Value;
@@ -25,10 +21,15 @@ import software.amazon.awscdk.services.s3.IBucket;
 import software.amazon.awscdk.services.s3.ObjectOwnership;
 import software.constructs.Construct;
 
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+import static co.uk.diyaccounting.submit.utils.S3.createLifecycleRules;
+
 public class DataStack extends Stack {
 
     public IBucket receiptsBucket;
     public ITable bundlesTable;
+    public ITable hmrcApiRequestsTable;
 
     @Value.Immutable
     public interface DataStackProps extends StackProps, SubmitStackProps {
@@ -89,7 +90,7 @@ public class DataStack extends Stack {
                 this.receiptsBucket.getBucketName(),
                 this.receiptsBucket.getNode().getId());
 
-        // Create DynamoDB table for bundle storage (shadow write)
+        // Create DynamoDB table for bundle storage
         this.bundlesTable = Table.Builder.create(this, props.resourceNamePrefix() + "-BundlesTable")
                 .tableName(props.sharedNames().bundlesTableName)
                 .partitionKey(Attribute.builder()
@@ -108,12 +109,34 @@ public class DataStack extends Stack {
                 "Created bundles DynamoDB table with name %s and id %s",
                 this.bundlesTable.getTableName(), this.bundlesTable.getNode().getId());
 
+        // Create DynamoDB table for HMRC API requests storage
+        this.hmrcApiRequestsTable = Table.Builder.create(this, props.resourceNamePrefix() + "-HmrcApiRequestsTable")
+            .tableName(props.sharedNames().hmrcApiRequestsTableName)
+            .partitionKey(Attribute.builder()
+                .name("hashedSub")
+                .type(AttributeType.STRING)
+                .build())
+            .sortKey(Attribute.builder()
+                .name("requestId")
+                .type(AttributeType.STRING)
+                .build())
+            .billingMode(BillingMode.PAY_PER_REQUEST) // Serverless, near-zero cost at rest
+            .timeToLiveAttribute("ttl") // Enable TTL for automatic expiry handling
+            .removalPolicy(RemovalPolicy.DESTROY) // Safe to destroy in non-prod
+            .build();
+        infof(
+            "Created HMRC API Requests DynamoDB table with name %s and id %s",
+            this.bundlesTable.getTableName(), this.hmrcApiRequestsTable.getNode().getId());
+
+
         Aspects.of(this).add(new SetAutoDeleteJobLogRetentionAspect(props.deploymentName(), RetentionDays.THREE_DAYS));
 
         cfnOutput(this, "ReceiptsBucketName", this.receiptsBucket.getBucketName());
         cfnOutput(this, "ReceiptsBucketArn", this.receiptsBucket.getBucketArn());
         cfnOutput(this, "BundlesTableName", this.bundlesTable.getTableName());
         cfnOutput(this, "BundlesTableArn", this.bundlesTable.getTableArn());
+        cfnOutput(this, "HmrcApiRequestsTableName", this.hmrcApiRequestsTable.getTableName());
+        cfnOutput(this, "HmrcApiRequestsArn", this.hmrcApiRequestsTable.getTableArn());
 
         infof(
                 "DataStack %s created successfully for %s",
