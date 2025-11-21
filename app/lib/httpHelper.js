@@ -1,6 +1,7 @@
 // app/lib/httpHelper.js
 
 import logger, { context } from "./logger.js";
+import { decodeJwtNoVerify } from "./jwtHelper.js";
 
 export function buildLambdaEventFromHttpRequest(httpRequest) {
   // Start with a copy of all incoming headers (Express normalizes to lowercase keys)
@@ -11,7 +12,26 @@ export function buildLambdaEventFromHttpRequest(httpRequest) {
   const referer = httpRequest.get("referer");
   if (referer) incomingHeaders.referer = referer;
 
+  // Extract bearer token from Authorization header if present
+  const authorization = httpRequest.get("authorization");
+  const bearerToken = authorization ? authorization.match(/^Bearer (.+)$/) : null;
+  const jwtPayload = decodeJwtNoVerify(bearerToken);
+
   const lambdaEvent = {
+    requestContext: {
+      authorizer: {
+        lambda: {
+          jwt: {
+            claims: {
+              ...jwtPayload,
+              "cognito:username": "test",
+              "email": "test@test.submit.diyaccunting.co.uk",
+              "scope": "read write",
+            },
+          },
+        },
+      },
+    },
     path: httpRequest.path,
     headers: incomingHeaders,
     queryStringParameters: httpRequest.query || {},

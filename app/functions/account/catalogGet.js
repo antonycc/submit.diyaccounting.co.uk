@@ -23,12 +23,7 @@ export async function handler(event) {
   const { request } = extractRequest(event);
   const responseHeaders = { "Content-Type": "application/json" };
 
-  // Bundle enforcement
-  try {
-    await enforceBundles(event);
-  } catch (error) {
-    return http403ForbiddenFromBundleEnforcement(error, request);
-  }
+  // No bundle enforcement
 
   logger.info({ message: "Retrieving product catalog" });
 

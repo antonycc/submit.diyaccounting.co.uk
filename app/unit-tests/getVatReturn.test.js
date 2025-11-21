@@ -34,6 +34,21 @@ describe("getVatReturn handler", () => {
 
   test("should retrieve VAT return successfully", async () => {
     const event = {
+      requestContext: {
+        requestId: "test-request-id",
+        authorizer: {
+          lambda: {
+            jwt: {
+              claims: {
+                "sub": "test-sub",
+                "cognito:username": "test",
+                "email": "test@test.submit.diyaccunting.co.uk",
+                "scope": "read write",
+              },
+            },
+          },
+        },
+      },
       queryStringParameters: {
         vrn: "111222333",
         periodKey: "24A1",
@@ -59,6 +74,21 @@ describe("getVatReturn handler", () => {
 
   test("should retrieve VAT return with Gov-Test-Scenario", async () => {
     const event = {
+      requestContext: {
+        requestId: "test-request-id",
+        authorizer: {
+          lambda: {
+            jwt: {
+              claims: {
+                "sub": "test-sub",
+                "cognito:username": "test",
+                "email": "test@test.submit.diyaccunting.co.uk",
+                "scope": "read write",
+              },
+            },
+          },
+        },
+      },
       queryStringParameters: {
         "vrn": "111222333",
         "Gov-Test-Scenario": "SINGLE_LIABILITY",
@@ -81,6 +111,21 @@ describe("getVatReturn handler", () => {
 
   test("should return 400 when vrn is missing", async () => {
     const event = {
+      requestContext: {
+        requestId: "test-request-id",
+        authorizer: {
+          lambda: {
+            jwt: {
+              claims: {
+                "sub": "test-sub",
+                "cognito:username": "test",
+                "email": "test@test.submit.diyaccunting.co.uk",
+                "scope": "read write",
+              },
+            },
+          },
+        },
+      },
       queryStringParameters: {},
       pathParameters: {
         periodKey: "24A1",
@@ -100,6 +145,21 @@ describe("getVatReturn handler", () => {
 
   test("should return 400 when periodKey is missing", async () => {
     const event = {
+      requestContext: {
+        requestId: "test-request-id",
+        authorizer: {
+          lambda: {
+            jwt: {
+              claims: {
+                "sub": "test-sub",
+                "cognito:username": "test",
+                "email": "test@test.submit.diyaccunting.co.uk",
+                "scope": "read write",
+              },
+            },
+          },
+        },
+      },
       queryStringParameters: {
         vrn: "111222333",
       },
@@ -119,6 +179,21 @@ describe("getVatReturn handler", () => {
 
   test("should return 400 when vrn format is invalid", async () => {
     const event = {
+      requestContext: {
+        requestId: "test-request-id",
+        authorizer: {
+          lambda: {
+            jwt: {
+              claims: {
+                "sub": "test-sub",
+                "cognito:username": "test",
+                "email": "test@test.submit.diyaccunting.co.uk",
+                "scope": "read write",
+              },
+            },
+          },
+        },
+      },
       queryStringParameters: {
         vrn: "invalid-vrn",
       },
@@ -140,6 +215,21 @@ describe("getVatReturn handler", () => {
 
   test("should return 400 when periodKey format is invalid", async () => {
     const event = {
+      requestContext: {
+        requestId: "test-request-id",
+        authorizer: {
+          lambda: {
+            jwt: {
+              claims: {
+                "sub": "test-sub",
+                "cognito:username": "test",
+                "email": "test@test.submit.diyaccunting.co.uk",
+                "scope": "read write",
+              },
+            },
+          },
+        },
+      },
       queryStringParameters: {
         vrn: "111222333",
       },
@@ -161,6 +251,21 @@ describe("getVatReturn handler", () => {
 
   test("should return 400 when authorization header is missing", async () => {
     const event = {
+      requestContext: {
+        requestId: "test-request-id",
+        authorizer: {
+          lambda: {
+            jwt: {
+              claims: {
+                "sub": "test-sub",
+                "cognito:username": "test",
+                "email": "test@test.submit.diyaccunting.co.uk",
+                "scope": "read write",
+              },
+            },
+          },
+        },
+      },
       queryStringParameters: {
         vrn: "111222333",
       },
@@ -197,6 +302,21 @@ describe("getVatReturn handler", () => {
     });
 
     const event = {
+      requestContext: {
+        requestId: "test-request-id",
+        authorizer: {
+          lambda: {
+            jwt: {
+              claims: {
+                "sub": "test-sub",
+                "cognito:username": "test",
+                "email": "test@test.submit.diyaccunting.co.uk",
+                "scope": "read write",
+              },
+            },
+          },
+        },
+      },
       queryStringParameters: {
         vrn: "111222333",
       },
@@ -237,6 +357,21 @@ describe("getVatReturn handler", () => {
     });
 
     const event = {
+      requestContext: {
+        requestId: "test-request-id",
+        authorizer: {
+          lambda: {
+            jwt: {
+              claims: {
+                "sub": "test-sub",
+                "cognito:username": "test",
+                "email": "test@test.submit.diyaccunting.co.uk",
+                "scope": "read write",
+              },
+            },
+          },
+        },
+      },
       queryStringParameters: {
         vrn: "111222333",
       },
@@ -269,6 +404,21 @@ describe("getVatReturn handler", () => {
     });
 
     const event = {
+      requestContext: {
+        requestId: "test-request-id",
+        authorizer: {
+          lambda: {
+            jwt: {
+              claims: {
+                "sub": "test-sub",
+                "cognito:username": "test",
+                "email": "test@test.submit.diyaccunting.co.uk",
+                "scope": "read write",
+              },
+            },
+          },
+        },
+      },
       queryStringParameters: {
         vrn: "111222333",
       },

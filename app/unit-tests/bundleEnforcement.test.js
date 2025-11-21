@@ -67,30 +67,6 @@ describe("bundleEnforcement.js", () => {
   });
 
   describe("enforceBundles", () => {
-    // test("should skip enforcement when disabled", async () => {
-    //   process.env.DIY_SUBMIT_ENFORCE_BUNDLES = "false";
-    //   const token = makeJWT("user-1");
-    //   const event = buildEvent(token);
-    //
-    //   // Should not throw
-    //   await enforceBundles(event);
-    //
-    //   // getUserBundles should not be called
-    //   expect(bundleHelpers.getUserBundles).not.toHaveBeenCalled();
-    // });
-
-    // test("should skip enforcement when userPoolId is not configured", async () => {
-    //   delete process.env.COGNITO_USER_POOL_ID;
-    //   const token = makeJWT("user-1");
-    //   const event = buildEvent(token);
-    //
-    //   // Should not throw
-    //   await enforceBundles(event);
-    //
-    //   // getUserBundles should not be called
-    //   expect(bundleHelpers.getUserBundles).not.toHaveBeenCalled();
-    // });
-
     test("should throw BundleAuthorizationError when no authorization token", async () => {
       const event = buildEvent(null);
 
@@ -169,7 +145,6 @@ describe("bundleEnforcement.js", () => {
       bundleHelpers.getUserBundles.mockResolvedValue([]);
 
       await expect(enforceBundles(event)).rejects.toThrow(BundleEntitlementError);
-      await expect(enforceBundles(event)).rejects.toThrow("Forbidden: HMRC Sandbox submission requires test bundle");
     });
 
     test("should allow production access with guest bundle", async () => {

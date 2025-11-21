@@ -47,6 +47,21 @@ describe("Integration – VAT API Endpoints (Direct Handler Testing)", () => {
 
   it("should validate VRN format consistently", async () => {
     const invalidEvent = {
+      requestContext: {
+        requestId: "test-request-id",
+        authorizer: {
+          lambda: {
+            jwt: {
+              claims: {
+                "sub": "test-sub",
+                "cognito:username": "test",
+                "email": "test@test.submit.diyaccunting.co.uk",
+                "scope": "read write",
+              },
+            },
+          },
+        },
+      },
       queryStringParameters: { vrn: "invalid-vrn" },
       headers: { authorization: "Bearer test-access-token" },
     };
@@ -60,6 +75,21 @@ describe("Integration – VAT API Endpoints (Direct Handler Testing)", () => {
 
   it("should require authorization for all endpoints", async () => {
     const noAuthEvent = {
+      requestContext: {
+        requestId: "test-request-id",
+        authorizer: {
+          lambda: {
+            jwt: {
+              claims: {
+                "sub": "test-sub",
+                "cognito:username": "test",
+                "email": "test@test.submit.diyaccunting.co.uk",
+                "scope": "read write",
+              },
+            },
+          },
+        },
+      },
       queryStringParameters: { vrn: "111222333" },
       headers: {},
     };
@@ -83,6 +113,21 @@ describe("Integration – VAT API Endpoints (Direct Handler Testing)", () => {
 
   it("should handle Gov-Test-Scenario headers", async () => {
     const eventWithScenario = {
+      requestContext: {
+        requestId: "test-request-id",
+        authorizer: {
+          lambda: {
+            jwt: {
+              claims: {
+                "sub": "test-sub",
+                "cognito:username": "test",
+                "email": "test@test.submit.diyaccunting.co.uk",
+                "scope": "read write",
+              },
+            },
+          },
+        },
+      },
       queryStringParameters: {
         "vrn": "111222333",
         "Gov-Test-Scenario": "QUARTERLY_NONE_MET",

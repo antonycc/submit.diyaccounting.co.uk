@@ -25,6 +25,21 @@ function makeIdToken(sub = "user-1", extra = {}) {
 
 function buildEvent(token, body) {
   return {
+    requestContext: {
+      requestId: "test-request-id",
+      authorizer: {
+        lambda: {
+          jwt: {
+            claims: {
+              "sub": "test-sub",
+              "cognito:username": "test",
+              "email": "test@test.submit.diyaccunting.co.uk",
+              "scope": "read write",
+            },
+          },
+        },
+      },
+    },
     headers: token ? { Authorization: `Bearer ${token}` } : {},
     body: JSON.stringify(body || {}),
   };

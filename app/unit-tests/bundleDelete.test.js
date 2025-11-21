@@ -41,9 +41,42 @@ describe("bundleDelete.js not_found path (MOCK mode)", () => {
     const token = makeIdToken("user-not-found");
 
     // Ensure user has a different bundle so delete-by-id misses
-    await bundlePost({ headers: authHeaders(token), body: JSON.stringify({ bundleId: "some-other" }) });
+    await bundlePost({
+      requestContext: {
+        requestId: "test-request-id",
+        authorizer: {
+          lambda: {
+            jwt: {
+              claims: {
+                "sub": "user-not-found",
+                "cognito:username": "test",
+                "email": "test@test.submit.diyaccunting.co.uk",
+                "scope": "read write",
+              },
+            },
+          },
+        },
+      },
+      headers: authHeaders(token),
+      body: JSON.stringify({ bundleId: "some-other" }),
+    });
 
     const res = await bundleDelete({
+      requestContext: {
+        requestId: "test-request-id",
+        authorizer: {
+          lambda: {
+            jwt: {
+              claims: {
+                "sub": "user-not-found",
+                "cognito:username": "test",
+                "email": "test@test.submit.diyaccunting.co.uk",
+                "scope": "read write",
+              },
+            },
+          },
+        },
+      },
       headers: authHeaders(token),
       pathParameters: { id: "does-not-exist" },
     });

@@ -30,6 +30,21 @@ describe("submitVatHandler Unauthorized token handling", () => {
 
     const headers = buildGovClientTestHeaders();
     const event = {
+      requestContext: {
+        requestId: "test-request-id",
+        authorizer: {
+          lambda: {
+            jwt: {
+              claims: {
+                "sub": "test-sub",
+                "cognito:username": "test",
+                "email": "test@test.submit.diyaccunting.co.uk",
+                "scope": "read write",
+              },
+            },
+          },
+        },
+      },
       body: JSON.stringify({
         vatNumber: "111222333",
         periodKey: "23A1",

@@ -46,7 +46,7 @@ describe("httpPostMock", () => {
           lambda: {
             jwt: {
               claims: {
-                "sub": "test-123",
+                "sub": "test-sub",
                 "cognito:username": "test",
                 "email": "test@test.submit.diyaccunting.co.uk",
                 "scope": "read write",
@@ -108,6 +108,20 @@ describe("httpPostMock", () => {
 
   test("should return 400 when vatNumber is missing", async () => {
     const event = {
+      requestContext: {
+        authorizer: {
+          lambda: {
+            jwt: {
+              claims: {
+                "sub": "test-sub",
+                "cognito:username": "test",
+                "email": "test@test.submit.diyaccunting.co.uk",
+                "scope": "read write",
+              },
+            },
+          },
+        },
+      },
       body: JSON.stringify({
         periodKey: "23A1",
         vatDue: "1000.50",
@@ -125,6 +139,21 @@ describe("httpPostMock", () => {
 
   test("should return 400 when periodKey is missing", async () => {
     const event = {
+      requestContext: {
+        requestId: "test-request-id",
+        authorizer: {
+          lambda: {
+            jwt: {
+              claims: {
+                "sub": "test-sub",
+                "cognito:username": "test",
+                "email": "test@test.submit.diyaccunting.co.uk",
+                "scope": "read write",
+              },
+            },
+          },
+        },
+      },
       body: JSON.stringify({
         vatNumber: "111222333",
         vatDue: "1000.50",
@@ -142,6 +171,21 @@ describe("httpPostMock", () => {
 
   test("should return 400 when vatDue is missing", async () => {
     const event = {
+      requestContext: {
+        requestId: "test-request-id",
+        authorizer: {
+          lambda: {
+            jwt: {
+              claims: {
+                "sub": "test-sub",
+                "cognito:username": "test",
+                "email": "test@test.submit.diyaccunting.co.uk",
+                "scope": "read write",
+              },
+            },
+          },
+        },
+      },
       body: JSON.stringify({
         vatNumber: "111222333",
         periodKey: "23A1",
@@ -159,6 +203,21 @@ describe("httpPostMock", () => {
 
   test("should return 400 when accessToken is missing", async () => {
     const event = {
+      requestContext: {
+        requestId: "test-request-id",
+        authorizer: {
+          lambda: {
+            jwt: {
+              claims: {
+                "sub": "test-sub",
+                "cognito:username": "test",
+                "email": "test@test.submit.diyaccunting.co.uk",
+                "scope": "read write",
+              },
+            },
+          },
+        },
+      },
       body: JSON.stringify({
         vatNumber: "111222333",
         periodKey: "23A1",
@@ -176,6 +235,21 @@ describe("httpPostMock", () => {
 
   test("should return 400 when all parameters are missing", async () => {
     const event = {
+      requestContext: {
+        requestId: "test-request-id",
+        authorizer: {
+          lambda: {
+            jwt: {
+              claims: {
+                "sub": "test-sub",
+                "cognito:username": "test",
+                "email": "test@test.submit.diyaccunting.co.uk",
+                "scope": "read write",
+              },
+            },
+          },
+        },
+      },
       body: JSON.stringify({}),
     };
 
@@ -191,6 +265,21 @@ describe("httpPostMock", () => {
 
   test("should return 400 when body is empty", async () => {
     const event = {
+      requestContext: {
+        requestId: "test-request-id",
+        authorizer: {
+          lambda: {
+            jwt: {
+              claims: {
+                "sub": "test-sub",
+                "cognito:username": "test",
+                "email": "test@test.submit.diyaccunting.co.uk",
+                "scope": "read write",
+              },
+            },
+          },
+        },
+      },
       body: "",
     };
 
@@ -206,6 +295,21 @@ describe("httpPostMock", () => {
 
   test("should return 400 when body is null", async () => {
     const event = {
+      requestContext: {
+        requestId: "test-request-id",
+        authorizer: {
+          lambda: {
+            jwt: {
+              claims: {
+                "sub": "test-sub",
+                "cognito:username": "test",
+                "email": "test@test.submit.diyaccunting.co.uk",
+                "scope": "read write",
+              },
+            },
+          },
+        },
+      },
       body: null,
     };
 
@@ -221,6 +325,21 @@ describe("httpPostMock", () => {
 
   test("should handle empty string parameters", async () => {
     const event = {
+      requestContext: {
+        requestId: "test-request-id",
+        authorizer: {
+          lambda: {
+            jwt: {
+              claims: {
+                "sub": "test-sub",
+                "cognito:username": "test",
+                "email": "test@test.submit.diyaccunting.co.uk",
+                "scope": "read write",
+              },
+            },
+          },
+        },
+      },
       body: JSON.stringify({
         vatNumber: "",
         periodKey: "",
@@ -250,6 +369,21 @@ describe("httpPostMock", () => {
     });
 
     const event = {
+      requestContext: {
+        requestId: "test-request-id",
+        authorizer: {
+          lambda: {
+            jwt: {
+              claims: {
+                "sub": "test-sub",
+                "cognito:username": "test",
+                "email": "test@test.submit.diyaccunting.co.uk",
+                "scope": "read write",
+              },
+            },
+          },
+        },
+      },
       body: JSON.stringify({
         vatNumber: "111222333",
         periodKey: "23A1",
@@ -276,6 +410,21 @@ describe("httpPostMock", () => {
     });
 
     const event = {
+      requestContext: {
+        requestId: "test-request-id",
+        authorizer: {
+          lambda: {
+            jwt: {
+              claims: {
+                "sub": "test-sub",
+                "cognito:username": "test",
+                "email": "test@test.submit.diyaccunting.co.uk",
+                "scope": "read write",
+              },
+            },
+          },
+        },
+      },
       body: JSON.stringify({
         vatNumber: "111222333",
         periodKey: "23A1",
@@ -300,6 +449,21 @@ describe("httpPostMock", () => {
     });
 
     const event = {
+      requestContext: {
+        requestId: "test-request-id",
+        authorizer: {
+          lambda: {
+            jwt: {
+              claims: {
+                "sub": "test-sub",
+                "cognito:username": "test",
+                "email": "test@test.submit.diyaccunting.co.uk",
+                "scope": "read write",
+              },
+            },
+          },
+        },
+      },
       body: JSON.stringify({
         vatNumber: "111222333",
         periodKey: "23A1",
@@ -329,6 +493,21 @@ describe("httpPostMock", () => {
     });
 
     const event = {
+      requestContext: {
+        requestId: "test-request-id",
+        authorizer: {
+          lambda: {
+            jwt: {
+              claims: {
+                "sub": "test-sub",
+                "cognito:username": "test",
+                "email": "test@test.submit.diyaccunting.co.uk",
+                "scope": "read write",
+              },
+            },
+          },
+        },
+      },
       body: JSON.stringify({
         vatNumber: "111222333",
         periodKey: "23A1",
@@ -351,6 +530,21 @@ describe("httpPostMock", () => {
 
   test("should handle malformed JSON in request body", async () => {
     const event = {
+      requestContext: {
+        requestId: "test-request-id",
+        authorizer: {
+          lambda: {
+            jwt: {
+              claims: {
+                "sub": "test-sub",
+                "cognito:username": "test",
+                "email": "test@test.submit.diyaccunting.co.uk",
+                "scope": "read write",
+              },
+            },
+          },
+        },
+      },
       body: "invalid-json",
     };
 
@@ -366,6 +560,21 @@ describe("httpPostMock", () => {
     mockFetch.mockRejectedValueOnce(new Error("Network error"));
 
     const event = {
+      requestContext: {
+        requestId: "test-request-id",
+        authorizer: {
+          lambda: {
+            jwt: {
+              claims: {
+                "sub": "test-sub",
+                "cognito:username": "test",
+                "email": "test@test.submit.diyaccunting.co.uk",
+                "scope": "read write",
+              },
+            },
+          },
+        },
+      },
       body: JSON.stringify({
         vatNumber: "111222333",
         periodKey: "23A1",
@@ -378,7 +587,23 @@ describe("httpPostMock", () => {
   });
 
   test("should handle missing body property", async () => {
-    const event = {};
+    const event = {
+      requestContext: {
+        requestId: "test-request-id",
+        authorizer: {
+          lambda: {
+            jwt: {
+              claims: {
+                "sub": "test-sub",
+                "cognito:username": "test",
+                "email": "test@test.submit.diyaccunting.co.uk",
+                "scope": "read write",
+              },
+            },
+          },
+        },
+      },
+    };
 
     const result = await submitVatHandler(event);
     const body = JSON.parse(result.body);
