@@ -224,8 +224,7 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
   const testContext = {
     name: testInfo.title,
     title: "Submit VAT Return (HMRC: VAT Return POST)",
-    description:
-      "Clicks through the app to submit a VAT return to HMRC MTD VAT API, then verifies receipt visibility and navigation.",
+    description: "Clicks through the app to submit a VAT return to HMRC MTD VAT API, then verifies receipt visibility and navigation.",
     hmrcApi: { url: "/api/v1/hmrc/vat/return", method: "POST" },
     env: {
       envName,

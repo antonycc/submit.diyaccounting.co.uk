@@ -19,6 +19,7 @@ import { apiEndpoint as mockAuthUrlGetApiEndpoint } from "../functions/non-lambd
 import { apiEndpoint as mockTokenPostApiEndpoint } from "../functions/non-lambda-mocks/mockTokenPost.js";
 import { dotenvConfigIfNotBlank, validateEnv } from "../lib/env.js";
 import logger from "../lib/logger.js";
+import { permissionCheckMiddleware } from "../lib/permissionCheck.js";
 
 dotenvConfigIfNotBlank({ path: ".env" });
 dotenvConfigIfNotBlank({ path: ".env.test" });
@@ -57,6 +58,9 @@ app.use((req, res, next) => {
 });
 
 app.use(express.static(path.join(__dirname, "../../web/public")));
+
+// Register permission check middleware for HEAD requests
+permissionCheckMiddleware(app);
 
 catalogGetApiEndpoint(app);
 bundleGetApiEndpoint(app);
