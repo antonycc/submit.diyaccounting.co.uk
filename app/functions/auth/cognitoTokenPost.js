@@ -1,7 +1,7 @@
 // app/functions/auth/cognitoTokenPost.js
 
 import logger from "../../lib/logger.js";
-import { extractRequest, buildTokenExchangeResponse, buildValidationError } from "../../lib/responses.js";
+import { extractRequest, buildTokenExchangeResponse, buildValidationError, http200OkResponse } from "../../lib/responses.js";
 import { validateEnv } from "../../lib/env.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
 
@@ -31,6 +31,15 @@ export async function handler(event) {
 
   const { request } = extractRequest(event);
   const errorMessages = [];
+
+  // If HEAD request, return 200 OK immediately after bundle enforcement
+  if (request.method === "HEAD") {
+    return http200OkResponse({
+      request,
+      headers: { "Content-Type": "application/json" },
+      data: {},
+    });
+  }
 
   // Extract and validate parameters
   const { code } = extractAndValidateParameters(event, errorMessages);

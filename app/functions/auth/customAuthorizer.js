@@ -5,6 +5,7 @@
 import logger from "../../lib/logger.js";
 import { CognitoJwtVerifier } from "aws-jwt-verify";
 import { decodeJwtNoVerify } from "../../lib/jwtHelper.js";
+import { http200OkResponse } from "@app/lib/responses.js";
 
 // Cache the verifier instance across Lambda invocations
 let verifier = null;
