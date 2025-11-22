@@ -161,6 +161,8 @@ jobs:
         run: |
           echo 'Getting deployed deployment names from CloudFormation stacks in eu-west-2 and us-east-1'
 
+          # Only stacks that look like prod-xxx-app-... or ci-xxx-del-...
+          # Extract the deployment id: prod-xxx or ci-yyy
           DEPLOYED_DEPLOYMENT_NAMES=$(
             for REGION in eu-west-2 us-east-1; do
               echo "Scanning region: $REGION" >&2
@@ -170,9 +172,7 @@ jobs:
                 --output text
             done \
             | tr '\t' '\n' \
-            # Only stacks that look like prod-xxx-app-... or ci-xxx-del-...
             | grep -E '^(ci|prod)-[a-zA-Z0-9-]+-(app|del)-' \
-            # Extract the deployment id: prod-xxx or ci-yyy
             | sed -E 's/^((ci|prod)-[a-zA-Z0-9-]+)-(app|del)-.*/\1/' \
             | sort -u
           )
