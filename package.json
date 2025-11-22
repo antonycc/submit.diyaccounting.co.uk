@@ -71,7 +71,8 @@
     "@iarna/toml": "^3.0.0",
     "aws-jwt-verify": "^5.1.1",
     "dotenv": "^17.2.3",
-    "pino": "^10.1.0"
+    "pino": "^10.1.0",
+    "uuid": "^13.0.0"
   },
   "devDependencies": {
     "@aws-sdk/client-cloudfront": "^3.931.0",
@@ -104,7 +105,6 @@
     "supertest": "^7.1.4",
     "testcontainers": "^11.8.1",
     "toml": "^3.0.0",
-    "uuid": "^13.0.0",
     "vitest": "3.2.4"
   },
   "overrides": {
