@@ -126,6 +126,66 @@ jobs:
           echo "last-known-good-deployment-name-ci=$LAST_KNOWN_GOOD_DEPLOYMENT_NAME_CI_VALUE" >> $GITHUB_OUTPUT
           echo "last-known-good-deployment-name-prod=$LAST_KNOWN_GOOD_DEPLOYMENT_NAME_PROD_VALUE" >> $GITHUB_OUTPUT
 
+      # Get the record names of aliases in any cloudfront distributions that match the ci- or prod- pattern in the first part of the domain name
+      - name: Get the published record names
+        id: published-deployment-names
+        run: |
+          echo "Getting CloudFront distributions"
+          DISTRIBUTION_IDS=$(aws cloudfront list-distributions --query "DistributionList.Items[].Id" --output text)
+          PUBLISHED_DEPLOYMENT_NAMES=""
+          echo "Found CloudFront Distribution IDs: $DISTRIBUTION_IDS"
+          for DISTRIBUTION_ID in $DISTRIBUTION_IDS; do
+            ALIASES=$(aws cloudfront get-distribution --id "$DISTRIBUTION_ID" --query "Distribution.DistributionConfig.Aliases.Items[]" --output text)
+            echo "Found aliases for Distribution ID $DISTRIBUTION_ID: $ALIASES"
+            for ALIAS in $ALIASES; do
+              RECORD_NAME=$(echo "$ALIAS" | cut -d'.' -f1)
+              if [[ "$RECORD_NAME" =~ ^(ci|prod)-.* ]]; then
+                PUBLISHED_DEPLOYMENT_NAMES="$PUBLISHED_DEPLOYMENT_NAMES $RECORD_NAME"
+              fi
+            done
+          done
+
+          # Remove duplicates
+          echo "Collected published deployment names before deduplication: $PUBLISHED_DEPLOYMENT_NAMES"
+          PUBLISHED_DEPLOYMENT_NAMES=$(echo $PUBLISHED_DEPLOYMENT_NAMES | tr ' ' '\n' | sort -u | tr '\n' ' ')
+
+          echo "Published deployment names: $PUBLISHED_DEPLOYMENT_NAMES"
+          echo "published-deployment-names=$PUBLISHED_DEPLOYMENT_NAMES" >> $GITHUB_OUTPUT
+
+      # Get deployment-related stack names from CloudFormation in eu-west-2 and us-east-1
+      # and extract deployment IDs like ci-foo / prod-bar from:
+      #   prod-64d48ac-app-OpsStack  -> prod-64d48ac
+      #   ci-mtdreport-app-DevStack  -> ci-mtdreport
+      - name: Get the deployed deployment names
+        id: deployed-deployment-names
+        run: |
+          echo 'Getting deployed deployment names from CloudFormation stacks in eu-west-2 and us-east-1'
+
+          DEPLOYED_DEPLOYMENT_NAMES=$(
+            for REGION in eu-west-2 us-east-1; do
+              echo "Scanning region: $REGION" >&2
+              aws cloudformation describe-stacks \
+                --region "$REGION" \
+                --query 'Stacks[].StackName' \
+                --output text
+            done \
+            | tr '\t' '\n' \
+            # Only stacks that look like prod-xxx-app-... or ci-xxx-del-...
+            | grep -E '^(ci|prod)-[a-zA-Z0-9-]+-(app|del)-' \
+            # Extract the deployment id: prod-xxx or ci-yyy
+            | sed -E 's/^((ci|prod)-[a-zA-Z0-9-]+)-(app|del)-.*/\1/' \
+            | sort -u
+          )
+
+          echo "Collected deployed deployment names (newline separated):"
+          printf '%s\n' $DEPLOYED_DEPLOYMENT_NAMES
+
+          # Convert to single space-separated bash-iterable string
+          DEPLOYED_DEPLOYMENT_NAMES=$(echo "$DEPLOYED_DEPLOYMENT_NAMES" | tr '\n' ' ')
+
+          echo "Deployed deployment names: $DEPLOYED_DEPLOYMENT_NAMES"
+          echo "deployed-deployment-names=$DEPLOYED_DEPLOYMENT_NAMES" >> "$GITHUB_OUTPUT"
+
       # Get the deployment names that the primary domains alias to in Route 53:
       #   submit.diyaccounting.co.uk  -> prod-*.submit.diyaccounting.co.uk.
       #   ci.submit.diyaccounting.co.uk -> ci-*.submit.diyaccounting.co.uk.
@@ -196,54 +256,79 @@ jobs:
           LAST_KNOWN_GOOD_DEPLOYMENT_NAME_CI="${{ steps.last-known-good-deployment-names.outputs.last-known-good-deployment-name-ci }}"
           LAST_KNOWN_GOOD_DEPLOYMENT_NAME_PROD="${{ steps.last-known-good-deployment-names.outputs.last-known-good-deployment-name-prod }}"
           PUBLIC_DEPLOYMENT_NAMES="${{ steps.public-deployment-names.outputs.public-deployment-names }}"
+          PUBLISHED_DEPLOYMENT_NAMES="${{ steps.published-deployment-names.outputs.published-deployment-names }}"
+          DEPLOYED_DEPLOYMENT_NAMES="${{ steps.deployed-deployment-names.outputs.deployed-deployment-names }}"
 
           echo "Last known good deployment names: CI='$LAST_KNOWN_GOOD_DEPLOYMENT_NAME_CI', PROD='$LAST_KNOWN_GOOD_DEPLOYMENT_NAME_PROD'"
           echo "Public deployment names: $PUBLIC_DEPLOYMENT_NAMES"
+          echo "Published deployment names: $PUBLISHED_DEPLOYMENT_NAMES"
+          echo "Deployed deployment names: $DEPLOYED_DEPLOYMENT_NAMES"
 
           STACK_DEPLOYMENT_NAMES_TO_KEEP=()
 
-          for DEPLOYMENT_NAME in $(echo "$PUBLIC_DEPLOYMENT_NAMES $LAST_KNOWN_GOOD_DEPLOYMENT_NAME_CI $LAST_KNOWN_GOOD_DEPLOYMENT_NAME_PROD" | tr ' ' '\n'); do
+          # 1. Always keep deployments that are currently aliased from the primaries
+          #    plus last-known-good deployments from SSM
+          for DEPLOYMENT_NAME in $(echo "$PUBLIC_DEPLOYMENT_NAMES \
+            $LAST_KNOWN_GOOD_DEPLOYMENT_NAME_CI \
+            $LAST_KNOWN_GOOD_DEPLOYMENT_NAME_PROD" | tr ' ' '\n'); do
             if [ -n "$DEPLOYMENT_NAME" ]; then
               STACK_DEPLOYMENT_NAMES_TO_KEEP+=("$DEPLOYMENT_NAME")
             fi
           done
 
-          # Remove duplicates from STACK_DEPLOYMENT_NAMES_TO_KEEP in a simple way
+          # 2. Always keep any holding deployments that are published via CloudFront
+          for DEPLOYMENT_NAME in $PUBLISHED_DEPLOYMENT_NAMES; do
+            if [[ "$DEPLOYMENT_NAME" == *-holding ]]; then
+              STACK_DEPLOYMENT_NAMES_TO_KEEP+=("$DEPLOYMENT_NAME")
+            fi
+          done
+
+          # Remove duplicates from STACK_DEPLOYMENT_NAMES_TO_KEEP
           echo "Removing duplicates from stacks to keep from: ${STACK_DEPLOYMENT_NAMES_TO_KEEP[*]}"
           STACK_DEPLOYMENT_NAMES_TO_KEEP=($(echo "${STACK_DEPLOYMENT_NAMES_TO_KEEP[@]}" | tr ' ' '\n' | sort -u | tr '\n' ' '))
 
           echo "Stacks to skip destruction: ${STACK_DEPLOYMENT_NAMES_TO_KEEP[*]}"
 
-          # List all stacks and filter out those matching STACK_DEPLOYMENT_NAMES_TO_KEEP
+          ALL_CANDIDATE_DEPLOYMENT_NAMES="$PUBLISHED_DEPLOYMENT_NAMES $DEPLOYED_DEPLOYMENT_NAMES"
+
+          # Remove duplicates from ALL_CANDIDATE_DEPLOYMENT_NAMES
+          echo "Removing duplicates from all candidate deployment names from: $ALL_CANDIDATE_DEPLOYMENT_NAMES"
+          ALL_CANDIDATE_DEPLOYMENT_NAMES=$(echo "$ALL_CANDIDATE_DEPLOYMENT_NAMES" | tr ' ' '\n' | sort -u | tr '\n' ' ')
+
+          # List all candidate stacks and filter out those matching STACK_DEPLOYMENT_NAMES_TO_KEEP
           # e.g.
           # SELECTED_ENVIRONMENT_NAME="ci"
           # SELECTED_DEPLOYMENT_NAME="ci-oldstack123"
           SELECTED_ENVIRONMENT_NAME=""
           SELECTED_DEPLOYMENT_NAME=""
-          for DEPLOYMENT_NAME in $(aws cloudformation describe-stacks \
-            --region eu-west-2 \
-            --query "Stacks[].StackName" \
-            --output text \
-            | tr '\t' '\n' \
-            | grep -E '^(app|del)-((ci|prod)-[a-zA-Z0-9-]+)-') \
-          ; do
-              echo "Extract deployment name from stack name: $DEPLOYMENT_NAME"
-              DEPLOYMENT_NAME_EXTRACTED=$(echo "$DEPLOYMENT_NAME" | sed -E 's/^(app|del)-((ci|prod)-[a-zA-Z0-9-]+)-.*/\2/')
-              if [[ ! " ${STACK_DEPLOYMENT_NAMES_TO_KEEP[@]} " =~ " ${DEPLOYMENT_NAME_EXTRACTED} " ]]; then
-                SELECTED_DEPLOYMENT_NAME="$DEPLOYMENT_NAME_EXTRACTED"
-                echo "Found stack for potential destruction: $DEPLOYMENT_NAME (deployment name: $SELECTED_DEPLOYMENT_NAME)"
-                if [[ "$SELECTED_DEPLOYMENT_NAME" == ci-* ]]; then
-                    echo "Matched ci stack for destruction"
-                    SELECTED_ENVIRONMENT_NAME="ci"
-                elif [[ "$SELECTED_DEPLOYMENT_NAME" == prod-* ]]; then
-                    echo "Matched prod stack for destruction"
-                    SELECTED_ENVIRONMENT_NAME="prod"
-                fi
-                echo "Selected stack for destruction: Environment='$SELECTED_ENVIRONMENT_NAME', Deployment='$SELECTED_DEPLOYMENT_NAME'"
-                break
-              else
-                echo "Skipping stack $DEPLOYMENT_NAME as it is in the keep list"
-              fi
+
+          for DEPLOYMENT_NAME in $ALL_CANDIDATE_DEPLOYMENT_NAMES; do
+            [ -z "$DEPLOYMENT_NAME" ] && continue
+
+            echo "Considering deployment name: $DEPLOYMENT_NAME"
+
+            if [[ " ${STACK_DEPLOYMENT_NAMES_TO_KEEP[*]} " =~ " ${DEPLOYMENT_NAME} " ]]; then
+              echo "Skipping $DEPLOYMENT_NAME as it is in the keep list"
+              continue
+            fi
+
+            SELECTED_DEPLOYMENT_NAME="$DEPLOYMENT_NAME"
+
+            if [[ "$SELECTED_DEPLOYMENT_NAME" == ci-* ]]; then
+              SELECTED_ENVIRONMENT_NAME="ci"
+              echo "Matched ci deployment for destruction"
+            elif [[ "$SELECTED_DEPLOYMENT_NAME" == prod-* ]]; then
+              SELECTED_ENVIRONMENT_NAME="prod"
+              echo "Matched prod deployment for destruction"
+            else
+              echo "Deployment $SELECTED_DEPLOYMENT_NAME is not ci-/prod-, skipping"
+              SELECTED_DEPLOYMENT_NAME=""
+              SELECTED_ENVIRONMENT_NAME=""
+              continue
+            fi
+
+            echo "Selected deployment for destruction: Environment='$SELECTED_ENVIRONMENT_NAME', Deployment='$SELECTED_DEPLOYMENT_NAME'"
+            break
           done
 
           if [ -z "$SELECTED_DEPLOYMENT_NAME" ]; then
