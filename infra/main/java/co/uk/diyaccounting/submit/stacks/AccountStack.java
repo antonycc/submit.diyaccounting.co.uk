@@ -138,8 +138,8 @@ public class AccountStack extends Stack {
                 String.format("arn:aws:cognito-idp:%s:%s:userpool/%s", region, account, userPool.getUserPoolId());
 
         // Get Bundles Lambda
-        var getBundlesLambdaEnv = new PopulatedMap<String, String>()
-                .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName());
+        var getBundlesLambdaEnv =
+                new PopulatedMap<String, String>().with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName());
         var getBundlesLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
