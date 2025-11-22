@@ -126,31 +126,53 @@ jobs:
           echo "last-known-good-deployment-name-ci=$LAST_KNOWN_GOOD_DEPLOYMENT_NAME_CI_VALUE" >> $GITHUB_OUTPUT
           echo "last-known-good-deployment-name-prod=$LAST_KNOWN_GOOD_DEPLOYMENT_NAME_PROD_VALUE" >> $GITHUB_OUTPUT
 
-      # Get the record names of aliases in any cloudfront distributions that match the ci- or prod- pattern in the first part of the domain name
+      # Get the record names of aliases in any cloudfront distributions that:
+      # - have a first label matching ^(ci|prod)-.*
+      # - AND are under one of the primary domains:
+      #     submit.diyaccounting.co.uk
+      #     ci.submit.diyaccounting.co.uk
       - name: Get the public record names
         id: public-deployment-names
         run: |
-          echo "Getting CloudFront distributions"
-          DISTRIBUTION_IDS=$(aws cloudfront list-distributions --query "DistributionList.Items[].Id" --output text)
-          PUBLIC_DEPLOYMENT_NAMES=""
+          echo 'Getting CloudFront distributions'
+          DISTRIBUTION_IDS=$(aws cloudfront list-distributions \
+            --query 'DistributionList.Items[].Id' \
+            --output text)
+          PUBLIC_DEPLOYMENT_NAMES=''
           echo "Found CloudFront Distribution IDs: $DISTRIBUTION_IDS"
+
           for DISTRIBUTION_ID in $DISTRIBUTION_IDS; do
-            ALIASES=$(aws cloudfront get-distribution --id "$DISTRIBUTION_ID" --query "Distribution.DistributionConfig.Aliases.Items[]" --output text)
+            ALIASES=$(aws cloudfront get-distribution \
+              --id "$DISTRIBUTION_ID" \
+              --query 'Distribution.DistributionConfig.Aliases.Items[]' \
+              --output text)
             echo "Found aliases for Distribution ID $DISTRIBUTION_ID: $ALIASES"
+
             for ALIAS in $ALIASES; do
-              RECORD_NAME=$(echo "$ALIAS" | cut -d'.' -f1)
-              if [[ "$RECORD_NAME" =~ ^(ci|prod)-.* ]]; then
-                PUBLIC_DEPLOYMENT_NAMES="$PUBLIC_DEPLOYMENT_NAMES $RECORD_NAME"
+              # Example ALIAS:
+              #   prod-64d48ac.submit.diyaccounting.co.uk
+              HOST_LABEL=${ALIAS%%.*}   # prod-64d48ac
+              REST_DOMAIN=${ALIAS#*.}   # submit.diyaccounting.co.uk
+
+              # Only treat as public if it is under one of the primary domains
+              if [[ "$REST_DOMAIN" == 'submit.diyaccounting.co.uk' || \
+                    "$REST_DOMAIN" == 'ci.submit.diyaccounting.co.uk' ]]; then
+                if [[ "$HOST_LABEL" =~ ^(ci|prod)-.* ]]; then
+                  PUBLIC_DEPLOYMENT_NAMES="$PUBLIC_DEPLOYMENT_NAMES $HOST_LABEL"
+                fi
               fi
             done
           done
 
           # Remove duplicates
           echo "Collected public deployment names before deduplication: $PUBLIC_DEPLOYMENT_NAMES"
-          PUBLIC_DEPLOYMENT_NAMES=$(echo $PUBLIC_DEPLOYMENT_NAMES | tr ' ' '\n' | sort -u | tr '\n' ' ')
+          PUBLIC_DEPLOYMENT_NAMES=$(echo "$PUBLIC_DEPLOYMENT_NAMES" \
+            | tr ' ' '\n' \
+            | sort -u \
+            | tr '\n' ' ')
 
           echo "Public deployment names: $PUBLIC_DEPLOYMENT_NAMES"
-          echo "public-deployment-names=$PUBLIC_DEPLOYMENT_NAMES" >> $GITHUB_OUTPUT
+          echo "public-deployment-names=$PUBLIC_DEPLOYMENT_NAMES" >> "$GITHUB_OUTPUT"
 
       # Select environment and deployment names of stacks to destroy matching .*-[ci|prod]-.* pattern but not the public deployment names or last known good deployment names
       - name: Select environment and deployment names
