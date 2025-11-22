@@ -3,7 +3,13 @@
 import { SecretsManagerClient, GetSecretValueCommand } from "@aws-sdk/client-secrets-manager";
 
 import logger from "../../lib/logger.js";
-import { extractRequest, parseRequestBody, buildTokenExchangeResponse, buildValidationError } from "../../lib/responses.js";
+import {
+  extractRequest,
+  parseRequestBody,
+  buildTokenExchangeResponse,
+  buildValidationError,
+  http200OkResponse,
+} from "../../lib/responses.js";
 import { validateEnv } from "../../lib/env.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
 import { enforceBundles } from "../../lib/bundleEnforcement.js";
@@ -58,11 +64,20 @@ export async function handler(event) {
   const errorMessages = [];
 
   // Bundle enforcement
-  let userSub;
-  try {
-    userSub = await enforceBundles(event);
-  } catch (error) {
-    return http403ForbiddenFromBundleEnforcement(error, request);
+  // let userSub;
+  // try {
+  //  userSub = await enforceBundles(event);
+  // } catch (error) {
+  //  return http403ForbiddenFromBundleEnforcement(error, request);
+  // }
+
+  // If HEAD request, return 200 OK immediately
+  if (request.method === "HEAD") {
+    return http200OkResponse({
+      request,
+      headers: { "Content-Type": "application/json" },
+      data: {},
+    });
   }
 
   // Extract and validate parameters
@@ -79,7 +94,7 @@ export async function handler(event) {
   logger.info({ message: "Exchanging authorization code for HMRC access token" });
   // TODO: Simplify this and/or rename because exchangeCodeForToken does not do the exchange, it just creates the body
   const tokenResponse = await exchangeCodeForToken(code, hmrcAccount);
-  return buildTokenExchangeResponse(request, tokenResponse.url, tokenResponse.body, userSub);
+  return buildTokenExchangeResponse(request, tokenResponse.url, tokenResponse.body); // , userSub);
 }
 
 // Service adaptor aware of the downstream service but not the consuming Lambda's incoming/outgoing HTTP request/response

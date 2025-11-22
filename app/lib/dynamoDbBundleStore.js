@@ -38,54 +38,11 @@ function getTableName() {
 }
 
 /**
- * Parse bundle string to extract bundleId and expiry (for backward compatibility)
- * @param {string} bundleStr - Bundle string in format "BUNDLE_ID" or "BUNDLE_ID|EXPIRY=2025-12-31"
- * @returns {Object} Object with bundleId and expiry (ISO date string or null)
- */
-function parseBundleString(bundleStr) {
-  if (!bundleStr || typeof bundleStr !== "string") {
-    return { bundleId: "", expiry: null };
-  }
-
-  const parts = bundleStr.split("|");
-  const bundleId = parts[0] || "";
-  let expiry = null;
-
-  if (parts.length > 1) {
-    const expiryMatch = parts[1].match(/EXPIRY=(.+)/);
-    if (expiryMatch && expiryMatch[1]) {
-      expiry = expiryMatch[1]; // ISO date string like "2025-12-31"
-    }
-  }
-
-  return { bundleId, expiry };
-}
-
-/**
- * Format bundle item to bundle string (for backward compatibility)
- * @param {Object} item - DynamoDB item with bundleId and expiry
- * @returns {string} Bundle string in format "BUNDLE_ID|EXPIRY=2025-12-31"
- */
-function formatBundleString(item) {
-  if (!item || !item.bundleId) {
-    return "";
-  }
-
-  if (item.expiry) {
-    // Extract just the date portion if it's a full ISO timestamp
-    const expiryDate = item.expiry.split("T")[0];
-    return `${item.bundleId}|EXPIRY=${expiryDate}`;
-  }
-
-  return item.bundleId;
-}
-
-/**
  * Store a bundle for a user in DynamoDB
  * @param {string} userId - User's sub claim (will be hashed)
- * @param {string} bundleStr - Bundle string in format "BUNDLE_ID|EXPIRY=2025-12-31"
+ * @param {string} bundleId - Bundle in format "test"
  */
-export async function putBundle(userId, bundleStr) {
+export async function putBundle(userId, bundleId) {
   if (!isDynamoDbEnabled()) {
     logger.debug({ message: "DynamoDB not enabled, skipping putBundle" });
     return;
@@ -93,12 +50,6 @@ export async function putBundle(userId, bundleStr) {
 
   try {
     const hashedSub = hashSub(userId);
-    const { bundleId, expiry } = parseBundleString(bundleStr);
-
-    if (!bundleId) {
-      logger.warn({ message: "Invalid bundle string, skipping putBundle", bundleStr });
-      return;
-    }
 
     const docClient = await getDynamoDbDocClient();
     const tableName = getTableName();
@@ -111,22 +62,16 @@ export async function putBundle(userId, bundleStr) {
     };
 
     // Add expiry with millisecond precision timestamp (ISO format)
-    if (expiry) {
-      // If expiry is a date-only string (e.g., "2025-12-31"), convert to full ISO timestamp
-      const expiryDate = new Date(expiry);
-      if (!isNaN(expiryDate.getTime())) {
-        // Store expiry as millisecond precision timestamp
-        item.expiry = expiryDate.toISOString();
+    // TODO: Check we look this up from the catalogue
+    const expiryDate = new Date();
+    expiryDate.setMonth(expiryDate.getMonth() + 1); // Set to end of month
+    item.expiry = expiryDate.toISOString();
 
-        // Calculate TTL as 1 month after expiry
-        const ttlDate = new Date(expiryDate.getTime());
-        ttlDate.setMonth(ttlDate.getMonth() + 1);
-        item.ttl = Math.floor(ttlDate.getTime() / 1000);
-        item.ttl_datestamp = ttlDate.toISOString();
-      } else {
-        logger.warn({ message: "Invalid expiry date format, skipping TTL", expiry });
-      }
-    }
+    // Calculate TTL as 1 month after expiry
+    const ttlDate = new Date(expiryDate.getTime());
+    ttlDate.setMonth(ttlDate.getMonth() + 1);
+    item.ttl = Math.floor(ttlDate.getTime() / 1000);
+    item.ttl_datestamp = ttlDate.toISOString();
 
     await docClient.send(
       new __dynamoDbModule.PutCommand({
@@ -212,11 +157,8 @@ export async function deleteAllBundles(userId) {
 
     // Delete bundles concurrently for better performance
     const deleteResults = await Promise.allSettled(
-      bundles.map(async (bundleStr) => {
-        const { bundleId } = parseBundleString(bundleStr);
-        if (bundleId) {
-          await deleteBundle(userId, bundleId);
-        }
+      bundles.map(async (bundleId) => {
+        await deleteBundle(userId, bundleId);
       }),
     );
 
@@ -273,8 +215,8 @@ export async function getUserBundles(userId) {
       }),
     );
 
-    // Convert DynamoDB items to bundle strings for backward compatibility
-    const bundles = (response.Items || []).map((item) => formatBundleString(item)).filter((b) => b.length > 0);
+    // Convert DynamoDB items to bundle strings
+    const bundles = (response.Items || []).map((item) => item);
 
     logger.info({
       message: "Retrieved bundles from DynamoDB",

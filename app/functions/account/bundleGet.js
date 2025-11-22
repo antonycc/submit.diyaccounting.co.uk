@@ -9,58 +9,6 @@ import { getUserBundles } from "../../lib/bundleHelpers.js";
 import { BundleAuthorizationError, BundleEntitlementError, enforceBundles } from "../../lib/bundleEnforcement.js";
 import { http403ForbiddenFromBundleEnforcement } from "../../lib/hmrcHelper.js";
 
-/**
- * Parse bundle string to extract bundleId and expiry
- * @param {string} bundleStr - Bundle string in format "BUNDLE_ID" or "BUNDLE_ID|EXPIRY=2025-12-31"
- * @returns {Object} Object with bundleId and expiry (ISO date string or empty string)
- */
-function parseBundleString(bundleStr) {
-  if (!bundleStr || typeof bundleStr !== "string") {
-    return { bundleId: "", expiry: "" };
-  }
-
-  const parts = bundleStr.split("|");
-  const bundleId = parts[0] || "";
-  let expiry = "";
-
-  if (parts.length > 1) {
-    const expiryMatch = parts[1].match(/EXPIRY=(.+)/);
-    if (expiryMatch && expiryMatch[1]) {
-      // Keep the entry with the latest expiry date
-      expiry = expiryMatch[1]; // ISO date string like "2025-12-31"
-    }
-  }
-
-  return { bundleId, expiry };
-}
-
-/**
- * Get de-duplicated bundles with expiry dates
- * @param {Array<string>} bundles - Array of bundle strings
- * @returns {Array<Object>} Array of bundle objects with bundleId and expiry
- */
-function formatBundles(bundles) {
-  const bundleMap = new Map();
-
-  for (const bundleStr of bundles) {
-    const { bundleId, expiry } = parseBundleString(bundleStr);
-    if (bundleId) {
-      // Keep the entry with the latest expiry date if duplicates exist
-      const existing = bundleMap.get(bundleId);
-      if (!existing) {
-        bundleMap.set(bundleId, { bundleId, expiry });
-      } else if (expiry) {
-        // Update if new expiry is later than existing
-        if (expiry > (existing.expiry || "")) {
-          bundleMap.set(bundleId, { bundleId, expiry });
-        }
-      }
-    }
-  }
-
-  return Array.from(bundleMap.values());
-}
-
 // Server hook for Express app, and construction of a Lambda-like event from HTTP request)
 export function apiEndpoint(app) {
   app.get("/api/v1/bundle", async (httpRequest, httpResponse) => {
@@ -111,6 +59,15 @@ export async function handler(event) {
     }
   }
 
+  // If HEAD request, return 200 OK immediately after bundle enforcement
+  if (request.method === "HEAD") {
+    return http200OkResponse({
+      request,
+      headers: { "Content-Type": "application/json" },
+      data: {},
+    });
+  }
+
   logger.info({ message: "Retrieving user bundles" });
 
   // Extract and validate parameters
@@ -155,8 +112,5 @@ export async function retrieveUserBundles(userId) {
   // Use DynamoDB as primary storage (via getUserBundles which abstracts the storage)
   const allBundles = await getUserBundles(userId);
 
-  // Format bundles with expiry information
-  const formattedBundles = formatBundles(allBundles);
-
-  return formattedBundles;
+  return allBundles;
 }

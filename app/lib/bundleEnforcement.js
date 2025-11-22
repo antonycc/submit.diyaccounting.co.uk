@@ -75,7 +75,8 @@ export async function enforceBundles(event, options = {}) {
   // Automatic bundles that everyone has implicitly
   const automaticBundleIds = getAutomaticBundles(catalog);
   const subscribedBundles = await getUserBundlesFromStorage(userSub);
-  const currentBundleIds = new Set([...(automaticBundleIds || []), ...(subscribedBundles || [])]);
+  const subscribedBundleIds = subscribedBundles.map((b) => b.bundleId);
+  const currentBundleIds = new Set([...(automaticBundleIds || []), ...(subscribedBundleIds || [])]);
 
   logger.info({
     message: "Checking bundle entitlements",

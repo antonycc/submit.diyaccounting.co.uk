@@ -158,7 +158,7 @@
             init: { headers: { Authorization: `Bearer ${idToken}` } },
           });
           if (bundlesData && bundlesData.bundles && Array.isArray(bundlesData.bundles)) {
-            __userBundles = bundlesData.bundles.map((b) => (b?.expiry ? `${b.bundleId}|EXPIRY=${b.expiry}` : b.bundleId));
+            __userBundles = bundlesData.bundles.map((b) => b.bundleId);
             return __userBundles;
           }
         } catch (err) {

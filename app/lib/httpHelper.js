@@ -13,7 +13,7 @@ export function buildLambdaEventFromHttpRequest(httpRequest) {
   if (referer) incomingHeaders.referer = referer;
 
   // Extract bearer token from Authorization header if present
-  const authorization = httpRequest.get("authorization");
+  const authorization = httpRequest.get("x-authorization") || httpRequest.get("authorization");
   const bearerToken = authorization ? authorization.match(/^Bearer (.+)$/) : null;
   const jwtPayload = decodeJwtNoVerify(bearerToken);
 

@@ -85,7 +85,7 @@
     <script type="module" src="widgets/view-source-link.js"></script>
     <script src="widgets/localstorage-viewer.js"></script>
     <script>
-      // In-memory user bundles state (list of bundleId[|EXPIRY=...] strings for compatibility with existing logic)
+      // In-memory user bundles state (list of bundleId strings)
       let __userBundles = [];
 
       async function initializeBundles() {
@@ -100,7 +100,7 @@
             if (response.ok) {
               const bundlesData = await response.json();
               if (bundlesData.bundles && Array.isArray(bundlesData.bundles)) {
-                __userBundles = bundlesData.bundles.map((b) => (b?.expiry ? `${b.bundleId}|EXPIRY=${b.expiry}` : b.bundleId));
+                __userBundles = bundlesData.bundles.map((b) => b.bundleId);
               } else {
                 __userBundles = [];
               }

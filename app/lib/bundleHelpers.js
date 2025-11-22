@@ -36,6 +36,7 @@ export async function getUserBundles(userId) {
  */
 export async function updateUserBundles(userId, bundles) {
   // TODO: Remove this mock mode stuff and move the mockery into tests
+  // This is actually avoided in app/functions/account/bundlePost.js anyway so should be fine to remove
   if (isMockMode()) {
     mockBundleStore.set(userId, bundles);
     logger.info({ message: `[MOCK] Updated bundles for user ${userId}`, bundles });
@@ -47,10 +48,10 @@ export async function updateUserBundles(userId, bundles) {
   const currentBundles = await dynamoDbBundleStore.getUserBundles(userId);
 
   // Parse bundle IDs from current bundles
-  const currentBundleIds = new Set(currentBundles.map((b) => b.split("|")[0]).filter((id) => id.length > 0));
+  const currentBundleIds = new Set(currentBundles);
 
   // Parse bundle IDs from new bundles
-  const newBundleIds = new Set(bundles.map((b) => b.split("|")[0]).filter((id) => id.length > 0));
+  const newBundleIds = new Set(bundles);
 
   // Remove bundles that are no longer in the new list
   const bundlesToRemove = [...currentBundleIds].filter((id) => !newBundleIds.has(id));

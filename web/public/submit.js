@@ -568,6 +568,7 @@ async function ensureSession({ minTTLms = 30000, force = false } = {}) {
 async function authorizedFetch(input, init = {}) {
   const headers = new Headers(init.headers || {});
   const accessToken = localStorage.getItem("cognitoAccessToken");
+  // TODO: Does this still need X-Authorization instead of Authorization? - Retest when otherwise stable.
   if (accessToken) headers.set("X-Authorization", `Bearer ${accessToken}`);
 
   const first = await fetchWithId(input, { ...init, headers });

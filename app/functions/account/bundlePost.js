@@ -3,7 +3,7 @@
 import { loadCatalogFromRoot } from "../../lib/productCatalogHelper.js";
 import { validateEnv } from "../../lib/env.js";
 import logger from "../../lib/logger.js";
-import { extractRequest, parseRequestBody } from "../../lib/responses.js";
+import { extractRequest, http200OkResponse, parseRequestBody } from "../../lib/responses.js";
 import { decodeJwtToken } from "../../lib/jwtHelper.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
 import { getUserBundles, updateUserBundles, isMockMode } from "../../lib/bundleHelpers.js";
@@ -79,6 +79,15 @@ export async function handler(event) {
     return http403ForbiddenFromBundleEnforcement(error, request);
   }
 
+  // If HEAD request, return 200 OK immediately after bundle enforcement
+  if (request.method === "HEAD") {
+    return http200OkResponse({
+      request,
+      headers: { "Content-Type": "application/json" },
+      data: {},
+    });
+  }
+
   try {
     logger.info({ message: "Bundle request received:", event: JSON.stringify(event, null, 2) });
     // TODO: Move into endpoint and emulate the API Gateway authorizer behavior
@@ -118,7 +127,7 @@ export async function handler(event) {
 
     const currentBundles = await getUserBundles(userId);
 
-    const hasBundle = currentBundles.some((bundle) => bundle === requestedBundle || bundle.startsWith(requestedBundle + "|"));
+    const hasBundle = currentBundles.some((bundle) => bundle === requestedBundle);
     if (hasBundle) {
       logger.info({ message: "User already has requested bundle:", requestedBundle });
       return {
@@ -181,11 +190,7 @@ export async function handler(event) {
     // on-request: enforce cap and expiry
     const cap = Number.isFinite(catalogBundle.cap) ? Number(catalogBundle.cap) : undefined;
     if (typeof cap === "number") {
-      let currentCount = 0;
-      for (const bundles of mockBundleStore.values()) {
-        if ((bundles || []).some((b) => typeof b === "string" && (b === requestedBundle || b.startsWith(requestedBundle + "|"))))
-          currentCount++;
-      }
+      const currentCount = mockBundleStore.size;
       if (currentCount >= cap) {
         logger.info({ message: "[Catalog bundle] Bundle cap reached:", requestedBundle, cap });
         return {
@@ -199,7 +204,7 @@ export async function handler(event) {
     const expiry = catalogBundle.timeout ? parseIsoDurationToDate(new Date(), catalogBundle.timeout) : null;
     const expiryStr = expiry ? expiry.toISOString().slice(0, 10) : "";
 
-    const newBundle = `${requestedBundle}|EXPIRY=${expiryStr || ""}`;
+    const newBundle = { bundleId: requestedBundle, expiry: expiryStr };
     currentBundles.push(newBundle);
 
     if (isMockMode()) {

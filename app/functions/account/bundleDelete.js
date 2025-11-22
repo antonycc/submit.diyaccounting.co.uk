@@ -75,6 +75,15 @@ export async function handler(event) {
     return http403ForbiddenFromBundleEnforcement(error, request);
   }
 
+  // If HEAD request, return 200 OK immediately after bundle enforcement
+  if (request.method === "HEAD") {
+    return http200OkResponse({
+      request,
+      headers: { "Content-Type": "application/json" },
+      data: {},
+    });
+  }
+
   logger.info({ message: "Deleting user bundle" });
 
   // Extract and validate parameters

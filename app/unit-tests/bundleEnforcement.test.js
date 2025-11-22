@@ -117,7 +117,7 @@ describe("bundleEnforcement.js", () => {
       };
       const event = buildEvent(token, authorizerContext);
 
-      bundleHelpers.getUserBundles.mockResolvedValue(["test|EXPIRY=2025-12-31"]);
+      bundleHelpers.getUserBundles.mockResolvedValue(["test"]);
 
       // Should not throw
       await enforceBundles(event);
@@ -207,7 +207,7 @@ describe("bundleEnforcement.js", () => {
       };
       const event = buildEvent(token, authorizerContext);
 
-      bundleHelpers.getUserBundles.mockResolvedValue(["guest|EXPIRY=2025-12-31"]);
+      bundleHelpers.getUserBundles.mockResolvedValue(["guest"]);
 
       // Should not throw
       await enforceBundles(event);
@@ -278,7 +278,7 @@ describe("bundleEnforcement.js", () => {
     });
 
     test("should remove bundles with expiry suffix", async () => {
-      bundleHelpers.getUserBundles.mockResolvedValue(["BUNDLE_1|EXPIRY=2025-12-31", "BUNDLE_2"]);
+      bundleHelpers.getUserBundles.mockResolvedValue(["BUNDLE_1", "BUNDLE_2"]);
       bundleHelpers.updateUserBundles.mockResolvedValue();
 
       const result = await removeBundles("user-1", ["BUNDLE_1"]);
