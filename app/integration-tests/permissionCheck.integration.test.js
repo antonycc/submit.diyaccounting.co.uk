@@ -10,6 +10,12 @@ import { dotenvConfigIfNotBlank } from "../lib/env.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
+// Test data constants
+const VALID_JWT_TOKEN =
+  "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJzdWIiOiJ0ZXN0LXVzZXIiLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJpYXQiOjE2MzQ1NjAwMDAsImV4cCI6OTk5OTk5OTk5OX0.";
+const VALID_JWT_TOKEN_POST =
+  "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJzdWIiOiJ0ZXN0LXVzZXItcG9zdCIsImVtYWlsIjoidGVzdC1wb3N0QGV4YW1wbGUuY29tIiwiaWF0IjoxNjM0NTYwMDAwLCJleHAiOjk5OTk5OTk5OTl9.";
+
 describe("Permission Check Integration Tests", () => {
   let app;
 
@@ -29,10 +35,7 @@ describe("Permission Check Integration Tests", () => {
 
   describe("HEAD Request Permission Checks", () => {
     it("should return 200 OK for HEAD request to catalog endpoint with valid auth", async () => {
-      const validToken =
-        "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJzdWIiOiJ0ZXN0LXVzZXIiLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJpYXQiOjE2MzQ1NjAwMDAsImV4cCI6OTk5OTk5OTk5OX0.";
-
-      const response = await request(app).head("/api/v1/catalog").set("Authorization", `Bearer ${validToken}`);
+      const response = await request(app).head("/api/v1/catalog").set("Authorization", `Bearer ${VALID_JWT_TOKEN}`);
 
       expect(response.status).toBe(200);
       expect(response.headers["x-permission-check"]).toBe("allowed");
@@ -41,10 +44,7 @@ describe("Permission Check Integration Tests", () => {
     });
 
     it("should return 200 OK for HEAD request to bundle endpoint with valid auth", async () => {
-      const validToken =
-        "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJzdWIiOiJ0ZXN0LXVzZXIiLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJpYXQiOjE2MzQ1NjAwMDAsImV4cCI6OTk5OTk5OTk5OX0.";
-
-      const response = await request(app).head("/api/v1/bundle").set("Authorization", `Bearer ${validToken}`);
+      const response = await request(app).head("/api/v1/bundle").set("Authorization", `Bearer ${VALID_JWT_TOKEN}`);
 
       expect(response.status).toBe(200);
       expect(response.headers["x-permission-check"]).toBe("allowed");
@@ -68,10 +68,7 @@ describe("Permission Check Integration Tests", () => {
     });
 
     it("should ignore query parameters in permission check", async () => {
-      const validToken =
-        "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJzdWIiOiJ0ZXN0LXVzZXIiLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJpYXQiOjE2MzQ1NjAwMDAsImV4cCI6OTk5OTk5OTk5OX0.";
-
-      const response = await request(app).head("/api/v1/catalog?page=1&search=test").set("Authorization", `Bearer ${validToken}`);
+      const response = await request(app).head("/api/v1/catalog?page=1&search=test").set("Authorization", `Bearer ${VALID_JWT_TOKEN}`);
 
       expect(response.status).toBe(200);
       expect(response.headers["x-permission-check"]).toBe("allowed");
@@ -95,10 +92,10 @@ describe("Permission Check Integration Tests", () => {
 
   describe("POST Request Still Works Normally", () => {
     it("should process POST request to bundle endpoint normally", async () => {
-      const validToken =
-        "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJzdWIiOiJ0ZXN0LXVzZXItcG9zdCIsImVtYWlsIjoidGVzdC1wb3N0QGV4YW1wbGUuY29tIiwiaWF0IjoxNjM0NTYwMDAwLCJleHAiOjk5OTk5OTk5OTl9.";
-
-      const response = await request(app).post("/api/v1/bundle").set("Authorization", `Bearer ${validToken}`).send({ bundleId: "test" });
+      const response = await request(app)
+        .post("/api/v1/bundle")
+        .set("Authorization", `Bearer ${VALID_JWT_TOKEN_POST}`)
+        .send({ bundleId: "test" });
 
       expect(response.status).toBe(200);
       expect(response.body).toBeDefined();
@@ -110,14 +107,11 @@ describe("Permission Check Integration Tests", () => {
 
   describe("HEAD vs GET Comparison", () => {
     it("HEAD should return same headers as GET but without body", async () => {
-      const validToken =
-        "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJzdWIiOiJ0ZXN0LXVzZXIiLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJpYXQiOjE2MzQ1NjAwMDAsImV4cCI6OTk5OTk5OTk5OX0.";
-
       // Make HEAD request
-      const headResponse = await request(app).head("/api/v1/catalog").set("Authorization", `Bearer ${validToken}`);
+      const headResponse = await request(app).head("/api/v1/catalog").set("Authorization", `Bearer ${VALID_JWT_TOKEN}`);
 
       // Make GET request
-      const getResponse = await request(app).get("/api/v1/catalog").set("Authorization", `Bearer ${validToken}`);
+      const getResponse = await request(app).get("/api/v1/catalog").set("Authorization", `Bearer ${VALID_JWT_TOKEN}`);
 
       // Both should succeed
       expect(headResponse.status).toBe(200);

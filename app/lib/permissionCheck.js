@@ -2,7 +2,7 @@
 
 import logger from "./logger.js";
 import { buildLambdaEventFromHttpRequest } from "./httpHelper.js";
-import { enforceBundles } from "./bundleEnforcement.js";
+import { enforceBundles, BundleAuthorizationError, BundleEntitlementError } from "./bundleEnforcement.js";
 import { extractRequest } from "./responses.js";
 
 /**
@@ -13,6 +13,8 @@ import { extractRequest } from "./responses.js";
  * - They return the same headers as the corresponding GET/POST would
  * - They do not include a response body
  * - They run the same authorization checks
+ *
+ * @param {object} app - Express application instance to register the HEAD route handler
  *
  * Returns:
  * - 200 OK: User has permission to access the resource
@@ -57,7 +59,7 @@ export function permissionCheckMiddleware(app) {
         // Determine appropriate status code based on error type
         let statusCode;
 
-        if (enforcementError.name === "BundleAuthorizationError") {
+        if (enforcementError instanceof BundleAuthorizationError) {
           statusCode = 401;
           logger.warn({
             message: "Permission check failed - unauthorized",
@@ -65,7 +67,7 @@ export function permissionCheckMiddleware(app) {
             error: enforcementError.message,
             status: statusCode,
           });
-        } else if (enforcementError.name === "BundleEntitlementError") {
+        } else if (enforcementError instanceof BundleEntitlementError) {
           statusCode = 403;
           logger.warn({
             message: "Permission check failed - forbidden",
