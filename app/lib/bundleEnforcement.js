@@ -115,7 +115,7 @@ export async function enforceBundles(event, options = {}) {
 // we allow access without requiring authentication. Only when non-automatic bundles are required
 // do we extract the user and fetch their bundles from storage.
 // Helper: derive bundle ID from stored string (which may include metadata like EXPIRY)
-const toBundleId = (b) => (typeof b === "string" ? b.split("|")[0] : String(b || ""));
+// const toBundleId = (b) => (typeof b === "string" ? b.split("|")[0] : String(b || ""));
 
 // Helper: match activity by path (mirrors web/public/widgets/entitlement-status.js)
 function matchesRegexPattern(pattern, normalizedPath) {
@@ -144,7 +144,7 @@ function findRequiredBundleIdsForUrlPath(catalog, currentPath) {
 
   for (const activity of catalog.activities) {
     const paths = activity.paths || (activity.path ? [activity.path] : []);
-    const bundles = Array.isArray(activity.bundles) ? activity.bundles.map(toBundleId) : [];
+    const bundles = Array.isArray(activity.bundles) ? activity.bundles : [];
 
     for (const pRaw of paths) {
       const p = String(pRaw);

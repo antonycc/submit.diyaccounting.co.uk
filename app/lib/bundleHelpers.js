@@ -47,23 +47,28 @@ export async function updateUserBundles(userId, bundles) {
   // Get current bundles to determine what to remove
   const currentBundles = await dynamoDbBundleStore.getUserBundles(userId);
 
+  logger.info({ message: `Current bundles for user ${userId} in DynamoDB`, currentBundles });
+
   // Parse bundle IDs from current bundles
   const currentBundleIds = new Set(currentBundles);
+  logger.info({ message: `Current bundle IDs for user ${userId} in DynamoDB`, currentBundleIds });
 
   // Parse bundle IDs from new bundles
   const newBundleIds = new Set(bundles);
+  logger.info({ message: `New bundle IDs for user ${userId}`, newBundleIds });
 
   // Remove bundles that are no longer in the new list
   const bundlesToRemove = [...currentBundleIds].filter((id) => !newBundleIds.has(id));
+  logger.info({ message: `Bundles to remove for user ${userId} in DynamoDB`, bundlesToRemove });
   for (const bundleId of bundlesToRemove) {
     await dynamoDbBundleStore.deleteBundle(userId, bundleId);
   }
 
   // Add new bundles
-  for (const bundleStr of bundles) {
-    const bundleId = bundleStr.split("|")[0];
+  for (const bundleId of bundles) {
     if (bundleId && !currentBundleIds.has(bundleId)) {
-      await dynamoDbBundleStore.putBundle(userId, bundleStr);
+      logger.info({ message: `Adding new bundle ${bundleId} for user ${userId} in DynamoDB` });
+      await dynamoDbBundleStore.putBundle(userId, bundleId);
     }
   }
 

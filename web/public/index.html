@@ -126,11 +126,12 @@
         return Array.isArray(__userBundles) ? __userBundles : [];
       }
 
-      function hasBundle(bundles, id) {
-        return (bundles || []).some((b) => typeof b === "string" && (b === id || b.startsWith(id + "|")));
-      }
+      //function hasBundle(bundles, id) {
+      //  return (bundles || []).some((b) => typeof b === "string" && b === id);
+      //}
 
       // Parse bundle expiry date from bundle string
+      // TODO: Remove and use the returned bundle objects,
       function parseBundleExpiry(bundleEntry) {
         if (!bundleEntry || typeof bundleEntry !== "string") return null;
         const parts = bundleEntry.split("|");

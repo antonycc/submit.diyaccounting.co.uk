@@ -148,7 +148,7 @@ export async function deleteUserBundle(userId, bundleToRemove, removeAll) {
   }
 
   logger.info({ message: `Removing bundle ${bundleToRemove} for user ${userId}` });
-  const bundlesAfterRemoval = currentBundles.filter((bundle) => !bundle.startsWith(bundleToRemove + "|") && bundle !== bundleToRemove);
+  const bundlesAfterRemoval = currentBundles.filter((bundle) => bundle !== bundleToRemove);
 
   if (bundlesAfterRemoval.length === currentBundles.length) {
     logger.error({ message: `Bundle ${bundleToRemove} not found for user ${userId}` });
