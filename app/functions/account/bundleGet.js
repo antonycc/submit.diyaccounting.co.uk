@@ -87,7 +87,7 @@ export function extractAndValidateParameters(event, errorMessages) {
 
 // HTTP request/response, aware Lambda handler function
 export async function handler(event) {
-  validateEnv(["COGNITO_USER_POOL_ID", "BUNDLE_DYNAMODB_TABLE_NAME"]);
+  validateEnv(["BUNDLE_DYNAMODB_TABLE_NAME"]);
 
   const { request } = extractRequest(event);
   const errorMessages = [];
@@ -152,10 +152,8 @@ export async function handler(event) {
 
 // Service adaptor aware of the downstream service but not the consuming Lambda's incoming/outgoing HTTP request/response
 export async function retrieveUserBundles(userId) {
-  const userPoolId = process.env.COGNITO_USER_POOL_ID;
-
   // Use DynamoDB as primary storage (via getUserBundles which abstracts the storage)
-  const allBundles = await getUserBundles(userId, userPoolId);
+  const allBundles = await getUserBundles(userId);
 
   // Format bundles with expiry information
   const formattedBundles = formatBundles(allBundles);

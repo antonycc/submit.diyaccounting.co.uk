@@ -63,7 +63,7 @@ export function extractAndValidateParameters(event, errorMessages) {
 
 // HTTP request/response, aware Lambda handler function
 export async function handler(event) {
-  validateEnv(["COGNITO_USER_POOL_ID", "BUNDLE_DYNAMODB_TABLE_NAME"]);
+  validateEnv(["BUNDLE_DYNAMODB_TABLE_NAME"]);
 
   const { request } = extractRequest(event);
   const errorMessages = [];
@@ -125,12 +125,11 @@ export async function handler(event) {
 
 // Service adaptor aware of the downstream service but not the consuming Lambda's incoming/outgoing HTTP request/response
 export async function deleteUserBundle(userId, bundleToRemove, removeAll) {
-  const userPoolId = process.env.COGNITO_USER_POOL_ID;
-  const currentBundles = await getUserBundles(userId, userPoolId);
+  const currentBundles = await getUserBundles(userId);
 
   if (removeAll) {
     // Use DynamoDB as primary storage via updateUserBundles
-    await updateUserBundles(userId, userPoolId, []);
+    await updateUserBundles(userId, []);
     logger.info({ message: `All bundles removed for user ${userId}` });
     return {
       status: "removed_all",
@@ -150,7 +149,7 @@ export async function deleteUserBundle(userId, bundleToRemove, removeAll) {
   }
 
   // Use DynamoDB as primary storage via updateUserBundles
-  await updateUserBundles(userId, userPoolId, bundlesAfterRemoval);
+  await updateUserBundles(userId, bundlesAfterRemoval);
   logger.info({ message: `Bundle ${bundleToRemove} removed for user ${userId}` });
   return {
     status: "removed",

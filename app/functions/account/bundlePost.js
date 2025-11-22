@@ -70,7 +70,7 @@ export async function handler(event) {
   const { request, requestId } = extractRequest(event);
   logger.info({ message: "bundlePost entry", route: "/api/v1/bundle", request });
 
-  validateEnv(["COGNITO_USER_POOL_ID", "BUNDLE_DYNAMODB_TABLE_NAME"]);
+  validateEnv(["BUNDLE_DYNAMODB_TABLE_NAME"]);
 
   // Bundle enforcement
   try {
@@ -93,7 +93,6 @@ export async function handler(event) {
       };
     }
     const userId = decodedToken.sub;
-    const userPoolId = process.env.COGNITO_USER_POOL_ID;
 
     const requestBody = parseRequestBody(event);
     if (!requestBody) {
@@ -117,7 +116,7 @@ export async function handler(event) {
 
     logger.info({ message: "Processing bundle request for user:", userId, requestedBundle });
 
-    const currentBundles = await getUserBundles(userId, userPoolId);
+    const currentBundles = await getUserBundles(userId);
 
     const hasBundle = currentBundles.some((bundle) => bundle === requestedBundle || bundle.startsWith(requestedBundle + "|"));
     if (hasBundle) {
@@ -207,7 +206,7 @@ export async function handler(event) {
       mockBundleStore.set(userId, currentBundles);
     } else {
       // Use DynamoDB as primary storage via updateUserBundles
-      await updateUserBundles(userId, userPoolId, currentBundles);
+      await updateUserBundles(userId, currentBundles);
     }
 
     logger.info({ message: "Bundle granted to user:", userId, newBundle });

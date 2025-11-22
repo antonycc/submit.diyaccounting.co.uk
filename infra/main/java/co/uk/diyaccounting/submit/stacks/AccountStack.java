@@ -139,7 +139,6 @@ public class AccountStack extends Stack {
 
         // Get Bundles Lambda
         var getBundlesLambdaEnv = new PopulatedMap<String, String>()
-                .with("COGNITO_USER_POOL_ID", userPool.getUserPoolId())
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName());
         var getBundlesLambdaUrlOrigin = new ApiLambda(
                 this,
@@ -187,7 +186,6 @@ public class AccountStack extends Stack {
 
         // Request Bundles Lambda
         var requestBundlesLambdaEnv = new PopulatedMap<String, String>()
-                .with("COGNITO_USER_POOL_ID", userPool.getUserPoolId())
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName())
                 .with("TEST_BUNDLE_EXPIRY_DATE", "2025-12-31")
                 .with("TEST_BUNDLE_USER_LIMIT", "10");
@@ -242,7 +240,6 @@ public class AccountStack extends Stack {
 
         // Delete Bundles Lambda
         var bundleDeleteLambdaEnv = new PopulatedMap<String, String>()
-                .with("COGNITO_USER_POOL_ID", userPool.getUserPoolId())
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName())
                 .with("TEST_BUNDLE_EXPIRY_DATE", "2025-12-31")
                 .with("TEST_BUNDLE_USER_LIMIT", "10");

@@ -21,7 +21,6 @@ describe("hmrcVatReturnPost handler (new tests)", () => {
       ...originalEnv,
       NODE_ENV: "test",
       HMRC_BASE_URI: "https://test-api.service.hmrc.gov.uk",
-      COGNITO_USER_POOL_ID: "test-pool-id", // required by handler's validateEnv
       HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME: "test-hmrc-requests-table",
     };
   });

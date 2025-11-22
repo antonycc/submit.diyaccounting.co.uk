@@ -61,7 +61,6 @@ describe("bundleEnforcement.js", () => {
     process.env = {
       ...originalEnv,
       DIY_SUBMIT_ENFORCE_BUNDLES: "true",
-      COGNITO_USER_POOL_ID: "test-pool-id",
       HMRC_BASE_URI: "https://test-api.service.hmrc.gov.uk",
     };
   });
