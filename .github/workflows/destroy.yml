@@ -128,51 +128,52 @@ jobs:
 
       # Get the record names of aliases in Route 53 that:
       # - have a first label matching ^(ci|prod)-.*
-      # - AND are directly under one of the primary hosted zones:
+      # - AND are directly under one of the primary subdomains:
       #     submit.diyaccounting.co.uk
       #     ci.submit.diyaccounting.co.uk
+      # Both subdomains live inside the diyaccounting.co.uk hosted zone.
       - name: Get the public record names
         id: public-deployment-names
         run: |
-          echo 'Getting Route 53 hosted zones for primary domains'
-          PRIMARY_ZONES='submit.diyaccounting.co.uk. ci.submit.diyaccounting.co.uk.'
+          echo 'Getting Route 53 hosted zone for diyaccounting.co.uk.'
+          ROOT_ZONE='diyaccounting.co.uk.'
+          PRIMARY_SUFFIXES='submit.diyaccounting.co.uk ci.submit.diyaccounting.co.uk'
           PUBLIC_DEPLOYMENT_NAMES=''
 
-          for ZONE_NAME in $PRIMARY_ZONES; do
-            echo "Looking up hosted zone for $ZONE_NAME"
-            ZONE_ID=$(aws route53 list-hosted-zones-by-name \
-              --dns-name "$ZONE_NAME" \
-              --query 'HostedZones[0].Id' \
-              --output text 2>/dev/null | sed 's|/hostedzone/||')
+          ZONE_ID=$(aws route53 list-hosted-zones-by-name \
+            --dns-name "$ROOT_ZONE" \
+            --query 'HostedZones[0].Id' \
+            --output text 2>/dev/null | sed 's|/hostedzone/||')
 
-            if [ -z "$ZONE_ID" ] || [ "$ZONE_ID" = "None" ]; then
-              echo "No hosted zone found for $ZONE_NAME, skipping"
-              continue
-            fi
+          if [ -z "$ZONE_ID" ] || [ "$ZONE_ID" = 'None' ]; then
+            echo "No hosted zone found for $ROOT_ZONE"
+            exit 1
+          fi
 
-            echo "Using hosted zone $ZONE_NAME ($ZONE_ID)"
+          echo "Using hosted zone $ROOT_ZONE ($ZONE_ID)"
 
-            # List A/AAAA/CNAME records in this zone
-            RECORD_NAMES=$(aws route53 list-resource-record-sets \
-              --hosted-zone-id "$ZONE_ID" \
-              --query 'ResourceRecordSets[?Type==`A` || Type==`AAAA` || Type==`CNAME`].Name' \
-              --output text)
+          # List A/AAAA/CNAME records in this zone
+          RECORD_NAMES=$(aws route53 list-resource-record-sets \
+            --hosted-zone-id "$ZONE_ID" \
+            --query 'ResourceRecordSets[?Type==`A` || Type==`AAAA` || Type==`CNAME`].Name' \
+            --output text)
 
-            echo "Found record names in $ZONE_NAME: $RECORD_NAMES"
+          echo "Found record names: $RECORD_NAMES"
 
-            for RECORD in $RECORD_NAMES; do
-              # RECORD examples:
-              #   prod-64d48ac.submit.diyaccounting.co.uk.
-              #   ci-mtdreport.ci.submit.diyaccounting.co.uk.
-              NAME_STRIPPED=${RECORD%.}           # drop trailing dot
-              HOST_LABEL=${NAME_STRIPPED%%.*}     # first label
-              REST_DOMAIN=${NAME_STRIPPED#*.}     # everything after first label
+          for RECORD in $RECORD_NAMES; do
+            # RECORD examples:
+            #   prod-64d48ac.submit.diyaccounting.co.uk.
+            #   ci-mtdreport.ci.submit.diyaccounting.co.uk.
+            NAME_STRIPPED=${RECORD%.}       # drop trailing dot
+            HOST_LABEL=${NAME_STRIPPED%%.*} # first label (prod-64d48ac)
+            REST_DOMAIN=${NAME_STRIPPED#*.} # everything after first label
 
-              # Only consider records that are *directly* under the zone
-              # i.e. HOST_LABEL.ZONE_NAME (no extra sub-subdomains)
-              if [ "$REST_DOMAIN." = "$ZONE_NAME" ]; then
+            for SUFFIX in $PRIMARY_SUFFIXES; do
+              # Only consider records that are directly under one of the primary
+              # subdomains and whose first label is ci-/prod-
+              if [ "$REST_DOMAIN" = "$SUFFIX" ]; then
                 if [[ "$HOST_LABEL" =~ ^(ci|prod)-.* ]]; then
-                  echo "Found public deployment record: $HOST_LABEL under $ZONE_NAME"
+                  echo "Found public deployment record: $HOST_LABEL under $SUFFIX"
                   PUBLIC_DEPLOYMENT_NAMES="$PUBLIC_DEPLOYMENT_NAMES $HOST_LABEL"
                 fi
               fi
