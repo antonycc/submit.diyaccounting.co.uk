@@ -126,18 +126,15 @@ jobs:
           echo "last-known-good-deployment-name-ci=$LAST_KNOWN_GOOD_DEPLOYMENT_NAME_CI_VALUE" >> $GITHUB_OUTPUT
           echo "last-known-good-deployment-name-prod=$LAST_KNOWN_GOOD_DEPLOYMENT_NAME_PROD_VALUE" >> $GITHUB_OUTPUT
 
-      # Get the record names of aliases in Route 53 that:
-      # - have a first label matching ^(ci|prod)-.*
-      # - AND are directly under one of the primary subdomains:
-      #     submit.diyaccounting.co.uk
-      #     ci.submit.diyaccounting.co.uk
-      # Both subdomains live inside the diyaccounting.co.uk hosted zone.
+      # Get the deployment names that the primary domains alias to in Route 53:
+      #   submit.diyaccounting.co.uk  -> prod-*.submit.diyaccounting.co.uk.
+      #   ci.submit.diyaccounting.co.uk -> ci-*.submit.diyaccounting.co.uk.
       - name: Get the public record names
         id: public-deployment-names
         run: |
           echo 'Getting Route 53 hosted zone for diyaccounting.co.uk.'
           ROOT_ZONE='diyaccounting.co.uk.'
-          PRIMARY_SUFFIXES='submit.diyaccounting.co.uk ci.submit.diyaccounting.co.uk'
+          PRIMARY_NAMES='submit.diyaccounting.co.uk. ci.submit.diyaccounting.co.uk.'
           PUBLIC_DEPLOYMENT_NAMES=''
 
           ZONE_ID=$(aws route53 list-hosted-zones-by-name \
@@ -152,35 +149,37 @@ jobs:
 
           echo "Using hosted zone $ROOT_ZONE ($ZONE_ID)"
 
-          # List A/AAAA/CNAME records in this zone
-          RECORD_NAMES=$(aws route53 list-resource-record-sets \
-            --hosted-zone-id "$ZONE_ID" \
-            --query 'ResourceRecordSets[?Type==`A` || Type==`AAAA` || Type==`CNAME`].Name' \
-            --output text)
+          for PRIMARY_NAME in $PRIMARY_NAMES; do
+            echo "Looking up alias target for $PRIMARY_NAME"
 
-          echo "Found record names: $RECORD_NAMES"
+            # Get the alias target DNSName for the A record of the primary name
+            ALIAS_TARGETS=$(aws route53 list-resource-record-sets \
+              --hosted-zone-id "$ZONE_ID" \
+              --query "ResourceRecordSets[?Name==\`$PRIMARY_NAME\` && Type==\`A\`].AliasTarget.DNSName" \
+              --output text)
 
-          for RECORD in $RECORD_NAMES; do
-            # RECORD examples:
-            #   prod-64d48ac.submit.diyaccounting.co.uk.
-            #   ci-mtdreport.ci.submit.diyaccounting.co.uk.
-            NAME_STRIPPED=${RECORD%.}       # drop trailing dot
-            HOST_LABEL=${NAME_STRIPPED%%.*} # first label (prod-64d48ac)
-            REST_DOMAIN=${NAME_STRIPPED#*.} # everything after first label
+            if [ -z "$ALIAS_TARGETS" ] || [ "$ALIAS_TARGETS" = 'None' ]; then
+              echo "No alias A record found for $PRIMARY_NAME"
+              continue
+            fi
 
-            for SUFFIX in $PRIMARY_SUFFIXES; do
-              # Only consider records that are directly under one of the primary
-              # subdomains and whose first label is ci-/prod-
-              if [ "$REST_DOMAIN" = "$SUFFIX" ]; then
-                if [[ "$HOST_LABEL" =~ ^(ci|prod)-.* ]]; then
-                  echo "Found public deployment record: $HOST_LABEL under $SUFFIX"
-                  PUBLIC_DEPLOYMENT_NAMES="$PUBLIC_DEPLOYMENT_NAMES $HOST_LABEL"
-                fi
+            echo "Alias targets for $PRIMARY_NAME: $ALIAS_TARGETS"
+
+            for TARGET in $ALIAS_TARGETS; do
+              # Example TARGET:
+              #   prod-64d48ac.submit.diyaccounting.co.uk.
+              TARGET_STRIPPED=${TARGET%.}          # drop trailing dot
+              HOST_LABEL=${TARGET_STRIPPED%%.*}    # first label (prod-64d48ac)
+
+              if [[ "$HOST_LABEL" =~ ^(ci|prod)-.* ]]; then
+                echo "Found public deployment from $PRIMARY_NAME -> $HOST_LABEL"
+                PUBLIC_DEPLOYMENT_NAMES="$PUBLIC_DEPLOYMENT_NAMES $HOST_LABEL"
+              else
+                echo "Alias target $TARGET_STRIPPED does not look like ci-/prod-*, skipping"
               fi
             done
           done
 
-          # Remove duplicates
           echo "Collected public deployment names before deduplication: $PUBLIC_DEPLOYMENT_NAMES"
           PUBLIC_DEPLOYMENT_NAMES=$(echo "$PUBLIC_DEPLOYMENT_NAMES" \
             | tr ' ' '\n' \
