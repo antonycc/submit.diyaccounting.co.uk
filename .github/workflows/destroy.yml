@@ -126,38 +126,53 @@ jobs:
           echo "last-known-good-deployment-name-ci=$LAST_KNOWN_GOOD_DEPLOYMENT_NAME_CI_VALUE" >> $GITHUB_OUTPUT
           echo "last-known-good-deployment-name-prod=$LAST_KNOWN_GOOD_DEPLOYMENT_NAME_PROD_VALUE" >> $GITHUB_OUTPUT
 
-      # Get the record names of aliases in any cloudfront distributions that:
+      # Get the record names of aliases in Route 53 that:
       # - have a first label matching ^(ci|prod)-.*
-      # - AND are under one of the primary domains:
+      # - AND are directly under one of the primary hosted zones:
       #     submit.diyaccounting.co.uk
       #     ci.submit.diyaccounting.co.uk
       - name: Get the public record names
         id: public-deployment-names
         run: |
-          echo 'Getting CloudFront distributions'
-          DISTRIBUTION_IDS=$(aws cloudfront list-distributions \
-            --query 'DistributionList.Items[].Id' \
-            --output text)
+          echo 'Getting Route 53 hosted zones for primary domains'
+          PRIMARY_ZONES='submit.diyaccounting.co.uk. ci.submit.diyaccounting.co.uk.'
           PUBLIC_DEPLOYMENT_NAMES=''
-          echo "Found CloudFront Distribution IDs: $DISTRIBUTION_IDS"
 
-          for DISTRIBUTION_ID in $DISTRIBUTION_IDS; do
-            ALIASES=$(aws cloudfront get-distribution \
-              --id "$DISTRIBUTION_ID" \
-              --query 'Distribution.DistributionConfig.Aliases.Items[]' \
+          for ZONE_NAME in $PRIMARY_ZONES; do
+            echo "Looking up hosted zone for $ZONE_NAME"
+            ZONE_ID=$(aws route53 list-hosted-zones-by-name \
+              --dns-name "$ZONE_NAME" \
+              --query 'HostedZones[0].Id' \
+              --output text 2>/dev/null | sed 's|/hostedzone/||')
+
+            if [ -z "$ZONE_ID" ] || [ "$ZONE_ID" = "None" ]; then
+              echo "No hosted zone found for $ZONE_NAME, skipping"
+              continue
+            fi
+
+            echo "Using hosted zone $ZONE_NAME ($ZONE_ID)"
+
+            # List A/AAAA/CNAME records in this zone
+            RECORD_NAMES=$(aws route53 list-resource-record-sets \
+              --hosted-zone-id "$ZONE_ID" \
+              --query 'ResourceRecordSets[?Type==`A` || Type==`AAAA` || Type==`CNAME`].Name' \
               --output text)
-            echo "Found aliases for Distribution ID $DISTRIBUTION_ID: $ALIASES"
 
-            for ALIAS in $ALIASES; do
-              # Example ALIAS:
-              #   prod-64d48ac.submit.diyaccounting.co.uk
-              HOST_LABEL=${ALIAS%%.*}   # prod-64d48ac
-              REST_DOMAIN=${ALIAS#*.}   # submit.diyaccounting.co.uk
+            echo "Found record names in $ZONE_NAME: $RECORD_NAMES"
 
-              # Only treat as public if it is under one of the primary domains
-              if [[ "$REST_DOMAIN" == 'submit.diyaccounting.co.uk' || \
-                    "$REST_DOMAIN" == 'ci.submit.diyaccounting.co.uk' ]]; then
+            for RECORD in $RECORD_NAMES; do
+              # RECORD examples:
+              #   prod-64d48ac.submit.diyaccounting.co.uk.
+              #   ci-mtdreport.ci.submit.diyaccounting.co.uk.
+              NAME_STRIPPED=${RECORD%.}           # drop trailing dot
+              HOST_LABEL=${NAME_STRIPPED%%.*}     # first label
+              REST_DOMAIN=${NAME_STRIPPED#*.}     # everything after first label
+
+              # Only consider records that are *directly* under the zone
+              # i.e. HOST_LABEL.ZONE_NAME (no extra sub-subdomains)
+              if [ "$REST_DOMAIN." = "$ZONE_NAME" ]; then
                 if [[ "$HOST_LABEL" =~ ^(ci|prod)-.* ]]; then
+                  echo "Found public deployment record: $HOST_LABEL under $ZONE_NAME"
                   PUBLIC_DEPLOYMENT_NAMES="$PUBLIC_DEPLOYMENT_NAMES $HOST_LABEL"
                 fi
               fi
