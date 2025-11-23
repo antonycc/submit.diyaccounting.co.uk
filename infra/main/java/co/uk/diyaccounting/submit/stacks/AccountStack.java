@@ -91,6 +91,7 @@ public class AccountStack extends Stack {
         super(scope, id, stackProps);
 
         // Lookup existing Cognito UserPool
+        // TODO: Remove this and the the BUNDLE_DYNAMODB_TABLE_NAME from customAuthorizerLambdaEnv once otherwise stable
         IUserPool userPool = UserPool.fromUserPoolArn(
                 this, "ImportedUserPool-%s".formatted(props.deploymentName()), props.cognitoUserPoolArn());
 
