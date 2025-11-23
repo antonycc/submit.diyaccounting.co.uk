@@ -47,7 +47,7 @@ export async function putBundle(userId, bundle) {
 
   try {
     const hashedSub = hashSub(userId);
-    logger.info({ message: "Storing bundle", hashedSub, bundle });
+    logger.info({ message: "Storing bundle", hashedSub, userId, bundle });
 
     const docClient = await getDynamoDbDocClient();
     const tableName = getTableName();
@@ -120,6 +120,7 @@ export async function deleteBundle(userId, bundleId) {
 
   try {
     const hashedSub = hashSub(userId);
+    logger.info({ message: "Deleting bundle", hashedSub, userId, bundleId });
     const docClient = await getDynamoDbDocClient();
     const tableName = getTableName();
 
@@ -168,6 +169,7 @@ export async function deleteAllBundles(userId) {
 
   try {
     const hashedSub = hashSub(userId);
+    logger.info({ message: "Deleting all bundles for user", userId, hashedSub });
     const bundles = await getUserBundles(userId);
 
     // Delete bundles concurrently for better performance
@@ -216,12 +218,15 @@ export async function deleteAllBundles(userId) {
  */
 export async function getUserBundles(userId) {
   if (!isDynamoDbEnabled()) {
-    logger.debug({ message: "DynamoDB not enabled, returning empty bundles array" });
+    logger.warn({ message: "DynamoDB not enabled, returning empty bundles array" });
     return [];
+  } else {
+    logger.info({ message: "DynamoDB enabled, proceeding with getUserBundles", userId });
   }
 
   try {
     const hashedSub = hashSub(userId);
+    logger.info({ message: "Retrieving bundles from DynamoDB", userId, hashedSub });
     const docClient = await getDynamoDbDocClient();
     const tableName = getTableName();
 
