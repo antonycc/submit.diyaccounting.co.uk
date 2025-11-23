@@ -38,6 +38,21 @@ describe("Integration – /api/v1/hmrc/receipt", () => {
 
     app.get("/api/v1/hmrc/receipt", async (req, res) => {
       const event = {
+        requestContext: {
+          requestId: "test-request-id",
+          authorizer: {
+            lambda: {
+              jwt: {
+                claims: {
+                  "sub": "test-sub",
+                  "cognito:username": "test",
+                  "email": "test@test.submit.diyaccunting.co.uk",
+                  "scope": "read write",
+                },
+              },
+            },
+          },
+        },
         path: req.path,
         headers: { host: req.get("host") || "localhost:3000", authorization: req.headers.authorization },
         queryStringParameters: req.query || {},
@@ -48,6 +63,21 @@ describe("Integration – /api/v1/hmrc/receipt", () => {
 
     app.get("/api/v1/hmrc/receipt/:name", async (req, res) => {
       const event = {
+        requestContext: {
+          requestId: "test-request-id",
+          authorizer: {
+            lambda: {
+              jwt: {
+                claims: {
+                  "sub": "test-sub",
+                  "cognito:username": "test",
+                  "email": "test@test.submit.diyaccunting.co.uk",
+                  "scope": "read write",
+                },
+              },
+            },
+          },
+        },
         path: req.path,
         headers: { host: req.get("host") || "localhost:3000", authorization: req.headers.authorization },
         pathParameters: { name: req.params.name },

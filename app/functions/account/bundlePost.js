@@ -3,7 +3,7 @@
 import { loadCatalogFromRoot } from "../../lib/productCatalogHelper.js";
 import { validateEnv } from "../../lib/env.js";
 import logger from "../../lib/logger.js";
-import { extractRequest, parseRequestBody } from "../../lib/responses.js";
+import { extractRequest, http200OkResponse, parseRequestBody } from "../../lib/responses.js";
 import { decodeJwtToken } from "../../lib/jwtHelper.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
 import { getUserBundles, updateUserBundles, isMockMode } from "../../lib/bundleHelpers.js";
@@ -18,7 +18,10 @@ function parseIsoDurationToDate(fromDate, iso) {
   const d = new Date(fromDate.getTime());
   // eslint-disable-next-line security/detect-unsafe-regex
   const m = String(iso || "").match(/^P(?:(\d+)Y)?(?:(\d+)M)?(?:(\d+)D)?$/);
-  if (!m) return d;
+  if (!m) {
+    logger.warn({ message: "Unsupported ISO duration format, cannot parse:", iso });
+    return d;
+  }
   const years = parseInt(m[1] || "0", 10);
   const months = parseInt(m[2] || "0", 10);
   const days = parseInt(m[3] || "0", 10);
@@ -31,7 +34,9 @@ function parseIsoDurationToDate(fromDate, iso) {
 function getCatalogBundle(bundleId) {
   try {
     const catalog = loadCatalogFromRoot();
-    return (catalog.bundles || []).find((b) => b.id === bundleId) || null;
+    const catalogBundle = (catalog.bundles || []).find((b) => b.id === bundleId) || null;
+    logger.info({ message: "Loaded catalog bundle:", bundleId, catalogBundle });
+    return catalogBundle;
   } catch (error) {
     logger.error({ message: "Failed to load product catalog:", error });
     return null;
@@ -42,18 +47,27 @@ function qualifiersSatisfied(bundle, claims, requestQualifiers = {}) {
   const q = bundle?.qualifiers || {};
   if (q.requiresTransactionId) {
     const tx = requestQualifiers.transactionId || claims?.transactionId || claims?.["custom:transactionId"];
-    if (!tx) return { ok: false, reason: "missing_transactionId" };
+    if (!tx) {
+      logger.warn({ message: "Missing required transactionId qualifier for bundle request" });
+      return { ok: false, reason: "missing_transactionId" };
+    }
   }
   if (q.subscriptionTier) {
     const tier = requestQualifiers.subscriptionTier || claims?.subscriptionTier || claims?.["custom:subscriptionTier"];
-    if (tier !== q.subscriptionTier) return { ok: false, reason: "subscription_tier_mismatch" };
+    if (tier !== q.subscriptionTier) {
+      logger.warn({ message: "Subscription tier qualifier mismatch for bundle request:", expected: q.subscriptionTier, received: tier });
+      return { ok: false, reason: "subscription_tier_mismatch" };
+    }
   }
   // Reject unknown qualifier keys present in request
   const known = new Set(Object.keys(q));
   if (q.requiresTransactionId) known.add("transactionId");
   if (Object.prototype.hasOwnProperty.call(q, "subscriptionTier")) known.add("subscriptionTier");
   for (const k of Object.keys(requestQualifiers || {})) {
-    if (!known.has(k)) return { ok: false, unknown: k };
+    if (!known.has(k)) {
+      logger.warn({ message: "Unknown qualifier in bundle request:", qualifier: k });
+      return { ok: false, unknown: k };
+    }
   }
   return { ok: true };
 }
@@ -70,13 +84,22 @@ export async function handler(event) {
   const { request, requestId } = extractRequest(event);
   logger.info({ message: "bundlePost entry", route: "/api/v1/bundle", request });
 
-  validateEnv(["COGNITO_USER_POOL_ID"]);
+  validateEnv(["BUNDLE_DYNAMODB_TABLE_NAME"]);
 
   // Bundle enforcement
   try {
     await enforceBundles(event);
   } catch (error) {
     return http403ForbiddenFromBundleEnforcement(error, request);
+  }
+
+  // If HEAD request, return 200 OK immediately after bundle enforcement
+  if (request.method === "HEAD") {
+    return http200OkResponse({
+      request,
+      headers: { "Content-Type": "application/json" },
+      data: {},
+    });
   }
 
   try {
@@ -93,7 +116,6 @@ export async function handler(event) {
       };
     }
     const userId = decodedToken.sub;
-    const userPoolId = process.env.COGNITO_USER_POOL_ID;
 
     const requestBody = parseRequestBody(event);
     if (!requestBody) {
@@ -117,9 +139,9 @@ export async function handler(event) {
 
     logger.info({ message: "Processing bundle request for user:", userId, requestedBundle });
 
-    const currentBundles = await getUserBundles(userId, userPoolId);
+    const currentBundles = await getUserBundles(userId);
 
-    const hasBundle = currentBundles.some((bundle) => bundle === requestedBundle || bundle.startsWith(requestedBundle + "|"));
+    const hasBundle = currentBundles.some((bundle) => bundle === requestedBundle);
     if (hasBundle) {
       logger.info({ message: "User already has requested bundle:", requestedBundle });
       return {
@@ -177,16 +199,14 @@ export async function handler(event) {
           bundles: currentBundles,
         }),
       };
+    } else {
+      logger.info({ message: "[Catalog bundle] Bundle requires manual allocation, proceeding:", requestedBundle });
     }
 
     // on-request: enforce cap and expiry
     const cap = Number.isFinite(catalogBundle.cap) ? Number(catalogBundle.cap) : undefined;
     if (typeof cap === "number") {
-      let currentCount = 0;
-      for (const bundles of mockBundleStore.values()) {
-        if ((bundles || []).some((b) => typeof b === "string" && (b === requestedBundle || b.startsWith(requestedBundle + "|"))))
-          currentCount++;
-      }
+      const currentCount = mockBundleStore.size;
       if (currentCount >= cap) {
         logger.info({ message: "[Catalog bundle] Bundle cap reached:", requestedBundle, cap });
         return {
@@ -195,19 +215,23 @@ export async function handler(event) {
           body: JSON.stringify({ error: "cap_reached" }),
         };
       }
+    } else {
+      logger.info({ message: "[Catalog bundle] No cap defined for bundle:", requestedBundle });
     }
 
+    logger.info({ message: "Granting bundle to user:", userId, requestedBundle });
     const expiry = catalogBundle.timeout ? parseIsoDurationToDate(new Date(), catalogBundle.timeout) : null;
     const expiryStr = expiry ? expiry.toISOString().slice(0, 10) : "";
-
-    const newBundle = `${requestedBundle}|EXPIRY=${expiryStr || ""}`;
+    const newBundle = { bundleId: requestedBundle, expiry: expiryStr };
+    logger.info({ message: "New bundle details:", newBundle });
     currentBundles.push(newBundle);
+    logger.info({ message: "Updated user bundles:", userId, currentBundles });
 
     if (isMockMode()) {
       mockBundleStore.set(userId, currentBundles);
     } else {
       // Use DynamoDB as primary storage via updateUserBundles
-      await updateUserBundles(userId, userPoolId, currentBundles);
+      await updateUserBundles(userId, currentBundles);
     }
 
     logger.info({ message: "Bundle granted to user:", userId, newBundle });

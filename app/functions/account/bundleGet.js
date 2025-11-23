@@ -6,64 +6,17 @@ import { extractRequest, http200OkResponse, http401UnauthorizedResponse, http500
 import { decodeJwtToken } from "../../lib/jwtHelper.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
 import { getUserBundles } from "../../lib/bundleHelpers.js";
-import { enforceBundles } from "../../lib/bundleEnforcement.js";
+import { BundleAuthorizationError, BundleEntitlementError, enforceBundles } from "../../lib/bundleEnforcement.js";
 import { http403ForbiddenFromBundleEnforcement } from "../../lib/hmrcHelper.js";
-
-/**
- * Parse bundle string to extract bundleId and expiry
- * @param {string} bundleStr - Bundle string in format "BUNDLE_ID" or "BUNDLE_ID|EXPIRY=2025-12-31"
- * @returns {Object} Object with bundleId and expiry (ISO date string or empty string)
- */
-function parseBundleString(bundleStr) {
-  if (!bundleStr || typeof bundleStr !== "string") {
-    return { bundleId: "", expiry: "" };
-  }
-
-  const parts = bundleStr.split("|");
-  const bundleId = parts[0] || "";
-  let expiry = "";
-
-  if (parts.length > 1) {
-    const expiryMatch = parts[1].match(/EXPIRY=(.+)/);
-    if (expiryMatch && expiryMatch[1]) {
-      // Keep the entry with the latest expiry date
-      expiry = expiryMatch[1]; // ISO date string like "2025-12-31"
-    }
-  }
-
-  return { bundleId, expiry };
-}
-
-/**
- * Get de-duplicated bundles with expiry dates
- * @param {Array<string>} bundles - Array of bundle strings
- * @returns {Array<Object>} Array of bundle objects with bundleId and expiry
- */
-function formatBundles(bundles) {
-  const bundleMap = new Map();
-
-  for (const bundleStr of bundles) {
-    const { bundleId, expiry } = parseBundleString(bundleStr);
-    if (bundleId) {
-      // Keep the entry with the latest expiry date if duplicates exist
-      const existing = bundleMap.get(bundleId);
-      if (!existing) {
-        bundleMap.set(bundleId, { bundleId, expiry });
-      } else if (expiry) {
-        // Update if new expiry is later than existing
-        if (expiry > (existing.expiry || "")) {
-          bundleMap.set(bundleId, { bundleId, expiry });
-        }
-      }
-    }
-  }
-
-  return Array.from(bundleMap.values());
-}
 
 // Server hook for Express app, and construction of a Lambda-like event from HTTP request)
 export function apiEndpoint(app) {
   app.get("/api/v1/bundle", async (httpRequest, httpResponse) => {
+    const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
+    const lambdaResult = await handler(lambdaEvent);
+    return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
+  });
+  app.head("/api/v1/bundle", async (httpRequest, httpResponse) => {
     const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
     const lambdaResult = await handler(lambdaEvent);
     return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
@@ -87,7 +40,7 @@ export function extractAndValidateParameters(event, errorMessages) {
 
 // HTTP request/response, aware Lambda handler function
 export async function handler(event) {
-  validateEnv(["COGNITO_USER_POOL_ID"]);
+  validateEnv(["BUNDLE_DYNAMODB_TABLE_NAME"]);
 
   const { request } = extractRequest(event);
   const errorMessages = [];
@@ -95,8 +48,29 @@ export async function handler(event) {
   // Bundle enforcement
   try {
     await enforceBundles(event);
+    // Handle BundleAuthorizationError and BundleEntitlementError with different response generators
   } catch (error) {
-    return http403ForbiddenFromBundleEnforcement(error, request);
+    if (error instanceof BundleAuthorizationError) {
+      return http401UnauthorizedResponse({
+        request,
+        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+        message: "Unauthorized access to bundles",
+        error: {},
+      });
+    }
+
+    if (error instanceof BundleEntitlementError) {
+      return http403ForbiddenFromBundleEnforcement(error, request);
+    }
+  }
+
+  // If HEAD request, return 200 OK immediately after bundle enforcement
+  if (request.method === "HEAD") {
+    return http200OkResponse({
+      request,
+      headers: { "Content-Type": "application/json" },
+      data: {},
+    });
   }
 
   logger.info({ message: "Retrieving user bundles" });
@@ -140,13 +114,8 @@ export async function handler(event) {
 
 // Service adaptor aware of the downstream service but not the consuming Lambda's incoming/outgoing HTTP request/response
 export async function retrieveUserBundles(userId) {
-  const userPoolId = process.env.COGNITO_USER_POOL_ID;
-
   // Use DynamoDB as primary storage (via getUserBundles which abstracts the storage)
-  const allBundles = await getUserBundles(userId, userPoolId);
+  const allBundles = await getUserBundles(userId);
 
-  // Format bundles with expiry information
-  const formattedBundles = formatBundles(allBundles);
-
-  return formattedBundles;
+  return allBundles;
 }

@@ -29,6 +29,11 @@ export function apiEndpoint(app) {
     const lambdaResult = await handler(lambdaEvent);
     return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
   });
+  app.head("/api/v1/bundle", async (httpRequest, httpResponse) => {
+    const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
+    const lambdaResult = await handler(lambdaEvent);
+    return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
+  });
 }
 
 export function extractAndValidateParameters(event, errorMessages) {
@@ -63,7 +68,7 @@ export function extractAndValidateParameters(event, errorMessages) {
 
 // HTTP request/response, aware Lambda handler function
 export async function handler(event) {
-  validateEnv(["COGNITO_USER_POOL_ID"]);
+  validateEnv(["BUNDLE_DYNAMODB_TABLE_NAME"]);
 
   const { request } = extractRequest(event);
   const errorMessages = [];
@@ -73,6 +78,15 @@ export async function handler(event) {
     await enforceBundles(event);
   } catch (error) {
     return http403ForbiddenFromBundleEnforcement(error, request);
+  }
+
+  // If HEAD request, return 200 OK immediately after bundle enforcement
+  if (request.method === "HEAD") {
+    return http200OkResponse({
+      request,
+      headers: { "Content-Type": "application/json" },
+      data: {},
+    });
   }
 
   logger.info({ message: "Deleting user bundle" });
@@ -125,12 +139,11 @@ export async function handler(event) {
 
 // Service adaptor aware of the downstream service but not the consuming Lambda's incoming/outgoing HTTP request/response
 export async function deleteUserBundle(userId, bundleToRemove, removeAll) {
-  const userPoolId = process.env.COGNITO_USER_POOL_ID;
-  const currentBundles = await getUserBundles(userId, userPoolId);
+  const currentBundles = await getUserBundles(userId);
 
   if (removeAll) {
     // Use DynamoDB as primary storage via updateUserBundles
-    await updateUserBundles(userId, userPoolId, []);
+    await updateUserBundles(userId, []);
     logger.info({ message: `All bundles removed for user ${userId}` });
     return {
       status: "removed_all",
@@ -140,7 +153,7 @@ export async function deleteUserBundle(userId, bundleToRemove, removeAll) {
   }
 
   logger.info({ message: `Removing bundle ${bundleToRemove} for user ${userId}` });
-  const bundlesAfterRemoval = currentBundles.filter((bundle) => !bundle.startsWith(bundleToRemove + "|") && bundle !== bundleToRemove);
+  const bundlesAfterRemoval = currentBundles.filter((bundle) => bundle !== bundleToRemove);
 
   if (bundlesAfterRemoval.length === currentBundles.length) {
     logger.error({ message: `Bundle ${bundleToRemove} not found for user ${userId}` });
@@ -150,7 +163,7 @@ export async function deleteUserBundle(userId, bundleToRemove, removeAll) {
   }
 
   // Use DynamoDB as primary storage via updateUserBundles
-  await updateUserBundles(userId, userPoolId, bundlesAfterRemoval);
+  await updateUserBundles(userId, bundlesAfterRemoval);
   logger.info({ message: `Bundle ${bundleToRemove} removed for user ${userId}` });
   return {
     status: "removed",

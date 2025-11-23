@@ -22,6 +22,7 @@ describe("hmrcTokenPost handler (new tests)", () => {
       HMRC_CLIENT_ID: "test-client-id",
       HMRC_CLIENT_SECRET: "test-client-secret",
       DIY_SUBMIT_BASE_URL: "https://submit.diyaccounting.co.uk",
+      HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME: "test-hmrc-requests-table",
     };
   });
 
@@ -40,7 +41,21 @@ describe("hmrcTokenPost handler (new tests)", () => {
     });
 
     const event = {
-      requestContext: { requestId: "req-1" },
+      requestContext: {
+        requestId: "test-request-id",
+        authorizer: {
+          lambda: {
+            jwt: {
+              claims: {
+                "sub": "test-sub",
+                "cognito:username": "test",
+                "email": "test@test.submit.diyaccunting.co.uk",
+                "scope": "read write",
+              },
+            },
+          },
+        },
+      },
       body: JSON.stringify({ code: "auth-code-123" }),
     };
 
@@ -56,7 +71,21 @@ describe("hmrcTokenPost handler (new tests)", () => {
 
   test("returns 400 when authorization code is missing", async () => {
     const event = {
-      requestContext: { requestId: "req-2" },
+      requestContext: {
+        requestId: "test-request-id",
+        authorizer: {
+          lambda: {
+            jwt: {
+              claims: {
+                "sub": "test-sub",
+                "cognito:username": "test",
+                "email": "test@test.submit.diyaccunting.co.uk",
+                "scope": "read write",
+              },
+            },
+          },
+        },
+      },
       body: JSON.stringify({}),
     };
 

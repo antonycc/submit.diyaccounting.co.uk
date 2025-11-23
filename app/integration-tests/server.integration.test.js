@@ -22,6 +22,23 @@ import { handler as authUrlHandler } from "@app/functions/hmrc/hmrcAuthUrlGet.js
 const HMRC = "https://test-api.service.hmrc.gov.uk";
 const s3Mock = mockClient(S3Client);
 
+function base64UrlEncode(obj) {
+  const json = JSON.stringify(obj);
+  return Buffer.from(json).toString("base64").replace(/=+$/g, "").replace(/\+/g, "-").replace(/\//g, "_");
+}
+
+function makeIdToken(sub = "user-1", extra = {}) {
+  const header = { alg: "none", typ: "JWT" };
+  const payload = {
+    sub,
+    email: `${sub}@example.com`,
+    iat: Math.floor(Date.now() / 1000),
+    exp: Math.floor(Date.now() / 1000) + 3600,
+    ...extra,
+  };
+  return `${base64UrlEncode(header)}.${base64UrlEncode(payload)}.`;
+}
+
 // Setup MSW server to mock external HTTP calls
 const server = setupServer(
   // Mock HMRC token exchange
@@ -103,25 +120,93 @@ describe("Integration – Server Express App", () => {
 
     // Wire the API routes exactly like server.js
     app.get("/api/v1/hmrc/authUrl", async (req, res) => {
-      const event = { queryStringParameters: { state: req.query.state } };
+      const event = {
+        requestContext: {
+          requestId: "test-request-id",
+          authorizer: {
+            lambda: {
+              jwt: {
+                claims: {
+                  "sub": "test-sub",
+                  "cognito:username": "test",
+                  "email": "test@test.submit.diyaccunting.co.uk",
+                  "scope": "read write",
+                },
+              },
+            },
+          },
+        },
+        queryStringParameters: { state: req.query.state },
+      };
       const { statusCode, body } = await authUrlHandler(event);
       res.status(statusCode).json(JSON.parse(body));
     });
 
     app.post("/api/v1/mock/token", async (req, res) => {
-      const event = { body: JSON.stringify(req.body) };
+      const event = {
+        requestContext: {
+          requestId: "test-request-id",
+          authorizer: {
+            lambda: {
+              jwt: {
+                claims: {
+                  "sub": "test-sub",
+                  "cognito:username": "test",
+                  "email": "test@test.submit.diyaccunting.co.uk",
+                  "scope": "read write",
+                },
+              },
+            },
+          },
+        },
+        body: JSON.stringify(req.body),
+      };
       const { statusCode, body } = await exchangeTokenHandler(event);
       res.status(statusCode).json(JSON.parse(body));
     });
 
     app.post("/api/v1/hmrc/vat/return", async (req, res) => {
-      const event = { body: JSON.stringify(req.body) };
+      const event = {
+        requestContext: {
+          requestId: "test-request-id",
+          authorizer: {
+            lambda: {
+              jwt: {
+                claims: {
+                  "sub": "test-sub",
+                  "cognito:username": "test",
+                  "email": "test@test.submit.diyaccunting.co.uk",
+                  "scope": "read write",
+                },
+              },
+            },
+          },
+        },
+        body: JSON.stringify(req.body),
+      };
       const { statusCode, body } = await submitVatHandler(event);
       res.status(statusCode).json(JSON.parse(body));
     });
 
     app.post("/api/v1/hmrc/receipt", async (req, res) => {
-      const event = { body: JSON.stringify(req.body) };
+      const event = {
+        requestContext: {
+          requestId: "test-request-id",
+          authorizer: {
+            lambda: {
+              jwt: {
+                claims: {
+                  "sub": "test-sub",
+                  "cognito:username": "test",
+                  "email": "test@test.submit.diyaccunting.co.uk",
+                  "scope": "read write",
+                },
+              },
+            },
+          },
+        },
+        body: JSON.stringify(req.body),
+      };
       const { statusCode, body } = await logReceiptHandler(event);
       res.status(statusCode).json(JSON.parse(body));
     });
@@ -181,8 +266,8 @@ describe("Integration – Server Express App", () => {
         vatDue: "150.00",
         accessToken: "mocked-access-token",
       };
-
-      const response = await request(app).post("/api/v1/hmrc/vat/return").send(vatData).expect(200);
+      const token = makeIdToken("test-user");
+      const response = await request(app).post("/api/v1/hmrc/vat/return").set("Authorization", `Bearer ${token}`).send(vatData).expect(200);
 
       console.log("VAT submission response:", response.body);
 

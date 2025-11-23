@@ -48,7 +48,21 @@ describe("hmrcReceiptGet handler (new tests)", () => {
     const token = `header.${base64Payload}.signature`;
 
     const event = {
-      requestContext: { requestId: "req-2" },
+      requestContext: {
+        requestId: "test-request-id",
+        authorizer: {
+          lambda: {
+            jwt: {
+              claims: {
+                "sub": "test-sub",
+                "cognito:username": "test",
+                "email": "test@test.submit.diyaccunting.co.uk",
+                "scope": "read write",
+              },
+            },
+          },
+        },
+      },
       headers: { authorization: `Bearer ${token}` },
       pathParameters: { name: "invalid-name-without-json" },
     };
@@ -67,7 +81,21 @@ describe("hmrcReceiptGet handler (new tests)", () => {
     const token = `header.${base64Payload}.signature`;
 
     const event = {
-      requestContext: { requestId: "req-3" },
+      requestContext: {
+        requestId: "test-request-id",
+        authorizer: {
+          lambda: {
+            jwt: {
+              claims: {
+                "sub": "test-sub",
+                "cognito:username": "test",
+                "email": "test@test.submit.diyaccunting.co.uk",
+                "scope": "read write",
+              },
+            },
+          },
+        },
+      },
       headers: { authorization: `Bearer ${token}` },
       queryStringParameters: { key: "receipts/other-user/receipt.json" },
     };

@@ -1,14 +1,10 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
 import co.uk.diyaccounting.submit.constructs.ApiLambda;
 import co.uk.diyaccounting.submit.constructs.ApiLambdaProps;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
-import java.util.List;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Aspects;
 import software.amazon.awscdk.Duration;
@@ -25,6 +21,11 @@ import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.logs.ILogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.constructs.Construct;
+
+import java.util.List;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 public class AccountStack extends Stack {
 
@@ -90,6 +91,7 @@ public class AccountStack extends Stack {
         super(scope, id, stackProps);
 
         // Lookup existing Cognito UserPool
+        // TODO: Remove this and the the BUNDLE_DYNAMODB_TABLE_NAME from customAuthorizerLambdaEnv once otherwise stable
         IUserPool userPool = UserPool.fromUserPoolArn(
                 this, "ImportedUserPool-%s".formatted(props.deploymentName()), props.cognitoUserPoolArn());
 
@@ -104,8 +106,8 @@ public class AccountStack extends Stack {
         this.lambdaFunctionProps = new java.util.ArrayList<>();
 
         // Catalog Lambda
-        var catalogLambdaEnv =
-                new PopulatedMap<String, String>().with("DIY_SUBMIT_BASE_URL", props.sharedNames().baseUrl);
+        var catalogLambdaEnv = new PopulatedMap<String, String>()
+                .with("DIY_SUBMIT_BASE_URL", props.sharedNames().baseUrl);
         var catalogLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
@@ -139,7 +141,6 @@ public class AccountStack extends Stack {
 
         // Get Bundles Lambda
         var getBundlesLambdaEnv = new PopulatedMap<String, String>()
-                .with("COGNITO_USER_POOL_ID", userPool.getUserPoolId())
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName());
         var getBundlesLambdaUrlOrigin = new ApiLambda(
                 this,
@@ -187,7 +188,6 @@ public class AccountStack extends Stack {
 
         // Request Bundles Lambda
         var requestBundlesLambdaEnv = new PopulatedMap<String, String>()
-                .with("COGNITO_USER_POOL_ID", userPool.getUserPoolId())
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName())
                 .with("TEST_BUNDLE_EXPIRY_DATE", "2025-12-31")
                 .with("TEST_BUNDLE_USER_LIMIT", "10");
@@ -242,7 +242,6 @@ public class AccountStack extends Stack {
 
         // Delete Bundles Lambda
         var bundleDeleteLambdaEnv = new PopulatedMap<String, String>()
-                .with("COGNITO_USER_POOL_ID", userPool.getUserPoolId())
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName())
                 .with("TEST_BUNDLE_EXPIRY_DATE", "2025-12-31")
                 .with("TEST_BUNDLE_USER_LIMIT", "10");

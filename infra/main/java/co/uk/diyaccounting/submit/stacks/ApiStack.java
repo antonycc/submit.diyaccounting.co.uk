@@ -1,12 +1,8 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
 import co.uk.diyaccounting.submit.constructs.ApiLambdaProps;
-import java.util.List;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Aspects;
 import software.amazon.awscdk.CfnOutput;
@@ -40,6 +36,11 @@ import software.amazon.awscdk.services.logs.ILogGroup;
 import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.constructs.Construct;
+
+import java.util.List;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 public class ApiStack extends Stack {
 
@@ -226,7 +227,13 @@ public class ApiStack extends Stack {
             }
             createdRouteKeys.add(routeKeyStr);
             firstCreatorByRoute.put(routeKeyStr, apiLambdaProps.functionName());
-            createRouteForLambda(apiLambdaProps, jwtAuthorizer, customAuthorizer, lambdaIntegrations);
+            createRouteForLambda(
+                    apiLambdaProps,
+                    jwtAuthorizer,
+                    customAuthorizer,
+                    lambdaIntegrations,
+                    createdRouteKeys,
+                    firstCreatorByRoute);
         }
 
         // Synthesis-time diagnostics: list all created routes
@@ -331,7 +338,9 @@ public class ApiStack extends Stack {
             ApiLambdaProps apiLambdaProps,
             HttpJwtAuthorizer jwtAuthorizer,
             HttpLambdaAuthorizer customAuthorizer,
-            LambdaIntegrations lambdaIntegrations) {
+            LambdaIntegrations lambdaIntegrations,
+            java.util.Set<String> createdRouteKeys,
+            java.util.Map<String, String> firstCreatorByRoute) {
 
         // Build stable, unique construct IDs per route using method+path signature
         String keySuffix = (apiLambdaProps.httpMethod().toString() + "-" + apiLambdaProps.urlPath())
@@ -410,5 +419,43 @@ public class ApiStack extends Stack {
                 .alarmDescription(
                         "Lambda errors >= 1 for " + apiLambdaProps.urlPath() + " " + apiLambdaProps.httpMethod())
                 .build();
+
+        // Additionally create a HEAD route for the same path to ensure HEAD requests are accepted across the API.
+        // Only create if the primary route isn't already HEAD and there's no explicit HEAD route defined elsewhere.
+        if (apiLambdaProps.httpMethod() != HttpMethod.HEAD) {
+            String headRouteKeyStr = "HEAD " + apiLambdaProps.urlPath();
+            if (!createdRouteKeys.contains(headRouteKeyStr)) {
+                // Track so we don't double-create if encountered again
+                createdRouteKeys.add(headRouteKeyStr);
+                firstCreatorByRoute.put(headRouteKeyStr, apiLambdaProps.functionName());
+
+                String headRouteId = apiLambdaProps.functionName() + "-Route-HEAD-" + keySuffix;
+                var headRouteKey = HttpRouteKey.with(apiLambdaProps.urlPath(), HttpMethod.HEAD);
+
+                if (apiLambdaProps.customAuthorizer()) {
+                    HttpRoute.Builder.create(this, headRouteId)
+                            .httpApi(this.httpApi)
+                            .routeKey(headRouteKey)
+                            .integration(integration)
+                            .authorizer(customAuthorizer)
+                            .build();
+                } else if (apiLambdaProps.jwtAuthorizer()) {
+                    HttpRoute.Builder.create(this, headRouteId)
+                            .httpApi(this.httpApi)
+                            .routeKey(headRouteKey)
+                            .integration(integration)
+                            .authorizer(jwtAuthorizer)
+                            .build();
+                } else {
+                    HttpRoute.Builder.create(this, headRouteId)
+                            .httpApi(this.httpApi)
+                            .routeKey(headRouteKey)
+                            .integration(integration)
+                            .build();
+                }
+
+                infof("Created route HEAD %s for function %s (via auto-HEAD)", apiLambdaProps.urlPath(), fn.getFunctionName());
+            }
+        }
     }
 }

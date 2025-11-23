@@ -3,7 +3,13 @@
 import { SecretsManagerClient, GetSecretValueCommand } from "@aws-sdk/client-secrets-manager";
 
 import logger from "../../lib/logger.js";
-import { extractRequest, parseRequestBody, buildTokenExchangeResponse, buildValidationError } from "../../lib/responses.js";
+import {
+  extractRequest,
+  parseRequestBody,
+  buildTokenExchangeResponse,
+  buildValidationError,
+  http200OkResponse,
+} from "../../lib/responses.js";
 import { validateEnv } from "../../lib/env.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
 import { enforceBundles } from "../../lib/bundleEnforcement.js";
@@ -42,7 +48,14 @@ export function extractAndValidateParameters(event, errorMessages) {
 // HTTP request/response, aware Lambda handler function
 export async function handler(event) {
   // Allow local/dev override via HMRC_CLIENT_SECRET. Only require ARN if override is not supplied.
-  const required = ["HMRC_BASE_URI", "HMRC_CLIENT_ID", "HMRC_SANDBOX_BASE_URI", "HMRC_SANDBOX_CLIENT_ID", "DIY_SUBMIT_BASE_URL"];
+  const required = [
+    "HMRC_BASE_URI",
+    "HMRC_CLIENT_ID",
+    "HMRC_SANDBOX_BASE_URI",
+    "HMRC_SANDBOX_CLIENT_ID",
+    "DIY_SUBMIT_BASE_URL",
+    "HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME",
+  ];
   if (!process.env.HMRC_CLIENT_SECRET) required.push("HMRC_CLIENT_SECRET_ARN");
   if (!process.env.HMRC_SANDBOX_CLIENT_SECRET) required.push("HMRC_SANDBOX_CLIENT_SECRET_ARN");
   validateEnv(required);
@@ -51,10 +64,20 @@ export async function handler(event) {
   const errorMessages = [];
 
   // Bundle enforcement
-  try {
-    await enforceBundles(event);
-  } catch (error) {
-    return http403ForbiddenFromBundleEnforcement(error, request);
+  // let userSub;
+  // try {
+  //  userSub = await enforceBundles(event);
+  // } catch (error) {
+  //  return http403ForbiddenFromBundleEnforcement(error, request);
+  // }
+
+  // If HEAD request, return 200 OK immediately
+  if (request.method === "HEAD") {
+    return http200OkResponse({
+      request,
+      headers: { "Content-Type": "application/json" },
+      data: {},
+    });
   }
 
   // Extract and validate parameters
@@ -69,8 +92,9 @@ export async function handler(event) {
 
   // Processing
   logger.info({ message: "Exchanging authorization code for HMRC access token" });
+  // TODO: Simplify this and/or rename because exchangeCodeForToken does not do the exchange, it just creates the body
   const tokenResponse = await exchangeCodeForToken(code, hmrcAccount);
-  return buildTokenExchangeResponse(request, tokenResponse.url, tokenResponse.body);
+  return buildTokenExchangeResponse(request, tokenResponse.url, tokenResponse.body); // , userSub);
 }
 
 // Service adaptor aware of the downstream service but not the consuming Lambda's incoming/outgoing HTTP request/response

@@ -99,6 +99,7 @@ if (__runDirect) {
         "HMRC_SANDBOX_CLIENT_ID",
         "HMRC_SANDBOX_CLIENT_SECRET_ARN",
         "DIY_SUBMIT_RECEIPTS_BUCKET_NAME",
+        "HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME",
       ]);
     } else {
       // In local/dev and behaviour tests, validate only essential vars

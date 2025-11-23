@@ -29,7 +29,7 @@ describe("dynamoDbBundleStore.js", () => {
     test("should skip operation when DynamoDB is not enabled", async () => {
       delete process.env.BUNDLE_DYNAMODB_TABLE_NAME;
       // Should not throw
-      await dynamoDbBundleStore.putBundle("user-123", "TEST_BUNDLE|EXPIRY=2025-12-31");
+      await dynamoDbBundleStore.putBundle("user-123", "TEST_BUNDLE");
     });
   });
 

@@ -4,7 +4,7 @@ import org.immutables.value.Value;
 import software.amazon.awscdk.services.apigatewayv2.HttpMethod;
 
 @Value.Immutable
-public interface ApiLambdaProps extends LambdaProps {
+public interface ApiLambdaProps extends AbstractLambdaProps {
 
     HttpMethod httpMethod();
 

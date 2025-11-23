@@ -51,7 +51,24 @@ describe("Integration – log receipt flow", () => {
       chargeRefNumber: "BAR456",
       processingDate: "2025-07-14T10:00:00.000Z",
     };
-    const res = await logReceiptHandler({ body: JSON.stringify(fakeReceipt) });
+    const res = await logReceiptHandler({
+      requestContext: {
+        requestId: "test-request-id",
+        authorizer: {
+          lambda: {
+            jwt: {
+              claims: {
+                "sub": "test-sub",
+                "cognito:username": "test",
+                "email": "test@test.submit.diyaccunting.co.uk",
+                "scope": "read write",
+              },
+            },
+          },
+        },
+      },
+      body: JSON.stringify(fakeReceipt),
+    });
     expect(res.statusCode).toBe(200);
     const body = JSON.parse(res.body);
     expect(body.receipt).toEqual(fakeReceipt);

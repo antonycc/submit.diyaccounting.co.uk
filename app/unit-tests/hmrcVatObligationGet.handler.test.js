@@ -34,6 +34,21 @@ describe("hmrcVatObligationGet handler (new tests)", () => {
 
   test("returns obligations using stubbed data", async () => {
     const event = {
+      requestContext: {
+        requestId: "test-request-id",
+        authorizer: {
+          lambda: {
+            jwt: {
+              claims: {
+                "sub": "test-sub",
+                "cognito:username": "test",
+                "email": "test@test.submit.diyaccunting.co.uk",
+                "scope": "read write",
+              },
+            },
+          },
+        },
+      },
       queryStringParameters: { vrn: "111222333" },
       headers: { ...buildGovClientTestHeaders(), authorization: "Bearer token-abc" },
     };
@@ -46,7 +61,25 @@ describe("hmrcVatObligationGet handler (new tests)", () => {
   });
 
   test("returns 400 when Authorization is missing", async () => {
-    const event = { queryStringParameters: { vrn: "111222333" }, headers: {} };
+    const event = {
+      requestContext: {
+        requestId: "test-request-id",
+        authorizer: {
+          lambda: {
+            jwt: {
+              claims: {
+                "sub": "test-sub",
+                "cognito:username": "test",
+                "email": "test@test.submit.diyaccunting.co.uk",
+                "scope": "read write",
+              },
+            },
+          },
+        },
+      },
+      queryStringParameters: { vrn: "111222333" },
+      headers: {},
+    };
 
     const result = await getVatObligationsHandler(event);
     const body = JSON.parse(result.body);
@@ -57,6 +90,21 @@ describe("hmrcVatObligationGet handler (new tests)", () => {
 
   test("returns 400 when dates are inverted", async () => {
     const event = {
+      requestContext: {
+        requestId: "test-request-id",
+        authorizer: {
+          lambda: {
+            jwt: {
+              claims: {
+                "sub": "test-sub",
+                "cognito:username": "test",
+                "email": "test@test.submit.diyaccunting.co.uk",
+                "scope": "read write",
+              },
+            },
+          },
+        },
+      },
       queryStringParameters: { vrn: "111222333", from: "2024-12-31", to: "2024-01-01" },
       headers: { ...buildGovClientTestHeaders(), authorization: "Bearer token-abc" },
     };

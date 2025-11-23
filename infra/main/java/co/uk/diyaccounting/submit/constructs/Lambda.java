@@ -1,8 +1,5 @@
 package co.uk.diyaccounting.submit.constructs;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-
-import java.util.List;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.services.cloudwatch.Alarm;
 import software.amazon.awscdk.services.cloudwatch.ComparisonOperator;
@@ -24,14 +21,18 @@ import software.amazon.awscdk.services.logs.LogGroupProps;
 import software.amazon.awscdk.services.logs.MetricFilter;
 import software.constructs.Construct;
 
+import java.util.List;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+
 public class Lambda {
 
     public final DockerImageCode dockerImage;
     public final Function lambda;
     public final ILogGroup logGroup;
-    public final LambdaProps props;
+    public final AbstractLambdaProps props;
 
-    public Lambda(final Construct scope, LambdaProps props) {
+    public Lambda(final Construct scope, AbstractLambdaProps props) {
         this.props = props;
 
         // Create the lambda function

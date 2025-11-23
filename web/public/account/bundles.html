@@ -158,7 +158,7 @@
             init: { headers: { Authorization: `Bearer ${idToken}` } },
           });
           if (bundlesData && bundlesData.bundles && Array.isArray(bundlesData.bundles)) {
-            __userBundles = bundlesData.bundles.map((b) => (b?.expiry ? `${b.bundleId}|EXPIRY=${b.expiry}` : b.bundleId));
+            __userBundles = bundlesData.bundles.map((b) => b.bundleId);
             return __userBundles;
           }
         } catch (err) {
@@ -168,7 +168,7 @@
         return __userBundles;
       };
 
-      const hasBundle = (bundles, id) => (bundles || []).some((b) => typeof b === "string" && (b === id || b.startsWith(id + "|")));
+      const hasBundle = (bundles, id) => (bundles || []).some((b) => typeof b === "string" && b === id);
 
       const markToRequest = (btn, message = "Request bundle") => {
         btn.textContent = message;
@@ -342,7 +342,7 @@
 
         const bundleCards = bundles
           .map((bundleEntry) => {
-            const bundleId = bundleEntry.split("|")[0]; // Remove expiry info if present
+            const bundleId = bundleEntry;
             const hasExpiry = bundleEntry.includes("EXPIRY=");
             const expiryInfo = hasExpiry ? bundleEntry.split("EXPIRY=")[1] : "";
 

@@ -83,7 +83,7 @@ export async function handler(event) {
 
     if (isMockMode) {
       // In mock mode, just decode the JWT without verification
-      logger.info({ message: "Running in mock mode, skipping JWT verification" });
+      logger.warn({ message: "Running in mock mode, skipping JWT verification" });
       payload = decodeJwtNoVerify(token);
 
       if (!payload || !payload.sub) {

@@ -21,7 +21,7 @@ describe("hmrcVatReturnPost handler (new tests)", () => {
       ...originalEnv,
       NODE_ENV: "test",
       HMRC_BASE_URI: "https://test-api.service.hmrc.gov.uk",
-      COGNITO_USER_POOL_ID: "test-pool-id", // required by handler's validateEnv
+      HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME: "test-hmrc-requests-table",
     };
   });
 
@@ -36,7 +36,21 @@ describe("hmrcVatReturnPost handler (new tests)", () => {
     mockFetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(receipt) });
 
     const event = {
-      requestContext: { requestId: "req-1" },
+      requestContext: {
+        requestId: "test-request-id",
+        authorizer: {
+          lambda: {
+            jwt: {
+              claims: {
+                "sub": "test-sub",
+                "cognito:username": "test",
+                "email": "test@test.submit.diyaccunting.co.uk",
+                "scope": "read write",
+              },
+            },
+          },
+        },
+      },
       body: JSON.stringify({ vatNumber: "111222333", periodKey: "24A1", vatDue: 99.99, accessToken: "token-abc" }),
       headers,
     };
@@ -56,6 +70,21 @@ describe("hmrcVatReturnPost handler (new tests)", () => {
 
   test("returns 400 when Authorization token is invalid or missing", async () => {
     const event = {
+      requestContext: {
+        requestId: "test-request-id",
+        authorizer: {
+          lambda: {
+            jwt: {
+              claims: {
+                "sub": "test-sub",
+                "cognito:username": "test",
+                "email": "test@test.submit.diyaccunting.co.uk",
+                "scope": "read write",
+              },
+            },
+          },
+        },
+      },
       body: JSON.stringify({ vatNumber: "111222333", periodKey: "24A1", vatDue: 100.0 }),
       headers: buildGovClientTestHeaders(),
     };

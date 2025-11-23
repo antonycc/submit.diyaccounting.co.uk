@@ -87,7 +87,7 @@ describe("extractUserFromAuthorizerContext with flat colon-keyed claims", () => 
           "sub": "1652b254-c021-70a8-39e8-2e2b620f92cc",
           "cognito:username": "cognito_2e90b081-973b-4716-a4c9-4a6be57c2a7c",
           "cognito:groups": "[eu-west-2_a4eKeQ4dz_cognito]",
-          "custom:bundles": "test|EXPIRY=2025-11-06",
+          "custom:bundles": "test",
           "email": "",
           "scope": "openid profile email",
         },

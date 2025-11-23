@@ -26,7 +26,21 @@ describe("hmrcReceiptPost handler (new tests)", () => {
     };
 
     const event = {
-      requestContext: { requestId: "req-1" },
+      requestContext: {
+        requestId: "test-request-id",
+        authorizer: {
+          lambda: {
+            jwt: {
+              claims: {
+                "sub": "test-sub",
+                "cognito:username": "test",
+                "email": "test@test.submit.diyaccunting.co.uk",
+                "scope": "read write",
+              },
+            },
+          },
+        },
+      },
       body: JSON.stringify({ receipt }),
     };
 
@@ -40,7 +54,21 @@ describe("hmrcReceiptPost handler (new tests)", () => {
 
   test("returns 400 when receipt is missing", async () => {
     const event = {
-      requestContext: { requestId: "req-2" },
+      requestContext: {
+        requestId: "test-request-id",
+        authorizer: {
+          lambda: {
+            jwt: {
+              claims: {
+                "sub": "test-sub",
+                "cognito:username": "test",
+                "email": "test@test.submit.diyaccunting.co.uk",
+                "scope": "read write",
+              },
+            },
+          },
+        },
+      },
       body: JSON.stringify({}),
     };
 
@@ -53,7 +81,21 @@ describe("hmrcReceiptPost handler (new tests)", () => {
 
   test("returns 400 when formBundleNumber is missing", async () => {
     const event = {
-      requestContext: { requestId: "req-3" },
+      requestContext: {
+        requestId: "test-request-id",
+        authorizer: {
+          lambda: {
+            jwt: {
+              claims: {
+                "sub": "test-sub",
+                "cognito:username": "test",
+                "email": "test@test.submit.diyaccunting.co.uk",
+                "scope": "read write",
+              },
+            },
+          },
+        },
+      },
       body: JSON.stringify({ receipt: { someField: "value" } }),
     };
 

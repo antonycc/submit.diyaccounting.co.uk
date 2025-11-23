@@ -6,9 +6,6 @@ import { hashSub } from "./subHasher.js";
 let __dynamoDbModule;
 let __dynamoDbDocClient;
 
-/**
- * Initialize DynamoDB Document Client lazily
- */
 async function getDynamoDbDocClient() {
   if (!__dynamoDbDocClient) {
     __dynamoDbModule = await import("@aws-sdk/lib-dynamodb");
@@ -19,115 +16,53 @@ async function getDynamoDbDocClient() {
   return __dynamoDbDocClient;
 }
 
-/**
- * Check if DynamoDB operations are enabled
- * @returns {boolean} True if DynamoDB table name is configured
- */
 export function isDynamoDbEnabled() {
-  return Boolean(process.env.BUNDLE_DYNAMODB_TABLE_NAME);
+  return Boolean(process.env.BUNDLE_DYNAMODB_TABLE_NAME && process.env.BUNDLE_DYNAMODB_TABLE_NAME !== "test-bundle-table");
 }
 
-/**
- * Get the configured DynamoDB table name
- * @returns {string} Table name
- */
 function getTableName() {
   const tableName = process.env.BUNDLE_DYNAMODB_TABLE_NAME;
   // This should always be checked by isDynamoDbEnabled() first, but return empty string as fallback
   return tableName || "";
 }
 
-/**
- * Parse bundle string to extract bundleId and expiry (for backward compatibility)
- * @param {string} bundleStr - Bundle string in format "BUNDLE_ID" or "BUNDLE_ID|EXPIRY=2025-12-31"
- * @returns {Object} Object with bundleId and expiry (ISO date string or null)
- */
-function parseBundleString(bundleStr) {
-  if (!bundleStr || typeof bundleStr !== "string") {
-    return { bundleId: "", expiry: null };
-  }
-
-  const parts = bundleStr.split("|");
-  const bundleId = parts[0] || "";
-  let expiry = null;
-
-  if (parts.length > 1) {
-    const expiryMatch = parts[1].match(/EXPIRY=(.+)/);
-    if (expiryMatch && expiryMatch[1]) {
-      expiry = expiryMatch[1]; // ISO date string like "2025-12-31"
-    }
-  }
-
-  return { bundleId, expiry };
-}
-
-/**
- * Format bundle item to bundle string (for backward compatibility)
- * @param {Object} item - DynamoDB item with bundleId and expiry
- * @returns {string} Bundle string in format "BUNDLE_ID|EXPIRY=2025-12-31"
- */
-function formatBundleString(item) {
-  if (!item || !item.bundleId) {
-    return "";
-  }
-
-  if (item.expiry) {
-    // Extract just the date portion if it's a full ISO timestamp
-    const expiryDate = item.expiry.split("T")[0];
-    return `${item.bundleId}|EXPIRY=${expiryDate}`;
-  }
-
-  return item.bundleId;
-}
-
-/**
- * Store a bundle for a user in DynamoDB
- * @param {string} userId - User's sub claim (will be hashed)
- * @param {string} bundleStr - Bundle string in format "BUNDLE_ID|EXPIRY=2025-12-31"
- */
-export async function putBundle(userId, bundleStr) {
+export async function putBundle(userId, bundle) {
   if (!isDynamoDbEnabled()) {
-    logger.debug({ message: "DynamoDB not enabled, skipping putBundle" });
+    logger.warn({ message: "DynamoDB not enabled, skipping putBundle" });
     return;
+  } else {
+    logger.info({ message: "DynamoDB enabled, proceeding with putBundle" });
   }
 
   try {
     const hashedSub = hashSub(userId);
-    const { bundleId, expiry } = parseBundleString(bundleStr);
-
-    if (!bundleId) {
-      logger.warn({ message: "Invalid bundle string, skipping putBundle", bundleStr });
-      return;
-    }
+    logger.info({ message: "Storing bundle", hashedSub, userId, bundle });
 
     const docClient = await getDynamoDbDocClient();
     const tableName = getTableName();
 
     const now = new Date();
     const item = {
+      ...bundle,
       hashedSub,
-      bundleId,
       createdAt: now.toISOString(),
     };
 
     // Add expiry with millisecond precision timestamp (ISO format)
-    if (expiry) {
-      // If expiry is a date-only string (e.g., "2025-12-31"), convert to full ISO timestamp
-      const expiryDate = new Date(expiry);
-      if (!isNaN(expiryDate.getTime())) {
-        // Store expiry as millisecond precision timestamp
-        item.expiry = expiryDate.toISOString();
+    const expiryDate = new Date(bundle.expiry);
+    item.expiry = expiryDate.toISOString();
 
-        // Calculate TTL as 1 month after expiry
-        const ttlDate = new Date(expiryDate.getTime());
-        ttlDate.setMonth(ttlDate.getMonth() + 1);
-        item.ttl = Math.floor(ttlDate.getTime() / 1000);
-        item.ttl_datestamp = ttlDate.toISOString();
-      } else {
-        logger.warn({ message: "Invalid expiry date format, skipping TTL", expiry });
-      }
-    }
+    // Calculate TTL as 1 month after expiry
+    const ttlDate = new Date(expiryDate.getTime());
+    ttlDate.setMonth(ttlDate.getMonth() + 1);
+    item.ttl = Math.floor(ttlDate.getTime() / 1000);
+    item.ttl_datestamp = ttlDate.toISOString();
 
+    logger.info({
+      message: "Storing bundle in DynamoDB as item",
+      hashedSub,
+      item,
+    });
     await docClient.send(
       new __dynamoDbModule.PutCommand({
         TableName: tableName,
@@ -136,40 +71,40 @@ export async function putBundle(userId, bundleStr) {
     );
 
     logger.info({
-      message: "Bundle stored in DynamoDB",
+      message: "Bundle stored in DynamoDB as item",
       hashedSub,
-      bundleId,
-      expiry: item.expiry,
-      ttl: item.ttl,
-      ttl_datestamp: item.ttl_datestamp,
+      item,
     });
   } catch (error) {
     logger.error({
       message: "Error storing bundle in DynamoDB",
       error: error.message,
       userId,
-      bundleStr,
+      bundle,
     });
-    // Don't throw - this is shadow write, should not fail the main operation
+    throw error;
   }
 }
 
-/**
- * Delete a bundle for a user from DynamoDB
- * @param {string} userId - User's sub claim (will be hashed)
- * @param {string} bundleId - Bundle ID to delete
- */
 export async function deleteBundle(userId, bundleId) {
   if (!isDynamoDbEnabled()) {
-    logger.debug({ message: "DynamoDB not enabled, skipping deleteBundle" });
+    logger.warn({ message: "DynamoDB not enabled, skipping deleteBundle" });
     return;
+  } else {
+    logger.info({ message: "DynamoDB enabled, proceeding with deleteBundle" });
   }
 
   try {
     const hashedSub = hashSub(userId);
+    logger.info({ message: "Deleting bundle", hashedSub, userId, bundleId });
     const docClient = await getDynamoDbDocClient();
     const tableName = getTableName();
 
+    logger.info({
+      message: "Deleting bundle from DynamoDB",
+      hashedSub,
+      bundleId,
+    });
     await docClient.send(
       new __dynamoDbModule.DeleteCommand({
         TableName: tableName,
@@ -192,31 +127,32 @@ export async function deleteBundle(userId, bundleId) {
       userId,
       bundleId,
     });
-    // Don't throw - this is shadow write, should not fail the main operation
+    throw error;
   }
 }
 
-/**
- * Delete all bundles for a user from DynamoDB
- * @param {string} userId - User's sub claim (will be hashed)
- */
 export async function deleteAllBundles(userId) {
   if (!isDynamoDbEnabled()) {
-    logger.debug({ message: "DynamoDB not enabled, skipping deleteAllBundles" });
+    logger.warn({ message: "DynamoDB not enabled, skipping deleteAllBundles" });
     return;
+  } else {
+    logger.info({ message: "DynamoDB enabled, proceeding with deleteAllBundles" });
   }
 
   try {
     const hashedSub = hashSub(userId);
+    logger.info({ message: "Deleting all bundles for user", userId, hashedSub });
     const bundles = await getUserBundles(userId);
 
     // Delete bundles concurrently for better performance
+    logger.info({
+      message: "Deleting all bundles from DynamoDB",
+      hashedSub,
+      count: bundles.length,
+    });
     const deleteResults = await Promise.allSettled(
-      bundles.map(async (bundleStr) => {
-        const { bundleId } = parseBundleString(bundleStr);
-        if (bundleId) {
-          await deleteBundle(userId, bundleId);
-        }
+      bundles.map(async (bundleId) => {
+        await deleteBundle(userId, bundleId);
       }),
     );
 
@@ -243,23 +179,21 @@ export async function deleteAllBundles(userId) {
       error: error.message,
       userId,
     });
-    // Don't throw - this is shadow write, should not fail the main operation
+    throw error;
   }
 }
 
-/**
- * Get all bundles for a user from DynamoDB
- * @param {string} userId - User's sub claim (will be hashed)
- * @returns {Promise<Array<string>>} Array of bundle strings
- */
 export async function getUserBundles(userId) {
   if (!isDynamoDbEnabled()) {
-    logger.debug({ message: "DynamoDB not enabled, returning empty bundles array" });
+    logger.warn({ message: "DynamoDB not enabled, returning empty bundles array" });
     return [];
+  } else {
+    logger.info({ message: "DynamoDB enabled, proceeding with getUserBundles", userId });
   }
 
   try {
     const hashedSub = hashSub(userId);
+    logger.info({ message: "Retrieving bundles from DynamoDB", userId, hashedSub });
     const docClient = await getDynamoDbDocClient();
     const tableName = getTableName();
 
@@ -272,9 +206,10 @@ export async function getUserBundles(userId) {
         },
       }),
     );
+    logger.info({ message: "Queried DynamoDB for user bundles", hashedSub, itemCount: response.Count });
 
-    // Convert DynamoDB items to bundle strings for backward compatibility
-    const bundles = (response.Items || []).map((item) => formatBundleString(item)).filter((b) => b.length > 0);
+    // Convert DynamoDB items to bundle strings
+    const bundles = (response.Items || []).map((item) => item);
 
     logger.info({
       message: "Retrieved bundles from DynamoDB",

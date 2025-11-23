@@ -1,6 +1,8 @@
 // behaviour-tests/submitVat.behaviour.test.js
 
 import { test } from "./helpers/playwrightTestWithout.js";
+import fs from "node:fs";
+import path from "node:path";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import {
   addOnPageLogging,
@@ -100,7 +102,7 @@ test.afterAll(async () => {
   }
 });
 
-test("Click through: Submit a VAT return to HMRC", async ({ page }) => {
+test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) => {
   // Compute test URL based on which servers are running§
   const testUrl =
     (runTestServer === "run" || runTestServer === "useExisting") && runProxy !== "run" && runProxy !== "useExisting"
@@ -109,6 +111,26 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }) => {
 
   // Add console logging to capture browser messages
   addOnPageLogging(page, screenshotPath);
+
+  // ---------- Test artefacts (video-adjacent) ----------
+  const outputDir = testInfo.outputPath("");
+  fs.mkdirSync(outputDir, { recursive: true });
+  let observedTraceparent = null;
+
+  // Capture the first traceparent header observed in any API response
+  page.on("response", (response) => {
+    try {
+      if (observedTraceparent) return;
+      const headers = response.headers?.() ?? response.headers?.() ?? {};
+      const h = typeof headers === "function" ? headers() : headers;
+      const tp = (h && (h["traceparent"] || h["Traceparent"])) || null;
+      if (tp) {
+        observedTraceparent = tp;
+      }
+    } catch (_e) {
+      // ignore header parsing errors
+    }
+  });
 
   /* ****** */
   /*  HOME  */
@@ -180,4 +202,54 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }) => {
   /* ********* */
 
   await logOutAndExpectToBeLoggedOut(page, screenshotPath);
+
+  // Extract user sub (from localStorage.userInfo) and write artefacts
+  let userSub = null;
+  try {
+    const userInfoStr = await page.evaluate(() => localStorage.getItem("userInfo"));
+    if (userInfoStr) {
+      const userInfo = JSON.parse(userInfoStr);
+      userSub = userInfo?.sub || null;
+    }
+  } catch (_e) {}
+
+  try {
+    fs.writeFileSync(path.join(outputDir, "traceparent.txt"), observedTraceparent || "", "utf-8");
+  } catch (_e) {}
+  try {
+    fs.writeFileSync(path.join(outputDir, "userSub.txt"), userSub || "", "utf-8");
+  } catch (_e) {}
+
+  // Build test context metadata and write testContext.json next to the video
+  const testContext = {
+    name: testInfo.title,
+    title: "Submit VAT Return (HMRC: VAT Return POST)",
+    description:
+      "Clicks through the app to submit a VAT return to HMRC MTD VAT API, then verifies receipt visibility and navigation.",
+    hmrcApi: { url: "/api/v1/hmrc/vat/return", method: "POST" },
+    env: {
+      envName,
+      baseUrl,
+      serverPort,
+      runTestServer,
+      runProxy,
+      runMockOAuth2,
+      runMinioS3,
+      testAuthProvider,
+      testAuthUsername,
+    },
+    testData: {
+      hmrcTestUsername,
+      hmrcTestPassword,
+      hmrcTestVatNumber,
+      hmrcVatPeriodKey,
+      hmrcVatDueAmount,
+      receiptsBucketName,
+      s3Endpoint,
+    },
+    artefactsDir: outputDir,
+  };
+  try {
+    fs.writeFileSync(path.join(outputDir, "testContext.json"), JSON.stringify(testContext, null, 2), "utf-8");
+  } catch (_e) {}
 });

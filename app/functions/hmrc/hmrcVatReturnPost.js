@@ -66,16 +66,26 @@ export function extractAndValidateParameters(event, errorMessages) {
 
 // HTTP request/response, aware Lambda handler function
 export async function handler(event) {
-  validateEnv(["HMRC_BASE_URI"]); // "COGNITO_USER_POOL_ID"
+  validateEnv(["HMRC_BASE_URI"]);
 
   const { request } = extractRequest(event);
   let errorMessages = [];
 
   // Bundle enforcement
+  let userSub;
   try {
-    await enforceBundles(event);
+    userSub = await enforceBundles(event);
   } catch (error) {
     return http403ForbiddenFromBundleEnforcement(error, request);
+  }
+
+  // If HEAD request, return 200 OK immediately after bundle enforcement
+  if (request.method === "HEAD") {
+    return http200OkResponse({
+      request,
+      headers: { "Content-Type": "application/json" },
+      data: {},
+    });
   }
 
   // Extract and validate parameters
@@ -130,6 +140,7 @@ export async function handler(event) {
       hmrcAccount,
       hmrcAccessToken,
       govClientHeaders,
+      userSub,
     ));
   } catch (error) {
     // Preserve original behavior expected by tests: bubble up network errors
@@ -157,7 +168,7 @@ export async function handler(event) {
 }
 
 // Service adaptor for aware of the downstream service but not the consuming Lambda's incoming/outgoing HTTP request/response
-export async function submitVat(periodKey, vatDue, vatNumber, hmrcAccount, hmrcAccessToken, govClientHeaders) {
+export async function submitVat(periodKey, vatDue, vatNumber, hmrcAccount, hmrcAccessToken, govClientHeaders, auditForUserSub) {
   const hmrcRequestHeaders = {
     "Content-Type": "application/json",
     "Accept": "application/vnd.hmrc.1.0+json",
@@ -198,7 +209,13 @@ export async function submitVat(periodKey, vatDue, vatNumber, hmrcAccount, hmrcA
     });
   } else {
     // Perform real HTTP call
-    ({ hmrcResponse, hmrcResponseBody } = await hmrcHttpPost(hmrcRequestUrl, hmrcRequestHeaders, govClientHeaders, hmrcRequestBody));
+    ({ hmrcResponse, hmrcResponseBody } = await hmrcHttpPost(
+      hmrcRequestUrl,
+      hmrcRequestHeaders,
+      govClientHeaders,
+      hmrcRequestBody,
+      auditForUserSub,
+    ));
   }
 
   return { hmrcRequestBody, receipt: hmrcResponseBody, hmrcResponse, hmrcResponseBody, hmrcRequestUrl };

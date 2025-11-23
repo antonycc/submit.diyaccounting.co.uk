@@ -1,15 +1,10 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
 import co.uk.diyaccounting.submit.constructs.ApiLambda;
 import co.uk.diyaccounting.submit.constructs.ApiLambdaProps;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
-import java.util.List;
-import java.util.Optional;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Aspects;
 import software.amazon.awscdk.Duration;
@@ -17,11 +12,19 @@ import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.services.apigatewayv2.HttpMethod;
+import software.amazon.awscdk.services.dynamodb.ITable;
+import software.amazon.awscdk.services.dynamodb.Table;
 import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.logs.ILogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
+
+import java.util.List;
+import java.util.Optional;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 public class AuthStack extends Stack {
 
@@ -85,6 +88,12 @@ public class AuthStack extends Stack {
     public AuthStack(Construct scope, String id, StackProps stackProps, AuthStackProps props) {
         super(scope, id, stackProps);
 
+        // Lookup existing DynamoDB Bundles Table
+        ITable bundlesTable = Table.fromTableName(
+            this,
+            "ImportedBundlesTable-%s".formatted(props.deploymentName()),
+            props.sharedNames().bundlesTableName);
+
         // Lambdas
 
         this.lambdaFunctionProps = new java.util.ArrayList<>();
@@ -124,6 +133,7 @@ public class AuthStack extends Stack {
         var exchangeCognitoTokenLambdaEnv = new PopulatedMap<String, String>()
                 .with("DIY_SUBMIT_BASE_URL", props.sharedNames().envBaseUrl)
                 .with("COGNITO_BASE_URI", props.sharedNames().cognitoBaseUri)
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
                 .with("COGNITO_CLIENT_ID", props.cognitoClientId());
         if (props.optionalTestAccessToken().isPresent()
                 && StringUtils.isNotBlank(props.optionalTestAccessToken().get())) {
@@ -155,11 +165,18 @@ public class AuthStack extends Stack {
                 "Created Lambda %s for Cognito exchange token with handler %s",
                 this.cognitoTokenPostLambda.getNode().getId(), props.sharedNames().cognitoTokenPostLambdaHandler);
 
+        // Grant Lambdas access to DynamoDB Bundles Table
+        bundlesTable.grantReadWriteData(this.cognitoTokenPostLambda);
+        infof(
+                "Granted Lambda %s read/write access to DynamoDB Table %s",
+                this.cognitoTokenPostLambda.getNode().getId(),
+                props.sharedNames().bundlesTableName);
+
         // Custom authorizer Lambda for X-Authorization header
         var customAuthorizerLambdaEnv = new PopulatedMap<String, String>()
                 .with("COGNITO_USER_POOL_ID", props.cognitoUserPoolId())
-                .with("COGNITO_USER_POOL_CLIENT_ID", props.cognitoUserPoolClientId());
-
+                .with("COGNITO_USER_POOL_CLIENT_ID", props.cognitoUserPoolClientId())
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName);
         var customAuthorizerLambda = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
@@ -182,6 +199,13 @@ public class AuthStack extends Stack {
         infof(
                 "Created Custom Authorizer Lambda %s with handler %s",
                 this.customAuthorizerLambda.getNode().getId(), props.sharedNames().customAuthorizerLambdaHandler);
+
+        // Grant Custom Authorizer Lambda access to DynamoDB Bundles Table
+        bundlesTable.grantReadWriteData(this.customAuthorizerLambda);
+        infof(
+                "Granted Custom Authorizer Lambda %s read/write access to DynamoDB Table %s",
+                this.customAuthorizerLambda.getNode().getId(),
+                props.sharedNames().bundlesTableName);
 
         Aspects.of(this).add(new SetAutoDeleteJobLogRetentionAspect(props.deploymentName(), RetentionDays.THREE_DAYS));
 

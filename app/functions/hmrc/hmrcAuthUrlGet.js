@@ -43,6 +43,15 @@ export async function handler(event) {
   const { request } = extractRequest(event);
   const errorMessages = [];
 
+  // If HEAD request, return 200 OK immediately
+  if (request.method === "HEAD") {
+    return http200OkResponse({
+      request,
+      headers: { "Content-Type": "application/json" },
+      data: {},
+    });
+  }
+
   // Extract and validate parameters
   const { state, requestedScope, hmrcAccount } = extractAndValidateParameters(event, errorMessages);
 

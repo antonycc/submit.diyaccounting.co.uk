@@ -23,7 +23,7 @@
     "cdk:synth-environment": "cd cdk-environment && npx dotenv -e ../.env -- npx dotenv -e ../.env.${ENVIRONMENT_NAME:-prod} -- npx cdk synth --require-approval never --ci true --strict --validation --exclusively ${ENVIRONMENT_NAME:-prod}-env-ObservabilityStack ${ENVIRONMENT_NAME:-prod}-env-DataStack ${ENVIRONMENT_NAME:-prod}-env-IdentityStack ${ENVIRONMENT_NAME:-prod}-env-ApexStack && cd ..",
     "cdk:synth-application": "cd cdk-application && npx dotenv -e ../.env -- npx dotenv -e ../.env.${ENVIRONMENT_NAME:-prod} -- npx cdk synth --require-approval never --ci true --strict --validation --exclusively ${ENVIRONMENT_NAME:-prod}-app-DevStack ${ENVIRONMENT_NAME:-prod}-app-AuthStack ${ENVIRONMENT_NAME:-prod}-app-HmrcStack ${ENVIRONMENT_NAME:-prod}-app-AccountStack ${ENVIRONMENT_NAME:-prod}-app-ApiStack ${ENVIRONMENT_NAME:-prod}-app-OpsStack ${ENVIRONMENT_NAME:-prod}-app-SelfDestructStack && cd ..",
     "cdk:synth-delivery": "cd cdk-delivery    && npx dotenv -e ../.env -- npx dotenv -e ../.env.${ENVIRONMENT_NAME:-prod} -- npx cdk synth --require-approval never --ci true --strict --validation --exclusively ${ENVIRONMENT_NAME:-prod}-del-EdgeStack ${ENVIRONMENT_NAME:-prod}-del-PublishStack ${ENVIRONMENT_NAME:-prod}-del-SelfDestructStack && cd ..",
-    "cdk":    "./mvnw clean verify -DskipTests && ENVIRONMENT_NAME=prod npm run cdk:synth-environment && ENVIRONMENT_NAME=prod npm run cdk:synth-application && ENVIRONMENT_NAME=prod HTTP_API_URL=https://package.json/script/ npm run cdk:synth-delivery && git restore web/public/submit.deployment web/public/submit.env || true && npm run clean && ./mvnw clean compile -DskipTests",
+    "cdk": "./mvnw clean verify -DskipTests && ENVIRONMENT_NAME=prod npm run cdk:synth-environment && ENVIRONMENT_NAME=prod npm run cdk:synth-application && ENVIRONMENT_NAME=prod HTTP_API_URL=https://package.json/script/ npm run cdk:synth-delivery && git restore web/public/submit.deployment web/public/submit.env || true && npm run clean && ./mvnw clean compile -DskipTests",
     "cdk-ci": "./mvnw clean verify -DskipTests && ENVIRONMENT_NAME=ci   npm run cdk:synth-environment && ENVIRONMENT_NAME=ci   npm run cdk:synth-application && ENVIRONMENT_NAME=ci   HTTP_API_URL=https://package.json/script/ npm run cdk:synth-delivery && git restore web/public/submit.deployment web/public/submit.env || true && npm run clean && ./mvnw clean compile -DskipTests",
     "update-to-minor": "npx npm-check-updates --upgrade --enginesNode --target minor    --verbose --install always",
     "update-to-greatest": "npx npm-check-updates --upgrade --enginesNode --target greatest --verbose --install always --reject 'alpha'",
@@ -47,7 +47,7 @@
     "test:submitVatBehaviour-sandbox": "HMRC_ACCOUNT=sandbox npm run test:submitVatBehaviour",
     "test:obligationBehaviour": "npx dotenv -e .env.proxy -- playwright test --project=obligation-behaviour-tests",
     "test:obligationBehaviour-sandbox": "HMRC_ACCOUNT=sandbox npm run test:obligationBehaviour",
-    "test:obligationBehaviour-ci":   "npx dotenv -e .env.ci   -- playwright test --project=obligation-behaviour-tests",
+    "test:obligationBehaviour-ci": "npx dotenv -e .env.ci   -- playwright test --project=obligation-behaviour-tests",
     "test:obligationBehaviour-prod": "npx dotenv -e .env.prod -- playwright test --project=obligation-behaviour-tests",
     "test:viewVatBehaviour": "npx dotenv -e .env.proxy -- playwright test --project=view-vat-behaviour-tests",
     "test:viewVatBehaviour-sandbox": "HMRC_ACCOUNT=sandbox npm run test:viewVatBehaviour",
@@ -71,7 +71,8 @@
     "@iarna/toml": "^3.0.0",
     "aws-jwt-verify": "^5.1.1",
     "dotenv": "^17.2.3",
-    "pino": "^10.1.0"
+    "pino": "^10.1.0",
+    "uuid": "^13.0.0"
   },
   "devDependencies": {
     "@aws-sdk/client-cloudfront": "^3.931.0",
@@ -80,7 +81,7 @@
     "@microsoft/eslint-formatter-sarif": "^3.1.0",
     "@ngrok/ngrok": "^1.5.2",
     "@playwright/test": "^1.56.1",
-    "@vitest/coverage-v8": "^4.0.8",
+    "@vitest/coverage-v8": "3.2.4",
     "aws-cdk": "^2.1031.2",
     "aws-sdk-client-mock": "^4.1.0",
     "bcryptjs": "^3.0.3",
@@ -95,6 +96,7 @@
     "eslint-plugin-security": "^3.0.1",
     "eslint-plugin-sonarjs": "^3.0.5",
     "express": "^5.1.0",
+    "glob": "^13.0.0",
     "happy-dom": "^20.0.10",
     "msw": "^2.12.1",
     "ngrok": "^5.0.0-beta.2",
@@ -103,8 +105,11 @@
     "supertest": "^7.1.4",
     "testcontainers": "^11.8.1",
     "toml": "^3.0.0",
-    "uuid": "^13.0.0",
-    "vitest": "^4.0.8"
+    "vitest": "3.2.4"
+  },
+  "overrides": {
+    "@vitest/coverage-v8": "3.2.4",
+    "vitest": "3.2.4"
   },
   "engines": {
     "node": ">=22.0.0"

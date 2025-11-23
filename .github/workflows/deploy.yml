@@ -4,7 +4,7 @@ concurrency:
   group: deploy-${{ github.ref_name }}
   cancel-in-progress: false
 
-# Bump12
+# Bump13
 
 on:
   workflow_dispatch:
@@ -46,7 +46,7 @@ on:
       selfDestructDelayHours:
         description: 'Hours before self-destruct triggers for non-prod environments'
         required: false
-        default: '1'
+        default: '8'
       convertTestVideo:
         description: 'Convert test video to mp4 format'
         type: choice

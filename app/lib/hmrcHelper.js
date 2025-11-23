@@ -1,12 +1,11 @@
 // app/lib/hmrcHelper.js
 
+import { v4 as uuidv4 } from "uuid";
 import logger, { context } from "./logger.js";
 import { BundleEntitlementError } from "./bundleEnforcement.js";
 import { http400BadRequestResponse, http500ServerErrorResponse, http403ForbiddenResponse } from "./responses.js";
+import { putHmrcApiRequest } from "./dynamoDbHmrcApiRequestStore.js";
 
-/**
- * Build the base URL for HMRC API calls
- */
 export function getHmrcBaseUrl(hmrcAccount) {
   // TODO: Ensure we always have these when otherwise stable and remove defaults
   return hmrcAccount === "sandbox"
@@ -14,9 +13,6 @@ export function getHmrcBaseUrl(hmrcAccount) {
     : process.env.HMRC_BASE_URI || "https://api.service.hmrc.gov.uk";
 }
 
-/**
- * Build common HMRC headers including fraud prevention headers
- */
 export function buildHmrcHeaders(accessToken, govClientHeaders = {}, testScenario = null) {
   const headers = {
     "Content-Type": "application/json",
@@ -75,9 +71,6 @@ export function validateHmrcAccessToken(hmrcAccessToken) {
   }
 }
 
-/**
- * Make a GET request to HMRC VAT API
- */
 export async function hmrcHttpGet(endpoint, accessToken, govClientHeaders = {}, testScenario = null, hmrcAccount, queryParams = {}) {
   const baseUrl = getHmrcBaseUrl(hmrcAccount);
   // Sanitize query params: drop undefined, null, and blank strings
@@ -144,43 +137,58 @@ export async function hmrcHttpGet(endpoint, accessToken, govClientHeaders = {}, 
   };
 }
 
-export async function hmrcHttpPost(hmrcRequestUrl, hmrcRequestHeaders, govClientHeaders, hmrcRequestBody) {
+export async function hmrcHttpPost(hmrcRequestUrl, hmrcRequestHeaders, govClientHeaders, hmrcRequestBody, auditForUserSub) {
   let hmrcResponse;
   const timeoutEnv = 20000;
+  const httpRequest = {
+    method: "POST",
+    headers: {
+      ...hmrcRequestHeaders,
+      ...govClientHeaders,
+      ...(context.get("requestId") ? { "x-request-id": context.get("requestId") } : {}),
+      ...(context.get("amznTraceId") ? { "x-amzn-trace-id": context.get("amznTraceId") } : {}),
+      ...(context.get("traceparent") ? { traceparent: context.get("traceparent") } : {}),
+    },
+    body: JSON.stringify(hmrcRequestBody),
+  };
+  let duration = 0;
+  // TODO: Remove this optionality and always have a timeout
   if (timeoutEnv && Number(timeoutEnv) > 0) {
     const controller = new AbortController();
     const timeoutMs = Number(timeoutEnv);
     const timeout = setTimeout(() => controller.abort(), timeoutMs);
     try {
-      hmrcResponse = await fetch(hmrcRequestUrl, {
-        method: "POST",
-        headers: {
-          ...hmrcRequestHeaders,
-          ...govClientHeaders,
-          ...(context.get("requestId") ? { "x-request-id": context.get("requestId") } : {}),
-          ...(context.get("amznTraceId") ? { "x-amzn-trace-id": context.get("amznTraceId") } : {}),
-          ...(context.get("traceparent") ? { traceparent: context.get("traceparent") } : {}),
-        },
-        body: JSON.stringify(hmrcRequestBody),
-        signal: controller.signal,
-      });
+      const startTime = Date.now();
+      hmrcResponse = await fetch(hmrcRequestUrl, { ...httpRequest, signal: controller.signal });
+      duration = Date.now() - startTime;
     } finally {
       clearTimeout(timeout);
     }
   } else {
-    hmrcResponse = await fetch(hmrcRequestUrl, {
-      method: "POST",
-      headers: {
-        ...hmrcRequestHeaders,
-        ...govClientHeaders,
-        ...(context.get("requestId") ? { "x-request-id": context.get("requestId") } : {}),
-        ...(context.get("amznTraceId") ? { "x-amzn-trace-id": context.get("amznTraceId") } : {}),
-        ...(context.get("traceparent") ? { traceparent: context.get("traceparent") } : {}),
-      },
-      body: JSON.stringify(hmrcRequestBody),
-    });
+    const startTime = Date.now();
+    hmrcResponse = await fetch(hmrcRequestUrl, httpRequest);
+    duration = Date.now() - startTime;
   }
   const hmrcResponseBody = await hmrcResponse.json();
+
+  const httpResponse = {
+    statusCode: hmrcResponse.status,
+    headers: hmrcResponse.headers ?? {},
+    body: hmrcResponseBody,
+  };
+  const userSubOrUuid = auditForUserSub || `unknown-user-${uuidv4()}`;
+  if (userSubOrUuid) {
+    try {
+      await putHmrcApiRequest(auditForUserSub, { url: hmrcRequestUrl, httpRequest, httpResponse, duration });
+    } catch (auditError) {
+      logger.error({
+        message: "Error auditing HMRC API request/response to DynamoDB",
+        error: auditError.message,
+        stack: auditError.stack,
+      });
+    }
+  }
+
   return { hmrcResponse, hmrcResponseBody };
 }
 

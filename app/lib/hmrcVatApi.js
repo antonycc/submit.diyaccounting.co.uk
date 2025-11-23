@@ -2,14 +2,6 @@
 
 import logger from "./logger.js";
 
-/**
- * Common utility for making HMRC VAT API calls
- * Handles base URI selection, headers, fraud prevention, and Gov-Test-Scenario
- */
-
-/**
- * Check if we should use stubbed data based on environment variables
- */
 export function shouldUseStub(stubEnvVar) {
   const stubData = process.env[stubEnvVar];
   if (!stubData) {
@@ -28,9 +20,6 @@ export function shouldUseStub(stubEnvVar) {
   }
 }
 
-/**
- * Get stubbed data from environment variable
- */
 export function getStubData(stubEnvVar, defaultData = {}) {
   const stubData = process.env[stubEnvVar];
   if (stubData) {

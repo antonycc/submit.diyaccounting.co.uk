@@ -29,12 +29,40 @@ function buildEvent(token, method = "GET") {
   return {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
     httpMethod: method,
+    requestContext: {
+      authorizer: {
+        lambda: {
+          jwt: {
+            claims: {
+              "sub": "test-sub",
+              "cognito:username": "test",
+              "email": "test@test.submit.diyaccunting.co.uk",
+              "scope": "read write",
+            },
+          },
+        },
+      },
+    },
   };
 }
 
 function buildPostEvent(token, body) {
   return {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
+    requestContext: {
+      authorizer: {
+        lambda: {
+          jwt: {
+            claims: {
+              "sub": "test-sub",
+              "cognito:username": "test",
+              "email": "test@test.submit.diyaccunting.co.uk",
+              "scope": "read write",
+            },
+          },
+        },
+      },
+    },
     body: JSON.stringify(body || {}),
   };
 }

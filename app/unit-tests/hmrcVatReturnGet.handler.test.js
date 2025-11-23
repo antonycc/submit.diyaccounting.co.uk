@@ -28,6 +28,21 @@ describe("hmrcVatReturnGet handler (new tests)", () => {
 
   test("returns VAT return details using stubbed data", async () => {
     const event = {
+      requestContext: {
+        requestId: "test-request-id",
+        authorizer: {
+          lambda: {
+            jwt: {
+              claims: {
+                "sub": "test-sub",
+                "cognito:username": "test",
+                "email": "test@test.submit.diyaccunting.co.uk",
+                "scope": "read write",
+              },
+            },
+          },
+        },
+      },
       queryStringParameters: { vrn: "111222333" },
       pathParameters: { periodKey: "24A1" },
       headers: { ...buildGovClientTestHeaders(), authorization: "Bearer token-abc" },
@@ -42,7 +57,26 @@ describe("hmrcVatReturnGet handler (new tests)", () => {
   });
 
   test("returns 400 when Authorization is missing", async () => {
-    const event = { queryStringParameters: { vrn: "111222333" }, pathParameters: { periodKey: "24A1" }, headers: {} };
+    const event = {
+      requestContext: {
+        requestId: "test-request-id",
+        authorizer: {
+          lambda: {
+            jwt: {
+              claims: {
+                "sub": "test-sub",
+                "cognito:username": "test",
+                "email": "test@test.submit.diyaccunting.co.uk",
+                "scope": "read write",
+              },
+            },
+          },
+        },
+      },
+      queryStringParameters: { vrn: "111222333" },
+      pathParameters: { periodKey: "24A1" },
+      headers: {},
+    };
 
     const result = await getVatReturnHandler(event);
     const body = JSON.parse(result.body);
@@ -53,6 +87,21 @@ describe("hmrcVatReturnGet handler (new tests)", () => {
 
   test("returns 400 for invalid VRN", async () => {
     const event = {
+      requestContext: {
+        requestId: "test-request-id",
+        authorizer: {
+          lambda: {
+            jwt: {
+              claims: {
+                "sub": "test-sub",
+                "cognito:username": "test",
+                "email": "test@test.submit.diyaccunting.co.uk",
+                "scope": "read write",
+              },
+            },
+          },
+        },
+      },
       queryStringParameters: { vrn: "abc" },
       pathParameters: { periodKey: "24A1" },
       headers: { ...buildGovClientTestHeaders(), authorization: "Bearer token-abc" },

@@ -48,7 +48,24 @@ describe("myReceipts functions", () => {
     };
     s3Mock.on(ListObjectsV2Command).resolves(listResp);
 
-    const { statusCode, body } = await listReceipts({ headers: { authorization: auth } });
+    const { statusCode, body } = await listReceipts({
+      requestContext: {
+        requestId: "test-request-id",
+        authorizer: {
+          lambda: {
+            jwt: {
+              claims: {
+                "sub": "test-sub",
+                "cognito:username": "test",
+                "email": "test@test.submit.diyaccunting.co.uk",
+                "scope": "read write",
+              },
+            },
+          },
+        },
+      },
+      headers: { authorization: auth },
+    });
     expect(statusCode).toBe(200);
     const json = JSON.parse(body);
     expect(Array.isArray(json.receipts)).toBe(true);
@@ -60,7 +77,24 @@ describe("myReceipts functions", () => {
   });
 
   test("handle returns 401 when no auth", async () => {
-    const { statusCode } = await listReceipts({ headers: {} });
+    const { statusCode } = await listReceipts({
+      requestContext: {
+        requestId: "test-request-id",
+        authorizer: {
+          lambda: {
+            jwt: {
+              claims: {
+                "sub": "test-sub",
+                "cognito:username": "test",
+                "email": "test@test.submit.diyaccunting.co.uk",
+                "scope": "read write",
+              },
+            },
+          },
+        },
+      },
+      headers: {},
+    });
     expect(statusCode).toBe(401);
   });
 
@@ -73,6 +107,21 @@ describe("myReceipts functions", () => {
     s3Mock.on(GetObjectCommand).resolves({ Body: stream });
 
     const { statusCode, body } = await getReceipt({
+      requestContext: {
+        requestId: "test-request-id",
+        authorizer: {
+          lambda: {
+            jwt: {
+              claims: {
+                "sub": userSub,
+                "cognito:username": "test",
+                "email": "test@test.submit.diyaccunting.co.uk",
+                "scope": "read write",
+              },
+            },
+          },
+        },
+      },
       headers: { authorization: auth },
       pathParameters: { name: "2025-07-01T12:00:00.000Z-CCC.json" },
     });
@@ -82,6 +131,21 @@ describe("myReceipts functions", () => {
 
     // Forbidden when trying to access someone else's prefix via full key
     const respForbidden = await getReceipt({
+      requestContext: {
+        requestId: "test-request-id",
+        authorizer: {
+          lambda: {
+            jwt: {
+              claims: {
+                "sub": userSub,
+                "cognito:username": "test",
+                "email": "test@test.submit.diyaccunting.co.uk",
+                "scope": "read write",
+              },
+            },
+          },
+        },
+      },
       headers: { authorization: auth },
       queryStringParameters: { key: `receipts/other/2025-01-01-XXX.json` },
     });

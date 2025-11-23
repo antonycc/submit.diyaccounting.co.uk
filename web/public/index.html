@@ -11,6 +11,9 @@
     <meta name="rum:region" content="${AWS_REGION}" />
     <meta name="rum:identityPoolId" content="${RUM_IDENTITY_POOL_ID}" />
     <meta name="rum:guestRoleArn" content="${RUM_GUEST_ROLE_ARN}" />
+    <!-- HEAD-prefetch scripts to prime API Gateway/Lambda and authorizers to reduce cold-start impact -->
+    <script async src="./prefetch/prefetch-catalog-head.js"></script>
+    <script async src="./prefetch/prefetch-bundle-head.js"></script>
   </head>
   <body>
     <header>
@@ -85,7 +88,7 @@
     <script type="module" src="widgets/view-source-link.js"></script>
     <script src="widgets/localstorage-viewer.js"></script>
     <script>
-      // In-memory user bundles state (list of bundleId[|EXPIRY=...] strings for compatibility with existing logic)
+      // In-memory user bundles state (list of bundleId strings)
       let __userBundles = [];
 
       async function initializeBundles() {
@@ -100,7 +103,7 @@
             if (response.ok) {
               const bundlesData = await response.json();
               if (bundlesData.bundles && Array.isArray(bundlesData.bundles)) {
-                __userBundles = bundlesData.bundles.map((b) => (b?.expiry ? `${b.bundleId}|EXPIRY=${b.expiry}` : b.bundleId));
+                __userBundles = bundlesData.bundles.map((b) => b.bundleId);
               } else {
                 __userBundles = [];
               }
@@ -125,11 +128,12 @@
         return Array.isArray(__userBundles) ? __userBundles : [];
       }
 
-      function hasBundle(bundles, id) {
-        return (bundles || []).some((b) => typeof b === "string" && (b === id || b.startsWith(id + "|")));
-      }
+      //function hasBundle(bundles, id) {
+      //  return (bundles || []).some((b) => typeof b === "string" && b === id);
+      //}
 
       // Parse bundle expiry date from bundle string
+      // TODO: Remove and use the returned bundle objects,
       function parseBundleExpiry(bundleEntry) {
         if (!bundleEntry || typeof bundleEntry !== "string") return null;
         const parts = bundleEntry.split("|");

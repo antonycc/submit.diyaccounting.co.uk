@@ -1,21 +1,18 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
 import co.uk.diyaccounting.submit.constructs.ApiLambda;
 import co.uk.diyaccounting.submit.constructs.ApiLambdaProps;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
-import java.util.List;
-import java.util.Optional;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Aspects;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
+import software.amazon.awscdk.services.dynamodb.ITable;
+import software.amazon.awscdk.services.dynamodb.Table;
 import software.amazon.awscdk.services.iam.Effect;
 import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.lambda.Function;
@@ -25,6 +22,12 @@ import software.amazon.awscdk.services.s3.Bucket;
 import software.amazon.awscdk.services.s3.IBucket;
 import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
+
+import java.util.List;
+import java.util.Optional;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 public class HmrcStack extends Stack {
 
@@ -123,6 +126,18 @@ public class HmrcStack extends Stack {
     public HmrcStack(Construct scope, String id, StackProps stackProps, HmrcStackProps props) {
         super(scope, id, stackProps);
 
+        // Lookup existing DynamoDB Bundles Table
+        ITable bundlesTable = Table.fromTableName(
+            this,
+            "ImportedBundlesTable-%s".formatted(props.deploymentName()),
+            props.sharedNames().bundlesTableName);
+
+        // Lookup existing DynamoDB HMRC API requests Table
+        ITable hmrcApiRequestsTable = Table.fromTableName(
+            this,
+            "ImportedHmrcApiRequestsTable-%s".formatted(props.deploymentName()),
+            props.sharedNames().hmrcApiRequestsTableName);
+
         // Lambdas
 
         this.lambdaFunctionProps = new java.util.ArrayList<>();
@@ -133,7 +148,8 @@ public class HmrcStack extends Stack {
                 .with("HMRC_BASE_URI", props.hmrcBaseUri())
                 .with("HMRC_CLIENT_ID", props.hmrcClientId())
                 .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
-                .with("HMRC_SANDBOX_CLIENT_ID", props.hmrcSandboxClientId());
+                .with("HMRC_SANDBOX_CLIENT_ID", props.hmrcSandboxClientId())
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName);
         var authUrlHmrcLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
@@ -159,13 +175,21 @@ public class HmrcStack extends Stack {
                 "Created Lambda %s for HMRC auth URL with handler %s",
                 this.hmrcAuthUrlGetLambda.getNode().getId(), props.sharedNames().hmrcAuthUrlGetLambdaHandler);
 
+        // Grant the Lambda permission to access DynamoDB Bundles Table
+        bundlesTable.grantReadData(this.hmrcAuthUrlGetLambda);
+        infof(
+            "Granted DynamoDB permissions to %s for Bundles Table %s",
+            this.hmrcAuthUrlGetLambda.getFunctionName(), bundlesTable.getTableName());
+
         // exchangeToken - HMRC
         var exchangeHmrcEnvBase = new PopulatedMap<String, String>()
                 .with("DIY_SUBMIT_BASE_URL", props.sharedNames().envBaseUrl)
                 .with("HMRC_BASE_URI", props.hmrcBaseUri())
                 .with("HMRC_CLIENT_ID", props.hmrcClientId())
                 .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
-                .with("HMRC_SANDBOX_CLIENT_ID", props.hmrcSandboxClientId());
+                .with("HMRC_SANDBOX_CLIENT_ID", props.hmrcSandboxClientId())
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
+                .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName());
         if (StringUtils.isNotBlank(props.hmrcClientSecretArn())) {
             exchangeHmrcEnvBase.with("HMRC_CLIENT_SECRET_ARN", props.hmrcClientSecretArn());
         }
@@ -202,6 +226,15 @@ public class HmrcStack extends Stack {
         infof(
                 "Created Lambda %s for HMRC exchange token with handler %s",
                 this.hmrcTokenPostLambda.getNode().getId(), props.sharedNames().hmrcTokenPostLambdaHandler);
+
+        // Grant the exchange token Lambda permission to access DynamoDB Bundles Table
+        bundlesTable.grantReadData(this.hmrcTokenPostLambda);
+        infof(
+            "Granted DynamoDB permissions to %s for Bundles Table %s",
+            this.hmrcTokenPostLambda.getFunctionName(), bundlesTable.getTableName());
+
+        // Allow the token exchange Lambda to write HMRC API request audit records to DynamoDB
+        hmrcApiRequestsTable.grantWriteData(this.hmrcTokenPostLambda);
 
         // Grant access to HMRC client secret in Secrets Manager
         if (StringUtils.isNotBlank(props.hmrcClientSecretArn())) {
@@ -241,12 +274,19 @@ public class HmrcStack extends Stack {
                 "Created Lambda %s for HMRC exchange token with handler %s",
                 this.hmrcTokenPostLambda.getNode().getId(), props.sharedNames().hmrcTokenPostLambdaHandler);
 
+        // Grant the token exchange Lambda permission to access DynamoDB Bundles Table
+        bundlesTable.grantReadData(this.hmrcTokenPostLambda);
+        infof(
+            "Granted DynamoDB permissions to %s for Bundles Table %s",
+            this.hmrcTokenPostLambda.getFunctionName(), bundlesTable.getTableName());
+
         // submitVat
         var submitVatLambdaEnv = new PopulatedMap<String, String>()
                 .with("DIY_SUBMIT_BASE_URL", props.sharedNames().envBaseUrl)
-                .with("COGNITO_USER_POOL_ID", props.cognitoUserPoolId())
                 .with("HMRC_BASE_URI", props.hmrcBaseUri())
-                .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri());
+                .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
+                .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName());
         var submitVatLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
@@ -272,11 +312,22 @@ public class HmrcStack extends Stack {
                 "Created Lambda %s for VAT submission with handler %s",
                 this.hmrcVatReturnPostLambda.getNode().getId(), props.sharedNames().hmrcVatReturnPostLambdaHandler);
 
+        // Grant the VAT submission Lambda permission to access DynamoDB Bundles Table
+        bundlesTable.grantReadData(this.hmrcVatReturnPostLambda);
+        infof(
+            "Granted DynamoDB permissions to %s for Bundles Table %s",
+            this.hmrcVatReturnPostLambda.getFunctionName(), bundlesTable.getTableName());
+
+        // Allow the VAT submission Lambda to write HMRC API request audit records to DynamoDB
+        hmrcApiRequestsTable.grantWriteData(this.hmrcVatReturnPostLambda);
+
         // VAT obligations GET
         var vatObligationLambdaEnv = new PopulatedMap<String, String>()
                 .with("DIY_SUBMIT_BASE_URL", props.sharedNames().envBaseUrl)
                 .with("HMRC_BASE_URI", props.hmrcBaseUri())
-                .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri());
+                .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
+                .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName());
         var hmrcVatObligationGetLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
@@ -303,11 +354,22 @@ public class HmrcStack extends Stack {
                 this.hmrcVatObligationGetLambda.getNode().getId(),
                 props.sharedNames().hmrcVatObligationGetLambdaHandler);
 
+        // Grant the VAT obligations Lambda permission to access DynamoDB Bundles Table
+        bundlesTable.grantReadData(this.hmrcVatObligationGetLambda);
+        infof(
+            "Granted DynamoDB permissions to %s for Bundles Table %s",
+            this.hmrcVatObligationGetLambda.getFunctionName(), bundlesTable.getTableName());
+
+        // Allow the VAT obligations Lambda to write HMRC API request audit records to DynamoDB
+        hmrcApiRequestsTable.grantWriteData(this.hmrcVatObligationGetLambda);
+
         // VAT return GET
         var vatReturnGetLambdaEnv = new PopulatedMap<String, String>()
                 .with("DIY_SUBMIT_BASE_URL", props.sharedNames().envBaseUrl)
                 .with("HMRC_BASE_URI", props.hmrcBaseUri())
-                .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri());
+                .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
+                .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName());
         var hmrcVatReturnGetLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
@@ -333,8 +395,18 @@ public class HmrcStack extends Stack {
                 "Created Lambda %s for VAT return retrieval with handler %s",
                 this.hmrcVatReturnGetLambda.getNode().getId(), props.sharedNames().hmrcVatReturnGetLambdaHandler);
 
+        // Grant the VAT return retrieval Lambda permission to access DynamoDB Bundles Table
+        bundlesTable.grantReadData(this.hmrcVatReturnGetLambda);
+        infof(
+            "Granted DynamoDB permissions to %s for Bundles Table %s",
+            this.hmrcVatReturnGetLambda.getFunctionName(), bundlesTable.getTableName());
+
+        // Allow the VAT return retrieval Lambda to write HMRC API request audit records to DynamoDB
+        hmrcApiRequestsTable.grantWriteData(this.hmrcVatReturnGetLambda);
+
         var logReceiptLambdaEnv = new PopulatedMap<String, String>()
                 .with("DIY_SUBMIT_BASE_URL", props.sharedNames().envBaseUrl)
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
                 .with("DIY_SUBMIT_RECEIPTS_BUCKET_NAME", props.sharedNames().receiptsBucketName);
         if (props.optionalTestS3Endpoint().isPresent()
                 && StringUtils.isNotBlank(props.optionalTestS3Endpoint().get())
@@ -373,9 +445,16 @@ public class HmrcStack extends Stack {
                 "Created Lambda %s for logging receipts with handler %s",
                 this.receiptPostLambda.getNode().getId(), props.sharedNames().receiptPostLambdaHandler);
 
+        // Grant the LogReceiptLambda permission to access DynamoDB Bundles Table
+        bundlesTable.grantReadData(this.receiptPostLambda);
+        infof(
+            "Granted DynamoDB permissions to %s for Bundles Table %s",
+            this.receiptPostLambda.getFunctionName(), bundlesTable.getTableName());
+
         // myReceipts Lambda
         var myReceiptsLambdaEnv = new PopulatedMap<String, String>()
                 .with("DIY_SUBMIT_BASE_URL", props.sharedNames().envBaseUrl)
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
                 .with("DIY_SUBMIT_RECEIPTS_BUCKET_NAME", props.sharedNames().receiptsBucketName);
         var myReceiptsLambdaUrlOrigin = new ApiLambda(
                 this,
@@ -416,6 +495,12 @@ public class HmrcStack extends Stack {
         infof(
                 "Created Lambda %s for my receipts retrieval with handler %s",
                 this.receiptGetLambda.getNode().getId(), props.sharedNames().receiptGetLambdaHandler);
+
+        // Grant the MyReceiptsLambda permission to access DynamoDB Bundles Table
+        bundlesTable.grantReadData(this.receiptGetLambda);
+        infof(
+            "Granted DynamoDB permissions to %s for Bundles Table %s",
+            this.receiptGetLambda.getFunctionName(), bundlesTable.getTableName());
 
         // Grant the LogReceiptLambda and MyReceiptsLambda write and read access respectively to the receipts S3 bucket
         IBucket receiptsBucket = Bucket.fromBucketName(
