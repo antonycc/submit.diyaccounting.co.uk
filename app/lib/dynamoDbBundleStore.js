@@ -47,7 +47,7 @@ export async function putBundle(userId, bundle) {
 
   try {
     const hashedSub = hashSub(userId);
-    logger.info({ message: "Storing bundle", hashedSub, bundle.bundleId });
+    logger.info({ message: "Storing bundle", hashedSub, bundle });
 
     const docClient = await getDynamoDbDocClient();
     const tableName = getTableName();
