@@ -32,6 +32,11 @@ on:
       - '.github/actions/get-names'
       - '.github/actions/set-origins'
       - '.github/workflows/deploy-environment.yml'
+      - 'infra/main/java/co/uk/diyaccounting/submit/SubmitEnvironment.java'
+      - 'infra/main/java/co/uk/diyaccounting/submit/stacks/ApexStack.java'
+      - 'infra/main/java/co/uk/diyaccounting/submit/stacks/DataStack.java'
+      - 'infra/main/java/co/uk/diyaccounting/submit/stacks/Observability*.java'
+      - 'infra/main/java/co/uk/diyaccounting/submit/stacks/IdentityStack.java'
   schedule:
     - cron: '51 3 * * *'
 
@@ -408,26 +413,26 @@ jobs:
             echo "No product-subscribers.subs file found, skipping bundle provisioning"
             exit 0
           fi
-          
+
           # Read each hashed sub from the file and add bundles
           while IFS= read -r hashed_sub || [ -n "$hashed_sub" ]; do
             # Skip empty lines and comments
             if [[ -z "$hashed_sub" ]] || [[ "$hashed_sub" =~ ^# ]]; then
               continue
             fi
-            
+
             echo "Adding bundles for subscriber: $hashed_sub"
-            
+
             # Add test bundle (for testing environments)
             if [[ "${{ needs.names.outputs.environment-name }}" != "prod" ]]; then
               ./scripts/add-bundle.sh "$hashed_sub" "test" "${{ needs.names.outputs.environment-name }}" || echo "Failed to add test bundle for $hashed_sub"
             fi
-            
+
             # Add guest bundle (for all environments)
             ./scripts/add-bundle.sh "$hashed_sub" "guest" "${{ needs.names.outputs.environment-name }}" || echo "Failed to add guest bundle for $hashed_sub"
-            
+
           done < product-subscribers.subs
-          
+
           echo "Bundle provisioning completed"
         env:
           AWS_REGION: ${{ env.AWS_REGION }}
