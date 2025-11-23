@@ -23,8 +23,8 @@ export function apiEndpoint(app) {
           params.append(key, String(value));
         }
       }
-
-      const resp = await fetch("http://localhost:8080/default/token", {
+      const base = process.env.TEST_MOCK_OAUTH2_BASE || "http://127.0.0.1:8080";
+      const resp = await fetch(`${base}/default/token`, {
         method: "POST",
         headers: { "content-type": "application/x-www-form-urlencoded" },
         body: params.toString(),

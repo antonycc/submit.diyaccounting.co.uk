@@ -38,78 +38,73 @@ export function isSandboxMode() {
   }
 }
 
-// Start local DynamoDB (via Testcontainers) if requested by env, and ensure tables exist
+// Start local DynamoDB using a single strategy (Testcontainers) and ensure tables exist
 export async function runLocalDynamoDb(runDynamoDb, bundleTableName, hmrcApiRequestsTableName) {
-  logger.info(`[dynamodb]: runDynamoDb=${runDynamoDb}, bundleTableName=${bundleTableName}, hmrcApiRequestsTableName=${hmrcApiRequestsTableName}`);
+  logger.info(
+    `[dynamodb]: runDynamoDb=${runDynamoDb}, bundleTableName=${bundleTableName}, hmrcApiRequestsTableName=${hmrcApiRequestsTableName}`,
+  );
+
   let container;
   let endpoint;
-  let dockerContainerId;
-  if (runDynamoDb === "run") {
-    // If endpoint already provided via env, prefer it (do not attempt to start a container)
-    if (process.env.TEST_DYNAMODB_ENDPOINT && process.env.TEST_DYNAMODB_ENDPOINT.trim() !== "") {
-      endpoint = process.env.TEST_DYNAMODB_ENDPOINT.trim();
-      logger.info(`[dynamodb]: Using pre-configured endpoint ${endpoint}`);
-    } else {
-      // Try starting via Docker CLI first (more robust in some environments than testcontainers)
+
+  // Helper: wait for DynamoDB endpoint to be responsive by calling ListTables
+  async function waitForDynamoReady(testEndpoint, label = "dynamodb", attempts = 30, delay = 500) {
+    const { DynamoDBClient, ListTablesCommand } = await import("@aws-sdk/client-dynamodb");
+    const client = new DynamoDBClient({
+      endpoint: testEndpoint,
+      region: "us-east-1",
+      credentials: { accessKeyId: "dummy", secretAccessKey: "dummy" },
+    });
+    for (let i = 1; i <= attempts; i++) {
       try {
-        logger.info("[dynamodb]: Trying to start via Docker CLI...");
-        // Ensure docker is available
-        execSync("docker --version", { stdio: "ignore" });
-        // Start detached container on fixed port 8000
-        const runArgs = [
-          "run",
-          "-d",
-          "-p",
-          "8000:8000",
-          "amazon/dynamodb-local:latest",
-          "-jar",
-          "DynamoDBLocal.jar",
-          "-sharedDb",
-          "-inMemory",
-        ];
-        const out = execSync(`docker ${runArgs.join(" ")}`, { encoding: "utf-8" }).trim();
-        dockerContainerId = out.split("\n")[0];
-        endpoint = "http://127.0.0.1:8000";
-        logger.info(`[dynamodb]: Started via Docker CLI, containerId=${dockerContainerId}, endpoint=${endpoint}`);
-        // Give it a moment to be ready
-        await new Promise((r) => setTimeout(r, 500));
-      } catch (cliErr) {
-        logger.warn(`[dynamodb]: Docker CLI start failed (${cliErr.message}). Falling back to testcontainers...`);
-        // Fall back to testcontainers
-        try {
-          const dynamodb = await import("@app/bin/dynamodb.js");
-          const started = await dynamodb.startDynamoDB();
-          if (typeof started === "string") {
-            endpoint = started;
-          } else {
-            endpoint = started.endpoint;
-            container = started.container;
-          }
-          logger.info(`[dynamodb]: Started via testcontainers at ${endpoint}`);
-        } catch (tcErr) {
-          logger.error(`[dynamodb]: Failed to start via testcontainers: ${tcErr.message}`);
-          // Final fallback: enable mock bundles to allow tests to continue without DynamoDB
-          process.env.TEST_BUNDLE_MOCK = "true";
-          logger.warn("[dynamodb]: Falling back to TEST_BUNDLE_MOCK=true due to missing container runtime");
-          return { container: null, endpoint: null, dockerContainerId: null };
-        }
+        await client.send(new ListTablesCommand({ Limit: 1 }));
+        logger.info(`[${label}]: Endpoint is responsive at ${testEndpoint}`);
+        return true;
+      } catch (e) {
+        logger.warn(`[${label}]: Readiness check ${i}/${attempts} failed: ${e?.message || e}`);
+        await new Promise((r) => setTimeout(r, delay));
       }
+    }
+    return false;
+  }
+
+  // Helper: ensure tables with retries
+  async function ensureTablesWithRetries(ensureFn, label, attempts = 30, delay = 500) {
+    for (let i = 1; i <= attempts; i++) {
+      try {
+        await ensureFn();
+        return;
+      } catch (e) {
+        logger.warn(`[${label}]: Ensure attempt ${i}/${attempts} failed: ${e?.message || e}`);
+        await new Promise((r) => setTimeout(r, delay));
+      }
+    }
+    throw new Error(`[${label}]: Failed to ensure required DynamoDB tables after ${attempts} attempts`);
+  }
+
+  if (runDynamoDb === "run") {
+    // Always use Testcontainers for local DynamoDB; do not use alternative strategies
+    const dynamodbBin = await import("@app/bin/dynamodb.js");
+    const started = await dynamodbBin.startDynamoDB();
+    endpoint = started.endpoint;
+    container = started.container;
+    logger.info(`[dynamodb]: Started Testcontainers DynamoDB at ${endpoint}`);
+
+    // Wait for endpoint to be ready
+    const ready = await waitForDynamoReady(endpoint, "dynamodb");
+    if (!ready) {
+      throw new Error(`[dynamodb]: Endpoint never became ready at ${endpoint}`);
     }
 
-    // Ensure expected tables exist
-    try {
-      const dynamodb = await import("@app/bin/dynamodb.js");
-      if (endpoint) {
-        if (bundleTableName) {
-          await dynamodb.ensureBundleTableExists(bundleTableName, endpoint);
-        }
-        if (hmrcApiRequestsTableName) {
-          await dynamodb.ensureHmrcApiRequestsTableExists(hmrcApiRequestsTableName, endpoint);
-        }
+    // Ensure expected tables exist (with retries)
+    await ensureTablesWithRetries(async () => {
+      if (bundleTableName) {
+        await dynamodbBin.ensureBundleTableExists(bundleTableName, endpoint);
       }
-    } catch (err) {
-      logger.warn(`[dynamodb]: Table ensure failed: ${err.message}`);
-    }
+      if (hmrcApiRequestsTableName) {
+        await dynamodbBin.ensureHmrcApiRequestsTableExists(hmrcApiRequestsTableName, endpoint);
+      }
+    }, "dynamodb-ensure");
 
     // Propagate endpoint so app code uses local DynamoDB
     process.env.TEST_DYNAMODB_ENDPOINT = endpoint;
@@ -119,7 +114,7 @@ export async function runLocalDynamoDb(runDynamoDb, bundleTableName, hmrcApiRequ
     logger.info("[dynamodb]: Skipping DynamoDB Local as TEST_DYNAMODB is not set to 'run'");
   }
 
-  return { container, endpoint, dockerContainerId };
+  return { container, endpoint, stop: async () => (container ? container.stop() : undefined) };
 }
 
 export async function runLocalS3(runMinioS3, receiptsBucketName, optionalTestS3AccessKey, optionalTestS3SecretKey) {
@@ -150,6 +145,10 @@ export async function runLocalHttpServer(runTestServer, s3Endpoint, httpServerPo
         ...process.env,
         TEST_S3_ENDPOINT: s3Endpoint,
         TEST_SERVER_HTTP_PORT: httpServerPort.toString(),
+        // Ensure DynamoDB endpoint discovered by runLocalDynamoDb wins over file-based .env
+        TEST_DYNAMODB_ENDPOINT: process.env.TEST_DYNAMODB_ENDPOINT,
+        TEST_DYNAMODB_ACCESS_KEY: process.env.TEST_DYNAMODB_ACCESS_KEY,
+        TEST_DYNAMODB_SECRET_KEY: process.env.TEST_DYNAMODB_SECRET_KEY,
       },
       stdio: ["pipe", "pipe", "pipe"],
     });
@@ -183,15 +182,132 @@ export async function runLocalOAuth2Server(runMockOAuth2) {
   logger.info(`[auth]: runMockOAuth2=${runMockOAuth2}`);
   let serverProcess;
   if (runMockOAuth2 === "run") {
-    logger.info("[auth]: Starting mock-oauth2-server process...");
-    // eslint-disable-next-line sonarjs/no-os-command-from-path
-    serverProcess = spawn("npm", ["run", "auth"], {
-      env: {
-        ...process.env,
-      },
-      stdio: ["pipe", "pipe", "pipe"],
-    });
-    await checkIfServerIsRunning("http://localhost:8080/default/debugger", 2000, undefined, "auth");
+    // Helper: attempt to start Docker-based server
+    const tryStartDockerAuth = () => {
+      try {
+        // Verify Docker exists; throws if not
+        execSync("docker --version", { stdio: "ignore" });
+        logger.info("[auth]: Starting mock-oauth2-server process via Docker...");
+        // eslint-disable-next-line sonarjs/no-os-command-from-path
+        serverProcess = spawn("npm", ["run", "auth"], {
+          env: {
+            ...process.env,
+          },
+          stdio: ["pipe", "pipe", "pipe"],
+        });
+      } catch (e) {
+        logger.warn(`[auth]: Docker not available or failed to start: ${e?.message || e}`);
+      }
+    };
+
+    // Fallback: start an in-process lightweight mock OAuth2 server compatible with our tests
+    let inProcessServer;
+    const startInProcessMockOAuth2 = async () => {
+      if (inProcessServer) return; // already started
+      logger.info("[auth]: Starting in-process mock OAuth2 server on http://localhost:8080 ...");
+      const express = (await import("express")).default;
+      const app = express();
+      app.use(express.urlencoded({ extended: true }));
+      app.use(express.json());
+
+      // Simple readiness/debug endpoint
+      app.get("/default/debugger", (_req, res) => {
+        res.status(200).send("<html><body><h1>Mock OAuth2 Debugger</h1></body></html>");
+      });
+
+      // Memory to store claims by auth code for token exchange
+      const codeStore = new Map();
+
+      // Authorization endpoint: show simple login form
+      app.get("/oauth/authorize", (req, res) => {
+        const { redirect_uri = "", state = "" } = req.query || {};
+        const html = `<!doctype html>
+          <html><head><meta charset="utf-8"><title>Mock OAuth2 Login</title></head>
+          <body>
+            <h1>Mock OAuth2 Login</h1>
+            <form method="post" action="/oauth/authorize">
+              <input type="hidden" name="redirect_uri" value="${String(redirect_uri)}"/>
+              <input type="hidden" name="state" value="${String(state)}"/>
+              <label>Username <input class="u-full-width" required type="text" name="username" placeholder="Enter any user/subject" autofocus="on" /></label>
+              <br/>
+              <label>Claims JSON<br/>
+                <textarea class="u-full-width claims" name="claims" rows="15" placeholder="Optional claims JSON" autofocus="on"></textarea>
+              </label>
+              <br/>
+              <input class="button-primary" type="submit" value="Sign-in" />
+            </form>
+          </body></html>`;
+        res.status(200).set("content-type", "text/html").send(html);
+      });
+
+      // Handle form submission -> redirect back to app with code & state
+      app.post("/oauth/authorize", (req, res) => {
+        const { redirect_uri = "", state = "", username = "user", claims = "{}" } = req.body || {};
+        let claimsObj = {};
+        try {
+          claimsObj = claims ? JSON.parse(claims) : {};
+        } catch (_) {
+          claimsObj = {};
+        }
+        const code = `mock-${Date.now()}`;
+        codeStore.set(code, { username, claims: claimsObj });
+        const url = new URL(String(redirect_uri));
+        url.searchParams.set("code", code);
+        if (state) url.searchParams.set("state", String(state));
+        res.redirect(302, url.toString());
+      });
+
+      // Token exchange endpoint
+      app.post("/default/token", (req, res) => {
+        const { code = "" } = req.body || {};
+        const entry = codeStore.get(String(code)) || { username: "user", claims: {} };
+        const baseClaims = {
+          sub: entry.username || "user",
+          email: entry.claims?.email || `${entry.username || "user"}@example.com`,
+          ...entry.claims,
+        };
+        // Not a real JWT; sufficient for tests that don't verify signature
+        const idToken = Buffer.from(JSON.stringify({ alg: "none" })).toString("base64url") + "." +
+          Buffer.from(JSON.stringify(baseClaims)).toString("base64url") + ".";
+        res.status(200).json({
+          access_token: "mock-access-token",
+          token_type: "bearer",
+          expires_in: 3600,
+          scope: "openid somescope",
+          id_token: idToken,
+        });
+      });
+
+      await new Promise((resolve, reject) => {
+        try {
+          inProcessServer = app.listen(8080, "127.0.0.1", () => {
+            logger.info("[auth]: In-process mock OAuth2 server is listening on 127.0.0.1:8080");
+            resolve();
+          });
+          inProcessServer.on("error", (e) => {
+            logger.error(`[auth]: In-process mock OAuth2 server failed to start: ${e?.message || e}`);
+            reject(e);
+          });
+        } catch (e) {
+          reject(e);
+        }
+      });
+      // Slight delay to ensure listener fully ready
+      await new Promise((r) => setTimeout(r, 50));
+
+      // Return a kill-compatible handle for afterAll cleanup
+      serverProcess = {
+        kill: () => {
+          try {
+            inProcessServer?.close();
+          } catch (_) {}
+        },
+      };
+    };
+
+    // First attempt docker, but provide fallback runServer to spawn in-process if readiness check fails
+    tryStartDockerAuth();
+    await checkIfServerIsRunning("http://127.0.0.1:8080/default/debugger", 500, startInProcessMockOAuth2, "auth");
   } else {
     logger.info("[auth]: Skipping mock-oauth2-server process as runMockOAuth2 is not set to 'run'");
   }

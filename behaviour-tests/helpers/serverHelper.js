@@ -14,12 +14,12 @@ export async function checkIfServerIsRunning(url, delay = 500, runServer = undef
       serverReady = true;
     } else if (runServer) {
       logger.info(`[${label}]: Starting server at ${url}`, url);
-      runServer();
+      await Promise.resolve(runServer());
     }
   } catch (error) {
     logger.info(`[${label}]: Starting server at ${url} after error ${error}`, url, error);
     if (runServer) {
-      runServer();
+      await Promise.resolve(runServer());
     }
   }
   while (!serverReady && attempts < 15) {

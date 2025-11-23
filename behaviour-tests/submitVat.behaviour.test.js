@@ -111,6 +111,11 @@ test.afterAll(async () => {
   if (mockOAuth2Process) {
     mockOAuth2Process.kill();
   }
+  try {
+    if (typeof dynamo?.stop === "function") {
+      await dynamo.stop();
+    }
+  } catch (_e) {}
   if (dynamo?.container) {
     try {
       await dynamo.container.stop();

@@ -105,6 +105,7 @@
     "prettier": "^3.6.2",
     "supertest": "^7.1.4",
     "testcontainers": "^11.8.1",
+    "dynalite": "^3.2.2",
     "toml": "^3.0.0",
     "vitest": "3.2.4"
   },

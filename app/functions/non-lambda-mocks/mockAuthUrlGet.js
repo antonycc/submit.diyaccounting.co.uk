@@ -66,7 +66,8 @@ export async function handler(event) {
 export function buildAuthUrl(state) {
   const maybeSlash = process.env.DIY_SUBMIT_BASE_URL?.endsWith("/") ? "" : "/";
   const redirectUri = `${process.env.DIY_SUBMIT_BASE_URL}${maybeSlash}auth/loginWithMockCallback.html`;
-  const mockBase = "http://localhost:8080";
+  // Use 127.0.0.1 to avoid IPv6 localhost (::1) issues in some environments
+  const mockBase = process.env.TEST_MOCK_OAUTH2_BASE || "http://127.0.0.1:8080";
   const scope = "openid somescope";
 
   const authUrl =

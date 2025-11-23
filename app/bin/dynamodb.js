@@ -6,7 +6,7 @@ import { fileURLToPath } from "url";
 import { readFileSync } from "fs";
 import { dotenvConfigIfNotBlank } from "../lib/env.js";
 import { CreateTableCommand, DescribeTableCommand, DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { GenericContainer } from "testcontainers";
+import dynalite from "dynalite";
 
 dotenvConfigIfNotBlank({ path: ".env" });
 
@@ -21,18 +21,26 @@ const cdkConfig = JSON.parse(readFileSync(cdkJsonPath, "utf8"));
 const context = cdkConfig.context || {};
 logger.info("CDK context:", context);
 
-async function startDynamoDBContainer() {
-  return await new GenericContainer("amazon/dynamodb-local:latest")
-    .withExposedPorts(8000)
-    .withCommand(["-jar", "DynamoDBLocal.jar", "-sharedDb", "-inMemory"])
-    .start();
+function startDynaliteServer({ host = "127.0.0.1", port = 8000 } = {}) {
+  const server = dynalite({ createTableMs: 0 });
+  return new Promise((resolve, reject) => {
+    server.listen(port, host, (err) => {
+      if (err) return reject(err);
+      const endpoint = `http://${host}:${port}`;
+      resolve({ server, endpoint });
+    });
+  });
 }
 
 export async function startDynamoDB() {
-  const container = await startDynamoDBContainer();
-  const endpoint = `http://${container.getHost()}:${container.getMappedPort(8000)}`;
-  // Return both endpoint and container so callers (e.g., tests) can manage lifecycle
-  return { endpoint, container };
+  // Start a single, consistent local DynamoDB-like server (dynalite)
+  const { server, endpoint } = await startDynaliteServer({ host: "127.0.0.1", port: 8000 });
+  const stop = async () => {
+    try {
+      server.close();
+    } catch (_e) {}
+  };
+  return { endpoint, container: null, stop };
 }
 
 // Create bundle table if it doesn't exist
@@ -122,13 +130,13 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const bundleTableName = process.env.BUNDLE_DYNAMODB_TABLE_NAME;
   const hmrcApiRequestsTableName = process.env.HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME;
 
-  let container;
+  let stop;
 
   try {
-    logger.info("Starting DynamoDB Local server...");
-    container = await startDynamoDBContainer();
-
-    const endpoint = `http://${container.getHost()}:${container.getMappedPort(8000)}`;
+    logger.info("Starting local DynamoDB (dynalite) server...");
+    const started = await startDynamoDB();
+    stop = started.stop;
+    const endpoint = started.endpoint;
     console.log(`DynamoDB started url=${endpoint}`);
 
     // Ensure tables exist
@@ -148,13 +156,11 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       isShuttingDown = true;
 
       logger.info(`\nReceived ${signal}. Shutting down DynamoDB Local server...`);
-      if (container) {
-        try {
-          await container.stop();
-          logger.info("DynamoDB Local server stopped successfully.");
-        } catch (error) {
-          logger.error("Error stopping DynamoDB Local server:", error);
-        }
+      try {
+        await stop?.();
+        logger.info("DynamoDB Local server stopped successfully.");
+      } catch (error) {
+        logger.error("Error stopping DynamoDB Local server:", error);
       }
       process.exit(0);
     };

@@ -91,6 +91,11 @@ test.afterAll(async () => {
   if (mockOAuth2Process) {
     mockOAuth2Process.kill();
   }
+  try {
+    if (typeof dynamo?.stop === "function") {
+      await dynamo.stop();
+    }
+  } catch (_e) {}
   if (dynamo?.container) {
     try {
       await dynamo.container.stop();
@@ -100,8 +105,9 @@ test.afterAll(async () => {
 
 test("Click through: Adding and removing bundles", async ({ page }, testInfo) => {
   // Compute test URL based on which servers are running§
+  // Prefer local HTTP server when it's running to avoid HTTPS->HTTP mixed content and localhost access issues
   const testUrl =
-    (runTestServer === "run" || runTestServer === "useExisting") && runProxy !== "run" && runProxy !== "useExisting"
+    runTestServer === "run" || runTestServer === "useExisting"
       ? `http://127.0.0.1:${serverPort}/`
       : baseUrl;
 
