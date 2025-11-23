@@ -10,14 +10,30 @@ async function getDynamoDbDocClient() {
   if (!__dynamoDbDocClient) {
     __dynamoDbModule = await import("@aws-sdk/lib-dynamodb");
     const { DynamoDBClient } = await import("@aws-sdk/client-dynamodb");
-    const client = new DynamoDBClient({ region: process.env.AWS_REGION || "eu-west-2" });
+
+    const clientConfig = {
+      region: process.env.AWS_REGION || "eu-west-2",
+    };
+
+    // Support local DynamoDB for testing/development
+    if (process.env.TEST_DYNAMODB_ENDPOINT) {
+      clientConfig.endpoint = process.env.TEST_DYNAMODB_ENDPOINT;
+      clientConfig.credentials = {
+        accessKeyId: process.env.TEST_DYNAMODB_ACCESS_KEY || "dummy",
+        secretAccessKey: process.env.TEST_DYNAMODB_SECRET_KEY || "dummy",
+      };
+    }
+
+    const client = new DynamoDBClient(clientConfig);
     __dynamoDbDocClient = __dynamoDbModule.DynamoDBDocumentClient.from(client);
   }
   return __dynamoDbDocClient;
 }
 
 export function isDynamoDbEnabled() {
-  return Boolean(process.env.BUNDLE_DYNAMODB_TABLE_NAME && process.env.BUNDLE_DYNAMODB_TABLE_NAME !== "test-bundle-table");
+  const tableName = process.env.BUNDLE_DYNAMODB_TABLE_NAME;
+  // Enable DynamoDB if table name is set and not the test placeholder
+  return Boolean(tableName && tableName !== "test-bundle-table");
 }
 
 function getTableName() {

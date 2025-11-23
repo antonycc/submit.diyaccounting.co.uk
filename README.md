@@ -65,11 +65,18 @@ npm run proxy
 
 npm run auth
 ```
-- Optional: MinIO (local S3) for receipts
+- Terminal D: MinIO (local S3) for receipts
 ```bash
 
 npm run storage
 ```
+- Terminal E: DynamoDB Local for bundle storage and HMRC API request logging
+```bash
+
+npm run dynamodb
+```
+
+Or use `npm start` to start all services (storage, DynamoDB, auth, proxy, and server) in a single command.
 
 
 Architecture Overview
