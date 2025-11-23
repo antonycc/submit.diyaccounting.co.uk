@@ -6,9 +6,6 @@ import { BundleEntitlementError } from "./bundleEnforcement.js";
 import { http400BadRequestResponse, http500ServerErrorResponse, http403ForbiddenResponse } from "./responses.js";
 import { putHmrcApiRequest } from "./dynamoDbHmrcApiRequestStore.js";
 
-/**
- * Build the base URL for HMRC API calls
- */
 export function getHmrcBaseUrl(hmrcAccount) {
   // TODO: Ensure we always have these when otherwise stable and remove defaults
   return hmrcAccount === "sandbox"
@@ -16,9 +13,6 @@ export function getHmrcBaseUrl(hmrcAccount) {
     : process.env.HMRC_BASE_URI || "https://api.service.hmrc.gov.uk";
 }
 
-/**
- * Build common HMRC headers including fraud prevention headers
- */
 export function buildHmrcHeaders(accessToken, govClientHeaders = {}, testScenario = null) {
   const headers = {
     "Content-Type": "application/json",
@@ -77,9 +71,6 @@ export function validateHmrcAccessToken(hmrcAccessToken) {
   }
 }
 
-/**
- * Make a GET request to HMRC VAT API
- */
 export async function hmrcHttpGet(endpoint, accessToken, govClientHeaders = {}, testScenario = null, hmrcAccount, queryParams = {}) {
   const baseUrl = getHmrcBaseUrl(hmrcAccount);
   // Sanitize query params: drop undefined, null, and blank strings

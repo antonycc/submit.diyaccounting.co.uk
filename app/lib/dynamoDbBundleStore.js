@@ -6,9 +6,6 @@ import { hashSub } from "./subHasher.js";
 let __dynamoDbModule;
 let __dynamoDbDocClient;
 
-/**
- * Initialize DynamoDB Document Client lazily
- */
 async function getDynamoDbDocClient() {
   if (!__dynamoDbDocClient) {
     __dynamoDbModule = await import("@aws-sdk/lib-dynamodb");
@@ -19,18 +16,10 @@ async function getDynamoDbDocClient() {
   return __dynamoDbDocClient;
 }
 
-/**
- * Check if DynamoDB operations are enabled
- * @returns {boolean} True if DynamoDB table name is configured
- */
 export function isDynamoDbEnabled() {
   return Boolean(process.env.BUNDLE_DYNAMODB_TABLE_NAME && process.env.BUNDLE_DYNAMODB_TABLE_NAME !== "test-bundle-table");
 }
 
-/**
- * Get the configured DynamoDB table name
- * @returns {string} Table name
- */
 function getTableName() {
   const tableName = process.env.BUNDLE_DYNAMODB_TABLE_NAME;
   // This should always be checked by isDynamoDbEnabled() first, but return empty string as fallback
@@ -97,11 +86,6 @@ export async function putBundle(userId, bundle) {
   }
 }
 
-/**
- * Delete a bundle for a user from DynamoDB
- * @param {string} userId - User's sub claim (will be hashed)
- * @param {string} bundleId - Bundle ID to delete
- */
 export async function deleteBundle(userId, bundleId) {
   if (!isDynamoDbEnabled()) {
     logger.warn({ message: "DynamoDB not enabled, skipping deleteBundle" });
@@ -147,10 +131,6 @@ export async function deleteBundle(userId, bundleId) {
   }
 }
 
-/**
- * Delete all bundles for a user from DynamoDB
- * @param {string} userId - User's sub claim (will be hashed)
- */
 export async function deleteAllBundles(userId) {
   if (!isDynamoDbEnabled()) {
     logger.warn({ message: "DynamoDB not enabled, skipping deleteAllBundles" });
@@ -203,11 +183,6 @@ export async function deleteAllBundles(userId) {
   }
 }
 
-/**
- * Get all bundles for a user from DynamoDB
- * @param {string} userId - User's sub claim (will be hashed)
- * @returns {Promise<Array<string>>} Array of bundle strings
- */
 export async function getUserBundles(userId) {
   if (!isDynamoDbEnabled()) {
     logger.warn({ message: "DynamoDB not enabled, returning empty bundles array" });

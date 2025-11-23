@@ -6,9 +6,6 @@ import { hashSub } from "./subHasher.js";
 let __dynamoDbModule;
 let __dynamoDbDocClient;
 
-/**
- * Initialize DynamoDB Document Client lazily
- */
 async function getDynamoDbDocClient() {
   if (!__dynamoDbDocClient) {
     __dynamoDbModule = await import("@aws-sdk/lib-dynamodb");
@@ -19,10 +16,6 @@ async function getDynamoDbDocClient() {
   return __dynamoDbDocClient;
 }
 
-/**
- * Check if DynamoDB operations are enabled
- * @returns {boolean} True if DynamoDB table name is configured
- */
 function isDynamoDbEnabled() {
   return Boolean(
     process.env.HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME &&
@@ -30,10 +23,6 @@ function isDynamoDbEnabled() {
   );
 }
 
-/**
- * Get the configured DynamoDB table name
- * @returns {string} Table name
- */
 function getTableName() {
   const tableName = process.env.HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME;
   // This should always be checked by isDynamoDbEnabled() first, but return empty string as fallback
