@@ -99,7 +99,7 @@ export async function putBundle(userId, bundle) {
       message: "Error storing bundle in DynamoDB",
       error: error.message,
       userId,
-      bundleId,
+      bundle,
     });
     throw error;
   }
