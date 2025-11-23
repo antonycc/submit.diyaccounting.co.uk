@@ -1,7 +1,9 @@
 (async function () {
-  const url = "/api/v1/hmrc/vat/return";
+  // Warm the GET VAT return route with a representative periodKey and placeholder VRN.
+  // This primes the Lambda and custom authorizer paths to reduce first-use latency.
+  const periodKey = "24A1";
+  const url = `/api/v1/hmrc/vat/return/${encodeURIComponent(periodKey)}?vrn=000000000`;
   try {
-    // HMRC VAT endpoints use custom authorizer with Cognito access token via X-Authorization
     const headers = {};
     try {
       const accessToken = localStorage.getItem("cognitoAccessToken");

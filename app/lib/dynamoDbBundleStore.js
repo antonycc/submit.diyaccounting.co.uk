@@ -74,7 +74,7 @@ export async function putBundle(userId, bundle) {
     logger.info({
       message: "Storing bundle in DynamoDB",
       hashedSub,
-      bundleId,
+      bundle,
       expiry: item.expiry,
       ttl: item.ttl,
       ttl_datestamp: item.ttl_datestamp,
@@ -89,7 +89,7 @@ export async function putBundle(userId, bundle) {
     logger.info({
       message: "Bundle stored in DynamoDB",
       hashedSub,
-      bundleId,
+      bundle,
       expiry: item.expiry,
       ttl: item.ttl,
       ttl_datestamp: item.ttl_datestamp,
