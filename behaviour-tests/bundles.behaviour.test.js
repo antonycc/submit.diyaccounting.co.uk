@@ -6,6 +6,7 @@ import path from "node:path";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import {
   addOnPageLogging,
+  runLocalDynamoDb,
   getEnvVarAndLog,
   isSandboxMode,
   runLocalHttpServer,
@@ -45,14 +46,22 @@ const runTestServer = getEnvVarAndLog("runTestServer", "TEST_SERVER_HTTP", null)
 const runProxy = getEnvVarAndLog("runProxy", "TEST_PROXY", null);
 const runMockOAuth2 = getEnvVarAndLog("runMockOAuth2", "TEST_MOCK_OAUTH2", null);
 // const runMinioS3 = getEnvVarAndLog("runMinioS3", "TEST_MINIO_S3", null);
+const runDynamoDb = getEnvVarAndLog("runDynamoDb", "TEST_DYNAMODB", null);
 const testAuthProvider = getEnvVarAndLog("testAuthProvider", "TEST_AUTH_PROVIDER", null);
 const testAuthUsername = getEnvVarAndLog("testAuthUsername", "TEST_AUTH_USERNAME", null);
 // const receiptsBucketName = getEnvVarAndLog("receiptsBucketName", "DIY_SUBMIT_RECEIPTS_BUCKET_NAME", null);
+const bundleTableName = getEnvVarAndLog("bundleTableName", "BUNDLE_DYNAMODB_TABLE_NAME", null);
+const hmrcApiRequestsTableName = getEnvVarAndLog(
+  "hmrcApiRequestsTableName",
+  "HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME",
+  null,
+);
 const baseUrl = getEnvVarAndLog("baseUrl", "DIY_SUBMIT_BASE_URL", null);
 
 let mockOAuth2Process;
 let serverProcess;
 let ngrokProcess;
+let dynamo;
 
 test.setTimeout(120_000);
 
@@ -62,6 +71,8 @@ test.beforeAll(async () => {
     ...originalEnv,
   };
   // Run local servers as needed for the tests
+  // 1) DynamoDB Local (before starting HTTP server)
+  dynamo = await runLocalDynamoDb(runDynamoDb, bundleTableName, hmrcApiRequestsTableName);
   mockOAuth2Process = await runLocalOAuth2Server(runMockOAuth2);
   serverProcess = await runLocalHttpServer(runTestServer, null, serverPort);
   ngrokProcess = await runLocalSslProxy(runProxy, serverPort, baseUrl);
@@ -79,6 +90,11 @@ test.afterAll(async () => {
   }
   if (mockOAuth2Process) {
     mockOAuth2Process.kill();
+  }
+  if (dynamo?.container) {
+    try {
+      await dynamo.container.stop();
+    } catch (_e) {}
   }
 });
 

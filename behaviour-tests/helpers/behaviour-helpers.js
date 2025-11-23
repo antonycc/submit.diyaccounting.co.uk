@@ -6,6 +6,7 @@ import { test } from "@playwright/test";
 import { gotoWithRetries } from "./gotoWithRetries.js";
 
 import logger from "@app/lib/logger.js";
+import { execSync } from "child_process";
 
 const defaultScreenshotPath = "target/behaviour-test-results/screenshots/behaviour-helpers";
 
@@ -35,6 +36,90 @@ export function isSandboxMode() {
     logger.info(`Sandbox mode detection: HMRC_ACCOUNT=${hmrcAccount} => sandbox=false`);
     return false;
   }
+}
+
+// Start local DynamoDB (via Testcontainers) if requested by env, and ensure tables exist
+export async function runLocalDynamoDb(runDynamoDb, bundleTableName, hmrcApiRequestsTableName) {
+  logger.info(`[dynamodb]: runDynamoDb=${runDynamoDb}, bundleTableName=${bundleTableName}, hmrcApiRequestsTableName=${hmrcApiRequestsTableName}`);
+  let container;
+  let endpoint;
+  let dockerContainerId;
+  if (runDynamoDb === "run") {
+    // If endpoint already provided via env, prefer it (do not attempt to start a container)
+    if (process.env.TEST_DYNAMODB_ENDPOINT && process.env.TEST_DYNAMODB_ENDPOINT.trim() !== "") {
+      endpoint = process.env.TEST_DYNAMODB_ENDPOINT.trim();
+      logger.info(`[dynamodb]: Using pre-configured endpoint ${endpoint}`);
+    } else {
+      // Try starting via Docker CLI first (more robust in some environments than testcontainers)
+      try {
+        logger.info("[dynamodb]: Trying to start via Docker CLI...");
+        // Ensure docker is available
+        execSync("docker --version", { stdio: "ignore" });
+        // Start detached container on fixed port 8000
+        const runArgs = [
+          "run",
+          "-d",
+          "-p",
+          "8000:8000",
+          "amazon/dynamodb-local:latest",
+          "-jar",
+          "DynamoDBLocal.jar",
+          "-sharedDb",
+          "-inMemory",
+        ];
+        const out = execSync(`docker ${runArgs.join(" ")}`, { encoding: "utf-8" }).trim();
+        dockerContainerId = out.split("\n")[0];
+        endpoint = "http://127.0.0.1:8000";
+        logger.info(`[dynamodb]: Started via Docker CLI, containerId=${dockerContainerId}, endpoint=${endpoint}`);
+        // Give it a moment to be ready
+        await new Promise((r) => setTimeout(r, 500));
+      } catch (cliErr) {
+        logger.warn(`[dynamodb]: Docker CLI start failed (${cliErr.message}). Falling back to testcontainers...`);
+        // Fall back to testcontainers
+        try {
+          const dynamodb = await import("@app/bin/dynamodb.js");
+          const started = await dynamodb.startDynamoDB();
+          if (typeof started === "string") {
+            endpoint = started;
+          } else {
+            endpoint = started.endpoint;
+            container = started.container;
+          }
+          logger.info(`[dynamodb]: Started via testcontainers at ${endpoint}`);
+        } catch (tcErr) {
+          logger.error(`[dynamodb]: Failed to start via testcontainers: ${tcErr.message}`);
+          // Final fallback: enable mock bundles to allow tests to continue without DynamoDB
+          process.env.TEST_BUNDLE_MOCK = "true";
+          logger.warn("[dynamodb]: Falling back to TEST_BUNDLE_MOCK=true due to missing container runtime");
+          return { container: null, endpoint: null, dockerContainerId: null };
+        }
+      }
+    }
+
+    // Ensure expected tables exist
+    try {
+      const dynamodb = await import("@app/bin/dynamodb.js");
+      if (endpoint) {
+        if (bundleTableName) {
+          await dynamodb.ensureBundleTableExists(bundleTableName, endpoint);
+        }
+        if (hmrcApiRequestsTableName) {
+          await dynamodb.ensureHmrcApiRequestsTableExists(hmrcApiRequestsTableName, endpoint);
+        }
+      }
+    } catch (err) {
+      logger.warn(`[dynamodb]: Table ensure failed: ${err.message}`);
+    }
+
+    // Propagate endpoint so app code uses local DynamoDB
+    process.env.TEST_DYNAMODB_ENDPOINT = endpoint;
+    process.env.TEST_DYNAMODB_ACCESS_KEY = process.env.TEST_DYNAMODB_ACCESS_KEY || "dummy";
+    process.env.TEST_DYNAMODB_SECRET_KEY = process.env.TEST_DYNAMODB_SECRET_KEY || "dummy";
+  } else {
+    logger.info("[dynamodb]: Skipping DynamoDB Local as TEST_DYNAMODB is not set to 'run'");
+  }
+
+  return { container, endpoint, dockerContainerId };
 }
 
 export async function runLocalS3(runMinioS3, receiptsBucketName, optionalTestS3AccessKey, optionalTestS3SecretKey) {

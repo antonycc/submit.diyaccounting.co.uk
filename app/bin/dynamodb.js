@@ -31,7 +31,8 @@ async function startDynamoDBContainer() {
 export async function startDynamoDB() {
   const container = await startDynamoDBContainer();
   const endpoint = `http://${container.getHost()}:${container.getMappedPort(8000)}`;
-  return endpoint;
+  // Return both endpoint and container so callers (e.g., tests) can manage lifecycle
+  return { endpoint, container };
 }
 
 // Create bundle table if it doesn't exist

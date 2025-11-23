@@ -6,6 +6,7 @@ import path from "node:path";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import {
   addOnPageLogging,
+  runLocalDynamoDb,
   getEnvVarAndLog,
   isSandboxMode,
   runLocalHttpServer,
@@ -56,9 +57,16 @@ const runTestServer = getEnvVarAndLog("runTestServer", "TEST_SERVER_HTTP", null)
 const runProxy = getEnvVarAndLog("runProxy", "TEST_PROXY", null);
 const runMockOAuth2 = getEnvVarAndLog("runMockOAuth2", "TEST_MOCK_OAUTH2", null);
 const runMinioS3 = getEnvVarAndLog("runMinioS3", "TEST_MINIO_S3", null);
+const runDynamoDb = getEnvVarAndLog("runDynamoDb", "TEST_DYNAMODB", null);
 const testAuthProvider = getEnvVarAndLog("testAuthProvider", "TEST_AUTH_PROVIDER", null);
 const testAuthUsername = getEnvVarAndLog("testAuthUsername", "TEST_AUTH_USERNAME", null);
 const receiptsBucketName = getEnvVarAndLog("receiptsBucketName", "DIY_SUBMIT_RECEIPTS_BUCKET_NAME", null);
+const bundleTableName = getEnvVarAndLog("bundleTableName", "BUNDLE_DYNAMODB_TABLE_NAME", null);
+const hmrcApiRequestsTableName = getEnvVarAndLog(
+  "hmrcApiRequestsTableName",
+  "HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME",
+  null,
+);
 const baseUrl = getEnvVarAndLog("baseUrl", "DIY_SUBMIT_BASE_URL", null);
 const hmrcTestUsername = getEnvVarAndLog("hmrcTestUsername", "TEST_HMRC_USERNAME", null);
 const hmrcTestPassword = getEnvVarAndLog("hmrcTestPassword", "TEST_HMRC_PASSWORD", null);
@@ -71,6 +79,7 @@ let mockOAuth2Process;
 let s3Endpoint;
 let serverProcess;
 let ngrokProcess;
+let dynamo;
 
 test.setTimeout(300_000);
 
@@ -81,6 +90,8 @@ test.beforeAll(async () => {
   };
 
   // Run servers needed for the test
+  // 1) DynamoDB Local (before starting the HTTP server so the app uses the detected endpoint)
+  dynamo = await runLocalDynamoDb(runDynamoDb, bundleTableName, hmrcApiRequestsTableName);
   mockOAuth2Process = await runLocalOAuth2Server(runMockOAuth2);
   s3Endpoint = await runLocalS3(runMinioS3, receiptsBucketName, optionalTestS3AccessKey, optionalTestS3SecretKey);
   serverProcess = await runLocalHttpServer(runTestServer, s3Endpoint, serverPort);
@@ -99,6 +110,11 @@ test.afterAll(async () => {
   }
   if (mockOAuth2Process) {
     mockOAuth2Process.kill();
+  }
+  if (dynamo?.container) {
+    try {
+      await dynamo.container.stop();
+    } catch (_e) {}
   }
 });
 
