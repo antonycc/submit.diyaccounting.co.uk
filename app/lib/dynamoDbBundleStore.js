@@ -37,12 +37,7 @@ function getTableName() {
   return tableName || "";
 }
 
-/**
- * Store a bundle for a user in DynamoDB
- * @param {string} userId - User's sub claim (will be hashed)
- * @param {string} bundleId - Bundle in format "test"
- */
-export async function putBundle(userId, bundleId) {
+export async function putBundle(userId, bundle) {
   if (!isDynamoDbEnabled()) {
     logger.warn({ message: "DynamoDB not enabled, skipping putBundle" });
     return;
@@ -52,15 +47,15 @@ export async function putBundle(userId, bundleId) {
 
   try {
     const hashedSub = hashSub(userId);
-    logger.info({ message: "Storing bundle", hashedSub, bundleId });
+    logger.info({ message: "Storing bundle", hashedSub, bundle.bundleId });
 
     const docClient = await getDynamoDbDocClient();
     const tableName = getTableName();
 
     const now = new Date();
     const item = {
+      ...bundle,
       hashedSub,
-      bundleId,
       createdAt: now.toISOString(),
     };
 
