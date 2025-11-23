@@ -56,8 +56,10 @@ Example data:
  */
 export async function putHmrcApiRequest(userSub, { url, httpRequest, httpResponse, duration }) {
   if (!isDynamoDbEnabled()) {
-    logger.debug({ message: "DynamoDB not enabled, skipping putHmrcApiRequest" });
+    logger.warn({ message: "DynamoDB not enabled, skipping putHmrcApiRequest" });
     return;
+  } else {
+    logger.info({ message: "DynamoDB enabled, proceeding with putHmrcApiRequest" });
   }
 
   const method = httpRequest && httpRequest.method ? httpRequest.method : "UNKNOWN";

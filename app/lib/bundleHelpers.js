@@ -65,10 +65,11 @@ export async function updateUserBundles(userId, bundles) {
   }
 
   // Add new bundles
-  for (const bundleId of bundles) {
-    if (bundleId && !currentBundleIds.has(bundleId)) {
-      logger.info({ message: `Adding new bundle ${bundleId} for user ${userId} in DynamoDB` });
-      await dynamoDbBundleStore.putBundle(userId, bundleId);
+  for (const bundle of bundles) {
+    logger.info({ message: `Checking if bundle ${bundle.bundleId} needs adding for user ${userId} in DynamoDB`, bundle });
+    if (bundle.bundleId && !currentBundleIds.has(bundle.bundleId)) {
+      logger.info({ message: `Adding new bundle ${bundle.bundleId} for user ${userId} in DynamoDB`, bundle });
+      await dynamoDbBundleStore.putBundle(userId, bundle);
     }
   }
 

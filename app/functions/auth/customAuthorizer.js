@@ -5,7 +5,6 @@
 import logger from "../../lib/logger.js";
 import { CognitoJwtVerifier } from "aws-jwt-verify";
 import { decodeJwtNoVerify } from "../../lib/jwtHelper.js";
-import { http200OkResponse } from "@app/lib/responses.js";
 
 // Cache the verifier instance across Lambda invocations
 let verifier = null;
@@ -84,7 +83,7 @@ export async function handler(event) {
 
     if (isMockMode) {
       // In mock mode, just decode the JWT without verification
-      logger.info({ message: "Running in mock mode, skipping JWT verification" });
+      logger.warn({ message: "Running in mock mode, skipping JWT verification" });
       payload = decodeJwtNoVerify(token);
 
       if (!payload || !payload.sub) {

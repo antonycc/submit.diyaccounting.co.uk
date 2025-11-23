@@ -44,12 +44,15 @@ function getTableName() {
  */
 export async function putBundle(userId, bundleId) {
   if (!isDynamoDbEnabled()) {
-    logger.debug({ message: "DynamoDB not enabled, skipping putBundle" });
+    logger.warn({ message: "DynamoDB not enabled, skipping putBundle" });
     return;
+  } else {
+    logger.info({ message: "DynamoDB enabled, proceeding with putBundle" });
   }
 
   try {
     const hashedSub = hashSub(userId);
+    logger.info({ message: "Storing bundle", hashedSub, bundleId });
 
     const docClient = await getDynamoDbDocClient();
     const tableName = getTableName();
@@ -73,6 +76,14 @@ export async function putBundle(userId, bundleId) {
     item.ttl = Math.floor(ttlDate.getTime() / 1000);
     item.ttl_datestamp = ttlDate.toISOString();
 
+    logger.info({
+      message: "Storing bundle in DynamoDB",
+      hashedSub,
+      bundleId,
+      expiry: item.expiry,
+      ttl: item.ttl,
+      ttl_datestamp: item.ttl_datestamp,
+    });
     await docClient.send(
       new __dynamoDbModule.PutCommand({
         TableName: tableName,
@@ -93,7 +104,7 @@ export async function putBundle(userId, bundleId) {
       message: "Error storing bundle in DynamoDB",
       error: error.message,
       userId,
-      bundleStr,
+      bundleId,
     });
     throw error;
   }
@@ -106,8 +117,10 @@ export async function putBundle(userId, bundleId) {
  */
 export async function deleteBundle(userId, bundleId) {
   if (!isDynamoDbEnabled()) {
-    logger.debug({ message: "DynamoDB not enabled, skipping deleteBundle" });
+    logger.warn({ message: "DynamoDB not enabled, skipping deleteBundle" });
     return;
+  } else {
+    logger.info({ message: "DynamoDB enabled, proceeding with deleteBundle" });
   }
 
   try {
@@ -115,6 +128,11 @@ export async function deleteBundle(userId, bundleId) {
     const docClient = await getDynamoDbDocClient();
     const tableName = getTableName();
 
+    logger.info({
+      message: "Deleting bundle from DynamoDB",
+      hashedSub,
+      bundleId,
+    });
     await docClient.send(
       new __dynamoDbModule.DeleteCommand({
         TableName: tableName,
@@ -147,8 +165,10 @@ export async function deleteBundle(userId, bundleId) {
  */
 export async function deleteAllBundles(userId) {
   if (!isDynamoDbEnabled()) {
-    logger.debug({ message: "DynamoDB not enabled, skipping deleteAllBundles" });
+    logger.warn({ message: "DynamoDB not enabled, skipping deleteAllBundles" });
     return;
+  } else {
+    logger.info({ message: "DynamoDB enabled, proceeding with deleteAllBundles" });
   }
 
   try {
@@ -156,6 +176,11 @@ export async function deleteAllBundles(userId) {
     const bundles = await getUserBundles(userId);
 
     // Delete bundles concurrently for better performance
+    logger.info({
+      message: "Deleting all bundles from DynamoDB",
+      hashedSub,
+      count: bundles.length,
+    });
     const deleteResults = await Promise.allSettled(
       bundles.map(async (bundleId) => {
         await deleteBundle(userId, bundleId);
@@ -214,6 +239,7 @@ export async function getUserBundles(userId) {
         },
       }),
     );
+    logger.info({ message: "Queried DynamoDB for user bundles", hashedSub, itemCount: response.Count });
 
     // Convert DynamoDB items to bundle strings
     const bundles = (response.Items || []).map((item) => item);
