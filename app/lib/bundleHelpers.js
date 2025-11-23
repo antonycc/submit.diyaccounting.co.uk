@@ -35,6 +35,8 @@ export async function getUserBundles(userId) {
  * @param {Array<string>} bundles - Array of bundle strings
  */
 export async function updateUserBundles(userId, bundles) {
+  logger.info({ message: `Updating bundles for user ${userId} with ${bundles.length}`, bundles });
+
   // TODO: Remove this mock mode stuff and move the mockery into tests
   // This is actually avoided in app/functions/account/bundlePost.js anyway so should be fine to remove
   if (isMockMode()) {
@@ -54,15 +56,15 @@ export async function updateUserBundles(userId, bundles) {
   logger.info({ message: `Current bundle IDs for user ${userId} in DynamoDB`, currentBundleIds });
 
   // Parse bundle IDs from new bundles
-  const newBundleIds = new Set(bundles);
-  logger.info({ message: `New bundle IDs for user ${userId}`, newBundleIds });
+  // const newBundleIds = new Set(bundles.map((b) => b.bundleId));
+  // logger.info({ message: `New bundle IDs for user ${userId}`, newBundleIds });
 
   // Remove bundles that are no longer in the new list
-  const bundlesToRemove = [...currentBundleIds].filter((id) => !newBundleIds.has(id));
-  logger.info({ message: `Bundles to remove for user ${userId} in DynamoDB`, bundlesToRemove });
-  for (const bundleId of bundlesToRemove) {
-    await dynamoDbBundleStore.deleteBundle(userId, bundleId);
-  }
+  // const bundlesToRemove = [...currentBundleIds].filter((id) => !newBundleIds.has(id));
+  // logger.info({ message: `Bundles to remove for user ${userId} in DynamoDB`, bundlesToRemove });
+  // for (const bundleId of bundlesToRemove) {
+  //  await dynamoDbBundleStore.deleteBundle(userId, bundleId);
+  // }
 
   // Add new bundles
   for (const bundle of bundles) {

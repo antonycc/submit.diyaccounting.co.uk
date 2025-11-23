@@ -60,9 +60,7 @@ export async function putBundle(userId, bundle) {
     };
 
     // Add expiry with millisecond precision timestamp (ISO format)
-    // TODO: Check we look this up from the catalogue
-    const expiryDate = new Date();
-    expiryDate.setMonth(expiryDate.getMonth() + 1); // Set to end of month
+    const expiryDate = new Date(bundle.expiry);
     item.expiry = expiryDate.toISOString();
 
     // Calculate TTL as 1 month after expiry
@@ -72,12 +70,9 @@ export async function putBundle(userId, bundle) {
     item.ttl_datestamp = ttlDate.toISOString();
 
     logger.info({
-      message: "Storing bundle in DynamoDB",
+      message: "Storing bundle in DynamoDB as item",
       hashedSub,
-      bundle,
-      expiry: item.expiry,
-      ttl: item.ttl,
-      ttl_datestamp: item.ttl_datestamp,
+      item,
     });
     await docClient.send(
       new __dynamoDbModule.PutCommand({
@@ -87,12 +82,9 @@ export async function putBundle(userId, bundle) {
     );
 
     logger.info({
-      message: "Bundle stored in DynamoDB",
+      message: "Bundle stored in DynamoDB as item",
       hashedSub,
-      bundle,
-      expiry: item.expiry,
-      ttl: item.ttl,
-      ttl_datestamp: item.ttl_datestamp,
+      item,
     });
   } catch (error) {
     logger.error({
