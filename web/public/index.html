@@ -11,7 +11,9 @@
     <meta name="rum:region" content="${AWS_REGION}" />
     <meta name="rum:identityPoolId" content="${RUM_IDENTITY_POOL_ID}" />
     <meta name="rum:guestRoleArn" content="${RUM_GUEST_ROLE_ARN}" />
+    <!-- HEAD-prefetch scripts to prime API Gateway/Lambda and authorizers to reduce cold-start impact -->
     <script async src="./prefetch/prefetch-catalog-head.js"></script>
+    <script async src="./prefetch/prefetch-bundle-head.js"></script>
   </head>
   <body>
     <header>
