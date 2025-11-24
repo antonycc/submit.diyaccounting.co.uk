@@ -321,8 +321,6 @@ public class ApexStack extends Stack {
                 .distribution(distribution)
                 .distributionPaths(List.of("/index.html"))
                 .retainOnDelete(true)
-                // .logGroup(webDeploymentLogGroup)
-                // .logRetention(RetentionDays.ONE_DAY)
                 .expires(Expiration.after(Duration.minutes(5)))
                 .prune(false)
                 .memoryLimit(1024)
