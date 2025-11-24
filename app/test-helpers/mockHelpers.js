@@ -106,8 +106,15 @@ export function parseResponseBody(response) {
 
 /**
  * Verify response structure
+ * Note: This function requires 'expect' from vitest to be available in the calling context
+ * It's meant to be used within test files, not as a standalone helper
  */
 export function verifyResponseStructure(response, expectedStatusCode) {
+  // This function is designed to be used in test contexts where expect is available
+  // If called outside a test context, it will throw ReferenceError
+  if (typeof expect === "undefined") {
+    throw new Error("verifyResponseStructure must be called from within a vitest test context where 'expect' is available");
+  }
   expect(response).toHaveProperty("statusCode");
   expect(response).toHaveProperty("headers");
   expect(response).toHaveProperty("body");
