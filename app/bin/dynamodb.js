@@ -127,6 +127,47 @@ export async function ensureHmrcApiRequestsTableExists(tableName, endpoint) {
   }
 }
 
+// Create receipts table if it doesn't exist
+export async function ensureReceiptsTableExists(tableName, endpoint) {
+  logger.info(`[dynamodb]: Ensuring receipts table: '${tableName}' exists on endpoint '${endpoint}'`);
+
+  const clientConfig = {
+    endpoint,
+    region: "us-east-1",
+    credentials: {
+      accessKeyId: "dummy",
+      secretAccessKey: "dummy",
+    },
+  };
+  const dynamodb = new DynamoDBClient(clientConfig);
+
+  try {
+    await dynamodb.send(new DescribeTableCommand({ TableName: tableName }));
+    logger.info(`[dynamodb]: ✅ Table '${tableName}' already exists on endpoint '${endpoint}'`);
+  } catch (err) {
+    if (err.name === "ResourceNotFoundException") {
+      logger.info(`[dynamodb]: ℹ️ Table '${tableName}' not found on endpoint '${endpoint}', creating...`);
+      await dynamodb.send(
+        new CreateTableCommand({
+          TableName: tableName,
+          KeySchema: [
+            { AttributeName: "hashedSub", KeyType: "HASH" },
+            { AttributeName: "receiptId", KeyType: "RANGE" },
+          ],
+          AttributeDefinitions: [
+            { AttributeName: "hashedSub", AttributeType: "S" },
+            { AttributeName: "receiptId", AttributeType: "S" },
+          ],
+          BillingMode: "PAY_PER_REQUEST",
+        }),
+      );
+      logger.info(`[dynamodb]: ✅ Created table '${tableName}' on endpoint '${endpoint}'`);
+    } else {
+      throw new Error(`[dynamodb]: Failed to check/create table: ${err.message} on endpoint '${endpoint}'`);
+    }
+  }
+}
+
 // Only start the server if this file is being run directly
 if (import.meta.url === `file://${process.argv[1]}`) {
   const bundleTableName = process.env.BUNDLE_DYNAMODB_TABLE_NAME;

@@ -176,13 +176,21 @@ export async function listUserReceipts(userSub) {
     // Convert DynamoDB items to receipt metadata
     const receipts = (response.Items || []).map((item) => {
       // Extract timestamp and formBundleNumber from receiptId
-      // Format: {timestamp}-{formBundleNumber}
-      // Use lastIndexOf to handle hyphens in formBundleNumber
-      const lastHyphenIndex = item.receiptId.lastIndexOf("-");
-      const timestamp =
-        lastHyphenIndex > 0 ? item.receiptId.substring(0, lastHyphenIndex) : item.receiptId;
-      const formBundleNumber =
-        lastHyphenIndex > 0 ? item.receiptId.substring(lastHyphenIndex + 1) : item.receiptId;
+      // Format: {ISO8601-timestamp}-{formBundleNumber}
+      // ISO timestamps end with 'Z', so find the hyphen after 'Z'
+      const zIndex = item.receiptId.indexOf("Z-");
+      let timestamp = item.receiptId;
+      let formBundleNumber = item.receiptId;
+
+      if (zIndex > 0) {
+        // Found 'Z-', so split there
+        timestamp = item.receiptId.substring(0, zIndex + 1); // Include the 'Z'
+        formBundleNumber = item.receiptId.substring(zIndex + 2); // Skip 'Z-'
+      } else {
+        // Fallback: no timestamp format found, treat whole string as formBundleNumber
+        timestamp = item.receiptId;
+        formBundleNumber = item.receiptId;
+      }
 
       return {
         receiptId: item.receiptId,
