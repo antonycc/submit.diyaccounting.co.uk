@@ -1,5 +1,4 @@
 // behaviour-tests/helpers/behaviour-helpers.js
-import { ensureMinioBucketExists, startMinio } from "@app/bin/minio.js";
 import { startDynamoDB, ensureBundleTableExists, ensureHmrcApiRequestsTableExists, ensureReceiptsTableExists } from "@app/bin/dynamodb.js";
 import { spawn } from "child_process";
 import { checkIfServerIsRunning } from "./serverHelper.js";
@@ -37,23 +36,6 @@ export function isSandboxMode() {
     logger.info(`Sandbox mode detection: HMRC_ACCOUNT=${hmrcAccount} => sandbox=false`);
     return false;
   }
-}
-
-export async function runLocalS3(runMinioS3, receiptsBucketName, optionalTestS3AccessKey, optionalTestS3SecretKey) {
-  logger.info(
-    `[minio]: runMinioS3=${runMinioS3}, receiptsBucketName=${receiptsBucketName}, optionalTestS3AccessKey=${optionalTestS3AccessKey}`,
-  );
-  let endpoint;
-  if (runMinioS3 === "run") {
-    logger.info("[minio]: Starting minio process...");
-    endpoint = await startMinio(receiptsBucketName, optionalTestS3AccessKey, optionalTestS3SecretKey);
-    logger.info("[minio]: Waiting for server to initialize...");
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    await ensureMinioBucketExists(receiptsBucketName, endpoint, optionalTestS3AccessKey, optionalTestS3SecretKey);
-  } else {
-    logger.info("[minio]: Skipping Minio container creation because TEST_MINIO_S3 is not set to 'run'");
-  }
-  return endpoint;
 }
 
 export async function runLocalDynamoDb(runDynamoDb, bundleTableName, hmrcApiRequestsTableName, receiptsTableName) {
@@ -95,8 +77,8 @@ export async function runLocalDynamoDb(runDynamoDb, bundleTableName, hmrcApiRequ
   return { stop, endpoint };
 }
 
-export async function runLocalHttpServer(runTestServer, s3Endpoint, httpServerPort) {
-  logger.info(`[minio]: runTestServer=${runTestServer}, s3Endpoint=${s3Endpoint}, httpServerPort=${httpServerPort}`);
+export async function runLocalHttpServer(runTestServer, httpServerPort) {
+  logger.info(`[http]: runTestServer=${runTestServer}, httpServerPort=${httpServerPort}`);
   let serverProcess;
   if (runTestServer === "run") {
     logger.info("[http]: Starting server process...");
@@ -104,7 +86,6 @@ export async function runLocalHttpServer(runTestServer, s3Endpoint, httpServerPo
     serverProcess = spawn("npm", ["run", "server"], {
       env: {
         ...process.env,
-        TEST_S3_ENDPOINT: s3Endpoint,
         TEST_SERVER_HTTP_PORT: httpServerPort.toString(),
       },
       stdio: ["pipe", "pipe", "pipe"],

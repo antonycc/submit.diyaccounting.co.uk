@@ -1,6 +1,6 @@
 # DIY Accounting Submit
 
-A developer-friendly web app and AWS stack to submit UK VAT returns via HMRC’s Making Tax Digital (MTD) APIs. It runs locally with mock OAuth2 and MinIO, and deploys to AWS with CloudFront + S3 static hosting, Lambda URL backends, and Cognito (Google sign-in). See USERGUIDE.md for the end-user flow.
+A developer-friendly web app and AWS stack to submit UK VAT returns via HMRC’s Making Tax Digital (MTD) APIs. It runs locally with mock OAuth2 and DynamoDb, and deploys to AWS with CloudFront + S3 static hosting, Lambda URL backends, and Cognito (Google sign-in). See USERGUIDE.md for the end-user flow.
 
 Table of Contents
 - TL;DR
@@ -16,7 +16,7 @@ Table of Contents
 
 TL;DR
 - What: Static web app fronted by CloudFront; Lambda functions for auth/token exchange, VAT submission, logging receipts, and bundle entitlement.
-- Try it locally: ngrok + mock OAuth2 + MinIO for receipts.
+- Try it locally: ngrok + mock OAuth2 + DynamoDb for receipts.
 - Deploy: Java CDK synthesizes and deploys CloudFront, S3, Cognito (with Google), Lambda URLs, Route53/ACM, and Secrets Manager.
 
 Quickstart (Local)
@@ -65,7 +65,7 @@ npm run proxy
 
 npm run auth
 ```
-- Optional: MinIO (local S3) for receipts
+- Optional: DynamoDb (local DynamoDb) for receipts
 ```bash
 
 npm run storage
@@ -349,11 +349,6 @@ Common runtime issues
 - **npm install fails with Playwright**
   - Run with --ignore-engines flag: `npm install --ignore-engines`
   - Separately install browsers: `npx playwright install chromium --with-deps`
-
-- **Test failures with MinIO**
-  - Check MinIO is running: `npm run storage`
-  - Verify TEST_S3_ENDPOINT matches MinIO URL
-  - Ensure bucket exists or create it via MinIO console
 
 - **CDK synth failures**
   - Verify environment variables are set correctly

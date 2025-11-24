@@ -5,7 +5,6 @@ import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, QueryCommand, ScanCommand } from "@aws-sdk/lib-dynamodb";
 import { hashSub } from "../lib/subHasher.js";
 import { mockClient } from "aws-sdk-client-mock";
-import { S3Client, PutObjectCommand, GetObjectCommand, ListObjectsV2Command } from "@aws-sdk/client-s3";
 import { Readable } from "stream";
 import { dotenvConfigIfNotBlank } from "../lib/env.js";
 import { handler as hmrcAuthUrlGetHandler } from "../functions/hmrc/hmrcAuthUrlGet.js";
@@ -19,7 +18,6 @@ import { ensureReceiptsTableExists } from "@app/bin/dynamodb.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
-const s3Mock = mockClient(S3Client);
 let stopDynalite;
 let importedBundleManagement;
 const bundlesTableName = "system-test-vat-journey-bundles";
@@ -129,7 +127,6 @@ describe("System Journey: HMRC VAT Submission End-to-End", () => {
 
   beforeEach(async () => {
     vi.resetAllMocks();
-    s3Mock.reset();
     // Ensure we are not in mock bundle mode for this journey test and that
     // our DynamoDB table env vars are preserved across setupTestEnv
     Object.assign(
@@ -137,10 +134,6 @@ describe("System Journey: HMRC VAT Submission End-to-End", () => {
       setupTestEnv({
         NODE_ENV: "stubbed",
         DIY_SUBMIT_RECEIPTS_BUCKET_NAME: "test-receipts-bucket",
-        TEST_MINIO_S3: "test",
-        TEST_S3_ENDPOINT: "http://localhost:9000",
-        TEST_S3_ACCESS_KEY: "minioadmin",
-        TEST_S3_SECRET_KEY: "minioadmin",
         HMRC_CLIENT_SECRET: "test-client-secret",
         HMRC_SANDBOX_CLIENT_SECRET: "test-sandbox-client-secret",
         TEST_BUNDLE_MOCK: "false",
@@ -226,9 +219,6 @@ describe("System Journey: HMRC VAT Submission End-to-End", () => {
 
     const formBundleNumber = submitBody.receipt.formBundleNumber;
 
-    // Step 4: Post receipt to S3
-    s3Mock.on(PutObjectCommand).resolves({});
-
     const receiptPostEvent = buildLambdaEvent({
       method: "POST",
       path: "/api/v1/hmrc/receipt",
@@ -257,17 +247,6 @@ describe("System Journey: HMRC VAT Submission End-to-End", () => {
     expect(receiptPostBody).toHaveProperty("receipt");
     expect(receiptPostBody).toHaveProperty("key");
     expect(receiptPostBody.key).toContain(formBundleNumber);
-
-    // Note: In stubbed mode (NODE_ENV=stubbed), S3 calls are not made
-    // The receipt is still logged and the handler returns success
-
-    // Step 5: Retrieve the receipt from S3
-    s3Mock.reset();
-
-    const receiptStream = Readable.from([JSON.stringify(submitBody.receipt)]);
-    s3Mock.on(GetObjectCommand).resolves({
-      Body: receiptStream,
-    });
 
     const receiptGetEvent = buildLambdaEvent({
       method: "GET",

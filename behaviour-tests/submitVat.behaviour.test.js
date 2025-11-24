@@ -11,7 +11,6 @@ import {
   runLocalHttpServer,
   runLocalOAuth2Server,
   runLocalDynamoDb,
-  runLocalS3,
   runLocalSslProxy,
 } from "./helpers/behaviour-helpers.js";
 import {
@@ -50,13 +49,12 @@ const screenshotPath = "target/behaviour-test-results/screenshots/submitVat-beha
 const originalEnv = { ...process.env };
 
 const envName = getEnvVarAndLog("envName", "ENVIRONMENT_NAME", "local");
-const serverPort = getEnvVarAndLog("serverPort", "TEST_SERVER_HTTP_PORT", 3000);
+const httpServerPort = getEnvVarAndLog("serverPort", "TEST_SERVER_HTTP_PORT", 3000);
 const optionalTestS3AccessKey = getEnvVarAndLog("optionalTestS3AccessKey", "TEST_S3_ACCESS_KEY", null);
 const optionalTestS3SecretKey = getEnvVarAndLog("optionalTestS3Secret_KEY", "TEST_S3_SECRET_KEY", null);
 const runTestServer = getEnvVarAndLog("runTestServer", "TEST_SERVER_HTTP", null);
 const runProxy = getEnvVarAndLog("runProxy", "TEST_PROXY", null);
 const runMockOAuth2 = getEnvVarAndLog("runMockOAuth2", "TEST_MOCK_OAUTH2", null);
-const runMinioS3 = getEnvVarAndLog("runMinioS3", "TEST_MINIO_S3", null);
 const testAuthProvider = getEnvVarAndLog("testAuthProvider", "TEST_AUTH_PROVIDER", null);
 const testAuthUsername = getEnvVarAndLog("testAuthUsername", "TEST_AUTH_USERNAME", null);
 const receiptsBucketName = getEnvVarAndLog("receiptsBucketName", "DIY_SUBMIT_RECEIPTS_BUCKET_NAME", null);
@@ -90,9 +88,8 @@ test.beforeAll(async () => {
   // Run servers needed for the test
   dynamoControl = await runLocalDynamoDb(runDynamoDb, bundleTableName, hmrcApiRequestsTableName, receiptsTableName);
   mockOAuth2Process = await runLocalOAuth2Server(runMockOAuth2);
-  s3Endpoint = await runLocalS3(runMinioS3, receiptsBucketName, optionalTestS3AccessKey, optionalTestS3SecretKey);
-  serverProcess = await runLocalHttpServer(runTestServer, s3Endpoint, serverPort);
-  ngrokProcess = await runLocalSslProxy(runProxy, serverPort, baseUrl);
+  serverProcess = await runLocalHttpServer(runTestServer, httpServerPort);
+  ngrokProcess = await runLocalSslProxy(runProxy, httpServerPort, baseUrl);
 
   console.log("beforeAll hook completed successfully");
 });
@@ -117,7 +114,7 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
   // Compute test URL based on which servers are running§
   const testUrl =
     (runTestServer === "run" || runTestServer === "useExisting") && runProxy !== "run" && runProxy !== "useExisting"
-      ? `http://127.0.0.1:${serverPort}/`
+      ? `http://127.0.0.1:${httpServerPort}/`
       : baseUrl;
 
   // Add console logging to capture browser messages
@@ -240,11 +237,10 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
     env: {
       envName,
       baseUrl,
-      serverPort,
+      serverPort: httpServerPort,
       runTestServer,
       runProxy,
       runMockOAuth2,
-      runMinioS3,
       testAuthProvider,
       testAuthUsername,
     },

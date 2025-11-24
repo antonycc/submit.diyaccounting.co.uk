@@ -2,7 +2,6 @@
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from "vitest";
 //import { mockClient } from "aws-sdk-client-mock";
-//import { S3Client, PutObjectCommand, GetObjectCommand, ListObjectsV2Command } from "@aws-sdk/client-s3";
 import { Readable } from "stream";
 import { dotenvConfigIfNotBlank } from "../lib/env.js";
 import { handler as hmrcReceiptPostHandler } from "../functions/hmrc/hmrcReceiptPost.js";
@@ -17,7 +16,6 @@ dotenvConfigIfNotBlank({ path: ".env.test" });
 
 let stopDynalite;
 let importedDynamoDbReceiptStore;
-//const s3Mock = mockClient(S3Client);
 const receiptsTableName = "system-test-vat-journey-receipts";
 
 function makeDocClient() {
@@ -76,23 +74,16 @@ describe("System: HMRC Receipt Flow (hmrcReceiptPost + hmrcReceiptGet)", () => {
 
   beforeEach(() => {
     vi.resetAllMocks();
-    //s3Mock.reset();
     Object.assign(
       process.env,
       setupTestEnv({
         DIY_SUBMIT_RECEIPTS_BUCKET_NAME: "test-receipts-bucket",
         RECEIPTS_DYNAMODB_TABLE_NAME: receiptsTableName,
-        TEST_S3_ENDPOINT: "http://localhost:9000",
-        TEST_S3_ACCESS_KEY: "minioadmin",
-        TEST_S3_SECRET_KEY: "minioadmin",
       }),
     );
   });
 
   it("should post a receipt and then retrieve it", async () => {
-    // Step 1: Post receipt to S3
-    //s3Mock.on(PutObjectCommand).resolves({});
-
     const receiptData = {
       formBundleNumber: "RECEIPT-12345",
       chargeRefNumber: "CHARGE-67890",
@@ -128,26 +119,6 @@ describe("System: HMRC Receipt Flow (hmrcReceiptPost + hmrcReceiptGet)", () => {
     expect(postBody.receipt).toEqual(receiptData);
     expect(postBody.key).toContain(`receipts/${testUserSub}/`);
     expect(postBody.key).toContain("RECEIPT-12345.json");
-
-    // Verify S3 was called
-    //expect(s3Mock.calls()).toHaveLength(1);
-    //const [putCall] = s3Mock.calls();
-    //expect(putCall.args[0].input.Bucket).toBe("test-receipts-bucket");
-    //expect(putCall.args[0].input.Key).toContain(testUserSub);
-
-    // Step 2: Retrieve the receipt
-    //s3Mock.reset();
-
-    // Mock list receipts
-    // s3Mock.on(ListObjectsV2Command).resolves({
-    //   Contents: [
-    //     {
-    //       Key: postBody.key,
-    //       Size: 200,
-    //       LastModified: new Date(),
-    //     },
-    //   ],
-    // });
 
     const getListEvent = buildLambdaEvent({
       method: "GET",

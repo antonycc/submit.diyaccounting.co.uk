@@ -27,7 +27,7 @@ npm run test:unit
 npm run test:integration
 # Duration: 3 seconds. NEVER CANCEL: Set timeout to 15+ seconds.
 
-# System tests with Docker containers (MinIO S3)
+# System tests with Docker containers
 npm run test:system
 # Duration: 6 seconds. NEVER CANCEL: Set timeout to 30+ seconds.
 
@@ -83,7 +83,7 @@ npm run test:behaviour
 ## Architecture Overview
 
 This is a full-stack AWS serverless application:
-- **Frontend**: Static HTML/CSS/JS served via CloudFront + S3
+- **Frontend**: Static HTML/CSS/JS served via CloudFront
 - **Backend**: Node.js Express server + AWS Lambda functions
 - **Infrastructure**: AWS CDK (Java) for deployment
 - **Testing**: Multi-tier testing with Vitest (unit/integration/system) and Playwright (browser/behavior)
@@ -120,18 +120,14 @@ Manual testing should be performed using the **proxy environment**. This require
      ```bash
      npm run auth
      ```
-   - MinIO S3 storage (endpoint is generated at runtime):
+   - Dynamo storage:
      ```bash
-     npm run storage
-     # Note the output: MinIO started url=http://127.0.0.1:9000 (or similar)
+     npm run data
      ```
 
-2. **Start the Express server with the MinIO endpoint:**
-   - Pass the MinIO endpoint to the server by overriding the environment variable:
+2. **Start the Express server:**
      ```bash
-     TEST_S3_ENDPOINT=<minio_endpoint_url> npm run server
-     # Example: TEST_S3_ENDPOINT=http://127.0.0.1:9000 npm run server
-     # Verify "Listening at http://127.0.0.1:3000" appears
+     npm run server
      ```
 
 3. **Manual test flows:**
@@ -148,7 +144,6 @@ Manual testing should be performed using the **proxy environment**. This require
      - Verify receipt display and storage functionality
 
 **Note:**
-- Always use the MinIO endpoint generated at runtime by the storage script.
 - All services must be running for full manual testing coverage.
 
 ## Common Issues & Workarounds
@@ -202,7 +197,7 @@ Manual testing should be performed using the **proxy environment**. This require
 
 - AWS CDK deployment requires Java 17+, Docker, and AWS CLI
 - GitHub Actions workflows handle CI/CD with multi-stage testing
-- Local development uses mock services (OAuth2, S3) for testing
+- Local development uses mock services (OAuth2, DynamoDB) for testing
 
 ## Critical Timing Expectations
 

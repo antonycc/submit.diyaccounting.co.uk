@@ -536,7 +536,7 @@ public class SubmitSharedNames {
                 "getReceipts",
                 List.of(
                         new ApiParameter("name", "query", false, "Receipt file name including .json"),
-                        new ApiParameter("key", "query", false, "Full S3 object key under receipts/{sub}/"))));
+                        new ApiParameter("key", "query", false, "Full DynamoDB Item key"))));
         publishedApiLambdas.add(new PublishedLambda(
                 this.receiptGetLambdaHttpMethod,
                 this.receiptGetByNameLambdaUrlPath,

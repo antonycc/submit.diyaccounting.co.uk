@@ -483,7 +483,7 @@ Removes a bundle from the authenticated user's account.
 
 **Endpoint**: `POST /api/v1/hmrc/receipt`
 
-Logs/stores submission receipts securely to AWS S3.
+Logs/stores submission receipts securely to AWS DynamoDb.
 
 **Authentication**: Cognito JWT
 
@@ -529,7 +529,7 @@ Retrieves stored receipts for the authenticated user.
 
 **Query Parameters**:
 - `name` (optional): Specific receipt filename (e.g., "2025-03-31-123456789012.json")
-- `key` (optional): Full S3 key (e.g., "receipts/user-id/2025-03-31-123456789012.json")
+- `key` (optional): Full DynamoDb key (e.g., "receipts/user-id/2025-03-31-123456789012.json")
 
 **Request Example**:
 ```

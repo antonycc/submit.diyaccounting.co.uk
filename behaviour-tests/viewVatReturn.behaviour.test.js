@@ -53,7 +53,7 @@ const screenshotPath = "target/behaviour-test-results/screenshots/view-vat-retur
 const originalEnv = { ...process.env };
 
 const envName = getEnvVarAndLog("envName", "ENVIRONMENT_NAME", "local");
-const serverPort = getEnvVarAndLog("serverPort", "TEST_SERVER_HTTP_PORT", 3000);
+const httpServerPort = getEnvVarAndLog("serverPort", "TEST_SERVER_HTTP_PORT", 3000);
 const runTestServer = getEnvVarAndLog("runTestServer", "TEST_SERVER_HTTP", null);
 const runProxy = getEnvVarAndLog("runProxy", "TEST_PROXY", null);
 const runMockOAuth2 = getEnvVarAndLog("runMockOAuth2", "TEST_MOCK_OAUTH2", null);
@@ -86,8 +86,8 @@ test.beforeAll(async () => {
   // Run servers needed for the test
   dynamoControl = await runLocalDynamoDb(runDynamoDb, bundleTableName, hmrcApiRequestsTableName, receiptsTableName);
   mockOAuth2Process = await runLocalOAuth2Server(runMockOAuth2);
-  serverProcess = await runLocalHttpServer(runTestServer, null, serverPort);
-  ngrokProcess = await runLocalSslProxy(runProxy, serverPort, baseUrl);
+  serverProcess = await runLocalHttpServer(runTestServer, httpServerPort);
+  ngrokProcess = await runLocalSslProxy(runProxy, httpServerPort, baseUrl);
 
   console.log("beforeAll hook completed successfully");
 });
@@ -112,7 +112,7 @@ test("Click through: Get VAT return from HMRC", async ({ page }, testInfo) => {
   // Compute test URL based on which servers are running
   const testUrl =
     (runTestServer === "run" || runTestServer === "useExisting") && runProxy !== "run" && runProxy !== "useExisting"
-      ? `http://127.0.0.1:${serverPort}/`
+      ? `http://127.0.0.1:${httpServerPort}/`
       : baseUrl;
 
   // Add console logging to capture browser messages
@@ -230,7 +230,7 @@ test("Click through: Get VAT return from HMRC", async ({ page }, testInfo) => {
     env: {
       envName,
       baseUrl,
-      serverPort,
+      serverPort: httpServerPort,
       runTestServer,
       runProxy,
       runMockOAuth2,

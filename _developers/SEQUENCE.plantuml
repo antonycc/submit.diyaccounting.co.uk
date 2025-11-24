@@ -10,7 +10,7 @@ group Backend
 end
 participant "HMRC OAuth Server" as HMRCAuth
 participant "HMRC VAT API" as HMRCApi
-participant "AWS S3" as S3
+participant "AWS S3" as DynamoDb
 
 User -> Browser: Open submission page
 Browser -> App: Load frontend assets
@@ -41,8 +41,8 @@ loop VAT Submission Flow
   SubmitVat -> App: receipt → [sync]
 
   App -> LogReceipt: POST /api/v1/hmrc/receipt { receipt } → [sync]
-  LogReceipt -> S3: PutObject(receipts/{formBundleNumber}.json) →→ [async]
-  S3 -> LogReceipt: success →→ [async]
+  LogReceipt -> DynamoDb: PutObject(receipts/{formBundleNumber}.json) →→ [async]
+  DynamoDb -> LogReceipt: success →→ [async]
   LogReceipt -> App: { status } → [sync]
 
   App -> Browser: Render success receipt → [sync]
