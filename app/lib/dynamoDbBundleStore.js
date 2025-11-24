@@ -10,7 +10,12 @@ async function getDynamoDbDocClient() {
   if (!__dynamoDbDocClient) {
     __dynamoDbModule = await import("@aws-sdk/lib-dynamodb");
     const { DynamoDBClient } = await import("@aws-sdk/client-dynamodb");
-    const client = new DynamoDBClient({ region: process.env.AWS_REGION || "eu-west-2" });
+    // Honour local dynalite endpoint if provided by tests or dev env
+    const endpoint = process.env.AWS_ENDPOINT_URL_DYNAMODB || process.env.AWS_ENDPOINT_URL;
+    const client = new DynamoDBClient({
+      region: process.env.AWS_REGION || "eu-west-2",
+      ...(endpoint ? { endpoint } : {}),
+    });
     __dynamoDbDocClient = __dynamoDbModule.DynamoDBDocumentClient.from(client);
   }
   return __dynamoDbDocClient;

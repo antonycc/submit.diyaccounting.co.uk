@@ -10,7 +10,18 @@ const mockBundleStore = getBundlesStore();
 
 // TODO: [stubs] Remove stubs from production code
 export function isMockMode() {
-  return String(process.env.TEST_BUNDLE_MOCK || "").toLowerCase() === "true" || process.env.TEST_BUNDLE_MOCK === "1";
+  const raw = process.env.TEST_BUNDLE_MOCK;
+  const flag = String(raw || "").toLowerCase();
+  if (flag === "true" || raw === "1") return true; // explicit enable
+  if (flag === "false" || raw === "0") return false; // explicit disable
+  // Otherwise, prefer DynamoDB when available
+  try {
+    if (dynamoDbBundleStore.isDynamoDbEnabled && dynamoDbBundleStore.isDynamoDbEnabled()) {
+      return false;
+    }
+  } catch {}
+  // Default: mock off
+  return false;
 }
 
 export class BundleAuthorizationError extends Error {

@@ -1,6 +1,9 @@
 // app/system-tests/hmrcVatJourney.system.test.js
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from "vitest";
+import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
+import { DynamoDBDocumentClient, QueryCommand, ScanCommand } from "@aws-sdk/lib-dynamodb";
+import { hashSub } from "../lib/subHasher.js";
 import { mockClient } from "aws-sdk-client-mock";
 import { S3Client, PutObjectCommand, GetObjectCommand, ListObjectsV2Command } from "@aws-sdk/client-s3";
 import { Readable } from "stream";
@@ -18,18 +21,78 @@ dotenvConfigIfNotBlank({ path: ".env.test" });
 const s3Mock = mockClient(S3Client);
 let stopDynalite;
 let bm;
+const bundlesTableName = "bundles-system-test-vat-journey";
+const hmrcReqsTableName = "hmrc-requests-system-test-vat-journey";
+
+function makeDocClient() {
+  const endpoint = process.env.AWS_ENDPOINT_URL_DYNAMODB || process.env.AWS_ENDPOINT_URL;
+  const client = new DynamoDBClient({
+    region: process.env.AWS_REGION || "us-east-1",
+    ...(endpoint ? { endpoint } : {}),
+    credentials: {
+      accessKeyId: process.env.AWS_ACCESS_KEY_ID || "dummy",
+      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || "dummy",
+    },
+  });
+  return DynamoDBDocumentClient.from(client);
+}
+
+async function queryBundlesForUser(userId) {
+  const hashedSub = hashSub(userId);
+  const doc = makeDocClient();
+  const resp = await doc.send(
+    new QueryCommand({
+      TableName: bundlesTableName,
+      KeyConditionExpression: "hashedSub = :h",
+      ExpressionAttributeValues: { ":h": hashedSub },
+    }),
+  );
+  return resp.Items || [];
+}
+
+async function scanHmrcRequestsByHashedSub(userId) {
+  const hashedSub = hashSub(userId);
+  const doc = makeDocClient();
+  const resp = await doc.send(
+    new ScanCommand({
+      TableName: hmrcReqsTableName,
+      FilterExpression: "hashedSub = :h",
+      ExpressionAttributeValues: { ":h": hashedSub },
+    }),
+  );
+  return resp.Items || [];
+}
+
+async function scanAllHmrcRequests() {
+  const doc = makeDocClient();
+  const resp = await doc.send(new ScanCommand({ TableName: hmrcReqsTableName }));
+  return resp.Items || [];
+}
+
+async function waitFor(predicate, { timeoutMs = 5000, intervalMs = 200 } = {}) {
+  const start = Date.now();
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    const result = await predicate();
+    if (result) return result;
+    if (Date.now() - start > timeoutMs) return result;
+    // small delay
+    // eslint-disable-next-line no-await-in-loop
+    await new Promise((r) => setTimeout(r, intervalMs));
+  }
+}
 
 describe("System Journey: HMRC VAT Submission End-to-End", () => {
   const testUserSub = "test-vat-journey-user";
   const testToken = makeIdToken(testUserSub);
 
   beforeAll(async () => {
-    const { ensureBundleTableExists } = await import("../bin/dynamodb.js");
+    const { ensureBundleTableExists, ensureHmrcApiRequestsTableExists } = await import("../bin/dynamodb.js");
     const { default: dynalite } = await import("dynalite");
 
     const host = "127.0.0.1";
     const port = 8004;
-    const tableName = "bundles-system-test-vat-journey";
+    const tableName = bundlesTableName;
     const server = dynalite({ createTableMs: 0 });
     await new Promise((resolve, reject) => {
       server.listen(port, host, (err) => (err ? reject(err) : resolve(null)));
@@ -47,8 +110,10 @@ describe("System Journey: HMRC VAT Submission End-to-End", () => {
     process.env.AWS_ENDPOINT_URL = endpoint;
     process.env.AWS_ENDPOINT_URL_DYNAMODB = endpoint;
     process.env.BUNDLE_DYNAMODB_TABLE_NAME = tableName;
+    process.env.HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME = hmrcReqsTableName;
 
     await ensureBundleTableExists(tableName, endpoint);
+    await ensureHmrcApiRequestsTableExists(hmrcReqsTableName, endpoint);
 
     bm = await import("../lib/bundleManagement.js");
   });
@@ -62,6 +127,8 @@ describe("System Journey: HMRC VAT Submission End-to-End", () => {
   beforeEach(async () => {
     vi.resetAllMocks();
     s3Mock.reset();
+    // Ensure we are not in mock bundle mode for this journey test and that
+    // our DynamoDB table env vars are preserved across setupTestEnv
     Object.assign(
       process.env,
       setupTestEnv({
@@ -73,6 +140,10 @@ describe("System Journey: HMRC VAT Submission End-to-End", () => {
         TEST_S3_SECRET_KEY: "minioadmin",
         HMRC_CLIENT_SECRET: "test-client-secret",
         HMRC_SANDBOX_CLIENT_SECRET: "test-sandbox-client-secret",
+        TEST_BUNDLE_MOCK: "false",
+        // ensure dynamo-backed stores are enabled and point to our test tables
+        BUNDLE_DYNAMODB_TABLE_NAME: bundlesTableName,
+        HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME: hmrcReqsTableName,
       }),
     );
 
@@ -221,9 +292,35 @@ describe("System Journey: HMRC VAT Submission End-to-End", () => {
     expect(receiptGetBody).toHaveProperty("formBundleNumber", formBundleNumber);
     expect(receiptGetBody).toHaveProperty("processingDate");
 
-    // Verify the complete journey
+    // Verify the complete journey response coherence
     expect(receiptGetBody).toEqual(submitBody.receipt);
-  });
+
+    // Final journey assertions against DynamoDB persistence
+    // 1) Bundles should be persisted for the user
+    const bundles = await waitFor(async () => {
+      const items = await queryBundlesForUser(testUserSub);
+      return items && items.find((b) => b.bundleId === "guest") ? items : null;
+    }, { timeoutMs: 8000, intervalMs: 250 });
+    expect(Array.isArray(bundles)).toBe(true);
+    expect(bundles.find((b) => b.bundleId === "guest")).toBeTruthy();
+
+    // 2) HMRC API request logs should be present
+    // Token exchange may be logged with an unknown UUID user when userSub not provided
+    // so scan the whole table and look for an oauth/token POST entry
+    const hmrcLogs = await waitFor(async () => {
+      const all = await scanAllHmrcRequests();
+      return all && all.length > 0 ? all : null;
+    }, { timeoutMs: 8000, intervalMs: 250 });
+    expect(Array.isArray(hmrcLogs)).toBe(true);
+    expect(hmrcLogs.length).toBeGreaterThan(0);
+    const tokenLogs = hmrcLogs.filter((i) => typeof i.url === "string" && i.url.includes("/oauth/token"));
+    expect(tokenLogs.length).toBeGreaterThan(0);
+    // basic shape checks
+    const one = tokenLogs[0];
+    expect(one).toHaveProperty("method");
+    expect(one.method).toBe("POST");
+    expect(one).toHaveProperty("createdAt");
+  }, 15000);
 
   it("should handle sandbox environment in complete journey", async () => {
     // Step 1: Get sandbox authorization URL

@@ -1,4 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
+import { DynamoDBDocumentClient, QueryCommand } from "@aws-sdk/lib-dynamodb";
+import { hashSub } from "../lib/subHasher.js";
 
 let stopDynalite;
 /** @typedef {typeof import("../lib/bundleManagement.js")} BundleManagement */
@@ -6,6 +9,32 @@ let stopDynalite;
 let bm;
 
 const tableName = "bundles-system-test-bm-journeys";
+
+function makeDocClient() {
+  const endpoint = process.env.AWS_ENDPOINT_URL_DYNAMODB || process.env.AWS_ENDPOINT_URL;
+  const client = new DynamoDBClient({
+    region: process.env.AWS_REGION || "us-east-1",
+    ...(endpoint ? { endpoint } : {}),
+    credentials: {
+      accessKeyId: process.env.AWS_ACCESS_KEY_ID || "dummy",
+      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || "dummy",
+    },
+  });
+  return DynamoDBDocumentClient.from(client);
+}
+
+async function queryBundlesForUser(userId) {
+  const hashedSub = hashSub(userId);
+  const doc = makeDocClient();
+  const resp = await doc.send(
+    new QueryCommand({
+      TableName: tableName,
+      KeyConditionExpression: "hashedSub = :h",
+      ExpressionAttributeValues: { ":h": hashedSub },
+    }),
+  );
+  return resp.Items || [];
+}
 
 function base64UrlEncode(obj) {
   const json = JSON.stringify(obj);
@@ -124,10 +153,16 @@ describe("System journeys: bundleManagement", () => {
     // 2) Add qualifying bundle and succeed
     const expiry = new Date(Date.now() + 60 * 60 * 1000).toISOString();
     await bm.updateUserBundles(sub, [{ bundleId: "guest", expiry }]);
+    // Verify persisted in DynamoDB directly
+    const itemsAfterAdd = await queryBundlesForUser(sub);
+    expect(itemsAfterAdd.find((it) => it.bundleId === "guest")).toBeTruthy();
     await bm.enforceBundles(event); // should pass now
 
     // 3) Remove bundle and fail again
     await bm.updateUserBundles(sub, []);
+    // Verify removal persisted
+    const itemsAfterRemove = await queryBundlesForUser(sub);
+    expect(itemsAfterRemove.find((it) => it.bundleId === "guest")).toBeUndefined();
     await expect(bm.enforceBundles(event)).rejects.toThrow();
   });
 });

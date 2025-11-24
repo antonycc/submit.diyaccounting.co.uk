@@ -265,7 +265,9 @@ export async function performTokenExchange(providerUrl, body, auditForUserSub) {
   const httpRequest = {
     method: "POST",
     headers: { ...requestHeaders },
-    body: requestBody,
+    // Store a plain string for auditing to ensure DynamoDB marshalling works
+    // (URLSearchParams is a class instance and not supported by the marshaller)
+    body: requestBody.toString(),
   };
   // TODO: [stubs] Remove stubs from production code
   if (process.env.NODE_ENV === "stubbed") {
@@ -299,9 +301,20 @@ export async function performTokenExchange(providerUrl, body, auditForUserSub) {
     }
   }
 
+  // Normalise headers to a plain object for DynamoDB marshalling
+  let responseHeadersObj = {};
+  try {
+    if (response && typeof response.headers?.forEach === "function") {
+      response.headers.forEach((value, key) => {
+        responseHeadersObj[key] = value;
+      });
+    } else if (response?.headers && typeof response.headers === "object") {
+      responseHeadersObj = { ...response.headers };
+    }
+  } catch {}
   const httpResponse = {
     statusCode: response.status,
-    headers: response.headers ?? {},
+    headers: responseHeadersObj,
     body: responseTokens,
   };
   const userSubOrUuid = auditForUserSub || `unknown-user-${uuidv4()}`;
