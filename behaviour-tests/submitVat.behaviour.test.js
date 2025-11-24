@@ -66,11 +66,7 @@ const hmrcTestPassword = getEnvVarAndLog("hmrcTestPassword", "TEST_HMRC_PASSWORD
 const hmrcTestVatNumber = getEnvVarAndLog("hmrcTestVatNumber", "TEST_HMRC_VAT_NUMBER", null);
 const runDynamoDb = getEnvVarAndLog("runDynamoDb", "TEST_DYNAMODB", null);
 const bundleTableName = getEnvVarAndLog("bundleTableName", "BUNDLE_DYNAMODB_TABLE_NAME", null);
-const hmrcApiRequestsTableName = getEnvVarAndLog(
-  "hmrcApiRequestsTableName",
-  "HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME",
-  null,
-);
+const hmrcApiRequestsTableName = getEnvVarAndLog("hmrcApiRequestsTableName", "HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", null);
 // eslint-disable-next-line sonarjs/pseudo-random
 const hmrcVatPeriodKey = Math.random().toString(36).substring(2, 6);
 const hmrcVatDueAmount = "1000.00";
@@ -237,8 +233,7 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
   const testContext = {
     name: testInfo.title,
     title: "Submit VAT Return (HMRC: VAT Return POST)",
-    description:
-      "Clicks through the app to submit a VAT return to HMRC MTD VAT API, then verifies receipt visibility and navigation.",
+    description: "Clicks through the app to submit a VAT return to HMRC MTD VAT API, then verifies receipt visibility and navigation.",
     hmrcApi: { url: "/api/v1/hmrc/vat/return", method: "POST" },
     env: {
       envName,

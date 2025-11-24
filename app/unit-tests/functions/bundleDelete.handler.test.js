@@ -6,11 +6,7 @@ import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import { handler as bundleDeleteHandler } from "@app/functions/account/bundleDelete.js";
 import { handler as bundlePostHandler } from "@app/functions/account/bundlePost.js";
 import { getBundlesStore } from "@app/functions/non-lambda-mocks/mockBundleStore.js";
-import {
-  buildLambdaEvent,
-  buildEventWithToken,
-  makeIdToken,
-} from "@app/test-helpers/eventBuilders.js";
+import { buildLambdaEvent, buildEventWithToken, makeIdToken } from "@app/test-helpers/eventBuilders.js";
 import { setupTestEnv, parseResponseBody } from "@app/test-helpers/mockHelpers.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
@@ -107,7 +103,7 @@ describe("bundleDelete handler", () => {
     // won't find bundles properly. This test documents expected behavior but
     // tests actual behavior until bug is fixed.
     const token = makeIdToken("user-delete-success");
-    
+
     // First grant a bundle
     const grantEvent = buildEventWithToken(token, { bundleId: "test" });
     await bundlePostHandler(grantEvent);
@@ -127,7 +123,7 @@ describe("bundleDelete handler", () => {
 
   test("successfully removes all bundles with removeAll flag", async () => {
     const token = makeIdToken("user-remove-all");
-    
+
     // Grant multiple bundles
     await bundlePostHandler(buildEventWithToken(token, { bundleId: "test" }));
     await bundlePostHandler(buildEventWithToken(token, { bundleId: "default" }));
@@ -145,7 +141,7 @@ describe("bundleDelete handler", () => {
   test("accepts bundleId via path parameter", async () => {
     // Same storage bug affects this test
     const token = makeIdToken("user-path-param");
-    
+
     // Grant a bundle first
     await bundlePostHandler(buildEventWithToken(token, { bundleId: "test" }));
 
@@ -163,7 +159,7 @@ describe("bundleDelete handler", () => {
   test("accepts bundleId via query parameter", async () => {
     // Same storage bug affects this test
     const token = makeIdToken("user-query-param");
-    
+
     // Grant a bundle first
     await bundlePostHandler(buildEventWithToken(token, { bundleId: "test" }));
 

@@ -1,5 +1,9 @@
 package co.uk.diyaccounting.submit.stacks;
 
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+import static co.uk.diyaccounting.submit.utils.S3.createLifecycleRules;
+
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
 import org.immutables.value.Value;
@@ -20,10 +24,6 @@ import software.amazon.awscdk.services.s3.BucketEncryption;
 import software.amazon.awscdk.services.s3.IBucket;
 import software.amazon.awscdk.services.s3.ObjectOwnership;
 import software.constructs.Construct;
-
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-import static co.uk.diyaccounting.submit.utils.S3.createLifecycleRules;
 
 public class DataStack extends Stack {
 
@@ -111,23 +111,23 @@ public class DataStack extends Stack {
 
         // Create DynamoDB table for HMRC API requests storage
         this.hmrcApiRequestsTable = Table.Builder.create(this, props.resourceNamePrefix() + "-HmrcApiRequestsTable")
-            .tableName(props.sharedNames().hmrcApiRequestsTableName)
-            .partitionKey(Attribute.builder()
-                .name("hashedSub")
-                .type(AttributeType.STRING)
-                .build())
-            .sortKey(Attribute.builder()
-                .name("requestId")
-                .type(AttributeType.STRING)
-                .build())
-            .billingMode(BillingMode.PAY_PER_REQUEST) // Serverless, near-zero cost at rest
-            .timeToLiveAttribute("ttl") // Enable TTL for automatic expiry handling
-            .removalPolicy(RemovalPolicy.DESTROY) // Safe to destroy in non-prod
-            .build();
+                .tableName(props.sharedNames().hmrcApiRequestsTableName)
+                .partitionKey(Attribute.builder()
+                        .name("hashedSub")
+                        .type(AttributeType.STRING)
+                        .build())
+                .sortKey(Attribute.builder()
+                        .name("requestId")
+                        .type(AttributeType.STRING)
+                        .build())
+                .billingMode(BillingMode.PAY_PER_REQUEST) // Serverless, near-zero cost at rest
+                .timeToLiveAttribute("ttl") // Enable TTL for automatic expiry handling
+                .removalPolicy(RemovalPolicy.DESTROY) // Safe to destroy in non-prod
+                .build();
         infof(
-            "Created HMRC API Requests DynamoDB table with name %s and id %s",
-            this.bundlesTable.getTableName(), this.hmrcApiRequestsTable.getNode().getId());
-
+                "Created HMRC API Requests DynamoDB table with name %s and id %s",
+                this.bundlesTable.getTableName(),
+                this.hmrcApiRequestsTable.getNode().getId());
 
         Aspects.of(this).add(new SetAutoDeleteJobLogRetentionAspect(props.deploymentName(), RetentionDays.THREE_DAYS));
 

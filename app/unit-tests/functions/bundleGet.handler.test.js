@@ -6,11 +6,7 @@ import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import { handler as bundleGetHandler } from "@app/functions/account/bundleGet.js";
 import { handler as bundlePostHandler } from "@app/functions/account/bundlePost.js";
 import { getBundlesStore } from "@app/functions/non-lambda-mocks/mockBundleStore.js";
-import {
-  buildLambdaEvent,
-  buildEventWithToken,
-  makeIdToken,
-} from "@app/test-helpers/eventBuilders.js";
+import { buildLambdaEvent, buildEventWithToken, makeIdToken } from "@app/test-helpers/eventBuilders.js";
 import { setupTestEnv, parseResponseBody } from "@app/test-helpers/mockHelpers.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
@@ -82,7 +78,7 @@ describe("bundleGet handler", () => {
 
   test("returns 200 with user bundles after granting", async () => {
     const token = makeIdToken("user-with-bundles");
-    
+
     // Grant a bundle first
     await bundlePostHandler(buildEventWithToken(token, { bundleId: "test" }));
 
@@ -99,7 +95,7 @@ describe("bundleGet handler", () => {
   test("returns multiple bundles when user has multiple grants", async () => {
     // Due to storage/comparison bug, bundles accumulate as duplicates
     const token = makeIdToken("user-multiple-bundles");
-    
+
     // Grant multiple bundles
     await bundlePostHandler(buildEventWithToken(token, { bundleId: "test" }));
     await bundlePostHandler(buildEventWithToken(token, { bundleId: "default" }));

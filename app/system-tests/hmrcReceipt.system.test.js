@@ -29,12 +29,15 @@ describe("System: HMRC Receipt Flow (hmrcReceiptPost + hmrcReceiptGet)", () => {
   beforeEach(() => {
     vi.resetAllMocks();
     s3Mock.reset();
-    Object.assign(process.env, setupTestEnv({
-      DIY_SUBMIT_RECEIPTS_BUCKET_NAME: "test-receipts-bucket",
-      TEST_S3_ENDPOINT: "http://localhost:9000",
-      TEST_S3_ACCESS_KEY: "minioadmin",
-      TEST_S3_SECRET_KEY: "minioadmin",
-    }));
+    Object.assign(
+      process.env,
+      setupTestEnv({
+        DIY_SUBMIT_RECEIPTS_BUCKET_NAME: "test-receipts-bucket",
+        TEST_S3_ENDPOINT: "http://localhost:9000",
+        TEST_S3_ACCESS_KEY: "minioadmin",
+        TEST_S3_SECRET_KEY: "minioadmin",
+      }),
+    );
   });
 
   it("should post a receipt and then retrieve it", async () => {
@@ -58,7 +61,7 @@ describe("System: HMRC Receipt Flow (hmrcReceiptPost + hmrcReceiptGet)", () => {
           lambda: {
             jwt: {
               claims: {
-                sub: testUserSub,
+                "sub": testUserSub,
                 "cognito:username": "testuser",
               },
             },
@@ -69,7 +72,7 @@ describe("System: HMRC Receipt Flow (hmrcReceiptPost + hmrcReceiptGet)", () => {
 
     const postResponse = await hmrcReceiptPostHandler(postEvent);
     expect(postResponse.statusCode).toBe(200);
-    
+
     const postBody = parseResponseBody(postResponse);
     expect(postBody).toHaveProperty("receipt");
     expect(postBody).toHaveProperty("key");
@@ -106,7 +109,7 @@ describe("System: HMRC Receipt Flow (hmrcReceiptPost + hmrcReceiptGet)", () => {
           lambda: {
             jwt: {
               claims: {
-                sub: testUserSub,
+                "sub": testUserSub,
                 "cognito:username": "testuser",
               },
             },
@@ -117,7 +120,7 @@ describe("System: HMRC Receipt Flow (hmrcReceiptPost + hmrcReceiptGet)", () => {
 
     const getListResponse = await hmrcReceiptGetHandler(getListEvent);
     expect(getListResponse.statusCode).toBe(200);
-    
+
     const getListBody = parseResponseBody(getListResponse);
     expect(getListBody).toHaveProperty("receipts");
     expect(Array.isArray(getListBody.receipts)).toBe(true);
@@ -141,7 +144,7 @@ describe("System: HMRC Receipt Flow (hmrcReceiptPost + hmrcReceiptGet)", () => {
           lambda: {
             jwt: {
               claims: {
-                sub: testUserSub,
+                "sub": testUserSub,
                 "cognito:username": "testuser",
               },
             },
@@ -152,7 +155,7 @@ describe("System: HMRC Receipt Flow (hmrcReceiptPost + hmrcReceiptGet)", () => {
 
     const getResponse = await hmrcReceiptGetHandler(getEvent);
     expect(getResponse.statusCode).toBe(200);
-    
+
     const getBody = parseResponseBody(getResponse);
     expect(getBody).toEqual(receiptData);
   });
@@ -183,7 +186,7 @@ describe("System: HMRC Receipt Flow (hmrcReceiptPost + hmrcReceiptGet)", () => {
           lambda: {
             jwt: {
               claims: {
-                sub: testUserSub,
+                "sub": testUserSub,
                 "cognito:username": "testuser",
               },
             },
@@ -205,7 +208,7 @@ describe("System: HMRC Receipt Flow (hmrcReceiptPost + hmrcReceiptGet)", () => {
           lambda: {
             jwt: {
               claims: {
-                sub: testUserSub,
+                "sub": testUserSub,
                 "cognito:username": "testuser",
               },
             },
@@ -230,7 +233,7 @@ describe("System: HMRC Receipt Flow (hmrcReceiptPost + hmrcReceiptGet)", () => {
 
     const getResponse = await hmrcReceiptGetHandler(getEvent);
     expect(getResponse.statusCode).toBe(401);
-    
+
     const getBody = parseResponseBody(getResponse);
     expect(getBody.message).toContain("Authentication required");
   });

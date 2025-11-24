@@ -12,10 +12,13 @@ dotenvConfigIfNotBlank({ path: ".env.test" });
 describe("System: HMRC Auth Flow (hmrcAuthUrl + hmrcToken)", () => {
   beforeEach(() => {
     vi.resetAllMocks();
-    Object.assign(process.env, setupTestEnv({
-      HMRC_CLIENT_SECRET: "test-client-secret",
-      HMRC_SANDBOX_CLIENT_SECRET: "test-sandbox-client-secret",
-    }));
+    Object.assign(
+      process.env,
+      setupTestEnv({
+        HMRC_CLIENT_SECRET: "test-client-secret",
+        HMRC_SANDBOX_CLIENT_SECRET: "test-sandbox-client-secret",
+      }),
+    );
   });
 
   it("should generate auth URL and then exchange code for token", async () => {
@@ -28,7 +31,7 @@ describe("System: HMRC Auth Flow (hmrcAuthUrl + hmrcToken)", () => {
 
     const authUrlResponse = await hmrcAuthUrlGetHandler(authUrlEvent);
     expect(authUrlResponse.statusCode).toBe(200);
-    
+
     const authUrlBody = parseResponseBody(authUrlResponse);
     expect(authUrlBody).toHaveProperty("authUrl");
     expect(authUrlBody.authUrl).toContain("oauth/authorize");
@@ -44,7 +47,7 @@ describe("System: HMRC Auth Flow (hmrcAuthUrl + hmrcToken)", () => {
 
     const tokenResponse = await hmrcTokenPostHandler(tokenEvent);
     expect([200, 500]).toContain(tokenResponse.statusCode);
-    
+
     if (tokenResponse.statusCode === 200) {
       const tokenBody = parseResponseBody(tokenResponse);
       expect(tokenBody).toHaveProperty("url");
@@ -66,7 +69,7 @@ describe("System: HMRC Auth Flow (hmrcAuthUrl + hmrcToken)", () => {
 
     const authUrlResponse = await hmrcAuthUrlGetHandler(authUrlEvent);
     expect(authUrlResponse.statusCode).toBe(200);
-    
+
     const authUrlBody = parseResponseBody(authUrlResponse);
     expect(authUrlBody.authUrl).toContain(process.env.HMRC_SANDBOX_CLIENT_ID);
 
@@ -80,7 +83,7 @@ describe("System: HMRC Auth Flow (hmrcAuthUrl + hmrcToken)", () => {
 
     const tokenResponse = await hmrcTokenPostHandler(tokenEvent);
     expect([200, 500]).toContain(tokenResponse.statusCode);
-    
+
     if (tokenResponse.statusCode === 200) {
       const tokenBody = parseResponseBody(tokenResponse);
       expect(tokenBody.body).toHaveProperty("client_id", process.env.HMRC_SANDBOX_CLIENT_ID);
@@ -96,7 +99,7 @@ describe("System: HMRC Auth Flow (hmrcAuthUrl + hmrcToken)", () => {
 
     const authUrlResponse = await hmrcAuthUrlGetHandler(authUrlEvent);
     expect(authUrlResponse.statusCode).toBe(400);
-    
+
     const authUrlBody = parseResponseBody(authUrlResponse);
     expect(authUrlBody.message).toContain("Missing state query parameter");
   });
@@ -110,7 +113,7 @@ describe("System: HMRC Auth Flow (hmrcAuthUrl + hmrcToken)", () => {
 
     const tokenResponse = await hmrcTokenPostHandler(tokenEvent);
     expect(tokenResponse.statusCode).toBe(400);
-    
+
     const tokenBody = parseResponseBody(tokenResponse);
     expect(tokenBody.message).toContain("Missing code");
   });

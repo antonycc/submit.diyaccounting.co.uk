@@ -141,9 +141,7 @@ describe("System: bundleManagement with local dynalite", () => {
       { bundleId: "test", expiry },
     ]);
 
-    await bm.updateUserBundles(userId, [
-      { bundleId: "guest", expiry },
-    ]);
+    await bm.updateUserBundles(userId, [{ bundleId: "guest", expiry }]);
 
     const after = await bm.getUserBundles(userId);
     const ids = after.map((b) => b.bundleId);

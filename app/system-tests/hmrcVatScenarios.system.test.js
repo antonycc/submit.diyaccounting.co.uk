@@ -86,9 +86,9 @@ describe("System: HMRC VAT Scenarios with Test Parameters", () => {
       method: "GET",
       path: "/api/v1/hmrc/vat/obligation",
       queryStringParameters: {
-        vrn: "123456789",
-        from: "2024-01-01",
-        to: "2024-12-31",
+        "vrn": "123456789",
+        "from": "2024-01-01",
+        "to": "2024-12-31",
         "Gov-Test-Scenario": "QUARTERLY_NONE_MET",
       },
       headers: {
@@ -100,7 +100,7 @@ describe("System: HMRC VAT Scenarios with Test Parameters", () => {
           lambda: {
             jwt: {
               claims: {
-                sub: "test-user",
+                "sub": "test-user",
                 "cognito:username": "testuser",
               },
             },
@@ -111,7 +111,7 @@ describe("System: HMRC VAT Scenarios with Test Parameters", () => {
 
     const obligationResponse = await hmrcVatObligationGetHandler(obligationEvent);
     expect(obligationResponse.statusCode).toBe(200);
-    
+
     const obligationBody = parseResponseBody(obligationResponse);
     expect(obligationBody).toHaveProperty("obligations");
     expect(Array.isArray(obligationBody.obligations)).toBe(true);
@@ -141,7 +141,7 @@ describe("System: HMRC VAT Scenarios with Test Parameters", () => {
       path: "/api/v1/hmrc/vat/return/24A1",
       pathParameters: { periodKey: "24A1" },
       queryStringParameters: {
-        vrn: "123456789",
+        "vrn": "123456789",
         "Gov-Test-Scenario": "QUARTERLY_ONE_MET",
       },
       headers: {
@@ -153,7 +153,7 @@ describe("System: HMRC VAT Scenarios with Test Parameters", () => {
           lambda: {
             jwt: {
               claims: {
-                sub: "test-user",
+                "sub": "test-user",
                 "cognito:username": "testuser",
               },
             },
@@ -164,7 +164,7 @@ describe("System: HMRC VAT Scenarios with Test Parameters", () => {
 
     const returnResponse = await hmrcVatReturnGetHandler(returnEvent);
     expect(returnResponse.statusCode).toBe(200);
-    
+
     const returnBody = parseResponseBody(returnResponse);
     expect(returnBody).toHaveProperty("periodKey", "24A1");
     expect(returnBody).toHaveProperty("vatDueSales");
@@ -182,7 +182,7 @@ describe("System: HMRC VAT Scenarios with Test Parameters", () => {
       body: {
         vatNumber: "123456789",
         periodKey: "24A1",
-        vatDue: 2500.50,
+        vatDue: 2500.5,
         accessToken: "test-hmrc-access-token",
       },
       headers: {
@@ -193,7 +193,7 @@ describe("System: HMRC VAT Scenarios with Test Parameters", () => {
           lambda: {
             jwt: {
               claims: {
-                sub: "test-user",
+                "sub": "test-user",
                 "cognito:username": "testuser",
               },
             },
@@ -204,7 +204,7 @@ describe("System: HMRC VAT Scenarios with Test Parameters", () => {
 
     const submitResponse = await hmrcVatReturnPostHandler(submitEvent);
     expect(submitResponse.statusCode).toBe(200);
-    
+
     const submitBody = parseResponseBody(submitResponse);
     expect(submitBody).toHaveProperty("receipt");
     expect(submitBody.receipt).toHaveProperty("formBundleNumber");
@@ -240,7 +240,7 @@ describe("System: HMRC VAT Scenarios with Test Parameters", () => {
           lambda: {
             jwt: {
               claims: {
-                sub: "test-user",
+                "sub": "test-user",
                 "cognito:username": "testuser",
               },
             },
@@ -251,7 +251,7 @@ describe("System: HMRC VAT Scenarios with Test Parameters", () => {
 
     const obligationResponse = await hmrcVatObligationGetHandler(obligationEvent);
     expect(obligationResponse.statusCode).toBe(200);
-    
+
     const obligationBody = parseResponseBody(obligationResponse);
     expect(obligationBody).toHaveProperty("obligations");
     expect(Array.isArray(obligationBody.obligations)).toBe(true);
@@ -283,7 +283,7 @@ describe("System: HMRC VAT Scenarios with Test Parameters", () => {
           lambda: {
             jwt: {
               claims: {
-                sub: "test-user",
+                "sub": "test-user",
                 "cognito:username": "testuser",
               },
             },
@@ -294,7 +294,7 @@ describe("System: HMRC VAT Scenarios with Test Parameters", () => {
 
     const returnResponse = await hmrcVatReturnGetHandler(returnEvent);
     expect(returnResponse.statusCode).toBe(200);
-    
+
     const returnBody = parseResponseBody(returnResponse);
     expect(returnBody).toHaveProperty("periodKey", "24B1");
   });
@@ -333,7 +333,7 @@ describe("System: HMRC VAT Scenarios with Test Parameters", () => {
           lambda: {
             jwt: {
               claims: {
-                sub: "test-user",
+                "sub": "test-user",
                 "cognito:username": "testuser",
               },
             },
@@ -344,7 +344,7 @@ describe("System: HMRC VAT Scenarios with Test Parameters", () => {
 
     const obligationResponse = await hmrcVatObligationGetHandler(obligationEvent);
     expect(obligationResponse.statusCode).toBe(200);
-    
+
     const obligationBody = parseResponseBody(obligationResponse);
     expect(obligationBody).toHaveProperty("obligations");
     expect(obligationBody.obligations[0]).toHaveProperty("status", "F");

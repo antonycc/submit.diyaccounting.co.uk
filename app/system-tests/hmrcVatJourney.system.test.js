@@ -62,16 +62,19 @@ describe("System Journey: HMRC VAT Submission End-to-End", () => {
   beforeEach(async () => {
     vi.resetAllMocks();
     s3Mock.reset();
-    Object.assign(process.env, setupTestEnv({
-      NODE_ENV: "stubbed",
-      DIY_SUBMIT_RECEIPTS_BUCKET_NAME: "test-receipts-bucket",
-      TEST_MINIO_S3: "test",
-      TEST_S3_ENDPOINT: "http://localhost:9000",
-      TEST_S3_ACCESS_KEY: "minioadmin",
-      TEST_S3_SECRET_KEY: "minioadmin",
-      HMRC_CLIENT_SECRET: "test-client-secret",
-      HMRC_SANDBOX_CLIENT_SECRET: "test-sandbox-client-secret",
-    }));
+    Object.assign(
+      process.env,
+      setupTestEnv({
+        NODE_ENV: "stubbed",
+        DIY_SUBMIT_RECEIPTS_BUCKET_NAME: "test-receipts-bucket",
+        TEST_MINIO_S3: "test",
+        TEST_S3_ENDPOINT: "http://localhost:9000",
+        TEST_S3_ACCESS_KEY: "minioadmin",
+        TEST_S3_SECRET_KEY: "minioadmin",
+        HMRC_CLIENT_SECRET: "test-client-secret",
+        HMRC_SANDBOX_CLIENT_SECRET: "test-sandbox-client-secret",
+      }),
+    );
 
     // Grant test bundle for user
     const expiry = new Date(Date.now() + 60 * 60 * 1000).toISOString();
@@ -91,7 +94,7 @@ describe("System Journey: HMRC VAT Submission End-to-End", () => {
 
     const authUrlResponse = await hmrcAuthUrlGetHandler(authUrlEvent);
     expect(authUrlResponse.statusCode).toBe(200);
-    
+
     const authUrlBody = parseResponseBody(authUrlResponse);
     expect(authUrlBody).toHaveProperty("authUrl");
     expect(authUrlBody.authUrl).toContain("oauth/authorize");
@@ -119,7 +122,7 @@ describe("System Journey: HMRC VAT Submission End-to-End", () => {
       body: {
         vatNumber: "123456789",
         periodKey: "25A1",
-        vatDue: 1500.50,
+        vatDue: 1500.5,
         accessToken: hmrcAccessToken,
       },
       headers: {
@@ -130,7 +133,7 @@ describe("System Journey: HMRC VAT Submission End-to-End", () => {
           lambda: {
             jwt: {
               claims: {
-                sub: testUserSub,
+                "sub": testUserSub,
                 "cognito:username": "vatuser",
               },
             },
@@ -141,7 +144,7 @@ describe("System Journey: HMRC VAT Submission End-to-End", () => {
 
     const submitResponse = await hmrcVatReturnPostHandler(submitEvent);
     expect(submitResponse.statusCode).toBe(200);
-    
+
     const submitBody = parseResponseBody(submitResponse);
     expect(submitBody).toHaveProperty("receipt");
     expect(submitBody.receipt).toHaveProperty("formBundleNumber");
@@ -164,7 +167,7 @@ describe("System Journey: HMRC VAT Submission End-to-End", () => {
           lambda: {
             jwt: {
               claims: {
-                sub: testUserSub,
+                "sub": testUserSub,
                 "cognito:username": "vatuser",
               },
             },
@@ -175,7 +178,7 @@ describe("System Journey: HMRC VAT Submission End-to-End", () => {
 
     const receiptPostResponse = await hmrcReceiptPostHandler(receiptPostEvent);
     expect(receiptPostResponse.statusCode).toBe(200);
-    
+
     const receiptPostBody = parseResponseBody(receiptPostResponse);
     expect(receiptPostBody).toHaveProperty("receipt");
     expect(receiptPostBody).toHaveProperty("key");
@@ -202,7 +205,7 @@ describe("System Journey: HMRC VAT Submission End-to-End", () => {
           lambda: {
             jwt: {
               claims: {
-                sub: testUserSub,
+                "sub": testUserSub,
                 "cognito:username": "vatuser",
               },
             },
@@ -213,7 +216,7 @@ describe("System Journey: HMRC VAT Submission End-to-End", () => {
 
     const receiptGetResponse = await hmrcReceiptGetHandler(receiptGetEvent);
     expect(receiptGetResponse.statusCode).toBe(200);
-    
+
     const receiptGetBody = parseResponseBody(receiptGetResponse);
     expect(receiptGetBody).toHaveProperty("formBundleNumber", formBundleNumber);
     expect(receiptGetBody).toHaveProperty("processingDate");
@@ -267,7 +270,7 @@ describe("System Journey: HMRC VAT Submission End-to-End", () => {
           lambda: {
             jwt: {
               claims: {
-                sub: testUserSub,
+                "sub": testUserSub,
                 "cognito:username": "sandboxuser",
               },
             },
@@ -278,7 +281,7 @@ describe("System Journey: HMRC VAT Submission End-to-End", () => {
 
     const submitResponse = await hmrcVatReturnPostHandler(submitEvent);
     expect(submitResponse.statusCode).toBe(200);
-    
+
     const submitBody = parseResponseBody(submitResponse);
     expect(submitBody).toHaveProperty("receipt");
     expect(submitBody.receipt).toHaveProperty("formBundleNumber");

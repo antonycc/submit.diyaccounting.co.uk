@@ -56,11 +56,14 @@ describe("System Journey: HMRC VAT Obligation-Based Flow", () => {
 
   beforeEach(async () => {
     vi.resetAllMocks();
-    Object.assign(process.env, setupTestEnv({
-      NODE_ENV: "stubbed",
-      HMRC_CLIENT_SECRET: "test-client-secret",
-      HMRC_SANDBOX_CLIENT_SECRET: "test-sandbox-client-secret",
-    }));
+    Object.assign(
+      process.env,
+      setupTestEnv({
+        NODE_ENV: "stubbed",
+        HMRC_CLIENT_SECRET: "test-client-secret",
+        HMRC_SANDBOX_CLIENT_SECRET: "test-sandbox-client-secret",
+      }),
+    );
 
     // Grant test bundle for user
     const expiry = new Date(Date.now() + 60 * 60 * 1000).toISOString();
@@ -80,7 +83,7 @@ describe("System Journey: HMRC VAT Obligation-Based Flow", () => {
 
     const authUrlResponse = await hmrcAuthUrlGetHandler(authUrlEvent);
     expect(authUrlResponse.statusCode).toBe(200);
-    
+
     const authUrlBody = parseResponseBody(authUrlResponse);
     expect(authUrlBody).toHaveProperty("authUrl");
     expect(authUrlBody.authUrl).toContain("oauth/authorize");
@@ -139,7 +142,7 @@ describe("System Journey: HMRC VAT Obligation-Based Flow", () => {
           lambda: {
             jwt: {
               claims: {
-                sub: testUserSub,
+                "sub": testUserSub,
                 "cognito:username": "obligationuser",
               },
             },
@@ -150,14 +153,14 @@ describe("System Journey: HMRC VAT Obligation-Based Flow", () => {
 
     const obligationResponse = await hmrcVatObligationGetHandler(obligationEvent);
     expect(obligationResponse.statusCode).toBe(200);
-    
+
     const obligationBody = parseResponseBody(obligationResponse);
     expect(obligationBody).toHaveProperty("obligations");
     expect(Array.isArray(obligationBody.obligations)).toBe(true);
     expect(obligationBody.obligations.length).toBeGreaterThan(0);
 
     // Find an open obligation to submit
-    const openObligation = obligationBody.obligations.find(o => o.status === "O");
+    const openObligation = obligationBody.obligations.find((o) => o.status === "O");
     expect(openObligation).toBeDefined();
     const periodKeyToSubmit = openObligation.periodKey;
 
@@ -168,7 +171,7 @@ describe("System Journey: HMRC VAT Obligation-Based Flow", () => {
       body: {
         vatNumber: "123456789",
         periodKey: periodKeyToSubmit,
-        vatDue: 2750.00,
+        vatDue: 2750.0,
         accessToken: hmrcAccessToken,
       },
       headers: {
@@ -179,7 +182,7 @@ describe("System Journey: HMRC VAT Obligation-Based Flow", () => {
           lambda: {
             jwt: {
               claims: {
-                sub: testUserSub,
+                "sub": testUserSub,
                 "cognito:username": "obligationuser",
               },
             },
@@ -190,7 +193,7 @@ describe("System Journey: HMRC VAT Obligation-Based Flow", () => {
 
     const submitResponse = await hmrcVatReturnPostHandler(submitEvent);
     expect(submitResponse.statusCode).toBe(200);
-    
+
     const submitBody = parseResponseBody(submitResponse);
     expect(submitBody).toHaveProperty("receipt");
     expect(submitBody.receipt).toHaveProperty("formBundleNumber");
@@ -200,11 +203,11 @@ describe("System Journey: HMRC VAT Obligation-Based Flow", () => {
     process.env.TEST_VAT_RETURN = JSON.stringify({
       source: "stub",
       periodKey: periodKeyToSubmit,
-      vatDueSales: 2750.00,
+      vatDueSales: 2750.0,
       vatDueAcquisitions: 0.0,
-      totalVatDue: 2750.00,
+      totalVatDue: 2750.0,
       vatReclaimedCurrPeriod: 0.0,
-      netVatDue: 2750.00,
+      netVatDue: 2750.0,
       totalValueSalesExVAT: 15000,
       totalValuePurchasesExVAT: 500,
       totalValueGoodsSuppliedExVAT: 0,
@@ -228,7 +231,7 @@ describe("System Journey: HMRC VAT Obligation-Based Flow", () => {
           lambda: {
             jwt: {
               claims: {
-                sub: testUserSub,
+                "sub": testUserSub,
                 "cognito:username": "obligationuser",
               },
             },
@@ -239,7 +242,7 @@ describe("System Journey: HMRC VAT Obligation-Based Flow", () => {
 
     const getReturnResponse = await hmrcVatReturnGetHandler(getReturnEvent);
     expect(getReturnResponse.statusCode).toBe(200);
-    
+
     const getReturnBody = parseResponseBody(getReturnResponse);
     expect(getReturnBody).toHaveProperty("periodKey", periodKeyToSubmit);
     expect(getReturnBody).toHaveProperty("finalised", true);
@@ -298,7 +301,7 @@ describe("System Journey: HMRC VAT Obligation-Based Flow", () => {
           lambda: {
             jwt: {
               claims: {
-                sub: testUserSub,
+                "sub": testUserSub,
                 "cognito:username": "multiuser",
               },
             },
@@ -309,13 +312,13 @@ describe("System Journey: HMRC VAT Obligation-Based Flow", () => {
 
     const obligationResponse = await hmrcVatObligationGetHandler(obligationEvent);
     expect(obligationResponse.statusCode).toBe(200);
-    
+
     const obligationBody = parseResponseBody(obligationResponse);
     expect(obligationBody.obligations.length).toBe(3);
-    
+
     // Verify we have both open and fulfilled obligations
-    const openObligations = obligationBody.obligations.filter(o => o.status === "O");
-    const fulfilledObligations = obligationBody.obligations.filter(o => o.status === "F");
+    const openObligations = obligationBody.obligations.filter((o) => o.status === "O");
+    const fulfilledObligations = obligationBody.obligations.filter((o) => o.status === "F");
     expect(openObligations.length).toBe(1);
     expect(fulfilledObligations.length).toBe(2);
   });
@@ -354,7 +357,7 @@ describe("System Journey: HMRC VAT Obligation-Based Flow", () => {
           lambda: {
             jwt: {
               claims: {
-                sub: testUserSub,
+                "sub": testUserSub,
                 "cognito:username": "filteruser",
               },
             },
@@ -365,12 +368,12 @@ describe("System Journey: HMRC VAT Obligation-Based Flow", () => {
 
     const obligationResponse = await hmrcVatObligationGetHandler(obligationEvent);
     expect(obligationResponse.statusCode).toBe(200);
-    
+
     const obligationBody = parseResponseBody(obligationResponse);
     expect(obligationBody.obligations).toBeDefined();
-    
+
     // All obligations should have fulfilled status
-    obligationBody.obligations.forEach(obligation => {
+    obligationBody.obligations.forEach((obligation) => {
       expect(obligation.status).toBe("F");
     });
   });
