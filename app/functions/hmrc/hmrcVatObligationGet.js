@@ -131,6 +131,7 @@ export async function handler(event) {
   try {
     // Check if we should use stubbed data
     logger.info({ message: "Checking for stubbed VAT obligations data", testScenario });
+    // TODO: [stubs] Remove stubs from production code
     if (shouldUseStub("TEST_VAT_OBLIGATIONS")) {
       logger.info({ message: "[MOCK] Using stubbed VAT obligations data", testScenario });
       obligations = getStubData("TEST_VAT_OBLIGATIONS");

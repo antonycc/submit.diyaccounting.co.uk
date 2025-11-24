@@ -206,6 +206,7 @@ export async function handler(event) {
     // on-request: enforce cap and expiry
     const cap = Number.isFinite(catalogBundle.cap) ? Number(catalogBundle.cap) : undefined;
     if (typeof cap === "number") {
+      // TODO: [stubs] Remove stubs from production code
       const currentCount = mockBundleStore.size;
       if (currentCount >= cap) {
         logger.info({ message: "[Catalog bundle] Bundle cap reached:", requestedBundle, cap });
@@ -227,6 +228,7 @@ export async function handler(event) {
     currentBundles.push(newBundle);
     logger.info({ message: "Updated user bundles:", userId, currentBundles });
 
+    // TODO: [stubs] Remove stubs from production code
     if (isMockMode()) {
       mockBundleStore.set(userId, currentBundles);
     } else {

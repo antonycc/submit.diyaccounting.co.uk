@@ -2,6 +2,7 @@
 
 import logger from "./logger.js";
 
+// TODO: [stubs] Remove stubs from production code
 export function shouldUseStub(stubEnvVar) {
   const stubData = process.env[stubEnvVar];
   if (!stubData) {

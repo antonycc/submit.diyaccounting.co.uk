@@ -267,6 +267,7 @@ export async function performTokenExchange(providerUrl, body, auditForUserSub) {
     headers: { ...requestHeaders },
     body: requestBody,
   };
+  // TODO: [stubs] Remove stubs from production code
   if (process.env.NODE_ENV === "stubbed") {
     logger.warn({ message: "httpPostMock called in stubbed mode, using test access token" });
     const testAccessToken = process.env.TEST_ACCESS_TOKEN;

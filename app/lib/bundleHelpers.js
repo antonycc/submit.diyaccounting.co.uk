@@ -6,6 +6,7 @@ import * as dynamoDbBundleStore from "./dynamoDbBundleStore.js";
 
 const mockBundleStore = getBundlesStore();
 
+// TODO: [stubs] Remove stubs from production code
 export function isMockMode() {
   return String(process.env.TEST_BUNDLE_MOCK || "").toLowerCase() === "true" || process.env.TEST_BUNDLE_MOCK === "1";
 }
