@@ -17,7 +17,7 @@ Table of Contents
 TL;DR
 - What: Static web app fronted by CloudFront; Lambda functions for auth/token exchange, VAT submission, logging receipts, and bundle entitlement.
 - Try it locally: ngrok + mock OAuth2 + DynamoDb for receipts.
-- Deploy: Java CDK synthesizes and deploys CloudFront, S3, Cognito (with Google), Lambda URLs, Route53/ACM, and Secrets Manager.
+- Deploy: Java CDK synthesizes and deploys CloudFront, S3, DynamoDB, Cognito (with Google), Lambda URLs, Route53/ACM, and Secrets Manager.
 
 Quickstart (Local)
 
@@ -101,7 +101,7 @@ Key environment variables (selected)
 - HMRC: HMRC_CLIENT_ID, HMRC_CLIENT_SECRET, HMRC_BASE_URI, DIY_SUBMIT_BASE_URL
 - Cognito/Google: COGNITO_CLIENT_ID, COGNITO_BASE_URI, DIY_SUBMIT_GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
 - Bundles: TEST_BUNDLE_EXPIRY_DATE, TEST_BUNDLE_USER_LIMIT, TEST_BUNDLE_MOCK, COGNITO_USER_POOL_ID, AWS_REGION
-- Local S3: TEST_S3_ENDPOINT, TEST_S3_ACCESS_KEY, TEST_S3_SECRET_KEY, DIY_SUBMIT_RECEIPTS_BUCKET_NAME
+- Local DynamoDB: RECEIPTS_DYNAMODB_TABLE_NAME
 See infra/main/java/co/uk/diyaccounting/submit/SubmitApplication.java for the full set mapped into the CDK stack.
 
 API Reference

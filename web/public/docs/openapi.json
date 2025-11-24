@@ -71,7 +71,7 @@
           "name" : "key",
           "in" : "query",
           "required" : false,
-          "description" : "Full S3 object key under receipts/{sub}/",
+          "description" : "Full DynamoDB Item key",
           "schema" : {
             "type" : "string",
             "example" : "receipts/00000000-0000-0000-0000-000000000000/2025-03-31-123456789012.json"
