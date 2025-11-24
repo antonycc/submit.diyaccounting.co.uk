@@ -9,7 +9,8 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 
 let stopDynalite;
 // @ts-check
-/** @type {import("../lib/dynamoDbBundleStore.js")} */
+/** @typedef {typeof import("../lib/dynamoDbBundleStore.js")} DynamoStore */
+/** @type {DynamoStore} */
 let store;
 const tableName = "bundles-system-test";
 
