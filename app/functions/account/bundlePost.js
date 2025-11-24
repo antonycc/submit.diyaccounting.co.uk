@@ -6,9 +6,8 @@ import logger from "../../lib/logger.js";
 import { extractRequest, http200OkResponse, parseRequestBody } from "../../lib/responses.js";
 import { decodeJwtToken } from "../../lib/jwtHelper.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
-import { getUserBundles, updateUserBundles, isMockMode } from "../../lib/bundleHelpers.js";
 import { getBundlesStore } from "../non-lambda-mocks/mockBundleStore.js";
-import { enforceBundles } from "../../lib/bundleEnforcement.js";
+import { enforceBundles, getUserBundles, isMockMode, updateUserBundles } from "../../lib/bundleManagement.js";
 import { http403ForbiddenFromBundleEnforcement } from "../../lib/hmrcHelper.js";
 
 const mockBundleStore = getBundlesStore();
@@ -94,7 +93,7 @@ export async function handler(event) {
   }
 
   // If HEAD request, return 200 OK immediately after bundle enforcement
-  if (request.method === "HEAD") {
+  if (event?.requestContext?.http?.method === "HEAD") {
     return http200OkResponse({
       request,
       headers: { "Content-Type": "application/json" },
@@ -206,6 +205,7 @@ export async function handler(event) {
     // on-request: enforce cap and expiry
     const cap = Number.isFinite(catalogBundle.cap) ? Number(catalogBundle.cap) : undefined;
     if (typeof cap === "number") {
+      // TODO: [stubs] Remove stubs from production code
       const currentCount = mockBundleStore.size;
       if (currentCount >= cap) {
         logger.info({ message: "[Catalog bundle] Bundle cap reached:", requestedBundle, cap });
@@ -227,6 +227,7 @@ export async function handler(event) {
     currentBundles.push(newBundle);
     logger.info({ message: "Updated user bundles:", userId, currentBundles });
 
+    // TODO: [stubs] Remove stubs from production code
     if (isMockMode()) {
       mockBundleStore.set(userId, currentBundles);
     } else {

@@ -111,23 +111,23 @@ public class DataStack extends Stack {
 
         // Create DynamoDB table for HMRC API requests storage
         this.hmrcApiRequestsTable = Table.Builder.create(this, props.resourceNamePrefix() + "-HmrcApiRequestsTable")
-            .tableName(props.sharedNames().hmrcApiRequestsTableName)
-            .partitionKey(Attribute.builder()
-                .name("hashedSub")
-                .type(AttributeType.STRING)
-                .build())
-            .sortKey(Attribute.builder()
-                .name("requestId")
-                .type(AttributeType.STRING)
-                .build())
-            .billingMode(BillingMode.PAY_PER_REQUEST) // Serverless, near-zero cost at rest
-            .timeToLiveAttribute("ttl") // Enable TTL for automatic expiry handling
-            .removalPolicy(RemovalPolicy.DESTROY) // Safe to destroy in non-prod
-            .build();
+                .tableName(props.sharedNames().hmrcApiRequestsTableName)
+                .partitionKey(Attribute.builder()
+                        .name("hashedSub")
+                        .type(AttributeType.STRING)
+                        .build())
+                .sortKey(Attribute.builder()
+                        .name("requestId")
+                        .type(AttributeType.STRING)
+                        .build())
+                .billingMode(BillingMode.PAY_PER_REQUEST) // Serverless, near-zero cost at rest
+                .timeToLiveAttribute("ttl") // Enable TTL for automatic expiry handling
+                .removalPolicy(RemovalPolicy.DESTROY) // Safe to destroy in non-prod
+                .build();
         infof(
-            "Created HMRC API Requests DynamoDB table with name %s and id %s",
-            this.bundlesTable.getTableName(), this.hmrcApiRequestsTable.getNode().getId());
-
+                "Created HMRC API Requests DynamoDB table with name %s and id %s",
+                this.hmrcApiRequestsTable.getTableName(),
+                this.hmrcApiRequestsTable.getNode().getId());
 
         Aspects.of(this).add(new SetAutoDeleteJobLogRetentionAspect(props.deploymentName(), RetentionDays.THREE_DAYS));
 

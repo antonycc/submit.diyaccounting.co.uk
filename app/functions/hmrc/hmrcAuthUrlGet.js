@@ -44,7 +44,7 @@ export async function handler(event) {
   const errorMessages = [];
 
   // If HEAD request, return 200 OK immediately
-  if (request.method === "HEAD") {
+  if (event?.requestContext?.http?.method === "HEAD") {
     return http200OkResponse({
       request,
       headers: { "Content-Type": "application/json" },

@@ -4,7 +4,7 @@ import { loadCatalogFromRoot } from "../../lib/productCatalogHelper.js";
 import { extractRequest, http200OkResponse, http500ServerErrorResponse } from "../../lib/responses.js";
 import logger from "../../lib/logger.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
-import { enforceBundles } from "../../lib/bundleEnforcement.js";
+import { enforceBundles } from "../../lib/bundleManagement.js";
 import { http403ForbiddenFromBundleEnforcement } from "../../lib/hmrcHelper.js";
 
 let cached = null; // { json, etag, lastModified, object, validated }
@@ -26,7 +26,7 @@ export async function handler(event) {
   // No bundle enforcement
 
   // If HEAD request, return 200 OK immediately
-  if (request.method === "HEAD") {
+  if (event?.requestContext?.http?.method === "HEAD") {
     return http200OkResponse({
       request,
       headers: { "Content-Type": "application/json" },

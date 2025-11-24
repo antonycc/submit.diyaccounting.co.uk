@@ -12,7 +12,7 @@ import {
 } from "../../lib/responses.js";
 import { validateEnv } from "../../lib/env.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
-import { enforceBundles } from "../../lib/bundleEnforcement.js";
+import { enforceBundles } from "../../lib/bundleManagement.js";
 import { http403ForbiddenFromBundleEnforcement } from "../../lib/hmrcHelper.js";
 
 const secretsClient = new SecretsManagerClient();
@@ -72,7 +72,7 @@ export async function handler(event) {
   // }
 
   // If HEAD request, return 200 OK immediately
-  if (request.method === "HEAD") {
+  if (event?.requestContext?.http?.method === "HEAD") {
     return http200OkResponse({
       request,
       headers: { "Content-Type": "application/json" },

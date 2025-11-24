@@ -25,7 +25,7 @@ import {
   http500ServerErrorFromHmrcResponse,
   http403ForbiddenFromBundleEnforcement,
 } from "../../lib/hmrcHelper.js";
-import { enforceBundles } from "../../lib/bundleEnforcement.js";
+import { enforceBundles } from "../../lib/bundleManagement.js";
 
 // Server hook for Express app, and construction of a Lambda-like event from HTTP request)
 export function apiEndpoint(app) {
@@ -84,7 +84,7 @@ export async function handler(event) {
   }
 
   // If HEAD request, return 200 OK immediately after bundle enforcement
-  if (request.method === "HEAD") {
+  if (event?.requestContext?.http?.method === "HEAD") {
     return http200OkResponse({
       request,
       headers: { "Content-Type": "application/json" },
@@ -131,6 +131,7 @@ export async function handler(event) {
   try {
     // Check if we should use stubbed data
     logger.info({ message: "Checking for stubbed VAT obligations data", testScenario });
+    // TODO: [stubs] Remove stubs from production code
     if (shouldUseStub("TEST_VAT_OBLIGATIONS")) {
       logger.info({ message: "[MOCK] Using stubbed VAT obligations data", testScenario });
       obligations = getStubData("TEST_VAT_OBLIGATIONS");

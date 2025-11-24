@@ -15,7 +15,7 @@ import { streamToString } from "../../lib/streams.js";
 import { validateEnv } from "../../lib/env.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
 import { getUserSub } from "../../lib/jwtHelper.js";
-import { enforceBundles } from "../../lib/bundleEnforcement.js";
+import { enforceBundles } from "../../lib/bundleManagement.js";
 import { http403ForbiddenFromBundleEnforcement } from "../../lib/hmrcHelper.js";
 
 function parseReceiptKey(key) {
@@ -103,7 +103,7 @@ export async function handler(event) {
   }
 
   // If HEAD request, return 200 OK immediately after bundle enforcement
-  if (request.method === "HEAD") {
+  if (event?.requestContext?.http?.method === "HEAD") {
     return http200OkResponse({
       request,
       headers: { "Content-Type": "application/json" },

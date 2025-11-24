@@ -12,7 +12,7 @@ import {
 import eventToGovClientHeaders from "../../lib/eventToGovClientHeaders.js";
 import { validateEnv } from "../../lib/env.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest, logHmrcRequestDetails } from "../../lib/httpHelper.js";
-import { enforceBundles } from "../../lib/bundleEnforcement.js";
+import { enforceBundles } from "../../lib/bundleManagement.js";
 import {
   UnauthorizedTokenError,
   validateHmrcAccessToken,
@@ -80,7 +80,7 @@ export async function handler(event) {
   }
 
   // If HEAD request, return 200 OK immediately after bundle enforcement
-  if (request.method === "HEAD") {
+  if (event?.requestContext?.http?.method === "HEAD") {
     return http200OkResponse({
       request,
       headers: { "Content-Type": "application/json" },
@@ -194,6 +194,7 @@ export async function submitVat(periodKey, vatDue, vatNumber, hmrcAccount, hmrcA
   const hmrcBase = hmrcAccount === "sandbox" ? process.env.HMRC_SANDBOX_BASE_URI : process.env.HMRC_BASE_URI;
   const hmrcRequestUrl = `${hmrcBase}/organisations/vat/${vatNumber}/returns`;
   logHmrcRequestDetails(hmrcRequestUrl, hmrcRequestHeaders, govClientHeaders, hmrcRequestBody);
+  // TODO: [stubs] Remove stubs from production code
   if (process.env.NODE_ENV === "stubbed") {
     hmrcResponse = {
       ok: true,

@@ -1,8 +1,12 @@
 package co.uk.diyaccounting.submit.stacks;
 
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
 import co.uk.diyaccounting.submit.constructs.ApiLambdaProps;
+import java.util.List;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Aspects;
 import software.amazon.awscdk.CfnOutput;
@@ -36,11 +40,6 @@ import software.amazon.awscdk.services.logs.ILogGroup;
 import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.constructs.Construct;
-
-import java.util.List;
-
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 public class ApiStack extends Stack {
 
@@ -454,7 +453,9 @@ public class ApiStack extends Stack {
                             .build();
                 }
 
-                infof("Created route HEAD %s for function %s (via auto-HEAD)", apiLambdaProps.urlPath(), fn.getFunctionName());
+                infof(
+                        "Created route HEAD %s for function %s (via auto-HEAD)",
+                        apiLambdaProps.urlPath(), fn.getFunctionName());
             }
         }
     }

@@ -29,7 +29,7 @@
     "update-to-greatest": "npx npm-check-updates --upgrade --enginesNode --target greatest --verbose --install always --reject 'alpha'",
     "convert:video": "node scripts/convert-video.js",
     "convert:video:default": "node scripts/convert-video.js --in target/behaviour-test-results/video.webm --out target/behaviour-test-results/video.mp4",
-    "test": "vitest --run app/unit-tests/*.test.js web/unit-tests/*.test.js app/integration-tests/*.test.js",
+    "test": "vitest --run app/unit-tests/*.test.js web/unit-tests/*.test.js app/integration-tests/*.test.js app/system-tests/*.test.js",
     "everything": "time sh -c 'rm -rf package-lock.json node_modules target && ./mvnw clean && npm install && npm test && npm run docker:build && ./mvnw test && npm run test:all && npm run build && npm run cdk-ci && npm run cdk && git restore web/public/submit.deployment web/public/submit.env || true && ./mvnw clean compile && npm ci && npm test'",
     "test:all": "vitest --run app/unit-tests/*.test.js app/integration-tests/*.test.js app/system-tests/*.test.js web/unit-tests/*.test.js && npm run test:browser && npm run test:behaviour && git restore web/public/submit.deployment web/public/submit.env || true",
     "test:app-unit": "vitest --run app/unit-tests/*.test.js",
@@ -58,6 +58,7 @@
     "proxy": "npx dotenv -e .env.proxy -- npx ngrok http --pooling-enabled --url wanted-finally-anteater.ngrok-free.app",
     "auth": "npx dotenv -e .env.proxy -- docker run -p 8080:8080 -e JSON_CONFIG_PATH=/config/mock-oauth2-config.json -e LOG_LEVEL=DEBUG -v $(pwd)/mock-oauth2-config.json:/config/mock-oauth2-config.json:ro ghcr.io/navikt/mock-oauth2-server:2.2.1",
     "storage": "npx dotenv -e .env.proxy -- node app/bin/minio.js",
+    "data": "npx dotenv -e .env.proxy -- node app/bin/dynamodb.js",
     "cloudfront:set-origins": "node ./app/actions/set-apex-origins.mjs",
     "set-apex-origins": "node ./app/actions/set-apex-origins.mjs"
   },
@@ -76,7 +77,7 @@
   },
   "devDependencies": {
     "@aws-sdk/client-cloudfront": "^3.931.0",
-    "@aws-sdk/client-dynamodb": "^3.931.0",
+    "@aws-sdk/client-dynamodb": "^3.936.0",
     "@aws-sdk/lib-dynamodb": "^3.931.0",
     "@microsoft/eslint-formatter-sarif": "^3.1.0",
     "@ngrok/ngrok": "^1.5.2",
@@ -86,6 +87,7 @@
     "aws-sdk-client-mock": "^4.1.0",
     "bcryptjs": "^3.0.3",
     "dotenv-cli": "^11.0.0",
+    "dynalite": "^3.2.2",
     "eslint": "^9.39.1",
     "eslint-config-google": "^0.14.0",
     "eslint-config-prettier": "^10.1.8",

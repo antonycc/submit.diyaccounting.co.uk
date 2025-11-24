@@ -2,7 +2,7 @@
 
 import { v4 as uuidv4 } from "uuid";
 import logger, { context } from "./logger.js";
-import { BundleEntitlementError } from "./bundleEnforcement.js";
+import { BundleEntitlementError } from "./bundleManagement.js";
 import { http400BadRequestResponse, http500ServerErrorResponse, http403ForbiddenResponse } from "./responses.js";
 import { putHmrcApiRequest } from "./dynamoDbHmrcApiRequestStore.js";
 
@@ -171,9 +171,21 @@ export async function hmrcHttpPost(hmrcRequestUrl, hmrcRequestHeaders, govClient
   }
   const hmrcResponseBody = await hmrcResponse.json();
 
+  // Normalise response headers to a plain object (Headers is not marshallable)
+  let responseHeadersObj = {};
+  try {
+    if (hmrcResponse && typeof hmrcResponse.headers?.forEach === "function") {
+      hmrcResponse.headers.forEach((value, key) => {
+        responseHeadersObj[key] = value;
+      });
+    } else if (hmrcResponse?.headers && typeof hmrcResponse.headers === "object") {
+      responseHeadersObj = { ...hmrcResponse.headers };
+    }
+  } catch {}
+
   const httpResponse = {
     statusCode: hmrcResponse.status,
-    headers: hmrcResponse.headers ?? {},
+    headers: responseHeadersObj,
     body: hmrcResponseBody,
   };
   const userSubOrUuid = auditForUserSub || `unknown-user-${uuidv4()}`;
