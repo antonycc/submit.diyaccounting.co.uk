@@ -1,0 +1,352 @@
+// app/system-tests/hmrcVatScenarios.system.test.js
+
+import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from "vitest";
+import { dotenvConfigIfNotBlank } from "../lib/env.js";
+import { handler as hmrcVatReturnGetHandler } from "../functions/hmrc/hmrcVatReturnGet.js";
+import { handler as hmrcVatReturnPostHandler } from "../functions/hmrc/hmrcVatReturnPost.js";
+import { handler as hmrcVatObligationGetHandler } from "../functions/hmrc/hmrcVatObligationGet.js";
+import { buildLambdaEvent, buildGovClientHeaders } from "../test-helpers/eventBuilders.js";
+import { setupTestEnv, parseResponseBody } from "../test-helpers/mockHelpers.js";
+
+dotenvConfigIfNotBlank({ path: ".env.test" });
+
+let stopDynalite;
+let bm;
+
+describe("System: HMRC VAT Scenarios with Test Parameters", () => {
+  beforeAll(async () => {
+    const { ensureBundleTableExists } = await import("../bin/dynamodb.js");
+    const { default: dynalite } = await import("dynalite");
+
+    const host = "127.0.0.1";
+    const port = 8003;
+    const tableName = "bundles-system-test-hmrc-vat";
+    const server = dynalite({ createTableMs: 0 });
+    await new Promise((resolve, reject) => {
+      server.listen(port, host, (err) => (err ? reject(err) : resolve(null)));
+    });
+    stopDynalite = async () => {
+      try {
+        server.close();
+      } catch {}
+    };
+    const endpoint = `http://${host}:${port}`;
+
+    process.env.AWS_REGION = process.env.AWS_REGION || "us-east-1";
+    process.env.AWS_ACCESS_KEY_ID = process.env.AWS_ACCESS_KEY_ID || "dummy";
+    process.env.AWS_SECRET_ACCESS_KEY = process.env.AWS_SECRET_ACCESS_KEY || "dummy";
+    process.env.AWS_ENDPOINT_URL = endpoint;
+    process.env.AWS_ENDPOINT_URL_DYNAMODB = endpoint;
+    process.env.BUNDLE_DYNAMODB_TABLE_NAME = tableName;
+
+    await ensureBundleTableExists(tableName, endpoint);
+
+    bm = await import("../lib/bundleManagement.js");
+  });
+
+  afterAll(async () => {
+    try {
+      await stopDynalite?.();
+    } catch {}
+  });
+
+  beforeEach(async () => {
+    vi.resetAllMocks();
+    Object.assign(process.env, setupTestEnv());
+
+    // Grant test bundle for all tests
+    const testUserSub = "test-user";
+    const expiry = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+    await bm.updateUserBundles(testUserSub, [{ bundleId: "guest", expiry }]);
+  });
+
+  it("should retrieve VAT obligations with QUARTERLY_NONE_MET scenario", async () => {
+    // Set up stub data for obligations
+    process.env.TEST_VAT_OBLIGATIONS = JSON.stringify({
+      source: "stub",
+      obligations: [
+        {
+          start: "2024-01-01",
+          end: "2024-03-31",
+          due: "2024-05-07",
+          status: "O",
+          periodKey: "24A1",
+        },
+        {
+          start: "2024-04-01",
+          end: "2024-06-30",
+          due: "2024-08-07",
+          status: "O",
+          periodKey: "24A2",
+        },
+      ],
+    });
+
+    const obligationEvent = buildLambdaEvent({
+      method: "GET",
+      path: "/api/v1/hmrc/vat/obligation",
+      queryStringParameters: {
+        vrn: "123456789",
+        from: "2024-01-01",
+        to: "2024-12-31",
+        "Gov-Test-Scenario": "QUARTERLY_NONE_MET",
+      },
+      headers: {
+        ...buildGovClientHeaders(),
+        authorization: "Bearer test-hmrc-access-token",
+      },
+      authorizer: {
+        authorizer: {
+          lambda: {
+            jwt: {
+              claims: {
+                sub: "test-user",
+                "cognito:username": "testuser",
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const obligationResponse = await hmrcVatObligationGetHandler(obligationEvent);
+    expect(obligationResponse.statusCode).toBe(200);
+    
+    const obligationBody = parseResponseBody(obligationResponse);
+    expect(obligationBody).toHaveProperty("obligations");
+    expect(Array.isArray(obligationBody.obligations)).toBe(true);
+    expect(obligationBody.obligations.length).toBeGreaterThan(0);
+    expect(obligationBody.obligations[0]).toHaveProperty("periodKey");
+  });
+
+  it("should retrieve VAT return with QUARTERLY_ONE_MET scenario", async () => {
+    // Set up stub data for VAT return
+    process.env.TEST_VAT_RETURN = JSON.stringify({
+      source: "stub",
+      periodKey: "24A1",
+      vatDueSales: 1500.75,
+      vatDueAcquisitions: 0.0,
+      totalVatDue: 1500.75,
+      vatReclaimedCurrPeriod: 100.5,
+      netVatDue: 1400.25,
+      totalValueSalesExVAT: 10000,
+      totalValuePurchasesExVAT: 1000,
+      totalValueGoodsSuppliedExVAT: 0,
+      totalAcquisitionsExVAT: 0,
+      finalised: true,
+    });
+
+    const returnEvent = buildLambdaEvent({
+      method: "GET",
+      path: "/api/v1/hmrc/vat/return/24A1",
+      pathParameters: { periodKey: "24A1" },
+      queryStringParameters: {
+        vrn: "123456789",
+        "Gov-Test-Scenario": "QUARTERLY_ONE_MET",
+      },
+      headers: {
+        ...buildGovClientHeaders(),
+        authorization: "Bearer test-hmrc-access-token",
+      },
+      authorizer: {
+        authorizer: {
+          lambda: {
+            jwt: {
+              claims: {
+                sub: "test-user",
+                "cognito:username": "testuser",
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const returnResponse = await hmrcVatReturnGetHandler(returnEvent);
+    expect(returnResponse.statusCode).toBe(200);
+    
+    const returnBody = parseResponseBody(returnResponse);
+    expect(returnBody).toHaveProperty("periodKey", "24A1");
+    expect(returnBody).toHaveProperty("vatDueSales");
+    expect(returnBody).toHaveProperty("totalVatDue");
+    expect(returnBody).toHaveProperty("finalised", true);
+  });
+
+  it("should submit VAT return with QUARTERLY_TWO_MET scenario", async () => {
+    // Set up stubbed mode for submission
+    process.env.NODE_ENV = "stubbed";
+
+    const submitEvent = buildLambdaEvent({
+      method: "POST",
+      path: "/api/v1/hmrc/vat/return",
+      body: {
+        vatNumber: "123456789",
+        periodKey: "24A1",
+        vatDue: 2500.50,
+        accessToken: "test-hmrc-access-token",
+      },
+      headers: {
+        ...buildGovClientHeaders(),
+      },
+      authorizer: {
+        authorizer: {
+          lambda: {
+            jwt: {
+              claims: {
+                sub: "test-user",
+                "cognito:username": "testuser",
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const submitResponse = await hmrcVatReturnPostHandler(submitEvent);
+    expect(submitResponse.statusCode).toBe(200);
+    
+    const submitBody = parseResponseBody(submitResponse);
+    expect(submitBody).toHaveProperty("receipt");
+    expect(submitBody.receipt).toHaveProperty("formBundleNumber");
+  });
+
+  it("should retrieve obligations with default date range when dates not provided", async () => {
+    // Set up stub data
+    process.env.TEST_VAT_OBLIGATIONS = JSON.stringify({
+      source: "stub",
+      obligations: [
+        {
+          start: "2025-01-01",
+          end: "2025-03-31",
+          due: "2025-05-07",
+          status: "O",
+          periodKey: "25A1",
+        },
+      ],
+    });
+
+    const obligationEvent = buildLambdaEvent({
+      method: "GET",
+      path: "/api/v1/hmrc/vat/obligation",
+      queryStringParameters: {
+        vrn: "123456789",
+      },
+      headers: {
+        ...buildGovClientHeaders(),
+        authorization: "Bearer test-hmrc-access-token",
+      },
+      authorizer: {
+        authorizer: {
+          lambda: {
+            jwt: {
+              claims: {
+                sub: "test-user",
+                "cognito:username": "testuser",
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const obligationResponse = await hmrcVatObligationGetHandler(obligationEvent);
+    expect(obligationResponse.statusCode).toBe(200);
+    
+    const obligationBody = parseResponseBody(obligationResponse);
+    expect(obligationBody).toHaveProperty("obligations");
+    expect(Array.isArray(obligationBody.obligations)).toBe(true);
+  });
+
+  it("should handle different test scenarios without Gov-Test-Scenario header", async () => {
+    // Set up stub data
+    process.env.TEST_VAT_RETURN = JSON.stringify({
+      source: "stub",
+      periodKey: "24B1",
+      vatDueSales: 500.0,
+      totalVatDue: 500.0,
+      finalised: true,
+    });
+
+    const returnEvent = buildLambdaEvent({
+      method: "GET",
+      path: "/api/v1/hmrc/vat/return/24B1",
+      pathParameters: { periodKey: "24B1" },
+      queryStringParameters: {
+        vrn: "987654321",
+      },
+      headers: {
+        ...buildGovClientHeaders(),
+        authorization: "Bearer test-hmrc-access-token",
+      },
+      authorizer: {
+        authorizer: {
+          lambda: {
+            jwt: {
+              claims: {
+                sub: "test-user",
+                "cognito:username": "testuser",
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const returnResponse = await hmrcVatReturnGetHandler(returnEvent);
+    expect(returnResponse.statusCode).toBe(200);
+    
+    const returnBody = parseResponseBody(returnResponse);
+    expect(returnBody).toHaveProperty("periodKey", "24B1");
+  });
+
+  it("should retrieve fulfilled obligations with status filter", async () => {
+    // Set up stub data with fulfilled obligations
+    process.env.TEST_VAT_OBLIGATIONS = JSON.stringify({
+      source: "stub",
+      obligations: [
+        {
+          start: "2024-01-01",
+          end: "2024-03-31",
+          due: "2024-05-07",
+          status: "F",
+          periodKey: "24A1",
+          received: "2024-05-05",
+        },
+      ],
+    });
+
+    const obligationEvent = buildLambdaEvent({
+      method: "GET",
+      path: "/api/v1/hmrc/vat/obligation",
+      queryStringParameters: {
+        vrn: "123456789",
+        from: "2024-01-01",
+        to: "2024-12-31",
+        status: "F",
+      },
+      headers: {
+        ...buildGovClientHeaders(),
+        authorization: "Bearer test-hmrc-access-token",
+      },
+      authorizer: {
+        authorizer: {
+          lambda: {
+            jwt: {
+              claims: {
+                sub: "test-user",
+                "cognito:username": "testuser",
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const obligationResponse = await hmrcVatObligationGetHandler(obligationEvent);
+    expect(obligationResponse.statusCode).toBe(200);
+    
+    const obligationBody = parseResponseBody(obligationResponse);
+    expect(obligationBody).toHaveProperty("obligations");
+    expect(obligationBody.obligations[0]).toHaveProperty("status", "F");
+  });
+});
