@@ -25,7 +25,7 @@ import {
   http500ServerErrorFromHmrcResponse,
   http403ForbiddenFromBundleEnforcement,
 } from "../../lib/hmrcHelper.js";
-import { enforceBundles } from "../../lib/bundleEnforcement.js";
+import { enforceBundles } from "../../lib/bundleManagement.js";
 
 // Server hook for Express app, and construction of a Lambda-like event from HTTP request)
 export function apiEndpoint(app) {

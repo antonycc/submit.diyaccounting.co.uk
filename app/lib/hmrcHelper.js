@@ -2,7 +2,7 @@
 
 import { v4 as uuidv4 } from "uuid";
 import logger, { context } from "./logger.js";
-import { BundleEntitlementError } from "./bundleEnforcement.js";
+import { BundleEntitlementError } from "./bundleManagement.js";
 import { http400BadRequestResponse, http500ServerErrorResponse, http403ForbiddenResponse } from "./responses.js";
 import { putHmrcApiRequest } from "./dynamoDbHmrcApiRequestStore.js";
 

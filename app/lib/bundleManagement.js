@@ -1,9 +1,17 @@
 // app/lib/bundleEnforcement.js
 
 import logger from "./logger.js";
-import { extractUserFromAuthorizerContext, extractRequest } from "./responses.js";
-import { getUserBundles, updateUserBundles } from "./bundleHelpers.js";
+import { extractRequest, extractUserFromAuthorizerContext } from "./responses.js";
 import { loadCatalogFromRoot } from "./productCatalogHelper.js";
+import { getBundlesStore } from "@app/functions/non-lambda-mocks/mockBundleStore.js";
+import * as dynamoDbBundleStore from "@app/lib/dynamoDbBundleStore.js";
+
+const mockBundleStore = getBundlesStore();
+
+// TODO: [stubs] Remove stubs from production code
+export function isMockMode() {
+  return String(process.env.TEST_BUNDLE_MOCK || "").toLowerCase() === "true" || process.env.TEST_BUNDLE_MOCK === "1";
+}
 
 export class BundleAuthorizationError extends Error {
   constructor(message, details) {
@@ -21,31 +29,62 @@ export class BundleEntitlementError extends Error {
   }
 }
 
-function extractUserInfo(event) {
-  logger.info({ message: "Extracting user information from event" });
-
-  // Try to get user from authorizer context
-  const userInfo = extractUserFromAuthorizerContext(event);
-  if (!userInfo) {
-    logger.warn({ message: "No authorization token found in event" });
-    throw new BundleAuthorizationError("Missing Authorization Bearer token", {
-      code: "MISSING_AUTH_TOKEN",
-    });
-  } else if (!userInfo?.sub) {
-    logger.warn({ message: "Invalid authorization token - missing sub claim" });
-    throw new BundleAuthorizationError("Invalid Authorization token", {
-      code: "INVALID_AUTH_TOKEN",
-    });
-  } else {
-    const userSub = userInfo.sub;
-    logger.info({
-      message: "User info extracted from authorizer context",
-      sub: userSub,
-      username: userInfo.username,
-      claims: Object.keys(userInfo),
-    });
-    return userSub;
+export async function getUserBundles(userId) {
+  // TODO: Remove this mock mode stuff and move the mockery into tests
+  if (isMockMode()) {
+    const bundles = mockBundleStore.get(userId) || [];
+    logger.info({ message: "[MOCK] Current user bundles:", bundles });
+    return bundles;
   }
+
+  // Use DynamoDB as primary source
+  const bundles = await dynamoDbBundleStore.getUserBundles(userId);
+  logger.info({ message: "Current user bundles from DynamoDB:", bundles });
+  return bundles;
+}
+
+export async function updateUserBundles(userId, bundles) {
+  logger.info({ message: `Updating bundles for user ${userId} with ${bundles.length}`, bundles });
+
+  // TODO: Remove this mock mode stuff and move the mockery into tests
+  // This is actually avoided in app/functions/account/bundlePost.js anyway so should be fine to remove
+  if (isMockMode()) {
+    mockBundleStore.set(userId, bundles);
+    logger.info({ message: `[MOCK] Updated bundles for user ${userId}`, bundles });
+    return;
+  }
+
+  // Update DynamoDB - this requires removing old bundles and adding new ones
+  // Get current bundles to determine what to remove
+  const currentBundles = await dynamoDbBundleStore.getUserBundles(userId);
+
+  logger.info({ message: `Current bundles for user ${userId} in DynamoDB count: ${currentBundles.length}`, currentBundles });
+
+  // Parse bundle IDs from current bundles
+  const currentBundleIds = new Set(currentBundles.map((b) => b.bundleId));
+  logger.info({ message: `Current bundle IDs for user ${userId} in DynamoDB count: ${currentBundleIds.length}`, currentBundleIds });
+
+  // Parse bundle IDs from new bundles
+  const newBundleIds = new Set(bundles.map((b) => b.bundleId));
+  logger.info({ message: `New bundle IDs for user ${userId} count: ${newBundleIds.length}`, newBundleIds });
+
+  // Remove bundles that are no longer in the new list
+  const bundlesToRemove = [...currentBundleIds].filter((id) => !newBundleIds.has(id));
+  logger.info({ message: `Bundles to remove for user ${userId} in DynamoDB`, bundlesToRemove });
+  for (const bundleId of bundlesToRemove) {
+    await dynamoDbBundleStore.deleteBundle(userId, bundleId);
+  }
+
+  // Add new bundles
+  for (const bundle of bundles) {
+    logger.info({ message: `Checking if bundle ${bundle.bundleId} needs adding for user ${userId} in DynamoDB`, bundle });
+    if (bundle.bundleId && !currentBundleIds.has(bundle.bundleId)) {
+      logger.info({ message: `Adding new bundle ${bundle.bundleId} for user ${userId} in DynamoDB`, bundle });
+      await dynamoDbBundleStore.putBundle(userId, bundle);
+    }
+  }
+
+  logger.info({ message: `Updated bundles for user ${userId} in DynamoDB`, bundles });
 }
 
 async function getUserBundlesFromStorage(userSub) {
@@ -53,6 +92,52 @@ async function getUserBundlesFromStorage(userSub) {
   const bundles = await getUserBundles(userSub);
   logger.info({ message: "User bundles retrieved", userSub, bundles, bundleCount: bundles.length });
   return bundles;
+}
+
+export async function addBundles(userId, bundlesToAdd) {
+  logger.info({ message: "addBundles called", userId, bundlesToAdd });
+
+  const currentBundles = await getUserBundles(userId);
+  const newBundles = [...currentBundles];
+
+  for (const bundle of bundlesToAdd) {
+    if (!newBundles.some((b) => b.startsWith(bundle) || b === bundle)) {
+      newBundles.push(bundle);
+    }
+  }
+
+  await updateUserBundles(userId, newBundles);
+
+  logger.info({
+    message: "Bundles added successfully",
+    userId,
+    addedBundles: bundlesToAdd,
+    previousCount: currentBundles.length,
+    newCount: newBundles.length,
+  });
+
+  return newBundles;
+}
+
+export async function removeBundles(userId, bundlesToRemove) {
+  logger.info({ message: "removeBundles called", userId, bundlesToRemove });
+
+  const currentBundles = await getUserBundles(userId);
+  const newBundles = currentBundles.filter((bundle) => {
+    return !bundlesToRemove.some((toRemove) => bundle === toRemove || bundle.startsWith(`${toRemove}|`));
+  });
+
+  await updateUserBundles(userId, newBundles);
+
+  logger.info({
+    message: "Bundles removed successfully",
+    userId,
+    removedBundles: bundlesToRemove,
+    previousCount: currentBundles.length,
+    newCount: newBundles.length,
+  });
+
+  return newBundles;
 }
 
 export async function enforceBundles(event, options = {}) {
@@ -108,6 +193,33 @@ export async function enforceBundles(event, options = {}) {
   });
 
   return userSub;
+}
+
+function extractUserInfo(event) {
+  logger.info({ message: "Extracting user information from event" });
+
+  // Try to get user from authorizer context
+  const userInfo = extractUserFromAuthorizerContext(event);
+  if (!userInfo) {
+    logger.warn({ message: "No authorization token found in event" });
+    throw new BundleAuthorizationError("Missing Authorization Bearer token", {
+      code: "MISSING_AUTH_TOKEN",
+    });
+  } else if (!userInfo?.sub) {
+    logger.warn({ message: "Invalid authorization token - missing sub claim" });
+    throw new BundleAuthorizationError("Invalid Authorization token", {
+      code: "INVALID_AUTH_TOKEN",
+    });
+  } else {
+    const userSub = userInfo.sub;
+    logger.info({
+      message: "User info extracted from authorizer context",
+      sub: userSub,
+      username: userInfo.username,
+      claims: Object.keys(userInfo),
+    });
+    return userSub;
+  }
 }
 
 // Calculate required bundles by seeing which activities in the catalog match this events URL path and require bundles
@@ -174,50 +286,4 @@ function findRequiredBundleIdsForUrlPath(catalog, currentPath) {
 function getAutomaticBundles(catalog) {
   if (!catalog?.bundles) return [];
   return catalog.bundles.filter((b) => b.allocation === "automatic").map((b) => b.id);
-}
-
-export async function addBundles(userId, bundlesToAdd) {
-  logger.info({ message: "addBundles called", userId, bundlesToAdd });
-
-  const currentBundles = await getUserBundles(userId);
-  const newBundles = [...currentBundles];
-
-  for (const bundle of bundlesToAdd) {
-    if (!newBundles.some((b) => b.startsWith(bundle) || b === bundle)) {
-      newBundles.push(bundle);
-    }
-  }
-
-  await updateUserBundles(userId, newBundles);
-
-  logger.info({
-    message: "Bundles added successfully",
-    userId,
-    addedBundles: bundlesToAdd,
-    previousCount: currentBundles.length,
-    newCount: newBundles.length,
-  });
-
-  return newBundles;
-}
-
-export async function removeBundles(userId, bundlesToRemove) {
-  logger.info({ message: "removeBundles called", userId, bundlesToRemove });
-
-  const currentBundles = await getUserBundles(userId);
-  const newBundles = currentBundles.filter((bundle) => {
-    return !bundlesToRemove.some((toRemove) => bundle === toRemove || bundle.startsWith(`${toRemove}|`));
-  });
-
-  await updateUserBundles(userId, newBundles);
-
-  logger.info({
-    message: "Bundles removed successfully",
-    userId,
-    removedBundles: bundlesToRemove,
-    previousCount: currentBundles.length,
-    newCount: newBundles.length,
-  });
-
-  return newBundles;
 }

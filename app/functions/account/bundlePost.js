@@ -6,9 +6,8 @@ import logger from "../../lib/logger.js";
 import { extractRequest, http200OkResponse, parseRequestBody } from "../../lib/responses.js";
 import { decodeJwtToken } from "../../lib/jwtHelper.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
-import { getUserBundles, updateUserBundles, isMockMode } from "../../lib/bundleHelpers.js";
 import { getBundlesStore } from "../non-lambda-mocks/mockBundleStore.js";
-import { enforceBundles } from "../../lib/bundleEnforcement.js";
+import { enforceBundles, getUserBundles, isMockMode, updateUserBundles } from "../../lib/bundleManagement.js";
 import { http403ForbiddenFromBundleEnforcement } from "../../lib/hmrcHelper.js";
 
 const mockBundleStore = getBundlesStore();

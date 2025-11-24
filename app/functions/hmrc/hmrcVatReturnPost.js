@@ -12,7 +12,7 @@ import {
 import eventToGovClientHeaders from "../../lib/eventToGovClientHeaders.js";
 import { validateEnv } from "../../lib/env.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest, logHmrcRequestDetails } from "../../lib/httpHelper.js";
-import { enforceBundles } from "../../lib/bundleEnforcement.js";
+import { enforceBundles } from "../../lib/bundleManagement.js";
 import {
   UnauthorizedTokenError,
   validateHmrcAccessToken,

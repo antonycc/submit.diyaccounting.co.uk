@@ -5,8 +5,7 @@ import logger from "../../lib/logger.js";
 import { extractRequest, http200OkResponse, http401UnauthorizedResponse, http500ServerErrorResponse } from "../../lib/responses.js";
 import { decodeJwtToken } from "../../lib/jwtHelper.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
-import { getUserBundles } from "../../lib/bundleHelpers.js";
-import { BundleAuthorizationError, BundleEntitlementError, enforceBundles } from "../../lib/bundleEnforcement.js";
+import { BundleAuthorizationError, BundleEntitlementError, enforceBundles, getUserBundles } from "../../lib/bundleManagement.js";
 import { http403ForbiddenFromBundleEnforcement } from "../../lib/hmrcHelper.js";
 
 // Server hook for Express app, and construction of a Lambda-like event from HTTP request)

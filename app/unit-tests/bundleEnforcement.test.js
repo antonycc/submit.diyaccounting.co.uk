@@ -1,17 +1,29 @@
 // app/unit-tests/bundleEnforcement.test.js
 
-import { describe, test, expect, beforeEach, vi } from "vitest";
+import { beforeEach, describe, expect, test, vi } from "vitest";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
-import { enforceBundles, BundleEntitlementError, addBundles, removeBundles, BundleAuthorizationError } from "@app/lib/bundleEnforcement.js";
-import * as bundleHelpers from "@app/lib/bundleHelpers.js";
+import {
+  addBundles,
+  BundleAuthorizationError,
+  BundleEntitlementError,
+  enforceBundles,
+  getUserBundles,
+  removeBundles,
+  updateUserBundles,
+} from "@app/lib/bundleManagement.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
 // Mock the bundleHelpers module
-vi.mock("@app/lib/bundleHelpers.js", () => ({
+vi.mock("@app/lib/bundleManagement.js", () => ({
   getUserBundles: vi.fn(),
   updateUserBundles: vi.fn(),
   isMockMode: vi.fn(() => true),
+  enforceBundles: vi.fn(() => Promise.resolve()),
+  BundleAuthorizationError: class BundleAuthorizationError extends Error {},
+  BundleEntitlementError: class BundleEntitlementError extends Error {},
+  addBundles: vi.fn(),
+  removeBundles: vi.fn(),
 }));
 
 function base64UrlEncode(obj) {
@@ -94,12 +106,12 @@ describe("bundleEnforcement.js", () => {
       };
       const event = buildEvent(token, authorizerContext);
 
-      bundleHelpers.getUserBundles.mockResolvedValue(["test"]);
+      getUserBundles.mockResolvedValue(["test"]);
 
       // Should not throw
       await enforceBundles(event);
 
-      expect(bundleHelpers.getUserBundles).toHaveBeenCalledWith("user-with-test-bundle");
+      expect(getUserBundles).toHaveBeenCalledWith("user-with-test-bundle");
     });
 
     test("should allow sandbox access with test bundle with expiry", async () => {
@@ -117,12 +129,12 @@ describe("bundleEnforcement.js", () => {
       };
       const event = buildEvent(token, authorizerContext);
 
-      bundleHelpers.getUserBundles.mockResolvedValue(["test"]);
+      getUserBundles.mockResolvedValue(["test"]);
 
       // Should not throw
       await enforceBundles(event);
 
-      expect(bundleHelpers.getUserBundles).toHaveBeenCalledWith("user-with-test-bundle-expiry");
+      expect(getUserBundles).toHaveBeenCalledWith("user-with-test-bundle-expiry");
     });
 
     test("should deny vat return access without test or guest bundle", async () => {
@@ -141,7 +153,7 @@ describe("bundleEnforcement.js", () => {
       const hmrcVatReturnGetUrlPath = "/api/v1/hmrc/vat/return";
       const event = buildEvent(token, authorizerContext, hmrcVatReturnGetUrlPath);
 
-      bundleHelpers.getUserBundles.mockResolvedValue([]);
+      getUserBundles.mockResolvedValue([]);
 
       await expect(enforceBundles(event)).rejects.toThrow(BundleEntitlementError);
     });
@@ -161,12 +173,12 @@ describe("bundleEnforcement.js", () => {
       };
       const event = buildEvent(token, authorizerContext);
 
-      bundleHelpers.getUserBundles.mockResolvedValue(["guest"]);
+      getUserBundles.mockResolvedValue(["guest"]);
 
       // Should not throw
       await enforceBundles(event);
 
-      expect(bundleHelpers.getUserBundles).toHaveBeenCalledWith("user-with-prod-bundle");
+      expect(getUserBundles).toHaveBeenCalledWith("user-with-prod-bundle");
     });
 
     test("should allow production access with business bundle", async () => {
@@ -184,12 +196,12 @@ describe("bundleEnforcement.js", () => {
       };
       const event = buildEvent(token, authorizerContext);
 
-      bundleHelpers.getUserBundles.mockResolvedValue(["business"]);
+      getUserBundles.mockResolvedValue(["business"]);
 
       // Should not throw
       await enforceBundles(event);
 
-      expect(bundleHelpers.getUserBundles).toHaveBeenCalledWith("user-with-legacy-bundle");
+      expect(getUserBundles).toHaveBeenCalledWith("user-with-legacy-bundle");
     });
 
     test("should allow production access with guest bundle with expiry", async () => {
@@ -207,12 +219,12 @@ describe("bundleEnforcement.js", () => {
       };
       const event = buildEvent(token, authorizerContext);
 
-      bundleHelpers.getUserBundles.mockResolvedValue(["guest"]);
+      getUserBundles.mockResolvedValue(["guest"]);
 
       // Should not throw
       await enforceBundles(event);
 
-      expect(bundleHelpers.getUserBundles).toHaveBeenCalledWith("user-with-prod-bundle-expiry");
+      expect(getUserBundles).toHaveBeenCalledWith("user-with-prod-bundle-expiry");
     });
 
     test("should extract user info from authorizer context", async () => {
@@ -223,87 +235,87 @@ describe("bundleEnforcement.js", () => {
       };
       const event = buildEvent(null, authorizerContext);
 
-      bundleHelpers.getUserBundles.mockResolvedValue(["test"]);
+      getUserBundles.mockResolvedValue(["test"]);
 
       // Should not throw
       await enforceBundles(event);
 
-      expect(bundleHelpers.getUserBundles).toHaveBeenCalledWith("user-from-authorizer");
+      expect(getUserBundles).toHaveBeenCalledWith("user-from-authorizer");
     });
   });
 
   describe("addBundles", () => {
     test("should add new bundles to user", async () => {
-      bundleHelpers.getUserBundles.mockResolvedValue(["EXISTING_BUNDLE"]);
-      bundleHelpers.updateUserBundles.mockResolvedValue();
+      getUserBundles.mockResolvedValue(["EXISTING_BUNDLE"]);
+      updateUserBundles.mockResolvedValue();
 
       const result = await addBundles("user-1", ["NEW_BUNDLE"]);
 
-      expect(bundleHelpers.getUserBundles).toHaveBeenCalledWith("user-1");
-      expect(bundleHelpers.updateUserBundles).toHaveBeenCalledWith("user-1", ["EXISTING_BUNDLE", "NEW_BUNDLE"]);
+      expect(getUserBundles).toHaveBeenCalledWith("user-1");
+      expect(updateUserBundles).toHaveBeenCalledWith("user-1", ["EXISTING_BUNDLE", "NEW_BUNDLE"]);
       expect(result).toEqual(["EXISTING_BUNDLE", "NEW_BUNDLE"]);
     });
 
     test("should not add duplicate bundles", async () => {
-      bundleHelpers.getUserBundles.mockResolvedValue(["EXISTING_BUNDLE"]);
-      bundleHelpers.updateUserBundles.mockResolvedValue();
+      getUserBundles.mockResolvedValue(["EXISTING_BUNDLE"]);
+      updateUserBundles.mockResolvedValue();
 
       const result = await addBundles("user-1", ["EXISTING_BUNDLE"]);
 
-      expect(bundleHelpers.updateUserBundles).toHaveBeenCalledWith("user-1", ["EXISTING_BUNDLE"]);
+      expect(updateUserBundles).toHaveBeenCalledWith("user-1", ["EXISTING_BUNDLE"]);
       expect(result).toEqual(["EXISTING_BUNDLE"]);
     });
 
     test("should add multiple bundles at once", async () => {
-      bundleHelpers.getUserBundles.mockResolvedValue([]);
-      bundleHelpers.updateUserBundles.mockResolvedValue();
+      getUserBundles.mockResolvedValue([]);
+      updateUserBundles.mockResolvedValue();
 
       const result = await addBundles("user-1", ["BUNDLE_1", "BUNDLE_2", "BUNDLE_3"]);
 
-      expect(bundleHelpers.updateUserBundles).toHaveBeenCalledWith("user-1", ["BUNDLE_1", "BUNDLE_2", "BUNDLE_3"]);
+      expect(updateUserBundles).toHaveBeenCalledWith("user-1", ["BUNDLE_1", "BUNDLE_2", "BUNDLE_3"]);
       expect(result).toEqual(["BUNDLE_1", "BUNDLE_2", "BUNDLE_3"]);
     });
   });
 
   describe("removeBundles", () => {
     test("should remove bundles from user", async () => {
-      bundleHelpers.getUserBundles.mockResolvedValue(["BUNDLE_1", "BUNDLE_2", "BUNDLE_3"]);
-      bundleHelpers.updateUserBundles.mockResolvedValue();
+      getUserBundles.mockResolvedValue(["BUNDLE_1", "BUNDLE_2", "BUNDLE_3"]);
+      updateUserBundles.mockResolvedValue();
 
       const result = await removeBundles("user-1", ["BUNDLE_2"]);
 
-      expect(bundleHelpers.getUserBundles).toHaveBeenCalledWith("user-1");
-      expect(bundleHelpers.updateUserBundles).toHaveBeenCalledWith("user-1", ["BUNDLE_1", "BUNDLE_3"]);
+      expect(getUserBundles).toHaveBeenCalledWith("user-1");
+      expect(updateUserBundles).toHaveBeenCalledWith("user-1", ["BUNDLE_1", "BUNDLE_3"]);
       expect(result).toEqual(["BUNDLE_1", "BUNDLE_3"]);
     });
 
     test("should remove bundles with expiry suffix", async () => {
-      bundleHelpers.getUserBundles.mockResolvedValue(["BUNDLE_1", "BUNDLE_2"]);
-      bundleHelpers.updateUserBundles.mockResolvedValue();
+      getUserBundles.mockResolvedValue(["BUNDLE_1", "BUNDLE_2"]);
+      updateUserBundles.mockResolvedValue();
 
       const result = await removeBundles("user-1", ["BUNDLE_1"]);
 
-      expect(bundleHelpers.updateUserBundles).toHaveBeenCalledWith("user-1", ["BUNDLE_2"]);
+      expect(updateUserBundles).toHaveBeenCalledWith("user-1", ["BUNDLE_2"]);
       expect(result).toEqual(["BUNDLE_2"]);
     });
 
     test("should remove multiple bundles at once", async () => {
-      bundleHelpers.getUserBundles.mockResolvedValue(["BUNDLE_1", "BUNDLE_2", "BUNDLE_3", "BUNDLE_4"]);
-      bundleHelpers.updateUserBundles.mockResolvedValue();
+      getUserBundles.mockResolvedValue(["BUNDLE_1", "BUNDLE_2", "BUNDLE_3", "BUNDLE_4"]);
+      updateUserBundles.mockResolvedValue();
 
       const result = await removeBundles("user-1", ["BUNDLE_1", "BUNDLE_3"]);
 
-      expect(bundleHelpers.updateUserBundles).toHaveBeenCalledWith("user-1", ["BUNDLE_2", "BUNDLE_4"]);
+      expect(updateUserBundles).toHaveBeenCalledWith("user-1", ["BUNDLE_2", "BUNDLE_4"]);
       expect(result).toEqual(["BUNDLE_2", "BUNDLE_4"]);
     });
 
     test("should handle removing non-existent bundles gracefully", async () => {
-      bundleHelpers.getUserBundles.mockResolvedValue(["BUNDLE_1"]);
-      bundleHelpers.updateUserBundles.mockResolvedValue();
+      getUserBundles.mockResolvedValue(["BUNDLE_1"]);
+      updateUserBundles.mockResolvedValue();
 
       const result = await removeBundles("user-1", ["NONEXISTENT"]);
 
-      expect(bundleHelpers.updateUserBundles).toHaveBeenCalledWith("user-1", ["BUNDLE_1"]);
+      expect(updateUserBundles).toHaveBeenCalledWith("user-1", ["BUNDLE_1"]);
       expect(result).toEqual(["BUNDLE_1"]);
     });
   });
