@@ -11,7 +11,7 @@ dotenvConfigIfNotBlank({ path: ".env.test" });
 const mockFetch = vi.fn();
 vi.stubGlobal("fetch", mockFetch);
 
-import { buildGovClientTestHeaders } from "@app/unit-tests/govClientTestHeader.js";
+import { buildGovClientTestHeaders } from "@app/unit-tests/app-lib/govClientTestHeader.js";
 
 describe("httpPostMock", () => {
   const originalEnv = process.env;

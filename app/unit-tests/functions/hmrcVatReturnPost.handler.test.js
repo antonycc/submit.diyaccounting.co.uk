@@ -4,7 +4,7 @@ import { describe, test, expect, vi, beforeEach } from "vitest";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 
 import { handler as submitVatHandler } from "@app/functions/hmrc/hmrcVatReturnPost.js";
-import { buildGovClientTestHeaders } from "@app/unit-tests/govClientTestHeader.js";
+import { buildGovClientTestHeaders } from "@app/unit-tests/app-lib/govClientTestHeader.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
