@@ -63,6 +63,9 @@ beforeAll(async () => {
   };
   const endpoint = `http://${host}:${port}`;
 
+  //YOU ARE HERE, THINKING ABOUT HOW THE PROXY ENVIRONMENT WILL TELL THE APP WHERE TO FIND DYNAMODB
+  //We'll probably need to ditch minio to do this, so merge: https://github.com/antonycc/submit.diyaccounting.co.uk/tree/copilot/convert-receipts-to-dynamodb
+
   process.env.AWS_REGION = process.env.AWS_REGION || "us-east-1";
   process.env.AWS_ACCESS_KEY_ID = process.env.AWS_ACCESS_KEY_ID || "dummy";
   process.env.AWS_SECRET_ACCESS_KEY = process.env.AWS_SECRET_ACCESS_KEY || "dummy";
