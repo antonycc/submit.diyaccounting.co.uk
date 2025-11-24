@@ -50,6 +50,17 @@ describe("Integration – log receipt flow", () => {
       chargeRefNumber: "BAR456",
       processingDate: "2025-07-14T10:00:00.000Z",
     };
+    // Create a simple JWT token for test-sub
+    const header = { alg: "none", typ: "JWT" };
+    const payload = { sub: "test-sub", email: "test@test.submit.diyaccunting.co.uk", scope: "read write" };
+    const base64UrlEncode = (obj) =>
+      Buffer.from(JSON.stringify(obj))
+        .toString("base64")
+        .replace(/=+$/g, "")
+        .replace(/\+/g, "-")
+        .replace(/\//g, "_");
+    const token = `${base64UrlEncode(header)}.${base64UrlEncode(payload)}.`;
+
     const res = await logReceiptHandler({
       requestContext: {
         requestId: "test-request-id",
@@ -65,6 +76,9 @@ describe("Integration – log receipt flow", () => {
             },
           },
         },
+      },
+      headers: {
+        authorization: `Bearer ${token}`,
       },
       body: JSON.stringify(fakeReceipt),
     });

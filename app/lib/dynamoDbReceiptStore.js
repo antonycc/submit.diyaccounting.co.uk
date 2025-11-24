@@ -17,9 +17,7 @@ async function getDynamoDbDocClient() {
 }
 
 export function isDynamoDbEnabled() {
-  return Boolean(
-    process.env.DIY_SUBMIT_RECEIPTS_TABLE_NAME && process.env.DIY_SUBMIT_RECEIPTS_TABLE_NAME !== "test-receipts-table",
-  );
+  return Boolean(process.env.DIY_SUBMIT_RECEIPTS_TABLE_NAME);
 }
 
 function getTableName() {

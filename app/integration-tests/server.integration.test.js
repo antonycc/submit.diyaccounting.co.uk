@@ -4,7 +4,7 @@ import { describe, beforeAll, afterAll, beforeEach, afterEach, it, expect, vi } 
 import { setupServer } from "msw/node";
 import { http, HttpResponse } from "msw";
 import { mockClient } from "aws-sdk-client-mock";
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { DynamoDBDocumentClient, PutCommand } from "@aws-sdk/lib-dynamodb";
 import request from "supertest";
 import express from "express";
 import path from "path";
@@ -20,7 +20,7 @@ import { handler as logReceiptHandler } from "@app/functions/hmrc/hmrcReceiptPos
 import { handler as authUrlHandler } from "@app/functions/hmrc/hmrcAuthUrlGet.js";
 
 const HMRC = "https://test-api.service.hmrc.gov.uk";
-const s3Mock = mockClient(S3Client);
+const dynamoDbMock = mockClient(DynamoDBDocumentClient);
 
 function base64UrlEncode(obj) {
   const json = JSON.stringify(obj);
@@ -105,12 +105,12 @@ describe("Integration – Server Express App", () => {
       GOOGLE_CLIENT_SECRET: "integration-test-google-secret",
       DIY_SUBMIT_BASE_URL: "https://test.submit.diyaccounting.co.uk/",
       HMRC_BASE_URI: "https://test-api.service.hmrc.gov.uk",
-      DIY_SUBMIT_RECEIPTS_BUCKET_NAME: "integration-test-bucket",
+      DIY_SUBMIT_RECEIPTS_TABLE_NAME: "integration-test-receipts-table",
+      BUNDLE_DYNAMODB_TABLE_NAME: "integration-test-bundle-table",
       TEST_SERVER_HTTP_PORT: "3001",
-      TEST_S3_ENDPOINT: "http://localhost:9000", // Enable S3 operations for tests
     };
 
-    s3Mock.reset();
+    dynamoDbMock.reset();
 
     // Create Express app exactly like server.js
     app = express();
@@ -189,6 +189,8 @@ describe("Integration – Server Express App", () => {
     });
 
     app.post("/api/v1/hmrc/receipt", async (req, res) => {
+      // Create a fake JWT token for the test
+      const token = makeIdToken("test-sub");
       const event = {
         requestContext: {
           requestId: "test-request-id",
@@ -205,6 +207,9 @@ describe("Integration – Server Express App", () => {
             },
           },
         },
+        headers: {
+          authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify(req.body),
       };
       const { statusCode, body } = await logReceiptHandler(event);
@@ -218,7 +223,7 @@ describe("Integration – Server Express App", () => {
   });
 
   afterEach(() => {
-    s3Mock.restore();
+    dynamoDbMock.restore();
   });
 
   describe("Auth Flow Integration", () => {
@@ -290,8 +295,8 @@ describe("Integration – Server Express App", () => {
 
   describe("Receipt Logging Integration", () => {
     it("should log receipt through Express endpoint", async () => {
-      // Mock successful S3 put
-      s3Mock.on(PutObjectCommand).resolves({});
+      // Mock successful DynamoDB put
+      dynamoDbMock.on(PutCommand).resolves({});
 
       const receiptData = {
         formBundleNumber: "test-bundle-123",
@@ -305,16 +310,16 @@ describe("Integration – Server Express App", () => {
 
       expect(response.body).toHaveProperty("receipt");
       expect(response.body).toHaveProperty("key");
-      expect(response.body.key).toBe("receipts/test-bundle-123.json");
+      // Key should now include userSub and timestamp
+      expect(response.body.key).toMatch(/^receipts\/test-sub\//);
+      expect(response.body.key).toMatch(/test-bundle-123\.json$/);
 
-      // Verify S3 was called correctly
-      expect(s3Mock.calls()).toHaveLength(1);
-      const s3Call = s3Mock.calls()[0];
-      expect(s3Call.args[0].input).toMatchObject({
-        Bucket: "integration-test-bucket",
-        Key: "receipts/test-bundle-123.json",
-        ContentType: "application/json",
-      });
+      // Verify DynamoDB was called correctly
+      expect(dynamoDbMock.calls()).toHaveLength(1);
+      const dynamoCall = dynamoDbMock.calls()[0];
+      expect(dynamoCall.args[0].input.TableName).toBe("integration-test-receipts-table");
+      expect(dynamoCall.args[0].input.Item.receiptId).toMatch(/test-bundle-123$/);
+      expect(dynamoCall.args[0].input.Item.receipt).toEqual(receiptData);
     });
   });
 

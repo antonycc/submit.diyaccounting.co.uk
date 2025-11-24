@@ -13,6 +13,7 @@ import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } fr
 import { enforceBundles } from "../../lib/bundleManagement.js";
 import { http403ForbiddenFromBundleEnforcement } from "../../lib/hmrcHelper.js";
 import { putReceipt } from "../../lib/dynamoDbReceiptStore.js";
+import { getUserSub } from "../../lib/jwtHelper.js";
 
 // Server hook for Express app, and construction of a Lambda-like event from HTTP request)
 export function apiEndpoint(app) {
@@ -23,28 +24,9 @@ export function apiEndpoint(app) {
   });
 }
 
-export function extractAndValidateParameters(event, errorMessages) {
+export function extractAndValidateParameters(event, errorMessages, userSub) {
   const parsedBody = parseRequestBody(event);
   const receipt = parsedBody && parsedBody.receipt ? parsedBody.receipt : parsedBody;
-
-  // Extract userSub from Authorization header if present
-  const auth = event.headers?.authorization || event.headers?.Authorization;
-  let userSub = null;
-  if (auth && auth.startsWith("Bearer ")) {
-    try {
-      const token = auth.split(" ")[1];
-      const parts = token.split(".");
-      if (parts.length >= 2) {
-        const payload = parts[1].replace(/-/g, "+").replace(/_/g, "/");
-        const json = Buffer.from(payload, "base64").toString("utf8");
-        const claims = JSON.parse(json);
-        userSub = claims.sub || null;
-      }
-    } catch {
-      // JWT parsing failed - userSub remains null
-      userSub = null;
-    }
-  }
 
   const formBundle = receipt?.formBundleNumber;
   const timestamp = new Date().toISOString();
@@ -71,7 +53,7 @@ export function extractAndValidateParameters(event, errorMessages) {
     errorMessages.push("Invalid hmrcAccount header. Must be either 'sandbox' or 'live' if provided.");
   }
 
-  return { receipt, receiptId, key, formBundle, hmrcAccount, userSub };
+  return { receipt, receiptId, key, formBundle, hmrcAccount };
 }
 
 // HTTP request/response, aware Lambda handler function
@@ -97,8 +79,11 @@ export async function handler(event) {
     });
   }
 
+  // Extract userSub from JWT
+  const userSub = getUserSub(event);
+
   // Extract and validate parameters
-  const { receipt, receiptId, key, formBundle, userSub } = extractAndValidateParameters(event, errorMessages);
+  const { receipt, receiptId, key, formBundle } = extractAndValidateParameters(event, errorMessages, userSub);
 
   const responseHeaders = {};
 

@@ -5,7 +5,7 @@ import request from "supertest";
 import path from "path";
 import { fileURLToPath } from "url";
 import { mockClient } from "aws-sdk-client-mock";
-import { S3Client, ListObjectsV2Command, GetObjectCommand } from "@aws-sdk/client-s3";
+import { DynamoDBDocumentClient, QueryCommand, GetCommand } from "@aws-sdk/lib-dynamodb";
 
 import { handler as listFn, handler as getFn } from "@app/functions/hmrc/hmrcReceiptGet.js";
 
@@ -23,14 +23,13 @@ function makeIdToken(sub = "mr-user-1", extra = {}) {
 
 describe("Integration – /api/v1/hmrc/receipt", () => {
   let app;
-  const s3Mock = mockClient(S3Client);
+  const dynamoDbMock = mockClient(DynamoDBDocumentClient);
   const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
   beforeEach(() => {
-    s3Mock.reset();
+    dynamoDbMock.reset();
     process.env.DIY_SUBMIT_BASE_URL = "https://hmrc-test-redirect/";
-    process.env.DIY_SUBMIT_RECEIPTS_BUCKET_NAME = "integration-test-bucket";
-    process.env.TEST_S3_ENDPOINT = "http://localhost:9000";
+    process.env.DIY_SUBMIT_RECEIPTS_TABLE_NAME = "integration-test-receipts-table";
 
     app = express();
     app.use(express.json());
@@ -91,13 +90,27 @@ describe("Integration – /api/v1/hmrc/receipt", () => {
   test("authorized user can list and fetch own receipts", async () => {
     const sub = "mr-user-2";
     const token = makeIdToken(sub);
-    s3Mock.on(ListObjectsV2Command).resolves({
-      Contents: [{ Key: `receipts/${sub}/2025-08-01T10:00:00.000Z-XYZ.json`, Size: 42 }],
-      IsTruncated: false,
+    const receiptId = "2025-08-01T10:00:00.000Z-XYZ";
+    
+    // Mock the Query command for listing receipts
+    dynamoDbMock.on(QueryCommand).resolves({
+      Items: [
+        {
+          receiptId: receiptId,
+          receipt: { formBundleNumber: "XYZ", amount: 123 },
+          createdAt: "2025-08-01T10:00:00.000Z",
+        },
+      ],
+      Count: 1,
     });
-    const bodyText = JSON.stringify({ formBundleNumber: "XYZ", amount: 123 });
-    s3Mock.on(GetObjectCommand).resolves({
-      Body: new ReadableStreamMock(bodyText),
+
+    // Mock the Get command for fetching a specific receipt
+    dynamoDbMock.on(GetCommand).resolves({
+      Item: {
+        receiptId: receiptId,
+        receipt: { formBundleNumber: "XYZ", amount: 123 },
+        createdAt: "2025-08-01T10:00:00.000Z",
+      },
     });
 
     const resList = await request(app).get("/api/v1/hmrc/receipt").set("Authorization", `Bearer ${token}`);
@@ -107,7 +120,9 @@ describe("Integration – /api/v1/hmrc/receipt", () => {
     expect(list.receipts.length).toBe(1);
     expect(list.receipts[0].formBundleNumber).toBe("XYZ");
 
-    const resGet = await request(app).get("/api/v1/hmrc/receipt/2025-08-01T10:00:00.000Z-XYZ.json").set("Authorization", `Bearer ${token}`);
+    const resGet = await request(app)
+      .get("/api/v1/hmrc/receipt/2025-08-01T10:00:00.000Z-XYZ.json")
+      .set("Authorization", `Bearer ${token}`);
     expect(resGet.status).toBe(200);
     const rec = JSON.parse(resGet.text || "{}");
     expect(rec.formBundleNumber).toBe("XYZ");
@@ -118,19 +133,3 @@ describe("Integration – /api/v1/hmrc/receipt", () => {
     expect(res.status).toBe(401);
   });
 });
-
-class ReadableStreamMock {
-  constructor(text) {
-    this._text = text;
-    this.readable = true;
-  }
-  on(event, handler) {
-    if (event === "data") {
-      handler(Buffer.from(this._text));
-    } else if (event === "end") {
-      setTimeout(handler, 0);
-    } else if (event === "error") {
-      // no-op
-    }
-  }
-}
