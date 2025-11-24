@@ -8,6 +8,8 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 // bundle store module to ensure it picks up the correct configuration.
 
 let stopDynalite;
+// @ts-check
+/** @type {import("../lib/dynamoDbBundleStore.js")} */
 let store;
 const tableName = "bundles-system-test";
 
@@ -51,20 +53,12 @@ describe("System: dynamoDbBundleStore with local dynalite", () => {
     // Verify dynamo is enabled via env
     expect(store.isDynamoDbEnabled()).toBe(true);
 
+    const userId = "user-12345";
     const bundleId = "bundle-1";
-    const hashedSub = "8c10be81ac685c3c63cc4a4e5638445aaed87e83ab1a73e808cb54988735c120";
-    const createdAt = new Date().toISOString();
     const expiry = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(); // 24 hours from now
-    const ttl_datestamp = new Date(Date.now() + 31 * 24 * 60 * 60 * 1000).toISOString();
-    const ttl = Math.floor(new Date(ttl_datestamp).getTime() / 1000);
-
     const bundle = {
-      hashedSub,
       bundleId,
-      createdAt,
       expiry,
-      ttl,
-      ttl_datestamp,
     };
 
     // Put the bundle
