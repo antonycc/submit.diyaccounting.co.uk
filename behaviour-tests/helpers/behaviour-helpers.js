@@ -77,8 +77,7 @@ export async function runLocalDynamoDb(runDynamoDb, bundleTableName, hmrcApiRequ
 
     // Ensure table names are set in env, with sensible defaults for behaviour tests
     const bundlesTable = bundleTableName || process.env.BUNDLE_DYNAMODB_TABLE_NAME || "behaviour-bundles";
-    const hmrcReqsTable =
-      hmrcApiRequestsTableName || process.env.HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME || "behaviour-hmrc-requests";
+    const hmrcReqsTable = hmrcApiRequestsTableName || process.env.HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME || "behaviour-hmrc-requests";
 
     process.env.BUNDLE_DYNAMODB_TABLE_NAME = bundlesTable;
     process.env.HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME = hmrcReqsTable;

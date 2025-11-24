@@ -115,7 +115,7 @@ describe("catalogGet handler", () => {
     // This is difficult to test without mocking loadCatalogFromRoot
     // which is deeply integrated. For now, we document this test requirement.
     // In a real scenario, we'd mock the catalog loader to throw an error.
-    
+
     // Placeholder test to document requirement
     expect(true).toBe(true);
   });

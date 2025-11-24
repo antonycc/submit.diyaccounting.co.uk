@@ -5,12 +5,7 @@ import { describe, test, beforeEach, expect, vi } from "vitest";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import { handler as bundlePostHandler } from "@app/functions/account/bundlePost.js";
 import { getBundlesStore } from "@app/functions/non-lambda-mocks/mockBundleStore.js";
-import {
-  buildLambdaEvent,
-  buildEventWithToken,
-  buildHeadEvent,
-  makeIdToken,
-} from "@app/test-helpers/eventBuilders.js";
+import { buildLambdaEvent, buildEventWithToken, buildHeadEvent, makeIdToken } from "@app/test-helpers/eventBuilders.js";
 import { setupTestEnv, parseResponseBody } from "@app/test-helpers/mockHelpers.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
@@ -19,7 +14,7 @@ describe("bundlePost handler", () => {
   beforeEach(() => {
     // Setup test environment
     Object.assign(process.env, setupTestEnv());
-    
+
     // Clear the in-memory bundle store
     const store = getBundlesStore();
     store.clear();
@@ -279,7 +274,6 @@ describe("bundlePost handler", () => {
     // To test bundle enforcement failure, we'd need to mock the enforceBundles function
     // or create a scenario where it fails. This is a placeholder for such tests.
     // In practice, bundle enforcement might fail due to missing required bundles.
-    
     // For now, we'll skip this as it requires deeper mocking of bundleManagement
     // The test exists to document the requirement
   });

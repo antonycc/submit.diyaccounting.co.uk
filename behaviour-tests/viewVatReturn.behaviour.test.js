@@ -67,11 +67,7 @@ const hmrcTestPassword = getEnvVarAndLog("hmrcTestPassword", "TEST_HMRC_PASSWORD
 const periodKey = "24A1"; // "18A1";
 const runDynamoDb = getEnvVarAndLog("runDynamoDb", "TEST_DYNAMODB", null);
 const bundleTableName = getEnvVarAndLog("bundleTableName", "BUNDLE_DYNAMODB_TABLE_NAME", null);
-const hmrcApiRequestsTableName = getEnvVarAndLog(
-  "hmrcApiRequestsTableName",
-  "HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME",
-  null,
-);
+const hmrcApiRequestsTableName = getEnvVarAndLog("hmrcApiRequestsTableName", "HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", null);
 
 let mockOAuth2Process;
 let serverProcess;
