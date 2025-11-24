@@ -1,7 +1,7 @@
 // app/test-helpers/mockHelpers.js
 // Helpers for setting up mocks and test environment
 
-import { vi } from "vitest";
+import { vi, expect as vitestExpect } from "vitest";
 
 /**
  * Setup fetch mock for tests
@@ -55,8 +55,9 @@ export function setupTestEnv(customEnv = {}) {
     HMRC_SANDBOX_CLIENT_ID: "test-sandbox-client-id",
     HMRC_CLIENT_SECRET: "test-client-secret",
     HMRC_SANDBOX_CLIENT_SECRET: "test-sandbox-client-secret",
-    HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME: "test-hmrc-requests-table",
     BUNDLE_DYNAMODB_TABLE_NAME: "test-bundle-table",
+    HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME: "test-hmrc-requests-table",
+    RECEIPTS_DYNAMODB_TABLE_NAME: "test-receipts-table",
     DIY_SUBMIT_BASE_URL: "https://test.diyaccounting.co.uk",
     COGNITO_CLIENT_ID: "test-cognito-client-id",
     COGNITO_BASE_URI: "https://test-cognito.amazonaws.com",
@@ -112,13 +113,13 @@ export function parseResponseBody(response) {
 export function verifyResponseStructure(response, expectedStatusCode) {
   // This function is designed to be used in test contexts where expect is available
   // If called outside a test context, it will throw ReferenceError
-  if (typeof expect === "undefined") {
-    throw new Error("verifyResponseStructure must be called from within a vitest test context where 'expect' is available");
-  }
-  expect(response).toHaveProperty("statusCode");
-  expect(response).toHaveProperty("headers");
-  expect(response).toHaveProperty("body");
+  // if (typeof expect === "undefined") {
+  //  throw new Error("verifyResponseStructure must be called from within a vitest test context where 'expect' is available");
+  // }
+  vitestExpect(response).toHaveProperty("statusCode");
+  vitestExpect(response).toHaveProperty("headers");
+  vitestExpect(response).toHaveProperty("body");
   if (expectedStatusCode !== undefined) {
-    expect(response.statusCode).toBe(expectedStatusCode);
+    vitestExpect(response.statusCode).toBe(expectedStatusCode);
   }
 }

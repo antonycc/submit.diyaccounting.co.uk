@@ -23,8 +23,6 @@ import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.logs.ILogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
-import software.amazon.awscdk.services.s3.Bucket;
-import software.amazon.awscdk.services.s3.IBucket;
 import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
 
@@ -406,7 +404,7 @@ public class HmrcStack extends Stack {
         var logReceiptLambdaEnv = new PopulatedMap<String, String>()
                 .with("DIY_SUBMIT_BASE_URL", props.sharedNames().envBaseUrl)
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
-                .with("DIY_SUBMIT_RECEIPTS_BUCKET_NAME", props.sharedNames().receiptsBucketName);
+                .with("RECEIPTS_DYNAMODB_TABLE_NAME", props.sharedNames().receiptsTableName);
         if (props.optionalTestS3Endpoint().isPresent()
                 && StringUtils.isNotBlank(props.optionalTestS3Endpoint().get())
                 && props.optionalTestS3AccessKey().isPresent()
@@ -454,7 +452,7 @@ public class HmrcStack extends Stack {
         var myReceiptsLambdaEnv = new PopulatedMap<String, String>()
                 .with("DIY_SUBMIT_BASE_URL", props.sharedNames().envBaseUrl)
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
-                .with("DIY_SUBMIT_RECEIPTS_BUCKET_NAME", props.sharedNames().receiptsBucketName);
+                .with("RECEIPTS_DYNAMODB_TABLE_NAME", props.sharedNames().receiptsTableName);
         var myReceiptsLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
@@ -501,11 +499,15 @@ public class HmrcStack extends Stack {
                 "Granted DynamoDB permissions to %s for Bundles Table %s",
                 this.receiptGetLambda.getFunctionName(), bundlesTable.getTableName());
 
-        // Grant the LogReceiptLambda and MyReceiptsLambda write and read access respectively to the receipts S3 bucket
-        IBucket receiptsBucket = Bucket.fromBucketName(
-                this, props.resourceNamePrefix() + "-ImportedReceiptsBucket", props.sharedNames().receiptsBucketName);
-        receiptsBucket.grantWrite(this.receiptPostLambda);
-        receiptsBucket.grantRead(this.receiptGetLambda);
+        // Lookup existing DynamoDB Receipts Table
+        ITable receiptsTable = Table.fromTableName(
+                this,
+                "ImportedReceiptsTable-%s".formatted(props.deploymentName()),
+                props.sharedNames().receiptsTableName);
+
+        // Grant the LogReceiptLambda and MyReceiptsLambda write and read access respectively to the receipts DynamoDB table
+        receiptsTable.grantWriteData(this.receiptPostLambda);
+        receiptsTable.grantReadData(this.receiptGetLambda);
 
         Aspects.of(this).add(new SetAutoDeleteJobLogRetentionAspect(props.deploymentName(), RetentionDays.THREE_DAYS));
 

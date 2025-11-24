@@ -1,38 +1,87 @@
 // app/system-tests/hmrcReceipt.system.test.js
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from "vitest";
-import { mockClient } from "aws-sdk-client-mock";
-import { S3Client, PutObjectCommand, GetObjectCommand, ListObjectsV2Command } from "@aws-sdk/client-s3";
+//import { mockClient } from "aws-sdk-client-mock";
+//import { S3Client, PutObjectCommand, GetObjectCommand, ListObjectsV2Command } from "@aws-sdk/client-s3";
 import { Readable } from "stream";
 import { dotenvConfigIfNotBlank } from "../lib/env.js";
 import { handler as hmrcReceiptPostHandler } from "../functions/hmrc/hmrcReceiptPost.js";
 import { handler as hmrcReceiptGetHandler } from "../functions/hmrc/hmrcReceiptGet.js";
 import { buildLambdaEvent, makeIdToken } from "../test-helpers/eventBuilders.js";
 import { setupTestEnv, parseResponseBody } from "../test-helpers/mockHelpers.js";
+import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
+import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
+import { ensureReceiptsTableExists } from "@app/bin/dynamodb.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
-const s3Mock = mockClient(S3Client);
+let stopDynalite;
+let importedDynamoDbReceiptStore;
+//const s3Mock = mockClient(S3Client);
+const receiptsTableName = "system-test-vat-journey-receipts";
+
+function makeDocClient() {
+  const endpoint = process.env.AWS_ENDPOINT_URL_DYNAMODB || process.env.AWS_ENDPOINT_URL;
+  const client = new DynamoDBClient({
+    region: process.env.AWS_REGION || "us-east-1",
+    ...(endpoint ? { endpoint } : {}),
+    credentials: {
+      accessKeyId: process.env.AWS_ACCESS_KEY_ID || "dummy",
+      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || "dummy",
+    },
+  });
+  return DynamoDBDocumentClient.from(client);
+}
 
 describe("System: HMRC Receipt Flow (hmrcReceiptPost + hmrcReceiptGet)", () => {
   const testUserSub = "test-user-receipt-123";
   const testToken = makeIdToken(testUserSub);
 
-  beforeAll(() => {
-    // Setup any global test state if needed
+  beforeAll(async () => {
+    const { ensureReceiptsTableExists } = await import("../bin/dynamodb.js");
+    const { default: dynalite } = await import("dynalite");
+
+    const host = "127.0.0.1";
+    const port = 9004;
+    const server = dynalite({ createTableMs: 0 });
+    await new Promise((resolve, reject) => {
+      server.listen(port, host, (err) => (err ? reject(err) : resolve(null)));
+    });
+    stopDynalite = async () => {
+      try {
+        server.close();
+      } catch {}
+    };
+    const endpoint = `http://${host}:${port}`;
+
+    process.env.AWS_REGION = process.env.AWS_REGION || "us-east-1";
+    process.env.AWS_ACCESS_KEY_ID = process.env.AWS_ACCESS_KEY_ID || "dummy";
+    process.env.AWS_SECRET_ACCESS_KEY = process.env.AWS_SECRET_ACCESS_KEY || "dummy";
+    process.env.AWS_ENDPOINT_URL = endpoint;
+    process.env.AWS_ENDPOINT_URL_DYNAMODB = endpoint;
+    //process.env.BUNDLE_DYNAMODB_TABLE_NAME = tableName;
+    //process.env.HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME = hmrcReqsTableName;
+    process.env.RECEIPTS_DYNAMODB_TABLE_NAME = receiptsTableName;
+
+    await ensureReceiptsTableExists(receiptsTableName, endpoint);
+
+    importedDynamoDbReceiptStore = await import("../lib/dynamoDbReceiptStore.js");
   });
 
-  afterAll(() => {
-    s3Mock.restore();
+  afterAll(async () => {
+    try {
+      await stopDynalite?.();
+    } catch {}
   });
 
   beforeEach(() => {
     vi.resetAllMocks();
-    s3Mock.reset();
+    //s3Mock.reset();
     Object.assign(
       process.env,
       setupTestEnv({
         DIY_SUBMIT_RECEIPTS_BUCKET_NAME: "test-receipts-bucket",
+        RECEIPTS_DYNAMODB_TABLE_NAME: receiptsTableName,
         TEST_S3_ENDPOINT: "http://localhost:9000",
         TEST_S3_ACCESS_KEY: "minioadmin",
         TEST_S3_SECRET_KEY: "minioadmin",
@@ -42,7 +91,7 @@ describe("System: HMRC Receipt Flow (hmrcReceiptPost + hmrcReceiptGet)", () => {
 
   it("should post a receipt and then retrieve it", async () => {
     // Step 1: Post receipt to S3
-    s3Mock.on(PutObjectCommand).resolves({});
+    //s3Mock.on(PutObjectCommand).resolves({});
 
     const receiptData = {
       formBundleNumber: "RECEIPT-12345",
@@ -81,24 +130,24 @@ describe("System: HMRC Receipt Flow (hmrcReceiptPost + hmrcReceiptGet)", () => {
     expect(postBody.key).toContain("RECEIPT-12345.json");
 
     // Verify S3 was called
-    expect(s3Mock.calls()).toHaveLength(1);
-    const [putCall] = s3Mock.calls();
-    expect(putCall.args[0].input.Bucket).toBe("test-receipts-bucket");
-    expect(putCall.args[0].input.Key).toContain(testUserSub);
+    //expect(s3Mock.calls()).toHaveLength(1);
+    //const [putCall] = s3Mock.calls();
+    //expect(putCall.args[0].input.Bucket).toBe("test-receipts-bucket");
+    //expect(putCall.args[0].input.Key).toContain(testUserSub);
 
     // Step 2: Retrieve the receipt
-    s3Mock.reset();
+    //s3Mock.reset();
 
     // Mock list receipts
-    s3Mock.on(ListObjectsV2Command).resolves({
-      Contents: [
-        {
-          Key: postBody.key,
-          Size: 200,
-          LastModified: new Date(),
-        },
-      ],
-    });
+    // s3Mock.on(ListObjectsV2Command).resolves({
+    //   Contents: [
+    //     {
+    //       Key: postBody.key,
+    //       Size: 200,
+    //       LastModified: new Date(),
+    //     },
+    //   ],
+    // });
 
     const getListEvent = buildLambdaEvent({
       method: "GET",
@@ -126,13 +175,13 @@ describe("System: HMRC Receipt Flow (hmrcReceiptPost + hmrcReceiptGet)", () => {
     expect(Array.isArray(getListBody.receipts)).toBe(true);
 
     // Step 3: Get specific receipt
-    s3Mock.reset();
+    //s3Mock.reset();
 
     // Mock get specific receipt
-    const receiptStream = Readable.from([JSON.stringify(receiptData)]);
-    s3Mock.on(GetObjectCommand).resolves({
-      Body: receiptStream,
-    });
+    //const receiptStream = Readable.from([JSON.stringify(receiptData)]);
+    //s3Mock.on(GetObjectCommand).resolves({
+    //  Body: receiptStream,
+    //});
 
     const getEvent = buildLambdaEvent({
       method: "GET",
@@ -162,7 +211,7 @@ describe("System: HMRC Receipt Flow (hmrcReceiptPost + hmrcReceiptGet)", () => {
 
   it("should handle multiple receipts for same user", async () => {
     // Post two different receipts
-    s3Mock.on(PutObjectCommand).resolves({});
+    //s3Mock.on(PutObjectCommand).resolves({});
 
     const receipt1 = {
       formBundleNumber: "RECEIPT-001",
@@ -221,7 +270,7 @@ describe("System: HMRC Receipt Flow (hmrcReceiptPost + hmrcReceiptGet)", () => {
     expect(postResponse2.statusCode).toBe(200);
 
     // Verify both were saved
-    expect(s3Mock.calls()).toHaveLength(2);
+    //expect(s3Mock.calls()).toHaveLength(2);
   });
 
   it("should require authentication for receipt retrieval", async () => {

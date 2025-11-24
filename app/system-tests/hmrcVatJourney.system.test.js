@@ -15,14 +15,16 @@ import { handler as hmrcReceiptPostHandler } from "../functions/hmrc/hmrcReceipt
 import { handler as hmrcReceiptGetHandler } from "../functions/hmrc/hmrcReceiptGet.js";
 import { buildLambdaEvent, buildGovClientHeaders, makeIdToken } from "../test-helpers/eventBuilders.js";
 import { setupTestEnv, parseResponseBody } from "../test-helpers/mockHelpers.js";
+import { ensureReceiptsTableExists } from "@app/bin/dynamodb.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
 const s3Mock = mockClient(S3Client);
 let stopDynalite;
-let bm;
-const bundlesTableName = "bundles-system-test-vat-journey";
-const hmrcReqsTableName = "hmrc-requests-system-test-vat-journey";
+let importedBundleManagement;
+const bundlesTableName = "system-test-vat-journey-bundles";
+const hmrcReqsTableName = "system-test-vat-journey-requests";
+const receiptsTableName = "system-test-vat-journey-receipts";
 
 function makeDocClient() {
   const endpoint = process.env.AWS_ENDPOINT_URL_DYNAMODB || process.env.AWS_ENDPOINT_URL;
@@ -91,8 +93,7 @@ describe("System Journey: HMRC VAT Submission End-to-End", () => {
     const { default: dynalite } = await import("dynalite");
 
     const host = "127.0.0.1";
-    const port = 8004;
-    const tableName = bundlesTableName;
+    const port = 9006;
     const server = dynalite({ createTableMs: 0 });
     await new Promise((resolve, reject) => {
       server.listen(port, host, (err) => (err ? reject(err) : resolve(null)));
@@ -109,13 +110,15 @@ describe("System Journey: HMRC VAT Submission End-to-End", () => {
     process.env.AWS_SECRET_ACCESS_KEY = process.env.AWS_SECRET_ACCESS_KEY || "dummy";
     process.env.AWS_ENDPOINT_URL = endpoint;
     process.env.AWS_ENDPOINT_URL_DYNAMODB = endpoint;
-    process.env.BUNDLE_DYNAMODB_TABLE_NAME = tableName;
+    process.env.BUNDLE_DYNAMODB_TABLE_NAME = bundlesTableName;
     process.env.HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME = hmrcReqsTableName;
+    process.env.RECEIPTS_DYNAMODB_TABLE_NAME = receiptsTableName;
 
-    await ensureBundleTableExists(tableName, endpoint);
+    await ensureBundleTableExists(bundlesTableName, endpoint);
     await ensureHmrcApiRequestsTableExists(hmrcReqsTableName, endpoint);
+    await ensureReceiptsTableExists(receiptsTableName, endpoint);
 
-    bm = await import("../lib/bundleManagement.js");
+    importedBundleManagement = await import("../lib/bundleManagement.js");
   });
 
   afterAll(async () => {
@@ -141,15 +144,15 @@ describe("System Journey: HMRC VAT Submission End-to-End", () => {
         HMRC_CLIENT_SECRET: "test-client-secret",
         HMRC_SANDBOX_CLIENT_SECRET: "test-sandbox-client-secret",
         TEST_BUNDLE_MOCK: "false",
-        // ensure dynamo-backed stores are enabled and point to our test tables
         BUNDLE_DYNAMODB_TABLE_NAME: bundlesTableName,
         HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME: hmrcReqsTableName,
+        RECEIPTS_DYNAMODB_TABLE_NAME: receiptsTableName,
       }),
     );
 
     // Grant test bundle for user
     const expiry = new Date(Date.now() + 60 * 60 * 1000).toISOString();
-    await bm.updateUserBundles(testUserSub, [{ bundleId: "guest", expiry }]);
+    await importedBundleManagement.updateUserBundles(testUserSub, [{ bundleId: "guest", expiry }]);
   });
 
   it("should complete full VAT submission journey: Auth → Token → Submit → PostReceipt → GetReceipt", async () => {
@@ -297,20 +300,26 @@ describe("System Journey: HMRC VAT Submission End-to-End", () => {
 
     // Final journey assertions against DynamoDB persistence
     // 1) Bundles should be persisted for the user
-    const bundles = await waitFor(async () => {
-      const items = await queryBundlesForUser(testUserSub);
-      return items && items.find((b) => b.bundleId === "guest") ? items : null;
-    }, { timeoutMs: 8000, intervalMs: 250 });
+    const bundles = await waitFor(
+      async () => {
+        const items = await queryBundlesForUser(testUserSub);
+        return items && items.find((b) => b.bundleId === "guest") ? items : null;
+      },
+      { timeoutMs: 8000, intervalMs: 250 },
+    );
     expect(Array.isArray(bundles)).toBe(true);
     expect(bundles.find((b) => b.bundleId === "guest")).toBeTruthy();
 
     // 2) HMRC API request logs should be present
     // Token exchange may be logged with an unknown UUID user when userSub not provided
     // so scan the whole table and look for an oauth/token POST entry
-    const hmrcLogs = await waitFor(async () => {
-      const all = await scanAllHmrcRequests();
-      return all && all.length > 0 ? all : null;
-    }, { timeoutMs: 8000, intervalMs: 250 });
+    const hmrcLogs = await waitFor(
+      async () => {
+        const all = await scanAllHmrcRequests();
+        return all && all.length > 0 ? all : null;
+      },
+      { timeoutMs: 8000, intervalMs: 250 },
+    );
     expect(Array.isArray(hmrcLogs)).toBe(true);
     expect(hmrcLogs.length).toBeGreaterThan(0);
     const tokenLogs = hmrcLogs.filter((i) => typeof i.url === "string" && i.url.includes("/oauth/token"));

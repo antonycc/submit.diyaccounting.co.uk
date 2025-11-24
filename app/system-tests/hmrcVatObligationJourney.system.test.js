@@ -23,7 +23,7 @@ describe("System Journey: HMRC VAT Obligation-Based Flow", () => {
     const { default: dynalite } = await import("dynalite");
 
     const host = "127.0.0.1";
-    const port = 8005;
+    const port = 9005;
     const tableName = "bundles-system-test-obligation-journey";
     const server = dynalite({ createTableMs: 0 });
     await new Promise((resolve, reject) => {

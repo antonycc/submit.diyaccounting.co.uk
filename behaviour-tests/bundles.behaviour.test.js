@@ -52,7 +52,11 @@ const testAuthUsername = getEnvVarAndLog("testAuthUsername", "TEST_AUTH_USERNAME
 const baseUrl = getEnvVarAndLog("baseUrl", "DIY_SUBMIT_BASE_URL", null);
 const runDynamoDb = getEnvVarAndLog("runDynamoDb", "TEST_DYNAMODB", null);
 const bundleTableName = getEnvVarAndLog("bundleTableName", "BUNDLE_DYNAMODB_TABLE_NAME", null);
-const hmrcApiRequestsTableName = getEnvVarAndLog("hmrcApiRequestsTableName", "HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", null);
+const hmrcApiRequestsTableName = getEnvVarAndLog(
+  "hmrcApiRequestsTableName",
+  "HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME",
+  null,
+);
 
 let mockOAuth2Process;
 let serverProcess;

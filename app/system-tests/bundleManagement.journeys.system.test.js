@@ -80,7 +80,7 @@ beforeAll(async () => {
   const { default: dynalite } = await import("dynalite");
 
   const host = "127.0.0.1";
-  const port = 8002; // use distinct port to avoid conflicts
+  const port = 9007; // use distinct port to avoid conflicts
   const server = dynalite({ createTableMs: 0 });
   await new Promise((resolve, reject) => {
     server.listen(port, host, (err) => (err ? reject(err) : resolve(null)));
@@ -91,9 +91,6 @@ beforeAll(async () => {
     } catch {}
   };
   const endpoint = `http://${host}:${port}`;
-
-  //YOU ARE HERE, THINKING ABOUT HOW THE PROXY ENVIRONMENT WILL TELL THE APP WHERE TO FIND DYNAMODB
-  //We'll probably need to ditch minio to do this, so merge: https://github.com/antonycc/submit.diyaccounting.co.uk/tree/copilot/convert-receipts-to-dynamodb
 
   process.env.AWS_REGION = process.env.AWS_REGION || "us-east-1";
   process.env.AWS_ACCESS_KEY_ID = process.env.AWS_ACCESS_KEY_ID || "dummy";
