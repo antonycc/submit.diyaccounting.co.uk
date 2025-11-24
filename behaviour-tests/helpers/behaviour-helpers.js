@@ -1,5 +1,6 @@
 // behaviour-tests/helpers/behaviour-helpers.js
 import { ensureMinioBucketExists, startMinio } from "@app/bin/minio.js";
+import { startDynamoDB, ensureBundleTableExists, ensureHmrcApiRequestsTableExists } from "@app/bin/dynamodb.js";
 import { spawn } from "child_process";
 import { checkIfServerIsRunning } from "./serverHelper.js";
 import { test } from "@playwright/test";
@@ -52,6 +53,43 @@ export async function runLocalS3(runMinioS3, receiptsBucketName, optionalTestS3A
     logger.info("[minio]: Skipping Minio container creation because TEST_MINIO_S3 is not set to 'run'");
   }
   return endpoint;
+}
+
+export async function runLocalDynamoDb(runDynamoDb, bundleTableName, hmrcApiRequestsTableName) {
+  logger.info(
+    `[dynamodb]: runDynamoDb=${runDynamoDb}, bundleTableName=${bundleTableName}, hmrcApiRequestsTableName=${hmrcApiRequestsTableName}`,
+  );
+  let stop;
+  let endpoint;
+  if (runDynamoDb === "run") {
+    logger.info("[dynamodb]: Starting dynalite (local DynamoDB) server...");
+    const started = await startDynamoDB();
+    stop = started.stop;
+    endpoint = started.endpoint;
+    logger.info(`[dynamodb]: Started at ${endpoint}`);
+
+    // Ensure AWS SDK v3 will talk to local endpoint
+    process.env.AWS_REGION = process.env.AWS_REGION || "us-east-1";
+    process.env.AWS_ACCESS_KEY_ID = process.env.AWS_ACCESS_KEY_ID || "dummy";
+    process.env.AWS_SECRET_ACCESS_KEY = process.env.AWS_SECRET_ACCESS_KEY || "dummy";
+    process.env.AWS_ENDPOINT_URL = endpoint;
+    process.env.AWS_ENDPOINT_URL_DYNAMODB = endpoint;
+
+    // Ensure table names are set in env, with sensible defaults for behaviour tests
+    const bundlesTable = bundleTableName || process.env.BUNDLE_DYNAMODB_TABLE_NAME || "behaviour-bundles";
+    const hmrcReqsTable =
+      hmrcApiRequestsTableName || process.env.HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME || "behaviour-hmrc-requests";
+
+    process.env.BUNDLE_DYNAMODB_TABLE_NAME = bundlesTable;
+    process.env.HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME = hmrcReqsTable;
+
+    // Create tables
+    await ensureBundleTableExists(bundlesTable, endpoint);
+    await ensureHmrcApiRequestsTableExists(hmrcReqsTable, endpoint);
+  } else {
+    logger.info("[dynamodb]: Skipping local DynamoDB because TEST_DYNAMODB is not set to 'run'");
+  }
+  return { stop, endpoint };
 }
 
 export async function runLocalHttpServer(runTestServer, s3Endpoint, httpServerPort) {

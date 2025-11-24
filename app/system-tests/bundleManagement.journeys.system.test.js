@@ -1,0 +1,130 @@
+import { describe, it, expect, beforeAll, afterAll } from "vitest";
+
+let stopDynalite;
+/** @typedef {typeof import("../lib/bundleManagement.js")} BundleManagement */
+/** @type {BundleManagement} */
+let bm;
+
+const tableName = "bundles-system-test-bm-journeys";
+
+function base64UrlEncode(obj) {
+  const json = JSON.stringify(obj);
+  return Buffer.from(json).toString("base64").replace(/=+$/g, "").replace(/\+/g, "-").replace(/\//g, "_");
+}
+
+function makeJWT(sub = "user-journey", extra = {}) {
+  const header = { alg: "none", typ: "JWT" };
+  const payload = {
+    sub,
+    email: `${sub}@example.com`,
+    iat: Math.floor(Date.now() / 1000),
+    exp: Math.floor(Date.now() / 1000) + 3600,
+    ...extra,
+  };
+  return `${base64UrlEncode(header)}.${base64UrlEncode(payload)}.`;
+}
+
+function buildEvent(token, authorizerContext = null, urlPath = null) {
+  const event = {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  };
+
+  if (authorizerContext) {
+    event.requestContext = {
+      authorizer: {
+        lambda: authorizerContext,
+      },
+    };
+  }
+
+  if (urlPath) {
+    event.requestContext = event.requestContext || {};
+    event.requestContext.http = event.requestContext.http || {};
+    event.requestContext.http.path = urlPath;
+  }
+
+  return event;
+}
+
+beforeAll(async () => {
+  const { ensureBundleTableExists } = await import("../bin/dynamodb.js");
+  const { default: dynalite } = await import("dynalite");
+
+  const host = "127.0.0.1";
+  const port = 8002; // use distinct port to avoid conflicts
+  const server = dynalite({ createTableMs: 0 });
+  await new Promise((resolve, reject) => {
+    server.listen(port, host, (err) => (err ? reject(err) : resolve(null)));
+  });
+  stopDynalite = async () => {
+    try {
+      server.close();
+    } catch {}
+  };
+  const endpoint = `http://${host}:${port}`;
+
+  process.env.AWS_REGION = process.env.AWS_REGION || "us-east-1";
+  process.env.AWS_ACCESS_KEY_ID = process.env.AWS_ACCESS_KEY_ID || "dummy";
+  process.env.AWS_SECRET_ACCESS_KEY = process.env.AWS_SECRET_ACCESS_KEY || "dummy";
+  process.env.AWS_ENDPOINT_URL = endpoint;
+  process.env.AWS_ENDPOINT_URL_DYNAMODB = endpoint;
+  process.env.BUNDLE_DYNAMODB_TABLE_NAME = tableName;
+
+  await ensureBundleTableExists(tableName, endpoint);
+
+  bm = await import("../lib/bundleManagement.js");
+});
+
+afterAll(async () => {
+  try {
+    await stopDynalite?.();
+  } catch {}
+});
+
+describe("System journeys: bundleManagement", () => {
+  it("journey: add, remove, add duplicate, remove all (mock mode)", async () => {
+    process.env.TEST_BUNDLE_MOCK = "true";
+    const userId = "bm-journey-mock";
+
+    // Start clean
+    await bm.updateUserBundles(userId, []);
+    expect(await bm.getUserBundles(userId)).toEqual([]);
+
+    // Add
+    await bm.addBundles(userId, ["BUNDLE_1"]);
+    expect(await bm.getUserBundles(userId)).toEqual(["BUNDLE_1"]);
+
+    // Remove
+    await bm.removeBundles(userId, ["BUNDLE_1"]);
+    expect(await bm.getUserBundles(userId)).toEqual([]);
+
+    // Try to add twice (should de-duplicate)
+    await bm.addBundles(userId, ["BUNDLE_2", "BUNDLE_2"]);
+    expect(await bm.getUserBundles(userId)).toEqual(["BUNDLE_2"]);
+
+    // Remove all
+    await bm.updateUserBundles(userId, []);
+    expect(await bm.getUserBundles(userId)).toEqual([]);
+  });
+
+  it("journey: enforcement fail → add bundle → succeed → remove bundle → fail (Dynamo mode)", async () => {
+    delete process.env.TEST_BUNDLE_MOCK; // ensure we go via Dynamo
+    const sub = "bm-journey-enforce";
+    const token = makeJWT(sub);
+    const authorizer = { jwt: { claims: { sub, "cognito:username": "journey" } } };
+    const hmrcPath = "/api/v1/hmrc/vat/return";
+    const event = buildEvent(token, authorizer, hmrcPath);
+
+    // 1) Fail due to missing bundle
+    await expect(bm.enforceBundles(event)).rejects.toThrow();
+
+    // 2) Add qualifying bundle and succeed
+    const expiry = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+    await bm.updateUserBundles(sub, [{ bundleId: "guest", expiry }]);
+    await bm.enforceBundles(event); // should pass now
+
+    // 3) Remove bundle and fail again
+    await bm.updateUserBundles(sub, []);
+    await expect(bm.enforceBundles(event)).rejects.toThrow();
+  });
+});

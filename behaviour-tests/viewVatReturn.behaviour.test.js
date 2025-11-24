@@ -8,6 +8,7 @@ import {
   addOnPageLogging,
   getEnvVarAndLog,
   isSandboxMode,
+  runLocalDynamoDb,
   runLocalHttpServer,
   runLocalOAuth2Server,
   runLocalSslProxy,
@@ -64,10 +65,18 @@ const hmrcTestVatNumber = getEnvVarAndLog("hmrcTestVatNumber", "TEST_HMRC_VAT_NU
 const hmrcTestUsername = getEnvVarAndLog("hmrcTestUsername", "TEST_HMRC_USERNAME", null);
 const hmrcTestPassword = getEnvVarAndLog("hmrcTestPassword", "TEST_HMRC_PASSWORD", null);
 const periodKey = "24A1"; // "18A1";
+const runDynamoDb = getEnvVarAndLog("runDynamoDb", "TEST_DYNAMODB", null);
+const bundleTableName = getEnvVarAndLog("bundleTableName", "BUNDLE_DYNAMODB_TABLE_NAME", null);
+const hmrcApiRequestsTableName = getEnvVarAndLog(
+  "hmrcApiRequestsTableName",
+  "HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME",
+  null,
+);
 
 let mockOAuth2Process;
 let serverProcess;
 let ngrokProcess;
+let dynamoControl;
 
 test.setTimeout(300_000);
 
@@ -78,6 +87,7 @@ test.beforeAll(async () => {
   };
 
   // Run servers needed for the test
+  dynamoControl = await runLocalDynamoDb(runDynamoDb, bundleTableName, hmrcApiRequestsTableName);
   mockOAuth2Process = await runLocalOAuth2Server(runMockOAuth2);
   serverProcess = await runLocalHttpServer(runTestServer, null, serverPort);
   ngrokProcess = await runLocalSslProxy(runProxy, serverPort, baseUrl);
@@ -96,6 +106,9 @@ test.afterAll(async () => {
   if (mockOAuth2Process) {
     mockOAuth2Process.kill();
   }
+  try {
+    await dynamoControl?.stop?.();
+  } catch {}
 });
 
 test("Click through: Get VAT return from HMRC", async ({ page }, testInfo) => {

@@ -26,7 +26,7 @@ export async function handler(event) {
   // No bundle enforcement
 
   // If HEAD request, return 200 OK immediately
-  if (request.method === "HEAD") {
+  if (event?.requestContext?.http?.method === "HEAD") {
     return http200OkResponse({
       request,
       headers: { "Content-Type": "application/json" },
