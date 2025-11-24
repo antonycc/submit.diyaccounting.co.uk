@@ -177,9 +177,12 @@ export async function listUserReceipts(userSub) {
     const receipts = (response.Items || []).map((item) => {
       // Extract timestamp and formBundleNumber from receiptId
       // Format: {timestamp}-{formBundleNumber}
-      const parts = item.receiptId.split("-");
-      const timestamp = parts.slice(0, -1).join("-"); // All parts except last
-      const formBundleNumber = parts[parts.length - 1]; // Last part
+      // Use lastIndexOf to handle hyphens in formBundleNumber
+      const lastHyphenIndex = item.receiptId.lastIndexOf("-");
+      const timestamp =
+        lastHyphenIndex > 0 ? item.receiptId.substring(0, lastHyphenIndex) : item.receiptId;
+      const formBundleNumber =
+        lastHyphenIndex > 0 ? item.receiptId.substring(lastHyphenIndex + 1) : item.receiptId;
 
       return {
         receiptId: item.receiptId,
