@@ -3,14 +3,14 @@
 import { describe, beforeAll, afterAll, beforeEach, afterEach, it, expect, vi } from "vitest";
 import { setupServer } from "msw/node";
 import { mockClient } from "aws-sdk-client-mock";
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { DynamoDBDocumentClient, PutCommand } from "@aws-sdk/lib-dynamodb";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 
 import { handler as logReceiptHandler } from "@app/functions/hmrc/hmrcReceiptPost.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
-const s3Mock = mockClient(S3Client);
+const dynamoDbMock = mockClient(DynamoDBDocumentClient);
 
 // spin up MSW server to catch HMRC calls
 const server = setupServer();
@@ -33,19 +33,18 @@ describe("Integration – log receipt flow", () => {
       // eslint-disable-next-line sonarjs/no-clear-text-protocols
       DIY_SUBMIT_BASE_URL: "http://hmrc.redirect:3000/",
       HMRC_CLIENT_SECRET: "test hmrc client secret",
-      DIY_SUBMIT_RECEIPTS_BUCKET_NAME: "test-receipts-bucket",
-      TEST_S3_ENDPOINT: "http://localhost:9000", // Enable S3 operations for tests
+      DIY_SUBMIT_RECEIPTS_TABLE_NAME: "test-receipts-table",
     };
-    s3Mock.reset();
+    dynamoDbMock.reset();
   });
 
   afterEach(() => {
-    s3Mock.restore();
+    dynamoDbMock.restore();
   });
 
-  it("should log a receipt to S3 via the in-memory mock", async () => {
-    // arrange S3 to succeed
-    s3Mock.on(PutObjectCommand).resolves({});
+  it("should log a receipt to DynamoDB via the in-memory mock", async () => {
+    // arrange DynamoDB to succeed
+    dynamoDbMock.on(PutCommand).resolves({});
     const fakeReceipt = {
       formBundleNumber: "FOO123",
       chargeRefNumber: "BAR456",
@@ -72,16 +71,18 @@ describe("Integration – log receipt flow", () => {
     expect(res.statusCode).toBe(200);
     const body = JSON.parse(res.body);
     expect(body.receipt).toEqual(fakeReceipt);
-    expect(body.key).toBe("receipts/FOO123.json");
+    // Key should include userSub when authenticated
+    expect(body.key).toMatch(/^receipts\/test-sub\//);
+    expect(body.key).toMatch(/FOO123\.json$/);
 
-    // ensure the S3 client was called correctly
-    expect(s3Mock.calls()).toHaveLength(1);
-    const [firstCall] = s3Mock.calls();
-    expect(firstCall.args[0].input).toEqual({
-      Bucket: "test-receipts-bucket",
-      Key: "receipts/FOO123.json",
-      Body: JSON.stringify(fakeReceipt),
-      ContentType: "application/json",
-    });
+    // ensure the DynamoDB client was called correctly
+    expect(dynamoDbMock.calls()).toHaveLength(1);
+    const [firstCall] = dynamoDbMock.calls();
+    const input = firstCall.args[0].input;
+    expect(input.TableName).toBe("test-receipts-table");
+    expect(input.Item.receipt).toEqual(fakeReceipt);
+    expect(input.Item.hashedSub).toBeDefined();
+    expect(input.Item.receiptId).toMatch(/FOO123$/);
+    expect(input.Item.ttl).toBeDefined();
   });
 });

@@ -23,7 +23,7 @@ import software.amazon.awscdk.assertions.Template;
             value = "arn:aws:secretsmanager:us-east-1:111111111111:secret:tt-witheight-google-secret"),
     @SetEnvironmentVariable(key = "CLOUD_TRAIL_ENABLED", value = "true"),
     @SetEnvironmentVariable(key = "ACCESS_LOG_GROUP_RETENTION_PERIOD_DAYS", value = "1"),
-    @SetEnvironmentVariable(key = "S3_RETAIN_RECEIPTS_BUCKET", value = "false"),
+    @SetEnvironmentVariable(key = "DYNAMODB_RETAIN_RECEIPTS_TABLE", value = "false"),
     @SetEnvironmentVariable(key = "HOLDING_DOC_ROOT_PATH", value = "./web/holding"),
     @SetEnvironmentVariable(key = "CDK_DEFAULT_ACCOUNT", value = "111111111111"),
     @SetEnvironmentVariable(key = "CDK_DEFAULT_REGION", value = "us-east-1")
@@ -64,8 +64,8 @@ class SubmitEnvironmentCdkResourceTest {
         // 5) Identity stack should create a Cognito User Pool
         Template.fromStack(env.identityStack).resourceCountIs("AWS::Cognito::UserPool", 1);
 
-        // 6) Data stack should create a receipts S3 bucket
-        Template.fromStack(env.dataStack).resourceCountIs("AWS::S3::Bucket", 1);
+        // 6) Data stack should create a receipts DynamoDB table (3 tables total: receipts, bundles, hmrcApiRequests)
+        Template.fromStack(env.dataStack).resourceCountIs("AWS::DynamoDB::Table", 3);
 
         // 7) Observability stack should enable CloudTrail (Trail present)
         Template.fromStack(env.observabilityStack).resourceCountIs("AWS::CloudTrail::Trail", 1);

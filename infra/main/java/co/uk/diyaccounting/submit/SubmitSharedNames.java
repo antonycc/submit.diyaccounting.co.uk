@@ -67,7 +67,7 @@ public class SubmitSharedNames {
     public String cognitoBaseUri;
     public String trailName;
 
-    public String receiptsBucketName;
+    public String receiptsTableName;
     public String bundlesTableName;
     public String hmrcApiRequestsTableName;
     public String holdingBucketName;
@@ -287,7 +287,7 @@ public class SubmitSharedNames {
         this.apexStackId = "%s-env-ApexStack".formatted(props.envName);
         this.cognitoBaseUri = "https://%s".formatted(this.cognitoDomainName);
 
-        this.receiptsBucketName = "%s-receipts".formatted(this.envDashedDomainName);
+        this.receiptsTableName = "%s-receipts".formatted(this.envDashedDomainName);
         this.bundlesTableName = "%s-bundles".formatted(this.envDashedDomainName);
         this.hmrcApiRequestsTableName = "%s-hmrc-api-requests".formatted(this.envDashedDomainName);
         this.distributionAccessLogGroupName = "distribution-%s-logs".formatted(this.envDashedDomainName);

@@ -42,7 +42,7 @@ public class SubmitEnvironment {
         public String googleClientSecretArn;
         public String antonyccClientId;
         public String antonyccBaseUri;
-        public String s3RetainReceiptsBucket;
+        public String dynamoDbRetainReceiptsTable;
 
         public static class Builder {
             private final SubmitEnvironmentProps p = new SubmitEnvironmentProps();
@@ -104,10 +104,10 @@ public class SubmitEnvironment {
                 envOr("CLOUD_TRAIL_ENABLED", appProps.cloudTrailEnabled, "(from cloudTrailEnabled in cdk.json)");
         var accessLogGroupRetentionPeriodDays = Integer.parseInt(
                 envOr("ACCESS_LOG_GROUP_RETENTION_PERIOD_DAYS", appProps.accessLogGroupRetentionPeriodDays, "30"));
-        var s3RetainReceiptsBucket = envOr(
-                "S3_RETAIN_RECEIPTS_BUCKET",
-                appProps.s3RetainReceiptsBucket,
-                "(from s3RetainReceiptsBucket in cdk.json)");
+        var dynamoDbRetainReceiptsTable = envOr(
+                "DYNAMODB_RETAIN_RECEIPTS_TABLE",
+                appProps.dynamoDbRetainReceiptsTable,
+                "(from dynamoDbRetainReceiptsTable in cdk.json)");
         var holdingDocRootPath =
                 envOr("HOLDING_DOC_ROOT_PATH", appProps.holdingDocRootPath, "(from holdingDocRootPath in cdk.json)");
 
@@ -164,7 +164,7 @@ public class SubmitEnvironment {
                         .resourceNamePrefix(sharedNames.envResourceNamePrefix)
                         .cloudTrailEnabled(cloudTrailEnabled)
                         .sharedNames(sharedNames)
-                        .s3RetainReceiptsBucket(s3RetainReceiptsBucket)
+                        .dynamoDbRetainReceiptsTable(dynamoDbRetainReceiptsTable)
                         .build());
 
         // Create the identity stack before any user aware services

@@ -14,20 +14,14 @@ import software.amazon.awscdk.services.dynamodb.BillingMode;
 import software.amazon.awscdk.services.dynamodb.ITable;
 import software.amazon.awscdk.services.dynamodb.Table;
 import software.amazon.awscdk.services.logs.RetentionDays;
-import software.amazon.awscdk.services.s3.BlockPublicAccess;
-import software.amazon.awscdk.services.s3.Bucket;
-import software.amazon.awscdk.services.s3.BucketEncryption;
-import software.amazon.awscdk.services.s3.IBucket;
-import software.amazon.awscdk.services.s3.ObjectOwnership;
 import software.constructs.Construct;
 
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-import static co.uk.diyaccounting.submit.utils.S3.createLifecycleRules;
 
 public class DataStack extends Stack {
 
-    public IBucket receiptsBucket;
+    public ITable receiptsTable;
     public ITable bundlesTable;
     public ITable hmrcApiRequestsTable;
 
@@ -58,7 +52,7 @@ public class DataStack extends Stack {
         @Override
         SubmitSharedNames sharedNames();
 
-        String s3RetainReceiptsBucket();
+        String dynamoDbRetainReceiptsTable();
 
         static ImmutableDataStackProps.Builder builder() {
             return ImmutableDataStackProps.builder();
@@ -72,23 +66,27 @@ public class DataStack extends Stack {
     public DataStack(Construct scope, String id, StackProps stackProps, DataStackProps props) {
         super(scope, id, stackProps);
 
-        // Create receipts bucket for storing VAT submission receipts
-        boolean s3RetainReceiptsBucket =
-                props.s3RetainReceiptsBucket() != null && Boolean.parseBoolean(props.s3RetainReceiptsBucket());
-        this.receiptsBucket = Bucket.Builder.create(this, props.resourceNamePrefix() + "-ReceiptsBucket")
-                .bucketName(props.sharedNames().receiptsBucketName)
-                .versioned(false)
-                .blockPublicAccess(BlockPublicAccess.BLOCK_ALL)
-                .encryption(BucketEncryption.S3_MANAGED)
-                .removalPolicy(s3RetainReceiptsBucket ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY)
-                .autoDeleteObjects(true)
-                .lifecycleRules(createLifecycleRules(2555)) // 7 years for tax records as per HMRC requirements
-                .objectOwnership(ObjectOwnership.OBJECT_WRITER)
+        // Create receipts DynamoDB table for storing VAT submission receipts
+        boolean dynamoDbRetainReceiptsTable =
+                props.dynamoDbRetainReceiptsTable() != null && Boolean.parseBoolean(props.dynamoDbRetainReceiptsTable());
+        this.receiptsTable = Table.Builder.create(this, props.resourceNamePrefix() + "-ReceiptsTable")
+                .tableName(props.sharedNames().receiptsTableName)
+                .partitionKey(Attribute.builder()
+                        .name("hashedSub")
+                        .type(AttributeType.STRING)
+                        .build())
+                .sortKey(Attribute.builder()
+                        .name("receiptId")
+                        .type(AttributeType.STRING)
+                        .build())
+                .billingMode(BillingMode.PAY_PER_REQUEST) // Serverless, near-zero cost at rest
+                .timeToLiveAttribute("ttl") // Enable TTL for automatic expiry handling (7 years)
+                .removalPolicy(dynamoDbRetainReceiptsTable ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY)
                 .build();
         infof(
-                "Created receipts bucket with name %s and id %s",
-                this.receiptsBucket.getBucketName(),
-                this.receiptsBucket.getNode().getId());
+                "Created receipts DynamoDB table with name %s and id %s",
+                this.receiptsTable.getTableName(),
+                this.receiptsTable.getNode().getId());
 
         // Create DynamoDB table for bundle storage
         this.bundlesTable = Table.Builder.create(this, props.resourceNamePrefix() + "-BundlesTable")
@@ -131,8 +129,8 @@ public class DataStack extends Stack {
 
         Aspects.of(this).add(new SetAutoDeleteJobLogRetentionAspect(props.deploymentName(), RetentionDays.THREE_DAYS));
 
-        cfnOutput(this, "ReceiptsBucketName", this.receiptsBucket.getBucketName());
-        cfnOutput(this, "ReceiptsBucketArn", this.receiptsBucket.getBucketArn());
+        cfnOutput(this, "ReceiptsTableName", this.receiptsTable.getTableName());
+        cfnOutput(this, "ReceiptsTableArn", this.receiptsTable.getTableArn());
         cfnOutput(this, "BundlesTableName", this.bundlesTable.getTableName());
         cfnOutput(this, "BundlesTableArn", this.bundlesTable.getTableArn());
         cfnOutput(this, "HmrcApiRequestsTableName", this.hmrcApiRequestsTable.getTableName());
