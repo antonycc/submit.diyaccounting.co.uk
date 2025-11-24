@@ -52,8 +52,6 @@ public class DataStack extends Stack {
         @Override
         SubmitSharedNames sharedNames();
 
-        String dynamoDbRetainReceiptsTable();
-
         static ImmutableDataStackProps.Builder builder() {
             return ImmutableDataStackProps.builder();
         }
@@ -67,8 +65,6 @@ public class DataStack extends Stack {
         super(scope, id, stackProps);
 
         // Create receipts DynamoDB table for storing VAT submission receipts
-        boolean dynamoDbRetainReceiptsTable =
-                props.dynamoDbRetainReceiptsTable() != null && Boolean.parseBoolean(props.dynamoDbRetainReceiptsTable());
         this.receiptsTable = Table.Builder.create(this, props.resourceNamePrefix() + "-ReceiptsTable")
                 .tableName(props.sharedNames().receiptsTableName)
                 .partitionKey(Attribute.builder()
@@ -81,7 +77,7 @@ public class DataStack extends Stack {
                         .build())
                 .billingMode(BillingMode.PAY_PER_REQUEST) // Serverless, near-zero cost at rest
                 .timeToLiveAttribute("ttl") // Enable TTL for automatic expiry handling (7 years)
-                .removalPolicy(dynamoDbRetainReceiptsTable ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY)
+                .removalPolicy(RemovalPolicy.DESTROY)
                 .build();
         infof(
                 "Created receipts DynamoDB table with name %s and id %s",

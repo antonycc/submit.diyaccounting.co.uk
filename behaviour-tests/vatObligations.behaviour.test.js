@@ -67,11 +67,8 @@ const hmrcVatPeriodFromDate = "2025-01-07";
 const hmrcVatPeriodToDate = "2025-11-01";
 const runDynamoDb = getEnvVarAndLog("runDynamoDb", "TEST_DYNAMODB", null);
 const bundleTableName = getEnvVarAndLog("bundleTableName", "BUNDLE_DYNAMODB_TABLE_NAME", null);
-const hmrcApiRequestsTableName = getEnvVarAndLog(
-  "hmrcApiRequestsTableName",
-  "HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME",
-  null,
-);
+const hmrcApiRequestsTableName = getEnvVarAndLog("hmrcApiRequestsTableName", "HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", null);
+const receiptsTableName = getEnvVarAndLog("receiptsTableName", "RECEIPTS_DYNAMODB_TABLE_NAME", null);
 
 let mockOAuth2Process;
 let serverProcess;
@@ -87,7 +84,7 @@ test.beforeAll(async () => {
   };
 
   // Run servers needed for the test
-  dynamoControl = await runLocalDynamoDb(runDynamoDb, bundleTableName, hmrcApiRequestsTableName);
+  dynamoControl = await runLocalDynamoDb(runDynamoDb, bundleTableName, hmrcApiRequestsTableName, receiptsTableName);
   mockOAuth2Process = await runLocalOAuth2Server(runMockOAuth2);
   serverProcess = await runLocalHttpServer(runTestServer, null, serverPort);
   ngrokProcess = await runLocalSslProxy(runProxy, serverPort, baseUrl);

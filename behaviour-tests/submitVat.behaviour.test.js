@@ -66,11 +66,9 @@ const hmrcTestPassword = getEnvVarAndLog("hmrcTestPassword", "TEST_HMRC_PASSWORD
 const hmrcTestVatNumber = getEnvVarAndLog("hmrcTestVatNumber", "TEST_HMRC_VAT_NUMBER", null);
 const runDynamoDb = getEnvVarAndLog("runDynamoDb", "TEST_DYNAMODB", null);
 const bundleTableName = getEnvVarAndLog("bundleTableName", "BUNDLE_DYNAMODB_TABLE_NAME", null);
-const hmrcApiRequestsTableName = getEnvVarAndLog(
-  "hmrcApiRequestsTableName",
-  "HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME",
-  null,
-);
+const hmrcApiRequestsTableName = getEnvVarAndLog("hmrcApiRequestsTableName", "HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", null);
+const receiptsTableName = getEnvVarAndLog("receiptsTableName", "RECEIPTS_DYNAMODB_TABLE_NAME", null);
+
 // eslint-disable-next-line sonarjs/pseudo-random
 const hmrcVatPeriodKey = Math.random().toString(36).substring(2, 6);
 const hmrcVatDueAmount = "1000.00";
@@ -90,7 +88,7 @@ test.beforeAll(async () => {
   };
 
   // Run servers needed for the test
-  dynamoControl = await runLocalDynamoDb(runDynamoDb, bundleTableName, hmrcApiRequestsTableName);
+  dynamoControl = await runLocalDynamoDb(runDynamoDb, bundleTableName, hmrcApiRequestsTableName, receiptsTableName);
   mockOAuth2Process = await runLocalOAuth2Server(runMockOAuth2);
   s3Endpoint = await runLocalS3(runMinioS3, receiptsBucketName, optionalTestS3AccessKey, optionalTestS3SecretKey);
   serverProcess = await runLocalHttpServer(runTestServer, s3Endpoint, serverPort);

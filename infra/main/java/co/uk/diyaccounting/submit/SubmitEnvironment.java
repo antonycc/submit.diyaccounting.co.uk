@@ -1,20 +1,21 @@
 package co.uk.diyaccounting.submit;
 
-import static co.uk.diyaccounting.submit.utils.Kind.envOr;
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.Kind.warnf;
-
 import co.uk.diyaccounting.submit.stacks.ApexStack;
 import co.uk.diyaccounting.submit.stacks.DataStack;
 import co.uk.diyaccounting.submit.stacks.IdentityStack;
 import co.uk.diyaccounting.submit.stacks.ObservabilityStack;
 import co.uk.diyaccounting.submit.stacks.ObservabilityUE1Stack;
 import co.uk.diyaccounting.submit.utils.KindCdk;
-import java.lang.reflect.Field;
-import java.nio.file.Paths;
 import software.amazon.awscdk.App;
 import software.amazon.awscdk.Environment;
 import software.constructs.Construct;
+
+import java.lang.reflect.Field;
+import java.nio.file.Paths;
+
+import static co.uk.diyaccounting.submit.utils.Kind.envOr;
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.Kind.warnf;
 
 public class SubmitEnvironment {
 
@@ -42,7 +43,6 @@ public class SubmitEnvironment {
         public String googleClientSecretArn;
         public String antonyccClientId;
         public String antonyccBaseUri;
-        public String dynamoDbRetainReceiptsTable;
 
         public static class Builder {
             private final SubmitEnvironmentProps p = new SubmitEnvironmentProps();
@@ -104,10 +104,6 @@ public class SubmitEnvironment {
                 envOr("CLOUD_TRAIL_ENABLED", appProps.cloudTrailEnabled, "(from cloudTrailEnabled in cdk.json)");
         var accessLogGroupRetentionPeriodDays = Integer.parseInt(
                 envOr("ACCESS_LOG_GROUP_RETENTION_PERIOD_DAYS", appProps.accessLogGroupRetentionPeriodDays, "30"));
-        var dynamoDbRetainReceiptsTable = envOr(
-                "DYNAMODB_RETAIN_RECEIPTS_TABLE",
-                appProps.dynamoDbRetainReceiptsTable,
-                "(from dynamoDbRetainReceiptsTable in cdk.json)");
         var holdingDocRootPath =
                 envOr("HOLDING_DOC_ROOT_PATH", appProps.holdingDocRootPath, "(from holdingDocRootPath in cdk.json)");
 
@@ -164,7 +160,6 @@ public class SubmitEnvironment {
                         .resourceNamePrefix(sharedNames.envResourceNamePrefix)
                         .cloudTrailEnabled(cloudTrailEnabled)
                         .sharedNames(sharedNames)
-                        .dynamoDbRetainReceiptsTable(dynamoDbRetainReceiptsTable)
                         .build());
 
         // Create the identity stack before any user aware services

@@ -1,12 +1,13 @@
 // behaviour-tests/helpers/behaviour-helpers.js
 import { ensureMinioBucketExists, startMinio } from "@app/bin/minio.js";
-import { startDynamoDB, ensureBundleTableExists, ensureHmrcApiRequestsTableExists } from "@app/bin/dynamodb.js";
+import { startDynamoDB, ensureBundleTableExists, ensureHmrcApiRequestsTableExists, ensureReceiptsTableExists } from "@app/bin/dynamodb.js";
 import { spawn } from "child_process";
 import { checkIfServerIsRunning } from "./serverHelper.js";
 import { test } from "@playwright/test";
 import { gotoWithRetries } from "./gotoWithRetries.js";
 
 import logger from "@app/lib/logger.js";
+import { validateEnv } from "@app/lib/env.js";
 
 const defaultScreenshotPath = "target/behaviour-test-results/screenshots/behaviour-helpers";
 
@@ -55,9 +56,9 @@ export async function runLocalS3(runMinioS3, receiptsBucketName, optionalTestS3A
   return endpoint;
 }
 
-export async function runLocalDynamoDb(runDynamoDb, bundleTableName, hmrcApiRequestsTableName) {
+export async function runLocalDynamoDb(runDynamoDb, bundleTableName, hmrcApiRequestsTableName, receiptsTableName) {
   logger.info(
-    `[dynamodb]: runDynamoDb=${runDynamoDb}, bundleTableName=${bundleTableName}, hmrcApiRequestsTableName=${hmrcApiRequestsTableName}`,
+    `[dynamodb]: runDynamoDb=${runDynamoDb}, bundleTableName=${bundleTableName}, hmrcApiRequestsTableName=${hmrcApiRequestsTableName}, receiptsTableName=${receiptsTableName}`,
   );
   let stop;
   let endpoint;
@@ -78,13 +79,16 @@ export async function runLocalDynamoDb(runDynamoDb, bundleTableName, hmrcApiRequ
     // Ensure table names are set in env, with sensible defaults for behaviour tests
     const bundlesTable = bundleTableName || process.env.BUNDLE_DYNAMODB_TABLE_NAME || "behaviour-bundles";
     const hmrcReqsTable = hmrcApiRequestsTableName || process.env.HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME || "behaviour-hmrc-requests";
+    const receiptsTable = receiptsTableName || process.env.RECEIPTS_DYNAMODB_TABLE_NAME || "behaviour-receipts";
 
     process.env.BUNDLE_DYNAMODB_TABLE_NAME = bundlesTable;
     process.env.HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME = hmrcReqsTable;
+    process.env.RECEIPTS_DYNAMODB_TABLE_NAME = receiptsTable;
 
     // Create tables
     await ensureBundleTableExists(bundlesTable, endpoint);
     await ensureHmrcApiRequestsTableExists(hmrcReqsTable, endpoint);
+    await ensureReceiptsTableExists(receiptsTable, endpoint);
   } else {
     logger.info("[dynamodb]: Skipping local DynamoDB because TEST_DYNAMODB is not set to 'run'");
   }
