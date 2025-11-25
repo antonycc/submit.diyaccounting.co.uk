@@ -51,8 +51,6 @@ beforeAll(async () => {
   const { ensureBundleTableExists } = await import("../bin/dynamodb.js");
   const { default: dynalite } = await import("dynalite");
 
-  // Start an isolated dynalite on a different port to avoid conflicts with
-  // other system tests that may also use 8000.
   const host = "127.0.0.1";
   const port = 8001;
   const server = dynalite({ createTableMs: 0 });

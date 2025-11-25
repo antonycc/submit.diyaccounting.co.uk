@@ -133,7 +133,9 @@ describe("bundleEnforcement.js", () => {
       };
       const event = buildEvent(token, authorizerContext);
 
-      dynamoDbBundleStore.getUserBundles.mockResolvedValue([{ bundleId: "test", expiry: new Date().toISOString() }]);
+      dynamoDbBundleStore.getUserBundles.mockResolvedValue([
+        { bundleId: "test", expiry: new Date().toISOString() },
+      ]);
 
       // Should not throw
       await enforceBundles(event);
@@ -177,7 +179,9 @@ describe("bundleEnforcement.js", () => {
       };
       const event = buildEvent(token, authorizerContext);
 
-      dynamoDbBundleStore.getUserBundles.mockResolvedValue([{ bundleId: "guest", expiry: new Date().toISOString() }]);
+      dynamoDbBundleStore.getUserBundles.mockResolvedValue([
+        { bundleId: "guest", expiry: new Date().toISOString() },
+      ]);
 
       // Should not throw
       await enforceBundles(event);
@@ -200,7 +204,9 @@ describe("bundleEnforcement.js", () => {
       };
       const event = buildEvent(token, authorizerContext);
 
-      dynamoDbBundleStore.getUserBundles.mockResolvedValue([{ bundleId: "business", expiry: new Date().toISOString() }]);
+      dynamoDbBundleStore.getUserBundles.mockResolvedValue([
+        { bundleId: "business", expiry: new Date().toISOString() },
+      ]);
 
       // Should not throw
       await enforceBundles(event);
@@ -223,7 +229,9 @@ describe("bundleEnforcement.js", () => {
       };
       const event = buildEvent(token, authorizerContext);
 
-      dynamoDbBundleStore.getUserBundles.mockResolvedValue([{ bundleId: "guest", expiry: new Date().toISOString() }]);
+      dynamoDbBundleStore.getUserBundles.mockResolvedValue([
+        { bundleId: "guest", expiry: new Date().toISOString() },
+      ]);
 
       // Should not throw
       await enforceBundles(event);
@@ -239,7 +247,9 @@ describe("bundleEnforcement.js", () => {
       };
       const event = buildEvent(null, authorizerContext);
 
-      dynamoDbBundleStore.getUserBundles.mockResolvedValue([{ bundleId: "test", expiry: new Date().toISOString() }]);
+      dynamoDbBundleStore.getUserBundles.mockResolvedValue([
+        { bundleId: "test", expiry: new Date().toISOString() },
+      ]);
 
       // Should not throw
       await enforceBundles(event);

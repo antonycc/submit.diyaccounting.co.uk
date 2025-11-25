@@ -1,12 +1,12 @@
 // behaviour-tests/helpers/behaviour-helpers.js
-import { ensureMinioBucketExists, startMinio } from "@app/bin/minio.js";
-import { startDynamoDB, ensureBundleTableExists, ensureHmrcApiRequestsTableExists } from "@app/bin/dynamodb.js";
+import { startDynamoDB, ensureBundleTableExists, ensureHmrcApiRequestsTableExists, ensureReceiptsTableExists } from "@app/bin/dynamodb.js";
 import { spawn } from "child_process";
 import { checkIfServerIsRunning } from "./serverHelper.js";
 import { test } from "@playwright/test";
 import { gotoWithRetries } from "./gotoWithRetries.js";
 
 import logger from "@app/lib/logger.js";
+import { validateEnv } from "@app/lib/env.js";
 
 const defaultScreenshotPath = "target/behaviour-test-results/screenshots/behaviour-helpers";
 
@@ -38,26 +38,9 @@ export function isSandboxMode() {
   }
 }
 
-export async function runLocalS3(runMinioS3, receiptsBucketName, optionalTestS3AccessKey, optionalTestS3SecretKey) {
+export async function runLocalDynamoDb(runDynamoDb, bundleTableName, hmrcApiRequestsTableName, receiptsTableName) {
   logger.info(
-    `[minio]: runMinioS3=${runMinioS3}, receiptsBucketName=${receiptsBucketName}, optionalTestS3AccessKey=${optionalTestS3AccessKey}`,
-  );
-  let endpoint;
-  if (runMinioS3 === "run") {
-    logger.info("[minio]: Starting minio process...");
-    endpoint = await startMinio(receiptsBucketName, optionalTestS3AccessKey, optionalTestS3SecretKey);
-    logger.info("[minio]: Waiting for server to initialize...");
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    await ensureMinioBucketExists(receiptsBucketName, endpoint, optionalTestS3AccessKey, optionalTestS3SecretKey);
-  } else {
-    logger.info("[minio]: Skipping Minio container creation because TEST_MINIO_S3 is not set to 'run'");
-  }
-  return endpoint;
-}
-
-export async function runLocalDynamoDb(runDynamoDb, bundleTableName, hmrcApiRequestsTableName) {
-  logger.info(
-    `[dynamodb]: runDynamoDb=${runDynamoDb}, bundleTableName=${bundleTableName}, hmrcApiRequestsTableName=${hmrcApiRequestsTableName}`,
+    `[dynamodb]: runDynamoDb=${runDynamoDb}, bundleTableName=${bundleTableName}, hmrcApiRequestsTableName=${hmrcApiRequestsTableName}, receiptsTableName=${receiptsTableName}`,
   );
   let stop;
   let endpoint;
@@ -78,21 +61,24 @@ export async function runLocalDynamoDb(runDynamoDb, bundleTableName, hmrcApiRequ
     // Ensure table names are set in env, with sensible defaults for behaviour tests
     const bundlesTable = bundleTableName || process.env.BUNDLE_DYNAMODB_TABLE_NAME || "behaviour-bundles";
     const hmrcReqsTable = hmrcApiRequestsTableName || process.env.HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME || "behaviour-hmrc-requests";
+    const receiptsTable = receiptsTableName || process.env.RECEIPTS_DYNAMODB_TABLE_NAME || "behaviour-receipts";
 
     process.env.BUNDLE_DYNAMODB_TABLE_NAME = bundlesTable;
     process.env.HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME = hmrcReqsTable;
+    process.env.RECEIPTS_DYNAMODB_TABLE_NAME = receiptsTable;
 
     // Create tables
     await ensureBundleTableExists(bundlesTable, endpoint);
     await ensureHmrcApiRequestsTableExists(hmrcReqsTable, endpoint);
+    await ensureReceiptsTableExists(receiptsTable, endpoint);
   } else {
     logger.info("[dynamodb]: Skipping local DynamoDB because TEST_DYNAMODB is not set to 'run'");
   }
   return { stop, endpoint };
 }
 
-export async function runLocalHttpServer(runTestServer, s3Endpoint, httpServerPort) {
-  logger.info(`[minio]: runTestServer=${runTestServer}, s3Endpoint=${s3Endpoint}, httpServerPort=${httpServerPort}`);
+export async function runLocalHttpServer(runTestServer, httpServerPort) {
+  logger.info(`[http]: runTestServer=${runTestServer}, httpServerPort=${httpServerPort}`);
   let serverProcess;
   if (runTestServer === "run") {
     logger.info("[http]: Starting server process...");
@@ -100,7 +86,6 @@ export async function runLocalHttpServer(runTestServer, s3Endpoint, httpServerPo
     serverProcess = spawn("npm", ["run", "server"], {
       env: {
         ...process.env,
-        TEST_S3_ENDPOINT: s3Endpoint,
         TEST_SERVER_HTTP_PORT: httpServerPort.toString(),
       },
       stdio: ["pipe", "pipe", "pipe"],

@@ -15,12 +15,27 @@ let store;
 const tableName = "bundles-system-test";
 
 beforeAll(async () => {
-  const { startDynamoDB, ensureBundleTableExists } = await import("../bin/dynamodb.js");
+  // const { startDynamoDB, ensureBundleTableExists } = await import("../bin/dynamodb.js");
+  //
+  // // Start local dynalite and configure environment for AWS SDK v3
+  // const started = await startDynamoDB();
+  // stopDynalite = started.stop;
+  // const endpoint = started.endpoint;
+  const { ensureBundleTableExists } = await import("../bin/dynamodb.js");
+  const { default: dynalite } = await import("dynalite");
 
-  // Start local dynalite and configure environment for AWS SDK v3
-  const started = await startDynamoDB();
-  stopDynalite = started.stop;
-  const endpoint = started.endpoint;
+  const host = "127.0.0.1";
+  const port = 9008; // use distinct port to avoid conflicts
+  const server = dynalite({ createTableMs: 0 });
+  await new Promise((resolve, reject) => {
+    server.listen(port, host, (err) => (err ? reject(err) : resolve(null)));
+  });
+  stopDynalite = async () => {
+    try {
+      server.close();
+    } catch {}
+  };
+  const endpoint = `http://${host}:${port}`;
 
   // Minimal AWS SDK env for local usage with endpoint override
   process.env.AWS_REGION = process.env.AWS_REGION || "us-east-1";

@@ -21,7 +21,7 @@ const cdkConfig = JSON.parse(readFileSync(cdkJsonPath, "utf8"));
 const context = cdkConfig.context || {};
 logger.info("CDK context:", context);
 
-function startDynaliteServer({ host = "127.0.0.1", port = 8000 } = {}) {
+function startDynaliteServer({ host = "127.0.0.1", port = 9000 } = {}) {
   const server = dynalite({ createTableMs: 0 });
   return new Promise((resolve, reject) => {
     server.listen(port, host, (err) => {
@@ -34,7 +34,7 @@ function startDynaliteServer({ host = "127.0.0.1", port = 8000 } = {}) {
 
 export async function startDynamoDB() {
   // Start a single, consistent local DynamoDB-like server (dynalite)
-  const { server, endpoint } = await startDynaliteServer({ host: "127.0.0.1", port: 8000 });
+  const { server, endpoint } = await startDynaliteServer({ host: "127.0.0.1", port: 9000 });
   const stop = async () => {
     try {
       server.close();
@@ -116,6 +116,47 @@ export async function ensureHmrcApiRequestsTableExists(tableName, endpoint) {
           AttributeDefinitions: [
             { AttributeName: "hashedSub", AttributeType: "S" },
             { AttributeName: "requestId", AttributeType: "S" },
+          ],
+          BillingMode: "PAY_PER_REQUEST",
+        }),
+      );
+      logger.info(`[dynamodb]: ✅ Created table '${tableName}' on endpoint '${endpoint}'`);
+    } else {
+      throw new Error(`[dynamodb]: Failed to check/create table: ${err.message} on endpoint '${endpoint}'`);
+    }
+  }
+}
+
+// Create receipts table if it doesn't exist
+export async function ensureReceiptsTableExists(tableName, endpoint) {
+  logger.info(`[dynamodb]: Ensuring receipts table: '${tableName}' exists on endpoint '${endpoint}'`);
+
+  const clientConfig = {
+    endpoint,
+    region: "us-east-1",
+    credentials: {
+      accessKeyId: "dummy",
+      secretAccessKey: "dummy",
+    },
+  };
+  const dynamodb = new DynamoDBClient(clientConfig);
+
+  try {
+    await dynamodb.send(new DescribeTableCommand({ TableName: tableName }));
+    logger.info(`[dynamodb]: ✅ Table '${tableName}' already exists on endpoint '${endpoint}'`);
+  } catch (err) {
+    if (err.name === "ResourceNotFoundException") {
+      logger.info(`[dynamodb]: ℹ️ Table '${tableName}' not found on endpoint '${endpoint}', creating...`);
+      await dynamodb.send(
+        new CreateTableCommand({
+          TableName: tableName,
+          KeySchema: [
+            { AttributeName: "hashedSub", KeyType: "HASH" },
+            { AttributeName: "receiptId", KeyType: "RANGE" },
+          ],
+          AttributeDefinitions: [
+            { AttributeName: "hashedSub", AttributeType: "S" },
+            { AttributeName: "receiptId", AttributeType: "S" },
           ],
           BillingMode: "PAY_PER_REQUEST",
         }),

@@ -37,9 +37,7 @@ describe("bundlePost handler", () => {
 
     const response = await bundlePostHandler(event);
 
-    // Currently returns 401 due to bug, should return 200
-    // expect(response.statusCode).toBe(200);
-    expect(response.statusCode).toBe(401); // Actual behavior
+    expect(response.statusCode).toBe(200);
   });
 
   // ============================================================================

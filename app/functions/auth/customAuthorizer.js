@@ -77,6 +77,7 @@ export async function handler(event) {
     const token = tokenMatch[1].trim();
 
     // Check if we're in test/mock mode (NODE_ENV === 'stubbed' or TEST_ACCESS_TOKEN is set)
+    // TODO: [stubs] Remove stubs from production code
     const isMockMode = process.env.NODE_ENV === "stubbed" || process.env.TEST_ACCESS_TOKEN;
 
     let payload;

@@ -33,10 +33,10 @@ function getTableName() {
 
 export async function putBundle(userId, bundle) {
   if (!isDynamoDbEnabled()) {
-    logger.warn({ message: "DynamoDB not enabled, skipping putBundle" });
+    logger.warn({ message: `DynamoDB not enabled, skipping putBundle [table: ${process.env.BUNDLE_DYNAMODB_TABLE_NAME}]` });
     return;
   } else {
-    logger.info({ message: "DynamoDB enabled, proceeding with putBundle" });
+    logger.info({ message: `DynamoDB enabled, proceeding with putBundle [table: ${process.env.BUNDLE_DYNAMODB_TABLE_NAME}]` });
   }
 
   try {
@@ -93,10 +93,10 @@ export async function putBundle(userId, bundle) {
 
 export async function deleteBundle(userId, bundleId) {
   if (!isDynamoDbEnabled()) {
-    logger.warn({ message: "DynamoDB not enabled, skipping deleteBundle" });
+    logger.warn({ message: `DynamoDB not enabled, skipping deleteBundle [table: ${process.env.BUNDLE_DYNAMODB_TABLE_NAME}]` });
     return;
   } else {
-    logger.info({ message: "DynamoDB enabled, proceeding with deleteBundle" });
+    logger.info({ message: `DynamoDB enabled, proceeding with deleteBundle [table: ${process.env.BUNDLE_DYNAMODB_TABLE_NAME}]` });
   }
 
   try {
@@ -138,10 +138,10 @@ export async function deleteBundle(userId, bundleId) {
 
 export async function deleteAllBundles(userId) {
   if (!isDynamoDbEnabled()) {
-    logger.warn({ message: "DynamoDB not enabled, skipping deleteAllBundles" });
+    logger.warn({ message: `DynamoDB not enabled, skipping deleteAllBundles [table: ${process.env.BUNDLE_DYNAMODB_TABLE_NAME}]` });
     return;
   } else {
-    logger.info({ message: "DynamoDB enabled, proceeding with deleteAllBundles" });
+    logger.info({ message: `DynamoDB enabled, proceeding with deleteAllBundles [table: ${process.env.BUNDLE_DYNAMODB_TABLE_NAME}]` });
   }
 
   try {
@@ -190,10 +190,10 @@ export async function deleteAllBundles(userId) {
 
 export async function getUserBundles(userId) {
   if (!isDynamoDbEnabled()) {
-    logger.warn({ message: "DynamoDB not enabled, returning empty bundles array" });
+    logger.warn({ message: `DynamoDB not enabled, returning empty bundles array [table: ${process.env.BUNDLE_DYNAMODB_TABLE_NAME}]` });
     return [];
   } else {
-    logger.info({ message: "DynamoDB enabled, proceeding with getUserBundles", userId });
+    logger.info({ message: `DynamoDB enabled, proceeding with getUserBundles [table: ${process.env.BUNDLE_DYNAMODB_TABLE_NAME}]`, userId });
   }
 
   try {

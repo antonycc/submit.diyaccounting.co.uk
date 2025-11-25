@@ -2,7 +2,7 @@
 
 ## 1 Overview and repository goals
 
-* **Purpose** – The repository aims to provide an open-source, developer-friendly system for UK businesses to submit VAT returns via HMRC’s *Making Tax Digital* (MTD) APIs.  It includes a static front-end (HTML/JS/ESM) and a serverless back-end (Node-based Lambdas) that can run locally with mock OAuth2 and MinIO or deploy to AWS (S3 + CloudFront + Lambda + Cognito).
+* **Purpose** – The repository aims to provide an open-source, developer-friendly system for UK businesses to submit VAT returns via HMRC’s *Making Tax Digital* (MTD) APIs.  It includes a static front-end (HTML/JS/ESM) and a serverless back-end (Node-based Lambdas) that can run locally with mock OAuth2 or deploy to AWS (DynamoDb + CloudFront + Lambda + Cognito).
 * **Core capability** – VAT return submission via the `/organisations/vat/{vrn}/returns` endpoint.  The OAuth flow uses HMRC’s sandbox for token acquisition and submission.
 * **Secondary features (in progress)** – viewing VAT obligations, liabilities, payments and penalties; entitlements management (bundle model) and front-end activity routing; dynamic fraud-prevention headers; observability and CI/CD integration.
 

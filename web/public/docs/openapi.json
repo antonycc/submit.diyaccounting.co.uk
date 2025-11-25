@@ -1,612 +1,559 @@
 {
-  "openapi": "3.0.3",
-  "info": {
-    "title": "DIY Accounting Submit API",
-    "description": "DIY Accounting Submit API documentation",
-    "version": "0.0.2-4",
-    "x-authentication-guide": {
-      "description": "This API is protected by Amazon Cognito. To use the API:\n\n1. **Via Website**: If you are logged into the DIY Accounting Submit website, you can access the Swagger UI directly and API calls will use your existing session cookies.\n\n2. **External Access**: \n   - First obtain a Cognito access token by calling `/api/v1/cognito/authUrl` to get the login URL\n   - Complete the OAuth flow to get an access token\n   - Include the token in the `Authorization: Bearer <token>` header\n\n3. **For HMRC Integration**: Some endpoints require HMRC authorization tokens obtained via `/api/v1/hmrc/authUrl` and `/api/v1/hmrc/token`\n\n**Note**: All endpoints require proper CORS headers and are accessible from the same domain as the main application."
+  "openapi" : "3.0.3",
+  "info" : {
+    "title" : "DIY Accounting Submit API",
+    "description" : "DIY Accounting Submit API documentation",
+    "version" : "0.0.2-4",
+    "x-authentication-guide" : {
+      "description" : "This API is protected by Amazon Cognito. To use the API:\n\n1. **Via Website**: If you are logged into the DIY Accounting Submit website, you can access the Swagger UI directly and API calls will use your existing session cookies.\n\n2. **External Access**: \n   - First obtain a Cognito access token by calling `/api/v1/cognito/authUrl` to get the login URL\n   - Complete the OAuth flow to get an access token\n   - Include the token in the `Authorization: Bearer <token>` header\n\n3. **For HMRC Integration**: Some endpoints require HMRC authorization tokens obtained via `/api/v1/hmrc/authUrl` and `/api/v1/hmrc/token`\n\n**Note**: All endpoints require proper CORS headers and are accessible from the same domain as the main application."
     }
   },
-  "servers": [
-    {
-      "url": "${env.DIY_SUBMIT_APEX_URL}api/v1/",
-      "description": "DIY Accounting Submit API documentation"
-    }
-  ],
-  "paths": {
-    "/hmrc/receipt": {
-      "post": {
-        "summary": "Log receipt to storage",
-        "description": "Logs a transaction receipt to secure storage",
-        "operationId": "logReceipt",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "receipt": {
-                    "type": "object",
-                    "properties": {
-                      "formBundleNumber": {
-                        "type": "string",
-                        "example": "123456789012"
+  "servers" : [ {
+    "url" : "${env.DIY_SUBMIT_APEX_URL}api/v1/",
+    "description" : "DIY Accounting Submit API documentation"
+  } ],
+  "paths" : {
+    "/hmrc/receipt" : {
+      "post" : {
+        "summary" : "Log receipt to storage",
+        "description" : "Logs a transaction receipt to secure storage",
+        "operationId" : "logReceipt",
+        "requestBody" : {
+          "required" : true,
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "type" : "object",
+                "properties" : {
+                  "receipt" : {
+                    "type" : "object",
+                    "properties" : {
+                      "formBundleNumber" : {
+                        "type" : "string",
+                        "example" : "123456789012"
                       }
                     }
                   }
                 }
               },
-              "example": {
-                "receipt": {
-                  "formBundleNumber": "123456789012"
+              "example" : {
+                "receipt" : {
+                  "formBundleNumber" : "123456789012"
                 }
               }
             }
           }
         },
-        "tags": ["HMRC"],
-        "security": [
-          {
-            "CognitoAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Receipt logged successfully"
+        "tags" : [ "HMRC" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Receipt logged successfully"
           }
         }
       },
-      "get": {
-        "summary": "Retrieve stored receipts",
-        "description": "Retrieves previously stored receipts for the authenticated user",
-        "operationId": "getReceipts",
-        "parameters": [
-          {
-            "name": "name",
-            "in": "query",
-            "required": false,
-            "description": "Receipt file name including .json",
-            "schema": {
-              "type": "string",
-              "example": "2025-03-31-123456789012.json"
-            }
-          },
-          {
-            "name": "key",
-            "in": "query",
-            "required": false,
-            "description": "Full S3 object key under receipts/{sub}/",
-            "schema": {
-              "type": "string",
-              "example": "receipts/00000000-0000-0000-0000-000000000000/2025-03-31-123456789012.json"
-            }
+      "get" : {
+        "summary" : "Retrieve stored receipts",
+        "description" : "Retrieves previously stored receipts for the authenticated user",
+        "operationId" : "getReceipts",
+        "parameters" : [ {
+          "name" : "name",
+          "in" : "query",
+          "required" : false,
+          "description" : "Receipt file name including .json",
+          "schema" : {
+            "type" : "string",
+            "example" : "2025-03-31-123456789012.json"
           }
-        ],
-        "tags": ["HMRC"],
-        "security": [
-          {
-            "CognitoAuth": []
+        }, {
+          "name" : "key",
+          "in" : "query",
+          "required" : false,
+          "description" : "Full DynamoDB Item key",
+          "schema" : {
+            "type" : "string",
+            "example" : "receipts/00000000-0000-0000-0000-000000000000/2025-03-31-123456789012.json"
           }
-        ],
-        "responses": {
-          "200": {
-            "description": "Receipts retrieved successfully"
+        } ],
+        "tags" : [ "HMRC" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Receipts retrieved successfully"
           }
         }
       }
     },
-    "/hmrc/token": {
-      "post": {
-        "summary": "Exchange HMRC authorization code for access token",
-        "description": "Exchanges an HMRC authorization code for an access token",
-        "operationId": "exchangeHmrcToken",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "code": {
-                    "type": "string",
-                    "example": "abc123"
+    "/hmrc/token" : {
+      "post" : {
+        "summary" : "Exchange HMRC authorization code for access token",
+        "description" : "Exchanges an HMRC authorization code for an access token",
+        "operationId" : "exchangeHmrcToken",
+        "requestBody" : {
+          "required" : true,
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "type" : "object",
+                "properties" : {
+                  "code" : {
+                    "type" : "string",
+                    "example" : "abc123"
                   }
                 }
               },
-              "example": {
-                "code": "abc123"
+              "example" : {
+                "code" : "abc123"
               }
             }
           }
         },
-        "tags": ["HMRC"],
-        "security": [
-          {
-            "CognitoAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "HMRC token exchanged successfully"
+        "tags" : [ "HMRC" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "HMRC token exchanged successfully"
           }
         }
       }
     },
-    "/bundle/{id}": {
-      "delete": {
-        "summary": "Delete bundle by id",
-        "description": "Deletes a bundle for the authenticated user using a path parameter",
-        "operationId": "deleteBundleById",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "description": "The bundle id (or name) to delete",
-            "schema": {
-              "type": "string"
-            }
+    "/bundle/{id}" : {
+      "delete" : {
+        "summary" : "Delete bundle by id",
+        "description" : "Deletes a bundle for the authenticated user using a path parameter",
+        "operationId" : "deleteBundleById",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "description" : "The bundle id (or name) to delete",
+          "schema" : {
+            "type" : "string"
           }
-        ],
-        "tags": ["Account"],
-        "security": [
-          {
-            "CognitoAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Bundle deleted successfully"
+        } ],
+        "tags" : [ "Account" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Bundle deleted successfully"
           }
         }
       }
     },
-    "/bundle": {
-      "get": {
-        "summary": "Get user bundles",
-        "description": "Retrieves all bundles for the authenticated user",
-        "operationId": "getBundles",
-        "tags": ["Account"],
-        "security": [
-          {
-            "CognitoAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Bundles retrieved successfully"
+    "/bundle" : {
+      "get" : {
+        "summary" : "Get user bundles",
+        "description" : "Retrieves all bundles for the authenticated user",
+        "operationId" : "getBundles",
+        "tags" : [ "Account" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Bundles retrieved successfully"
           }
         }
       },
-      "post": {
-        "summary": "Request new bundle",
-        "description": "Creates a new bundle request for the authenticated user",
-        "operationId": "requestBundle",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "bundleId": {
-                    "type": "string",
-                    "example": "test"
+      "post" : {
+        "summary" : "Request new bundle",
+        "description" : "Creates a new bundle request for the authenticated user",
+        "operationId" : "requestBundle",
+        "requestBody" : {
+          "required" : true,
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "type" : "object",
+                "properties" : {
+                  "bundleId" : {
+                    "type" : "string",
+                    "example" : "test"
                   },
-                  "qualifiers": {
-                    "type": "object",
-                    "properties": {
-                      "transactionId": {
-                        "type": "string",
-                        "example": "TX-12345"
+                  "qualifiers" : {
+                    "type" : "object",
+                    "properties" : {
+                      "transactionId" : {
+                        "type" : "string",
+                        "example" : "TX-12345"
                       }
                     }
                   }
                 }
               },
-              "example": {
-                "bundleId": "test",
-                "qualifiers": {
-                  "transactionId": "TX-12345"
+              "example" : {
+                "bundleId" : "test",
+                "qualifiers" : {
+                  "transactionId" : "TX-12345"
                 }
               }
             }
           }
         },
-        "tags": ["Account"],
-        "security": [
-          {
-            "CognitoAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Bundle created successfully"
+        "tags" : [ "Account" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Bundle created successfully"
           }
         }
       },
-      "delete": {
-        "summary": "Delete bundle",
-        "description": "Deletes a bundle for the authenticated user",
-        "operationId": "deleteBundle",
-        "parameters": [
-          {
-            "name": "bundleId",
-            "in": "query",
-            "required": false,
-            "description": "The bundle id (or name) to delete",
-            "schema": {
-              "type": "string",
-              "example": "test"
-            }
-          },
-          {
-            "name": "removeAll",
-            "in": "query",
-            "required": false,
-            "description": "When true, removes all bundles",
-            "schema": {
-              "type": "string",
-              "example": "false"
-            }
+      "delete" : {
+        "summary" : "Delete bundle",
+        "description" : "Deletes a bundle for the authenticated user",
+        "operationId" : "deleteBundle",
+        "parameters" : [ {
+          "name" : "bundleId",
+          "in" : "query",
+          "required" : false,
+          "description" : "The bundle id (or name) to delete",
+          "schema" : {
+            "type" : "string",
+            "example" : "test"
           }
-        ],
-        "tags": ["Account"],
-        "security": [
-          {
-            "CognitoAuth": []
+        }, {
+          "name" : "removeAll",
+          "in" : "query",
+          "required" : false,
+          "description" : "When true, removes all bundles",
+          "schema" : {
+            "type" : "string",
+            "example" : "false"
           }
-        ],
-        "responses": {
-          "200": {
-            "description": "Bundle deleted successfully"
+        } ],
+        "tags" : [ "Account" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Bundle deleted successfully"
           }
         }
       }
     },
-    "/hmrc/vat/return": {
-      "post": {
-        "summary": "Submit VAT return to HMRC",
-        "description": "Submits a VAT return to HMRC on behalf of the authenticated user",
-        "operationId": "submitVatReturn",
-        "parameters": [
-          {
-            "name": "Gov-Test-Scenario",
-            "in": "header",
-            "required": false,
-            "description": "HMRC sandbox test scenario",
-            "schema": {
-              "type": "string",
-              "example": "QUARTERLY_ONE_MET"
-            }
+    "/hmrc/vat/return" : {
+      "post" : {
+        "summary" : "Submit VAT return to HMRC",
+        "description" : "Submits a VAT return to HMRC on behalf of the authenticated user",
+        "operationId" : "submitVatReturn",
+        "parameters" : [ {
+          "name" : "Gov-Test-Scenario",
+          "in" : "header",
+          "required" : false,
+          "description" : "HMRC sandbox test scenario",
+          "schema" : {
+            "type" : "string",
+            "example" : "QUARTERLY_ONE_MET"
           }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "vatNumber": {
-                    "type": "string",
-                    "example": "176540158"
+        } ],
+        "requestBody" : {
+          "required" : true,
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "type" : "object",
+                "properties" : {
+                  "vatNumber" : {
+                    "type" : "string",
+                    "example" : "176540158"
                   },
-                  "periodKey": {
-                    "type": "string",
-                    "example": "24A1"
+                  "periodKey" : {
+                    "type" : "string",
+                    "example" : "24A1"
                   },
-                  "vatDue": {
-                    "type": "number",
-                    "format": "float",
-                    "example": 2400.0
+                  "vatDue" : {
+                    "type" : "number",
+                    "format" : "float",
+                    "example" : 2400.0
                   },
-                  "accessToken": {
-                    "type": "string",
-                    "example": "HMRC_ACCESS_TOKEN"
+                  "accessToken" : {
+                    "type" : "string",
+                    "example" : "HMRC_ACCESS_TOKEN"
                   }
                 }
               },
-              "example": {
-                "vatNumber": "176540158",
-                "periodKey": "24A1",
-                "vatDue": 2400.0,
-                "accessToken": "HMRC_ACCESS_TOKEN"
+              "example" : {
+                "vatNumber" : "176540158",
+                "periodKey" : "24A1",
+                "vatDue" : 2400.0,
+                "accessToken" : "HMRC_ACCESS_TOKEN"
               }
             }
           }
         },
-        "tags": ["HMRC"],
-        "security": [
-          {
-            "HmrcAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "VAT return submitted successfully"
+        "tags" : [ "HMRC" ],
+        "security" : [ {
+          "HmrcAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "VAT return submitted successfully"
           }
         }
       }
     },
-    "/cognito/token": {
-      "post": {
-        "summary": "Exchange Cognito authorization code for access token",
-        "description": "Exchanges an authorization code for a Cognito access token",
-        "operationId": "exchangeCognitoToken",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/x-www-form-urlencoded": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "code": {
-                    "type": "string",
-                    "example": "abc123"
+    "/cognito/token" : {
+      "post" : {
+        "summary" : "Exchange Cognito authorization code for access token",
+        "description" : "Exchanges an authorization code for a Cognito access token",
+        "operationId" : "exchangeCognitoToken",
+        "requestBody" : {
+          "required" : true,
+          "content" : {
+            "application/x-www-form-urlencoded" : {
+              "schema" : {
+                "type" : "object",
+                "properties" : {
+                  "code" : {
+                    "type" : "string",
+                    "example" : "abc123"
                   }
                 }
               },
-              "example": {
-                "code": "abc123"
+              "example" : {
+                "code" : "abc123"
               }
             }
           }
         },
-        "tags": ["Authentication"],
-        "responses": {
-          "200": {
-            "description": "Token exchanged successfully"
+        "tags" : [ "Authentication" ],
+        "responses" : {
+          "200" : {
+            "description" : "Token exchanged successfully"
           }
         }
       }
     },
-    "/hmrc/receipt/{name}": {
-      "get": {
-        "summary": "Retrieve a stored receipt by name",
-        "description": "Retrieves a specific stored receipt for the authenticated user by file name",
-        "operationId": "getReceiptByName",
-        "parameters": [
-          {
-            "name": "name",
-            "in": "path",
-            "required": true,
-            "description": "The receipt file name including .json",
-            "schema": {
-              "type": "string",
-              "example": "2025-03-31-123456789012.json"
-            }
+    "/hmrc/receipt/{name}" : {
+      "get" : {
+        "summary" : "Retrieve a stored receipt by name",
+        "description" : "Retrieves a specific stored receipt for the authenticated user by file name",
+        "operationId" : "getReceiptByName",
+        "parameters" : [ {
+          "name" : "name",
+          "in" : "path",
+          "required" : true,
+          "description" : "The receipt file name including .json",
+          "schema" : {
+            "type" : "string",
+            "example" : "2025-03-31-123456789012.json"
           }
-        ],
-        "tags": ["HMRC"],
-        "security": [
-          {
-            "CognitoAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Request completed successfully"
+        } ],
+        "tags" : [ "HMRC" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Request completed successfully"
           }
         }
       }
     },
-    "/hmrc/vat/obligation": {
-      "get": {
-        "summary": "Get VAT obligations from HMRC",
-        "description": "Retrieves VAT obligations from HMRC for the authenticated user",
-        "operationId": "getVatObligations",
-        "parameters": [
-          {
-            "name": "vrn",
-            "in": "query",
-            "required": true,
-            "description": "VAT Registration Number (9 digits)",
-            "schema": {
-              "type": "string",
-              "example": "176540158",
-              "pattern": "^\\d{9}$"
-            }
-          },
-          {
-            "name": "from",
-            "in": "query",
-            "required": false,
-            "description": "From date in YYYY-MM-DD format",
-            "schema": {
-              "type": "string",
-              "example": "2025-01-01"
-            }
-          },
-          {
-            "name": "to",
-            "in": "query",
-            "required": false,
-            "description": "To date in YYYY-MM-DD format",
-            "schema": {
-              "type": "string",
-              "example": "2025-03-31"
-            }
-          },
-          {
-            "name": "status",
-            "in": "query",
-            "required": false,
-            "description": "Obligation status: O (Open) or F (Fulfilled)",
-            "schema": {
-              "type": "string",
-              "enum": "O,F",
-              "example": "O"
-            }
-          },
-          {
-            "name": "Gov-Test-Scenario",
-            "in": "query",
-            "required": false,
-            "description": "HMRC sandbox test scenario",
-            "schema": {
-              "type": "string",
-              "example": "QUARTERLY_ONE_MET"
-            }
+    "/hmrc/vat/obligation" : {
+      "get" : {
+        "summary" : "Get VAT obligations from HMRC",
+        "description" : "Retrieves VAT obligations from HMRC for the authenticated user",
+        "operationId" : "getVatObligations",
+        "parameters" : [ {
+          "name" : "vrn",
+          "in" : "query",
+          "required" : true,
+          "description" : "VAT Registration Number (9 digits)",
+          "schema" : {
+            "type" : "string",
+            "example" : "176540158",
+            "pattern" : "^\\d{9}$"
           }
-        ],
-        "tags": ["HMRC"],
-        "security": [
-          {
-            "CognitoAuth": []
+        }, {
+          "name" : "from",
+          "in" : "query",
+          "required" : false,
+          "description" : "From date in YYYY-MM-DD format",
+          "schema" : {
+            "type" : "string",
+            "example" : "2025-01-01"
           }
-        ],
-        "responses": {
-          "200": {
-            "description": "Request completed successfully"
+        }, {
+          "name" : "to",
+          "in" : "query",
+          "required" : false,
+          "description" : "To date in YYYY-MM-DD format",
+          "schema" : {
+            "type" : "string",
+            "example" : "2025-03-31"
+          }
+        }, {
+          "name" : "status",
+          "in" : "query",
+          "required" : false,
+          "description" : "Obligation status: O (Open) or F (Fulfilled)",
+          "schema" : {
+            "type" : "string",
+            "enum" : "O,F",
+            "example" : "O"
+          }
+        }, {
+          "name" : "Gov-Test-Scenario",
+          "in" : "query",
+          "required" : false,
+          "description" : "HMRC sandbox test scenario",
+          "schema" : {
+            "type" : "string",
+            "example" : "QUARTERLY_ONE_MET"
+          }
+        } ],
+        "tags" : [ "HMRC" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Request completed successfully"
           }
         }
       }
     },
-    "/catalog": {
-      "get": {
-        "summary": "Get product catalog",
-        "description": "Retrieves the available product catalog",
-        "operationId": "getCatalog",
-        "tags": ["Account"],
-        "responses": {
-          "200": {
-            "description": "Catalog retrieved successfully"
+    "/catalog" : {
+      "get" : {
+        "summary" : "Get product catalog",
+        "description" : "Retrieves the available product catalog",
+        "operationId" : "getCatalog",
+        "tags" : [ "Account" ],
+        "responses" : {
+          "200" : {
+            "description" : "Catalog retrieved successfully"
           }
         }
       }
     },
-    "/cognito/authUrl": {
-      "get": {
-        "summary": "Get Cognito authentication URL",
-        "description": "Returns the Cognito OAuth2 authorization URL for user login",
-        "operationId": "getCognitoAuthUrl",
-        "parameters": [
-          {
-            "name": "state",
-            "in": "query",
-            "required": true,
-            "description": "Opaque state value to mitigate CSRF attacks",
-            "schema": {
-              "type": "string",
-              "example": "csrf-1234"
-            }
+    "/cognito/authUrl" : {
+      "get" : {
+        "summary" : "Get Cognito authentication URL",
+        "description" : "Returns the Cognito OAuth2 authorization URL for user login",
+        "operationId" : "getCognitoAuthUrl",
+        "parameters" : [ {
+          "name" : "state",
+          "in" : "query",
+          "required" : true,
+          "description" : "Opaque state value to mitigate CSRF attacks",
+          "schema" : {
+            "type" : "string",
+            "example" : "csrf-1234"
           }
-        ],
-        "tags": ["Authentication"],
-        "responses": {
-          "200": {
-            "description": "Authentication URL returned successfully"
+        } ],
+        "tags" : [ "Authentication" ],
+        "responses" : {
+          "200" : {
+            "description" : "Authentication URL returned successfully"
           }
         }
       }
     },
-    "/hmrc/vat/return/{periodKey}": {
-      "get": {
-        "summary": "Get submitted VAT returns from HMRC",
-        "description": "Retrieves previously submitted VAT returns from HMRC for the authenticated user",
-        "operationId": "getVatReturns",
-        "parameters": [
-          {
-            "name": "periodKey",
-            "in": "path",
-            "required": true,
-            "description": "The VAT period key to retrieve",
-            "schema": {
-              "type": "string",
-              "example": "24A1"
-            }
-          },
-          {
-            "name": "vrn",
-            "in": "query",
-            "required": true,
-            "description": "VAT Registration Number (9 digits)",
-            "schema": {
-              "type": "string",
-              "example": "176540158",
-              "pattern": "^\\d{9}$"
-            }
-          },
-          {
-            "name": "Gov-Test-Scenario",
-            "in": "query",
-            "required": false,
-            "description": "HMRC sandbox test scenario",
-            "schema": {
-              "type": "string",
-              "example": "QUARTERLY_ONE_MET"
-            }
+    "/hmrc/vat/return/{periodKey}" : {
+      "get" : {
+        "summary" : "Get submitted VAT returns from HMRC",
+        "description" : "Retrieves previously submitted VAT returns from HMRC for the authenticated user",
+        "operationId" : "getVatReturns",
+        "parameters" : [ {
+          "name" : "periodKey",
+          "in" : "path",
+          "required" : true,
+          "description" : "The VAT period key to retrieve",
+          "schema" : {
+            "type" : "string",
+            "example" : "24A1"
           }
-        ],
-        "tags": ["HMRC"],
-        "security": [
-          {
-            "CognitoAuth": []
+        }, {
+          "name" : "vrn",
+          "in" : "query",
+          "required" : true,
+          "description" : "VAT Registration Number (9 digits)",
+          "schema" : {
+            "type" : "string",
+            "example" : "176540158",
+            "pattern" : "^\\d{9}$"
           }
-        ],
-        "responses": {
-          "200": {
-            "description": "Request completed successfully"
+        }, {
+          "name" : "Gov-Test-Scenario",
+          "in" : "query",
+          "required" : false,
+          "description" : "HMRC sandbox test scenario",
+          "schema" : {
+            "type" : "string",
+            "example" : "QUARTERLY_ONE_MET"
+          }
+        } ],
+        "tags" : [ "HMRC" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Request completed successfully"
           }
         }
       }
     },
-    "/hmrc/authUrl": {
-      "get": {
-        "summary": "Get HMRC authentication URL",
-        "description": "Returns the HMRC OAuth2 authorization URL for accessing HMRC APIs",
-        "operationId": "getHmrcAuthUrl",
-        "parameters": [
-          {
-            "name": "state",
-            "in": "query",
-            "required": true,
-            "description": "Opaque state value to mitigate CSRF attacks",
-            "schema": {
-              "type": "string",
-              "example": "csrf-1234"
-            }
-          },
-          {
-            "name": "scope",
-            "in": "query",
-            "required": false,
-            "description": "OAuth scopes: write:vat, read:vat or both",
-            "schema": {
-              "type": "string",
-              "example": "write:vat read:vat"
-            }
+    "/hmrc/authUrl" : {
+      "get" : {
+        "summary" : "Get HMRC authentication URL",
+        "description" : "Returns the HMRC OAuth2 authorization URL for accessing HMRC APIs",
+        "operationId" : "getHmrcAuthUrl",
+        "parameters" : [ {
+          "name" : "state",
+          "in" : "query",
+          "required" : true,
+          "description" : "Opaque state value to mitigate CSRF attacks",
+          "schema" : {
+            "type" : "string",
+            "example" : "csrf-1234"
           }
-        ],
-        "tags": ["HMRC"],
-        "security": [
-          {
-            "CognitoAuth": []
+        }, {
+          "name" : "scope",
+          "in" : "query",
+          "required" : false,
+          "description" : "OAuth scopes: write:vat, read:vat or both",
+          "schema" : {
+            "type" : "string",
+            "example" : "write:vat read:vat"
           }
-        ],
-        "responses": {
-          "200": {
-            "description": "HMRC authentication URL returned successfully"
+        } ],
+        "tags" : [ "HMRC" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "HMRC authentication URL returned successfully"
           }
         }
       }
     }
   },
-  "components": {
-    "securitySchemes": {
-      "CognitoAuth": {
-        "type": "http",
-        "scheme": "bearer",
-        "bearerFormat": "JWT",
-        "description": "Cognito JWT token"
+  "components" : {
+    "securitySchemes" : {
+      "CognitoAuth" : {
+        "type" : "http",
+        "scheme" : "bearer",
+        "bearerFormat" : "JWT",
+        "description" : "Cognito JWT token"
       },
-      "HmrcAuth": {
-        "type": "http",
-        "scheme": "bearer",
-        "description": "HMRC OAuth2 token"
+      "HmrcAuth" : {
+        "type" : "http",
+        "scheme" : "bearer",
+        "description" : "HMRC OAuth2 token"
       }
     }
   }

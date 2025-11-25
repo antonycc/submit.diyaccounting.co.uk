@@ -19,7 +19,7 @@ describe("System: HMRC VAT Scenarios with Test Parameters", () => {
     const { default: dynalite } = await import("dynalite");
 
     const host = "127.0.0.1";
-    const port = 8003;
+    const port = 9003;
     const tableName = "bundles-system-test-hmrc-vat";
     const server = dynalite({ createTableMs: 0 });
     await new Promise((resolve, reject) => {

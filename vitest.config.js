@@ -22,6 +22,11 @@ export default defineConfig(({ mode }) => {
           // Limit workers without CLI flags
           pool: "forks",
           poolOptions: { forks: { minForks: 1, maxForks: 1 } },
+
+          // Disable file-level parallelism and concurrent tests
+          // fileParallelism: false, // run test files sequentially
+          // sequence: { concurrent: false }, // run tests in a file sequentially
+
           // pool: "threads",
           // poolOptions: {
           //  threads: { minThreads: 1, maxThreads: 1 },
@@ -36,6 +41,7 @@ export default defineConfig(({ mode }) => {
           },
           include: [
             "app/unit-tests/*.test.js",
+            "app/unit-tests/*/*.test.js",
             "app/integration-tests/*.test.js",
             "app/system-tests/*.test.js",
             "web/unit-tests/*.test.js",
