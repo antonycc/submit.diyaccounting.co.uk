@@ -24,7 +24,7 @@ describe("System Journey: HMRC VAT Obligation-Based Flow", () => {
 
     const host = "127.0.0.1";
     const port = 9005;
-    const tableName = "bundles-system-test-obligation-journey";
+    const tableName = "test-bundle-table";
     const server = dynalite({ createTableMs: 0 });
     await new Promise((resolve, reject) => {
       server.listen(port, host, (err) => (err ? reject(err) : resolve(null)));

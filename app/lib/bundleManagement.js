@@ -6,23 +6,23 @@ import { loadCatalogFromRoot } from "./productCatalogHelper.js";
 import { getBundlesStore } from "../functions/non-lambda-mocks/mockBundleStore.js";
 import * as dynamoDbBundleStore from "./dynamoDbBundleStore.js";
 
-const mockBundleStore = getBundlesStore();
+// const mockBundleStore = getBundlesStore();
 
 // TODO: [stubs] Remove stubs from production code
-export function isMockMode() {
-  const raw = process.env.TEST_BUNDLE_MOCK;
-  const flag = String(raw || "").toLowerCase();
-  if (flag === "true" || raw === "1") return true; // explicit enable
-  if (flag === "false" || raw === "0") return false; // explicit disable
-  // Otherwise, prefer DynamoDB when available
-  try {
-    if (dynamoDbBundleStore.isDynamoDbEnabled && dynamoDbBundleStore.isDynamoDbEnabled()) {
-      return false;
-    }
-  } catch {}
-  // Default: mock off
-  return false;
-}
+// export function isMockMode() {
+//   const raw = process.env.TEST_BUNDLE_MOCK;
+//   const flag = String(raw || "").toLowerCase();
+//   if (flag === "true" || raw === "1") return true; // explicit enable
+//   if (flag === "false" || raw === "0") return false; // explicit disable
+//   // Otherwise, prefer DynamoDB when available
+//   try {
+//     if (dynamoDbBundleStore.isDynamoDbEnabled && dynamoDbBundleStore.isDynamoDbEnabled()) {
+//       return false;
+//     }
+//   } catch {}
+//   // Default: mock off
+//   return false;
+// }
 
 export class BundleAuthorizationError extends Error {
   constructor(message, details) {

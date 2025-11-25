@@ -10,8 +10,11 @@ import { setupTestEnv, parseResponseBody } from "../test-helpers/mockHelpers.js"
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
-let stopDynalite;
+/** @typedef {typeof import("../lib/bundleManagement.js")} BundleManagement */
+/** @type {BundleManagement} */
 let bm;
+let stopDynalite;
+const bundlesTableName = "test-bundle-table";
 
 describe("System: HMRC VAT Scenarios with Test Parameters", () => {
   beforeAll(async () => {
@@ -20,7 +23,6 @@ describe("System: HMRC VAT Scenarios with Test Parameters", () => {
 
     const host = "127.0.0.1";
     const port = 9003;
-    const tableName = "bundles-system-test-hmrc-vat";
     const server = dynalite({ createTableMs: 0 });
     await new Promise((resolve, reject) => {
       server.listen(port, host, (err) => (err ? reject(err) : resolve(null)));
@@ -37,9 +39,9 @@ describe("System: HMRC VAT Scenarios with Test Parameters", () => {
     process.env.AWS_SECRET_ACCESS_KEY = process.env.AWS_SECRET_ACCESS_KEY || "dummy";
     process.env.AWS_ENDPOINT_URL = endpoint;
     process.env.AWS_ENDPOINT_URL_DYNAMODB = endpoint;
-    process.env.BUNDLE_DYNAMODB_TABLE_NAME = tableName;
+    process.env.BUNDLE_DYNAMODB_TABLE_NAME = bundlesTableName;
 
-    await ensureBundleTableExists(tableName, endpoint);
+    await ensureBundleTableExists(bundlesTableName, endpoint);
 
     bm = await import("../lib/bundleManagement.js");
   });

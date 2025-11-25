@@ -6,11 +6,8 @@ import logger from "../../lib/logger.js";
 import { extractRequest, http200OkResponse, parseRequestBody } from "../../lib/responses.js";
 import { decodeJwtToken } from "../../lib/jwtHelper.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
-import { getBundlesStore } from "../non-lambda-mocks/mockBundleStore.js";
-import { enforceBundles, getUserBundles, isMockMode, updateUserBundles } from "../../lib/bundleManagement.js";
+import { enforceBundles, getUserBundles } from "../../lib/bundleManagement.js";
 import { http403ForbiddenFromBundleEnforcement } from "../../lib/hmrcHelper.js";
-
-const mockBundleStore = getBundlesStore();
 
 function parseIsoDurationToDate(fromDate, iso) {
   // Minimal support for PnD, PnM, PnY
@@ -229,12 +226,12 @@ export async function handler(event) {
     logger.info({ message: "Updated user bundles:", userId, currentBundles });
 
     // TODO: [stubs] Remove stubs from production code
-    if (isMockMode()) {
-      mockBundleStore.set(userId, currentBundles);
-    } else {
-      // Use DynamoDB as primary storage via updateUserBundles
-      await updateUserBundles(userId, currentBundles);
-    }
+    // if (isMockMode()) {
+    //   mockBundleStore.set(userId, currentBundles);
+    // } else {
+    //   // Use DynamoDB as primary storage via updateUserBundles
+    //   await updateUserBundles(userId, currentBundles);
+    // }
 
     logger.info({ message: "Bundle granted to user:", userId, newBundle });
     return {

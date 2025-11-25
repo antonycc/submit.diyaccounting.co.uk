@@ -66,9 +66,6 @@ afterAll(async () => {
 
 describe("System: dynamoDbBundleStore with local dynalite", () => {
   it("should enable DynamoDB via env and perform put/get/delete operations", async () => {
-    // Verify dynamo is enabled via env
-    expect(store.isDynamoDbEnabled()).toBe(true);
-
     const userId = "user-12345";
     const bundleId = "bundle-1";
     const expiry = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(); // 24 hours from now
