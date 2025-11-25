@@ -1,15 +1,10 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
 import co.uk.diyaccounting.submit.constructs.ApiLambda;
 import co.uk.diyaccounting.submit.constructs.ApiLambdaProps;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
-import java.util.List;
-import java.util.Optional;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Aspects;
 import software.amazon.awscdk.Duration;
@@ -25,6 +20,12 @@ import software.amazon.awscdk.services.logs.ILogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
+
+import java.util.List;
+import java.util.Optional;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 public class HmrcStack extends Stack {
 
@@ -179,7 +180,7 @@ public class HmrcStack extends Stack {
                 this.hmrcAuthUrlGetLambda.getFunctionName(), bundlesTable.getTableName());
 
         // exchangeToken - HMRC
-        var exchangeHmrcEnvBase = new PopulatedMap<String, String>()
+        var exchangeHmrcTokenLambdaEnv = new PopulatedMap<String, String>()
                 .with("DIY_SUBMIT_BASE_URL", props.sharedNames().envBaseUrl)
                 .with("HMRC_BASE_URI", props.hmrcBaseUri())
                 .with("HMRC_CLIENT_ID", props.hmrcClientId())
@@ -188,14 +189,14 @@ public class HmrcStack extends Stack {
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
                 .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName());
         if (StringUtils.isNotBlank(props.hmrcClientSecretArn())) {
-            exchangeHmrcEnvBase.with("HMRC_CLIENT_SECRET_ARN", props.hmrcClientSecretArn());
+            exchangeHmrcTokenLambdaEnv.with("HMRC_CLIENT_SECRET_ARN", props.hmrcClientSecretArn());
         }
         if (StringUtils.isNotBlank(props.hmrcSandboxClientSecretArn())) {
-            exchangeHmrcEnvBase.with("HMRC_SANDBOX_CLIENT_SECRET_ARN", props.hmrcSandboxClientSecretArn());
+            exchangeHmrcTokenLambdaEnv.with("HMRC_SANDBOX_CLIENT_SECRET_ARN", props.hmrcSandboxClientSecretArn());
         }
         if (props.optionalTestAccessToken().isPresent()
                 && StringUtils.isNotBlank(props.optionalTestAccessToken().get())) {
-            exchangeHmrcEnvBase.with(
+            exchangeHmrcTokenLambdaEnv.with(
                     "TEST_ACCESS_TOKEN", props.optionalTestAccessToken().get());
         }
 
@@ -213,7 +214,7 @@ public class HmrcStack extends Stack {
                         .urlPath(props.sharedNames().hmrcTokenPostLambdaUrlPath)
                         .jwtAuthorizer(props.sharedNames().hmrcTokenPostLambdaJwtAuthorizer)
                         .customAuthorizer(props.sharedNames().hmrcTokenPostLambdaCustomAuthorizer)
-                        .environment(exchangeHmrcEnvBase)
+                        .environment(exchangeHmrcTokenLambdaEnv)
                         .timeout(Duration.millis(Long.parseLong("30000")))
                         .build());
         this.hmrcTokenPostLambdaProps = exchangeHmrcTokenLambdaUrlOrigin.apiProps;
@@ -283,7 +284,8 @@ public class HmrcStack extends Stack {
                 .with("HMRC_BASE_URI", props.hmrcBaseUri())
                 .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
-                .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName());
+                .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName())
+                .with("RECEIPTS_DYNAMODB_TABLE_NAME", props.sharedNames().receiptsTableName);
         var submitVatLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
