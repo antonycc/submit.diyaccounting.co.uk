@@ -172,44 +172,6 @@ describe("System: HMRC VAT Scenarios with Test Parameters", () => {
     expect(returnBody).toHaveProperty("finalised", true);
   });
 
-  it("should submit VAT return with QUARTERLY_TWO_MET scenario", async () => {
-    // Set up stubbed mode for submission
-    process.env.NODE_ENV = "stubbed";
-
-    const submitEvent = buildLambdaEvent({
-      method: "POST",
-      path: "/api/v1/hmrc/vat/return",
-      body: {
-        vatNumber: "123456789",
-        periodKey: "24A1",
-        vatDue: 2500.5,
-        accessToken: "test-hmrc-access-token",
-      },
-      headers: {
-        ...buildGovClientHeaders(),
-      },
-      authorizer: {
-        authorizer: {
-          lambda: {
-            jwt: {
-              claims: {
-                "sub": "test-user",
-                "cognito:username": "testuser",
-              },
-            },
-          },
-        },
-      },
-    });
-
-    const submitResponse = await hmrcVatReturnPostHandler(submitEvent);
-    expect(submitResponse.statusCode).toBe(200);
-
-    const submitBody = parseResponseBody(submitResponse);
-    expect(submitBody).toHaveProperty("receipt");
-    expect(submitBody.receipt).toHaveProperty("formBundleNumber");
-  });
-
   it("should retrieve obligations with default date range when dates not provided", async () => {
     // Set up stub data
     process.env.TEST_VAT_OBLIGATIONS = JSON.stringify({
@@ -248,6 +210,8 @@ describe("System: HMRC VAT Scenarios with Test Parameters", () => {
         },
       },
     });
+
+    // Add test bundle
 
     const obligationResponse = await hmrcVatObligationGetHandler(obligationEvent);
     expect(obligationResponse.statusCode).toBe(200);

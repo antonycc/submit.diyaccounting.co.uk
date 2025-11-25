@@ -42,11 +42,11 @@ export class BundleEntitlementError extends Error {
 
 export async function getUserBundles(userId) {
   // TODO: Remove this mock mode stuff and move the mockery into tests
-  if (isMockMode()) {
-    const bundles = mockBundleStore.get(userId) || [];
-    logger.info({ message: "[MOCK] Current user bundles:", bundles });
-    return bundles;
-  }
+  // if (isMockMode()) {
+  //   const bundles = mockBundleStore.get(userId) || [];
+  //   logger.info({ message: "[MOCK] Current user bundles:", bundles });
+  //   return bundles;
+  // }
 
   // Use DynamoDB as primary source
   const bundles = await dynamoDbBundleStore.getUserBundles(userId);
@@ -59,11 +59,11 @@ export async function updateUserBundles(userId, bundles) {
 
   // TODO: Remove this mock mode stuff and move the mockery into tests
   // This is actually avoided in app/functions/account/bundlePost.js anyway so should be fine to remove
-  if (isMockMode()) {
-    mockBundleStore.set(userId, bundles);
-    logger.info({ message: `[MOCK] Updated bundles for user ${userId}`, bundles });
-    return;
-  }
+  // if (isMockMode()) {
+  //   mockBundleStore.set(userId, bundles);
+  //   logger.info({ message: `[MOCK] Updated bundles for user ${userId}`, bundles });
+  //   return;
+  // }
 
   // Update DynamoDB - this requires removing old bundles and adding new ones
   // Get current bundles to determine what to remove

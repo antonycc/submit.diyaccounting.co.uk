@@ -205,15 +205,16 @@ export async function handler(event) {
     // on-request: enforce cap and expiry
     const cap = Number.isFinite(catalogBundle.cap) ? Number(catalogBundle.cap) : undefined;
     if (typeof cap === "number") {
-      // TODO: [stubs] Remove stubs from production code
-      const currentCount = mockBundleStore.size;
+      const currentCount = currentBundles.length;
       if (currentCount >= cap) {
-        logger.info({ message: "[Catalog bundle] Bundle cap reached:", requestedBundle, cap });
+        logger.info({ message: "[Catalog bundle] Bundle cap reached:", requestedBundle, currentCount, cap });
         return {
           statusCode: 403,
           headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
           body: JSON.stringify({ error: "cap_reached" }),
         };
+      } else {
+        logger.info({ message: "[Catalog bundle] Bundle cap not yet reached:", requestedBundle, currentCount, cap });
       }
     } else {
       logger.info({ message: "[Catalog bundle] No cap defined for bundle:", requestedBundle });

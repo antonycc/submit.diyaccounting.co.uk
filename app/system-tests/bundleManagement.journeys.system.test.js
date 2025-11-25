@@ -111,31 +111,6 @@ afterAll(async () => {
 });
 
 describe("System journeys: bundleManagement", () => {
-  it("journey: add, remove, add duplicate, remove all (mock mode)", async () => {
-    process.env.TEST_BUNDLE_MOCK = "true";
-    const userId = "bm-journey-mock";
-
-    // Start clean
-    await bm.updateUserBundles(userId, []);
-    expect(await bm.getUserBundles(userId)).toEqual([]);
-
-    // Add
-    await bm.addBundles(userId, ["BUNDLE_1"]);
-    expect(await bm.getUserBundles(userId)).toEqual(["BUNDLE_1"]);
-
-    // Remove
-    await bm.removeBundles(userId, ["BUNDLE_1"]);
-    expect(await bm.getUserBundles(userId)).toEqual([]);
-
-    // Try to add twice (should de-duplicate)
-    await bm.addBundles(userId, ["BUNDLE_2", "BUNDLE_2"]);
-    expect(await bm.getUserBundles(userId)).toEqual(["BUNDLE_2"]);
-
-    // Remove all
-    await bm.updateUserBundles(userId, []);
-    expect(await bm.getUserBundles(userId)).toEqual([]);
-  });
-
   it("journey: enforcement fail → add bundle → succeed → remove bundle → fail (Dynamo mode)", async () => {
     delete process.env.TEST_BUNDLE_MOCK; // ensure we go via Dynamo
     const sub = "bm-journey-enforce";

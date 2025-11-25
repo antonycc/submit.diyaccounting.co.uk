@@ -133,9 +133,7 @@ describe("bundleEnforcement.js", () => {
       };
       const event = buildEvent(token, authorizerContext);
 
-      dynamoDbBundleStore.getUserBundles.mockResolvedValue([
-        { bundleId: "test", expiry: new Date().toISOString() },
-      ]);
+      dynamoDbBundleStore.getUserBundles.mockResolvedValue([{ bundleId: "test", expiry: new Date().toISOString() }]);
 
       // Should not throw
       await enforceBundles(event);
@@ -179,9 +177,7 @@ describe("bundleEnforcement.js", () => {
       };
       const event = buildEvent(token, authorizerContext);
 
-      dynamoDbBundleStore.getUserBundles.mockResolvedValue([
-        { bundleId: "guest", expiry: new Date().toISOString() },
-      ]);
+      dynamoDbBundleStore.getUserBundles.mockResolvedValue([{ bundleId: "guest", expiry: new Date().toISOString() }]);
 
       // Should not throw
       await enforceBundles(event);
@@ -204,9 +200,7 @@ describe("bundleEnforcement.js", () => {
       };
       const event = buildEvent(token, authorizerContext);
 
-      dynamoDbBundleStore.getUserBundles.mockResolvedValue([
-        { bundleId: "business", expiry: new Date().toISOString() },
-      ]);
+      dynamoDbBundleStore.getUserBundles.mockResolvedValue([{ bundleId: "business", expiry: new Date().toISOString() }]);
 
       // Should not throw
       await enforceBundles(event);
@@ -229,9 +223,7 @@ describe("bundleEnforcement.js", () => {
       };
       const event = buildEvent(token, authorizerContext);
 
-      dynamoDbBundleStore.getUserBundles.mockResolvedValue([
-        { bundleId: "guest", expiry: new Date().toISOString() },
-      ]);
+      dynamoDbBundleStore.getUserBundles.mockResolvedValue([{ bundleId: "guest", expiry: new Date().toISOString() }]);
 
       // Should not throw
       await enforceBundles(event);
@@ -247,97 +239,12 @@ describe("bundleEnforcement.js", () => {
       };
       const event = buildEvent(null, authorizerContext);
 
-      dynamoDbBundleStore.getUserBundles.mockResolvedValue([
-        { bundleId: "test", expiry: new Date().toISOString() },
-      ]);
+      dynamoDbBundleStore.getUserBundles.mockResolvedValue([{ bundleId: "test", expiry: new Date().toISOString() }]);
 
       // Should not throw
       await enforceBundles(event);
 
       expect(dynamoDbBundleStore.getUserBundles).toHaveBeenCalledWith("user-from-authorizer");
-    });
-  });
-
-  describe("addBundles", () => {
-    test("should add new bundles to user (mock mode)", async () => {
-      // Use mock mode for string-based bundle operations
-      process.env.TEST_BUNDLE_MOCK = "true";
-      await updateUserBundles("user-1", ["EXISTING_BUNDLE"]);
-
-      const result = await addBundles("user-1", ["NEW_BUNDLE"]);
-
-      expect(result).toEqual(["EXISTING_BUNDLE", "NEW_BUNDLE"]);
-      // Verify persisted via public API
-      const persisted = await getUserBundles("user-1");
-      expect(persisted).toEqual(["EXISTING_BUNDLE", "NEW_BUNDLE"]);
-    });
-
-    test("should not add duplicate bundles (mock mode)", async () => {
-      process.env.TEST_BUNDLE_MOCK = "true";
-      await updateUserBundles("user-dup", ["EXISTING_BUNDLE"]);
-
-      const result = await addBundles("user-dup", ["EXISTING_BUNDLE"]);
-
-      expect(result).toEqual(["EXISTING_BUNDLE"]);
-      const persisted = await getUserBundles("user-dup");
-      expect(persisted).toEqual(["EXISTING_BUNDLE"]);
-    });
-
-    test("should add multiple bundles at once (mock mode)", async () => {
-      process.env.TEST_BUNDLE_MOCK = "true";
-      await updateUserBundles("user-multi", []);
-
-      const result = await addBundles("user-multi", ["BUNDLE_1", "BUNDLE_2", "BUNDLE_3"]);
-
-      expect(result).toEqual(["BUNDLE_1", "BUNDLE_2", "BUNDLE_3"]);
-      const persisted = await getUserBundles("user-multi");
-      expect(persisted).toEqual(["BUNDLE_1", "BUNDLE_2", "BUNDLE_3"]);
-    });
-  });
-
-  describe("removeBundles", () => {
-    test("should remove bundles from user (mock mode)", async () => {
-      process.env.TEST_BUNDLE_MOCK = "true";
-      await updateUserBundles("user-rem", ["BUNDLE_1", "BUNDLE_2", "BUNDLE_3"]);
-
-      const result = await removeBundles("user-rem", ["BUNDLE_2"]);
-
-      expect(result).toEqual(["BUNDLE_1", "BUNDLE_3"]);
-      const persisted = await getUserBundles("user-rem");
-      expect(persisted).toEqual(["BUNDLE_1", "BUNDLE_3"]);
-    });
-
-    test("should remove bundles with expiry suffix (mock mode)", async () => {
-      process.env.TEST_BUNDLE_MOCK = "true";
-      await updateUserBundles("user-exp", ["BUNDLE_1", "BUNDLE_2"]);
-
-      const result = await removeBundles("user-exp", ["BUNDLE_1"]);
-
-      expect(result).toEqual(["BUNDLE_2"]);
-      const persisted = await getUserBundles("user-exp");
-      expect(persisted).toEqual(["BUNDLE_2"]);
-    });
-
-    test("should remove multiple bundles at once (mock mode)", async () => {
-      process.env.TEST_BUNDLE_MOCK = "true";
-      await updateUserBundles("user-mrem", ["BUNDLE_1", "BUNDLE_2", "BUNDLE_3", "BUNDLE_4"]);
-
-      const result = await removeBundles("user-mrem", ["BUNDLE_1", "BUNDLE_3"]);
-
-      expect(result).toEqual(["BUNDLE_2", "BUNDLE_4"]);
-      const persisted = await getUserBundles("user-mrem");
-      expect(persisted).toEqual(["BUNDLE_2", "BUNDLE_4"]);
-    });
-
-    test("should handle removing non-existent bundles gracefully (mock mode)", async () => {
-      process.env.TEST_BUNDLE_MOCK = "true";
-      await updateUserBundles("user-nx", ["BUNDLE_1"]);
-
-      const result = await removeBundles("user-nx", ["NONEXISTENT"]);
-
-      expect(result).toEqual(["BUNDLE_1"]);
-      const persisted = await getUserBundles("user-nx");
-      expect(persisted).toEqual(["BUNDLE_1"]);
     });
   });
 });
