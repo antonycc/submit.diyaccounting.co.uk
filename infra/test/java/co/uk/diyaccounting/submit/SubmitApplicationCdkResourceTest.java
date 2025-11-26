@@ -34,6 +34,8 @@ import software.amazon.awscdk.assertions.Template;
     @SetEnvironmentVariable(key = "BASE_IMAGE_TAG", value = "test"),
     @SetEnvironmentVariable(key = "CLOUD_TRAIL_ENABLED", value = "true"),
     @SetEnvironmentVariable(key = "SELF_DESTRUCT_DELAY_HOURS", value = "1"),
+    @SetEnvironmentVariable(key = "HTTP_API_URL", value = "https://test-api.example.com/"),
+    @SetEnvironmentVariable(key = "DOC_ROOT_PATH", value = "web/public"),
     @SetEnvironmentVariable(key = "CDK_DEFAULT_ACCOUNT", value = "111111111111"),
     @SetEnvironmentVariable(key = "CDK_DEFAULT_REGION", value = "eu-west-2"),
 })
@@ -103,6 +105,12 @@ class SubmitApplicationCdkResourceTest {
 
         infof("Created stack:", submitApplication.opsStack.getStackName());
         Template.fromStack(submitApplication.opsStack).resourceCountIs("AWS::CloudWatch::Dashboard", 1);
+
+        infof("Created stack:", submitApplication.edgeStack.getStackName());
+        Template.fromStack(submitApplication.edgeStack).resourceCountIs("AWS::CloudFront::Distribution", 1);
+
+        infof("Created stack:", submitApplication.publishStack.getStackName());
+        Template.fromStack(submitApplication.publishStack).resourceCountIs("Custom::CDKBucketDeployment", 1);
 
         if (submitApplication.selfDestructStack != null) {
             infof("Created stack:", submitApplication.selfDestructStack.getStackName());
