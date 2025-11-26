@@ -1,37 +1,25 @@
 // app/lib/hmrcVatApi.js
 
-// import logger from "./logger.js";
+// Minimal safe implementations retained for backward compatibility with tests that import these helpers.
+// TODO: [stubs] Remove test-time stub controls from production code once all tests prime HTTP instead.
 
-// TODO: [stubs] Remove stubs from production code
-// export function shouldUseStub(stubEnvVar) {
-//   const stubData = process.env[stubEnvVar];
-//   if (!stubData) {
-//     return false;
-//   }
-//   try {
-//     const parsedData = JSON.parse(stubData);
-//     return parsedData["source"] === "stub";
-//   } catch (e) {
-//     // If parsing fails, assume it's not stub data
-//     logger.warn({
-//       message: `Failed to parse stub data from ${stubEnvVar} when checking for stub usage`,
-//       error: e.message,
-//     });
-//     return false;
-//   }
-// }
+export function shouldUseStub(stubEnvVar) {
+  const raw = process.env[stubEnvVar];
+  if (!raw) return false;
+  try {
+    const parsed = JSON.parse(raw);
+    return parsed && parsed.source === "stub";
+  } catch {
+    return false;
+  }
+}
 
-// export function getStubData(stubEnvVar, defaultData = {}) {
-//   const stubData = process.env[stubEnvVar];
-//   if (stubData) {
-//     try {
-//       return JSON.parse(stubData);
-//     } catch (e) {
-//       logger.warn({
-//         message: `Failed to parse stub data from ${stubEnvVar}`,
-//         error: e.message,
-//       });
-//     }
-//   }
-//   return defaultData;
-// }
+export function getStubData(stubEnvVar, defaultData = {}) {
+  const raw = process.env[stubEnvVar];
+  if (!raw) return defaultData;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return defaultData;
+  }
+}

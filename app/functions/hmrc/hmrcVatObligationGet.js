@@ -131,16 +131,18 @@ export async function handler(event) {
   try {
     // Check if we should use stubbed data
     logger.info({ message: "Checking for stubbed VAT obligations data", testScenario });
-    // TODO: [stubs] Remove stubs from production code
-    // if (shouldUseStub("TEST_VAT_OBLIGATIONS")) {
-    //   logger.info({ message: "[MOCK] Using stubbed VAT obligations data", testScenario });
-    //   obligations = getStubData("TEST_VAT_OBLIGATIONS");
-    // } else {
-    ({ obligations, hmrcResponse } = await getVatObligations(vrn, hmrcAccessToken, govClientHeaders, testScenario, hmrcAccount, {
-      from,
-      to,
-      status,
-    }));
+    // TODO: [stubs] Remove stubs from production code once all tests prime HTTP instead
+    if (shouldUseStub("TEST_VAT_OBLIGATIONS")) {
+      logger.info({ message: "[MOCK] Using stubbed VAT obligations data", testScenario });
+      obligations = getStubData("TEST_VAT_OBLIGATIONS");
+      hmrcResponse = { ok: true, status: 200 };
+    } else {
+      ({ obligations, hmrcResponse } = await getVatObligations(vrn, hmrcAccessToken, govClientHeaders, testScenario, hmrcAccount, {
+        from,
+        to,
+        status,
+      }));
+    }
 
     // Generate error responses based on HMRC response
     if (hmrcResponse && !hmrcResponse.ok) {
@@ -152,7 +154,7 @@ export async function handler(event) {
         return http500ServerErrorFromHmrcResponse(request, hmrcResponse, responseHeaders);
       }
     }
-    // }
+    // end stub/real branch
   } catch (error) {
     logger.error({
       message: "Error in handler",

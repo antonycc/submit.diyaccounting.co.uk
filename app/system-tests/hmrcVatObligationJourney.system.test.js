@@ -1,8 +1,6 @@
 // app/system-tests/hmrcVatObligationJourney.system.test.js
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from "vitest";
-import http from "http";
-import { URL } from "url";
 import { dotenvConfigIfNotBlank } from "../lib/env.js";
 import { handler as hmrcAuthUrlGetHandler } from "../functions/hmrc/hmrcAuthUrlGet.js";
 import { handler as hmrcTokenPostHandler } from "../functions/hmrc/hmrcTokenPost.js";
@@ -11,99 +9,13 @@ import { handler as hmrcVatReturnPostHandler } from "../functions/hmrc/hmrcVatRe
 import { handler as hmrcVatReturnGetHandler } from "../functions/hmrc/hmrcVatReturnGet.js";
 import { buildLambdaEvent, buildGovClientHeaders } from "../test-helpers/eventBuilders.js";
 import { setupTestEnv, parseResponseBody } from "../test-helpers/mockHelpers.js";
+import { startHmrcMockServer } from "../test-helpers/primableMockServer.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
 let stopDynalite;
 let bm;
 let hmrcMock;
-
-function startHmrcMockServer() {
-  // Simple primable HTTP server for HMRC endpoints
-  const primed = [];
-
-  function prime(matcher, responder) {
-    primed.push({ matcher, responder });
-  }
-
-  const server = http.createServer(async (req, res) => {
-    try {
-      const method = req.method || "GET";
-      const urlObj = new URL(req.url, "http://localhost");
-
-      // Read body (for POST form submissions)
-      const chunks = [];
-      await new Promise((resolve) => {
-        req.on("data", (c) => chunks.push(c));
-        req.on("end", resolve);
-      });
-      const rawBody = Buffer.concat(chunks).toString("utf8");
-
-      // Find first matching primed responder
-      const match = primed.find(({ matcher }) => {
-        if (typeof matcher === "function") return matcher({ method, path: urlObj.pathname, rawBody, search: urlObj.search });
-        if (matcher instanceof RegExp) return matcher.test(`${method} ${urlObj.pathname}`);
-        return matcher === `${method} ${urlObj.pathname}` || matcher === urlObj.pathname;
-      });
-
-      if (match) {
-        const result = await match.responder({ method, url: urlObj, rawBody, headers: req.headers });
-        const status = result?.statusCode || result?.status || 200;
-        const headers = { "content-type": "application/json", ...(result?.headers || {}) };
-        const body = result?.body ?? {};
-        res.writeHead(status, headers);
-        res.end(typeof body === "string" ? body : JSON.stringify(body));
-        return;
-      }
-
-      // Default 404 for unmatched routes
-      res.writeHead(404, { "content-type": "application/json" });
-      res.end(JSON.stringify({ message: "Not primed", path: urlObj.pathname }));
-    } catch (err) {
-      res.writeHead(500, { "content-type": "application/json" });
-      res.end(JSON.stringify({ message: "Mock server error", error: String(err) }));
-    }
-  });
-
-  return new Promise((resolve, reject) => {
-    server.listen(0, "127.0.0.1", (err) => {
-      if (err) return reject(err);
-      const address = server.address();
-      const baseUrl = `http://127.0.0.1:${address.port}`;
-
-      // Default priming for POST /oauth/token
-      prime((req) => req.method === "POST" && req.path === "/oauth/token", ({ rawBody }) => {
-        // Parse x-www-form-urlencoded to pull out the auth code for pattern-based responses
-        const params = new URLSearchParams(rawBody || "");
-        const code = params.get("code") || "unknown-code";
-        // Build a deterministic token to allow tests to validate when needed
-        const token = `mock-token-${code}`;
-        return {
-          status: 200,
-          headers: { "content-type": "application/json" },
-          body: {
-            access_token: token,
-            token_type: "Bearer",
-            expires_in: 3600,
-            refresh_token: `mock-refresh-${code}`,
-            id_token: `mock-id-${code}`,
-            scope: "write:vat read:vat",
-          },
-        };
-      });
-
-      resolve({
-        baseUrl,
-        prime,
-        stop: async () => {
-          try {
-            server.close();
-          } catch {}
-        },
-      });
-    });
-  });
-}
 
 describe("System Journey: HMRC VAT Obligation-Based Flow", () => {
   const testUserSub = "test-obligation-journey-user";
@@ -164,6 +76,53 @@ describe("System Journey: HMRC VAT Obligation-Based Flow", () => {
     // Ensure HMRC base URIs target the mock server for all tests in this suite
     process.env.HMRC_BASE_URI = hmrcMock.baseUrl;
     process.env.HMRC_SANDBOX_BASE_URI = hmrcMock.baseUrl;
+
+    // Prime HMRC endpoints used by this suite
+    // 1) POST VAT return submission
+    hmrcMock.prime(
+      ({ method, path }) => method === "POST" && /\/organisations\/vat\/[0-9]{9}\/returns$/.test(path),
+      ({ rawBody, url }) => {
+        let body;
+        try {
+          body = JSON.parse(rawBody || "{}");
+        } catch {
+          body = {};
+        }
+        const periodKey = body?.periodKey || "25A1";
+        const now = new Date().toISOString();
+        return {
+          status: 200,
+          body: {
+            formBundleNumber: `FBN-${periodKey}-0001`,
+            processingDate: now,
+          },
+        };
+      },
+    );
+
+    // 2) GET VAT obligations
+    hmrcMock.prime(
+      ({ method, path }) => method === "GET" && /\/organisations\/vat\/[0-9]{9}\/obligations$/.test(path),
+      () => {
+        let data = { obligations: [] };
+        try {
+          data = JSON.parse(process.env.TEST_VAT_OBLIGATIONS || "{}");
+        } catch {}
+        return { status: 200, body: data };
+      },
+    );
+
+    // 3) GET VAT return by periodKey
+    hmrcMock.prime(
+      ({ method, path }) => method === "GET" && /\/organisations\/vat\/[0-9]{9}\/returns\/.+/.test(path),
+      () => {
+        let data = {};
+        try {
+          data = JSON.parse(process.env.TEST_VAT_RETURN || "{}");
+        } catch {}
+        return { status: 200, body: data };
+      },
+    );
 
     // Grant test bundle for user
     const expiry = new Date(Date.now() + 60 * 60 * 1000).toISOString();
