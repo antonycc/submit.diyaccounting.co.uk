@@ -443,21 +443,21 @@ jobs:
       - name: Build CDK
         run: ./mvnw --errors clean verify -DskipTests
 
-      - name: Destroy Submit Delivery
-        run: |
-          cd cdk-delivery && \
-            npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
-              npx cdk destroy \
-              --all \
-              --force \
-          && cd .. \
-          ;
-        env:
-          ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
-          DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
-          BASE_IMAGE_TAG: "${{ env.BASE_IMAGE_TAG }}:latest"
-          WEBSITE_HASH: 'placeholder'
-          HTTP_API_URL: 'https://placeholder'
+#      - name: Destroy Submit Delivery
+#        run: |
+#          cd cdk-delivery && \
+#            npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
+#              npx cdk destroy \
+#              --all \
+#              --force \
+#          && cd .. \
+#          ;
+#        env:
+#          ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
+#          DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
+#          BASE_IMAGE_TAG: "${{ env.BASE_IMAGE_TAG }}:latest"
+#          WEBSITE_HASH: 'placeholder'
+#          HTTP_API_URL: 'https://placeholder'
 
 #      - name: Destroy PublishStack
 #        run: |
@@ -503,6 +503,8 @@ jobs:
           # Set by deploy-environment.yml after the environment's AuthStack is deployed
           COGNITO_USER_POOL_ARN: ${{ vars.COGNITO_USER_POOL_ARN }}
           COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
+          WEBSITE_HASH: 'placeholder'
+          HTTP_API_URL: 'https://placeholder'
 
       #      - name: Destroy OpsStack
       #        run: |
