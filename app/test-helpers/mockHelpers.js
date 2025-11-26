@@ -86,12 +86,12 @@ export function disableBundleMock() {
 /**
  * Reset bundle store
  */
-export function resetBundleStore() {
-  // Import dynamically to avoid circular dependencies
-  const { getBundlesStore } = require("@app/functions/non-lambda-mocks/mockBundleStore.js");
-  const store = getBundlesStore();
-  store.clear();
-}
+// export function resetBundleStore() {
+//   // Import dynamically to avoid circular dependencies
+//   const { getBundlesStore } = require("@app/functions/non-lambda-mocks/mockBundleStore.js");
+//   const store = getBundlesStore();
+//   store.clear();
+// }
 
 /**
  * Extract response body as JSON

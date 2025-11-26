@@ -4,7 +4,7 @@
 import { describe, test, beforeEach, expect, vi } from "vitest";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import { handler as bundlePostHandler } from "@app/functions/account/bundlePost.js";
-import { getBundlesStore } from "@app/functions/non-lambda-mocks/mockBundleStore.js";
+//import { getBundlesStore } from "@app/functions/non-lambda-mocks/mockBundleStore.js";
 import { buildLambdaEvent, buildEventWithToken, buildHeadEvent, makeIdToken } from "@app/test-helpers/eventBuilders.js";
 import { setupTestEnv, parseResponseBody } from "@app/test-helpers/mockHelpers.js";
 
@@ -16,8 +16,8 @@ describe("bundlePost handler", () => {
     Object.assign(process.env, setupTestEnv());
 
     // Clear the in-memory bundle store
-    const store = getBundlesStore();
-    store.clear();
+    //const store = getBundlesStore();
+    //store.clear();
   });
 
   // ============================================================================

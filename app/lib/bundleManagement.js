@@ -3,7 +3,7 @@
 import logger from "./logger.js";
 import { extractRequest, extractUserFromAuthorizerContext } from "./responses.js";
 import { loadCatalogFromRoot } from "./productCatalogHelper.js";
-import { getBundlesStore } from "../functions/non-lambda-mocks/mockBundleStore.js";
+// import { getBundlesStore } from "../functions/non-lambda-mocks/mockBundleStore.js";
 import * as dynamoDbBundleStore from "./dynamoDbBundleStore.js";
 
 // const mockBundleStore = getBundlesStore();
