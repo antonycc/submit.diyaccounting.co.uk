@@ -1,468 +1,132 @@
 # DIY Accounting Submit
 
-A developer-friendly web app and AWS stack to submit UK VAT returns via HMRC’s Making Tax Digital (MTD) APIs. It runs locally with mock OAuth2 and DynamoDb, and deploys to AWS with CloudFront + S3 static hosting, Lambda URL backends, and Cognito (Google sign-in). See USERGUIDE.md for the end-user flow.
+Submit UK VAT returns via HMRC’s Making Tax Digital (MTD) APIs. Run locally with ngrok, a mock OAuth2 server, and local DynamoDB; deploy to AWS using Java CDK (CloudFront + S3 static hosting, Lambda URL backends, Cognito optional).
 
-Table of Contents
-- TL;DR
-- Quickstart (Local)
-- Architecture Overview
-- API Reference
-- Bundles and product-catalog
-- Deployment (AWS CDK Java)
-- Observability & Security
-- Testing and CI matrix
-- Roadmap
-- License
+Quickstart — Local (your own ngrok domain + HMRC sandbox)
 
-TL;DR
-- What: Static web app fronted by CloudFront; Lambda functions for auth/token exchange, VAT submission, logging receipts, and bundle entitlement.
-- Try it locally: ngrok + mock OAuth2 + DynamoDb for receipts.
-- Deploy: Java CDK synthesizes and deploys CloudFront, S3, DynamoDB, Cognito (with Google), Lambda URLs, Route53/ACM, and Secrets Manager.
+Prerequisites
+- Node.js 22+
+- Java 21+ (for CDK build; not required to just run the local server)
+- An ngrok account (with Authtoken; a reserved subdomain recommended)
+- Playwright browser deps: run npm run playwright:install
 
-Quickstart (Local)
-
-Clone and install
+1) Clone and install
 ```bash
-
 git clone git@github.com:antonycc/submit.diyaccounting.co.uk.git
 cd submit.diyaccounting.co.uk
 npm install
-npm run build
 ```
 
-Set environment (choose one path)
-- HMRC sandbox only (no Cognito/Google):
-```env
-DIY_SUBMIT_BASE_URL=https://your-ngrok-domain.ngrok-free.app/
-HMRC_BASE_URI=https://test-api.service.hmrc.gov.uk
-HMRC_CLIENT_ID=your_hmrc_client_id
-HMRC_CLIENT_SECRET=your_hmrc_client_secret
-```
-- Cognito (Google sign-in) fronting Google IdP:
-```env
-DIY_SUBMIT_BASE_URL=https://submit.example.com/
-COGNITO_BASE_URI=https://auth.submit.example.com
-COGNITO_CLIENT_ID=your_cognito_userpool_client_id
-# Optional fallback for local-only flows without Cognito
-DIY_SUBMIT_GOOGLE_CLIENT_ID=your_google_client_id
-GOOGLE_CLIENT_SECRET=your_google_client_secret
-```
-Note: The previous README mistakenly labeled COGNITO_CLIENT_ID as a Google client ID. Use COGNITO_CLIENT_ID for Cognito; use DIY_SUBMIT_GOOGLE_CLIENT_ID when talking directly to Google (no Cognito).
-
-Run locally (proxy environment)
-- Terminal A: start server
+2) Configure ngrok
+- Get your Authtoken from https://dashboard.ngrok.com/get-started/your-authtoken
+- Reserve a subdomain (e.g. my-submit-dev.ngrok-free.app) so URLs are stable
+- Export your token so the proxy can authenticate:
 ```bash
-
-npm run server
+export NGROK_AUTHTOKEN=YOUR_NGROK_AUTHTOKEN
 ```
-- Terminal B: expose via ngrok (HTTPS URL seen by the browser)
-```bash
 
-npm run proxy
+3) Configure environment (local proxy)
+- Edit .env.proxy and set at least:
+  - DIY_SUBMIT_BASE_URL=https://YOUR_RESERVED_SUBDOMAIN.ngrok-free.app/
+  - TEST_SERVER_HTTP=run (default)
+  - TEST_PROXY=run (default)
+  - TEST_MOCK_OAUTH2=run (default)
+  - TEST_DYNAMODB=run (default)
+- HMRC sandbox (optional, for real OAuth to HMRC):
+  - Create an app in the HMRC Developer Hub (Sandbox) and add your redirect URI: https://YOUR_RESERVED_SUBDOMAIN.ngrok-free.app/
+  - Set HMRC_SANDBOX_CLIENT_ID in your local environment or .env (not committed)
+  - Provide the client secret via either HMRC_SANDBOX_CLIENT_SECRET (local only) or HMRC_SANDBOX_CLIENT_SECRET_ARN (when using AWS Secrets Manager). Keep secrets out of VCS.
+
+4) Run locally
+Pick one:
+- All-in-one (starts mock OAuth2, ngrok proxy, and the web server):
+```bash
+npm start
 ```
-- Terminal C: mock OAuth2 (for login flows during development)
+- Or run pieces yourself:
 ```bash
-
+npm run server   # http://127.0.0.1:3000
+npm run proxy -- 3000   # exposes your reserved ngrok domain
+# Optional: mock OAuth2 server if testing Google/Cognito-like flows locally
 npm run auth
 ```
-- Optional: DynamoDb (local DynamoDb) for receipts
-```bash
 
-npm run storage
-```
+Open your site at your ngrok URL: https://YOUR_RESERVED_SUBDOMAIN.ngrok-free.app/
 
-
-Architecture Overview
-High-level
-- CloudFront + S3: Static site, OAI-restricted S3 origin.
-- Lambda URL backends: authUrl-get (hmrc/mock/cognito), exchange-token (hmrc/google), submit-vat, log-receipt, request-bundle.
-- Cognito + Google IdP: Hosted UI domain; User Pool and User Pool Client for Google identity provider.
-- Route53 + ACM: DNS and certificates; optional useExisting certificate/hosted zone.
-- Secrets Manager: HMRC and Google client secrets, loaded by Lambdas when not provided via env.
-- CloudTrail + X-Ray (optional): Audit and tracing.
-
-ASCII diagram
-```text
-[Browser]
-   |  HTTPS (CloudFront)
-[CloudFront] -> [S3 static site]
-   |            \
-   |             -> [Lambda URL: /api/*]
-   |                    - authUrl-get (hmrc/mock/cognito)
-   |                    - exchange-token (hmrc/google)
-   |                    - submit-vat
-   |                    - log-receipt
-   |                    - request-bundle
-   |
-[Cognito (Google IdP)]   [Secrets Manager]   [S3 receipts]
-```
-
-Key environment variables (selected)
-- HMRC: HMRC_CLIENT_ID, HMRC_CLIENT_SECRET, HMRC_BASE_URI, DIY_SUBMIT_BASE_URL
-- Cognito/Google: COGNITO_CLIENT_ID, COGNITO_BASE_URI, DIY_SUBMIT_GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
-- Bundles: TEST_BUNDLE_EXPIRY_DATE, TEST_BUNDLE_USER_LIMIT, TEST_BUNDLE_MOCK, COGNITO_USER_POOL_ID, AWS_REGION
-- Local DynamoDB: RECEIPTS_DYNAMODB_TABLE_NAME
-See infra/main/java/co/uk/diyaccounting/submit/SubmitApplication.java for the full set mapped into the CDK stack.
-
-API Reference
-Auth URL endpoints
-- GET /api/v1/hmrc/authUrl?state=...
-- GET /api/v1/mock/authUrl?state=...
-- GET /api/v1/cognito/authUrl?state=...
-Response
-```json
-{
-  "authUrl": "https://..."
-}
-```
-
-Token exchange endpoints
-- POST /api/v1/hmrc/token
-- POST /api/google/exchange-token
-Request
-```json
-{
-  "code": "AUTHORIZATION_CODE"
-}
-```
-Success response
-```json
-{
-  "accessToken": "...",
-  "hmrcAccessToken": "..."
-}
-```
-Error response (example)
-```json
-{
-  "message": "Token exchange failed",
-  "error": { "responseCode": 400, "responseBody": { "providerError": "..." } }
-}
-```
-
-VAT submission
-- POST /api/v1/hmrc/vat/return
-Headers: Authorization: Bearer <accessToken>
-Request (example)
-```json
-{
-  "vatNumber": "176540158",
-  "periodKey": "24A1",
-  "vatDue": "2400.00"
-}
-```
-Response (example)
-```json
-{
-  "processingDate": "2025-07-14T20:20:20Z",
-  "formBundleNumber": "123456789012",
-  "chargeRefNumber": "XZ1234567890"
-}
-```
-
-Receipts and bundles
-- POST /api/v1/hmrc/receipt
-- POST /api/v1/bundle
-  - Headers: Authorization: Bearer <idToken>
-  - Body: { "bundleId": "test", "qualifiers": { /* optional */ } }
-  - Response: { "granted": true, "expiry": "2025-09-01T00:00:00Z" }
-
-Bundles and product-catalog
-Catalog: product-catalogue.toml
-- Bundles (default, test, guest, basic, legacy, advanced) govern access.
-- Activities map to bundles. For example:
-  - test -> submit-vat-sandbox, vat-obligations-sandbox
-  - guest/basic/legacy -> production submit-vat and others
-How to try locally
-- Go to bundles.html and request the “Test” bundle.
-- Visit index.html to see sections update based on granted bundles.
-
-Deployment (AWS CDK Java)
-Prereqs
-- Node 22+, Java 17+, Docker, AWS CLI, CDK v2, Maven wrapper (./mvnw)
-
-Environment (example)
-```bash
-
-export ENVIRONMENT_NAME=dev
-export HOSTED_ZONE_NAME=example.com
-export HOSTED_ZONE_ID=Z123ABC...
-export SUB_DOMAIN_NAME=submit
-export USE_EXISTING_HOSTED_ZONE=true
-export USE_EXISTING_CERTIFICATE=true
-export DIY_SUBMIT_BASE_URL=https://submit.example.com/
-export HMRC_BASE_URI=https://test-api.service.hmrc.gov.uk
-export HMRC_CLIENT_ID=...
-export HMRC_CLIENT_SECRET=...
-export DIY_SUBMIT_GOOGLE_CLIENT_ID=...
-export GOOGLE_CLIENT_SECRET=...
-export DIY_SUBMIT_COGNITO_DOMAIN_PREFIX=submit-dev-1234
-```
-
-Build, synth, deploy
-```bash
-
-./mvnw clean package
-npx cdk bootstrap aws://YOUR_ACCOUNT/YOUR_REGION
-npx cdk synth WebStack-dev
-npx cdk deploy WebStack-dev
-```
-Useful outputs (CfnOutput)
-- DistributionId, ARecord, UserPoolId, UserPoolClientId, UserPoolDomainName
-- Lambda URLs: AuthUrlHmrc, ExchangeHmrcToken, ExchangeGoogleToken, SubmitVat, LogReceipt, Bundle
-- Secrets ARNs: HmrcClientSecretsManagerSecretArn, GoogleClientSecretsManagerSecretArn
-
-Observability & Security
-- Logging: S3 access logs, CloudFront logs, Lambda logs; optional verbose.
-- Audit: CloudTrail optional, with object-level S3 event selectors.
-- Tracing: X-Ray optional.
-- Secrets: AWS Secrets Manager used by exchangeToken when env vars are not present.
-- Compliance: HMRC MTD sandbox vs production keys; data retention policies for receipts; consider GDPR for Cognito profile data.
-
-Testing and CI matrix
-Test types (scripts in package.json)
-- Unit tests (Vitest): app/unit-tests, web/unit-tests
-  - npm run test:unit
-- System tests (Vitest): app/system-tests
-  - npm run test:system
-- Browser tests (Playwright): web/browser-tests
-  - npm run test:browser
-- Behaviour tests (Playwright): behaviour-tests
+Test suites (run progressively)
+- One-time browser install: npm run playwright:install
+- Unit + system tests (Vitest): npm test
+- Browser tests (Playwright): npm run test:browser
+- Behaviour tests (Playwright; orchestrates server, ngrok, mock OAuth2, and local DynamoDB using .env.proxy):
   - npm run test:behaviour
-- Infra tests (CDK synth in Docker + mvnw):
-  - npm run run test:cdk
-- End-to-end with running proxy:
-  - npm run test:submitVatBehaviourProxyRunning
+- Everything above in one go:
+  - npm run test:all
 
-What runs between commit and deploy
-1) Lint/format (optional gates): eslint, prettier.
-2) Unit + Integration + System (Vitest) and Playwright suites.
-3) Infra synth validation (Docker + ./mvnw + CDK).
-4) If all green, environment-specific cdk deploy step.
+Troubleshooting
+- If you see flaky behaviour tests after a Docker/build, clear cached outputs: rm -rf target
+- Ensure NGROK_AUTHTOKEN is exported and DIY_SUBMIT_BASE_URL matches your reserved subdomain
+- If port 3000 is in use, set TEST_SERVER_HTTP_PORT in .env.proxy and pass the same to npm run proxy -- <port>
 
-Test command excerpts
-- npm test
-```text
-Test Files 18 passed (18)
-Tests 119 passed (119)
-Duration 2.50s
+Architecture (high level)
+- CloudFront + S3: static front-end assets
+- Lambda URLs: HMRC auth URL, token exchange, VAT submission, logging receipts, bundle entitlement APIs
+- Optional Cognito + Google IdP: hosted UI; user identity for gated features
+- Route53 + ACM: DNS and CloudFront certificate
+- Secrets Manager: HMRC and Google client secrets for non-local environments
+- Local dev: ngrok, mock OAuth2, and local DynamoDB (via dynalite)
+
+Environment files
+- .env.proxy: local development with proxy + mock OAuth2 + local DynamoDB
+- .env.prod: production-like values (no secrets in plaintext). For your own domain, copy this to a new file (e.g. .env.myprod) and override values
+- Behaviour tests reference environment via dotenv (see package.json scripts); secrets should come from your shell env or AWS Secrets Manager ARNs
+
+Deployment — AWS (your own domain, prod-based)
+Prerequisites
+- AWS account, AWS CLI configured
+- CDK v2, Java 21+, Docker
+- A public domain you control in Route53 (or the ability to delegate to Route53)
+
+Steps
+1) DNS and certificate
+   - Create (or import) a Route53 hosted zone for your domain (e.g. submit.example.org)
+   - Request an ACM certificate in us-east-1 for your apex + wildcard:
+     - submit.example.org and *.submit.example.org
+2) GitHub Actions OIDC (once per AWS account)
+   - Add the token.actions.githubusercontent.com OIDC identity provider in IAM
+   - Create two roles: a GitHub Actions role (assumable by your repo) and a deployment role (assumable by the Actions role and trusted admins)
+3) Repository configuration
+   - Set repository variables/secrets for your account and domain (examples):
+     - AWS_ACCOUNT_ID, AWS_REGION
+     - AWS_HOSTED_ZONE_ID, AWS_HOSTED_ZONE_NAME (e.g. submit.example.org)
+     - AWS_CERTIFICATE_ARN (from us-east-1)
+4) Environment file for your domain
+   - Copy .env.prod to .env.myprod and set:
+     - ENVIRONMENT_NAME=myprod, DEPLOYMENT_NAME=myprod
+     - DIY_SUBMIT_BASE_URL=https://submit.example.org/
+     - HMRC_BASE_URI / HMRC_SANDBOX_BASE_URI as needed
+     - HMRC_CLIENT_SECRET_ARN / HMRC_SANDBOX_CLIENT_SECRET_ARN pointing to Secrets Manager
+     - DynamoDB/S3 names if you want to control them; otherwise the CDK will create them
+5) Build and synthesise locally (optional pre-check)
+```bash
+./mvnw clean verify -DskipTests
+ENVIRONMENT_NAME=myprod npm run cdk:synth-environment
+ENVIRONMENT_NAME=myprod npm run cdk:synth-application
+ENVIRONMENT_NAME=myprod HTTP_API_URL=https://package.json/script/ npm run cdk:synth-delivery
 ```
-- npm run test:unit
-```text
-Test Files 13 passed (13)
-Tests 101 passed (101)
-Duration 1.70s
-```
-- npm run test:integration
-```text
-Test Files 5 passed (5)
-Tests 18 passed (18)
-Duration 1.31s
-```
-- npm run test:system
-```text
-Test Files 3 passed (3)
-Tests 5 passed (5)
-Duration 4.97s
-```
+6) Deploy via GitHub Actions
+   - Push to main for prod-like deployment, or run the deploy workflow manually choosing your environment name
 
-Code style, formatting, and IDE setup
-- JavaScript/Node
-  - Linting: ESLint (Flat config) with eslint-config-google, plus eslint-plugin-prettier to enforce Prettier formatting in lint.
-  - Formatting: Prettier v3 with default options. ESM modules throughout.
-  - Source of truth: eslint.config.js, package.json scripts.
-- Java (CDK/infra)
-  - Formatting: Spotless Maven plugin using Palantir Java Format 2.50.0 with 100-column wrap.
-  - Also: removeUnusedImports, endWithNewline, and POM sorting for pom.xml.
-  - Source of truth: pom.xml (<spotless-maven-plugin> section).
-- Shared
-  - Editor config: .editorconfig sets LF, final newline, trimming, and Java max_line_length=100.
+Notes
+- Local manual deploys with cdk deploy are possible after assuming your deployment role; the CI workflow is the source of truth for production
 
-CLI
-- Check: npm run formatting (Prettier check + Spotless check)
-- Fix: npm run formatting-fix (Prettier write + Spotless apply)
-- Lint: npm run linting / npm run linting-fix
+House style and tooling
+- Formatting checks: npm run formatting (Prettier + Spotless) / npm run formatting-fix
+- Linting: npm run linting / npm run linting-fix
+- Java formatting is enforced by Spotless (Palantir Java Format, 100 columns)
 
-IDE quick setup (respect, enforce, and auto-correct)
-- VS Code
-  - Install: ESLint (dbaeumer.vscode-eslint), Prettier - Code formatter (esbenp.prettier-vscode).
-  - Settings (workspace):
-    ```json
-    {
-      "editor.formatOnSave": true,
-      "editor.defaultFormatter": "esbenp.prettier-vscode",
-      "eslint.experimental.useFlatConfig": true,
-      "editor.codeActionsOnSave": {
-        "source.fixAll.eslint": "explicit"
-      }
-    }
-    ```
-  - Run fixes: Ctrl/Cmd+S (format on save) or run npm scripts above.
-- JetBrains IDEs (WebStorm, IntelliJ IDEA Ultimate/Community)
-  - JavaScript: Settings → Languages & Frameworks → JavaScript → Code Quality Tools → ESLint → Automatic.
-  - Prettier: Settings → Tools → Actions on Save → Run Prettier; also enable "Run eslint --fix".
-  - Java: Install "Palantir Java Format" plugin (or Google Java Format) and enable it; optionally add Save Actions plugin to format + optimize imports on save.
-- Eclipse
-  - Install Palantir Java Format via update site: https://palantir.github.io/palantir-java-format/eclipse/update/
-  - Preferences → Java → Code Style → Formatter → select Palantir. Enable Save Actions to format and organize imports.
-- JetBrains Fleet
-  - Enable ESLint and Prettier, set Prettier as default formatter; for Java, run ./mvnw spotless:apply or use Google Java Format plugin when available.
-
-Defer to configs
-- For any questions about rules, rely on eslint.config.js, pom.xml Spotless config, and Prettier defaults: https://prettier.io/docs/en/options.html
-
-Troubleshooting and Error Messages
-
-Common validation errors
-- **"Invalid vatNumber format - must be 9 digits"**
-  - Cause: VAT number is not exactly 9 digits
-  - Fix: Use format 176540158 (no spaces, hyphens, or GB prefix)
-
-- **"Invalid periodKey format"**
-  - Cause: Period key doesn't match expected pattern
-  - Fix: Use 3-5 character format like "24A1" or "#001"
-
-- **"Missing accessToken parameter from body"**
-  - Cause: HMRC access token not provided or expired
-  - Fix: Re-authorize with HMRC using /api/v1/hmrc/authUrl
-
-- **"Unauthorized - invalid or expired HMRC access token"**
-  - Cause: HMRC token validation failed
-  - Fix: Complete HMRC OAuth flow again; check token hasn't expired
-
-- **"Bundle not found in catalog"**
-  - Cause: Requested bundle ID doesn't exist in product-catalogue.toml
-  - Fix: Verify bundle ID spelling; check catalog for available bundles
-
-- **"Bundle cap reached"**
-  - Cause: Maximum users for bundle exceeded
-  - Fix: Wait for slots to free up or request a different bundle
-
-Common runtime issues
-- **Build failures with mvnw**
-  - Ensure Java 17+ is installed: `java -version`
-  - Clean build: `./mvnw clean package -U`
-  - Check for Maven repository issues; try clearing ~/.m2/repository
-
-- **npm install fails with Playwright**
-  - Run with --ignore-engines flag: `npm install --ignore-engines`
-  - Separately install browsers: `npx playwright install chromium --with-deps`
-
-- **CDK synth failures**
-  - Verify environment variables are set correctly
-  - Check cdk.json context values
-  - Run `./mvnw clean package` first to compile Java CDK code
-
-- **Lambda function timeout**
-  - Check CloudWatch logs: `/aws/lambda/{function-name}`
-  - Verify HMRC API is responsive (check status page)
-  - Increase Lambda timeout in CDK stack if needed
-
-Debugging tips
-- Enable verbose logging: Set LOG_LEVEL=debug in environment
-- Check request IDs in error responses to correlate with CloudWatch logs
-- Use X-Ray tracing (if enabled) to diagnose API call chains
-- Review CloudFront distribution settings for origin configuration issues
-- Test with HMRC sandbox before production to isolate API vs app issues
-
-API error responses
-All API endpoints return consistent error format:
-```json
-{
-  "message": "Human-readable error description",
-  "error": {
-    "responseCode": 400,
-    "responseBody": {
-      "detail": "Additional error context"
-    }
-  }
-}
-```
-
-HTTP status codes:
-- 200: Success
-- 400: Validation error (check message for specific field issues)
-- 401: Unauthorized (missing or invalid authentication token)
-- 403: Forbidden (insufficient bundle access or permissions)
-- 404: Resource not found
-- 429: Rate limited (retry with exponential backoff)
-- 500: Internal server error (check CloudWatch logs with request ID)
-
-HMRC-specific errors
-- Check HMRC API status: https://api.service.hmrc.gov.uk/api-status
-- Review HMRC developer forum for known issues
-- Verify Gov-Client headers are correctly formatted
-- Ensure correct scope (read:vat, write:vat) in authorization
-- Test scenario headers (Gov-Test-Scenario) only work in sandbox
-
-Performance optimization
-- Lambda cold starts: Consider provisioned concurrency for high-traffic endpoints
-- CloudFront caching: Static assets cached; API responses not cached
-- Bundle lookups: Cached in Lambda execution context between invocations
-- DynamoDB queries: Use sparse indexes for efficient bundle filtering
-- S3 receipts: Consider S3 Select for querying large receipt sets
-
-For deployment-specific issues, see [SETUP.md](_developers/SETUP.md).
-For end-user troubleshooting, see [USERGUIDE.md](USERGUIDE.md).
-
-Contributing
-
-Code contributions
-- Fork the repository and create a feature branch
-- Follow code style: ESLint (Flat config) + Prettier for JS, Spotless for Java
-- Run tests locally: `npm test` and `./mvnw test`
-- Run linting: `npm run linting-fix && npm run formatting-fix`
-- Write tests for new functionality
-- Update documentation for API or behavior changes
-- Submit PR with clear description of changes
-
-Documentation maintenance
-Documentation should be updated alongside code changes:
-- **README.md**: High-level architecture, setup, troubleshooting
-- **USERGUIDE.md**: End-user workflows and features
-- **_developers/API.md**: Complete API endpoint documentation
-- **_developers/SETUP.md**: Developer environment setup
-- **.github/workflows/README.md**: CI/CD workflow documentation
-- **OpenAPI specs** (openapi.json/yaml): Keep in sync with actual endpoints
-- **JSDoc comments**: Add to all public functions and modules
-- **Inline comments**: Explain complex logic or non-obvious behavior
-
-Documentation style guidelines
-- Keep prose brief and scannable
-- Use code examples liberally
-- Include error messages and troubleshooting steps
-- Add request/response examples for all APIs
-- Reference related documentation sections
-- Update version numbers when releasing
-- Ensure consistency across all docs
-
-When adding new features
-1. Update OpenAPI specification with new endpoints
-2. Add comprehensive examples to API.md
-3. Update USERGUIDE.md if user-facing
-4. Add JSDoc to new functions
-5. Update README.md if architecture changes
-6. Document new environment variables
-7. Add troubleshooting for common issues
-
-Documentation testing checklist
-- [ ] All links work (no 404s)
-- [ ] Code examples are valid and tested
-- [ ] API examples match actual endpoint schemas
-- [ ] Error messages match actual application output
-- [ ] Screenshots are current (if UI changes)
-- [ ] Version numbers are updated
-- [ ] Cross-references are accurate
-
-Roadmap
-- Production HMRC VAT flow and additional MTD APIs.
-- Expand activities across full product catalog; subscription tiers (basic/advanced).
-- Audit/export tooling; better UI/UX for activities and receipts.
-- CI hardening, additional Playwright journeys, and improved observability defaults.
+Documentation
+- This README: high-level architecture and quickstart
+- _developers/SETUP.md: step-by-step developer setup (local, tests, and AWS)
 
 License
-This project is licensed under GPL-3.0. See LICENSE for details.
-
-See also
-- USERGUIDE.md (end-user flow)
-- _developers/SETUP.md (developer setup details)
+GPL-3.0. See LICENSE for details.
