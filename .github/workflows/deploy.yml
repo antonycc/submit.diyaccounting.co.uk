@@ -231,9 +231,9 @@ jobs:
       - name: Authenticate ngrok
         shell: bash
         env:
-          NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
+          NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
         run: |
-          npx ngrok config add-authtoken "${NGROK_AUTH_TOKEN?}"
+          npx ngrok config add-authtoken "${NGROK_AUTHTOKEN?}"
 
       - name: Run behaviour tests - bundle
         run: |
@@ -301,9 +301,9 @@ jobs:
       - name: Authenticate ngrok
         shell: bash
         env:
-          NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
+          NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
         run: |
-          npx ngrok config add-authtoken "${NGROK_AUTH_TOKEN?}"
+          npx ngrok config add-authtoken "${NGROK_AUTHTOKEN?}"
 
       - name: Run behaviour tests - obligation
         run: |
@@ -372,9 +372,9 @@ jobs:
       - name: Authenticate ngrok
         shell: bash
         env:
-          NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
+          NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
         run: |
-          npx ngrok config add-authtoken "${NGROK_AUTH_TOKEN?}"
+          npx ngrok config add-authtoken "${NGROK_AUTHTOKEN?}"
 
       - name: Run behaviour tests - view vat
         run: |
@@ -443,9 +443,9 @@ jobs:
       - name: Authenticate ngrok
         shell: bash
         env:
-          NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
+          NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
         run: |
-          npx ngrok config add-authtoken "${NGROK_AUTH_TOKEN?}"
+          npx ngrok config add-authtoken "${NGROK_AUTHTOKEN?}"
 
       - name: Run behaviour tests - submit vat
         run: |
