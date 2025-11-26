@@ -129,14 +129,7 @@ export async function handler(event) {
       vatReturn = getStubData("TEST_VAT_RETURN");
       hmrcResponse = { ok: true, status: 200 };
     } else {
-      ({ vatReturn, hmrcResponse } = await getVatReturn(
-        vrn,
-        periodKey,
-        hmrcAccessToken,
-        govClientHeaders,
-        testScenario,
-        hmrcAccount,
-      ));
+      ({ vatReturn, hmrcResponse } = await getVatReturn(vrn, periodKey, hmrcAccessToken, govClientHeaders, testScenario, hmrcAccount));
     }
     // Generate error responses based on HMRC response
     if (hmrcResponse && !hmrcResponse.ok) {

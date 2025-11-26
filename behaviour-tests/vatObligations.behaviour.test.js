@@ -40,6 +40,7 @@ import {
   initHmrcAuth,
   submitHmrcAuth,
 } from "./steps/behaviour-hmrc-steps.js";
+import { exportAllTables } from "./helpers/dynamodb-export.js";
 
 if (!process.env.DIY_SUBMIT_ENV_FILEPATH) {
   dotenvConfigIfNotBlank({ path: ".env.test" });
@@ -200,6 +201,25 @@ test("Click through: View VAT obligations from HMRC", async ({ page }, testInfo)
   /* ********* */
 
   await logOutAndExpectToBeLoggedOut(page, screenshotPath);
+
+  /* **************** */
+  /*  EXPORT DYNAMODB */
+  /* **************** */
+
+  // Export DynamoDB tables if dynalite was used
+  if (runDynamoDb === "run" && dynamoControl?.endpoint) {
+    console.log("[DynamoDB Export]: Starting export of all tables...");
+    try {
+      const exportResults = await exportAllTables(outputDir, dynamoControl.endpoint, {
+        bundleTableName,
+        hmrcApiRequestsTableName,
+        receiptsTableName,
+      });
+      console.log("[DynamoDB Export]: Export completed:", exportResults);
+    } catch (error) {
+      console.error("[DynamoDB Export]: Failed to export tables:", error);
+    }
+  }
 
   // Extract user sub (from localStorage.userInfo) and write artefacts
   let userSub = null;

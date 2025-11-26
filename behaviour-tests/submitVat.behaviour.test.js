@@ -27,6 +27,7 @@ import {
 } from "./steps/behaviour-login-steps.js";
 import { ensureBundlePresent, goToBundlesPage } from "./steps/behaviour-bundle-steps.js";
 import { goToReceiptsPageUsingHamburgerMenu, verifyAtLeastOneClickableReceipt } from "./steps/behaviour-hmrc-receipts-steps.js";
+import { exportAllTables } from "./helpers/dynamodb-export.js";
 import { completeVat, fillInVat, initSubmitVat, submitFormVat, verifyVatSubmission } from "./steps/behaviour-hmrc-vat-steps.js";
 import {
   acceptCookiesHmrc,
@@ -210,6 +211,25 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
   /* ********* */
 
   await logOutAndExpectToBeLoggedOut(page, screenshotPath);
+
+  /* **************** */
+  /*  EXPORT DYNAMODB */
+  /* **************** */
+
+  // Export DynamoDB tables if dynalite was used
+  if (runDynamoDb === "run" && dynamoControl?.endpoint) {
+    console.log("[DynamoDB Export]: Starting export of all tables...");
+    try {
+      const exportResults = await exportAllTables(outputDir, dynamoControl.endpoint, {
+        bundleTableName,
+        hmrcApiRequestsTableName,
+        receiptsTableName,
+      });
+      console.log("[DynamoDB Export]: Export completed:", exportResults);
+    } catch (error) {
+      console.error("[DynamoDB Export]: Failed to export tables:", error);
+    }
+  }
 
   // Extract user sub (from localStorage.userInfo) and write artefacts
   let userSub = null;
