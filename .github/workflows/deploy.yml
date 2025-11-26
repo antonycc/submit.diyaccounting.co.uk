@@ -228,12 +228,12 @@ jobs:
            npm install
            npx playwright install chromium --with-deps
 
-      - name: Authenticate ngrok
-        shell: bash
-        env:
-          NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
-        run: |
-          npx ngrok config add-authtoken "${NGROK_AUTHTOKEN?}"
+#      - name: Authenticate ngrok
+#        shell: bash
+#        env:
+#          NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
+#        run: |
+#          npx ngrok config add-authtoken "${NGROK_AUTHTOKEN?}"
 
       - name: Run behaviour tests - bundle
         run: |
@@ -245,6 +245,7 @@ jobs:
           TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
           TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
           TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
+          NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
 
       - name: Upload artifacts (results)
         if: ${{ !cancelled() }}
@@ -298,12 +299,12 @@ jobs:
           npm install
           npx playwright install chromium --with-deps
 
-      - name: Authenticate ngrok
-        shell: bash
-        env:
-          NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
-        run: |
-          npx ngrok config add-authtoken "${NGROK_AUTHTOKEN?}"
+#      - name: Authenticate ngrok
+#        shell: bash
+#        env:
+#          NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
+#        run: |
+#          npx ngrok config add-authtoken "${NGROK_AUTHTOKEN?}"
 
       - name: Run behaviour tests - obligation
         run: |
@@ -316,6 +317,7 @@ jobs:
           TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
           TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
           HMRC_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
+          NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
 
       - name: Upload artifacts (results)
         if: ${{ !cancelled() }}
@@ -369,12 +371,12 @@ jobs:
           npm install
           npx playwright install chromium --with-deps
 
-      - name: Authenticate ngrok
-        shell: bash
-        env:
-          NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
-        run: |
-          npx ngrok config add-authtoken "${NGROK_AUTHTOKEN?}"
+#      - name: Authenticate ngrok
+#        shell: bash
+#        env:
+#          NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
+#        run: |
+#          npx ngrok config add-authtoken "${NGROK_AUTHTOKEN?}"
 
       - name: Run behaviour tests - view vat
         run: |
@@ -387,6 +389,7 @@ jobs:
           TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
           TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
           HMRC_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
+          NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
 
       - name: Upload artifacts (results)
         if: ${{ !cancelled() }}
@@ -440,12 +443,12 @@ jobs:
           npm install
           npx playwright install chromium --with-deps
 
-      - name: Authenticate ngrok
-        shell: bash
-        env:
-          NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
-        run: |
-          npx ngrok config add-authtoken "${NGROK_AUTHTOKEN?}"
+#      - name: Authenticate ngrok
+#        shell: bash
+#        env:
+#          NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
+#        run: |
+#          npx ngrok config add-authtoken "${NGROK_AUTHTOKEN?}"
 
       - name: Run behaviour tests - submit vat
         run: |
@@ -458,6 +461,7 @@ jobs:
           TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
           TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
           HMRC_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
+          NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
 
       - name: Upload artifacts (results)
         if: ${{ !cancelled() }}
