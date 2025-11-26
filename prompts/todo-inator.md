@@ -43,7 +43,7 @@ Produce a high‑quality Pull Request that:
    - Run focused tests first, then broader suites.
    - For JS/TS:
      - Unit tests: `npm run test:unit` (or `npm run test`)
-     - Integration: `npm run test:integration`
+     - System: `npm run test:system`
      - Behaviour/Browser (if relevant): `npm run test:behaviour` / `npm run test:browser`
    - For Java/CDK:
      - Build/validate: `npm run build` (Maven + Spotless checks)

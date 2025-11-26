@@ -1,15 +1,6 @@
 // app/functions/mockTokenPost.js
 
-// import { SecretsManagerClient, GetSecretValueCommand } from "@aws-sdk/client-secrets-manager";
-
 import logger from "../../lib/logger.js";
-// import { extractRequest, httpBadRequestResponse, httpOkResponse, httpServerErrorResponse } from "../../lib/responses.js";
-// import { validateEnv } from "../../lib/env.js";
-
-// const secretsClient = new SecretsManagerClient();
-
-// caching via module-level variables
-// let cachedHmrcClientSecret;
 
 export function apiEndpoint(app) {
   // Proxy to local mock OAuth2 server token endpoint to avoid browser PNA/CORS

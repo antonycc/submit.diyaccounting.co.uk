@@ -3,26 +3,7 @@
 import logger from "./logger.js";
 import { extractRequest, extractUserFromAuthorizerContext } from "./responses.js";
 import { loadCatalogFromRoot } from "./productCatalogHelper.js";
-import { getBundlesStore } from "../functions/non-lambda-mocks/mockBundleStore.js";
 import * as dynamoDbBundleStore from "./dynamoDbBundleStore.js";
-
-// const mockBundleStore = getBundlesStore();
-
-// TODO: [stubs] Remove stubs from production code
-// export function isMockMode() {
-//   const raw = process.env.TEST_BUNDLE_MOCK;
-//   const flag = String(raw || "").toLowerCase();
-//   if (flag === "true" || raw === "1") return true; // explicit enable
-//   if (flag === "false" || raw === "0") return false; // explicit disable
-//   // Otherwise, prefer DynamoDB when available
-//   try {
-//     if (dynamoDbBundleStore.isDynamoDbEnabled && dynamoDbBundleStore.isDynamoDbEnabled()) {
-//       return false;
-//     }
-//   } catch {}
-//   // Default: mock off
-//   return false;
-// }
 
 export class BundleAuthorizationError extends Error {
   constructor(message, details) {
@@ -41,13 +22,6 @@ export class BundleEntitlementError extends Error {
 }
 
 export async function getUserBundles(userId) {
-  // TODO: Remove this mock mode stuff and move the mockery into tests
-  // if (isMockMode()) {
-  //   const bundles = mockBundleStore.get(userId) || [];
-  //   logger.info({ message: "[MOCK] Current user bundles:", bundles });
-  //   return bundles;
-  // }
-
   // Use DynamoDB as primary source
   const bundles = await dynamoDbBundleStore.getUserBundles(userId);
   logger.info({ message: "Current user bundles from DynamoDB:", bundles });
@@ -56,14 +30,6 @@ export async function getUserBundles(userId) {
 
 export async function updateUserBundles(userId, bundles) {
   logger.info({ message: `Updating bundles for user ${userId} with ${bundles.length}`, bundles });
-
-  // TODO: Remove this mock mode stuff and move the mockery into tests
-  // This is actually avoided in app/functions/account/bundlePost.js anyway so should be fine to remove
-  // if (isMockMode()) {
-  //   mockBundleStore.set(userId, bundles);
-  //   logger.info({ message: `[MOCK] Updated bundles for user ${userId}`, bundles });
-  //   return;
-  // }
 
   // Update DynamoDB - this requires removing old bundles and adding new ones
   // Get current bundles to determine what to remove

@@ -13,8 +13,6 @@ import {
 import eventToGovClientHeaders from "../../lib/eventToGovClientHeaders.js";
 import { validateEnv } from "../../lib/env.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
-// Stub controls remain in hmrcVatApi; HTTP client moved to hmrcHelper during refactor
-import { shouldUseStub, getStubData } from "../../lib/hmrcVatApi.js";
 import {
   UnauthorizedTokenError,
   validateHmrcAccessToken,
@@ -123,14 +121,7 @@ export async function handler(event) {
   let hmrcResponse;
   try {
     logger.info({ message: "Checking for stubbed VAT return data", vrn, periodKey, testScenario });
-    // TODO: [stubs] Remove stubs from production code once all tests prime HTTP instead
-    if (shouldUseStub("TEST_VAT_RETURN")) {
-      logger.warn({ message: "[MOCK] Using stubbed VAT return data", vrn, periodKey, testScenario });
-      vatReturn = getStubData("TEST_VAT_RETURN");
-      hmrcResponse = { ok: true, status: 200 };
-    } else {
-      ({ vatReturn, hmrcResponse } = await getVatReturn(vrn, periodKey, hmrcAccessToken, govClientHeaders, testScenario, hmrcAccount));
-    }
+    ({ vatReturn, hmrcResponse } = await getVatReturn(vrn, periodKey, hmrcAccessToken, govClientHeaders, testScenario, hmrcAccount));
     // Generate error responses based on HMRC response
     if (hmrcResponse && !hmrcResponse.ok) {
       if (hmrcResponse.status === 403) {
@@ -141,7 +132,6 @@ export async function handler(event) {
         return http500ServerErrorFromHmrcResponse(request, hmrcResponse, responseHeaders);
       }
     }
-    // end stub/real branch
   } catch (error) {
     logger.error({ message: "Error while retrieving VAT return from HMRC", error: error.message, stack: error.stack });
     return http500ServerErrorResponse({

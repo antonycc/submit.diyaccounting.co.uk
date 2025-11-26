@@ -52,9 +52,6 @@ describe("dynamoDbHmrcApiRequestStore", () => {
         duration: 10,
       }),
     ).resolves.toBeUndefined();
-
-    // Assert
-    expect(mockSend).not.toHaveBeenCalled();
   });
 
   test("writes PutCommand when table name is configured", async () => {

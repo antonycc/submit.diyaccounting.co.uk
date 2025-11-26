@@ -46,7 +46,7 @@ Before executing the prompt creation, conduct this internal review:
 - Are error cases properly handled with comprehensive logging?
 
 #### Quality Review
-- Are tests comprehensive (unit, integration, e2e)?
+- Are tests comprehensive (unit, system, e2e)?
 - Is logging verbose enough for debugging auth flows?
 - Does the change maintain backward compatibility?
 - Is documentation updated appropriately?

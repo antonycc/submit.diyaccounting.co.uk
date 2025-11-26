@@ -21,23 +21,12 @@ async function getDynamoDbDocClient() {
   return __dynamoDbDocClient;
 }
 
-// export function isDynamoDbEnabled() {
-//   return Boolean(process.env.BUNDLE_DYNAMODB_TABLE_NAME && process.env.BUNDLE_DYNAMODB_TABLE_NAME !== "test-bundle-table");
-// }
-
 function getTableName() {
   const tableName = process.env.BUNDLE_DYNAMODB_TABLE_NAME;
-  // This should always be checked by isDynamoDbEnabled() first, but return empty string as fallback
   return tableName || "";
 }
 
 export async function putBundle(userId, bundle) {
-  // if (!isDynamoDbEnabled()) {
-  //   logger.warn({ message: `DynamoDB not enabled, skipping putBundle [table: ${process.env.BUNDLE_DYNAMODB_TABLE_NAME}]` });
-  //   return;
-  // } else {
-  //   logger.info({ message: `DynamoDB enabled, proceeding with putBundle [table: ${process.env.BUNDLE_DYNAMODB_TABLE_NAME}]` });
-  // }
   logger.info({ message: `putBundle [table: ${process.env.BUNDLE_DYNAMODB_TABLE_NAME}]` });
 
   try {
@@ -93,12 +82,6 @@ export async function putBundle(userId, bundle) {
 }
 
 export async function deleteBundle(userId, bundleId) {
-  // if (!isDynamoDbEnabled()) {
-  //   logger.warn({ message: `DynamoDB not enabled, skipping deleteBundle [table: ${process.env.BUNDLE_DYNAMODB_TABLE_NAME}]` });
-  //   return;
-  // } else {
-  //   logger.info({ message: `DynamoDB enabled, proceeding with deleteBundle [table: ${process.env.BUNDLE_DYNAMODB_TABLE_NAME}]` });
-  // }
   logger.info({ message: `deleteBundle [table: ${process.env.BUNDLE_DYNAMODB_TABLE_NAME}]` });
 
   try {
@@ -139,12 +122,6 @@ export async function deleteBundle(userId, bundleId) {
 }
 
 export async function deleteAllBundles(userId) {
-  // if (!isDynamoDbEnabled()) {
-  //   logger.warn({ message: `DynamoDB not enabled, skipping deleteAllBundles [table: ${process.env.BUNDLE_DYNAMODB_TABLE_NAME}]` });
-  //   return;
-  // } else {
-  //   logger.info({ message: `DynamoDB enabled, proceeding with deleteAllBundles [table: ${process.env.BUNDLE_DYNAMODB_TABLE_NAME}]` });
-  // }
   logger.info({ message: `deleteAllBundles [table: ${process.env.BUNDLE_DYNAMODB_TABLE_NAME}]` });
 
   try {
@@ -192,12 +169,6 @@ export async function deleteAllBundles(userId) {
 }
 
 export async function getUserBundles(userId) {
-  // if (!isDynamoDbEnabled()) {
-  //   logger.warn({ message: `DynamoDB not enabled, returning empty bundles array [table: ${process.env.BUNDLE_DYNAMODB_TABLE_NAME}]` });
-  //   return [];
-  // } else {
-  //   logger.info({ message: `DynamoDB enabled, proceeding with getUserBundles [table: ${process.env.BUNDLE_DYNAMODB_TABLE_NAME}]`, userId });
-  // }
   logger.info({ message: `getUserBundles [table: ${process.env.BUNDLE_DYNAMODB_TABLE_NAME}]`, userId });
 
   try {

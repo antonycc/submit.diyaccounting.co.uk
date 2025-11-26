@@ -223,8 +223,6 @@ Testing and CI matrix
 Test types (scripts in package.json)
 - Unit tests (Vitest): app/unit-tests, web/unit-tests
   - npm run test:unit
-- Integration tests (Vitest): app/integration-tests
-  - npm run test:integration
 - System tests (Vitest): app/system-tests
   - npm run test:system
 - Browser tests (Playwright): web/browser-tests

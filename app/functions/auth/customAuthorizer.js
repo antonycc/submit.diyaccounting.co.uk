@@ -4,7 +4,6 @@
 
 import logger from "../../lib/logger.js";
 import { CognitoJwtVerifier } from "aws-jwt-verify";
-import { decodeJwtNoVerify } from "../../lib/jwtHelper.js";
 
 // Cache the verifier instance across Lambda invocations
 let verifier = null;
@@ -76,31 +75,7 @@ export async function handler(event) {
 
     const token = tokenMatch[1].trim();
 
-    // Check if we're in test/mock mode (NODE_ENV === 'stubbed' or TEST_ACCESS_TOKEN is set)
-    // TODO: [stubs] Remove stubs from production code
-    // const isMockMode = process.env.NODE_ENV === "stubbed" || process.env.TEST_ACCESS_TOKEN;
-
-    // YOU ARE HERE: the mocking should be controlled in the test
-
     let payload;
-
-    // if (isMockMode) {
-    //   // In mock mode, just decode the JWT without verification
-    //   logger.warn({ message: "Running in mock mode, skipping JWT verification" });
-    //   payload = decodeJwtNoVerify(token);
-    //
-    //   if (!payload || !payload.sub) {
-    //     logger.warn({ message: "Invalid JWT structure in mock mode" });
-    //     return generateDenyPolicy(routeArn);
-    //   }
-    //
-    //   logger.info({
-    //     message: "Mock JWT decoded successfully",
-    //     sub: payload.sub,
-    //     username: payload.username,
-    //   });
-    // } else {
-    // Production mode - verify the JWT token with Cognito
     const jwtVerifier = getVerifier();
     payload = await jwtVerifier.verify(token);
 
@@ -110,7 +85,6 @@ export async function handler(event) {
       username: payload.username,
       scopes: payload.scope,
     });
-    // }
 
     // Generate allow policy with JWT claims in context
     return generateAllowPolicy(routeArn, payload);
@@ -132,27 +106,21 @@ function generateAllowPolicy(routeArn, jwtPayload) {
   // We need to allow access to the specific route
   let policyResource = routeArn;
 
-  // If routeArn contains specific route details, we might need to adjust it
-  // For HTTP API v2, we typically allow the specific route
-  // if (routeArn && routeArn.includes("execute-api")) {
-  //  // Keep the specific routeArn as is for HTTP API v2
-  //  policyResource = routeArn;
-  // }
-  try {
-    if (routeArn && routeArn.includes(":execute-api:")) {
-      const arnParts = routeArn.split(":");
-      const region = arnParts[3];
-      const accountId = arnParts[4];
-      const apiAndMore = arnParts[5]; // api-id/stage/method/resource
-      const apiId = apiAndMore.split("/")[0];
+  // try {
+  if (routeArn && routeArn.includes(":execute-api:")) {
+    const arnParts = routeArn.split(":");
+    const region = arnParts[3];
+    const accountId = arnParts[4];
+    const apiAndMore = arnParts[5]; // api-id/stage/method/resource
+    const apiId = apiAndMore.split("/")[0];
 
-      // Wildcard stage, method, and resource to avoid brittle exact matching on HTTP API
-      policyResource = `arn:aws:execute-api:${region}:${accountId}:${apiId}/*/*/*`;
-    }
-  } catch (error) {
-    // Fallback to original routeArn if parsing fails
-    logger.warn({ message: "Failed to parse routeArn for policy resource, using original", routeArn, error: error.message });
+    // Wildcard stage, method, and resource to avoid brittle exact matching on HTTP API
+    policyResource = `arn:aws:execute-api:${region}:${accountId}:${apiId}/*/*/*`;
   }
+  // } catch (error) {
+  //  // Fallback to original routeArn if parsing fails
+  //  logger.warn({ message: "Failed to parse routeArn for policy resource, using original", routeArn, error: error.message });
+  // }
 
   // Flatten all JWT claims into simple string values for context
   const flatContext = {};
