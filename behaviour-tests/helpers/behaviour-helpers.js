@@ -1,5 +1,6 @@
 // behaviour-tests/helpers/behaviour-helpers.js
 import { startDynamoDB, ensureBundleTableExists, ensureHmrcApiRequestsTableExists, ensureReceiptsTableExists } from "@app/bin/dynamodb.js";
+import { startNgrok } from "@app/bin/ngrok.js";
 import { spawn } from "child_process";
 import { checkIfServerIsRunning } from "./serverHelper.js";
 import { test } from "@playwright/test";
@@ -97,23 +98,42 @@ export async function runLocalHttpServer(runTestServer, httpServerPort) {
   return serverProcess;
 }
 
-export async function runLocalSslProxy(runProxy, httpServerPort, baseUrl) {
+export async function runLocalNgrokProxy(runProxy, httpServerPort, baseUrl) {
   logger.info(`[proxy]: runProxy=${runProxy}, httpServerPort=${httpServerPort}, baseUrl=${baseUrl}`);
-  let ngrokProcess;
+  let stop;
+  let endpoint;
   if (runProxy === "run") {
-    logger.info("[proxy]: Starting ngrok process...");
-    // eslint-disable-next-line sonarjs/no-os-command-from-path
-    ngrokProcess = spawn("npm", ["run", "proxy", httpServerPort.toString()], {
-      env: {
-        ...process.env,
-      },
-      stdio: ["pipe", "pipe", "pipe"],
+    logger.info("[proxy]: Starting ngrok tunnel using @ngrok/ngrok...");
+    // Extract domain from baseUrl if provided
+    const domain = baseUrl ? baseUrl.replace(/^https?:\/\//, "").replace(/\/$/, "") : undefined;
+    const started = await startNgrok({
+      addr: httpServerPort,
+      domain: domain,
+      poolingEnabled: true,
     });
-    await checkIfServerIsRunning(baseUrl, 1000, undefined, "proxy");
+    stop = started.stop;
+    endpoint = started.endpoint;
+    logger.info(`[proxy]: Started at ${endpoint}`);
+    await checkIfServerIsRunning(endpoint, 1000, undefined, "proxy");
   } else {
-    logger.info("[proxy]: Skipping ngrok process as runProxy is not set to 'run'");
+    logger.info("[proxy]: Skipping ngrok tunnel as runProxy is not set to 'run'");
   }
-  return ngrokProcess;
+  return { stop, endpoint };
+}
+
+export async function runLocalSslProxy(runProxy, httpServerPort, baseUrl) {
+  // This function is now a wrapper around runLocalNgrokProxy for backwards compatibility
+  logger.info(`[proxy]: runLocalSslProxy called (delegating to runLocalNgrokProxy)`);
+  const result = await runLocalNgrokProxy(runProxy, httpServerPort, baseUrl);
+  // For backwards compatibility, return an object that looks like a process with a kill method
+  return result.stop
+    ? {
+        kill: () => {
+          logger.info("[proxy]: kill() called on ngrok proxy, stopping...");
+          result.stop().catch((error) => logger.error("[proxy]: Error during kill:", error));
+        },
+      }
+    : null;
 }
 
 export async function runLocalOAuth2Server(runMockOAuth2) {
