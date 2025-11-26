@@ -84,34 +84,34 @@ Listening at http://127.0.0.1:3000 for https://test-api.service.hmrc.gov.uk
 ```
 
 Access via [http://127.0.0.1:3000](http://127.0.0.1:3000) or...
-install [ngrok](https://ngrok.com/) and run to expose http://127.0.0.1:3000 to an SSL terminated public URL:
+use the built-in ngrok proxy to expose http://127.0.0.1:3000 to an SSL terminated public URL:
+
 ```bash
-ngrok http 3000
+# Set your ngrok authtoken first (get it from https://dashboard.ngrok.com/get-started/your-authtoken)
+export NGROK_AUTHTOKEN=your_authtoken_here
+
+# Start the ngrok tunnel
+npm run proxy
 ```
 
-ngrok runs:
+Or you can also use ngrok directly by running:
+```bash
+node app/bin/ngrok.js 3000
+```
+
+ngrok runs and outputs something like:
 ```log
-ngrok                                                                                                                                                                                                          (Ctrl+C to quit)
-
-🤖 Want to hang with ngrokkers on our new Discord? http://ngrok.com/discord
-
-Session Status                online
-Account                       Antony @ Polycode (Plan: Free)
-Version                       3.22.1
-Region                        Europe (eu)
-Web Interface                 http://127.0.0.1:4040
-Forwarding                    https://d57b-146-70-103-222.ngrok-free.app -> http://localhost:3000
-
-Connections                   ttl     opn     rt1     rt5     p50     p90
-                              0       0       0.00    0.00    0.00    0.00
+[ngrok]: ✅ Tunnel established at https://wanted-finally-anteater.ngrok-free.app
+Ngrok started url=https://wanted-finally-anteater.ngrok-free.app
+[ngrok]: Tunnel is running. Press CTRL-C to stop.
 ```
 
-Here you can open https://d57b-146-70-103-222.ngrok-free.app in a browser of your choice (you'll have your own URL
-unless I am still running this one, I don't know when the id's roll so I might.)
+Here you can open the ngrok URL (e.g., https://wanted-finally-anteater.ngrok-free.app) in a browser of your choice.
+The URL will be based on your `.env.proxy` configuration or a random URL if not specified.
 
 # Local usage with HMRC
 
-Add the ngrok URL to the HMRC MTD service as a redirect URI, e.g. `https://d57b-146-70-103-222.ngrok-free.app/`.
+Add the ngrok URL to the HMRC MTD service as a redirect URI, e.g. `https://wanted-finally-anteater.ngrok-free.app/`.
 Start at https://d57b-146-70-103-222.ngrok-free.app
 Enter your VAT number, Period Key, and VAT Due in the form and click "Submit VAT Return".
 Log in to HMRC...
