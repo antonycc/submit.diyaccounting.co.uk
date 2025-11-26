@@ -9,8 +9,10 @@ import co.uk.diyaccounting.submit.stacks.AccountStack;
 import co.uk.diyaccounting.submit.stacks.ApiStack;
 import co.uk.diyaccounting.submit.stacks.AuthStack;
 import co.uk.diyaccounting.submit.stacks.DevStack;
+import co.uk.diyaccounting.submit.stacks.EdgeStack;
 import co.uk.diyaccounting.submit.stacks.HmrcStack;
 import co.uk.diyaccounting.submit.stacks.OpsStack;
+import co.uk.diyaccounting.submit.stacks.PublishStack;
 import co.uk.diyaccounting.submit.stacks.SelfDestructStack;
 import co.uk.diyaccounting.submit.utils.KindCdk;
 import java.lang.reflect.Field;
@@ -31,6 +33,8 @@ public class SubmitApplication {
     public final AccountStack accountStack;
     public final ApiStack apiStack;
     public final OpsStack opsStack;
+    public final EdgeStack edgeStack;
+    public final PublishStack publishStack;
     public final SelfDestructStack selfDestructStack;
 
     public static class SubmitApplicationProps {
@@ -51,6 +55,10 @@ public class SubmitApplication {
         public String userPoolArn;
         public String userPoolClientId;
         public String bundlesTableArn;
+        public String hostedZoneId;
+        public String certificateArn;
+        public String docRootPath;
+        public String httpApiUrl;
 
         public static class Builder {
             private final SubmitApplicationProps p = new SubmitApplicationProps();
@@ -137,6 +145,11 @@ public class SubmitApplication {
         infof("Self-destruct start datetime: %s", selfDestructStartDatetime);
         var cloudTrailEnabled =
                 envOr("CLOUD_TRAIL_ENABLED", appProps.cloudTrailEnabled, "(from cloudTrailEnabled in cdk.json)");
+        var httpApiUrl = envOr("HTTP_API_URL", appProps.httpApiUrl, "(from httpApiUrl in cdk.json)");
+        var commitHash = envOr("COMMIT_HASH", "local");
+        var websiteHash = envOr("WEBSITE_HASH", "local");
+        var buildNumber = envOr("BUILD_NUMBER", "local");
+        var docRootPath = envOr("DOC_ROOT_PATH", appProps.docRootPath, "(from docRootPath in cdk.json)");
 
         // Create DevStack with resources only used during development or deployment (e.g. ECR)
         infof(
@@ -288,6 +301,51 @@ public class SubmitApplication {
                         .build());
         this.opsStack.addDependency(hmrcStack);
         this.opsStack.addDependency(apiStack);
+
+        // Create the Edge stack (CloudFront, Route53)
+        infof(
+                "Synthesizing stack %s for deployment %s to environment %s",
+                sharedNames.edgeStackId, deploymentName, envName);
+        this.edgeStack = new EdgeStack(
+                app,
+                sharedNames.edgeStackId,
+                EdgeStack.EdgeStackProps.builder()
+                        .env(usEast1Env)
+                        .crossRegionReferences(true)
+                        .envName(envName)
+                        .deploymentName(deploymentName)
+                        .resourceNamePrefix(sharedNames.delResourceNamePrefix)
+                        .cloudTrailEnabled(cloudTrailEnabled)
+                        .sharedNames(sharedNames)
+                        .hostedZoneName(appProps.hostedZoneName)
+                        .hostedZoneId(appProps.hostedZoneId)
+                        .certificateArn(appProps.certificateArn)
+                        .apiGatewayUrl(httpApiUrl)
+                        .build());
+
+        // Create the Publish stack (Bucket Deployments to CloudFront)
+        infof(
+                "Synthesizing stack %s for deployment %s to environment %s",
+                sharedNames.publishStackId, deploymentName, envName);
+        String distributionId = this.edgeStack.distribution.getDistributionId();
+        this.publishStack = new PublishStack(
+                app,
+                sharedNames.publishStackId,
+                PublishStack.PublishStackProps.builder()
+                        .env(usEast1Env)
+                        .crossRegionReferences(false)
+                        .envName(envName)
+                        .deploymentName(deploymentName)
+                        .resourceNamePrefix(sharedNames.delResourceNamePrefix)
+                        .cloudTrailEnabled(cloudTrailEnabled)
+                        .sharedNames(sharedNames)
+                        .distributionId(distributionId)
+                        .commitHash(commitHash)
+                        .websiteHash(websiteHash)
+                        .buildNumber(buildNumber)
+                        .docRootPath(docRootPath)
+                        .build());
+        this.publishStack.addDependency(this.edgeStack);
 
         // Create the SelfDestruct stack only for non-prod deployments and when JAR exists
         if (!"prod".equals(deploymentName)) {
