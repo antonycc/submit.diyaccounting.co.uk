@@ -69,23 +69,26 @@ export function startHmrcMockServer() {
       const baseUrl = `http://127.0.0.1:${address.port}`;
 
       // Default priming for POST /oauth/token
-      prime((req) => req.method === "POST" && req.path === "/oauth/token", ({ rawBody }) => {
-        const params = new URLSearchParams(rawBody || "");
-        const code = params.get("code") || "unknown-code";
-        const token = `mock-token-${code}`;
-        return {
-          status: 200,
-          headers: { "content-type": "application/json" },
-          body: {
-            access_token: token,
-            token_type: "Bearer",
-            expires_in: 3600,
-            refresh_token: `mock-refresh-${code}`,
-            id_token: `mock-id-${code}`,
-            scope: "write:vat read:vat",
-          },
-        };
-      });
+      prime(
+        (req) => req.method === "POST" && req.path === "/oauth/token",
+        ({ rawBody }) => {
+          const params = new URLSearchParams(rawBody || "");
+          const code = params.get("code") || "unknown-code";
+          const token = `mock-token-${code}`;
+          return {
+            status: 200,
+            headers: { "content-type": "application/json" },
+            body: {
+              access_token: token,
+              token_type: "Bearer",
+              expires_in: 3600,
+              refresh_token: `mock-refresh-${code}`,
+              id_token: `mock-id-${code}`,
+              scope: "write:vat read:vat",
+            },
+          };
+        },
+      );
 
       resolve({
         baseUrl,
