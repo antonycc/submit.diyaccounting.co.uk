@@ -181,7 +181,13 @@ export async function hmrcHttpPost(hmrcRequestUrl, hmrcRequestHeaders, govClient
     } else if (hmrcResponse?.headers && typeof hmrcResponse.headers === "object") {
       responseHeadersObj = { ...hmrcResponse.headers };
     }
-  } catch {}
+  } catch (error) {
+    logger.error({
+      message: "Error normalizing HMRC response headers",
+      error: error.message,
+      stack: error.stack,
+    });
+  }
 
   const httpResponse = {
     statusCode: hmrcResponse.status,

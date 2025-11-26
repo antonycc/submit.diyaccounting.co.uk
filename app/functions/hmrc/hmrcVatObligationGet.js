@@ -132,27 +132,27 @@ export async function handler(event) {
     // Check if we should use stubbed data
     logger.info({ message: "Checking for stubbed VAT obligations data", testScenario });
     // TODO: [stubs] Remove stubs from production code
-    if (shouldUseStub("TEST_VAT_OBLIGATIONS")) {
-      logger.info({ message: "[MOCK] Using stubbed VAT obligations data", testScenario });
-      obligations = getStubData("TEST_VAT_OBLIGATIONS");
-    } else {
-      ({ obligations, hmrcResponse } = await getVatObligations(vrn, hmrcAccessToken, govClientHeaders, testScenario, hmrcAccount, {
-        from,
-        to,
-        status,
-      }));
+    // if (shouldUseStub("TEST_VAT_OBLIGATIONS")) {
+    //   logger.info({ message: "[MOCK] Using stubbed VAT obligations data", testScenario });
+    //   obligations = getStubData("TEST_VAT_OBLIGATIONS");
+    // } else {
+    ({ obligations, hmrcResponse } = await getVatObligations(vrn, hmrcAccessToken, govClientHeaders, testScenario, hmrcAccount, {
+      from,
+      to,
+      status,
+    }));
 
-      // Generate error responses based on HMRC response
-      if (hmrcResponse && !hmrcResponse.ok) {
-        if (hmrcResponse.status === 403) {
-          return http403ForbiddenFromHmrcResponse(hmrcAccessToken, hmrcResponse, responseHeaders);
-        } else if (hmrcResponse.status === 404) {
-          return http404NotFoundFromHmrcResponse(request, hmrcResponse, responseHeaders);
-        } else {
-          return http500ServerErrorFromHmrcResponse(request, hmrcResponse, responseHeaders);
-        }
+    // Generate error responses based on HMRC response
+    if (hmrcResponse && !hmrcResponse.ok) {
+      if (hmrcResponse.status === 403) {
+        return http403ForbiddenFromHmrcResponse(hmrcAccessToken, hmrcResponse, responseHeaders);
+      } else if (hmrcResponse.status === 404) {
+        return http404NotFoundFromHmrcResponse(request, hmrcResponse, responseHeaders);
+      } else {
+        return http500ServerErrorFromHmrcResponse(request, hmrcResponse, responseHeaders);
       }
     }
+    // }
   } catch (error) {
     logger.error({
       message: "Error in handler",

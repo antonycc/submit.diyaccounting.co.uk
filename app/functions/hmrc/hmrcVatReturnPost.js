@@ -195,29 +195,29 @@ export async function submitVat(periodKey, vatDue, vatNumber, hmrcAccount, hmrcA
   const hmrcRequestUrl = `${hmrcBase}/organisations/vat/${vatNumber}/returns`;
   logHmrcRequestDetails(hmrcRequestUrl, hmrcRequestHeaders, govClientHeaders, hmrcRequestBody);
   // TODO: [stubs] Remove stubs from production code
-  if (process.env.NODE_ENV === "stubbed") {
-    hmrcResponse = {
-      ok: true,
-      status: 200,
-      json: async () => ({ access_token: hmrcAccessToken }),
-      text: async () => JSON.stringify({ access_token: hmrcAccessToken }),
-    };
-    // TEST_RECEIPT is already a JSON string, so parse it first
-    hmrcResponseBody = JSON.parse(process.env.TEST_RECEIPT || "{}");
-    logger.warn({
-      message: "httpPostMock called in stubbed mode, using test receipt",
-      receipt: hmrcResponseBody,
-    });
-  } else {
-    // Perform real HTTP call
-    ({ hmrcResponse, hmrcResponseBody } = await hmrcHttpPost(
-      hmrcRequestUrl,
-      hmrcRequestHeaders,
-      govClientHeaders,
-      hmrcRequestBody,
-      auditForUserSub,
-    ));
-  }
+  // if (process.env.NODE_ENV === "stubbed") {
+  //   hmrcResponse = {
+  //     ok: true,
+  //     status: 200,
+  //     json: async () => ({ access_token: hmrcAccessToken }),
+  //     text: async () => JSON.stringify({ access_token: hmrcAccessToken }),
+  //   };
+  //   // TEST_RECEIPT is already a JSON string, so parse it first
+  //   hmrcResponseBody = JSON.parse(process.env.TEST_RECEIPT || "{}");
+  //   logger.warn({
+  //     message: "httpPostMock called in stubbed mode, using test receipt",
+  //     receipt: hmrcResponseBody,
+  //   });
+  // } else {
+  // Perform HTTP call
+  ({ hmrcResponse, hmrcResponseBody } = await hmrcHttpPost(
+    hmrcRequestUrl,
+    hmrcRequestHeaders,
+    govClientHeaders,
+    hmrcRequestBody,
+    auditForUserSub,
+  ));
+  // }
 
   return { hmrcRequestBody, receipt: hmrcResponseBody, hmrcResponse, hmrcResponseBody, hmrcRequestUrl };
 }

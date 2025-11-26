@@ -80,6 +80,8 @@ export async function handler(event) {
     // TODO: [stubs] Remove stubs from production code
     const isMockMode = process.env.NODE_ENV === "stubbed" || process.env.TEST_ACCESS_TOKEN;
 
+    // YOU ARE HERE: the mocking should be controlled in the test
+
     let payload;
 
     if (isMockMode) {

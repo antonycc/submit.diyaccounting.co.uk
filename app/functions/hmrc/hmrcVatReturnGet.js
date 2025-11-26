@@ -124,22 +124,22 @@ export async function handler(event) {
   try {
     logger.info({ message: "Checking for stubbed VAT return data", vrn, periodKey, testScenario });
     // TODO: [stubs] Remove stubs from production code
-    if (shouldUseStub("TEST_VAT_RETURN")) {
-      logger.warn({ message: "[MOCK] Using stubbed VAT return data", vrn, periodKey, testScenario });
-      vatReturn = getStubData("TEST_VAT_RETURN");
-    } else {
-      ({ vatReturn, hmrcResponse } = await getVatReturn(vrn, periodKey, hmrcAccessToken, govClientHeaders, testScenario, hmrcAccount));
-      // Generate error responses based on HMRC response
-      if (hmrcResponse && !hmrcResponse.ok) {
-        if (hmrcResponse.status === 403) {
-          return http403ForbiddenFromHmrcResponse(hmrcAccessToken, hmrcResponse, responseHeaders);
-        } else if (hmrcResponse.status === 404) {
-          return http404NotFoundFromHmrcResponse(request, hmrcResponse, responseHeaders);
-        } else {
-          return http500ServerErrorFromHmrcResponse(request, hmrcResponse, responseHeaders);
-        }
+    // if (shouldUseStub("TEST_VAT_RETURN")) {
+    //   logger.warn({ message: "[MOCK] Using stubbed VAT return data", vrn, periodKey, testScenario });
+    //   vatReturn = getStubData("TEST_VAT_RETURN");
+    // } else {
+    ({ vatReturn, hmrcResponse } = await getVatReturn(vrn, periodKey, hmrcAccessToken, govClientHeaders, testScenario, hmrcAccount));
+    // Generate error responses based on HMRC response
+    if (hmrcResponse && !hmrcResponse.ok) {
+      if (hmrcResponse.status === 403) {
+        return http403ForbiddenFromHmrcResponse(hmrcAccessToken, hmrcResponse, responseHeaders);
+      } else if (hmrcResponse.status === 404) {
+        return http404NotFoundFromHmrcResponse(request, hmrcResponse, responseHeaders);
+      } else {
+        return http500ServerErrorFromHmrcResponse(request, hmrcResponse, responseHeaders);
       }
     }
+    // }
   } catch (error) {
     logger.error({ message: "Error while retrieving VAT return from HMRC", error: error.message, stack: error.stack });
     return http500ServerErrorResponse({
