@@ -1,5 +1,8 @@
 package co.uk.diyaccounting.submit.stacks;
 
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
 import org.immutables.value.Value;
@@ -15,9 +18,6 @@ import software.amazon.awscdk.services.dynamodb.ITable;
 import software.amazon.awscdk.services.dynamodb.Table;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.constructs.Construct;
-
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 public class DataStack extends Stack {
 
@@ -81,8 +81,7 @@ public class DataStack extends Stack {
                 .build();
         infof(
                 "Created receipts DynamoDB table with name %s and id %s",
-                this.receiptsTable.getTableName(),
-                this.receiptsTable.getNode().getId());
+                this.receiptsTable.getTableName(), this.receiptsTable.getNode().getId());
 
         // Create DynamoDB table for bundle storage
         this.bundlesTable = Table.Builder.create(this, props.resourceNamePrefix() + "-BundlesTable")

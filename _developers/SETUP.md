@@ -4,6 +4,106 @@ This project allows UK businesses to submit tax returns to HMRC under the Making
 
 ---
 
+# Quick developer setup (current code paths)
+
+This section reflects what actually happens with the current code and scripts. It provides a step‑by‑step guide to set up your own environment with your own ngrok account/domain, HMRC sandbox credentials, and test data. It also lists the steps to run the test suites up to npm run test:all, and how to deploy to AWS for your own domain based on prod settings.
+
+1) Prerequisites
+- Node.js 22+
+- Java 21+ and Docker (for CDK build/synth)
+- An ngrok account with Authtoken; a reserved subdomain is recommended
+- HMRC Developer Hub account for sandbox credentials
+
+2) Clone and install
+```bash
+git clone git@github.com:antonycc/submit.diyaccounting.co.uk.git
+cd submit.diyaccounting.co.uk
+npm install
+npm run playwright:install
+```
+
+3) Configure ngrok
+- Get your Authtoken from https://dashboard.ngrok.com/get-started/your-authtoken
+- Reserve a subdomain (e.g. my-submit-dev.ngrok-free.app) for stable URLs
+- Export your token so the proxy can authenticate:
+```bash
+export NGROK_AUTHTOKEN=YOUR_NGROK_AUTHTOKEN
+```
+
+4) Configure local environment (implied secrets)
+- Use .env.proxy as your base for local development. Set at least:
+  - DIY_SUBMIT_BASE_URL=https://YOUR_RESERVED_SUBDOMAIN.ngrok-free.app/
+  - TEST_SERVER_HTTP=run
+  - TEST_PROXY=run
+  - TEST_MOCK_OAUTH2=run
+  - TEST_DYNAMODB=run
+- Do NOT commit plaintext secrets. Behaviour tests reference secrets from your shell env or from ARNs in AWS Secrets Manager. Typical values you’ll need to supply locally include:
+  - HMRC_SANDBOX_CLIENT_ID
+  - HMRC_SANDBOX_CLIENT_SECRET (or HMRC_SANDBOX_CLIENT_SECRET_ARN when using AWS)
+  - Optional: GOOGLE_CLIENT_SECRET / DIY_SUBMIT_GOOGLE_CLIENT_ID, COGNITO_* if testing those paths
+- DynamoDB table names for local tests (bundles, HMRC API requests, receipts) default sensibly; tables are created automatically by the behaviour test harness when TEST_DYNAMODB=run.
+
+5) HMRC sandbox application
+- In the HMRC Developer Hub (Sandbox), create an app and add your redirect URI:
+  - https://YOUR_RESERVED_SUBDOMAIN.ngrok-free.app/
+- Copy the client ID and client secret and provide them via your environment (see step 4).
+
+6) Run locally
+Pick one of the following options:
+- All‑in‑one (starts mock OAuth2, ngrok proxy, and the web server):
+```bash
+npm start
+```
+- Or run components individually:
+```bash
+npm run server                 # Serves at http://127.0.0.1:3000
+npm run proxy -- 3000          # Exposes your ngrok domain
+npm run auth                   # Starts mock OAuth2 server (optional)
+```
+Open https://YOUR_RESERVED_SUBDOMAIN.ngrok-free.app/
+
+7) Run tests up to npm run test:all
+- Unit + system tests (Vitest):
+```bash
+npm test
+```
+- Browser tests (Playwright):
+```bash
+npm run test:browser
+```
+- Behaviour tests (Playwright) — orchestrates server, ngrok, mock OAuth2, and local DynamoDB using .env.proxy:
+```bash
+npm run test:behaviour
+```
+- Full suite:
+```bash
+npm run test:all
+```
+Troubleshooting: if you suddenly get a large batch of test failures, clear the local test artifacts:
+```bash
+rm -rf target
+```
+
+8) Deploy to AWS (based on prod, for your own domain)
+- What you need:
+  - Route53 hosted zone for your domain (e.g. submit.example.org)
+  - ACM certificate in us-east-1 for submit.example.org and *.submit.example.org (used by CloudFront)
+  - GitHub Actions OIDC provider + two roles (Actions role and deployment role)
+  - Repository variables/secrets set for your account and domain: AWS_ACCOUNT_ID, AWS_REGION, AWS_HOSTED_ZONE_ID, AWS_HOSTED_ZONE_NAME, AWS_CERTIFICATE_ARN
+- Create an environment file for your domain by copying .env.prod to .env.myprod and set:
+  - ENVIRONMENT_NAME=myprod, DEPLOYMENT_NAME=myprod
+  - DIY_SUBMIT_BASE_URL=https://submit.example.org/
+  - HMRC_BASE_URI / HMRC_SANDBOX_BASE_URI as needed
+  - HMRC_CLIENT_SECRET_ARN / HMRC_SANDBOX_CLIENT_SECRET_ARN (Secrets Manager)
+- Optional pre-check (local synth):
+```bash
+./mvnw clean verify -DskipTests
+ENVIRONMENT_NAME=myprod npm run cdk:synth-environment
+ENVIRONMENT_NAME=myprod npm run cdk:synth-application
+ENVIRONMENT_NAME=myprod HTTP_API_URL=https://package.json/script/ npm run cdk:synth-delivery
+```
+- Deploy via GitHub Actions: push to main or run the deploy workflow and select your environment name.
+
 # Build and run locally
 
 ## Java code formatting (Maven Spotless + Palantir Java Format)
@@ -44,7 +144,7 @@ Notes:
 ```bash
 
 git clone git@github.com:antonycc/submit.diyaccounting.co.uk.git
-cd submit.diyaccounting.co.uk.git
+cd submit.diyaccounting.co.uk
 ```
 
 ## Install Node.js dependencies and test
@@ -61,10 +161,17 @@ npm test
 ./mvnw clean package
 ```
 
-## Synthesis the CDK
+## Synthesise the CDK (current scripts)
 
+Recommended top-level script that validates and synthesises all stacks for the prod environment:
 ```bash
-npx cdk synth
+npm run cdk
+```
+Or run individual synths (example for a custom environment):
+```bash
+ENVIRONMENT_NAME=ci npm run cdk:synth-environment
+ENVIRONMENT_NAME=ci npm run cdk:synth-application
+ENVIRONMENT_NAME=ci HTTP_API_URL=https://package.json/script/ npm run cdk:synth-delivery
 ```
 
 ## Run the website locally
@@ -111,12 +218,10 @@ The URL will be based on your `.env.proxy` configuration or a random URL if not 
 
 # Local usage with HMRC
 
-Add the ngrok URL to the HMRC MTD service as a redirect URI, e.g. `https://wanted-finally-anteater.ngrok-free.app/`.
-Start at https://d57b-146-70-103-222.ngrok-free.app
+Add your ngrok URL to the HMRC MTD service as a redirect URI, e.g. `https://YOUR_RESERVED_SUBDOMAIN.ngrok-free.app/`.
+Start at your ngrok URL, e.g. https://YOUR_RESERVED_SUBDOMAIN.ngrok-free.app
 Enter your VAT number, Period Key, and VAT Due in the form and click "Submit VAT Return".
 Log in to HMRC...
-
-More details on usage are in [USERGUIDE.md](programmers/USERGUIDE.md).
 
 ---
 
