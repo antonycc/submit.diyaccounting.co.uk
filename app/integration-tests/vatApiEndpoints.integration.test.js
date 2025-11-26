@@ -5,6 +5,7 @@ import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 
 import { handler as getVatObligationsHandler } from "@app/functions/hmrc/hmrcVatObligationGet.js";
 import { handler as getVatReturnHandler } from "@app/functions/hmrc/hmrcVatReturnGet.js";
+import * as hmrcHelper from "@app/lib/hmrcHelper.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -39,6 +40,53 @@ describe("Integration – VAT API Endpoints (Direct Handler Testing)", () => {
         finalised: true,
       }),
     };
+
+    // Traditional mocking: avoid real HTTP and return deterministic data
+    vi.spyOn(hmrcHelper, "hmrcHttpGet").mockImplementation(
+      async (endpoint, _token, _govClientHeaders, _testScenario, _hmrcAccount, queryParams = {}) => {
+        if (String(endpoint).includes("/obligations")) {
+          let data;
+          try {
+            data = JSON.parse(process.env.TEST_VAT_OBLIGATIONS || "{}");
+          } catch {
+            data = undefined;
+          }
+          if (!data || !data.obligations) {
+            data = {
+              source: "mock",
+              obligations: [
+                {
+                  start: "2024-01-01",
+                  end: "2024-03-31",
+                  due: "2024-05-07",
+                  status: queryParams?.status || "O",
+                  periodKey: "24A1",
+                  received: queryParams?.status === "F" ? "2024-05-06" : undefined,
+                },
+              ],
+            };
+          }
+          return { ok: true, status: 200, data };
+        }
+
+        if (String(endpoint).includes("/returns/")) {
+          let data;
+          try {
+            data = JSON.parse(process.env.TEST_VAT_RETURN || "{}");
+          } catch {
+            data = undefined;
+          }
+          if (!data || !data.periodKey) {
+            const match = String(endpoint).match(/returns\/([^/?]+)/);
+            const periodKey = match ? match[1] : "24A1";
+            data = { source: "mock", periodKey, vatDueSales: 1000, totalVatDue: 1000, finalised: true };
+          }
+          return { ok: true, status: 200, data };
+        }
+
+        return { ok: true, status: 200, data: {} };
+      },
+    );
   });
 
   afterAll(() => {

@@ -5,6 +5,7 @@ import { dotenvConfigIfNotBlank } from "../lib/env.js";
 import { handler as hmrcVatReturnGetHandler } from "../functions/hmrc/hmrcVatReturnGet.js";
 import { handler as hmrcVatReturnPostHandler } from "../functions/hmrc/hmrcVatReturnPost.js";
 import { handler as hmrcVatObligationGetHandler } from "../functions/hmrc/hmrcVatObligationGet.js";
+import * as hmrcHelper from "../lib/hmrcHelper.js";
 import { buildLambdaEvent, buildGovClientHeaders } from "../test-helpers/eventBuilders.js";
 import { setupTestEnv, parseResponseBody } from "../test-helpers/mockHelpers.js";
 
@@ -60,6 +61,53 @@ describe("System: HMRC VAT Scenarios with Test Parameters", () => {
     const testUserSub = "test-user";
     const expiry = new Date(Date.now() + 60 * 60 * 1000).toISOString();
     await bm.updateUserBundles(testUserSub, [{ bundleId: "guest", expiry }]);
+
+    // Traditional mocking for HMRC HTTP to avoid real network and drive scenarios
+    vi.spyOn(hmrcHelper, "hmrcHttpGet").mockImplementation(
+      async (endpoint, _token, _govClientHeaders, _testScenario, _hmrcAccount, queryParams = {}) => {
+        if (String(endpoint).includes("/obligations")) {
+          let data;
+          try {
+            data = JSON.parse(process.env.TEST_VAT_OBLIGATIONS || "{}");
+          } catch {
+            data = undefined;
+          }
+          if (!data || !data.obligations) {
+            data = {
+              source: "mock",
+              obligations: [
+                {
+                  start: queryParams?.from || "2024-01-01",
+                  end: queryParams?.to || "2024-03-31",
+                  due: "2024-05-07",
+                  status: queryParams?.status || "O",
+                  periodKey: "24A1",
+                  received: queryParams?.status === "F" ? "2024-05-06" : undefined,
+                },
+              ],
+            };
+          }
+          return { ok: true, status: 200, data };
+        }
+
+        if (String(endpoint).includes("/returns/")) {
+          let data;
+          try {
+            data = JSON.parse(process.env.TEST_VAT_RETURN || "{}");
+          } catch {
+            data = undefined;
+          }
+          if (!data || !data.periodKey) {
+            const match = String(endpoint).match(/returns\/([^/?]+)/);
+            const periodKey = match ? match[1] : "24A1";
+            data = { source: "mock", periodKey, vatDueSales: 1000, totalVatDue: 1000, finalised: true };
+          }
+          return { ok: true, status: 200, data };
+        }
+
+        return { ok: true, status: 200, data: {} };
+      },
+    );
   });
 
   it("should retrieve VAT obligations with QUARTERLY_NONE_MET scenario", async () => {
