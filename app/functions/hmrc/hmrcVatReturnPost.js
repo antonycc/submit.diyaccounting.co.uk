@@ -194,21 +194,6 @@ export async function submitVat(periodKey, vatDue, vatNumber, hmrcAccount, hmrcA
   const hmrcBase = hmrcAccount === "sandbox" ? process.env.HMRC_SANDBOX_BASE_URI : process.env.HMRC_BASE_URI;
   const hmrcRequestUrl = `${hmrcBase}/organisations/vat/${vatNumber}/returns`;
   logHmrcRequestDetails(hmrcRequestUrl, hmrcRequestHeaders, govClientHeaders, hmrcRequestBody);
-  // TODO: [stubs] Remove stubs from production code
-  // if (process.env.NODE_ENV === "stubbed") {
-  //   hmrcResponse = {
-  //     ok: true,
-  //     status: 200,
-  //     json: async () => ({ access_token: hmrcAccessToken }),
-  //     text: async () => JSON.stringify({ access_token: hmrcAccessToken }),
-  //   };
-  //   // TEST_RECEIPT is already a JSON string, so parse it first
-  //   hmrcResponseBody = JSON.parse(process.env.TEST_RECEIPT || "{}");
-  //   logger.warn({
-  //     message: "httpPostMock called in stubbed mode, using test receipt",
-  //     receipt: hmrcResponseBody,
-  //   });
-  // } else {
   // Perform HTTP call
   ({ hmrcResponse, hmrcResponseBody } = await hmrcHttpPost(
     hmrcRequestUrl,
@@ -217,7 +202,6 @@ export async function submitVat(periodKey, vatDue, vatNumber, hmrcAccount, hmrcA
     hmrcRequestBody,
     auditForUserSub,
   ));
-  // }
 
   return { hmrcRequestBody, receipt: hmrcResponseBody, hmrcResponse, hmrcResponseBody, hmrcRequestUrl };
 }

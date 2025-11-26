@@ -61,14 +61,6 @@ export async function handler(event) {
   const { request } = extractRequest(event);
   const errorMessages = [];
 
-  // Bundle enforcement
-  // let userSub;
-  // try {
-  //  userSub = await enforceBundles(event);
-  // } catch (error) {
-  //  return http403ForbiddenFromBundleEnforcement(error, request);
-  // }
-
   // If HEAD request, return 200 OK immediately
   if (event?.requestContext?.http?.method === "HEAD") {
     return http200OkResponse({

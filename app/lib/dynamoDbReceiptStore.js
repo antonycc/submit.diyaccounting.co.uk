@@ -16,13 +16,8 @@ async function getDynamoDbDocClient() {
   return __dynamoDbDocClient;
 }
 
-export function isDynamoDbEnabled() {
-  return Boolean(process.env.RECEIPTS_DYNAMODB_TABLE_NAME);
-}
-
 function getTableName() {
   const tableName = process.env.RECEIPTS_DYNAMODB_TABLE_NAME;
-  // This should always be checked by isDynamoDbEnabled() first, but return empty string as fallback
   return tableName || "";
 }
 
@@ -33,12 +28,7 @@ function getTableName() {
  * @param {object} receipt - The receipt data to store
  */
 export async function putReceipt(userSub, receiptId, receipt) {
-  if (!isDynamoDbEnabled()) {
-    logger.warn({ message: `DynamoDB not enabled, skipping putReceipt [table: ${process.env.RECEIPTS_DYNAMODB_TABLE_NAME}]` });
-    return;
-  } else {
-    logger.info({ message: `DynamoDB enabled, proceeding with putReceipt [table: ${process.env.RECEIPTS_DYNAMODB_TABLE_NAME}]` });
-  }
+  logger.info({ message: `DynamoDB enabled, proceeding with putReceipt [table: ${process.env.RECEIPTS_DYNAMODB_TABLE_NAME}]` });
 
   try {
     const hashedSub = hashSub(userSub);
@@ -97,16 +87,11 @@ export async function putReceipt(userSub, receiptId, receipt) {
  * @returns {object} The receipt data
  */
 export async function getReceipt(userSub, receiptId) {
-  if (!isDynamoDbEnabled()) {
-    logger.warn({ message: `DynamoDB not enabled, returning null [table: ${process.env.RECEIPTS_DYNAMODB_TABLE_NAME}]` });
-    return null;
-  } else {
-    logger.info({
-      message: `DynamoDB enabled, proceeding with getReceipt [table: ${process.env.RECEIPTS_DYNAMODB_TABLE_NAME}]`,
-      userSub,
-      receiptId,
-    });
-  }
+  logger.info({
+    message: `DynamoDB enabled, proceeding with getReceipt [table: ${process.env.RECEIPTS_DYNAMODB_TABLE_NAME}]`,
+    userSub,
+    receiptId,
+  });
 
   try {
     const hashedSub = hashSub(userSub);
@@ -153,15 +138,10 @@ export async function getReceipt(userSub, receiptId) {
  * @returns {Array} Array of receipt metadata objects
  */
 export async function listUserReceipts(userSub) {
-  if (!isDynamoDbEnabled()) {
-    logger.warn({ message: `DynamoDB not enabled, returning empty receipts array [table: ${process.env.RECEIPTS_DYNAMODB_TABLE_NAME}]` });
-    return [];
-  } else {
-    logger.info({
-      message: `DynamoDB enabled, proceeding with listUserReceipts [table: ${process.env.RECEIPTS_DYNAMODB_TABLE_NAME}]`,
-      userSub,
-    });
-  }
+  logger.info({
+    message: `DynamoDB enabled, proceeding with listUserReceipts [table: ${process.env.RECEIPTS_DYNAMODB_TABLE_NAME}]`,
+    userSub,
+  });
 
   try {
     const hashedSub = hashSub(userSub);

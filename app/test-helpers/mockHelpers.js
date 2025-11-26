@@ -84,16 +84,6 @@ export function disableBundleMock() {
 }
 
 /**
- * Reset bundle store
- */
-// export function resetBundleStore() {
-//   // Import dynamically to avoid circular dependencies
-//   const { getBundlesStore } = require("@app/functions/non-lambda-mocks/mockBundleStore.js");
-//   const store = getBundlesStore();
-//   store.clear();
-// }
-
-/**
  * Extract response body as JSON
  */
 export function parseResponseBody(response) {
@@ -112,10 +102,6 @@ export function parseResponseBody(response) {
  */
 export function verifyResponseStructure(response, expectedStatusCode) {
   // This function is designed to be used in test contexts where expect is available
-  // If called outside a test context, it will throw ReferenceError
-  // if (typeof expect === "undefined") {
-  //  throw new Error("verifyResponseStructure must be called from within a vitest test context where 'expect' is available");
-  // }
   vitestExpect(response).toHaveProperty("statusCode");
   vitestExpect(response).toHaveProperty("headers");
   vitestExpect(response).toHaveProperty("body");

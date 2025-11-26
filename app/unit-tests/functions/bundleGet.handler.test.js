@@ -5,7 +5,6 @@ import { describe, test, beforeEach, expect } from "vitest";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import { handler as bundleGetHandler } from "@app/functions/account/bundleGet.js";
 import { handler as bundlePostHandler } from "@app/functions/account/bundlePost.js";
-//import { getBundlesStore } from "@app/functions/non-lambda-mocks/mockBundleStore.js";
 import { buildLambdaEvent, buildEventWithToken, makeIdToken } from "@app/test-helpers/eventBuilders.js";
 import { setupTestEnv, parseResponseBody } from "@app/test-helpers/mockHelpers.js";
 

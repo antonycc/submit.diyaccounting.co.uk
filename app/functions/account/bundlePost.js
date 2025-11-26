@@ -227,16 +227,14 @@ export async function handler(event) {
     logger.info({ message: "Updated user bundles:", userId, currentBundles });
 
     // Persist the updated bundles to the primary store (DynamoDB)
-    // Note: Previously this was stubbed out which meant the UI would refresh from GET and
-    // not see the newly granted bundle, causing behaviour tests to fail.
-    try {
-      // Lazy import to avoid circular deps at module load and keep handler fast to import
-      const { updateUserBundles } = await import("../../lib/bundleManagement.js");
-      await updateUserBundles(userId, currentBundles);
-    } catch (e) {
-      logger.error({ message: "Failed to persist updated bundles", error: e });
-      // Continue to return success so the client can still reflect the state; persistence errors are logged
-    }
+    // try {
+    // Lazy import to avoid circular deps at module load and keep handler fast to import
+    const { updateUserBundles } = await import("../../lib/bundleManagement.js");
+    await updateUserBundles(userId, currentBundles);
+    // } catch (e) {
+    //  logger.error({ message: "Failed to persist updated bundles", error: e });
+    //  throw e;
+    // }
 
     logger.info({ message: "Bundle granted to user:", userId, newBundle });
     return {

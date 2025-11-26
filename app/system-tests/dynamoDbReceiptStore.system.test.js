@@ -80,9 +80,6 @@ afterAll(async () => {
 
 describe("System: dynamoDbReceiptStore with local dynalite", () => {
   it("should enable DynamoDB via env and perform putReceipt/getReceipt/listUserReceipts operations", async () => {
-    // Verify dynamo is enabled via env
-    expect(store.isDynamoDbEnabled()).toBe(true);
-
     const userSub = "user-receipt-12345";
     const receiptId = "2025-11-24T10:00:00.000Z-TEST-BUNDLE-001";
     const receipt = {

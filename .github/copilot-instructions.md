@@ -23,10 +23,6 @@ npm install --ignore-engines
 npm run test:unit
 # Duration: 4 seconds. NEVER CANCEL: Set timeout to 15+ seconds.
 
-# Integration tests with mocked HTTP services
-npm run test:integration
-# Duration: 3 seconds. NEVER CANCEL: Set timeout to 15+ seconds.
-
 # System tests with Docker containers
 npm run test:system
 # Duration: 6 seconds. NEVER CANCEL: Set timeout to 30+ seconds.
@@ -86,14 +82,14 @@ This is a full-stack AWS serverless application:
 - **Frontend**: Static HTML/CSS/JS served via CloudFront
 - **Backend**: Node.js Express server + AWS Lambda functions
 - **Infrastructure**: AWS CDK (Java) for deployment
-- **Testing**: Multi-tier testing with Vitest (unit/integration/system) and Playwright (browser/behavior)
+- **Testing**: Multi-tier testing with Vitest (unit/system) and Playwright (browser/behavior)
 
 ## Validation Scenarios
 
 ### ALWAYS Test After Making Changes
 1. **Core functionality validation**:
    ```bash
-   npm run test:unit && npm run test:integration
+   npm test
    ```
 
 2. **Server startup validation**:
@@ -156,10 +152,6 @@ Manual testing should be performed using the **proxy environment**. This require
 - **Problem**: pom.xml specifies Java 21, system has Java 17
 - **Solution**: Use compiler overrides: `-Dmaven.compiler.source=17 -Dmaven.compiler.target=17`
 
-### Playwright Installation Issues
-- **Problem**: Playwright browser download fails during npm install or separate installation
-- **Solution**: Network/firewall issues may prevent browser downloads. Tests using Playwright may not work in restricted environments. Use unit/integration/system tests instead.
-
 ### CDK Synthesis Issues
 - **Problem**: `npx cdk synth` fails with missing environment variables
 - **Solution**: CDK requires AWS environment variables. For local development, use test commands instead.
@@ -167,7 +159,7 @@ Manual testing should be performed using the **proxy environment**. This require
 ### Test Timeouts
 - **Problem**: Long-running operations may timeout with default settings
 - **Solution**: Always set appropriate timeouts:
-  - Unit/Integration tests: 15+ seconds
+  - Unit tests: 15+ seconds
   - System tests: 30+ seconds
   - Browser tests: 60+ seconds
   - Behavior tests: 120+ seconds

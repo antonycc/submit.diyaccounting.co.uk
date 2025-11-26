@@ -121,10 +121,6 @@ export async function saveReceiptToDynamoDB(userSub, receiptId, receipt) {
     message: `Environment variables: RECEIPTS_DYNAMODB_TABLE_NAME=${receiptsTableName}`,
   });
 
-  // TODO: [stubs] Remove stubs from production code
-  // if (process.env.NODE_ENV === "stubbed") {
-  //  logger.warn({ message: "NODE_ENV environment variable is stubbed: No receipt saved." });
-  // } else {
   logger.info({
     message: `Logging receipt to DynamoDB table ${receiptsTableName} with receiptId ${receiptId}`,
   });
@@ -134,5 +130,4 @@ export async function saveReceiptToDynamoDB(userSub, receiptId, receipt) {
     logger.error({ message: "Failed to log receipt to DynamoDB", error });
     throw new Error(`Failed to log receipt: ${error.message}`);
   }
-  // }
 }

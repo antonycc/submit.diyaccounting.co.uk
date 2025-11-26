@@ -23,18 +23,8 @@ async function getDynamoDbDocClient() {
   return __dynamoDbDocClient;
 }
 
-function isDynamoDbEnabled() {
-  const name = process.env.HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME;
-  if (!name) return false;
-  const lower = String(name).toLowerCase();
-  // Treat known test placeholders as disabled
-  if (lower === "test-hmrc-api-requests-table" || lower === "test-hmrc-requests-table") return false;
-  return true;
-}
-
 function getTableName() {
   const tableName = process.env.HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME;
-  // This should always be checked by isDynamoDbEnabled() first, but return empty string as fallback
   return tableName || "";
 }
 
@@ -53,12 +43,7 @@ Example data:
   };
  */
 export async function putHmrcApiRequest(userSub, { url, httpRequest, httpResponse, duration }) {
-  if (!isDynamoDbEnabled()) {
-    logger.warn({ message: `DynamoDB not enabled, skipping putHmrcApiRequest [table: ${process.env.RECEIPTS_DYNAMODB_TABLE_NAME}]` });
-    return;
-  } else {
-    logger.info({ message: `DynamoDB enabled, proceeding with putHmrcApiRequest [table: ${process.env.RECEIPTS_DYNAMODB_TABLE_NAME}]` });
-  }
+  logger.info({ message: `DynamoDB enabled, proceeding with putHmrcApiRequest [table: ${process.env.RECEIPTS_DYNAMODB_TABLE_NAME}]` });
 
   const method = httpRequest && httpRequest.method ? httpRequest.method : "UNKNOWN";
   const requestId = context.get("requestId");
