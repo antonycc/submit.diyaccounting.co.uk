@@ -48,7 +48,7 @@ export function mockNetworkError(mockFetch, errorMessage = "Network error") {
  */
 export function setupTestEnv(customEnv = {}) {
   const defaultEnv = {
-    NODE_ENV: "test",
+    // NODE_ENV: "test",
     HMRC_BASE_URI: "https://test-api.service.hmrc.gov.uk",
     HMRC_SANDBOX_BASE_URI: "https://test-api.service.hmrc.gov.uk/test",
     HMRC_CLIENT_ID: "test-client-id",

@@ -3,12 +3,11 @@ import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, QueryCommand } from "@aws-sdk/lib-dynamodb";
 import { hashSub } from "../lib/subHasher.js";
 
-let stopDynalite;
 /** @typedef {typeof import("../lib/bundleManagement.js")} BundleManagement */
 /** @type {BundleManagement} */
 let bm;
-
-const tableName = "bundles-system-test-bm-journeys";
+let stopDynalite;
+const bundlesTableName = "bundles-system-test-bm-journeys";
 
 function makeDocClient() {
   const endpoint = process.env.AWS_ENDPOINT_URL_DYNAMODB || process.env.AWS_ENDPOINT_URL;
@@ -28,7 +27,7 @@ async function queryBundlesForUser(userId) {
   const doc = makeDocClient();
   const resp = await doc.send(
     new QueryCommand({
-      TableName: tableName,
+      TableName: bundlesTableName,
       KeyConditionExpression: "hashedSub = :h",
       ExpressionAttributeValues: { ":h": hashedSub },
     }),
@@ -97,9 +96,9 @@ beforeAll(async () => {
   process.env.AWS_SECRET_ACCESS_KEY = process.env.AWS_SECRET_ACCESS_KEY || "dummy";
   process.env.AWS_ENDPOINT_URL = endpoint;
   process.env.AWS_ENDPOINT_URL_DYNAMODB = endpoint;
-  process.env.BUNDLE_DYNAMODB_TABLE_NAME = tableName;
+  process.env.BUNDLE_DYNAMODB_TABLE_NAME = bundlesTableName;
 
-  await ensureBundleTableExists(tableName, endpoint);
+  await ensureBundleTableExists(bundlesTableName, endpoint);
 
   bm = await import("../lib/bundleManagement.js");
 });
@@ -111,31 +110,6 @@ afterAll(async () => {
 });
 
 describe("System journeys: bundleManagement", () => {
-  it("journey: add, remove, add duplicate, remove all (mock mode)", async () => {
-    process.env.TEST_BUNDLE_MOCK = "true";
-    const userId = "bm-journey-mock";
-
-    // Start clean
-    await bm.updateUserBundles(userId, []);
-    expect(await bm.getUserBundles(userId)).toEqual([]);
-
-    // Add
-    await bm.addBundles(userId, ["BUNDLE_1"]);
-    expect(await bm.getUserBundles(userId)).toEqual(["BUNDLE_1"]);
-
-    // Remove
-    await bm.removeBundles(userId, ["BUNDLE_1"]);
-    expect(await bm.getUserBundles(userId)).toEqual([]);
-
-    // Try to add twice (should de-duplicate)
-    await bm.addBundles(userId, ["BUNDLE_2", "BUNDLE_2"]);
-    expect(await bm.getUserBundles(userId)).toEqual(["BUNDLE_2"]);
-
-    // Remove all
-    await bm.updateUserBundles(userId, []);
-    expect(await bm.getUserBundles(userId)).toEqual([]);
-  });
-
   it("journey: enforcement fail → add bundle → succeed → remove bundle → fail (Dynamo mode)", async () => {
     delete process.env.TEST_BUNDLE_MOCK; // ensure we go via Dynamo
     const sub = "bm-journey-enforce";

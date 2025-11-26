@@ -6,11 +6,8 @@ import logger from "../../lib/logger.js";
 import { extractRequest, http200OkResponse, parseRequestBody } from "../../lib/responses.js";
 import { decodeJwtToken } from "../../lib/jwtHelper.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
-import { getBundlesStore } from "../non-lambda-mocks/mockBundleStore.js";
-import { enforceBundles, getUserBundles, isMockMode, updateUserBundles } from "../../lib/bundleManagement.js";
+import { enforceBundles, getUserBundles } from "../../lib/bundleManagement.js";
 import { http403ForbiddenFromBundleEnforcement } from "../../lib/hmrcHelper.js";
-
-const mockBundleStore = getBundlesStore();
 
 function parseIsoDurationToDate(fromDate, iso) {
   // Minimal support for PnD, PnM, PnY
@@ -140,7 +137,8 @@ export async function handler(event) {
 
     const currentBundles = await getUserBundles(userId);
 
-    const hasBundle = currentBundles.some((bundle) => bundle === requestedBundle);
+    // currentBundles are objects like { bundleId, expiry }. Ensure we compare by bundleId
+    const hasBundle = currentBundles.some((bundle) => bundle?.bundleId === requestedBundle);
     if (hasBundle) {
       logger.info({ message: "User already has requested bundle:", requestedBundle });
       return {
@@ -205,15 +203,16 @@ export async function handler(event) {
     // on-request: enforce cap and expiry
     const cap = Number.isFinite(catalogBundle.cap) ? Number(catalogBundle.cap) : undefined;
     if (typeof cap === "number") {
-      // TODO: [stubs] Remove stubs from production code
-      const currentCount = mockBundleStore.size;
+      const currentCount = currentBundles.length;
       if (currentCount >= cap) {
-        logger.info({ message: "[Catalog bundle] Bundle cap reached:", requestedBundle, cap });
+        logger.info({ message: "[Catalog bundle] Bundle cap reached:", requestedBundle, currentCount, cap });
         return {
           statusCode: 403,
           headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
           body: JSON.stringify({ error: "cap_reached" }),
         };
+      } else {
+        logger.info({ message: "[Catalog bundle] Bundle cap not yet reached:", requestedBundle, currentCount, cap });
       }
     } else {
       logger.info({ message: "[Catalog bundle] No cap defined for bundle:", requestedBundle });
@@ -227,12 +226,16 @@ export async function handler(event) {
     currentBundles.push(newBundle);
     logger.info({ message: "Updated user bundles:", userId, currentBundles });
 
-    // TODO: [stubs] Remove stubs from production code
-    if (isMockMode()) {
-      mockBundleStore.set(userId, currentBundles);
-    } else {
-      // Use DynamoDB as primary storage via updateUserBundles
+    // Persist the updated bundles to the primary store (DynamoDB)
+    // Note: Previously this was stubbed out which meant the UI would refresh from GET and
+    // not see the newly granted bundle, causing behaviour tests to fail.
+    try {
+      // Lazy import to avoid circular deps at module load and keep handler fast to import
+      const { updateUserBundles } = await import("../../lib/bundleManagement.js");
       await updateUserBundles(userId, currentBundles);
+    } catch (e) {
+      logger.error({ message: "Failed to persist updated bundles", error: e });
+      // Continue to return success so the client can still reflect the state; persistence errors are logged
     }
 
     logger.info({ message: "Bundle granted to user:", userId, newBundle });

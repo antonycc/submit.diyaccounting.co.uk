@@ -12,8 +12,6 @@ import {
 } from "../../lib/responses.js";
 import { validateEnv } from "../../lib/env.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
-import { enforceBundles } from "../../lib/bundleManagement.js";
-import { http403ForbiddenFromBundleEnforcement } from "../../lib/hmrcHelper.js";
 
 const secretsClient = new SecretsManagerClient();
 

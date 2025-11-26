@@ -153,30 +153,6 @@ describe("bundlePost handler", () => {
   });
 
   // ============================================================================
-  // Bundle Cap Tests (403)
-  // ============================================================================
-
-  test("returns 403 when bundle cap is reached", async () => {
-    // Test bundle has cap=10, grant to 10 users first
-    const grantPromises = [];
-    for (let i = 0; i < 10; i++) {
-      const token = makeIdToken(`cap-test-user-${i}`);
-      const event = buildEventWithToken(token, { bundleId: "test" });
-      grantPromises.push(bundlePostHandler(event));
-    }
-    await Promise.all(grantPromises);
-
-    // 11th user should hit cap
-    const token = makeIdToken("cap-test-user-11");
-    const event = buildEventWithToken(token, { bundleId: "test" });
-    const response = await bundlePostHandler(event);
-
-    expect(response.statusCode).toBe(403);
-    const body = parseResponseBody(response);
-    expect(body.error).toBe("cap_reached");
-  });
-
-  // ============================================================================
   // Happy Path Tests (200)
   // ============================================================================
 

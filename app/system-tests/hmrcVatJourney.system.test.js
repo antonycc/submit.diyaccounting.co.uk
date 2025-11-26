@@ -15,10 +15,12 @@ import { handler as hmrcReceiptGetHandler } from "../functions/hmrc/hmrcReceiptG
 import { buildLambdaEvent, buildGovClientHeaders, makeIdToken } from "../test-helpers/eventBuilders.js";
 import { setupTestEnv, parseResponseBody } from "../test-helpers/mockHelpers.js";
 import { ensureReceiptsTableExists } from "@app/bin/dynamodb.js";
+import { startHmrcMockServer } from "../test-helpers/primableMockServer.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
 let stopDynalite;
+let hmrcMock;
 let importedBundleManagement;
 const bundlesTableName = "system-test-vat-journey-bundles";
 const hmrcReqsTableName = "system-test-vat-journey-requests";
@@ -91,17 +93,16 @@ describe("System Journey: HMRC VAT Submission End-to-End", () => {
     const { default: dynalite } = await import("dynalite");
 
     const host = "127.0.0.1";
-    const port = 9006;
     const server = dynalite({ createTableMs: 0 });
-    await new Promise((resolve, reject) => {
-      server.listen(port, host, (err) => (err ? reject(err) : resolve(null)));
+    const address = await new Promise((resolve, reject) => {
+      server.listen(0, host, (err) => (err ? reject(err) : resolve(server.address())));
     });
     stopDynalite = async () => {
       try {
         server.close();
       } catch {}
     };
-    const endpoint = `http://${host}:${port}`;
+    const endpoint = `http://${host}:${address.port}`;
 
     process.env.AWS_REGION = process.env.AWS_REGION || "us-east-1";
     process.env.AWS_ACCESS_KEY_ID = process.env.AWS_ACCESS_KEY_ID || "dummy";
@@ -117,11 +118,17 @@ describe("System Journey: HMRC VAT Submission End-to-End", () => {
     await ensureReceiptsTableExists(receiptsTableName, endpoint);
 
     importedBundleManagement = await import("../lib/bundleManagement.js");
+
+    // Start HMRC mock server
+    hmrcMock = await startHmrcMockServer();
   });
 
   afterAll(async () => {
     try {
       await stopDynalite?.();
+    } catch {}
+    try {
+      await hmrcMock?.stop?.();
     } catch {}
   });
 
@@ -132,7 +139,7 @@ describe("System Journey: HMRC VAT Submission End-to-End", () => {
     Object.assign(
       process.env,
       setupTestEnv({
-        NODE_ENV: "stubbed",
+        //NODE_ENV: "stubbed",
         DIY_SUBMIT_RECEIPTS_BUCKET_NAME: "test-receipts-bucket",
         HMRC_CLIENT_SECRET: "test-client-secret",
         HMRC_SANDBOX_CLIENT_SECRET: "test-sandbox-client-secret",
@@ -141,6 +148,33 @@ describe("System Journey: HMRC VAT Submission End-to-End", () => {
         HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME: hmrcReqsTableName,
         RECEIPTS_DYNAMODB_TABLE_NAME: receiptsTableName,
       }),
+    );
+
+    // Ensure HMRC base URIs target the mock server for all tests in this suite
+    process.env.HMRC_BASE_URI = hmrcMock.baseUrl;
+    process.env.HMRC_SANDBOX_BASE_URI = hmrcMock.baseUrl;
+
+    // Prime HMRC endpoints used by this suite
+    // 1) POST VAT return submission
+    hmrcMock.prime(
+      ({ method, path }) => method === "POST" && /\/organisations\/vat\/[0-9]{9}\/returns$/.test(path),
+      ({ rawBody }) => {
+        let body;
+        try {
+          body = JSON.parse(rawBody || "{}");
+        } catch {
+          body = {};
+        }
+        const periodKey = body?.periodKey || "25A1";
+        const now = new Date().toISOString();
+        return {
+          status: 200,
+          body: {
+            formBundleNumber: `FBN-${periodKey}-0001`,
+            processingDate: now,
+          },
+        };
+      },
     );
 
     // Grant test bundle for user
@@ -175,12 +209,10 @@ describe("System Journey: HMRC VAT Submission End-to-End", () => {
     });
 
     const tokenResponse = await hmrcTokenPostHandler(tokenEvent);
-    // Token exchange may return 500 in test environment due to missing AWS Secrets Manager
-    // In a real environment with AWS credentials, this would return 200
-    expect([200, 500]).toContain(tokenResponse.statusCode);
-
-    // Simulate receiving access token from HMRC (in real flow, this would come from the token response)
-    const hmrcAccessToken = "mock-hmrc-access-token-12345";
+    // With the primed mock HMRC server, token exchange should succeed
+    expect(tokenResponse.statusCode).toBe(200);
+    const tokenBody = parseResponseBody(tokenResponse);
+    const hmrcAccessToken = tokenBody?.accessToken || tokenBody?.hmrcAccessToken || "mock-token";
 
     // Step 3: Submit VAT return to HMRC
     const submitEvent = buildLambdaEvent({
@@ -334,7 +366,9 @@ describe("System Journey: HMRC VAT Submission End-to-End", () => {
     });
 
     const tokenResponse = await hmrcTokenPostHandler(tokenEvent);
-    expect([200, 500]).toContain(tokenResponse.statusCode);
+    expect(tokenResponse.statusCode).toBe(200);
+    const sandboxTokenBody = parseResponseBody(tokenResponse);
+    const sandboxAccessToken = sandboxTokenBody?.accessToken || sandboxTokenBody?.hmrcAccessToken || "mock-sandbox-token";
 
     // Step 3: Submit VAT return in sandbox
     const submitEvent = buildLambdaEvent({
@@ -344,7 +378,7 @@ describe("System Journey: HMRC VAT Submission End-to-End", () => {
         vatNumber: "987654321",
         periodKey: "25B1",
         vatDue: 750.25,
-        accessToken: "sandbox-access-token",
+        accessToken: sandboxAccessToken,
       },
       headers: {
         ...buildGovClientHeaders(),

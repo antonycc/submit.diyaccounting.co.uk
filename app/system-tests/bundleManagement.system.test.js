@@ -1,4 +1,8 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from "vitest";
+import { describe, it, expect, beforeAll, afterAll, beforeEach, test } from "vitest";
+import { buildEventWithToken, makeIdToken } from "@app/test-helpers/eventBuilders.js";
+import { handler as bundlePostHandler } from "@app/functions/account/bundlePost.js";
+import { parseResponseBody } from "@app/test-helpers/mockHelpers.js";
+import { handler as bundleGetHandler } from "@app/functions/account/bundleGet.js";
 
 // We mirror the dynalite setup used by dynamoDbBundleStore.system.test.js
 let stopDynalite;
@@ -25,9 +29,10 @@ function makeJWT(sub = "user-123", extra = {}) {
   return `${base64UrlEncode(header)}.${base64UrlEncode(payload)}.`;
 }
 
-function buildEvent(token, authorizerContext = null, urlPath = null) {
+function buildEvent(token, authorizerContext = null, urlPath = null, body = {}) {
   const event = {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: JSON.stringify(body),
   };
 
   if (authorizerContext) {
@@ -94,19 +99,19 @@ beforeEach(() => {
 });
 
 describe("System: bundleManagement with local dynalite", () => {
-  it("isMockMode should reflect TEST_BUNDLE_MOCK env", async () => {
-    delete process.env.TEST_BUNDLE_MOCK;
-    expect(bm.isMockMode()).toBe(false);
-
-    process.env.TEST_BUNDLE_MOCK = "true";
-    expect(bm.isMockMode()).toBe(true);
-
-    process.env.TEST_BUNDLE_MOCK = "1";
-    expect(bm.isMockMode()).toBe(true);
-
-    process.env.TEST_BUNDLE_MOCK = "FALSE";
-    expect(bm.isMockMode()).toBe(false);
-  });
+  // it("isMockMode should reflect TEST_BUNDLE_MOCK env", async () => {
+  //   delete process.env.TEST_BUNDLE_MOCK;
+  //   expect(bm.isMockMode()).toBe(false);
+  //
+  //   process.env.TEST_BUNDLE_MOCK = "true";
+  //   expect(bm.isMockMode()).toBe(true);
+  //
+  //   process.env.TEST_BUNDLE_MOCK = "1";
+  //   expect(bm.isMockMode()).toBe(true);
+  //
+  //   process.env.TEST_BUNDLE_MOCK = "FALSE";
+  //   expect(bm.isMockMode()).toBe(false);
+  // });
 
   it("getUserBundles should return [] initially (Dynamo mode)", async () => {
     const userId = "bm-sys-empty";
@@ -147,34 +152,6 @@ describe("System: bundleManagement with local dynalite", () => {
     expect(ids).not.toContain("test");
   });
 
-  it("addBundles should append new entries and avoid duplicates (mock mode)", async () => {
-    process.env.TEST_BUNDLE_MOCK = "true";
-    const userId = "bm-mock-add";
-
-    await bm.updateUserBundles(userId, []);
-    let updated = await bm.addBundles(userId, ["BUNDLE_A"]);
-    expect(updated).toEqual(["BUNDLE_A"]);
-
-    // Try to add duplicate
-    updated = await bm.addBundles(userId, ["BUNDLE_A", "BUNDLE_B"]);
-    expect(updated).toEqual(["BUNDLE_A", "BUNDLE_B"]);
-
-    const persisted = await bm.getUserBundles(userId);
-    expect(persisted).toEqual(["BUNDLE_A", "BUNDLE_B"]);
-  });
-
-  it("removeBundles should remove by exact id and prefix matches (mock mode)", async () => {
-    process.env.TEST_BUNDLE_MOCK = "true";
-    const userId = "bm-mock-remove";
-    // Note: mock store stores plain strings; include a variant with metadata suffix
-    await bm.updateUserBundles(userId, ["BUNDLE_X", "BUNDLE_Y|EXP2026-01-01"]);
-
-    const afterRemoval = await bm.removeBundles(userId, ["BUNDLE_X", "BUNDLE_Y"]);
-    expect(afterRemoval).toEqual([]);
-    const persisted = await bm.getUserBundles(userId);
-    expect(persisted).toEqual([]);
-  });
-
   it("enforceBundles should pass when no non-automatic bundles are required (unknown path)", async () => {
     const sub = "bm-auth-user";
     const token = makeJWT(sub);
@@ -199,7 +176,7 @@ describe("System: bundleManagement with local dynalite", () => {
       jwt: {
         claims: {
           sub,
-          "cognito:username": "u",
+          "cognito:username": sub,
         },
       },
     };

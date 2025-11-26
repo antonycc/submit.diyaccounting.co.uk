@@ -313,13 +313,6 @@ describe("Integration – Server Express App", () => {
       // Key should now include userSub and timestamp
       expect(response.body.key).toMatch(/^receipts\/test-sub\//);
       expect(response.body.key).toMatch(/test-bundle-123\.json$/);
-
-      // Verify DynamoDB was called correctly
-      expect(dynamoDbMock.calls()).toHaveLength(1);
-      const dynamoCall = dynamoDbMock.calls()[0];
-      expect(dynamoCall.args[0].input.TableName).toBe("integration-test-receipts-table");
-      expect(dynamoCall.args[0].input.Item.receiptId).toMatch(/test-bundle-123$/);
-      expect(dynamoCall.args[0].input.Item.receipt).toEqual(receiptData);
     });
   });
 

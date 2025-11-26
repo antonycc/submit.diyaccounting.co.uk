@@ -253,7 +253,6 @@ export async function performTokenExchange(providerUrl, body, auditForUserSub) {
   };
   const requestBody = new URLSearchParams(body);
 
-  let response;
   logger.info({
     message: `Request to POST ${providerUrl}`,
     url: providerUrl,
@@ -270,21 +269,21 @@ export async function performTokenExchange(providerUrl, body, auditForUserSub) {
     body: requestBody.toString(),
   };
   // TODO: [stubs] Remove stubs from production code
-  if (process.env.NODE_ENV === "stubbed") {
-    logger.warn({ message: "httpPostMock called in stubbed mode, using test access token" });
-    const testAccessToken = process.env.TEST_ACCESS_TOKEN;
-    response = {
-      ok: true,
-      status: 200,
-      json: async () => ({ access_token: testAccessToken }),
-      text: async () => JSON.stringify({ access_token: testAccessToken }),
-    };
-  } else {
-    logger.info({ message: "Performing real HTTP POST for token exchange", providerUrl });
-    const startTime = new Date().getTime();
-    response = await fetch(providerUrl, httpRequest);
-    duration = new Date().getTime() - startTime;
-  }
+  // if (process.env.NODE_ENV === "stubbed") {
+  //   logger.warn({ message: "httpPostMock called in stubbed mode, using test access token" });
+  //   const testAccessToken = process.env.TEST_ACCESS_TOKEN;
+  //   response = {
+  //     ok: true,
+  //     status: 200,
+  //     json: async () => ({ access_token: testAccessToken }),
+  //     text: async () => JSON.stringify({ access_token: testAccessToken }),
+  //   };
+  // } else {
+  logger.info({ message: "Performing HTTP POST for token exchange", providerUrl });
+  const startTime = new Date().getTime();
+  const response = await fetch(providerUrl, httpRequest);
+  duration = new Date().getTime() - startTime;
+  // }
 
   let responseTokens;
   try {
