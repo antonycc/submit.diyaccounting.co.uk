@@ -1479,11 +1479,11 @@ jobs:
           java-version: ${{ env.JAVA_VERSION }}
           cache: 'maven'
 
-      - name: Build CDK and synthesize and deploy the EdgeStack in the Delivery Application
+      - name: Build CDK and synthesize and deploy the EdgeStack in the Application
         if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
         run: |
           ./mvnw --errors clean verify -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
-            && cd cdk-delivery \
+            && cd cdk-application \
             && cat ../.env.${{ needs.names.outputs.environment-name }} \
             && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
               npx cdk deploy \
@@ -1493,7 +1493,7 @@ jobs:
                 --ci true \
                 --concurrency 4 \
                 --asset-parallelism \
-                --outputs-file ../cdk-submit-delivery.out/cdk-outputs-edge.json \
+                --outputs-file ../cdk-submit-application.out/cdk-outputs-edge.json \
               && cd .. \
             ;
         env:
@@ -1503,15 +1503,17 @@ jobs:
           WEBSITE_HASH: "placeholder"
           HTTP_API_URL: ${{ needs.deploy-api.outputs.httpApiUrl }}
           DIY_SUBMIT_APEX_URL: ${{ needs.names.outputs.apex-url }}
+          COGNITO_USER_POOL_ARN: ${{ vars.COGNITO_USER_POOL_ARN }}
+          COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
 
-      - run: cat cdk-submit-delivery.out/cdk-outputs-edge.json | jq '.'
+      - run: cat cdk-submit-application.out/cdk-outputs-edge.json | jq '.'
         if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
 
       - name: Resolve stack outputs
         if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
         id: edge-outputs
         run: |
-          ORIGIN_BUCKET_NAME=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-del-EdgeStack"].OriginBucketName' cdk-submit-delivery.out/cdk-outputs-edge.json)
+          ORIGIN_BUCKET_NAME=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-del-EdgeStack"].OriginBucketName' cdk-submit-application.out/cdk-outputs-edge.json)
           echo "ORIGIN_BUCKET_NAME=$ORIGIN_BUCKET_NAME"
           echo "ORIGIN_BUCKET_NAME=$ORIGIN_BUCKET_NAME" >> $GITHUB_OUTPUT
         shell: bash
@@ -1654,11 +1656,11 @@ jobs:
           output-credentials: true
           retry-max-attempts: 3
 
-      - name: Build CDK and synthesize and deploy the PublishStack in the Delivery Application
+      - name: Build CDK and synthesize and deploy the PublishStack in the Application
         if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.publish-compare.outputs.skipPublishStackDeployment != 'true' }}
         run: |
           ./mvnw --errors clean verify -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
-            && cd cdk-delivery \
+            && cd cdk-application \
             && cat ../.env.${{ needs.names.outputs.environment-name }} \
             && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
               npx cdk deploy \
@@ -1678,6 +1680,8 @@ jobs:
           WEBSITE_HASH: ${{ steps.publish-hash.outputs.WEBSITE_HASH }}
           HTTP_API_URL: ${{ needs.deploy-api.outputs.httpApiUrl }}
           DIY_SUBMIT_APEX_URL: ${{ needs.names.outputs.apex-url }}
+          COGNITO_USER_POOL_ARN: ${{ vars.COGNITO_USER_POOL_ARN }}
+          COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
 
 #      - name: Upsert Cognito callback/logout URLs
 #        if: ${{ contains(needs.names.outputs.base-url, 'submit') }}
