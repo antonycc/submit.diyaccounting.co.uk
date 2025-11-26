@@ -99,7 +99,7 @@
     "glob": "^13.0.0",
     "happy-dom": "^20.0.10",
     "msw": "^2.12.3",
-    "ngrok": "^5.0.0-beta.2",
+    "ngrok": "^4.3.3",
     "npm-check-updates": "^19.1.2",
     "prettier": "^3.6.2",
     "supertest": "^7.1.4",
