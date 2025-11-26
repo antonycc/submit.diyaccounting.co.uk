@@ -9,6 +9,16 @@ dotenvConfigIfNotBlank({ path: ".env" });
 import logger from "../lib/logger.js";
 
 /**
+ * Extract domain from a URL string
+ * @param {string} url - URL string (e.g., "https://example.com/path")
+ * @returns {string} Domain without protocol or trailing slash (e.g., "example.com")
+ */
+export function extractDomainFromUrl(url) {
+  if (!url) return undefined;
+  return url.replace(/^https?:\/\//, "").replace(/\/$/, "");
+}
+
+/**
  * Start ngrok tunnel
  * @param {Object} options - Configuration options
  * @param {string|number} options.addr - Local port or address to forward (e.g., 3000 or "localhost:3000")
@@ -61,7 +71,7 @@ export async function startNgrok({ addr = 3000, domain, poolingEnabled = true } 
 if (import.meta.url === `file://${process.argv[1]}`) {
   // Get configuration from environment variables or command line arguments
   const port = process.argv[2] || process.env.TEST_SERVER_HTTP_PORT || 3000;
-  const domain = process.env.NGROK_DOMAIN || process.env.DIY_SUBMIT_BASE_URL?.replace(/^https?:\/\//, "").replace(/\/$/, "");
+  const domain = process.env.NGROK_DOMAIN || extractDomainFromUrl(process.env.DIY_SUBMIT_BASE_URL);
 
   let stop;
 

@@ -1,6 +1,6 @@
 // behaviour-tests/helpers/behaviour-helpers.js
 import { startDynamoDB, ensureBundleTableExists, ensureHmrcApiRequestsTableExists, ensureReceiptsTableExists } from "@app/bin/dynamodb.js";
-import { startNgrok } from "@app/bin/ngrok.js";
+import { startNgrok, extractDomainFromUrl } from "@app/bin/ngrok.js";
 import { spawn } from "child_process";
 import { checkIfServerIsRunning } from "./serverHelper.js";
 import { test } from "@playwright/test";
@@ -105,7 +105,7 @@ export async function runLocalNgrokProxy(runProxy, httpServerPort, baseUrl) {
   if (runProxy === "run") {
     logger.info("[proxy]: Starting ngrok tunnel using @ngrok/ngrok...");
     // Extract domain from baseUrl if provided
-    const domain = baseUrl ? baseUrl.replace(/^https?:\/\//, "").replace(/\/$/, "") : undefined;
+    const domain = extractDomainFromUrl(baseUrl);
     const started = await startNgrok({
       addr: httpServerPort,
       domain: domain,

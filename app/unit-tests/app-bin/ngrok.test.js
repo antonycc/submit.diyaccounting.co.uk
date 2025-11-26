@@ -1,6 +1,6 @@
 // app/unit-tests/app-bin/ngrok.test.js
 import { describe, it, expect } from "vitest";
-import { startNgrok } from "../../bin/ngrok.js";
+import { startNgrok, extractDomainFromUrl } from "../../bin/ngrok.js";
 
 describe("ngrok", () => {
   it("should export startNgrok function", () => {
@@ -20,5 +20,32 @@ describe("ngrok", () => {
       // since it requires ngrok authentication
       startNgrok.toString();
     }).not.toThrow();
+  });
+
+  describe("extractDomainFromUrl", () => {
+    it("should extract domain from https URL", () => {
+      expect(extractDomainFromUrl("https://example.com/path")).toBe("example.com/path");
+    });
+
+    it("should extract domain from http URL", () => {
+      expect(extractDomainFromUrl("http://example.com/path")).toBe("example.com/path");
+    });
+
+    it("should remove trailing slash", () => {
+      expect(extractDomainFromUrl("https://example.com/")).toBe("example.com");
+    });
+
+    it("should handle URL without protocol", () => {
+      expect(extractDomainFromUrl("example.com")).toBe("example.com");
+    });
+
+    it("should return undefined for null/undefined", () => {
+      expect(extractDomainFromUrl(null)).toBeUndefined();
+      expect(extractDomainFromUrl(undefined)).toBeUndefined();
+    });
+
+    it("should return undefined for empty string", () => {
+      expect(extractDomainFromUrl("")).toBeUndefined();
+    });
   });
 });
