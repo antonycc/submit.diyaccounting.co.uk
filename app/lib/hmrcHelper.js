@@ -94,7 +94,7 @@ export async function hmrcHttpGet(endpoint, accessToken, govClientHeaders = {}, 
     testScenario,
     environment: {
       hmrcBase: baseUrl,
-      nodeEnv: process.env.NODE_ENV,
+      // nodeEnv: process.env.NODE_ENV,
     },
   });
 

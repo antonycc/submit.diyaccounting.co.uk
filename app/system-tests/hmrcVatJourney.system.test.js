@@ -139,7 +139,7 @@ describe("System Journey: HMRC VAT Submission End-to-End", () => {
     Object.assign(
       process.env,
       setupTestEnv({
-        NODE_ENV: "stubbed",
+        //NODE_ENV: "stubbed",
         DIY_SUBMIT_RECEIPTS_BUCKET_NAME: "test-receipts-bucket",
         HMRC_CLIENT_SECRET: "test-client-secret",
         HMRC_SANDBOX_CLIENT_SECRET: "test-sandbox-client-secret",

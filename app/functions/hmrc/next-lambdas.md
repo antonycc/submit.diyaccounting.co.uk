@@ -80,9 +80,6 @@ export function mapHmrcGetResponseToHttp(request, requestId, hmrcResponse, heade
 }
 ```
 
-6) Different stub strategies between POST and GET
-- POST uses `NODE_ENV === "stubbed"` with `TEST_RECEIPT`; GET uses `TEST_VAT_RETURN`/`TEST_VAT_OBLIGATIONS` env content with `source: "stub"`.
-
 Suggestion:
 - Consider aligning on one approach (env-variable-driven stub objects) and optionally gating with a `TEST_*_ENABLED` flag for clarity.
 

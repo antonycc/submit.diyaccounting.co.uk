@@ -72,7 +72,7 @@ export function logHmrcRequestDetails(hmrcRequestUrl, hmrcRequestHeaders, govCli
     },
     body: hmrcRequestBody,
     environment: {
-      nodeEnv: process.env.NODE_ENV,
+      // nodeEnv: process.env.NODE_ENV,
     },
   });
 }

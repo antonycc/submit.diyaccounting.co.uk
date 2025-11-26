@@ -67,7 +67,7 @@ describe("System Journey: HMRC VAT Obligation-Based Flow", () => {
     Object.assign(
       process.env,
       setupTestEnv({
-        NODE_ENV: "stubbed",
+        //NODE_ENV: "stubbed",
         HMRC_CLIENT_SECRET: "test-client-secret",
         HMRC_SANDBOX_CLIENT_SECRET: "test-sandbox-client-secret",
       }),

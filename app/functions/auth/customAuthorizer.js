@@ -78,39 +78,39 @@ export async function handler(event) {
 
     // Check if we're in test/mock mode (NODE_ENV === 'stubbed' or TEST_ACCESS_TOKEN is set)
     // TODO: [stubs] Remove stubs from production code
-    const isMockMode = process.env.NODE_ENV === "stubbed" || process.env.TEST_ACCESS_TOKEN;
+    // const isMockMode = process.env.NODE_ENV === "stubbed" || process.env.TEST_ACCESS_TOKEN;
 
     // YOU ARE HERE: the mocking should be controlled in the test
 
     let payload;
 
-    if (isMockMode) {
-      // In mock mode, just decode the JWT without verification
-      logger.warn({ message: "Running in mock mode, skipping JWT verification" });
-      payload = decodeJwtNoVerify(token);
+    // if (isMockMode) {
+    //   // In mock mode, just decode the JWT without verification
+    //   logger.warn({ message: "Running in mock mode, skipping JWT verification" });
+    //   payload = decodeJwtNoVerify(token);
+    //
+    //   if (!payload || !payload.sub) {
+    //     logger.warn({ message: "Invalid JWT structure in mock mode" });
+    //     return generateDenyPolicy(routeArn);
+    //   }
+    //
+    //   logger.info({
+    //     message: "Mock JWT decoded successfully",
+    //     sub: payload.sub,
+    //     username: payload.username,
+    //   });
+    // } else {
+    // Production mode - verify the JWT token with Cognito
+    const jwtVerifier = getVerifier();
+    payload = await jwtVerifier.verify(token);
 
-      if (!payload || !payload.sub) {
-        logger.warn({ message: "Invalid JWT structure in mock mode" });
-        return generateDenyPolicy(routeArn);
-      }
-
-      logger.info({
-        message: "Mock JWT decoded successfully",
-        sub: payload.sub,
-        username: payload.username,
-      });
-    } else {
-      // Production mode - verify the JWT token with Cognito
-      const jwtVerifier = getVerifier();
-      payload = await jwtVerifier.verify(token);
-
-      logger.info({
-        message: "JWT token verified successfully",
-        sub: payload.sub,
-        username: payload.username,
-        scopes: payload.scope,
-      });
-    }
+    logger.info({
+      message: "JWT token verified successfully",
+      sub: payload.sub,
+      username: payload.username,
+      scopes: payload.scope,
+    });
+    // }
 
     // Generate allow policy with JWT claims in context
     return generateAllowPolicy(routeArn, payload);
