@@ -1,14 +1,13 @@
 package co.uk.diyaccounting.submit;
 
-import co.uk.diyaccounting.submit.utils.ResourceNameUtils;
-import software.amazon.awscdk.services.apigatewayv2.HttpMethod;
-
-import java.util.ArrayList;
-import java.util.List;
-
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDashedDomainName;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.convertDotSeparatedToDashSeparated;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateResourceNamePrefix;
+
+import co.uk.diyaccounting.submit.utils.ResourceNameUtils;
+import java.util.ArrayList;
+import java.util.List;
+import software.amazon.awscdk.services.apigatewayv2.HttpMethod;
 
 public class SubmitSharedNames {
 

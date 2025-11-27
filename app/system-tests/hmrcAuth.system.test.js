@@ -1,15 +1,21 @@
 // app/system-tests/hmrcAuth.system.test.js
 
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterAll, vi } from "vitest";
 import { dotenvConfigIfNotBlank } from "../lib/env.js";
 import { handler as hmrcAuthUrlGetHandler } from "../functions/hmrc/hmrcAuthUrlGet.js";
 import { handler as hmrcTokenPostHandler } from "../functions/hmrc/hmrcTokenPost.js";
 import { buildLambdaEvent } from "../test-helpers/eventBuilders.js";
 import { setupTestEnv, parseResponseBody } from "../test-helpers/mockHelpers.js";
+import { exportDynamoDBDataForUsers } from "../test-helpers/dynamodbExporter.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
 describe("System: HMRC Auth Flow (hmrcAuthUrl + hmrcToken)", () => {
+  afterAll(async () => {
+    // Export DynamoDB data for all users used in this test suite
+    const userSubs = ["test-sub"];
+    await exportDynamoDBDataForUsers(userSubs, "hmrcAuth.system.test.js");
+  });
   beforeEach(() => {
     vi.resetAllMocks();
     Object.assign(
