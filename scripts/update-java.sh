@@ -1,7 +1,7 @@
 # remove Maven's build outputs and cached resolution
 rm -rf target
+rm -rf cdk-submit-environment.out
 rm -rf cdk-submit-application.out
-rm -rf cdk-submit-delivery.out
 rm -rf ~/.m2/repository/
 
 # clean + resolve dependencies fresh

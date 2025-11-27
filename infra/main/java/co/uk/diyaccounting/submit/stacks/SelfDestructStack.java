@@ -1,19 +1,9 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.Kind.putIfNotNull;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateIamCompatibleName;
-
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
 import co.uk.diyaccounting.submit.constructs.Lambda;
 import co.uk.diyaccounting.submit.constructs.LambdaProps;
-import java.time.ZonedDateTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Aspects;
 import software.amazon.awscdk.Duration;
@@ -36,6 +26,17 @@ import software.amazon.awscdk.services.logs.ILogGroup;
 import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.constructs.Construct;
+
+import java.time.ZonedDateTime;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.Kind.putIfNotNull;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateIamCompatibleName;
 
 public class SelfDestructStack extends Stack {
 
@@ -114,15 +115,9 @@ public class SelfDestructStack extends Stack {
         Tags.of(this).add("BackupRequired", "false");
         Tags.of(this).add("MonitoringEnabled", "true");
 
-        var functionName = props.isDeliveryStack()
-                ? props.sharedNames().delSelfDestructLambdaFunctionName
-                : props.isApplicationStack() ? props.sharedNames().appSelfDestructLambdaFunctionName : null;
-        var handler = props.isDeliveryStack()
-                ? props.sharedNames().delSelfDestructLambdaHandler
-                : props.isApplicationStack() ? props.sharedNames().appSelfDestructLambdaHandler : null;
-        var lambdaArn = props.isDeliveryStack()
-                ? props.sharedNames().delSelfDestructLambdaArn
-                : props.isApplicationStack() ? props.sharedNames().appSelfDestructLambdaArn : null;
+        var functionName = props.sharedNames().selfDestructLambdaFunctionName;
+        var handler = props.sharedNames().selfDestructLambdaHandler;
+        var lambdaArn = props.sharedNames().selfDestructLambdaArn;
 
         // Log group for self-destruct function
         ILogGroup logGroup = LogGroup.fromLogGroupArn(
@@ -243,7 +238,6 @@ public class SelfDestructStack extends Stack {
         //                                        "cdk.out/**",
         //                                        "cdk-submit-application.out/**",
         //                                        "cdk-submit-environment.out/**",
-        //                                        "cdk-submit-delivery.out/**",
         //                                        "target/**",
         //                                        ".idea/**"
         //                                ))

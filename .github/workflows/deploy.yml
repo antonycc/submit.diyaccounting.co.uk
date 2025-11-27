@@ -228,13 +228,6 @@ jobs:
            npm install
            npx playwright install chromium --with-deps
 
-#      - name: Authenticate ngrok
-#        shell: bash
-#        env:
-#          NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
-#        run: |
-#          npx ngrok config add-authtoken "${NGROK_AUTHTOKEN?}"
-
       - name: Run behaviour tests - bundle
         run: |
           npm run test:bundleBehaviour || exit_code=$? \
@@ -298,13 +291,6 @@ jobs:
         run: |
           npm install
           npx playwright install chromium --with-deps
-
-#      - name: Authenticate ngrok
-#        shell: bash
-#        env:
-#          NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
-#        run: |
-#          npx ngrok config add-authtoken "${NGROK_AUTHTOKEN?}"
 
       - name: Run behaviour tests - obligation
         run: |
@@ -371,13 +357,6 @@ jobs:
           npm install
           npx playwright install chromium --with-deps
 
-#      - name: Authenticate ngrok
-#        shell: bash
-#        env:
-#          NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
-#        run: |
-#          npx ngrok config add-authtoken "${NGROK_AUTHTOKEN?}"
-
       - name: Run behaviour tests - view vat
         run: |
           npm run test:viewVatBehaviour || exit_code=$? \
@@ -442,13 +421,6 @@ jobs:
         run: |
           npm install
           npx playwright install chromium --with-deps
-
-#      - name: Authenticate ngrok
-#        shell: bash
-#        env:
-#          NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
-#        run: |
-#          npx ngrok config add-authtoken "${NGROK_AUTHTOKEN?}"
 
       - name: Run behaviour tests - submit vat
         run: |
@@ -524,7 +496,6 @@ jobs:
 
   skip-deploy-check:
     name: 'skip deploy check'
-    #if: ${{ (inputs.skipDeploy != 'true') && (github.event_name != 'push' || !contains(github.event.head_commit.message, 'skip:')) }}
     if: ${{ inputs.skipDeploy != 'true' }}
     runs-on: ubuntu-24.04
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
@@ -1364,83 +1335,6 @@ jobs:
     outputs:
       httpApiUrl: ${{ steps.api-outputs.outputs.HTTP_API_URL }}
 
-  deploy-delivery-self-destruct:
-    name: 'deploy delivery self-destruct'
-    if: ${{ inputs.skipDeploy != 'true' && github.ref != 'refs/heads/main' && needs.names.outputs.environment-name != 'prod' }}
-    needs:
-      - names
-      - skip-deploy-check
-      - mvn-package
-      - push-images-us-east-1
-      - deploy-api
-    runs-on: ubuntu-24.04
-    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
-    steps:
-
-      - name: Configure AWS role via GitHub OIDC
-        uses: aws-actions/configure-aws-credentials@v5
-        with:
-          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-          role-chaining: false
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - name: Assume AWS deployment role
-        uses: aws-actions/configure-aws-credentials@v5
-        with:
-          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-          role-chaining: true
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - name: Checkout
-        uses: actions/checkout@v5
-
-      - name: Setup Node
-        uses: actions/setup-node@v6
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Node dependencies
-        run: npm ci
-
-      - uses: actions/setup-java@v5
-        with:
-          distribution: 'temurin'
-          java-version: ${{ env.JAVA_VERSION }}
-          cache: 'maven'
-
-      - name: Deploy SelfDestruct Stack (CDK)
-        run: |
-          ./mvnw --errors clean verify -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
-            && cd cdk-delivery \
-            && cat ../.env.${{ needs.names.outputs.environment-name }} \
-            && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
-              npx cdk deploy \
-                ${{ needs.names.outputs.deployment-name }}-del-SelfDestructStack \
-                --require-approval never \
-                --ci true \
-                --concurrency 4 \
-                --asset-parallelism \
-                --outputs-file ../cdk-submit-delivery.out/cdk-outputs-self-destruct.json \
-          && cd .. \
-          ;
-        env:
-          ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
-          DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
-          BASE_IMAGE_TAG: ${{ needs.push-images-us-east-1.outputs.base-image-tag }}
-          SELF_DESTRUCT_START_DATETIME: ${{ needs.mvn-package.outputs.self-destruct-start-datetime }}
-          WEBSITE_HASH: "placeholder"
-          HTTP_API_URL: ${{ needs.deploy-api.outputs.httpApiUrl }}
-          DIY_SUBMIT_APEX_URL: ${{ needs.names.outputs.apex-url }}
-
   deploy-edge:
     name: 'deploy edge'
     needs:
@@ -1484,7 +1378,7 @@ jobs:
         id: static-skip
         shell: bash
         run: |
-          STACK_NAME="${{ needs.names.outputs.deployment-name }}-del-EdgeStack"
+          STACK_NAME="${{ needs.names.outputs.deployment-name }}-app-EdgeStack"
           echo "Checking for existing COMPLETE stack: $STACK_NAME"
           COUNT=$(aws cloudformation list-stacks \
             --region "us-east-1" \
@@ -1527,7 +1421,7 @@ jobs:
             && cat ../.env.${{ needs.names.outputs.environment-name }} \
             && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
               npx cdk deploy \
-                ${{ needs.names.outputs.deployment-name }}-del-EdgeStack \
+                ${{ needs.names.outputs.deployment-name }}-app-EdgeStack \
                 --exclusively \
                 --require-approval never \
                 --ci true \
@@ -1553,7 +1447,7 @@ jobs:
         if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
         id: edge-outputs
         run: |
-          ORIGIN_BUCKET_NAME=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-del-EdgeStack"].OriginBucketName' cdk-submit-application.out/cdk-outputs-edge.json)
+          ORIGIN_BUCKET_NAME=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-app-EdgeStack"].OriginBucketName' cdk-submit-application.out/cdk-outputs-edge.json)
           echo "ORIGIN_BUCKET_NAME=$ORIGIN_BUCKET_NAME"
           echo "ORIGIN_BUCKET_NAME=$ORIGIN_BUCKET_NAME" >> $GITHUB_OUTPUT
         shell: bash
@@ -1704,7 +1598,7 @@ jobs:
             && cat ../.env.${{ needs.names.outputs.environment-name }} \
             && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
               npx cdk deploy \
-                ${{ needs.names.outputs.deployment-name }}-del-PublishStack \
+                ${{ needs.names.outputs.deployment-name }}-app-PublishStack \
                 --exclusively \
                 --require-approval never \
                 --ci true \
@@ -1722,43 +1616,6 @@ jobs:
           DIY_SUBMIT_APEX_URL: ${{ needs.names.outputs.apex-url }}
           COGNITO_USER_POOL_ARN: ${{ vars.COGNITO_USER_POOL_ARN }}
           COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
-
-#      - name: Upsert Cognito callback/logout URLs
-#        if: ${{ contains(needs.names.outputs.base-url, 'submit') }}
-#        uses: actions/github-script@v8
-#        env:
-#          USER_POOL_ID: ${{ vars.COGNITO_USER_POOL_ID }}
-#          CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
-#          REGION: ${{ env.AWS_REGION }}
-#          BASE_URL: ${{ needs.names.outputs.base-url }}
-#        with:
-#          script: |
-#            const {execSync} = require('child_process')
-#            const jp = JSON.parse
-#            const sh = (cmd)=>execSync(cmd,{encoding:'utf8'}).trim()
-#
-#            const d = jp(sh(`aws cognito-idp describe-user-pool-client --user-pool-id ${process.env.USER_POOL_ID} --client-id ${process.env.CLIENT_ID} --region ${process.env.REGION}`)).UserPoolClient
-#            const have = new Set([...(d.CallbackURLs||[]), ...(d.LogoutURLs||[])])
-#
-#            const add = (arr)=>Array.from(new Set(arr))
-#            const cbWanted = add([...(d.CallbackURLs||[]), `${process.env.BASE_URL}auth/loginWithCognitoCallback.html`])
-#            const loWanted = add([...(d.LogoutURLs||[]), `${process.env.BASE_URL}`])
-#
-#            const changed = JSON.stringify(cbWanted) !== JSON.stringify(d.CallbackURLs||[]) ||
-#                            JSON.stringify(loWanted) !== JSON.stringify(d.LogoutURLs||[])
-#
-#            core.notice(`Will update: ${changed}`)
-#            if (!changed) return
-#
-#            const payload = {
-#              UserPoolId: process.env.USER_POOL_ID,
-#              ClientId: process.env.CLIENT_ID,
-#              CallbackURLs: cbWanted,
-#              LogoutURLs: loWanted
-#            }
-#            const tmp = 'payload.json'
-#            require('fs').writeFileSync(tmp, JSON.stringify(payload))
-#            sh(`aws cognito-idp update-user-pool-client --cli-input-json file://${tmp} --region ${process.env.REGION}`)
 
   deploy-ops:
     name: 'deploy ops with dashboard'
@@ -1854,77 +1711,6 @@ jobs:
           COGNITO_USER_POOL_ARN: ${{ vars.COGNITO_USER_POOL_ARN }}
           COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
 
-#  origin-test:
-#    if: ${{ !cancelled() }}
-#    name: 'origin test'
-#    needs:
-#      - names
-#      - skip-deploy-check
-#      - deploy-auth
-#      - deploy-hmrc
-#      - deploy-account
-#      - deploy-edge
-#      - deploy-publish
-#    runs-on: ubuntu-24.04
-#    container: mcr.microsoft.com/playwright:v1.55.1-jammy
-#    # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags
-#    # and extension with ubuntu distribution e.g. https://releases.ubuntu.com/jammy/
-#    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
-#    steps:
-#      - name: Checkout
-#        uses: actions/checkout@v5
-#
-#      - name: Setup Node
-#        uses: actions/setup-node@v6
-#        with:
-#          node-version: ${{ env.NODE_VERSION }}
-#          cache: 'npm'
-#
-#      - name: Install dependencies
-#        run: |
-#          npm ci --ignore-scripts
-#        env:
-#          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
-#
-#      #cp '.env.${{ needs.names.outputs.environment-name }}' '.env.test' ; npx dotenv -e '.env.${{ needs.names.outputs.environment-name }}' -- npm run test:behaviour
-#      #
-#      - run: cp '.env.${{ needs.names.outputs.environment-name }}' '.env.test' ; npx dotenv -e '.env.${{ needs.names.outputs.environment-name }}' -- npm run test:bundleBehaviour
-#        env:
-#          DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.base-url }}
-#          TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
-#          TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
-#          TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
-#
-#      - name: Upload artifacts (results)
-#        if: ${{ !cancelled() }}
-#        uses: actions/upload-artifact@v5
-#        with:
-#          name: origin-test-artifacts
-#          retention-days: 30
-#          path: |
-#            target/behaviour-test-results/
-#
-#      - name: Upload artifacts (reports)
-#        if: ${{ !cancelled() }}
-#        uses: actions/upload-artifact@v5
-#        with:
-#          name: origin-test-reports
-#          retention-days: 30
-#          path: |
-#            target/test-reports/
-
-  # Invoke .github/workflows/set-origins.yml to set this domain as the apex origin
-  #  workflow_call:
-  #    inputs:
-  #      environment:
-  #        description: 'Target environment (binds to GitHub Environment)'
-  #        required: true
-  #        type: string
-  #      originsCsv:
-  #        description: 'Comma-separated list of app origins to serve from apex (e.g. ci-123.example.com,ci-124.example.com). Leave blank to display maintenance page.'
-  #        required: false
-  #        type: string
-  #        default: ''
   set-origins:
     name: 'set origins'
     #if: ${{ needs.names.outputs.environment-name != 'prod' || needs.origin-test.outputs.result == 'success' }}
@@ -1971,7 +1757,7 @@ jobs:
         id: get-distribution-id
         run: |
           DISTRIBUTION_ID=$(aws cloudformation describe-stacks \
-            --stack-name "${{ needs.names.outputs.deployment-name }}-del-EdgeStack" \
+            --stack-name "${{ needs.names.outputs.deployment-name }}-app-EdgeStack" \
             --region "us-east-1" \
             --query "Stacks[0].Outputs[?OutputKey=='DistributionId'].OutputValue" \
             --output text)
@@ -1990,98 +1776,6 @@ jobs:
           cloudfront-distribution-id: ${{ steps.get-distribution-id.outputs.DISTRIBUTION_ID }}
     outputs:
       existing-deployment-name: ${{ steps.set-origins.outputs.existing-deployment-name }}
-
-#        run: |
-#          set -euo pipefail
-#
-#          if [ -z "${DIY_SUBMIT_APEX_DOMAIN:-}" ] || [ -z "${DIY_SUBMIT_BASE_DOMAIN:-}" ] || [ -z "${AWS_HOSTED_ZONE_ID:-}" ]; then
-#            echo "Required env vars DIY_SUBMIT_APEX_DOMAIN, DIY_SUBMIT_BASE_DOMAIN, and AWS_HOSTED_ZONE_ID must be set."
-#            exit 1
-#          fi
-#
-#          cat > /tmp/alias.json <<JSON
-#          {
-#            "Comment": "Alias apex domain to base domain",
-#            "Changes": [
-#              {
-#                "Action": "UPSERT",
-#                "ResourceRecordSet": {
-#                  "Name": "${DIY_SUBMIT_APEX_DOMAIN}.",
-#                  "Type": "A",
-#                  "AliasTarget": {
-#                    "HostedZoneId": "${AWS_HOSTED_ZONE_ID}",
-#                    "DNSName": "${DIY_SUBMIT_BASE_DOMAIN}.",
-#                    "EvaluateTargetHealth": false
-#                  }
-#                }
-#              },
-#              {
-#                "Action": "UPSERT",
-#                "ResourceRecordSet": {
-#                  "Name": "${DIY_SUBMIT_APEX_DOMAIN}.",
-#                  "Type": "AAAA",
-#                  "AliasTarget": {
-#                    "HostedZoneId": "${AWS_HOSTED_ZONE_ID}",
-#                    "DNSName": "${DIY_SUBMIT_BASE_DOMAIN}.",
-#                    "EvaluateTargetHealth": false
-#                  }
-#                }
-#              }
-#            ]
-#          }
-#          JSON
-#
-#          echo "Upserting alias records: ${DIY_SUBMIT_APEX_DOMAIN} -> ${DIY_SUBMIT_BASE_DOMAIN} in hosted zone ${AWS_HOSTED_ZONE_ID}"
-#          aws route53 change-resource-record-sets --hosted-zone-id "$AWS_HOSTED_ZONE_ID" --change-batch file:///tmp/alias.json
-
-  # TODO: Configure or copy and convert the system test API test to test against deployed environment
-#  api-test:
-#    if: ${{ !cancelled() && inputs.skipDeploy == 'true' || needs.deploy-publish.result == 'success' }}
-#    name: 'api test'
-#    needs:
-#      - names
-#      - build-cdk
-#      - deploy-application
-#      - deploy-edge
-#      - deploy-publish
-#      - set-origins
-  #    - origin-test
-#    runs-on: ubuntu-24.04
-#    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
-#    steps:
-#      - name: Checkout
-#        uses: actions/checkout@v5
-#
-#      - name: Setup Node
-#        uses: actions/setup-node@v6
-#        with:
-#          node-version: ${{ env.NODE_VERSION }}
-#          cache: 'npm'
-#
-#      - name: Node dependencies
-#        run: npm ci
-#
-#      - name: Install dependencies and Playwright browsers
-#        run: |
-#          npm -v
-#          npm ci --ignore-scripts
-#          npx playwright install chromium --with-deps
-#
-#      - name: Run Playwright API test
-#        run: |
-#          echo "DIY_SUBMIT_BASE_URL=${DIY_SUBMIT_BASE_URL}"
-#          npm run test:api
-#        env:
-#          DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.base-url }}
-#
-#      - name: Upload artifacts
-#        if: ${{ !cancelled() }}
-#        uses: actions/upload-artifact@v5
-#        with:
-#          name: api-test-artifacts
-#          path: |
-#            playwright-report
-#            test-results
 
   web-test-bundle:
     if: ${{ !cancelled() }}
@@ -2640,73 +2334,11 @@ jobs:
       - name: Copy test reports to S3 origin bucket
         if: ${{ !cancelled() }}
         env:
-          BUCKET_NAME: ${{ needs.names.outputs.deployment-name }}-submit-del-origin-us-east-1
+          BUCKET_NAME: ${{ needs.names.outputs.deployment-name }}-submit-app-origin-us-east-1
         run: |
           echo "Uploading test reports to S3 bucket: ${BUCKET_NAME?}"
           aws s3 cp target/test-reports/ s3://${BUCKET_NAME?}/tests/ --recursive
         shell: bash
-
-# TODO: Reinstate load test
-#  load-test:
-#    if: ${{ !cancelled() && inputs.skipDeploy == 'true' || needs.deploy-publish.result == 'success' }}
-#    name: 'load test'
-#    needs:
-#      - names
-#      - build-cdk
-#      - deploy-edge
-#      - deploy-edge
-#      - deploy-publish
-#      - set-origins
-#    runs-on: ubuntu-24.04
-#    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
-#    steps:
-#      - name: Checkout
-#        uses: actions/checkout@v5
-#
-#      - name: Setup Node
-#        uses: actions/setup-node@v6
-#        with:
-#          node-version: ${{ env.NODE_VERSION }}
-#          cache: 'npm'
-#
-#      - name: Node dependencies
-#        run: npm ci
-#
-#      - name: Setup k6
-#        uses: grafana/setup-k6-action@v1
-#
-#      - name: Setup k6 with dashboard extension
-#        run: |
-#          # Download pre-built k6 binary with xk6-dashboard extension
-#          curl -L https://github.com/grafana/xk6-dashboard/releases/download/v0.7.12/xk6-dashboard_v0.7.12_linux_amd64.tar.gz -o xk6-dashboard.tar.gz
-#          tar -xzf xk6-dashboard.tar.gz
-#          chmod +x xk6-dashboard_v0.7.12_linux_amd64/k6
-#          # Create a symlink for easy access
-#          ln -s xk6-dashboard_v0.7.12_linux_amd64/k6 k6
-#          ./k6 version
-#
-#      - name: Run k6 load test with dashboard
-#        run: |
-#          # k6 run tests/load.live.test.js --summary-export=load-test-summary.json
-#          # Run k6 with dashboard export, events recording, and summary export for maximum information
-#          ./k6 run tests/load.live.test.js \
-#            --out 'dashboard=export=load-test-report.html&port=-1&record=load-test-events.json&period=1s' \
-#            --summary-export=load-test-summary.json
-#        env:
-#          DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.base-url }}
-#          TEST_USERNAME: ${{ needs.test-parameters.outputs.test-username }}
-#          TEST_PASSWORD: ${{ needs.test-parameters.outputs.test-password }}
-#          DURATION: ${{ inputs.loadTestDuration }}
-#
-#      - name: Upload artifacts
-#        if: ${{ !cancelled() }}
-#        uses: actions/upload-artifact@v5
-#        with:
-#          name: load-test-artifacts
-#          path: |
-#            load-test-summary.json
-#            load-test-report.html
-#            load-test-events.json
 
   convert-video:
     name: 'convert web test video to mp4'
@@ -2849,7 +2481,6 @@ jobs:
 
  # TODO: If set-origins passed but web-test failed, look up the last deployment from a parameter store and set-origin back to that deployment
 
-
   invalidate-cloudfront:
     name: 'invalidate CloudFront paths (test/** and docs/**)'
     if: ${{ !cancelled() }}
@@ -2883,7 +2514,7 @@ jobs:
 
       - name: Invalidate CloudFront paths
         env:
-          STACK_NAME: ${{ needs.names.outputs.deployment-name }}-del-EdgeStack
+          STACK_NAME: ${{ needs.names.outputs.deployment-name }}-app-EdgeStack
         shell: bash
         run: |
           set -euo pipefail

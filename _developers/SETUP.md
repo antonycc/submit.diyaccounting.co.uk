@@ -100,7 +100,6 @@ rm -rf target
 ./mvnw clean verify -DskipTests
 ENVIRONMENT_NAME=myprod npm run cdk:synth-environment
 ENVIRONMENT_NAME=myprod npm run cdk:synth-application
-ENVIRONMENT_NAME=myprod HTTP_API_URL=https://package.json/script/ npm run cdk:synth-delivery
 ```
 - Deploy via GitHub Actions: push to main or run the deploy workflow and select your environment name.
 
@@ -171,7 +170,6 @@ Or run individual synths (example for a custom environment):
 ```bash
 ENVIRONMENT_NAME=ci npm run cdk:synth-environment
 ENVIRONMENT_NAME=ci npm run cdk:synth-application
-ENVIRONMENT_NAME=ci HTTP_API_URL=https://package.json/script/ npm run cdk:synth-delivery
 ```
 
 ## Run the website locally

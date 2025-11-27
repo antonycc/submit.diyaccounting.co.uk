@@ -111,7 +111,6 @@ Steps
 ./mvnw clean verify -DskipTests
 ENVIRONMENT_NAME=myprod npm run cdk:synth-environment
 ENVIRONMENT_NAME=myprod npm run cdk:synth-application
-ENVIRONMENT_NAME=myprod HTTP_API_URL=https://package.json/script/ npm run cdk:synth-delivery
 ```
 6) Deploy via GitHub Actions
    - Push to main for prod-like deployment, or run the deploy workflow manually choosing your environment name

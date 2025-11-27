@@ -259,19 +259,12 @@
                             <target>
                                 <!-- Create copies with desired names from the base shaded jar -->
                                 <copy file="${project.build.directory}/${project.build.finalName}-dist.jar" tofile="${project.build.directory}/submit-application.jar"></copy>
-                                <copy file="${project.build.directory}/${project.build.finalName}-dist.jar" tofile="${project.build.directory}/submit-delivery.jar"></copy>
                                 <copy file="${project.build.directory}/${project.build.finalName}-dist.jar" tofile="${project.build.directory}/submit-environment.jar"></copy>
 
                                 <!-- Update manifests in-place for each variant -->
                                 <jar jarfile="${project.build.directory}/submit-application.jar" update="true" zip64Mode="as-needed">
                                     <manifest>
                                         <attribute name="Main-Class" value="co.uk.diyaccounting.submit.SubmitApplication"></attribute>
-                                    </manifest>
-                                </jar>
-
-                                <jar jarfile="${project.build.directory}/submit-delivery.jar" update="true" zip64Mode="as-needed">
-                                    <manifest>
-                                        <attribute name="Main-Class" value="co.uk.diyaccounting.submit.SubmitDelivery"></attribute>
                                     </manifest>
                                 </jar>
 
@@ -457,11 +450,6 @@
                                     <file>${project.build.directory}/submit-application.jar</file>
                                     <type>jar</type>
                                     <classifier>submit-application</classifier>
-                                </artifact>
-                                <artifact>
-                                    <file>${project.build.directory}/submit-delivery.jar</file>
-                                    <type>jar</type>
-                                    <classifier>submit-delivery</classifier>
                                 </artifact>
                                 <artifact>
                                     <file>${project.build.directory}/submit-environment.jar</file>

@@ -8,8 +8,8 @@
 
 rm -f package-lock.json
 rm -rf node-modules
+rm -rf cdk-submit-environment.out
 rm -rf cdk-submit-application.out
-rm -rf cdk-submit-delivery.out
 npm install
 npm run update-to-greatest
 npm update

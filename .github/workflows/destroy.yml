@@ -161,7 +161,7 @@ jobs:
         run: |
           echo 'Getting deployed deployment names from CloudFormation stacks in eu-west-2 and us-east-1'
 
-          # Only stacks that look like prod-xxx-app-... or ci-xxx-del-...
+          # Only stacks that look like prod-xxx-app-...
           # Extract the deployment id: prod-xxx or ci-yyy
           DEPLOYED_DEPLOYMENT_NAMES=$(
             for REGION in eu-west-2 us-east-1; do
@@ -443,50 +443,6 @@ jobs:
       - name: Build CDK
         run: ./mvnw --errors clean verify -DskipTests
 
-      - name: Destroy Submit Delivery
-        run: |
-          cd cdk-delivery && \
-            npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
-              npx cdk destroy \
-              --all \
-              --force \
-          && cd .. \
-          ;
-        env:
-          ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
-          DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
-          BASE_IMAGE_TAG: "${{ env.BASE_IMAGE_TAG }}:latest"
-          WEBSITE_HASH: 'placeholder'
-          HTTP_API_URL: 'https://placeholder'
-
-#      - name: Destroy PublishStack
-#        run: |
-#          cd cdk-delivery && \
-#            npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
-#              npx cdk destroy \
-#              del-${{ needs.names.outputs.deployment-name }}-PublishStack \
-#              --exclusively --force \
-#          && cd .. \
-#          ;
-#        env:
-#          ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
-#          DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
-#          WEBSITE_HASH: 'placeholder'
-#
-#      - name: Destroy EdgeStack
-#        run: |
-#          cd cdk-delivery && \
-#            npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
-#              npx cdk destroy \
-#              del-${{ needs.names.outputs.deployment-name }}-EdgeStack \
-#              --exclusively --force \
-#          && cd .. \
-#          ;
-#        env:
-#          ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
-#          DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
-#          WEBSITE_HASH: 'placeholder'
-
       - name: Destroy Submit Application
         run: |
           cd cdk-application && \
@@ -503,122 +459,8 @@ jobs:
           # Set by deploy-environment.yml after the environment's AuthStack is deployed
           COGNITO_USER_POOL_ARN: ${{ vars.COGNITO_USER_POOL_ARN }}
           COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
-
-      #      - name: Destroy OpsStack
-      #        run: |
-      #          cd cdk-application && \
-      #            npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
-      #              npx cdk destroy \
-      #              app-${{ needs.names.outputs.deployment-name }}-OpsStack \
-      #              --exclusively --force \
-      #          && cd .. \
-      #          ;
-      #        env:
-      #          ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
-      #          DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
-      #          BASE_IMAGE_TAG: "${{ env.BASE_IMAGE_TAG }}:latest"
-      #          # Set by deploy-environment.yml after the environment's AuthStack is deployed
-      #          COGNITO_USER_POOL_ARN: ${{ vars.COGNITO_USER_POOL_ARN }}
-      #          COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
-      #
-      #      - name: Destroy AccountStack
-      #        run: |
-      #          cd cdk-application && \
-      #            npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
-      #              npx cdk destroy \
-      #              app-${{ needs.names.outputs.deployment-name }}-AccountStack \
-      #              --exclusively --force \
-      #          && cd .. \
-      #          ;
-      #        env:
-      #          ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
-      #          DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
-      #          BASE_IMAGE_TAG: "${{ env.BASE_IMAGE_TAG }}:latest"
-      #          # Set by deploy-environment.yml after the environment's AuthStack is deployed
-      #          COGNITO_USER_POOL_ARN: ${{ vars.COGNITO_USER_POOL_ARN }}
-      #          COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
-      #
-      #      - name: Destroy HmrcStack
-      #        run: |
-      #          cd cdk-application && \
-      #            npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
-      #              npx cdk destroy \
-      #              app-${{ needs.names.outputs.deployment-name }}-HmrcStack \
-      #              --exclusively --force \
-      #          && cd .. \
-      #          ;
-      #        env:
-      #          ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
-      #          DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
-      #          BASE_IMAGE_TAG: "${{ env.BASE_IMAGE_TAG }}:latest"
-      #          # Set by deploy-environment.yml after the environment's AuthStack is deployed
-      #          COGNITO_USER_POOL_ARN: ${{ vars.COGNITO_USER_POOL_ARN }}
-      #          COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
-      #
-      #      - name: Destroy AuthStack
-      #        run: |
-      #          cd cdk-application && \
-      #            npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
-      #              npx cdk destroy \
-      #              app-${{ needs.names.outputs.deployment-name }}-AuthStack \
-      #              --exclusively --force \
-      #          && cd .. \
-      #          ;
-      #        env:
-      #          ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
-      #          DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
-      #          BASE_IMAGE_TAG: "${{ env.BASE_IMAGE_TAG }}:latest"
-      #          # Set by deploy-environment.yml after the environment's AuthStack is deployed
-      #          COGNITO_USER_POOL_ARN: ${{ vars.COGNITO_USER_POOL_ARN }}
-      #          COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
-      #
-      #      - name: Destroy DevStack
-      #        run: |
-      #          cd cdk-application && \
-      #            npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
-      #              npx cdk destroy \
-      #              app-${{ needs.names.outputs.deployment-name }}-DevStack \
-      #              --exclusively --force \
-      #          && cd .. \
-      #          ;
-      #        env:
-      #          ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
-      #          DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
-      #          BASE_IMAGE_TAG: "${{ env.BASE_IMAGE_TAG }}:latest"
-      #          # Set by deploy-environment.yml after the environment's AuthStack is deployed
-      #          COGNITO_USER_POOL_ARN: ${{ vars.COGNITO_USER_POOL_ARN }}
-      #          COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
-      #
-      #      - name: Destroy SelfDestructStack (Delivery)
-      #        run: |
-      #          cd cdk-delivery && \
-      #            npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
-      #              npx cdk destroy \
-      #              del-${{ needs.names.outputs.deployment-name }}-SelfDestructStack \
-      #              --exclusively --force \
-      #          && cd .. \
-      #          ;
-      #        env:
-      #          ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
-      #          DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
-      #          WEBSITE_HASH: 'placeholder'
-      #
-      #      - name: Destroy SelfDestructStack (Application)
-      #        run: |
-      #          cd cdk-application && \
-      #            npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
-      #              npx cdk destroy \
-      #              app-${{ needs.names.outputs.deployment-name }}-SelfDestructStack \
-      #              --exclusively --force \
-      #          && cd .. \
-      #          ;
-      #        env:
-      #          ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
-      #          DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
-      #          BASE_IMAGE_TAG: "${{ env.BASE_IMAGE_TAG }}:latest"
-      #          # Set by deploy-environment.yml after the environment's AuthStack is deployed
-      #          COGNITO_USER_POOL_ARN: ${{ vars.COGNITO_USER_POOL_ARN }}
-      #          COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
+          WEBSITE_HASH: 'placeholder'
+          HTTP_API_URL: 'https://placeholder'
 
       - name: CDK stacks after
         if: ${{ !cancelled() }}
