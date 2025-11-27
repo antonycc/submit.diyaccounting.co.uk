@@ -16,6 +16,7 @@ import { buildLambdaEvent, buildGovClientHeaders, makeIdToken } from "../test-he
 import { setupTestEnv, parseResponseBody } from "../test-helpers/mockHelpers.js";
 import { ensureReceiptsTableExists } from "@app/bin/dynamodb.js";
 import { startHmrcMockServer } from "../test-helpers/primableMockServer.js";
+import { exportDynamoDBDataForUsers } from "../test-helpers/dynamodbExporter.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -124,6 +125,10 @@ describe("System Journey: HMRC VAT Submission End-to-End", () => {
   });
 
   afterAll(async () => {
+    // Export DynamoDB data for all users used in this test suite
+    const userSubs = ["test-vat-journey-user"];
+    await exportDynamoDBDataForUsers(userSubs, "hmrcVatJourney.system.test.js");
+
     try {
       await stopDynalite?.();
     } catch {}
