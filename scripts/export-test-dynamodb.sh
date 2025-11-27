@@ -49,12 +49,14 @@ while IFS= read -r file; do
     if [ -n "$SUB" ]; then
       # Check if already in array
       FOUND=0
-      for existing in "${USER_SUBS[@]}"; do
-        if [ "$existing" = "$SUB" ]; then
-          FOUND=1
-          break
-        fi
-      done
+      if [ ${#USER_SUBS[@]} -gt 0 ]; then
+        for existing in "${USER_SUBS[@]}"; do
+          if [ "$existing" = "$SUB" ]; then
+            FOUND=1
+            break
+          fi
+        done
+      fi
       if [ $FOUND -eq 0 ]; then
         USER_SUBS+=("$SUB")
       fi
@@ -69,9 +71,11 @@ if [ ${#USER_SUBS[@]} -eq 0 ]; then
 fi
 
 echo "Found ${#USER_SUBS[@]} unique user sub(s):"
-for sub in "${USER_SUBS[@]}"; do
-  echo "  - $sub"
-done
+if [ ${#USER_SUBS[@]} -gt 0 ]; then
+  for sub in "${USER_SUBS[@]}"; do
+    echo "  - $sub"
+  done
+fi
 echo ""
 
 # Call the Node.js export script
