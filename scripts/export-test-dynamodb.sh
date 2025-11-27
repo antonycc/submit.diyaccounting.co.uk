@@ -48,7 +48,14 @@ while IFS= read -r file; do
     SUB=$(cat "$file" | tr -d '[:space:]')
     if [ -n "$SUB" ]; then
       # Check if already in array
-      if [[ ! " ${USER_SUBS[@]:-} " =~ " ${SUB} " ]]; then
+      FOUND=0
+      for existing in "${USER_SUBS[@]}"; do
+        if [ "$existing" = "$SUB" ]; then
+          FOUND=1
+          break
+        fi
+      done
+      if [ $FOUND -eq 0 ]; then
         USER_SUBS+=("$SUB")
       fi
     fi

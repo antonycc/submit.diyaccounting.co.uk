@@ -19,17 +19,9 @@
 
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, ScanCommand } from "@aws-sdk/lib-dynamodb";
-import crypto from "crypto";
+import { hashSub } from "../app/lib/subHasher.js";
 import fs from "fs";
 import path from "path";
-
-// Hash a sub to get hashedSub (matches the app/lib/subHasher.js logic)
-function hashSub(sub) {
-  if (!sub || typeof sub !== "string") {
-    throw new Error("Invalid sub: must be a non-empty string");
-  }
-  return crypto.createHash("sha256").update(sub).digest("hex");
-}
 
 // Create DynamoDB Document Client
 function makeDocClient(region) {
