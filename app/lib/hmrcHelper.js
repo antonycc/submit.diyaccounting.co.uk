@@ -71,7 +71,15 @@ export function validateHmrcAccessToken(hmrcAccessToken) {
   }
 }
 
-export async function hmrcHttpGet(endpoint, accessToken, govClientHeaders = {}, testScenario = null, hmrcAccount, queryParams = {}) {
+export async function hmrcHttpGet(
+  endpoint,
+  accessToken,
+  govClientHeaders = {},
+  testScenario = null,
+  hmrcAccount,
+  queryParams = {},
+  auditForUserSub,
+) {
   const baseUrl = getHmrcBaseUrl(hmrcAccount);
   // Sanitize query params: drop undefined, null, and blank strings
   const cleanParams = Object.fromEntries(
@@ -128,6 +136,22 @@ export async function hmrcHttpGet(endpoint, accessToken, govClientHeaders = {}, 
     status: hmrcResponse.status,
     hmrcResponseBody,
   });
+
+  const httpResponse = {
+    statusCode: hmrcResponse.status,
+    headers: hmrcResponse.headers,
+    body: hmrcResponseBody,
+  };
+  const userSubOrUuid = auditForUserSub || `unknown-user-${uuidv4()}`;
+  try {
+    await putHmrcApiRequest(userSubOrUuid, { url: hmrcRequestUrl, httpRequest, httpResponse, duration });
+  } catch (auditError) {
+    logger.error({
+      message: "Error auditing HMRC API request/response to DynamoDB",
+      error: auditError.message,
+      stack: auditError.stack,
+    });
+  }
 
   return {
     ok: hmrcResponse.ok,
@@ -189,22 +213,27 @@ export async function hmrcHttpPost(hmrcRequestUrl, hmrcRequestHeaders, govClient
     });
   }
 
+  logger.info({
+    message: `Response from POST ${hmrcRequestUrl}`,
+    url: hmrcRequestUrl,
+    status: hmrcResponse.status,
+    hmrcResponseBody,
+  });
+
   const httpResponse = {
     statusCode: hmrcResponse.status,
     headers: responseHeadersObj,
     body: hmrcResponseBody,
   };
   const userSubOrUuid = auditForUserSub || `unknown-user-${uuidv4()}`;
-  if (userSubOrUuid) {
-    try {
-      await putHmrcApiRequest(auditForUserSub, { url: hmrcRequestUrl, httpRequest, httpResponse, duration });
-    } catch (auditError) {
-      logger.error({
-        message: "Error auditing HMRC API request/response to DynamoDB",
-        error: auditError.message,
-        stack: auditError.stack,
-      });
-    }
+  try {
+    await putHmrcApiRequest(userSubOrUuid, { url: hmrcRequestUrl, httpRequest, httpResponse, duration });
+  } catch (auditError) {
+    logger.error({
+      message: "Error auditing HMRC API request/response to DynamoDB",
+      error: auditError.message,
+      stack: auditError.stack,
+    });
   }
 
   return { hmrcResponse, hmrcResponseBody };

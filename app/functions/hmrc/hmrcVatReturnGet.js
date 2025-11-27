@@ -67,8 +67,9 @@ export async function handler(event) {
   let errorMessages = [];
 
   // Bundle enforcement
+  let userSub;
   try {
-    await enforceBundles(event);
+    userSub = await enforceBundles(event);
   } catch (error) {
     return http403ForbiddenFromBundleEnforcement(error, request);
   }
@@ -121,7 +122,15 @@ export async function handler(event) {
   let hmrcResponse;
   try {
     logger.info({ message: "Checking for stubbed VAT return data", vrn, periodKey, testScenario });
-    ({ vatReturn, hmrcResponse } = await getVatReturn(vrn, periodKey, hmrcAccessToken, govClientHeaders, testScenario, hmrcAccount));
+    ({ vatReturn, hmrcResponse } = await getVatReturn(
+      vrn,
+      periodKey,
+      hmrcAccessToken,
+      govClientHeaders,
+      testScenario,
+      hmrcAccount,
+      userSub,
+    ));
     // Generate error responses based on HMRC response
     if (hmrcResponse && !hmrcResponse.ok) {
       if (hmrcResponse.status === 403) {
@@ -152,9 +161,9 @@ export async function handler(event) {
 }
 
 // Service adaptor aware of the downstream service but not the consuming Lambda's incoming/outgoing HTTP request/response
-export async function getVatReturn(vrn, periodKey, hmrcAccessToken, govClientHeaders, testScenario, hmrcAccount) {
+export async function getVatReturn(vrn, periodKey, hmrcAccessToken, govClientHeaders, testScenario, hmrcAccount, auditForUserSub) {
   const hmrcRequestUrl = `/organisations/vat/${vrn}/returns/${periodKey}`;
-  const hmrcResponse = await hmrcHttpGet(hmrcRequestUrl, hmrcAccessToken, govClientHeaders, testScenario, hmrcAccount);
+  const hmrcResponse = await hmrcHttpGet(hmrcRequestUrl, hmrcAccessToken, govClientHeaders, testScenario, hmrcAccount, auditForUserSub);
 
   if (!hmrcResponse.ok) {
     // Consumers of this function may choose to map these to HTTP responses

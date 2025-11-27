@@ -189,19 +189,19 @@ export async function submitVat(periodKey, vatDue, vatNumber, hmrcAccount, hmrcA
     finalised: true,
   };
 
-  let hmrcResponseBody;
-  let hmrcResponse;
+  // let hmrcResponseBody;
+  // let hmrcResponse;
   const hmrcBase = hmrcAccount === "sandbox" ? process.env.HMRC_SANDBOX_BASE_URI : process.env.HMRC_BASE_URI;
   const hmrcRequestUrl = `${hmrcBase}/organisations/vat/${vatNumber}/returns`;
   logHmrcRequestDetails(hmrcRequestUrl, hmrcRequestHeaders, govClientHeaders, hmrcRequestBody);
   // Perform HTTP call
-  ({ hmrcResponse, hmrcResponseBody } = await hmrcHttpPost(
+  const { hmrcResponse, hmrcResponseBody } = await hmrcHttpPost(
     hmrcRequestUrl,
     hmrcRequestHeaders,
     govClientHeaders,
     hmrcRequestBody,
     auditForUserSub,
-  ));
+  );
 
   return { hmrcRequestBody, receipt: hmrcResponseBody, hmrcResponse, hmrcResponseBody, hmrcRequestUrl };
 }
