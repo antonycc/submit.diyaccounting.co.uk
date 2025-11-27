@@ -3,20 +3,99 @@
 /* global RTCPeerConnection */
 // Generic utility functions for submit application
 
-// Check authentication status on page load
+// Check authentication status on page load and validate token expiry
 // eslint-disable-next-line no-unused-vars
 function checkAuthStatus() {
   const accessToken = localStorage.getItem("cognitoAccessToken");
+  const idToken = localStorage.getItem("cognitoIdToken");
   const userInfo = localStorage.getItem("userInfo");
 
   if (accessToken && userInfo) {
     console.log("User is authenticated");
+
+    // Check if tokens are expired or about to expire
+    checkTokenExpiry(accessToken, idToken);
+
     // eslint-disable-next-line no-undef
     updateLoginStatus();
   } else {
     console.log("User is not authenticated");
     // eslint-disable-next-line no-undef
     updateLoginStatus();
+  }
+}
+
+// Check if tokens are expired and notify user
+function checkTokenExpiry(accessToken, idToken) {
+  try {
+    const now = Date.now();
+    const accessExpMs = getJwtExpiryMs(accessToken);
+    const idExpMs = getJwtExpiryMs(idToken);
+
+    // Check if either token is expired
+    const accessExpired = accessExpMs && accessExpMs < now;
+    const idExpired = idExpMs && idExpMs < now;
+
+    if (accessExpired || idExpired) {
+      console.warn("Token(s) expired on page load", { accessExpired, idExpired });
+
+      // Notify user and offer to refresh
+      if (typeof window !== "undefined" && window.showStatus) {
+        window.showStatus("Your session has expired. Attempting to refresh...", "info");
+      }
+
+      // Attempt to refresh tokens
+      void ensureSession({ force: true })
+        .then((newToken) => {
+          if (newToken) {
+            console.log("Token refresh successful on page load");
+            if (typeof window !== "undefined" && window.showStatus) {
+              window.showStatus("Session refreshed successfully.", "success");
+            }
+          } else {
+            console.warn("Token refresh failed on page load");
+            if (typeof window !== "undefined" && window.showStatus) {
+              window.showStatus("Session expired. Please log in again.", "warning");
+              setTimeout(() => {
+                window.location.href = "/auth/login.html";
+              }, 3000);
+            }
+          }
+          return undefined;
+        })
+        .catch((err) => {
+          console.error("Token refresh error on page load:", err);
+          if (typeof window !== "undefined" && window.showStatus) {
+            window.showStatus("Session expired. Please log in again.", "warning");
+            setTimeout(() => {
+              window.location.href = "/auth/login.html";
+            }, 3000);
+          }
+          return undefined;
+        });
+      return;
+    }
+
+    // Check if tokens are expiring soon (within 5 minutes)
+    const fiveMinutes = 5 * 60 * 1000;
+    const accessExpiringSoon = accessExpMs && accessExpMs - now < fiveMinutes && accessExpMs - now > 0;
+    const idExpiringSoon = idExpMs && idExpMs - now < fiveMinutes && idExpMs - now > 0;
+
+    if (accessExpiringSoon || idExpiringSoon) {
+      console.log("Token(s) expiring soon, attempting preemptive refresh");
+      // Silently attempt to refresh tokens before they expire
+      void ensureSession({ force: false, minTTLms: fiveMinutes })
+        .then(() => {
+          console.log("Preemptive token refresh successful");
+          return undefined;
+        })
+        .catch((err) => {
+          console.warn("Preemptive token refresh failed:", err);
+          return undefined;
+        });
+    }
+  } catch (error) {
+    console.warn("Error checking token expiry:", error);
   }
 }
 
@@ -564,7 +643,7 @@ async function ensureSession({ minTTLms = 30000, force = false } = {}) {
   }
 }
 
-// Centralized fetch with Cognito header injection and 401 refresh-and-retry
+// Centralized fetch with Cognito header injection and 401/403 handling
 async function authorizedFetch(input, init = {}) {
   const headers = new Headers(init.headers || {});
   const accessToken = localStorage.getItem("cognitoAccessToken");
@@ -572,11 +651,61 @@ async function authorizedFetch(input, init = {}) {
   if (accessToken) headers.set("X-Authorization", `Bearer ${accessToken}`);
 
   const first = await fetchWithId(input, { ...init, headers });
+
+  // Handle 403 Forbidden - likely missing bundle entitlement
+  if (first.status === 403) {
+    try {
+      const errorBody = await first.json().catch(() => ({}));
+      const message = errorBody.message || "Access forbidden. You may need to add a bundle to access this feature.";
+      console.warn("403 Forbidden:", message);
+
+      // Show user-friendly error and guide to bundles page
+      if (typeof window !== "undefined" && window.showStatus) {
+        window.showStatus(`${message} Click here to add bundles.`, "error");
+        // Add a link to bundles page in the error message
+        setTimeout(() => {
+          const statusContainer = document.getElementById("statusMessagesContainer");
+          if (statusContainer) {
+            const lastMessage = statusContainer.lastElementChild;
+            if (lastMessage && lastMessage.classList.contains("status-error")) {
+              lastMessage.style.cursor = "pointer";
+              lastMessage.onclick = () => {
+                window.location.href = "/account/bundles.html";
+              };
+            }
+          }
+        }, 100);
+      }
+    } catch (e) {
+      console.warn("Failed to handle 403 error:", e);
+    }
+    return first; // Return the 403 response for caller to handle
+  }
+
+  // Handle 401 Unauthorized - token expired or invalid
   if (first.status !== 401) return first;
 
   // One-time retry after forcing refresh
   // Note: Token refresh only works if backend supports refresh_token grant type
-  await ensureSession({ force: true }).catch(() => {});
+  console.log("Received 401, attempting token refresh...");
+  try {
+    const refreshed = await ensureSession({ force: true });
+    if (!refreshed) {
+      // Refresh failed, guide user to re-authenticate
+      console.warn("Token refresh failed, user needs to re-authenticate");
+      if (typeof window !== "undefined" && window.showStatus) {
+        window.showStatus("Your session has expired. Please log in again.", "warning");
+        setTimeout(() => {
+          window.location.href = "/auth/login.html";
+        }, 2000);
+      }
+      return first;
+    }
+  } catch (e) {
+    console.warn("Token refresh error:", e);
+    return first;
+  }
+
   const headers2 = new Headers(init.headers || {});
   const at2 = localStorage.getItem("cognitoAccessToken");
   if (at2) headers2.set("X-Authorization", `Bearer ${at2}`);
@@ -586,7 +715,7 @@ async function authorizedFetch(input, init = {}) {
 // Expose authorizedFetch globally for HTML usage
 window.authorizedFetch = authorizedFetch;
 
-// Fetch with ID token and automatic 401 refresh-and-retry
+// Fetch with ID token and automatic 401/403 handling
 // This is specifically for endpoints that use the Authorization header with idToken
 async function fetchWithIdToken(input, init = {}) {
   // Helper to get the current idToken
@@ -603,11 +732,61 @@ async function fetchWithIdToken(input, init = {}) {
   if (idToken) headers.set("Authorization", `Bearer ${idToken}`);
 
   const first = await fetch(input, { ...init, headers });
+
+  // Handle 403 Forbidden - likely missing bundle entitlement
+  if (first.status === 403) {
+    try {
+      const errorBody = await first.json().catch(() => ({}));
+      const message = errorBody.message || "Access forbidden. You may need to add a bundle to access this feature.";
+      console.warn("403 Forbidden:", message);
+
+      // Show user-friendly error and guide to bundles page
+      if (typeof window !== "undefined" && window.showStatus) {
+        window.showStatus(`${message} Click here to add bundles.`, "error");
+        // Add a link to bundles page in the error message
+        setTimeout(() => {
+          const statusContainer = document.getElementById("statusMessagesContainer");
+          if (statusContainer) {
+            const lastMessage = statusContainer.lastElementChild;
+            if (lastMessage && lastMessage.classList.contains("status-error")) {
+              lastMessage.style.cursor = "pointer";
+              lastMessage.onclick = () => {
+                window.location.href = "/account/bundles.html";
+              };
+            }
+          }
+        }, 100);
+      }
+    } catch (e) {
+      console.warn("Failed to handle 403 error:", e);
+    }
+    return first; // Return the 403 response for caller to handle
+  }
+
+  // Handle 401 Unauthorized - token expired or invalid
   if (first.status !== 401) return first;
 
   // One-time retry after forcing refresh
   // Note: Token refresh only works if backend supports refresh_token grant type
-  await ensureSession({ force: true }).catch(() => {});
+  console.log("Received 401, attempting token refresh...");
+  try {
+    const refreshed = await ensureSession({ force: true });
+    if (!refreshed) {
+      // Refresh failed, guide user to re-authenticate
+      console.warn("Token refresh failed, user needs to re-authenticate");
+      if (typeof window !== "undefined" && window.showStatus) {
+        window.showStatus("Your session has expired. Please log in again.", "warning");
+        setTimeout(() => {
+          window.location.href = "/auth/login.html";
+        }, 2000);
+      }
+      return first;
+    }
+  } catch (e) {
+    console.warn("Token refresh error:", e);
+    return first;
+  }
+
   const headers2 = new Headers(init.headers || {});
   const idToken2 = getIdToken();
   if (idToken2) headers2.set("Authorization", `Bearer ${idToken2}`);
@@ -1082,4 +1261,9 @@ if (typeof window !== "undefined") {
   window.isActivityAvailable = isActivityAvailable;
   window.fetchCatalogText = fetchCatalogText;
   window.fetchWithId = fetchWithId;
+  // token management
+  window.checkTokenExpiry = checkTokenExpiry;
+  window.ensureSession = ensureSession;
+  window.getJwtExpiryMs = getJwtExpiryMs;
+  window.parseJwtClaims = parseJwtClaims;
 }
