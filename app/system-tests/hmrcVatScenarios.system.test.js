@@ -8,6 +8,7 @@ import { handler as hmrcVatObligationGetHandler } from "../functions/hmrc/hmrcVa
 import * as hmrcHelper from "../lib/hmrcHelper.js";
 import { buildLambdaEvent, buildGovClientHeaders } from "../test-helpers/eventBuilders.js";
 import { setupTestEnv, parseResponseBody } from "../test-helpers/mockHelpers.js";
+import { exportDynamoDBDataForUsers } from "../test-helpers/dynamodbExporter.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -48,6 +49,10 @@ describe("System: HMRC VAT Scenarios with Test Parameters", () => {
   });
 
   afterAll(async () => {
+    // Export DynamoDB data for all users used in this test suite
+    const userSubs = ["test-user"];
+    await exportDynamoDBDataForUsers(userSubs, "hmrcVatScenarios.system.test.js");
+
     try {
       await stopDynalite?.();
     } catch {}

@@ -10,6 +10,7 @@ import { handler as hmrcVatReturnGetHandler } from "../functions/hmrc/hmrcVatRet
 import { buildLambdaEvent, buildGovClientHeaders } from "../test-helpers/eventBuilders.js";
 import { setupTestEnv, parseResponseBody } from "../test-helpers/mockHelpers.js";
 import { startHmrcMockServer } from "../test-helpers/primableMockServer.js";
+import { exportDynamoDBDataForUsers } from "../test-helpers/dynamodbExporter.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -54,6 +55,10 @@ describe("System Journey: HMRC VAT Obligation-Based Flow", () => {
   });
 
   afterAll(async () => {
+    // Export DynamoDB data for all users used in this test suite
+    const userSubs = ["test-obligation-journey-user"];
+    await exportDynamoDBDataForUsers(userSubs, "hmrcVatObligationJourney.system.test.js");
+
     try {
       await stopDynalite?.();
     } catch {}
