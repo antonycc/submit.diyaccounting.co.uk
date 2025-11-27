@@ -1,13 +1,14 @@
 package co.uk.diyaccounting.submit;
 
+import co.uk.diyaccounting.submit.utils.ResourceNameUtils;
+import software.amazon.awscdk.services.apigatewayv2.HttpMethod;
+
+import java.util.ArrayList;
+import java.util.List;
+
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDashedDomainName;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.convertDotSeparatedToDashSeparated;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateResourceNamePrefix;
-
-import co.uk.diyaccounting.submit.utils.ResourceNameUtils;
-import java.util.ArrayList;
-import java.util.List;
-import software.amazon.awscdk.services.apigatewayv2.HttpMethod;
 
 public class SubmitSharedNames {
 
@@ -97,7 +98,7 @@ public class SubmitSharedNames {
     public String accountStackId;
     public String apiStackId;
     public String opsStackId;
-    public String appSelfDestructStackId;
+    public String selfDestructStackId;
     public String ecrRepositoryArn;
     public String ecrRepositoryName;
     public String ecrLogGroupName;
@@ -216,18 +217,12 @@ public class SubmitSharedNames {
     public boolean bundleDeleteLambdaJwtAuthorizer;
     public boolean bundleDeleteLambdaCustomAuthorizer;
 
-    public String delSelfDestructLambdaHandler;
-    public String delSelfDestructLambdaFunctionName;
-    public String delSelfDestructLambdaArn;
+    public String selfDestructLambdaHandler;
+    public String selfDestructLambdaFunctionName;
+    public String selfDestructLambdaArn;
 
-    public String appSelfDestructLambdaHandler;
-    public String appSelfDestructLambdaFunctionName;
-    public String appSelfDestructLambdaArn;
-
-    public String delResourceNamePrefix;
     public String edgeStackId;
     public String publishStackId;
-    public String delSelfDestructStackId;
 
     public static class SubmitSharedNamesProps {
         public String hostedZoneName;
@@ -311,7 +306,7 @@ public class SubmitSharedNames {
         this.accountStackId = "%s-app-AccountStack".formatted(props.deploymentName);
         this.apiStackId = "%s-app-ApiStack".formatted(props.deploymentName);
         this.opsStackId = "%s-app-OpsStack".formatted(props.deploymentName);
-        this.appSelfDestructStackId = "%s-app-SelfDestructStack".formatted(props.deploymentName);
+        this.selfDestructStackId = "%s-app-SelfDestructStack".formatted(props.deploymentName);
         this.ecrRepositoryArn = "arn:aws:ecr:%s:%s:repository/%s-ecr"
                 .formatted(props.regionName, props.awsAccount, this.appResourceNamePrefix);
         this.ecrRepositoryName = "%s-ecr".formatted(this.appResourceNamePrefix);
@@ -323,17 +318,15 @@ public class SubmitSharedNames {
         this.ue1EcrLogGroupName = "/aws/ecr/%s-us-east-1".formatted(this.appResourceNamePrefix);
         this.ue1EcrPublishRoleName = "%s-ecr-publish-role-us-east-1".formatted(appResourceNamePrefix);
 
-        this.delResourceNamePrefix = "%s-del".formatted(generateResourceNamePrefix(this.deploymentDomainName));
-        this.edgeStackId = "%s-del-EdgeStack".formatted(props.deploymentName);
-        this.publishStackId = "%s-del-PublishStack".formatted(props.deploymentName);
-        this.delSelfDestructStackId = "%s-del-SelfDestructStack".formatted(props.deploymentName);
+        this.edgeStackId = "%s-app-EdgeStack".formatted(props.deploymentName);
+        this.publishStackId = "%s-app-PublishStack".formatted(props.deploymentName);
 
         this.trailName = "%s-trail".formatted(this.envResourceNamePrefix);
         this.holdingBucketName =
                 convertDotSeparatedToDashSeparated("%s-holding-us-east-1".formatted(this.envResourceNamePrefix));
         this.originBucketName =
-                convertDotSeparatedToDashSeparated("%s-origin-us-east-1".formatted(this.delResourceNamePrefix));
-        this.originAccessLogBucketName = "%s-origin-access-logs".formatted(this.delResourceNamePrefix);
+                convertDotSeparatedToDashSeparated("%s-origin-us-east-1".formatted(this.appResourceNamePrefix));
+        this.originAccessLogBucketName = "%s-origin-access-logs".formatted(this.appResourceNamePrefix);
 
         var appLambdaHandlerPrefix = "app/functions";
         var appLambdaArnPrefix = "arn:aws:lambda:%s:%s:function:%s"
@@ -630,19 +623,10 @@ public class SubmitSharedNames {
         var appSelfDestructLambdaHandlerName = "selfDestruct.handler";
         var appSelfDestructLambdaHandlerDashed =
                 ResourceNameUtils.convertCamelCaseToDashSeparated(appSelfDestructLambdaHandlerName);
-        this.appSelfDestructLambdaFunctionName =
+        this.selfDestructLambdaFunctionName =
                 "%s-app-%s".formatted(this.appResourceNamePrefix, appSelfDestructLambdaHandlerDashed);
-        this.appSelfDestructLambdaHandler =
+        this.selfDestructLambdaHandler =
                 "%s/infra/%s".formatted(appLambdaHandlerPrefix, appSelfDestructLambdaHandlerName);
-        this.appSelfDestructLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, appSelfDestructLambdaHandlerDashed);
-
-        var delSelfDestructLambdaHandlerName = "selfDestruct.handler";
-        var delSelfDestructLambdaHandlerDashed =
-                ResourceNameUtils.convertCamelCaseToDashSeparated(delSelfDestructLambdaHandlerName);
-        this.delSelfDestructLambdaFunctionName =
-                "%s-del-%s".formatted(this.appResourceNamePrefix, delSelfDestructLambdaHandlerDashed);
-        this.delSelfDestructLambdaHandler =
-                "%s/infra/%s".formatted(appLambdaHandlerPrefix, delSelfDestructLambdaHandlerName);
-        this.delSelfDestructLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, delSelfDestructLambdaHandlerDashed);
+        this.selfDestructLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, appSelfDestructLambdaHandlerDashed);
     }
 }
