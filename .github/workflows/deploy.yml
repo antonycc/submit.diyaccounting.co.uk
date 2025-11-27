@@ -1819,6 +1819,39 @@ jobs:
           TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
           TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
 
+      - name: Configure AWS role via GitHub OIDC
+        if: ${{ !cancelled() }}
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        if: ${{ !cancelled() }}
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Export DynamoDB data for test users
+        if: ${{ !cancelled() }}
+        run: |
+          chmod +x scripts/export-test-dynamodb.sh
+          scripts/export-test-dynamodb.sh '${{ needs.names.outputs.deployment-name }}'
+        env:
+          AWS_REGION: ${{ env.AWS_REGION }}
+          RESULTS_DIR: target/behaviour-test-results
+
       - name: Upload artifacts (results)
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v5
@@ -1879,6 +1912,39 @@ jobs:
           TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
           TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
           TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
+
+      - name: Configure AWS role via GitHub OIDC
+        if: ${{ !cancelled() }}
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        if: ${{ !cancelled() }}
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Export DynamoDB data for test users
+        if: ${{ !cancelled() }}
+        run: |
+          chmod +x scripts/export-test-dynamodb.sh
+          scripts/export-test-dynamodb.sh '${{ needs.names.outputs.deployment-name }}'
+        env:
+          AWS_REGION: ${{ env.AWS_REGION }}
+          RESULTS_DIR: target/behaviour-test-results
 
       - name: Upload artifacts (results)
         if: ${{ !cancelled() }}
@@ -1941,6 +2007,39 @@ jobs:
           TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
           TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
 
+      - name: Configure AWS role via GitHub OIDC
+        if: ${{ !cancelled() }}
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        if: ${{ !cancelled() }}
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Export DynamoDB data for test users
+        if: ${{ !cancelled() }}
+        run: |
+          chmod +x scripts/export-test-dynamodb.sh
+          scripts/export-test-dynamodb.sh '${{ needs.names.outputs.deployment-name }}'
+        env:
+          AWS_REGION: ${{ env.AWS_REGION }}
+          RESULTS_DIR: target/behaviour-test-results
+
       - name: Upload artifacts (results)
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v5
@@ -2001,6 +2100,39 @@ jobs:
           TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
           TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
           TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
+
+      - name: Configure AWS role via GitHub OIDC
+        if: ${{ !cancelled() }}
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        if: ${{ !cancelled() }}
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Export DynamoDB data for test users
+        if: ${{ !cancelled() }}
+        run: |
+          chmod +x scripts/export-test-dynamodb.sh
+          scripts/export-test-dynamodb.sh '${{ needs.names.outputs.deployment-name }}'
+        env:
+          AWS_REGION: ${{ env.AWS_REGION }}
+          RESULTS_DIR: target/behaviour-test-results
 
       - name: Upload artifacts (results)
         if: ${{ !cancelled() }}
@@ -2063,6 +2195,39 @@ jobs:
           TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
           TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
 
+      - name: Configure AWS role via GitHub OIDC
+        if: ${{ !cancelled() }}
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        if: ${{ !cancelled() }}
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Export DynamoDB data for test users
+        if: ${{ !cancelled() }}
+        run: |
+          chmod +x scripts/export-test-dynamodb.sh
+          scripts/export-test-dynamodb.sh '${{ needs.names.outputs.deployment-name }}'
+        env:
+          AWS_REGION: ${{ env.AWS_REGION }}
+          RESULTS_DIR: target/behaviour-test-results
+
       - name: Upload artifacts (results)
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v5
@@ -2124,6 +2289,39 @@ jobs:
           TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
           TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
 
+      - name: Configure AWS role via GitHub OIDC
+        if: ${{ !cancelled() }}
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        if: ${{ !cancelled() }}
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Export DynamoDB data for test users
+        if: ${{ !cancelled() }}
+        run: |
+          chmod +x scripts/export-test-dynamodb.sh
+          scripts/export-test-dynamodb.sh '${{ needs.names.outputs.deployment-name }}'
+        env:
+          AWS_REGION: ${{ env.AWS_REGION }}
+          RESULTS_DIR: target/behaviour-test-results
+
       - name: Upload artifacts (results)
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v5
@@ -2184,6 +2382,39 @@ jobs:
           TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
           TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
           TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
+
+      - name: Configure AWS role via GitHub OIDC
+        if: ${{ !cancelled() }}
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        if: ${{ !cancelled() }}
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Export DynamoDB data for test users
+        if: ${{ !cancelled() }}
+        run: |
+          chmod +x scripts/export-test-dynamodb.sh
+          scripts/export-test-dynamodb.sh '${{ needs.names.outputs.deployment-name }}'
+        env:
+          AWS_REGION: ${{ env.AWS_REGION }}
+          RESULTS_DIR: target/behaviour-test-results
 
       - name: Upload artifacts (results)
         if: ${{ !cancelled() }}
