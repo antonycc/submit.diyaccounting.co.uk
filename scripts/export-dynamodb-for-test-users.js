@@ -111,11 +111,10 @@ async function exportDynamoDBData(deploymentName, userSubs, outputDir, region) {
     try {
       const items = await scanTableForHashedSubs(docClient, tableName, hashedSubs);
 
-      // Add table name to each item for context
+      // Add table name to each item for context (matches existing pattern in app/test-helpers/dynamodbExporter.js)
       for (const item of items) {
         allData.push({
-          _tableName: tableName,
-          _tableType: tableType,
+          tableName,
           ...item,
         });
       }
